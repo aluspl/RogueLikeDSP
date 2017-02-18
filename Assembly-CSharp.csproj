@@ -50,20 +50,17 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Scripts\ControlMap.cs" />
-    <Compile Include="Assets\Scripts\FinishPointAction.cs" />
-    <Compile Include="Assets\Scripts\GameLogic.cs" />
     <Compile Include="Assets\Scripts\MainMenu\ExitGameOnClick.cs" />
     <Compile Include="Assets\Scripts\MainMenu\LoadSceneOnClick.cs" />
     <Compile Include="Assets\Scripts\MainMenu\MainMenuScript.cs" />
+    <Compile Include="Assets\Scripts\MapUtils\ControlMap.cs" />
     <Compile Include="Assets\Scripts\MapUtils\MapGenerate.cs" />
     <Compile Include="Assets\Scripts\MapUtils\MapLoader.cs" />
     <Compile Include="Assets\Scripts\MapUtils\MapLogic.cs" />
-    <Compile Include="Assets\Scripts\Player.cs" />
-    <Compile Include="Assets\Scripts\Timer.cs" />
-    <None Include="Assets\packages\Unity.Newtonsoft.Json.7.0.0.0\lib\net35-Client\Unity.Newtonsoft.Json.xml" />
-    <None Include="Assets\Standard Assets\Fonts\OpenSans\License!.txt" />
-    <None Include="Assets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
+    <Compile Include="Assets\Scripts\TheBall\EnemyLogic.cs" />
+    <Compile Include="Assets\Scripts\TheBall\FinishPointAction.cs" />
+    <Compile Include="Assets\Scripts\TheBall\GameLogic.cs" />
+    <Compile Include="Assets\Scripts\TheBall\Player.cs" />
     <Reference Include="UnityEngine.UI">
       <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
     </Reference>
@@ -82,15 +79,6 @@
     <Reference Include="UnityEngine.VR">
       <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/UnityVR/RuntimeEditor/UnityEngine.VR.dll</HintPath>
     </Reference>
-    <Reference Include="Unity.Newtonsoft.Json">
-      <HintPath>/Users/szymonmotyka/Dev/Unity/TheUnityBall/Assets/packages/Unity.Newtonsoft.Json.7.0.0.0/lib/net35-Client/Unity.Newtonsoft.Json.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="Assembly-CSharp-firstpass.csproj">
-      <Project>{8FBB3524-1D79-D5F9-0DB8-400BAB37A8E2}</Project>
-      <Name>Assembly-CSharp-firstpass</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

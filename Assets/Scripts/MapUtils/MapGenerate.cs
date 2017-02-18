@@ -5,6 +5,7 @@ public class MapGenerate : MonoBehaviour {
     public GameObject Wall;
     public GameObject Corner;
     public GameObject FinishPoint;
+    public GameObject Enemy;
 
 
     public List<TextAsset> Map;
@@ -20,8 +21,7 @@ public class MapGenerate : MonoBehaviour {
     {
         transform.localScale = new Vector3(0.5f, 0.5f, 0);
 
-        //   var map = MapLoader.LoadMap(0);
-        var map = MapLoader.GenerateMap(10);
+        var map = MapLoader.GenerateMap(10+lvl);
         Debug.Log(string.Format("Map Items {0}",transform.childCount));
         if (map==null) return;
         _player = player;
@@ -44,6 +44,17 @@ public class MapGenerate : MonoBehaviour {
                 GenerateMapItem(map, x, y, mapStartX, mapStartY);
             }
         }
+        for (int i = 0; i < map.GetLength(0)-10; i++)
+        {
+            GenerateEnemy(map.GetLength(0));
+        }
+    }
+
+    private void GenerateEnemy(int size)
+    {
+        var random=new System.Random();
+        if (Enemy == null) Enemy = GameObject.FindWithTag("Enemy");
+        AddElement(Enemy, random.Next(size)/2,1,random.Next(size)/2,1,0);
     }
 
     private void GenerateMapItem(int[,] map, int x, int y, int mapStartX, int mapStartY)
@@ -51,10 +62,10 @@ public class MapGenerate : MonoBehaviour {
         var pos = map[x, y];
         if (pos <= 0) return;
         if (pos >0)
-            AddWall(GetMapObject(pos), x, mapStartX, y, mapStartY, GetWallAngle(pos));
+            AddElement(GetMapObject(pos), x, mapStartX, y, mapStartY, GetWallAngle(pos));
      }
 
-    private void AddWall(GameObject mapObject, int x, int mapStartX, int y, int mapStartY, int angle)
+    private void AddElement(GameObject mapObject, int x, int mapStartX, int y, int mapStartY, int angle)
     {
         Instantiate(mapObject, GetPosition(x, mapStartX, y, mapStartY), Quaternion.Euler(0, 0, angle), transform);
     }
@@ -98,6 +109,7 @@ public class MapGenerate : MonoBehaviour {
                 return FinishPoint;
             case 8:
                 return _player;
+
             default:
                 return null;
 

@@ -7,8 +7,6 @@ using Random = System.Random;
 
 public class MapLoader
 {
-
-
     public static int[,] LoadMap(int map)
     {
         return Maps.Count > map ? Maps[0] : Maps.First().Value;
@@ -26,10 +24,10 @@ public class MapLoader
         SetupBorders(mapSize, map);
         SetupCorners(mapSize, map);
         var mapvalues=new StringBuilder();
-        for (var x = 1; x < mapSize - 2; x++)
+        for (var x = 1; x < mapSize - 1; x++)
         {
             mapvalues.AppendLine();
-            for (var y = 1; y < mapSize - 2; y++)
+            for (var y = 1; y < mapSize - 1; y++)
             {
                 map[x, y] = random.Next(3);
                 mapvalues.AppendFormat("{0} ",map[x, y]);
@@ -43,9 +41,10 @@ public class MapLoader
 
     private static void SetupAssets(int mapSize, int[,] map, Random random)
     {
-        map[random.Next(mapSize - 3) + 1, random.Next(mapSize - 3) + 1] = StartPosition;
-        map[random.Next(mapSize - 3) + 1, random.Next(mapSize - 3) + 1] = EndPosition;
-
+       // map[random.Next(mapSize - 3) + 1, random.Next(mapSize - 3) + 1] = StartPosition;
+       // map[random.Next(mapSize - 3) + 1, random.Next(mapSize - 3) + 1] = EndPosition;
+        map[2, 2] = StartPosition;
+        map[mapSize/2, mapSize/2] = EndPosition;
     }
 
     private static void SetupBorders(int mapSize, int[,] map)
