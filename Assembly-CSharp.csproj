@@ -53,7 +53,10 @@
     <Compile Include="Assets\Scripts\MainMenu\ExitGameOnClick.cs" />
     <Compile Include="Assets\Scripts\MainMenu\LoadSceneOnClick.cs" />
     <Compile Include="Assets\Scripts\MainMenu\MainMenuScript.cs" />
+    <Compile Include="Assets\Scripts\MapUtils\Enums\MapElement.cs" />
+    <Compile Include="Assets\Scripts\MapUtils\Enums\MapTheme.cs" />
     <Compile Include="Assets\Scripts\MapUtils\MapGenerator.cs" />
+    <Compile Include="Assets\Scripts\MapUtils\MapManager.cs" />
     <Compile Include="Assets\Scripts\MiniGame\TheBall\BallMapElement.cs" />
     <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallControlMap.cs" />
     <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallEnemyLogic.cs" />

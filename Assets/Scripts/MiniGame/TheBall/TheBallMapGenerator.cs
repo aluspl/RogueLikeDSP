@@ -179,7 +179,7 @@ namespace MiniGame.TheBall
         {
             map[0, 0] = BallMapElement.BottomLeftCorner;
             map[0, mapSize - 1] = BallMapElement.TopLeftCorner;
-           map[mapSize - 1, 0] = BallMapElement.BottomRightCorner;
+               map[mapSize - 1, 0] = BallMapElement.BottomRightCorner;
             map[mapSize - 1, mapSize - 1] = BallMapElement.TopRightCorner;
         }
 

@@ -1,4 +1,5 @@
-# TheUnityBall
-I don't know what to write here
-First project in unity2d :) 1. version
-Have fun
+# LifeLike - RogueLike na miare naszych możliwości
+Gra na Daj Się Poznać 2017.
+Opis projektu na szymonmotyka.pl
+ROGUELIKE GAME:
+1. etap: Mapa
