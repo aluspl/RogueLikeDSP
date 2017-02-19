@@ -53,14 +53,14 @@
     <Compile Include="Assets\Scripts\MainMenu\ExitGameOnClick.cs" />
     <Compile Include="Assets\Scripts\MainMenu\LoadSceneOnClick.cs" />
     <Compile Include="Assets\Scripts\MainMenu\MainMenuScript.cs" />
-    <Compile Include="Assets\Scripts\MapUtils\ControlMap.cs" />
-    <Compile Include="Assets\Scripts\MapUtils\MapGenerate.cs" />
-    <Compile Include="Assets\Scripts\MapUtils\MapLoader.cs" />
-    <Compile Include="Assets\Scripts\MapUtils\MapLogic.cs" />
-    <Compile Include="Assets\Scripts\TheBall\EnemyLogic.cs" />
-    <Compile Include="Assets\Scripts\TheBall\FinishPointAction.cs" />
-    <Compile Include="Assets\Scripts\TheBall\GameLogic.cs" />
-    <Compile Include="Assets\Scripts\TheBall\Player.cs" />
+    <Compile Include="Assets\Scripts\MapUtils\MapGenerator.cs" />
+    <Compile Include="Assets\Scripts\MiniGame\TheBall\BallMapElement.cs" />
+    <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallControlMap.cs" />
+    <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallEnemyLogic.cs" />
+    <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallGameLogic.cs" />
+    <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallMapGenerator.cs" />
+    <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallMapLogic.cs" />
+    <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallPlayer.cs" />
     <Reference Include="UnityEngine.UI">
       <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
     </Reference>
