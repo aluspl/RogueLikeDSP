@@ -21,9 +21,16 @@ public class MapManager : MonoBehaviour
 
     public GameObject Player;
 
+    public int MapSizeX = 100;
+
+    public int MapSizeY = 100;
+
+    public int MaxHorizontalLines=5;
+    public int MaxVerticalLines=4;
+
     // Use this for initialization
 	void Start () {
-	    var map=MapGenerator.GenerateMap(300);
+	    var map=MapGenerator.GenerateMap(MapSizeX,MapSizeY, MaxHorizontalLines, MaxVerticalLines);
 	    InsertMapElements(map);
 	}
 
@@ -33,8 +40,18 @@ public class MapManager : MonoBehaviour
         {
             case MapElement.Wall:
                 return Walls.FirstOrDefault();
+            case MapElement.Door:
+                return Doors.FirstOrDefault();
             case MapElement.Floor:
                 return Floors.FirstOrDefault();
+            case MapElement.Floor1:
+                return Floors.Count == 1 ? Floors[0] : Floors.LastOrDefault();
+            case MapElement.Floor2:
+                return Floors.Count == 2 ? Floors[1] : Floors.LastOrDefault();
+            case MapElement.Floor3:
+                return Floors.Count == 3 ? Floors[2] : Floors.LastOrDefault();
+            case MapElement.Floor4:
+                return Floors.Count == 4 ? Floors[3] : Floors.LastOrDefault();
             case MapElement.StartPoint:
                 return Player;
             case MapElement.EndPoint:
