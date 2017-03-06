@@ -1,5 +1,4 @@
 ﻿using System;
-using UnityEngine.PlaymodeTests;
 
 namespace Controls
 {
@@ -10,7 +9,6 @@ namespace Controls
             ReduceSpeed(xDir);
             ReduceSpeed(yDir);
         }
-        [Test]
         private static void ReduceSpeed(double dir)
         {
             if (Math.Abs(dir) < 0) return;

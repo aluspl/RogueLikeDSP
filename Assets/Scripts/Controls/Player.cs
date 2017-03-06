@@ -2,7 +2,6 @@
 using System.Security.Cryptography.X509Certificates;
 using MapUtils;
 using UnityEngine;
-using UnityEngine.PlaymodeTests;
 
 namespace Controls
 {
@@ -74,7 +73,6 @@ namespace Controls
               //  var door = component as Door;
             }
         }
-        [Test]
         private void CheckIfDisable()
         {
             GameManager.Instance.GameOver();
