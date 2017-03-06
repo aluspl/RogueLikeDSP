@@ -12,7 +12,7 @@ namespace Enums
         LockedDoor=7,
 
 
-        StartPoint, EndPoint
+        PlayerStart, EndPoint
 
     }
 }

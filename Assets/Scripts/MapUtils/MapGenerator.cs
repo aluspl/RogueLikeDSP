@@ -9,7 +9,12 @@ using Random = UnityEngine.Random;
 
 internal static class MapGenerator
 {
-/*
+    public static int MinimumWallSize = 20;
+
+    private static int MapSizeY { get; set; }
+
+    private static int MapSizeX { get; set; }
+        /*
           Generate Map
           mapSize: size of generated map
       */
@@ -21,7 +26,7 @@ internal static class MapGenerator
         var map = new MapElement[mapSizeX, mapSizeY];
         SetupAddons(map);
         SetupAssets(map);
-        GenerateRooms(map, totalHorizontalLines: maxVerticalLines, totalVerticalLines: maxVerticalLines);
+        GenerateRooms(map, totalHorizontalLines: maxHorizontalLines, totalVerticalLines: maxVerticalLines);
         SetupBorders(map);
         return map;
     }
@@ -89,7 +94,8 @@ In future : generate maps different floor enums :)
     {
         Debug.Log(string.Format("X: {0} Y: {1} PosX: {2} PosY: {3} PosY+Y={4}", xSize,ySize,posX,posY,posY+ySize));
         posX += xSize;
-        var door = Random.Range(posY, posY + xSize);
+
+        var door = Random.Range(posY+1, (posY + xSize)-1);
         for (var y = posY; y < posY + ySize; y++)
         {
             if (y >= MapSizeY - 1 || posX >= MapSizeX - 1) continue;
@@ -104,7 +110,7 @@ In future : generate maps different floor enums :)
     private static void GetHorizontalWall(MapElement[,] map, ref int posY, int ySize)
     {
         posY += ySize;
-        //From 1 border to 2.border
+        //From 1. border to 2.border
         var door = Random.Range(1, MapSizeX-2);
 
         for (var x = 0; x < MapSizeX - 1; x++)
@@ -131,15 +137,11 @@ In future : generate maps different floor enums :)
         return randomX;
     }
 
-    static readonly int MinimumWallSize = 20;
 
-    private static int MapSizeY { get; set; }
-
-    private static int MapSizeX { get; set; }
 
     private static void SetupAssets(MapElement[,] map)
     {
-        map[2, 2] = MapElement.StartPoint;
+        map[2, 2] = MapElement.PlayerStart;
         map[MapSizeX/2, MapSizeY/2] = MapElement.EndPoint;
     }
 

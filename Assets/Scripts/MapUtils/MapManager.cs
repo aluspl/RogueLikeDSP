@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
+using Characters;
+using Controls;
 using Enums;
 using MiniGame.TheBall;
 using UnityEngine;
@@ -19,7 +21,7 @@ public class MapManager : MonoBehaviour
     public List<GameObject> Doors;
     public GameObject EndPoint;
 
-    public GameObject Player;
+    public Player Player;
 
     public int MapSizeX = 100;
 
@@ -27,12 +29,25 @@ public class MapManager : MonoBehaviour
 
     public int MaxHorizontalLines=5;
     public int MaxVerticalLines=4;
+    public int MinimalWallSize = 10;
+    private MapElement[,] Map { get; set; }
 
     // Use this for initialization
-	void Start () {
-	    var map=MapGenerator.GenerateMap(MapSizeX,MapSizeY, MaxHorizontalLines, MaxVerticalLines);
-	    InsertMapElements(map);
-	}
+
+    public void StartLevel(int level)
+    {
+        MapGenerator.MinimumWallSize = MinimalWallSize;
+        Map=MapGenerator.GenerateMap(MapSizeX,MapSizeY, MaxHorizontalLines, MaxVerticalLines);
+        InsertMapElements();
+
+    }
+
+    void Awake()
+    {
+         MapCollection=new GameObject("Map").transform;
+    }
+
+    private Transform MapCollection { get; set; }
 
     private GameObject GetMapObject(MapElement pos)
     {
@@ -52,8 +67,8 @@ public class MapManager : MonoBehaviour
                 return Floors.Count == 3 ? Floors[2] : Floors.LastOrDefault();
             case MapElement.Floor4:
                 return Floors.Count == 4 ? Floors[3] : Floors.LastOrDefault();
-            case MapElement.StartPoint:
-                return Player;
+            case MapElement.PlayerStart:
+                return Player.gameObject;
             case MapElement.EndPoint:
                 return EndPoint;
             default:
@@ -62,13 +77,13 @@ public class MapManager : MonoBehaviour
     }
 
 
-    private void InsertMapElements(MapElement[,] map)
+    private void InsertMapElements()
     {
-        for (var x = 0; x < map.GetLength(0); x++)
+        for (var x = 0; x < Map.GetLength(0); x++)
         {
-            for (var y = 0; y < map.GetLength(1); y++)
+            for (var y = 0; y < Map.GetLength(1); y++)
             {
-                GenerateMapItem(map, x, y);
+                GenerateMapItem(Map, x, y);
             }
         }
     }
@@ -83,12 +98,12 @@ public class MapManager : MonoBehaviour
 
     private void AddElement(GameObject mapObject, int x, int y)
     {
-        Instantiate(mapObject, GetPosition(x, y), Quaternion.identity , transform);
+        Instantiate(mapObject, GetPosition(x, y), Quaternion.identity , MapCollection);
     }
 
     private static Vector3 GetPosition(int i, int j)
     {
-        return new Vector3(i/2f, j/2f, 0);
+        return new Vector3(i, j, 0);
     }
     public void CleanMap()
     {
