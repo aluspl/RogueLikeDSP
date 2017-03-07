@@ -7,6 +7,8 @@ namespace Controls
 {
     public class Player : MovingObject
     {
+        public bool IsButtonEnabled = true;
+
         protected override void Start ()
         {
 //            _animator = GetComponent<Animator>();
@@ -24,27 +26,44 @@ namespace Controls
 
         private Vector2 GetControllerInput()
         {
-// Keys
-             const int horizontal = 1;
-             const int vertical = 1;
+            if (IsButtonEnabled)
+            {
+            // Keys
+                const int vector = 1;
 
-            if (Input.GetKeyDown(GameManager.Instance.KeyUp))
-                return new Vector2(0,vertical);
-            if (Input.GetKeyDown(GameManager.Instance.KeyLeft))
-                return new Vector2(horizontal*-1,0);
-            if (Input.GetKeyDown(GameManager.Instance.KeyRight))
-                return new Vector2(horizontal,0);
-            if (Input.GetKeyDown(GameManager.Instance.KeyDown))
-                return new Vector2(0,vertical*-1);
+                if (Input.GetKeyDown(GameManager.Instance.KeyUp))
+                {
+                    transform.eulerAngles=new Vector3(0,0,0);
+                    return new Vector2(0, vector);
+                }
+                if (Input.GetKeyDown(GameManager.Instance.KeyLeft))
+                {
+                    transform.eulerAngles=new Vector3(0,0,90);
+                    return new Vector2(vector * -1, 0);
+                }
+                if (Input.GetKeyDown(GameManager.Instance.KeyRight))
+                {
+                    transform.eulerAngles=new Vector3(0,0,270);
+                    return new Vector2(vector, 0);
+                }
+                if (Input.GetKeyDown(GameManager.Instance.KeyDown))
+                {
+                    transform.eulerAngles=new Vector3(0,0,180);
+                    return new Vector2(0, vector * -1);
+                }
+                else return Vector2.zero;
+            }
+            else
+            {
+                //Controller - MORE UNiversal, but sometimes too sensitive
 
-            //Controller - MORE UNiversal, but sometimes too sensitive
+                var x = (int)Input.GetAxisRaw("Horizontal");
 
-             var x = (int)Input.GetAxisRaw("Horizontal");
+                var y = (int)Input.GetAxisRaw("Vertical");
+                if (x != 0) y = 0;
 
-             var y = (int)Input.GetAxisRaw("Vertical");
-            if (x != 0) y = 0;
-
-            return new Vector2(x,y);
+                return new Vector2(x,y);
+            }
         }
 
         private void OnTriggerEnter2D(Collider2D other)
