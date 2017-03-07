@@ -1,5 +1,9 @@
-# LifeLike - RogueLike na miare naszych możliwości
+## LifeLike - RogueLike na miare naszych możliwości
 Gra na Daj Się Poznać 2017.
-Opis projektu na szymonmotyka.pl
+Opis projektu na [Szymon Motyka](http://szymonmotyka.pl)
 ROGUELIKE GAME:
-1. etap: Mapa
+1. Mapa
+2. Postać
+3. Obrót
+
+ W Grę można zagrać na [Link do gry](https://aluspl.github.io/RogueLikeDSP/Versions/)
