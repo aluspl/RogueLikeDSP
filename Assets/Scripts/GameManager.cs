@@ -11,6 +11,10 @@ public class GameManager : MonoBehaviour
     public KeyCode KeyDown=KeyCode.DownArrow;
     public KeyCode KeyLeft=KeyCode.LeftArrow;
     public KeyCode KeyRight=KeyCode.RightArrow;
+    public KeyCode LightKey=KeyCode.F;
+
+    public bool IsDay = false;
+
 
     // Use this for initialization
     void Awake()
@@ -34,8 +38,9 @@ public class GameManager : MonoBehaviour
 
 
 	// Update is called once per frame
-	void Update () {
-		
+	void Update ()
+	{
+	    if (Input.GetKeyDown(LightKey)) IsDay = !IsDay;
 	}
 
     public void FinishMap()

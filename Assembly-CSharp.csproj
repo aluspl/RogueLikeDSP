@@ -56,6 +56,7 @@
     <Compile Include="Assets\Scripts\Characters\CharacterClasses\ItGuyClass.cs" />
     <Compile Include="Assets\Scripts\Controls\ControlUtils.cs" />
     <Compile Include="Assets\Scripts\Controls\FollowPlayer.cs" />
+    <Compile Include="Assets\Scripts\Controls\LightControl.cs" />
     <Compile Include="Assets\Scripts\Controls\MovingObject.cs" />
     <Compile Include="Assets\Scripts\Controls\Player.cs" />
     <Compile Include="Assets\Scripts\Enums\MapElement.cs" />
@@ -75,9 +76,6 @@
     <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallMapGenerator.cs" />
     <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallMapLogic.cs" />
     <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallPlayer.cs" />
-    <Reference Include="UnityEngine.Advertisements">
-      <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/Advertisements/UnityEngine.Advertisements.dll</HintPath>
-    </Reference>
     <Reference Include="UnityEngine.UI">
       <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
     </Reference>
@@ -92,9 +90,6 @@
     </Reference>
     <Reference Include="UnityEngine.HoloLens">
       <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/UnityHoloLens/RuntimeEditor/UnityEngine.HoloLens.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.Purchasing">
-      <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/UnityPurchasing/UnityEngine.Purchasing.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.VR">
       <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/UnityVR/RuntimeEditor/UnityEngine.VR.dll</HintPath>
