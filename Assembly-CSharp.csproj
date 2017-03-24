@@ -50,11 +50,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\MapUtils\Exit.cs" />
     <Compile Include="Assets\Scripts\Characters\CharacterClasses\BaseCharacterClass.cs" />
     <Compile Include="Assets\Scripts\Characters\CharacterClasses\CharacterFactory.cs" />
     <Compile Include="Assets\Scripts\Characters\CharacterClasses\ItGuyClass.cs" />
-    <Compile Include="Assets\Scripts\Controls\ControlUtils.cs" />
     <Compile Include="Assets\Scripts\Controls\FollowPlayer.cs" />
     <Compile Include="Assets\Scripts\Controls\LightControl.cs" />
     <Compile Include="Assets\Scripts\Controls\MovingObject.cs" />
@@ -63,10 +61,13 @@
     <Compile Include="Assets\Scripts\Enums\MapTheme.cs" />
     <Compile Include="Assets\Scripts\GameManager.cs" />
     <Compile Include="Assets\Scripts\InitateGame.cs" />
+    <Compile Include="Assets\Scripts\Interfaces\IMapGenerator.cs" />
+    <Compile Include="Assets\Scripts\Interfaces\IMapManager.cs" />
     <Compile Include="Assets\Scripts\MainMenu\ExitGameOnClick.cs" />
     <Compile Include="Assets\Scripts\MainMenu\LoadSceneOnClick.cs" />
     <Compile Include="Assets\Scripts\MainMenu\MainMenuScript.cs" />
-    <Compile Include="Assets\Scripts\MapUtils\Door.cs" />
+    <Compile Include="Assets\Scripts\MapElements\Door.cs" />
+    <Compile Include="Assets\Scripts\MapElements\Exit.cs" />
     <Compile Include="Assets\Scripts\MapUtils\MapGenerator.cs" />
     <Compile Include="Assets\Scripts\MapUtils\MapManager.cs" />
     <Compile Include="Assets\Scripts\MiniGame\TheBall\BallMapElement.cs" />

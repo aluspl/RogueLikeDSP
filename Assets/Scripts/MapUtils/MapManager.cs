@@ -7,11 +7,12 @@ using System.Text;
 using Characters;
 using Controls;
 using Enums;
+using Interfaces;
 using MiniGame.TheBall;
 using UnityEngine;
 using Random = System.Random;
 
-public class MapManager : MonoBehaviour
+public class MapManager : MonoBehaviour, IMapManager
 {
     /**
         Items based on selected theme :)
@@ -30,14 +31,17 @@ public class MapManager : MonoBehaviour
     public int MaxHorizontalLines=5;
     public int MaxVerticalLines=4;
     public int MinimalWallSize = 10;
-    private MapElement[,] Map { get; set; }
+    public MapElement[,] Map { get; set; }
 
     // Use this for initialization
 
     public void StartLevel(int level)
     {
-        MapGenerator.MinimumWallSize = MinimalWallSize;
-        Map=MapGenerator.GenerateMap(MapSizeX,MapSizeY, MaxHorizontalLines, MaxVerticalLines);
+        using (var generator = new MapGenerator())
+        {
+            generator.MinimumWallSize = MinimalWallSize;
+            Map=generator.GenerateMap(MapSizeX,MapSizeY, MaxHorizontalLines, MaxVerticalLines);
+        }
         InsertMapElements();
 
     }
@@ -47,9 +51,9 @@ public class MapManager : MonoBehaviour
          MapCollection=new GameObject("Map").transform;
     }
 
-    private Transform MapCollection { get; set; }
+    public Transform MapCollection { get; set; }
 
-    private GameObject GetMapObject(MapElement pos)
+    public GameObject GetMapObject(MapElement pos)
     {
         switch (pos)
         {
@@ -77,7 +81,7 @@ public class MapManager : MonoBehaviour
     }
 
 
-    private void InsertMapElements()
+    public void InsertMapElements()
     {
         for (var x = 0; x < Map.GetLength(0); x++)
         {
@@ -89,14 +93,14 @@ public class MapManager : MonoBehaviour
     }
 
 
-    private void GenerateMapItem(MapElement[,] map, int x, int y)
+    public void GenerateMapItem(MapElement[,] map, int x, int y)
     {
         var pos = map[x, y];
         if (pos >=0)
             AddElement(GetMapObject(pos), x, y);
     }
 
-    private void AddElement(GameObject mapObject, int x, int y)
+    public void AddElement(GameObject mapObject, int x, int y)
     {
         Instantiate(mapObject, GetPosition(x, y), Quaternion.identity , MapCollection);
     }

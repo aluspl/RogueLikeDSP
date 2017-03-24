@@ -1,24 +1,21 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Enums;
+using Interfaces;
 using UnityEngine;
-using UnityEngine.AI;
 using Random = UnityEngine.Random;
 
-internal static class MapGenerator
+public  class MapGenerator : IDisposable, IMapGenerator
 {
-    public static int MinimumWallSize = 20;
+    public  int MinimumWallSize = 20;
 
-    private static int MapSizeY { get; set; }
+    public int MapSizeY { get; set; }
 
-    private static int MapSizeX { get; set; }
-        /*
+    public int MapSizeX { get; set; }
+    /*
           Generate Map
           mapSize: size of generated map
       */
-    public static MapElement[,] GenerateMap(int mapSizeX, int mapSizeY, int maxHorizontalLines, int maxVerticalLines)
+    public  MapElement[,] GenerateMap(int mapSizeX, int mapSizeY, int maxHorizontalLines, int maxVerticalLines)
     {
         MapSizeX = mapSizeX;
         MapSizeY = mapSizeY;
@@ -31,7 +28,7 @@ internal static class MapGenerator
         return map;
     }
 
-    private static void SetupAddons(MapElement[,] map)
+    public void SetupAddons(MapElement[,] map)
     {
         for (var x = 1; x < MapSizeX - 1; x++)
         {
@@ -42,7 +39,7 @@ internal static class MapGenerator
         }
     }
 
-    private static void GenerateRooms(MapElement[,] map, int  totalHorizontalLines, int totalVerticalLines)
+    public void GenerateRooms(MapElement[,] map, int  totalHorizontalLines, int totalVerticalLines)
     {
         var leftValueY = MapSizeY-1;
         var posY=0;
@@ -61,7 +58,7 @@ internal static class MapGenerator
 
     }
 
-    private static void GetVerticalWalls(MapElement[,] map, int totalVerticalLines,  int posX, int posY,
+    public void GetVerticalWalls(MapElement[,] map, int totalVerticalLines,  int posX, int posY,
         int y)
     {
         var verticalLines = Random.Range(0, totalVerticalLines);
@@ -80,7 +77,7 @@ internal static class MapGenerator
 /*
 In future : generate maps different floor enums :)
 */
-    private static void GetFloors(MapElement[,] map, int posX, int posY, int xSize, int ySize)
+    public void GetFloors(MapElement[,] map, int posX, int posY, int xSize, int ySize)
     {
         var floorElement = (MapElement)Random.Range(1, 4);
         for (var x=posX;x<posX+xSize;x++)
@@ -90,7 +87,7 @@ In future : generate maps different floor enums :)
         }
     }
 
-    private static void GetVerticalWall(MapElement[,] map, ref int posX,  int posY, int xSize, int ySize)
+    public void GetVerticalWall(MapElement[,] map, ref int posX,  int posY, int xSize, int ySize)
     {
         Debug.Log(string.Format("X: {0} Y: {1} PosX: {2} PosY: {3} PosY+Y={4}", xSize,ySize,posX,posY,posY+ySize));
         posX += xSize;
@@ -107,7 +104,7 @@ In future : generate maps different floor enums :)
 
     }
 
-    private static void GetHorizontalWall(MapElement[,] map, ref int posY, int ySize)
+    public void GetHorizontalWall(MapElement[,] map, ref int posY, int ySize)
     {
         posY += ySize;
         //From 1. border to 2.border
@@ -123,9 +120,9 @@ In future : generate maps different floor enums :)
         }
     }
 
-    private static int GetWallSize(ref int left)
+    public int GetWallSize(ref int left)
     {
-        
+
         if (left <= MinimumWallSize)
         {
             return left;
@@ -138,14 +135,13 @@ In future : generate maps different floor enums :)
     }
 
 
-
-    private static void SetupAssets(MapElement[,] map)
+    public void SetupAssets(MapElement[,] map)
     {
         map[2, 2] = MapElement.PlayerStart;
         map[MapSizeX/2, MapSizeY/2] = MapElement.EndPoint;
     }
 
-    private static void SetupBorders(MapElement[,] map)
+    public void SetupBorders(MapElement[,] map)
     {
         for (var x = 0; x <= MapSizeX - 2; x++)
         {
@@ -160,4 +156,7 @@ In future : generate maps different floor enums :)
         }
     }
 
+    public void Dispose()
+    {
+    }
 }
