@@ -2,16 +2,17 @@
 
 namespace Characters.CharacterClasses
 {
-    public class ItGuyClass : BaseCharacter
+    public class HoboClass : BaseCharacter
     {
-        public static string ClassName = "IT Guy";
+        public static string ClassName = "Hobo";
 
-        public ItGuyClass(CharacterStatisticDataModel statistic) : base(statistic)
+        public HoboClass(CharacterStatisticDataModel statistic) : base(statistic)
         {
+            throw new System.NotImplementedException();
         }
 
 
-        public const string ClassType = "ITGuyClass";
+        public const string ClassType = "HoboClass";
 
         public override List<string> SpecialActionsList()
         {

@@ -59,6 +59,8 @@ public class MapManager : MonoBehaviour, IMapManager
         {
             case MapElement.Wall:
                 return Walls.FirstOrDefault();
+            case MapElement.InsideWall:
+                return Walls.FirstOrDefault();
             case MapElement.Door:
                 return Doors.FirstOrDefault();
             case MapElement.Floor:

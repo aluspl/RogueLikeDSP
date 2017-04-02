@@ -1,9 +1,10 @@
 ﻿using System.Collections;
+using Interfaces;
 using UnityEngine;
 
 namespace Controls
 {
-    public abstract class MovingObject : MonoBehaviour
+    public abstract class MovingObject : MonoBehaviour, IMovement
     {
         public float MoveTime = 0.1f;
 
@@ -21,12 +22,11 @@ namespace Controls
            _inverseMoveTime=  1f / MoveTime;
        }
 
-        private bool Move(Vector2 destination, out RaycastHit2D hit)
+        public bool Move(Vector2 destination, out RaycastHit2D hit)
         {
 
             var start = (Vector2)transform.position;
             var end = start + destination;
-            RoundDestination(ref end);
             _boxCollider2D.enabled = false;
             hit = Physics2D.Linecast(start, end, BlockingLayer);
             _boxCollider2D.enabled = true;
@@ -36,14 +36,9 @@ namespace Controls
             return true;
         }
 
-        private void RoundDestination(ref Vector2 end)
-        {
-            end.x = Mathf.RoundToInt(end.x);
-            end.y = Mathf.RoundToInt(end.y);
-        }
 
         //Move Object to selected Destination
-        private IEnumerator Movement(Vector3 destination)
+        public IEnumerator Movement(Vector3 destination)
         {
             Debug.Log(string.Format("Move location X {0} Y{1}",destination.x,destination.y));
 

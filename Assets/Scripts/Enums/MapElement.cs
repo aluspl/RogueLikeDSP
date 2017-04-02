@@ -9,10 +9,9 @@ namespace Enums
         Floor1=1, Floor2=2, Floor3=3, Floor4=4,
         Wall=5,
         Door=6,
-        LockedDoor=7,
+        InsideWall=7,
+        LockedDoor=8,
 
-
-        PlayerStart, EndPoint
-
+        PlayerStart, EndPoint,
     }
 }

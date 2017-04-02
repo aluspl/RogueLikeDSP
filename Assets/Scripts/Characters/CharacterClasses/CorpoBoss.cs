@@ -2,24 +2,22 @@
 
 namespace Characters.CharacterClasses
 {
-    public class ItGuyClass : BaseCharacter
+    public class CorpoBoss : BaseCharacter
     {
-        public static string ClassName = "IT Guy";
+        public static string ClassName = "Corpo Boss";
 
-        public ItGuyClass(CharacterStatisticDataModel statistic) : base(statistic)
+        public CorpoBoss(CharacterStatisticDataModel statistic) : base(statistic)
         {
         }
 
-
-        public const string ClassType = "ITGuyClass";
+        public const string ClassType = "CorpoBossClass";
 
         public override List<string> SpecialActionsList()
         {
             return new List<string>()
             {
                 "Normal Attack",
-                "Tech Talk",
-
+                "Fire Attack",
             };
         }
     }

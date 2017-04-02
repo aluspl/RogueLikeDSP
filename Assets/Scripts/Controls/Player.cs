@@ -11,7 +11,6 @@ namespace Controls
 
         protected override void Start ()
         {
-//            _animator = GetComponent<Animator>();
             base.Start();
         }
 

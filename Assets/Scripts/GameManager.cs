@@ -1,5 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Characters;
+using Characters.CharacterClasses;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -7,6 +9,7 @@ public class GameManager : MonoBehaviour
     private MapManager _mapManager;
     public static GameManager Instance = null;
     private int _level=0;
+    public BaseCharacter Player;
     public KeyCode KeyUp=KeyCode.UpArrow;
     public KeyCode KeyDown=KeyCode.DownArrow;
     public KeyCode KeyLeft=KeyCode.LeftArrow;
