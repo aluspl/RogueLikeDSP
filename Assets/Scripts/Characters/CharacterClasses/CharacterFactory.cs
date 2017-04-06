@@ -20,7 +20,6 @@ namespace Characters.CharacterClasses
                     return new CorpoBoss(statistic);
                 case CorpoRat.ClassType:
                     return new CorpoRat(statistic);
-
                 default:
                     return  null;
             }

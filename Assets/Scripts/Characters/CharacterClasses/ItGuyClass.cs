@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Enums;
 
 namespace Characters.CharacterClasses
 {
@@ -10,6 +11,32 @@ namespace Characters.CharacterClasses
         {
         }
 
+        public override string SpecialAction(BaseCharacter enemyCharacter, string actionName)
+        {
+            switch (actionName)
+            {
+                case "Tech Talk":
+                    return AttackTechTalk(enemyCharacter);
+                    break;
+                case "Phantom IT Device Attack":
+                    return AttackPhantomDevice(enemyCharacter);
+                    break;
+                default:
+                    return Attack(enemyCharacter);
+            }
+        }
+
+        private string AttackPhantomDevice(BaseCharacter enemyCharacter)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        private string AttackTechTalk(BaseCharacter enemyCharacter)
+        {
+            if (_random.Next(Charisma) >= _random.Next(Inteligence)) return GameLogSystem.TechTalk(false);
+            enemyCharacter.Status = Status.Sleep;
+            return GameLogSystem.TechTalk(true);
+        }
 
         public const string ClassType = "ITGuyClass";
 
@@ -17,9 +44,8 @@ namespace Characters.CharacterClasses
         {
             return new List<string>()
             {
-                "Normal Attack",
                 "Tech Talk",
-
+                "Phantom IT Device Attack"
             };
         }
     }

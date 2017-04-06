@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Characters.CharacterClasses;
+using Enums;
 using Interfaces;
 
 namespace Characters
@@ -8,6 +9,7 @@ namespace Characters
     public abstract class BaseCharacter : ICharacter
     {
         public static string ClassName;
+        public readonly Random _random = new Random();
 
          /**
         *
@@ -15,35 +17,24 @@ namespace Characters
         */
         protected BaseCharacter(CharacterStatisticDataModel statistic)
         {
-            if (statistic != null)
-            {
-                Name = statistic.Name;
-                Strength = statistic.Strength;
-                Inteligence = statistic.Inteligence;
-                Agility = statistic.Agility;
-                Charisma = statistic.Charisma;
-                Endurance = statistic.Endurance;
-            }
-            else
-            {
-                Name = "Default";
-                Strength = 1;
-                Inteligence = 1;
-                Agility = 1;
-                Charisma = 1;
-                Endurance = 1;
-            }
+            Name = statistic.Name;
+            Strength = statistic.Strength;
+            Inteligence = statistic.Inteligence;
+            Agility = statistic.Agility;
+            Charisma = statistic.Charisma;
+            Endurance = statistic.Endurance;
             HealthPoint = Endurance * 10;
             Level = 0;
             CurrentExperience = 0;
         }
-        public int ChanceToAttack(int chance)
+        //Check Greater Random in Agility
+        public bool ChanceToAttack(BaseCharacter enemy)
         {
-            throw new System.NotImplementedException();
+            return _random.Next(Agility)>_random.Next(enemy.Agility);
         }
-        public int CriticalChance(int chance)
+        public bool CriticalChance()
         {
-            throw new System.NotImplementedException();
+            return _random.Next(100)*Agility>90;
         }
         public int GetActionsPoints()
         {
@@ -51,19 +42,26 @@ namespace Characters
         }
         public virtual string Attack(BaseCharacter enemy)
         {
-            var damage = Strength;
-            enemy.HealthPoint -= damage;
-            return GameLogSystem.Attack(damage, enemy);
+            if (!ChanceToAttack(enemy)) return GameLogSystem.MissedAttack();
+            var damage = CriticalChance() ? _random.Next(Strength) : _random.Next(Strength) * 2;
+            damage=enemy.Defense(damage);
+            return GameLogSystem.Attack(damage,enemy);
         }
+
+        private int Defense(int damage)
+        {
+            HealthPoint -= damage;
+            return damage;
+        }
+
         public virtual string SpecialAction(BaseCharacter enemyCharacter, string actionName)
         {
-            throw new System.NotImplementedException();
+            return string.Empty;
         }
 
         public virtual List<string> SpecialActionsList()
         {
-            throw new System.NotImplementedException();
-
+             return new List<string>();
         }
         public string Name { get; set; }
         public int Strength { get; set; }
@@ -74,6 +72,6 @@ namespace Characters
          public int Agility { get; set; }
         public int Endurance { get; set; }
         public int HealthPoint { get; set; }
-
+        public Status Status { get; set; }
     }
 }

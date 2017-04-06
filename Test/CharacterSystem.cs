@@ -25,9 +25,22 @@ namespace MapGeneratorTest
         [Test]
         public void IsAttackWork()
         {
-            var player = CharacterFactory.GetPlayerClass("ITGuyClass",null);
+            var basicstatistic = new CharacterStatisticDataModel
+            {
+                Name = "Test",
+                Agility = 1,
+                Charisma = 1,
+                Endurance = 1,
+                Inteligence = 1,
+                Strength = 1
+            };
 
-            var enemy = CharacterFactory.GetPlayerClass("ITGuyClass",null);
+            var player = CharacterFactory.GetPlayerClass("ITGuyClass",basicstatistic);
+
+            var enemy = CharacterFactory.GetPlayerClass("ITGuyClass",basicstatistic);
+            Assert.IsFalse(player.ChanceToAttack(enemy));
+            Assert.IsFalse(player.CriticalChance());
+            
             Assert.IsNotNullOrEmpty(player.Attack(enemy));
         }
         [Test]
@@ -39,7 +52,8 @@ namespace MapGeneratorTest
                 Name = "Test",
                 Agility = 1,
                 Charisma = 1,
-                Endurance = 1, Inteligence = 1,
+                Endurance = 1,
+                Inteligence = 1,
                 Strength = 1
             });
             Assert.AreNotEqual(player.Agility,0);
@@ -81,9 +95,18 @@ namespace MapGeneratorTest
         {
             try
             {
-
-                ///WRONG TEST!!
-                return CharacterFactory.GetPlayerClass(className, null).Name;
+                var statistic = new CharacterStatisticDataModel()
+                {
+                    Agility = 1,
+                    Charisma = 1,
+                    Endurance = 1,
+                    Inteligence = 1,
+                    Strength = 1,
+                    CurrentExperience = 0,
+                    Level = 0,
+                    Name = className
+                };
+                return CharacterFactory.GetPlayerClass(className, statistic).Name;
             }
             catch (Exception)
             {

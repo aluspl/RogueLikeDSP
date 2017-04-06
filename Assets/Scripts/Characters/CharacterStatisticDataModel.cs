@@ -2,7 +2,7 @@
 
 namespace Characters
 {
-    public class CharacterStatisticDataModel
+    public struct CharacterStatisticDataModel
     {
         public string Name { get; set; }
         public int Strength { get; set; }
@@ -12,5 +12,6 @@ namespace Characters
         public int Charisma { get; set; }
         public int Agility { get; set; }
         public int Endurance { get; set; }
+        public int Stamina { get; set; }
     }
 }
