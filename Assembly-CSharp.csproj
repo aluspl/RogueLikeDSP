@@ -59,7 +59,7 @@
     <Compile Include="Assets\Scripts\Characters\CharacterClasses\ItGuyClass.cs" />
     <Compile Include="Assets\Scripts\Characters\CharacterClasses\SuperHoboClass.cs" />
     <Compile Include="Assets\Scripts\Characters\CharacterStatisticDataModel.cs" />
-    <Compile Include="Assets\Scripts\Characters\GameLogSystem.cs" />
+    <Compile Include="Assets\Scripts\Controls\Enemy.cs" />
     <Compile Include="Assets\Scripts\Controls\FollowPlayer.cs" />
     <Compile Include="Assets\Scripts\Controls\LightControl.cs" />
     <Compile Include="Assets\Scripts\Controls\MovingObject.cs" />
@@ -67,6 +67,7 @@
     <Compile Include="Assets\Scripts\Enums\MapElement.cs" />
     <Compile Include="Assets\Scripts\Enums\MapTheme.cs" />
     <Compile Include="Assets\Scripts\Enums\Status.cs" />
+    <Compile Include="Assets\Scripts\GameLogSystem.cs" />
     <Compile Include="Assets\Scripts\GameManager.cs" />
     <Compile Include="Assets\Scripts\InitateGame.cs" />
     <Compile Include="Assets\Scripts\Interfaces\ICharacter.cs" />
@@ -87,6 +88,7 @@
     <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallMapGenerator.cs" />
     <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallMapLogic.cs" />
     <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallPlayer.cs" />
+    <Compile Include="Assets\Scripts\Utils\EnemyUtils.cs" />
     <Reference Include="UnityEngine.UI">
       <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
     </Reference>

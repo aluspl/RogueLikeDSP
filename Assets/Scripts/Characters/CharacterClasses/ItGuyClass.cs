@@ -17,10 +17,8 @@ namespace Characters.CharacterClasses
             {
                 case "Tech Talk":
                     return AttackTechTalk(enemyCharacter);
-                    break;
                 case "Phantom IT Device Attack":
                     return AttackPhantomDevice(enemyCharacter);
-                    break;
                 default:
                     return Attack(enemyCharacter);
             }
@@ -28,7 +26,7 @@ namespace Characters.CharacterClasses
 
         private string AttackPhantomDevice(BaseCharacter enemyCharacter)
         {
-            throw new System.NotImplementedException();
+            return string.Empty;
         }
 
         private string AttackTechTalk(BaseCharacter enemyCharacter)

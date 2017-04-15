@@ -4,11 +4,10 @@ namespace Characters.CharacterClasses
 {
     public class SuperHoboClass : BaseCharacter
     {
-        public static string ClassName = "Super Hobo";
+        public new static string ClassName = "Super Hobo";
 
         public SuperHoboClass(CharacterStatisticDataModel statistic) : base(statistic)
         {
-            throw new System.NotImplementedException();
         }
 
 
