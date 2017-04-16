@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
+using Characters;
 
-namespace Characters.CharacterClasses
+namespace Assets.Scripts.Characters.CharacterClasses
 {
     public class CorpoBoss : BaseCharacter
     {
-        public static string ClassName = "Corpo Boss";
+        public new static string ClassName = "Corpo Boss";
 
         public CorpoBoss(CharacterStatisticDataModel statistic) : base(statistic)
         {

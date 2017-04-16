@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Text;
-using Characters;
+using Assets.Scripts.Enums;
 using Controls;
-using Enums;
 using Interfaces;
-using MiniGame.TheBall;
 using UnityEngine;
 using Random = System.Random;
 
@@ -20,17 +14,20 @@ public class MapManager : MonoBehaviour, IMapManager
     public List<GameObject> Walls;
     public List<GameObject> Floors;
     public List<GameObject> Doors;
+    public List<Enemy> Enemies;
+
     public GameObject EndPoint;
 
     public Player Player;
 
     public int MapSizeX = 100;
-
     public int MapSizeY = 100;
-
+    public int MaxEnemies = 2;
     public int MaxHorizontalLines=5;
     public int MaxVerticalLines=4;
     public int MinimalWallSize = 10;
+    private readonly Random _random=new Random();
+
     public MapElement[,] Map { get; set; }
 
     // Use this for initialization
@@ -42,14 +39,17 @@ public class MapManager : MonoBehaviour, IMapManager
             generator.MinimumWallSize = MinimalWallSize;
             Map=generator.GenerateMap(MapSizeX,MapSizeY, MaxHorizontalLines, MaxVerticalLines);
         }
+        MaxEnemies = level + 2;
         InsertMapElements();
-
     }
 
     void Awake()
     {
          MapCollection=new GameObject("Map").transform;
+        EnemiesCollection=new GameObject("Enemies").transform;
     }
+
+    public Transform EnemiesCollection { get; set; }
 
     public Transform MapCollection { get; set; }
 
@@ -95,11 +95,30 @@ public class MapManager : MonoBehaviour, IMapManager
     }
 
 
+
     public void GenerateMapItem(MapElement[,] map, int x, int y)
     {
         var pos = map[x, y];
-        if (pos >=0)
+        if (pos >= 0)
+        {
             AddElement(GetMapObject(pos), x, y);
+            AddEnemy(map, x, y);
+        }
+    }
+
+    private void AddEnemy(MapElement[,] map, int x, int y)
+    {
+        if (MaxEnemies <= 0 || Enemies.Count==0 || map[x,y]!=MapElement.Floor) return;
+        var chance = _random.Next(20)==0;         if (!chance) return;
+
+        var enemy=Instantiate(Enemies.FirstOrDefault(), GetPosition(x, y), Quaternion.identity , EnemiesCollection);
+
+        if (enemy != null)
+        {
+            GameManager.Instance.AddEnemy(enemy);
+            MaxEnemies--;
+        }
+
     }
 
     public void AddElement(GameObject mapObject, int x, int y)

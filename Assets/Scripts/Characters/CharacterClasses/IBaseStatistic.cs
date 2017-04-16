@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Characters.CharacterClasses
+namespace Assets.Scripts.Characters.CharacterClasses
 {
     public interface IBaseStatistic
     {        List<string> GetAttackType(int lvl);

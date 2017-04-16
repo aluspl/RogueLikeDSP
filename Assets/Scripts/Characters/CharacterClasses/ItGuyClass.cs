@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
-using Enums;
+using Assets.Scripts.Characters;
+using Assets.Scripts.Enums;
 
 namespace Characters.CharacterClasses
 {
     public class ItGuyClass : BaseCharacter
     {
-        public static string ClassName = "IT Guy";
+        public new static readonly string ClassName = "IT Guy";
 
         public ItGuyClass(CharacterStatisticDataModel statistic) : base(statistic)
         {

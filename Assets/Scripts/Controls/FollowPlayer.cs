@@ -13,6 +13,7 @@ namespace Controls
         {
             _camera = GetComponent<Camera>();
             player = GameObject.FindGameObjectWithTag(Player.Tag);
+            if (player!=null)
             offset = transform.position - player.transform.position;
             SetLight();
         }
@@ -21,6 +22,7 @@ namespace Controls
         {
             SetLight();
             // Set the position of the camera's transform to be the same as the player's, but offset by the calculated offset distance.
+            if (player!=null)
             transform.position = player.transform.position + offset;
         }
 

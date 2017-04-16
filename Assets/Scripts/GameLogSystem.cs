@@ -1,4 +1,5 @@
-﻿using Characters;
+﻿using Assets.Scripts.Characters;
+using Characters;
 
 public static class GameLogSystem
 {

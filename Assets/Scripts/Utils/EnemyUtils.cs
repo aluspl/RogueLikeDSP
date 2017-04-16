@@ -1,6 +1,10 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
+using Assets.Scripts.Characters;
+using Assets.Scripts.Characters.CharacterClasses;
 using Characters;
-using Characters.CharacterClasses;
+using Controls;
+using UnityEngine;
 
 namespace Utils
 {
@@ -22,5 +26,17 @@ namespace Utils
             };
             return CharacterFactory.GetPlayerClass(classes.FirstOrDefault().Key, statistic);
         }
+
+        public static Enemy SelectedEnemy
+        {
+            get
+            {
+                return GameManager.Instance.Enemies.Count > EnemyIndex
+                    ? GameManager.Instance.Enemies[EnemyIndex]
+                    : null;
+            }
+        }
+
+        public static int EnemyIndex { get; set; }
     }
 }

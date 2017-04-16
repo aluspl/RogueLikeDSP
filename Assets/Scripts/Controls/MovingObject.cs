@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using Interfaces;
 using UnityEngine;
 
@@ -34,6 +35,12 @@ namespace Controls
             if (hit.transform != null) return false;
                 StartCoroutine(Movement(end));
             return true;
+        }
+
+        protected static void RoundMoves(Vector3 direction)
+        {
+            direction.x = (float) Math.Round(direction.x,1);
+            direction.y = (float) Math.Round(direction.y,1);
         }
 
 

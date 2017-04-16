@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Security.Cryptography.X509Certificates;
 using MapUtils;
 using UnityEngine;
 
@@ -18,13 +17,16 @@ namespace Controls
         void Update()
         {
             var moveVector=GetControllerInput();
+            RoundMoves(moveVector);
             if (Math.Abs(moveVector.x) > TOLERANCE || Math.Abs(moveVector.y) > TOLERANCE)
+
             AttemtMove<MovingObject>(moveVector);
 
         }
 
         private Vector2 GetControllerInput()
         {
+
             if (IsButtonEnabled)
             {
             // Keys
@@ -63,17 +65,18 @@ namespace Controls
 
                 return new Vector2(x,y);
             }
+
+
         }
+
 
 
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            if (other.CompareTag(Exit.Tag))
-            {
-                GameManager.Instance.FinishMap();
-                enabled = false;
-            }
+            if (!other.CompareTag(Exit.Tag)) return;
+            GameManager.Instance.FinishMap();
+            enabled = false;
         }
 
         protected override void AttemtMove<T>(Vector2 direction)
@@ -92,6 +95,10 @@ namespace Controls
             {
               //  var door = component as Door;
             }
+            if (component is Enemy)
+            {
+                GameManager.Instance.SelectEnemy(component as Enemy);
+            }
         }
         private void CheckIfDisable()
         {
@@ -99,7 +106,7 @@ namespace Controls
         }
 
 
-        public static string Tag = "Player";
-        private static double TOLERANCE=0;
+        public static readonly string Tag = "Player";
+        private static readonly double TOLERANCE=0;
     }
 }

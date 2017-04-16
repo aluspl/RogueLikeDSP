@@ -1,20 +1,21 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-public class InitateGame : MonoBehaviour
+namespace Assets.Scripts
 {
+    public class InitateGame : MonoBehaviour
+    {
 
-    public GameObject GameManager;
-	// Use this for initialization
-	void Awake ()
-	{
-	    if (global::GameManager.Instance == null)
-	        Instantiate(GameManager);
-	}
+        public GameObject GameManager;
+        // Use this for initialization
+        void Awake ()
+        {
+            if (global::GameManager.Instance == null)
+                Instantiate(GameManager);
+        }
 	
-	// Update is called once per frame
-	void Update () {
+        // Update is called once per frame
+        void Update () {
 		
-	}
+        }
+    }
 }

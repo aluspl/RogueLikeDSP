@@ -4,7 +4,7 @@ namespace Characters.CharacterClasses
 {
     public class HoboClass : BaseCharacter
     {
-        public static string ClassName = "Hobo";
+        public new static string ClassName = "Hobo";
 
         public HoboClass(CharacterStatisticDataModel statistic) : base(statistic)
         {

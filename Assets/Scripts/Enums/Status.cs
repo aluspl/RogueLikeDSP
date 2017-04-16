@@ -1,7 +1,7 @@
-﻿namespace Enums
+﻿namespace Assets.Scripts.Enums
 {
     public enum Status
     {
-        Sleep
+        Sleep, Paralized, Drunk
     }
 }

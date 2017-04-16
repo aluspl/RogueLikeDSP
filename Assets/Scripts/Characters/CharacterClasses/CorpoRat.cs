@@ -1,7 +1,9 @@
-﻿namespace Characters.CharacterClasses
+﻿using Characters;
+
+namespace Assets.Scripts.Characters.CharacterClasses
 {
     public class CorpoRat : BaseCharacter
-    {  public static string ClassName = "Corpo Rat";
+    {  public new static string ClassName = "Corpo Rat";
 
         public CorpoRat(CharacterStatisticDataModel statistic) : base(statistic)
         {

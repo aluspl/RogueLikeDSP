@@ -1,6 +1,4 @@
-﻿using Characters.CharacterClasses;
-
-namespace Characters
+﻿namespace Characters
 {
     public struct CharacterStatisticDataModel
     {

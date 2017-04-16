@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
+using Characters;
 
-namespace Characters.CharacterClasses
+namespace Assets.Scripts.Characters.CharacterClasses
 {
     public class SuperHoboClass : BaseCharacter
     {

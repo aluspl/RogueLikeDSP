@@ -1,9 +1,10 @@
-﻿
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using Characters;
+using Characters.CharacterClasses;
 
-namespace Characters.CharacterClasses
+namespace Assets.Scripts.Characters.CharacterClasses
 {
-    public class CharacterFactory
+    public static class CharacterFactory
     {
         public static BaseCharacter GetPlayerClass(string classType, CharacterStatisticDataModel statistic )
         {

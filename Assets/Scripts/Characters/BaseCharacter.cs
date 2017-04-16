@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using Characters.CharacterClasses;
-using Enums;
+using Assets.Scripts.Characters;
+using Assets.Scripts.Enums;
 using Interfaces;
 
 namespace Characters
@@ -24,15 +24,16 @@ namespace Characters
             Charisma = statistic.Charisma;
             Endurance = statistic.Endurance;
             HealthPoint = Endurance * 10;
-            Level = 0;
+            Level = 1;
             CurrentExperience = 0;
         }
         //Check Greater Random in Agility
-        public bool ChanceToAttack(BaseCharacter enemy)
+        private bool ChanceToAttack(BaseCharacter enemy)
         {
             return _random.Next(Agility)>_random.Next(enemy.Agility);
         }
-        public bool CriticalChance()
+
+        private bool CriticalChance()
         {
             return _random.Next(100)*Agility>90;
         }

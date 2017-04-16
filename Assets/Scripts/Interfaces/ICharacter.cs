@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Assets.Scripts.Characters;
 using Characters;
 
 namespace Interfaces

@@ -1,4 +1,5 @@
-﻿using Enums;
+﻿using Assets.Scripts.Enums;
+using Enums;
 
 namespace Interfaces
 {
