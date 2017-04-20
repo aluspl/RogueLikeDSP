@@ -12,6 +12,6 @@ namespace Assets.Scripts.Enums
         InsideWall=7,
         LockedDoor=8,
 
-        PlayerStart, EndPoint,
+        Player, EndPoint,
     }
 }

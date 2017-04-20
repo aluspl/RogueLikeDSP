@@ -23,7 +23,7 @@ namespace MiniGame.TheBall
 
         public const string FinishPointTag="FinishPoint";
         public const string GameLogicTag="GameLogic";
-        public const string PlayerTag="Player";
+        public const string PlayerTag="PlayerStatistic";
         public DateTime CurrentTime = DateTime.Now;
         private TimeSpan _totalTime;
 

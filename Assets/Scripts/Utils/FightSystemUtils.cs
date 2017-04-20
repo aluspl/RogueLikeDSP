@@ -1,32 +1,37 @@
 ﻿using System.Text;
-using Assets.Scripts.Characters;
 using Characters;
+using Controls;
 using UnityEngine;
-using Utils;
+using UnityEngine.UI;
 
-namespace Assets.Scripts.Utils
+namespace Utils
 {
     public class FightSystemUtils : MonoBehaviour
     {
-        StringBuilder  Log= new StringBuilder();
+
+        public  void AttackPlayer(BaseCharacter Enemy)
+        {
+            UIManager.Instance.AddLog(Enemy.Attack(GameManager.Instance.PlayerStatistic));
+        }
+
         public void Awake()
         {
 
         }
-        public  void AttackPlayer(BaseCharacter Enemy)
-        {
-            AddLog(Enemy.Attack(GameManager.Instance.Player));
-        }
 
-        private void AddLog(string log)
+
+
+        private bool CheckIsEnemyIsNotNull
         {
-            Log.AppendLine(log);
+            get {
+                return EnemyUtils.SelectedEnemy != null && GameManager.Instance.PlayerStatistic != null;
+            }
         }
 
         public void AttackEnemy()
         {
-            if (EnemyUtils.SelectedEnemy!= null)
-                AddLog(GameManager.Instance.Player.Attack(EnemyUtils.SelectedEnemy.EnemyCharacter));
+            if (CheckIsEnemyIsNotNull)
+                UIManager.Instance.AddLog(GameManager.Instance.PlayerStatistic.Attack(EnemyUtils.SelectedEnemy.EnemyCharacter));
         }
     }
 

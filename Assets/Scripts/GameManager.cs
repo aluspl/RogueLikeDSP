@@ -2,10 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using Assets.Scripts.Characters;
-using Assets.Scripts.Utils;
 using Characters;
 using Controls;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Utils;
 
 public class GameManager : MonoBehaviour
@@ -13,7 +13,7 @@ public class GameManager : MonoBehaviour
     private MapManager _mapManager;
     public static GameManager Instance = null;
     private int _level=0;
-    public BaseCharacter Player;
+    public BaseCharacter PlayerStatistic;
     public KeyCode KeyUp=KeyCode.UpArrow;
     public KeyCode KeyDown=KeyCode.DownArrow;
     public KeyCode KeyLeft=KeyCode.LeftArrow;
@@ -22,9 +22,11 @@ public class GameManager : MonoBehaviour
     public KeyCode FightSpecial=KeyCode.E;
     public KeyCode ReloadWeapon=KeyCode.R;
     public KeyCode SelectEnemyKey=KeyCode.Tab;
+    public KeyCode ExitKey=KeyCode.Escape;
 
     public KeyCode LightKey=KeyCode.F;
 
+    public GameObject PlayerObject;
     public bool IsDay = false;
     public FightSystemUtils FightSystem;
     //Private
@@ -35,17 +37,21 @@ public class GameManager : MonoBehaviour
     {
         if (Instance == null) Instance = this;
         else if (Instance!=this) Destroy(gameObject);
-       DontDestroyOnLoad(gameObject);
+           DontDestroyOnLoad(gameObject);
+
+
         _mapManager = GetComponent<MapManager>();
         FightSystem = GetComponent<FightSystemUtils>();
+
         InitGame();
     }
 
     private void InitGame()
     {
-        Enemies.Clear();
-
+        _mapManager.CleanMap();
         _mapManager.StartLevel(_level++);
+    //    Enemies.Clear();
+        UIManager.Instance.AddLog("Start New Game");
 
     }
 
@@ -61,7 +67,15 @@ public class GameManager : MonoBehaviour
         if (Input.GetKeyDown(LightKey)) IsDay = !IsDay;
         if (Input.GetKeyDown(FightNormal)) FightSystem.AttackEnemy();
         if (Input.GetKeyDown(SelectEnemyKey)) SelectEnemy();
+        if (Input.GetKeyDown(ExitKey)) EndGame();
 
+
+    }
+
+    private void EndGame()
+    {
+        InitGame();
+//        SceneManager.UnloadSceneAsync(SceneManager.GetActiveScene());
     }
 
     public void FinishMap()
@@ -81,15 +95,17 @@ public class GameManager : MonoBehaviour
 
     private void SelectEnemy()
     {
+
         if (Enemies.Count <= 0) return;
+        EnemyUtils.EnemyIndex++;
         if (EnemyUtils.EnemyIndex == Enemies.Count) EnemyUtils.EnemyIndex = 0;
         foreach (var enemy in Enemies)
         {
             enemy.IsSelected = false;
         }
-        Debug.Log("Selected Enemy: "+EnemyUtils.SelectedEnemy.EnemyCharacter.Name + "Current Index: "+ EnemyUtils.EnemyIndex);
         Enemies[EnemyUtils.EnemyIndex].IsSelected = true;
-        EnemyUtils.EnemyIndex++;
+        UIManager.Instance.AddLog("<b>Selected Enemy</b>: "+ EnemyUtils.SelectedEnemy.EnemyCharacter.Name);
+
     }
 
 
@@ -101,4 +117,3 @@ public class GameManager : MonoBehaviour
 
     }
 }
-

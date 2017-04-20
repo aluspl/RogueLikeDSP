@@ -74,5 +74,6 @@ namespace Characters
         public int Endurance { get; set; }
         public int HealthPoint { get; set; }
         public Status Status { get; set; }
+        public string SelectedClass { get { return ClassName; } }
     }
 }

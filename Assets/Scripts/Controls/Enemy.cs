@@ -10,17 +10,36 @@ namespace Controls
         public BaseCharacter EnemyCharacter { get; set; }
         private Transform _target;
         public bool IsSelected { get; set; }
-        public Light SelectedLight;
+        private Light _selectedLight;
         public void Awake()
         {
             EnemyCharacter = EnemyUtils.GenerateEnemy();
-            SelectedLight = GetComponentInChildren<Light>();
-            //    _target = GameObject.FindGameObjectWithTag(Player.Tag).transform;
+            _selectedLight = GetComponentInChildren<Light>();
+            //    _target = GameObject.FindGameObjectWithTag(PlayerStatistic.Tag).transform;
         }
-
+        public  int Distance {
+            get {
+                if (GameManager.Instance.PlayerObject != null)
+                    return (int) Vector2.Distance(GameManager.Instance.PlayerObject.transform.position,
+                        transform.position);
+                Debug.Log(GameManager.Instance.PlayerObject);
+                return 0;
+                //Matematyka jednak cos daje!
+                //      return (int) Mathf.Sqrt(Mathf.Pow(Player.transform.position.x - SelectedEnemy.transform.position.x, 2) +
+                //                  Mathf.Pow(Player.transform.position.y - SelectedEnemy.transform.position.y, 2));
+            }
+        }
+        public  string ClassName {
+            get
+            {
+                if (EnemyCharacter != null)
+                    return EnemyCharacter.SelectedClass;
+                return "Any Class";
+            }
+        }
         public void Update()
         {
-            SelectedLight.enabled = IsSelected;
+            _selectedLight.enabled = IsSelected;
         }
         protected override void OnCantMove<T>(T component)
         {

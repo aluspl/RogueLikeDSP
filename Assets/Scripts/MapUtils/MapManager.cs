@@ -39,7 +39,7 @@ public class MapManager : MonoBehaviour, IMapManager
             generator.MinimumWallSize = MinimalWallSize;
             Map=generator.GenerateMap(MapSizeX,MapSizeY, MaxHorizontalLines, MaxVerticalLines);
         }
-        MaxEnemies = level + 2;
+        MaxEnemies = level + 10;
         InsertMapElements();
     }
 
@@ -73,7 +73,8 @@ public class MapManager : MonoBehaviour, IMapManager
                 return Floors.Count == 3 ? Floors[2] : Floors.LastOrDefault();
             case MapElement.Floor4:
                 return Floors.Count == 4 ? Floors[3] : Floors.LastOrDefault();
-            case MapElement.PlayerStart:
+            case MapElement.Player:
+
                 return Player.gameObject;
             case MapElement.EndPoint:
                 return EndPoint;
@@ -85,6 +86,7 @@ public class MapManager : MonoBehaviour, IMapManager
 
     public void InsertMapElements()
     {
+
         for (var x = 0; x < Map.GetLength(0); x++)
         {
             for (var y = 0; y < Map.GetLength(1); y++)
@@ -99,26 +101,30 @@ public class MapManager : MonoBehaviour, IMapManager
     public void GenerateMapItem(MapElement[,] map, int x, int y)
     {
         var pos = map[x, y];
-        if (pos >= 0)
-        {
+        if (pos < 0) return;
+        if (pos == MapElement.Player)
+            AddPlayer(GetMapObject(pos), x, y);
+        else
             AddElement(GetMapObject(pos), x, y);
-            AddEnemy(map, x, y);
-        }
+        AddEnemy(map, x, y);
+    }
+
+    private void AddPlayer(GameObject mapObject, int x, int y)
+    {
+        GameManager.Instance.PlayerObject=Instantiate(mapObject, GetPosition(x, y), Quaternion.identity );
     }
 
     private void AddEnemy(MapElement[,] map, int x, int y)
     {
         if (MaxEnemies <= 0 || Enemies.Count==0 || map[x,y]!=MapElement.Floor) return;
-        var chance = _random.Next(20)==0;         if (!chance) return;
+        var chance = _random.Next(20)==0;
+        if (!chance) return;
 
         var enemy=Instantiate(Enemies.FirstOrDefault(), GetPosition(x, y), Quaternion.identity , EnemiesCollection);
 
-        if (enemy != null)
-        {
-            GameManager.Instance.AddEnemy(enemy);
-            MaxEnemies--;
-        }
-
+        if (enemy == null) return;
+        GameManager.Instance.AddEnemy(enemy);
+        MaxEnemies--;
     }
 
     public void AddElement(GameObject mapObject, int x, int y)
@@ -132,9 +138,22 @@ public class MapManager : MonoBehaviour, IMapManager
     }
     public void CleanMap()
     {
-        foreach (Transform child in transform)
+            Destroy(GameManager.Instance.PlayerObject.gameObject);
+
+        if (EnemiesCollection != null)
         {
-            Destroy(child.gameObject);
+            GameManager.Instance.Enemies.Clear();
+            foreach (Transform child in EnemiesCollection.transform)
+            {
+                Destroy(child.gameObject);
+            }
+        }
+        if (MapCollection == null) return;
+        {
+            foreach (Transform child in MapCollection.transform)
+            {
+                Destroy(child.gameObject);
+            }
         }
     }
 }

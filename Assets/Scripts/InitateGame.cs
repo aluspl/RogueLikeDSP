@@ -1,21 +1,21 @@
 ﻿using UnityEngine;
 
-namespace Assets.Scripts
+public class InitateGame : MonoBehaviour
 {
-    public class InitateGame : MonoBehaviour
-    {
+    public GameObject UiUtils;
 
-        public GameObject GameManager;
-        // Use this for initialization
-        void Awake ()
-        {
-            if (global::GameManager.Instance == null)
-                Instantiate(GameManager);
-        }
-	
-        // Update is called once per frame
-        void Update () {
+    public GameObject GameManager;
+    // Use this for initialization
+    void Awake ()
+    {
+        if (global::GameManager.Instance == null)
+            Instantiate(GameManager);
+        if (global::UIManager.Instance == null)
+            Instantiate(UiUtils);
+    }
+
+    // Update is called once per frame
+    void Update () {
 		
-        }
     }
 }

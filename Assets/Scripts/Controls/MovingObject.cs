@@ -10,6 +10,7 @@ namespace Controls
         public float MoveTime = 0.1f;
 
         public LayerMask BlockingLayer;
+        public LayerMask EnemyLayer;
 
         private BoxCollider2D _boxCollider2D;
         private Rigidbody2D _rb2D;
