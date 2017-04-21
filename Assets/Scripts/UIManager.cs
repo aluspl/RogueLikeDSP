@@ -6,8 +6,6 @@ using Utils;
 
 public class UIManager : MonoBehaviour
 {
-    private UIManager _mapManager;
-    public static UIManager Instance = null;
 
     public Text GameLog;
     public Text SelectedEnemyStatistic;
@@ -66,8 +64,7 @@ public class UIManager : MonoBehaviour
     }
     public void Awake()
     {
-        if (Instance == null) Instance = this;
-        else if (Instance!=this) Destroy(gameObject);
-        DontDestroyOnLoad(gameObject);
+//        if (Instance == null) Instance = this;
+//        else if (Instance!=this) Destroy(gameObject);
     }
 }

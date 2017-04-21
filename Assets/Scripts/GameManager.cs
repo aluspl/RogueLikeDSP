@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Assets.Scripts.Characters;
 using Characters;
 using Controls;
@@ -29,6 +30,8 @@ public class GameManager : MonoBehaviour
     public GameObject PlayerObject;
     public bool IsDay = false;
     public FightSystemUtils FightSystem;
+    public UIManager UIUtils;
+
     //Private
     public List<Enemy> Enemies=new List<Enemy>();
 
@@ -42,6 +45,7 @@ public class GameManager : MonoBehaviour
 
         _mapManager = GetComponent<MapManager>();
         FightSystem = GetComponent<FightSystemUtils>();
+        UIUtils = GetComponent<UIManager>();
 
         InitGame();
     }
@@ -51,7 +55,7 @@ public class GameManager : MonoBehaviour
         _mapManager.CleanMap();
         _mapManager.StartLevel(_level++);
     //    Enemies.Clear();
-        UIManager.Instance.AddLog("Start New Game");
+        UIUtils.AddLog("Start New Game");
 
     }
 
@@ -95,7 +99,7 @@ public class GameManager : MonoBehaviour
 
     private void SelectEnemy()
     {
-
+        Enemies = Enemies.OrderBy(p => p.Distance).ToList();
         if (Enemies.Count <= 0) return;
         EnemyUtils.EnemyIndex++;
         if (EnemyUtils.EnemyIndex == Enemies.Count) EnemyUtils.EnemyIndex = 0;
@@ -104,7 +108,7 @@ public class GameManager : MonoBehaviour
             enemy.IsSelected = false;
         }
         Enemies[EnemyUtils.EnemyIndex].IsSelected = true;
-        UIManager.Instance.AddLog("<b>Selected Enemy</b>: "+ EnemyUtils.SelectedEnemy.EnemyCharacter.Name);
+        UIUtils.AddLog("<b>Selected Enemy</b>: "+ EnemyUtils.SelectedEnemy.EnemyCharacter.Name);
 
     }
 

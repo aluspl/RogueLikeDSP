@@ -9,9 +9,9 @@ namespace Utils
     public class FightSystemUtils : MonoBehaviour
     {
 
-        public  void AttackPlayer(BaseCharacter Enemy)
+        public  void AttackPlayer(BaseCharacter enemy)
         {
-            UIManager.Instance.AddLog(Enemy.Attack(GameManager.Instance.PlayerStatistic));
+            GameManager.Instance.UIUtils.AddLog(enemy.Attack(GameManager.Instance.PlayerStatistic));
         }
 
         public void Awake()
@@ -31,7 +31,7 @@ namespace Utils
         public void AttackEnemy()
         {
             if (CheckIsEnemyIsNotNull)
-                UIManager.Instance.AddLog(GameManager.Instance.PlayerStatistic.Attack(EnemyUtils.SelectedEnemy.EnemyCharacter));
+                GameManager.Instance.UIUtils.AddLog(GameManager.Instance.PlayerStatistic.Attack(EnemyUtils.SelectedEnemy.EnemyCharacter));
         }
     }
 

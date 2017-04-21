@@ -10,8 +10,8 @@ public class InitateGame : MonoBehaviour
     {
         if (global::GameManager.Instance == null)
             Instantiate(GameManager);
-        if (global::UIManager.Instance == null)
-            Instantiate(UiUtils);
+//        if (global::UIManager.Instance == null)
+//            Instantiate(UiUtils);
     }
 
     // Update is called once per frame

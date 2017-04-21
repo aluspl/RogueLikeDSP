@@ -1,6 +1,9 @@
 fileFormatVersion: 2
 guid: cc428dbbe1fc416eaae2327fb833795b
-timeCreated: 1492292816
+labels:
+- Character
+timeCreated: 1492725687
+licenseType: Free
 MonoImporter:
   serializedVersion: 2
   defaultReferences: []
