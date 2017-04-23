@@ -10,7 +10,7 @@ namespace Utils
 {
     public static class EnemyUtils
     {
-        private static int EnemyCount=0;
+        private static int _enemyCount=0;
         public static BaseCharacter GenerateEnemy()
         {
             var classes = CharacterFactory.EnemyClassList();
@@ -22,7 +22,7 @@ namespace Utils
                 Endurance = 1,
                 Inteligence = 1,
                 Level = 1,
-                Name = "Enemy "+EnemyCount++,
+                Name = "Enemy "+_enemyCount++,
                 Strength = 1
             };
             return CharacterFactory.GetPlayerClass(classes.FirstOrDefault().Key, statistic);

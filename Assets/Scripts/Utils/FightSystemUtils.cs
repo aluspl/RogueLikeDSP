@@ -19,8 +19,6 @@ namespace Utils
 
         }
 
-
-
         private bool CheckIsEnemyIsNotNull
         {
             get {

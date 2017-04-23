@@ -30,8 +30,10 @@ public class GameManager : MonoBehaviour
     public GameObject PlayerObject;
     public bool IsDay = false;
     public FightSystemUtils FightSystem;
+    public CreateCharacterEditor CharacterEditorPrefab;
     public UIManager UIUtils;
 
+    public Canvas GameUI;
     //Private
     public List<Enemy> Enemies=new List<Enemy>();
 
@@ -46,17 +48,21 @@ public class GameManager : MonoBehaviour
         _mapManager = GetComponent<MapManager>();
         FightSystem = GetComponent<FightSystemUtils>();
         UIUtils = GetComponent<UIManager>();
-
+        GameUI = GetComponentInChildren<Canvas>();
         InitGame();
     }
 
     private void InitGame()
     {
+        if (PlayerStatistic == null && CharacterEditorPrefab!=null)
+        {
+            var characterEditor=Instantiate(CharacterEditorPrefab);
+
+        }
         _mapManager.CleanMap();
         _mapManager.StartLevel(_level++);
-    //    Enemies.Clear();
-        UIUtils.AddLog("Start New Game");
 
+        UIUtils.ClearLog();
     }
 
     public void GameOver()
