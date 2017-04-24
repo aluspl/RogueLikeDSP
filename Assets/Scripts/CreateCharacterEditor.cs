@@ -70,7 +70,7 @@ public class CreateCharacterEditor : MonoBehaviour
 
     public void OnDestroy()
     {
-        GameManager.Instance.GameUI.enabled = true;
+        if (GameManager.Instance.GameUI!=null) GameManager.Instance.GameUI.enabled = true;
         _characterUiCanvas.enabled = false;
     }
 

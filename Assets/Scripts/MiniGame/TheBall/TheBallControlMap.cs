@@ -18,7 +18,7 @@ namespace MiniGame.TheBall
             Camera = Camera.main;
             _currEuler = Vector3.zero;;
             transform.eulerAngles = Vector3.zero;;
-            Camera.hdr = true;
+            Camera.allowHDR = true;
 
         }
 

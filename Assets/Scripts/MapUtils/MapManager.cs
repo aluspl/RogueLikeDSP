@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Assets.Scripts.Enums;
 using Controls;
@@ -138,22 +139,29 @@ public class MapManager : MonoBehaviour, IMapManager
     }
     public void CleanMap()
     {
+        try
+        {
             Destroy(GameManager.Instance.PlayerObject.gameObject);
 
-        if (EnemiesCollection != null)
-        {
-            GameManager.Instance.Enemies.Clear();
-            foreach (Transform child in EnemiesCollection.transform)
+            if (EnemiesCollection != null)
             {
-                Destroy(child.gameObject);
+                GameManager.Instance.Enemies.Clear();
+                foreach (Transform child in EnemiesCollection.transform)
+                {
+                    Destroy(child.gameObject);
+                }
+            }
+            if (MapCollection == null) return;
+            {
+                foreach (Transform child in MapCollection.transform)
+                {
+                    Destroy(child.gameObject);
+                }
             }
         }
-        if (MapCollection == null) return;
+        catch (Exception e)
         {
-            foreach (Transform child in MapCollection.transform)
-            {
-                Destroy(child.gameObject);
-            }
+            Debug.Log(e);
         }
     }
 }

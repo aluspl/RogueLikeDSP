@@ -56,7 +56,7 @@ public class GameManager : MonoBehaviour
     {
         if (PlayerStatistic == null && CharacterEditorPrefab!=null)
         {
-            var characterEditor=Instantiate(CharacterEditorPrefab);
+            Instantiate(CharacterEditorPrefab);
 
         }
         _mapManager.CleanMap();
