@@ -11,7 +11,7 @@ namespace Utils
 
         public  void AttackPlayer(BaseCharacter enemy)
         {
-            GameManager.Instance.UIUtils.AddLog(enemy.Attack(GameManager.Instance.PlayerStatistic));
+            GameManager.Instance.UiUtils.AddLog(enemy.Attack(GameManager.Instance.PlayerStatistic));
         }
 
         public void Awake()
@@ -29,7 +29,7 @@ namespace Utils
         public void AttackEnemy()
         {
             if (CheckIsEnemyIsNotNull)
-                GameManager.Instance.UIUtils.AddLog(GameManager.Instance.PlayerStatistic.Attack(EnemyUtils.SelectedEnemy.EnemyCharacter));
+                GameManager.Instance.UiUtils.AddLog(GameManager.Instance.PlayerStatistic.Attack(EnemyUtils.SelectedEnemy.EnemyCharacter));
         }
     }
 

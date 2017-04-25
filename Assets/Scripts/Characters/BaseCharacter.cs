@@ -1,15 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Assets.Scripts.Characters;
 using Assets.Scripts.Enums;
 using Interfaces;
+using UnityEngine;
+using Random = System.Random;
 
 namespace Characters
 {
     public abstract class BaseCharacter : ICharacter
     {
         public static string ClassName;
-        public readonly Random _random = new Random();
+        protected readonly Random _random = new Random();
 
          /**
         *
@@ -23,11 +24,14 @@ namespace Characters
             Agility = statistic.Agility;
             Charisma = statistic.Charisma;
             Endurance = statistic.Endurance;
+            Perception = statistic.Perception;
+
             HealthPoint = Endurance * 10;
             Level = 1;
             CurrentExperience = 0;
+            Debug.Log(Name +":"+ ClassName);
         }
-        //Check Greater Random in Agility
+        //Check Greater Random in AgilitySlider
         private bool ChanceToAttack(BaseCharacter enemy)
         {
             return _random.Next(Agility)>_random.Next(enemy.Agility);
@@ -69,8 +73,9 @@ namespace Characters
         public int Level { get; set; }
         public long CurrentExperience { get; set; }
         public int Inteligence { get; set; }
+        public int Perception { get; set; }
         public int Charisma { get; set; }
-         public int Agility { get; set; }
+        public int Agility { get; set; }
         public int Endurance { get; set; }
         public int HealthPoint { get; set; }
         public Status Status { get; set; }

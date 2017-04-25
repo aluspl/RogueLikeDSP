@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,23 +19,28 @@ public class GameManager : MonoBehaviour
     public KeyCode KeyDown=KeyCode.DownArrow;
     public KeyCode KeyLeft=KeyCode.LeftArrow;
     public KeyCode KeyRight=KeyCode.RightArrow;
-    public KeyCode FightNormal=KeyCode.Space;
+    public KeyCode FightNormalKey=KeyCode.Space;
     public KeyCode FightSpecial=KeyCode.E;
     public KeyCode ReloadWeapon=KeyCode.R;
     public KeyCode SelectEnemyKey=KeyCode.Tab;
     public KeyCode ExitKey=KeyCode.Escape;
-
+    public KeyCode OpenDetailKey = KeyCode.I;
     public KeyCode LightKey=KeyCode.F;
 
     public GameObject PlayerObject;
     public bool IsDay = false;
     public FightSystemUtils FightSystem;
     public CreateCharacterEditor CharacterEditorPrefab;
-    public UIManager UIUtils;
+    public CharacterDetailView PlayerDetailPrefab;
 
-    public Canvas GameUI;
+    public UIManager UiUtils;
+
+    private Canvas _gameUI;
     //Private
     public List<Enemy> Enemies=new List<Enemy>();
+
+    public bool OpenedWindow;
+
 
     // Use this for initialization
     void Awake()
@@ -47,23 +52,21 @@ public class GameManager : MonoBehaviour
 
         _mapManager = GetComponent<MapManager>();
         FightSystem = GetComponent<FightSystemUtils>();
-        UIUtils = GetComponent<UIManager>();
-        GameUI = GetComponentInChildren<Canvas>();
+        UiUtils = GetComponent<UIManager>();
+        _gameUI = GetComponentInChildren<Canvas>();
         InitGame();
     }
 
     private void InitGame()
     {
-        if (PlayerStatistic == null && CharacterEditorPrefab!=null)
-        {
-            Instantiate(CharacterEditorPrefab);
-
-        }
+        OpenCharacterCreatorWindow();
         _mapManager.CleanMap();
         _mapManager.StartLevel(_level++);
 
-        UIUtils.ClearLog();
+        UiUtils.ClearLog();
     }
+
+
 
     public void GameOver()
     {
@@ -74,18 +77,39 @@ public class GameManager : MonoBehaviour
 	// Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(LightKey)) IsDay = !IsDay;
-        if (Input.GetKeyDown(FightNormal)) FightSystem.AttackEnemy();
-        if (Input.GetKeyDown(SelectEnemyKey)) SelectEnemy();
-        if (Input.GetKeyDown(ExitKey)) EndGame();
+        if (!OpenedWindow)
+        {
+            if (Input.GetKeyDown(LightKey)) IsDay = !IsDay;
+            if (Input.GetKeyDown(FightNormalKey)) FightSystem.AttackEnemy();
+            if (Input.GetKeyDown(SelectEnemyKey)) SelectEnemy();
+            if (Input.GetKeyDown(ExitKey)) EndGame();
+            if (Input.GetKeyDown(OpenDetailKey)) OpenDetail();
+            _gameUI.enabled = true;
+        }
+        else
+        {
+            _gameUI.enabled = false;
+        }
 
 
+    }
+
+    private void OpenDetail()
+    {
+        if (PlayerStatistic == null || PlayerDetailPrefab == null) return;
+        Instantiate(PlayerDetailPrefab);
+        OpenedWindow = true;
+    }
+    private void OpenCharacterCreatorWindow()
+    {
+        if (PlayerStatistic != null || CharacterEditorPrefab == null) return;
+        Instantiate(CharacterEditorPrefab);
+        OpenedWindow = true;
     }
 
     private void EndGame()
     {
         InitGame();
-//        SceneManager.UnloadSceneAsync(SceneManager.GetActiveScene());
     }
 
     public void FinishMap()
@@ -114,7 +138,7 @@ public class GameManager : MonoBehaviour
             enemy.IsSelected = false;
         }
         Enemies[EnemyUtils.EnemyIndex].IsSelected = true;
-        UIUtils.AddLog("<b>Selected Enemy</b>: "+ EnemyUtils.SelectedEnemy.EnemyCharacter.Name);
+        UiUtils.AddLog("<b>Selected Enemy</b>: "+ EnemyUtils.SelectedEnemy.EnemyCharacter.Name);
 
     }
 
