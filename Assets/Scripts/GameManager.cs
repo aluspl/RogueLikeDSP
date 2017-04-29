@@ -81,7 +81,7 @@ public class GameManager : MonoBehaviour
         {
             if (Input.GetKeyDown(LightKey)) IsDay = !IsDay;
             if (Input.GetKeyDown(FightNormalKey)) FightSystem.AttackEnemy();
-            if (Input.GetKeyDown(SelectEnemyKey)) SelectEnemy();
+            if (Input.GetKeyDown(SelectEnemyKey)) EnemyUtils.SelectEnemy();
             if (Input.GetKeyDown(ExitKey)) EndGame();
             if (Input.GetKeyDown(OpenDetailKey)) OpenDetail();
             _gameUI.enabled = true;
@@ -124,23 +124,20 @@ public class GameManager : MonoBehaviour
 
     public void KillEnemy(Enemy enemy)
     {
-        Enemies.Remove(enemy);
-    }
-
-    private void SelectEnemy()
-    {
-        Enemies = Enemies.OrderBy(p => p.Distance).ToList();
-        if (Enemies.Count <= 0) return;
-        EnemyUtils.EnemyIndex++;
-        if (EnemyUtils.EnemyIndex == Enemies.Count) EnemyUtils.EnemyIndex = 0;
-        foreach (var enemy in Enemies)
+        try
         {
-            enemy.IsSelected = false;
-        }
-        Enemies[EnemyUtils.EnemyIndex].IsSelected = true;
-        UiUtils.AddLog("<b>Selected Enemy</b>: "+ EnemyUtils.SelectedEnemy.EnemyCharacter.Name);
+            Enemies.Remove(enemy);
+            Destroy(enemy.gameObject);
+            EnemyUtils.EnemyIndex = -1;
 
+        }
+        catch (Exception)
+        {
+            Debug.Log("Enemy shouldn't be here!");
+        }
     }
+
+
 
 
     public void SelectEnemy(Enemy component)

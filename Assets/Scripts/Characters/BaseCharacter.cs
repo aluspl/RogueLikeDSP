@@ -3,6 +3,7 @@ using Assets.Scripts.Characters;
 using Assets.Scripts.Enums;
 using Interfaces;
 using UnityEngine;
+using Utils;
 using Random = System.Random;
 
 namespace Characters
@@ -34,7 +35,11 @@ namespace Characters
         //Check Greater Random in AgilitySlider
         private bool ChanceToAttack(BaseCharacter enemy)
         {
-            return _random.Next(Agility)>_random.Next(enemy.Agility);
+
+            var yourChance = _random.Next(Agility);
+            var enemyChance = _random.Next(enemy.Agility);
+            Debug.Log(string.Format("Chance to attack: {0} vs {1}",yourChance,enemyChance));
+            return yourChance > enemyChance;
         }
 
         private bool CriticalChance()
@@ -56,6 +61,7 @@ namespace Characters
         private int Defense(int damage)
         {
             HealthPoint -= damage;
+       
             return damage;
         }
 

@@ -32,11 +32,15 @@ namespace Controls
         public  string ClassName {
             get
             {
-                if (EnemyCharacter != null)
-                    return EnemyCharacter.SelectedClass;
-                return "Any Class";
+                return EnemyCharacter != null ? EnemyCharacter.SelectedClass : "Any Class";
             }
         }
+
+        public bool IsDead
+        {
+            get { return EnemyCharacter.HealthPoint <= 0; }
+        }
+
         public void Update()
         {
             _selectedLight.enabled = IsSelected;

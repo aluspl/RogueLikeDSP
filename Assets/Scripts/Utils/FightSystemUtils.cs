@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 using Characters;
 using Controls;
 using UnityEngine;
@@ -19,17 +20,51 @@ namespace Utils
 
         }
 
+        public UIManager UI
+        {
+            get { return GameManager.Instance.UiUtils; }
+        }
+
+        public BaseCharacter Player
+        {
+            get { return GameManager.Instance.PlayerStatistic; }
+        }
         private bool CheckIsEnemyIsNotNull
         {
             get {
-                return EnemyUtils.SelectedEnemy != null && GameManager.Instance.PlayerStatistic != null;
+                return EnemyUtils.SelectedEnemy != null && Player != null;
             }
         }
 
         public void AttackEnemy()
         {
             if (CheckIsEnemyIsNotNull)
-                GameManager.Instance.UiUtils.AddLog(GameManager.Instance.PlayerStatistic.Attack(EnemyUtils.SelectedEnemy.EnemyCharacter));
+            {
+                var result=Player.Attack(EnemyUtils.SelectedEnemy.EnemyCharacter);
+                UI.AddLog(result);
+                if (EnemyUtils.SelectedEnemy.IsDead)
+                {
+                    result = EnemyIsDead(EnemyUtils.SelectedEnemy);
+                    UI.AddLog(result);
+                }
+            }
+            else
+            {
+                UI.AddLog("Enemy isn't selected");
+            }
+        }
+
+        private string EnemyIsDead(Enemy selectedEnemy)
+        {
+            var builder=new StringBuilder();
+            builder.AppendFormat("Enemy called {0} is now Dead, SHAME OF YOU! Great Job!! ",
+                selectedEnemy.EnemyCharacter.Name);
+            var experience=selectedEnemy.EnemyCharacter.Level * 10;
+            Player.CurrentExperience += experience;
+            builder.AppendFormat("\nYou receive {0} exp from {1} and you have  now {2}", experience,
+                selectedEnemy.EnemyCharacter.Name, Player.CurrentExperience);
+            GameManager.Instance.KillEnemy(selectedEnemy);
+            return builder.ToString();
         }
     }
 

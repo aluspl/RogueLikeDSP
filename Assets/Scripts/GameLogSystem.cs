@@ -5,7 +5,7 @@ public static class GameLogSystem
 {
     public static string Attack(int damage, BaseCharacter enemy)
     {
-        return string.Format("You attack enemy for {0} damage",damage);
+        return string.Format("You attack {1} for {0} damage. Enemy has now {2} HP",damage, enemy.Name, enemy.HealthPoint);
     }
 
     public static string MissedAttack()
