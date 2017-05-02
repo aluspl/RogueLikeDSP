@@ -5,12 +5,12 @@ using UnityEngine;
 
 namespace Controls
 {
-    public abstract class MovingObject : MonoBehaviour, IMovement
+    public abstract class MovingObject : MonoBehaviour
     {
-        public float MoveTime = 0.1f;
+        public float MoveTime = 0.5f;
 
         public LayerMask BlockingLayer;
-        public LayerMask EnemyLayer;
+        public LayerMask CharacterLayer;
 
         private BoxCollider2D _boxCollider2D;
         private Rigidbody2D _rb2D;
@@ -30,7 +30,9 @@ namespace Controls
             var start = (Vector2)transform.position;
             var end = start + destination;
             _boxCollider2D.enabled = false;
-            hit = Physics2D.Linecast(start, end, BlockingLayer);
+                hit = Physics2D.Linecast(start, end, BlockingLayer);
+            if (hit.transform == null) 
+                hit =  Physics2D.Linecast(start, end, CharacterLayer);
             _boxCollider2D.enabled = true;
 
             if (hit.transform != null) return false;
@@ -48,16 +50,17 @@ namespace Controls
         //Move Object to selected Destination
         public IEnumerator Movement(Vector3 destination)
         {
-            Debug.Log(string.Format("Move location X {0} Y{1}",destination.x,destination.y));
-
             var remainingDistance = (transform.position - destination).sqrMagnitude;
-            while (remainingDistance>float.Epsilon)
-            {
-                var newPosition=Vector3.MoveTowards(_rb2D.position, destination, _inverseMoveTime * Time.deltaTime);
-                _rb2D.MovePosition(newPosition);
-                remainingDistance = (transform.position - destination).sqrMagnitude;
-                yield return null;
-            }
+            
+            // while (remainingDistance>float.Epsilon)
+            // {
+            //     var newPosition=Vector3.MoveTowards(_rb2D.position, destination, _inverseMoveTime * Time.deltaTime);
+            //     _rb2D.MovePosition(newPosition);
+            //     remainingDistance = (transform.position - destination).sqrMagnitude;
+            //     yield return null;
+            // }      
+            transform.position=destination;
+            yield return null;
         }
 
         protected virtual void AttemtMove<T>(Vector2 direction)

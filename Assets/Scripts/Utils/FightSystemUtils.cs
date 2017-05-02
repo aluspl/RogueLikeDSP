@@ -39,19 +39,20 @@ namespace Utils
         public void AttackEnemy()
         {
             if (CheckIsEnemyIsNotNull)
-            {
+            {  
+                GameManager.Instance.EndPlayerTurn();
+
                 var result=Player.Attack(EnemyUtils.SelectedEnemy.EnemyCharacter);
                 UI.AddLog(result);
-                if (EnemyUtils.SelectedEnemy.IsDead)
-                {
-                    result = EnemyIsDead(EnemyUtils.SelectedEnemy);
-                    UI.AddLog(result);
-                }
+                if (!EnemyUtils.SelectedEnemy.IsDead) return;
+                result = EnemyIsDead(EnemyUtils.SelectedEnemy);
+                UI.AddLog(result);
             }
             else
             {
                 UI.AddLog("Enemy isn't selected");
-            }
+            }       
+
         }
 
         private string EnemyIsDead(Enemy selectedEnemy)

@@ -1,0 +1,9 @@
+{
+"TOTAL_MEMORY": 268435456,
+"dataUrl": "version5contrattack.data.unityweb",
+"asmCodeUrl": "version5contrattack.asm.code.unityweb",
+"asmMemoryUrl": "version5contrattack.asm.memory.unityweb",
+"asmFrameworkUrl": "version5contrattack.asm.framework.unityweb",
+"splashScreenStyle": "Dark",
+"backgroundColor": "#222C36"
+}

@@ -1,14 +1,14 @@
 ﻿using System.Collections.Generic;
-using Characters;
 
-namespace Assets.Scripts.Characters.CharacterClasses
+namespace Characters.CharacterClasses
 {
     public class SuperHoboClass : BaseCharacter
     {
         public new static string ClassName = "Super Hobo";
 
         public SuperHoboClass(CharacterStatisticDataModel statistic) : base(statistic)
-        {
+        {            SelectedClass=ClassName;
+
         }
 
 

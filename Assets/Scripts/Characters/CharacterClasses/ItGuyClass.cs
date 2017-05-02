@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
-using Assets.Scripts.Characters;
-using Assets.Scripts.Enums;
+using Enums;
 
 namespace Characters.CharacterClasses
 {
@@ -10,6 +9,7 @@ namespace Characters.CharacterClasses
 
         public ItGuyClass(CharacterStatisticDataModel statistic) : base(statistic)
         {
+            SelectedClass=ClassName;
         }
 
         public override string SpecialAction(BaseCharacter enemyCharacter, string actionName)
@@ -32,9 +32,9 @@ namespace Characters.CharacterClasses
 
         private string AttackTechTalk(BaseCharacter enemyCharacter)
         {
-            if (_random.Next(Charisma) >= _random.Next(Inteligence)) return GameLogSystem.TechTalk(false);
+            if (_random.Next(Charisma) >= _random.Next(Inteligence)) return GameLogSystem.TechTalk(this, false);
             enemyCharacter.Status = Status.Sleep;
-            return GameLogSystem.TechTalk(true);
+            return GameLogSystem.TechTalk(this, true);
         }
 
         public const string ClassType = "ITGuyClass";

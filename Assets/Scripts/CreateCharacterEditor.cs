@@ -1,8 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Assets.Scripts.Characters.CharacterClasses;
 using Characters;
+using Characters.CharacterClasses;
 using UnityEngine;
 using UnityEngine.UI;
 

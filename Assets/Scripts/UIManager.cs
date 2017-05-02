@@ -3,6 +3,7 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
 using Utils;
+using Characters;
 
 public class UIManager : MonoBehaviour
 {
@@ -34,23 +35,42 @@ public class UIManager : MonoBehaviour
     public void LateUpdate()
     {
         SelectedEnemyPanel();
+        PlayerPanel();
+    }
+    public BaseCharacter Player {get {return GameManager.Instance.PlayerStatistic;}}
+    private void PlayerPanel()
+    {
+        if (Player==null) return;
+        if (PlayerStatistic!=null) PlayerStatistic.text=string.Format("<b>Name: </b>{0}", Player.Name);
+       
+        if (PlayerDetail!=null) PlayerDetail.text=string.Format("HP: {0}/{1}",
+          Player.HealthPoint,
+          Player.MaxHealthPoint);
     }
 
     private void SelectedEnemyPanel()
     {
-        if (EnemyUtils.SelectedEnemy==null) return;
-        if (SelectedEnemyStatistic != null)
+        if (EnemyUtils.SelectedEnemy==null)
         {
-            SelectedEnemyStatistic.text = string.Format("<b>Name</b>: {0} \n<b>Class Name</b>: {1}",
-                EnemyUtils.SelectedEnemy.EnemyCharacter.Name,
-                EnemyUtils.SelectedEnemy.ClassName);
+            if (SelectedEnemyStatistic != null)
+                SelectedEnemyStatistic.text=string.Empty;
+            if (SelectedEnemyDetail != null)
+                SelectedEnemyDetail.text=string.Empty;
         }
-        if (SelectedEnemyDetail != null)
+        else
         {
-            SelectedEnemyDetail.text = string.Format("<b>Distance:</b>{0}",
-                EnemyUtils.SelectedEnemy.Distance);
+            if (SelectedEnemyStatistic != null)
+            {
+                SelectedEnemyStatistic.text = string.Format("<b>Name</b>: {0} \n<b>Class Name</b>: {1}",
+                    EnemyUtils.SelectedEnemy.EnemyCharacter.Name,
+                    EnemyUtils.SelectedEnemy.ClassName);
+            }
+            if (SelectedEnemyDetail != null)
+            {
+                SelectedEnemyDetail.text = string.Format("<b>Distance:</b>{0}",
+                    EnemyUtils.SelectedEnemy.Distance);
+            }
         }
-
     }
 
     private void ClearFirstLine()

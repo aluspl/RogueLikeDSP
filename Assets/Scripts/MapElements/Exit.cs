@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace MapUtils
+namespace MapElements
 {
     internal class Exit : MonoBehaviour
     {

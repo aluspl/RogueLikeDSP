@@ -1,5 +1,5 @@
 ﻿using System;
-using MapUtils;
+using MapElements;
 using UnityEngine;
 
 namespace Controls
@@ -16,12 +16,20 @@ namespace Controls
 
         void Update()
         {
-            var moveVector=GetControllerInput();
+            MovingLogic();
+        }
+
+        private void MovingLogic()
+        {
+            if (!GameManager.Instance.IsPlayerTurn) return;
+
+            var moveVector = GetControllerInput();
+
             RoundMoves(moveVector);
             if (Math.Abs(moveVector.x) > TOLERANCE || Math.Abs(moveVector.y) > TOLERANCE)
-
-            AttemtMove<MovingObject>(moveVector);
-
+                AttemtMove<MovingObject>(moveVector);
+          if (moveVector!=Vector2.zero)
+            GameManager.Instance.EndPlayerTurn();
         }
 
         private Vector2 GetControllerInput()

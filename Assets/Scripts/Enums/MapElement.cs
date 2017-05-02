@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Assets.Scripts.Enums
+namespace Enums
 {
     [Flags]
     public enum MapElement

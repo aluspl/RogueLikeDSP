@@ -1,6 +1,9 @@
 ﻿using UnityEngine;
 
-public class Door : MonoBehaviour
+namespace MapElements
 {
+    public class Door : MonoBehaviour
+    {
 
+    }
 }

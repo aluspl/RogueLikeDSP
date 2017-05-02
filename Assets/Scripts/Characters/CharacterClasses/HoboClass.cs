@@ -8,7 +8,7 @@ namespace Characters.CharacterClasses
 
         public HoboClass(CharacterStatisticDataModel statistic) : base(statistic)
         {
-            throw new System.NotImplementedException();
+            SelectedClass=ClassName;
         }
 
 

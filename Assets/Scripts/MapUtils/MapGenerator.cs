@@ -1,5 +1,4 @@
 ﻿using System;
-using Assets.Scripts.Enums;
 using Enums;
 using Interfaces;
 using UnityEngine;
@@ -50,7 +49,7 @@ public  class MapGenerator : IDisposable, IMapGenerator
         {
             var y = GetWallSize(ref leftValueY);
             GetVerticalWalls(map, totalVerticalLines, 0, posY, y);
-            Debug.Log(string.Format("Line Horizontal {0} of {1},  PosY: {2}", i+1,totalVerticalLines, posY));
+       //     Debug.Log(string.Format("Line Horizontal {0} of {1},  PosY: {2}", i+1,totalVerticalLines, posY));
             GetHorizontalWall(map, ref posY, y);
 
         }
@@ -67,7 +66,7 @@ public  class MapGenerator : IDisposable, IMapGenerator
 
         for (var j = 0; j < verticalLines; j++)
         {
-            Debug.Log(string.Format("Line Vertical {0} of {1}", j + 1, verticalLines));
+         //   Debug.Log(string.Format("Line Vertical {0} of {1}", j + 1, verticalLines));
 
             var x = GetWallSize(ref leftValueX);
 
@@ -90,7 +89,7 @@ In future : generate maps different floor enums :)
 
     public void GetVerticalWall(MapElement[,] map, ref int posX,  int posY, int xSize, int ySize)
     {
-        Debug.Log(string.Format("X: {0} Y: {1} PosX: {2} PosY: {3} PosY+Y={4}", xSize,ySize,posX,posY,posY+ySize));
+        //Debug.Log(string.Format("X: {0} Y: {1} PosX: {2} PosY: {3} PosY+Y={4}", xSize,ySize,posX,posY,posY+ySize));
         posX += xSize;
 
         var door = Random.Range(posY+1, (posY + xSize)-1);

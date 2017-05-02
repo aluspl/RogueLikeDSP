@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
-using Assets.Scripts.Characters;
-using Assets.Scripts.Enums;
+using Enums;
 using Interfaces;
 using UnityEngine;
 using Utils;
@@ -26,8 +25,9 @@ namespace Characters
             Charisma = statistic.Charisma;
             Endurance = statistic.Endurance;
             Perception = statistic.Perception;
-
+        
             HealthPoint = Endurance * 10;
+            MaxHealthPoint = HealthPoint;
             Level = 1;
             CurrentExperience = 0;
             Debug.Log(Name +":"+ ClassName);
@@ -35,10 +35,9 @@ namespace Characters
         //Check Greater Random in AgilitySlider
         private bool ChanceToAttack(BaseCharacter enemy)
         {
-
+           
             var yourChance = _random.Next(Agility);
             var enemyChance = _random.Next(enemy.Agility);
-            Debug.Log(string.Format("Chance to attack: {0} vs {1}",yourChance,enemyChance));
             return yourChance > enemyChance;
         }
 
@@ -85,6 +84,7 @@ namespace Characters
         public int Endurance { get; set; }
         public int HealthPoint { get; set; }
         public Status Status { get; set; }
-        public string SelectedClass { get { return ClassName; } }
+        public string SelectedClass { get; set; }
+        public int MaxHealthPoint { get; set; }
     }
 }

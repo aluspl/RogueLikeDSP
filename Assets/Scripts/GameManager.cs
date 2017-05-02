@@ -2,9 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Assets.Scripts.Characters;
 using Characters;
-using Controls;
+ using Characters.CharacterClasses;
+ using Controls;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Utils;
@@ -40,6 +40,7 @@ public class GameManager : MonoBehaviour
     public List<Enemy> Enemies=new List<Enemy>();
 
     public bool OpenedWindow;
+    public bool IsPlayerTurn;
 
 
     // Use this for initialization
@@ -62,10 +63,19 @@ public class GameManager : MonoBehaviour
         OpenCharacterCreatorWindow();
         _mapManager.CleanMap();
         _mapManager.StartLevel(_level++);
-
+        IsPlayerTurn = true;
         UiUtils.ClearLog();
     }
 
+    public void EndPlayerTurn()
+    {
+        UiUtils.AddLog("Enemies Turn");
+        IsPlayerTurn = false;
+        if (PlayerObject!=null && PlayerStatistic!=null)
+           EnemyUtils.EnemiesMove(PlayerObject);
+        UiUtils.AddLog("Player Turn");
+        IsPlayerTurn = true;
+    }
 
 
     public void GameOver()
@@ -90,8 +100,8 @@ public class GameManager : MonoBehaviour
         {
             _gameUI.enabled = false;
         }
-
-
+        if (EnemyUtils.SelectedEnemy!=null && EnemyUtils.SelectedEnemy.Distance>1) EnemyUtils.UnSelectAllEnemies();
+        
     }
 
     private void OpenDetail()
@@ -102,6 +112,12 @@ public class GameManager : MonoBehaviour
     }
     private void OpenCharacterCreatorWindow()
     {
+        PlayerStatistic = CharacterFactory.GetPlayerClass("ITGuyClass", new CharacterStatisticDataModel(){ 
+            Agility=6, 
+            Strength=6, 
+             Name="Test",
+             Endurance=1 });
+
         if (PlayerStatistic != null || CharacterEditorPrefab == null) return;
         Instantiate(CharacterEditorPrefab);
         OpenedWindow = true;
@@ -128,23 +144,17 @@ public class GameManager : MonoBehaviour
         {
             Enemies.Remove(enemy);
             Destroy(enemy.gameObject);
-            EnemyUtils.EnemyIndex = -1;
-
+            EnemyUtils.UnSelectAllEnemies();
         }
         catch (Exception)
         {
             Debug.Log("Enemy shouldn't be here!");
         }
     }
-
-
-
-
     public void SelectEnemy(Enemy component)
     {
          //Yeah !
-        EnemyUtils.EnemyIndex = 0;
+        EnemyUtils.SelectedEnemy = component;
         Debug.Log("Selected Enemy Index: "+EnemyUtils.EnemyIndex);
-
     }
 }

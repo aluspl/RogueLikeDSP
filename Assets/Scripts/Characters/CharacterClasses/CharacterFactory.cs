@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
-using Characters;
-using Characters.CharacterClasses;
 
-namespace Assets.Scripts.Characters.CharacterClasses
+namespace Characters.CharacterClasses
 {
     public static class CharacterFactory
     {
@@ -12,7 +10,6 @@ namespace Assets.Scripts.Characters.CharacterClasses
             {
                 case ItGuyClass.ClassType:
                     return new ItGuyClass(statistic);
-
                 case SuperHoboClass.ClassType:
                     return new SuperHoboClass(statistic);
                 case HoboClass.ClassType:

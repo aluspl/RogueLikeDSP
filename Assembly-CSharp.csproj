@@ -1,20 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <LangVersion>4</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>10.0.20506</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <RootNamespace>
-    </RootNamespace>
+    <RootNamespace></RootNamespace>
     <ProjectGuid>{12A4A462-38C4-8F3B-2451-05AEB2DBDCD3}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>Assembly-CSharp</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <BaseDirectory>Assets</BaseDirectory>
   </PropertyGroup>
@@ -50,70 +46,71 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Scripts\CharacterDetailView.cs" />
-    <Compile Include="Assets\Scripts\Characters\BaseCharacter.cs" />
-    <Compile Include="Assets\Scripts\Characters\CharacterClasses\CharacterFactory.cs" />
-    <Compile Include="Assets\Scripts\Characters\CharacterClasses\CorpoBoss.cs" />
-    <Compile Include="Assets\Scripts\Characters\CharacterClasses\CorpoRat.cs" />
-    <Compile Include="Assets\Scripts\Characters\CharacterClasses\HoboClass.cs" />
-    <Compile Include="Assets\Scripts\Characters\CharacterClasses\IBaseStatistic.cs" />
-    <Compile Include="Assets\Scripts\Characters\CharacterClasses\ItGuyClass.cs" />
-    <Compile Include="Assets\Scripts\Characters\CharacterClasses\SuperHoboClass.cs" />
-    <Compile Include="Assets\Scripts\Characters\CharacterStatisticDataModel.cs" />
-    <Compile Include="Assets\Scripts\Controls\Enemy.cs" />
-    <Compile Include="Assets\Scripts\Controls\FollowPlayer.cs" />
-    <Compile Include="Assets\Scripts\Controls\LightControl.cs" />
-    <Compile Include="Assets\Scripts\Controls\MovingObject.cs" />
-    <Compile Include="Assets\Scripts\Controls\Player.cs" />
-    <Compile Include="Assets\Scripts\CreateCharacterEditor.cs" />
-    <Compile Include="Assets\Scripts\Enums\MapElement.cs" />
-    <Compile Include="Assets\Scripts\Enums\MapTheme.cs" />
-    <Compile Include="Assets\Scripts\Enums\Status.cs" />
-    <Compile Include="Assets\Scripts\GameLogSystem.cs" />
-    <Compile Include="Assets\Scripts\GameManager.cs" />
-    <Compile Include="Assets\Scripts\InitateGame.cs" />
-    <Compile Include="Assets\Scripts\Interfaces\ICharacter.cs" />
-    <Compile Include="Assets\Scripts\Interfaces\IMapGenerator.cs" />
-    <Compile Include="Assets\Scripts\Interfaces\IMapManager.cs" />
-    <Compile Include="Assets\Scripts\Interfaces\IMovement.cs" />
-    <Compile Include="Assets\Scripts\MainMenu\ExitGameOnClick.cs" />
-    <Compile Include="Assets\Scripts\MainMenu\LoadSceneOnClick.cs" />
-    <Compile Include="Assets\Scripts\MainMenu\MainMenuScript.cs" />
-    <Compile Include="Assets\Scripts\MapElements\Door.cs" />
-    <Compile Include="Assets\Scripts\MapElements\Exit.cs" />
-    <Compile Include="Assets\Scripts\MapUtils\MapGenerator.cs" />
-    <Compile Include="Assets\Scripts\MapUtils\MapManager.cs" />
-    <Compile Include="Assets\Scripts\MiniGame\TheBall\BallMapElement.cs" />
-    <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallControlMap.cs" />
-    <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallEnemyLogic.cs" />
-    <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallGameLogic.cs" />
-    <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallMapGenerator.cs" />
-    <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallMapLogic.cs" />
-    <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallPlayer.cs" />
-    <Compile Include="Assets\Scripts\UIManager.cs" />
-    <Compile Include="Assets\Scripts\Utils\EnemyUtils.cs" />
-    <Compile Include="Assets\Scripts\Utils\FightSystemUtils.cs" />
-    <Reference Include="UnityEngine.UI">
-      <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.Networking">
-      <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/Networking/UnityEngine.Networking.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.TestRunner">
-      <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/TestRunner/UnityEngine.TestRunner.dll</HintPath>
-    </Reference>
-    <Reference Include="nunit.framework">
-      <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/TestRunner/nunit.framework.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.Analytics">
-      <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/UnityAnalytics/UnityEngine.Analytics.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.HoloLens">
-      <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/UnityHoloLens/RuntimeEditor/UnityEngine.HoloLens.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.VR">
-      <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/UnityVR/RuntimeEditor/UnityEngine.VR.dll</HintPath>
-    </Reference>
+     <Compile Include="Assets\Scripts\CharacterDetailView.cs" />
+     <Compile Include="Assets\Scripts\Characters\BaseCharacter.cs" />
+     <Compile Include="Assets\Scripts\Characters\CharacterClasses\CharacterFactory.cs" />
+     <Compile Include="Assets\Scripts\Characters\CharacterClasses\CorpoBoss.cs" />
+     <Compile Include="Assets\Scripts\Characters\CharacterClasses\CorpoRat.cs" />
+     <Compile Include="Assets\Scripts\Characters\CharacterClasses\HoboClass.cs" />
+     <Compile Include="Assets\Scripts\Characters\CharacterClasses\IBaseStatistic.cs" />
+     <Compile Include="Assets\Scripts\Characters\CharacterClasses\ItGuyClass.cs" />
+     <Compile Include="Assets\Scripts\Characters\CharacterClasses\SuperHoboClass.cs" />
+     <Compile Include="Assets\Scripts\Characters\CharacterStatisticDataModel.cs" />
+     <Compile Include="Assets\Scripts\Controls\Enemy.cs" />
+     <Compile Include="Assets\Scripts\Controls\FollowPlayer.cs" />
+     <Compile Include="Assets\Scripts\Controls\LightControl.cs" />
+     <Compile Include="Assets\Scripts\Controls\MovingObject.cs" />
+     <Compile Include="Assets\Scripts\Controls\Player.cs" />
+     <Compile Include="Assets\Scripts\CreateCharacterEditor.cs" />
+     <Compile Include="Assets\Scripts\Enums\MapElement.cs" />
+     <Compile Include="Assets\Scripts\Enums\MapTheme.cs" />
+     <Compile Include="Assets\Scripts\Enums\Status.cs" />
+     <Compile Include="Assets\Scripts\GameLogSystem.cs" />
+     <Compile Include="Assets\Scripts\GameManager.cs" />
+     <Compile Include="Assets\Scripts\InitateGame.cs" />
+     <Compile Include="Assets\Scripts\Interfaces\ICharacter.cs" />
+     <Compile Include="Assets\Scripts\Interfaces\IMapGenerator.cs" />
+     <Compile Include="Assets\Scripts\Interfaces\IMapManager.cs" />
+     <Compile Include="Assets\Scripts\Interfaces\IMovement.cs" />
+     <Compile Include="Assets\Scripts\MainMenu\ExitGameOnClick.cs" />
+     <Compile Include="Assets\Scripts\MainMenu\LoadSceneOnClick.cs" />
+     <Compile Include="Assets\Scripts\MainMenu\MainMenuScript.cs" />
+     <Compile Include="Assets\Scripts\MapElements\Door.cs" />
+     <Compile Include="Assets\Scripts\MapElements\Exit.cs" />
+     <Compile Include="Assets\Scripts\MapUtils\MapGenerator.cs" />
+     <Compile Include="Assets\Scripts\MapUtils\MapManager.cs" />
+     <Compile Include="Assets\Scripts\MiniGame\TheBall\BallMapElement.cs" />
+     <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallControlMap.cs" />
+     <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallEnemyLogic.cs" />
+     <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallGameLogic.cs" />
+     <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallMapGenerator.cs" />
+     <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallMapLogic.cs" />
+     <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallPlayer.cs" />
+     <Compile Include="Assets\Scripts\UIManager.cs" />
+     <Compile Include="Assets\Scripts\Utils\EnemyUtils.cs" />
+     <Compile Include="Assets\Scripts\Utils\FightSystemUtils.cs" />
+     <Compile Include="Assets\Scripts\Utils\MathUtils.cs" />
+ <Reference Include="UnityEngine.UI">
+ <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
+ </Reference>
+ <Reference Include="UnityEngine.Networking">
+ <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/Networking/UnityEngine.Networking.dll</HintPath>
+ </Reference>
+ <Reference Include="UnityEngine.TestRunner">
+ <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/TestRunner/UnityEngine.TestRunner.dll</HintPath>
+ </Reference>
+ <Reference Include="nunit.framework">
+ <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/TestRunner/nunit.framework.dll</HintPath>
+ </Reference>
+ <Reference Include="UnityEngine.Analytics">
+ <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/UnityAnalytics/UnityEngine.Analytics.dll</HintPath>
+ </Reference>
+ <Reference Include="UnityEngine.HoloLens">
+ <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/UnityHoloLens/RuntimeEditor/UnityEngine.HoloLens.dll</HintPath>
+ </Reference>
+ <Reference Include="UnityEngine.VR">
+ <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/UnityVR/RuntimeEditor/UnityEngine.VR.dll</HintPath>
+ </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
@@ -123,14 +120,5 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  <ItemGroup>
-    <Reference Include="UnityEditor.iOS.Extensions.Xcode">
-      <HintPath>/Applications/Unity/PlaybackEngines/iOSSupport/UnityEditor.iOS.Extensions.Xcode.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="UnityEditor.iOS.Extensions.Common">
-      <HintPath>/Applications/Unity/PlaybackEngines/iOSSupport/UnityEditor.iOS.Extensions.Common.dll</HintPath>
-    </Reference>
-  </ItemGroup>
+  
 </Project>

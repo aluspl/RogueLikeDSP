@@ -16,10 +16,8 @@ namespace Controls
             if (GameManager.Instance.PlayerObject != null)
             {
                 offset = transform.position - GameManager.Instance.PlayerObject.transform.position;
-
             }
             SetLight();
-
         }
 	
         void LateUpdate ()
@@ -42,8 +40,6 @@ namespace Controls
             {
                _camera.backgroundColor=Color.white;
                 RenderSettings.ambientLight = Color.white;
-
-
                 isDay = true;
             }
 
