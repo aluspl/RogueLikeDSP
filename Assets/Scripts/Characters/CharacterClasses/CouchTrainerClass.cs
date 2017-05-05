@@ -3,11 +3,11 @@ using Enums;
 
 namespace Characters.CharacterClasses
 {
-    public class ItGuyClass : BaseCharacter
+    public class CouchTrainerClass : BaseCharacter
     {
-        public new static readonly string ClassName = "IT Guy";
+        public new static readonly string ClassName = "Couch Trainer";
 
-        public ItGuyClass(CharacterStatisticDataModel statistic) : base(statistic)
+        public CouchTrainerClass(CharacterStatisticDataModel statistic) : base(statistic)
         {
             SelectedClass=ClassName;
         }
@@ -42,7 +42,7 @@ namespace Characters.CharacterClasses
             return GameLogSystem.TechTalk(this, true);
         }
 
-        public const string ClassType = "ITGuyClass";
+        public const string ClassType = "CouchTrainerClass";
 
         public override List<string> SpecialActionsList()
         {

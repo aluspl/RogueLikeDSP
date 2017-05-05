@@ -18,6 +18,8 @@ namespace Characters.CharacterClasses
                     return new CorpoBoss(statistic);
                 case CorpoRat.ClassType:
                     return new CorpoRat(statistic);
+                case CouchTrainerClass.ClassType:
+                    return new CouchTrainerClass(statistic);
                 default:
                     return  null;
             }
@@ -28,7 +30,9 @@ namespace Characters.CharacterClasses
             var list = new Dictionary<string, string>
             {
                 {                    ItGuyClass.ClassType, ItGuyClass.ClassName                },
-                {                    SuperHoboClass.ClassType, SuperHoboClass.ClassName    }
+                {                    SuperHoboClass.ClassType, SuperHoboClass.ClassName    },
+                {                    CouchTrainerClass.ClassType, CouchTrainerClass.ClassName    }
+
 
             };
             return list;
@@ -40,6 +44,8 @@ namespace Characters.CharacterClasses
                 {CorpoBoss.ClassType, CorpoBoss.ClassName},
                 {CorpoRat.ClassType, CorpoRat.ClassName},
                 {HoboClass.ClassType, SuperHoboClass.ClassName},
+                {CouchTrainerClass.ClassType, CouchTrainerClass.ClassName }
+
 
             };
             return list;

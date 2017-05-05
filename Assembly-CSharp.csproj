@@ -51,6 +51,7 @@
      <Compile Include="Assets\Scripts\Characters\CharacterClasses\CharacterFactory.cs" />
      <Compile Include="Assets\Scripts\Characters\CharacterClasses\CorpoBoss.cs" />
      <Compile Include="Assets\Scripts\Characters\CharacterClasses\CorpoRat.cs" />
+     <Compile Include="Assets\Scripts\Characters\CharacterClasses\CouchTrainerClass.cs" />
      <Compile Include="Assets\Scripts\Characters\CharacterClasses\HoboClass.cs" />
      <Compile Include="Assets\Scripts\Characters\CharacterClasses\IBaseStatistic.cs" />
      <Compile Include="Assets\Scripts\Characters\CharacterClasses\ItGuyClass.cs" />
