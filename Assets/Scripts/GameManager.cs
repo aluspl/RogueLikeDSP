@@ -112,11 +112,11 @@ public class GameManager : MonoBehaviour
     }
     private void OpenCharacterCreatorWindow()
     {
-        PlayerStatistic = CharacterFactory.GetPlayerClass("ITGuyClass", new CharacterStatisticDataModel(){ 
-            Agility=6, 
-            Strength=6, 
-             Name="Test",
-             Endurance=1 });
+        // PlayerStatistic = CharacterFactory.GetPlayerClass("ITGuyClass", new CharacterStatisticDataModel(){ 
+        //     Agility=6, 
+        //     Strength=6, 
+        //      Name="Test",
+        //      Endurance=1 });
 
         if (PlayerStatistic != null || CharacterEditorPrefab == null) return;
         Instantiate(CharacterEditorPrefab);

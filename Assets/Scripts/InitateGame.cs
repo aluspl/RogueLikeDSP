@@ -2,7 +2,6 @@
 
 public class InitateGame : MonoBehaviour
 {
-    public GameObject UiUtils;
 
     public GameObject GameManager;
     // Use this for initialization
