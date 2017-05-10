@@ -56,16 +56,7 @@ namespace Controls
         public void MoveToPlayer(GameObject playerObject)
         {       
             var moveVector = (Vector2)(transform.position- playerObject.transform.position);
-         //   transform.eulerAngles=CalculateAngle(playerObject);
-            Debug.Log(string.Format("{0} is at x:{1} y:{2} moving to x: {3} y: {4} You are at x: {5} y: {6}",     
-                EnemyCharacter.Name, 
-                transform.position.x,
-                transform.position.y,
-                moveVector.x, 
-                moveVector.y, 
-                playerObject.transform.position.x,
-                playerObject.transform.position.y ));
-            
+       
             MathUtils.RoundMoves(ref moveVector);
             transform.eulerAngles=MathUtils.SetRotation(moveVector);
          

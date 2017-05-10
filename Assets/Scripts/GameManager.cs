@@ -3,8 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Characters;
- using Characters.CharacterClasses;
- using Controls;
+using Characters.CharacterClasses;
+using Controls;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Utils;
@@ -19,13 +19,22 @@ public class GameManager : MonoBehaviour
     public KeyCode KeyDown=KeyCode.DownArrow;
     public KeyCode KeyLeft=KeyCode.LeftArrow;
     public KeyCode KeyRight=KeyCode.RightArrow;
-    public KeyCode FightNormalKey=KeyCode.Space;
-    public KeyCode FightSpecial=KeyCode.E;
+    public KeyCode FightNormalKey=KeyCode.Space; 
+    public KeyCode FightNormalKeyPad= KeyCode.Joystick1Button16;
+    public KeyCode FightSpecial=KeyCode.E | KeyCode.Joystick1Button14;
+    public KeyCode FightSpecialPad= KeyCode.Joystick1Button14;
+    
     public KeyCode ReloadWeapon=KeyCode.R;
-    public KeyCode SelectEnemyKey=KeyCode.Tab;
+    public KeyCode ReloadWeaponPAD= KeyCode.Joystick1Button17;
+
+    public KeyCode SelectEnemyKey=KeyCode.Tab  | KeyCode.Joystick1Button13;
+    public KeyCode SelectEnemyKeyPAD=KeyCode.Joystick1Button13;
     public KeyCode ExitKey=KeyCode.Escape;
+    public KeyCode ExitKeyPAD=KeyCode.Joystick1Button9;
     public KeyCode OpenDetailKey = KeyCode.I;
+    public KeyCode OpenDetailKeyPAD =KeyCode.Joystick1Button10;
     public KeyCode LightKey=KeyCode.F;
+    public KeyCode LightKeyPAD=KeyCode.Joystick1Button18;
 
     public GameObject PlayerObject;
     public bool IsDay = false;
@@ -60,6 +69,7 @@ public class GameManager : MonoBehaviour
 
     private void InitGame()
     {
+       // IsDay=!IsDay;
         OpenCharacterCreatorWindow();
         _mapManager.CleanMap();
         _mapManager.StartLevel(_level++);
@@ -74,13 +84,17 @@ public class GameManager : MonoBehaviour
         if (PlayerObject!=null && PlayerStatistic!=null)
            EnemyUtils.EnemiesMove(PlayerObject);
         UiUtils.AddLog("Player Turn");
+        
         IsPlayerTurn = true;
     }
 
 
     public void GameOver()
     {
-        enabled = false;
+        Destroy(_gameUI.gameObject);
+        Destroy(Instance);
+
+        SceneManager.LoadScene(0);
     }
 
 
@@ -89,11 +103,11 @@ public class GameManager : MonoBehaviour
     {
         if (!OpenedWindow)
         {
-            if (Input.GetKeyDown(LightKey)) IsDay = !IsDay;
-            if (Input.GetKeyDown(FightNormalKey)) FightSystem.AttackEnemy();
-            if (Input.GetKeyDown(SelectEnemyKey)) EnemyUtils.SelectEnemy();
-            if (Input.GetKeyDown(ExitKey)) EndGame();
-            if (Input.GetKeyDown(OpenDetailKey)) OpenDetail();
+            if (Input.GetKeyDown(FightNormalKey) || Input.GetKeyDown(FightNormalKeyPad)) FightSystem.AttackEnemy();
+            if (Input.GetKeyDown(SelectEnemyKey)|| Input.GetKeyDown(SelectEnemyKeyPAD)) EnemyUtils.SelectEnemy();
+            if (Input.GetKeyDown(ExitKey)|| Input.GetKeyDown(ExitKeyPAD)) EndGame();
+            if (Input.GetKeyDown(OpenDetailKey)|| Input.GetKeyDown(OpenDetailKeyPAD)) OpenDetail();
+         //   detectPressedKeyOrButton();
             _gameUI.enabled = true;
         }
         else
@@ -103,7 +117,14 @@ public class GameManager : MonoBehaviour
         if (EnemyUtils.SelectedEnemy!=null && EnemyUtils.SelectedEnemy.Distance>1) EnemyUtils.UnSelectAllEnemies();
         
     }
-
+ public void detectPressedKeyOrButton()
+ {
+     foreach(KeyCode kcode in Enum.GetValues(typeof(KeyCode)))
+     {
+         if (Input.GetKeyDown(kcode))
+             Debug.Log("KeyCode down: " + kcode);
+     }
+ }
     private void OpenDetail()
     {
         if (PlayerStatistic == null || PlayerDetailPrefab == null) return;
@@ -125,12 +146,12 @@ public class GameManager : MonoBehaviour
 
     private void EndGame()
     {
-        InitGame();
+        GameOver();
     }
 
     public void FinishMap()
     {
-        _mapManager.StartLevel(_level++);
+        InitGame();
     }
 
     public void AddEnemy(Enemy enemy)

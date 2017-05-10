@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Enums;
 using Interfaces;
 using UnityEngine;
@@ -25,7 +26,8 @@ namespace Characters
             Charisma = statistic.Charisma;
             Endurance = statistic.Endurance;
             Perception = statistic.Perception;
-        
+            isEnemy= statistic.IsEnemy;
+
             HealthPoint = Endurance * 10;
             MaxHealthPoint = HealthPoint;
             Level = 1;
@@ -60,8 +62,17 @@ namespace Characters
         private int Defense(int damage)
         {
             HealthPoint -= damage;
-       
+            CheckHealth();
             return damage;
+        }
+
+        private void CheckHealth()
+        {
+            if (HealthPoint<=0)
+            {
+                if (!isEnemy) 
+                    GameManager.Instance.GameOver();                   
+            }
         }
 
         public virtual string SpecialAction(BaseCharacter enemyCharacter, string actionName)
@@ -86,5 +97,7 @@ namespace Characters
         public Status Status { get; set; }
         public string SelectedClass { get; set; }
         public int MaxHealthPoint { get; set; }
+        public bool isEnemy {get; set; }
+        public int KilledEnemies { get;  set; }
     }
 }

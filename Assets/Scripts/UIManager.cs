@@ -43,9 +43,10 @@ public class UIManager : MonoBehaviour
         if (Player==null) return;
         if (PlayerStatistic!=null) PlayerStatistic.text=string.Format("<b>Name: </b>{0}", Player.Name);
        
-        if (PlayerDetail!=null) PlayerDetail.text=string.Format("HP: {0}/{1}",
+        if (PlayerDetail!=null) PlayerDetail.text=string.Format("<b>HP:</b> {0}/{1}\n<b>Enemy Killed:</b> {2}",
           Player.HealthPoint,
-          Player.MaxHealthPoint);
+          Player.MaxHealthPoint,
+          Player.KilledEnemies);
     }
 
     private void SelectedEnemyPanel()

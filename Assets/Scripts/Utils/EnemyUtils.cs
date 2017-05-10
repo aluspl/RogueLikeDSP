@@ -23,6 +23,7 @@ namespace Utils
                 Level = 1,                   
                 Name = "Random Enemy "+_enemyCount++,
                 Strength = Random.Range(0,5),
+                IsEnemy=true
             };
             Debug.Log(string.Format("",statistic.Name,statistic.Agility,statistic.Strength, statistic.Endurance));
             return CharacterFactory.GetPlayerClass(classes.FirstOrDefault().Key, statistic);
@@ -54,8 +55,9 @@ namespace Utils
         {
             get
             {
-                return EnemyIndex!=-1
-                    ? GameManager.Instance.Enemies.FirstOrDefault(p=>p.IsSelected)
+                // Property action for unselected enemy or empty list ... or whatever :D 
+                return (GameManager.Instance!=null && GameManager.Instance.Enemies.Count>0)
+                     ? GameManager.Instance.Enemies.FirstOrDefault(p=>p.IsSelected)
                     : null;
             }
             set

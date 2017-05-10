@@ -13,5 +13,7 @@
         public int Perception;
 
         public int Stamina;
+
+        public bool IsEnemy { get; internal set; }
     }
 }

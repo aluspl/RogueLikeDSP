@@ -17,20 +17,20 @@ namespace Controls
         // Update is called once per frame
         void Update ()
         {
+            if (Input.GetKeyDown(GameManager.Instance.LightKey) || Input.GetKeyDown(GameManager.Instance.LightKeyPAD)) _isDay = !_isDay;
+
             SetLight();
         }
         private void SetLight()
         {
-            if (!GameManager.Instance.IsDay && _isDay)
+            if (_isDay)
             {
                 _light.intensity = 0.6f;
 
-                _isDay = false;
             }
-            if (GameManager.Instance.IsDay && !_isDay)
+            if (!_isDay)
             {
-                _light.intensity = 0;
-                _isDay = true;
+                _light.intensity = 0.1f;
             }
         }
     }

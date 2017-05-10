@@ -16,8 +16,8 @@ namespace Characters.CharacterClasses
         {
             switch (actionName)
             {
-                case "Tech Talk":
-                    return AttackTechTalk(enemyCharacter);
+                case "Invite to Training":
+                    return InviteToTraining(enemyCharacter);
                 case "Phantom IT Device Attack":
                     return AttackPhantomDevice(enemyCharacter);
                 case "IT Rage":
@@ -35,7 +35,7 @@ namespace Characters.CharacterClasses
         {
             return string.Empty;
         }
-        private string AttackTechTalk(BaseCharacter enemyCharacter)
+        private string InviteToTraining(BaseCharacter enemyCharacter)
         {
             if (_random.Next(Charisma) >= _random.Next(Inteligence)) return GameLogSystem.TechTalk(this, false);
             enemyCharacter.Status = Status.Sleep;

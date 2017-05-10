@@ -41,7 +41,6 @@ namespace Utils
             if (CheckIsEnemyIsNotNull)
             {  
                 GameManager.Instance.EndPlayerTurn();
-
                 var result=Player.Attack(EnemyUtils.SelectedEnemy.EnemyCharacter);
                 UI.AddLog(result);
                 if (!EnemyUtils.SelectedEnemy.IsDead) return;
@@ -55,16 +54,17 @@ namespace Utils
 
         }
 
-        private string EnemyIsDead(Enemy selectedEnemy)
+        public  string EnemyIsDead(Enemy selectedEnemy)
         {
             var builder=new StringBuilder();
             builder.AppendFormat("Enemy called {0} is now Dead, SHAME OF YOU! Great Job!! ",
                 selectedEnemy.EnemyCharacter.Name);
             var experience=selectedEnemy.EnemyCharacter.Level * 10;
             Player.CurrentExperience += experience;
-            builder.AppendFormat("\nYou receive {0} exp from {1} and you have  now {2}", experience,
-                selectedEnemy.EnemyCharacter.Name, Player.CurrentExperience);
+            builder.AppendFormat("\nYou receive {0} exp from {1} and you have  now {2}",
+             experience, selectedEnemy.EnemyCharacter.Name, Player.CurrentExperience);
             GameManager.Instance.KillEnemy(selectedEnemy);
+            Player.KilledEnemies++;
             return builder.ToString();
         }
     }

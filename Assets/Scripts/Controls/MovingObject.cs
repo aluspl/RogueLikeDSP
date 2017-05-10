@@ -13,15 +13,15 @@ namespace Controls
         public LayerMask CharacterLayer;
 
         private BoxCollider2D _boxCollider2D;
-        private Rigidbody2D _rb2D;
-        private float _inverseMoveTime;
+//        private Rigidbody2D _rb2D;
+//        private float _inverseMoveTime;
 
         // Use this for initialization
        protected virtual void Start ()
        {
            _boxCollider2D = GetComponent<BoxCollider2D>();
-           _rb2D = GetComponent<Rigidbody2D>();
-           _inverseMoveTime=  1f / MoveTime;
+         //  _rb2D = GetComponent<Rigidbody2D>();
+     //      _inverseMoveTime=  1f / MoveTime;
        }
 
         public bool Move(Vector2 destination, out RaycastHit2D hit)
