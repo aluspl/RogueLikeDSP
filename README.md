@@ -9,7 +9,7 @@ Playery z grą:
  3. Wersja 3 z GUI i Creaktorem oraz przeciwnikami [Link do gry](https://aluspl.github.io/RogueLikeDSP/Versions/GUIAndCharacterCreator)
  4. Wersja 4 z Walka [Link do gry](https://aluspl.github.io/RogueLikeDSP/Versions/fight)
  5. Wersja 5 z Kontr Atakiem [Link do gry](https://aluspl.github.io/RogueLikeDSP/Versions/version5contrattack)
- 6. Wersja 6 z Z Następną mapą i śmiercią [Link do gry](https://aluspl.github.io/RogueLikeDSP/Versions/Version6)
+ 6. Wersja 6 z Z Następną mapą i śmiercią [Link do gry](https://aluspl.github.io/RogueLikeDSP/Versions/version6)
 
  Klawiszologia:
 
