@@ -26,7 +26,13 @@ namespace Utils
             }
             return A;
         }
+        public static float Round(double number)
+        {
+            if (number>0) return 1f;
+            if (number <0) return -1f;
+            return 0f;
 
+        }
         public static double AngleInDeg(Vector2 vec1, Vector2 vec2) {
              var A=CalculateAzimuth(vec1, vec2);
              var RG= (180 / Mathf.PI);

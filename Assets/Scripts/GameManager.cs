@@ -11,30 +11,13 @@ using Utils;
 
 public class GameManager : MonoBehaviour
 {
-    private MapManager _mapManager;
+    private MapManager MapManager;
     public static GameManager Instance = null;
+
     private int _level=0;
     public BaseCharacter PlayerStatistic;
-    public KeyCode KeyUp=KeyCode.UpArrow;
-    public KeyCode KeyDown=KeyCode.DownArrow;
-    public KeyCode KeyLeft=KeyCode.LeftArrow;
-    public KeyCode KeyRight=KeyCode.RightArrow;
-    public KeyCode FightNormalKey=KeyCode.Space; 
-    public KeyCode FightNormalKeyPad= KeyCode.Joystick1Button16;
-    public KeyCode FightSpecial=KeyCode.E | KeyCode.Joystick1Button14;
-    public KeyCode FightSpecialPad= KeyCode.Joystick1Button14;
-    
-    public KeyCode ReloadWeapon=KeyCode.R;
-    public KeyCode ReloadWeaponPAD= KeyCode.Joystick1Button17;
+  
 
-    public KeyCode SelectEnemyKey=KeyCode.Tab  | KeyCode.Joystick1Button13;
-    public KeyCode SelectEnemyKeyPAD=KeyCode.Joystick1Button13;
-    public KeyCode ExitKey=KeyCode.Escape;
-    public KeyCode ExitKeyPAD=KeyCode.Joystick1Button9;
-    public KeyCode OpenDetailKey = KeyCode.I;
-    public KeyCode OpenDetailKeyPAD =KeyCode.Joystick1Button10;
-    public KeyCode LightKey=KeyCode.F;
-    public KeyCode LightKeyPAD=KeyCode.Joystick1Button18;
 
     public GameObject PlayerObject;
     public bool IsDay = false;
@@ -51,6 +34,8 @@ public class GameManager : MonoBehaviour
     public bool OpenedWindow;
     public bool IsPlayerTurn;
 
+    public bool IsEnemyTurn { get; internal set; }
+
 
     // Use this for initialization
     void Awake()
@@ -60,7 +45,7 @@ public class GameManager : MonoBehaviour
            DontDestroyOnLoad(gameObject);
 
 
-        _mapManager = GetComponent<MapManager>();
+        MapManager = GetComponent<MapManager>();
         FightSystem = GetComponent<FightSystemUtils>();
         UiUtils = GetComponent<UIManager>();
         _gameUI = GetComponentInChildren<Canvas>();
@@ -69,23 +54,32 @@ public class GameManager : MonoBehaviour
 
     private void InitGame()
     {
-       // IsDay=!IsDay;
+        IsDay=!IsDay;
         OpenCharacterCreatorWindow();
-        _mapManager.CleanMap();
-        _mapManager.StartLevel(_level++);
+        MapManager.CleanMap();
+        MapManager.StartLevel(_level++);
         IsPlayerTurn = true;
         UiUtils.ClearLog();
     }
 
     public void EndPlayerTurn()
     {
-        UiUtils.AddLog("Enemies Turn");
+    //    UiUtils.AddLog("Enemies Turn");
         IsPlayerTurn = false;
         if (PlayerObject!=null && PlayerStatistic!=null)
-           EnemyUtils.EnemiesMove(PlayerObject);
-        UiUtils.AddLog("Player Turn");
+        {
+            try
+            {
+                var coroutine = EnemyUtils.EnemiesMove(PlayerObject);
+                StartCoroutine(coroutine);
+            }
+            catch (Exception e)
+            {
+                Debug.Log(e);
+            }
+        }
+        //UiUtils.AddLog("Player Turn");
         
-        IsPlayerTurn = true;
     }
 
 
@@ -103,10 +97,10 @@ public class GameManager : MonoBehaviour
     {
         if (!OpenedWindow)
         {
-            if (Input.GetKeyDown(FightNormalKey) || Input.GetKeyDown(FightNormalKeyPad)) FightSystem.AttackEnemy();
-            if (Input.GetKeyDown(SelectEnemyKey)|| Input.GetKeyDown(SelectEnemyKeyPAD)) EnemyUtils.SelectEnemy();
-            if (Input.GetKeyDown(ExitKey)|| Input.GetKeyDown(ExitKeyPAD)) EndGame();
-            if (Input.GetKeyDown(OpenDetailKey)|| Input.GetKeyDown(OpenDetailKeyPAD)) OpenDetail();
+            if (Input.GetKeyDown(InputManager.Instance.FightNormalKey)) FightSystem.AttackEnemy();
+            if (Input.GetKeyDown(InputManager.Instance.SelectEnemyKey)) EnemyUtils.SelectEnemy();
+            if (Input.GetKeyDown(InputManager.Instance.ExitKey)) EndGame();
+            if (Input.GetKeyDown(InputManager.Instance.OpenDetailKey)) OpenDetail();
          //   detectPressedKeyOrButton();
             _gameUI.enabled = true;
         }

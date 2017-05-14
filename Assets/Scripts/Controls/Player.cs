@@ -6,7 +6,6 @@ namespace Controls
 {
     public class Player : MovingObject
     {
-        const bool IsButtonEnabled = true;
 
         protected override void Start ()
         {
@@ -27,9 +26,10 @@ namespace Controls
 
             RoundMoves(moveVector);
             if (Math.Abs(moveVector.x) > TOLERANCE || Math.Abs(moveVector.y) > TOLERANCE)       
-                AttemtMove<MovingObject>(moveVector);
-             if (moveVector!=Vector2.zero)
              {
+                 Debug.Log(string.Format("x: {0} y: {1}",moveVector.x,moveVector.y));
+
+                AttemtMove<MovingObject>(moveVector);
                 transform.eulerAngles=MathUtils.SetRotation(moveVector);
                 GameManager.Instance.EndPlayerTurn();
              }
@@ -38,48 +38,16 @@ namespace Controls
         private Vector2 GetControllerInput()
         {
 
-            if (IsButtonEnabled)
-            {
-            // Keys
-                 int vector = 1;
-
-                if (Input.GetKeyDown(GameManager.Instance.KeyUp))
-                {
-                    //transform.eulerAngles=new Vector3(0,0,0);
-                    return new Vector2(0, vector);
-                }
-                if (Input.GetKeyDown(GameManager.Instance.KeyLeft))
-                {
-                   // transform.eulerAngles=new Vector3(0,0,90);
-                    return new Vector2(vector * -1, 0);
-                }
-                if (Input.GetKeyDown(GameManager.Instance.KeyRight))
-                {
-                 //   transform.eulerAngles=new Vector3(0,0,270);
-                    return new Vector2(vector, 0);
-                }
-                if (Input.GetKeyDown(GameManager.Instance.KeyDown))
-                {
-                //    transform.eulerAngles=new Vector3(0,0,180);
-                    return new Vector2(0, vector * -1);
-                }
-                else return Vector2.zero;
-            }
-            else
-            {
+            
                 //Controller - MORE UNiversal, but sometimes too sensitive
 
                 var x = Input.GetAxisRaw("Horizontal");
-                float f;
-            //    int x = (f=Input.GetAxis("Horizontal")) > 0 ? 1 : f < 0 ? -1 : 0;
 
                 var y = Input.GetAxisRaw("Vertical");
-          //    int y = (f=Input.GetAxis("Vertical")) > 0 ? 1 : f < 0 ? -1 : 0;
 
-                if (x!=0 || y!=0) Debug.Log(string.Format("x: {0} y: {1}",x,y));
                 if (x!=0) y=0;
                 return new Vector2(x,y);
-            }
+            
 
 
         }

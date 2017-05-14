@@ -53,8 +53,8 @@ public class CharacterDetailView : MonoBehaviour
     // Update is called once per frame
 	void Update ()
 	{
-	    if (Input.GetKeyDown(GameManager.Instance.ExitKey)) CloseWindow();
-	    if (Input.GetKeyDown(GameManager.Instance.OpenDetailKey)) CloseWindow();
+	    if (Input.GetKeyDown(InputManager.Instance.ExitKey)) CloseWindow();
+	    if (Input.GetKeyDown(InputManager.Instance.OpenDetailKey)) CloseWindow();
 
 	}
 

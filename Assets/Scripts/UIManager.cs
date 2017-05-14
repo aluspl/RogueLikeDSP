@@ -69,7 +69,7 @@ public class UIManager : MonoBehaviour
             if (SelectedEnemyDetail != null)
             {
                 SelectedEnemyDetail.text = string.Format("<b>Distance:</b>{0}",
-                    EnemyUtils.SelectedEnemy.Distance);
+                EnemyUtils.SelectedEnemy.Distance);
             }
         }
     }

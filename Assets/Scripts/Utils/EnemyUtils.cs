@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections;
+using System.Linq;
 using Characters;
 using Characters.CharacterClasses;
 using Controls;
@@ -6,7 +7,7 @@ using UnityEngine;
 
 namespace Utils
 {
-    public static class EnemyUtils
+    public class EnemyUtils
     {     
         private static int _enemyCount;
         public static BaseCharacter GenerateEnemy()
@@ -40,16 +41,25 @@ namespace Utils
             nearby[EnemyIndex>=nearby.Count?  0 : EnemyIndex ].IsSelected = true;
         }
 
-        public static void EnemiesMove(GameObject playerObject)
+        public static IEnumerator EnemiesMove(GameObject playerObject)
         {
-            foreach (var enemy in  GameManager.Instance.Enemies)
+            if (GameManager.Instance.Enemies.Count==0)
             {
-                enemy.IsHisTurn = true;
-                enemy.MoveToPlayer(playerObject);
+               yield return new WaitForSeconds(WaitTime);     
             }
+            if (GameManager.Instance.Enemies!=null)
+                for (int i =0; i<GameManager.Instance.Enemies.Count; i++)
+                {
+                    var enemy=GameManager.Instance.Enemies[i];
+                    enemy.IsHisTurn = true;
+                    enemy.MoveToPlayer(playerObject);
+                    yield return new WaitForSeconds(enemy.MoveTime);
+                }
+            GameManager.Instance.IsPlayerTurn=true;
         }
 
         public static int MAXDISTANCE = 1;
+        private static float WaitTime=0.01f;
 
         public static Enemy SelectedEnemy
         {

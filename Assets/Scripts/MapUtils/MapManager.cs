@@ -46,7 +46,7 @@ public class MapManager : MonoBehaviour, IMapManager
 
     void Awake()
     {
-         MapCollection=new GameObject("Map").transform;
+        MapCollection=new GameObject("Map").transform;
         EnemiesCollection=new GameObject("Enemies").transform;
     }
 

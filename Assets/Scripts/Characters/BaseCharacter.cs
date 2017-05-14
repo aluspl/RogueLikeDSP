@@ -53,10 +53,10 @@ namespace Characters
         }
         public virtual string Attack(BaseCharacter enemy)
         {
-            if (!ChanceToAttack(enemy)) return GameLogSystem.MissedAttack();
+            if (!ChanceToAttack(enemy)) return GameLogSystem.MissedAttack(this);
             var damage = CriticalChance() ? _random.Next(Strength) : _random.Next(Strength) * 2;
             damage=enemy.Defense(damage);
-            return GameLogSystem.Attack(damage,enemy);
+            return GameLogSystem.Attack(damage,this, enemy);
         }
 
         private int Defense(int damage)

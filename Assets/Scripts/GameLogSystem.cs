@@ -2,14 +2,14 @@
 
 public static class GameLogSystem
 {
-    public static string Attack(int damage, BaseCharacter enemy)
+    public static string Attack(int damage, BaseCharacter character,BaseCharacter enemy)
     {
-        return string.Format("Attack <b>{1}</b> for <b>{0}</b> damage. Enemy has now <b>{2}</b> HP",damage, enemy.Name, enemy.HealthPoint);
+        return string.Format("<b>{0}</b> Attack <b>{1}</b> for <b>{2}</b> damage. Enemy has now <b>{3}</b> HP",character.Name,  enemy.Name, damage, enemy.HealthPoint);
     }
 
-    public static string MissedAttack()
+    public static string MissedAttack(BaseCharacter character)
     {
-        return "Attack Missed";
+        return string.Format("<b>{0}</b>: Attack Missed",character.Name);
     }
 
     public static string TechTalk(BaseCharacter attacker, bool success)

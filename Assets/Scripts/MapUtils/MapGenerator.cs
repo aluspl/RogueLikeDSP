@@ -137,7 +137,7 @@ In future : generate maps different floor enums :)
 
     public void SetupAssets(MapElement[,] map)
     {
-        map[2, 2] = MapElement.Player;
+        map[1, 1] = MapElement.Player;
         map[MapSizeX/2, MapSizeY/2] = MapElement.EndPoint;
     }
 
