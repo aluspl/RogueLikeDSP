@@ -24,9 +24,10 @@ namespace Controls
             if (GameManager.Instance.OpenedWindow) return;
             var moveVector = GetControllerInput();
 
-            RoundMoves(moveVector);
             if (Math.Abs(moveVector.x) > TOLERANCE || Math.Abs(moveVector.y) > TOLERANCE)       
              {
+             //   RoundMoves(moveVector);
+
                  Debug.Log(string.Format("x: {0} y: {1}",moveVector.x,moveVector.y));
 
                 AttemtMove<MovingObject>(moveVector);
@@ -42,9 +43,9 @@ namespace Controls
                 //Controller - MORE UNiversal, but sometimes too sensitive
 
                 var x = Input.GetAxisRaw("Horizontal");
-
+                x=MathUtils.Round(x);
                 var y = Input.GetAxisRaw("Vertical");
-
+                y=MathUtils.Round(y);
                 if (x!=0) y=0;
                 return new Vector2(x,y);
             

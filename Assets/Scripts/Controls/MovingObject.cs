@@ -7,7 +7,7 @@ namespace Controls
 {
     public abstract class MovingObject : MonoBehaviour
     {
-        public float MoveTime = 0.1f;
+        public float MoveTime = 0.2f;
 
         public LayerMask BlockingLayer;
         public LayerMask CharacterLayer;
@@ -26,7 +26,6 @@ namespace Controls
 
         public bool Move(Vector2 destination, out RaycastHit2D hit)
         {
-
             var start = (Vector2)transform.position;
             
             var end = start + destination;

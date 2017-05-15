@@ -19,3 +19,5 @@ public static class GameLogSystem
             : string.Format("{0} are not so boring for your enemy", attacker.Name);
     }
 }
+//22 489 48 77
+//spoldzierlcza 72 traspress 

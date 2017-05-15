@@ -30,9 +30,13 @@ public class InputManager : MonoBehaviour {
 		if (PadName.Length==0)
 			ControlType=KeyConfig.Keyboard;
 		else {
-			Debug.Log("Selected Input: "+ PadName[0]);
-
+			Debug.Log(string.Format("Platform : {0} Pad Name : {1}",Application.platform, PadName[0]));
 			ControlType=KeyConfig.GamePadOSX;
+
+        if ( Application.platform==RuntimePlatform.OSXPlayer)
+			ControlType=KeyConfig.GamePadOSX;
+		if ( Application.platform==RuntimePlatform.WindowsPlayer || Application.platform==RuntimePlatform.LinuxPlayer)
+			ControlType=KeyConfig.GamePad;
 		}
 		Debug.Log("Selected Input: "+ ControlType);
 
@@ -60,13 +64,13 @@ public class InputManager : MonoBehaviour {
 			}
 			case KeyConfig.GamePad:
 			{
-				FightSpecialKey= KeyCode.Joystick1Button14;
-				FightNormalKey= KeyCode.Joystick1Button16;
-				ReloadWeaponKey= KeyCode.Joystick1Button17;
-				SelectEnemyKey=KeyCode.Joystick1Button13;
-				ExitKey=KeyCode.Joystick1Button9;
-				OpenDetailKey =KeyCode.Joystick1Button10;
-				LightKey=KeyCode.Joystick1Button18;		
+				FightSpecialKey= KeyCode.Joystick1Button5;
+				FightNormalKey= KeyCode.Joystick1Button0;
+				ReloadWeaponKey= KeyCode.Joystick1Button1;
+				SelectEnemyKey=KeyCode.Joystick1Button4;
+				ExitKey=KeyCode.Joystick1Button7;
+				OpenDetailKey =KeyCode.Joystick1Button6;
+				LightKey=KeyCode.Joystick1Button3;		
 				break;			
 			}
 			case KeyConfig.GamePadOSX:
