@@ -1,11 +1,11 @@
 ﻿using System.Collections;
 using System.Linq;
-using Characters;
-using Characters.CharacterClasses;
-using Controls;
+using LifeLike.Characters;
+using LifeLike.Characters.CharacterClasses;
+using LifeLike.Controls;
 using UnityEngine;
 
-namespace Utils
+namespace LifeLike.Utils
 {
     public class EnemyUtils
     {     
@@ -43,6 +43,8 @@ namespace Utils
 
         public static IEnumerator EnemiesMove(GameObject playerObject)
         {
+            yield return new WaitForSeconds(WaitTime);     
+
             if (GameManager.Instance.Enemies.Count==0)
             {
                yield return new WaitForSeconds(WaitTime);     
@@ -59,7 +61,7 @@ namespace Utils
         }
 
         public static int MAXDISTANCE = 1;
-        private static float WaitTime=0.01f;
+        private static float WaitTime=0.1f;
 
         public static Enemy SelectedEnemy
         {

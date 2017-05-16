@@ -1,4 +1,4 @@
-﻿namespace Characters.CharacterClasses
+﻿namespace LifeLike.Characters.CharacterClasses
 {
     public class CorpoRat : BaseCharacter
     {  public new static string ClassName = "Corpo Rat";

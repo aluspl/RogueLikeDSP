@@ -1,16 +1,19 @@
 ﻿using UnityEngine;
 
-public class InitateGame : MonoBehaviour
+namespace LifeLike
 {
-
-    public GameObject GameManager;
-    public GameObject InputManager;
-
-    void Awake ()
+    public class InitateGame : MonoBehaviour
     {
-        if (global::GameManager.Instance == null)
-            Instantiate(GameManager);
-         if (global::InputManager.Instance == null)
-             Instantiate(InputManager);
-    } 
+
+        public GameObject GameManager;
+        public GameObject InputManager;
+
+        void Awake()
+        {
+            if (LifeLike.GameManager.Instance == null)
+                Instantiate(GameManager);
+            if (LifeLike.InputManager.Instance == null)
+                Instantiate(InputManager);
+        }
+    }
 }

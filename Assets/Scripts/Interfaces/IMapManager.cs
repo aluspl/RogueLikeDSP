@@ -1,7 +1,7 @@
-﻿using Enums;
+﻿using LifeLike.Enums;
 using UnityEngine;
 
-namespace Interfaces
+namespace LifeLike.Interfaces
 {
     public interface IMapManager
     {

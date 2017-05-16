@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Enums
+namespace LifeLike.Enums
 {
     [Flags]
     public enum MapElement

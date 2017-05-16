@@ -10,7 +10,7 @@ Playery z grą:
  4. Wersja 4 z Walka [Link do gry](https://aluspl.github.io/RogueLikeDSP/Versions/fight)
  5. Wersja 5 z Kontr Atakiem [Link do gry](https://aluspl.github.io/RogueLikeDSP/Versions/version5contrattack)
  6. Wersja 6 z Z Następną mapą i śmiercią [Link do gry](https://aluspl.github.io/RogueLikeDSP/Versions/version6)
-
+ 7. Wersja 7 z specjalnymi atakami [Link do gry](https://aluspl.github.io/RogueLikeDSP/Versions/version7)
  Klawiszologia:
 
  Tab: Przelaczanie przeciwnikow

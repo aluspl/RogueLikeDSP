@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Characters.CharacterClasses
+namespace LifeLike.Characters.CharacterClasses
 {
     public interface IBaseStatistic
     {        List<string> GetAttackType(int lvl);

@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Text;
-using Characters;
-using Controls;
+using LifeLike.Characters;
+using LifeLike.Controls;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Utils
+namespace LifeLike.Utils
 {
     public class FightSystemUtils : MonoBehaviour
     {
@@ -40,12 +40,12 @@ namespace Utils
         {
             if (CheckIsEnemyIsNotNull)
             {  
-                GameManager.Instance.EndPlayerTurn();
+                 GameManager.Instance.EndPlayerTurn();
                 var result=Player.Attack(EnemyUtils.SelectedEnemy.EnemyCharacter);
                 UI.AddLog(result);
                 if (!EnemyUtils.SelectedEnemy.IsDead) return;
-                result = EnemyIsDead(EnemyUtils.SelectedEnemy);
-                UI.AddLog(result);
+                EnemyIsDead(EnemyUtils.SelectedEnemy);
+             
             }
             else
             {
@@ -53,8 +53,24 @@ namespace Utils
             }       
 
         }
+        public void SpecialAttackEnemy()
+        {
+             if (CheckIsEnemyIsNotNull)
+             {  
+                GameManager.Instance.EndPlayerTurn();
+                var result=Player.SpecialAction(EnemyUtils.SelectedEnemy.EnemyCharacter);
+                UI.AddLog(result);
+                if (!EnemyUtils.SelectedEnemy.IsDead) return;
+                 EnemyIsDead(EnemyUtils.SelectedEnemy);
+             }
+            else
+            {
+                UI.AddLog("Enemy isn't selected");
+            }      
+                   
+     }
 
-        public  string EnemyIsDead(Enemy selectedEnemy)
+        public  void EnemyIsDead(Enemy selectedEnemy)
         {
             var builder=new StringBuilder();
             builder.AppendFormat("Enemy called {0} is now Dead, SHAME OF YOU! Great Job!! ",
@@ -65,8 +81,10 @@ namespace Utils
              experience, selectedEnemy.EnemyCharacter.Name, Player.CurrentExperience);
             GameManager.Instance.KillEnemy(selectedEnemy);
             Player.KilledEnemies++;
-            return builder.ToString();
+            UI.AddLog(builder.ToString());
         }
+
+      
     }
 
 }

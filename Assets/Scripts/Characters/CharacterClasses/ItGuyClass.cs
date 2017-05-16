@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
-using Enums;
+using LifeLike.Enums;
+using LifeLike.Utils;
+using UnityEngine;
 
-namespace Characters.CharacterClasses
+namespace LifeLike.Characters.CharacterClasses
 {
     public class ItGuyClass : BaseCharacter
     {
@@ -12,9 +14,9 @@ namespace Characters.CharacterClasses
             SelectedClass=ClassName;
         }
 
-        public override string SpecialAction(BaseCharacter enemyCharacter, string actionName)
+        public override string SpecialAction(BaseCharacter enemyCharacter)
         {
-            switch (actionName)
+            switch (SelectedSpecialAttack)
             {
                 case "Tech Talk":
                     return AttackTechTalk(enemyCharacter);
@@ -37,9 +39,18 @@ namespace Characters.CharacterClasses
         }
         private string AttackTechTalk(BaseCharacter enemyCharacter)
         {
-            if (_random.Next(Charisma) >= _random.Next(Inteligence)) return GameLogSystem.TechTalk(this, false);
+            
+       
+            int YourPoints = random.Next(Inteligence);
+            int EnemyPoints = random.Next(enemyCharacter.Endurance);
+                 
+            Debug.Log(string.Format("Your Generated Points Chance: {0}, Enemy Generated Point: {1}",YourPoints,
+            EnemyPoints));
+            if (YourPoints < EnemyPoints)
+                 return GameLogUtils.TechTalk(this, false);
+
             enemyCharacter.Status = Status.Sleep;
-            return GameLogSystem.TechTalk(this, true);
+            return GameLogUtils.TechTalk(this, true);
         }
 
         public const string ClassType = "ITGuyClass";

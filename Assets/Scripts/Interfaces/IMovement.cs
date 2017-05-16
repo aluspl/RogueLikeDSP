@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using UnityEngine;
 
-namespace Interfaces
+namespace LifeLike.Interfaces
 {
     public interface IMovement
     {

@@ -1,4 +1,4 @@
-﻿namespace Characters
+﻿namespace LifeLike.Characters
 {
     public struct CharacterStatisticDataModel
     {

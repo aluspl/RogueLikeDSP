@@ -1,14 +1,14 @@
 ﻿using System.Collections.Generic;
-using Characters;
+using LifeLike.Characters;
 
-namespace Interfaces
+namespace LifeLike.Interfaces
 {
     public interface ICharacter
     {
         int GetActionsPoints();
         string Attack(BaseCharacter enemy);
 
-        string SpecialAction(BaseCharacter enemyCharacter, string actionName);
+        string SpecialAction(BaseCharacter enemyCharacter);
 
         List<string> SpecialActionsList();
 

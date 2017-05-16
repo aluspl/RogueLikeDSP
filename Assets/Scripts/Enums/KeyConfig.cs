@@ -1,7 +1,10 @@
-public enum KeyConfig
+namespace LifeLike.Enums
 {
-    Keyboard,
-	GamePad,
-	GamePadOSX,
-	Touch
+	public enum KeyConfig
+	{
+		Keyboard,
+		GamePad,
+		GamePadOSX,
+		Touch
+	}
 }

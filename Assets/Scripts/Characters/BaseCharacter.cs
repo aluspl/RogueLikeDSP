@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using Enums;
-using Interfaces;
+using LifeLike.Enums;
+using LifeLike.Interfaces;
 using UnityEngine;
-using Utils;
+using LifeLike.Utils;
 using Random = System.Random;
 
-namespace Characters
+namespace LifeLike.Characters
 {
     public abstract class BaseCharacter : ICharacter
     {
         public static string ClassName;
-        protected readonly Random _random = new Random();
+        protected readonly Random random = new Random();
 
          /**
         *
@@ -38,14 +38,14 @@ namespace Characters
         private bool ChanceToAttack(BaseCharacter enemy)
         {
            
-            var yourChance = _random.Next(Agility);
-            var enemyChance = _random.Next(enemy.Agility);
+            var yourChance = random.Next(Agility);
+            var enemyChance = random.Next(enemy.Agility);
             return yourChance > enemyChance;
         }
 
         private bool CriticalChance()
         {
-            return _random.Next(100)*Agility>90;
+            return random.Next(100)*Agility>90;
         }
         public int GetActionsPoints()
         {
@@ -53,10 +53,10 @@ namespace Characters
         }
         public virtual string Attack(BaseCharacter enemy)
         {
-            if (!ChanceToAttack(enemy)) return GameLogSystem.MissedAttack(this);
-            var damage = CriticalChance() ? _random.Next(Strength) : _random.Next(Strength) * 2;
+            if (!ChanceToAttack(enemy)) return GameLogUtils.MissedAttack(this);
+            var damage = CriticalChance() ? random.Next(Strength) : random.Next(Strength) * 2;
             damage=enemy.Defense(damage);
-            return GameLogSystem.Attack(damage,this, enemy);
+            return GameLogUtils.Attack(damage,this, enemy);
         }
 
         private int Defense(int damage)
@@ -64,6 +64,10 @@ namespace Characters
             HealthPoint -= damage;
             CheckHealth();
             return damage;
+        }
+
+        internal void StatusChange()
+        {
         }
 
         private void CheckHealth()
@@ -75,7 +79,7 @@ namespace Characters
             }
         }
 
-        public virtual string SpecialAction(BaseCharacter enemyCharacter, string actionName)
+        public virtual string SpecialAction(BaseCharacter enemyCharacter)
         {
             return string.Empty;
         }
@@ -83,6 +87,18 @@ namespace Characters
         public virtual List<string> SpecialActionsList()
         {
              return new List<string>();
+        }
+        public string SelectedSpecialAttack {get; set;}
+
+        public void SelectSpecialAttack()
+        {
+            if (SpecialActionsList().Count==0) SelectedSpecialAttack=string.Empty;
+            else
+            {
+                if (SpecialActionIndex>SpecialActionsList().Count) SpecialActionIndex=0;
+                    SelectedSpecialAttack=SpecialActionsList()[SpecialActionIndex++];
+            }
+            Debug.Log("Selected Special Attack: "+SelectedSpecialAttack);
         }
         public string Name { get; set; }
         public int Strength { get; set; }
@@ -99,5 +115,6 @@ namespace Characters
         public int MaxHealthPoint { get; set; }
         public bool isEnemy {get; set; }
         public int KilledEnemies { get;  set; }
+        private int SpecialActionIndex;
     }
 }

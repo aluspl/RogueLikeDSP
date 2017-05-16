@@ -1,8 +1,9 @@
 ﻿using System;
-using MapElements;
+using LifeLike.MapElements;
+using LifeLike.Utils;
 using UnityEngine;
-using Utils;
-namespace Controls
+
+namespace LifeLike.Controls
 {
     public class Player : MovingObject
     {
@@ -28,7 +29,7 @@ namespace Controls
              {
              //   RoundMoves(moveVector);
 
-                 Debug.Log(string.Format("x: {0} y: {1}",moveVector.x,moveVector.y));
+//                 Debug.Log(string.Format("x: {0} y: {1}",moveVector.x,moveVector.y));
 
                 AttemtMove<MovingObject>(moveVector);
                 transform.eulerAngles=MathUtils.SetRotation(moveVector);

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Characters.CharacterClasses
+namespace LifeLike.Characters.CharacterClasses
 {
     public static class CharacterFactory
     {

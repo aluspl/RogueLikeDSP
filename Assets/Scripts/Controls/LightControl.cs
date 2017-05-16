@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Controls
+namespace LifeLike.Controls
 {
     public class LightControl : MonoBehaviour {
         private bool _isDay=false;

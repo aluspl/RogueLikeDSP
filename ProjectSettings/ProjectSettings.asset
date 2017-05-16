@@ -614,7 +614,7 @@ PlayerSettings:
   facebookSdkVersion: 7.9.1
   apiCompatibilityLevel: 1
   cloudProjectId: e6b1af38-b98f-4081-af04-849095be6659
-  projectName: Unity2D
+  projectName: LifeLike
   organizationId: szymon-motyka
   cloudEnabled: 0
   enableNewInputSystem: 0

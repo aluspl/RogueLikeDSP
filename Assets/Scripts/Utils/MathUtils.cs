@@ -1,7 +1,7 @@
 using UnityEngine;
 using System;
 
-namespace Utils
+namespace LifeLike.Utils
 {
     public static class MathUtils
     {     

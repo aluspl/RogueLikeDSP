@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections;
-using Interfaces;
+using LifeLike.Interfaces;
 using UnityEngine;
-using Utils;
-namespace Controls
+using LifeLike.Utils;
+namespace LifeLike.Controls
 {
     public abstract class MovingObject : MonoBehaviour
     {

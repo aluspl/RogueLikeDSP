@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace MapElements
+namespace LifeLike.MapElements
 {
     internal class Exit : MonoBehaviour
     {

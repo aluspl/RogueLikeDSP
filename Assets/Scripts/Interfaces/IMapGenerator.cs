@@ -1,6 +1,6 @@
-﻿using Enums;
+﻿using LifeLike.Enums;
 
-namespace Interfaces
+namespace LifeLike.Interfaces
 {
     public interface IMapGenerator
     {

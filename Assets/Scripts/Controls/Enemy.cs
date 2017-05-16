@@ -1,9 +1,12 @@
 ﻿using System;
-using Characters;
-using UnityEngine;
-using Utils;
+using LifeLike.Characters;
+using LifeLike.Controls;
+using LifeLike.Utils;
+using LifeLike.Enums;
 
-namespace Controls
+using UnityEngine;
+
+namespace LifeLike.Controls
 {
     public class Enemy : MovingObject
     {
@@ -54,7 +57,14 @@ namespace Controls
         }
 
         public void MoveToPlayer(GameObject playerObject)
-        {       
+        {      
+            if (!EnemyCharacter.isEnemy) return;
+            if (EnemyCharacter.Status==Status.Sleep 
+                || EnemyCharacter.Status==Status.Paralized) 
+            {
+                EnemyCharacter.StatusChange();
+                return;
+            } 
             var moveVector = (Vector2)(transform.position- playerObject.transform.position);
        
             MathUtils.RoundMoves(ref moveVector);

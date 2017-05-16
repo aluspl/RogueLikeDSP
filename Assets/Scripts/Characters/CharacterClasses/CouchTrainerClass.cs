@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
-using Enums;
+using LifeLike.Enums;
+using LifeLike.Utils;
+using UnityEngine;
 
-namespace Characters.CharacterClasses
+namespace LifeLike.Characters.CharacterClasses
 {
     public class CouchTrainerClass : BaseCharacter
     {
@@ -12,34 +14,31 @@ namespace Characters.CharacterClasses
             SelectedClass=ClassName;
         }
 
-        public override string SpecialAction(BaseCharacter enemyCharacter, string actionName)
+        public override string SpecialAction(BaseCharacter enemyCharacter)
         {
-            switch (actionName)
+            switch (SelectedSpecialAttack)
             {
                 case "Invite to Training":
-                    return InviteToTraining(enemyCharacter);
-                case "Phantom IT Device Attack":
-                    return AttackPhantomDevice(enemyCharacter);
-                case "IT Rage":
-                    return AttackITRage(enemyCharacter);
-                default:
-                    return Attack(enemyCharacter);
+                    return InviteToTraining(enemyCharacter);              
             }
+            return GameLogUtils.NoSelectedAttack;
         }
 
         private string AttackPhantomDevice(BaseCharacter enemyCharacter)
         {
             return string.Empty;
         }
-        private string AttackITRage(BaseCharacter enemyCharacter)
-        {
-            return string.Empty;
-        }
+
         private string InviteToTraining(BaseCharacter enemyCharacter)
         {
-            if (_random.Next(Charisma) >= _random.Next(Inteligence)) return GameLogSystem.TechTalk(this, false);
-            enemyCharacter.Status = Status.Sleep;
-            return GameLogSystem.TechTalk(this, true);
+            int YourPoints = random.Next(Charisma);
+            int EnemyPoints = random.Next(enemyCharacter.Inteligence);
+            Debug.Log(string.Format("Your Generated Charisma Chance: {0}, Enemy Generated Inteligence Point: {1}",YourPoints,
+            EnemyPoints));
+            if (YourPoints <EnemyPoints) 
+              return GameLogUtils.CouchTraining(this, false);
+            enemyCharacter.isEnemy =false;
+            return GameLogUtils.CouchTraining(this, true);
         }
 
         public const string ClassType = "CouchTrainerClass";
@@ -48,8 +47,7 @@ namespace Characters.CharacterClasses
         {
             return new List<string>()
             {
-                "Tech Talk",
-                "Phantom IT Device Attack"
+                "Invite to Training",
             };
         }
     }
