@@ -95,7 +95,7 @@ namespace LifeLike.Characters
             if (SpecialActionsList().Count==0) SelectedSpecialAttack=string.Empty;
             else
             {
-                if (SpecialActionIndex>SpecialActionsList().Count) SpecialActionIndex=0;
+                if (SpecialActionIndex==SpecialActionsList().Count) SpecialActionIndex=0;
                     SelectedSpecialAttack=SpecialActionsList()[SpecialActionIndex++];
             }
             Debug.Log("Selected Special Attack: "+SelectedSpecialAttack);
