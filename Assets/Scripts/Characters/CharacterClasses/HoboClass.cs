@@ -2,7 +2,7 @@
 
 namespace LifeLike.Characters.CharacterClasses
 {
-    public class HoboClass : BaseCharacter
+    public class HoboClass : Character
     {
         public new static string ClassName = "Hobo";
 

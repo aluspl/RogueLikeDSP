@@ -10,7 +10,7 @@ namespace LifeLike.Utils
     public class EnemyUtils
     {     
         private static int _enemyCount;
-        public static BaseCharacter GenerateEnemy()
+        public static Character GenerateEnemy()
         {
             var classes = CharacterFactory.EnemyClassList();
             
@@ -31,7 +31,7 @@ namespace LifeLike.Utils
         }
         public static void SelectEnemy()
         {
-            var nearby = GameManager.Instance.Enemies.Where(p=>p.Distance<=MAXDISTANCE).OrderBy(p => p.Distance).ToList();
+            var nearby = EnemyManager.Instance.List.Where(p=>p.Distance<=MAXDISTANCE).OrderBy(p => p.Distance).ToList();
             if (nearby.Count <= 0) return;
 
             EnemyIndex++;
@@ -41,35 +41,35 @@ namespace LifeLike.Utils
             nearby[EnemyIndex>=nearby.Count?  0 : EnemyIndex ].IsSelected = true;
         }
 
-        public static IEnumerator EnemiesMove(GameObject playerObject)
+        public static IEnumerator EnemiesMove()
         {
             yield return new WaitForSeconds(WaitTime);     
 
-            if (GameManager.Instance.Enemies.Count==0)
+            if (EnemyManager.Instance.List.Count==0)
             {
                yield return new WaitForSeconds(WaitTime);     
             }
-            if (GameManager.Instance.Enemies!=null)
-                for (int i =0; i<GameManager.Instance.Enemies.Count; i++)
+            if (EnemyManager.Instance.List!=null)
+                for (int i =0; i<EnemyManager.Instance.List.Count; i++)
                 {
-                    var enemy=GameManager.Instance.Enemies[i];
+                    var enemy=EnemyManager.Instance.List[i];
                     enemy.IsHisTurn = true;
-                    enemy.MoveToPlayer(playerObject);
+                    enemy.MoveToPlayer(PlayerManager.Instance.Object);
                     yield return new WaitForSeconds(enemy.MoveTime);
                 }
             GameManager.Instance.IsPlayerTurn=true;
         }
 
         public static int MAXDISTANCE = 1;
-        private static float WaitTime=0.1f;
+        private static float WaitTime=1f;
 
         public static Enemy SelectedEnemy
         {
             get
             {
                 // Property action for unselected enemy or empty list ... or whatever :D 
-                return (GameManager.Instance!=null && GameManager.Instance.Enemies.Count>0)
-                     ? GameManager.Instance.Enemies.FirstOrDefault(p=>p.IsSelected)
+                return (EnemyManager.Instance!=null && EnemyManager.Instance.List.Count>0)
+                     ? EnemyManager.Instance.List.FirstOrDefault(p=>p.IsSelected)
                     : null;
             }
             set
@@ -83,7 +83,7 @@ namespace LifeLike.Utils
 
         public static void UnSelectAllEnemies()
         {
-            foreach (var enemy in  GameManager.Instance.Enemies)
+            foreach (var enemy in  EnemyManager.Instance.List)
             {
                 enemy.IsSelected = false;
             }

@@ -8,17 +8,17 @@ namespace LifeLike.Utils
     {
         internal static string NoSelectedAttack="You should select special attack";
 
-        public static string Attack(int damage, BaseCharacter character, BaseCharacter enemy)
+        public static string Attack(int damage, Character character, Character enemy)
         {
             return string.Format("<b>{0}</b> Attack <b>{1}</b> for <b>{2}</b> damage. Enemy has now <b>{3}</b> HP",character.Name,  enemy.Name, damage, enemy.HealthPoint);
         }
 
-        public static string MissedAttack(BaseCharacter character)
+        public static string MissedAttack(Character character)
         {
             return string.Format("<b>{0}</b>: Attack Missed",character.Name);
         }
 
-        public static string TechTalk(BaseCharacter character, bool success)
+        public static string TechTalk(Character character, bool success)
         {
             return success ? 
                 string.Format("<b>{0}</b> has successfully bored <b>The Enemy</b>! He is sleeping now.  Good Job!",character.Name) 

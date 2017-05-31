@@ -42,8 +42,8 @@ namespace LifeLike.Controls
 
         protected static void RoundMoves(Vector3 direction)
         {
-            direction.x = (float) MathUtils.Round(direction.x);
-            direction.y = (float) MathUtils.Round(direction.y);
+            direction.x =  MathUtils.Round(direction.x);
+            direction.y =  MathUtils.Round(direction.y);
         }
 
 
@@ -59,6 +59,7 @@ namespace LifeLike.Controls
                remainingDistance = (transform.position - destination).sqrMagnitude;
                yield return null;
            }
+            RoundMoves(destination);
             transform.position=destination;
             yield return null;
         }

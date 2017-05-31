@@ -1,6 +1,6 @@
 ﻿namespace LifeLike.Characters.CharacterClasses
 {
-    public class CorpoRat : BaseCharacter
+    public class CorpoRat : Character
     {  public new static string ClassName = "Corpo Rat";
 
         public CorpoRat(CharacterStatisticDataModel statistic) : base(statistic)

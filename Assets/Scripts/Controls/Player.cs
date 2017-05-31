@@ -27,7 +27,7 @@ namespace LifeLike.Controls
 
             if (Math.Abs(moveVector.x) > TOLERANCE || Math.Abs(moveVector.y) > TOLERANCE)       
              {
-             //   RoundMoves(moveVector);
+               RoundMoves(moveVector);
 
 //                 Debug.Log(string.Format("x: {0} y: {1}",moveVector.x,moveVector.y));
 
@@ -73,7 +73,7 @@ namespace LifeLike.Controls
             }
             if (component is Enemy)
             {
-                GameManager.Instance.SelectEnemy(component as Enemy);
+                EnemyManager.Instance.SelectEnemy(component as Enemy);
             }
         }
         private void CheckIfDisable()

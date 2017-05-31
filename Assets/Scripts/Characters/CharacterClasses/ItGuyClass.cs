@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace LifeLike.Characters.CharacterClasses
 {
-    public class ItGuyClass : BaseCharacter
+    public class ItGuyClass : Character
     {
         public new static readonly string ClassName = "IT Guy";
 
@@ -14,7 +14,7 @@ namespace LifeLike.Characters.CharacterClasses
             SelectedClass=ClassName;
         }
 
-        public override string SpecialAction(BaseCharacter enemyCharacter)
+        public override string SpecialAction(Character enemyCharacter)
         {
             switch (SelectedSpecialAttack)
             {
@@ -29,15 +29,15 @@ namespace LifeLike.Characters.CharacterClasses
             }
         }
 
-        private string AttackPhantomDevice(BaseCharacter enemyCharacter)
+        private string AttackPhantomDevice(Character enemyCharacter)
         {
             return string.Empty;
         }
-        private string AttackITRage(BaseCharacter enemyCharacter)
+        private string AttackITRage(Character enemyCharacter)
         {
             return string.Empty;
         }
-        private string AttackTechTalk(BaseCharacter enemyCharacter)
+        private string AttackTechTalk(Character enemyCharacter)
         {
             
        

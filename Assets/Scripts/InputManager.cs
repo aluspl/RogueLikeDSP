@@ -3,11 +3,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using LifeLike.Enums;
+using LifeLike.Inferfaces;
 
 namespace LifeLike
 {
 
-	public class InputManager : MonoBehaviour {
+	public class InputManager : MonoBehaviour, IManager 
+	{
+		[InjectAttribute("Input")]
 		public static InputManager Instance = null;
 		public KeyCode FightNormalKey {get; set;}
 		public KeyCode FightSpecialKey {get; set;}
@@ -22,8 +25,8 @@ namespace LifeLike
 		// Use this for initialization
 		void Awake () {
 			if (Instance == null) Instance = this;
-			else if (Instance!=this) Destroy(gameObject);
-			DontDestroyOnLoad(gameObject);
+			//DontDestroyOnLoad(gameObject);
+		//	DI.Inject(this);
 			SetupControlType();
 			SetupKeys();
 		}
@@ -95,8 +98,20 @@ namespace LifeLike
 				}
 			}
 		}
-		
-	
-	}
+
+		void LateUpdate()
+		{
+			// var previousType = ControlType;
+			// SetupControlType();
+			// if (previousType==ControlType) return;
+			// SetupKeys();
+		}
+
+        public void Destroy()
+        {
+			Destroy(this.gameObject);
+			
+        }
+    }
 
 }

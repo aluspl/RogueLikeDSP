@@ -2,7 +2,7 @@
 
 namespace LifeLike.Characters.CharacterClasses
 {
-    public class CorpoBoss : BaseCharacter
+    public class CorpoBoss : Character
     {
         public new static string ClassName = "Corpo Boss";
 

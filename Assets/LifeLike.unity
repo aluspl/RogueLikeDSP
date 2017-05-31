@@ -121,7 +121,6 @@ GameObject:
   - component: {fileID: 1805629554}
   - component: {fileID: 1805629553}
   - component: {fileID: 1805629552}
-  - component: {fileID: 1805629557}
   - component: {fileID: 1805629558}
   m_Layer: 0
   m_Name: Main Camera
@@ -200,21 +199,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1805629557
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1805629551}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: db0bdd55e9cbe4c4eb09b7eba88ed7cc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  GameManager: {fileID: 1763209994577516, guid: 975733f03affa4c7bad86cf297629cce,
-    type: 2}
-  InputManager: {fileID: 1497517306460876, guid: 6a6775704c1b34442a59eddc7c10305a,
-    type: 2}
 --- !u!114 &1805629558
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -223,6 +207,55 @@ MonoBehaviour:
   m_GameObject: {fileID: 1805629551}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3e69b2b48169f4d38820cf32a64798fa, type: 3}
+  m_Script: {fileID: 11500000, guid: 62bd12782b370402583bde4305d1a95e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &1938953783
+GameObject:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  serializedVersion: 5
+  m_Component:
+  - component: {fileID: 1938953784}
+  - component: {fileID: 1938953785}
+  m_Layer: 0
+  m_Name: Modules
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1938953784
+Transform:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1938953783}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1938953785
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1938953783}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa1174954ca544da3a08f240169bdd0b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GameManager: {fileID: 1763209994577516, guid: 975733f03affa4c7bad86cf297629cce,
+    type: 2}
+  InputManager: {fileID: 1497517306460876, guid: 6a6775704c1b34442a59eddc7c10305a,
+    type: 2}
+  PlayerManager: {fileID: 1956720975883368, guid: 0c5ec2f5263d344a395a8a8a0c5e0882,
+    type: 2}
+  UIManager: {fileID: 1259885700424382, guid: 8ea31708814a4442eb92739fdf11a974, type: 2}
+  EnemyManager: {fileID: 1946449410027816, guid: ca8ce930207004e9087129a3aa021b2b,
+    type: 2}

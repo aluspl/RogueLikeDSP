@@ -6,9 +6,9 @@ namespace LifeLike.Interfaces
     public interface ICharacter
     {
         int GetActionsPoints();
-        string Attack(BaseCharacter enemy);
+        string Attack(Character enemy);
 
-        string SpecialAction(BaseCharacter enemyCharacter);
+        string SpecialAction(Character enemyCharacter);
 
         List<string> SpecialActionsList();
 

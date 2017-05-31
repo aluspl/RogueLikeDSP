@@ -19,7 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>Temp\bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;UNITY_5_3_OR_NEWER;UNITY_5_4_OR_NEWER;UNITY_5_5_OR_NEWER;UNITY_5_6_OR_NEWER;UNITY_5_6_0;UNITY_5_6;UNITY_5;UNITY_ANALYTICS;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_RUNTIME_NAVMESH_BUILDING;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_WWW;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;INCLUDE_DYNAMIC_GI;INCLUDE_GI;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_SCRIPTING_NEW_CSHARP_COMPILER;ENABLE_VIDEO;UNITY_WEBGL;UNITY_WEBGL_API;UNITY_DISABLE_WEB_VERIFICATION;UNITY_GFX_USE_PLATFORM_VSYNC;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_UNITYWEBREQUEST;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_VR;ENABLE_IL2CPP;NET_2_0;ENABLE_PROFILER;UNITY_ASSERTIONS;UNITY_EDITOR;UNITY_EDITOR_64;UNITY_EDITOR_OSX;ENABLE_NATIVE_ARRAY_CHECKS;UNITY_TEAM_LICENSE;CROSS_PLATFORM_INPUT</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;UNITY_5_3_OR_NEWER;UNITY_5_4_OR_NEWER;UNITY_5_5_OR_NEWER;UNITY_5_6_OR_NEWER;UNITY_5_6_1;UNITY_5_6;UNITY_5;UNITY_64;UNITY_ANALYTICS;ENABLE_AUDIO;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_DUCK_TYPING;ENABLE_GENERICS;ENABLE_PVR_GI;ENABLE_MICROPHONE;ENABLE_MULTIPLE_DISPLAYS;ENABLE_PHYSICS;ENABLE_RUNTIME_NAVMESH_BUILDING;ENABLE_SPRITERENDERER_FLIPPING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_RAKNET;ENABLE_UNET;ENABLE_LZMA;ENABLE_UNITYEVENTS;ENABLE_WEBCAM;ENABLE_WWW;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_HUB;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_LICENSE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_NATIVE_ARRAY;INCLUDE_DYNAMIC_GI;INCLUDE_GI;PLATFORM_SUPPORTS_MONO;RENDER_SOFTWARE_CURSOR;INCLUDE_PUBNUB;ENABLE_PLAYMODE_TESTS_RUNNER;ENABLE_SCRIPTING_NEW_CSHARP_COMPILER;ENABLE_VIDEO;UNITY_STANDALONE_OSX;UNITY_STANDALONE;ENABLE_SUBSTANCE;ENABLE_GAMECENTER;ENABLE_RUNTIME_GI;ENABLE_MOVIES;ENABLE_NETWORK;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_UNITYWEBREQUEST;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_VR;ENABLE_CLUSTERINPUT;ENABLE_WEBSOCKET_HOST;ENABLE_MONO;NET_2_0;DEVELOPMENT_BUILD;ENABLE_PROFILER;UNITY_ASSERTIONS;UNITY_EDITOR;UNITY_EDITOR_64;UNITY_EDITOR_OSX;ENABLE_NATIVE_ARRAY_CHECKS;UNITY_TEAM_LICENSE;CROSS_PLATFORM_INPUT</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoWarn>0169</NoWarn>
@@ -46,8 +46,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\Scripts\CharacterDetailView.cs" />
-     <Compile Include="Assets\Scripts\Characters\BaseCharacter.cs" />
+     <Compile Include="Assets\Scripts\CameraManager.cs" />
+     <Compile Include="Assets\Scripts\Characters\Character.cs" />
      <Compile Include="Assets\Scripts\Characters\CharacterClasses\CharacterFactory.cs" />
      <Compile Include="Assets\Scripts\Characters\CharacterClasses\CorpoBoss.cs" />
      <Compile Include="Assets\Scripts\Characters\CharacterClasses\CorpoRat.cs" />
@@ -58,22 +58,31 @@
      <Compile Include="Assets\Scripts\Characters\CharacterClasses\SuperHoboClass.cs" />
      <Compile Include="Assets\Scripts\Characters\CharacterStatisticDataModel.cs" />
      <Compile Include="Assets\Scripts\Controls\Enemy.cs" />
-     <Compile Include="Assets\Scripts\Controls\FollowPlayer.cs" />
      <Compile Include="Assets\Scripts\Controls\LightControl.cs" />
      <Compile Include="Assets\Scripts\Controls\MovingObject.cs" />
      <Compile Include="Assets\Scripts\Controls\Player.cs" />
-     <Compile Include="Assets\Scripts\CreateCharacterEditor.cs" />
+     <Compile Include="Assets\Scripts\DI.cs" />
+     <Compile Include="Assets\Scripts\EnemyManager.cs" />
+     <Compile Include="Assets\Scripts\Enums\Equipment\EquipmentType.cs" />
+     <Compile Include="Assets\Scripts\Enums\Equipment\WeaponType.cs" />
      <Compile Include="Assets\Scripts\Enums\KeyConfig.cs" />
      <Compile Include="Assets\Scripts\Enums\MapElement.cs" />
      <Compile Include="Assets\Scripts\Enums\MapTheme.cs" />
      <Compile Include="Assets\Scripts\Enums\Status.cs" />
+     <Compile Include="Assets\Scripts\Equipments\Equipment.cs" />
+     <Compile Include="Assets\Scripts\Equipments\Weapon.cs" />
      <Compile Include="Assets\Scripts\GameManager.cs" />
-     <Compile Include="Assets\Scripts\InitateGame.cs" />
      <Compile Include="Assets\Scripts\InputManager.cs" />
+     <Compile Include="Assets\Scripts\Interfaces\Equipment\IEquipment.cs" />
+     <Compile Include="Assets\Scripts\Interfaces\Equipment\IWeapon.cs" />
      <Compile Include="Assets\Scripts\Interfaces\ICharacter.cs" />
+     <Compile Include="Assets\Scripts\Interfaces\IGameManager.cs" />
+     <Compile Include="Assets\Scripts\Interfaces\IManager.cs" />
      <Compile Include="Assets\Scripts\Interfaces\IMapGenerator.cs" />
      <Compile Include="Assets\Scripts\Interfaces\IMapManager.cs" />
      <Compile Include="Assets\Scripts\Interfaces\IMovement.cs" />
+     <Compile Include="Assets\Scripts\Interfaces\IPlayerManager.cs" />
+     <Compile Include="Assets\Scripts\Interfaces\IUIManager.cs" />
      <Compile Include="Assets\Scripts\MainMenu\ExitGameOnClick.cs" />
      <Compile Include="Assets\Scripts\MainMenu\LoadSceneOnClick.cs" />
      <Compile Include="Assets\Scripts\MainMenu\MainMenuScript.cs" />
@@ -89,13 +98,15 @@
      <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallMapGenerator.cs" />
      <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallMapLogic.cs" />
      <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallPlayer.cs" />
+     <Compile Include="Assets\Scripts\PlayerManager.cs" />
+     <Compile Include="Assets\Scripts\StateManager.cs" />
      <Compile Include="Assets\Scripts\UIManager.cs" />
      <Compile Include="Assets\Scripts\Utils\EnemyUtils.cs" />
-     <Compile Include="Assets\Scripts\Utils\FightSystemUtils.cs" />
+     <Compile Include="Assets\Scripts\Utils\FightUtils.cs" />
      <Compile Include="Assets\Scripts\Utils\GameLogUtils.cs" />
      <Compile Include="Assets\Scripts\Utils\MathUtils.cs" />
-     <None Include="Assets\Standard Assets\Fonts\OpenSans\License!.txt" />
-     <None Include="Assets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
+     <Compile Include="Assets\Scripts\Windows\CharacterDetailView.cs" />
+     <Compile Include="Assets\Scripts\Windows\CreateCharacterEditor.cs" />
  <Reference Include="UnityEngine.UI">
  <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
  </Reference>
@@ -117,10 +128,6 @@
  <Reference Include="UnityEngine.VR">
  <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/UnityVR/RuntimeEditor/UnityEngine.VR.dll</HintPath>
  </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="Assembly-CSharp-firstpass.csproj">
-      <Project>{2D18A041-7D81-DC2D-0BB5-DC7D9F6A44B7}</Project>      <Name>Assembly-CSharp-firstpass</Name>    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

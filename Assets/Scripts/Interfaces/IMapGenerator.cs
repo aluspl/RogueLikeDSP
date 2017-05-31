@@ -2,7 +2,7 @@
 
 namespace LifeLike.Interfaces
 {
-    public interface IMapGenerator
+    public interface IMapGenerator 
     {
         int MapSizeY { get; set; }
         int MapSizeX { get; set; }

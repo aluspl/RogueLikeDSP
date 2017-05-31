@@ -4,11 +4,15 @@ using UnityEngine;
 using UnityEngine.UI;
 using LifeLike.Utils;
 using LifeLike.Characters;
+using LifeLike.Inferfaces;
 
 namespace LifeLike
 {
-    public class UIManager : MonoBehaviour
+    public class UIManager : MonoBehaviour, IManager, IUIManager
     {
+        [InjectAttribute("UI")]
+        public static IUIManager Instance = null;
+
         public Text GameLog;
         public Text SelectedEnemyStatistic;
         public Text SelectedEnemyDetail;
@@ -25,7 +29,17 @@ namespace LifeLike
             _stringLog.AppendLine(log);
             GameLog.text = _stringLog.ToString();
         }
+       void OnDisable()
+        {
+            GameUI.enabled=false;
+        //    Debug.Log("script was disabled");
+        }
 
+        void OnEnable()
+        {
+            GameUI.enabled=true;
+      //      Debug.Log("script was enabled");
+        }
         public void ClearLog()
         {
             _stringLog.Length = 0;
@@ -39,10 +53,14 @@ namespace LifeLike
             PlayerPanel();
         }
 
-        public BaseCharacter Player
+        public Character Player
         {
-            get { return GameManager.Instance.PlayerStatistic; }
+            get { return PlayerManager.Instance.Statistic; }
         }
+
+        public Canvas GameUI { get; set; }
+        public bool Enabled { get {return enabled;}
+                              set {enabled=value;} }
 
         private void PlayerPanel()
         {
@@ -97,8 +115,19 @@ namespace LifeLike
 
         public void Awake()
         {
-//        if (Instance == null) Instance = this;
-//        else if (Instance!=this) Destroy(gameObject);
+            if (Instance == null) Instance = this;
+		//	DontDestroyOnLoad(gameObject);
+//            DI.Inject(this);
+
+            GameUI = GetComponentInChildren<Canvas>();
+            
+
+        }
+
+        public void Destroy()
+        {
+            Destroy(this.gameObject);
+            Instance=null;
         }
     }
 }

@@ -107,15 +107,15 @@ namespace LifeLike.MapUtils
             var pos = map[x, y];
             if (pos < 0) return;
             if (pos == MapElement.Player)
-                AddPlayer(GetMapObject(pos), x, y);
+                AddPlayer(x, y);
             else
                 AddElement(GetMapObject(pos), x, y);
             AddEnemy(map, x, y);
         }
 
-        private void AddPlayer(GameObject mapObject, int x, int y)
+        private void AddPlayer(int x, int y)
         {
-            GameManager.Instance.PlayerObject = Instantiate(mapObject, GetPosition(x, y), Quaternion.identity);
+            PlayerManager.Instance.Object = Instantiate<Player>(Player, GetPosition(x, y), Quaternion.identity);
         }
 
         private void AddEnemy(MapElement[,] map, int x, int y)
@@ -128,7 +128,7 @@ namespace LifeLike.MapUtils
                 EnemiesCollection);
 
             if (enemy == null) return;
-            GameManager.Instance.AddEnemy(enemy);
+            EnemyManager.Instance.AddEnemy(enemy);
             MaxEnemies--;
         }
 
@@ -146,11 +146,10 @@ namespace LifeLike.MapUtils
         {
             try
             {
-                Destroy(GameManager.Instance.PlayerObject.gameObject);
 
                 if (EnemiesCollection != null)
                 {
-                    GameManager.Instance.Enemies.Clear();
+                    EnemyManager.Instance.List.Clear();
                     foreach (Transform child in EnemiesCollection.transform)
                     {
                         Destroy(child.gameObject);
@@ -162,7 +161,9 @@ namespace LifeLike.MapUtils
                     {
                         Destroy(child.gameObject);
                     }
-                }
+                }                
+                Destroy(PlayerManager.Instance.Object);
+
             }
             catch (Exception e)
             {

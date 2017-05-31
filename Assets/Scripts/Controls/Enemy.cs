@@ -10,7 +10,7 @@ namespace LifeLike.Controls
 {
     public class Enemy : MovingObject
     {
-        public BaseCharacter EnemyCharacter { get; set; }
+        public Character EnemyCharacter { get; set; }
         private Transform _target;
         public bool IsSelected { get; set; }
         private Light _selectedLight;
@@ -24,8 +24,8 @@ namespace LifeLike.Controls
         }
         public  int Distance {
             get {
-                if (GameManager.Instance.PlayerObject != null)
-                    return (int) Vector2.Distance(GameManager.Instance.PlayerObject.transform.position,
+                if (PlayerManager.Instance.Object != null)
+                    return (int) Vector2.Distance(PlayerManager.Instance.Object.transform.position,
                         transform.position);
                 return 0;
 
@@ -53,10 +53,10 @@ namespace LifeLike.Controls
         protected override void OnCantMove<T>(T component)
         {
             if (Distance==1)
-                GameManager.Instance.FightSystem.AttackPlayer(EnemyCharacter);
+                FightUtils.Instance.AttackPlayer(EnemyCharacter);
         }
 
-        public void MoveToPlayer(GameObject playerObject)
+        public void MoveToPlayer(Player playerObject)
         {      
             if (!EnemyCharacter.isEnemy) return;
             if (EnemyCharacter.Status==Status.Sleep 

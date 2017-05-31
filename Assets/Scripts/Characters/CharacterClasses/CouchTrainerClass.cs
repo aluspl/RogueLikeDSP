@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace LifeLike.Characters.CharacterClasses
 {
-    public class CouchTrainerClass : BaseCharacter
+    public class CouchTrainerClass : Character
     {
         public new static readonly string ClassName = "Couch Trainer";
 
@@ -14,7 +14,7 @@ namespace LifeLike.Characters.CharacterClasses
             SelectedClass=ClassName;
         }
 
-        public override string SpecialAction(BaseCharacter enemyCharacter)
+        public override string SpecialAction(Character enemyCharacter)
         {
             switch (SelectedSpecialAttack)
             {
@@ -24,12 +24,12 @@ namespace LifeLike.Characters.CharacterClasses
             return GameLogUtils.NoSelectedAttack;
         }
 
-        private string AttackPhantomDevice(BaseCharacter enemyCharacter)
+        private string AttackPhantomDevice(Character enemyCharacter)
         {
             return string.Empty;
         }
 
-        private string InviteToTraining(BaseCharacter enemyCharacter)
+        private string InviteToTraining(Character enemyCharacter)
         {
             int YourPoints = random.Next(Charisma);
             int EnemyPoints = random.Next(enemyCharacter.Inteligence);

@@ -4,7 +4,7 @@ namespace LifeLike.Characters.CharacterClasses
 {
     public static class CharacterFactory
     {
-        public static BaseCharacter GetPlayerClass(string classType, CharacterStatisticDataModel statistic )
+        public static Character GetPlayerClass(string classType, CharacterStatisticDataModel statistic )
         {
             switch (classType)
             {
