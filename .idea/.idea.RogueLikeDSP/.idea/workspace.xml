@@ -2,17 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d0c1d4d1-c090-4430-a749-d98aba4b9423" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Versions/version6/Build/version6.asm.code.unityweb" afterPath="$PROJECT_DIR$/Versions/version6/Build/version6.asm.code.unityweb" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Versions/version6/Build/version6.asm.framework.unityweb" afterPath="$PROJECT_DIR$/Versions/version6/Build/version6.asm.framework.unityweb" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Versions/version6/Build/version6.asm.memory.unityweb" afterPath="$PROJECT_DIR$/Versions/version6/Build/version6.asm.memory.unityweb" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Versions/version6/Build/version6.data.unityweb" afterPath="$PROJECT_DIR$/Versions/version6/Build/version6.data.unityweb" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/.idea.RogueLikeDSP/.idea/contentModel.xml" afterPath="$PROJECT_DIR$/.idea/.idea.RogueLikeDSP/.idea/contentModel.xml" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/Assets/Scripts/Characters/BaseCharacter.cs" afterPath="" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Library/assetDatabase3" afterPath="$PROJECT_DIR$/Library/assetDatabase3" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/.idea.RogueLikeDSP/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/.idea.RogueLikeDSP/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/.idea.RogueLikeDSP/riderModule.iml" afterPath="$PROJECT_DIR$/.idea/.idea.RogueLikeDSP/riderModule.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Assembly-CSharp-Editor-firstpass.csproj" afterPath="$PROJECT_DIR$/Assembly-CSharp-Editor-firstpass.csproj" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Assembly-CSharp-firstpass.csproj" afterPath="$PROJECT_DIR$/Assembly-CSharp-firstpass.csproj" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Assembly-CSharp.csproj" afterPath="$PROJECT_DIR$/Assembly-CSharp.csproj" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Assets/Scripts/Characters/BaseCharacter.cs" afterPath="$PROJECT_DIR$/Assets/Scripts/Characters/BaseCharacter.cs" />
     </list>
     <ignored path="$PROJECT_DIR$/Temp/bin/" />
     <ignored path="$PROJECT_DIR$/obj/" />
@@ -54,8 +47,8 @@
       <file leaf-file-name="Assembly-CSharp.csproj" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Assembly-CSharp.csproj">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-2">
-              <caret line="114" column="2" lean-forward="false" selection-start-line="114" selection-start-column="2" selection-end-line="114" selection-end-column="2" />
+            <state relative-caret-position="388">
+              <caret line="132" column="59" lean-forward="false" selection-start-line="132" selection-start-column="59" selection-end-line="132" selection-end-column="59" />
               <folding />
             </state>
           </provider>
@@ -418,7 +411,7 @@
       <workItem from="1494971330599" duration="1032000" />
       <workItem from="1495205145168" duration="634000" />
       <workItem from="1495327010436" duration="410000" />
-      <workItem from="1496268371255" duration="237000" />
+      <workItem from="1496268371255" duration="681000" />
     </task>
     <task id="LOCAL-00001" summary="Dodane nowe okno postaci&#10;Zaaktualizowana wersja webowa gry&#10;Zrefaktoryzowany sposb na otwarcie okien&#10;Dodane statystyki do kreatora postaci.">
       <created>1493146092399</created>
@@ -473,7 +466,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="29020000" />
+    <option name="totallyTimeSpent" value="29464000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -489,14 +482,14 @@
     <layout>
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Errors In Solution" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.28604925" sideWeight="0.525" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.28604925" sideWeight="0.525" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Unit Tests" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.28604925" sideWeight="0.475" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.28604925" sideWeight="0.475" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="NuGet" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Change Signature" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Build" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection Results" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32942554" sideWeight="0.50277776" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -541,6 +534,32 @@
   <component name="TypeScriptGeneratedFilesManager">
     <option name="processedProjectFiles" value="true" />
   </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="RECENTLY_FILTERED_USER_GROUPS">
+                <collection />
+              </option>
+              <option name="RECENTLY_FILTERED_BRANCH_GROUPS">
+                <collection />
+              </option>
+              <option name="COLUMN_ORDER">
+                <list>
+                  <option value="0" />
+                  <option value="1" />
+                  <option value="2" />
+                  <option value="3" />
+                </list>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
   <component name="VcsContentAnnotationSettings">
     <option name="myLimit" value="2678400000" />
   </component>
@@ -552,7 +571,8 @@
     <MESSAGE value="Nowy INput Manager :)&#10;w przypadku wywalenia ... wejśc na koniec kolejki :)" />
     <MESSAGE value="Fixed movement (Pad YEAH!!)" />
     <MESSAGE value="ADded special attack and new version :)" />
-    <option name="LAST_COMMIT_MESSAGE" value="ADded special attack and new version :)" />
+    <MESSAGE value="fuuu" />
+    <option name="LAST_COMMIT_MESSAGE" value="fuuu" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
   <component name="XDebuggerManager">
@@ -958,8 +978,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Assembly-CSharp.csproj">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-2">
-          <caret line="114" column="2" lean-forward="false" selection-start-line="114" selection-start-column="2" selection-end-line="114" selection-end-column="2" />
+        <state relative-caret-position="388">
+          <caret line="132" column="59" lean-forward="false" selection-start-line="132" selection-start-column="59" selection-end-line="132" selection-end-column="59" />
           <folding />
         </state>
       </provider>

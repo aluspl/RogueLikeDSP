@@ -76,7 +76,7 @@ namespace LifeLike.Characters
             if (HealthPoint<=0)
             {
                 if (!isEnemy) 
-                    GameManager.Instance.GameOver();                   
+                    GameLogicManager.Instance.GameOver();                   
             }
         }
 

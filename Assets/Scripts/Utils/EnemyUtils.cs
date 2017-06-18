@@ -57,11 +57,11 @@ namespace LifeLike.Utils
                     enemy.MoveToPlayer(PlayerManager.Instance.Object);
                     yield return new WaitForSeconds(enemy.MoveTime);
                 }
-            GameManager.Instance.IsPlayerTurn=true;
+            GameLogicManager.Instance.IsPlayerTurn=true;
         }
 
         public static int MAXDISTANCE = 1;
-        private static float WaitTime=1f;
+        private static float WaitTime=0.1f;
 
         public static Enemy SelectedEnemy
         {

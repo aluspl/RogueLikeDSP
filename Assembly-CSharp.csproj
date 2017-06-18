@@ -69,20 +69,24 @@
      <Compile Include="Assets\Scripts\Enums\MapElement.cs" />
      <Compile Include="Assets\Scripts\Enums\MapTheme.cs" />
      <Compile Include="Assets\Scripts\Enums\Status.cs" />
+     <Compile Include="Assets\Scripts\Enums\WindowState.cs" />
+     <Compile Include="Assets\Scripts\Enums\WindowType.cs" />
      <Compile Include="Assets\Scripts\Equipments\Equipment.cs" />
      <Compile Include="Assets\Scripts\Equipments\Weapon.cs" />
+     <Compile Include="Assets\Scripts\GameLogicManager.cs" />
      <Compile Include="Assets\Scripts\GameManager.cs" />
      <Compile Include="Assets\Scripts\InputManager.cs" />
      <Compile Include="Assets\Scripts\Interfaces\Equipment\IEquipment.cs" />
      <Compile Include="Assets\Scripts\Interfaces\Equipment\IWeapon.cs" />
      <Compile Include="Assets\Scripts\Interfaces\ICharacter.cs" />
-     <Compile Include="Assets\Scripts\Interfaces\IGameManager.cs" />
+     <Compile Include="Assets\Scripts\Interfaces\IGameLogicManager.cs" />
      <Compile Include="Assets\Scripts\Interfaces\IManager.cs" />
      <Compile Include="Assets\Scripts\Interfaces\IMapGenerator.cs" />
      <Compile Include="Assets\Scripts\Interfaces\IMapManager.cs" />
      <Compile Include="Assets\Scripts\Interfaces\IMovement.cs" />
      <Compile Include="Assets\Scripts\Interfaces\IPlayerManager.cs" />
      <Compile Include="Assets\Scripts\Interfaces\IUIManager.cs" />
+     <Compile Include="Assets\Scripts\Interfaces\IWindowManager.cs" />
      <Compile Include="Assets\Scripts\MainMenu\ExitGameOnClick.cs" />
      <Compile Include="Assets\Scripts\MainMenu\LoadSceneOnClick.cs" />
      <Compile Include="Assets\Scripts\MainMenu\MainMenuScript.cs" />
@@ -99,24 +103,21 @@
      <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallMapLogic.cs" />
      <Compile Include="Assets\Scripts\MiniGame\TheBall\TheBallPlayer.cs" />
      <Compile Include="Assets\Scripts\PlayerManager.cs" />
-     <Compile Include="Assets\Scripts\StateManager.cs" />
      <Compile Include="Assets\Scripts\UIManager.cs" />
      <Compile Include="Assets\Scripts\Utils\EnemyUtils.cs" />
      <Compile Include="Assets\Scripts\Utils\FightUtils.cs" />
      <Compile Include="Assets\Scripts\Utils\GameLogUtils.cs" />
      <Compile Include="Assets\Scripts\Utils\MathUtils.cs" />
-     <Compile Include="Assets\Scripts\Windows\CharacterDetailView.cs" />
-     <Compile Include="Assets\Scripts\Windows\CreateCharacterEditor.cs" />
+     <Compile Include="Assets\Scripts\WindowManager.cs" />
+     <Compile Include="Assets\Scripts\Windows\CreateWindow.cs" />
+     <Compile Include="Assets\Scripts\Windows\DetailWindow.cs" />
+     <Compile Include="Assets\Scripts\Windows\EquipmentWindow.cs" />
+     <Compile Include="Assets\Scripts\Windows\Window.cs" />
  <Reference Include="UnityEngine.UI">
  <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
  </Reference>
  <Reference Include="UnityEngine.Networking">
  <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/Networking/UnityEngine.Networking.dll</HintPath>
-  
- </Reference>
-
-      <Reference Include="UnityEngine.Analytics">
- <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/UnityAnalytics/UnityEngine.Analytics.dll</HintPath>
  </Reference>
  <Reference Include="UnityEngine.TestRunner">
  <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/TestRunner/UnityEngine.TestRunner.dll</HintPath>
@@ -124,11 +125,8 @@
  <Reference Include="nunit.framework">
  <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/TestRunner/nunit.framework.dll</HintPath>
  </Reference>
- <Reference Include="UnityEngine.Networking">
- <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/Networking/UnityEngine.Networking.dll</HintPath>
- </Reference>
- <Reference Include="UnityEngine.UI">
- <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
+ <Reference Include="UnityEngine.Analytics">
+ <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/UnityAnalytics/UnityEngine.Analytics.dll</HintPath>
  </Reference>
  <Reference Include="UnityEngine.HoloLens">
  <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/UnityHoloLens/RuntimeEditor/UnityEngine.HoloLens.dll</HintPath>

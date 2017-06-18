@@ -34,7 +34,6 @@ namespace LifeLike.MapUtils
 
         public MapElement[,] Map { get; set; }
 
-        // Use this for initialization
 
         public void StartLevel(int level)
         {
@@ -162,7 +161,7 @@ namespace LifeLike.MapUtils
                         Destroy(child.gameObject);
                     }
                 }                
-                Destroy(PlayerManager.Instance.Object);
+                Destroy(PlayerManager.Instance.Object.gameObject);
 
             }
             catch (Exception e)

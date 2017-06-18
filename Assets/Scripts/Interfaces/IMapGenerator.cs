@@ -1,4 +1,5 @@
-﻿using LifeLike.Enums;
+﻿using System.Collections.Generic;
+using LifeLike.Enums;
 
 namespace LifeLike.Interfaces
 {
@@ -11,11 +12,11 @@ namespace LifeLike.Interfaces
         void GenerateRooms(MapElement[,] map, int  totalHorizontalLines, int totalVerticalLines);
 
         void GetVerticalWalls(MapElement[,] map, int totalVerticalLines,  int posX, int posY,
-            int y);
+            int y,  ref List<int> WallPositions);
 
         void GetFloors(MapElement[,] map, int posX, int posY, int xSize, int ySize);
         void GetVerticalWall(MapElement[,] map, ref int posX,  int posY, int xSize, int ySize);
-        void GetHorizontalWall(MapElement[,] map, ref int posY, int ySize);
+        void GetHorizontalWall(MapElement[,] map, ref int posY, int ySize, List<int> WallPositions);
         int GetWallSize(ref int left);
         void SetupAssets(MapElement[,] map);
         void SetupBorders(MapElement[,] map);

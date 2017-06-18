@@ -8,7 +8,7 @@ using LifeLike.Inferfaces;
 
 namespace LifeLike
 {
-    public class UIManager : MonoBehaviour, IManager, IUIManager
+    public class UIManager : MonoBehaviour, IUIManager
     {
         [InjectAttribute("UI")]
         public static IUIManager Instance = null;

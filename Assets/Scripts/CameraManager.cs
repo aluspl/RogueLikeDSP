@@ -8,6 +8,8 @@ namespace LifeLike
         private Vector3 offset;         //Private variable to store the offset distance between the player and camera
         private bool isDay = false;
         private Camera _camera;
+        private Color AlmostDark=new Color(0.6f,0.6f,0.6f,1f);
+        private Color ColorSteel=new Color(0.4f,0.4f,0.4f,1f);
 
         // Use this for initialization
         void Awake ()
@@ -33,18 +35,18 @@ namespace LifeLike
 
         private void SetLight()
         {
-            if (GameManager.Instance==null) return;
-            if (!GameManager.Instance.IsDay && isDay)
+            if (GameLogicManager.Instance==null) return;
+            if (!GameLogicManager.Instance.IsDay && isDay)
             {
                _camera.backgroundColor=Color.black;
                 RenderSettings.ambientLight = Color.black;
             //    RenderSettings.ambientIntensity=1;
                 isDay = false;
             }
-            if (GameManager.Instance.IsDay && !isDay)
+            if (GameLogicManager.Instance.IsDay && !isDay)
             {
-               _camera.backgroundColor=Color.grey;
-                RenderSettings.ambientLight=Color.white;
+               _camera.backgroundColor=ColorSteel;
+                RenderSettings.ambientLight=AlmostDark;;
               //  RenderSettings.ambientIntensity=0.5f;
                 isDay = true;
             }

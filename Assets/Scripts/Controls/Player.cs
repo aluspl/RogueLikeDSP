@@ -1,4 +1,5 @@
 ﻿using System;
+using LifeLike.Enums;
 using LifeLike.MapElements;
 using LifeLike.Utils;
 using UnityEngine;
@@ -21,19 +22,19 @@ namespace LifeLike.Controls
 
         private void MovingLogic()
         {
-            if (!GameManager.Instance.IsPlayerTurn) return;
-            if (GameManager.Instance.OpenedWindow) return;
+            if (!GameLogicManager.Instance.IsPlayerTurn) return;
+            if (WindowManager.Instance.Status==WindowState.Open) return;
             var moveVector = GetControllerInput();
 
             if (Math.Abs(moveVector.x) > TOLERANCE || Math.Abs(moveVector.y) > TOLERANCE)       
              {
-               RoundMoves(moveVector);
+                RoundMoves(ref moveVector);
 
-//                 Debug.Log(string.Format("x: {0} y: {1}",moveVector.x,moveVector.y));
+                 Debug.Log(string.Format("x: {0} y: {1}",moveVector.x,moveVector.y));
 
                 AttemtMove<MovingObject>(moveVector);
                 transform.eulerAngles=MathUtils.SetRotation(moveVector);
-                GameManager.Instance.EndPlayerTurn();
+                GameLogicManager.Instance.EndPlayerTurn();
              }
         }
 
@@ -44,9 +45,7 @@ namespace LifeLike.Controls
                 //Controller - MORE UNiversal, but sometimes too sensitive
 
                 var x = Input.GetAxisRaw("Horizontal");
-                x=MathUtils.Round(x);
                 var y = Input.GetAxisRaw("Vertical");
-                y=MathUtils.Round(y);
                 if (x!=0) y=0;
                 return new Vector2(x,y);
             
@@ -78,7 +77,7 @@ namespace LifeLike.Controls
         }
         private void CheckIfDisable()
         {
-            GameManager.Instance.GameOver();
+            GameLogicManager.Instance.GameOver();
         }
 
 

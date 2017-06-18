@@ -17,7 +17,7 @@ namespace LifeLike.MapElements
 			Debug.Log(other.tag);
 			if (other.tag==Controls.Player.Tag)
 			{
-				GameManager.Instance.FinishMap();
+				GameLogicManager.Instance.FinishMap();
 			}
 		}
 	}

@@ -43,7 +43,7 @@ namespace LifeLike.Utils
         {
             if (CheckIsEnemyIsNotNull)
             {  
-                 GameManager.Instance.EndPlayerTurn();
+                GameLogicManager.Instance.EndPlayerTurn();
                 var result=Player.Attack(EnemyUtils.SelectedEnemy.EnemyCharacter);
                 UI.AddLog(result);
                 if (!EnemyUtils.SelectedEnemy.IsDead) return;
@@ -60,7 +60,7 @@ namespace LifeLike.Utils
         {
              if (CheckIsEnemyIsNotNull)
              {  
-                GameManager.Instance.EndPlayerTurn();
+                GameLogicManager.Instance.EndPlayerTurn();
                 var result=Player.SpecialAction(EnemyUtils.SelectedEnemy.EnemyCharacter);
                 UI.AddLog(result);
                 if (!EnemyUtils.SelectedEnemy.IsDead) return;

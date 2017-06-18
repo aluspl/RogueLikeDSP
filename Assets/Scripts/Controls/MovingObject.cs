@@ -7,7 +7,7 @@ namespace LifeLike.Controls
 {
     public abstract class MovingObject : MonoBehaviour
     {
-        public float MoveTime = 0.2f;
+        public float MoveTime = 0.05f;
 
         public LayerMask BlockingLayer;
         public LayerMask CharacterLayer;
@@ -28,22 +28,26 @@ namespace LifeLike.Controls
         {
             var start = (Vector2)transform.position;
             
-            var end = start + destination;
+            var endPoint = start + destination;
+            
+            RoundMoves(ref endPoint);
+            Debug.Log(string.Format("x: {0} y: {1}",endPoint.x,endPoint.y));
+
             _boxCollider2D.enabled = false;
-                hit = Physics2D.Linecast(start, end, BlockingLayer);
+                hit = Physics2D.Linecast(start, endPoint, BlockingLayer);
             if (hit.transform == null) 
-                hit =  Physics2D.Linecast(start, end, CharacterLayer);
+                hit =  Physics2D.Linecast(start, endPoint, CharacterLayer);
             _boxCollider2D.enabled = true;
 
             if (hit.transform != null) return false;
-                StartCoroutine(Movement(end));
+                StartCoroutine(Movement(endPoint));
             return true;
         }
 
-        protected static void RoundMoves(Vector3 direction)
+        protected static void RoundMoves(ref Vector2 direction)
         {
-            direction.x =  MathUtils.Round(direction.x);
-            direction.y =  MathUtils.Round(direction.y);
+            direction.x =  (float)Math.Floor(direction.x);
+            direction.y =  (float)Math.Floor(direction.y);
         }
 
 
@@ -59,7 +63,6 @@ namespace LifeLike.Controls
                remainingDistance = (transform.position - destination).sqrMagnitude;
                yield return null;
            }
-            RoundMoves(destination);
             transform.position=destination;
             yield return null;
         }

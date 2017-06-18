@@ -247,15 +247,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 1938953783}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aa1174954ca544da3a08f240169bdd0b, type: 3}
+  m_Script: {fileID: 11500000, guid: dd91d66ad430c4f6294dc4a52eb1bd5a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GameManager: {fileID: 1763209994577516, guid: 975733f03affa4c7bad86cf297629cce,
-    type: 2}
-  InputManager: {fileID: 1497517306460876, guid: 6a6775704c1b34442a59eddc7c10305a,
-    type: 2}
-  PlayerManager: {fileID: 1956720975883368, guid: 0c5ec2f5263d344a395a8a8a0c5e0882,
+  GameLogicManager: {fileID: 1763209994577516, guid: 975733f03affa4c7bad86cf297629cce,
     type: 2}
   UIManager: {fileID: 1259885700424382, guid: 8ea31708814a4442eb92739fdf11a974, type: 2}
-  EnemyManager: {fileID: 1946449410027816, guid: ca8ce930207004e9087129a3aa021b2b,
+  WindowManager: {fileID: 1216376933969732, guid: 75b2ffc53e2b84e1089197e66a5d3c4f,
     type: 2}

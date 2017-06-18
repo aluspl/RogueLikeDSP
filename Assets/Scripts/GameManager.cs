@@ -1,137 +1,115 @@
-﻿﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using LifeLike.Characters;
-using LifeLike.Characters.CharacterClasses;
-using LifeLike.Controls;
-using UnityEngine;
-using UnityEngine.SceneManagement;
-using LifeLike.Utils;
-using LifeLike.MapUtils;
+﻿using System;
+using System.ComponentModel;
 using LifeLike.Inferfaces;
-using LifeLike.Interfaces;
+using UnityEngine;
 
 namespace LifeLike
 {
-    public class GameManager : MonoBehaviour, IGameManager
+    public class GameManager : MonoBehaviour 
     {
-        private MapManager MapManager;
-        public static IGameManager Instance = null;
+        public static GameManager Instance = null;
+        public GameObject GameLogicManager;
+        // public GameObject InputManager;
+        // public GameObject PlayerManager;
+        public GameObject UIManager;
+        // public GameObject EnemyManager;
+        public GameObject WindowManager;
 
-        private int _level = 0;
 
-        public bool IsDay {get; set; }
-        public CreateCharacterEditor CharacterEditorPrefab;
-        public CharacterDetailView PlayerDetailPrefab;
-
-        public bool OpenedWindow { get; set;}
-        public bool IsPlayerTurn {get; set;}
-
-        public bool IsEnemyTurn { get; internal set; }
-    
-        // Use this for initialization
         void Awake()
         {
-            if (Instance == null) Instance = this;
-         //   DontDestroyOnLoad(gameObject);
-           // DI.Inject(this);
+            Instance=this;
+            DontDestroyOnLoad(Instance);
 
-            MapManager = GetComponent<MapManager>();
-            InitGame();
+            BuildContainer();
+         //   Build();
         }
 
-        private void InitGame()
+        public void BuildContainer()
         {
-            IsDay = !IsDay;
-            OpenCharacterCreatorWindow();
-            MapManager.CleanMap();
-            MapManager.StartLevel(_level++);
-            IsPlayerTurn = true;
-            UIManager.Instance.ClearLog();
-        }
-
-        public void EndPlayerTurn()
-        {
-            IsPlayerTurn = false;
-            if (PlayerManager.Instance.Object != null && PlayerManager.Instance.Statistic != null)
-            {
-                    var coroutine = EnemyUtils.EnemiesMove();
-                    StartCoroutine(coroutine);                
-            }
-        }
-
-
-        public void GameOver()
-        {
-            UIManager.Instance.Destroy();
-            PlayerManager.Instance.Destroy();
-            EnemyManager.Instance.Destroy();
             
-            Destroy();
-            SceneManager.LoadScene(0);
-        }
+            if (LifeLike.InputManager.Instance == null)
+                gameObject.AddComponent<InputManager>();
+            if (LifeLike.PlayerManager.Instance == null)
+                gameObject.AddComponent<PlayerManager>();
+                      
+            if (LifeLike.WindowManager.Instance==null)
+                Instantiate(WindowManager, transform);
+          
+            if (LifeLike.EnemyManager.Instance == null)
+                gameObject.AddComponent<EnemyManager>();
+            
+            if (LifeLike.UIManager.Instance == null)
+                Instantiate(UIManager, transform);
+           
+            if (LifeLike.GameLogicManager.Instance == null)
+                Instantiate(GameLogicManager,transform);
 
-
-        // Update is called once per frame
-        void Update()
+        }        
+        public bool AreAllModulesWork(out string ErrorModule)
         {
-            if (!OpenedWindow)
+            if (LifeLike.InputManager.Instance==null) 
             {
-                if (Input.GetKeyDown(InputManager.Instance.FightNormalKey)) FightUtils.Instance.AttackEnemy();
-                if (Input.GetKeyDown(InputManager.Instance.FightSpecialKey)) FightUtils.Instance.SpecialAttackEnemy();
-                if (Input.GetKeyDown(InputManager.Instance.SelectEnemyKey)) EnemyUtils.SelectEnemy();
-                if (Input.GetKeyDown(InputManager.Instance.SelectSpecialAttackKey))  PlayerManager.Instance.Statistic.SelectSpecialAttack();
-                if (Input.GetKeyDown(InputManager.Instance.ExitKey)) EndGame();
-                if (Input.GetKeyDown(InputManager.Instance.OpenDetailKey)) OpenDetail();
-                //   detectPressedKeyOrButton();
-                if (UIManager.Instance!=null)
-                UIManager.Instance.Enabled = true;
+                ErrorModule="InputManager";
+                return false;
             }
-            else
+            if (LifeLike.PlayerManager.Instance==null)             
             {
-                if (UIManager.Instance!=null)
-                UIManager.Instance.Enabled = false;
+                ErrorModule="PlayerManager";
+                return false;
             }
-            if (EnemyUtils.SelectedEnemy != null && EnemyUtils.SelectedEnemy.Distance > 1)
-                EnemyUtils.UnSelectAllEnemies();
+
+            if (LifeLike.EnemyManager.Instance==null)             
+            {
+                ErrorModule="EnemyManager";
+                return false;
+            }
+
+
+            if (LifeLike.UIManager.Instance==null)             
+            {
+                ErrorModule="UIManager";
+                return false;
+            }
+
+            if (LifeLike.WindowManager.Instance==null)             
+            {
+                ErrorModule="WindowManager";
+                return false;
+            }
+
+            if (LifeLike.GameLogicManager.Instance==null)             
+            {
+                ErrorModule="GameLogicManager";
+                return false;
+            }
+
+            ErrorModule=string.Empty;
+            return true;
+        }
+        public void EndGame(){
+            LifeLike.UIManager.Instance.Destroy();
+            LifeLike.PlayerManager.Instance.Destroy();
+            LifeLike.EnemyManager.Instance.Destroy();
+
+            LifeLike.WindowManager.Instance.Destroy();
+            
+            LifeLike.GameLogicManager.Instance.Destroy();
 
         }
 
-        private void OpenDetail()
-        {
-            if (PlayerManager.Instance.Statistic == null || PlayerDetailPrefab == null) return;
-            Instantiate(PlayerDetailPrefab);
-            OpenedWindow = true;
-        }
-
-        private void OpenCharacterCreatorWindow()
-        {
-            // PlayerStatistic = CharacterFactory.GetPlayerClass("ITGuyClass", new CharacterStatisticDataModel(){
-            //     Agility=6,
-            //     Strength=6,
-            //      Name="Test",
-            //      Endurance=1 });
-
-            if (PlayerManager.Instance.Statistic != null || CharacterEditorPrefab == null) return;
-            Instantiate(CharacterEditorPrefab);
-            OpenedWindow = true;
-        }
-
-        private void EndGame()
-        {
-            GameOver();
-        }
-
-        public void FinishMap()
-        {
-            InitGame();
-        }
-
-        public void Destroy()
-        {
-            Destroy(this.gameObject);
-            Instance=null;
-        }
+        // private void Build()
+        // {
+        //     if (LifeLike.InputManager.Instance == null)
+        //         Instantiate(InputManager);
+        //     if (LifeLike.UIManager.Instance == null)
+        //         Instantiate(UIManager);
+        //     if (LifeLike.PlayerManager.Instance == null)
+        //         Instantiate(PlayerManager);
+        //     if (LifeLike.EnemyManager.Instance == null)
+        //         Instantiate(EnemyManager);
+        //     if (LifeLike.GameManager.Instance == null)
+        //         Instantiate(GameManager);
+        // }
     }
 }
