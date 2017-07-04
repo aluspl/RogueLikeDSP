@@ -9,6 +9,7 @@ TagManager:
   - GameLogic
   - UI Text
   - Enemy
+  - UI Controller
   layers:
   - Default
   - TransparentFX

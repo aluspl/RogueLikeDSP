@@ -17,7 +17,9 @@ namespace LifeLike
 		public KeyCode ReloadWeaponKey {get; set;}
 		public KeyCode SelectEnemyKey {get; set;}
 		public KeyCode ExitKey {get; set;}
-		public KeyCode OpenDetailKey {get; set;}
+		public KeyCode OpenDetailWindowKey {get; set;}
+		public KeyCode OpenEquipmentWindowKey {get; set;}
+
 		public KeyCode LightKey {get; set;}
 		public KeyConfig ControlType { get;  set; }
 		public KeyCode SelectSpecialAttackKey { get;  set; }
@@ -66,7 +68,8 @@ namespace LifeLike
 					ReloadWeaponKey=KeyCode.R;
 					SelectEnemyKey=KeyCode.Tab;
 					ExitKey=KeyCode.Escape;
-					OpenDetailKey = KeyCode.I;
+					OpenDetailWindowKey = KeyCode.I;
+					OpenEquipmentWindowKey=KeyCode.O;
 					LightKey=KeyCode.F;
 					break;
 				}
@@ -75,10 +78,12 @@ namespace LifeLike
 					FightSpecialKey= KeyCode.Joystick1Button5;
 					SelectSpecialAttackKey = KeyCode.Joystick1Button1;
 					FightNormalKey= KeyCode.Joystick1Button0;
-					ReloadWeaponKey= KeyCode.Joystick1Button2;
+					ReloadWeaponKey= KeyCode.Joystick1Button3;
 					SelectEnemyKey=KeyCode.Joystick1Button4;
 					ExitKey=KeyCode.Joystick1Button7;
-					OpenDetailKey =KeyCode.Joystick1Button6;
+					OpenDetailWindowKey =KeyCode.Joystick1Button6;
+					OpenEquipmentWindowKey =KeyCode.Joystick1Button8;
+
 					LightKey=KeyCode.Joystick1Button2;
 
 					break;
@@ -89,10 +94,12 @@ namespace LifeLike
 					SelectSpecialAttackKey = KeyCode.Joystick1Button17;
 
 					FightNormalKey= KeyCode.Joystick1Button16;
-					ReloadWeaponKey= KeyCode.Joystick1Button17;
+					ReloadWeaponKey= KeyCode.Joystick1Button19;
 					SelectEnemyKey=KeyCode.Joystick1Button13;
 					ExitKey=KeyCode.Joystick1Button9;
-					OpenDetailKey =KeyCode.Joystick1Button10;
+					OpenDetailWindowKey =KeyCode.Joystick1Button10;
+										OpenEquipmentWindowKey =KeyCode.Joystick1Button9;
+
 					LightKey=KeyCode.Joystick1Button18;
 					break;
 				}

@@ -108,6 +108,9 @@
      <Compile Include="Assets\Scripts\Utils\FightUtils.cs" />
      <Compile Include="Assets\Scripts\Utils\GameLogUtils.cs" />
      <Compile Include="Assets\Scripts\Utils\MathUtils.cs" />
+     <Compile Include="Assets\Scripts\Views\ListItemBase.cs" />
+     <Compile Include="Assets\Scripts\Views\ListItemEquipment.cs" />
+     <Compile Include="Assets\Scripts\Views\ListView.cs" />
      <Compile Include="Assets\Scripts\WindowManager.cs" />
      <Compile Include="Assets\Scripts\Windows\CreateWindow.cs" />
      <Compile Include="Assets\Scripts\Windows\DetailWindow.cs" />

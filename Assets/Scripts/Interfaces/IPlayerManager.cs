@@ -12,6 +12,7 @@ namespace LifeLike.Inferfaces
 
          Player Object  {get; set;}
 
-        List<IEquipment> GetEquipments(EquipmentType weapon);
+        ICollection<IEquipment> GetEquipments(EquipmentType weapon);
+         List<IEquipment> Equipments {get; set; }
     }
 }

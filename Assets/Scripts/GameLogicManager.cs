@@ -72,7 +72,6 @@ namespace LifeLike
         }
 
 
-        // Update is called once per frame
         void Update()
         {
             if (WindowManager.Instance.Status==WindowState.Close)
@@ -82,7 +81,9 @@ namespace LifeLike
                 if (Input.GetKeyDown(InputManager.Instance.SelectEnemyKey)) EnemyUtils.SelectEnemy();
                 if (Input.GetKeyDown(InputManager.Instance.SelectSpecialAttackKey))  PlayerManager.Instance.Statistic.SelectSpecialAttack();
                 if (Input.GetKeyDown(InputManager.Instance.ExitKey)) EndGame();
-                if (Input.GetKeyDown(InputManager.Instance.OpenDetailKey)) WindowManager.Instance.Open(WindowType.Detail);
+                if (Input.GetKeyDown(InputManager.Instance.OpenDetailWindowKey)) WindowManager.Instance.Open(WindowType.Detail);
+                if (Input.GetKeyDown(InputManager.Instance.OpenEquipmentWindowKey)) WindowManager.Instance.Open(WindowType.Equipment);
+                
                 //   detectPressedKeyOrButton();
                 if (UIManager.Instance!=null)
                 UIManager.Instance.Enabled = true;

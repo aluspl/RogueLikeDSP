@@ -38,12 +38,12 @@ namespace LifeLike
 
         public CharacterStatisticDataModel Statistic = new CharacterStatisticDataModel()
         {
-            Strength = 1,
-            Agility = 1,
-            Charisma = 1,
-            Inteligence = 1,
-            Endurance = 1,
-            Perception = 1
+            Strength = 2,
+            Agility = 2,
+            Charisma = 2,
+            Inteligence = 2,
+            Endurance = 2,
+            Perception = 2
         };
 
 
@@ -144,7 +144,7 @@ namespace LifeLike
 
         int CalculatePointLeft()
         {
-            return (CharacterLeftPointValue + 6) - (Statistic.Strength +
+            return (CharacterLeftPointValue + 12) - (Statistic.Strength +
                                                     Statistic.Agility +
                                                     Statistic.Charisma +
                                                     Statistic.Endurance +

@@ -160,7 +160,8 @@ namespace LifeLike.MapUtils
                     {
                         Destroy(child.gameObject);
                     }
-                }                
+                }       
+                if (PlayerManager.Instance.Object!=null)         
                 Destroy(PlayerManager.Instance.Object.gameObject);
 
             }

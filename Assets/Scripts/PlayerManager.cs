@@ -30,12 +30,7 @@ public class PlayerManager : MonoBehaviour, IPlayerManager {
 			Equipments.Add(equipment);
 		}
 		
-		public List<IEquipment> GetEquipments(EquipmentType type)
-		{
-			return Equipments
-					.Where(p=>p.EquipmentType==type)
-					.ToList();
-		}
+	
         // Use this for initialization
         void Awake () {
 			if (Instance == null) Instance = this;
@@ -43,7 +38,7 @@ public class PlayerManager : MonoBehaviour, IPlayerManager {
 			Equipments.AddRange(RandomWeapon());
 		}
 
-        private IEnumerable<IEquipment> RandomWeapon()
+        private ICollection<IEquipment> RandomWeapon()
         {
 			List<IEquipment> weapons=new List<IEquipment>();
 			weapons.Add(new Weapon{ Name="Test", Attack=10});
@@ -53,11 +48,14 @@ public class PlayerManager : MonoBehaviour, IPlayerManager {
 			weapons.Add(new Weapon{ Name="Test 4", Attack=10});
 			return weapons;
         }
-
-        // Update is called once per frame
-        void Update () {
-			
+       
+      
+		public ICollection<IEquipment> GetEquipments(EquipmentType type)
+		{
+			return Equipments
+					.Where(p=>p.EquipmentType==type)
+					.ToList();
 		}
-}
+    }
 }
 

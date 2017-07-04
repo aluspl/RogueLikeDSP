@@ -52,7 +52,7 @@ namespace LifeLike
 		void Update()
 		{
 			if (Input.GetKeyDown(InputManager.Instance.ExitKey)) CloseWindow();
-			if (Input.GetKeyDown(InputManager.Instance.OpenDetailKey)) CloseWindow();
+			if (Input.GetKeyDown(InputManager.Instance.OpenDetailWindowKey)) CloseWindow();
 
 		}
 
