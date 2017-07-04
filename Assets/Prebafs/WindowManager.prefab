@@ -55,5 +55,5 @@ MonoBehaviour:
     type: 2}
   DetailWindowPrefab: {fileID: 114002812260086746, guid: ceebe0a8b9cac4b5496f8543f708803d,
     type: 2}
-  EquipmentWindowPrefab: {fileID: 0}
-  WindowState: 1
+  EquipmentWindowPrefab: {fileID: 114214175269157634, guid: 833e6e173410e41178de67ce203892b2,
+    type: 2}
