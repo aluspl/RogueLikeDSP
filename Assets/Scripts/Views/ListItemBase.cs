@@ -29,7 +29,7 @@ namespace LifeLike.Views
 
 		[SerializeField]
 		private RectTransform _rectTransform;
-
+        
 
 		public int Index
 		{

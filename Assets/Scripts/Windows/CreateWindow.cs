@@ -165,7 +165,7 @@ namespace LifeLike
 
 
         // Update is called once per frame
-        void Update()
+        void FixedUpdate()
         {
             if (CharacterLeftPoint != null)
             {

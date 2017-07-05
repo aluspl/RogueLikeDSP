@@ -49,7 +49,7 @@ namespace LifeLike
 
 
 		// Update is called once per frame
-		void Update()
+		void FixedUpdate()
 		{
 			if (Input.GetKeyDown(InputManager.Instance.ExitKey)) CloseWindow();
 			if (Input.GetKeyDown(InputManager.Instance.OpenDetailWindowKey)) CloseWindow();

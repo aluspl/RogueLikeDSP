@@ -101,7 +101,7 @@ namespace LifeLike
             Equipment.Object=Equipments[item.Index];
             Equipment.SetDetails();
         }
-		void FixUpdate()
+		void FixedUpdate()
         {
             KeyBinding();
             UpdateControls();
