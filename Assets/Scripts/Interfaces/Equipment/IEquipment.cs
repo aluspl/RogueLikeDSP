@@ -8,5 +8,6 @@ namespace LifeLike.Interfaces
 		 EquipmentType EquipmentType {get; set;}
 		 string IconImageName {get; set;}
          string SpriteImageName {get; set;}
+         string Stats { get;  }
     }
 }

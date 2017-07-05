@@ -96,14 +96,13 @@ public class ListView : MonoBehaviour {
 
 
 		public void Start(){
-				_scrollRect=this.GetComponent<ScrollRect>();
-				_viewport=this.GetComponentsInChildren<RectTransform>().FirstOrDefault(p=>p.name=="Viewport");
-				_content=this.GetComponentsInChildren<RectTransform>().FirstOrDefault(p=>p.name=="Content");
+			//	_scrollRect=this.GetComponent<ScrollRect>();
+		//		_viewport=this.GetComponentsInChildren<RectTransform>().FirstOrDefault(p=>p.name=="Viewport");
+		//		_content=this.GetComponentsInChildren<RectTransform>().FirstOrDefault(p=>p.name=="Content");
 		}
 
 		public void Create(int items, ListItemBase listItemPrefab)
-		{
-				
+		{				
 				_scrollRect.vertical = true;
 				_scrollRect.horizontal = false;
 

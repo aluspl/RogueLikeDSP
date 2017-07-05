@@ -150,6 +150,7 @@
 'Assets/Scripts/Utils/GameLogUtils.cs'
 'Assets/Scripts/Utils/MathUtils.cs'
 'Assets/Scripts/Views/ListItemBase.cs'
+'Assets/Scripts/Views/ListItemEquipment.cs'
 'Assets/Scripts/Views/ListView.cs'
 'Assets/Scripts/WindowManager.cs'
 'Assets/Scripts/Windows/CreateWindow.cs'

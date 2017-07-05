@@ -18,12 +18,25 @@ namespace LifeLike
 
         [SerializeField]
         private ListView _list;
-    
+        [SerializeField]
+        private Text _selectedWeapon;
+        [SerializeField]
+        private Text _selectedArmor;
+        [SerializeField]
+        private Text _selectedHead;
+        [SerializeField]
+        private Text _selectedGloves;
+        [SerializeField]
+        private Text _selectedShoes;
+        [SerializeField]
+        private Text _selectedPants;
         [SerializeField]
         private ListItemBase _listItem;
+
+
         private ListItemEquipment _selectedItem;
     	private int _selectedIndex;
-
+        
 
         public IList<IEquipment> Equipments { get; set; }
 
@@ -44,6 +57,7 @@ namespace LifeLike
 
         private void OnEquipmentSelect(IEquipment SelectedEquipment)
         {
+            Debug.Log(string.Format("Selected Equipment: {0} Type {1}", SelectedEquipment.Name ,SelectedEquipment.EquipmentType));
 			switch (SelectedEquipment.EquipmentType)
             {
                 case EquipmentType.Weapon:
@@ -84,19 +98,36 @@ namespace LifeLike
             }
                 
             ListItemEquipment Equipment = (ListItemEquipment)item;	// cast to your own ListItem
-            Equipment.Type = Equipments[item.Index].EquipmentType;
             Equipment.Object=Equipments[item.Index];
+            Equipment.SetDetails();
         }
-		// Update is called once per frame
 		void FixUpdate()
         {
             KeyBinding();
+            UpdateControls();
         }
+        public Character Player {get {return PlayerManager.Instance.Statistic;} }
+        private void UpdateControls()
+        {
+            if (_selectedWeapon != null)  _selectedWeapon.text = SetupText(EquipmentType.Weapon, Player.SelectedWeapon);
+            if (_selectedArmor!=null) _selectedArmor.text= SetupText(EquipmentType.Armor, Player.SelectedArmor);
+            if (_selectedPants!=null) _selectedPants.text= SetupText(EquipmentType.Pants, Player.SelectedPants);
+            if (_selectedGloves!=null) _selectedGloves.text=SetupText(EquipmentType.Gloves, Player.SelectedGloves);
+            if (_selectedShoes!=null) _selectedShoes.text=SetupText(EquipmentType.Shoes, Player.SelectedShoes);
+            if (_selectedHead!=null) _selectedHead.text=SetupText(EquipmentType.Head, Player.SelectedHead);
+
+        }
+
+        private string SetupText(EquipmentType type, IEquipment equipment)
+        {
+            var name=equipment!=null ? equipment.Name : "none";
+            return string.Format("{0}: {1}", type,name);
+         }
 
         private void KeyBinding()
         {
             if (Input.GetKeyDown(InputManager.Instance.ExitKey)) CloseWindow();
-            if (Input.GetKeyDown(InputManager.Instance.OpenDetailWindowKey)) CloseWindow();
+            if (Input.GetKeyDown(InputManager.Instance.OpenEquipmentWindowKey)) CloseWindow();
         }
     }
 }

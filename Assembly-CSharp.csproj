@@ -76,7 +76,12 @@
      <Compile Include="Assets\Scripts\GameLogicManager.cs" />
      <Compile Include="Assets\Scripts\GameManager.cs" />
      <Compile Include="Assets\Scripts\InputManager.cs" />
+     <Compile Include="Assets\Scripts\Interfaces\Equipment\IArmor.cs" />
      <Compile Include="Assets\Scripts\Interfaces\Equipment\IEquipment.cs" />
+     <Compile Include="Assets\Scripts\Interfaces\Equipment\IGloves.cs" />
+     <Compile Include="Assets\Scripts\Interfaces\Equipment\IHead.cs" />
+     <Compile Include="Assets\Scripts\Interfaces\Equipment\IPants.cs" />
+     <Compile Include="Assets\Scripts\Interfaces\Equipment\IShoes.cs" />
      <Compile Include="Assets\Scripts\Interfaces\Equipment\IWeapon.cs" />
      <Compile Include="Assets\Scripts\Interfaces\ICharacter.cs" />
      <Compile Include="Assets\Scripts\Interfaces\IGameLogicManager.cs" />

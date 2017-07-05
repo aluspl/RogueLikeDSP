@@ -10,17 +10,16 @@ namespace LifeLike.Views{
         public IEquipment Object { get;  set; }
         public EquipmentType Type { get;  set; }
 
-    [SerializeField]
-	private Image _image;
 
-	[SerializeField]
-	private Text _itemName;
+        [SerializeField]
+        private Text _itemName;
 
-	[SerializeField]
-	private Text _labelCode;
-
-
-	private Sprite _sprite;
+        [SerializeField]
+        private Text _itemType;
+        [SerializeField]
+        private Text _itemStat;
+        // [SerializeField]
+        // private Sprite _sprite;
 
 
 	public void SetItem()
@@ -31,20 +30,22 @@ namespace LifeLike.Views{
 	public void SetDetails()
 	{
         _itemName.text = Object.Name;
-    
-		if(_sprite != null)
-		{
-			Resources.UnloadAsset (_sprite.texture);
-		}
+        _itemType.text=string.Format("Type: {0}",Object.EquipmentType.ToString());
+        _itemStat.text=Object.Stats;
+        
+		// if(_sprite != null)
+		// {
+		// 	Resources.UnloadAsset (_sprite.texture);
+		// }
 
-		_sprite = Resources.Load<Sprite> ("flags/" + Object.SpriteImageName);
+		// _sprite = Resources.Load<Sprite> ("weapontypes/" + Object.EquipmentType);
 
-		_image.sprite = _sprite;
+		// _image.sprite = _sprite;
 	}
 
 	public void Select(bool selected)
 	{
-		_itemName.color = selected ? Color.green : Color.black;
+       // GetComponent<Image>().color=selected ? Color.gray : Color.white;
 	}
 
     }

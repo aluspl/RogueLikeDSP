@@ -118,6 +118,14 @@ namespace LifeLike.Characters
         public int KilledEnemies { get;  set; }
         private int SpecialActionIndex; 
         public IWeapon SelectedWeapon {get; set; }
-        
+        public IHead SelectedHead { get;  set; }
+
+        public IArmor SelectedArmor { get;  set; }
+
+        public IPants SelectedPants { get;  set; }
+
+        public IGloves SelectedGloves { get;  set; }
+        public IShoes SelectedShoes { get;  set; }
+
     }
 }

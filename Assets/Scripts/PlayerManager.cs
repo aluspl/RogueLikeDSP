@@ -41,11 +41,9 @@ public class PlayerManager : MonoBehaviour, IPlayerManager {
         private ICollection<IEquipment> RandomWeapon()
         {
 			List<IEquipment> weapons=new List<IEquipment>();
-			weapons.Add(new Weapon{ Name="Test", Attack=10});
-			weapons.Add(new Weapon{ Name="Test 1", Attack=10});
-			weapons.Add(new Weapon{ Name="Test 2", Attack=10});
-			weapons.Add(new Weapon{ Name="Test 3", Attack=10});
-			weapons.Add(new Weapon{ Name="Test 4", Attack=10});
+			weapons.Add(new Weapon{ Name="Sword", Attack=10, WeaponType= WeaponType.Blade});
+			weapons.Add(new Weapon{ Name="Keyboard", Attack=10, WeaponType=WeaponType.ItStuff});
+			weapons.Add(new Weapon{ Name="Broken Glass", Attack=10, WeaponType=WeaponType.Bottle});
 			return weapons;
         }
        
