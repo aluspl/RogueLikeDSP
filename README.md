@@ -1,7 +1,7 @@
 # LifeLike - RogueLike na miare naszych możliwości
-Gra na Daj Się Poznać 2017.
+
 Opis projektu na [Szymon Motyka](http://szymonmotyka.pl) i [DSP2017](http://szymonmotyka.pl/tag/dsp)
-Kontakt na [Facebook](https://facebook.com/szymonmotykapl)
+Kontakt na [Facebook](https://facebook.com/szymonmotykapl) or twitter @AlusPL
 
 ## WebGL:
  1. Version 1 [Link do gry](https://aluspl.github.io/RogueLikeDSP/Versions/)
@@ -15,11 +15,8 @@ Kontakt na [Facebook](https://facebook.com/szymonmotykapl)
  
  ## Klawiszologia:
 
- - Tab: Przelaczanie przeciwnikow
- - f: swiatlo
- - spacja : atak (Version 4)
- - i Character Detail
- - o Equipment Window
-
-## Details
-p.s zmienilem nazwe solucji. W praktyce, skrypt do Rider otwiera solucje .sln o takiej nazwie, jak folder w ktorym macie Unity. Wiec, warto miec to pod uwage
+ - Tab: switch enemy/Przelaczanie przeciwnikow
+ - f: light/swiatlo
+ - spacja : attack/atak 
+ - i Character Detail / Okno Postaci
+ - o Equipment Window / Okno Ekwipunku
