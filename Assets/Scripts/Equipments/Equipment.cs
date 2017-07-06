@@ -14,5 +14,10 @@ namespace LifeLike.Equipments{
 		public string IconImageName {get; set;}
         public string SpriteImageName { get ; set ; }
         public virtual string Stats { get;  }
+		public virtual string FullStats { get;  }
+	    public virtual int Bonus1 { get;  set; }
+        public virtual StatEnum Bonus1Type { get; set; }
+        public virtual int Bonus2 { get;  set; }
+        public virtual StatEnum Bonus2Type { get; set; }
     }
 }

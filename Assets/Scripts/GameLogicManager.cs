@@ -72,7 +72,7 @@ namespace LifeLike
         }
 
 
-        void Update()
+        void FixedUpdate()
         {
             if (WindowManager.Instance.Status==WindowState.Close)
             {

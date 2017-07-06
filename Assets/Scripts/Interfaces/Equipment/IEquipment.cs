@@ -9,5 +9,7 @@ namespace LifeLike.Interfaces
 		 string IconImageName {get; set;}
          string SpriteImageName {get; set;}
          string Stats { get;  }
+        string FullStats { get;  }
+
     }
 }

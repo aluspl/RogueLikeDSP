@@ -26,7 +26,6 @@ namespace LifeLike.Utils
                 Strength = Random.Range(0,5),
                 IsEnemy=true
             };
-            Debug.Log(string.Format("",statistic.Name,statistic.Agility,statistic.Strength, statistic.Endurance));
             return CharacterFactory.GetPlayerClass(classes.FirstOrDefault().Key, statistic);
         }
         public static void SelectEnemy()

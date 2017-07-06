@@ -64,6 +64,7 @@
      <Compile Include="Assets\Scripts\DI.cs" />
      <Compile Include="Assets\Scripts\EnemyManager.cs" />
      <Compile Include="Assets\Scripts\Enums\Equipment\EquipmentType.cs" />
+     <Compile Include="Assets\Scripts\Enums\Equipment\StatEnum.cs" />
      <Compile Include="Assets\Scripts\Enums\Equipment\WeaponType.cs" />
      <Compile Include="Assets\Scripts\Enums\KeyConfig.cs" />
      <Compile Include="Assets\Scripts\Enums\MapElement.cs" />
@@ -71,7 +72,12 @@
      <Compile Include="Assets\Scripts\Enums\Status.cs" />
      <Compile Include="Assets\Scripts\Enums\WindowState.cs" />
      <Compile Include="Assets\Scripts\Enums\WindowType.cs" />
+     <Compile Include="Assets\Scripts\Equipments\Armor.cs" />
      <Compile Include="Assets\Scripts\Equipments\Equipment.cs" />
+     <Compile Include="Assets\Scripts\Equipments\Gloves.cs" />
+     <Compile Include="Assets\Scripts\Equipments\Head.cs" />
+     <Compile Include="Assets\Scripts\Equipments\Pants.cs" />
+     <Compile Include="Assets\Scripts\Equipments\Shoes.cs" />
      <Compile Include="Assets\Scripts\Equipments\Weapon.cs" />
      <Compile Include="Assets\Scripts\GameLogicManager.cs" />
      <Compile Include="Assets\Scripts\GameManager.cs" />

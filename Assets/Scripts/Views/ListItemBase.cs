@@ -17,10 +17,10 @@ namespace LifeLike.Views
 			{
 				onSelected(this);
 
-				if (clear)
-				{
-					onSelected = null;
-				}
+				// if (clear)
+				// {
+				// 	onSelected = null;
+				// }
 			}
 		}
 

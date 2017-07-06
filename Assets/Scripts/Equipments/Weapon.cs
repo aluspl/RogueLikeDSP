@@ -22,9 +22,16 @@ namespace LifeLike.Equipments
         public override string Stats { 
             get
             {
-            return string.Format( "Damage {1}, Type: {0}", WeaponType, Attack);   
+                return string.Format( "Damage {1}, Type: {0}", WeaponType, Attack);   
             }
         }
+         public override string FullStats { 
+            get
+            {
+                return string.Format( "Name {0}, Damage {1}, Type: {2}", Name, Attack, WeaponType);   
+            }
+        }
+        
 
     }
 }

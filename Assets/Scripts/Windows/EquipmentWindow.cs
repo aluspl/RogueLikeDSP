@@ -57,13 +57,27 @@ namespace LifeLike
 
         private void OnEquipmentSelect(IEquipment SelectedEquipment)
         {
-            Debug.Log(string.Format("Selected Equipment: {0} Type {1}", SelectedEquipment.Name ,SelectedEquipment.EquipmentType));
+            Debug.Log(string.Format("Selected Equipment: {0}; Type {1}", SelectedEquipment.Name ,SelectedEquipment.EquipmentType));
 			switch (SelectedEquipment.EquipmentType)
             {
                 case EquipmentType.Weapon:
     				PlayerManager.Instance.Statistic.SelectedWeapon=SelectedEquipment as IWeapon;
-                
-                break;
+                    break;
+                case EquipmentType.Armor:
+          			PlayerManager.Instance.Statistic.SelectedArmor=SelectedEquipment as IArmor;                    
+                    break;
+                 case EquipmentType.Head:
+          			PlayerManager.Instance.Statistic.SelectedHead=SelectedEquipment as IHead;                    
+                    break;
+                case EquipmentType.Pants:
+          			PlayerManager.Instance.Statistic.SelectedPants=SelectedEquipment as IPants;                    
+                    break;
+                case EquipmentType.Gloves:
+          			PlayerManager.Instance.Statistic.SelectedGloves=SelectedEquipment as IGloves;                    
+                    break;
+                case EquipmentType.Shoes:
+          			PlayerManager.Instance.Statistic.SelectedShoes=SelectedEquipment as IShoes;                    
+                    break;
             }
         }
 
@@ -81,13 +95,9 @@ namespace LifeLike
     
             _selectedItem = (ListItemEquipment)item;
             _selectedItem.Select (true);
-            OnEquipmentSelect(_selectedItem.Object);
-           
             _selectedIndex = _selectedItem.Index;
-    
-            #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            Debug.Log("Selected Country | " + Equipments[item.Index].Name);
-            #endif
+
+            OnEquipmentSelect(_selectedItem.Object);        
         }
     
         void HandleOnItemLoadedHandler (ListItemBase item) // reference to the loaded list item

@@ -13,10 +13,8 @@ namespace LifeLike
 		public List<Enemy> List = new List<Enemy>();
 
 		public static EnemyManager Instance = null;
-		// Use this for initialization
 		void Awake () {
 				if (Instance == null) Instance = this;
-			//	DontDestroyOnLoad(gameObject);
 		}
 		
 

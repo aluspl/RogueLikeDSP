@@ -31,7 +31,6 @@ namespace LifeLike.Controls
             var endPoint = start + destination;
             
             RoundMoves(ref endPoint);
-            Debug.Log(string.Format("x: {0} y: {1}",endPoint.x,endPoint.y));
 
             _boxCollider2D.enabled = false;
                 hit = Physics2D.Linecast(start, endPoint, BlockingLayer);

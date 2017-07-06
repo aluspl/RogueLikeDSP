@@ -33,7 +33,6 @@ namespace LifeLike.Characters
             MaxHealthPoint = HealthPoint;
             Level = 1;
             CurrentExperience = 0;
-            Debug.Log(Name +":"+ ClassName);
         }
         //Check Greater Random in AgilitySlider
         private bool ChanceToAttack(Character enemy)

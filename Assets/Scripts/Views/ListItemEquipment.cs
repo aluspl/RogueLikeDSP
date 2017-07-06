@@ -15,11 +15,12 @@ namespace LifeLike.Views{
         private Text _itemName;
 
         [SerializeField]
-        private Text _itemType;
+        private Image _itemType;
         [SerializeField]
         private Text _itemStat;
-        // [SerializeField]
-        // private Sprite _sprite;
+
+        [SerializeField]
+        private Sprite _sprite;
 
 
 	public void SetItem()
@@ -30,17 +31,17 @@ namespace LifeLike.Views{
 	public void SetDetails()
 	{
         _itemName.text = Object.Name;
-        _itemType.text=string.Format("Type: {0}",Object.EquipmentType.ToString());
+      //  _itemType.text=string.Format("Type: {0}",Object.EquipmentType.ToString());
         _itemStat.text=Object.Stats;
         
-		// if(_sprite != null)
-		// {
-		// 	Resources.UnloadAsset (_sprite.texture);
-		// }
+		if(_sprite != null)
+		{
+			Resources.UnloadAsset (_sprite.texture);
+		}
 
-		// _sprite = Resources.Load<Sprite> ("weapontypes/" + Object.EquipmentType);
-
-		// _image.sprite = _sprite;
+		_sprite = Resources.Load<Sprite> ("Equipment/" + Object.EquipmentType.ToString());
+        Debug.Log("Sprite: "+Object.EquipmentType.ToString()+" is Loaded ? "+_sprite!=null);
+		_itemType.sprite = _sprite;
 	}
 
 	public void Select(bool selected)

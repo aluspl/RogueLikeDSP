@@ -20,7 +20,6 @@ namespace LifeLike.Controls
         {
             EnemyCharacter = EnemyUtils.GenerateEnemy();
             _selectedLight = GetComponentInChildren<Light>();
-            //    _target = GameObject.FindGameObjectWithTag(PlayerStatistic.Tag).transform;
         }
         public  int Distance {
             get {
@@ -46,8 +45,7 @@ namespace LifeLike.Controls
         public bool IsHisTurn { get; set; }
 
         public void Update()
-        {
-        
+        {        
             _selectedLight.enabled = IsSelected;
         }
         protected override void OnCantMove<T>(T component)
