@@ -613,6 +613,8 @@ PlayerSettings:
   cloudServicesEnabled:
     Build: 1
     Collab: 0
+    ErrorHub: 0
+    Hub: 0
     UNet: 1
   facebookSdkVersion: 7.9.1
   apiCompatibilityLevel: 1
