@@ -31,6 +31,8 @@ namespace LifeLike.Characters
 
             HealthPoint = Endurance * 10;
             MaxHealthPoint = HealthPoint;
+            StaminaPoint = Strength * 10;
+            MaxStaminaPoint = StaminaPoint;
             Level = 1;
             CurrentExperience = 0;
         }
@@ -46,11 +48,7 @@ namespace LifeLike.Characters
         private bool CriticalChance()
         {
             return random.Next(100)*Agility>90;
-        }
-        public int GetActionsPoints()
-        {
-            return Agility/2;
-        }
+        }     
         public virtual string Attack(Character enemy)
         {
             if (!ChanceToAttack(enemy)) return GameLogUtils.MissedAttack(this);
@@ -100,6 +98,12 @@ namespace LifeLike.Characters
             }
             Debug.Log("Selected Special Attack: "+SelectedSpecialAttack);
         }
+        public bool CheckStamina(int StaminaCost)
+        {
+            if (StaminaPoint<StaminaCost) return false;    
+            StaminaPoint-=StaminaCost;
+            return true;
+        }
         public string Name { get; set; }
         public int Strength { get; set; }
         public int Level { get; set; }
@@ -125,6 +129,7 @@ namespace LifeLike.Characters
 
         public IGloves SelectedGloves { get;  set; }
         public IShoes SelectedShoes { get;  set; }
-
+        public int StaminaPoint { get; internal set; }
+        public int MaxStaminaPoint { get; internal set; }
     }
 }

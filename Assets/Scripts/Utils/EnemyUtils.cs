@@ -56,6 +56,7 @@ namespace LifeLike.Utils
                     enemy.MoveToPlayer(PlayerManager.Instance.Object);
                     yield return new WaitForSeconds(enemy.MoveTime);
                 }
+            if(GameLogicManager.Instance!=null)
             GameLogicManager.Instance.IsPlayerTurn=true;
         }
 

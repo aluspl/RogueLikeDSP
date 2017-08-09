@@ -7,8 +7,8 @@ namespace LifeLike.Utils
     {     
          public static double CalculateAzimuth(Vector2 vec1, Vector2 vec2) {
             double A=0;
-            var dY=vec2.y - vec1.y;
-            var dX=vec2.x - vec1.x;    
+            var dX=vec1.y - vec2.y;
+            var dY=vec1.x - vec1.x;    
             if (dX==0)
             {
                 if (dY>0) A=0.5*Mathf.PI;
@@ -26,13 +26,6 @@ namespace LifeLike.Utils
             }
             return A;
         }
-        public static float Round(double number)
-        {
-            if (number>0) return 1f;
-            if (number <0) return -1f;
-            return 0f;
-
-        }
         public static double AngleInDeg(Vector2 vec1, Vector2 vec2) {
              var A=CalculateAzimuth(vec1, vec2);
              var RG= (180 / Mathf.PI);
@@ -40,6 +33,14 @@ namespace LifeLike.Utils
 
             return A*RG;
         }
+        public static float Round(double number)
+        {   
+            if (number>0) return 1f;
+            if (number <0) return -1f;
+            return 0f;
+
+        }
+  
         public static void RoundMoves(ref Vector2 moveVector)
         {
             if (Math.Abs(moveVector.x) > Math.Abs(moveVector.y))

@@ -38,7 +38,9 @@ TODO
     7.3. 
 8. Przeciwnicy
     8.1 Lepszy generator przeciwników oraz przeciwników specjalnych
-    
+9. Statyczne Mapy
+10. Polepszyc okno tworenia postaci
+11. Save !
 # Linki 
 
 

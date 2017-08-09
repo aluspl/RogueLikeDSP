@@ -611,13 +611,15 @@ PlayerSettings:
       daydreamIconForeground: {fileID: 0}
       daydreamIconBackground: {fileID: 0}
   cloudServicesEnabled:
-    Build: 0
+    Build: 1
     Collab: 0
+    ErrorHub: 0
+    Hub: 0
     UNet: 1
   facebookSdkVersion: 7.9.1
   apiCompatibilityLevel: 1
-  cloudProjectId: 8d213a27-dd91-4d71-a180-5eeb4482df38
-  projectName: LIfeLike
+  cloudProjectId: e6b1af38-b98f-4081-af04-849095be6659
+  projectName: LifeLike
   organizationId: szymon-motyka
   cloudEnabled: 0
   enableNewInputSystem: 0

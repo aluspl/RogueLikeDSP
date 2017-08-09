@@ -65,7 +65,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Walls:
-  - {fileID: 1084837747580724, guid: 32ee1af4c92a3414383220b4b217dcfe, type: 2}
+  - {fileID: 1272974229817016, guid: 32ee1af4c92a3414383220b4b217dcfe, type: 2}
   Floors:
   - {fileID: 1674372907240122, guid: 929c4b6d30af9473986440b86384313f, type: 2}
   Doors:

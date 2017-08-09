@@ -14,10 +14,15 @@ namespace LifeLike
         public static IUIManager Instance = null;
 
         public Text GameLog;
-        public Text SelectedEnemyStatistic;
-        public Text SelectedEnemyDetail;
-        public Text PlayerStatistic;
-        public Text PlayerDetail;
+        public Text ENEMYNAME;
+        public Text ENEMYSTATUS;
+        public Text ENEMYDISTANCE;
+        public Text ENEMYHP;
+        public Image ENEMYPANEL;
+
+        public Text PLAYERHP;
+        public Text PLAYERSTAMINA;
+        public Text PLAYERATTACK;
 
         StringBuilder _stringLog = new StringBuilder();
         public int MaxLines = 10;
@@ -44,7 +49,7 @@ namespace LifeLike
         {
             _stringLog.Length = 0;
             _stringLog.Capacity = 0;
-
+            
         }
 
         public void LateUpdate()
@@ -65,14 +70,10 @@ namespace LifeLike
         private void PlayerPanel()
         {
             if (Player == null) return;
-            if (PlayerStatistic != null) PlayerStatistic.text = string.Format("<b>Name: </b>{0}", Player.Name);
+            if (PLAYERHP != null) PLAYERHP.text = string.Format("{0}/{1}",Player.HealthPoint,Player.MaxHealthPoint);
+            if (PLAYERSTAMINA != null) PLAYERSTAMINA.text = string.Format("{0}/{1}",Player.StaminaPoint,Player.MaxStaminaPoint);
 
-            if (PlayerDetail != null)
-                PlayerDetail.text = string.Format("<b>HP:</b> {0}/{1}\n<b>Enemy Killed:</b> {2}\n<b>Selected Special:</b>{3} ",
-                    Player.HealthPoint,
-                    Player.MaxHealthPoint,
-                    Player.KilledEnemies,
-                    Player.SelectedSpecialAttack);
+            if (PLAYERATTACK != null)        PLAYERATTACK.text =Player.SelectedSpecialAttack;
                     
         }
 
@@ -80,26 +81,30 @@ namespace LifeLike
         {
             if (EnemyUtils.SelectedEnemy == null)
             {
-                if (SelectedEnemyStatistic != null)
-                    SelectedEnemyStatistic.text = string.Empty;
-                if (SelectedEnemyDetail != null)
-                    SelectedEnemyDetail.text = string.Empty;
+                if (ENEMYHP != null)
+                    ENEMYHP.text = string.Empty;
+                if (ENEMYNAME != null)
+                    ENEMYNAME.text = string.Empty;
+                if (ENEMYSTATUS != null)
+                    ENEMYSTATUS.text = string.Empty;
+                if (ENEMYDISTANCE != null)
+                    ENEMYSTATUS.text = string.Empty;
+                                    if (ENEMYPANEL!=null) ENEMYPANEL.gameObject.SetActive(false);
+
             }
             else
             {
-                if (SelectedEnemyStatistic != null)
-                {
-                    SelectedEnemyStatistic.text = string.Format("<b>Name</b>: {0} \n<b>Class Name</b>: {1}",
-                        EnemyUtils.SelectedEnemy.EnemyCharacter.Name,
-                        EnemyUtils.SelectedEnemy.EnemyCharacter.SelectedClass);
-                }
-                if (SelectedEnemyDetail != null)
-                {
-                    SelectedEnemyDetail.text = string.Format("<b>Distance:</b> {0}\n<b>Is he a Enemy?</b>: {1}\n<b>Status</b>: {2}",
-                        EnemyUtils.SelectedEnemy.Distance,
-                        EnemyUtils.SelectedEnemy.EnemyCharacter.isEnemy,
-                        EnemyUtils.SelectedEnemy.EnemyCharacter.Status);
-                }
+                if (ENEMYHP != null)
+                    ENEMYHP.text = string.Format("{0}/{1}",EnemyUtils.SelectedEnemy.Statistic.HealthPoint,EnemyUtils.SelectedEnemy.Statistic.MaxHealthPoint);
+                if (ENEMYNAME != null)
+                    ENEMYNAME.text = EnemyUtils.SelectedEnemy.Statistic.Name;
+                if (ENEMYSTATUS != null)
+                    ENEMYSTATUS.text = EnemyUtils.SelectedEnemy.Statistic.Status.ToString();
+                if (ENEMYDISTANCE != null)
+                    ENEMYDISTANCE.text = EnemyUtils.SelectedEnemy.Distance.ToString();
+                if (ENEMYPANEL!=null)
+                    ENEMYPANEL.color=EnemyUtils.SelectedEnemy.Statistic.isEnemy? Color.red : Color.green;
+                if (ENEMYPANEL!=null) ENEMYPANEL.gameObject.SetActive(true);               
             }
         }
 

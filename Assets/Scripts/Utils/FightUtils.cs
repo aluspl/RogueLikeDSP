@@ -44,44 +44,34 @@ namespace LifeLike.Utils
             if (CheckIsEnemyIsNotNull)
             {  
                 GameLogicManager.Instance.EndPlayerTurn();
-                var result=Player.Attack(EnemyUtils.SelectedEnemy.EnemyCharacter);
+                var result=Player.Attack(EnemyUtils.SelectedEnemy.Statistic);
                 UI.AddLog(result);
                 if (!EnemyUtils.SelectedEnemy.IsDead) return;
                 EnemyIsDead(EnemyUtils.SelectedEnemy);
              
-            }
-            else
-            {
-                UI.AddLog("Enemy isn't selected");
-            }       
-
+            }              
         }
         public void SpecialAttackEnemy()
         {
              if (CheckIsEnemyIsNotNull)
              {  
                 GameLogicManager.Instance.EndPlayerTurn();
-                var result=Player.SpecialAction(EnemyUtils.SelectedEnemy.EnemyCharacter);
+                var result=Player.SpecialAction(EnemyUtils.SelectedEnemy.Statistic);
                 UI.AddLog(result);
                 if (!EnemyUtils.SelectedEnemy.IsDead) return;
                  EnemyIsDead(EnemyUtils.SelectedEnemy);
-             }
-            else
-            {
-                UI.AddLog("Enemy isn't selected");
-            }      
-                   
+             }                                 
      }
 
         public  void EnemyIsDead(Enemy selectedEnemy)
         {
             var builder=new StringBuilder();
             builder.AppendFormat("Enemy called {0} is now Dead, SHAME OF YOU! Great Job!! ",
-                selectedEnemy.EnemyCharacter.Name);
-            var experience=selectedEnemy.EnemyCharacter.Level * 10;
+                selectedEnemy.Statistic.Name);
+            var experience=selectedEnemy.Statistic.Level * 10;
             Player.CurrentExperience += experience;
             builder.AppendFormat("\nYou receive {0} exp from {1} and you have  now {2}",
-             experience, selectedEnemy.EnemyCharacter.Name, Player.CurrentExperience);
+             experience, selectedEnemy.Statistic.Name, Player.CurrentExperience);
             EnemyManager.Instance.KillEnemy(selectedEnemy);
             Player.KilledEnemies++;
             UI.AddLog(builder.ToString());

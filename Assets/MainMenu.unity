@@ -361,10 +361,10 @@ RectTransform:
   m_Father: {fileID: 1877963379}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -64}
-  m_SizeDelta: {x: 200, y: 180}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &302529826
 MonoBehaviour:
@@ -399,8 +399,9 @@ MonoBehaviour:
     m_VerticalOverflow: 0
     m_LineSpacing: 1
   m_Text: "Keys: \n<b>Up</b> - Up\n<b>Down</b> - Down\n<b>Left</b> - Left\n<b>Right</b>
-    - Right\n\n<b>i</b> - Equipment Window\n<b>f</b> - Flashlight\n\n<b>Tab</b> -
-    Select Nearby enemy\n<b>Space</b> - Attack Enemy\n\n<b>Escape</b> - Back To Menu\n\n\n"
+    - Right\n\n<b>i</b> - Character \n<b>o</b> - Equipment \n<b>f</b> - Flashlight\n<b>q</b>
+    - Select Special Attack\n<b>e</b> - Use Special Attack\n\n\n<b>Tab</b> - Select
+    Nearby enemy\n<b>Space</b> - Attack Enemy\n\n<b>Escape</b> - Back To Menu\n\n\n"
 --- !u!222 &302529827
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -474,7 +475,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Play The Ball
+  m_Text: Load Game
 --- !u!222 &379673282
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -766,7 +767,7 @@ GameObject:
   - component: {fileID: 1021444413}
   - component: {fileID: 1021444412}
   m_Layer: 5
-  m_Name: PlayBallGame
+  m_Name: Load Game Button
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -836,7 +837,7 @@ MonoBehaviour:
     m_HighlightedTrigger: Highlighted
     m_PressedTrigger: Pressed
     m_DisabledTrigger: Disabled
-  m_Interactable: 1
+  m_Interactable: 0
   m_TargetGraphic: {fileID: 1021444414}
   m_OnClick:
     m_PersistentCalls:
@@ -851,7 +852,7 @@ MonoBehaviour:
           m_FloatArgument: 0
           m_StringArgument: TheBallGame
           m_BoolArgument: 0
-        m_CallState: 2
+        m_CallState: 0
     m_TypeName: UnityEngine.UI.Button+ButtonClickedEvent, UnityEngine.UI, Version=1.0.0.0,
       Culture=neutral, PublicKeyToken=null
 --- !u!114 &1021444414
@@ -1073,11 +1074,11 @@ RectTransform:
   m_Father: {fileID: 1857378749}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0.5}
-  m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 300, y: 0.5}
-  m_SizeDelta: {x: 300, y: 456}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 300, y: 0}
+  m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &1682597614
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1238,10 +1239,10 @@ RectTransform:
   m_Father: {fileID: 1785826707}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 900, y: 500}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1857378750
 MonoBehaviour:
@@ -1307,11 +1308,11 @@ RectTransform:
   m_Father: {fileID: 1857378749}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0.5}
-  m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 600, y: -0.5}
+  m_AnchorMin: {x: 1, y: 0.5}
+  m_AnchorMax: {x: 1, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 300, y: 456}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_Pivot: {x: 1, y: 0.5}
 --- !u!114 &1877963380
 MonoBehaviour:
   m_ObjectHideFlags: 0

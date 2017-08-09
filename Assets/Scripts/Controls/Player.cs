@@ -33,24 +33,20 @@ namespace LifeLike.Controls
                  Debug.Log(string.Format("x: {0} y: {1}",moveVector.x,moveVector.y));
 
                 AttemtMove<MovingObject>(moveVector);
+                if (EnemyUtils.SelectedEnemy==null)
                 transform.eulerAngles=MathUtils.SetRotation(moveVector);
+                else
+                transform.eulerAngles=CalculateAngle(EnemyUtils.SelectedEnemy);
                 GameLogicManager.Instance.EndPlayerTurn();
              }
         }
 
         private Vector2 GetControllerInput()
         {
-
-            
-                //Controller - MORE UNiversal, but sometimes too sensitive
-
                 var x = Input.GetAxisRaw("Horizontal");
                 var y = Input.GetAxisRaw("Vertical");
                 if (x!=0) y=0;
-                return new Vector2(x,y);
-            
-
-
+                return new Vector2(x,y);        
         }
 
 

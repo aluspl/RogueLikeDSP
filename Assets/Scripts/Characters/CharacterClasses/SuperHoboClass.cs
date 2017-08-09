@@ -7,8 +7,8 @@ namespace LifeLike.Characters.CharacterClasses
         public new static string ClassName = "Super Hobo";
 
         public SuperHoboClass(CharacterStatisticDataModel statistic) : base(statistic)
-        {            SelectedClass=ClassName;
-
+        {           
+             SelectedClass=ClassName;
         }
 
 

@@ -10,7 +10,7 @@ namespace LifeLike.Controls
 {
     public class Enemy : MovingObject
     {
-        public Character EnemyCharacter { get; set; }
+        public Character Statistic { get; set; }
         private Transform _target;
         public bool IsSelected { get; set; }
         private Light _selectedLight;
@@ -18,7 +18,7 @@ namespace LifeLike.Controls
 
         public void Awake()
         {
-            EnemyCharacter = EnemyUtils.GenerateEnemy();
+            Statistic = EnemyUtils.GenerateEnemy();
             _selectedLight = GetComponentInChildren<Light>();
         }
         public  int Distance {
@@ -33,13 +33,13 @@ namespace LifeLike.Controls
         public  string ClassName {
             get
             {
-                return EnemyCharacter != null ? EnemyCharacter.SelectedClass : "Any Class";
+                return Statistic != null ? Statistic.SelectedClass : "Any Class";
             }
         }
 
         public bool IsDead
         {
-            get { return EnemyCharacter.HealthPoint <= 0; }
+            get { return Statistic.HealthPoint <= 0; }
         }
 
         public bool IsHisTurn { get; set; }
@@ -47,42 +47,38 @@ namespace LifeLike.Controls
         public void Update()
         {        
             _selectedLight.enabled = IsSelected;
+          
+
         }
         protected override void OnCantMove<T>(T component)
         {
             if (Distance==1)
-                FightUtils.Instance.AttackPlayer(EnemyCharacter);
+                FightUtils.Instance.AttackPlayer(Statistic);
         }
 
         public void MoveToPlayer(Player playerObject)
         {      
-            if (!EnemyCharacter.isEnemy) return;
-            if (EnemyCharacter.Status==Status.Sleep 
-                || EnemyCharacter.Status==Status.Paralized) 
+            if (!Statistic.isEnemy) return;
+            if (Statistic.Status==Status.Sleep 
+                || Statistic.Status==Status.Paralized) 
             {
-                EnemyCharacter.StatusChange();
+                Statistic.StatusChange();
                 return;
             } 
             var moveVector = (Vector2)(transform.position- playerObject.transform.position);
        
             MathUtils.RoundMoves(ref moveVector);
-            transform.eulerAngles=MathUtils.SetRotation(moveVector);
-         
+            //transform.eulerAngles=MathUtils.SetRotation(moveVector);
          
             if (Math.Abs(moveVector.x) > TOLERANCE || Math.Abs(moveVector.y) > TOLERANCE)
                 AttemtMove<MovingObject>(moveVector);        
+            transform.eulerAngles=CalculateAngle(PlayerManager.Instance.Object);
+
         }
 
      
 
-        //This returns the angle in radians
-
-        private Vector3 CalculateAngle(GameObject player)
-        {
-            var angle=MathUtils.AngleInDeg(transform.position, player.transform.position);
-     //       Debug.Log(string.Format("Angle for {0} is {1}", EnemyCharacter.Name, angle));
-            return  new Vector3(0,0,(float)angle);
-        }
+ 
 
         
     }

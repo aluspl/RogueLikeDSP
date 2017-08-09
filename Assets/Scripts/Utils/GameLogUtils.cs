@@ -31,6 +31,11 @@ namespace LifeLike.Utils
                 string.Format("<b>{0}</b> has successfully changed <b>Enemy</b>! Who stole your brain?!",character.Name) 
                 : string.Format("<b>{0}</b>'s You can't change <b>Enemy</b> to Zombie! He is too inteligent for you! ", character.Name);
                 }
+
+        internal static string LowStamina()
+        {
+            return "You need more stamina points! Drink a Coffee or something!";
+        }
     }
 }
 

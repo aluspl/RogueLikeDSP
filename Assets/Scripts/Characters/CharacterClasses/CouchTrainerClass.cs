@@ -31,6 +31,8 @@ namespace LifeLike.Characters.CharacterClasses
 
         private string InviteToTraining(Character enemyCharacter)
         {
+            if (!CheckStamina(InviteToTrainingCost)) return GameLogUtils.LowStamina();
+
             int YourPoints = random.Next(Charisma);
             int EnemyPoints = random.Next(enemyCharacter.Inteligence);
             Debug.Log(string.Format("Your Generated Charisma Chance: {0}, Enemy Generated Inteligence Point: {1}",YourPoints,
@@ -42,6 +44,7 @@ namespace LifeLike.Characters.CharacterClasses
         }
 
         public const string ClassType = "CouchTrainerClass";
+        private readonly int InviteToTrainingCost=15;
 
         public override List<string> SpecialActionsList()
         {

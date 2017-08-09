@@ -10,7 +10,7 @@ namespace LifeLike
 {
     public class CreateWindow : Window
     {
-
+        private const int PointsToSpend = 6;
         public Slider StrengthSlider;
         public Slider InteligenceSlider;
         public Slider CharismaSlider;
@@ -29,7 +29,7 @@ namespace LifeLike
         public InputField CharacterName;
         public Character Character;
         public Text CharacterLeftPoint;
-        public int CharacterLeftPointValue = 10;
+        public int CharacterLeftPointValue = PointsToSpend;
 
         private Dictionary<string, string> _characterClasses;
         public string SelectedClass { get; set; }
@@ -144,7 +144,7 @@ namespace LifeLike
 
         int CalculatePointLeft()
         {
-            return (CharacterLeftPointValue + 12) - (Statistic.Strength +
+            return (CharacterLeftPointValue + PointsToSpend) - (Statistic.Strength +
                                                     Statistic.Agility +
                                                     Statistic.Charisma +
                                                     Statistic.Endurance +

@@ -65,7 +65,13 @@ namespace LifeLike.Controls
             transform.position=destination;
             yield return null;
         }
+       //This returns the angle in radians
 
+        public Vector3 CalculateAngle(MovingObject enemy)
+        {
+            var angle=MathUtils.AngleInDeg(transform.position, enemy.transform.position);        
+            return  new Vector3(0,0,(float)angle);
+        }
         protected virtual void AttemtMove<T>(Vector2 direction)
             where T : Component
         {

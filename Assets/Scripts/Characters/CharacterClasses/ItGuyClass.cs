@@ -38,14 +38,12 @@ namespace LifeLike.Characters.CharacterClasses
             return string.Empty;
         }
         private string AttackTechTalk(Character enemyCharacter)
-        {
-            
-       
+        {    
+            if (!CheckStamina(TechTalkCost)) return GameLogUtils.LowStamina();
+           
             int YourPoints = random.Next(Inteligence);
             int EnemyPoints = random.Next(enemyCharacter.Endurance);
-                 
-            Debug.Log(string.Format("Your Generated Points Chance: {0}, Enemy Generated Point: {1}",YourPoints,
-            EnemyPoints));
+                            
             if (YourPoints < EnemyPoints)
                  return GameLogUtils.TechTalk(this, false);
 
@@ -54,6 +52,7 @@ namespace LifeLike.Characters.CharacterClasses
         }
 
         public const string ClassType = "ITGuyClass";
+        private readonly int TechTalkCost=10;
 
         public override List<string> SpecialActionsList()
         {

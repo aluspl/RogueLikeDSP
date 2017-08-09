@@ -98,18 +98,6 @@ namespace LifeLike
 
         }
 
-        // private void Build()
-        // {
-        //     if (LifeLike.InputManager.Instance == null)
-        //         Instantiate(InputManager);
-        //     if (LifeLike.UIManager.Instance == null)
-        //         Instantiate(UIManager);
-        //     if (LifeLike.PlayerManager.Instance == null)
-        //         Instantiate(PlayerManager);
-        //     if (LifeLike.EnemyManager.Instance == null)
-        //         Instantiate(EnemyManager);
-        //     if (LifeLike.GameManager.Instance == null)
-        //         Instantiate(GameManager);
-        // }
+       
     }
 }
