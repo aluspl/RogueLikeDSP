@@ -49,7 +49,7 @@ namespace LifeLike
         {
             _stringLog.Length = 0;
             _stringLog.Capacity = 0;
-            
+
         }
 
         public void LateUpdate()
@@ -102,9 +102,13 @@ namespace LifeLike
                     ENEMYSTATUS.text = EnemyUtils.SelectedEnemy.Statistic.Status.ToString();
                 if (ENEMYDISTANCE != null)
                     ENEMYDISTANCE.text = EnemyUtils.SelectedEnemy.Distance.ToString();
+
                 if (ENEMYPANEL!=null)
-                    ENEMYPANEL.color=EnemyUtils.SelectedEnemy.Statistic.isEnemy? Color.red : Color.green;
-                if (ENEMYPANEL!=null) ENEMYPANEL.gameObject.SetActive(true);               
+                { 
+//                    ENEMYPANEL.color=EnemyUtils.SelectedEnemy.Statistic.isEnemy? Color.red : Color.green;
+                    ENEMYPANEL.color=EnemyUtils.SelectedEnemy.Statistic.isEnemy? new Color(1,0,0,0.2f) : new Color(0,1,0,0.2f) ;
+                    ENEMYPANEL.gameObject.SetActive(true);               
+                }
             }
         }
 
