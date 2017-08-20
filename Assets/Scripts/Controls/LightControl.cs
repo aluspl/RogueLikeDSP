@@ -17,6 +17,8 @@ namespace LifeLike.Controls
         // Update is called once per frame
         void Update ()
         {
+            if (InputManager.Instance==null) return;
+
             if (Input.GetKeyDown(InputManager.Instance.LightKey)) _isDay = !_isDay;
 
             SetLight();

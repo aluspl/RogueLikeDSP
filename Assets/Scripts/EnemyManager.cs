@@ -14,7 +14,7 @@ namespace LifeLike
 
 		public static EnemyManager Instance = null;
 		void Awake () {
-				if (Instance == null) Instance = this;
+		    if (Instance == null) Instance = this;
 		}
 		
 
@@ -29,6 +29,7 @@ namespace LifeLike
             try
             {
                 List.Remove(enemy);
+                LootManager.Instance.GenerateLoot(enemy.transform, enemy.Statistic);
                 Destroy(enemy.gameObject);
                 EnemyUtils.UnSelectAllEnemies();
             }

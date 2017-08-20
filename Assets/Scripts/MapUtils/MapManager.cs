@@ -42,7 +42,7 @@ namespace LifeLike.MapUtils
                 generator.MinimumWallSize = MinimalWallSize;
                 Map = generator.GenerateMap(MapSizeX, MapSizeY, MaxHorizontalLines, MaxVerticalLines);
             }
-            MaxEnemies = level + 10;
+            MaxEnemies = level + 5;
             InsertMapElements();
         }
 

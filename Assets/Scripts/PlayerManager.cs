@@ -35,7 +35,7 @@ public class PlayerManager : MonoBehaviour, IPlayerManager {
         void Awake () {
 			if (Instance == null) Instance = this;
 			Equipments=new List<IEquipment>();	
-			Equipments.AddRange(RandomWeapon());
+		//	Equipments.AddRange(RandomWeapon());
 		}
 
         private ICollection<IEquipment> RandomWeapon()
@@ -80,6 +80,47 @@ public class PlayerManager : MonoBehaviour, IPlayerManager {
 					.Where(p=>p.EquipmentType==type)
 					.ToList();
 		}
+
+
+        public void RecoverStamina(IStamina stamina)
+        {
+			if (Statistic==null) return;
+			if (Statistic.StaminaPoint+stamina.StaminaRecover>Statistic.MaxStaminaPoint) 
+			{
+				UIManager.Instance.AddLog("Great Coffee! Restored Stamina");				
+				Statistic.StaminaPoint=Statistic.MaxStaminaPoint;
+			}
+			if (Statistic.StaminaPoint==Statistic.MaxStaminaPoint)
+			{
+				UIManager.Instance.AddLog("Great Coffee, but you are full restored");				
+			}
+			else 
+			{
+				Statistic.StaminaPoint+=stamina.StaminaRecover;
+				UIManager.Instance.AddLog("Great Coffee! Restored Stamina"+stamina.StaminaRecover);				
+			}
+        }
+
+        public void RecoverHP(IHealth health)
+        {
+		if (Statistic==null) return;
+			if (Statistic.HealthPoint+health.HealthRecover>Statistic.MaxHealthPoint) 
+			{
+				UIManager.Instance.AddLog("Painkiller is working Restored your life");				
+				Statistic.HealthPoint=Statistic.MaxHealthPoint;
+			}
+			if (Statistic.HealthPoint==Statistic.MaxHealthPoint)
+			{
+				UIManager.Instance.AddLog("Painkiller is working, but you are full restored");				
+			}
+			else 
+			{
+				Statistic.HealthPoint+=health.HealthRecover;
+				UIManager.Instance.AddLog("Painkiller is working! Restored HP: "+health.HealthRecover);				
+			}
+        }
+
+    
     }
 }
 

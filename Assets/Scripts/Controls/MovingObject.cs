@@ -69,7 +69,8 @@ namespace LifeLike.Controls
 
         public Vector3 CalculateAngle(MovingObject enemy)
         {
-            var angle=MathUtils.AngleInDeg(transform.position, enemy.transform.position);        
+            var angle=MathUtils.AngleInDeg(transform.position, enemy.transform.position);   
+            angle=-angle;  
             return  new Vector3(0,0,(float)angle);
         }
         protected virtual void AttemtMove<T>(Vector2 direction)

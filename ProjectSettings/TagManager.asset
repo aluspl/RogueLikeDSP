@@ -10,6 +10,7 @@ TagManager:
   - UI Text
   - Enemy
   - UI Controller
+  - Loot
   layers:
   - Default
   - TransparentFX

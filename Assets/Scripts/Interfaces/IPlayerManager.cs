@@ -14,5 +14,8 @@ namespace LifeLike.Inferfaces
 
         ICollection<IEquipment> GetEquipments(EquipmentType weapon);
          List<IEquipment> Equipments {get; set; }
+
+        void RecoverStamina(IStamina stamina);
+        void RecoverHP(IHealth health);
     }
 }

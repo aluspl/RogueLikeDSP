@@ -17,7 +17,11 @@ namespace LifeLike
 {
     public class GameLogicManager : MonoBehaviour, IGameLogicManager
     {
-        private MapManager MapManager;
+        public IMapManager MapManager;
+        public IMapManager GetMapManager(){
+            return MapManager;
+        }
+
         public static IGameLogicManager Instance = null;
 
         private int _level = 0;
@@ -74,6 +78,7 @@ namespace LifeLike
 
         void FixedUpdate()
         {
+            if (WindowManager.Instance==null) return;
             if (WindowManager.Instance.Status==WindowState.Close)
             {
                 if (Input.GetKeyDown(InputManager.Instance.FightNormalKey)) FightUtils.Instance.AttackEnemy();

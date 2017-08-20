@@ -1,4 +1,5 @@
 using LifeLike.Inferfaces;
+using LifeLike.Interfaces;
 
 namespace LifeLike.Inferfaces
 {
@@ -6,6 +7,7 @@ namespace LifeLike.Inferfaces
     {
         bool IsPlayerTurn { get; set; }
         bool IsDay { get; set; }
+        IMapManager GetMapManager();
 
         void EndPlayerTurn();
         void GameOver();

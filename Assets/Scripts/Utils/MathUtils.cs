@@ -7,29 +7,28 @@ namespace LifeLike.Utils
     {     
          public static double CalculateAzimuth(Vector2 vec1, Vector2 vec2) {
             double A=0;
-            var dX=vec1.y - vec2.y;
-            var dY=vec1.x - vec1.x;    
+            var dX=vec2.y - vec1.y;
+            var dY=vec2.x - vec1.x;    
             if (dX==0)
             {
                 if (dY>0) A=0.5*Mathf.PI;
                 else A=1.5*Mathf.PI;                
             }
+            else if (dY==0)
+            {
+                if (dX>0) A=0;
+                else A=Mathf.PI;
+            }
             else
             {
                 A=Mathf.Atan2(dY, dX);
-                if (dX<0)
-                {  A=A+Mathf.PI;}
-                else
-                { 
-                     if (dY<0) A=A+(2*Mathf.PI); 
-                }            
+                if (dY<0) A=A+(2*Mathf.PI);          
             }
             return A;
         }
         public static double AngleInDeg(Vector2 vec1, Vector2 vec2) {
              var A=CalculateAzimuth(vec1, vec2);
              var RG= (180 / Mathf.PI);
-             Debug.Log(string.Format("Azimuth is {0}, Vector 1: x: {1} y: {2}, Vector 2: x: {3} y: {4} Angle is {5}", A, vec1.x,vec1.y,vec2.x,vec2.y,A*RG));
 
             return A*RG;
         }

@@ -69,10 +69,10 @@ namespace LifeLike.Controls
        
             MathUtils.RoundMoves(ref moveVector);
             //transform.eulerAngles=MathUtils.SetRotation(moveVector);
-         
+            transform.eulerAngles=CalculateAngle(playerObject);
+
             if (Math.Abs(moveVector.x) > TOLERANCE || Math.Abs(moveVector.y) > TOLERANCE)
                 AttemtMove<MovingObject>(moveVector);        
-            transform.eulerAngles=CalculateAngle(PlayerManager.Instance.Object);
 
         }
 

@@ -22,8 +22,10 @@ namespace LifeLike.Controls
 
         private void MovingLogic()
         {
+            if (GameLogicManager.Instance==null) return;
             if (!GameLogicManager.Instance.IsPlayerTurn) return;
             if (WindowManager.Instance.Status==WindowState.Open) return;
+            
             var moveVector = GetControllerInput();
 
             if (Math.Abs(moveVector.x) > TOLERANCE || Math.Abs(moveVector.y) > TOLERANCE)       
@@ -34,9 +36,9 @@ namespace LifeLike.Controls
 
                 AttemtMove<MovingObject>(moveVector);
                 if (EnemyUtils.SelectedEnemy==null)
-                transform.eulerAngles=MathUtils.SetRotation(moveVector);
+                    transform.eulerAngles=MathUtils.SetRotation(moveVector);
                 else
-                transform.eulerAngles=CalculateAngle(EnemyUtils.SelectedEnemy);
+                    transform.eulerAngles=CalculateAngle(EnemyUtils.SelectedEnemy);
                 GameLogicManager.Instance.EndPlayerTurn();
              }
         }

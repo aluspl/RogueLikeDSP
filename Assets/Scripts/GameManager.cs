@@ -10,7 +10,7 @@ namespace LifeLike
         public static GameManager Instance = null;
         public GameObject GameLogicManager;
         // public GameObject InputManager;
-        // public GameObject PlayerManager;
+        public GameObject LootManager;
         public GameObject UIManager;
         // public GameObject EnemyManager;
         public GameObject WindowManager;
@@ -32,7 +32,7 @@ namespace LifeLike
                 gameObject.AddComponent<InputManager>();
             if (LifeLike.PlayerManager.Instance == null)
                 gameObject.AddComponent<PlayerManager>();
-                      
+                  
             if (LifeLike.WindowManager.Instance==null)
                 Instantiate(WindowManager, transform);
           
@@ -41,10 +41,12 @@ namespace LifeLike
             
             if (LifeLike.UIManager.Instance == null)
                 Instantiate(UIManager, transform);
+             if (LifeLike.LootManager.Instance==null)
+                  Instantiate(LootManager, transform);
            
             if (LifeLike.GameLogicManager.Instance == null)
                 Instantiate(GameLogicManager,transform);
-
+           
         }        
         public bool AreAllModulesWork(out string ErrorModule)
         {
@@ -84,6 +86,11 @@ namespace LifeLike
                 return false;
             }
 
+            if (LifeLike.LootManager.Instance==null)             
+            {
+                ErrorModule="LootManager";
+                return false;
+            }
             ErrorModule=string.Empty;
             return true;
         }
@@ -95,7 +102,7 @@ namespace LifeLike
             LifeLike.WindowManager.Instance.Destroy();
             
             LifeLike.GameLogicManager.Instance.Destroy();
-
+            LifeLike.LootManager.Instance.Destroy();
         }
 
        
