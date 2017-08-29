@@ -25,6 +25,8 @@ namespace LifeLike.Equipments
             return string.Format( "Name {0}, Defense {1},",Name, Defense);   
             }
         }
+                public override string IconImageName {get {return "gloves";} }
+
         public int Defense { get; set; }
     }
 }

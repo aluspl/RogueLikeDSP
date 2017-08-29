@@ -42,7 +42,7 @@ public class PlayerManager : MonoBehaviour, IPlayerManager {
         {
 			List<IEquipment> equipments=new List<IEquipment>();
 			equipments.Add(new Weapon{ Name="Sword", Attack=1, WeaponType= WeaponType.Blade});
-			equipments.Add(new Weapon{ Name="Keyboard", Attack=2, WeaponType=WeaponType.ItStuff});
+			equipments.Add(new Weapon{ Name="Keyboard", Attack=2, WeaponType=WeaponType.ItItem});
 			equipments.Add(new Weapon{ Name="Broken Glass", Attack=3, WeaponType=WeaponType.Bottle});
 		
 			equipments.Add(new Armor{ Name="Metal Armor", Defense=1, Bonus1=1, Bonus1Type=StatEnum.Strength });

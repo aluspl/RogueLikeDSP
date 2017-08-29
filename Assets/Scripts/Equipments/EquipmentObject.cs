@@ -21,7 +21,6 @@ namespace LifeLike.Equipments{
                var  sprite = Resources.Load<Sprite>("Equipment/" + Equipment.IconImageName);
                 Debug.Log(string.Format("Sprite is null: {0}? ",sprite==null));
                 GetComponent<SpriteRenderer>().sprite=sprite;
-
             }
             else
                 Debug.Log("Can't Load sprite ");    
@@ -47,7 +46,12 @@ namespace LifeLike.Equipments{
 
                         Destroy(this.gameObject);
                         break;
-                    
+                    default:
+                        PlayerManager.Instance.Equipments.Add(Equipment);
+                        Debug.Log("Get Equipment");
+                        Destroy(this.gameObject);
+                        break;
+
                 }
 			}
 		}

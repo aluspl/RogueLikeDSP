@@ -128,6 +128,7 @@
      <Compile Include="Assets\Scripts\PlayerManager.cs" />
      <Compile Include="Assets\Scripts\UIManager.cs" />
      <Compile Include="Assets\Scripts\Utils\EnemyUtils.cs" />
+     <Compile Include="Assets\Scripts\Utils\EquipmentGenerator.cs" />
      <Compile Include="Assets\Scripts\Utils\FightUtils.cs" />
      <Compile Include="Assets\Scripts\Utils\GameLogUtils.cs" />
      <Compile Include="Assets\Scripts\Utils\MathUtils.cs" />
