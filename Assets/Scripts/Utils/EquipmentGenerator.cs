@@ -49,7 +49,7 @@ namespace LifeLike.Utils
         }
         private static string GetEquipmentMaterial(int lvl)
         {
-            var material=new Random().Next(0,lvl);
+            var material=new Random().Next(0,6);
             switch (material)
             {
                 case 0: return "Paper";
