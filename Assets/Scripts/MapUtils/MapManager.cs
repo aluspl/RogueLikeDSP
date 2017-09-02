@@ -37,8 +37,8 @@ namespace LifeLike.MapUtils
 
         public void StartLevel(int level)
         {
-            MapSizeX=(level+1)*30;
-            MapSizeY=(level+1)*30;
+            MapSizeX=(level+1)*_random.Next(10,30);
+            MapSizeY=(level+1)*_random.Next(10,30);
             using (var generator = new MapGenerator())
             {
                 generator.MinimumWallSize = MinimalWallSize;
