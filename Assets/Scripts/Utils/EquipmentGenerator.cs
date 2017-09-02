@@ -10,7 +10,7 @@ namespace LifeLike.Utils
     {
         public static IEquipment GenerateEquipment(int lvl)
         {
-            var chance = (int)(UnityEngine.Random.value * 10);
+            var chance = new Random().Next(0,7);
             var equipmentlvl=RandomWeaponLvl(lvl);
             switch (chance)
             {
@@ -22,7 +22,7 @@ namespace LifeLike.Utils
                 case 5: return GenerateShoes(equipmentlvl);
                 case 6: return GenerateGloves(equipmentlvl);
                 case 7: return GenerateHead(equipmentlvl);
-                default: return null;
+                default: return new  Stamina { StaminaRecover=1 };
             }
         }
 

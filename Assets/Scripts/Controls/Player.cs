@@ -31,16 +31,18 @@ namespace LifeLike.Controls
             if (Math.Abs(moveVector.x) > TOLERANCE || Math.Abs(moveVector.y) > TOLERANCE)       
              {
                 RoundMoves(ref moveVector);
-
-                 Debug.Log(string.Format("x: {0} y: {1}",moveVector.x,moveVector.y));
-
                 AttemtMove<MovingObject>(moveVector);
                 if (EnemyUtils.SelectedEnemy==null)
                     transform.eulerAngles=MathUtils.SetRotation(moveVector);
                 else
-                    transform.eulerAngles=CalculateAngle(EnemyUtils.SelectedEnemy);
+                    RotateToEnemy();
                 GameLogicManager.Instance.EndPlayerTurn();
              }
+        }
+
+        public void RotateToEnemy()
+        {
+            transform.eulerAngles = CalculateAngle(EnemyUtils.SelectedEnemy);
         }
 
         private Vector2 GetControllerInput()

@@ -7,7 +7,7 @@ namespace LifeLike.Interfaces
     {
         int MapSizeY { get; set; }
         int MapSizeX { get; set; }
-        MapElement[,] GenerateMap(int mapSizeX, int mapSizeY, int maxHorizontalLines, int maxVerticalLines);
+        MapElement[,] GenerateMap(int maxHorizontalLines, int maxVerticalLines);
         void SetupAddons(MapElement[,] map);
         void GenerateRooms(MapElement[,] map, int  totalHorizontalLines, int totalVerticalLines);
 

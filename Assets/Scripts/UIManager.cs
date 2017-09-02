@@ -60,7 +60,7 @@ namespace LifeLike
 
         public Character Player
         {
-            get { return PlayerManager.Instance.Statistic; }
+            get { return PlayerManager.Instance?.Statistic; }
         }
 
         public Canvas GameUI { get; set; }

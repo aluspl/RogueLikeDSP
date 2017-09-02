@@ -17,12 +17,12 @@ namespace LifeLike.MapUtils
               Generate Map
               mapSize: size of generated map
           */
-        public  MapElement[,] GenerateMap(int mapSizeX, int mapSizeY, int maxHorizontalLines, int maxVerticalLines)
+        public  MapElement[,] GenerateMap(int maxHorizontalLines, int maxVerticalLines)
         {
-            MapSizeX = mapSizeX;
-            MapSizeY = mapSizeY;
+            // MapSizeX = mapSizeX;
+            // MapSizeY = mapSizeY;
 
-            var map = new MapElement[mapSizeX, mapSizeY];
+            var map = new MapElement[MapSizeX, MapSizeY];
 
             SetupAddons(map);            
             SetupAssets(map);

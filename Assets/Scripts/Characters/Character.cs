@@ -14,10 +14,10 @@ namespace LifeLike.Characters
         public static string ClassName;
         protected readonly Random random = new Random();
 
-         /**
-        *
-        *Gnerate Actions Points based on agility
-        */
+        /**
+       *
+       *Gnerate Actions Points based on agility
+       */
         public Character(CharacterStatisticDataModel statistic)
         {
             Name = statistic.Name;
@@ -27,7 +27,7 @@ namespace LifeLike.Characters
             Charisma = statistic.Charisma;
             Endurance = statistic.Endurance;
             Perception = statistic.Perception;
-            isEnemy= statistic.IsEnemy;
+            isEnemy = statistic.IsEnemy;
 
             HealthPoint = Endurance * 10;
             MaxHealthPoint = HealthPoint;
@@ -39,7 +39,6 @@ namespace LifeLike.Characters
         //Check Greater Random in AgilitySlider
         private bool ChanceToAttack(Character enemy)
         {
-           
             var yourChance = random.Next(Agility);
             var enemyChance = random.Next(enemy.Agility);
             return yourChance > enemyChance;
@@ -47,16 +46,24 @@ namespace LifeLike.Characters
 
         private bool CriticalChance()
         {
-            return random.Next(100)*Agility>90;
-        }     
+            return random.Next(100) * Agility > 90;
+        }
         public virtual string Attack(Character enemy)
         {
             if (!ChanceToAttack(enemy)) return GameLogUtils.MissedAttack(this);
             var damage = CriticalChance() ? random.Next(Strength) : random.Next(Strength) * 2;
-            damage=enemy.Defense(damage);
-            return GameLogUtils.Attack(damage,this, enemy);
+            damage = enemy.Defense(damage);
+            return GameLogUtils.Attack(damage, this, enemy);
         }
+        public string CalculateLvl()
+        {
+            var needExperience = Math.Pow(2, Level + 4);
+            if (CurrentExperience > needExperience)
+                Level++;
+            Debug.Log($"{CurrentExperience}/{needExperience} => Level {Level}");
 
+            return GameLogUtils.Experience(this, needExperience);
+        }
         private int Defense(int damage)
         {
             HealthPoint -= damage;
@@ -70,10 +77,10 @@ namespace LifeLike.Characters
 
         private void CheckHealth()
         {
-            if (HealthPoint<=0)
+            if (HealthPoint <= 0)
             {
-                if (!isEnemy) 
-                    GameLogicManager.Instance.GameOver();                   
+                if (!isEnemy)
+                    GameLogicManager.Instance.GameOver();
             }
         }
 
@@ -84,24 +91,24 @@ namespace LifeLike.Characters
 
         public virtual List<string> SpecialActionsList()
         {
-             return new List<string>();
+            return new List<string>();
         }
-        public string SelectedSpecialAttack {get; set;}
+        public string SelectedSpecialAttack { get; set; }
 
         public void SelectSpecialAttack()
         {
-            if (SpecialActionsList().Count==0) SelectedSpecialAttack=string.Empty;
+            if (SpecialActionsList().Count == 0) SelectedSpecialAttack = string.Empty;
             else
             {
-                if (SpecialActionIndex==SpecialActionsList().Count) SpecialActionIndex=0;
-                    SelectedSpecialAttack=SpecialActionsList()[SpecialActionIndex++];
+                if (SpecialActionIndex == SpecialActionsList().Count) SpecialActionIndex = 0;
+                SelectedSpecialAttack = SpecialActionsList()[SpecialActionIndex++];
             }
-            Debug.Log("Selected Special Attack: "+SelectedSpecialAttack);
+            Debug.Log("Selected Special Attack: " + SelectedSpecialAttack);
         }
         public bool CheckStamina(int StaminaCost)
         {
-            if (StaminaPoint<StaminaCost) return false;    
-            StaminaPoint-=StaminaCost;
+            if (StaminaPoint < StaminaCost) return false;
+            StaminaPoint -= StaminaCost;
             return true;
         }
         public string Name { get; set; }
@@ -117,19 +124,21 @@ namespace LifeLike.Characters
         public Status Status { get; set; }
         public string SelectedClass { get; set; }
         public int MaxHealthPoint { get; set; }
-        public bool isEnemy {get; set; }
-        public int KilledEnemies { get;  set; }
-        private int SpecialActionIndex; 
-        public IWeapon SelectedWeapon {get; set; }
-        public IHead SelectedHead { get;  set; }
+        public bool isEnemy { get; set; }
+        public int KilledEnemies { get; set; }
+        private int SpecialActionIndex;
+        public IWeapon SelectedWeapon { get; set; }
+        public IHead SelectedHead { get; set; }
 
-        public IArmor SelectedArmor { get;  set; }
+        public IArmor SelectedArmor { get; set; }
 
-        public IPants SelectedPants { get;  set; }
+        public IPants SelectedPants { get; set; }
 
-        public IGloves SelectedGloves { get;  set; }
-        public IShoes SelectedShoes { get;  set; }
+        public IGloves SelectedGloves { get; set; }
+        public IShoes SelectedShoes { get; set; }
         public int StaminaPoint { get; internal set; }
         public int MaxStaminaPoint { get; internal set; }
+
+
     }
 }

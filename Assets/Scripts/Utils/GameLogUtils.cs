@@ -36,6 +36,12 @@ namespace LifeLike.Utils
         {
             return "You need more stamina points! Drink a Coffee or something!";
         }
+
+        internal static string Experience(Character character, double needExperience)
+        {
+            return $"You received {character.CurrentExperience}/{needExperience} => You have now {character.Level} level";   
+
+        }
     }
 }
 

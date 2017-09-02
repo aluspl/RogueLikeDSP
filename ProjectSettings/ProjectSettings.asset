@@ -149,7 +149,7 @@ PlayerSettings:
   androidMaxAspectRatio: 2.1
   applicationIdentifier:
     Android: pl.szymonmotyka.unity
-    Standalone: unity.Szymon Motyka.LIfeLike
+    Standalone: pl.szymonmotyka.lifelike
     Tizen: pl.szymonmotyka.unity
     iOS: pl.szymonmotyka.unity
     tvOS: pl.szymonmotyka.unity
@@ -546,7 +546,7 @@ PlayerSettings:
   scriptingBackend: {}
   incrementalIl2cppBuild: {}
   additionalIl2CppArgs: 
-  scriptingRuntimeVersion: 0
+  scriptingRuntimeVersion: 1
   apiCompatibilityLevelPerPlatform: {}
   m_RenderingPath: 1
   m_MobileRenderingPath: 1

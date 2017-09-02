@@ -37,10 +37,14 @@ namespace LifeLike.MapUtils
 
         public void StartLevel(int level)
         {
+            MapSizeX=(level+1)*30;
+            MapSizeY=(level+1)*30;
             using (var generator = new MapGenerator())
             {
                 generator.MinimumWallSize = MinimalWallSize;
-                Map = generator.GenerateMap(MapSizeX, MapSizeY, MaxHorizontalLines, MaxVerticalLines);
+                generator.MapSizeX=MapSizeX;
+                generator.MapSizeY=MapSizeY;
+                Map = generator.GenerateMap(MaxHorizontalLines, MaxVerticalLines);
             }
             MaxEnemies = level + 5;
             InsertMapElements();
@@ -119,10 +123,10 @@ namespace LifeLike.MapUtils
 
         private void AddEnemy(MapElement[,] map, int x, int y)
         {
+            if (x==0 && y==0) return;
             if (MaxEnemies <= 0 || Enemies.Count == 0 || map[x, y] != MapElement.Floor) return;
-            var chance = _random.Next(20) == 0;
+            var chance = _random.Next(50) == 0;
             if (!chance) return;
-
             var enemy = Instantiate(Enemies.FirstOrDefault(), GetPosition(x, y), Quaternion.identity,
                 EnemiesCollection);
 

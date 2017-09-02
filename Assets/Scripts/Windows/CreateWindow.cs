@@ -4,7 +4,9 @@ using System.Linq;
 using LifeLike.Characters;
 using LifeLike.Characters.CharacterClasses;
 using LifeLike.Enums;
+using LifeLike.Utils;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 namespace LifeLike
 {
@@ -24,6 +26,7 @@ namespace LifeLike
         public Text AgilityValue;
         public Text EnduranceValue;
         public Text PerceptionValue;
+        public Text ClassDescription;
 
         public Dropdown ClassListDropdown;
         public InputField CharacterName;
@@ -158,9 +161,15 @@ namespace LifeLike
         {
             if (string.IsNullOrEmpty(Statistic.Name) || SelectedClass == null) return;
             if (CalculatePointLeft() < 0) return;
-
-            PlayerManager.Instance.Statistic = CharacterFactory.GetPlayerClass(SelectedClass, Statistic);
-            CloseWindow();
+            if (PlayerManager.Instance==null)
+            {
+                GameStatic.Statistic = CharacterFactory.GetPlayerClass(SelectedClass, Statistic);
+                SceneManager.LoadScene ("LifeLike");
+            }
+            else
+            {
+                PlayerManager.Instance.Statistic=CharacterFactory.GetPlayerClass(SelectedClass, Statistic);
+            }
         }
 
 

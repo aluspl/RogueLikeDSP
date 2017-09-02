@@ -2,91 +2,102 @@ using System;
 using LifeLike;
 using LifeLike.Enums;
 using LifeLike.Inferfaces;
+using LifeLike.Utils;
 using UnityEngine;
-namespace LifeLike{
-public class WindowManager : MonoBehaviour, IWindowManager
+namespace LifeLike
 {
-    public CreateWindow CreateWindowPrefab;
-    public DetailWindow DetailWindowPrefab;
-    public EquipmentWindow EquipmentWindowPrefab;
-    
-    
-    [InjectAttribute("UI")]
-    public static IWindowManager Instance = null;
-
-    public WindowState Status { get; set; }
-    public void Awake()
+    public class WindowManager : MonoBehaviour, IWindowManager
     {
-        Instance=this;
-        Status =WindowState.Close;
-    }
-    public void Destroy()
-    {
-        Status= WindowState.Close;
-    }
+        public CreateWindow CreateWindowPrefab;
+        public DetailWindow DetailWindowPrefab;
+        public EquipmentWindow EquipmentWindowPrefab;
 
-    private  void OpenDetailWindow()
-    {
-        if (PlayerManager.Instance!=null && PlayerManager.Instance.Statistic!=null)
-        {
-            Instantiate(DetailWindowPrefab);
-            Status=WindowState.Open;
 
-        }
-        else
-        {
-            Status=WindowState.Close;
-        }
-    }
-    private void OpenEquipmentWindow()
-    {
-        if (PlayerManager.Instance!=null && PlayerManager.Instance.Statistic!=null)
-        {
-            Instantiate(EquipmentWindowPrefab);
-            Status=WindowState.Open;
-        }
-        else
-        {
-            Status=WindowState.Close;
-        }        
-    }
-    private  void OpenCreateWindow()
-    {
-        if (PlayerManager.Instance!=null && PlayerManager.Instance.Statistic==null) 
-        {
-            Instantiate(CreateWindowPrefab);
-            Status=WindowState.Open;
+        [InjectAttribute("UI")]
+        public static IWindowManager Instance = null;
 
-        }
-        else        
+        public WindowState Status { get; set; }
+        public void Awake()
         {
-            Status=WindowState.Close;
+            Instance = this;
+            Status = WindowState.Close;
         }
-    }
+        public void Destroy()
+        {
+            Status = WindowState.Close;
+        }
 
-    public void Open(WindowType type)
+        private void OpenDetailWindow()
         {
-          switch (type)
+            if (PlayerManager.Instance != null && PlayerManager.Instance.Statistic != null)
             {
-                case WindowType.Create: 
-                    OpenCreateWindow();
-                break;
-                case WindowType.Detail: 
-                    OpenDetailWindow();
-                break;
-                case WindowType.Equipment: 
-                    OpenEquipmentWindow();                
-                break;
-                
-                default: Debug.LogError(" Window Manager: really? "); break;        
+                Instantiate(DetailWindowPrefab);
+                Status = WindowState.Open;
+
+            }
+            else
+            {
+                Status = WindowState.Close;
+            }
+        }
+        private void OpenEquipmentWindow()
+        {
+            if (PlayerManager.Instance != null && PlayerManager.Instance.Statistic != null)
+            {
+                Instantiate(EquipmentWindowPrefab);
+                Status = WindowState.Open;
+            }
+            else
+            {
+                Status = WindowState.Close;
+            }
+        }
+        private void OpenCreateWindow()
+        {
+            if (PlayerManager.Instance != null && PlayerManager.Instance.Statistic == null)
+            {
+                if (GameStatic.Statistic == null)
+                {
+                    Instantiate(CreateWindowPrefab);
+
+                    Status = WindowState.Open;
+                }
+                else
+                {
+                    PlayerManager.Instance.Statistic = GameStatic.Statistic;
+                    Status = WindowState.Close;
+
+                }
+            }
+            else
+            {
+                Status = WindowState.Close;
             }
         }
 
-      
+        public void Open(WindowType type)
+        {
+            switch (type)
+            {
+                case WindowType.Create:
+                    OpenCreateWindow();
+                    break;
+                case WindowType.Detail:
+                    OpenDetailWindow();
+                    break;
+                case WindowType.Equipment:
+                    OpenEquipmentWindow();
+                    break;
+
+                default: Debug.LogError(" Window Manager: really? "); break;
+            }
+        }
+
+
 
         void IManager.Destroy()
         {
-            Instance=null;
+            Instance = null;
         }
 
     }

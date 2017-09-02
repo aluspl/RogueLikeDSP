@@ -11,7 +11,7 @@ namespace LifeLike.Utils
     public class FightUtils : MonoBehaviour
     {
 
-        public  void AttackPlayer(Character enemy)
+        public void AttackPlayer(Character enemy)
         {
             UI.AddLog(enemy.Attack(PlayerManager.Instance.Statistic));
         }
@@ -32,52 +32,54 @@ namespace LifeLike.Utils
         }
         private bool CheckIsEnemyIsNotNull
         {
-            get {
+            get
+            {
                 return EnemyUtils.SelectedEnemy != null && Player != null;
             }
         }
 
-        public static FightUtils Instance { get;  set; }
+        public static FightUtils Instance { get; set; }
 
         public void AttackEnemy()
         {
             if (CheckIsEnemyIsNotNull)
-            {  
+            {
                 GameLogicManager.Instance.EndPlayerTurn();
-                var result=Player.Attack(EnemyUtils.SelectedEnemy.Statistic);
+                var result = Player.Attack(EnemyUtils.SelectedEnemy.Statistic);
                 UI.AddLog(result);
                 if (!EnemyUtils.SelectedEnemy.IsDead) return;
                 EnemyIsDead(EnemyUtils.SelectedEnemy);
-             
-            }              
+
+            }
         }
         public void SpecialAttackEnemy()
         {
-             if (CheckIsEnemyIsNotNull)
-             {  
+            if (CheckIsEnemyIsNotNull)
+            {
                 GameLogicManager.Instance.EndPlayerTurn();
-                var result=Player.SpecialAction(EnemyUtils.SelectedEnemy.Statistic);
+                var result = Player.SpecialAction(EnemyUtils.SelectedEnemy.Statistic);
                 UI.AddLog(result);
                 if (!EnemyUtils.SelectedEnemy.IsDead) return;
-                 EnemyIsDead(EnemyUtils.SelectedEnemy);
-             }                                 
-     }
+                EnemyIsDead(EnemyUtils.SelectedEnemy);
+            }
+        }
 
-        public  void EnemyIsDead(Enemy selectedEnemy)
+        public void EnemyIsDead(Enemy selectedEnemy)
         {
-            var builder=new StringBuilder();
+            var builder = new StringBuilder();
             builder.AppendFormat("Enemy called {0} is now Dead, SHAME OF YOU! Great Job!! ",
                 selectedEnemy.Statistic.Name);
-            var experience=selectedEnemy.Statistic.Level * 10;
+            var experience = selectedEnemy.Statistic.Level * 10;
             Player.CurrentExperience += experience;
-            builder.AppendFormat("\nYou receive {0} exp from {1} and you have  now {2}",
-             experience, selectedEnemy.Statistic.Name, Player.CurrentExperience);
+            builder.AppendFormat("\nYou receive {0} exp from {1}",
+             experience, selectedEnemy.Statistic.Name);
+            builder.AppendLine(Player.CalculateLvl());
             EnemyManager.Instance.KillEnemy(selectedEnemy);
             Player.KilledEnemies++;
             UI.AddLog(builder.ToString());
         }
 
-      
+
     }
 
 }

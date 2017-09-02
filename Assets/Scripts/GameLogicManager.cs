@@ -105,8 +105,7 @@ namespace LifeLike
 
        
         private void OpenCharacterCreatorWindow()
-        { 
-            
+        {             
             WindowManager.Instance.Open(WindowType.Create);    
         }
 

@@ -13,19 +13,9 @@ namespace LifeLike.Utils
         public static Character GenerateEnemy()
         {
             var classes = CharacterFactory.EnemyClassList();
-            
-            var statistic = new CharacterStatisticDataModel
-            {
-                Agility = Random.Range(0,5),
-                Charisma = 1,
-                CurrentExperience = 0,
-                Endurance = Random.Range(0,5),
-                Inteligence = 1,
-                Level = 1,                   
-                Name = "Random Enemy "+_enemyCount++,
-                Strength = Random.Range(0,5),
-                IsEnemy=true
-            };
+            var lvl = PlayerManager.Instance?.Statistic!=null? PlayerManager.Instance.Statistic.Level : 1; 
+            var statistic =  EnemyGenerator.GenerateEnemy(lvl);
+         
             return CharacterFactory.GetPlayerClass(classes.FirstOrDefault().Key, statistic);
         }
         public static void SelectEnemy()
@@ -38,6 +28,7 @@ namespace LifeLike.Utils
             if (EnemyIndex == nearby.Count) EnemyIndex = 0;
             UnSelectAllEnemies();
             nearby[EnemyIndex>=nearby.Count?  0 : EnemyIndex ].IsSelected = true;
+            PlayerManager.Instance?.Object.RotateToEnemy();
         }
 
         public static IEnumerator EnemiesMove()
