@@ -97,6 +97,7 @@ namespace LifeLike
 
         void IManager.Destroy()
         {
+            Destroy(this.gameObject);
             Instance = null;
         }
 

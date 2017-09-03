@@ -23,7 +23,9 @@ public class PlayerManager : MonoBehaviour, IPlayerManager {
         public void Destroy()
         {
 			Destroy(Object);
+			Destroy(gameObject);
 			Statistic=null;
+			Instance=null;
         }
 		public void AddEquipment(IEquipment equipment)
 		{

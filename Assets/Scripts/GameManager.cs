@@ -103,6 +103,13 @@ namespace LifeLike
             
             LifeLike.GameLogicManager.Instance.Destroy();
             LifeLike.LootManager.Instance.Destroy();
+            LifeLike.UIManager.Instance=null;
+            LifeLike.PlayerManager.Instance=null;
+            LifeLike.EnemyManager.Instance=null;
+            LifeLike.WindowManager.Instance=null;            
+            LifeLike.GameLogicManager.Instance=null;
+            LifeLike.LootManager.Instance=null;
+            Destroy(this.gameObject);
         }
 
        

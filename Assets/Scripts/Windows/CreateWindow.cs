@@ -169,6 +169,8 @@ namespace LifeLike
             else
             {
                 PlayerManager.Instance.Statistic=CharacterFactory.GetPlayerClass(SelectedClass, Statistic);
+                         SceneManager.LoadScene ("LifeLike");
+
             }
         }
 

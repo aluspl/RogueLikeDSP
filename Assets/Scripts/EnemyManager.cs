@@ -48,7 +48,8 @@ namespace LifeLike
        public void Destroy()
         {
             List.Clear();
-//            Destroy(this.gameObject);
+            Destroy(this.gameObject);
+            Instance=null;
 
         }
     }

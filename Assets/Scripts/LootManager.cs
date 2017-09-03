@@ -36,6 +36,7 @@ namespace LifeLike
         public void Destroy()
         {
             Destroy(this.gameObject);
+            LootManager.Instance=null;
         }
         public IMapManager MapManager
         {

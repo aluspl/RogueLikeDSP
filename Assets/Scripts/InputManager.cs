@@ -117,7 +117,7 @@ namespace LifeLike
         public void Destroy()
         {
 			Destroy(this.gameObject);
-			
+			Instance=null;
         }
     }
 

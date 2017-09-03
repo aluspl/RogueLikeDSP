@@ -635,7 +635,7 @@ PlayerSettings:
     Hub: 0
     UNet: 1
   facebookSdkVersion: 7.9.1
-  apiCompatibilityLevel: 2
+  apiCompatibilityLevel: 3
   cloudProjectId: e6b1af38-b98f-4081-af04-849095be6659
   projectName: LifeLike
   organizationId: szymon-motyka
