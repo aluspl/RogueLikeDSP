@@ -18,7 +18,7 @@ namespace LifeLike.Characters
        *
        *Gnerate Actions Points based on agility
        */
-        public Character(CharacterStatisticDataModel statistic)
+        public Character(CharacterStats statistic)
         {
             Name = statistic.Name;
             Strength = statistic.Strength;

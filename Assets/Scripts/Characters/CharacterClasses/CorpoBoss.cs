@@ -6,7 +6,7 @@ namespace LifeLike.Characters.CharacterClasses
     {
         public new static string ClassName = "Corpo Boss";
 
-        public CorpoBoss(CharacterStatisticDataModel statistic) : base(statistic)
+        public CorpoBoss(CharacterStats statistic) : base(statistic)
         {           
              SelectedClass=ClassName;
         }

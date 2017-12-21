@@ -1,17 +1,51 @@
 using System;
+using System.IO;
 using LifeLike.Characters;
 using LifeLike.Equipments;
 using LifeLike.Inferfaces;
 using LifeLike.Interfaces;
+using UnityEngine;
 
 namespace LifeLike.Utils
 {
     public class EquipmentGenerator
     {
-        public static IEquipment GenerateEquipment(int lvl)
+        public EquipmentGenerator()
         {
-            var chance = new Random().Next(0,7);
-            var equipmentlvl=RandomWeaponLvl(lvl);
+            _random = new System.Random();
+            LoadEquipmentConfig();
+        }       
+        private static readonly string equipmentFileName="Equipment.json";
+
+        private System.Random _random=new System.Random();
+        private EquipmentConfig loadedData;
+
+        private  void LoadEquipmentConfig()
+        {
+            string filePath = Path.Combine(UnityEngine.Application.streamingAssetsPath, equipmentFileName);
+            if (File.Exists(filePath))
+            {
+                // Read the json from the file into a string
+                string dataAsJson = File.ReadAllText(filePath);
+                // Pass the json to JsonUtility, and tell it to create a GameData object from it
+                loadedData = UnityEngine.JsonUtility.FromJson<EquipmentConfig>(dataAsJson);
+            }
+            else
+            {
+                loadedData=EquipmentConfig.SampleData();
+                Debug.LogError("Cannot load game data!");
+            }
+        }
+
+        public int RandomNumber(int max)
+        {
+            return _random.Next(0, max);
+        }
+
+        public  IEquipment GenerateEquipment(int lvl)
+        {
+            var chance=RandomNumber(20);
+            var equipmentlvl = RandomWeaponLvl(lvl);
             switch (chance)
             {
                 case 0: return new Health { HealthRecover = 10 };
@@ -22,20 +56,20 @@ namespace LifeLike.Utils
                 case 5: return GenerateShoes(equipmentlvl);
                 case 6: return GenerateGloves(equipmentlvl);
                 case 7: return GenerateHead(equipmentlvl);
-                default: return new  Stamina { StaminaRecover=1 };
+                default: return  null;
             }
         }
 
-        private static int RandomWeaponLvl(int lvl)
+        private  int RandomWeaponLvl(int lvl)
         {
-            if (lvl<=0) return 0;
-            return new Random().Next(0,lvl);
+            if (lvl <= 0) return 0;
+            return RandomNumber(lvl);
         }
-        public static string GenerateName(string type, int lvl)
+        public  string GenerateName(string type, int lvl)
         {
-            return string.Format("{0} {1} {2}", GetEquipmentRare(lvl), GetEquipmentMaterial(lvl),type);
+            return string.Format("{0} {1} {2}", GetEquipmentRare(lvl), GetEquipmentMaterial(lvl), type);
         }
-        private static string GetEquipmentRare(int lvl)
+        private  string GetEquipmentRare(int lvl)
         {
             switch (lvl)
             {
@@ -43,57 +77,46 @@ namespace LifeLike.Utils
                 case 1: return "Normal";
                 case 2: return "Rare";
                 case 3: return "Special";
-                case 4: return "Legendary";                
+                case 4: return "Legendary";
                 default: return "Normal";
             }
         }
-        private static string GetEquipmentMaterial(int lvl)
+        private  string GetEquipmentMaterial(int lvl)
         {
-            var material=new Random().Next(0,6);
-            switch (material)
-            {
-                case 0: return "Paper";
-                case 1: return "Rusty";
-                case 2: return "Cotton";
-                case 3: return "Poliester";
-
-                case 4: return "Metal";
-                case 5: return "Leather";
-                case 6: return "Titan";                            
-                default: return "Cotton";
-            }
+            var material = RandomNumber(loadedData.Materials.Count-1);
+            return loadedData.Materials[material];                     
         }
-        private static IEquipment GenerateHead(int equipmentlvl)
+        private  IEquipment GenerateHead(int equipmentlvl)
         {
-            string HeadType=Head.GetTypes();
+            string HeadType = Head.GetTypes();
             return new Head { Name = HeadType, Defense = 1 };
         }
 
-        private static IEquipment GenerateGloves(int equipmentlvl)
+        private  IEquipment GenerateGloves(int equipmentlvl)
         {
             return new Gloves { Name = "Gloves", Defense = 1 };
         }
 
-        private static IShoes GenerateShoes(int equipmentlvl)
+        private  IShoes GenerateShoes(int equipmentlvl)
         {
             return new Shoes { Name = "Shoes", Defense = 1 };
         }
 
-        private static IPants GeneratePants(int equipmentlvl)
+        private  IPants GeneratePants(int equipmentlvl)
         {
             return new Pants { Name = "Pants", Defense = 1 };
         }
 
-        private static IWeapon GenerateWeapon(int equipmentlvl)
+        private  IWeapon GenerateWeapon(int equipmentlvl)
         {
-            var weapon=Weapon.Type;
-            weapon.Name=GenerateName(weapon.Name, equipmentlvl);
-            weapon.Attack=equipmentlvl;
-            
+            var weapon = Weapon.Type;
+            weapon.Name = GenerateName(weapon.Name, equipmentlvl);
+            weapon.Attack = equipmentlvl;
+
             return weapon;
         }
 
-        private static IArmor GenerateArmor(int equipmentlvl)
+        private  IArmor GenerateArmor(int equipmentlvl)
         {
             return new Armor { Name = "Armor", Defense = 1 };
         }

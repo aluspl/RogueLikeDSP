@@ -27,7 +27,7 @@ namespace LifeLike.Controls
         {
             if (_isDay)
             {
-                _light.intensity = 0.6f;
+                _light.intensity = 2f;
 
             }
             if (!_isDay)

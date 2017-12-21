@@ -6,7 +6,7 @@ namespace LifeLike.Characters.CharacterClasses
     {
         public new static string ClassName = "Hobo";
 
-        public HoboClass(CharacterStatisticDataModel statistic) : base(statistic)
+        public HoboClass(CharacterStats statistic) : base(statistic)
         {
             SelectedClass=ClassName;
         }

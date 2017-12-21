@@ -18,6 +18,7 @@ namespace LifeLike.Equipments{
         public string SpriteImageName { get ; set ; }
         public virtual string Stats { get;  }
 		public virtual string FullStats { get;  }
+        public EquipmentLevel EquipmentLevel {get; set;}
 	    public virtual int Bonus1 { get;  set; }
         public virtual StatEnum Bonus1Type { get; set; }
         public virtual int Bonus2 { get;  set; }

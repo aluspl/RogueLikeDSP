@@ -9,7 +9,7 @@ namespace LifeLike.Characters.CharacterClasses
     {
         public new static readonly string ClassName = "IT Guy";
 
-        public ItGuyClass(CharacterStatisticDataModel statistic) : base(statistic)
+        public ItGuyClass(CharacterStats statistic) : base(statistic)
         {
             SelectedClass=ClassName;
         }

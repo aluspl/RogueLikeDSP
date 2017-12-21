@@ -1,4 +1,4 @@
 sceneSetups:
-- path: Assets/LifeLike.unity
+- path: Assets/CharacterCreator.unity
   isLoaded: 1
   isActive: 1

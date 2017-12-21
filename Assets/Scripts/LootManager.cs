@@ -19,10 +19,12 @@ namespace LifeLike
 
         [InjectAttribute("Loot")]
         public static ILootManager Instance = null;
+        private EquipmentGenerator _equipmentGenerator;
 
         void Awake()
         {
             if (Instance == null) Instance = this;
+            _equipmentGenerator = new EquipmentGenerator();
         }
 
         void LateUpdate()
@@ -54,8 +56,12 @@ namespace LifeLike
                 if (MapManager == null) return null;
                 var position = enemyPosition.transform.position;
                 var equipment = GenerateLootItem(EnemyStatistic, PlayerManager.Instance.Statistic);
-                var eq = Instantiate(Equipment, position, Quaternion.Euler(0, 0, 0));
-                eq.SetEquipment(equipment);
+                if (equipment!=null)
+                { 
+                    var eq = Instantiate(Equipment, position, Quaternion.Euler(0, 0, 0));
+                    eq.SetEquipment(equipment);
+                }
+               
                 return equipment;
             }
             catch (Exception e)
@@ -68,7 +74,7 @@ namespace LifeLike
         private IEquipment GenerateLootItem(Character enemy, Character player)
         {
 			var lvl = player.Level-enemy.Level;
-			return EquipmentGenerator.GenerateEquipment(lvl);
+			return _equipmentGenerator.GenerateEquipment(lvl);
 			
 
         

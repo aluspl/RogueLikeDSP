@@ -5,9 +5,9 @@ namespace LifeLike.Utils
 {
     public class EnemyGenerator
     {
-        public static CharacterStatisticDataModel GenerateEnemy(int lvl)
+        public static CharacterStats GenerateEnemy(int lvl)
         {
-            var statistic = new CharacterStatisticDataModel
+            var statistic = new CharacterStats
             {
                 Agility=2,
                 Strength=2,
@@ -21,7 +21,7 @@ namespace LifeLike.Utils
             AssignPoints(statistic,lvl);
             return statistic;
         }
-        private static void AssignPoints(CharacterStatisticDataModel statistic, int lvl)
+        private static void AssignPoints(CharacterStats statistic, int lvl)
         {
             var random = new Random();
 

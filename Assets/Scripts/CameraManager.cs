@@ -19,7 +19,7 @@ namespace LifeLike
             if (PlayerManager.Instance!=null &&  PlayerManager.Instance.Object != null)
             {
                 transform.position= new Vector3(PlayerManager.Instance.Object.transform.position.x,
-                    PlayerManager.Instance.Object.transform.position.y,-1);
+                    PlayerManager.Instance.Object.transform.position.y,-10);
             }
             SetLight();
         }
@@ -30,7 +30,7 @@ namespace LifeLike
             // Set the position of the camera's transform to be the same as the player's, but offset by the calculated offset distance.
             if (PlayerManager.Instance!=null &&   PlayerManager.Instance.Object!=null)
              transform.position= new Vector3(PlayerManager.Instance.Object.transform.position.x,               
-             PlayerManager.Instance.Object.transform.position.y,-1);     
+             PlayerManager.Instance.Object.transform.position.y,-10);     
        }
 
         private void SetLight()

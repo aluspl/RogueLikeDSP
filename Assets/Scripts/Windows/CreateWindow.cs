@@ -39,7 +39,7 @@ namespace LifeLike
 
         public Button SaveButton;
 
-        public CharacterStatisticDataModel Statistic = new CharacterStatisticDataModel()
+        public CharacterStats Statistic = new CharacterStats()
         {
             Strength = 2,
             Agility = 2,
