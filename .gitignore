@@ -1,0 +1,11 @@
+/Temp
+/Packages
+/obj
+/.vscode
+/.idea
+/Library
+".\\Assets\\packages/"
+ProjectSettings/PresetManager.asset
+RogueLikeDSP.sln.DotSettings.user
+Temp/
+etc/
