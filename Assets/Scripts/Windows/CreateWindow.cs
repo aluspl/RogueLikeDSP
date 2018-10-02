@@ -15,17 +15,11 @@ namespace LifeLike
         private const int PointsToSpend = 6;
         public Slider StrengthSlider;
         public Slider InteligenceSlider;
-        public Slider CharismaSlider;
         public Slider AgilitySlider;
-        public Slider EnduranceSlider;
-        public Slider PerceptionSlider;
 
         public Text StrengthValue;
         public Text InteligenceValue;
-        public Text CharismaValue;
         public Text AgilityValue;
-        public Text EnduranceValue;
-        public Text PerceptionValue;
         public Text ClassDescription;
 
         public Dropdown ClassListDropdown;
@@ -43,10 +37,7 @@ namespace LifeLike
         {
             Strength = 2,
             Agility = 2,
-            Charisma = 2,
             Inteligence = 2,
-            Endurance = 2,
-            Perception = 2
         };
 
 
@@ -74,38 +65,10 @@ namespace LifeLike
             if (StrengthSlider != null) StrengthSlider.onValueChanged.AddListener(StrengthChanged);
             if (AgilitySlider != null) AgilitySlider.onValueChanged.AddListener(AgilityChanged);
             if (InteligenceSlider != null) InteligenceSlider.onValueChanged.AddListener(InteligenceChanged);
-            if (EnduranceSlider != null) EnduranceSlider.onValueChanged.AddListener(EnduranceChanged);
-            if (PerceptionSlider != null) PerceptionSlider.onValueChanged.AddListener(PerceptionChanged);
-            if (CharismaSlider != null) CharismaSlider.onValueChanged.AddListener(CharismaChanged);
-            if (CharismaValue != null) CharismaValue.text = Statistic.Charisma.ToString();
-            if (PerceptionValue != null) PerceptionValue.text = Statistic.Perception.ToString();
-            if (EnduranceValue != null) EnduranceValue.text = Statistic.Endurance.ToString();
             if (AgilityValue != null) AgilityValue.text = Statistic.Agility.ToString();
             if (StrengthValue != null) StrengthValue.text = Statistic.Strength.ToString();
             if (InteligenceValue != null) InteligenceValue.text = Statistic.Inteligence.ToString();
 
-        }
-
-        private void CharismaChanged(float value)
-        {
-            Statistic.Charisma = (int) value;
-            CharismaValue.text = Statistic.Charisma.ToString();
-          //  Debug.Log("Charisma: " + value);
-        }
-
-        private void PerceptionChanged(float value)
-        {
-            Statistic.Perception = (int) value;
-            PerceptionValue.text = Statistic.Perception.ToString();
-            //Debug.Log("Perception: " + value);
-        }
-
-        private void EnduranceChanged(float value)
-        {
-            Statistic.Endurance = (int) value;
-            EnduranceValue.text = Statistic.Endurance.ToString();
-
-          //  Debug.Log("Endurance: " + value);
         }
 
         private void InteligenceChanged(float value)
@@ -149,10 +112,10 @@ namespace LifeLike
         {
             return (CharacterLeftPointValue + PointsToSpend) - (Statistic.Strength +
                                                     Statistic.Agility +
-                                                    Statistic.Charisma +
-                                                    Statistic.Endurance +
-                                                    Statistic.Inteligence +
-                                                    Statistic.Perception);
+                                                    // Statistic.Charisma +
+                                                    // Statistic.Endurance +
+                                                    Statistic.Inteligence);  //+
+                                                    // Statistic.Perception);
 
 
         }
@@ -169,8 +132,8 @@ namespace LifeLike
             else
             {
                 PlayerManager.Instance.Statistic=CharacterFactory.GetPlayerClass(SelectedClass, Statistic);
-                         SceneManager.LoadScene ("LifeLike");
-
+                        //  SceneManager.LoadScene ("LifeLike");
+                CloseWindow();
             }
         }
 

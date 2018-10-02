@@ -5,9 +5,9 @@ using UnityEngine;
 
 namespace LifeLike
 {
-    public class GameManager : MonoBehaviour 
+    public class GameStateManager : MonoBehaviour 
     {
-        public static GameManager Instance = null;
+        public static GameStateManager Instance = null;
         public GameObject GameLogicManager;
         // public GameObject InputManager;
         public GameObject LootManager;

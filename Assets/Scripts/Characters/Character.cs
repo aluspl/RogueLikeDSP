@@ -24,9 +24,9 @@ namespace LifeLike.Characters
             Strength = statistic.Strength;
             Inteligence = statistic.Inteligence;
             Agility = statistic.Agility;
-            Charisma = statistic.Charisma;
-            Endurance = statistic.Endurance;
-            Perception = statistic.Perception;
+            // Charisma = statistic.Charisma;
+            // Endurance = statistic.Endurance;
+            // Perception = statistic.Perception;
             isEnemy = statistic.IsEnemy;
 
             HealthPoint = Endurance * 10;

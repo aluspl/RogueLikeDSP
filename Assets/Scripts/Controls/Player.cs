@@ -18,6 +18,38 @@ namespace LifeLike.Controls
         void Update()
         {
             MovingLogic();
+            Rotate();
+        }
+
+        private void Rotate()
+        {
+            if (WindowManager.Instance.Status==WindowState.Open) return;
+
+            if (InputManager.Instance==null) return;
+            Quaternion quaternion;
+            switch(InputManager.Instance.ControlType)
+            {
+                case KeyConfig.Keyboard:           
+                {
+                    var mousePosition = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x,Input.mousePosition.y, Input.mousePosition.z));                 
+                    quaternion = Quaternion.Euler(0, 0, Mathf.Atan2(mousePosition.y, mousePosition.x) * Mathf.Rad2Deg - 90);                             
+                    break;
+                }   
+                case KeyConfig.GamePad:           
+                {                    
+                    quaternion = Quaternion.Euler(0, 0, Mathf.Atan2(Input.GetAxisRaw("RHorizontal"),Input.GetAxisRaw("RVertical")) * Mathf.Rad2Deg - 90);                             
+                    break;
+                }
+                case KeyConfig.GamePadOSX:           
+                {                    
+                    quaternion = Quaternion.Euler(0, 0, Mathf.Atan2(Input.GetAxisRaw("RHorizontal"),Input.GetAxisRaw("RVertical")) * Mathf.Rad2Deg - 90);                             
+                    break;
+                }
+                default: 
+                    quaternion= Quaternion.Euler(0,0,0);
+                    break;
+            }   
+            transform.rotation = quaternion;
         }
 
         private void MovingLogic()
