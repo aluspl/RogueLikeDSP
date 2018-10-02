@@ -11,8 +11,7 @@ namespace LifeLike.Utils
             {
                 Agility=2,
                 Strength=2,
-                Endurance=2,
-                Charisma = 2,
+                // Endurance=2,
                 Inteligence = 2,
                 Level = lvl,                
                 Name = GenerateName(),
@@ -32,11 +31,11 @@ namespace LifeLike.Utils
                 statistic.Agility = temp = random.Next(1, points);
                 points -= temp;
             }
-            if (points > 1)
-            {
-                statistic.Endurance = temp = random.Next(1, points);
-                points -= temp;
-            }
+            // if (points > 1)
+            // {
+            //     statistic.Endurance = temp = random.Next(1, points);
+            //     points -= temp;
+            // }
             if (points > 1)
             {
                 statistic.Strength = temp = random.Next(1, points);

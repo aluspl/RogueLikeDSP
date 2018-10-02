@@ -66,7 +66,6 @@ namespace LifeLike
                 {
                     PlayerManager.Instance.Statistic = GameStatic.Statistic;
                     Status = WindowState.Close;
-
                 }
             }
             else

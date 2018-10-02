@@ -38,11 +38,11 @@ namespace LifeLike
             if (Instance == null) Instance = this;
             MapManager = GetComponent<MapManager>();
             string ErrorModule=string.Empty;
-            if (GameManager.Instance.AreAllModulesWork(out ErrorModule)) InitGame();
+            if (GameStateManager.Instance.AreAllModulesWork(out ErrorModule)) InitGame();
             else 
             {
                 Debug.LogError("Problem with Loading instance: "+ErrorModule);
-                GameManager.Instance.BuildContainer();
+                GameStateManager.Instance.BuildContainer();
                 InitGame();
             }
         }
@@ -71,7 +71,7 @@ namespace LifeLike
         public void GameOver()
         {
            
-            GameManager.Instance.EndGame();
+            GameStateManager.Instance.EndGame();
             SceneManager.LoadScene(0);
         }
 
@@ -82,7 +82,11 @@ namespace LifeLike
             if (WindowManager.Instance.Status==WindowState.Close)
             {
                 if (Input.GetKeyDown(InputManager.Instance.FightNormalKey)) FightUtils.Instance.AttackEnemy();
+                if (Input.GetKeyDown(KeyCode.Mouse0)) FightUtils.Instance.AttackEnemy();
+
                 if (Input.GetKeyDown(InputManager.Instance.FightSpecialKey)) FightUtils.Instance.SpecialAttackEnemy();
+                if (Input.GetKeyDown(KeyCode.Mouse1)) FightUtils.Instance.SpecialAttackEnemy();
+
                 if (Input.GetKeyDown(InputManager.Instance.SelectEnemyKey)) EnemyUtils.SelectEnemy();
                 if (Input.GetKeyDown(InputManager.Instance.SelectSpecialAttackKey))  PlayerManager.Instance.Statistic.SelectSpecialAttack();
                 if (Input.GetKeyDown(InputManager.Instance.ExitKey)) EndGame();
@@ -124,5 +128,6 @@ namespace LifeLike
             Destroy(this.gameObject);
             Instance=null;
         }
+
     }
 }

@@ -7,13 +7,9 @@
         public long CurrentExperience;
         public int Strength;
         public int Inteligence;
-        public int Charisma;
         public int Agility;
-        public int Endurance;
-        public int Perception;
-
+        // public int Endurance;
         public int Stamina;
-
         public bool IsEnemy;
     }
 }
