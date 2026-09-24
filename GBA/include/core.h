@@ -143,6 +143,8 @@ namespace core
         run_mods bonus;
         int xp_pct = 0;              // doświadczenie x100 (mnożnik trudności bez gubienia ułamków)
         int xp_banked = 0;           // ile doświadczenia już przeniesiono do profilu
+        int run_xp = 0;              // surowe doświadczenie z tej budowy (poziomy postaci)
+        int hero_level = 1;               // poziom postaci w trakcie budowy
         int boss = -1;               // indeks w enemies[]
         int stairs_x = -1, stairs_y = -1;
         status st = status::playing;
@@ -218,7 +220,26 @@ namespace core
         }
         int score_pct() const { return ddef().score_pct * (100 + tier * data::ng_score_pct_per_tier) / 100; }
         int xp() const { return xp_pct / 100; }
-        void gain_xp(int base) { xp_pct += base * score_pct(); }
+        void gain_xp(int base)
+        {
+            xp_pct += base * score_pct();
+            run_xp += base;
+            while(hero_level < data::max_hero_level && run_xp >= data::level_thresholds[hero_level - 1]) level_up();
+        }
+
+        // Ile brakuje do kolejnego poziomu; -1 = maksymalny.
+        int xp_to_next() const { return hero_level < data::max_hero_level ? data::level_thresholds[hero_level - 1] - run_xp : -1; }
+
+        // Awans: +HP; wybrane poziomy dają +1 obrażenia / +1 obrona (data::dmg/def_levels_mask).
+        void level_up()
+        {
+            ++hero_level;
+            hero.max_hp = int16_t(hero.max_hp + data::hp_per_level);
+            hero.hp = int16_t(hero.hp + data::hp_per_level);
+            if(data::dmg_levels_mask & (1 << hero_level)) ++dmg_bonus;
+            if(data::def_levels_mask & (1 << hero_level)) ++def_bonus;
+            push(message().add("Awans! Poziom ").add(hero_level));
+        }
 
         void push(const message& m)
         {

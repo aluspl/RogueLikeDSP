@@ -36,10 +36,10 @@ inline constexpr core::enemy_def enemies[] = {
 
 inline constexpr core::stage_def stages[] = {
     { "Fundamenty", { 0, 3, -1, -1 }, 2, 5, -1, 100, 0 },
-    { "Stan surowy", { 4, 5, 3, -1 }, 3, 6, -1, 105, 0 },
-    { "Dach", { 6, 3, 0, -1 }, 3, 7, -1, 110, 0 },
-    { "Instalacje", { 1, 0, 2, -1 }, 3, 8, -1, 115, 0 },
-    { "Wykończenie i odbiór", { 2, 7, -1, -1 }, 2, 6, 8, 120, 0 },
+    { "Stan surowy", { 4, 5, 3, -1 }, 3, 6, -1, 110, 0 },
+    { "Dach", { 6, 3, 0, -1 }, 3, 7, -1, 120, 0 },
+    { "Instalacje", { 1, 0, 2, -1 }, 3, 8, -1, 130, 0 },
+    { "Wykończenie i odbiór", { 2, 7, -1, -1 }, 2, 6, 8, 140, 0 },
 };
 
 inline constexpr core::difficulty_def difficulties[] = {
@@ -63,6 +63,12 @@ inline constexpr int xp_boss = 20;
 inline constexpr int start_classes_mask = 19;
 inline constexpr int class_cost = 25;
 inline constexpr int hard_cost = 40;
+
+inline constexpr int level_thresholds[] = { 10, 25, 45, 70 };
+inline constexpr int max_hero_level = 5;
+inline constexpr int hp_per_level = 2;
+inline constexpr int dmg_levels_mask = 32;
+inline constexpr int def_levels_mask = 8;
 
 inline constexpr int classes_count = 6;
 inline constexpr int stages_count = 5;

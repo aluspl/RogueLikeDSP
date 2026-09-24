@@ -243,7 +243,7 @@
         "kornik"
       ],
       "count": 6,
-      "hpPct": 105,
+      "hpPct": 110,
       "dmgBonus": 0
     },
     {
@@ -254,7 +254,7 @@
         "przeciek"
       ],
       "count": 7,
-      "hpPct": 110,
+      "hpPct": 120,
       "dmgBonus": 0
     },
     {
@@ -265,7 +265,7 @@
         "plesn"
       ],
       "count": 8,
-      "hpPct": 115,
+      "hpPct": 130,
       "dmgBonus": 0
     },
     {
@@ -276,7 +276,7 @@
       ],
       "count": 6,
       "boss": "termin",
-      "hpPct": 120,
+      "hpPct": 140,
       "dmgBonus": 0
     }
   ],
@@ -377,6 +377,21 @@
           30
         ]
       }
+    ]
+  },
+  "heroLevels": {
+    "thresholds": [
+      10,
+      25,
+      45,
+      70
+    ],
+    "hpPerLevel": 2,
+    "dmgLevels": [
+      5
+    ],
+    "defLevels": [
+      3
     ]
   }
 }

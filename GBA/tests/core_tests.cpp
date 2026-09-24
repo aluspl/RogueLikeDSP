@@ -210,7 +210,25 @@ int main()
         for(int k = 0; k < 20; ++k) g.player_wait();
         CHECK(g.hits_count <= max_hits);   // bufor się nie przepełnia
     }
-    // 14. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
+    // 14. poziomy postaci w trakcie budowy
+    {
+        game g; g.new_run(1, 5, 0);   // Łatwy: poziomy liczone z surowego doświadczenia, nie z mnożnika
+        int hp0 = g.hero.max_hp, dmg0 = g.dmg_bonus, def0 = g.def_bonus;
+        CHECK(g.hero_level == 1);
+        g.gain_xp(data::level_thresholds[0] - 1); CHECK(g.hero_level == 1);
+        g.gain_xp(1);
+        CHECK(g.hero_level == 2 && g.hero.max_hp == hp0 + data::hp_per_level);
+        CHECK(g.dmg_bonus == dmg0 + ((data::dmg_levels_mask >> 2) & 1) && g.def_bonus == def0 + ((data::def_levels_mask >> 2) & 1));
+        g.gain_xp(data::level_thresholds[1] - data::level_thresholds[0]);
+        CHECK(g.hero_level == 3 && g.hero.max_hp == hp0 + 2 * data::hp_per_level);
+        g.gain_xp(10000);
+        CHECK(g.hero_level == data::max_hero_level);
+        CHECK(g.xp_to_next() < 0);
+        game h; h.new_run(1, 5); CHECK(h.xp_to_next() == data::level_thresholds[0]);
+        // NG+ zachowuje poziom
+        g.st = status::won; g.new_game_plus(); CHECK(g.hero_level == data::max_hero_level);
+    }
+    // 15. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};
     for(int df=0;df<data::difficulties_count;++df)
