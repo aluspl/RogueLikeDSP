@@ -393,9 +393,37 @@ namespace
         }
     }
 
+    // Karta etapu na wejściu: nazwa, siła problemów, poziom trudności.
+    void stage_card(app& a)
+    {
+        const core::game& g = *a.g;
+        bn::bg_palettes::set_transparent_color(bn::color(3, 5, 8));
+        page_sprites t;
+        a.text.set_center_alignment();
+        core::message l1; l1.add("Etap ").add(g.stage + 1).add("/").add(data::stages_count);
+        a.text.generate(0, -40, l1.s, t);
+        a.text.generate(0, -20, clip(data::stages[g.stage].name, 29), t);
+        core::message l3; l3.add("Siła problemów: ").add(g.enemy_hp_pct()).add("% HP");
+        a.text.generate(0, 8, l3.s, t);
+        core::message l4; l4.add("Poziom: ").add(g.ddef().name);
+        if(g.tier > 0) l4.add("  NG+").add(g.tier);
+        a.text.generate(0, 26, l4.s, t);
+        if(data::stages[g.stage].boss >= 0) a.text.generate(0, 50, "Uwaga: Termin czeka!", t);
+        for(int i = 0; i < 100 && ! bn::keypad::a_pressed() && ! bn::keypad::start_pressed(); ++i) next_frame();
+        leave(scene::game);   // ściemnij kartę, gra się rozjaśni
+    }
+
+    // Unosząca się liczba obrażeń nad polem.
+    struct floater
+    {
+        bn::vector<bn::sprite_ptr, 4> sprites;
+        int timer = 0;
+    };
+
     scene run_game(app& a)
     {
         core::game& g = *a.g;
+        stage_card(a);
         bn::bg_palettes::set_transparent_color(bn::color(1, 1, 3));
         bn::camera_ptr cam = bn::camera_ptr::create(0, 0);
 
@@ -436,6 +464,32 @@ namespace
         a.text.set_bg_priority(0);
         a.text.set_z_order(-100);
         int fx_timer = 0, hurt_timer = 0, hold = 0;
+        bn::vector<floater, core::max_hits> floaters;
+        int shake_timer = 0, target_timer = 0;
+        bn::fixed_point cam_base;
+
+        // pasek HP celu (ostatnio trafiony wróg / boss): 2 segmenty ściśnięte do 16 px
+        bn::sprite_ptr tgt_left = bn::sprite_items::hp_bar.create_sprite(0, 0, 0);
+        bn::sprite_ptr tgt_right = bn::sprite_items::hp_bar.create_sprite(0, 0, 96);
+        for(bn::sprite_ptr* s : { &tgt_left, &tgt_right })
+        {
+            s->set_camera(cam); s->set_horizontal_scale(bn::fixed(0.5)); s->set_z_order(-20); s->set_visible(false);
+        }
+        auto update_target_bar = [&]() {
+            int ti = target_timer > 0 ? g.last_target : -1;
+            if(g.boss >= 0 && g.enemies[g.boss].alive && g.enemies[g.boss].awake) ti = g.boss;
+            bool show = ti >= 0 && g.enemies[ti].alive && g.visible(g.enemies[ti].x, g.enemies[ti].y);
+            tgt_left.set_visible(show); tgt_right.set_visible(show);
+            if(! show) return;
+            const core::actor& e = g.enemies[ti];
+            int fill = core::imax(1, e.hp * 62 / e.max_hp);
+            int color = e.hp * 2 > e.max_hp ? 0 : (e.hp * 4 > e.max_hp ? 1 : 2);
+            tgt_left.set_tiles(bn::sprite_items::hp_bar.tiles_item(), color * 32 + core::imin(fill, 31));
+            tgt_right.set_tiles(bn::sprite_items::hp_bar.tiles_item(), 96 + color * 32 + core::imax(0, fill - 31));
+            bn::fixed_point p = world(e.x, e.y);
+            tgt_left.set_position(p.x() - 8, p.y() - 11);
+            tgt_right.set_position(p.x() + 8, p.y() - 11);
+        };
 
         auto refresh = [&]() {
             map->build(g);
@@ -449,7 +503,8 @@ namespace
             for(int i = 0; i < g.pickups_count; ++i)
                 pickups[i].set_visible(g.pickups[i].active && g.explored(g.pickups[i].x, g.pickups[i].y));
             bn::fixed_point c = world(g.hero.x, g.hero.y);
-            cam.set_position(clampf(c.x(), 136), clampf(c.y(), 176));
+            cam_base = bn::fixed_point(clampf(c.x(), 136), clampf(c.y(), 176));
+            cam.set_position(cam_base);
 
             hud.clear();
             a.text.set_left_alignment();
@@ -482,9 +537,26 @@ namespace
                     fx.push_back(s);
                 }
             fx_timer = fx.empty() ? 0 : 10;
-            if(g.hero_hit) hurt_timer = 16;
+            if(g.hero_hit) { hurt_timer = 16; shake_timer = 8; }
             g.turn_events = 0;
             g.hero_hit = false;
+
+            // liczby obrażeń
+            a.text.set_center_alignment();
+            for(int i = 0; i < g.hits_count; ++i)
+            {
+                if(floaters.full()) floaters.erase(floaters.begin());
+                floaters.push_back(floater());
+                floater& f = floaters.back();
+                core::message m; m.add("-").add(g.hits[i].amount);
+                bn::fixed_point p = world(g.hits[i].x, g.hits[i].y);
+                a.text.generate(p.x(), p.y() - 12, m.s, f.sprites);
+                for(bn::sprite_ptr& sp : f.sprites) { sp.set_camera(cam); sp.set_z_order(-60); }
+                f.timer = 36;
+                if(! g.hits[i].on_hero) target_timer = 90;
+            }
+            g.hits_count = 0;
+            update_target_bar();
         };
         refresh();
 
@@ -494,7 +566,8 @@ namespace
             bg_map_ptr.reload_cells_ref();
             for(auto& s : enemies) s.set_visible(false);
             for(auto& s : pickups) s.set_visible(false);
-            fx.clear(); log.clear();
+            fx.clear(); log.clear(); floaters.clear();
+            tgt_left.set_visible(false); tgt_right.set_visible(false);
             a.text.set_left_alignment();
             a.text.generate(-116, 72, "Podgląd mapy (puść L)", log);
             bn::fixed_point hp(g.hero.x * 8 + 4 - 256, g.hero.y * 8 + 4 - 256);
@@ -540,8 +613,9 @@ namespace
                 hero.set_visible(false);
                 for(auto& s : enemies) s.set_visible(false);
                 for(auto& s : pickups) s.set_visible(false);
-                fx.clear(); hud.clear(); log.clear();
+                fx.clear(); hud.clear(); log.clear(); floaters.clear();
                 hp_left.set_visible(false); hp_right.set_visible(false);
+                tgt_left.set_visible(false); tgt_right.set_visible(false);
                 bool quit = run_pause(a);
                 if(quit)
                 {
@@ -552,6 +626,7 @@ namespace
                 }
                 bg.set_visible(true);
                 hero.set_visible(true);
+                hp_left.set_visible(true); hp_right.set_visible(true);
                 refresh();
                 hold = 0;
                 continue;
@@ -560,6 +635,22 @@ namespace
             if(acted) refresh();
 
             if(fx_timer > 0 && --fx_timer == 0) fx.clear();
+            for(int i = 0; i < floaters.size(); )
+            {
+                floater& f = floaters[i];
+                if(--f.timer <= 0) { floaters.erase(floaters.begin() + i); continue; }
+                if(f.timer & 1) for(bn::sprite_ptr& sp : f.sprites) sp.set_y(sp.y() - 1);
+                ++i;
+            }
+            if(target_timer > 0 && --target_timer == 0) update_target_bar();
+            // wstrząs i czerwony błysk po otrzymaniu obrażeń
+            if(shake_timer > 0)
+            {
+                --shake_timer;
+                cam.set_position(cam_base.x() + (shake_timer == 0 ? 0 : ((shake_timer & 1) ? 2 : -2)), cam_base.y());
+                if(fade_in_left == 0)
+                    bn::bg_palettes::set_fade(bn::color(31, 4, 4), shake_timer > 4 ? bn::fixed(0.3) : bn::fixed(0));
+            }
             if(hurt_timer > 0) { --hurt_timer; hero.set_visible((hurt_timer & 2) == 0); }
             bool low_hp = g.hero.hp * 4 <= g.hero.max_hp;
             ++blink;

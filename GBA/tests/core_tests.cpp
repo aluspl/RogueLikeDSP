@@ -196,7 +196,21 @@ int main()
         g.spawn(0, 2, 6); CHECK(!g.visible(g.enemies[0].x, g.enemies[0].y));
         g.spawn(0, 9, 7); CHECK(g.visible(g.enemies[1].x, g.enemies[1].y));
     }
-    // 13. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
+    // 13. zdarzenia trafień (liczby obrażeń, pasek HP celu)
+    {
+        game g; g.new_run(1, 11);
+        g.enemies_count = 0; g.spawn(8, g.hero.x + 1, g.hero.y); g.enemies[0].awake = true;
+        int ehp = g.enemies[0].hp, hhp = g.hero.hp;
+        g.player_move(1, 0);   // atak w Termin, potem Termin oddaje
+        CHECK(g.hits_count == 2);
+        CHECK(!g.hits[0].on_hero && g.hits[0].amount == ehp - g.enemies[0].hp && g.hits[0].x == g.enemies[0].x);
+        CHECK(g.hits[1].on_hero && g.hits[1].amount == hhp - g.hero.hp && g.hits[1].x == g.hero.x);
+        CHECK(g.last_target == 0);
+        g.hits_count = 0;
+        for(int k = 0; k < 20; ++k) g.player_wait();
+        CHECK(g.hits_count <= max_hits);   // bufor się nie przepełnia
+    }
+    // 14. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};
     for(int df=0;df<data::difficulties_count;++df)
