@@ -170,7 +170,8 @@ namespace
             core::message n; n.add("< ").add(c.name).add(" >");
             a.text.generate(0, 4, n.s, lines);
             core::message ld; ld.add("Zablokowany: ").add(data::class_cost).add(" dośw.");
-            a.text.generate(0, 20, locked ? ld.s : clip(c.desc, 29).c_str(), lines);
+            core::message ab; ab.add("Moc R: ").add(c.ability_name);
+            a.text.generate(0, 20, locked ? ld.s : ab.s, lines);
             core::message s; s.add("HP ").add(c.max_health).add(" SIŁ ").add(c.strength).add(" ZRĘ ").add(c.agility);
             a.text.generate(0, 38, s.s, lines);
             core::message s2; s2.add("INT ").add(c.intelligence).add(" OBR ").add(c.defense);
@@ -294,8 +295,9 @@ namespace
         l[3].add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range).add(" +").add(g.dmg_bonus);
         l[4].add("Poziom ").add(g.hero_level);
         if(g.xp_to_next() >= 0) l[4].add(" (awans za ").add(g.xp_to_next()).add(")");
-        l[5].add("Wynik ").add(g.score).add("  Dni ").add(g.turns);
-        l[6].add("Usunięte problemy: ").add(g.kills);
+        l[5].add("Wynik ").add(g.score).add("  Problemy: ").add(g.kills);
+        l[6].add("Moc R: ").add(c.ability_name);
+        if(g.ability_cd > 0) l[6].add(" (za ").add(g.ability_cd).add(")"); else l[6].add(" (gotowa)");
         for(int i = 0; i < 7; ++i) a.text.generate(-108, -46 + i * 16, clip(l[i].s, 27), t);
         a.text.set_center_alignment();
         a.text.generate(0, 72, "B: wróć", t);
@@ -329,7 +331,7 @@ namespace
         a.text.generate(0, -70, "Jak grać", t);
         a.text.set_left_alignment();
         const char* lines[] = { "Przejdź 5 etapów budowy,", "na końcu pokonaj Termin.", "Schody = koniec etapu.",
-                                "D-pad: ruch i atak wręcz", "A: atak narzędziem", "B: czekaj, odpocznij",
+                                "D-pad: ruch i atak wręcz", "A: atak  B: czekaj", "R: moc zawodu",
                                 "SELECT: menu  L: mapa" };
         for(int i = 0; i < 7; ++i) a.text.generate(-108, -48 + i * 16, lines[i], t);
         a.text.set_center_alignment();
@@ -524,6 +526,7 @@ namespace
             hp_right.set_tiles(bn::sprite_items::hp_bar.tiles_item(), 96 + color * 32 + core::imax(0, fill - 31));
             core::message num; num.add(g.hero.hp).add("/").add(g.hero.max_hp);
             a.text.generate(-30, -72, num.s, hud);
+            if(g.ability_cd == 0) a.text.generate(20, -72, "R", hud);   // moc gotowa
             a.text.set_right_alignment();
             core::message st; st.add("Etap ").add(g.stage + 1).add("/").add(data::stages_count).add(" ");
             st.add(clip(g.ddef().name, 1).c_str());
@@ -613,6 +616,7 @@ namespace
             }
             else if(bn::keypad::a_pressed()) { acted = g.player_attack_nearest(); if(! acted) refresh(); }
             else if(bn::keypad::b_pressed()) acted = g.player_wait();
+            else if(bn::keypad::r_pressed() && ! bn::keypad::l_held()) { acted = g.player_ability(); if(! acted) refresh(); }
             // skrót pokazowy/testowy: L+R+SELECT = zalicz etap; samo SELECT = menu
             if(bn::keypad::select_pressed() && bn::keypad::l_held() && bn::keypad::r_held()) { g.debug_skip(); refresh(); }
             else if(bn::keypad::select_pressed())

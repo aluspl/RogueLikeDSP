@@ -97,7 +97,10 @@ namespace core
         int8_t def_id = -1;     // indeks w data::enemies; -1 = gracz
         bool alive = false;
         bool awake = false;
+        int8_t stun = 0;        // tury ogłuszenia (Odprawa)
     };
+
+    struct temp_wall { int8_t x, y, turns; };   // Ścianka Murarza
 
     struct pickup { int8_t x, y; uint8_t type; bool active; uint8_t arg = 0; };   // arg: indeks narzędzia
     struct hit { int8_t x, y; int16_t amount; bool on_hero; };   // do liczb obrażeń nad polem
@@ -163,6 +166,9 @@ namespace core
         }
 
         const class_def& cdef() const { return data::classes[cls]; }
+        int ability_cd = 0;          // tury do ponownego użycia mocy (R)
+        temp_wall walls[4];
+        int walls_count = 0;
         int weapon_override = -1;    // podniesione narzędzie zamiast broni zawodu
         const weapon_def& weapon() const { return data::weapons[weapon_override >= 0 ? weapon_override : cdef().weapon]; }
         const difficulty_def& ddef() const { return data::difficulties[diff]; }
@@ -287,6 +293,7 @@ namespace core
             stage = s;
             st = status::playing;
             lv.generate(r);
+            walls_count = 0;
             for(auto& row : fov) for(auto& c : row) c = unknown;
             const stage_def& sd = data::stages[stage];
             const room& first = lv.rooms[0];
@@ -402,6 +409,81 @@ namespace core
             return true;
         }
 
+        bool pickup_at(int x, int y) const
+        {
+            for(int i = 0; i < pickups_count; ++i) if(pickups[i].active && pickups[i].x == x && pickups[i].y == y) return true;
+            return false;
+        }
+
+        // Moc zawodu (R). Zwraca true, jeśli zużyła turę; bez celu nic się nie dzieje.
+        bool player_ability()
+        {
+            if(st != status::playing || ability_cd > 0) return false;
+            const class_def& c = cdef();
+            bool ok = false;
+            switch(c.ability)
+            {
+                case ability_effect::stun:
+                    for(int i = 0; i < enemies_count; ++i)
+                        if(enemies[i].alive && visible(enemies[i].x, enemies[i].y))
+                        { enemies[i].stun = 2; enemies[i].awake = true; ok = true; }
+                    if(ok) push(message().add(c.ability_name).add(": problemy wstrzymane"));
+                    break;
+                case ability_effect::wall:
+                {
+                    const int d[4][2] = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
+                    for(auto& v : d)
+                    {
+                        int x = hero.x + v[0], y = hero.y + v[1];
+                        if(walls_count < 4 && lv.at(x, y) == tile::floor && ! occupied(x, y) && ! pickup_at(x, y))
+                        { lv.t[y][x] = tile::wall; walls[walls_count++] = { int8_t(x), int8_t(y), 6 }; ok = true; }
+                    }
+                    if(ok) push(message().add(c.ability_name).add(" postawiona!"));
+                    break;
+                }
+                case ability_effect::volley:
+                    for(int i = 0; i < enemies_count && st == status::playing; ++i)
+                    {
+                        const actor& e = enemies[i];
+                        if(e.alive && visible(e.x, e.y) && cheb(hero.x, hero.y, e.x, e.y) <= weapon().range) { hero_attack(i); ok = true; }
+                    }
+                    break;
+                case ability_effect::chain:
+                {
+                    uint32_t done = 0;
+                    int t = nearest_target();
+                    for(int k = 0; k < 3 && t >= 0 && st == status::playing; ++k)
+                    {
+                        int px = enemies[t].x, py = enemies[t].y;
+                        hero_attack(t); done |= 1u << t; ok = true;
+                        t = -1;
+                        for(int i = 0; i < enemies_count; ++i)
+                        {
+                            const actor& e = enemies[i];
+                            if(e.alive && ! (done & (1u << i)) && visible(e.x, e.y) && cheb(px, py, e.x, e.y) <= 2) { t = i; break; }
+                        }
+                    }
+                    break;
+                }
+                case ability_effect::heal:
+                    if(hero.hp < hero.max_hp)
+                    {
+                        int h = imin(8, hero.max_hp - hero.hp);
+                        hero.hp = int16_t(hero.hp + h); ok = true;
+                        push(message().add(c.ability_name).add(" zakręcony: +").add(h).add(" HP"));
+                    }
+                    break;
+                case ability_effect::spin:
+                    for(int i = 0; i < enemies_count && st == status::playing; ++i)
+                        if(enemies[i].alive && cheb(hero.x, hero.y, enemies[i].x, enemies[i].y) == 1) { hero_attack(i); ok = true; }
+                    break;
+            }
+            if(! ok) { push(message().add(c.ability_name).add(": nie teraz")); return false; }
+            end_turn();
+            ability_cd = c.ability_cooldown;
+            return true;
+        }
+
         bool player_wait()
         {
             if(st != status::playing) return false;
@@ -456,6 +538,7 @@ namespace core
             const enemy_def& ed = data::enemies[e.def_id];
             int d = cheb(e.x, e.y, hero.x, hero.y);
             if(! e.awake) { if(d <= ed.sight) e.awake = true; else return; }
+            if(e.stun > 0) { --e.stun; return; }
             // Termin: porusza się co drugą turę, poniżej połowy HP przyspiesza
             if(i == boss && e.hp * 2 > e.max_hp && (turns & 1)) return;
             int manh = iabs(e.x - hero.x) + iabs(e.y - hero.y);
@@ -485,6 +568,10 @@ namespace core
         void end_turn()
         {
             ++turns;
+            if(ability_cd > 0 && --ability_cd == 0) push(message().add("Moc gotowa: ").add(cdef().ability_name));
+            for(int i = 0; i < walls_count; )
+                if(--walls[i].turns <= 0) { lv.t[walls[i].y][walls[i].x] = tile::floor; walls[i] = walls[--walls_count]; }
+                else ++i;
             update_fov();
             if(st == status::playing)
                 for(int i = 0; i < enemies_count && st == status::playing; ++i)

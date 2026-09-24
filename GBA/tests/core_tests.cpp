@@ -34,6 +34,16 @@ static void bot_step(game& g)
     int x=tx,y=ty; while(true){int k=px[y][x]; int bx=x-d[k][0],by=y-d[k][1]; if(bx==g.hero.x&&by==g.hero.y){ if(!g.player_move(x-bx,y-by)) g.player_wait(); return;} x=bx;y=by;}
 }
 
+// Otwarta arena 14x14 bez wrogów i znajdziek, bohater na (7,7) - do testów mocy.
+static void arena(game& g, int cls)
+{
+    g.new_run(cls, 77);
+    for(auto& row : g.lv.t) for(auto& c : row) c = tile::wall;
+    for(int y = 1; y <= 14; ++y) for(int x = 1; x <= 14; ++x) g.lv.t[y][x] = tile::floor;
+    g.enemies_count = 0; g.pickups_count = 0; g.stairs_x = g.stairs_y = -1;
+    g.hero.x = 7; g.hero.y = 7; g.update_fov();
+}
+
 int main()
 {
     // 1. mapy: spójne, pokoje >= 2, start na podłodze, deterministyczne
@@ -272,7 +282,57 @@ int main()
         // migracja: stary profil v2 (bajt narzędzi = 0) ma narzędzia startowe
         profile old; profile_reset(old); old.tools = 0; CHECK(tool_unlocked(old, 0));
     }
-    // 17. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
+    // 17. moce zawodów (R)
+    {
+        game g; arena(g, 4);                                 // Hydraulik: Zawór (leczenie)
+        CHECK(g.ability_cd == 0 && !g.player_ability());     // pełne HP - nic do leczenia, tura nie mija
+        CHECK(g.turns == 0);
+        g.hero.hp = 10; CHECK(g.player_ability() && g.hero.hp == 18 && g.turns == 1);
+        CHECK(g.ability_cd == g.cdef().ability_cooldown && !g.player_ability());
+        for(int k = 0; k < g.cdef().ability_cooldown; ++k) g.player_wait();
+        CHECK(g.ability_cd == 0);
+    }
+    {
+        game g; arena(g, 0);                                 // Kierownik: Odprawa (ogłuszenie)
+        CHECK(!g.player_ability());                          // brak widocznych wrogów
+        g.spawn(8, 8, 7); g.enemies[0].awake = true;
+        int hp = g.hero.hp;
+        CHECK(g.player_ability() && g.enemies[0].stun > 0);
+        g.player_wait();
+        CHECK(g.hero.hp >= hp);                              // ogłuszony nie atakuje (+ ewentualny odpoczynek)
+    }
+    {
+        game g; arena(g, 1);                                 // Murarz: Ścianka
+        g.spawn(0, 8, 7);                                    // wróg na wschodzie - tam ścianki nie będzie
+        CHECK(g.player_ability());
+        CHECK(g.lv.at(6, 7) == tile::wall && g.lv.at(7, 6) == tile::wall && g.lv.at(7, 8) == tile::wall);
+        CHECK(g.lv.at(8, 7) == tile::floor);
+        for(int k = 0; k < 8; ++k) g.player_wait();
+        CHECK(g.lv.at(6, 7) == tile::floor && g.lv.at(7, 6) == tile::floor && g.lv.at(7, 8) == tile::floor);
+    }
+    {
+        game g; arena(g, 2);                                 // Cieśla: Seria (zasięg broni 3)
+        g.spawn(4, 8, 7); g.spawn(4, 10, 7); g.spawn(4, 13, 7);
+        int h0 = g.enemies[0].hp, h1 = g.enemies[1].hp, h2 = g.enemies[2].hp;
+        CHECK(g.player_ability());
+        CHECK(g.enemies[0].hp < h0 && g.enemies[1].hp < h1 && g.enemies[2].hp == h2);
+    }
+    {
+        game g; arena(g, 3);                                 // Elektryk: Łańcuch (zasięg 2, skoki do 2 pól)
+        g.spawn(4, 9, 7); g.spawn(4, 11, 7); g.spawn(4, 13, 7); g.spawn(4, 7, 13);
+        int h[4]; for(int i = 0; i < 4; ++i) h[i] = g.enemies[i].hp;
+        CHECK(g.player_ability());
+        CHECK(g.enemies[0].hp < h[0] && g.enemies[1].hp < h[1] && g.enemies[2].hp < h[2] && g.enemies[3].hp == h[3]);
+    }
+    {
+        game g; arena(g, 5);                                 // Glazurnik: Wirówka (wszyscy obok)
+        CHECK(!g.player_ability());
+        g.spawn(4, 6, 6); g.spawn(4, 8, 8); g.spawn(4, 7, 9);
+        int h0 = g.enemies[0].hp, h1 = g.enemies[1].hp, h2 = g.enemies[2].hp;
+        CHECK(g.player_ability());
+        CHECK(g.enemies[0].hp < h0 && g.enemies[1].hp < h1 && g.enemies[2].hp == h2);
+    }
+    // 18. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};
     for(int df=0;df<data::difficulties_count;++df)

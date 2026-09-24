@@ -15,6 +15,8 @@ namespace core
         stat scales_with;
     };
 
+    enum class ability_effect : uint8_t { stun, wall, volley, chain, heal, spin };
+
     struct class_def           // zawód budowlany
     {
         const char* name;
@@ -26,6 +28,10 @@ namespace core
         int8_t defense;
         int8_t weapon;
         int8_t frame;          // klatka w graphics/actors.bmp
+        const char* ability_name;   // moc zawodu (przycisk R)
+        const char* ability_desc;
+        ability_effect ability;
+        int8_t ability_cooldown;    // w turach
     };
 
     struct enemy_def           // "problem budowy"

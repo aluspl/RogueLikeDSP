@@ -19,6 +19,7 @@ Przekroczony budżet) i bossa **Nieprzekraczalny Termin**. Na końcu ekran z kod
 | SELECT | w grze: menu przerwy (karta postaci, harmonogram, jak grać, porzuć budowę); na tytule: sklep „Szkolenia” |
 | B (tytuł) | ekran „Jak grać” |
 | L (przytrzymaj) | podgląd odkrytej mapy etapu |
+| R | moc zawodu (Odprawa, Ścianka, Seria, Łańcuch, Zawór, Wirówka), odnawia się po kilkunastu turach; „R” w HUD = gotowa |
 | góra/dół (wybór zawodu) | poziom trudności: Łatwy / Normalny / Trudny |
 | L+R+SELECT | skrót pokazowy: zalicz etap (do testów i prezentacji na stoisku) |
 
