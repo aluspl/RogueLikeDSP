@@ -10,3 +10,18 @@ RogueLikeDSP.sln.DotSettings.user
 Temp/
 etc/
 Library/
+
+# --- Godot / .NET ---
+.godot/
+GODOT/godot/.godot/
+**/bin/
+**/obj/
+*.user
+.vs/
+.idea/
+TestResults/
+# --- GBA (Butano) ---
+GBA/build/
+GBA/*.gba
+GBA/*.elf
+GBA/core_tests
