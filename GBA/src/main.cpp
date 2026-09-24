@@ -884,8 +884,9 @@ namespace
 
     struct particle_pool
     {
-        enum : int { dust = 0, spark = 3, confetti = 5, star = 9 };
-        bn::vector<particle, 16> list;
+        enum : int { dust = 0, spark = 3, confetti = 5, star = 9, ring = 10, brick = 12, nail = 13, bolt = 14,
+                     drop = 16, plus = 17, zzz = 18 };
+        bn::vector<particle, 24> list;
         bn::random rnd;
         bn::camera_ptr cam;
 
@@ -1112,6 +1113,76 @@ namespace
             if(shake_timer == 0) cam.set_position(cam_base);
         };
 
+        // Efekty cząsteczkowe mocy zawodów + błysk ekranu w kolorze mocy.
+        int flash_timer = 0;
+        bn::color flash_color;
+        auto ability_fx = [&]() {
+            bn::fixed_point h = world(g.hero.x, g.hero.y);
+            static constexpr int8_t dir[8][2] = { { 2, 0 }, { 1, 1 }, { 0, 2 }, { -1, 1 }, { -2, 0 }, { -1, -1 }, { 0, -2 }, { 1, -1 } };
+            switch(g.cdef().ability)
+            {
+                case core::ability_effect::stun:   // kręgi megafonu + "z" nad ogłuszonymi
+                    flash_color = bn::color(20, 16, 31);
+                    for(int k = 0; k < 8; ++k)
+                        fx_particles.spawn(h.x(), h.y(), bn::fixed(dir[k][0]) * bn::fixed(0.9), bn::fixed(dir[k][1]) * bn::fixed(0.9), 0, 22,
+                                           particle_pool::ring, 2);
+                    for(int i = 0; i < g.enemies_count; ++i)
+                        if(g.enemies[i].alive && g.enemies[i].stun > 0 && g.visible(g.enemies[i].x, g.enemies[i].y))
+                        {
+                            bn::fixed_point e = world(g.enemies[i].x, g.enemies[i].y);
+                            fx_particles.spawn(e.x() + 4, e.y() - 8, bn::fixed(0.2), bn::fixed(-0.4), 0, 40, particle_pool::zzz);
+                        }
+                    break;
+                case core::ability_effect::wall:   // cegły wyskakują z ziemi + pył zaprawy
+                    flash_color = bn::color(31, 16, 6);
+                    for(int i = 0; i < g.walls_count; ++i)
+                    {
+                        bn::fixed_point w = world(g.walls[i].x, g.walls[i].y);
+                        fx_particles.spawn(w.x(), w.y() + 4, fx_particles.rand(-8, 8), bn::fixed(-1.6), bn::fixed(0.15), 20, particle_pool::brick);
+                        fx_particles.spawn(w.x() - 4, w.y() + 6, bn::fixed(-0.3), bn::fixed(-0.2), 0, 16, particle_pool::dust, 3);
+                        fx_particles.spawn(w.x() + 4, w.y() + 6, bn::fixed(0.3), bn::fixed(-0.2), 0, 16, particle_pool::dust, 3);
+                    }
+                    break;
+                case core::ability_effect::volley:   // gwoździe lecą do celów
+                    flash_color = bn::color(31, 28, 8);
+                    for(int i = 0; i < g.hits_count; ++i)
+                    {
+                        bn::fixed_point t = world(g.hits[i].x, g.hits[i].y);
+                        fx_particles.spawn(h.x(), h.y(), (t.x() - h.x()) / 10, (t.y() - h.y()) / 10, 0, 10, particle_pool::nail);
+                    }
+                    break;
+                case core::ability_effect::chain:   // łuk elektryczny: bohater -> cel 1 -> cel 2 -> cel 3
+                {
+                    flash_color = bn::color(12, 28, 31);
+                    bn::fixed_point from = h;
+                    for(int i = 0; i < g.hits_count; ++i)
+                    {
+                        if(g.hits[i].on_hero) continue;
+                        bn::fixed_point to = world(g.hits[i].x, g.hits[i].y);
+                        for(int k = 1; k <= 3; ++k)
+                            fx_particles.spawn(from.x() + (to.x() - from.x()) * k / 4, from.y() + (to.y() - from.y()) * k / 4,
+                                               0, 0, 0, 12, particle_pool::bolt, 2);
+                        from = to;
+                    }
+                    break;
+                }
+                case core::ability_effect::heal:   // krople i zielone plusy
+                    flash_color = bn::color(8, 30, 16);
+                    for(int k = 0; k < 6; ++k)
+                        fx_particles.spawn(h.x() + fx_particles.rand(-112, 112), h.y() + 4, 0, fx_particles.rand(-24, -8), 0, 26,
+                                           k & 1 ? particle_pool::plus : particle_pool::drop);
+                    break;
+                case core::ability_effect::spin:   // wirujący krąg iskier
+                    flash_color = bn::color(31, 31, 31);
+                    for(int k = 0; k < 8; ++k)
+                        fx_particles.spawn(h.x() + dir[k][0] * 6, h.y() + dir[k][1] * 6,
+                                           bn::fixed(-dir[k][1]) * bn::fixed(0.8), bn::fixed(dir[k][0]) * bn::fixed(0.8), 0, 16,
+                                           particle_pool::spark, 2);
+                    break;
+            }
+            flash_timer = 6;
+        };
+
         auto refresh = [&]() {
             map->build(g);
             bg_map_ptr.reload_cells_ref();
@@ -1245,7 +1316,8 @@ namespace
             else if(bn::keypad::r_pressed() && ! bn::keypad::l_held())
             {
                 acted = g.player_ability();
-                if(acted) bn::sound_items::sfx_ability.play(); else refresh();
+                if(acted) { bn::sound_items::sfx_ability.play(); ability_fx(); }
+                else refresh();
             }
             // skrót pokazowy/testowy: L+R+SELECT = zalicz etap; samo SELECT = menu
             if(bn::keypad::select_pressed() && bn::keypad::l_held() && bn::keypad::r_held()) { g.debug_skip(); snap_next = true; refresh(); }
@@ -1292,6 +1364,11 @@ namespace
                 ++i;
             }
             if(target_timer > 0 && --target_timer == 0) update_target_bar();
+            if(flash_timer > 0 && fade_in_left == 0 && shake_timer == 0)   // błysk mocy
+            {
+                --flash_timer;
+                bn::bg_palettes::set_fade(flash_color, bn::fixed(flash_timer) / 16);
+            }
             // wstrząs i czerwony błysk po otrzymaniu obrażeń
             if(shake_timer > 0)
             {
