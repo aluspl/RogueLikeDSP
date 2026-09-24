@@ -15,13 +15,23 @@ Przekroczony budżet) i bossa **Nieprzekraczalny Termin**. Na końcu ekran z kod
 | D-pad | ruch / atak przez wejście na wroga (przytrzymaj = szybki ruch) |
 | A | atak narzędziem w najbliższy cel w zasięgu (zasięg zależy od narzędzia) |
 | B | czekaj turę (co 4 tury +1 HP) |
-| START | menu / dalej |
+| START | dalej |
+| SELECT | w grze: menu przerwy (karta postaci, harmonogram, jak grać, porzuć budowę); na tytule: sklep „Szkolenia” |
+| B (tytuł) | ekran „Jak grać” |
+| góra/dół (wybór zawodu) | poziom trudności: Łatwy / Normalny / Trudny |
 | L+R+SELECT | skrót pokazowy: zalicz etap (do testów i prezentacji na stoisku) |
 
 ## Zawody (dane w `data/game.json`)
 Kierownik budowy (Dziennik budowy, zasięg 2) · Murarz (Kielnia) · Cieśla-dekarz (Gwoździarka, zasięg 3) ·
 Elektryk (Próbnik napięcia, zasięg 2) · Hydraulik (Klucz nastawny) · Glazurnik (Szlifierka).
-Znajdźki: kawa z termosu (+HP), kask (+obrona), projekt wykonawczy (+obrażenia). Rekord zapisuje się w SRAM.
+Znajdźki: kawa z termosu (+HP), kask (+obrona), projekt wykonawczy (+obrażenia).
+
+## Trudność i meta-progresja
+- HP wrogów rośnie z etapem, poziom trudności (Łatwy/Normalny/Trudny) mnoży siłę wrogów i wynik.
+- Po wygranej: „Kolejna budowa” (NG+) – ten sam zawód i premie, mocniejsi wrogowie.
+- Doświadczenie za wrogów, etapy i bossa wydajesz w sklepie „Szkolenia” (po budowie i z tytułu):
+  ulepszenia statystyk, więcej znajdziek, nowe zawody, poziom Trudny.
+- Profil (rekord, doświadczenie, zakupy) zapisuje się w SRAM; starszy zapis z samym rekordem jest przenoszony.
 
 ## Budowanie
 Wymagania: [Butano](https://github.com/GValiente/butano) 21.8.0, devkitARM **albo** Wonderful Toolchain
@@ -37,6 +47,11 @@ Domyślnie Makefile szuka Butano w `../../butano/butano` (obok repo).
 Testy rdzenia na PC (spójność 500 map, determinizm seedów, symulacja botem balansu każdego zawodu):
 ```bash
 g++ -std=c++20 -O2 -Iinclude tests/core_tests.cpp -o core_tests && ./core_tests
+```
+
+Playtest bez okna (Docker + libmgba): skrypt klawiszy -> zrzuty ekranu PNG, np.
+```bash
+tools/playtest/run.sh moj_skrypt.txt /tmp/zrzuty --fresh   # opis komend w tools/playtest/playtest.c
 ```
 
 ## Uruchomienie na Miyoo

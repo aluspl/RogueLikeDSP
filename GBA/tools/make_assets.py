@@ -153,14 +153,50 @@ def p_helmet(d): d.pieslice([2, 4, 14, 16], 180, 360, fill=OR); d.rectangle([1, 
 def p_plan(d):   d.rectangle([2, 3, 13, 13], fill=BL, outline=WH); d.line([(4, 6), (11, 6)], fill=WH); d.rectangle([5, 8, 10, 11], outline=WH)
 def fx_hit(d):   d.line([(3, 3), (12, 12)], fill=WH); d.line([(12, 3), (3, 12)], fill=WH); d.point((8, 8), fill=YE)
 
+def ui_lock(d):
+    d.arc([4, 1, 11, 10], 180, 360, fill=LG); d.line([(4, 5), (4, 7)], fill=LG); d.line([(11, 5), (11, 7)], fill=LG)
+    d.rectangle([3, 7, 12, 14], fill=YE, outline=BR); d.rectangle([7, 9, 8, 12], fill=K)
+
+def silhouette(frame):   # ciemna sylwetka zablokowanego zawodu
+    return [0 if p == 0 else K for p in frame]
+
 ENEMY_SPR = [e_leak, e_spark, e_mold, e_beetle, e_paper, e_delivery, e_rain, e_budget, e_deadline]
 PICKUP_SPR = [p_coffee, p_helmet, p_plan, fx_hit]
+UI_SPR = [ui_lock]
 
+# klatki: 0-5 zawody, 6-14 wrogowie, 15-17 znajdźki, 18 efekt trafienia, 19 kłódka, 20-25 sylwetki zawodów
 def make_actors():
-    frames = [sprite(f) for f in CLASSES_SPR + ENEMY_SPR + PICKUP_SPR]
+    frames = [sprite(f) for f in CLASSES_SPR + ENEMY_SPR + PICKUP_SPR + UI_SPR]
+    frames += [silhouette(sprite(f)) for f in CLASSES_SPR]
     px = [p for fr in frames for p in fr]
     write_bmp(os.path.join(G, "actors.bmp"), px, 16, 16 * len(frames), SPR_PAL, 4)
     write_json("actors", {"type": "sprite", "height": 16})
+    return len(frames)
+
+# ---------------------------------------------------------------- 2b. pasek życia (2 sprite'y 32x8 = 64 px)
+# klatka = segment * 96 + kolor * 32 + wypełnienie; segment 0 = lewy, 1 = prawy; kolor 0 zielony, 1 żółty, 2 czerwony
+# wnętrze paska ma 62 px: lewy segment pokazuje 0..31, prawy 0..31 pikseli
+HP_PAL = [(255, 0, 255), (16, 16, 24), (54, 58, 72), (250, 250, 250),
+          (76, 175, 80), (46, 107, 48), (245, 211, 61), (190, 150, 30), (214, 60, 60), (140, 30, 30)]
+
+def hp_frame(seg, color, fill):
+    main, shade = 4 + color * 2, 5 + color * 2
+    px = [[0] * 32 for _ in range(8)]
+    for y in range(8):
+        for x in range(32):
+            border = y in (0, 7) or (seg == 0 and x == 0) or (seg == 1 and x == 31)
+            if border: px[y][x] = 1; continue
+            inner = x - 1 if seg == 0 else x          # pozycja w obrębie segmentu
+            if inner < fill:
+                px[y][x] = 3 if y == 1 else (shade if y == 6 else main)
+            else:
+                px[y][x] = 2
+    return [p for row in px for p in row]
+
+def make_hp_bar():
+    frames = [hp_frame(seg, c, f) for seg in range(2) for c in range(3) for f in range(32)]
+    write_bmp(os.path.join(G, "hp_bar.bmp"), [p for fr in frames for p in fr], 32, 8 * len(frames), HP_PAL, 4)
+    write_json("hp_bar", {"type": "sprite", "height": 8})
     return len(frames)
 
 # ---------------------------------------------------------------- 3. kafelki + palety etapów
@@ -278,6 +314,7 @@ if __name__ == "__main__":
     os.makedirs(DOCS, exist_ok=True)
     print("font glyphs:", make_font())
     print("actor frames:", make_actors())
+    print("hp bar frames:", make_hp_bar())
     make_tiles()
     make_title()
     print("QR version/size:", make_end())
