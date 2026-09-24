@@ -27,15 +27,15 @@ inline constexpr core::class_def classes[] = {
 };
 
 inline constexpr core::enemy_def enemies[] = {
-    { "Przeciek", 6, 1, 3, 0, 6, 10, 6 },
-    { "Zwarcie", 5, 2, 4, 0, 7, 12, 7 },
-    { "Pleśń", 9, 1, 2, 1, 4, 10, 8 },
-    { "Kornik", 7, 1, 3, 1, 5, 10, 9 },
-    { "Papierologia", 12, 1, 2, 2, 4, 15, 10 },
-    { "Opóźniona dostawa", 10, 2, 4, 1, 6, 15, 11 },
-    { "Ulewa", 8, 2, 3, 0, 8, 12, 12 },
-    { "Przekroczony budżet", 14, 2, 5, 2, 6, 25, 13 },
-    { "Nieprzekraczalny Termin", 40, 3, 6, 3, 12, 200, 14 },
+    { "Przeciek", "Kapie tam, gdzie nie powinno", 6, 1, 3, 0, 6, 10, 6 },
+    { "Zwarcie", "Iskrzy przy każdej okazji", 5, 2, 4, 0, 7, 12, 7 },
+    { "Pleśń", "Lubi wilgoć i zimne ściany", 9, 1, 2, 1, 4, 10, 8 },
+    { "Kornik", "Drąży więźbę po cichu", 7, 1, 3, 1, 5, 10, 9 },
+    { "Papierologia", "Brakuje jednej pieczątki", 12, 1, 2, 2, 4, 15, 10 },
+    { "Opóźniona dostawa", "Będzie jutro. Na pewno.", 10, 2, 4, 1, 6, 15, 11 },
+    { "Ulewa", "Zawsze tuż przed dachem", 8, 2, 3, 0, 8, 12, 12 },
+    { "Przekroczony budżet", "Rośnie szybciej niż mury", 14, 2, 5, 2, 6, 25, 13 },
+    { "Nieprzekraczalny Termin", "Nieprzesuwalny. Podobno.", 40, 3, 6, 3, 12, 200, 14 },
 };
 
 inline constexpr core::stage_def stages[] = {
@@ -59,6 +59,30 @@ inline constexpr core::upgrade_def upgrades[] = {
     { "Lepszy termos", "Kawa leczy +4 HP", core::upgrade_effect::coffee, 4, 2, { 10, 20, 0, 0 } },
     { "Dostawy", "+1 znajdźka na etap", core::upgrade_effect::pickups, 1, 2, { 15, 30, 0, 0 } },
 };
+
+inline constexpr core::badge_def badges[] = {
+    { "Bez usterek", "Etap bez żadnych obrażeń", 20 },
+    { "Przed terminem", "Termin pokonany w 150 tur", 30 },
+    { "Seryjny", "8 problemów na jednym etapie", 15 },
+    { "Zawodowiec", "Poziom postaci 5", 20 },
+    { "Twardziel", "Wygrana na Trudnym", 40 },
+    { "Pełny zespół", "Wygrana każdym zawodem", 60 },
+    { "Kolekcjoner", "Znajdź wszystkie narzędzia", 30 },
+    { "Katalog usterek", "Pokonaj każdy problem", 30 },
+    { "Osiedle", "Zbuduj 5 domów", 50 },
+};
+
+inline constexpr int badges_count = 9;
+inline constexpr int enemies_count = 9;
+inline constexpr int badge_bez_usterek = 0;
+inline constexpr int badge_przed_terminem = 1;
+inline constexpr int badge_seryjny = 2;
+inline constexpr int badge_zawodowiec = 3;
+inline constexpr int badge_twardziel = 4;
+inline constexpr int badge_pelny_zespol = 5;
+inline constexpr int badge_kolekcjoner = 6;
+inline constexpr int badge_katalog = 7;
+inline constexpr int badge_osiedle = 8;
 
 inline constexpr core::tool_def tools[] = {
     { 6, 0 },

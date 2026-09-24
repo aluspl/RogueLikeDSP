@@ -360,7 +360,67 @@ int main()
         run_save_make(rs, g); rs.size -= 4; CHECK(!run_save_valid(rs));                     // inna wersja gry
         run_save_make(rs, g); run_save_clear(rs); CHECK(!run_save_valid(rs));               // wyczyszczony
     }
-    // 19. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
+    // 19. motywacja: liczniki etapu, odznaki, Osiedle, katalog, migracja profilu v2 -> v3
+    {
+        profile v2; profile_reset(v2);
+        std::memcpy(v2.magic, "PBRL002", 8); v2.xp = 77; v2.levels[0] = 2; v2.classes = 0x3F; v2.hard = 1; v2.flags = 1; v2.tools = 2; v2.best = 900;
+        std::memset(reinterpret_cast<char*>(&v2) + 36, 0xEE, sizeof v2 - 36);   // śmieci za starym końcem struktury
+        CHECK(profile_fix(v2));
+        CHECK(std::strcmp(v2.magic, profile_magic) == 0 && v2.xp == 77 && v2.levels[0] == 2 && v2.classes == 0x3F);
+        CHECK(v2.hard == 1 && v2.flags == 1 && v2.tools == 2 && v2.best == 900);
+        CHECK(v2.badges == 0 && v2.catalog == 0 && v2.houses_count == 0 && v2.class_wins == 0 && v2.tools_found == 0);
+    }
+    {
+        game g; arena(g, 1);
+        CHECK(g.stage_damage == 0 && g.stage_kills == 0 && g.stage_start_turn == 0);
+        g.spawn(8, 8, 7); g.enemies[0].awake = true;
+        int hp = g.hero.hp; g.player_wait();
+        CHECK(g.stage_damage == hp - g.hero.hp && g.stage_damage > 0);
+        g.enemies[0].hp = 1; g.player_move(1, 0);
+        CHECK(g.stage_kills == 1);
+        g.st = status::stage_clear; g.next_stage();
+        CHECK(g.stage_damage == 0 && g.stage_kills == 0 && g.stage_start_turn == g.turns);
+    }
+    {
+        profile p; profile_reset(p);
+        game g; arena(g, 1);
+        g.st = status::stage_clear;                      // etap bez obrażeń
+        int xp0 = p.xp;
+        int got = check_badges(p, g);
+        CHECK(got == (1 << data::badge_bez_usterek) && p.xp == xp0 + data::badges[data::badge_bez_usterek].xp);
+        CHECK(check_badges(p, g) == 0);                  // drugi raz nie
+        g.stage_damage = 5; g.stage_kills = 8;
+        CHECK(check_badges(p, g) == (1 << data::badge_seryjny));
+    }
+    {
+        profile p; profile_reset(p);
+        game g; g.new_run(3, 5, data::difficulties_count - 1);
+        g.st = status::won; g.score = 2500; g.stage = data::stages_count - 1; g.stage_start_turn = g.turns - 100; g.stage_damage = 1;
+        CHECK(add_house(p, g) && p.houses_count == 1 && (p.houses[0] & 15) == 3 && (p.houses[0] >> 4) == 2);
+        int got = check_badges(p, g);
+        CHECK(got & (1 << data::badge_twardziel));
+        CHECK(got & (1 << data::badge_przed_terminem));
+        CHECK(p.class_wins == (1 << 3) && !(got & (1 << data::badge_pelny_zespol)));
+        for(int i = 0; i < 20; ++i) add_house(p, g);
+        CHECK(p.houses_count == max_houses);             // Osiedle ma limit działek
+        CHECK(check_badges(p, g) & (1 << data::badge_osiedle));
+        for(int c = 0; c < data::classes_count; ++c) { g.cls = c; check_badges(p, g); }
+        CHECK(p.badges & (1 << data::badge_pelny_zespol));
+    }
+    {
+        profile p; profile_reset(p);
+        game g; arena(g, 1);
+        for(int d = 0; d < data::enemies_count; ++d) g.kills_by_type[d] = 1;
+        g.tools_found = uint8_t((1 << data::tools_count) - 1);
+        g.hero_level = data::max_hero_level;
+        int got = check_badges(p, g);
+        CHECK(got & (1 << data::badge_katalog) && got & (1 << data::badge_kolekcjoner) && got & (1 << data::badge_zawodowiec));
+        CHECK(p.catalog == (1 << data::enemies_count) - 1);
+        // zebranie narzędzia zapisuje je w liczniku budowy
+        game h; arena(h, 1); h.pickups[0] = { h.hero.x, h.hero.y, tool, true, 2 }; h.pickups_count = 1; h.collect();
+        CHECK(h.tools_found == (1 << 2));
+    }
+    // 20. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};
     for(int df=0;df<data::difficulties_count;++df)

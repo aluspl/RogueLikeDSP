@@ -24,6 +24,7 @@
 #include "bn_sprite_items_font_8x16.h"
 #include "bn_sprite_items_hp_bar.h"
 #include "bn_sprite_items_particles.h"
+#include "bn_sprite_items_houses.h"
 #include "bn_random.h"
 #include "bn_music.h"
 #include "bn_music_items.h"
@@ -229,7 +230,7 @@ namespace
             a.text.set_center_alignment();
         }
         text_sprites shop_hint;
-        a.text.generate(0, 66, "SELECT: szkolenia  B: pomoc", shop_hint);
+        a.text.generate(0, 66, "SELECT: telefon  B: pomoc", shop_hint);
         int frame = 0;
         while(true)
         {
@@ -1052,6 +1053,18 @@ namespace
                 banner.hide();
                 banner.push("Etap zaliczony", clip(data::stages[g.stage].name, 24).c_str());
             }
+            if(g.st == core::status::stage_clear || g.st == core::status::won)   // odznaki
+            {
+                int got = core::check_badges(a.save, g);
+                for(int i = 0; i < data::badges_count; ++i)
+                    if(got & (1 << i))
+                    {
+                        core::message t; t.add("Odznaka: ").add(data::badges[i].name);
+                        core::message b; b.add("+").add(data::badges[i].xp).add(" dośw.");
+                        banner.push(t.s, b.s);
+                    }
+                if(got) bn::sram::write(a.save);
+            }
             prev_level = g.hero_level; prev_weapon = g.weapon_override; prev_pickups = g.pickups_count; prev_cd = g.ability_cd;
         };
 
@@ -1419,7 +1432,7 @@ namespace
                             fx_particles.spawn(cam_base.x() + fx_particles.rand(-110 * 16, 110 * 16), cam_base.y() - 84,
                                                fx_particles.rand(-8, 8), fx_particles.rand(8, 20), bn::fixed(0.02), 80,
                                                particle_pool::confetti + fx_particles.rnd.get_int(4));
-                    animate(); fx_particles.update(); next_frame();
+                    banner.update(a); animate(); fx_particles.update(); next_frame();
                 }
                 return leave(scene::end);
             }
@@ -1460,6 +1473,8 @@ namespace
         bool won = g.st == core::status::won;
         if(g.score > a.save.best) a.save.best = g.score;
         if(won) ++a.save.wins;
+        if(won) core::add_house(a.save, g);
+        core::check_badges(a.save, g);   // katalog, narzędzia, Osiedle (bez banera - to już ekran końcowy)
         int gained = core::bank_xp(a.save, g);
         bn::sram::write(a.save);
         clear_run(a);
@@ -1483,11 +1498,17 @@ namespace
         }
     }
 
-    // ------------------------------------------------------------------ sklep "Szkolenia" = zakładka Koszty w telefonie
-    scene run_shop(app& a)
+    // ------------------------------------------------------------------ telefon profilu (z tytułu i po budowie)
+    // Te same ikony zakładek, inne treści: Odznaki, Katalog usterek, Osiedle, Zespół, Koszty (sklep Szkolenia).
+    scene run_shop(app& a, int tab = 4)
     {
-        phone_screen ph(4);
+        phone_screen ph(tab);
         bn::sprite_palette_item default_ink = a.text.palette_item();
+        page_sprites t;
+        bn::vector<bn::sprite_ptr, core::max_houses> houses;
+        const char* profile_tabs[] = { "Odznaki", "Katalog", "Osiedle", "Zespół", "Koszty" };
+
+        // --- sklep (zakładka Koszty)
         enum kind : uint8_t { upgrade, cls, hard, tool };
         struct entry { kind k; int8_t i; };
         bn::vector<entry, core::max_upgrades + 8 + 8 + 1> entries;
@@ -1501,63 +1522,150 @@ namespace
             if(! core::difficulty_unlocked(a.save, data::difficulties_count - 1)) entries.push_back({ hard, 0 });
         };
         rebuild();
-
-        constexpr int window = 4;   // wiersze 2..5 karty
-        int sel = 0, top = 0;
-        const char* note = nullptr;
-        page_sprites t;
         auto cost_of = [&](const entry& e) {
             return e.k == upgrade ? core::upgrade_cost(a.save, e.i)
                  : e.k == cls ? data::class_cost : (e.k == tool ? data::tools[e.i].cost : data::hard_cost);
         };
-        auto redraw = [&]() {
-            phone_header(a, ph, t, tab_names[4], "A: kup  B: wyjdź");
+
+        int sel = 0, top = 0;
+        const char* note = nullptr;
+        auto list_size = [&]() {
+            switch(tab)
+            {
+                case 0: return data::badges_count;
+                case 1: return data::enemies_count;
+                case 3: return data::classes_count;
+                case 4: return entries.size();
+                default: return 0;
+            }
+        };
+
+        auto draw_list_row = [&](int r, int i, bool is_sel) {   // zakładki 0, 1, 3
             phone_canvas& c = *ph.canvas;
-            phone_text(a, t, list_x, row_py(0), "Pozostało", ink::dim);
-            core::message xp; xp.add(int(a.save.xp)).add(" dośw.");
-            phone_text(a, t, 226, row_py(0), xp.s, ink::done, 1);
-            const entry& se = entries[sel];
-            core::message tool_desc;
-            if(se.k == tool)
+            if(is_sel) stripe(c, r, phone_tile::stripe_brand);
+            ink name_ink = is_sel ? ink::brand : ink::dark;
+            if(tab == 0)
             {
-                const core::weapon_def& w = data::weapons[data::tools[se.i].weapon];
-                tool_desc.add("Narzędzie ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range);
+                bool got = a.save.badges & (1u << i);
+                phone_text(a, t, list_x, row_py(r), clip(data::badges[i].name, 16).c_str(), got || is_sel ? name_ink : ink::dim);
+                core::message xp; xp.add("+").add(data::badges[i].xp);
+                phone_pill(a, c, t, pill_end, row_ty(r), got ? "Zdobyta" : xp.s, got ? pill::done : pill::gray);
             }
-            const char* desc = note ? note : (se.k == upgrade ? data::upgrades[se.i].desc
-                             : (se.k == cls ? "Nowy zawód do wyboru" : (se.k == tool ? tool_desc.s : "Najwyższa trudność")));
-            phone_text(a, t, list_x, row_py(1), clip(desc, 26).c_str(), ink::dim);
-            for(int r = 0; r < window && top + r < entries.size(); ++r)
+            else if(tab == 1)
             {
-                const entry& e = entries[top + r];
-                bool is_sel = top + r == sel;
-                core::message m;
-                if(e.k == upgrade) m.add(data::upgrades[e.i].name).add(" ").add(a.save.levels[e.i]).add("/").add(data::upgrades[e.i].levels);
-                else if(e.k == cls) m.add("Zawód: ").add(data::classes[e.i].name);
-                else if(e.k == tool) m.add(data::weapons[data::tools[e.i].weapon].name);
-                else m.add("Trudność: ").add(data::difficulties[data::difficulties_count - 1].name);
-                if(is_sel) stripe(c, r + 2, phone_tile::stripe_brand);
-                phone_text(a, t, list_x, row_py(r + 2), clip(m.s, 17).c_str(), is_sel ? ink::brand : ink::dark);
-                int cost = cost_of(e);
-                core::message cm; cm.add(cost);
-                phone_pill(a, c, t, pill_end, row_ty(r + 2), cost < 0 ? "MAX" : cm.s,
-                           cost < 0 ? pill::done : (cost <= a.save.xp ? pill::group : pill::gray));
+                bool known = a.save.catalog & (1u << i);
+                core::message m; m.add("#").add(i + 1).add(" ").add(known ? clip(data::enemies[i].name, 14).c_str() : "???");
+                phone_text(a, t, list_x, row_py(r), m.s, known || is_sel ? name_ink : ink::dim);
+                phone_pill(a, c, t, pill_end, row_ty(r), known ? "ZAMKNIĘTA" : "NIEZNANA", known ? pill::done : pill::gray);
             }
+            else
+            {
+                bool won = a.save.class_wins & (1u << i), unl = core::class_unlocked(a.save, i);
+                phone_text(a, t, list_x, row_py(r), clip(data::classes[i].name, 16).c_str(), unl || is_sel ? name_ink : ink::dim);
+                phone_pill(a, c, t, pill_end, row_ty(r), won ? "Wygrana" : (unl ? "Dostępny" : "Zablok."),
+                           won ? pill::done : (unl ? pill::group : pill::gray));
+            }
+        };
+
+        auto redraw = [&]() {
+            houses.clear();
+            phone_canvas& c = *ph.canvas;
+            core::message sub;
+            if(tab == 4) sub.add("A: kup  B: wyjdź");
+            else if(tab == 0) { int n = 0; for(int i = 0; i < data::badges_count; ++i) n += (a.save.badges >> i) & 1;
+                                sub.add(n).add("/").add(data::badges_count); }
+            else if(tab == 1) { int n = 0; for(int i = 0; i < data::enemies_count; ++i) n += (a.save.catalog >> i) & 1;
+                                sub.add(n).add("/").add(data::enemies_count); }
+            else if(tab == 2) sub.add("Domy: ").add(int(a.save.houses_count)).add("/").add(core::max_houses);
+            else { int n = 0; for(int i = 0; i < data::classes_count; ++i) n += (a.save.class_wins >> i) & 1;
+                   sub.add("Wygrane ").add(n).add("/").add(data::classes_count); }
+            phone_header(a, ph, t, profile_tabs[tab], sub.s);
+
+            if(tab == 2)   // Osiedle: domy z wygranych budów, 6 x 2 działki
+            {
+                phone_text(a, t, list_x, row_py(0), "Twoje ukończone budowy", ink::dim);
+                for(int i = 0; i < core::max_houses; ++i)
+                {
+                    int frame = 24;
+                    if(i < a.save.houses_count) frame = (a.save.houses[i] >> 4) * 6 + (a.save.houses[i] & 15);
+                    bn::sprite_ptr hs = bn::sprite_items::houses.create_sprite(30 + (i % 6) * 36 - 120, 64 + (i / 6) * 28 - 80, frame);
+                    hs.set_bg_priority(1);
+                    houses.push_back(hs);
+                }
+                core::message best; best.add("Najlepszy wynik: ").add(int(a.save.best));
+                phone_text(a, t, list_x, row_py(5), best.s, ink::dim);
+                ph.commit();
+                return;
+            }
+            if(tab == 4)   // Koszty = sklep Szkolenia
+            {
+                phone_text(a, t, list_x, row_py(0), "Pozostało", ink::dim);
+                core::message xp; xp.add(int(a.save.xp)).add(" dośw.");
+                phone_text(a, t, 226, row_py(0), xp.s, ink::done, 1);
+                const entry& se = entries[sel];
+                core::message tool_desc;
+                if(se.k == tool)
+                {
+                    const core::weapon_def& w = data::weapons[data::tools[se.i].weapon];
+                    tool_desc.add("Narzędzie ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range);
+                }
+                const char* desc = note ? note : (se.k == upgrade ? data::upgrades[se.i].desc
+                                 : (se.k == cls ? "Nowy zawód do wyboru" : (se.k == tool ? tool_desc.s : "Najwyższa trudność")));
+                phone_text(a, t, list_x, row_py(1), clip(desc, 26).c_str(), ink::dim);
+                for(int r = 0; r < 4 && top + r < entries.size(); ++r)
+                {
+                    const entry& e = entries[top + r];
+                    bool is_sel = top + r == sel;
+                    core::message m;
+                    if(e.k == upgrade) m.add(data::upgrades[e.i].name).add(" ").add(a.save.levels[e.i]).add("/").add(data::upgrades[e.i].levels);
+                    else if(e.k == cls) m.add("Zawód: ").add(data::classes[e.i].name);
+                    else if(e.k == tool) m.add(data::weapons[data::tools[e.i].weapon].name);
+                    else m.add("Trudność: ").add(data::difficulties[data::difficulties_count - 1].name);
+                    if(is_sel) stripe(c, r + 2, phone_tile::stripe_brand);
+                    phone_text(a, t, list_x, row_py(r + 2), clip(m.s, 17).c_str(), is_sel ? ink::brand : ink::dark);
+                    int cost = cost_of(e);
+                    core::message cm; cm.add(cost);
+                    phone_pill(a, c, t, pill_end, row_ty(r + 2), cost < 0 ? "MAX" : cm.s,
+                               cost < 0 ? pill::done : (cost <= a.save.xp ? pill::group : pill::gray));
+                }
+                ph.commit();
+                return;
+            }
+            // listy: Odznaki, Katalog, Zespół - 5 wierszy + opis zaznaczonego
+            for(int r = 0; r < 5 && top + r < list_size(); ++r) draw_list_row(r, top + r, top + r == sel);
+            const char* desc = "";
+            if(tab == 0) desc = data::badges[sel].desc;
+            else if(tab == 1) desc = (a.save.catalog & (1u << sel)) ? data::enemies[sel].desc : "Pokonaj, żeby poznać";
+            else desc = data::classes[sel].ability_desc;
+            phone_text(a, t, list_x, row_py(5), clip(desc, 26).c_str(), ink::dim);
             ph.commit();
         };
+        ph.set_tab(tab);
         redraw();
 
         while(true)
         {
-            int dir = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
-            if(dir)
+            int d = (bn::keypad::r_pressed() || bn::keypad::right_pressed()) ? 1
+                  : ((bn::keypad::l_pressed() || bn::keypad::left_pressed()) ? -1 : 0);
+            if(d)
             {
-                sel = (sel + dir + entries.size()) % entries.size();
+                tab = (tab + d + tabs_count) % tabs_count;
+                sel = top = 0; note = nullptr;
+                ph.set_tab(tab);
+                redraw();
+                bn::sound_items::sfx_menu.play();
+            }
+            int n = list_size(), window = tab == 4 ? 4 : 5;
+            int dir = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+            if(dir && n > 0)
+            {
+                sel = (sel + dir + n) % n;
                 if(sel < top) top = sel;
                 if(sel >= top + window) top = sel - window + 1;
                 note = nullptr;
                 redraw();
             }
-            if(bn::keypad::a_pressed())
+            if(tab == 4 && bn::keypad::a_pressed())
             {
                 const entry e = entries[sel];
                 bool ok = e.k == upgrade ? core::buy_upgrade(a.save, e.i)
@@ -1578,6 +1686,7 @@ namespace
             if(bn::keypad::b_pressed() || bn::keypad::start_pressed())
             {
                 t.clear();
+                houses.clear();
                 a.text.set_palette_item(default_ink);
                 wait_release();
                 return leave(scene::title);

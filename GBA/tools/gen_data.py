@@ -25,7 +25,7 @@ for c in d["classes"]:
 L.append("};\n")
 L.append("inline constexpr core::enemy_def enemies[] = {")
 for e in d["enemies"]:
-    L.append(f'    {{ {s(e["name"])}, {e["maxHealth"]}, {e["minDamage"]}, {e["maxDamage"]}, {e["defense"]}, '
+    L.append(f'    {{ {s(e["name"])}, {s(e["desc"])}, {e["maxHealth"]}, {e["minDamage"]}, {e["maxDamage"]}, {e["defense"]}, '
              f'{e["sight"]}, {e["score"]}, {e["frame"]} }},')
 L.append("};\n")
 L.append("inline constexpr core::stage_def stages[] = {")
@@ -49,6 +49,14 @@ for u in m["upgrades"]:
     L.append(f'    {{ {s(u["name"])}, {s(u["desc"])}, core::upgrade_effect::{u["effect"]}, {u["value"]}, '
              f'{len(u["costs"])}, {{ {", ".join(map(str, costs))} }} }},')
 L.append("};\n")
+L.append("inline constexpr core::badge_def badges[] = {")
+for b in d["badges"]:
+    L.append(f'    {{ {s(b["name"])}, {s(b["desc"])}, {b["xp"]} }},')
+L.append("};\n")
+bid = {b["id"]: i for i, b in enumerate(d["badges"])}
+L += [f"inline constexpr int badges_count = {len(d['badges'])};",
+      f"inline constexpr int enemies_count = {len(d['enemies'])};"]
+L += [f"inline constexpr int badge_{k} = {v};" for k, v in bid.items()] + [""]
 L.append("inline constexpr core::tool_def tools[] = {")
 for t in m["tools"]:
     L.append(f'    {{ {wid[t["weapon"]]}, {t["cost"]} }},')
