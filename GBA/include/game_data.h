@@ -60,6 +60,17 @@ inline constexpr core::upgrade_def upgrades[] = {
     { "Dostawy", "+1 znajdźka na etap", core::upgrade_effect::pickups, 1, 2, { 15, 30, 0, 0 } },
 };
 
+inline constexpr core::story_msg story_stages[] = {
+    { "Anna Nowak", { "Działka nasza! Liczę na", "mocne fundamenty. Uważaj", "na wilgoć w wykopie." } },
+    { "Kierownik Marek", { "Stal jest, papierów brak.", "Papierologia już czeka.", "Trzymaj się planu!" } },
+    { "Anna Nowak", { "Prognoza: ulewa. Zdążysz", "z dachem przed deszczem?", "Kornik też nie śpi." } },
+    { "Kierownik Marek", { "Prąd i woda w jednych", "ścianach. Co może pójść", "nie tak? ;)" } },
+    { "Anna Nowak", { "Już widzę nasz salon.", "Tylko ten Termin... Dasz", "radę, mamy harmonogram!" } },
+};
+inline constexpr core::story_msg story_win = { "Anna Nowak", { "Mamy klucze! Plan", "pokonał chaos budowy.", "Dziękujemy za wszystko!" } };
+inline constexpr core::story_msg story_lose = { "Kierownik Marek", { "Budowa stoi. Spokojnie -", "z lepszym planem pójdzie.", "Wracamy na plac?" } };
+inline constexpr core::story_msg story_ngplus = { "Anna Nowak", { "Znajomi też chcą dom.", "Bierzesz kolejną budowę?", "Termin już się szykuje." } };
+
 inline constexpr core::badge_def badges[] = {
     { "Bez usterek", "Etap bez żadnych obrażeń", 20 },
     { "Przed terminem", "Termin pokonany w 150 tur", 30 },

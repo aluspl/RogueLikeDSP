@@ -70,6 +70,12 @@ namespace core
         int16_t costs[4];      // koszt kolejnych poziomów w doświadczeniu
     };
 
+    struct story_msg           // wiadomość w telefonie (fabuła): nadawca + 3 linie dymka
+    {
+        const char* from;
+        const char* lines[3];
+    };
+
     struct badge_def           // odznaka (motywacja do kolejnych budów)
     {
         const char* name;

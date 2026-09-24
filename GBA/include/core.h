@@ -180,6 +180,9 @@ namespace core
         const weapon_def& weapon() const { return data::weapons[weapon_override >= 0 ? weapon_override : cdef().weapon]; }
         const difficulty_def& ddef() const { return data::difficulties[diff]; }
 
+        // Wiadomość fabularna na wejściu etapu (przy NG+ pierwszy etap ma własną).
+        const story_msg& stage_story() const { return tier > 0 && stage == 0 ? data::story_ngplus : data::story_stages[stage]; }
+
         bool visible(int x, int y) const { return lv.in(x, y) && fov[y][x] == in_view; }
         bool explored(int x, int y) const { return lv.in(x, y) && fov[y][x] != unknown; }
 

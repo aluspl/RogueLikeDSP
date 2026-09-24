@@ -802,24 +802,44 @@ namespace
         }
     }
 
-    // Karta etapu na wejściu: nazwa, siła problemów, poziom trudności.
+    // Wiadomość w telefonie (fabuła): nadawca, dymek z 3 liniami, 2 wiersze informacji. A/START: dalej.
+    void phone_message(app& a, const core::story_msg& m, const char* sub, const char* info1, ink info1_ink, const char* info2)
+    {
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
+        phone_screen ph(2);
+        ph.icon.set_visible(false);
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        page_sprites t;
+        phone_header(a, ph, t, "Wiadomości", sub);
+        phone_canvas& c = *ph.canvas;
+        phone_text(a, t, list_x, row_py(0), m.from, ink::dark);
+        phone_pill(a, c, t, pill_end, row_ty(0), "teraz", pill::gray);
+        c.rounded(2, row_ty(1), 26, 6, phone_tile::fill_group, phone_tile::corner_group);   // dymek wiadomości
+        for(int i = 0; i < 3; ++i) phone_text(a, t, 22, row_py(1 + i), m.lines[i], ink::dark);
+        phone_text(a, t, list_x, row_py(4), info1, info1_ink);
+        phone_text(a, t, list_x, row_py(5), info2, ink::dim);
+        phone_text(a, t, 226, row_py(5), "A: dalej", ink::brand, 1);
+        ph.commit();
+        bn::sound_items::sfx_notify.play(bn::fixed(0.7));
+        wait_release();
+        for(int i = 0; i < 600 && ! bn::keypad::a_pressed() && ! bn::keypad::start_pressed(); ++i) next_frame();
+        t.clear();
+        a.text.set_palette_item(default_ink);
+    }
+
+    // Wejście na etap: wiadomość od inwestorki / kierownika + siła problemów i trudność.
     void stage_card(app& a)
     {
         const core::game& g = *a.g;
-        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
-        page_sprites t;
-        a.text.set_center_alignment();
-        core::message l1; l1.add("Etap ").add(g.stage + 1).add("/").add(data::stages_count);
-        a.text.generate(0, -40, l1.s, t);
-        a.text.generate(0, -20, clip(data::stages[g.stage].name, 29), t);
-        core::message l3; l3.add("Siła problemów: ").add(g.enemy_hp_pct()).add("% HP");
-        a.text.generate(0, 8, l3.s, t);
-        core::message l4; l4.add("Trudność: ").add(g.ddef().name);
-        if(g.tier > 0) l4.add("  NG+").add(g.tier);
-        a.text.generate(0, 26, l4.s, t);
-        if(data::stages[g.stage].boss >= 0) a.text.generate(0, 50, "Uwaga: Termin czeka!", t);
-        for(int i = 0; i < 100 && ! bn::keypad::a_pressed() && ! bn::keypad::start_pressed(); ++i) next_frame();
-        leave(scene::game);   // ściemnij kartę, gra się rozjaśni
+        core::message sub; sub.add("Etap ").add(g.stage + 1).add("/").add(data::stages_count);
+        bool boss = data::stages[g.stage].boss >= 0;
+        core::message i1;
+        if(boss) i1.add("Uwaga: Termin czeka!");
+        else i1.add(clip(data::stages[g.stage].name, 12).c_str()).add(": problemy ").add(g.enemy_hp_pct()).add("%");
+        core::message i2; i2.add(g.ddef().name);
+        if(g.tier > 0) i2.add(" NG+").add(g.tier);
+        phone_message(a, g.stage_story(), sub.s, i1.s, boss ? ink::late : ink::dim, i2.s);
+        leave(scene::game);   // ściemnij telefon, gra się rozjaśni
     }
 
     // Powiadomienie push jak z aplikacji PlanBudowlany: baner zjeżdża z góry ekranu.
@@ -1480,6 +1500,12 @@ namespace
         clear_run(a);
         play_song(song::none);
         (won ? bn::sound_items::sfx_level : bn::sound_items::sfx_hurt).play();
+        {
+            core::message i1; i1.add("Wynik ").add(g.score).add("  Dośw. +").add(gained);
+            phone_message(a, won ? data::story_win : data::story_lose, won ? "Odbiór" : "Budowa", i1.s, ink::dark,
+                          won ? "Dom na Osiedlu!" : "Dośw. zostaje");
+            leave(scene::end);
+        }
 
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         bn::regular_bg_ptr bg = bn::regular_bg_items::end.create_bg(8, 48);
