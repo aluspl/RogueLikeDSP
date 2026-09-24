@@ -741,6 +741,77 @@ namespace
         leave(scene::game);   // ściemnij kartę, gra się rozjaśni
     }
 
+    // Powiadomienie push jak z aplikacji PlanBudowlany: baner zjeżdża z góry ekranu.
+    struct notice { bn::string<32> title; bn::string<32> body; };
+
+    struct push_banner
+    {
+        static constexpr int slide = 8, hold = 80, height = 32;
+        bn::unique_ptr<phone_canvas> canvas;
+        bn::regular_bg_ptr bg;
+        bn::sprite_ptr icon;
+        bn::vector<bn::sprite_ptr, 24> text;
+        bn::vector<bn::fixed, 24> text_y;
+        bn::vector<notice, 4> queue;
+        int timer = 0;   // 0 = brak banera
+
+        push_banner() :
+            canvas(new phone_canvas()),
+            bg(make_canvas_bg(*canvas)),
+            icon(bn::sprite_items::phone_icons.create_sprite(-96, -64, 5))
+        {
+            canvas->rounded(1, 0, 28, 4, phone_tile::fill_card, phone_tile::corner_card);
+            bn::regular_bg_map_ptr map = bg.map();
+            map.reload_cells_ref();
+            bg.set_priority(0);
+            bg.set_visible(false);
+            icon.set_bg_priority(0);
+            icon.set_visible(false);
+        }
+
+        bool active() const { return timer > 0; }
+
+        void push(const char* title, const char* body)
+        {
+            if(queue.full()) queue.erase(queue.begin());
+            queue.push_back({ bn::string<32>(title), bn::string<32>(body) });
+        }
+
+        void start(app& a)
+        {
+            const notice& n = queue.front();
+            text.clear(); text_y.clear();
+            a.text.set_bg_priority(0);
+            a.text.set_left_alignment();
+            a.text.set_palette_item(bn::sprite_palette_items::font_dark);
+            a.text.generate(36 - 120, 0 - 72, n.title, text);
+            a.text.set_palette_item(bn::sprite_palette_items::font_dim);
+            a.text.generate(36 - 120, 15 - 72, n.body, text);
+            a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
+            for(bn::sprite_ptr& sp : text) text_y.push_back(sp.y());
+            queue.erase(queue.begin());
+            timer = slide * 2 + hold;
+            bg.set_visible(true); icon.set_visible(true);
+        }
+
+        // Zwraca true, gdy baner jest na ekranie (HUD wtedy schowany).
+        bool update(app& a)
+        {
+            if(timer == 0 && ! queue.empty()) start(a);
+            if(timer == 0) return false;
+            --timer;
+            int t = slide * 2 + hold - timer;   // klatka od startu
+            int off = t < slide ? height - t * height / slide : (timer < slide ? height - timer * height / slide : 0);
+            bg.set_y(48 - off);
+            icon.set_y(-64 - off);
+            for(int i = 0; i < text.size(); ++i) text[i].set_y(text_y[i] - off);
+            if(timer == 0) { bg.set_visible(false); icon.set_visible(false); text.clear(); }
+            return true;
+        }
+
+        void hide() { timer = 0; queue.clear(); bg.set_visible(false); icon.set_visible(false); text.clear(); }
+    };
+
     // Unosząca się liczba obrażeń nad polem.
     struct floater
     {
@@ -799,6 +870,39 @@ namespace
         bn::vector<floater, core::max_hits> floaters;
         int shake_timer = 0, target_timer = 0;
         bn::fixed_point cam_base;
+        push_banner banner;
+        int prev_level = g.hero_level, prev_weapon = g.weapon_override, prev_pickups = g.pickups_count;
+        int prev_cd = g.ability_cd;
+        bool boss_seen = false;
+        auto detect_events = [&]() {   // powiadomienia push o ważnych zdarzeniach
+            if(g.hero_level > prev_level)
+            {
+                core::message t; t.add("Awans! Poziom ").add(g.hero_level);
+                core::message b; b.add("+").add(data::hp_per_level).add(" HP");
+                if(data::def_levels_mask & (1 << g.hero_level)) b.add(", +1 obrona");
+                if(data::dmg_levels_mask & (1 << g.hero_level)) b.add(", +1 obrażenia");
+                banner.push(t.s, b.s);
+            }
+            if(g.weapon_override != prev_weapon && g.weapon_override >= 0)
+            {
+                const core::weapon_def& w = g.weapon();
+                core::message b; b.add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage);
+                banner.push("Nowe narzędzie", clip(b.s, 24).c_str());
+            }
+            if(g.pickups_count > prev_pickups) banner.push("Coś wypadło!", "Zajrzyj na miejsce usterki");
+            if(prev_cd > 0 && g.ability_cd == 0) banner.push("Moc gotowa", g.cdef().ability_name);
+            if(! boss_seen && g.boss >= 0 && g.enemies[g.boss].alive && g.visible(g.enemies[g.boss].x, g.enemies[g.boss].y))
+            {
+                boss_seen = true;
+                banner.push("Przypisano Ci usterkę", "Nieprzekraczalny Termin");
+            }
+            if(g.st == core::status::stage_clear)   // ważniejsze niż kolejka: od razu, zanim zmieni się scena
+            {
+                banner.hide();
+                banner.push("Etap zaliczony", clip(data::stages[g.stage].name, 24).c_str());
+            }
+            prev_level = g.hero_level; prev_weapon = g.weapon_override; prev_pickups = g.pickups_count; prev_cd = g.ability_cd;
+        };
 
         // pasek HP celu (ostatnio trafiony wróg / boss): 2 segmenty ściśnięte do 16 px
         bn::sprite_ptr tgt_left = bn::sprite_items::hp_bar.create_sprite(0, 0, 0);
@@ -891,6 +995,7 @@ namespace
             }
             g.hits_count = 0;
             update_target_bar();
+            detect_events();
         };
         refresh();
 
@@ -951,6 +1056,7 @@ namespace
                 fx.clear(); hud.clear(); log.clear(); floaters.clear();
                 hp_left.set_visible(false); hp_right.set_visible(false);
                 tgt_left.set_visible(false); tgt_right.set_visible(false);
+                banner.hide();
                 pause_result pr = run_phone(a);
                 if(pr == pause_result::save_exit) { save_run(a); return leave(scene::title); }
                 if(pr == pause_result::quit)
@@ -991,10 +1097,16 @@ namespace
             if(hurt_timer > 0) { --hurt_timer; hero.set_visible((hurt_timer & 2) == 0); }
             bool low_hp = g.hero.hp * 4 <= g.hero.max_hp;
             ++blink;
-            hp_left.set_visible(! low_hp || (blink & 16));
-            hp_right.set_visible(! low_hp || (blink & 16));
+            bool banner_on = banner.update(a);
+            for(bn::sprite_ptr& sp : hud) sp.set_visible(! banner_on);
+            hp_left.set_visible(! banner_on && (! low_hp || (blink & 16)));
+            hp_right.set_visible(! banner_on && (! low_hp || (blink & 16)));
 
-            if(g.st == core::status::stage_clear) { for(int i = 0; i < 30; ++i) next_frame(); return leave(scene::schedule); }
+            if(g.st == core::status::stage_clear)
+            {
+                for(int i = 0; i < 70; ++i) { banner.update(a); next_frame(); }
+                return leave(scene::schedule);
+            }
             if(g.st == core::status::dead || g.st == core::status::won)
             {
                 hero.set_visible(true);
