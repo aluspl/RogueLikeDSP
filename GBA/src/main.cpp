@@ -178,7 +178,7 @@ namespace
         auto redraw_diff = [&]() {
             diff_line.clear();
             a.text.set_center_alignment();
-            core::message m; m.add("Poziom (góra/dół): ").add(data::difficulties[a.chosen_diff].name);
+            core::message m; m.add("Trudność (góra/dół): ").add(data::difficulties[a.chosen_diff].name);
             a.text.generate(0, -56, m.s, diff_line);
         };
         redraw();
@@ -284,12 +284,13 @@ namespace
         a.text.generate(0, -68, c.name, t);
         a.text.set_left_alignment();
         core::message l[7];
-        l[0].add("Poziom: ").add(g.ddef().name);
+        l[0].add("Trudność: ").add(g.ddef().name);
         if(g.tier > 0) l[0].add(" NG+").add(g.tier);
         l[1].add("HP ").add(g.hero.hp).add("/").add(g.hero.max_hp).add("  OBR ").add(c.defense).add("+").add(g.def_bonus);
         l[2].add("SIŁ ").add(c.strength).add(" ZRĘ ").add(c.agility).add(" INT ").add(c.intelligence);
-        l[3].add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range);
-        l[4].add("Premia obrażeń: +").add(g.dmg_bonus);
+        l[3].add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range).add(" +").add(g.dmg_bonus);
+        l[4].add("Poziom ").add(g.hero_level);
+        if(g.xp_to_next() >= 0) l[4].add(" (awans za ").add(g.xp_to_next()).add(")");
         l[5].add("Wynik ").add(g.score).add("  Dni ").add(g.turns);
         l[6].add("Usunięte problemy: ").add(g.kills);
         for(int i = 0; i < 7; ++i) a.text.generate(-108, -46 + i * 16, clip(l[i].s, 27), t);
@@ -405,7 +406,7 @@ namespace
         a.text.generate(0, -20, clip(data::stages[g.stage].name, 29), t);
         core::message l3; l3.add("Siła problemów: ").add(g.enemy_hp_pct()).add("% HP");
         a.text.generate(0, 8, l3.s, t);
-        core::message l4; l4.add("Poziom: ").add(g.ddef().name);
+        core::message l4; l4.add("Trudność: ").add(g.ddef().name);
         if(g.tier > 0) l4.add("  NG+").add(g.tier);
         a.text.generate(0, 26, l4.s, t);
         if(data::stages[g.stage].boss >= 0) a.text.generate(0, 50, "Uwaga: Termin czeka!", t);
@@ -758,12 +759,12 @@ namespace
                     if(c < 0) m.add(" MAX"); else m.add(" - ").add(c);
                 }
                 else if(e.k == cls) m.add("Zawód: ").add(data::classes[e.i].name).add(" - ").add(data::class_cost);
-                else m.add("Poziom ").add(data::difficulties[data::difficulties_count - 1].name).add(" - ").add(data::hard_cost);
+                else m.add("Trudność: ").add(data::difficulties[data::difficulties_count - 1].name).add(" - ").add(data::hard_cost);
                 a.text.generate(-112, -46 + row * 16, clip(m.s, 29), t);
             }
             a.text.set_center_alignment();
             const entry& e = entries[sel];
-            const char* desc = note ? note : (e.k == upgrade ? data::upgrades[e.i].desc : (e.k == cls ? "Nowy zawód do wyboru" : "Odblokuj najwyższy poziom"));
+            const char* desc = note ? note : (e.k == upgrade ? data::upgrades[e.i].desc : (e.k == cls ? "Nowy zawód do wyboru" : "Odblokuj najwyższą trudność"));
             a.text.generate(0, 54, clip(desc, 29), t);
             a.text.generate(0, 72, "A: kup  B: wyjdź", t);
         };

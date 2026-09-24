@@ -30,6 +30,7 @@ Mgła wojny: widzisz na 7 pól (ściany zasłaniają), odkryte pola zostają prz
 
 ## Trudność i meta-progresja
 - HP wrogów rośnie z etapem, poziom trudności (Łatwy/Normalny/Trudny) mnoży siłę wrogów i wynik.
+- Poziomy postaci w trakcie budowy: awans za doświadczenie daje +HP, na 3. poziomie +obrona, na 5. +obrażenia.
 - Po wygranej: „Kolejna budowa” (NG+) – ten sam zawód i premie, mocniejsi wrogowie.
 - Doświadczenie za wrogów, etapy i bossa wydajesz w sklepie „Szkolenia” (po budowie i z tytułu):
   ulepszenia statystyk, więcej znajdziek, nowe zawody, poziom Trudny.

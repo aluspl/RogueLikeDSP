@@ -54,6 +54,12 @@ L += [f"inline constexpr int upgrades_count = {len(m['upgrades'])};",
       f"inline constexpr int start_classes_mask = {start_mask};",
       f"inline constexpr int class_cost = {m['classCost']};",
       f"inline constexpr int hard_cost = {m['hardCost']};", ""]
+hl = d["heroLevels"]
+L += [f"inline constexpr int level_thresholds[] = {{ {', '.join(map(str, hl['thresholds']))} }};",
+      f"inline constexpr int max_hero_level = {len(hl['thresholds']) + 1};",
+      f"inline constexpr int hp_per_level = {hl['hpPerLevel']};",
+      f"inline constexpr int dmg_levels_mask = {sum(1 << l for l in hl['dmgLevels'])};",
+      f"inline constexpr int def_levels_mask = {sum(1 << l for l in hl['defLevels'])};", ""]
 L += [f"inline constexpr int classes_count = {len(d['classes'])};",
       f"inline constexpr int stages_count = {len(d['stages'])};",
       f"inline constexpr int difficulties_count = {len(d['difficulties'])};",
