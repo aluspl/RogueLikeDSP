@@ -2,6 +2,7 @@
 
 Port gry LifeLike (Daj Się Poznać 2017, oryginał w Unity) na Godot 4 .NET.
 Pełna dokumentacja (research, architektura, format danych, roadmapa, ADR) zostanie dodana w `docs/`.
+Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KONCEPCJA.md) – roguelike budowlany z telefonem (aplikacja PlanBudowlany) jako interfejsem.
 
 ## Wymagania
 - Godot 4.7 w wersji .NET
