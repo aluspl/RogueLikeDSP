@@ -41,7 +41,11 @@
 #include "bn_regular_bg_items_title.h"
 #include "bn_regular_bg_items_end.h"
 #include "bn_regular_bg_tiles_items_tiles.h"
-#include "bn_bg_palette_items_stage_palettes.h"
+#include "bn_bg_palette_items_stage_palettes_0.h"
+#include "bn_bg_palette_items_stage_palettes_1.h"
+#include "bn_bg_palette_items_stage_palettes_2.h"
+#include "bn_bg_palette_items_stage_palettes_3.h"
+#include "bn_bg_palette_items_stage_palettes_4.h"
 
 #include "core.h"
 #include "meta.h"
@@ -275,7 +279,14 @@ namespace
 
         bg_map() : map_item(cells[0], bn::size(columns, rows)) { bn::memory::clear(cells); }
 
-        static constexpr int dim_palettes = 5;   // palety 5..9 = przyciemnione etapy
+        // Miękkie światło: paleta 0 = pełne światło przy bohaterze, 1 = 80%, 2 = 60% (skraj pola widzenia),
+        // 3 = pole zapamiętane poza polem widzenia. Każdy etap ma własny zestaw 4 palet.
+        static int light_level(const core::game& g, int x, int y)
+        {
+            if(! g.visible(x, y)) return 3;
+            int dx = x - g.hero.x, dy = y - g.hero.y, d2 = dx * dx + dy * dy;
+            return d2 <= 10 ? 0 : (d2 <= 24 ? 1 : 2);
+        }
 
         void set(int cx, int cy, int t, int palette)
         {
@@ -290,7 +301,7 @@ namespace
         // Kafel pola z uwzględnieniem mgły wojny: 0 = nieznane (czarne).
         static int tile_of(const core::game& g, int x, int y, int& palette)
         {
-            palette = g.stage + (g.visible(x, y) ? 0 : dim_palettes);
+            palette = light_level(g, x, y);
             if(! g.explored(x, y)) return 0;
             core::tile k = g.lv.at(x, y);
             if(k == core::tile::floor) return 1;
@@ -885,7 +896,10 @@ namespace
         bn::bg_tiles::set_allow_offset(false);
         bn::unique_ptr<bg_map> map(new bg_map());
         map->build(g);
-        bn::regular_bg_item item(bn::regular_bg_tiles_items::tiles, bn::bg_palette_items::stage_palettes, map->map_item);
+        const bn::bg_palette_item* stage_pals[] = { &bn::bg_palette_items::stage_palettes_0, &bn::bg_palette_items::stage_palettes_1,
+                                                    &bn::bg_palette_items::stage_palettes_2, &bn::bg_palette_items::stage_palettes_3,
+                                                    &bn::bg_palette_items::stage_palettes_4 };
+        bn::regular_bg_item item(bn::regular_bg_tiles_items::tiles, *stage_pals[core::imin(g.stage, 4)], map->map_item);
         bn::regular_bg_ptr bg = item.create_bg(0, 0);
         bn::regular_bg_map_ptr bg_map_ptr = bg.map();
         bn::bg_tiles::set_allow_offset(true);
