@@ -258,7 +258,21 @@ def t_stairs(t):
     for y in range(8):
         t[y][0] = 5
 
-TILES = [t_empty, t_floor, t_wall, t_walltop, t_stairs]
+def t_floor_wall_shadow(t):   # podłoga tuż pod ścianą: pas cienia u góry (kolor 8)
+    t_floor(t)
+    for x in range(8):
+        t[0][x] = t[1][x] = 8
+        if x % 2 == 0: t[2][x] = 8
+
+def t_actor_shadow(t):   # lewa dolna ćwiartka elipsy cienia pod postacią (prawa = odbicie)
+    t_floor(t)
+    for y in range(8):
+        for x in range(8):
+            dx, dy = (x - 7.5) / 7.2, (y - 4.8) / 3.0   # środek elipsy na styku kafli, w dolnej części pola
+            if dx * dx + dy * dy <= 1.0: t[y][x] = 8
+
+# indeksy: 0 pusty, 1 podłoga, 2 mur, 3 lico muru, 4 schody, 5 podłoga z cieniem muru, 6 cień postaci (ćwiartka)
+TILES = [t_empty, t_floor, t_wall, t_walltop, t_stairs, t_floor_wall_shadow, t_actor_shadow]
 
 def make_tiles():
     px_tiles = [tile(f) for f in TILES]
@@ -281,7 +295,8 @@ def make_tiles():
                 f = (1.0, 0.8, 0.6)[level]
                 cols = [tuple(int(v * f + n * (1 - f) * 0.6) for v, n in zip(col, BRAND_NAVY)) for col in c]
                 stairs = [tuple(int(v * f) for v in (245, 211, 61)), tuple(int(v * f) for v in (180, 120, 20))]
-            pal += [(12, 12, 20)] + cols + stairs + [(0, 0, 0)] * 8
+            shadow = tuple(int(v * 0.45) for v in cols[0])   # cień na podłodze
+            pal += [(12, 12, 20)] + cols + stairs + [shadow] + [(0, 0, 0)] * 7
         write_bmp(os.path.join(G, f"stage_palettes_{si}.bmp"), [0] * 64, 8, 8, pal, 8)
         write_json(f"stage_palettes_{si}", {"type": "bg_palette", "bpp_mode": "bpp_4", "colors_count": 64})
 

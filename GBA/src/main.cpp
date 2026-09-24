@@ -334,13 +334,13 @@ namespace
             return d2 <= 10 ? 0 : (d2 <= 24 ? 1 : 2);
         }
 
-        void set(int cx, int cy, int t, int palette)
+        void set(int cx, int cy, int t, int palette, bool hflip = false)
         {
             bn::regular_bg_map_cell& cell = cells[map_item.cell_index(cx, cy)];
             bn::regular_bg_map_cell_info info(cell);
             info.set_tile_index(t);
             info.set_palette_id(palette);
-            info.set_horizontal_flip(false);
+            info.set_horizontal_flip(hflip);
             cell = info.cell();
         }
 
@@ -350,19 +350,38 @@ namespace
             palette = light_level(g, x, y);
             if(! g.explored(x, y)) return 0;
             core::tile k = g.lv.at(x, y);
-            if(k == core::tile::floor) return 1;
+            if(k == core::tile::floor) return g.lv.at(x, y - 1) == core::tile::wall ? 5 : 1;   // cień muru u góry
             if(k == core::tile::stairs) return 4;
             return g.lv.at(x, y + 1) != core::tile::wall ? 3 : 2;   // lico muru nad podłogą / mur
         }
 
-        // Widok gry: pole 16x16 = 2x2 kafle 8x8.
+        // Czy na polu stoi coś, co rzuca cień (bohater, widoczny wróg, znajdźka)?
+        static bool casts_shadow(const core::game& g, int x, int y)
+        {
+            if(g.hero.x == x && g.hero.y == y) return true;
+            for(int i = 0; i < g.enemies_count; ++i)
+                if(g.enemies[i].alive && g.enemies[i].x == x && g.enemies[i].y == y && g.visible(x, y)) return true;
+            for(int i = 0; i < g.pickups_count; ++i)
+                if(g.pickups[i].active && g.pickups[i].x == x && g.pickups[i].y == y) return true;
+            return false;
+        }
+
+        // Widok gry: pole 16x16 = 2x2 kafle 8x8. Cień postaci: dolne kafle pola (ćwiartka + odbicie).
         void build(const core::game& g)
         {
             for(int y = 0; y < core::map_h; ++y)
                 for(int x = 0; x < core::map_w; ++x)
                 {
                     int pal, t = tile_of(g, x, y, pal);
-                    for(int dy = 0; dy < 2; ++dy) for(int dx = 0; dx < 2; ++dx) set(x * 2 + dx, y * 2 + dy, t, pal);
+                    bool top_shadow = t == 5;
+                    int base = top_shadow ? 1 : t;
+                    set(x * 2, y * 2, t, pal); set(x * 2 + 1, y * 2, t, pal);
+                    if((t == 1 || t == 5) && g.visible(x, y) && casts_shadow(g, x, y))
+                    {
+                        set(x * 2, y * 2 + 1, 6, pal);
+                        set(x * 2 + 1, y * 2 + 1, 6, pal, true);
+                    }
+                    else { set(x * 2, y * 2 + 1, base, pal); set(x * 2 + 1, y * 2 + 1, base, pal); }
                 }
         }
 
