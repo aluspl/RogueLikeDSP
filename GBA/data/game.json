@@ -10,7 +10,13 @@
       "intelligence": 5,
       "defense": 3,
       "weapon": "dziennik",
-      "frame": 0
+      "frame": 0,
+      "ability": {
+        "name": "Odprawa",
+        "desc": "Ogłusza widocznych wrogów",
+        "effect": "stun",
+        "cooldown": 15
+      }
     },
     {
       "id": "murarz",
@@ -22,7 +28,13 @@
       "intelligence": 1,
       "defense": 4,
       "weapon": "kielnia",
-      "frame": 1
+      "frame": 1,
+      "ability": {
+        "name": "Ścianka",
+        "desc": "Stawia ścianki wokół",
+        "effect": "wall",
+        "cooldown": 15
+      }
     },
     {
       "id": "ciesla",
@@ -34,7 +46,13 @@
       "intelligence": 1,
       "defense": 3,
       "weapon": "gwozdziarka",
-      "frame": 2
+      "frame": 2,
+      "ability": {
+        "name": "Seria",
+        "desc": "Trafia wszystkich w zasięgu",
+        "effect": "volley",
+        "cooldown": 12
+      }
     },
     {
       "id": "elektryk",
@@ -46,7 +64,13 @@
       "intelligence": 5,
       "defense": 2,
       "weapon": "probnik",
-      "frame": 3
+      "frame": 3,
+      "ability": {
+        "name": "Łańcuch",
+        "desc": "Przeskakuje na 3 cele",
+        "effect": "chain",
+        "cooldown": 12
+      }
     },
     {
       "id": "hydraulik",
@@ -58,7 +82,13 @@
       "intelligence": 3,
       "defense": 3,
       "weapon": "klucz",
-      "frame": 4
+      "frame": 4,
+      "ability": {
+        "name": "Zawór",
+        "desc": "Leczy 8 HP",
+        "effect": "heal",
+        "cooldown": 20
+      }
     },
     {
       "id": "glazurnik",
@@ -70,7 +100,13 @@
       "intelligence": 2,
       "defense": 3,
       "weapon": "szlifierka",
-      "frame": 5
+      "frame": 5,
+      "ability": {
+        "name": "Wirówka",
+        "desc": "Trafia wszystkich obok",
+        "effect": "spin",
+        "cooldown": 10
+      }
     }
   ],
   "weapons": [

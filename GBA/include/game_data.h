@@ -18,12 +18,12 @@ inline constexpr core::weapon_def weapons[] = {
 };
 
 inline constexpr core::class_def classes[] = {
-    { "Kierownik budowy", "Trzyma harmonogram w ryzach.", 30, 3, 3, 5, 3, 0, 0 },
-    { "Murarz", "Twardy jak pustak.", 32, 5, 2, 1, 4, 1, 1 },
-    { "Cieśla-dekarz", "Gwoździe wbija z daleka.", 30, 4, 4, 1, 3, 2, 2 },
-    { "Elektryk", "Wie, gdzie jest faza.", 24, 2, 4, 5, 2, 3, 3 },
-    { "Hydraulik", "Żaden przeciek mu nie straszny.", 32, 4, 3, 3, 3, 4, 4 },
-    { "Glazurnik", "Precyzja co do fugi.", 30, 3, 5, 2, 3, 5, 5 },
+    { "Kierownik budowy", "Trzyma harmonogram w ryzach.", 30, 3, 3, 5, 3, 0, 0, "Odprawa", "Ogłusza widocznych wrogów", core::ability_effect::stun, 15 },
+    { "Murarz", "Twardy jak pustak.", 32, 5, 2, 1, 4, 1, 1, "Ścianka", "Stawia ścianki wokół", core::ability_effect::wall, 15 },
+    { "Cieśla-dekarz", "Gwoździe wbija z daleka.", 30, 4, 4, 1, 3, 2, 2, "Seria", "Trafia wszystkich w zasięgu", core::ability_effect::volley, 12 },
+    { "Elektryk", "Wie, gdzie jest faza.", 24, 2, 4, 5, 2, 3, 3, "Łańcuch", "Przeskakuje na 3 cele", core::ability_effect::chain, 12 },
+    { "Hydraulik", "Żaden przeciek mu nie straszny.", 32, 4, 3, 3, 3, 4, 4, "Zawór", "Leczy 8 HP", core::ability_effect::heal, 20 },
+    { "Glazurnik", "Precyzja co do fugi.", 30, 3, 5, 2, 3, 5, 5, "Wirówka", "Trafia wszystkich obok", core::ability_effect::spin, 10 },
 };
 
 inline constexpr core::enemy_def enemies[] = {
