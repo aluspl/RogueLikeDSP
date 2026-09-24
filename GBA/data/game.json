@@ -1,0 +1,273 @@
+{
+  "classes": [
+    {
+      "id": "kierownik",
+      "name": "Kierownik budowy",
+      "desc": "Trzyma harmonogram w ryzach.",
+      "maxHealth": 30,
+      "strength": 3,
+      "agility": 3,
+      "intelligence": 5,
+      "defense": 3,
+      "weapon": "dziennik",
+      "frame": 0
+    },
+    {
+      "id": "murarz",
+      "name": "Murarz",
+      "desc": "Twardy jak pustak.",
+      "maxHealth": 32,
+      "strength": 5,
+      "agility": 2,
+      "intelligence": 1,
+      "defense": 4,
+      "weapon": "kielnia",
+      "frame": 1
+    },
+    {
+      "id": "ciesla",
+      "name": "Cieśla-dekarz",
+      "desc": "Gwoździe wbija z daleka.",
+      "maxHealth": 30,
+      "strength": 4,
+      "agility": 4,
+      "intelligence": 1,
+      "defense": 3,
+      "weapon": "gwozdziarka",
+      "frame": 2
+    },
+    {
+      "id": "elektryk",
+      "name": "Elektryk",
+      "desc": "Wie, gdzie jest faza.",
+      "maxHealth": 24,
+      "strength": 2,
+      "agility": 4,
+      "intelligence": 5,
+      "defense": 2,
+      "weapon": "probnik",
+      "frame": 3
+    },
+    {
+      "id": "hydraulik",
+      "name": "Hydraulik",
+      "desc": "Żaden przeciek mu nie straszny.",
+      "maxHealth": 32,
+      "strength": 4,
+      "agility": 3,
+      "intelligence": 3,
+      "defense": 3,
+      "weapon": "klucz",
+      "frame": 4
+    },
+    {
+      "id": "glazurnik",
+      "name": "Glazurnik",
+      "desc": "Precyzja co do fugi.",
+      "maxHealth": 30,
+      "strength": 3,
+      "agility": 5,
+      "intelligence": 2,
+      "defense": 3,
+      "weapon": "szlifierka",
+      "frame": 5
+    }
+  ],
+  "weapons": [
+    {
+      "id": "dziennik",
+      "name": "Dziennik budowy",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 2,
+      "scalesWith": "intelligence"
+    },
+    {
+      "id": "kielnia",
+      "name": "Kielnia",
+      "minDamage": 3,
+      "maxDamage": 5,
+      "range": 1,
+      "scalesWith": "strength"
+    },
+    {
+      "id": "gwozdziarka",
+      "name": "Gwoździarka",
+      "minDamage": 2,
+      "maxDamage": 3,
+      "range": 3,
+      "scalesWith": "agility"
+    },
+    {
+      "id": "probnik",
+      "name": "Próbnik napięcia",
+      "minDamage": 3,
+      "maxDamage": 5,
+      "range": 2,
+      "scalesWith": "intelligence"
+    },
+    {
+      "id": "klucz",
+      "name": "Klucz nastawny",
+      "minDamage": 3,
+      "maxDamage": 6,
+      "range": 1,
+      "scalesWith": "strength"
+    },
+    {
+      "id": "szlifierka",
+      "name": "Szlifierka",
+      "minDamage": 3,
+      "maxDamage": 7,
+      "range": 1,
+      "scalesWith": "agility"
+    }
+  ],
+  "enemies": [
+    {
+      "id": "przeciek",
+      "name": "Przeciek",
+      "maxHealth": 6,
+      "minDamage": 1,
+      "maxDamage": 3,
+      "defense": 0,
+      "sight": 6,
+      "score": 10,
+      "frame": 6
+    },
+    {
+      "id": "zwarcie",
+      "name": "Zwarcie",
+      "maxHealth": 5,
+      "minDamage": 2,
+      "maxDamage": 4,
+      "defense": 0,
+      "sight": 7,
+      "score": 12,
+      "frame": 7
+    },
+    {
+      "id": "plesn",
+      "name": "Pleśń",
+      "maxHealth": 9,
+      "minDamage": 1,
+      "maxDamage": 2,
+      "defense": 1,
+      "sight": 4,
+      "score": 10,
+      "frame": 8
+    },
+    {
+      "id": "kornik",
+      "name": "Kornik",
+      "maxHealth": 7,
+      "minDamage": 1,
+      "maxDamage": 3,
+      "defense": 1,
+      "sight": 5,
+      "score": 10,
+      "frame": 9
+    },
+    {
+      "id": "papierologia",
+      "name": "Papierologia",
+      "maxHealth": 12,
+      "minDamage": 1,
+      "maxDamage": 2,
+      "defense": 2,
+      "sight": 4,
+      "score": 15,
+      "frame": 10
+    },
+    {
+      "id": "dostawa",
+      "name": "Opóźniona dostawa",
+      "maxHealth": 10,
+      "minDamage": 2,
+      "maxDamage": 4,
+      "defense": 1,
+      "sight": 6,
+      "score": 15,
+      "frame": 11
+    },
+    {
+      "id": "ulewa",
+      "name": "Ulewa",
+      "maxHealth": 8,
+      "minDamage": 2,
+      "maxDamage": 3,
+      "defense": 0,
+      "sight": 8,
+      "score": 12,
+      "frame": 12
+    },
+    {
+      "id": "budzet",
+      "name": "Przekroczony budżet",
+      "maxHealth": 14,
+      "minDamage": 2,
+      "maxDamage": 5,
+      "defense": 2,
+      "sight": 6,
+      "score": 25,
+      "frame": 13
+    },
+    {
+      "id": "termin",
+      "name": "Nieprzekraczalny Termin",
+      "maxHealth": 40,
+      "minDamage": 3,
+      "maxDamage": 6,
+      "defense": 3,
+      "sight": 12,
+      "score": 200,
+      "frame": 14
+    }
+  ],
+  "stages": [
+    {
+      "name": "Fundamenty",
+      "enemies": [
+        "przeciek",
+        "kornik"
+      ],
+      "count": 5
+    },
+    {
+      "name": "Stan surowy",
+      "enemies": [
+        "papierologia",
+        "dostawa",
+        "kornik"
+      ],
+      "count": 6
+    },
+    {
+      "name": "Dach",
+      "enemies": [
+        "ulewa",
+        "kornik",
+        "przeciek"
+      ],
+      "count": 7
+    },
+    {
+      "name": "Instalacje",
+      "enemies": [
+        "zwarcie",
+        "przeciek",
+        "plesn"
+      ],
+      "count": 8
+    },
+    {
+      "name": "Wykończenie i odbiór",
+      "enemies": [
+        "plesn",
+        "budzet"
+      ],
+      "count": 6,
+      "boss": "termin"
+    }
+  ]
+}
