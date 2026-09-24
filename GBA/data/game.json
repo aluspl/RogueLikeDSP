@@ -121,6 +121,38 @@
       "maxDamage": 7,
       "range": 1,
       "scalesWith": "agility"
+    },
+    {
+      "id": "lom",
+      "name": "Łom",
+      "minDamage": 3,
+      "maxDamage": 6,
+      "range": 1,
+      "scalesWith": "strength"
+    },
+    {
+      "id": "wkretarka",
+      "name": "Wkrętarka",
+      "minDamage": 2,
+      "maxDamage": 5,
+      "range": 2,
+      "scalesWith": "agility"
+    },
+    {
+      "id": "laser",
+      "name": "Poziomica laserowa",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 4,
+      "scalesWith": "intelligence"
+    },
+    {
+      "id": "mlot",
+      "name": "Młot wyburzeniowy",
+      "minDamage": 5,
+      "maxDamage": 8,
+      "range": 1,
+      "scalesWith": "strength"
     }
   ],
   "enemies": [
@@ -377,6 +409,24 @@
           30
         ]
       }
+    ],
+    "tools": [
+      {
+        "weapon": "lom",
+        "cost": 0
+      },
+      {
+        "weapon": "wkretarka",
+        "cost": 20
+      },
+      {
+        "weapon": "laser",
+        "cost": 30
+      },
+      {
+        "weapon": "mlot",
+        "cost": 40
+      }
     ]
   },
   "heroLevels": {
@@ -393,5 +443,14 @@
     "defLevels": [
       3
     ]
+  },
+  "drops": {
+    "chancePct": 25,
+    "weights": {
+      "coffee": 50,
+      "helmet": 20,
+      "plan": 15,
+      "tool": 15
+    }
   }
 }

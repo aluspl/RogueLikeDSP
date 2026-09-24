@@ -228,7 +228,51 @@ int main()
         // NG+ zachowuje poziom
         g.st = status::won; g.new_game_plus(); CHECK(g.hero_level == data::max_hero_level);
     }
-    // 15. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
+    // 15. dropy: wypadają z wrogów w miejscu śmierci, narzędzia tylko odblokowane
+    {
+        int drops = 0, tools_seen = 0;
+        for(uint32_t seed = 1; seed <= 300; ++seed)
+        {
+            game g; g.new_run(1, seed);
+            int before = g.pickups_count;
+            g.enemies_count = 0; g.spawn(0, g.hero.x + 1, g.hero.y); g.enemies[0].hp = 1;
+            g.player_move(1, 0);
+            if(g.pickups_count > before)
+            {
+                ++drops;
+                const pickup& p = g.pickups[g.pickups_count - 1];
+                CHECK(p.active && p.x == g.hero.x + 1 && p.y == g.hero.y);
+                if(p.type == tool) { ++tools_seen; CHECK(data::start_tools_mask & (1 << p.arg)); }
+            }
+        }
+        CHECK(drops > 300 * data::drop_chance_pct / 200 && drops < 300 * data::drop_chance_pct * 2 / 100);
+        CHECK(tools_seen > 0);
+    }
+    // 16. narzędzie: podniesienie zmienia broń; odblokowane w sklepie trafiają do puli
+    {
+        game g; g.new_run(1, 9);
+        int lom = data::tools[0].weapon;
+        g.pickups[0] = { g.hero.x, g.hero.y, tool, true, 0 }; g.collect();
+        CHECK(&g.weapon() == &data::weapons[lom]);
+        profile p; profile_reset(p);
+        CHECK(tool_unlocked(p, 0) && !tool_unlocked(p, 3) && !buy_tool(p, 3));
+        p.xp = 100; CHECK(buy_tool(p, 3) && tool_unlocked(p, 3) && !buy_tool(p, 3) && p.xp == 100 - data::tools[3].cost);
+        CHECK(mods(p).tools == (data::start_tools_mask | (1 << 3)));
+        // wszystkie narzędzia odblokowane -> każde może wypaść
+        run_mods m; m.tools = (1 << data::tools_count) - 1;
+        int seen = 0;
+        for(uint32_t seed = 1; seed <= 3000 && seen != m.tools; ++seed)
+        {
+            game h; h.new_run(1, seed, data::default_difficulty, m);
+            h.enemies_count = 0; h.spawn(0, h.hero.x + 1, h.hero.y); h.enemies[0].hp = 1; h.player_move(1, 0);
+            const pickup& q = h.pickups[h.pickups_count - 1];
+            if(q.type == tool) seen |= 1 << q.arg;
+        }
+        CHECK(seen == m.tools);
+        // migracja: stary profil v2 (bajt narzędzi = 0) ma narzędzia startowe
+        profile old; profile_reset(old); old.tools = 0; CHECK(tool_unlocked(old, 0));
+    }
+    // 17. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};
     for(int df=0;df<data::difficulties_count;++df)

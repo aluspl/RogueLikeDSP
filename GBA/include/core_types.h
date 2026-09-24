@@ -63,6 +63,12 @@ namespace core
         int16_t costs[4];      // koszt kolejnych poziomów w doświadczeniu
     };
 
+    struct tool_def            // narzędzie do znalezienia (drop), odblokowywane w sklepie
+    {
+        int8_t weapon;         // indeks w data::weapons
+        int16_t cost;          // 0 = dostępne od początku
+    };
+
     struct difficulty_def      // poziom trudności wybierany na starcie
     {
         const char* name;

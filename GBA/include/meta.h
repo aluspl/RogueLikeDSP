@@ -24,7 +24,7 @@ namespace core
         uint8_t classes;               // bitmaska odblokowanych zawodów
         uint8_t hard;                  // odblokowany poziom Trudny
         uint8_t flags;                 // bity profile_flag (dawny bajt wyrównania = 0 w starych zapisach)
-        uint8_t pad;
+        uint8_t tools;                 // kupione narzędzia (bitmaska; startowe zawsze dostępne)
     };
 
     enum profile_flag : uint8_t { help_seen = 1 };
@@ -79,6 +79,16 @@ namespace core
         return true;
     }
 
+    inline int tools_mask(const profile& p) { return p.tools | data::start_tools_mask; }
+    inline bool tool_unlocked(const profile& p, int i) { return (tools_mask(p) >> i) & 1; }
+
+    inline bool buy_tool(profile& p, int i)
+    {
+        if(tool_unlocked(p, i) || p.xp < data::tools[i].cost) return false;
+        p.xp -= data::tools[i].cost; p.tools = uint8_t(p.tools | (1u << i));
+        return true;
+    }
+
     inline bool buy_hard(profile& p)
     {
         if(p.hard || p.xp < data::hard_cost) return false;
@@ -89,6 +99,7 @@ namespace core
     inline run_mods mods(const profile& p)
     {
         run_mods m;
+        m.tools = tools_mask(p);
         for(int i = 0; i < data::upgrades_count; ++i)
         {
             int v = data::upgrades[i].value * p.levels[i];
