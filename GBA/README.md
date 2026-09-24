@@ -31,6 +31,17 @@ Dropy: z pokonanych wrogów może wypaść kawa, kask, projekt albo skrzynka z n
 Powiadomienia push jak w aplikacji: awans, nowe narzędzie, drop, moc gotowa, zaliczony etap, pojawienie się Terminu.
 Mgła wojny: widzisz na 7 pól (ściany zasłaniają), odkryte pola zostają przyciemnione, wrogowie poza polem widzenia są ukryci.
 
+## Fabuła
+Budujesz dom dla rodziny Nowaków. Każdy etap otwiera wiadomość w telefonie od inwestorki Anny Nowak albo
+kierownika Marka; po wygranej i porażce przychodzi wiadomość z morałem: plan pokonuje chaos budowy.
+Teksty są w `data/game.json` (`story`).
+
+## Motywacja
+- **Odznaki** (9, np. Bez usterek, Przed terminem, Pełny zespół) - nagroda w doświadczeniu, baner przy zdobyciu.
+- **Katalog usterek** - pokonane rodzaje problemów z opisami.
+- **Osiedle** - dom za każdą wygraną budowę, wielkość zależy od wyniku.
+- SELECT na tytule: telefon profilu (Odznaki, Katalog, Osiedle, Zespół, Koszty).
+
 ## Trudność i meta-progresja
 - HP wrogów rośnie z etapem, poziom trudności (Łatwy/Normalny/Trudny) mnoży siłę wrogów i wynik.
 - Poziomy postaci w trakcie budowy: awans za doświadczenie daje +HP, na 3. poziomie +obrona, na 5. +obrażenia.

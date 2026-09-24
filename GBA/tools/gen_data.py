@@ -49,6 +49,17 @@ for u in m["upgrades"]:
     L.append(f'    {{ {s(u["name"])}, {s(u["desc"])}, core::upgrade_effect::{u["effect"]}, {u["value"]}, '
              f'{len(u["costs"])}, {{ {", ".join(map(str, costs))} }} }},')
 L.append("};\n")
+def story(m):
+    lines = m["text"].split("|")
+    assert len(lines) <= 3 and all(len(l) <= 25 for l in lines), m   # dymek: 3 linie x 25 znaków
+    lines += [""] * (3 - len(lines))
+    return f'{{ {s(m["from"])}, {{ {", ".join(s(l) for l in lines)} }} }}'
+st = d["story"]
+assert len(st["stages"]) == len(d["stages"])
+L.append("inline constexpr core::story_msg story_stages[] = {")
+L += [f"    {story(m)}," for m in st["stages"]]
+L.append("};")
+L += [f"inline constexpr core::story_msg story_{k} = {story(st[k])};" for k in ("win", "lose", "ngplus")] + [""]
 L.append("inline constexpr core::badge_def badges[] = {")
 for b in d["badges"]:
     L.append(f'    {{ {s(b["name"])}, {s(b["desc"])}, {b["xp"]} }},')

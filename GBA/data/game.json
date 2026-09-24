@@ -553,5 +553,41 @@
       "desc": "Zbuduj 5 domów",
       "xp": 50
     }
-  ]
+  ],
+  "story": {
+    "stages": [
+      {
+        "from": "Anna Nowak",
+        "text": "Działka nasza! Liczę na|mocne fundamenty. Uważaj|na wilgoć w wykopie."
+      },
+      {
+        "from": "Kierownik Marek",
+        "text": "Stal jest, papierów brak.|Papierologia już czeka.|Trzymaj się planu!"
+      },
+      {
+        "from": "Anna Nowak",
+        "text": "Prognoza: ulewa. Zdążysz|z dachem przed deszczem?|Kornik też nie śpi."
+      },
+      {
+        "from": "Kierownik Marek",
+        "text": "Prąd i woda w jednych|ścianach. Co może pójść|nie tak? ;)"
+      },
+      {
+        "from": "Anna Nowak",
+        "text": "Już widzę nasz salon.|Tylko ten Termin... Dasz|radę, mamy harmonogram!"
+      }
+    ],
+    "win": {
+      "from": "Anna Nowak",
+      "text": "Mamy klucze! Plan|pokonał chaos budowy.|Dziękujemy za wszystko!"
+    },
+    "lose": {
+      "from": "Kierownik Marek",
+      "text": "Budowa stoi. Spokojnie -|z lepszym planem pójdzie.|Wracamy na plac?"
+    },
+    "ngplus": {
+      "from": "Anna Nowak",
+      "text": "Znajomi też chcą dom.|Bierzesz kolejną budowę?|Termin już się szykuje."
+    }
+  }
 }

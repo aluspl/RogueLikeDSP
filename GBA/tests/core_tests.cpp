@@ -420,7 +420,16 @@ int main()
         game h; arena(h, 1); h.pickups[0] = { h.hero.x, h.hero.y, tool, true, 2 }; h.pickups_count = 1; h.collect();
         CHECK(h.tools_found == (1 << 2));
     }
-    // 20. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
+    // 20. fabuła: wiadomość etapu, NG+ ma własną
+    {
+        game g; g.new_run(1, 3);
+        CHECK(&g.stage_story() == &data::story_stages[0]);
+        g.next_stage(); CHECK(&g.stage_story() == &data::story_stages[1]);
+        g.st = status::won; g.stage = data::stages_count - 1; g.new_game_plus();
+        CHECK(&g.stage_story() == &data::story_ngplus);
+        for(int i = 0; i < data::stages_count; ++i) CHECK(data::story_stages[i].from && data::story_stages[i].lines[0][0]);
+    }
+    // 21. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};
     for(int df=0;df<data::difficulties_count;++df)
