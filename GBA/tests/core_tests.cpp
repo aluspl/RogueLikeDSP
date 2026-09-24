@@ -165,7 +165,38 @@ int main()
         CHECK(bank_xp(p, g) == x && p.xp == x);
         CHECK(bank_xp(p, g) == 0 && p.xp == x);
     }
-    // 12. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
+    // 12. pole widzenia (mgła wojny)
+    for(uint32_t seed = 1; seed <= 100; ++seed)   // cały pokój startowy widoczny od razu
+    {
+        game g; g.new_run(0, seed);
+        const room& r0 = g.lv.rooms[0];
+        CHECK(g.visible(g.hero.x, g.hero.y));
+        for(int y = r0.y; y < r0.y + r0.h; ++y) for(int x = r0.x; x < r0.x + r0.w; ++x) CHECK(g.visible(x, y));
+        const room& last = g.lv.rooms[g.lv.rooms_count - 1];
+        if(cheb(g.hero.x, g.hero.y, last.cx(), last.cy()) > fov_radius) CHECK(!g.explored(last.cx(), last.cy()));
+    }
+    {
+        game g; g.new_run(0, 3);
+        for(auto& row : g.lv.t) for(auto& c : row) c = tile::wall;
+        for(int y = 1; y <= 12; ++y) for(int x = 1; x <= 12; ++x) g.lv.t[y][x] = tile::floor;
+        g.lv.t[4][6] = tile::wall;                        // filar nad bohaterem
+        g.enemies_count = 0; g.hero.x = 6; g.hero.y = 6;
+        g.update_fov();
+        CHECK(g.visible(6, 4));                           // sam filar widać
+        CHECK(!g.visible(6, 3) && !g.visible(6, 2));      // za filarem cień
+        CHECK(g.visible(9, 6) && g.visible(3, 9));        // otwarta przestrzeń widoczna
+        CHECK(!g.visible(6, 6 + fov_radius + 1));         // poza zasięgiem (i tak ściana, ale poza promieniem)
+        CHECK(!g.explored(0, 0));                         // narożnik mapy poza promieniem
+        // zapamiętane pola: po odejściu przestają być widoczne, ale zostają odkryte
+        CHECK(g.visible(1, 6));
+        g.lv.t[6][5] = tile::wall; g.lv.t[5][5] = tile::wall; g.lv.t[7][5] = tile::wall;   // ściana na zachód
+        g.update_fov();
+        CHECK(!g.visible(1, 6) && g.explored(1, 6));
+        // wrogowie poza polem widzenia są ukryci
+        g.spawn(0, 2, 6); CHECK(!g.visible(g.enemies[0].x, g.enemies[0].y));
+        g.spawn(0, 9, 7); CHECK(g.visible(g.enemies[1].x, g.enemies[1].y));
+    }
+    // 13. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};
     for(int df=0;df<data::difficulties_count;++df)

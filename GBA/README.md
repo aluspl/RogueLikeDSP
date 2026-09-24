@@ -18,6 +18,7 @@ Przekroczony budżet) i bossa **Nieprzekraczalny Termin**. Na końcu ekran z kod
 | START | dalej |
 | SELECT | w grze: menu przerwy (karta postaci, harmonogram, jak grać, porzuć budowę); na tytule: sklep „Szkolenia” |
 | B (tytuł) | ekran „Jak grać” |
+| L (przytrzymaj) | podgląd odkrytej mapy etapu |
 | góra/dół (wybór zawodu) | poziom trudności: Łatwy / Normalny / Trudny |
 | L+R+SELECT | skrót pokazowy: zalicz etap (do testów i prezentacji na stoisku) |
 
@@ -25,6 +26,7 @@ Przekroczony budżet) i bossa **Nieprzekraczalny Termin**. Na końcu ekran z kod
 Kierownik budowy (Dziennik budowy, zasięg 2) · Murarz (Kielnia) · Cieśla-dekarz (Gwoździarka, zasięg 3) ·
 Elektryk (Próbnik napięcia, zasięg 2) · Hydraulik (Klucz nastawny) · Glazurnik (Szlifierka).
 Znajdźki: kawa z termosu (+HP), kask (+obrona), projekt wykonawczy (+obrażenia).
+Mgła wojny: widzisz na 7 pól (ściany zasłaniają), odkryte pola zostają przyciemnione, wrogowie poza polem widzenia są ukryci.
 
 ## Trudność i meta-progresja
 - HP wrogów rośnie z etapem, poziom trudności (Łatwy/Normalny/Trudny) mnoży siłę wrogów i wynik.

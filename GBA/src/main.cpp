@@ -219,27 +219,46 @@ namespace
 
         bg_map() : map_item(cells[0], bn::size(columns, rows)) { bn::memory::clear(cells); }
 
-        void build(const core::level& lv, int palette)
+        static constexpr int dim_palettes = 5;   // palety 5..9 = przyciemnione etapy
+
+        void set(int cx, int cy, int t, int palette)
+        {
+            bn::regular_bg_map_cell& cell = cells[map_item.cell_index(cx, cy)];
+            bn::regular_bg_map_cell_info info(cell);
+            info.set_tile_index(t);
+            info.set_palette_id(palette);
+            info.set_horizontal_flip(false);
+            cell = info.cell();
+        }
+
+        // Kafel pola z uwzględnieniem mgły wojny: 0 = nieznane (czarne).
+        static int tile_of(const core::game& g, int x, int y, int& palette)
+        {
+            palette = g.stage + (g.visible(x, y) ? 0 : dim_palettes);
+            if(! g.explored(x, y)) return 0;
+            core::tile k = g.lv.at(x, y);
+            if(k == core::tile::floor) return 1;
+            if(k == core::tile::stairs) return 4;
+            return g.lv.at(x, y + 1) != core::tile::wall ? 3 : 2;   // lico muru nad podłogą / mur
+        }
+
+        // Widok gry: pole 16x16 = 2x2 kafle 8x8.
+        void build(const core::game& g)
         {
             for(int y = 0; y < core::map_h; ++y)
                 for(int x = 0; x < core::map_w; ++x)
                 {
-                    int t = 2;                                                     // mur
-                    core::tile k = lv.at(x, y);
-                    if(k == core::tile::floor) t = 1;
-                    else if(k == core::tile::stairs) t = 4;
-                    else if(lv.at(x, y + 1) != core::tile::wall) t = 3;            // lico muru nad podłogą
-                    for(int dy = 0; dy < 2; ++dy)
-                        for(int dx = 0; dx < 2; ++dx)
-                        {
-                            bn::regular_bg_map_cell& cell = cells[map_item.cell_index(x * 2 + dx, y * 2 + dy)];
-                            bn::regular_bg_map_cell_info info(cell);
-                            info.set_tile_index(t);
-                            info.set_palette_id(palette);
-                            info.set_horizontal_flip(false);
-                            cell = info.cell();
-                        }
+                    int pal, t = tile_of(g, x, y, pal);
+                    for(int dy = 0; dy < 2; ++dy) for(int dx = 0; dx < 2; ++dx) set(x * 2 + dx, y * 2 + dy, t, pal);
                 }
+        }
+
+        // Podgląd mapy (L): pole = 1 kafel 8x8, cały etap mieści się prawie na jednym ekranie.
+        void build_overview(const core::game& g)
+        {
+            bn::memory::clear(cells);
+            for(int y = 0; y < core::map_h; ++y)
+                for(int x = 0; x < core::map_w; ++x) { int pal, t = tile_of(g, x, y, pal); set(x, y, t, pal); }
         }
     };
 
@@ -307,7 +326,7 @@ namespace
         a.text.set_left_alignment();
         const char* lines[] = { "Przejdź 5 etapów budowy,", "na końcu pokonaj Termin.", "Schody = koniec etapu.",
                                 "D-pad: ruch i atak wręcz", "A: atak narzędziem", "B: czekaj, odpocznij",
-                                "SELECT: menu i mapa" };
+                                "SELECT: menu  L: mapa" };
         for(int i = 0; i < 7; ++i) a.text.generate(-108, -48 + i * 16, lines[i], t);
         a.text.set_center_alignment();
         a.text.generate(0, 72, "A: dalej", t);
@@ -382,7 +401,7 @@ namespace
 
         bn::bg_tiles::set_allow_offset(false);
         bn::unique_ptr<bg_map> map(new bg_map());
-        map->build(g.lv, g.stage);
+        map->build(g);
         bn::regular_bg_item item(bn::regular_bg_tiles_items::tiles, bn::bg_palette_items::stage_palettes, map->map_item);
         bn::regular_bg_ptr bg = item.create_bg(0, 0);
         bn::regular_bg_map_ptr bg_map_ptr = bg.map();
@@ -419,13 +438,16 @@ namespace
         int fx_timer = 0, hurt_timer = 0, hold = 0;
 
         auto refresh = [&]() {
+            map->build(g);
+            bg_map_ptr.reload_cells_ref();
             hero.set_position(world(g.hero.x, g.hero.y));
             for(int i = 0; i < g.enemies_count; ++i)
             {
-                enemies[i].set_visible(g.enemies[i].alive);
+                enemies[i].set_visible(g.enemies[i].alive && g.visible(g.enemies[i].x, g.enemies[i].y));
                 enemies[i].set_position(world(g.enemies[i].x, g.enemies[i].y));
             }
-            for(int i = 0; i < g.pickups_count; ++i) pickups[i].set_visible(g.pickups[i].active);
+            for(int i = 0; i < g.pickups_count; ++i)
+                pickups[i].set_visible(g.pickups[i].active && g.explored(g.pickups[i].x, g.pickups[i].y));
             bn::fixed_point c = world(g.hero.x, g.hero.y);
             cam.set_position(clampf(c.x(), 136), clampf(c.y(), 176));
 
@@ -466,8 +488,34 @@ namespace
         };
         refresh();
 
+        // Podgląd mapy: trzymaj L (samo L, bez R - L+R+SELECT to skrót pokazowy).
+        auto overview = [&]() {
+            map->build_overview(g);
+            bg_map_ptr.reload_cells_ref();
+            for(auto& s : enemies) s.set_visible(false);
+            for(auto& s : pickups) s.set_visible(false);
+            fx.clear(); log.clear();
+            a.text.set_left_alignment();
+            a.text.generate(-116, 72, "Podgląd mapy (puść L)", log);
+            bn::fixed_point hp(g.hero.x * 8 + 4 - 256, g.hero.y * 8 + 4 - 256);
+            hero.set_position(hp);
+            hero.set_scale(bn::fixed(0.5));
+            cam.set_position(clampf(hp.x() + 128, 8) - 128, clampf(hp.y() + 128, 48) - 128);
+            int t = 0;
+            while(bn::keypad::l_held() && ! bn::keypad::r_held())
+            {
+                hero.set_visible((++t & 16) == 0);
+                next_frame();
+            }
+            hero.remove_affine_mat();
+            hero.set_visible(true);
+            refresh();
+            hold = 0;
+        };
+
         while(true)
         {
+            if(bn::keypad::l_held() && ! bn::keypad::r_held()) { overview(); continue; }
             bool acted = false;
             int dx = 0, dy = 0;
             // ruch: pojedyncze wciśnięcie lub przytrzymanie (auto-powtórzenie)

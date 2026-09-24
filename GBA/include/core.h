@@ -15,9 +15,11 @@ namespace core
     constexpr int max_pickups = 6;
     constexpr int log_lines = 3;
     constexpr int log_len = 48;
+    constexpr int fov_radius = 7;       // promień widzenia bohatera w polach
 
     enum class tile : uint8_t { wall, floor, stairs };
     enum class status : uint8_t { playing, stage_clear, dead, won };
+    enum sight : uint8_t { unknown = 0, remembered = 1, in_view = 2 };   // mgła wojny
     enum pickup_type : uint8_t { coffee, helmet, plan };
 
     inline int iabs(int v) { return v < 0 ? -v : v; }
@@ -143,12 +145,57 @@ namespace core
         int stairs_x = -1, stairs_y = -1;
         status st = status::playing;
         message log[log_lines];
+        uint8_t fov[map_h][map_w];   // sight: nieznane / zapamiętane / widoczne teraz
         uint32_t turn_events = 0;    // bitmaska: które indeksy przeciwników zostały trafione w tej turze (efekt)
         bool hero_hit = false;
 
         const class_def& cdef() const { return data::classes[cls]; }
         const weapon_def& weapon() const { return data::weapons[cdef().weapon]; }
         const difficulty_def& ddef() const { return data::difficulties[diff]; }
+
+        bool visible(int x, int y) const { return lv.in(x, y) && fov[y][x] == in_view; }
+        bool explored(int x, int y) const { return lv.in(x, y) && fov[y][x] != unknown; }
+
+        // Pole widzenia: recursive shadowcasting (8 oktantów), ściany zasłaniają, same są widoczne.
+        void update_fov()
+        {
+            for(auto& row : fov) for(auto& c : row) if(c == in_view) c = remembered;
+            fov[hero.y][hero.x] = in_view;
+            static constexpr int8_t m[4][8] = { { 1, 0, 0, -1, -1, 0, 0, 1 }, { 0, 1, -1, 0, 0, -1, 1, 0 },
+                                                { 0, 1, 1, 0, 0, -1, -1, 0 }, { 1, 0, 0, 1, -1, 0, 0, -1 } };
+            for(int o = 0; o < 8; ++o) cast_light(1, 1.0f, 0.0f, m[0][o], m[1][o], m[2][o], m[3][o]);
+        }
+
+        void cast_light(int row, float start, float end, int xx, int xy, int yx, int yy)
+        {
+            if(start < end) return;
+            float new_start = 0;
+            for(int j = row; j <= fov_radius; ++j)
+            {
+                bool blocked = false;
+                for(int dx = -j, dy = -j; dx <= 0; ++dx)
+                {
+                    int x = hero.x + dx * xx + dy * xy, y = hero.y + dx * yx + dy * yy;
+                    float l_slope = (dx - 0.5f) / (dy + 0.5f), r_slope = (dx + 0.5f) / (dy - 0.5f);
+                    if(start < r_slope) continue;
+                    if(end > l_slope) break;
+                    if(dx * dx + dy * dy <= fov_radius * fov_radius && lv.in(x, y)) fov[y][x] = in_view;
+                    bool opaque = ! lv.passable(x, y);
+                    if(blocked)
+                    {
+                        if(opaque) { new_start = r_slope; continue; }
+                        blocked = false; start = new_start;
+                    }
+                    else if(opaque && j < fov_radius)
+                    {
+                        blocked = true;
+                        cast_light(j + 1, start, l_slope, xx, xy, yx, yy);
+                        new_start = r_slope;
+                    }
+                }
+                if(blocked) break;
+            }
+        }
 
         // Trudność = etap x poziom x NG+. Mnożniki w procentach, premie sumowane.
         int enemy_hp_pct() const
@@ -207,6 +254,7 @@ namespace core
             stage = s;
             st = status::playing;
             lv.generate(r);
+            for(auto& row : fov) for(auto& c : row) c = unknown;
             const stage_def& sd = data::stages[stage];
             const room& first = lv.rooms[0];
             const room& last = lv.rooms[lv.rooms_count - 1];
@@ -238,6 +286,7 @@ namespace core
                 pickups[pickups_count++] = { int8_t(x), int8_t(y), uint8_t(i == 0 ? coffee : r.range(0, 2)), true };
             }
             push(message().add("Etap ").add(stage + 1).add(": ").add(sd.name));
+            update_fov();
         }
 
         void spawn(int def_id, int x, int y)
@@ -372,6 +421,7 @@ namespace core
         void end_turn()
         {
             ++turns;
+            update_fov();
             if(st == status::playing)
                 for(int i = 0; i < enemies_count && st == status::playing; ++i)
                     if(enemies[i].alive) enemy_act(i);
