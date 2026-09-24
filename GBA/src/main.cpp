@@ -92,7 +92,34 @@ namespace
         int chosen_class = 1;
         int chosen_diff = data::default_difficulty;
         scene after_help = scene::title;   // dokąd wrócić z ekranu "Jak grać"
+        bool has_run = false;              // w SRAM jest przerwana budowa
     };
+
+    // ------------------------------------------------------------------ zapis budowy w trakcie (SRAM za profilem)
+    struct run_marker { char magic[8]; };
+
+    void save_run(app& a)
+    {
+        bn::unique_ptr<core::run_save> s(new core::run_save());
+        core::run_save_make(*s, *a.g);
+        bn::sram::write_offset(*s, core::run_save_offset);
+        a.has_run = true;
+    }
+
+    bool load_run(app& a)
+    {
+        bn::unique_ptr<core::run_save> s(new core::run_save());
+        bn::sram::read_offset(*s, core::run_save_offset);
+        if(! core::run_save_valid(*s)) return false;
+        bn::memory::copy(s->g, 1, *a.g);
+        return true;
+    }
+
+    void clear_run(app& a)
+    {
+        bn::sram::write_offset(run_marker{}, core::run_save_offset);
+        a.has_run = false;
+    }
 
     // Ściemnia ekran i przechodzi do sceny s (rozjaśnienie robi frame() w nowej scenie).
     scene leave(scene s)
@@ -130,17 +157,25 @@ namespace
         if(a.save.best > 0)
         {
             core::message m; m.add("Rekord: ").add(int(a.save.best));
-            a.text.generate(0, 72, m.s, record);
+            a.text.set_right_alignment();
+            a.text.generate(116, -72, m.s, record);
+            a.text.set_center_alignment();
         }
         text_sprites shop_hint;
-        a.text.generate(0, 54, "SELECT: szkolenia  B: pomoc", shop_hint);
+        a.text.generate(0, 66, "SELECT: szkolenia  B: pomoc", shop_hint);
         int frame = 0;
         while(true)
         {
             ++a.seed_counter;
-            if((frame++ % 60) == 0) { prompt.clear(); a.text.generate(0, 36, "Naciśnij START", prompt); }
+            if((frame++ % 60) == 0) { prompt.clear(); a.text.generate(0, 50, a.has_run ? "START: dalej  A: nowa" : "Naciśnij START", prompt); }
             if((frame % 60) == 40) prompt.clear();
-            if(bn::keypad::start_pressed() || bn::keypad::a_pressed()) { wait_release(); return leave(scene::class_select); }
+            if(a.has_run && bn::keypad::start_pressed())   // kontynuuj przerwaną budowę
+            {
+                wait_release();
+                if(load_run(a)) return leave(scene::game);
+                a.has_run = false;
+            }
+            else if(bn::keypad::start_pressed() || bn::keypad::a_pressed()) { wait_release(); return leave(scene::class_select); }
             if(bn::keypad::select_pressed()) { wait_release(); return leave(scene::shop); }
             if(bn::keypad::b_pressed()) { a.after_help = scene::title; wait_release(); return leave(scene::help); }
             next_frame();
@@ -347,11 +382,12 @@ namespace
         return leave(a.after_help);
     }
 
-    // Zwraca true, jeśli gracz porzucił budowę.
-    bool run_pause(app& a)
+    enum class pause_result { resume, quit, save_exit };
+
+    pause_result run_pause(app& a)
     {
-        const char* items[] = { "Wznów", "Karta postaci", "Harmonogram", "Jak grać", "Porzuć budowę" };
-        constexpr int items_count = 5;
+        const char* items[] = { "Wznów", "Karta postaci", "Harmonogram", "Jak grać", "Zapisz i wyjdź", "Porzuć budowę" };
+        constexpr int items_count = 6;
         int sel = 0;
         bool confirm = false;
         page_sprites t;
@@ -372,18 +408,19 @@ namespace
         {
             if(confirm)
             {
-                if(bn::keypad::a_pressed()) { wait_release(); return true; }
+                if(bn::keypad::a_pressed()) { wait_release(); return pause_result::quit; }
                 if(bn::keypad::b_pressed()) { confirm = false; redraw(); }
             }
             else
             {
                 if(bn::keypad::up_pressed()) { sel = (sel + items_count - 1) % items_count; redraw(); }
                 if(bn::keypad::down_pressed()) { sel = (sel + 1) % items_count; redraw(); }
-                if(bn::keypad::b_pressed() || bn::keypad::select_pressed() || bn::keypad::start_pressed()) { wait_release(); return false; }
+                if(bn::keypad::b_pressed() || bn::keypad::select_pressed() || bn::keypad::start_pressed()) { wait_release(); return pause_result::resume; }
                 if(bn::keypad::a_pressed())
                 {
-                    if(sel == 0) { wait_release(); return false; }
-                    if(sel == 4) { confirm = true; redraw(); }
+                    if(sel == 0) { wait_release(); return pause_result::resume; }
+                    if(sel == 4) { wait_release(); return pause_result::save_exit; }
+                    if(sel == 5) { confirm = true; redraw(); }
                     else
                     {
                         t.clear();
@@ -430,6 +467,7 @@ namespace
     {
         core::game& g = *a.g;
         stage_card(a);
+        save_run(a);   // autozapis na starcie etapu (albo po wznowieniu)
         bn::bg_palettes::set_transparent_color(bn::color(1, 1, 3));
         bn::camera_ptr cam = bn::camera_ptr::create(0, 0);
 
@@ -628,12 +666,14 @@ namespace
                 fx.clear(); hud.clear(); log.clear(); floaters.clear();
                 hp_left.set_visible(false); hp_right.set_visible(false);
                 tgt_left.set_visible(false); tgt_right.set_visible(false);
-                bool quit = run_pause(a);
-                if(quit)
+                pause_result pr = run_pause(a);
+                if(pr == pause_result::save_exit) { save_run(a); return leave(scene::title); }
+                if(pr == pause_result::quit)
                 {
                     if(g.score > a.save.best) a.save.best = g.score;
                     core::bank_xp(a.save, g);
                     bn::sram::write(a.save);
+                    clear_run(a);
                     return leave(scene::shop);
                 }
                 bg.set_visible(true);
@@ -715,6 +755,7 @@ namespace
         if(won) ++a.save.wins;
         int gained = core::bank_xp(a.save, g);
         bn::sram::write(a.save);
+        clear_run(a);
 
         bn::bg_palettes::set_transparent_color(bn::color(3, 5, 8));
         bn::regular_bg_ptr bg = bn::regular_bg_items::end.create_bg(8, 48);
@@ -832,6 +873,7 @@ int main()
     a.save = load_save();
     bn::unique_ptr<core::game> game(new core::game());
     a.g = game.get();
+    a.has_run = load_run(a);   // tylko sprawdzenie; start i tak idzie przez tytuł
 
     scene s = scene::title;
     while(true)

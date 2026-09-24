@@ -1,6 +1,7 @@
 #pragma once
 // Meta-progresja: profil gracza w SRAM (rekord, doświadczenie, zakupy) i sklep "Szkolenia".
 // Czyste C++ (bez Butano) - testowalne na PC.
+#include <type_traits>
 #include "core.h"
 
 namespace core
@@ -123,4 +124,43 @@ namespace core
         p.xp += d;
         return d;
     }
+
+    // ------------------------------------------------------------------ zapis budowy w trakcie
+    // Cały stan gry (game jest trywialnie kopiowalny) za profilem w SRAM. Rozmiar i suma kontrolna
+    // odrzucają zapisy uszkodzone i z innej wersji gry.
+    static_assert(std::is_trivially_copyable_v<game>);
+    constexpr char run_magic[8] = "PBRUN01";
+    constexpr int run_save_offset = 256;
+    static_assert(sizeof(profile) <= run_save_offset);
+
+    struct run_save
+    {
+        char magic[8];
+        uint32_t size;
+        uint32_t checksum;
+        game g;
+    };
+
+    inline uint32_t run_checksum(const game& g)
+    {
+        uint32_t h = 2166136261u;   // FNV-1a
+        const unsigned char* b = reinterpret_cast<const unsigned char*>(&g);
+        for(unsigned i = 0; i < sizeof g; ++i) { h ^= b[i]; h *= 16777619u; }
+        return h;
+    }
+
+    inline void run_save_make(run_save& s, const game& g)
+    {
+        std::memcpy(s.magic, run_magic, sizeof s.magic);
+        s.size = sizeof(game);
+        std::memcpy(&s.g, &g, sizeof g);
+        s.checksum = run_checksum(s.g);
+    }
+
+    inline bool run_save_valid(const run_save& s)
+    {
+        return std::memcmp(s.magic, run_magic, sizeof s.magic) == 0 && s.size == sizeof(game) && s.checksum == run_checksum(s.g);
+    }
+
+    inline void run_save_clear(run_save& s) { std::memset(s.magic, 0, sizeof s.magic); }
 }
