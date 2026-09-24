@@ -25,6 +25,9 @@
 #include "bn_sprite_items_hp_bar.h"
 #include "bn_sprite_items_particles.h"
 #include "bn_random.h"
+#include "bn_music.h"
+#include "bn_music_items.h"
+#include "bn_sound_items.h"
 #include "bn_display.h"
 #include "bn_bg_palette_ptr.h"
 #include "bn_sprite_palette_ptr.h"
@@ -173,6 +176,19 @@ namespace
         next_frame();
     }
 
+    // ------------------------------------------------------------------ dźwięk (Maxmod; pliki z tools/make_audio.py)
+    enum class song { none, title, game };
+    song current_song = song::none;
+
+    void play_song(song s)
+    {
+        if(s == current_song) return;
+        current_song = s;
+        if(s == song::title) bn::music_items::music_title.play(bn::fixed(0.45));
+        else if(s == song::game) bn::music_items::music_game.play(bn::fixed(0.35));
+        else if(bn::music::playing()) bn::music::stop();
+    }
+
     // ------------------------------------------------------------------ efekty palet
     // Gradient fioletu marki na tle ekranu tytułowego i końcowego: HDMA zmienia jeden kolor palety co linię.
     alignas(int) bn::color violet_gradient[bn::display::height()];
@@ -202,6 +218,7 @@ namespace
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         bn::regular_bg_ptr bg = bn::regular_bg_items::title.create_bg(8, 48);   // lewy górny róg obrazu = róg ekranu
         bn::bg_palette_color_hbe_ptr gradient = make_gradient(bg, screen_info::title_bg_index);
+        play_song(song::title);
         text_sprites prompt, record;
         a.text.set_center_alignment();
         if(a.save.best > 0)
@@ -282,8 +299,8 @@ namespace
                 while(! core::difficulty_unlocked(a.save, a.chosen_diff));
                 redraw_diff();
             }
-            if(bn::keypad::left_pressed()) { a.chosen_class = (a.chosen_class + data::classes_count - 1) % data::classes_count; redraw(); }
-            if(bn::keypad::right_pressed()) { a.chosen_class = (a.chosen_class + 1) % data::classes_count; redraw(); }
+            if(bn::keypad::left_pressed()) { a.chosen_class = (a.chosen_class + data::classes_count - 1) % data::classes_count; redraw(); bn::sound_items::sfx_menu.play(); }
+            if(bn::keypad::right_pressed()) { a.chosen_class = (a.chosen_class + 1) % data::classes_count; redraw(); bn::sound_items::sfx_menu.play(); }
             if((bn::keypad::a_pressed() || bn::keypad::start_pressed()) && core::class_unlocked(a.save, a.chosen_class))
             {
                 a.g->new_run(a.chosen_class, a.seed_counter * 2654435761u + 12345u, a.chosen_diff, core::mods(a.save));
@@ -757,7 +774,7 @@ namespace
             {
                 int d = (bn::keypad::r_pressed() || bn::keypad::right_pressed()) ? 1
                       : ((bn::keypad::l_pressed() || bn::keypad::left_pressed()) ? -1 : 0);
-                if(d) { a.phone_tab = (a.phone_tab + d + tabs_count) % tabs_count; redraw(); }
+                if(d) { a.phone_tab = (a.phone_tab + d + tabs_count) % tabs_count; redraw(); bn::sound_items::sfx_menu.play(); }
                 if(bn::keypad::start_pressed()) { sheet = true; sel = 0; redraw(); }
                 if(bn::keypad::b_pressed() || bn::keypad::select_pressed()) return finish(pause_result::resume);
             }
@@ -836,6 +853,7 @@ namespace
             queue.erase(queue.begin());
             timer = slide * 2 + hold;
             bg.set_visible(true); icon.set_visible(true);
+            bn::sound_items::sfx_notify.play(bn::fixed(0.7));
         }
 
         // Zwraca true, gdy baner jest na ekranie (HUD wtedy schowany).
@@ -918,6 +936,7 @@ namespace
     {
         core::game& g = *a.g;
         stage_card(a);
+        play_song(song::game);
         save_run(a);   // autozapis na starcie etapu (albo po wznowieniu)
         bn::bg_palettes::set_transparent_color(bn::color(1, 1, 3));
         bn::camera_ptr cam = bn::camera_ptr::create(0, 0);
@@ -972,10 +991,17 @@ namespace
         particle_pool fx_particles(cam);
         int prev_level = g.hero_level, prev_weapon = g.weapon_override, prev_pickups = g.pickups_count;
         int prev_cd = g.ability_cd;
+        int prev_active = 0;
+        for(int i = 0; i < g.pickups_count; ++i) prev_active += g.pickups[i].active;
         bool boss_seen = false;
         auto detect_events = [&]() {   // powiadomienia push o ważnych zdarzeniach
+            int active_pickups = 0;
+            for(int i = 0; i < g.pickups_count; ++i) active_pickups += g.pickups[i].active;
+            if(active_pickups < prev_active) bn::sound_items::sfx_pickup.play();   // zebrana znajdźka
+            prev_active = active_pickups;
             if(g.hero_level > prev_level)
             {
+                bn::sound_items::sfx_level.play();
                 for(int k = 0; k < 8; ++k)   // gwiazdki awansu dookoła bohatera
                 {
                     static constexpr int8_t dir[8][2] = { { 2, 0 }, { 1, 1 }, { 0, 2 }, { -1, 1 }, { -2, 0 }, { -1, -1 }, { 0, -2 }, { 1, -1 } };
@@ -1002,6 +1028,7 @@ namespace
             }
             if(g.st == core::status::stage_clear)   // ważniejsze niż kolejka: od razu, zanim zmieni się scena
             {
+                bn::sound_items::sfx_stage.play();
                 banner.hide();
                 banner.push("Etap zaliczony", clip(data::stages[g.stage].name, 24).c_str());
             }
@@ -1160,6 +1187,8 @@ namespace
                 f.timer = 36;
                 if(! g.hits[i].on_hero) target_timer = 90;
                 fx_particles.burst(p, g.hits[i].on_hero ? 3 : 5, particle_pool::spark, 2, 24, 16);   // iskry
+                if(i == 0 || g.hits[i].on_hero != g.hits[i - 1].on_hero)
+                    (g.hits[i].on_hero ? bn::sound_items::sfx_hurt : bn::sound_items::sfx_hit).play();
             }
             g.hits_count = 0;
             update_target_bar();
@@ -1213,7 +1242,11 @@ namespace
             }
             else if(bn::keypad::a_pressed()) { acted = g.player_attack_nearest(); if(! acted) refresh(); }
             else if(bn::keypad::b_pressed()) acted = g.player_wait();
-            else if(bn::keypad::r_pressed() && ! bn::keypad::l_held()) { acted = g.player_ability(); if(! acted) refresh(); }
+            else if(bn::keypad::r_pressed() && ! bn::keypad::l_held())
+            {
+                acted = g.player_ability();
+                if(acted) bn::sound_items::sfx_ability.play(); else refresh();
+            }
             // skrót pokazowy/testowy: L+R+SELECT = zalicz etap; samo SELECT = menu
             if(bn::keypad::select_pressed() && bn::keypad::l_held() && bn::keypad::r_held()) { g.debug_skip(); snap_next = true; refresh(); }
             else if(bn::keypad::select_pressed())
@@ -1334,6 +1367,8 @@ namespace
         int gained = core::bank_xp(a.save, g);
         bn::sram::write(a.save);
         clear_run(a);
+        play_song(song::none);
+        (won ? bn::sound_items::sfx_level : bn::sound_items::sfx_hurt).play();
 
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         bn::regular_bg_ptr bg = bn::regular_bg_items::end.create_bg(8, 48);
@@ -1434,6 +1469,7 @@ namespace
                         : e.k == tool ? core::buy_tool(a.save, e.i) : core::buy_hard(a.save);
                 if(ok)
                 {
+                    bn::sound_items::sfx_buy.play();
                     bn::sram::write(a.save);
                     note = "Kupione!";
                     rebuild();
