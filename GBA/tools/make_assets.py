@@ -269,16 +269,21 @@ def make_tiles():
             px += ti[y * 8:(y + 1) * 8]
     write_bmp(os.path.join(G, "tiles.bmp"), px, w, 8, [(0, 0, 0)] * 16, 4)
     write_json("tiles", {"type": "regular_bg_tiles", "bpp_mode": "bpp_4"})
-    pal = []
-    for c in STAGE_COLORS:
-        stage = [(12, 12, 20)] + c + [(245, 211, 61), (180, 120, 20)] + [(0, 0, 0)] * 8
-        pal += stage
-    # palety 5..9: te same etapy przyciemnione (zapamiętane pola poza polem widzenia)
-    for c in STAGE_COLORS:
-        dim = [tuple(int(v * 0.5 + n * 0.25) for v, n in zip(col, BRAND_NAVY)) for col in c]
-        pal += [(12, 12, 20)] + dim + [(100, 90, 40), (70, 50, 20)] + [(0, 0, 0)] * 8
-    write_bmp(os.path.join(G, "stage_palettes.bmp"), [0] * 64, 8, 8, pal, 8)
-    write_json("stage_palettes", {"type": "bg_palette", "bpp_mode": "bpp_4", "colors_count": 32 * len(STAGE_COLORS)})
+    # Każdy etap: 4 palety światła - pełne, 80%, 60% (skraj pola widzenia), zapamiętane (przyciemnione).
+    # Osobny plik na etap, bo 5 etapów x 64 kolory nie mieści się w jednej palecie BMP.
+    for si, c in enumerate(STAGE_COLORS):
+        pal = []
+        for level in range(4):
+            if level == 3:
+                cols = [tuple(int(v * 0.5 + n * 0.25) for v, n in zip(col, BRAND_NAVY)) for col in c]
+                stairs = [(100, 90, 40), (70, 50, 20)]
+            else:
+                f = (1.0, 0.8, 0.6)[level]
+                cols = [tuple(int(v * f + n * (1 - f) * 0.6) for v, n in zip(col, BRAND_NAVY)) for col in c]
+                stairs = [tuple(int(v * f) for v in (245, 211, 61)), tuple(int(v * f) for v in (180, 120, 20))]
+            pal += [(12, 12, 20)] + cols + stairs + [(0, 0, 0)] * 8
+        write_bmp(os.path.join(G, f"stage_palettes_{si}.bmp"), [0] * 64, 8, 8, pal, 8)
+        write_json(f"stage_palettes_{si}", {"type": "bg_palette", "bpp_mode": "bpp_4", "colors_count": 64})
 
 # ---------------------------------------------------------------- 3b. telefon z aplikacją PlanBudowlany (menu w grze)
 # Wspólna paleta 16 kolorów = tokeny AppColors z aplikacji mobilnej.
