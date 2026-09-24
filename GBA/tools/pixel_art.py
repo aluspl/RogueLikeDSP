@@ -363,3 +363,60 @@ def particle_frames():
         assert len(rows) == 8 and all(len(r) == 8 for r in rows), rows
         out += [CODES[ch] for r in rows for ch in r]
     return out
+
+
+# ------------------------------------------------------------------ Osiedle: domy 16x16
+# klatka = wielkość * 6 + zawód (dach w kolorze kasku zawodu), 24 = pusta działka
+HOUSE_SMALL = [
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+    ".......KK.......",
+    "......KHHK......",
+    ".....KHHHHK.....",
+    "....KHHHHHHK....",
+    "...KKKKKKKKKK...",
+    "....KWWWWWWK....",
+    "....KWBKWWWK....",
+    "....KWBKWTWK....",
+    "....KWWWWTWK....",
+    "....KKKKKKKK....",
+    "..GGGGGGGGGGGG.."]
+HOUSE_TALL = [
+    "................",
+    "................",
+    "......KKKK......",
+    ".....KHHHHK.....",
+    "....KHHHHHHK....",
+    "...KHHHHHHHHK...",
+    "..KKKKKKKKKKKK..",
+    "...KWWWWWWWWK...",
+    "...KWBKWWBKWK...",
+    "...KWBKWWBKWK...",
+    "...KWWWWWWWWK...",
+    "...KWBKWWTTWK...",
+    "...KWBKWWTTWK...",
+    "...KWWWWWTTWK...",
+    "...KKKKKKKKKK...",
+    ".GGGGGGGGGGGGGG."]
+EMPTY_PLOT = [
+    "................", "................", "................", "................", "................",
+    "................", "................", "................", "................", "................",
+    "................", "..T.T.T.T.T.T...", "..T.T.T.T.T.T...", "..TTTTTTTTTTT...", "..T.T.T.T.T.T...",
+    "..DDDDDDDDDDDD.."]
+
+
+def house_frame(cls, size):
+    helmet = WORKERS[cls][0]
+    rows = [r.replace("H", helmet) for r in (HOUSE_SMALL if size < 2 else HOUSE_TALL)]
+    px = parse(rows)
+    if size in (1, 3):   # komin / garaż jako dodatek
+        for x, y in ((11, 3), (11, 4), (12, 3), (12, 4)) if size == 1 else ((13, 11), (14, 11), (13, 12), (14, 12), (13, 13), (14, 13)):
+            px[y * 16 + x] = CODES["K" if size == 1 else "g"]
+    return px
+
+
+def house_frames():
+    return [p for size in range(4) for cls in range(6) for p in house_frame(cls, size)] + parse(EMPTY_PLOT)

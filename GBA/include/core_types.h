@@ -37,6 +37,7 @@ namespace core
     struct enemy_def           // "problem budowy"
     {
         const char* name;
+        const char* desc;      // opis w Katalogu usterek
         int8_t max_health;
         int8_t min_damage;
         int8_t max_damage;
@@ -67,6 +68,13 @@ namespace core
         int8_t value;          // premia za każdy poziom
         int8_t levels;
         int16_t costs[4];      // koszt kolejnych poziomów w doświadczeniu
+    };
+
+    struct badge_def           // odznaka (motywacja do kolejnych budów)
+    {
+        const char* name;
+        const char* desc;
+        int16_t xp;            // nagroda przy pierwszym zdobyciu
     };
 
     struct tool_def            // narzędzie do znalezienia (drop), odblokowywane w sklepie

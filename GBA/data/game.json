@@ -201,7 +201,8 @@
       "defense": 0,
       "sight": 6,
       "score": 10,
-      "frame": 6
+      "frame": 6,
+      "desc": "Kapie tam, gdzie nie powinno"
     },
     {
       "id": "zwarcie",
@@ -212,7 +213,8 @@
       "defense": 0,
       "sight": 7,
       "score": 12,
-      "frame": 7
+      "frame": 7,
+      "desc": "Iskrzy przy każdej okazji"
     },
     {
       "id": "plesn",
@@ -223,7 +225,8 @@
       "defense": 1,
       "sight": 4,
       "score": 10,
-      "frame": 8
+      "frame": 8,
+      "desc": "Lubi wilgoć i zimne ściany"
     },
     {
       "id": "kornik",
@@ -234,7 +237,8 @@
       "defense": 1,
       "sight": 5,
       "score": 10,
-      "frame": 9
+      "frame": 9,
+      "desc": "Drąży więźbę po cichu"
     },
     {
       "id": "papierologia",
@@ -245,7 +249,8 @@
       "defense": 2,
       "sight": 4,
       "score": 15,
-      "frame": 10
+      "frame": 10,
+      "desc": "Brakuje jednej pieczątki"
     },
     {
       "id": "dostawa",
@@ -256,7 +261,8 @@
       "defense": 1,
       "sight": 6,
       "score": 15,
-      "frame": 11
+      "frame": 11,
+      "desc": "Będzie jutro. Na pewno."
     },
     {
       "id": "ulewa",
@@ -267,7 +273,8 @@
       "defense": 0,
       "sight": 8,
       "score": 12,
-      "frame": 12
+      "frame": 12,
+      "desc": "Zawsze tuż przed dachem"
     },
     {
       "id": "budzet",
@@ -278,7 +285,8 @@
       "defense": 2,
       "sight": 6,
       "score": 25,
-      "frame": 13
+      "frame": 13,
+      "desc": "Rośnie szybciej niż mury"
     },
     {
       "id": "termin",
@@ -289,7 +297,8 @@
       "defense": 3,
       "sight": 12,
       "score": 200,
-      "frame": 14
+      "frame": 14,
+      "desc": "Nieprzesuwalny. Podobno."
     }
   ],
   "stages": [
@@ -488,5 +497,61 @@
       "plan": 15,
       "tool": 15
     }
-  }
+  },
+  "badges": [
+    {
+      "id": "bez_usterek",
+      "name": "Bez usterek",
+      "desc": "Etap bez żadnych obrażeń",
+      "xp": 20
+    },
+    {
+      "id": "przed_terminem",
+      "name": "Przed terminem",
+      "desc": "Termin pokonany w 150 tur",
+      "xp": 30
+    },
+    {
+      "id": "seryjny",
+      "name": "Seryjny",
+      "desc": "8 problemów na jednym etapie",
+      "xp": 15
+    },
+    {
+      "id": "zawodowiec",
+      "name": "Zawodowiec",
+      "desc": "Poziom postaci 5",
+      "xp": 20
+    },
+    {
+      "id": "twardziel",
+      "name": "Twardziel",
+      "desc": "Wygrana na Trudnym",
+      "xp": 40
+    },
+    {
+      "id": "pelny_zespol",
+      "name": "Pełny zespół",
+      "desc": "Wygrana każdym zawodem",
+      "xp": 60
+    },
+    {
+      "id": "kolekcjoner",
+      "name": "Kolekcjoner",
+      "desc": "Znajdź wszystkie narzędzia",
+      "xp": 30
+    },
+    {
+      "id": "katalog",
+      "name": "Katalog usterek",
+      "desc": "Pokonaj każdy problem",
+      "xp": 30
+    },
+    {
+      "id": "osiedle",
+      "name": "Osiedle",
+      "desc": "Zbuduj 5 domów",
+      "xp": 50
+    }
+  ]
 }

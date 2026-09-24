@@ -484,6 +484,8 @@ if __name__ == "__main__":
     import pixel_art as pa
     write_bmp(os.path.join(G, "particles.bmp"), pa.particle_frames(), 8, 8 * len(pa.PARTICLES), SPR_PAL, 4)
     write_json("particles", {"type": "sprite", "height": 8})
+    write_bmp(os.path.join(G, "houses.bmp"), pa.house_frames(), 16, 16 * 25, SPR_PAL, 4)
+    write_json("houses", {"type": "sprite", "height": 16})
     print("phone tiles:", make_phone())
     make_tiles()
     make_title()

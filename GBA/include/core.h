@@ -147,6 +147,10 @@ namespace core
         int def_bonus = 0, dmg_bonus = 0;
         int turns = 0, kills = 0, score = 0;
         uint8_t kills_by_type[16] = {};   // pokonane problemy wg rodzaju (zakładka Usterki)
+        int stage_damage = 0;        // obrażenia otrzymane na bieżącym etapie (odznaka Bez usterek)
+        int stage_kills = 0;         // problemy usunięte na bieżącym etapie (odznaka Seryjny)
+        int stage_start_turn = 0;    // tura wejścia na etap (odznaka Przed terminem)
+        uint8_t tools_found = 0;     // narzędzia podniesione w tej budowie (odznaka Kolekcjoner)
         run_mods bonus;
         int xp_pct = 0;              // doświadczenie x100 (mnożnik trudności bez gubienia ułamków)
         int xp_banked = 0;           // ile doświadczenia już przeniesiono do profilu
@@ -297,6 +301,7 @@ namespace core
             st = status::playing;
             lv.generate(r);
             walls_count = 0;
+            stage_damage = 0; stage_kills = 0; stage_start_turn = turns;
             for(auto& row : fov) for(auto& c : row) c = unknown;
             const stage_def& sd = data::stages[stage];
             const room& first = lv.rooms[0];
@@ -367,7 +372,7 @@ namespace core
             turn_events |= 1u << ei;
             if(e.hp <= 0)
             {
-                e.alive = false; ++kills;
+                e.alive = false; ++kills; ++stage_kills;
                 if(kills_by_type[e.def_id] < 255) ++kills_by_type[e.def_id]; score += ed.score * score_pct() / 100; gain_xp(data::xp_per_kill);
                 maybe_drop(e.x, e.y);
                 push(message().add(ed.name).add(" - usunięto!"));
@@ -531,6 +536,7 @@ namespace core
                 else
                 {
                     weapon_override = data::tools[p.arg].weapon;
+                    tools_found = uint8_t(tools_found | (1u << p.arg));
                     push(message().add("Narzędzie: ").add(weapon().name).add(" ").add(weapon().min_damage).add("-").add(weapon().max_damage));
                 }
             }
@@ -551,6 +557,7 @@ namespace core
                 int dmg = r.range(ed.min_damage, ed.max_damage) + enemy_dmg_bonus() - (cdef().defense + def_bonus) / 2;
                 if(dmg < 1) dmg = 1;
                 hero.hp = int16_t(hero.hp - dmg);
+                stage_damage += dmg;
                 hero_hit = true;
                 add_hit(hero.x, hero.y, dmg, true);
                 push(message().add(ed.name).add(": -").add(dmg).add(" HP"));
