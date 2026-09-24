@@ -25,3 +25,4 @@ GBA/build/
 GBA/*.gba
 GBA/*.elf
 GBA/core_tests
+GBA/*.sav

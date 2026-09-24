@@ -308,5 +308,75 @@
     "hpPctPerTier": 20,
     "dmgBonusPerTier": 1,
     "scorePctPerTier": 50
+  },
+  "meta": {
+    "xpPerKill": 1,
+    "xpPerStage": 5,
+    "xpBoss": 20,
+    "startClasses": [
+      "kierownik",
+      "murarz",
+      "hydraulik"
+    ],
+    "classCost": 25,
+    "hardCost": 40,
+    "upgrades": [
+      {
+        "id": "kondycja",
+        "name": "Kondycja",
+        "desc": "+4 HP na start",
+        "effect": "hp",
+        "value": 4,
+        "costs": [
+          10,
+          20,
+          35
+        ]
+      },
+      {
+        "id": "bhp",
+        "name": "Szkolenie BHP",
+        "desc": "+1 obrona",
+        "effect": "def",
+        "value": 1,
+        "costs": [
+          15,
+          30
+        ]
+      },
+      {
+        "id": "fach",
+        "name": "Kurs fachowy",
+        "desc": "+1 obrażenia",
+        "effect": "dmg",
+        "value": 1,
+        "costs": [
+          20,
+          40
+        ]
+      },
+      {
+        "id": "termos",
+        "name": "Lepszy termos",
+        "desc": "Kawa leczy +4 HP",
+        "effect": "coffee",
+        "value": 4,
+        "costs": [
+          10,
+          20
+        ]
+      },
+      {
+        "id": "dostawy",
+        "name": "Dostawy",
+        "desc": "+1 znajdźka na etap",
+        "effect": "pickups",
+        "value": 1,
+        "costs": [
+          15,
+          30
+        ]
+      }
+    ]
   }
 }

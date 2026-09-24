@@ -36,6 +36,24 @@ L.append("inline constexpr core::difficulty_def difficulties[] = {")
 for df in d["difficulties"]:
     L.append(f'    {{ {s(df["name"])}, {df["hpPct"]}, {df["dmgBonus"]}, {df["scorePct"]} }},')
 L.append("};\n")
+m = d["meta"]
+cid = {c["id"]: i for i, c in enumerate(d["classes"])}
+EFF = {"hp", "def", "dmg", "coffee", "pickups"}
+L.append("inline constexpr core::upgrade_def upgrades[] = {")
+for u in m["upgrades"]:
+    assert u["effect"] in EFF and 1 <= len(u["costs"]) <= 4, u
+    costs = u["costs"] + [0] * (4 - len(u["costs"]))
+    L.append(f'    {{ {s(u["name"])}, {s(u["desc"])}, core::upgrade_effect::{u["effect"]}, {u["value"]}, '
+             f'{len(u["costs"])}, {{ {", ".join(map(str, costs))} }} }},')
+L.append("};\n")
+start_mask = sum(1 << cid[c] for c in m["startClasses"])
+L += [f"inline constexpr int upgrades_count = {len(m['upgrades'])};",
+      f"inline constexpr int xp_per_kill = {m['xpPerKill']};",
+      f"inline constexpr int xp_per_stage = {m['xpPerStage']};",
+      f"inline constexpr int xp_boss = {m['xpBoss']};",
+      f"inline constexpr int start_classes_mask = {start_mask};",
+      f"inline constexpr int class_cost = {m['classCost']};",
+      f"inline constexpr int hard_cost = {m['hardCost']};", ""]
 L += [f"inline constexpr int classes_count = {len(d['classes'])};",
       f"inline constexpr int stages_count = {len(d['stages'])};",
       f"inline constexpr int difficulties_count = {len(d['difficulties'])};",
