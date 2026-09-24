@@ -97,6 +97,7 @@ int main()
         g.enemies_count = 0; g.spawn(0, g.hero.x + 1, g.hero.y); g.enemies[0].hp = 1;
         g.player_move(1, 0);
         CHECK(g.kills == 1 && g.score == data::enemies[0].score * g.score_pct() / 100);
+        CHECK(g.kills_by_type[0] == 1 && g.kills_by_type[1] == 0);
     }
     // 6. NG+: tylko po wygranej; zachowuje zawód, premie i wynik, podnosi poziom
     {
@@ -166,6 +167,14 @@ int main()
         CHECK(buy_hard(p) && difficulty_unlocked(p, 2) && !buy_hard(p));
         run_mods m = mods(p);
         CHECK(m.hp == data::upgrades[0].value * data::upgrades[0].levels && m.def == 0);
+        CHECK(shop_spent(p) == 1000 - p.xp);                       // wszystko, co zeszło z konta, to wydatki
+        profile e; profile_reset(e); CHECK(shop_spent(e) == 0);
+        p.xp = 100000;
+        for(int i=0;i<data::upgrades_count;++i) while(buy_upgrade(p, i)) {}
+        for(int i=0;i<data::classes_count;++i) buy_class(p, i);
+        for(int i=0;i<data::tools_count;++i) buy_tool(p, i);
+        buy_hard(p);
+        CHECK(shop_spent(p) == shop_total_cost());
     }
     // 11. bankowanie doświadczenia: bez podwójnego liczenia (np. NG+)
     {

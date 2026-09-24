@@ -116,6 +116,28 @@ namespace core
         return m;
     }
 
+    // Ekran "Koszty": ile kosztuje cały sklep i ile już wydano (pasek budżetu).
+    inline int shop_total_cost()
+    {
+        int t = data::hard_cost;
+        for(int i = 0; i < data::upgrades_count; ++i)
+            for(int l = 0; l < data::upgrades[i].levels; ++l) t += data::upgrades[i].costs[l];
+        for(int i = 0; i < data::classes_count; ++i) if(! (data::start_classes_mask & (1 << i))) t += data::class_cost;
+        for(int i = 0; i < data::tools_count; ++i) t += data::tools[i].cost;
+        return t;
+    }
+
+    inline int shop_spent(const profile& p)
+    {
+        int t = p.hard ? data::hard_cost : 0;
+        for(int i = 0; i < data::upgrades_count; ++i)
+            for(int l = 0; l < p.levels[i]; ++l) t += data::upgrades[i].costs[l];
+        for(int i = 0; i < data::classes_count; ++i)
+            if(class_unlocked(p, i) && ! (data::start_classes_mask & (1 << i))) t += data::class_cost;
+        for(int i = 0; i < data::tools_count; ++i) if(tool_unlocked(p, i)) t += data::tools[i].cost;
+        return t;
+    }
+
     // Przenosi nowe doświadczenie z budowy do profilu. Zwraca, ile dodano.
     inline int bank_xp(profile& p, game& g)
     {

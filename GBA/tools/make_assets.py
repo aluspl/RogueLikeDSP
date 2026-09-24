@@ -28,8 +28,11 @@ FONT_MONO_B = os.path.join(FONT_DIR, "DejaVuSansMono-Bold.ttf")
 FONT_SANS_B = os.path.join(FONT_DIR, "DejaVuSans-Bold.ttf")
 FONT_SANS = os.path.join(FONT_DIR, "DejaVuSans.ttf")
 
-BRAND_ORANGE = (242, 140, 40)
-BRAND_NAVY = (27, 42, 65)
+# kolory marki z design systemu PlanBudowlany (AppColors w aplikacji mobilnej)
+BRAND_VIOLET = (107, 78, 255)    # brand #6B4EFF
+BRAND_ORANGE = (255, 122, 61)    # brandAccent #FF7A3D
+BRAND_NAVY = (27, 20, 64)        # ciemny fiolet: tła ekranów tekstowych (= bn::color(3, 2, 8))
+DARK = (11, 11, 15)              # textLight2 #0B0B0F
 URL = "planbudowlany.online"
 
 # ---------------------------------------------------------------- BMP writer
@@ -270,15 +273,134 @@ def make_tiles():
     write_bmp(os.path.join(G, "stage_palettes.bmp"), [0] * 64, 8, 8, pal, 8)
     write_json("stage_palettes", {"type": "bg_palette", "bpp_mode": "bpp_4", "colors_count": 32 * len(STAGE_COLORS)})
 
+# ---------------------------------------------------------------- 3b. telefon z aplikacją PlanBudowlany (menu w grze)
+# Wspólna paleta 16 kolorów = tokeny AppColors z aplikacji mobilnej.
+PHONE_PAL = [(255, 0, 255),       # 0  przezroczysty
+             (246, 245, 248),     # 1  bgLight2 (tło aplikacji)
+             (255, 255, 255),     # 2  card
+             (239, 234, 247),     # 3  nagłówek grupy / tor paska
+             BRAND_VIOLET,        # 4  brand
+             BRAND_ORANGE,        # 5  brandAccent
+             DARK,                # 6  tekst
+             (99, 99, 102),       # 7  textDim
+             (229, 231, 235),     # 8  border (szara pastylka)
+             (148, 163, 184),     # 9  statusTodo (slate-400)
+             (245, 158, 11),      # 10 statusInProgress (amber-500)
+             (16, 185, 129),      # 11 statusDone (emerald-500)
+             (239, 68, 68),       # 12 statusDelayed / error (red-500)
+             (254, 243, 222),     # 13 tło pastylki "w trakcie"
+             (254, 226, 226),     # 14 tło pastylki "otwarta"
+             (209, 250, 229)]     # 15 tło pastylki "gotowe"
+P_BG, P_CARD, P_GROUP, P_BRAND, P_ACCENT, P_TEXT, P_DIM, P_BORDER, P_TODO, P_PROG, P_DONE, P_LATE, P_PROG_BG, P_LATE_BG, P_DONE_BG = range(1, 16)
+TAB_X = [24 + 48 * i for i in range(5)]   # środki ikon zakładek: Zadania, Usterki, Start, Zespół, Koszty
+TAB_Y = 134                               # górna krawędź ikon 16x16
+
+def tab_icon(d, i, c, ox=0, oy=0):
+    """Proste ikony jak w pasku aplikacji; (ox, oy) = lewy górny róg pola 16x16."""
+    P = lambda x, y: (ox + x, oy + y)
+    if i == 0:   # Zadania: znaczniki + linie
+        for y in (2, 8):
+            d.ellipse([P(1, y), P(4, y + 3)], outline=c); d.line([P(6, y + 1), P(14, y + 1)], fill=c); d.line([P(6, y + 2), P(14, y + 2)], fill=c)
+        d.point([P(2, 3), P(3, 4)], fill=c)
+    elif i == 1:   # Usterki: dokument
+        d.rectangle([P(3, 1), P(12, 13)], outline=c); d.rectangle([P(3, 1), P(12, 13)], fill=c)
+        for y in (6, 9): d.line([P(5, y), P(10, y)], fill=PHONE_PAL[P_CARD])
+    elif i == 2:   # Start: domek
+        d.polygon([P(1, 7), P(8, 1), P(15, 7)], fill=c); d.rectangle([P(3, 7), P(13, 13)], fill=c)
+        d.rectangle([P(7, 9), P(9, 13)], fill=PHONE_PAL[P_CARD])
+    elif i == 3:   # Zespół: dwie osoby
+        for x in (1, 8):
+            d.ellipse([P(x + 1, 1), P(x + 5, 5)], fill=c); d.pieslice([P(x, 6), P(x + 7, 16)], 180, 360, fill=c)
+    else:          # Koszty: banknot
+        d.rectangle([P(1, 3), P(14, 11)], outline=c); d.rectangle([P(2, 4), P(13, 10)], outline=c)
+        d.ellipse([P(6, 5), P(9, 9)], outline=c)
+
+def make_phone():
+    # ramka telefonu: tło aplikacji, pasek statusu, dolny pasek zakładek (szare ikony)
+    im = Image.new("RGB", (256, 256), PHONE_PAL[P_BG])
+    d = ImageDraw.Draw(im)
+    d.text((10, 1), "09:41", font=ImageFont.truetype(FONT_SANS_B, 9), fill=DARK)
+    for k in range(4): d.rectangle([196 + k * 3, 8 - k * 2, 197 + k * 3, 9], fill=DARK)           # zasięg
+    d.rectangle([212, 3, 227, 9], outline=DARK); d.rectangle([214, 5, 222, 7], fill=PHONE_PAL[P_DONE])   # bateria
+    d.rectangle([228, 5, 229, 7], fill=DARK)
+    d.rounded_rectangle([4, 130, 235, 157], radius=8, fill=PHONE_PAL[P_CARD], outline=PHONE_PAL[P_BORDER])
+    for i, x in enumerate(TAB_X): tab_icon(d, i, PHONE_PAL[P_DIM], x - 8, TAB_Y)
+    # ciemna ramka urządzenia z zaokrąglonymi rogami
+    d.rounded_rectangle([-2, -2, 241, 161], radius=12, outline=DARK, width=4)
+    d.rectangle([240, 0, 256, 256], fill=DARK); d.rectangle([0, 160, 256, 256], fill=DARK)
+    idx = [PHONE_PAL.index(im.getpixel((x, y))) if im.getpixel((x, y)) in PHONE_PAL else nearest(im.getpixel((x, y)))
+           for y in range(256) for x in range(256)]
+    write_bmp(os.path.join(G, "phone_chrome.bmp"), idx, 256, 256, PHONE_PAL, 4)
+    write_json("phone_chrome", {"type": "regular_bg", "bpp_mode": "bpp_4"})
+
+    # ikony: 0-4 aktywne zakładki (fiolet + kreska pod spodem), 5 ikona aplikacji PB do powiadomień
+    frames = []
+    for i in range(5):
+        fr = Image.new("RGB", (16, 16), PHONE_PAL[0]); fd = ImageDraw.Draw(fr)
+        fd.rectangle([0, 0, 15, 15], fill=PHONE_PAL[P_CARD]); tab_icon(fd, i, BRAND_VIOLET)
+        fd.rectangle([3, 15, 12, 15], fill=BRAND_VIOLET)
+        frames.append(fr)
+    fr = Image.new("RGB", (16, 16), PHONE_PAL[0]); fd = ImageDraw.Draw(fr)
+    fd.rounded_rectangle([0, 0, 15, 15], radius=4, fill=BRAND_VIOLET)
+    fd.polygon([(3, 7), (8, 2), (13, 7)], outline=PHONE_PAL[P_CARD]); fd.rectangle([4, 7, 12, 13], outline=PHONE_PAL[P_CARD])
+    fd.line([(7, 9), (7, 13)], fill=PHONE_PAL[P_CARD]); fd.line([(9, 9), (9, 13)], fill=PHONE_PAL[P_CARD])
+    frames.append(fr)
+    px = [nearest(fr.getpixel((x, y))) for fr in frames for y in range(16) for x in range(16)]
+    write_bmp(os.path.join(G, "phone_icons.bmp"), px, 16, 16 * len(frames), PHONE_PAL, 4)
+    write_json("phone_icons", {"type": "sprite", "height": 16})
+
+    # kafelki treści (karty, pastylki, paski postępu) + nagłówek z indeksami dla kodu gry
+    tiles, names = [[0] * 64], ["empty"]
+    def add(name, t): names.append(name); tiles.append(t)
+    fills = {"card": P_CARD, "group": P_GROUP, "brand": P_BRAND, "prog_bg": P_PROG_BG, "late_bg": P_LATE_BG,
+             "done_bg": P_DONE_BG, "gray": P_BORDER, "bg": P_BG}
+    for n, c in fills.items():
+        add("fill_" + n, [c] * 64)
+        corner = [0] * 64          # lewy górny róg, promień ~3 px (reszta rogów przez odbicia)
+        for y in range(8):
+            for x in range(8):
+                if (x - 3.5) ** 2 + (y - 3.5) ** 2 <= 16 or x >= 4 or y >= 4: corner[y * 8 + x] = c
+        add("corner_" + n, corner)
+    for n, c in {"todo": P_TODO, "prog": P_PROG, "done": P_DONE, "brand": P_BRAND, "late": P_LATE}.items():
+        add("stripe_" + n, [c if x < 2 else P_CARD for y in range(8) for x in range(8)])
+    for n, c in {"brand": P_BRAND, "done": P_DONE, "late": P_LATE}.items():
+        for k in range(9):   # pasek postępu: k z 8 pikseli wypełnione, wiersze 6-7 (środek 16-pikselowego wiersza listy)
+            add(f"bar_{n}_{k}", [(c if x < k else P_GROUP) if 6 <= y <= 7 else P_CARD for y in range(8) for x in range(8)])
+    px = []
+    for y in range(8):
+        for t in tiles: px += t[y * 8:(y + 1) * 8]
+    write_bmp(os.path.join(G, "phone_tiles.bmp"), px, 8 * len(tiles), 8, PHONE_PAL, 4)
+    write_json("phone_tiles", {"type": "regular_bg_tiles", "bpp_mode": "bpp_4"})
+    write_bmp(os.path.join(G, "phone_palette.bmp"), [0] * 64, 8, 8, PHONE_PAL, 4)
+    write_json("phone_palette", {"type": "bg_palette", "bpp_mode": "bpp_4"})
+    h = ["// WYGENEROWANE przez tools/make_assets.py - indeksy kafelków graphics/phone_tiles.bmp.", "#pragma once", "",
+         "namespace phone_tile", "{"]
+    h += [f"    constexpr int {n} = {i};" for i, n in enumerate(names)]
+    h += [f"    constexpr int tab_x[] = {{ {', '.join(str(x - 120) for x in TAB_X)} }};   // środki ikon (współrzędne sprite'ów)",
+          f"    constexpr int tab_y = {TAB_Y + 8 - 80};", "}", ""]
+    open(os.path.join(ROOT, "include", "phone_tiles.h"), "w", encoding="utf-8").write("\n".join(h))
+
+    # palety tekstu: [przezroczysty, litera, obrys] - obrys w kolorze karty, żeby na jasnym tle był niewidoczny
+    for n, (fill, edge) in {"dark": (DARK, PHONE_PAL[P_CARD]), "dim": (PHONE_PAL[P_DIM], PHONE_PAL[P_CARD]),
+                            "brand": (BRAND_VIOLET, PHONE_PAL[P_CARD]), "prog": ((180, 110, 5), PHONE_PAL[P_PROG_BG]),
+                            "done": ((4, 120, 87), PHONE_PAL[P_DONE_BG]), "late": ((185, 28, 28), PHONE_PAL[P_LATE_BG]),
+                            "white": ((255, 255, 255), BRAND_VIOLET)}.items():
+        write_bmp(os.path.join(G, "font_" + n + ".bmp"), [0] * 64, 8, 8, [(255, 0, 255), fill, edge], 4)
+        write_json("font_" + n, {"type": "sprite_palette"})
+    return len(tiles)
+
+def nearest(rgb):
+    return min(range(1, 16), key=lambda i: sum((a - b) ** 2 for a, b in zip(rgb, PHONE_PAL[i]))) if rgb != PHONE_PAL[0] else 0
+
 # ---------------------------------------------------------------- 4. ekran tytułowy i końcowy (regular bg 256x256, 8bpp)
 def logo_image(size):
     png = cairosvg.svg2png(url=os.path.join(SRC, "pb_logo.svg"), output_width=size, output_height=size)
     return Image.open(io.BytesIO(png)).convert("RGBA")
 
-def screen_bg(name, img240):
-    canvas = Image.new("RGB", (256, 256), BRAND_NAVY)
+def screen_bg(name, img240, bg=BRAND_VIOLET):
+    canvas = Image.new("RGB", (256, 256), bg)
     canvas.paste(img240, (0, 0))
-    px, pal = quantize(canvas, 64, first=BRAND_NAVY)
+    px, pal = quantize(canvas, 64, first=bg)
     write_bmp(os.path.join(G, name + ".bmp"), px, 256, 256, pal, 8)
     write_json(name, {"type": "regular_bg", "bpp_mode": "bpp_8"})
     canvas.crop((0, 0, 240, 160)).resize((480, 320), Image.NEAREST).save(os.path.join(DOCS, "preview_" + name + ".png"))
@@ -288,21 +410,22 @@ def centered(d, y, text, font, fill):
     d.text(((240 - w) / 2, y), text, font=font, fill=fill)
 
 def make_title():
-    im = Image.new("RGB", (240, 160), BRAND_NAVY)
+    im = Image.new("RGB", (240, 160), BRAND_VIOLET)
     d = ImageDraw.Draw(im)
     # "plac budowy": pas ostrzegawczy u dołu
+    d.rectangle([0, 148, 240, 160], fill=DARK)
     for x in range(-20, 260, 16):
         d.polygon([(x, 160), (x + 8, 160), (x + 16, 148), (x + 8, 148)], fill=BRAND_ORANGE)
-    d.rectangle([0, 146, 240, 147], fill=(20, 20, 20))
+    d.rectangle([0, 146, 240, 147], fill=DARK)
     logo = logo_image(80)
     im.paste(logo, (80, -6), logo)
     centered(d, 66, "PlanBudowlany", ImageFont.truetype(FONT_SANS_B, 22), (250, 250, 250))
     centered(d, 91, "ROGUELIKE", ImageFont.truetype(FONT_SANS_B, 14), BRAND_ORANGE)
-    centered(d, 109, "Zbuduj dom. Przetrwaj budowę.", ImageFont.truetype(FONT_SANS, 10), (200, 200, 210))
+    centered(d, 109, "Zbuduj dom. Przetrwaj budowę.", ImageFont.truetype(FONT_SANS, 10), (225, 220, 255))
     screen_bg("title", im)
 
 def make_end():
-    im = Image.new("RGB", (240, 160), BRAND_NAVY)
+    im = Image.new("RGB", (240, 160), BRAND_VIOLET)
     d = ImageDraw.Draw(im)
     qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=3, border=2)
     qr.add_data("https://" + URL)
@@ -314,7 +437,7 @@ def make_end():
     f = ImageFont.truetype(FONT_SANS_B, 11)
     d.text((6, 48), "Zaplanuj prawdziwą", font=f, fill=(250, 250, 250))
     d.text((6, 62), "budowę:", font=f, fill=(250, 250, 250))
-    d.text((6, 80), URL, font=ImageFont.truetype(FONT_SANS_B, 10), fill=BRAND_ORANGE)
+    d.text((6, 80), URL, font=ImageFont.truetype(FONT_SANS_B, 10), fill=(255, 255, 255))
     d.rectangle([0, 104, 240, 105], fill=BRAND_ORANGE)
     screen_bg("end", im)
     return qr.version, q.size
@@ -325,6 +448,7 @@ if __name__ == "__main__":
     print("font glyphs:", make_font())
     print("actor frames:", make_actors())
     print("hp bar frames:", make_hp_bar())
+    print("phone tiles:", make_phone())
     make_tiles()
     make_title()
     print("QR version/size:", make_end())

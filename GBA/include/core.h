@@ -129,6 +129,8 @@ namespace core
         int tools = data::start_tools_mask;   // narzędzia, które mogą wypaść z wrogów
     };
 
+    static_assert(sizeof(data::enemies) / sizeof(data::enemies[0]) <= 16);
+
     struct game
     {
         level lv;
@@ -144,6 +146,7 @@ namespace core
         int tier = 0;                // NG+: ile razy budowa została już ukończona
         int def_bonus = 0, dmg_bonus = 0;
         int turns = 0, kills = 0, score = 0;
+        uint8_t kills_by_type[16] = {};   // pokonane problemy wg rodzaju (zakładka Usterki)
         run_mods bonus;
         int xp_pct = 0;              // doświadczenie x100 (mnożnik trudności bez gubienia ułamków)
         int xp_banked = 0;           // ile doświadczenia już przeniesiono do profilu
@@ -364,7 +367,8 @@ namespace core
             turn_events |= 1u << ei;
             if(e.hp <= 0)
             {
-                e.alive = false; ++kills; score += ed.score * score_pct() / 100; gain_xp(data::xp_per_kill);
+                e.alive = false; ++kills;
+                if(kills_by_type[e.def_id] < 255) ++kills_by_type[e.def_id]; score += ed.score * score_pct() / 100; gain_xp(data::xp_per_kill);
                 maybe_drop(e.x, e.y);
                 push(message().add(ed.name).add(" - usunięto!"));
                 if(ei == boss) { score += (500 + 100 * (stage + 1)) * score_pct() / 100; gain_xp(data::xp_boss); st = status::won;

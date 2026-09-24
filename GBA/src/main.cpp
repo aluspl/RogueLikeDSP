@@ -23,6 +23,17 @@
 #include "bn_sprite_items_actors.h"
 #include "bn_sprite_items_font_8x16.h"
 #include "bn_sprite_items_hp_bar.h"
+#include "bn_sprite_items_phone_icons.h"
+#include "bn_regular_bg_items_phone_chrome.h"
+#include "bn_regular_bg_tiles_items_phone_tiles.h"
+#include "bn_bg_palette_items_phone_palette.h"
+#include "bn_sprite_palette_items_font_dark.h"
+#include "bn_sprite_palette_items_font_dim.h"
+#include "bn_sprite_palette_items_font_brand.h"
+#include "bn_sprite_palette_items_font_prog.h"
+#include "bn_sprite_palette_items_font_done.h"
+#include "bn_sprite_palette_items_font_late.h"
+#include "bn_sprite_palette_items_font_white.h"
 #include "bn_sprite_palettes.h"
 #include "bn_regular_bg_items_title.h"
 #include "bn_regular_bg_items_end.h"
@@ -31,6 +42,7 @@
 
 #include "core.h"
 #include "meta.h"
+#include "phone_tiles.h"
 
 namespace
 {
@@ -93,6 +105,7 @@ namespace
         int chosen_diff = data::default_difficulty;
         scene after_help = scene::title;   // dokąd wrócić z ekranu "Jak grać"
         bool has_run = false;              // w SRAM jest przerwana budowa
+        int phone_tab = 2;                 // ostatnio otwarta zakładka telefonu (Start)
     };
 
     // ------------------------------------------------------------------ zapis budowy w trakcie (SRAM za profilem)
@@ -150,7 +163,7 @@ namespace
     // ------------------------------------------------------------------ ekran tytułowy
     scene run_title(app& a)
     {
-        bn::bg_palettes::set_transparent_color(bn::color(3, 5, 8));
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         bn::regular_bg_ptr bg = bn::regular_bg_items::title.create_bg(8, 48);   // lewy górny róg obrazu = róg ekranu
         text_sprites prompt, record;
         a.text.set_center_alignment();
@@ -185,7 +198,7 @@ namespace
     // ------------------------------------------------------------------ wybór zawodu
     scene run_class_select(app& a)
     {
-        bn::bg_palettes::set_transparent_color(bn::color(3, 5, 8));
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         text_sprites header, lines, diff_line;
         a.text.set_center_alignment();
         a.text.generate(0, -72, "Wybierz fach", header);
@@ -313,52 +326,6 @@ namespace
         wait_release();
     }
 
-    void page_character(app& a)
-    {
-        const core::game& g = *a.g;
-        const core::class_def& c = g.cdef();
-        const core::weapon_def& w = g.weapon();
-        page_sprites t;
-        a.text.set_center_alignment();
-        a.text.generate(0, -68, c.name, t);
-        a.text.set_left_alignment();
-        core::message l[7];
-        l[0].add("Trudność: ").add(g.ddef().name);
-        if(g.tier > 0) l[0].add(" NG+").add(g.tier);
-        l[1].add("HP ").add(g.hero.hp).add("/").add(g.hero.max_hp).add("  OBR ").add(c.defense).add("+").add(g.def_bonus);
-        l[2].add("SIŁ ").add(c.strength).add(" ZRĘ ").add(c.agility).add(" INT ").add(c.intelligence);
-        l[3].add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range).add(" +").add(g.dmg_bonus);
-        l[4].add("Poziom ").add(g.hero_level);
-        if(g.xp_to_next() >= 0) l[4].add(" (awans za ").add(g.xp_to_next()).add(")");
-        l[5].add("Wynik ").add(g.score).add("  Problemy: ").add(g.kills);
-        l[6].add("Moc R: ").add(c.ability_name);
-        if(g.ability_cd > 0) l[6].add(" (za ").add(g.ability_cd).add(")"); else l[6].add(" (gotowa)");
-        for(int i = 0; i < 7; ++i) a.text.generate(-108, -46 + i * 16, clip(l[i].s, 27), t);
-        a.text.set_center_alignment();
-        a.text.generate(0, 72, "B: wróć", t);
-        wait_page_close();
-    }
-
-    void page_schedule(app& a)
-    {
-        const core::game& g = *a.g;
-        page_sprites t;
-        a.text.set_center_alignment();
-        a.text.generate(0, -68, "Harmonogram budowy", t);
-        a.text.set_left_alignment();
-        for(int i = 0; i < data::stages_count; ++i)
-        {
-            core::message m;
-            m.add(i < g.stage ? "[x] " : (i == g.stage ? "[>] " : "[ ] ")).add(data::stages[i].name);
-            a.text.generate(-100, -44 + i * 16, clip(m.s, 27), t);
-        }
-        a.text.set_center_alignment();
-        core::message s; s.add("Siła problemów: ").add(g.enemy_hp_pct()).add("% HP");
-        a.text.generate(0, 44, s.s, t);
-        a.text.generate(0, 72, "B: wróć", t);
-        wait_page_close();
-    }
-
     void page_help(app& a)
     {
         page_sprites t;
@@ -376,61 +343,379 @@ namespace
 
     scene run_help(app& a)
     {
-        bn::bg_palettes::set_transparent_color(bn::color(3, 5, 8));
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         page_help(a);
         if(! core::has_flag(a.save, core::help_seen)) { core::set_flag(a.save, core::help_seen); bn::sram::write(a.save); }
         return leave(a.after_help);
     }
 
+    // ------------------------------------------------------------------ telefon z aplikacją PlanBudowlany
+    // Menu w grze wygląda jak aplikacja PlanBudowlany: ramka z paskiem statusu, białe karty, pastylki
+    // statusów w kolorach AppColors, dolny pasek zakładek (Zadania, Usterki, Start, Zespół, Koszty).
+    struct phone_canvas   // dynamiczna warstwa treści nad ramką (kafelki z graphics/phone_tiles.bmp)
+    {
+        static constexpr int columns = 32;
+        static constexpr int rows = 32;
+        alignas(int) bn::regular_bg_map_cell cells[columns * rows];
+        bn::regular_bg_map_item map_item;
+
+        phone_canvas() : map_item(cells[0], bn::size(columns, rows)) { clear(); }
+
+        void clear() { bn::memory::clear(cells); }
+
+        void set(int tx, int ty, int tile, bool hflip = false, bool vflip = false)
+        {
+            if(tx < 0 || ty < 0 || tx >= columns || ty >= rows) return;
+            bn::regular_bg_map_cell& cell = cells[map_item.cell_index(tx, ty)];
+            bn::regular_bg_map_cell_info info(cell);
+            info.set_tile_index(tile);
+            info.set_palette_id(0);
+            info.set_horizontal_flip(hflip);
+            info.set_vertical_flip(vflip);
+            cell = info.cell();
+        }
+
+        // prostokąt z zaokrąglonymi rogami (kafel lewego górnego rogu odbijany na pozostałe)
+        void rounded(int tx, int ty, int tw, int th, int fill, int corner)
+        {
+            for(int y = 0; y < th; ++y) for(int x = 0; x < tw; ++x) set(tx + x, ty + y, fill);
+            set(tx, ty, corner);
+            set(tx + tw - 1, ty, corner, true);
+            set(tx, ty + th - 1, corner, false, true);
+            set(tx + tw - 1, ty + th - 1, corner, true, true);
+        }
+
+        // pasek postępu (jeden rząd kafli): value z max
+        void bar(int tx, int ty, int tw, int first_tile, int value, int max)
+        {
+            int px = max > 0 ? core::imin(tw * 8, core::imax(0, value) * tw * 8 / max) : 0;
+            for(int x = 0; x < tw; ++x) set(tx + x, ty, first_tile + core::imax(0, core::imin(8, px - x * 8)));
+        }
+    };
+
+    bn::regular_bg_ptr make_canvas_bg(phone_canvas& c)
+    {
+        bn::bg_tiles::set_allow_offset(false);
+        bn::regular_bg_item item(bn::regular_bg_tiles_items::phone_tiles, bn::bg_palette_items::phone_palette, c.map_item);
+        bn::regular_bg_ptr bg = item.create_bg(8, 48);
+        bn::bg_tiles::set_allow_offset(true);
+        return bg;
+    }
+
+    struct phone_screen   // ramka + warstwa treści + ikona aktywnej zakładki
+    {
+        bn::unique_ptr<phone_canvas> canvas;
+        bn::regular_bg_ptr chrome;
+        bn::regular_bg_ptr content;
+        bn::regular_bg_map_ptr map;
+        bn::sprite_ptr icon;
+
+        explicit phone_screen(int tab) :
+            canvas(new phone_canvas()),
+            chrome(bn::regular_bg_items::phone_chrome.create_bg(8, 48)),
+            content(make_canvas_bg(*canvas)),
+            map(content.map()),
+            icon(bn::sprite_items::phone_icons.create_sprite(phone_tile::tab_x[tab], phone_tile::tab_y, tab))
+        {
+            chrome.set_priority(3);
+            content.set_priority(2);
+            icon.set_bg_priority(1);
+        }
+
+        void set_tab(int tab)
+        {
+            icon.set_position(phone_tile::tab_x[tab], phone_tile::tab_y);
+            icon.set_tiles(bn::sprite_items::phone_icons.tiles_item(), tab);
+        }
+
+        void commit() { map.reload_cells_ref(); }
+
+        void set_visible(bool v) { chrome.set_visible(v); content.set_visible(v); icon.set_visible(v); }
+    };
+
+    enum class ink { dark, dim, brand, prog, done, late, white };
+
+    const bn::sprite_palette_item& ink_palette(ink i)
+    {
+        switch(i)
+        {
+            case ink::dim:   return bn::sprite_palette_items::font_dim;
+            case ink::brand: return bn::sprite_palette_items::font_brand;
+            case ink::prog:  return bn::sprite_palette_items::font_prog;
+            case ink::done:  return bn::sprite_palette_items::font_done;
+            case ink::late:  return bn::sprite_palette_items::font_late;
+            case ink::white: return bn::sprite_palette_items::font_white;
+            default:         return bn::sprite_palette_items::font_dark;
+        }
+    }
+
+    // Tekst w pikselach ekranu: (px, py) = lewy górny róg linii 16 px; align -1 lewo, 0 środek, 1 prawo.
+    void phone_text(app& a, page_sprites& t, int px, int py, const char* s, ink i, int align = -1)
+    {
+        a.text.set_palette_item(ink_palette(i));
+        a.text.set_bg_priority(1);   // nad kartami (priorytet 2) i ramką (3)
+        if(align < 0) a.text.set_left_alignment();
+        else if(align > 0) a.text.set_right_alignment();
+        else a.text.set_center_alignment();
+        a.text.generate(px - 120, py - 72, s, t);
+    }
+
+    int utf8_len(const char* s)
+    {
+        int n = 0;
+        for(; *s; ++s) if((uint8_t(*s) & 0xC0) != 0x80) ++n;
+        return n;
+    }
+
+    enum class pill { prog, late, done, gray, brand, group };
+
+    // Pastylka statusu przyklejona prawą krawędzią do kafla tx_end, 2 kafle wysokości.
+    void phone_pill(app& a, phone_canvas& c, page_sprites& t, int tx_end, int ty, const char* s, pill p)
+    {
+        int tw = utf8_len(s) + 1;
+        int tx = tx_end - tw;
+        int fill = phone_tile::fill_gray, corner = phone_tile::corner_gray;
+        ink i = ink::dim;
+        switch(p)
+        {
+            case pill::prog:  fill = phone_tile::fill_prog_bg; corner = phone_tile::corner_prog_bg; i = ink::prog; break;
+            case pill::late:  fill = phone_tile::fill_late_bg; corner = phone_tile::corner_late_bg; i = ink::late; break;
+            case pill::done:  fill = phone_tile::fill_done_bg; corner = phone_tile::corner_done_bg; i = ink::done; break;
+            case pill::brand: fill = phone_tile::fill_brand; corner = phone_tile::corner_brand; i = ink::white; break;
+            case pill::group: fill = phone_tile::fill_group; corner = phone_tile::corner_group; i = ink::brand; break;
+            default: break;
+        }
+        c.rounded(tx, ty, tw, 2, fill, corner);
+        phone_text(a, t, tx * 8 + tw * 4, ty * 8, s, i, 0);
+    }
+
+    // Lista na karcie: wiersz r (0..5) = 16 px od y 32, kafle od rzędu 4.
+    constexpr int row_ty(int r) { return 4 + r * 2; }
+    constexpr int row_py(int r) { return 32 + r * 16; }
+    constexpr int list_x = 14;   // początek tekstu za paskiem statusu
+    constexpr int pill_end = 28; // prawa krawędź pastylek (kafel)
+
+    void stripe(phone_canvas& c, int r, int tile) { c.set(1, row_ty(r), tile); c.set(1, row_ty(r) + 1, tile); }
+
+    constexpr const char* tab_names[] = { "Zadania", "Usterki", "Start", "Zespół", "Koszty" };
+    constexpr int tabs_count = 5;
+
+    void phone_header(app& a, phone_screen& ph, page_sprites& t, const char* title, const char* sub)
+    {
+        ph.canvas->clear();
+        t.clear();
+        phone_text(a, t, 10, 13, title, ink::dark);
+        phone_text(a, t, 230, 13, sub, ink::dim, 1);
+        ph.canvas->rounded(1, 4, 28, 12, phone_tile::fill_card, phone_tile::corner_card);
+    }
+
+    void tab_tasks(app& a, phone_screen& ph, page_sprites& t)   // Zadania = harmonogram budowy
+    {
+        const core::game& g = *a.g;
+        core::message sub; sub.add("Etap ").add(g.stage + 1).add("/").add(data::stages_count);
+        phone_header(a, ph, t, tab_names[0], sub.s);
+        phone_canvas& c = *ph.canvas;
+        for(int i = 0; i < data::stages_count; ++i)
+        {
+            bool done = i < g.stage || (i == g.stage && g.st == core::status::won);
+            bool cur = i == g.stage && ! done;
+            stripe(c, i, done ? phone_tile::stripe_done : (cur ? phone_tile::stripe_prog : phone_tile::stripe_todo));
+            phone_text(a, t, list_x, row_py(i), clip(data::stages[i].name, 15).c_str(), done ? ink::dim : ink::dark);
+            phone_pill(a, c, t, pill_end, row_ty(i), done ? "Gotowe" : (cur ? "W trakcie" : "Do zrob."),
+                       done ? pill::done : (cur ? pill::prog : pill::gray));
+        }
+        phone_text(a, t, list_x, row_py(5), "Postęp", ink::dim);
+        c.bar(9, row_ty(5), 18, phone_tile::bar_brand_0, g.stage, data::stages_count);
+    }
+
+    void tab_issues(app& a, phone_screen& ph, page_sprites& t)   // Usterki = problemy budowy
+    {
+        const core::game& g = *a.g;
+        constexpr int types = int(sizeof(data::enemies) / sizeof(data::enemies[0]));
+        const core::stage_def& sd = data::stages[g.stage];
+        int open = 0, rows = 0;
+        struct row { int8_t def; bool open; };
+        bn::vector<row, 6> list;
+        for(int d = 0; d < types && list.size() < 6; ++d)
+        {
+            bool in_stage = sd.boss == d;
+            for(int k = 0; k < sd.pool_count; ++k) if(sd.pool[k] == d) in_stage = true;
+            int alive = 0;
+            for(int i = 0; i < g.enemies_count; ++i) if(g.enemies[i].alive && g.enemies[i].def_id == d) ++alive;
+            if(! in_stage && g.kills_by_type[d] == 0) continue;
+            list.push_back({ int8_t(d), alive > 0 });
+            open += alive > 0;
+        }
+        core::message sub; sub.add("Otwarte: ").add(open);
+        phone_header(a, ph, t, tab_names[1], sub.s);
+        phone_canvas& c = *ph.canvas;
+        for(const row& rw : list)
+        {
+            stripe(c, rows, rw.open ? phone_tile::stripe_late : phone_tile::stripe_done);
+            core::message m; m.add("#").add(rows + 1).add(" ").add(clip(data::enemies[rw.def].name, 9).c_str());
+            if(g.kills_by_type[rw.def] > 0) m.add(" x").add(g.kills_by_type[rw.def]);
+            phone_text(a, t, list_x, row_py(rows), m.s, ink::dark);
+            phone_pill(a, c, t, pill_end, row_ty(rows), rw.open ? "OTWARTA" : "ZAMKNIĘTA", rw.open ? pill::late : pill::done);
+            ++rows;
+        }
+    }
+
+    void tab_home(app& a, phone_screen& ph, page_sprites& t)   // Start = pulpit postaci
+    {
+        const core::game& g = *a.g;
+        core::message sub; sub.add(g.ddef().name);
+        if(g.tier > 0) sub.add(" NG+").add(g.tier);
+        phone_header(a, ph, t, tab_names[2], sub.s);
+        phone_canvas& c = *ph.canvas;
+        core::message r0; r0.add("Etap ").add(g.stage + 1).add(": ").add(data::stages[g.stage].name);
+        phone_text(a, t, list_x, row_py(0), clip(r0.s, 15).c_str(), ink::dark);
+        phone_pill(a, c, t, pill_end, row_ty(0), "W trakcie", pill::prog);
+        stripe(c, 0, phone_tile::stripe_prog);
+
+        core::message hp; hp.add("HP ").add(g.hero.hp).add("/").add(g.hero.max_hp);
+        phone_text(a, t, list_x, row_py(1), hp.s, ink::dark);
+        int bar_tile = g.hero.hp * 2 > g.hero.max_hp ? phone_tile::bar_done_0
+                     : (g.hero.hp * 4 > g.hero.max_hp ? phone_tile::bar_brand_0 : phone_tile::bar_late_0);
+        c.bar(14, row_ty(1), 13, bar_tile, g.hero.hp, g.hero.max_hp);
+
+        core::message lv; lv.add("Poziom ").add(g.hero_level);
+        phone_text(a, t, list_x, row_py(2), lv.s, ink::dark);
+        int prev = g.hero_level >= 2 ? data::level_thresholds[g.hero_level - 2] : 0;
+        if(g.xp_to_next() < 0) c.bar(14, row_ty(2), 13, phone_tile::bar_brand_0, 1, 1);
+        else c.bar(14, row_ty(2), 13, phone_tile::bar_brand_0, g.run_xp - prev, data::level_thresholds[g.hero_level - 1] - prev);
+
+        core::message mc; mc.add("Moc: ").add(g.cdef().ability_name);
+        phone_text(a, t, list_x, row_py(3), mc.s, ink::dark);
+        core::message cd; cd.add("za ").add(g.ability_cd);
+        phone_pill(a, c, t, pill_end, row_ty(3), g.ability_cd == 0 ? "Gotowa" : cd.s, g.ability_cd == 0 ? pill::done : pill::gray);
+
+        const core::weapon_def& w = g.weapon();
+        core::message wl; wl.add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range);
+        wl.add(" +").add(g.dmg_bonus);
+        phone_text(a, t, list_x, row_py(4), clip(wl.s, 26).c_str(), ink::dim);
+        core::message sc; sc.add("Wynik ").add(g.score).add("  Dzień ").add(g.turns);
+        phone_text(a, t, list_x, row_py(5), sc.s, ink::dim);
+    }
+
+    void tab_team(app& a, phone_screen& ph, page_sprites& t)   // Zespół = zawody
+    {
+        const core::game& g = *a.g;
+        phone_header(a, ph, t, tab_names[3], "Fachowcy");
+        phone_canvas& c = *ph.canvas;
+        for(int i = 0; i < data::classes_count && i < 6; ++i)
+        {
+            bool mine = i == g.cls, unl = core::class_unlocked(a.save, i);
+            stripe(c, i, mine ? phone_tile::stripe_brand : (unl ? phone_tile::stripe_done : phone_tile::stripe_todo));
+            phone_text(a, t, list_x, row_py(i), clip(data::classes[i].name, 16).c_str(), mine ? ink::brand : (unl ? ink::dark : ink::dim));
+            phone_pill(a, c, t, pill_end, row_ty(i), mine ? "Ty" : (unl ? "Dostępny" : "Zablok."),
+                       mine ? pill::brand : (unl ? pill::done : pill::gray));
+        }
+    }
+
+    void tab_costs(app& a, phone_screen& ph, page_sprites& t)   // Koszty = Szkolenia (podgląd w trakcie budowy)
+    {
+        const core::game& g = *a.g;
+        phone_header(a, ph, t, tab_names[4], "Szkolenia");
+        phone_canvas& c = *ph.canvas;
+        int total = core::shop_total_cost(), spent = core::shop_spent(a.save);
+        phone_text(a, t, list_x, row_py(0), "CAŁKOWITY KOSZT", ink::dim);
+        core::message sp; sp.add(spent).add(" dośw.");
+        phone_text(a, t, list_x, row_py(1), sp.s, ink::dark);
+        c.bar(2, row_ty(2), 26, phone_tile::bar_brand_0, spent, total);
+        core::message bud; bud.add("Budżet ").add(total);
+        phone_text(a, t, list_x, row_py(3), bud.s, ink::dim);
+        core::message rest; rest.add("Pozostało ").add(int(a.save.xp));
+        phone_text(a, t, 226, row_py(3), rest.s, ink::done, 1);
+        core::message run; run.add("Z tej budowy: +").add(g.xp() - g.xp_banked);
+        phone_text(a, t, list_x, row_py(4), run.s, ink::dim);
+        phone_text(a, t, list_x, row_py(5), "Kupisz po budowie", ink::dim);
+    }
+
+    void draw_tab(app& a, phone_screen& ph, page_sprites& t, int tab)
+    {
+        switch(tab)
+        {
+            case 0: tab_tasks(a, ph, t); break;
+            case 1: tab_issues(a, ph, t); break;
+            case 3: tab_team(a, ph, t); break;
+            case 4: tab_costs(a, ph, t); break;
+            default: tab_home(a, ph, t); break;
+        }
+        ph.set_tab(tab);
+        ph.commit();
+    }
+
     enum class pause_result { resume, quit, save_exit };
 
-    pause_result run_pause(app& a)
+    // Telefon pod SELECT. L/R lub strzałki: zakładki; START: menu akcji; B/SELECT: powrót do gry.
+    pause_result run_phone(app& a)
     {
-        const char* items[] = { "Wznów", "Karta postaci", "Harmonogram", "Jak grać", "Zapisz i wyjdź", "Porzuć budowę" };
-        constexpr int items_count = 6;
-        int sel = 0;
-        bool confirm = false;
+        phone_screen ph(a.phone_tab);
         page_sprites t;
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        const char* actions[] = { "Wróć do gry", "Jak grać", "Zapisz i wyjdź", "Porzuć budowę" };
+        constexpr int actions_count = 4;
+        bool sheet = false, confirm = false;
+        int sel = 0;
         auto redraw = [&]() {
-            t.clear();
-            a.text.set_center_alignment();
-            a.text.generate(0, -68, "Przerwa", t);
-            for(int i = 0; i < items_count; ++i)
+            if(! sheet) { draw_tab(a, ph, t, a.phone_tab); return; }
+            phone_header(a, ph, t, "Menu", "START");
+            for(int i = 0; i < actions_count; ++i)
             {
-                core::message m; m.add(i == sel ? "> " : "  ").add(items[i]).add(i == sel ? " <" : "  ");
-                a.text.generate(0, -40 + i * 16, m.s, t);
+                if(i == sel) stripe(*ph.canvas, i, phone_tile::stripe_brand);
+                phone_text(a, t, list_x, row_py(i), actions[i], i == sel ? ink::brand : ink::dark);
             }
-            a.text.generate(0, 72, confirm ? "Na pewno? A: tak  B: nie" : "A: wybierz  B: wróć", t);
+            phone_text(a, t, list_x, row_py(5), confirm ? "Na pewno? A: tak  B: nie" : "A: wybierz  B: wróć",
+                       confirm ? ink::late : ink::dim);
+            ph.commit();
+        };
+        auto finish = [&](pause_result r) {
+            t.clear();
+            a.text.set_palette_item(default_ink);
+            wait_release();
+            return r;
         };
         redraw();
         wait_release();
         while(true)
         {
-            if(confirm)
+            if(sheet)
             {
-                if(bn::keypad::a_pressed()) { wait_release(); return pause_result::quit; }
-                if(bn::keypad::b_pressed()) { confirm = false; redraw(); }
+                if(confirm)
+                {
+                    if(bn::keypad::a_pressed()) return finish(pause_result::quit);
+                    if(bn::keypad::b_pressed()) { confirm = false; redraw(); }
+                }
+                else
+                {
+                    if(bn::keypad::up_pressed()) { sel = (sel + actions_count - 1) % actions_count; redraw(); }
+                    if(bn::keypad::down_pressed()) { sel = (sel + 1) % actions_count; redraw(); }
+                    if(bn::keypad::b_pressed()) { sheet = false; redraw(); }
+                    if(bn::keypad::a_pressed())
+                    {
+                        if(sel == 0) return finish(pause_result::resume);
+                        if(sel == 2) return finish(pause_result::save_exit);
+                        if(sel == 3) { confirm = true; redraw(); }
+                        else
+                        {
+                            t.clear();
+                            ph.set_visible(false);
+                            a.text.set_palette_item(default_ink);
+                            wait_release();
+                            page_help(a);
+                            ph.set_visible(true);
+                            redraw();
+                        }
+                    }
+                }
             }
             else
             {
-                if(bn::keypad::up_pressed()) { sel = (sel + items_count - 1) % items_count; redraw(); }
-                if(bn::keypad::down_pressed()) { sel = (sel + 1) % items_count; redraw(); }
-                if(bn::keypad::b_pressed() || bn::keypad::select_pressed() || bn::keypad::start_pressed()) { wait_release(); return pause_result::resume; }
-                if(bn::keypad::a_pressed())
-                {
-                    if(sel == 0) { wait_release(); return pause_result::resume; }
-                    if(sel == 4) { wait_release(); return pause_result::save_exit; }
-                    if(sel == 5) { confirm = true; redraw(); }
-                    else
-                    {
-                        t.clear();
-                        wait_release();
-                        if(sel == 1) page_character(a);
-                        else if(sel == 2) page_schedule(a);
-                        else page_help(a);
-                        redraw();
-                    }
-                }
+                int d = (bn::keypad::r_pressed() || bn::keypad::right_pressed()) ? 1
+                      : ((bn::keypad::l_pressed() || bn::keypad::left_pressed()) ? -1 : 0);
+                if(d) { a.phone_tab = (a.phone_tab + d + tabs_count) % tabs_count; redraw(); }
+                if(bn::keypad::start_pressed()) { sheet = true; sel = 0; redraw(); }
+                if(bn::keypad::b_pressed() || bn::keypad::select_pressed()) return finish(pause_result::resume);
             }
             next_frame();
         }
@@ -440,7 +725,7 @@ namespace
     void stage_card(app& a)
     {
         const core::game& g = *a.g;
-        bn::bg_palettes::set_transparent_color(bn::color(3, 5, 8));
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         page_sprites t;
         a.text.set_center_alignment();
         core::message l1; l1.add("Etap ").add(g.stage + 1).add("/").add(data::stages_count);
@@ -666,7 +951,7 @@ namespace
                 fx.clear(); hud.clear(); log.clear(); floaters.clear();
                 hp_left.set_visible(false); hp_right.set_visible(false);
                 tgt_left.set_visible(false); tgt_right.set_visible(false);
-                pause_result pr = run_pause(a);
+                pause_result pr = run_phone(a);
                 if(pr == pause_result::save_exit) { save_run(a); return leave(scene::title); }
                 if(pr == pause_result::quit)
                 {
@@ -724,7 +1009,7 @@ namespace
     scene run_schedule(app& a)
     {
         core::game& g = *a.g;
-        bn::bg_palettes::set_transparent_color(bn::color(3, 5, 8));
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         text_sprites t;
         a.text.set_center_alignment();
         a.text.generate(0, -68, "Harmonogram budowy", t);
@@ -757,7 +1042,7 @@ namespace
         bn::sram::write(a.save);
         clear_run(a);
 
-        bn::bg_palettes::set_transparent_color(bn::color(3, 5, 8));
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         bn::regular_bg_ptr bg = bn::regular_bg_items::end.create_bg(8, 48);
         text_sprites t;
         a.text.set_center_alignment();
@@ -773,10 +1058,11 @@ namespace
         }
     }
 
-    // ------------------------------------------------------------------ sklep "Szkolenia" (meta-progresja)
+    // ------------------------------------------------------------------ sklep "Szkolenia" = zakładka Koszty w telefonie
     scene run_shop(app& a)
     {
-        bn::bg_palettes::set_transparent_color(bn::color(3, 5, 8));
+        phone_screen ph(4);
+        bn::sprite_palette_item default_ink = a.text.palette_item();
         enum kind : uint8_t { upgrade, cls, hard, tool };
         struct entry { kind k; int8_t i; };
         bn::vector<entry, core::max_upgrades + 8 + 8 + 1> entries;
@@ -791,44 +1077,47 @@ namespace
         };
         rebuild();
 
-        constexpr int window = 6;
+        constexpr int window = 4;   // wiersze 2..5 karty
         int sel = 0, top = 0;
         const char* note = nullptr;
         page_sprites t;
+        auto cost_of = [&](const entry& e) {
+            return e.k == upgrade ? core::upgrade_cost(a.save, e.i)
+                 : e.k == cls ? data::class_cost : (e.k == tool ? data::tools[e.i].cost : data::hard_cost);
+        };
         auto redraw = [&]() {
-            t.clear();
-            a.text.set_center_alignment();
-            core::message h; h.add("Szkolenia  Dośw.: ").add(int(a.save.xp));
-            a.text.generate(0, -68, h.s, t);
-            a.text.set_left_alignment();
-            for(int row = 0; row < window && top + row < entries.size(); ++row)
-            {
-                const entry& e = entries[top + row];
-                core::message m; m.add(top + row == sel ? "> " : "  ");
-                if(e.k == upgrade)
-                {
-                    const core::upgrade_def& u = data::upgrades[e.i];
-                    m.add(u.name).add(" ").add(a.save.levels[e.i]).add("/").add(u.levels);
-                    int c = core::upgrade_cost(a.save, e.i);
-                    if(c < 0) m.add(" MAX"); else m.add(" - ").add(c);
-                }
-                else if(e.k == cls) m.add("Zawód: ").add(data::classes[e.i].name).add(" - ").add(data::class_cost);
-                else if(e.k == tool) m.add(data::weapons[data::tools[e.i].weapon].name).add(" - ").add(data::tools[e.i].cost);
-                else m.add("Trudność: ").add(data::difficulties[data::difficulties_count - 1].name).add(" - ").add(data::hard_cost);
-                a.text.generate(-112, -46 + row * 16, clip(m.s, 29), t);
-            }
-            a.text.set_center_alignment();
-            const entry& e = entries[sel];
+            phone_header(a, ph, t, tab_names[4], "A: kup  B: wyjdź");
+            phone_canvas& c = *ph.canvas;
+            phone_text(a, t, list_x, row_py(0), "Pozostało", ink::dim);
+            core::message xp; xp.add(int(a.save.xp)).add(" dośw.");
+            phone_text(a, t, 226, row_py(0), xp.s, ink::done, 1);
+            const entry& se = entries[sel];
             core::message tool_desc;
-            if(e.k == tool)
+            if(se.k == tool)
             {
-                const core::weapon_def& w = data::weapons[data::tools[e.i].weapon];
-                tool_desc.add("Narzędzie ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range).add(", może wypaść");
+                const core::weapon_def& w = data::weapons[data::tools[se.i].weapon];
+                tool_desc.add("Narzędzie ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range);
             }
-            const char* desc = note ? note : (e.k == upgrade ? data::upgrades[e.i].desc : (e.k == cls ? "Nowy zawód do wyboru"
-                             : (e.k == tool ? tool_desc.s : "Odblokuj najwyższą trudność")));
-            a.text.generate(0, 54, clip(desc, 29), t);
-            a.text.generate(0, 72, "A: kup  B: wyjdź", t);
+            const char* desc = note ? note : (se.k == upgrade ? data::upgrades[se.i].desc
+                             : (se.k == cls ? "Nowy zawód do wyboru" : (se.k == tool ? tool_desc.s : "Najwyższa trudność")));
+            phone_text(a, t, list_x, row_py(1), clip(desc, 26).c_str(), ink::dim);
+            for(int r = 0; r < window && top + r < entries.size(); ++r)
+            {
+                const entry& e = entries[top + r];
+                bool is_sel = top + r == sel;
+                core::message m;
+                if(e.k == upgrade) m.add(data::upgrades[e.i].name).add(" ").add(a.save.levels[e.i]).add("/").add(data::upgrades[e.i].levels);
+                else if(e.k == cls) m.add("Zawód: ").add(data::classes[e.i].name);
+                else if(e.k == tool) m.add(data::weapons[data::tools[e.i].weapon].name);
+                else m.add("Trudność: ").add(data::difficulties[data::difficulties_count - 1].name);
+                if(is_sel) stripe(c, r + 2, phone_tile::stripe_brand);
+                phone_text(a, t, list_x, row_py(r + 2), clip(m.s, 17).c_str(), is_sel ? ink::brand : ink::dark);
+                int cost = cost_of(e);
+                core::message cm; cm.add(cost);
+                phone_pill(a, c, t, pill_end, row_ty(r + 2), cost < 0 ? "MAX" : cm.s,
+                           cost < 0 ? pill::done : (cost <= a.save.xp ? pill::group : pill::gray));
+            }
+            ph.commit();
         };
         redraw();
 
@@ -860,7 +1149,13 @@ namespace
                 else note = (e.k == upgrade && core::upgrade_cost(a.save, e.i) < 0) ? "Maksymalny poziom" : "Za mało doświadczenia";
                 redraw();
             }
-            if(bn::keypad::b_pressed() || bn::keypad::start_pressed()) { wait_release(); return leave(scene::title); }
+            if(bn::keypad::b_pressed() || bn::keypad::start_pressed())
+            {
+                t.clear();
+                a.text.set_palette_item(default_ink);
+                wait_release();
+                return leave(scene::title);
+            }
             next_frame();
         }
     }

@@ -16,7 +16,7 @@ Przekroczony budżet) i bossa **Nieprzekraczalny Termin**. Na końcu ekran z kod
 | A | atak narzędziem w najbliższy cel w zasięgu (zasięg zależy od narzędzia) |
 | B | czekaj turę (co 4 tury +1 HP) |
 | START | dalej |
-| SELECT | w grze: menu przerwy (karta postaci, harmonogram, jak grać, porzuć budowę); na tytule: sklep „Szkolenia” |
+| SELECT | w grze: telefon z aplikacją PlanBudowlany (Zadania, Usterki, Start, Zespół, Koszty; L/R – zakładki, START – menu: jak grać, zapisz i wyjdź, porzuć budowę); na tytule: Szkolenia (ekran Koszty) |
 | B (tytuł) | ekran „Jak grać” |
 | L (przytrzymaj) | podgląd odkrytej mapy etapu |
 | R | moc zawodu (Odprawa, Ścianka, Seria, Łańcuch, Zawór, Wirówka), odnawia się po kilkunastu turach; „R” w HUD = gotowa |
