@@ -16,6 +16,7 @@ namespace core
     constexpr int log_lines = 3;
     constexpr int log_len = 48;
     constexpr int fov_radius = 7;       // promień widzenia bohatera w polach
+    constexpr int max_hits = 8;         // zdarzenia trafień w jednej turze (dla efektów)
 
     enum class tile : uint8_t { wall, floor, stairs };
     enum class status : uint8_t { playing, stage_clear, dead, won };
@@ -99,6 +100,7 @@ namespace core
     };
 
     struct pickup { int8_t x, y; uint8_t type; bool active; };
+    struct hit { int8_t x, y; int16_t amount; bool on_hero; };   // do liczb obrażeń nad polem
 
     // Dziennik budowy (log zdarzeń) - krótkie linie UTF-8
     struct message
@@ -148,6 +150,14 @@ namespace core
         uint8_t fov[map_h][map_w];   // sight: nieznane / zapamiętane / widoczne teraz
         uint32_t turn_events = 0;    // bitmaska: które indeksy przeciwników zostały trafione w tej turze (efekt)
         bool hero_hit = false;
+        hit hits[max_hits];
+        int hits_count = 0;          // warstwa GBA czyta i zeruje po każdej turze
+        int last_target = -1;        // ostatnio trafiony wróg (pasek HP celu)
+
+        void add_hit(int x, int y, int amount, bool on_hero)
+        {
+            if(hits_count < max_hits) hits[hits_count++] = { int8_t(x), int8_t(y), int16_t(amount), on_hero };
+        }
 
         const class_def& cdef() const { return data::classes[cls]; }
         const weapon_def& weapon() const { return data::weapons[cdef().weapon]; }
@@ -319,6 +329,8 @@ namespace core
             if(dmg < 1) dmg = 1;
             e.hp = int16_t(e.hp - dmg);
             e.awake = true;
+            last_target = ei;
+            add_hit(e.x, e.y, dmg, false);
             turn_events |= 1u << ei;
             if(e.hp <= 0)
             {
@@ -402,6 +414,7 @@ namespace core
                 if(dmg < 1) dmg = 1;
                 hero.hp = int16_t(hero.hp - dmg);
                 hero_hit = true;
+                add_hit(hero.x, hero.y, dmg, true);
                 push(message().add(ed.name).add(": -").add(dmg).add(" HP"));
                 if(hero.hp <= 0) { hero.hp = 0; hero.alive = false; st = status::dead;
                     push(message().add("Budowa wstrzymana...")); }
