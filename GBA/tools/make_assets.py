@@ -455,6 +455,9 @@ if __name__ == "__main__":
     print("font glyphs:", make_font())
     print("actor frames:", make_actors())
     print("hp bar frames:", make_hp_bar())
+    import pixel_art as pa
+    write_bmp(os.path.join(G, "particles.bmp"), pa.particle_frames(), 8, 8 * len(pa.PARTICLES), SPR_PAL, 4)
+    write_json("particles", {"type": "sprite", "height": 8})
     print("phone tiles:", make_phone())
     make_tiles()
     make_title()
