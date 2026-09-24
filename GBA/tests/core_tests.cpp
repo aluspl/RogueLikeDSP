@@ -138,6 +138,8 @@ int main()
         profile q; std::memset(&q, 0xFF, sizeof q);
         CHECK(profile_fix(q) && q.best == 0 && q.classes == data::start_classes_mask);
         q.xp = 7; CHECK(!profile_fix(q) && q.xp == 7);
+        CHECK(!has_flag(p, help_seen) && !has_flag(q, help_seen));   // instrukcja pokaże się po migracji
+        set_flag(q, help_seen); CHECK(has_flag(q, help_seen) && !profile_fix(q) && has_flag(q, help_seen));
     }
     // 10. sklep: koszty, poziomy, zawody, poziom Trudny, premie
     {

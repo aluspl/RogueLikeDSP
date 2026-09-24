@@ -23,8 +23,14 @@ namespace core
         uint8_t levels[max_upgrades];  // kupione poziomy ulepszeń
         uint8_t classes;               // bitmaska odblokowanych zawodów
         uint8_t hard;                  // odblokowany poziom Trudny
-        uint8_t pad[2];
+        uint8_t flags;                 // bity profile_flag (dawny bajt wyrównania = 0 w starych zapisach)
+        uint8_t pad;
     };
+
+    enum profile_flag : uint8_t { help_seen = 1 };
+
+    inline bool has_flag(const profile& p, profile_flag f) { return p.flags & f; }
+    inline void set_flag(profile& p, profile_flag f) { p.flags = uint8_t(p.flags | f); }
 
     inline void profile_reset(profile& p)
     {
