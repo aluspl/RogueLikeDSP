@@ -1,0 +1,8 @@
+{
+  "id": "short_bow",
+  "name": "Krótki łuk",
+  "minDamage": 1,
+  "maxDamage": 3,
+  "range": 4,
+  "scalesWith": "agility"
+}
