@@ -64,6 +64,7 @@ namespace
     constexpr int frame_lock = 19;
     constexpr int frame_silhouette = 20;   // + indeks zawodu
     constexpr int frame_toolbox = 26;
+    constexpr int frame_anim_b = 27;     // + klatka zawodu/wroga (0..14) = druga klatka animacji
 
     int pickup_frame(const core::pickup& p) { return p.type == core::tool ? frame_toolbox : frame_coffee + p.type; }
 
@@ -927,21 +928,58 @@ namespace
             tgt_right.set_position(p.x() + 8, p.y() - 11);
         };
 
+        // Animacja: płynny ruch między polami (4 px/klatkę) i 2 klatki "oddechu"/kroku.
+        bn::fixed_point hero_cur = world(g.hero.x, g.hero.y), hero_dst = hero_cur;
+        bn::vector<bn::fixed_point, core::max_enemies> enemy_cur, enemy_dst;
+        for(int i = 0; i < g.enemies_count; ++i) { enemy_cur.push_back(world(g.enemies[i].x, g.enemies[i].y)); enemy_dst.push_back(enemy_cur.back()); }
+        int anim_clock = 0, hero_shown = -1;
+        bn::vector<int8_t, core::max_enemies> enemy_shown(g.enemies_count, -1);
+        bool snap_next = true;
+        auto approach = [](bn::fixed_point& c, const bn::fixed_point& d) {
+            bn::fixed dx = d.x() - c.x(), dy = d.y() - c.y();
+            c.set_x(c.x() + (dx > 4 ? bn::fixed(4) : (dx < -4 ? bn::fixed(-4) : dx)));
+            c.set_y(c.y() + (dy > 4 ? bn::fixed(4) : (dy < -4 ? bn::fixed(-4) : dy)));
+        };
+        auto animate = [&]() {
+            ++anim_clock;
+            bool hero_moving = hero_cur != hero_dst;
+            approach(hero_cur, hero_dst);
+            hero.set_position(hero_cur);
+            bool phase = (anim_clock / 24) & 1;
+            int hf = data::classes[g.cls].frame + ((phase || hero_moving) ? frame_anim_b : 0);
+            if(hf != hero_shown) { hero.set_tiles(bn::sprite_items::actors.tiles_item(), hf); hero_shown = hf; }
+            for(int i = 0; i < g.enemies_count; ++i)
+            {
+                approach(enemy_cur[i], enemy_dst[i]);
+                enemies[i].set_position(enemy_cur[i]);
+                int ef = data::enemies[g.enemies[i].def_id].frame + (((anim_clock / 20 + i) & 1) ? frame_anim_b : 0);
+                if(ef != enemy_shown[i]) { enemies[i].set_tiles(bn::sprite_items::actors.tiles_item(), ef); enemy_shown[i] = int8_t(ef); }
+            }
+            for(int i = 0; i < pickups.size(); ++i)   // znajdźki lekko podskakują
+                pickups[i].set_y(world(g.pickups[i].x, g.pickups[i].y).y() - (((anim_clock / 16 + i) & 1) ? 1 : 0));
+            cam_base = bn::fixed_point(clampf(hero_cur.x(), 136), clampf(hero_cur.y(), 176));
+            if(shake_timer == 0) cam.set_position(cam_base);
+        };
+
         auto refresh = [&]() {
             map->build(g);
             bg_map_ptr.reload_cells_ref();
-            hero.set_position(world(g.hero.x, g.hero.y));
+            hero_dst = world(g.hero.x, g.hero.y);
             for(int i = 0; i < g.enemies_count; ++i)
             {
                 enemies[i].set_visible(g.enemies[i].alive && g.visible(g.enemies[i].x, g.enemies[i].y));
-                enemies[i].set_position(world(g.enemies[i].x, g.enemies[i].y));
+                enemy_dst[i] = world(g.enemies[i].x, g.enemies[i].y);
+            }
+            if(snap_next)
+            {
+                hero_cur = hero_dst;
+                for(int i = 0; i < g.enemies_count; ++i) enemy_cur[i] = enemy_dst[i];
+                snap_next = false;
             }
             sync_pickups();
             for(int i = 0; i < g.pickups_count; ++i)
                 pickups[i].set_visible(g.pickups[i].active && g.explored(g.pickups[i].x, g.pickups[i].y));
-            bn::fixed_point c = world(g.hero.x, g.hero.y);
-            cam_base = bn::fixed_point(clampf(c.x(), 136), clampf(c.y(), 176));
-            cam.set_position(cam_base);
+            animate();
 
             hud.clear();
             a.text.set_left_alignment();
@@ -1021,6 +1059,7 @@ namespace
             }
             hero.remove_affine_mat();
             hero.set_visible(true);
+            snap_next = true;
             refresh();
             hold = 0;
         };
@@ -1046,7 +1085,7 @@ namespace
             else if(bn::keypad::b_pressed()) acted = g.player_wait();
             else if(bn::keypad::r_pressed() && ! bn::keypad::l_held()) { acted = g.player_ability(); if(! acted) refresh(); }
             // skrót pokazowy/testowy: L+R+SELECT = zalicz etap; samo SELECT = menu
-            if(bn::keypad::select_pressed() && bn::keypad::l_held() && bn::keypad::r_held()) { g.debug_skip(); refresh(); }
+            if(bn::keypad::select_pressed() && bn::keypad::l_held() && bn::keypad::r_held()) { g.debug_skip(); snap_next = true; refresh(); }
             else if(bn::keypad::select_pressed())
             {
                 bg.set_visible(false);
@@ -1070,6 +1109,7 @@ namespace
                 bg.set_visible(true);
                 hero.set_visible(true);
                 hp_left.set_visible(true); hp_right.set_visible(true);
+                snap_next = true;
                 refresh();
                 hold = 0;
                 continue;
@@ -1077,6 +1117,7 @@ namespace
 
             if(acted) refresh();
 
+            animate();
             if(fx_timer > 0 && --fx_timer == 0) fx.clear();
             for(int i = 0; i < floaters.size(); )
             {
