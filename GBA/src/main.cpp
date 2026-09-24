@@ -25,6 +25,10 @@
 #include "bn_sprite_items_hp_bar.h"
 #include "bn_sprite_items_particles.h"
 #include "bn_random.h"
+#include "bn_display.h"
+#include "bn_bg_palette_ptr.h"
+#include "bn_sprite_palette_ptr.h"
+#include "bn_bg_palette_color_hbe_ptr.h"
 #include "bn_optional.h"
 #include "bn_sprite_items_phone_icons.h"
 #include "bn_regular_bg_items_phone_chrome.h"
@@ -50,6 +54,7 @@
 #include "core.h"
 #include "meta.h"
 #include "phone_tiles.h"
+#include "screen_info.h"
 
 namespace
 {
@@ -168,11 +173,35 @@ namespace
         next_frame();
     }
 
+    // ------------------------------------------------------------------ efekty palet
+    // Gradient fioletu marki na tle ekranu tytułowego i końcowego: HDMA zmienia jeden kolor palety co linię.
+    alignas(int) bn::color violet_gradient[bn::display::height()];
+
+    bn::bg_palette_color_hbe_ptr make_gradient(const bn::regular_bg_ptr& bg, int color_index)
+    {
+        for(int y = 0; y < bn::display::height(); ++y)
+        {
+            int t = y * 256 / bn::display::height();   // 0..255 od góry do dołu
+            int r = 124 - (124 - 44) * t / 256, gr = 98 - (98 - 30) * t / 256, b = 255 - (255 - 150) * t / 256;
+            violet_gradient[y] = bn::color(r >> 3, gr >> 3, b >> 3);
+        }
+        return bn::bg_palette_color_hbe_ptr::create(bg.palette(), color_index, violet_gradient);
+    }
+
+    // Trójkątna fala 0..max..0 o okresie 2*max klatek.
+    int pulse(int clock, int max) { int p = clock % (2 * max); return p < max ? p : 2 * max - p; }
+
+    bn::color mix(int r1, int g1, int b1, int r2, int g2, int b2, int t, int max)   // RGB 0..255 -> kolor GBA
+    {
+        return bn::color((r1 + (r2 - r1) * t / max) >> 3, (g1 + (g2 - g1) * t / max) >> 3, (b1 + (b2 - b1) * t / max) >> 3);
+    }
+
     // ------------------------------------------------------------------ ekran tytułowy
     scene run_title(app& a)
     {
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         bn::regular_bg_ptr bg = bn::regular_bg_items::title.create_bg(8, 48);   // lewy górny róg obrazu = róg ekranu
+        bn::bg_palette_color_hbe_ptr gradient = make_gradient(bg, screen_info::title_bg_index);
         text_sprites prompt, record;
         a.text.set_center_alignment();
         if(a.save.best > 0)
@@ -1014,8 +1043,29 @@ namespace
             c.set_x(c.x() + (dx > 4 ? bn::fixed(4) : (dx < -4 ? bn::fixed(-4) : dx)));
             c.set_y(c.y() + (dy > 4 ? bn::fixed(4) : (dy < -4 ? bn::fixed(-4) : dy)));
         };
+        bn::bg_palette_ptr map_palette = bg.palette();
+        bn::sprite_palette_ptr actors_palette = hero.palette();
+        auto palette_fx = [&]() {
+            if(anim_clock % 3 == 0)   // poświata schodów (kolory 6-7 w paletach światła 0-2)
+            {
+                int p = pulse(anim_clock / 3, 12);
+                static constexpr int light[3] = { 100, 80, 60 };
+                for(int l = 0; l < 3; ++l)
+                {
+                    int f = light[l];
+                    map_palette.set_color(l * 16 + 6, mix(245 * f / 100, 211 * f / 100, 61 * f / 100, 255, 250, 200 * f / 100, p, 16));
+                    map_palette.set_color(l * 16 + 7, mix(180 * f / 100, 120 * f / 100, 20 * f / 100, 255, 190, 60, p, 16));
+                }
+            }
+            if(anim_clock % 8 == 0)   // mieniąca się woda (Przeciek): kolor cyjan palety postaci
+                actors_palette.set_color(14, mix(90, 208, 230, 190, 245, 255, pulse(anim_clock / 8, 4), 4));
+            bool alarm = g.hero.hp * 4 <= g.hero.max_hp && g.hero.hp > 0;   // niskie HP: pulsująca czerwień
+            map_palette.set_fade(bn::color(31, 2, 2), alarm ? bn::fixed(pulse(anim_clock, 30)) / 120 : bn::fixed(0));
+        };
+
         auto animate = [&]() {
             ++anim_clock;
+            palette_fx();
             bool hero_moving = hero_cur != hero_dst;
             approach(hero_cur, hero_dst);
             hero.set_position(hero_cur);
@@ -1287,6 +1337,7 @@ namespace
 
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         bn::regular_bg_ptr bg = bn::regular_bg_items::end.create_bg(8, 48);
+        bn::bg_palette_color_hbe_ptr gradient = make_gradient(bg, screen_info::end_bg_index);
         text_sprites t;
         a.text.set_center_alignment();
         a.text.generate(0, 34, won ? "ODBIÓR ZALICZONY!" : "BUDOWA WSTRZYMANA", t);

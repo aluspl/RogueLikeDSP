@@ -409,10 +409,16 @@ def logo_image(size):
     png = cairosvg.svg2png(url=os.path.join(SRC, "pb_logo.svg"), output_width=size, output_height=size)
     return Image.open(io.BytesIO(png)).convert("RGBA")
 
+SCREEN_BG_INDEX = {}
+
 def screen_bg(name, img240, bg=BRAND_VIOLET):
     canvas = Image.new("RGB", (256, 256), bg)
     canvas.paste(img240, (0, 0))
     px, pal = quantize(canvas, 64, first=bg)
+    # indeks koloru tła (najczęstszy) - gra podmienia go gradientem HDMA
+    counts = {}
+    for v in px: counts[v] = counts.get(v, 0) + 1
+    SCREEN_BG_INDEX[name] = max(counts, key=counts.get)
     write_bmp(os.path.join(G, name + ".bmp"), px, 256, 256, pal, 8)
     write_json(name, {"type": "regular_bg", "bpp_mode": "bpp_8"})
     canvas.crop((0, 0, 240, 160)).resize((480, 320), Image.NEAREST).save(os.path.join(DOCS, "preview_" + name + ".png"))
@@ -467,3 +473,8 @@ if __name__ == "__main__":
     make_tiles()
     make_title()
     print("QR version/size:", make_end())
+    h = ["// WYGENEROWANE przez tools/make_assets.py - indeksy koloru tła ekranów (gradient HDMA).", "#pragma once", "",
+         "namespace screen_info", "{"]
+    h += [f"    constexpr int {n}_bg_index = {i};" for n, i in SCREEN_BG_INDEX.items()]
+    h += ["}", ""]
+    open(os.path.join(ROOT, "include", "screen_info.h"), "w", encoding="utf-8").write("\n".join(h))
