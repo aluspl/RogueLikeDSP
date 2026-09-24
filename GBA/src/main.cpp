@@ -23,6 +23,9 @@
 #include "bn_sprite_items_actors.h"
 #include "bn_sprite_items_font_8x16.h"
 #include "bn_sprite_items_hp_bar.h"
+#include "bn_sprite_items_particles.h"
+#include "bn_random.h"
+#include "bn_optional.h"
 #include "bn_sprite_items_phone_icons.h"
 #include "bn_regular_bg_items_phone_chrome.h"
 #include "bn_regular_bg_tiles_items_phone_tiles.h"
@@ -813,6 +816,57 @@ namespace
         void hide() { timer = 0; queue.clear(); bg.set_visible(false); icon.set_visible(false); text.clear(); }
     };
 
+    // Cząsteczki (pył, iskry, konfetti, gwiazdki). Mała pula; bez wolnych sprite'ów efekt jest pomijany.
+    struct particle
+    {
+        bn::sprite_ptr sp;
+        bn::fixed x, y, vx, vy, gravity;
+        int age, life, frame, frames;
+    };
+
+    struct particle_pool
+    {
+        enum : int { dust = 0, spark = 3, confetti = 5, star = 9 };
+        bn::vector<particle, 16> list;
+        bn::random rnd;
+        bn::camera_ptr cam;
+
+        explicit particle_pool(const bn::camera_ptr& c) : cam(c) {}
+
+        bn::fixed rand(int lo16, int hi16) { return bn::fixed(rnd.get_int(lo16, hi16 + 1)) / 16; }   // w 1/16 px
+
+        void spawn(bn::fixed x, bn::fixed y, bn::fixed vx, bn::fixed vy, bn::fixed gravity, int life, int frame, int frames = 1)
+        {
+            if(list.full()) return;
+            bn::optional<bn::sprite_ptr> sp = bn::sprite_items::particles.create_sprite_optional(x, y, frame);
+            if(! sp) return;
+            sp->set_camera(cam);
+            sp->set_z_order(-30);
+            list.push_back({ bn::move(*sp), x, y, vx, vy, gravity, 0, life, frame, frames });
+        }
+
+        void burst(bn::fixed_point p, int count, int frame, int frames, int speed16, int life)
+        {
+            for(int i = 0; i < count; ++i)
+                spawn(p.x(), p.y(), rand(-speed16, speed16), rand(-speed16, speed16 / 2), bn::fixed(0.08), life, frame, frames);
+        }
+
+        void update()
+        {
+            for(int i = 0; i < list.size(); )
+            {
+                particle& p = list[i];
+                if(++p.age >= p.life) { list.erase(list.begin() + i); continue; }
+                p.vy += p.gravity;
+                p.x += p.vx; p.y += p.vy;
+                p.sp.set_position(p.x, p.y);
+                int f = p.frame + bn::min(p.frames - 1, p.age * p.frames / p.life);
+                if(p.frames > 1) p.sp.set_tiles(bn::sprite_items::particles.tiles_item(), f);
+                ++i;
+            }
+        }
+    };
+
     // Unosząca się liczba obrażeń nad polem.
     struct floater
     {
@@ -872,12 +926,18 @@ namespace
         int shake_timer = 0, target_timer = 0;
         bn::fixed_point cam_base;
         push_banner banner;
+        particle_pool fx_particles(cam);
         int prev_level = g.hero_level, prev_weapon = g.weapon_override, prev_pickups = g.pickups_count;
         int prev_cd = g.ability_cd;
         bool boss_seen = false;
         auto detect_events = [&]() {   // powiadomienia push o ważnych zdarzeniach
             if(g.hero_level > prev_level)
             {
+                for(int k = 0; k < 8; ++k)   // gwiazdki awansu dookoła bohatera
+                {
+                    static constexpr int8_t dir[8][2] = { { 2, 0 }, { 1, 1 }, { 0, 2 }, { -1, 1 }, { -2, 0 }, { -1, -1 }, { 0, -2 }, { 1, -1 } };
+                    fx_particles.spawn(world(g.hero.x, g.hero.y).x(), world(g.hero.x, g.hero.y).y(), bn::fixed(dir[k][0]) / 2, bn::fixed(dir[k][1]) / 2, 0, 28, particle_pool::star);
+                }
                 core::message t; t.add("Awans! Poziom ").add(g.hero_level);
                 core::message b; b.add("+").add(data::hp_per_level).add(" HP");
                 if(data::def_levels_mask & (1 << g.hero_level)) b.add(", +1 obrona");
@@ -964,7 +1024,12 @@ namespace
         auto refresh = [&]() {
             map->build(g);
             bg_map_ptr.reload_cells_ref();
+            bn::fixed_point old_dst = hero_dst;
             hero_dst = world(g.hero.x, g.hero.y);
+            if(! snap_next && old_dst != hero_dst)   // pył spod butów
+                for(int k = -1; k <= 1; k += 2)
+                    fx_particles.spawn(old_dst.x() + k * 3, old_dst.y() + 6, bn::fixed(k) / 4, bn::fixed(-0.25), 0, 18,
+                                       particle_pool::dust, 3);
             for(int i = 0; i < g.enemies_count; ++i)
             {
                 enemies[i].set_visible(g.enemies[i].alive && g.visible(g.enemies[i].x, g.enemies[i].y));
@@ -1030,6 +1095,7 @@ namespace
                 for(bn::sprite_ptr& sp : f.sprites) { sp.set_camera(cam); sp.set_z_order(-60); }
                 f.timer = 36;
                 if(! g.hits[i].on_hero) target_timer = 90;
+                fx_particles.burst(p, g.hits[i].on_hero ? 3 : 5, particle_pool::spark, 2, 24, 16);   // iskry
             }
             g.hits_count = 0;
             update_target_bar();
@@ -1043,7 +1109,7 @@ namespace
             bg_map_ptr.reload_cells_ref();
             for(auto& s : enemies) s.set_visible(false);
             for(auto& s : pickups) s.set_visible(false);
-            fx.clear(); log.clear(); floaters.clear();
+            fx.clear(); log.clear(); floaters.clear(); fx_particles.list.clear();
             tgt_left.set_visible(false); tgt_right.set_visible(false);
             a.text.set_left_alignment();
             a.text.generate(-116, 72, "Podgląd mapy (puść L)", log);
@@ -1096,6 +1162,7 @@ namespace
                 hp_left.set_visible(false); hp_right.set_visible(false);
                 tgt_left.set_visible(false); tgt_right.set_visible(false);
                 banner.hide();
+                fx_particles.list.clear();
                 pause_result pr = run_phone(a);
                 if(pr == pause_result::save_exit) { save_run(a); return leave(scene::title); }
                 if(pr == pause_result::quit)
@@ -1118,6 +1185,7 @@ namespace
             if(acted) refresh();
 
             animate();
+            fx_particles.update();
             if(fx_timer > 0 && --fx_timer == 0) fx.clear();
             for(int i = 0; i < floaters.size(); )
             {
@@ -1145,13 +1213,21 @@ namespace
 
             if(g.st == core::status::stage_clear)
             {
-                for(int i = 0; i < 70; ++i) { banner.update(a); next_frame(); }
+                for(int i = 0; i < 70; ++i) { banner.update(a); animate(); fx_particles.update(); next_frame(); }
                 return leave(scene::schedule);
             }
             if(g.st == core::status::dead || g.st == core::status::won)
             {
                 hero.set_visible(true);
-                for(int i = 0; i < 90; ++i) next_frame();
+                for(int i = 0; i < 90; ++i)
+                {
+                    if(g.st == core::status::won && (i % 6) == 0)   // konfetti na odbiór budowy
+                        for(int k = 0; k < 2; ++k)
+                            fx_particles.spawn(cam_base.x() + fx_particles.rand(-110 * 16, 110 * 16), cam_base.y() - 84,
+                                               fx_particles.rand(-8, 8), fx_particles.rand(8, 20), bn::fixed(0.02), 80,
+                                               particle_pool::confetti + fx_particles.rnd.get_int(4));
+                    animate(); fx_particles.update(); next_frame();
+                }
                 return leave(scene::end);
             }
             next_frame();
