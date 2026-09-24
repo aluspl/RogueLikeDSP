@@ -257,8 +257,12 @@ def make_tiles():
     for c in STAGE_COLORS:
         stage = [(12, 12, 20)] + c + [(245, 211, 61), (180, 120, 20)] + [(0, 0, 0)] * 8
         pal += stage
+    # palety 5..9: te same etapy przyciemnione (zapamiętane pola poza polem widzenia)
+    for c in STAGE_COLORS:
+        dim = [tuple(int(v * 0.5 + n * 0.25) for v, n in zip(col, BRAND_NAVY)) for col in c]
+        pal += [(12, 12, 20)] + dim + [(100, 90, 40), (70, 50, 20)] + [(0, 0, 0)] * 8
     write_bmp(os.path.join(G, "stage_palettes.bmp"), [0] * 64, 8, 8, pal, 8)
-    write_json("stage_palettes", {"type": "bg_palette", "bpp_mode": "bpp_4", "colors_count": 16 * len(STAGE_COLORS)})
+    write_json("stage_palettes", {"type": "bg_palette", "bpp_mode": "bpp_4", "colors_count": 32 * len(STAGE_COLORS)})
 
 # ---------------------------------------------------------------- 4. ekran tytułowy i końcowy (regular bg 256x256, 8bpp)
 def logo_image(size):
