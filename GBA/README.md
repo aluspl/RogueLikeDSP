@@ -47,6 +47,7 @@ Wymagania: [Butano](https://github.com/GValiente/butano) 21.8.0, devkitARM **alb
 ```bash
 python3 tools/gen_data.py        # data/game.json -> include/game_data.h
 python3 tools/make_assets.py     # (opcjonalnie) grafiki -> graphics/*.bmp
+python3 tools/make_audio.py      # (opcjonalnie) dźwięk -> audio/*.wav, audio/*.mod (Maxmod)
 make -j8 BUTANO_PATH=/ścieżka/do/butano/butano
 ```
 Domyślnie Makefile szuka Butano w `../../butano/butano` (obok repo).
