@@ -1,0 +1,7 @@
+{
+  "id": "warrior",
+  "name": "Wojownik",
+  "description": "Dużo życia, silny w zwarciu.",
+  "baseStats": { "maxHealth": 20, "strength": 3, "agility": 1, "intelligence": 0, "defense": 2 },
+  "startingWeapon": "rusty_sword"
+}

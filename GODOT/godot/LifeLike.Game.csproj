@@ -1,0 +1,12 @@
+<Project Sdk="Godot.NET.Sdk/4.7.2">
+  <!-- Wersja SDK musi zgadzać się z wersją edytora Godot .NET (Project > Tools > C#). -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <Nullable>enable</Nullable>
+    <RootNamespace>LifeLike.Game</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../src/LifeLike.Core/LifeLike.Core.csproj" />
+  </ItemGroup>
+</Project>
