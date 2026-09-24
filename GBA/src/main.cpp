@@ -742,7 +742,7 @@ namespace
     }
 
     // Powiadomienie push jak z aplikacji PlanBudowlany: baner zjeżdża z góry ekranu.
-    struct notice { bn::string<32> title; bn::string<32> body; };
+    struct notice { bn::string<64> title; bn::string<64> body; };
 
     struct push_banner
     {
@@ -774,7 +774,7 @@ namespace
         void push(const char* title, const char* body)
         {
             if(queue.full()) queue.erase(queue.begin());
-            queue.push_back({ bn::string<32>(title), bn::string<32>(body) });
+            queue.push_back({ bn::string<64>(clip(title, 23).c_str()), bn::string<64>(clip(body, 23).c_str()) });   // 23 znaki obok ikony
         }
 
         void start(app& a)
@@ -889,7 +889,7 @@ namespace
                 core::message b; b.add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage);
                 banner.push("Nowe narzędzie", clip(b.s, 24).c_str());
             }
-            if(g.pickups_count > prev_pickups) banner.push("Coś wypadło!", "Zajrzyj na miejsce usterki");
+            if(g.pickups_count > prev_pickups) banner.push("Coś wypadło!", "Sprawdź miejsce usterki");
             if(prev_cd > 0 && g.ability_cd == 0) banner.push("Moc gotowa", g.cdef().ability_name);
             if(! boss_seen && g.boss >= 0 && g.enemies[g.boss].alive && g.visible(g.enemies[g.boss].x, g.enemies[g.boss].y))
             {

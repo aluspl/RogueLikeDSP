@@ -5,7 +5,8 @@ Wejście: assets_src/pb_logo.svg (znak PlanBudowlany). Wszystko inne rysowane pr
 żeby dało się to podmienić pixel-artem z Aseprite bez zmiany kodu gry (te same nazwy plików).
 Uruchom: python3 tools/make_assets.py  (wymaga: pillow, cairosvg, qrcode)
 """
-import io, json, os, struct
+import io, json, os, struct, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from PIL import Image, ImageDraw, ImageFont
 import cairosvg, qrcode
 
@@ -172,11 +173,17 @@ def p_toolbox(d):   # skrzynka z narzędziem (drop)
 UI_SPR = [ui_lock]
 
 # klatki: 0-5 zawody, 6-14 wrogowie, 15-17 znajdźki, 18 efekt trafienia, 19 kłódka, 20-25 sylwetki zawodów,
-# 26 skrzynka z narzędziem
+# 26 skrzynka z narzędziem, 27-41 druga klatka animacji zawodów i wrogów (pixel-art: tools/pixel_art.py)
 def make_actors():
-    frames = [sprite(f) for f in CLASSES_SPR + ENEMY_SPR + PICKUP_SPR + UI_SPR]
-    frames += [silhouette(sprite(f)) for f in CLASSES_SPR]
-    frames += [sprite(p_toolbox)]
+    import pixel_art as pa
+    workers = [pa.worker_frame(i, 0) for i in range(6)]
+    enemies = [pa.enemy_frame(i, 0) for i in range(9)]
+    frames = workers + enemies
+    frames += [pa.pickup_frame(n) for n in ("coffee", "helmet", "plan")]
+    frames += [sprite(fx_hit), sprite(ui_lock)]
+    frames += [silhouette(f) for f in workers]
+    frames += [pa.pickup_frame("toolbox")]
+    frames += [pa.worker_frame(i, 1) for i in range(6)] + [pa.enemy_frame(i, 1) for i in range(9)]   # klatki B animacji
     px = [p for fr in frames for p in fr]
     write_bmp(os.path.join(G, "actors.bmp"), px, 16, 16 * len(frames), SPR_PAL, 4)
     write_json("actors", {"type": "sprite", "height": 16})
