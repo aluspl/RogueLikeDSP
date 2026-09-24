@@ -51,6 +51,18 @@ namespace core
         int8_t dmg_bonus;      // premia do obrażeń wrogów w etapie
     };
 
+    enum class upgrade_effect : uint8_t { hp, def, dmg, coffee, pickups };
+
+    struct upgrade_def         // ulepszenie ze sklepu "Szkolenia" (meta-progresja)
+    {
+        const char* name;
+        const char* desc;
+        upgrade_effect effect;
+        int8_t value;          // premia za każdy poziom
+        int8_t levels;
+        int16_t costs[4];      // koszt kolejnych poziomów w doświadczeniu
+    };
+
     struct difficulty_def      // poziom trudności wybierany na starcie
     {
         const char* name;

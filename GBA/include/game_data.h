@@ -48,6 +48,22 @@ inline constexpr core::difficulty_def difficulties[] = {
     { "Trudny", 125, 0, 150 },
 };
 
+inline constexpr core::upgrade_def upgrades[] = {
+    { "Kondycja", "+4 HP na start", core::upgrade_effect::hp, 4, 3, { 10, 20, 35, 0 } },
+    { "Szkolenie BHP", "+1 obrona", core::upgrade_effect::def, 1, 2, { 15, 30, 0, 0 } },
+    { "Kurs fachowy", "+1 obrażenia", core::upgrade_effect::dmg, 1, 2, { 20, 40, 0, 0 } },
+    { "Lepszy termos", "Kawa leczy +4 HP", core::upgrade_effect::coffee, 4, 2, { 10, 20, 0, 0 } },
+    { "Dostawy", "+1 znajdźka na etap", core::upgrade_effect::pickups, 1, 2, { 15, 30, 0, 0 } },
+};
+
+inline constexpr int upgrades_count = 5;
+inline constexpr int xp_per_kill = 1;
+inline constexpr int xp_per_stage = 5;
+inline constexpr int xp_boss = 20;
+inline constexpr int start_classes_mask = 19;
+inline constexpr int class_cost = 25;
+inline constexpr int hard_cost = 40;
+
 inline constexpr int classes_count = 6;
 inline constexpr int stages_count = 5;
 inline constexpr int difficulties_count = 3;

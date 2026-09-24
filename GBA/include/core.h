@@ -12,7 +12,7 @@ namespace core
     constexpr int map_h = 32;
     constexpr int max_rooms = 10;
     constexpr int max_enemies = 12;
-    constexpr int max_pickups = 4;
+    constexpr int max_pickups = 6;
     constexpr int log_lines = 3;
     constexpr int log_len = 48;
 
@@ -115,6 +115,12 @@ namespace core
         }
     };
 
+    // Premie z meta-progresji (sklep "Szkolenia"), stałe przez całą budowę.
+    struct run_mods
+    {
+        int hp = 0, def = 0, dmg = 0, coffee = 0, pickups = 0;
+    };
+
     struct game
     {
         level lv;
@@ -130,6 +136,9 @@ namespace core
         int tier = 0;                // NG+: ile razy budowa została już ukończona
         int def_bonus = 0, dmg_bonus = 0;
         int turns = 0, kills = 0, score = 0;
+        run_mods bonus;
+        int xp_pct = 0;              // doświadczenie x100 (mnożnik trudności bez gubienia ułamków)
+        int xp_banked = 0;           // ile doświadczenia już przeniesiono do profilu
         int boss = -1;               // indeks w enemies[]
         int stairs_x = -1, stairs_y = -1;
         status st = status::playing;
@@ -151,6 +160,8 @@ namespace core
             return data::stages[stage].dmg_bonus + ddef().dmg_bonus + tier * data::ng_dmg_bonus_per_tier;
         }
         int score_pct() const { return ddef().score_pct * (100 + tier * data::ng_score_pct_per_tier) / 100; }
+        int xp() const { return xp_pct / 100; }
+        void gain_xp(int base) { xp_pct += base * score_pct(); }
 
         void push(const message& m)
         {
@@ -158,13 +169,17 @@ namespace core
             log[log_lines - 1] = m;
         }
 
-        void new_run(int class_index, uint32_t seed, int difficulty = data::default_difficulty)
+        void new_run(int class_index, uint32_t seed, int difficulty = data::default_difficulty,
+                     const run_mods& mods = run_mods())
         {
             *this = game();
             cls = class_index;
             diff = difficulty;
+            bonus = mods;
+            def_bonus = mods.def;
+            dmg_bonus = mods.dmg;
             r.seed(seed);
-            hero.max_hp = hero.hp = cdef().max_health;
+            hero.max_hp = hero.hp = int16_t(cdef().max_health + mods.hp);
             hero.alive = true;
             start_stage(0);
         }
@@ -216,7 +231,7 @@ namespace core
             }
 
             pickups_count = 0;
-            for(int i = 0; i < 3 && lv.rooms_count > 1; ++i)
+            for(int i = 0; i < 3 + bonus.pickups && i < max_pickups && lv.rooms_count > 1; ++i)
             {
                 const room& rm = lv.rooms[r.range(1, lv.rooms_count - 1)];
                 int x, y; random_free_cell_in_room(rm, x, y);
@@ -258,9 +273,9 @@ namespace core
             turn_events |= 1u << ei;
             if(e.hp <= 0)
             {
-                e.alive = false; ++kills; score += ed.score * score_pct() / 100;
+                e.alive = false; ++kills; score += ed.score * score_pct() / 100; gain_xp(data::xp_per_kill);
                 push(message().add(ed.name).add(" - usunięto!"));
-                if(ei == boss) { score += (500 + 100 * (stage + 1)) * score_pct() / 100; st = status::won;
+                if(ei == boss) { score += (500 + 100 * (stage + 1)) * score_pct() / 100; gain_xp(data::xp_boss); st = status::won;
                     push(message().add("Odbiór techniczny zaliczony!")); }
             }
             else
@@ -317,7 +332,7 @@ namespace core
                 pickup& p = pickups[i];
                 if(! p.active || p.x != hero.x || p.y != hero.y) continue;
                 p.active = false;
-                if(p.type == coffee) { int h = imin(8, hero.max_hp - hero.hp); hero.hp = int16_t(hero.hp + h); push(message().add("Kawa z termosu: +").add(h).add(" HP")); }
+                if(p.type == coffee) { int h = imin(8 + bonus.coffee, hero.max_hp - hero.hp); hero.hp = int16_t(hero.hp + h); push(message().add("Kawa z termosu: +").add(h).add(" HP")); }
                 else if(p.type == helmet) { ++def_bonus; push(message().add("Nowy kask: obrona +1")); }
                 else { ++dmg_bonus; push(message().add("Projekt wykonawczy: obrażenia +1")); }
             }
@@ -364,6 +379,7 @@ namespace core
             {
                 st = status::stage_clear;
                 score += 100 * score_pct() / 100;
+                gain_xp(data::xp_per_stage);
                 push(message().add("Etap zakończony: ").add(data::stages[stage].name));
             }
         }

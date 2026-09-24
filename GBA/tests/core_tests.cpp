@@ -3,6 +3,7 @@
 #include <cassert>
 #include <queue>
 #include "core.h"
+#include "meta.h"
 using namespace core;
 static int fails = 0;
 #define CHECK(c) do{ if(!(c)){ std::printf("FAIL %s:%d %s\n", __FILE__, __LINE__, #c); ++fails; } }while(0)
@@ -98,7 +99,71 @@ int main()
         CHECK(g.dmg_bonus == 2 && g.def_bonus == 1 && g.score == 1234 && g.hero.hp == g.hero.max_hp);
         CHECK(g.enemy_hp_pct() > data::stages[0].hp_pct && g.enemy_dmg_bonus() > dmg0);
     }
-    // 7. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
+    // 7. premie z meta-progresji (run_mods) działają na start budowy
+    {
+        game a; a.new_run(1, 5);
+        run_mods m; m.hp = 8; m.def = 1; m.dmg = 2; m.coffee = 4; m.pickups = 2;
+        game b; b.new_run(1, 5, data::default_difficulty, m);
+        CHECK(b.hero.max_hp == a.hero.max_hp + 8 && b.hero.hp == b.hero.max_hp);
+        CHECK(b.def_bonus == 1 && b.dmg_bonus == 2);
+        CHECK(b.pickups_count == a.pickups_count + 2);
+        b.hero.hp = 1; b.pickups[0] = { b.hero.x, b.hero.y, coffee, true }; b.collect();
+        CHECK(b.hero.hp == 1 + 8 + 4);
+        b.next_stage(); CHECK(b.pickups_count == a.pickups_count + 2);   // premia trwa w kolejnych etapach
+    }
+    // 8. doświadczenie: wrogowie, etapy, boss; mnożone przez trudność
+    {
+        game g; g.new_run(1, 7);
+        g.enemies_count = 0; g.spawn(0, g.hero.x + 1, g.hero.y); g.enemies[0].hp = 1;
+        g.player_move(1, 0);
+        CHECK(g.xp() == data::xp_per_kill);
+        g.debug_skip(); CHECK(g.st == status::stage_clear && g.xp() == data::xp_per_kill + data::xp_per_stage);
+        game h; h.new_run(1, 7, 2);
+        h.enemies_count = 0; h.spawn(0, h.hero.x + 1, h.hero.y); h.enemies[0].hp = 1; h.player_move(1, 0);
+        h.debug_skip();
+        CHECK(h.xp() == (data::xp_per_kill + data::xp_per_stage) * h.score_pct() / 100);
+        game w; w.new_run(1, 7);
+        for(int k=0;k<data::stages_count-1;++k){ w.debug_skip(); w.next_stage(); }
+        int before = w.xp(); w.debug_skip();
+        CHECK(w.st == status::won && w.xp() == before + data::xp_per_kill + data::xp_boss);
+    }
+    // 9. profil: migracja zapisu v1 (rekord), śmieci -> domyślny, v2 bez zmian
+    {
+        profile p; std::memset(&p, 0xAB, sizeof p);
+        std::memcpy(p.magic, "PBRL001", 8); p.best = 500; p.runs = 3; p.wins = 1;
+        CHECK(profile_fix(p));
+        CHECK(std::strcmp(p.magic, profile_magic) == 0 && p.best == 500 && p.runs == 3 && p.wins == 1);
+        CHECK(p.xp == 0 && p.classes == data::start_classes_mask && !p.hard);
+        for(int i=0;i<max_upgrades;++i) CHECK(p.levels[i] == 0);
+        profile q; std::memset(&q, 0xFF, sizeof q);
+        CHECK(profile_fix(q) && q.best == 0 && q.classes == data::start_classes_mask);
+        q.xp = 7; CHECK(!profile_fix(q) && q.xp == 7);
+    }
+    // 10. sklep: koszty, poziomy, zawody, poziom Trudny, premie
+    {
+        profile p; profile_reset(p);
+        CHECK(!class_unlocked(p, 2) && class_unlocked(p, 1));
+        CHECK(!difficulty_unlocked(p, 2) && difficulty_unlocked(p, 1));
+        CHECK(!buy_upgrade(p, 0));                               // brak doświadczenia
+        p.xp = 1000;
+        int c0 = upgrade_cost(p, 0);
+        CHECK(c0 == data::upgrades[0].costs[0] && buy_upgrade(p, 0) && p.levels[0] == 1 && p.xp == 1000 - c0);
+        while(upgrade_cost(p, 0) > 0) CHECK(buy_upgrade(p, 0));
+        CHECK(p.levels[0] == data::upgrades[0].levels && !buy_upgrade(p, 0));
+        CHECK(buy_class(p, 2) && class_unlocked(p, 2) && !buy_class(p, 2));
+        CHECK(buy_hard(p) && difficulty_unlocked(p, 2) && !buy_hard(p));
+        run_mods m = mods(p);
+        CHECK(m.hp == data::upgrades[0].value * data::upgrades[0].levels && m.def == 0);
+    }
+    // 11. bankowanie doświadczenia: bez podwójnego liczenia (np. NG+)
+    {
+        profile p; profile_reset(p);
+        game g; g.new_run(1, 7); g.debug_skip();
+        int x = g.xp(); CHECK(x > 0);
+        CHECK(bank_xp(p, g) == x && p.xp == x);
+        CHECK(bank_xp(p, g) == 0 && p.xp == x);
+    }
+    // 12. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};
     for(int df=0;df<data::difficulties_count;++df)
@@ -120,6 +185,28 @@ int main()
         std::printf("%-18s %-9s %6d %6.1f %6ld %8ld\n", data::classes[c].name, data::difficulties[df].name, wins*100/runs, double(stages)/runs, turns/runs, score/runs);
     }
     for(int df=1;df<data::difficulties_count;++df) CHECK(diff_wins[df-1] > diff_wins[df]);   // trudniej = mniej wygranych
+    // pełne ulepszenia ze sklepu wyraźnie pomagają (Normalny, wszystkie zawody)
+    {
+        profile p; profile_reset(p);
+        for(int i=0;i<data::upgrades_count;++i) p.levels[i] = uint8_t(data::upgrades[i].levels);
+        run_mods m = mods(p);
+        int wins=0; const int runs=300;
+        for(int c=0;c<data::classes_count;++c)
+            for(int k=0;k<runs;++k)
+            {
+                game g; g.new_run(c, 1000+k*7919, data::default_difficulty, m);
+                for(int step=0; step<4000; ++step)
+                {
+                    if(g.st==status::stage_clear){ g.next_stage(); continue; }
+                    if(g.st!=status::playing) break;
+                    bot_step(g);
+                }
+                wins += g.st==status::won;
+            }
+        int base = diff_wins[data::default_difficulty];
+        std::printf("Normalny: bez ulepszeń %d%%, z pełnymi %d%%\n", base*100/(runs*data::classes_count), wins*100/(runs*data::classes_count));
+        CHECK(wins > base);
+    }
     std::printf(fails ? "\n%d FAIL\n" : "\nOK - wszystkie testy przeszły\n", fails);
     return fails != 0;
 }

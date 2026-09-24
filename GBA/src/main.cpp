@@ -28,6 +28,7 @@
 #include "bn_bg_palette_items_stage_palettes.h"
 
 #include "core.h"
+#include "meta.h"
 
 namespace
 {
@@ -42,34 +43,18 @@ namespace
     using text_sprites = bn::vector<bn::sprite_ptr, 48>;
     using page_sprites = bn::vector<bn::sprite_ptr, 80>;   // pełnoekranowe strony menu
 
-    enum class scene { title, class_select, game, schedule, end };
+    enum class scene { title, class_select, game, schedule, end, shop };
 
     constexpr int frame_coffee = 15;
     constexpr int frame_fx = 18;
 
-    // ------------------------------------------------------------------ zapis (SRAM)
-    struct save_data
+    // ------------------------------------------------------------------ zapis (SRAM): profil z meta.h
+    core::profile load_save()
     {
-        char magic[8];
-        int32_t best = 0;
-        int32_t runs = 0;
-        int32_t wins = 0;
-    };
-    constexpr char save_magic[8] = "PBRL001";
-
-    save_data load_save()
-    {
-        save_data s;
-        bn::sram::read(s);
-        bool ok = true;
-        for(int i = 0; i < 8; ++i) if(s.magic[i] != save_magic[i]) ok = false;
-        if(! ok)   // pusta/obca pamięć -> domyślne
-        {
-            s = save_data();
-            for(int i = 0; i < 8; ++i) s.magic[i] = save_magic[i];
-            bn::sram::write(s);
-        }
-        return s;
+        core::profile p;
+        bn::sram::read(p);
+        if(core::profile_fix(p)) bn::sram::write(p);   // pusta pamięć albo migracja z v1
+        return p;
     }
 
     // ------------------------------------------------------------------ wspólny stan
@@ -77,7 +62,7 @@ namespace
     {
         bn::sprite_text_generator text{font};
         core::game* g = nullptr;
-        save_data save;
+        core::profile save;
         uint32_t seed_counter = 1;
         int chosen_class = 1;
         int chosen_diff = data::default_difficulty;
@@ -111,15 +96,18 @@ namespace
         if(a.save.best > 0)
         {
             core::message m; m.add("Rekord: ").add(int(a.save.best));
-            a.text.generate(0, 66, m.s, record);
+            a.text.generate(0, 72, m.s, record);
         }
+        text_sprites shop_hint;
+        a.text.generate(0, 56, "SELECT: szkolenia", shop_hint);
         int frame = 0;
         while(true)
         {
             ++a.seed_counter;
-            if((frame++ % 60) == 0) { prompt.clear(); a.text.generate(0, 48, "Naciśnij START", prompt); }
+            if((frame++ % 60) == 0) { prompt.clear(); a.text.generate(0, 40, "Naciśnij START", prompt); }
             if((frame % 60) == 40) prompt.clear();
             if(bn::keypad::start_pressed() || bn::keypad::a_pressed()) { wait_release(); return scene::class_select; }
+            if(bn::keypad::select_pressed()) { wait_release(); return scene::shop; }
             bn::core::update();
         }
     }
@@ -139,10 +127,12 @@ namespace
             lines.clear();
             const core::class_def& c = data::classes[a.chosen_class];
             const core::weapon_def& w = data::weapons[c.weapon];
+            bool locked = ! core::class_unlocked(a.save, a.chosen_class);
             hero.set_tiles(bn::sprite_items::actors.tiles_item(), c.frame);
+            hero.set_visible(! locked);
             core::message n; n.add("< ").add(c.name).add(" >");
             a.text.generate(0, 4, n.s, lines);
-            a.text.generate(0, 20, clip(c.desc, 29), lines);
+            a.text.generate(0, 20, locked ? "Odblokuj w Szkoleniach" : clip(c.desc, 29).c_str(), lines);
             core::message s; s.add("HP ").add(c.max_health).add(" SIŁ ").add(c.strength).add(" ZRĘ ").add(c.agility);
             a.text.generate(0, 38, s.s, lines);
             core::message s2; s2.add("INT ").add(c.intelligence).add(" OBR ").add(c.defense);
@@ -161,13 +151,18 @@ namespace
 
         while(true)
         {
-            if(bn::keypad::up_pressed()) { a.chosen_diff = (a.chosen_diff + data::difficulties_count - 1) % data::difficulties_count; redraw_diff(); }
-            if(bn::keypad::down_pressed()) { a.chosen_diff = (a.chosen_diff + 1) % data::difficulties_count; redraw_diff(); }
+            int ddir = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+            if(ddir)
+            {
+                do a.chosen_diff = (a.chosen_diff + ddir + data::difficulties_count) % data::difficulties_count;
+                while(! core::difficulty_unlocked(a.save, a.chosen_diff));
+                redraw_diff();
+            }
             if(bn::keypad::left_pressed()) { a.chosen_class = (a.chosen_class + data::classes_count - 1) % data::classes_count; redraw(); }
             if(bn::keypad::right_pressed()) { a.chosen_class = (a.chosen_class + 1) % data::classes_count; redraw(); }
-            if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
+            if((bn::keypad::a_pressed() || bn::keypad::start_pressed()) && core::class_unlocked(a.save, a.chosen_class))
             {
-                a.g->new_run(a.chosen_class, a.seed_counter * 2654435761u + 12345u, a.chosen_diff);
+                a.g->new_run(a.chosen_class, a.seed_counter * 2654435761u + 12345u, a.chosen_diff, core::mods(a.save));
                 ++a.save.runs;
                 bn::sram::write(a.save);
                 wait_release();
@@ -443,8 +438,10 @@ namespace
                 bool quit = run_pause(a);
                 if(quit)
                 {
-                    if(g.score > a.save.best) { a.save.best = g.score; bn::sram::write(a.save); }
-                    return scene::title;
+                    if(g.score > a.save.best) a.save.best = g.score;
+                    core::bank_xp(a.save, g);
+                    bn::sram::write(a.save);
+                    return scene::shop;
                 }
                 bg.set_visible(true);
                 hero.set_visible(true);
@@ -502,6 +499,7 @@ namespace
         bool won = g.st == core::status::won;
         if(g.score > a.save.best) a.save.best = g.score;
         if(won) ++a.save.wins;
+        int gained = core::bank_xp(a.save, g);
         bn::sram::write(a.save);
 
         bn::bg_palettes::set_transparent_color(bn::color(3, 5, 8));
@@ -509,13 +507,94 @@ namespace
         text_sprites t;
         a.text.set_center_alignment();
         a.text.generate(0, 34, won ? "ODBIÓR ZALICZONY!" : "BUDOWA WSTRZYMANA", t);
-        core::message s; s.add("Wynik ").add(g.score).add("  Rekord ").add(int(a.save.best));
+        core::message s; s.add("Wynik ").add(g.score).add("  Dośw. +").add(gained);
         a.text.generate(0, 52, s.s, t);
         a.text.generate(0, 70, won ? "A: kolejna  START: koniec" : "START: nowa budowa", t);
         while(true)
         {
             if(won && bn::keypad::a_pressed()) { g.new_game_plus(); wait_release(); return scene::game; }
-            if(bn::keypad::start_pressed() || (! won && bn::keypad::a_pressed())) { wait_release(); return scene::title; }
+            if(bn::keypad::start_pressed() || (! won && bn::keypad::a_pressed())) { wait_release(); return scene::shop; }
+            bn::core::update();
+        }
+    }
+
+    // ------------------------------------------------------------------ sklep "Szkolenia" (meta-progresja)
+    scene run_shop(app& a)
+    {
+        bn::bg_palettes::set_transparent_color(bn::color(3, 5, 8));
+        enum kind : uint8_t { upgrade, cls, hard };
+        struct entry { kind k; int8_t i; };
+        bn::vector<entry, core::max_upgrades + 8 + 1> entries;
+        auto rebuild = [&]() {
+            entries.clear();
+            for(int i = 0; i < data::upgrades_count; ++i) entries.push_back({ upgrade, int8_t(i) });
+            for(int i = 0; i < data::classes_count; ++i)
+                if(! core::class_unlocked(a.save, i)) entries.push_back({ cls, int8_t(i) });
+            if(! core::difficulty_unlocked(a.save, data::difficulties_count - 1)) entries.push_back({ hard, 0 });
+        };
+        rebuild();
+
+        constexpr int window = 6;
+        int sel = 0, top = 0;
+        const char* note = nullptr;
+        page_sprites t;
+        auto redraw = [&]() {
+            t.clear();
+            a.text.set_center_alignment();
+            core::message h; h.add("Szkolenia  Dośw.: ").add(int(a.save.xp));
+            a.text.generate(0, -68, h.s, t);
+            a.text.set_left_alignment();
+            for(int row = 0; row < window && top + row < entries.size(); ++row)
+            {
+                const entry& e = entries[top + row];
+                core::message m; m.add(top + row == sel ? "> " : "  ");
+                if(e.k == upgrade)
+                {
+                    const core::upgrade_def& u = data::upgrades[e.i];
+                    m.add(u.name).add(" ").add(a.save.levels[e.i]).add("/").add(u.levels);
+                    int c = core::upgrade_cost(a.save, e.i);
+                    if(c < 0) m.add(" MAX"); else m.add(" - ").add(c);
+                }
+                else if(e.k == cls) m.add("Zawód: ").add(data::classes[e.i].name).add(" - ").add(data::class_cost);
+                else m.add("Poziom ").add(data::difficulties[data::difficulties_count - 1].name).add(" - ").add(data::hard_cost);
+                a.text.generate(-112, -46 + row * 16, clip(m.s, 29), t);
+            }
+            a.text.set_center_alignment();
+            const entry& e = entries[sel];
+            const char* desc = note ? note : (e.k == upgrade ? data::upgrades[e.i].desc : (e.k == cls ? "Nowy zawód do wyboru" : "Odblokuj najwyższy poziom"));
+            a.text.generate(0, 54, clip(desc, 29), t);
+            a.text.generate(0, 72, "A: kup  B: wyjdź", t);
+        };
+        redraw();
+
+        while(true)
+        {
+            int dir = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+            if(dir)
+            {
+                sel = (sel + dir + entries.size()) % entries.size();
+                if(sel < top) top = sel;
+                if(sel >= top + window) top = sel - window + 1;
+                note = nullptr;
+                redraw();
+            }
+            if(bn::keypad::a_pressed())
+            {
+                const entry e = entries[sel];
+                bool ok = e.k == upgrade ? core::buy_upgrade(a.save, e.i)
+                        : e.k == cls ? core::buy_class(a.save, e.i) : core::buy_hard(a.save);
+                if(ok)
+                {
+                    bn::sram::write(a.save);
+                    note = "Kupione!";
+                    rebuild();
+                    if(sel >= entries.size()) sel = entries.size() - 1;
+                    if(top > sel) top = sel;
+                }
+                else note = (e.k == upgrade && core::upgrade_cost(a.save, e.i) < 0) ? "Maksymalny poziom" : "Za mało doświadczenia";
+                redraw();
+            }
+            if(bn::keypad::b_pressed() || bn::keypad::start_pressed()) { wait_release(); return scene::title; }
             bn::core::update();
         }
     }
@@ -539,6 +618,7 @@ int main()
             case scene::game:         s = run_game(a); break;
             case scene::schedule:     s = run_schedule(a); break;
             case scene::end:          s = run_end(a); break;
+            case scene::shop:         s = run_shop(a); break;
         }
     }
 }
