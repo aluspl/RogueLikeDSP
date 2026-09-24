@@ -37,6 +37,7 @@ Mgła wojny: widzisz na 7 pól (ściany zasłaniają), odkryte pola zostają prz
 - Doświadczenie za wrogów, etapy i bossa wydajesz w sklepie „Szkolenia” (po budowie i z tytułu):
   ulepszenia statystyk, więcej znajdziek, nowe zawody, poziom Trudny.
 - Profil (rekord, doświadczenie, zakupy) zapisuje się w SRAM; starszy zapis z samym rekordem jest przenoszony.
+- Budowa zapisuje się sama na starcie każdego etapu i przez „Zapisz i wyjdź” w menu; na tytule START wznawia. Śmierć, wygrana i porzucenie kasują zapis.
 
 ## Budowanie
 Wymagania: [Butano](https://github.com/GValiente/butano) 21.8.0, devkitARM **albo** Wonderful Toolchain

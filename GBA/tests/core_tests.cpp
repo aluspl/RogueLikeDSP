@@ -30,7 +30,7 @@ static void bot_step(game& g)
     int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}};
     while(!q.empty()){ auto [x,y]=q.front(); q.pop(); if(x==tx&&y==ty) break;
         for(int k=0;k<4;++k){int nx=x+d[k][0],ny=y+d[k][1]; if(g.lv.passable(nx,ny)&&px[ny][nx]<0){px[ny][nx]=k;q.push({nx,ny});}}}
-    if(tx<0||px[ty][tx]<0){ g.player_wait(); return; }
+    if(tx<0||px[ty][tx]<0||(tx==g.hero.x&&ty==g.hero.y)){ g.player_wait(); return; }
     int x=tx,y=ty; while(true){int k=px[y][x]; int bx=x-d[k][0],by=y-d[k][1]; if(bx==g.hero.x&&by==g.hero.y){ if(!g.player_move(x-bx,y-by)) g.player_wait(); return;} x=bx;y=by;}
 }
 
@@ -332,7 +332,21 @@ int main()
         CHECK(g.player_ability());
         CHECK(g.enemies[0].hp < h0 && g.enemies[1].hp < h1 && g.enemies[2].hp == h2);
     }
-    // 18. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
+    // 18. zapis budowy w trakcie (SRAM)
+    {
+        static game g; g.new_run(2, 555, 2);
+        auto play = [](game& x) { if(x.st == status::stage_clear) x.next_stage(); else if(x.st == status::playing) bot_step(x); };
+        for(int k = 0; k < 30; ++k) play(g);
+        static run_save rs; run_save_make(rs, g);
+        CHECK(run_save_valid(rs));
+        static game h; std::memcpy(&h, &rs.g, sizeof h);
+        for(int k = 0; k < 50; ++k) { play(g); play(h); }            // wznowiona gra przebiega identycznie
+        CHECK(std::memcmp(&g, &h, sizeof g) == 0);
+        reinterpret_cast<unsigned char*>(&rs.g)[100] ^= 0x5A; CHECK(!run_save_valid(rs));   // uszkodzony
+        run_save_make(rs, g); rs.size -= 4; CHECK(!run_save_valid(rs));                     // inna wersja gry
+        run_save_make(rs, g); run_save_clear(rs); CHECK(!run_save_valid(rs));               // wyczyszczony
+    }
+    // 19. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};
     for(int df=0;df<data::difficulties_count;++df)
