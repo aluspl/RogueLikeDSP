@@ -11,6 +11,10 @@ inline constexpr core::weapon_def weapons[] = {
     { "Próbnik napięcia", 3, 5, 2, core::stat::intel },
     { "Klucz nastawny", 3, 6, 1, core::stat::str },
     { "Szlifierka", 3, 7, 1, core::stat::agi },
+    { "Łom", 3, 6, 1, core::stat::str },
+    { "Wkrętarka", 2, 5, 2, core::stat::agi },
+    { "Poziomica laserowa", 2, 4, 4, core::stat::intel },
+    { "Młot wyburzeniowy", 5, 8, 1, core::stat::str },
 };
 
 inline constexpr core::class_def classes[] = {
@@ -55,6 +59,18 @@ inline constexpr core::upgrade_def upgrades[] = {
     { "Lepszy termos", "Kawa leczy +4 HP", core::upgrade_effect::coffee, 4, 2, { 10, 20, 0, 0 } },
     { "Dostawy", "+1 znajdźka na etap", core::upgrade_effect::pickups, 1, 2, { 15, 30, 0, 0 } },
 };
+
+inline constexpr core::tool_def tools[] = {
+    { 6, 0 },
+    { 7, 20 },
+    { 8, 30 },
+    { 9, 40 },
+};
+
+inline constexpr int tools_count = 4;
+inline constexpr int start_tools_mask = 1;
+inline constexpr int drop_chance_pct = 25;
+inline constexpr int drop_weights[] = { 50, 20, 15, 15 };
 
 inline constexpr int upgrades_count = 5;
 inline constexpr int xp_per_kill = 1;

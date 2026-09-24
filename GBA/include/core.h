@@ -12,7 +12,7 @@ namespace core
     constexpr int map_h = 32;
     constexpr int max_rooms = 10;
     constexpr int max_enemies = 12;
-    constexpr int max_pickups = 6;
+    constexpr int max_pickups = 10;
     constexpr int log_lines = 3;
     constexpr int log_len = 48;
     constexpr int fov_radius = 7;       // promień widzenia bohatera w polach
@@ -21,7 +21,7 @@ namespace core
     enum class tile : uint8_t { wall, floor, stairs };
     enum class status : uint8_t { playing, stage_clear, dead, won };
     enum sight : uint8_t { unknown = 0, remembered = 1, in_view = 2 };   // mgła wojny
-    enum pickup_type : uint8_t { coffee, helmet, plan };
+    enum pickup_type : uint8_t { coffee, helmet, plan, tool };
 
     inline int iabs(int v) { return v < 0 ? -v : v; }
     inline int imax(int a, int b) { return a > b ? a : b; }
@@ -99,7 +99,7 @@ namespace core
         bool awake = false;
     };
 
-    struct pickup { int8_t x, y; uint8_t type; bool active; };
+    struct pickup { int8_t x, y; uint8_t type; bool active; uint8_t arg = 0; };   // arg: indeks narzędzia
     struct hit { int8_t x, y; int16_t amount; bool on_hero; };   // do liczb obrażeń nad polem
 
     // Dziennik budowy (log zdarzeń) - krótkie linie UTF-8
@@ -123,6 +123,7 @@ namespace core
     struct run_mods
     {
         int hp = 0, def = 0, dmg = 0, coffee = 0, pickups = 0;
+        int tools = data::start_tools_mask;   // narzędzia, które mogą wypaść z wrogów
     };
 
     struct game
@@ -162,7 +163,8 @@ namespace core
         }
 
         const class_def& cdef() const { return data::classes[cls]; }
-        const weapon_def& weapon() const { return data::weapons[cdef().weapon]; }
+        int weapon_override = -1;    // podniesione narzędzie zamiast broni zawodu
+        const weapon_def& weapon() const { return data::weapons[weapon_override >= 0 ? weapon_override : cdef().weapon]; }
         const difficulty_def& ddef() const { return data::difficulties[diff]; }
 
         bool visible(int x, int y) const { return lv.in(x, y) && fov[y][x] == in_view; }
@@ -356,6 +358,7 @@ namespace core
             if(e.hp <= 0)
             {
                 e.alive = false; ++kills; score += ed.score * score_pct() / 100; gain_xp(data::xp_per_kill);
+                maybe_drop(e.x, e.y);
                 push(message().add(ed.name).add(" - usunięto!"));
                 if(ei == boss) { score += (500 + 100 * (stage + 1)) * score_pct() / 100; gain_xp(data::xp_boss); st = status::won;
                     push(message().add("Odbiór techniczny zaliczony!")); }
@@ -407,6 +410,28 @@ namespace core
             return true;
         }
 
+        // Drop z pokonanego wroga: szansa data::drop_chance_pct, typ losowany wagami.
+        void maybe_drop(int x, int y)
+        {
+            if(r.range(1, 100) > data::drop_chance_pct || pickups_count >= max_pickups) return;
+            for(int i = 0; i < pickups_count; ++i) if(pickups[i].active && pickups[i].x == x && pickups[i].y == y) return;
+            int total = 0; for(int w : data::drop_weights) total += w;
+            int roll = r.range(1, total), type = 0;
+            while(roll > data::drop_weights[type]) roll -= data::drop_weights[type++];
+            uint8_t arg = 0;
+            if(type == tool)
+            {
+                int n = 0; for(int i = 0; i < data::tools_count; ++i) n += (bonus.tools >> i) & 1;
+                if(n == 0) type = coffee;
+                else
+                {
+                    int k = r.range(0, n - 1);
+                    for(int i = 0; i < data::tools_count; ++i) if(((bonus.tools >> i) & 1) && k-- == 0) { arg = uint8_t(i); break; }
+                }
+            }
+            pickups[pickups_count++] = { int8_t(x), int8_t(y), uint8_t(type), true, arg };
+        }
+
         void collect()
         {
             for(int i = 0; i < pickups_count; ++i)
@@ -416,7 +441,12 @@ namespace core
                 p.active = false;
                 if(p.type == coffee) { int h = imin(8 + bonus.coffee, hero.max_hp - hero.hp); hero.hp = int16_t(hero.hp + h); push(message().add("Kawa z termosu: +").add(h).add(" HP")); }
                 else if(p.type == helmet) { ++def_bonus; push(message().add("Nowy kask: obrona +1")); }
-                else { ++dmg_bonus; push(message().add("Projekt wykonawczy: obrażenia +1")); }
+                else if(p.type == plan) { ++dmg_bonus; push(message().add("Projekt wykonawczy: obrażenia +1")); }
+                else
+                {
+                    weapon_override = data::tools[p.arg].weapon;
+                    push(message().add("Narzędzie: ").add(weapon().name).add(" ").add(weapon().min_damage).add("-").add(weapon().max_damage));
+                }
             }
         }
 

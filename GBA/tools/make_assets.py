@@ -162,12 +162,18 @@ def silhouette(frame):   # ciemna sylwetka zablokowanego zawodu
 
 ENEMY_SPR = [e_leak, e_spark, e_mold, e_beetle, e_paper, e_delivery, e_rain, e_budget, e_deadline]
 PICKUP_SPR = [p_coffee, p_helmet, p_plan, fx_hit]
+def p_toolbox(d):   # skrzynka z narzędziem (drop)
+    d.rectangle([2, 7, 13, 14], fill=RD, outline=K); d.rectangle([2, 7, 13, 9], fill=OR, outline=K)
+    d.arc([5, 3, 10, 9], 180, 360, fill=GY); d.rectangle([7, 10, 8, 11], fill=YE)
+
 UI_SPR = [ui_lock]
 
-# klatki: 0-5 zawody, 6-14 wrogowie, 15-17 znajdźki, 18 efekt trafienia, 19 kłódka, 20-25 sylwetki zawodów
+# klatki: 0-5 zawody, 6-14 wrogowie, 15-17 znajdźki, 18 efekt trafienia, 19 kłódka, 20-25 sylwetki zawodów,
+# 26 skrzynka z narzędziem
 def make_actors():
     frames = [sprite(f) for f in CLASSES_SPR + ENEMY_SPR + PICKUP_SPR + UI_SPR]
     frames += [silhouette(sprite(f)) for f in CLASSES_SPR]
+    frames += [sprite(p_toolbox)]
     px = [p for fr in frames for p in fr]
     write_bmp(os.path.join(G, "actors.bmp"), px, 16, 16 * len(frames), SPR_PAL, 4)
     write_json("actors", {"type": "sprite", "height": 16})

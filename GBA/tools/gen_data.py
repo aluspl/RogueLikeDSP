@@ -46,6 +46,16 @@ for u in m["upgrades"]:
     L.append(f'    {{ {s(u["name"])}, {s(u["desc"])}, core::upgrade_effect::{u["effect"]}, {u["value"]}, '
              f'{len(u["costs"])}, {{ {", ".join(map(str, costs))} }} }},')
 L.append("};\n")
+L.append("inline constexpr core::tool_def tools[] = {")
+for t in m["tools"]:
+    L.append(f'    {{ {wid[t["weapon"]]}, {t["cost"]} }},')
+L.append("};\n")
+dr = d["drops"]
+start_tools = sum(1 << i for i, t in enumerate(m["tools"]) if t["cost"] == 0)
+L += [f"inline constexpr int tools_count = {len(m['tools'])};",
+      f"inline constexpr int start_tools_mask = {start_tools};",
+      f"inline constexpr int drop_chance_pct = {dr['chancePct']};",
+      f"inline constexpr int drop_weights[] = {{ {dr['weights']['coffee']}, {dr['weights']['helmet']}, {dr['weights']['plan']}, {dr['weights']['tool']} }};", ""]
 start_mask = sum(1 << cid[c] for c in m["startClasses"])
 L += [f"inline constexpr int upgrades_count = {len(m['upgrades'])};",
       f"inline constexpr int xp_per_kill = {m['xpPerKill']};",

@@ -51,6 +51,9 @@ namespace
     constexpr int frame_fx = 18;
     constexpr int frame_lock = 19;
     constexpr int frame_silhouette = 20;   // + indeks zawodu
+    constexpr int frame_toolbox = 26;
+
+    int pickup_frame(const core::pickup& p) { return p.type == core::tool ? frame_toolbox : frame_coffee + p.type; }
 
     // ------------------------------------------------------------------ przejścia: ściemnianie palet
     constexpr int fade_frames = 8;
@@ -447,13 +450,16 @@ namespace
             enemies.push_back(s);
         }
         bn::vector<bn::sprite_ptr, core::max_pickups> pickups;
-        for(int i = 0; i < g.pickups_count; ++i)
-        {
-            bn::sprite_ptr s = bn::sprite_items::actors.create_sprite(world(g.pickups[i].x, g.pickups[i].y), frame_coffee + g.pickups[i].type);
-            s.set_camera(cam);
-            s.set_z_order(10);
-            pickups.push_back(s);
-        }
+        auto sync_pickups = [&]() {   // dropy pojawiają się w trakcie etapu
+            for(int i = pickups.size(); i < g.pickups_count; ++i)
+            {
+                bn::sprite_ptr s = bn::sprite_items::actors.create_sprite(world(g.pickups[i].x, g.pickups[i].y), pickup_frame(g.pickups[i]));
+                s.set_camera(cam);
+                s.set_z_order(10);
+                pickups.push_back(s);
+            }
+        };
+        sync_pickups();
         bn::vector<bn::sprite_ptr, core::max_enemies> fx;
 
         text_sprites hud, log;
@@ -501,6 +507,7 @@ namespace
                 enemies[i].set_visible(g.enemies[i].alive && g.visible(g.enemies[i].x, g.enemies[i].y));
                 enemies[i].set_position(world(g.enemies[i].x, g.enemies[i].y));
             }
+            sync_pickups();
             for(int i = 0; i < g.pickups_count; ++i)
                 pickups[i].set_visible(g.pickups[i].active && g.explored(g.pickups[i].x, g.pickups[i].y));
             bn::fixed_point c = world(g.hero.x, g.hero.y);
@@ -725,14 +732,16 @@ namespace
     scene run_shop(app& a)
     {
         bn::bg_palettes::set_transparent_color(bn::color(3, 5, 8));
-        enum kind : uint8_t { upgrade, cls, hard };
+        enum kind : uint8_t { upgrade, cls, hard, tool };
         struct entry { kind k; int8_t i; };
-        bn::vector<entry, core::max_upgrades + 8 + 1> entries;
+        bn::vector<entry, core::max_upgrades + 8 + 8 + 1> entries;
         auto rebuild = [&]() {
             entries.clear();
             for(int i = 0; i < data::upgrades_count; ++i) entries.push_back({ upgrade, int8_t(i) });
             for(int i = 0; i < data::classes_count; ++i)
                 if(! core::class_unlocked(a.save, i)) entries.push_back({ cls, int8_t(i) });
+            for(int i = 0; i < data::tools_count; ++i)
+                if(! core::tool_unlocked(a.save, i)) entries.push_back({ tool, int8_t(i) });
             if(! core::difficulty_unlocked(a.save, data::difficulties_count - 1)) entries.push_back({ hard, 0 });
         };
         rebuild();
@@ -759,12 +768,20 @@ namespace
                     if(c < 0) m.add(" MAX"); else m.add(" - ").add(c);
                 }
                 else if(e.k == cls) m.add("Zawód: ").add(data::classes[e.i].name).add(" - ").add(data::class_cost);
+                else if(e.k == tool) m.add(data::weapons[data::tools[e.i].weapon].name).add(" - ").add(data::tools[e.i].cost);
                 else m.add("Trudność: ").add(data::difficulties[data::difficulties_count - 1].name).add(" - ").add(data::hard_cost);
                 a.text.generate(-112, -46 + row * 16, clip(m.s, 29), t);
             }
             a.text.set_center_alignment();
             const entry& e = entries[sel];
-            const char* desc = note ? note : (e.k == upgrade ? data::upgrades[e.i].desc : (e.k == cls ? "Nowy zawód do wyboru" : "Odblokuj najwyższą trudność"));
+            core::message tool_desc;
+            if(e.k == tool)
+            {
+                const core::weapon_def& w = data::weapons[data::tools[e.i].weapon];
+                tool_desc.add("Narzędzie ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range).add(", może wypaść");
+            }
+            const char* desc = note ? note : (e.k == upgrade ? data::upgrades[e.i].desc : (e.k == cls ? "Nowy zawód do wyboru"
+                             : (e.k == tool ? tool_desc.s : "Odblokuj najwyższą trudność")));
             a.text.generate(0, 54, clip(desc, 29), t);
             a.text.generate(0, 72, "A: kup  B: wyjdź", t);
         };
@@ -785,7 +802,8 @@ namespace
             {
                 const entry e = entries[sel];
                 bool ok = e.k == upgrade ? core::buy_upgrade(a.save, e.i)
-                        : e.k == cls ? core::buy_class(a.save, e.i) : core::buy_hard(a.save);
+                        : e.k == cls ? core::buy_class(a.save, e.i)
+                        : e.k == tool ? core::buy_tool(a.save, e.i) : core::buy_hard(a.save);
                 if(ok)
                 {
                     bn::sram::write(a.save);
