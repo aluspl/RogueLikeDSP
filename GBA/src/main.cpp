@@ -40,6 +40,7 @@ namespace
     constexpr bn::sprite_font font(bn::sprite_items::font_8x16, pl_chars_map.reference());
 
     using text_sprites = bn::vector<bn::sprite_ptr, 48>;
+    using page_sprites = bn::vector<bn::sprite_ptr, 80>;   // pełnoekranowe strony menu
 
     enum class scene { title, class_select, game, schedule, end };
 
@@ -79,6 +80,7 @@ namespace
         save_data save;
         uint32_t seed_counter = 1;
         int chosen_class = 1;
+        int chosen_diff = data::default_difficulty;
     };
 
     // obcina tekst do n znaków (UTF-8), żeby nie wychodził poza ekran
@@ -126,9 +128,9 @@ namespace
     scene run_class_select(app& a)
     {
         bn::bg_palettes::set_transparent_color(bn::color(3, 5, 8));
-        text_sprites header, lines;
+        text_sprites header, lines, diff_line;
         a.text.set_center_alignment();
-        a.text.generate(0, -66, "Wybierz fach", header);
+        a.text.generate(0, -72, "Wybierz fach", header);
         bn::sprite_ptr hero = bn::sprite_items::actors.create_sprite(0, -30, 0);
         hero.set_double_size_mode(bn::sprite_double_size_mode::ENABLED);
         hero.set_scale(2);
@@ -148,15 +150,24 @@ namespace
             core::message wl; wl.add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range);
             a.text.generate(0, 72, clip(wl.s, 29), lines);
         };
+        auto redraw_diff = [&]() {
+            diff_line.clear();
+            a.text.set_center_alignment();
+            core::message m; m.add("Poziom (góra/dół): ").add(data::difficulties[a.chosen_diff].name);
+            a.text.generate(0, -56, m.s, diff_line);
+        };
         redraw();
+        redraw_diff();
 
         while(true)
         {
+            if(bn::keypad::up_pressed()) { a.chosen_diff = (a.chosen_diff + data::difficulties_count - 1) % data::difficulties_count; redraw_diff(); }
+            if(bn::keypad::down_pressed()) { a.chosen_diff = (a.chosen_diff + 1) % data::difficulties_count; redraw_diff(); }
             if(bn::keypad::left_pressed()) { a.chosen_class = (a.chosen_class + data::classes_count - 1) % data::classes_count; redraw(); }
             if(bn::keypad::right_pressed()) { a.chosen_class = (a.chosen_class + 1) % data::classes_count; redraw(); }
             if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
             {
-                a.g->new_run(a.chosen_class, a.seed_counter * 2654435761u + 12345u);
+                a.g->new_run(a.chosen_class, a.seed_counter * 2654435761u + 12345u, a.chosen_diff);
                 ++a.save.runs;
                 bn::sram::write(a.save);
                 wait_release();
@@ -204,6 +215,124 @@ namespace
     bn::fixed clampf(bn::fixed v, int lim) { return v < -lim ? bn::fixed(-lim) : (v > lim ? bn::fixed(lim) : v); }
 
     bn::fixed_point world(int x, int y) { return bn::fixed_point(x * 16 + 8 - 256, y * 16 + 8 - 256); }
+
+    // ------------------------------------------------------------------ menu pod SELECT (pauza)
+    void wait_page_close()
+    {
+        while(! (bn::keypad::a_pressed() || bn::keypad::b_pressed() || bn::keypad::select_pressed()))
+            bn::core::update();
+        wait_release();
+    }
+
+    void page_character(app& a)
+    {
+        const core::game& g = *a.g;
+        const core::class_def& c = g.cdef();
+        const core::weapon_def& w = g.weapon();
+        page_sprites t;
+        a.text.set_center_alignment();
+        a.text.generate(0, -68, c.name, t);
+        a.text.set_left_alignment();
+        core::message l[7];
+        l[0].add("Poziom: ").add(g.ddef().name);
+        if(g.tier > 0) l[0].add(" NG+").add(g.tier);
+        l[1].add("HP ").add(g.hero.hp).add("/").add(g.hero.max_hp).add("  OBR ").add(c.defense).add("+").add(g.def_bonus);
+        l[2].add("SIŁ ").add(c.strength).add(" ZRĘ ").add(c.agility).add(" INT ").add(c.intelligence);
+        l[3].add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range);
+        l[4].add("Premia obrażeń: +").add(g.dmg_bonus);
+        l[5].add("Wynik ").add(g.score).add("  Dni ").add(g.turns);
+        l[6].add("Usunięte problemy: ").add(g.kills);
+        for(int i = 0; i < 7; ++i) a.text.generate(-108, -46 + i * 16, clip(l[i].s, 27), t);
+        a.text.set_center_alignment();
+        a.text.generate(0, 72, "B: wróć", t);
+        wait_page_close();
+    }
+
+    void page_schedule(app& a)
+    {
+        const core::game& g = *a.g;
+        page_sprites t;
+        a.text.set_center_alignment();
+        a.text.generate(0, -68, "Harmonogram budowy", t);
+        a.text.set_left_alignment();
+        for(int i = 0; i < data::stages_count; ++i)
+        {
+            core::message m;
+            m.add(i < g.stage ? "[x] " : (i == g.stage ? "[>] " : "[ ] ")).add(data::stages[i].name);
+            a.text.generate(-100, -44 + i * 16, clip(m.s, 27), t);
+        }
+        a.text.set_center_alignment();
+        core::message s; s.add("Siła problemów: ").add(g.enemy_hp_pct()).add("% HP");
+        a.text.generate(0, 44, s.s, t);
+        a.text.generate(0, 72, "B: wróć", t);
+        wait_page_close();
+    }
+
+    void page_controls(app& a)
+    {
+        page_sprites t;
+        a.text.set_center_alignment();
+        a.text.generate(0, -68, "Sterowanie", t);
+        a.text.set_left_alignment();
+        const char* lines[] = { "D-pad: ruch / atak", "Przytrzymaj: szybki ruch", "A: atak narzędziem",
+                                "B: czekaj (odpoczynek)", "SELECT: menu" };
+        for(int i = 0; i < 5; ++i) a.text.generate(-100, -44 + i * 16, lines[i], t);
+        a.text.set_center_alignment();
+        a.text.generate(0, 72, "B: wróć", t);
+        wait_page_close();
+    }
+
+    // Zwraca true, jeśli gracz porzucił budowę.
+    bool run_pause(app& a)
+    {
+        const char* items[] = { "Wznów", "Karta postaci", "Harmonogram", "Sterowanie", "Porzuć budowę" };
+        constexpr int items_count = 5;
+        int sel = 0;
+        bool confirm = false;
+        page_sprites t;
+        auto redraw = [&]() {
+            t.clear();
+            a.text.set_center_alignment();
+            a.text.generate(0, -68, "Przerwa", t);
+            for(int i = 0; i < items_count; ++i)
+            {
+                core::message m; m.add(i == sel ? "> " : "  ").add(items[i]).add(i == sel ? " <" : "  ");
+                a.text.generate(0, -40 + i * 16, m.s, t);
+            }
+            a.text.generate(0, 72, confirm ? "Na pewno? A: tak  B: nie" : "A: wybierz  B: wróć", t);
+        };
+        redraw();
+        wait_release();
+        while(true)
+        {
+            if(confirm)
+            {
+                if(bn::keypad::a_pressed()) { wait_release(); return true; }
+                if(bn::keypad::b_pressed()) { confirm = false; redraw(); }
+            }
+            else
+            {
+                if(bn::keypad::up_pressed()) { sel = (sel + items_count - 1) % items_count; redraw(); }
+                if(bn::keypad::down_pressed()) { sel = (sel + 1) % items_count; redraw(); }
+                if(bn::keypad::b_pressed() || bn::keypad::select_pressed() || bn::keypad::start_pressed()) { wait_release(); return false; }
+                if(bn::keypad::a_pressed())
+                {
+                    if(sel == 0) { wait_release(); return false; }
+                    if(sel == 4) { confirm = true; redraw(); }
+                    else
+                    {
+                        t.clear();
+                        wait_release();
+                        if(sel == 1) page_character(a);
+                        else if(sel == 2) page_schedule(a);
+                        else page_controls(a);
+                        redraw();
+                    }
+                }
+            }
+            bn::core::update();
+        }
+    }
 
     scene run_game(app& a)
     {
@@ -302,8 +431,27 @@ namespace
             }
             else if(bn::keypad::a_pressed()) { acted = g.player_attack_nearest(); if(! acted) refresh(); }
             else if(bn::keypad::b_pressed()) acted = g.player_wait();
-            // skrót pokazowy/testowy: L+R+SELECT = zalicz etap
+            // skrót pokazowy/testowy: L+R+SELECT = zalicz etap; samo SELECT = menu
             if(bn::keypad::select_pressed() && bn::keypad::l_held() && bn::keypad::r_held()) { g.debug_skip(); refresh(); }
+            else if(bn::keypad::select_pressed())
+            {
+                bg.set_visible(false);
+                hero.set_visible(false);
+                for(auto& s : enemies) s.set_visible(false);
+                for(auto& s : pickups) s.set_visible(false);
+                fx.clear(); hud.clear(); log.clear();
+                bool quit = run_pause(a);
+                if(quit)
+                {
+                    if(g.score > a.save.best) { a.save.best = g.score; bn::sram::write(a.save); }
+                    return scene::title;
+                }
+                bg.set_visible(true);
+                hero.set_visible(true);
+                refresh();
+                hold = 0;
+                continue;
+            }
 
             if(acted) refresh();
 
@@ -363,10 +511,11 @@ namespace
         a.text.generate(0, 34, won ? "ODBIÓR ZALICZONY!" : "BUDOWA WSTRZYMANA", t);
         core::message s; s.add("Wynik ").add(g.score).add("  Rekord ").add(int(a.save.best));
         a.text.generate(0, 52, s.s, t);
-        a.text.generate(0, 70, "START: nowa budowa", t);
+        a.text.generate(0, 70, won ? "A: kolejna  START: koniec" : "START: nowa budowa", t);
         while(true)
         {
-            if(bn::keypad::start_pressed() || bn::keypad::a_pressed()) { wait_release(); return scene::title; }
+            if(won && bn::keypad::a_pressed()) { g.new_game_plus(); wait_release(); return scene::game; }
+            if(bn::keypad::start_pressed() || (! won && bn::keypad::a_pressed())) { wait_release(); return scene::title; }
             bn::core::update();
         }
     }

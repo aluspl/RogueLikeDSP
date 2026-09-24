@@ -29,10 +29,20 @@ L.append("inline constexpr core::stage_def stages[] = {")
 for st in d["stages"]:
     pool = [eid[x] for x in st["enemies"]] + [-1] * (4 - len(st["enemies"]))
     boss = eid[st["boss"]] if "boss" in st else -1
-    L.append(f'    {{ {s(st["name"])}, {{ {", ".join(map(str, pool))} }}, {len(st["enemies"])}, {st["count"]}, {boss} }},')
+    L.append(f'    {{ {s(st["name"])}, {{ {", ".join(map(str, pool))} }}, {len(st["enemies"])}, {st["count"]}, {boss}, '
+             f'{st.get("hpPct", 100)}, {st.get("dmgBonus", 0)} }},')
+L.append("};\n")
+L.append("inline constexpr core::difficulty_def difficulties[] = {")
+for df in d["difficulties"]:
+    L.append(f'    {{ {s(df["name"])}, {df["hpPct"]}, {df["dmgBonus"]}, {df["scorePct"]} }},')
 L.append("};\n")
 L += [f"inline constexpr int classes_count = {len(d['classes'])};",
-      f"inline constexpr int stages_count = {len(d['stages'])};", "", "}", ""]
+      f"inline constexpr int stages_count = {len(d['stages'])};",
+      f"inline constexpr int difficulties_count = {len(d['difficulties'])};",
+      f"inline constexpr int default_difficulty = {d['defaultDifficulty']};",
+      f"inline constexpr int ng_hp_pct_per_tier = {d['newGamePlus']['hpPctPerTier']};",
+      f"inline constexpr int ng_dmg_bonus_per_tier = {d['newGamePlus']['dmgBonusPerTier']};",
+      f"inline constexpr int ng_score_pct_per_tier = {d['newGamePlus']['scorePctPerTier']};", "", "}", ""]
 out = "\n".join(L)
 path = os.path.join(ROOT, "include", "game_data.h")
 if "--check" in sys.argv:

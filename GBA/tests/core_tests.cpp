@@ -48,14 +48,66 @@ int main()
     }
     // 2. dziennik: polskie znaki i liczby
     message m; m.add("Kawa: +").add(8).add(" HP"); CHECK(std::strcmp(m.s, "Kawa: +8 HP")==0);
-    // 3. balans: bot gra po 300 runów każdym zawodem
-    std::printf("%-18s %6s %6s %6s %8s\n","zawód","wygr.%","śr.etap","śr.tury","śr.wynik");
+    // 3. trudność: HP i obrażenia wrogów rosną z etapem, poziomem i NG+
+    {
+        game n; n.new_run(0, 42, 1);
+        CHECK(n.diff == 1 && n.tier == 0);
+        CHECK(n.enemy_hp_pct() == data::stages[0].hp_pct);
+        for(int i=0;i<n.enemies_count;++i)
+            CHECK(n.enemies[i].max_hp == data::enemies[n.enemies[i].def_id].max_health * data::stages[0].hp_pct / 100);
+        game e; e.new_run(0, 42, 0);
+        game h; h.new_run(0, 42, 2);
+        CHECK(e.enemy_hp_pct() < n.enemy_hp_pct() && n.enemy_hp_pct() < h.enemy_hp_pct());
+        CHECK(e.enemy_dmg_bonus() < n.enemy_dmg_bonus() && n.enemy_dmg_bonus() <= h.enemy_dmg_bonus());
+        CHECK(e.score_pct() < n.score_pct() && n.score_pct() < h.score_pct());
+        for(int i=0;i<e.enemies_count;++i) CHECK(e.enemies[i].max_hp >= 1);
+        // etapy: mnożnik nie maleje
+        game s; s.new_run(0, 42, 1);
+        int prev_hp = s.enemy_hp_pct(), prev_dmg = s.enemy_dmg_bonus();
+        for(int k=1;k<data::stages_count;++k){ s.next_stage(); CHECK(s.enemy_hp_pct() >= prev_hp); CHECK(s.enemy_dmg_bonus() >= prev_dmg); prev_hp=s.enemy_hp_pct(); prev_dmg=s.enemy_dmg_bonus(); }
+        // boss też skalowany
+        CHECK(s.boss >= 0 && s.enemies[s.boss].max_hp > data::enemies[data::stages[s.stage].boss].max_health);
+    }
+    // 4. obrażenia wroga uwzględniają premię trudności
+    {
+        // ten sam seed = ten sam rzut; Termin (3-6) vs obrona Elektryka nie schodzi do minimum 1
+        int lost[2];
+        for(int k=0;k<2;++k)
+        {
+            game g; g.new_run(3, 7, k);   // Łatwy (-1) vs Normalny
+            g.enemies_count = 0; g.spawn(8, g.hero.x + 1, g.hero.y); g.enemies[0].awake = true;
+            int before = g.hero.hp; g.player_wait(); lost[k] = before - g.hero.hp;
+        }
+        CHECK(lost[0] >= 1 && lost[1] == lost[0] + 1);
+    }
+    // 5. wynik: zabicie wroga daje score * mnożnik trudności
+    {
+        game g; g.new_run(1, 7, 2);
+        g.enemies_count = 0; g.spawn(0, g.hero.x + 1, g.hero.y); g.enemies[0].hp = 1;
+        g.player_move(1, 0);
+        CHECK(g.kills == 1 && g.score == data::enemies[0].score * g.score_pct() / 100);
+    }
+    // 6. NG+: tylko po wygranej; zachowuje zawód, premie i wynik, podnosi poziom
+    {
+        game g; g.new_run(2, 99, 1);
+        CHECK(!g.new_game_plus());
+        g.dmg_bonus = 2; g.def_bonus = 1; g.score = 1234; g.st = status::won; g.stage = data::stages_count - 1;
+        int dmg0 = data::stages[0].dmg_bonus;
+        CHECK(g.new_game_plus());
+        CHECK(g.tier == 1 && g.stage == 0 && g.st == status::playing && g.cls == 2 && g.diff == 1);
+        CHECK(g.dmg_bonus == 2 && g.def_bonus == 1 && g.score == 1234 && g.hero.hp == g.hero.max_hp);
+        CHECK(g.enemy_hp_pct() > data::stages[0].hp_pct && g.enemy_dmg_bonus() > dmg0);
+    }
+    // 7. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
+    std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
+    int diff_wins[data::difficulties_count] = {};
+    for(int df=0;df<data::difficulties_count;++df)
     for(int c=0;c<data::classes_count;++c)
     {
         int wins=0; long stages=0, turns=0, score=0; const int runs=300;
         for(int k=0;k<runs;++k)
         {
-            game g; g.new_run(c, 1000+k*7919);
+            game g; g.new_run(c, 1000+k*7919, df);
             for(int step=0; step<4000; ++step)
             {
                 if(g.st==status::stage_clear){ g.next_stage(); continue; }
@@ -64,8 +116,10 @@ int main()
             }
             wins += g.st==status::won; stages += g.stage+1; turns += g.turns; score += g.score;
         }
-        std::printf("%-18s %6d %6.1f %6ld %8ld\n", data::classes[c].name, wins*100/runs, double(stages)/runs, turns/runs, score/runs);
+        diff_wins[df] += wins;
+        std::printf("%-18s %-9s %6d %6.1f %6ld %8ld\n", data::classes[c].name, data::difficulties[df].name, wins*100/runs, double(stages)/runs, turns/runs, score/runs);
     }
+    for(int df=1;df<data::difficulties_count;++df) CHECK(diff_wins[df-1] > diff_wins[df]);   // trudniej = mniej wygranych
     std::printf(fails ? "\n%d FAIL\n" : "\nOK - wszystkie testy przeszły\n", fails);
     return fails != 0;
 }

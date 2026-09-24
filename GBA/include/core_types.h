@@ -47,5 +47,15 @@ namespace core
         int8_t pool_count;
         int8_t enemy_count;
         int8_t boss;           // -1 = brak
+        int16_t hp_pct;        // mnożnik HP wrogów w etapie (100 = bez zmian)
+        int8_t dmg_bonus;      // premia do obrażeń wrogów w etapie
+    };
+
+    struct difficulty_def      // poziom trudności wybierany na starcie
+    {
+        const char* name;
+        int16_t hp_pct;        // mnożnik HP wrogów
+        int8_t dmg_bonus;      // premia do obrażeń wrogów (może być ujemna)
+        int16_t score_pct;     // mnożnik wyniku
     };
 }

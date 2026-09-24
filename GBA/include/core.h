@@ -126,6 +126,8 @@ namespace core
         int pickups_count = 0;
         int cls = 0;
         int stage = 0;               // 0..stages_count-1
+        int diff = data::default_difficulty;   // indeks w data::difficulties
+        int tier = 0;                // NG+: ile razy budowa została już ukończona
         int def_bonus = 0, dmg_bonus = 0;
         int turns = 0, kills = 0, score = 0;
         int boss = -1;               // indeks w enemies[]
@@ -137,6 +139,18 @@ namespace core
 
         const class_def& cdef() const { return data::classes[cls]; }
         const weapon_def& weapon() const { return data::weapons[cdef().weapon]; }
+        const difficulty_def& ddef() const { return data::difficulties[diff]; }
+
+        // Trudność = etap x poziom x NG+. Mnożniki w procentach, premie sumowane.
+        int enemy_hp_pct() const
+        {
+            return data::stages[stage].hp_pct * ddef().hp_pct / 100 * (100 + tier * data::ng_hp_pct_per_tier) / 100;
+        }
+        int enemy_dmg_bonus() const
+        {
+            return data::stages[stage].dmg_bonus + ddef().dmg_bonus + tier * data::ng_dmg_bonus_per_tier;
+        }
+        int score_pct() const { return ddef().score_pct * (100 + tier * data::ng_score_pct_per_tier) / 100; }
 
         void push(const message& m)
         {
@@ -144,10 +158,11 @@ namespace core
             log[log_lines - 1] = m;
         }
 
-        void new_run(int class_index, uint32_t seed)
+        void new_run(int class_index, uint32_t seed, int difficulty = data::default_difficulty)
         {
             *this = game();
             cls = class_index;
+            diff = difficulty;
             r.seed(seed);
             hero.max_hp = hero.hp = cdef().max_health;
             hero.alive = true;
@@ -216,7 +231,7 @@ namespace core
             actor& a = enemies[enemies_count++];
             a = actor();
             a.x = int8_t(x); a.y = int8_t(y); a.def_id = int8_t(def_id);
-            a.hp = a.max_hp = ed.max_health; a.alive = true;
+            a.hp = a.max_hp = int16_t(imax(1, ed.max_health * enemy_hp_pct() / 100)); a.alive = true;
         }
 
         int enemy_at(int x, int y) const
@@ -243,9 +258,9 @@ namespace core
             turn_events |= 1u << ei;
             if(e.hp <= 0)
             {
-                e.alive = false; ++kills; score += ed.score;
+                e.alive = false; ++kills; score += ed.score * score_pct() / 100;
                 push(message().add(ed.name).add(" - usunięto!"));
-                if(ei == boss) { score += 500 + 100 * (stage + 1); st = status::won;
+                if(ei == boss) { score += (500 + 100 * (stage + 1)) * score_pct() / 100; st = status::won;
                     push(message().add("Odbiór techniczny zaliczony!")); }
             }
             else
@@ -319,7 +334,7 @@ namespace core
             int manh = iabs(e.x - hero.x) + iabs(e.y - hero.y);
             if(manh == 1)
             {
-                int dmg = r.range(ed.min_damage, ed.max_damage) - (cdef().defense + def_bonus) / 2;
+                int dmg = r.range(ed.min_damage, ed.max_damage) + enemy_dmg_bonus() - (cdef().defense + def_bonus) / 2;
                 if(dmg < 1) dmg = 1;
                 hero.hp = int16_t(hero.hp - dmg);
                 hero_hit = true;
@@ -348,7 +363,7 @@ namespace core
             if(st == status::playing && hero.x == stairs_x && hero.y == stairs_y)
             {
                 st = status::stage_clear;
-                score += 100;
+                score += 100 * score_pct() / 100;
                 push(message().add("Etap zakończony: ").add(data::stages[stage].name));
             }
         }
@@ -366,6 +381,19 @@ namespace core
         {
             hero.hp = int16_t(imin(hero.max_hp, hero.hp + 5));
             start_stage(stage + 1);
+        }
+
+        // NG+ ("Kolejna budowa"): po wygranej ten sam zawód i poziom, premie i wynik zostają,
+        // wrogowie mocniejsi o kolejny stopień. Zwraca false, jeśli budowa nie została ukończona.
+        bool new_game_plus()
+        {
+            if(st != status::won) return false;
+            ++tier;
+            for(auto& e : enemies) e = actor();
+            hero.hp = hero.max_hp;
+            start_stage(0);
+            push(message().add("Kolejna budowa! Poziom ").add(tier + 1));
+            return true;
         }
     };
 }
