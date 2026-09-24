@@ -35,14 +35,25 @@ inline constexpr core::enemy_def enemies[] = {
 };
 
 inline constexpr core::stage_def stages[] = {
-    { "Fundamenty", { 0, 3, -1, -1 }, 2, 5, -1 },
-    { "Stan surowy", { 4, 5, 3, -1 }, 3, 6, -1 },
-    { "Dach", { 6, 3, 0, -1 }, 3, 7, -1 },
-    { "Instalacje", { 1, 0, 2, -1 }, 3, 8, -1 },
-    { "Wykończenie i odbiór", { 2, 7, -1, -1 }, 2, 6, 8 },
+    { "Fundamenty", { 0, 3, -1, -1 }, 2, 5, -1, 100, 0 },
+    { "Stan surowy", { 4, 5, 3, -1 }, 3, 6, -1, 105, 0 },
+    { "Dach", { 6, 3, 0, -1 }, 3, 7, -1, 110, 0 },
+    { "Instalacje", { 1, 0, 2, -1 }, 3, 8, -1, 115, 0 },
+    { "Wykończenie i odbiór", { 2, 7, -1, -1 }, 2, 6, 8, 120, 0 },
+};
+
+inline constexpr core::difficulty_def difficulties[] = {
+    { "Łatwy", 80, -1, 50 },
+    { "Normalny", 100, 0, 100 },
+    { "Trudny", 125, 0, 150 },
 };
 
 inline constexpr int classes_count = 6;
 inline constexpr int stages_count = 5;
+inline constexpr int difficulties_count = 3;
+inline constexpr int default_difficulty = 1;
+inline constexpr int ng_hp_pct_per_tier = 20;
+inline constexpr int ng_dmg_bonus_per_tier = 1;
+inline constexpr int ng_score_pct_per_tier = 50;
 
 }

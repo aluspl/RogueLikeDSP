@@ -231,7 +231,9 @@
         "przeciek",
         "kornik"
       ],
-      "count": 5
+      "count": 5,
+      "hpPct": 100,
+      "dmgBonus": 0
     },
     {
       "name": "Stan surowy",
@@ -240,7 +242,9 @@
         "dostawa",
         "kornik"
       ],
-      "count": 6
+      "count": 6,
+      "hpPct": 105,
+      "dmgBonus": 0
     },
     {
       "name": "Dach",
@@ -249,7 +253,9 @@
         "kornik",
         "przeciek"
       ],
-      "count": 7
+      "count": 7,
+      "hpPct": 110,
+      "dmgBonus": 0
     },
     {
       "name": "Instalacje",
@@ -258,7 +264,9 @@
         "przeciek",
         "plesn"
       ],
-      "count": 8
+      "count": 8,
+      "hpPct": 115,
+      "dmgBonus": 0
     },
     {
       "name": "Wykończenie i odbiór",
@@ -267,7 +275,38 @@
         "budzet"
       ],
       "count": 6,
-      "boss": "termin"
+      "boss": "termin",
+      "hpPct": 120,
+      "dmgBonus": 0
     }
-  ]
+  ],
+  "difficulties": [
+    {
+      "id": "latwy",
+      "name": "Łatwy",
+      "hpPct": 80,
+      "dmgBonus": -1,
+      "scorePct": 50
+    },
+    {
+      "id": "normalny",
+      "name": "Normalny",
+      "hpPct": 100,
+      "dmgBonus": 0,
+      "scorePct": 100
+    },
+    {
+      "id": "trudny",
+      "name": "Trudny",
+      "hpPct": 125,
+      "dmgBonus": 0,
+      "scorePct": 150
+    }
+  ],
+  "defaultDifficulty": 1,
+  "newGamePlus": {
+    "hpPctPerTier": 20,
+    "dmgBonusPerTier": 1,
+    "scorePctPerTier": 50
+  }
 }
