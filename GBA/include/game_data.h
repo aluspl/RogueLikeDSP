@@ -40,10 +40,13 @@ inline constexpr core::enemy_def enemies[] = {
 
 inline constexpr core::stage_def stages[] = {
     { "Fundamenty", { 0, 3, -1, -1 }, 2, 5, -1, 100, 0 },
-    { "Stan surowy", { 4, 5, 3, -1 }, 3, 6, -1, 110, 0 },
-    { "Dach", { 6, 3, 0, -1 }, 3, 7, -1, 120, 0 },
-    { "Instalacje", { 1, 0, 2, -1 }, 3, 8, -1, 130, 0 },
-    { "Wykończenie i odbiór", { 2, 7, -1, -1 }, 2, 6, 8, 140, 0 },
+    { "Mury parteru", { 4, 5, 3, -1 }, 3, 6, -1, 105, 0 },
+    { "Strop", { 5, 7, 3, -1 }, 3, 6, -1, 110, 0 },
+    { "Dach", { 6, 3, 0, -1 }, 3, 7, -1, 115, 0 },
+    { "Okna i drzwi", { 5, 6, 4, -1 }, 3, 7, -1, 120, 0 },
+    { "Instalacje", { 1, 0, 2, -1 }, 3, 8, -1, 125, 0 },
+    { "Tynki i wylewki", { 2, 0, 1, -1 }, 3, 8, -1, 130, 0 },
+    { "Wykończenie i odbiór", { 2, 7, -1, -1 }, 2, 6, 8, 135, 0 },
 };
 
 inline constexpr core::difficulty_def difficulties[] = {
@@ -63,8 +66,11 @@ inline constexpr core::upgrade_def upgrades[] = {
 inline constexpr core::story_msg story_stages[] = {
     { "Anna Nowak", { "Działka nasza! Liczę na", "mocne fundamenty. Uważaj", "na wilgoć w wykopie." } },
     { "Kierownik Marek", { "Stal jest, papierów brak.", "Papierologia już czeka.", "Trzymaj się planu!" } },
+    { "Kierownik Marek", { "Szalunki stoją, beton", "jedzie. Oby dostawa", "dojechała na czas!" } },
     { "Anna Nowak", { "Prognoza: ulewa. Zdążysz", "z dachem przed deszczem?", "Kornik też nie śpi." } },
-    { "Kierownik Marek", { "Prąd i woda w jednych", "ścianach. Co może pójść", "nie tak? ;)" } },
+    { "Kierownik Marek", { "Stan surowy zamknięty!", "Okna na wymiar, drzwi", "też. Ulewa nie odpuszcza." } },
+    { "Anna Nowak", { "Elektryk i hydraulik", "w jednym pokoju. Co", "może pójść nie tak? ;)" } },
+    { "Kierownik Marek", { "Tynki schną tydzień.", "Pleśń tylko na to czeka.", "Wietrz i nie odpuszczaj." } },
     { "Anna Nowak", { "Już widzę nasz salon.", "Tylko ten Termin... Dasz", "radę, mamy harmonogram!" } },
 };
 inline constexpr core::story_msg story_win = { "Anna Nowak", { "Mamy klucze! Plan", "pokonał chaos budowy.", "Dziękujemy za wszystko!" } };
@@ -122,7 +128,7 @@ inline constexpr int dmg_levels_mask = 32;
 inline constexpr int def_levels_mask = 8;
 
 inline constexpr int classes_count = 6;
-inline constexpr int stages_count = 5;
+inline constexpr int stages_count = 8;
 inline constexpr int difficulties_count = 3;
 inline constexpr int default_difficulty = 1;
 inline constexpr int ng_hp_pct_per_tier = 20;

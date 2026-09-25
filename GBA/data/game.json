@@ -313,10 +313,21 @@
       "dmgBonus": 0
     },
     {
-      "name": "Stan surowy",
+      "name": "Mury parteru",
       "enemies": [
         "papierologia",
         "dostawa",
+        "kornik"
+      ],
+      "count": 6,
+      "hpPct": 105,
+      "dmgBonus": 0
+    },
+    {
+      "name": "Strop",
+      "enemies": [
+        "dostawa",
+        "budzet",
         "kornik"
       ],
       "count": 6,
@@ -331,6 +342,17 @@
         "przeciek"
       ],
       "count": 7,
+      "hpPct": 115,
+      "dmgBonus": 0
+    },
+    {
+      "name": "Okna i drzwi",
+      "enemies": [
+        "dostawa",
+        "ulewa",
+        "papierologia"
+      ],
+      "count": 7,
       "hpPct": 120,
       "dmgBonus": 0
     },
@@ -340,6 +362,17 @@
         "zwarcie",
         "przeciek",
         "plesn"
+      ],
+      "count": 8,
+      "hpPct": 125,
+      "dmgBonus": 0
+    },
+    {
+      "name": "Tynki i wylewki",
+      "enemies": [
+        "plesn",
+        "przeciek",
+        "zwarcie"
       ],
       "count": 8,
       "hpPct": 130,
@@ -352,9 +385,9 @@
         "budzet"
       ],
       "count": 6,
-      "boss": "termin",
-      "hpPct": 140,
-      "dmgBonus": 0
+      "hpPct": 135,
+      "dmgBonus": 0,
+      "boss": "termin"
     }
   ],
   "difficulties": [
@@ -565,12 +598,24 @@
         "text": "Stal jest, papierów brak.|Papierologia już czeka.|Trzymaj się planu!"
       },
       {
+        "from": "Kierownik Marek",
+        "text": "Szalunki stoją, beton|jedzie. Oby dostawa|dojechała na czas!"
+      },
+      {
         "from": "Anna Nowak",
         "text": "Prognoza: ulewa. Zdążysz|z dachem przed deszczem?|Kornik też nie śpi."
       },
       {
         "from": "Kierownik Marek",
-        "text": "Prąd i woda w jednych|ścianach. Co może pójść|nie tak? ;)"
+        "text": "Stan surowy zamknięty!|Okna na wymiar, drzwi|też. Ulewa nie odpuszcza."
+      },
+      {
+        "from": "Anna Nowak",
+        "text": "Elektryk i hydraulik|w jednym pokoju. Co|może pójść nie tak? ;)"
+      },
+      {
+        "from": "Kierownik Marek",
+        "text": "Tynki schną tydzień.|Pleśń tylko na to czeka.|Wietrz i nie odpuszczaj."
       },
       {
         "from": "Anna Nowak",

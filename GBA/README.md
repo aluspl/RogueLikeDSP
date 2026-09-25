@@ -3,7 +3,7 @@
 Marketingowe demo roguelike na Game Boy Advance / emulatory (Miyoo, mGBA). Zbudowane na rdzeniu logiki
 przeniesionym z LifeLike (folder `../GODOT`): generator map z seedem, tury, walka, AI wrogów.
 
-Zbuduj dom w 5 etapach: **Fundamenty → Stan surowy → Dach → Instalacje → Wykończenie i odbiór**.
+Zbuduj dom w 8 etapach: **Fundamenty → Mury parteru → Strop → Dach → Okna i drzwi → Instalacje → Tynki i wylewki → Wykończenie i odbiór**.
 Pokonaj „problemy budowy” (Przeciek, Zwarcie, Pleśń, Kornik, Papierologia, Opóźniona dostawa, Ulewa,
 Przekroczony budżet) i bossa **Nieprzekraczalny Termin**. Na końcu ekran z kodem QR do planbudowlany.online.
 

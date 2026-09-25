@@ -55,6 +55,9 @@
 #include "bn_bg_palette_items_stage_palettes_2.h"
 #include "bn_bg_palette_items_stage_palettes_3.h"
 #include "bn_bg_palette_items_stage_palettes_4.h"
+#include "bn_bg_palette_items_stage_palettes_5.h"
+#include "bn_bg_palette_items_stage_palettes_6.h"
+#include "bn_bg_palette_items_stage_palettes_7.h"
 
 #include "core.h"
 #include "meta.h"
@@ -606,13 +609,16 @@ namespace
         core::message sub; sub.add("Etap ").add(g.stage + 1).add("/").add(data::stages_count);
         phone_header(a, ph, t, tab_names[0], sub.s);
         phone_canvas& c = *ph.canvas;
-        for(int i = 0; i < data::stages_count; ++i)
+        int first = core::imax(0, core::imin(g.stage - 2, data::stages_count - 5));   // okno 5 etapów wokół bieżącego
+        for(int r = 0; r < 5 && first + r < data::stages_count; ++r)
         {
+            int i = first + r;
             bool done = i < g.stage || (i == g.stage && g.st == core::status::won);
             bool cur = i == g.stage && ! done;
-            stripe(c, i, done ? phone_tile::stripe_done : (cur ? phone_tile::stripe_prog : phone_tile::stripe_todo));
-            phone_text(a, t, list_x, row_py(i), clip(data::stages[i].name, 15).c_str(), done ? ink::dim : ink::dark);
-            phone_pill(a, c, t, pill_end, row_ty(i), done ? "Gotowe" : (cur ? "W trakcie" : "Do zrob."),
+            stripe(c, r, done ? phone_tile::stripe_done : (cur ? phone_tile::stripe_prog : phone_tile::stripe_todo));
+            core::message m; m.add(i + 1).add(". ").add(data::stages[i].name);
+            phone_text(a, t, list_x, row_py(r), clip(m.s, 15).c_str(), done ? ink::dim : ink::dark);
+            phone_pill(a, c, t, pill_end, row_ty(r), done ? "Gotowe" : (cur ? "W trakcie" : "Do zrob."),
                        done ? pill::done : (cur ? pill::prog : pill::gray));
         }
         phone_text(a, t, list_x, row_py(5), "Postęp", ink::dim);
@@ -997,8 +1003,10 @@ namespace
         map->build(g);
         const bn::bg_palette_item* stage_pals[] = { &bn::bg_palette_items::stage_palettes_0, &bn::bg_palette_items::stage_palettes_1,
                                                     &bn::bg_palette_items::stage_palettes_2, &bn::bg_palette_items::stage_palettes_3,
-                                                    &bn::bg_palette_items::stage_palettes_4 };
-        bn::regular_bg_item item(bn::regular_bg_tiles_items::tiles, *stage_pals[core::imin(g.stage, 4)], map->map_item);
+                                                    &bn::bg_palette_items::stage_palettes_4, &bn::bg_palette_items::stage_palettes_5,
+                                                    &bn::bg_palette_items::stage_palettes_6, &bn::bg_palette_items::stage_palettes_7 };
+        static_assert(data::stages_count <= 8);
+        bn::regular_bg_item item(bn::regular_bg_tiles_items::tiles, *stage_pals[g.stage], map->map_item);
         bn::regular_bg_ptr bg = item.create_bg(0, 0);
         bn::regular_bg_map_ptr bg_map_ptr = bg.map();
         bn::bg_tiles::set_allow_offset(true);
@@ -1513,11 +1521,13 @@ namespace
         a.text.set_center_alignment();
         a.text.generate(0, -68, "Harmonogram budowy", t);
         a.text.set_left_alignment();
-        for(int i = 0; i < data::stages_count; ++i)
+        int first = core::imax(0, core::imin(g.stage - 1, data::stages_count - 5));   // okno 5 etapów
+        for(int r = 0; r < 5 && first + r < data::stages_count; ++r)
         {
+            int i = first + r;
             core::message m;
-            m.add(i <= g.stage ? "[x] " : (i == g.stage + 1 ? "[>] " : "[ ] ")).add(data::stages[i].name);
-            a.text.generate(-100, -44 + i * 16, clip(m.s, 27), t);
+            m.add(i <= g.stage ? "[x] " : (i == g.stage + 1 ? "[>] " : "[ ] ")).add(i + 1).add(". ").add(data::stages[i].name);
+            a.text.generate(-104, -44 + r * 16, clip(m.s, 27), t);
         }
         a.text.set_center_alignment();
         core::message s; s.add("Wynik: ").add(g.score).add("  Dni: ").add(g.turns);
