@@ -21,7 +21,7 @@ for c in d["classes"]:
     assert len(ab["desc"]) <= 23, ab   # mieści się w banerze obok ikony
     assert ab["effect"] in {"stun", "wall", "volley", "chain", "flush", "spin"}, ab
     L.append(f'    {{ {s(c["name"])}, {s(c["desc"])}, {c["maxHealth"]}, {c["strength"]}, {c["agility"]}, '
-             f'{c["intelligence"]}, {c["defense"]}, {wid[c["weapon"]]}, {c["frame"]}, '
+             f'{c["intelligence"]}, {c["defense"]}, {c["luck"]}, {wid[c["weapon"]]}, {c["frame"]}, '
              f'{s(ab["name"])}, {s(ab["desc"])}, core::ability_effect::{ab["effect"]}, {ab["cooldown"]} }},')
 L.append("};\n")
 L.append("inline constexpr core::enemy_def enemies[] = {")
@@ -112,6 +112,14 @@ L += [f"inline constexpr int tools_count = {len(m['tools'])};",
       f"inline constexpr int start_tools_mask = {start_tools};",
       f"inline constexpr int drop_chance_pct = {dr['chancePct']};",
       f"inline constexpr int drop_weights[] = {{ {dr['weights']['coffee']}, {dr['weights']['helmet']}, {dr['weights']['plan']}, {dr['weights']['tool']}, {dr['weights']['gear']} }};", ""]
+lk = d["luck"]
+L += [f"inline constexpr int crit_base_pct = {lk['critBasePct']};",
+      f"inline constexpr int crit_per_luck_pct = {lk['critPerLuckPct']};",
+      f"inline constexpr int crit_multiplier = {lk['critMultiplier']};",
+      f"inline constexpr int drop_per_luck_pct = {lk['dropPerLuckPct']};",
+      f"inline constexpr int rarity_per_luck = {lk['rarityPerLuck']};",
+      f"inline constexpr int dodge_per_luck_pct = {lk['dodgePerLuckPct']};",
+      f"inline constexpr int dodge_max_pct = {lk['dodgeMaxPct']};", ""]
 eq = d["equipment"]
 L.append("inline constexpr core::gear_def gear[] = {   // indeks = slot * 3 + jakość")
 for sl in eq["slots"]:

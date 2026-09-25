@@ -52,6 +52,8 @@ static void arena(game& g, int cls)
     g.hero.x = 7; g.hero.y = 7; g.update_fov();
 }
 
+static int g_dummy_crit(int cls) { game g; g.new_run(cls, 1); return g.crit_pct(); }
+
 int main()
 {
     // 1. mapy: spójne, pokoje >= 2, start na podłodze, deterministyczne
@@ -623,6 +625,36 @@ int main()
             applied += g.status_turns(status_effect::poison) > 0;
         }
         CHECK(applied > 30 && applied < 120);
+    }
+    // 28a. szczęście: kryt x2, unik, różne szczęście zawodów
+    {
+        CHECK(data::classes[5].luck > data::classes[1].luck);                          // Glazurnik > Murarz
+        for(int c = 0; c < data::classes_count; ++c) CHECK(data::classes[1].luck <= data::classes[c].luck);
+        int crits = 0, hits = 0;
+        for(uint32_t seed = 1; seed <= 400; ++seed)
+        {
+            game g; arena(g, 5); g.r.seed(seed);
+            g.spawn(8, 8, 7); g.enemies[0].hp = g.enemies[0].max_hp = 500;
+            g.player_move(1, 0);
+            for(int i = 0; i < g.hits_count; ++i) if(!g.hits[i].on_hero)
+            {
+                ++hits; crits += g.hits[i].kind == hit_crit;
+                if(g.hits[i].kind == hit_crit) CHECK(g.hits[i].amount % data::crit_multiplier == 0);
+            }
+        }
+        int expect = hits * g_dummy_crit(5) / 100;
+        CHECK(crits > expect / 2 && crits < expect * 2);
+        int dodges = 0;
+        for(uint32_t seed = 1; seed <= 400; ++seed)
+        {
+            game g; arena(g, 5); g.r.seed(seed);
+            g.spawn(8, 8, 7); g.enemies[0].awake = true;
+            int hp = g.hero.hp; g.player_wait();
+            if(g.hits_count > 0 && g.hits[0].kind == hit_dodge) { ++dodges; CHECK(g.hero.hp >= hp); }
+        }
+        game gl; arena(gl, 5);
+        CHECK(dodges > 400 * gl.dodge_pct() / 300 && dodges < 400 * gl.dodge_pct() * 3 / 100);
+        game gm; arena(gm, 1); CHECK(gm.dodge_pct() == 0 && gm.crit_pct() == data::crit_base_pct);
     }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");

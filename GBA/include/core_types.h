@@ -26,6 +26,7 @@ namespace core
         int8_t agility;
         int8_t intelligence;
         int8_t defense;
+        int8_t luck;           // szczęście: kryt, unik, dropy
         int8_t weapon;
         int8_t frame;          // klatka w graphics/actors.bmp
         const char* ability_name;   // moc zawodu (przycisk R)

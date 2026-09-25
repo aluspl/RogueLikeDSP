@@ -9,6 +9,7 @@
       "agility": 3,
       "intelligence": 5,
       "defense": 3,
+      "luck": 2,
       "weapon": "dziennik",
       "frame": 0,
       "ability": {
@@ -27,6 +28,7 @@
       "agility": 2,
       "intelligence": 1,
       "defense": 4,
+      "luck": 0,
       "weapon": "kielnia",
       "frame": 1,
       "ability": {
@@ -45,6 +47,7 @@
       "agility": 4,
       "intelligence": 1,
       "defense": 3,
+      "luck": 2,
       "weapon": "gwozdziarka",
       "frame": 2,
       "ability": {
@@ -63,6 +66,7 @@
       "agility": 4,
       "intelligence": 5,
       "defense": 2,
+      "luck": 1,
       "weapon": "probnik",
       "frame": 3,
       "ability": {
@@ -81,6 +85,7 @@
       "agility": 3,
       "intelligence": 3,
       "defense": 3,
+      "luck": 2,
       "weapon": "klucz",
       "frame": 4,
       "ability": {
@@ -99,6 +104,7 @@
       "agility": 5,
       "intelligence": 2,
       "defense": 3,
+      "luck": 4,
       "weapon": "szlifierka",
       "frame": 5,
       "ability": {
@@ -611,6 +617,15 @@
       "tool": 15,
       "gear": 35
     }
+  },
+  "luck": {
+    "critBasePct": 5,
+    "critPerLuckPct": 3,
+    "critMultiplier": 2,
+    "dropPerLuckPct": 2,
+    "rarityPerLuck": 3,
+    "dodgePerLuckPct": 2,
+    "dodgeMaxPct": 20
   },
   "badges": [
     {
