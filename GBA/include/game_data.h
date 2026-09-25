@@ -231,10 +231,10 @@ inline constexpr int material_gear_box = 1;
 inline constexpr int material_max = 9;
 
 inline constexpr core::path_def paths[] = {   // wybór ścieżki: wariant kolejnego etapu
-    { "Szybko, ale drogo", "Szybko", "-2 problemy, -15 zł, -1 znajdźka", -2, -1, -15, 0, false, false },
-    { "Tanio, ale ryzykownie", "Tanio", "+1 problem, +2 znajdźki, zła pogoda", 1, 2, 0, 0, true, false },
+    { "Szybko i drogo", "Szybko", "-2 problemy, -15 zł, -1 znajdźka", -2, -1, -15, 0, false, false },
+    { "Tanio, ryzyko", "Tanio", "+1 problem, +2 znajdźki, zła pogoda", 1, 2, 0, 0, true, false },
     { "Po terminie", "Po term.", "Bez wydarzenia na placu, -10 zł", 0, 0, -10, 0, false, true },
-    { "Z zapasem materiałów", "Zapas", "+1 problem, +3 materiały na start", 1, 0, 0, 3, false, false },
+    { "Z zapasem", "Zapas", "+1 problem, +3 materiały na start", 1, 0, 0, 3, false, false },
 };
 inline constexpr int paths_count = 4;
 

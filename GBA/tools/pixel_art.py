@@ -597,7 +597,8 @@ def truck_frames():
 
 
 # ------------------------------------------------------------------ menu akcji pod START (16x16): atak, termos, czekaj, ramka wyboru;
-# 4-5: mała kłódka i strzałki góra/dół (wybór zawodu); 6-10: pogoda dnia (Słonecznie, Upał, Mróz, Wiatr, Deszcz)
+# 4-5: mała kłódka i strzałki góra/dół (wybór zawodu); 6-10: pogoda dnia (Słonecznie, Upał, Mróz, Wiatr, Deszcz);
+# 11-13: materiały w HUD (cement, stal, drewno - małe, w lewej części klatki, cyfra obok); 14: kalendarz (budowa dnia)
 MENU_ICONS = [
     [   # Atak: młotek
         "................", "................", "....KKKKKKK.....", "...KgllllllK....", "...KggggggKK....",
@@ -643,6 +644,22 @@ MENU_ICONS = [
         "................", "......KKKK......", "....KKllllKK....", "...KllWWllllK...", ".KKlWlllllllKK..",
         "KllllllllllllgK.", "KlllllllllllggK.", ".KggggggggggggK.", "..KKKKKKKKKKKK..", "...B...B...B....",
         "..BB..BB..BB....", "..B...B...B.....", ".B...B...B......", "................", "..B...B...B.....", ".B...B...B......"],
+    [   # materiał: cement (worek)
+        "................", "................", "................", "..KKKKKKK.......", ".KllWlllgK......",
+        ".KlllllggK......", ".KlKKKKlgK......", ".KlKTTKlgK......", ".KlKKKKlgK......", ".KlllllggK......",
+        ".KgggggggK......", "..KKKKKKK.......", "................", "................", "................", "................"],
+    [   # materiał: stal (pręty zbrojeniowe)
+        "................", "................", "................", ".......KK.......", ".....KKCK.......",
+        "...KKClKK.......", ".KKClKKCK.......", "KClKKClKK.......", "KKKClKKK........", ".KClKKK.........",
+        "KClKK...........", "KKK.............", "................", "................", "................", "................"],
+    [   # materiał: drewno (deski)
+        "................", "................", "................", "KKKKKKKKKK......", "KOTTOTTTTK......",
+        "KKKKKKKKKK......", ".KKKKKKKKKK.....", ".KTTOTTTOTK.....", ".KKKKKKKKKK.....", "KKKKKKKKKK......",
+        "KTOTTTTOTK......", "KKKKKKKKKK......", "................", "................", "................", "................"],
+    [   # kalendarz (codzienna budowa)
+        "................", "...K......K.....", "..KKKKKKKKKKK...", "..KRRRRRRRRRK...", "..KRRRRRRRRRK...",
+        "..KKKKKKKKKKK...", "..KWWWWWWWWWK...", "..KWKWKWKWWWK...", "..KWWWWWWWWWK...", "..KWKWKWPPWWK...",
+        "..KWWWWWPPWWK...", "..KWKWKWWWWWK...", "..KWWWWWWWWWK...", "..KKKKKKKKKKK...", "................", "................"],
 ]
 
 

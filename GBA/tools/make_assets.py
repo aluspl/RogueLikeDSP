@@ -447,6 +447,13 @@ def make_phone():
         add("corner_" + n, corner)
     for n, c in {"todo": P_TODO, "prog": P_PROG, "done": P_DONE, "brand": P_BRAND, "late": P_LATE}.items():
         add("stripe_" + n, [c if x < 2 else P_CARD for y in range(8) for x in range(8)])
+    # linie rozgałęzień harmonogramu (wybór ścieżki): pozioma, pionowa, trójnik w górę, narożnik w dół (w prawo; lewy = odbicie)
+    L = lambda f: [P_BRAND if f(x, y) else P_CARD for y in range(8) for x in range(8)]
+    add("line_h", L(lambda x, y: 3 <= y <= 4))
+    add("line_v", L(lambda x, y: 3 <= x <= 4))
+    add("line_tee_up", L(lambda x, y: 3 <= y <= 4 or (3 <= x <= 4 and y <= 4)))
+    add("line_corner", L(lambda x, y: (3 <= y <= 4 and x >= 3) or (3 <= x <= 4 and y >= 3)))
+    add("node", L(lambda x, y: (x - 3.5) ** 2 + (y - 3.5) ** 2 <= 9))
     for n, c in {"brand": P_BRAND, "done": P_DONE, "late": P_LATE}.items():
         for k in range(9):   # pasek postępu: k z 8 pikseli wypełnione, wiersze 6-7 (środek 16-pikselowego wiersza listy)
             add(f"bar_{n}_{k}", [(c if x < k else P_GROUP) if 6 <= y <= 7 else P_CARD for y in range(8) for x in range(8)])

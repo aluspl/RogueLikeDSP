@@ -26,6 +26,13 @@
 //       zatrucie; telefon -> Zespół -> A = Brygada; kolejne etapy też ze 100 zł (L+R+SELECT)
 //  16 - tryb inwestora: profil po pierwszej wygranej, włączone Budżet -30% i Problemy +20% HP, rekord stawki Murarza 3;
 //       na wyborze zawodu SELECT = lista modyfikatorów
+//  17 - wybór ścieżki: L+R+SELECT kończy etap, harmonogram z dwoma wariantami (lewo/prawo, A); kolejne etapy też
+//  18 - materiały i naprawy: po 5 cementu/stali/drewna, deszcz (kałuże obok), bohater o 1 dośw. od awansu, obok
+//       Kornik z 1 HP (A = usunięty, awans z napisem "AWANS!"), dalej ogłuszona Pleśń; telefon -> Sprzęt -> A:
+//       naprawy Załataj i Kładka
+//  19 - codzienna budowa: profil z datą 25.09.2026 i wynikami trzech wcześniejszych dni (R na tytule)
+//  20 - wygrana: ostatni etap z bossem, dni poprzednich etapów wypełnione (L+R+SELECT = odbiór, harmonogram domu)
+//  21 - porażka: 1 HP, obok przebudzony problem (B = czekaj, koniec budowy z motywacją: rekord, zlecenie, Szkolenia)
 #include "core.h"
 #include "meta.h"
 
@@ -79,6 +86,15 @@ namespace debug_scenario
                 if(data::contracts[i].kind == core::contract_kind::wins) p.wins = data::contracts[i].target - 1;   // wygrana = baner na końcu
             }
         }
+        if(scenario == 19)
+        {
+            core::set_daily_date(p, 2026, 9, 25);
+            int day = core::daily_number(2026, 9, 25);
+            core::record_daily(p, day - 1, 3120, true);
+            core::record_daily(p, day - 2, 1480, false);
+            core::record_daily(p, day - 4, 2210, false);
+        }
+        if(scenario == 21) { p.best = 4200; p.xp = 12; p.kills_total = 180; }
         if(scenario == 16)
         {
             p.wins = 1;
@@ -249,6 +265,34 @@ namespace debug_scenario
                 b.awake = true;
                 g.slam_counter = data::slam_every - 1;   // Kontrola BHP zaraz po ogłuszeniu
                 g.summon_counter = data::enemies[data::enemy_inspekcja].summon_every - 1;
+                break;
+            }
+            case 18:
+            {
+                for(int m = 0; m < data::materials_count; ++m) g.mats[m] = 5;
+                for(int i = 0; i < data::weather_count; ++i) if(data::weather[i].effect == core::weather_effect::rain) g.weather = int8_t(i);
+                g.run_xp = data::level_thresholds[0] - 1;
+                g.enemies_count = 0;
+                place_enemy(g, data::enemy_kornik, 1, 1, true, 5);
+                g.enemies[0].hp = 1;
+                place_enemy(g, data::enemy_plesn, 3, 3, true, 30);
+                break;
+            }
+            case 20:
+            {
+                g.start_stage(data::stages_count - 1);
+                for(int s = 0; s < data::stages_count - 1; ++s) g.stage_days[s] = uint16_t(18 + (s * 7) % 11);
+                g.score = 4800;
+                g.turns = 240;
+                g.stage_start_turn = 200;
+                break;
+            }
+            case 21:
+            {
+                g.hero.hp = 1;
+                g.score = 900;
+                g.enemies_count = 0;
+                place_enemy(g, data::enemy_budzet, 1, 1, true, 0);
                 break;
             }
             default:
