@@ -130,6 +130,8 @@ namespace core
                 case upgrade_effect::dmg:     m.dmg += v; break;
                 case upgrade_effect::coffee:  m.coffee += v; break;
                 case upgrade_effect::pickups: m.pickups += v; break;
+                case upgrade_effect::luck:    m.luck += v; break;
+                case upgrade_effect::craft:   m.craft += v; break;
             }
         }
         return m;

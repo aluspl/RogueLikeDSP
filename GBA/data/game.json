@@ -195,6 +195,22 @@
       "maxDamage": 8,
       "range": 1,
       "scalesWith": "strength"
+    },
+    {
+      "id": "tablet",
+      "name": "Tablet z projektem",
+      "minDamage": 3,
+      "maxDamage": 5,
+      "range": 2,
+      "scalesWith": "intelligence"
+    },
+    {
+      "id": "miernik",
+      "name": "Miernik laserowy",
+      "minDamage": 2,
+      "maxDamage": 5,
+      "range": 3,
+      "scalesWith": "intelligence"
     }
   ],
   "enemies": [
@@ -572,6 +588,28 @@
           15,
           30
         ]
+      },
+      {
+        "id": "bhp2",
+        "name": "Kurs BHP II",
+        "desc": "+1 szczęścia",
+        "effect": "luck",
+        "value": 1,
+        "costs": [
+          20,
+          40
+        ]
+      },
+      {
+        "id": "warsztaty",
+        "name": "Warsztaty",
+        "desc": "+1 do statystyki broni",
+        "effect": "craft",
+        "value": 1,
+        "costs": [
+          20,
+          40
+        ]
       }
     ],
     "tools": [
@@ -590,6 +628,14 @@
       {
         "weapon": "mlot",
         "cost": 40
+      },
+      {
+        "weapon": "tablet",
+        "cost": 25
+      },
+      {
+        "weapon": "miernik",
+        "cost": 35
       }
     ]
   },
@@ -845,6 +891,27 @@
         "name": "Odnowienie mocy -1",
         "short": "Moc -1t",
         "effect": "cooldown",
+        "value": 1
+      },
+      {
+        "id": "str",
+        "name": "Siła +1",
+        "short": "SIŁ+1",
+        "effect": "str",
+        "value": 1
+      },
+      {
+        "id": "agi",
+        "name": "Zręczność +1",
+        "short": "ZRĘ+1",
+        "effect": "agi",
+        "value": 1
+      },
+      {
+        "id": "intel",
+        "name": "Inteligencja +1",
+        "short": "INT+1",
+        "effect": "intel",
         "value": 1
       }
     ],

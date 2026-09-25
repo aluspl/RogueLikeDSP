@@ -44,7 +44,7 @@ for df in d["difficulties"]:
 L.append("};\n")
 m = d["meta"]
 cid = {c["id"]: i for i, c in enumerate(d["classes"])}
-EFF = {"hp", "def", "dmg", "coffee", "pickups"}
+EFF = {"hp", "def", "dmg", "coffee", "pickups", "luck", "craft"}
 L.append("inline constexpr core::upgrade_def upgrades[] = {")
 for u in m["upgrades"]:
     assert u["effect"] in EFF and 1 <= len(u["costs"]) <= 4, u
@@ -136,7 +136,7 @@ L.append("inline constexpr const char* gear_slots[] = { " + ", ".join(s(sl["name
 L.append("inline constexpr const char* gear_rarities[] = { " + ", ".join(s(r) for r in eq["rarities"]) + " };")
 L.append("inline constexpr core::trait_def gear_traits[] = {   // cechy sprzętu (losowane do każdego przedmiotu)")
 for t in eq["traits"]:
-    assert t["effect"] in {"luck", "crit", "poison_res", "sight", "cooldown"} and len(t["short"]) <= 9 and len(t["name"]) <= 22, t
+    assert t["effect"] in {"luck", "crit", "poison_res", "sight", "cooldown", "str", "agi", "intel"} and len(t["short"]) <= 9 and len(t["name"]) <= 22, t
     L.append(f'    {{ {s(t["name"])}, {s(t["short"])}, core::trait_effect::{t["effect"]}, {t["value"]} }},')
 L.append("};")
 L.append(f"inline constexpr int gear_traits_count = {len(eq['traits'])};")

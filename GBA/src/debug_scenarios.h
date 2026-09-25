@@ -10,6 +10,8 @@
 //   6 - porównanie sprzętu: założony kask i rękawice, obok (w prawo) paczki: lepszy kask i gorsze rękawice
 //   7 - termos: 2 kawy w termosie, ranny bohater (35% HP), kawa na polu w prawo
 //   8 - kryt i unik: markowy sprzęt z cechą Szczęście +1, obok (w lewo) wytrzymała Pleśń atakująca bohatera
+//   9 - statystyki: Szkolenia Warsztaty i Kurs BHP II kupione, sprzęt z cechami SIŁ/ZRĘ/INT +1,
+//       obok (w prawo) skrzynka z Tabletem z projektem (narzędzie INT)
 #include "core.h"
 #include "meta.h"
 
@@ -41,6 +43,35 @@ namespace debug_scenario
         p.classes = uint8_t((1 << data::classes_count) - 1);
         p.hard = 1;
         core::set_flag(p, core::help_seen);
+    }
+
+    // Profil scenariusza (po unlock_all, przed ekranem tytułowym).
+    inline void setup_profile(core::profile& p, int scenario)
+    {
+        if(scenario < 9) return;
+        core::set_flag(p, core::prologue_seen);
+        for(int i = 0; i < data::upgrades_count; ++i)
+            if(data::upgrades[i].effect == core::upgrade_effect::luck || data::upgrades[i].effect == core::upgrade_effect::craft)
+                p.levels[i] = uint8_t(data::upgrades[i].levels);
+        p.tools = uint8_t((1 << data::tools_count) - 1);
+    }
+
+    inline int trait_index(core::trait_effect e)
+    {
+        for(int i = 0; i < data::gear_traits_count; ++i) if(data::gear_traits[i].effect == e) return i;
+        return 0;
+    }
+
+    inline int tool_index(const char* weapon_name)
+    {
+        for(int i = 0; i < data::tools_count; ++i)
+        {
+            const char* a = data::weapons[data::tools[i].weapon].name;
+            const char* b = weapon_name;
+            while(*a && *a == *b) { ++a; ++b; }
+            if(*a == *b) return i;
+        }
+        return 0;
     }
 
     // Wołane raz, na wejściu na pierwszy etap budowy.
@@ -115,6 +146,13 @@ namespace debug_scenario
                 g.hero.max_hp = g.hero.hp = 300;
                 break;
             }
+            case 9:
+                g.pickups_count = 0;
+                g.equip(0, 1, trait_index(core::trait_effect::str));
+                g.equip(1, 1, trait_index(core::trait_effect::agi));
+                g.equip(2, 1, trait_index(core::trait_effect::intel));
+                g.pickups[g.pickups_count++] = { int8_t(g.hero.x + 1), g.hero.y, core::tool, true, uint8_t(tool_index("Tablet z projektem")) };
+                break;
             default:
                 break;
         }

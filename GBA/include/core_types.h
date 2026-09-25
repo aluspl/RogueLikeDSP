@@ -91,7 +91,7 @@ namespace core
         shop_effect effect;
     };
 
-    enum class upgrade_effect : uint8_t { hp, def, dmg, coffee, pickups };
+    enum class upgrade_effect : uint8_t { hp, def, dmg, coffee, pickups, luck, craft };   // craft: +statystyka broni zawodu
 
     struct upgrade_def         // ulepszenie ze sklepu "Szkolenia" (meta-progresja)
     {
@@ -118,7 +118,7 @@ namespace core
         int8_t value;
     };
 
-    enum class trait_effect : uint8_t { luck, crit, poison_res, sight, cooldown };
+    enum class trait_effect : uint8_t { luck, crit, poison_res, sight, cooldown, str, agi, intel };
 
     struct trait_def           // cecha przedmiotu sprzętu
     {
