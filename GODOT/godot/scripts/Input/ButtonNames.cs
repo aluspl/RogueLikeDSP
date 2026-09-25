@@ -37,7 +37,7 @@ public static class ButtonNames
         foreach (var ev in InputMap.ActionGetEvents(name))
         {
             if (ev is not InputEventKey k) continue;
-            var code = k.PhysicalKeycode != Key.None ? DisplayServer.KeyboardGetKeycodeFromPhysical(k.PhysicalKeycode) : k.Keycode;
+            var code = k.PhysicalKeycode != Key.None ? k.PhysicalKeycode : k.Keycode; // nazwa wg układu QWERTY
             return code switch
             {
                 Key.Space => "Spacja",
