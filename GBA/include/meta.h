@@ -269,6 +269,33 @@ namespace core
 
     inline bool contract_done(const profile& p, int i) { return p.contracts & (1u << i); }
 
+    // Postęp zlecenia w trakcie budowy: profil + liczniki budowy jeszcze nieprzeniesione do profilu.
+    inline int contract_progress_live(const profile& p, const game& g, int i)
+    {
+        int v = contract_progress(p, i);
+        switch(data::contracts[i].kind)
+        {
+            case contract_kind::kills:      return v + g.kills - g.kills_banked;
+            case contract_kind::powers:     return v + g.powers_used - g.powers_banked;
+            case contract_kind::brand:      return v + g.brand_found - g.brand_banked;
+            case contract_kind::clean_boss: return v + g.clean_bosses - g.clean_banked;
+            default:                        return v;
+        }
+    }
+
+    // Najbliższe ukończenia (największy % postępu) nieukończone zlecenie; -1 gdy wszystkie wykonane.
+    inline int next_contract(const profile& p, const game& g)
+    {
+        int best = -1, best_pct = -1;
+        for(int i = 0; i < data::contracts_count; ++i)
+        {
+            if(contract_done(p, i)) continue;
+            int pct = imin(100, contract_progress_live(p, g, i) * 100 / data::contracts[i].target);
+            if(pct > best_pct) { best_pct = pct; best = i; }
+        }
+        return best;
+    }
+
     // Sprawdza zlecenia: ukończone dają doświadczenie (i pamiątkę). Zwraca bitmaskę ukończonych właśnie teraz.
     inline int check_contracts(profile& p)
     {

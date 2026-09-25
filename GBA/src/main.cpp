@@ -863,7 +863,16 @@ namespace
         phone_text(a, t, 226, row_py(3), rest.s, ink::done, 1);
         core::message run; run.add("Z tej budowy: +").add(g.xp() - g.xp_banked);
         phone_text(a, t, list_x, row_py(4), run.s, ink::dim);
-        phone_text(a, t, list_x, row_py(5), "Kupisz po budowie", ink::dim);
+        int ci = core::next_contract(a.save, g);   // najbliższe zlecenie z postępem na żywo
+        if(ci >= 0)
+        {
+            const core::contract_def& cd = data::contracts[ci];
+            core::message cm; cm.add("Zlecenie: ").add(cd.name);
+            phone_text(a, t, list_x, row_py(5), clip(cm.s, 20).c_str(), ink::dim);
+            core::message pm; pm.add(core::imin(cd.target, core::contract_progress_live(a.save, g, ci))).add("/").add(cd.target);
+            phone_pill(a, c, t, pill_end, row_ty(5), pm.s, pill::prog);
+        }
+        else phone_text(a, t, list_x, row_py(5), "Kupisz po budowie", ink::dim);
     }
 
     void draw_tab(app& a, phone_screen& ph, page_sprites& t, int tab)
