@@ -25,6 +25,8 @@ Co powstaje:
   fx/shadow.png, fx/danger.png, fx/range.png   cień pod postacią, pole zapowiedzianego ciosu, ramka zasięgu
   font/glyphs.png, font/glyphs_edge.png, font/font.json
                              pikselowy font 8x16 z polskimi znakami (litery i cień osobno, szerokości znaków)
+  ui/touch_icons.png         ikony sterowania dotykiem 16x16 (klucz ustawień, telefon, mapa, link, zamknij, wstecz)
+  ../icon.png                ikona aplikacji 1024x1024 (bohater z actors.png klatka 0 na fiolecie marki, pas ostrzegawczy)
   audio/sfx_*.wav            efekty (kopie 1:1), audio/music_*.mp3 - moduły .mod wyrenderowane przez
                              openmpt123 i zakodowane ffmpeg (libmp3lame; Godot gra MP3 bez dodatków) (bez tych narzędzi muzyka jest pomijana)
 
@@ -219,6 +221,76 @@ def export_phone_icons():
         dim.append([[cpx[(y0 + y) * cw + x0 + x] for x in range(16)] for y in range(16)])
     save(frames_to_image(dim, cpal, transparent_index=card), "ui/phone_icons_dim.png")
     return len(frames)
+
+
+# ------------------------------------------------------------------ dotyk: ikony paska akcji i ustawień
+TOUCH_PAL = {"K": (16, 16, 24), "W": (250, 250, 250), "l": (200, 204, 214), "g": (130, 134, 148),
+             "B": (107, 78, 255), "b": (180, 166, 255), "O": (255, 122, 61), "Y": (255, 215, 90), "D": (54, 58, 72)}
+TOUCH_ICONS = [
+    [   # 0 klucz płaski (ustawienia)
+        "................", ".........KKK....", "........KllK.KK.", "........KlK.KlK.", "........KlKKllK.",
+        ".......KlllllK..", "......KllllgK...", ".....KlllgKK....", "....KlllgK......", "...KlllgK.......",
+        "..KlllgK........", ".KlllgK.........", ".KllgK..........", "..KKK...........", "................", "................"],
+    [   # 1 telefon z aplikacją PB
+        "................", ".....KKKKKK.....", "....KDDDDDDK....", "....KDKKKKDK....", "....KDBBBBDK....",
+        "....KDBWWBDK....", "....KDBWBBDK....", "....KDBWWBDK....", "....KDBWBBDK....", "....KDBBBBDK....",
+        "....KDBBBBDK....", "....KDDDDDDK....", "....KDDWWDDK....", ".....KKKKKK.....", "................", "................"],
+    [   # 2 mapa etapu (składana)
+        "................", "................", "..KKK..KKK..KKK.", ".KYYYKKlllKKYYYK", ".KYYYKlllKKYYYYK", ".KYOYKllOlKYYYYK",
+        ".KYYYKlOlOKYOYYK", ".KYYYKllllKYYYYK", ".KYYOKlllKKYYYYK", ".KYYYKlllKKYYYYK", ".KYYYKllllKYYOYK",
+        ".KYYYKKlllKKYYYK", "..KKK..KKK..KKK.", "................", "................", "................"],
+    [   # 3 link (globus)
+        "................", ".....KKKKKK.....", "....KbBWWBbK....", "...KbBWBBWBbK...", "..KbBWBBBBWBbK..",
+        "..KWWWWWWWWWWK..", "..KBWBBBBBBWBK..", "..KBWBBBBBBWBK..", "..KWWWWWWWWWWK..", "..KbBWBBBBWBbK..",
+        "...KbBWBBWBbK...", "....KbBWWBbK....", ".....KKKKKK.....", "................", "................", "................"],
+    [   # 4 zamknij
+        "................", "................", "...KK......KK...", "..KWWK....KWWK..", "...KWWK..KWWK...",
+        "....KWWKKWWK....", ".....KWWWWK.....", "......KWWK......", ".....KWWWWK.....", "....KWWKKWWK....",
+        "...KWWK..KWWK...", "..KWWK....KWWK..", "...KK......KK...", "................", "................", "................"],
+    [   # 5 wstecz
+        "................", "................", ".......KK.......", "......KWWK......", ".....KWWK.......",
+        "....KWWK........", "...KWWWKKKKKKK..", "..KWWWWWWWWWWWK.", "...KWWWKKKKKKK..", "....KWWK........",
+        ".....KWWK.......", "......KWWK......", ".......KK.......", "................", "................", "................"],
+]
+
+
+def export_touch_icons():
+    im = Image.new("RGBA", (16, 16 * len(TOUCH_ICONS)), TRANSPARENT)
+    px = im.load()
+    for f, rows in enumerate(TOUCH_ICONS):
+        assert len(rows) == 16 and all(len(r) == 16 for r in rows), f
+        for y, row in enumerate(rows):
+            for x, ch in enumerate(row):
+                if ch != ".":
+                    px[x, f * 16 + y] = TOUCH_PAL[ch] + (255,)
+    save(im, "ui/touch_icons.png")
+    return len(TOUCH_ICONS)
+
+
+# ------------------------------------------------------------------ ikona aplikacji (iOS / Android)
+def make_app_icon():
+    """1024x1024: bohater (actors.png klatka 0, 32x32) powiększony bez wygładzania na fiolecie marki,
+    u dołu pas ostrzegawczy placu budowy (pomarańczowe skosy) - jak ekran tytułowy."""
+    size, brand, accent, dark = 1024, (107, 78, 255), (255, 122, 61), (22, 20, 30)
+    icon = Image.new("RGBA", (size, size), brand + (255,))
+    actors = Image.open(os.path.join(OUT, "sprites", "actors.png")).convert("RGBA")
+    hero = actors.crop((0, 0, 32, 32))
+    box = hero.getbbox()
+    hero = hero.crop(box)
+    k = 23
+    big = hero.resize((hero.width * k, hero.height * k), Image.NEAREST)
+    band_top = 860
+    icon.alpha_composite(big, ((size - big.width) // 2, (band_top - big.height) // 2 + 20))
+    px = icon.load()
+    for y in range(band_top, size):
+        for x in range(size):
+            if y < band_top + 20:
+                px[x, y] = dark + (255,)
+            else:
+                px[x, y] = accent + (255,) if ((x + (size - y)) // 45) % 2 == 0 else brand + (255,)
+    path = os.path.join(REPO, "GODOT", "godot", "icon.png")
+    icon.convert("RGB").save(path, optimize=False)
+    return os.path.relpath(path, REPO)
 
 
 # ------------------------------------------------------------------ ekran tytułowy i końcowy
@@ -569,6 +641,8 @@ def main():
     report["ability_icons"] = export_sheet("ability_icons", 16, "sprites/ability_icons.png", "ui/ability_icons.png",
                                            "ui/ability_icons_gray.png")[0]
     report["phone_icons"] = export_phone_icons()
+    report["touch_icons"] = export_touch_icons()
+    report["app_icon"] = make_app_icon()
     export_screen("title", 128, "ui/title.png")
     export_screen("end", 104, "ui/end.png")
     report["font_glyphs"] = export_font()
