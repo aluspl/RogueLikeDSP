@@ -28,6 +28,7 @@
 #include "bn_sprite_items_truck.h"
 #include "bn_sprite_items_houses.h"
 #include "bn_sprite_items_ability_icons.h"
+#include "bn_sprite_items_menu_icons.h"
 #include "bn_random.h"
 #include "bn_music.h"
 #include "bn_music_items.h"
@@ -472,7 +473,7 @@ namespace
         a.text.set_left_alignment();
         const char* lines[] = { "8 etapów w 3 aktach, każdy", "kończy boss. Schody = dalej.", "D-pad: ruch i atak wręcz",
                                 "A: atak (trzymaj: celuj)", "B: czekaj (trzymaj: podgląd)", "R: moc zawodu  L: mapa",
-                                "SELECT: telefon" };
+                                "START: akcje  SELECT: telefon" };
         for(int i = 0; i < 7; ++i) a.text.generate(-108, -48 + i * 16, lines[i], t);
         a.text.set_center_alignment();
         a.text.generate(0, 72, "A: dalej", t);
@@ -1185,7 +1186,17 @@ namespace
         }
         text_sprites status_text;
         int shown_status = -1, status_count = 0;
-        auto hide_status_hud = [&]() { for(auto& s : status_icons) s.set_visible(false); status_text.clear(); shown_status = -1; };
+        // Termos w HUD: ikona + liczba kaw (np. 2/3).
+        bn::sprite_ptr thermos_icon = bn::sprite_items::menu_icons.create_sprite(50, -52, 1);
+        thermos_icon.set_bg_priority(0);
+        thermos_icon.set_z_order(-100);
+        text_sprites thermos_text;
+        int shown_thermos = -1;
+        auto hide_status_hud = [&]() {
+            for(auto& s : status_icons) s.set_visible(false);
+            status_text.clear(); shown_status = -1;
+            thermos_icon.set_visible(false); thermos_text.clear(); shown_thermos = -1;
+        };
         a.text.set_bg_priority(0);
         a.text.set_z_order(-100);
         int fx_timer = 0, hurt_timer = 0, hold = 0;
@@ -1669,6 +1680,65 @@ namespace
             banner.hide();
             fx_particles.list.clear();
         };
+        // Menu akcji pod START: ikony wokół bohatera - góra Atak, prawo Moc, dół Termos, lewo Czekaj.
+        // Strzałka wybiera (druga raz tą samą strzałką albo A - wykonuje), START/B zamyka.
+        bool menu_open = false;
+        int menu_sel = -1;
+        bn::vector<bn::sprite_ptr, 5> menu_sprites;
+        static constexpr int8_t menu_dir[4][2] = { { 0, -1 }, { 1, 0 }, { 0, 1 }, { -1, 0 } };
+        auto menu_label = [&]() {
+            log.clear();
+            a.text.set_left_alignment();
+            a.text.set_palette_item(bn::sprite_palette_items::font_map_loot);
+            core::message m;
+            switch(menu_sel)
+            {
+                case 0: m.add("Atak: najbliższy cel (z").add(g.weapon().range).add(")"); break;
+                case 1: m.add("Moc: ").add(ability_label(g).s);
+                        if(g.ability_cd > 0) m.add(" - za ").add(g.ability_cd).add(" t."); break;
+                case 2: m.add("Termos ").add(g.thermos).add("/").add(data::thermos_capacity).add(": kawa +").add(g.coffee_heal()).add(" HP"); break;
+                case 3: m.add("Czekaj turę"); break;
+                default: m.add("Akcje: wybierz strzałką"); break;
+            }
+            a.text.generate(-116, 56, clip(m.s, 34).c_str(), log);
+            a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
+            a.text.generate(-116, 72, menu_sel < 0 ? "START/B: zamknij" : "A: wykonaj  START/B: zamknij", log);
+            draw_strips(true);
+            log_timer = 0;
+            if(menu_sprites.size() == 5)
+            {
+                menu_sprites[4].set_visible(menu_sel >= 0);
+                if(menu_sel >= 0) menu_sprites[4].set_position(menu_sprites[menu_sel].position());
+            }
+        };
+        auto open_menu = [&]() {
+            menu_open = true; menu_sel = -1;
+            menu_sprites.clear();
+            bn::fixed_point h = world(g.hero.x, g.hero.y);
+            for(int k = 0; k < 4; ++k)
+            {
+                bn::fixed_point p(h.x() + menu_dir[k][0] * 22, h.y() + menu_dir[k][1] * 22);
+                bn::optional<bn::sprite_ptr> sp = k == 1 ? bn::sprite_items::ability_icons.create_sprite_optional(p, g.cls)
+                    : bn::sprite_items::menu_icons.create_sprite_optional(p, k == 0 ? 0 : (k == 2 ? 1 : 2));
+                if(! sp) { menu_sprites.clear(); break; }
+                sp->set_camera(cam); sp->set_z_order(-70);
+                menu_sprites.push_back(bn::move(*sp));
+            }
+            if(menu_sprites.size() == 4)
+                if(bn::optional<bn::sprite_ptr> ring = bn::sprite_items::menu_icons.create_sprite_optional(0, 0, 3))
+                {
+                    ring->set_camera(cam); ring->set_z_order(-71); ring->set_visible(false);
+                    menu_sprites.push_back(bn::move(*ring));
+                }
+            target_marker.set_visible(false);
+            menu_label();
+        };
+        auto close_menu = [&]() {
+            menu_open = false;
+            menu_sprites.clear();
+            log.clear(); draw_strips(false); log_seen = g.log_serial;
+        };
+
         auto resume_view = [&]() {
             bg.set_visible(true);
             hero.set_visible(true);
@@ -1712,6 +1782,47 @@ namespace
                 continue;
             }
             if(range_flash > 0 && --range_flash == 0) show_range(false);
+            if(menu_open)
+            {
+                int pick = -1;
+                for(int k = 0; k < 4; ++k)
+                {
+                    bool pr = k == 0 ? bn::keypad::up_pressed() : (k == 1 ? bn::keypad::right_pressed()
+                            : (k == 2 ? bn::keypad::down_pressed() : bn::keypad::left_pressed()));
+                    if(! pr) continue;
+                    if(menu_sel == k) pick = k;
+                    else { menu_sel = k; menu_label(); bn::sound_items::sfx_menu.play(); }
+                }
+                if(bn::keypad::a_pressed() && menu_sel >= 0) pick = menu_sel;
+                if(pick < 0 && (bn::keypad::start_pressed() || bn::keypad::b_pressed())) { close_menu(); wait_release(); refresh(); }
+                else if(pick >= 0)
+                {
+                    close_menu();
+                    switch(pick)
+                    {
+                        case 0:
+                            acted = g.player_attack_nearest();
+                            if(! acted) { show_range(true); range_flash = 20; }
+                            break;
+                        case 1:
+                            acted = g.player_ability();
+                            if(acted) { bn::sound_items::sfx_ability.play(); ability_fx(); }
+                            break;
+                        case 2:
+                            acted = g.player_drink();
+                            if(acted) bn::sound_items::sfx_pickup.play();
+                            break;
+                        default:
+                            acted = g.player_wait();
+                            break;
+                    }
+                    refresh();
+                    wait_release();
+                }
+                animate(); fx_particles.update(); banner.update(a);
+                next_frame();
+                continue;
+            }
             if(looking)   // B: krótko = czekaj turę; przytrzymaj = podgląd wrogów (bez zużycia tury)
             {
                 ++look_frames;
@@ -1784,6 +1895,7 @@ namespace
                 aim_count = g.targets_in_range(aim_targets, core::max_enemies);
             }
             else if(bn::keypad::b_pressed() && ! looking) { looking = true; look_frames = 0; look_sel = 0; }
+            else if(bn::keypad::start_pressed()) { open_menu(); next_frame(); continue; }
             else if(bn::keypad::r_pressed() && ! bn::keypad::l_held())
             {
                 acted = g.player_ability();
@@ -1883,6 +1995,18 @@ namespace
                 }
                 for(int k = 0; k < 3; ++k) status_icons[k].set_visible(! banner_on && k < status_count);
                 for(bn::sprite_ptr& sp : status_text) sp.set_visible(! banner_on);
+                if(g.thermos != shown_thermos)
+                {
+                    shown_thermos = g.thermos;
+                    thermos_text.clear();
+                    a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
+                    a.text.set_bg_priority(0);
+                    a.text.set_left_alignment();
+                    core::message m; m.add(g.thermos).add("/").add(data::thermos_capacity);
+                    a.text.generate(59, -52, m.s, thermos_text);
+                }
+                thermos_icon.set_visible(! banner_on);
+                for(bn::sprite_ptr& sp : thermos_text) sp.set_visible(! banner_on);
             }
             bool ready = g.ability_cd == 0;
             power_icon.set_visible(! banner_on);

@@ -385,7 +385,7 @@
         "kornik"
       ],
       "count": 5,
-      "hpPct": 100,
+      "hpPct": 108,
       "dmgBonus": 0,
       "act": 0
     },
@@ -397,7 +397,7 @@
         "kornik"
       ],
       "count": 6,
-      "hpPct": 102,
+      "hpPct": 110,
       "dmgBonus": 0,
       "act": 0
     },
@@ -409,7 +409,7 @@
         "kornik"
       ],
       "count": 6,
-      "hpPct": 104,
+      "hpPct": 112,
       "dmgBonus": 0,
       "act": 0,
       "boss": "betoniarka"
@@ -422,7 +422,7 @@
         "przeciek"
       ],
       "count": 7,
-      "hpPct": 106,
+      "hpPct": 115,
       "dmgBonus": 0,
       "act": 1
     },
@@ -434,7 +434,7 @@
         "papierologia"
       ],
       "count": 7,
-      "hpPct": 108,
+      "hpPct": 118,
       "dmgBonus": 0,
       "act": 1,
       "boss": "nawalnica"
@@ -447,7 +447,7 @@
         "plesn"
       ],
       "count": 8,
-      "hpPct": 110,
+      "hpPct": 121,
       "dmgBonus": 0,
       "act": 2
     },
@@ -459,7 +459,7 @@
         "zwarcie"
       ],
       "count": 8,
-      "hpPct": 112,
+      "hpPct": 124,
       "dmgBonus": 0,
       "act": 2
     },
@@ -470,7 +470,7 @@
         "budzet"
       ],
       "count": 6,
-      "hpPct": 115,
+      "hpPct": 128,
       "dmgBonus": 0,
       "act": 2,
       "boss": "termin"
@@ -626,6 +626,11 @@
     "rarityPerLuck": 3,
     "dodgePerLuckPct": 2,
     "dodgeMaxPct": 20
+  },
+  "thermos": {
+    "capacity": 3,
+    "heal": 8,
+    "botDrinkBelowPct": 40
   },
   "badges": [
     {

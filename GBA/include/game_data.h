@@ -41,14 +41,14 @@ inline constexpr core::enemy_def enemies[] = {
 };
 
 inline constexpr core::stage_def stages[] = {
-    { "Fundamenty", { 0, 3, -1, -1 }, 2, 5, -1, 100, 0, 0 },
-    { "Mury parteru", { 4, 5, 3, -1 }, 3, 6, -1, 102, 0, 0 },
-    { "Strop", { 5, 7, 3, -1 }, 3, 6, 9, 104, 0, 0 },
-    { "Dach", { 6, 3, 0, -1 }, 3, 7, -1, 106, 0, 1 },
-    { "Okna i drzwi", { 5, 6, 4, -1 }, 3, 7, 10, 108, 0, 1 },
-    { "Instalacje", { 1, 0, 2, -1 }, 3, 8, -1, 110, 0, 2 },
-    { "Tynki i wylewki", { 2, 0, 1, -1 }, 3, 8, -1, 112, 0, 2 },
-    { "Wykończenie i odbiór", { 2, 7, -1, -1 }, 2, 6, 8, 115, 0, 2 },
+    { "Fundamenty", { 0, 3, -1, -1 }, 2, 5, -1, 108, 0, 0 },
+    { "Mury parteru", { 4, 5, 3, -1 }, 3, 6, -1, 110, 0, 0 },
+    { "Strop", { 5, 7, 3, -1 }, 3, 6, 9, 112, 0, 0 },
+    { "Dach", { 6, 3, 0, -1 }, 3, 7, -1, 115, 0, 1 },
+    { "Okna i drzwi", { 5, 6, 4, -1 }, 3, 7, 10, 118, 0, 1 },
+    { "Instalacje", { 1, 0, 2, -1 }, 3, 8, -1, 121, 0, 2 },
+    { "Tynki i wylewki", { 2, 0, 1, -1 }, 3, 8, -1, 124, 0, 2 },
+    { "Wykończenie i odbiór", { 2, 7, -1, -1 }, 2, 6, 8, 128, 0, 2 },
 };
 
 inline constexpr core::difficulty_def difficulties[] = {
@@ -162,6 +162,10 @@ inline constexpr int drop_per_luck_pct = 2;
 inline constexpr int rarity_per_luck = 3;
 inline constexpr int dodge_per_luck_pct = 2;
 inline constexpr int dodge_max_pct = 20;
+
+inline constexpr int thermos_capacity = 3;
+inline constexpr int coffee_heal = 8;
+inline constexpr int bot_drink_below_pct = 40;
 
 inline constexpr core::gear_def gear[] = {   // indeks = slot * 3 + jakość
     { "Kask budowlany", core::gear_stat::def, 1 },

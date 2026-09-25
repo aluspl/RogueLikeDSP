@@ -229,6 +229,7 @@ namespace core
         int walls_count = 0;
         int8_t equipped[4] = { -1, -1, -1, -1 };   // sprzęt: jakość w slocie (kask, rękawice, kamizelka), -1 = brak
         int8_t equipped_trait[4] = {};              // cecha przedmiotu w slocie (data::gear_traits)
+        int thermos = 0;                            // kawy w termosie (pije się z menu pod START)
         int8_t offer_slot = -1, offer_rarity = 0, offer_trait = 0;   // paczka czeka na decyzję: zakładam / zostawiam
         int weapon_override = -1;    // podniesione narzędzie zamiast broni zawodu
 
@@ -735,6 +736,28 @@ namespace core
             return true;
         }
 
+        int coffee_heal() const { return data::coffee_heal + bonus.coffee; }
+
+        void drink_coffee()
+        {
+            int h = imin(coffee_heal(), hero.max_hp - hero.hp);
+            hero.hp = int16_t(hero.hp + h);
+            push(message().add("Kawa z termosu: +").add(h).add(" HP").as(good));
+        }
+
+        // Picie z termosu (menu pod START): leczy, zużywa turę.
+        bool player_drink()
+        {
+            if(st != status::playing) return false;
+            if(thermos <= 0) { push(message().add("Termos pusty")); return false; }
+            if(hero.hp >= hero.max_hp) { push(message().add("HP pełne - kawa poczeka")); return false; }
+            if(shocked_turn()) return true;
+            --thermos;
+            drink_coffee();
+            end_turn();
+            return true;
+        }
+
         bool player_wait()
         {
             if(st != status::playing) return false;
@@ -816,7 +839,15 @@ namespace core
                 if(! p.active || p.x != hero.x || p.y != hero.y) continue;
                 if(p.type == gear_box && has_offer()) continue;   // najpierw decyzja o poprzedniej paczce
                 p.active = false;
-                if(p.type == coffee) { int h = imin(8 + bonus.coffee, hero.max_hp - hero.hp); hero.hp = int16_t(hero.hp + h); push(message().add("Kawa z termosu: +").add(h).add(" HP").as(good)); }
+                if(p.type == coffee)
+                {
+                    if(thermos < data::thermos_capacity)   // kawa do termosu; pełny termos - pije od razu
+                    {
+                        ++thermos;
+                        push(message().add("Kawa do termosu (").add(thermos).add("/").add(data::thermos_capacity).add(")").as(good));
+                    }
+                    else drink_coffee();
+                }
                 else if(p.type == helmet) { ++def_bonus; push(message().add("Nowy kask: obrona +1").as(loot)); }
                 else if(p.type == plan) { ++dmg_bonus; push(message().add("Projekt wykonawczy: obrażenia +1").as(loot)); }
                 else if(p.type == gear_box)
