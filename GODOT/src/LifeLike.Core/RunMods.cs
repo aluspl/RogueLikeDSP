@@ -31,6 +31,8 @@ public struct RunMods
     public int Tools;
     /// <summary>Brygada: fachowcy do wezwania (bitmaska GameData.Brigade).</summary>
     public int Helpers;
+    /// <summary>Tryb inwestora: włączone modyfikatory (bitmaska GameData.Investor).</summary>
+    public int Investor;
 
     public static RunMods Default(GameData d) => new() { Tools = d.StartToolsMask, Helpers = d.StartHelpersMask };
 

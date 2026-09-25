@@ -9,4 +9,5 @@ public enum ClassSelectHit
     Keepsake,
     Start,
     Back,
+    Investor,
 }

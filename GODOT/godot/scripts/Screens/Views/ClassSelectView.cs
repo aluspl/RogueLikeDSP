@@ -244,7 +244,17 @@ public partial class ClassSelectView : Control
         f.Draw(this, new Vector2(x + 6, Mathf.Round(kr.GetCenter().Y - 8)), "Pamiątka", Ink.Dim);
         f.Draw(this, new Vector2(x + cw - 6, Mathf.Round(kr.GetCenter().Y - 8)), f.Fit($"< {keep} >", cw - 90), k2 < 0 ? Ink.Dim : Ink.Done, TextAlign.Right);
         _hits.Add((kr, ClassSelectHit.Keepsake, 0));
-        y += rowH + 6;
+        y += rowH + 4;
+        if (Meta.InvestorUnlocked(_p)) // tryb inwestora: stawka, dotknięcie = modyfikatory
+        {
+            var ir = new Rect2(x - 4, y, cw + 8, rowH);
+            DrawStyleBox(Ui.Box(Pal.Group, 8), ir.Grow(-2));
+            f.Draw(this, new Vector2(x + 6, Mathf.Round(ir.GetCenter().Y - 8)), "Tryb inwestora", Ink.Dim);
+            f.Draw(this, new Vector2(x + cw - 6, Mathf.Round(ir.GetCenter().Y - 8)), InvestorLabel(), Ink.Brand, TextAlign.Right);
+            _hits.Add((ir, ClassSelectHit.Investor, 0));
+            y += rowH + 4;
+        }
+        y += 2;
         var perkText = k2 >= 0 ? RunMods.PerkLabel(Meta.KeepsakePerk(_d, _p, k2)) : "";
         var perks = UiText.Perks(_d, _p);
         var bottom = Note.Length > 0 ? Note : !unl ? $"Zablokowany: {_d.ClassCost} dośw. w Szkoleniach"
@@ -256,6 +266,9 @@ public partial class ClassSelectView : Control
             y += 16;
         }
     }
+
+    /// <summary>Stawka włączonych modyfikatorów i rekord zawodu, np. „stawka 5, rekord 3”.</summary>
+    private string InvestorLabel() => $"stawka {Investor.Stake(_d, Meta.InvestorMask(_d, _p))}, rekord {_p.BestStake[Selected]}";
 
     /// <summary>Paski statystyk (bazowa w kolorze marki, premia Szkoleń na zielono); zwraca dół.</summary>
     private float DrawStats(float sx, float sy, float width, int cls, ClassDef c, in RunMods m, bool unl, float step)
@@ -331,6 +344,12 @@ public partial class ClassSelectView : Control
         var diffLock = Meta.DifficultyUnlocked(_d, _p, Difficulty) ? "" : " (zablok.)";
         f.Draw(this, new Vector2(x, y), "Trudność:", Ink.Dim);
         f.Draw(this, new Vector2(x + 64, y), $"< {diff.Name}{diffLock} >", diffLock.Length > 0 ? Ink.Late : Ink.Dark);
+        if (Meta.InvestorUnlocked(_p)) // tryb inwestora (Tab) w tym samym wierszu
+        {
+            var ix = r.Position.X + r.Size.X / 2 + 10;
+            f.Draw(this, new Vector2(ix, y), "Inwestor:", Ink.Dim);
+            f.Draw(this, new Vector2(ix + 62, y), f.Fit($"{InvestorLabel()} (Tab)", (int)(r.End.X - ix - 76)), Ink.Brand);
+        }
         var k = Meta.SelectedKeepsake(_d, _p);
         var keep = k < 0 ? "bez pamiątki" : $"{_d.Keepsakes[k].Name} {UiText.Roman(Meta.KeepsakeRank(_d, _p, k) - 1)}: {RunMods.PerkLabel(Meta.KeepsakePerk(_d, _p, k))}";
         y += 18;

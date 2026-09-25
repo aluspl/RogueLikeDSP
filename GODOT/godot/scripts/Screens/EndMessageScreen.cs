@@ -24,6 +24,8 @@ public sealed class EndMessageScreen : Screen
         page.Add(won ? S.Data.StoryWin : S.Data.StoryLose);
         page.Info($"Wynik {S.Game.Score}  Dośw. +{S.LastGained}", Ink.Dark);
         page.Info(won ? "Dom na Osiedlu!" : "Doświadczenie zostaje", won ? Ink.Done : Ink.Dim);
+        var stake = Investor.Stake(S.Data, S.Game.Bonus.Investor);
+        if (stake > 0) page.Info($"Tryb inwestora: stawka {stake}" + (won ? $" (rekord zawodu {S.Profile.BestStake[S.Game.Cls]})" : ""), Ink.Brand);
         N.Phone.OpenSingle(page, 2, instant);
     }
 

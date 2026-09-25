@@ -27,7 +27,7 @@ public sealed class ScheduleScreen : Screen
 
     public void Advance()
     {
-        if (S.Game.ActCleared)
+        if (S.Game.ActCleared && !S.Game.ShopClosed) // tryb inwestora: Hurtownia zamknięta
         {
             S.Note = "";
             Flow.Hurtownia.Open();

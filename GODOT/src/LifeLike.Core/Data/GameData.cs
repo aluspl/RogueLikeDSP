@@ -42,6 +42,8 @@ public sealed class GameData
     public HelperDef[] Brigade { get; private init; } = [];
     /// <summary>Fachowcy dostępni od początku (koszt 0).</summary>
     public int StartHelpersMask { get; private init; }
+    /// <summary>Tryb inwestora: modyfikatory trudności (sekcja "investor"); bez sekcji – pusta lista.</summary>
+    public InvestorDef[] Investor { get; private init; } = [];
     /// <summary>Indeks = slot * 3 + jakość.</summary>
     public GearDef[] Gear { get; private init; } = [];
     public string[] GearSlots { get; private init; } = [];
@@ -291,6 +293,12 @@ public sealed class GameData
             if (brigade[i].Cost == 0) startHelpers |= 1 << i;
         }
 
+        var investor = d.TryGetProperty("investor", out var ij)
+            ? ij.GetProperty("list").EnumerateArray().Select(x => new InvestorDef(Str(x, "id"), Str(x, "name"), Str(x, "desc"),
+                ParseInvestor(Str(x, "effect")), Int(x, "value"), Int(x, "xpPct"), Int(x, "stake"))).ToArray()
+            : [];
+        Require(investor.Length <= 8, "tryb inwestora: maks. 8 modyfikatorów");
+
         var drops = d.GetProperty("drops");
         var weights = drops.GetProperty("weights");
         var eq = d.GetProperty("equipment");
@@ -361,6 +369,7 @@ public sealed class GameData
             WeatherNoBadStack = weatherNoBadStack,
             Brigade = brigade,
             StartHelpersMask = startHelpers,
+            Investor = investor,
             Tools = tools,
             Gear = gear.ToArray(),
             GearSlots = slots.ToArray(),
@@ -506,6 +515,17 @@ public sealed class GameData
         "rain" => EventEffect.Rain,
         "thermos" => EventEffect.Thermos,
         _ => throw new GameDataException($"nieznany skutek wydarzenia: {s}"),
+    };
+
+    private static InvestorEffect ParseInvestor(string s) => s switch
+    {
+        "cash_pct" => InvestorEffect.CashPct,
+        "no_break" => InvestorEffect.NoBreak,
+        "enemy_hp" => InvestorEffect.EnemyHp,
+        "no_shop" => InvestorEffect.NoShop,
+        "slam" => InvestorEffect.Slam,
+        "enemy_dmg" => InvestorEffect.EnemyDmg,
+        _ => throw new GameDataException($"nieznany modyfikator inwestora: {s}"),
     };
 
     private static UpgradeEffect ParseUpgrade(string s) =>

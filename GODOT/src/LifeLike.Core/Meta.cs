@@ -163,6 +163,13 @@ public static class Meta
         return true;
     }
 
+    /// <summary>Tryb inwestora: odblokowany po pierwszej wygranej; wybór na ekranie zawodu.</summary>
+    public static bool InvestorUnlocked(Profile p) => p.Wins > 0;
+
+    public static int InvestorMask(GameData d, Profile p) => InvestorUnlocked(p) ? p.Investor & ((1 << d.Investor.Length) - 1) : 0;
+
+    public static void ToggleInvestor(Profile p, int i) => p.Investor = (byte)(p.Investor ^ (1u << i));
+
     public static RunMods Mods(GameData d, Profile p)
     {
         var m = RunMods.Default(d);
@@ -188,6 +195,8 @@ public static class Meta
         }
         var k = SelectedKeepsake(d, p); // pamiątka zabrana na budowę
         if (k >= 0) m.AddPerk(KeepsakePerk(d, p, k));
+        m.Investor = InvestorMask(d, p); // tryb inwestora: modyfikatory i premia doświadczenia
+        m.XpPct += Investor.Xp(d, m.Investor);
         return m;
     }
 
@@ -401,6 +410,8 @@ public static class Meta
         }
         p.ToolsFound = (byte)(p.ToolsFound | g.ToolsFound);
         if (g.St == GameStatus.Won) p.ClassWins = (byte)(p.ClassWins | (1u << g.Cls));
+        var stake = Investor.Stake(d, g.Bonus.Investor); // rekord stawki zawodu (wygrana w trybie inwestora)
+        if (g.St == GameStatus.Won && stake > p.BestStake[g.Cls]) p.BestStake[g.Cls] = (byte)stake;
     }
 
     /// <summary>Sprawdza odznaki po ważnym momencie; nowe dają doświadczenie. Zwraca bitmaskę zdobytych teraz.</summary>

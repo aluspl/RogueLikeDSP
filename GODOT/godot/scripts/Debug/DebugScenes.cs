@@ -17,7 +17,7 @@ public sealed class DebugScenes
         "overview", "phone-tasks", "phone-issues", "phone-start", "phone-gear", "phone-costs", "card", "perks", "schedule",
         "hurtownia", "boss", "endmsg", "end", "banners", "map", "aim", "preview", "prologue",
         "schedule-tip", "help", "settings", "settings-title", "walk", "weather-rain", "weather-snow", "weather-wind", "weather-heat",
-        "brigade", "ally",
+        "brigade", "ally", "investor",
     ];
 
     private readonly App _app;
@@ -32,7 +32,7 @@ public sealed class DebugScenes
     private ScreenFlow Flow => _app.Flow;
 
     public static bool UsesDemoProfile(string scene) =>
-        scene is "title" or "classselect" or "profile" or "catalog" or "estate" or "team" or "training" or "card" or "perks";
+        scene is "title" or "classselect" or "profile" or "catalog" or "estate" or "team" or "training" or "card" or "perks" or "investor";
 
     public async Task Setup(string scene)
     {
@@ -60,6 +60,15 @@ public sealed class DebugScenes
                 return;
             case "help":
                 Flow.Help.Open(true, true);
+                return;
+            case "investor": // tryb inwestora nad wyborem zawodu: dwa modyfikatory włączone, rekord stawki
+                s.ClassId = 1;
+                s.Profile.Wins = Math.Max(1, s.Profile.Wins);
+                s.Profile.Investor = 0x05;
+                s.Profile.BestStake[1] = 3;
+                Flow.ClassSelect.Open();
+                Flow.Investor.Open(true);
+                Flow.Investor.Page.Sel = 2;
                 return;
             case "settings-title":
                 Flow.Title.Open();

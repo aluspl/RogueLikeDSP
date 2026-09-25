@@ -136,6 +136,36 @@ public sealed partial class Game
     // ------------------------------------------------------------------ pogoda dnia
     public WeatherDef WDef => D.Weather[Weather];
 
+    // ------------------------------------------------------------------ tryb inwestora
+    /// <summary>Suma wartości włączonych modyfikatorów danego rodzaju.</summary>
+    public int InvestorValue(InvestorEffect e)
+    {
+        var v = 0;
+        for (var i = 0; i < D.Investor.Length; ++i)
+        {
+            if (((Bonus.Investor >> i) & 1) != 0 && D.Investor[i].Effect == e) v += D.Investor[i].Value;
+        }
+        return v;
+    }
+
+    public bool InvestorHas(InvestorEffect e)
+    {
+        for (var i = 0; i < D.Investor.Length; ++i)
+        {
+            if (((Bonus.Investor >> i) & 1) != 0 && D.Investor[i].Effect == e) return true;
+        }
+        return false;
+    }
+
+    /// <summary>Przychód budowy (zł) z modyfikatorem budżetu.</summary>
+    public int Income(int v) => v * (100 + InvestorValue(InvestorEffect.CashPct)) / 100;
+
+    /// <summary>Co ile tur boss zapowiada cios (Kontrola częściej: krócej, nie mniej niż 2).</summary>
+    public int SlamEvery() => Math.Max(2, D.SlamEvery - InvestorValue(InvestorEffect.Slam));
+
+    /// <summary>Hurtownia zamknięta: po akcie od razu kolejny etap.</summary>
+    public bool ShopClosed => InvestorHas(InvestorEffect.NoShop);
+
     public bool WeatherIs(WeatherEffect e) => D.Weather[Weather].Effect == e;
 
     /// <summary>Pogoda dnia: losowanie wagami spośród dozwolonych na etapie s.</summary>
@@ -236,7 +266,7 @@ public sealed partial class Game
         switch (ev.Effect)
         {
             case EventEffect.FewerPickups: PickupsCount = Math.Max(Math.Min(1, PickupsCount), PickupsCount - ev.Value); break;
-            case EventEffect.Cash: Cash += ev.Value; break;
+            case EventEffect.Cash: Cash += Income(ev.Value); break;
             case EventEffect.Thermos: Thermos = ThermosCap(); break;
             // inspekcja: premia na koniec etapu; ulewa: poślizg przy ciosach
         }
@@ -367,9 +397,10 @@ public sealed partial class Game
 
     // ------------------------------------------------------------------ trudność, doświadczenie, poziomy
     /// <summary>Trudność = etap x poziom x NG+. Mnożniki w procentach, premie sumowane.</summary>
-    public int EnemyHpPct() => D.Stages[Stage].HpPct * DDef.HpPct / 100 * (100 + Tier * D.NgHpPctPerTier) / 100;
+    public int EnemyHpPct() => D.Stages[Stage].HpPct * DDef.HpPct / 100 * (100 + Tier * D.NgHpPctPerTier) / 100
+                               * (100 + InvestorValue(InvestorEffect.EnemyHp)) / 100;
 
-    public int EnemyDmgBonus() => D.Stages[Stage].DmgBonus + DDef.DmgBonus + Tier * D.NgDmgBonusPerTier;
+    public int EnemyDmgBonus() => D.Stages[Stage].DmgBonus + DDef.DmgBonus + Tier * D.NgDmgBonusPerTier + InvestorValue(InvestorEffect.EnemyDmg);
 
     public int ScorePct() => DDef.ScorePct * (100 + Tier * D.NgScorePctPerTier) / 100;
 
@@ -550,7 +581,7 @@ public sealed partial class Game
     /// <summary>Przejście do kolejnego etapu (po ekranie harmonogramu). Przerwa na kawę: +5 HP.</summary>
     public void NextStage()
     {
-        Hero.Hp = (short)Math.Min(Hero.MaxHp, Hero.Hp + 5);
+        if (!InvestorHas(InvestorEffect.NoBreak)) Hero.Hp = (short)Math.Min(Hero.MaxHp, Hero.Hp + 5); // tryb inwestora: bez przerwy
         StartStage(Stage + 1);
     }
 
