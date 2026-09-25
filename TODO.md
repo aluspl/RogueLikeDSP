@@ -1,7 +1,7 @@
 # TODO – PlanBudowlany RogueLike
 
 Stan na 2026-09-25: GBA v0.21.45 (wydane), Godot – logika zgodna z v0.21.45, oprawa z GBA, refaktor na ekrany,
-wersja mobilna w toku. Opis projektów: [`README.md`](README.md).
+wersja mobilna na iPhonie. Opis projektów: [`README.md`](README.md).
 
 Legenda: ✅ zrobione · 🔄 w toku · ⬜ do zrobienia · — nie dotyczy
 
@@ -9,12 +9,12 @@ Legenda: ✅ zrobione · 🔄 w toku · ⬜ do zrobienia · — nie dotyczy
 
 | Zadanie | GODOT (MOBILE) | GBA |
 |---|---|---|
-| Pion na telefonie, marginesy pod wyspę i pasek Home, skalowanie bez czarnych pasów | 🔄 | — |
-| Sterowanie jedną ręką: przesuwanie palcem, stuknięcie w pole/wroga, pasek ikon akcji (Atak, Moc, Termos, Czekaj, Telefon) | 🔄 | — |
-| Opcje pod ikoną klucza (głośność, wibracje, joystick, pasek pod lewą/prawą rękę, wielkość tekstu, Zapisz i wyjdź) | 🔄 | ⬜ (opcje dźwięku w menu) |
-| Przycisk planbudowlany.online na tytule | 🔄 | ✅ (QR na ekranie końcowym) |
-| Instalacja na urządzeniu jedną komendą (`GODOT/tools/ios_deploy.sh`) | 🔄 | — |
-| Test ręczny na sprzęcie i poprawki po graniu | ⬜ iPhone | ⬜ Miyoo, dźwięk |
+| Pion na telefonie, marginesy pod wyspę i pasek Home, skalowanie bez czarnych pasów | ✅ | — |
+| Sterowanie jedną ręką: przesuwanie palcem, stuknięcie w pole/wroga, pasek ikon akcji (Atak, Moc, Termos, Czekaj, Telefon) | ✅ | — |
+| Opcje pod ikoną klucza (głośność, wibracje, joystick, pasek pod lewą/prawą rękę, wielkość tekstu, Zapisz i wyjdź) | ✅ | ⬜ (opcje dźwięku w menu) |
+| Przycisk planbudowlany.online na tytule | ✅ | ✅ (QR na ekranie końcowym) |
+| Instalacja na urządzeniu jedną komendą (`GODOT/tools/ios_deploy.sh`) | ✅ | — |
+| Test ręczny na sprzęcie i poprawki po graniu | 🔄 iPhone (zainstalowane) | ⬜ Miyoo, dźwięk |
 | Android: eksport i instalacja (podpis bez sekretów w repo) | ⬜ | — |
 | Wydania do pobrania w Releases | ⬜ .ipa / .apk / desktop | ✅ ROM co wersję |
 | Oprawa 2.5D: kamera 3/4, dynamiczne światło (latarka czołowa), pogoda na etapie Dach | ⬜ | — |
@@ -56,7 +56,7 @@ Kolejność: A – rdzeń i GBA (po bossie Inspekcja Pracy), B – Godot i mobil
 | Wydarzenia na placu, rady kierownika | ✅ | ✅ |
 | Telefon PlanBudowlany (zakładki, powiadomienia push) | ✅ | ✅ |
 | Wybór zawodu z paskiem portretów, zablokowane na końcu | ✅ | ✅ |
-| Celowanie (przytrzymanie A) i karta wroga (przytrzymanie B) | ✅ klawiatura · 🔄 dotyk | ✅ |
+| Celowanie (przytrzymanie A) i karta wroga (przytrzymanie B) | ✅ klawiatura i dotyk | ✅ |
 | Prolog przy pierwszej budowie | ✅ | ✅ |
 | Grafika | ✅ bogatsza (kafle 32 px, 4 klatki chodu, światło) | ✅ |
 | Dźwięk i muzyka | ✅ | ✅ |
