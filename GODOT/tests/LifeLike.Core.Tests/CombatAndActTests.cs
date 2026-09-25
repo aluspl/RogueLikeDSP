@@ -1,6 +1,7 @@
 namespace LifeLike.Core.Tests;
 
-// core_tests.cpp: 2 i 22 (dziennik), 13 (trafienia), 23 (celowanie), 24 (akty), 25 (uderzenie bossa), 26 (Hurtownia).
+// core_tests.cpp: 2 i 22 (dziennik), 13 (trafienia), 23 (celowanie), 24 (akty), 25 (uderzenie bossa),
+// 25b (Inspekcja Pracy), 26 (Hurtownia).
 public class CombatAndActTests
 {
     private static GameData D => TestData.D;
@@ -140,6 +141,91 @@ public class CombatAndActTests
         var bet = D.Enemies[D.EnemyIndex("betoniarka")];
         if (dodge) Assert.True(g.Hero.Hp >= hp);
         else Assert.True(g.Hero.Hp <= hp - (bet.MinDamage + D.SlamDamageBonus - (g.CDef.Defense + g.DefBonus) / 2));
+    }
+
+    [Fact]
+    public void InspekcjaCrossSlamAndSummonLimit()
+    {
+        var ii = D.EnemyIndex("inspekcja");
+        var id = D.Enemies[ii];
+        Assert.True(id.Shape == SlamShape.Cross && id.Summon == D.EnemyIndex("papierologia") && id.SummonMax > 0 && id.RewardCash > 0);
+        var g = TestData.Arena(1);
+        g.Spawn(ii, 10, 7);
+        g.Boss = 0;
+        g.Enemies[0].Awake = true;
+        for (var k = 0; k < id.SummonMax; ++k)
+        {
+            g.Spawn(id.Summon, 10, 7);
+            g.Enemies[g.EnemiesCount - 1].Alive = false;
+        }
+        for (var k = 0; k < 12 && g.SlamTimer == 0; ++k) g.PlayerWait();
+        Assert.True(g.SlamTimer == D.SlamCrossDelay && g.SlamX == g.Hero.X && g.SlamY == g.Hero.Y);
+        Assert.True(g.SlamCell(g.Hero.X + D.SlamCrossReach, g.Hero.Y) && g.SlamCell(g.Hero.X, g.Hero.Y - D.SlamCrossReach));
+        Assert.True(!g.SlamCell(g.Hero.X + 1, g.Hero.Y + 1) && !g.SlamCell(g.Hero.X + D.SlamCrossReach + 1, g.Hero.Y));
+        var hp = g.Hero.Hp;
+        g.PlayerMove(0, 1); // zejście z krzyża po skosie
+        g.PlayerMove(-1, 0);
+        g.PlayerWait();
+        Assert.True(g.SlamTimer == 0 && g.Hero.Hp >= hp);
+        for (var k = 0; k < 60 && g.St == GameStatus.Playing; ++k)
+        {
+            g.Hero.Hp = g.Hero.MaxHp;
+            g.PlayerWait();
+        }
+        var alive = 0;
+        for (var i = 1; i < g.EnemiesCount; ++i)
+        {
+            alive += g.Enemies[i].Alive ? 1 : 0;
+            Assert.Equal(D.EnemyIndex("papierologia"), g.Enemies[i].DefId);
+        }
+        Assert.True(g.SummonsUsed == id.SummonMax && alive == id.SummonMax);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void InspekcjaStunnedByFullGear(bool gear)
+    {
+        var ii = D.EnemyIndex("inspekcja");
+        var st = Array.FindIndex(D.Stages, s => s.Boss == ii);
+        var id = D.Enemies[ii];
+        var g = TestData.Run(1, 31);
+        g.StartStage(st);
+        if (gear)
+        {
+            for (var i = 0; i < D.GearSlotsCount; ++i) g.Equip(i, 0, 0);
+        }
+        Assert.Equal(D.Stages[st].EnemyCount + 1 + id.SummonMax, g.EnemiesCount);
+        Assert.True(!g.Enemies[g.Boss + 1].Alive && g.StairsX < 0);
+        g.Enemies[g.Boss].Awake = true;
+        g.Enemies[g.Boss].X = (sbyte)(g.Hero.X + 5);
+        g.Enemies[g.Boss].Y = g.Hero.Y;
+        g.EnemyAct(g.Boss);
+        Assert.True(g.BossWakeDamage >= 0);
+        Assert.Equal(gear ? id.GearStun - 1 : 0, g.Enemies[g.Boss].Stun);
+    }
+
+    [Fact]
+    public void InspekcjaMidActRewardWithoutHurtownia()
+    {
+        var ii = D.EnemyIndex("inspekcja");
+        var st = Array.FindIndex(D.Stages, s => s.Boss == ii);
+        var id = D.Enemies[ii];
+        Assert.True(st + 1 < D.Stages.Length && D.Stages[st + 1].Act == D.Stages[st].Act);
+        var g = TestData.Run(1, 31);
+        for (var k = 0; k < st; ++k)
+        {
+            g.DebugSkip();
+            g.ActCleared = false;
+            g.NextStage();
+        }
+        int cash = g.Cash, actKills = g.ActKills;
+        g.DebugSkip();
+        Assert.True(g.St == GameStatus.StageClear && !g.ActCleared);
+        Assert.Equal(cash + id.RewardCash + id.Score / D.CashPerScore, g.Cash);
+        Assert.Equal(actKills + 1, g.ActKills);
+        g.NextStage();
+        Assert.True(g.Stage == st + 1 && g.StairsX >= 0);
     }
 
     [Fact]

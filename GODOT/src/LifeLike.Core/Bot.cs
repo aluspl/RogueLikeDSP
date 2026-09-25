@@ -18,14 +18,14 @@ public static class Bot
             else g.DeclineOffer();
         }
         if (g.Thermos > 0 && g.Hero.Hp * 100 < g.Hero.MaxHp * g.D.BotDrinkBelowPct && g.PlayerDrink()) return;
-        if (g.SlamCell(g.Hero.X, g.Hero.Y)) // zapowiedziany cios bossa: zejdź z czerwonych pól (jak człowiek)
+        if (g.SlamCell(g.Hero.X, g.Hero.Y)) // zapowiedziany cios bossa: zejdź z czerwonych pól (jak człowiek; nie wraca na nie)
         {
             int best = -1, bd = -1;
             for (var k = 0; k < 4; ++k)
             {
                 int nx = g.Hero.X + Dirs[k, 0], ny = g.Hero.Y + Dirs[k, 1];
                 if (!g.Lv.Passable(nx, ny) || g.Occupied(nx, ny)) continue;
-                var dist = Game.Cheb(nx, ny, g.SlamX, g.SlamY);
+                var dist = Game.Cheb(nx, ny, g.SlamX, g.SlamY) + (g.SlamCell(nx, ny) ? 0 : 10); // najpierw pole poza zasięgiem
                 if (dist > bd)
                 {
                     bd = dist;
@@ -83,6 +83,11 @@ public static class Bot
             int bx = cx - Dirs[k, 0], by = cy - Dirs[k, 1];
             if (bx == g.Hero.X && by == g.Hero.Y)
             {
+                if (g.SlamCell(cx, cy) && g.EnemyAt(cx, cy) < 0) // nie wchodzi na czerwone pola przed ciosem
+                {
+                    g.PlayerWait();
+                    return;
+                }
                 if (!g.PlayerMove(cx - bx, cy - by)) g.PlayerWait();
                 return;
             }
