@@ -227,6 +227,12 @@ namespace core
         int stage_kills = 0;         // problemy usunięte na bieżącym etapie (odznaka Seryjny)
         int stage_start_turn = 0;    // tura wejścia na etap (odznaka Przed terminem)
         uint8_t tools_found = 0;     // narzędzia podniesione w tej budowie (odznaka Kolekcjoner)
+        // liczniki zleceń (przenoszone do profilu przez bank_counters; *_banked = już przeniesione)
+        int kills_banked = 0;
+        uint16_t powers_used = 0, powers_banked = 0;   // użycia mocy
+        uint8_t brand_found = 0, brand_banked = 0;     // założone markowe przedmioty
+        uint8_t clean_bosses = 0, clean_banked = 0;    // bossowie aktu bez obrażeń w walce z nimi
+        int boss_wake_damage = -1;   // stage_damage w chwili dołączenia bossa do walki (-1 = jeszcze nie)
         int cash = 0;                // budżet budowy (zł) - za usunięte problemy i premie aktów, wydawany w Hurtowni
         int act_kills = 0;           // problemy usunięte w bieżącym akcie (premia)
         int act_bonus = 0;           // ostatnia premia za akt (do pokazania w Hurtowni)
@@ -462,7 +468,7 @@ namespace core
             st = status::playing;
             lv.generate(r);
             walls_count = 0;
-            stage_damage = 0; stage_kills = 0; stage_start_turn = turns;
+            stage_damage = 0; stage_kills = 0; stage_start_turn = turns; boss_wake_damage = -1;
             act_cleared = false; slam_timer = 0; slam_x = slam_y = -1; slam_counter = 0;
             for(auto& row : fov) for(auto& c : row) c = unknown;
             const stage_def& sd = data::stages[stage];
@@ -524,6 +530,7 @@ namespace core
         {
             actor& e = enemies[ei];
             const enemy_def& ed = data::enemies[e.def_id];
+            if(ei == boss && boss_wake_damage < 0) boss_wake_damage = stage_damage;   // walka z bossem trwa
             int dmg = r.range(weapon().min_damage, weapon().max_damage) + hero_stat(weapon().scales_with) / 2 + dmg_bonus
                     + gear_bonus(gear_stat::dmg) - ed.defense / 2;
             if(dmg < 1) dmg = 1;
@@ -543,6 +550,7 @@ namespace core
                 push(message().add(ed.name).add(" - usunięto!").as(good));
                 if(ei == boss)
                 {
+                    if(stage_damage == boss_wake_damage && clean_bosses < 255) ++clean_bosses;   // zlecenie Czysta robota
                     score += (500 + 100 * (stage + 1)) * score_pct() / 100;
                     gain_xp(data::xp_boss);
                     slam_timer = 0;
@@ -770,6 +778,7 @@ namespace core
                 }
             }
             if(! ok) { push(message().add(c.ability_name).add(": nie teraz")); return false; }
+            if(powers_used < 65535) ++powers_used;
             end_turn();
             ability_cd = ability_cooldown();
             return true;
@@ -878,6 +887,7 @@ namespace core
             }
             equipped[slot] = int8_t(rarity);
             equipped_trait[slot] = int8_t(trait);
+            if(rarity == 2 && brand_found < 255) ++brand_found;   // zlecenie Markowy styl
             update_fov();   // cecha Widzenie zmienia pole widzenia
             push(message().add("Sprzęt: ").add(nw.name).add(" +").add(nw.value).as(loot));
         }
@@ -946,6 +956,7 @@ namespace core
             const enemy_def& ed = data::enemies[e.def_id];
             int d = cheb(e.x, e.y, hero.x, hero.y);
             if(! e.awake) { if(d <= ed.sight) e.awake = true; else return; }
+            if(i == boss && boss_wake_damage < 0) boss_wake_damage = stage_damage;
             if(e.stun > 0) { --e.stun; return; }
             if(ed.slam && i == boss)   // boss: co kilka tur zapowiada uderzenie w obszar wokół bohatera
             {

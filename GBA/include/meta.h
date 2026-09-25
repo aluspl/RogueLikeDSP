@@ -11,10 +11,14 @@ namespace core
     static_assert(data::upgrades_count <= max_upgrades);
     static_assert(data::classes_count <= 8);
 
-    constexpr char profile_magic[8] = "PBRL003";
+    constexpr char profile_magic[8] = "PBRL004";
+    constexpr char profile_magic_v3[8] = "PBRL003";
     constexpr char profile_magic_v2[8] = "PBRL002";
     constexpr char profile_magic_v1[8] = "PBRL001";
     constexpr int profile_v2_size = 36;   // v3 = v2 + pola motywacji na końcu
+    constexpr int profile_v3_size = 56;   // v4 = v3 + zlecenia i pamiątki na końcu
+    constexpr int max_keepsakes = 8;
+    static_assert(data::contracts_count <= 8);
     constexpr int max_houses = 12;        // działki na Osiedlu
     static_assert(data::badges_count <= 16 && data::enemies_count <= 16);
 
@@ -38,8 +42,17 @@ namespace core
         uint8_t tools_found;           // narzędzia kiedykolwiek znalezione (odznaka Kolekcjoner)
         uint8_t houses_count;
         uint8_t houses[max_houses];    // Osiedle: zawód (4 bity) | wielkość domu << 4
+        // --- v4: zlecenia i pamiątki
+        uint16_t kills_total;          // problemy usunięte we wszystkich budowach
+        uint16_t powers_total;         // użycia mocy zawodu
+        uint8_t brand_total;           // założone markowe przedmioty
+        uint8_t clean_bosses;          // bossowie aktu pokonani bez obrażeń w walce z nimi
+        uint8_t contracts;             // ukończone zlecenia (bitmaska data::contracts)
+        uint8_t keepsake;              // wybrana pamiątka + 1 (0 = bez pamiątki)
+        uint8_t keepsake_runs[max_keepsakes];   // budowy z każdą pamiątką (ranga)
     };
     static_assert(offsetof(profile, badges) == profile_v2_size);
+    static_assert(offsetof(profile, kills_total) == profile_v3_size);
 
     enum profile_flag : uint8_t { help_seen = 1, prologue_seen = 2 };
 
@@ -57,9 +70,12 @@ namespace core
     inline bool profile_fix(profile& p)
     {
         if(std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0) return false;
-        if(std::memcmp(p.magic, profile_magic_v2, sizeof p.magic) == 0)   // v2 -> v3: nowe pola od zera
+        // v3 -> v4 i v2 -> v4: stare pola zostają, nowe od zera
+        int keep = std::memcmp(p.magic, profile_magic_v3, sizeof p.magic) == 0 ? profile_v3_size
+                 : (std::memcmp(p.magic, profile_magic_v2, sizeof p.magic) == 0 ? profile_v2_size : 0);
+        if(keep > 0)
         {
-            std::memset(reinterpret_cast<char*>(&p) + profile_v2_size, 0, sizeof p - profile_v2_size);
+            std::memset(reinterpret_cast<char*>(&p) + keep, 0, sizeof p - keep);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             return true;
         }
@@ -172,9 +188,56 @@ namespace core
         return true;
     }
 
-    // Przenosi do profilu trwałe osiągnięcia budowy (katalog, narzędzia, wygrane zawody). Można wołać wielokrotnie.
-    inline void record_run(profile& p, const game& g)
+    inline uint16_t add_sat16(uint16_t a, int d) { return uint16_t(imin(65535, a + imax(0, d))); }
+    inline uint8_t add_sat8(uint8_t a, int d) { return uint8_t(imin(255, a + imax(0, d))); }
+
+    // Przenosi do profilu nowe wartości liczników zleceń z budowy (bez podwójnego liczenia).
+    inline void bank_counters(profile& p, game& g)
     {
+        p.kills_total = add_sat16(p.kills_total, g.kills - g.kills_banked); g.kills_banked = g.kills;
+        p.powers_total = add_sat16(p.powers_total, g.powers_used - g.powers_banked); g.powers_banked = g.powers_used;
+        p.brand_total = add_sat8(p.brand_total, g.brand_found - g.brand_banked); g.brand_banked = g.brand_found;
+        p.clean_bosses = add_sat8(p.clean_bosses, g.clean_bosses - g.clean_banked); g.clean_banked = g.clean_bosses;
+    }
+
+    inline int popcount(unsigned v) { int n = 0; for(; v; v &= v - 1) ++n; return n; }
+
+    // Postęp zlecenia (licznik z profilu).
+    inline int contract_progress(const profile& p, int i)
+    {
+        switch(data::contracts[i].kind)
+        {
+            case contract_kind::kills:      return p.kills_total;
+            case contract_kind::powers:     return p.powers_total;
+            case contract_kind::brand:      return p.brand_total;
+            case contract_kind::clean_boss: return p.clean_bosses;
+            case contract_kind::class_wins: return popcount(p.class_wins);
+            case contract_kind::wins:       return p.wins;
+            default:                        return 0;
+        }
+    }
+
+    inline bool contract_done(const profile& p, int i) { return p.contracts & (1u << i); }
+
+    // Sprawdza zlecenia: ukończone dają doświadczenie (i pamiątkę). Zwraca bitmaskę ukończonych właśnie teraz.
+    inline int check_contracts(profile& p)
+    {
+        int got = 0;
+        for(int i = 0; i < data::contracts_count; ++i)
+            if(! contract_done(p, i) && contract_progress(p, i) >= data::contracts[i].target)
+            {
+                p.contracts = uint8_t(p.contracts | (1u << i));
+                p.xp += data::contracts[i].xp;
+                got |= 1 << i;
+            }
+        return got;
+    }
+
+    // Przenosi do profilu trwałe osiągnięcia budowy (katalog, narzędzia, wygrane zawody, liczniki zleceń).
+    // Można wołać wielokrotnie.
+    inline void record_run(profile& p, game& g)
+    {
+        bank_counters(p, g);
         for(int d = 0; d < data::enemies_count; ++d) if(g.kills_by_type[d]) p.catalog = uint16_t(p.catalog | (1u << d));
         p.tools_found = uint8_t(p.tools_found | g.tools_found);
         if(g.st == status::won) p.class_wins = uint8_t(p.class_wins | (1u << g.cls));
@@ -182,7 +245,7 @@ namespace core
 
     // Sprawdza odznaki po ważnym momencie (koniec etapu, koniec budowy). Nowe odznaki dają doświadczenie.
     // Zwraca bitmaskę odznak zdobytych właśnie teraz.
-    inline int check_badges(profile& p, const game& g)
+    inline int check_badges(profile& p, game& g)
     {
         record_run(p, g);
         bool cleared = g.st == status::stage_clear || g.st == status::won;
@@ -222,7 +285,7 @@ namespace core
     // Cały stan gry (game jest trywialnie kopiowalny) za profilem w SRAM. Rozmiar i suma kontrolna
     // odrzucają zapisy uszkodzone i z innej wersji gry.
     static_assert(std::is_trivially_copyable_v<game>);
-    constexpr char run_magic[8] = "PBRUN02";   // 02: szczęście, cechy sprzętu, termos
+    constexpr char run_magic[8] = "PBRUN03";   // 03: liczniki zleceń, premie z odznak i pamiątek
     constexpr int run_save_offset = 256;
     static_assert(sizeof(profile) <= run_save_offset);
 

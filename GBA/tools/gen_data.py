@@ -106,6 +106,15 @@ bid = {b["id"]: i for i, b in enumerate(d["badges"])}
 L += [f"inline constexpr int badges_count = {len(d['badges'])};",
       f"inline constexpr int enemies_count = {len(d['enemies'])};"]
 L += [f"inline constexpr int badge_{k} = {v};" for k, v in bid.items()] + [""]
+KINDS = {"kills", "powers", "brand", "clean_boss", "class_wins", "wins"}
+kid = {k["id"]: i for i, k in enumerate(d.get("keepsakes", []))}
+L.append("inline constexpr core::contract_def contracts[] = {   // zlecenia: długofalowe cele z licznikami w profilu")
+for c in d["contracts"]:
+    assert c["kind"] in KINDS and len(c["name"]) <= 16 and len(c["desc"]) <= 30 and 0 < c["target"] < 30000, c
+    L.append(f'    {{ {s(c["name"])}, {s(c["desc"])}, core::contract_kind::{c["kind"]}, {c["target"]}, {c["xp"]}, '
+             f'{kid[c["keepsake"]] if "keepsake" in c else -1} }},')
+L.append("};")
+L += [f"inline constexpr int contracts_count = {len(d['contracts'])};", ""]
 L.append("inline constexpr core::tool_def tools[] = {")
 for t in m["tools"]:
     L.append(f'    {{ {wid[t["weapon"]]}, {t["cost"]} }},')

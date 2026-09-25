@@ -1038,5 +1038,55 @@
       "effect": "ability"
     }
   ],
-  "version": "v0.21.42"
+  "version": "v0.21.42",
+  "contracts": [
+    {
+      "id": "trzy_fachy",
+      "name": "Trzy fachy",
+      "desc": "Wygraj 3 różnymi zawodami",
+      "kind": "class_wins",
+      "target": 3,
+      "xp": 40
+    },
+    {
+      "id": "czysta_robota",
+      "name": "Czysta robota",
+      "desc": "Boss aktu bez obrażeń w walce",
+      "kind": "clean_boss",
+      "target": 1,
+      "xp": 30
+    },
+    {
+      "id": "markowy_styl",
+      "name": "Markowy styl",
+      "desc": "Zbierz 5 markowych przedmiotów",
+      "kind": "brand",
+      "target": 5,
+      "xp": 30
+    },
+    {
+      "id": "mocarz",
+      "name": "Mocarz",
+      "desc": "Użyj mocy zawodu 100 razy",
+      "kind": "powers",
+      "target": 100,
+      "xp": 40
+    },
+    {
+      "id": "pogromca",
+      "name": "Pogromca usterek",
+      "desc": "Usuń 200 problemów",
+      "kind": "kills",
+      "target": 200,
+      "xp": 60
+    },
+    {
+      "id": "staly_klient",
+      "name": "Stały klient",
+      "desc": "Wygraj 5 budów",
+      "kind": "wins",
+      "target": 5,
+      "xp": 50
+    }
+  ]
 }
