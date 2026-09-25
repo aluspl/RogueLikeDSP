@@ -130,6 +130,13 @@ for sl in eq["slots"]:
 L.append("};")
 L.append("inline constexpr const char* gear_slots[] = { " + ", ".join(s(sl["name"]) for sl in eq["slots"]) + " };")
 L.append("inline constexpr const char* gear_rarities[] = { " + ", ".join(s(r) for r in eq["rarities"]) + " };")
+L.append("inline constexpr core::trait_def gear_traits[] = {   // cechy sprzętu (losowane do każdego przedmiotu)")
+for t in eq["traits"]:
+    assert t["effect"] in {"luck", "crit", "poison_res", "sight", "cooldown"} and len(t["short"]) <= 9 and len(t["name"]) <= 22, t
+    L.append(f'    {{ {s(t["name"])}, {s(t["short"])}, core::trait_effect::{t["effect"]}, {t["value"]} }},')
+L.append("};")
+L.append(f"inline constexpr int gear_traits_count = {len(eq['traits'])};")
+L.append(f"inline constexpr int gear_decline_xp = {eq['declineXp']};")
 rr = eq["rarityRoll"]
 L += [f"inline constexpr int gear_slots_count = {len(eq['slots'])};",
       f"inline constexpr int gear_solid_from = {rr['solidFrom']};",

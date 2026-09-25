@@ -21,6 +21,7 @@ static bool connected(const level& lv, int sx, int sy)
 // Prosty bot: idź do najbliższego wroga/schodów, atakuj z dystansu, gdy się da.
 static void bot_step(game& g)
 {
+    if(g.has_offer()) { if(g.offer_is_better()) g.accept_offer(); else g.decline_offer(); }
     if(g.slam_cell(g.hero.x, g.hero.y))   // zapowiedziany cios bossa: zejdź z czerwonych pól (jak człowiek)
     {
         int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}}, best=-1, bd=-1;
@@ -463,15 +464,20 @@ int main()
         game g; arena(g, 1);
         for(int i = 0; i < data::gear_slots_count; ++i) CHECK(g.equipped[i] == -1);
         int hp0 = g.hero.max_hp;
-        auto give = [&](int slot, int rarity) {
-            g.pickups[0] = { g.hero.x, g.hero.y, gear_box, true, uint8_t(slot * 3 + rarity) }; g.pickups_count = 1; g.collect();
+        auto give = [&](int slot, int rarity, int trait = 0) {
+            g.pickups[0] = { g.hero.x, g.hero.y, gear_box, true, uint8_t(slot * 3 + rarity), uint8_t(trait) }; g.pickups_count = 1; g.collect();
         };
-        give(2, 1);                                                       // kamizelka ocieplana +8 HP
-        CHECK(g.equipped[2] == 1 && g.hero.max_hp == hp0 + 8);
+        give(2, 1, 3);                                                    // kamizelka ocieplana +8 HP: pusty slot - od razu
+        CHECK(g.equipped[2] == 1 && g.equipped_trait[2] == 3 && g.hero.max_hp == hp0 + 8 && !g.has_offer());
         int xp0 = g.run_xp;
-        give(2, 0);                                                       // gorsza: zostaje lepsza, jest doświadczenie
-        CHECK(g.equipped[2] == 1 && g.hero.max_hp == hp0 + 8 && g.run_xp > xp0);
-        give(2, 2);                                                       // lepsza zastępuje
+        give(2, 0);                                                       // zajęty slot: porównanie
+        CHECK(g.has_offer() && !g.offer_is_better() && g.equipped[2] == 1);
+        give(2, 2); CHECK(g.pickups[0].active);                           // druga paczka czeka, aż zdecydujesz
+        g.decline_offer();                                                // zostawiam stary: doświadczenie
+        CHECK(!g.has_offer() && g.equipped[2] == 1 && g.hero.max_hp == hp0 + 8 && g.run_xp == xp0 + data::gear_decline_xp);
+        give(2, 0, 1); g.accept_offer();                                  // gorszy, ale gracz wybrał
+        CHECK(g.equipped[2] == 0 && g.equipped_trait[2] == 1 && g.hero.max_hp == hp0 + 4);
+        give(2, 2); CHECK(g.offer_is_better()); g.accept_offer();         // lepsza zastępuje
         CHECK(g.equipped[2] == 2 && g.hero.max_hp == hp0 + 12);
         give(0, 2); give(1, 2);
         CHECK(g.gear_bonus(gear_stat::def) == 3 && g.gear_bonus(gear_stat::dmg) == 3);
@@ -625,6 +631,37 @@ int main()
             applied += g.status_turns(status_effect::poison) > 0;
         }
         CHECK(applied > 30 && applied < 120);
+    }
+    // 27a. cechy sprzętu: szczęście, kryt, odporność, widzenie, odnowienie mocy
+    {
+        auto trait_of = [](trait_effect e) { for(int i = 0; i < data::gear_traits_count; ++i) if(data::gear_traits[i].effect == e) return i; return -1; };
+        game g; arena(g, 1);
+        int luck0 = g.luck(), crit0 = g.crit_pct(), cd0 = g.ability_cooldown();
+        g.equip(0, 0, trait_of(trait_effect::luck));
+        CHECK(g.luck() == luck0 + 1 && g.crit_pct() == crit0 + data::crit_per_luck_pct);
+        g.equip(1, 0, trait_of(trait_effect::crit));
+        CHECK(g.crit_pct() == crit0 + data::crit_per_luck_pct + 5);
+        g.equip(2, 0, trait_of(trait_effect::cooldown));
+        CHECK(g.ability_cooldown() == cd0 - 1);
+        g.equip(0, 0, trait_of(trait_effect::poison_res));
+        g.apply_status(status_effect::poison, 3); CHECK(g.status_turns(status_effect::poison) == 0);
+        g.hero.x = 7; g.hero.y = 7; g.update_fov();
+        CHECK(!g.visible(7, 7 + fov_radius + 1) || g.lv.at(7, 7 + fov_radius + 1) == tile::wall);
+        game w; w.new_run(0, 3);
+        for(auto& row : w.lv.t) for(auto& c : row) c = tile::floor;
+        w.enemies_count = 0; w.hero.x = 15; w.hero.y = 15; w.update_fov();
+        CHECK(!w.visible(15, 15 + fov_radius + 1));
+        w.equip(0, 0, trait_of(trait_effect::sight));
+        CHECK(w.sight_radius() == fov_radius + 1 && w.visible(15, 15 + fov_radius + 1));
+        int seen = 0;                                                     // dropy sprzętu mają różne cechy
+        for(uint32_t seed = 1; seed <= 1500; ++seed)
+        {
+            game h; h.new_run(1, seed);
+            h.enemies_count = 0; h.spawn(0, h.hero.x + 1, h.hero.y); h.enemies[0].hp = 1; h.player_move(1, 0);
+            const pickup& p = h.pickups[h.pickups_count - 1];
+            if(p.type == gear_box) { CHECK(p.trait < data::gear_traits_count); seen |= 1 << p.trait; }
+        }
+        CHECK(seen == (1 << data::gear_traits_count) - 1);
     }
     // 28a. szczęście: kryt x2, unik, różne szczęście zawodów
     {

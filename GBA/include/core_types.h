@@ -118,6 +118,16 @@ namespace core
         int8_t value;
     };
 
+    enum class trait_effect : uint8_t { luck, crit, poison_res, sight, cooldown };
+
+    struct trait_def           // cecha przedmiotu sprzętu
+    {
+        const char* name;
+        const char* short_name;   // do pastylki w telefonie
+        trait_effect effect;
+        int8_t value;
+    };
+
     struct badge_def           // odznaka (motywacja do kolejnych budów)
     {
         const char* name;

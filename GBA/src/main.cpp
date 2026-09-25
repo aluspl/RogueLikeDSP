@@ -766,7 +766,8 @@ namespace
         const core::game& g = *a.g;
         phone_header(a, ph, t, tab_names[3], "Na budowie");
         phone_canvas& c = *ph.canvas;
-        core::message w; w.add(g.weapon().name).add(" ").add(g.weapon().min_damage).add("-").add(g.weapon().max_damage);
+        core::message w; w.add(g.weapon().name).add(" ").add(g.weapon().min_damage).add("-").add(g.weapon().max_damage)
+                               .add(" z").add(g.weapon().range).add(" +").add(g.dmg_bonus);
         stripe(c, 0, phone_tile::stripe_brand);
         phone_text(a, t, list_x, row_py(0), clip(w.s, 26).c_str(), ink::dark);
         for(int i = 0; i < data::gear_slots_count; ++i)
@@ -777,12 +778,15 @@ namespace
             else m.add(data::gear_slots[i]).add(": brak");
             stripe(c, 1 + i, r < 0 ? phone_tile::stripe_todo : (r == 2 ? phone_tile::stripe_prog : (r == 1 ? phone_tile::stripe_brand : phone_tile::stripe_done)));
             phone_text(a, t, list_x, row_py(1 + i), clip(m.s, 17).c_str(), r >= 0 ? ink::dark : ink::dim);
-            if(r >= 0) phone_pill(a, c, t, pill_end, row_ty(1 + i), data::gear_rarities[r], r == 2 ? pill::prog : (r == 1 ? pill::group : pill::gray));
+            if(r >= 0)   // pastylka = cecha przedmiotu, kolor = jakość
+                phone_pill(a, c, t, pill_end, row_ty(1 + i), data::gear_traits[g.equipped_trait[i]].short_name,
+                           r == 2 ? pill::prog : (r == 1 ? pill::group : pill::gray));
         }
-        core::message s1; s1.add("Obrona +").add(g.gear_bonus(core::gear_stat::def)).add("  Obraż. +").add(g.gear_bonus(core::gear_stat::dmg));
-        phone_text(a, t, list_x, row_py(4), s1.s, ink::dim);
-        core::message s2; s2.add("Kamizelka: +").add(g.gear_bonus(core::gear_stat::hp)).add(" HP");
-        phone_text(a, t, list_x, row_py(5), s2.s, ink::dim);
+        core::message s1; s1.add("Obrona +").add(g.gear_bonus(core::gear_stat::def)).add("  Obraż. +").add(g.gear_bonus(core::gear_stat::dmg))
+                                .add("  HP +").add(g.gear_bonus(core::gear_stat::hp));
+        phone_text(a, t, list_x, row_py(4), clip(s1.s, 34).c_str(), ink::dim);
+        core::message s2; s2.add("Kryt ").add(g.crit_pct()).add("%  Unik ").add(g.dodge_pct()).add("%  Wzrok ").add(g.sight_radius());
+        phone_text(a, t, list_x, row_py(5), clip(s2.s, 34).c_str(), ink::dim);
     }
 
     void tab_costs(app& a, phone_screen& ph, page_sprites& t)   // Koszty = Szkolenia (podgląd w trakcie budowy)
@@ -892,6 +896,52 @@ namespace
             }
             next_frame();
         }
+    }
+
+    const char* gear_stat_name(core::gear_stat s)
+    {
+        return s == core::gear_stat::def ? "Obrona" : (s == core::gear_stat::dmg ? "Obrażenia" : "Max HP");
+    }
+
+    // Paczka sprzętu przy zajętym slocie: porównanie obecny / nowy z cechami. A: zakładam, B: zostawiam.
+    void gear_offer_dialog(app& a)
+    {
+        core::game& g = *a.g;
+        phone_screen ph(3);
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        page_sprites t;
+        const int slot = g.offer_slot;
+        phone_header(a, ph, t, "Paczka sprzętu", data::gear_slots[slot]);
+        phone_canvas& c = *ph.canvas;
+        auto item_rows = [&](int row, int rarity, int trait, bool is_new) {
+            const core::gear_def& gd = data::gear[slot * 3 + rarity];
+            stripe(c, row, is_new ? phone_tile::stripe_prog : phone_tile::stripe_todo);
+            stripe(c, row + 1, is_new ? phone_tile::stripe_prog : phone_tile::stripe_todo);
+            phone_text(a, t, list_x, row_py(row), clip(gd.name, 17).c_str(), ink::dark);
+            phone_pill(a, c, t, pill_end, row_ty(row), data::gear_rarities[rarity],
+                       rarity == 2 ? pill::prog : (rarity == 1 ? pill::group : pill::gray));
+            core::message m; m.add(is_new ? "Nowy: " : "Teraz: ").add(gear_stat_name(gd.stat)).add(" +").add(gd.value)
+                                .add(", ").add(data::gear_traits[trait].short_name);
+            phone_text(a, t, list_x, row_py(row + 1), clip(m.s, 34).c_str(), is_new ? ink::brand : ink::dim);
+        };
+        item_rows(0, g.equipped[slot], g.equipped_trait[slot], false);
+        item_rows(2, g.offer_rarity, g.offer_trait, true);
+        core::message cm; cm.add("Cecha: ").add(data::gear_traits[g.offer_trait].name);
+        phone_text(a, t, list_x, row_py(4), clip(cm.s, 34).c_str(), ink::dim);
+        core::message km; km.add("A: zakładam  B: zostawiam (+").add(data::gear_decline_xp + g.offer_rarity).add(")");
+        phone_text(a, t, list_x, row_py(5), km.s, g.offer_is_better() ? ink::done : ink::dark);
+        ph.commit();
+        bn::sound_items::sfx_notify.play(bn::fixed(0.7));
+        wait_release();
+        while(g.has_offer())
+        {
+            if(bn::keypad::a_pressed()) { g.accept_offer(); bn::sound_items::sfx_buy.play(); }
+            else if(bn::keypad::b_pressed()) { g.decline_offer(); bn::sound_items::sfx_menu.play(); }
+            next_frame();
+        }
+        t.clear();
+        a.text.set_palette_item(default_ink);
+        wait_release();
     }
 
     // Wiadomość w telefonie (fabuła): nadawca, dymek z 3 liniami, 2 wiersze informacji. A/START: dalej.
@@ -1605,6 +1655,31 @@ namespace
             hold = 0;
         };
 
+        // Pełnoekranowe okno (telefon, porównanie sprzętu): chowa mapę i HUD, zwalnia warstwę pasków.
+        auto suspend_view = [&]() {
+            bg.set_visible(false);
+            hero.set_visible(false);
+            for(auto& sp : enemies) sp.set_visible(false);
+            for(auto& sp : pickups) sp.set_visible(false);
+            fx.clear(); hud.clear(); log.clear(); floaters.clear();
+            hp_left.set_visible(false); hp_right.set_visible(false);
+            hide_mini_bars(); target_marker.set_visible(false); status_sprite.set_visible(false);
+            power_icon.set_visible(false); power_text.clear(); shown_cd = -1; hide_status_hud();
+            release_strips();
+            banner.hide();
+            fx_particles.list.clear();
+        };
+        auto resume_view = [&]() {
+            bg.set_visible(true);
+            hero.set_visible(true);
+            hp_left.set_visible(true); hp_right.set_visible(true);
+            create_strips();
+            draw_strips(strips_bottom);
+            snap_next = true;
+            refresh();
+            hold = 0;
+        };
+
         while(true)
         {
             if(bn::keypad::l_held() && ! bn::keypad::r_held()) { overview(); continue; }
@@ -1643,7 +1718,7 @@ namespace
                 if(look_frames == 10)
                 {
                     look_count = 0;
-                    for(int d = 1; d <= core::fov_radius + 1; ++d)
+                    for(int d = 1; d <= g.sight_radius() + 1; ++d)
                         for(int i = 0; i < g.enemies_count; ++i)
                             if(g.enemies[i].alive && g.visible(g.enemies[i].x, g.enemies[i].y)
                                && core::cheb(g.hero.x, g.hero.y, g.enemies[i].x, g.enemies[i].y) == d)
@@ -1719,17 +1794,7 @@ namespace
             if(bn::keypad::select_pressed() && bn::keypad::l_held() && bn::keypad::r_held()) { g.debug_skip(); snap_next = true; refresh(); }
             else if(bn::keypad::select_pressed())
             {
-                bg.set_visible(false);
-                hero.set_visible(false);
-                for(auto& s : enemies) s.set_visible(false);
-                for(auto& s : pickups) s.set_visible(false);
-                fx.clear(); hud.clear(); log.clear(); floaters.clear();
-                hp_left.set_visible(false); hp_right.set_visible(false);
-                hide_mini_bars(); target_marker.set_visible(false); status_sprite.set_visible(false);
-                power_icon.set_visible(false); power_text.clear(); shown_cd = -1; hide_status_hud();
-                release_strips();
-                banner.hide();
-                fx_particles.list.clear();
+                suspend_view();
                 pause_result pr = run_phone(a);
                 if(pr == pause_result::save_exit) { save_run(a); return leave(scene::title); }
                 if(pr == pause_result::quit)
@@ -1740,19 +1805,18 @@ namespace
                     clear_run(a);
                     return leave(scene::shop);
                 }
-                bg.set_visible(true);
-                hero.set_visible(true);
-                hp_left.set_visible(true); hp_right.set_visible(true);
-                create_strips();
-                draw_strips(strips_bottom);
-                snap_next = true;
-                refresh();
-                hold = 0;
+                resume_view();
                 continue;
             }
 
             if(acted) refresh();
-
+            if(g.has_offer())   // paczka sprzętu: okno porównania (jak telefon - zwalnia paski)
+            {
+                suspend_view();
+                gear_offer_dialog(a);
+                resume_view();
+                continue;
+            }
             animate();
             fx_particles.update();
             if(log_timer > 0 && --log_timer == 0) { log.clear(); draw_strips(false); }   // komunikaty znikają

@@ -805,7 +805,45 @@
           ]
         ]
       }
-    ]
+    ],
+    "traits": [
+      {
+        "id": "luck",
+        "name": "Szczęście +1",
+        "short": "Szcz.+1",
+        "effect": "luck",
+        "value": 1
+      },
+      {
+        "id": "crit",
+        "name": "Kryt +5%",
+        "short": "Kryt+5%",
+        "effect": "crit",
+        "value": 5
+      },
+      {
+        "id": "poison",
+        "name": "Odporność na zatrucie",
+        "short": "Bez zatr.",
+        "effect": "poison_res",
+        "value": 1
+      },
+      {
+        "id": "sight",
+        "name": "Widzenie +1",
+        "short": "Wzrok+1",
+        "effect": "sight",
+        "value": 1
+      },
+      {
+        "id": "cooldown",
+        "name": "Odnowienie mocy -1",
+        "short": "Moc -1t",
+        "effect": "cooldown",
+        "value": 1
+      }
+    ],
+    "declineXp": 1
   },
   "acts": [
     {
