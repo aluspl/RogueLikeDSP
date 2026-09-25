@@ -18,7 +18,7 @@ namespace core
     constexpr int profile_v2_size = 36;   // v3 = v2 + pola motywacji na końcu
     constexpr int profile_v3_size = 56;   // v4 = v3 + zlecenia i pamiątki na końcu
     constexpr int max_keepsakes = 8;
-    static_assert(data::contracts_count <= 8);
+    static_assert(data::contracts_count <= 8 && data::keepsakes_count <= max_keepsakes);
     constexpr int max_houses = 12;        // działki na Osiedlu
     static_assert(data::badges_count <= 16 && data::enemies_count <= 16);
 
@@ -132,6 +132,54 @@ namespace core
         return true;
     }
 
+    // ------------------------------------------------------------------ pamiątki
+    inline bool keepsake_unlocked(const profile& p, int k)
+    {
+        const keepsake_def& kd = data::keepsakes[k];
+        if(kd.start || (kd.badge >= 0 && (p.badges & (1u << kd.badge)))) return true;
+        for(int i = 0; i < data::contracts_count; ++i)
+            if(data::contracts[i].keepsake == k && (p.contracts & (1u << i))) return true;
+        return false;
+    }
+
+    // Ranga 1-3: rośnie po data::keepsake_rank_runs budowach z tą pamiątką.
+    inline int keepsake_rank(const profile& p, int k)
+    {
+        return 1 + (p.keepsake_runs[k] >= data::keepsake_rank_runs[0]) + (p.keepsake_runs[k] >= data::keepsake_rank_runs[1]);
+    }
+
+    inline perk keepsake_perk(const profile& p, int k)
+    {
+        return { data::keepsakes[k].effect, data::keepsakes[k].values[keepsake_rank(p, k) - 1] };
+    }
+
+    // Wybrana pamiątka (indeks) albo -1.
+    inline int selected_keepsake(const profile& p)
+    {
+        int k = int(p.keepsake) - 1;
+        return k >= 0 && k < data::keepsakes_count && keepsake_unlocked(p, k) ? k : -1;
+    }
+
+    // Wybór na ekranie zawodu (L/R): kolejna odblokowana pamiątka albo "bez pamiątki".
+    inline void cycle_keepsake(profile& p, int dir)
+    {
+        int n = data::keepsakes_count + 1, k = p.keepsake;
+        for(int i = 0; i < n; ++i)
+        {
+            k = (k + dir + n) % n;
+            if(k == 0 || keepsake_unlocked(p, k - 1)) break;
+        }
+        p.keepsake = uint8_t(k);
+    }
+
+    // Start budowy: licznik budów i budów z wybraną pamiątką (mods() wołać wcześniej - ranga z budów przed tą).
+    inline void start_run(profile& p)
+    {
+        ++p.runs;
+        int k = selected_keepsake(p);
+        if(k >= 0 && p.keepsake_runs[k] < 255) ++p.keepsake_runs[k];
+    }
+
     inline run_mods mods(const profile& p)
     {
         run_mods m;
@@ -152,6 +200,8 @@ namespace core
         }
         for(int i = 0; i < data::badges_count; ++i)   // uprawnienia z zdobytych odznak
             if(p.badges & (1u << i)) add_perk(m, data::badges[i].bonus);
+        int k = selected_keepsake(p);   // pamiątka zabrana na budowę
+        if(k >= 0) add_perk(m, keepsake_perk(p, k));
         return m;
     }
 

@@ -107,7 +107,19 @@ L += [f"inline constexpr int badges_count = {len(d['badges'])};",
       f"inline constexpr int enemies_count = {len(d['enemies'])};"]
 L += [f"inline constexpr int badge_{k} = {v};" for k, v in bid.items()] + [""]
 KINDS = {"kills", "powers", "brand", "clean_boss", "class_wins", "wins"}
-kid = {k["id"]: i for i, k in enumerate(d.get("keepsakes", []))}
+ks = d["keepsakes"]
+kid = {k["id"]: i for i, k in enumerate(ks["list"])}
+assert len(ks["rankRuns"]) == 2 and ks["rankRuns"][0] < ks["rankRuns"][1]
+L.append("inline constexpr core::keepsake_def keepsakes[] = {   // pamiątki: wybierane na start budowy, ranga rośnie z budowami")
+for k in ks["list"]:
+    assert k["effect"] in PERKS and len(k["values"]) == 3 and len(k["name"]) <= 20 and len(k["desc"]) <= 34, k
+    unlocked_by = [c["id"] for c in d["contracts"] if c.get("keepsake") == k["id"]]
+    assert k.get("start") or "badge" in k or unlocked_by, f"pamiątka {k['id']} bez sposobu odblokowania"
+    L.append(f'    {{ {s(k["name"])}, {s(k["desc"])}, core::perk_effect::{k["effect"]}, {{ {", ".join(map(str, k["values"]))} }}, '
+             f'{bid[k["badge"]] if "badge" in k else -1}, {"true" if k.get("start") else "false"} }},')
+L.append("};")
+L += [f"inline constexpr int keepsakes_count = {len(ks['list'])};",
+      f"inline constexpr int keepsake_rank_runs[] = {{ {ks['rankRuns'][0]}, {ks['rankRuns'][1]} }};", ""]
 L.append("inline constexpr core::contract_def contracts[] = {   // zlecenia: długofalowe cele z licznikami w profilu")
 for c in d["contracts"]:
     assert c["kind"] in KINDS and len(c["name"]) <= 16 and len(c["desc"]) <= 30 and 0 < c["target"] < 30000, c

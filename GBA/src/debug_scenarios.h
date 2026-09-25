@@ -14,6 +14,7 @@
 //       obok (w prawo) skrzynka z Tabletem z projektem (narzędzie INT)
 //  10 - uprawnienia i zlecenia: część odznak zdobyta (premie na budowę), zlecenia w toku,
 //       jedno o krok od ukończenia (moc R + L+R+SELECT = baner)
+//  11 - pamiątki: wszystkie odblokowane, Termos babci po 8 budowach (ranga III, wybrany), Kask ojca po 3 (II)
 #include "core.h"
 #include "meta.h"
 
@@ -66,6 +67,13 @@ namespace debug_scenario
                 if(data::contracts[i].kind == core::contract_kind::powers) p.powers_total = uint16_t(data::contracts[i].target - 1);
                 if(data::contracts[i].kind == core::contract_kind::wins) p.contracts = uint8_t(p.contracts | (1 << i));
             }
+        }
+        if(scenario == 11)
+        {
+            p.badges = uint16_t(p.badges | (1 << data::badge_bez_usterek));
+            for(int i = 0; i < data::contracts_count; ++i) if(data::contracts[i].keepsake >= 0) p.contracts = uint8_t(p.contracts | (1 << i));
+            p.keepsake_runs[0] = 8; p.keepsake_runs[1] = 3; p.keepsake_runs[3] = 1;
+            p.keepsake = 1;
         }
     }
 

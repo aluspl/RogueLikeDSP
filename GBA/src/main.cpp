@@ -312,13 +312,12 @@ namespace
     scene run_class_select(app& a)
     {
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
-        text_sprites header, lines, diff_line;
+        text_sprites lines, diff_line, keep_lines;
         a.text.set_center_alignment();
-        a.text.generate(0, -72, "Wybierz fach", header);
-        bn::sprite_ptr hero = bn::sprite_items::actors.create_sprite(0, -30, 0);
+        bn::sprite_ptr hero = bn::sprite_items::actors.create_sprite(-84, -34, 0);
         hero.set_double_size_mode(bn::sprite_double_size_mode::ENABLED);
         hero.set_scale(2);
-        bn::sprite_ptr lock = bn::sprite_items::actors.create_sprite(20, -20, frame_lock);
+        bn::sprite_ptr lock = bn::sprite_items::actors.create_sprite(-64, -24, frame_lock);
         lock.set_z_order(-1);
 
         auto redraw = [&]() {
@@ -352,10 +351,30 @@ namespace
             diff_line.clear();
             a.text.set_center_alignment();
             core::message m; m.add("Trudność (góra/dół): ").add(data::difficulties[a.chosen_diff].name);
-            a.text.generate(0, -56, m.s, diff_line);
+            a.text.generate(0, -72, m.s, diff_line);
+        };
+        auto redraw_keep = [&]() {   // pamiątka zabierana na budowę (L/R), obok postaci
+            keep_lines.clear();
+            a.text.set_left_alignment();
+            a.text.generate(-56, -52, "Pamiątka (L/R):", keep_lines);
+            int k = core::selected_keepsake(a.save);
+            if(k < 0)
+            {
+                a.text.generate(-56, -36, "bez pamiątki", keep_lines);
+                a.text.generate(-56, -20, "więcej w Zleceniach", keep_lines);
+            }
+            else
+            {
+                core::message n; n.add(data::keepsakes[k].name).add(" ").add(roman(core::keepsake_rank(a.save, k) - 1));
+                a.text.generate(-56, -36, n.s, keep_lines);
+                core::message e; core::perk_label(e, core::keepsake_perk(a.save, k));
+                a.text.generate(-56, -20, e.s, keep_lines);
+            }
+            a.text.set_center_alignment();
         };
         redraw();
         redraw_diff();
+        redraw_keep();
 
         while(true)
         {
@@ -366,6 +385,8 @@ namespace
                 while(! core::difficulty_unlocked(a.save, a.chosen_diff));
                 redraw_diff();
             }
+            int kdir = bn::keypad::r_pressed() ? 1 : (bn::keypad::l_pressed() ? -1 : 0);
+            if(kdir) { core::cycle_keepsake(a.save, kdir); redraw_keep(); redraw(); bn::sound_items::sfx_menu.play(); }
             if(bn::keypad::left_pressed()) { a.chosen_class = (a.chosen_class + data::classes_count - 1) % data::classes_count; redraw(); bn::sound_items::sfx_menu.play(); }
             if(bn::keypad::right_pressed()) { a.chosen_class = (a.chosen_class + 1) % data::classes_count; redraw(); bn::sound_items::sfx_menu.play(); }
             if((bn::keypad::a_pressed() || bn::keypad::start_pressed()) && core::class_unlocked(a.save, a.chosen_class))
@@ -374,7 +395,7 @@ namespace
 #ifdef PB_SCENARIO
                 debug_scenario::apply(*a.g, PB_SCENARIO);
 #endif
-                ++a.save.runs;
+                core::start_run(a.save);   // licznik budów i budów z pamiątką (ranga)
                 bn::sram::write(a.save);
                 wait_release();
                 if(! core::has_flag(a.save, core::prologue_seen)) return leave(scene::prologue);
@@ -1101,7 +1122,9 @@ namespace
             {
                 const core::contract_def& c = data::contracts[i];
                 core::message t; t.add("Zlecenie: ").add(c.name);
-                core::message b; b.add("Wykonane! +").add(c.xp).add(" dośw.");
+                core::message b;
+                if(c.keepsake >= 0) b.add("+").add(c.xp).add(", ").add(data::keepsakes[c.keepsake].name);   // pamiątka odblokowana
+                else b.add("Wykonane! +").add(c.xp).add(" dośw.");
                 banner.push(t.s, b.s);
             }
     }
@@ -1323,10 +1346,20 @@ namespace
         for(int i = 0; i < 4; ++i) prev_equipped[i] = g.equipped[i];
         for(int i = 0; i < g.pickups_count; ++i) prev_active += g.pickups[i].active;
         bool boss_seen = false;
-        if(g.stage == 0 && g.tier == 0)   // podpowiedź na start budowy: moc pod R
+        if(g.stage == 0 && g.tier == 0 && g.turns == 0)   // podpowiedź na start budowy: moc pod R, zabrana pamiątka
         {
             core::message t; t.add("R: ").add(g.cdef().ability_name);
             banner.push(t.s, g.cdef().ability_desc);
+            int k = core::selected_keepsake(a.save);
+            if(k >= 0)
+            {
+                // ranga liczona z budów przed tą (start_run już policzył bieżącą)
+                int runs = a.save.keepsake_runs[k] - 1;
+                int rank = 1 + (runs >= data::keepsake_rank_runs[0]) + (runs >= data::keepsake_rank_runs[1]);
+                core::message kt; kt.add(data::keepsakes[k].name).add(" ").add(roman(rank - 1));   // pamiątka z rangą
+                core::message kb; core::perk_label(kb, { data::keepsakes[k].effect, data::keepsakes[k].values[rank - 1] });
+                banner.push(kt.s, kb.s);
+            }
         }
         auto detect_events = [&]() {   // powiadomienia push o ważnych zdarzeniach
             int active_pickups = 0;
@@ -2348,13 +2381,13 @@ namespace
         int sel = 0, top = 0;
         const char* note = nullptr;
         // Zakładka Odznaki ma strony przełączane A: Odznaki / Zlecenia.
-        const char* badge_pages[] = { "Odznaki", "Zlecenia" };
-        constexpr int badge_pages_count = 2;
+        const char* badge_pages[] = { "Odznaki", "Zlecenia", "Pamiątki" };
+        constexpr int badge_pages_count = 3;
         int page = 0;
         auto list_size = [&]() {
             switch(tab)
             {
-                case 0: return page == 1 ? data::contracts_count : data::badges_count;
+                case 0: return page == 2 ? data::keepsakes_count : (page == 1 ? data::contracts_count : data::badges_count);
                 case 1: return data::enemies_count;
                 case 3: return data::classes_count;
                 case 4: return entries.size();
@@ -2368,7 +2401,15 @@ namespace
             phone_canvas& c = *ph.canvas;
             if(is_sel) stripe(c, r, phone_tile::stripe_brand);
             ink name_ink = is_sel ? ink::brand : ink::dark;
-            if(tab == 0 && page == 1)   // zlecenie: nazwa + postęp licznika
+            if(tab == 0 && page == 2)   // pamiątka: nazwa + ranga
+            {
+                bool unl = core::keepsake_unlocked(a.save, i);
+                phone_text(a, t, list_x, row_py(r), clip(data::keepsakes[i].name, 18).c_str(), unl || is_sel ? name_ink : ink::dim);
+                core::message rk; rk.add("Ranga ").add(roman(core::keepsake_rank(a.save, i) - 1));
+                bool chosen = core::selected_keepsake(a.save) == i;
+                phone_pill(a, c, t, pill_end, row_ty(r), unl ? rk.s : "Zablok.", ! unl ? pill::gray : (chosen ? pill::prog : pill::group));
+            }
+            else if(tab == 0 && page == 1)   // zlecenie: nazwa + postęp licznika
             {
                 bool done = core::contract_done(a.save, i);
                 int pr = core::imin(core::contract_progress(a.save, i), data::contracts[i].target);
@@ -2406,8 +2447,9 @@ namespace
             if(tab == 4) sub.add("A: kup  B: wyjdź");
             else if(tab == 0)
             {
-                int n = 0, total = page == 1 ? data::contracts_count : data::badges_count;
-                for(int i = 0; i < total; ++i) n += ((page == 1 ? a.save.contracts : a.save.badges) >> i) & 1;
+                int n = 0, total = page == 2 ? data::keepsakes_count : (page == 1 ? data::contracts_count : data::badges_count);
+                for(int i = 0; i < total; ++i)
+                    n += page == 2 ? core::keepsake_unlocked(a.save, i) : ((page == 1 ? a.save.contracts : a.save.badges) >> i) & 1;
                 sub.add(n).add("/").add(total).add("  A: ").add(badge_pages[(page + 1) % badge_pages_count]);
             }
             else if(tab == 1) { int n = 0; for(int i = 0; i < data::enemies_count; ++i) n += (a.save.catalog >> i) & 1;
@@ -2471,11 +2513,34 @@ namespace
             // listy: Odznaki (4 wiersze + opis + uprawnienie), Katalog, Zespół (5 wierszy + opis zaznaczonego)
             for(int r = 0; r < list_window() && top + r < list_size(); ++r) draw_list_row(r, top + r, top + r == sel);
             const char* desc = "";
+            if(tab == 0 && page == 2)
+            {
+                const core::keepsake_def& kd = data::keepsakes[sel];
+                bool unl = core::keepsake_unlocked(a.save, sel);
+                core::message e; core::perk_label(e, core::keepsake_perk(a.save, sel));
+                int runs = a.save.keepsake_runs[sel], rank = core::keepsake_rank(a.save, sel);
+                if(unl) e.add(", budowy: ").add(runs);
+                phone_text(a, t, list_x, row_py(4), clip(unl ? e.s : kd.desc, 34).c_str(), unl ? ink::dark : ink::dim);
+                core::message u;
+                if(! unl)
+                {
+                    if(kd.badge >= 0) u.add("Odznaka: ").add(data::badges[kd.badge].name);
+                    else for(int i = 0; i < data::contracts_count; ++i)
+                        if(data::contracts[i].keepsake == sel) { u.add("Zlecenie: ").add(data::contracts[i].name); break; }
+                }
+                else if(rank < 3) u.add("Ranga ").add(roman(rank)).add(" po ").add(data::keepsake_rank_runs[rank - 1]).add(" bud.");
+                else u.add(kd.desc);
+                phone_text(a, t, list_x, row_py(5), clip(u.s, 34).c_str(), unl ? ink::dim : ink::brand);
+                ph.commit();
+                return;
+            }
             if(tab == 0 && page == 1)
             {
                 const core::contract_def& cd = data::contracts[sel];
                 phone_text(a, t, list_x, row_py(4), clip(cd.desc, 30).c_str(), ink::dim);
-                core::message rm; rm.add("Nagroda: +").add(cd.xp).add(" dośw.");
+                core::message rm; rm.add("Nagroda: +").add(cd.xp);
+                if(cd.keepsake >= 0) rm.add(", ").add(data::keepsakes[cd.keepsake].name);
+                else rm.add(" dośw.");
                 phone_text(a, t, list_x, row_py(5), clip(rm.s, 34).c_str(), core::contract_done(a.save, sel) ? ink::done : ink::dim);
                 ph.commit();
                 return;
