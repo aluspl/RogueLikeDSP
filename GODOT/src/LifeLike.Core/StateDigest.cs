@@ -113,8 +113,13 @@ public static class StateDigest
         // v0.21.46: wezwania bossa (Inspekcja Pracy)
         f.Add(g.SummonCounter);
         f.Add(g.SummonsUsed);
-        // v0.21.47: pogoda dnia
+        // v0.21.47: pogoda dnia, brygada
         f.Add(g.Weather);
+        f.Add(g.HelperCalled);
+        f.Add(g.GuardTurns);
+        f.Add(g.AllyTurns);
+        f.Add(g.AllyX);
+        f.Add(g.AllyY);
         return f.H;
     }
 }

@@ -52,6 +52,12 @@ public sealed partial class Game
     public sbyte StageEvent = -1;
     /// <summary>Pogoda dnia na bieżącym etapie (GameData.Weather).</summary>
     public sbyte Weather;
+    /// <summary>Brygada: fachowiec wezwany na tym etapie (-1 = jeszcze nie).</summary>
+    public sbyte HelperCalled = -1;
+    /// <summary>Ochrona BHP-owca: tury do końca.</summary>
+    public sbyte GuardTurns;
+    /// <summary>Pomocnik obok bohatera: tury pomocy i pole.</summary>
+    public sbyte AllyTurns, AllyX = -1, AllyY = -1;
     /// <summary>Budżet budowy (zł) – za usunięte problemy i premie aktów, wydawany w Hurtowni.</summary>
     public int Cash;
     public int ActKills;
@@ -250,6 +256,9 @@ public sealed partial class Game
 
     public int DodgePct() => Math.Min(D.DodgeMaxPct, D.DodgePerLuckPct * Luck());
 
+    /// <summary>Obrona bohatera: zawód + premie + sprzęt + ochrona BHP-owca z brygady.</summary>
+    public int HeroDefense() => CDef.Defense + DefBonus + GearBonus(GearStat.Def) + (GuardTurns > 0 ? D.Brigade[HelperCalled].Value : 0);
+
     public void AddHit(int x, int y, int amount, bool onHero, HitKind kind = HitKind.Normal)
     {
         if (HitsCount < MaxHits) Hits[HitsCount++] = new Hit { X = (sbyte)x, Y = (sbyte)y, Amount = (short)amount, OnHero = onHero, Kind = kind };
@@ -410,6 +419,7 @@ public sealed partial class Game
     public bool Occupied(int x, int y)
     {
         if (Hero.Alive && Hero.X == x && Hero.Y == y) return true;
+        if (AllyTurns > 0 && AllyX == x && AllyY == y) return true; // pomocnik z brygady
         for (var i = 0; i < EnemiesCount; ++i)
         {
             if (Enemies[i].Alive && Enemies[i].X == x && Enemies[i].Y == y) return true;
@@ -449,6 +459,10 @@ public sealed partial class Game
         SlamCounter = 0;
         SummonCounter = 0;
         SummonsUsed = 0;
+        HelperCalled = -1; // brygada: raz na etap
+        GuardTurns = 0;
+        AllyTurns = 0;
+        AllyX = AllyY = -1;
         Array.Fill(Fov, Sight.Unknown);
         var sd = D.Stages[Stage];
         var first = Lv.Rooms[0];

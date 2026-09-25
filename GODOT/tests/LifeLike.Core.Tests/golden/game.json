@@ -1336,5 +1336,54 @@
         ]
       }
     ]
+  },
+  "brigade": {
+    "list": [
+      {
+        "id": "geodeta",
+        "name": "Geodeta",
+        "desc": "Mapa etapu i schody",
+        "effect": "reveal",
+        "value": 0,
+        "turns": 0,
+        "reach": 0,
+        "price": 8,
+        "cost": 0
+      },
+      {
+        "id": "bhp",
+        "name": "BHP-owiec",
+        "desc": "Bez stanów, obrona +2",
+        "effect": "safety",
+        "value": 2,
+        "turns": 8,
+        "reach": 0,
+        "price": 10,
+        "cost": 0
+      },
+      {
+        "id": "pompa",
+        "name": "Pompa do betonu",
+        "desc": "Beton wokół: -6 HP",
+        "effect": "pump",
+        "value": 6,
+        "turns": 0,
+        "reach": 2,
+        "price": 15,
+        "cost": 30
+      },
+      {
+        "id": "kolega",
+        "name": "Elektryk-kolega",
+        "desc": "Pomaga 10 tur, cios -3",
+        "effect": "ally",
+        "value": 3,
+        "turns": 10,
+        "reach": 1,
+        "price": 15,
+        "cost": 35,
+        "frame": 3
+      }
+    ]
   }
 }

@@ -38,6 +38,7 @@ public class GoldenTests
         {
             for (var i = 0; i < d.Upgrades.Length; i++) p.Levels[i] = (byte)d.Upgrades[i].Levels;
             p.Tools = (byte)((1 << d.Tools.Length) - 1);
+            p.Brigade = (byte)((1 << d.Brigade.Length) - 1);
         }
         p.Badges = (ushort)badges;
         p.Contracts = (byte)contracts;

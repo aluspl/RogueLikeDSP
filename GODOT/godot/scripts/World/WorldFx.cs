@@ -158,6 +158,34 @@ public sealed class WorldFx
         _w.Flash(flash, 0.38f);
     }
 
+    /// <summary>Brygada: efekt wezwania fachowca (brigade_fx w main.cpp) i błysk.</summary>
+    public void Brigade(HelperEffect effect)
+    {
+        var g = G;
+        var h = Hero.Position;
+        switch (effect)
+        {
+            case HelperEffect.Reveal:
+                foreach (var d in Dir8) Fx.Spawn(h, d * 2.4f, 0, 26, Assets.PRing, 2);
+                _w.Flash(new Color(0.55f, 0.8f, 1f), 0.3f);
+                break;
+            case HelperEffect.Pump: // beton rozlewa się wokół bohatera
+                foreach (var d in Dir8) Fx.Spawn(h + new Vector2(0, 8), d * 1.6f, 0, 26, Assets.PDust, 3);
+                for (var i = 0; i < g.HitsCount; i++) Fx.Burst(_w.GridToScreen(g.Hits[i].X, g.Hits[i].Y), 6, Assets.PDust, 3, 1.4f, 20);
+                _w.Flash(new Color(0.8f, 0.8f, 0.75f), 0.35f);
+                break;
+            case HelperEffect.Safety:
+                for (var k = 0; k < 8; k++) Fx.Spawn(h + new Vector2(Fx.Rand(-40, 40), 8), new Vector2(0, Fx.Rand(-2.4f, -1f)), 0, 26, Assets.PPlus);
+                _w.Flash(Pal.FlashFlush, 0.3f);
+                break;
+            default:
+                if (g.AllyTurns > 0)
+                    Fx.Burst(_w.GridToScreen(g.AllyX, g.AllyY) + new Vector2(0, 10), 8, Assets.PDust, 3, 1.2f, 18);
+                _w.Flash(Pal.FlashChain, 0.3f);
+                break;
+        }
+    }
+
     private void ChainBolts(Vector2 from)
     {
         var g = G;

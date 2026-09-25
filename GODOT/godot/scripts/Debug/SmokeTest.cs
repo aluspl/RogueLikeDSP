@@ -21,7 +21,7 @@ namespace LifeLike.Game.Debug;
 public sealed class SmokeTest
 {
     private readonly App _app;
-    private int _steps, _offers, _drinks, _holds, _weathers;
+    private int _steps, _offers, _drinks, _holds, _weathers, _helpers;
     private bool _prologue, _touch, _portrait;
 
     public SmokeTest(App app) => _app = app;
@@ -42,6 +42,7 @@ public sealed class SmokeTest
             new DebugScenes(_app).AdvanceMessages(); // bot kończy na karcie etapu - dalej na mapę
             if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) ExerciseHolds();
             if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) await ExerciseWeather();
+            if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) await ExerciseBrigade();
             if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) await ExerciseMenuAndOffer();
             if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) await ExerciseTouchAndSettings();
             var ok = g.Stage >= 5 || g.St is GameStatus.Dead or GameStatus.Won;
@@ -53,7 +54,7 @@ public sealed class SmokeTest
             if (DrawErrors.Count > 0) throw new Exception($"błędy rysowania: {DrawErrors.Count}, ostatni: {DrawErrors.Last}");
             GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {s.Data.Version}, zawody {s.Data.Classes.Length}, etap {stage + 1}, " +
                      $"dzień {g.Turns}, HP {g.Hero.Hp}/{g.Hero.MaxHp}, wynik {g.Score}, budżet {g.Cash}, kroki {_steps}, " +
-                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
+                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
                      $"ekran {Flow.Current.GetType().Name}");
             _app.Root.GetTree().Quit(ok ? 0 : 1);
         }
@@ -165,6 +166,40 @@ public sealed class SmokeTest
         }
         g.Weather = old;
         _app.Refresh();
+    }
+
+    /// <summary>
+    /// Brygada: z menu akcji (A bez kierunku) do telefonu, wezwanie zablokowanego (zostaje w telefonie), potem każdy
+    /// fachowiec na kolejnych etapach (wezwanie wraca na mapę, zużywa turę, pomocnik rysuje się obok bohatera).
+    /// </summary>
+    private async Task ExerciseBrigade()
+    {
+        var g = _app.Session.Game;
+        var d = g.D;
+        Flow.Game.Menu.Open();
+        Flow.Game.Menu.HandleInput(InputCmd.Of(GameAction.A));
+        if (Flow.Current != Flow.Brigade) throw new Exception("menu akcji: A bez kierunku nie otwiera Brygady");
+        await DebugRunner.Frames(_app.Root, 2);
+        g.Cash = 0;
+        Flow.Brigade.Call(0);
+        if (Flow.Current != Flow.Brigade || g.HelperCalled >= 0) throw new Exception("brygada bez budżetu nie powinna przyjść");
+        Flow.Brigade.HandleInput(InputCmd.Of(GameAction.Cancel));
+        if (Flow.Current != Flow.Game) throw new Exception("Brygada: Esc nie wraca do gry");
+        g.Bonus.Helpers = (1 << d.Brigade.Length) - 1;
+        for (var h = d.Brigade.Length - 1; h >= 0 && Flow.Current == Flow.Game && g.St == GameStatus.Playing; h--)
+        {
+            g.HelperCalled = -1;
+            g.Cash = 100;
+            if (d.Brigade[h].Effect == Core.Data.HelperEffect.Pump && g.HelperBlocked(h) == HelperBlock.NoTarget) new DemoStaging(_app).BringEnemies();
+            if (g.HelperBlocked(h) != HelperBlock.Ok) continue;
+            var turns = g.Turns;
+            Flow.Brigade.Open();
+            Flow.Brigade.Page.Sel = h;
+            Flow.Brigade.HandleInput(InputCmd.Of(GameAction.A));
+            if (g.Turns == turns || g.HelperCalled != h) throw new Exception($"brygada: {d.Brigade[h].Name} nie przyszedł");
+            await DebugRunner.Frames(_app.Root, 2);
+            _helpers++;
+        }
     }
 
     /// <summary>Ścieżki UI, na które bot mógł nie trafić: termos przez menu akcji i okno porównania sprzętu.</summary>

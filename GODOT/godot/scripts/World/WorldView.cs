@@ -25,6 +25,7 @@ public partial class WorldView : Node2D
     private readonly MarksLayer _marks = new();
     private readonly WorldCamera _camera = new();
     private ActorSprite _hero;
+    private ActorSprite _ally; // pomocnik z brygady
     private readonly List<ActorSprite> _enemies = new();
     private readonly List<ActorSprite> _pickups = new();
     private readonly List<bool> _enemyAlive = new();
@@ -68,6 +69,8 @@ public partial class WorldView : Node2D
         _marks.Bind(this);
         _hero = new ActorSprite { AnimPeriod = 0.4f, Breathes = true };
         _actors.AddChild(_hero);
+        _ally = new ActorSprite { AnimPeriod = 0.4f, Breathes = true, AnimPhase = 0.2f, Visible = false };
+        _actors.AddChild(_ally);
     }
 
     public void Bind(CoreGame g)
@@ -178,6 +181,7 @@ public partial class WorldView : Node2D
         _turns = _g.Turns;
         _map.QueueRedraw();
         SyncHero(snap);
+        SyncAlly(snap);
         for (var i = 0; i < _g.EnemiesCount; i++) SyncEnemy(i, snap);
         SyncPickups(snap);
         Effects.TakeHits();
@@ -198,6 +202,21 @@ public partial class WorldView : Node2D
         _hero.MoveTo(heroDst, snap);
         _hero.Visible = true;
         _hero.Modulate = _g.Hero.Alive ? Colors.White : Pal.DeadHero;
+    }
+
+    /// <summary>Pomocnik z brygady: fachowiec obok bohatera, dopóki pomaga.</summary>
+    private void SyncAlly(bool snap)
+    {
+        if (_g.AllyTurns <= 0 || _g.HelperCalled < 0)
+        {
+            _ally.Visible = false;
+            return;
+        }
+        var dst = GridToScreen(_g.AllyX, _g.AllyY);
+        _ally.BaseFrame = _g.D.Brigade[_g.HelperCalled].Frame;
+        if (dst.X != _ally.Position.X && _ally.Visible) _ally.Flip = dst.X < _ally.Position.X;
+        _ally.MoveTo(dst, snap || !_ally.Visible);
+        _ally.Visible = true;
     }
 
     private void SyncEnemy(int i, bool snap)

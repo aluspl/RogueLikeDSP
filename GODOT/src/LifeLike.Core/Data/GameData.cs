@@ -38,6 +38,10 @@ public sealed class GameData
     public WeatherDef[] Weather { get; private init; } = [];
     /// <summary>Niekorzystna pogoda i niekorzystne wydarzenie na placu naraz: wydarzenie przepada.</summary>
     public bool WeatherNoBadStack { get; private init; }
+    /// <summary>Brygada: najemni fachowcy (sekcja "brigade"); bez sekcji – pusta lista.</summary>
+    public HelperDef[] Brigade { get; private init; } = [];
+    /// <summary>Fachowcy dostępni od początku (koszt 0).</summary>
+    public int StartHelpersMask { get; private init; }
     /// <summary>Indeks = slot * 3 + jakość.</summary>
     public GearDef[] Gear { get; private init; } = [];
     public string[] GearSlots { get; private init; } = [];
@@ -270,6 +274,23 @@ public sealed class GameData
             }
         }
 
+        var brigade = d.TryGetProperty("brigade", out var bj)
+            ? bj.GetProperty("list").EnumerateArray().Select(h => new HelperDef(Str(h, "id"), Str(h, "name"), Str(h, "desc"),
+                ParseEnum<HelperEffect>(Str(h, "effect")), Int(h, "value"), Int(h, "turns"), Int(h, "reach", 0), Int(h, "price"),
+                Int(h, "cost"), Int(h, "frame", -1))).ToArray()
+            : [];
+        Require(brigade.Length <= 8, "brygada: maks. 8 fachowców");
+        foreach (var h in brigade)
+        {
+            Require(h.Price > 0 && (h.Effect != HelperEffect.Pump || h.Reach >= 1) && (h.Effect != HelperEffect.Ally || (h.Turns > 0 && h.Frame >= 0)),
+                $"brygada {h.Id}: złe dane");
+        }
+        var startHelpers = 0;
+        for (var i = 0; i < brigade.Length; i++)
+        {
+            if (brigade[i].Cost == 0) startHelpers |= 1 << i;
+        }
+
         var drops = d.GetProperty("drops");
         var weights = drops.GetProperty("weights");
         var eq = d.GetProperty("equipment");
@@ -338,6 +359,8 @@ public sealed class GameData
             SiteEventChancePct = siteEventChance,
             Weather = weather,
             WeatherNoBadStack = weatherNoBadStack,
+            Brigade = brigade,
+            StartHelpersMask = startHelpers,
             Tools = tools,
             Gear = gear.ToArray(),
             GearSlots = slots.ToArray(),

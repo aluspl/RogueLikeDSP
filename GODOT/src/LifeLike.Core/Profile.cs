@@ -5,8 +5,8 @@ namespace LifeLike.Core;
 
 /// <summary>
 /// Profil gracza (odpowiednik core::profile z meta.h): rekord, doświadczenie, zakupy, odznaki, Osiedle.
-/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v5: 80 bajtów, little-endian, bajty 55 i 78-79 to wyrównanie),
-/// więc migracje v1/v2/v3/v4 działają tak samo.
+/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v6: 88 bajtów, little-endian, bajt 55 to wyrównanie),
+/// więc migracje v1/v2/v3/v4/v5 działają tak samo.
 /// </summary>
 public sealed class Profile
 {
@@ -17,8 +17,11 @@ public sealed class Profile
     public const int V3Size = 56;
     /// <summary>v5 = v4 + liczniki zleceń przeniesione z bieżącej budowy od tego offsetu.</summary>
     public const int V4Size = 72;
-    public const int Size = 80;
+    /// <summary>v6 = v5 + brygada i tryb inwestora od tego offsetu.</summary>
+    public const int V5Size = 78;
+    public const int Size = 88;
     public const int MaxKeepsakes = 8;
+    public const string MagicV6 = "PBRL006";
     public const string MagicV5 = "PBRL005";
     public const string MagicV4 = "PBRL004";
     public const string MagicV3 = "PBRL003";
@@ -66,6 +69,13 @@ public sealed class Profile
     public ushort RunPowers;
     public byte RunBrand;
     public byte RunClean;
+    // --- v6: brygada i tryb inwestora
+    /// <summary>Kupieni w Szkoleniach fachowcy brygady (bitmaska; startowi zawsze dostępni).</summary>
+    public byte Brigade;
+    /// <summary>Włączone modyfikatory trybu inwestora (bitmaska GameData.Investor).</summary>
+    public byte Investor;
+    /// <summary>Najwyższa stawka wygranej budowy na każdy zawód.</summary>
+    public byte[] BestStake = new byte[8];
 
     public static byte[] MagicBytes(string s)
     {
@@ -112,6 +122,9 @@ public sealed class Profile
         BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(74), RunPowers);
         b[76] = RunBrand;
         b[77] = RunClean;
+        b[78] = Brigade;
+        b[79] = Investor;
+        BestStake.CopyTo(b, 80);
         return b;
     }
 
@@ -149,6 +162,9 @@ public sealed class Profile
             RunPowers = BinaryPrimitives.ReadUInt16LittleEndian(b[74..]),
             RunBrand = b[76],
             RunClean = b[77],
+            Brigade = b[78],
+            Investor = b[79],
+            BestStake = b.Slice(80, 8).ToArray(),
         };
         return p;
     }

@@ -1,21 +1,35 @@
 using LifeLike.Core.Data;
 using LifeLike.Game.Gfx;
+using LifeLike.Game.Input;
 using CoreGame = LifeLike.Core.Game;
 
 namespace LifeLike.Game.Phone.Tabs;
 
 /// <summary>
 /// Sprzęt (tab_gear na GBA): narzędzie z obrażeniami i zasięgiem, kask / rękawice / kamizelka / ... z jakością
-/// (kolor paska) i cechą (pastylka), premie sprzętu oraz szczęście: kryt, unik, wzrok.
+/// (kolor paska) i cechą (pastylka), premie sprzętu oraz szczęście: kryt, unik, wzrok. A / przycisk: Brygada.
 /// </summary>
 public sealed class GearTab : PhonePage
 {
     private readonly CoreGame _g;
+    private readonly System.Action _brigade;
 
-    public GearTab(CoreGame g) => _g = g;
+    public GearTab(CoreGame g, System.Action brigade = null)
+    {
+        _g = g;
+        _brigade = brigade;
+    }
 
     public override string Title => "Sprzęt";
-    public override string Sub => "Na budowie";
+    public override string Sub => _brigade is null ? "Na budowie" : "Spacja: Brygada";
+    public override PageAction[] Actions => _brigade is null ? [] : [new("Brygada", GameAction.A)];
+
+    public override bool Input(InputCmd e)
+    {
+        if (_brigade is null || !e.Is(GameAction.A)) return false;
+        _brigade();
+        return true;
+    }
 
     public override void Draw(PhonePainter p)
     {
@@ -27,7 +41,7 @@ public sealed class GearTab : PhonePage
         var right = c0.End.X - 6;
         var w = g.Weapon;
         p.Stripe(c0, 0, Pal.Brand);
-        var pw = p.Pill(right, p.RowY(c0, 0), $"z{w.Range} {UiText.StatShort(w.ScalesWith)}", PillKind.Group);
+        var pw = p.Pill(right, p.RowY(c0, 0), $"z{g.WeaponRange()} {UiText.StatShort(w.ScalesWith)}", PillKind.Group);
         p.Text(tx, p.RowY(c0, 0), $"{w.Name} {w.MinDamage}-{w.MaxDamage} +{g.DmgBonus}", Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
 
         y = p.Section(c0.End.Y + 4, "SPRZĘT", $"{CountEquipped()}/{d.GearSlotsCount}");
