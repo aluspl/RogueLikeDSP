@@ -10,6 +10,7 @@ public sealed partial class Game
     {
         ref var e = ref Enemies[ei];
         var ed = D.Enemies[e.DefId];
+        if (ei == Boss && BossWakeDamage < 0) BossWakeDamage = StageDamage; // walka z bossem trwa
         var dmg = R.Range(Weapon.MinDamage, Weapon.MaxDamage) + HeroStat(Weapon.ScalesWith) / 2 + DmgBonus
                   + GearBonus(GearStat.Dmg) - ed.Defense / 2;
         if (dmg < 1) dmg = 1;
@@ -34,6 +35,7 @@ public sealed partial class Game
             Push(Msg(ed.Name).Add(" - usunięto!").As(LogKind.Good));
             if (ei == Boss)
             {
+                if (StageDamage == BossWakeDamage && CleanBosses < 255) ++CleanBosses; // zlecenie Czysta robota
                 Score += (500 + 100 * (Stage + 1)) * ScorePct() / 100;
                 GainXp(D.XpBoss);
                 SlamTimer = 0;
@@ -220,6 +222,7 @@ public sealed partial class Game
         foreach (var w in D.DropWeights) total += w;
         int roll = R.Range(1, total), type = 0;
         while (roll > D.DropWeights[type]) roll -= D.DropWeights[type++];
+        if (type != (int)PickupType.Tool && Bonus.ToolPct > 0 && R.Range(1, 100) <= Bonus.ToolPct) type = (int)PickupType.Tool; // uprawnienie Kolekcjoner
         int arg = 0, trait = 0;
         if (type == (int)PickupType.GearBox) // slot losowy, jakość lepsza na późnych etapach i ze szczęściem
         {
@@ -264,6 +267,7 @@ public sealed partial class Game
         }
         Equipped[slot] = (sbyte)rarity;
         EquippedTrait[slot] = (sbyte)trait;
+        if (rarity == 2 && BrandFound < 255) ++BrandFound; // zlecenie Markowy styl
         UpdateFov(); // cecha Widzenie zmienia pole widzenia
         Push(Msg("Sprzęt: ").Add(nw.Name).Add(" +").Add(nw.Value).As(LogKind.Loot));
     }
@@ -300,10 +304,10 @@ public sealed partial class Game
             p.Active = false;
             if (p.Type == PickupType.Coffee)
             {
-                if (Thermos < D.ThermosCapacity) // kawa do termosu; pełny termos – pije od razu
+                if (Thermos < ThermosCap()) // kawa do termosu; pełny termos – pije od razu
                 {
                     ++Thermos;
-                    Push(Msg("Kawa do termosu (").Add(Thermos).Add("/").Add(D.ThermosCapacity).Add(")").As(LogKind.Good));
+                    Push(Msg("Kawa do termosu (").Add(Thermos).Add("/").Add(ThermosCap()).Add(")").As(LogKind.Good));
                 }
                 else
                 {
@@ -354,6 +358,7 @@ public sealed partial class Game
             if (d <= ed.Sight) e.Awake = true;
             else return;
         }
+        if (i == Boss && BossWakeDamage < 0) BossWakeDamage = StageDamage;
         if (e.Stun > 0)
         {
             --e.Stun;
@@ -392,6 +397,8 @@ public sealed partial class Game
             Push(Msg(ed.Name).Add(": -").Add(dmg).Add(" HP").As(LogKind.Bad));
             if (ed.OnHit != StatusEffect.None && Hero.Hp > 0 && R.Range(1, 100) <= ed.StatusChance)
                 ApplyStatus(ed.OnHit, ed.StatusTurns);
+            if (EventActive(EventEffect.Rain) && Hero.Hp > 0 && R.Range(1, 100) <= D.SiteEvents[StageEvent].Value)
+                ApplyStatus(StatusEffect.Slip, 2); // Ulewa w nocy: błoto na placu
             if (Hero.Hp <= 0)
             {
                 Hero.Hp = 0;
@@ -486,6 +493,11 @@ public sealed partial class Game
             Score += 100 * ScorePct() / 100;
             GainXp(D.XpPerStage);
             Push(Msg("Etap zakończony: ").Add(D.Stages[Stage].Name).As(LogKind.Good));
+            if (EventActive(EventEffect.Inspection) && StageDamage == 0) // Inspekcja nadzoru: etap bez obrażeń
+            {
+                GainXp(D.SiteEvents[StageEvent].Value);
+                Push(Msg("Inspekcja: +").Add(D.SiteEvents[StageEvent].Value).Add(" dośw.").As(LogKind.Good));
+            }
         }
     }
 }

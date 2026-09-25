@@ -104,6 +104,12 @@ public static class StateDigest
             for (var i = 0; i < m.N; i++) f.Add(m.S[i]);
         }
         foreach (var t in g.Lv.T) f.Add((int)t);
+        // v0.21.43: wydarzenie na placu, liczniki zleceń
+        f.Add(g.StageEvent);
+        f.Add(g.BossWakeDamage);
+        f.Add(g.PowersUsed);
+        f.Add(g.BrandFound);
+        f.Add(g.CleanBosses);
         return f.H;
     }
 }

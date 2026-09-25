@@ -11,7 +11,7 @@ public static class Meta
     public static void ProfileReset(GameData d, Profile p)
     {
         var fresh = Profile.FromBytes(new byte[Profile.Size]);
-        fresh.Magic = Profile.MagicBytes(Profile.MagicV3);
+        fresh.Magic = Profile.MagicBytes(Profile.MagicV4);
         fresh.Classes = (byte)d.StartClassesMask;
         CopyInto(fresh, p);
     }
@@ -42,21 +42,27 @@ public static class Meta
         dst.ToolsFound = copy.ToolsFound;
         dst.HousesCount = copy.HousesCount;
         dst.Houses = copy.Houses;
+        dst.KillsTotal = copy.KillsTotal;
+        dst.PowersTotal = copy.PowersTotal;
+        dst.BrandTotal = copy.BrandTotal;
+        dst.CleanBosses = copy.CleanBosses;
+        dst.Contracts = copy.Contracts;
+        dst.Keepsake = copy.Keepsake;
+        dst.KeepsakeRuns = copy.KeepsakeRuns;
     }
 
     /// <summary>Naprawia wczytany profil. Zwraca true, jeśli trzeba go zapisać (migracja albo pusta pamięć).</summary>
     public static bool ProfileFix(GameData d, Profile p)
     {
-        if (p.MagicIs(Profile.MagicV3)) return false;
-        if (p.MagicIs(Profile.MagicV2)) // v2 -> v3: nowe pola od zera
+        if (p.MagicIs(Profile.MagicV4)) return false;
+        // v3 -> v4 i v2 -> v4: stare pola zostają, nowe od zera (jak memset od profile_v3_size / profile_v2_size)
+        var keep = p.MagicIs(Profile.MagicV3) ? Profile.V3Size : (p.MagicIs(Profile.MagicV2) ? Profile.V2Size : 0);
+        if (keep > 0)
         {
-            p.Badges = 0;
-            p.Catalog = 0;
-            p.ClassWins = 0;
-            p.ToolsFound = 0;
-            p.HousesCount = 0;
-            p.Houses = new byte[Profile.MaxHouses];
-            p.Magic = Profile.MagicBytes(Profile.MagicV3);
+            var b = p.ToBytes();
+            Array.Clear(b, keep, b.Length - keep);
+            CopyInto(Profile.FromBytes(b), p);
+            p.Magic = Profile.MagicBytes(Profile.MagicV4);
             return true;
         }
         if (p.MagicIs(Profile.MagicV1))
@@ -134,8 +140,16 @@ public static class Meta
                 case UpgradeEffect.Dmg: m.Dmg += v; break;
                 case UpgradeEffect.Coffee: m.Coffee += v; break;
                 case UpgradeEffect.Pickups: m.Pickups += v; break;
+                case UpgradeEffect.Luck: m.Luck += v; break;
+                case UpgradeEffect.Craft: m.Craft += v; break;
             }
         }
+        for (var i = 0; i < d.Badges.Length; ++i) // uprawnienia ze zdobytych odznak
+        {
+            if ((p.Badges & (1u << i)) != 0) m.AddPerk(d.Badges[i].Bonus);
+        }
+        var k = SelectedKeepsake(d, p); // pamiątka zabrana na budowę
+        if (k >= 0) m.AddPerk(KeepsakePerk(d, p, k));
         return m;
     }
 
@@ -191,9 +205,145 @@ public static class Meta
         return true;
     }
 
-    /// <summary>Przenosi do profilu trwałe osiągnięcia budowy (katalog, narzędzia, wygrane zawody).</summary>
+    // ------------------------------------------------------------------ pamiątki
+    public static bool KeepsakeUnlocked(GameData d, Profile p, int k)
+    {
+        var kd = d.Keepsakes[k];
+        if (kd.Start || (kd.Badge >= 0 && (p.Badges & (1u << kd.Badge)) != 0)) return true;
+        for (var i = 0; i < d.Contracts.Length; ++i)
+        {
+            if (d.Contracts[i].Keepsake == k && (p.Contracts & (1u << i)) != 0) return true;
+        }
+        return false;
+    }
+
+    /// <summary>Ranga 1-3: rośnie po KeepsakeRankRuns budowach z tą pamiątką.</summary>
+    public static int KeepsakeRank(GameData d, Profile p, int k) =>
+        1 + (p.KeepsakeRuns[k] >= d.KeepsakeRankRuns[0] ? 1 : 0) + (p.KeepsakeRuns[k] >= d.KeepsakeRankRuns[1] ? 1 : 0);
+
+    public static Perk KeepsakePerk(GameData d, Profile p, int k) =>
+        new(d.Keepsakes[k].Effect, d.Keepsakes[k].Values[KeepsakeRank(d, p, k) - 1]);
+
+    /// <summary>Wybrana pamiątka (indeks) albo -1.</summary>
+    public static int SelectedKeepsake(GameData d, Profile p)
+    {
+        var k = p.Keepsake - 1;
+        return k >= 0 && k < d.Keepsakes.Length && KeepsakeUnlocked(d, p, k) ? k : -1;
+    }
+
+    /// <summary>Wybór na ekranie zawodu (L/R): kolejna odblokowana pamiątka albo „bez pamiątki”.</summary>
+    public static void CycleKeepsake(GameData d, Profile p, int dir)
+    {
+        int n = d.Keepsakes.Length + 1, k = p.Keepsake;
+        for (var i = 0; i < n; ++i)
+        {
+            k = (k + dir + n) % n;
+            if (k == 0 || KeepsakeUnlocked(d, p, k - 1)) break;
+        }
+        p.Keepsake = (byte)k;
+    }
+
+    /// <summary>Start budowy: licznik budów i budów z wybraną pamiątką (Mods() wołać wcześniej – ranga z budów przed tą).</summary>
+    public static void StartRun(GameData d, Profile p)
+    {
+        ++p.Runs;
+        var k = SelectedKeepsake(d, p);
+        if (k >= 0 && p.KeepsakeRuns[k] < 255) ++p.KeepsakeRuns[k];
+    }
+
+    // ------------------------------------------------------------------ zlecenia
+    private static ushort AddSat16(ushort a, int delta) => (ushort)Math.Min(65535, a + Math.Max(0, delta));
+
+    private static byte AddSat8(byte a, int delta) => (byte)Math.Min(255, a + Math.Max(0, delta));
+
+    /// <summary>Przenosi do profilu nowe wartości liczników zleceń z budowy (bez podwójnego liczenia).</summary>
+    public static void BankCounters(Profile p, Game g)
+    {
+        p.KillsTotal = AddSat16(p.KillsTotal, g.Kills - g.KillsBanked);
+        g.KillsBanked = g.Kills;
+        p.PowersTotal = AddSat16(p.PowersTotal, g.PowersUsed - g.PowersBanked);
+        g.PowersBanked = g.PowersUsed;
+        p.BrandTotal = AddSat8(p.BrandTotal, g.BrandFound - g.BrandBanked);
+        g.BrandBanked = g.BrandFound;
+        p.CleanBosses = AddSat8(p.CleanBosses, g.CleanBosses - g.CleanBanked);
+        g.CleanBanked = g.CleanBosses;
+    }
+
+    private static int PopCount(uint v)
+    {
+        var n = 0;
+        for (; v != 0; v &= v - 1) ++n;
+        return n;
+    }
+
+    /// <summary>Postęp zlecenia (licznik z profilu).</summary>
+    public static int ContractProgress(GameData d, Profile p, int i) => d.Contracts[i].Kind switch
+    {
+        ContractKind.Kills => p.KillsTotal,
+        ContractKind.Powers => p.PowersTotal,
+        ContractKind.Brand => p.BrandTotal,
+        ContractKind.CleanBoss => p.CleanBosses,
+        ContractKind.ClassWins => PopCount(p.ClassWins),
+        ContractKind.Wins => p.Wins,
+        _ => 0,
+    };
+
+    public static bool ContractDone(Profile p, int i) => (p.Contracts & (1u << i)) != 0;
+
+    /// <summary>Postęp zlecenia w trakcie budowy: profil + liczniki budowy jeszcze nieprzeniesione do profilu.</summary>
+    public static int ContractProgressLive(GameData d, Profile p, Game g, int i)
+    {
+        var v = ContractProgress(d, p, i);
+        return d.Contracts[i].Kind switch
+        {
+            ContractKind.Kills => v + g.Kills - g.KillsBanked,
+            ContractKind.Powers => v + g.PowersUsed - g.PowersBanked,
+            ContractKind.Brand => v + g.BrandFound - g.BrandBanked,
+            ContractKind.CleanBoss => v + g.CleanBosses - g.CleanBanked,
+            _ => v,
+        };
+    }
+
+    /// <summary>Najbliższe ukończenia (największy % postępu) nieukończone zlecenie; -1 gdy wszystkie wykonane.</summary>
+    public static int NextContract(GameData d, Profile p, Game g)
+    {
+        int best = -1, bestPct = -1;
+        for (var i = 0; i < d.Contracts.Length; ++i)
+        {
+            if (ContractDone(p, i)) continue;
+            var pct = Math.Min(100, ContractProgressLive(d, p, g, i) * 100 / d.Contracts[i].Target);
+            if (pct > bestPct)
+            {
+                bestPct = pct;
+                best = i;
+            }
+        }
+        return best;
+    }
+
+    /// <summary>Sprawdza zlecenia: ukończone dają doświadczenie (i pamiątkę). Zwraca bitmaskę ukończonych właśnie teraz.</summary>
+    public static int CheckContracts(GameData d, Profile p)
+    {
+        var got = 0;
+        for (var i = 0; i < d.Contracts.Length; ++i)
+        {
+            if (!ContractDone(p, i) && ContractProgress(d, p, i) >= d.Contracts[i].Target)
+            {
+                p.Contracts = (byte)(p.Contracts | (1u << i));
+                p.Xp += d.Contracts[i].Xp;
+                got |= 1 << i;
+            }
+        }
+        return got;
+    }
+
+    /// <summary>
+    /// Przenosi do profilu trwałe osiągnięcia budowy (katalog, narzędzia, wygrane zawody, liczniki zleceń).
+    /// Można wołać wielokrotnie.
+    /// </summary>
     public static void RecordRun(GameData d, Profile p, Game g)
     {
+        BankCounters(p, g);
         for (var e = 0; e < d.Enemies.Length; ++e)
         {
             if (g.KillsByType[e] != 0) p.Catalog = (ushort)(p.Catalog | (1u << e));

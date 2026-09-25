@@ -28,20 +28,25 @@ public class GoldenTests
         bool fullMods = j.GetProperty("fullMods").GetInt32() != 0, smart = j.GetProperty("smart").GetInt32() != 0;
         bool shop = j.GetProperty("shop").GetInt32() != 0, ngplus = j.GetProperty("ngplus").GetInt32() != 0;
         var steps = j.GetProperty("steps").GetInt32();
+        int Opt(string k) => j.TryGetProperty(k, out var v) ? v.GetInt32() : 0;
+        int badges = Opt("badges"), contracts = Opt("contracts"), keepsake = Opt("keepsake"), keepsakeRuns = Opt("keepsakeRuns");
         var snaps = j.GetProperty("snapshots").EnumerateArray().ToList();
         var digests = j.GetProperty("digests").EnumerateArray().Select(x => x.GetString()).ToList();
 
         var p = Meta.NewProfile(d);
-        var m = RunMods.Default(d);
         if (fullMods)
         {
             for (var i = 0; i < d.Upgrades.Length; i++) p.Levels[i] = (byte)d.Upgrades[i].Levels;
             p.Tools = (byte)((1 << d.Tools.Length) - 1);
-            m = Meta.Mods(d, p);
         }
+        p.Badges = (ushort)badges;
+        p.Contracts = (byte)contracts;
+        p.Keepsake = (byte)keepsake;
+        if (keepsake > 0) p.KeepsakeRuns[keepsake - 1] = (byte)keepsakeRuns;
+        var m = Meta.Mods(d, p); // przed StartRun: ranga pamiątki z budów przed tą
         var g = new Game(d);
         g.NewRun(cls, seed, diff, m);
-        ++p.Runs;
+        Meta.StartRun(d, p);
 
         var snapIndex = 0;
         var digestIndex = 0;
@@ -71,6 +76,7 @@ public class GoldenTests
             if (g.St == GameStatus.StageClear)
             {
                 Meta.CheckBadges(d, p, g);
+                Meta.CheckContracts(d, p);
                 Meta.BankXp(p, g);
                 if (g.ActCleared && shop) Bot.Shop(g);
                 g.NextStage();
@@ -84,6 +90,7 @@ public class GoldenTests
                 ++p.Wins;
                 Meta.AddHouse(p, g);
                 Meta.CheckBadges(d, p, g);
+                Meta.CheckContracts(d, p);
                 Meta.BankXp(p, g);
                 didNg = true;
                 g.NewGamePlus();
@@ -103,6 +110,7 @@ public class GoldenTests
             Meta.AddHouse(p, g);
         }
         Meta.CheckBadges(d, p, g);
+        Meta.CheckContracts(d, p);
         Meta.BankXp(p, g);
 
         Assert.Equal(snaps.Count, snapIndex);

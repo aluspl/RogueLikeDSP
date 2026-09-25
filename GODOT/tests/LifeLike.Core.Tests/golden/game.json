@@ -195,6 +195,22 @@
       "maxDamage": 8,
       "range": 1,
       "scalesWith": "strength"
+    },
+    {
+      "id": "tablet",
+      "name": "Tablet z projektem",
+      "minDamage": 3,
+      "maxDamage": 5,
+      "range": 2,
+      "scalesWith": "intelligence"
+    },
+    {
+      "id": "miernik",
+      "name": "Miernik laserowy",
+      "minDamage": 2,
+      "maxDamage": 5,
+      "range": 3,
+      "scalesWith": "intelligence"
     }
   ],
   "enemies": [
@@ -572,6 +588,28 @@
           15,
           30
         ]
+      },
+      {
+        "id": "bhp2",
+        "name": "Kurs BHP II",
+        "desc": "+1 szczęścia",
+        "effect": "luck",
+        "value": 1,
+        "costs": [
+          20,
+          40
+        ]
+      },
+      {
+        "id": "warsztaty",
+        "name": "Warsztaty",
+        "desc": "+1 do statystyki broni",
+        "effect": "craft",
+        "value": 1,
+        "costs": [
+          20,
+          40
+        ]
       }
     ],
     "tools": [
@@ -590,6 +628,14 @@
       {
         "weapon": "mlot",
         "cost": 40
+      },
+      {
+        "weapon": "tablet",
+        "cost": 25
+      },
+      {
+        "weapon": "miernik",
+        "cost": 35
       }
     ]
   },
@@ -637,55 +683,91 @@
       "id": "bez_usterek",
       "name": "Bez usterek",
       "desc": "Etap bez żadnych obrażeń",
-      "xp": 20
+      "xp": 20,
+      "perk": {
+        "effect": "hp",
+        "value": 2
+      }
     },
     {
       "id": "przed_terminem",
       "name": "Przed terminem",
       "desc": "Termin pokonany w 150 tur",
-      "xp": 30
+      "xp": 30,
+      "perk": {
+        "effect": "cooldown",
+        "value": 1
+      }
     },
     {
       "id": "seryjny",
       "name": "Seryjny",
       "desc": "8 problemów na jednym etapie",
-      "xp": 15
+      "xp": 15,
+      "perk": {
+        "effect": "dmg",
+        "value": 1
+      }
     },
     {
       "id": "zawodowiec",
       "name": "Zawodowiec",
       "desc": "Poziom postaci 5",
-      "xp": 20
+      "xp": 20,
+      "perk": {
+        "effect": "crit",
+        "value": 5
+      }
     },
     {
       "id": "twardziel",
       "name": "Twardziel",
       "desc": "Wygrana na Trudnym",
-      "xp": 40
+      "xp": 40,
+      "perk": {
+        "effect": "def",
+        "value": 1
+      }
     },
     {
       "id": "pelny_zespol",
       "name": "Pełny zespół",
       "desc": "Wygrana każdym zawodem",
-      "xp": 60
+      "xp": 60,
+      "perk": {
+        "effect": "cash",
+        "value": 20
+      }
     },
     {
       "id": "kolekcjoner",
       "name": "Kolekcjoner",
       "desc": "Znajdź wszystkie narzędzia",
-      "xp": 30
+      "xp": 30,
+      "perk": {
+        "effect": "tool_pct",
+        "value": 10
+      }
     },
     {
       "id": "katalog",
       "name": "Katalog usterek",
       "desc": "Pokonaj każdy problem",
-      "xp": 30
+      "xp": 30,
+      "perk": {
+        "effect": "luck",
+        "value": 1
+      }
     },
     {
       "id": "osiedle",
       "name": "Osiedle",
       "desc": "Zbuduj 5 domów",
-      "xp": 50
+      "xp": 50,
+      "perk": {
+        "effect": "xp_pct",
+        "value": 10
+      }
     }
   ],
   "story": {
@@ -846,6 +928,27 @@
         "short": "Moc -1t",
         "effect": "cooldown",
         "value": 1
+      },
+      {
+        "id": "str",
+        "name": "Siła +1",
+        "short": "SIŁ+1",
+        "effect": "str",
+        "value": 1
+      },
+      {
+        "id": "agi",
+        "name": "Zręczność +1",
+        "short": "ZRĘ+1",
+        "effect": "agi",
+        "value": 1
+      },
+      {
+        "id": "intel",
+        "name": "Inteligencja +1",
+        "short": "INT+1",
+        "effect": "intel",
+        "value": 1
       }
     ],
     "declineXp": 1
@@ -935,5 +1038,183 @@
       "effect": "ability"
     }
   ],
-  "version": "v0.21.42"
+  "version": "v0.21.43",
+  "contracts": [
+    {
+      "id": "trzy_fachy",
+      "name": "Trzy fachy",
+      "desc": "Wygraj 3 różnymi zawodami",
+      "kind": "class_wins",
+      "target": 3,
+      "xp": 40
+    },
+    {
+      "id": "czysta_robota",
+      "name": "Czysta robota",
+      "desc": "Boss aktu bez obrażeń w walce",
+      "kind": "clean_boss",
+      "target": 1,
+      "xp": 30,
+      "keepsake": "poziomica"
+    },
+    {
+      "id": "markowy_styl",
+      "name": "Markowy styl",
+      "desc": "Zbierz 5 markowych przedmiotów",
+      "kind": "brand",
+      "target": 5,
+      "xp": 30,
+      "keepsake": "kielnia"
+    },
+    {
+      "id": "mocarz",
+      "name": "Mocarz",
+      "desc": "Użyj mocy zawodu 100 razy",
+      "kind": "powers",
+      "target": 100,
+      "xp": 40,
+      "keepsake": "notes"
+    },
+    {
+      "id": "pogromca",
+      "name": "Pogromca usterek",
+      "desc": "Usuń 200 problemów",
+      "kind": "kills",
+      "target": 200,
+      "xp": 60
+    },
+    {
+      "id": "staly_klient",
+      "name": "Stały klient",
+      "desc": "Wygraj 5 budów",
+      "kind": "wins",
+      "target": 5,
+      "xp": 50
+    }
+  ],
+  "keepsakes": {
+    "rankRuns": [
+      3,
+      8
+    ],
+    "list": [
+      {
+        "id": "termos",
+        "name": "Termos babci",
+        "desc": "Stary, ale trzyma ciepło",
+        "effect": "thermos",
+        "values": [
+          1,
+          2,
+          3
+        ],
+        "start": true
+      },
+      {
+        "id": "kask",
+        "name": "Kask ojca",
+        "desc": "Pamięta niejedną budowę",
+        "effect": "def",
+        "values": [
+          1,
+          2,
+          3
+        ],
+        "badge": "bez_usterek"
+      },
+      {
+        "id": "kielnia",
+        "name": "Szczęśliwa kielnia",
+        "desc": "Nigdy nie zawiodła",
+        "effect": "luck",
+        "values": [
+          2,
+          3,
+          4
+        ]
+      },
+      {
+        "id": "poziomica",
+        "name": "Stara poziomica",
+        "desc": "Wszystko widać jak na dłoni",
+        "effect": "sight",
+        "values": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "id": "notes",
+        "name": "Notes kierownika",
+        "desc": "Wszystko zapisane, nic nie ginie",
+        "effect": "cooldown",
+        "values": [
+          1,
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  "siteEvents": {
+    "chancePct": 45,
+    "list": [
+      {
+        "id": "dostawa",
+        "name": "Dostawa spóźniona",
+        "short": "-2 znajdź.",
+        "from": "Kierownik Marek",
+        "text": "Hurtownia dzwoniła:|dostawa będzie jutro.|Mniej materiału na placu.",
+        "effect": "fewer_pickups",
+        "value": 2,
+        "info": "Mniej znajdziek na etapie",
+        "good": false
+      },
+      {
+        "id": "premia",
+        "name": "Premia od inwestora",
+        "short": "+20 zł",
+        "from": "Anna Nowak",
+        "text": "Dobrze idzie! Przelewam|premię na budowę. Kupcie|coś w Hurtowni.",
+        "effect": "cash",
+        "value": 20,
+        "info": "Budżet budowy +20 zł",
+        "good": true
+      },
+      {
+        "id": "inspekcja",
+        "name": "Inspekcja nadzoru",
+        "short": "Bez ran",
+        "from": "Kierownik Marek",
+        "text": "Dziś inspektor nadzoru.|Etap bez obrażeń =|premia. Uważaj na siebie!",
+        "effect": "inspection",
+        "value": 10,
+        "info": "Etap bez obrażeń: +10 dośw.",
+        "good": true
+      },
+      {
+        "id": "ulewa",
+        "name": "Ulewa w nocy",
+        "short": "Poślizg",
+        "from": "Anna Nowak",
+        "text": "W nocy lało jak z cebra.|Na placu błoto po kostki.|Uważaj, ślisko!",
+        "effect": "rain",
+        "value": 25,
+        "info": "Ciosy: +25% szans na poślizg",
+        "good": false
+      },
+      {
+        "id": "kawa",
+        "name": "Ekipa na kawie",
+        "short": "Termos",
+        "from": "Kierownik Marek",
+        "text": "Ekipa zrobiła kawę|dla wszystkich. Termos|masz pełny!",
+        "effect": "thermos",
+        "value": 0,
+        "info": "Termos pełny",
+        "good": true
+      }
+    ]
+  }
 }
