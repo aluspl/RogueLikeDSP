@@ -24,6 +24,7 @@
 #include "bn_sprite_items_font_8x16.h"
 #include "bn_sprite_items_hp_bar.h"
 #include "bn_sprite_items_particles.h"
+#include "bn_sprite_items_mini_hp.h"
 #include "bn_sprite_items_houses.h"
 #include "bn_sprite_items_ability_icons.h"
 #include "bn_random.h"
@@ -971,7 +972,7 @@ namespace
     struct particle_pool
     {
         enum : int { dust = 0, spark = 3, confetti = 5, star = 9, ring = 10, brick = 12, nail = 13, bolt = 14,
-                     drop = 16, plus = 17, zzz = 18 };
+                     drop = 16, plus = 17, zzz = 18, alert = 19, marker = 20 };
         bn::vector<particle, 24> list;
         bn::random rnd;
         bn::camera_ptr cam;
@@ -1106,6 +1107,15 @@ namespace
         bool aiming = false;
         int aim_frames = 0, aim_sel = 0, aim_count = 0, range_flash = 0;
         int8_t aim_targets[core::max_enemies];
+        // Znacznik oznaczonego celu: strzałka nad wrogiem, którego trafi krótkie A (albo wybranym przy celowaniu).
+        bn::sprite_ptr target_marker = bn::sprite_items::particles.create_sprite(0, 0, particle_pool::marker);
+        target_marker.set_camera(cam);
+        target_marker.set_z_order(-45);
+        target_marker.set_visible(false);
+        int marked = -1;
+        bool looking = false;
+        int look_frames = 0, look_sel = 0, look_count = 0, look_shown = -1;
+        int8_t look_list[core::max_enemies];
         static bool range_cells[core::map_h][core::map_w];
         bn::sprite_ptr reticle = bn::sprite_items::actors.create_sprite(0, 0, frame_reticle);
         reticle.set_camera(cam);
@@ -1204,28 +1214,29 @@ namespace
             prev_level = g.hero_level; prev_weapon = g.weapon_override; prev_pickups = g.pickups_count; prev_cd = g.ability_cd;
         };
 
-        // pasek HP celu (ostatnio trafiony wróg / boss): 2 segmenty ściśnięte do 16 px
-        bn::sprite_ptr tgt_left = bn::sprite_items::hp_bar.create_sprite(0, 0, 0);
-        bn::sprite_ptr tgt_right = bn::sprite_items::hp_bar.create_sprite(0, 0, 96);
-        for(bn::sprite_ptr* s : { &tgt_left, &tgt_right })
-        {
-            s->set_camera(cam); s->set_horizontal_scale(bn::fixed(0.5)); s->set_z_order(-20); s->set_visible(false);
-        }
-        auto update_target_bar = [&]() {
-            int ti = target_timer > 0 ? g.last_target : -1;
-            if(g.boss >= 0 && g.enemies[g.boss].alive && g.enemies[g.boss].awake) ti = g.boss;
-            bool show = ti >= 0 && g.enemies[ti].alive && g.visible(g.enemies[ti].x, g.enemies[ti].y);
-            tgt_left.set_visible(show); tgt_right.set_visible(show);
-            if(! show) return;
-            const core::actor& e = g.enemies[ti];
-            int fill = core::imax(1, e.hp * 62 / e.max_hp);
-            int color = e.hp * 2 > e.max_hp ? 0 : (e.hp * 4 > e.max_hp ? 1 : 2);
-            tgt_left.set_tiles(bn::sprite_items::hp_bar.tiles_item(), color * 32 + core::imin(fill, 31));
-            tgt_right.set_tiles(bn::sprite_items::hp_bar.tiles_item(), 96 + color * 32 + core::imax(0, fill - 31));
-            bn::fixed_point p = world(e.x, e.y);
-            tgt_left.set_position(p.x() - 8, p.y() - 11);
-            tgt_right.set_position(p.x() + 8, p.y() - 11);
+        // Mini paski HP nad widocznymi wrogami, którzy Cię ścigają albo są ranni (1 sprite 8x8 na wroga).
+        bn::vector<bn::optional<bn::sprite_ptr>, core::max_enemies> mini_bars(g.enemies_count);
+        auto update_mini_bars = [&]() {
+            for(int i = 0; i < g.enemies_count; ++i)
+            {
+                const core::actor& e = g.enemies[i];
+                bool show = e.alive && g.visible(e.x, e.y) && (e.awake || e.hp < e.max_hp);
+                if(! show) { if(mini_bars[i]) mini_bars[i]->set_visible(false); continue; }
+                int fill = core::imax(1, e.hp * 6 / e.max_hp);
+                int color = e.hp * 2 > e.max_hp ? 0 : (e.hp * 4 > e.max_hp ? 1 : 2);
+                if(! mini_bars[i])
+                {
+                    mini_bars[i] = bn::sprite_items::mini_hp.create_sprite_optional(0, 0, color * 7 + fill);
+                    if(! mini_bars[i]) continue;   // brak wolnych sprite'ów - bez paska
+                    mini_bars[i]->set_camera(cam);
+                    mini_bars[i]->set_z_order(-20);
+                }
+                mini_bars[i]->set_tiles(bn::sprite_items::mini_hp.tiles_item(), color * 7 + fill);
+                mini_bars[i]->set_visible(true);
+            }
         };
+        auto hide_mini_bars = [&]() { for(auto& mb : mini_bars) if(mb) mb->set_visible(false); };
+        uint32_t prev_awake = 0;
 
         // Animacja: płynny ruch między polami (4 px/klatkę) i 2 klatki "oddechu"/kroku.
         bn::fixed_point hero_cur = world(g.hero.x, g.hero.y), hero_dst = hero_cur;
@@ -1272,6 +1283,9 @@ namespace
             {
                 approach(enemy_cur[i], enemy_dst[i]);
                 enemies[i].set_position(enemy_cur[i]);
+                if(mini_bars[i]) mini_bars[i]->set_position(enemy_cur[i].x(), enemy_cur[i].y() - 11);
+                if(i == marked)
+                    target_marker.set_position(enemy_cur[i].x(), enemy_cur[i].y() - 19 - (((anim_clock / 10) & 1) ? 1 : 0));
                 int ef = data::enemies[g.enemies[i].def_id].frame + (((anim_clock / 20 + i) & 1) ? frame_anim_b : 0);
                 if(ef != enemy_shown[i]) { enemies[i].set_tiles(bn::sprite_items::actors.tiles_item(), ef); enemy_shown[i] = int8_t(ef); }
             }
@@ -1440,7 +1454,9 @@ namespace
                 floater& f = floaters.back();
                 core::message m; m.add("-").add(g.hits[i].amount);
                 bn::fixed_point p = world(g.hits[i].x, g.hits[i].y);
+                a.text.set_palette_item(g.hits[i].on_hero ? bn::sprite_palette_items::font_map_bad : bn::sprite_items::font_8x16.palette_item());
                 a.text.generate(p.x(), p.y() - 12, m.s, f.sprites);
+                a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
                 for(bn::sprite_ptr& sp : f.sprites) { sp.set_camera(cam); sp.set_z_order(-60); }
                 f.timer = 36;
                 if(! g.hits[i].on_hero) target_timer = 90;
@@ -1449,7 +1465,23 @@ namespace
                     (g.hits[i].on_hero ? bn::sound_items::sfx_hurt : bn::sound_items::sfx_hit).play();
             }
             g.hits_count = 0;
-            update_target_bar();
+            update_mini_bars();
+            {
+                int8_t tt[core::max_enemies];
+                marked = g.targets_in_range(tt, core::max_enemies) > 0 ? tt[0] : -1;
+                target_marker.set_visible(marked >= 0);
+            }
+            for(int i = 0; i < g.enemies_count; ++i)   // "!" nad wrogiem, który Cię właśnie zauważył
+            {
+                const core::actor& e = g.enemies[i];
+                bool aw = e.alive && e.awake;
+                if(aw && ! (prev_awake & (1u << i)) && g.visible(e.x, e.y))
+                {
+                    bn::fixed_point p = world(e.x, e.y);
+                    fx_particles.spawn(p.x(), p.y() - 14, 0, bn::fixed(-0.15), 0, 40, particle_pool::alert);
+                }
+                if(aw) prev_awake |= 1u << i; else prev_awake &= ~(1u << i);
+            }
             detect_events();
         };
         refresh();
@@ -1461,7 +1493,7 @@ namespace
             for(auto& s : enemies) s.set_visible(false);
             for(auto& s : pickups) s.set_visible(false);
             fx.clear(); log.clear(); floaters.clear(); fx_particles.list.clear();
-            tgt_left.set_visible(false); tgt_right.set_visible(false);
+            hide_mini_bars(); target_marker.set_visible(false);
             power_icon.set_visible(false); power_text.clear(); shown_cd = -1;
             a.text.set_left_alignment();
             a.text.generate(-116, 72, "Podgląd mapy (puść L)", log);
@@ -1498,6 +1530,7 @@ namespace
                 {
                     const core::actor& e = g.enemies[aim_targets[aim_sel]];
                     reticle.set_position(world(e.x, e.y));
+                    marked = aim_targets[aim_sel];
                     reticle.set_visible(aim_frames >= 8 && ((aim_frames / 6) & 1) == 0 ? true : aim_frames >= 8);
                 }
                 if(! bn::keypad::a_held())
@@ -1513,6 +1546,61 @@ namespace
                 continue;
             }
             if(range_flash > 0 && --range_flash == 0) show_range(false);
+            if(looking)   // B: krótko = czekaj turę; przytrzymaj = podgląd wrogów (bez zużycia tury)
+            {
+                ++look_frames;
+                if(look_frames == 10)
+                {
+                    look_count = 0;
+                    for(int d = 1; d <= core::fov_radius + 1; ++d)
+                        for(int i = 0; i < g.enemies_count; ++i)
+                            if(g.enemies[i].alive && g.visible(g.enemies[i].x, g.enemies[i].y)
+                               && core::cheb(g.hero.x, g.hero.y, g.enemies[i].x, g.enemies[i].y) == d)
+                                look_list[look_count++] = int8_t(i);
+                }
+                if(look_frames >= 10 && look_count > 0)
+                {
+                    if(bn::keypad::right_pressed() || bn::keypad::down_pressed()) { look_sel = (look_sel + 1) % look_count; look_shown = -1; }
+                    if(bn::keypad::left_pressed() || bn::keypad::up_pressed()) { look_sel = (look_sel + look_count - 1) % look_count; look_shown = -1; }
+                    const core::actor& e = g.enemies[look_list[look_sel]];
+                    reticle.set_position(world(e.x, e.y));
+                    reticle.set_visible(true);
+                    if(look_shown != look_list[look_sel])   // karta wroga w miejscu dziennika
+                    {
+                        look_shown = look_list[look_sel];
+                        const core::enemy_def& ed = data::enemies[e.def_id];
+                        log.clear();
+                        a.text.set_left_alignment();
+                        a.text.set_palette_item(bn::sprite_palette_items::font_map_loot);
+                        core::message l1; l1.add(ed.name).add("  HP ").add(e.hp).add("/").add(e.max_hp);
+                        l1.add("  obr. ").add(ed.min_damage + g.enemy_dmg_bonus()).add("-").add(ed.max_damage + g.enemy_dmg_bonus());
+                        a.text.generate(-116, 56, clip(l1.s, 34).c_str(), log);
+                        a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
+                        a.text.generate(-116, 72, ed.desc, log);
+                        draw_strips(true);
+                        log_timer = 0;
+                    }
+                }
+                else if(look_frames >= 10 && look_shown != -2)
+                {
+                    look_shown = -2;
+                    log.clear();
+                    a.text.set_left_alignment();
+                    a.text.generate(-116, 72, "Nikogo w polu widzenia", log);
+                    draw_strips(true);
+                }
+                if(! bn::keypad::b_held())
+                {
+                    looking = false;
+                    reticle.set_visible(false);
+                    if(look_frames < 10) acted = g.player_wait();
+                    else { log.clear(); draw_strips(false); log_seen = g.log_serial; look_shown = -1; }
+                }
+                if(acted) refresh();
+                animate(); fx_particles.update(); banner.update(a);
+                next_frame();
+                continue;
+            }
             bool any_dir = bn::keypad::left_held() || bn::keypad::right_held() || bn::keypad::up_held() || bn::keypad::down_held();
             bool pressed = bn::keypad::left_pressed() || bn::keypad::right_pressed() || bn::keypad::up_pressed() || bn::keypad::down_pressed();
             hold = any_dir ? hold + 1 : 0;
@@ -1529,7 +1617,7 @@ namespace
                 aiming = true; aim_frames = 0; aim_sel = 0;
                 aim_count = g.targets_in_range(aim_targets, core::max_enemies);
             }
-            else if(bn::keypad::b_pressed()) acted = g.player_wait();
+            else if(bn::keypad::b_pressed() && ! looking) { looking = true; look_frames = 0; look_sel = 0; }
             else if(bn::keypad::r_pressed() && ! bn::keypad::l_held())
             {
                 acted = g.player_ability();
@@ -1546,7 +1634,7 @@ namespace
                 for(auto& s : pickups) s.set_visible(false);
                 fx.clear(); hud.clear(); log.clear(); floaters.clear();
                 hp_left.set_visible(false); hp_right.set_visible(false);
-                tgt_left.set_visible(false); tgt_right.set_visible(false);
+                hide_mini_bars(); target_marker.set_visible(false);
                 power_icon.set_visible(false); power_text.clear(); shown_cd = -1;
                 strip_bg.set_visible(false);
                 banner.hide();
@@ -1584,7 +1672,6 @@ namespace
                 if(f.timer & 1) for(bn::sprite_ptr& sp : f.sprites) sp.set_y(sp.y() - 1);
                 ++i;
             }
-            if(target_timer > 0 && --target_timer == 0) update_target_bar();
             if(flash_timer > 0 && fade_in_left == 0 && shake_timer == 0)   // błysk mocy
             {
                 --flash_timer;

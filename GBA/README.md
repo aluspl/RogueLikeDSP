@@ -14,7 +14,7 @@ Przekroczony budżet) i bossa **Nieprzekraczalny Termin**. Na końcu ekran z kod
 |---|---|
 | D-pad | ruch / atak przez wejście na wroga (przytrzymaj = szybki ruch) |
 | A | krótko: atak w najbliższy cel; przytrzymaj: podgląd zasięgu i celownik (strzałki zmieniają cel), puść: atak |
-| B | czekaj turę (co 4 tury +1 HP) |
+| B | krótko: czekaj turę (co 4 tury +1 HP); przytrzymaj: podgląd widocznych wrogów (nazwa, HP, obrażenia, opis; strzałki zmieniają wroga) |
 | START | dalej |
 | SELECT | w grze: telefon z aplikacją PlanBudowlany (Zadania, Usterki, Start, Zespół, Koszty; L/R – zakładki, START – menu: jak grać, zapisz i wyjdź, porzuć budowę); na tytule: Szkolenia (ekran Koszty) |
 | B (tytuł) | ekran „Jak grać” |
