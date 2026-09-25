@@ -1,3 +1,5 @@
+using System.Linq;
+using System.Text.Json;
 using Godot;
 using LifeLike.Core;
 using LifeLike.Core.Data;
@@ -19,6 +21,18 @@ public static class GodotDataSource
         if (!FileAccess.FileExists(GameJson))
             throw new GameDataException($"brak {GameJson} – zbuduj projekt (dotnet build), żeby skopiować GBA/data/game.json");
         return GameData.Parse(FileAccess.GetFileAsString(GameJson));
+    }
+
+    /// <summary>
+    /// Rady kierownika (game.json „tips”, ekran harmonogramu na GBA). GameData z rdzenia ich nie czyta
+    /// (to tekst tylko dla prezentacji), więc bierzemy je wprost z tego samego pliku.
+    /// </summary>
+    public static string[] LoadTips()
+    {
+        if (!FileAccess.FileExists(GameJson)) return [];
+        using var doc = JsonDocument.Parse(FileAccess.GetFileAsString(GameJson));
+        if (!doc.RootElement.TryGetProperty("tips", out var tips) || tips.ValueKind != JsonValueKind.Array) return [];
+        return tips.EnumerateArray().Select(t => t.GetString() ?? "").Where(t => t.Length > 0).ToArray();
     }
 
     public static Profile LoadProfile(GameData d)

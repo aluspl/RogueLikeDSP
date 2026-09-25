@@ -16,6 +16,7 @@ public sealed class DebugScenes
         "title", "classselect", "profile", "catalog", "estate", "team", "training", "game", "combat", "offer", "menu",
         "overview", "phone-tasks", "phone-issues", "phone-start", "phone-gear", "phone-costs", "card", "perks", "schedule",
         "hurtownia", "boss", "endmsg", "end", "banners", "map", "aim", "preview", "prologue",
+        "schedule-tip",
     ];
 
     private readonly App _app;
@@ -91,7 +92,7 @@ public sealed class DebugScenes
             g.Equip(1, 2, Array.FindIndex(s.Data.GearTraits, t => t.Effect == TraitEffect.Str));
             _app.Refresh();
         }
-        if (scene is "schedule" or "hurtownia" or "endmsg" or "end" or "boss")
+        if (scene is "schedule" or "schedule-tip" or "hurtownia" or "endmsg" or "end" or "boss")
         {
             await SkipStages(scene);
             return;
@@ -189,6 +190,7 @@ public sealed class DebugScenes
             _app.AfterAction(true);
             await DebugRunner.Frames(_app.Root, 1);
             if (Flow.Current == Flow.Schedule && scene == "schedule") return;
+            if (Flow.Current == Flow.Schedule && scene == "schedule-tip" && g.Stage >= 1) return; // druga rada, notatka z odznakami
             if (Flow.Current == Flow.EndMessage)
             {
                 if (scene == "end") Flow.End.Open();

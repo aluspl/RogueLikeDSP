@@ -39,6 +39,12 @@ public sealed class GameSession
     public string Note { get; set; } = "";
     /// <summary>Doświadczenie zabankowane na koniec budowy.</summary>
     public int LastGained { get; private set; }
+    /// <summary>Rady kierownika z game.json (ekran harmonogramu).</summary>
+    public string[] Tips { get; set; } = [];
+
+    /// <summary>Rada na harmonogram po bieżącym etapie: kolejna z każdym etapem, bez losowania (jak GBA).</summary>
+    public string Tip => Tips.Length == 0 ? "" : Tips[(Game.Stage + Game.Tier * 3) % Tips.Length];
+
     /// <summary>Pierwszy etap tej budowy jeszcze nie wystartował (podpowiedzi na start).</summary>
     public bool FirstStage { get; set; }
 

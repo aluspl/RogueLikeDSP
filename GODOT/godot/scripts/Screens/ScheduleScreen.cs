@@ -15,7 +15,8 @@ public sealed class ScheduleScreen : Screen
 
     public void Open(bool instant = false) => Flow.Go(this, instant);
 
-    public override void Enter(bool instant) => N.Phone.OpenSingle(new SchedulePage(S.Game, S.Note), 0, instant);
+    public override void Enter(bool instant) =>
+        N.Phone.OpenSingle(new SchedulePage(S.Game, S.Note, ButtonNames.Localize(S.Tip)), 0, instant);
 
     public override bool HandleInput(InputCmd e)
     {
