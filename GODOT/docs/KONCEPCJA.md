@@ -181,5 +181,25 @@ Szkic ekranu (1280×720): telefon w pionie na środku, mapa etapu w tle rozmyta 
 - Powiadomienia push w prawym górnym rogu pod HUD (nie zasłaniają „UWAGA: cios za…”), kliknięcie / dotknięcie
   otwiera powiązaną zakładkę telefonu.
 - Eksporter: 4 klatki chodu i klatka oddechu dla zawodów, problemów i bossów (`actors_anim.png`), pickup z prologu.
-- Dalej: układ pionowy z przyciskami ekranowymi (telefon), 2.5D i światło (kamień 4).
+- Dalej: układ pionowy z przyciskami ekranowymi (telefon), 2.5D i światło (kamień 4) – układ pionowy zrobiony (niżej).
+
+### Wersja na telefon: pion, dotyk jedną ręką, ustawienia, iOS (zrobione, 2026-09-25)
+
+- Na iOS/Androidzie gra działa pionowo (komputer bez zmian, 1280x720 poziomo). `Layout` wybiera bazę 360x640
+  pionowo (iPhone 14 Pro Max: UI 430x932, piksel UI = punkt iOS, skala 3) i 640x360 poziomo, skala całkowita
+  z opcją „duży tekst”, bezpieczny obszar z `DisplayServer.GetDisplaySafeArea()`: HUD pod wyspą, pasek akcji
+  nad paskiem domowym, mapa ~9 pól na szerokość, telefon PlanBudowlany jako aplikacja na cały ekran.
+- Sterowanie jedną ręką zamiast A/B: pasek akcji w strefie kciuka z ikonami menu akcji z GBA (Atak – trzymanie:
+  celownik pod palcem; Moc – szara z odliczaniem / pulsująca; Termos z liczbą kaw; Czekaj – trzymanie: karta
+  problemu; Telefon – trzymanie: mapa etapu), przesunięcie palcem = krok (trzymanie – kolejne kroki), dotknięcie
+  pola = marsz krok po kroku (staje przy nowym problemie, obrażeniach, problemie obok), dotknięcie problemu = atak
+  albo podejście, przytrzymanie = karta; opcjonalnie gałka i pasek dla lewej ręki; wibracje przy trafieniu,
+  obrażeniach i powiadomieniu. W telefonie: przyciski stron zamiast podpowiedzi klawiszy, dotyk wierszy,
+  przesunięcie w bok = zakładka. Teksty z GBA (rady kierownika) mówią o przyciskach paska („Przytrzymaj Atak”).
+- Ustawienia pod kluczem w rogu (tytuł i mapa, Esc): głośności, wibracje, sterowanie, ręka, tekst, Jak grać,
+  Zapisz i wyjdź / Porzuć budowę (zapis budowy jak `run_save` na GBA, „Kontynuuj budowę” na tytule), wersja
+  i link planbudowlany.online (także na tytule). `user://settings.cfg` osobno od profilu.
+- Eksport iOS (projekt Xcode) i Android w `export_presets.cfg`, ikona aplikacji z eksportera,
+  `tools/ios_deploy.sh` – build, podpis i instalacja na iPhonie jednym poleceniem.
+- Dalej: 2.5D i światło (kamień 4), zrzut ekranu z urządzenia w automatycznych testach.
 

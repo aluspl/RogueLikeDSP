@@ -70,6 +70,35 @@ telefon, nowy wybór zawodu) jak w GBA v0.21.45.
 | Wybór zawodu: zawód / trudność / pamiątka / start / wróć | ←/→, ↑/↓, Q/E, Enter, Esc | D-pad, LB/RB, Start, B | |
 | Profil w telefonie (odznaki, zlecenia, pamiątki; Spacja zmienia stronę) | P | X | |
 | Szkolenia (zakładka Koszty w telefonie profilu, Spacja kupuje) | K | Y | |
+| Ustawienia (także klucz w prawym górnym rogu tytułu i mapy) | Esc | | klik na klucz |
+
+## Telefon: pion i dotyk jedną ręką
+
+Na iOS/Androidzie (albo z `--touch` na komputerze) gra jest pionowa i sterowana kciukiem – bez przycisków A/B:
+
+| Gest | Co robi |
+|---|---|
+| Przesunięcie palcem po mapie | krok w tę stronę (atak problemu na drodze); palec trzymany dalej = kolejne kroki |
+| Dotknięcie pola | marsz krok po kroku (każdy krok to tura); staje, gdy pojawi się problem, gdy jest obok albo gdy oberwiesz |
+| Dotknięcie problemu | atak, jeśli w zasięgu, inaczej marsz do niego (do zasięgu) |
+| Przytrzymanie problemu | jego karta (HP, obrażenia, opis), bez tury |
+| Pasek akcji: **Atak** | dotknięcie = najbliższy cel; trzymanie = zasięg i celownik, palec przesuwa cel, puszczenie = atak |
+| **Moc** | moc zawodu (szara z odliczaniem, pulsuje, gdy gotowa) |
+| **Termos** | kawa z termosu (liczba kaw na przycisku) |
+| **Czekaj** | dotknięcie = tura; trzymanie = karta najbliższego problemu (przesunięcie: następny) |
+| **Telefon** | dotknięcie = aplikacja PlanBudowlany na cały ekran; trzymanie = podgląd mapy etapu |
+| Pasek HUD u góry | pulpit postaci w telefonie |
+| Telefon | ikony zakładek, przesunięcie w bok = zakładka, w górę/dół = lista, przyciski na dole strony, krzyżyk zamyka |
+
+Ustawienia (klucz 🔧 w prawym górnym rogu, poza czasem gry): muzyka, dźwięki, wibracje, sterowanie (gesty + pasek
+albo gałka + pasek), pasek akcji dla prawej / lewej ręki, tekst normalny / duży, Jak grać, w trakcie budowy
+Zapisz i wyjdź (na tytule „Kontynuuj budowę”) i Porzuć budowę, wersja i link planbudowlany.online. Zapis w
+`user://settings.cfg` (osobno od profilu `user://profile.sav`); budowa w toku w `user://run.sav` (start etapu,
+Zapisz i wyjdź, uśpienie aplikacji).
+
+Układ: `Layout` pionowo liczy od 360x640 (iPhone 14 Pro Max 1290x2796 -> UI 430x932 w skali 3, piksel UI = punkt
+iOS, cele dotyku ≥ 44 pt), poziomo od 640x360; HUD pod wyspą (`DisplayServer.GetDisplaySafeArea()`), pasek akcji
+nad paskiem domowym, mapa ~9 pól na szerokość, telefon jako aplikacja na cały ekran.
 
 ## Wymagania i uruchomienie
 
@@ -78,14 +107,31 @@ telefon, nowy wybór zawodu) jak w GBA v0.21.45.
 - Z terminala: `godot-mono --path GODOT/godot` (opcjonalnie `-- --seed 1234`).
 - Test dymny bez okna (bot gra 3 etapy przez warstwę Godota, kod 0 = OK):
   `godot-mono --headless --path GODOT/godot -- --smoke`
+- Podgląd wersji na telefon na komputerze: `godot-mono --path GODOT/godot -- --touch --portrait` (okno 430x932 jak
+  iPhone w punktach, z symulowaną wyspą i paskiem domowym; `--touch` samo = dotyk myszą w poziomie,
+  `--size 860x1864` = inny rozmiar okna). Działa też ze zrzutami (`--touch --portrait --screenshot ...`).
 - Zrzut ekranu (1280x720) sceny pokazowej: `godot-mono --path GODOT/godot -- --screenshot /tmp/shot.png --scene game`.
   Sceny: `title`, `classselect`, `profile`, `catalog`, `estate`, `team`, `training` (telefon profilu), `game`, `combat`
   (KRYT!/Unik!), `offer` (paczka sprzętu), `menu` (menu akcji), `phone-tasks`, `phone-issues`, `phone-start`
   (= `overview`), `phone-gear`, `phone-costs`, `card` (karta etapu z wydarzeniem), `perks` (HUD z premiami i wydarzeniem),
   `schedule`, `hurtownia`, `boss` (boss z zapowiedzianym ciosem), `endmsg`, `end`, `banners`, `map`, `aim` (trzymane A),
-  `preview` (trzymane B), `prologue`, `schedule-tip` (rada kierownika), `help` (Jak grać).
+  `preview` (trzymane B), `prologue`, `schedule-tip` (rada kierownika), `help` (Jak grać), `settings` (ustawienia
+  w budowie), `settings-title`, `walk` (marsz po dotknięciu pola).
   Sceny ustawiają stan ręcznie (profil pokazowy, skrót zaliczenia etapu jak L+R+SELECT na GBA); zrzuty i test dymny
   działają bez dźwięku.
+
+### iPhone (iOS)
+
+`GODOT/tools/ios_deploy.sh` – wersja z `GBA/data/game.json` do presetu, `dotnet build`, eksport projektu Xcode
+(`godot-mono --headless --export-debug iOS`, preset w `godot/export_presets.cfg`), `xcodebuild` z automatycznym
+podpisem (klucz API App Store Connect), instalacja i uruchomienie przez `xcrun devicectl` na iPhonie (USB albo Wi-Fi).
+Opcje: `--export` (tylko projekt Xcode), `--no-launch`; zmienne `UDID` (domyślnie iPhone Szymona), `ASC_KEY`
+(ścieżka do `.p8`, domyślnie w `~/Dev/PlanerBudowlany/Organizacja/Mobile/certs`; klucza nie ma w repo), `TEAM_ID`,
+`BUNDLE_ID`. Wyniki w `GODOT/build/ios` (poza gitem). Wymaga szablonów eksportu 4.7.2.stable.mono, Xcode i:
+`rendering/textures/vram_compression/import_etc2_astc=true` w project.godot (bez tego eksport iOS kończy się po cichu)
+oraz `godot/LifeLike.Game.sln` obok project.godot (eksport C# szuka tam rozwiązania; testy dalej z `GODOT/LifeLike.sln`).
+Ikona `godot/icon.png` (1024x1024) powstaje w `tools/export_godot_assets.py`. Preset „Android” jest bez sekretów podpisu
+(klucz debug z ustawień edytora).
 
 Przy pierwszym uruchomieniu z terminala najpierw `dotnet build GODOT/godot/LifeLike.Game.csproj`
 i `godot-mono --headless --path GODOT/godot --import` (import grafik i dźwięków z `godot/assets`).
@@ -169,7 +215,7 @@ prezentacja tylko ją pokazuje i reaguje na zdarzenia.
 Main.cs            korzeń sceny: dane + profil -> App; wejście (klawiatura/pad/mysz/wirtualny kontroler) do ekranu bieżącego
 App.cs             kompozycja: GameSession, SceneNodes, ScreenFlow, obserwatorzy zdarzeń; Refresh / AfterAction / StartRun
 SceneNodes.cs      drzewo węzłów: WorldView, HudLayer (1), plansze (2), telefon z tłem (3), banery (4)
-LaunchOptions.cs   argumenty --seed / --smoke / --screenshot --scene
+LaunchOptions.cs   argumenty --seed / --smoke / --screenshot --scene / --touch / --portrait / --size
 Input/             GameAction (A, B, L, R, START, SELECT, strzałki...), InputCmd (zdarzenie jako akcje, wciśnięte
                    i puszczone), GameInput (mapa klawiszy i pada, Translate, Press/Release dla przycisków
                    ekranowych, IsHeld), ButtonNames (A/B/START... w tekstach z game.json -> klawisze)
@@ -179,10 +225,14 @@ Session/           GameSession (budowa + profil: start, etap, NG+, odznaki, zlec
 Screens/           Screen (Enter / Exit / HandleInput / Process + deklaracja warstw i muzyki), ScreenFlow (maszyna
                    stanów), ekrany: Title, Profile, ClassSelect, Prologue, PrologueMessage, Help, Game, Phone,
                    StageCard, Schedule, Hurtownia, Offer, EndMessage, End; Play/ (tryby mapy: ActionMenu, Aiming,
-                   EnemyLook, PlayCommands); Views/ (TitleView, ClassSelectView, EndView, PrologueView, PrologueStage)
+                   EnemyLook, PlayCommands, TouchPlay - gesty na mapie, AutoWalk + PathFinder -
+                   marsz po dotknięciu pola); Settings (ustawienia nad bieżącym ekranem); Views/ (TitleView, ClassSelectView, EndView, PrologueView, PrologueStage)
 World/             WorldView (sprite'y, synchronizacja), WorldFx (trafienia, moce, awans, konfetti), WorldCamera,
                    warstwy: MapLayer, OverlayLayer, FogLayer, FxLayer, MarksLayer, ActorSprite
-Hud/               HudLayer (HudTop, HudLog, EnemyCard, ScreenTint), PushBanners + PushBanner (rysowanie, trafienie
+Touch/             GestureTracker (dotyk -> gesty: Down, Drag, Swipe, SwipeRepeat, LongPress, Tap, Up), Gesture,
+                   TouchControls (warstwa: ActionBar - pasek akcji, VirtualStick - gałka), BarButton, TouchIcon
+Settings/          GameSettings (user://settings.cfg, Changed), ControlScheme, Haptics (wibracje przy dźwiękach)
+Hud/               SettingsButton (klucz ustawień), HudLayer (HudTop, HudLog, EnemyCard, ScreenTint), PushBanners + PushBanner (rysowanie, trafienie
                    kliknięciem), BannerFeed (treść i zakładka telefonu z SessionEvents)
 Phone/             PhoneView (telefon), PhonePage, PhonePainter, PhoneTabs, Backdrop; Tabs/ (w grze), ProfileTabs/,
                    Pages/ (wiadomość, harmonogram z radą, Hurtownia, paczka, Jak grać)
