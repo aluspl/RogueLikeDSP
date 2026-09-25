@@ -539,7 +539,7 @@ if __name__ == "__main__":
     icon_pal = list(SPR_PAL); icon_pal[SK] = (0, 0, 0)   # kolor skóry nieużywany w ikonach
     write_bmp(os.path.join(G, "ability_icons.bmp"), pa.ability_icon_frames(), 16, 16 * len(pa.ABILITY_ICONS), icon_pal, 4)
     write_json("ability_icons", {"type": "sprite", "height": 16})
-    # menu akcji pod START (atak, termos, czekaj, ramka wyboru); też ikona termosu w HUD
+    # menu akcji pod START (atak, termos, czekaj, ramka wyboru), kłódka i strzałki wyboru zawodu; też ikona termosu w HUD
     write_bmp(os.path.join(G, "menu_icons.bmp"), pa.menu_icon_frames(), 16, 16 * len(pa.MENU_ICONS), SPR_PAL, 4)
     write_json("menu_icons", {"type": "sprite", "height": 16})
     # prolog: pickup (32x16, 2 klatki kół)
