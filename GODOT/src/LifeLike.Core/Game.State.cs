@@ -85,6 +85,15 @@ public sealed partial class Game
             w.Write(v);
         w.Write(KillsByType);
         w.Write(ToolsFound);
+        w.Write(KillsBanked);
+        w.Write(PowersUsed);
+        w.Write(PowersBanked);
+        w.Write(BrandFound);
+        w.Write(BrandBanked);
+        w.Write(CleanBosses);
+        w.Write(CleanBanked);
+        w.Write(BossWakeDamage);
+        w.Write(StageEvent);
         foreach (var v in new[] { Cash, ActKills, ActBonus }) w.Write(v);
         w.Write(ActCleared);
         w.Write(SlamTimer);
@@ -92,7 +101,12 @@ public sealed partial class Game
         w.Write(SlamY);
         w.Write(SlamCounter);
         foreach (var s in HeroStatus) w.Write(s);
-        foreach (var v in new[] { Bonus.Hp, Bonus.Def, Bonus.Dmg, Bonus.Coffee, Bonus.Pickups, Bonus.Tools }) w.Write(v);
+        foreach (var v in new[]
+                 {
+                     Bonus.Hp, Bonus.Def, Bonus.Dmg, Bonus.Coffee, Bonus.Pickups, Bonus.Luck, Bonus.Craft, Bonus.Cooldown, Bonus.Sight,
+                     Bonus.Thermos, Bonus.ToolPct, Bonus.XpPct, Bonus.Cash, Bonus.Crit, Bonus.Tools,
+                 })
+            w.Write(v);
         foreach (var v in new[] { XpPct, XpBanked, RunXp, HeroLevel, Boss, StairsX, StairsY }) w.Write(v);
         w.Write((byte)St);
         foreach (var m in Log)
@@ -160,6 +174,15 @@ public sealed partial class Game
         StageStartTurn = r.ReadInt32();
         r.Read(KillsByType, 0, KillsByType.Length);
         ToolsFound = r.ReadByte();
+        KillsBanked = r.ReadInt32();
+        PowersUsed = r.ReadUInt16();
+        PowersBanked = r.ReadUInt16();
+        BrandFound = r.ReadByte();
+        BrandBanked = r.ReadByte();
+        CleanBosses = r.ReadByte();
+        CleanBanked = r.ReadByte();
+        BossWakeDamage = r.ReadInt32();
+        StageEvent = r.ReadSByte();
         Cash = r.ReadInt32();
         ActKills = r.ReadInt32();
         ActBonus = r.ReadInt32();
@@ -171,7 +194,9 @@ public sealed partial class Game
         for (var i = 0; i < HeroStatus.Length; i++) HeroStatus[i] = r.ReadSByte();
         Bonus = new RunMods
         {
-            Hp = r.ReadInt32(), Def = r.ReadInt32(), Dmg = r.ReadInt32(), Coffee = r.ReadInt32(), Pickups = r.ReadInt32(), Tools = r.ReadInt32(),
+            Hp = r.ReadInt32(), Def = r.ReadInt32(), Dmg = r.ReadInt32(), Coffee = r.ReadInt32(), Pickups = r.ReadInt32(),
+            Luck = r.ReadInt32(), Craft = r.ReadInt32(), Cooldown = r.ReadInt32(), Sight = r.ReadInt32(), Thermos = r.ReadInt32(),
+            ToolPct = r.ReadInt32(), XpPct = r.ReadInt32(), Cash = r.ReadInt32(), Crit = r.ReadInt32(), Tools = r.ReadInt32(),
         };
         XpPct = r.ReadInt32();
         XpBanked = r.ReadInt32();

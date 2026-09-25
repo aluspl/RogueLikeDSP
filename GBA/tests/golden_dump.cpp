@@ -94,11 +94,14 @@ static uint32_t digest(const game& g)
         for(int i = 0; i < m.n; ++i) f.add((unsigned char)m.s[i]);
     }
     for(int y = 0; y < map_h; ++y) for(int x = 0; x < map_w; ++x) f.add(int(g.lv.t[y][x]));
+    // v0.21.43: wydarzenie na placu, liczniki zleceń
+    f.add(g.stage_event); f.add(g.boss_wake_damage); f.add(g.powers_used); f.add(g.brand_found); f.add(g.clean_bosses);
     return f.h;
 }
 
 // ------------------------------------------------------------------ JSON
 static std::string out;
+static int event_hits[16];   // statystyka wydarzeń na placu (wypis na końcu)
 static void w(const char* s) { out += s; }
 static void wi(long v) { out += std::to_string(v); }
 static void key(const char* k) { out += '"'; out += k; out += "\":"; }
@@ -128,7 +131,12 @@ static void snapshot(const game& g, int step)
     w(","); key("slam"); w("["); wi(g.slam_timer); w(","); wi(g.slam_x); w(","); wi(g.slam_y); w(","); wi(g.slam_counter); w("]");
     w(","); key("equipped"); w("["); for(int i = 0; i < 4; ++i) { if(i) w(","); wi(g.equipped[i]); } w("]");
     w(","); key("equippedTrait"); w("["); for(int i = 0; i < 4; ++i) { if(i) w(","); wi(g.equipped_trait[i]); } w("]");
-    w(","); key("thermos"); wi(g.thermos);
+    w(","); key("thermos"); wi(g.thermos); w(","); key("thermosCap"); wi(g.thermos_cap());
+    w(","); key("stageEvent"); wi(g.stage_event);
+    w(","); key("counters"); w("["); wi(g.kills_banked); w(","); wi(g.powers_used); w(","); wi(g.powers_banked); w(",");
+    wi(g.brand_found); w(","); wi(g.brand_banked); w(","); wi(g.clean_bosses); w(","); wi(g.clean_banked); w(","); wi(g.boss_wake_damage); w("]");
+    w(","); key("stats"); w("["); wi(g.hero_stat(stat::str)); w(","); wi(g.hero_stat(stat::agi)); w(","); wi(g.hero_stat(stat::intel)); w(",");
+    wi(g.luck()); w(","); wi(g.crit_pct()); w(","); wi(g.sight_radius()); w(","); wi(g.ability_cooldown()); w("]");
     w(","); key("offer"); w("["); wi(g.offer_slot); w(","); wi(g.offer_rarity); w(","); wi(g.offer_trait); w("]");
     w(","); key("heroStatus"); w("["); for(int i = 0; i < 5; ++i) { if(i) w(","); wi(g.hero_status[i]); } w("]");
     w(","); key("killsByType"); w("["); for(int i = 0; i < 16; ++i) { if(i) w(","); wi(g.kills_by_type[i]); } w("]");
@@ -185,10 +193,18 @@ static void profile_json(const profile& p)
     w(","); key("badges"); wi(p.badges); w(","); key("catalog"); wi(p.catalog); w(","); key("classWins"); wi(p.class_wins);
     w(","); key("toolsFound"); wi(p.tools_found); w(","); key("houses"); w("[");
     for(int i = 0; i < p.houses_count; ++i) { if(i) w(","); wi(p.houses[i]); }
-    w("]}");
+    w("]"); w(","); key("killsTotal"); wi(p.kills_total); w(","); key("powersTotal"); wi(p.powers_total);
+    w(","); key("brandTotal"); wi(p.brand_total); w(","); key("cleanBosses"); wi(p.clean_bosses);
+    w(","); key("contracts"); wi(p.contracts); w(","); key("keepsake"); wi(p.keepsake);
+    w(","); key("keepsakeRuns"); w("["); for(int i = 0; i < max_keepsakes; ++i) { if(i) w(","); wi(p.keepsake_runs[i]); } w("]");
+    w(","); key("sram"); hex_bytes(reinterpret_cast<const char*>(&p), sizeof p);   // profil bajt po bajcie jak w SRAM
+    w("}");
 }
 
-struct scenario { int cls; uint32_t seed; int diff; bool full_mods; bool smart; bool shop; bool ngplus; int steps; };
+// badges/contracts: odznaki i zlecenia w profilu przed budową (uprawnienia, odblokowane pamiątki);
+// keepsake: wybrana pamiątka + 1; keepsake_runs: budowy z nią przed tą (ranga)
+struct scenario { int cls; uint32_t seed; int diff; bool full_mods; bool smart; bool shop; bool ngplus; int steps;
+                  int badges = 0; int contracts = 0; int keepsake = 0; int keepsake_runs = 0; };
 
 int main(int argc, char** argv)
 {
@@ -201,24 +217,34 @@ int main(int argc, char** argv)
     sc.push_back({ 2, 7u, 0, true, true, true, true, 6000 });            // pełne Szkolenia, Łatwy, NG+
     sc.push_back({ 3, 99u, 0, true, true, true, true, 6000 });
     sc.push_back({ 0, 123456789u, 2, true, true, true, true, 4000 });
+    // v0.21.43: uprawnienia z odznak, pamiątki (rangi I-III), wydarzenia na placu, liczniki zleceń
+    const int all_badges = (1 << data::badges_count) - 1, all_contracts = (1 << data::contracts_count) - 1;
+    sc.push_back({ 1, 31337u, 1, false, true, true, true, 6000, all_badges, 0, 1, 0 });            // Termos babci I, wszystkie odznaki
+    sc.push_back({ 4, 2024u, 1, true, true, true, true, 6000, 0x41, all_contracts, 3, 8 });        // Szczęśliwa kielnia III, Kolekcjoner
+    sc.push_back({ 5, 1234u, 2, true, true, true, false, 5000, all_badges, all_contracts, 5, 3 });  // Notes kierownika II
+    sc.push_back({ 0, 55555u, 1, false, false, false, false, 4000, 0x108, all_contracts, 4, 0 });  // Stara poziomica I, bot z testów
+    sc.push_back({ 2, 9001u, 0, true, true, true, true, 6000, 0x01, 0, 2, 2 });                    // Kask ojca I (z odznaki)
 
     for(size_t si = 0; si < sc.size(); ++si)
     {
         const scenario& s = sc[si];
         profile p; profile_reset(p);
-        run_mods m;
         if(s.full_mods)
         {
             for(int i = 0; i < data::upgrades_count; ++i) p.levels[i] = uint8_t(data::upgrades[i].levels);
             p.tools = uint8_t((1 << data::tools_count) - 1);
-            m = mods(p);
         }
+        p.badges = uint16_t(s.badges); p.contracts = uint8_t(s.contracts); p.keepsake = uint8_t(s.keepsake);
+        if(s.keepsake > 0) p.keepsake_runs[s.keepsake - 1] = uint8_t(s.keepsake_runs);
+        run_mods m = mods(p);   // przed start_run: ranga pamiątki z budów przed tą
         static game g; g.new_run(s.cls, s.seed, s.diff, m);
-        ++p.runs;
+        start_run(p);
         out.clear();
         w("{"); key("cls"); wi(s.cls); w(","); key("seed"); wi(s.seed); w(","); key("diff"); wi(s.diff);
         w(","); key("fullMods"); wi(s.full_mods); w(","); key("smart"); wi(s.smart); w(","); key("shop"); wi(s.shop);
         w(","); key("ngplus"); wi(s.ngplus); w(","); key("steps"); wi(s.steps);
+        w(","); key("badges"); wi(s.badges); w(","); key("contracts"); wi(s.contracts); w(","); key("keepsake"); wi(s.keepsake);
+        w(","); key("keepsakeRuns"); wi(s.keepsake_runs);
         w(","); key("snapshots"); w("[");
         snapshot(g, 0);
         std::vector<uint32_t> digests;
@@ -228,7 +254,7 @@ int main(int argc, char** argv)
         {
             if(g.st == status::stage_clear)
             {
-                check_badges(p, g); bank_xp(p, g);
+                check_badges(p, g); check_contracts(p); bank_xp(p, g);
                 if(g.act_cleared && s.shop) bot_shop(g);
                 g.next_stage();
                 w(","); snapshot(g, step);
@@ -238,7 +264,7 @@ int main(int argc, char** argv)
             if(g.st == status::won && s.ngplus && ! did_ng)
             {
                 if(g.score > p.best) p.best = g.score;
-                ++p.wins; add_house(p, g); check_badges(p, g); bank_xp(p, g);
+                ++p.wins; add_house(p, g); check_badges(p, g); check_contracts(p); bank_xp(p, g);
                 did_ng = true;
                 g.new_game_plus();
                 w(","); snapshot(g, step);
@@ -247,11 +273,12 @@ int main(int argc, char** argv)
             }
             if(g.st != status::playing) break;
             if(s.smart) bot_step_smart(g); else bot_step(g);
+            if(g.turns == g.stage_start_turn + 1 && g.stage_event >= 0) ++event_hits[g.stage_event];
             digests.push_back(digest(g)); g.hits_count = 0;   // warstwa GBA zeruje trafienia po każdej turze
         }
         if(g.score > p.best) p.best = g.score;
         if(g.st == status::won) { ++p.wins; add_house(p, g); }
-        check_badges(p, g); bank_xp(p, g);
+        check_badges(p, g); check_contracts(p); bank_xp(p, g);
         w("]"); w(","); key("endStep"); wi(step);
         w(","); key("final"); snapshot(g, step);
         w(","); key("profile"); profile_json(p);
@@ -265,5 +292,8 @@ int main(int argc, char** argv)
         std::printf("%s: zawód %d seed %u poziom %d -> %s etap %d tier %d tury %d wynik %d kroki %d\n", path, s.cls, s.seed, s.diff,
                     g.st == status::won ? "WYGRANA" : (g.st == status::dead ? "porażka" : "w toku"), g.stage + 1, g.tier, g.turns, g.score, step);
     }
+    std::printf("wydarzenia na placu (etapy):");
+    for(int i = 0; i < data::site_events_count; ++i) std::printf(" %s=%d", data::site_events[i].name, event_hits[i]);
+    std::printf("\n");
     return 0;
 }

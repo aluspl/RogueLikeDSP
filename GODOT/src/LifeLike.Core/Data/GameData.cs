@@ -25,6 +25,15 @@ public sealed class GameData
     public ShopItemDef[] Hurtownia { get; private init; } = [];
     public BadgeDef[] Badges { get; private init; } = [];
     public ToolDef[] Tools { get; private init; } = [];
+    /// <summary>Pamiątki (sekcja "keepsakes"): wybierane na start budowy, ranga rośnie z budowami.</summary>
+    public KeepsakeDef[] Keepsakes { get; private init; } = [];
+    /// <summary>Po ilu budowach z pamiątką ranga II i III.</summary>
+    public int[] KeepsakeRankRuns { get; private init; } = [3, 8];
+    /// <summary>Zlecenia: długofalowe cele z licznikami w profilu.</summary>
+    public ContractDef[] Contracts { get; private init; } = [];
+    /// <summary>Wydarzenia na placu (sekcja "siteEvents").</summary>
+    public SiteEventDef[] SiteEvents { get; private init; } = [];
+    public int SiteEventChancePct { get; private init; }
     /// <summary>Indeks = slot * 3 + jakość.</summary>
     public GearDef[] Gear { get; private init; } = [];
     public string[] GearSlots { get; private init; } = [];
@@ -179,8 +188,38 @@ public sealed class GameData
             Str(it, "id", ""), Str(it, "name"), Str(it, "desc"), Int(it, "price"), ParseEnum<ShopEffect>(Str(it, "effect")))).ToArray();
 
         var badgesJson = d.GetProperty("badges").EnumerateArray().ToArray();
-        var badges = badgesJson.Select(b => new BadgeDef(Str(b, "id"), Str(b, "name"), Str(b, "desc"), Int(b, "xp"))).ToArray();
+        var badges = badgesJson.Select(b => new BadgeDef(Str(b, "id"), Str(b, "name"), Str(b, "desc"), Int(b, "xp"),
+            b.TryGetProperty("perk", out var pk) ? new Perk(ParsePerk(Str(pk, "effect")), Int(pk, "value")) : new Perk(PerkEffect.Unknown, 0))).ToArray();
         Require(badges.Length <= 16 && enemies.Length <= 16, "maks. 16 odznak i 16 rodzajów wrogów");
+        var bid = Index(badgesJson);
+        // pamiątki i zlecenia (od v0.21.43; starsze dane – puste listy)
+        var keepsakesJson = d.TryGetProperty("keepsakes", out var ksj) ? ksj.GetProperty("list").EnumerateArray().ToArray() : [];
+        var kid = Index(keepsakesJson);
+        var contractsJson = d.TryGetProperty("contracts", out var cj) ? cj.EnumerateArray().ToArray() : [];
+        var contracts = contractsJson.Select(c => new ContractDef(Str(c, "id"), Str(c, "name"), Str(c, "desc"), ParseContract(Str(c, "kind")),
+            Int(c, "target"), Int(c, "xp"), c.TryGetProperty("keepsake", out var ck) ? Lookup(kid, ck.GetString() ?? "", "pamiątka") : -1)).ToArray();
+        foreach (var c in contracts) Require(c.Target is > 0 and < 30000, $"zlecenie {c.Id}: zły cel");
+        var keepsakes = keepsakesJson.Select(k => new KeepsakeDef(Str(k, "id"), Str(k, "name"), Str(k, "desc"), ParsePerk(Str(k, "effect")),
+            k.GetProperty("values").EnumerateArray().Select(v => v.GetInt32()).ToArray(),
+            k.TryGetProperty("badge", out var kb) ? Lookup(bid, kb.GetString() ?? "", "odznaka") : -1,
+            k.TryGetProperty("start", out var kst) && kst.GetBoolean())).ToArray();
+        for (var k = 0; k < keepsakes.Length; k++)
+        {
+            Require(keepsakes[k].Values.Length == 3, $"pamiątka {keepsakes[k].Id}: 3 rangi");
+            var kk = k;
+            Require(keepsakes[k].Start || keepsakes[k].Badge >= 0 || contracts.Any(c => c.Keepsake == kk), $"pamiątka {keepsakes[k].Id} bez sposobu odblokowania");
+        }
+        Require(contracts.Length <= 8 && keepsakes.Length <= 8, "maks. 8 zleceń i 8 pamiątek");
+        var rankRuns = ksj.ValueKind == JsonValueKind.Object ? ksj.GetProperty("rankRuns").EnumerateArray().Select(x => x.GetInt32()).ToArray() : new[] { 3, 8 };
+        Require(rankRuns.Length == 2 && rankRuns[0] < rankRuns[1], "pamiątki: 2 progi rang");
+        var siteEvents = Array.Empty<SiteEventDef>();
+        var siteEventChance = 0;
+        if (d.TryGetProperty("siteEvents", out var sej))
+        {
+            siteEventChance = Int(sej, "chancePct");
+            siteEvents = sej.GetProperty("list").EnumerateArray().Select(e => new SiteEventDef(Str(e, "id"), Str(e, "name"), Str(e, "short"),
+                Str(e, "info"), Story(e), ParseEvent(Str(e, "effect")), Int(e, "value"), e.GetProperty("good").GetBoolean())).ToArray();
+        }
 
         var drops = d.GetProperty("drops");
         var weights = drops.GetProperty("weights");
@@ -243,6 +282,11 @@ public sealed class GameData
             Acts = acts,
             Hurtownia = hurtownia,
             Badges = badges,
+            Keepsakes = keepsakes,
+            KeepsakeRankRuns = rankRuns,
+            Contracts = contracts,
+            SiteEvents = siteEvents,
+            SiteEventChancePct = siteEventChance,
             Tools = tools,
             Gear = gear.ToArray(),
             GearSlots = slots.ToArray(),
@@ -343,7 +387,48 @@ public sealed class GameData
         "poison_res" => TraitEffect.PoisonRes,
         "sight" => TraitEffect.Sight,
         "cooldown" => TraitEffect.Cooldown,
+        "str" => TraitEffect.Str,
+        "agi" => TraitEffect.Agi,
+        "intel" => TraitEffect.Intel,
         _ => TraitEffect.Unknown, // nowsza wersja danych: cecha bez działania
+    };
+
+    private static PerkEffect ParsePerk(string s) => s switch
+    {
+        "hp" => PerkEffect.Hp,
+        "def" => PerkEffect.Def,
+        "dmg" => PerkEffect.Dmg,
+        "luck" => PerkEffect.Luck,
+        "cooldown" => PerkEffect.Cooldown,
+        "sight" => PerkEffect.Sight,
+        "thermos" => PerkEffect.Thermos,
+        "tool_pct" => PerkEffect.ToolPct,
+        "xp_pct" => PerkEffect.XpPct,
+        "cash" => PerkEffect.Cash,
+        "crit" => PerkEffect.Crit,
+        "coffee" => PerkEffect.Coffee,
+        _ => PerkEffect.Unknown, // nowsza wersja danych: premia bez działania
+    };
+
+    private static ContractKind ParseContract(string s) => s switch
+    {
+        "kills" => ContractKind.Kills,
+        "powers" => ContractKind.Powers,
+        "brand" => ContractKind.Brand,
+        "clean_boss" => ContractKind.CleanBoss,
+        "class_wins" => ContractKind.ClassWins,
+        "wins" => ContractKind.Wins,
+        _ => throw new GameDataException($"nieznany rodzaj zlecenia: {s}"),
+    };
+
+    private static EventEffect ParseEvent(string s) => s switch
+    {
+        "fewer_pickups" => EventEffect.FewerPickups,
+        "cash" => EventEffect.Cash,
+        "inspection" => EventEffect.Inspection,
+        "rain" => EventEffect.Rain,
+        "thermos" => EventEffect.Thermos,
+        _ => throw new GameDataException($"nieznany skutek wydarzenia: {s}"),
     };
 
     private static UpgradeEffect ParseUpgrade(string s) =>

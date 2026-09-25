@@ -39,6 +39,18 @@ public sealed partial class Game
     public int StageKills;
     public int StageStartTurn;
     public byte ToolsFound;
+    // liczniki zleceń (przenoszone do profilu przez Meta.BankCounters; *Banked = już przeniesione)
+    public int KillsBanked;
+    /// <summary>Użycia mocy.</summary>
+    public ushort PowersUsed, PowersBanked;
+    /// <summary>Założone markowe przedmioty.</summary>
+    public byte BrandFound, BrandBanked;
+    /// <summary>Bossowie aktu bez obrażeń w walce z nimi.</summary>
+    public byte CleanBosses, CleanBanked;
+    /// <summary>StageDamage w chwili dołączenia bossa do walki (-1 = jeszcze nie).</summary>
+    public int BossWakeDamage = -1;
+    /// <summary>Wydarzenie na placu na bieżącym etapie (GameData.SiteEvents, -1 = brak).</summary>
+    public sbyte StageEvent = -1;
     /// <summary>Budżet budowy (zł) – za usunięte problemy i premie aktów, wydawany w Hurtowni.</summary>
     public int Cash;
     public int ActKills;
@@ -126,11 +138,34 @@ public sealed partial class Game
     }
 
     /// <summary>Szczęście: kryt (x2), mały unik przed ciosem wroga, częstsze i lepsze dropy.</summary>
-    public int Luck() => CDef.Luck + TraitBonus(TraitEffect.Luck);
+    public int Luck() => CDef.Luck + Bonus.Luck + TraitBonus(TraitEffect.Luck);
 
-    public int CritPct() => D.CritBasePct + D.CritPerLuckPct * Luck() + TraitBonus(TraitEffect.Crit);
+    public int CritPct() => D.CritBasePct + D.CritPerLuckPct * Luck() + TraitBonus(TraitEffect.Crit) + Bonus.Crit;
 
-    public int SightRadius() => FovRadius + TraitBonus(TraitEffect.Sight);
+    public int SightRadius() => FovRadius + TraitBonus(TraitEffect.Sight) + Bonus.Sight;
+
+    /// <summary>Pojemność termosu (+ uprawnienia i pamiątka).</summary>
+    public int ThermosCap() => D.ThermosCapacity + Bonus.Thermos;
+
+    // ------------------------------------------------------------------ wydarzenia na placu
+    public bool EventActive(EventEffect e) => StageEvent >= 0 && D.SiteEvents[StageEvent].Effect == e;
+
+    public SiteEventDef? CurrentEvent => StageEvent >= 0 ? D.SiteEvents[StageEvent] : null;
+
+    /// <summary>Wydarzenie na placu: SMS na starcie etapu, efekt od razu (znajdźki, budżet, termos) albo w trakcie etapu.</summary>
+    public void ApplyEvent(int e)
+    {
+        StageEvent = (sbyte)e;
+        var ev = D.SiteEvents[e];
+        switch (ev.Effect)
+        {
+            case EventEffect.FewerPickups: PickupsCount = Math.Max(Math.Min(1, PickupsCount), PickupsCount - ev.Value); break;
+            case EventEffect.Cash: Cash += ev.Value; break;
+            case EventEffect.Thermos: Thermos = ThermosCap(); break;
+            // inspekcja: premia na koniec etapu; ulewa: poślizg przy ciosach
+        }
+        Push(Msg("SMS: ").Add(ev.Name).As(ev.Good ? LogKind.Good : LogKind.Bad));
+    }
 
     /// <summary>Suma cech założonego sprzętu danego rodzaju.</summary>
     public int TraitBonus(TraitEffect e)
@@ -263,7 +298,7 @@ public sealed partial class Game
 
     public void GainXp(int b)
     {
-        XpPct += b * ScorePct();
+        XpPct += b * ScorePct() * (100 + Bonus.XpPct) / 100;
         RunXp += b;
         while (HeroLevel < D.MaxHeroLevel && RunXp >= D.LevelThresholds[HeroLevel - 1]) LevelUp();
     }
@@ -298,6 +333,7 @@ public sealed partial class Game
         R.Seed(seed);
         Hero.MaxHp = Hero.Hp = (short)(CDef.MaxHealth + mods.Hp);
         Hero.Alive = true;
+        Cash = mods.Cash;
         StartStage(0);
     }
 
@@ -336,6 +372,7 @@ public sealed partial class Game
         StageDamage = 0;
         StageKills = 0;
         StageStartTurn = Turns;
+        BossWakeDamage = -1;
         ActCleared = false;
         SlamTimer = 0;
         SlamX = SlamY = -1;
@@ -379,6 +416,8 @@ public sealed partial class Game
             Pickups[PickupsCount++] = new Pickup(x, y, i == 0 ? PickupType.Coffee : (PickupType)R.Range(0, 2), true);
         }
         Push(Msg("Etap ").Add(Stage + 1).Add(": ").Add(sd.Name));
+        StageEvent = -1; // wydarzenie na placu: nie na pierwszym etapie i nie u bossa
+        if (s > 0 && sd.Boss < 0 && R.Range(1, 100) <= D.SiteEventChancePct) ApplyEvent(R.Range(0, D.SiteEvents.Length - 1));
         UpdateFov();
     }
 
@@ -403,12 +442,10 @@ public sealed partial class Game
         return -1;
     }
 
-    public int HeroStat(Stat s) => s switch
-    {
-        Stat.Str => CDef.Strength,
-        Stat.Agi => CDef.Agility,
-        _ => CDef.Intelligence,
-    };
+    /// <summary>Statystyka efektywna: zawód + Warsztaty + cechy sprzętu (SIŁ/ZRĘ/INT +1).</summary>
+    public int HeroStat(Stat s) => RunMods.ClassBaseStat(D, Cls, s) + StatBonus(s);
+
+    public int StatBonus(Stat s) => RunMods.StatBonus(D, Bonus, Cls, s) + TraitBonus(RunMods.StatTrait(s));
 
     /// <summary>Przejście do kolejnego etapu (po ekranie harmonogramu). Przerwa na kawę: +5 HP.</summary>
     public void NextStage()

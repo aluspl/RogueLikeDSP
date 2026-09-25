@@ -8,7 +8,7 @@ namespace LifeLike.Core;
 /// </summary>
 public sealed class RunSave
 {
-    public const string RunMagic = "PBRUN02"; // 02: szczęście, cechy sprzętu, termos
+    public const string RunMagic = "PBRUN03"; // 03: liczniki zleceń, premie z odznak i pamiątek
 
     public byte[] Magic = new byte[8];
     public uint Size;

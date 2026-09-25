@@ -15,7 +15,7 @@ public class ProfileAndShopTests
         p.Runs = 3;
         p.Wins = 1;
         Assert.True(Meta.ProfileFix(D, p));
-        Assert.True(p.MagicIs(Profile.MagicV3) && p.Best == 500 && p.Runs == 3 && p.Wins == 1);
+        Assert.True(p.MagicIs(Profile.MagicV4) && p.Best == 500 && p.Runs == 3 && p.Wins == 1);
         Assert.True(p.Xp == 0 && p.Classes == D.StartClassesMask && p.Hard == 0);
         Assert.All(p.Levels, l => Assert.Equal(0, l));
         var q = Profile.FromBytes(Enumerable.Repeat((byte)0xFF, Profile.Size).ToArray());
@@ -120,7 +120,7 @@ public class ProfileAndShopTests
     }
 
     [Fact]
-    public void MigrationV2ToV3ZeroesNewFields()
+    public void MigrationV2ToV4ZeroesNewFields()
     {
         var v2 = Meta.NewProfile(D);
         v2.Magic = Profile.MagicBytes(Profile.MagicV2);
@@ -135,9 +135,10 @@ public class ProfileAndShopTests
         for (var i = Profile.V2Size; i < raw.Length; i++) raw[i] = 0xEE; // śmieci za starym końcem struktury
         v2 = Profile.FromBytes(raw);
         Assert.True(Meta.ProfileFix(D, v2));
-        Assert.True(v2.MagicIs(Profile.MagicV3) && v2.Xp == 77 && v2.Levels[0] == 2 && v2.Classes == 0x3F);
+        Assert.True(v2.MagicIs(Profile.MagicV4) && v2.Xp == 77 && v2.Levels[0] == 2 && v2.Classes == 0x3F);
         Assert.True(v2.Hard == 1 && v2.Flags == 1 && v2.Tools == 2 && v2.Best == 900);
         Assert.True(v2.Badges == 0 && v2.Catalog == 0 && v2.HousesCount == 0 && v2.ClassWins == 0 && v2.ToolsFound == 0);
+        Assert.True(v2.KillsTotal == 0 && v2.PowersTotal == 0 && v2.Contracts == 0 && v2.Keepsake == 0 && v2.KeepsakeRuns.All(x => x == 0));
     }
 
     [Fact]

@@ -10,7 +10,7 @@ public sealed partial class Game
 
     /// <summary>Każda ranga skraca odnowienie o 2 tury (minimum 4), cecha sprzętu dalej (minimum 3).</summary>
     public int AbilityCooldown() =>
-        Math.Max(3, Math.Max(4, CDef.AbilityCooldown - 2 * (AbilityRank() - 1)) - TraitBonus(TraitEffect.Cooldown));
+        Math.Max(3, Math.Max(4, CDef.AbilityCooldown - 2 * (AbilityRank() - 1)) - TraitBonus(TraitEffect.Cooldown) - Bonus.Cooldown);
 
     public int NearestVisibleEnemy()
     {
@@ -159,6 +159,7 @@ public sealed partial class Game
             Push(Msg(c.AbilityName).Add(": nie teraz"));
             return false;
         }
+        if (PowersUsed < 65535) ++PowersUsed;
         EndTurn();
         AbilityCd = AbilityCooldown();
         return true;

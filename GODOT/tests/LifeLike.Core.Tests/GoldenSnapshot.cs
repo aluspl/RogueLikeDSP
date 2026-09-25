@@ -50,6 +50,10 @@ public static class GoldenSnapshot
         K("equipped", Arr(g.Equipped.Select(x => (int)x)));
         K("equippedTrait", Arr(g.EquippedTrait.Select(x => (int)x)));
         K("thermos", g.Thermos.ToString());
+        K("thermosCap", g.ThermosCap().ToString());
+        K("stageEvent", g.StageEvent.ToString());
+        K("counters", Arr([g.KillsBanked, g.PowersUsed, g.PowersBanked, g.BrandFound, g.BrandBanked, g.CleanBosses, g.CleanBanked, g.BossWakeDamage]));
+        K("stats", Arr([g.HeroStat(Stat.Str), g.HeroStat(Stat.Agi), g.HeroStat(Stat.Intel), g.Luck(), g.CritPct(), g.SightRadius(), g.AbilityCooldown()]));
         K("offer", Arr([g.OfferSlot, g.OfferRarity, g.OfferTrait]));
         K("heroStatus", Arr(g.HeroStatus.Select(x => (int)x)));
         K("killsByType", Arr(g.KillsByType.Select(x => (int)x)));
@@ -83,5 +87,8 @@ public static class GoldenSnapshot
 
     public static string OfProfile(Profile p) =>
         $"{{\"best\":{p.Best},\"runs\":{p.Runs},\"wins\":{p.Wins},\"xp\":{p.Xp},\"badges\":{p.Badges},\"catalog\":{p.Catalog}," +
-        $"\"classWins\":{p.ClassWins},\"toolsFound\":{p.ToolsFound},\"houses\":{Arr(p.Houses.Take(p.HousesCount).Select(h => (int)h))}}}";
+        $"\"classWins\":{p.ClassWins},\"toolsFound\":{p.ToolsFound},\"houses\":{Arr(p.Houses.Take(p.HousesCount).Select(h => (int)h))}," +
+        $"\"killsTotal\":{p.KillsTotal},\"powersTotal\":{p.PowersTotal},\"brandTotal\":{p.BrandTotal},\"cleanBosses\":{p.CleanBosses}," +
+        $"\"contracts\":{p.Contracts},\"keepsake\":{p.Keepsake},\"keepsakeRuns\":{Arr(p.KeepsakeRuns.Select(x => (int)x))}," +
+        $"\"sram\":\"{Convert.ToHexString(p.ToBytes()).ToLowerInvariant()}\"}}";
 }

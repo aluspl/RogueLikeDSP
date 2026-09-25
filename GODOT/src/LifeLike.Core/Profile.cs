@@ -5,14 +5,19 @@ namespace LifeLike.Core;
 
 /// <summary>
 /// Profil gracza (odpowiednik core::profile z meta.h): rekord, doświadczenie, zakupy, odznaki, Osiedle.
-/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (56 bajtów, little-endian), więc migracje v1/v2 działają tak samo.
+/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v4: 72 bajty, little-endian, bajt 55 to wyrównanie),
+/// więc migracje v1/v2/v3 działają tak samo.
 /// </summary>
 public sealed class Profile
 {
     public const int MaxUpgrades = 8;
     public const int MaxHouses = 12;
     public const int V2Size = 36;
-    public const int Size = 56;
+    /// <summary>v4 = v3 + zlecenia i pamiątki od tego offsetu.</summary>
+    public const int V3Size = 56;
+    public const int Size = 72;
+    public const int MaxKeepsakes = 8;
+    public const string MagicV4 = "PBRL004";
     public const string MagicV3 = "PBRL003";
     public const string MagicV2 = "PBRL002";
     public const string MagicV1 = "PBRL001";
@@ -37,6 +42,21 @@ public sealed class Profile
     public byte HousesCount;
     /// <summary>Osiedle: zawód (4 bity) | wielkość domu &lt;&lt; 4.</summary>
     public byte[] Houses = new byte[MaxHouses];
+    // --- v4: zlecenia i pamiątki
+    /// <summary>Problemy usunięte we wszystkich budowach.</summary>
+    public ushort KillsTotal;
+    /// <summary>Użycia mocy zawodu.</summary>
+    public ushort PowersTotal;
+    /// <summary>Założone markowe przedmioty.</summary>
+    public byte BrandTotal;
+    /// <summary>Bossowie aktu pokonani bez obrażeń w walce z nimi.</summary>
+    public byte CleanBosses;
+    /// <summary>Ukończone zlecenia (bitmaska GameData.Contracts).</summary>
+    public byte Contracts;
+    /// <summary>Wybrana pamiątka + 1 (0 = bez pamiątki).</summary>
+    public byte Keepsake;
+    /// <summary>Budowy z każdą pamiątką (ranga).</summary>
+    public byte[] KeepsakeRuns = new byte[MaxKeepsakes];
 
     public static byte[] MagicBytes(string s)
     {
@@ -72,6 +92,13 @@ public sealed class Profile
         b[41] = ToolsFound;
         b[42] = HousesCount;
         Houses.CopyTo(b, 43);
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(56), KillsTotal);
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(58), PowersTotal);
+        b[60] = BrandTotal;
+        b[61] = CleanBosses;
+        b[62] = Contracts;
+        b[63] = Keepsake;
+        KeepsakeRuns.CopyTo(b, 64);
         return b;
     }
 
@@ -98,6 +125,13 @@ public sealed class Profile
             ToolsFound = b[41],
             HousesCount = b[42],
             Houses = b.Slice(43, MaxHouses).ToArray(),
+            KillsTotal = BinaryPrimitives.ReadUInt16LittleEndian(b[56..]),
+            PowersTotal = BinaryPrimitives.ReadUInt16LittleEndian(b[58..]),
+            BrandTotal = b[60],
+            CleanBosses = b[61],
+            Contracts = b[62],
+            Keepsake = b[63],
+            KeepsakeRuns = b.Slice(64, MaxKeepsakes).ToArray(),
         };
         return p;
     }
