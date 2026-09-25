@@ -106,7 +106,7 @@ public sealed partial class Game
         foreach (var v in new[]
                  {
                      Bonus.Hp, Bonus.Def, Bonus.Dmg, Bonus.Coffee, Bonus.Pickups, Bonus.Luck, Bonus.Craft, Bonus.Cooldown, Bonus.Sight,
-                     Bonus.Thermos, Bonus.ToolPct, Bonus.XpPct, Bonus.Cash, Bonus.Crit, Bonus.Tools, Bonus.Helpers,
+                     Bonus.Thermos, Bonus.ToolPct, Bonus.XpPct, Bonus.Cash, Bonus.Crit, Bonus.Tools, Bonus.Helpers, Bonus.Investor,
                  })
             w.Write(v);
         foreach (var v in new[] { XpPct, XpBanked, RunXp, HeroLevel, Boss, StairsX, StairsY }) w.Write(v);
@@ -204,6 +204,7 @@ public sealed partial class Game
             Luck = r.ReadInt32(), Craft = r.ReadInt32(), Cooldown = r.ReadInt32(), Sight = r.ReadInt32(), Thermos = r.ReadInt32(),
             ToolPct = r.ReadInt32(), XpPct = r.ReadInt32(), Cash = r.ReadInt32(), Crit = r.ReadInt32(), Tools = r.ReadInt32(),
             Helpers = r.ReadInt32(),
+            Investor = r.ReadInt32(),
         };
         XpPct = r.ReadInt32();
         XpBanked = r.ReadInt32();

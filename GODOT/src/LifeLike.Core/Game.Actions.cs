@@ -38,7 +38,7 @@ public sealed partial class Game
             ++Kills;
             ++StageKills;
             ++ActKills;
-            Cash += ed.Score / D.CashPerScore;
+            Cash += Income(ed.Score / D.CashPerScore);
             if (KillsByType[e.DefId] < 255) ++KillsByType[e.DefId];
             Score += ed.Score * ScorePct() / 100;
             GainXp(D.XpPerKill);
@@ -52,8 +52,8 @@ public sealed partial class Game
                 SlamTimer = 0;
                 if (ed.RewardCash > 0) // nagroda bossa (Inspekcja: Protokół bez uwag)
                 {
-                    Cash += ed.RewardCash;
-                    Push(Msg(ed.RewardTitle).Add("! +").Add(ed.RewardCash).Add(" zł").As(LogKind.Good));
+                    Cash += Income(ed.RewardCash);
+                    Push(Msg(ed.RewardTitle).Add("! +").Add(Income(ed.RewardCash)).Add(" zł").As(LogKind.Good));
                 }
                 if (Stage == D.Stages.Length - 1)
                 {
@@ -74,7 +74,7 @@ public sealed partial class Game
                     {
                         if (D.Stages[i].Act == act) stagesInAct++;
                     }
-                    ActBonus = ad.BonusPerStage * stagesInAct + ad.BonusPerKill * ActKills;
+                    ActBonus = Income(ad.BonusPerStage * stagesInAct + ad.BonusPerKill * ActKills);
                     Cash += ActBonus;
                     ActKills = 0;
                     ActCleared = true;
@@ -417,7 +417,7 @@ public sealed partial class Game
         if (ed.Slam && i == Boss) // boss: co kilka tur zapowiada uderzenie w obszar wokół bohatera
         {
             if (SlamTimer > 0) return; // ładuje cios, stoi w miejscu
-            if (++SlamCounter >= D.SlamEvery && d <= 4)
+            if (++SlamCounter >= SlamEvery() && d <= 4)
             {
                 var cross = ed.Shape == SlamShape.Cross;
                 SlamCounter = 0;

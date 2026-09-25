@@ -22,6 +22,7 @@ public sealed class SmokeTest
 {
     private readonly App _app;
     private int _steps, _offers, _drinks, _holds, _weathers, _helpers;
+    private bool _investor;
     private bool _prologue, _touch, _portrait;
 
     public SmokeTest(App app) => _app = app;
@@ -48,13 +49,14 @@ public sealed class SmokeTest
             var ok = g.Stage >= 5 || g.St is GameStatus.Dead or GameStatus.Won;
             var stage = g.Stage;
             await VisitScreens();
+            await ExerciseInvestor();
             await ExercisePortrait();
             var missing = Sfx.Missing();
             if (missing.Length > 0) throw new Exception("brak dźwięków: " + missing);
             if (DrawErrors.Count > 0) throw new Exception($"błędy rysowania: {DrawErrors.Count}, ostatni: {DrawErrors.Last}");
             GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {s.Data.Version}, zawody {s.Data.Classes.Length}, etap {stage + 1}, " +
                      $"dzień {g.Turns}, HP {g.Hero.Hp}/{g.Hero.MaxHp}, wynik {g.Score}, budżet {g.Cash}, kroki {_steps}, " +
-                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
+                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, inwestor {(_investor ? "tak" : "nie")}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
                      $"ekran {Flow.Current.GetType().Name}");
             _app.Root.GetTree().Quit(ok ? 0 : 1);
         }
@@ -288,6 +290,38 @@ public sealed class SmokeTest
         finally
         {
             Layout.Touch = false;
+        }
+    }
+
+    /// <summary>Tryb inwestora: zablokowany przed wygraną, po wygranej Tab na wyborze zawodu, przełączanie, Mods, powrót.</summary>
+    private async Task ExerciseInvestor()
+    {
+        var s = _app.Session;
+        var p = s.Profile;
+        int wins = p.Wins, inv = p.Investor;
+        try
+        {
+            p.Wins = 0;
+            Flow.ClassSelect.Open();
+            Flow.ClassSelect.HandleInput(InputCmd.Of(GameAction.Select));
+            if (Flow.Current != Flow.ClassSelect) throw new Exception("tryb inwestora dostępny przed pierwszą wygraną");
+            p.Wins = 1;
+            p.Investor = 0;
+            Flow.ClassSelect.HandleInput(InputCmd.Of(GameAction.Select));
+            if (Flow.Current != Flow.Investor) throw new Exception("Tab na wyborze zawodu nie otwiera trybu inwestora");
+            await DebugRunner.Frames(_app.Root, 2);
+            Flow.Investor.Page.Sel = 3;
+            Flow.Investor.HandleInput(InputCmd.Of(GameAction.A));
+            if (Meta.Mods(s.Data, p).Investor != 1 << 3) throw new Exception("modyfikator nie włączył się");
+            Flow.Investor.HandleInput(InputCmd.Of(GameAction.Cancel));
+            if (Flow.Current != Flow.ClassSelect) throw new Exception("Esc nie wraca do wyboru zawodu");
+            await DebugRunner.Frames(_app.Root, 2);
+            _investor = true;
+        }
+        finally
+        {
+            p.Wins = wins;
+            p.Investor = (byte)inv;
         }
     }
 

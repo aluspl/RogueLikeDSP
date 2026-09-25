@@ -10,7 +10,7 @@ namespace LifeLike.Game.Phone.ProfileTabs;
 
 /// <summary>
 /// Koszty = sklep Szkolenia (zakładka 4 profilu na GBA): „Pozostało” doświadczenia, lista ulepszeń, zablokowanych
-/// zawodów, narzędzi i najwyższej trudności z pastylkami ceny; Spacja/Enter kupuje (jak A na GBA).
+/// zawodów, narzędzi, fachowców brygady i najwyższej trudności z pastylkami ceny; Spacja/Enter kupuje (jak A na GBA).
 /// </summary>
 public sealed class TrainingTab : PhonePage
 {
@@ -58,6 +58,10 @@ public sealed class TrainingTab : PhonePage
         {
             if (!Meta.ToolUnlocked(_d, _p, i)) _entries.Add((TrainingKind.Tool, i));
         }
+        for (var i = 0; i < _d.Brigade.Length; i++)
+        {
+            if (!Meta.HelperUnlocked(_d, _p, i)) _entries.Add((TrainingKind.Helper, i));
+        }
         if (!Meta.DifficultyUnlocked(_d, _p, _d.Difficulties.Length - 1)) _entries.Add((TrainingKind.Hard, 0));
     }
 
@@ -66,6 +70,7 @@ public sealed class TrainingTab : PhonePage
         TrainingKind.Upgrade => Meta.UpgradeCost(_d, _p, e.I),
         TrainingKind.Class => _d.ClassCost,
         TrainingKind.Tool => _d.Tools[e.I].Cost,
+        TrainingKind.Helper => _d.Brigade[e.I].Cost,
         _ => _d.HardCost,
     };
 
@@ -74,6 +79,7 @@ public sealed class TrainingTab : PhonePage
         TrainingKind.Upgrade => $"{_d.Upgrades[e.I].Name} {_p.Levels[e.I]}/{_d.Upgrades[e.I].Levels}",
         TrainingKind.Class => "Zawód: " + _d.Classes[e.I].Name,
         TrainingKind.Tool => _d.Weapons[_d.Tools[e.I].Weapon].Name,
+        TrainingKind.Helper => "Brygada: " + _d.Brigade[e.I].Name,
         _ => "Trudność: " + _d.Difficulties[^1].Name,
     };
 
@@ -86,6 +92,7 @@ public sealed class TrainingTab : PhonePage
             var w = _d.Weapons[_d.Tools[e.I].Weapon];
             return $"Narzędzie {w.MinDamage}-{w.MaxDamage} z{w.Range}, {UiText.StatShort(w.ScalesWith)}";
         }
+        if (e.K == TrainingKind.Helper) return $"{_d.Brigade[e.I].Desc} (wezwanie {_d.Brigade[e.I].Price} zł)";
         return "Najwyższa trudność";
     }
 
@@ -99,6 +106,7 @@ public sealed class TrainingTab : PhonePage
             TrainingKind.Upgrade => Meta.BuyUpgrade(_d, _p, e.I),
             TrainingKind.Class => Meta.BuyClass(_d, _p, e.I),
             TrainingKind.Tool => Meta.BuyTool(_d, _p, e.I),
+            TrainingKind.Helper => Meta.BuyHelper(_d, _p, e.I),
             _ => Meta.BuyHard(_d, _p),
         };
         if (ok)

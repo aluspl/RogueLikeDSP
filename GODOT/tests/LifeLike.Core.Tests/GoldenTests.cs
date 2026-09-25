@@ -30,6 +30,7 @@ public class GoldenTests
         var steps = j.GetProperty("steps").GetInt32();
         int Opt(string k) => j.TryGetProperty(k, out var v) ? v.GetInt32() : 0;
         int badges = Opt("badges"), contracts = Opt("contracts"), keepsake = Opt("keepsake"), keepsakeRuns = Opt("keepsakeRuns");
+        var investor = Opt("investor");
         var snaps = j.GetProperty("snapshots").EnumerateArray().ToList();
         var digests = j.GetProperty("digests").EnumerateArray().Select(x => x.GetString()).ToList();
 
@@ -43,6 +44,11 @@ public class GoldenTests
         p.Badges = (ushort)badges;
         p.Contracts = (byte)contracts;
         p.Keepsake = (byte)keepsake;
+        if (investor != 0) // tryb inwestora po pierwszej wygranej
+        {
+            p.Wins = 1;
+            p.Investor = (byte)investor;
+        }
         if (keepsake > 0) p.KeepsakeRuns[keepsake - 1] = (byte)keepsakeRuns;
         var m = Meta.Mods(d, p); // przed StartRun: ranga pamiątki z budów przed tą
         var g = new Game(d);
@@ -79,7 +85,7 @@ public class GoldenTests
                 Meta.CheckBadges(d, p, g);
                 Meta.CheckContracts(d, p);
                 Meta.BankXp(p, g);
-                if (g.ActCleared && shop) Bot.Shop(g);
+                if (g.ActCleared && shop && !g.ShopClosed) Bot.Shop(g);
                 g.NextStage();
                 CheckSnapshot(step);
                 CheckDigest(step);

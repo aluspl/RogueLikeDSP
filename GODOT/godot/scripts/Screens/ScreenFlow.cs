@@ -30,6 +30,7 @@ public sealed class ScreenFlow
         End = new EndScreen(app);
         Settings = new SettingsScreen(app);
         Brigade = new BrigadeScreen(app);
+        Investor = new InvestorScreen(app);
     }
 
     public Screen Current { get; private set; }
@@ -50,6 +51,7 @@ public sealed class ScreenFlow
     public EndScreen End { get; }
     public SettingsScreen Settings { get; }
     public BrigadeScreen Brigade { get; }
+    public InvestorScreen Investor { get; }
 
     /// <summary>Przejście na ekran; instant = bez animacji (telefon od razu na miejscu, tło od razu rozmyte).</summary>
     public void Go(Screen next, bool instant = false)

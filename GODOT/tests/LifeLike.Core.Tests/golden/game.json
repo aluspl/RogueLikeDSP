@@ -1385,5 +1385,63 @@
         "frame": 3
       }
     ]
+  },
+  "investor": {
+    "list": [
+      {
+        "id": "budzet",
+        "name": "Budżet -30%",
+        "desc": "Mniej zł za problemy i akty",
+        "effect": "cash_pct",
+        "value": -30,
+        "xpPct": 10,
+        "stake": 1
+      },
+      {
+        "id": "przerwa",
+        "name": "Bez przerwy na kawę",
+        "desc": "Między etapami bez +5 HP",
+        "effect": "no_break",
+        "value": 0,
+        "xpPct": 10,
+        "stake": 1
+      },
+      {
+        "id": "problemy",
+        "name": "Problemy +20% HP",
+        "desc": "Każdy problem ma +20% HP",
+        "effect": "enemy_hp",
+        "value": 20,
+        "xpPct": 15,
+        "stake": 2
+      },
+      {
+        "id": "hurtownia",
+        "name": "Hurtownia zamknięta",
+        "desc": "Między aktami bez zakupów",
+        "effect": "no_shop",
+        "value": 0,
+        "xpPct": 15,
+        "stake": 2
+      },
+      {
+        "id": "kontrola",
+        "name": "Kontrola częściej",
+        "desc": "Boss uderza co 3 tury, nie 4",
+        "effect": "slam",
+        "value": 1,
+        "xpPct": 10,
+        "stake": 1
+      },
+      {
+        "id": "termin",
+        "name": "Termin goni",
+        "desc": "Problemy biją o 1 mocniej",
+        "effect": "enemy_dmg",
+        "value": 1,
+        "xpPct": 20,
+        "stake": 3
+      }
+    ]
   }
 }
