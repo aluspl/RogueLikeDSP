@@ -4,7 +4,7 @@ using LifeLike.Game.Screens.Views;
 
 namespace LifeLike.Game.Screens;
 
-/// <summary>Tytuł (run_title na GBA): menu Nowa budowa / Profil / Szkolenia, rekord i doświadczenie z profilu.</summary>
+/// <summary>Tytuł (run_title na GBA): menu Nowa budowa / Profil / Szkolenia / Jak grać, rekord i doświadczenie z profilu.</summary>
 public sealed class TitleScreen : Screen
 {
     private int _sel;
@@ -62,8 +62,11 @@ public sealed class TitleScreen : Screen
             case 1:
                 Flow.Profile.Open(0);
                 break;
-            default:
+            case 2:
                 Flow.Profile.Open(4);
+                break;
+            default:
+                Flow.Help.Open(true);
                 break;
         }
         return true;

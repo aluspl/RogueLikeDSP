@@ -16,7 +16,7 @@ public sealed class DebugScenes
         "title", "classselect", "profile", "catalog", "estate", "team", "training", "game", "combat", "offer", "menu",
         "overview", "phone-tasks", "phone-issues", "phone-start", "phone-gear", "phone-costs", "card", "perks", "schedule",
         "hurtownia", "boss", "endmsg", "end", "banners", "map", "aim", "preview", "prologue",
-        "schedule-tip",
+        "schedule-tip", "help",
     ];
 
     private readonly App _app;
@@ -56,6 +56,9 @@ public sealed class DebugScenes
                 s.ClassId = 1;
                 _app.StartRun();
                 Flow.Prologue.Seek(4.2f);
+                return;
+            case "help":
+                Flow.Help.Open(true, true);
                 return;
             case "card": // karta etapu z wydarzeniem: pierwszy seed, przy którym etap 2 ma wydarzenie
                 s.ClassId = 1;

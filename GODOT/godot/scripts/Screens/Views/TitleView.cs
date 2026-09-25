@@ -9,7 +9,7 @@ namespace LifeLike.Game.Screens.Views;
 /// </summary>
 public partial class TitleView : Control
 {
-    public static readonly string[] Items = ["Nowa budowa", "Profil: odznaki, zlecenia", "Szkolenia (Koszty)"];
+    public static readonly string[] Items = ["Nowa budowa", "Profil: odznaki, zlecenia", "Szkolenia (Koszty)", "Jak grać"];
 
     public string Version { get; set; } = "";
     public int Best { get; set; }
