@@ -150,6 +150,22 @@ namespace core
         uint8_t stages;           // bitmaska etapów, na których może wypaść
     };
 
+    // Brygada: najemny fachowiec wzywany raz na etap z telefonu (płatny budżetem budowy).
+    enum class helper_effect : uint8_t { reveal, pump, safety, ally };
+
+    struct helper_def
+    {
+        const char* name;
+        const char* desc;
+        helper_effect effect;
+        int8_t value;          // pompa: obrażenia; BHP-owiec: +obrona; pomocnik: obrażenia ciosu
+        int8_t turns;          // BHP-owiec: tury ochrony; pomocnik: tury pomocy
+        int8_t reach;          // pompa: zasięg (pola)
+        int16_t price;         // zł z budżetu budowy
+        int16_t cost;          // odblokowanie w Szkoleniach (doświadczenie), 0 = od początku
+        int8_t frame;          // pomocnik: klatka postaci w actors.bmp
+    };
+
     enum class gear_stat : uint8_t { def, dmg, hp };
 
     struct gear_def            // sprzęt z dropów: slot x jakość

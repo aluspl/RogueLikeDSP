@@ -144,6 +144,7 @@ namespace core
         int cash = 0;                // budżet na start budowy (zł)
         int crit = 0;                // kryt +%
         int tools = data::start_tools_mask;   // narzędzia, które mogą wypaść z wrogów
+        int helpers = data::start_helpers_mask;   // brygada: fachowcy do wezwania (Szkolenia)
     };
 
     inline void add_perk(run_mods& m, const perk& p)
@@ -234,6 +235,10 @@ namespace core
         int boss_wake_damage = -1;   // stage_damage w chwili dołączenia bossa do walki (-1 = jeszcze nie)
         int8_t stage_event = -1;     // wydarzenie na placu na bieżącym etapie (data::site_events, -1 = brak)
         int8_t weather = 0;          // pogoda dnia na bieżącym etapie (data::weather)
+        // brygada: fachowiec wezwany na tym etapie (-1 = jeszcze nie), ochrona BHP-owca, pomocnik obok bohatera
+        int8_t helper_called = -1;
+        int8_t guard_turns = 0;
+        int8_t ally_turns = 0, ally_x = -1, ally_y = -1;
 
         bool event_active(event_effect e) const { return stage_event >= 0 && data::site_events[stage_event].effect == e; }
         const weather_def& wdef() const { return data::weather[weather]; }
@@ -398,6 +403,11 @@ namespace core
             return b;
         }
         int dodge_pct() const { return imin(data::dodge_max_pct, data::dodge_per_luck_pct * luck()); }
+        // Obrona bohatera: zawód + premie + sprzęt + ochrona BHP-owca z brygady.
+        int hero_defense() const
+        {
+            return cdef().defense + def_bonus + gear_bonus(gear_stat::def) + (guard_turns > 0 ? data::brigade[helper_called].value : 0);
+        }
         const weapon_def& weapon() const { return data::weapons[weapon_override >= 0 ? weapon_override : cdef().weapon]; }
         // Zasięg broni z pogodą: wiatr skraca zasięg broni dalekiego zasięgu (nie mniej niż 1).
         int weapon_range() const
@@ -521,6 +531,7 @@ namespace core
         bool occupied(int x, int y) const
         {
             if(hero.alive && hero.x == x && hero.y == y) return true;
+            if(ally_turns > 0 && ally_x == x && ally_y == y) return true;   // pomocnik z brygady
             for(int i = 0; i < enemies_count; ++i)
                 if(enemies[i].alive && enemies[i].x == x && enemies[i].y == y) return true;
             return false;
@@ -544,6 +555,7 @@ namespace core
             walls_count = 0;
             stage_damage = 0; stage_kills = 0; stage_start_turn = turns; boss_wake_damage = -1;
             act_cleared = false; slam_timer = 0; slam_x = slam_y = -1; slam_counter = 0; summon_counter = 0; summons_used = 0;
+            helper_called = -1; guard_turns = 0; ally_turns = 0; ally_x = ally_y = -1;   // brygada: raz na etap
             for(auto& row : fov) for(auto& c : row) c = unknown;
             const stage_def& sd = data::stages[stage];
             const room& first = lv.rooms[0];
@@ -618,14 +630,23 @@ namespace core
         // obrażenia = rzut broni + stat/2 + premie - obrona/2, min 1
         void hero_attack(int ei)
         {
-            actor& e = enemies[ei];
-            const enemy_def& ed = data::enemies[e.def_id];
+            const enemy_def& ed = data::enemies[enemies[ei].def_id];
             if(ei == boss && boss_wake_damage < 0) boss_engaged();   // walka z bossem trwa
             int dmg = r.range(weapon().min_damage, weapon().max_damage) + hero_stat(weapon().scales_with) / 2 + dmg_bonus
                     + gear_bonus(gear_stat::dmg) - ed.defense / 2;
             if(dmg < 1) dmg = 1;
             bool crit = r.range(1, 100) <= crit_pct();
             if(crit) dmg *= data::crit_multiplier;
+            damage_enemy(ei, dmg, crit, weapon().name);
+        }
+
+        // Obrażenia dla problemu (broń bohatera albo brygada; src = nazwa w dzienniku): trafienie, usunięcie, nagrody,
+        // koniec etapu po bossie.
+        void damage_enemy(int ei, int dmg, bool crit, const char* src)
+        {
+            actor& e = enemies[ei];
+            const enemy_def& ed = data::enemies[e.def_id];
+            if(ei == boss && boss_wake_damage < 0) boss_engaged();
             e.hp = int16_t(e.hp - dmg);
             e.awake = true;
             last_target = ei;
@@ -675,7 +696,7 @@ namespace core
                 }
             }
             else
-                push(message().add(crit ? "KRYT! " : "").add(weapon().name).add(": -").add(dmg).add(" (").add(ed.name).add(")").as(crit ? loot : info));
+                push(message().add(crit ? "KRYT! " : "").add(src).add(": -").add(dmg).add(" (").add(ed.name).add(")").as(crit ? loot : info));
         }
 
         // Akcje gracza. Zwracają true, jeśli zużyły turę.
@@ -887,6 +908,113 @@ namespace core
             end_turn();
             ability_cd = ability_cooldown();
             return true;
+        }
+
+        // ------------------------------------------------------------------ brygada (raz na etap, z telefonu)
+        static constexpr int8_t around8[8][2] = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 }, { 1, 1 }, { -1, 1 }, { 1, -1 }, { -1, -1 } };
+
+        // Wolne pole podłogi obok (x, y), najbliższe (nx, ny); false, gdy brak.
+        bool free_around(int x, int y, int nx, int ny, int& ox, int& oy) const
+        {
+            int bd = 99;
+            for(const auto& o : around8)
+            {
+                int cx = x + o[0], cy = y + o[1];
+                if(lv.at(cx, cy) != tile::floor || occupied(cx, cy) || pickup_at(cx, cy)) continue;
+                int d = cheb(cx, cy, nx, ny);
+                if(d < bd) { bd = d; ox = cx; oy = cy; }
+            }
+            return bd < 99;
+        }
+
+        enum helper_block : uint8_t { helper_ok, helper_busy, helper_used, helper_locked, helper_cash, helper_no_target, helper_no_room };
+
+        // Czy fachowca h można teraz wezwać (bez skutków ubocznych - telefon i bot).
+        int helper_blocked(int h) const
+        {
+            const helper_def& hd = data::brigade[h];
+            if(st != status::playing) return helper_busy;
+            if(helper_called >= 0) return helper_used;
+            if(! ((bonus.helpers >> h) & 1)) return helper_locked;
+            if(cash < hd.price) return helper_cash;
+            if(hd.effect == helper_effect::pump)
+            {
+                for(int i = 0; i < enemies_count; ++i)
+                    if(enemies[i].alive && cheb(hero.x, hero.y, enemies[i].x, enemies[i].y) <= hd.reach) return helper_ok;
+                return helper_no_target;
+            }
+            int x, y;
+            if(hd.effect == helper_effect::ally && ! free_around(hero.x, hero.y, hero.x, hero.y, x, y)) return helper_no_room;
+            return helper_ok;
+        }
+
+        // Wezwanie fachowca (zużywa turę i budżet). Geodeta: mapa etapu; pompa: beton na problemy wokół;
+        // BHP-owiec: zdejmuje stany i daje obronę; pomocnik: idzie za bohaterem i bije sąsiadów przez kilka tur.
+        bool call_helper(int h)
+        {
+            const helper_def& hd = data::brigade[h];
+            switch(helper_blocked(h))
+            {
+                case helper_ok: break;
+                case helper_used: push(message().add("Brygada już była na tym etapie")); return false;
+                case helper_cash: push(message().add("Brygada: za mały budżet (").add(hd.price).add(" zł)")); return false;
+                case helper_no_target: push(message().add(hd.name).add(": nikogo w zasięgu")); return false;
+                case helper_no_room: push(message().add(hd.name).add(": brak miejsca obok")); return false;
+                default: return false;
+            }
+            if(shocked_turn()) return true;
+            cash -= hd.price;
+            helper_called = int8_t(h);
+            push(message().add("Brygada: ").add(hd.name).as(good));
+            switch(hd.effect)
+            {
+                case helper_effect::reveal:   // podłoga, schody i mury przy nich
+                    for(int y = 0; y < map_h; ++y)
+                        for(int x = 0; x < map_w; ++x)
+                        {
+                            if(fov[y][x] != unknown) continue;
+                            bool near = false;
+                            for(int dy = -1; dy <= 1 && ! near; ++dy) for(int dx = -1; dx <= 1; ++dx) if(lv.passable(x + dx, y + dy)) { near = true; break; }
+                            if(near) fov[y][x] = remembered;
+                        }
+                    break;
+                case helper_effect::pump:
+                    for(int i = 0; i < enemies_count && st == status::playing; ++i)
+                        if(enemies[i].alive && cheb(hero.x, hero.y, enemies[i].x, enemies[i].y) <= hd.reach) damage_enemy(i, hd.value, false, hd.name);
+                    break;
+                case helper_effect::safety:
+                    hero_status[int(status_effect::poison)] = hero_status[int(status_effect::shock)] = hero_status[int(status_effect::slip)] = 0;
+                    guard_turns = int8_t(hd.turns + 1);   // + tura wezwania
+                    break;
+                case helper_effect::ally:
+                {
+                    int x = -1, y = -1;
+                    free_around(hero.x, hero.y, hero.x, hero.y, x, y);
+                    ally_x = int8_t(x); ally_y = int8_t(y); ally_turns = hd.turns;
+                    break;
+                }
+                default: break;
+            }
+            end_turn();
+            return true;
+        }
+
+        // Pomocnik: trzyma się obok bohatera i bije problem obok siebie (bez rzutu - stałe obrażenia).
+        void ally_act()
+        {
+            const helper_def& hd = data::brigade[helper_called];
+            if(cheb(ally_x, ally_y, hero.x, hero.y) != 1)
+            {
+                int x, y;
+                if(free_around(hero.x, hero.y, ally_x, ally_y, x, y)) { ally_x = int8_t(x); ally_y = int8_t(y); }
+            }
+            for(int i = 0; i < enemies_count; ++i)
+                if(enemies[i].alive && cheb(ally_x, ally_y, enemies[i].x, enemies[i].y) == 1) { damage_enemy(i, hd.value, false, hd.name); break; }
+            if(--ally_turns == 0)
+            {
+                ally_x = ally_y = -1;
+                push(message().add(hd.name).add(": koniec pomocy"));
+            }
         }
 
         // Hurtownia między aktami: zakup za budżet budowy.
@@ -1112,7 +1240,7 @@ namespace core
                     push(message().add("Unik! ").add(ed.name).add(" chybia").as(good));
                     return;
                 }
-                int dmg = r.range(ed.min_damage, ed.max_damage) + enemy_dmg_bonus() - (cdef().defense + def_bonus + gear_bonus(gear_stat::def)) / 2;
+                int dmg = r.range(ed.min_damage, ed.max_damage) + enemy_dmg_bonus() - hero_defense() / 2;
                 if(dmg < 1) dmg = 1;
                 hero.hp = int16_t(hero.hp - dmg);
                 stage_damage += dmg;
@@ -1149,17 +1277,18 @@ namespace core
                 if(hero.hp > 1) { hero.hp = int16_t(hero.hp - 1); stage_damage += 1; add_hit(hero.x, hero.y, 1, true); }
             }
             if(ability_cd > 0 && --ability_cd == 0) push(message().add("Moc gotowa: ").add(cdef().ability_name).as(good));
+            if(guard_turns > 0) --guard_turns;   // ochrona BHP-owca mija
             for(int i = 0; i < walls_count; )
                 if(--walls[i].turns <= 0) { lv.t[walls[i].y][walls[i].x] = tile::floor; walls[i] = walls[--walls_count]; }
                 else ++i;
             update_fov();
+            if(ally_turns > 0 && st == status::playing) ally_act();   // pomocnik z brygady
             if(slam_timer > 0 && --slam_timer == 0 && boss >= 0 && enemies[boss].alive)   // cios bossa spada
             {
                 const enemy_def& bd = data::enemies[enemies[boss].def_id];
                 if(slam_cell_at(hero.x, hero.y))
                 {
-                    int dmg = r.range(bd.min_damage, bd.max_damage) + enemy_dmg_bonus() + data::slam_damage_bonus
-                            - (cdef().defense + def_bonus + gear_bonus(gear_stat::def)) / 2;
+                    int dmg = r.range(bd.min_damage, bd.max_damage) + enemy_dmg_bonus() + data::slam_damage_bonus - hero_defense() / 2;
                     if(dmg < 1) dmg = 1;
                     hero.hp = int16_t(hero.hp - dmg);
                     stage_damage += dmg;

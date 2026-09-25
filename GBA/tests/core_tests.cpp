@@ -193,6 +193,7 @@ int main()
         for(int i=0;i<data::upgrades_count;++i) while(buy_upgrade(p, i)) {}
         for(int i=0;i<data::classes_count;++i) buy_class(p, i);
         for(int i=0;i<data::tools_count;++i) buy_tool(p, i);
+        for(int i=0;i<data::brigade_count;++i) buy_helper(p, i);
         buy_hard(p);
         CHECK(shop_spent(p) == shop_total_cost());
     }
@@ -1083,6 +1084,85 @@ int main()
             r.hero.x = int8_t(px - 1); r.hero.y = int8_t(py); r.update_fov();
             CHECK(r.status_turns(status_effect::slip) == 0);
             CHECK(r.player_move(1, 0) && r.hero.x == px && r.status_turns(status_effect::slip) > 0);
+        }
+    }
+    // 35. brygada: raz na etap, za budżet, odblokowanie w Szkoleniach, skutki fachowców; profil v5 -> v6
+    {
+        auto hx_of = [](helper_effect e) { for(int i = 0; i < data::brigade_count; ++i) if(data::brigade[i].effect == e) return i; return -1; };
+        int geo = hx_of(helper_effect::reveal), pump = hx_of(helper_effect::pump), bhp = hx_of(helper_effect::safety), ally = hx_of(helper_effect::ally);
+        CHECK(geo >= 0 && pump >= 0 && bhp >= 0 && ally >= 0);
+        // odblokowanie: startowi od razu, reszta za doświadczenie
+        profile p; profile_reset(p);
+        for(int i = 0; i < data::brigade_count; ++i) CHECK(helper_unlocked(p, i) == (data::brigade[i].cost == 0));
+        int locked = -1; for(int i = 0; i < data::brigade_count; ++i) if(! helper_unlocked(p, i)) { locked = i; break; }
+        CHECK(locked >= 0 && ! buy_helper(p, locked));
+        p.xp = 500; CHECK(buy_helper(p, locked) && helper_unlocked(p, locked) && p.xp == 500 - data::brigade[locked].cost && ! buy_helper(p, locked));
+        CHECK(mods(p).helpers == (data::start_helpers_mask | (1 << locked)));
+        CHECK(shop_spent(p) == data::brigade[locked].cost);
+        // Geodeta: mapa odkryta (podłoga i schody), budżet, raz na etap, tura
+        {
+            game g; g.new_run(1, 314); g.weather = 0;
+            g.cash = 0; CHECK(g.helper_blocked(geo) == game::helper_cash && ! g.call_helper(geo) && g.turns == 0);
+            g.cash = 100; CHECK(! g.explored(g.stairs_x, g.stairs_y));
+            CHECK(g.helper_blocked(geo) == game::helper_ok && g.call_helper(geo));
+            CHECK(g.turns == 1 && g.cash == 100 - data::brigade[geo].price && g.helper_called == geo);
+            CHECK(g.explored(g.stairs_x, g.stairs_y));
+            for(int y = 0; y < map_h; ++y) for(int x = 0; x < map_w; ++x) if(g.lv.passable(x, y)) CHECK(g.explored(x, y));
+            CHECK(g.helper_blocked(bhp) == game::helper_used && ! g.call_helper(bhp) && g.turns == 1);
+            g.debug_skip(); CHECK(g.st == status::stage_clear); g.next_stage();
+            CHECK(g.helper_called < 0 && g.helper_blocked(geo) == game::helper_ok);   // kolejny etap: znowu można
+            game l; l.new_run(1, 314); l.cash = 999;
+            if(locked >= 0) CHECK(l.helper_blocked(locked) == game::helper_locked && ! l.call_helper(locked));
+        }
+        // BHP-owiec: zdejmuje stany, obrona przez kilka tur (mniejsze obrażenia)
+        {
+            game g; arena(g, 1); g.cash = 100;
+            g.apply_status(status_effect::poison, 5); g.apply_status(status_effect::slip, 5);
+            int def0 = g.hero_defense();
+            CHECK(g.call_helper(bhp));
+            CHECK(g.status_turns(status_effect::poison) == 0 && g.status_turns(status_effect::slip) == 0);
+            CHECK(g.hero_defense() == def0 + data::brigade[bhp].value && g.guard_turns == data::brigade[bhp].turns);
+            for(int t = 0; t < data::brigade[bhp].turns; ++t) g.player_wait();
+            CHECK(g.guard_turns == 0 && g.hero_defense() == def0);
+        }
+        // pompa: beton na problemy w zasięgu (bez rzutu), poza zasięgiem nic; bez celu nie wzywa
+        {
+            game g; arena(g, 1); g.cash = 100; g.bonus.helpers = (1 << data::brigade_count) - 1;
+            CHECK(g.helper_blocked(pump) == game::helper_no_target);
+            int reach = data::brigade[pump].reach;
+            g.spawn(data::enemy_papierologia, 7 + reach, 7); g.spawn(data::enemy_papierologia, 7 + reach + 2, 7);
+            g.enemies[0].hp = g.enemies[0].max_hp = 50; g.enemies[1].hp = g.enemies[1].max_hp = 50;
+            CHECK(g.call_helper(pump));
+            CHECK(g.enemies[0].hp == 50 - data::brigade[pump].value && g.enemies[1].hp == 50);
+            game k; arena(k, 1); k.cash = 100; k.bonus.helpers = (1 << data::brigade_count) - 1; k.spawn(data::enemy_kornik, 8, 7);
+            k.enemies[0].hp = 1; int kills = k.kills;
+            CHECK(k.call_helper(pump) && ! k.enemies[0].alive && k.kills == kills + 1);   // usunięcie liczy się jak zwykle
+        }
+        // pomocnik: stoi obok, idzie za bohaterem, bije sąsiadów przez kilka tur, blokuje pole
+        {
+            game g; arena(g, 1); g.cash = 100; g.bonus.helpers = (1 << data::brigade_count) - 1;
+            CHECK(g.call_helper(ally));
+            CHECK(g.ally_turns == data::brigade[ally].turns - 1 && cheb(g.ally_x, g.ally_y, g.hero.x, g.hero.y) == 1);
+            CHECK(g.occupied(g.ally_x, g.ally_y));
+            for(int k = 0; k < 3; ++k) { g.player_move(1, 0); CHECK(cheb(g.ally_x, g.ally_y, g.hero.x, g.hero.y) == 1); }
+            int ex = -1, ey = -1;
+            for(const auto& o : game::around8) { int x = g.ally_x + o[0], y = g.ally_y + o[1];
+                if(g.lv.at(x, y) == tile::floor && ! g.occupied(x, y) && cheb(x, y, g.hero.x, g.hero.y) > 1) { ex = x; ey = y; break; } }
+            CHECK(ex >= 0);
+            g.spawn(data::enemy_papierologia, ex, ey); int ei = g.enemies_count - 1;
+            g.enemies[ei].hp = g.enemies[ei].max_hp = 50; g.enemies[ei].stun = 50;
+            g.player_wait();
+            CHECK(g.enemies[ei].hp < 50);
+            while(g.ally_turns > 0) g.player_wait();
+            CHECK(g.ally_x < 0 && g.ally_turns == 0);
+        }
+        // profil v5 -> v6: stare pola zostają, nowe od zera
+        {
+            profile v5; profile_reset(v5); std::memcpy(v5.magic, "PBRL005", 8); v5.best = 4321; v5.run_clean = 3; v5.xp = 99;
+            std::memset(reinterpret_cast<char*>(&v5) + profile_v5_size, 0xEE, sizeof v5 - profile_v5_size);
+            CHECK(profile_fix(v5) && std::strcmp(v5.magic, profile_magic) == 0 && v5.best == 4321 && v5.run_clean == 3 && v5.xp == 99);
+            CHECK(v5.brigade == 0 && v5.investor == 0);
+            for(int i = 0; i < 8; ++i) CHECK(v5.best_stake[i] == 0);
         }
     }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie

@@ -44,6 +44,8 @@ static void bot_step_smart(game& g)
 {
     if(g.has_offer()) { if(g.offer_rarity >= g.equipped[g.offer_slot]) g.accept_offer(); else g.decline_offer(); }
     if(g.thermos > 0 && g.hero.hp * 2 < g.hero.max_hp && g.player_drink()) return;
+    if(g.helper_called < 0 && g.hero.hp * 3 < g.hero.max_hp)   // brygada: przy 1/3 HP najdroższy dostępny fachowiec
+        for(int h = data::brigade_count - 1; h >= 0; --h) if(g.helper_blocked(h) == game::helper_ok && g.call_helper(h)) return;
     if(!g.slam_cell(g.hero.x, g.hero.y) && g.ability_cd == 0)
     {
         int t = g.nearest_visible_enemy();
@@ -98,8 +100,9 @@ static uint32_t digest(const game& g)
     f.add(g.stage_event); f.add(g.boss_wake_damage); f.add(g.powers_used); f.add(g.brand_found); f.add(g.clean_bosses);
     // v0.21.46: wezwania bossa (Inspekcja Pracy)
     f.add(g.summon_counter); f.add(g.summons_used);
-    // v0.21.47: pogoda dnia
+    // v0.21.47: pogoda dnia, brygada
     f.add(g.weather);
+    f.add(g.helper_called); f.add(g.guard_turns); f.add(g.ally_turns); f.add(g.ally_x); f.add(g.ally_y);
     return f.h;
 }
 
@@ -138,6 +141,8 @@ static void snapshot(const game& g, int step)
     w(","); key("thermos"); wi(g.thermos); w(","); key("thermosCap"); wi(g.thermos_cap());
     w(","); key("stageEvent"); wi(g.stage_event);
     w(","); key("weather"); wi(g.weather); w(","); key("weaponRange"); wi(g.weapon_range());
+    w(","); key("brigade"); w("["); wi(g.helper_called); w(","); wi(g.guard_turns); w(","); wi(g.ally_turns); w(","); wi(g.ally_x);
+    w(","); wi(g.ally_y); w(","); wi(g.hero_defense()); w("]");
     w(","); key("counters"); w("["); wi(g.powers_used); w(","); wi(g.brand_found); w(","); wi(g.clean_bosses); w(",");
     wi(g.boss_wake_damage); w("]");
     w(","); key("stats"); w("["); wi(g.hero_stat(stat::str)); w(","); wi(g.hero_stat(stat::agi)); w(","); wi(g.hero_stat(stat::intel)); w(",");
@@ -201,6 +206,7 @@ static void profile_json(const profile& p)
     w("]"); w(","); key("killsTotal"); wi(p.kills_total); w(","); key("powersTotal"); wi(p.powers_total);
     w(","); key("brandTotal"); wi(p.brand_total); w(","); key("cleanBosses"); wi(p.clean_bosses);
     w(","); key("contracts"); wi(p.contracts); w(","); key("keepsake"); wi(p.keepsake);
+    w(","); key("brigade"); wi(p.brigade);
     w(","); key("keepsakeRuns"); w("["); for(int i = 0; i < max_keepsakes; ++i) { if(i) w(","); wi(p.keepsake_runs[i]); } w("]");
     w(","); key("sram"); hex_bytes(reinterpret_cast<const char*>(&p), sizeof p);   // profil bajt po bajcie jak w SRAM
     w("}");
@@ -238,6 +244,7 @@ int main(int argc, char** argv)
         {
             for(int i = 0; i < data::upgrades_count; ++i) p.levels[i] = uint8_t(data::upgrades[i].levels);
             p.tools = uint8_t((1 << data::tools_count) - 1);
+            p.brigade = uint8_t((1 << data::brigade_count) - 1);
         }
         p.badges = uint16_t(s.badges); p.contracts = uint8_t(s.contracts); p.keepsake = uint8_t(s.keepsake);
         if(s.keepsake > 0) p.keepsake_runs[s.keepsake - 1] = uint8_t(s.keepsake_runs);
