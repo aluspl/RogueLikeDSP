@@ -492,7 +492,21 @@ int main()
             }
         CHECK(gear_drops > 0 && brand[1] > brand[0]);                   // na późnych etapach częściej markowy
     }
-    // 22. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
+    // 22. dziennik: powtórzenia jako licznik, rodzaj komunikatu, numer kolejny
+    {
+        game g; arena(g, 1);
+        int serial = g.log_serial;
+        g.push(message().add("Brak celu").as(info));
+        g.push(message().add("Brak celu").as(info));
+        CHECK(g.log_serial == serial + 2);
+        CHECK(std::strcmp(g.log[log_lines - 1].s, "Brak celu") == 0 && g.log[log_lines - 1].repeat == 2);
+        CHECK(std::strcmp(g.log[log_lines - 2].s, "Brak celu") != 0);
+        g.push(message().add("Awans").as(good));
+        CHECK(g.log[log_lines - 1].kind == good && g.log[log_lines - 2].repeat == 2);
+        g.spawn(8, 8, 7); g.enemies[0].awake = true; g.player_wait();
+        CHECK(g.log[log_lines - 1].kind == bad);                     // obrażenia bohatera na czerwono
+    }
+    // 23. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};
     for(int df=0;df<data::difficulties_count;++df)
