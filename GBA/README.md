@@ -15,10 +15,11 @@ Przekroczony budżet) i bossów (Zepsuta Betoniarka, Nawałnica, Inspekcja Pracy
 | D-pad | ruch / atak przez wejście na wroga (przytrzymaj = szybki ruch) |
 | A | krótko: atak w najbliższy cel; przytrzymaj: podgląd zasięgu i celownik (strzałki zmieniają cel), puść: atak |
 | B | krótko: czekaj turę (co 4 tury +1 HP); przytrzymaj: podgląd widocznych wrogów (nazwa, HP, obrażenia, opis; strzałki zmieniają wroga) |
-| START | w grze: menu akcji wokół bohatera – góra Atak, prawo Moc, dół Termos, lewo Czekaj (strzałka wybiera, A albo ta sama strzałka wykonuje, START/B zamyka); poza grą: dalej |
+| START | w grze: menu akcji wokół bohatera – góra Atak, prawo Moc, dół Termos, lewo Czekaj (strzałka wybiera, A albo ta sama strzałka wykonuje, A bez kierunku = Brygada, START/B zamyka); poza grą: dalej |
 | SELECT | w grze: telefon z aplikacją PlanBudowlany (Zadania, Usterki, Start, Sprzęt, Koszty; L/R – zakładki, START – menu: jak grać, zapisz i wyjdź, porzuć budowę); na tytule: telefon profilu (Odznaki/Zlecenia/Pamiątki – przełączane A, Katalog, Osiedle, Zespół, Koszty = Szkolenia) |
 | lewo/prawo (wybór zawodu) | zmiana zawodu na pasku portretów (odblokowane najpierw; zablokowany można obejrzeć, A go nie wybierze) |
 | L/R (wybór zawodu) | pamiątka zabierana na budowę (albo „bez pamiątki”) |
+| SELECT (wybór zawodu) | po pierwszej wygranej: tryb inwestora (modyfikatory, A włącza/wyłącza) |
 | B (tytuł) | ekran „Jak grać” |
 | L (przytrzymaj) | podgląd odkrytej mapy etapu |
 | R | moc zawodu (Odprawa, Ścianka, Seria, Łańcuch, Zawór, Wirówka); ikona w prawym górnym rogu: szara z odliczaniem = ładuje się, pulsuje z „R” = gotowa; ranga II od 3. i III od 5. poziomu postaci |
@@ -85,6 +86,26 @@ Teksty są w `data/game.json` (`story`).
 - **Osiedle** - dom za każdą wygraną budowę, wielkość zależy od wyniku.
 - SELECT na tytule: telefon profilu (Odznaki/Zlecenia/Pamiątki, Katalog, Osiedle, Zespół, Koszty).
 
+## Pogoda dnia
+Każdy etap losuje pogodę (sekcja `weather` w `data/game.json`: waga, lista etapów, skutek): Słonecznie – bez skutku,
+Upał – moc +1 tura odnowienia, Mróz – problemy (nie bossowie) stoją co 3. turę, Wiatr – broń z dystansu ma zasięg -1
+(etapy 2–5), Deszcz – kałuże na mapie (stały wzór; wejście w kałużę = poślizg na 2 tury, etapy 1–5). Ikona w HUD obok
+termosu, wiersz w zakładce Zadania, linia „Pogoda” na karcie etapu, wpis w dzienniku. Niekorzystna pogoda i
+niekorzystne wydarzenie na placu się nie łączą (`noBadStack`: wydarzenie przepada).
+
+## Brygada
+Raz na etap możesz wezwać najemnego fachowca za zł z budżetu budowy (wezwanie zużywa turę): telefon → zakładka Zespół
+(Sprzęt) → A = strona Brygada (góra/dół, A wezwij, B wróć) albo START i A bez kierunku. Geodeta (mapa etapu i schody),
+BHP-owiec (bez stanów, obrona +2 na 8 tur), Pompa do betonu (-6 HP problemom w zasięgu 2), Elektryk-kolega (pomocnik
+obok bohatera przez 10 tur, cios -3, zajmuje pole). Dwóch pierwszych od początku, pozostałych kupujesz w Szkoleniach
+(Koszty w telefonie profilu). Dane: `brigade` (cena, koszt odblokowania, wartości).
+
+## Tryb inwestora
+Po pierwszej wygranej SELECT na wyborze zawodu otwiera modyfikatory trudności (jak Heat w Hadesie; sekcja `investor`):
+Budżet -30%, Bez przerwy na kawę, Problemy +20% HP, Hurtownia zamknięta, Kontrola częściej, Termin goni. Każdy daje
+premię doświadczenia i punkty stawki; wybór zapisuje się w profilu, rekord stawki każdego zawodu też (wygrane budowy).
+Stawka jest na karcie zawodu, w SMS-ie końca budowy i w rogu ekranu końcowego.
+
 ## Wydarzenia na placu
 Na starcie etapu (nie pierwszego i nie z bossem) z szansą `siteEvents.chancePct` przychodzi SMS z modyfikatorem etapu:
 Dostawa spóźniona (mniej znajdziek), Premia od inwestora (+20 zł), Inspekcja nadzoru (etap bez obrażeń = +10 dośw.),
@@ -98,8 +119,8 @@ Zadania telefonu. Teksty i wartości: `siteEvents` w `data/game.json`.
 - Doświadczenie za wrogów, etapy i bossa wydajesz w sklepie „Szkolenia” (po budowie i z tytułu):
   ulepszenia statystyk (m.in. Kurs BHP II: +1 szczęścia, Warsztaty: +1 do statystyki broni zawodu), więcej znajdziek,
   nowe zawody, narzędzia, poziom Trudny.
-- Profil (rekord, doświadczenie, zakupy, odznaki, liczniki zleceń, pamiątki) zapisuje się w SRAM (format v5);
-  starsze zapisy (v1-v4) są przenoszone bez utraty danych.
+- Profil (rekord, doświadczenie, zakupy, odznaki, liczniki zleceń, pamiątki, brygada, tryb inwestora) zapisuje się
+  w SRAM (format v6); starsze zapisy (v1-v5) są przenoszone bez utraty danych.
 - Liczniki zleceń trafiają do profilu na końcu etapu; profil pamięta, ile z bieżącej budowy już przeniesiono, więc
   wznowienie budowy po wyłączeniu konsoli nie liczy etapu drugi raz.
 - Harmonogram między etapami pokazuje radę kierownika (sterowanie i mechaniki; lista `tips` w `data/game.json`).
@@ -129,7 +150,7 @@ tools/playtest/run.sh moj_skrypt.txt /tmp/zrzuty --fresh   # opis komend w tools
 
 Scenariusze testowe (sytuacje, do których skrypt nie dojdzie na ślepo – boss obok, wrogowie w zasięgu, moce,
 sprzęt, stany, porównanie sprzętu, termos, kryt i unik, statystyki (9), uprawnienia i zlecenia (10), pamiątki (11),
-wydarzenia na placu (12), Inspekcja Pracy (13)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
+wydarzenia na placu (12), Inspekcja Pracy (13), pogoda (14), brygada (15), tryb inwestora (16)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
 ```bash
 make TARGET=scn1 BUILD=build_scn1 USERFLAGS="-DPB_SCENARIO=1" BUTANO_PATH=...
 ROM=scn1.gba tools/playtest/run.sh skrypt.txt /tmp/zrzuty --fresh
@@ -146,7 +167,7 @@ tools/gen_data.py     JSON -> include/game_data.h
 tools/make_assets.py  proceduralne grafiki: font PL 8x16, sprite'y, kafelki+palety etapów, tytuł, ekran z QR
 assets_src/pb_logo.svg  znak PlanBudowlany
 include/core.h        logika gry (czyste C++, bez Butano) - testowalna na PC
-include/meta.h        profil SRAM (v4), Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki
+include/meta.h        profil SRAM (v6), Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
 src/main.cpp          warstwa GBA: sceny, mapa, kamera, HUD, SRAM
 ```
 Grafiki są placeholderami generowanymi kodem: podmień pliki w `graphics/` pixel-artem z Aseprite

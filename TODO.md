@@ -1,6 +1,6 @@
 # TODO – PlanBudowlany RogueLike
 
-Stan na 2026-09-25: GBA v0.21.45 (wydane), Godot – logika zgodna z v0.21.45, oprawa z GBA, refaktor na ekrany,
+Stan na 2026-09-25: GBA v0.21.47 (zbudowane, niewydane), Godot – logika zgodna z v0.21.47, oprawa z GBA, refaktor na ekrany,
 wersja mobilna na iPhonie. Opis projektów: [`README.md`](README.md).
 
 Legenda: ✅ zrobione · 🔄 w toku · ⬜ do zrobienia · — nie dotyczy
@@ -24,7 +24,7 @@ Legenda: ✅ zrobione · 🔄 w toku · ⬜ do zrobienia · — nie dotyczy
 | Muzyka: pętle bez przerwy | ⬜ (MP3 → OGG) | ✅ |
 | Portret Kierownika na wyborze zawodu lekko przesunięty | — | ⬜ |
 | Czytelniejszy komunikat „Brak celu w zasięgu 1” (`core.h` + port C#) | ⬜ | ⬜ |
-| Balans po nowych funkcjach (bot: Normalny ~54%, pełne Szkolenia ~69%) | wspólny rdzeń | ⬜ |
+| Balans po nowych funkcjach (bot: Normalny ~49%, pełne Szkolenia ~70%; ~25% przebiegów bota utyka w oscylacji – do poprawy bota) | wspólny rdzeń | ⬜ |
 
 ## Nowe pomysły (2026-09-25, „zrób wszystko”)
 
@@ -32,13 +32,13 @@ Kolejność: A – rdzeń i GBA (po bossie Inspekcja Pracy), B – Godot i mobil
 
 | # | Pomysł | Etap | GODOT (MOBILE) | GBA |
 |---|---|---|---|---|
-| 0 | Boss Inspekcja Pracy (podkładka z pieczątką, akt III, Kontrola BHP) | – | 🔄 rdzeń | 🔄 |
+| 0 | Boss Inspekcja Pracy (podkładka z pieczątką, akt III, Kontrola BHP) | – | ✅ | ✅ |
 | 1 | Codzienna budowa: seed dnia, tabela wyników | A/B | ⬜ (data z systemu) | ⬜ (seed z daty wpisanej ręcznie – GBA nie ma zegara) |
-| 2 | Brygada: najemny fachowiec raz na etap (Geodeta – mapa, Pompa do betonu – obszar…) | A | ⬜ | ⬜ |
+| 2 | Brygada: najemny fachowiec raz na etap (Geodeta – mapa, Pompa do betonu – obszar…) | A | ✅ | ✅ |
 | 3 | Wybór ścieżki między etapami (harmonogram z rozgałęzieniami) | A | ⬜ | ⬜ |
 | 4 | Materiały (cement, stal, drewno) – Hurtownia i naprawy pól | A | ⬜ | ⬜ |
-| 5 | Pogoda dnia (upał, mróz, wiatr) jako modyfikator etapu | A | ⬜ | ⬜ |
-| 6 | Tryb inwestora: modyfikatory trudności za dodatkowe doświadczenie (jak Heat w Hadesie) | A | ⬜ | ⬜ |
+| 5 | Pogoda dnia (upał, mróz, wiatr) jako modyfikator etapu | A | ✅ | ✅ |
+| 6 | Tryb inwestora: modyfikatory trudności za dodatkowe doświadczenie (jak Heat w Hadesie) | A | ✅ | ✅ |
 | 7 | Powiadomienia systemowe („Nowa codzienna budowa”) | B | ⬜ | — |
 | 8 | Widżet / Live Activity z postępem budowy | B (natywne rozszerzenie iOS) | ⬜ | — |
 | 9 | Udostępnianie wyniku (obrazek + link planbudowlany.online) | B | ⬜ | ⬜ (kod QR z wynikiem) |
