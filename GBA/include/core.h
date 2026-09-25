@@ -22,7 +22,7 @@ namespace core
     enum class tile : uint8_t { wall, floor, stairs };
     enum class status : uint8_t { playing, stage_clear, dead, won };
     enum sight : uint8_t { unknown = 0, remembered = 1, in_view = 2 };   // mgła wojny
-    enum pickup_type : uint8_t { coffee, helmet, plan, tool };
+    enum pickup_type : uint8_t { coffee, helmet, plan, tool, gear_box };
 
     inline int iabs(int v) { return v < 0 ? -v : v; }
     inline int imax(int a, int b) { return a > b ? a : b; }
@@ -177,7 +177,16 @@ namespace core
         int ability_cd = 0;          // tury do ponownego użycia mocy (R)
         temp_wall walls[max_walls];
         int walls_count = 0;
+        int8_t equipped[4] = { -1, -1, -1, -1 };   // sprzęt: jakość w slocie (kask, rękawice, kamizelka), -1 = brak
         int weapon_override = -1;    // podniesione narzędzie zamiast broni zawodu
+
+        int gear_bonus(gear_stat s) const
+        {
+            int b = 0;
+            for(int i = 0; i < data::gear_slots_count; ++i)
+                if(equipped[i] >= 0 && data::gear[i * 3 + equipped[i]].stat == s) b += data::gear[i * 3 + equipped[i]].value;
+            return b;
+        }
         const weapon_def& weapon() const { return data::weapons[weapon_override >= 0 ? weapon_override : cdef().weapon]; }
         const difficulty_def& ddef() const { return data::difficulties[diff]; }
 
@@ -367,7 +376,8 @@ namespace core
         {
             actor& e = enemies[ei];
             const enemy_def& ed = data::enemies[e.def_id];
-            int dmg = r.range(weapon().min_damage, weapon().max_damage) + hero_stat(weapon().scales_with) / 2 + dmg_bonus - ed.defense / 2;
+            int dmg = r.range(weapon().min_damage, weapon().max_damage) + hero_stat(weapon().scales_with) / 2 + dmg_bonus
+                    + gear_bonus(gear_stat::dmg) - ed.defense / 2;
             if(dmg < 1) dmg = 1;
             e.hp = int16_t(e.hp - dmg);
             e.awake = true;
@@ -570,6 +580,12 @@ namespace core
             int roll = r.range(1, total), type = 0;
             while(roll > data::drop_weights[type]) roll -= data::drop_weights[type++];
             uint8_t arg = 0;
+            if(type == gear_box)   // slot losowy, jakość lepsza na późnych etapach
+            {
+                int roll = r.range(1, 100) + stage * data::gear_stage_bonus;
+                int rarity = roll >= data::gear_brand_from ? 2 : (roll >= data::gear_solid_from ? 1 : 0);
+                arg = uint8_t(r.range(0, data::gear_slots_count - 1) * 3 + rarity);
+            }
             if(type == tool)
             {
                 int n = 0; for(int i = 0; i < data::tools_count; ++i) n += (bonus.tools >> i) & 1;
@@ -583,6 +599,26 @@ namespace core
             pickups[pickups_count++] = { int8_t(x), int8_t(y), uint8_t(type), true, arg };
         }
 
+        // Sprzęt: lepszy zakłada się sam (kamizelka od razu podnosi max HP), gorszy zamienia się w doświadczenie.
+        void equip(int slot, int rarity)
+        {
+            const gear_def& nw = data::gear[slot * 3 + rarity];
+            if(rarity <= equipped[slot])
+            {
+                gain_xp(1 + rarity);
+                push(message().add("Masz lepszy: ").add(data::gear_slots[slot]));
+                return;
+            }
+            if(nw.stat == gear_stat::hp)
+            {
+                int diff = nw.value - (equipped[slot] >= 0 ? data::gear[slot * 3 + equipped[slot]].value : 0);
+                hero.max_hp = int16_t(hero.max_hp + diff);
+                hero.hp = int16_t(hero.hp + diff);
+            }
+            equipped[slot] = int8_t(rarity);
+            push(message().add("Sprzęt: ").add(nw.name).add(" +").add(nw.value));
+        }
+
         void collect()
         {
             for(int i = 0; i < pickups_count; ++i)
@@ -593,6 +629,7 @@ namespace core
                 if(p.type == coffee) { int h = imin(8 + bonus.coffee, hero.max_hp - hero.hp); hero.hp = int16_t(hero.hp + h); push(message().add("Kawa z termosu: +").add(h).add(" HP")); }
                 else if(p.type == helmet) { ++def_bonus; push(message().add("Nowy kask: obrona +1")); }
                 else if(p.type == plan) { ++dmg_bonus; push(message().add("Projekt wykonawczy: obrażenia +1")); }
+                else if(p.type == gear_box) equip(p.arg / 3, p.arg % 3);
                 else
                 {
                     weapon_override = data::tools[p.arg].weapon;
@@ -614,7 +651,7 @@ namespace core
             int manh = iabs(e.x - hero.x) + iabs(e.y - hero.y);
             if(manh == 1)
             {
-                int dmg = r.range(ed.min_damage, ed.max_damage) + enemy_dmg_bonus() - (cdef().defense + def_bonus) / 2;
+                int dmg = r.range(ed.min_damage, ed.max_damage) + enemy_dmg_bonus() - (cdef().defense + def_bonus + gear_bonus(gear_stat::def)) / 2;
                 if(dmg < 1) dmg = 1;
                 hero.hp = int16_t(hero.hp - dmg);
                 stage_damage += dmg;

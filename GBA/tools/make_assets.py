@@ -173,7 +173,7 @@ def p_toolbox(d):   # skrzynka z narzędziem (drop)
 UI_SPR = [ui_lock]
 
 # klatki: 0-5 zawody, 6-14 wrogowie, 15-17 znajdźki, 18 efekt trafienia, 19 kłódka, 20-25 sylwetki zawodów,
-# 26 skrzynka z narzędziem, 27-41 druga klatka animacji zawodów i wrogów (pixel-art: tools/pixel_art.py)
+# 26 skrzynka z narzędziem, 27-41 druga klatka animacji zawodów i wrogów, 42-44 paczki sprzętu (pixel-art: tools/pixel_art.py)
 def make_actors():
     import pixel_art as pa
     workers = [pa.worker_frame(i, 0) for i in range(6)]
@@ -184,6 +184,8 @@ def make_actors():
     frames += [silhouette(f) for f in workers]
     frames += [pa.pickup_frame("toolbox")]
     frames += [pa.worker_frame(i, 1) for i in range(6)] + [pa.enemy_frame(i, 1) for i in range(9)]   # klatki B animacji
+    gf = pa.gear_frames()
+    frames += [gf[i * 256:(i + 1) * 256] for i in range(3)]   # 42-44 paczki sprzętu wg jakości
     px = [p for fr in frames for p in fr]
     write_bmp(os.path.join(G, "actors.bmp"), px, 16, 16 * len(frames), SPR_PAL, 4)
     write_json("actors", {"type": "sprite", "height": 16})

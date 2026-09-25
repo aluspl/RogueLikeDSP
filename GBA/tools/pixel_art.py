@@ -453,3 +453,27 @@ ABILITY_ICONS = [
 
 def ability_icon_frames():
     return [p for rows in ABILITY_ICONS for p in parse(rows)]
+
+
+# ------------------------------------------------------------------ paczki ze sprzętem (drop): zwykły, solidny, markowy
+GEAR_BOX = [
+    "................",
+    "................",
+    ".....KKKKKK.....",
+    "....KAAAAAAK....",
+    "...KAAAAAAAAK...",
+    "..KKKKKKKKKKKK..",
+    "..KAAAAWWAAAAK..",
+    "..KAAAAWWAAAAK..",
+    "..KAAAAAAAAAAK..",
+    "..KAAAKKKKAAAK..",
+    "..KAAAKYYKAAAK..",
+    "..KAAAKKKKAAAK..",
+    "..KAAAAAAAAAAK..",
+    "..KKKKKKKKKKKK..",
+    "................",
+    "................"]
+
+
+def gear_frames():
+    return [p for color in ("g", "B", "O") for p in parse(GEAR_BOX, {"A": color})]

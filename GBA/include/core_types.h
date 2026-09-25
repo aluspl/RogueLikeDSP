@@ -76,6 +76,15 @@ namespace core
         const char* lines[3];
     };
 
+    enum class gear_stat : uint8_t { def, dmg, hp };
+
+    struct gear_def            // sprzęt z dropów: slot x jakość
+    {
+        const char* name;
+        gear_stat stat;
+        int8_t value;
+    };
+
     struct badge_def           // odznaka (motywacja do kolejnych budów)
     {
         const char* name;

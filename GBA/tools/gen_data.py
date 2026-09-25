@@ -78,7 +78,22 @@ start_tools = sum(1 << i for i, t in enumerate(m["tools"]) if t["cost"] == 0)
 L += [f"inline constexpr int tools_count = {len(m['tools'])};",
       f"inline constexpr int start_tools_mask = {start_tools};",
       f"inline constexpr int drop_chance_pct = {dr['chancePct']};",
-      f"inline constexpr int drop_weights[] = {{ {dr['weights']['coffee']}, {dr['weights']['helmet']}, {dr['weights']['plan']}, {dr['weights']['tool']} }};", ""]
+      f"inline constexpr int drop_weights[] = {{ {dr['weights']['coffee']}, {dr['weights']['helmet']}, {dr['weights']['plan']}, {dr['weights']['tool']}, {dr['weights']['gear']} }};", ""]
+eq = d["equipment"]
+L.append("inline constexpr core::gear_def gear[] = {   // indeks = slot * 3 + jakość")
+for sl in eq["slots"]:
+    assert len(sl["items"]) == len(eq["rarities"]) == 3
+    for name, val in sl["items"]:
+        assert len(name) <= 20, name
+        L.append(f'    {{ {s(name)}, core::gear_stat::{sl["stat"]}, {val} }},')
+L.append("};")
+L.append("inline constexpr const char* gear_slots[] = { " + ", ".join(s(sl["name"]) for sl in eq["slots"]) + " };")
+L.append("inline constexpr const char* gear_rarities[] = { " + ", ".join(s(r) for r in eq["rarities"]) + " };")
+rr = eq["rarityRoll"]
+L += [f"inline constexpr int gear_slots_count = {len(eq['slots'])};",
+      f"inline constexpr int gear_solid_from = {rr['solidFrom']};",
+      f"inline constexpr int gear_brand_from = {rr['brandFrom']};",
+      f"inline constexpr int gear_stage_bonus = {rr['stageBonus']};", ""]
 start_mask = sum(1 << cid[c] for c in m["startClasses"])
 L += [f"inline constexpr int upgrades_count = {len(m['upgrades'])};",
       f"inline constexpr int xp_per_kill = {m['xpPerKill']};",
