@@ -18,12 +18,12 @@ inline constexpr core::weapon_def weapons[] = {
 };
 
 inline constexpr core::class_def classes[] = {
-    { "Kierownik budowy", "Trzyma harmonogram w ryzach.", 30, 3, 3, 5, 3, 0, 0, "Odprawa", "Ogłusza widocznych", core::ability_effect::stun, 15 },
-    { "Murarz", "Twardy jak pustak.", 32, 5, 2, 1, 4, 1, 1, "Ścianka", "Mur przed wrogiem", core::ability_effect::wall, 15 },
-    { "Cieśla-dekarz", "Gwoździe wbija z daleka.", 30, 4, 4, 1, 3, 2, 2, "Seria", "Gwoździe we wszystkich", core::ability_effect::volley, 12 },
-    { "Elektryk", "Wie, gdzie jest faza.", 24, 2, 4, 5, 2, 3, 3, "Łańcuch", "Prąd skacze po celach", core::ability_effect::chain, 12 },
-    { "Hydraulik", "Żaden przeciek mu nie straszny.", 32, 4, 3, 3, 3, 4, 4, "Zawór", "Odpycha wrogów i leczy", core::ability_effect::flush, 20 },
-    { "Glazurnik", "Precyzja co do fugi.", 30, 3, 5, 2, 3, 5, 5, "Wirówka", "Tnie wszystkich dookoła", core::ability_effect::spin, 10 },
+    { "Kierownik budowy", "Trzyma harmonogram w ryzach.", 30, 3, 3, 5, 3, 2, 0, 0, "Odprawa", "Ogłusza widocznych", core::ability_effect::stun, 15 },
+    { "Murarz", "Twardy jak pustak.", 32, 5, 2, 1, 4, 0, 1, 1, "Ścianka", "Mur przed wrogiem", core::ability_effect::wall, 15 },
+    { "Cieśla-dekarz", "Gwoździe wbija z daleka.", 30, 4, 4, 1, 3, 2, 2, 2, "Seria", "Gwoździe we wszystkich", core::ability_effect::volley, 12 },
+    { "Elektryk", "Wie, gdzie jest faza.", 24, 2, 4, 5, 2, 1, 3, 3, "Łańcuch", "Prąd skacze po celach", core::ability_effect::chain, 12 },
+    { "Hydraulik", "Żaden przeciek mu nie straszny.", 32, 4, 3, 3, 3, 2, 4, 4, "Zawór", "Odpycha wrogów i leczy", core::ability_effect::flush, 20 },
+    { "Glazurnik", "Precyzja co do fugi.", 30, 3, 5, 2, 3, 4, 5, 5, "Wirówka", "Tnie wszystkich dookoła", core::ability_effect::spin, 10 },
 };
 
 inline constexpr core::enemy_def enemies[] = {
@@ -154,6 +154,14 @@ inline constexpr int tools_count = 4;
 inline constexpr int start_tools_mask = 1;
 inline constexpr int drop_chance_pct = 25;
 inline constexpr int drop_weights[] = { 40, 5, 5, 15, 35 };
+
+inline constexpr int crit_base_pct = 5;
+inline constexpr int crit_per_luck_pct = 3;
+inline constexpr int crit_multiplier = 2;
+inline constexpr int drop_per_luck_pct = 2;
+inline constexpr int rarity_per_luck = 3;
+inline constexpr int dodge_per_luck_pct = 2;
+inline constexpr int dodge_max_pct = 20;
 
 inline constexpr core::gear_def gear[] = {   // indeks = slot * 3 + jakość
     { "Kask budowlany", core::gear_stat::def, 1 },

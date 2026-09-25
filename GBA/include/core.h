@@ -104,7 +104,8 @@ namespace core
     struct temp_wall { int8_t x, y, turns; };   // Ścianka Murarza
 
     struct pickup { int8_t x, y; uint8_t type; bool active; uint8_t arg = 0; };   // arg: indeks narzędzia
-    struct hit { int8_t x, y; int16_t amount; bool on_hero; };   // do liczb obrażeń nad polem
+    enum hit_kind : uint8_t { hit_normal, hit_crit, hit_dodge };
+    struct hit { int8_t x, y; int16_t amount; bool on_hero; uint8_t kind = hit_normal; };   // do liczb obrażeń nad polem
 
     // Dziennik budowy (log zdarzeń) - krótkie linie UTF-8
     enum log_kind : uint8_t { info, bad, good, loot };   // kolor komunikatu w dzienniku
@@ -212,9 +213,9 @@ namespace core
         int hits_count = 0;          // warstwa GBA czyta i zeruje po każdej turze
         int last_target = -1;        // ostatnio trafiony wróg (pasek HP celu)
 
-        void add_hit(int x, int y, int amount, bool on_hero)
+        void add_hit(int x, int y, int amount, bool on_hero, int kind = hit_normal)
         {
-            if(hits_count < max_hits) hits[hits_count++] = { int8_t(x), int8_t(y), int16_t(amount), on_hero };
+            if(hits_count < max_hits) hits[hits_count++] = { int8_t(x), int8_t(y), int16_t(amount), on_hero, uint8_t(kind) };
         }
 
         const class_def& cdef() const { return data::classes[cls]; }
@@ -231,6 +232,10 @@ namespace core
                 if(equipped[i] >= 0 && data::gear[i * 3 + equipped[i]].stat == s) b += data::gear[i * 3 + equipped[i]].value;
             return b;
         }
+        // Szczęście: kryt (x2), mały unik przed ciosem wroga, częstsze i lepsze dropy.
+        int luck() const { return cdef().luck; }
+        int crit_pct() const { return data::crit_base_pct + data::crit_per_luck_pct * luck(); }
+        int dodge_pct() const { return imin(data::dodge_max_pct, data::dodge_per_luck_pct * luck()); }
         const weapon_def& weapon() const { return data::weapons[weapon_override >= 0 ? weapon_override : cdef().weapon]; }
         const difficulty_def& ddef() const { return data::difficulties[diff]; }
 
@@ -433,10 +438,12 @@ namespace core
             int dmg = r.range(weapon().min_damage, weapon().max_damage) + hero_stat(weapon().scales_with) / 2 + dmg_bonus
                     + gear_bonus(gear_stat::dmg) - ed.defense / 2;
             if(dmg < 1) dmg = 1;
+            bool crit = r.range(1, 100) <= crit_pct();
+            if(crit) dmg *= data::crit_multiplier;
             e.hp = int16_t(e.hp - dmg);
             e.awake = true;
             last_target = ei;
-            add_hit(e.x, e.y, dmg, false);
+            add_hit(e.x, e.y, dmg, false, crit ? hit_crit : hit_normal);
             turn_events |= 1u << ei;
             if(e.hp <= 0)
             {
@@ -470,7 +477,7 @@ namespace core
                 }
             }
             else
-                push(message().add(weapon().name).add(": -").add(dmg).add(" (").add(ed.name).add(")"));
+                push(message().add(crit ? "KRYT! " : "").add(weapon().name).add(": -").add(dmg).add(" (").add(ed.name).add(")").as(crit ? loot : info));
         }
 
         // Akcje gracza. Zwracają true, jeśli zużyły turę.
@@ -718,7 +725,7 @@ namespace core
         // Drop z pokonanego wroga: szansa data::drop_chance_pct, typ losowany wagami.
         void maybe_drop(int x, int y)
         {
-            if(r.range(1, 100) > data::drop_chance_pct || pickups_count >= max_pickups) return;
+            if(r.range(1, 100) > data::drop_chance_pct + data::drop_per_luck_pct * luck() || pickups_count >= max_pickups) return;
             for(int i = 0; i < pickups_count; ++i) if(pickups[i].active && pickups[i].x == x && pickups[i].y == y) return;
             int total = 0; for(int w : data::drop_weights) total += w;
             int roll = r.range(1, total), type = 0;
@@ -726,8 +733,8 @@ namespace core
             uint8_t arg = 0;
             if(type == gear_box)   // slot losowy, jakość lepsza na późnych etapach
             {
-                int roll = r.range(1, 100) + stage * data::gear_stage_bonus;
-                int rarity = roll >= data::gear_brand_from ? 2 : (roll >= data::gear_solid_from ? 1 : 0);
+                int q = r.range(1, 100) + stage * data::gear_stage_bonus + data::rarity_per_luck * luck();
+                int rarity = q >= data::gear_brand_from ? 2 : (q >= data::gear_solid_from ? 1 : 0);
                 arg = uint8_t(r.range(0, data::gear_slots_count - 1) * 3 + rarity);
             }
             if(type == tool)
@@ -807,6 +814,12 @@ namespace core
             int manh = iabs(e.x - hero.x) + iabs(e.y - hero.y);
             if(manh == 1)
             {
+                if(dodge_pct() > 0 && r.range(1, 100) <= dodge_pct())   // szczęście: unik
+                {
+                    add_hit(hero.x, hero.y, 0, true, hit_dodge);
+                    push(message().add("Unik! ").add(ed.name).add(" chybia").as(good));
+                    return;
+                }
                 int dmg = r.range(ed.min_damage, ed.max_damage) + enemy_dmg_bonus() - (cdef().defense + def_bonus + gear_bonus(gear_stat::def)) / 2;
                 if(dmg < 1) dmg = 1;
                 hero.hp = int16_t(hero.hp - dmg);

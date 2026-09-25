@@ -315,7 +315,7 @@ namespace
             a.text.generate(0, 20, locked ? ld.s : ab.s, lines);
             core::message s; s.add("HP ").add(c.max_health).add(" SIŁ ").add(c.strength).add(" ZRĘ ").add(c.agility);
             a.text.generate(0, 38, s.s, lines);
-            core::message s2; s2.add("INT ").add(c.intelligence).add(" OBR ").add(c.defense);
+            core::message s2; s2.add("INT ").add(c.intelligence).add(" OBR ").add(c.defense).add(" SZCZ ").add(c.luck);
             a.text.generate(0, 54, s2.s, lines);
             core::message wl; wl.add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range);
             a.text.generate(0, 72, clip(wl.s, 29), lines);
@@ -650,7 +650,7 @@ namespace
     void tab_tasks(app& a, phone_screen& ph, page_sprites& t)   // Zadania = harmonogram budowy
     {
         const core::game& g = *a.g;
-        core::message sub; sub.add("Etap ").add(g.stage + 1).add("/").add(data::stages_count);
+        core::message sub; sub.add("Etap ").add(g.stage + 1).add("/").add(data::stages_count).add(", ").add(g.score).add(" pkt");
         phone_header(a, ph, t, tab_names[0], sub.s);
         phone_canvas& c = *ph.canvas;
         int first = core::imax(0, core::imin(g.stage - 2, data::stages_count - 5));   // okno 5 etapów wokół bieżącego
@@ -730,6 +730,7 @@ namespace
         const core::game& g = *a.g;
         core::message sub; sub.add(g.ddef().name);
         if(g.tier > 0) sub.add(" NG+").add(g.tier);
+        sub.add(", ").add(g.cash).add(" zł");
         phone_header(a, ph, t, tab_names[2], sub.s);
         phone_canvas& c = *ph.canvas;
         core::message r0; r0.add("Etap ").add(g.stage + 1).add(": ").add(data::stages[g.stage].name);
@@ -756,8 +757,8 @@ namespace
 
         core::message sl = status_line(g);
         phone_text(a, t, list_x, row_py(4), clip(sl.s, 40).c_str(), sl.kind == core::bad ? ink::late : ink::dim);
-        core::message sc; sc.add("Wynik ").add(g.score).add("  Budżet ").add(g.cash).add(" zł");
-        phone_text(a, t, list_x, row_py(5), sc.s, ink::dim);
+        core::message sc; sc.add("Szczęście ").add(g.luck()).add("  Kryt ").add(g.crit_pct()).add("%  Unik ").add(g.dodge_pct()).add("%");
+        phone_text(a, t, list_x, row_py(5), clip(sc.s, 34).c_str(), ink::dim);
     }
 
     void tab_gear(app& a, phone_screen& ph, page_sprites& t)   // Sprzęt: narzędzie + kask, rękawice, kamizelka
@@ -1535,9 +1536,16 @@ namespace
                 if(floaters.full()) floaters.erase(floaters.begin());
                 floaters.push_back(floater());
                 floater& f = floaters.back();
-                core::message m; m.add("-").add(g.hits[i].amount);
+                const core::hit& h = g.hits[i];
+                core::message m;
+                if(h.kind == core::hit_dodge) m.add("Unik!");
+                else if(h.kind == core::hit_crit) m.add("KRYT! -").add(h.amount);
+                else m.add("-").add(h.amount);
                 bn::fixed_point p = world(g.hits[i].x, g.hits[i].y);
-                a.text.set_palette_item(g.hits[i].on_hero ? bn::sprite_palette_items::font_map_bad : bn::sprite_items::font_8x16.palette_item());
+                a.text.set_palette_item(h.kind == core::hit_dodge ? bn::sprite_palette_items::font_map_good
+                                      : h.kind == core::hit_crit ? bn::sprite_palette_items::font_map_loot
+                                      : h.on_hero ? bn::sprite_palette_items::font_map_bad : bn::sprite_items::font_8x16.palette_item());
+                if(h.kind == core::hit_crit) { flash_color = bn::color(31, 27, 8); flash_timer = 5; }   // krótki żółty błysk
                 a.text.generate(p.x(), p.y() - 12, m.s, f.sprites);
                 a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
                 for(bn::sprite_ptr& sp : f.sprites) { sp.set_camera(cam); sp.set_z_order(-60); }
