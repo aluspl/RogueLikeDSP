@@ -799,7 +799,7 @@ namespace core
                     slam_counter = 0;
                     slam_timer = 2;
                     slam_x = hero.x; slam_y = hero.y;
-                    push(message().add(ed.name).add(" szykuje uderzenie!").as(bad));
+                    push(message().add("Cios bossa za 2 tury!").as(bad));
                     return;
                 }
             }

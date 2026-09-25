@@ -26,3 +26,6 @@ GBA/*.gba
 GBA/*.elf
 GBA/core_tests
 GBA/*.sav
+GBA/scn*.gba
+GBA/scn*.elf
+GBA/build_scn*/

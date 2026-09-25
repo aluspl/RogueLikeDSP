@@ -69,6 +69,9 @@
 #include "phone_tiles.h"
 #include "screen_info.h"
 #include "font_widths.h"
+#ifdef PB_SCENARIO
+#include "debug_scenarios.h"   // tylko buildy testowe playtestera
+#endif
 
 namespace
 {
@@ -335,6 +338,9 @@ namespace
             if((bn::keypad::a_pressed() || bn::keypad::start_pressed()) && core::class_unlocked(a.save, a.chosen_class))
             {
                 a.g->new_run(a.chosen_class, a.seed_counter * 2654435761u + 12345u, a.chosen_diff, core::mods(a.save));
+#ifdef PB_SCENARIO
+                debug_scenario::apply(*a.g, PB_SCENARIO);
+#endif
                 ++a.save.runs;
                 bn::sram::write(a.save);
                 wait_release();
@@ -1098,18 +1104,27 @@ namespace
         particle_pool fx_particles(cam);
 
         // Półprzezroczyste ciemne paski pod HUD (u góry) i dziennikiem (u dołu, tylko gdy są komunikaty).
+        // GBA ma 4 warstwy tła: mapa, baner, paski - telefon (2 warstwy) wymaga chwilowego zwolnienia pasków.
         bn::unique_ptr<phone_canvas> strips(new phone_canvas());
-        bn::regular_bg_ptr strip_bg = make_canvas_bg(*strips);
-        bn::regular_bg_map_ptr strip_map = strip_bg.map();
-        strip_bg.set_priority(1);
-        strip_bg.set_blending_enabled(true);
-        bn::blending::set_transparency_alpha(bn::fixed(0.55));
+        bn::optional<bn::regular_bg_ptr> strip_bg;
+        bn::optional<bn::regular_bg_map_ptr> strip_map;
+        bool strips_bottom = false;
+        auto create_strips = [&]() {
+            strip_bg = make_canvas_bg(*strips);
+            strip_map = strip_bg->map();
+            strip_bg->set_priority(1);
+            strip_bg->set_blending_enabled(true);
+            bn::blending::set_transparency_alpha(bn::fixed(0.55));
+        };
+        auto release_strips = [&]() { strip_map.reset(); strip_bg.reset(); };
         auto draw_strips = [&](bool bottom) {
+            strips_bottom = bottom;
             strips->clear();
             for(int x = 0; x < 30; ++x) { strips->set(x, 0, phone_tile::fill_dark); strips->set(x, 1, phone_tile::fill_dark); }
             if(bottom) for(int y = 16; y < 20; ++y) for(int x = 0; x < 30; ++x) strips->set(x, y, phone_tile::fill_dark);
-            strip_map.reload_cells_ref();
+            if(strip_map) strip_map->reload_cells_ref();
         };
+        create_strips();
         draw_strips(false);
         int log_timer = 0, log_seen = g.log_serial;
 
@@ -1663,7 +1678,7 @@ namespace
                 hp_left.set_visible(false); hp_right.set_visible(false);
                 hide_mini_bars(); target_marker.set_visible(false); status_sprite.set_visible(false);
                 power_icon.set_visible(false); power_text.clear(); shown_cd = -1;
-                strip_bg.set_visible(false);
+                release_strips();
                 banner.hide();
                 fx_particles.list.clear();
                 pause_result pr = run_phone(a);
@@ -1679,7 +1694,8 @@ namespace
                 bg.set_visible(true);
                 hero.set_visible(true);
                 hp_left.set_visible(true); hp_right.set_visible(true);
-                strip_bg.set_visible(true);
+                create_strips();
+                draw_strips(strips_bottom);
                 snap_next = true;
                 refresh();
                 hold = 0;
@@ -2092,6 +2108,9 @@ int main()
     bn::core::init();
     app a;
     a.save = load_save();
+#ifdef PB_SCENARIO
+    debug_scenario::unlock_all(a.save);
+#endif
     bn::unique_ptr<core::game> game(new core::game());
     a.g = game.get();
     a.has_run = load_run(a);   // tylko sprawdzenie; start i tak idzie przez tytuł
