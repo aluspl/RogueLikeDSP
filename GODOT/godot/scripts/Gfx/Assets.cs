@@ -73,13 +73,13 @@ public static class Assets
     public static Rect2 AnimFrame(int row, int k) => new(k * Actor, row * Actor, Actor, Actor);
 
     /// <summary>Czy klatka ma animację chodu (zawody, problemy budowy, bossowie).</summary>
-    public static bool HasWalk(int frame) => frame is >= 0 and < 15 or 46 or 47;
+    public static bool HasWalk(int frame) => frame is >= 0 and < 15 or 46 or 47 or 50;
 
     /// <summary>Region klatki size x size w pionowym pasku.</summary>
     public static Rect2 Frame(int index, int size) => new(0, index * size, size, size);
 
-    /// <summary>Druga klatka animacji (anim_b z main.cpp): zawody i wrogowie 0..14 -> +27, bossowie 46-47 -> 48-49.</summary>
-    public static int AnimB(int frame) => frame < 15 ? frame + FrameAnimB : frame + 2;
+    /// <summary>Druga klatka animacji (anim_b z main.cpp): zawody i wrogowie 0..14 -> +27, bossowie 46-47 -> 48-49, 50 -> 51.</summary>
+    public static int AnimB(int frame) => frame < 15 ? frame + FrameAnimB : (frame < 48 ? frame + 2 : frame + 1);
 
     /// <summary>Klatka znajdźki jak pickup_frame() w main.cpp.</summary>
     public static int PickupFrame(in Pickup p) => p.Type switch
