@@ -3,7 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
+    <RollForward>Major</RollForward>
 
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
@@ -18,6 +19,13 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="LifeLike.Core" />
+    <Using Include="LifeLike.Core.Data" />
+  </ItemGroup>
+
+  <!-- Kopia danych z migawki GBA i złote przebiegi z GBA/tests/golden_dump.cpp (patrz README). -->
+  <ItemGroup>
+    <None Include="golden/*.json" CopyToOutputDirectory="PreserveNewest" LinkBase="golden" />
   </ItemGroup>
 
   <ItemGroup>

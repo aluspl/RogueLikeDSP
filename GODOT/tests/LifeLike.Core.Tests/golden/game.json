@@ -1,0 +1,858 @@
+{
+  "classes": [
+    {
+      "id": "kierownik",
+      "name": "Kierownik budowy",
+      "desc": "Trzyma harmonogram w ryzach.",
+      "maxHealth": 30,
+      "strength": 3,
+      "agility": 3,
+      "intelligence": 5,
+      "defense": 3,
+      "weapon": "dziennik",
+      "frame": 0,
+      "ability": {
+        "name": "Odprawa",
+        "desc": "Ogłusza widocznych",
+        "effect": "stun",
+        "cooldown": 15
+      }
+    },
+    {
+      "id": "murarz",
+      "name": "Murarz",
+      "desc": "Twardy jak pustak.",
+      "maxHealth": 32,
+      "strength": 5,
+      "agility": 2,
+      "intelligence": 1,
+      "defense": 4,
+      "weapon": "kielnia",
+      "frame": 1,
+      "ability": {
+        "name": "Ścianka",
+        "desc": "Mur przed wrogiem",
+        "effect": "wall",
+        "cooldown": 15
+      }
+    },
+    {
+      "id": "ciesla",
+      "name": "Cieśla-dekarz",
+      "desc": "Gwoździe wbija z daleka.",
+      "maxHealth": 30,
+      "strength": 4,
+      "agility": 4,
+      "intelligence": 1,
+      "defense": 3,
+      "weapon": "gwozdziarka",
+      "frame": 2,
+      "ability": {
+        "name": "Seria",
+        "desc": "Gwoździe we wszystkich",
+        "effect": "volley",
+        "cooldown": 12
+      }
+    },
+    {
+      "id": "elektryk",
+      "name": "Elektryk",
+      "desc": "Wie, gdzie jest faza.",
+      "maxHealth": 24,
+      "strength": 2,
+      "agility": 4,
+      "intelligence": 5,
+      "defense": 2,
+      "weapon": "probnik",
+      "frame": 3,
+      "ability": {
+        "name": "Łańcuch",
+        "desc": "Prąd skacze po celach",
+        "effect": "chain",
+        "cooldown": 12
+      }
+    },
+    {
+      "id": "hydraulik",
+      "name": "Hydraulik",
+      "desc": "Żaden przeciek mu nie straszny.",
+      "maxHealth": 32,
+      "strength": 4,
+      "agility": 3,
+      "intelligence": 3,
+      "defense": 3,
+      "weapon": "klucz",
+      "frame": 4,
+      "ability": {
+        "name": "Zawór",
+        "desc": "Odpycha wrogów i leczy",
+        "effect": "flush",
+        "cooldown": 20
+      }
+    },
+    {
+      "id": "glazurnik",
+      "name": "Glazurnik",
+      "desc": "Precyzja co do fugi.",
+      "maxHealth": 30,
+      "strength": 3,
+      "agility": 5,
+      "intelligence": 2,
+      "defense": 3,
+      "weapon": "szlifierka",
+      "frame": 5,
+      "ability": {
+        "name": "Wirówka",
+        "desc": "Tnie wszystkich dookoła",
+        "effect": "spin",
+        "cooldown": 10
+      }
+    }
+  ],
+  "weapons": [
+    {
+      "id": "dziennik",
+      "name": "Dziennik budowy",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 2,
+      "scalesWith": "intelligence"
+    },
+    {
+      "id": "kielnia",
+      "name": "Kielnia",
+      "minDamage": 3,
+      "maxDamage": 5,
+      "range": 1,
+      "scalesWith": "strength"
+    },
+    {
+      "id": "gwozdziarka",
+      "name": "Gwoździarka",
+      "minDamage": 2,
+      "maxDamage": 3,
+      "range": 3,
+      "scalesWith": "agility"
+    },
+    {
+      "id": "probnik",
+      "name": "Próbnik napięcia",
+      "minDamage": 3,
+      "maxDamage": 5,
+      "range": 2,
+      "scalesWith": "intelligence"
+    },
+    {
+      "id": "klucz",
+      "name": "Klucz nastawny",
+      "minDamage": 3,
+      "maxDamage": 6,
+      "range": 1,
+      "scalesWith": "strength"
+    },
+    {
+      "id": "szlifierka",
+      "name": "Szlifierka",
+      "minDamage": 3,
+      "maxDamage": 7,
+      "range": 1,
+      "scalesWith": "agility"
+    },
+    {
+      "id": "lom",
+      "name": "Łom",
+      "minDamage": 3,
+      "maxDamage": 6,
+      "range": 1,
+      "scalesWith": "strength"
+    },
+    {
+      "id": "wkretarka",
+      "name": "Wkrętarka",
+      "minDamage": 2,
+      "maxDamage": 5,
+      "range": 2,
+      "scalesWith": "agility"
+    },
+    {
+      "id": "laser",
+      "name": "Poziomica laserowa",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 4,
+      "scalesWith": "intelligence"
+    },
+    {
+      "id": "mlot",
+      "name": "Młot wyburzeniowy",
+      "minDamage": 5,
+      "maxDamage": 8,
+      "range": 1,
+      "scalesWith": "strength"
+    }
+  ],
+  "enemies": [
+    {
+      "id": "przeciek",
+      "name": "Przeciek",
+      "maxHealth": 6,
+      "minDamage": 1,
+      "maxDamage": 3,
+      "defense": 0,
+      "sight": 6,
+      "score": 10,
+      "frame": 6,
+      "desc": "Kapie tam, gdzie nie powinno",
+      "slam": false,
+      "onHit": {
+        "status": "slip",
+        "chancePct": 14,
+        "turns": 2
+      }
+    },
+    {
+      "id": "zwarcie",
+      "name": "Zwarcie",
+      "maxHealth": 5,
+      "minDamage": 2,
+      "maxDamage": 4,
+      "defense": 0,
+      "sight": 7,
+      "score": 12,
+      "frame": 7,
+      "desc": "Iskrzy przy każdej okazji",
+      "slam": false,
+      "onHit": {
+        "status": "shock",
+        "chancePct": 17,
+        "turns": 1
+      }
+    },
+    {
+      "id": "plesn",
+      "name": "Pleśń",
+      "maxHealth": 9,
+      "minDamage": 1,
+      "maxDamage": 2,
+      "defense": 1,
+      "sight": 4,
+      "score": 10,
+      "frame": 8,
+      "desc": "Lubi wilgoć i zimne ściany",
+      "slam": false,
+      "onHit": {
+        "status": "poison",
+        "chancePct": 24,
+        "turns": 3
+      }
+    },
+    {
+      "id": "kornik",
+      "name": "Kornik",
+      "maxHealth": 7,
+      "minDamage": 1,
+      "maxDamage": 3,
+      "defense": 1,
+      "sight": 5,
+      "score": 10,
+      "frame": 9,
+      "desc": "Drąży więźbę po cichu",
+      "slam": false
+    },
+    {
+      "id": "papierologia",
+      "name": "Papierologia",
+      "maxHealth": 12,
+      "minDamage": 1,
+      "maxDamage": 2,
+      "defense": 2,
+      "sight": 4,
+      "score": 15,
+      "frame": 10,
+      "desc": "Brakuje jednej pieczątki",
+      "slam": false,
+      "onHit": {
+        "status": "paper",
+        "chancePct": 35,
+        "turns": 0
+      }
+    },
+    {
+      "id": "dostawa",
+      "name": "Opóźniona dostawa",
+      "maxHealth": 10,
+      "minDamage": 2,
+      "maxDamage": 4,
+      "defense": 1,
+      "sight": 6,
+      "score": 15,
+      "frame": 11,
+      "desc": "Będzie jutro. Na pewno.",
+      "slam": false
+    },
+    {
+      "id": "ulewa",
+      "name": "Ulewa",
+      "maxHealth": 8,
+      "minDamage": 2,
+      "maxDamage": 3,
+      "defense": 0,
+      "sight": 8,
+      "score": 12,
+      "frame": 12,
+      "desc": "Zawsze tuż przed dachem",
+      "slam": false,
+      "onHit": {
+        "status": "slip",
+        "chancePct": 28,
+        "turns": 3
+      }
+    },
+    {
+      "id": "budzet",
+      "name": "Przekroczony budżet",
+      "maxHealth": 14,
+      "minDamage": 2,
+      "maxDamage": 5,
+      "defense": 2,
+      "sight": 6,
+      "score": 25,
+      "frame": 13,
+      "desc": "Rośnie szybciej niż mury",
+      "slam": false
+    },
+    {
+      "id": "termin",
+      "name": "Nieprzekraczalny Termin",
+      "maxHealth": 40,
+      "minDamage": 3,
+      "maxDamage": 6,
+      "defense": 3,
+      "sight": 12,
+      "score": 200,
+      "frame": 14,
+      "desc": "Nieprzesuwalny. Podobno.",
+      "slam": true,
+      "onHit": {
+        "status": "paper",
+        "chancePct": 28,
+        "turns": 0
+      }
+    },
+    {
+      "id": "betoniarka",
+      "name": "Zepsuta Betoniarka",
+      "desc": "Kręci się, ale nie tam",
+      "maxHealth": 30,
+      "minDamage": 3,
+      "maxDamage": 5,
+      "defense": 2,
+      "sight": 10,
+      "score": 150,
+      "frame": 46,
+      "slam": true
+    },
+    {
+      "id": "nawalnica",
+      "name": "Nawałnica",
+      "desc": "Leje jak z cebra",
+      "maxHealth": 36,
+      "minDamage": 3,
+      "maxDamage": 6,
+      "defense": 2,
+      "sight": 12,
+      "score": 180,
+      "frame": 47,
+      "slam": true,
+      "onHit": {
+        "status": "slip",
+        "chancePct": 35,
+        "turns": 3
+      }
+    }
+  ],
+  "stages": [
+    {
+      "name": "Fundamenty",
+      "enemies": [
+        "przeciek",
+        "kornik"
+      ],
+      "count": 5,
+      "hpPct": 100,
+      "dmgBonus": 0,
+      "act": 0
+    },
+    {
+      "name": "Mury parteru",
+      "enemies": [
+        "papierologia",
+        "dostawa",
+        "kornik"
+      ],
+      "count": 6,
+      "hpPct": 102,
+      "dmgBonus": 0,
+      "act": 0
+    },
+    {
+      "name": "Strop",
+      "enemies": [
+        "dostawa",
+        "budzet",
+        "kornik"
+      ],
+      "count": 6,
+      "hpPct": 104,
+      "dmgBonus": 0,
+      "act": 0,
+      "boss": "betoniarka"
+    },
+    {
+      "name": "Dach",
+      "enemies": [
+        "ulewa",
+        "kornik",
+        "przeciek"
+      ],
+      "count": 7,
+      "hpPct": 106,
+      "dmgBonus": 0,
+      "act": 1
+    },
+    {
+      "name": "Okna i drzwi",
+      "enemies": [
+        "dostawa",
+        "ulewa",
+        "papierologia"
+      ],
+      "count": 7,
+      "hpPct": 108,
+      "dmgBonus": 0,
+      "act": 1,
+      "boss": "nawalnica"
+    },
+    {
+      "name": "Instalacje",
+      "enemies": [
+        "zwarcie",
+        "przeciek",
+        "plesn"
+      ],
+      "count": 8,
+      "hpPct": 110,
+      "dmgBonus": 0,
+      "act": 2
+    },
+    {
+      "name": "Tynki i wylewki",
+      "enemies": [
+        "plesn",
+        "przeciek",
+        "zwarcie"
+      ],
+      "count": 8,
+      "hpPct": 112,
+      "dmgBonus": 0,
+      "act": 2
+    },
+    {
+      "name": "Wykończenie i odbiór",
+      "enemies": [
+        "plesn",
+        "budzet"
+      ],
+      "count": 6,
+      "hpPct": 115,
+      "dmgBonus": 0,
+      "act": 2,
+      "boss": "termin"
+    }
+  ],
+  "difficulties": [
+    {
+      "id": "latwy",
+      "name": "Łatwy",
+      "hpPct": 80,
+      "dmgBonus": -1,
+      "scorePct": 50
+    },
+    {
+      "id": "normalny",
+      "name": "Normalny",
+      "hpPct": 100,
+      "dmgBonus": 0,
+      "scorePct": 100
+    },
+    {
+      "id": "trudny",
+      "name": "Trudny",
+      "hpPct": 125,
+      "dmgBonus": 0,
+      "scorePct": 150
+    }
+  ],
+  "defaultDifficulty": 1,
+  "newGamePlus": {
+    "hpPctPerTier": 20,
+    "dmgBonusPerTier": 1,
+    "scorePctPerTier": 50
+  },
+  "meta": {
+    "xpPerKill": 1,
+    "xpPerStage": 5,
+    "xpBoss": 20,
+    "startClasses": [
+      "kierownik",
+      "murarz",
+      "hydraulik"
+    ],
+    "classCost": 25,
+    "hardCost": 40,
+    "upgrades": [
+      {
+        "id": "kondycja",
+        "name": "Kondycja",
+        "desc": "+4 HP na start",
+        "effect": "hp",
+        "value": 4,
+        "costs": [
+          10,
+          20,
+          35
+        ]
+      },
+      {
+        "id": "bhp",
+        "name": "Szkolenie BHP",
+        "desc": "+1 obrona",
+        "effect": "def",
+        "value": 1,
+        "costs": [
+          15,
+          30
+        ]
+      },
+      {
+        "id": "fach",
+        "name": "Kurs fachowy",
+        "desc": "+1 obrażenia",
+        "effect": "dmg",
+        "value": 1,
+        "costs": [
+          20,
+          40
+        ]
+      },
+      {
+        "id": "termos",
+        "name": "Lepszy termos",
+        "desc": "Kawa leczy +4 HP",
+        "effect": "coffee",
+        "value": 4,
+        "costs": [
+          10,
+          20
+        ]
+      },
+      {
+        "id": "dostawy",
+        "name": "Dostawy",
+        "desc": "+1 znajdźka na etap",
+        "effect": "pickups",
+        "value": 1,
+        "costs": [
+          15,
+          30
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "weapon": "lom",
+        "cost": 0
+      },
+      {
+        "weapon": "wkretarka",
+        "cost": 20
+      },
+      {
+        "weapon": "laser",
+        "cost": 30
+      },
+      {
+        "weapon": "mlot",
+        "cost": 40
+      }
+    ]
+  },
+  "heroLevels": {
+    "thresholds": [
+      10,
+      25,
+      45,
+      70
+    ],
+    "hpPerLevel": 2,
+    "dmgLevels": [
+      5
+    ],
+    "defLevels": [
+      3
+    ]
+  },
+  "drops": {
+    "chancePct": 25,
+    "weights": {
+      "coffee": 40,
+      "helmet": 5,
+      "plan": 5,
+      "tool": 15,
+      "gear": 35
+    }
+  },
+  "badges": [
+    {
+      "id": "bez_usterek",
+      "name": "Bez usterek",
+      "desc": "Etap bez żadnych obrażeń",
+      "xp": 20
+    },
+    {
+      "id": "przed_terminem",
+      "name": "Przed terminem",
+      "desc": "Termin pokonany w 150 tur",
+      "xp": 30
+    },
+    {
+      "id": "seryjny",
+      "name": "Seryjny",
+      "desc": "8 problemów na jednym etapie",
+      "xp": 15
+    },
+    {
+      "id": "zawodowiec",
+      "name": "Zawodowiec",
+      "desc": "Poziom postaci 5",
+      "xp": 20
+    },
+    {
+      "id": "twardziel",
+      "name": "Twardziel",
+      "desc": "Wygrana na Trudnym",
+      "xp": 40
+    },
+    {
+      "id": "pelny_zespol",
+      "name": "Pełny zespół",
+      "desc": "Wygrana każdym zawodem",
+      "xp": 60
+    },
+    {
+      "id": "kolekcjoner",
+      "name": "Kolekcjoner",
+      "desc": "Znajdź wszystkie narzędzia",
+      "xp": 30
+    },
+    {
+      "id": "katalog",
+      "name": "Katalog usterek",
+      "desc": "Pokonaj każdy problem",
+      "xp": 30
+    },
+    {
+      "id": "osiedle",
+      "name": "Osiedle",
+      "desc": "Zbuduj 5 domów",
+      "xp": 50
+    }
+  ],
+  "story": {
+    "stages": [
+      {
+        "from": "Anna Nowak",
+        "text": "Działka nasza! Liczę na|mocne fundamenty. Uważaj|na wilgoć w wykopie."
+      },
+      {
+        "from": "Kierownik Marek",
+        "text": "Stal jest, papierów brak.|Papierologia już czeka.|Trzymaj się planu!"
+      },
+      {
+        "from": "Kierownik Marek",
+        "text": "Szalunki stoją, beton|jedzie. Oby dostawa|dojechała na czas!"
+      },
+      {
+        "from": "Anna Nowak",
+        "text": "Prognoza: ulewa. Zdążysz|z dachem przed deszczem?|Kornik też nie śpi."
+      },
+      {
+        "from": "Kierownik Marek",
+        "text": "Stan surowy zamknięty!|Okna na wymiar, drzwi|też. Ulewa nie odpuszcza."
+      },
+      {
+        "from": "Anna Nowak",
+        "text": "Elektryk i hydraulik|w jednym pokoju. Co|może pójść nie tak? ;)"
+      },
+      {
+        "from": "Kierownik Marek",
+        "text": "Tynki schną tydzień.|Pleśń tylko na to czeka.|Wietrz i nie odpuszczaj."
+      },
+      {
+        "from": "Anna Nowak",
+        "text": "Już widzę nasz salon.|Tylko ten Termin... Dasz|radę, mamy harmonogram!"
+      }
+    ],
+    "win": {
+      "from": "Anna Nowak",
+      "text": "Mamy klucze! Plan|pokonał chaos budowy.|Dziękujemy za wszystko!"
+    },
+    "lose": {
+      "from": "Kierownik Marek",
+      "text": "Budowa stoi. Spokojnie -|z lepszym planem pójdzie.|Wracamy na plac?"
+    },
+    "ngplus": {
+      "from": "Anna Nowak",
+      "text": "Znajomi też chcą dom.|Bierzesz kolejną budowę?|Termin już się szykuje."
+    },
+    "prologue": {
+      "from": "Anna Nowak",
+      "text": "Witaj na budowie! Plan|jest, ekipa też. Tylko|te problemy... Do dzieła!"
+    },
+    "prologueCaptions": [
+      "Działka przy ul. Budowlanej 7...",
+      "...a problemy już czekają."
+    ]
+  },
+  "equipment": {
+    "rarities": [
+      "Zwykły",
+      "Solidny",
+      "Markowy"
+    ],
+    "rarityRoll": {
+      "solidFrom": 70,
+      "brandFrom": 94,
+      "stageBonus": 5
+    },
+    "slots": [
+      {
+        "name": "Kask",
+        "stat": "def",
+        "items": [
+          [
+            "Kask budowlany",
+            1
+          ],
+          [
+            "Kask z latarką",
+            2
+          ],
+          [
+            "Kask markowy",
+            3
+          ]
+        ]
+      },
+      {
+        "name": "Rękawice",
+        "stat": "dmg",
+        "items": [
+          [
+            "Rękawice robocze",
+            1
+          ],
+          [
+            "Rękawice wzmacniane",
+            2
+          ],
+          [
+            "Rękawice markowe",
+            3
+          ]
+        ]
+      },
+      {
+        "name": "Kamizelka",
+        "stat": "hp",
+        "items": [
+          [
+            "Kamizelka odblaskowa",
+            4
+          ],
+          [
+            "Kamizelka ocieplana",
+            8
+          ],
+          [
+            "Kamizelka markowa",
+            12
+          ]
+        ]
+      }
+    ]
+  },
+  "acts": [
+    {
+      "name": "Stan surowy",
+      "bonusPerStage": 10,
+      "bonusPerKill": 2
+    },
+    {
+      "name": "Pod dachem",
+      "bonusPerStage": 10,
+      "bonusPerKill": 2
+    },
+    {
+      "name": "Wykończenie",
+      "bonusPerStage": 10,
+      "bonusPerKill": 2
+    }
+  ],
+  "slam": {
+    "every": 4,
+    "damageBonus": 2,
+    "radius": 1
+  },
+  "cash": {
+    "perScore": 5
+  },
+  "hurtownia": [
+    {
+      "id": "kawa",
+      "name": "Kawa z ekspresu",
+      "desc": "Pełne HP",
+      "price": 30,
+      "effect": "heal"
+    },
+    {
+      "id": "paczka",
+      "name": "Paczka sprzętu",
+      "desc": "Losowy sprzęt, co najmniej solidny",
+      "price": 50,
+      "effect": "gear"
+    },
+    {
+      "id": "narzedzie",
+      "name": "Nowe narzędzie",
+      "desc": "Losowe odblokowane narzędzie",
+      "price": 40,
+      "effect": "tool"
+    },
+    {
+      "id": "kondycja",
+      "name": "Siłownia",
+      "desc": "+3 max HP na tę budowę",
+      "price": 45,
+      "effect": "maxhp"
+    },
+    {
+      "id": "energetyk",
+      "name": "Energetyk",
+      "desc": "Moc od razu gotowa",
+      "price": 20,
+      "effect": "ability"
+    }
+  ],
+  "version": "v0.21.41"
+}
