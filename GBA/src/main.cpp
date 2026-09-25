@@ -263,6 +263,10 @@ namespace
             a.text.generate(116, -72, m.s, record);
             a.text.set_center_alignment();
         }
+        text_sprites version_text;   // numer wersji w lewym górnym rogu
+        a.text.set_left_alignment();
+        a.text.generate(-116, -72, data::version, version_text);
+        a.text.set_center_alignment();
         text_sprites shop_hint;
         a.text.generate(0, 66, "SELECT: telefon  B: pomoc", shop_hint);
         int frame = 0;

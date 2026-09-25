@@ -132,6 +132,7 @@ L += [f"inline constexpr int level_thresholds[] = {{ {', '.join(map(str, hl['thr
       f"inline constexpr int hp_per_level = {hl['hpPerLevel']};",
       f"inline constexpr int dmg_levels_mask = {sum(1 << l for l in hl['dmgLevels'])};",
       f"inline constexpr int def_levels_mask = {sum(1 << l for l in hl['defLevels'])};", ""]
+L += [f"inline constexpr const char* version = {s(d['version'])};   // numer wersji (ekran tytułowy, changelog)", ""]
 L += [f"inline constexpr int classes_count = {len(d['classes'])};",
       f"inline constexpr int stages_count = {len(d['stages'])};",
       f"inline constexpr int difficulties_count = {len(d['difficulties'])};",

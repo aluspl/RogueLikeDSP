@@ -179,6 +179,8 @@ inline constexpr int hp_per_level = 2;
 inline constexpr int dmg_levels_mask = 32;
 inline constexpr int def_levels_mask = 8;
 
+inline constexpr const char* version = "v0.2141";   // numer wersji (ekran tytułowy, changelog)
+
 inline constexpr int classes_count = 6;
 inline constexpr int stages_count = 8;
 inline constexpr int difficulties_count = 3;
