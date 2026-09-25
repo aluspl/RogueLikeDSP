@@ -52,6 +52,8 @@ public static class GoldenSnapshot
         K("thermos", g.Thermos.ToString());
         K("thermosCap", g.ThermosCap().ToString());
         K("stageEvent", g.StageEvent.ToString());
+        K("weather", g.Weather.ToString());
+        K("weaponRange", g.WeaponRange().ToString());
         K("counters", Arr([g.PowersUsed, g.BrandFound, g.CleanBosses, g.BossWakeDamage]));
         K("stats", Arr([g.HeroStat(Stat.Str), g.HeroStat(Stat.Agi), g.HeroStat(Stat.Intel), g.Luck(), g.CritPct(), g.SightRadius(), g.AbilityCooldown()]));
         K("offer", Arr([g.OfferSlot, g.OfferRarity, g.OfferTrait]));

@@ -29,6 +29,9 @@ public static class Assets
     public const int PDust = 0, PSpark = 3, PConfetti = 5, PStar = 9, PRing = 10, PBrick = 12, PNail = 13, PBolt = 14;
     public const int PDrop = 16, PPlus = 17, PZzz = 18, PAlert = 19, PMarker = 20, PStatus = 21;
 
+    // menu_icons.png: 0 atak, 1 termos, 2 czekaj, 3 ramka, 4 kłódka, 5 strzałki, 6-10 pogoda dnia (wg WeatherEffect)
+    public const int MenuWeather = 6;
+
     // tiles/stage_N.png: 4 podłogi, 2 podłogi z cieniem muru, mur, lico muru, schody
     public const int TileFloor = 0, TileFloorShadow = 4, TileWall = 6, TileWallFace = 7, TileStairs = 8;
 

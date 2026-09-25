@@ -5,7 +5,7 @@ using CoreGame = LifeLike.Core.Game;
 namespace LifeLike.Game.Hud;
 
 /// <summary>
-/// HUD w trakcie budowy (warstwa nad mapą): błyski ekranu, górny pasek (HP, poziom, etap, stany, termos, moc)
+/// HUD w trakcie budowy (warstwa nad mapą): pogoda dnia (deszcz, śnieg, wiatr, upał), błyski ekranu, górny pasek (HP, poziom, etap, stany, termos, moc)
 /// i dolny pas dziennika / podpowiedzi menu akcji. Układ jak na GBA; warstwa w skali Layout.HudScale
 /// (większy tekst niż telefon i plansze), szerokość od rozmiaru ekranu.
 /// </summary>
@@ -15,6 +15,7 @@ public partial class HudLayer : ScaledLayer
     {
     }
 
+    private readonly WeatherOverlay _weather = new();
     private readonly ScreenTint _tint = new();
     private readonly HudTop _top = new();
     private readonly HudLog _log = new();
@@ -25,6 +26,7 @@ public partial class HudLayer : ScaledLayer
     public override void _Ready()
     {
         Layer = 1;
+        Root.AddChild(_weather);
         Root.AddChild(_tint);
         Root.AddChild(_top);
         Root.AddChild(_log);
@@ -56,6 +58,7 @@ public partial class HudLayer : ScaledLayer
 
     public void ShowGame(CoreGame g)
     {
+        _weather.SetGame(g);
         _top.SetGame(g);
         _log.SetGame(g);
         _tint.LowHp = g.Hero.Hp > 0 && g.Hero.Hp * 4 <= g.Hero.MaxHp;

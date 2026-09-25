@@ -45,7 +45,7 @@ public static class PlayCommands
         if (button != MouseButton.Left) return false;
         var cell = view.ScreenToGrid(view.GetGlobalMousePosition());
         var ei = g.EnemyAt(cell.X, cell.Y);
-        if (ei >= 0 && g.Visible(cell.X, cell.Y) && CoreGame.Cheb(g.Hero.X, g.Hero.Y, cell.X, cell.Y) <= g.Weapon.Range)
+        if (ei >= 0 && g.Visible(cell.X, cell.Y) && CoreGame.Cheb(g.Hero.X, g.Hero.Y, cell.X, cell.Y) <= g.WeaponRange())
             return g.PlayerAttack(ei);
         int dx = cell.X - g.Hero.X, dy = cell.Y - g.Hero.Y;
         if (dx == 0 && dy == 0) return g.PlayerWait();

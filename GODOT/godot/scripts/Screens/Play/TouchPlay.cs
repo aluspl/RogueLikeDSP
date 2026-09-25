@@ -209,7 +209,7 @@ public sealed class TouchPlay
         var ei = g.EnemyAt(cell.X, cell.Y);
         if (ei >= 0 && g.Visible(cell.X, cell.Y))
         {
-            if (CoreGame.Cheb(g.Hero.X, g.Hero.Y, cell.X, cell.Y) <= g.Weapon.Range)
+            if (CoreGame.Cheb(g.Hero.X, g.Hero.Y, cell.X, cell.Y) <= g.WeaponRange())
             {
                 _app.AfterAction(g.PlayerAttack(ei));
                 return;

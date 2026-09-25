@@ -50,6 +50,8 @@ public sealed partial class Game
     public int BossWakeDamage = -1;
     /// <summary>Wydarzenie na placu na bieżącym etapie (GameData.SiteEvents, -1 = brak).</summary>
     public sbyte StageEvent = -1;
+    /// <summary>Pogoda dnia na bieżącym etapie (GameData.Weather).</summary>
+    public sbyte Weather;
     /// <summary>Budżet budowy (zł) – za usunięte problemy i premie aktów, wydawany w Hurtowni.</summary>
     public int Cash;
     public int ActKills;
@@ -117,6 +119,40 @@ public sealed partial class Game
     public ClassDef CDef => D.Classes[Cls];
     public DifficultyDef DDef => D.Difficulties[Diff];
     public WeaponDef Weapon => D.Weapons[WeaponOverride >= 0 ? WeaponOverride : CDef.Weapon];
+
+    /// <summary>Zasięg broni z pogodą: wiatr skraca zasięg broni dalekiego zasięgu (nie mniej niż 1).</summary>
+    public int WeaponRange()
+    {
+        var rg = Weapon.Range;
+        return WeatherIs(WeatherEffect.Wind) && rg > 1 ? Math.Max(1, rg - WDef.Value) : rg;
+    }
+
+    // ------------------------------------------------------------------ pogoda dnia
+    public WeatherDef WDef => D.Weather[Weather];
+
+    public bool WeatherIs(WeatherEffect e) => D.Weather[Weather].Effect == e;
+
+    /// <summary>Pogoda dnia: losowanie wagami spośród dozwolonych na etapie s.</summary>
+    public int RollWeather(int s)
+    {
+        var total = 0;
+        for (var i = 0; i < D.Weather.Length; ++i)
+        {
+            if ((D.Weather[i].StagesMask & (1 << s)) != 0) total += D.Weather[i].Weight;
+        }
+        var roll = R.Range(1, total);
+        for (var i = 0; i < D.Weather.Length; ++i)
+        {
+            if ((D.Weather[i].StagesMask & (1 << s)) == 0) continue;
+            if (roll <= D.Weather[i].Weight) return i;
+            roll -= D.Weather[i].Weight;
+        }
+        return 0;
+    }
+
+    /// <summary>Deszcz: kałuże na części pól podłogi (stały wzór zależny od etapu); wejście w kałużę = poślizg.</summary>
+    public bool Puddle(int x, int y) =>
+        WeatherIs(WeatherEffect.Rain) && Lv.At(x, y) == Tile.Floor && (x * 7 + y * 13 + Stage * 5) % WDef.Value == 0;
 
     public int StatusTurns(StatusEffect s) => HeroStatus[(int)s];
 
@@ -458,8 +494,16 @@ public sealed partial class Game
             Pickups[PickupsCount++] = new Pickup(x, y, i == 0 ? PickupType.Coffee : (PickupType)R.Range(0, 2), true);
         }
         Push(Msg("Etap ").Add(Stage + 1).Add(": ").Add(sd.Name));
+        Weather = (sbyte)RollWeather(s); // pogoda dnia
+        if (WDef.Effect != WeatherEffect.None)
+            Push(Msg("Pogoda: ").Add(WDef.Name).Add(" (").Add(WDef.Short).Add(")").As(WDef.Bad ? LogKind.Bad : LogKind.Good));
         StageEvent = -1; // wydarzenie na placu: nie na pierwszym etapie i nie u bossa
-        if (s > 0 && sd.Boss < 0 && R.Range(1, 100) <= D.SiteEventChancePct) ApplyEvent(R.Range(0, D.SiteEvents.Length - 1));
+        if (s > 0 && sd.Boss < 0 && R.Range(1, 100) <= D.SiteEventChancePct)
+        {
+            var e = R.Range(0, D.SiteEvents.Length - 1);
+            // niekorzystna pogoda i niekorzystne wydarzenie naraz to za dużo: wydarzenie przepada
+            if (!(D.WeatherNoBadStack && WDef.Bad && !D.SiteEvents[e].Good)) ApplyEvent(e);
+        }
         UpdateFov();
     }
 

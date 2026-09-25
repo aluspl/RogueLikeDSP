@@ -106,6 +106,10 @@ public sealed partial class Game
                     Collect();
                 }
             }
+            else if (Puddle(Hero.X, Hero.Y)) // deszcz: kałuża = poślizg
+            {
+                ApplyStatus(StatusEffect.Slip, 2);
+            }
         }
         else
         {
@@ -122,7 +126,7 @@ public sealed partial class Game
         {
             var e = Enemies[i];
             var d = Cheb(Hero.X, Hero.Y, e.X, e.Y);
-            if (e.Alive && d <= Weapon.Range && d < bd)
+            if (e.Alive && d <= WeaponRange() && d < bd)
             {
                 bd = d;
                 best = i;
@@ -135,7 +139,7 @@ public sealed partial class Game
     public int TargetsInRange(Span<sbyte> output)
     {
         var n = 0;
-        for (var d = 1; d <= Weapon.Range; ++d)
+        for (var d = 1; d <= WeaponRange(); ++d)
         {
             for (var i = 0; i < EnemiesCount && n < output.Length; ++i)
             {
@@ -152,7 +156,7 @@ public sealed partial class Game
         if (St != GameStatus.Playing || ei < 0 || ei >= EnemiesCount) return false;
         if (ShockedTurn()) return true;
         var e = Enemies[ei];
-        if (!e.Alive || !Visible(e.X, e.Y) || Cheb(Hero.X, Hero.Y, e.X, e.Y) > Weapon.Range) return false;
+        if (!e.Alive || !Visible(e.X, e.Y) || Cheb(Hero.X, Hero.Y, e.X, e.Y) > WeaponRange()) return false;
         HeroAttack(ei);
         EndTurn();
         return true;
@@ -165,7 +169,7 @@ public sealed partial class Game
         var t = NearestTarget();
         if (t < 0)
         {
-            Push(Msg("Brak celu w zasięgu ").Add(Weapon.Range));
+            Push(Msg("Brak celu w zasięgu ").Add(WeaponRange()));
             return false;
         }
         HeroAttack(t);
@@ -449,6 +453,7 @@ public sealed partial class Game
             }
             return;
         }
+        if (WeatherIs(WeatherEffect.Frost) && i != Boss && Turns % WDef.Value == 0) return; // mróz: problemy stoją
         int dx = Math.Sign(Hero.X - e.X), dy = Math.Sign(Hero.Y - e.Y);
         var xfirst = Math.Abs(Hero.X - e.X) >= Math.Abs(Hero.Y - e.Y);
         Span<int> tries = [xfirst ? dx : 0, xfirst ? 0 : dy, xfirst ? 0 : dx, xfirst ? dy : 0];

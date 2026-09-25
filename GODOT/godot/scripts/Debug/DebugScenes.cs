@@ -16,7 +16,7 @@ public sealed class DebugScenes
         "title", "classselect", "profile", "catalog", "estate", "team", "training", "game", "combat", "offer", "menu",
         "overview", "phone-tasks", "phone-issues", "phone-start", "phone-gear", "phone-costs", "card", "perks", "schedule",
         "hurtownia", "boss", "endmsg", "end", "banners", "map", "aim", "preview", "prologue",
-        "schedule-tip", "help", "settings", "settings-title", "walk",
+        "schedule-tip", "help", "settings", "settings-title", "walk", "weather-rain", "weather-snow", "weather-wind", "weather-heat",
     ];
 
     private readonly App _app;
@@ -187,6 +187,23 @@ public sealed class DebugScenes
                 Flow.Game.HandleInput(InputCmd.Of(GameAction.A));
                 Flow.Game.Aim.Cycle(1);
                 break;
+            case "weather-rain": // pogoda dnia: nakładka, kałuże (deszcz), ikona w HUD
+            case "weather-snow":
+            case "weather-wind":
+            case "weather-heat":
+            {
+                banners.Clear();
+                var eff = scene switch
+                {
+                    "weather-rain" => WeatherEffect.Rain,
+                    "weather-snow" => WeatherEffect.Frost,
+                    "weather-wind" => WeatherEffect.Wind,
+                    _ => WeatherEffect.Heat,
+                };
+                g.Weather = (sbyte)Array.FindIndex(_app.Session.Data.Weather, w => w.Effect == eff);
+                _app.Refresh();
+                break;
+            }
             case "preview": // trzymane B: karta najbliższego problemu
                 banners.Clear();
                 _app.Nodes.Touch.Bar.Pressed = Touch.BarButton.Wait;

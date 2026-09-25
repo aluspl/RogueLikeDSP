@@ -90,6 +90,7 @@ public sealed partial class Game
         w.Write(CleanBosses);
         w.Write(BossWakeDamage);
         w.Write(StageEvent);
+        w.Write(Weather);
         foreach (var v in new[] { Cash, ActKills, ActBonus }) w.Write(v);
         w.Write(ActCleared);
         w.Write(SlamTimer);
@@ -177,6 +178,7 @@ public sealed partial class Game
         CleanBosses = r.ReadByte();
         BossWakeDamage = r.ReadInt32();
         StageEvent = r.ReadSByte();
+        Weather = r.ReadSByte();
         Cash = r.ReadInt32();
         ActKills = r.ReadInt32();
         ActBonus = r.ReadInt32();

@@ -108,7 +108,7 @@ public sealed class Aiming
         var g = _app.Session.Game;
         if (_count == 0)
         {
-            N.Hud.ShowHint($"Celowanie: brak celu w zasięgu (z{g.Weapon.Range})", ButtonNames.Pick("Puść Spację: wróć", "Puść Atak: wróć"));
+            N.Hud.ShowHint($"Celowanie: brak celu w zasięgu (z{g.WeaponRange()})", ButtonNames.Pick("Puść Spację: wróć", "Puść Atak: wróć"));
             return;
         }
         var e = g.Enemies[Target];

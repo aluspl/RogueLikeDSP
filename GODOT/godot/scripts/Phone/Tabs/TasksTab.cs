@@ -1,10 +1,11 @@
 using LifeLike.Core;
+using LifeLike.Core.Data;
 using LifeLike.Game.Gfx;
 using CoreGame = LifeLike.Core.Game;
 
 namespace LifeLike.Game.Phone.Tabs;
 
-/// <summary>Zadania = harmonogram budowy: etapy z pastylkami Gotowe / W trakcie / Do zrob., wydarzenie na placu, postęp (tab_tasks na GBA).</summary>
+/// <summary>Zadania = harmonogram budowy: etapy z pastylkami Gotowe / W trakcie / Do zrob., wydarzenie na placu, pogoda dnia (tab_tasks na GBA).</summary>
 public sealed class TasksTab : PhonePage
 {
     private readonly CoreGame _g;
@@ -47,7 +48,10 @@ public sealed class TasksTab : PhonePage
         }
         var r1 = p.RowY(c2, 1);
         p.Divider(c2, 1);
-        p.Text(p.TextX(c2), r1, "Postęp", Ink.Dim);
-        p.Bar(p.TextX(c2) + 46, r1, c2.End.X - 10 - (p.TextX(c2) + 46), _g.Stage, n, Pal.Brand);
+        var wd = _g.WDef; // pogoda dnia
+        var calm = wd.Effect == WeatherEffect.None;
+        p.Stripe(c2, 1, wd.Bad ? Pal.Late : calm ? Pal.Todo : Pal.Done);
+        var wp = p.Pill(c2.End.X - 6, r1, wd.Short, wd.Bad ? PillKind.Late : calm ? PillKind.Gray : PillKind.Done);
+        p.Text(p.TextX(c2), r1, $"Pogoda: {wd.Name}", Ink.Dark, TextAlign.Left, c2.End.X - 12 - wp - p.TextX(c2));
     }
 }

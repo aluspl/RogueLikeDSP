@@ -8,9 +8,10 @@ public sealed partial class Game
     /// <summary>Ranga mocy rośnie z poziomem postaci: II od 3., III od 5. poziomu.</summary>
     public int AbilityRank() => 1 + (HeroLevel >= 3 ? 1 : 0) + (HeroLevel >= 5 ? 1 : 0);
 
-    /// <summary>Każda ranga skraca odnowienie o 2 tury (minimum 4), cecha sprzętu dalej (minimum 3).</summary>
+    /// <summary>Każda ranga skraca odnowienie o 2 tury (minimum 4), cecha sprzętu dalej (minimum 3); upał wydłuża.</summary>
     public int AbilityCooldown() =>
-        Math.Max(3, Math.Max(4, CDef.AbilityCooldown - 2 * (AbilityRank() - 1)) - TraitBonus(TraitEffect.Cooldown) - Bonus.Cooldown);
+        Math.Max(3, Math.Max(4, CDef.AbilityCooldown - 2 * (AbilityRank() - 1)) - TraitBonus(TraitEffect.Cooldown) - Bonus.Cooldown)
+        + (WeatherIs(WeatherEffect.Heat) ? WDef.Value : 0);
 
     public int NearestVisibleEnemy()
     {
@@ -73,7 +74,7 @@ public sealed partial class Game
             }
             case AbilityEffect.Volley: // Seria: wszyscy widoczni w zasięgu (+1 obrażeń od II, +1 zasięgu na III)
             {
-                var range = Weapon.Range + (rank >= 3 ? 1 : 0);
+                var range = WeaponRange() + (rank >= 3 ? 1 : 0);
                 if (rank >= 2) ++DmgBonus;
                 for (var i = 0; i < EnemiesCount && St == GameStatus.Playing; ++i)
                 {

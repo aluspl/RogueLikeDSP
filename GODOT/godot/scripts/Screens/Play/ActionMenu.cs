@@ -96,7 +96,7 @@ public sealed class ActionMenu
         var sel = N.World.MenuSel;
         var label = sel switch
         {
-            0 => $"Atak: najbliższy cel (z{g.Weapon.Range})",
+            0 => $"Atak: najbliższy cel (z{g.WeaponRange()})",
             1 => $"Moc: {UiText.AbilityLabel(g)}" + (g.AbilityCd > 0 ? $" - za {g.AbilityCd} t." : ""),
             2 => $"Termos {g.Thermos}/{g.ThermosCap()}: kawa +{g.CoffeeHeal()} HP (zużywa turę)",
             3 => "Czekaj turę",
