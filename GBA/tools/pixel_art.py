@@ -477,3 +477,15 @@ GEAR_BOX = [
 
 def gear_frames():
     return [p for color in ("g", "B", "O") for p in parse(GEAR_BOX, {"A": color})]
+
+
+# ------------------------------------------------------------------ celownik (klatka 45 aktorów)
+RETICLE = [
+    "KKKKK....KKKKK..", "KYYYK....KYYYK..", "KYKK......KKYK..", "KYK........KYK..", "KKK........KKK..",
+    "................", "................", "................", "................", "................",
+    "KKK........KKK..", "KYK........KYK..", "KYKK......KKYK..", "KYYYK....KYYYK..", "KKKKK....KKKKK..", "................"]
+
+
+def reticle_frame():
+    rows = ["." + r[:15] for r in RETICLE]   # wyśrodkowanie
+    return parse(rows)

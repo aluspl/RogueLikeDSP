@@ -196,6 +196,7 @@ def make_actors():
     frames += [pa.worker_frame(i, 1) for i in range(6)] + [pa.enemy_frame(i, 1) for i in range(9)]   # klatki B animacji
     gf = pa.gear_frames()
     frames += [gf[i * 256:(i + 1) * 256] for i in range(3)]   # 42-44 paczki sprzętu wg jakości
+    frames += [pa.reticle_frame()]                             # 45 celownik
     px = [p for fr in frames for p in fr]
     write_bmp(os.path.join(G, "actors.bmp"), px, 16, 16 * len(frames), SPR_PAL, 4)
     write_json("actors", {"type": "sprite", "height": 16})
@@ -286,8 +287,14 @@ def t_actor_shadow(t):   # lewa dolna ćwiartka elipsy cienia pod postacią (pra
             dx, dy = (x - 7.5) / 7.2, (y - 4.8) / 3.0   # środek elipsy na styku kafli, w dolnej części pola
             if dx * dx + dy * dy <= 1.0: t[y][x] = 8
 
-# indeksy: 0 pusty, 1 podłoga, 2 mur, 3 lico muru, 4 schody, 5 podłoga z cieniem muru, 6 cień postaci (ćwiartka)
-TILES = [t_empty, t_floor, t_wall, t_walltop, t_stairs, t_floor_wall_shadow, t_actor_shadow]
+def t_floor_range(t):   # pole w zasięgu broni: narożnik ramki (4 ćwiartki przez odbicia = ramka pola)
+    t_floor(t)
+    for x, y in ((0, 0), (1, 0), (2, 0), (0, 1), (0, 2), (1, 1)):
+        t[y][x] = 6
+
+# indeksy: 0 pusty, 1 podłoga, 2 mur, 3 lico muru, 4 schody, 5 podłoga z cieniem muru, 6 cień postaci (ćwiartka),
+# 7 podłoga w zasięgu broni (ćwiartka ramki)
+TILES = [t_empty, t_floor, t_wall, t_walltop, t_stairs, t_floor_wall_shadow, t_actor_shadow, t_floor_range]
 
 def make_tiles():
     px_tiles = [tile(f) for f in TILES]
