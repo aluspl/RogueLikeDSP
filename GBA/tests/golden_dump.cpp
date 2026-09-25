@@ -244,7 +244,7 @@ int main(int argc, char** argv)
     sc.push_back({ 2, 9001u, 0, true, true, true, true, 6000, 0x01, 0, 2, 2 });                    // Kask ojca I (z odznaki)
     // v0.21.47: tryb inwestora (wszystkie modyfikatory; budżet i Hurtownia zamknięta)
     const int all_investor = (1 << data::investor_count) - 1;
-    sc.push_back({ 2, 777u, 0, true, true, true, true, 6000, all_badges, all_contracts, 1, 8, all_investor });
+    sc.push_back({ 2, 780u, 0, true, true, true, true, 6000, all_badges, all_contracts, 1, 8, all_investor });
     sc.push_back({ 4, 4242u, 1, true, true, true, true, 6000, 0, 0, 0, 0, 0x09 });
 
     for(size_t si = 0; si < sc.size(); ++si)
