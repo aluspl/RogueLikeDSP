@@ -15,13 +15,12 @@ namespace LifeLike.Game.Phone.ProfileTabs;
 public sealed class TrainingTab : PhonePage
 {
     private const int Window = 7;
-    private enum Kind { Upgrade, Class, Tool, Hard }
 
     private readonly GameData _d;
     private readonly Profile _p;
     private readonly Action _saved;
     private readonly ListState _list = new();
-    private readonly List<(Kind K, int I)> _entries = new();
+    private readonly List<(TrainingKind K, int I)> _entries = new();
     private string _note = "";
 
     public TrainingTab(GameData d, Profile p, Action saved)
@@ -41,39 +40,39 @@ public sealed class TrainingTab : PhonePage
     private void Rebuild()
     {
         _entries.Clear();
-        for (var i = 0; i < _d.Upgrades.Length; i++) _entries.Add((Kind.Upgrade, i));
+        for (var i = 0; i < _d.Upgrades.Length; i++) _entries.Add((TrainingKind.Upgrade, i));
         for (var i = 0; i < _d.Classes.Length; i++)
         {
-            if (!Meta.ClassUnlocked(_p, i)) _entries.Add((Kind.Class, i));
+            if (!Meta.ClassUnlocked(_p, i)) _entries.Add((TrainingKind.Class, i));
         }
         for (var i = 0; i < _d.Tools.Length; i++)
         {
-            if (!Meta.ToolUnlocked(_d, _p, i)) _entries.Add((Kind.Tool, i));
+            if (!Meta.ToolUnlocked(_d, _p, i)) _entries.Add((TrainingKind.Tool, i));
         }
-        if (!Meta.DifficultyUnlocked(_d, _p, _d.Difficulties.Length - 1)) _entries.Add((Kind.Hard, 0));
+        if (!Meta.DifficultyUnlocked(_d, _p, _d.Difficulties.Length - 1)) _entries.Add((TrainingKind.Hard, 0));
     }
 
-    private int Cost((Kind K, int I) e) => e.K switch
+    private int Cost((TrainingKind K, int I) e) => e.K switch
     {
-        Kind.Upgrade => Meta.UpgradeCost(_d, _p, e.I),
-        Kind.Class => _d.ClassCost,
-        Kind.Tool => _d.Tools[e.I].Cost,
+        TrainingKind.Upgrade => Meta.UpgradeCost(_d, _p, e.I),
+        TrainingKind.Class => _d.ClassCost,
+        TrainingKind.Tool => _d.Tools[e.I].Cost,
         _ => _d.HardCost,
     };
 
-    private string Name((Kind K, int I) e) => e.K switch
+    private string Name((TrainingKind K, int I) e) => e.K switch
     {
-        Kind.Upgrade => $"{_d.Upgrades[e.I].Name} {_p.Levels[e.I]}/{_d.Upgrades[e.I].Levels}",
-        Kind.Class => "Zawód: " + _d.Classes[e.I].Name,
-        Kind.Tool => _d.Weapons[_d.Tools[e.I].Weapon].Name,
+        TrainingKind.Upgrade => $"{_d.Upgrades[e.I].Name} {_p.Levels[e.I]}/{_d.Upgrades[e.I].Levels}",
+        TrainingKind.Class => "Zawód: " + _d.Classes[e.I].Name,
+        TrainingKind.Tool => _d.Weapons[_d.Tools[e.I].Weapon].Name,
         _ => "Trudność: " + _d.Difficulties[^1].Name,
     };
 
-    private string Desc((Kind K, int I) e)
+    private string Desc((TrainingKind K, int I) e)
     {
-        if (e.K == Kind.Upgrade) return _d.Upgrades[e.I].Desc;
-        if (e.K == Kind.Class) return "Nowy zawód do wyboru: " + _d.Classes[e.I].AbilityName;
-        if (e.K == Kind.Tool)
+        if (e.K == TrainingKind.Upgrade) return _d.Upgrades[e.I].Desc;
+        if (e.K == TrainingKind.Class) return "Nowy zawód do wyboru: " + _d.Classes[e.I].AbilityName;
+        if (e.K == TrainingKind.Tool)
         {
             var w = _d.Weapons[_d.Tools[e.I].Weapon];
             return $"Narzędzie {w.MinDamage}-{w.MaxDamage} z{w.Range}, {UiText.StatShort(w.ScalesWith)}";
@@ -88,9 +87,9 @@ public sealed class TrainingTab : PhonePage
         var e = _entries[_list.Sel];
         var ok = e.K switch
         {
-            Kind.Upgrade => Meta.BuyUpgrade(_d, _p, e.I),
-            Kind.Class => Meta.BuyClass(_d, _p, e.I),
-            Kind.Tool => Meta.BuyTool(_d, _p, e.I),
+            TrainingKind.Upgrade => Meta.BuyUpgrade(_d, _p, e.I),
+            TrainingKind.Class => Meta.BuyClass(_d, _p, e.I),
+            TrainingKind.Tool => Meta.BuyTool(_d, _p, e.I),
             _ => Meta.BuyHard(_d, _p),
         };
         if (ok)
@@ -103,7 +102,7 @@ public sealed class TrainingTab : PhonePage
         }
         else
         {
-            _note = e.K == Kind.Upgrade && Meta.UpgradeCost(_d, _p, e.I) < 0 ? "Maksymalny poziom" : "Za mało doświadczenia";
+            _note = e.K == TrainingKind.Upgrade && Meta.UpgradeCost(_d, _p, e.I) < 0 ? "Maksymalny poziom" : "Za mało doświadczenia";
         }
         return ok;
     }
