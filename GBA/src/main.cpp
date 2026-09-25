@@ -702,8 +702,8 @@ namespace
         core::message sub; sub.add("Etap ").add(g.stage + 1).add("/").add(data::stages_count).add(", ").add(g.score).add(" pkt");
         phone_header(a, ph, t, tab_names[0], sub.s);
         phone_canvas& c = *ph.canvas;
-        int first = core::imax(0, core::imin(g.stage - 2, data::stages_count - 5));   // okno 5 etapów wokół bieżącego
-        for(int r = 0; r < 5 && first + r < data::stages_count; ++r)
+        int first = core::imax(0, core::imin(g.stage - 1, data::stages_count - 4));   // okno 4 etapów wokół bieżącego
+        for(int r = 0; r < 4 && first + r < data::stages_count; ++r)
         {
             int i = first + r;
             bool done = i < g.stage || (i == g.stage && g.st == core::status::won);
@@ -714,6 +714,15 @@ namespace
             phone_pill(a, c, t, pill_end, row_ty(r), done ? "Gotowe" : (cur ? "W trakcie" : "Do zrob."),
                        done ? pill::done : (cur ? pill::prog : pill::gray));
         }
+        if(g.stage_event >= 0)   // wydarzenie na placu na tym etapie
+        {
+            const core::site_event_def& ev = data::site_events[g.stage_event];
+            stripe(c, 4, ev.good ? phone_tile::stripe_done : phone_tile::stripe_late);
+            int room = ((pill_end - utf8_len(ev.short_name) - 1) * 8 - list_x) / 7;   // znaki przed pastylką
+            phone_text(a, t, list_x, row_py(4), clip(ev.name, room).c_str(), ink::dark);
+            phone_pill(a, c, t, pill_end, row_ty(4), ev.short_name, ev.good ? pill::done : pill::late);
+        }
+        else phone_text(a, t, list_x, row_py(4), "Plac: bez niespodzianek", ink::dim);
         phone_text(a, t, list_x, row_py(5), "Postęp", ink::dim);
         c.bar(9, row_ty(5), 18, phone_tile::bar_brand_0, g.stage, data::stages_count);
     }
@@ -1030,6 +1039,12 @@ namespace
         core::message i2; i2.add(g.ddef().name);
         if(g.tier > 0) i2.add(" NG+").add(g.tier);
         phone_message(a, g.stage_story(), sub.s, i1.s, boss ? ink::late : ink::dim, i2.s);
+        if(g.stage_event >= 0 && g.turns == g.stage_start_turn)   // wydarzenie na placu: drugi SMS (nie po wznowieniu w trakcie)
+        {
+            const core::site_event_def& ev = data::site_events[g.stage_event];
+            leave(scene::game);
+            phone_message(a, ev.msg, "Plac budowy", ev.info, ev.good ? ink::done : ink::late, ev.name);
+        }
         leave(scene::game);   // ściemnij telefon, gra się rozjaśni
     }
 
@@ -2118,6 +2133,15 @@ namespace
         }
     }
 
+    // Kolejny etap (po harmonogramie albo Hurtowni).
+    void advance_stage(app& a)
+    {
+        a.g->next_stage();
+#ifdef PB_SCENARIO
+        debug_scenario::after_next_stage(*a.g, PB_SCENARIO);
+#endif
+    }
+
     // ------------------------------------------------------------------ harmonogram między etapami
     scene run_schedule(app& a)
     {
@@ -2145,7 +2169,7 @@ namespace
             {
                 wait_release();
                 if(g.act_cleared) return leave(scene::hurtownia);   // koniec aktu: zakupy przed kolejnym
-                g.next_stage();
+                advance_stage(a);
                 return leave(scene::game);
             }
             next_frame();
@@ -2342,7 +2366,7 @@ namespace
                 t.clear();
                 a.text.set_palette_item(default_ink);
                 wait_release();
-                g.next_stage();
+                advance_stage(a);
                 return leave(scene::game);
             }
             next_frame();

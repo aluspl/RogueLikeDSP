@@ -15,6 +15,8 @@
 //  10 - uprawnienia i zlecenia: część odznak zdobyta (premie na budowę), zlecenia w toku,
 //       jedno o krok od ukończenia (moc R + L+R+SELECT = baner)
 //  11 - pamiątki: wszystkie odblokowane, Termos babci po 8 budowach (ranga III, wybrany), Kask ojca po 3 (II)
+//  12 - wydarzenia na placu: start od etapu 2 z wydarzeniem; każdy kolejny etap bez bossa ma wydarzenie
+//       (po kolei z listy; L+R+SELECT przechodzi dalej)
 #include "core.h"
 #include "meta.h"
 
@@ -93,6 +95,20 @@ namespace debug_scenario
             if(*a == *b) return i;
         }
         return 0;
+    }
+
+    // Scenariusz 12: wymusza wydarzenie na placu (kolejne z listy), jeśli los go nie dał.
+    inline void force_event(core::game& g)
+    {
+        static int next = 0;
+        if(g.stage_event >= 0 || g.stage == 0 || data::stages[g.stage].boss >= 0) return;
+        g.apply_event(next++ % data::site_events_count);
+    }
+
+    // Wołane po przejściu na kolejny etap (harmonogram, Hurtownia).
+    inline void after_next_stage(core::game& g, int scenario)
+    {
+        if(scenario == 12) force_event(g);
     }
 
     // Wołane raz, na wejściu na pierwszy etap budowy.
@@ -177,6 +193,10 @@ namespace debug_scenario
             case 10:
                 g.enemies_count = 0;
                 place_enemy(g, data::enemy_kornik, 2, 3, true, 0);
+                break;
+            case 12:
+                g.start_stage(1);
+                force_event(g);
                 break;
             default:
                 break;

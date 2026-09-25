@@ -233,6 +233,24 @@ namespace core
         uint8_t brand_found = 0, brand_banked = 0;     // założone markowe przedmioty
         uint8_t clean_bosses = 0, clean_banked = 0;    // bossowie aktu bez obrażeń w walce z nimi
         int boss_wake_damage = -1;   // stage_damage w chwili dołączenia bossa do walki (-1 = jeszcze nie)
+        int8_t stage_event = -1;     // wydarzenie na placu na bieżącym etapie (data::site_events, -1 = brak)
+
+        bool event_active(event_effect e) const { return stage_event >= 0 && data::site_events[stage_event].effect == e; }
+
+        // Wydarzenie na placu: SMS na starcie etapu, efekt od razu (znajdźki, budżet, termos) albo w trakcie etapu.
+        void apply_event(int e)
+        {
+            stage_event = int8_t(e);
+            const site_event_def& ev = data::site_events[e];
+            switch(ev.effect)
+            {
+                case event_effect::fewer_pickups: pickups_count = imax(imin(1, pickups_count), pickups_count - ev.value); break;
+                case event_effect::cash:          cash += ev.value; break;
+                case event_effect::thermos:       thermos = thermos_cap(); break;
+                default: break;   // inspekcja: premia na koniec etapu; ulewa: poślizg przy ciosach
+            }
+            push(message().add("SMS: ").add(ev.name).as(ev.good ? good : bad));
+        }
         int cash = 0;                // budżet budowy (zł) - za usunięte problemy i premie aktów, wydawany w Hurtowni
         int act_kills = 0;           // problemy usunięte w bieżącym akcie (premia)
         int act_bonus = 0;           // ostatnia premia za akt (do pokazania w Hurtowni)
@@ -502,6 +520,8 @@ namespace core
                 pickups[pickups_count++] = { int8_t(x), int8_t(y), uint8_t(i == 0 ? coffee : r.range(0, 2)), true };
             }
             push(message().add("Etap ").add(stage + 1).add(": ").add(sd.name));
+            stage_event = -1;   // wydarzenie na placu: nie na pierwszym etapie i nie u bossa
+            if(s > 0 && sd.boss < 0 && r.range(1, 100) <= data::site_event_chance_pct) apply_event(r.range(0, data::site_events_count - 1));
             update_fov();
         }
 
@@ -990,6 +1010,8 @@ namespace core
                 push(message().add(ed.name).add(": -").add(dmg).add(" HP").as(bad));
                 if(ed.on_hit != status_effect::none && hero.hp > 0 && r.range(1, 100) <= ed.status_chance)
                     apply_status(ed.on_hit, ed.status_turns);
+                if(event_active(event_effect::rain) && hero.hp > 0 && r.range(1, 100) <= data::site_events[stage_event].value)
+                    apply_status(status_effect::slip, 2);   // Ulewa w nocy: błoto na placu
                 if(hero.hp <= 0) { hero.hp = 0; hero.alive = false; st = status::dead;
                     push(message().add("Budowa wstrzymana...").as(bad)); }
                 return;
@@ -1046,6 +1068,11 @@ namespace core
                 score += 100 * score_pct() / 100;
                 gain_xp(data::xp_per_stage);
                 push(message().add("Etap zakończony: ").add(data::stages[stage].name).as(good));
+                if(event_active(event_effect::inspection) && stage_damage == 0)   // Inspekcja nadzoru: etap bez obrażeń
+                {
+                    gain_xp(data::site_events[stage_event].value);
+                    push(message().add("Inspekcja: +").add(data::site_events[stage_event].value).add(" dośw.").as(good));
+                }
             }
         }
 
