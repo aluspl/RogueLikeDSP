@@ -358,6 +358,10 @@ PARTICLES = [
     ["..KKK...", "..KRK...", "..KRK...", "..KRK...", "..KKK...", "..KRK...", "..KKK...", "........"],
     # 20 strzałka nad oznaczonym celem (krótkie A trafi właśnie jego)
     ["KKKKKKK.", "KYYYYYK.", ".KYYYK..", "..KYK...", "...K....", "........", "........", "........"],
+    # 21-23 ikony stanów nad bohaterem: zatrucie, porażenie, poślizg
+    [".KKKK...", "KGGDGK..", "KGDGGK..", "KGGGDK..", ".KGGK...", "..KK....", "........", "........"],
+    ["...KYK..", "..KYK...", ".KYYYK..", "..KYK...", ".KYK....", ".KK.....", "........", "........"],
+    ["........", ".C...C..", "C.C.C.C.", "...C...C", "........", "CCCCCCC.", "........", "........"],
 ]
 
 

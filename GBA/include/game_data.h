@@ -27,28 +27,28 @@ inline constexpr core::class_def classes[] = {
 };
 
 inline constexpr core::enemy_def enemies[] = {
-    { "Przeciek", "Kapie tam, gdzie nie powinno", 6, 1, 3, 0, 6, 10, 6, false },
-    { "Zwarcie", "Iskrzy przy każdej okazji", 5, 2, 4, 0, 7, 12, 7, false },
-    { "Pleśń", "Lubi wilgoć i zimne ściany", 9, 1, 2, 1, 4, 10, 8, false },
-    { "Kornik", "Drąży więźbę po cichu", 7, 1, 3, 1, 5, 10, 9, false },
-    { "Papierologia", "Brakuje jednej pieczątki", 12, 1, 2, 2, 4, 15, 10, false },
-    { "Opóźniona dostawa", "Będzie jutro. Na pewno.", 10, 2, 4, 1, 6, 15, 11, false },
-    { "Ulewa", "Zawsze tuż przed dachem", 8, 2, 3, 0, 8, 12, 12, false },
-    { "Przekroczony budżet", "Rośnie szybciej niż mury", 14, 2, 5, 2, 6, 25, 13, false },
-    { "Nieprzekraczalny Termin", "Nieprzesuwalny. Podobno.", 40, 3, 6, 3, 12, 200, 14, true },
-    { "Zepsuta Betoniarka", "Kręci się, ale nie tam", 30, 3, 5, 2, 10, 150, 46, true },
-    { "Nawałnica", "Leje jak z cebra", 36, 3, 6, 2, 12, 180, 47, true },
+    { "Przeciek", "Kapie tam, gdzie nie powinno", 6, 1, 3, 0, 6, 10, 6, false, core::status_effect::slip, 14, 2 },
+    { "Zwarcie", "Iskrzy przy każdej okazji", 5, 2, 4, 0, 7, 12, 7, false, core::status_effect::shock, 17, 1 },
+    { "Pleśń", "Lubi wilgoć i zimne ściany", 9, 1, 2, 1, 4, 10, 8, false, core::status_effect::poison, 24, 3 },
+    { "Kornik", "Drąży więźbę po cichu", 7, 1, 3, 1, 5, 10, 9, false, core::status_effect::none, 0, 0 },
+    { "Papierologia", "Brakuje jednej pieczątki", 12, 1, 2, 2, 4, 15, 10, false, core::status_effect::paper, 35, 0 },
+    { "Opóźniona dostawa", "Będzie jutro. Na pewno.", 10, 2, 4, 1, 6, 15, 11, false, core::status_effect::none, 0, 0 },
+    { "Ulewa", "Zawsze tuż przed dachem", 8, 2, 3, 0, 8, 12, 12, false, core::status_effect::slip, 28, 3 },
+    { "Przekroczony budżet", "Rośnie szybciej niż mury", 14, 2, 5, 2, 6, 25, 13, false, core::status_effect::none, 0, 0 },
+    { "Nieprzekraczalny Termin", "Nieprzesuwalny. Podobno.", 40, 3, 6, 3, 12, 200, 14, true, core::status_effect::paper, 28, 0 },
+    { "Zepsuta Betoniarka", "Kręci się, ale nie tam", 30, 3, 5, 2, 10, 150, 46, true, core::status_effect::none, 0, 0 },
+    { "Nawałnica", "Leje jak z cebra", 36, 3, 6, 2, 12, 180, 47, true, core::status_effect::slip, 35, 3 },
 };
 
 inline constexpr core::stage_def stages[] = {
     { "Fundamenty", { 0, 3, -1, -1 }, 2, 5, -1, 100, 0, 0 },
-    { "Mury parteru", { 4, 5, 3, -1 }, 3, 6, -1, 105, 0, 0 },
-    { "Strop", { 5, 7, 3, -1 }, 3, 6, 9, 110, 0, 0 },
-    { "Dach", { 6, 3, 0, -1 }, 3, 7, -1, 115, 0, 1 },
-    { "Okna i drzwi", { 5, 6, 4, -1 }, 3, 7, 10, 120, 0, 1 },
-    { "Instalacje", { 1, 0, 2, -1 }, 3, 8, -1, 125, 0, 2 },
-    { "Tynki i wylewki", { 2, 0, 1, -1 }, 3, 8, -1, 130, 0, 2 },
-    { "Wykończenie i odbiór", { 2, 7, -1, -1 }, 2, 6, 8, 135, 0, 2 },
+    { "Mury parteru", { 4, 5, 3, -1 }, 3, 6, -1, 102, 0, 0 },
+    { "Strop", { 5, 7, 3, -1 }, 3, 6, 9, 104, 0, 0 },
+    { "Dach", { 6, 3, 0, -1 }, 3, 7, -1, 106, 0, 1 },
+    { "Okna i drzwi", { 5, 6, 4, -1 }, 3, 7, 10, 108, 0, 1 },
+    { "Instalacje", { 1, 0, 2, -1 }, 3, 8, -1, 110, 0, 2 },
+    { "Tynki i wylewki", { 2, 0, 1, -1 }, 3, 8, -1, 112, 0, 2 },
+    { "Wykończenie i odbiór", { 2, 7, -1, -1 }, 2, 6, 8, 115, 0, 2 },
 };
 
 inline constexpr core::difficulty_def difficulties[] = {
@@ -94,7 +94,7 @@ inline constexpr core::shop_item_def hurtownia[] = {
 inline constexpr int acts_count = 3;
 inline constexpr int hurtownia_count = 5;
 inline constexpr int slam_every = 4;
-inline constexpr int slam_damage_bonus = 3;
+inline constexpr int slam_damage_bonus = 2;
 inline constexpr int slam_radius = 1;
 inline constexpr int cash_per_score = 5;
 inline constexpr int enemy_przeciek = 0;

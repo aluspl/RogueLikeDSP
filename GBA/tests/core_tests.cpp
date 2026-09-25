@@ -585,7 +585,45 @@ int main()
             }
         }
     }
-    // 27. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
+    // 27. stany od problemów budowy
+    {
+        game g; arena(g, 1);
+        g.apply_status(status_effect::poison, 3);
+        int hp = g.hero.hp; g.player_wait(); g.player_wait();
+        CHECK(g.hero.hp <= hp - 2 + 1 && g.status_turns(status_effect::poison) == 1);   // -1 HP na turę (+ew. odpoczynek)
+        g.hero.hp = 1; g.player_wait(); CHECK(g.hero.hp == 1 && g.hero.alive);        // zatrucie nie zabija
+    }
+    {
+        game g; arena(g, 1);
+        g.apply_status(status_effect::shock, 1);
+        int x = g.hero.x;
+        CHECK(g.player_move(-1, 0) && g.hero.x == x && g.turns == 1);                 // porażenie: tura stracona
+        CHECK(g.player_move(-1, 0) && g.hero.x == x - 1);
+    }
+    {
+        game g; arena(g, 1);
+        g.apply_status(status_effect::slip, 2);
+        int x = g.hero.x;
+        CHECK(g.player_move(-1, 0) && g.hero.x == x - 2);                             // poślizg: 2 pola
+        g.hero.x = 2; CHECK(g.player_move(-1, 0) && g.hero.x == 1);                   // przy ścianie tylko 1
+    }
+    {
+        game g; arena(g, 1);
+        g.ability_cd = 1; g.apply_status(status_effect::paper, 0);
+        CHECK(g.ability_cd == 4);                                                     // papierologia: +3 tury odnowienia
+    }
+    {
+        int applied = 0;                                                              // Pleśń zatruwa przy trafieniu (~35%)
+        for(uint32_t seed = 1; seed <= 200; ++seed)
+        {
+            game g; g.new_run(1, seed);
+            g.enemies_count = 0; g.spawn(data::enemy_plesn, g.hero.x + 1, g.hero.y); g.enemies[0].awake = true;
+            g.player_wait();
+            applied += g.status_turns(status_effect::poison) > 0;
+        }
+        CHECK(applied > 30 && applied < 120);
+    }
+    // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};
     for(int df=0;df<data::difficulties_count;++df)

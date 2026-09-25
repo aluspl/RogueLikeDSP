@@ -203,7 +203,12 @@
       "score": 10,
       "frame": 6,
       "desc": "Kapie tam, gdzie nie powinno",
-      "slam": false
+      "slam": false,
+      "onHit": {
+        "status": "slip",
+        "chancePct": 14,
+        "turns": 2
+      }
     },
     {
       "id": "zwarcie",
@@ -216,7 +221,12 @@
       "score": 12,
       "frame": 7,
       "desc": "Iskrzy przy każdej okazji",
-      "slam": false
+      "slam": false,
+      "onHit": {
+        "status": "shock",
+        "chancePct": 17,
+        "turns": 1
+      }
     },
     {
       "id": "plesn",
@@ -229,7 +239,12 @@
       "score": 10,
       "frame": 8,
       "desc": "Lubi wilgoć i zimne ściany",
-      "slam": false
+      "slam": false,
+      "onHit": {
+        "status": "poison",
+        "chancePct": 24,
+        "turns": 3
+      }
     },
     {
       "id": "kornik",
@@ -255,7 +270,12 @@
       "score": 15,
       "frame": 10,
       "desc": "Brakuje jednej pieczątki",
-      "slam": false
+      "slam": false,
+      "onHit": {
+        "status": "paper",
+        "chancePct": 35,
+        "turns": 0
+      }
     },
     {
       "id": "dostawa",
@@ -281,7 +301,12 @@
       "score": 12,
       "frame": 12,
       "desc": "Zawsze tuż przed dachem",
-      "slam": false
+      "slam": false,
+      "onHit": {
+        "status": "slip",
+        "chancePct": 28,
+        "turns": 3
+      }
     },
     {
       "id": "budzet",
@@ -307,7 +332,12 @@
       "score": 200,
       "frame": 14,
       "desc": "Nieprzesuwalny. Podobno.",
-      "slam": true
+      "slam": true,
+      "onHit": {
+        "status": "paper",
+        "chancePct": 28,
+        "turns": 0
+      }
     },
     {
       "id": "betoniarka",
@@ -333,7 +363,12 @@
       "sight": 12,
       "score": 180,
       "frame": 47,
-      "slam": true
+      "slam": true,
+      "onHit": {
+        "status": "slip",
+        "chancePct": 35,
+        "turns": 3
+      }
     }
   ],
   "stages": [
@@ -356,7 +391,7 @@
         "kornik"
       ],
       "count": 6,
-      "hpPct": 105,
+      "hpPct": 102,
       "dmgBonus": 0,
       "act": 0
     },
@@ -368,7 +403,7 @@
         "kornik"
       ],
       "count": 6,
-      "hpPct": 110,
+      "hpPct": 104,
       "dmgBonus": 0,
       "act": 0,
       "boss": "betoniarka"
@@ -381,7 +416,7 @@
         "przeciek"
       ],
       "count": 7,
-      "hpPct": 115,
+      "hpPct": 106,
       "dmgBonus": 0,
       "act": 1
     },
@@ -393,7 +428,7 @@
         "papierologia"
       ],
       "count": 7,
-      "hpPct": 120,
+      "hpPct": 108,
       "dmgBonus": 0,
       "act": 1,
       "boss": "nawalnica"
@@ -406,7 +441,7 @@
         "plesn"
       ],
       "count": 8,
-      "hpPct": 125,
+      "hpPct": 110,
       "dmgBonus": 0,
       "act": 2
     },
@@ -418,7 +453,7 @@
         "zwarcie"
       ],
       "count": 8,
-      "hpPct": 130,
+      "hpPct": 112,
       "dmgBonus": 0,
       "act": 2
     },
@@ -429,7 +464,7 @@
         "budzet"
       ],
       "count": 6,
-      "hpPct": 135,
+      "hpPct": 115,
       "dmgBonus": 0,
       "act": 2,
       "boss": "termin"
@@ -768,7 +803,7 @@
   ],
   "slam": {
     "every": 4,
-    "damageBonus": 3,
+    "damageBonus": 2,
     "radius": 1
   },
   "cash": {

@@ -164,6 +164,35 @@ namespace core
         int slam_timer = 0;          // uderzenie bossa: tury do ciosu (0 = brak zapowiedzi)
         int8_t slam_x = -1, slam_y = -1;
         int slam_counter = 0;
+        int8_t hero_status[5] = {};  // tury aktywnych stanów bohatera (indeks = status_effect)
+
+        int status_turns(status_effect s) const { return hero_status[int(s)]; }
+
+        void apply_status(status_effect s, int t)
+        {
+            switch(s)
+            {
+                case status_effect::poison: push(message().add("Zatrucie pleśnią!").as(bad)); break;
+                case status_effect::shock:  push(message().add("Porażenie! Tracisz turę").as(bad)); break;
+                case status_effect::slip:   push(message().add("Poślizg na mokrym!").as(bad)); break;
+                case status_effect::paper:
+                    ability_cd = imin(ability_cooldown() + 3, ability_cd + 3);
+                    push(message().add("Papierologia: moc później").as(bad));
+                    return;
+                default: return;
+            }
+            hero_status[int(s)] = int8_t(imax(hero_status[int(s)], t));
+        }
+
+        // Porażenie: akcja bohatera przepada, mija tura.
+        bool shocked_turn()
+        {
+            if(hero_status[int(status_effect::shock)] <= 0) return false;
+            --hero_status[int(status_effect::shock)];
+            push(message().add("Porażenie: tura stracona").as(bad));
+            end_turn();
+            return true;
+        }
 
         // Pole w zasięgu zapowiedzianego uderzenia bossa (czerwone pola na mapie).
         bool slam_cell(int x, int y) const { return slam_timer > 0 && slam_cell_at(x, y); }
@@ -449,10 +478,21 @@ namespace core
         bool player_move(int dx, int dy)
         {
             if(st != status::playing) return false;
+            if(shocked_turn()) return true;
             int nx = hero.x + dx, ny = hero.y + dy;
             int ei = enemy_at(nx, ny);
             if(ei >= 0) hero_attack(ei);
-            else if(lv.passable(nx, ny)) { hero.x = int8_t(nx); hero.y = int8_t(ny); collect(); }
+            else if(lv.passable(nx, ny))
+            {
+                hero.x = int8_t(nx); hero.y = int8_t(ny); collect();
+                int8_t& slip = hero_status[int(status_effect::slip)];
+                if(slip > 0)   // poślizg: jeszcze jedno pole w tę samą stronę
+                {
+                    --slip;
+                    int sx = hero.x + dx, sy = hero.y + dy;
+                    if(lv.passable(sx, sy) && ! occupied(sx, sy)) { hero.x = int8_t(sx); hero.y = int8_t(sy); collect(); }
+                }
+            }
             else return false;
             end_turn();
             return true;
@@ -487,6 +527,7 @@ namespace core
         bool player_attack(int ei)
         {
             if(st != status::playing || ei < 0 || ei >= enemies_count) return false;
+            if(shocked_turn()) return true;
             const actor& e = enemies[ei];
             if(! e.alive || ! visible(e.x, e.y) || cheb(hero.x, hero.y, e.x, e.y) > weapon().range) return false;
             hero_attack(ei);
@@ -497,6 +538,7 @@ namespace core
         bool player_attack_nearest()
         {
             if(st != status::playing) return false;
+            if(shocked_turn()) return true;
             int t = nearest_target();
             if(t < 0) { push(message().add("Brak celu w zasięgu ").add(weapon().range)); return false; }
             hero_attack(t);
@@ -773,6 +815,8 @@ namespace core
                 hero_hit = true;
                 add_hit(hero.x, hero.y, dmg, true);
                 push(message().add(ed.name).add(": -").add(dmg).add(" HP").as(bad));
+                if(ed.on_hit != status_effect::none && hero.hp > 0 && r.range(1, 100) <= ed.status_chance)
+                    apply_status(ed.on_hit, ed.status_turns);
                 if(hero.hp <= 0) { hero.hp = 0; hero.alive = false; st = status::dead;
                     push(message().add("Budowa wstrzymana...").as(bad)); }
                 return;
@@ -791,6 +835,12 @@ namespace core
         void end_turn()
         {
             ++turns;
+            int8_t& poison = hero_status[int(status_effect::poison)];
+            if(poison > 0 && st == status::playing)   // zatrucie: -1 HP na turę, ale nie zabija
+            {
+                --poison;
+                if(hero.hp > 1) { hero.hp = int16_t(hero.hp - 1); stage_damage += 1; add_hit(hero.x, hero.y, 1, true); }
+            }
             if(ability_cd > 0 && --ability_cd == 0) push(message().add("Moc gotowa: ").add(cdef().ability_name).as(good));
             for(int i = 0; i < walls_count; )
                 if(--walls[i].turns <= 0) { lv.t[walls[i].y][walls[i].x] = tile::floor; walls[i] = walls[--walls_count]; }

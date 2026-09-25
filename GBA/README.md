@@ -39,6 +39,11 @@ Bossowie co kilka tur zapowiadają uderzenie – czerwone pola wokół bohatera;
 Usunięte problemy dają budżet (zł), koniec aktu – premię; między aktami **Hurtownia** (kawa, paczka sprzętu,
 narzędzie, siłownia, energetyk – oferta w `hurtownia`).
 
+## Stany
+Problemy budowy przy trafieniu mogą nałożyć stan (konfiguracja `onHit` w `data/game.json`): zatrucie (Pleśń: -1 HP
+przez kilka tur, nie zabija), porażenie (Zwarcie: tracisz turę), poślizg (Ulewa, Przeciek, Nawałnica: ruch o 2 pola),
+papierologia (Papierologia, Termin: moc odnawia się 3 tury dłużej). Ikona aktywnego stanu jest nad bohaterem.
+
 ## Fabuła
 Budujesz dom dla rodziny Nowaków. Każdy etap otwiera wiadomość w telefonie od inwestorki Anny Nowak albo
 kierownika Marka; po wygranej i porażce przychodzi wiadomość z morałem: plan pokonuje chaos budowy.
