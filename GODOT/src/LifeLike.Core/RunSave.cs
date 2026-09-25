@@ -8,7 +8,7 @@ namespace LifeLike.Core;
 /// </summary>
 public sealed class RunSave
 {
-    public const string RunMagic = "PBRUN03"; // 03: liczniki zleceń, premie z odznak i pamiątek
+    public const string RunMagic = "PBRUN04"; // 04: przeniesione liczniki zleceń w profilu (v5), nie w budowie
 
     public byte[] Magic = new byte[8];
     public uint Size;

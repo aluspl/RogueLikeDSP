@@ -5,8 +5,8 @@ namespace LifeLike.Core;
 
 /// <summary>
 /// Profil gracza (odpowiednik core::profile z meta.h): rekord, doświadczenie, zakupy, odznaki, Osiedle.
-/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v4: 72 bajty, little-endian, bajt 55 to wyrównanie),
-/// więc migracje v1/v2/v3 działają tak samo.
+/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v5: 80 bajtów, little-endian, bajty 55 i 78-79 to wyrównanie),
+/// więc migracje v1/v2/v3/v4 działają tak samo.
 /// </summary>
 public sealed class Profile
 {
@@ -15,8 +15,11 @@ public sealed class Profile
     public const int V2Size = 36;
     /// <summary>v4 = v3 + zlecenia i pamiątki od tego offsetu.</summary>
     public const int V3Size = 56;
-    public const int Size = 72;
+    /// <summary>v5 = v4 + liczniki zleceń przeniesione z bieżącej budowy od tego offsetu.</summary>
+    public const int V4Size = 72;
+    public const int Size = 80;
     public const int MaxKeepsakes = 8;
+    public const string MagicV5 = "PBRL005";
     public const string MagicV4 = "PBRL004";
     public const string MagicV3 = "PBRL003";
     public const string MagicV2 = "PBRL002";
@@ -57,6 +60,12 @@ public sealed class Profile
     public byte Keepsake;
     /// <summary>Budowy z każdą pamiątką (ranga).</summary>
     public byte[] KeepsakeRuns = new byte[MaxKeepsakes];
+    // --- v5: ile liczników zleceń bieżącej budowy już przeniesiono do *Total (znak wodny; zapisywany razem
+    // z sumami, więc wznowienie budowy z autozapisu na starcie etapu nie liczy etapu drugi raz)
+    public ushort RunKills;
+    public ushort RunPowers;
+    public byte RunBrand;
+    public byte RunClean;
 
     public static byte[] MagicBytes(string s)
     {
@@ -99,6 +108,10 @@ public sealed class Profile
         b[62] = Contracts;
         b[63] = Keepsake;
         KeepsakeRuns.CopyTo(b, 64);
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(72), RunKills);
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(74), RunPowers);
+        b[76] = RunBrand;
+        b[77] = RunClean;
         return b;
     }
 
@@ -132,6 +145,10 @@ public sealed class Profile
             Contracts = b[62],
             Keepsake = b[63],
             KeepsakeRuns = b.Slice(64, MaxKeepsakes).ToArray(),
+            RunKills = BinaryPrimitives.ReadUInt16LittleEndian(b[72..]),
+            RunPowers = BinaryPrimitives.ReadUInt16LittleEndian(b[74..]),
+            RunBrand = b[76],
+            RunClean = b[77],
         };
         return p;
     }

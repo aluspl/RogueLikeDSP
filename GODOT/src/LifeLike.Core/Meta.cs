@@ -11,9 +11,22 @@ public static class Meta
     public static void ProfileReset(GameData d, Profile p)
     {
         var fresh = Profile.FromBytes(new byte[Profile.Size]);
-        fresh.Magic = Profile.MagicBytes(Profile.MagicV4);
+        fresh.Magic = Profile.MagicBytes(Profile.MagicV5);
         fresh.Classes = (byte)d.StartClassesMask;
+        DefaultKeepsake(d, fresh);
         CopyInto(fresh, p);
+    }
+
+    /// <summary>Bez wybranej pamiątki: pierwsza odblokowana (nowy profil zaczyna z Termosem babci).</summary>
+    public static void DefaultKeepsake(GameData d, Profile p)
+    {
+        if (p.Keepsake != 0) return;
+        for (var k = 0; k < d.Keepsakes.Length; ++k)
+        {
+            if (!KeepsakeUnlocked(d, p, k)) continue;
+            p.Keepsake = (byte)(k + 1);
+            return;
+        }
     }
 
     public static Profile NewProfile(GameData d)
@@ -49,20 +62,27 @@ public static class Meta
         dst.Contracts = copy.Contracts;
         dst.Keepsake = copy.Keepsake;
         dst.KeepsakeRuns = copy.KeepsakeRuns;
+        dst.RunKills = copy.RunKills;
+        dst.RunPowers = copy.RunPowers;
+        dst.RunBrand = copy.RunBrand;
+        dst.RunClean = copy.RunClean;
     }
 
     /// <summary>Naprawia wczytany profil. Zwraca true, jeśli trzeba go zapisać (migracja albo pusta pamięć).</summary>
     public static bool ProfileFix(GameData d, Profile p)
     {
-        if (p.MagicIs(Profile.MagicV4)) return false;
-        // v3 -> v4 i v2 -> v4: stare pola zostają, nowe od zera (jak memset od profile_v3_size / profile_v2_size)
-        var keep = p.MagicIs(Profile.MagicV3) ? Profile.V3Size : (p.MagicIs(Profile.MagicV2) ? Profile.V2Size : 0);
+        if (p.MagicIs(Profile.MagicV5)) return false;
+        // v4/v3/v2 -> v5: stare pola zostają, nowe od zera (jak memset od profile_v4_size / v3 / v2);
+        // bez wybranej pamiątki – pierwsza odblokowana
+        var keep = p.MagicIs(Profile.MagicV4) ? Profile.V4Size
+            : (p.MagicIs(Profile.MagicV3) ? Profile.V3Size : (p.MagicIs(Profile.MagicV2) ? Profile.V2Size : 0));
         if (keep > 0)
         {
             var b = p.ToBytes();
             Array.Clear(b, keep, b.Length - keep);
             CopyInto(Profile.FromBytes(b), p);
-            p.Magic = Profile.MagicBytes(Profile.MagicV4);
+            p.Magic = Profile.MagicBytes(Profile.MagicV5);
+            DefaultKeepsake(d, p);
             return true;
         }
         if (p.MagicIs(Profile.MagicV1))
@@ -247,6 +267,10 @@ public static class Meta
     public static void StartRun(GameData d, Profile p)
     {
         ++p.Runs;
+        p.RunKills = 0; // nowa budowa nie ma jeszcze nic przeniesionego do liczników zleceń
+        p.RunPowers = 0;
+        p.RunBrand = 0;
+        p.RunClean = 0;
         var k = SelectedKeepsake(d, p);
         if (k >= 0 && p.KeepsakeRuns[k] < 255) ++p.KeepsakeRuns[k];
     }
@@ -256,17 +280,21 @@ public static class Meta
 
     private static byte AddSat8(byte a, int delta) => (byte)Math.Min(255, a + Math.Max(0, delta));
 
-    /// <summary>Przenosi do profilu nowe wartości liczników zleceń z budowy (bez podwójnego liczenia).</summary>
+    /// <summary>
+    /// Przenosi do profilu nowe wartości liczników zleceń z budowy (bez podwójnego liczenia): dolicza tylko nadwyżkę
+    /// ponad znak wodny Run* w profilu. Po wznowieniu budowy z wcześniejszego autozapisu liczniki gry są mniejsze
+    /// niż znak wodny – powtórzony etap dolicza się dopiero, gdy go przebije.
+    /// </summary>
     public static void BankCounters(Profile p, Game g)
     {
-        p.KillsTotal = AddSat16(p.KillsTotal, g.Kills - g.KillsBanked);
-        g.KillsBanked = g.Kills;
-        p.PowersTotal = AddSat16(p.PowersTotal, g.PowersUsed - g.PowersBanked);
-        g.PowersBanked = g.PowersUsed;
-        p.BrandTotal = AddSat8(p.BrandTotal, g.BrandFound - g.BrandBanked);
-        g.BrandBanked = g.BrandFound;
-        p.CleanBosses = AddSat8(p.CleanBosses, g.CleanBosses - g.CleanBanked);
-        g.CleanBanked = g.CleanBosses;
+        p.KillsTotal = AddSat16(p.KillsTotal, g.Kills - p.RunKills);
+        p.RunKills = (ushort)Math.Max(p.RunKills, Math.Min(65535, g.Kills));
+        p.PowersTotal = AddSat16(p.PowersTotal, g.PowersUsed - p.RunPowers);
+        p.RunPowers = Math.Max(p.RunPowers, g.PowersUsed);
+        p.BrandTotal = AddSat8(p.BrandTotal, g.BrandFound - p.RunBrand);
+        p.RunBrand = Math.Max(p.RunBrand, g.BrandFound);
+        p.CleanBosses = AddSat8(p.CleanBosses, g.CleanBosses - p.RunClean);
+        p.RunClean = Math.Max(p.RunClean, g.CleanBosses);
     }
 
     private static int PopCount(uint v)
@@ -296,10 +324,10 @@ public static class Meta
         var v = ContractProgress(d, p, i);
         return d.Contracts[i].Kind switch
         {
-            ContractKind.Kills => v + g.Kills - g.KillsBanked,
-            ContractKind.Powers => v + g.PowersUsed - g.PowersBanked,
-            ContractKind.Brand => v + g.BrandFound - g.BrandBanked,
-            ContractKind.CleanBoss => v + g.CleanBosses - g.CleanBanked,
+            ContractKind.Kills => v + Math.Max(0, g.Kills - p.RunKills),
+            ContractKind.Powers => v + Math.Max(0, g.PowersUsed - p.RunPowers),
+            ContractKind.Brand => v + Math.Max(0, g.BrandFound - p.RunBrand),
+            ContractKind.CleanBoss => v + Math.Max(0, g.CleanBosses - p.RunClean),
             _ => v,
         };
     }

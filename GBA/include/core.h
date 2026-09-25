@@ -227,11 +227,10 @@ namespace core
         int stage_kills = 0;         // problemy usunięte na bieżącym etapie (odznaka Seryjny)
         int stage_start_turn = 0;    // tura wejścia na etap (odznaka Przed terminem)
         uint8_t tools_found = 0;     // narzędzia podniesione w tej budowie (odznaka Kolekcjoner)
-        // liczniki zleceń (przenoszone do profilu przez bank_counters; *_banked = już przeniesione)
-        int kills_banked = 0;
-        uint16_t powers_used = 0, powers_banked = 0;   // użycia mocy
-        uint8_t brand_found = 0, brand_banked = 0;     // założone markowe przedmioty
-        uint8_t clean_bosses = 0, clean_banked = 0;    // bossowie aktu bez obrażeń w walce z nimi
+        // liczniki zleceń (przenoszone do profilu przez bank_counters; ile już przeniesiono - w profilu, run_*)
+        uint16_t powers_used = 0;    // użycia mocy
+        uint8_t brand_found = 0;     // założone markowe przedmioty
+        uint8_t clean_bosses = 0;    // bossowie aktu bez obrażeń w walce z nimi
         int boss_wake_damage = -1;   // stage_damage w chwili dołączenia bossa do walki (-1 = jeszcze nie)
         int8_t stage_event = -1;     // wydarzenie na placu na bieżącym etapie (data::site_events, -1 = brak)
 
@@ -565,7 +564,8 @@ namespace core
             {
                 e.alive = false; ++kills; ++stage_kills; ++act_kills;
                 cash += ed.score / data::cash_per_score;
-                if(kills_by_type[e.def_id] < 255) ++kills_by_type[e.def_id]; score += ed.score * score_pct() / 100; gain_xp(data::xp_per_kill);
+                if(kills_by_type[e.def_id] < 255) ++kills_by_type[e.def_id];
+                score += ed.score * score_pct() / 100; gain_xp(data::xp_per_kill);
                 maybe_drop(e.x, e.y);
                 push(message().add(ed.name).add(" - usunięto!").as(good));
                 if(ei == boss)
@@ -796,6 +796,7 @@ namespace core
                     }
                     break;
                 }
+                default: break;
             }
             if(! ok) { push(message().add(c.ability_name).add(": nie teraz")); return false; }
             if(powers_used < 65535) ++powers_used;
@@ -829,6 +830,7 @@ namespace core
                         if(((bonus.tools >> t) & 1) && k-- == 0) { weapon_override = data::tools[t].weapon; tools_found = uint8_t(tools_found | (1u << t)); break; }
                     break;
                 }
+                default: break;
             }
             cash -= it.price;
             push(message().add("Hurtownia: ").add(it.name).as(loot));
@@ -901,9 +903,9 @@ namespace core
             const gear_def& nw = data::gear[slot * 3 + rarity];
             if(nw.stat == gear_stat::hp)
             {
-                int diff = nw.value - (equipped[slot] >= 0 ? data::gear[slot * 3 + equipped[slot]].value : 0);
-                hero.max_hp = int16_t(hero.max_hp + diff);
-                hero.hp = int16_t(imax(1, hero.hp + diff));
+                int delta = nw.value - (equipped[slot] >= 0 ? data::gear[slot * 3 + equipped[slot]].value : 0);
+                hero.max_hp = int16_t(hero.max_hp + delta);
+                hero.hp = int16_t(imax(1, hero.hp + delta));
             }
             equipped[slot] = int8_t(rarity);
             equipped_trait[slot] = int8_t(trait);

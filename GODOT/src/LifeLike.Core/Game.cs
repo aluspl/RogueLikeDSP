@@ -39,14 +39,13 @@ public sealed partial class Game
     public int StageKills;
     public int StageStartTurn;
     public byte ToolsFound;
-    // liczniki zleceń (przenoszone do profilu przez Meta.BankCounters; *Banked = już przeniesione)
-    public int KillsBanked;
+    // liczniki zleceń (przenoszone do profilu przez Meta.BankCounters; ile już przeniesiono – w profilu, Run*)
     /// <summary>Użycia mocy.</summary>
-    public ushort PowersUsed, PowersBanked;
+    public ushort PowersUsed;
     /// <summary>Założone markowe przedmioty.</summary>
-    public byte BrandFound, BrandBanked;
+    public byte BrandFound;
     /// <summary>Bossowie aktu bez obrażeń w walce z nimi.</summary>
-    public byte CleanBosses, CleanBanked;
+    public byte CleanBosses;
     /// <summary>StageDamage w chwili dołączenia bossa do walki (-1 = jeszcze nie).</summary>
     public int BossWakeDamage = -1;
     /// <summary>Wydarzenie na placu na bieżącym etapie (GameData.SiteEvents, -1 = brak).</summary>

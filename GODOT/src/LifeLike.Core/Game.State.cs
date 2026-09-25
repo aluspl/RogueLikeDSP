@@ -85,13 +85,9 @@ public sealed partial class Game
             w.Write(v);
         w.Write(KillsByType);
         w.Write(ToolsFound);
-        w.Write(KillsBanked);
         w.Write(PowersUsed);
-        w.Write(PowersBanked);
         w.Write(BrandFound);
-        w.Write(BrandBanked);
         w.Write(CleanBosses);
-        w.Write(CleanBanked);
         w.Write(BossWakeDamage);
         w.Write(StageEvent);
         foreach (var v in new[] { Cash, ActKills, ActBonus }) w.Write(v);
@@ -174,13 +170,9 @@ public sealed partial class Game
         StageStartTurn = r.ReadInt32();
         r.Read(KillsByType, 0, KillsByType.Length);
         ToolsFound = r.ReadByte();
-        KillsBanked = r.ReadInt32();
         PowersUsed = r.ReadUInt16();
-        PowersBanked = r.ReadUInt16();
         BrandFound = r.ReadByte();
-        BrandBanked = r.ReadByte();
         CleanBosses = r.ReadByte();
-        CleanBanked = r.ReadByte();
         BossWakeDamage = r.ReadInt32();
         StageEvent = r.ReadSByte();
         Cash = r.ReadInt32();

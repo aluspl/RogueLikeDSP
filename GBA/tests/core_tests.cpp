@@ -825,9 +825,52 @@ int main()
         CHECK(v3.hard == 1 && v3.flags == 3 && v3.tools == 5 && v3.badges == 0x0123 && v3.catalog == 0x07FF);
         CHECK(v3.class_wins == 0x05 && v3.tools_found == 0x0B && v3.houses_count == 3 && v3.houses[0] == 0x21 && v3.houses[2] == 0x35);
         CHECK(v3.kills_total == 0 && v3.powers_total == 0 && v3.brand_total == 0 && v3.clean_bosses == 0);
-        CHECK(v3.contracts == 0 && v3.keepsake == 0);
+        CHECK(v3.contracts == 0 && selected_keepsake(v3) >= 0 && data::keepsakes[selected_keepsake(v3)].start);   // domyślna pamiątka
         for(int i = 0; i < max_keepsakes; ++i) CHECK(v3.keepsake_runs[i] == 0);
         CHECK(!profile_fix(v3));
+    }
+    // 31d. profil v4 -> v5: pola zostają, znak wodny liczników od zera; bez pamiątki - pierwsza odblokowana
+    {
+        profile v4; profile_reset(v4);
+        std::memcpy(v4.magic, "PBRL004", 8); v4.best = 77; v4.xp = 12; v4.kills_total = 150; v4.powers_total = 40;
+        v4.contracts = 0x03; v4.keepsake = 0; v4.keepsake_runs[0] = 4;
+        std::memset(reinterpret_cast<char*>(&v4) + profile_v4_size, 0xEE, sizeof v4 - profile_v4_size);   // śmieci
+        CHECK(profile_fix(v4) && std::strcmp(v4.magic, profile_magic) == 0);
+        CHECK(v4.best == 77 && v4.xp == 12 && v4.kills_total == 150 && v4.powers_total == 40 && v4.contracts == 0x03);
+        CHECK(v4.keepsake_runs[0] == 4 && v4.run_kills == 0 && v4.run_powers == 0 && v4.run_brand == 0 && v4.run_clean == 0);
+        CHECK(selected_keepsake(v4) >= 0 && data::keepsakes[selected_keepsake(v4)].start);
+        CHECK(!profile_fix(v4));
+        profile w; profile_reset(w); std::memcpy(w.magic, "PBRL004", 8); w.keepsake = 0; w.badges = 0x01;
+        int kb = -1; for(int k = 0; k < data::keepsakes_count; ++k) if(data::keepsakes[k].badge == 0) kb = k;
+        w.keepsake = uint8_t(kb >= 0 ? kb + 1 : 0);   // wybrana pamiątka zostaje
+        CHECK(profile_fix(w) && w.keepsake == uint8_t(kb >= 0 ? kb + 1 : 1));
+        profile n; profile_reset(n); CHECK(selected_keepsake(n) >= 0 && data::keepsakes[selected_keepsake(n)].start);   // nowy profil
+    }
+    // 31e. wyłączenie konsoli po zaliczonym etapie i wznowienie z autozapisu na starcie etapu:
+    // liczniki zleceń z tego etapu nie liczą się drugi raz
+    {
+        profile p; profile_reset(p);
+        static game g; g.new_run(1, 4242, 0, mods(p)); start_run(p);
+        static run_save rs; run_save_make(rs, g);                        // autozapis na starcie etapu
+        for(int k = 0; k < 4000 && g.st == status::playing; ++k) bot_step(g);
+        CHECK(g.st == status::stage_clear && g.kills > 0);
+        g.powers_used = 2;
+        check_badges(p, g);                                              // koniec etapu: liczniki do profilu (SRAM)
+        int kills1 = p.kills_total, pw1 = p.powers_total;
+        CHECK(kills1 == g.kills && pw1 == 2);
+        static game h; std::memcpy(&h, &rs.g, sizeof h);                 // wznowienie: stan ze startu etapu
+        int i_k = -1; for(int i = 0; i < data::contracts_count; ++i) if(data::contracts[i].kind == contract_kind::kills) i_k = i;
+        CHECK(contract_progress_live(p, h, i_k) == kills1);              // telefon nie pokazuje etapu dwa razy
+        for(int k = 0; k < 4000 && h.st == status::playing; ++k) bot_step(h);
+        CHECK(h.st == status::stage_clear && h.kills == g.kills);        // ten sam etap jeszcze raz
+        h.powers_used = 2;
+        check_badges(p, h);
+        CHECK(p.kills_total == kills1 && p.powers_total == pw1);        // bez podwójnego liczenia
+        h.kills += 2; h.powers_used = 3; record_run(p, h);              // powtórka dała więcej: tylko nadwyżka
+        CHECK(p.kills_total == kills1 + 2 && p.powers_total == pw1 + 1);
+        start_run(p);                                                    // nowa budowa liczy od zera
+        game n; n.new_run(1, 5); n.kills = 3; record_run(p, n);
+        CHECK(p.kills_total == kills1 + 5 && p.run_kills == 3);
     }
     // 32. pamiątki: odblokowanie (start / odznaka / zlecenie), wybór, ranga po 3 i 8 budowach, premia w mods
     {
@@ -842,9 +885,10 @@ int main()
         for(int i = 0; i < data::contracts_count; ++i) if(data::contracts[i].keepsake >= 0) { contract_i = i; contract_k = data::contracts[i].keepsake; }
         CHECK(start_k >= 0 && badge_k >= 0 && contract_k >= 0);
         CHECK(keepsake_unlocked(p, start_k) && !keepsake_unlocked(p, badge_k) && !keepsake_unlocked(p, contract_k));
-        CHECK(selected_keepsake(p) == -1);
-        cycle_keepsake(p, 1); CHECK(selected_keepsake(p) == start_k);      // zablokowane są pomijane
-        cycle_keepsake(p, 1); CHECK(p.keepsake == 0);                       // "bez pamiątki"
+        CHECK(selected_keepsake(p) == start_k);                             // nowy profil: pamiątka startowa
+        cycle_keepsake(p, 1); CHECK(p.keepsake == 0);                       // zablokowane są pomijane -> "bez pamiątki"
+        cycle_keepsake(p, 1); CHECK(selected_keepsake(p) == start_k);
+        cycle_keepsake(p, -1); CHECK(p.keepsake == 0);
         p.badges = uint16_t(1 << data::keepsakes[badge_k].badge);
         CHECK(keepsake_unlocked(p, badge_k));
         p.contracts = uint8_t(1 << contract_i);
