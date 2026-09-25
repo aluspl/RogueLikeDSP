@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Text;
 using Godot;
 using LifeLike.Core;
 using LifeLike.Core.Data;
@@ -9,13 +8,28 @@ using CoreGame = LifeLike.Core.Game;
 namespace LifeLike.Game;
 
 /// <summary>
-/// Kompozycja gry: dane (game.json wspólny z GBA) -> LifeLike.Core.Game -> widok + HUD.
-/// Cała logika siedzi w LifeLike.Core (port 1:1 z GBA); tu jest tylko klej z silnikiem: ekrany tekstowe,
-/// wejście (klawiatura/pad/mysz) i render. Telefon i 2.5D to kolejne kamienie milowe (docs/KONCEPCJA.md).
+/// Kompozycja gry: dane (game.json wspólny z GBA) -> LifeLike.Core.Game -> widok mapy, HUD, telefon i ekrany.
+/// Cała logika siedzi w LifeLike.Core (port 1:1 z GBA); tu jest tylko prezentacja: przejścia ekranów (jak sceny
+/// w GBA/src/main.cpp), wejście (klawiatura/pad/mysz), dźwięk i powiadomienia. Obraz: 640x360 skalowane 2x.
+/// Pliki częściowe: Main.Screens.cs (ekrany i telefon), Main.Input.cs (wejście), Main.Debug.cs (zrzuty, test dymny).
 /// </summary>
 public partial class Main : Node2D
 {
-    private enum Screen { Title, Training, Playing, Overview, StageClear, Hurtownia, End, GearOffer, ActionMenu, Profile, StageCard }
+    private enum Screen
+    {
+        Title,
+        ClassSelect,
+        Profile,
+        Playing,
+        Phone,
+        ActionMenu,
+        GearOffer,
+        StageClear,
+        StageCard,
+        Hurtownia,
+        EndMessage,
+        End,
+    }
 
     [Export] public uint Seed { get; set; } // 0 = losowy
 
@@ -23,19 +37,29 @@ public partial class Main : Node2D
     private Profile _profile;
     private CoreGame _g;
     private Screen _screen = Screen.Title;
-    private int _cls, _diff, _sel;
+    private int _cls, _diff;
+    private int _titleSel;
+    private int _phoneTab = 2;   // ostatnio otwarta zakładka telefonu (Start), jak phone_tab na GBA
     private string _note = "";
     private int _lastGained;
     private bool _persistProfile = true;
+    private bool _firstStage;
 
     private WorldView _view;
     private Hud _hud;
-    private Camera2D _camera;
+    private Phone _phone;
+    private Backdrop _backdrop;
+    private PushBanners _banners;
+    private TitleScreen _title;
+    private ClassSelectScreen _classSelect;
+    private EndScreen _end;
+    private EventWatcher _events;
+    private HurtowniaPage _hurtownia;
 
     public override void _Ready()
     {
         GameInput.Register();
-        RenderingServer.SetDefaultClearColor(Colors.Black);
+        RenderingServer.SetDefaultClearColor(Pal.Void);
         try
         {
             _d = GodotDataSource.LoadGameData();
@@ -54,14 +78,9 @@ public partial class Main : Node2D
         _persistProfile = !smoke;
         _profile = smoke ? Meta.NewProfile(_d) : GodotDataSource.LoadProfile(_d);
         _diff = _d.DefaultDifficulty;
+        _cls = 1;
         _g = new CoreGame(_d);
-        _view = new WorldView();
-        _hud = new Hud();
-        _camera = new Camera2D { Zoom = new Vector2(1.4f, 1.4f), PositionSmoothingEnabled = true };
-        AddChild(_view);
-        AddChild(_hud);
-        AddChild(_camera);
-        _view.Bind(_g);
+        BuildNodes(!smoke && !args.Contains("--screenshot"));
 
         if (smoke)
         {
@@ -77,615 +96,66 @@ public partial class Main : Node2D
         ShowTitle();
     }
 
-    /// <summary>
-    /// --screenshot plik.png [--scene nazwa]: podgląd grafiki bez klikania, potem zrzut ekranu i wyjście.
-    /// Sceny: game (domyślna – bot gra kilka tur), title (ekran tytułowy), offer (okno porównania sprzętu),
-    /// menu (menu akcji z termosem; na pokaz stan zatrucia i kawy w termosie), combat (liczby: KRYT! i Unik!),
-    /// overview (podgląd pod Tab), profile (odznaki z uprawnieniami, zlecenia, pamiątki), card (karta etapu z wydarzeniem na placu),
-    /// perks (HUD z premiami: statystyki „SIŁ 5+2”, pamiątka, wydarzenie, najbliższe zlecenie). Sceny title/profile/card/perks
-    /// używają pokazowego profilu (odznaki, zlecenia, wybrana pamiątka).
-    /// </summary>
-    private async void TakeScreenshot(string path)
+    public override void _ExitTree()
     {
-        _persistProfile = false;
-        _profile = Meta.NewProfile(_d);
-        Seed = Seed != 0 ? Seed : 424242u;
-        var args = OS.GetCmdlineUserArgs();
-        var sceneArg = Array.IndexOf(args, "--scene");
-        var scene = sceneArg >= 0 && sceneArg + 1 < args.Length ? args[sceneArg + 1] : "game";
-        if (scene is "title" or "profile" or "card" or "perks") _profile = DemoProfile();
-        if (scene == "title")
-        {
-            _cls = 5;
-            ShowTitle();
-        }
-        else if (scene == "profile")
-        {
-            ShowProfile();
-        }
-        else if (scene == "card") // karta etapu z wydarzeniem: pierwszy seed, przy którym etap 2 ma wydarzenie
-        {
-            _cls = 1;
-            for (var s = Seed; ; s++)
-            {
-                Seed = s;
-                StartRun();
-                _g.NextStage();
-                if (_g.StageEvent >= 0) break;
-            }
-            ShowStageCard();
-            Refresh();
-        }
-        else
-        {
-            _cls = scene == "game" ? 0 : scene == "perks" ? 1 : 5;
-            StartRun();
-            if (scene == "perks") // Murarz z Warsztatami i cechą SIŁ+1, na etapie z wydarzeniem
-            {
-                for (var s = Seed; _g.StageEvent < 0; s++)
-                {
-                    Seed = s;
-                    StartRun();
-                    _g.NextStage();
-                }
-                _g.Equip(1, 2, Array.FindIndex(_d.GearTraits, t => t.Effect == TraitEffect.Str));
-                Refresh();
-            }
-            for (var i = 0; i < 10 && _screen == Screen.Playing; i++)
-            {
-                Bot.StepSmart(_g);
-                AfterAction(true);
-            }
-            if (_screen == Screen.GearOffer) CloseOffer(_g.OfferIsBetter);
-            switch (scene)
-            {
-                case "offer": // pokaz: założony kask z jedną cechą, pod nogami paczka z lepszym i inną cechą
-                    _g.Equip(0, 1, 1);
-                    _g.Pickups[0] = new Pickup(_g.Hero.X, _g.Hero.Y, PickupType.GearBox, true, 0 * 3 + 2, 3);
-                    _g.Collect();
-                    AfterAction(true);
-                    break;
-                case "menu":
-                    _g.Thermos = 2;
-                    _g.Hero.Hp = (short)(_g.Hero.MaxHp / 2);
-                    _g.ApplyStatus(StatusEffect.Poison, 3);
-                    _g.ApplyStatus(StatusEffect.Slip, 2);
-                    OpenMenu();
-                    _view.MenuSel = 2;
-                    MenuHint();
-                    break;
-                case "combat": // pokaz liczb: trafienie krytyczne bohatera i unik przed ciosem problemu
-                {
-                    _g.EnemiesCount = 0;
-                    var (ex, ey) = FreeNeighbour();
-                    _g.Spawn(0, ex, ey);
-                    _g.Enemies[0].Hp = _g.Enemies[0].MaxHp = 500;
-                    _g.Enemies[0].Awake = true;
-                    var kept = new System.Collections.Generic.List<Hit>();
-                    for (var k = 0; k < 300 && kept.Count == 0; k++)
-                    {
-                        _g.HitsCount = 0;
-                        _g.Hero.Hp = _g.Hero.MaxHp;
-                        _g.PlayerAttack(0);
-                        for (var h = 0; h < _g.HitsCount; h++) if (_g.Hits[h].Kind == HitKind.Crit) kept.Add(_g.Hits[h]);
-                    }
-                    for (var k = 0; k < 300; k++)
-                    {
-                        _g.HitsCount = 0;
-                        _g.Hero.Hp = _g.Hero.MaxHp;
-                        _g.PlayerWait();
-                        if (_g.HitsCount > 0 && _g.Hits[0].Kind == HitKind.Dodge) break;
-                    }
-                    foreach (var h in kept) _g.AddHit(h.X, h.Y, h.Amount, h.OnHero, h.Kind);
-                    AfterAction(true);
-                    break;
-                }
-                case "overview":
-                    _screen = Screen.Overview;
-                    ShowOverview();
-                    break;
-            }
-        }
-        for (var i = 0; i < 30; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-        GetViewport().GetTexture().GetImage().SavePng(path);
-        GD.Print($"Zrzut ekranu: {path}");
-        GetTree().Quit();
+        Assets.ClearCache();
+        Ui.ClearCache();
+        PixelFont.Release();
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
     }
 
-    /// <summary>Profil pokazowy do zrzutów: część odznak (uprawnienia), zlecenia z postępem, pamiątka z rangą II, Warsztaty.</summary>
-    private Profile DemoProfile()
+    private void BuildNodes(bool sound)
     {
-        var p = Meta.NewProfile(_d);
-        p.Runs = 14;
-        p.Wins = 3;
-        p.Best = 5613;
-        p.Xp = 85;
-        p.Badges = (ushort)((1 << _d.BadgeBezUsterek) | (1 << _d.BadgeSeryjny) | (1 << _d.BadgeKolekcjoner));
-        p.ClassWins = 0x03;
-        p.KillsTotal = 163;
-        p.PowersTotal = 71;
-        p.BrandTotal = 5;
-        p.CleanBosses = 1;
-        Meta.CheckContracts(_d, p);
-        var craft = Array.FindIndex(_d.Upgrades, u => u.Effect == UpgradeEffect.Craft);
-        if (craft >= 0) p.Levels[craft] = 2;
-        var kielnia = Array.FindIndex(_d.Keepsakes, k => k.Effect == PerkEffect.Luck);
-        if (kielnia >= 0)
-        {
-            p.Keepsake = (byte)(kielnia + 1);
-            p.KeepsakeRuns[kielnia] = 4;
-        }
-        p.KeepsakeRuns[0] = 2;
-        return p;
+        if (sound) AddChild(new Sfx()); // test dymny i zrzuty bez dźwięku (Sfx.Play jest wtedy pusty)
+        _view = new WorldView();
+        AddChild(_view);
+        _view.Bind(_g);
+        _hud = new Hud();
+        AddChild(_hud);
+        _view.OnFlash = (c, a) => _hud.Tint.Flash(c, a);
+
+        var screens = new CanvasLayer { Layer = 2 };
+        AddChild(screens);
+        _title = new TitleScreen { Visible = false, Version = _d.Version };
+        _classSelect = new ClassSelectScreen { Visible = false };
+        _end = new EndScreen { Visible = false };
+        screens.AddChild(_title);
+        screens.AddChild(_classSelect);
+        screens.AddChild(_end);
+
+        var phoneLayer = new CanvasLayer { Layer = 3 };
+        AddChild(phoneLayer);
+        _backdrop = new Backdrop();
+        _phone = new Phone();
+        phoneLayer.AddChild(_backdrop);
+        phoneLayer.AddChild(_phone);
+
+        var top = new CanvasLayer { Layer = 4 };
+        AddChild(top);
+        _banners = new PushBanners();
+        top.AddChild(_banners);
+        _events = new EventWatcher(_banners, _view);
     }
 
-    private (int X, int Y) FreeNeighbour()
+    /// <summary>Widoczność warstw wg ekranu: mapa + HUD w trakcie budowy, telefon z rozmytym tłem, ekrany pełne.</summary>
+    private void ApplyScreen(Screen s)
     {
-        foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
-        {
-            int x = _g.Hero.X + dx, y = _g.Hero.Y + dy;
-            if (_g.Lv.At(x, y) == Tile.Floor && !_g.Occupied(x, y)) return (x, y);
-        }
-        return (_g.Hero.X + 1, _g.Hero.Y);
-    }
-
-    // ------------------------------------------------------------------ test dymny
-    /// <summary>
-    /// Test dymny: godot --headless --path GODOT/godot -- --smoke. Bot (ten sam co w testach rdzenia) gra kilka etapów
-    /// przez warstwę Godota (odświeżanie widoku, HUD, ekrany harmonogramu i Hurtowni), kod wyjścia 0 = OK.
-    /// </summary>
-    private void RunSmokeTest()
-    {
-        try
-        {
-            _cls = 0;
-            _diff = 0;
-            Seed = Seed != 0 ? Seed : 424242u;
-            StartRun();
-            int steps = 0, offers = 0, drinks = 0;
-            for (; steps < 4000 && _g.Stage < 5; steps++)
-            {
-                if (_screen is Screen.StageClear or Screen.StageCard)
-                {
-                    Advance();
-                    continue;
-                }
-                if (_screen == Screen.Hurtownia)
-                {
-                    Bot.Shop(_g);
-                    ShowHurtownia();
-                    Advance();
-                    continue;
-                }
-                if (_screen == Screen.GearOffer) // okno porównania: decyzja jak bot z GBA (lepszy – zakładam)
-                {
-                    offers++;
-                    CloseOffer(_g.OfferIsBetter);
-                    continue;
-                }
-                if (_screen != Screen.Playing) break;
-                if (_g.Thermos > 0 && _g.Hero.Hp * 2 < _g.Hero.MaxHp) // termos przez menu akcji (Enter, strzałka w dół x2)
-                {
-                    OpenMenu();
-                    MenuPick(2);
-                    MenuPick(2);
-                    drinks++;
-                    continue;
-                }
-                Bot.StepSmart(_g);
-                AfterAction(true);
-            }
-            if (_screen == Screen.Playing && _g.St == GameStatus.Playing)
-            {
-                // Ścieżki UI, na które bot mógł nie trafić: termos przez menu akcji i okno porównania sprzętu.
-                _g.Thermos = Math.Max(_g.Thermos, 1);
-                _g.Hero.Hp = (short)Math.Max(1, _g.Hero.MaxHp / 3);
-                int before = _g.Thermos, hp = _g.Hero.Hp;
-                OpenMenu();
-                MenuPick(2);
-                MenuPick(2);
-                if (_screen == Screen.Playing && (_g.Thermos != before - 1 || _g.Hero.Hp <= hp - 20)) throw new Exception("termos z menu nie zadziałał");
-                drinks++;
-                if (_g.St == GameStatus.Playing && _screen == Screen.Playing)
-                {
-                    _g.Equip(0, 0, 0);
-                    _g.Pickups[0] = new Pickup(_g.Hero.X, _g.Hero.Y, PickupType.GearBox, true, 2, 1);
-                    _g.Collect();
-                    AfterAction(true);
-                    if (_screen != Screen.GearOffer) throw new Exception("brak okna porównania sprzętu");
-                    OfferInput(new InputEventAction { Action = GameInput.Attack, Pressed = true });
-                    if (_screen != Screen.Playing || _g.Equipped[0] != 2 || _g.EquippedTrait[0] != 1) throw new Exception("zakładanie z porównania nie zadziałało");
-                    offers++;
-                }
-            }
-            ShowOverview();
-            ShowProfile();
-            _profile.Keepsake = 0;
-            Meta.CycleKeepsake(_d, _profile, 1);
-            if (Meta.SelectedKeepsake(_d, _profile) < 0) throw new Exception("brak pamiątki startowej do wyboru");
-            ShowTitle();
-            var ok = _g.Stage >= 5 || _g.St is GameStatus.Dead or GameStatus.Won;
-            GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {_d.Version}, zawody {_d.Classes.Length}, etap {_g.Stage + 1}, " +
-                     $"dzień {_g.Turns}, HP {_g.Hero.Hp}/{_g.Hero.MaxHp}, wynik {_g.Score}, budżet {_g.Cash}, kroki {steps}, " +
-                     $"paczki {offers}, termos {drinks}, zabite w profilu {_profile.KillsTotal}, moce {_profile.PowersTotal}, ekran {_screen}");
-            GetTree().Quit(ok ? 0 : 1);
-        }
-        catch (Exception ex)
-        {
-            GD.PushError($"SMOKE FAIL: {ex}");
-            GetTree().Quit(1);
-        }
-    }
-
-    // ------------------------------------------------------------------ ekrany
-    private void ShowTitle()
-    {
-        _screen = Screen.Title;
-        var sb = new StringBuilder();
-        sb.AppendLine($"PLANBUDOWLANY ROGUELIKE  {_d.Version}");
-        sb.AppendLine($"Rekord: {_profile.Best} · Budowy: {_profile.Runs} · Wygrane: {_profile.Wins} · Doświadczenie: {_profile.Xp}");
-        sb.AppendLine();
-        var mods = Meta.Mods(_d, _profile);
-        sb.AppendLine("Zawód (←/→):");
-        for (var i = 0; i < _d.Classes.Length; i++)
-        {
-            var c = _d.Classes[i];
-            var mark = i == _cls ? "> " : "  ";
-            var lockTxt = Meta.ClassUnlocked(_profile, i) ? "" : $"  [zablokowany – {_d.ClassCost} dośw. w Szkoleniach]";
-            sb.AppendLine($"{mark}{c.Name} – {c.Desc} HP {c.MaxHealth + mods.Hp}, {Hud.ClassStats(_d, i, mods)}, szczęście {c.Luck + mods.Luck}, moc {c.AbilityName}{lockTxt}");
-        }
-        sb.AppendLine();
-        var diffLock = Meta.DifficultyUnlocked(_d, _profile, _diff) ? "" : " [zablokowany]";
-        sb.AppendLine($"Poziom (↑/↓): {_d.Difficulties[_diff].Name}{diffLock}");
-        sb.AppendLine($"Pamiątka (Q/E): {KeepsakeText()}");
-        var perks = PerksText();
-        sb.AppendLine($"Uprawnienia: {(perks.Length > 0 ? perks : "brak – zdobywaj odznaki")}");
-        sb.AppendLine();
-        sb.AppendLine("Spacja/Enter: start · K: Szkolenia (sklep za doświadczenie) · P: profil (odznaki, zlecenia, pamiątki)");
-        if (_note.Length > 0) sb.AppendLine().AppendLine(_note);
-        _hud.ShowPanel(sb.ToString());
-    }
-
-    /// <summary>Wybrana pamiątka z rangą i premią, np. „Szczęśliwa kielnia II – +3 szczęścia (1/3 odblokowanych)”.</summary>
-    private string KeepsakeText()
-    {
-        var unlocked = Enumerable.Range(0, _d.Keepsakes.Length).Count(k => Meta.KeepsakeUnlocked(_d, _profile, k));
-        var k = Meta.SelectedKeepsake(_d, _profile);
-        var sel = k < 0
-            ? "bez pamiątki"
-            : $"{_d.Keepsakes[k].Name} {Hud.Roman(Meta.KeepsakeRank(_d, _profile, k) - 1)} – {RunMods.PerkLabel(Meta.KeepsakePerk(_d, _profile, k))}";
-        return $"{sel} ({unlocked}/{_d.Keepsakes.Length} odblokowanych)";
-    }
-
-    /// <summary>Uprawnienia ze zdobytych odznak (premie na każdą budowę).</summary>
-    private string PerksText() =>
-        string.Join(", ", _d.Badges.Where((_, i) => (_profile.Badges & (1 << i)) != 0).Select(b => RunMods.PerkLabel(b.Bonus)).Where(s => s.Length > 0));
-
-    /// <summary>Najbliższe zlecenie z postępem na żywo (HUD, podgląd), null gdy wszystkie wykonane.</summary>
-    private string ContractLine()
-    {
-        var i = Meta.NextContract(_d, _profile, _g);
-        if (i < 0) return null;
-        var c = _d.Contracts[i];
-        return $"Zlecenie: {c.Name} {Math.Min(c.Target, Meta.ContractProgressLive(_d, _profile, _g, i))}/{c.Target} – {c.Desc}";
-    }
-
-    /// <summary>Profil: odznaki z uprawnieniami, zlecenia z postępem i nagrodą, pamiątki z rangą (jak zakładki telefonu na GBA).</summary>
-    private void ShowProfile()
-    {
-        _screen = Screen.Profile;
-        var sb = new StringBuilder();
-        sb.AppendLine($"PROFIL · Budowy {_profile.Runs} · Wygrane {_profile.Wins} · Rekord {_profile.Best}");
-        sb.AppendLine();
-        sb.AppendLine($"ODZNAKI I UPRAWNIENIA ({BitCount(_profile.Badges)}/{_d.Badges.Length}):");
-        for (var i = 0; i < _d.Badges.Length; i++)
-        {
-            var b = _d.Badges[i];
-            var got = (_profile.Badges & (1 << i)) != 0;
-            sb.AppendLine($" {(got ? "[x]" : "[ ]")} {b.Name} – {b.Desc} → {RunMods.PerkLabel(b.Bonus)}{(got ? "" : $" (+{b.Xp} dośw.)")}");
-        }
-        var right = new StringBuilder();
-        right.AppendLine($"ZLECENIA ({BitCount(_profile.Contracts)}/{_d.Contracts.Length}):");
-        for (var i = 0; i < _d.Contracts.Length; i++)
-        {
-            var c = _d.Contracts[i];
-            var done = Meta.ContractDone(_profile, i);
-            var reward = $"+{c.Xp} dośw." + (c.Keepsake >= 0 ? $", {_d.Keepsakes[c.Keepsake].Name}" : "");
-            right.AppendLine($" {(done ? "[x]" : "[ ]")} {c.Name} – {c.Desc} {Math.Min(c.Target, Meta.ContractProgress(_d, _profile, i))}/{c.Target} → {reward}");
-        }
-        sb.AppendLine();
-        sb.AppendLine("PAMIĄTKI (Q/E na ekranie tytułowym):");
-        var selK = Meta.SelectedKeepsake(_d, _profile);
-        for (var k = 0; k < _d.Keepsakes.Length; k++)
-        {
-            var kd = _d.Keepsakes[k];
-            var rank = Meta.KeepsakeRank(_d, _profile, k);
-            string how;
-            if (Meta.KeepsakeUnlocked(_d, _profile, k))
-                how = rank < 3 ? $"ranga {Hud.Roman(rank)} po {_d.KeepsakeRankRuns[rank - 1]} bud. (ma {_profile.KeepsakeRuns[k]})" : "ranga maks.";
-            else if (kd.Badge >= 0)
-                how = $"odblokuje odznaka {_d.Badges[kd.Badge].Name}";
-            else
-                how = "odblokuje zlecenie " + (_d.Contracts.FirstOrDefault(c => c.Keepsake == k)?.Name ?? "?");
-            sb.AppendLine($" {(k == selK ? ">" : " ")} {kd.Name} {Hud.Roman(rank - 1)} – {RunMods.PerkLabel(Meta.KeepsakePerk(_d, _profile, k))} · {how}");
-        }
-        right.AppendLine();
-        right.AppendLine($"Liczniki: usunięte problemy {_profile.KillsTotal}, moce {_profile.PowersTotal}, markowy sprzęt {_profile.BrandTotal}, czyści bossowie {_profile.CleanBosses}");
-        right.AppendLine();
-        right.AppendLine("P/Z/Esc: wróć");
-        _hud.ShowPanel(sb.ToString(), right.ToString());
-    }
-
-    private static int BitCount(int v) => System.Numerics.BitOperations.PopCount((uint)v);
-
-    /// <summary>Karta etapu po harmonogramie: nazwa etapu i SMS wydarzenia na placu (jak drugi SMS na GBA).</summary>
-    private void ShowStageCard()
-    {
-        _screen = Screen.StageCard;
-        var sd = _d.Stages[_g.Stage];
-        var sb = new StringBuilder();
-        sb.AppendLine($"ETAP {_g.Stage + 1}/{_d.Stages.Length}: {sd.Name}");
-        sb.AppendLine($"Akt {Hud.Roman(sd.Act)} {_d.Acts[sd.Act].Name}{(sd.Boss >= 0 ? " · BOSS: " + _d.Enemies[sd.Boss].Name : "")}");
-        sb.AppendLine();
-        if (_g.CurrentEvent is { } ev)
-        {
-            sb.AppendLine($"WYDARZENIE NA PLACU: {ev.Name} ({(ev.Good ? "korzystne" : "utrudnienie")})");
-            sb.AppendLine($"SMS od {ev.Msg.From}: {string.Join(" ", ev.Msg.Lines.Where(l => l.Length > 0))}");
-            sb.AppendLine($"Skutek: {ev.Info}");
-        }
-        else
-        {
-            sb.AppendLine("Na placu spokojnie – bez wydarzeń.");
-        }
-        var line = ContractLine();
-        if (line is not null) sb.AppendLine().AppendLine(line);
-        sb.AppendLine();
-        sb.AppendLine("Spacja/Enter: do roboty");
-        _hud.ShowPanel(sb.ToString());
-    }
-
-    private string[] TrainingEntries()
-    {
-        var list = _d.Upgrades.Select((u, i) =>
-        {
-            var cost = Meta.UpgradeCost(_d, _profile, i);
-            return $"{u.Name} ({u.Desc}) poziom {_profile.Levels[i]}/{u.Levels} – {(cost < 0 ? "max" : cost + " dośw.")}";
-        }).ToList();
-        for (var i = 0; i < _d.Classes.Length; i++)
-            list.Add($"Zawód: {_d.Classes[i].Name} – {(Meta.ClassUnlocked(_profile, i) ? "odblokowany" : _d.ClassCost + " dośw.")}");
-        for (var i = 0; i < _d.Tools.Length; i++)
-            list.Add($"Narzędzie: {_d.Weapons[_d.Tools[i].Weapon].Name} – {(Meta.ToolUnlocked(_d, _profile, i) ? "odblokowane" : _d.Tools[i].Cost + " dośw.")}");
-        list.Add($"Poziom {_d.Difficulties[^1].Name} – {(_profile.Hard != 0 ? "odblokowany" : _d.HardCost + " dośw.")}");
-        return list.ToArray();
-    }
-
-    private bool BuyTraining(int sel)
-    {
-        var u = _d.Upgrades.Length;
-        var c = _d.Classes.Length;
-        var t = _d.Tools.Length;
-        if (sel < u) return Meta.BuyUpgrade(_d, _profile, sel);
-        if (sel < u + c) return Meta.BuyClass(_d, _profile, sel - u);
-        if (sel < u + c + t) return Meta.BuyTool(_d, _profile, sel - u - c);
-        return Meta.BuyHard(_d, _profile);
-    }
-
-    private void ShowTraining()
-    {
-        _screen = Screen.Training;
-        var entries = TrainingEntries();
-        _sel = Math.Clamp(_sel, 0, entries.Length - 1);
-        var sb = new StringBuilder();
-        sb.AppendLine($"SZKOLENIA · Pozostało: {_profile.Xp} dośw. · Wydano {Meta.ShopSpent(_d, _profile)}/{Meta.ShopTotalCost(_d)}");
-        sb.AppendLine();
-        for (var i = 0; i < entries.Length; i++) sb.AppendLine((i == _sel ? "> " : "  ") + entries[i]);
-        sb.AppendLine();
-        sb.AppendLine("↑/↓ wybór · Spacja: kup · Z/Esc: wróć");
-        if (_note.Length > 0) sb.AppendLine(_note);
-        _hud.ShowPanel(sb.ToString());
-    }
-
-    private void ShowOverview()
-    {
-        var sb = new StringBuilder();
-        sb.AppendLine($"PODGLĄD · {_g.CDef.Name} · poziom {_g.HeroLevel} · dzień {_g.Turns}");
-        sb.AppendLine($"HP {_g.Hero.Hp}/{_g.Hero.MaxHp} · {Hud.Stats(_g)} · obrona {_g.CDef.Defense}+{_g.DefBonus + _g.GearBonus(GearStat.Def)} · premia obrażeń {_g.DmgBonus + _g.GearBonus(GearStat.Dmg)}");
-        sb.AppendLine($"{Hud.Luck(_g)} · Termos {_g.Thermos}/{_g.ThermosCap()} · Moc co {_g.AbilityCooldown()} t.");
-        if (_g.CurrentEvent is { } ev) sb.AppendLine($"Wydarzenie na placu: {ev.Name} – {ev.Info}");
-        var line = ContractLine();
-        if (line is not null) sb.AppendLine(line);
-        sb.AppendLine($"Sprzęt: {Hud.Gear(_g)}");
-        sb.AppendLine($"Stany: {Hud.Statuses(_g)}");
-        sb.AppendLine($"Wynik {_g.Score} · Budżet {_g.Cash} zł · Doświadczenie {_g.Xp} · Zabite {_g.Kills}");
-        sb.AppendLine();
-        sb.AppendLine("Widoczne problemy budowy:");
-        var any = false;
-        for (var i = 0; i < _g.EnemiesCount; i++)
-        {
-            var e = _g.Enemies[i];
-            if (!e.Alive || !_g.Visible(e.X, e.Y)) continue;
-            var ed = _d.Enemies[e.DefId];
-            var bonus = _g.EnemyDmgBonus();
-            sb.AppendLine($"  {ed.Name}{(i == _g.Boss ? " (BOSS)" : "")} HP {e.Hp}/{e.MaxHp}, obr. {ed.MinDamage + bonus}-{ed.MaxDamage + bonus}, " +
-                          $"odl. {CoreGame.Cheb(_g.Hero.X, _g.Hero.Y, e.X, e.Y)} – {ed.Desc}");
-            any = true;
-        }
-        if (!any) sb.AppendLine("  nikogo w polu widzenia");
-        sb.AppendLine();
-        sb.AppendLine("Tab: wróć do gry");
-        _hud.ShowPanel(sb.ToString());
-    }
-
-    private void ShowStageClear()
-    {
-        _screen = Screen.StageClear;
-        var sb = new StringBuilder();
-        sb.AppendLine(_g.ActCleared ? $"AKT {Hud.Roman(_d.Stages[_g.Stage].Act)} ZALICZONY! Premia +{_g.ActBonus} zł" : "ETAP ZALICZONY");
-        sb.AppendLine();
-        sb.AppendLine("Harmonogram:");
-        for (var i = 0; i < _d.Stages.Length; i++)
-            sb.AppendLine($"{(i <= _g.Stage ? "[x]" : i == _g.Stage + 1 ? "[>]" : "[ ]")} {i + 1}. {_d.Stages[i].Name}");
-        sb.AppendLine();
-        sb.AppendLine($"Wynik: {_g.Score}  Dni: {_g.Turns}  Doświadczenie budowy: {_g.Xp}");
-        if (_note.Length > 0) sb.AppendLine(_note);
-        var story = _d.StoryStages[Math.Min(_g.Stage + 1, _d.StoryStages.Length - 1)];
-        sb.AppendLine();
-        sb.AppendLine($"SMS od {story.From}: {string.Join(" ", story.Lines)}");
-        sb.AppendLine();
-        sb.AppendLine(_g.ActCleared ? "Spacja/Enter: do Hurtowni" : "Kawa: +5 HP · Spacja/Enter: dalej");
-        _hud.ShowPanel(sb.ToString());
-    }
-
-    private void ShowHurtownia()
-    {
-        _screen = Screen.Hurtownia;
-        _sel = Math.Clamp(_sel, 0, _d.Hurtownia.Length - 1);
-        var sb = new StringBuilder();
-        sb.AppendLine($"HURTOWNIA · Budżet: {_g.Cash} zł");
-        sb.AppendLine();
-        for (var i = 0; i < _d.Hurtownia.Length; i++)
-        {
-            var it = _d.Hurtownia[i];
-            sb.AppendLine($"{(i == _sel ? "> " : "  ")}{it.Name} – {it.Price} zł{(_g.Cash >= it.Price ? "" : " (za mało)")}: {it.Desc}");
-        }
-        sb.AppendLine();
-        sb.AppendLine($"HP {_g.Hero.Hp}/{_g.Hero.MaxHp} · broń {_g.Weapon.Name} · sprzęt: {Hud.Gear(_g)}");
-        sb.AppendLine("↑/↓ wybór · Spacja: kup · Enter/Z: dalej");
-        if (_note.Length > 0) sb.AppendLine(_note);
-        _hud.ShowPanel(sb.ToString());
-    }
-
-    /// <summary>Paczka sprzętu przy zajętym slocie: porównanie obecny / nowy z cechami (jak telefon na GBA).</summary>
-    private void ShowOffer()
-    {
-        _screen = Screen.GearOffer;
-        var slot = _g.OfferSlot;
-        string Row(string label, int rarity, int trait)
-        {
-            var gd = _d.Gear[slot * 3 + rarity];
-            var t = _d.GearTraits[trait];
-            return $"{label} {gd.Name} ({_d.GearRarities[rarity]}) – {Hud.StatName(gd.Stat)} +{gd.Value}, cecha: {t.Name}";
-        }
-        var sb = new StringBuilder();
-        sb.AppendLine($"PACZKA SPRZĘTU · {_d.GearSlots[slot]}");
-        sb.AppendLine();
-        sb.AppendLine(Row("Teraz:", _g.Equipped[slot], _g.EquippedTrait[slot]));
-        sb.AppendLine(Row("Nowy: ", _g.OfferRarity, _g.OfferTrait));
-        sb.AppendLine();
-        sb.AppendLine(_g.OfferIsBetter ? "Nowy jest lepszej jakości."
-                      : _g.OfferRarity == _g.Equipped[slot] ? "Ta sama jakość – różni się cechą." : "Nowy jest gorszej jakości.");
-        sb.AppendLine();
-        sb.AppendLine($"A (Spacja/X): zakładam · B (Z): zostawiam (+{_d.GearDeclineXp + _g.OfferRarity} dośw.)");
-        _hud.ShowPanel(sb.ToString());
-    }
-
-    private void CloseOffer(bool accept)
-    {
-        if (accept) _g.AcceptOffer();
-        else _g.DeclineOffer();
-        _screen = Screen.Playing;
-        _hud.HidePanel();
-        AfterAction(true); // decyzja nie zużywa tury, ale mogła dać awans (doświadczenie)
-    }
-
-    // ------------------------------------------------------------------ menu akcji (Enter / START)
-    /// <summary>Menu akcji wokół bohatera: góra Atak, prawo Moc, dół Termos, lewo Czekaj (jak GBA v0.21.42).</summary>
-    private void OpenMenu()
-    {
-        _screen = Screen.ActionMenu;
-        _view.MenuSel = -1;
-        MenuHint();
-        Refresh();
-    }
-
-    private void CloseMenu()
-    {
-        _view.MenuSel = -2;
-        _hud.ShowHint(null);
-        if (_screen == Screen.ActionMenu) _screen = Screen.Playing;
-        Refresh();
-    }
-
-    private void MenuHint()
-    {
-        var label = _view.MenuSel switch
-        {
-            0 => $"Atak: najbliższy cel (z{_g.Weapon.Range})",
-            1 => $"Moc: {_g.CDef.AbilityName} {Hud.Roman(_g.AbilityRank() - 1)}" + (_g.AbilityCd > 0 ? $" – za {_g.AbilityCd} t." : ""),
-            2 => $"Termos {_g.Thermos}/{_g.ThermosCap()}: kawa +{_g.CoffeeHeal()} HP (zużywa turę)",
-            3 => "Czekaj turę",
-            _ => "Akcje: wybierz strzałką (A Atak ↑, M Moc →, T Termos ↓, C Czekaj ←)",
-        };
-        _hud.ShowHint(label + "\n" + (_view.MenuSel < 0 ? "Enter/Z: zamknij" : "Ta sama strzałka lub Spacja: wykonaj · Enter/Z: zamknij"));
-    }
-
-    /// <summary>Strzałka w menu: pierwszy raz wybiera, drugi raz tą samą – wykonuje.</summary>
-    private void MenuPick(int k)
-    {
-        if (_view.MenuSel != k)
-        {
-            _view.MenuSel = k;
-            MenuHint();
-            _view.QueueRedraw();
-            return;
-        }
-        MenuExecute();
-    }
-
-    private void MenuExecute()
-    {
-        var sel = _view.MenuSel;
-        CloseMenu();
-        var acted = sel switch
-        {
-            0 => AttackNearest(),
-            1 => _g.PlayerAbility(),
-            2 => _g.PlayerDrink(),
-            3 => _g.PlayerWait(),
-            _ => false,
-        };
-        AfterAction(acted);
-    }
-
-    private bool ActionMenuInput(InputEvent e)
-    {
-        for (var k = 0; k < 4; k++)
-        {
-            var action = k switch { 0 => GameInput.Up, 1 => GameInput.Right, 2 => GameInput.Down, _ => GameInput.Left };
-            if (!Pressed(e, action)) continue;
-            MenuPick(k);
-            return true;
-        }
-        if (Pressed(e, GameInput.Attack) && _view.MenuSel >= 0) MenuExecute();
-        else if (Pressed(e, GameInput.Confirm) || Pressed(e, GameInput.Wait) || Pressed(e, GameInput.Cancel)) CloseMenu();
-        else return false;
-        return true;
-    }
-
-    private bool OfferInput(InputEvent e)
-    {
-        if (Pressed(e, GameInput.Attack)) CloseOffer(true);
-        else if (Pressed(e, GameInput.Wait) || Pressed(e, GameInput.Cancel)) CloseOffer(false);
-        else return false;
-        return true;
-    }
-
-    private void ShowEnd()
-    {
-        _screen = Screen.End;
-        var won = _g.St == GameStatus.Won;
-        var story = won ? _d.StoryWin : _d.StoryLose;
-        var sb = new StringBuilder();
-        sb.AppendLine(won ? "ODBIÓR ZALICZONY!" : "BUDOWA WSTRZYMANA");
-        sb.AppendLine();
-        sb.AppendLine($"Wynik {_g.Score} · Dni {_g.Turns} · Etap {_g.Stage + 1}/{_d.Stages.Length} · Dośw. +{_lastGained}");
-        sb.AppendLine($"Rekord {_profile.Best} · Doświadczenie w profilu {_profile.Xp}{(won ? " · Dom na Osiedlu!" : "")}");
-        if (_note.Length > 0) sb.AppendLine(_note);
-        sb.AppendLine();
-        sb.AppendLine($"SMS od {story.From}: {string.Join(" ", story.Lines)}");
-        sb.AppendLine();
-        sb.AppendLine(won ? "Spacja: kolejna budowa (NG+) · Enter: menu" : "Spacja/Enter: menu");
-        _hud.ShowPanel(sb.ToString());
+        _screen = s;
+        var inRun = s is Screen.Playing or Screen.Phone or Screen.ActionMenu or Screen.GearOffer or Screen.StageClear
+            or Screen.StageCard or Screen.Hurtownia or Screen.EndMessage;
+        _view.Visible = inRun;
+        _hud.Visible = inRun;
+        _title.Visible = s is Screen.Title or Screen.Profile;
+        _classSelect.Visible = s == Screen.ClassSelect;
+        _end.Visible = s == Screen.End;
+        var phone = s is Screen.Profile or Screen.Phone or Screen.GearOffer or Screen.StageClear or Screen.StageCard
+            or Screen.Hurtownia or Screen.EndMessage;
+        _backdrop.SetOn(phone);
+        _banners.Compact = phone;
+        if (!phone) _phone.Close();
+        if (s != Screen.ActionMenu) _hud.ShowHint(null);
+        Sfx.Music(s is Screen.Title or Screen.ClassSelect or Screen.Profile ? "title" : s == Screen.End ? "" : "game");
     }
 
     // ------------------------------------------------------------------ przebieg budowy
@@ -696,15 +166,32 @@ public partial class Main : Node2D
         Meta.StartRun(_d, _profile);
         SaveProfile();
         _note = "";
-        _screen = Screen.Playing;
-        _hud.HidePanel();
+        _firstStage = true;
+        _banners.Clear();
+        _events.Reset(_g);
         GD.Print($"Nowa budowa: {_g.CDef.Name}, {_d.Difficulties[_diff].Name}, seed {seed}");
         Refresh();
+        ShowStageCard();
     }
 
     private void SaveProfile()
     {
         if (_persistProfile) GodotDataSource.SaveProfile(_profile);
+    }
+
+    /// <summary>Powiadomienia o nowych odznakach i zleceniach (push_achievements na GBA).</summary>
+    private void PushAchievements(int badges, int contracts)
+    {
+        for (var i = 0; i < _d.Badges.Length; i++)
+        {
+            if ((badges & (1 << i)) != 0) _banners.Push("Odznaka: " + _d.Badges[i].Name, $"+{_d.Badges[i].Xp} dośw.");
+        }
+        for (var i = 0; i < _d.Contracts.Length; i++)
+        {
+            if ((contracts & (1 << i)) == 0) continue;
+            var c = _d.Contracts[i];
+            _banners.Push("Zlecenie: " + c.Name, c.Keepsake >= 0 ? $"+{c.Xp}, {_d.Keepsakes[c.Keepsake].Name}" : $"Wykonane! +{c.Xp} dośw.");
+        }
     }
 
     private string BadgeNote(int got) =>
@@ -715,12 +202,13 @@ public partial class Main : Node2D
         got == 0 ? "" : "Zlecenia wykonane: " + string.Join(", ", _d.Contracts.Where((_, i) => (got & (1 << i)) != 0)
             .Select(c => $"{c.Name} (+{c.Xp}{(c.Keepsake >= 0 ? ", pamiątka " + _d.Keepsakes[c.Keepsake].Name : "")})"));
 
-    /// <summary>Odznaki (z bankowaniem liczników zleceń) i zlecenia – jak main.cpp na GBA: check_badges, potem check_contracts.</summary>
+    /// <summary>Odznaki (z bankowaniem liczników zleceń) i zlecenia - jak main.cpp na GBA: check_badges, potem check_contracts.</summary>
     private string CheckProgress()
     {
-        var badges = BadgeNote(Meta.CheckBadges(_d, _profile, _g));
-        var contracts = ContractNote(Meta.CheckContracts(_d, _profile));
-        return string.Join("\n", new[] { badges, contracts }.Where(s => s.Length > 0));
+        var got = Meta.CheckBadges(_d, _profile, _g);
+        var done = Meta.CheckContracts(_d, _profile);
+        PushAchievements(got, done);
+        return string.Join("\n", new[] { BadgeNote(got), ContractNote(done) }.Where(s => s.Length > 0));
     }
 
     /// <summary>Po akcji gracza: odznaki, bankowanie doświadczenia, przejścia ekranów (jak main.cpp na GBA).</summary>
@@ -731,8 +219,12 @@ public partial class Main : Node2D
             Refresh();
             return;
         }
+        Refresh();
         if (_g.St == GameStatus.StageClear)
         {
+            Sfx.Play("stage");
+            _banners.Clear();
+            _banners.Push("Etap zaliczony", _d.Stages[_g.Stage].Name);
             _note = CheckProgress();
             if (_g.Score > _profile.Best) _profile.Best = _g.Score;
             Meta.BankXp(_profile, _g);
@@ -747,251 +239,63 @@ public partial class Main : Node2D
             {
                 ++_profile.Wins;
                 Meta.AddHouse(_profile, _g);
+                _view.Confetti();
             }
             _note = CheckProgress();
             _lastGained = Meta.BankXp(_profile, _g);
             SaveProfile();
-            ShowEnd();
+            Sfx.Play(won ? "level" : "hurt");
+            ShowEndMessage();
         }
         else if (_g.St == GameStatus.Playing && _g.HasOffer && _screen == Screen.Playing)
         {
             ShowOffer();
         }
-        Refresh();
     }
 
-    /// <summary>Dalej z harmonogramu / Hurtowni.</summary>
+    /// <summary>Dalej z harmonogramu / karty etapu / Hurtowni.</summary>
     private void Advance()
     {
         if (_screen == Screen.StageClear && _g.ActCleared)
         {
             _note = "";
-            _sel = 0;
             ShowHurtownia();
             return;
         }
         if (_screen == Screen.StageCard)
         {
-            _screen = Screen.Playing;
-            _hud.HidePanel();
+            ApplyScreen(Screen.Playing);
+            if (_firstStage && _g.Stage == 0 && _g.Tier == 0) FirstStageBanners();
+            _firstStage = false;
             Refresh();
             return;
         }
         _note = "";
         _g.NextStage();
-        ShowStageCard();
+        _events.Reset(_g);
         Refresh();
+        ShowStageCard();
+    }
+
+    /// <summary>Podpowiedź na start budowy: moc pod R i zabrana pamiątka z rangą (jak na GBA).</summary>
+    private void FirstStageBanners()
+    {
+        _banners.Push("R: " + _g.CDef.AbilityName, _g.CDef.AbilityDesc);
+        var k = Meta.SelectedKeepsake(_d, _profile);
+        if (k < 0) return;
+        var runs = _profile.KeepsakeRuns[k] - 1;
+        var rank = 1 + (runs >= _d.KeepsakeRankRuns[0] ? 1 : 0) + (runs >= _d.KeepsakeRankRuns[1] ? 1 : 0);
+        var kd = _d.Keepsakes[k];
+        _banners.Push($"{kd.Name} {UiText.Roman(rank - 1)}", RunMods.PerkLabel(new Perk(kd.Effect, kd.Values[rank - 1])));
     }
 
     private void Refresh()
     {
-        _camera.Position = _view.GridToScreen(_g.Hero.X, _g.Hero.Y);
         Span<sbyte> t = stackalloc sbyte[CoreGame.MaxEnemies];
-        _view.Mark(_screen == Screen.Playing && _g.TargetsInRange(t) > 0 ? t[0] : -1);
-        _view.TakeHits(_g);
-        _view.QueueRedraw();
-        _hud.ShowGame(_g, ContractLine());
-    }
-
-    // ------------------------------------------------------------------ wejście
-    private static bool Pressed(InputEvent e, string action, bool echo = false) => e.IsActionPressed(action, echo);
-
-    private static int MenuDir(InputEvent e) => Pressed(e, GameInput.Up, true) ? -1 : Pressed(e, GameInput.Down, true) ? 1 : 0;
-
-    public override void _UnhandledInput(InputEvent e)
-    {
-        if (_g is null) return;
-        var handled = _screen switch
-        {
-            Screen.Title => TitleInput(e),
-            Screen.Training => TrainingInput(e),
-            Screen.Playing => PlayInput(e),
-            Screen.Overview => OverviewInput(e),
-            Screen.StageClear or Screen.StageCard => StageClearInput(e),
-            Screen.Profile => ProfileInput(e),
-            Screen.Hurtownia => HurtowniaInput(e),
-            Screen.End => EndInput(e),
-            Screen.GearOffer => OfferInput(e),
-            Screen.ActionMenu => ActionMenuInput(e),
-            _ => false,
-        };
-        if (handled) GetViewport().SetInputAsHandled();
-    }
-
-    private bool TitleInput(InputEvent e)
-    {
-        if (Pressed(e, GameInput.Left) || Pressed(e, GameInput.Right))
-        {
-            _cls = (_cls + (Pressed(e, GameInput.Left) ? _d.Classes.Length - 1 : 1)) % _d.Classes.Length;
-        }
-        else if (MenuDir(e) != 0)
-        {
-            _diff = (_diff + MenuDir(e) + _d.Difficulties.Length) % _d.Difficulties.Length;
-        }
-        else if (Pressed(e, GameInput.KeepPrev) || Pressed(e, GameInput.KeepNext))
-        {
-            Meta.CycleKeepsake(_d, _profile, Pressed(e, GameInput.KeepPrev) ? -1 : 1);
-            SaveProfile();
-        }
-        else if (Pressed(e, GameInput.Profile))
-        {
-            ShowProfile();
-            return true;
-        }
-        else if (Pressed(e, GameInput.Shop))
-        {
-            _note = "";
-            _sel = 0;
-            ShowTraining();
-            return true;
-        }
-        else if (Pressed(e, GameInput.Attack) || Pressed(e, GameInput.Confirm))
-        {
-            if (!Meta.ClassUnlocked(_profile, _cls)) _note = "Ten zawód odblokujesz w Szkoleniach (K).";
-            else if (!Meta.DifficultyUnlocked(_d, _profile, _diff)) _note = "Ten poziom odblokujesz w Szkoleniach (K).";
-            else
-            {
-                StartRun();
-                return true;
-            }
-        }
-        else
-        {
-            return false;
-        }
-        ShowTitle();
-        return true;
-    }
-
-    private bool ProfileInput(InputEvent e)
-    {
-        if (!Pressed(e, GameInput.Profile) && !Pressed(e, GameInput.Wait) && !Pressed(e, GameInput.Cancel) && !Pressed(e, GameInput.Confirm)) return false;
-        ShowTitle();
-        return true;
-    }
-
-    private bool TrainingInput(InputEvent e)
-    {
-        var n = TrainingEntries().Length;
-        if (MenuDir(e) != 0) _sel = (_sel + MenuDir(e) + n) % n;
-        else if (Pressed(e, GameInput.Attack) || Pressed(e, GameInput.Confirm))
-        {
-            _note = BuyTraining(_sel) ? "Kupione!" : "Za mało doświadczenia albo już masz.";
-            SaveProfile();
-        }
-        else if (Pressed(e, GameInput.Wait) || Pressed(e, GameInput.Cancel) || Pressed(e, GameInput.Shop))
-        {
-            _note = "";
-            ShowTitle();
-            return true;
-        }
-        else return false;
-        ShowTraining();
-        return true;
-    }
-
-    private bool PlayInput(InputEvent e)
-    {
-        if (Pressed(e, GameInput.Overview))
-        {
-            _screen = Screen.Overview;
-            ShowOverview();
-            return true;
-        }
-        if (Pressed(e, GameInput.Confirm))
-        {
-            OpenMenu();
-            return true;
-        }
-        int dx = 0, dy = 0;
-        if (Pressed(e, GameInput.Up, true)) dy = -1;
-        else if (Pressed(e, GameInput.Down, true)) dy = 1;
-        else if (Pressed(e, GameInput.Left, true)) dx = -1;
-        else if (Pressed(e, GameInput.Right, true)) dx = 1;
-        bool acted;
-        if (dx != 0 || dy != 0) acted = _g.PlayerMove(dx, dy);
-        else if (Pressed(e, GameInput.Attack)) acted = AttackNearest();
-        else if (Pressed(e, GameInput.Wait)) acted = _g.PlayerWait();
-        else if (Pressed(e, GameInput.Ability)) acted = _g.PlayerAbility();
-        else if (e is InputEventMouseButton { Pressed: true } mb) acted = MouseAction(mb);
-        else return false;
-        AfterAction(acted);
-        return true;
-    }
-
-    /// <summary>A: atak najbliższego widocznego celu w zasięgu (jak celowanie na GBA bez przełączania celu).</summary>
-    private bool AttackNearest()
-    {
-        Span<sbyte> t = stackalloc sbyte[CoreGame.MaxEnemies];
-        return _g.TargetsInRange(t) > 0 ? _g.PlayerAttack(t[0]) : _g.PlayerAttackNearest();
-    }
-
-    /// <summary>Mysz: lewy klik na wroga w zasięgu = atak, gdzie indziej = krok w tę stronę; prawy klik = czekaj.</summary>
-    private bool MouseAction(InputEventMouseButton mb)
-    {
-        if (mb.ButtonIndex == MouseButton.Right) return _g.PlayerWait();
-        if (mb.ButtonIndex != MouseButton.Left) return false;
-        var cell = _view.ScreenToGrid(GetGlobalMousePosition());
-        var ei = _g.EnemyAt(cell.X, cell.Y);
-        if (ei >= 0 && _g.Visible(cell.X, cell.Y) && CoreGame.Cheb(_g.Hero.X, _g.Hero.Y, cell.X, cell.Y) <= _g.Weapon.Range)
-            return _g.PlayerAttack(ei);
-        int dx = cell.X - _g.Hero.X, dy = cell.Y - _g.Hero.Y;
-        if (dx == 0 && dy == 0) return _g.PlayerWait();
-        return Math.Abs(dx) >= Math.Abs(dy) ? _g.PlayerMove(Math.Sign(dx), 0) : _g.PlayerMove(0, Math.Sign(dy));
-    }
-
-    private bool OverviewInput(InputEvent e)
-    {
-        if (!Pressed(e, GameInput.Overview) && !Pressed(e, GameInput.Cancel) && !Pressed(e, GameInput.Wait)) return false;
-        _screen = Screen.Playing;
-        _hud.HidePanel();
-        Refresh();
-        return true;
-    }
-
-    private bool StageClearInput(InputEvent e)
-    {
-        if (!Pressed(e, GameInput.Attack) && !Pressed(e, GameInput.Confirm)) return false;
-        Advance();
-        return true;
-    }
-
-    private bool HurtowniaInput(InputEvent e)
-    {
-        if (MenuDir(e) != 0)
-        {
-            _sel = (_sel + MenuDir(e) + _d.Hurtownia.Length) % _d.Hurtownia.Length;
-            _note = "";
-        }
-        else if (Pressed(e, GameInput.Attack))
-        {
-            _note = _g.HurtowniaBuy(_sel) ? "Kupione! Enter: dalej" : "Za mały budżet";
-            Refresh();
-        }
-        else if (Pressed(e, GameInput.Confirm) || Pressed(e, GameInput.Wait) || Pressed(e, GameInput.Cancel))
-        {
-            Advance();
-            return true;
-        }
-        else return false;
-        ShowHurtownia();
-        return true;
-    }
-
-    private bool EndInput(InputEvent e)
-    {
-        if (_g.St == GameStatus.Won && Pressed(e, GameInput.Attack))
-        {
-            _g.NewGamePlus();
-            _note = "";
-            _screen = Screen.Playing;
-            _hud.HidePanel();
-            Refresh();
-            return true;
-        }
-        if (!Pressed(e, GameInput.Confirm) && !Pressed(e, GameInput.Attack)) return false;
-        _note = "";
-        ShowTitle();
-        return true;
+        _view.Mark(_screen is Screen.Playing or Screen.Phone && _g.St == GameStatus.Playing && _g.TargetsInRange(t) > 0 ? t[0] : -1);
+        _view.Sync();
+        _events.Check(_g);
+        _hud.ShowGame(_g);
+        if (_phone.IsOpen) _phone.QueueRedraw();
     }
 }
