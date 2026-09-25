@@ -45,7 +45,7 @@ przez kilka tur, nie zabija), porażenie (Zwarcie: tracisz turę), poślizg (Ule
 papierologia (Papierologia, Termin: moc odnawia się 3 tury dłużej). Ikona aktywnego stanu jest nad bohaterem.
 
 ## Fabuła
-Budujesz dom dla rodziny Nowaków. Każdy etap otwiera wiadomość w telefonie od inwestorki Anny Nowak albo
+Budujesz dom dla rodziny Nowaków. Pierwszą budowę otwiera prolog: pickup wjeżdża na działkę pełną porozrzucanych problemów (A pomija). Każdy etap otwiera wiadomość w telefonie od inwestorki Anny Nowak albo
 kierownika Marka; po wygranej i porażce przychodzi wiadomość z morałem: plan pokonuje chaos budowy.
 Teksty są w `data/game.json` (`story`).
 

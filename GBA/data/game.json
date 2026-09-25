@@ -714,7 +714,15 @@
     "ngplus": {
       "from": "Anna Nowak",
       "text": "Znajomi też chcą dom.|Bierzesz kolejną budowę?|Termin już się szykuje."
-    }
+    },
+    "prologue": {
+      "from": "Anna Nowak",
+      "text": "Witaj na budowie! Plan|jest, ekipa też. Tylko|te problemy... Do dzieła!"
+    },
+    "prologueCaptions": [
+      "Działka przy ul. Budowlanej 7...",
+      "...a problemy już czekają."
+    ]
   },
   "equipment": {
     "rarities": [

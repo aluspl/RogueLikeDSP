@@ -41,7 +41,7 @@ namespace core
     };
     static_assert(offsetof(profile, badges) == profile_v2_size);
 
-    enum profile_flag : uint8_t { help_seen = 1 };
+    enum profile_flag : uint8_t { help_seen = 1, prologue_seen = 2 };
 
     inline bool has_flag(const profile& p, profile_flag f) { return p.flags & f; }
     inline void set_flag(profile& p, profile_flag f) { p.flags = uint8_t(p.flags | f); }

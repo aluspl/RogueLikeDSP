@@ -25,6 +25,7 @@
 #include "bn_sprite_items_hp_bar.h"
 #include "bn_sprite_items_particles.h"
 #include "bn_sprite_items_mini_hp.h"
+#include "bn_sprite_items_truck.h"
 #include "bn_sprite_items_houses.h"
 #include "bn_sprite_items_ability_icons.h"
 #include "bn_random.h"
@@ -86,7 +87,7 @@ namespace
     using text_sprites = bn::vector<bn::sprite_ptr, 48>;
     using page_sprites = bn::vector<bn::sprite_ptr, 80>;   // pełnoekranowe strony menu
 
-    enum class scene { title, class_select, game, schedule, end, shop, help, hurtownia };
+    enum class scene { title, class_select, game, schedule, end, shop, help, hurtownia, prologue };
 
     constexpr int frame_coffee = 15;
     constexpr int frame_fx = 18;
@@ -344,6 +345,7 @@ namespace
                 ++a.save.runs;
                 bn::sram::write(a.save);
                 wait_release();
+                if(! core::has_flag(a.save, core::prologue_seen)) return leave(scene::prologue);
                 if(! core::has_flag(a.save, core::help_seen)) { a.after_help = scene::game; return leave(scene::help); }
                 return leave(scene::game);
             }
@@ -464,9 +466,9 @@ namespace
         a.text.set_center_alignment();
         a.text.generate(0, -70, "Jak grać", t);
         a.text.set_left_alignment();
-        const char* lines[] = { "Przejdź 5 etapów budowy,", "na końcu pokonaj Termin.", "Schody = koniec etapu.",
-                                "D-pad: ruch i atak wręcz", "A: atak  B: czekaj", "R: moc zawodu",
-                                "SELECT: menu  L: mapa" };
+        const char* lines[] = { "8 etapów w 3 aktach, każdy", "kończy boss. Schody = dalej.", "D-pad: ruch i atak wręcz",
+                                "A: atak (trzymaj: celuj)", "B: czekaj (trzymaj: podgląd)", "R: moc zawodu  L: mapa",
+                                "SELECT: telefon" };
         for(int i = 0; i < 7; ++i) a.text.generate(-108, -48 + i * 16, lines[i], t);
         a.text.set_center_alignment();
         a.text.generate(0, 72, "A: dalej", t);
@@ -1846,6 +1848,102 @@ namespace
         }
     }
 
+    // ------------------------------------------------------------------ prolog: wjazd na działkę (pierwsza budowa)
+    // Pickup wjeżdża na plac, bohater wysiada, kamera jedzie przez działkę z porozrzucanymi problemami budowy,
+    // na koniec SMS od inwestorki. A/START pomija.
+    scene run_prologue(app& a)
+    {
+        const core::game& g = *a.g;
+        {
+            bn::bg_palettes::set_transparent_color(bn::color(1, 1, 3));
+            bn::camera_ptr cam = bn::camera_ptr::create(-136, 8 * 16 + 8 - 256);
+            bn::bg_tiles::set_allow_offset(false);
+            bn::unique_ptr<bg_map> map(new bg_map());
+            for(int y = 0; y < core::map_h; ++y)   // plac: droga dojazdowa z lewej, płot u góry i u dołu
+                for(int x = 0; x < core::map_w; ++x)
+                {
+                    int t = 0;
+                    if(y >= 4 && y <= 13) t = 1;
+                    else if((y == 3 || y == 14) && x >= 4) t = y == 3 ? 3 : 2;
+                    for(int dy = 0; dy < 2; ++dy) for(int dx = 0; dx < 2; ++dx) map->set(x * 2 + dx, y * 2 + dy, t, 0);
+                }
+            bn::regular_bg_item item(bn::regular_bg_tiles_items::tiles, bn::bg_palette_items::stage_palettes_0, map->map_item);
+            bn::regular_bg_ptr bg = item.create_bg(0, 0);
+            bn::bg_tiles::set_allow_offset(true);
+            bg.set_camera(cam);
+
+            bn::sprite_ptr truck = bn::sprite_items::truck.create_sprite(world(-2, 9).x(), world(0, 9).y());
+            truck.set_camera(cam);
+            bn::sprite_ptr hero = bn::sprite_items::actors.create_sprite(world(7, 10), data::classes[g.cls].frame);
+            hero.set_camera(cam);
+            hero.set_visible(false);
+            struct prop { int8_t def, x, y; };
+            const prop props[] = { { int8_t(data::enemy_przeciek), 11, 6 }, { int8_t(data::enemy_zwarcie), 14, 11 },
+                                   { int8_t(data::enemy_papierologia), 17, 7 }, { int8_t(data::enemy_plesn), 20, 11 },
+                                   { int8_t(data::enemy_kornik), 22, 6 }, { int8_t(data::enemy_budzet), 25, 9 },
+                                   { int8_t(data::enemy_ulewa), 27, 5 }, { int8_t(data::enemy_termin), 29, 10 } };
+            constexpr int props_count = int(sizeof(props) / sizeof(props[0]));
+            bn::vector<bn::sprite_ptr, props_count> enemies;
+            bool alerted[props_count] = {};
+            for(const prop& p : props)
+            {
+                bn::sprite_ptr sp = bn::sprite_items::actors.create_sprite(world(p.x, p.y), data::enemies[p.def].frame);
+                sp.set_camera(cam);
+                enemies.push_back(sp);
+            }
+            particle_pool dust(cam);
+            text_sprites caption;
+            a.text.set_bg_priority(0);
+            auto show_caption = [&](const char* s) {
+                caption.clear();
+                a.text.set_center_alignment();
+                a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
+                a.text.generate(0, 64, s, caption);
+            };
+            play_song(song::game);
+
+            for(int t = 0; t < 420; ++t)
+            {
+                if(bn::keypad::a_pressed() || bn::keypad::start_pressed()) break;
+                if(t < 80)   // wjazd pickupa z pyłem spod kół
+                {
+                    truck.set_x(world(-2, 9).x() + t * (world(5, 9).x() - world(-2, 9).x()) / 80);
+                    truck.set_tiles(bn::sprite_items::truck.tiles_item(), (t / 4) & 1);
+                    if(t % 5 == 0)
+                        dust.spawn(truck.x() - 16, truck.y() + 6, bn::fixed(-0.5), bn::fixed(-0.2), 0, 20, particle_pool::dust, 3);
+                }
+                if(t == 90)
+                {
+                    hero.set_visible(true);
+                    for(int k = -1; k <= 1; k += 2) dust.spawn(hero.x() + k * 4, hero.y() + 6, bn::fixed(k) / 3, bn::fixed(-0.3), 0, 16, particle_pool::dust, 3);
+                    show_caption(data::prologue_captions[0]);
+                }
+                if(t >= 110 && t < 330)   // przejazd kamery przez działkę
+                    cam.set_x(-136 + (t - 110) * (120 + 136) / 220);
+                if(t == 220) show_caption(data::prologue_captions[1]);
+                for(int i = 0; i < props_count; ++i)
+                {
+                    int base = data::enemies[props[i].def].frame;
+                    enemies[i].set_tiles(bn::sprite_items::actors.tiles_item(), ((t / 20 + i) & 1) ? anim_b(base) : base);
+                    if(! alerted[i] && enemies[i].x() < cam.x() + 90 && t > 110)
+                    {
+                        alerted[i] = true;
+                        dust.spawn(enemies[i].x(), enemies[i].y() - 14, 0, bn::fixed(-0.15), 0, 50, particle_pool::alert);
+                    }
+                }
+                dust.update();
+                next_frame();
+            }
+            caption.clear();
+            leave(scene::prologue);   // ściemnij plac przed wiadomością
+        }
+        core::set_flag(a.save, core::prologue_seen);
+        bn::sram::write(a.save);
+        phone_message(a, data::story_prologue, "Budowa", "Twój pierwszy plac budowy", ink::dim, data::classes[g.cls].name);
+        if(! core::has_flag(a.save, core::help_seen)) { a.after_help = scene::game; return leave(scene::help); }
+        return leave(scene::game);
+    }
+
     // ------------------------------------------------------------------ Hurtownia między aktami (budżet budowy)
     scene run_hurtownia(app& a)
     {
@@ -2128,6 +2226,7 @@ int main()
             case scene::shop:         s = run_shop(a); break;
             case scene::help:         s = run_help(a); break;
             case scene::hurtownia:    s = run_hurtownia(a); break;
+            case scene::prologue:     s = run_prologue(a); break;
         }
     }
 }
