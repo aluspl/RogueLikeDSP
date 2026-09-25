@@ -15,6 +15,8 @@ inline constexpr core::weapon_def weapons[] = {
     { "Wkrętarka", 2, 5, 2, core::stat::agi },
     { "Poziomica laserowa", 2, 4, 4, core::stat::intel },
     { "Młot wyburzeniowy", 5, 8, 1, core::stat::str },
+    { "Tablet z projektem", 3, 5, 2, core::stat::intel },
+    { "Miernik laserowy", 2, 5, 3, core::stat::intel },
 };
 
 inline constexpr core::class_def classes[] = {
@@ -63,6 +65,8 @@ inline constexpr core::upgrade_def upgrades[] = {
     { "Kurs fachowy", "+1 obrażenia", core::upgrade_effect::dmg, 1, 2, { 20, 40, 0, 0 } },
     { "Lepszy termos", "Kawa leczy +4 HP", core::upgrade_effect::coffee, 4, 2, { 10, 20, 0, 0 } },
     { "Dostawy", "+1 znajdźka na etap", core::upgrade_effect::pickups, 1, 2, { 15, 30, 0, 0 } },
+    { "Kurs BHP II", "+1 szczęścia", core::upgrade_effect::luck, 1, 2, { 20, 40, 0, 0 } },
+    { "Warsztaty", "+1 do statystyki broni", core::upgrade_effect::craft, 1, 2, { 20, 40, 0, 0 } },
 };
 
 inline constexpr core::story_msg story_stages[] = {
@@ -148,9 +152,11 @@ inline constexpr core::tool_def tools[] = {
     { 7, 20 },
     { 8, 30 },
     { 9, 40 },
+    { 10, 25 },
+    { 11, 35 },
 };
 
-inline constexpr int tools_count = 4;
+inline constexpr int tools_count = 6;
 inline constexpr int start_tools_mask = 1;
 inline constexpr int drop_chance_pct = 25;
 inline constexpr int drop_weights[] = { 40, 5, 5, 15, 35 };
@@ -186,15 +192,18 @@ inline constexpr core::trait_def gear_traits[] = {   // cechy sprzętu (losowane
     { "Odporność na zatrucie", "Bez zatr.", core::trait_effect::poison_res, 1 },
     { "Widzenie +1", "Wzrok+1", core::trait_effect::sight, 1 },
     { "Odnowienie mocy -1", "Moc -1t", core::trait_effect::cooldown, 1 },
+    { "Siła +1", "SIŁ+1", core::trait_effect::str, 1 },
+    { "Zręczność +1", "ZRĘ+1", core::trait_effect::agi, 1 },
+    { "Inteligencja +1", "INT+1", core::trait_effect::intel, 1 },
 };
-inline constexpr int gear_traits_count = 5;
+inline constexpr int gear_traits_count = 8;
 inline constexpr int gear_decline_xp = 1;
 inline constexpr int gear_slots_count = 3;
 inline constexpr int gear_solid_from = 70;
 inline constexpr int gear_brand_from = 94;
 inline constexpr int gear_stage_bonus = 5;
 
-inline constexpr int upgrades_count = 5;
+inline constexpr int upgrades_count = 7;
 inline constexpr int xp_per_kill = 1;
 inline constexpr int xp_per_stage = 5;
 inline constexpr int xp_boss = 20;

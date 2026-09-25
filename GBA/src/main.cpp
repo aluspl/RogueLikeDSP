@@ -212,6 +212,25 @@ namespace
         return m;
     }
 
+    // Statystyki: skrót nazwy i zapis "baza+premia" (np. "SIŁ 5+1").
+    const char* stat_short(core::stat s) { return s == core::stat::str ? "SIŁ" : (s == core::stat::agi ? "ZRĘ" : "INT"); }
+
+    void add_stat(core::message& m, const char* label, int base, int bonus)
+    {
+        m.add(label).add(" ").add(base);
+        if(bonus > 0) m.add("+").add(bonus);
+    }
+
+    // Wiersz statystyk efektywnych bohatera w trakcie budowy: SIŁ, ZRĘ, INT, szczęście.
+    core::message hero_stats_line(const core::game& g)
+    {
+        core::message m;
+        const core::stat all[3] = { core::stat::str, core::stat::agi, core::stat::intel };
+        for(core::stat st : all) { add_stat(m, stat_short(st), core::class_base_stat(g.cls, st), g.stat_bonus(st)); m.add(" "); }
+        add_stat(m, "SZCZ", g.cdef().luck, g.luck() - g.cdef().luck);
+        return m;
+    }
+
     // ------------------------------------------------------------------ dźwięk (Maxmod; pliki z tools/make_audio.py)
     enum class song { none, title, game };
     song current_song = song::none;
@@ -314,11 +333,19 @@ namespace
             core::message ld; ld.add("Zablokowany: ").add(data::class_cost).add(" dośw.");
             core::message ab; ab.add("Moc R: ").add(c.ability_name);
             a.text.generate(0, 20, locked ? ld.s : ab.s, lines);
-            core::message s; s.add("HP ").add(c.max_health).add(" SIŁ ").add(c.strength).add(" ZRĘ ").add(c.agility);
+            // statystyki efektywne: zawód + Szkolenia (Warsztaty, BHP) - "baza+premia"
+            const core::run_mods m = core::mods(a.save);
+            const int ci = a.chosen_class;
+            core::message s; add_stat(s, "HP", c.max_health, m.hp);
+            s.add(" "); add_stat(s, "SIŁ", c.strength, core::mods_stat_bonus(m, ci, core::stat::str));
+            s.add(" "); add_stat(s, "ZRĘ", c.agility, core::mods_stat_bonus(m, ci, core::stat::agi));
             a.text.generate(0, 38, s.s, lines);
-            core::message s2; s2.add("INT ").add(c.intelligence).add(" OBR ").add(c.defense).add(" SZCZ ").add(c.luck);
+            core::message s2; add_stat(s2, "INT", c.intelligence, core::mods_stat_bonus(m, ci, core::stat::intel));
+            s2.add(" "); add_stat(s2, "OBR", c.defense, m.def);
+            s2.add(" "); add_stat(s2, "SZCZ", c.luck, m.luck);
             a.text.generate(0, 54, s2.s, lines);
-            core::message wl; wl.add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range);
+            core::message wl; wl.add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range)
+                                   .add(" (").add(stat_short(w.scales_with)).add(")");
             a.text.generate(0, 72, clip(wl.s, 29), lines);
         };
         auto redraw_diff = [&]() {
@@ -758,7 +785,7 @@ namespace
 
         core::message sl = status_line(g);
         phone_text(a, t, list_x, row_py(4), clip(sl.s, 40).c_str(), sl.kind == core::bad ? ink::late : ink::dim);
-        core::message sc; sc.add("Szczęście ").add(g.luck()).add("  Kryt ").add(g.crit_pct()).add("%  Unik ").add(g.dodge_pct()).add("%");
+        core::message sc = hero_stats_line(g);   // statystyki efektywne (baza+premie); kryt i unik w zakładce Sprzęt
         phone_text(a, t, list_x, row_py(5), clip(sc.s, 34).c_str(), ink::dim);
     }
 
@@ -2374,7 +2401,8 @@ namespace
                 if(se.k == tool)
                 {
                     const core::weapon_def& w = data::weapons[data::tools[se.i].weapon];
-                    tool_desc.add("Narzędzie ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range);
+                    tool_desc.add("Narzędzie ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range)
+                             .add(", ").add(stat_short(w.scales_with));
                 }
                 const char* desc = note ? note : (se.k == upgrade ? data::upgrades[se.i].desc
                                  : (se.k == cls ? "Nowy zawód do wyboru" : (se.k == tool ? tool_desc.s : "Najwyższa trudność")));
@@ -2470,6 +2498,7 @@ int main()
     a.save = load_save();
 #ifdef PB_SCENARIO
     debug_scenario::unlock_all(a.save);
+    debug_scenario::setup_profile(a.save, PB_SCENARIO);
 #endif
     bn::unique_ptr<core::game> game(new core::game());
     a.g = game.get();

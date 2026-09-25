@@ -700,6 +700,46 @@ int main()
         CHECK(dodges > 400 * gl.dodge_pct() / 300 && dodges < 400 * gl.dodge_pct() * 3 / 100);
         game gm; arena(gm, 1); CHECK(gm.dodge_pct() == 0 && gm.crit_pct() == data::crit_base_pct);
     }
+    // 29. statystyki: cechy SIŁ/ZRĘ/INT, Warsztaty (statystyka broni zawodu), Kurs BHP II, narzędzia INT
+    {
+        auto trait_of = [](trait_effect e) { for(int i = 0; i < data::gear_traits_count; ++i) if(data::gear_traits[i].effect == e) return i; return -1; };
+        int t_str = trait_of(trait_effect::str), t_int = trait_of(trait_effect::intel);
+        CHECK(t_str >= 0 && t_int >= 0 && trait_of(trait_effect::agi) >= 0);
+        game g; arena(g, 1);                                          // Murarz: Kielnia skaluje się z SIŁ
+        CHECK(g.hero_stat(stat::str) == data::classes[1].strength && g.stat_bonus(stat::str) == 0);
+        g.equip(0, 0, t_str); g.equip(1, 0, t_int);
+        CHECK(g.hero_stat(stat::str) == data::classes[1].strength + 1 && g.hero_stat(stat::intel) == data::classes[1].intelligence + 1);
+        CHECK(g.hero_stat(stat::agi) == data::classes[1].agility);
+        run_mods m; m.craft = 2; m.luck = 1;
+        game w; w.new_run(1, 9, data::default_difficulty, m);
+        CHECK(w.hero_stat(stat::str) == data::classes[1].strength + 2 && w.hero_stat(stat::intel) == data::classes[1].intelligence);
+        CHECK(w.luck() == data::classes[1].luck + 1);
+        game k; k.new_run(0, 9, data::default_difficulty, m);           // Kierownik: Dziennik skaluje się z INT
+        CHECK(k.hero_stat(stat::intel) == data::classes[0].intelligence + 2 && k.hero_stat(stat::str) == data::classes[0].strength);
+        CHECK(mods_stat_bonus(m, 0, stat::intel) == 2 && mods_stat_bonus(m, 0, stat::str) == 0);
+        // wyższa statystyka broni = większe obrażenia (ten sam rzut)
+        game a0, a1; arena(a0, 1); arena(a1, 1); a1.bonus.craft = 2;
+        a0.spawn(8, 8, 7); a1.spawn(8, 8, 7); a0.enemies[0].hp = a1.enemies[0].hp = 999;
+        a0.hero_attack(0); a1.hero_attack(0);
+        CHECK(a1.enemies[0].hp < a0.enemies[0].hp);
+        // Szkolenia: Kurs BHP II i Warsztaty w mods()
+        profile p; profile_reset(p);
+        int i_luck = -1, i_craft = -1;
+        for(int i = 0; i < data::upgrades_count; ++i)
+        {
+            if(data::upgrades[i].effect == upgrade_effect::luck) i_luck = i;
+            if(data::upgrades[i].effect == upgrade_effect::craft) i_craft = i;
+        }
+        CHECK(i_luck >= 0 && i_craft >= 0 && data::upgrades[i_luck].levels == 2 && data::upgrades[i_craft].levels == 2);
+        p.levels[i_luck] = 2; p.levels[i_craft] = 1;
+        run_mods pm = mods(p);
+        CHECK(pm.luck == 2 && pm.craft == 1);
+        // co najmniej 2 narzędzia skalowane INT do odblokowania
+        int int_tools = 0;
+        for(int i = 0; i < data::tools_count; ++i)
+            if(data::weapons[data::tools[i].weapon].scales_with == stat::intel && data::tools[i].cost > 0) ++int_tools;
+        CHECK(int_tools >= 3);
+    }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};

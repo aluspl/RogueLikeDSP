@@ -133,8 +133,27 @@ namespace core
     struct run_mods
     {
         int hp = 0, def = 0, dmg = 0, coffee = 0, pickups = 0;
+        int luck = 0;                // Kurs BHP II
+        int craft = 0;               // Warsztaty: + do statystyki, z którą skaluje się broń zawodu
         int tools = data::start_tools_mask;   // narzędzia, które mogą wypaść z wrogów
     };
+
+    inline int class_base_stat(int cls, stat s)
+    {
+        const class_def& c = data::classes[cls];
+        return s == stat::str ? c.strength : (s == stat::agi ? c.agility : c.intelligence);
+    }
+
+    // Premia z meta-progresji do statystyki zawodu (Warsztaty działają na statystykę broni zawodu).
+    inline int mods_stat_bonus(const run_mods& m, int cls, stat s)
+    {
+        return data::weapons[data::classes[cls].weapon].scales_with == s ? m.craft : 0;
+    }
+
+    inline trait_effect stat_trait(stat s)
+    {
+        return s == stat::str ? trait_effect::str : (s == stat::agi ? trait_effect::agi : trait_effect::intel);
+    }
 
     static_assert(sizeof(data::enemies) / sizeof(data::enemies[0]) <= 16);
 
@@ -241,7 +260,7 @@ namespace core
             return b;
         }
         // Szczęście: kryt (x2), mały unik przed ciosem wroga, częstsze i lepsze dropy.
-        int luck() const { return cdef().luck + trait_bonus(trait_effect::luck); }
+        int luck() const { return cdef().luck + bonus.luck + trait_bonus(trait_effect::luck); }
         int crit_pct() const { return data::crit_base_pct + data::crit_per_luck_pct * luck() + trait_bonus(trait_effect::crit); }
         int sight_radius() const { return fov_radius + trait_bonus(trait_effect::sight); }
 
@@ -444,10 +463,9 @@ namespace core
             return -1;
         }
 
-        int hero_stat(stat s) const
-        {
-            switch(s) { case stat::str: return cdef().strength; case stat::agi: return cdef().agility; default: return cdef().intelligence; }
-        }
+        // Statystyka efektywna: zawód + Warsztaty + cechy sprzętu (SIŁ/ZRĘ/INT +1).
+        int hero_stat(stat s) const { return class_base_stat(cls, s) + stat_bonus(s); }
+        int stat_bonus(stat s) const { return mods_stat_bonus(bonus, cls, s) + trait_bonus(stat_trait(s)); }
 
         // obrażenia = rzut broni + stat/2 + premie - obrona/2, min 1
         void hero_attack(int ei)
