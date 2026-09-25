@@ -26,6 +26,27 @@ Legenda: ✅ zrobione · 🔄 w toku · ⬜ do zrobienia · — nie dotyczy
 | Czytelniejszy komunikat „Brak celu w zasięgu 1” (`core.h` + port C#) | ⬜ | ⬜ |
 | Balans po nowych funkcjach (bot: Normalny ~54%, pełne Szkolenia ~69%) | wspólny rdzeń | ⬜ |
 
+## Nowe pomysły (2026-09-25, „zrób wszystko”)
+
+Kolejność: A – rdzeń i GBA (po bossie Inspekcja Pracy), B – Godot i mobile (po wersji mobilnej), C – 2.5D.
+
+| # | Pomysł | Etap | GODOT (MOBILE) | GBA |
+|---|---|---|---|---|
+| 0 | Boss Inspekcja Pracy (podkładka z pieczątką, akt III, Kontrola BHP) | – | 🔄 rdzeń | 🔄 |
+| 1 | Codzienna budowa: seed dnia, tabela wyników | A/B | ⬜ (data z systemu) | ⬜ (seed z daty wpisanej ręcznie – GBA nie ma zegara) |
+| 2 | Brygada: najemny fachowiec raz na etap (Geodeta – mapa, Pompa do betonu – obszar…) | A | ⬜ | ⬜ |
+| 3 | Wybór ścieżki między etapami (harmonogram z rozgałęzieniami) | A | ⬜ | ⬜ |
+| 4 | Materiały (cement, stal, drewno) – Hurtownia i naprawy pól | A | ⬜ | ⬜ |
+| 5 | Pogoda dnia (upał, mróz, wiatr) jako modyfikator etapu | A | ⬜ | ⬜ |
+| 6 | Tryb inwestora: modyfikatory trudności za dodatkowe doświadczenie (jak Heat w Hadesie) | A | ⬜ | ⬜ |
+| 7 | Powiadomienia systemowe („Nowa codzienna budowa”) | B | ⬜ | — |
+| 8 | Widżet / Live Activity z postępem budowy | B (natywne rozszerzenie iOS) | ⬜ | — |
+| 9 | Udostępnianie wyniku (obrazek + link planbudowlany.online) | B | ⬜ | ⬜ (kod QR z wynikiem) |
+| 10 | Game Center / Google Play Games: osiągnięcia z odznak, tabela wyników | B (konfiguracja w App Store Connect) | ⬜ | — |
+| 11 | 2.5D: kamera 3/4, latarka czołowa, cienie ścian | C | ⬜ | — |
+| 12 | Ulewa jako pogoda na etapie Dach (deszcz, kałuże, poślizg) | C | ⬜ | ⬜ (prostszy efekt) |
+| 13 | Po wygranej: harmonogram domu w stylu aplikacji + „Zaplanuj swoją budowę” | A/B | ⬜ | ⬜ |
+
 ## Zgodność funkcji
 
 | Funkcja | GODOT (MOBILE) | GBA |
