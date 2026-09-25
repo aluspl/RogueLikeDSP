@@ -8,8 +8,9 @@ using CoreGame = LifeLike.Core.Game;
 namespace LifeLike.Game;
 
 /// <summary>
-/// HUD tekstowy: etap/akt, HP, poziom, moc z odliczaniem, broń, budżet, stany, dziennik (kolory jak na GBA)
-/// oraz panel ekranów tekstowych (tytuł, harmonogram, Hurtownia, podgląd, koniec gry).
+/// HUD tekstowy: etap/akt, HP, poziom, moc z odliczaniem, broń, budżet, szczęście (kryt/unik), termos,
+/// stany z turami, sprzęt z cechami, dziennik (kolory jak na GBA), podpowiedź menu akcji
+/// oraz panel ekranów tekstowych (tytuł, harmonogram, Hurtownia, podgląd, porównanie sprzętu, koniec gry).
 /// </summary>
 public partial class Hud : CanvasLayer
 {
@@ -23,14 +24,20 @@ public partial class Hud : CanvasLayer
     private readonly Label _help = new()
     {
         Position = new Vector2(12, 690),
-        Text = "Strzałki/WSAD: ruch i atak · Spacja/X (A): atak celu · Z (B): czekaj · R: moc · Tab: podgląd · mysz: klik = krok/atak",
+        Text = "Strzałki/WSAD: ruch i atak · Spacja/X (A): atak celu · Z (B): czekaj · R: moc · Enter (START): menu akcji / termos · Tab: podgląd",
+    };
+    /// <summary>Podpowiedź menu akcji (nad dziennikiem), jak linia menu na GBA.</summary>
+    private readonly RichTextLabel _hint = new()
+    {
+        Position = new Vector2(12, 548), Size = new Vector2(900, 50), BbcodeEnabled = true, ScrollActive = false, Visible = false,
     };
 
     public override void _Ready()
     {
         _panel.AddThemeFontSizeOverride("font_size", 18);
         _log.AddThemeFontSizeOverride("normal_font_size", 16);
-        foreach (var n in new Control[] { _stats, _log, _help, _panelBg, _panel }) AddChild(n);
+        _hint.AddThemeFontSizeOverride("normal_font_size", 16);
+        foreach (var n in new Control[] { _stats, _log, _hint, _help, _panelBg, _panel }) AddChild(n);
         HidePanel();
     }
 
@@ -48,7 +55,8 @@ public partial class Hud : CanvasLayer
             $"{g.CDef.Name}  HP {g.Hero.Hp}/{g.Hero.MaxHp} · Poziom {g.HeroLevel} ({next}) · Wynik {g.Score} · Budżet {g.Cash} zł\n" +
             $"Moc: {g.CDef.AbilityName} {Roman(g.AbilityRank() - 1)} ({g.CDef.AbilityDesc}) – {power} · " +
             $"Broń: {w.Name} {w.MinDamage}-{w.MaxDamage}, zasięg {w.Range}\n" +
-            $"Stany: {Statuses(g)} · Sprzęt: {Gear(g)}" + (g.SlamTimer > 0 ? $"\nUWAGA: cios bossa za {g.SlamTimer}!" : "");
+            $"{Luck(g)} · Termos {g.Thermos}/{d.ThermosCapacity} (kawa +{g.CoffeeHeal()} HP)\n" +
+            $"Stany: {Statuses(g)}\nSprzęt: {Gear(g)}" + (g.SlamTimer > 0 ? $"\nUWAGA: cios bossa za {g.SlamTimer}!" : "");
         _log.Text = string.Join("\n", g.Log.Where(m => m.N > 0).Select(LogLine));
     }
 
@@ -61,23 +69,41 @@ public partial class Hud : CanvasLayer
         return $"[color={color}]{text}{(m.Repeat > 1 ? $" x{m.Repeat}" : "")}[/color]";
     }
 
+    /// <summary>Szczęście i jego skutki: „Szczęście 4 · Kryt 17% · Unik 8% · Wzrok 7”.</summary>
+    public static string Luck(CoreGame g) => $"Szczęście {g.Luck()} · Kryt {g.CritPct()}% · Unik {g.DodgePct()}% · Wzrok {g.SightRadius()}";
+
+    /// <summary>Stany z turami i skutkiem z danych, np. „Zatrucie 3 t. (-1 HP/turę)”.</summary>
     public static string Statuses(CoreGame g)
     {
         var parts = new List<string>();
-        if (g.StatusTurns(StatusEffect.Poison) > 0) parts.Add($"zatrucie {g.StatusTurns(StatusEffect.Poison)}");
-        if (g.StatusTurns(StatusEffect.Shock) > 0) parts.Add($"porażenie {g.StatusTurns(StatusEffect.Shock)}");
-        if (g.StatusTurns(StatusEffect.Slip) > 0) parts.Add($"poślizg {g.StatusTurns(StatusEffect.Slip)}");
+        foreach (var s in new[] { StatusEffect.Poison, StatusEffect.Shock, StatusEffect.Slip })
+        {
+            var t = g.StatusTurns(s);
+            if (t <= 0) continue;
+            var sd = g.D.Statuses[(int)s];
+            parts.Add($"{sd.Name} {t} t. ({sd.Effect})");
+        }
         return parts.Count == 0 ? "brak" : string.Join(", ", parts);
     }
 
+    /// <summary>Założony sprzęt z cechami, np. „Kask budowlany [Kryt+5%]”.</summary>
     public static string Gear(CoreGame g)
     {
         var parts = new List<string>();
         for (var s = 0; s < g.D.GearSlotsCount; s++)
         {
-            if (g.Equipped[s] >= 0) parts.Add(g.D.Gear[s * 3 + g.Equipped[s]].Name);
+            if (g.Equipped[s] >= 0) parts.Add($"{g.D.Gear[s * 3 + g.Equipped[s]].Name} [{g.D.GearTraits[g.EquippedTrait[s]].Short}]");
         }
         return parts.Count == 0 ? "brak" : string.Join(", ", parts);
+    }
+
+    public static string StatName(GearStat s) => s switch { GearStat.Def => "obrona", GearStat.Dmg => "obrażenia", _ => "max HP" };
+
+    /// <summary>Podpowiedź pod mapą (menu akcji); null chowa.</summary>
+    public void ShowHint(string text)
+    {
+        _hint.Visible = text is not null;
+        if (text is not null) _hint.Text = $"[color=#f59e0b]{text.Replace("[", "[lb]")}[/color]";
     }
 
     public void ShowPanel(string text)
