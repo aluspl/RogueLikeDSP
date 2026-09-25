@@ -44,6 +44,27 @@ public sealed class GameData
     public int StartHelpersMask { get; private init; }
     /// <summary>Tryb inwestora: modyfikatory trudności (sekcja "investor"); bez sekcji – pusta lista.</summary>
     public InvestorDef[] Investor { get; private init; } = [];
+    /// <summary>Materiały (sekcja "materials"): cement, stal, drewno; bez sekcji – pusta lista (bez dropów).</summary>
+    public MaterialDef[] Materials { get; private init; } = [];
+    /// <summary>Naprawy pola za materiał (Załataj, Kładka).</summary>
+    public RepairDef[] Repairs { get; private init; } = [];
+    public int MaterialDropPct { get; private init; }
+    public int MaterialBossDrop { get; private init; }
+    public int MaterialGearBox { get; private init; }
+    public int MaterialMax { get; private init; } = 9;
+    /// <summary>Wybór ścieżki między etapami (sekcja "paths"); bez sekcji – pusta lista (bez wyboru).</summary>
+    public PathDef[] Paths { get; private init; } = [];
+    /// <summary>Codzienna budowa: dzień nr 1 (rok, miesiąc, dzień), domyślna data na GBA, trudność, ile modyfikatorów dnia,
+    /// ile dni w historii wyników.</summary>
+    public int[] DailyEpoch { get; private init; } = [2026, 1, 1];
+    public int[] DailyDefaultDate { get; private init; } = [2026, 10, 1];
+    public int DailyDifficulty { get; private init; } = 1;
+    public int DailyInvestorMods { get; private init; }
+    public int DailyHistory { get; private init; } = 5;
+    /// <summary>Harmonogram domu po wygranej: dni etapu = ScheduleMinDays + tury / ScheduleTurnsPerDay.</summary>
+    public int ScheduleMinDays { get; private init; } = 4;
+    public int ScheduleTurnsPerDay { get; private init; } = 3;
+    public string ScheduleUrl { get; private init; } = "planbudowlany.online";
     /// <summary>Indeks = slot * 3 + jakość.</summary>
     public GearDef[] Gear { get; private init; } = [];
     public string[] GearSlots { get; private init; } = [];
@@ -134,6 +155,9 @@ public sealed class GameData
         var wid = Index(weaponsJson);
         var enemiesJson = d.GetProperty("enemies").EnumerateArray().ToArray();
         var eid = Index(enemiesJson);
+        var hasMaterials = d.TryGetProperty("materials", out var matj);
+        var materialsJson = hasMaterials ? matj.GetProperty("list").EnumerateArray().ToArray() : [];
+        var mid = Index(materialsJson);
 
         var weapons = weaponsJson.Select(w => new WeaponDef(
             Str(w, "id"), Str(w, "name"), Int(w, "minDamage"), Int(w, "maxDamage"), Int(w, "range"),
@@ -170,7 +194,8 @@ public sealed class GameData
                 hasSummon ? Int(sm, "max") : 0,
                 Int(e, "gearStun", 0),
                 hasReward ? Int(rw, "cash", 0) : 0,
-                hasReward ? Str(rw, "title", "") : "");
+                hasReward ? Str(rw, "title", "") : "",
+                e.TryGetProperty("material", out var em) ? Lookup(mid, em.GetString() ?? "", "materiał") : -1);
         }).ToArray();
         foreach (var e in enemies)
         {
@@ -183,12 +208,20 @@ public sealed class GameData
             var pool = st.GetProperty("enemies").EnumerateArray().Select(x => Lookup(eid, x.GetString() ?? "", "wróg")).ToArray();
             Require(pool.Length is >= 1 and <= 4, "etap: 1-4 rodzaje wrogów");
             var boss = st.TryGetProperty("boss", out var b) ? Lookup(eid, b.GetString() ?? "", "boss") : -1;
-            return new StageDef(Str(st, "name"), pool, Int(st, "count"), boss, Int(st, "hpPct", 100), Int(st, "dmgBonus", 0), Int(st, "act"));
+            return new StageDef(Str(st, "name"), pool, Int(st, "count"), boss, Int(st, "hpPct", 100), Int(st, "dmgBonus", 0), Int(st, "act"),
+                Int(st, "cost", 0));
         }).ToArray();
+        var paths = d.TryGetProperty("paths", out var pj)
+            ? pj.GetProperty("list").EnumerateArray().Select(x => new PathDef(Str(x, "id"), Str(x, "name"), Str(x, "short"), Str(x, "desc"),
+                Int(x, "enemies", 0), Int(x, "pickups", 0), Int(x, "cash", 0), Int(x, "materials", 0),
+                x.TryGetProperty("badWeather", out var bw) && bw.GetBoolean(), x.TryGetProperty("noEvent", out var ne) && ne.GetBoolean())).ToArray()
+            : [];
+        Require(paths.Length == 0 || paths.Length is >= 2 and <= 8, "ścieżki: 2-8 wariantów");
+        var pathMore = Math.Max(0, paths.Length > 0 ? paths.Max(x => x.Enemies) : 0);
         foreach (var st in stages)
         {
-            // boss z wezwaniami: etap + boss + wezwani mieszczą się w Game.MaxEnemies
-            Require(st.Boss < 0 || st.EnemyCount + 1 + enemies[st.Boss].SummonMax <= 12, $"etap {st.Name}: za dużo wrogów z wezwanymi");
+            // boss z wezwaniami: etap + ścieżka + boss + wezwani mieszczą się w Game.MaxEnemies
+            Require(st.Boss < 0 || st.EnemyCount + pathMore + 1 + enemies[st.Boss].SummonMax <= 12, $"etap {st.Name}: za dużo wrogów z wezwanymi");
         }
 
         var difficulties = d.GetProperty("difficulties").EnumerateArray().Select(x => new DifficultyDef(
@@ -197,7 +230,7 @@ public sealed class GameData
         var meta = d.GetProperty("meta");
         var upgrades = meta.GetProperty("upgrades").EnumerateArray().Select(u => new UpgradeDef(
             Str(u, "id", ""), Str(u, "name"), Str(u, "desc"), ParseUpgrade(Str(u, "effect")), Int(u, "value"),
-            u.GetProperty("costs").EnumerateArray().Select(c => c.GetInt32()).ToArray())).ToArray();
+            u.GetProperty("costs").EnumerateArray().Select(c => c.GetInt32()).ToArray(), Int(u, "refund", 0))).ToArray();
         foreach (var u in upgrades)
         {
             Require(u.Costs.Length is >= 1 and <= 4, $"ulepszenie {u.Name}: 1-4 poziomy");
@@ -219,7 +252,14 @@ public sealed class GameData
         }
 
         var hurtownia = d.GetProperty("hurtownia").EnumerateArray().Select(it => new ShopItemDef(
-            Str(it, "id", ""), Str(it, "name"), Str(it, "desc"), Int(it, "price"), ParseEnum<ShopEffect>(Str(it, "effect")))).ToArray();
+            Str(it, "id", ""), Str(it, "name"), Str(it, "desc"), Int(it, "price"), ParseEnum<ShopEffect>(Str(it, "effect")),
+            it.TryGetProperty("material", out var im) ? Lookup(mid, im.GetString() ?? "", "materiał") : -1, Int(it, "matCost", 0))).ToArray();
+        var materials = materialsJson.Select(x => new MaterialDef(Str(x, "id"), Str(x, "name"), Str(x, "short"))).ToArray();
+        Require(materials.Length is 0 or 3, "materiały: 3 rodzaje");
+        var repairs = hasMaterials && matj.TryGetProperty("repairs", out var rj)
+            ? rj.EnumerateArray().Select(x => new RepairDef(Str(x, "id"), Str(x, "name"), Str(x, "desc"), Str(x, "info"),
+                ParseEnum<RepairEffect>(Str(x, "effect")), Lookup(mid, Str(x, "material"), "materiał"), Int(x, "cost"), Int(x, "value"))).ToArray()
+            : [];
 
         var badgesJson = d.GetProperty("badges").EnumerateArray().ToArray();
         var badges = badgesJson.Select(b => new BadgeDef(Str(b, "id"), Str(b, "name"), Str(b, "desc"), Int(b, "xp"),
@@ -342,6 +382,9 @@ public sealed class GameData
         foreach (var c in meta.GetProperty("startClasses").EnumerateArray()) startClasses |= 1 << Lookup(cid, c.GetString() ?? "", "zawód");
 
         int BadgeIdx(string id) => Array.FindIndex(badges, b => b.Id == id);
+        var hasDaily = d.TryGetProperty("daily", out var dj);
+        var hasSchedule = d.TryGetProperty("schedule", out var scj);
+        var difficultiesJson = d.GetProperty("difficulties").EnumerateArray().ToArray();
 
         return new GameData
         {
@@ -370,6 +413,21 @@ public sealed class GameData
             Brigade = brigade,
             StartHelpersMask = startHelpers,
             Investor = investor,
+            Materials = materials,
+            Repairs = repairs,
+            MaterialDropPct = hasMaterials ? Int(matj, "dropPct") : 0,
+            MaterialBossDrop = hasMaterials ? Int(matj, "bossDrop") : 0,
+            MaterialGearBox = hasMaterials ? Int(matj, "gearBox") : 0,
+            MaterialMax = hasMaterials ? Int(matj, "max") : 9,
+            Paths = paths,
+            DailyEpoch = hasDaily ? dj.GetProperty("epoch").EnumerateArray().Select(x => x.GetInt32()).ToArray() : [2026, 1, 1],
+            DailyDefaultDate = hasDaily ? dj.GetProperty("defaultDate").EnumerateArray().Select(x => x.GetInt32()).ToArray() : [2026, 10, 1],
+            DailyDifficulty = hasDaily ? Lookup(Index(difficultiesJson), Str(dj, "difficulty"), "trudność") : Int(d, "defaultDifficulty"),
+            DailyInvestorMods = hasDaily ? Int(dj, "investorMods") : 0,
+            DailyHistory = hasDaily ? Int(dj, "history") : 5,
+            ScheduleMinDays = hasSchedule ? Int(scj, "minDays") : 4,
+            ScheduleTurnsPerDay = hasSchedule ? Int(scj, "turnsPerDay") : 3,
+            ScheduleUrl = hasSchedule ? Str(scj, "url") : "planbudowlany.online",
             Tools = tools,
             Gear = gear.ToArray(),
             GearSlots = slots.ToArray(),

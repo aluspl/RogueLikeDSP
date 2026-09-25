@@ -149,6 +149,16 @@ public sealed partial class Game
         w.Write(LogSerial);
         w.Write(SummonCounter);
         w.Write(SummonsUsed);
+        w.Write(RunSeed);
+        w.Write(StagePath);
+        w.Write(NextPath);
+        w.Write(Mats);
+        w.Write(Bridges);
+        foreach (var b in BridgeX) w.Write(b);
+        foreach (var b in BridgeY) w.Write(b);
+        w.Write(Daily);
+        w.Write(DailyDay);
+        foreach (var d in StageDays) w.Write(d);
     }
 
     public void Read(BinaryReader r)
@@ -244,5 +254,15 @@ public sealed partial class Game
         LogSerial = r.ReadInt32();
         SummonCounter = r.ReadInt32();
         SummonsUsed = r.ReadInt32();
+        RunSeed = r.ReadUInt32();
+        StagePath = r.ReadSByte();
+        NextPath = r.ReadSByte();
+        r.Read(Mats, 0, Mats.Length);
+        Bridges = r.ReadSByte();
+        for (var i = 0; i < BridgeX.Length; i++) BridgeX[i] = r.ReadSByte();
+        for (var i = 0; i < BridgeY.Length; i++) BridgeY[i] = r.ReadSByte();
+        Daily = r.ReadBoolean();
+        DailyDay = r.ReadUInt16();
+        for (var i = 0; i < StageDays.Length; i++) StageDays[i] = r.ReadUInt16();
     }
 }

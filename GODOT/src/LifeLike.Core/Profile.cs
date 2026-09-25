@@ -5,8 +5,8 @@ namespace LifeLike.Core;
 
 /// <summary>
 /// Profil gracza (odpowiednik core::profile z meta.h): rekord, doświadczenie, zakupy, odznaki, Osiedle.
-/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v6: 88 bajtów, little-endian, bajt 55 to wyrównanie),
-/// więc migracje v1/v2/v3/v4/v5 działają tak samo.
+/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v7: 124 bajty, little-endian, bajt 55 to wyrównanie),
+/// więc migracje v1/v2/v3/v4/v5/v6 działają tak samo.
 /// </summary>
 public sealed class Profile
 {
@@ -19,8 +19,12 @@ public sealed class Profile
     public const int V4Size = 72;
     /// <summary>v6 = v5 + brygada i tryb inwestora od tego offsetu.</summary>
     public const int V5Size = 78;
-    public const int Size = 88;
+    /// <summary>v7 = v6 + codzienna budowa (data, najlepsze wyniki dni) od tego offsetu.</summary>
+    public const int V6Size = 88;
+    public const int Size = 124;
     public const int MaxKeepsakes = 8;
+    public const int DailySlots = 5;
+    public const string MagicV7 = "PBRL007";
     public const string MagicV6 = "PBRL006";
     public const string MagicV5 = "PBRL005";
     public const string MagicV4 = "PBRL004";
@@ -76,6 +80,18 @@ public sealed class Profile
     public byte Investor;
     /// <summary>Najwyższa stawka wygranej budowy na każdy zawód.</summary>
     public byte[] BestStake = new byte[8];
+    // --- v7: codzienna budowa (GBA: data wpisana ręcznie; Godot: data z systemu)
+    /// <summary>Ostatnio wpisana data (0 = domyślna z danych).</summary>
+    public byte DailyD, DailyM;
+    public ushort DailyY;
+    /// <summary>Numery dni z wynikiem (0 = pusty).</summary>
+    public ushort[] DailyDay = new ushort[DailySlots];
+    /// <summary>Bity: wygrana tego dnia.</summary>
+    public byte DailyWon;
+    /// <summary>Rozegrane codzienne budowy (do 255).</summary>
+    public byte DailyRuns;
+    /// <summary>Najlepszy wynik dnia.</summary>
+    public int[] DailyScore = new int[DailySlots];
 
     public static byte[] MagicBytes(string s)
     {
@@ -125,6 +141,13 @@ public sealed class Profile
         b[78] = Brigade;
         b[79] = Investor;
         BestStake.CopyTo(b, 80);
+        b[88] = DailyD;
+        b[89] = DailyM;
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(90), DailyY);
+        for (var i = 0; i < DailySlots; i++) BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(92 + i * 2), DailyDay[i]);
+        b[102] = DailyWon;
+        b[103] = DailyRuns;
+        for (var i = 0; i < DailySlots; i++) BinaryPrimitives.WriteInt32LittleEndian(b.AsSpan(104 + i * 4), DailyScore[i]);
         return b;
     }
 
@@ -165,7 +188,17 @@ public sealed class Profile
             Brigade = b[78],
             Investor = b[79],
             BestStake = b.Slice(80, 8).ToArray(),
+            DailyD = b[88],
+            DailyM = b[89],
+            DailyY = BinaryPrimitives.ReadUInt16LittleEndian(b[90..]),
+            DailyWon = b[102],
+            DailyRuns = b[103],
         };
+        for (var i = 0; i < DailySlots; i++)
+        {
+            p.DailyDay[i] = BinaryPrimitives.ReadUInt16LittleEndian(b[(92 + i * 2)..]);
+            p.DailyScore[i] = BinaryPrimitives.ReadInt32LittleEndian(b[(104 + i * 4)..]);
+        }
         return p;
     }
 }

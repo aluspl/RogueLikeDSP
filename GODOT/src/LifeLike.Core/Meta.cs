@@ -11,7 +11,7 @@ public static class Meta
     public static void ProfileReset(GameData d, Profile p)
     {
         var fresh = Profile.FromBytes(new byte[Profile.Size]);
-        fresh.Magic = Profile.MagicBytes(Profile.MagicV6);
+        fresh.Magic = Profile.MagicBytes(Profile.MagicV7);
         fresh.Classes = (byte)d.StartClassesMask;
         DefaultKeepsake(d, fresh);
         CopyInto(fresh, p);
@@ -69,15 +69,42 @@ public static class Meta
         dst.Brigade = copy.Brigade;
         dst.Investor = copy.Investor;
         dst.BestStake = copy.BestStake;
+        dst.DailyD = copy.DailyD;
+        dst.DailyM = copy.DailyM;
+        dst.DailyY = copy.DailyY;
+        dst.DailyDay = copy.DailyDay;
+        dst.DailyWon = copy.DailyWon;
+        dst.DailyRuns = copy.DailyRuns;
+        dst.DailyScore = copy.DailyScore;
+    }
+
+    /// <summary>
+    /// Szkolenia z mniejszą liczbą poziomów niż w starym profilu (np. po zmianie balansu): poziomy ponad maksimum wracają
+    /// jako doświadczenie (Refund z danych). Zwraca true, jeśli coś zmieniono.
+    /// </summary>
+    public static bool ClampLevels(GameData d, Profile p)
+    {
+        var changed = false;
+        for (var i = 0; i < d.Upgrades.Length; ++i)
+        {
+            while (p.Levels[i] > d.Upgrades[i].Levels)
+            {
+                --p.Levels[i];
+                p.Xp += d.Upgrades[i].Refund;
+                changed = true;
+            }
+        }
+        return changed;
     }
 
     /// <summary>Naprawia wczytany profil. Zwraca true, jeśli trzeba go zapisać (migracja albo pusta pamięć).</summary>
     public static bool ProfileFix(GameData d, Profile p)
     {
-        if (p.MagicIs(Profile.MagicV6)) return false;
-        // v5/v4/v3/v2 -> v6: stare pola zostają, nowe od zera (jak memset od profile_v5_size / v4 / v3 / v2);
+        if (p.MagicIs(Profile.MagicV7)) return ClampLevels(d, p);
+        // v6/v5/v4/v3/v2 -> v7: stare pola zostają, nowe od zera (jak memset od profile_v6_size / v5 / v4 / v3 / v2);
         // bez wybranej pamiątki – pierwsza odblokowana
-        var keep = p.MagicIs(Profile.MagicV5) ? Profile.V5Size
+        var keep = p.MagicIs(Profile.MagicV6) ? Profile.V6Size
+            : p.MagicIs(Profile.MagicV5) ? Profile.V5Size
             : p.MagicIs(Profile.MagicV4) ? Profile.V4Size
             : (p.MagicIs(Profile.MagicV3) ? Profile.V3Size : (p.MagicIs(Profile.MagicV2) ? Profile.V2Size : 0));
         if (keep > 0)
@@ -85,8 +112,9 @@ public static class Meta
             var b = p.ToBytes();
             Array.Clear(b, keep, b.Length - keep);
             CopyInto(Profile.FromBytes(b), p);
-            p.Magic = Profile.MagicBytes(Profile.MagicV6);
+            p.Magic = Profile.MagicBytes(Profile.MagicV7);
             DefaultKeepsake(d, p);
+            ClampLevels(d, p);
             return true;
         }
         if (p.MagicIs(Profile.MagicV1))
@@ -305,6 +333,41 @@ public static class Meta
         p.RunClean = 0;
         var k = SelectedKeepsake(d, p);
         if (k >= 0 && p.KeepsakeRuns[k] < 255) ++p.KeepsakeRuns[k];
+    }
+
+    /// <summary>
+    /// Po budowie: najtańsze niekupione w Szkoleniach (motywacja). Kind: 0 ulepszenie, 1 zawód, 2 narzędzie, 3 brygada,
+    /// 4 poziom Trudny. Zwraca koszt albo -1, gdy wszystko kupione.
+    /// </summary>
+    public static int NextUnlock(GameData d, Profile p, out int kind, out int index)
+    {
+        int best = -1, k0 = -1, i0 = -1;
+        void Take(int k, int i, int c)
+        {
+            if (c >= 0 && (best < 0 || c < best))
+            {
+                best = c;
+                k0 = k;
+                i0 = i;
+            }
+        }
+        for (var i = 0; i < d.Upgrades.Length; ++i) Take(0, i, UpgradeCost(d, p, i));
+        for (var i = 0; i < d.Classes.Length; ++i)
+        {
+            if (!ClassUnlocked(p, i)) Take(1, i, d.ClassCost);
+        }
+        for (var i = 0; i < d.Tools.Length; ++i)
+        {
+            if (!ToolUnlocked(d, p, i)) Take(2, i, d.Tools[i].Cost);
+        }
+        for (var i = 0; i < d.Brigade.Length; ++i)
+        {
+            if (!HelperUnlocked(d, p, i)) Take(3, i, d.Brigade[i].Cost);
+        }
+        if (p.Hard == 0) Take(4, 0, d.HardCost);
+        kind = k0;
+        index = i0;
+        return best;
     }
 
     // ------------------------------------------------------------------ zlecenia

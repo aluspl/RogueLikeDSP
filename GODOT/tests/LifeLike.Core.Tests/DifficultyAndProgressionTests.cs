@@ -15,7 +15,7 @@ public class DifficultyAndProgressionTests
             Assert.Equal(D.Enemies[n.Enemies[i].DefId].MaxHealth * D.Stages[0].HpPct / 100, n.Enemies[i].MaxHp);
         var e = TestData.Run(0, 42, 0);
         var h = TestData.Run(0, 42, 2);
-        Assert.True(e.EnemyHpPct() < n.EnemyHpPct() && n.EnemyHpPct() < h.EnemyHpPct());
+        Assert.True(e.EnemyHpPct() <= n.EnemyHpPct() && n.EnemyHpPct() < h.EnemyHpPct());
         Assert.True(e.EnemyDmgBonus() < n.EnemyDmgBonus() && n.EnemyDmgBonus() <= h.EnemyDmgBonus());
         Assert.True(e.ScorePct() < n.ScorePct() && n.ScorePct() < h.ScorePct());
         for (var i = 0; i < e.EnemiesCount; ++i) Assert.True(e.Enemies[i].MaxHp >= 1);

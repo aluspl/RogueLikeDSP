@@ -120,6 +120,19 @@ public static class StateDigest
         f.Add(g.AllyTurns);
         f.Add(g.AllyX);
         f.Add(g.AllyY);
+        // v0.21.48: ścieżka, materiały, kładki, codzienna budowa, dni etapów
+        f.Add(g.StagePath);
+        f.Add(g.NextPath);
+        for (var i = 0; i < 3; i++) f.Add(g.Mats[i]);
+        f.Add(g.Bridges);
+        for (var i = 0; i < g.Bridges; i++)
+        {
+            f.Add(g.BridgeX[i]);
+            f.Add(g.BridgeY[i]);
+        }
+        f.Add(g.Daily ? 1 : 0);
+        f.Add(g.DailyDay);
+        foreach (var d in g.StageDays) f.Add(d);
         return f.H;
     }
 }

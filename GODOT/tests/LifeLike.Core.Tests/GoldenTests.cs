@@ -31,6 +31,7 @@ public class GoldenTests
         int Opt(string k) => j.TryGetProperty(k, out var v) ? v.GetInt32() : 0;
         int badges = Opt("badges"), contracts = Opt("contracts"), keepsake = Opt("keepsake"), keepsakeRuns = Opt("keepsakeRuns");
         var investor = Opt("investor");
+        int paths = Opt("paths"), daily = Opt("daily");
         var snaps = j.GetProperty("snapshots").EnumerateArray().ToList();
         var digests = j.GetProperty("digests").EnumerateArray().Select(x => x.GetString()).ToList();
 
@@ -52,7 +53,8 @@ public class GoldenTests
         if (keepsake > 0) p.KeepsakeRuns[keepsake - 1] = (byte)keepsakeRuns;
         var m = Meta.Mods(d, p); // przed StartRun: ranga pamiątki z budów przed tą
         var g = new Game(d);
-        g.NewRun(cls, seed, diff, m);
+        if (daily > 0) Daily.Start(g, daily); // codzienna budowa: zawód i seed z dnia, bez Szkoleń
+        else g.NewRun(cls, seed, diff, m);
         Meta.StartRun(d, p);
 
         var snapIndex = 0;
@@ -86,6 +88,7 @@ public class GoldenTests
                 Meta.CheckContracts(d, p);
                 Meta.BankXp(p, g);
                 if (g.ActCleared && shop && !g.ShopClosed) Bot.Shop(g);
+                if (paths != 0) g.ChoosePath(g.Stage & 1);
                 g.NextStage();
                 CheckSnapshot(step);
                 CheckDigest(step);
@@ -119,6 +122,7 @@ public class GoldenTests
         Meta.CheckBadges(d, p, g);
         Meta.CheckContracts(d, p);
         Meta.BankXp(p, g);
+        if (g.Daily) Daily.Record(d, p, g.DailyDay, g.Score, g.St == GameStatus.Won);
 
         Assert.Equal(snaps.Count, snapIndex);
         Assert.Equal(digests.Count, digestIndex);

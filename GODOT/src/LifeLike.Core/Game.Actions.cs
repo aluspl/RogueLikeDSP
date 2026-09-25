@@ -44,6 +44,17 @@ public sealed partial class Game
             GainXp(D.XpPerKill);
             MaybeDrop(e.X, e.Y);
             Push(Msg(ed.Name).Add(" - usunięto!").As(LogKind.Good));
+            if (D.Materials.Length > 0)
+            {
+                if (ei == Boss) // boss: po kilka sztuk każdego materiału
+                {
+                    for (var m = 0; m < D.Materials.Length; ++m) AddMaterial(m, D.MaterialBossDrop);
+                }
+                else if (R.Range(1, 100) <= D.MaterialDropPct)
+                {
+                    AddMaterial(ed.Material >= 0 ? ed.Material : R.Range(0, D.Materials.Length - 1));
+                }
+            }
             if (ei == Boss)
             {
                 if (StageDamage == BossWakeDamage && CleanBosses < 255) ++CleanBosses; // zlecenie Czysta robota
@@ -55,6 +66,7 @@ public sealed partial class Game
                     Cash += Income(ed.RewardCash);
                     Push(Msg(ed.RewardTitle).Add("! +").Add(Income(ed.RewardCash)).Add(" zł").As(LogKind.Good));
                 }
+                FinishStage();
                 if (Stage == D.Stages.Length - 1)
                 {
                     St = GameStatus.Won;
@@ -351,6 +363,7 @@ public sealed partial class Game
             }
             else if (p.Type == PickupType.GearBox)
             {
+                if (D.Materials.Length > 0) AddMaterial(R.Range(0, D.Materials.Length - 1), D.MaterialGearBox); // w paczce też materiał
                 var slot = p.Arg / 3;
                 if (Equipped[slot] < 0)
                 {
@@ -548,6 +561,7 @@ public sealed partial class Game
         if (St == GameStatus.Playing && Hero.X == StairsX && Hero.Y == StairsY)
         {
             St = GameStatus.StageClear;
+            FinishStage();
             Score += 100 * ScorePct() / 100;
             GainXp(D.XpPerStage);
             Push(Msg("Etap zakończony: ").Add(D.Stages[Stage].Name).As(LogKind.Good));

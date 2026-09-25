@@ -234,13 +234,23 @@ public class CombatAndActTests
         var g = TestData.Arena(1);
         Assert.True(!g.HurtowniaBuy(0) && g.Cash == 0);
         g.Cash = 1000;
+        var matItems = 0;
         for (var i = 0; i < D.Hurtownia.Length; ++i)
         {
             var it = D.Hurtownia[i];
-            int cash = g.Cash, maxhp = g.Hero.MaxHp;
+            if (it.Material >= 0) // płatne materiałem: bez materiału nie, z materiałem – zł zostają
+            {
+                ++matItems;
+                g.Mats[it.Material] = 0;
+                Assert.True(!g.HurtowniaCan(i) && !g.HurtowniaBuy(i));
+                g.Mats[it.Material] = (byte)(it.MatCost + 1);
+            }
+            int cash = g.Cash, maxhp = g.Hero.MaxHp, def = g.DefBonus;
             g.Hero.Hp = 3;
             g.AbilityCd = 9;
-            Assert.True(g.HurtowniaBuy(i) && g.Cash == cash - it.Price);
+            g.Thermos = 0;
+            Assert.True(g.HurtowniaCan(i) && g.HurtowniaBuy(i) && g.Cash == cash - it.Price);
+            if (it.Material >= 0) Assert.Equal(1, g.Mats[it.Material]);
             switch (it.Effect)
             {
                 case ShopEffect.Heal: Assert.Equal(g.Hero.MaxHp, g.Hero.Hp); break;
@@ -248,7 +258,10 @@ public class CombatAndActTests
                 case ShopEffect.Ability: Assert.Equal(0, g.AbilityCd); break;
                 case ShopEffect.Tool: Assert.True(g.WeaponOverride >= 0); break;
                 case ShopEffect.Gear: Assert.Contains(g.Equipped.Take(D.GearSlotsCount), e => e >= 1); break;
+                case ShopEffect.Def: Assert.Equal(def + 1, g.DefBonus); break;
+                case ShopEffect.Thermos: Assert.Equal(Math.Min(2, g.ThermosCap()), g.Thermos); break;
             }
         }
+        Assert.True(matItems >= 2);
     }
 }

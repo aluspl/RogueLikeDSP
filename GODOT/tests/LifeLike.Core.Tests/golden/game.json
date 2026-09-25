@@ -23,7 +23,7 @@
       "id": "murarz",
       "name": "Murarz",
       "desc": "Twardy jak pustak.",
-      "maxHealth": 32,
+      "maxHealth": 34,
       "strength": 5,
       "agility": 2,
       "intelligence": 1,
@@ -80,7 +80,7 @@
       "id": "hydraulik",
       "name": "Hydraulik",
       "desc": "Żaden przeciek mu nie straszny.",
-      "maxHealth": 32,
+      "maxHealth": 34,
       "strength": 4,
       "agility": 3,
       "intelligence": 3,
@@ -127,8 +127,8 @@
     {
       "id": "kielnia",
       "name": "Kielnia",
-      "minDamage": 3,
-      "maxDamage": 5,
+      "minDamage": 4,
+      "maxDamage": 6,
       "range": 1,
       "scalesWith": "strength"
     },
@@ -151,15 +151,15 @@
     {
       "id": "klucz",
       "name": "Klucz nastawny",
-      "minDamage": 3,
-      "maxDamage": 6,
+      "minDamage": 4,
+      "maxDamage": 7,
       "range": 1,
       "scalesWith": "strength"
     },
     {
       "id": "szlifierka",
       "name": "Szlifierka",
-      "minDamage": 3,
+      "minDamage": 4,
       "maxDamage": 7,
       "range": 1,
       "scalesWith": "agility"
@@ -221,7 +221,7 @@
       "minDamage": 1,
       "maxDamage": 3,
       "defense": 0,
-      "sight": 6,
+      "sight": 7,
       "score": 10,
       "frame": 6,
       "desc": "Kapie tam, gdzie nie powinno",
@@ -230,7 +230,8 @@
         "status": "slip",
         "chancePct": 14,
         "turns": 2
-      }
+      },
+      "material": "cement"
     },
     {
       "id": "zwarcie",
@@ -239,7 +240,7 @@
       "minDamage": 2,
       "maxDamage": 4,
       "defense": 0,
-      "sight": 7,
+      "sight": 8,
       "score": 12,
       "frame": 7,
       "desc": "Iskrzy przy każdej okazji",
@@ -248,7 +249,8 @@
         "status": "shock",
         "chancePct": 17,
         "turns": 1
-      }
+      },
+      "material": "stal"
     },
     {
       "id": "plesn",
@@ -257,7 +259,7 @@
       "minDamage": 1,
       "maxDamage": 2,
       "defense": 1,
-      "sight": 4,
+      "sight": 5,
       "score": 10,
       "frame": 8,
       "desc": "Lubi wilgoć i zimne ściany",
@@ -266,7 +268,8 @@
         "status": "poison",
         "chancePct": 24,
         "turns": 3
-      }
+      },
+      "material": "drewno"
     },
     {
       "id": "kornik",
@@ -275,11 +278,12 @@
       "minDamage": 1,
       "maxDamage": 3,
       "defense": 1,
-      "sight": 5,
+      "sight": 6,
       "score": 10,
       "frame": 9,
       "desc": "Drąży więźbę po cichu",
-      "slam": false
+      "slam": false,
+      "material": "drewno"
     },
     {
       "id": "papierologia",
@@ -288,7 +292,7 @@
       "minDamage": 1,
       "maxDamage": 2,
       "defense": 2,
-      "sight": 4,
+      "sight": 5,
       "score": 15,
       "frame": 10,
       "desc": "Brakuje jednej pieczątki",
@@ -297,7 +301,8 @@
         "status": "paper",
         "chancePct": 35,
         "turns": 0
-      }
+      },
+      "material": "drewno"
     },
     {
       "id": "dostawa",
@@ -306,11 +311,12 @@
       "minDamage": 2,
       "maxDamage": 4,
       "defense": 1,
-      "sight": 6,
+      "sight": 7,
       "score": 15,
       "frame": 11,
       "desc": "Będzie jutro. Na pewno.",
-      "slam": false
+      "slam": false,
+      "material": "stal"
     },
     {
       "id": "ulewa",
@@ -319,7 +325,7 @@
       "minDamage": 2,
       "maxDamage": 3,
       "defense": 0,
-      "sight": 8,
+      "sight": 9,
       "score": 12,
       "frame": 12,
       "desc": "Zawsze tuż przed dachem",
@@ -328,7 +334,8 @@
         "status": "slip",
         "chancePct": 28,
         "turns": 3
-      }
+      },
+      "material": "cement"
     },
     {
       "id": "budzet",
@@ -337,17 +344,18 @@
       "minDamage": 2,
       "maxDamage": 5,
       "defense": 2,
-      "sight": 6,
+      "sight": 7,
       "score": 25,
       "frame": 13,
       "desc": "Rośnie szybciej niż mury",
-      "slam": false
+      "slam": false,
+      "material": "stal"
     },
     {
       "id": "termin",
       "name": "Nieprzekraczalny Termin",
-      "maxHealth": 40,
-      "minDamage": 3,
+      "maxHealth": 42,
+      "minDamage": 4,
       "maxDamage": 6,
       "defense": 3,
       "sight": 12,
@@ -365,7 +373,7 @@
       "id": "betoniarka",
       "name": "Zepsuta Betoniarka",
       "desc": "Kręci się, ale nie tam",
-      "maxHealth": 30,
+      "maxHealth": 28,
       "minDamage": 3,
       "maxDamage": 5,
       "defense": 2,
@@ -378,9 +386,9 @@
       "id": "nawalnica",
       "name": "Nawałnica",
       "desc": "Leje jak z cebra",
-      "maxHealth": 36,
+      "maxHealth": 32,
       "minDamage": 3,
-      "maxDamage": 6,
+      "maxDamage": 5,
       "defense": 2,
       "sight": 12,
       "score": 180,
@@ -431,9 +439,10 @@
         "kornik"
       ],
       "count": 5,
-      "hpPct": 108,
+      "hpPct": 95,
       "dmgBonus": 0,
-      "act": 0
+      "act": 0,
+      "cost": 48
     },
     {
       "name": "Mury parteru",
@@ -443,9 +452,10 @@
         "kornik"
       ],
       "count": 6,
-      "hpPct": 110,
+      "hpPct": 100,
       "dmgBonus": 0,
-      "act": 0
+      "act": 0,
+      "cost": 62
     },
     {
       "name": "Strop",
@@ -455,10 +465,11 @@
         "kornik"
       ],
       "count": 6,
-      "hpPct": 112,
+      "hpPct": 105,
       "dmgBonus": 0,
       "act": 0,
-      "boss": "betoniarka"
+      "boss": "betoniarka",
+      "cost": 36
     },
     {
       "name": "Dach",
@@ -467,10 +478,11 @@
         "kornik",
         "przeciek"
       ],
-      "count": 7,
-      "hpPct": 115,
-      "dmgBonus": 0,
-      "act": 1
+      "count": 8,
+      "hpPct": 110,
+      "dmgBonus": 1,
+      "act": 1,
+      "cost": 55
     },
     {
       "name": "Okna i drzwi",
@@ -479,11 +491,12 @@
         "ulewa",
         "papierologia"
       ],
-      "count": 7,
-      "hpPct": 118,
-      "dmgBonus": 0,
+      "count": 8,
+      "hpPct": 115,
+      "dmgBonus": 1,
       "act": 1,
-      "boss": "nawalnica"
+      "boss": "nawalnica",
+      "cost": 41
     },
     {
       "name": "Instalacje",
@@ -492,11 +505,12 @@
         "przeciek",
         "plesn"
       ],
-      "count": 7,
-      "hpPct": 121,
-      "dmgBonus": 0,
+      "count": 8,
+      "hpPct": 120,
+      "dmgBonus": 2,
       "act": 2,
-      "boss": "inspekcja"
+      "boss": "inspekcja",
+      "cost": 46
     },
     {
       "name": "Tynki i wylewki",
@@ -505,10 +519,11 @@
         "przeciek",
         "zwarcie"
       ],
-      "count": 8,
-      "hpPct": 124,
-      "dmgBonus": 0,
-      "act": 2
+      "count": 9,
+      "hpPct": 126,
+      "dmgBonus": 2,
+      "act": 2,
+      "cost": 38
     },
     {
       "name": "Wykończenie i odbiór",
@@ -516,18 +531,19 @@
         "plesn",
         "budzet"
       ],
-      "count": 6,
-      "hpPct": 128,
-      "dmgBonus": 0,
+      "count": 7,
+      "hpPct": 132,
+      "dmgBonus": 2,
       "act": 2,
-      "boss": "termin"
+      "boss": "termin",
+      "cost": 72
     }
   ],
   "difficulties": [
     {
       "id": "latwy",
       "name": "Łatwy",
-      "hpPct": 80,
+      "hpPct": 100,
       "dmgBonus": -1,
       "scorePct": 50
     },
@@ -567,9 +583,9 @@
       {
         "id": "kondycja",
         "name": "Kondycja",
-        "desc": "+4 HP na start",
+        "desc": "+2 HP na start",
         "effect": "hp",
-        "value": 4,
+        "value": 2,
         "costs": [
           10,
           20,
@@ -583,9 +599,9 @@
         "effect": "def",
         "value": 1,
         "costs": [
-          15,
-          30
-        ]
+          15
+        ],
+        "refund": 30
       },
       {
         "id": "fach",
@@ -594,16 +610,16 @@
         "effect": "dmg",
         "value": 1,
         "costs": [
-          20,
-          40
-        ]
+          20
+        ],
+        "refund": 40
       },
       {
         "id": "termos",
         "name": "Lepszy termos",
-        "desc": "Kawa leczy +4 HP",
+        "desc": "Kawa leczy +2 HP",
         "effect": "coffee",
-        "value": 4,
+        "value": 2,
         "costs": [
           10,
           20
@@ -1003,7 +1019,7 @@
   ],
   "slam": {
     "every": 4,
-    "damageBonus": 2,
+    "damageBonus": 3,
     "radius": 1,
     "delay": 2,
     "crossReach": 2,
@@ -1070,9 +1086,36 @@
       "desc": "Moc od razu gotowa",
       "price": 20,
       "effect": "ability"
+    },
+    {
+      "id": "zbrojenie",
+      "name": "Zbrojenie",
+      "desc": "+1 obrona na tę budowę",
+      "price": 0,
+      "material": "stal",
+      "matCost": 4,
+      "effect": "def"
+    },
+    {
+      "id": "wylewka",
+      "name": "Wylewka",
+      "desc": "+3 max HP na tę budowę",
+      "price": 0,
+      "material": "cement",
+      "matCost": 4,
+      "effect": "maxhp"
+    },
+    {
+      "id": "deskowanie",
+      "name": "Deskowanie",
+      "desc": "2 kawy do termosu",
+      "price": 0,
+      "material": "drewno",
+      "matCost": 3,
+      "effect": "thermos"
     }
   ],
-  "version": "v0.21.47",
+  "version": "v0.21.48",
   "tips": [
     "Przytrzymaj B: podgląd problemów",
     "Przytrzymaj A: celownik i zasięg",
@@ -1082,7 +1125,10 @@
     "Paczka: A zakładam, B zostawiam",
     "Przytrzymaj L: mapa odkrytego placu",
     "Telefon (SELECT): Koszty i Zlecenia",
-    "Co 4 tury czekania (B) +1 HP"
+    "Co 4 tury czekania (B) +1 HP",
+    "Między etapami wybierz ścieżkę",
+    "Drewno: Załataj drogę problemom",
+    "Stal: Kładka nad kałużami"
   ],
   "contracts": [
     {
@@ -1408,10 +1454,10 @@
       },
       {
         "id": "problemy",
-        "name": "Problemy +20% HP",
-        "desc": "Każdy problem ma +20% HP",
+        "name": "Problemy +35% HP",
+        "desc": "Każdy problem ma +35% HP",
         "effect": "enemy_hp",
-        "value": 20,
+        "value": 35,
         "xpPct": 15,
         "stake": 2
       },
@@ -1436,12 +1482,129 @@
       {
         "id": "termin",
         "name": "Termin goni",
-        "desc": "Problemy biją o 1 mocniej",
+        "desc": "Problemy biją o 2 mocniej",
         "effect": "enemy_dmg",
-        "value": 1,
+        "value": 2,
         "xpPct": 20,
         "stake": 3
       }
     ]
+  },
+  "materials": {
+    "list": [
+      {
+        "id": "cement",
+        "name": "Cement",
+        "short": "Cem."
+      },
+      {
+        "id": "stal",
+        "name": "Stal",
+        "short": "Stal"
+      },
+      {
+        "id": "drewno",
+        "name": "Drewno",
+        "short": "Drew."
+      }
+    ],
+    "dropPct": 35,
+    "bossDrop": 2,
+    "gearBox": 1,
+    "max": 9,
+    "repairs": [
+      {
+        "id": "zalataj",
+        "name": "Załataj",
+        "desc": "Deski w poprzek drogi",
+        "info": "Mur 3 pola przed problemem, 6 tur",
+        "effect": "patch",
+        "material": "drewno",
+        "cost": 1,
+        "value": 6
+      },
+      {
+        "id": "kladka",
+        "name": "Kładka",
+        "desc": "Kałuże bez poślizgu",
+        "info": "Kałuże w zasięgu 2: bez poślizgu",
+        "effect": "bridge",
+        "material": "stal",
+        "cost": 1,
+        "value": 2
+      }
+    ]
+  },
+  "paths": {
+    "list": [
+      {
+        "id": "szybko",
+        "name": "Szybko, ale drogo",
+        "short": "Szybko",
+        "desc": "-2 problemy, -15 zł, -1 znajdźka",
+        "enemies": -2,
+        "pickups": -1,
+        "cash": -15,
+        "materials": 0,
+        "badWeather": false,
+        "noEvent": false
+      },
+      {
+        "id": "tanio",
+        "name": "Tanio, ale ryzykownie",
+        "short": "Tanio",
+        "desc": "+1 problem, +2 znajdźki, zła pogoda",
+        "enemies": 1,
+        "pickups": 2,
+        "cash": 0,
+        "materials": 0,
+        "badWeather": true,
+        "noEvent": false
+      },
+      {
+        "id": "termin",
+        "name": "Po terminie",
+        "short": "Po term.",
+        "desc": "Bez wydarzenia na placu, -10 zł",
+        "enemies": 0,
+        "pickups": 0,
+        "cash": -10,
+        "materials": 0,
+        "badWeather": false,
+        "noEvent": true
+      },
+      {
+        "id": "zapas",
+        "name": "Z zapasem materiałów",
+        "short": "Zapas",
+        "desc": "+1 problem, +3 materiały na start",
+        "enemies": 1,
+        "pickups": 0,
+        "cash": 0,
+        "materials": 3,
+        "badWeather": false,
+        "noEvent": false
+      }
+    ]
+  },
+  "daily": {
+    "epoch": [
+      2026,
+      1,
+      1
+    ],
+    "defaultDate": [
+      2026,
+      10,
+      1
+    ],
+    "difficulty": "normalny",
+    "investorMods": 2,
+    "history": 5
+  },
+  "schedule": {
+    "minDays": 4,
+    "turnsPerDay": 3,
+    "url": "planbudowlany.online"
   }
 }

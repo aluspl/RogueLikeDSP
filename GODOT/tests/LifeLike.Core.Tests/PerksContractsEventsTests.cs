@@ -207,7 +207,7 @@ public class PerksContractsEventsTests
         v3.Runs = 9;
         v3.Wins = 4;
         v3.Xp = 321;
-        v3.Levels[1] = 2;
+        v3.Levels[0] = 2;
         v3.Classes = 0x1F;
         v3.Hard = 1;
         v3.Flags = 3;
@@ -222,8 +222,8 @@ public class PerksContractsEventsTests
         var raw = v3.ToBytes();
         for (var i = Profile.V3Size; i < raw.Length; i++) raw[i] = 0xCD; // śmieci
         v3 = Profile.FromBytes(raw);
-        Assert.True(Meta.ProfileFix(D, v3) && v3.MagicIs(Profile.MagicV6));
-        Assert.True(v3.Best == 1234 && v3.Runs == 9 && v3.Wins == 4 && v3.Xp == 321 && v3.Levels[1] == 2 && v3.Classes == 0x1F);
+        Assert.True(Meta.ProfileFix(D, v3) && v3.MagicIs(Profile.MagicV7));
+        Assert.True(v3.Best == 1234 && v3.Runs == 9 && v3.Wins == 4 && v3.Xp == 321 && v3.Levels[0] == 2 && v3.Classes == 0x1F);
         Assert.True(v3.Hard == 1 && v3.Flags == 3 && v3.Tools == 5 && v3.Badges == 0x0123 && v3.Catalog == 0x07FF);
         Assert.True(v3.ClassWins == 0x05 && v3.ToolsFound == 0x0B && v3.HousesCount == 3 && v3.Houses[0] == 0x21 && v3.Houses[2] == 0x35);
         Assert.True(v3.KillsTotal == 0 && v3.PowersTotal == 0 && v3.BrandTotal == 0 && v3.CleanBosses == 0);
@@ -248,7 +248,7 @@ public class PerksContractsEventsTests
         var raw = v4.ToBytes();
         for (var i = Profile.V4Size; i < raw.Length; i++) raw[i] = 0xEE; // śmieci
         v4 = Profile.FromBytes(raw);
-        Assert.True(Meta.ProfileFix(D, v4) && v4.MagicIs(Profile.MagicV6));
+        Assert.True(Meta.ProfileFix(D, v4) && v4.MagicIs(Profile.MagicV7));
         Assert.True(v4.Best == 77 && v4.Xp == 12 && v4.KillsTotal == 150 && v4.PowersTotal == 40 && v4.Contracts == 0x03);
         Assert.True(v4.KeepsakeRuns[0] == 4 && v4.RunKills == 0 && v4.RunPowers == 0 && v4.RunBrand == 0 && v4.RunClean == 0);
         Assert.True(Meta.SelectedKeepsake(D, v4) >= 0 && D.Keepsakes[Meta.SelectedKeepsake(D, v4)].Start);
@@ -300,7 +300,7 @@ public class PerksContractsEventsTests
 
     /// <summary>Układ bajtów profilu v6 jak struktura core::profile w SRAM (offsety z static_assert w meta.h).</summary>
     [Fact]
-    public void ProfileV6SramLayout()
+    public void ProfileV7SramLayout()
     {
         var p = Meta.NewProfile(D);
         p.KillsTotal = 0x1234;
@@ -319,9 +319,19 @@ public class PerksContractsEventsTests
         p.Investor = 0x21;
         p.BestStake[0] = 5;
         p.BestStake[7] = 9;
+        Daily.SetDate(p, 2026, 9, 25);
+        p.DailyDay[0] = 0x0102;
+        p.DailyDay[4] = 0x0304;
+        p.DailyWon = 0x11;
+        p.DailyRuns = 42;
+        p.DailyScore[0] = 0x01020304;
+        p.DailyScore[4] = -2;
         var b = p.ToBytes();
-        Assert.Equal(88, b.Length);
-        Assert.Equal("PBRL006\0"u8.ToArray(), b[..8]);
+        Assert.Equal(124, b.Length);
+        Assert.Equal("PBRL007\0"u8.ToArray(), b[..8]);
+        Assert.Equal(new byte[] { 25, 9, 0xEA, 0x07, 0x02, 0x01 }, b[88..94]);
+        Assert.Equal(new byte[] { 0x04, 0x03, 0x11, 42, 0x04, 0x03, 0x02, 0x01 }, b[100..108]);
+        Assert.Equal(new byte[] { 0xFE, 0xFF, 0xFF, 0xFF }, b[120..124]);
         Assert.Equal(new byte[] { 0x34, 0x12, 0x01, 0x02, 7, 8, 0x2A, 3, 11 }, b[56..65]);
         Assert.Equal(99, b[71]);
         Assert.Equal(new byte[] { 0x06, 0x05, 0x02, 0x01, 3, 4, 0x0C, 0x21, 5 }, b[72..81]);
@@ -472,6 +482,6 @@ public class PerksContractsEventsTests
         Assert.True(l.StageEvent == g.StageEvent && l.PowersUsed == 12 && l.BrandFound == 2 && l.CleanBosses == 1 && l.BossWakeDamage == 5);
         Assert.True(l.Bonus.Crit == g.Bonus.Crit && l.Bonus.XpPct == g.Bonus.XpPct && l.Bonus.Thermos == g.Bonus.Thermos && l.ThermosCap() == g.ThermosCap());
         Assert.Equal(StateDigest.Of(g), StateDigest.Of(l));
-        Assert.Equal("PBRUN06", RunSave.RunMagic);
+        Assert.Equal("PBRUN07", RunSave.RunMagic);
     }
 }

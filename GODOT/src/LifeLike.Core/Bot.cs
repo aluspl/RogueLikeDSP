@@ -1,3 +1,5 @@
+using LifeLike.Core.Data;
+
 namespace LifeLike.Core;
 
 /// <summary>
@@ -130,6 +132,11 @@ public static class Bot
             else g.DeclineOffer();
         }
         if (g.Thermos > 0 && g.Hero.Hp * 2 < g.Hero.MaxHp && g.PlayerDrink()) return;
+        for (var k = 0; k < g.D.Repairs.Length; ++k) // naprawy: Kładka przy kałużach; Załataj przy niskim HP (problem w polu widzenia)
+        {
+            var want = g.D.Repairs[k].Effect == RepairEffect.Bridge || g.Hero.Hp * 3 < g.Hero.MaxHp;
+            if (want && g.RepairBlocked(k) == RepairBlock.Ok && g.PlayerRepair(k)) return;
+        }
         if (g.HelperCalled < 0 && g.NearestVisibleEnemy() >= 0) // brygada: przy pierwszym problemie na etapie (kolejny fachowiec co etap)
         {
             for (var k = 0; k < g.D.Brigade.Length; ++k)

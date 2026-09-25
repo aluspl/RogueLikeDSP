@@ -29,12 +29,57 @@ public sealed partial class Game
         return best;
     }
 
+    public bool CanPlaceWall(int x, int y) => WallsCount < MaxWalls && Lv.At(x, y) == Tile.Floor && !Occupied(x, y) && !PickupAt(x, y);
+
     public bool PlaceWall(int x, int y, int turnsLeft)
     {
-        if (WallsCount >= MaxWalls || Lv.At(x, y) != Tile.Floor || Occupied(x, y) || PickupAt(x, y)) return false;
+        if (!CanPlaceWall(x, y)) return false;
         Lv[x, y] = Tile.Wall;
         Walls[WallsCount++] = new TempWall { X = (sbyte)x, Y = (sbyte)y, Turns = (sbyte)turnsLeft };
         return true;
+    }
+
+    /// <summary>
+    /// Mur (2*half+1 pól) w poprzek drogi najbliższego widocznego wroga, na polu przed bohaterem (Ścianka, Załataj).
+    /// Zwraca liczbę pól linii (0 = brak widocznego wroga).
+    /// </summary>
+    public int WallLine(int half, Span<int> xs, Span<int> ys)
+    {
+        var t = NearestVisibleEnemy();
+        if (t < 0) return 0;
+        int dx = Math.Sign(Enemies[t].X - Hero.X), dy = Math.Sign(Enemies[t].Y - Hero.Y);
+        if (Math.Abs(Enemies[t].X - Hero.X) >= Math.Abs(Enemies[t].Y - Hero.Y)) dy = 0;
+        else dx = 0;
+        int cx = Hero.X + dx, cy = Hero.Y + dy;            // środek muru: pole przed bohaterem
+        int px = dy != 0 ? 1 : 0, py = dx != 0 ? 1 : 0;    // kierunek muru: prostopadle
+        var n = 0;
+        for (var k = -half; k <= half; ++k)
+        {
+            xs[n] = cx + px * k;
+            ys[n] = cy + py * k;
+            ++n;
+        }
+        return n;
+    }
+
+    public bool WallPossible(int half)
+    {
+        Span<int> xs = stackalloc int[5], ys = stackalloc int[5];
+        var n = WallLine(half, xs, ys);
+        for (var i = 0; i < n; ++i)
+        {
+            if (CanPlaceWall(xs[i], ys[i])) return true;
+        }
+        return false;
+    }
+
+    public bool WallTowardEnemy(int half, int dur)
+    {
+        Span<int> xs = stackalloc int[5], ys = stackalloc int[5];
+        var n = WallLine(half, xs, ys);
+        var ok = false;
+        for (var i = 0; i < n; ++i) ok |= PlaceWall(xs[i], ys[i], dur);
+        return ok;
     }
 
     /// <summary>Moc zawodu (R). Zwraca true, jeśli zużyła turę; bez celu nic się nie dzieje.</summary>
@@ -59,19 +104,9 @@ public sealed partial class Game
                 if (ok) Push(Msg(c.AbilityName).Add(": problemy wstrzymane"));
                 break;
             case AbilityEffect.Wall: // Ścianka: mur w poprzek drogi najbliższego wroga (nigdy wokół bohatera)
-            {
-                var t = NearestVisibleEnemy();
-                if (t < 0) break;
-                int dx = Math.Sign(Enemies[t].X - Hero.X), dy = Math.Sign(Enemies[t].Y - Hero.Y);
-                if (Math.Abs(Enemies[t].X - Hero.X) >= Math.Abs(Enemies[t].Y - Hero.Y)) dy = 0;
-                else dx = 0;
-                int cx = Hero.X + dx, cy = Hero.Y + dy;            // środek muru: pole przed bohaterem
-                int px = dy != 0 ? 1 : 0, py = dx != 0 ? 1 : 0;    // kierunek muru: prostopadle
-                int half = rank >= 3 ? 2 : 1, dur = 4 + 2 * rank;
-                for (var k = -half; k <= half; ++k) ok |= PlaceWall(cx + px * k, cy + py * k, dur);
+                ok = WallTowardEnemy(rank >= 3 ? 2 : 1, 4 + 2 * rank);
                 if (ok) Push(Msg(c.AbilityName).Add(" postawiona!"));
                 break;
-            }
             case AbilityEffect.Volley: // Seria: wszyscy widoczni w zasięgu (+1 obrażeń od II, +1 zasięgu na III)
             {
                 var range = WeaponRange() + (rank >= 3 ? 1 : 0);
@@ -166,11 +201,18 @@ public sealed partial class Game
         return true;
     }
 
-    /// <summary>Hurtownia między aktami: zakup za budżet budowy.</summary>
+    /// <summary>Czy stać na towar z Hurtowni (zł albo materiał).</summary>
+    public bool HurtowniaCan(int i)
+    {
+        var it = D.Hurtownia[i];
+        return it.Material >= 0 ? Mats[it.Material] >= it.MatCost : Cash >= it.Price;
+    }
+
+    /// <summary>Hurtownia między aktami: zakup za budżet budowy albo materiał.</summary>
     public bool HurtowniaBuy(int i)
     {
         var it = D.Hurtownia[i];
-        if (Cash < it.Price) return false;
+        if (!HurtowniaCan(i)) return false;
         switch (it.Effect)
         {
             case ShopEffect.Heal:
@@ -182,6 +224,12 @@ public sealed partial class Game
                 break;
             case ShopEffect.Ability:
                 AbilityCd = 0;
+                break;
+            case ShopEffect.Def:
+                ++DefBonus;
+                break;
+            case ShopEffect.Thermos:
+                Thermos = Math.Min(ThermosCap(), Thermos + 2);
                 break;
             case ShopEffect.Gear:
             {
@@ -209,7 +257,8 @@ public sealed partial class Game
                 break;
             }
         }
-        Cash -= it.Price;
+        if (it.Material >= 0) Mats[it.Material] = (byte)(Mats[it.Material] - it.MatCost);
+        else Cash -= it.Price;
         Push(Msg("Hurtownia: ").Add(it.Name).As(LogKind.Loot));
         return true;
     }

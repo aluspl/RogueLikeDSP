@@ -15,6 +15,7 @@ public sealed partial class Game
     public const int FovRadius = 7;
     public const int MaxHits = 8;
     public const int MaxWalls = 5;
+    public const int MaxBridges = 3;
 
     public GameData D { get; }
 
@@ -104,6 +105,23 @@ public sealed partial class Game
     public sbyte OfferSlot = -1, OfferRarity, OfferTrait;
     public int WeaponOverride = -1;
     public int LogSerial;
+    // v0.21.48: wybór ścieżki, materiały, naprawy, codzienna budowa, harmonogram domu
+    /// <summary>Seed budowy (oferta ścieżek na harmonogramie).</summary>
+    public uint RunSeed;
+    /// <summary>Ścieżka bieżącego etapu (GameData.Paths), -1 = bez wyboru (pierwszy etap).</summary>
+    public sbyte StagePath = -1;
+    /// <summary>Wybór na harmonogramie: 0/1 = pozycja w ofercie.</summary>
+    public sbyte NextPath;
+    /// <summary>Materiały: cement, stal, drewno (GameData.Materials).</summary>
+    public readonly byte[] Mats = new byte[4];
+    /// <summary>Kładki na etapie (kałuże w zasięgu bez poślizgu).</summary>
+    public sbyte Bridges;
+    public readonly sbyte[] BridgeX = new sbyte[MaxBridges], BridgeY = new sbyte[MaxBridges];
+    /// <summary>Codzienna budowa (seed dnia) i numer dnia.</summary>
+    public bool Daily;
+    public ushort DailyDay;
+    /// <summary>Tury na każdym etapie (harmonogram domu po wygranej).</summary>
+    public readonly ushort[] StageDays = new ushort[8];
 
     public Game(GameData data)
     {
@@ -168,27 +186,40 @@ public sealed partial class Game
 
     public bool WeatherIs(WeatherEffect e) => D.Weather[Weather].Effect == e;
 
-    /// <summary>Pogoda dnia: losowanie wagami spośród dozwolonych na etapie s.</summary>
-    public int RollWeather(int s)
+    private bool WeatherAllowed(int i, int s, bool badOnly) => (D.Weather[i].StagesMask & (1 << s)) != 0 && (!badOnly || D.Weather[i].Bad);
+
+    /// <summary>Pogoda dnia: losowanie wagami spośród dozwolonych na etapie s (badOnly: tylko niekorzystne, jeśli są).</summary>
+    public int RollWeather(int s, bool badOnly = false)
     {
         var total = 0;
         for (var i = 0; i < D.Weather.Length; ++i)
         {
-            if ((D.Weather[i].StagesMask & (1 << s)) != 0) total += D.Weather[i].Weight;
+            if (WeatherAllowed(i, s, badOnly)) total += D.Weather[i].Weight;
         }
+        if (total == 0) return RollWeather(s, false);
         var roll = R.Range(1, total);
         for (var i = 0; i < D.Weather.Length; ++i)
         {
-            if ((D.Weather[i].StagesMask & (1 << s)) == 0) continue;
+            if (!WeatherAllowed(i, s, badOnly)) continue;
             if (roll <= D.Weather[i].Weight) return i;
             roll -= D.Weather[i].Weight;
         }
         return 0;
     }
 
-    /// <summary>Deszcz: kałuże na części pól podłogi (stały wzór zależny od etapu); wejście w kałużę = poślizg.</summary>
-    public bool Puddle(int x, int y) =>
-        WeatherIs(WeatherEffect.Rain) && Lv.At(x, y) == Tile.Floor && (x * 7 + y * 13 + Stage * 5) % WDef.Value == 0;
+    /// <summary>
+    /// Deszcz: kałuże na części pól podłogi (stały wzór zależny od etapu); wejście w kałużę = poślizg. Kładka: kałuże
+    /// w jej zasięgu nie działają do końca etapu.
+    /// </summary>
+    public bool Puddle(int x, int y)
+    {
+        if (!WeatherIs(WeatherEffect.Rain) || Lv.At(x, y) != Tile.Floor || (x * 7 + y * 13 + Stage * 5) % WDef.Value != 0) return false;
+        for (var i = 0; i < Bridges; ++i)
+        {
+            if (Cheb(x, y, BridgeX[i], BridgeY[i]) <= BridgeReach()) return false;
+        }
+        return true;
+    }
 
     public int StatusTurns(StatusEffect s) => HeroStatus[(int)s];
 
@@ -441,6 +472,7 @@ public sealed partial class Game
         DefBonus = mods.Def;
         DmgBonus = mods.Dmg;
         R.Seed(seed);
+        RunSeed = seed;
         Hero.MaxHp = Hero.Hp = (short)(CDef.MaxHealth + mods.Hp);
         Hero.Alive = true;
         Cash = mods.Cash;
@@ -474,12 +506,15 @@ public sealed partial class Game
         oy = rm.Cy;
     }
 
-    public void StartStage(int s)
+    public void StartStage(int s, int path = -1)
     {
         Stage = s;
         St = GameStatus.Playing;
+        StagePath = (sbyte)path;
+        var pd = path >= 0 ? D.Paths[path] : null;
         Lv.Generate(ref R);
         WallsCount = 0;
+        Bridges = 0;
         StageDamage = 0;
         StageKills = 0;
         StageStartTurn = Turns;
@@ -510,7 +545,8 @@ public sealed partial class Game
         }
 
         EnemiesCount = 0;
-        for (var i = 0; i < sd.EnemyCount && EnemiesCount < MaxEnemies; ++i)
+        var count = Math.Max(1, sd.EnemyCount + (pd?.Enemies ?? 0)); // ścieżka: więcej / mniej problemów
+        for (var i = 0; i < count && EnemiesCount < MaxEnemies; ++i)
         {
             var roomI = 1 + R.Range(0, Lv.RoomsCount - 2 > 0 ? Lv.RoomsCount - 2 : 0);
             if (roomI >= Lv.RoomsCount) roomI = Lv.RoomsCount - 1;
@@ -532,18 +568,25 @@ public sealed partial class Game
         }
 
         PickupsCount = 0;
-        for (var i = 0; i < 3 + Bonus.Pickups && i < MaxPickups && Lv.RoomsCount > 1; ++i)
+        var pickupsN = Math.Max(1, 3 + Bonus.Pickups + (pd?.Pickups ?? 0));
+        for (var i = 0; i < pickupsN && i < MaxPickups && Lv.RoomsCount > 1; ++i)
         {
             var rm = Lv.Rooms[R.Range(1, Lv.RoomsCount - 1)];
             RandomFreeCellInRoom(rm, out var x, out var y);
             Pickups[PickupsCount++] = new Pickup(x, y, i == 0 ? PickupType.Coffee : (PickupType)R.Range(0, 2), true);
         }
         Push(Msg("Etap ").Add(Stage + 1).Add(": ").Add(sd.Name));
-        Weather = (sbyte)RollWeather(s); // pogoda dnia
+        if (pd != null) // ścieżka z harmonogramu: budżet i materiały od razu
+        {
+            Push(Msg("Ścieżka: ").Add(pd.Name));
+            if (pd.Cash != 0) Cash = Math.Max(0, Cash + Income(pd.Cash));
+            for (var k = 0; k < pd.Materials; ++k) AddMaterial(R.Range(0, D.Materials.Length - 1));
+        }
+        Weather = (sbyte)RollWeather(s, pd != null && pd.BadWeather); // pogoda dnia
         if (WDef.Effect != WeatherEffect.None)
             Push(Msg("Pogoda: ").Add(WDef.Name).Add(" (").Add(WDef.Short).Add(")").As(WDef.Bad ? LogKind.Bad : LogKind.Good));
         StageEvent = -1; // wydarzenie na placu: nie na pierwszym etapie i nie u bossa
-        if (s > 0 && sd.Boss < 0 && R.Range(1, 100) <= D.SiteEventChancePct)
+        if (s > 0 && sd.Boss < 0 && !(pd != null && pd.NoEvent) && R.Range(1, 100) <= D.SiteEventChancePct)
         {
             var e = R.Range(0, D.SiteEvents.Length - 1);
             // niekorzystna pogoda i niekorzystne wydarzenie naraz to za dużo: wydarzenie przepada
@@ -578,11 +621,13 @@ public sealed partial class Game
 
     public int StatBonus(Stat s) => RunMods.StatBonus(D, Bonus, Cls, s) + TraitBonus(RunMods.StatTrait(s));
 
-    /// <summary>Przejście do kolejnego etapu (po ekranie harmonogramu). Przerwa na kawę: +5 HP.</summary>
+    /// <summary>Przejście do kolejnego etapu (po ekranie harmonogramu) wybraną ścieżką. Przerwa na kawę: +5 HP.</summary>
     public void NextStage()
     {
         if (!InvestorHas(InvestorEffect.NoBreak)) Hero.Hp = (short)Math.Min(Hero.MaxHp, Hero.Hp + 5); // tryb inwestora: bez przerwy
-        StartStage(Stage + 1);
+        var path = D.Paths.Length >= 2 ? PathOffer(NextPath) : -1;
+        NextPath = 0;
+        StartStage(Stage + 1, path);
     }
 
     /// <summary>
