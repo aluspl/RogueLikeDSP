@@ -196,6 +196,8 @@ L += [f"inline constexpr int level_thresholds[] = {{ {', '.join(map(str, hl['thr
       f"inline constexpr int dmg_levels_mask = {sum(1 << l for l in hl['dmgLevels'])};",
       f"inline constexpr int def_levels_mask = {sum(1 << l for l in hl['defLevels'])};", ""]
 L += [f"inline constexpr const char* version = {s(d['version'])};   // numer wersji (ekran tytułowy, changelog)", ""]
+L += ["inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonogramu między etapami"]
+L += [f"    {s(t)}," for t in d["tips"]] + ["};", f"inline constexpr int tips_count = {len(d['tips'])};", ""]
 L += [f"inline constexpr int classes_count = {len(d['classes'])};",
       f"inline constexpr int stages_count = {len(d['stages'])};",
       f"inline constexpr int difficulties_count = {len(d['difficulties'])};",

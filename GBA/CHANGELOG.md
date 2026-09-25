@@ -2,6 +2,27 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
+## v0.21.44 – 2026-09-25
+### Nowe
+- **Rada kierownika** na ekranie harmonogramu między etapami: krótka podpowiedź o sterowaniu i mechanikach
+  (podgląd pod B, celownik pod A, termos, uniki przed bossem, mapa pod L…), co etap inna. Lista `tips` w `data/game.json`.
+### Zmiany
+- Nowy profil zaczyna z wybraną pamiątką Termos babci (nie trzeba jej wybierać L/R); profil przeniesiony bez wybranej
+  pamiątki dostaje pierwszą odblokowaną.
+- Profil w formacie v5 (migracja z v4/v3/v2/v1 bez utraty danych); nowy zapis budowy (PBRUN04) – przerwana budowa
+  z v0.21.43 nie wznowi się.
+- Telefon, zakładka Koszty w trakcie budowy: czytelniej – „Wydane na szkolenia X z Y dośw.” i „Do wydania po budowie”
+  zamiast mylącego „Budżet / Pozostało”.
+- Odznaki w telefonie profilu: nagroda za niezdobytą odznakę jako „+15 dośw.” zamiast samego „+15”.
+- Harmonogram pokazuje zaliczony etap i trzy kolejne.
+### Poprawki
+- Liczniki zleceń z etapu nie liczą się drugi raz po wyłączeniu konsoli i wznowieniu budowy z autozapisu
+  (profil pamięta, ile z bieżącej budowy już przeniesiono); postęp w telefonie też nie pokazuje etapu podwójnie.
+- Ucinane teksty: nazwa etapu pod pastylką „W trakcie” (zakładka Start), opis paczki w Hurtowni, komunikaty dziennika
+  (np. „Zostawiasz stary sprzęt: +2 dośw.”) – teksty mierzone są teraz w pikselach (font o zmiennej szerokości),
+  a ucięte kończą się kropką zamiast wychodzić poza ramkę.
+- ROM kompiluje się bez ostrzeżeń.
+
 ## v0.21.43 – 2026-09-25
 ### Nowe
 - **Statystyki:** cechy sprzętu Siła/Zręczność/Inteligencja +1 (podnoszą statystykę broni), narzędzia skalowane INT

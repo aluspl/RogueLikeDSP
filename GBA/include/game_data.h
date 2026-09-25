@@ -92,7 +92,7 @@ inline constexpr core::act_def acts[] = {
 };
 inline constexpr core::shop_item_def hurtownia[] = {
     { "Kawa z ekspresu", "Pełne HP", 30, core::shop_effect::heal },
-    { "Paczka sprzętu", "Losowy sprzęt, co najmniej solidny", 50, core::shop_effect::gear },
+    { "Paczka sprzętu", "Losowy sprzęt, min. solidny", 50, core::shop_effect::gear },
     { "Nowe narzędzie", "Losowe odblokowane narzędzie", 40, core::shop_effect::tool },
     { "Siłownia", "+3 max HP na tę budowę", 45, core::shop_effect::maxhp },
     { "Energetyk", "Moc od razu gotowa", 20, core::shop_effect::ability },
@@ -247,7 +247,20 @@ inline constexpr int hp_per_level = 2;
 inline constexpr int dmg_levels_mask = 32;
 inline constexpr int def_levels_mask = 8;
 
-inline constexpr const char* version = "v0.21.43";   // numer wersji (ekran tytułowy, changelog)
+inline constexpr const char* version = "v0.21.44";   // numer wersji (ekran tytułowy, changelog)
+
+inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonogramu między etapami
+    "Przytrzymaj B: podgląd problemów",
+    "Przytrzymaj A: celownik i zasięg",
+    "Kawa z termosu leczy - menu START",
+    "Czerwone pola? Masz 2 tury na unik",
+    "Moc pod R: ikona pulsuje = gotowa",
+    "Paczka: A zakładam, B zostawiam",
+    "Przytrzymaj L: mapa odkrytego placu",
+    "Telefon (SELECT): Koszty i Zlecenia",
+    "Co 4 tury czekania (B) +1 HP",
+};
+inline constexpr int tips_count = 9;
 
 inline constexpr int classes_count = 6;
 inline constexpr int stages_count = 8;

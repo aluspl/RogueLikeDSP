@@ -63,7 +63,7 @@ Teksty są w `data/game.json` (`story`).
   (200 problemów), Stały klient (5 wygranych). Nagroda: doświadczenie i/lub pamiątka, baner przy ukończeniu.
   Telefon profilu: zakładka Odznaki, strona Zlecenia (A); w trakcie budowy zakładka Koszty pokazuje najbliższe zlecenie.
 - **Pamiątki** (jak keepsakes, `keepsakes`): jedna zabierana na budowę, wybór L/R na ekranie zawodu. Termos babci
-  (termos +1 miejsce, od początku), Kask ojca (+1 obrony, odznaka Bez usterek), Szczęśliwa kielnia (+2 szczęścia),
+  (termos +1 miejsce, od początku – nowy profil zabiera go domyślnie), Kask ojca (+1 obrony, odznaka Bez usterek), Szczęśliwa kielnia (+2 szczęścia),
   Stara poziomica (widzenie +1), Notes kierownika (moc -1 t.) – trzy ostatnie za zlecenia. Ranga II po 3, III po 8
   budowach z pamiątką (`rankRuns`, wartości `values`). Strona Pamiątki w telefonie profilu.
 - **Katalog usterek** - pokonane rodzaje problemów z opisami.
@@ -83,8 +83,11 @@ Zadania telefonu. Teksty i wartości: `siteEvents` w `data/game.json`.
 - Doświadczenie za wrogów, etapy i bossa wydajesz w sklepie „Szkolenia” (po budowie i z tytułu):
   ulepszenia statystyk (m.in. Kurs BHP II: +1 szczęścia, Warsztaty: +1 do statystyki broni zawodu), więcej znajdziek,
   nowe zawody, narzędzia, poziom Trudny.
-- Profil (rekord, doświadczenie, zakupy, odznaki, liczniki zleceń, pamiątki) zapisuje się w SRAM (format v4);
-  starsze zapisy (v1-v3) są przenoszone bez utraty danych.
+- Profil (rekord, doświadczenie, zakupy, odznaki, liczniki zleceń, pamiątki) zapisuje się w SRAM (format v5);
+  starsze zapisy (v1-v4) są przenoszone bez utraty danych.
+- Liczniki zleceń trafiają do profilu na końcu etapu; profil pamięta, ile z bieżącej budowy już przeniesiono, więc
+  wznowienie budowy po wyłączeniu konsoli nie liczy etapu drugi raz.
+- Harmonogram między etapami pokazuje radę kierownika (sterowanie i mechaniki; lista `tips` w `data/game.json`).
 - Budowa zapisuje się sama na starcie każdego etapu i przez „Zapisz i wyjdź” w menu; na tytule START wznawia. Śmierć, wygrana i porzucenie kasują zapis.
 
 ## Budowanie

@@ -1012,7 +1012,7 @@
     {
       "id": "paczka",
       "name": "Paczka sprzętu",
-      "desc": "Losowy sprzęt, co najmniej solidny",
+      "desc": "Losowy sprzęt, min. solidny",
       "price": 50,
       "effect": "gear"
     },
@@ -1038,7 +1038,18 @@
       "effect": "ability"
     }
   ],
-  "version": "v0.21.43",
+  "version": "v0.21.44",
+  "tips": [
+    "Przytrzymaj B: podgląd problemów",
+    "Przytrzymaj A: celownik i zasięg",
+    "Kawa z termosu leczy - menu START",
+    "Czerwone pola? Masz 2 tury na unik",
+    "Moc pod R: ikona pulsuje = gotowa",
+    "Paczka: A zakładam, B zostawiam",
+    "Przytrzymaj L: mapa odkrytego placu",
+    "Telefon (SELECT): Koszty i Zlecenia",
+    "Co 4 tury czekania (B) +1 HP"
+  ],
   "contracts": [
     {
       "id": "trzy_fachy",
