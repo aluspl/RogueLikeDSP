@@ -123,3 +123,21 @@ Szkic ekranu (1280×720): telefon w pionie na środku, mapa etapu w tle rozmyta 
 | Rzut? | 2.5D (siatka turowa, kamera 3/4, dynamiczne światło). |
 | Czas a telefon? | Gra turowa; akcje w telefonie są poza czasem i nie zużywają tury. |
 | Dane? | Statystyki, zawody, przedmioty itp. wspólne z GBA (jeden JSON); grafika i UI osobno. |
+
+## 8. Postęp
+
+### Kamień milowy 1 – rdzeń (zrobione, 2026-09-25)
+
+- `LifeLike.Core` zastąpił stary fantasy-rdzeń (mag/wojownik/szczur, `DungeonGenerator`). Logika z `GBA/include/core.h`
+  i `meta.h` przeniesiona 1:1: generator xorshift32, shadowcasting, walka, AI, moce z rangami, stany, sprzęt,
+  narzędzia, dropy, akty z bossami (zapowiadane uderzenie), Hurtownia, poziomy postaci, NG+, dziennik, celowanie,
+  profil (Szkolenia, odblokowania, odznaki, katalog, Osiedle, bankowanie XP, migracje zapisu) i zapis budowy.
+- Dane: gra czyta wspólny `GBA/data/game.json` (kopiowany przy buildzie do `godot/data/`), parser ignoruje nieznane pola.
+- Testy: przypadki z `GBA/tests/core_tests.cpp` jako xUnit (z balansem na botach) + **test złoty**:
+  `GBA/tests/golden_dump.cpp` zapisuje 15 przebiegów bota, C# odtwarza je krok po kroku (skrót stanu po każdym
+  kroku, pełne zrzuty na etapach) – ten sam seed daje identyczną grę.
+- Godot: grywalna wersja 2D (prostokąty i litery, mgła wojny, HUD tekstowy, ekrany tekstowe: tytuł, Szkolenia,
+  harmonogram, Hurtownia, podgląd, koniec gry z NG+), sterowanie klawiatura/pad/mysz jak na GBA,
+  test dymny `--smoke` (bot gra 3 etapy w headless Godot).
+- Różnice względem GBA: zapis budowy to serializacja pól (nie `memcpy` struktury), celowanie pod A wybiera najbliższy
+  cel (bez przełączania strzałkami), brak telefonu, dźwięku, prologu i animacji – to kolejne kamienie milowe.
