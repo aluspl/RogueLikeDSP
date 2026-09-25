@@ -506,7 +506,17 @@ int main()
         g.spawn(8, 8, 7); g.enemies[0].awake = true; g.player_wait();
         CHECK(g.log[log_lines - 1].kind == bad);                     // obrażenia bohatera na czerwono
     }
-    // 23. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
+    // 23. celowanie: cele w zasięgu od najbliższego, atak tylko w zasięgu
+    {
+        game g; arena(g, 2);                                             // Cieśla: zasięg 3
+        g.spawn(4, 10, 7); g.spawn(4, 8, 8); g.spawn(4, 13, 7);
+        int8_t t[8]; int n = g.targets_in_range(t, 8);
+        CHECK(n == 2 && t[0] == 1 && t[1] == 0);                         // najbliższy pierwszy, daleki pominięty
+        CHECK(!g.player_attack(2) && g.turns == 0);                       // poza zasięgiem - bez tury
+        int hp = g.enemies[0].hp;
+        CHECK(g.player_attack(0) && g.enemies[0].hp < hp && g.turns == 1);
+    }
+    // 24. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};
     for(int df=0;df<data::difficulties_count;++df)

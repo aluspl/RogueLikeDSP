@@ -92,6 +92,7 @@ namespace
     constexpr int frame_anim_b = 27;     // + klatka zawodu/wroga (0..14) = druga klatka animacji
 
     constexpr int frame_gear = 42;       // + jakość
+    constexpr int frame_reticle = 45;
     int pickup_frame(const core::pickup& p)
     {
         if(p.type == core::tool) return frame_toolbox;
@@ -359,13 +360,16 @@ namespace
             return d2 <= 10 ? 0 : (d2 <= 24 ? 1 : 2);
         }
 
-        void set(int cx, int cy, int t, int palette, bool hflip = false)
+        const bool (*highlight)[core::map_w] = nullptr;   // pola w zasięgu broni (celowanie)
+
+        void set(int cx, int cy, int t, int palette, bool hflip = false, bool vflip = false)
         {
             bn::regular_bg_map_cell& cell = cells[map_item.cell_index(cx, cy)];
             bn::regular_bg_map_cell_info info(cell);
             info.set_tile_index(t);
             info.set_palette_id(palette);
             info.set_horizontal_flip(hflip);
+            info.set_vertical_flip(vflip);
             cell = info.cell();
         }
 
@@ -398,6 +402,12 @@ namespace
                 for(int x = 0; x < core::map_w; ++x)
                 {
                     int pal, t = tile_of(g, x, y, pal);
+                    if((t == 1 || t == 5) && highlight && highlight[y][x])   // ramka pola w zasięgu
+                    {
+                        set(x * 2, y * 2, 7, pal); set(x * 2 + 1, y * 2, 7, pal, true);
+                        set(x * 2, y * 2 + 1, 7, pal, false, true); set(x * 2 + 1, y * 2 + 1, 7, pal, true, true);
+                        continue;
+                    }
                     bool top_shadow = t == 5;
                     int base = top_shadow ? 1 : t;
                     set(x * 2, y * 2, t, pal); set(x * 2 + 1, y * 2, t, pal);
@@ -1091,6 +1101,29 @@ namespace
         };
         draw_strips(false);
         int log_timer = 0, log_seen = g.log_serial;
+
+        // Celowanie: przytrzymanie A pokazuje zasięg i celownik, strzałki zmieniają cel, puszczenie atakuje.
+        bool aiming = false;
+        int aim_frames = 0, aim_sel = 0, aim_count = 0, range_flash = 0;
+        int8_t aim_targets[core::max_enemies];
+        static bool range_cells[core::map_h][core::map_w];
+        bn::sprite_ptr reticle = bn::sprite_items::actors.create_sprite(0, 0, frame_reticle);
+        reticle.set_camera(cam);
+        reticle.set_z_order(-40);
+        reticle.set_visible(false);
+        auto show_range = [&](bool on) {
+            if(on)
+            {
+                for(int y = 0; y < core::map_h; ++y)
+                    for(int x = 0; x < core::map_w; ++x)
+                        range_cells[y][x] = g.visible(x, y) && core::cheb(g.hero.x, g.hero.y, x, y) <= g.weapon().range
+                                            && ! (x == g.hero.x && y == g.hero.y);
+                map->highlight = range_cells;
+            }
+            else map->highlight = nullptr;
+            map->build(g);
+            bg_map_ptr.reload_cells_ref();
+        };
         int prev_level = g.hero_level, prev_weapon = g.weapon_override, prev_pickups = g.pickups_count;
         int prev_cd = g.ability_cd;
         int prev_active = 0;
@@ -1455,6 +1488,31 @@ namespace
             bool acted = false;
             int dx = 0, dy = 0;
             // ruch: pojedyncze wciśnięcie lub przytrzymanie (auto-powtórzenie)
+            if(aiming)   // celowanie trwa: strzałki wybierają cel, puszczenie A atakuje
+            {
+                ++aim_frames;
+                if(aim_frames == 8) { show_range(true); reticle.set_visible(aim_count > 0); }
+                if(aim_count > 1 && (bn::keypad::right_pressed() || bn::keypad::down_pressed())) aim_sel = (aim_sel + 1) % aim_count;
+                if(aim_count > 1 && (bn::keypad::left_pressed() || bn::keypad::up_pressed())) aim_sel = (aim_sel + aim_count - 1) % aim_count;
+                if(aim_count > 0)
+                {
+                    const core::actor& e = g.enemies[aim_targets[aim_sel]];
+                    reticle.set_position(world(e.x, e.y));
+                    reticle.set_visible(aim_frames >= 8 && ((aim_frames / 6) & 1) == 0 ? true : aim_frames >= 8);
+                }
+                if(! bn::keypad::a_held())
+                {
+                    aiming = false;
+                    reticle.set_visible(false);
+                    if(aim_count > 0) { show_range(false); acted = g.player_attack(aim_targets[aim_sel]); }
+                    else { show_range(true); range_flash = 20; }   // brak celu: zasięg tylko mignie
+                }
+                if(acted) refresh();
+                animate(); fx_particles.update(); banner.update(a);
+                next_frame();
+                continue;
+            }
+            if(range_flash > 0 && --range_flash == 0) show_range(false);
             bool any_dir = bn::keypad::left_held() || bn::keypad::right_held() || bn::keypad::up_held() || bn::keypad::down_held();
             bool pressed = bn::keypad::left_pressed() || bn::keypad::right_pressed() || bn::keypad::up_pressed() || bn::keypad::down_pressed();
             hold = any_dir ? hold + 1 : 0;
@@ -1466,7 +1524,11 @@ namespace
                 else if(bn::keypad::down_held()) dy = 1;
                 if(dx || dy) acted = g.player_move(dx, dy);
             }
-            else if(bn::keypad::a_pressed()) { acted = g.player_attack_nearest(); if(! acted) refresh(); }
+            else if(bn::keypad::a_pressed() && ! aiming)
+            {
+                aiming = true; aim_frames = 0; aim_sel = 0;
+                aim_count = g.targets_in_range(aim_targets, core::max_enemies);
+            }
             else if(bn::keypad::b_pressed()) acted = g.player_wait();
             else if(bn::keypad::r_pressed() && ! bn::keypad::l_held())
             {

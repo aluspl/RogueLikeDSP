@@ -436,6 +436,30 @@ namespace core
             return best;
         }
 
+        // Cele w zasięgu broni (widoczni, żywi), posortowane od najbliższego. Zwraca liczbę.
+        int targets_in_range(int8_t* out, int max) const
+        {
+            int n = 0;
+            for(int d = 1; d <= weapon().range; ++d)
+                for(int i = 0; i < enemies_count && n < max; ++i)
+                {
+                    const actor& e = enemies[i];
+                    if(e.alive && visible(e.x, e.y) && cheb(hero.x, hero.y, e.x, e.y) == d) out[n++] = int8_t(i);
+                }
+            return n;
+        }
+
+        // Atak wybranego celu (celowanie przytrzymaniem A). Cel musi być w zasięgu i widoczny.
+        bool player_attack(int ei)
+        {
+            if(st != status::playing || ei < 0 || ei >= enemies_count) return false;
+            const actor& e = enemies[ei];
+            if(! e.alive || ! visible(e.x, e.y) || cheb(hero.x, hero.y, e.x, e.y) > weapon().range) return false;
+            hero_attack(ei);
+            end_turn();
+            return true;
+        }
+
         bool player_attack_nearest()
         {
             if(st != status::playing) return false;
