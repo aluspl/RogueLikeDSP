@@ -1,5 +1,6 @@
 using Godot;
 using LifeLike.Game.Gfx;
+using LifeLike.Game.Input;
 using CoreGame = LifeLike.Core.Game;
 
 namespace LifeLike.Game.Phone.Pages;
@@ -17,6 +18,7 @@ public sealed class OfferPage : PhonePage
     public override string Title => "Paczka sprzętu";
     public override string Sub => _g.OfferSlot >= 0 ? _g.D.GearSlots[_g.OfferSlot] : "";
     public override string Hint => $"Spacja: zakładam  Z: zostawiam (+{_g.D.GearDeclineXp + _g.OfferRarity})";
+    public override PageAction[] Actions => [new("Zakładam", GameAction.A), new($"Zostawiam +{_g.D.GearDeclineXp + _g.OfferRarity}", GameAction.B)];
 
     public override void Draw(PhonePainter p)
     {

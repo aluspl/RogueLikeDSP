@@ -82,6 +82,9 @@ public partial class WorldView : Node2D
 
     public Vector2I ScreenToGrid(Vector2 world) => new(Mathf.FloorToInt(world.X / Cell), Mathf.FloorToInt(world.Y / Cell));
 
+    /// <summary>Punkt ekranu w pikselach UI (dotyk) -> pole mapy (przez kamerę).</summary>
+    public Vector2I UiToGrid(Vector2 ui) => ScreenToGrid(GetCanvasTransform().AffineInverse() * ui);
+
     public void Mark(int enemy) => Marked = enemy;
 
     public void FlashRange() => _overlay.FlashRange();

@@ -27,9 +27,9 @@ public partial class PushBanners : Control
     /// <summary>Górna krawędź stosu (pod paskiem HUD, gdy mapa jest widoczna).</summary>
     public float TopInset { get; set; } = Margin;
 
-    private int W => Compact ? CompactW : WideW;
+    private int W => Compact ? CompactW : (int)Mathf.Min(WideW, Size.X - 2 * Margin);
 
-    private float Left => Compact ? 8f : Mathf.Round(Size.X - W - Margin);
+    private float Left => Compact ? 8f : Mathf.Round(Mathf.Min(Size.X, Layout.SafeArea.End.X) - W - Margin);
 
     private float Top => Compact ? 40f : TopInset;
 

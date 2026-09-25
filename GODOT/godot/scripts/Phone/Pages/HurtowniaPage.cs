@@ -22,6 +22,15 @@ public sealed class HurtowniaPage : PhonePage
     public override string Title => "Hurtownia";
     public override string Sub => $"Budżet: {_g.Cash} zł";
     public override string Hint => "Spacja: kup  Enter: dalej";
+    public override PageAction[] Actions => [new("Kup", GameAction.A), new("Dalej", GameAction.Start)];
+
+    public override bool TapRow(int index)
+    {
+        if (index == _list.Sel) Buy();
+        else _note = "";
+        _list.Sel = index;
+        return true;
+    }
 
     public int Sel
     {
@@ -81,6 +90,7 @@ public sealed class HurtowniaPage : PhonePage
             var sel = i == _list.Sel;
             if (sel) p.Selected(card, r);
             else if (r > 0) p.Divider(card, r);
+            p.HitRow(card, r, i);
             var pw = p.Pill(right, y, $"{it.Price} zł", _g.Cash >= it.Price ? PillKind.Group : PillKind.Gray);
             p.Text(tx, y, it.Name, sel ? Ink.Brand : Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
         }

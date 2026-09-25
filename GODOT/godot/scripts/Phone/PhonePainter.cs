@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 using LifeLike.Game.Gfx;
 
@@ -10,12 +11,19 @@ namespace LifeLike.Game.Phone;
 /// </summary>
 public sealed class PhonePainter
 {
-    public const int RowH = 18;
+    /// <summary>Wysokość wiersza: 18 px, przy dotyku na pionowym ekranie 26 px (większy cel palca).</summary>
+    public static int RowH => Layout.Touch && Layout.Portrait ? 26 : 18;
+
+    /// <summary>Przesunięcie tekstu 16 px w wierszu (wyśrodkowanie).</summary>
+    public static int TextDy => (RowH - 16) / 2;
     public const int Pad = 6;
 
     public readonly CanvasItem C;
     public readonly Rect2 Content;
     public readonly PixelFont F = PixelFont.I;
+
+    /// <summary>Wiersze list do dotknięcia (prostokąt we współrzędnych telefonu, indeks elementu).</summary>
+    public readonly List<(Rect2 Rect, int Index)> Hits = new();
 
     public PhonePainter(CanvasItem c, Rect2 content)
     {
@@ -57,6 +65,12 @@ public sealed class PhonePainter
         Stripe(card, r, Pal.Brand);
     }
 
+    /// <summary>Wiersz r karty jako cel dotyku dla elementu index (PhonePage.TapRow).</summary>
+    public void HitRow(Rect2 card, int r, int index) => Hits.Add((new Rect2(card.Position.X, RowY(card, r), card.Size.X, RowH), index));
+
+    /// <summary>Dowolny prostokąt jako cel dotyku (np. przyciski -/+ w wierszu); wcześniej dodane mają pierwszeństwo.</summary>
+    public void Hit(Rect2 r, int index) => Hits.Add((r, index));
+
     public void Divider(Rect2 card, int r)
     {
         C.DrawRect(new Rect2(card.Position.X + 10, RowY(card, r) - 1, card.Size.X - 20, 1), Pal.Bg);
@@ -66,7 +80,7 @@ public sealed class PhonePainter
     public float Text(float x, float y, string s, Ink ink, TextAlign a = TextAlign.Left, float maxW = 0)
     {
         if (maxW > 0) s = F.Fit(s, (int)maxW);
-        return F.Draw(C, new Vector2(x, y + 1), s, ink, a);
+        return F.Draw(C, new Vector2(x, y + TextDy), s, ink, a);
     }
 
     /// <summary>Pogrubiony tekst (dwa przebiegi przesunięte o piksel) - tytuły jak w aplikacji.</summary>
@@ -88,9 +102,9 @@ public sealed class PhonePainter
         var (bg, ink) = PillColors(k);
         s = F.Normalize(s);
         var w = F.Measure(s) + 10;
-        var r = new Rect2(right - w, y + 2, w, RowH - 4);
+        var r = new Rect2(right - w, y + (RowH - 14) / 2, w, 14);
         C.DrawStyleBox(Ui.Box(bg, 7), r);
-        F.Draw(C, new Vector2(r.Position.X + w / 2f, y), s, ink, TextAlign.Center);
+        F.Draw(C, new Vector2(r.Position.X + w / 2f, r.Position.Y - 2), s, ink, TextAlign.Center);
         return w;
     }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LifeLike.Game.Gfx;
+using LifeLike.Game.Input;
 using CoreGame = LifeLike.Core.Game;
 
 namespace LifeLike.Game.Phone.Pages;
@@ -27,6 +28,7 @@ public sealed class SchedulePage : PhonePage
     public override string Title => "Harmonogram";
     public override string Sub => _g.ActCleared ? $"Akt {UiText.Roman(_g.D.Stages[_g.Stage].Act)} zaliczony!" : "Etap zaliczony";
     public override string Hint => _g.ActCleared ? "Enter: do Hurtowni" : "Enter: dalej (kawa +5 HP)";
+    public override PageAction[] Actions => [new(_g.ActCleared ? "Do Hurtowni" : "Dalej (kawa +5 HP)", GameAction.Start)];
 
     public override void Draw(PhonePainter p)
     {

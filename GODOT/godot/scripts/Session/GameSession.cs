@@ -53,6 +53,50 @@ public sealed class GameSession
         if (Persist) GodotDataSource.SaveProfile(Profile);
     }
 
+    /// <summary>Zapis przerwanej budowy (user://run.sav, jak run_save w SRAM na GBA): na starcie etapu, przy
+    /// „Zapisz i wyjdź” i gdy system usypia aplikację w trakcie gry.</summary>
+    public void SaveRun()
+    {
+        if (Persist && Game.St == GameStatus.Playing) GodotDataSource.SaveRun(RunSave.Make(Game));
+    }
+
+    /// <summary>Czy jest przerwana budowa do wznowienia (ta sama wersja danych).</summary>
+    public bool HasRun => Persist && GodotDataSource.LoadRun() is { } s && s.Valid(Data);
+
+    /// <summary>Wznowienie przerwanej budowy (Kontynuuj budowę na tytule).</summary>
+    public bool ResumeRun()
+    {
+        var s = Persist ? GodotDataSource.LoadRun() : null;
+        if (s is null || !s.Valid(Data))
+        {
+            ClearRun();
+            return false;
+        }
+        Game.FromBytes(s.Data);
+        ClassId = Game.Cls;
+        Note = "";
+        FirstStage = false;
+        _watcher.Reset(Game);
+        return true;
+    }
+
+    public void ClearRun()
+    {
+        if (Persist) GodotDataSource.DeleteRun();
+    }
+
+    /// <summary>Porzuć budowę (jak „Porzuć budowę” w telefonie na GBA): rekord, odznaki i zlecenia z przerwanej
+    /// budowy się liczą, doświadczenie trafia do profilu, zapis budowy znika.</summary>
+    public void AbandonRun()
+    {
+        if (Game.Score > Profile.Best) Profile.Best = Game.Score;
+        var progress = CheckProgress();
+        LastGained = Meta.BankXp(Profile, Game);
+        Save();
+        ClearRun();
+        Note = $"Budowa porzucona: +{LastGained} dośw." + (progress.Length > 0 ? " " + progress : "");
+    }
+
     /// <summary>Nowa budowa wybranym zawodem i trudnością (jak wybór zawodu -> gra na GBA).</summary>
     public void StartRun()
     {
@@ -60,6 +104,7 @@ public sealed class GameSession
         Game.NewRun(ClassId, seed, Difficulty, Meta.Mods(Data, Profile)); // Mods przed StartRun: ranga pamiątki z budów przed tą
         Meta.StartRun(Data, Profile);
         Save();
+        SaveRun();
         Note = "";
         FirstStage = true;
         Events.RaiseRunStarted();
@@ -73,6 +118,7 @@ public sealed class GameSession
         Note = "";
         Game.NextStage();
         _watcher.Reset(Game);
+        SaveRun(); // autozapis na starcie etapu (jak GBA)
     }
 
     /// <summary>Kolejna budowa po odbiorze (NG+), te same statystyki.</summary>
@@ -81,6 +127,7 @@ public sealed class GameSession
         Game.NewGamePlus();
         Note = "";
         _watcher.Reset(Game);
+        SaveRun();
     }
 
     /// <summary>Stan odniesienia zdarzeń tury bez powiadomień (po ręcznej zmianie stanu).</summary>
@@ -118,6 +165,7 @@ public sealed class GameSession
             Note = CheckProgress();
             LastGained = Meta.BankXp(Profile, g);
             Save();
+            ClearRun();
             return TurnOutcome.RunEnded;
         }
         return g.St == GameStatus.Playing && g.HasOffer ? TurnOutcome.Offer : TurnOutcome.None;

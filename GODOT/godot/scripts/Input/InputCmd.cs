@@ -29,6 +29,9 @@ public readonly struct InputCmd
     /// <summary>Syntetyczne wciśnięcie akcji (test dymny, dotyk).</summary>
     public static InputCmd Of(GameAction a) => new(a, GameAction.None, false, true, MouseButton.None, Vector2.Zero);
 
+    /// <summary>Dotknięcie / lewy klik w punkcie (piksele UI).</summary>
+    public static InputCmd Tap(Vector2 p) => new(GameAction.None, GameAction.None, false, false, MouseButton.Left, p);
+
     /// <summary>Syntetyczne puszczenie akcji.</summary>
     public static InputCmd Release(GameAction a) => new(GameAction.None, a, false, false, MouseButton.None, Vector2.Zero);
 

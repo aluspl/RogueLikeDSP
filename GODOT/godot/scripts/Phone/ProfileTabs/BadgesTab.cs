@@ -41,6 +41,13 @@ public sealed class BadgesTab : PhonePage
     }
 
     public override string Hint => $"Spacja: {Pages[(_page + 1) % 3]}  Q/E: zakładki";
+    public override PageAction[] Actions => [new(Pages[(_page + 1) % 3] + " >", GameAction.A)];
+
+    public override bool TapRow(int index)
+    {
+        _list.Sel = index;
+        return true;
+    }
 
     private int Count => _page == 2 ? _d.Keepsakes.Length : _page == 1 ? _d.Contracts.Length : _d.Badges.Length;
 
@@ -77,6 +84,7 @@ public sealed class BadgesTab : PhonePage
             var sel = i == _list.Sel;
             if (sel) p.Selected(card, r);
             else if (r > 0) p.Divider(card, r);
+            p.HitRow(card, r, i);
             string name, pill;
             PillKind kind;
             bool on;

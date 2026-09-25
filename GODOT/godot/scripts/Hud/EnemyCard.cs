@@ -1,5 +1,6 @@
 using Godot;
 using LifeLike.Game.Gfx;
+using LifeLike.Game.Input;
 using CoreGame = LifeLike.Core.Game;
 
 namespace LifeLike.Game.Hud;
@@ -54,7 +55,7 @@ public partial class EnemyCard : Control
         if (_enemy < 0)
         {
             f.Draw(this, new Vector2(8, top + 12), "Nikogo w polu widzenia", Ink.MapDim);
-            f.Draw(this, new Vector2(w - 6, Size.Y - 18), "Puść Z: wróć", Ink.MapDim, TextAlign.Right);
+            f.Draw(this, new Vector2(w - 6, Size.Y - 18), ButtonNames.Pick("Puść Z: wróć", "Puść: wróć"), Ink.MapDim, TextAlign.Right);
             return;
         }
         var e = _g.Enemies[_enemy];
@@ -73,7 +74,8 @@ public partial class EnemyCard : Control
         var stats = $"HP {e.Hp}/{e.MaxHp}   obr. {ed.MinDamage + bonus}-{ed.MaxDamage + bonus}";
         f.Draw(this, new Vector2(bar.End.X + 8, top + 2), f.Fit(stats, (int)(w - bar.End.X - 14)), Ink.Map);
         f.Draw(this, new Vector2(x, top + 20), f.Fit(ed.Desc, (int)(w - x - 8)), Ink.MapDim);
-        var hint = _count > 1 ? $"{_index + 1}/{_count}  Strzałki: następny   Puść Z: wróć" : "Puść Z: wróć";
+        var back = ButtonNames.Pick("Puść Z: wróć", "Puść: wróć");
+        var hint = _count > 1 ? $"{_index + 1}/{_count}  {ButtonNames.Pick("Strzałki: następny", "Przesuń: następny")}   {back}" : back;
         f.Draw(this, new Vector2(w - 6, top + 38), hint, Ink.MapDim, TextAlign.Right);
     }
 }
