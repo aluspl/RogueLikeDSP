@@ -23,6 +23,12 @@ public sealed class CatalogTab : PhonePage
     public override string Sub => $"{UiText.BitCount(_p.Catalog)}/{_d.Enemies.Length}";
     public override string Hint => "Q/E: zakładki  Esc: wróć";
 
+    public override bool TapRow(int index)
+    {
+        _list.Sel = index;
+        return true;
+    }
+
     private bool Known(int i) => (_p.Catalog & (1 << i)) != 0;
 
     public override bool Input(InputCmd e)
@@ -48,6 +54,7 @@ public sealed class CatalogTab : PhonePage
             var sel = i == _list.Sel;
             if (sel) p.Selected(card, r);
             else if (r > 0) p.Divider(card, r);
+            p.HitRow(card, r, i);
             var known = Known(i);
             var pw = p.Pill(right, y, known ? "ZAMKNIĘTA" : "NIEZNANA", known ? PillKind.Done : PillKind.Gray);
             p.Text(tx, y, $"#{i + 1} {(known ? _d.Enemies[i].Name : "???")}", sel ? Ink.Brand : known ? Ink.Dark : Ink.Dim, TextAlign.Left, right - pw - 4 - tx);

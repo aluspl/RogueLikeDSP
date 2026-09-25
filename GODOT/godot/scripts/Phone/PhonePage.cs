@@ -15,8 +15,17 @@ public abstract class PhonePage
     /// <summary>Podtytuł po prawej stronie nagłówka (np. „Etap 3/8, 1234 pkt”).</summary>
     public virtual string Sub => "";
 
-    /// <summary>Podpowiedź sterowania na dole ekranu aplikacji.</summary>
+    /// <summary>Podpowiedź sterowania na dole ekranu aplikacji (klawiatura / pad).</summary>
     public virtual string Hint => "";
+
+    /// <summary>Przyciski na dole strony przy sterowaniu dotykiem (zamiast Hint).</summary>
+    public virtual PageAction[] Actions => [];
+
+    /// <summary>Krzyżyk w nagłówku przy dotyku (zamyka stronę akcją Cancel); zakładki mają go zawsze.</summary>
+    public virtual bool Closable => false;
+
+    /// <summary>Dotknięcie wiersza listy zarejestrowanego przez PhonePainter.HitRow; true = obsłużone.</summary>
+    public virtual bool TapRow(int index) => false;
 
     public abstract void Draw(PhonePainter p);
 

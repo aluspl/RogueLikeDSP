@@ -15,6 +15,7 @@ public static class GodotDataSource
 {
     public const string GameJson = "res://data/game.json";
     public const string ProfilePath = "user://profile.sav";
+    public const string RunPath = "user://run.sav";
 
     public static GameData LoadGameData()
     {
@@ -42,6 +43,32 @@ public static class GodotDataSource
             : Profile.FromBytes(new byte[Profile.Size]);
         if (Meta.ProfileFix(d, p)) SaveProfile(p);
         return p;
+    }
+
+    public static RunSave LoadRun()
+    {
+        if (!FileAccess.FileExists(RunPath)) return null;
+        var raw = FileAccess.GetFileAsBytes(RunPath);
+        if (raw.Length < 16) return null;
+        try
+        {
+            return RunSave.FromBytes(raw);
+        }
+        catch (System.IO.EndOfStreamException)
+        {
+            return null;
+        }
+    }
+
+    public static void SaveRun(RunSave s)
+    {
+        using var f = FileAccess.Open(RunPath, FileAccess.ModeFlags.Write);
+        f?.StoreBuffer(s.ToBytes());
+    }
+
+    public static void DeleteRun()
+    {
+        if (FileAccess.FileExists(RunPath)) DirAccess.RemoveAbsolute(ProjectSettings.GlobalizePath(RunPath));
     }
 
     public static void SaveProfile(Profile p)

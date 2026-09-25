@@ -22,6 +22,7 @@ public sealed class App
         Session = new GameSession(d, profile, persist, seed) { Tips = GodotDataSource.LoadTips() };
         Nodes = new SceneNodes(root, sound, d.Version);
         Nodes.World.Bind(Session.Game);
+        Nodes.Touch.Bind(Session.Game);
         Banners = new BannerFeed(Session, Nodes.Banners);
         SoundCues.Attach(Session.Events);
         Session.Events.LevelUp += (_, _) => Nodes.World.Effects.LevelUp();

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Godot;
 using LifeLike.Core.Data;
 using LifeLike.Game.Gfx;
+using LifeLike.Game.Input;
 
 namespace LifeLike.Game.Phone.Pages;
 
@@ -37,6 +38,17 @@ public sealed class MessagePage : PhonePage
     public override string Title => "Wiadomości";
     public override string Sub => _sub;
     public override string Hint => _hint;
+
+    /// <summary>Przycisk dotykowy z podpowiedzi („Enter: do roboty” -> „Do roboty”).</summary>
+    public override PageAction[] Actions
+    {
+        get
+        {
+            var label = _hint.Contains(':') ? _hint[(_hint.IndexOf(':') + 1)..].Trim() : "Dalej";
+            if (label.Length > 0) label = char.ToUpperInvariant(label[0]) + label[1..];
+            return [new(label, GameAction.Start)];
+        }
+    }
 
     public override void Draw(PhonePainter p)
     {

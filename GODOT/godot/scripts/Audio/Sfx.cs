@@ -1,11 +1,13 @@
 using System.Collections.Generic;
 using Godot;
+using LifeLike.Game.Settings;
 
 namespace LifeLike.Game.Audio;
 
 /// <summary>
 /// Dźwięki z GBA (assets/audio/sfx_*.wav) i muzyka (music_*.mp3 wyrenderowana z modułów .mod).
 /// Nazwy jak bn::sound_items na GBA: hit, hurt, pickup, level, ability, menu, notify, buy, stage.
+/// Głośność z ustawień (GameSettings), a wybrane dźwięki dają też krótką wibrację na telefonie (Haptics).
 /// </summary>
 public partial class Sfx : Node
 {
@@ -27,10 +29,12 @@ public partial class Sfx : Node
         }
         _music = new AudioStreamPlayer();
         AddChild(_music);
+        GameSettings.Changed += ApplyMusicVolume;
     }
 
     public override void _ExitTree()
     {
+        GameSettings.Changed -= ApplyMusicVolume;
         _streams.Clear();
         foreach (var p in _pool)
         {
@@ -70,13 +74,14 @@ public partial class Sfx : Node
     /// <summary>Efekt dźwiękowy; volume jak bn::fixed w sound_item.play(volume) (0..1).</summary>
     public static void Play(string name, float volume = 1f)
     {
-        if (_instance is null) return;
+        Haptics.ForSound(name);
+        if (_instance is null || GameSettings.Sound == 0) return;
         var s = _instance.Stream($"res://assets/audio/sfx_{name}.wav");
         if (s is null) return;
         var p = _instance._pool[_instance._next];
         _instance._next = (_instance._next + 1) % _instance._pool.Count;
         p.Stream = s;
-        p.VolumeDb = Mathf.LinearToDb(Mathf.Max(volume, 0.01f)) - 4f;
+        p.VolumeDb = Mathf.LinearToDb(Mathf.Max(volume * GameSettings.SoundVolume, 0.01f)) - 4f;
         p.Play();
     }
 
@@ -92,7 +97,14 @@ public partial class Sfx : Node
         if (s is AudioStreamMP3 mp3) mp3.Loop = true;
         if (s is null) return;
         m.Stream = s;
-        m.VolumeDb = Mathf.LinearToDb(song == "title" ? 0.45f : 0.35f) - 4f;
+        _instance.ApplyMusicVolume();
         m.Play();
+    }
+
+    /// <summary>Głośność muzyki jak na GBA (tytuł 0.45, gra 0.35) razy suwak z ustawień; 0 = wycisza.</summary>
+    private void ApplyMusicVolume()
+    {
+        var v = (_song == "title" ? 0.45f : 0.35f) * GameSettings.MusicVolume;
+        _music.VolumeDb = v <= 0 ? -80f : Mathf.LinearToDb(v) - 4f;
     }
 }

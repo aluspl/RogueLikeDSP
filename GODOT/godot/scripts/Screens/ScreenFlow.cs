@@ -1,4 +1,5 @@
 using LifeLike.Game.Audio;
+using LifeLike.Game.Gfx;
 
 namespace LifeLike.Game.Screens;
 
@@ -27,6 +28,7 @@ public sealed class ScreenFlow
         Offer = new OfferScreen(app);
         EndMessage = new EndMessageScreen(app);
         End = new EndScreen(app);
+        Settings = new SettingsScreen(app);
     }
 
     public Screen Current { get; private set; }
@@ -45,6 +47,7 @@ public sealed class ScreenFlow
     public OfferScreen Offer { get; }
     public EndMessageScreen EndMessage { get; }
     public EndScreen End { get; }
+    public SettingsScreen Settings { get; }
 
     /// <summary>Przejście na ekran; instant = bez animacji (telefon od razu na miejscu, tło od razu rozmyte).</summary>
     public void Go(Screen next, bool instant = false)
@@ -54,6 +57,8 @@ public sealed class ScreenFlow
         var n = _app.Nodes;
         n.World.Visible = next.InRun;
         n.Hud.Visible = next.InRun;
+        n.Touch.Visible = Layout.Touch && next == Game;
+        n.Settings.Visible = next.ShowsSettings;
         n.TitleView.Visible = (next.Views & ViewSet.Title) != 0;
         n.ClassSelectView.Visible = (next.Views & ViewSet.ClassSelect) != 0;
         n.EndView.Visible = (next.Views & ViewSet.End) != 0;

@@ -1,11 +1,13 @@
 using LifeLike.Game.Input;
 using LifeLike.Game.Screens.Play;
+using LifeLike.Game.Touch;
 
 namespace LifeLike.Game.Screens;
 
 /// <summary>
 /// Budowa (run_game na GBA): mapa z HUD, ruch, A atak, B czekaj, R moc, START menu akcji, SELECT telefon,
-/// L podgląd mapy, mysz. Po każdej akcji App.AfterAction decyduje o kolejnym ekranie.
+/// L podgląd mapy, Esc ustawienia, mysz; przy dotyku pasek akcji i gesty (TouchPlay). Po każdej akcji
+/// App.AfterAction decyduje o kolejnym ekranie.
 /// </summary>
 public sealed class GameScreen : Screen
 {
@@ -14,7 +16,10 @@ public sealed class GameScreen : Screen
         Menu = new ActionMenu(app);
         Aim = new Aiming(app);
         Look = new EnemyLook(app);
+        Touch = new TouchPlay(app, this);
     }
+
+    public TouchPlay Touch { get; }
 
     public ActionMenu Menu { get; }
     public Aiming Aim { get; }
@@ -22,17 +27,22 @@ public sealed class GameScreen : Screen
 
     public override bool InRun => true;
     public override bool ShowsTarget => !Menu.IsOpen && !Aim.Active;
+    public override bool ShowsSettings => true;
+
+    public override bool HandleGesture(in Gesture g) => Touch.Handle(g);
 
     public override void Exit()
     {
         Aim.Cancel();
         Look.Cancel();
+        Touch.Reset();
     }
 
     public override void Process(double delta)
     {
         Aim.Process(delta);
         Look.Process(delta);
+        Touch.Process(delta);
     }
 
     public void Open(bool instant = false) => Flow.Go(this, instant);
@@ -41,12 +51,13 @@ public sealed class GameScreen : Screen
     public void ToggleOverview()
     {
         N.World.ToggleOverview();
-        if (N.World.OverviewOn) N.Hud.ShowHint("Podgląd mapy etapu", "Dowolny klawisz: wróć");
+        if (N.World.OverviewOn) N.Hud.ShowHint("Podgląd mapy etapu", ButtonNames.Pick("Dowolny klawisz: wróć", "Puść albo dotknij: wróć"));
         else N.Hud.ShowHint(null);
     }
 
     public override bool HandleInput(InputCmd e)
     {
+        if (e.AnyKey) Touch.Walk.Stop();
         if (Menu.IsOpen) return Menu.HandleInput(e);
         if (Aim.Active) return Aim.HandleInput(e);
         if (Look.Active) return Look.HandleInput(e);
@@ -62,6 +73,11 @@ public sealed class GameScreen : Screen
         {
             if (!e.AnyKey) return false;
             ToggleOverview();
+            return true;
+        }
+        if (e.Is(GameAction.Cancel))
+        {
+            Flow.Settings.Open(this);
             return true;
         }
         if (e.Is(GameAction.Select))

@@ -60,6 +60,7 @@ public static class Assets
     public static Texture2D UiMenu => Tex("ui/menu_icons.png");
     public static Texture2D PhoneIcons => Tex("ui/phone_icons.png");
     public static Texture2D PhoneIconsDim => Tex("ui/phone_icons_dim.png");
+    public static Texture2D TouchIcons => Tex("ui/touch_icons.png");
     public static Texture2D Shadow => Tex("fx/shadow.png");
     public static Texture2D Danger => Tex("fx/danger.png");
     public static Texture2D Range => Tex("fx/range.png");

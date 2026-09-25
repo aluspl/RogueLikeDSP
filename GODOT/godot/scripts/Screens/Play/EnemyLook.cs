@@ -62,6 +62,17 @@ public sealed class EnemyLook
         Show();
     }
 
+    /// <summary>Karta konkretnego problemu (dotyk: przytrzymanie go na mapie) - bez zużycia tury.</summary>
+    public void ShowEnemy(int enemy)
+    {
+        Begin();
+        Reveal();
+        var k = _list.IndexOf(enemy);
+        if (k < 0) return;
+        _sel = k;
+        Show();
+    }
+
     public bool HandleInput(InputCmd e)
     {
         if (e.IsReleased(GameAction.B))

@@ -1,3 +1,4 @@
+using Godot;
 using LifeLike.Game.Input;
 using CoreGame = LifeLike.Core.Game;
 
@@ -76,6 +77,30 @@ public sealed class Aiming
         Show();
     }
 
+    /// <summary>Dotyk: palec nad polem - cel najbliższy temu polu (odsłania celownik).</summary>
+    public void PointAt(Vector2I cell)
+    {
+        if (!Active || _count == 0) return;
+        var g = _app.Session.Game;
+        int best = _sel, bestD = int.MaxValue;
+        for (var i = 0; i < _count; i++)
+        {
+            var e = g.Enemies[_targets[i]];
+            var d = CoreGame.Cheb(e.X, e.Y, cell.X, cell.Y);
+            if (d >= bestD) continue;
+            bestD = d;
+            best = i;
+        }
+        if (best == _sel && _revealed) return;
+        _sel = best;
+        if (!_revealed)
+        {
+            _revealed = true;
+            N.World.ShowRange(true);
+        }
+        Show();
+    }
+
     private void Show()
     {
         N.World.Mark(Target);
@@ -83,12 +108,13 @@ public sealed class Aiming
         var g = _app.Session.Game;
         if (_count == 0)
         {
-            N.Hud.ShowHint($"Celowanie: brak celu w zasięgu (z{g.Weapon.Range})", "Puść Spację: wróć");
+            N.Hud.ShowHint($"Celowanie: brak celu w zasięgu (z{g.Weapon.Range})", ButtonNames.Pick("Puść Spację: wróć", "Puść Atak: wróć"));
             return;
         }
         var e = g.Enemies[Target];
         var name = g.D.Enemies[e.DefId].Name;
-        N.Hud.ShowHint($"Cel {_sel + 1}/{_count}: {name}, HP {e.Hp}/{e.MaxHp}", "Strzałki: zmiana celu   Puść Spację: atak");
+        N.Hud.ShowHint($"Cel {_sel + 1}/{_count}: {name}, HP {e.Hp}/{e.MaxHp}",
+            ButtonNames.Pick("Strzałki: zmiana celu   Puść Spację: atak", "Przesuń palec: cel   Puść Atak: atak"));
     }
 
     /// <summary>Puszczenie A: atak wybranego celu (bez celu - miga zasięg jak range_flash na GBA).</summary>

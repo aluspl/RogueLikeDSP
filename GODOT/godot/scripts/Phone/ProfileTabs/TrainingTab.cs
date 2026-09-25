@@ -34,6 +34,15 @@ public sealed class TrainingTab : PhonePage
     public override string Title => "Koszty";
     public override string Sub => "Szkolenia";
     public override string Hint => "Spacja: kup  Q/E: zakładki  Esc: wróć";
+    public override PageAction[] Actions => [new("Kup", GameAction.A)];
+
+    public override bool TapRow(int index)
+    {
+        if (index == _list.Sel) Buy();
+        else _note = "";
+        _list.Sel = index;
+        return true;
+    }
 
     public int Count => _entries.Count;
 
@@ -143,6 +152,7 @@ public sealed class TrainingTab : PhonePage
             var sel = i == _list.Sel;
             if (sel) p.Selected(card, r);
             else if (r > 0) p.Divider(card, r);
+            p.HitRow(card, r, i);
             var cost = Cost(e);
             var pw = p.Pill(right, y, cost < 0 ? "MAX" : cost.ToString(), cost < 0 ? PillKind.Done : cost <= _p.Xp ? PillKind.Group : PillKind.Gray);
             p.Text(tx, y, Name(e), sel ? Ink.Brand : Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
