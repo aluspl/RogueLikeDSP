@@ -2,6 +2,20 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
+## v0.21.45 – 2026-09-25
+### Nowe
+- **Nowy ekran wyboru zawodu:** pasek portretów wszystkich zawodów u góry – wybrany powiększony na fioletowym polu,
+  kołysze się i przebiera nogami, zablokowane jako ciemne sylwetki z małą kłódką. Pod nim karta zawodu: moc z ikoną
+  i opisem, broń z obrażeniami, zasięgiem i statystyką skalowania, statystyki w siatce z premiami na zielono
+  (statystyka broni wyróżniona), trudność jako kolorowa pastylka (Łatwy / Normalny / Trudny). Karta wjeżdża z boku
+  przy zmianie zawodu.
+### Zmiany
+- Zawody posortowane: najpierw odblokowane, potem zablokowane (w obu grupach kolejność z danych). Zablokowany można
+  obejrzeć, ale nie wystartować (A – portret kręci głową); pod kartą podpowiedź „Odblokuj w Kosztach (telefon)”
+  z kosztem i posiadanym doświadczeniem.
+- Pamiątka (L/R) pod kartą z pełnym opisem efektu; zmiana pamiątki od razu przelicza statystyki na karcie.
+- Sterowanie bez zmian: lewo/prawo – zawód, góra/dół – trudność, L/R – pamiątka, A/START – start, B – powrót.
+
 ## v0.21.44 – 2026-09-25
 ### Nowe
 - **Rada kierownika** na ekranie harmonogramu między etapami: krótka podpowiedź o sterowaniu i mechanikach
