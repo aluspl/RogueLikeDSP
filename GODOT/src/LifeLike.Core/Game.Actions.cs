@@ -13,10 +13,12 @@ public sealed partial class Game
         var dmg = R.Range(Weapon.MinDamage, Weapon.MaxDamage) + HeroStat(Weapon.ScalesWith) / 2 + DmgBonus
                   + GearBonus(GearStat.Dmg) - ed.Defense / 2;
         if (dmg < 1) dmg = 1;
+        var crit = R.Range(1, 100) <= CritPct();
+        if (crit) dmg *= D.CritMultiplier;
         e.Hp = (short)(e.Hp - dmg);
         e.Awake = true;
         LastTarget = ei;
-        AddHit(e.X, e.Y, dmg, false);
+        AddHit(e.X, e.Y, dmg, false, crit ? HitKind.Crit : HitKind.Normal);
         TurnEvents |= 1u << ei;
         if (e.Hp <= 0)
         {
@@ -60,7 +62,7 @@ public sealed partial class Game
         }
         else
         {
-            Push(Msg(Weapon.Name).Add(": -").Add(dmg).Add(" (").Add(ed.Name).Add(")"));
+            Push(Msg(crit ? "KRYT! " : "").Add(Weapon.Name).Add(": -").Add(dmg).Add(" (").Add(ed.Name).Add(")").As(crit ? LogKind.Loot : LogKind.Info));
         }
     }
 
@@ -168,6 +170,36 @@ public sealed partial class Game
         return false;
     }
 
+    public int CoffeeHeal() => D.CoffeeHeal + Bonus.Coffee;
+
+    public void DrinkCoffee()
+    {
+        var h = Math.Min(CoffeeHeal(), Hero.MaxHp - Hero.Hp);
+        Hero.Hp = (short)(Hero.Hp + h);
+        Push(Msg("Kawa z termosu: +").Add(h).Add(" HP").As(LogKind.Good));
+    }
+
+    /// <summary>Picie z termosu (menu akcji): leczy, zużywa turę.</summary>
+    public bool PlayerDrink()
+    {
+        if (St != GameStatus.Playing) return false;
+        if (Thermos <= 0)
+        {
+            Push(Msg("Termos pusty"));
+            return false;
+        }
+        if (Hero.Hp >= Hero.MaxHp)
+        {
+            Push(Msg("HP pełne - kawa poczeka"));
+            return false;
+        }
+        if (ShockedTurn()) return true;
+        --Thermos;
+        DrinkCoffee();
+        EndTurn();
+        return true;
+    }
+
     public bool PlayerWait()
     {
         if (St != GameStatus.Playing) return false;
@@ -179,7 +211,7 @@ public sealed partial class Game
     /// <summary>Drop z pokonanego wroga: szansa DropChancePct, typ losowany wagami.</summary>
     public void MaybeDrop(int x, int y)
     {
-        if (R.Range(1, 100) > D.DropChancePct || PickupsCount >= MaxPickups) return;
+        if (R.Range(1, 100) > D.DropChancePct + D.DropPerLuckPct * Luck() || PickupsCount >= MaxPickups) return;
         for (var i = 0; i < PickupsCount; ++i)
         {
             if (Pickups[i].Active && Pickups[i].X == x && Pickups[i].Y == y) return;
@@ -188,12 +220,13 @@ public sealed partial class Game
         foreach (var w in D.DropWeights) total += w;
         int roll = R.Range(1, total), type = 0;
         while (roll > D.DropWeights[type]) roll -= D.DropWeights[type++];
-        var arg = 0;
-        if (type == (int)PickupType.GearBox) // slot losowy, jakość lepsza na późnych etapach
+        int arg = 0, trait = 0;
+        if (type == (int)PickupType.GearBox) // slot losowy, jakość lepsza na późnych etapach i ze szczęściem
         {
-            var r2 = R.Range(1, 100) + Stage * D.GearStageBonus;
-            var rarity = r2 >= D.GearBrandFrom ? 2 : (r2 >= D.GearSolidFrom ? 1 : 0);
+            var q = R.Range(1, 100) + Stage * D.GearStageBonus + D.RarityPerLuck * Luck();
+            var rarity = q >= D.GearBrandFrom ? 2 : (q >= D.GearSolidFrom ? 1 : 0);
             arg = (byte)(R.Range(0, D.GearSlotsCount - 1) * 3 + rarity);
+            trait = (byte)R.Range(0, D.GearTraitsCount - 1);
         }
         if (type == (int)PickupType.Tool)
         {
@@ -216,27 +249,45 @@ public sealed partial class Game
                 }
             }
         }
-        Pickups[PickupsCount++] = new Pickup(x, y, (PickupType)type, true, arg);
+        Pickups[PickupsCount++] = new Pickup(x, y, (PickupType)type, true, arg, trait);
     }
 
-    /// <summary>Sprzęt: lepszy zakłada się sam (kamizelka od razu podnosi max HP), gorszy zamienia się w doświadczenie.</summary>
-    public void Equip(int slot, int rarity)
+    /// <summary>Zakłada przedmiot w slocie (zastępuje obecny; kamizelka od razu zmienia max HP).</summary>
+    public void Equip(int slot, int rarity, int trait)
     {
         var nw = D.Gear[slot * 3 + rarity];
-        if (rarity <= Equipped[slot])
-        {
-            GainXp(1 + rarity);
-            Push(Msg("Masz lepszy: ").Add(D.GearSlots[slot]).As(LogKind.Loot));
-            return;
-        }
         if (nw.Stat == GearStat.Hp)
         {
             var diff = nw.Value - (Equipped[slot] >= 0 ? D.Gear[slot * 3 + Equipped[slot]].Value : 0);
             Hero.MaxHp = (short)(Hero.MaxHp + diff);
-            Hero.Hp = (short)(Hero.Hp + diff);
+            Hero.Hp = (short)Math.Max(1, Hero.Hp + diff);
         }
         Equipped[slot] = (sbyte)rarity;
+        EquippedTrait[slot] = (sbyte)trait;
+        UpdateFov(); // cecha Widzenie zmienia pole widzenia
         Push(Msg("Sprzęt: ").Add(nw.Name).Add(" +").Add(nw.Value).As(LogKind.Loot));
+    }
+
+    public bool HasOffer => OfferSlot >= 0;
+
+    public bool OfferIsBetter => HasOffer && OfferRarity > Equipped[OfferSlot];
+
+    /// <summary>Paczka sprzętu przy zajętym slocie: gracz porównuje (A zakładam, B zostawiam). Nie zużywa tury.</summary>
+    public void AcceptOffer()
+    {
+        if (!HasOffer) return;
+        int slot = OfferSlot;
+        OfferSlot = -1;
+        Equip(slot, OfferRarity, OfferTrait);
+    }
+
+    public void DeclineOffer()
+    {
+        if (!HasOffer) return;
+        var xp = D.GearDeclineXp + OfferRarity;
+        OfferSlot = -1;
+        GainXp(xp);
+        Push(Msg("Zostawiasz stary sprzęt: +").Add(xp).Add(" dośw.").As(LogKind.Loot));
     }
 
     public void Collect()
@@ -245,12 +296,19 @@ public sealed partial class Game
         {
             ref var p = ref Pickups[i];
             if (!p.Active || p.X != Hero.X || p.Y != Hero.Y) continue;
+            if (p.Type == PickupType.GearBox && HasOffer) continue; // najpierw decyzja o poprzedniej paczce
             p.Active = false;
             if (p.Type == PickupType.Coffee)
             {
-                var h = Math.Min(8 + Bonus.Coffee, Hero.MaxHp - Hero.Hp);
-                Hero.Hp = (short)(Hero.Hp + h);
-                Push(Msg("Kawa z termosu: +").Add(h).Add(" HP").As(LogKind.Good));
+                if (Thermos < D.ThermosCapacity) // kawa do termosu; pełny termos – pije od razu
+                {
+                    ++Thermos;
+                    Push(Msg("Kawa do termosu (").Add(Thermos).Add("/").Add(D.ThermosCapacity).Add(")").As(LogKind.Good));
+                }
+                else
+                {
+                    DrinkCoffee();
+                }
             }
             else if (p.Type == PickupType.Helmet)
             {
@@ -264,7 +322,18 @@ public sealed partial class Game
             }
             else if (p.Type == PickupType.GearBox)
             {
-                Equip(p.Arg / 3, p.Arg % 3);
+                var slot = p.Arg / 3;
+                if (Equipped[slot] < 0)
+                {
+                    Equip(slot, p.Arg % 3, p.Trait); // pusty slot: zakłada od razu
+                }
+                else
+                {
+                    OfferSlot = (sbyte)slot;
+                    OfferRarity = (sbyte)(p.Arg % 3);
+                    OfferTrait = (sbyte)p.Trait;
+                    Push(Msg("Paczka: ").Add(D.Gear[p.Arg].Name).As(LogKind.Loot));
+                }
             }
             else
             {
@@ -308,6 +377,12 @@ public sealed partial class Game
         var manh = Math.Abs(e.X - Hero.X) + Math.Abs(e.Y - Hero.Y);
         if (manh == 1)
         {
+            if (DodgePct() > 0 && R.Range(1, 100) <= DodgePct()) // szczęście: unik
+            {
+                AddHit(Hero.X, Hero.Y, 0, true, HitKind.Dodge);
+                Push(Msg("Unik! ").Add(ed.Name).Add(" chybia").As(LogKind.Good));
+                return;
+            }
             var dmg = R.Range(ed.MinDamage, ed.MaxDamage) + EnemyDmgBonus() - (CDef.Defense + DefBonus + GearBonus(GearStat.Def)) / 2;
             if (dmg < 1) dmg = 1;
             Hero.Hp = (short)(Hero.Hp - dmg);

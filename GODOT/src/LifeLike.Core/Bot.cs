@@ -2,7 +2,8 @@ namespace LifeLike.Core;
 
 /// <summary>
 /// Deterministyczny bot z GBA/tests/core_tests.cpp (bot_step): idzie do najbliższego wroga albo schodów,
-/// atakuje z dystansu, schodzi z pól zapowiedzianego ciosu bossa. Używany w testach balansu, teście złotym
+/// atakuje z dystansu, schodzi z pól zapowiedzianego ciosu bossa, przy paczce sprzętu bierze lepszą (gorszą zostawia),
+/// pije z termosu poniżej BotDrinkBelowPct HP. Używany w testach balansu, teście złotym
 /// i teście dymnym Godota.
 /// </summary>
 public static class Bot
@@ -11,6 +12,12 @@ public static class Bot
 
     public static void Step(Game g)
     {
+        if (g.HasOffer)
+        {
+            if (g.OfferIsBetter) g.AcceptOffer();
+            else g.DeclineOffer();
+        }
+        if (g.Thermos > 0 && g.Hero.Hp * 100 < g.Hero.MaxHp * g.D.BotDrinkBelowPct && g.PlayerDrink()) return;
         if (g.SlamCell(g.Hero.X, g.Hero.Y)) // zapowiedziany cios bossa: zejdź z czerwonych pól (jak człowiek)
         {
             int best = -1, bd = -1;
@@ -86,10 +93,18 @@ public static class Bot
 
     /// <summary>
     /// Wariant bota z testu złotego: jak Step, ale używa mocy, gdy widoczny wróg jest blisko,
-    /// i celuje (PlayerAttack) w najbliższy widoczny cel w zasięgu. Musi zgadzać się z GBA/tests/golden_dump.cpp.
+    /// i celuje (PlayerAttack) w najbliższy widoczny cel w zasięgu. Paczkę sprzętu tej samej lub lepszej jakości
+    /// zakłada (wymiana cechy), gorszą zostawia; pije z termosu poniżej połowy HP.
+    /// Musi zgadzać się z GBA/tests/golden_dump.cpp.
     /// </summary>
     public static void StepSmart(Game g)
     {
+        if (g.HasOffer)
+        {
+            if (g.OfferRarity >= g.Equipped[g.OfferSlot]) g.AcceptOffer();
+            else g.DeclineOffer();
+        }
+        if (g.Thermos > 0 && g.Hero.Hp * 2 < g.Hero.MaxHp && g.PlayerDrink()) return;
         if (!g.SlamCell(g.Hero.X, g.Hero.Y) && g.AbilityCd == 0)
         {
             var t = g.NearestVisibleEnemy();

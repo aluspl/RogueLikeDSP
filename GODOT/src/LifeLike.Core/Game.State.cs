@@ -78,6 +78,7 @@ public sealed partial class Game
             w.Write((byte)p.Type);
             w.Write(p.Active);
             w.Write(p.Arg);
+            w.Write(p.Trait);
         }
         w.Write(PickupsCount);
         foreach (var v in new[] { Cls, Stage, Diff, Tier, DefBonus, DmgBonus, Turns, Kills, Score, StageDamage, StageKills, StageStartTurn })
@@ -110,6 +111,7 @@ public sealed partial class Game
             w.Write(h.Y);
             w.Write(h.Amount);
             w.Write(h.OnHero);
+            w.Write((byte)h.Kind);
         }
         w.Write(HitsCount);
         w.Write(LastTarget);
@@ -122,6 +124,11 @@ public sealed partial class Game
         }
         w.Write(WallsCount);
         foreach (var e in Equipped) w.Write(e);
+        foreach (var e in EquippedTrait) w.Write(e);
+        w.Write(Thermos);
+        w.Write(OfferSlot);
+        w.Write(OfferRarity);
+        w.Write(OfferTrait);
         w.Write(WeaponOverride);
         w.Write(LogSerial);
     }
@@ -137,7 +144,7 @@ public sealed partial class Game
         for (var i = 0; i < Enemies.Length; i++) Enemies[i] = ReadActor(r);
         EnemiesCount = r.ReadInt32();
         for (var i = 0; i < Pickups.Length; i++)
-            Pickups[i] = new Pickup { X = r.ReadSByte(), Y = r.ReadSByte(), Type = (PickupType)r.ReadByte(), Active = r.ReadBoolean(), Arg = r.ReadByte() };
+            Pickups[i] = new Pickup { X = r.ReadSByte(), Y = r.ReadSByte(), Type = (PickupType)r.ReadByte(), Active = r.ReadBoolean(), Arg = r.ReadByte(), Trait = r.ReadByte() };
         PickupsCount = r.ReadInt32();
         Cls = r.ReadInt32();
         Stage = r.ReadInt32();
@@ -187,7 +194,7 @@ public sealed partial class Game
         TurnEvents = r.ReadUInt32();
         HeroHit = r.ReadBoolean();
         for (var i = 0; i < Hits.Length; i++)
-            Hits[i] = new Hit { X = r.ReadSByte(), Y = r.ReadSByte(), Amount = r.ReadInt16(), OnHero = r.ReadBoolean() };
+            Hits[i] = new Hit { X = r.ReadSByte(), Y = r.ReadSByte(), Amount = r.ReadInt16(), OnHero = r.ReadBoolean(), Kind = (HitKind)r.ReadByte() };
         HitsCount = r.ReadInt32();
         LastTarget = r.ReadInt32();
         AbilityCd = r.ReadInt32();
@@ -195,6 +202,11 @@ public sealed partial class Game
             Walls[i] = new TempWall { X = r.ReadSByte(), Y = r.ReadSByte(), Turns = r.ReadSByte() };
         WallsCount = r.ReadInt32();
         for (var i = 0; i < Equipped.Length; i++) Equipped[i] = r.ReadSByte();
+        for (var i = 0; i < EquippedTrait.Length; i++) EquippedTrait[i] = r.ReadSByte();
+        Thermos = r.ReadInt32();
+        OfferSlot = r.ReadSByte();
+        OfferRarity = r.ReadSByte();
+        OfferTrait = r.ReadSByte();
         WeaponOverride = r.ReadInt32();
         LogSerial = r.ReadInt32();
     }

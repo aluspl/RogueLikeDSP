@@ -60,6 +60,7 @@ public class GoldenTests
                             $"GBA {digests[digestIndex]}, C# {got}. Ostatni komunikat: {g.Log[Game.LogLines - 1]}");
             }
             digestIndex++;
+            g.HitsCount = 0; // jak warstwa GBA po każdej turze
         }
 
         CheckSnapshot(0);

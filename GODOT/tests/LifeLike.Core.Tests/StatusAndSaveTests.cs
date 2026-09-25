@@ -46,6 +46,7 @@ public class StatusAndSaveTests
     {
         var g = TestData.Arena(1);
         g.ApplyStatus(StatusEffect.Poison, 3);
+        Assert.Equal("Zatrucie: -1 HP/turę, 3 t.", g.Log[Game.LogLines - 1].Text); // skutek i czas w komunikacie
         int hp = g.Hero.Hp;
         g.PlayerWait();
         g.PlayerWait();
@@ -82,7 +83,8 @@ public class StatusAndSaveTests
         var g = TestData.Arena(1);
         g.AbilityCd = 1;
         g.ApplyStatus(StatusEffect.Paper, 0);
-        Assert.Equal(4, g.AbilityCd);
+        Assert.Equal(1 + D.PaperDelay, g.AbilityCd);
+        Assert.Equal("Papierologia: moc +" + D.PaperDelay + " t.", g.Log[Game.LogLines - 1].Text);
     }
 
     [Fact]

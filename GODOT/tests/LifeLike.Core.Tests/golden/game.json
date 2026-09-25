@@ -9,6 +9,7 @@
       "agility": 3,
       "intelligence": 5,
       "defense": 3,
+      "luck": 2,
       "weapon": "dziennik",
       "frame": 0,
       "ability": {
@@ -27,6 +28,7 @@
       "agility": 2,
       "intelligence": 1,
       "defense": 4,
+      "luck": 0,
       "weapon": "kielnia",
       "frame": 1,
       "ability": {
@@ -45,6 +47,7 @@
       "agility": 4,
       "intelligence": 1,
       "defense": 3,
+      "luck": 2,
       "weapon": "gwozdziarka",
       "frame": 2,
       "ability": {
@@ -63,6 +66,7 @@
       "agility": 4,
       "intelligence": 5,
       "defense": 2,
+      "luck": 1,
       "weapon": "probnik",
       "frame": 3,
       "ability": {
@@ -81,6 +85,7 @@
       "agility": 3,
       "intelligence": 3,
       "defense": 3,
+      "luck": 2,
       "weapon": "klucz",
       "frame": 4,
       "ability": {
@@ -99,6 +104,7 @@
       "agility": 5,
       "intelligence": 2,
       "defense": 3,
+      "luck": 4,
       "weapon": "szlifierka",
       "frame": 5,
       "ability": {
@@ -379,7 +385,7 @@
         "kornik"
       ],
       "count": 5,
-      "hpPct": 100,
+      "hpPct": 108,
       "dmgBonus": 0,
       "act": 0
     },
@@ -391,7 +397,7 @@
         "kornik"
       ],
       "count": 6,
-      "hpPct": 102,
+      "hpPct": 110,
       "dmgBonus": 0,
       "act": 0
     },
@@ -403,7 +409,7 @@
         "kornik"
       ],
       "count": 6,
-      "hpPct": 104,
+      "hpPct": 112,
       "dmgBonus": 0,
       "act": 0,
       "boss": "betoniarka"
@@ -416,7 +422,7 @@
         "przeciek"
       ],
       "count": 7,
-      "hpPct": 106,
+      "hpPct": 115,
       "dmgBonus": 0,
       "act": 1
     },
@@ -428,7 +434,7 @@
         "papierologia"
       ],
       "count": 7,
-      "hpPct": 108,
+      "hpPct": 118,
       "dmgBonus": 0,
       "act": 1,
       "boss": "nawalnica"
@@ -441,7 +447,7 @@
         "plesn"
       ],
       "count": 8,
-      "hpPct": 110,
+      "hpPct": 121,
       "dmgBonus": 0,
       "act": 2
     },
@@ -453,7 +459,7 @@
         "zwarcie"
       ],
       "count": 8,
-      "hpPct": 112,
+      "hpPct": 124,
       "dmgBonus": 0,
       "act": 2
     },
@@ -464,7 +470,7 @@
         "budzet"
       ],
       "count": 6,
-      "hpPct": 115,
+      "hpPct": 128,
       "dmgBonus": 0,
       "act": 2,
       "boss": "termin"
@@ -611,6 +617,20 @@
       "tool": 15,
       "gear": 35
     }
+  },
+  "luck": {
+    "critBasePct": 5,
+    "critPerLuckPct": 3,
+    "critMultiplier": 2,
+    "dropPerLuckPct": 2,
+    "rarityPerLuck": 3,
+    "dodgePerLuckPct": 2,
+    "dodgeMaxPct": 20
+  },
+  "thermos": {
+    "capacity": 3,
+    "heal": 8,
+    "botDrinkBelowPct": 40
   },
   "badges": [
     {
@@ -790,7 +810,45 @@
           ]
         ]
       }
-    ]
+    ],
+    "traits": [
+      {
+        "id": "luck",
+        "name": "Szczęście +1",
+        "short": "Szcz.+1",
+        "effect": "luck",
+        "value": 1
+      },
+      {
+        "id": "crit",
+        "name": "Kryt +5%",
+        "short": "Kryt+5%",
+        "effect": "crit",
+        "value": 5
+      },
+      {
+        "id": "poison",
+        "name": "Odporność na zatrucie",
+        "short": "Bez zatr.",
+        "effect": "poison_res",
+        "value": 1
+      },
+      {
+        "id": "sight",
+        "name": "Widzenie +1",
+        "short": "Wzrok+1",
+        "effect": "sight",
+        "value": 1
+      },
+      {
+        "id": "cooldown",
+        "name": "Odnowienie mocy -1",
+        "short": "Moc -1t",
+        "effect": "cooldown",
+        "value": 1
+      }
+    ],
+    "declineXp": 1
   },
   "acts": [
     {
@@ -813,6 +871,29 @@
     "every": 4,
     "damageBonus": 2,
     "radius": 1
+  },
+  "statuses": {
+    "poison": {
+      "name": "Zatrucie",
+      "short": "Zatr.",
+      "effect": "-1 HP/turę"
+    },
+    "shock": {
+      "name": "Porażenie",
+      "short": "Poraż.",
+      "effect": "tracisz turę"
+    },
+    "slip": {
+      "name": "Poślizg",
+      "short": "Pośl.",
+      "effect": "ruch o 2 pola"
+    },
+    "paper": {
+      "name": "Papierologia",
+      "short": "Papier.",
+      "effect": "moc później",
+      "delay": 3
+    }
   },
   "cash": {
     "perScore": 5
@@ -854,5 +935,5 @@
       "effect": "ability"
     }
   ],
-  "version": "v0.21.41"
+  "version": "v0.21.42"
 }

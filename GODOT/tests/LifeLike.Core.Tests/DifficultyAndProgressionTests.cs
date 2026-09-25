@@ -96,7 +96,16 @@ public class DifficultyAndProgressionTests
         b.Hero.Hp = 1;
         b.Pickups[0] = new Pickup(b.Hero.X, b.Hero.Y, PickupType.Coffee, true);
         b.Collect();
-        Assert.Equal(1 + 8 + 4, b.Hero.Hp);
+        Assert.True(b.Hero.Hp == 1 && b.Thermos == 1); // kawa trafia do termosu
+        Assert.True(b.PlayerDrink() && b.Hero.Hp == 1 + D.CoffeeHeal + 4 && b.Thermos == 0 && b.Turns == 1);
+        Assert.False(b.PlayerDrink()); // pusty termos: bez tury
+        b.Thermos = D.ThermosCapacity;
+        b.Hero.Hp = 1;
+        b.Pickups[0] = new Pickup(b.Hero.X, b.Hero.Y, PickupType.Coffee, true);
+        b.Collect();
+        Assert.True(b.Hero.Hp == 1 + D.CoffeeHeal + 4 && b.Thermos == D.ThermosCapacity); // pełny: pije od razu
+        b.Hero.Hp = b.Hero.MaxHp;
+        Assert.True(!b.PlayerDrink() && b.Thermos == D.ThermosCapacity);
         b.NextStage();
         Assert.Equal(a.PickupsCount + 2, b.PickupsCount);
     }

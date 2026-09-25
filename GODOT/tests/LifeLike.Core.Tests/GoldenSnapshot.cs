@@ -48,6 +48,9 @@ public static class GoldenSnapshot
         K("stageStartTurn", g.StageStartTurn.ToString());
         K("slam", Arr([g.SlamTimer, g.SlamX, g.SlamY, g.SlamCounter]));
         K("equipped", Arr(g.Equipped.Select(x => (int)x)));
+        K("equippedTrait", Arr(g.EquippedTrait.Select(x => (int)x)));
+        K("thermos", g.Thermos.ToString());
+        K("offer", Arr([g.OfferSlot, g.OfferRarity, g.OfferTrait]));
         K("heroStatus", Arr(g.HeroStatus.Select(x => (int)x)));
         K("killsByType", Arr(g.KillsByType.Select(x => (int)x)));
         K("rooms", "[" + string.Join(",", g.Lv.Rooms.Take(g.Lv.RoomsCount).Select(r => Arr([r.X, r.Y, r.W, r.H]))) + "]");
@@ -70,7 +73,7 @@ public static class GoldenSnapshot
         K("enemies", "[" + string.Join(",", g.Enemies.Take(g.EnemiesCount).Select(e =>
             Arr([e.DefId, e.X, e.Y, e.Hp, e.MaxHp, e.Alive ? 1 : 0, e.Awake ? 1 : 0, e.Stun]))) + "]");
         K("pickups", "[" + string.Join(",", g.Pickups.Take(g.PickupsCount).Select(p =>
-            Arr([p.X, p.Y, (int)p.Type, p.Active ? 1 : 0, p.Arg]))) + "]");
+            Arr([p.X, p.Y, (int)p.Type, p.Active ? 1 : 0, p.Arg, p.Trait]))) + "]");
         K("walls", "[" + string.Join(",", g.Walls.Take(g.WallsCount).Select(w => Arr([w.X, w.Y, w.Turns]))) + "]");
         K("log", "[" + string.Join(",", g.Log.Select(m =>
             $"{{\"hex\":\"{Convert.ToHexString(m.S, 0, m.N).ToLowerInvariant()}\",\"kind\":{(int)m.Kind},\"repeat\":{m.Repeat}}}")) + "]");

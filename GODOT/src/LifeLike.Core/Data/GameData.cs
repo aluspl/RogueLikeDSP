@@ -32,6 +32,10 @@ public sealed class GameData
     /// <summary>Wagi dropów w kolejności typów znajdziek: kawa, kask, projekt, narzędzie, sprzęt.</summary>
     public int[] DropWeights { get; private init; } = [];
     public int[] LevelThresholds { get; private init; } = [];
+    /// <summary>Opisy stanów, indeks = StatusEffect (0 = brak).</summary>
+    public StatusDef[] Statuses { get; private init; } = [];
+    /// <summary>Cechy sprzętu (losowane do każdego przedmiotu).</summary>
+    public TraitDef[] GearTraits { get; private init; } = [];
 
     public int SlamEvery { get; private init; }
     public int SlamDamageBonus { get; private init; }
@@ -56,9 +60,26 @@ public sealed class GameData
     public int NgHpPctPerTier { get; private init; }
     public int NgDmgBonusPerTier { get; private init; }
     public int NgScorePctPerTier { get; private init; }
+    /// <summary>Papierologia: o ile tur później moc.</summary>
+    public int PaperDelay { get; private init; }
+    // Szczęście (sekcja "luck"): kryt, unik, dropy, jakość sprzętu.
+    public int CritBasePct { get; private init; }
+    public int CritPerLuckPct { get; private init; }
+    public int CritMultiplier { get; private init; }
+    public int DropPerLuckPct { get; private init; }
+    public int RarityPerLuck { get; private init; }
+    public int DodgePerLuckPct { get; private init; }
+    public int DodgeMaxPct { get; private init; }
+    // Termos (sekcja "thermos").
+    public int ThermosCapacity { get; private init; }
+    public int CoffeeHeal { get; private init; }
+    public int BotDrinkBelowPct { get; private init; }
+    /// <summary>Doświadczenie za odrzucenie paczki sprzętu (plus jakość paczki).</summary>
+    public int GearDeclineXp { get; private init; }
 
     public int MaxHeroLevel => LevelThresholds.Length + 1;
     public int GearSlotsCount => GearSlots.Length;
+    public int GearTraitsCount => GearTraits.Length;
 
     /// <summary>Indeks wroga po identyfikatorze (odpowiednik data::enemy_*), -1 gdy brak.</summary>
     public int EnemyIndex(string id) => Array.FindIndex(Enemies, e => e.Id == id);
@@ -103,7 +124,7 @@ public sealed class GameData
         {
             var ab = c.GetProperty("ability");
             return new ClassDef(Str(c, "id"), Str(c, "name"), Str(c, "desc"), Int(c, "maxHealth"), Int(c, "strength"),
-                Int(c, "agility"), Int(c, "intelligence"), Int(c, "defense"), Lookup(wid, Str(c, "weapon"), "broń"),
+                Int(c, "agility"), Int(c, "intelligence"), Int(c, "defense"), Int(c, "luck", 0), Lookup(wid, Str(c, "weapon"), "broń"),
                 Int(c, "frame"), Str(ab, "name"), Str(ab, "desc"), ParseEnum<AbilityEffect>(Str(ab, "effect")),
                 Int(ab, "cooldown"));
         }).ToArray();
@@ -132,7 +153,7 @@ public sealed class GameData
 
         var meta = d.GetProperty("meta");
         var upgrades = meta.GetProperty("upgrades").EnumerateArray().Select(u => new UpgradeDef(
-            Str(u, "id", ""), Str(u, "name"), Str(u, "desc"), ParseEnum<UpgradeEffect>(Str(u, "effect")), Int(u, "value"),
+            Str(u, "id", ""), Str(u, "name"), Str(u, "desc"), ParseUpgrade(Str(u, "effect")), Int(u, "value"),
             u.GetProperty("costs").EnumerateArray().Select(c => c.GetInt32()).ToArray())).ToArray();
         foreach (var u in upgrades)
         {
@@ -180,6 +201,17 @@ public sealed class GameData
             }
         }
         var rr = eq.GetProperty("rarityRoll");
+        var traits = eq.GetProperty("traits").EnumerateArray().Select(t => new TraitDef(Str(t, "id", ""), Str(t, "name"), Str(t, "short"),
+            ParseTrait(Str(t, "effect")), Int(t, "value"))).ToArray();
+        Require(traits.Length >= 1, "sprzęt: co najmniej jedna cecha");
+        var stt = d.GetProperty("statuses");
+        StatusDef StatusOf(string k)
+        {
+            var x = stt.GetProperty(k);
+            return new StatusDef(Str(x, "name"), Str(x, "short"), Str(x, "effect"));
+        }
+        var lk = d.GetProperty("luck");
+        var th = d.GetProperty("thermos");
         var hl = d.GetProperty("heroLevels");
         var ng = d.GetProperty("newGamePlus");
         var slamJson = d.GetProperty("slam");
@@ -240,6 +272,20 @@ public sealed class GameData
             NgHpPctPerTier = Int(ng, "hpPctPerTier"),
             NgDmgBonusPerTier = Int(ng, "dmgBonusPerTier"),
             NgScorePctPerTier = Int(ng, "scorePctPerTier"),
+            Statuses = [new StatusDef("", "", ""), StatusOf("poison"), StatusOf("shock"), StatusOf("slip"), StatusOf("paper")],
+            PaperDelay = Int(stt.GetProperty("paper"), "delay"),
+            GearTraits = traits,
+            GearDeclineXp = Int(eq, "declineXp"),
+            CritBasePct = Int(lk, "critBasePct"),
+            CritPerLuckPct = Int(lk, "critPerLuckPct"),
+            CritMultiplier = Int(lk, "critMultiplier"),
+            DropPerLuckPct = Int(lk, "dropPerLuckPct"),
+            RarityPerLuck = Int(lk, "rarityPerLuck"),
+            DodgePerLuckPct = Int(lk, "dodgePerLuckPct"),
+            DodgeMaxPct = Int(lk, "dodgeMaxPct"),
+            ThermosCapacity = Int(th, "capacity"),
+            CoffeeHeal = Int(th, "heal"),
+            BotDrinkBelowPct = Int(th, "botDrinkBelowPct"),
             BadgeBezUsterek = BadgeIdx("bez_usterek"),
             BadgePrzedTerminem = BadgeIdx("przed_terminem"),
             BadgeSeryjny = BadgeIdx("seryjny"),
@@ -289,6 +335,19 @@ public sealed class GameData
         "intelligence" => Stat.Intel,
         _ => throw new GameDataException($"nieznana cecha: {s}"),
     };
+
+    private static TraitEffect ParseTrait(string s) => s switch
+    {
+        "luck" => TraitEffect.Luck,
+        "crit" => TraitEffect.Crit,
+        "poison_res" => TraitEffect.PoisonRes,
+        "sight" => TraitEffect.Sight,
+        "cooldown" => TraitEffect.Cooldown,
+        _ => TraitEffect.Unknown, // nowsza wersja danych: cecha bez działania
+    };
+
+    private static UpgradeEffect ParseUpgrade(string s) =>
+        Enum.TryParse<UpgradeEffect>(s, ignoreCase: true, out var v) && v != UpgradeEffect.Unknown ? v : UpgradeEffect.Unknown;
 
     private static T ParseEnum<T>(string s) where T : struct, Enum =>
         Enum.TryParse<T>(s, ignoreCase: true, out var v) ? v : throw new GameDataException($"nieznana wartość {typeof(T).Name}: {s}");

@@ -1,5 +1,6 @@
 // Zrzut "złotych" przebiegów gry dla testu zgodności wersji Godot (C#) z GBA.
 // Kompilacja (z katalogu GBA): g++ -std=c++20 -O2 -Iinclude tests/golden_dump.cpp -o /tmp/golden_dump
+// (nagłówki muszą pochodzić z tej samej wersji GBA co kopia GODOT/tests/LifeLike.Core.Tests/golden/game.json)
 // Uruchomienie: /tmp/golden_dump <katalog_wyjściowy>   -> <katalog>/run_XX.json
 // Każdy przebieg: deterministyczny bot (kopia bot_step z core_tests.cpp + wariant "smart" z mocą i celowaniem),
 // po każdym kroku skrót FNV stanu (digest), na starcie każdego etapu i na końcu pełny zrzut stanu.
@@ -15,6 +16,8 @@ using namespace core;
 // ------------------------------------------------------------------ bot (kopia z core_tests.cpp)
 static void bot_step(game& g)
 {
+    if(g.has_offer()) { if(g.offer_is_better()) g.accept_offer(); else g.decline_offer(); }
+    if(g.thermos > 0 && g.hero.hp * 100 < g.hero.max_hp * data::bot_drink_below_pct && g.player_drink()) return;
     if(g.slam_cell(g.hero.x, g.hero.y))
     {
         int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}}, best=-1, bd=-1;
@@ -36,8 +39,11 @@ static void bot_step(game& g)
 }
 
 // Wariant: moc, gdy widoczny wróg jest blisko; celowanie w najbliższy widoczny cel w zasięgu (Bot.StepSmart w C#).
+// Paczka sprzętu tej samej lub lepszej jakości: zakłada (wymiana cechy), gorsza: zostawia. Termos poniżej połowy HP.
 static void bot_step_smart(game& g)
 {
+    if(g.has_offer()) { if(g.offer_rarity >= g.equipped[g.offer_slot]) g.accept_offer(); else g.decline_offer(); }
+    if(g.thermos > 0 && g.hero.hp * 2 < g.hero.max_hp && g.player_drink()) return;
     if(!g.slam_cell(g.hero.x, g.hero.y) && g.ability_cd == 0)
     {
         int t = g.nearest_visible_enemy();
@@ -73,10 +79,14 @@ static uint32_t digest(const game& g)
     for(int i = 0; i < g.pickups_count; ++i)
     {
         const pickup& p = g.pickups[i];
-        f.add(p.x); f.add(p.y); f.add(p.type); f.add(p.active); f.add(p.arg);
+        f.add(p.x); f.add(p.y); f.add(p.type); f.add(p.active); f.add(p.arg); f.add(p.trait);
     }
     for(int i = 0; i < 5; ++i) f.add(g.hero_status[i]);
     for(int i = 0; i < 4; ++i) f.add(g.equipped[i]);
+    for(int i = 0; i < 4; ++i) f.add(g.equipped_trait[i]);
+    f.add(g.thermos); f.add(g.offer_slot); f.add(g.offer_rarity); f.add(g.offer_trait);
+    f.add(g.hits_count);
+    for(int i = 0; i < g.hits_count; ++i) { const hit& h = g.hits[i]; f.add(h.x); f.add(h.y); f.add(h.amount); f.add(h.on_hero); f.add(h.kind); }
     f.add(g.act_cleared); f.add(g.act_bonus); f.add(g.stage_damage); f.add(g.stage_kills); f.add(g.tools_found);
     for(const message& m : g.log)
     {
@@ -117,6 +127,9 @@ static void snapshot(const game& g, int step)
     w(","); key("stageDamage"); wi(g.stage_damage); w(","); key("stageKills"); wi(g.stage_kills); w(","); key("stageStartTurn"); wi(g.stage_start_turn);
     w(","); key("slam"); w("["); wi(g.slam_timer); w(","); wi(g.slam_x); w(","); wi(g.slam_y); w(","); wi(g.slam_counter); w("]");
     w(","); key("equipped"); w("["); for(int i = 0; i < 4; ++i) { if(i) w(","); wi(g.equipped[i]); } w("]");
+    w(","); key("equippedTrait"); w("["); for(int i = 0; i < 4; ++i) { if(i) w(","); wi(g.equipped_trait[i]); } w("]");
+    w(","); key("thermos"); wi(g.thermos);
+    w(","); key("offer"); w("["); wi(g.offer_slot); w(","); wi(g.offer_rarity); w(","); wi(g.offer_trait); w("]");
     w(","); key("heroStatus"); w("["); for(int i = 0; i < 5; ++i) { if(i) w(","); wi(g.hero_status[i]); } w("]");
     w(","); key("killsByType"); w("["); for(int i = 0; i < 16; ++i) { if(i) w(","); wi(g.kills_by_type[i]); } w("]");
     w(","); key("rooms"); w("[");
@@ -151,7 +164,7 @@ static void snapshot(const game& g, int step)
     {
         const pickup& p = g.pickups[i];
         if(i) w(",");
-        w("["); wi(p.x); w(","); wi(p.y); w(","); wi(p.type); w(","); wi(p.active); w(","); wi(p.arg); w("]");
+        w("["); wi(p.x); w(","); wi(p.y); w(","); wi(p.type); w(","); wi(p.active); w(","); wi(p.arg); w(","); wi(p.trait); w("]");
     }
     w("]");
     w(","); key("walls"); w("[");
@@ -219,7 +232,7 @@ int main(int argc, char** argv)
                 if(g.act_cleared && s.shop) bot_shop(g);
                 g.next_stage();
                 w(","); snapshot(g, step);
-                digests.push_back(digest(g));
+                digests.push_back(digest(g)); g.hits_count = 0;
                 continue;
             }
             if(g.st == status::won && s.ngplus && ! did_ng)
@@ -229,12 +242,12 @@ int main(int argc, char** argv)
                 did_ng = true;
                 g.new_game_plus();
                 w(","); snapshot(g, step);
-                digests.push_back(digest(g));
+                digests.push_back(digest(g)); g.hits_count = 0;
                 continue;
             }
             if(g.st != status::playing) break;
             if(s.smart) bot_step_smart(g); else bot_step(g);
-            digests.push_back(digest(g));
+            digests.push_back(digest(g)); g.hits_count = 0;   // warstwa GBA zeruje trafienia po każdej turze
         }
         if(g.score > p.best) p.best = g.score;
         if(g.st == status::won) { ++p.wins; add_house(p, g); }
