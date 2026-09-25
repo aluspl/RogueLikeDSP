@@ -1156,5 +1156,65 @@
         ]
       }
     ]
+  },
+  "siteEvents": {
+    "chancePct": 45,
+    "list": [
+      {
+        "id": "dostawa",
+        "name": "Dostawa spóźniona",
+        "short": "-2 znajdź.",
+        "from": "Kierownik Marek",
+        "text": "Hurtownia dzwoniła:|dostawa będzie jutro.|Mniej materiału na placu.",
+        "effect": "fewer_pickups",
+        "value": 2,
+        "info": "Mniej znajdziek na etapie",
+        "good": false
+      },
+      {
+        "id": "premia",
+        "name": "Premia od inwestora",
+        "short": "+20 zł",
+        "from": "Anna Nowak",
+        "text": "Dobrze idzie! Przelewam|premię na budowę. Kupcie|coś w Hurtowni.",
+        "effect": "cash",
+        "value": 20,
+        "info": "Budżet budowy +20 zł",
+        "good": true
+      },
+      {
+        "id": "inspekcja",
+        "name": "Inspekcja nadzoru",
+        "short": "Bez ran",
+        "from": "Kierownik Marek",
+        "text": "Dziś inspektor nadzoru.|Etap bez obrażeń =|premia. Uważaj na siebie!",
+        "effect": "inspection",
+        "value": 10,
+        "info": "Etap bez obrażeń: +10 dośw.",
+        "good": true
+      },
+      {
+        "id": "ulewa",
+        "name": "Ulewa w nocy",
+        "short": "Poślizg",
+        "from": "Anna Nowak",
+        "text": "W nocy lało jak z cebra.|Na placu błoto po kostki.|Uważaj, ślisko!",
+        "effect": "rain",
+        "value": 25,
+        "info": "Ciosy: +25% szans na poślizg",
+        "good": false
+      },
+      {
+        "id": "kawa",
+        "name": "Ekipa na kawie",
+        "short": "Termos",
+        "from": "Kierownik Marek",
+        "text": "Ekipa zrobiła kawę|dla wszystkich. Termos|masz pełny!",
+        "effect": "thermos",
+        "value": 0,
+        "info": "Termos pełny",
+        "good": true
+      }
+    ]
   }
 }

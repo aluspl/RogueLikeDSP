@@ -109,6 +109,20 @@ namespace core
         const char* lines[3];
     };
 
+    // Wydarzenie na placu: losowy SMS na starcie etapu (nie pierwszego i nie z bossem) z modyfikatorem etapu.
+    enum class event_effect : uint8_t { fewer_pickups, cash, inspection, rain, thermos };
+
+    struct site_event_def
+    {
+        const char* name;
+        const char* short_name;   // pastylka w telefonie
+        const char* info;         // skutek dla gracza
+        story_msg msg;            // SMS: nadawca + 3 linie
+        event_effect effect;
+        int8_t value;
+        bool good;                // korzystne (kolor w telefonie)
+    };
+
     enum class gear_stat : uint8_t { def, dmg, hp };
 
     struct gear_def            // sprzęt z dropów: slot x jakość

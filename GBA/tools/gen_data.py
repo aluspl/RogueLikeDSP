@@ -127,6 +127,16 @@ for c in d["contracts"]:
              f'{kid[c["keepsake"]] if "keepsake" in c else -1} }},')
 L.append("};")
 L += [f"inline constexpr int contracts_count = {len(d['contracts'])};", ""]
+se = d["siteEvents"]
+L.append("inline constexpr core::site_event_def site_events[] = {   // wydarzenia na placu: SMS na starcie etapu")
+for e in se["list"]:
+    assert e["effect"] in {"fewer_pickups", "cash", "inspection", "rain", "thermos"} and len(e["short"]) <= 10, e
+    assert len(e["name"]) <= 22 and len(e["info"]) <= 30, e
+    L.append(f'    {{ {s(e["name"])}, {s(e["short"])}, {s(e["info"])}, {story(e)}, core::event_effect::{e["effect"]}, '
+             f'{e["value"]}, {"true" if e["good"] else "false"} }},')
+L.append("};")
+L += [f"inline constexpr int site_events_count = {len(se['list'])};",
+      f"inline constexpr int site_event_chance_pct = {se['chancePct']};", ""]
 L.append("inline constexpr core::tool_def tools[] = {")
 for t in m["tools"]:
     L.append(f'    {{ {wid[t["weapon"]]}, {t["cost"]} }},')

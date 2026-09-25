@@ -167,6 +167,16 @@ inline constexpr core::contract_def contracts[] = {   // zlecenia: długofalowe 
 };
 inline constexpr int contracts_count = 6;
 
+inline constexpr core::site_event_def site_events[] = {   // wydarzenia na placu: SMS na starcie etapu
+    { "Dostawa spóźniona", "-2 znajdź.", "Mniej znajdziek na etapie", { "Kierownik Marek", { "Hurtownia dzwoniła:", "dostawa będzie jutro.", "Mniej materiału na placu." } }, core::event_effect::fewer_pickups, 2, false },
+    { "Premia od inwestora", "+20 zł", "Budżet budowy +20 zł", { "Anna Nowak", { "Dobrze idzie! Przelewam", "premię na budowę. Kupcie", "coś w Hurtowni." } }, core::event_effect::cash, 20, true },
+    { "Inspekcja nadzoru", "Bez ran", "Etap bez obrażeń: +10 dośw.", { "Kierownik Marek", { "Dziś inspektor nadzoru.", "Etap bez obrażeń =", "premia. Uważaj na siebie!" } }, core::event_effect::inspection, 10, true },
+    { "Ulewa w nocy", "Poślizg", "Ciosy: +25% szans na poślizg", { "Anna Nowak", { "W nocy lało jak z cebra.", "Na placu błoto po kostki.", "Uważaj, ślisko!" } }, core::event_effect::rain, 25, false },
+    { "Ekipa na kawie", "Termos", "Termos pełny", { "Kierownik Marek", { "Ekipa zrobiła kawę", "dla wszystkich. Termos", "masz pełny!" } }, core::event_effect::thermos, 0, true },
+};
+inline constexpr int site_events_count = 5;
+inline constexpr int site_event_chance_pct = 45;
+
 inline constexpr core::tool_def tools[] = {
     { 6, 0 },
     { 7, 20 },

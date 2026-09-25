@@ -857,6 +857,52 @@ int main()
         game g; g.new_run(1, 3, data::default_difficulty, mods(q));
         if(data::keepsakes[start_k].effect == perk_effect::thermos) CHECK(g.thermos_cap() == data::thermos_capacity + data::keepsakes[start_k].values[0]);
     }
+    // 33. wydarzenia na placu: nie na pierwszym etapie i nie u bossa, efekty
+    {
+        int counts[data::stages_count] = {};
+        for(int k = 0; k < 200; ++k)
+        {
+            game g; g.new_run(k % data::classes_count, 500 + k * 31);
+            for(int st = 0; st < data::stages_count; ++st)
+            {
+                if(st > 0) g.next_stage();
+                if(g.stage_event >= 0) ++counts[st];
+                CHECK(g.stage_event < data::site_events_count);
+            }
+        }
+        CHECK(counts[0] == 0);
+        for(int st = 0; st < data::stages_count; ++st)
+            if(data::stages[st].boss >= 0) CHECK(counts[st] == 0);
+            else if(st > 0) CHECK(counts[st] > 200 * data::site_event_chance_pct / 200 && counts[st] < 200 * (data::site_event_chance_pct + 20) / 100);
+        auto ev_of = [](event_effect e) { for(int i = 0; i < data::site_events_count; ++i) if(data::site_events[i].effect == e) return i; return -1; };
+        for(event_effect e : { event_effect::fewer_pickups, event_effect::cash, event_effect::inspection, event_effect::rain, event_effect::thermos })
+            CHECK(ev_of(e) >= 0);
+        game g; g.new_run(1, 44); g.stage_event = -1;
+        int pk = g.pickups_count, cash = g.cash;
+        g.apply_event(ev_of(event_effect::fewer_pickups));
+        CHECK(g.pickups_count == imax(1, pk - data::site_events[ev_of(event_effect::fewer_pickups)].value) && g.event_active(event_effect::fewer_pickups));
+        g.apply_event(ev_of(event_effect::cash)); CHECK(g.cash == cash + data::site_events[ev_of(event_effect::cash)].value);
+        g.thermos = 0; g.apply_event(ev_of(event_effect::thermos)); CHECK(g.thermos == g.thermos_cap());
+        // inspekcja: etap bez obrażeń = premia doświadczenia; z obrażeniami nic
+        game a; a.new_run(1, 44); a.apply_event(ev_of(event_effect::inspection));
+        game b; b.new_run(1, 44);
+        a.debug_skip(); b.debug_skip();
+        CHECK(a.st == status::stage_clear && a.xp() == b.xp() + data::site_events[ev_of(event_effect::inspection)].value);
+        game c; c.new_run(1, 44); c.apply_event(ev_of(event_effect::inspection)); c.stage_damage = 1; c.debug_skip();
+        CHECK(c.xp() == b.xp());
+        // ulewa: ciosy częściej dają poślizg
+        int slips_rain = 0, slips_dry = 0;
+        for(int k = 0; k < 200; ++k)
+            for(int rain = 0; rain < 2; ++rain)
+            {
+                game h; arena(h, 1); h.hero.max_hp = h.hero.hp = 999;
+                if(rain) h.apply_event(ev_of(event_effect::rain));
+                h.r.seed(900 + k); h.spawn(data::enemy_kornik, 8, 7); h.enemies[0].awake = true;
+                h.player_wait();
+                (rain ? slips_rain : slips_dry) += h.status_turns(status_effect::slip) > 0;
+            }
+        CHECK(slips_dry == 0 && slips_rain > 20);
+    }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};
