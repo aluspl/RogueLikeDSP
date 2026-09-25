@@ -16,7 +16,7 @@ public sealed class DebugScenes
         "title", "classselect", "profile", "catalog", "estate", "team", "training", "game", "combat", "offer", "menu",
         "overview", "phone-tasks", "phone-issues", "phone-start", "phone-gear", "phone-costs", "card", "perks", "schedule",
         "hurtownia", "boss", "endmsg", "end", "banners", "map", "aim", "preview", "prologue",
-        "schedule-tip", "help",
+        "schedule-tip", "help", "settings", "settings-title", "walk",
     ];
 
     private readonly App _app;
@@ -59,6 +59,10 @@ public sealed class DebugScenes
                 return;
             case "help":
                 Flow.Help.Open(true, true);
+                return;
+            case "settings-title":
+                Flow.Title.Open();
+                Flow.Settings.Open(Flow.Title, true);
                 return;
             case "card": // karta etapu z wydarzeniem: pierwszy seed, przy którym etap 2 ma wydarzenie
                 s.ClassId = 1;
@@ -164,13 +168,28 @@ public sealed class DebugScenes
                 banners.Clear();
                 Flow.Game.ToggleOverview();
                 break;
+            case "settings": // ustawienia w trakcie budowy (Zapisz i wyjdź, Porzuć budowę)
+                banners.Clear();
+                Flow.Settings.Open(Flow.Game, true);
+                break;
+            case "walk": // dotknięcie pola: marsz w toku (kilka kroków)
+                banners.Clear();
+                for (var x = Level.W - 1; x >= 0; x--)
+                {
+                    var cell = new Godot.Vector2I(x, g.Hero.Y);
+                    if (Flow.Game.Touch.Walk.Start(cell)) break;
+                }
+                for (var i = 0; i < 3; i++) Flow.Game.Touch.Walk.Process(1);
+                break;
             case "aim": // trzymane A: zasięg, celownik na drugim celu
                 banners.Clear();
+                _app.Nodes.Touch.Bar.Pressed = Touch.BarButton.Attack;
                 Flow.Game.HandleInput(InputCmd.Of(GameAction.A));
                 Flow.Game.Aim.Cycle(1);
                 break;
             case "preview": // trzymane B: karta najbliższego problemu
                 banners.Clear();
+                _app.Nodes.Touch.Bar.Pressed = Touch.BarButton.Wait;
                 Flow.Game.HandleInput(InputCmd.Of(GameAction.B));
                 Flow.Game.Look.Reveal();
                 break;

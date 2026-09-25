@@ -1,3 +1,4 @@
+using Godot;
 using LifeLike.Game.Gfx;
 using CoreGame = LifeLike.Core.Game;
 
@@ -29,6 +30,28 @@ public partial class HudLayer : ScaledLayer
         Root.AddChild(_log);
         Root.AddChild(_card);
         base._Ready();
+        Layout.Changed += Place;
+        Place();
+    }
+
+    public override void _ExitTree()
+    {
+        Layout.Changed -= Place;
+        base._ExitTree();
+    }
+
+    /// <summary>Górny pasek pod wyspą / wycięciem, dziennik i karta wroga nad paskiem akcji i paskiem domowym.</summary>
+    private void Place()
+    {
+        var s = Layout.HudScale;
+        _top.OffsetTop = Mathf.Round(Layout.SafeTop / s);
+        _log.OffsetBottom = -Mathf.Round(Layout.BottomReserve / s);
+        _card.OffsetBottom = _log.OffsetBottom;
+        foreach (var c in new Control[] { _top, _log, _card })
+        {
+            c.OffsetLeft = Mathf.Round(Layout.SafeLeft / s);
+            c.OffsetRight = -Mathf.Round(Layout.SafeRight / s);
+        }
     }
 
     public void ShowGame(CoreGame g)

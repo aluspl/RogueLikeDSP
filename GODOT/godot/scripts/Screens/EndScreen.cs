@@ -29,6 +29,12 @@ public sealed class EndScreen : Screen
 
     public override bool HandleInput(InputCmd e)
     {
+        if (e.IsTap)
+        {
+            var b = N.EndView.ButtonAt(e.Pointer);
+            if (b == 0) return false;
+            e = InputCmd.Of(b == 1 ? GameAction.A : GameAction.Start);
+        }
         if (S.Game.St == GameStatus.Won && e.Is(GameAction.A))
         {
             S.NewGamePlus();

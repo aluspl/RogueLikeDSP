@@ -103,6 +103,7 @@ public partial class HudLog : Control
             }
             return;
         }
+        if (Layout.Touch) return; // przy dotyku ściągą jest pasek akcji
         f.Draw(this, new Vector2(w - 6, h - 18), "Tab: telefon  Enter: akcje  R: moc  M: mapa", Ink.MapDim.WithAlpha(0.7f), TextAlign.Right);
     }
 
