@@ -2,6 +2,26 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
+## v0.21.42 – 2026-09-25
+### Nowe
+- **Szczęście:** nowa statystyka zawodu (Glazurnik 4, Hydraulik/Kierownik/Cieśla 2, Elektryk 1, Murarz 0),
+  widoczna na wyborze zawodu i w telefonie. Daje kryt (5% + 3%/pkt, obrażenia x2, żółte „KRYT!” i błysk),
+  mały unik przed ciosem wroga („Unik!”), częstsze i lepsze dropy.
+- **Cechy sprzętu:** każdy przedmiot ma losową cechę (Szczęście +1, Kryt +5%, Odporność na zatrucie,
+  Widzenie +1, Odnowienie mocy -1). Paczka przy zajętym slocie otwiera okno porównania
+  (A – zakładam, B – zostawiam za doświadczenie). Cechy w zakładce Sprzęt.
+- **Menu akcji pod START:** ikony wokół bohatera – Atak, Moc, Termos, Czekaj.
+- **Termos:** kawa trafia do termosu (3 miejsca), pije się z menu (zużywa turę); pełny termos – pije od razu.
+  Ikona termosu z liczbą w HUD.
+- Scenariusze testowe 6 (porównanie sprzętu), 7 (termos), 8 (kryt i unik).
+### Zmiany
+- Stany czytelniejsze: liczba tur przy ikonach w HUD, komunikat mówi skutek i czas
+  (np. „Zatrucie: -1 HP/turę, 3 t.”), wiersz Stany w telefonie.
+- Zakładka Start: szczęście, kryt i unik; budżet w nagłówku; wynik w nagłówku Zadań.
+- Balans: HP problemów na etapach +8–13 pp (bot na Normalnym ~51% wygranych).
+- Nowy format zapisu budowy (PBRUN02) – przerwana budowa z v0.21.41 nie wznowi się.
+- Konfiguracja w `data/game.json`: `luck`, `thermos`, `statuses`, `equipment.traits`.
+
 ## v0.21.41 – 2026-09-25
 ### Nowe
 - **Prolog przy pierwszej budowie:** pickup PlanBudowlany wjeżdża na działkę, bohater wysiada, kamera
