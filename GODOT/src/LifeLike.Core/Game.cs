@@ -60,6 +60,10 @@ public sealed partial class Game
     public int SlamTimer;
     public sbyte SlamX = -1, SlamY = -1;
     public int SlamCounter;
+    /// <summary>Boss z wezwaniami: tury do kolejnego wezwania.</summary>
+    public int SummonCounter;
+    /// <summary>Ilu wezwano w tej walce (uśpione miejsca za bossem w Enemies).</summary>
+    public int SummonsUsed;
     /// <summary>Tury aktywnych stanów bohatera (indeks = StatusEffect).</summary>
     public readonly sbyte[] HeroStatus = new sbyte[5];
     public RunMods Bonus;
@@ -124,7 +128,37 @@ public sealed partial class Game
 
     /// <summary>Pole w zasięgu zapowiedzianego uderzenia bossa (czerwone pola na mapie).</summary>
     public bool SlamCell(int x, int y) => SlamTimer > 0 && SlamCellAt(x, y);
-    public bool SlamCellAt(int x, int y) => SlamX >= 0 && Cheb(x, y, SlamX, SlamY) <= D.SlamRadius;
+    public bool SlamCellAt(int x, int y)
+    {
+        if (SlamX < 0) return false;
+        if (Boss >= 0 && D.Enemies[Enemies[Boss].DefId].Shape == SlamShape.Cross) // Kontrola BHP: wiersz i kolumna
+        {
+            return (x == SlamX && Math.Abs(y - SlamY) <= D.SlamCrossReach) || (y == SlamY && Math.Abs(x - SlamX) <= D.SlamCrossReach);
+        }
+        return Cheb(x, y, SlamX, SlamY) <= D.SlamRadius;
+    }
+
+    /// <summary>Pełny sprzęt: założony przedmiot w każdym slocie (kask, rękawice, kamizelka).</summary>
+    public bool FullGear()
+    {
+        for (var i = 0; i < D.GearSlotsCount; ++i)
+        {
+            if (Equipped[i] < 0) return false;
+        }
+        return true;
+    }
+
+    /// <summary>Boss dołącza do walki (raz na etap): licznik Czystej roboty; Inspekcja przy pełnym sprzęcie traci turę.</summary>
+    public void BossEngaged()
+    {
+        BossWakeDamage = StageDamage;
+        var bd = D.Enemies[Enemies[Boss].DefId];
+        if (bd.GearStun > 0 && FullGear())
+        {
+            Enemies[Boss].Stun = (sbyte)Math.Max(Enemies[Boss].Stun, bd.GearStun);
+            Push(Msg("Wszystko zgodnie z BHP!").As(LogKind.Good));
+        }
+    }
 
     public int GearBonus(GearStat s)
     {
@@ -377,6 +411,8 @@ public sealed partial class Game
         SlamTimer = 0;
         SlamX = SlamY = -1;
         SlamCounter = 0;
+        SummonCounter = 0;
+        SummonsUsed = 0;
         Array.Fill(Fov, Sight.Unknown);
         var sd = D.Stages[Stage];
         var first = Lv.Rooms[0];
@@ -406,6 +442,12 @@ public sealed partial class Game
             if (Occupied(x, y)) RandomFreeCellInRoom(last, out x, out y);
             Boss = EnemiesCount;
             Spawn(sd.Boss, x, y);
+            var bd = D.Enemies[sd.Boss];
+            for (var k = 0; k < bd.SummonMax && EnemiesCount < MaxEnemies; ++k) // uśpione miejsca na wezwanych
+            {
+                Spawn(bd.Summon, x, y);
+                Enemies[EnemiesCount - 1].Alive = false;
+            }
         }
 
         PickupsCount = 0;

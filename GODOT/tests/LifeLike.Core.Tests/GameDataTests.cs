@@ -10,7 +10,7 @@ public class GameDataTests
     {
         Assert.Equal(6, D.Classes.Length);
         Assert.Equal(12, D.Weapons.Length);
-        Assert.Equal(11, D.Enemies.Length);
+        Assert.Equal(12, D.Enemies.Length);
         Assert.Equal(8, D.Stages.Length);
         Assert.Equal(1, D.StartToolsMask);
         Assert.Equal(19, D.StartClassesMask);
@@ -21,6 +21,11 @@ public class GameDataTests
         Assert.Equal(new[] { 0, 3 }, D.Stages[0].Pool);
         Assert.Equal(9, D.Stages[2].Boss);
         Assert.Equal(-1, D.Stages[0].Boss);
+        Assert.Equal(11, D.Stages[5].Boss); // v0.21.46: Inspekcja Pracy w środku aktu III
+        Assert.True(D.Enemies[11].Shape == SlamShape.Cross && D.Enemies[11].Summon == 4 && D.Enemies[11].SummonMax == 2);
+        Assert.True(D.Enemies[11].GearStun == 2 && D.Enemies[11].RewardCash == 60 && D.Enemies[11].RewardTitle == "Protokół bez uwag");
+        Assert.True(D.Enemies[9].Shape == SlamShape.Square && D.Enemies[9].Summon == -1 && D.Enemies[9].SlamName == "");
+        Assert.True(D.SlamDelay == 2 && D.SlamCrossDelay == 3 && D.SlamCrossReach == 2);
         Assert.Equal(1, D.Classes[1].Weapon);
         Assert.Equal(AbilityEffect.Flush, D.Classes[4].Ability);
         Assert.Equal(StatusEffect.Paper, D.Enemies[8].OnHit);
@@ -58,7 +63,7 @@ public class GameDataTests
         Assert.True(D.CritBasePct == 5 && D.CritPerLuckPct == 3 && D.CritMultiplier == 2 && D.DodgeMaxPct == 20);
         Assert.True(D.ThermosCapacity == 3 && D.CoffeeHeal == 8 && D.BotDrinkBelowPct == 40 && D.GearDeclineXp == 1);
         Assert.Equal(108, D.Stages[0].HpPct);
-        Assert.Equal("v0.21.44", D.Version);
+        Assert.Equal("v0.21.46", D.Version);
     }
 
     [Fact]

@@ -49,6 +49,10 @@ public sealed class GameData
     public int SlamEvery { get; private init; }
     public int SlamDamageBonus { get; private init; }
     public int SlamRadius { get; private init; }
+    /// <summary>Tury od zapowiedzi do ciosu (kwadrat) i dla krzyża (Kontrola BHP), zasięg ramion krzyża.</summary>
+    public int SlamDelay { get; private init; } = 2;
+    public int SlamCrossDelay { get; private init; } = 3;
+    public int SlamCrossReach { get; private init; } = 2;
     public int CashPerScore { get; private init; }
     public int StartToolsMask { get; private init; }
     public int DropChancePct { get; private init; }
@@ -141,13 +145,28 @@ public sealed class GameData
         var enemies = enemiesJson.Select(e =>
         {
             var hasHit = e.TryGetProperty("onHit", out var hit);
+            var hasSummon = e.TryGetProperty("summon", out var sm);
+            var hasReward = e.TryGetProperty("reward", out var rw);
             return new EnemyDef(Str(e, "id"), Str(e, "name"), Str(e, "desc"), Int(e, "maxHealth"), Int(e, "minDamage"),
                 Int(e, "maxDamage"), Int(e, "defense"), Int(e, "sight"), Int(e, "score"), Int(e, "frame"),
                 e.TryGetProperty("slam", out var slam) && slam.GetBoolean(),
                 hasHit && hit.TryGetProperty("status", out var s) ? ParseEnum<StatusEffect>(s.GetString() ?? "none") : StatusEffect.None,
                 hasHit ? Int(hit, "chancePct", 0) : 0,
-                hasHit ? Int(hit, "turns", 0) : 0);
+                hasHit ? Int(hit, "turns", 0) : 0,
+                ParseEnum<SlamShape>(Str(e, "slamShape", "square")),
+                Str(e, "slamName", ""),
+                hasSummon ? Lookup(eid, Str(sm, "enemy"), "wezwany wróg") : -1,
+                hasSummon ? Int(sm, "every") : 0,
+                hasSummon ? Int(sm, "max") : 0,
+                Int(e, "gearStun", 0),
+                hasReward ? Int(rw, "cash", 0) : 0,
+                hasReward ? Str(rw, "title", "") : "");
         }).ToArray();
+        foreach (var e in enemies)
+        {
+            Require(e.Summon < 0 || (!enemies[e.Summon].Slam && e.SummonEvery > 0 && e.SummonMax is > 0 and <= 3),
+                $"wróg {e.Id}: złe wezwania");
+        }
 
         var stages = d.GetProperty("stages").EnumerateArray().Select(st =>
         {
@@ -156,6 +175,11 @@ public sealed class GameData
             var boss = st.TryGetProperty("boss", out var b) ? Lookup(eid, b.GetString() ?? "", "boss") : -1;
             return new StageDef(Str(st, "name"), pool, Int(st, "count"), boss, Int(st, "hpPct", 100), Int(st, "dmgBonus", 0), Int(st, "act"));
         }).ToArray();
+        foreach (var st in stages)
+        {
+            // boss z wezwaniami: etap + boss + wezwani mieszczą się w Game.MaxEnemies
+            Require(st.Boss < 0 || st.EnemyCount + 1 + enemies[st.Boss].SummonMax <= 12, $"etap {st.Name}: za dużo wrogów z wezwanymi");
+        }
 
         var difficulties = d.GetProperty("difficulties").EnumerateArray().Select(x => new DifficultyDef(
             Str(x, "id", ""), Str(x, "name"), Int(x, "hpPct"), Int(x, "dmgBonus"), Int(x, "scorePct"))).ToArray();
@@ -296,6 +320,9 @@ public sealed class GameData
             SlamEvery = Int(slamJson, "every"),
             SlamDamageBonus = Int(slamJson, "damageBonus"),
             SlamRadius = Int(slamJson, "radius"),
+            SlamDelay = Int(slamJson, "delay", 2),
+            SlamCrossDelay = Int(slamJson, "crossDelay", 3),
+            SlamCrossReach = Int(slamJson, "crossReach", 2),
             CashPerScore = Int(d.GetProperty("cash"), "perScore"),
             StartToolsMask = startTools,
             DropChancePct = Int(drops, "chancePct"),

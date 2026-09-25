@@ -141,6 +141,8 @@ public sealed partial class Game
         w.Write(OfferTrait);
         w.Write(WeaponOverride);
         w.Write(LogSerial);
+        w.Write(SummonCounter);
+        w.Write(SummonsUsed);
     }
 
     public void Read(BinaryReader r)
@@ -226,5 +228,7 @@ public sealed partial class Game
         OfferTrait = r.ReadSByte();
         WeaponOverride = r.ReadInt32();
         LogSerial = r.ReadInt32();
+        SummonCounter = r.ReadInt32();
+        SummonsUsed = r.ReadInt32();
     }
 }

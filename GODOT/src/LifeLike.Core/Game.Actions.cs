@@ -10,7 +10,7 @@ public sealed partial class Game
     {
         ref var e = ref Enemies[ei];
         var ed = D.Enemies[e.DefId];
-        if (ei == Boss && BossWakeDamage < 0) BossWakeDamage = StageDamage; // walka z bossem trwa
+        if (ei == Boss && BossWakeDamage < 0) BossEngaged(); // walka z bossem trwa
         var dmg = R.Range(Weapon.MinDamage, Weapon.MaxDamage) + HeroStat(Weapon.ScalesWith) / 2 + DmgBonus
                   + GearBonus(GearStat.Dmg) - ed.Defense / 2;
         if (dmg < 1) dmg = 1;
@@ -39,10 +39,20 @@ public sealed partial class Game
                 Score += (500 + 100 * (Stage + 1)) * ScorePct() / 100;
                 GainXp(D.XpBoss);
                 SlamTimer = 0;
+                if (ed.RewardCash > 0) // nagroda bossa (Inspekcja: Protokół bez uwag)
+                {
+                    Cash += ed.RewardCash;
+                    Push(Msg(ed.RewardTitle).Add("! +").Add(ed.RewardCash).Add(" zł").As(LogKind.Good));
+                }
                 if (Stage == D.Stages.Length - 1)
                 {
                     St = GameStatus.Won;
                     Push(Msg("Odbiór techniczny zaliczony!").As(LogKind.Good));
+                }
+                else if (D.Stages[Stage + 1].Act == D.Stages[Stage].Act) // boss w środku aktu: dalej bez Hurtowni
+                {
+                    St = GameStatus.StageClear;
+                    Push(Msg("Etap zakończony: ").Add(D.Stages[Stage].Name).As(LogKind.Good));
                 }
                 else // boss aktu: premia za akt, potem Hurtownia
                 {
@@ -348,6 +358,31 @@ public sealed partial class Game
         }
     }
 
+    private static readonly int[,] Around = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 }, { 1, 1 }, { -1, 1 }, { 1, -1 }, { -1, -1 } };
+
+    /// <summary>Wezwanie (Inspekcja: Papierologia): budzi kolejne uśpione miejsce za bossem na wolnym polu obok niego.</summary>
+    public bool SummonNear(int bx, int by)
+    {
+        var slot = Boss + 1 + SummonsUsed;
+        if (slot >= EnemiesCount) return false;
+        for (var k = 0; k < 8; ++k)
+        {
+            int x = bx + Around[k, 0], y = by + Around[k, 1];
+            if (Lv.At(x, y) != Tile.Floor || Occupied(x, y)) continue;
+            ref var m = ref Enemies[slot];
+            m.X = (sbyte)x;
+            m.Y = (sbyte)y;
+            m.Hp = m.MaxHp;
+            m.Alive = true;
+            m.Awake = true;
+            m.Stun = 0;
+            ++SummonsUsed;
+            Push(Msg("Wezwanie: ").Add(D.Enemies[m.DefId].Name).As(LogKind.Bad));
+            return true;
+        }
+        return false;
+    }
+
     public void EnemyAct(int i)
     {
         ref var e = ref Enemies[i];
@@ -358,7 +393,7 @@ public sealed partial class Game
             if (d <= ed.Sight) e.Awake = true;
             else return;
         }
-        if (i == Boss && BossWakeDamage < 0) BossWakeDamage = StageDamage;
+        if (i == Boss && BossWakeDamage < 0) BossEngaged();
         if (e.Stun > 0)
         {
             --e.Stun;
@@ -369,13 +404,19 @@ public sealed partial class Game
             if (SlamTimer > 0) return; // ładuje cios, stoi w miejscu
             if (++SlamCounter >= D.SlamEvery && d <= 4)
             {
+                var cross = ed.Shape == SlamShape.Cross;
                 SlamCounter = 0;
-                SlamTimer = 2;
+                SlamTimer = cross ? D.SlamCrossDelay : D.SlamDelay;
                 SlamX = Hero.X;
                 SlamY = Hero.Y;
-                Push(Msg("Cios bossa za 2 tury!").As(LogKind.Bad));
+                Push(Msg(ed.SlamName.Length > 0 ? ed.SlamName : "Cios bossa").Add(" za ").Add(SlamTimer).Add(" tury!").As(LogKind.Bad));
                 return;
             }
+        }
+        if (i == Boss && ed.Summon >= 0 && SummonsUsed < ed.SummonMax && ++SummonCounter >= ed.SummonEvery && d <= 6)
+        {
+            SummonCounter = 0;
+            if (SummonNear(e.X, e.Y)) return; // wezwanie zużywa turę bossa
         }
         // Termin: porusza się co drugą turę, poniżej połowy HP przyspiesza
         if (i == Boss && e.Hp * 2 > e.MaxHp && (Turns & 1) != 0) return;
@@ -465,7 +506,7 @@ public sealed partial class Game
                 StageDamage += dmg;
                 HeroHit = true;
                 AddHit(Hero.X, Hero.Y, dmg, true);
-                Push(Msg("Uderzenie: -").Add(dmg).Add(" HP").As(LogKind.Bad));
+                Push(Msg(bd.SlamName.Length > 0 ? bd.SlamName : "Uderzenie").Add(": -").Add(dmg).Add(" HP").As(LogKind.Bad));
                 if (Hero.Hp <= 0)
                 {
                     Hero.Hp = 0;
