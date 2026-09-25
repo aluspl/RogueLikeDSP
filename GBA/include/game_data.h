@@ -29,17 +29,18 @@ inline constexpr core::class_def classes[] = {
 };
 
 inline constexpr core::enemy_def enemies[] = {
-    { "Przeciek", "Kapie tam, gdzie nie powinno", 6, 1, 3, 0, 6, 10, 6, false, core::status_effect::slip, 14, 2 },
-    { "Zwarcie", "Iskrzy przy każdej okazji", 5, 2, 4, 0, 7, 12, 7, false, core::status_effect::shock, 17, 1 },
-    { "Pleśń", "Lubi wilgoć i zimne ściany", 9, 1, 2, 1, 4, 10, 8, false, core::status_effect::poison, 24, 3 },
-    { "Kornik", "Drąży więźbę po cichu", 7, 1, 3, 1, 5, 10, 9, false, core::status_effect::none, 0, 0 },
-    { "Papierologia", "Brakuje jednej pieczątki", 12, 1, 2, 2, 4, 15, 10, false, core::status_effect::paper, 35, 0 },
-    { "Opóźniona dostawa", "Będzie jutro. Na pewno.", 10, 2, 4, 1, 6, 15, 11, false, core::status_effect::none, 0, 0 },
-    { "Ulewa", "Zawsze tuż przed dachem", 8, 2, 3, 0, 8, 12, 12, false, core::status_effect::slip, 28, 3 },
-    { "Przekroczony budżet", "Rośnie szybciej niż mury", 14, 2, 5, 2, 6, 25, 13, false, core::status_effect::none, 0, 0 },
-    { "Nieprzekraczalny Termin", "Nieprzesuwalny. Podobno.", 40, 3, 6, 3, 12, 200, 14, true, core::status_effect::paper, 28, 0 },
-    { "Zepsuta Betoniarka", "Kręci się, ale nie tam", 30, 3, 5, 2, 10, 150, 46, true, core::status_effect::none, 0, 0 },
-    { "Nawałnica", "Leje jak z cebra", 36, 3, 6, 2, 12, 180, 47, true, core::status_effect::slip, 35, 3 },
+    { "Przeciek", "Kapie tam, gdzie nie powinno", 6, 1, 3, 0, 6, 10, 6, false, core::status_effect::slip, 14, 2, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
+    { "Zwarcie", "Iskrzy przy każdej okazji", 5, 2, 4, 0, 7, 12, 7, false, core::status_effect::shock, 17, 1, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
+    { "Pleśń", "Lubi wilgoć i zimne ściany", 9, 1, 2, 1, 4, 10, 8, false, core::status_effect::poison, 24, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
+    { "Kornik", "Drąży więźbę po cichu", 7, 1, 3, 1, 5, 10, 9, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
+    { "Papierologia", "Brakuje jednej pieczątki", 12, 1, 2, 2, 4, 15, 10, false, core::status_effect::paper, 35, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
+    { "Opóźniona dostawa", "Będzie jutro. Na pewno.", 10, 2, 4, 1, 6, 15, 11, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
+    { "Ulewa", "Zawsze tuż przed dachem", 8, 2, 3, 0, 8, 12, 12, false, core::status_effect::slip, 28, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
+    { "Przekroczony budżet", "Rośnie szybciej niż mury", 14, 2, 5, 2, 6, 25, 13, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
+    { "Nieprzekraczalny Termin", "Nieprzesuwalny. Podobno.", 40, 3, 6, 3, 12, 200, 14, true, core::status_effect::paper, 28, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
+    { "Zepsuta Betoniarka", "Kręci się, ale nie tam", 30, 3, 5, 2, 10, 150, 46, true, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
+    { "Nawałnica", "Leje jak z cebra", 36, 3, 6, 2, 12, 180, 47, true, core::status_effect::slip, 35, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
+    { "Inspekcja Pracy", "Sprawdza kask i barierki", 30, 3, 5, 2, 12, 170, 50, true, core::status_effect::paper, 30, 0, core::slam_shape::cross, "Kontrola BHP", 4, 6, 2, 2, 60, "Protokół bez uwag" },
 };
 
 inline constexpr core::stage_def stages[] = {
@@ -48,7 +49,7 @@ inline constexpr core::stage_def stages[] = {
     { "Strop", { 5, 7, 3, -1 }, 3, 6, 9, 112, 0, 0 },
     { "Dach", { 6, 3, 0, -1 }, 3, 7, -1, 115, 0, 1 },
     { "Okna i drzwi", { 5, 6, 4, -1 }, 3, 7, 10, 118, 0, 1 },
-    { "Instalacje", { 1, 0, 2, -1 }, 3, 8, -1, 121, 0, 2 },
+    { "Instalacje", { 1, 0, 2, -1 }, 3, 7, 11, 121, 0, 2 },
     { "Tynki i wylewki", { 2, 0, 1, -1 }, 3, 8, -1, 124, 0, 2 },
     { "Wykończenie i odbiór", { 2, 7, -1, -1 }, 2, 6, 8, 128, 0, 2 },
 };
@@ -75,7 +76,7 @@ inline constexpr core::story_msg story_stages[] = {
     { "Kierownik Marek", { "Szalunki stoją, beton", "jedzie. Oby dostawa", "dojechała na czas!" } },
     { "Anna Nowak", { "Prognoza: ulewa. Zdążysz", "z dachem przed deszczem?", "Kornik też nie śpi." } },
     { "Kierownik Marek", { "Stan surowy zamknięty!", "Okna na wymiar, drzwi", "też. Ulewa nie odpuszcza." } },
-    { "Anna Nowak", { "Elektryk i hydraulik", "w jednym pokoju. Co", "może pójść nie tak? ;)" } },
+    { "Kierownik Marek", { "Inspekcja Pracy w drodze!", "Kask, szelki, barierki -", "papiery też sprawdzą." } },
     { "Kierownik Marek", { "Tynki schną tydzień.", "Pleśń tylko na to czeka.", "Wietrz i nie odpuszczaj." } },
     { "Anna Nowak", { "Już widzę nasz salon.", "Tylko ten Termin... Dasz", "radę, mamy harmonogram!" } },
 };
@@ -110,6 +111,9 @@ inline constexpr int hurtownia_count = 5;
 inline constexpr int slam_every = 4;
 inline constexpr int slam_damage_bonus = 2;
 inline constexpr int slam_radius = 1;
+inline constexpr int slam_delay = 2;
+inline constexpr int slam_cross_reach = 2;
+inline constexpr int slam_cross_delay = 3;
 inline constexpr int cash_per_score = 5;
 inline constexpr int enemy_przeciek = 0;
 inline constexpr int enemy_zwarcie = 1;
@@ -122,6 +126,7 @@ inline constexpr int enemy_budzet = 7;
 inline constexpr int enemy_termin = 8;
 inline constexpr int enemy_betoniarka = 9;
 inline constexpr int enemy_nawalnica = 10;
+inline constexpr int enemy_inspekcja = 11;
 
 inline constexpr core::badge_def badges[] = {   // perk = uprawnienie: trwała premia na każdą budowę
     { "Bez usterek", "Etap bez żadnych obrażeń", 20, { core::perk_effect::hp, 2 } },
@@ -136,7 +141,7 @@ inline constexpr core::badge_def badges[] = {   // perk = uprawnienie: trwała p
 };
 
 inline constexpr int badges_count = 9;
-inline constexpr int enemies_count = 11;
+inline constexpr int enemies_count = 12;
 inline constexpr int badge_bez_usterek = 0;
 inline constexpr int badge_przed_terminem = 1;
 inline constexpr int badge_seryjny = 2;
@@ -247,7 +252,7 @@ inline constexpr int hp_per_level = 2;
 inline constexpr int dmg_levels_mask = 32;
 inline constexpr int def_levels_mask = 8;
 
-inline constexpr const char* version = "v0.21.45";   // numer wersji (ekran tytułowy, changelog)
+inline constexpr const char* version = "v0.21.46";   // numer wersji (ekran tytułowy, changelog)
 
 inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonogramu między etapami
     "Przytrzymaj B: podgląd problemów",

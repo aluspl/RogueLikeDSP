@@ -23,7 +23,7 @@ static void bot_step(game& g)
         int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}}, best=-1, bd=-1;
         for(int k=0;k<4;++k){ int nx=g.hero.x+d[k][0], ny=g.hero.y+d[k][1];
             if(!g.lv.passable(nx,ny)||g.occupied(nx,ny)) continue;
-            int dist=cheb(nx,ny,g.slam_x,g.slam_y); if(dist>bd){bd=dist;best=k;} }
+            int dist=cheb(nx,ny,g.slam_x,g.slam_y)+(g.slam_cell(nx,ny)?0:10); if(dist>bd){bd=dist;best=k;} }
         if(best>=0 && g.player_move(d[best][0],d[best][1])) return;
     }
     if(g.nearest_target() >= 0 && g.weapon().range > 1) { g.player_attack_nearest(); return; }
@@ -35,7 +35,7 @@ static void bot_step(game& g)
     while(!q.empty()){ auto [x,y]=q.front(); q.pop(); if(x==tx&&y==ty) break;
         for(int k=0;k<4;++k){int nx=x+d[k][0],ny=y+d[k][1]; if(g.lv.passable(nx,ny)&&px[ny][nx]<0){px[ny][nx]=k;q.push({nx,ny});}}}
     if(tx<0||px[ty][tx]<0||(tx==g.hero.x&&ty==g.hero.y)){ g.player_wait(); return; }
-    int x=tx,y=ty; while(true){int k=px[y][x]; int bx=x-d[k][0],by=y-d[k][1]; if(bx==g.hero.x&&by==g.hero.y){ if(!g.player_move(x-bx,y-by)) g.player_wait(); return;} x=bx;y=by;}
+    int x=tx,y=ty; while(true){int k=px[y][x]; int bx=x-d[k][0],by=y-d[k][1]; if(bx==g.hero.x&&by==g.hero.y){ if(g.slam_cell(x,y)&&g.enemy_at(x,y)<0){ g.player_wait(); return; } if(!g.player_move(x-bx,y-by)) g.player_wait(); return;} x=bx;y=by;}
 }
 
 // Wariant: moc, gdy widoczny wróg jest blisko; celowanie w najbliższy widoczny cel w zasięgu (Bot.StepSmart w C#).
@@ -96,6 +96,8 @@ static uint32_t digest(const game& g)
     for(int y = 0; y < map_h; ++y) for(int x = 0; x < map_w; ++x) f.add(int(g.lv.t[y][x]));
     // v0.21.43: wydarzenie na placu, liczniki zleceń
     f.add(g.stage_event); f.add(g.boss_wake_damage); f.add(g.powers_used); f.add(g.brand_found); f.add(g.clean_bosses);
+    // v0.21.46: wezwania bossa (Inspekcja Pracy)
+    f.add(g.summon_counter); f.add(g.summons_used);
     return f.h;
 }
 

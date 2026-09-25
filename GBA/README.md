@@ -5,7 +5,7 @@ przeniesionym z LifeLike (folder `../GODOT`): generator map z seedem, tury, walk
 
 Zbuduj dom w 8 etapach: **Fundamenty → Mury parteru → Strop → Dach → Okna i drzwi → Instalacje → Tynki i wylewki → Wykończenie i odbiór**.
 Pokonaj „problemy budowy” (Przeciek, Zwarcie, Pleśń, Kornik, Papierologia, Opóźniona dostawa, Ulewa,
-Przekroczony budżet) i bossa **Nieprzekraczalny Termin**. Na końcu ekran z kodem QR do planbudowlany.online.
+Przekroczony budżet) i bossów (Zepsuta Betoniarka, Nawałnica, Inspekcja Pracy, **Nieprzekraczalny Termin**). Na końcu ekran z kodem QR do planbudowlany.online.
 
 ![ekran tytułowy](docs/preview_title.png) ![ekran końcowy z QR](docs/preview_end.png)
 
@@ -39,20 +39,28 @@ Pod spodem karta: nazwa, trudność (pastylka ze strzałkami góra/dół), moc z
 zasięgiem i statystyką skalowania (np. „(SIŁ)”), statystyki HP/SIŁ/ZRĘ/INT/OBR/SZCZ z premią (zielone „+2”,
 statystyka broni na fioletowo). Karta wjeżdża z boku przy zmianie zawodu. Pod kartą pamiątka (L/R) z efektem, a dla
 zablokowanego zawodu – gdzie go odblokować (Koszty w telefonie profilu) i ile kosztuje.
-Powiadomienia push jak w aplikacji: awans, nowe narzędzie, drop, moc gotowa, zaliczony etap, pojawienie się Terminu.
+Powiadomienia push jak w aplikacji: awans, nowe narzędzie, drop, moc gotowa, zaliczony etap, pojawienie się bossa („Przypisano Ci usterkę”).
 Mgła wojny: widzisz na 7 pól (ściany zasłaniają), odkryte pola zostają przyciemnione, wrogowie poza polem widzenia są ukryci.
 
 ## Akty i bossowie
 Etapy są pogrupowane w akty (`data/game.json`: `acts`, pole `act` etapu); każdy akt kończy się bossem:
 Akt I Stan surowy – **Zepsuta Betoniarka**, Akt II Pod dachem – **Nawałnica**, Akt III Wykończenie – **Nieprzekraczalny Termin**.
+W środku aktu III (etap Instalacje) czeka **Inspekcja Pracy** – kontrola BHP bez zapowiedzi (podkładka z protokołem
+i pieczątką). Etap z bossem nie ma schodów: kończy go pokonanie bossa.
 Bossowie co kilka tur zapowiadają uderzenie – czerwone pola wokół bohatera; masz 2 tury, żeby z nich zejść.
+Inspekcja zamiast kwadratu stempluje **krzyż** (wiersz i kolumna bohatera, 2 pola w każdą stronę – „Kontrola BHP”)
+z 3 turami na zejście (najlepiej po skosie), trafienie może dać Papierologię, co 6 tur wzywa Papierologię (najwyżej 2
+na walkę). W pełnym sprzęcie (kask, rękawice, kamizelka) na start walki: „Wszystko zgodnie z BHP!” – Inspekcja traci
+2 tury. Pokonana: baner „Protokół bez uwag” i +60 zł; po niej harmonogram i dalej etap Tynki (Hurtownia tylko między
+aktami). Mechaniki bossów w danych wroga: `slamShape`, `slamName`, `summon`, `gearStun`, `reward`; `slam` – `delay`,
+`crossReach`, `crossDelay`.
 Usunięte problemy dają budżet (zł), koniec aktu – premię; między aktami **Hurtownia** (kawa, paczka sprzętu,
 narzędzie, siłownia, energetyk – oferta w `hurtownia`).
 
 ## Stany
 Problemy budowy przy trafieniu mogą nałożyć stan (konfiguracja `onHit` w `data/game.json`): zatrucie (Pleśń: -1 HP
 przez kilka tur, nie zabija), porażenie (Zwarcie: tracisz turę), poślizg (Ulewa, Przeciek, Nawałnica: ruch o 2 pola),
-papierologia (Papierologia, Termin: moc odnawia się 3 tury dłużej). Ikona aktywnego stanu jest nad bohaterem, a w HUD (pod paskiem HP) ikony stanów z liczbą tur do końca; komunikat przy nałożeniu mówi skutek i czas, telefon (zakładka Start) ma wiersz Stany. Nazwy i skutki: `statuses`.
+papierologia (Papierologia, Inspekcja Pracy, Termin: moc odnawia się 3 tury dłużej). Ikona aktywnego stanu jest nad bohaterem, a w HUD (pod paskiem HP) ikony stanów z liczbą tur do końca; komunikat przy nałożeniu mówi skutek i czas, telefon (zakładka Start) ma wiersz Stany. Nazwy i skutki: `statuses`.
 
 ## Fabuła
 Budujesz dom dla rodziny Nowaków. Pierwszą budowę otwiera prolog: pickup wjeżdża na działkę pełną porozrzucanych problemów (A pomija). Każdy etap otwiera wiadomość w telefonie od inwestorki Anny Nowak albo
@@ -121,7 +129,7 @@ tools/playtest/run.sh moj_skrypt.txt /tmp/zrzuty --fresh   # opis komend w tools
 
 Scenariusze testowe (sytuacje, do których skrypt nie dojdzie na ślepo – boss obok, wrogowie w zasięgu, moce,
 sprzęt, stany, porównanie sprzętu, termos, kryt i unik, statystyki (9), uprawnienia i zlecenia (10), pamiątki (11),
-wydarzenia na placu (12)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
+wydarzenia na placu (12), Inspekcja Pracy (13)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
 ```bash
 make TARGET=scn1 BUILD=build_scn1 USERFLAGS="-DPB_SCENARIO=1" BUTANO_PATH=...
 ROM=scn1.gba tools/playtest/run.sh skrypt.txt /tmp/zrzuty --fresh

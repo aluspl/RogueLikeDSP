@@ -45,6 +45,9 @@ namespace core
         const char* effect;    // skutek, np. "-1 HP/turę"
     };
 
+    // Kształt zapowiedzianego uderzenia bossa: kwadrat wokół bohatera albo krzyż (wiersz i kolumna).
+    enum class slam_shape : uint8_t { square, cross };
+
     struct enemy_def           // "problem budowy"
     {
         const char* name;
@@ -60,6 +63,15 @@ namespace core
         status_effect on_hit;  // stan nakładany przy trafieniu bohatera
         int8_t status_chance;  // szansa w %
         int8_t status_turns;   // ile tur trwa
+        // mechaniki bossów (domyślnie wyłączone)
+        slam_shape shape = slam_shape::square;
+        const char* slam_name = "";   // nazwa uderzenia w komunikatach ("" = "Cios bossa" / "Uderzenie")
+        int8_t summon = -1;           // wzywany problem (indeks w data::enemies), -1 = brak
+        int8_t summon_every = 0;      // co ile tur boss wzywa
+        int8_t summon_max = 0;        // ile razy na walkę
+        int8_t gear_stun = 0;         // pełny sprzęt (wszystkie sloty): boss ogłuszony na tyle tur na starcie walki
+        int16_t reward_cash = 0;      // premia (zł) za pokonanie bossa
+        const char* reward_title = "";   // baner nagrody, np. "Protokół bez uwag"
     };
 
     struct stage_def           // etap budowy = piętro lochu

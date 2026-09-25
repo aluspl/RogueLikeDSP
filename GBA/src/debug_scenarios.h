@@ -17,6 +17,9 @@
 //  11 - pamiątki: wszystkie odblokowane, Termos babci po 8 budowach (ranga III, wybrany), Kask ojca po 3 (II)
 //  12 - wydarzenia na placu: start od etapu 2 z wydarzeniem; każdy kolejny etap bez bossa ma wydarzenie
 //       (po kolei z listy; L+R+SELECT przechodzi dalej)
+//  13 - Inspekcja Pracy (boss w środku aktu III, sam) kilka pól od bohatera w pełnym sprzęcie: baner "Wszystko zgodnie
+//       z BHP!" (2 tury ogłuszenia), potem Kontrola BHP w krzyż (3 tury na zejście), wezwanie Papierologii;
+//       L+R+SELECT = pokonanie, baner "Protokół bez uwag" i harmonogram bez Hurtowni
 #include "core.h"
 #include "meta.h"
 
@@ -198,6 +201,21 @@ namespace debug_scenario
                 g.start_stage(1);
                 force_event(g);
                 break;
+            case 13:
+            {
+                int st = 0;
+                while(data::stages[st].boss != data::enemy_inspekcja) ++st;
+                g.start_stage(st);
+                for(int i = 0; i < g.boss; ++i) g.enemies[i].alive = false;          // sam boss (bez problemów etapu)
+                for(int i = 0; i < data::gear_slots_count; ++i) g.equip(i, 0, 0);   // pełny sprzęt: kask, rękawice, kamizelka
+                core::actor& b = g.enemies[g.boss];
+                int x, y;
+                if(free_cell(g, 3, 3, x, y)) { b.x = int8_t(x); b.y = int8_t(y); }
+                b.awake = true;
+                g.slam_counter = data::slam_every - 1;   // Kontrola BHP zaraz po ogłuszeniu
+                g.summon_counter = data::enemies[data::enemy_inspekcja].summon_every - 1;
+                break;
+            }
             default:
                 break;
         }

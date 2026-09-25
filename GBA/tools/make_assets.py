@@ -197,7 +197,7 @@ def make_actors():
     gf = pa.gear_frames()
     frames += [gf[i * 256:(i + 1) * 256] for i in range(3)]   # 42-44 paczki sprzętu wg jakości
     frames += [pa.reticle_frame()]                             # 45 celownik
-    frames += pa.boss_frames()                                 # 46-47 bossowie aktów, 48-49 ich druga klatka
+    frames += pa.boss_frames()                                 # 46-47 bossowie aktów, 48-49 ich druga klatka, 50-51 Inspekcja
     px = [p for fr in frames for p in fr]
     write_bmp(os.path.join(G, "actors.bmp"), px, 16, 16 * len(frames), SPR_PAL, 4)
     write_json("actors", {"type": "sprite", "height": 16})

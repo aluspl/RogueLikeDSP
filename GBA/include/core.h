@@ -257,6 +257,8 @@ namespace core
         int slam_timer = 0;          // uderzenie bossa: tury do ciosu (0 = brak zapowiedzi)
         int8_t slam_x = -1, slam_y = -1;
         int slam_counter = 0;
+        int summon_counter = 0;      // boss z wezwaniami: tury do kolejnego wezwania
+        int summons_used = 0;        // ilu wezwano w tej walce (uśpione miejsca za bossem w enemies[])
         int8_t hero_status[5] = {};  // tury aktywnych stanów bohatera (indeks = status_effect)
 
         int status_turns(status_effect s) const { return hero_status[int(s)]; }
@@ -291,9 +293,34 @@ namespace core
             return true;
         }
 
-        // Pole w zasięgu zapowiedzianego uderzenia bossa (czerwone pola na mapie).
+        // Pole w zasięgu zapowiedzianego uderzenia bossa (czerwone pola na mapie): kwadrat albo krzyż (Kontrola BHP).
         bool slam_cell(int x, int y) const { return slam_timer > 0 && slam_cell_at(x, y); }
-        bool slam_cell_at(int x, int y) const { return slam_x >= 0 && cheb(x, y, slam_x, slam_y) <= data::slam_radius; }
+        bool slam_cell_at(int x, int y) const
+        {
+            if(slam_x < 0) return false;
+            if(boss >= 0 && data::enemies[enemies[boss].def_id].shape == slam_shape::cross)
+                return (x == slam_x && iabs(y - slam_y) <= data::slam_cross_reach) || (y == slam_y && iabs(x - slam_x) <= data::slam_cross_reach);
+            return cheb(x, y, slam_x, slam_y) <= data::slam_radius;
+        }
+
+        // Pełny sprzęt: założony przedmiot w każdym slocie (kask, rękawice, kamizelka).
+        bool full_gear() const
+        {
+            for(int i = 0; i < data::gear_slots_count; ++i) if(equipped[i] < 0) return false;
+            return true;
+        }
+
+        // Boss dołącza do walki (raz na etap): licznik Czystej roboty; Inspekcja przy pełnym sprzęcie traci turę.
+        void boss_engaged()
+        {
+            boss_wake_damage = stage_damage;
+            const enemy_def& bd = data::enemies[enemies[boss].def_id];
+            if(bd.gear_stun > 0 && full_gear())
+            {
+                enemies[boss].stun = int8_t(imax(enemies[boss].stun, bd.gear_stun));
+                push(message().add("Wszystko zgodnie z BHP!").as(good));
+            }
+        }
         run_mods bonus;
         int xp_pct = 0;              // doświadczenie x100 (mnożnik trudności bez gubienia ułamków)
         int xp_banked = 0;           // ile doświadczenia już przeniesiono do profilu
@@ -486,7 +513,7 @@ namespace core
             lv.generate(r);
             walls_count = 0;
             stage_damage = 0; stage_kills = 0; stage_start_turn = turns; boss_wake_damage = -1;
-            act_cleared = false; slam_timer = 0; slam_x = slam_y = -1; slam_counter = 0;
+            act_cleared = false; slam_timer = 0; slam_x = slam_y = -1; slam_counter = 0; summon_counter = 0; summons_used = 0;
             for(auto& row : fov) for(auto& c : row) c = unknown;
             const stage_def& sd = data::stages[stage];
             const room& first = lv.rooms[0];
@@ -509,6 +536,12 @@ namespace core
                 if(occupied(x, y)) random_free_cell_in_room(last, x, y);
                 boss = enemies_count;
                 spawn(sd.boss, x, y);
+                const enemy_def& bd = data::enemies[sd.boss];
+                for(int k = 0; k < bd.summon_max && enemies_count < max_enemies; ++k)   // uśpione miejsca na wezwanych
+                {
+                    spawn(bd.summon, x, y);
+                    enemies[enemies_count - 1].alive = false;
+                }
             }
 
             pickups_count = 0;
@@ -549,7 +582,7 @@ namespace core
         {
             actor& e = enemies[ei];
             const enemy_def& ed = data::enemies[e.def_id];
-            if(ei == boss && boss_wake_damage < 0) boss_wake_damage = stage_damage;   // walka z bossem trwa
+            if(ei == boss && boss_wake_damage < 0) boss_engaged();   // walka z bossem trwa
             int dmg = r.range(weapon().min_damage, weapon().max_damage) + hero_stat(weapon().scales_with) / 2 + dmg_bonus
                     + gear_bonus(gear_stat::dmg) - ed.defense / 2;
             if(dmg < 1) dmg = 1;
@@ -574,10 +607,20 @@ namespace core
                     score += (500 + 100 * (stage + 1)) * score_pct() / 100;
                     gain_xp(data::xp_boss);
                     slam_timer = 0;
+                    if(ed.reward_cash > 0)   // nagroda bossa (Inspekcja: Protokół bez uwag)
+                    {
+                        cash += ed.reward_cash;
+                        push(message().add(ed.reward_title).add("! +").add(ed.reward_cash).add(" zł").as(good));
+                    }
                     if(stage == data::stages_count - 1)
                     {
                         st = status::won;
                         push(message().add("Odbiór techniczny zaliczony!").as(good));
+                    }
+                    else if(data::stages[stage + 1].act == data::stages[stage].act)   // boss w środku aktu: dalej bez Hurtowni
+                    {
+                        st = status::stage_clear;
+                        push(message().add("Etap zakończony: ").add(data::stages[stage].name).as(good));
                     }
                     else   // boss aktu: premia za akt, potem Hurtownia
                     {
@@ -972,25 +1015,50 @@ namespace core
             }
         }
 
+        // Wezwanie (Inspekcja: Papierologia): budzi kolejne uśpione miejsce za bossem na wolnym polu obok niego.
+        bool summon_near(int bx, int by)
+        {
+            int slot = boss + 1 + summons_used;
+            if(slot >= enemies_count) return false;
+            static constexpr int8_t around[8][2] = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 }, { 1, 1 }, { -1, 1 }, { 1, -1 }, { -1, -1 } };
+            for(const auto& o : around)
+            {
+                int x = bx + o[0], y = by + o[1];
+                if(lv.at(x, y) != tile::floor || occupied(x, y)) continue;
+                actor& m = enemies[slot];
+                m.x = int8_t(x); m.y = int8_t(y); m.hp = m.max_hp; m.alive = true; m.awake = true; m.stun = 0;
+                ++summons_used;
+                push(message().add("Wezwanie: ").add(data::enemies[m.def_id].name).as(bad));
+                return true;
+            }
+            return false;
+        }
+
         void enemy_act(int i)
         {
             actor& e = enemies[i];
             const enemy_def& ed = data::enemies[e.def_id];
             int d = cheb(e.x, e.y, hero.x, hero.y);
             if(! e.awake) { if(d <= ed.sight) e.awake = true; else return; }
-            if(i == boss && boss_wake_damage < 0) boss_wake_damage = stage_damage;
+            if(i == boss && boss_wake_damage < 0) boss_engaged();
             if(e.stun > 0) { --e.stun; return; }
             if(ed.slam && i == boss)   // boss: co kilka tur zapowiada uderzenie w obszar wokół bohatera
             {
                 if(slam_timer > 0) return;   // ładuje cios, stoi w miejscu
                 if(++slam_counter >= data::slam_every && d <= 4)
                 {
+                    bool cross = ed.shape == slam_shape::cross;
                     slam_counter = 0;
-                    slam_timer = 2;
+                    slam_timer = cross ? data::slam_cross_delay : data::slam_delay;
                     slam_x = hero.x; slam_y = hero.y;
-                    push(message().add("Cios bossa za 2 tury!").as(bad));
+                    push(message().add(ed.slam_name[0] ? ed.slam_name : "Cios bossa").add(" za ").add(slam_timer).add(" tury!").as(bad));
                     return;
                 }
+            }
+            if(i == boss && ed.summon >= 0 && summons_used < ed.summon_max && ++summon_counter >= ed.summon_every && d <= 6)
+            {
+                summon_counter = 0;
+                if(summon_near(e.x, e.y)) return;   // wezwanie zużywa turę bossa
             }
             // Termin: porusza się co drugą turę, poniżej połowy HP przyspiesza
             if(i == boss && e.hp * 2 > e.max_hp && (turns & 1)) return;
@@ -1055,7 +1123,7 @@ namespace core
                     stage_damage += dmg;
                     hero_hit = true;
                     add_hit(hero.x, hero.y, dmg, true);
-                    push(message().add("Uderzenie: -").add(dmg).add(" HP").as(bad));
+                    push(message().add(bd.slam_name[0] ? bd.slam_name : "Uderzenie").add(": -").add(dmg).add(" HP").as(bad));
                     if(hero.hp <= 0) { hero.hp = 0; hero.alive = false; st = status::dead; push(message().add("Budowa wstrzymana...").as(bad)); }
                 }
                 else push(message().add("Unik! Cios poszedł obok").as(good));
