@@ -72,6 +72,7 @@ namespace core
         int8_t gear_stun = 0;         // pełny sprzęt (wszystkie sloty): boss ogłuszony na tyle tur na starcie walki
         int16_t reward_cash = 0;      // premia (zł) za pokonanie bossa
         const char* reward_title = "";   // baner nagrody, np. "Protokół bez uwag"
+        int8_t material = -1;         // materiał z usuniętego problemu (data::materials), -1 = losowy
     };
 
     struct stage_def           // etap budowy = piętro lochu
@@ -84,6 +85,7 @@ namespace core
         int16_t hp_pct;        // mnożnik HP wrogów w etapie (100 = bez zmian)
         int8_t dmg_bonus;      // premia do obrażeń wrogów w etapie
         int8_t act;            // akt budowy (każdy kończy się bossem)
+        int16_t cost;          // koszt etapu w tys. zł (harmonogram domu po wygranej)
     };
 
     struct act_def             // akt budowy: kilka etapów zakończonych bossem, potem Hurtownia
@@ -93,14 +95,51 @@ namespace core
         int8_t bonus_per_kill;    // ... i za każdy usunięty problem w akcie
     };
 
-    enum class shop_effect : uint8_t { heal, gear, tool, maxhp, ability };
+    enum class shop_effect : uint8_t { heal, gear, tool, maxhp, ability, def, thermos };
 
-    struct shop_item_def       // Hurtownia między aktami (płatne budżetem z budowy)
+    struct shop_item_def       // Hurtownia między aktami (płatne budżetem z budowy albo materiałami)
     {
         const char* name;
         const char* desc;
-        int16_t price;
+        int16_t price;         // zł (0, gdy płatne materiałem)
         shop_effect effect;
+        int8_t material = -1;  // płatne materiałem (data::materials), -1 = zł
+        int8_t mat_cost = 0;   // ile sztuk materiału
+    };
+
+    // Materiały budowy (cement, stal, drewno): wypadają z problemów i paczek, płacą w Hurtowni i za naprawy.
+    struct material_def
+    {
+        const char* name;
+        const char* short_name;
+    };
+
+    // Naprawa pola za materiał (telefon: Brygada i naprawy): Załataj - deski w poprzek drogi, Kładka - kałuże bez poślizgu.
+    enum class repair_effect : uint8_t { patch, bridge };
+
+    struct repair_def
+    {
+        const char* name;
+        const char* desc;      // krótko (baner)
+        const char* info;      // skutek (telefon)
+        repair_effect effect;
+        int8_t material;
+        int8_t cost;
+        int8_t value;          // Załataj: tury muru; Kładka: zasięg (pola)
+    };
+
+    // Wybór ścieżki między etapami: wariant kolejnego etapu (jak rozgałęzienia w Slay the Spire, stała kolejność etapów).
+    struct path_def
+    {
+        const char* name;
+        const char* short_name;
+        const char* desc;
+        int8_t enemies;        // +/- problemów na etapie
+        int8_t pickups;        // +/- znajdziek
+        int16_t cash;          // zł od razu (+/-)
+        int8_t materials;      // losowe materiały na start etapu
+        bool bad_weather;      // pogoda tylko z niekorzystnych
+        bool no_event;         // bez wydarzenia na placu
     };
 
     enum class upgrade_effect : uint8_t { hp, def, dmg, coffee, pickups, luck, craft };   // craft: +statystyka broni zawodu
@@ -113,6 +152,7 @@ namespace core
         int8_t value;          // premia za każdy poziom
         int8_t levels;
         int16_t costs[4];      // koszt kolejnych poziomów w doświadczeniu
+        int16_t refund = 0;    // zwrot (dośw.) za poziom ponad maksimum (profil sprzed zmiany liczby poziomów)
     };
 
     struct story_msg           // wiadomość w telefonie (fabuła): nadawca + 3 linie dymka

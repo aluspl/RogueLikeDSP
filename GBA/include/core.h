@@ -222,6 +222,15 @@ namespace core
     }
 
     static_assert(sizeof(data::enemies) / sizeof(data::enemies[0]) <= 16);
+    static_assert(data::materials_count <= 4 && data::stages_count <= 8);
+
+    // Kładka: zasięg (pola) z danych naprawy "bridge".
+    constexpr int bridge_reach()
+    {
+        for(int i = 0; i < data::repairs_count; ++i) if(data::repairs[i].effect == repair_effect::bridge) return data::repairs[i].value;
+        return 0;
+    }
+    constexpr int max_bridges = 3;
 
     struct game
     {
@@ -254,6 +263,16 @@ namespace core
         int8_t helper_called = -1;
         int8_t guard_turns = 0;
         int8_t ally_turns = 0, ally_x = -1, ally_y = -1;
+        // v0.21.48: wybór ścieżki, materiały, naprawy, codzienna budowa, harmonogram domu
+        uint32_t run_seed = 0;       // seed budowy (oferta ścieżek na harmonogramie)
+        int8_t stage_path = -1;      // ścieżka bieżącego etapu (data::paths), -1 = bez wyboru (pierwszy etap)
+        int8_t next_path = 0;        // wybór na harmonogramie: 0/1 = pozycja w ofercie
+        uint8_t mats[4] = {};        // materiały: cement, stal, drewno (data::materials)
+        int8_t bridges = 0;          // Kładki na etapie (kałuże w zasięgu bez poślizgu)
+        int8_t bridge_x[max_bridges] = {}, bridge_y[max_bridges] = {};
+        bool daily = false;          // codzienna budowa (seed dnia)
+        uint16_t daily_day = 0;      // numer dnia codziennej budowy
+        uint16_t stage_days[8] = {}; // tury na każdym etapie (harmonogram domu po wygranej)
 
         bool event_active(event_effect e) const { return stage_event >= 0 && data::site_events[stage_event].effect == e; }
         const weather_def& wdef() const { return data::weather[weather]; }
@@ -276,15 +295,20 @@ namespace core
         bool shop_closed() const { return investor_has(investor_effect::no_shop); }
         bool weather_is(weather_effect e) const { return data::weather[weather].effect == e; }
 
-        // Pogoda dnia: losowanie wagami spośród dozwolonych na etapie s.
-        int roll_weather(int s)
+        // Pogoda dnia: losowanie wagami spośród dozwolonych na etapie s (bad_only: tylko niekorzystne, jeśli są).
+        bool weather_allowed(int i, int s, bool bad_only) const
+        {
+            return (data::weather[i].stages & (1u << s)) && (! bad_only || data::weather[i].bad);
+        }
+        int roll_weather(int s, bool bad_only = false)
         {
             int total = 0;
-            for(int i = 0; i < data::weather_count; ++i) if(data::weather[i].stages & (1u << s)) total += data::weather[i].weight;
+            for(int i = 0; i < data::weather_count; ++i) if(weather_allowed(i, s, bad_only)) total += data::weather[i].weight;
+            if(total == 0) return roll_weather(s, false);
             int roll = r.range(1, total);
             for(int i = 0; i < data::weather_count; ++i)
             {
-                if(! (data::weather[i].stages & (1u << s))) continue;
+                if(! weather_allowed(i, s, bad_only)) continue;
                 if(roll <= data::weather[i].weight) return i;
                 roll -= data::weather[i].weight;
             }
@@ -294,7 +318,9 @@ namespace core
         // Deszcz: kałuże na części pól podłogi (stały wzór zależny od etapu); wejście w kałużę = poślizg.
         bool puddle(int x, int y) const
         {
-            return weather_is(weather_effect::rain) && lv.at(x, y) == tile::floor && (x * 7 + y * 13 + stage * 5) % wdef().value == 0;
+            if(! weather_is(weather_effect::rain) || lv.at(x, y) != tile::floor || (x * 7 + y * 13 + stage * 5) % wdef().value != 0) return false;
+            for(int i = 0; i < bridges; ++i) if(cheb(x, y, bridge_x[i], bridge_y[i]) <= bridge_reach()) return false;   // Kładka
+            return true;
         }
 
         // Wydarzenie na placu: SMS na starcie etapu, efekt od razu (znajdźki, budżet, termos) albo w trakcie etapu.
@@ -555,6 +581,7 @@ namespace core
             def_bonus = mods.def;
             dmg_bonus = mods.dmg;
             r.seed(seed);
+            run_seed = seed;
             hero.max_hp = hero.hp = int16_t(cdef().max_health + mods.hp);
             hero.alive = true;
             cash = mods.cash;
@@ -580,12 +607,15 @@ namespace core
             ox = rm.cx(); oy = rm.cy();
         }
 
-        void start_stage(int s)
+        void start_stage(int s, int path = -1)
         {
             stage = s;
             st = status::playing;
+            stage_path = int8_t(path);
+            const path_def* pd = path >= 0 ? &data::paths[path] : nullptr;
             lv.generate(r);
             walls_count = 0;
+            bridges = 0;
             stage_damage = 0; stage_kills = 0; stage_start_turn = turns; boss_wake_damage = -1;
             act_cleared = false; slam_timer = 0; slam_x = slam_y = -1; slam_counter = 0; summon_counter = 0; summons_used = 0;
             helper_called = -1; guard_turns = 0; ally_turns = 0; ally_x = ally_y = -1;   // brygada: raz na etap
@@ -598,7 +628,8 @@ namespace core
             if(sd.boss < 0) { stairs_x = last.cx(); stairs_y = last.cy(); lv.t[stairs_y][stairs_x] = tile::stairs; }
 
             enemies_count = 0;
-            for(int i = 0; i < sd.enemy_count && enemies_count < max_enemies; ++i)
+            const int count = imax(1, sd.enemy_count + (pd ? pd->enemies : 0));   // ścieżka: więcej / mniej problemów
+            for(int i = 0; i < count && enemies_count < max_enemies; ++i)
             {
                 int room_i = 1 + r.range(0, lv.rooms_count - 2 > 0 ? lv.rooms_count - 2 : 0);
                 if(room_i >= lv.rooms_count) room_i = lv.rooms_count - 1;
@@ -620,18 +651,25 @@ namespace core
             }
 
             pickups_count = 0;
-            for(int i = 0; i < 3 + bonus.pickups && i < max_pickups && lv.rooms_count > 1; ++i)
+            const int pickups_n = imax(1, 3 + bonus.pickups + (pd ? pd->pickups : 0));
+            for(int i = 0; i < pickups_n && i < max_pickups && lv.rooms_count > 1; ++i)
             {
                 const room& rm = lv.rooms[r.range(1, lv.rooms_count - 1)];
                 int x, y; random_free_cell_in_room(rm, x, y);
                 pickups[pickups_count++] = { int8_t(x), int8_t(y), uint8_t(i == 0 ? coffee : r.range(0, 2)), true };
             }
             push(message().add("Etap ").add(stage + 1).add(": ").add(sd.name));
-            weather = int8_t(roll_weather(s));   // pogoda dnia
+            if(pd)   // ścieżka z harmonogramu: budżet i materiały od razu
+            {
+                push(message().add("Ścieżka: ").add(pd->name));
+                if(pd->cash != 0) cash = imax(0, cash + income(pd->cash));
+                for(int k = 0; k < pd->materials; ++k) add_material(r.range(0, data::materials_count - 1));
+            }
+            weather = int8_t(roll_weather(s, pd && pd->bad_weather));   // pogoda dnia
             if(wdef().effect != weather_effect::none)
                 push(message().add("Pogoda: ").add(wdef().name).add(" (").add(wdef().short_name).add(")").as(wdef().bad ? bad : good));
             stage_event = -1;   // wydarzenie na placu: nie na pierwszym etapie i nie u bossa
-            if(s > 0 && sd.boss < 0 && r.range(1, 100) <= data::site_event_chance_pct)
+            if(s > 0 && sd.boss < 0 && ! (pd && pd->no_event) && r.range(1, 100) <= data::site_event_chance_pct)
             {
                 int e = r.range(0, data::site_events_count - 1);
                 // niekorzystna pogoda i niekorzystne wydarzenie naraz to za dużo: wydarzenie przepada
@@ -693,6 +731,10 @@ namespace core
                 score += ed.score * score_pct() / 100; gain_xp(data::xp_per_kill);
                 maybe_drop(e.x, e.y);
                 push(message().add(ed.name).add(" - usunięto!").as(good));
+                if(ei == boss)   // boss: po kilka sztuk każdego materiału
+                    for(int m = 0; m < data::materials_count; ++m) add_material(m, data::material_boss_drop);
+                else if(r.range(1, 100) <= data::material_drop_pct)
+                    add_material(ed.material >= 0 ? ed.material : r.range(0, data::materials_count - 1));
                 if(ei == boss)
                 {
                     if(stage_damage == boss_wake_damage && clean_bosses < 255) ++clean_bosses;   // zlecenie Czysta robota
@@ -704,6 +746,7 @@ namespace core
                         cash += income(ed.reward_cash);
                         push(message().add(ed.reward_title).add("! +").add(income(ed.reward_cash)).add(" zł").as(good));
                     }
+                    finish_stage();
                     if(stage == data::stages_count - 1)
                     {
                         st = status::won;
@@ -832,12 +875,47 @@ namespace core
             return best;
         }
 
+        bool can_place_wall(int x, int y) const
+        {
+            return walls_count < max_walls && lv.at(x, y) == tile::floor && ! occupied(x, y) && ! pickup_at(x, y);
+        }
+
         bool place_wall(int x, int y, int turns_left)
         {
-            if(walls_count >= max_walls || lv.at(x, y) != tile::floor || occupied(x, y) || pickup_at(x, y)) return false;
+            if(! can_place_wall(x, y)) return false;
             lv.t[y][x] = tile::wall;
             walls[walls_count++] = { int8_t(x), int8_t(y), int8_t(turns_left) };
             return true;
+        }
+
+        // Mur (2*half+1 pól) w poprzek drogi najbliższego widocznego wroga, na polu przed bohaterem (Ścianka, Załataj).
+        // Zwraca liczbę pól linii (0 = brak widocznego wroga).
+        int wall_line(int half, int8_t* xs, int8_t* ys) const
+        {
+            int t = nearest_visible_enemy();
+            if(t < 0) return 0;
+            int dx = isign(enemies[t].x - hero.x), dy = isign(enemies[t].y - hero.y);
+            if(iabs(enemies[t].x - hero.x) >= iabs(enemies[t].y - hero.y)) dy = 0; else dx = 0;
+            int cx = hero.x + dx, cy = hero.y + dy;          // środek muru: pole przed bohaterem
+            int px = dy != 0 ? 1 : 0, py = dx != 0 ? 1 : 0;   // kierunek muru: prostopadle
+            int n = 0;
+            for(int k = -half; k <= half; ++k) { xs[n] = int8_t(cx + px * k); ys[n] = int8_t(cy + py * k); ++n; }
+            return n;
+        }
+        bool wall_possible(int half) const
+        {
+            int8_t xs[5], ys[5];
+            int n = wall_line(half, xs, ys);
+            for(int i = 0; i < n; ++i) if(can_place_wall(xs[i], ys[i])) return true;
+            return false;
+        }
+        bool wall_toward_enemy(int half, int dur)
+        {
+            int8_t xs[5], ys[5];
+            int n = wall_line(half, xs, ys);
+            bool ok = false;
+            for(int i = 0; i < n; ++i) ok |= place_wall(xs[i], ys[i], dur);
+            return ok;
         }
 
         // Moc zawodu (R). Zwraca true, jeśli zużyła turę; bez celu nic się nie dzieje.
@@ -856,18 +934,9 @@ namespace core
                     if(ok) push(message().add(c.ability_name).add(": problemy wstrzymane"));
                     break;
                 case ability_effect::wall:   // Ścianka: mur w poprzek drogi najbliższego wroga (nigdy wokół bohatera)
-                {
-                    int t = nearest_visible_enemy();
-                    if(t < 0) break;
-                    int dx = isign(enemies[t].x - hero.x), dy = isign(enemies[t].y - hero.y);
-                    if(iabs(enemies[t].x - hero.x) >= iabs(enemies[t].y - hero.y)) dy = 0; else dx = 0;
-                    int cx = hero.x + dx, cy = hero.y + dy;          // środek muru: pole przed bohaterem
-                    int px = dy != 0 ? 1 : 0, py = dx != 0 ? 1 : 0;   // kierunek muru: prostopadle
-                    int half = rank >= 3 ? 2 : 1, dur = 4 + 2 * rank;
-                    for(int k = -half; k <= half; ++k) ok |= place_wall(cx + px * k, cy + py * k, dur);
+                    ok = wall_toward_enemy(rank >= 3 ? 2 : 1, 4 + 2 * rank);
                     if(ok) push(message().add(c.ability_name).add(" postawiona!"));
                     break;
-                }
                 case ability_effect::volley:   // Seria: wszyscy widoczni w zasięgu (+1 obrażeń od II, +1 zasięgu na III)
                 {
                     int range = weapon_range() + (rank >= 3 ? 1 : 0);
@@ -1051,15 +1120,24 @@ namespace core
         }
 
         // Hurtownia między aktami: zakup za budżet budowy.
+        // Czy stać na towar z Hurtowni (zł albo materiał).
+        bool hurtownia_can(int i) const
+        {
+            const shop_item_def& it = data::hurtownia[i];
+            return it.material >= 0 ? mats[it.material] >= it.mat_cost : cash >= it.price;
+        }
+
         bool hurtownia_buy(int i)
         {
             const shop_item_def& it = data::hurtownia[i];
-            if(cash < it.price) return false;
+            if(! hurtownia_can(i)) return false;
             switch(it.effect)
             {
                 case shop_effect::heal: hero.hp = hero.max_hp; break;
                 case shop_effect::maxhp: hero.max_hp = int16_t(hero.max_hp + 3); hero.hp = int16_t(hero.hp + 3); break;
                 case shop_effect::ability: ability_cd = 0; break;
+                case shop_effect::def: ++def_bonus; break;
+                case shop_effect::thermos: thermos = imin(thermos_cap(), thermos + 2); break;
                 case shop_effect::gear:
                 {
                     int slot = r.range(0, data::gear_slots_count - 1), rarity = r.range(1, 2);
@@ -1077,10 +1155,85 @@ namespace core
                 }
                 default: break;
             }
-            cash -= it.price;
+            if(it.material >= 0) mats[it.material] = uint8_t(mats[it.material] - it.mat_cost);
+            else cash -= it.price;
             push(message().add("Hurtownia: ").add(it.name).as(loot));
             return true;
         }
+
+        // ------------------------------------------------------------------ materiały i naprawy pola
+        void add_material(int m, int n = 1)
+        {
+            int v = imin(data::material_max, mats[m] + n), got = v - mats[m];
+            mats[m] = uint8_t(v);
+            if(got > 0) push(message().add(data::materials[m].name).add(" +").add(got).as(loot));
+        }
+
+        enum repair_block : uint8_t { repair_ok, repair_busy, repair_material, repair_no_target, repair_no_room, repair_no_puddle };
+
+        bool puddle_near(int reach) const
+        {
+            for(int y = hero.y - reach; y <= hero.y + reach; ++y)
+                for(int x = hero.x - reach; x <= hero.x + reach; ++x) if(puddle(x, y)) return true;
+            return false;
+        }
+
+        // Czy naprawę k można teraz zrobić (bez skutków ubocznych - telefon i bot).
+        int repair_blocked(int k) const
+        {
+            const repair_def& rd = data::repairs[k];
+            if(st != status::playing) return repair_busy;
+            if(mats[rd.material] < rd.cost) return repair_material;
+            if(rd.effect == repair_effect::patch)
+            {
+                if(nearest_visible_enemy() < 0) return repair_no_target;
+                if(! wall_possible(1)) return repair_no_room;
+            }
+            if(rd.effect == repair_effect::bridge && (bridges >= max_bridges || ! puddle_near(rd.value))) return repair_no_puddle;
+            return repair_ok;
+        }
+
+        // Naprawa za materiał (zużywa turę): Załataj - mur z desek przed najbliższym problemem, Kładka - kałuże wokół
+        // bez poślizgu do końca etapu (i koniec poślizgu).
+        bool player_repair(int k)
+        {
+            const repair_def& rd = data::repairs[k];
+            switch(repair_blocked(k))
+            {
+                case repair_ok: break;
+                case repair_material: push(message().add(rd.name).add(": brak - ").add(data::materials[rd.material].name)); return false;
+                case repair_no_target: push(message().add(rd.name).add(": brak problemu w polu widzenia")); return false;
+                case repair_no_room: push(message().add(rd.name).add(": nie ma gdzie")); return false;
+                case repair_no_puddle: push(message().add(rd.name).add(": brak kałuż obok")); return false;
+                default: return false;
+            }
+            if(shocked_turn()) return true;
+            mats[rd.material] = uint8_t(mats[rd.material] - rd.cost);
+            if(rd.effect == repair_effect::patch) wall_toward_enemy(1, rd.value);
+            else
+            {
+                bridge_x[bridges] = hero.x; bridge_y[bridges] = hero.y; ++bridges;
+                hero_status[int(status_effect::slip)] = 0;
+            }
+            push(message().add(rd.name).add(": ").add(rd.desc).as(good));
+            end_turn();
+            return true;
+        }
+
+        // ------------------------------------------------------------------ wybór ścieżki (harmonogram)
+        // Oferta na kolejny etap: dwie różne ścieżki zależne od seeda budowy i etapu (bez losowania z RNG gry).
+        int path_offer(int k) const
+        {
+            uint32_t h = (run_seed ^ (uint32_t(stage + 1 + tier * 16) * 2654435761u)) * 2246822519u;
+            h ^= h >> 15;
+            int a = int(h % uint32_t(data::paths_count));
+            if(k == 0) return a;
+            return (a + 1 + int((h >> 8) % uint32_t(data::paths_count - 1))) % data::paths_count;
+        }
+        void choose_path(int k) { next_path = int8_t(k & 1); }
+
+        // Etap zaliczony: ile tur trwał (harmonogram domu po wygranej).
+        void finish_stage() { stage_days[stage] = uint16_t(imin(65535, turns - stage_start_turn)); }
 
         int coffee_heal() const { return data::coffee_heal + bonus.coffee; }
 
@@ -1200,6 +1353,7 @@ namespace core
                 else if(p.type == plan) { ++dmg_bonus; push(message().add("Projekt wykonawczy: obrażenia +1").as(loot)); }
                 else if(p.type == gear_box)
                 {
+                    add_material(r.range(0, data::materials_count - 1), data::material_gear_box);   // w paczce też materiał
                     int slot = p.arg / 3;
                     if(equipped[slot] < 0) equip(slot, p.arg % 3, p.trait);   // pusty slot: zakłada od razu
                     else
@@ -1339,6 +1493,7 @@ namespace core
             if(st == status::playing && hero.x == stairs_x && hero.y == stairs_y)
             {
                 st = status::stage_clear;
+                finish_stage();
                 score += 100 * score_pct() / 100;
                 gain_xp(data::xp_per_stage);
                 push(message().add("Etap zakończony: ").add(data::stages[stage].name).as(good));
@@ -1358,11 +1513,13 @@ namespace core
             else if(stairs_x >= 0) { hero.x = int8_t(stairs_x); hero.y = int8_t(stairs_y); end_turn(); }
         }
 
-        // Przejście do kolejnego etapu (po ekranie harmonogramu). Przerwa na kawę: +5 HP.
+        // Przejście do kolejnego etapu (po ekranie harmonogramu) wybraną ścieżką. Przerwa na kawę: +5 HP.
         void next_stage()
         {
             if(! investor_has(investor_effect::no_break)) hero.hp = int16_t(imin(hero.max_hp, hero.hp + 5));   // tryb inwestora: bez przerwy
-            start_stage(stage + 1);
+            int path = path_offer(next_path);
+            next_path = 0;
+            start_stage(stage + 1, path);
         }
 
         // NG+ ("Kolejna budowa"): po wygranej ten sam zawód i poziom, premie i wynik zostają,

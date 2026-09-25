@@ -76,6 +76,11 @@ static void bot_step_smart(game& g)
 {
     if(g.has_offer()) { if(g.offer_rarity >= g.equipped[g.offer_slot]) g.accept_offer(); else g.decline_offer(); }
     if(g.thermos > 0 && g.hero.hp * 2 < g.hero.max_hp && g.player_drink()) return;
+    for(int k = 0; k < data::repairs_count; ++k)   // naprawy: Kładka przy kałużach; Załataj przy niskim HP (problem w polu widzenia)
+    {
+        bool want = data::repairs[k].effect == repair_effect::bridge || g.hero.hp * 3 < g.hero.max_hp;
+        if(want && g.repair_blocked(k) == game::repair_ok && g.player_repair(k)) return;
+    }
     if(g.helper_called < 0 && g.nearest_visible_enemy() >= 0)   // brygada: przy pierwszym problemie na etapie (kolejny fachowiec co etap)
         for(int k = 0; k < data::brigade_count; ++k)
         {
@@ -139,6 +144,13 @@ static uint32_t digest(const game& g)
     // v0.21.47: pogoda dnia, brygada
     f.add(g.weather);
     f.add(g.helper_called); f.add(g.guard_turns); f.add(g.ally_turns); f.add(g.ally_x); f.add(g.ally_y);
+    // v0.21.48: ścieżka, materiały, kładki, codzienna budowa, dni etapów
+    f.add(g.stage_path); f.add(g.next_path);
+    for(int i = 0; i < 3; ++i) f.add(g.mats[i]);
+    f.add(g.bridges);
+    for(int i = 0; i < g.bridges; ++i) { f.add(g.bridge_x[i]); f.add(g.bridge_y[i]); }
+    f.add(g.daily); f.add(g.daily_day);
+    for(int i = 0; i < 8; ++i) f.add(g.stage_days[i]);
     return f.h;
 }
 
@@ -185,6 +197,11 @@ static void snapshot(const game& g, int step)
     wi(g.boss_wake_damage); w("]");
     w(","); key("stats"); w("["); wi(g.hero_stat(stat::str)); w(","); wi(g.hero_stat(stat::agi)); w(","); wi(g.hero_stat(stat::intel)); w(",");
     wi(g.luck()); w(","); wi(g.crit_pct()); w(","); wi(g.sight_radius()); w(","); wi(g.ability_cooldown()); w("]");
+    w(","); key("path"); w("["); wi(g.stage_path); w(","); wi(g.path_offer(0)); w(","); wi(g.path_offer(1)); w("]");
+    w(","); key("mats"); w("["); for(int i = 0; i < 3; ++i) { if(i) w(","); wi(g.mats[i]); } w("]");
+    w(","); key("bridges"); w("["); for(int i = 0; i < g.bridges; ++i) { if(i) w(","); w("["); wi(g.bridge_x[i]); w(","); wi(g.bridge_y[i]); w("]"); } w("]");
+    w(","); key("daily"); w("["); wi(g.daily); w(","); wi(g.daily_day); w("]");
+    w(","); key("stageDays"); w("["); for(int i = 0; i < 8; ++i) { if(i) w(","); wi(g.stage_days[i]); } w("]");
     w(","); key("offer"); w("["); wi(g.offer_slot); w(","); wi(g.offer_rarity); w(","); wi(g.offer_trait); w("]");
     w(","); key("heroStatus"); w("["); for(int i = 0; i < 5; ++i) { if(i) w(","); wi(g.hero_status[i]); } w("]");
     w(","); key("killsByType"); w("["); for(int i = 0; i < 16; ++i) { if(i) w(","); wi(g.kills_by_type[i]); } w("]");
@@ -247,14 +264,19 @@ static void profile_json(const profile& p)
     w(","); key("brigade"); wi(p.brigade); w(","); key("investor"); wi(p.investor);
     w(","); key("bestStake"); w("["); for(int i = 0; i < 8; ++i) { if(i) w(","); wi(p.best_stake[i]); } w("]");
     w(","); key("keepsakeRuns"); w("["); for(int i = 0; i < max_keepsakes; ++i) { if(i) w(","); wi(p.keepsake_runs[i]); } w("]");
+    w(","); key("daily"); w("["); wi(p.daily_won); w(","); wi(p.daily_runs); w("]");
+    w(","); key("dailyDay"); w("["); for(int i = 0; i < daily_slots; ++i) { if(i) w(","); wi(p.daily_day[i]); } w("]");
+    w(","); key("dailyScore"); w("["); for(int i = 0; i < daily_slots; ++i) { if(i) w(","); wi(p.daily_score[i]); } w("]");
     w(","); key("sram"); hex_bytes(reinterpret_cast<const char*>(&p), sizeof p);   // profil bajt po bajcie jak w SRAM
     w("}");
 }
 
 // badges/contracts: odznaki i zlecenia w profilu przed budową (uprawnienia, odblokowane pamiątki);
 // keepsake: wybrana pamiątka + 1; keepsake_runs: budowy z nią przed tą (ranga)
+// paths: wybór ścieżki na harmonogramie (0 = zawsze pierwsza z oferty, 1 = na przemian: stage & 1);
+// daily: numer dnia codziennej budowy (0 = zwykła budowa; zawód i seed z dnia, bez Szkoleń)
 struct scenario { int cls; uint32_t seed; int diff; bool full_mods; bool smart; bool shop; bool ngplus; int steps;
-                  int badges = 0; int contracts = 0; int keepsake = 0; int keepsake_runs = 0; int investor = 0; };
+                  int badges = 0; int contracts = 0; int keepsake = 0; int keepsake_runs = 0; int investor = 0; int paths = 0; int daily = 0; };
 
 int main(int argc, char** argv)
 {
@@ -278,6 +300,10 @@ int main(int argc, char** argv)
     const int all_investor = (1 << data::investor_count) - 1;
     sc.push_back({ 2, 780u, 0, true, true, true, true, 6000, all_badges, all_contracts, 1, 8, all_investor });
     sc.push_back({ 4, 4242u, 1, true, true, true, true, 6000, 0, 0, 0, 0, 0x09 });
+    // v0.21.48: wybór ścieżki na przemian (materiały, naprawy, Hurtownia za materiały), codzienna budowa
+    sc.push_back({ 1, 48048u, 1, true, true, true, true, 6000, 0, 0, 1, 0, 0, 1 });
+    sc.push_back({ 3, 20260925u, 0, false, true, true, false, 5000, 0, 0, 0, 0, 0, 1 });
+    sc.push_back({ 0, 0u, 1, false, true, true, false, 5000, 0, 0, 0, 0, 0, 1, daily_number(2026, 9, 25) });
 
     for(size_t si = 0; si < sc.size(); ++si)
     {
@@ -293,7 +319,9 @@ int main(int argc, char** argv)
         if(s.investor) { p.wins = 1; p.investor = uint8_t(s.investor); }   // tryb inwestora po pierwszej wygranej
         if(s.keepsake > 0) p.keepsake_runs[s.keepsake - 1] = uint8_t(s.keepsake_runs);
         run_mods m = mods(p);   // przed start_run: ranga pamiątki z budów przed tą
-        static game g; g.new_run(s.cls, s.seed, s.diff, m);
+        static game g;
+        if(s.daily > 0) start_daily(g, s.daily);
+        else g.new_run(s.cls, s.seed, s.diff, m);
         start_run(p);
         out.clear();
         w("{"); key("cls"); wi(s.cls); w(","); key("seed"); wi(s.seed); w(","); key("diff"); wi(s.diff);
@@ -301,6 +329,7 @@ int main(int argc, char** argv)
         w(","); key("ngplus"); wi(s.ngplus); w(","); key("steps"); wi(s.steps);
         w(","); key("badges"); wi(s.badges); w(","); key("contracts"); wi(s.contracts); w(","); key("keepsake"); wi(s.keepsake);
         w(","); key("keepsakeRuns"); wi(s.keepsake_runs); w(","); key("investor"); wi(s.investor);
+        w(","); key("paths"); wi(s.paths); w(","); key("daily"); wi(s.daily);
         w(","); key("snapshots"); w("[");
         snapshot(g, 0);
         std::vector<uint32_t> digests;
@@ -312,6 +341,7 @@ int main(int argc, char** argv)
             {
                 check_badges(p, g); check_contracts(p); bank_xp(p, g);
                 if(g.act_cleared && s.shop && ! g.shop_closed()) bot_shop(g);
+                if(s.paths) g.choose_path(g.stage & 1);
                 g.next_stage();
                 w(","); snapshot(g, step);
                 digests.push_back(digest(g)); g.hits_count = 0;
@@ -337,6 +367,7 @@ int main(int argc, char** argv)
         if(g.score > p.best) p.best = g.score;
         if(g.st == status::won) { ++p.wins; add_house(p, g); }
         check_badges(p, g); check_contracts(p); bank_xp(p, g);
+        if(g.daily) record_daily(p, g.daily_day, g.score, g.st == status::won);
         w("]"); w(","); key("endStep"); wi(step);
         w(","); key("final"); snapshot(g, step);
         w(","); key("profile"); profile_json(p);

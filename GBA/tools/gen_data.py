@@ -7,6 +7,7 @@ d = json.load(open(os.path.join(ROOT, "data", "game.json"), encoding="utf-8"))
 STAT = {"strength": "stat::str", "agility": "stat::agi", "intelligence": "stat::intel"}
 wid = {w["id"]: i for i, w in enumerate(d["weapons"])}
 eid = {e["id"]: i for i, e in enumerate(d["enemies"])}
+mid = {x["id"]: i for i, x in enumerate(d["materials"]["list"])}
 def s(x): return '"' + x.replace('"', '\\"') + '"'
 L = ["// WYGENEROWANE przez tools/gen_data.py z data/game.json - nie edytuj ręcznie.",
      "#pragma once", '#include "core_types.h"', "", "namespace data {", ""]
@@ -35,14 +36,14 @@ for e in d["enemies"]:
              f'core::status_effect::{e.get("onHit", {}).get("status", "none")}, {e.get("onHit", {}).get("chancePct", 0)}, '
              f'{e.get("onHit", {}).get("turns", 0)}, core::slam_shape::{e.get("slamShape", "square")}, {s(e.get("slamName", ""))}, '
              f'{eid[sm["enemy"]] if sm else -1}, {sm.get("every", 0)}, {sm.get("max", 0)}, {e.get("gearStun", 0)}, '
-             f'{rw.get("cash", 0)}, {s(rw.get("title", ""))} }},')
+             f'{rw.get("cash", 0)}, {s(rw.get("title", ""))}, {mid[e["material"]] if "material" in e else -1} }},')
 L.append("};\n")
 L.append("inline constexpr core::stage_def stages[] = {")
 for st in d["stages"]:
     pool = [eid[x] for x in st["enemies"]] + [-1] * (4 - len(st["enemies"]))
     boss = eid[st["boss"]] if "boss" in st else -1
     L.append(f'    {{ {s(st["name"])}, {{ {", ".join(map(str, pool))} }}, {len(st["enemies"])}, {st["count"]}, {boss}, '
-             f'{st.get("hpPct", 100)}, {st.get("dmgBonus", 0)}, {st["act"]} }},')
+             f'{st.get("hpPct", 100)}, {st.get("dmgBonus", 0)}, {st["act"]}, {st.get("cost", 0)} }},')
 L.append("};\n")
 L.append("inline constexpr core::difficulty_def difficulties[] = {")
 for df in d["difficulties"]:
@@ -56,7 +57,7 @@ for u in m["upgrades"]:
     assert u["effect"] in EFF and 1 <= len(u["costs"]) <= 4, u
     costs = u["costs"] + [0] * (4 - len(u["costs"]))
     L.append(f'    {{ {s(u["name"])}, {s(u["desc"])}, core::upgrade_effect::{u["effect"]}, {u["value"]}, '
-             f'{len(u["costs"])}, {{ {", ".join(map(str, costs))} }} }},')
+             f'{len(u["costs"])}, {{ {", ".join(map(str, costs))} }}, {u.get("refund", 0)} }},')
 L.append("};\n")
 def story(m):
     lines = m["text"].split("|")
@@ -72,9 +73,11 @@ L += [f"inline constexpr core::story_msg story_{k} = {story(st[k])};" for k in (
 L.append("inline constexpr const char* prologue_captions[] = { " + ", ".join(s(c) for c in st["prologueCaptions"]) + " };")
 L.append("")
 acts = d["acts"]
+path_more = max(0, max(x["enemies"] for x in d["paths"]["list"]))   # ścieżka może dodać problemy
 for st in d["stages"]:   # boss z wezwaniami: etap + boss + wezwani mieszczą się w core::max_enemies (12)
+    assert st["count"] + path_more <= 12, st
     if "boss" in st:
-        assert st["count"] + 1 + d["enemies"][eid[st["boss"]]].get("summon", {}).get("max", 0) <= 12, st
+        assert st["count"] + path_more + 1 + d["enemies"][eid[st["boss"]]].get("summon", {}).get("max", 0) <= 12, st
 for ai in range(len(acts)):   # każdy akt kończy się etapem z bossem
     last = max(i for i, st in enumerate(d["stages"]) if st["act"] == ai)
     assert "boss" in d["stages"][last], f"akt {ai} bez bossa"
@@ -83,8 +86,10 @@ L += [f'    {{ {s(a["name"])}, {a["bonusPerStage"]}, {a["bonusPerKill"]} }},' fo
 L.append("};")
 L.append("inline constexpr core::shop_item_def hurtownia[] = {")
 for it in d["hurtownia"]:
-    assert it["effect"] in {"heal", "gear", "tool", "maxhp", "ability"} and len(it["desc"]) <= 34, it
-    L.append(f'    {{ {s(it["name"])}, {s(it["desc"])}, {it["price"]}, core::shop_effect::{it["effect"]} }},')
+    assert it["effect"] in {"heal", "gear", "tool", "maxhp", "ability", "def", "thermos"} and len(it["desc"]) <= 34, it
+    assert ("material" in it) == (it["price"] == 0) and (0 < it.get("matCost", 1) <= 9), it   # zł albo materiał
+    L.append(f'    {{ {s(it["name"])}, {s(it["desc"])}, {it["price"]}, core::shop_effect::{it["effect"]}, '
+             f'{mid[it["material"]] if "material" in it else -1}, {it.get("matCost", 0)} }},')
 L.append("};")
 stt = d["statuses"]
 L.append("inline constexpr core::status_def statuses[] = {   // indeks = core::status_effect")
@@ -188,6 +193,49 @@ for x in iv:
     L.append(f'    {{ {s(x["name"])}, {s(x["desc"])}, core::investor_effect::{x["effect"]}, {x["value"]}, {x["xpPct"]}, {x["stake"]} }},')
 L.append("};")
 L += [f"inline constexpr int investor_count = {len(iv)};", ""]
+ma = d["materials"]
+assert len(ma["list"]) == 3 and 0 <= ma["dropPct"] <= 100 and 0 < ma["max"] <= 99   # HUD: 3 ikony, 1-2 cyfry
+L.append("inline constexpr core::material_def materials[] = {   // materiały: cement, stal, drewno")
+for x in ma["list"]:
+    assert len(x["name"]) <= 8 and len(x["short"]) <= 6, x
+    L.append(f'    {{ {s(x["name"])}, {s(x["short"])} }},')
+L.append("};")
+L.append("inline constexpr core::repair_def repairs[] = {   // naprawy pola za materiał")
+for x in ma["repairs"]:
+    assert x["effect"] in {"patch", "bridge"} and len(x["name"]) <= 12 and len(x["desc"]) <= 23 and len(x["info"]) <= 34, x
+    assert 0 < x["cost"] <= 9 and 0 < x["value"] <= 20, x
+    L.append(f'    {{ {s(x["name"])}, {s(x["desc"])}, {s(x["info"])}, core::repair_effect::{x["effect"]}, {mid[x["material"]]}, '
+             f'{x["cost"]}, {x["value"]} }},')
+L.append("};")
+L += [f"inline constexpr int materials_count = {len(ma['list'])};",
+      f"inline constexpr int repairs_count = {len(ma['repairs'])};",
+      f"inline constexpr int material_drop_pct = {ma['dropPct']};",
+      f"inline constexpr int material_boss_drop = {ma['bossDrop']};",
+      f"inline constexpr int material_gear_box = {ma['gearBox']};",
+      f"inline constexpr int material_max = {ma['max']};", ""]
+assert len(ma["repairs"]) + len(d["brigade"]["list"]) <= 8
+pa = d["paths"]["list"]
+assert 2 <= len(pa) <= 8
+L.append("inline constexpr core::path_def paths[] = {   // wybór ścieżki: wariant kolejnego etapu")
+for x in pa:
+    assert len(x["name"]) <= 22 and len(x["short"]) <= 9 and len(x["desc"]) <= 36, x
+    assert -4 <= x["enemies"] <= 2 and -3 <= x["pickups"] <= 3 and -50 <= x["cash"] <= 50 and 0 <= x["materials"] <= 6, x
+    L.append(f'    {{ {s(x["name"])}, {s(x["short"])}, {s(x["desc"])}, {x["enemies"]}, {x["pickups"]}, {x["cash"]}, {x["materials"]}, '
+             f'{"true" if x["badWeather"] else "false"}, {"true" if x["noEvent"] else "false"} }},')
+L.append("};")
+L += [f"inline constexpr int paths_count = {len(pa)};", ""]
+dy = d["daily"]
+dif = {x["id"]: i for i, x in enumerate(d["difficulties"])}
+assert 1 <= dy["history"] <= 5 and 0 <= dy["investorMods"] <= len(d["investor"]["list"])
+L += [f"inline constexpr int daily_epoch[] = {{ {', '.join(map(str, dy['epoch']))} }};   // codzienna budowa: dzień nr 1",
+      f"inline constexpr int daily_default_date[] = {{ {', '.join(map(str, dy['defaultDate']))} }};",
+      f"inline constexpr int daily_difficulty = {dif[dy['difficulty']]};",
+      f"inline constexpr int daily_investor_mods = {dy['investorMods']};",
+      f"inline constexpr int daily_history = {dy['history']};", ""]
+sc = d["schedule"]
+L += [f"inline constexpr int schedule_min_days = {sc['minDays']};   // harmonogram domu: dni etapu = min + tury / turnsPerDay",
+      f"inline constexpr int schedule_turns_per_day = {sc['turnsPerDay']};",
+      f"inline constexpr const char* schedule_url = {s(sc['url'])};", ""]
 L.append("inline constexpr core::tool_def tools[] = {")
 for t in m["tools"]:
     L.append(f'    {{ {wid[t["weapon"]]}, {t["cost"]} }},')

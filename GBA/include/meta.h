@@ -11,7 +11,8 @@ namespace core
     static_assert(data::upgrades_count <= max_upgrades);
     static_assert(data::classes_count <= 8);
 
-    constexpr char profile_magic[8] = "PBRL006";
+    constexpr char profile_magic[8] = "PBRL007";
+    constexpr char profile_magic_v6[8] = "PBRL006";
     constexpr char profile_magic_v5[8] = "PBRL005";
     constexpr char profile_magic_v4[8] = "PBRL004";
     constexpr char profile_magic_v3[8] = "PBRL003";
@@ -21,6 +22,9 @@ namespace core
     constexpr int profile_v3_size = 56;   // v4 = v3 + zlecenia i pamiątki na końcu
     constexpr int profile_v4_size = 72;   // v5 = v4 + liczniki zleceń przeniesione z bieżącej budowy
     constexpr int profile_v5_size = 78;   // v6 = v5 + brygada i tryb inwestora
+    constexpr int profile_v6_size = 88;   // v7 = v6 + codzienna budowa (data, najlepsze wyniki dni)
+    constexpr int daily_slots = 5;
+    static_assert(data::daily_history <= daily_slots);
     constexpr int max_keepsakes = 8;
     static_assert(data::contracts_count <= 8 && data::keepsakes_count <= max_keepsakes);
     constexpr int max_houses = 12;        // działki na Osiedlu
@@ -65,11 +69,19 @@ namespace core
         uint8_t brigade;               // kupieni w Szkoleniach fachowcy (bitmaska; startowi zawsze dostępni)
         uint8_t investor;              // włączone modyfikatory trybu inwestora (bitmaska data::investor)
         uint8_t best_stake[8];         // najwyższa stawka wygranej budowy na każdy zawód
+        // --- v7: codzienna budowa (GBA nie ma zegara: data wpisana ręcznie; Godot: data z systemu)
+        uint8_t daily_d, daily_m;      // ostatnio wpisana data (0 = domyślna z danych)
+        uint16_t daily_y;
+        uint16_t daily_day[daily_slots];   // numery dni z wynikiem (0 = pusty)
+        uint8_t daily_won;             // bity: wygrana tego dnia
+        uint8_t daily_runs;            // rozegrane codzienne budowy (licznik, do 255)
+        int32_t daily_score[daily_slots];  // najlepszy wynik dnia
     };
     static_assert(offsetof(profile, badges) == profile_v2_size);
     static_assert(offsetof(profile, kills_total) == profile_v3_size);
     static_assert(offsetof(profile, run_kills) == profile_v4_size);
-    static_assert(offsetof(profile, brigade) == profile_v5_size && sizeof(profile) == 88);
+    static_assert(offsetof(profile, brigade) == profile_v5_size);
+    static_assert(offsetof(profile, daily_d) == profile_v6_size && offsetof(profile, daily_score) == 104 && sizeof(profile) == 124);
 
     enum profile_flag : uint8_t { help_seen = 1, prologue_seen = 2 };
 
@@ -94,12 +106,28 @@ namespace core
         default_keepsake(p);
     }
 
+    // Szkolenia z mniejszą liczbą poziomów niż w starym profilu (np. po zmianie balansu): poziomy ponad maksimum
+    // wracają jako doświadczenie (refund z danych). Zwraca true, jeśli coś zmieniono.
+    inline bool clamp_levels(profile& p)
+    {
+        bool changed = false;
+        for(int i = 0; i < data::upgrades_count; ++i)
+            while(p.levels[i] > data::upgrades[i].levels)
+            {
+                --p.levels[i];
+                p.xp += data::upgrades[i].refund;
+                changed = true;
+            }
+        return changed;
+    }
+
     // Naprawia wczytany profil. Zwraca true, jeśli trzeba go zapisać (migracja albo pusta pamięć).
     inline bool profile_fix(profile& p)
     {
-        if(std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0) return false;
-        // v5/v4/v3/v2 -> v6: stare pola zostają, nowe od zera; bez wybranej pamiątki - pierwsza odblokowana
-        int keep = std::memcmp(p.magic, profile_magic_v5, sizeof p.magic) == 0 ? profile_v5_size
+        if(std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0) return clamp_levels(p);
+        // v6/v5/v4/v3/v2 -> v7: stare pola zostają, nowe od zera; bez wybranej pamiątki - pierwsza odblokowana
+        int keep = std::memcmp(p.magic, profile_magic_v6, sizeof p.magic) == 0 ? profile_v6_size
+                 : std::memcmp(p.magic, profile_magic_v5, sizeof p.magic) == 0 ? profile_v5_size
                  : std::memcmp(p.magic, profile_magic_v4, sizeof p.magic) == 0 ? profile_v4_size
                  : (std::memcmp(p.magic, profile_magic_v3, sizeof p.magic) == 0 ? profile_v3_size
                  : (std::memcmp(p.magic, profile_magic_v2, sizeof p.magic) == 0 ? profile_v2_size : 0));
@@ -108,6 +136,7 @@ namespace core
             std::memset(reinterpret_cast<char*>(&p) + keep, 0, sizeof p - keep);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             default_keepsake(p);
+            clamp_levels(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v1, sizeof p.magic) == 0)
@@ -417,11 +446,163 @@ namespace core
         return d;
     }
 
+    // ------------------------------------------------------------------ codzienna budowa (seed z daty)
+    inline bool leap_year(int y) { return (y % 4 == 0 && y % 100 != 0) || y % 400 == 0; }
+    inline int days_in_month(int y, int m)
+    {
+        static constexpr int8_t dm[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+        return m == 2 && leap_year(y) ? 29 : dm[(m - 1) % 12];
+    }
+
+    // Dni od 1970-01-01 (kalendarz gregoriański; algorytm days_from_civil).
+    inline int days_from_civil(int y, int m, int d)
+    {
+        y -= m <= 2;
+        int era = (y >= 0 ? y : y - 399) / 400;
+        int yoe = y - era * 400;
+        int doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1;
+        int doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+        return era * 146097 + doe - 719468;
+    }
+
+    inline void civil_from_days(int z, int& y, int& m, int& d)
+    {
+        z += 719468;
+        int era = (z >= 0 ? z : z - 146096) / 146097;
+        int doe = z - era * 146097;
+        int yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+        int doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+        int mp = (5 * doy + 2) / 153;
+        d = doy - (153 * mp + 2) / 5 + 1;
+        m = mp < 10 ? mp + 3 : mp - 9;
+        y = yoe + era * 400 + (m <= 2);
+    }
+
+    // Numer "Budowy dnia" (1 = data::daily_epoch).
+    inline int daily_number(int y, int m, int d)
+    {
+        return days_from_civil(y, m, d) - days_from_civil(data::daily_epoch[0], data::daily_epoch[1], data::daily_epoch[2]) + 1;
+    }
+
+    inline uint32_t daily_seed(int day)
+    {
+        uint32_t h = uint32_t(day) * 2654435761u + 0x9E3779B9u;
+        h ^= h >> 16; h *= 2246822519u; h ^= h >> 13;
+        return h ? h : 1u;
+    }
+
+    // Zawód dnia i modyfikatory dnia (tryb inwestora) z seeda - dla wszystkich takie same.
+    inline int daily_class(uint32_t seed) { return int(seed % uint32_t(data::classes_count)); }
+    inline int daily_investor(uint32_t seed)
+    {
+        int mask = 0;
+        uint32_t h = seed;
+        for(int k = 0; k < data::daily_investor_mods; ++k)
+        {
+            h = h * 1664525u + 1013904223u;
+            int i = int((h >> 16) % uint32_t(data::investor_count));
+            for(int guard = 0; (mask >> i) & 1 && guard < data::investor_count; ++guard) i = (i + 1) % data::investor_count;
+            mask |= 1 << i;
+        }
+        return mask;
+    }
+
+    // Codzienna budowa jest równa dla wszystkich: bez Szkoleń, odznak i pamiątek, tylko modyfikatory dnia.
+    inline run_mods daily_mods(uint32_t seed)
+    {
+        run_mods m;
+        m.investor = daily_investor(seed);
+        m.xp_pct = investor_xp(m.investor);
+        return m;
+    }
+
+    inline void start_daily(game& g, int day)
+    {
+        uint32_t seed = daily_seed(day);
+        g.new_run(daily_class(seed), seed, data::daily_difficulty, daily_mods(seed));
+        g.daily = true;
+        g.daily_day = uint16_t(day);
+    }
+
+    // Data codziennej budowy z profilu (GBA: wpisana ręcznie; 0 = domyślna z danych).
+    inline void daily_date(const profile& p, int& y, int& m, int& d)
+    {
+        if(p.daily_y == 0 || p.daily_m < 1 || p.daily_m > 12 || p.daily_d < 1) { y = data::daily_default_date[0]; m = data::daily_default_date[1]; d = data::daily_default_date[2]; }
+        else { y = p.daily_y; m = p.daily_m; d = imin(p.daily_d, days_in_month(p.daily_y, p.daily_m)); }
+    }
+
+    inline void set_daily_date(profile& p, int y, int m, int d)
+    {
+        p.daily_y = uint16_t(y); p.daily_m = uint8_t(m); p.daily_d = uint8_t(d);
+    }
+
+    // Najlepszy wynik dnia (-1 = brak).
+    inline int daily_best(const profile& p, int day)
+    {
+        for(int i = 0; i < data::daily_history; ++i) if(p.daily_day[i] == day && day > 0) return p.daily_score[i];
+        return -1;
+    }
+    inline bool daily_won(const profile& p, int day)
+    {
+        for(int i = 0; i < data::daily_history; ++i) if(p.daily_day[i] == day && day > 0) return (p.daily_won >> i) & 1;
+        return false;
+    }
+
+    // Wynik codziennej budowy: najlepszy dnia zostaje; nowy dzień zastępuje najstarszy. Zwraca true = nowy rekord dnia.
+    inline bool record_daily(profile& p, int day, int score, bool won)
+    {
+        if(p.daily_runs < 255) ++p.daily_runs;
+        int slot = -1, oldest = 0;
+        for(int i = 0; i < data::daily_history; ++i)
+        {
+            if(p.daily_day[i] == day) { slot = i; break; }
+            if(p.daily_day[i] < p.daily_day[oldest]) oldest = i;
+        }
+        if(slot < 0)
+        {
+            slot = oldest;
+            p.daily_day[slot] = uint16_t(day); p.daily_score[slot] = score;
+            p.daily_won = uint8_t((p.daily_won & ~(1u << slot)) | (won ? 1u << slot : 0u));
+            return true;
+        }
+        if(won) p.daily_won = uint8_t(p.daily_won | (1u << slot));
+        if(score <= p.daily_score[slot]) return false;
+        p.daily_score[slot] = score;
+        return true;
+    }
+
+    // ------------------------------------------------------------------ harmonogram domu po wygranej
+    // Dni etapu z liczby tur (min + tury / turnsPerDay) i data końca etapu, licząc wstecz od daty odbioru.
+    inline int schedule_days(const game& g, int s) { return data::schedule_min_days + g.stage_days[s] / data::schedule_turns_per_day; }
+    inline int schedule_total_days(const game& g) { int t = 0; for(int s = 0; s < data::stages_count; ++s) t += schedule_days(g, s); return t; }
+    inline int schedule_total_cost() { int t = 0; for(int s = 0; s < data::stages_count; ++s) t += data::stages[s].cost; return t; }
+    // Dzień (days_from_civil) rozpoczęcia etapu s, gdy odbiór był w dniu end_day.
+    inline int schedule_start_day(const game& g, int s, int end_day)
+    {
+        int d = end_day - schedule_total_days(g);
+        for(int i = 0; i < s; ++i) d += schedule_days(g, i);
+        return d;
+    }
+
+    // ------------------------------------------------------------------ po budowie: co najbliżej do kupienia (motywacja)
+    // Najtańsze niekupione w Szkoleniach: kind 0 ulepszenie, 1 zawód, 2 narzędzie, 3 brygada, 4 poziom Trudny; -1 = wszystko.
+    inline int next_unlock(const profile& p, int& kind, int& index)
+    {
+        int best = -1;
+        auto take = [&](int k, int i, int c) { if(c >= 0 && (best < 0 || c < best)) { best = c; kind = k; index = i; } };
+        for(int i = 0; i < data::upgrades_count; ++i) take(0, i, upgrade_cost(p, i));
+        for(int i = 0; i < data::classes_count; ++i) if(! class_unlocked(p, i)) take(1, i, data::class_cost);
+        for(int i = 0; i < data::tools_count; ++i) if(! tool_unlocked(p, i)) take(2, i, data::tools[i].cost);
+        for(int i = 0; i < data::brigade_count; ++i) if(! helper_unlocked(p, i)) take(3, i, data::brigade[i].cost);
+        if(! p.hard) take(4, 0, data::hard_cost);
+        return best;
+    }
+
     // ------------------------------------------------------------------ zapis budowy w trakcie
     // Cały stan gry (game jest trywialnie kopiowalny) za profilem w SRAM. Rozmiar i suma kontrolna
     // odrzucają zapisy uszkodzone i z innej wersji gry.
     static_assert(std::is_trivially_copyable_v<game>);
-    constexpr char run_magic[8] = "PBRUN06";   // 06: pogoda, brygada, tryb inwestora; 05: wezwania bossa (Inspekcja Pracy)
+    constexpr char run_magic[8] = "PBRUN07";   // 07: ścieżki, materiały, codzienna budowa; 06: pogoda, brygada, tryb inwestora
     constexpr int run_save_offset = 256;
     static_assert(sizeof(profile) <= run_save_offset);
 

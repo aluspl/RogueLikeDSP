@@ -6,11 +6,11 @@ namespace data {
 
 inline constexpr core::weapon_def weapons[] = {
     { "Dziennik budowy", 2, 4, 2, core::stat::intel },
-    { "Kielnia", 3, 5, 1, core::stat::str },
+    { "Kielnia", 4, 6, 1, core::stat::str },
     { "Gwoździarka", 2, 3, 3, core::stat::agi },
     { "Próbnik napięcia", 3, 5, 2, core::stat::intel },
-    { "Klucz nastawny", 3, 6, 1, core::stat::str },
-    { "Szlifierka", 3, 7, 1, core::stat::agi },
+    { "Klucz nastawny", 4, 7, 1, core::stat::str },
+    { "Szlifierka", 4, 7, 1, core::stat::agi },
     { "Łom", 3, 6, 1, core::stat::str },
     { "Wkrętarka", 2, 5, 2, core::stat::agi },
     { "Poziomica laserowa", 2, 4, 4, core::stat::intel },
@@ -21,53 +21,53 @@ inline constexpr core::weapon_def weapons[] = {
 
 inline constexpr core::class_def classes[] = {
     { "Kierownik budowy", "Trzyma harmonogram w ryzach.", 30, 3, 3, 5, 3, 2, 0, 0, "Odprawa", "Ogłusza widocznych", core::ability_effect::stun, 15 },
-    { "Murarz", "Twardy jak pustak.", 32, 5, 2, 1, 4, 0, 1, 1, "Ścianka", "Mur przed wrogiem", core::ability_effect::wall, 15 },
+    { "Murarz", "Twardy jak pustak.", 34, 5, 2, 1, 4, 0, 1, 1, "Ścianka", "Mur przed wrogiem", core::ability_effect::wall, 15 },
     { "Cieśla-dekarz", "Gwoździe wbija z daleka.", 30, 4, 4, 1, 3, 2, 2, 2, "Seria", "Gwoździe we wszystkich", core::ability_effect::volley, 12 },
     { "Elektryk", "Wie, gdzie jest faza.", 24, 2, 4, 5, 2, 1, 3, 3, "Łańcuch", "Prąd skacze po celach", core::ability_effect::chain, 12 },
-    { "Hydraulik", "Żaden przeciek mu nie straszny.", 32, 4, 3, 3, 3, 2, 4, 4, "Zawór", "Odpycha wrogów i leczy", core::ability_effect::flush, 20 },
+    { "Hydraulik", "Żaden przeciek mu nie straszny.", 34, 4, 3, 3, 3, 2, 4, 4, "Zawór", "Odpycha wrogów i leczy", core::ability_effect::flush, 20 },
     { "Glazurnik", "Precyzja co do fugi.", 30, 3, 5, 2, 3, 4, 5, 5, "Wirówka", "Tnie wszystkich dookoła", core::ability_effect::spin, 10 },
 };
 
 inline constexpr core::enemy_def enemies[] = {
-    { "Przeciek", "Kapie tam, gdzie nie powinno", 6, 1, 3, 0, 6, 10, 6, false, core::status_effect::slip, 14, 2, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
-    { "Zwarcie", "Iskrzy przy każdej okazji", 5, 2, 4, 0, 7, 12, 7, false, core::status_effect::shock, 17, 1, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
-    { "Pleśń", "Lubi wilgoć i zimne ściany", 9, 1, 2, 1, 4, 10, 8, false, core::status_effect::poison, 24, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
-    { "Kornik", "Drąży więźbę po cichu", 7, 1, 3, 1, 5, 10, 9, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
-    { "Papierologia", "Brakuje jednej pieczątki", 12, 1, 2, 2, 4, 15, 10, false, core::status_effect::paper, 35, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
-    { "Opóźniona dostawa", "Będzie jutro. Na pewno.", 10, 2, 4, 1, 6, 15, 11, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
-    { "Ulewa", "Zawsze tuż przed dachem", 8, 2, 3, 0, 8, 12, 12, false, core::status_effect::slip, 28, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
-    { "Przekroczony budżet", "Rośnie szybciej niż mury", 14, 2, 5, 2, 6, 25, 13, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
-    { "Nieprzekraczalny Termin", "Nieprzesuwalny. Podobno.", 40, 3, 6, 3, 12, 200, 14, true, core::status_effect::paper, 28, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
-    { "Zepsuta Betoniarka", "Kręci się, ale nie tam", 30, 3, 5, 2, 10, 150, 46, true, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
-    { "Nawałnica", "Leje jak z cebra", 36, 3, 6, 2, 12, 180, 47, true, core::status_effect::slip, 35, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "" },
-    { "Inspekcja Pracy", "Sprawdza kask i barierki", 30, 3, 5, 2, 12, 170, 50, true, core::status_effect::paper, 30, 0, core::slam_shape::cross, "Kontrola BHP", 4, 6, 2, 2, 60, "Protokół bez uwag" },
+    { "Przeciek", "Kapie tam, gdzie nie powinno", 6, 1, 3, 0, 7, 10, 6, false, core::status_effect::slip, 14, 2, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0 },
+    { "Zwarcie", "Iskrzy przy każdej okazji", 5, 2, 4, 0, 8, 12, 7, false, core::status_effect::shock, 17, 1, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1 },
+    { "Pleśń", "Lubi wilgoć i zimne ściany", 9, 1, 2, 1, 5, 10, 8, false, core::status_effect::poison, 24, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2 },
+    { "Kornik", "Drąży więźbę po cichu", 7, 1, 3, 1, 6, 10, 9, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2 },
+    { "Papierologia", "Brakuje jednej pieczątki", 12, 1, 2, 2, 5, 15, 10, false, core::status_effect::paper, 35, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2 },
+    { "Opóźniona dostawa", "Będzie jutro. Na pewno.", 10, 2, 4, 1, 7, 15, 11, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1 },
+    { "Ulewa", "Zawsze tuż przed dachem", 8, 2, 3, 0, 9, 12, 12, false, core::status_effect::slip, 28, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0 },
+    { "Przekroczony budżet", "Rośnie szybciej niż mury", 14, 2, 5, 2, 7, 25, 13, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1 },
+    { "Nieprzekraczalny Termin", "Nieprzesuwalny. Podobno.", 42, 4, 6, 3, 12, 200, 14, true, core::status_effect::paper, 28, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", -1 },
+    { "Zepsuta Betoniarka", "Kręci się, ale nie tam", 28, 3, 5, 2, 10, 150, 46, true, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", -1 },
+    { "Nawałnica", "Leje jak z cebra", 32, 3, 5, 2, 12, 180, 47, true, core::status_effect::slip, 35, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", -1 },
+    { "Inspekcja Pracy", "Sprawdza kask i barierki", 30, 3, 5, 2, 12, 170, 50, true, core::status_effect::paper, 30, 0, core::slam_shape::cross, "Kontrola BHP", 4, 6, 2, 2, 60, "Protokół bez uwag", -1 },
 };
 
 inline constexpr core::stage_def stages[] = {
-    { "Fundamenty", { 0, 3, -1, -1 }, 2, 5, -1, 108, 0, 0 },
-    { "Mury parteru", { 4, 5, 3, -1 }, 3, 6, -1, 110, 0, 0 },
-    { "Strop", { 5, 7, 3, -1 }, 3, 6, 9, 112, 0, 0 },
-    { "Dach", { 6, 3, 0, -1 }, 3, 7, -1, 115, 0, 1 },
-    { "Okna i drzwi", { 5, 6, 4, -1 }, 3, 7, 10, 118, 0, 1 },
-    { "Instalacje", { 1, 0, 2, -1 }, 3, 7, 11, 121, 0, 2 },
-    { "Tynki i wylewki", { 2, 0, 1, -1 }, 3, 8, -1, 124, 0, 2 },
-    { "Wykończenie i odbiór", { 2, 7, -1, -1 }, 2, 6, 8, 128, 0, 2 },
+    { "Fundamenty", { 0, 3, -1, -1 }, 2, 5, -1, 95, 0, 0, 48 },
+    { "Mury parteru", { 4, 5, 3, -1 }, 3, 6, -1, 100, 0, 0, 62 },
+    { "Strop", { 5, 7, 3, -1 }, 3, 6, 9, 105, 0, 0, 36 },
+    { "Dach", { 6, 3, 0, -1 }, 3, 8, -1, 110, 1, 1, 55 },
+    { "Okna i drzwi", { 5, 6, 4, -1 }, 3, 8, 10, 115, 1, 1, 41 },
+    { "Instalacje", { 1, 0, 2, -1 }, 3, 8, 11, 120, 2, 2, 46 },
+    { "Tynki i wylewki", { 2, 0, 1, -1 }, 3, 9, -1, 126, 2, 2, 38 },
+    { "Wykończenie i odbiór", { 2, 7, -1, -1 }, 2, 7, 8, 132, 2, 2, 72 },
 };
 
 inline constexpr core::difficulty_def difficulties[] = {
-    { "Łatwy", 80, -1, 50 },
+    { "Łatwy", 100, -1, 50 },
     { "Normalny", 100, 0, 100 },
     { "Trudny", 125, 0, 150 },
 };
 
 inline constexpr core::upgrade_def upgrades[] = {
-    { "Kondycja", "+4 HP na start", core::upgrade_effect::hp, 4, 3, { 10, 20, 35, 0 } },
-    { "Szkolenie BHP", "+1 obrona", core::upgrade_effect::def, 1, 2, { 15, 30, 0, 0 } },
-    { "Kurs fachowy", "+1 obrażenia", core::upgrade_effect::dmg, 1, 2, { 20, 40, 0, 0 } },
-    { "Lepszy termos", "Kawa leczy +4 HP", core::upgrade_effect::coffee, 4, 2, { 10, 20, 0, 0 } },
-    { "Dostawy", "+1 znajdźka na etap", core::upgrade_effect::pickups, 1, 2, { 15, 30, 0, 0 } },
-    { "Kurs BHP II", "+1 szczęścia", core::upgrade_effect::luck, 1, 2, { 20, 40, 0, 0 } },
-    { "Warsztaty", "+1 do statystyki broni", core::upgrade_effect::craft, 1, 2, { 20, 40, 0, 0 } },
+    { "Kondycja", "+2 HP na start", core::upgrade_effect::hp, 2, 3, { 10, 20, 35, 0 }, 0 },
+    { "Szkolenie BHP", "+1 obrona", core::upgrade_effect::def, 1, 1, { 15, 0, 0, 0 }, 30 },
+    { "Kurs fachowy", "+1 obrażenia", core::upgrade_effect::dmg, 1, 1, { 20, 0, 0, 0 }, 40 },
+    { "Lepszy termos", "Kawa leczy +2 HP", core::upgrade_effect::coffee, 2, 2, { 10, 20, 0, 0 }, 0 },
+    { "Dostawy", "+1 znajdźka na etap", core::upgrade_effect::pickups, 1, 2, { 15, 30, 0, 0 }, 0 },
+    { "Kurs BHP II", "+1 szczęścia", core::upgrade_effect::luck, 1, 2, { 20, 40, 0, 0 }, 0 },
+    { "Warsztaty", "+1 do statystyki broni", core::upgrade_effect::craft, 1, 2, { 20, 40, 0, 0 }, 0 },
 };
 
 inline constexpr core::story_msg story_stages[] = {
@@ -92,11 +92,14 @@ inline constexpr core::act_def acts[] = {
     { "Wykończenie", 10, 2 },
 };
 inline constexpr core::shop_item_def hurtownia[] = {
-    { "Kawa z ekspresu", "Pełne HP", 30, core::shop_effect::heal },
-    { "Paczka sprzętu", "Losowy sprzęt, min. solidny", 50, core::shop_effect::gear },
-    { "Nowe narzędzie", "Losowe odblokowane narzędzie", 40, core::shop_effect::tool },
-    { "Siłownia", "+3 max HP na tę budowę", 45, core::shop_effect::maxhp },
-    { "Energetyk", "Moc od razu gotowa", 20, core::shop_effect::ability },
+    { "Kawa z ekspresu", "Pełne HP", 30, core::shop_effect::heal, -1, 0 },
+    { "Paczka sprzętu", "Losowy sprzęt, min. solidny", 50, core::shop_effect::gear, -1, 0 },
+    { "Nowe narzędzie", "Losowe odblokowane narzędzie", 40, core::shop_effect::tool, -1, 0 },
+    { "Siłownia", "+3 max HP na tę budowę", 45, core::shop_effect::maxhp, -1, 0 },
+    { "Energetyk", "Moc od razu gotowa", 20, core::shop_effect::ability, -1, 0 },
+    { "Zbrojenie", "+1 obrona na tę budowę", 0, core::shop_effect::def, 1, 4 },
+    { "Wylewka", "+3 max HP na tę budowę", 0, core::shop_effect::maxhp, 0, 4 },
+    { "Deskowanie", "2 kawy do termosu", 0, core::shop_effect::thermos, 2, 3 },
 };
 inline constexpr core::status_def statuses[] = {   // indeks = core::status_effect
     { "", "", "" },
@@ -107,9 +110,9 @@ inline constexpr core::status_def statuses[] = {   // indeks = core::status_effe
 };
 inline constexpr int paper_delay = 3;
 inline constexpr int acts_count = 3;
-inline constexpr int hurtownia_count = 5;
+inline constexpr int hurtownia_count = 8;
 inline constexpr int slam_every = 4;
-inline constexpr int slam_damage_bonus = 2;
+inline constexpr int slam_damage_bonus = 3;
 inline constexpr int slam_radius = 1;
 inline constexpr int slam_delay = 2;
 inline constexpr int slam_cross_reach = 2;
@@ -204,12 +207,46 @@ inline constexpr int start_helpers_mask = 3;
 inline constexpr core::investor_def investor[] = {   // tryb inwestora: modyfikatory po pierwszej wygranej
     { "Budżet -30%", "Mniej zł za problemy i akty", core::investor_effect::cash_pct, -30, 10, 1 },
     { "Bez przerwy na kawę", "Między etapami bez +5 HP", core::investor_effect::no_break, 0, 10, 1 },
-    { "Problemy +20% HP", "Każdy problem ma +20% HP", core::investor_effect::enemy_hp, 20, 15, 2 },
+    { "Problemy +35% HP", "Każdy problem ma +35% HP", core::investor_effect::enemy_hp, 35, 15, 2 },
     { "Hurtownia zamknięta", "Między aktami bez zakupów", core::investor_effect::no_shop, 0, 15, 2 },
     { "Kontrola częściej", "Boss uderza co 3 tury, nie 4", core::investor_effect::slam, 1, 10, 1 },
-    { "Termin goni", "Problemy biją o 1 mocniej", core::investor_effect::enemy_dmg, 1, 20, 3 },
+    { "Termin goni", "Problemy biją o 2 mocniej", core::investor_effect::enemy_dmg, 2, 20, 3 },
 };
 inline constexpr int investor_count = 6;
+
+inline constexpr core::material_def materials[] = {   // materiały: cement, stal, drewno
+    { "Cement", "Cem." },
+    { "Stal", "Stal" },
+    { "Drewno", "Drew." },
+};
+inline constexpr core::repair_def repairs[] = {   // naprawy pola za materiał
+    { "Załataj", "Deski w poprzek drogi", "Mur 3 pola przed problemem, 6 tur", core::repair_effect::patch, 2, 1, 6 },
+    { "Kładka", "Kałuże bez poślizgu", "Kałuże w zasięgu 2: bez poślizgu", core::repair_effect::bridge, 1, 1, 2 },
+};
+inline constexpr int materials_count = 3;
+inline constexpr int repairs_count = 2;
+inline constexpr int material_drop_pct = 35;
+inline constexpr int material_boss_drop = 2;
+inline constexpr int material_gear_box = 1;
+inline constexpr int material_max = 9;
+
+inline constexpr core::path_def paths[] = {   // wybór ścieżki: wariant kolejnego etapu
+    { "Szybko, ale drogo", "Szybko", "-2 problemy, -15 zł, -1 znajdźka", -2, -1, -15, 0, false, false },
+    { "Tanio, ale ryzykownie", "Tanio", "+1 problem, +2 znajdźki, zła pogoda", 1, 2, 0, 0, true, false },
+    { "Po terminie", "Po term.", "Bez wydarzenia na placu, -10 zł", 0, 0, -10, 0, false, true },
+    { "Z zapasem materiałów", "Zapas", "+1 problem, +3 materiały na start", 1, 0, 0, 3, false, false },
+};
+inline constexpr int paths_count = 4;
+
+inline constexpr int daily_epoch[] = { 2026, 1, 1 };   // codzienna budowa: dzień nr 1
+inline constexpr int daily_default_date[] = { 2026, 10, 1 };
+inline constexpr int daily_difficulty = 1;
+inline constexpr int daily_investor_mods = 2;
+inline constexpr int daily_history = 5;
+
+inline constexpr int schedule_min_days = 4;   // harmonogram domu: dni etapu = min + tury / turnsPerDay
+inline constexpr int schedule_turns_per_day = 3;
+inline constexpr const char* schedule_url = "planbudowlany.online";
 
 inline constexpr core::tool_def tools[] = {
     { 6, 0 },
@@ -281,7 +318,7 @@ inline constexpr int hp_per_level = 2;
 inline constexpr int dmg_levels_mask = 32;
 inline constexpr int def_levels_mask = 8;
 
-inline constexpr const char* version = "v0.21.47";   // numer wersji (ekran tytułowy, changelog)
+inline constexpr const char* version = "v0.21.48";   // numer wersji (ekran tytułowy, changelog)
 
 inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonogramu między etapami
     "Przytrzymaj B: podgląd problemów",
@@ -293,8 +330,11 @@ inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonog
     "Przytrzymaj L: mapa odkrytego placu",
     "Telefon (SELECT): Koszty i Zlecenia",
     "Co 4 tury czekania (B) +1 HP",
+    "Między etapami wybierz ścieżkę",
+    "Drewno: Załataj drogę problemom",
+    "Stal: Kładka nad kałużami",
 };
-inline constexpr int tips_count = 9;
+inline constexpr int tips_count = 12;
 
 inline constexpr int classes_count = 6;
 inline constexpr int stages_count = 8;

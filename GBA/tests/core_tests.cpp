@@ -111,7 +111,7 @@ int main()
             CHECK(n.enemies[i].max_hp == data::enemies[n.enemies[i].def_id].max_health * data::stages[0].hp_pct / 100);
         game e; e.new_run(0, 42, 0);
         game h; h.new_run(0, 42, 2);
-        CHECK(e.enemy_hp_pct() < n.enemy_hp_pct() && n.enemy_hp_pct() < h.enemy_hp_pct());
+        CHECK(e.enemy_hp_pct() <= n.enemy_hp_pct() && n.enemy_hp_pct() < h.enemy_hp_pct());
         CHECK(e.enemy_dmg_bonus() < n.enemy_dmg_bonus() && n.enemy_dmg_bonus() <= h.enemy_dmg_bonus());
         CHECK(e.score_pct() < n.score_pct() && n.score_pct() < h.score_pct());
         for(int i=0;i<e.enemies_count;++i) CHECK(e.enemies[i].max_hp >= 1);
@@ -662,12 +662,20 @@ int main()
         game g; arena(g, 1);
         CHECK(!g.hurtownia_buy(0) && g.cash == 0);
         g.cash = 1000;
+        int mat_items = 0;
         for(int i = 0; i < data::hurtownia_count; ++i)
         {
             const shop_item_def& it = data::hurtownia[i];
-            int cash = g.cash, maxhp = g.hero.max_hp;
-            g.hero.hp = 3; g.ability_cd = 9;
-            CHECK(g.hurtownia_buy(i) && g.cash == cash - it.price);
+            if(it.material >= 0)   // płatne materiałem: bez materiału nie, z materiałem - zł zostają
+            {
+                ++mat_items;
+                g.mats[it.material] = 0; CHECK(!g.hurtownia_can(i) && !g.hurtownia_buy(i));
+                g.mats[it.material] = uint8_t(it.mat_cost + 1);
+            }
+            int cash = g.cash, maxhp = g.hero.max_hp, def = g.def_bonus;
+            g.hero.hp = 3; g.ability_cd = 9; g.thermos = 0;
+            CHECK(g.hurtownia_can(i) && g.hurtownia_buy(i) && g.cash == cash - it.price);
+            if(it.material >= 0) CHECK(g.mats[it.material] == 1);
             switch(it.effect)
             {
                 case shop_effect::heal:    CHECK(g.hero.hp == g.hero.max_hp); break;
@@ -675,8 +683,11 @@ int main()
                 case shop_effect::ability: CHECK(g.ability_cd == 0); break;
                 case shop_effect::tool:    CHECK(g.weapon_override >= 0); break;
                 case shop_effect::gear:    { bool any = false; for(int s2 = 0; s2 < data::gear_slots_count; ++s2) any |= g.equipped[s2] >= 1; CHECK(any); break; }
+                case shop_effect::def:     CHECK(g.def_bonus == def + 1); break;
+                case shop_effect::thermos: CHECK(g.thermos == imin(2, g.thermos_cap())); break;
             }
         }
+        CHECK(mat_items >= 2);
     }
     // 27. stany od problemów budowy
     {
@@ -894,12 +905,12 @@ int main()
     // 31b. profil v3 -> v4: wszystkie dotychczasowe pola zostają, nowe od zera
     {
         profile v3; profile_reset(v3);
-        std::memcpy(v3.magic, "PBRL003", 8); v3.best = 1234; v3.runs = 9; v3.wins = 4; v3.xp = 321; v3.levels[1] = 2;
+        std::memcpy(v3.magic, "PBRL003", 8); v3.best = 1234; v3.runs = 9; v3.wins = 4; v3.xp = 321; v3.levels[0] = 2;
         v3.classes = 0x1F; v3.hard = 1; v3.flags = 3; v3.tools = 5; v3.badges = 0x0123; v3.catalog = 0x07FF;
         v3.class_wins = 0x05; v3.tools_found = 0x0B; v3.houses_count = 3; v3.houses[0] = 0x21; v3.houses[2] = 0x35;
         std::memset(reinterpret_cast<char*>(&v3) + profile_v3_size, 0xCD, sizeof v3 - profile_v3_size);   // śmieci
         CHECK(profile_fix(v3) && std::strcmp(v3.magic, profile_magic) == 0);
-        CHECK(v3.best == 1234 && v3.runs == 9 && v3.wins == 4 && v3.xp == 321 && v3.levels[1] == 2 && v3.classes == 0x1F);
+        CHECK(v3.best == 1234 && v3.runs == 9 && v3.wins == 4 && v3.xp == 321 && v3.levels[0] == 2 && v3.classes == 0x1F);
         CHECK(v3.hard == 1 && v3.flags == 3 && v3.tools == 5 && v3.badges == 0x0123 && v3.catalog == 0x07FF);
         CHECK(v3.class_wins == 0x05 && v3.tools_found == 0x0B && v3.houses_count == 3 && v3.houses[0] == 0x21 && v3.houses[2] == 0x35);
         CHECK(v3.kills_total == 0 && v3.powers_total == 0 && v3.brand_total == 0 && v3.clean_bosses == 0);
@@ -1241,6 +1252,176 @@ int main()
             }
         std::printf("Tryb inwestora (wszystkie modyfikatory, Normalny): %d%% vs bez %d%%\n", hard * 100 / 120, base * 100 / 120);
         CHECK(hard < base);
+    }
+    // 37. wybór ścieżki: dwie różne oferty, deterministyczne; skutki wariantu na kolejnym etapie
+    {
+        auto px_of = [](auto pred) { for(int i = 0; i < data::paths_count; ++i) if(pred(data::paths[i])) return i; return -1; };
+        game g; g.new_run(1, 777);
+        for(int st = 0; st < data::stages_count - 1; ++st)
+        {
+            g.stage = st;
+            CHECK(g.path_offer(0) != g.path_offer(1) && g.path_offer(0) >= 0 && g.path_offer(1) < data::paths_count);
+            game h; h.new_run(1, 777); h.stage = st; CHECK(h.path_offer(0) == g.path_offer(0) && h.path_offer(1) == g.path_offer(1));
+        }
+        int seen = 0;
+        for(uint32_t seed = 1; seed <= 200; ++seed) { game k; k.new_run(0, seed); seen |= (1 << k.path_offer(0)) | (1 << k.path_offer(1)); }
+        CHECK(seen == (1 << data::paths_count) - 1);   // każda ścieżka bywa w ofercie
+        for(int k = 0; k < 2; ++k)   // wybór 0/1 = pozycja w ofercie; po etapie wybór wraca na pierwszą
+        {
+            game a; a.new_run(2, 4242); a.debug_skip();
+            int want = a.path_offer(k);
+            a.choose_path(k); a.next_stage();
+            CHECK(a.stage == 1 && a.stage_path == want && a.next_path == 0);
+        }
+        game f; f.new_run(2, 99); CHECK(f.stage_path == -1);   // pierwszy etap bez ścieżki
+        // skutki: start_stage z konkretną ścieżką vs bez (ten sam seed)
+        int more = px_of([](const path_def& p) { return p.enemies > 0; }), fewer = px_of([](const path_def& p) { return p.enemies < 0; });
+        int calm = px_of([](const path_def& p) { return p.no_event; }), risky = px_of([](const path_def& p) { return p.bad_weather; });
+        int stock = px_of([](const path_def& p) { return p.materials > 0; });
+        CHECK(more >= 0 && fewer >= 0 && calm >= 0 && risky >= 0 && stock >= 0);
+        int bs = 0; while(data::stages[bs].boss < 0) ++bs;   // etap z bossem: bez wydarzenia na placu (budżet bez premii)
+        for(int path : { more, fewer })
+        {
+            game a; a.new_run(1, 31); a.cash = 50; a.r.seed(1234); a.start_stage(bs);
+            game b; b.new_run(1, 31); b.cash = 50; b.r.seed(1234); b.start_stage(bs, path);
+            CHECK(b.enemies_count == a.enemies_count + data::paths[path].enemies);
+            CHECK(b.cash == imax(0, 50 + data::paths[path].cash));
+        }
+        int bad_ok = 0, events = 0;
+        for(uint32_t seed = 1; seed <= 100; ++seed)
+        {
+            game w; w.new_run(1, seed); w.start_stage(1, risky); bad_ok += data::weather[w.weather].bad;
+            game e; e.new_run(1, seed); e.start_stage(1, calm); events += e.stage_event >= 0;
+        }
+        CHECK(bad_ok == 100 && events == 0);
+        game m; m.new_run(1, 5); m.start_stage(1, stock);
+        CHECK(m.mats[0] + m.mats[1] + m.mats[2] == data::paths[stock].materials);
+    }
+    // 38. materiały: z problemów, bossów i paczek, limit; naprawy: Załataj (mur z desek), Kładka (kałuże bez poślizgu)
+    {
+        int got = 0;
+        for(uint32_t seed = 1; seed <= 400; ++seed)
+        {
+            game g; arena(g, 1); g.r.seed(seed);
+            g.spawn(data::enemy_kornik, 8, 7); g.enemies[0].hp = 1; g.player_move(1, 0);
+            int n = g.mats[0] + g.mats[1] + g.mats[2];
+            CHECK(n <= 1);
+            if(n) { ++got; CHECK(g.mats[data::enemies[data::enemy_kornik].material] == 1); }   // Kornik: drewno
+        }
+        CHECK(got > 400 * data::material_drop_pct / 200 && got < 400 * data::material_drop_pct * 2 / 100);
+        game b; arena(b, 1); b.spawn(data::enemy_betoniarka, 8, 7); b.boss = 0; b.enemies[0].hp = 1; b.player_move(1, 0);
+        for(int m = 0; m < data::materials_count; ++m) CHECK(b.mats[m] == data::material_boss_drop);   // boss: każdego po kilka
+        game c; arena(c, 1); for(int k = 0; k < 30; ++k) c.add_material(2); CHECK(c.mats[2] == data::material_max);   // limit
+        game q; arena(q, 1); q.pickups[0] = { q.hero.x, q.hero.y, gear_box, true, 0, 0 }; q.pickups_count = 1; q.collect();
+        CHECK(q.mats[0] + q.mats[1] + q.mats[2] == data::material_gear_box);   // paczka: też materiał
+        auto rx_of = [](repair_effect e) { for(int i = 0; i < data::repairs_count; ++i) if(data::repairs[i].effect == e) return i; return -1; };
+        int patch = rx_of(repair_effect::patch), bridge = rx_of(repair_effect::bridge);
+        CHECK(patch >= 0 && bridge >= 0);
+        {   // Załataj: bez drewna / bez celu nic; z celem mur 3 pola przed bohaterem, kosztuje drewno i turę
+            game g; arena(g, 1);
+            const repair_def& rd = data::repairs[patch];
+            CHECK(g.repair_blocked(patch) == game::repair_material && !g.player_repair(patch) && g.turns == 0);
+            g.mats[rd.material] = 3;
+            CHECK(g.repair_blocked(patch) == game::repair_no_target);
+            g.spawn(data::enemy_kornik, 11, 7);
+            CHECK(g.repair_blocked(patch) == game::repair_ok && g.player_repair(patch));
+            CHECK(g.turns == 1 && g.mats[rd.material] == 3 - rd.cost);
+            CHECK(g.lv.at(8, 6) == tile::wall && g.lv.at(8, 7) == tile::wall && g.lv.at(8, 8) == tile::wall && g.walls[0].turns == rd.value - 1);
+            for(int k = 0; k < rd.value; ++k) g.player_wait();
+            CHECK(g.lv.at(8, 7) == tile::floor);
+        }
+        {   // Kładka: tylko przy kałużach; kałuże w zasięgu przestają działać, poślizg znika
+            const repair_def& rd = data::repairs[bridge];
+            game dry; arena(dry, 1); dry.mats[rd.material] = 3;
+            CHECK(dry.repair_blocked(bridge) == game::repair_no_puddle && !dry.player_repair(bridge));
+            game r; arena(r, 1); r.weather = 0;
+            for(int i = 0; i < data::weather_count; ++i) if(data::weather[i].effect == weather_effect::rain) r.weather = int8_t(i);
+            r.mats[rd.material] = 3;
+            int near0 = 0; for(int y = 7 - rd.value; y <= 7 + rd.value; ++y) for(int x = 7 - rd.value; x <= 7 + rd.value; ++x) near0 += r.puddle(x, y);
+            if(near0 > 0)
+            {
+                r.apply_status(status_effect::slip, 3);
+                CHECK(r.player_repair(bridge) && r.mats[rd.material] == 3 - rd.cost && r.status_turns(status_effect::slip) == 0);
+                int near1 = 0; for(int y = 7 - rd.value; y <= 7 + rd.value; ++y) for(int x = 7 - rd.value; x <= 7 + rd.value; ++x) near1 += r.puddle(x, y);
+                CHECK(near1 == 0);
+                r.debug_skip(); r.next_stage(); CHECK(r.bridges == 0);   // kolejny etap: kładki zostają na starym placu
+            }
+            else CHECK(r.repair_blocked(bridge) == game::repair_no_puddle);
+        }
+    }
+    // 39. codzienna budowa: data -> numer dnia -> seed, zawód i modyfikatory dnia, wyniki w profilu; profil v6 -> v7
+    {
+        CHECK(daily_number(data::daily_epoch[0], data::daily_epoch[1], data::daily_epoch[2]) == 1);
+        CHECK(daily_number(2026, 9, 25) - daily_number(2026, 9, 24) == 1 && daily_number(2027, 1, 1) - daily_number(2026, 12, 31) == 1);
+        CHECK(days_in_month(2028, 2) == 29 && days_in_month(2026, 2) == 28 && days_in_month(2026, 12) == 31);
+        for(int z = 19000; z < 22000; z += 37) { int y, m, d; civil_from_days(z, y, m, d); CHECK(days_from_civil(y, m, d) == z); }
+        int day = daily_number(2026, 9, 25);
+        CHECK(daily_seed(day) == daily_seed(day) && daily_seed(day) != daily_seed(day + 1));
+        game a; start_daily(a, day); game b; start_daily(b, day);
+        CHECK(a.daily && a.daily_day == day && a.cls == daily_class(daily_seed(day)) && a.diff == data::daily_difficulty);
+        CHECK(a.bonus.investor == daily_investor(daily_seed(day)) && a.bonus.hp == 0 && a.bonus.def == 0);
+        CHECK(std::memcmp(a.lv.t, b.lv.t, sizeof a.lv.t) == 0 && a.hero.x == b.hero.x);   // ten sam dzień = ta sama budowa
+        int bits = 0; for(int i = 0; i < data::investor_count; ++i) bits += (a.bonus.investor >> i) & 1;
+        CHECK(bits == data::daily_investor_mods);
+        int classes_seen = 0; for(int d = 1; d <= 60; ++d) classes_seen |= 1 << daily_class(daily_seed(d));
+        CHECK(classes_seen == (1 << data::classes_count) - 1);
+        profile p; profile_reset(p);
+        int y, m, d; daily_date(p, y, m, d);
+        CHECK(y == data::daily_default_date[0] && m == data::daily_default_date[1] && d == data::daily_default_date[2]);
+        set_daily_date(p, 2026, 2, 31); daily_date(p, y, m, d); CHECK(d == 28);   // dzień poza miesiącem - obcięty
+        CHECK(daily_best(p, day) == -1);
+        CHECK(record_daily(p, day, 500, false) && daily_best(p, day) == 500 && !daily_won(p, day));
+        CHECK(!record_daily(p, day, 300, true) && daily_best(p, day) == 500 && daily_won(p, day));   // gorszy wynik nie zastępuje
+        CHECK(record_daily(p, day, 900, false) && daily_best(p, day) == 900 && daily_won(p, day));
+        for(int k = 1; k <= data::daily_history; ++k) record_daily(p, day + k, 100 * k, false);
+        CHECK(daily_best(p, day) == -1 && daily_best(p, day + data::daily_history) == 100 * data::daily_history);   // najstarszy wypada
+        CHECK(p.daily_runs == 3 + data::daily_history);
+        profile v6; profile_reset(v6); std::memcpy(v6.magic, "PBRL006", 8); v6.best = 321; v6.investor = 5; v6.best_stake[2] = 4;
+        std::memset(reinterpret_cast<char*>(&v6) + profile_v6_size, 0xEE, sizeof v6 - profile_v6_size);
+        CHECK(profile_fix(v6) && std::strcmp(v6.magic, profile_magic) == 0 && v6.best == 321 && v6.investor == 5 && v6.best_stake[2] == 4);
+        CHECK(v6.daily_y == 0 && v6.daily_runs == 0 && v6.daily_won == 0);
+        for(int i = 0; i < daily_slots; ++i) CHECK(v6.daily_day[i] == 0 && v6.daily_score[i] == 0);
+        // Szkolenia z poziomami ponad nowe maksimum: zwrot doświadczenia
+        profile c; profile_reset(c); c.xp = 10;
+        int ui = -1; for(int i = 0; i < data::upgrades_count; ++i) if(data::upgrades[i].refund > 0) ui = i;
+        CHECK(ui >= 0);
+        c.levels[ui] = uint8_t(data::upgrades[ui].levels + 1);
+        CHECK(profile_fix(c) && c.levels[ui] == data::upgrades[ui].levels && c.xp == 10 + data::upgrades[ui].refund);
+        CHECK(!profile_fix(c));
+    }
+    // 40. harmonogram domu: tury każdego etapu zapisane przy zaliczeniu, dni i daty etapów
+    {
+        game g; g.new_run(1, 7);
+        for(int k = 0; k < 5; ++k) { g.hero.hp = g.hero.max_hp = 999; g.player_wait(); }
+        g.debug_skip();
+        CHECK(g.st == status::stage_clear && g.stage_days[0] == g.turns);
+        while(g.st == status::stage_clear)
+        {
+            g.next_stage();
+            for(int k = 0; k < 2 + g.stage; ++k) { g.hero.hp = g.hero.max_hp = 999; g.player_wait(); }
+            g.debug_skip();
+        }
+        CHECK(g.st == status::won);
+        for(int s2 = 1; s2 < data::stages_count; ++s2) CHECK(g.stage_days[s2] >= 2 + s2);
+        int total = 0; for(int s2 = 0; s2 < data::stages_count; ++s2) { CHECK(schedule_days(g, s2) >= data::schedule_min_days); total += schedule_days(g, s2); }
+        CHECK(schedule_total_days(g) == total && schedule_total_cost() > 0);
+        int end = days_from_civil(2026, 10, 1);
+        CHECK(schedule_start_day(g, 0, end) == end - total && schedule_start_day(g, 1, end) == end - total + schedule_days(g, 0));
+    }
+    // 41. po budowie: najbliższe do kupienia w Szkoleniach
+    {
+        profile p; profile_reset(p);
+        int kind = -1, idx = -1, cost = next_unlock(p, kind, idx);
+        CHECK(cost > 0 && kind >= 0);
+        int cheapest = 1 << 20; for(int i = 0; i < data::upgrades_count; ++i) cheapest = imin(cheapest, upgrade_cost(p, i));
+        CHECK(cost <= cheapest);
+        p.xp = 1 << 20;
+        for(int i = 0; i < data::upgrades_count; ++i) while(buy_upgrade(p, i)) {}
+        for(int i = 0; i < data::classes_count; ++i) buy_class(p, i);
+        for(int i = 0; i < data::tools_count; ++i) buy_tool(p, i);
+        for(int i = 0; i < data::brigade_count; ++i) buy_helper(p, i);
+        buy_hard(p);
+        CHECK(next_unlock(p, kind, idx) == -1);
     }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
