@@ -326,105 +326,6 @@ namespace
         }
     }
 
-    // ------------------------------------------------------------------ wybór zawodu
-    scene run_class_select(app& a)
-    {
-        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
-        text_sprites lines, diff_line, keep_lines;
-        a.text.set_center_alignment();
-        bn::sprite_ptr hero = bn::sprite_items::actors.create_sprite(-84, -34, 0);
-        hero.set_double_size_mode(bn::sprite_double_size_mode::ENABLED);
-        hero.set_scale(2);
-        bn::sprite_ptr lock = bn::sprite_items::actors.create_sprite(-64, -24, frame_lock);
-        lock.set_z_order(-1);
-
-        auto redraw = [&]() {
-            lines.clear();
-            const core::class_def& c = data::classes[a.chosen_class];
-            const core::weapon_def& w = data::weapons[c.weapon];
-            bool locked = ! core::class_unlocked(a.save, a.chosen_class);
-            hero.set_tiles(bn::sprite_items::actors.tiles_item(), locked ? frame_silhouette + a.chosen_class : c.frame);
-            lock.set_visible(locked);
-            core::message n; n.add("< ").add(c.name).add(" >");
-            a.text.generate(0, 4, n.s, lines);
-            core::message ld; ld.add("Zablokowany: ").add(data::class_cost).add(" dośw.");
-            core::message ab; ab.add("Moc R: ").add(c.ability_name);
-            a.text.generate(0, 20, locked ? ld.s : ab.s, lines);
-            // statystyki efektywne: zawód + Szkolenia (Warsztaty, BHP) - "baza+premia"
-            const core::run_mods m = core::mods(a.save);
-            const int ci = a.chosen_class;
-            core::message s; add_stat(s, "HP", c.max_health, m.hp);
-            s.add(" "); add_stat(s, "SIŁ", c.strength, core::mods_stat_bonus(m, ci, core::stat::str));
-            s.add(" "); add_stat(s, "ZRĘ", c.agility, core::mods_stat_bonus(m, ci, core::stat::agi));
-            a.text.generate(0, 38, s.s, lines);
-            core::message s2; add_stat(s2, "INT", c.intelligence, core::mods_stat_bonus(m, ci, core::stat::intel));
-            s2.add(" "); add_stat(s2, "OBR", c.defense, m.def);
-            s2.add(" "); add_stat(s2, "SZCZ", c.luck, m.luck);
-            a.text.generate(0, 54, s2.s, lines);
-            core::message wl; wl.add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range)
-                                   .add(" (").add(stat_short(w.scales_with)).add(")");
-            a.text.generate(0, 72, clip(wl.s, 29), lines);
-        };
-        auto redraw_diff = [&]() {
-            diff_line.clear();
-            a.text.set_center_alignment();
-            core::message m; m.add("Trudność (góra/dół): ").add(data::difficulties[a.chosen_diff].name);
-            a.text.generate(0, -72, m.s, diff_line);
-        };
-        auto redraw_keep = [&]() {   // pamiątka zabierana na budowę (L/R), obok postaci
-            keep_lines.clear();
-            a.text.set_left_alignment();
-            a.text.generate(-56, -52, "Pamiątka (L/R):", keep_lines);
-            int k = core::selected_keepsake(a.save);
-            if(k < 0)
-            {
-                a.text.generate(-56, -36, "bez pamiątki", keep_lines);
-                a.text.generate(-56, -20, "więcej w Zleceniach", keep_lines);
-            }
-            else
-            {
-                core::message n; n.add(data::keepsakes[k].name).add(" ").add(roman(core::keepsake_rank(a.save, k) - 1));
-                a.text.generate(-56, -36, n.s, keep_lines);
-                core::message e; core::perk_label(e, core::keepsake_perk(a.save, k));
-                a.text.generate(-56, -20, e.s, keep_lines);
-            }
-            a.text.set_center_alignment();
-        };
-        redraw();
-        redraw_diff();
-        redraw_keep();
-
-        while(true)
-        {
-            int ddir = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
-            if(ddir)
-            {
-                do a.chosen_diff = (a.chosen_diff + ddir + data::difficulties_count) % data::difficulties_count;
-                while(! core::difficulty_unlocked(a.save, a.chosen_diff));
-                redraw_diff();
-            }
-            int kdir = bn::keypad::r_pressed() ? 1 : (bn::keypad::l_pressed() ? -1 : 0);
-            if(kdir) { core::cycle_keepsake(a.save, kdir); redraw_keep(); redraw(); bn::sound_items::sfx_menu.play(); }
-            if(bn::keypad::left_pressed()) { a.chosen_class = (a.chosen_class + data::classes_count - 1) % data::classes_count; redraw(); bn::sound_items::sfx_menu.play(); }
-            if(bn::keypad::right_pressed()) { a.chosen_class = (a.chosen_class + 1) % data::classes_count; redraw(); bn::sound_items::sfx_menu.play(); }
-            if((bn::keypad::a_pressed() || bn::keypad::start_pressed()) && core::class_unlocked(a.save, a.chosen_class))
-            {
-                a.g->new_run(a.chosen_class, a.seed_counter * 2654435761u + 12345u, a.chosen_diff, core::mods(a.save));
-#ifdef PB_SCENARIO
-                debug_scenario::apply(*a.g, PB_SCENARIO);
-#endif
-                core::start_run(a.save);   // licznik budów i budów z pamiątką (ranga)
-                bn::sram::write(a.save);
-                wait_release();
-                if(! core::has_flag(a.save, core::prologue_seen)) return leave(scene::prologue);
-                if(! core::has_flag(a.save, core::help_seen)) { a.after_help = scene::game; return leave(scene::help); }
-                return leave(scene::game);
-            }
-            if(bn::keypad::b_pressed()) { wait_release(); return leave(scene::title); }
-            next_frame();
-        }
-    }
-
     // ------------------------------------------------------------------ mapa etapu (dynamiczne tło 64x64 kafli 8x8 = 32x32 pól 16x16)
     struct bg_map
     {
@@ -2414,6 +2315,288 @@ namespace
 
     // ------------------------------------------------------------------ telefon profilu (z tytułu i po budowie)
     // Te same ikony zakładek, inne treści: Odznaki, Katalog usterek, Osiedle, Zespół, Koszty (sklep Szkolenia).
+    // ------------------------------------------------------------------ wybór zawodu
+    // U góry pasek portretów (odblokowane zawody najpierw, potem zablokowane jako sylwetki z kłódką),
+    // pod nim karta wybranego zawodu (moc, broń, statystyki, trudność), na dole pamiątka.
+    // Strzałki lewo/prawo przechodzą po wszystkich; zablokowany można obejrzeć, ale nie wystartować.
+    namespace class_ui
+    {
+        constexpr int oy = 2;                       // cała warstwa kafli przesunięta 2 px w dół
+        constexpr int card_ty = 5, card_th = 11;    // karta: kafle 1..28 x 5..15 (y 42..130)
+        constexpr int row1 = 50, row2 = 66, row3 = 82, row4 = 98, row5 = 113;   // wiersze tekstu karty (px)
+        constexpr int keep_row = 130, keep_row2 = 144;                          // pod kartą
+        constexpr int slot_w = 40;                  // 6 portretów po 40 px = cały ekran
+        constexpr int small_cy = 22, big_cy = 18;   // środki portretów (px)
+        constexpr int frame_small_lock = 4, frame_arrows = 5;   // klatki menu_icons
+        constexpr int slide_px = 12, slide_step = 3;
+
+        int slot_cx(int s) { return s * slot_w + slot_w / 2; }
+    }
+
+    scene run_class_select(app& a)
+    {
+        using namespace class_ui;
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
+        const bn::sprite_palette_item default_ink = a.text.palette_item();
+        const int default_prio = a.text.bg_priority();
+        a.text.set_bg_priority(1);   // nad kartą (warstwa kafli ma priorytet 2)
+
+        // kolejność na pasku: odblokowane (jak w danych), potem zablokowane
+        int order[data::classes_count], count = 0;
+        for(int pass = 0; pass < 2; ++pass)
+            for(int i = 0; i < data::classes_count; ++i)
+                if(core::class_unlocked(a.save, i) == (pass == 0)) order[count++] = i;
+        auto slot_of = [&](int cls) { for(int s = 0; s < count; ++s) if(order[s] == cls) return s; return 0; };
+        if(! core::class_unlocked(a.save, a.chosen_class)) a.chosen_class = order[0];   // startowe zawody zawsze są
+        int sel = slot_of(a.chosen_class);
+
+        bn::unique_ptr<phone_canvas> canvas(new phone_canvas());
+        bn::regular_bg_ptr bg = make_canvas_bg(*canvas);
+        bg.set_y(bg.y() + oy);
+        bg.set_priority(2);
+        bn::regular_bg_map_ptr map = bg.map();
+
+        // portrety: mały na każdym miejscu, duży (x2) na wybranym
+        bn::vector<bn::sprite_ptr, data::classes_count> small, locks;
+        for(int s = 0; s < count; ++s)
+        {
+            int c = order[s];
+            bool unl = core::class_unlocked(a.save, c);
+            bn::sprite_ptr p = bn::sprite_items::actors.create_sprite(slot_cx(s) - 120, small_cy - 80 + oy,
+                                                                       unl ? data::classes[c].frame : frame_silhouette + c);
+            p.set_bg_priority(1);
+            small.push_back(bn::move(p));
+            if(! unl)
+            {
+                bn::sprite_ptr l = bn::sprite_items::menu_icons.create_sprite(slot_cx(s) - 120 + 6, small_cy - 80 + oy + 5, frame_small_lock);
+                l.set_bg_priority(1);
+                l.set_z_order(-1);
+                locks.push_back(bn::move(l));
+            }
+        }
+        bn::sprite_ptr big = bn::sprite_items::actors.create_sprite(0, 0, 0);
+        big.set_double_size_mode(bn::sprite_double_size_mode::ENABLED);
+        big.set_bg_priority(1);
+        big.set_z_order(-2);
+        bn::sprite_ptr big_lock = bn::sprite_items::menu_icons.create_sprite(0, 0, frame_small_lock);
+        big_lock.set_bg_priority(1);
+        big_lock.set_z_order(-3);
+        bn::sprite_ptr ability = bn::sprite_items::ability_icons.create_sprite(18 - 120, row2 + 8 - 80, 0);
+        ability.set_bg_priority(1);
+        bn::sprite_ptr arrows = bn::sprite_items::menu_icons.create_sprite(0, 0, frame_arrows);
+        arrows.set_bg_priority(1);
+
+        page_sprites card_t;          // tekst karty (przesuwa się przy zmianie zawodu)
+        text_sprites pill_t, keep_t;  // napisy na pastylce (kafle stoją) i pod kartą
+
+        // tekst w px ekranu (lewy górny róg linii 16 px); zwraca szerokość
+        auto put = [&](auto& t, int px, int py, const char* s, const bn::sprite_palette_item& pal, int align = -1) {
+            a.text.set_palette_item(pal);
+            if(align < 0) a.text.set_left_alignment();
+            else if(align > 0) a.text.set_right_alignment();
+            else a.text.set_center_alignment();
+            a.text.generate(px - 120, py - 72, s, t);
+            return a.text.width(s);
+        };
+        auto pill_at = [&](int tx_end, int ty, const char* s, pill p) {   // jak phone_pill, z przesunięciem oy
+            int tw = utf8_len(s) + 1, tx = tx_end - tw;
+            int fill = phone_tile::fill_gray, corner = phone_tile::corner_gray;
+            ink i = ink::dim;
+            if(p == pill::done) { fill = phone_tile::fill_done_bg; corner = phone_tile::corner_done_bg; i = ink::done; }
+            else if(p == pill::late) { fill = phone_tile::fill_late_bg; corner = phone_tile::corner_late_bg; i = ink::late; }
+            else if(p == pill::group) { fill = phone_tile::fill_group; corner = phone_tile::corner_group; i = ink::brand; }
+            canvas->rounded(tx, ty, tw, 2, fill, corner);
+            put(pill_t, tx * 8 + tw * 4, ty * 8 + oy, s, ink_palette(i), 0);
+            return tx;
+        };
+
+        int clock = 0, pop = 0, slide = 0, shake = 0;
+
+        auto draw_strip = [&]() {
+            for(int ty = 0; ty < card_ty; ++ty) for(int tx = 0; tx < 30; ++tx) canvas->set(tx, ty, phone_tile::empty);
+            for(int s = 0; s < count; ++s)
+            {
+                bool unl = core::class_unlocked(a.save, order[s]);
+                if(s == sel) canvas->rounded(s * 5, 0, 5, 4, phone_tile::fill_brand, phone_tile::corner_brand);
+                else canvas->rounded(s * 5 + 1, 1, 3, 3, unl ? phone_tile::fill_group : phone_tile::fill_gray,
+                                     unl ? phone_tile::corner_group : phone_tile::corner_gray);
+                small[s].set_visible(s != sel);
+            }
+            int li = 0;
+            for(int s = 0; s < count; ++s) if(! core::class_unlocked(a.save, order[s])) locks[li++].set_visible(s != sel);
+            const int c = order[sel];
+            bool unl = core::class_unlocked(a.save, c);
+            big.set_tiles(bn::sprite_items::actors.tiles_item(), unl ? data::classes[c].frame : frame_silhouette + c);
+            big.set_x(slot_cx(sel) - 120);
+            big_lock.set_position(slot_cx(sel) - 120 + 12, big_cy - 80 + oy + 8);
+            big_lock.set_visible(! unl);
+        };
+
+        auto draw_diff = [&](bool locked) {   // pastylka trudności w pierwszym wierszu karty (albo "Zablokowany")
+            for(int tx = 14; tx < 28; ++tx) { canvas->set(tx, 6, phone_tile::fill_card); canvas->set(tx, 7, phone_tile::fill_card); }
+            pill_t.clear();
+            if(locked) { pill_at(28, 6, "Zablokowany", pill::late); arrows.set_visible(false); return; }
+            int d = a.chosen_diff;
+            pill p = d == 0 ? pill::done : (d == data::difficulties_count - 1 ? pill::late : pill::group);
+            int tx = pill_at(28, 6, data::difficulties[d].name, p);
+            arrows.set_position(tx * 8 - 8 - 120, row1 + 8 - 80);
+            arrows.set_visible(true);
+        };
+
+        auto draw_card = [&]() {
+            card_t.clear();
+            const int ci = order[sel];
+            const core::class_def& c = data::classes[ci];
+            const core::weapon_def& w = data::weapons[c.weapon];
+            bool locked = ! core::class_unlocked(a.save, ci);
+            put(card_t, 16, row1, c.name, ink_palette(ink::dark));
+            draw_diff(locked);
+            // moc: ikona, nazwa (fiolet) i jednolinijkowy opis
+            ability.set_tiles(bn::sprite_items::ability_icons.tiles_item(), ci);
+            ability.set_position(18 - 120, row2 + 8 - 80);
+            int x = 29 + put(card_t, 29, row2, c.ability_name, ink_palette(ink::brand));
+            put(card_t, x + 4, row2, fit(a, c.ability_desc, 229 - x - 4).c_str(), ink_palette(ink::dim));
+            // broń: nazwa, obrażenia i zasięg, statystyka skalowania (fiolet)
+            core::message wn; wn.add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage);
+            core::message tag; tag.add("(").add(stat_short(w.scales_with)).add(")");
+            core::message rng; rng.add(", zasięg ").add(w.range);
+            int room = 228 - 16 - a.text.width(wn.s) - 4 - a.text.width(tag.s);
+            if(a.text.width(rng.s) > room) { rng = core::message(); rng.add(", zas. ").add(w.range); }
+            x = 16 + put(card_t, 16, row3, wn.s, ink_palette(ink::dark));
+            x += put(card_t, x, row3, rng.s, ink_palette(ink::dim));
+            put(card_t, x + 4, row3, tag.s, ink_palette(ink::brand));
+            // statystyki efektywne: zawód + Szkolenia, uprawnienia, pamiątka - "baza+premia"
+            const core::run_mods m = core::mods(a.save);
+            struct cell { const char* label; int base, bonus; bool weapon; };
+            const cell cells[6] = {
+                { "HP", c.max_health, m.hp, false },
+                { "SIŁ", c.strength, core::mods_stat_bonus(m, ci, core::stat::str), w.scales_with == core::stat::str },
+                { "ZRĘ", c.agility, core::mods_stat_bonus(m, ci, core::stat::agi), w.scales_with == core::stat::agi },
+                { "INT", c.intelligence, core::mods_stat_bonus(m, ci, core::stat::intel), w.scales_with == core::stat::intel },
+                { "OBR", c.defense, m.def, false },
+                { "SZCZ", c.luck, m.luck, false } };
+            for(int i = 0; i < 6; ++i)
+            {
+                const cell& ce = cells[i];
+                int cx = 16 + (i % 3) * 72, cy = i < 3 ? row4 : row5;
+                cx += put(card_t, cx, cy, ce.label, ink_palette(ce.weapon ? ink::brand : ink::dim)) + 4;
+                core::message v; v.add(ce.base);
+                cx += put(card_t, cx, cy, v.s, ink_palette(ink::dark));
+                if(ce.bonus > 0) { core::message b; b.add("+").add(ce.bonus); put(card_t, cx, cy, b.s, ink_palette(ink::done)); }
+            }
+        };
+
+        auto draw_keep = [&]() {   // pod kartą: pamiątka (L/R) albo jak odblokować zawód
+            keep_t.clear();
+            const int ci = order[sel];
+            if(! core::class_unlocked(a.save, ci))
+            {
+                put(keep_t, 8, keep_row, "Odblokuj w Kosztach (telefon)", bn::sprite_items::font_8x16.palette_item());
+                core::message m; m.add("Koszt ").add(data::class_cost).add(" dośw., masz ").add(int(a.save.xp));
+                put(keep_t, 8, keep_row2, m.s, a.save.xp >= data::class_cost ? bn::sprite_palette_items::font_map_good
+                                                                              : bn::sprite_palette_items::font_map_loot);
+                return;
+            }
+            int x = 8 + put(keep_t, 8, keep_row, "Pamiątka L/R: ", bn::sprite_items::font_8x16.palette_item());
+            int k = core::selected_keepsake(a.save);
+            if(k < 0)
+            {
+                put(keep_t, x, keep_row, "brak", bn::sprite_palette_items::font_map_loot);
+                put(keep_t, 8, keep_row2, "więcej pamiątek w Zleceniach", bn::sprite_palette_items::font_map_good);
+                return;
+            }
+            core::message n; n.add(data::keepsakes[k].name).add(" ").add(roman(core::keepsake_rank(a.save, k) - 1));
+            put(keep_t, x, keep_row, fit(a, n.s, 232 - x).c_str(), bn::sprite_palette_items::font_map_loot);
+            core::message e; core::perk_label(e, core::keepsake_perk(a.save, k));
+            put(keep_t, 8, keep_row2, fit(a, e.s, 224).c_str(), bn::sprite_palette_items::font_map_good);
+        };
+
+        auto redraw_all = [&]() {
+            canvas->clear();
+            canvas->rounded(1, card_ty, 28, card_th, phone_tile::fill_card, phone_tile::corner_card);
+            draw_strip();
+            draw_card();
+            draw_keep();
+            map.reload_cells_ref();
+        };
+        auto move_card = [&](int dx) {
+            for(bn::sprite_ptr& s : card_t) s.set_x(s.x() + dx);
+            ability.set_x(ability.x() + dx);
+        };
+        redraw_all();
+
+        while(true)
+        {
+            ++clock;
+            int ddir = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+            if(ddir)
+            {
+                do a.chosen_diff = (a.chosen_diff + ddir + data::difficulties_count) % data::difficulties_count;
+                while(! core::difficulty_unlocked(a.save, a.chosen_diff));
+                if(core::class_unlocked(a.save, order[sel])) { draw_diff(false); map.reload_cells_ref(); }
+                bn::sound_items::sfx_menu.play();
+            }
+            int kdir = bn::keypad::r_pressed() ? 1 : (bn::keypad::l_pressed() ? -1 : 0);
+            if(kdir)
+            {
+                core::cycle_keepsake(a.save, kdir);
+                draw_card(); draw_keep(); map.reload_cells_ref();   // pamiątka zmienia statystyki
+                bn::sound_items::sfx_menu.play();
+            }
+            int cdir = bn::keypad::right_pressed() ? 1 : (bn::keypad::left_pressed() ? -1 : 0);
+            if(cdir)
+            {
+                sel = (sel + cdir + count) % count;
+                a.chosen_class = order[sel];
+                redraw_all();
+                slide = cdir * slide_px; move_card(slide);   // karta wjeżdża z kierunku ruchu
+                pop = 4;
+                bn::sound_items::sfx_menu.play();
+            }
+            if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
+            {
+                if(core::class_unlocked(a.save, a.chosen_class))
+                {
+                    a.text.set_palette_item(default_ink);
+                    a.text.set_bg_priority(default_prio);
+                    a.g->new_run(a.chosen_class, a.seed_counter * 2654435761u + 12345u, a.chosen_diff, core::mods(a.save));
+#ifdef PB_SCENARIO
+                    debug_scenario::apply(*a.g, PB_SCENARIO);
+#endif
+                    core::start_run(a.save);   // licznik budów i budów z pamiątką (ranga)
+                    bn::sram::write(a.save);
+                    wait_release();
+                    if(! core::has_flag(a.save, core::prologue_seen)) return leave(scene::prologue);
+                    if(! core::has_flag(a.save, core::help_seen)) { a.after_help = scene::game; return leave(scene::help); }
+                    return leave(scene::game);
+                }
+                shake = 12;   // zablokowany: portret kręci głową
+                bn::sound_items::sfx_hurt.play();
+            }
+            if(bn::keypad::b_pressed())
+            {
+                a.text.set_palette_item(default_ink);
+                a.text.set_bg_priority(default_prio);
+                wait_release();
+                return leave(scene::title);
+            }
+
+            // animacje: wjazd karty, "wyskok" i kołysanie wybranego portretu, przebieranie nogami
+            if(slide) { int st = slide > 0 ? -core::imin(slide_step, slide) : core::imin(slide_step, -slide); move_card(st); slide += st; }
+            const int c = order[sel];
+            bool unl = core::class_unlocked(a.save, c);
+            big.set_scale(bn::fixed(2) - bn::fixed(pop) / 8);
+            if(pop) --pop;
+            int bob = unl ? pulse(clock / 12, 1) : 0;
+            int sx = shake ? ((shake & 2) ? 2 : -2) : 0;
+            if(shake) --shake;
+            big.set_position(slot_cx(sel) - 120 + sx, big_cy - 80 + oy - bob);
+            if(unl && clock % 24 == 0)
+                big.set_tiles(bn::sprite_items::actors.tiles_item(), (clock / 24) % 2 ? anim_b(data::classes[c].frame) : data::classes[c].frame);
+            next_frame();
+        }
+    }
+
     scene run_shop(app& a, int tab = 4)
     {
         phone_screen ph(tab);
