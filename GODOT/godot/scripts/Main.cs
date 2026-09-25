@@ -15,7 +15,7 @@ namespace LifeLike.Game;
 /// </summary>
 public partial class Main : Node2D
 {
-    private enum Screen { Title, Training, Playing, Overview, StageClear, Hurtownia, End }
+    private enum Screen { Title, Training, Playing, Overview, StageClear, Hurtownia, End, GearOffer, ActionMenu }
 
     [Export] public uint Seed { get; set; } // 0 = losowy
 
@@ -77,22 +77,98 @@ public partial class Main : Node2D
         ShowTitle();
     }
 
-    /// <summary>--screenshot plik.png: bot gra kilkadziesiąt tur, potem zrzut ekranu i wyjście (podgląd grafiki bez klikania).</summary>
+    /// <summary>
+    /// --screenshot plik.png [--scene nazwa]: podgląd grafiki bez klikania, potem zrzut ekranu i wyjście.
+    /// Sceny: game (domyślna – bot gra kilka tur), title (ekran tytułowy), offer (okno porównania sprzętu),
+    /// menu (menu akcji z termosem; na pokaz stan zatrucia i kawy w termosie), combat (liczby: KRYT! i Unik!),
+    /// overview (podgląd pod Tab).
+    /// </summary>
     private async void TakeScreenshot(string path)
     {
         _persistProfile = false;
         _profile = Meta.NewProfile(_d);
         Seed = Seed != 0 ? Seed : 424242u;
-        StartRun();
-        for (var i = 0; i < 10 && _screen == Screen.Playing; i++)
+        var args = OS.GetCmdlineUserArgs();
+        var sceneArg = Array.IndexOf(args, "--scene");
+        var scene = sceneArg >= 0 && sceneArg + 1 < args.Length ? args[sceneArg + 1] : "game";
+        if (scene == "title")
         {
-            Bot.StepSmart(_g);
-            AfterAction(true);
+            _cls = 5;
+            ShowTitle();
+        }
+        else
+        {
+            _cls = scene == "game" ? 0 : 5;
+            StartRun();
+            for (var i = 0; i < 10 && _screen == Screen.Playing; i++)
+            {
+                Bot.StepSmart(_g);
+                AfterAction(true);
+            }
+            if (_screen == Screen.GearOffer) CloseOffer(_g.OfferIsBetter);
+            switch (scene)
+            {
+                case "offer": // pokaz: założony kask z jedną cechą, pod nogami paczka z lepszym i inną cechą
+                    _g.Equip(0, 1, 1);
+                    _g.Pickups[0] = new Pickup(_g.Hero.X, _g.Hero.Y, PickupType.GearBox, true, 0 * 3 + 2, 3);
+                    _g.Collect();
+                    AfterAction(true);
+                    break;
+                case "menu":
+                    _g.Thermos = 2;
+                    _g.Hero.Hp = (short)(_g.Hero.MaxHp / 2);
+                    _g.ApplyStatus(StatusEffect.Poison, 3);
+                    _g.ApplyStatus(StatusEffect.Slip, 2);
+                    OpenMenu();
+                    _view.MenuSel = 2;
+                    MenuHint();
+                    break;
+                case "combat": // pokaz liczb: trafienie krytyczne bohatera i unik przed ciosem problemu
+                {
+                    _g.EnemiesCount = 0;
+                    var (ex, ey) = FreeNeighbour();
+                    _g.Spawn(0, ex, ey);
+                    _g.Enemies[0].Hp = _g.Enemies[0].MaxHp = 500;
+                    _g.Enemies[0].Awake = true;
+                    var kept = new System.Collections.Generic.List<Hit>();
+                    for (var k = 0; k < 300 && kept.Count == 0; k++)
+                    {
+                        _g.HitsCount = 0;
+                        _g.Hero.Hp = _g.Hero.MaxHp;
+                        _g.PlayerAttack(0);
+                        for (var h = 0; h < _g.HitsCount; h++) if (_g.Hits[h].Kind == HitKind.Crit) kept.Add(_g.Hits[h]);
+                    }
+                    for (var k = 0; k < 300; k++)
+                    {
+                        _g.HitsCount = 0;
+                        _g.Hero.Hp = _g.Hero.MaxHp;
+                        _g.PlayerWait();
+                        if (_g.HitsCount > 0 && _g.Hits[0].Kind == HitKind.Dodge) break;
+                    }
+                    foreach (var h in kept) _g.AddHit(h.X, h.Y, h.Amount, h.OnHero, h.Kind);
+                    AfterAction(true);
+                    break;
+                }
+                case "overview":
+                    _screen = Screen.Overview;
+                    ShowOverview();
+                    break;
+            }
         }
         for (var i = 0; i < 30; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         GetViewport().GetTexture().GetImage().SavePng(path);
         GD.Print($"Zrzut ekranu: {path}");
         GetTree().Quit();
+    }
+
+    private (int X, int Y) FreeNeighbour()
+    {
+        foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
+        {
+            int x = _g.Hero.X + dx, y = _g.Hero.Y + dy;
+            if (_g.Lv.At(x, y) == Tile.Floor && !_g.Occupied(x, y)) return (x, y);
+        }
+        return (_g.Hero.X + 1, _g.Hero.Y);
     }
 
     // ------------------------------------------------------------------ test dymny
@@ -108,8 +184,8 @@ public partial class Main : Node2D
             _diff = 0;
             Seed = Seed != 0 ? Seed : 424242u;
             StartRun();
-            var steps = 0;
-            for (; steps < 4000 && _g.Stage < 3; steps++)
+            int steps = 0, offers = 0, drinks = 0;
+            for (; steps < 4000 && _g.Stage < 5; steps++)
             {
                 if (_screen == Screen.StageClear)
                 {
@@ -123,14 +199,52 @@ public partial class Main : Node2D
                     Advance();
                     continue;
                 }
+                if (_screen == Screen.GearOffer) // okno porównania: decyzja jak bot z GBA (lepszy – zakładam)
+                {
+                    offers++;
+                    CloseOffer(_g.OfferIsBetter);
+                    continue;
+                }
                 if (_screen != Screen.Playing) break;
+                if (_g.Thermos > 0 && _g.Hero.Hp * 2 < _g.Hero.MaxHp) // termos przez menu akcji (Enter, strzałka w dół x2)
+                {
+                    OpenMenu();
+                    MenuPick(2);
+                    MenuPick(2);
+                    drinks++;
+                    continue;
+                }
                 Bot.StepSmart(_g);
                 AfterAction(true);
             }
+            if (_screen == Screen.Playing && _g.St == GameStatus.Playing)
+            {
+                // Ścieżki UI, na które bot mógł nie trafić: termos przez menu akcji i okno porównania sprzętu.
+                _g.Thermos = Math.Max(_g.Thermos, 1);
+                _g.Hero.Hp = (short)Math.Max(1, _g.Hero.MaxHp / 3);
+                int before = _g.Thermos, hp = _g.Hero.Hp;
+                OpenMenu();
+                MenuPick(2);
+                MenuPick(2);
+                if (_screen == Screen.Playing && (_g.Thermos != before - 1 || _g.Hero.Hp <= hp - 20)) throw new Exception("termos z menu nie zadziałał");
+                drinks++;
+                if (_g.St == GameStatus.Playing && _screen == Screen.Playing)
+                {
+                    _g.Equip(0, 0, 0);
+                    _g.Pickups[0] = new Pickup(_g.Hero.X, _g.Hero.Y, PickupType.GearBox, true, 2, 1);
+                    _g.Collect();
+                    AfterAction(true);
+                    if (_screen != Screen.GearOffer) throw new Exception("brak okna porównania sprzętu");
+                    OfferInput(new InputEventAction { Action = GameInput.Attack, Pressed = true });
+                    if (_screen != Screen.Playing || _g.Equipped[0] != 2 || _g.EquippedTrait[0] != 1) throw new Exception("zakładanie z porównania nie zadziałało");
+                    offers++;
+                }
+            }
             ShowOverview();
-            var ok = _g.Stage >= 3 || _g.St is GameStatus.Dead or GameStatus.Won;
+            var ok = _g.Stage >= 5 || _g.St is GameStatus.Dead or GameStatus.Won;
             GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {_d.Version}, zawody {_d.Classes.Length}, etap {_g.Stage + 1}, " +
-                     $"dzień {_g.Turns}, HP {_g.Hero.Hp}/{_g.Hero.MaxHp}, wynik {_g.Score}, budżet {_g.Cash}, kroki {steps}, ekran {_screen}");
+                     $"dzień {_g.Turns}, HP {_g.Hero.Hp}/{_g.Hero.MaxHp}, wynik {_g.Score}, budżet {_g.Cash}, kroki {steps}, " +
+                     $"paczki {offers}, termos {drinks}, ekran {_screen}");
             GetTree().Quit(ok ? 0 : 1);
         }
         catch (Exception ex)
@@ -154,7 +268,7 @@ public partial class Main : Node2D
             var c = _d.Classes[i];
             var mark = i == _cls ? "> " : "  ";
             var lockTxt = Meta.ClassUnlocked(_profile, i) ? "" : $"  [zablokowany – {_d.ClassCost} dośw. w Szkoleniach]";
-            sb.AppendLine($"{mark}{c.Name} – {c.Desc} HP {c.MaxHealth}, moc {c.AbilityName}{lockTxt}");
+            sb.AppendLine($"{mark}{c.Name} – {c.Desc} HP {c.MaxHealth}, szczęście {c.Luck}, moc {c.AbilityName}{lockTxt}");
         }
         sb.AppendLine();
         var diffLock = Meta.DifficultyUnlocked(_d, _profile, _diff) ? "" : " [zablokowany]";
@@ -211,7 +325,9 @@ public partial class Main : Node2D
         var sb = new StringBuilder();
         sb.AppendLine($"PODGLĄD · {_g.CDef.Name} · poziom {_g.HeroLevel} · dzień {_g.Turns}");
         sb.AppendLine($"HP {_g.Hero.Hp}/{_g.Hero.MaxHp} · obrona {_g.CDef.Defense}+{_g.DefBonus + _g.GearBonus(GearStat.Def)} · premia obrażeń {_g.DmgBonus + _g.GearBonus(GearStat.Dmg)}");
-        sb.AppendLine($"Sprzęt: {Hud.Gear(_g)} · Stany: {Hud.Statuses(_g)}");
+        sb.AppendLine($"{Hud.Luck(_g)} · Termos {_g.Thermos}/{_d.ThermosCapacity}");
+        sb.AppendLine($"Sprzęt: {Hud.Gear(_g)}");
+        sb.AppendLine($"Stany: {Hud.Statuses(_g)}");
         sb.AppendLine($"Wynik {_g.Score} · Budżet {_g.Cash} zł · Doświadczenie {_g.Xp} · Zabite {_g.Kills}");
         sb.AppendLine();
         sb.AppendLine("Widoczne problemy budowy:");
@@ -269,6 +385,121 @@ public partial class Main : Node2D
         sb.AppendLine("↑/↓ wybór · Spacja: kup · Enter/Z: dalej");
         if (_note.Length > 0) sb.AppendLine(_note);
         _hud.ShowPanel(sb.ToString());
+    }
+
+    /// <summary>Paczka sprzętu przy zajętym slocie: porównanie obecny / nowy z cechami (jak telefon na GBA).</summary>
+    private void ShowOffer()
+    {
+        _screen = Screen.GearOffer;
+        var slot = _g.OfferSlot;
+        string Row(string label, int rarity, int trait)
+        {
+            var gd = _d.Gear[slot * 3 + rarity];
+            var t = _d.GearTraits[trait];
+            return $"{label} {gd.Name} ({_d.GearRarities[rarity]}) – {Hud.StatName(gd.Stat)} +{gd.Value}, cecha: {t.Name}";
+        }
+        var sb = new StringBuilder();
+        sb.AppendLine($"PACZKA SPRZĘTU · {_d.GearSlots[slot]}");
+        sb.AppendLine();
+        sb.AppendLine(Row("Teraz:", _g.Equipped[slot], _g.EquippedTrait[slot]));
+        sb.AppendLine(Row("Nowy: ", _g.OfferRarity, _g.OfferTrait));
+        sb.AppendLine();
+        sb.AppendLine(_g.OfferIsBetter ? "Nowy jest lepszej jakości."
+                      : _g.OfferRarity == _g.Equipped[slot] ? "Ta sama jakość – różni się cechą." : "Nowy jest gorszej jakości.");
+        sb.AppendLine();
+        sb.AppendLine($"A (Spacja/X): zakładam · B (Z): zostawiam (+{_d.GearDeclineXp + _g.OfferRarity} dośw.)");
+        _hud.ShowPanel(sb.ToString());
+    }
+
+    private void CloseOffer(bool accept)
+    {
+        if (accept) _g.AcceptOffer();
+        else _g.DeclineOffer();
+        _screen = Screen.Playing;
+        _hud.HidePanel();
+        AfterAction(true); // decyzja nie zużywa tury, ale mogła dać awans (doświadczenie)
+    }
+
+    // ------------------------------------------------------------------ menu akcji (Enter / START)
+    /// <summary>Menu akcji wokół bohatera: góra Atak, prawo Moc, dół Termos, lewo Czekaj (jak GBA v0.21.42).</summary>
+    private void OpenMenu()
+    {
+        _screen = Screen.ActionMenu;
+        _view.MenuSel = -1;
+        MenuHint();
+        Refresh();
+    }
+
+    private void CloseMenu()
+    {
+        _view.MenuSel = -2;
+        _hud.ShowHint(null);
+        if (_screen == Screen.ActionMenu) _screen = Screen.Playing;
+        Refresh();
+    }
+
+    private void MenuHint()
+    {
+        var label = _view.MenuSel switch
+        {
+            0 => $"Atak: najbliższy cel (z{_g.Weapon.Range})",
+            1 => $"Moc: {_g.CDef.AbilityName} {Hud.Roman(_g.AbilityRank() - 1)}" + (_g.AbilityCd > 0 ? $" – za {_g.AbilityCd} t." : ""),
+            2 => $"Termos {_g.Thermos}/{_d.ThermosCapacity}: kawa +{_g.CoffeeHeal()} HP (zużywa turę)",
+            3 => "Czekaj turę",
+            _ => "Akcje: wybierz strzałką (A Atak ↑, M Moc →, T Termos ↓, C Czekaj ←)",
+        };
+        _hud.ShowHint(label + "\n" + (_view.MenuSel < 0 ? "Enter/Z: zamknij" : "Ta sama strzałka lub Spacja: wykonaj · Enter/Z: zamknij"));
+    }
+
+    /// <summary>Strzałka w menu: pierwszy raz wybiera, drugi raz tą samą – wykonuje.</summary>
+    private void MenuPick(int k)
+    {
+        if (_view.MenuSel != k)
+        {
+            _view.MenuSel = k;
+            MenuHint();
+            _view.QueueRedraw();
+            return;
+        }
+        MenuExecute();
+    }
+
+    private void MenuExecute()
+    {
+        var sel = _view.MenuSel;
+        CloseMenu();
+        var acted = sel switch
+        {
+            0 => AttackNearest(),
+            1 => _g.PlayerAbility(),
+            2 => _g.PlayerDrink(),
+            3 => _g.PlayerWait(),
+            _ => false,
+        };
+        AfterAction(acted);
+    }
+
+    private bool ActionMenuInput(InputEvent e)
+    {
+        for (var k = 0; k < 4; k++)
+        {
+            var action = k switch { 0 => GameInput.Up, 1 => GameInput.Right, 2 => GameInput.Down, _ => GameInput.Left };
+            if (!Pressed(e, action)) continue;
+            MenuPick(k);
+            return true;
+        }
+        if (Pressed(e, GameInput.Attack) && _view.MenuSel >= 0) MenuExecute();
+        else if (Pressed(e, GameInput.Confirm) || Pressed(e, GameInput.Wait) || Pressed(e, GameInput.Cancel)) CloseMenu();
+        else return false;
+        return true;
+    }
+
+    private bool OfferInput(InputEvent e)
+    {
+        if (Pressed(e, GameInput.Attack)) CloseOffer(true);
+        else if (Pressed(e, GameInput.Wait) || Pressed(e, GameInput.Cancel)) CloseOffer(false);
+        else return false;
+        return true;
     }
 
     private void ShowEnd()
@@ -341,6 +572,10 @@ public partial class Main : Node2D
             SaveProfile();
             ShowEnd();
         }
+        else if (_g.St == GameStatus.Playing && _g.HasOffer && _screen == Screen.Playing)
+        {
+            ShowOffer();
+        }
         Refresh();
     }
 
@@ -366,6 +601,7 @@ public partial class Main : Node2D
         _camera.Position = _view.GridToScreen(_g.Hero.X, _g.Hero.Y);
         Span<sbyte> t = stackalloc sbyte[CoreGame.MaxEnemies];
         _view.Mark(_screen == Screen.Playing && _g.TargetsInRange(t) > 0 ? t[0] : -1);
+        _view.TakeHits(_g);
         _view.QueueRedraw();
         _hud.ShowGame(_g);
     }
@@ -387,6 +623,8 @@ public partial class Main : Node2D
             Screen.StageClear => StageClearInput(e),
             Screen.Hurtownia => HurtowniaInput(e),
             Screen.End => EndInput(e),
+            Screen.GearOffer => OfferInput(e),
+            Screen.ActionMenu => ActionMenuInput(e),
             _ => false,
         };
         if (handled) GetViewport().SetInputAsHandled();
@@ -453,6 +691,11 @@ public partial class Main : Node2D
         {
             _screen = Screen.Overview;
             ShowOverview();
+            return true;
+        }
+        if (Pressed(e, GameInput.Confirm))
+        {
+            OpenMenu();
             return true;
         }
         int dx = 0, dy = 0;

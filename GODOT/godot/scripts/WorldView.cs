@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 using LifeLike.Core;
 
@@ -15,6 +16,27 @@ public partial class WorldView : Node2D
     private LifeLike.Core.Game _g;
     private int _marked = -1;
 
+    /// <summary>Liczby nad polami (obrażenia, KRYT!, Unik!) – znikają po FloatLife sekundach.</summary>
+    private readonly List<Floater> _floaters = new();
+    private const float FloatLife = 1.2f;
+
+    private sealed class Floater
+    {
+        public Vector2 Pos;
+        public string Text = "";
+        public Color Col;
+        public int Size;
+        public float Age;
+    }
+
+    /// <summary>Menu akcji pod Enter/START: -2 zamknięte, -1 otwarte bez wyboru, 0..3 = góra/prawo/dół/lewo.</summary>
+    public int MenuSel { get; set; } = -2;
+
+    public static readonly Vector2I[] MenuDirs = [new(0, -1), new(1, 0), new(0, 1), new(-1, 0)];
+    public static readonly string[] MenuIcons = ["A", "M", "T", "C"]; // Atak, Moc, Termos, Czekaj
+    private static readonly Color MenuC = new("fde68a"), MenuSelC = new("f59e0b");
+    public static readonly Color CritC = new("facc15"), DodgeC = new("34d399"), HurtC = new("ef4444");
+
     private static readonly Color WallC = new("3a3548"), FloorC = new("8a8577"), StairsC = new("f59e0b");
     private static readonly Color TempWallC = new("b45309"), HeroC = new("6b4eff"), EnemyC = new("ef4444");
     private static readonly Color BossC = new("991b1b"), SlamC = new(1f, 0.1f, 0.1f, 0.45f), TextC = Colors.White;
@@ -24,6 +46,46 @@ public partial class WorldView : Node2D
 
     /// <summary>Wróg wskazany celowaniem (ramka).</summary>
     public void Mark(int enemy) => _marked = enemy;
+
+    /// <summary>
+    /// Przenosi trafienia z rdzenia na liczby nad polami i zeruje listę (jak warstwa GBA po każdej turze):
+    /// „KRYT! -N” na żółto, „Unik!” na zielono, obrażenia bohatera na czerwono.
+    /// </summary>
+    public void TakeHits(LifeLike.Core.Game g)
+    {
+        for (var i = 0; i < g.HitsCount; i++)
+        {
+            var h = g.Hits[i];
+            var f = new Floater { Pos = GridToScreen(h.X, h.Y) + new Vector2(0, -Cell * 0.7f - 9 * (i % 3)), Size = 13 };
+            switch (h.Kind)
+            {
+                case HitKind.Dodge:
+                    f.Text = "Unik!";
+                    f.Col = DodgeC;
+                    break;
+                case HitKind.Crit:
+                    f.Text = $"KRYT! -{h.Amount}";
+                    f.Col = CritC;
+                    f.Size = 15;
+                    break;
+                default:
+                    f.Text = $"-{h.Amount}";
+                    f.Col = h.OnHero ? HurtC : Colors.White;
+                    break;
+            }
+            _floaters.Add(f);
+        }
+        g.HitsCount = 0;
+        QueueRedraw();
+    }
+
+    public override void _Process(double delta)
+    {
+        if (_floaters.Count == 0) return;
+        foreach (var f in _floaters) f.Age += (float)delta;
+        _floaters.RemoveAll(f => f.Age > FloatLife);
+        QueueRedraw();
+    }
 
     public Vector2 GridToScreen(int x, int y) => new(x * Cell + Cell / 2f, y * Cell + Cell / 2f);
 
@@ -82,6 +144,27 @@ public partial class WorldView : Node2D
         DrawRect(new Rect2(h.X * Cell + 1, h.Y * Cell + 1, Cell - 3, Cell - 3), h.Alive ? HeroC : Colors.DimGray);
         Letter(font, h.X, h.Y, "@", TextC);
         Bar(h.X, h.Y, h.Hp, h.MaxHp, Colors.LimeGreen);
+
+        if (MenuSel >= -1)
+        {
+            for (var k = 0; k < 4; k++)
+            {
+                var c = GridToScreen(h.X, h.Y) + new Vector2(MenuDirs[k].X, MenuDirs[k].Y) * (Cell * 1.15f);
+                if (k == MenuSel) DrawCircle(c, Cell * 0.55f, MenuSelC);
+                DrawCircle(c, Cell * 0.42f, new Color(0.08f, 0.06f, 0.14f));
+                DrawArc(c, Cell * 0.42f, 0, Mathf.Tau, 20, k == MenuSel ? MenuSelC : MenuC, 1.5f);
+                DrawString(font, c + new Vector2(-Cell / 2f, 5), MenuIcons[k], HorizontalAlignment.Center, Cell, 13, k == MenuSel ? MenuSelC : MenuC);
+            }
+        }
+
+        foreach (var f in _floaters)
+        {
+            var t = f.Age / FloatLife;
+            var col = new Color(f.Col, 1f - t * t);
+            var pos = f.Pos + new Vector2(0, -14 * t);
+            DrawString(font, pos + new Vector2(-40 + 1, 1), f.Text, HorizontalAlignment.Center, 80, f.Size, new Color(0, 0, 0, col.A));
+            DrawString(font, pos + new Vector2(-40, 0), f.Text, HorizontalAlignment.Center, 80, f.Size, col);
+        }
     }
 
     private bool IsTempWall(int x, int y)
