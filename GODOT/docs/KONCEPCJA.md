@@ -158,6 +158,28 @@ Szkic ekranu (1280×720): telefon w pionie na środku, mapa etapu w tle rozmyta 
 - Ekrany: tytuł (logo, wersja z game.json), wybór zawodu jak GBA v0.21.45 (karuzela portretów, odblokowane najpierw,
   karta z paskami statystyk), koniec z kodem QR i konfetti. Zrzuty `--screenshot --scene` (26 scen), test dymny
   otwiera wszystkie zakładki i ekrany i kończy się błędem, gdy któryś się nie rysuje.
-- Jeszcze nie: 2.5D i dynamiczne światło (kamień 4), animacje chodu w wielu klatkach, dotknięcie banera otwiera
-  zakładkę, rada kierownika (`tips`) na harmonogramie, celowanie z przełączaniem celu i podgląd wroga pod B.
+- Jeszcze nie (stan po kamieniu 2): 2.5D i dynamiczne światło (kamień 4); resztę zrobił kolejny krok (niżej).
+
+### Architektura i parytet z GBA (zrobione, 2026-09-25)
+
+- Warstwa Godota podzielona na klasy (katalog = przestrzeń nazw): `Main` to cienki korzeń, `App` składa sesję,
+  węzły i ekrany; `Screens/` – maszyna stanów `ScreenFlow` i ekrany (`Screen`: Enter / Exit / HandleInput / Process,
+  deklaracja warstw i muzyki), `Session/GameSession` z `SessionEvents` (awans, drop, moc gotowa, boss, etap, koniec
+  budowy, odznaki) – banery, dźwięki i efekty mapy tylko obserwują; `Input/` – akcje jak przyciski GBA (`GameAction`,
+  `InputCmd`), wstrzykiwanie z przycisków ekranowych; `Debug/` – zrzuty i test dymny poza kodem produkcyjnym;
+  kolory w `Pal`/`Ink`, skale i rozmiar ekranu tylko w `Layout`. Zachowanie bez zmian (ten sam wynik testu
+  dymnego, zrzuty 26 scen różnią się tylko fazą animacji).
+- Ekran: stretch `canvas_items` + `expand` (dowolne proporcje bez pasów), mapa ~9 pól w pionie jak na GBA
+  (2.5 px okna na piksel grafiki), bohater w środku pola między paskami HUD, HUD w 1.5x, podgląd mapy dopasowany do
+  odkrytej części; menu tytułu i karta zawodu w większym foncie (skala ułamkowa fontu).
+- Celowanie pod trzymanym A (zasięg + celownik z GBA, strzałki zmieniają cel, puszczenie atakuje) i podgląd pod
+  trzymanym B (karta wroga: nazwa, HP, obrażenia z premią, opis; krótkie B = czekaj) – jak na GBA.
+- Prolog przy pierwszej budowie (`story.prologue`, `prologueCaptions`, pickup z GBA, flaga `prologue_seen`) i ekran
+  „Jak grać” (`help_seen`, też z menu tytułu).
+- Rada kierownika na harmonogramie (`tips`, kolejna z każdym etapem; przyciski GBA w tekście zamieniane na klawisze
+  z mapy wejścia – dane w game.json bez zmian).
+- Powiadomienia push w prawym górnym rogu pod HUD (nie zasłaniają „UWAGA: cios za…”), kliknięcie / dotknięcie
+  otwiera powiązaną zakładkę telefonu.
+- Eksporter: 4 klatki chodu i klatka oddechu dla zawodów, problemów i bossów (`actors_anim.png`), pickup z prologu.
+- Dalej: układ pionowy z przyciskami ekranowymi (telefon), 2.5D i światło (kamień 4).
 

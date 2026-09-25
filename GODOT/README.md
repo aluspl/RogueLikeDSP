@@ -33,16 +33,20 @@ telefon, nowy wybór zawodu) jak w GBA v0.21.45.
 - **`tests/LifeLike.Core.Tests`** – testy xUnit przeniesione z `GBA/tests/core_tests.cpp` (łącznie z balansem
   na botach, z mniejszą liczbą przebiegów) + test złoty.
 - **`godot/`** – grywalna wersja 2D z oprawą jak na GBA (kamienie milowe 2 i część 4 z KONCEPCJI):
-  obraz 640x360 skalowany 2x (ostre piksele), kafle etapów 32x32 w paletach z GBA, postacie, problemy budowy,
+  interfejs 640x360 pikseli UI przy 1280x720 (stretch `canvas_items`, aspect `expand`, skala całkowita – inne proporcje
+  okna dają więcej miejsca, bez pasów), mapa przybliżona do ~9 pól w pionie jak na GBA, HUD w 1.5x, kafle etapów 32x32 w paletach z GBA, postacie, problemy budowy,
   bossowie i znajdźki z GBA (Scale2x) z cieniem, płynnym ruchem, szturchnięciem przy ataku i błyskiem trafienia,
   mgła wojny z miękkim światłem, czerwone pola zapowiedzianego ciosu bossa, znacznik celu, „!”, mini paski HP,
   liczby obrażeń / „KRYT!” / „Unik!”, cząsteczki (pył, iskry, moce zawodów, awans, dropy, konfetti), wstrząs i błyski
-  ekranu, podgląd mapy (M). HUD jak na GBA: pasek HP, poziom z doświadczeniem, etap, stany z turami, termos, ikona
+  ekranu, podgląd mapy (M) dopasowany do odkrytej części etapu, chód w 4 klatkach i oddech postaci, celowanie pod
+  trzymanym A (zasięg, celownik, strzałki zmieniają cel) i karta wroga pod trzymanym B, prolog przy pierwszej budowie
+  (pickup wjeżdża na plac, kamera jedzie przez działkę, SMS od inwestorki) i ekran „Jak grać”. HUD jak na GBA: pasek HP, poziom z doświadczeniem, etap, stany z turami, termos, ikona
   mocy (szara z odliczaniem / pulsująca), dziennik z gasnącymi kolorowymi liniami, menu akcji wokół bohatera.
   **Telefon z aplikacją PlanBudowlany** pionowo na środku ekranu (mapa rozmyta i przyciemniona, wysuwa się z dołu,
   akcje poza czasem gry): w grze Zadania, Usterki, Start, Sprzęt, Koszty; na tytule profil – Odznaki / Zlecenia /
   Pamiątki, Katalog, Osiedle, Zespół, Koszty = sklep Szkolenia; wiadomości (karta etapu z SMS-em wydarzenia),
-  paczka sprzętu, harmonogram, Hurtownia; powiadomienia push z dźwiękiem. Ekrany: tytuł z logo i wersją z game.json,
+  paczka sprzętu, harmonogram z radą kierownika (`tips` z game.json, przyciski GBA zamienione na klawisze), Hurtownia;
+  powiadomienia push z dźwiękiem (na mapie w prawym górnym rogu pod HUD, kliknięcie otwiera zakładkę telefonu). Ekrany: tytuł z logo i wersją z game.json,
   wybór zawodu (karuzela portretów – odblokowane najpierw, karta z mocą, narzędziem, paskami statystyk z premią,
   trudnością i pamiątką), koniec gry z kodem QR i konfetti. Dźwięki z GBA na tych samych zdarzeniach, muzyka tytułu
   i gry. Profil zapisuje się w `user://profile.sav` (układ bajtów jak SRAM na GBA).
@@ -52,15 +56,17 @@ telefon, nowy wybór zawodu) jak w GBA v0.21.45.
 | Akcja | Klawiatura | Pad | Mysz |
 |---|---|---|---|
 | Ruch / atak wroga na drodze | strzałki, WSAD, numpad | D-pad, lewa gałka | lewy klik obok = krok |
-| A: atak najbliższego celu w zasięgu (bez celu miga zasięg) | Spacja, X, J | A | lewy klik na wroga w zasięgu |
-| B: czekaj turę | Z, Kp5, `.` | B | prawy klik |
+| A: atak najbliższego celu w zasięgu (bez celu miga zasięg); trzymaj: celownik, strzałki zmieniają cel, puść = atak | Spacja, X, J | A | lewy klik na wroga w zasięgu |
+| B: czekaj turę; trzymaj: karta wroga (strzałki: następny), bez zużycia tury | Z, Kp5, `.` | B | prawy klik |
 | R: moc zawodu | R, F | RB | |
 | START: menu akcji (strzałka wybiera, ta sama strzałka / A wykonuje, Enter/B zamyka) | Enter | Start | |
 | SELECT: telefon (zakładki: Q/E albo ←/→, zamknięcie: Tab/Esc/Z) | Tab | Select | |
 | L: podgląd mapy etapu (dowolny klawisz wraca) | M | L3 | |
 | Paczka sprzętu: A zakładam / B zostawiam | Spacja / Z | A / B | |
 | Dalej (wiadomości, harmonogram, Hurtownia) | Enter / Spacja | Start / A | |
-| Tytuł: menu (Nowa budowa, Profil, Szkolenia) | ↑/↓ + Enter | D-pad + Start | |
+| Powiadomienie push: otwórz jego zakładkę w telefonie | | | lewy klik / dotknięcie |
+| Prolog: pomiń | Spacja / Enter | A / Start | klik |
+| Tytuł: menu (Nowa budowa, Profil, Szkolenia, Jak grać) | ↑/↓ + Enter | D-pad + Start | |
 | Wybór zawodu: zawód / trudność / pamiątka / start / wróć | ←/→, ↑/↓, Q/E, Enter, Esc | D-pad, LB/RB, Start, B | |
 | Profil w telefonie (odznaki, zlecenia, pamiątki; Spacja zmienia stronę) | P | X | |
 | Szkolenia (zakładka Koszty w telefonie profilu, Spacja kupuje) | K | Y | |
@@ -76,7 +82,8 @@ telefon, nowy wybór zawodu) jak w GBA v0.21.45.
   Sceny: `title`, `classselect`, `profile`, `catalog`, `estate`, `team`, `training` (telefon profilu), `game`, `combat`
   (KRYT!/Unik!), `offer` (paczka sprzętu), `menu` (menu akcji), `phone-tasks`, `phone-issues`, `phone-start`
   (= `overview`), `phone-gear`, `phone-costs`, `card` (karta etapu z wydarzeniem), `perks` (HUD z premiami i wydarzeniem),
-  `schedule`, `hurtownia`, `boss` (boss z zapowiedzianym ciosem), `endmsg`, `end`, `banners`, `map`.
+  `schedule`, `hurtownia`, `boss` (boss z zapowiedzianym ciosem), `endmsg`, `end`, `banners`, `map`, `aim` (trzymane A),
+  `preview` (trzymane B), `prologue`, `schedule-tip` (rada kierownika), `help` (Jak grać).
   Sceny ustawiają stan ręcznie (profil pokazowy, skrót zaliczenia etapu jak L+R+SELECT na GBA); zrzuty i test dymny
   działają bez dźwięku.
 
@@ -147,7 +154,7 @@ dotnet test GODOT/LifeLike.sln
 src/LifeLike.Core/          logika gry (Game*.cs, Level, Rng, Meta, Profile, RunSave, Bot, Data/GameData)
 tests/LifeLike.Core.Tests/  testy xUnit + golden/ (dane z migawki GBA i złote przebiegi)
 tools/                      export_godot_assets.py – grafiki, font i dźwięki z GBA do godot/assets
-godot/                      projekt Godota (640x360 skalowane 2x)
+godot/                      projekt Godota (UI 640x360 przy 1280x720, dowolne proporcje okna)
 godot/assets/               wynik eksportu z GBA (PNG, font, WAV, MP3) + pliki .import
 godot/scripts/              prezentacja (C#, katalog = przestrzeń nazw LifeLike.Game.*) - patrz „Architektura”
 godot/data/                 kopia GBA/data/game.json robiona przy buildzie (poza gitem)
@@ -163,20 +170,25 @@ Main.cs            korzeń sceny: dane + profil -> App; wejście (klawiatura/pad
 App.cs             kompozycja: GameSession, SceneNodes, ScreenFlow, obserwatorzy zdarzeń; Refresh / AfterAction / StartRun
 SceneNodes.cs      drzewo węzłów: WorldView, HudLayer (1), plansze (2), telefon z tłem (3), banery (4)
 LaunchOptions.cs   argumenty --seed / --smoke / --screenshot --scene
-Input/             GameAction (A, B, L, R, START, SELECT, strzałki...), InputCmd (zdarzenie jako akcje),
-                   GameInput (mapa klawiszy i pada, Translate, Press/Release dla przycisków ekranowych, IsHeld)
+Input/             GameAction (A, B, L, R, START, SELECT, strzałki...), InputCmd (zdarzenie jako akcje, wciśnięte
+                   i puszczone), GameInput (mapa klawiszy i pada, Translate, Press/Release dla przycisków
+                   ekranowych, IsHeld), ButtonNames (A/B/START... w tekstach z game.json -> klawisze)
 Session/           GameSession (budowa + profil: start, etap, NG+, odznaki, zlecenia, bankowanie, zapis),
                    SessionEvents (LevelUp, PickedUp, Dropped, ToolFound, GearEquipped, AbilityReady, BossSpotted,
                    StageCleared, RunEnded, Achievements), TurnWatcher (wykrywa zdarzenia tury), GodotDataSource
 Screens/           Screen (Enter / Exit / HandleInput / Process + deklaracja warstw i muzyki), ScreenFlow (maszyna
-                   stanów), ekrany: Title, Profile, ClassSelect, Game, Phone, StageCard, Schedule, Hurtownia, Offer,
-                   EndMessage, End; Play/ (ActionMenu, PlayCommands); Views/ (TitleView, ClassSelectView, EndView)
+                   stanów), ekrany: Title, Profile, ClassSelect, Prologue, PrologueMessage, Help, Game, Phone,
+                   StageCard, Schedule, Hurtownia, Offer, EndMessage, End; Play/ (tryby mapy: ActionMenu, Aiming,
+                   EnemyLook, PlayCommands); Views/ (TitleView, ClassSelectView, EndView, PrologueView, PrologueStage)
 World/             WorldView (sprite'y, synchronizacja), WorldFx (trafienia, moce, awans, konfetti), WorldCamera,
                    warstwy: MapLayer, OverlayLayer, FogLayer, FxLayer, MarksLayer, ActorSprite
-Hud/               HudLayer (HudTop, HudLog, ScreenTint), PushBanners (rysowanie), BannerFeed (treść z SessionEvents)
-Phone/             PhoneView (telefon), PhonePage, PhonePainter, Backdrop; Tabs/ (w grze), ProfileTabs/, Pages/
-Gfx/               Pal (tokeny kolorów PlanBudowlany i GBA), Ink, Layout (rozmiar UI - jedyne miejsce), Assets,
-                   PixelFont, Ui, UiText, DrawErrors
+Hud/               HudLayer (HudTop, HudLog, EnemyCard, ScreenTint), PushBanners + PushBanner (rysowanie, trafienie
+                   kliknięciem), BannerFeed (treść i zakładka telefonu z SessionEvents)
+Phone/             PhoneView (telefon), PhonePage, PhonePainter, PhoneTabs, Backdrop; Tabs/ (w grze), ProfileTabs/,
+                   Pages/ (wiadomość, harmonogram z radą, Hurtownia, paczka, Jak grać)
+Gfx/               Pal (tokeny kolorów PlanBudowlany i GBA), Ink, Layout (rozmiar UI, skale HUD i mapy, bezpieczny
+                   obszar - jedyne miejsce), ScaledLayer (warstwa z własną skalą), Assets, PixelFont (skala
+                   ułamkowa), Ui, UiText, DrawHook, DrawErrors
 Audio/             Sfx (dźwięki i muzyka), SoundCues (dźwięki zdarzeń sesji)
 Debug/             DebugRunner (--smoke / --screenshot), SmokeTest, ScreenshotRunner, DebugScenes, DemoStaging, DemoProfile
 ```
@@ -184,3 +196,9 @@ Debug/             DebugRunner (--smoke / --screenshot), SmokeTest, ScreenshotRu
 Przepływ: `Main` tłumaczy zdarzenie na `InputCmd` -> `ScreenFlow.Current.HandleInput` -> ekran woła akcję rdzenia
 (np. `PlayerMove`) -> `App.AfterAction` -> `Refresh` (widok mapy zużywa trafienia tury, `TurnWatcher` zgłasza
 zdarzenia -> banery / dźwięki / efekty) -> `GameSession.Resolve` (etap zaliczony, koniec budowy, paczka) -> kolejny ekran.
+
+Skalowanie: `Layout` liczy wszystko od widocznego prostokąta okna – `ContentScale` (piksele okna na piksel UI,
+całkowita), `HudScale` (1.5x, zaokrąglone tak, by piksel był całkowitą liczbą pikseli okna), `WorldZoom` (~9 pól
+w pionie), `SafeArea` (wycięcia ekranu na telefonie). Widoki układają się od `Size`/`UiSize` (kotwice), więc układ
+pionowy (telefon) wymaga tylko własnych proporcji elementów, bez zmian w logice ekranów. Przyciski ekranowe
+wstrzykują akcje przez `GameInput.Press/Release` (ta sama ścieżka co klawiatura, łącznie z trzymaniem A/B).
