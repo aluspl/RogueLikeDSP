@@ -247,7 +247,7 @@ inline constexpr int hp_per_level = 2;
 inline constexpr int dmg_levels_mask = 32;
 inline constexpr int def_levels_mask = 8;
 
-inline constexpr const char* version = "v0.21.44";   // numer wersji (ekran tytułowy, changelog)
+inline constexpr const char* version = "v0.21.45";   // numer wersji (ekran tytułowy, changelog)
 
 inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonogramu między etapami
     "Przytrzymaj B: podgląd problemów",

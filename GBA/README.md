@@ -17,6 +17,7 @@ Przekroczony budżet) i bossa **Nieprzekraczalny Termin**. Na końcu ekran z kod
 | B | krótko: czekaj turę (co 4 tury +1 HP); przytrzymaj: podgląd widocznych wrogów (nazwa, HP, obrażenia, opis; strzałki zmieniają wroga) |
 | START | w grze: menu akcji wokół bohatera – góra Atak, prawo Moc, dół Termos, lewo Czekaj (strzałka wybiera, A albo ta sama strzałka wykonuje, START/B zamyka); poza grą: dalej |
 | SELECT | w grze: telefon z aplikacją PlanBudowlany (Zadania, Usterki, Start, Sprzęt, Koszty; L/R – zakładki, START – menu: jak grać, zapisz i wyjdź, porzuć budowę); na tytule: telefon profilu (Odznaki/Zlecenia/Pamiątki – przełączane A, Katalog, Osiedle, Zespół, Koszty = Szkolenia) |
+| lewo/prawo (wybór zawodu) | zmiana zawodu na pasku portretów (odblokowane najpierw; zablokowany można obejrzeć, A go nie wybierze) |
 | L/R (wybór zawodu) | pamiątka zabierana na budowę (albo „bez pamiątki”) |
 | B (tytuł) | ekran „Jak grać” |
 | L (przytrzymaj) | podgląd odkrytej mapy etapu |
@@ -32,6 +33,12 @@ Sprzęt: z wrogów wypadają paczki (zwykły / solidny / markowy) – kask (+obr
 **Szczęście** (`luck` zawodu + cechy): kryt 5% + 3%/pkt (obrażenia x2, żółte „KRYT!”), unik przed ciosem wroga 2%/pkt (maks. 20%), częstsze i lepsze dropy – parametry w sekcji `luck` pliku `data/game.json`. Glazurnik ma najwięcej szczęścia, Murarz wcale.
 Dropy: z pokonanych wrogów może wypaść kawa, kask, projekt albo skrzynka z narzędziem (Łom, Wkrętarka, Poziomica laserowa, Młot wyburzeniowy, Tablet z projektem, Miernik laserowy – zastępuje broń zawodu; kolejne narzędzia odblokowujesz w Szkoleniach; trzy ostatnie skalują się z INT).
 Statystyki efektywne (baza zawodu + premie ze Szkoleń, pamiątki i sprzętu, np. „SIŁ 5+2”) są na wyborze zawodu i w telefonie (zakładka Start).
+**Wybór zawodu:** u góry pasek portretów wszystkich zawodów – najpierw odblokowane (w kolejności z danych), potem
+zablokowane jako ciemne sylwetki z kłódką; wybrany portret jest powiększony na fioletowym polu i przebiera nogami.
+Pod spodem karta: nazwa, trudność (pastylka ze strzałkami góra/dół), moc z ikoną i opisem, broń z obrażeniami,
+zasięgiem i statystyką skalowania (np. „(SIŁ)”), statystyki HP/SIŁ/ZRĘ/INT/OBR/SZCZ z premią (zielone „+2”,
+statystyka broni na fioletowo). Karta wjeżdża z boku przy zmianie zawodu. Pod kartą pamiątka (L/R) z efektem, a dla
+zablokowanego zawodu – gdzie go odblokować (Koszty w telefonie profilu) i ile kosztuje.
 Powiadomienia push jak w aplikacji: awans, nowe narzędzie, drop, moc gotowa, zaliczony etap, pojawienie się Terminu.
 Mgła wojny: widzisz na 7 pól (ściany zasłaniają), odkryte pola zostają przyciemnione, wrogowie poza polem widzenia są ukryci.
 
