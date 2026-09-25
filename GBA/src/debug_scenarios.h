@@ -7,6 +7,8 @@
 //   3 - wrogowie wokół bohatera (efekty mocy każdego zawodu; wszystkie zawody odblokowane)
 //   4 - paczki sprzętu 3 jakości i skrzynka z narzędziem obok bohatera
 //   5 - aktywne stany: zatrucie, poślizg, porażenie
+//   6 - porównanie sprzętu: założony kask i rękawice, obok (w prawo) paczki: lepszy kask i gorsze rękawice
+//   8 - kryt i unik: markowy sprzęt z cechą Szczęście +1, obok (w lewo) wytrzymała Pleśń atakująca bohatera
 #include "core.h"
 #include "meta.h"
 
@@ -86,6 +88,26 @@ namespace debug_scenario
                 g.apply_status(core::status_effect::slip, 6);
                 g.apply_status(core::status_effect::shock, 1);
                 break;
+            case 6:
+            {
+                g.pickups_count = 0;
+                g.equip(0, 0, 0);                                   // kask budowlany, Szczęście +1
+                g.equip(1, 2, 4);                                   // rękawice markowe, Odnowienie mocy -1
+                g.pickups[g.pickups_count++] = { int8_t(g.hero.x + 1), g.hero.y, core::gear_box, true, uint8_t(0 * 3 + 2), 3 };
+                if(g.lv.at(g.hero.x + 2, g.hero.y) == core::tile::floor)
+                    g.pickups[g.pickups_count++] = { int8_t(g.hero.x + 2), g.hero.y, core::gear_box, true, uint8_t(1 * 3 + 1), 1 };
+                break;
+            }
+            case 8:
+            {
+                for(int i = 0; i < data::gear_slots_count; ++i) g.equip(i, 2, 0);   // szczęście +3: kryt i unik
+                g.enemies_count = 0;
+                g.spawn(data::enemy_plesn, g.hero.x - 1, g.hero.y);
+                core::actor& e = g.enemies[0];
+                e.hp = e.max_hp = 300; e.awake = true;
+                g.hero.max_hp = g.hero.hp = 300;
+                break;
+            }
             default:
                 break;
         }

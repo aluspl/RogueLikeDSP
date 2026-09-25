@@ -103,7 +103,7 @@ namespace core
 
     struct temp_wall { int8_t x, y, turns; };   // Ścianka Murarza
 
-    struct pickup { int8_t x, y; uint8_t type; bool active; uint8_t arg = 0; };   // arg: indeks narzędzia
+    struct pickup { int8_t x, y; uint8_t type; bool active; uint8_t arg = 0; uint8_t trait = 0; };   // arg: narzędzie / slot*3+jakość; trait: cecha sprzętu
     enum hit_kind : uint8_t { hit_normal, hit_crit, hit_dodge };
     struct hit { int8_t x, y; int16_t amount; bool on_hero; uint8_t kind = hit_normal; };   // do liczb obrażeń nad polem
 
@@ -180,6 +180,11 @@ namespace core
                 push(message().add(sd.name).add(": moc +").add(data::paper_delay).add(" t.").as(bad));
                 return;
             }
+            if(s == status_effect::poison && trait_bonus(trait_effect::poison_res) > 0)
+            {
+                push(message().add("Odporność: bez zatrucia").as(good));
+                return;
+            }
             hero_status[int(s)] = int8_t(imax(hero_status[int(s)], t));
             push(message().add(sd.name).add(": ").add(sd.effect).add(", ").add(hero_status[int(s)]).add(" t.").as(bad));
         }
@@ -223,6 +228,8 @@ namespace core
         temp_wall walls[max_walls];
         int walls_count = 0;
         int8_t equipped[4] = { -1, -1, -1, -1 };   // sprzęt: jakość w slocie (kask, rękawice, kamizelka), -1 = brak
+        int8_t equipped_trait[4] = {};              // cecha przedmiotu w slocie (data::gear_traits)
+        int8_t offer_slot = -1, offer_rarity = 0, offer_trait = 0;   // paczka czeka na decyzję: zakładam / zostawiam
         int weapon_override = -1;    // podniesione narzędzie zamiast broni zawodu
 
         int gear_bonus(gear_stat s) const
@@ -233,8 +240,18 @@ namespace core
             return b;
         }
         // Szczęście: kryt (x2), mały unik przed ciosem wroga, częstsze i lepsze dropy.
-        int luck() const { return cdef().luck; }
-        int crit_pct() const { return data::crit_base_pct + data::crit_per_luck_pct * luck(); }
+        int luck() const { return cdef().luck + trait_bonus(trait_effect::luck); }
+        int crit_pct() const { return data::crit_base_pct + data::crit_per_luck_pct * luck() + trait_bonus(trait_effect::crit); }
+        int sight_radius() const { return fov_radius + trait_bonus(trait_effect::sight); }
+
+        // Suma cech założonego sprzętu danego rodzaju.
+        int trait_bonus(trait_effect e) const
+        {
+            int b = 0;
+            for(int i = 0; i < data::gear_slots_count; ++i)
+                if(equipped[i] >= 0 && data::gear_traits[equipped_trait[i]].effect == e) b += data::gear_traits[equipped_trait[i]].value;
+            return b;
+        }
         int dodge_pct() const { return imin(data::dodge_max_pct, data::dodge_per_luck_pct * luck()); }
         const weapon_def& weapon() const { return data::weapons[weapon_override >= 0 ? weapon_override : cdef().weapon]; }
         const difficulty_def& ddef() const { return data::difficulties[diff]; }
@@ -259,7 +276,8 @@ namespace core
         {
             if(start < end) return;
             float new_start = 0;
-            for(int j = row; j <= fov_radius; ++j)
+            const int radius = sight_radius();
+            for(int j = row; j <= radius; ++j)
             {
                 bool blocked = false;
                 for(int dx = -j, dy = -j; dx <= 0; ++dx)
@@ -268,14 +286,14 @@ namespace core
                     float l_slope = (dx - 0.5f) / (dy + 0.5f), r_slope = (dx + 0.5f) / (dy - 0.5f);
                     if(start < r_slope) continue;
                     if(end > l_slope) break;
-                    if(dx * dx + dy * dy <= fov_radius * fov_radius && lv.in(x, y)) fov[y][x] = in_view;
+                    if(dx * dx + dy * dy <= radius * radius && lv.in(x, y)) fov[y][x] = in_view;
                     bool opaque = ! lv.passable(x, y);
                     if(blocked)
                     {
                         if(opaque) { new_start = r_slope; continue; }
                         blocked = false; start = new_start;
                     }
-                    else if(opaque && j < fov_radius)
+                    else if(opaque && j < radius)
                     {
                         blocked = true;
                         cast_light(j + 1, start, l_slope, xx, xy, yx, yy);
@@ -560,7 +578,10 @@ namespace core
 
         // Ranga mocy rośnie z poziomem postaci: II od 3., III od 5. poziomu. Każda ranga skraca odnowienie o 2 tury.
         int ability_rank() const { return 1 + (hero_level >= 3) + (hero_level >= 5); }
-        int ability_cooldown() const { return imax(4, cdef().ability_cooldown - 2 * (ability_rank() - 1)); }
+        int ability_cooldown() const
+        {
+            return imax(3, imax(4, cdef().ability_cooldown - 2 * (ability_rank() - 1)) - trait_bonus(trait_effect::cooldown));
+        }
 
         int nearest_visible_enemy() const
         {
@@ -697,7 +718,7 @@ namespace core
                 {
                     int slot = r.range(0, data::gear_slots_count - 1), rarity = r.range(1, 2);
                     if(rarity <= equipped[slot]) rarity = imin(2, equipped[slot] + 1);
-                    if(rarity > equipped[slot]) equip(slot, rarity); else gain_xp(3);
+                    if(rarity > equipped[slot]) equip(slot, rarity, r.range(0, data::gear_traits_count - 1)); else gain_xp(3);
                     break;
                 }
                 case shop_effect::tool:
@@ -730,12 +751,13 @@ namespace core
             int total = 0; for(int w : data::drop_weights) total += w;
             int roll = r.range(1, total), type = 0;
             while(roll > data::drop_weights[type]) roll -= data::drop_weights[type++];
-            uint8_t arg = 0;
+            uint8_t arg = 0, trait = 0;
             if(type == gear_box)   // slot losowy, jakość lepsza na późnych etapach
             {
                 int q = r.range(1, 100) + stage * data::gear_stage_bonus + data::rarity_per_luck * luck();
                 int rarity = q >= data::gear_brand_from ? 2 : (q >= data::gear_solid_from ? 1 : 0);
                 arg = uint8_t(r.range(0, data::gear_slots_count - 1) * 3 + rarity);
+                trait = uint8_t(r.range(0, data::gear_traits_count - 1));
             }
             if(type == tool)
             {
@@ -747,27 +769,43 @@ namespace core
                     for(int i = 0; i < data::tools_count; ++i) if(((bonus.tools >> i) & 1) && k-- == 0) { arg = uint8_t(i); break; }
                 }
             }
-            pickups[pickups_count++] = { int8_t(x), int8_t(y), uint8_t(type), true, arg };
+            pickups[pickups_count++] = { int8_t(x), int8_t(y), uint8_t(type), true, arg, trait };
         }
 
-        // Sprzęt: lepszy zakłada się sam (kamizelka od razu podnosi max HP), gorszy zamienia się w doświadczenie.
-        void equip(int slot, int rarity)
+        // Zakłada przedmiot w slocie (zastępuje obecny; kamizelka od razu zmienia max HP).
+        void equip(int slot, int rarity, int trait)
         {
             const gear_def& nw = data::gear[slot * 3 + rarity];
-            if(rarity <= equipped[slot])
-            {
-                gain_xp(1 + rarity);
-                push(message().add("Masz lepszy: ").add(data::gear_slots[slot]).as(loot));
-                return;
-            }
             if(nw.stat == gear_stat::hp)
             {
                 int diff = nw.value - (equipped[slot] >= 0 ? data::gear[slot * 3 + equipped[slot]].value : 0);
                 hero.max_hp = int16_t(hero.max_hp + diff);
-                hero.hp = int16_t(hero.hp + diff);
+                hero.hp = int16_t(imax(1, hero.hp + diff));
             }
             equipped[slot] = int8_t(rarity);
+            equipped_trait[slot] = int8_t(trait);
+            update_fov();   // cecha Widzenie zmienia pole widzenia
             push(message().add("Sprzęt: ").add(nw.name).add(" +").add(nw.value).as(loot));
+        }
+
+        bool has_offer() const { return offer_slot >= 0; }
+        bool offer_is_better() const { return has_offer() && offer_rarity > equipped[offer_slot]; }
+
+        // Paczka sprzętu przy zajętym slocie: gracz porównuje (A zakładam, B zostawiam). Nie zużywa tury.
+        void accept_offer()
+        {
+            if(! has_offer()) return;
+            int slot = offer_slot; offer_slot = -1;
+            equip(slot, offer_rarity, offer_trait);
+        }
+
+        void decline_offer()
+        {
+            if(! has_offer()) return;
+            int xp = data::gear_decline_xp + offer_rarity;
+            offer_slot = -1;
+            gain_xp(xp);
+            push(message().add("Zostawiasz stary sprzęt: +").add(xp).add(" dośw.").as(loot));
         }
 
         void collect()
@@ -776,11 +814,21 @@ namespace core
             {
                 pickup& p = pickups[i];
                 if(! p.active || p.x != hero.x || p.y != hero.y) continue;
+                if(p.type == gear_box && has_offer()) continue;   // najpierw decyzja o poprzedniej paczce
                 p.active = false;
                 if(p.type == coffee) { int h = imin(8 + bonus.coffee, hero.max_hp - hero.hp); hero.hp = int16_t(hero.hp + h); push(message().add("Kawa z termosu: +").add(h).add(" HP").as(good)); }
                 else if(p.type == helmet) { ++def_bonus; push(message().add("Nowy kask: obrona +1").as(loot)); }
                 else if(p.type == plan) { ++dmg_bonus; push(message().add("Projekt wykonawczy: obrażenia +1").as(loot)); }
-                else if(p.type == gear_box) equip(p.arg / 3, p.arg % 3);
+                else if(p.type == gear_box)
+                {
+                    int slot = p.arg / 3;
+                    if(equipped[slot] < 0) equip(slot, p.arg % 3, p.trait);   // pusty slot: zakłada od razu
+                    else
+                    {
+                        offer_slot = int8_t(slot); offer_rarity = int8_t(p.arg % 3); offer_trait = int8_t(p.trait);
+                        push(message().add("Paczka: ").add(data::gear[p.arg].name).as(loot));
+                    }
+                }
                 else
                 {
                     weapon_override = data::tools[p.arg].weapon;

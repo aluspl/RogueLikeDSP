@@ -176,6 +176,15 @@ inline constexpr core::gear_def gear[] = {   // indeks = slot * 3 + jakość
 };
 inline constexpr const char* gear_slots[] = { "Kask", "Rękawice", "Kamizelka" };
 inline constexpr const char* gear_rarities[] = { "Zwykły", "Solidny", "Markowy" };
+inline constexpr core::trait_def gear_traits[] = {   // cechy sprzętu (losowane do każdego przedmiotu)
+    { "Szczęście +1", "Szcz.+1", core::trait_effect::luck, 1 },
+    { "Kryt +5%", "Kryt+5%", core::trait_effect::crit, 5 },
+    { "Odporność na zatrucie", "Bez zatr.", core::trait_effect::poison_res, 1 },
+    { "Widzenie +1", "Wzrok+1", core::trait_effect::sight, 1 },
+    { "Odnowienie mocy -1", "Moc -1t", core::trait_effect::cooldown, 1 },
+};
+inline constexpr int gear_traits_count = 5;
+inline constexpr int gear_decline_xp = 1;
 inline constexpr int gear_slots_count = 3;
 inline constexpr int gear_solid_from = 70;
 inline constexpr int gear_brand_from = 94;
