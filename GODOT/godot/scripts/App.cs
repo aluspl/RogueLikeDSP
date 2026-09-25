@@ -19,7 +19,7 @@ public sealed class App
     public App(Node root, GameData d, Profile profile, bool persist, bool sound, uint seed)
     {
         Root = root;
-        Session = new GameSession(d, profile, persist, seed);
+        Session = new GameSession(d, profile, persist, seed) { Tips = GodotDataSource.LoadTips() };
         Nodes = new SceneNodes(root, sound, d.Version);
         Nodes.World.Bind(Session.Game);
         Banners = new BannerFeed(Session, Nodes.Banners);

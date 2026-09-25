@@ -16,53 +16,53 @@ namespace LifeLike.Game;
 /// </summary>
 public partial class Main : Node2D
 {
-    [Export] public uint Seed { get; set; } // 0 = losowy
+	[Export] public uint Seed { get; set; } // 0 = losowy
 
-    private App _app;
+	private App _app;
 
-    public override void _Ready()
-    {
-        GameInput.Register();
-        RenderingServer.SetDefaultClearColor(Pal.Void);
-        Layout.Track(GetTree().Root);
-        GameData d;
-        try
-        {
-            d = GodotDataSource.LoadGameData();
-        }
-        catch (Exception ex)
-        {
-            GD.PushError($"Dane gry: {ex.Message}");
-            GetTree().Quit(1);
-            return;
-        }
-        var opts = LaunchOptions.Parse(OS.GetCmdlineUserArgs(), Seed);
-        var profile = opts.Harness ? Meta.NewProfile(d) : GodotDataSource.LoadProfile(d);
-        _app = new App(this, d, profile, !opts.Harness, !opts.Harness, opts.Seed);
-        GameInput.Injected += OnInjected;
-        if (DebugRunner.TryStart(_app, opts)) return;
-        _app.Flow.Title.Open();
-    }
+	public override void _Ready()
+	{
+		GameInput.Register();
+		RenderingServer.SetDefaultClearColor(Pal.Void);
+		Layout.Track(GetTree().Root);
+		GameData d;
+		try
+		{
+			d = GodotDataSource.LoadGameData();
+		}
+		catch (Exception ex)
+		{
+			GD.PushError($"Dane gry: {ex.Message}");
+			GetTree().Quit(1);
+			return;
+		}
+		var opts = LaunchOptions.Parse(OS.GetCmdlineUserArgs(), Seed);
+		var profile = opts.Harness ? Meta.NewProfile(d) : GodotDataSource.LoadProfile(d);
+		_app = new App(this, d, profile, !opts.Harness, !opts.Harness, opts.Seed);
+		GameInput.Injected += OnInjected;
+		if (DebugRunner.TryStart(_app, opts)) return;
+		_app.Flow.Title.Open();
+	}
 
-    public override void _UnhandledInput(InputEvent e)
-    {
-        if (Dispatch(GameInput.Translate(e))) GetViewport().SetInputAsHandled();
-    }
+	public override void _UnhandledInput(InputEvent e)
+	{
+		if (Dispatch(GameInput.Translate(e))) GetViewport().SetInputAsHandled();
+	}
 
-    /// <summary>Akcja gracza (klawiatura, pad, mysz albo wirtualny kontroler) do ekranu bieżącego.</summary>
-    private bool Dispatch(InputCmd cmd) => _app?.Flow.Current is not null && _app.Flow.Current.HandleInput(cmd);
+	/// <summary>Akcja gracza (klawiatura, pad, mysz albo wirtualny kontroler) do ekranu bieżącego.</summary>
+	private bool Dispatch(InputCmd cmd) => _app?.Flow.Current is not null && _app.Flow.Current.HandleInput(cmd);
 
-    private void OnInjected(InputCmd cmd) => Dispatch(cmd);
+	private void OnInjected(InputCmd cmd) => Dispatch(cmd);
 
-    public override void _Process(double delta) => _app?.Flow.Current?.Process(delta);
+	public override void _Process(double delta) => _app?.Flow.Current?.Process(delta);
 
-    public override void _ExitTree()
-    {
-        GameInput.Injected -= OnInjected;
-        Assets.ClearCache();
-        Ui.ClearCache();
-        PixelFont.Release();
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-    }
+	public override void _ExitTree()
+	{
+		GameInput.Injected -= OnInjected;
+		Assets.ClearCache();
+		Ui.ClearCache();
+		PixelFont.Release();
+		GC.Collect();
+		GC.WaitForPendingFinalizers();
+	}
 }
