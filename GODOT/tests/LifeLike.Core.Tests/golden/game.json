@@ -1539,7 +1539,7 @@
     "list": [
       {
         "id": "szybko",
-        "name": "Szybko, ale drogo",
+        "name": "Szybko i drogo",
         "short": "Szybko",
         "desc": "-2 problemy, -15 zł, -1 znajdźka",
         "enemies": -2,
@@ -1551,7 +1551,7 @@
       },
       {
         "id": "tanio",
-        "name": "Tanio, ale ryzykownie",
+        "name": "Tanio, ryzyko",
         "short": "Tanio",
         "desc": "+1 problem, +2 znajdźki, zła pogoda",
         "enemies": 1,
@@ -1575,7 +1575,7 @@
       },
       {
         "id": "zapas",
-        "name": "Z zapasem materiałów",
+        "name": "Z zapasem",
         "short": "Zapas",
         "desc": "+1 problem, +3 materiały na start",
         "enemies": 1,
