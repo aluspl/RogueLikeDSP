@@ -1054,7 +1054,8 @@
       "desc": "Boss aktu bez obrażeń w walce",
       "kind": "clean_boss",
       "target": 1,
-      "xp": 30
+      "xp": 30,
+      "keepsake": "poziomica"
     },
     {
       "id": "markowy_styl",
@@ -1062,7 +1063,8 @@
       "desc": "Zbierz 5 markowych przedmiotów",
       "kind": "brand",
       "target": 5,
-      "xp": 30
+      "xp": 30,
+      "keepsake": "kielnia"
     },
     {
       "id": "mocarz",
@@ -1070,7 +1072,8 @@
       "desc": "Użyj mocy zawodu 100 razy",
       "kind": "powers",
       "target": 100,
-      "xp": 40
+      "xp": 40,
+      "keepsake": "notes"
     },
     {
       "id": "pogromca",
@@ -1088,5 +1091,70 @@
       "target": 5,
       "xp": 50
     }
-  ]
+  ],
+  "keepsakes": {
+    "rankRuns": [
+      3,
+      8
+    ],
+    "list": [
+      {
+        "id": "termos",
+        "name": "Termos babci",
+        "desc": "Stary, ale trzyma ciepło",
+        "effect": "thermos",
+        "values": [
+          1,
+          2,
+          3
+        ],
+        "start": true
+      },
+      {
+        "id": "kask",
+        "name": "Kask ojca",
+        "desc": "Pamięta niejedną budowę",
+        "effect": "def",
+        "values": [
+          1,
+          2,
+          3
+        ],
+        "badge": "bez_usterek"
+      },
+      {
+        "id": "kielnia",
+        "name": "Szczęśliwa kielnia",
+        "desc": "Nigdy nie zawiodła",
+        "effect": "luck",
+        "values": [
+          2,
+          3,
+          4
+        ]
+      },
+      {
+        "id": "poziomica",
+        "name": "Stara poziomica",
+        "desc": "Wszystko widać jak na dłoni",
+        "effect": "sight",
+        "values": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "id": "notes",
+        "name": "Notes kierownika",
+        "desc": "Wszystko zapisane, nic nie ginie",
+        "effect": "cooldown",
+        "values": [
+          1,
+          2,
+          3
+        ]
+      }
+    ]
+  }
 }

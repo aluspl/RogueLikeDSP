@@ -145,6 +145,17 @@ namespace core
         perk bonus;            // uprawnienie: premia na każdą kolejną budowę (jak w Hades)
     };
 
+    // Pamiątka (jak keepsake w Hades): zabierana na budowę, premia rośnie z rangą (I/II/III).
+    struct keepsake_def
+    {
+        const char* name;
+        const char* desc;
+        perk_effect effect;
+        int8_t values[3];      // premia na rangę I, II, III
+        int8_t badge;          // odblokowuje odznaka (-1 = nie)
+        bool start;            // dostępna od początku
+    };
+
     // Zlecenie (jak lista przepowiedni): cel z licznikiem w profilu, nagroda przy ukończeniu.
     enum class contract_kind : uint8_t { kills, powers, brand, clean_boss, class_wins, wins };
 

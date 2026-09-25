@@ -147,11 +147,21 @@ inline constexpr int badge_kolekcjoner = 6;
 inline constexpr int badge_katalog = 7;
 inline constexpr int badge_osiedle = 8;
 
+inline constexpr core::keepsake_def keepsakes[] = {   // pamiątki: wybierane na start budowy, ranga rośnie z budowami
+    { "Termos babci", "Stary, ale trzyma ciepło", core::perk_effect::thermos, { 1, 2, 3 }, -1, true },
+    { "Kask ojca", "Pamięta niejedną budowę", core::perk_effect::def, { 1, 2, 3 }, 0, false },
+    { "Szczęśliwa kielnia", "Nigdy nie zawiodła", core::perk_effect::luck, { 2, 3, 4 }, -1, false },
+    { "Stara poziomica", "Wszystko widać jak na dłoni", core::perk_effect::sight, { 1, 2, 3 }, -1, false },
+    { "Notes kierownika", "Wszystko zapisane, nic nie ginie", core::perk_effect::cooldown, { 1, 2, 3 }, -1, false },
+};
+inline constexpr int keepsakes_count = 5;
+inline constexpr int keepsake_rank_runs[] = { 3, 8 };
+
 inline constexpr core::contract_def contracts[] = {   // zlecenia: długofalowe cele z licznikami w profilu
     { "Trzy fachy", "Wygraj 3 różnymi zawodami", core::contract_kind::class_wins, 3, 40, -1 },
-    { "Czysta robota", "Boss aktu bez obrażeń w walce", core::contract_kind::clean_boss, 1, 30, -1 },
-    { "Markowy styl", "Zbierz 5 markowych przedmiotów", core::contract_kind::brand, 5, 30, -1 },
-    { "Mocarz", "Użyj mocy zawodu 100 razy", core::contract_kind::powers, 100, 40, -1 },
+    { "Czysta robota", "Boss aktu bez obrażeń w walce", core::contract_kind::clean_boss, 1, 30, 3 },
+    { "Markowy styl", "Zbierz 5 markowych przedmiotów", core::contract_kind::brand, 5, 30, 2 },
+    { "Mocarz", "Użyj mocy zawodu 100 razy", core::contract_kind::powers, 100, 40, 4 },
     { "Pogromca usterek", "Usuń 200 problemów", core::contract_kind::kills, 200, 60, -1 },
     { "Stały klient", "Wygraj 5 budów", core::contract_kind::wins, 5, 50, -1 },
 };

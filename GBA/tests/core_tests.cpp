@@ -819,6 +819,44 @@ int main()
         for(int i = 0; i < max_keepsakes; ++i) CHECK(v3.keepsake_runs[i] == 0);
         CHECK(!profile_fix(v3));
     }
+    // 32. pamiątki: odblokowanie (start / odznaka / zlecenie), wybór, ranga po 3 i 8 budowach, premia w mods
+    {
+        profile p; profile_reset(p);
+        CHECK(data::keepsakes_count >= 5);
+        int start_k = -1, badge_k = -1, contract_k = -1, contract_i = -1;
+        for(int k = 0; k < data::keepsakes_count; ++k)
+        {
+            if(data::keepsakes[k].start) start_k = k;
+            else if(data::keepsakes[k].badge >= 0) badge_k = k;
+        }
+        for(int i = 0; i < data::contracts_count; ++i) if(data::contracts[i].keepsake >= 0) { contract_i = i; contract_k = data::contracts[i].keepsake; }
+        CHECK(start_k >= 0 && badge_k >= 0 && contract_k >= 0);
+        CHECK(keepsake_unlocked(p, start_k) && !keepsake_unlocked(p, badge_k) && !keepsake_unlocked(p, contract_k));
+        CHECK(selected_keepsake(p) == -1);
+        cycle_keepsake(p, 1); CHECK(selected_keepsake(p) == start_k);      // zablokowane są pomijane
+        cycle_keepsake(p, 1); CHECK(p.keepsake == 0);                       // "bez pamiątki"
+        p.badges = uint16_t(1 << data::keepsakes[badge_k].badge);
+        CHECK(keepsake_unlocked(p, badge_k));
+        p.contracts = uint8_t(1 << contract_i);
+        CHECK(keepsake_unlocked(p, contract_k));
+        p.keepsake = uint8_t(contract_k + 1);
+        CHECK(selected_keepsake(p) == contract_k && keepsake_rank(p, contract_k) == 1);
+        run_mods m1 = mods(p);
+        run_mods e; add_perk(e, { data::keepsakes[contract_k].effect, data::keepsakes[contract_k].values[0] });
+        CHECK(m1.luck + m1.sight + m1.cooldown + m1.thermos + m1.def >= e.luck + e.sight + e.cooldown + e.thermos + e.def);
+        int runs0 = p.runs;
+        for(int r = 0; r < data::keepsake_rank_runs[0]; ++r) start_run(p);
+        CHECK(p.runs == runs0 + data::keepsake_rank_runs[0] && keepsake_rank(p, contract_k) == 2);
+        CHECK(keepsake_perk(p, contract_k).value == data::keepsakes[contract_k].values[1]);
+        for(int r = data::keepsake_rank_runs[0]; r < data::keepsake_rank_runs[1]; ++r) start_run(p);
+        CHECK(keepsake_rank(p, contract_k) == 3 && keepsake_perk(p, contract_k).value == data::keepsakes[contract_k].values[2]);
+        CHECK(p.keepsake_runs[start_k] == 0);                               // licznik tylko wybranej
+        p.contracts = 0; CHECK(selected_keepsake(p) == -1);                  // zablokowana nie działa
+        // Termos babci: miejsce w termosie
+        profile q; profile_reset(q); q.keepsake = uint8_t(start_k + 1);
+        game g; g.new_run(1, 3, data::default_difficulty, mods(q));
+        if(data::keepsakes[start_k].effect == perk_effect::thermos) CHECK(g.thermos_cap() == data::thermos_capacity + data::keepsakes[start_k].values[0]);
+    }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};
