@@ -442,17 +442,23 @@ namespace
 
     void page_help(app& a)
     {
-        page_sprites t;
-        a.text.set_center_alignment();
-        a.text.generate(0, -70, "Jak grać", t);
-        a.text.set_left_alignment();
-        const char* lines[] = { "8 etapów w 3 aktach, każdy", "kończy boss. Schody = dalej.", "D-pad: ruch i atak wręcz",
-                                "A: atak (trzymaj: celuj)", "B: czekaj (trzymaj: podgląd)", "R: moc zawodu  L: mapa",
-                                "START: akcje  SELECT: telefon" };
-        for(int i = 0; i < 7; ++i) a.text.generate(-108, -48 + i * 16, lines[i], t);
-        a.text.set_center_alignment();
-        a.text.generate(0, 72, "A: dalej", t);
-        wait_page_close();
+        const char* pages[2][7] = {
+            { "8 etapów w 3 aktach, każdy", "kończy boss. Schody = dalej.", "D-pad: ruch i atak wręcz",
+              "A: atak (trzymaj: celuj)", "B: czekaj (trzymaj: podgląd)", "R: moc zawodu  L: mapa",
+              "START: akcje  SELECT: telefon" },
+            { "Pogoda dnia: ikona w HUD,", "skutek w telefonie (Zadania).", "Brygada raz na etap za zł:",
+              "telefon, Zespół, A (albo", "START i A). Po wygranej:", "SELECT na wyborze zawodu =", "tryb inwestora (stawka)." } };
+        for(int pg = 0; pg < 2; ++pg)
+        {
+            page_sprites t;
+            a.text.set_center_alignment();
+            a.text.generate(0, -70, pg == 0 ? "Jak grać (1/2)" : "Jak grać (2/2)", t);
+            a.text.set_left_alignment();
+            for(int i = 0; i < 7; ++i) a.text.generate(-108, -48 + i * 16, pages[pg][i], t);
+            a.text.set_center_alignment();
+            a.text.generate(0, 72, "A: dalej", t);
+            wait_page_close();
+        }
     }
 
     scene run_help(app& a)

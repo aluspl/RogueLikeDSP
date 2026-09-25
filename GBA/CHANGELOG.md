@@ -2,6 +2,31 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
+## v0.21.47 – 2026-09-25
+### Nowe
+- **Pogoda dnia:** każdy etap losuje pogodę – Słonecznie (bez skutku), **Upał** (moc odnawia się 1 turę dłużej),
+  **Mróz** (problemy stoją co 3. turę), **Wiatr** (broń z dystansu: zasięg -1; etapy Mury parteru – Okna i drzwi),
+  **Deszcz** (kałuże na mapie, wejście w kałużę = poślizg; etapy do Okien i drzwi). Wewnątrz domu (Instalacje,
+  Tynki, Wykończenie) tylko słońce albo upał. Ikona pogody w HUD obok termosu, wiersz „Pogoda” w zakładce Zadania,
+  linia na karcie etapu. Niekorzystna pogoda nie łączy się z niekorzystnym wydarzeniem na placu (wydarzenie przepada).
+- **Brygada:** raz na etap najemny fachowiec za zł z budżetu budowy (wezwanie zużywa turę): **Geodeta** (8 zł, cała
+  mapa etapu i schody), **BHP-owiec** (10 zł, zdejmuje stany, obrona +2 na 8 tur), **Pompa do betonu** (15 zł, -6 HP
+  problemom w zasięgu 2) i **Elektryk-kolega** (15 zł, idzie obok bohatera przez 10 tur, bije sąsiadów za 3
+  i zasłania drogę problemom). Dwóch pierwszych od razu, pozostałych kupisz w Szkoleniach. Telefon: zakładka Zespół
+  (Sprzęt) – A otwiera Brygadę; w menu akcji (START) A bez kierunku. Baner i efekt przy przyjściu fachowca.
+- **Tryb inwestora** (jak Heat w Hadesie): po pierwszej wygranej SELECT na wyborze zawodu otwiera modyfikatory –
+  Budżet -30%, Bez przerwy na kawę, Problemy +20% HP, Hurtownia zamknięta, Kontrola częściej (cios bossa co 3 tury),
+  Termin goni (+1 obrażeń problemów). Każdy daje % doświadczenia i punkty **stawki** (razem do 10). Rekord stawki
+  każdego zawodu w profilu; stawka na karcie zawodu, w SMS-ie końca budowy i na ekranie końcowym.
+- „Jak grać” ma drugą stronę (pogoda, brygada, tryb inwestora).
+- Scenariusze testowe 14 (pogoda po kolei), 15 (brygada), 16 (tryb inwestora).
+### Zmiany
+- Profil w SRAM v6 (PBRL006: brygada, modyfikatory, rekord stawki) – starsze profile przenoszą się bez utraty danych.
+- Nowy zapis budowy (PBRUN06) – przerwana budowa z v0.21.46 nie wznowi się.
+- Dane w `data/game.json`: sekcje `weather`, `brigade`, `investor`.
+- Balans (bot): Normalny 49% wygranych (z pełnymi Szkoleniami 70%); wszystkie modyfikatory inwestora: 4% bez
+  Szkoleń, 24% z pełnymi.
+
 ## v0.21.46 – 2026-09-25
 ### Nowe
 - **Nowy boss: Inspekcja Pracy** – kontrola BHP bez zapowiedzi w środku aktu III (etap Instalacje; Termin dalej
