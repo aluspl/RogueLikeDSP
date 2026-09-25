@@ -150,7 +150,8 @@ public sealed partial class Game
     // ------------------------------------------------------------------ wydarzenia na placu
     public bool EventActive(EventEffect e) => StageEvent >= 0 && D.SiteEvents[StageEvent].Effect == e;
 
-    public SiteEventDef? CurrentEvent => StageEvent >= 0 ? D.SiteEvents[StageEvent] : null;
+    /// <summary>Bieżące wydarzenie na placu albo null.</summary>
+    public SiteEventDef CurrentEvent => StageEvent >= 0 ? D.SiteEvents[StageEvent] : null;
 
     /// <summary>Wydarzenie na placu: SMS na starcie etapu, efekt od razu (znajdźki, budżet, termos) albo w trakcie etapu.</summary>
     public void ApplyEvent(int e)

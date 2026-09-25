@@ -6,6 +6,7 @@ namespace LifeLike.Game;
 /// Rejestruje akcje w InputMap z kodu: klawiatura, pad i (w Main) mysz – układ jak na GBA.
 /// Strzałki/WSAD/D-pad: ruch (wejście na wroga = atak). A (Spacja/X/pad A): atak najbliższego celu w zasięgu.
 /// B (Z/Kp5/pad B): czekaj turę. R (R/pad RB): moc zawodu. Tab (pad Select): podgląd tekstowy. Enter (pad Start): dalej.
+/// Ekran tytułowy: Q/E (pad LB/RB) – wybór pamiątki (jak L/R na GBA), P (pad X) – profil (odznaki, zlecenia, pamiątki).
 /// Reszta gry używa WYŁĄCZNIE nazw akcji.
 /// </summary>
 public static class GameInput
@@ -13,6 +14,7 @@ public static class GameInput
     public const string Up = "move_up", Down = "move_down", Left = "move_left", Right = "move_right";
     public const string Attack = "attack", Wait = "wait_turn", Ability = "ability";
     public const string Overview = "overview", Confirm = "confirm", Cancel = "cancel", Shop = "shop";
+    public const string KeepPrev = "keepsake_prev", KeepNext = "keepsake_next", Profile = "profile";
 
     public static void Register()
     {
@@ -41,6 +43,12 @@ public static class GameInput
         Add(Cancel, Key.Escape, Key.Backspace);
         Add(Shop, Key.K);
         Pad(Shop, JoyButton.Y);
+        Add(KeepPrev, Key.Q);
+        Pad(KeepPrev, JoyButton.LeftShoulder);
+        Add(KeepNext, Key.E);
+        Pad(KeepNext, JoyButton.RightShoulder);
+        Add(Profile, Key.P);
+        Pad(Profile, JoyButton.X);
     }
 
     private static void Ensure(string action)
