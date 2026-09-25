@@ -178,6 +178,16 @@ for h in bg:
 L.append("};")
 L += [f"inline constexpr int brigade_count = {len(bg)};",
       f"inline constexpr int start_helpers_mask = {sum(1 << i for i, h in enumerate(bg) if h['cost'] == 0)};", ""]
+iv = d["investor"]["list"]
+assert 1 <= len(iv) <= 8
+L.append("inline constexpr core::investor_def investor[] = {   // tryb inwestora: modyfikatory po pierwszej wygranej")
+for x in iv:
+    assert x["effect"] in {"cash_pct", "no_break", "enemy_hp", "no_shop", "slam", "enemy_dmg"} and len(x["name"]) <= 20 and len(x["desc"]) <= 30, x
+    assert -90 <= x["value"] <= 100 and 0 < x["xpPct"] <= 100 and 0 < x["stake"] <= 9, x
+    assert x["effect"] != "slam" or d["slam"]["every"] - x["value"] >= 2, x
+    L.append(f'    {{ {s(x["name"])}, {s(x["desc"])}, core::investor_effect::{x["effect"]}, {x["value"]}, {x["xpPct"]}, {x["stake"]} }},')
+L.append("};")
+L += [f"inline constexpr int investor_count = {len(iv)};", ""]
 L.append("inline constexpr core::tool_def tools[] = {")
 for t in m["tools"]:
     L.append(f'    {{ {wid[t["weapon"]]}, {t["cost"]} }},')

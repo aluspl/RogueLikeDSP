@@ -201,6 +201,16 @@ inline constexpr core::helper_def brigade[] = {   // brygada: najemni fachowcy (
 inline constexpr int brigade_count = 4;
 inline constexpr int start_helpers_mask = 3;
 
+inline constexpr core::investor_def investor[] = {   // tryb inwestora: modyfikatory po pierwszej wygranej
+    { "Budżet -30%", "Mniej zł za problemy i akty", core::investor_effect::cash_pct, -30, 10, 1 },
+    { "Bez przerwy na kawę", "Między etapami bez +5 HP", core::investor_effect::no_break, 0, 10, 1 },
+    { "Problemy +20% HP", "Każdy problem ma +20% HP", core::investor_effect::enemy_hp, 20, 15, 2 },
+    { "Hurtownia zamknięta", "Między aktami bez zakupów", core::investor_effect::no_shop, 0, 15, 2 },
+    { "Kontrola częściej", "Boss uderza co 3 tury, nie 4", core::investor_effect::slam, 1, 10, 1 },
+    { "Termin goni", "Problemy biją o 1 mocniej", core::investor_effect::enemy_dmg, 1, 20, 3 },
+};
+inline constexpr int investor_count = 6;
+
 inline constexpr core::tool_def tools[] = {
     { 6, 0 },
     { 7, 20 },

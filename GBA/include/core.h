@@ -145,7 +145,22 @@ namespace core
         int crit = 0;                // kryt +%
         int tools = data::start_tools_mask;   // narzędzia, które mogą wypaść z wrogów
         int helpers = data::start_helpers_mask;   // brygada: fachowcy do wezwania (Szkolenia)
+        int investor = 0;            // tryb inwestora: włączone modyfikatory (bitmaska data::investor)
     };
+
+    // Tryb inwestora: stawka i premia doświadczenia za zestaw modyfikatorów.
+    inline int investor_stake(int mask)
+    {
+        int s = 0;
+        for(int i = 0; i < data::investor_count; ++i) if(mask & (1 << i)) s += data::investor[i].stake;
+        return s;
+    }
+    inline int investor_xp(int mask)
+    {
+        int s = 0;
+        for(int i = 0; i < data::investor_count; ++i) if(mask & (1 << i)) s += data::investor[i].xp_pct;
+        return s;
+    }
 
     inline void add_perk(run_mods& m, const perk& p)
     {
@@ -242,6 +257,23 @@ namespace core
 
         bool event_active(event_effect e) const { return stage_event >= 0 && data::site_events[stage_event].effect == e; }
         const weather_def& wdef() const { return data::weather[weather]; }
+
+        // Tryb inwestora: suma wartości włączonych modyfikatorów danego rodzaju / czy któryś włączony.
+        int investor_value(investor_effect e) const
+        {
+            int v = 0;
+            for(int i = 0; i < data::investor_count; ++i) if((bonus.investor >> i) & 1 && data::investor[i].effect == e) v += data::investor[i].value;
+            return v;
+        }
+        bool investor_has(investor_effect e) const
+        {
+            for(int i = 0; i < data::investor_count; ++i) if((bonus.investor >> i) & 1 && data::investor[i].effect == e) return true;
+            return false;
+        }
+        // Przychód budowy (zł) z modyfikatorem budżetu.
+        int income(int v) const { return v * (100 + investor_value(investor_effect::cash_pct)) / 100; }
+        int slam_every() const { return imax(2, data::slam_every - investor_value(investor_effect::slam)); }
+        bool shop_closed() const { return investor_has(investor_effect::no_shop); }
         bool weather_is(weather_effect e) const { return data::weather[weather].effect == e; }
 
         // Pogoda dnia: losowanie wagami spośród dozwolonych na etapie s.
@@ -273,7 +305,7 @@ namespace core
             switch(ev.effect)
             {
                 case event_effect::fewer_pickups: pickups_count = imax(imin(1, pickups_count), pickups_count - ev.value); break;
-                case event_effect::cash:          cash += ev.value; break;
+                case event_effect::cash:          cash += income(ev.value); break;
                 case event_effect::thermos:       thermos = thermos_cap(); break;
                 default: break;   // inspekcja: premia na koniec etapu; ulewa: poślizg przy ciosach
             }
@@ -468,11 +500,12 @@ namespace core
         // Trudność = etap x poziom x NG+. Mnożniki w procentach, premie sumowane.
         int enemy_hp_pct() const
         {
-            return data::stages[stage].hp_pct * ddef().hp_pct / 100 * (100 + tier * data::ng_hp_pct_per_tier) / 100;
+            return data::stages[stage].hp_pct * ddef().hp_pct / 100 * (100 + tier * data::ng_hp_pct_per_tier) / 100
+                   * (100 + investor_value(investor_effect::enemy_hp)) / 100;
         }
         int enemy_dmg_bonus() const
         {
-            return data::stages[stage].dmg_bonus + ddef().dmg_bonus + tier * data::ng_dmg_bonus_per_tier;
+            return data::stages[stage].dmg_bonus + ddef().dmg_bonus + tier * data::ng_dmg_bonus_per_tier + investor_value(investor_effect::enemy_dmg);
         }
         int score_pct() const { return ddef().score_pct * (100 + tier * data::ng_score_pct_per_tier) / 100; }
         int xp() const { return xp_pct / 100; }
@@ -655,7 +688,7 @@ namespace core
             if(e.hp <= 0)
             {
                 e.alive = false; ++kills; ++stage_kills; ++act_kills;
-                cash += ed.score / data::cash_per_score;
+                cash += income(ed.score / data::cash_per_score);
                 if(kills_by_type[e.def_id] < 255) ++kills_by_type[e.def_id];
                 score += ed.score * score_pct() / 100; gain_xp(data::xp_per_kill);
                 maybe_drop(e.x, e.y);
@@ -668,8 +701,8 @@ namespace core
                     slam_timer = 0;
                     if(ed.reward_cash > 0)   // nagroda bossa (Inspekcja: Protokół bez uwag)
                     {
-                        cash += ed.reward_cash;
-                        push(message().add(ed.reward_title).add("! +").add(ed.reward_cash).add(" zł").as(good));
+                        cash += income(ed.reward_cash);
+                        push(message().add(ed.reward_title).add("! +").add(income(ed.reward_cash)).add(" zł").as(good));
                     }
                     if(stage == data::stages_count - 1)
                     {
@@ -686,7 +719,7 @@ namespace core
                         const act_def& ad = data::acts[data::stages[stage].act];
                         int stages_in_act = 0;
                         for(int i = 0; i < data::stages_count; ++i) stages_in_act += data::stages[i].act == data::stages[stage].act;
-                        act_bonus = ad.bonus_per_stage * stages_in_act + ad.bonus_per_kill * act_kills;
+                        act_bonus = income(ad.bonus_per_stage * stages_in_act + ad.bonus_per_kill * act_kills);
                         cash += act_bonus;
                         act_kills = 0;
                         act_cleared = true;
@@ -1214,7 +1247,7 @@ namespace core
             if(ed.slam && i == boss)   // boss: co kilka tur zapowiada uderzenie w obszar wokół bohatera
             {
                 if(slam_timer > 0) return;   // ładuje cios, stoi w miejscu
-                if(++slam_counter >= data::slam_every && d <= 4)
+                if(++slam_counter >= slam_every() && d <= 4)
                 {
                     bool cross = ed.shape == slam_shape::cross;
                     slam_counter = 0;
@@ -1328,7 +1361,7 @@ namespace core
         // Przejście do kolejnego etapu (po ekranie harmonogramu). Przerwa na kawę: +5 HP.
         void next_stage()
         {
-            hero.hp = int16_t(imin(hero.max_hp, hero.hp + 5));
+            if(! investor_has(investor_effect::no_break)) hero.hp = int16_t(imin(hero.max_hp, hero.hp + 5));   // tryb inwestora: bez przerwy
             start_stage(stage + 1);
         }
 
