@@ -4,8 +4,16 @@ Wersja Godot gry z demo GBA (`../GBA`): roguelike budowlany, w którym etapy bud
 a wrogami są *problemy budowy*. Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KONCEPCJA.md)
 (telefon z aplikacją PlanBudowlany jako interfejs, oprawa 2.5D – kolejne kamienie milowe).
 
-**Stan: zgodny z GBA v0.21.47** (logika, dane i test złoty z migawki GBA v0.21.47: pogoda dnia, brygada, tryb
-inwestora, boss Inspekcja Pracy); oprawa (grafika, font, dźwięk, telefon, wybór zawodu) jak w GBA v0.21.47.
+**Stan: zgodny z GBA v0.21.48** (logika, dane i test złoty z migawki GBA v0.21.48: wybór ścieżki między etapami,
+materiały i naprawy, codzienna budowa, harmonogram domu po wygranej, nowy balans; wcześniej pogoda dnia, brygada,
+tryb inwestora, boss Inspekcja Pracy); oprawa (grafika, font, dźwięk, telefon, wybór zawodu) jak w GBA.
+
+Nowe w v0.21.48 (warstwa Godota): mapka wyboru ścieżki na harmonogramie (strzałki / dotknięcie, Enter), materiały
+w HUD, w Sprzęcie i w Hurtowni (towary za materiały), naprawy Załataj i Kładka na stronie Brygada i naprawy,
+Codzienna budowa w menu tytułu (data z systemu, zawód i modyfikatory dnia, wyniki ostatnich dni, „Wyślij wynik”
+przez `ILeaderboard` – na razie lokalna zaślepka, Game Center później, bez kodu sieciowego), harmonogram domu po
+wygranej (dom z Osiedla, daty, dni, koszty i link planbudowlany.online), wyraźny awans (poświata, gwiazdki, napis
+„AWANS! Poziom N” i co się poprawiło) oraz na końcu budowy rekord, najbliższe zlecenie i najbliższy zakup.
 
 ## Co jest
 
@@ -74,6 +82,10 @@ inwestora, boss Inspekcja Pracy); oprawa (grafika, font, dźwięk, telefon, wyb�
 | Profil w telefonie (odznaki, zlecenia, pamiątki; Spacja zmienia stronę) | P | X | |
 | Brygada (menu akcji: Spacja bez kierunku; telefon: Sprzęt → Spacja) | Enter, Spacja | Start, A | |
 | Tryb inwestora na wyborze zawodu (po pierwszej wygranej; Spacja włącza modyfikator) | Tab | Select | |
+| Harmonogram: wybór ścieżki kolejnego etapu | ←/→ (↑/↓), Enter | D-pad, Start | dotknięcie gałęzi |
+| Naprawy (telefon: Sprzęt → Brygada i naprawy, Spacja) | Spacja | A | dotknięcie |
+| Codzienna budowa (menu tytułu): start / wyślij wynik / wróć | Spacja, Tab, Esc | A, Select, B | przyciski |
+| Harmonogram domu po wygranej: planbudowlany.online / dalej | Spacja / Enter | A / Start | przyciski |
 | Szkolenia (zakładka Koszty w telefonie profilu, Spacja kupuje) | K | Y | |
 | Ustawienia (także klucz w prawym górnym rogu tytułu i mapy) | Esc | | klik na klucz |
 
@@ -92,7 +104,8 @@ Na iOS/Androidzie (albo z `--touch` na komputerze) gra jest pionowa i sterowana 
 | **Termos** | kawa z termosu (liczba kaw na przycisku) |
 | **Czekaj** | dotknięcie = tura; trzymanie = karta najbliższego problemu (przesunięcie: następny) |
 | **Telefon** | dotknięcie = aplikacja PlanBudowlany na cały ekran; trzymanie = podgląd mapy etapu |
-| Telefon → **Sprzęt → Brygada** | fachowiec raz na etap (przycisk „Wezwij”, zużywa turę) |
+| Telefon → **Sprzęt → Brygada** | fachowiec raz na etap (przycisk „Wezwij”, zużywa turę) i naprawy za materiały („Napraw”) |
+| Harmonogram | dotknięcie gałęzi mapki = ścieżka, przycisk „Dalej: …” |
 | Wybór zawodu: **Tryb inwestora** | wiersz pod pamiątką po pierwszej wygranej – modyfikatory i stawka |
 | Pasek HUD u góry | pulpit postaci w telefonie |
 | Telefon | ikony zakładek, przesunięcie w bok = zakładka, w górę/dół = lista, przyciski na dole strony, krzyżyk zamyka |
@@ -112,7 +125,8 @@ nad paskiem domowym, mapa ~9 pól na szerokość, telefon jako aplikacja na cał
 - Godot 4.7 w wersji .NET (np. `brew install --cask godot-mono`), .NET 8 SDK (lub nowszy z runtime 8).
 - W Godot: *Import* → `GODOT/godot/project.godot`, uruchom scenę `scenes/Main.tscn`.
 - Z terminala: `godot-mono --path GODOT/godot` (opcjonalnie `-- --seed 1234`).
-- Test dymny bez okna (bot gra 3 etapy przez warstwę Godota, kod 0 = OK):
+- Test dymny bez okna (bot gra kilka etapów przez warstwę Godota, wybiera drugą ścieżkę, łata drogę deskami, gra
+  budowę dnia i przechodzi harmonogram domu po wygranej; kod 0 = OK):
   `godot-mono --headless --path GODOT/godot -- --smoke`
 - Podgląd wersji na telefon na komputerze: `godot-mono --path GODOT/godot -- --touch --portrait` (okno 430x932 jak
   iPhone w punktach, z symulowaną wyspą i paskiem domowym; `--touch` samo = dotyk myszą w poziomie,
@@ -125,7 +139,9 @@ nad paskiem domowym, mapa ~9 pól na szerokość, telefon jako aplikacja na cał
   `preview` (trzymane B), `prologue`, `schedule-tip` (rada kierownika), `help` (Jak grać), `settings` (ustawienia
   w budowie), `settings-title`, `walk` (marsz po dotknięciu pola), `weather-rain`, `weather-snow`, `weather-wind`,
   `weather-heat` (pogoda dnia: nakładka, kałuże, ikona w HUD), `brigade` (telefon: Brygada), `ally` (pomocnik obok
-  bohatera), `investor` (tryb inwestora nad wyborem zawodu).
+  bohatera), `investor` (tryb inwestora nad wyborem zawodu), `schedule-path` (wybór ścieżki), `materials` (HUD
+  z materiałami), `repairs` (Brygada i naprawy), `hurtownia-mats` (towary za materiały), `daily` (codzienna budowa),
+  `house` (harmonogram domu po wygranej), `levelup` (wyraźny awans), `death` (SMS po porażce: co zostaje).
   Sceny ustawiają stan ręcznie (profil pokazowy, skrót zaliczenia etapu jak L+R+SELECT na GBA); zrzuty i test dymny
   działają bez dźwięku.
 
@@ -229,12 +245,13 @@ LaunchOptions.cs   argumenty --seed / --smoke / --screenshot --scene / --touch /
 Input/             GameAction (A, B, L, R, START, SELECT, strzałki...), InputCmd (zdarzenie jako akcje, wciśnięte
                    i puszczone), GameInput (mapa klawiszy i pada, Translate, Press/Release dla przycisków
                    ekranowych, IsHeld), ButtonNames (A/B/START... w tekstach z game.json -> klawisze)
-Session/           GameSession (budowa + profil: start, etap, NG+, odznaki, zlecenia, bankowanie, zapis),
+Session/           GameSession (budowa + profil: start, budowa dnia, etap, NG+, odznaki, zlecenia, bankowanie, zapis),
+                   ILeaderboard + LocalLeaderboard (tabela wyników dnia: zaślepka pod Game Center),
                    SessionEvents (LevelUp, PickedUp, Dropped, ToolFound, GearEquipped, AbilityReady, BossSpotted,
                    StageCleared, RunEnded, Achievements), TurnWatcher (wykrywa zdarzenia tury), GodotDataSource
 Screens/           Screen (Enter / Exit / HandleInput / Process + deklaracja warstw i muzyki), ScreenFlow (maszyna
                    stanów), ekrany: Title, Profile, ClassSelect, Prologue, PrologueMessage, Help, Game, Phone,
-                   StageCard, Schedule, Hurtownia, Offer, EndMessage, End; Play/ (tryby mapy: ActionMenu, Aiming,
+                   StageCard, Schedule (wybór ścieżki), Hurtownia, Offer, EndMessage, HouseSchedule, End, Daily; Play/ (tryby mapy: ActionMenu, Aiming,
                    EnemyLook, PlayCommands, TouchPlay - gesty na mapie, AutoWalk + PathFinder -
                    marsz po dotknięciu pola); Settings (ustawienia nad bieżącym ekranem); Views/ (TitleView, ClassSelectView, EndView, PrologueView, PrologueStage)
 World/             WorldView (sprite'y, synchronizacja), WorldFx (trafienia, moce, awans, konfetti), WorldCamera,
