@@ -24,6 +24,8 @@
 //       (Słonecznie, Upał, Mróz, Wiatr, Deszcz...; L+R+SELECT przechodzi dalej)
 //  15 - brygada: 100 zł budżetu, wszyscy fachowcy odblokowani, trzy problemy obok bohatera (ogłuszone na chwilę),
 //       zatrucie; telefon -> Zespół -> A = Brygada; kolejne etapy też ze 100 zł (L+R+SELECT)
+//  16 - tryb inwestora: profil po pierwszej wygranej, włączone Budżet -30% i Problemy +20% HP, rekord stawki Murarza 3;
+//       na wyborze zawodu SELECT = lista modyfikatorów
 #include "core.h"
 #include "meta.h"
 
@@ -76,6 +78,12 @@ namespace debug_scenario
                 if(data::contracts[i].kind == core::contract_kind::powers) p.powers_total = uint16_t(data::contracts[i].target - 1);
                 if(data::contracts[i].kind == core::contract_kind::wins) p.wins = data::contracts[i].target - 1;   // wygrana = baner na końcu
             }
+        }
+        if(scenario == 16)
+        {
+            p.wins = 1;
+            p.investor = 0x05;
+            p.best_stake[1] = 3;
         }
         if(scenario == 11)
         {

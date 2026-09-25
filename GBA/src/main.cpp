@@ -88,7 +88,7 @@ namespace
     using text_sprites = bn::vector<bn::sprite_ptr, 48>;
     using page_sprites = bn::vector<bn::sprite_ptr, 80>;   // pełnoekranowe strony menu
 
-    enum class scene { title, class_select, game, schedule, end, shop, help, hurtownia, prologue };
+    enum class scene { title, class_select, game, schedule, end, shop, help, hurtownia, prologue, investor };
 
     constexpr int frame_coffee = 15;
     constexpr int frame_fx = 18;
@@ -864,14 +864,14 @@ namespace
     enum class pause_result { resume, quit, save_exit };
 
     // Telefon pod SELECT. L/R lub strzałki: zakładki; START: menu akcji; B/SELECT: powrót do gry.
-    pause_result run_phone(app& a)
+    pause_result run_phone(app& a, bool brigade_page = false)
     {
         phone_screen ph(a.phone_tab);
         page_sprites t;
         bn::sprite_palette_item default_ink = a.text.palette_item();
         const char* actions[] = { "Wróć do gry", "Jak grać", "Zapisz i wyjdź", "Porzuć budowę" };
         constexpr int actions_count = 4;
-        bool sheet = false, confirm = false, brigade = false;   // brigade: strona Brygada w zakładce Zespół (A)
+        bool sheet = false, confirm = false, brigade = brigade_page;   // brigade: strona Brygada w zakładce Zespół (A)
         int sel = 0, bsel = 0;
         auto redraw = [&]() {
             if(! sheet && brigade && a.phone_tab == 3) { tab_brigade(a, ph, t, bsel); ph.set_tab(3); ph.commit(); return; }
@@ -1865,7 +1865,7 @@ namespace
                     break;
                 case 2: m.add("Termos ").add(g.thermos).add("/").add(g.thermos_cap()).add(": kawa +").add(g.coffee_heal()).add(" HP"); break;
                 case 3: m.add("Czekaj turę"); break;
-                default: m.add("Akcje: wybierz strzałką"); break;
+                default: m.add("Akcje: strzałka, A: Brygada"); break;
             }
             a.text.generate(-116, 56, fit(a, m.s, 232).c_str(), log);
             a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
@@ -1962,6 +1962,34 @@ namespace
                     else { menu_sel = k; menu_label(); bn::sound_items::sfx_menu.play(); }
                 }
                 if(bn::keypad::a_pressed() && menu_sel >= 0) pick = menu_sel;
+                else if(bn::keypad::a_pressed())   // A bez kierunku: Brygada w telefonie
+                {
+                    close_menu();
+                    suspend_view();
+                    int tab = a.phone_tab;
+                    a.phone_tab = 3;
+                    pause_result pr = run_phone(a, true);
+                    a.phone_tab = tab;
+                    if(pr == pause_result::save_exit) { save_run(a); return leave(scene::title); }
+                    if(pr == pause_result::quit)
+                    {
+                        if(g.score > a.save.best) a.save.best = g.score;
+                        core::check_badges(a.save, g);
+                        core::check_contracts(a.save);
+                        core::bank_xp(a.save, g);
+                        bn::sram::write(a.save);
+                        clear_run(a);
+                        return leave(scene::shop);
+                    }
+                    resume_view();
+                    if(pr == pause_result::resume && a.pending_helper >= 0)
+                    {
+                        int h = a.pending_helper;
+                        a.pending_helper = -1;
+                        if(g.call_helper(h)) { brigade_fx(h); refresh(); }
+                    }
+                    continue;
+                }
                 if(pick < 0 && (bn::keypad::start_pressed() || bn::keypad::b_pressed())) { close_menu(); wait_release(); refresh(); }
                 else if(pick >= 0)
                 {
@@ -2252,13 +2280,13 @@ namespace
         }
         core::message s; s.add("Wynik: ").add(g.score).add("  Dni: ").add(g.turns);
         a.text.generate(0, 44, s.s, t);
-        a.text.generate(0, 62, "Kawa: +5 HP   A: dalej", t);
+        a.text.generate(0, 62, g.investor_has(core::investor_effect::no_break) ? "Bez przerwy   A: dalej" : "Kawa: +5 HP   A: dalej", t);
         while(true)
         {
             if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
             {
                 wait_release();
-                if(g.act_cleared) return leave(scene::hurtownia);   // koniec aktu: zakupy przed kolejnym
+                if(g.act_cleared && ! g.shop_closed()) return leave(scene::hurtownia);   // koniec aktu: zakupy (tryb inwestora: zamknięta)
                 advance_stage(a);
                 return leave(scene::game);
             }
@@ -2274,7 +2302,9 @@ namespace
         if(g.score > a.save.best) a.save.best = g.score;
         if(won) ++a.save.wins;
         if(won) core::add_house(a.save, g);
-        int badges_got = core::check_badges(a.save, g);   // katalog, narzędzia, Osiedle, liczniki zleceń
+        int stake = core::investor_stake(g.bonus.investor);
+        bool stake_record = won && stake > 0 && stake > a.save.best_stake[g.cls];
+        int badges_got = core::check_badges(a.save, g);   // katalog, narzędzia, Osiedle, liczniki zleceń, rekord stawki
         int contracts_got = core::check_contracts(a.save);
         int gained = core::bank_xp(a.save, g);
         bn::sram::write(a.save);
@@ -2283,8 +2313,10 @@ namespace
         (won ? bn::sound_items::sfx_level : bn::sound_items::sfx_hurt).play();
         {
             core::message i1; i1.add("Wynik ").add(g.score).add("  Dośw. +").add(gained);
-            phone_message(a, won ? data::story_win : data::story_lose, won ? "Odbiór" : "Budowa", i1.s, ink::dark,
-                          won ? "Dom na Osiedlu!" : "Dośw. zostaje");
+            core::message i2;
+            if(stake > 0) i2.add("Stawka ").add(stake).add(stake_record ? " - rekord!" : "").add(won ? ", dom!" : "");
+            else i2.add(won ? "Dom na Osiedlu!" : "Dośw. zostaje");
+            phone_message(a, won ? data::story_win : data::story_lose, won ? "Odbiór" : "Budowa", i1.s, ink::dark, i2.s);
             leave(scene::end);
         }
 
@@ -2297,6 +2329,13 @@ namespace
         core::message s; s.add("Wynik ").add(g.score).add("  Dośw. +").add(gained);
         a.text.generate(0, 52, s.s, t);
         a.text.generate(0, 70, won ? "A: kolejna  START: koniec" : "START: nowa budowa", t);
+        if(stake > 0)   // tryb inwestora: stawka w prawym górnym rogu
+        {
+            core::message sm; sm.add("Stawka ").add(stake);
+            a.text.set_right_alignment();
+            a.text.generate(116, -72, sm.s, t);
+            a.text.set_center_alignment();
+        }
         push_banner banner;   // odznaki i zlecenia zdobyte na koniec budowy (np. Stały klient)
         push_achievements(banner, badges_got, contracts_got);
         while(true)
@@ -2658,7 +2697,13 @@ namespace
             core::message n; n.add(data::keepsakes[k].name).add(" ").add(roman(core::keepsake_rank(a.save, k) - 1));
             put(keep_t, x, keep_row, fit(a, n.s, 232 - x).c_str(), bn::sprite_palette_items::font_map_loot);
             core::message e; core::perk_label(e, core::keepsake_perk(a.save, k));
-            put(keep_t, 8, keep_row2, fit(a, e.s, 224).c_str(), bn::sprite_palette_items::font_map_good);
+            bool inv = core::investor_unlocked(a.save);
+            put(keep_t, 8, keep_row2, fit(a, e.s, inv ? 128 : 224).c_str(), bn::sprite_palette_items::font_map_good);
+            if(inv)   // tryb inwestora: stawka (SELECT - modyfikatory)
+            {
+                core::message sm; sm.add("SELECT: stawka ").add(core::investor_stake(core::investor_mask(a.save)));
+                put(keep_t, 232, keep_row2, sm.s, bn::sprite_palette_items::font_map_loot, 1);
+            }
         };
 
         auto redraw_all = [&]() {
@@ -2730,6 +2775,13 @@ namespace
                 wait_release();
                 return leave(scene::title);
             }
+            if(bn::keypad::select_pressed() && core::investor_unlocked(a.save))   // tryb inwestora
+            {
+                a.text.set_palette_item(default_ink);
+                a.text.set_bg_priority(default_prio);
+                wait_release();
+                return leave(scene::investor);
+            }
 
             // animacje: wjazd karty, "wyskok" i kołysanie wybranego portretu, przebieranie nogami
             if(slide) { int st = slide > 0 ? -core::imin(slide_step, slide) : core::imin(slide_step, -slide); move_card(st); slide += st; }
@@ -2743,6 +2795,63 @@ namespace
             big.set_position(slot_cx(sel) - 120 + sx, big_cy - 80 + oy - bob);
             if(unl && clock % 24 == 0)
                 big.set_tiles(bn::sprite_items::actors.tiles_item(), (clock / 24) % 2 ? anim_b(data::classes[c].frame) : data::classes[c].frame);
+            next_frame();
+        }
+    }
+
+    // ------------------------------------------------------------------ tryb inwestora (SELECT na wyborze zawodu)
+    // Modyfikatory trudności po pierwszej wygranej: A włącza/wyłącza, każdy daje % doświadczenia i punkty stawki.
+    scene run_investor(app& a)
+    {
+        phone_screen ph(4);
+        ph.icon.set_visible(false);
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        page_sprites t;
+        int sel = 0, top = 0;
+        auto redraw = [&]() {
+            int mask = core::investor_mask(a.save);
+            core::message sub; sub.add("Stawka ").add(core::investor_stake(mask));
+            phone_header(a, ph, t, "Tryb inwestora", sub.s);
+            phone_canvas& c = *ph.canvas;
+            for(int r = 0; r < 4 && top + r < data::investor_count; ++r)
+            {
+                int i = top + r;
+                const core::investor_def& d = data::investor[i];
+                bool on = (mask >> i) & 1, is_sel = i == sel;
+                stripe(c, r, is_sel ? phone_tile::stripe_brand : (on ? phone_tile::stripe_done : phone_tile::stripe_todo));
+                core::message pm; pm.add(on ? "WŁ +" : "+").add(d.stake);
+                phone_text(a, t, list_x, row_py(r), fit(a, d.name, pill_room(pm.s)).c_str(), is_sel ? ink::brand : (on ? ink::dark : ink::dim));
+                phone_pill(a, c, t, pill_end, row_ty(r), pm.s, on ? pill::done : pill::gray);
+            }
+            core::message dm; dm.add(data::investor[sel].desc).add(", +").add(data::investor[sel].xp_pct).add("%");
+            phone_text(a, t, list_x, row_py(4), fit(a, dm.s, phone_text_w).c_str(), ink::dim);
+            core::message xm; xm.add("Dośw. +").add(core::investor_xp(mask)).add("%  rekord ").add(int(a.save.best_stake[a.chosen_class]));
+            phone_text(a, t, list_x, row_py(5), fit(a, xm.s, 150).c_str(), ink::dark);
+            phone_text(a, t, 226, row_py(5), "A: wł/wył", ink::brand, 1);
+            ph.commit();
+        };
+        redraw();
+        wait_release();
+        while(true)
+        {
+            int n = data::investor_count;
+            int dir = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+            if(dir)
+            {
+                sel = (sel + dir + n) % n;
+                if(sel < top) top = sel;
+                if(sel >= top + 4) top = sel - 3;
+                redraw(); bn::sound_items::sfx_menu.play();
+            }
+            if(bn::keypad::a_pressed()) { core::toggle_investor(a.save, sel); redraw(); bn::sound_items::sfx_buy.play(); }
+            if(bn::keypad::b_pressed() || bn::keypad::start_pressed() || bn::keypad::select_pressed())
+            {
+                bn::sram::write(a.save);
+                t.clear();
+                a.text.set_palette_item(default_ink);
+                wait_release();
+                return leave(scene::class_select);
+            }
             next_frame();
         }
     }
@@ -3052,6 +3161,7 @@ int main()
             case scene::help:         s = run_help(a); break;
             case scene::hurtownia:    s = run_hurtownia(a); break;
             case scene::prologue:     s = run_prologue(a); break;
+            case scene::investor:     s = run_investor(a); break;
             default: break;
         }
     }

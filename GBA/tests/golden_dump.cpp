@@ -146,6 +146,7 @@ static void snapshot(const game& g, int step)
     w(","); key("thermos"); wi(g.thermos); w(","); key("thermosCap"); wi(g.thermos_cap());
     w(","); key("stageEvent"); wi(g.stage_event);
     w(","); key("weather"); wi(g.weather); w(","); key("weaponRange"); wi(g.weapon_range());
+    w(","); key("investor"); w("["); wi(g.bonus.investor); w(","); wi(g.income(100)); w(","); wi(g.slam_every()); w(","); wi(g.shop_closed()); w("]");
     w(","); key("brigade"); w("["); wi(g.helper_called); w(","); wi(g.guard_turns); w(","); wi(g.ally_turns); w(","); wi(g.ally_x);
     w(","); wi(g.ally_y); w(","); wi(g.hero_defense()); w("]");
     w(","); key("counters"); w("["); wi(g.powers_used); w(","); wi(g.brand_found); w(","); wi(g.clean_bosses); w(",");
@@ -211,7 +212,8 @@ static void profile_json(const profile& p)
     w("]"); w(","); key("killsTotal"); wi(p.kills_total); w(","); key("powersTotal"); wi(p.powers_total);
     w(","); key("brandTotal"); wi(p.brand_total); w(","); key("cleanBosses"); wi(p.clean_bosses);
     w(","); key("contracts"); wi(p.contracts); w(","); key("keepsake"); wi(p.keepsake);
-    w(","); key("brigade"); wi(p.brigade);
+    w(","); key("brigade"); wi(p.brigade); w(","); key("investor"); wi(p.investor);
+    w(","); key("bestStake"); w("["); for(int i = 0; i < 8; ++i) { if(i) w(","); wi(p.best_stake[i]); } w("]");
     w(","); key("keepsakeRuns"); w("["); for(int i = 0; i < max_keepsakes; ++i) { if(i) w(","); wi(p.keepsake_runs[i]); } w("]");
     w(","); key("sram"); hex_bytes(reinterpret_cast<const char*>(&p), sizeof p);   // profil bajt po bajcie jak w SRAM
     w("}");
@@ -220,7 +222,7 @@ static void profile_json(const profile& p)
 // badges/contracts: odznaki i zlecenia w profilu przed budową (uprawnienia, odblokowane pamiątki);
 // keepsake: wybrana pamiątka + 1; keepsake_runs: budowy z nią przed tą (ranga)
 struct scenario { int cls; uint32_t seed; int diff; bool full_mods; bool smart; bool shop; bool ngplus; int steps;
-                  int badges = 0; int contracts = 0; int keepsake = 0; int keepsake_runs = 0; };
+                  int badges = 0; int contracts = 0; int keepsake = 0; int keepsake_runs = 0; int investor = 0; };
 
 int main(int argc, char** argv)
 {
@@ -240,6 +242,10 @@ int main(int argc, char** argv)
     sc.push_back({ 5, 1234u, 2, true, true, true, false, 5000, all_badges, all_contracts, 5, 3 });  // Notes kierownika II
     sc.push_back({ 0, 55555u, 1, false, false, false, false, 4000, 0x108, all_contracts, 4, 0 });  // Stara poziomica I, bot z testów
     sc.push_back({ 2, 9001u, 0, true, true, true, true, 6000, 0x01, 0, 2, 2 });                    // Kask ojca I (z odznaki)
+    // v0.21.47: tryb inwestora (wszystkie modyfikatory; budżet i Hurtownia zamknięta)
+    const int all_investor = (1 << data::investor_count) - 1;
+    sc.push_back({ 2, 777u, 0, true, true, true, true, 6000, all_badges, all_contracts, 1, 8, all_investor });
+    sc.push_back({ 4, 4242u, 1, true, true, true, true, 6000, 0, 0, 0, 0, 0x09 });
 
     for(size_t si = 0; si < sc.size(); ++si)
     {
@@ -252,6 +258,7 @@ int main(int argc, char** argv)
             p.brigade = uint8_t((1 << data::brigade_count) - 1);
         }
         p.badges = uint16_t(s.badges); p.contracts = uint8_t(s.contracts); p.keepsake = uint8_t(s.keepsake);
+        if(s.investor) { p.wins = 1; p.investor = uint8_t(s.investor); }   // tryb inwestora po pierwszej wygranej
         if(s.keepsake > 0) p.keepsake_runs[s.keepsake - 1] = uint8_t(s.keepsake_runs);
         run_mods m = mods(p);   // przed start_run: ranga pamiątki z budów przed tą
         static game g; g.new_run(s.cls, s.seed, s.diff, m);
@@ -261,7 +268,7 @@ int main(int argc, char** argv)
         w(","); key("fullMods"); wi(s.full_mods); w(","); key("smart"); wi(s.smart); w(","); key("shop"); wi(s.shop);
         w(","); key("ngplus"); wi(s.ngplus); w(","); key("steps"); wi(s.steps);
         w(","); key("badges"); wi(s.badges); w(","); key("contracts"); wi(s.contracts); w(","); key("keepsake"); wi(s.keepsake);
-        w(","); key("keepsakeRuns"); wi(s.keepsake_runs);
+        w(","); key("keepsakeRuns"); wi(s.keepsake_runs); w(","); key("investor"); wi(s.investor);
         w(","); key("snapshots"); w("[");
         snapshot(g, 0);
         std::vector<uint32_t> digests;
@@ -272,7 +279,7 @@ int main(int argc, char** argv)
             if(g.st == status::stage_clear)
             {
                 check_badges(p, g); check_contracts(p); bank_xp(p, g);
-                if(g.act_cleared && s.shop) bot_shop(g);
+                if(g.act_cleared && s.shop && ! g.shop_closed()) bot_shop(g);
                 g.next_stage();
                 w(","); snapshot(g, step);
                 digests.push_back(digest(g)); g.hits_count = 0;

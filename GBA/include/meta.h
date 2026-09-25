@@ -224,6 +224,11 @@ namespace core
         if(k >= 0 && p.keepsake_runs[k] < 255) ++p.keepsake_runs[k];
     }
 
+    // Tryb inwestora: odblokowany po pierwszej wygranej; wybór na ekranie zawodu (SELECT).
+    inline bool investor_unlocked(const profile& p) { return p.wins > 0; }
+    inline int investor_mask(const profile& p) { return investor_unlocked(p) ? p.investor & ((1 << data::investor_count) - 1) : 0; }
+    inline void toggle_investor(profile& p, int i) { p.investor = uint8_t(p.investor ^ (1u << i)); }
+
     inline run_mods mods(const profile& p)
     {
         run_mods m;
@@ -248,6 +253,8 @@ namespace core
             if(p.badges & (1u << i)) add_perk(m, data::badges[i].bonus);
         int k = selected_keepsake(p);   // pamiątka zabrana na budowę
         if(k >= 0) add_perk(m, keepsake_perk(p, k));
+        m.investor = investor_mask(p);   // tryb inwestora: modyfikatory i premia doświadczenia
+        m.xp_pct += investor_xp(m.investor);
         return m;
     }
 
@@ -368,6 +375,8 @@ namespace core
         for(int d = 0; d < data::enemies_count; ++d) if(g.kills_by_type[d]) p.catalog = uint16_t(p.catalog | (1u << d));
         p.tools_found = uint8_t(p.tools_found | g.tools_found);
         if(g.st == status::won) p.class_wins = uint8_t(p.class_wins | (1u << g.cls));
+        int stake = investor_stake(g.bonus.investor);   // rekord stawki zawodu (wygrana w trybie inwestora)
+        if(g.st == status::won && stake > p.best_stake[g.cls]) p.best_stake[g.cls] = uint8_t(stake);
     }
 
     // Sprawdza odznaki po ważnym momencie (koniec etapu, koniec budowy). Nowe odznaki dają doświadczenie.

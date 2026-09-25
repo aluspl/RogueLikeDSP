@@ -166,6 +166,19 @@ namespace core
         int8_t frame;          // pomocnik: klatka postaci w actors.bmp
     };
 
+    // Tryb inwestora (jak Heat w Hadesie): modyfikatory trudności po pierwszej wygranej, każdy za % doświadczenia i stawkę.
+    enum class investor_effect : uint8_t { cash_pct, no_break, enemy_hp, no_shop, slam, enemy_dmg };
+
+    struct investor_def
+    {
+        const char* name;
+        const char* desc;
+        investor_effect effect;
+        int8_t value;          // budżet: % zł; problemy: +% HP; kontrola: -tury między ciosami bossa; termin: +obrażenia
+        int8_t xp_pct;         // premia doświadczenia
+        int8_t stake;          // punkty stawki
+    };
+
     enum class gear_stat : uint8_t { def, dmg, hp };
 
     struct gear_def            // sprzęt z dropów: slot x jakość

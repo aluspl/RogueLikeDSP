@@ -1165,6 +1165,53 @@ int main()
             for(int i = 0; i < 8; ++i) CHECK(v5.best_stake[i] == 0);
         }
     }
+    // 36. tryb inwestora: odblokowanie po wygranej, stawka i premia doświadczenia, skutki modyfikatorów, rekord stawki
+    {
+        auto iv_of = [](investor_effect e) { for(int i = 0; i < data::investor_count; ++i) if(data::investor[i].effect == e) return i; return -1; };
+        for(investor_effect e : { investor_effect::cash_pct, investor_effect::no_break, investor_effect::enemy_hp, investor_effect::no_shop,
+                                  investor_effect::slam, investor_effect::enemy_dmg }) CHECK(iv_of(e) >= 0);
+        const int all = (1 << data::investor_count) - 1;
+        profile p; profile_reset(p); p.investor = uint8_t(all);
+        CHECK(! investor_unlocked(p) && mods(p).investor == 0);            // przed pierwszą wygraną nie działa
+        int xp0 = mods(p).xp_pct;
+        p.wins = 1;
+        run_mods m = mods(p);
+        CHECK(m.investor == all && m.xp_pct == xp0 + investor_xp(all) && investor_stake(all) > 0);
+        toggle_investor(p, 0); CHECK(mods(p).investor == (all & ~1)); toggle_investor(p, 0);
+        game a; a.new_run(1, 55); game b; b.new_run(1, 55, data::default_difficulty, m);
+        CHECK(b.enemy_hp_pct() == a.enemy_hp_pct() * (100 + data::investor[iv_of(investor_effect::enemy_hp)].value) / 100);
+        CHECK(b.enemy_dmg_bonus() == a.enemy_dmg_bonus() + data::investor[iv_of(investor_effect::enemy_dmg)].value);
+        CHECK(b.income(100) == 100 + data::investor[iv_of(investor_effect::cash_pct)].value && a.income(100) == 100);
+        CHECK(b.slam_every() == data::slam_every - data::investor[iv_of(investor_effect::slam)].value && a.slam_every() == data::slam_every);
+        CHECK(b.shop_closed() && ! a.shop_closed());
+        a.hero.hp = 5; b.hero.hp = 5; a.debug_skip(); b.debug_skip(); a.next_stage(); b.next_stage();
+        CHECK(a.hero.hp == 10 && b.hero.hp == 5);                           // bez przerwy na kawę
+        CHECK(b.xp_pct > 0 && b.bonus.xp_pct == m.xp_pct);
+        // rekord stawki tylko za wygraną, per zawód
+        profile q; profile_reset(q); q.wins = 1; q.investor = uint8_t(all);
+        game w; w.new_run(3, 9, data::default_difficulty, mods(q));
+        record_run(q, w); CHECK(q.best_stake[3] == 0);
+        w.st = status::won; record_run(q, w); CHECK(q.best_stake[3] == investor_stake(all) && q.best_stake[2] == 0);
+        q.investor = 1; game w2; w2.new_run(3, 9, data::default_difficulty, mods(q)); w2.st = status::won; record_run(q, w2);
+        CHECK(q.best_stake[3] == investor_stake(all));                      // niższa stawka nie psuje rekordu
+        // modyfikatory utrudniają (bot, Normalny)
+        int base = 0, hard = 0;
+        for(int k = 0; k < 120; ++k)
+            for(int mode = 0; mode < 2; ++mode)
+            {
+                run_mods mm; if(mode) mm.investor = all;
+                game g; g.new_run(k % data::classes_count, 3000 + k * 131, data::default_difficulty, mm);
+                for(int step = 0; step < 4000; ++step)
+                {
+                    if(g.st == status::stage_clear) { g.next_stage(); continue; }
+                    if(g.st != status::playing) break;
+                    bot_step(g);
+                }
+                (mode ? hard : base) += g.st == status::won;
+            }
+        std::printf("Tryb inwestora (wszystkie modyfikatory, Normalny): %d%% vs bez %d%%\n", hard * 100 / 120, base * 100 / 120);
+        CHECK(hard < base);
+    }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};
