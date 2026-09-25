@@ -1723,7 +1723,7 @@ namespace
                 case 0: m.add("Atak: najbliższy cel (z").add(g.weapon().range).add(")"); break;
                 case 1: m.add("Moc: ").add(ability_label(g).s);
                         if(g.ability_cd > 0) m.add(" - za ").add(g.ability_cd).add(" t."); break;
-                case 2: m.add("Termos ").add(g.thermos).add("/").add(data::thermos_capacity).add(": kawa +").add(g.coffee_heal()).add(" HP"); break;
+                case 2: m.add("Termos ").add(g.thermos).add("/").add(g.thermos_cap()).add(": kawa +").add(g.coffee_heal()).add(" HP"); break;
                 case 3: m.add("Czekaj turę"); break;
                 default: m.add("Akcje: wybierz strzałką"); break;
             }
@@ -2029,7 +2029,7 @@ namespace
                     a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
                     a.text.set_bg_priority(0);
                     a.text.set_left_alignment();
-                    core::message m; m.add(g.thermos).add("/").add(data::thermos_capacity);
+                    core::message m; m.add(g.thermos).add("/").add(g.thermos_cap());
                     a.text.generate(59, -52, m.s, thermos_text);
                 }
                 thermos_icon.set_visible(! banner_on);
@@ -2334,6 +2334,8 @@ namespace
             }
         };
 
+        auto list_window = [&]() { return tab == 4 || tab == 0 ? 4 : 5; };   // widoczne wiersze listy
+
         auto draw_list_row = [&](int r, int i, bool is_sel) {   // zakładki 0, 1, 3
             phone_canvas& c = *ph.canvas;
             if(is_sel) stripe(c, r, phone_tile::stripe_brand);
@@ -2426,10 +2428,19 @@ namespace
                 ph.commit();
                 return;
             }
-            // listy: Odznaki, Katalog, Zespół - 5 wierszy + opis zaznaczonego
-            for(int r = 0; r < 5 && top + r < list_size(); ++r) draw_list_row(r, top + r, top + r == sel);
+            // listy: Odznaki (4 wiersze + opis + uprawnienie), Katalog, Zespół (5 wierszy + opis zaznaczonego)
+            for(int r = 0; r < list_window() && top + r < list_size(); ++r) draw_list_row(r, top + r, top + r == sel);
             const char* desc = "";
-            if(tab == 0) desc = data::badges[sel].desc;
+            if(tab == 0)
+            {
+                bool got = a.save.badges & (1u << sel);
+                phone_text(a, t, list_x, row_py(4), clip(data::badges[sel].desc, 30).c_str(), ink::dim);
+                core::message pm; pm.add("Premia: ");
+                core::perk_label(pm, data::badges[sel].bonus);
+                phone_text(a, t, list_x, row_py(5), clip(pm.s, 34).c_str(), got ? ink::done : ink::dim);
+                ph.commit();
+                return;
+            }
             else if(tab == 1) desc = (a.save.catalog & (1u << sel)) ? data::enemies[sel].desc : "Pokonaj, żeby poznać";
             else desc = data::classes[sel].ability_desc;
             phone_text(a, t, list_x, row_py(5), clip(desc, 26).c_str(), ink::dim);
@@ -2450,7 +2461,7 @@ namespace
                 redraw();
                 bn::sound_items::sfx_menu.play();
             }
-            int n = list_size(), window = tab == 4 ? 4 : 5;
+            int n = list_size(), window = list_window();
             int dir = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
             if(dir && n > 0)
             {

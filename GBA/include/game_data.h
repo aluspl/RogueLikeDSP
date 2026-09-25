@@ -123,16 +123,16 @@ inline constexpr int enemy_termin = 8;
 inline constexpr int enemy_betoniarka = 9;
 inline constexpr int enemy_nawalnica = 10;
 
-inline constexpr core::badge_def badges[] = {
-    { "Bez usterek", "Etap bez żadnych obrażeń", 20 },
-    { "Przed terminem", "Termin pokonany w 150 tur", 30 },
-    { "Seryjny", "8 problemów na jednym etapie", 15 },
-    { "Zawodowiec", "Poziom postaci 5", 20 },
-    { "Twardziel", "Wygrana na Trudnym", 40 },
-    { "Pełny zespół", "Wygrana każdym zawodem", 60 },
-    { "Kolekcjoner", "Znajdź wszystkie narzędzia", 30 },
-    { "Katalog usterek", "Pokonaj każdy problem", 30 },
-    { "Osiedle", "Zbuduj 5 domów", 50 },
+inline constexpr core::badge_def badges[] = {   // perk = uprawnienie: trwała premia na każdą budowę
+    { "Bez usterek", "Etap bez żadnych obrażeń", 20, { core::perk_effect::hp, 2 } },
+    { "Przed terminem", "Termin pokonany w 150 tur", 30, { core::perk_effect::cooldown, 1 } },
+    { "Seryjny", "8 problemów na jednym etapie", 15, { core::perk_effect::dmg, 1 } },
+    { "Zawodowiec", "Poziom postaci 5", 20, { core::perk_effect::crit, 5 } },
+    { "Twardziel", "Wygrana na Trudnym", 40, { core::perk_effect::def, 1 } },
+    { "Pełny zespół", "Wygrana każdym zawodem", 60, { core::perk_effect::cash, 20 } },
+    { "Kolekcjoner", "Znajdź wszystkie narzędzia", 30, { core::perk_effect::tool_pct, 10 } },
+    { "Katalog usterek", "Pokonaj każdy problem", 30, { core::perk_effect::luck, 1 } },
+    { "Osiedle", "Zbuduj 5 domów", 50, { core::perk_effect::xp_pct, 10 } },
 };
 
 inline constexpr int badges_count = 9;

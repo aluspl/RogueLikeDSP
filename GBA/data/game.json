@@ -683,55 +683,91 @@
       "id": "bez_usterek",
       "name": "Bez usterek",
       "desc": "Etap bez żadnych obrażeń",
-      "xp": 20
+      "xp": 20,
+      "perk": {
+        "effect": "hp",
+        "value": 2
+      }
     },
     {
       "id": "przed_terminem",
       "name": "Przed terminem",
       "desc": "Termin pokonany w 150 tur",
-      "xp": 30
+      "xp": 30,
+      "perk": {
+        "effect": "cooldown",
+        "value": 1
+      }
     },
     {
       "id": "seryjny",
       "name": "Seryjny",
       "desc": "8 problemów na jednym etapie",
-      "xp": 15
+      "xp": 15,
+      "perk": {
+        "effect": "dmg",
+        "value": 1
+      }
     },
     {
       "id": "zawodowiec",
       "name": "Zawodowiec",
       "desc": "Poziom postaci 5",
-      "xp": 20
+      "xp": 20,
+      "perk": {
+        "effect": "crit",
+        "value": 5
+      }
     },
     {
       "id": "twardziel",
       "name": "Twardziel",
       "desc": "Wygrana na Trudnym",
-      "xp": 40
+      "xp": 40,
+      "perk": {
+        "effect": "def",
+        "value": 1
+      }
     },
     {
       "id": "pelny_zespol",
       "name": "Pełny zespół",
       "desc": "Wygrana każdym zawodem",
-      "xp": 60
+      "xp": 60,
+      "perk": {
+        "effect": "cash",
+        "value": 20
+      }
     },
     {
       "id": "kolekcjoner",
       "name": "Kolekcjoner",
       "desc": "Znajdź wszystkie narzędzia",
-      "xp": 30
+      "xp": 30,
+      "perk": {
+        "effect": "tool_pct",
+        "value": 10
+      }
     },
     {
       "id": "katalog",
       "name": "Katalog usterek",
       "desc": "Pokonaj każdy problem",
-      "xp": 30
+      "xp": 30,
+      "perk": {
+        "effect": "luck",
+        "value": 1
+      }
     },
     {
       "id": "osiedle",
       "name": "Osiedle",
       "desc": "Zbuduj 5 domów",
-      "xp": 50
+      "xp": 50,
+      "perk": {
+        "effect": "xp_pct",
+        "value": 10
+      }
     }
   ],
   "story": {

@@ -134,6 +134,8 @@ namespace core
                 case upgrade_effect::craft:   m.craft += v; break;
             }
         }
+        for(int i = 0; i < data::badges_count; ++i)   // uprawnienia z zdobytych odznak
+            if(p.badges & (1u << i)) add_perk(m, data::badges[i].bonus);
         return m;
     }
 
