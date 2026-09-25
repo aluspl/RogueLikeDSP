@@ -91,4 +91,4 @@ Grafiki są placeholderami generowanymi kodem: podmień pliki w `graphics/` pixe
 (te same nazwy i rozmiary) bez zmian w kodzie.
 
 Gra nieoficjalna, niezwiązana z Nintendo ani przez nie licencjonowana. Silnik: Butano (zlib).
-Font: DejaVu Sans Mono (licencja Bitstream Vera/DejaVu).
+Font gry: pikselowy font o zmiennej szerokości z Butano (`common_variable_8x16_font`, licencja zlib) z dorysowanymi polskimi znakami (`assets_src/butano_variable_8x16_font.bmp`). Napisy na ekranie tytułowym: DejaVu Sans (licencja Bitstream Vera/DejaVu).

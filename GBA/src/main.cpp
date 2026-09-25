@@ -63,6 +63,7 @@
 #include "meta.h"
 #include "phone_tiles.h"
 #include "screen_info.h"
+#include "font_widths.h"
 
 namespace
 {
@@ -72,7 +73,7 @@ namespace
     };
     constexpr bn::span<const bn::utf8_character> pl_chars_span(pl_chars);
     constexpr auto pl_chars_map = bn::utf8_characters_map<pl_chars_span>();
-    constexpr bn::sprite_font font(bn::sprite_items::font_8x16, pl_chars_map.reference());
+    constexpr bn::sprite_font font(bn::sprite_items::font_8x16, pl_chars_map.reference(), font_widths);   // zmienna szerokość
 
     using text_sprites = bn::vector<bn::sprite_ptr, 48>;
     using page_sprites = bn::vector<bn::sprite_ptr, 80>;   // pełnoekranowe strony menu
