@@ -18,7 +18,8 @@ L.append("};\n")
 L.append("inline constexpr core::class_def classes[] = {")
 for c in d["classes"]:
     ab = c["ability"]
-    assert ab["effect"] in {"stun", "wall", "volley", "chain", "heal", "spin"}, ab
+    assert len(ab["desc"]) <= 23, ab   # mieści się w banerze obok ikony
+    assert ab["effect"] in {"stun", "wall", "volley", "chain", "flush", "spin"}, ab
     L.append(f'    {{ {s(c["name"])}, {s(c["desc"])}, {c["maxHealth"]}, {c["strength"]}, {c["agility"]}, '
              f'{c["intelligence"]}, {c["defense"]}, {wid[c["weapon"]]}, {c["frame"]}, '
              f'{s(ab["name"])}, {s(ab["desc"])}, core::ability_effect::{ab["effect"]}, {ab["cooldown"]} }},')

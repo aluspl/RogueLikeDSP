@@ -486,6 +486,10 @@ if __name__ == "__main__":
     write_json("particles", {"type": "sprite", "height": 8})
     write_bmp(os.path.join(G, "houses.bmp"), pa.house_frames(), 16, 16 * 25, SPR_PAL, 4)
     write_json("houses", {"type": "sprite", "height": 16})
+    # osobna paleta (inaczej Butano współdzieli ją z postaciami i szarość ikony objęłaby bohatera)
+    icon_pal = list(SPR_PAL); icon_pal[SK] = (0, 0, 0)   # kolor skóry nieużywany w ikonach
+    write_bmp(os.path.join(G, "ability_icons.bmp"), pa.ability_icon_frames(), 16, 16 * len(pa.ABILITY_ICONS), icon_pal, 4)
+    write_json("ability_icons", {"type": "sprite", "height": 16})
     print("phone tiles:", make_phone())
     make_tiles()
     make_title()
