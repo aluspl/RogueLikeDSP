@@ -2127,7 +2127,7 @@ namespace
             if(g.st == core::status::dead || g.st == core::status::won)
             {
                 hero.set_visible(true);
-                for(int i = 0; i < 90; ++i)
+                for(int i = 0; i < 90 || (banner.busy() && i < 480 && ! bn::keypad::a_pressed()); ++i)   // też banery odznak
                 {
                     if(g.st == core::status::won && (i % 6) == 0)   // konfetti na odbiór budowy
                         for(int k = 0; k < 2; ++k)
