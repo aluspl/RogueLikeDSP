@@ -29,3 +29,4 @@ GBA/*.sav
 GBA/scn*.gba
 GBA/scn*.elf
 GBA/build_scn*/
+.claude/
