@@ -14,6 +14,7 @@ config/name="PlanBudowlany RogueLike (LifeLike)"
 config/description="Roguelike budowlany – port gry z GBA na Godot 4 + C#"
 run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
+config/icon="res://icon.png"
 
 [display]
 
@@ -24,6 +25,7 @@ window/size/window_height_override=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/stretch/scale_mode="integer"
+window/handheld/orientation=1
 
 [dotnet]
 
@@ -34,3 +36,4 @@ project/assembly_name="LifeLike.Game"
 textures/canvas_textures/default_texture_filter=0
 2d/snap/snap_2d_transforms_to_pixel=true
 2d/snap/snap_2d_vertices_to_pixel=true
+textures/vram_compression/import_etc2_astc=true
