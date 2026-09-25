@@ -1,7 +1,0 @@
-{
-  "id": "rogue",
-  "name": "Łotrzyk",
-  "description": "Zwinny, bije szybko, słabo znosi ciosy.",
-  "baseStats": { "maxHealth": 14, "strength": 1, "agility": 3, "intelligence": 1, "defense": 1 },
-  "startingWeapon": "dagger"
-}

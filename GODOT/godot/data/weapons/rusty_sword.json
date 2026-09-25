@@ -1,9 +1,0 @@
-{
-  // Broń startowa wojownika
-  "id": "rusty_sword",
-  "name": "Zardzewiały miecz",
-  "minDamage": 2,
-  "maxDamage": 4,
-  "range": 1,
-  "scalesWith": "strength"
-}

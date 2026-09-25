@@ -3,10 +3,24 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <EnableDynamicLoading>true</EnableDynamicLoading>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
     <RootNamespace>LifeLike.Game</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../src/LifeLike.Core/LifeLike.Core.csproj" />
   </ItemGroup>
+
+  <!--
+    Dane gry są wspólne z wersją GBA: jedynym źródłem jest GBA/data/game.json.
+    Przy każdym buildzie (także z edytora Godota) kopiujemy go do res://data/game.json (plik w .gitignore).
+  -->
+  <PropertyGroup>
+    <SharedGameJson>$(MSBuildProjectDirectory)/../../GBA/data/game.json</SharedGameJson>
+  </PropertyGroup>
+  <Target Name="CopySharedGameData" BeforeTargets="BeforeBuild">
+    <Error Condition="!Exists('$(SharedGameJson)') And !Exists('$(MSBuildProjectDirectory)/data/game.json')"
+           Text="Brak $(SharedGameJson) – gra potrzebuje wspólnych danych z katalogu GBA." />
+    <Copy Condition="Exists('$(SharedGameJson)')" SourceFiles="$(SharedGameJson)"
+          DestinationFolder="$(MSBuildProjectDirectory)/data" SkipUnchangedFiles="true" />
+  </Target>
 </Project>
