@@ -89,7 +89,7 @@ public sealed class AutoWalk
             var e = g.Enemies[i];
             var dist = CoreGame.Cheb(g.Hero.X, g.Hero.Y, e.X, e.Y);
             if (dist <= 1) return true;
-            if (i == _target && dist <= g.Weapon.Range) return true;
+            if (i == _target && dist <= g.WeaponRange()) return true;
         }
         return false;
     }

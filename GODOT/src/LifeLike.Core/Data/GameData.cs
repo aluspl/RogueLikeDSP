@@ -34,6 +34,10 @@ public sealed class GameData
     /// <summary>Wydarzenia na placu (sekcja "siteEvents").</summary>
     public SiteEventDef[] SiteEvents { get; private init; } = [];
     public int SiteEventChancePct { get; private init; }
+    /// <summary>Pogoda dnia (sekcja "weather"); bez sekcji – jedna pogoda bez skutku.</summary>
+    public WeatherDef[] Weather { get; private init; } = [];
+    /// <summary>Niekorzystna pogoda i niekorzystne wydarzenie na placu naraz: wydarzenie przepada.</summary>
+    public bool WeatherNoBadStack { get; private init; }
     /// <summary>Indeks = slot * 3 + jakość.</summary>
     public GearDef[] Gear { get; private init; } = [];
     public string[] GearSlots { get; private init; } = [];
@@ -245,6 +249,27 @@ public sealed class GameData
                 Str(e, "info"), Story(e), ParseEvent(Str(e, "effect")), Int(e, "value"), e.GetProperty("good").GetBoolean())).ToArray();
         }
 
+        var allStages = (1 << stages.Length) - 1;
+        WeatherDef[] weather = [new WeatherDef("slonce", "Słonecznie", "Pogodnie", "", WeatherEffect.None, 0, 1, false, allStages)];
+        var weatherNoBadStack = false;
+        if (d.TryGetProperty("weather", out var wj))
+        {
+            weatherNoBadStack = wj.TryGetProperty("noBadStack", out var nb) && nb.GetBoolean();
+            weather = wj.GetProperty("list").EnumerateArray().Select(w => new WeatherDef(Str(w, "id"), Str(w, "name"), Str(w, "short"),
+                Str(w, "info"), ParseEnum<WeatherEffect>(Str(w, "effect")), Int(w, "value"), Int(w, "weight"), w.GetProperty("bad").GetBoolean(),
+                w.TryGetProperty("stages", out var ws) ? ws.EnumerateArray().Aggregate(0, (m, x) => m | 1 << x.GetInt32()) : allStages)).ToArray();
+            Require(weather.Length >= 1 && weather[0].Effect == WeatherEffect.None, "pogoda: pierwsza bez skutku");
+            foreach (var w in weather)
+            {
+                Require(w.Weight is > 0 and < 128 && (w.Effect is not (WeatherEffect.Frost or WeatherEffect.Rain) || w.Value >= 2), $"pogoda {w.Id}: zła waga/wartość");
+            }
+            for (var si = 0; si < stages.Length; si++)
+            {
+                var bit = 1 << si;
+                Require(weather.Any(w => (w.StagesMask & bit) != 0), $"etap {si}: brak pogody do wylosowania");
+            }
+        }
+
         var drops = d.GetProperty("drops");
         var weights = drops.GetProperty("weights");
         var eq = d.GetProperty("equipment");
@@ -311,6 +336,8 @@ public sealed class GameData
             Contracts = contracts,
             SiteEvents = siteEvents,
             SiteEventChancePct = siteEventChance,
+            Weather = weather,
+            WeatherNoBadStack = weatherNoBadStack,
             Tools = tools,
             Gear = gear.ToArray(),
             GearSlots = slots.ToArray(),

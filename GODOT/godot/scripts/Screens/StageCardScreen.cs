@@ -1,3 +1,4 @@
+using LifeLike.Core.Data;
 using LifeLike.Game.Audio;
 using LifeLike.Game.Gfx;
 using LifeLike.Game.Input;
@@ -29,7 +30,9 @@ public sealed class StageCardScreen : Screen
         if (sd.Boss >= 0) page.Info($"Uwaga: {d.Enemies[sd.Boss].Name}!", Ink.Late);
         else page.Info($"{sd.Name}: problemy {g.EnemyHpPct()}%", Ink.Dim);
         if (ev is not null) page.Info($"{ev.Name}: {ev.Info}", ev.Good ? Ink.Done : Ink.Late);
-        page.Info(g.DDef.Name + (g.Tier > 0 ? $" NG+{g.Tier}" : ""), Ink.Dim);
+        var wd = g.WDef; // pogoda dnia (skutek w zakładce Zadania) i trudność w jednym wierszu
+        var weather = wd.Effect == WeatherEffect.None ? wd.Name : $"{wd.Name} ({wd.Short})";
+        page.Info($"Pogoda: {weather}, {g.DDef.Name}" + (g.Tier > 0 ? $" NG+{g.Tier}" : ""), wd.Bad ? Ink.Late : Ink.Dim);
         N.Phone.OpenSingle(page, 2, instant);
         Sfx.Play("notify", 0.7f);
     }

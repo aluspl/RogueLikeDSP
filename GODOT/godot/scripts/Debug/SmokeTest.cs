@@ -21,7 +21,7 @@ namespace LifeLike.Game.Debug;
 public sealed class SmokeTest
 {
     private readonly App _app;
-    private int _steps, _offers, _drinks, _holds;
+    private int _steps, _offers, _drinks, _holds, _weathers;
     private bool _prologue, _touch, _portrait;
 
     public SmokeTest(App app) => _app = app;
@@ -41,6 +41,7 @@ public sealed class SmokeTest
             await PlayStages();
             new DebugScenes(_app).AdvanceMessages(); // bot kończy na karcie etapu - dalej na mapę
             if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) ExerciseHolds();
+            if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) await ExerciseWeather();
             if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) await ExerciseMenuAndOffer();
             if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) await ExerciseTouchAndSettings();
             var ok = g.Stage >= 5 || g.St is GameStatus.Dead or GameStatus.Won;
@@ -52,7 +53,7 @@ public sealed class SmokeTest
             if (DrawErrors.Count > 0) throw new Exception($"błędy rysowania: {DrawErrors.Count}, ostatni: {DrawErrors.Last}");
             GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {s.Data.Version}, zawody {s.Data.Classes.Length}, etap {stage + 1}, " +
                      $"dzień {g.Turns}, HP {g.Hero.Hp}/{g.Hero.MaxHp}, wynik {g.Score}, budżet {g.Cash}, kroki {_steps}, " +
-                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
+                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
                      $"ekran {Flow.Current.GetType().Name}");
             _app.Root.GetTree().Quit(ok ? 0 : 1);
         }
@@ -146,6 +147,24 @@ public sealed class SmokeTest
         game.HandleInput(InputCmd.Release(GameAction.A));
         if (game.Aim.Active) throw new Exception("puszczenie A nie zakończyło celowania");
         _holds++;
+    }
+
+    /// <summary>Każda pogoda dnia na mapie (nakładka deszczu/śniegu/wiatru/upału, kałuże, ikona w HUD) bez błędów rysowania.</summary>
+    private async Task ExerciseWeather()
+    {
+        var g = _app.Session.Game;
+        var old = g.Weather;
+        for (var w = 0; w < g.D.Weather.Length; w++)
+        {
+            g.Weather = (sbyte)w;
+            _app.Refresh();
+            await DebugRunner.Frames(_app.Root, 2);
+            if (g.D.Weather[w].Effect == Core.Data.WeatherEffect.Wind && g.Weapon.Range > 1 && g.WeaponRange() >= g.Weapon.Range)
+                throw new Exception("wiatr nie skraca zasięgu");
+            _weathers++;
+        }
+        g.Weather = old;
+        _app.Refresh();
     }
 
     /// <summary>Ścieżki UI, na które bot mógł nie trafić: termos przez menu akcji i okno porównania sprzętu.</summary>

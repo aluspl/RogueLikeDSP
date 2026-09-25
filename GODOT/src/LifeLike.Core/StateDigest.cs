@@ -113,6 +113,8 @@ public static class StateDigest
         // v0.21.46: wezwania bossa (Inspekcja Pracy)
         f.Add(g.SummonCounter);
         f.Add(g.SummonsUsed);
+        // v0.21.47: pogoda dnia
+        f.Add(g.Weather);
         return f.H;
     }
 }

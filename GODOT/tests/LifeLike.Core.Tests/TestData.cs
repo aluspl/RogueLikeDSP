@@ -39,6 +39,7 @@ public static class TestData
         g.EnemiesCount = 0;
         g.PickupsCount = 0;
         g.StairsX = g.StairsY = -1;
+        g.Weather = 0; // bez pogody (testy mocy i zasięgu)
         g.Hero.X = 7;
         g.Hero.Y = 7;
         g.UpdateFov();

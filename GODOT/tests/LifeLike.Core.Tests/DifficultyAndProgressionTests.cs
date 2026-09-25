@@ -39,6 +39,8 @@ public class DifficultyAndProgressionTests
         for (var k = 0; k < 2; ++k)
         {
             var g = TestData.Run(3, 7, k); // Łatwy (-1) vs Normalny
+            g.Weather = 0; // ten sam rzut niezależnie od pogody
+            g.R.Seed(7);
             g.EnemiesCount = 0;
             g.Spawn(8, g.Hero.X + 1, g.Hero.Y);
             g.Enemies[0].Awake = true;
