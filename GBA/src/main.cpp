@@ -150,6 +150,7 @@ namespace
         scene after_help = scene::title;   // dokąd wrócić z ekranu "Jak grać"
         bool has_run = false;              // w SRAM jest przerwana budowa
         int phone_tab = 2;                 // ostatnio otwarta zakładka telefonu (Start)
+        int pending_helper = -1;           // brygada: fachowiec wybrany w telefonie (wzywany po powrocie do gry)
     };
 
     // ------------------------------------------------------------------ zapis budowy w trakcie (SRAM za profilem)
@@ -755,7 +756,7 @@ namespace
     void tab_gear(app& a, phone_screen& ph, page_sprites& t)   // Sprzęt: narzędzie + kask, rękawice, kamizelka
     {
         const core::game& g = *a.g;
-        phone_header(a, ph, t, tab_names[3], "Na budowie");
+        phone_header(a, ph, t, tab_names[3], "A: Brygada");
         phone_canvas& c = *ph.canvas;
         core::message w; w.add(g.weapon().name).add(" ").add(g.weapon().min_damage).add("-").add(g.weapon().max_damage)
                                .add(" z").add(g.weapon_range()).add(" +").add(g.dmg_bonus);
@@ -778,6 +779,45 @@ namespace
         phone_text(a, t, list_x, row_py(4), fit(a, s1.s, phone_text_w).c_str(), ink::dim);
         core::message s2; s2.add("Kryt ").add(g.crit_pct()).add("%  Unik ").add(g.dodge_pct()).add("%  Wzrok ").add(g.sight_radius());
         phone_text(a, t, list_x, row_py(5), fit(a, s2.s, phone_text_w).c_str(), ink::dim);
+    }
+
+    // Brygada (zakładka Zespół, strona pod A): najemni fachowcy raz na etap za budżet budowy.
+    void tab_brigade(app& a, phone_screen& ph, page_sprites& t, int sel)
+    {
+        const core::game& g = *a.g;
+        core::message sub; sub.add("Budżet: ").add(g.cash).add(" zł");
+        phone_header(a, ph, t, "Brygada", sub.s);
+        phone_canvas& c = *ph.canvas;
+        for(int i = 0; i < data::brigade_count; ++i)
+        {
+            const core::helper_def& hd = data::brigade[i];
+            bool unl = (g.bonus.helpers >> i) & 1, here = g.helper_called == i, is_sel = i == sel;
+            if(is_sel) stripe(c, i, phone_tile::stripe_brand);
+            core::message pr; pr.add(hd.price).add(" zł");
+            const char* pill_s = here ? "Na placu" : (unl ? pr.s : "Zablok.");
+            phone_text(a, t, list_x, row_py(i), fit(a, hd.name, pill_room(pill_s)).c_str(), is_sel ? ink::brand : (unl ? ink::dark : ink::dim));
+            phone_pill(a, c, t, pill_end, row_ty(i), pill_s, here ? pill::done : (unl && g.cash >= hd.price ? pill::group : pill::gray));
+        }
+        phone_text(a, t, list_x, row_py(4), fit(a, data::brigade[sel].desc, phone_text_w).c_str(), ink::dim);
+        core::message st;
+        ink si = ink::dim;
+        if(g.helper_called >= 0)
+        {
+            st.add("Na tym etapie: ").add(data::brigade[g.helper_called].name);
+            if(g.guard_turns > 0) st.add(" (").add(g.guard_turns).add(" t.)");
+            if(g.ally_turns > 0) st.add(" (").add(g.ally_turns).add(" t.)");
+            si = ink::done;
+        }
+        else switch(g.helper_blocked(sel))
+        {
+            case core::game::helper_ok: st.add("A: wezwij (tura)  B: wróć"); si = ink::brand; break;
+            case core::game::helper_locked: st.add("Odblokuj w Szkoleniach"); break;
+            case core::game::helper_cash: st.add("Za mały budżet"); si = ink::late; break;
+            case core::game::helper_no_target: st.add("Nikogo w zasięgu ").add(data::brigade[sel].reach); si = ink::late; break;
+            case core::game::helper_no_room: st.add("Brak miejsca obok"); si = ink::late; break;
+            default: st.add("B: wróć"); break;
+        }
+        phone_text(a, t, list_x, row_py(5), fit(a, st.s, phone_text_w).c_str(), si);
     }
 
     void tab_costs(app& a, phone_screen& ph, page_sprites& t)   // Koszty = Szkolenia (podgląd w trakcie budowy)
@@ -831,9 +871,10 @@ namespace
         bn::sprite_palette_item default_ink = a.text.palette_item();
         const char* actions[] = { "Wróć do gry", "Jak grać", "Zapisz i wyjdź", "Porzuć budowę" };
         constexpr int actions_count = 4;
-        bool sheet = false, confirm = false;
-        int sel = 0;
+        bool sheet = false, confirm = false, brigade = false;   // brigade: strona Brygada w zakładce Zespół (A)
+        int sel = 0, bsel = 0;
         auto redraw = [&]() {
+            if(! sheet && brigade && a.phone_tab == 3) { tab_brigade(a, ph, t, bsel); ph.set_tab(3); ph.commit(); return; }
             if(! sheet) { draw_tab(a, ph, t, a.phone_tab); return; }
             phone_header(a, ph, t, "Menu", "START");
             for(int i = 0; i < actions_count; ++i)
@@ -889,7 +930,19 @@ namespace
             {
                 int d = (bn::keypad::r_pressed() || bn::keypad::right_pressed()) ? 1
                       : ((bn::keypad::l_pressed() || bn::keypad::left_pressed()) ? -1 : 0);
-                if(d) { a.phone_tab = (a.phone_tab + d + tabs_count) % tabs_count; redraw(); bn::sound_items::sfx_menu.play(); }
+                if(d) { a.phone_tab = (a.phone_tab + d + tabs_count) % tabs_count; brigade = false; redraw(); bn::sound_items::sfx_menu.play(); }
+                else if(brigade && a.phone_tab == 3)   // Brygada: góra/dół wybór, A wezwij, B wróć do Sprzętu
+                {
+                    int v = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+                    if(v) { bsel = (bsel + v + data::brigade_count) % data::brigade_count; redraw(); bn::sound_items::sfx_menu.play(); }
+                    if(bn::keypad::a_pressed())
+                    {
+                        if(a.g->helper_blocked(bsel) == core::game::helper_ok) { a.pending_helper = bsel; return finish(pause_result::resume); }
+                        bn::sound_items::sfx_hurt.play();
+                    }
+                    if(bn::keypad::b_pressed()) { brigade = false; redraw(); bn::sound_items::sfx_menu.play(); next_frame(); continue; }
+                }
+                else if(a.phone_tab == 3 && bn::keypad::a_pressed()) { brigade = true; bsel = 0; redraw(); bn::sound_items::sfx_menu.play(); }
                 if(bn::keypad::start_pressed()) { sheet = true; sel = 0; redraw(); }
                 if(bn::keypad::b_pressed() || bn::keypad::select_pressed()) return finish(pause_result::resume);
             }
@@ -1428,6 +1481,10 @@ namespace
         bn::vector<bn::fixed_point, core::max_enemies> enemy_cur, enemy_dst;
         for(int i = 0; i < g.enemies_count; ++i) { enemy_cur.push_back(world(g.enemies[i].x, g.enemies[i].y)); enemy_dst.push_back(enemy_cur.back()); }
         int anim_clock = 0, hero_shown = -1;
+        // Pomocnik z brygady: sprite fachowca obok bohatera (tylko, gdy pomaga).
+        bn::optional<bn::sprite_ptr> ally_sprite;
+        bn::fixed_point ally_cur, ally_dst;
+        bool ally_hidden = false;
         bn::vector<int8_t, core::max_enemies> enemy_shown(g.enemies_count, -1);
         bool snap_next = true;
         auto approach = [](bn::fixed_point& c, const bn::fixed_point& d) {
@@ -1486,6 +1543,23 @@ namespace
                 int ef = ((anim_clock / 20 + i) & 1) ? anim_b(base) : base;
                 if(ef != enemy_shown[i]) { enemies[i].set_tiles(bn::sprite_items::actors.tiles_item(), ef); enemy_shown[i] = int8_t(ef); }
             }
+            if(g.ally_turns > 0 && ! ally_hidden)   // pomocnik z brygady
+            {
+                int base = data::brigade[g.helper_called].frame;
+                if(! ally_sprite)
+                {
+                    ally_sprite = bn::sprite_items::actors.create_sprite_optional(ally_dst, base);
+                    if(ally_sprite) { ally_sprite->set_camera(cam); ally_cur = ally_dst; }
+                }
+                if(ally_sprite)
+                {
+                    bool moving = ally_cur != ally_dst;
+                    approach(ally_cur, ally_dst);
+                    ally_sprite->set_position(ally_cur);
+                    ally_sprite->set_tiles(bn::sprite_items::actors.tiles_item(), (phase || moving) ? base + frame_anim_b : base);
+                }
+            }
+            else if(ally_sprite) ally_sprite.reset();
             for(int i = 0; i < pickups.size(); ++i)   // znajdźki lekko podskakują
                 pickups[i].set_y(world(g.pickups[i].x, g.pickups[i].y).y() - (((anim_clock / 16 + i) & 1) ? 1 : 0));
             cam_base = bn::fixed_point(clampf(hero_cur.x(), 136), clampf(hero_cur.y(), 176));
@@ -1563,6 +1637,39 @@ namespace
             flash_timer = 6;
         };
 
+        // Brygada: baner i efekty wezwania fachowca.
+        auto brigade_fx = [&](int h) {
+            const core::helper_def& hd = data::brigade[h];
+            banner.push(hd.name, hd.desc);   // fachowiec na placu (nazwa i skutek, 23 znaki)
+            bn::sound_items::sfx_ability.play();
+            bn::fixed_point p = world(g.hero.x, g.hero.y);
+            static constexpr int8_t dir[8][2] = { { 2, 0 }, { 1, 1 }, { 0, 2 }, { -1, 1 }, { -2, 0 }, { -1, -1 }, { 0, -2 }, { 1, -1 } };
+            switch(hd.effect)
+            {
+                case core::helper_effect::reveal: flash_color = bn::color(16, 24, 31); break;
+                case core::helper_effect::pump:   // beton rozlewa się wokół bohatera
+                    flash_color = bn::color(24, 24, 22);
+                    for(int k = 0; k < 8; ++k)
+                        fx_particles.spawn(p.x(), p.y() + 4, bn::fixed(dir[k][0]) * bn::fixed(0.8), bn::fixed(dir[k][1]) * bn::fixed(0.8), 0, 24,
+                                           particle_pool::dust, 3);
+                    break;
+                case core::helper_effect::safety:
+                    flash_color = bn::color(8, 30, 16);
+                    for(int k = 0; k < 6; ++k)
+                        fx_particles.spawn(p.x() + fx_particles.rand(-128, 128), p.y() + 4, 0, fx_particles.rand(-20, -8), 0, 26, particle_pool::plus);
+                    break;
+                default:
+                    flash_color = bn::color(12, 28, 31);
+                    if(g.ally_turns > 0)
+                    {
+                        bn::fixed_point q = world(g.ally_x, g.ally_y);
+                        for(int k = -1; k <= 1; k += 2) fx_particles.spawn(q.x() + k * 4, q.y() + 6, bn::fixed(k) / 3, bn::fixed(-0.3), 0, 16, particle_pool::dust, 3);
+                    }
+                    break;
+            }
+            flash_timer = 6;
+        };
+
         auto refresh = [&]() {
             map->build(g);
             bg_map_ptr.reload_cells_ref();
@@ -1577,9 +1684,11 @@ namespace
                 enemies[i].set_visible(g.enemies[i].alive && g.visible(g.enemies[i].x, g.enemies[i].y));
                 enemy_dst[i] = world(g.enemies[i].x, g.enemies[i].y);
             }
+            if(g.ally_turns > 0) ally_dst = world(g.ally_x, g.ally_y);
             if(snap_next)
             {
                 hero_cur = hero_dst;
+                ally_cur = ally_dst;
                 for(int i = 0; i < g.enemies_count; ++i) enemy_cur[i] = enemy_dst[i];
                 snap_next = false;
             }
@@ -1700,6 +1809,7 @@ namespace
             fx.clear(); log.clear(); floaters.clear(); fx_particles.list.clear();
             hide_mini_bars(); target_marker.set_visible(false); status_sprite.set_visible(false);
             power_icon.set_visible(false); power_text.clear(); shown_cd = -1; hide_status_hud();
+            ally_hidden = true; ally_sprite.reset();
             a.text.set_left_alignment();
             a.text.generate(-116, 72, "Podgląd mapy (puść L)", log);
             bn::fixed_point hp(g.hero.x * 8 + 4 - 256, g.hero.y * 8 + 4 - 256);
@@ -1714,6 +1824,7 @@ namespace
             }
             hero.remove_affine_mat();
             hero.set_visible(true);
+            ally_hidden = false;
             snap_next = true;
             refresh();
             hold = 0;
@@ -1729,6 +1840,7 @@ namespace
             hp_left.set_visible(false); hp_right.set_visible(false);
             hide_mini_bars(); target_marker.set_visible(false); status_sprite.set_visible(false);
             power_icon.set_visible(false); power_text.clear(); shown_cd = -1; hide_status_hud();
+            ally_hidden = true; ally_sprite.reset();
             release_strips();
             banner.hide();
             fx_particles.list.clear();
@@ -1795,6 +1907,7 @@ namespace
         };
 
         auto resume_view = [&]() {
+            ally_hidden = false;
             bg.set_visible(true);
             hero.set_visible(true);
             hp_left.set_visible(true); hp_right.set_visible(true);
@@ -1975,6 +2088,12 @@ namespace
                     return leave(scene::shop);
                 }
                 resume_view();
+                if(a.pending_helper >= 0)   // brygada wybrana w telefonie: wezwanie zużywa turę
+                {
+                    int h = a.pending_helper;
+                    a.pending_helper = -1;
+                    if(g.call_helper(h)) { brigade_fx(h); refresh(); }
+                }
                 continue;
             }
 
@@ -2637,9 +2756,9 @@ namespace
         const char* profile_tabs[] = { "Odznaki", "Katalog", "Osiedle", "Zespół", "Koszty" };
 
         // --- sklep (zakładka Koszty)
-        enum kind : uint8_t { upgrade, cls, hard, tool };
+        enum kind : uint8_t { upgrade, cls, hard, tool, helper };
         struct entry { kind k; int8_t i; };
-        bn::vector<entry, core::max_upgrades + 8 + 8 + 1> entries;
+        bn::vector<entry, core::max_upgrades + 8 + 8 + 8 + 1> entries;
         auto rebuild = [&]() {
             entries.clear();
             for(int i = 0; i < data::upgrades_count; ++i) entries.push_back({ upgrade, int8_t(i) });
@@ -2647,12 +2766,14 @@ namespace
                 if(! core::class_unlocked(a.save, i)) entries.push_back({ cls, int8_t(i) });
             for(int i = 0; i < data::tools_count; ++i)
                 if(! core::tool_unlocked(a.save, i)) entries.push_back({ tool, int8_t(i) });
+            for(int i = 0; i < data::brigade_count; ++i)
+                if(! core::helper_unlocked(a.save, i)) entries.push_back({ helper, int8_t(i) });
             if(! core::difficulty_unlocked(a.save, data::difficulties_count - 1)) entries.push_back({ hard, 0 });
         };
         rebuild();
         auto cost_of = [&](const entry& e) {
             return e.k == upgrade ? core::upgrade_cost(a.save, e.i)
-                 : e.k == cls ? data::class_cost : (e.k == tool ? data::tools[e.i].cost : data::hard_cost);
+                 : e.k == cls ? data::class_cost : (e.k == tool ? data::tools[e.i].cost : (e.k == helper ? data::brigade[e.i].cost : data::hard_cost));
         };
 
         int sel = 0, top = 0;
@@ -2767,7 +2888,8 @@ namespace
                              .add(", ").add(stat_short(w.scales_with));
                 }
                 const char* desc = note ? note : (se.k == upgrade ? data::upgrades[se.i].desc
-                                 : (se.k == cls ? "Nowy zawód do wyboru" : (se.k == tool ? tool_desc.s : "Najwyższa trudność")));
+                                 : (se.k == cls ? "Nowy zawód do wyboru" : (se.k == tool ? tool_desc.s
+                                 : (se.k == helper ? data::brigade[se.i].desc : "Najwyższa trudność"))));
                 phone_text(a, t, list_x, row_py(1), fit(a, desc, phone_text_w).c_str(), ink::dim);
                 for(int r = 0; r < 4 && top + r < entries.size(); ++r)
                 {
@@ -2777,6 +2899,7 @@ namespace
                     if(e.k == upgrade) m.add(data::upgrades[e.i].name).add(" ").add(a.save.levels[e.i]).add("/").add(data::upgrades[e.i].levels);
                     else if(e.k == cls) m.add("Zawód: ").add(data::classes[e.i].name);
                     else if(e.k == tool) m.add(data::weapons[data::tools[e.i].weapon].name);
+                    else if(e.k == helper) m.add("Brygada: ").add(data::brigade[e.i].name);
                     else m.add("Trudność: ").add(data::difficulties[data::difficulties_count - 1].name);
                     if(is_sel) stripe(c, r + 2, phone_tile::stripe_brand);
                     phone_text(a, t, list_x, row_py(r + 2), clip(m.s, 17).c_str(), is_sel ? ink::brand : ink::dark);
@@ -2875,7 +2998,8 @@ namespace
                 const entry e = entries[sel];
                 bool ok = e.k == upgrade ? core::buy_upgrade(a.save, e.i)
                         : e.k == cls ? core::buy_class(a.save, e.i)
-                        : e.k == tool ? core::buy_tool(a.save, e.i) : core::buy_hard(a.save);
+                        : e.k == tool ? core::buy_tool(a.save, e.i)
+                        : e.k == helper ? core::buy_helper(a.save, e.i) : core::buy_hard(a.save);
                 if(ok)
                 {
                     bn::sound_items::sfx_buy.play();

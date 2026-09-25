@@ -11,7 +11,8 @@ namespace core
     static_assert(data::upgrades_count <= max_upgrades);
     static_assert(data::classes_count <= 8);
 
-    constexpr char profile_magic[8] = "PBRL005";
+    constexpr char profile_magic[8] = "PBRL006";
+    constexpr char profile_magic_v5[8] = "PBRL005";
     constexpr char profile_magic_v4[8] = "PBRL004";
     constexpr char profile_magic_v3[8] = "PBRL003";
     constexpr char profile_magic_v2[8] = "PBRL002";
@@ -19,6 +20,7 @@ namespace core
     constexpr int profile_v2_size = 36;   // v3 = v2 + pola motywacji na końcu
     constexpr int profile_v3_size = 56;   // v4 = v3 + zlecenia i pamiątki na końcu
     constexpr int profile_v4_size = 72;   // v5 = v4 + liczniki zleceń przeniesione z bieżącej budowy
+    constexpr int profile_v5_size = 78;   // v6 = v5 + brygada i tryb inwestora
     constexpr int max_keepsakes = 8;
     static_assert(data::contracts_count <= 8 && data::keepsakes_count <= max_keepsakes);
     constexpr int max_houses = 12;        // działki na Osiedlu
@@ -59,10 +61,15 @@ namespace core
         uint16_t run_powers;
         uint8_t run_brand;
         uint8_t run_clean;
+        // --- v6: brygada (odblokowani fachowcy) i tryb inwestora
+        uint8_t brigade;               // kupieni w Szkoleniach fachowcy (bitmaska; startowi zawsze dostępni)
+        uint8_t investor;              // włączone modyfikatory trybu inwestora (bitmaska data::investor)
+        uint8_t best_stake[8];         // najwyższa stawka wygranej budowy na każdy zawód
     };
     static_assert(offsetof(profile, badges) == profile_v2_size);
     static_assert(offsetof(profile, kills_total) == profile_v3_size);
     static_assert(offsetof(profile, run_kills) == profile_v4_size);
+    static_assert(offsetof(profile, brigade) == profile_v5_size && sizeof(profile) == 88);
 
     enum profile_flag : uint8_t { help_seen = 1, prologue_seen = 2 };
 
@@ -91,8 +98,9 @@ namespace core
     inline bool profile_fix(profile& p)
     {
         if(std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0) return false;
-        // v4/v3/v2 -> v5: stare pola zostają, nowe od zera; bez wybranej pamiątki - pierwsza odblokowana
-        int keep = std::memcmp(p.magic, profile_magic_v4, sizeof p.magic) == 0 ? profile_v4_size
+        // v5/v4/v3/v2 -> v6: stare pola zostają, nowe od zera; bez wybranej pamiątki - pierwsza odblokowana
+        int keep = std::memcmp(p.magic, profile_magic_v5, sizeof p.magic) == 0 ? profile_v5_size
+                 : std::memcmp(p.magic, profile_magic_v4, sizeof p.magic) == 0 ? profile_v4_size
                  : (std::memcmp(p.magic, profile_magic_v3, sizeof p.magic) == 0 ? profile_v3_size
                  : (std::memcmp(p.magic, profile_magic_v2, sizeof p.magic) == 0 ? profile_v2_size : 0));
         if(keep > 0)
@@ -145,6 +153,17 @@ namespace core
     {
         if(tool_unlocked(p, i) || p.xp < data::tools[i].cost) return false;
         p.xp -= data::tools[i].cost; p.tools = uint8_t(p.tools | (1u << i));
+        return true;
+    }
+
+    // Brygada: fachowcy do wezwania (startowi zawsze, reszta za doświadczenie w Szkoleniach).
+    inline int helpers_mask(const profile& p) { return p.brigade | data::start_helpers_mask; }
+    inline bool helper_unlocked(const profile& p, int i) { return (helpers_mask(p) >> i) & 1; }
+
+    inline bool buy_helper(profile& p, int i)
+    {
+        if(helper_unlocked(p, i) || p.xp < data::brigade[i].cost) return false;
+        p.xp -= data::brigade[i].cost; p.brigade = uint8_t(p.brigade | (1u << i));
         return true;
     }
 
@@ -209,6 +228,7 @@ namespace core
     {
         run_mods m;
         m.tools = tools_mask(p);
+        m.helpers = helpers_mask(p);
         for(int i = 0; i < data::upgrades_count; ++i)
         {
             int v = data::upgrades[i].value * p.levels[i];
@@ -239,6 +259,7 @@ namespace core
             for(int l = 0; l < data::upgrades[i].levels; ++l) t += data::upgrades[i].costs[l];
         for(int i = 0; i < data::classes_count; ++i) if(! (data::start_classes_mask & (1 << i))) t += data::class_cost;
         for(int i = 0; i < data::tools_count; ++i) t += data::tools[i].cost;
+        for(int i = 0; i < data::brigade_count; ++i) t += data::brigade[i].cost;
         return t;
     }
 
@@ -250,6 +271,7 @@ namespace core
         for(int i = 0; i < data::classes_count; ++i)
             if(class_unlocked(p, i) && ! (data::start_classes_mask & (1 << i))) t += data::class_cost;
         for(int i = 0; i < data::tools_count; ++i) if(tool_unlocked(p, i)) t += data::tools[i].cost;
+        for(int i = 0; i < data::brigade_count; ++i) if(helper_unlocked(p, i)) t += data::brigade[i].cost;
         return t;
     }
 

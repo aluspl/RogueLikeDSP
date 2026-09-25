@@ -192,6 +192,15 @@ inline constexpr core::weather_def weather[] = {   // pogoda dnia: losowana na s
 inline constexpr int weather_count = 5;
 inline constexpr bool weather_no_bad_stack = true;
 
+inline constexpr core::helper_def brigade[] = {   // brygada: najemni fachowcy (raz na etap)
+    { "Geodeta", "Mapa etapu i schody", core::helper_effect::reveal, 0, 0, 0, 8, 0, -1 },
+    { "BHP-owiec", "Bez stanów, obrona +2", core::helper_effect::safety, 2, 8, 0, 10, 0, -1 },
+    { "Pompa do betonu", "Beton wokół: -6 HP", core::helper_effect::pump, 6, 0, 2, 15, 30, -1 },
+    { "Elektryk-kolega", "Pomaga 10 tur, cios -3", core::helper_effect::ally, 3, 10, 1, 15, 35, 3 },
+};
+inline constexpr int brigade_count = 4;
+inline constexpr int start_helpers_mask = 3;
+
 inline constexpr core::tool_def tools[] = {
     { 6, 0 },
     { 7, 20 },

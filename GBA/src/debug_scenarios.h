@@ -22,6 +22,8 @@
 //       L+R+SELECT = pokonanie, baner "Protokół bez uwag" i harmonogram bez Hurtowni
 //  14 - pogoda dnia: pierwszy etap w deszczu (kałuże obok bohatera), każdy kolejny etap z kolejną pogodą z listy
 //       (Słonecznie, Upał, Mróz, Wiatr, Deszcz...; L+R+SELECT przechodzi dalej)
+//  15 - brygada: 100 zł budżetu, wszyscy fachowcy odblokowani, trzy problemy obok bohatera (ogłuszone na chwilę),
+//       zatrucie; telefon -> Zespół -> A = Brygada; kolejne etapy też ze 100 zł (L+R+SELECT)
 #include "core.h"
 #include "meta.h"
 
@@ -124,6 +126,7 @@ namespace debug_scenario
     {
         if(scenario == 12) force_event(g);
         if(scenario == 14) { force_weather(g); g.update_fov(); }
+        if(scenario == 15) g.cash = 100;
     }
 
     // Wołane raz, na wejściu na pierwszy etap budowy.
@@ -215,6 +218,15 @@ namespace debug_scenario
                 break;
             case 14:
                 force_weather(g);   // deszcz: kałuże widać wokół bohatera
+                break;
+            case 15:
+                g.cash = 100;
+                g.bonus.helpers = (1 << data::brigade_count) - 1;
+                g.enemies_count = 0;
+                place_enemy(g, data::enemy_papierologia, 1, 1, true, 3);
+                place_enemy(g, data::enemy_kornik, 2, 2, true, 3);
+                place_enemy(g, data::enemy_plesn, 2, 2, true, 3);
+                g.apply_status(core::status_effect::poison, 6);
                 break;
             case 13:
             {

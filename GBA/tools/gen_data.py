@@ -165,6 +165,19 @@ for si in range(len(d["stages"])):   # każdy etap ma jakąś pogodę do wylosow
     assert any(("stages" not in w) or si in w["stages"] for w in wt["list"]), si
 L += [f"inline constexpr int weather_count = {len(wt['list'])};",
       f"inline constexpr bool weather_no_bad_stack = {'true' if wt.get('noBadStack') else 'false'};", ""]
+bg = d["brigade"]["list"]
+assert 1 <= len(bg) <= 4   # telefon GBA: 4 wiersze listy
+L.append("inline constexpr core::helper_def brigade[] = {   // brygada: najemni fachowcy (raz na etap)")
+for h in bg:
+    assert h["effect"] in {"reveal", "pump", "safety", "ally"} and len(h["name"]) <= 16 and len(h["desc"]) <= 23, h   # opis = baner
+    assert 0 < h["price"] <= 200 and 0 <= h["cost"] <= 200 and 0 <= h["value"] < 100 and 0 <= h["turns"] < 100, h
+    assert h["effect"] != "pump" or h["reach"] >= 1, h
+    assert h["effect"] != "ally" or (h["turns"] > 0 and 0 <= h.get("frame", -1) < 15), h
+    L.append(f'    {{ {s(h["name"])}, {s(h["desc"])}, core::helper_effect::{h["effect"]}, {h["value"]}, {h["turns"]}, {h["reach"]}, '
+             f'{h["price"]}, {h["cost"]}, {h.get("frame", -1)} }},')
+L.append("};")
+L += [f"inline constexpr int brigade_count = {len(bg)};",
+      f"inline constexpr int start_helpers_mask = {sum(1 << i for i, h in enumerate(bg) if h['cost'] == 0)};", ""]
 L.append("inline constexpr core::tool_def tools[] = {")
 for t in m["tools"]:
     L.append(f'    {{ {wid[t["weapon"]]}, {t["cost"]} }},')
