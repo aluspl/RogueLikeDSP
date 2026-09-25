@@ -790,6 +790,16 @@ int main()
         CHECK(check_contracts(p) == 0);                                  // raz
         p.wins = 1000; CHECK(check_contracts(p) != 0);                     // Stały klient itp.
     }
+    // 31c. postęp zleceń na żywo w trakcie budowy (telefon, zakładka Koszty)
+    {
+        profile p; profile_reset(p);
+        int i_k = -1; for(int i = 0; i < data::contracts_count; ++i) if(data::contracts[i].kind == contract_kind::kills) i_k = i;
+        game g; arena(g, 1); g.kills = 7;
+        CHECK(contract_progress_live(p, g, i_k) == 7 && contract_progress(p, i_k) == 0);
+        record_run(p, g); CHECK(contract_progress_live(p, g, i_k) == 7 && contract_progress(p, i_k) == 7);
+        CHECK(next_contract(p, g) >= 0);
+        p.contracts = uint8_t((1 << data::contracts_count) - 1); CHECK(next_contract(p, g) == -1);
+    }
     // 31a. boss aktu bez obrażeń w walce z nim (Czysta robota)
     {
         game g; g.new_run(1, 21);
