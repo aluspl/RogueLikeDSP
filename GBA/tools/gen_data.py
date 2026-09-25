@@ -27,14 +27,14 @@ L.append("};\n")
 L.append("inline constexpr core::enemy_def enemies[] = {")
 for e in d["enemies"]:
     L.append(f'    {{ {s(e["name"])}, {s(e["desc"])}, {e["maxHealth"]}, {e["minDamage"]}, {e["maxDamage"]}, {e["defense"]}, '
-             f'{e["sight"]}, {e["score"]}, {e["frame"]} }},')
+             f'{e["sight"]}, {e["score"]}, {e["frame"]}, {"true" if e.get("slam") else "false"} }},')
 L.append("};\n")
 L.append("inline constexpr core::stage_def stages[] = {")
 for st in d["stages"]:
     pool = [eid[x] for x in st["enemies"]] + [-1] * (4 - len(st["enemies"]))
     boss = eid[st["boss"]] if "boss" in st else -1
     L.append(f'    {{ {s(st["name"])}, {{ {", ".join(map(str, pool))} }}, {len(st["enemies"])}, {st["count"]}, {boss}, '
-             f'{st.get("hpPct", 100)}, {st.get("dmgBonus", 0)} }},')
+             f'{st.get("hpPct", 100)}, {st.get("dmgBonus", 0)}, {st["act"]} }},')
 L.append("};\n")
 L.append("inline constexpr core::difficulty_def difficulties[] = {")
 for df in d["difficulties"]:
@@ -61,6 +61,26 @@ L.append("inline constexpr core::story_msg story_stages[] = {")
 L += [f"    {story(m)}," for m in st["stages"]]
 L.append("};")
 L += [f"inline constexpr core::story_msg story_{k} = {story(st[k])};" for k in ("win", "lose", "ngplus")] + [""]
+acts = d["acts"]
+for ai in range(len(acts)):   # każdy akt kończy się etapem z bossem
+    last = max(i for i, st in enumerate(d["stages"]) if st["act"] == ai)
+    assert "boss" in d["stages"][last], f"akt {ai} bez bossa"
+L.append("inline constexpr core::act_def acts[] = {")
+L += [f'    {{ {s(a["name"])}, {a["bonusPerStage"]}, {a["bonusPerKill"]} }},' for a in acts]
+L.append("};")
+L.append("inline constexpr core::shop_item_def hurtownia[] = {")
+for it in d["hurtownia"]:
+    assert it["effect"] in {"heal", "gear", "tool", "maxhp", "ability"} and len(it["desc"]) <= 34, it
+    L.append(f'    {{ {s(it["name"])}, {s(it["desc"])}, {it["price"]}, core::shop_effect::{it["effect"]} }},')
+L.append("};")
+sl = d["slam"]
+L += [f"inline constexpr int acts_count = {len(acts)};",
+      f"inline constexpr int hurtownia_count = {len(d['hurtownia'])};",
+      f"inline constexpr int slam_every = {sl['every']};",
+      f"inline constexpr int slam_damage_bonus = {sl['damageBonus']};",
+      f"inline constexpr int slam_radius = {sl['radius']};",
+      f"inline constexpr int cash_per_score = {d['cash']['perScore']};"]
+L += [f"inline constexpr int enemy_{e['id']} = {i};" for i, e in enumerate(d["enemies"])] + [""]
 L.append("inline constexpr core::badge_def badges[] = {")
 for b in d["badges"]:
     L.append(f'    {{ {s(b["name"])}, {s(b["desc"])}, {b["xp"]} }},')
@@ -115,6 +135,22 @@ L += [f"inline constexpr int classes_count = {len(d['classes'])};",
       f"inline constexpr int ng_hp_pct_per_tier = {d['newGamePlus']['hpPctPerTier']};",
       f"inline constexpr int ng_dmg_bonus_per_tier = {d['newGamePlus']['dmgBonusPerTier']};",
       f"inline constexpr int ng_score_pct_per_tier = {d['newGamePlus']['scorePctPerTier']};", "", "}", ""]
+# Każdy tekst gry musi dać się narysować fontem (ASCII + polskie znaki), inaczej Butano zatrzyma grę.
+import re
+FONT_CHARS = set(chr(c) for c in range(32, 127)) | set("ąćęłńóśźżĄĆĘŁŃÓŚŹŻ")
+def check_font(o, where):
+    if isinstance(o, str):
+        badc = [ch for ch in o if ch not in FONT_CHARS and ch != "|"]
+        assert not badc, f"znak spoza fontu {badc} w {where}: {o}"
+    elif isinstance(o, dict):
+        for k, v in o.items(): check_font(v, where + "." + k)
+    elif isinstance(o, list):
+        for i, v in enumerate(o): check_font(v, f"{where}[{i}]")
+check_font(d, "game.json")
+code = "\n".join(l.split("//")[0] for l in open(os.path.join(ROOT, "src", "main.cpp"), encoding="utf-8").read().splitlines())
+for lit in re.findall(r'"((?:[^"\\]|\\.)*)"', code):
+    check_font(lit, "src/main.cpp")
+
 out = "\n".join(L)
 path = os.path.join(ROOT, "include", "game_data.h")
 if "--check" in sys.argv:

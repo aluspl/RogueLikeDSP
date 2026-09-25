@@ -32,6 +32,13 @@ Dropy: z pokonanych wrogów może wypaść kawa, kask, projekt albo skrzynka z n
 Powiadomienia push jak w aplikacji: awans, nowe narzędzie, drop, moc gotowa, zaliczony etap, pojawienie się Terminu.
 Mgła wojny: widzisz na 7 pól (ściany zasłaniają), odkryte pola zostają przyciemnione, wrogowie poza polem widzenia są ukryci.
 
+## Akty i bossowie
+Etapy są pogrupowane w akty (`data/game.json`: `acts`, pole `act` etapu); każdy akt kończy się bossem:
+Akt I Stan surowy – **Zepsuta Betoniarka**, Akt II Pod dachem – **Nawałnica**, Akt III Wykończenie – **Nieprzekraczalny Termin**.
+Bossowie co kilka tur zapowiadają uderzenie – czerwone pola wokół bohatera; masz 2 tury, żeby z nich zejść.
+Usunięte problemy dają budżet (zł), koniec aktu – premię; między aktami **Hurtownia** (kawa, paczka sprzętu,
+narzędzie, siłownia, energetyk – oferta w `hurtownia`).
+
 ## Fabuła
 Budujesz dom dla rodziny Nowaków. Każdy etap otwiera wiadomość w telefonie od inwestorki Anny Nowak albo
 kierownika Marka; po wygranej i porażce przychodzi wiadomość z morałem: plan pokonuje chaos budowy.

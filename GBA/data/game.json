@@ -202,7 +202,8 @@
       "sight": 6,
       "score": 10,
       "frame": 6,
-      "desc": "Kapie tam, gdzie nie powinno"
+      "desc": "Kapie tam, gdzie nie powinno",
+      "slam": false
     },
     {
       "id": "zwarcie",
@@ -214,7 +215,8 @@
       "sight": 7,
       "score": 12,
       "frame": 7,
-      "desc": "Iskrzy przy każdej okazji"
+      "desc": "Iskrzy przy każdej okazji",
+      "slam": false
     },
     {
       "id": "plesn",
@@ -226,7 +228,8 @@
       "sight": 4,
       "score": 10,
       "frame": 8,
-      "desc": "Lubi wilgoć i zimne ściany"
+      "desc": "Lubi wilgoć i zimne ściany",
+      "slam": false
     },
     {
       "id": "kornik",
@@ -238,7 +241,8 @@
       "sight": 5,
       "score": 10,
       "frame": 9,
-      "desc": "Drąży więźbę po cichu"
+      "desc": "Drąży więźbę po cichu",
+      "slam": false
     },
     {
       "id": "papierologia",
@@ -250,7 +254,8 @@
       "sight": 4,
       "score": 15,
       "frame": 10,
-      "desc": "Brakuje jednej pieczątki"
+      "desc": "Brakuje jednej pieczątki",
+      "slam": false
     },
     {
       "id": "dostawa",
@@ -262,7 +267,8 @@
       "sight": 6,
       "score": 15,
       "frame": 11,
-      "desc": "Będzie jutro. Na pewno."
+      "desc": "Będzie jutro. Na pewno.",
+      "slam": false
     },
     {
       "id": "ulewa",
@@ -274,7 +280,8 @@
       "sight": 8,
       "score": 12,
       "frame": 12,
-      "desc": "Zawsze tuż przed dachem"
+      "desc": "Zawsze tuż przed dachem",
+      "slam": false
     },
     {
       "id": "budzet",
@@ -286,7 +293,8 @@
       "sight": 6,
       "score": 25,
       "frame": 13,
-      "desc": "Rośnie szybciej niż mury"
+      "desc": "Rośnie szybciej niż mury",
+      "slam": false
     },
     {
       "id": "termin",
@@ -298,7 +306,34 @@
       "sight": 12,
       "score": 200,
       "frame": 14,
-      "desc": "Nieprzesuwalny. Podobno."
+      "desc": "Nieprzesuwalny. Podobno.",
+      "slam": true
+    },
+    {
+      "id": "betoniarka",
+      "name": "Zepsuta Betoniarka",
+      "desc": "Kręci się, ale nie tam",
+      "maxHealth": 30,
+      "minDamage": 3,
+      "maxDamage": 5,
+      "defense": 2,
+      "sight": 10,
+      "score": 150,
+      "frame": 46,
+      "slam": true
+    },
+    {
+      "id": "nawalnica",
+      "name": "Nawałnica",
+      "desc": "Leje jak z cebra",
+      "maxHealth": 36,
+      "minDamage": 3,
+      "maxDamage": 6,
+      "defense": 2,
+      "sight": 12,
+      "score": 180,
+      "frame": 47,
+      "slam": true
     }
   ],
   "stages": [
@@ -310,7 +345,8 @@
       ],
       "count": 5,
       "hpPct": 100,
-      "dmgBonus": 0
+      "dmgBonus": 0,
+      "act": 0
     },
     {
       "name": "Mury parteru",
@@ -321,7 +357,8 @@
       ],
       "count": 6,
       "hpPct": 105,
-      "dmgBonus": 0
+      "dmgBonus": 0,
+      "act": 0
     },
     {
       "name": "Strop",
@@ -332,7 +369,9 @@
       ],
       "count": 6,
       "hpPct": 110,
-      "dmgBonus": 0
+      "dmgBonus": 0,
+      "act": 0,
+      "boss": "betoniarka"
     },
     {
       "name": "Dach",
@@ -343,7 +382,8 @@
       ],
       "count": 7,
       "hpPct": 115,
-      "dmgBonus": 0
+      "dmgBonus": 0,
+      "act": 1
     },
     {
       "name": "Okna i drzwi",
@@ -354,7 +394,9 @@
       ],
       "count": 7,
       "hpPct": 120,
-      "dmgBonus": 0
+      "dmgBonus": 0,
+      "act": 1,
+      "boss": "nawalnica"
     },
     {
       "name": "Instalacje",
@@ -365,7 +407,8 @@
       ],
       "count": 8,
       "hpPct": 125,
-      "dmgBonus": 0
+      "dmgBonus": 0,
+      "act": 2
     },
     {
       "name": "Tynki i wylewki",
@@ -376,7 +419,8 @@
       ],
       "count": 8,
       "hpPct": 130,
-      "dmgBonus": 0
+      "dmgBonus": 0,
+      "act": 2
     },
     {
       "name": "Wykończenie i odbiór",
@@ -387,6 +431,7 @@
       "count": 6,
       "hpPct": 135,
       "dmgBonus": 0,
+      "act": 2,
       "boss": "termin"
     }
   ],
@@ -703,5 +748,67 @@
         ]
       }
     ]
-  }
+  },
+  "acts": [
+    {
+      "name": "Stan surowy",
+      "bonusPerStage": 10,
+      "bonusPerKill": 2
+    },
+    {
+      "name": "Pod dachem",
+      "bonusPerStage": 10,
+      "bonusPerKill": 2
+    },
+    {
+      "name": "Wykończenie",
+      "bonusPerStage": 10,
+      "bonusPerKill": 2
+    }
+  ],
+  "slam": {
+    "every": 4,
+    "damageBonus": 3,
+    "radius": 1
+  },
+  "cash": {
+    "perScore": 5
+  },
+  "hurtownia": [
+    {
+      "id": "kawa",
+      "name": "Kawa z ekspresu",
+      "desc": "Pełne HP",
+      "price": 30,
+      "effect": "heal"
+    },
+    {
+      "id": "paczka",
+      "name": "Paczka sprzętu",
+      "desc": "Losowy sprzęt, co najmniej solidny",
+      "price": 50,
+      "effect": "gear"
+    },
+    {
+      "id": "narzedzie",
+      "name": "Nowe narzędzie",
+      "desc": "Losowe odblokowane narzędzie",
+      "price": 40,
+      "effect": "tool"
+    },
+    {
+      "id": "kondycja",
+      "name": "Siłownia",
+      "desc": "+3 max HP na tę budowę",
+      "price": 45,
+      "effect": "maxhp"
+    },
+    {
+      "id": "energetyk",
+      "name": "Energetyk",
+      "desc": "Moc od razu gotowa",
+      "price": 20,
+      "effect": "ability"
+    }
+  ]
 }

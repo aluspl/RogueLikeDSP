@@ -21,6 +21,14 @@ static bool connected(const level& lv, int sx, int sy)
 // Prosty bot: idź do najbliższego wroga/schodów, atakuj z dystansu, gdy się da.
 static void bot_step(game& g)
 {
+    if(g.slam_cell(g.hero.x, g.hero.y))   // zapowiedziany cios bossa: zejdź z czerwonych pól (jak człowiek)
+    {
+        int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}}, best=-1, bd=-1;
+        for(int k=0;k<4;++k){ int nx=g.hero.x+d[k][0], ny=g.hero.y+d[k][1];
+            if(!g.lv.passable(nx,ny)||g.occupied(nx,ny)) continue;
+            int dist=cheb(nx,ny,g.slam_x,g.slam_y); if(dist>bd){bd=dist;best=k;} }
+        if(best>=0 && g.player_move(d[best][0],d[best][1])) return;
+    }
     if(g.nearest_target() >= 0 && g.weapon().range > 1) { g.player_attack_nearest(); return; }
     int tx = g.stairs_x, ty = g.stairs_y, best = 999;
     for(int i=0;i<g.enemies_count;++i){ auto& e=g.enemies[i]; int d=cheb(g.hero.x,g.hero.y,e.x,e.y); if(e.alive&&d<best&&(d<6||g.stairs_x<0)){best=d;tx=e.x;ty=e.y;} }
@@ -516,7 +524,68 @@ int main()
         int hp = g.enemies[0].hp;
         CHECK(g.player_attack(0) && g.enemies[0].hp < hp && g.turns == 1);
     }
-    // 24. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
+    // 24. akty: budżet za problemy, boss aktu -> premia i Hurtownia, ostatni boss -> wygrana
+    {
+        game g; g.new_run(1, 5);
+        g.enemies_count = 0; g.spawn(0, g.hero.x + 1, g.hero.y); g.enemies[0].hp = 1; g.player_move(1, 0);
+        CHECK(g.cash == data::enemies[0].score / data::cash_per_score);
+    }
+    {
+        game g; g.new_run(1, 5);
+        int last_of_act0 = 0;
+        while(data::stages[last_of_act0 + 1].act == 0) ++last_of_act0;
+        for(int k = 0; k < last_of_act0; ++k) { g.debug_skip(); CHECK(g.st == status::stage_clear && !g.act_cleared); g.next_stage(); }
+        CHECK(g.boss >= 0 && data::enemies[g.enemies[g.boss].def_id].slam);
+        int c0 = g.cash;
+        g.debug_skip();                                                   // boss aktu I
+        CHECK(g.st == status::stage_clear && g.act_cleared);
+        int stages_in_act = last_of_act0 + 1;
+        CHECK(g.act_bonus == data::acts[0].bonus_per_stage * stages_in_act + data::acts[0].bonus_per_kill * 1);
+        CHECK(g.cash == c0 + g.act_bonus + data::enemies[g.enemies[g.boss].def_id].score / data::cash_per_score);
+        g.next_stage();
+        CHECK(!g.act_cleared && data::stages[g.stage].act == 1);
+        while(g.stage < data::stages_count - 1) { g.debug_skip(); g.next_stage(); }
+        g.debug_skip();
+        CHECK(g.st == status::won);
+    }
+    // 25. uderzenie bossa: zapowiedź 2 tury wcześniej, zejście z czerwonych pól = unik
+    for(int dodge = 0; dodge < 2; ++dodge)
+    {
+        game g; arena(g, 1);
+        g.spawn(data::enemy_betoniarka, 10, 7); g.boss = 0; g.enemies[0].awake = true;
+        for(int k = 0; k < 12 && g.slam_timer == 0; ++k) g.player_wait();
+        CHECK(g.slam_timer == 2 && g.slam_x == g.hero.x && g.slam_y == g.hero.y);
+        CHECK(g.slam_cell(g.hero.x, g.hero.y) && g.slam_cell(g.hero.x + 1, g.hero.y + 1) && !g.slam_cell(g.hero.x + 2, g.hero.y));
+        int bx = g.enemies[0].x, hp = g.hero.hp;
+        if(dodge) { g.player_move(-1, 0); g.player_move(-1, 0); }
+        else { g.player_wait(); g.player_wait(); }
+        CHECK(g.slam_timer == 0 && g.enemies[0].x <= bx + 0);             // boss stał w miejscu, ładując cios
+        if(dodge) CHECK(g.hero.hp >= hp);
+        else CHECK(g.hero.hp <= hp - (data::enemies[data::enemy_betoniarka].min_damage + data::slam_damage_bonus
+                                      - (g.cdef().defense + g.def_bonus) / 2));
+    }
+    // 26. Hurtownia: ceny, efekty
+    {
+        game g; arena(g, 1);
+        CHECK(!g.hurtownia_buy(0) && g.cash == 0);
+        g.cash = 1000;
+        for(int i = 0; i < data::hurtownia_count; ++i)
+        {
+            const shop_item_def& it = data::hurtownia[i];
+            int cash = g.cash, maxhp = g.hero.max_hp;
+            g.hero.hp = 3; g.ability_cd = 9;
+            CHECK(g.hurtownia_buy(i) && g.cash == cash - it.price);
+            switch(it.effect)
+            {
+                case shop_effect::heal:    CHECK(g.hero.hp == g.hero.max_hp); break;
+                case shop_effect::maxhp:   CHECK(g.hero.max_hp == maxhp + 3); break;
+                case shop_effect::ability: CHECK(g.ability_cd == 0); break;
+                case shop_effect::tool:    CHECK(g.weapon_override >= 0); break;
+                case shop_effect::gear:    { bool any = false; for(int s2 = 0; s2 < data::gear_slots_count; ++s2) any |= g.equipped[s2] >= 1; CHECK(any); break; }
+            }
+        }
+    }
+    // 27. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};
     for(int df=0;df<data::difficulties_count;++df)

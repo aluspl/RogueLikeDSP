@@ -197,6 +197,7 @@ def make_actors():
     gf = pa.gear_frames()
     frames += [gf[i * 256:(i + 1) * 256] for i in range(3)]   # 42-44 paczki sprzętu wg jakości
     frames += [pa.reticle_frame()]                             # 45 celownik
+    frames += pa.boss_frames()                                 # 46-47 bossowie aktów, 48-49 ich druga klatka
     px = [p for fr in frames for p in fr]
     write_bmp(os.path.join(G, "actors.bmp"), px, 16, 16 * len(frames), SPR_PAL, 4)
     write_json("actors", {"type": "sprite", "height": 16})
@@ -307,9 +308,15 @@ def t_floor_range(t):   # pole w zasięgu broni: narożnik ramki (4 ćwiartki pr
     for x, y in ((0, 0), (1, 0), (2, 0), (0, 1), (0, 2), (1, 1)):
         t[y][x] = 6
 
+def t_floor_danger(t):   # zapowiedziany cios bossa: czerwona ramka i ukośne kreski (ćwiartka pola)
+    t_floor(t)
+    for i in range(8):
+        t[0][i] = 9; t[i][0] = 9
+        if i >= 2: t[i][i] = 9
+
 # indeksy: 0 pusty, 1 podłoga, 2 mur, 3 lico muru, 4 schody, 5 podłoga z cieniem muru, 6 cień postaci (ćwiartka),
-# 7 podłoga w zasięgu broni (ćwiartka ramki)
-TILES = [t_empty, t_floor, t_wall, t_walltop, t_stairs, t_floor_wall_shadow, t_actor_shadow, t_floor_range]
+# 7 podłoga w zasięgu broni (ćwiartka ramki), 8 pole zapowiedzianego ciosu bossa (ćwiartka)
+TILES = [t_empty, t_floor, t_wall, t_walltop, t_stairs, t_floor_wall_shadow, t_actor_shadow, t_floor_range, t_floor_danger]
 
 def make_tiles():
     px_tiles = [tile(f) for f in TILES]
@@ -333,7 +340,8 @@ def make_tiles():
                 cols = [tuple(int(v * f + n * (1 - f) * 0.6) for v, n in zip(col, BRAND_NAVY)) for col in c]
                 stairs = [tuple(int(v * f) for v in (245, 211, 61)), tuple(int(v * f) for v in (180, 120, 20))]
             shadow = tuple(int(v * 0.45) for v in cols[0])   # cień na podłodze
-            pal += [(12, 12, 20)] + cols + stairs + [shadow] + [(0, 0, 0)] * 7
+            danger = tuple(int(v * (0.6 if level == 3 else (1.0, 0.85, 0.7)[level])) for v in (235, 50, 50))
+            pal += [(12, 12, 20)] + cols + stairs + [shadow, danger] + [(0, 0, 0)] * 6
         write_bmp(os.path.join(G, f"stage_palettes_{si}.bmp"), [0] * 64, 8, 8, pal, 8)
         write_json(f"stage_palettes_{si}", {"type": "bg_palette", "bpp_mode": "bpp_4", "colors_count": 64})
 

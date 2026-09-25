@@ -83,7 +83,7 @@ namespace
     using text_sprites = bn::vector<bn::sprite_ptr, 48>;
     using page_sprites = bn::vector<bn::sprite_ptr, 80>;   // pełnoekranowe strony menu
 
-    enum class scene { title, class_select, game, schedule, end, shop, help };
+    enum class scene { title, class_select, game, schedule, end, shop, help, hurtownia };
 
     constexpr int frame_coffee = 15;
     constexpr int frame_fx = 18;
@@ -91,6 +91,10 @@ namespace
     constexpr int frame_silhouette = 20;   // + indeks zawodu
     constexpr int frame_toolbox = 26;
     constexpr int frame_anim_b = 27;     // + klatka zawodu/wroga (0..14) = druga klatka animacji
+
+    int anim_b(int frame) { return frame < 15 ? frame + frame_anim_b : frame + 2; }   // bossowie aktów: 46-47 -> 48-49
+
+    const char* roman(int n) { static const char* r[] = { "I", "II", "III", "IV", "V" }; return r[n < 5 ? n : 4]; }
 
     constexpr int frame_gear = 42;       // + jakość
     constexpr int frame_reticle = 45;
@@ -403,6 +407,12 @@ namespace
                 for(int x = 0; x < core::map_w; ++x)
                 {
                     int pal, t = tile_of(g, x, y, pal);
+                    if((t == 1 || t == 5) && g.slam_cell(x, y))   // zapowiedziany cios bossa
+                    {
+                        set(x * 2, y * 2, 8, pal); set(x * 2 + 1, y * 2, 8, pal, true);
+                        set(x * 2, y * 2 + 1, 8, pal, false, true); set(x * 2 + 1, y * 2 + 1, 8, pal, true, true);
+                        continue;
+                    }
                     if((t == 1 || t == 5) && highlight && highlight[y][x])   // ramka pola w zasięgu
                     {
                         set(x * 2, y * 2, 7, pal); set(x * 2 + 1, y * 2, 7, pal, true);
@@ -712,7 +722,7 @@ namespace
         core::message wl; wl.add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range);
         wl.add(" +").add(g.dmg_bonus);
         phone_text(a, t, list_x, row_py(4), clip(wl.s, 26).c_str(), ink::dim);
-        core::message sc; sc.add("Wynik ").add(g.score).add("  Dzień ").add(g.turns);
+        core::message sc; sc.add("Wynik ").add(g.score).add("  Budżet ").add(g.cash).add(" zł");
         phone_text(a, t, list_x, row_py(5), sc.s, ink::dim);
     }
 
@@ -878,10 +888,10 @@ namespace
     void stage_card(app& a)
     {
         const core::game& g = *a.g;
-        core::message sub; sub.add("Etap ").add(g.stage + 1).add("/").add(data::stages_count);
+        core::message sub; sub.add("Akt ").add(roman(data::stages[g.stage].act)).add(", ").add(g.stage + 1).add("/").add(data::stages_count);
         bool boss = data::stages[g.stage].boss >= 0;
         core::message i1;
-        if(boss) i1.add("Uwaga: Termin czeka!");
+        if(boss) i1.add("Uwaga: ").add(clip(data::enemies[data::stages[g.stage].boss].name, 18).c_str()).add("!");
         else i1.add(clip(data::stages[g.stage].name, 12).c_str()).add(": problemy ").add(g.enemy_hp_pct()).add("%");
         core::message i2; i2.add(g.ddef().name);
         if(g.tier > 0) i2.add(" NG+").add(g.tier);
@@ -1191,7 +1201,7 @@ namespace
             if(! boss_seen && g.boss >= 0 && g.enemies[g.boss].alive && g.visible(g.enemies[g.boss].x, g.enemies[g.boss].y))
             {
                 boss_seen = true;
-                banner.push("Przypisano Ci usterkę", "Nieprzekraczalny Termin");
+                banner.push("Przypisano Ci usterkę", data::enemies[g.enemies[g.boss].def_id].name);
             }
             if(g.st == core::status::stage_clear)   // ważniejsze niż kolejka: od razu, zanim zmieni się scena
             {
@@ -1286,7 +1296,8 @@ namespace
                 if(mini_bars[i]) mini_bars[i]->set_position(enemy_cur[i].x(), enemy_cur[i].y() - 11);
                 if(i == marked)
                     target_marker.set_position(enemy_cur[i].x(), enemy_cur[i].y() - 19 - (((anim_clock / 10) & 1) ? 1 : 0));
-                int ef = data::enemies[g.enemies[i].def_id].frame + (((anim_clock / 20 + i) & 1) ? frame_anim_b : 0);
+                int base = data::enemies[g.enemies[i].def_id].frame;
+                int ef = ((anim_clock / 20 + i) & 1) ? anim_b(base) : base;
                 if(ef != enemy_shown[i]) { enemies[i].set_tiles(bn::sprite_items::actors.tiles_item(), ef); enemy_shown[i] = int8_t(ef); }
             }
             for(int i = 0; i < pickups.size(); ++i)   // znajdźki lekko podskakują
@@ -1754,7 +1765,13 @@ namespace
         a.text.generate(0, 62, "Kawa: +5 HP   A: dalej", t);
         while(true)
         {
-            if(bn::keypad::a_pressed() || bn::keypad::start_pressed()) { g.next_stage(); wait_release(); return leave(scene::game); }
+            if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
+            {
+                wait_release();
+                if(g.act_cleared) return leave(scene::hurtownia);   // koniec aktu: zakupy przed kolejnym
+                g.next_stage();
+                return leave(scene::game);
+            }
             next_frame();
         }
     }
@@ -1793,6 +1810,65 @@ namespace
         {
             if(won && bn::keypad::a_pressed()) { g.new_game_plus(); wait_release(); return leave(scene::game); }
             if(bn::keypad::start_pressed() || (! won && bn::keypad::a_pressed())) { wait_release(); return leave(scene::shop); }
+            next_frame();
+        }
+    }
+
+    // ------------------------------------------------------------------ Hurtownia między aktami (budżet budowy)
+    scene run_hurtownia(app& a)
+    {
+        core::game& g = *a.g;
+        phone_screen ph(4);
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        page_sprites t;
+        int sel = 0, top = 0;
+        const char* note = nullptr;
+        bn::sound_items::sfx_notify.play(bn::fixed(0.7));
+        auto redraw = [&]() {
+            core::message sub; sub.add("Budżet: ").add(g.cash).add(" zł");
+            phone_header(a, ph, t, "Hurtownia", sub.s);
+            phone_canvas& c = *ph.canvas;
+            core::message b; b.add("Premia za akt ").add(roman(data::stages[g.stage].act)).add(": +").add(g.act_bonus).add(" zł");
+            phone_text(a, t, list_x, row_py(0), note ? note : b.s, note ? ink::brand : ink::done);
+            for(int r = 0; r < 4 && top + r < data::hurtownia_count; ++r)   // 4 wiersze, przewijane
+            {
+                const core::shop_item_def& it = data::hurtownia[top + r];
+                bool is_sel = top + r == sel;
+                if(is_sel) stripe(c, r + 1, phone_tile::stripe_brand);
+                phone_text(a, t, list_x, row_py(r + 1), clip(it.name, 16).c_str(), is_sel ? ink::brand : ink::dark);
+                core::message pr; pr.add(it.price).add(" zł");
+                phone_pill(a, c, t, pill_end, row_ty(r + 1), pr.s, g.cash >= it.price ? pill::group : pill::gray);
+            }
+            phone_text(a, t, list_x, row_py(5), clip(data::hurtownia[sel].desc, 26).c_str(), ink::dim);
+            ph.commit();
+        };
+        redraw();
+        wait_release();
+        while(true)
+        {
+            int n = data::hurtownia_count;
+            int dir = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+            if(dir)
+            {
+                sel = (sel + dir + n) % n;
+                if(sel < top) top = sel;
+                if(sel >= top + 4) top = sel - 3;
+                note = nullptr; redraw(); bn::sound_items::sfx_menu.play();
+            }
+            if(bn::keypad::a_pressed())
+            {
+                if(g.hurtownia_buy(sel)) { bn::sound_items::sfx_buy.play(); note = "Kupione! START: dalej"; }
+                else note = "Za mały budżet";
+                redraw();
+            }
+            if(bn::keypad::b_pressed() || bn::keypad::start_pressed())
+            {
+                t.clear();
+                a.text.set_palette_item(default_ink);
+                wait_release();
+                g.next_stage();
+                return leave(scene::game);
+            }
             next_frame();
         }
     }
@@ -2016,6 +2092,7 @@ int main()
             case scene::end:          s = run_end(a); break;
             case scene::shop:         s = run_shop(a); break;
             case scene::help:         s = run_help(a); break;
+            case scene::hurtownia:    s = run_hurtownia(a); break;
         }
     }
 }

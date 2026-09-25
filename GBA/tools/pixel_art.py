@@ -493,3 +493,51 @@ RETICLE = [
 def reticle_frame():
     rows = ["." + r[:15] for r in RETICLE]   # wyśrodkowanie
     return parse(rows)
+
+
+# ------------------------------------------------------------------ bossowie aktów (klatki 46-47, druga klatka 48-49)
+BOSSES = {
+    "betoniarka": [
+        "................",
+        "......KKKKK.....",
+        ".....KOOOOOK....",
+        "....KOOKOOOOK...",
+        "...KOOOOKOOOOK..",
+        "...KOKOOOOKOOK..",
+        "...KOOOKOOOOOK..",
+        "....KOOOOKOOK...",
+        ".....KOOOOOKgK..",
+        "......KKKKKgK...",
+        "..KKKKKKKKKKKK..",
+        "..KggggggggggK..",
+        "..KgWKgggWKggK..",
+        "..KKKKKKKKKKKK..",
+        "...KgK....KgK...",
+        "....K......K...."],
+    "nawalnica": [
+        "................",
+        "....KKKK..KKK...",
+        "..KKggggKKgggK..",
+        ".KggggggggggggK.",
+        ".KggWKggggWKggK.",
+        ".KggKKggggKKggK.",
+        ".KgggggKKgggggK.",
+        "..KKKKKKKKKKKK..",
+        "...B..KYK..B....",
+        "..B..KYYK.B.....",
+        ".....KYK...B....",
+        "....KYYK..B.....",
+        "....KYK....B....",
+        "...KYK.....B....",
+        "...KK...........",
+        "................"],
+}
+
+
+def boss_frames():
+    out = []
+    for name in ("betoniarka", "nawalnica"):
+        out.append(parse(BOSSES[name]))
+    for name in ("betoniarka", "nawalnica"):   # druga klatka: "oddech" 1 px w dół
+        px = parse(BOSSES[name]); out.append([0] * 16 + px[:16 * 15])
+    return out

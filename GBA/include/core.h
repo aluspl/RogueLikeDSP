@@ -157,6 +157,17 @@ namespace core
         int stage_kills = 0;         // problemy usunięte na bieżącym etapie (odznaka Seryjny)
         int stage_start_turn = 0;    // tura wejścia na etap (odznaka Przed terminem)
         uint8_t tools_found = 0;     // narzędzia podniesione w tej budowie (odznaka Kolekcjoner)
+        int cash = 0;                // budżet budowy (zł) - za usunięte problemy i premie aktów, wydawany w Hurtowni
+        int act_kills = 0;           // problemy usunięte w bieżącym akcie (premia)
+        int act_bonus = 0;           // ostatnia premia za akt (do pokazania w Hurtowni)
+        bool act_cleared = false;    // pokonano bossa aktu - przed kolejnym etapem jest Hurtownia
+        int slam_timer = 0;          // uderzenie bossa: tury do ciosu (0 = brak zapowiedzi)
+        int8_t slam_x = -1, slam_y = -1;
+        int slam_counter = 0;
+
+        // Pole w zasięgu zapowiedzianego uderzenia bossa (czerwone pola na mapie).
+        bool slam_cell(int x, int y) const { return slam_timer > 0 && slam_cell_at(x, y); }
+        bool slam_cell_at(int x, int y) const { return slam_x >= 0 && cheb(x, y, slam_x, slam_y) <= data::slam_radius; }
         run_mods bonus;
         int xp_pct = 0;              // doświadczenie x100 (mnożnik trudności bez gubienia ułamków)
         int xp_banked = 0;           // ile doświadczenia już przeniesiono do profilu
@@ -329,6 +340,7 @@ namespace core
             lv.generate(r);
             walls_count = 0;
             stage_damage = 0; stage_kills = 0; stage_start_turn = turns;
+            act_cleared = false; slam_timer = 0; slam_x = slam_y = -1; slam_counter = 0;
             for(auto& row : fov) for(auto& c : row) c = unknown;
             const stage_def& sd = data::stages[stage];
             const room& first = lv.rooms[0];
@@ -400,12 +412,34 @@ namespace core
             turn_events |= 1u << ei;
             if(e.hp <= 0)
             {
-                e.alive = false; ++kills; ++stage_kills;
+                e.alive = false; ++kills; ++stage_kills; ++act_kills;
+                cash += ed.score / data::cash_per_score;
                 if(kills_by_type[e.def_id] < 255) ++kills_by_type[e.def_id]; score += ed.score * score_pct() / 100; gain_xp(data::xp_per_kill);
                 maybe_drop(e.x, e.y);
                 push(message().add(ed.name).add(" - usunięto!").as(good));
-                if(ei == boss) { score += (500 + 100 * (stage + 1)) * score_pct() / 100; gain_xp(data::xp_boss); st = status::won;
-                    push(message().add("Odbiór techniczny zaliczony!").as(good)); }
+                if(ei == boss)
+                {
+                    score += (500 + 100 * (stage + 1)) * score_pct() / 100;
+                    gain_xp(data::xp_boss);
+                    slam_timer = 0;
+                    if(stage == data::stages_count - 1)
+                    {
+                        st = status::won;
+                        push(message().add("Odbiór techniczny zaliczony!").as(good));
+                    }
+                    else   // boss aktu: premia za akt, potem Hurtownia
+                    {
+                        const act_def& ad = data::acts[data::stages[stage].act];
+                        int stages_in_act = 0;
+                        for(int i = 0; i < data::stages_count; ++i) stages_in_act += data::stages[i].act == data::stages[stage].act;
+                        act_bonus = ad.bonus_per_stage * stages_in_act + ad.bonus_per_kill * act_kills;
+                        cash += act_bonus;
+                        act_kills = 0;
+                        act_cleared = true;
+                        st = status::stage_clear;
+                        push(message().add("Akt zaliczony! Premia ").add(act_bonus).add(" zł").as(good));
+                    }
+                }
             }
             else
                 push(message().add(weapon().name).add(": -").add(dmg).add(" (").add(ed.name).add(")"));
@@ -601,6 +635,37 @@ namespace core
             return true;
         }
 
+        // Hurtownia między aktami: zakup za budżet budowy.
+        bool hurtownia_buy(int i)
+        {
+            const shop_item_def& it = data::hurtownia[i];
+            if(cash < it.price) return false;
+            switch(it.effect)
+            {
+                case shop_effect::heal: hero.hp = hero.max_hp; break;
+                case shop_effect::maxhp: hero.max_hp = int16_t(hero.max_hp + 3); hero.hp = int16_t(hero.hp + 3); break;
+                case shop_effect::ability: ability_cd = 0; break;
+                case shop_effect::gear:
+                {
+                    int slot = r.range(0, data::gear_slots_count - 1), rarity = r.range(1, 2);
+                    if(rarity <= equipped[slot]) rarity = imin(2, equipped[slot] + 1);
+                    if(rarity > equipped[slot]) equip(slot, rarity); else gain_xp(3);
+                    break;
+                }
+                case shop_effect::tool:
+                {
+                    int n = 0; for(int t = 0; t < data::tools_count; ++t) n += (bonus.tools >> t) & 1;
+                    int k = r.range(0, imax(0, n - 1));
+                    for(int t = 0; t < data::tools_count; ++t)
+                        if(((bonus.tools >> t) & 1) && k-- == 0) { weapon_override = data::tools[t].weapon; tools_found = uint8_t(tools_found | (1u << t)); break; }
+                    break;
+                }
+            }
+            cash -= it.price;
+            push(message().add("Hurtownia: ").add(it.name).as(loot));
+            return true;
+        }
+
         bool player_wait()
         {
             if(st != status::playing) return false;
@@ -684,6 +749,18 @@ namespace core
             int d = cheb(e.x, e.y, hero.x, hero.y);
             if(! e.awake) { if(d <= ed.sight) e.awake = true; else return; }
             if(e.stun > 0) { --e.stun; return; }
+            if(ed.slam && i == boss)   // boss: co kilka tur zapowiada uderzenie w obszar wokół bohatera
+            {
+                if(slam_timer > 0) return;   // ładuje cios, stoi w miejscu
+                if(++slam_counter >= data::slam_every && d <= 4)
+                {
+                    slam_counter = 0;
+                    slam_timer = 2;
+                    slam_x = hero.x; slam_y = hero.y;
+                    push(message().add(ed.name).add(" szykuje uderzenie!").as(bad));
+                    return;
+                }
+            }
             // Termin: porusza się co drugą turę, poniżej połowy HP przyspiesza
             if(i == boss && e.hp * 2 > e.max_hp && (turns & 1)) return;
             int manh = iabs(e.x - hero.x) + iabs(e.y - hero.y);
@@ -719,6 +796,24 @@ namespace core
                 if(--walls[i].turns <= 0) { lv.t[walls[i].y][walls[i].x] = tile::floor; walls[i] = walls[--walls_count]; }
                 else ++i;
             update_fov();
+            if(slam_timer > 0 && --slam_timer == 0 && boss >= 0 && enemies[boss].alive)   // cios bossa spada
+            {
+                const enemy_def& bd = data::enemies[enemies[boss].def_id];
+                if(slam_cell_at(hero.x, hero.y))
+                {
+                    int dmg = r.range(bd.min_damage, bd.max_damage) + enemy_dmg_bonus() + data::slam_damage_bonus
+                            - (cdef().defense + def_bonus + gear_bonus(gear_stat::def)) / 2;
+                    if(dmg < 1) dmg = 1;
+                    hero.hp = int16_t(hero.hp - dmg);
+                    stage_damage += dmg;
+                    hero_hit = true;
+                    add_hit(hero.x, hero.y, dmg, true);
+                    push(message().add("Uderzenie: -").add(dmg).add(" HP").as(bad));
+                    if(hero.hp <= 0) { hero.hp = 0; hero.alive = false; st = status::dead; push(message().add("Budowa wstrzymana...").as(bad)); }
+                }
+                else push(message().add("Unik! Cios poszedł obok").as(good));
+                slam_x = slam_y = -1;
+            }
             if(st == status::playing)
                 for(int i = 0; i < enemies_count && st == status::playing; ++i)
                     if(enemies[i].alive) enemy_act(i);
