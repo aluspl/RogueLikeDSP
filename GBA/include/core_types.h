@@ -34,6 +34,9 @@ namespace core
         int8_t ability_cooldown;    // w turach
     };
 
+    // Stan nakładany przez problem budowy przy trafieniu bohatera.
+    enum class status_effect : uint8_t { none, poison, shock, slip, paper };
+
     struct enemy_def           // "problem budowy"
     {
         const char* name;
@@ -46,6 +49,9 @@ namespace core
         int16_t score;
         int8_t frame;
         bool slam;             // boss: zapowiada uderzenie w obszar (czerwone pola)
+        status_effect on_hit;  // stan nakładany przy trafieniu bohatera
+        int8_t status_chance;  // szansa w %
+        int8_t status_turns;   // ile tur trwa
     };
 
     struct stage_def           // etap budowy = piętro lochu

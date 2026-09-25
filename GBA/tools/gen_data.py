@@ -27,7 +27,9 @@ L.append("};\n")
 L.append("inline constexpr core::enemy_def enemies[] = {")
 for e in d["enemies"]:
     L.append(f'    {{ {s(e["name"])}, {s(e["desc"])}, {e["maxHealth"]}, {e["minDamage"]}, {e["maxDamage"]}, {e["defense"]}, '
-             f'{e["sight"]}, {e["score"]}, {e["frame"]}, {"true" if e.get("slam") else "false"} }},')
+             f'{e["sight"]}, {e["score"]}, {e["frame"]}, {"true" if e.get("slam") else "false"}, '
+             f'core::status_effect::{e.get("onHit", {}).get("status", "none")}, {e.get("onHit", {}).get("chancePct", 0)}, '
+             f'{e.get("onHit", {}).get("turns", 0)} }},')
 L.append("};\n")
 L.append("inline constexpr core::stage_def stages[] = {")
 for st in d["stages"]:

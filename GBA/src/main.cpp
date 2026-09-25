@@ -982,7 +982,7 @@ namespace
     struct particle_pool
     {
         enum : int { dust = 0, spark = 3, confetti = 5, star = 9, ring = 10, brick = 12, nail = 13, bolt = 14,
-                     drop = 16, plus = 17, zzz = 18, alert = 19, marker = 20 };
+                     drop = 16, plus = 17, zzz = 18, alert = 19, marker = 20, status_icon = 21 };
         bn::vector<particle, 24> list;
         bn::random rnd;
         bn::camera_ptr cam;
@@ -1123,6 +1123,11 @@ namespace
         target_marker.set_z_order(-45);
         target_marker.set_visible(false);
         int marked = -1;
+        // Ikona aktywnego stanu nad bohaterem (zatrucie / porażenie / poślizg).
+        bn::sprite_ptr status_sprite = bn::sprite_items::particles.create_sprite(0, 0, particle_pool::status_icon);
+        status_sprite.set_camera(cam);
+        status_sprite.set_z_order(-45);
+        status_sprite.set_visible(false);
         bool looking = false;
         int look_frames = 0, look_sel = 0, look_count = 0, look_shown = -1;
         int8_t look_list[core::max_enemies];
@@ -1287,6 +1292,17 @@ namespace
             approach(hero_cur, hero_dst);
             hero.set_position(hero_cur);
             bool phase = (anim_clock / 24) & 1;
+            {
+                int active[3], n = 0;
+                const core::status_effect order[3] = { core::status_effect::poison, core::status_effect::shock, core::status_effect::slip };
+                for(int k = 0; k < 3; ++k) if(g.status_turns(order[k]) > 0) active[n++] = k;
+                status_sprite.set_visible(n > 0);
+                if(n > 0)
+                {
+                    status_sprite.set_tiles(bn::sprite_items::particles.tiles_item(), particle_pool::status_icon + active[(anim_clock / 40) % n]);
+                    status_sprite.set_position(hero_cur.x() + 7, hero_cur.y() - 12);
+                }
+            }
             int hf = data::classes[g.cls].frame + ((phase || hero_moving) ? frame_anim_b : 0);
             if(hf != hero_shown) { hero.set_tiles(bn::sprite_items::actors.tiles_item(), hf); hero_shown = hf; }
             for(int i = 0; i < g.enemies_count; ++i)
@@ -1504,7 +1520,7 @@ namespace
             for(auto& s : enemies) s.set_visible(false);
             for(auto& s : pickups) s.set_visible(false);
             fx.clear(); log.clear(); floaters.clear(); fx_particles.list.clear();
-            hide_mini_bars(); target_marker.set_visible(false);
+            hide_mini_bars(); target_marker.set_visible(false); status_sprite.set_visible(false);
             power_icon.set_visible(false); power_text.clear(); shown_cd = -1;
             a.text.set_left_alignment();
             a.text.generate(-116, 72, "Podgląd mapy (puść L)", log);
@@ -1645,7 +1661,7 @@ namespace
                 for(auto& s : pickups) s.set_visible(false);
                 fx.clear(); hud.clear(); log.clear(); floaters.clear();
                 hp_left.set_visible(false); hp_right.set_visible(false);
-                hide_mini_bars(); target_marker.set_visible(false);
+                hide_mini_bars(); target_marker.set_visible(false); status_sprite.set_visible(false);
                 power_icon.set_visible(false); power_text.clear(); shown_cd = -1;
                 strip_bg.set_visible(false);
                 banner.hide();
