@@ -44,8 +44,12 @@ static void bot_step_smart(game& g)
 {
     if(g.has_offer()) { if(g.offer_rarity >= g.equipped[g.offer_slot]) g.accept_offer(); else g.decline_offer(); }
     if(g.thermos > 0 && g.hero.hp * 2 < g.hero.max_hp && g.player_drink()) return;
-    if(g.helper_called < 0 && g.hero.hp * 3 < g.hero.max_hp)   // brygada: przy 1/3 HP najdroższy dostępny fachowiec
-        for(int h = data::brigade_count - 1; h >= 0; --h) if(g.helper_blocked(h) == game::helper_ok && g.call_helper(h)) return;
+    if(g.helper_called < 0 && g.nearest_visible_enemy() >= 0)   // brygada: przy pierwszym problemie na etapie (kolejny fachowiec co etap)
+        for(int k = 0; k < data::brigade_count; ++k)
+        {
+            int h = (g.stage + k) % data::brigade_count;
+            if(g.helper_blocked(h) == game::helper_ok && g.call_helper(h)) return;
+        }
     if(!g.slam_cell(g.hero.x, g.hero.y) && g.ability_cd == 0)
     {
         int t = g.nearest_visible_enemy();
@@ -109,6 +113,7 @@ static uint32_t digest(const game& g)
 // ------------------------------------------------------------------ JSON
 static std::string out;
 static int event_hits[16];   // statystyka wydarzeń na placu (wypis na końcu)
+static int helper_hits[8];   // statystyka wezwań brygady
 static void w(const char* s) { out += s; }
 static void wi(long v) { out += std::to_string(v); }
 static void key(const char* k) { out += '"'; out += k; out += "\":"; }
@@ -284,7 +289,9 @@ int main(int argc, char** argv)
                 continue;
             }
             if(g.st != status::playing) break;
+            int called = g.helper_called;
             if(s.smart) bot_step_smart(g); else bot_step(g);
+            if(called < 0 && g.helper_called >= 0) ++helper_hits[g.helper_called];
             if(g.turns == g.stage_start_turn + 1 && g.stage_event >= 0) ++event_hits[g.stage_event];
             digests.push_back(digest(g)); g.hits_count = 0;   // warstwa GBA zeruje trafienia po każdej turze
         }
@@ -306,6 +313,8 @@ int main(int argc, char** argv)
     }
     std::printf("wydarzenia na placu (etapy):");
     for(int i = 0; i < data::site_events_count; ++i) std::printf(" %s=%d", data::site_events[i].name, event_hits[i]);
+    std::printf("\nbrygada (wezwania):");
+    for(int i = 0; i < data::brigade_count; ++i) std::printf(" %s=%d", data::brigade[i].name, helper_hits[i]);
     std::printf("\n");
     return 0;
 }
