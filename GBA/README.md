@@ -15,7 +15,7 @@ Przekroczony budżet) i bossa **Nieprzekraczalny Termin**. Na końcu ekran z kod
 | D-pad | ruch / atak przez wejście na wroga (przytrzymaj = szybki ruch) |
 | A | krótko: atak w najbliższy cel; przytrzymaj: podgląd zasięgu i celownik (strzałki zmieniają cel), puść: atak |
 | B | krótko: czekaj turę (co 4 tury +1 HP); przytrzymaj: podgląd widocznych wrogów (nazwa, HP, obrażenia, opis; strzałki zmieniają wroga) |
-| START | dalej |
+| START | w grze: menu akcji wokół bohatera – góra Atak, prawo Moc, dół Termos, lewo Czekaj (strzałka wybiera, A albo ta sama strzałka wykonuje, START/B zamyka); poza grą: dalej |
 | SELECT | w grze: telefon z aplikacją PlanBudowlany (Zadania, Usterki, Start, Zespół, Koszty; L/R – zakładki, START – menu: jak grać, zapisz i wyjdź, porzuć budowę); na tytule: Szkolenia (ekran Koszty) |
 | B (tytuł) | ekran „Jak grać” |
 | L (przytrzymaj) | podgląd odkrytej mapy etapu |
@@ -26,8 +26,9 @@ Przekroczony budżet) i bossa **Nieprzekraczalny Termin**. Na końcu ekran z kod
 ## Zawody (dane w `data/game.json`)
 Kierownik budowy (Dziennik budowy, zasięg 2) · Murarz (Kielnia) · Cieśla-dekarz (Gwoździarka, zasięg 3) ·
 Elektryk (Próbnik napięcia, zasięg 2) · Hydraulik (Klucz nastawny) · Glazurnik (Szlifierka).
-Znajdźki: kawa z termosu (+HP), kask (+obrona), projekt wykonawczy (+obrażenia).
-Sprzęt: z wrogów wypadają paczki (zwykły / solidny / markowy) – kask (+obrona), rękawice (+obrażenia), kamizelka (+max HP); lepszy zakłada się sam, gorszy daje doświadczenie; w telefonie zakładka Sprzęt.
+Znajdźki: kawa (trafia do termosu – 3 miejsca, pije się z menu pod START za turę; przy pełnym termosie pije od razu), kask (+obrona), projekt wykonawczy (+obrażenia). Ikona termosu z liczbą kaw jest w HUD.
+Sprzęt: z wrogów wypadają paczki (zwykły / solidny / markowy) – kask (+obrona), rękawice (+obrażenia), kamizelka (+max HP). Każdy przedmiot ma losową cechę (Szczęście +1, Kryt +5%, Odporność na zatrucie, Widzenie +1, Odnowienie mocy -1; `equipment.traits`). Do pustego slotu zakłada się sam; przy zajętym okno porównania (obecny vs nowy): A – zakładam, B – zostawiam (doświadczenie). W telefonie zakładka Sprzęt z cechami.
+**Szczęście** (`luck` zawodu + cechy): kryt 5% + 3%/pkt (obrażenia x2, żółte „KRYT!”), unik przed ciosem wroga 2%/pkt (maks. 20%), częstsze i lepsze dropy – parametry w sekcji `luck` pliku `data/game.json`. Glazurnik ma najwięcej szczęścia, Murarz wcale.
 Dropy: z pokonanych wrogów może wypaść kawa, kask, projekt albo skrzynka z narzędziem (Łom, Wkrętarka, Poziomica laserowa, Młot wyburzeniowy – zastępuje broń zawodu; kolejne narzędzia odblokowujesz w Szkoleniach).
 Powiadomienia push jak w aplikacji: awans, nowe narzędzie, drop, moc gotowa, zaliczony etap, pojawienie się Terminu.
 Mgła wojny: widzisz na 7 pól (ściany zasłaniają), odkryte pola zostają przyciemnione, wrogowie poza polem widzenia są ukryci.
@@ -42,7 +43,7 @@ narzędzie, siłownia, energetyk – oferta w `hurtownia`).
 ## Stany
 Problemy budowy przy trafieniu mogą nałożyć stan (konfiguracja `onHit` w `data/game.json`): zatrucie (Pleśń: -1 HP
 przez kilka tur, nie zabija), porażenie (Zwarcie: tracisz turę), poślizg (Ulewa, Przeciek, Nawałnica: ruch o 2 pola),
-papierologia (Papierologia, Termin: moc odnawia się 3 tury dłużej). Ikona aktywnego stanu jest nad bohaterem.
+papierologia (Papierologia, Termin: moc odnawia się 3 tury dłużej). Ikona aktywnego stanu jest nad bohaterem, a w HUD (pod paskiem HP) ikony stanów z liczbą tur do końca; komunikat przy nałożeniu mówi skutek i czas, telefon (zakładka Start) ma wiersz Stany. Nazwy i skutki: `statuses`.
 
 ## Fabuła
 Budujesz dom dla rodziny Nowaków. Pierwszą budowę otwiera prolog: pickup wjeżdża na działkę pełną porozrzucanych problemów (A pomija). Każdy etap otwiera wiadomość w telefonie od inwestorki Anny Nowak albo
@@ -87,7 +88,7 @@ tools/playtest/run.sh moj_skrypt.txt /tmp/zrzuty --fresh   # opis komend w tools
 ```
 
 Scenariusze testowe (sytuacje, do których skrypt nie dojdzie na ślepo – boss obok, wrogowie w zasięgu, moce,
-sprzęt, stany): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
+sprzęt, stany, porównanie sprzętu, termos, kryt i unik): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
 ```bash
 make TARGET=scn1 BUILD=build_scn1 USERFLAGS="-DPB_SCENARIO=1" BUTANO_PATH=...
 ROM=scn1.gba tools/playtest/run.sh skrypt.txt /tmp/zrzuty --fresh
