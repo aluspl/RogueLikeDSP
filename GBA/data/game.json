@@ -391,6 +391,36 @@
         "chancePct": 35,
         "turns": 3
       }
+    },
+    {
+      "id": "inspekcja",
+      "name": "Inspekcja Pracy",
+      "desc": "Sprawdza kask i barierki",
+      "maxHealth": 30,
+      "minDamage": 3,
+      "maxDamage": 5,
+      "defense": 2,
+      "sight": 12,
+      "score": 170,
+      "frame": 50,
+      "slam": true,
+      "slamShape": "cross",
+      "slamName": "Kontrola BHP",
+      "onHit": {
+        "status": "paper",
+        "chancePct": 30,
+        "turns": 0
+      },
+      "summon": {
+        "enemy": "papierologia",
+        "every": 6,
+        "max": 2
+      },
+      "gearStun": 2,
+      "reward": {
+        "cash": 60,
+        "title": "Protokół bez uwag"
+      }
     }
   ],
   "stages": [
@@ -462,10 +492,11 @@
         "przeciek",
         "plesn"
       ],
-      "count": 8,
+      "count": 7,
       "hpPct": 121,
       "dmgBonus": 0,
-      "act": 2
+      "act": 2,
+      "boss": "inspekcja"
     },
     {
       "name": "Tynki i wylewki",
@@ -793,8 +824,8 @@
         "text": "Stan surowy zamknięty!|Okna na wymiar, drzwi|też. Ulewa nie odpuszcza."
       },
       {
-        "from": "Anna Nowak",
-        "text": "Elektryk i hydraulik|w jednym pokoju. Co|może pójść nie tak? ;)"
+        "from": "Kierownik Marek",
+        "text": "Inspekcja Pracy w drodze!|Kask, szelki, barierki -|papiery też sprawdzą."
       },
       {
         "from": "Kierownik Marek",
@@ -973,7 +1004,10 @@
   "slam": {
     "every": 4,
     "damageBonus": 2,
-    "radius": 1
+    "radius": 1,
+    "delay": 2,
+    "crossReach": 2,
+    "crossDelay": 3
   },
   "statuses": {
     "poison": {
@@ -1038,7 +1072,7 @@
       "effect": "ability"
     }
   ],
-  "version": "v0.21.45",
+  "version": "v0.21.46",
   "tips": [
     "Przytrzymaj B: podgląd problemów",
     "Przytrzymaj A: celownik i zasięg",

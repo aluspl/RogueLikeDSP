@@ -499,7 +499,7 @@ def reticle_frame():
     return parse(rows)
 
 
-# ------------------------------------------------------------------ bossowie aktów (klatki 46-47, druga klatka 48-49)
+# ------------------------------------------------------------------ bossowie (klatki 46-47, druga klatka 48-49; Inspekcja 50-51)
 BOSSES = {
     "betoniarka": [
         "................",
@@ -535,6 +535,24 @@ BOSSES = {
         "...KYK.....B....",
         "...KK...........",
         "................"],
+    # Inspekcja Pracy: podkładka z protokołem (surowe brwi), odlatująca kartka i pieczątka z czerwonym tuszem
+    "inspekcja": [
+        ".....KKKK..KKKK.",
+        "....KgllgK.KWWWK",
+        ".KKKKKKKKKKKWggK",
+        ".KTTTTTTTTTKWWWK",
+        ".KTWWWWWWWTKKKK.",
+        ".KTWKKWKKWTK....",
+        ".KTWWKWKWWTK....",
+        ".KTWWKWKWWTK.KK.",
+        ".KTWWWWWWWTKKTTK",
+        ".KTWgggggWTK.KTK",
+        ".KTWWWWWWWTK.KTK",
+        ".KTWWWRRWWTKKKKK",
+        ".KTWWRWWRWTKRRRK",
+        ".KTWWWRRWWTKKKKK",
+        ".KTTTTTTTTTK....",
+        ".KKKKKKKKKKK...."],
 }
 
 
@@ -544,6 +562,8 @@ def boss_frames():
         out.append(parse(BOSSES[name]))
     for name in ("betoniarka", "nawalnica"):   # druga klatka: "oddech" 1 px w dół
         px = parse(BOSSES[name]); out.append([0] * 16 + px[:16 * 15])
+    px = parse(BOSSES["inspekcja"])            # 50-51: Inspekcja Pracy (klatka A, B)
+    out += [px, [0] * 16 + px[:16 * 15]]
     return out
 
 

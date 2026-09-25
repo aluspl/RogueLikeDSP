@@ -23,12 +23,12 @@ static void bot_step(game& g)
 {
     if(g.has_offer()) { if(g.offer_is_better()) g.accept_offer(); else g.decline_offer(); }
     if(g.thermos > 0 && g.hero.hp * 100 < g.hero.max_hp * data::bot_drink_below_pct && g.player_drink()) return;
-    if(g.slam_cell(g.hero.x, g.hero.y))   // zapowiedziany cios bossa: zejdź z czerwonych pól (jak człowiek)
+    if(g.slam_cell(g.hero.x, g.hero.y))   // zapowiedziany cios bossa: zejdź z czerwonych pól (jak człowiek; nie wraca na nie)
     {
         int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}}, best=-1, bd=-1;
         for(int k=0;k<4;++k){ int nx=g.hero.x+d[k][0], ny=g.hero.y+d[k][1];
             if(!g.lv.passable(nx,ny)||g.occupied(nx,ny)) continue;
-            int dist=cheb(nx,ny,g.slam_x,g.slam_y); if(dist>bd){bd=dist;best=k;} }
+            int dist=cheb(nx,ny,g.slam_x,g.slam_y)+(g.slam_cell(nx,ny)?0:10); if(dist>bd){bd=dist;best=k;} }
         if(best>=0 && g.player_move(d[best][0],d[best][1])) return;
     }
     if(g.nearest_target() >= 0 && g.weapon().range > 1) { g.player_attack_nearest(); return; }
@@ -41,7 +41,7 @@ static void bot_step(game& g)
     while(!q.empty()){ auto [x,y]=q.front(); q.pop(); if(x==tx&&y==ty) break;
         for(int k=0;k<4;++k){int nx=x+d[k][0],ny=y+d[k][1]; if(g.lv.passable(nx,ny)&&px[ny][nx]<0){px[ny][nx]=k;q.push({nx,ny});}}}
     if(tx<0||px[ty][tx]<0||(tx==g.hero.x&&ty==g.hero.y)){ g.player_wait(); return; }
-    int x=tx,y=ty; while(true){int k=px[y][x]; int bx=x-d[k][0],by=y-d[k][1]; if(bx==g.hero.x&&by==g.hero.y){ if(!g.player_move(x-bx,y-by)) g.player_wait(); return;} x=bx;y=by;}
+    int x=tx,y=ty; while(true){int k=px[y][x]; int bx=x-d[k][0],by=y-d[k][1]; if(bx==g.hero.x&&by==g.hero.y){ if(g.slam_cell(x,y)&&g.enemy_at(x,y)<0){ g.player_wait(); return; } if(!g.player_move(x-bx,y-by)) g.player_wait(); return;} x=bx;y=by;}
 }
 
 // Otwarta arena 14x14 bez wrogów i znajdziek, bohater na (7,7) - do testów mocy.
@@ -578,6 +578,51 @@ int main()
         if(dodge) CHECK(g.hero.hp >= hp);
         else CHECK(g.hero.hp <= hp - (data::enemies[data::enemy_betoniarka].min_damage + data::slam_damage_bonus
                                       - (g.cdef().defense + g.def_bonus) / 2));
+    }
+    // 25b. Inspekcja Pracy: Kontrola BHP w krzyż (3 tury), wezwania Papierologii (limit), pełny sprzęt = ogłuszenie,
+    //      boss w środku aktu: nagroda, etap zaliczony bez Hurtowni
+    {
+        int is = 0; while(data::stages[is].boss != data::enemy_inspekcja) ++is;
+        const enemy_def& id = data::enemies[data::enemy_inspekcja];
+        CHECK(is + 1 < data::stages_count && data::stages[is + 1].act == data::stages[is].act);   // w środku aktu
+        CHECK(id.shape == slam_shape::cross && id.summon == data::enemy_papierologia && id.summon_max > 0 && id.reward_cash > 0);
+        game g; arena(g, 1);
+        g.spawn(data::enemy_inspekcja, 10, 7); g.boss = 0; g.enemies[0].awake = true;
+        for(int k = 0; k < id.summon_max; ++k) { g.spawn(id.summon, 10, 7); g.enemies[g.enemies_count - 1].alive = false; }
+        for(int k = 0; k < 12 && g.slam_timer == 0; ++k) g.player_wait();
+        CHECK(g.slam_timer == data::slam_cross_delay && g.slam_x == g.hero.x && g.slam_y == g.hero.y);
+        CHECK(g.slam_cell(g.hero.x + data::slam_cross_reach, g.hero.y) && g.slam_cell(g.hero.x, g.hero.y - data::slam_cross_reach));
+        CHECK(!g.slam_cell(g.hero.x + 1, g.hero.y + 1) && !g.slam_cell(g.hero.x + data::slam_cross_reach + 1, g.hero.y));
+        int hp = g.hero.hp;
+        g.player_move(0, 1); g.player_move(-1, 0); g.player_wait();              // zejście z krzyża po skosie
+        CHECK(g.slam_timer == 0 && g.hero.hp >= hp);
+        int alive_before = 0;
+        for(int k = 0; k < 60 && g.st == status::playing; ++k) { g.hero.hp = g.hero.max_hp; g.player_wait(); }
+        for(int i = 1; i < g.enemies_count; ++i) alive_before += g.enemies[i].alive;
+        CHECK(g.summons_used == id.summon_max && alive_before == id.summon_max);   // limit wezwań
+        for(int i = 1; i < g.enemies_count; ++i) CHECK(g.enemies[i].def_id == data::enemy_papierologia);
+    }
+    {
+        int is = 0; while(data::stages[is].boss != data::enemy_inspekcja) ++is;
+        const enemy_def& id = data::enemies[data::enemy_inspekcja];
+        for(int gear = 0; gear < 2; ++gear)
+        {
+            game g; g.new_run(1, 31); g.start_stage(is);
+            if(gear) for(int i = 0; i < data::gear_slots_count; ++i) g.equip(i, 0, 0);
+            CHECK(g.enemies_count == data::stages[is].enemy_count + 1 + id.summon_max);
+            CHECK(!g.enemies[g.boss + 1].alive && g.stairs_x < 0);
+            g.enemies[g.boss].awake = true; g.enemies[g.boss].x = int8_t(g.hero.x + 5); g.enemies[g.boss].y = g.hero.y;
+            g.enemy_act(g.boss);
+            CHECK(g.boss_wake_damage >= 0 && g.enemies[g.boss].stun == (gear ? id.gear_stun - 1 : 0));
+        }
+        game g; g.new_run(1, 31);
+        for(int k = 0; k < is; ++k) { g.debug_skip(); if(g.act_cleared) g.act_cleared = false; g.next_stage(); }
+        int cash = g.cash, act_kills = g.act_kills;
+        g.debug_skip();
+        CHECK(g.st == status::stage_clear && !g.act_cleared);
+        CHECK(g.cash == cash + id.reward_cash + id.score / data::cash_per_score && g.act_kills == act_kills + 1);
+        g.next_stage();
+        CHECK(g.stage == is + 1 && g.stairs_x >= 0);
     }
     // 26. Hurtownia: ceny, efekty
     {

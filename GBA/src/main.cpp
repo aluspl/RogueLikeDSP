@@ -97,7 +97,8 @@ namespace
     constexpr int frame_toolbox = 26;
     constexpr int frame_anim_b = 27;     // + klatka zawodu/wroga (0..14) = druga klatka animacji
 
-    int anim_b(int frame) { return frame < 15 ? frame + frame_anim_b : frame + 2; }   // bossowie aktów: 46-47 -> 48-49
+    // druga klatka: zawody/wrogowie 0-14 -> +27, bossowie aktów 46-47 -> 48-49, Inspekcja 50 -> 51
+    int anim_b(int frame) { return frame < 15 ? frame + frame_anim_b : (frame < 48 ? frame + 2 : frame + 1); }
 
     const char* roman(int n) { static const char* r[] = { "I", "II", "III", "IV", "V" }; return r[n < 5 ? n : 4]; }
 
@@ -1291,6 +1292,7 @@ namespace
         for(int i = 0; i < 4; ++i) prev_equipped[i] = g.equipped[i];
         for(int i = 0; i < g.pickups_count; ++i) prev_active += g.pickups[i].active;
         bool boss_seen = false;
+        bool boss_engaged = g.boss_wake_damage >= 0;   // Inspekcja: baner "zgodnie z BHP" przy pełnym sprzęcie
         if(g.stage == 0 && g.tier == 0 && g.turns == 0)   // podpowiedź na start budowy: moc pod R, zabrana pamiątka
         {
             core::message t; t.add("R: ").add(g.cdef().ability_name);
@@ -1353,11 +1355,23 @@ namespace
                 boss_seen = true;
                 banner.push("Przypisano Ci usterkę", data::enemies[g.enemies[g.boss].def_id].name);
             }
+            if(! boss_engaged && g.boss_wake_damage >= 0)
+            {
+                boss_engaged = true;
+                const core::enemy_def& bd = data::enemies[g.enemies[g.boss].def_id];
+                if(bd.gear_stun > 0 && g.full_gear()) banner.push("Wszystko zgodnie z BHP!", "Kontrola wstrzymana");
+            }
             if(g.st == core::status::stage_clear)   // ważniejsze niż kolejka: od razu, zanim zmieni się scena
             {
                 bn::sound_items::sfx_stage.play();
                 banner.hide();
                 banner.push("Etap zaliczony", clip(data::stages[g.stage].name, 24).c_str());
+                if(g.boss >= 0 && ! g.enemies[g.boss].alive && data::enemies[g.enemies[g.boss].def_id].reward_cash > 0)
+                {
+                    const core::enemy_def& bd = data::enemies[g.enemies[g.boss].def_id];   // nagroda bossa, np. Protokół bez uwag
+                    core::message b; b.add("Premia +").add(bd.reward_cash).add(" zł");
+                    banner.push(bd.reward_title, b.s);
+                }
             }
             if(g.st == core::status::stage_clear || g.st == core::status::won)   // odznaki i zlecenia
             {

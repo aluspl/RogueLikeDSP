@@ -26,10 +26,16 @@ for c in d["classes"]:
 L.append("};\n")
 L.append("inline constexpr core::enemy_def enemies[] = {")
 for e in d["enemies"]:
+    sm, rw = e.get("summon", {}), e.get("reward", {})
+    assert e.get("slamShape", "square") in {"square", "cross"} and len(e.get("slamName", "")) <= 16, e
+    assert not sm or (sm["enemy"] in eid and not d["enemies"][eid[sm["enemy"]]].get("slam") and sm["every"] > 0 and 0 < sm["max"] <= 3), e
+    assert len(rw.get("title", "")) <= 24 and 0 <= rw.get("cash", 0) <= 500, e
     L.append(f'    {{ {s(e["name"])}, {s(e["desc"])}, {e["maxHealth"]}, {e["minDamage"]}, {e["maxDamage"]}, {e["defense"]}, '
              f'{e["sight"]}, {e["score"]}, {e["frame"]}, {"true" if e.get("slam") else "false"}, '
              f'core::status_effect::{e.get("onHit", {}).get("status", "none")}, {e.get("onHit", {}).get("chancePct", 0)}, '
-             f'{e.get("onHit", {}).get("turns", 0)} }},')
+             f'{e.get("onHit", {}).get("turns", 0)}, core::slam_shape::{e.get("slamShape", "square")}, {s(e.get("slamName", ""))}, '
+             f'{eid[sm["enemy"]] if sm else -1}, {sm.get("every", 0)}, {sm.get("max", 0)}, {e.get("gearStun", 0)}, '
+             f'{rw.get("cash", 0)}, {s(rw.get("title", ""))} }},')
 L.append("};\n")
 L.append("inline constexpr core::stage_def stages[] = {")
 for st in d["stages"]:
@@ -66,6 +72,9 @@ L += [f"inline constexpr core::story_msg story_{k} = {story(st[k])};" for k in (
 L.append("inline constexpr const char* prologue_captions[] = { " + ", ".join(s(c) for c in st["prologueCaptions"]) + " };")
 L.append("")
 acts = d["acts"]
+for st in d["stages"]:   # boss z wezwaniami: etap + boss + wezwani mieszczą się w core::max_enemies (12)
+    if "boss" in st:
+        assert st["count"] + 1 + d["enemies"][eid[st["boss"]]].get("summon", {}).get("max", 0) <= 12, st
 for ai in range(len(acts)):   # każdy akt kończy się etapem z bossem
     last = max(i for i, st in enumerate(d["stages"]) if st["act"] == ai)
     assert "boss" in d["stages"][last], f"akt {ai} bez bossa"
@@ -92,6 +101,9 @@ L += [f"inline constexpr int acts_count = {len(acts)};",
       f"inline constexpr int slam_every = {sl['every']};",
       f"inline constexpr int slam_damage_bonus = {sl['damageBonus']};",
       f"inline constexpr int slam_radius = {sl['radius']};",
+      f"inline constexpr int slam_delay = {sl['delay']};",
+      f"inline constexpr int slam_cross_reach = {sl['crossReach']};",
+      f"inline constexpr int slam_cross_delay = {sl['crossDelay']};",
       f"inline constexpr int cash_per_score = {d['cash']['perScore']};"]
 L += [f"inline constexpr int enemy_{e['id']} = {i};" for i, e in enumerate(d["enemies"])] + [""]
 PERKS = {"hp", "def", "dmg", "luck", "cooldown", "sight", "thermos", "tool_pct", "xp_pct", "cash", "crit", "coffee"}

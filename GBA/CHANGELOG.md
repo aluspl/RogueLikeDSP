@@ -2,6 +2,26 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
+## v0.21.46 – 2026-09-25
+### Nowe
+- **Nowy boss: Inspekcja Pracy** – kontrola BHP bez zapowiedzi w środku aktu III (etap Instalacje; Termin dalej
+  czeka na końcu). Podkładka z protokołem o surowych brwiach, odlatującą kartką i pieczątką z czerwonym tuszem.
+  SMS od kierownika przed etapem, powiadomienie „Przypisano Ci usterkę: Inspekcja Pracy”, wpis w katalogu usterek.
+- **Kontrola BHP:** Inspekcja stempluje w **krzyż** (wiersz i kolumna bohatera, 2 pola w każdą stronę) zamiast
+  kwadratu 3×3; 3 tury na zejście – najlepiej po skosie. Trafienie może nałożyć Papierologię.
+- **Wezwania:** co 6 tur Inspekcja wzywa Papierologię (najwyżej 2 na walkę).
+- **„Wszystko zgodnie z BHP!”** – w pełnym sprzęcie (kask, rękawice, kamizelka) Inspekcja na start walki traci 2 tury.
+- Pokonana Inspekcja: baner **„Protokół bez uwag”** i premia +60 zł; potem zwykły harmonogram (Hurtownia zostaje
+  tylko między aktami).
+- Mechaniki bossów sterowane danymi (`data/game.json`): `slamShape`, `slamName`, `summon`, `gearStun`, `reward`
+  wroga oraz `delay`, `crossReach`, `crossDelay` w `slam`.
+- Scenariusz testowy 13: Inspekcja obok bohatera w pełnym sprzęcie.
+### Zmiany
+- Etap Instalacje: 7 problemów zamiast 8 (plus boss), bez wydarzenia na placu (jak każdy etap z bossem).
+- Bot testów balansu schodzi z czerwonych pól na pole poza zasięgiem i nie wchodzi na nie przed ciosem
+  (bez zmian dla kwadratu bossów aktów). Normalny: 52% wygranych (z pełnymi Szkoleniami 70%).
+- Nowy zapis budowy (PBRUN05) – przerwana budowa z v0.21.45 nie wznowi się.
+
 ## v0.21.45 – 2026-09-25
 ### Nowe
 - **Nowy ekran wyboru zawodu:** pasek portretów wszystkich zawodów u góry – wybrany powiększony na fioletowym polu,
