@@ -1038,7 +1038,7 @@
       "effect": "ability"
     }
   ],
-  "version": "v0.21.42",
+  "version": "v0.21.43",
   "contracts": [
     {
       "id": "trzy_fachy",

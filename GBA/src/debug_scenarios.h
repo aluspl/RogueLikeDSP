@@ -13,7 +13,7 @@
 //   9 - statystyki: Szkolenia Warsztaty i Kurs BHP II kupione, sprzęt z cechami SIŁ/ZRĘ/INT +1,
 //       obok (w prawo) skrzynka z Tabletem z projektem (narzędzie INT)
 //  10 - uprawnienia i zlecenia: część odznak zdobyta (premie na budowę), zlecenia w toku,
-//       jedno o krok od ukończenia (moc R + L+R+SELECT = baner)
+//       Mocarz o krok od ukończenia (moc R + L+R+SELECT = baner), Stały klient o jedną wygraną (baner na końcu)
 //  11 - pamiątki: wszystkie odblokowane, Termos babci po 8 budowach (ranga III, wybrany), Kask ojca po 3 (II)
 //  12 - wydarzenia na placu: start od etapu 2 z wydarzeniem; każdy kolejny etap bez bossa ma wydarzenie
 //       (po kolei z listy; L+R+SELECT przechodzi dalej)
@@ -63,11 +63,11 @@ namespace debug_scenario
         {
             p.badges = uint16_t((1 << data::badge_bez_usterek) | (1 << data::badge_seryjny) | (1 << data::badge_kolekcjoner)
                                 | (1 << data::badge_osiedle));
-            p.kills_total = 150; p.brand_total = 2; p.class_wins = 3; p.wins = 5;
+            p.kills_total = 150; p.brand_total = 2; p.class_wins = 3;
             for(int i = 0; i < data::contracts_count; ++i)
             {
                 if(data::contracts[i].kind == core::contract_kind::powers) p.powers_total = uint16_t(data::contracts[i].target - 1);
-                if(data::contracts[i].kind == core::contract_kind::wins) p.contracts = uint8_t(p.contracts | (1 << i));
+                if(data::contracts[i].kind == core::contract_kind::wins) p.wins = data::contracts[i].target - 1;   // wygrana = baner na końcu
             }
         }
         if(scenario == 11)

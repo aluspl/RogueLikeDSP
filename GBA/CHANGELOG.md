@@ -2,6 +2,29 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
+## v0.21.43 – 2026-09-25
+### Nowe
+- **Statystyki:** cechy sprzętu Siła/Zręczność/Inteligencja +1 (podnoszą statystykę broni), narzędzia skalowane INT
+  do odblokowania w Szkoleniach (Tablet z projektem, Miernik laserowy), nowe Szkolenia Kurs BHP II (+1 szczęścia)
+  i Warsztaty (+1 do statystyki broni zawodu). Statystyki efektywne („SIŁ 5+2”) na wyborze zawodu i w telefonie.
+- **Uprawnienia:** każda odznaka daje trwałą premię na każdą budowę (np. Bez usterek +2 max HP, Seryjny +1 obrażeń,
+  Przed terminem moc -1 t., Kolekcjoner +10% szans na narzędzie, Osiedle +10% doświadczenia). Premia widoczna
+  przy odznace w telefonie profilu.
+- **Zlecenia:** długofalowe cele z licznikami (Trzy fachy, Czysta robota, Markowy styl, Mocarz, Pogromca usterek,
+  Stały klient) z nagrodą w doświadczeniu i pamiątkach. Strona Zlecenia w zakładce Odznaki (A), baner przy ukończeniu,
+  najbliższe zlecenie z postępem w zakładce Koszty w trakcie budowy.
+- **Pamiątki:** przedmiot zabierany na budowę (L/R na wyborze zawodu): Termos babci, Kask ojca, Szczęśliwa kielnia,
+  Stara poziomica, Notes kierownika. Ranga II po 3 i III po 8 budowach z pamiątką. Strona Pamiątki w telefonie profilu.
+- **Wydarzenia na placu:** na starcie etapu (nie pierwszego i nie z bossem) losowy SMS z modyfikatorem – Dostawa
+  spóźniona, Premia od inwestora, Inspekcja nadzoru, Ulewa w nocy, Ekipa na kawie. Wiersz w zakładce Zadania.
+- Scenariusze testowe 9 (statystyki), 10 (uprawnienia i zlecenia), 11 (pamiątki), 12 (wydarzenia).
+### Zmiany
+- Koniec etapu czeka, aż pokażą się banery odznak i zleceń (A pomija); banery także na ekranie końcowym.
+- Ekran wyboru zawodu: trudność u góry, pamiątka obok postaci, statystyka broni przy narzędziu (np. „(SIŁ)”).
+- Profil w formacie v4 (migracja z v3/v2/v1 bez utraty danych); nowy zapis budowy (PBRUN03) – przerwana budowa
+  z v0.21.42 nie wznowi się.
+- Konfiguracja w `data/game.json`: `badges[].perk`, `contracts`, `keepsakes`, `siteEvents`.
+
 ## v0.21.42 – 2026-09-25
 ### Nowe
 - **Szczęście:** nowa statystyka zawodu (Glazurnik 4, Hydraulik/Kierownik/Cieśla 2, Elektryk 1, Murarz 0),
