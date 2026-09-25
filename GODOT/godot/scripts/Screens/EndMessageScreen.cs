@@ -19,20 +19,51 @@ public sealed class EndMessageScreen : Screen
 
     public override void Enter(bool instant)
     {
-        var won = S.Game.St == GameStatus.Won;
+        var g = S.Game;
+        var d = S.Data;
+        var p = S.Profile;
+        var won = g.St == GameStatus.Won;
         var page = new MessagePage(won ? "Odbiór" : "Budowa");
-        page.Add(won ? S.Data.StoryWin : S.Data.StoryLose);
-        page.Info($"Wynik {S.Game.Score}  Dośw. +{S.LastGained}", Ink.Dark);
-        page.Info(won ? "Dom na Osiedlu!" : "Doświadczenie zostaje", won ? Ink.Done : Ink.Dim);
-        var stake = Investor.Stake(S.Data, S.Game.Bonus.Investor);
-        if (stake > 0) page.Info($"Tryb inwestora: stawka {stake}" + (won ? $" (rekord zawodu {S.Profile.BestStake[S.Game.Cls]})" : ""), Ink.Brand);
+        page.Add(won ? d.StoryWin : d.StoryLose);
+        page.Info($"Wynik {g.Score}  Dośw. +{S.LastGained} (w profilu {p.Xp})", Ink.Dark);
+        if (g.Daily) page.Info(S.DailyRecord ? $"Rekord dnia! Budowa dnia nr {g.DailyDay}" : $"Budowa dnia nr {g.DailyDay}: najlepszy {Daily.Best(d, p, g.DailyDay)}", S.DailyRecord ? Ink.Done : Ink.Dim);
+        if (g.Score > S.PrevBest) page.Info($"Nowy rekord! (poprzedni {S.PrevBest})", Ink.Done);
+        else page.Info(won ? "Dom na Osiedlu!" : $"Rekord {p.Best} - do pobicia", won ? Ink.Done : Ink.Dim);
+        var stake = Investor.Stake(d, g.Bonus.Investor);
+        if (stake > 0) page.Info($"Tryb inwestora: stawka {stake}" + (won ? $" (rekord zawodu {p.BestStake[g.Cls]})" : ""), Ink.Brand);
+        if (!won) Motivation(page);
         N.Phone.OpenSingle(page, 2, instant);
+    }
+
+    /// <summary>Po porażce: najbliższe zlecenie i najbliższy zakup w Szkoleniach (coś zostaje na kolejną próbę).</summary>
+    private void Motivation(MessagePage page)
+    {
+        var d = S.Data;
+        var p = S.Profile;
+        var ci = Meta.NextContract(d, p, S.Game);
+        if (ci >= 0)
+        {
+            var c = d.Contracts[ci];
+            page.Info($"Zlecenie {c.Name}: {System.Math.Min(c.Target, Meta.ContractProgress(d, p, ci))}/{c.Target}", Ink.Prog);
+        }
+        var cost = Meta.NextUnlock(d, p, out var kind, out var idx);
+        if (cost < 0) return;
+        var name = kind switch
+        {
+            0 => $"{d.Upgrades[idx].Name} {UiText.Roman(p.Levels[idx])}",
+            1 => $"zawód {d.Classes[idx].Name}",
+            2 => d.Weapons[d.Tools[idx].Weapon].Name,
+            3 => $"brygada: {d.Brigade[idx].Name}",
+            _ => $"poziom {d.Difficulties[d.Difficulties.Length - 1].Name}",
+        };
+        page.Info(p.Xp >= cost ? $"Stać Cię: {name} ({cost} dośw.)" : $"Najbliżej: {name}, brakuje {cost - p.Xp} dośw.", p.Xp >= cost ? Ink.Done : Ink.Brand);
     }
 
     public override bool HandleInput(InputCmd e)
     {
         if (!e.Is(GameAction.A | GameAction.Start)) return false;
-        Flow.End.Open();
+        if (S.Game.St == GameStatus.Won && S.Data.Stages.Length > 0) Flow.HouseSchedule.Open();
+        else Flow.End.Open();
         return true;
     }
 }

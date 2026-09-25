@@ -62,13 +62,22 @@ public sealed class GearTab : PhonePage
             p.Text(tx, r, gd.Name, Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
         }
 
-        y = p.Section(c1.End.Y + 4, "PREMIE");
-        var c2 = p.Card(y, 3);
+        y = p.Section(c1.End.Y + 4, "PREMIE I MATERIAŁY");
+        var c2 = p.Card(y, d.Materials.Length > 0 ? 4 : 3);
         p.Text(tx, p.RowY(c2, 0), $"Obrona +{g.GearBonus(GearStat.Def)}  Obraż. +{g.GearBonus(GearStat.Dmg)}  HP +{g.GearBonus(GearStat.Hp)}", Ink.Dim, TextAlign.Left, right - tx);
         p.Divider(c2, 1);
         p.Text(tx, p.RowY(c2, 1), $"Kryt {g.CritPct()}%  Unik {g.DodgePct()}%  Wzrok {g.SightRadius()}", Ink.Dim, TextAlign.Left, right - tx);
         p.Divider(c2, 2);
         p.Text(tx, p.RowY(c2, 2), $"Szczęście {g.Luck()}  Termos {g.Thermos}/{g.ThermosCap()}", Ink.Dim, TextAlign.Left, right - tx);
+        if (d.Materials.Length == 0) return;
+        p.Divider(c2, 3); // materiały: Hurtownia i naprawy (Brygada)
+        var mx = tx;
+        for (var m = 0; m < d.Materials.Length; m++)
+        {
+            MaterialIcon.Draw(p.C, m, new Godot.Vector2(mx, p.RowY(c2, 3) + (PhonePainter.RowH - MaterialIcon.Size) / 2));
+            mx += MaterialIcon.Size + 3;
+            mx += p.Text(mx, p.RowY(c2, 3), $"{d.Materials[m].Name} {g.Mats[m]}", g.Mats[m] > 0 ? Ink.Dark : Ink.Dim) + 8;
+        }
     }
 
     private int CountEquipped()

@@ -8,7 +8,8 @@ namespace LifeLike.Game.Phone.Pages;
 
 /// <summary>
 /// Hurtownia między aktami (run_hurtownia na GBA): budżet budowy w nagłówku, premia za akt, lista towarów
-/// z ceną w pastylce (fiolet - stać Cię, szara - za drogo), opis zaznaczonego; Spacja kupuje, Enter - dalej.
+/// z ceną w pastylce (fiolet - stać Cię, szara - za drogo; towary za materiały: „4x Stal”), opis zaznaczonego,
+/// posiadane materiały; Spacja kupuje, Enter - dalej.
 /// </summary>
 public sealed class HurtowniaPage : PhonePage
 {
@@ -47,7 +48,8 @@ public sealed class HurtowniaPage : PhonePage
         }
         else
         {
-            _note = "Za mały budżet";
+            var it = _g.D.Hurtownia[_list.Sel];
+            _note = it.Material >= 0 ? $"Za mało: {_g.D.Materials[it.Material].Name}" : "Za mały budżet";
         }
     }
 
@@ -91,13 +93,23 @@ public sealed class HurtowniaPage : PhonePage
             if (sel) p.Selected(card, r);
             else if (r > 0) p.Divider(card, r);
             p.HitRow(card, r, i);
-            var pw = p.Pill(right, y, $"{it.Price} zł", _g.Cash >= it.Price ? PillKind.Group : PillKind.Gray);
-            p.Text(tx, y, it.Name, sel ? Ink.Brand : Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
+            var price = it.Material >= 0 ? $"{it.MatCost}x {d.Materials[it.Material].Short}" : $"{it.Price} zł";
+            var pw = p.Pill(right, y, price, _g.HurtowniaCan(i) ? PillKind.Group : PillKind.Gray);
+            var nx = tx;
+            if (it.Material >= 0)
+            {
+                MaterialIcon.Draw(p.C, it.Material, new Godot.Vector2(tx, y + (PhonePainter.RowH - MaterialIcon.Size) / 2));
+                nx += MaterialIcon.Size + 4;
+            }
+            p.Text(nx, y, it.Name, sel ? Ink.Brand : Ink.Dark, TextAlign.Left, right - pw - 4 - nx);
         }
         var dc = p.Card(card.End.Y + 6, 3);
         var lines = p.F.Wrap(d.Hurtownia[_list.Sel].Desc, (int)(right - tx));
         for (var k = 0; k < 2 && k < lines.Count; k++) p.Text(tx, p.RowY(dc, k), lines[k], Ink.Dim);
         p.Divider(dc, 2);
-        p.Text(tx, p.RowY(dc, 2), $"HP {_g.Hero.Hp}/{_g.Hero.MaxHp}  {_g.Weapon.Name}", Ink.Dim, TextAlign.Left, right - tx);
+        var info = $"HP {_g.Hero.Hp}/{_g.Hero.MaxHp}";
+        for (var m = 0; m < d.Materials.Length; m++) info += $"  {d.Materials[m].Short} {_g.Mats[m]}";
+        if (d.Materials.Length == 0) info += $"  {_g.Weapon.Name}";
+        p.Text(tx, p.RowY(dc, 2), info, Ink.Dim, TextAlign.Left, right - tx);
     }
 }

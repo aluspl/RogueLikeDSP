@@ -5,7 +5,7 @@ using CoreGame = LifeLike.Core.Game;
 
 namespace LifeLike.Game.Phone.Tabs;
 
-/// <summary>Zadania = harmonogram budowy: etapy z pastylkami Gotowe / W trakcie / Do zrob., wydarzenie na placu, pogoda dnia (tab_tasks na GBA).</summary>
+/// <summary>Zadania = harmonogram budowy: etapy z pastylkami Gotowe / W trakcie / Do zrob., wydarzenie na placu, pogoda dnia i wybrana ścieżka (tab_tasks na GBA).</summary>
 public sealed class TasksTab : PhonePage
 {
     private readonly CoreGame _g;
@@ -34,7 +34,8 @@ public sealed class TasksTab : PhonePage
         }
         y = card.End.Y + 4;
         y = p.Section(y, "PLAC BUDOWY");
-        var c2 = p.Card(y, 2);
+        var hasPath = _g.StagePath >= 0 && _g.StagePath < d.Paths.Length;
+        var c2 = p.Card(y, hasPath ? 3 : 2);
         var r0 = p.RowY(c2, 0);
         if (_g.CurrentEvent is { } ev)
         {
@@ -53,5 +54,12 @@ public sealed class TasksTab : PhonePage
         p.Stripe(c2, 1, wd.Bad ? Pal.Late : calm ? Pal.Todo : Pal.Done);
         var wp = p.Pill(c2.End.X - 6, r1, wd.Short, wd.Bad ? PillKind.Late : calm ? PillKind.Gray : PillKind.Done);
         p.Text(p.TextX(c2), r1, $"Pogoda: {wd.Name}", Ink.Dark, TextAlign.Left, c2.End.X - 12 - wp - p.TextX(c2));
+        if (!hasPath) return;
+        var path = d.Paths[_g.StagePath]; // ścieżka wybrana na harmonogramie
+        var r2 = p.RowY(c2, 2);
+        p.Divider(c2, 2);
+        p.Stripe(c2, 2, Pal.Brand);
+        var pp = p.Pill(c2.End.X - 6, r2, path.Short, PillKind.Group);
+        p.Text(p.TextX(c2), r2, $"Ścieżka: {path.Desc}", Ink.Dark, TextAlign.Left, c2.End.X - 12 - pp - p.TextX(c2));
     }
 }

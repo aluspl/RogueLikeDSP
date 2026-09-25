@@ -3,7 +3,7 @@ using LifeLike.Game.Input;
 
 namespace LifeLike.Game.Phone.Pages;
 
-/// <summary>Jak grać (page_help na GBA): cel budowy, sterowanie z nazwami klawiszy z bieżącej mapy wejścia, pogoda, brygada, tryb inwestora.</summary>
+/// <summary>Jak grać (page_help na GBA): cel budowy, sterowanie z nazwami klawiszy z bieżącej mapy wejścia, pogoda, brygada, tryb inwestora, ścieżki, materiały, codzienna budowa.</summary>
 public sealed class HelpPage : PhonePage
 {
     private static readonly (string Key, string What)[] Controls =
@@ -85,10 +85,23 @@ public sealed class HelpPage : PhonePage
     }
 
     /// <summary>Nowości w wąskim telefonie (poziomo): krótko.</summary>
-    private static readonly string[] ShortNews = ["Pogoda dnia: ikona w HUD", "Brygada: Enter i Spacja", "Po wygranej: Tab = inwestor"];
+    private static readonly string[] ShortNews =
+        ["Między etapami: wybór ścieżki", "Materiały: Hurtownia i naprawy", "Codzienna budowa: menu tytułu", "Pogoda, brygada: telefon > Sprzęt"];
 
-    /// <summary>Pogoda dnia, brygada i tryb inwestora (v0.21.47).</summary>
+    /// <summary>Pogoda, brygada i tryb inwestora (v0.21.47), ścieżki, materiały i codzienna budowa (v0.21.48).</summary>
     private static string[] News => Layout.Touch
-        ? ["Pogoda dnia: ikona w HUD, skutek w Zadaniach", "Brygada: Telefon > Sprzęt > Brygada (raz na etap)", "Po wygranej: Tryb inwestora na wyborze zawodu"]
-        : ["Pogoda dnia: ikona w HUD, skutek w Zadaniach", "Brygada: Enter, Spacja (albo telefon > Sprzęt)", "Po wygranej: Tab na wyborze zawodu = tryb inwestora"];
+        ?
+        [
+            "Między etapami: wybierz ścieżkę kolejnego etapu", "Materiały z problemów: Hurtownia i naprawy (Brygada)",
+            "Załataj (drewno): deski przed problemem", "Kładka (stal): kałuże bez poślizgu", "Codzienna budowa: menu tytułu, jedna na dzień",
+            "Pogoda dnia: ikona w HUD, skutek w Zadaniach", "Brygada: Telefon > Sprzęt > Brygada (raz na etap)",
+            "Po wygranej: Tryb inwestora na wyborze zawodu",
+        ]
+        :
+        [
+            "Między etapami: strzałki = ścieżka kolejnego etapu", "Materiały z problemów: Hurtownia i naprawy (Brygada)",
+            "Załataj (drewno): deski przed problemem", "Kładka (stal): kałuże bez poślizgu", "Codzienna budowa: menu tytułu, jedna na dzień",
+            "Pogoda dnia: ikona w HUD, skutek w Zadaniach", "Brygada: Enter, Spacja (albo telefon > Sprzęt)",
+            "Po wygranej: Tab na wyborze zawodu = tryb inwestora",
+        ];
 }

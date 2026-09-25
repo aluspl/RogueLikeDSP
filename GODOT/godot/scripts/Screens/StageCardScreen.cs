@@ -30,6 +30,7 @@ public sealed class StageCardScreen : Screen
         if (sd.Boss >= 0) page.Info($"Uwaga: {d.Enemies[sd.Boss].Name}!", Ink.Late);
         else page.Info($"{sd.Name}: problemy {g.EnemyHpPct()}%", Ink.Dim);
         if (ev is not null) page.Info($"{ev.Name}: {ev.Info}", ev.Good ? Ink.Done : Ink.Late);
+        if (g.StagePath >= 0 && g.StagePath < d.Paths.Length) page.Info($"Ścieżka: {d.Paths[g.StagePath].Name}", Ink.Brand);
         var wd = g.WDef; // pogoda dnia (skutek w zakładce Zadania) i trudność w jednym wierszu
         var weather = wd.Effect == WeatherEffect.None ? wd.Name : $"{wd.Name} ({wd.Short})";
         page.Info($"Pogoda: {weather}, {g.DDef.Name}" + (g.Tier > 0 ? $" NG+{g.Tier}" : ""), wd.Bad ? Ink.Late : Ink.Dim);

@@ -58,6 +58,8 @@ public static class Pal
     public static readonly Color HurtTint = new(1f, 0.13f, 0.13f);
     public static readonly Color CritTint = new(1f, 0.87f, 0.25f);
     public static readonly Color LevelFlash = new(1f, 0.95f, 0.5f);
+    /// <summary>Złota poświata awansu wokół bohatera.</summary>
+    public static readonly Color LevelGlow = new(1f, 0.85f, 0.35f);
     public static readonly Color LowHpTint = new(0.9f, 0.05f, 0.05f);
 
     /// <summary>Błysk ekranu w kolorze mocy zawodu (ability_fx na GBA).</summary>

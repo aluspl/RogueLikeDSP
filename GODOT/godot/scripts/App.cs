@@ -25,7 +25,7 @@ public sealed class App
         Nodes.Touch.Bind(Session.Game);
         Banners = new BannerFeed(Session, Nodes.Banners);
         SoundCues.Attach(Session.Events);
-        Session.Events.LevelUp += (_, _) => Nodes.World.Effects.LevelUp();
+        Session.Events.LevelUp += (level, abilityUp) => Nodes.World.Effects.LevelUp(level, abilityUp);
         Session.Events.RunEnded += won =>
         {
             if (won) Nodes.World.Effects.Confetti();
@@ -81,6 +81,14 @@ public sealed class App
         Refresh();
         if (!Session.Profile.HasFlag(Profile.FlagPrologueSeen)) Flow.Prologue.Open();
         else Flow.StageCard.Open();
+    }
+
+    /// <summary>Codzienna budowa dnia `day` (bez prologu): karta etapu z SMS-em.</summary>
+    public void StartDaily(int day)
+    {
+        Session.StartDaily(day);
+        Refresh();
+        Flow.StageCard.Open();
     }
 
     /// <summary>Kolejny etap (harmonogram / Hurtownia -> karta etapu).</summary>

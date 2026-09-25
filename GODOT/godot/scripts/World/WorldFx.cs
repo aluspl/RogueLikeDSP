@@ -88,15 +88,36 @@ public sealed class WorldFx
         return f;
     }
 
-    /// <summary>Gwiazdki awansu dookoła bohatera.</summary>
-    public void LevelUp()
+    /// <summary>
+    /// Awans (wyraźny): złota poświata wokół bohatera, krąg i unoszące się gwiazdki, duży napis „AWANS! Poziom N”
+    /// nad głową na ~1,5 s i pod nim, co się poprawiło (HP, obrona / obrażenia, ranga mocy).
+    /// </summary>
+    public void LevelUp(int level, bool abilityUp)
     {
-        for (var k = 0; k < 8; k++)
+        var g = G;
+        var h = _w.GridToScreen(g.Hero.X, g.Hero.Y); // pole bohatera (sprite może jeszcze dochodzić)
+        Fx.AddGlow(new Glow { Pos = h, Color = Pal.LevelGlow, Life = 1.4f, Radius = 64 });
+        for (var k = 0; k < 12; k++)
         {
-            var a = k * Mathf.Tau / 8;
-            Fx.Spawn(Hero.Position, new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * 1.1f, 0, 30, Assets.PStar);
+            var a = k * Mathf.Tau / 12;
+            Fx.Spawn(h, new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * 1.4f, 0, 34, Assets.PStar);
         }
+        for (var k = 0; k < 10; k++) // gwiazdki unoszą się z ziemi wokół bohatera
+            Fx.Spawn(h + new Vector2(Fx.Rand(-22, 22), Fx.Rand(0, 14)), new Vector2(Fx.Rand(-0.2f, 0.2f), Fx.Rand(-1.6f, -0.8f)), 0, 60 + Fx.RandInt(30), Assets.PStar);
+        Fx.AddFloater(new Floater { Pos = h + new Vector2(0, -40), Text = $"AWANS! Poziom {level}", Ink = Ink.MapLoot, Life = 1.6f, Scale = 2 });
+        Fx.AddFloater(new Floater { Pos = h + new Vector2(0, -12), Text = LevelGains(g, level, abilityUp), Ink = Ink.MapGood, Life = 1.6f });
         Hero.Flash(Pal.LevelFlash);
+        _w.Flash(Pal.LevelGlow, 0.3f);
+    }
+
+    /// <summary>Co dał awans: „+2 max HP, +1 obrona, ranga mocy II”.</summary>
+    public static string LevelGains(CoreGame g, int level, bool abilityUp)
+    {
+        var s = $"+{g.D.HpPerLevel} max HP";
+        if ((g.D.DefLevelsMask & (1 << level)) != 0) s += ", +1 obrona";
+        if ((g.D.DmgLevelsMask & (1 << level)) != 0) s += ", +1 obrażenia";
+        if (abilityUp) s += $", ranga mocy {UiText.Roman(g.AbilityRank() - 1)}";
+        return s;
     }
 
     /// <summary>Konfetti na odbiór budowy (wygrana).</summary>
@@ -184,6 +205,25 @@ public sealed class WorldFx
                 _w.Flash(Pal.FlashChain, 0.3f);
                 break;
         }
+    }
+
+    /// <summary>Naprawa za materiał: deski wyskakują z ziemi (Załataj) albo krąg kropel wokół (Kładka).</summary>
+    public void Repair(RepairEffect effect)
+    {
+        var g = G;
+        if (effect == RepairEffect.Patch)
+        {
+            for (var i = 0; i < g.WallsCount; i++)
+            {
+                var w = _w.GridToScreen(g.Walls[i].X, g.Walls[i].Y);
+                Fx.Spawn(w + new Vector2(0, 8), new Vector2(Fx.Rand(-1, 1), -3f), 0.3f, 20, Assets.PBrick);
+                Fx.Spawn(w + new Vector2(0, 12), new Vector2(Fx.Rand(-0.6f, 0.6f), -0.4f), 0, 16, Assets.PDust, 3);
+            }
+            _w.Flash(Pal.FlashWall, 0.25f);
+            return;
+        }
+        foreach (var d in Dir8) Fx.Spawn(Hero.Position, d * 2f, 0, 24, Assets.PDrop);
+        _w.Flash(new Color(0.6f, 0.75f, 0.95f), 0.25f);
     }
 
     private void ChainBolts(Vector2 from)

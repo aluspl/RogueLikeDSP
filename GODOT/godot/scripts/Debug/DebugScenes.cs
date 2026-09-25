@@ -18,6 +18,7 @@ public sealed class DebugScenes
         "hurtownia", "boss", "endmsg", "end", "banners", "map", "aim", "preview", "prologue",
         "schedule-tip", "help", "settings", "settings-title", "walk", "weather-rain", "weather-snow", "weather-wind", "weather-heat",
         "brigade", "ally", "investor",
+        "schedule-path", "materials", "repairs", "hurtownia-mats", "daily", "house", "levelup", "death",
     ];
 
     private readonly App _app;
@@ -32,7 +33,8 @@ public sealed class DebugScenes
     private ScreenFlow Flow => _app.Flow;
 
     public static bool UsesDemoProfile(string scene) =>
-        scene is "title" or "classselect" or "profile" or "catalog" or "estate" or "team" or "training" or "card" or "perks" or "investor";
+        scene is "title" or "classselect" or "profile" or "catalog" or "estate" or "team" or "training" or "card" or "perks" or "investor"
+            or "daily" or "death";
 
     public async Task Setup(string scene)
     {
@@ -61,6 +63,19 @@ public sealed class DebugScenes
             case "help":
                 Flow.Help.Open(true, true);
                 return;
+            case "daily": // codzienna budowa: stała data, wyniki kilku dni w profilu, notatka po „Wyślij wynik”
+            {
+                s.FixedToday = Tuple.Create(2026, 9, 25);
+                var day = s.TodayNumber;
+                Daily.Record(s.Data, s.Profile, day - 3, 2140, false);
+                Daily.Record(s.Data, s.Profile, day - 2, 5320, true);
+                Daily.Record(s.Data, s.Profile, day - 1, 1870, false);
+                Daily.Record(s.Data, s.Profile, day, 3410, false);
+                Flow.Title.Open();
+                Flow.Daily.Open(true);
+                Flow.Daily.Submit();
+                return;
+            }
             case "investor": // tryb inwestora nad wyborem zawodu: dwa modyfikatory włączone, rekord stawki
                 s.ClassId = 1;
                 s.Profile.Wins = Math.Max(1, s.Profile.Wins);
@@ -109,7 +124,7 @@ public sealed class DebugScenes
             g.Equip(1, 2, Array.FindIndex(s.Data.GearTraits, t => t.Effect == TraitEffect.Str));
             _app.Refresh();
         }
-        if (scene is "schedule" or "schedule-tip" or "hurtownia" or "endmsg" or "end" or "boss")
+        if (scene is "schedule" or "schedule-tip" or "hurtownia" or "endmsg" or "end" or "boss" or "schedule-path" or "hurtownia-mats" or "house")
         {
             await SkipStages(scene);
             return;
@@ -132,6 +147,33 @@ public sealed class DebugScenes
         var banners = _app.Nodes.Banners;
         switch (scene)
         {
+            case "materials": // HUD z materiałami (ikony i liczby w drugim rzędzie)
+                banners.Clear();
+                g.Mats[0] = 2;
+                g.Mats[1] = 1;
+                g.Mats[2] = 4;
+                _app.Refresh();
+                break;
+            case "repairs": // Brygada i naprawy: drewno i stal, zaznaczone Załataj
+                banners.Clear();
+                g.Cash = 30;
+                g.Mats[1] = 2;
+                g.Mats[2] = 3;
+                Flow.Brigade.Open(true);
+                Flow.Brigade.Page.Sel = g.D.Brigade.Length;
+                break;
+            case "levelup": // wyraźny awans: poświata, gwiazdki, napis nad bohaterem
+                banners.Clear();
+                g.GainXp(g.XpToNext());
+                _app.Refresh();
+                break;
+            case "death": // budowa wstrzymana: SMS z tym, co zostaje (dośw., rekord, zlecenie, najbliższy zakup)
+                banners.Clear();
+                g.Hero.Hp = 0;
+                g.Hero.Alive = false;
+                g.St = GameStatus.Dead;
+                _app.AfterAction(true);
+                break;
             case "offer": // pokaz: założony kask z jedną cechą, pod nogami paczka z lepszym i inną cechą
                 g.Equip(0, 1, 1);
                 g.Pickups[0] = new Pickup(g.Hero.X, g.Hero.Y, PickupType.GearBox, true, 0 * 3 + 2, 3);
@@ -162,6 +204,8 @@ public sealed class DebugScenes
                 Flow.Phone.Open(1, true);
                 break;
             case "phone-gear":
+                g.Mats[0] = 2;
+                g.Mats[2] = 4;
                 g.Equip(0, 1, 1);
                 g.Equip(2, 2, 3);
                 Flow.Phone.Open(3, true);
@@ -256,15 +300,34 @@ public sealed class DebugScenes
             _app.AfterAction(true);
             await DebugRunner.Frames(_app.Root, 1);
             if (Flow.Current == Flow.Schedule && scene == "schedule") return;
+            if (Flow.Current == Flow.Schedule && scene == "schedule-path" && g.Stage >= 1)
+            {
+                Flow.Schedule.Page.Sel = 1;
+                _app.Nodes.Phone.QueueRedraw();
+                return;
+            }
             if (Flow.Current == Flow.Schedule && scene == "schedule-tip" && g.Stage >= 1) return; // druga rada, notatka z odznakami
             if (Flow.Current == Flow.EndMessage)
             {
                 if (scene == "end") Flow.End.Open();
+                if (scene == "house")
+                {
+                    _app.Session.FixedToday = Tuple.Create(2026, 9, 25);
+                    Flow.HouseSchedule.OpenBrowser = false;
+                    Flow.HouseSchedule.Open(true);
+                }
                 return;
             }
-            if (Flow.Current == Flow.Schedule && g.ActCleared && scene == "hurtownia")
+            if (Flow.Current == Flow.Schedule && g.ActCleared && scene is "hurtownia" or "hurtownia-mats")
             {
                 Flow.Schedule.Advance();
+                if (scene == "hurtownia-mats")
+                {
+                    g.Mats[0] = 4;
+                    g.Mats[1] = 5;
+                    g.Mats[2] = 1;
+                    Flow.Hurtownia.Page.Sel = Array.FindIndex(g.D.Hurtownia, it => it.Material >= 0);
+                }
                 return;
             }
             AdvanceMessages();

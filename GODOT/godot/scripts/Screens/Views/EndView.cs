@@ -11,6 +11,8 @@ namespace LifeLike.Game.Screens.Views;
 public partial class EndView : Control
 {
     public bool Won { get; set; }
+    /// <summary>Przycisk „Kolejna budowa (NG+)” (nie po codziennej budowie).</summary>
+    public bool CanContinue { get; set; }
     public string Line1 { get; set; } = "";
     public string Line2 { get; set; } = "";
     public string Note { get; set; } = "";
@@ -19,7 +21,7 @@ public partial class EndView : Control
     private Rect2 _next, _menu;
 
     /// <summary>Przycisk pod punktem: 1 = kolejna budowa (NG+), 2 = menu, 0 = nic.</summary>
-    public int ButtonAt(Vector2 p) => Won && _next.HasPoint(p) ? 1 : _menu.HasPoint(p) ? 2 : 0;
+    public int ButtonAt(Vector2 p) => CanContinue && _next.HasPoint(p) ? 1 : _menu.HasPoint(p) ? 2 : 0;
     private readonly List<Vector4> _confetti = new(); // x, y, prędkość, klatka
     private readonly RandomNumberGenerator _rnd = new();
 
@@ -97,17 +99,17 @@ public partial class EndView : Control
         {
             var bh = portrait ? 52f : 26f;
             var by = h - Mathf.Max(Layout.SafeBottom, 8) - bh - (portrait ? 12 : 4);
-            if (Won)
+            if (CanContinue)
             {
                 _next = new Rect2(16, by - bh - 10, w - 32, bh);
                 DrawButton(_next, "Kolejna budowa (NG+)", true);
             }
             _menu = new Rect2(16, by, w - 32, bh);
-            DrawButton(_menu, "Menu", !Won);
+            DrawButton(_menu, "Menu", !CanContinue);
         }
         else
         {
-            var hint = Won ? "Spacja: kolejna budowa (NG+)   Enter: menu" : "Enter: menu";
+            var hint = CanContinue ? "Spacja: kolejna budowa (NG+)   Enter: menu" : "Enter: menu";
             if (((int)(_clock * 1.5f) & 1) == 0) f.Draw(this, new Vector2(w / 2, h - 20), hint, Ink.OnBrand, TextAlign.Center);
         }
         foreach (var c in _confetti)

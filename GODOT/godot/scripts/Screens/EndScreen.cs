@@ -21,8 +21,11 @@ public sealed class EndScreen : Screen
         var won = g.St == GameStatus.Won;
         var v = N.EndView;
         v.Won = won;
+        v.CanContinue = won && !g.Daily; // codzienna budowa: bez NG+
         v.Line1 = $"Wynik {g.Score}   Dni {g.Turns}   Etap {g.Stage + 1}/{S.Data.Stages.Length}   Dośw. +{S.LastGained}";
-        v.Line2 = $"Rekord {S.Profile.Best}   Doświadczenie w profilu {S.Profile.Xp}" + (won ? "   Dom na Osiedlu!" : "");
+        var record = g.Score > S.PrevBest ? "Nowy rekord!" : $"Rekord {S.Profile.Best}";
+        var daily = g.Daily ? (S.DailyRecord ? "   Rekord dnia!" : $"   Budowa dnia nr {g.DailyDay}") : "";
+        v.Line2 = $"{record}   Doświadczenie w profilu {S.Profile.Xp}" + (won ? "   Dom na Osiedlu!" : "") + daily;
         v.Note = S.Note;
         N.Banners.Clear();
     }
@@ -35,7 +38,7 @@ public sealed class EndScreen : Screen
             if (b == 0) return false;
             e = InputCmd.Of(b == 1 ? GameAction.A : GameAction.Start);
         }
-        if (S.Game.St == GameStatus.Won && e.Is(GameAction.A))
+        if (S.Game.St == GameStatus.Won && !S.Game.Daily && e.Is(GameAction.A))
         {
             S.NewGamePlus();
             App.Refresh();

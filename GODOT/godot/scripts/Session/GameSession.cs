@@ -39,6 +39,35 @@ public sealed class GameSession
     public string Note { get; set; } = "";
     /// <summary>Doświadczenie zabankowane na koniec budowy.</summary>
     public int LastGained { get; private set; }
+    /// <summary>Rekord sprzed zakończonej budowy (do „Nowy rekord!”).</summary>
+    public int PrevBest { get; private set; }
+    /// <summary>Codzienna budowa pobiła najlepszy wynik dnia (Daily.Record).</summary>
+    public bool DailyRecord { get; private set; }
+    /// <summary>Tabela wyników codziennej budowy (na razie lokalna zaślepka).</summary>
+    public ILeaderboard Leaderboard { get; set; } = new LocalLeaderboard();
+    /// <summary>Stała data „dzisiaj” (zrzuty ekranu, test dymny); null = data systemowa.</summary>
+    public System.Tuple<int, int, int> FixedToday { get; set; }
+
+    /// <summary>Dzisiejsza data (system albo FixedToday).</summary>
+    public (int Y, int M, int D) Today
+    {
+        get
+        {
+            if (FixedToday is not null) return (FixedToday.Item1, FixedToday.Item2, FixedToday.Item3);
+            var t = Time.GetDateDictFromSystem();
+            return ((int)t["year"], (int)t["month"], (int)t["day"]);
+        }
+    }
+
+    /// <summary>Numer dzisiejszej codziennej budowy.</summary>
+    public int TodayNumber
+    {
+        get
+        {
+            var (y, m, d) = Today;
+            return Daily.Number(Data, y, m, d);
+        }
+    }
     /// <summary>Rady kierownika z game.json (ekran harmonogramu).</summary>
     public string[] Tips { get; set; } = [];
 
@@ -112,6 +141,21 @@ public sealed class GameSession
         GD.Print($"Nowa budowa: {Game.CDef.Name}, {Data.Difficulties[Difficulty].Name}, seed {seed}");
     }
 
+    /// <summary>Codzienna budowa dnia `day`: zawód, seed i modyfikatory dnia, bez Szkoleń i pamiątek (liczniki profilu jak zwykle).</summary>
+    public void StartDaily(int day)
+    {
+        Daily.Start(Game, day);
+        ClassId = Game.Cls;
+        Meta.StartRun(Data, Profile);
+        Save();
+        SaveRun();
+        Note = "";
+        FirstStage = true;
+        Events.RaiseRunStarted();
+        _watcher.Reset(Game);
+        GD.Print($"Codzienna budowa nr {day}: {Game.CDef.Name}, seed {Game.RunSeed}");
+    }
+
     /// <summary>Kolejny etap (po harmonogramie albo Hurtowni).</summary>
     public void NextStage()
     {
@@ -155,7 +199,9 @@ public sealed class GameSession
         if (g.St is GameStatus.Won or GameStatus.Dead)
         {
             var won = g.St == GameStatus.Won;
+            PrevBest = Profile.Best;
             if (g.Score > Profile.Best) Profile.Best = g.Score;
+            DailyRecord = g.Daily && Daily.Record(Data, Profile, g.DailyDay, g.Score, won);
             if (won)
             {
                 ++Profile.Wins;

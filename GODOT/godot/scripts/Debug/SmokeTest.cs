@@ -21,7 +21,9 @@ namespace LifeLike.Game.Debug;
 public sealed class SmokeTest
 {
     private readonly App _app;
-    private int _steps, _offers, _drinks, _holds, _weathers, _helpers;
+    private int _steps, _offers, _drinks, _holds, _weathers, _helpers, _repairs, _levelUps;
+    private int _pathWanted = -1;
+    private bool _pathOk, _daily, _house;
     private bool _investor;
     private bool _prologue, _touch, _portrait;
 
@@ -38,25 +40,29 @@ public sealed class SmokeTest
             s.ClassId = 0;
             s.Difficulty = 0;
             s.Seed = s.Seed != 0 ? s.Seed : 424242u;
+            s.Events.LevelUp += (_, _) => _levelUps++;
             _app.StartRun();
             await PlayStages();
             new DebugScenes(_app).AdvanceMessages(); // bot kończy na karcie etapu - dalej na mapę
             if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) ExerciseHolds();
             if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) await ExerciseWeather();
             if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) await ExerciseBrigade();
+            if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) await ExerciseRepairs();
             if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) await ExerciseMenuAndOffer();
             if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) await ExerciseTouchAndSettings();
             var ok = g.Stage >= 5 || g.St is GameStatus.Dead or GameStatus.Won;
             var stage = g.Stage;
             await VisitScreens();
             await ExerciseInvestor();
+            await ExerciseDaily();
+            if (!_pathOk) throw new Exception("wybór ścieżki: druga oferta nie trafiła na etap");
             await ExercisePortrait();
             var missing = Sfx.Missing();
             if (missing.Length > 0) throw new Exception("brak dźwięków: " + missing);
             if (DrawErrors.Count > 0) throw new Exception($"błędy rysowania: {DrawErrors.Count}, ostatni: {DrawErrors.Last}");
             GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {s.Data.Version}, zawody {s.Data.Classes.Length}, etap {stage + 1}, " +
                      $"dzień {g.Turns}, HP {g.Hero.Hp}/{g.Hero.MaxHp}, wynik {g.Score}, budżet {g.Cash}, kroki {_steps}, " +
-                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, inwestor {(_investor ? "tak" : "nie")}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
+                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
                      $"ekran {Flow.Current.GetType().Name}");
             _app.Root.GetTree().Quit(ok ? 0 : 1);
         }
@@ -87,11 +93,23 @@ public sealed class SmokeTest
             }
             if (Flow.Current == Flow.Schedule)
             {
+                if (_pathWanted < 0 && Flow.Schedule.Page.HasChoice) // raz: druga ścieżka strzałką w prawo
+                {
+                    Flow.Schedule.HandleInput(InputCmd.Of(GameAction.Right));
+                    if (Flow.Schedule.Page.Sel != 1) throw new Exception("harmonogram: strzałka nie wybiera drugiej ścieżki");
+                    _pathWanted = g.PathOffer(1);
+                    await DebugRunner.Frames(_app.Root, 1);
+                }
                 Flow.Schedule.Advance();
                 continue;
             }
             if (Flow.Current == Flow.StageCard)
             {
+                if (_pathWanted >= 0 && !_pathOk)
+                {
+                    if (g.StagePath != _pathWanted) throw new Exception($"ścieżka etapu {g.StagePath}, oczekiwana {_pathWanted}");
+                    _pathOk = true;
+                }
                 Flow.StageCard.Advance();
                 continue;
             }
@@ -202,6 +220,92 @@ public sealed class SmokeTest
             await DebugRunner.Frames(_app.Root, 2);
             _helpers++;
         }
+    }
+
+    /// <summary>Naprawy z telefonu (Brygada i naprawy): Załataj za drewno – mur przed problemem, tura, materiał zużyty.</summary>
+    private async Task ExerciseRepairs()
+    {
+        var g = _app.Session.Game;
+        var d = g.D;
+        var k = Array.FindIndex(d.Repairs, r => r.Effect == Core.Data.RepairEffect.Patch);
+        if (k < 0) return;
+        var rd = d.Repairs[k];
+        g.Mats[rd.Material] = 0;
+        Flow.Brigade.Open();
+        Flow.Brigade.Page.Sel = d.Brigade.Length + k;
+        await DebugRunner.Frames(_app.Root, 2);
+        Flow.Brigade.HandleInput(InputCmd.Of(GameAction.A));
+        if (Flow.Current != Flow.Brigade) throw new Exception("naprawa bez materiału nie powinna wyjść z telefonu");
+        Flow.Brigade.HandleInput(InputCmd.Of(GameAction.Cancel));
+        g.Mats[rd.Material] = 3;
+        if (g.RepairBlocked(k) == RepairBlock.NoTarget) new DemoStaging(_app).BringEnemies();
+        if (g.RepairBlocked(k) != RepairBlock.Ok) return;
+        var turns = g.Turns;
+        Flow.Brigade.Open();
+        Flow.Brigade.Page.Sel = d.Brigade.Length + k;
+        Flow.Brigade.HandleInput(InputCmd.Of(GameAction.A));
+        if (g.Turns == turns || g.Mats[rd.Material] != 3 - rd.Cost) throw new Exception("Załataj: brak tury albo materiał niezużyty");
+        await DebugRunner.Frames(_app.Root, 2);
+        _repairs++;
+    }
+
+    /// <summary>
+    /// Codzienna budowa z tytułu (stała data): ekran dnia, „Wyślij wynik” (lokalna zaślepka), start budowy dnia,
+    /// kilka kroków bota, porażka – rekord dnia w profilu, bez NG+; potem wygrana – harmonogram domu z linkiem.
+    /// </summary>
+    private async Task ExerciseDaily()
+    {
+        var s = _app.Session;
+        var g = s.Game;
+        s.FixedToday = Tuple.Create(2026, 9, 25);
+        Flow.Title.Open();
+        Flow.Daily.Open(true);
+        await DebugRunner.Frames(_app.Root, 2);
+        Flow.Daily.Submit();
+        var day = Flow.Daily.Page.Day;
+        Flow.Daily.HandleInput(InputCmd.Of(GameAction.A));
+        if (!g.Daily || g.DailyDay != day || g.Cls != Daily.ClassOf(s.Data, Daily.Seed(day))) throw new Exception("codzienna budowa nie wystartowała");
+        new DebugScenes(_app).AdvanceMessages();
+        for (var i = 0; i < 30 && Flow.Current == Flow.Game && g.St == GameStatus.Playing; i++)
+        {
+            Bot.StepSmart(g);
+            _app.AfterAction(true);
+            new DebugScenes(_app).AdvanceMessages();
+        }
+        if (g.St == GameStatus.Playing)
+        {
+            g.Hero.Hp = 0;
+            g.Hero.Alive = false;
+            g.St = GameStatus.Dead;
+            _app.AfterAction(true);
+        }
+        if (Daily.Best(s.Data, s.Profile, day) != g.Score) throw new Exception("codzienna budowa: brak wyniku dnia w profilu");
+        if (Flow.Current == Flow.EndMessage) Flow.EndMessage.HandleInput(InputCmd.Of(GameAction.A));
+        if (Flow.Current == Flow.End && _app.Nodes.EndView.CanContinue) throw new Exception("codzienna budowa: NG+ nie powinno być");
+        await DebugRunner.Frames(_app.Root, 2);
+        _daily = true;
+        // wygrana: SMS -> harmonogram domu -> link (bez przeglądarki) -> plansza końcowa
+        s.ClassId = 0;
+        _app.StartRun();
+        new DebugScenes(_app).AdvanceMessages();
+        for (var guard = 0; guard < 60 && g.St != GameStatus.Won; guard++)
+        {
+            g.DebugSkip();
+            _app.AfterAction(true);
+            new DebugScenes(_app).AdvanceMessages();
+        }
+        if (Flow.Current != Flow.EndMessage) throw new Exception("wygrana: brak SMS-a z odbioru");
+        Flow.EndMessage.HandleInput(InputCmd.Of(GameAction.A));
+        if (Flow.Current != Flow.HouseSchedule) throw new Exception("wygrana: brak harmonogramu domu");
+        Flow.HouseSchedule.OpenBrowser = false;
+        await DebugRunner.Frames(_app.Root, 2);
+        Flow.HouseSchedule.HandleInput(InputCmd.Of(GameAction.A));
+        if (Flow.HouseSchedule.LinkOpened != 1) throw new Exception("harmonogram domu: link nie działa");
+        Flow.HouseSchedule.HandleInput(InputCmd.Of(GameAction.Start));
+        if (Flow.Current != Flow.End || !_app.Nodes.EndView.CanContinue) throw new Exception("po harmonogramie domu brak planszy końcowej z NG+");
+        await DebugRunner.Frames(_app.Root, 2);
+        _house = true;
+        Flow.Title.Open();
     }
 
     /// <summary>Ścieżki UI, na które bot mógł nie trafić: termos przez menu akcji i okno porównania sprzętu.</summary>

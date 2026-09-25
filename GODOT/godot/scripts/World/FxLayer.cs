@@ -13,6 +13,7 @@ public partial class FxLayer : Node2D
     private const int MaxParticles = 160;
     private readonly List<Particle> _particles = new();
     private readonly List<Floater> _floaters = new();
+    private readonly List<Glow> _glows = new();
     private readonly RandomNumberGenerator _rnd = new();
     private double _acc;
 
@@ -37,10 +38,16 @@ public partial class FxLayer : Node2D
 
     public void AddFloater(Floater f) => _floaters.Add(f);
 
+    /// <summary>Poświata (awans): krąg światła rośnie i gaśnie.</summary>
+    public void AddGlow(Glow g) => _glows.Add(g);
+
+    public int GlowCount => _glows.Count;
+
     public void Clear()
     {
         _particles.Clear();
         _floaters.Clear();
+        _glows.Clear();
     }
 
     public override void _Process(double delta)
@@ -64,6 +71,11 @@ public partial class FxLayer : Node2D
             }
         }
         if (_acc > 0.2) _acc = 0;
+        for (var i = _glows.Count - 1; i >= 0; i--)
+        {
+            _glows[i].Age += (float)delta;
+            if (_glows[i].Age >= _glows[i].Life) _glows.RemoveAt(i);
+        }
         for (var i = _floaters.Count - 1; i >= 0; i--)
         {
             _floaters[i].Age += (float)delta;
@@ -74,6 +86,14 @@ public partial class FxLayer : Node2D
 
     public override void _Draw()
     {
+        foreach (var g in _glows) // miękkie koło: kilka pierścieni o rosnącej przezroczystości
+        {
+            var t = g.Age / g.Life;
+            var r = g.Radius * (0.35f + 0.65f * Mathf.Min(1f, t * 2.2f));
+            var a = t < 0.25f ? t / 0.25f : 1f - (t - 0.25f) / 0.75f;
+            for (var k = 0; k < 6; k++)
+                DrawCircle(g.Pos, r * (1f - k / 6f), new Color(g.Color, 0.1f * a));
+        }
         const int s = Assets.Particle;
         var tex = Assets.Particles;
         foreach (var p in _particles)

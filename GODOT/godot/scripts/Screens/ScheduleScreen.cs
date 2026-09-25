@@ -15,18 +15,26 @@ public sealed class ScheduleScreen : Screen
 
     public void Open(bool instant = false) => Flow.Go(this, instant);
 
-    public override void Enter(bool instant) =>
-        N.Phone.OpenSingle(new SchedulePage(S.Game, S.Note, ButtonNames.Localize(S.Tip)), 0, instant);
+    public SchedulePage Page { get; private set; }
+
+    public override void Enter(bool instant)
+    {
+        Page = new SchedulePage(S.Game, S.Note, ButtonNames.Localize(S.Tip));
+        N.Phone.OpenSingle(Page, 0, instant);
+    }
 
     public override bool HandleInput(InputCmd e)
     {
+        if (N.Phone.HandleInput(e)) return true;
         if (!e.Is(GameAction.A | GameAction.Start)) return false;
         Advance();
         return true;
     }
 
+    /// <summary>Dalej wybraną ścieżką: wybór zostaje w grze (Game.NextPath) także przez Hurtownię.</summary>
     public void Advance()
     {
+        if (Page is not null && Page.HasChoice) S.Game.ChoosePath(Page.Sel);
         if (S.Game.ActCleared && !S.Game.ShopClosed) // tryb inwestora: Hurtownia zamknięta
         {
             S.Note = "";

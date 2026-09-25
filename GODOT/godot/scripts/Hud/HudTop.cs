@@ -6,7 +6,7 @@ namespace LifeLike.Game.Hud;
 
 /// <summary>
 /// Górny pasek HUD jak na GBA (półprzezroczysty ciemny pas): HP z paskiem, poziom z paskiem doświadczenia, etap;
-/// w drugim rzędzie stany z liczbą tur, termos, pogoda dnia, wydarzenie na placu, ostrzeżenie o ciosie bossa, termos i ikona mocy
+/// w drugim rzędzie stany z liczbą tur, termos, pogoda dnia, materiały, wydarzenie na placu, ostrzeżenie o ciosie bossa, termos i ikona mocy
 /// (szara z odliczaniem, gdy się ładuje; „R” i podskakiwanie, gdy gotowa).
 /// </summary>
 public partial class HudTop : Control
@@ -109,6 +109,15 @@ public partial class HudTop : Control
         if (!ready) x += f.Draw(this, new Vector2(x, 19), g.AbilityCd.ToString(), Ink.MapDim) + 8;
         else if (((int)(_clock * 2) & 1) == 0) x += f.Draw(this, new Vector2(x, 19), "R", Ink.MapGood) + 8;
         else x += f.Measure("R") + 8;
+
+        // materiały: ikona + liczba (tylko posiadane)
+        for (var m = 0; m < g.D.Materials.Length; m++)
+        {
+            if (g.Mats[m] == 0) continue;
+            MaterialIcon.Draw(this, m, new Vector2(x, 22));
+            x += MaterialIcon.Size + 2;
+            x += f.Draw(this, new Vector2(x, 19), g.Mats[m].ToString(), Ink.Map) + 6;
+        }
 
         // wydarzenie na placu / zapowiedź ciosu bossa
         if (g.SlamTimer > 0)

@@ -10,7 +10,8 @@ namespace LifeLike.Game.Phone.Pages;
 /// <summary>
 /// Brygada (tab_brigade na GBA, zakładka Zespół): najemni fachowcy raz na etap - lista z ceną w pastylce
 /// (fiolet - stać Cię, szara - za drogo albo zablokowany, zielona - już na placu), opis zaznaczonego i stan wezwania.
-/// Spacja / dotknięcie zaznaczonego wzywa (zużywa turę), Esc wraca do gry.
+/// Spacja / dotknięcie zaznaczonego wzywa (zużywa turę), Esc wraca do gry. Pod fachowcami naprawy za materiały
+/// (Załataj – drewno, Kładka – stal): indeksy listy za fachowcami, stan z Game.RepairBlocked.
 /// </summary>
 public sealed class BrigadePage : PhonePage
 {
@@ -24,10 +25,15 @@ public sealed class BrigadePage : PhonePage
         _call = call;
     }
 
-    public override string Title => "Brygada";
+    public override string Title => _g.D.Repairs.Length > 0 ? "Brygada i naprawy" : "Brygada";
     public override string Sub => $"Budżet: {_g.Cash} zł";
-    public override string Hint => "Spacja: wezwij (tura)  Esc: wróć";
-    public override PageAction[] Actions => [new("Wezwij", GameAction.A), new("Wróć", GameAction.Cancel)];
+    public override string Hint => IsRepair ? "Spacja: napraw (tura)  Esc: wróć" : "Spacja: wezwij (tura)  Esc: wróć";
+    public override PageAction[] Actions => [new(IsRepair ? "Napraw" : "Wezwij", GameAction.A), new("Wróć", GameAction.Cancel)];
+
+    private int Count => _g.D.Brigade.Length + _g.D.Repairs.Length;
+
+    /// <summary>Zaznaczona jest naprawa (indeks za fachowcami).</summary>
+    private bool IsRepair => _list.Sel >= _g.D.Brigade.Length;
     public override bool Closable => true;
 
     public int Sel
@@ -48,7 +54,7 @@ public sealed class BrigadePage : PhonePage
         var v = e.VDir;
         if (v != 0)
         {
-            _list.Move(v, _g.D.Brigade.Length, _g.D.Brigade.Length);
+            _list.Move(v, Count, Count);
             Sfx.Play("menu");
             return true;
         }
@@ -61,6 +67,20 @@ public sealed class BrigadePage : PhonePage
     private (string Text, Ink Ink) Status()
     {
         var d = _g.D;
+        if (IsRepair)
+        {
+            var k = _list.Sel - d.Brigade.Length;
+            var rd = d.Repairs[k];
+            return _g.RepairBlocked(k) switch
+            {
+                RepairBlock.Ok => ("Gotowe do naprawy (zużywa turę)", Ink.Brand),
+                RepairBlock.Material => ($"Brak materiału: {d.Materials[rd.Material].Name} ({_g.Mats[rd.Material]}/{rd.Cost})", Ink.Late),
+                RepairBlock.NoTarget => ("Brak problemu w polu widzenia", Ink.Late),
+                RepairBlock.NoRoom => ("Nie ma gdzie postawić desek", Ink.Late),
+                RepairBlock.NoPuddle => ("Brak kałuż obok (deszcz)", Ink.Late),
+                _ => ("", Ink.Dim),
+            };
+        }
         if (_g.HelperCalled >= 0)
         {
             var t = _g.GuardTurns > 0 ? $" ({_g.GuardTurns} t.)" : _g.AllyTurns > 0 ? $" ({_g.AllyTurns} t.)" : "";
@@ -81,7 +101,7 @@ public sealed class BrigadePage : PhonePage
     {
         var d = _g.D;
         var n = d.Brigade.Length;
-        _list.Clamp(n, n);
+        _list.Clamp(Count, Count);
         var y = p.Section(p.Top, "FACHOWCY", "raz na etap");
         var card = p.Card(y, n);
         var tx = p.TextX(card);
@@ -101,8 +121,32 @@ public sealed class BrigadePage : PhonePage
             var pw = p.Pill(right, ry, pill, kind);
             p.Text(tx, ry, h.Name, sel ? Ink.Brand : unl ? Ink.Dark : Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
         }
-        var dc = p.Card(card.End.Y + 6, 2);
-        p.Text(tx, p.RowY(dc, 0), d.Brigade[_list.Sel].Desc, Ink.Dim, TextAlign.Left, right - tx);
+        var bottom = card.End.Y;
+        if (d.Repairs.Length > 0)
+        {
+            var ry0 = p.Section(bottom + 4, "NAPRAWY", "za materiały");
+            var rc = p.Card(ry0, d.Repairs.Length);
+            for (var k = 0; k < d.Repairs.Length; k++)
+            {
+                var rd = d.Repairs[k];
+                var ry = p.RowY(rc, k);
+                var idx = n + k;
+                var sel = idx == _list.Sel;
+                var ok = _g.RepairBlocked(k) == RepairBlock.Ok;
+                if (sel) p.Selected(rc, k);
+                else if (k > 0) p.Divider(rc, k);
+                p.HitRow(rc, k, idx);
+                var have = _g.Mats[rd.Material] >= rd.Cost;
+                var pw = p.Pill(right, ry, $"{rd.Cost}x {d.Materials[rd.Material].Short} ({_g.Mats[rd.Material]})", ok ? PillKind.Group : have ? PillKind.Gray : PillKind.Late);
+                MaterialIcon.Draw(p.C, rd.Material, new Godot.Vector2(tx, ry + (PhonePainter.RowH - MaterialIcon.Size) / 2));
+                var nx = tx + MaterialIcon.Size + 4;
+                p.Text(nx, ry, rd.Name, sel ? Ink.Brand : ok ? Ink.Dark : Ink.Dim, TextAlign.Left, right - pw - 4 - nx);
+            }
+            bottom = rc.End.Y;
+        }
+        var dc = p.Card(bottom + 6, 2);
+        var desc = IsRepair ? d.Repairs[_list.Sel - n].Info : d.Brigade[_list.Sel].Desc;
+        p.Text(tx, p.RowY(dc, 0), desc, Ink.Dim, TextAlign.Left, right - tx);
         p.Divider(dc, 1);
         var (text, ink) = Status();
         p.Text(tx, p.RowY(dc, 1), text, ink, TextAlign.Left, right - tx);

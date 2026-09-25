@@ -46,6 +46,11 @@ public sealed class BrigadeScreen : Screen
     public void Call(int h)
     {
         var g = S.Game;
+        if (h >= S.Data.Brigade.Length)
+        {
+            Repair(h - S.Data.Brigade.Length);
+            return;
+        }
         if (g.HelperBlocked(h) != HelperBlock.Ok)
         {
             Sfx.Play("hurt");
@@ -61,6 +66,29 @@ public sealed class BrigadeScreen : Screen
             Sfx.Play("ability");
             N.World.Sync();
             N.World.Effects.Brigade(hd.Effect);
+        }
+        App.AfterAction(acted);
+    }
+
+    /// <summary>Naprawa k za materiał: zablokowana - dźwięk i zostaje w telefonie; inaczej mapa, tura, baner, efekt.</summary>
+    public void Repair(int k)
+    {
+        var g = S.Game;
+        if (g.RepairBlocked(k) != RepairBlock.Ok)
+        {
+            Sfx.Play("hurt");
+            N.Phone.QueueRedraw();
+            return;
+        }
+        Flow.Game.Open();
+        var acted = g.PlayerRepair(k);
+        if (acted)
+        {
+            var rd = S.Data.Repairs[k];
+            N.Banners.Push(rd.Name, rd.Desc);
+            Sfx.Play("buy");
+            N.World.Sync();
+            N.World.Effects.Repair(rd.Effect);
         }
         App.AfterAction(acted);
     }
