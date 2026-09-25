@@ -18,30 +18,60 @@ static bool connected(const level& lv, int sx, int sy)
     return n==total;
 }
 
-// Prosty bot: idź do najbliższego wroga/schodów, atakuj z dystansu, gdy się da.
+// Pole przechodnie dla bota: także tymczasowy mur (Ścianka) - znika za kilka tur, więc nie zmienia wybranego celu.
+static bool bot_open(const game& g, int x, int y)
+{
+    if(g.lv.passable(x, y)) return true;
+    for(int i = 0; i < g.walls_count; ++i) if(g.walls[i].x == x && g.walls[i].y == y) return true;
+    return false;
+}
+
+// Odległość po ścieżce (4 kierunki, przez pola przechodnie) od (sx, sy) do każdego pola; -1 = nieosiągalne.
+static void bot_bfs(const game& g, int sx, int sy, int (&dist)[map_h][map_w])
+{
+    static const int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}};
+    for(auto& r:dist) for(auto& c:r) c=-1;
+    std::queue<std::pair<int,int>> q; q.push({sx,sy}); dist[sy][sx]=0;
+    while(!q.empty()){ auto [x,y]=q.front(); q.pop();
+        for(int k=0;k<4;++k){int nx=x+d[k][0],ny=y+d[k][1]; if(bot_open(g,nx,ny)&&dist[ny][nx]<0){dist[ny][nx]=dist[y][x]+1;q.push({nx,ny});}}}
+}
+
+// Prosty bot: idź do najbliższego (po ścieżce) wroga albo schodów, atakuj z dystansu, gdy się da.
+// Cel wybiera odległość po ścieżce (do 7 pól drogi; na etapie z bossem każdy problem), więc z każdym krokiem do celu
+// jego odległość maleje i bot nie przeskakuje między dwoma celami (dawniej odległość w linii prostej przez ścianę:
+// krok w stronę celu oddalał go, bot wracał do schodów i kręcił się do limitu kroków). Przed ciosem bossa schodzi
+// z czerwonych pól w stronę celu (dawniej zawsze w tę samą stronę - w wąskim korytarzu cofał się bez końca).
 static void bot_step(game& g)
 {
+    static const int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}};
     if(g.has_offer()) { if(g.offer_is_better()) g.accept_offer(); else g.decline_offer(); }
     if(g.thermos > 0 && g.hero.hp * 100 < g.hero.max_hp * data::bot_drink_below_pct && g.player_drink()) return;
+    static int hd[map_h][map_w], td[map_h][map_w];
+    bot_bfs(g, g.hero.x, g.hero.y, hd);
+    int tx = g.stairs_x, ty = g.stairs_y, best = 999;
+    for(int i=0;i<g.enemies_count;++i){ auto& e=g.enemies[i]; int dd=hd[e.y][e.x]; if(e.alive&&dd>=0&&dd<best&&(dd<8||g.stairs_x<0)){best=dd;tx=e.x;ty=e.y;} }
+    bool has_target = tx>=0 && hd[ty][tx]>=0;
+    if(has_target) bot_bfs(g, tx, ty, td);
     if(g.slam_cell(g.hero.x, g.hero.y))   // zapowiedziany cios bossa: zejdź z czerwonych pól (jak człowiek; nie wraca na nie)
     {
-        int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}}, best=-1, bd=-1;
+        int bk=-1, bs=-1000000;
         for(int k=0;k<4;++k){ int nx=g.hero.x+d[k][0], ny=g.hero.y+d[k][1];
             if(!g.lv.passable(nx,ny)||g.occupied(nx,ny)) continue;
-            int dist=cheb(nx,ny,g.slam_x,g.slam_y)+(g.slam_cell(nx,ny)?0:10); if(dist>bd){bd=dist;best=k;} }
-        if(best>=0 && g.player_move(d[best][0],d[best][1])) return;
+            int s=(g.slam_cell(nx,ny)?0:1000)-(has_target&&td[ny][nx]>=0?td[ny][nx]:500); if(s>bs){bs=s;bk=k;} }
+        if(bk>=0 && g.player_move(d[bk][0],d[bk][1])) return;
     }
     if(g.nearest_target() >= 0 && g.weapon().range > 1) { g.player_attack_nearest(); return; }
-    int tx = g.stairs_x, ty = g.stairs_y, best = 999;
-    for(int i=0;i<g.enemies_count;++i){ auto& e=g.enemies[i]; int d=cheb(g.hero.x,g.hero.y,e.x,e.y); if(e.alive&&d<best&&(d<6||g.stairs_x<0)){best=d;tx=e.x;ty=e.y;} }
-    // BFS po mapie do celu
-    int px[map_h][map_w]; for(auto& r:px) for(auto& c:r) c=-1;
-    std::queue<std::pair<int,int>> q; q.push({g.hero.x,g.hero.y}); px[g.hero.y][g.hero.x]=4;
-    int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}};
-    while(!q.empty()){ auto [x,y]=q.front(); q.pop(); if(x==tx&&y==ty) break;
-        for(int k=0;k<4;++k){int nx=x+d[k][0],ny=y+d[k][1]; if(g.lv.passable(nx,ny)&&px[ny][nx]<0){px[ny][nx]=k;q.push({nx,ny});}}}
-    if(tx<0||px[ty][tx]<0||(tx==g.hero.x&&ty==g.hero.y)){ g.player_wait(); return; }
-    int x=tx,y=ty; while(true){int k=px[y][x]; int bx=x-d[k][0],by=y-d[k][1]; if(bx==g.hero.x&&by==g.hero.y){ if(g.slam_cell(x,y)&&g.enemy_at(x,y)<0){ g.player_wait(); return; } if(!g.player_move(x-bx,y-by)) g.player_wait(); return;} x=bx;y=by;}
+    if(!has_target||(tx==g.hero.x&&ty==g.hero.y)){ g.player_wait(); return; }
+    for(int k=0;k<4;++k)   // krok na sąsiednie pole bliżej celu
+    {
+        int nx=g.hero.x+d[k][0], ny=g.hero.y+d[k][1];
+        if(!bot_open(g,nx,ny)||td[ny][nx]!=td[g.hero.y][g.hero.x]-1) continue;
+        if(!g.lv.passable(nx,ny)){ g.player_wait(); return; }   // mur Ścianki na drodze: czekaj, aż zniknie
+        if(g.slam_cell(nx,ny)&&g.enemy_at(nx,ny)<0){ g.player_wait(); return; }   // nie wchodzi na czerwone pola przed ciosem
+        if(!g.player_move(d[k][0],d[k][1])) g.player_wait();
+        return;
+    }
+    g.player_wait();
 }
 
 // Otwarta arena 14x14 bez wrogów i znajdziek, bohater na (7,7) - do testów mocy.
