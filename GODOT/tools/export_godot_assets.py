@@ -152,11 +152,13 @@ def export_sheet(name, frame_h, rel_hd, rel_1x=None, rel_gray=None, rel_white=No
 
 # ------------------------------------------------------------------ animacje chodu i oddechu
 ANIM_FRAMES = 5          # chód x4 + oddech
-CHARACTER_FRAMES = list(range(0, 15)) + [46, 47]   # zawody, problemy budowy, bossowie (jak anim_b w main.cpp)
+CHARACTER_FRAMES = list(range(0, 15)) + [46, 47, 50]   # zawody, problemy budowy, bossowie (jak anim_b w main.cpp)
 
 
 def anim_b(f):
-    return f + 27 if f < 15 else f + 2
+    if f < 15:
+        return f + 27
+    return f + 2 if f < 48 else f + 1
 
 
 def rows_span(frame):
