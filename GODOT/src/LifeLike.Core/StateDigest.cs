@@ -72,9 +72,25 @@ public static class StateDigest
             f.Add((int)p.Type);
             f.Add(p.Active ? 1 : 0);
             f.Add(p.Arg);
+            f.Add(p.Trait);
         }
         for (var i = 0; i < 5; i++) f.Add(g.HeroStatus[i]);
         for (var i = 0; i < 4; i++) f.Add(g.Equipped[i]);
+        for (var i = 0; i < 4; i++) f.Add(g.EquippedTrait[i]);
+        f.Add(g.Thermos);
+        f.Add(g.OfferSlot);
+        f.Add(g.OfferRarity);
+        f.Add(g.OfferTrait);
+        f.Add(g.HitsCount);
+        for (var i = 0; i < g.HitsCount; i++)
+        {
+            var h = g.Hits[i];
+            f.Add(h.X);
+            f.Add(h.Y);
+            f.Add(h.Amount);
+            f.Add(h.OnHero ? 1 : 0);
+            f.Add((int)h.Kind);
+        }
         f.Add(g.ActCleared ? 1 : 0);
         f.Add(g.ActBonus);
         f.Add(g.StageDamage);

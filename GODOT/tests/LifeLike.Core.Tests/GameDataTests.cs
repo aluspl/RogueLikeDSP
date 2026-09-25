@@ -47,6 +47,33 @@ public class GameDataTests
     }
 
     [Fact]
+    public void V42SectionsAreParsed()
+    {
+        Assert.Equal(new[] { 2, 0, 2, 1, 2, 4 }, D.Classes.Select(c => c.Luck).ToArray());
+        Assert.Equal(5, D.GearTraitsCount);
+        Assert.Equal(TraitEffect.PoisonRes, D.GearTraits[2].Effect);
+        Assert.Equal("Zatrucie", D.Statuses[(int)StatusEffect.Poison].Name);
+        Assert.Equal("-1 HP/turę", D.Statuses[(int)StatusEffect.Poison].Effect);
+        Assert.Equal(3, D.PaperDelay);
+        Assert.True(D.CritBasePct == 5 && D.CritPerLuckPct == 3 && D.CritMultiplier == 2 && D.DodgeMaxPct == 20);
+        Assert.True(D.ThermosCapacity == 3 && D.CoffeeHeal == 8 && D.BotDrinkBelowPct == 40 && D.GearDeclineXp == 1);
+        Assert.Equal(108, D.Stages[0].HpPct);
+        Assert.Equal("v0.21.42", D.Version);
+    }
+
+    /// <summary>Nowsze dane GBA mogą mieć efekty, których port jeszcze nie zna – wczytują się jako Unknown (bez działania).</summary>
+    [Fact]
+    public void UnknownEffectsLoadAsInert()
+    {
+        var json = File.ReadAllText(TestData.GoldenPath("game.json"))
+            .Replace("\"effect\": \"cooldown\"", "\"effect\": \"str\"")
+            .Replace("\"effect\": \"pickups\"", "\"effect\": \"craft\"");
+        var d = GameData.Parse(json);
+        Assert.Equal(TraitEffect.Unknown, d.GearTraits[4].Effect);
+        Assert.Contains(d.Upgrades, u => u.Effect == UpgradeEffect.Unknown);
+    }
+
+    [Fact]
     public void BrokenReferenceIsReported()
     {
         var json = File.ReadAllText(TestData.GoldenPath("game.json")).Replace("\"weapon\": \"kielnia\"", "\"weapon\": \"nie_ma\"");

@@ -1,6 +1,6 @@
 namespace LifeLike.Core.Tests;
 
-// core_tests.cpp: 15 (dropy), 21 (sprzęt).
+// core_tests.cpp: 15 (dropy), 21 (sprzęt i porównanie przy paczce), 27a (cechy sprzętu).
 public class LootAndGearTests
 {
     private static GameData D => TestData.D;
@@ -40,23 +40,32 @@ public class LootAndGearTests
     }
 
     [Fact]
-    public void BetterGearEquipsWorseGivesXp()
+    public void GearBoxOnEmptySlotEquipsOtherwiseAsksToCompare()
     {
         var g = TestData.Arena(1);
         for (var i = 0; i < D.GearSlotsCount; ++i) Assert.Equal(-1, g.Equipped[i]);
         int hp0 = g.Hero.MaxHp;
-        void Give(int slot, int rarity)
+        void Give(int slot, int rarity, int trait = 0)
         {
-            g.Pickups[0] = new Pickup(g.Hero.X, g.Hero.Y, PickupType.GearBox, true, slot * 3 + rarity);
+            g.Pickups[0] = new Pickup(g.Hero.X, g.Hero.Y, PickupType.GearBox, true, slot * 3 + rarity, trait);
             g.PickupsCount = 1;
             g.Collect();
         }
-        Give(2, 1);
-        Assert.True(g.Equipped[2] == 1 && g.Hero.MaxHp == hp0 + 8);
+        Give(2, 1, 3); // kamizelka ocieplana +8 HP: pusty slot – od razu
+        Assert.True(g.Equipped[2] == 1 && g.EquippedTrait[2] == 3 && g.Hero.MaxHp == hp0 + 8 && !g.HasOffer);
         var xp0 = g.RunXp;
-        Give(2, 0);
-        Assert.True(g.Equipped[2] == 1 && g.Hero.MaxHp == hp0 + 8 && g.RunXp > xp0);
+        Give(2, 0); // zajęty slot: porównanie
+        Assert.True(g.HasOffer && !g.OfferIsBetter && g.Equipped[2] == 1);
         Give(2, 2);
+        Assert.True(g.Pickups[0].Active); // druga paczka czeka, aż zdecydujesz
+        g.DeclineOffer(); // zostawiam stary: doświadczenie
+        Assert.True(!g.HasOffer && g.Equipped[2] == 1 && g.Hero.MaxHp == hp0 + 8 && g.RunXp == xp0 + D.GearDeclineXp);
+        Give(2, 0, 1);
+        g.AcceptOffer(); // gorszy, ale gracz wybrał
+        Assert.True(g.Equipped[2] == 0 && g.EquippedTrait[2] == 1 && g.Hero.MaxHp == hp0 + 4);
+        Give(2, 2);
+        Assert.True(g.OfferIsBetter);
+        g.AcceptOffer(); // lepsza zastępuje
         Assert.True(g.Equipped[2] == 2 && g.Hero.MaxHp == hp0 + 12);
         Give(0, 2);
         Give(1, 2);
@@ -109,5 +118,65 @@ public class LootAndGearTests
             }
         }
         Assert.True(gearDrops > 0 && brand[1] > brand[0]);
+    }
+
+    private static int TraitOf(TraitEffect e)
+    {
+        for (var i = 0; i < D.GearTraitsCount; ++i)
+            if (D.GearTraits[i].Effect == e) return i;
+        return -1;
+    }
+
+    [Fact]
+    public void GearTraitsLuckCritPoisonResistanceCooldown()
+    {
+        var g = TestData.Arena(1);
+        int luck0 = g.Luck(), crit0 = g.CritPct(), cd0 = g.AbilityCooldown();
+        g.Equip(0, 0, TraitOf(TraitEffect.Luck));
+        Assert.True(g.Luck() == luck0 + 1 && g.CritPct() == crit0 + D.CritPerLuckPct);
+        g.Equip(1, 0, TraitOf(TraitEffect.Crit));
+        Assert.Equal(crit0 + D.CritPerLuckPct + 5, g.CritPct());
+        g.Equip(2, 0, TraitOf(TraitEffect.Cooldown));
+        Assert.Equal(cd0 - 1, g.AbilityCooldown());
+        g.Equip(0, 0, TraitOf(TraitEffect.PoisonRes));
+        g.ApplyStatus(StatusEffect.Poison, 3);
+        Assert.Equal(0, g.StatusTurns(StatusEffect.Poison));
+        g.Hero.X = 7;
+        g.Hero.Y = 7;
+        g.UpdateFov();
+        Assert.True(!g.Visible(7, 7 + Game.FovRadius + 1) || g.Lv.At(7, 7 + Game.FovRadius + 1) == Tile.Wall);
+    }
+
+    [Fact]
+    public void SightTraitWidensFieldOfView()
+    {
+        var w = TestData.NewGame();
+        w.NewRun(0, 3);
+        w.Lv.Fill(Tile.Floor);
+        w.EnemiesCount = 0;
+        w.Hero.X = 15;
+        w.Hero.Y = 15;
+        w.UpdateFov();
+        Assert.False(w.Visible(15, 15 + Game.FovRadius + 1));
+        w.Equip(0, 0, TraitOf(TraitEffect.Sight));
+        Assert.True(w.SightRadius() == Game.FovRadius + 1 && w.Visible(15, 15 + Game.FovRadius + 1));
+    }
+
+    [Fact]
+    public void GearDropsHaveEveryTrait()
+    {
+        var seen = 0;
+        for (uint seed = 1; seed <= 1500; ++seed)
+        {
+            var h = KillAdjacent(seed);
+            h.PlayerMove(1, 0);
+            var p = h.Pickups[h.PickupsCount - 1];
+            if (p.Type == PickupType.GearBox)
+            {
+                Assert.True(p.Trait < D.GearTraitsCount);
+                seen |= 1 << p.Trait;
+            }
+        }
+        Assert.Equal((1 << D.GearTraitsCount) - 1, seen);
     }
 }

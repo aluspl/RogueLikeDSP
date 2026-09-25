@@ -73,6 +73,12 @@ public sealed partial class Game
     public int WallsCount;
     /// <summary>Sprzęt: jakość w slocie (kask, rękawice, kamizelka), -1 = brak.</summary>
     public readonly sbyte[] Equipped = [-1, -1, -1, -1];
+    /// <summary>Cecha przedmiotu w slocie (GameData.GearTraits).</summary>
+    public readonly sbyte[] EquippedTrait = new sbyte[4];
+    /// <summary>Kawy w termosie (pije się z menu akcji).</summary>
+    public int Thermos;
+    /// <summary>Paczka czeka na decyzję (zakładam / zostawiam): slot (-1 = brak), jakość, cecha.</summary>
+    public sbyte OfferSlot = -1, OfferRarity, OfferTrait;
     public int WeaponOverride = -1;
     public int LogSerial;
 
@@ -119,9 +125,29 @@ public sealed partial class Game
         return b;
     }
 
-    public void AddHit(int x, int y, int amount, bool onHero)
+    /// <summary>Szczęście: kryt (x2), mały unik przed ciosem wroga, częstsze i lepsze dropy.</summary>
+    public int Luck() => CDef.Luck + TraitBonus(TraitEffect.Luck);
+
+    public int CritPct() => D.CritBasePct + D.CritPerLuckPct * Luck() + TraitBonus(TraitEffect.Crit);
+
+    public int SightRadius() => FovRadius + TraitBonus(TraitEffect.Sight);
+
+    /// <summary>Suma cech założonego sprzętu danego rodzaju.</summary>
+    public int TraitBonus(TraitEffect e)
     {
-        if (HitsCount < MaxHits) Hits[HitsCount++] = new Hit { X = (sbyte)x, Y = (sbyte)y, Amount = (short)amount, OnHero = onHero };
+        var b = 0;
+        for (var i = 0; i < D.GearSlotsCount; ++i)
+        {
+            if (Equipped[i] >= 0 && D.GearTraits[EquippedTrait[i]].Effect == e) b += D.GearTraits[EquippedTrait[i]].Value;
+        }
+        return b;
+    }
+
+    public int DodgePct() => Math.Min(D.DodgeMaxPct, D.DodgePerLuckPct * Luck());
+
+    public void AddHit(int x, int y, int amount, bool onHero, HitKind kind = HitKind.Normal)
+    {
+        if (HitsCount < MaxHits) Hits[HitsCount++] = new Hit { X = (sbyte)x, Y = (sbyte)y, Amount = (short)amount, OnHero = onHero, Kind = kind };
     }
 
     public void Push(Message m)
@@ -140,20 +166,24 @@ public sealed partial class Game
     private static Message Msg(string s) => new Message().Add(s);
 
     // ------------------------------------------------------------------ stany
+    /// <summary>Nakłada stan; komunikat mówi skutek i czas, np. „Zatrucie: -1 HP/turę, 3 t.”.</summary>
     public void ApplyStatus(StatusEffect s, int t)
     {
-        switch (s)
+        if (s == StatusEffect.None) return;
+        var sd = D.Statuses[(int)s];
+        if (s == StatusEffect.Paper)
         {
-            case StatusEffect.Poison: Push(Msg("Zatrucie pleśnią!").As(LogKind.Bad)); break;
-            case StatusEffect.Shock: Push(Msg("Porażenie! Tracisz turę").As(LogKind.Bad)); break;
-            case StatusEffect.Slip: Push(Msg("Poślizg na mokrym!").As(LogKind.Bad)); break;
-            case StatusEffect.Paper:
-                AbilityCd = Math.Min(AbilityCooldown() + 3, AbilityCd + 3);
-                Push(Msg("Papierologia: moc później").As(LogKind.Bad));
-                return;
-            default: return;
+            AbilityCd = Math.Min(AbilityCooldown() + D.PaperDelay, AbilityCd + D.PaperDelay);
+            Push(Msg(sd.Name).Add(": moc +").Add(D.PaperDelay).Add(" t.").As(LogKind.Bad));
+            return;
+        }
+        if (s == StatusEffect.Poison && TraitBonus(TraitEffect.PoisonRes) > 0)
+        {
+            Push(Msg("Odporność: bez zatrucia").As(LogKind.Good));
+            return;
         }
         HeroStatus[(int)s] = (sbyte)Math.Max(HeroStatus[(int)s], t);
+        Push(Msg(sd.Name).Add(": ").Add(sd.Effect).Add(", ").Add(HeroStatus[(int)s]).Add(" t.").As(LogKind.Bad));
     }
 
     /// <summary>Porażenie: akcja bohatera przepada, mija tura.</summary>
@@ -188,7 +218,8 @@ public sealed partial class Game
     {
         if (start < end) return;
         float newStart = 0;
-        for (var j = row; j <= FovRadius; ++j)
+        var radius = SightRadius();
+        for (var j = row; j <= radius; ++j)
         {
             var blocked = false;
             for (int dx = -j, dy = -j; dx <= 0; ++dx)
@@ -197,7 +228,7 @@ public sealed partial class Game
                 float lSlope = (dx - 0.5f) / (dy + 0.5f), rSlope = (dx + 0.5f) / (dy - 0.5f);
                 if (start < rSlope) continue;
                 if (end > lSlope) break;
-                if (dx * dx + dy * dy <= FovRadius * FovRadius && Level.In(x, y)) Fov[y * Level.W + x] = Sight.InView;
+                if (dx * dx + dy * dy <= radius * radius && Level.In(x, y)) Fov[y * Level.W + x] = Sight.InView;
                 var opaque = !Lv.Passable(x, y);
                 if (blocked)
                 {
@@ -209,7 +240,7 @@ public sealed partial class Game
                     blocked = false;
                     start = newStart;
                 }
-                else if (opaque && j < FovRadius)
+                else if (opaque && j < radius)
                 {
                     blocked = true;
                     CastLight(j + 1, start, lSlope, xx, xy, yx, yy);

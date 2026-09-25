@@ -8,8 +8,9 @@ public sealed partial class Game
     /// <summary>Ranga mocy rośnie z poziomem postaci: II od 3., III od 5. poziomu.</summary>
     public int AbilityRank() => 1 + (HeroLevel >= 3 ? 1 : 0) + (HeroLevel >= 5 ? 1 : 0);
 
-    /// <summary>Każda ranga skraca odnowienie o 2 tury (minimum 4).</summary>
-    public int AbilityCooldown() => Math.Max(4, CDef.AbilityCooldown - 2 * (AbilityRank() - 1));
+    /// <summary>Każda ranga skraca odnowienie o 2 tury (minimum 4), cecha sprzętu dalej (minimum 3).</summary>
+    public int AbilityCooldown() =>
+        Math.Max(3, Math.Max(4, CDef.AbilityCooldown - 2 * (AbilityRank() - 1)) - TraitBonus(TraitEffect.Cooldown));
 
     public int NearestVisibleEnemy()
     {
@@ -185,7 +186,7 @@ public sealed partial class Game
                 var slot = R.Range(0, D.GearSlotsCount - 1);
                 var rarity = R.Range(1, 2);
                 if (rarity <= Equipped[slot]) rarity = Math.Min(2, Equipped[slot] + 1);
-                if (rarity > Equipped[slot]) Equip(slot, rarity);
+                if (rarity > Equipped[slot]) Equip(slot, rarity, R.Range(0, D.GearTraitsCount - 1));
                 else GainXp(3);
                 break;
             }
