@@ -128,11 +128,21 @@ namespace core
         int8_t value;
     };
 
+    // Trwała premia na budowę: uprawnienie z odznaki, pamiątka (run_mods).
+    enum class perk_effect : uint8_t { hp, def, dmg, luck, cooldown, sight, thermos, tool_pct, xp_pct, cash, crit, coffee };
+
+    struct perk
+    {
+        perk_effect effect;
+        int8_t value;
+    };
+
     struct badge_def           // odznaka (motywacja do kolejnych budów)
     {
         const char* name;
         const char* desc;
         int16_t xp;            // nagroda przy pierwszym zdobyciu
+        perk bonus;            // uprawnienie: premia na każdą kolejną budowę (jak w Hades)
     };
 
     struct tool_def            // narzędzie do znalezienia (drop), odblokowywane w sklepie

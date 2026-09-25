@@ -12,6 +12,8 @@
 //   8 - kryt i unik: markowy sprzęt z cechą Szczęście +1, obok (w lewo) wytrzymała Pleśń atakująca bohatera
 //   9 - statystyki: Szkolenia Warsztaty i Kurs BHP II kupione, sprzęt z cechami SIŁ/ZRĘ/INT +1,
 //       obok (w prawo) skrzynka z Tabletem z projektem (narzędzie INT)
+//  10 - uprawnienia i zlecenia: część odznak zdobyta (premie na budowę), zlecenia w toku,
+//       jedno o krok od ukończenia (moc R + L+R+SELECT = baner)
 #include "core.h"
 #include "meta.h"
 
@@ -54,6 +56,9 @@ namespace debug_scenario
             if(data::upgrades[i].effect == core::upgrade_effect::luck || data::upgrades[i].effect == core::upgrade_effect::craft)
                 p.levels[i] = uint8_t(data::upgrades[i].levels);
         p.tools = uint8_t((1 << data::tools_count) - 1);
+        if(scenario == 10)
+            p.badges = uint16_t((1 << data::badge_bez_usterek) | (1 << data::badge_seryjny) | (1 << data::badge_kolekcjoner)
+                                | (1 << data::badge_osiedle));
     }
 
     inline int trait_index(core::trait_effect e)

@@ -94,9 +94,13 @@ L += [f"inline constexpr int acts_count = {len(acts)};",
       f"inline constexpr int slam_radius = {sl['radius']};",
       f"inline constexpr int cash_per_score = {d['cash']['perScore']};"]
 L += [f"inline constexpr int enemy_{e['id']} = {i};" for i, e in enumerate(d["enemies"])] + [""]
-L.append("inline constexpr core::badge_def badges[] = {")
+PERKS = {"hp", "def", "dmg", "luck", "cooldown", "sight", "thermos", "tool_pct", "xp_pct", "cash", "crit", "coffee"}
+def perk(pk):
+    assert pk["effect"] in PERKS and -128 <= pk["value"] <= 127, pk
+    return f'{{ core::perk_effect::{pk["effect"]}, {pk["value"]} }}'
+L.append("inline constexpr core::badge_def badges[] = {   // perk = uprawnienie: trwała premia na każdą budowę")
 for b in d["badges"]:
-    L.append(f'    {{ {s(b["name"])}, {s(b["desc"])}, {b["xp"]} }},')
+    L.append(f'    {{ {s(b["name"])}, {s(b["desc"])}, {b["xp"]}, {perk(b["perk"])} }},')
 L.append("};\n")
 bid = {b["id"]: i for i, b in enumerate(d["badges"])}
 L += [f"inline constexpr int badges_count = {len(d['badges'])};",

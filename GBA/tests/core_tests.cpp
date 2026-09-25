@@ -740,6 +740,33 @@ int main()
             if(data::weapons[data::tools[i].weapon].scales_with == stat::intel && data::tools[i].cost > 0) ++int_tools;
         CHECK(int_tools >= 3);
     }
+    // 30. uprawnienia: każda zdobyta odznaka daje trwałą premię (mods), premie działają w budowie
+    {
+        profile p; profile_reset(p);
+        run_mods m0 = mods(p);
+        CHECK(m0.hp == 0 && m0.dmg == 0 && m0.cash == 0 && m0.xp_pct == 0);
+        p.badges = uint16_t((1 << data::badges_count) - 1);
+        run_mods m = mods(p);
+        run_mods sum;
+        for(int i = 0; i < data::badges_count; ++i) add_perk(sum, data::badges[i].bonus);
+        CHECK(m.hp == sum.hp && m.def == sum.def && m.dmg == sum.dmg && m.luck == sum.luck && m.cooldown == sum.cooldown);
+        CHECK(m.tool_pct == sum.tool_pct && m.xp_pct == sum.xp_pct && m.cash == sum.cash && m.crit == sum.crit);
+        CHECK(data::badges[data::badge_bez_usterek].bonus.effect == perk_effect::hp && m.hp == 2);
+        CHECK(m.dmg >= 1 && m.cooldown >= 1 && m.tool_pct >= 10 && m.luck >= 1 && m.xp_pct >= 10);
+        for(int i = 0; i < data::badges_count; ++i) { message pm; perk_label(pm, data::badges[i].bonus); CHECK(pm.n > 0 && pm.n < 30); }
+        // premie w budowie
+        run_mods pm; pm.cash = 20; pm.sight = 1; pm.cooldown = 1; pm.thermos = 1; pm.crit = 5; pm.xp_pct = 50;
+        game a; a.new_run(0, 11); game b; b.new_run(0, 11, data::default_difficulty, pm);
+        CHECK(b.cash == a.cash + 20 && b.sight_radius() == a.sight_radius() + 1 && b.thermos_cap() == a.thermos_cap() + 1);
+        CHECK(b.ability_cooldown() == a.ability_cooldown() - 1 && b.crit_pct() == a.crit_pct() + 5);
+        a.gain_xp(10); b.gain_xp(10);
+        CHECK(b.xp() == a.xp() * 3 / 2);
+        // Kolekcjoner: 100% - każdy drop to narzędzie
+        game t; arena(t, 1); t.bonus.tool_pct = 100; t.bonus.tools = data::start_tools_mask;
+        int drops = 0, tools_n = 0;
+        for(int k = 0; k < 300; ++k) { t.pickups_count = 0; t.maybe_drop(3, 3); if(t.pickups_count) { ++drops; tools_n += t.pickups[0].type == tool; } }
+        CHECK(drops > 0 && tools_n == drops);
+    }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};

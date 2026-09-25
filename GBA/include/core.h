@@ -135,8 +135,58 @@ namespace core
         int hp = 0, def = 0, dmg = 0, coffee = 0, pickups = 0;
         int luck = 0;                // Kurs BHP II
         int craft = 0;               // Warsztaty: + do statystyki, z którą skaluje się broń zawodu
+        // uprawnienia z odznak i pamiątka (perk_effect)
+        int cooldown = 0;            // odnowienie mocy krótsze o tyle tur
+        int sight = 0;               // widzenie +
+        int thermos = 0;             // dodatkowe miejsca w termosie
+        int tool_pct = 0;            // % szansy, że drop zamieni się w narzędzie
+        int xp_pct = 0;              // % więcej doświadczenia
+        int cash = 0;                // budżet na start budowy (zł)
+        int crit = 0;                // kryt +%
         int tools = data::start_tools_mask;   // narzędzia, które mogą wypaść z wrogów
     };
+
+    inline void add_perk(run_mods& m, const perk& p)
+    {
+        switch(p.effect)
+        {
+            case perk_effect::hp:       m.hp += p.value; break;
+            case perk_effect::def:      m.def += p.value; break;
+            case perk_effect::dmg:      m.dmg += p.value; break;
+            case perk_effect::luck:     m.luck += p.value; break;
+            case perk_effect::cooldown: m.cooldown += p.value; break;
+            case perk_effect::sight:    m.sight += p.value; break;
+            case perk_effect::thermos:  m.thermos += p.value; break;
+            case perk_effect::tool_pct: m.tool_pct += p.value; break;
+            case perk_effect::xp_pct:   m.xp_pct += p.value; break;
+            case perk_effect::cash:     m.cash += p.value; break;
+            case perk_effect::crit:     m.crit += p.value; break;
+            case perk_effect::coffee:   m.coffee += p.value; break;
+            default: break;
+        }
+    }
+
+    // Opis premii dla gracza, np. "+2 max HP", "Moc -1 t. odnowienia" (telefon, wybór zawodu).
+    inline message& perk_label(message& m, const perk& p)
+    {
+        int v = p.value;
+        switch(p.effect)
+        {
+            case perk_effect::hp:       return m.add("+").add(v).add(" max HP");
+            case perk_effect::def:      return m.add("+").add(v).add(" obrony");
+            case perk_effect::dmg:      return m.add("+").add(v).add(" obrażeń");
+            case perk_effect::luck:     return m.add("+").add(v).add(" szczęścia");
+            case perk_effect::cooldown: return m.add("Moc -").add(v).add(" t. odnowienia");
+            case perk_effect::sight:    return m.add("Widzenie +").add(v);
+            case perk_effect::thermos:  return m.add("Termos +").add(v).add(v == 1 ? " miejsce" : " miejsca");
+            case perk_effect::tool_pct: return m.add("+").add(v).add("% szans na narzędzie");
+            case perk_effect::xp_pct:   return m.add("+").add(v).add("% doświadczenia");
+            case perk_effect::cash:     return m.add("+").add(v).add(" zł na start");
+            case perk_effect::crit:     return m.add("Kryt +").add(v).add("%");
+            case perk_effect::coffee:   return m.add("Kawa +").add(v).add(" HP");
+            default:                    return m;
+        }
+    }
 
     inline int class_base_stat(int cls, stat s)
     {
@@ -261,8 +311,9 @@ namespace core
         }
         // Szczęście: kryt (x2), mały unik przed ciosem wroga, częstsze i lepsze dropy.
         int luck() const { return cdef().luck + bonus.luck + trait_bonus(trait_effect::luck); }
-        int crit_pct() const { return data::crit_base_pct + data::crit_per_luck_pct * luck() + trait_bonus(trait_effect::crit); }
-        int sight_radius() const { return fov_radius + trait_bonus(trait_effect::sight); }
+        int crit_pct() const { return data::crit_base_pct + data::crit_per_luck_pct * luck() + trait_bonus(trait_effect::crit) + bonus.crit; }
+        int sight_radius() const { return fov_radius + trait_bonus(trait_effect::sight) + bonus.sight; }
+        int thermos_cap() const { return data::thermos_capacity + bonus.thermos; }
 
         // Suma cech założonego sprzętu danego rodzaju.
         int trait_bonus(trait_effect e) const
@@ -337,7 +388,7 @@ namespace core
         int xp() const { return xp_pct / 100; }
         void gain_xp(int base)
         {
-            xp_pct += base * score_pct();
+            xp_pct += base * score_pct() * (100 + bonus.xp_pct) / 100;
             run_xp += base;
             while(hero_level < data::max_hero_level && run_xp >= data::level_thresholds[hero_level - 1]) level_up();
         }
@@ -383,6 +434,7 @@ namespace core
             r.seed(seed);
             hero.max_hp = hero.hp = int16_t(cdef().max_health + mods.hp);
             hero.alive = true;
+            cash = mods.cash;
             start_stage(0);
         }
 
@@ -599,7 +651,7 @@ namespace core
         int ability_rank() const { return 1 + (hero_level >= 3) + (hero_level >= 5); }
         int ability_cooldown() const
         {
-            return imax(3, imax(4, cdef().ability_cooldown - 2 * (ability_rank() - 1)) - trait_bonus(trait_effect::cooldown));
+            return imax(3, imax(4, cdef().ability_cooldown - 2 * (ability_rank() - 1)) - trait_bonus(trait_effect::cooldown) - bonus.cooldown);
         }
 
         int nearest_visible_enemy() const
@@ -792,6 +844,7 @@ namespace core
             int total = 0; for(int w : data::drop_weights) total += w;
             int roll = r.range(1, total), type = 0;
             while(roll > data::drop_weights[type]) roll -= data::drop_weights[type++];
+            if(type != tool && bonus.tool_pct > 0 && r.range(1, 100) <= bonus.tool_pct) type = tool;   // uprawnienie Kolekcjoner
             uint8_t arg = 0, trait = 0;
             if(type == gear_box)   // slot losowy, jakość lepsza na późnych etapach
             {
@@ -859,10 +912,10 @@ namespace core
                 p.active = false;
                 if(p.type == coffee)
                 {
-                    if(thermos < data::thermos_capacity)   // kawa do termosu; pełny termos - pije od razu
+                    if(thermos < thermos_cap())   // kawa do termosu; pełny termos - pije od razu
                     {
                         ++thermos;
-                        push(message().add("Kawa do termosu (").add(thermos).add("/").add(data::thermos_capacity).add(")").as(good));
+                        push(message().add("Kawa do termosu (").add(thermos).add("/").add(thermos_cap()).add(")").as(good));
                     }
                     else drink_coffee();
                 }
