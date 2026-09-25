@@ -111,7 +111,25 @@ inline constexpr core::tool_def tools[] = {
 inline constexpr int tools_count = 4;
 inline constexpr int start_tools_mask = 1;
 inline constexpr int drop_chance_pct = 25;
-inline constexpr int drop_weights[] = { 50, 20, 15, 15 };
+inline constexpr int drop_weights[] = { 40, 5, 5, 15, 35 };
+
+inline constexpr core::gear_def gear[] = {   // indeks = slot * 3 + jakość
+    { "Kask budowlany", core::gear_stat::def, 1 },
+    { "Kask z latarką", core::gear_stat::def, 2 },
+    { "Kask markowy", core::gear_stat::def, 3 },
+    { "Rękawice robocze", core::gear_stat::dmg, 1 },
+    { "Rękawice wzmacniane", core::gear_stat::dmg, 2 },
+    { "Rękawice markowe", core::gear_stat::dmg, 3 },
+    { "Kamizelka odblaskowa", core::gear_stat::hp, 4 },
+    { "Kamizelka ocieplana", core::gear_stat::hp, 8 },
+    { "Kamizelka markowa", core::gear_stat::hp, 12 },
+};
+inline constexpr const char* gear_slots[] = { "Kask", "Rękawice", "Kamizelka" };
+inline constexpr const char* gear_rarities[] = { "Zwykły", "Solidny", "Markowy" };
+inline constexpr int gear_slots_count = 3;
+inline constexpr int gear_solid_from = 70;
+inline constexpr int gear_brand_from = 94;
+inline constexpr int gear_stage_bonus = 5;
 
 inline constexpr int upgrades_count = 5;
 inline constexpr int xp_per_kill = 1;

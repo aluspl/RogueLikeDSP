@@ -27,6 +27,7 @@ Przekroczony budżet) i bossa **Nieprzekraczalny Termin**. Na końcu ekran z kod
 Kierownik budowy (Dziennik budowy, zasięg 2) · Murarz (Kielnia) · Cieśla-dekarz (Gwoździarka, zasięg 3) ·
 Elektryk (Próbnik napięcia, zasięg 2) · Hydraulik (Klucz nastawny) · Glazurnik (Szlifierka).
 Znajdźki: kawa z termosu (+HP), kask (+obrona), projekt wykonawczy (+obrażenia).
+Sprzęt: z wrogów wypadają paczki (zwykły / solidny / markowy) – kask (+obrona), rękawice (+obrażenia), kamizelka (+max HP); lepszy zakłada się sam, gorszy daje doświadczenie; w telefonie zakładka Sprzęt.
 Dropy: z pokonanych wrogów może wypaść kawa, kask, projekt albo skrzynka z narzędziem (Łom, Wkrętarka, Poziomica laserowa, Młot wyburzeniowy – zastępuje broń zawodu; kolejne narzędzia odblokowujesz w Szkoleniach).
 Powiadomienia push jak w aplikacji: awans, nowe narzędzie, drop, moc gotowa, zaliczony etap, pojawienie się Terminu.
 Mgła wojny: widzisz na 7 pól (ściany zasłaniają), odkryte pola zostają przyciemnione, wrogowie poza polem widzenia są ukryci.

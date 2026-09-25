@@ -448,7 +448,51 @@ int main()
         CHECK(&g.stage_story() == &data::story_ngplus);
         for(int i = 0; i < data::stages_count; ++i) CHECK(data::story_stages[i].from && data::story_stages[i].lines[0][0]);
     }
-    // 21. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
+    // 21. sprzęt: zakładanie lepszego, premie, drop z jakością zależną od etapu
+    {
+        game g; arena(g, 1);
+        for(int i = 0; i < data::gear_slots_count; ++i) CHECK(g.equipped[i] == -1);
+        int hp0 = g.hero.max_hp;
+        auto give = [&](int slot, int rarity) {
+            g.pickups[0] = { g.hero.x, g.hero.y, gear_box, true, uint8_t(slot * 3 + rarity) }; g.pickups_count = 1; g.collect();
+        };
+        give(2, 1);                                                       // kamizelka ocieplana +8 HP
+        CHECK(g.equipped[2] == 1 && g.hero.max_hp == hp0 + 8);
+        int xp0 = g.run_xp;
+        give(2, 0);                                                       // gorsza: zostaje lepsza, jest doświadczenie
+        CHECK(g.equipped[2] == 1 && g.hero.max_hp == hp0 + 8 && g.run_xp > xp0);
+        give(2, 2);                                                       // lepsza zastępuje
+        CHECK(g.equipped[2] == 2 && g.hero.max_hp == hp0 + 12);
+        give(0, 2); give(1, 2);
+        CHECK(g.gear_bonus(gear_stat::def) == 3 && g.gear_bonus(gear_stat::dmg) == 3);
+    }
+    {
+        int lost[2], dealt[2];                                            // ten sam seed: kask zmniejsza, rękawice zwiększają
+        for(int k = 0; k < 2; ++k)
+        {
+            game g; g.new_run(3, 9);
+            if(k) { g.equipped[0] = 2; g.equipped[1] = 2; }
+            g.enemies_count = 0; g.spawn(8, g.hero.x + 1, g.hero.y); g.enemies[0].awake = true;
+            int ehp = g.enemies[0].hp, hhp = g.hero.hp;
+            g.player_move(1, 0);
+            dealt[k] = ehp - g.enemies[0].hp; lost[k] = hhp - g.hero.hp;
+        }
+        CHECK(dealt[1] == dealt[0] + 3);
+        CHECK(lost[1] < lost[0]);
+    }
+    {
+        int brand[2] = {}, gear_drops = 0;
+        for(int st = 0; st < 2; ++st)
+            for(uint32_t seed = 1; seed <= 1500; ++seed)
+            {
+                game g; g.new_run(1, seed); g.stage = st == 0 ? 0 : data::stages_count - 1;
+                g.enemies_count = 0; g.spawn(0, g.hero.x + 1, g.hero.y); g.enemies[0].hp = 1; g.player_move(1, 0);
+                const pickup& p = g.pickups[g.pickups_count - 1];
+                if(p.type == gear_box) { CHECK(p.arg < data::gear_slots_count * 3); ++gear_drops; brand[st] += p.arg % 3 == 2; }
+            }
+        CHECK(gear_drops > 0 && brand[1] > brand[0]);                   // na późnych etapach częściej markowy
+    }
+    // 22. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};
     for(int df=0;df<data::difficulties_count;++df)

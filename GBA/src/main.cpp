@@ -86,7 +86,13 @@ namespace
     constexpr int frame_toolbox = 26;
     constexpr int frame_anim_b = 27;     // + klatka zawodu/wroga (0..14) = druga klatka animacji
 
-    int pickup_frame(const core::pickup& p) { return p.type == core::tool ? frame_toolbox : frame_coffee + p.type; }
+    constexpr int frame_gear = 42;       // + jakość
+    int pickup_frame(const core::pickup& p)
+    {
+        if(p.type == core::tool) return frame_toolbox;
+        if(p.type == core::gear_box) return frame_gear + p.arg % 3;
+        return frame_coffee + p.type;
+    }
 
     // ------------------------------------------------------------------ przejścia: ściemnianie palet
     constexpr int fade_frames = 8;
@@ -591,7 +597,7 @@ namespace
 
     void stripe(phone_canvas& c, int r, int tile) { c.set(1, row_ty(r), tile); c.set(1, row_ty(r) + 1, tile); }
 
-    constexpr const char* tab_names[] = { "Zadania", "Usterki", "Start", "Zespół", "Koszty" };
+    constexpr const char* tab_names[] = { "Zadania", "Usterki", "Start", "Sprzęt", "Koszty" };
     constexpr int tabs_count = 5;
 
     void phone_header(app& a, phone_screen& ph, page_sprites& t, const char* title, const char* sub)
@@ -694,19 +700,28 @@ namespace
         phone_text(a, t, list_x, row_py(5), sc.s, ink::dim);
     }
 
-    void tab_team(app& a, phone_screen& ph, page_sprites& t)   // Zespół = zawody
+    void tab_gear(app& a, phone_screen& ph, page_sprites& t)   // Sprzęt: narzędzie + kask, rękawice, kamizelka
     {
         const core::game& g = *a.g;
-        phone_header(a, ph, t, tab_names[3], "Fachowcy");
+        phone_header(a, ph, t, tab_names[3], "Na budowie");
         phone_canvas& c = *ph.canvas;
-        for(int i = 0; i < data::classes_count && i < 6; ++i)
+        core::message w; w.add(g.weapon().name).add(" ").add(g.weapon().min_damage).add("-").add(g.weapon().max_damage);
+        stripe(c, 0, phone_tile::stripe_brand);
+        phone_text(a, t, list_x, row_py(0), clip(w.s, 26).c_str(), ink::dark);
+        for(int i = 0; i < data::gear_slots_count; ++i)
         {
-            bool mine = i == g.cls, unl = core::class_unlocked(a.save, i);
-            stripe(c, i, mine ? phone_tile::stripe_brand : (unl ? phone_tile::stripe_done : phone_tile::stripe_todo));
-            phone_text(a, t, list_x, row_py(i), clip(data::classes[i].name, 16).c_str(), mine ? ink::brand : (unl ? ink::dark : ink::dim));
-            phone_pill(a, c, t, pill_end, row_ty(i), mine ? "Ty" : (unl ? "Dostępny" : "Zablok."),
-                       mine ? pill::brand : (unl ? pill::done : pill::gray));
+            int r = g.equipped[i];
+            core::message m;
+            if(r >= 0) m.add(data::gear[i * 3 + r].name);
+            else m.add(data::gear_slots[i]).add(": brak");
+            stripe(c, 1 + i, r < 0 ? phone_tile::stripe_todo : (r == 2 ? phone_tile::stripe_prog : (r == 1 ? phone_tile::stripe_brand : phone_tile::stripe_done)));
+            phone_text(a, t, list_x, row_py(1 + i), clip(m.s, 17).c_str(), r >= 0 ? ink::dark : ink::dim);
+            if(r >= 0) phone_pill(a, c, t, pill_end, row_ty(1 + i), data::gear_rarities[r], r == 2 ? pill::prog : (r == 1 ? pill::group : pill::gray));
         }
+        core::message s1; s1.add("Obrona +").add(g.gear_bonus(core::gear_stat::def)).add("  Obraż. +").add(g.gear_bonus(core::gear_stat::dmg));
+        phone_text(a, t, list_x, row_py(4), s1.s, ink::dim);
+        core::message s2; s2.add("Kamizelka: +").add(g.gear_bonus(core::gear_stat::hp)).add(" HP");
+        phone_text(a, t, list_x, row_py(5), s2.s, ink::dim);
     }
 
     void tab_costs(app& a, phone_screen& ph, page_sprites& t)   // Koszty = Szkolenia (podgląd w trakcie budowy)
@@ -734,7 +749,7 @@ namespace
         {
             case 0: tab_tasks(a, ph, t); break;
             case 1: tab_issues(a, ph, t); break;
-            case 3: tab_team(a, ph, t); break;
+            case 3: tab_gear(a, ph, t); break;
             case 4: tab_costs(a, ph, t); break;
             default: tab_home(a, ph, t); break;
         }
@@ -1058,6 +1073,8 @@ namespace
         int prev_level = g.hero_level, prev_weapon = g.weapon_override, prev_pickups = g.pickups_count;
         int prev_cd = g.ability_cd;
         int prev_active = 0;
+        int8_t prev_equipped[4];
+        for(int i = 0; i < 4; ++i) prev_equipped[i] = g.equipped[i];
         for(int i = 0; i < g.pickups_count; ++i) prev_active += g.pickups[i].active;
         bool boss_seen = false;
         if(g.stage == 0 && g.tier == 0)   // podpowiedź na start budowy: moc pod R
@@ -1097,6 +1114,15 @@ namespace
                 banner.push("Nowe narzędzie", clip(b.s, 24).c_str());
             }
             if(g.pickups_count > prev_pickups) banner.push("Coś wypadło!", "Sprawdź miejsce usterki");
+            for(int i = 0; i < data::gear_slots_count; ++i)
+                if(g.equipped[i] != prev_equipped[i] && g.equipped[i] >= 0)
+                {
+                    const core::gear_def& gd = data::gear[i * 3 + g.equipped[i]];
+                    core::message t; t.add("Sprzęt: ").add(data::gear_rarities[g.equipped[i]]);
+                    core::message b; b.add(gd.name).add(" +").add(gd.value);
+                    banner.push(t.s, b.s);
+                    prev_equipped[i] = g.equipped[i];
+                }
             if(prev_cd > 0 && g.ability_cd == 0) banner.push("Moc gotowa", g.cdef().ability_name);
             if(! boss_seen && g.boss >= 0 && g.enemies[g.boss].alive && g.visible(g.enemies[g.boss].x, g.enemies[g.boss].y))
             {

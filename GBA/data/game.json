@@ -525,10 +525,11 @@
   "drops": {
     "chancePct": 25,
     "weights": {
-      "coffee": 50,
-      "helmet": 20,
-      "plan": 15,
-      "tool": 15
+      "coffee": 40,
+      "helmet": 5,
+      "plan": 5,
+      "tool": 15,
+      "gear": 35
     }
   },
   "badges": [
@@ -634,5 +635,73 @@
       "from": "Anna Nowak",
       "text": "Znajomi też chcą dom.|Bierzesz kolejną budowę?|Termin już się szykuje."
     }
+  },
+  "equipment": {
+    "rarities": [
+      "Zwykły",
+      "Solidny",
+      "Markowy"
+    ],
+    "rarityRoll": {
+      "solidFrom": 70,
+      "brandFrom": 94,
+      "stageBonus": 5
+    },
+    "slots": [
+      {
+        "name": "Kask",
+        "stat": "def",
+        "items": [
+          [
+            "Kask budowlany",
+            1
+          ],
+          [
+            "Kask z latarką",
+            2
+          ],
+          [
+            "Kask markowy",
+            3
+          ]
+        ]
+      },
+      {
+        "name": "Rękawice",
+        "stat": "dmg",
+        "items": [
+          [
+            "Rękawice robocze",
+            1
+          ],
+          [
+            "Rękawice wzmacniane",
+            2
+          ],
+          [
+            "Rękawice markowe",
+            3
+          ]
+        ]
+      },
+      {
+        "name": "Kamizelka",
+        "stat": "hp",
+        "items": [
+          [
+            "Kamizelka odblaskowa",
+            4
+          ],
+          [
+            "Kamizelka ocieplana",
+            8
+          ],
+          [
+            "Kamizelka markowa",
+            12
+          ]
+        ]
+      }
+    ]
   }
 }
