@@ -77,32 +77,42 @@ def quantize(img, colors, first=(0, 0, 0)):
 PL_CHARS = ["ą", "ć", "ę", "ł", "ń", "ó", "ś", "ź", "ż", "Ą", "Ć", "Ę", "Ł", "Ń", "Ó", "Ś", "Ź", "Ż"]
 
 def make_font():
-    chars = [chr(c) for c in range(33, 127)] + PL_CHARS
-    font = ImageFont.truetype(FONT_MONO_B, 12)
-    W, H = 8, 16
-    strip = Image.new("L", (W, H * len(chars)), 0)
-    for i, ch in enumerate(chars):
-        cell = Image.new("L", (W, H), 0)
-        d = ImageDraw.Draw(cell)
-        bbox = font.getbbox(ch)
-        gw = bbox[2] - bbox[0]
-        d.text(((W - gw) // 2 - bbox[0], 0), ch, font=font, fill=255)
-        strip.paste(cell, (0, i * H))
-    # 0 = przezroczysty, 1 = tekst, 2 = obrys (czytelność na mapie)
-    px = strip.load()
-    out = []
-    for y in range(strip.height):
-        for x in range(W):
-            if px[x, y] > 110:
-                out.append(1)
-            else:
-                near = any(0 <= x + dx < W and 0 <= y + dy < strip.height and px[x + dx, y + dy] > 110
-                           for dx in (-1, 0, 1) for dy in (-1, 0, 1))
-                out.append(2 if near else 0)
-    write_bmp(os.path.join(G, "font_8x16.bmp"), out, W, strip.height,
-              [(255, 0, 255), (250, 250, 250), (20, 20, 30)], 4)
+    """Pikselowy font o zmiennej szerokości z Butano (common_variable_8x16_font, zlib) + polskie znaki
+    dorysowane na literach bazowych. Paleta: 0 przezroczysty, 1 litera, 2 cień (obrys prawy-dolny)."""
+    src = Image.open(os.path.join(SRC, "butano_variable_8x16_font.bmp"))
+    widths = list(map(int, open(os.path.join(SRC, "butano_variable_8x16_font_widths.txt")).read().split()))
+    remap = {0: 0, 14: 1, 12: 2}
+    def glyph(ch):   # znaki od 33 ('!'), spacja nie ma obrazka
+        i = ord(ch) - 33
+        return [[remap[src.getpixel((x, i * 16 + y))] for x in range(8)] for y in range(16)]
+    def width(ch): return widths[ord(ch) - 32]
+    acute_low = [(4, 4, 1), (5, 4, 2), (3, 5, 1), (4, 5, 2)]
+    acute_cap = [(4, 2, 1), (5, 2, 2), (3, 3, 1), (4, 3, 2)]
+    dot_low = [(3, 5, 1), (4, 5, 1), (5, 5, 2)]
+    dot_cap = [(3, 3, 1), (4, 3, 1), (5, 3, 2)]
+    ogonek = [(5, 12, 1), (4, 13, 1), (5, 13, 1), (6, 13, 2), (4, 14, 2), (5, 14, 2)]
+    stroke = [(2, 8, 1), (3, 8, 2), (2, 9, 2)]
+    pl = {"ą": ("a", ogonek), "ć": ("c", acute_low), "ę": ("e", ogonek), "ł": ("l", stroke), "ń": ("n", acute_low),
+          "ó": ("o", acute_low), "ś": ("s", acute_low), "ź": ("z", acute_low), "ż": ("z", dot_low),
+          "Ą": ("A", ogonek), "Ć": ("C", acute_cap), "Ę": ("E", ogonek), "Ł": ("L", stroke), "Ń": ("N", acute_cap),
+          "Ó": ("O", acute_cap), "Ś": ("S", acute_cap), "Ź": ("Z", acute_cap), "Ż": ("Z", dot_cap)}
+    assert list(pl) == PL_CHARS
+    glyphs = [glyph(chr(c)) for c in range(33, 127)]
+    out_widths = [widths[0]] + [width(chr(c)) for c in range(33, 127)]
+    for ch, (base, extra) in pl.items():
+        g = [row[:] for row in glyph(base)]
+        for x, y, v in extra:
+            if g[y][x] != 1: g[y][x] = v
+        glyphs.append(g)
+        out_widths.append(max(width(base), 5 if ch in "łŁ" else 0))
+    px = [v for g in glyphs for row in g for v in row]
+    write_bmp(os.path.join(G, "font_8x16.bmp"), px, 8, 16 * len(glyphs), [(255, 0, 255), (250, 250, 250), (20, 20, 30)], 4)
     write_json("font_8x16", {"type": "sprite", "height": 16})
-    return len(chars)
+    h = ["// WYGENEROWANE przez tools/make_assets.py - szerokości znaków fontu (spacja, ASCII 33-126, polskie znaki).",
+         "#pragma once", "#include <cstdint>", "",
+         f"inline constexpr int8_t font_widths[] = {{ {', '.join(map(str, out_widths))} }};", ""]
+    open(os.path.join(ROOT, "include", "font_widths.h"), "w", encoding="utf-8").write("\n".join(h))
+    return len(glyphs)
 
 # ---------------------------------------------------------------- 2. sprite'y aktorów (16x16, wspólna paleta)
 SPR_PAL = [(255, 0, 255), (26, 26, 26), (240, 240, 240), (240, 192, 144), BRAND_ORANGE, BRAND_NAVY,
