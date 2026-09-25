@@ -141,3 +141,23 @@ Szkic ekranu (1280×720): telefon w pionie na środku, mapa etapu w tle rozmyta 
   test dymny `--smoke` (bot gra 3 etapy w headless Godot).
 - Różnice względem GBA: zapis budowy to serializacja pól (nie `memcpy` struktury), celowanie pod A wybiera najbliższy
   cel (bez przełączania strzałkami), brak telefonu, dźwięku, prologu i animacji – to kolejne kamienie milowe.
+
+### Kamień milowy 2 + część 4 – telefon i oprawa pikselowa (zrobione, 2026-09-25)
+
+- Grafika, font i dźwięk z GBA: `GODOT/tools/export_godot_assets.py` (deterministyczny, czyta tylko `GBA/`) zapisuje
+  do `godot/assets/` postacie i wrogów 32x32 (Scale2x), bogatsze kafle 32x32 dla 8 etapów w paletach z GBA,
+  cząsteczki, ikony, plansze tytułu/końca, pikselowy font z polskimi znakami i dźwięki (muzyka `.mod` -> `.mp3`).
+- Obraz 640x360 skalowany 2x (ostre piksele, więcej pól na ekranie niż na GBA): mapa z kafli, cienie, płynny ruch,
+  szturchnięcie przy ataku, błysk trafienia, mgła z miękkim światłem (tekstura mgły z filtrowaniem liniowym),
+  pola ciosu bossa, znacznik celu, „!”, mini paski HP, liczby KRYT!/Unik!, cząsteczki mocy, wstrząs i błyski ekranu.
+- HUD 1:1 z GBA (pasek HP, poziom, etap, stany z turami, termos, ikona mocy z odliczaniem, gasnący dziennik).
+- Telefon pionowo na środku (tło rozmyte i przyciemnione, wysuwa się z dołu, `Tab`/SELECT): zakładki w grze
+  Zadania, Usterki (portrety problemów), Start, Sprzęt, Koszty; profil na tytule: Odznaki/Zlecenia/Pamiątki, Katalog,
+  Osiedle, Zespół, Koszty = Szkolenia; wiadomości SMS, paczka sprzętu, harmonogram, Hurtownia. Powiadomienia push
+  (stos banerów z dźwiękiem; przy otwartym telefonie w kolumnie obok).
+- Ekrany: tytuł (logo, wersja z game.json), wybór zawodu jak GBA v0.21.45 (karuzela portretów, odblokowane najpierw,
+  karta z paskami statystyk), koniec z kodem QR i konfetti. Zrzuty `--screenshot --scene` (26 scen), test dymny
+  otwiera wszystkie zakładki i ekrany i kończy się błędem, gdy któryś się nie rysuje.
+- Jeszcze nie: 2.5D i dynamiczne światło (kamień 4), animacje chodu w wielu klatkach, dotknięcie banera otwiera
+  zakładkę, rada kierownika (`tips`) na harmonogramie, celowanie z przełączaniem celu i podgląd wroga pod B.
+
