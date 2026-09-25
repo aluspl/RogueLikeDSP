@@ -198,6 +198,24 @@ namespace
         return out;
     }
 
+    constexpr int phone_text_w = 210;   // szerokość wiersza tekstu w telefonie (px)
+
+    // obcina tekst do szerokości w pikselach (font o zmiennej szerokości); ucięty kończy się kropką
+    template<class App>
+    bn::string<96> fit(App& a, const char* s, int max_px)
+    {
+        bn::string<96> out = clip(s, 95);
+        if(a.text.width(out) <= max_px) return out;
+        int dot = a.text.width(".");
+        while(! out.empty() && (a.text.width(out) + dot > max_px || out.back() == ' ' || out.back() == ','))
+        {
+            while(! out.empty() && (uint8_t(out.back()) & 0xC0) == 0x80) out.pop_back();   // bajty kontynuacji UTF-8
+            if(! out.empty()) out.pop_back();
+        }
+        out.push_back('.');
+        return out;
+    }
+
     void wait_release()
     {
         next_frame();
@@ -681,6 +699,9 @@ namespace
     constexpr int row_py(int r) { return 32 + r * 16; }
     constexpr int list_x = 14;   // początek tekstu za paskiem statusu
     constexpr int pill_end = 28; // prawa krawędź pastylek (kafel)
+    int utf8_len(const char* s);
+    // miejsce (px) na tekst od list_x do pastylki z napisem s przy prawej krawędzi
+    int pill_room(const char* s) { return (pill_end - utf8_len(s) - 1) * 8 - list_x - 4; }
 
     void stripe(phone_canvas& c, int r, int tile) { c.set(1, row_ty(r), tile); c.set(1, row_ty(r) + 1, tile); }
 
@@ -710,9 +731,9 @@ namespace
             bool cur = i == g.stage && ! done;
             stripe(c, r, done ? phone_tile::stripe_done : (cur ? phone_tile::stripe_prog : phone_tile::stripe_todo));
             core::message m; m.add(i + 1).add(". ").add(data::stages[i].name);
-            phone_text(a, t, list_x, row_py(r), clip(m.s, 15).c_str(), done ? ink::dim : ink::dark);
-            phone_pill(a, c, t, pill_end, row_ty(r), done ? "Gotowe" : (cur ? "W trakcie" : "Do zrob."),
-                       done ? pill::done : (cur ? pill::prog : pill::gray));
+            const char* state = done ? "Gotowe" : (cur ? "W trakcie" : "Do zrob.");
+            phone_text(a, t, list_x, row_py(r), fit(a, m.s, pill_room(state)).c_str(), done ? ink::dim : ink::dark);
+            phone_pill(a, c, t, pill_end, row_ty(r), state, done ? pill::done : (cur ? pill::prog : pill::gray));
         }
         if(g.stage_event >= 0)   // wydarzenie na placu na tym etapie
         {
@@ -792,7 +813,7 @@ namespace
         phone_header(a, ph, t, tab_names[2], sub.s);
         phone_canvas& c = *ph.canvas;
         core::message r0; r0.add("Etap ").add(g.stage + 1).add(": ").add(data::stages[g.stage].name);
-        phone_text(a, t, list_x, row_py(0), clip(r0.s, 15).c_str(), ink::dark);
+        phone_text(a, t, list_x, row_py(0), fit(a, r0.s, pill_room("W trakcie")).c_str(), ink::dark);
         phone_pill(a, c, t, pill_end, row_ty(0), "W trakcie", pill::prog);
         stripe(c, 0, phone_tile::stripe_prog);
 
@@ -814,9 +835,9 @@ namespace
         phone_pill(a, c, t, pill_end, row_ty(3), g.ability_cd == 0 ? "Gotowa" : cd.s, g.ability_cd == 0 ? pill::done : pill::gray);
 
         core::message sl = status_line(g);
-        phone_text(a, t, list_x, row_py(4), clip(sl.s, 40).c_str(), sl.kind == core::bad ? ink::late : ink::dim);
+        phone_text(a, t, list_x, row_py(4), fit(a, sl.s, phone_text_w).c_str(), sl.kind == core::bad ? ink::late : ink::dim);
         core::message sc = hero_stats_line(g);   // statystyki efektywne (baza+premie); kryt i unik w zakładce Sprzęt
-        phone_text(a, t, list_x, row_py(5), clip(sc.s, 34).c_str(), ink::dim);
+        phone_text(a, t, list_x, row_py(5), fit(a, sc.s, phone_text_w).c_str(), ink::dim);
     }
 
     void tab_gear(app& a, phone_screen& ph, page_sprites& t)   // Sprzęt: narzędzie + kask, rękawice, kamizelka
@@ -827,7 +848,7 @@ namespace
         core::message w; w.add(g.weapon().name).add(" ").add(g.weapon().min_damage).add("-").add(g.weapon().max_damage)
                                .add(" z").add(g.weapon().range).add(" +").add(g.dmg_bonus);
         stripe(c, 0, phone_tile::stripe_brand);
-        phone_text(a, t, list_x, row_py(0), clip(w.s, 26).c_str(), ink::dark);
+        phone_text(a, t, list_x, row_py(0), fit(a, w.s, phone_text_w).c_str(), ink::dark);
         for(int i = 0; i < data::gear_slots_count; ++i)
         {
             int r = g.equipped[i];
@@ -842,9 +863,9 @@ namespace
         }
         core::message s1; s1.add("Obrona +").add(g.gear_bonus(core::gear_stat::def)).add("  Obraż. +").add(g.gear_bonus(core::gear_stat::dmg))
                                 .add("  HP +").add(g.gear_bonus(core::gear_stat::hp));
-        phone_text(a, t, list_x, row_py(4), clip(s1.s, 34).c_str(), ink::dim);
+        phone_text(a, t, list_x, row_py(4), fit(a, s1.s, phone_text_w).c_str(), ink::dim);
         core::message s2; s2.add("Kryt ").add(g.crit_pct()).add("%  Unik ").add(g.dodge_pct()).add("%  Wzrok ").add(g.sight_radius());
-        phone_text(a, t, list_x, row_py(5), clip(s2.s, 34).c_str(), ink::dim);
+        phone_text(a, t, list_x, row_py(5), fit(a, s2.s, phone_text_w).c_str(), ink::dim);
     }
 
     void tab_costs(app& a, phone_screen& ph, page_sprites& t)   // Koszty = Szkolenia (podgląd w trakcie budowy)
@@ -853,13 +874,12 @@ namespace
         phone_header(a, ph, t, tab_names[4], "Szkolenia");
         phone_canvas& c = *ph.canvas;
         int total = core::shop_total_cost(), spent = core::shop_spent(a.save);
-        phone_text(a, t, list_x, row_py(0), "CAŁKOWITY KOSZT", ink::dim);
-        core::message sp; sp.add(spent).add(" dośw.");
+        phone_text(a, t, list_x, row_py(0), "WYDANE NA SZKOLENIA", ink::dim);
+        core::message sp; sp.add(spent).add(" z ").add(total).add(" dośw.");
         phone_text(a, t, list_x, row_py(1), sp.s, ink::dark);
         c.bar(2, row_ty(2), 26, phone_tile::bar_brand_0, spent, total);
-        core::message bud; bud.add("Budżet ").add(total);
-        phone_text(a, t, list_x, row_py(3), bud.s, ink::dim);
-        core::message rest; rest.add("Pozostało ").add(int(a.save.xp));
+        phone_text(a, t, list_x, row_py(3), "Do wydania po budowie", ink::dim);
+        core::message rest; rest.add(int(a.save.xp)).add(" dośw.");
         phone_text(a, t, 226, row_py(3), rest.s, ink::done, 1);
         core::message run; run.add("Z tej budowy: +").add(g.xp() - g.xp_banked);
         phone_text(a, t, list_x, row_py(4), run.s, ink::dim);
@@ -868,8 +888,8 @@ namespace
         {
             const core::contract_def& cd = data::contracts[ci];
             core::message cm; cm.add("Zlecenie: ").add(cd.name);
-            phone_text(a, t, list_x, row_py(5), clip(cm.s, 20).c_str(), ink::dim);
             core::message pm; pm.add(core::imin(cd.target, core::contract_progress_live(a.save, g, ci))).add("/").add(cd.target);
+            phone_text(a, t, list_x, row_py(5), fit(a, cm.s, pill_room(pm.s)).c_str(), ink::dim);
             phone_pill(a, c, t, pill_end, row_ty(5), pm.s, pill::prog);
         }
         else phone_text(a, t, list_x, row_py(5), "Kupisz po budowie", ink::dim);
@@ -989,12 +1009,12 @@ namespace
                        rarity == 2 ? pill::prog : (rarity == 1 ? pill::group : pill::gray));
             core::message m; m.add(is_new ? "Nowy: " : "Teraz: ").add(gear_stat_name(gd.stat)).add(" +").add(gd.value)
                                 .add(", ").add(data::gear_traits[trait].short_name);
-            phone_text(a, t, list_x, row_py(row + 1), clip(m.s, 34).c_str(), is_new ? ink::brand : ink::dim);
+            phone_text(a, t, list_x, row_py(row + 1), fit(a, m.s, phone_text_w).c_str(), is_new ? ink::brand : ink::dim);
         };
         item_rows(0, g.equipped[slot], g.equipped_trait[slot], false);
         item_rows(2, g.offer_rarity, g.offer_trait, true);
         core::message cm; cm.add("Cecha: ").add(data::gear_traits[g.offer_trait].name);
-        phone_text(a, t, list_x, row_py(4), clip(cm.s, 34).c_str(), ink::dim);
+        phone_text(a, t, list_x, row_py(4), fit(a, cm.s, phone_text_w).c_str(), ink::dim);
         core::message km; km.add("A: zakładam  B: zostawiam (+").add(data::gear_decline_xp + g.offer_rarity).add(")");
         phone_text(a, t, list_x, row_py(5), km.s, g.offer_is_better() ? ink::done : ink::dark);
         ph.commit();
@@ -1607,6 +1627,7 @@ namespace
                                            bn::fixed(-dir[k][1]) * bn::fixed(0.8), bn::fixed(dir[k][0]) * bn::fixed(0.8), 0, 16,
                                            particle_pool::spark, 2);
                     break;
+                default: break;
             }
             flash_timer = 6;
         };
@@ -1669,7 +1690,7 @@ namespace
                         case core::loot: a.text.set_palette_item(bn::sprite_palette_items::font_map_loot); break;
                         default:         a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item()); break;
                     }
-                    core::message line; line.add(clip(m.s, 30).c_str());
+                    core::message line; line.add(fit(a, m.s, m.repeat > 1 ? 208 : 232).c_str());
                     if(m.repeat > 1) line.add(" x").add(m.repeat);
                     a.text.generate(-116, 56 + k * 16, line.s, log);
                 }
@@ -1795,13 +1816,15 @@ namespace
             switch(menu_sel)
             {
                 case 0: m.add("Atak: najbliższy cel (z").add(g.weapon().range).add(")"); break;
-                case 1: m.add("Moc: ").add(ability_label(g).s);
-                        if(g.ability_cd > 0) m.add(" - za ").add(g.ability_cd).add(" t."); break;
+                case 1:
+                    m.add("Moc: ").add(ability_label(g).s);
+                    if(g.ability_cd > 0) m.add(" - za ").add(g.ability_cd).add(" t.");
+                    break;
                 case 2: m.add("Termos ").add(g.thermos).add("/").add(g.thermos_cap()).add(": kawa +").add(g.coffee_heal()).add(" HP"); break;
                 case 3: m.add("Czekaj turę"); break;
                 default: m.add("Akcje: wybierz strzałką"); break;
             }
-            a.text.generate(-116, 56, clip(m.s, 34).c_str(), log);
+            a.text.generate(-116, 56, fit(a, m.s, 232).c_str(), log);
             a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
             a.text.generate(-116, 72, menu_sel < 0 ? "START/B: zamknij" : "A: wykonaj  START/B: zamknij", log);
             draw_strips(true);
@@ -1952,7 +1975,7 @@ namespace
                         a.text.set_palette_item(bn::sprite_palette_items::font_map_loot);
                         core::message l1; l1.add(ed.name).add("  HP ").add(e.hp).add("/").add(e.max_hp);
                         l1.add("  obr. ").add(ed.min_damage + g.enemy_dmg_bonus()).add("-").add(ed.max_damage + g.enemy_dmg_bonus());
-                        a.text.generate(-116, 56, clip(l1.s, 34).c_str(), log);
+                        a.text.generate(-116, 56, fit(a, l1.s, 232).c_str(), log);
                         a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
                         a.text.generate(-116, 72, ed.desc, log);
                         draw_strips(true);
@@ -2160,8 +2183,8 @@ namespace
         a.text.set_center_alignment();
         a.text.generate(0, -68, "Harmonogram budowy", t);
         a.text.set_left_alignment();
-        int first = core::imax(0, core::imin(g.stage - 1, data::stages_count - 5));   // okno 5 etapów
-        for(int r = 0; r < 5 && first + r < data::stages_count; ++r)
+        int first = core::imax(0, core::imin(g.stage, data::stages_count - 4));   // okno 4 etapów: zaliczony i kolejne
+        for(int r = 0; r < 4 && first + r < data::stages_count; ++r)
         {
             int i = first + r;
             core::message m;
@@ -2169,6 +2192,13 @@ namespace
             a.text.generate(-104, -44 + r * 16, clip(m.s, 27), t);
         }
         a.text.set_center_alignment();
+        {
+            // rada kierownika (data::tips) - kolejna z każdym etapem, bez losowania (nie rusza RNG gry)
+            bn::sprite_palette_item default_ink = a.text.palette_item();
+            a.text.set_palette_item(bn::sprite_palette_items::font_map_loot);
+            a.text.generate(0, 24, fit(a, data::tips[(g.stage + g.tier * 3) % data::tips_count], 232).c_str(), t);
+            a.text.set_palette_item(default_ink);
+        }
         core::message s; s.add("Wynik: ").add(g.score).add("  Dni: ").add(g.turns);
         a.text.generate(0, 44, s.s, t);
         a.text.generate(0, 62, "Kawa: +5 HP   A: dalej", t);
@@ -2348,7 +2378,7 @@ namespace
                 core::message pr; pr.add(it.price).add(" zł");
                 phone_pill(a, c, t, pill_end, row_ty(r + 1), pr.s, g.cash >= it.price ? pill::group : pill::gray);
             }
-            phone_text(a, t, list_x, row_py(5), clip(data::hurtownia[sel].desc, 26).c_str(), ink::dim);
+            phone_text(a, t, list_x, row_py(5), fit(a, data::hurtownia[sel].desc, phone_text_w).c_str(), ink::dim);
             ph.commit();
         };
         redraw();
@@ -2453,9 +2483,10 @@ namespace
             else if(tab == 0)
             {
                 bool got = a.save.badges & (1u << i);
-                phone_text(a, t, list_x, row_py(r), clip(data::badges[i].name, 16).c_str(), got || is_sel ? name_ink : ink::dim);
-                core::message xp; xp.add("+").add(data::badges[i].xp);
-                phone_pill(a, c, t, pill_end, row_ty(r), got ? "Zdobyta" : xp.s, got ? pill::done : pill::gray);
+                core::message xp; xp.add("+").add(data::badges[i].xp).add(" dośw.");   // nagroda za zdobycie
+                const char* pill_s = got ? "Zdobyta" : xp.s;
+                phone_text(a, t, list_x, row_py(r), fit(a, data::badges[i].name, pill_room(pill_s)).c_str(), got || is_sel ? name_ink : ink::dim);
+                phone_pill(a, c, t, pill_end, row_ty(r), pill_s, got ? pill::done : pill::gray);
             }
             else if(tab == 1)
             {
@@ -2523,7 +2554,7 @@ namespace
                 }
                 const char* desc = note ? note : (se.k == upgrade ? data::upgrades[se.i].desc
                                  : (se.k == cls ? "Nowy zawód do wyboru" : (se.k == tool ? tool_desc.s : "Najwyższa trudność")));
-                phone_text(a, t, list_x, row_py(1), clip(desc, 26).c_str(), ink::dim);
+                phone_text(a, t, list_x, row_py(1), fit(a, desc, phone_text_w).c_str(), ink::dim);
                 for(int r = 0; r < 4 && top + r < entries.size(); ++r)
                 {
                     const entry& e = entries[top + r];
@@ -2553,7 +2584,7 @@ namespace
                 core::message e; core::perk_label(e, core::keepsake_perk(a.save, sel));
                 int runs = a.save.keepsake_runs[sel], rank = core::keepsake_rank(a.save, sel);
                 if(unl) e.add(", budowy: ").add(runs);
-                phone_text(a, t, list_x, row_py(4), clip(unl ? e.s : kd.desc, 34).c_str(), unl ? ink::dark : ink::dim);
+                phone_text(a, t, list_x, row_py(4), fit(a, unl ? e.s : kd.desc, phone_text_w).c_str(), unl ? ink::dark : ink::dim);
                 core::message u;
                 if(! unl)
                 {
@@ -2563,34 +2594,34 @@ namespace
                 }
                 else if(rank < 3) u.add("Ranga ").add(roman(rank)).add(" po ").add(data::keepsake_rank_runs[rank - 1]).add(" bud.");
                 else u.add(kd.desc);
-                phone_text(a, t, list_x, row_py(5), clip(u.s, 34).c_str(), unl ? ink::dim : ink::brand);
+                phone_text(a, t, list_x, row_py(5), fit(a, u.s, phone_text_w).c_str(), unl ? ink::dim : ink::brand);
                 ph.commit();
                 return;
             }
             if(tab == 0 && page == 1)
             {
                 const core::contract_def& cd = data::contracts[sel];
-                phone_text(a, t, list_x, row_py(4), clip(cd.desc, 30).c_str(), ink::dim);
+                phone_text(a, t, list_x, row_py(4), fit(a, cd.desc, phone_text_w).c_str(), ink::dim);
                 core::message rm; rm.add("Nagroda: +").add(cd.xp);
                 if(cd.keepsake >= 0) rm.add(", ").add(data::keepsakes[cd.keepsake].name);
                 else rm.add(" dośw.");
-                phone_text(a, t, list_x, row_py(5), clip(rm.s, 34).c_str(), core::contract_done(a.save, sel) ? ink::done : ink::dim);
+                phone_text(a, t, list_x, row_py(5), fit(a, rm.s, phone_text_w).c_str(), core::contract_done(a.save, sel) ? ink::done : ink::dim);
                 ph.commit();
                 return;
             }
             if(tab == 0)
             {
                 bool got = a.save.badges & (1u << sel);
-                phone_text(a, t, list_x, row_py(4), clip(data::badges[sel].desc, 30).c_str(), ink::dim);
+                phone_text(a, t, list_x, row_py(4), fit(a, data::badges[sel].desc, phone_text_w).c_str(), ink::dim);
                 core::message pm; pm.add("Premia: ");
                 core::perk_label(pm, data::badges[sel].bonus);
-                phone_text(a, t, list_x, row_py(5), clip(pm.s, 34).c_str(), got ? ink::done : ink::dim);
+                phone_text(a, t, list_x, row_py(5), fit(a, pm.s, phone_text_w).c_str(), got ? ink::done : ink::dim);
                 ph.commit();
                 return;
             }
             else if(tab == 1) desc = (a.save.catalog & (1u << sel)) ? data::enemies[sel].desc : "Pokonaj, żeby poznać";
             else desc = data::classes[sel].ability_desc;
-            phone_text(a, t, list_x, row_py(5), clip(desc, 26).c_str(), ink::dim);
+            phone_text(a, t, list_x, row_py(5), fit(a, desc, phone_text_w).c_str(), ink::dim);
             ph.commit();
         };
         ph.set_tab(tab);
@@ -2683,6 +2714,7 @@ int main()
             case scene::help:         s = run_help(a); break;
             case scene::hurtownia:    s = run_hurtownia(a); break;
             case scene::prologue:     s = run_prologue(a); break;
+            default: break;
         }
     }
 }
