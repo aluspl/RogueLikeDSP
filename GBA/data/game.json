@@ -814,6 +814,29 @@
     "damageBonus": 2,
     "radius": 1
   },
+  "statuses": {
+    "poison": {
+      "name": "Zatrucie",
+      "short": "Zatr.",
+      "effect": "-1 HP/turę"
+    },
+    "shock": {
+      "name": "Porażenie",
+      "short": "Poraż.",
+      "effect": "tracisz turę"
+    },
+    "slip": {
+      "name": "Poślizg",
+      "short": "Pośl.",
+      "effect": "ruch o 2 pola"
+    },
+    "paper": {
+      "name": "Papierologia",
+      "short": "Papier.",
+      "effect": "moc później",
+      "delay": 3
+    }
+  },
   "cash": {
     "perScore": 5
   },

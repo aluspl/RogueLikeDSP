@@ -93,6 +93,14 @@ inline constexpr core::shop_item_def hurtownia[] = {
     { "Siłownia", "+3 max HP na tę budowę", 45, core::shop_effect::maxhp },
     { "Energetyk", "Moc od razu gotowa", 20, core::shop_effect::ability },
 };
+inline constexpr core::status_def statuses[] = {   // indeks = core::status_effect
+    { "", "", "" },
+    { "Zatrucie", "Zatr.", "-1 HP/turę" },
+    { "Porażenie", "Poraż.", "tracisz turę" },
+    { "Poślizg", "Pośl.", "ruch o 2 pola" },
+    { "Papierologia", "Papier.", "moc później" },
+};
+inline constexpr int paper_delay = 3;
 inline constexpr int acts_count = 3;
 inline constexpr int hurtownia_count = 5;
 inline constexpr int slam_every = 4;

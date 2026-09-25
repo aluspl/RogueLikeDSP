@@ -701,6 +701,30 @@ namespace
         }
     }
 
+    constexpr core::status_effect hud_statuses[3] = { core::status_effect::poison, core::status_effect::shock, core::status_effect::slip };
+
+    // Aktywne stany z turami do końca: jeden - pełna nazwa i skutek, kilka - skróty.
+    core::message status_line(const core::game& g)
+    {
+        core::message m; m.add("Stany: ");
+        int n = 0;
+        for(core::status_effect s : hud_statuses) n += g.status_turns(s) > 0;
+        if(n == 0) return m.add("brak");
+        m.as(core::bad);
+        bool first = true;
+        for(core::status_effect s : hud_statuses)
+        {
+            int t = g.status_turns(s);
+            if(t <= 0) continue;
+            const core::status_def& sd = data::statuses[int(s)];
+            if(n == 1) return m.add(sd.name).add(" ").add(t).add(" t. (").add(sd.effect).add(")");
+            if(! first) m.add(", ");
+            m.add(sd.short_name).add(" ").add(t);
+            first = false;
+        }
+        return m.add(" t.");
+    }
+
     void tab_home(app& a, phone_screen& ph, page_sprites& t)   // Start = pulpit postaci
     {
         const core::game& g = *a.g;
@@ -730,10 +754,8 @@ namespace
         core::message cd; cd.add("za ").add(g.ability_cd);
         phone_pill(a, c, t, pill_end, row_ty(3), g.ability_cd == 0 ? "Gotowa" : cd.s, g.ability_cd == 0 ? pill::done : pill::gray);
 
-        const core::weapon_def& w = g.weapon();
-        core::message wl; wl.add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range);
-        wl.add(" +").add(g.dmg_bonus);
-        phone_text(a, t, list_x, row_py(4), clip(wl.s, 26).c_str(), ink::dim);
+        core::message sl = status_line(g);
+        phone_text(a, t, list_x, row_py(4), clip(sl.s, 40).c_str(), sl.kind == core::bad ? ink::late : ink::dim);
         core::message sc; sc.add("Wynik ").add(g.score).add("  Budżet ").add(g.cash).add(" zł");
         phone_text(a, t, list_x, row_py(5), sc.s, ink::dim);
     }
@@ -1100,6 +1122,19 @@ namespace
         bn::sprite_palette_ptr power_palette = power_icon.palette();
         text_sprites power_text;
         int shown_cd = -1;
+        // Aktywne stany w tym samym rzędzie (lewa strona): ikona + liczba tur do końca.
+        bn::vector<bn::sprite_ptr, 3> status_icons;
+        for(int k = 0; k < 3; ++k)
+        {
+            bn::sprite_ptr s = bn::sprite_items::particles.create_sprite(-112 + k * 22, -52, particle_pool::status_icon + k);
+            s.set_bg_priority(0);
+            s.set_z_order(-100);
+            s.set_visible(false);
+            status_icons.push_back(s);
+        }
+        text_sprites status_text;
+        int shown_status = -1, status_count = 0;
+        auto hide_status_hud = [&]() { for(auto& s : status_icons) s.set_visible(false); status_text.clear(); shown_status = -1; };
         a.text.set_bg_priority(0);
         a.text.set_z_order(-100);
         int fx_timer = 0, hurt_timer = 0, hold = 0;
@@ -1542,7 +1577,7 @@ namespace
             for(auto& s : pickups) s.set_visible(false);
             fx.clear(); log.clear(); floaters.clear(); fx_particles.list.clear();
             hide_mini_bars(); target_marker.set_visible(false); status_sprite.set_visible(false);
-            power_icon.set_visible(false); power_text.clear(); shown_cd = -1;
+            power_icon.set_visible(false); power_text.clear(); shown_cd = -1; hide_status_hud();
             a.text.set_left_alignment();
             a.text.generate(-116, 72, "Podgląd mapy (puść L)", log);
             bn::fixed_point hp(g.hero.x * 8 + 4 - 256, g.hero.y * 8 + 4 - 256);
@@ -1683,7 +1718,7 @@ namespace
                 fx.clear(); hud.clear(); log.clear(); floaters.clear();
                 hp_left.set_visible(false); hp_right.set_visible(false);
                 hide_mini_bars(); target_marker.set_visible(false); status_sprite.set_visible(false);
-                power_icon.set_visible(false); power_text.clear(); shown_cd = -1;
+                power_icon.set_visible(false); power_text.clear(); shown_cd = -1; hide_status_hud();
                 release_strips();
                 banner.hide();
                 fx_particles.list.clear();
@@ -1749,6 +1784,33 @@ namespace
                 if(shown_cd > 0) { core::message m; m.add(shown_cd); a.text.generate(96, -52, m.s, power_text); }
                 else a.text.generate(96, -52, "R", power_text);
                 power_palette.set_grayscale_intensity(shown_cd > 0 ? bn::fixed(1) : bn::fixed(0));
+            }
+            {
+                int key = 0;
+                for(int k = 0; k < 3; ++k) key = key * 128 + core::imax(0, g.status_turns(hud_statuses[k]));
+                if(key != shown_status)
+                {
+                    shown_status = key;
+                    status_text.clear();
+                    status_count = 0;
+                    a.text.set_palette_item(bn::sprite_palette_items::font_map_bad);
+                    a.text.set_bg_priority(0);
+                    a.text.set_left_alignment();
+                    for(int k = 0; k < 3; ++k)
+                    {
+                        int turns_left = g.status_turns(hud_statuses[k]);
+                        if(turns_left <= 0) continue;
+                        int x = -112 + status_count * 22;
+                        status_icons[status_count].set_tiles(bn::sprite_items::particles.tiles_item(), particle_pool::status_icon + k);
+                        status_icons[status_count].set_x(x);
+                        core::message m; m.add(turns_left);
+                        a.text.generate(x + 5, -52, m.s, status_text);
+                        ++status_count;
+                    }
+                    a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
+                }
+                for(int k = 0; k < 3; ++k) status_icons[k].set_visible(! banner_on && k < status_count);
+                for(bn::sprite_ptr& sp : status_text) sp.set_visible(! banner_on);
             }
             bool ready = g.ability_cd == 0;
             power_icon.set_visible(! banner_on);

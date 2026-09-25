@@ -589,6 +589,7 @@ int main()
     {
         game g; arena(g, 1);
         g.apply_status(status_effect::poison, 3);
+        CHECK(std::strcmp(g.log[log_lines - 1].s, "Zatrucie: -1 HP/turę, 3 t.") == 0);   // skutek i czas w komunikacie
         int hp = g.hero.hp; g.player_wait(); g.player_wait();
         CHECK(g.hero.hp <= hp - 2 + 1 && g.status_turns(status_effect::poison) == 1);   // -1 HP na turę (+ew. odpoczynek)
         g.hero.hp = 1; g.player_wait(); CHECK(g.hero.hp == 1 && g.hero.alive);        // zatrucie nie zabija
