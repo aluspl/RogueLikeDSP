@@ -1,0 +1,7 @@
+{
+  "id": "mage",
+  "name": "Mag",
+  "description": "Kruchy, ale razi z dystansu.",
+  "baseStats": { "maxHealth": 10, "strength": 0, "agility": 1, "intelligence": 4, "defense": 0 },
+  "startingWeapon": "oak_staff"
+}

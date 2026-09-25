@@ -1,3 +1,5 @@
+> **Nowość (2026):** na branchu `godot-migration` są dwa nowe projekty: [`GODOT/`](GODOT/README.md) (LifeLike w Godot 4 + C#) i [`GBA/`](GBA/README.md) (PlanBudowlany RogueLike na Game Boy Advance).
+
 # LifeLike - RogueLike na miare naszych możliwości
 
 Opis projektu na [Szymon Motyka](http://szymonmotyka.pl) i [DSP2017](http://szymonmotyka.pl/tag/dsp)

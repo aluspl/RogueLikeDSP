@@ -1,0 +1,8 @@
+{
+  "id": "dagger",
+  "name": "Sztylet",
+  "minDamage": 1,
+  "maxDamage": 3,
+  "range": 1,
+  "scalesWith": "agility"
+}
