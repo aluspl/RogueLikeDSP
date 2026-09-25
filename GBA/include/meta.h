@@ -11,12 +11,14 @@ namespace core
     static_assert(data::upgrades_count <= max_upgrades);
     static_assert(data::classes_count <= 8);
 
-    constexpr char profile_magic[8] = "PBRL004";
+    constexpr char profile_magic[8] = "PBRL005";
+    constexpr char profile_magic_v4[8] = "PBRL004";
     constexpr char profile_magic_v3[8] = "PBRL003";
     constexpr char profile_magic_v2[8] = "PBRL002";
     constexpr char profile_magic_v1[8] = "PBRL001";
     constexpr int profile_v2_size = 36;   // v3 = v2 + pola motywacji na końcu
     constexpr int profile_v3_size = 56;   // v4 = v3 + zlecenia i pamiątki na końcu
+    constexpr int profile_v4_size = 72;   // v5 = v4 + liczniki zleceń przeniesione z bieżącej budowy
     constexpr int max_keepsakes = 8;
     static_assert(data::contracts_count <= 8 && data::keepsakes_count <= max_keepsakes);
     constexpr int max_houses = 12;        // działki na Osiedlu
@@ -50,33 +52,54 @@ namespace core
         uint8_t contracts;             // ukończone zlecenia (bitmaska data::contracts)
         uint8_t keepsake;              // wybrana pamiątka + 1 (0 = bez pamiątki)
         uint8_t keepsake_runs[max_keepsakes];   // budowy z każdą pamiątką (ranga)
+        // --- v5: ile liczników zleceń bieżącej budowy już przeniesiono do *_total (znak wodny).
+        // Jest w profilu, bo zapisuje się razem z sumami jednym zapisem SRAM: wznowienie budowy
+        // z autozapisu na starcie etapu nie doliczy drugi raz etapu, który już raz przeniesiono.
+        uint16_t run_kills;
+        uint16_t run_powers;
+        uint8_t run_brand;
+        uint8_t run_clean;
     };
     static_assert(offsetof(profile, badges) == profile_v2_size);
     static_assert(offsetof(profile, kills_total) == profile_v3_size);
+    static_assert(offsetof(profile, run_kills) == profile_v4_size);
 
     enum profile_flag : uint8_t { help_seen = 1, prologue_seen = 2 };
 
     inline bool has_flag(const profile& p, profile_flag f) { return p.flags & f; }
     inline void set_flag(profile& p, profile_flag f) { p.flags = uint8_t(p.flags | f); }
 
+    inline bool keepsake_unlocked(const profile& p, int k);
+
+    // Bez wybranej pamiątki: pierwsza odblokowana (nowy profil zaczyna z Termosem babci).
+    inline void default_keepsake(profile& p)
+    {
+        if(p.keepsake != 0) return;
+        for(int k = 0; k < data::keepsakes_count; ++k)
+            if(keepsake_unlocked(p, k)) { p.keepsake = uint8_t(k + 1); return; }
+    }
+
     inline void profile_reset(profile& p)
     {
         std::memset(&p, 0, sizeof p);
         std::memcpy(p.magic, profile_magic, sizeof p.magic);
         p.classes = uint8_t(data::start_classes_mask);
+        default_keepsake(p);
     }
 
     // Naprawia wczytany profil. Zwraca true, jeśli trzeba go zapisać (migracja albo pusta pamięć).
     inline bool profile_fix(profile& p)
     {
         if(std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0) return false;
-        // v3 -> v4 i v2 -> v4: stare pola zostają, nowe od zera
-        int keep = std::memcmp(p.magic, profile_magic_v3, sizeof p.magic) == 0 ? profile_v3_size
-                 : (std::memcmp(p.magic, profile_magic_v2, sizeof p.magic) == 0 ? profile_v2_size : 0);
+        // v4/v3/v2 -> v5: stare pola zostają, nowe od zera; bez wybranej pamiątki - pierwsza odblokowana
+        int keep = std::memcmp(p.magic, profile_magic_v4, sizeof p.magic) == 0 ? profile_v4_size
+                 : (std::memcmp(p.magic, profile_magic_v3, sizeof p.magic) == 0 ? profile_v3_size
+                 : (std::memcmp(p.magic, profile_magic_v2, sizeof p.magic) == 0 ? profile_v2_size : 0));
         if(keep > 0)
         {
             std::memset(reinterpret_cast<char*>(&p) + keep, 0, sizeof p - keep);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
+            default_keepsake(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v1, sizeof p.magic) == 0)
@@ -172,10 +195,12 @@ namespace core
         p.keepsake = uint8_t(k);
     }
 
-    // Start budowy: licznik budów i budów z wybraną pamiątką (mods() wołać wcześniej - ranga z budów przed tą).
+    // Start budowy: licznik budów i budów z wybraną pamiątką (mods() wołać wcześniej - ranga z budów przed tą),
+    // nowa budowa nie ma jeszcze nic przeniesionego do liczników zleceń.
     inline void start_run(profile& p)
     {
         ++p.runs;
+        p.run_kills = 0; p.run_powers = 0; p.run_brand = 0; p.run_clean = 0;
         int k = selected_keepsake(p);
         if(k >= 0 && p.keepsake_runs[k] < 255) ++p.keepsake_runs[k];
     }
@@ -196,6 +221,7 @@ namespace core
                 case upgrade_effect::pickups: m.pickups += v; break;
                 case upgrade_effect::luck:    m.luck += v; break;
                 case upgrade_effect::craft:   m.craft += v; break;
+                default: break;
             }
         }
         for(int i = 0; i < data::badges_count; ++i)   // uprawnienia z zdobytych odznak
@@ -241,13 +267,15 @@ namespace core
     inline uint16_t add_sat16(uint16_t a, int d) { return uint16_t(imin(65535, a + imax(0, d))); }
     inline uint8_t add_sat8(uint8_t a, int d) { return uint8_t(imin(255, a + imax(0, d))); }
 
-    // Przenosi do profilu nowe wartości liczników zleceń z budowy (bez podwójnego liczenia).
-    inline void bank_counters(profile& p, game& g)
+    // Przenosi do profilu nowe wartości liczników zleceń z budowy (bez podwójnego liczenia): dolicza tylko
+    // nadwyżkę ponad znak wodny run_* w profilu. Po wznowieniu budowy z wcześniejszego autozapisu liczniki
+    // gry są mniejsze niż znak wodny - powtórzony etap dolicza się dopiero, gdy go przebije.
+    inline void bank_counters(profile& p, const game& g)
     {
-        p.kills_total = add_sat16(p.kills_total, g.kills - g.kills_banked); g.kills_banked = g.kills;
-        p.powers_total = add_sat16(p.powers_total, g.powers_used - g.powers_banked); g.powers_banked = g.powers_used;
-        p.brand_total = add_sat8(p.brand_total, g.brand_found - g.brand_banked); g.brand_banked = g.brand_found;
-        p.clean_bosses = add_sat8(p.clean_bosses, g.clean_bosses - g.clean_banked); g.clean_banked = g.clean_bosses;
+        p.kills_total = add_sat16(p.kills_total, g.kills - p.run_kills); p.run_kills = uint16_t(imax(p.run_kills, imin(65535, g.kills)));
+        p.powers_total = add_sat16(p.powers_total, g.powers_used - p.run_powers); p.run_powers = uint16_t(imax(p.run_powers, g.powers_used));
+        p.brand_total = add_sat8(p.brand_total, g.brand_found - p.run_brand); p.run_brand = uint8_t(imax(p.run_brand, g.brand_found));
+        p.clean_bosses = add_sat8(p.clean_bosses, g.clean_bosses - p.run_clean); p.run_clean = uint8_t(imax(p.run_clean, g.clean_bosses));
     }
 
     inline int popcount(unsigned v) { int n = 0; for(; v; v &= v - 1) ++n; return n; }
@@ -275,10 +303,10 @@ namespace core
         int v = contract_progress(p, i);
         switch(data::contracts[i].kind)
         {
-            case contract_kind::kills:      return v + g.kills - g.kills_banked;
-            case contract_kind::powers:     return v + g.powers_used - g.powers_banked;
-            case contract_kind::brand:      return v + g.brand_found - g.brand_banked;
-            case contract_kind::clean_boss: return v + g.clean_bosses - g.clean_banked;
+            case contract_kind::kills:      return v + imax(0, g.kills - p.run_kills);
+            case contract_kind::powers:     return v + imax(0, g.powers_used - p.run_powers);
+            case contract_kind::brand:      return v + imax(0, g.brand_found - p.run_brand);
+            case contract_kind::clean_boss: return v + imax(0, g.clean_bosses - p.run_clean);
             default:                        return v;
         }
     }
@@ -362,7 +390,7 @@ namespace core
     // Cały stan gry (game jest trywialnie kopiowalny) za profilem w SRAM. Rozmiar i suma kontrolna
     // odrzucają zapisy uszkodzone i z innej wersji gry.
     static_assert(std::is_trivially_copyable_v<game>);
-    constexpr char run_magic[8] = "PBRUN03";   // 03: liczniki zleceń, premie z odznak i pamiątek
+    constexpr char run_magic[8] = "PBRUN04";   // 04: przeniesione liczniki zleceń w profilu (v5), nie w budowie
     constexpr int run_save_offset = 256;
     static_assert(sizeof(profile) <= run_save_offset);
 

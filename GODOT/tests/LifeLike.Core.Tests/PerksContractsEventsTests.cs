@@ -1,7 +1,8 @@
 namespace LifeLike.Core.Tests;
 
 // core_tests.cpp (v0.21.43): 29 (statystyki, Warsztaty, Kurs BHP II), 30 (uprawnienia z odznak), 31/31a/31b/31c (zlecenia,
-// Czysta robota, migracja profilu v3 -> v4, postęp na żywo), 32 (pamiątki), 33 (wydarzenia na placu).
+// Czysta robota, migracja profilu v3 -> v5, postęp na żywo), 31d/31e (v0.21.44: migracja v4 -> v5, domyślna pamiątka,
+// wznowienie budowy bez podwójnego liczenia zleceń), 32 (pamiątki), 33 (wydarzenia na placu).
 public class PerksContractsEventsTests
 {
     private static GameData D => TestData.D;
@@ -196,9 +197,9 @@ public class PerksContractsEventsTests
         Assert.Equal(0, h.CleanBosses);
     }
 
-    // 31b. profil v3 -> v4: wszystkie dotychczasowe pola zostają, nowe od zera
+    // 31b. profil v3 -> v5: wszystkie dotychczasowe pola zostają, nowe od zera
     [Fact]
-    public void MigrationV3ToV4KeepsOldFields()
+    public void MigrationV3ToV5KeepsOldFields()
     {
         var v3 = Meta.NewProfile(D);
         v3.Magic = Profile.MagicBytes(Profile.MagicV3);
@@ -221,19 +222,85 @@ public class PerksContractsEventsTests
         var raw = v3.ToBytes();
         for (var i = Profile.V3Size; i < raw.Length; i++) raw[i] = 0xCD; // śmieci
         v3 = Profile.FromBytes(raw);
-        Assert.True(Meta.ProfileFix(D, v3) && v3.MagicIs(Profile.MagicV4));
+        Assert.True(Meta.ProfileFix(D, v3) && v3.MagicIs(Profile.MagicV5));
         Assert.True(v3.Best == 1234 && v3.Runs == 9 && v3.Wins == 4 && v3.Xp == 321 && v3.Levels[1] == 2 && v3.Classes == 0x1F);
         Assert.True(v3.Hard == 1 && v3.Flags == 3 && v3.Tools == 5 && v3.Badges == 0x0123 && v3.Catalog == 0x07FF);
         Assert.True(v3.ClassWins == 0x05 && v3.ToolsFound == 0x0B && v3.HousesCount == 3 && v3.Houses[0] == 0x21 && v3.Houses[2] == 0x35);
         Assert.True(v3.KillsTotal == 0 && v3.PowersTotal == 0 && v3.BrandTotal == 0 && v3.CleanBosses == 0);
-        Assert.True(v3.Contracts == 0 && v3.Keepsake == 0);
+        Assert.True(v3.Contracts == 0 && Meta.SelectedKeepsake(D, v3) >= 0 && D.Keepsakes[Meta.SelectedKeepsake(D, v3)].Start);
         Assert.All(v3.KeepsakeRuns, r => Assert.Equal(0, r));
         Assert.False(Meta.ProfileFix(D, v3));
     }
 
-    /// <summary>Układ bajtów profilu v4 jak struktura core::profile w SRAM (offsety z static_assert w meta.h).</summary>
+    // 31d. profil v4 -> v5: pola zostają, znak wodny liczników od zera; bez pamiątki – pierwsza odblokowana
     [Fact]
-    public void ProfileV4SramLayout()
+    public void MigrationV4ToV5DefaultKeepsake()
+    {
+        var v4 = Meta.NewProfile(D);
+        v4.Magic = Profile.MagicBytes(Profile.MagicV4);
+        v4.Best = 77;
+        v4.Xp = 12;
+        v4.KillsTotal = 150;
+        v4.PowersTotal = 40;
+        v4.Contracts = 0x03;
+        v4.Keepsake = 0;
+        v4.KeepsakeRuns[0] = 4;
+        var raw = v4.ToBytes();
+        for (var i = Profile.V4Size; i < raw.Length; i++) raw[i] = 0xEE; // śmieci
+        v4 = Profile.FromBytes(raw);
+        Assert.True(Meta.ProfileFix(D, v4) && v4.MagicIs(Profile.MagicV5));
+        Assert.True(v4.Best == 77 && v4.Xp == 12 && v4.KillsTotal == 150 && v4.PowersTotal == 40 && v4.Contracts == 0x03);
+        Assert.True(v4.KeepsakeRuns[0] == 4 && v4.RunKills == 0 && v4.RunPowers == 0 && v4.RunBrand == 0 && v4.RunClean == 0);
+        Assert.True(Meta.SelectedKeepsake(D, v4) >= 0 && D.Keepsakes[Meta.SelectedKeepsake(D, v4)].Start);
+        Assert.False(Meta.ProfileFix(D, v4));
+        var w = Meta.NewProfile(D);
+        w.Magic = Profile.MagicBytes(Profile.MagicV4);
+        w.Badges = 0x01;
+        var kb = Array.FindIndex(D.Keepsakes, k => k.Badge == 0);
+        w.Keepsake = (byte)(kb >= 0 ? kb + 1 : 0); // wybrana pamiątka zostaje
+        Assert.True(Meta.ProfileFix(D, w) && w.Keepsake == (kb >= 0 ? kb + 1 : 1));
+        var n = Meta.NewProfile(D); // nowy profil
+        Assert.True(Meta.SelectedKeepsake(D, n) >= 0 && D.Keepsakes[Meta.SelectedKeepsake(D, n)].Start);
+    }
+
+    // 31e. wyłączenie konsoli po zaliczonym etapie i wznowienie z autozapisu na starcie etapu:
+    // liczniki zleceń z tego etapu nie liczą się drugi raz
+    [Fact]
+    public void ResumedStageDoesNotDoubleCountContracts()
+    {
+        var p = Meta.NewProfile(D);
+        var g = new Game(D);
+        g.NewRun(1, 4242, 0, Meta.Mods(D, p));
+        Meta.StartRun(D, p);
+        var rs = RunSave.Make(g); // autozapis na starcie etapu
+        for (var k = 0; k < 4000 && g.St == GameStatus.Playing; ++k) Bot.Step(g);
+        Assert.True(g.St == GameStatus.StageClear && g.Kills > 0);
+        g.PowersUsed = 2;
+        Meta.CheckBadges(D, p, g); // koniec etapu: liczniki do profilu (SRAM)
+        int kills1 = p.KillsTotal, pw1 = p.PowersTotal;
+        Assert.True(kills1 == g.Kills && pw1 == 2);
+        var h = RunSave.FromBytes(rs.ToBytes()).Load(D); // wznowienie: stan ze startu etapu
+        var iK = ContractOf(ContractKind.Kills);
+        Assert.Equal(kills1, Meta.ContractProgressLive(D, p, h, iK)); // telefon nie pokazuje etapu dwa razy
+        for (var k = 0; k < 4000 && h.St == GameStatus.Playing; ++k) Bot.Step(h);
+        Assert.True(h.St == GameStatus.StageClear && h.Kills == g.Kills); // ten sam etap jeszcze raz
+        h.PowersUsed = 2;
+        Meta.CheckBadges(D, p, h);
+        Assert.True(p.KillsTotal == kills1 && p.PowersTotal == pw1); // bez podwójnego liczenia
+        h.Kills += 2;
+        h.PowersUsed = 3;
+        Meta.RecordRun(D, p, h); // powtórka dała więcej: tylko nadwyżka
+        Assert.True(p.KillsTotal == kills1 + 2 && p.PowersTotal == pw1 + 1);
+        Meta.StartRun(D, p); // nowa budowa liczy od zera
+        var n = TestData.Run(1, 5);
+        n.Kills = 3;
+        Meta.RecordRun(D, p, n);
+        Assert.True(p.KillsTotal == kills1 + 5 && p.RunKills == 3);
+    }
+
+    /// <summary>Układ bajtów profilu v5 jak struktura core::profile w SRAM (offsety z static_assert w meta.h).</summary>
+    [Fact]
+    public void ProfileV5SramLayout()
     {
         var p = Meta.NewProfile(D);
         p.KillsTotal = 0x1234;
@@ -244,11 +311,16 @@ public class PerksContractsEventsTests
         p.Keepsake = 3;
         p.KeepsakeRuns[0] = 11;
         p.KeepsakeRuns[7] = 99;
+        p.RunKills = 0x0506;
+        p.RunPowers = 0x0102;
+        p.RunBrand = 3;
+        p.RunClean = 4;
         var b = p.ToBytes();
-        Assert.Equal(72, b.Length);
-        Assert.Equal("PBRL004\0"u8.ToArray(), b[..8]);
+        Assert.Equal(80, b.Length);
+        Assert.Equal("PBRL005\0"u8.ToArray(), b[..8]);
         Assert.Equal(new byte[] { 0x34, 0x12, 0x01, 0x02, 7, 8, 0x2A, 3, 11 }, b[56..65]);
         Assert.Equal(99, b[71]);
+        Assert.Equal(new byte[] { 0x06, 0x05, 0x02, 0x01, 3, 4, 0, 0 }, b[72..80]);
         Assert.Equal(b, Profile.FromBytes(b).ToBytes());
     }
 
@@ -272,11 +344,13 @@ public class PerksContractsEventsTests
         }
         Assert.True(startK >= 0 && badgeK >= 0 && contractK >= 0);
         Assert.True(Meta.KeepsakeUnlocked(D, p, startK) && !Meta.KeepsakeUnlocked(D, p, badgeK) && !Meta.KeepsakeUnlocked(D, p, contractK));
-        Assert.Equal(-1, Meta.SelectedKeepsake(D, p));
+        Assert.Equal(startK, Meta.SelectedKeepsake(D, p)); // nowy profil: pamiątka startowa
         Meta.CycleKeepsake(D, p, 1);
-        Assert.Equal(startK, Meta.SelectedKeepsake(D, p)); // zablokowane są pomijane
+        Assert.Equal(0, p.Keepsake); // zablokowane są pomijane -> „bez pamiątki”
         Meta.CycleKeepsake(D, p, 1);
-        Assert.Equal(0, p.Keepsake); // „bez pamiątki”
+        Assert.Equal(startK, Meta.SelectedKeepsake(D, p));
+        Meta.CycleKeepsake(D, p, -1);
+        Assert.Equal(0, p.Keepsake);
         p.Badges = (ushort)(1 << D.Keepsakes[badgeK].Badge);
         Assert.True(Meta.KeepsakeUnlocked(D, p, badgeK));
         p.Contracts = (byte)(1 << contractI);
@@ -393,6 +467,6 @@ public class PerksContractsEventsTests
         Assert.True(l.StageEvent == g.StageEvent && l.PowersUsed == 12 && l.BrandFound == 2 && l.CleanBosses == 1 && l.BossWakeDamage == 5);
         Assert.True(l.Bonus.Crit == g.Bonus.Crit && l.Bonus.XpPct == g.Bonus.XpPct && l.Bonus.Thermos == g.Bonus.Thermos && l.ThermosCap() == g.ThermosCap());
         Assert.Equal(StateDigest.Of(g), StateDigest.Of(l));
-        Assert.Equal("PBRUN03", RunSave.RunMagic);
+        Assert.Equal("PBRUN04", RunSave.RunMagic);
     }
 }

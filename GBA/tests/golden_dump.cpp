@@ -133,8 +133,8 @@ static void snapshot(const game& g, int step)
     w(","); key("equippedTrait"); w("["); for(int i = 0; i < 4; ++i) { if(i) w(","); wi(g.equipped_trait[i]); } w("]");
     w(","); key("thermos"); wi(g.thermos); w(","); key("thermosCap"); wi(g.thermos_cap());
     w(","); key("stageEvent"); wi(g.stage_event);
-    w(","); key("counters"); w("["); wi(g.kills_banked); w(","); wi(g.powers_used); w(","); wi(g.powers_banked); w(",");
-    wi(g.brand_found); w(","); wi(g.brand_banked); w(","); wi(g.clean_bosses); w(","); wi(g.clean_banked); w(","); wi(g.boss_wake_damage); w("]");
+    w(","); key("counters"); w("["); wi(g.powers_used); w(","); wi(g.brand_found); w(","); wi(g.clean_bosses); w(",");
+    wi(g.boss_wake_damage); w("]");
     w(","); key("stats"); w("["); wi(g.hero_stat(stat::str)); w(","); wi(g.hero_stat(stat::agi)); w(","); wi(g.hero_stat(stat::intel)); w(",");
     wi(g.luck()); w(","); wi(g.crit_pct()); w(","); wi(g.sight_radius()); w(","); wi(g.ability_cooldown()); w("]");
     w(","); key("offer"); w("["); wi(g.offer_slot); w(","); wi(g.offer_rarity); w(","); wi(g.offer_trait); w("]");
