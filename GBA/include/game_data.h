@@ -27,26 +27,28 @@ inline constexpr core::class_def classes[] = {
 };
 
 inline constexpr core::enemy_def enemies[] = {
-    { "Przeciek", "Kapie tam, gdzie nie powinno", 6, 1, 3, 0, 6, 10, 6 },
-    { "Zwarcie", "Iskrzy przy każdej okazji", 5, 2, 4, 0, 7, 12, 7 },
-    { "Pleśń", "Lubi wilgoć i zimne ściany", 9, 1, 2, 1, 4, 10, 8 },
-    { "Kornik", "Drąży więźbę po cichu", 7, 1, 3, 1, 5, 10, 9 },
-    { "Papierologia", "Brakuje jednej pieczątki", 12, 1, 2, 2, 4, 15, 10 },
-    { "Opóźniona dostawa", "Będzie jutro. Na pewno.", 10, 2, 4, 1, 6, 15, 11 },
-    { "Ulewa", "Zawsze tuż przed dachem", 8, 2, 3, 0, 8, 12, 12 },
-    { "Przekroczony budżet", "Rośnie szybciej niż mury", 14, 2, 5, 2, 6, 25, 13 },
-    { "Nieprzekraczalny Termin", "Nieprzesuwalny. Podobno.", 40, 3, 6, 3, 12, 200, 14 },
+    { "Przeciek", "Kapie tam, gdzie nie powinno", 6, 1, 3, 0, 6, 10, 6, false },
+    { "Zwarcie", "Iskrzy przy każdej okazji", 5, 2, 4, 0, 7, 12, 7, false },
+    { "Pleśń", "Lubi wilgoć i zimne ściany", 9, 1, 2, 1, 4, 10, 8, false },
+    { "Kornik", "Drąży więźbę po cichu", 7, 1, 3, 1, 5, 10, 9, false },
+    { "Papierologia", "Brakuje jednej pieczątki", 12, 1, 2, 2, 4, 15, 10, false },
+    { "Opóźniona dostawa", "Będzie jutro. Na pewno.", 10, 2, 4, 1, 6, 15, 11, false },
+    { "Ulewa", "Zawsze tuż przed dachem", 8, 2, 3, 0, 8, 12, 12, false },
+    { "Przekroczony budżet", "Rośnie szybciej niż mury", 14, 2, 5, 2, 6, 25, 13, false },
+    { "Nieprzekraczalny Termin", "Nieprzesuwalny. Podobno.", 40, 3, 6, 3, 12, 200, 14, true },
+    { "Zepsuta Betoniarka", "Kręci się, ale nie tam", 30, 3, 5, 2, 10, 150, 46, true },
+    { "Nawałnica", "Leje jak z cebra", 36, 3, 6, 2, 12, 180, 47, true },
 };
 
 inline constexpr core::stage_def stages[] = {
-    { "Fundamenty", { 0, 3, -1, -1 }, 2, 5, -1, 100, 0 },
-    { "Mury parteru", { 4, 5, 3, -1 }, 3, 6, -1, 105, 0 },
-    { "Strop", { 5, 7, 3, -1 }, 3, 6, -1, 110, 0 },
-    { "Dach", { 6, 3, 0, -1 }, 3, 7, -1, 115, 0 },
-    { "Okna i drzwi", { 5, 6, 4, -1 }, 3, 7, -1, 120, 0 },
-    { "Instalacje", { 1, 0, 2, -1 }, 3, 8, -1, 125, 0 },
-    { "Tynki i wylewki", { 2, 0, 1, -1 }, 3, 8, -1, 130, 0 },
-    { "Wykończenie i odbiór", { 2, 7, -1, -1 }, 2, 6, 8, 135, 0 },
+    { "Fundamenty", { 0, 3, -1, -1 }, 2, 5, -1, 100, 0, 0 },
+    { "Mury parteru", { 4, 5, 3, -1 }, 3, 6, -1, 105, 0, 0 },
+    { "Strop", { 5, 7, 3, -1 }, 3, 6, 9, 110, 0, 0 },
+    { "Dach", { 6, 3, 0, -1 }, 3, 7, -1, 115, 0, 1 },
+    { "Okna i drzwi", { 5, 6, 4, -1 }, 3, 7, 10, 120, 0, 1 },
+    { "Instalacje", { 1, 0, 2, -1 }, 3, 8, -1, 125, 0, 2 },
+    { "Tynki i wylewki", { 2, 0, 1, -1 }, 3, 8, -1, 130, 0, 2 },
+    { "Wykończenie i odbiór", { 2, 7, -1, -1 }, 2, 6, 8, 135, 0, 2 },
 };
 
 inline constexpr core::difficulty_def difficulties[] = {
@@ -77,6 +79,36 @@ inline constexpr core::story_msg story_win = { "Anna Nowak", { "Mamy klucze! Pla
 inline constexpr core::story_msg story_lose = { "Kierownik Marek", { "Budowa stoi. Spokojnie -", "z lepszym planem pójdzie.", "Wracamy na plac?" } };
 inline constexpr core::story_msg story_ngplus = { "Anna Nowak", { "Znajomi też chcą dom.", "Bierzesz kolejną budowę?", "Termin już się szykuje." } };
 
+inline constexpr core::act_def acts[] = {
+    { "Stan surowy", 10, 2 },
+    { "Pod dachem", 10, 2 },
+    { "Wykończenie", 10, 2 },
+};
+inline constexpr core::shop_item_def hurtownia[] = {
+    { "Kawa z ekspresu", "Pełne HP", 30, core::shop_effect::heal },
+    { "Paczka sprzętu", "Losowy sprzęt, co najmniej solidny", 50, core::shop_effect::gear },
+    { "Nowe narzędzie", "Losowe odblokowane narzędzie", 40, core::shop_effect::tool },
+    { "Siłownia", "+3 max HP na tę budowę", 45, core::shop_effect::maxhp },
+    { "Energetyk", "Moc od razu gotowa", 20, core::shop_effect::ability },
+};
+inline constexpr int acts_count = 3;
+inline constexpr int hurtownia_count = 5;
+inline constexpr int slam_every = 4;
+inline constexpr int slam_damage_bonus = 3;
+inline constexpr int slam_radius = 1;
+inline constexpr int cash_per_score = 5;
+inline constexpr int enemy_przeciek = 0;
+inline constexpr int enemy_zwarcie = 1;
+inline constexpr int enemy_plesn = 2;
+inline constexpr int enemy_kornik = 3;
+inline constexpr int enemy_papierologia = 4;
+inline constexpr int enemy_dostawa = 5;
+inline constexpr int enemy_ulewa = 6;
+inline constexpr int enemy_budzet = 7;
+inline constexpr int enemy_termin = 8;
+inline constexpr int enemy_betoniarka = 9;
+inline constexpr int enemy_nawalnica = 10;
+
 inline constexpr core::badge_def badges[] = {
     { "Bez usterek", "Etap bez żadnych obrażeń", 20 },
     { "Przed terminem", "Termin pokonany w 150 tur", 30 },
@@ -90,7 +122,7 @@ inline constexpr core::badge_def badges[] = {
 };
 
 inline constexpr int badges_count = 9;
-inline constexpr int enemies_count = 9;
+inline constexpr int enemies_count = 11;
 inline constexpr int badge_bez_usterek = 0;
 inline constexpr int badge_przed_terminem = 1;
 inline constexpr int badge_seryjny = 2;

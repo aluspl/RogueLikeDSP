@@ -45,6 +45,7 @@ namespace core
         int8_t sight;
         int16_t score;
         int8_t frame;
+        bool slam;             // boss: zapowiada uderzenie w obszar (czerwone pola)
     };
 
     struct stage_def           // etap budowy = piętro lochu
@@ -56,6 +57,24 @@ namespace core
         int8_t boss;           // -1 = brak
         int16_t hp_pct;        // mnożnik HP wrogów w etapie (100 = bez zmian)
         int8_t dmg_bonus;      // premia do obrażeń wrogów w etapie
+        int8_t act;            // akt budowy (każdy kończy się bossem)
+    };
+
+    struct act_def             // akt budowy: kilka etapów zakończonych bossem, potem Hurtownia
+    {
+        const char* name;
+        int8_t bonus_per_stage;   // premia (zł) za ukończenie aktu: za każdy etap aktu
+        int8_t bonus_per_kill;    // ... i za każdy usunięty problem w akcie
+    };
+
+    enum class shop_effect : uint8_t { heal, gear, tool, maxhp, ability };
+
+    struct shop_item_def       // Hurtownia między aktami (płatne budżetem z budowy)
+    {
+        const char* name;
+        const char* desc;
+        int16_t price;
+        shop_effect effect;
     };
 
     enum class upgrade_effect : uint8_t { hp, def, dmg, coffee, pickups };
