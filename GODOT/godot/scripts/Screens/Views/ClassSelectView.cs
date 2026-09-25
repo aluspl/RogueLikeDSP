@@ -147,27 +147,28 @@ public partial class ClassSelectView : Control
         var x = r.Position.X + 14;
         var y = r.Position.Y + 8;
 
-        // nazwa w 2x + opis
+        // nazwa w 2x + opis (tekst karty w 1.5x - czytelny na dużym ekranie)
+        const float ts = 1.5f;
         f.Draw(this, new Vector2(x, y), c.Name, Ink.Dark, TextAlign.Left, 2);
         y += 32;
         var colW = (int)(r.Size.X / 2 - 24);
-        f.Draw(this, new Vector2(x, y), f.Fit(c.Desc, colW), Ink.Dim);
-        y += 20;
+        f.Draw(this, new Vector2(x, y), f.Fit(c.Desc, colW, ts), Ink.Dim, TextAlign.Left, ts);
+        y += 26;
 
         // moc z ikoną
-        DrawStyleBox(Ui.Box(Pal.Group, 6), new Rect2(x, y, 36, 36));
-        Assets.DrawFrame(this, Assets.AbilityIcons, cls, 32, new Vector2(x + 2, y + 2));
-        f.Draw(this, new Vector2(x + 44, y), $"Moc (R): {c.AbilityName}", Ink.Brand);
-        f.Draw(this, new Vector2(x + 44, y + 17), f.Fit(c.AbilityDesc, colW - 44), Ink.Dim);
-        y += 40;
+        DrawStyleBox(Ui.Box(Pal.Group, 6), new Rect2(x, y + 4, 36, 36));
+        Assets.DrawFrame(this, Assets.AbilityIcons, cls, 32, new Vector2(x + 2, y + 6));
+        f.Draw(this, new Vector2(x + 44, y), f.Fit($"Moc (R): {c.AbilityName}", colW - 44, ts), Ink.Brand, TextAlign.Left, ts);
+        f.Draw(this, new Vector2(x + 44, y + 22), f.Fit(c.AbilityDesc, colW - 44, ts), Ink.Dim, TextAlign.Left, ts);
+        y += 48;
 
         // narzędzie ze statystyką
         var wpn = _d.Weapons[c.Weapon];
-        f.Draw(this, new Vector2(x, y), f.Fit($"{wpn.Name} {wpn.MinDamage}-{wpn.MaxDamage}, zasięg {wpn.Range}", colW - 40), Ink.Dark);
+        f.Draw(this, new Vector2(x, y), f.Fit($"{wpn.Name} {wpn.MinDamage}-{wpn.MaxDamage}, zasięg {wpn.Range}", colW - 40, ts), Ink.Dark, TextAlign.Left, ts);
         var tag = UiText.StatShort(wpn.ScalesWith);
         var tw = f.Measure(tag) + 10;
-        DrawStyleBox(Ui.Box(Pal.Group, 7), new Rect2(x + colW - tw, y + 2, tw, 14));
-        f.Draw(this, new Vector2(x + colW - tw / 2f, y), tag, Ink.Brand, TextAlign.Center);
+        DrawStyleBox(Ui.Box(Pal.Group, 7), new Rect2(x + colW - tw, y + 5, tw, 14));
+        f.Draw(this, new Vector2(x + colW - tw / 2f, y + 3), tag, Ink.Brand, TextAlign.Center);
 
         // trudność i pamiątka
         y = r.Position.Y + 140;

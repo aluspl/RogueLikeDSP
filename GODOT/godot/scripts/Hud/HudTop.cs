@@ -15,6 +15,7 @@ public partial class HudTop : Control
     private float _clock;
 
     public const int Height = 38;
+    private const int HpBarW = 64, XpBarW = 40;
 
     public override void _Ready()
     {
@@ -55,19 +56,17 @@ public partial class HudTop : Control
         DrawRect(new Rect2(0, 0, w, Height), new Color(Pal.Text, 0.62f));
         DrawRect(new Rect2(0, Height, w, 1), new Color(Pal.Brand, 0.55f));
 
-        // rząd 1: HP, pasek, liczby
+        // rząd 1: HP, pasek, liczby, poziom z paskiem doświadczenia (szerokości od tekstu - HUD bywa wąski)
         var low = g.Hero.Hp * 4 <= g.Hero.MaxHp;
         f.Draw(this, new Vector2(6, 2), "HP", Ink.Map);
         var blinkOff = low && ((int)(_clock * 4) & 1) == 1;
-        if (!blinkOff) DrawHpBar(new Rect2(26, 6, 104, 8), g.Hero.Hp, g.Hero.MaxHp);
-        f.Draw(this, new Vector2(136, 2), $"{g.Hero.Hp}/{g.Hero.MaxHp}", low ? Ink.MapBad : Ink.Map);
-
-        // poziom i doświadczenie (Start w telefonie ma szczegóły)
-        var lvX = 196;
-        f.Draw(this, new Vector2(lvX, 2), $"Poz. {g.HeroLevel}", Ink.MapLoot);
+        if (!blinkOff) DrawHpBar(new Rect2(26, 6, HpBarW, 8), g.Hero.Hp, g.Hero.MaxHp);
+        var x = 32f + HpBarW;
+        x += f.Draw(this, new Vector2(x, 2), $"{g.Hero.Hp}/{g.Hero.MaxHp}", low ? Ink.MapBad : Ink.Map) + 10;
+        x += f.Draw(this, new Vector2(x, 2), $"Poz. {g.HeroLevel}", Ink.MapLoot) + 5;
         var prev = g.HeroLevel >= 2 ? g.D.LevelThresholds[g.HeroLevel - 2] : 0;
         var fill = g.XpToNext() < 0 ? 1f : (g.RunXp - prev) / (float)Mathf.Max(1, g.D.LevelThresholds[g.HeroLevel - 1] - prev);
-        var xr = new Rect2(lvX + 44, 8, 56, 4);
+        var xr = new Rect2(x, 8, XpBarW, 4);
         DrawRect(xr.Grow(1), Pal.HpEdge);
         DrawRect(xr, Pal.HpBack);
         DrawRect(new Rect2(xr.Position, new Vector2(Mathf.Round(xr.Size.X * Mathf.Clamp(fill, 0, 1)), 4)), Pal.Brand);
@@ -76,11 +75,11 @@ public partial class HudTop : Control
         var sd = g.D.Stages[g.Stage];
         var ng = g.Tier > 0 ? $" +{g.Tier}" : "";
         var right = $"Etap {g.Stage + 1}/{g.D.Stages.Length}: {sd.Name}";
-        f.Draw(this, new Vector2(w - 6, 2), f.Fit(right, 250), Ink.Map, TextAlign.Right);
+        f.Draw(this, new Vector2(w - 6, 2), f.Fit(right, (int)(w - xr.End.X - 18)), Ink.Map, TextAlign.Right);
         f.Draw(this, new Vector2(w - 6, 19), $"{g.DDef.Name}{ng}", Ink.MapDim, TextAlign.Right);
 
         // rząd 2: stany (ikona + tury)
-        var x = 6f;
+        x = 6f;
         for (var k = 0; k < 3; k++)
         {
             var t = g.StatusTurns(UiText.HudStatuses[k]);

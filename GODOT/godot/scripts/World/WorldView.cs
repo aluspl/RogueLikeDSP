@@ -84,7 +84,7 @@ public partial class WorldView : Node2D
 
     public void FlashRange() => _overlay.FlashRange();
 
-    public void ToggleOverview() => _camera.ToggleOverview();
+    public void ToggleOverview() => _camera.ToggleOverview(_g);
 
     /// <summary>Sprite problemu w trakcie znikania blisko pozycji (trafienie, które go usunęło).</summary>
     public ActorSprite FindDying(Vector2 pos)
