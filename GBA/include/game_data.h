@@ -78,6 +78,8 @@ inline constexpr core::story_msg story_stages[] = {
 inline constexpr core::story_msg story_win = { "Anna Nowak", { "Mamy klucze! Plan", "pokonał chaos budowy.", "Dziękujemy za wszystko!" } };
 inline constexpr core::story_msg story_lose = { "Kierownik Marek", { "Budowa stoi. Spokojnie -", "z lepszym planem pójdzie.", "Wracamy na plac?" } };
 inline constexpr core::story_msg story_ngplus = { "Anna Nowak", { "Znajomi też chcą dom.", "Bierzesz kolejną budowę?", "Termin już się szykuje." } };
+inline constexpr core::story_msg story_prologue = { "Anna Nowak", { "Witaj na budowie! Plan", "jest, ekipa też. Tylko", "te problemy... Do dzieła!" } };
+inline constexpr const char* prologue_captions[] = { "Działka przy ul. Budowlanej 7...", "...a problemy już czekają." };
 
 inline constexpr core::act_def acts[] = {
     { "Stan surowy", 10, 2 },

@@ -545,3 +545,32 @@ def boss_frames():
     for name in ("betoniarka", "nawalnica"):   # druga klatka: "oddech" 1 px w dół
         px = parse(BOSSES[name]); out.append([0] * 16 + px[:16 * 15])
     return out
+
+
+# ------------------------------------------------------------------ prolog: pickup PlanBudowlany 32x16 (2 klatki: koła)
+TRUCK = [
+    "................................",
+    "................................",
+    "..................KKKKKKKK......",
+    ".................KPPPPPPPPK.....",
+    "................KPPlllllPPPK....",
+    "...............KPPPlllllPPPPK...",
+    "..KKKKKKKKKKKKKKPPPPPPPPPPPPPK..",
+    "..KPPPPPPPPPPPPPPPPPPPPPPPPPPPK.",
+    "..KPPWWPPPPPPPPPPPPPPPPPPPPPPYK.",
+    "..KOOOOOOOOOOOOOOOOOOOOOOOOOOOK.",
+    "..KPPPPPPPPPPPPPPPPPPPPPPPPPPPK.",
+    "..KKKKKKKKKKKKKKKKKKKKKKKKKKKKK.",
+    ".....KKKK...............KKKK....",
+    "....KgKKgK.............KgKKgK...",
+    "....KKggKK.............KKggKK...",
+    ".....KKKK...............KKKK...."]
+
+
+def truck_frames():
+    rows = [r for r in TRUCK]
+    a = [CODES[ch] for r in rows for ch in r]
+    b_rows = rows[:13] + ["....KKggKK.............KKggKK...", "....KgKKgK.............KgKKgK...", rows[15]]
+    b = [CODES[ch] for r in b_rows for ch in r]
+    assert len(a) == len(b) == 32 * 16
+    return a + b

@@ -62,7 +62,9 @@ assert len(st["stages"]) == len(d["stages"])
 L.append("inline constexpr core::story_msg story_stages[] = {")
 L += [f"    {story(m)}," for m in st["stages"]]
 L.append("};")
-L += [f"inline constexpr core::story_msg story_{k} = {story(st[k])};" for k in ("win", "lose", "ngplus")] + [""]
+L += [f"inline constexpr core::story_msg story_{k} = {story(st[k])};" for k in ("win", "lose", "ngplus", "prologue")]
+L.append("inline constexpr const char* prologue_captions[] = { " + ", ".join(s(c) for c in st["prologueCaptions"]) + " };")
+L.append("")
 acts = d["acts"]
 for ai in range(len(acts)):   # każdy akt kończy się etapem z bossem
     last = max(i for i, st in enumerate(d["stages"]) if st["act"] == ai)
