@@ -2,6 +2,52 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
+## v0.21.48 – 2026-09-25
+### Nowe
+- **Wybór ścieżki:** na harmonogramie między etapami dwa warianty kolejnego etapu jako rozgałęzienie (lewo/prawo, A) –
+  **Szybko i drogo** (-2 problemy, -15 zł, -1 znajdźka), **Tanio, ryzyko** (+1 problem, +2 znajdźki, tylko zła pogoda),
+  **Po terminie** (bez wydarzenia na placu, -10 zł), **Z zapasem** (+1 problem, +3 materiały). Kolejność etapów bez
+  zmian, oferta zależy od seeda budowy. Wybrana ścieżka w zakładce Zadania i na karcie etapu. Sekcja `paths`.
+- **Materiały:** cement, stal i drewno wypadają z problemów (35%, każdy problem ma swój materiał), bossów (po 2 każdego)
+  i paczek sprzętu. Ikony z liczbą w HUD, wiersz w zakładce Sprzęt. W Hurtowni towary za materiały: **Zbrojenie**
+  (4 stal, +1 obrony), **Wylewka** (4 cement, +3 max HP), **Deskowanie** (3 drewno, 2 kawy do termosu).
+- **Naprawy pola** (telefon → Sprzęt → A, pod Brygadą): **Załataj** (1 drewno – mur z desek w poprzek drogi problemu na
+  6 tur) i **Kładka** (1 stal – kałuże w zasięgu 2 bez poślizgu do końca etapu, zdejmuje poślizg). Zużywają turę.
+- **Codzienna budowa** (R na tytule): GBA nie ma zegara, więc datę ustawiasz strzałkami (pamięta ją profil). Z daty:
+  „Budowa dnia nr N”, zawód dnia i dwa modyfikatory dnia – dla wszystkich takie same, bez Szkoleń i pamiątek.
+  Najlepszy wynik i wygrana każdego z 5 ostatnich dni w profilu; po budowie „Rekord dnia!”, bez NG+. Sekcja `daily`.
+- **Harmonogram domu po wygranej:** telefon z aplikacją PlanBudowlany – zdjęcie domu z Osiedla, etapy z datą
+  rozpoczęcia, liczbą dni i kosztem (tys. zł, pole `cost` etapu), razem dni i koszt, na dole planbudowlany.online
+  (kod QR na kolejnym ekranie).
+- **Wyraźny awans:** złoty błysk, pierścień i unoszące się gwiazdki, napis „AWANS! Poziom N” nad bohaterem (~1,5 s),
+  w banerze co się poprawiło (max HP, obrona, obrażenia, ranga mocy).
+- **Koniec budowy motywuje:** na ekranie końcowym na zmianę rekord (albo „Nowy rekord!”), najbliższe zlecenie
+  z postępem, najbliższe Szkolenie („Stać Cię” albo „brakuje N dośw.”) i stawka.
+- „Jak grać” – trzecia strona (ścieżki, materiały i naprawy, budowa dnia). Scenariusze testowe 17–21.
+### Balans
+Bot testów balansu naprawiony: wybierał cel po odległości w linii prostej przez ścianę i w ~28% przebiegów krążył
+między dwoma celami do limitu kroków (liczone jako porażka). Teraz cel i krok po odległości ścieżki, unik przed ciosem
+bossa w stronę celu, mur Ścianki przeczekuje – 0 utkniętych przebiegów. Potem gra jest trudniejsza (jak w roguelike):
+etapy aktów II–III mocniejsze (HP 95→132%, obrażenia +1/+2), więcej problemów (5–9), problemy wcześniej zauważają
+bohatera, bossowie bez zmian w sile, broń wręcz (Kielnia, Klucz, Szlifierka) i HP Murarza/Hydraulika wyżej. Szkolenia:
+BHP i Kurs fachowy po 1 poziomie (zwrot 30/40 dośw. za kupiony drugi poziom), Kondycja +2 HP, Lepszy termos +2 HP.
+Tryb inwestora: Problemy +35% HP, Termin goni +2. Etapy 1–2 bez śmierci bota – giną u bossów aktów II i III.
+
+| Wygrane bota (300 przebiegów na zawód) | v0.21.47 | bot bez pętli | v0.21.48 |
+|---|---|---|---|
+| Łatwy | 68% | 97% | 60% |
+| Normalny | 49% | 64% | 30% |
+| Trudny | 34% | 36% | 12% |
+| Normalny, pełne Szkolenia | 70% | 99% | 89% |
+| Normalny, pełne Szkolenia + wszystkie modyfikatory | 24% | 84% | 10% |
+| Utknięte przebiegi (Normalny) | 28% | 0% | 0% |
+
+### Zmiany
+- Profil w SRAM v7 (PBRL007, 124 bajty: data i wyniki budowy dnia) – starsze profile przenoszą się bez utraty danych;
+  poziomy Szkoleń ponad nowe maksimum wracają jako doświadczenie.
+- Nowy zapis budowy (PBRUN07) – przerwana budowa z v0.21.47 nie wznowi się.
+- Stawka trybu inwestora na ekranie końcowym w wierszu na zmianę (w rogu zasłaniała kod QR).
+
 ## v0.21.47 – 2026-09-25
 ### Nowe
 - **Pogoda dnia:** każdy etap losuje pogodę – Słonecznie (bez skutku), **Upał** (moc odnawia się 1 turę dłużej),

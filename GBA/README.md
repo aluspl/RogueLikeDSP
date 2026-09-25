@@ -21,6 +21,8 @@ Przekroczony budżet) i bossów (Zepsuta Betoniarka, Nawałnica, Inspekcja Pracy
 | L/R (wybór zawodu) | pamiątka zabierana na budowę (albo „bez pamiątki”) |
 | SELECT (wybór zawodu) | po pierwszej wygranej: tryb inwestora (modyfikatory, A włącza/wyłącza) |
 | B (tytuł) | ekran „Jak grać” |
+| R (tytuł) | codzienna budowa (data strzałkami, A – start) |
+| lewo/prawo (harmonogram) | wybór ścieżki na kolejny etap, A – dalej |
 | L (przytrzymaj) | podgląd odkrytej mapy etapu |
 | R | moc zawodu (Odprawa, Ścianka, Seria, Łańcuch, Zawór, Wirówka); ikona w prawym górnym rogu: szara z odliczaniem = ładuje się, pulsuje z „R” = gotowa; ranga II od 3. i III od 5. poziomu postaci |
 | góra/dół (wybór zawodu) | poziom trudności: Łatwy / Normalny / Trudny |
@@ -106,6 +108,27 @@ Budżet -30%, Bez przerwy na kawę, Problemy +20% HP, Hurtownia zamknięta, Kont
 premię doświadczenia i punkty stawki; wybór zapisuje się w profilu, rekord stawki każdego zawodu też (wygrane budowy).
 Stawka jest na karcie zawodu, w SMS-ie końca budowy i w rogu ekranu końcowego.
 
+## Wybór ścieżki
+Na harmonogramie między etapami dwa warianty kolejnego etapu jako rozgałęzienie (lewo/prawo, A; sekcja `paths`):
+Szybko i drogo (-2 problemy, -15 zł, -1 znajdźka), Tanio, ryzyko (+1 problem, +2 znajdźki, zła pogoda), Po terminie
+(bez wydarzenia na placu, -10 zł), Z zapasem (+1 problem, +3 materiały). Kolejność etapów stała, oferta z seeda budowy.
+
+## Materiały i naprawy
+Cement, stal i drewno (sekcja `materials`) wypadają z problemów (każdy ma swój materiał), bossów i paczek; ikony w HUD
+i w zakładce Sprzęt. Hurtownia ma towary za materiały (Zbrojenie, Wylewka, Deskowanie). Naprawy (telefon → Sprzęt → A,
+pod Brygadą; zużywają turę): Załataj (drewno – mur z desek w poprzek drogi problemu) i Kładka (stal – kałuże wokół bez
+poślizgu).
+
+## Codzienna budowa
+R na tytule. GBA nie ma zegara – datę ustawiasz sam (profil ją pamięta). Z daty: numer „Budowy dnia”, seed, zawód
+i modyfikatory dnia (dla wszystkich takie same, bez Szkoleń i pamiątek). Profil pamięta najlepszy wynik 5 ostatnich dni.
+Sekcja `daily`.
+
+## Po wygranej
+Harmonogram domu w telefonie (zdjęcie domu, daty, dni i koszty etapów – pole `cost` etapów, sekcja `schedule`), potem
+ekran z kodem QR planbudowlany.online. Po porażce ekran końcowy przypomina rekord, najbliższe zlecenie i najbliższe
+Szkolenie.
+
 ## Wydarzenia na placu
 Na starcie etapu (nie pierwszego i nie z bossem) z szansą `siteEvents.chancePct` przychodzi SMS z modyfikatorem etapu:
 Dostawa spóźniona (mniej znajdziek), Premia od inwestora (+20 zł), Inspekcja nadzoru (etap bez obrażeń = +10 dośw.),
@@ -120,7 +143,7 @@ Zadania telefonu. Teksty i wartości: `siteEvents` w `data/game.json`.
   ulepszenia statystyk (m.in. Kurs BHP II: +1 szczęścia, Warsztaty: +1 do statystyki broni zawodu), więcej znajdziek,
   nowe zawody, narzędzia, poziom Trudny.
 - Profil (rekord, doświadczenie, zakupy, odznaki, liczniki zleceń, pamiątki, brygada, tryb inwestora) zapisuje się
-  w SRAM (format v6); starsze zapisy (v1-v5) są przenoszone bez utraty danych.
+  w SRAM (format v7, z wynikami codziennej budowy); starsze zapisy (v1-v6) są przenoszone bez utraty danych.
 - Liczniki zleceń trafiają do profilu na końcu etapu; profil pamięta, ile z bieżącej budowy już przeniesiono, więc
   wznowienie budowy po wyłączeniu konsoli nie liczy etapu drugi raz.
 - Harmonogram między etapami pokazuje radę kierownika (sterowanie i mechaniki; lista `tips` w `data/game.json`).
@@ -150,7 +173,8 @@ tools/playtest/run.sh moj_skrypt.txt /tmp/zrzuty --fresh   # opis komend w tools
 
 Scenariusze testowe (sytuacje, do których skrypt nie dojdzie na ślepo – boss obok, wrogowie w zasięgu, moce,
 sprzęt, stany, porównanie sprzętu, termos, kryt i unik, statystyki (9), uprawnienia i zlecenia (10), pamiątki (11),
-wydarzenia na placu (12), Inspekcja Pracy (13), pogoda (14), brygada (15), tryb inwestora (16)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
+wydarzenia na placu (12), Inspekcja Pracy (13), pogoda (14), brygada (15), tryb inwestora (16), wybór ścieżki (17),
+materiały, naprawy i awans (18), codzienna budowa (19), wygrana z harmonogramem domu (20), porażka (21)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
 ```bash
 make TARGET=scn1 BUILD=build_scn1 USERFLAGS="-DPB_SCENARIO=1" BUTANO_PATH=...
 ROM=scn1.gba tools/playtest/run.sh skrypt.txt /tmp/zrzuty --fresh
@@ -167,7 +191,7 @@ tools/gen_data.py     JSON -> include/game_data.h
 tools/make_assets.py  proceduralne grafiki: font PL 8x16, sprite'y, kafelki+palety etapów, tytuł, ekran z QR
 assets_src/pb_logo.svg  znak PlanBudowlany
 include/core.h        logika gry (czyste C++, bez Butano) - testowalna na PC
-include/meta.h        profil SRAM (v6), Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
+include/meta.h        profil SRAM (v7), codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
 src/main.cpp          warstwa GBA: sceny, mapa, kamera, HUD, SRAM
 ```
 Grafiki są placeholderami generowanymi kodem: podmień pliki w `graphics/` pixel-artem z Aseprite

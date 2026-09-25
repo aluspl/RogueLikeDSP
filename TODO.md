@@ -1,6 +1,6 @@
 # TODO – PlanBudowlany RogueLike
 
-Stan na 2026-09-25: GBA v0.21.47 (zbudowane, niewydane), Godot – logika zgodna z v0.21.47, oprawa z GBA, refaktor na ekrany,
+Stan na 2026-09-25: GBA v0.21.47 wydane, v0.21.48 zbudowane (niewydane), Godot – logika zgodna z v0.21.48, oprawa z GBA, refaktor na ekrany,
 wersja mobilna na iPhonie. Opis projektów: [`README.md`](README.md).
 
 Legenda: ✅ zrobione · 🔄 w toku · ⬜ do zrobienia · — nie dotyczy
@@ -24,7 +24,7 @@ Legenda: ✅ zrobione · 🔄 w toku · ⬜ do zrobienia · — nie dotyczy
 | Muzyka: pętle bez przerwy | ⬜ (MP3 → OGG) | ✅ |
 | Portret Kierownika na wyborze zawodu lekko przesunięty | — | ⬜ |
 | Czytelniejszy komunikat „Brak celu w zasięgu 1” (`core.h` + port C#) | ⬜ | ⬜ |
-| Balans po nowych funkcjach (bot: Normalny ~49%, pełne Szkolenia ~70%; ~25% przebiegów bota utyka w oscylacji – do poprawy bota) | wspólny rdzeń | ⬜ |
+| Bot balansu bez oscylacji (cel po odległości ścieżki, 0 utkniętych przebiegów) i trudniejszy balans v0.21.48 (bot: Łatwy 60%, Normalny 30%, Trudny 12%, pełne Szkolenia 89% – cel 50–60% jeszcze nie osiągnięty, wszystkie modyfikatory 10%) | ✅ wspólny rdzeń | ✅ |
 
 ## Nowe pomysły (2026-09-25, „zrób wszystko”)
 
@@ -33,10 +33,10 @@ Kolejność: A – rdzeń i GBA (po bossie Inspekcja Pracy), B – Godot i mobil
 | # | Pomysł | Etap | GODOT (MOBILE) | GBA |
 |---|---|---|---|---|
 | 0 | Boss Inspekcja Pracy (podkładka z pieczątką, akt III, Kontrola BHP) | – | ✅ | ✅ |
-| 1 | Codzienna budowa: seed dnia, tabela wyników | A/B | ⬜ (data z systemu) | ⬜ (seed z daty wpisanej ręcznie – GBA nie ma zegara) |
+| 1 | Codzienna budowa: seed dnia, tabela wyników | A/B | ✅ (data z systemu; wyślij wynik – zaślepka pod Game Center) | ✅ (data ustawiana ręcznie, pamiętana w profilu) |
 | 2 | Brygada: najemny fachowiec raz na etap (Geodeta – mapa, Pompa do betonu – obszar…) | A | ✅ | ✅ |
-| 3 | Wybór ścieżki między etapami (harmonogram z rozgałęzieniami) | A | ⬜ | ⬜ |
-| 4 | Materiały (cement, stal, drewno) – Hurtownia i naprawy pól | A | ⬜ | ⬜ |
+| 3 | Wybór ścieżki między etapami (harmonogram z rozgałęzieniami; może później połączyć się z #21) | A | ✅ | ✅ |
+| 4 | Materiały (cement, stal, drewno) – Hurtownia i naprawy pól (Załataj, Kładka) | A | ✅ | ✅ |
 | 5 | Pogoda dnia (upał, mróz, wiatr) jako modyfikator etapu | A | ✅ | ✅ |
 | 6 | Tryb inwestora: modyfikatory trudności za dodatkowe doświadczenie (jak Heat w Hadesie) | A | ✅ | ✅ |
 | 7 | Powiadomienia systemowe („Nowa codzienna budowa”) | B | ⬜ | — |
@@ -45,7 +45,34 @@ Kolejność: A – rdzeń i GBA (po bossie Inspekcja Pracy), B – Godot i mobil
 | 10 | Game Center / Google Play Games: osiągnięcia z odznak, tabela wyników | B (konfiguracja w App Store Connect) | ⬜ | — |
 | 11 | 2.5D: kamera 3/4, latarka czołowa, cienie ścian | C | ⬜ | — |
 | 12 | Ulewa jako pogoda na etapie Dach (deszcz, kałuże, poślizg) | C | ⬜ | ⬜ (prostszy efekt) |
-| 13 | Po wygranej: harmonogram domu w stylu aplikacji + „Zaplanuj swoją budowę” | A/B | ⬜ | ⬜ |
+| 13 | Po wygranej: harmonogram domu w stylu aplikacji + „Zaplanuj swoją budowę” | A/B | ✅ | ✅ |
+| 14 | Więcej etapów (np. 10–12) i wyraźna różnorodność między aktami – własne kafle/paleta, zestaw problemów, mechanika aktu (np. akt I wykop i błoto, akt II wysokość i wiatr, akt III instalacje i terminy) | A3 | ⬜ | ⬜ |
+| 15 | Wyraźny awans na poziom – poświata i napis „AWANS!” | A | ✅ | ✅ |
+| 16 | Przygotowanie pod synchronizację w chmurze – warstwa zapisu (profil + budowa) z lokalną implementacją i miejscem na iCloud / Game Center saved games i Google Play Games Saved Games | A3 | ⬜ | — |
+| 17 | Przedmioty (kawa, termos) mają znaczenie – po zmianie balansu sprawdzić, czy są używane (bot: statystyka użycia kawy) | A3 | ⬜ | ⬜ |
+| 18 | Więcej różnych przedmiotów – nowe jednorazowe (np. apteczka, energetyk, taśma naprawcza, plan awaryjny), nowe elementy sprzętu i cechy, rzadkie przedmioty unikalne | A3 | ⬜ | ⬜ |
+| 19 | Opis statystyk – co robi każda statystyka i jak (wzór w prostych słowach, np. „SIŁ: +1 obrażeń co 2 pkt dla broni SIŁ”), na wyborze zawodu, w telefonie (Start/Sprzęt) i w Jak grać | A3 | ⬜ | ⬜ |
+| 20 | Akt 0 „Papierologia” przed stanem surowym – etapy: Działka i mapy (geodeta, granice), Projekt i pozwolenie na budowę, Przyłącza (wodociąg, prąd, kanalizacja); problemy papierowe i sieciowe (Brakujący podpis, Zaginiony wniosek, Termin na odwołanie, Pęknięta rura, Brak ciśnienia) – nigdy urzędnicy; boss aktu np. „Decyzja odmowna” / „Wieczny wniosek”; mechanika: pieczątki i kolejka (zbieranie dokumentów otwiera schody) | A3 | ⬜ | ⬜ |
+| 21 | Bonus między etapami – po każdym etapie wybór 1 z 3 premii na bieżącą budowę (np. +2 max HP, moc -1 t., kryt +5%, kawa +2 HP, brygada -5 zł), rzadkość premii (może się połączyć z wyborem ścieżki #3) | A3 | ⬜ | ⬜ |
+| 22 | Respekt – stała waluta za ukończenie każdego etapu (więcej za bossów i akty), zapisana w profilu (nie przepada przy śmierci); wydawana na stałe ulepszenia procentowe z rangami (lista niżej) | A3 | ⬜ | ⬜ |
+| 23 | Odblokowania za kolejne przejścia (jak Slay the Spire): każda wygrana odblokowuje coś nowego – lepsze narzędzie, element sprzętu, nowy zawód (np. Dekarz, Tynkarz, Operator koparki), nowy akt/etap, nowy tryb; lista nagród po kolei widoczna w profilu | A3 | ⬜ | ⬜ |
+
+## Respekt – lista do testów (#22)
+
+Stałe ulepszenia z rangami (zakres do przetestowania; przesadzone skreślimy po testach):
+
+- obrażenia +1–20%
+- otrzymane obrażenia -1–20%
+- szansa na lepszy sprzęt +1–20%
+- kryt +1–10%
+- leczenie kawy +5–50%
+- odnowienie mocy -1–2 t.
+- budżet na start +5–50 zł
+- doświadczenie +2–20%
+- brygada -5–30% ceny
+- termos +1 miejsce
+- unik +1–5%
+- zasięg widzenia +1
 
 ## Zgodność funkcji
 
