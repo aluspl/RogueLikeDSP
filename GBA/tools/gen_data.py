@@ -77,6 +77,15 @@ for it in d["hurtownia"]:
     assert it["effect"] in {"heal", "gear", "tool", "maxhp", "ability"} and len(it["desc"]) <= 34, it
     L.append(f'    {{ {s(it["name"])}, {s(it["desc"])}, {it["price"]}, core::shop_effect::{it["effect"]} }},')
 L.append("};")
+stt = d["statuses"]
+L.append("inline constexpr core::status_def statuses[] = {   // indeks = core::status_effect")
+L.append('    { "", "", "" },')
+for k in ("poison", "shock", "slip", "paper"):
+    x = stt[k]
+    assert len(x["short"]) <= 8 and len(x["name"]) + len(x["effect"]) <= 30, x
+    L.append(f'    {{ {s(x["name"])}, {s(x["short"])}, {s(x["effect"])} }},')
+L.append("};")
+L.append(f"inline constexpr int paper_delay = {stt['paper']['delay']};")
 sl = d["slam"]
 L += [f"inline constexpr int acts_count = {len(acts)};",
       f"inline constexpr int hurtownia_count = {len(d['hurtownia'])};",

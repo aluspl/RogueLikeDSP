@@ -37,6 +37,13 @@ namespace core
     // Stan nakładany przez problem budowy przy trafieniu bohatera.
     enum class status_effect : uint8_t { none, poison, shock, slip, paper };
 
+    struct status_def          // opis stanu (komunikat przy nałożeniu, HUD, telefon)
+    {
+        const char* name;
+        const char* short_name;
+        const char* effect;    // skutek, np. "-1 HP/turę"
+    };
+
     struct enemy_def           // "problem budowy"
     {
         const char* name;

@@ -168,20 +168,19 @@ namespace core
 
         int status_turns(status_effect s) const { return hero_status[int(s)]; }
 
+        // Nakłada stan; komunikat mówi skutek i czas, np. "Zatrucie: -1 HP/turę, 3 t.".
         void apply_status(status_effect s, int t)
         {
-            switch(s)
+            if(s == status_effect::none) return;
+            const status_def& sd = data::statuses[int(s)];
+            if(s == status_effect::paper)
             {
-                case status_effect::poison: push(message().add("Zatrucie pleśnią!").as(bad)); break;
-                case status_effect::shock:  push(message().add("Porażenie! Tracisz turę").as(bad)); break;
-                case status_effect::slip:   push(message().add("Poślizg na mokrym!").as(bad)); break;
-                case status_effect::paper:
-                    ability_cd = imin(ability_cooldown() + 3, ability_cd + 3);
-                    push(message().add("Papierologia: moc później").as(bad));
-                    return;
-                default: return;
+                ability_cd = imin(ability_cooldown() + data::paper_delay, ability_cd + data::paper_delay);
+                push(message().add(sd.name).add(": moc +").add(data::paper_delay).add(" t.").as(bad));
+                return;
             }
             hero_status[int(s)] = int8_t(imax(hero_status[int(s)], t));
+            push(message().add(sd.name).add(": ").add(sd.effect).add(", ").add(hero_status[int(s)]).add(" t.").as(bad));
         }
 
         // Porażenie: akcja bohatera przepada, mija tura.
