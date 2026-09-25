@@ -1,30 +1,38 @@
-using System.Collections.Generic;
 using Godot;
+using LifeLike.Core;
 using LifeLike.Core.Data;
 
 namespace LifeLike.Game;
 
 /// <summary>
-/// Czyta JSON-y przez FileAccess/DirAccess, więc działa i w edytorze, i w wyeksportowanej grze (res:// w .pck),
-/// i z user://mods. W eksporcie dodaj filtr "data/*.json" (Export > Resources > Filters to export non-resource files).
+/// Wczytuje dane gry i profil gracza przez FileAccess, więc działa w edytorze i w wyeksportowanej grze.
+/// res://data/game.json to kopia wspólnego GBA/data/game.json robiona przy każdym buildzie (target
+/// CopySharedGameData w LifeLike.Game.csproj). W eksporcie dodaj filtr "data/*.json" (Export > Resources).
 /// </summary>
-public sealed class GodotDataSource(string root) : IDataSource
+public static class GodotDataSource
 {
-    public IEnumerable<(string Path, string Json)> ReadFolder(string folder)
+    public const string GameJson = "res://data/game.json";
+    public const string ProfilePath = "user://profile.sav";
+
+    public static GameData LoadGameData()
     {
-        var files = new List<(string, string)>();
-        Collect($"{root}/{folder}", folder, files);
-        files.Sort((a, b) => string.CompareOrdinal(a.Item1, b.Item1));
-        return files;
+        if (!FileAccess.FileExists(GameJson))
+            throw new GameDataException($"brak {GameJson} – zbuduj projekt (dotnet build), żeby skopiować GBA/data/game.json");
+        return GameData.Parse(FileAccess.GetFileAsString(GameJson));
     }
 
-    private static void Collect(string dirPath, string rel, List<(string, string)> into)
+    public static Profile LoadProfile(GameData d)
     {
-        using var dir = DirAccess.Open(dirPath);
-        if (dir is null) return;
-        foreach (var sub in dir.GetDirectories()) Collect($"{dirPath}/{sub}", $"{rel}/{sub}", into);
-        foreach (var file in dir.GetFiles())
-            if (file.EndsWith(".json"))
-                into.Add(($"{rel}/{file}", FileAccess.GetFileAsString($"{dirPath}/{file}")));
+        var p = FileAccess.FileExists(ProfilePath)
+            ? Profile.FromBytes(FileAccess.GetFileAsBytes(ProfilePath))
+            : Profile.FromBytes(new byte[Profile.Size]);
+        if (Meta.ProfileFix(d, p)) SaveProfile(p);
+        return p;
+    }
+
+    public static void SaveProfile(Profile p)
+    {
+        using var f = FileAccess.Open(ProfilePath, FileAccess.ModeFlags.Write);
+        f?.StoreBuffer(p.ToBytes());
     }
 }

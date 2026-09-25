@@ -1,8 +1,0 @@
-{
-  // Klasa wroga — wrogowie to też klasy, ten sam format
-  "id": "rat",
-  "name": "Szczur",
-  "description": "Podstawowy wróg.",
-  "baseStats": { "maxHealth": 5, "strength": 1, "agility": 1, "intelligence": 0, "defense": 0 },
-  "startingWeapon": "claws"
-}

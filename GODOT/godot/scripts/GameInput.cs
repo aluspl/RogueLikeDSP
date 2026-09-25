@@ -3,24 +3,44 @@ using Godot;
 namespace LifeLike.Game;
 
 /// <summary>
-/// Rejestruje akcje w InputMap z kodu: klawiatura (WSAD + strzałki + numpad), pad (D-pad + lewa gałka + przyciski).
-/// Z kodu, a nie z project.godot — łatwiej czytać w diffie i to jest też fundament pod ekran remappingu.
+/// Rejestruje akcje w InputMap z kodu: klawiatura, pad i (w Main) mysz – układ jak na GBA.
+/// Strzałki/WSAD/D-pad: ruch (wejście na wroga = atak). A (Spacja/X/pad A): atak najbliższego celu w zasięgu.
+/// B (Z/Kp5/pad B): czekaj turę. R (R/pad RB): moc zawodu. Tab (pad Select): podgląd tekstowy. Enter (pad Start): dalej.
 /// Reszta gry używa WYŁĄCZNIE nazw akcji.
 /// </summary>
 public static class GameInput
 {
     public const string Up = "move_up", Down = "move_down", Left = "move_left", Right = "move_right";
-    public const string Wait = "wait_turn", Restart = "restart", NextClass = "next_class";
+    public const string Attack = "attack", Wait = "wait_turn", Ability = "ability";
+    public const string Overview = "overview", Confirm = "confirm", Cancel = "cancel", Shop = "shop";
 
     public static void Register()
     {
-        Add(Up, Key.W, Key.Up, Key.Kp8);       Pad(Up, JoyButton.DpadUp);       Axis(Up, JoyAxis.LeftY, -1);
-        Add(Down, Key.S, Key.Down, Key.Kp2);   Pad(Down, JoyButton.DpadDown);   Axis(Down, JoyAxis.LeftY, 1);
-        Add(Left, Key.A, Key.Left, Key.Kp4);   Pad(Left, JoyButton.DpadLeft);   Axis(Left, JoyAxis.LeftX, -1);
-        Add(Right, Key.D, Key.Right, Key.Kp6); Pad(Right, JoyButton.DpadRight); Axis(Right, JoyAxis.LeftX, 1);
-        Add(Wait, Key.Space, Key.Kp5);         Pad(Wait, JoyButton.A);
-        Add(Restart, Key.R);                   Pad(Restart, JoyButton.Start);
-        Add(NextClass, Key.Tab);               Pad(NextClass, JoyButton.Back);
+        Add(Up, Key.W, Key.Up, Key.Kp8);
+        Pad(Up, JoyButton.DpadUp);
+        Axis(Up, JoyAxis.LeftY, -1);
+        Add(Down, Key.S, Key.Down, Key.Kp2);
+        Pad(Down, JoyButton.DpadDown);
+        Axis(Down, JoyAxis.LeftY, 1);
+        Add(Left, Key.A, Key.Left, Key.Kp4);
+        Pad(Left, JoyButton.DpadLeft);
+        Axis(Left, JoyAxis.LeftX, -1);
+        Add(Right, Key.D, Key.Right, Key.Kp6);
+        Pad(Right, JoyButton.DpadRight);
+        Axis(Right, JoyAxis.LeftX, 1);
+        Add(Attack, Key.Space, Key.X, Key.J);
+        Pad(Attack, JoyButton.A);
+        Add(Wait, Key.Z, Key.Kp5, Key.Period);
+        Pad(Wait, JoyButton.B);
+        Add(Ability, Key.R, Key.F);
+        Pad(Ability, JoyButton.RightShoulder);
+        Add(Overview, Key.Tab);
+        Pad(Overview, JoyButton.Back);
+        Add(Confirm, Key.Enter, Key.KpEnter);
+        Pad(Confirm, JoyButton.Start);
+        Add(Cancel, Key.Escape, Key.Backspace);
+        Add(Shop, Key.K);
+        Pad(Shop, JoyButton.Y);
     }
 
     private static void Ensure(string action)

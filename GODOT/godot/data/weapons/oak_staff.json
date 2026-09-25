@@ -1,8 +1,0 @@
-{
-  "id": "oak_staff",
-  "name": "Dębowy kostur",
-  "minDamage": 1,
-  "maxDamage": 2,
-  "range": 2,
-  "scalesWith": "intelligence"
-}

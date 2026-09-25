@@ -1,0 +1,2 @@
+# Kopia GBA/data/game.json robiona przy buildzie (target CopySharedGameData w godot/LifeLike.Game.csproj)
+godot/data/game.json
