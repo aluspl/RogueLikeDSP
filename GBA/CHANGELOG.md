@@ -2,7 +2,7 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
-## v0.2141 – 2026-09-25
+## v0.21.41 – 2026-09-25
 ### Nowe
 - **Prolog przy pierwszej budowie:** pickup PlanBudowlany wjeżdża na działkę, bohater wysiada, kamera
   przejeżdża przez plac z porozrzucanymi problemami budowy, na koniec SMS od inwestorki. A pomija.
@@ -10,15 +10,15 @@ Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 ### Zmiany
 - Instrukcja „Jak grać” opisuje 8 etapów w 3 aktach i nowe sterowanie (celowanie, podgląd, telefon).
 
-## v0.2140 – 2026-09-25 (poprawka)
+## v0.21.40 – 2026-09-25 (poprawka)
 ### Poprawki
-- Telefon (SELECT) w trakcie budowy wywracał grę w v0.2139 (brak wolnej warstwy tła).
+- Telefon (SELECT) w trakcie budowy wywracał grę w v0.21.39 (brak wolnej warstwy tła).
 - Komunikat o ciosie bossa nie jest już ucinany.
 ### Testy
 - Scenariusze testowe playtestera (`-DPB_SCENARIO=N`): boss obok, wrogowie w zasięgu, moce wszystkich
   zawodów, sprzęt, stany. Pełna regresja: 92 zrzuty bez ekranu błędu.
 
-## v0.2139 – 2026-09-25
+## v0.21.39 – 2026-09-25
 ### Czytelność
 - Pikselowy font o zmiennej szerokości (Butano) z polskimi znakami.
 - Dziennik: znikające komunikaty, powtórzenia jako „x2”, kolory według znaczenia, półprzezroczyste paski.
@@ -31,9 +31,9 @@ Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 - Stany: zatrucie, porażenie, poślizg, papierologia.
 - Konfiguracja aktów, bossów, Hurtowni i stanów w `data/game.json`.
 ### Znane problemy
-- Otwarcie telefonu w trakcie budowy wywraca grę – naprawione w v0.2140.
+- Otwarcie telefonu w trakcie budowy wywraca grę – naprawione w v0.21.40.
 
-## v0.2138 – 2026-09-25
+## v0.21.38 – 2026-09-25
 ### Poprawki
 - Ścianka Murarza nie zamyka już bohatera (mur w poprzek drogi wroga zamiast kwadratu wokół).
 ### Nowe
@@ -42,7 +42,7 @@ Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 - 8 etapów budowy (nowe: Strop, Okna i drzwi, Tynki i wylewki).
 - Sprzęt z dropów: kask, rękawice, kamizelka w 3 jakościach, zakładka Sprzęt w telefonie.
 
-## v0.2137 – 2026-09-25
+## v0.21.37 – 2026-09-25
 Pierwsze publiczne wydanie.
 - 5 etapów budowy, 6 zawodów z mocami pod R, 9 problemów budowy i boss Nieprzekraczalny Termin.
 - Trudność Łatwy / Normalny / Trudny, NG+, poziomy postaci, dropy i narzędzia.
