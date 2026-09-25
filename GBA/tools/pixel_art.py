@@ -597,7 +597,7 @@ def truck_frames():
 
 
 # ------------------------------------------------------------------ menu akcji pod START (16x16): atak, termos, czekaj, ramka wyboru;
-# 4-5: mała kłódka i strzałki góra/dół (wybór zawodu)
+# 4-5: mała kłódka i strzałki góra/dół (wybór zawodu); 6-10: pogoda dnia (Słonecznie, Upał, Mróz, Wiatr, Deszcz)
 MENU_ICONS = [
     [   # Atak: młotek
         "................", "................", "....KKKKKKK.....", "...KgllllllK....", "...KggggggKK....",
@@ -623,6 +623,26 @@ MENU_ICONS = [
         "................", "................", ".......KK.......", "......KPPK......", ".....KPPPPK.....",
         "....KPPPPPPK....", "....KKKPPKKK....", "......KPPK......", "......KPPK......", "....KKKPPKKK....",
         "....KPPPPPPK....", ".....KPPPPK.....", "......KPPK......", ".......KK.......", "................", "................"],
+    [   # pogoda: Słonecznie (słońce)
+        ".......Y........", "..Y....Y....Y...", "...Y.......Y....", "................", ".....KKKKKK.....",
+        "....KYYYYYYK....", "...KYYWWYYYYK...", "YY.KYWYYYYYYK.YY", "...KYYYYYYYYK...", "...KYYYYYYYOK...",
+        "....KYYYYYOK....", ".....KKKKKK.....", "................", "...Y.......Y....", "..Y....Y....Y...", ".......Y........"],
+    [   # pogoda: Upał (termometr i fale gorąca)
+        "......KKK.......", ".....KWWWK..O...", ".....KWlWK.O....", ".....KWlWK..O...", ".....KWRWK...O..",
+        ".....KWRWK..O...", ".....KWRWK.O....", ".....KWRWK..O...", ".....KWRWK......", "....KWRRRWK.....",
+        "...KWRRRRRWK....", "...KRRWRRRRK....", "...KRRRRRRRK....", "....KRRRRRK.....", ".....KKKKK......", "................"],
+    [   # pogoda: Mróz (płatek śniegu)
+        "................", ".......C........", "....C..C..C.....", ".....C.W.C......", "......CWC.......",
+        "..C...CWC...C...", "...C..CWC..C....", ".CCWWWWWWWWWCC..", "...C..CWC..C....", "..C...CWC...C...",
+        "......CWC.......", ".....C.W.C......", "....C..C..C.....", ".......C........", "................", "................"],
+    [   # pogoda: Wiatr (smugi powietrza)
+        "................", "..........KKK...", ".........KWWWK..", "..KKKKKKKK..WK..", ".KWWWWWWWWWWWK..",
+        "..KKKKKKKKKKK...", "................", "...KKKKKKKKKK...", "..KllllllllllK..", "...KKKKKKKKK.lK.",
+        "............KlK.", "...........KK...", ".KKKKKK.........", "KWWWWWWK........", ".KKKKKK.........", "................"],
+    [   # pogoda: Deszcz (chmura i krople)
+        "................", "......KKKK......", "....KKllllKK....", "...KllWWllllK...", ".KKlWlllllllKK..",
+        "KllllllllllllgK.", "KlllllllllllggK.", ".KggggggggggggK.", "..KKKKKKKKKKKK..", "...B...B...B....",
+        "..BB..BB..BB....", "..B...B...B.....", ".B...B...B......", "................", "..B...B...B.....", ".B...B...B......"],
 ]
 
 

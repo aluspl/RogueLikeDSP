@@ -98,6 +98,8 @@ static uint32_t digest(const game& g)
     f.add(g.stage_event); f.add(g.boss_wake_damage); f.add(g.powers_used); f.add(g.brand_found); f.add(g.clean_bosses);
     // v0.21.46: wezwania bossa (Inspekcja Pracy)
     f.add(g.summon_counter); f.add(g.summons_used);
+    // v0.21.47: pogoda dnia
+    f.add(g.weather);
     return f.h;
 }
 
@@ -135,6 +137,7 @@ static void snapshot(const game& g, int step)
     w(","); key("equippedTrait"); w("["); for(int i = 0; i < 4; ++i) { if(i) w(","); wi(g.equipped_trait[i]); } w("]");
     w(","); key("thermos"); wi(g.thermos); w(","); key("thermosCap"); wi(g.thermos_cap());
     w(","); key("stageEvent"); wi(g.stage_event);
+    w(","); key("weather"); wi(g.weather); w(","); key("weaponRange"); wi(g.weapon_range());
     w(","); key("counters"); w("["); wi(g.powers_used); w(","); wi(g.brand_found); w(","); wi(g.clean_bosses); w(",");
     wi(g.boss_wake_damage); w("]");
     w(","); key("stats"); w("["); wi(g.hero_stat(stat::str)); w(","); wi(g.hero_stat(stat::agi)); w(","); wi(g.hero_stat(stat::intel)); w(",");

@@ -400,6 +400,12 @@ namespace
                         set(x * 2, y * 2 + 1, 7, pal, false, true); set(x * 2 + 1, y * 2 + 1, 7, pal, true, true);
                         continue;
                     }
+                    if((t == 1 || t == 5) && g.puddle(x, y))   // deszcz: kałuża
+                    {
+                        set(x * 2, y * 2, 9, pal); set(x * 2 + 1, y * 2, 9, pal, true);
+                        set(x * 2, y * 2 + 1, 9, pal, false, true); set(x * 2 + 1, y * 2 + 1, 9, pal, true, true);
+                        continue;
+                    }
                     bool top_shadow = t == 5;
                     int base = top_shadow ? 1 : t;
                     set(x * 2, y * 2, t, pal); set(x * 2 + 1, y * 2, t, pal);
@@ -646,8 +652,12 @@ namespace
             phone_pill(a, c, t, pill_end, row_ty(4), ev.short_name, ev.good ? pill::done : pill::late);
         }
         else phone_text(a, t, list_x, row_py(4), "Plac: bez niespodzianek", ink::dim);
-        phone_text(a, t, list_x, row_py(5), "Postęp", ink::dim);
-        c.bar(9, row_ty(5), 18, phone_tile::bar_brand_0, g.stage, data::stages_count);
+        const core::weather_def& wd = g.wdef();   // pogoda dnia
+        bool calm = wd.effect == core::weather_effect::none;
+        stripe(c, 5, wd.bad ? phone_tile::stripe_late : (calm ? phone_tile::stripe_todo : phone_tile::stripe_done));
+        core::message wm; wm.add("Pogoda: ").add(wd.name);
+        phone_text(a, t, list_x, row_py(5), fit(a, wm.s, pill_room(wd.short_name)).c_str(), ink::dark);
+        phone_pill(a, c, t, pill_end, row_ty(5), wd.short_name, wd.bad ? pill::late : (calm ? pill::gray : pill::done));
     }
 
     void tab_issues(app& a, phone_screen& ph, page_sprites& t)   // Usterki = problemy budowy
@@ -748,7 +758,7 @@ namespace
         phone_header(a, ph, t, tab_names[3], "Na budowie");
         phone_canvas& c = *ph.canvas;
         core::message w; w.add(g.weapon().name).add(" ").add(g.weapon().min_damage).add("-").add(g.weapon().max_damage)
-                               .add(" z").add(g.weapon().range).add(" +").add(g.dmg_bonus);
+                               .add(" z").add(g.weapon_range()).add(" +").add(g.dmg_bonus);
         stripe(c, 0, phone_tile::stripe_brand);
         phone_text(a, t, list_x, row_py(0), fit(a, w.s, phone_text_w).c_str(), ink::dark);
         for(int i = 0; i < data::gear_slots_count; ++i)
@@ -967,9 +977,9 @@ namespace
         core::message i1;
         if(boss) i1.add("Uwaga: ").add(clip(data::enemies[data::stages[g.stage].boss].name, 18).c_str()).add("!");
         else i1.add(clip(data::stages[g.stage].name, 12).c_str()).add(": problemy ").add(g.enemy_hp_pct()).add("%");
-        core::message i2; i2.add(g.ddef().name);
-        if(g.tier > 0) i2.add(" NG+").add(g.tier);
-        phone_message(a, g.stage_story(), sub.s, i1.s, boss ? ink::late : ink::dim, i2.s);
+        core::message i2; i2.add("Pogoda: ").add(g.wdef().name);   // pogoda dnia (skutek w telefonie: Zadania); trudność w HUD
+        if(g.tier > 0) i2.add(", NG+").add(g.tier);
+        phone_message(a, g.stage_story(), sub.s, i1.s, boss ? ink::late : ink::dim, fit(a, i2.s, 150).c_str());
         if(g.stage_event >= 0 && g.turns == g.stage_start_turn)   // wydarzenie na placu: drugi SMS (nie po wznowieniu w trakcie)
         {
             const core::site_event_def& ev = data::site_events[g.stage_event];
@@ -1210,10 +1220,16 @@ namespace
         thermos_icon.set_z_order(-100);
         text_sprites thermos_text;
         int shown_thermos = -1;
+        // Pogoda dnia w HUD: ikona między stanami a termosem (menu_icons 6-10).
+        constexpr int frame_weather = 6;
+        bn::sprite_ptr weather_icon = bn::sprite_items::menu_icons.create_sprite(28, -52, frame_weather + int(g.wdef().effect));
+        weather_icon.set_bg_priority(0);
+        weather_icon.set_z_order(-100);
         auto hide_status_hud = [&]() {
             for(auto& s : status_icons) s.set_visible(false);
             status_text.clear(); shown_status = -1;
             thermos_icon.set_visible(false); thermos_text.clear(); shown_thermos = -1;
+            weather_icon.set_visible(false);
         };
         a.text.set_bg_priority(0);
         a.text.set_z_order(-100);
@@ -1277,7 +1293,7 @@ namespace
             {
                 for(int y = 0; y < core::map_h; ++y)
                     for(int x = 0; x < core::map_w; ++x)
-                        range_cells[y][x] = g.visible(x, y) && core::cheb(g.hero.x, g.hero.y, x, y) <= g.weapon().range
+                        range_cells[y][x] = g.visible(x, y) && core::cheb(g.hero.x, g.hero.y, x, y) <= g.weapon_range()
                                             && ! (x == g.hero.x && y == g.hero.y);
                 map->highlight = range_cells;
             }
@@ -1730,7 +1746,7 @@ namespace
             core::message m;
             switch(menu_sel)
             {
-                case 0: m.add("Atak: najbliższy cel (z").add(g.weapon().range).add(")"); break;
+                case 0: m.add("Atak: najbliższy cel (z").add(g.weapon_range()).add(")"); break;
                 case 1:
                     m.add("Moc: ").add(ability_label(g).s);
                     if(g.ability_cd > 0) m.add(" - za ").add(g.ability_cd).add(" t.");
@@ -2047,6 +2063,7 @@ namespace
                     a.text.generate(59, -52, m.s, thermos_text);
                 }
                 thermos_icon.set_visible(! banner_on);
+                weather_icon.set_visible(! banner_on);
                 for(bn::sprite_ptr& sp : thermos_text) sp.set_visible(! banner_on);
             }
             bool ready = g.ability_cd == 0;

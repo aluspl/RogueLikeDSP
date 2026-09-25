@@ -135,6 +135,21 @@ namespace core
         bool good;                // korzystne (kolor w telefonie)
     };
 
+    // Pogoda dnia: losowana na starcie każdego etapu (tylko z listy dozwolonych dla etapu).
+    enum class weather_effect : uint8_t { none, heat, frost, wind, rain };
+
+    struct weather_def
+    {
+        const char* name;
+        const char* short_name;   // pastylka w telefonie
+        const char* info;         // skutek dla gracza
+        weather_effect effect;
+        int8_t value;             // upał: +tury mocy; mróz: co ile tur problemy stoją; wiatr: -zasięg; deszcz: 1 kałuża na tyle pól
+        int8_t weight;            // waga losowania
+        bool bad;                 // niekorzystna (z niekorzystnym wydarzeniem na placu się nie łączy)
+        uint8_t stages;           // bitmaska etapów, na których może wypaść
+    };
+
     enum class gear_stat : uint8_t { def, dmg, hp };
 
     struct gear_def            // sprzęt z dropów: slot x jakość

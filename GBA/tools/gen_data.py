@@ -149,6 +149,22 @@ for e in se["list"]:
 L.append("};")
 L += [f"inline constexpr int site_events_count = {len(se['list'])};",
       f"inline constexpr int site_event_chance_pct = {se['chancePct']};", ""]
+wt = d["weather"]
+all_stages = (1 << len(d["stages"])) - 1
+assert wt["list"][0]["effect"] == "none" and len(d["stages"]) <= 8   # pierwsza = bez skutku (domyślna)
+L.append("inline constexpr core::weather_def weather[] = {   // pogoda dnia: losowana na starcie etapu")
+for w in wt["list"]:
+    assert w["effect"] in {"none", "heat", "frost", "wind", "rain"} and len(w["short"]) <= 10, w
+    assert len(w["name"]) <= 12 and len(w["info"]) <= 30 and 0 < w["weight"] < 128 and 0 <= w["value"] < 128, w
+    assert w["effect"] not in ("frost", "rain") or w["value"] >= 2, w
+    mask = sum(1 << i for i in w["stages"]) if "stages" in w else all_stages
+    L.append(f'    {{ {s(w["name"])}, {s(w["short"])}, {s(w["info"])}, core::weather_effect::{w["effect"]}, {w["value"]}, '
+             f'{w["weight"]}, {"true" if w["bad"] else "false"}, {mask} }},')
+L.append("};")
+for si in range(len(d["stages"])):   # każdy etap ma jakąś pogodę do wylosowania
+    assert any(("stages" not in w) or si in w["stages"] for w in wt["list"]), si
+L += [f"inline constexpr int weather_count = {len(wt['list'])};",
+      f"inline constexpr bool weather_no_bad_stack = {'true' if wt.get('noBadStack') else 'false'};", ""]
 L.append("inline constexpr core::tool_def tools[] = {")
 for t in m["tools"]:
     L.append(f'    {{ {wid[t["weapon"]]}, {t["cost"]} }},')
