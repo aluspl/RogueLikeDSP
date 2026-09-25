@@ -3,18 +3,19 @@ using Godot;
 namespace LifeLike.Game;
 
 /// <summary>
-/// Rejestruje akcje w InputMap z kodu: klawiatura, pad i (w Main) mysz – układ jak na GBA.
-/// Strzałki/WSAD/D-pad: ruch (wejście na wroga = atak). A (Spacja/X/pad A): atak najbliższego celu w zasięgu.
-/// B (Z/Kp5/pad B): czekaj turę. R (R/pad RB): moc zawodu. Tab (pad Select): podgląd tekstowy. Enter (pad Start): dalej.
-/// Ekran tytułowy: Q/E (pad LB/RB) – wybór pamiątki (jak L/R na GBA), P (pad X) – profil (odznaki, zlecenia, pamiątki).
+/// Mapa wejścia rejestrowana w kodzie (klawiatura + pad), jak przyciski GBA:
+/// A = atak celu, B = czekaj, R = moc zawodu, START = menu akcji (Enter), SELECT = telefon (Tab),
+/// L = podgląd mapy (M). W telefonie Q/E (LB/RB) i strzałki w lewo/prawo przełączają zakładki (L/R na GBA).
+/// Na wyborze zawodu Q/E (LB/RB) - pamiątka, P (pad X) - profil, K (pad Y) - Szkolenia.
 /// Reszta gry używa WYŁĄCZNIE nazw akcji.
 /// </summary>
 public static class GameInput
 {
     public const string Up = "move_up", Down = "move_down", Left = "move_left", Right = "move_right";
     public const string Attack = "attack", Wait = "wait_turn", Ability = "ability";
-    public const string Overview = "overview", Confirm = "confirm", Cancel = "cancel", Shop = "shop";
+    public const string Phone = "phone", Confirm = "confirm", Cancel = "cancel", Shop = "shop", Map = "map_overview";
     public const string KeepPrev = "keepsake_prev", KeepNext = "keepsake_next", Profile = "profile";
+    public const string TabPrev = "tab_prev", TabNext = "tab_next";
 
     public static void Register()
     {
@@ -36,8 +37,10 @@ public static class GameInput
         Pad(Wait, JoyButton.B);
         Add(Ability, Key.R, Key.F);
         Pad(Ability, JoyButton.RightShoulder);
-        Add(Overview, Key.Tab);
-        Pad(Overview, JoyButton.Back);
+        Add(Phone, Key.Tab);
+        Pad(Phone, JoyButton.Back);
+        Add(Map, Key.M);
+        Pad(Map, JoyButton.LeftStick);
         Add(Confirm, Key.Enter, Key.KpEnter);
         Pad(Confirm, JoyButton.Start);
         Add(Cancel, Key.Escape, Key.Backspace);
@@ -47,6 +50,10 @@ public static class GameInput
         Pad(KeepPrev, JoyButton.LeftShoulder);
         Add(KeepNext, Key.E);
         Pad(KeepNext, JoyButton.RightShoulder);
+        Add(TabPrev, Key.Q);
+        Pad(TabPrev, JoyButton.LeftShoulder);
+        Add(TabNext, Key.E);
+        Pad(TabNext, JoyButton.RightShoulder);
         Add(Profile, Key.P);
         Pad(Profile, JoyButton.X);
     }
