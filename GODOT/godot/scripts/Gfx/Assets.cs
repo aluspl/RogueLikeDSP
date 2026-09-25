@@ -47,6 +47,10 @@ public static class Assets
 
     public static Texture2D Actors => Tex("sprites/actors.png");
     public static Texture2D ActorsWhite => Tex("sprites/actors_white.png");
+    /// <summary>Chód (4 klatki) i oddech postaci: wiersz = klatka z actors.png, kolumna = AnimWalk0..3 / AnimBreath.</summary>
+    public static Texture2D ActorsAnim => Tex("sprites/actors_anim.png");
+    public static Texture2D ActorsAnimWhite => Tex("sprites/actors_anim_white.png");
+    public static Texture2D Truck => Tex("sprites/truck.png");
     public static Texture2D Particles => Tex("sprites/particles.png");
     public static Texture2D Houses => Tex("sprites/houses.png");
     public static Texture2D MenuIcons => Tex("sprites/menu_icons.png");
@@ -61,6 +65,14 @@ public static class Assets
     public static Texture2D Range => Tex("fx/range.png");
 
     public static Texture2D StageTiles(int stage) => Tex($"tiles/stage_{Mathf.Clamp(stage, 0, 7)}.png");
+
+    public const int AnimWalkFrames = 4, AnimBreath = 4;
+
+    /// <summary>Region klatki animacji (chód 0..3, oddech 4) postaci o klatce bazowej row.</summary>
+    public static Rect2 AnimFrame(int row, int k) => new(k * Actor, row * Actor, Actor, Actor);
+
+    /// <summary>Czy klatka ma animację chodu (zawody, problemy budowy, bossowie).</summary>
+    public static bool HasWalk(int frame) => frame is >= 0 and < 15 or 46 or 47;
 
     /// <summary>Region klatki size x size w pionowym pasku.</summary>
     public static Rect2 Frame(int index, int size) => new(0, index * size, size, size);

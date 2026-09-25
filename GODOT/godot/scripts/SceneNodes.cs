@@ -28,9 +28,11 @@ public sealed class SceneNodes
         TitleView = new TitleView { Visible = false, Version = version };
         ClassSelectView = new ClassSelectView { Visible = false };
         EndView = new EndView { Visible = false };
+        PrologueView = new PrologueView { Visible = false };
         screens.AddChild(TitleView);
         screens.AddChild(ClassSelectView);
         screens.AddChild(EndView);
+        screens.AddChild(PrologueView);
 
         var phoneLayer = new CanvasLayer { Layer = 3 };
         root.AddChild(phoneLayer);
@@ -57,6 +59,7 @@ public sealed class SceneNodes
     public TitleView TitleView { get; }
     public ClassSelectView ClassSelectView { get; }
     public EndView EndView { get; }
+    public PrologueView PrologueView { get; }
     public Backdrop Backdrop { get; }
     public PhoneView Phone { get; }
     public PushBanners Banners { get; }

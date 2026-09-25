@@ -16,6 +16,8 @@ public sealed class ScreenFlow
         Title = new TitleScreen(app);
         Profile = new ProfileScreen(app);
         ClassSelect = new ClassSelectScreen(app);
+        Prologue = new PrologueScreen(app);
+        PrologueMessage = new PrologueMessageScreen(app);
         Game = new GameScreen(app);
         Phone = new PhoneScreen(app);
         StageCard = new StageCardScreen(app);
@@ -31,6 +33,8 @@ public sealed class ScreenFlow
     public TitleScreen Title { get; }
     public ProfileScreen Profile { get; }
     public ClassSelectScreen ClassSelect { get; }
+    public PrologueScreen Prologue { get; }
+    public PrologueMessageScreen PrologueMessage { get; }
     public GameScreen Game { get; }
     public PhoneScreen Phone { get; }
     public StageCardScreen StageCard { get; }
@@ -51,6 +55,7 @@ public sealed class ScreenFlow
         n.TitleView.Visible = (next.Views & ViewSet.Title) != 0;
         n.ClassSelectView.Visible = (next.Views & ViewSet.ClassSelect) != 0;
         n.EndView.Visible = (next.Views & ViewSet.End) != 0;
+        n.PrologueView.Visible = (next.Views & ViewSet.Prologue) != 0;
         n.Backdrop.SetOn(next.UsesPhone, instant);
         n.SetBannerMode(next.UsesPhone, next.InRun);
         if (!next.UsesPhone) n.Phone.Close();
