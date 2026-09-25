@@ -1,6 +1,7 @@
 using Godot;
+using LifeLike.Game.Gfx;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.World;
 
 /// <summary>
 /// Postać, problem budowy albo znajdźka na mapie: cień pod spodem, 2 klatki animacji (jak klatki A/B na GBA),

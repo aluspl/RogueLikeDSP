@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Godot;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Gfx;
 
 /// <summary>Pomocnicze rysowanie interfejsu w stylu pikselowym: zaokrąglone prostokąty bez wygładzania, gradient, pasy.</summary>
 public static class Ui
@@ -31,12 +31,10 @@ public static class Ui
     /// <summary>Pionowy gradient fioletu marki (make_gradient na GBA: HDMA zmienia kolor tła co linię), w pasach 2 px.</summary>
     public static void VioletGradient(CanvasItem ci, Rect2 r)
     {
-        var top = new Color(124 / 255f, 98 / 255f, 1f);
-        var bottom = new Color(44 / 255f, 30 / 255f, 150 / 255f);
         for (var y = 0; y < r.Size.Y; y += 2)
         {
             var t = y / r.Size.Y;
-            ci.DrawRect(new Rect2(r.Position.X, r.Position.Y + y, r.Size.X, 2), top.Lerp(bottom, t));
+            ci.DrawRect(new Rect2(r.Position.X, r.Position.Y + y, r.Size.X, 2), Pal.GradientTop.Lerp(Pal.GradientBottom, t));
         }
     }
 

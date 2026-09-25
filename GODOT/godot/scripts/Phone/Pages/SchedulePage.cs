@@ -1,6 +1,7 @@
+using LifeLike.Game.Gfx;
 using CoreGame = LifeLike.Core.Game;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Phone.Pages;
 
 /// <summary>
 /// Harmonogram po etapie (run_schedule na GBA): etapy z pastylkami Gotowe / Następny / Do zrob., wynik, dni,

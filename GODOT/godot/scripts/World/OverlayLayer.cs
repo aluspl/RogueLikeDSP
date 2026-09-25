@@ -1,8 +1,9 @@
 using Godot;
 using LifeLike.Core;
+using LifeLike.Game.Gfx;
 using CoreGame = LifeLike.Core.Game;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.World;
 
 /// <summary>
 /// Nakładki na podłogę pod postaciami: pulsujące pola zapowiedzianego ciosu bossa (czerwona ramka z kreskami),
@@ -39,7 +40,7 @@ public partial class OverlayLayer : Node2D
                 var r = new Rect2(x * c, y * c, c, c);
                 var t = _g.Lv[x, y];
                 if (t == Tile.Stairs && _g.Visible(x, y))
-                    DrawRect(r.Grow(-3), new Color(1f, 0.92f, 0.5f, 0.12f + 0.16f * pulse));
+                    DrawRect(r.Grow(-3), new Color(Pal.StairsGlow, 0.12f + 0.16f * pulse));
                 if (t != Tile.Wall && _g.SlamCell(x, y))
                     DrawTextureRect(Assets.Danger, r, false, new Color(1, 1, 1, 0.55f + 0.45f * pulse));
                 if (_range > 0 && t != Tile.Wall && _g.Visible(x, y) && !(x == _g.Hero.X && y == _g.Hero.Y)

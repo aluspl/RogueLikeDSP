@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Godot;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Audio;
 
 /// <summary>
 /// Dźwięki z GBA (assets/audio/sfx_*.wav) i muzyka (music_*.mp3 wyrenderowana z modułów .mod).

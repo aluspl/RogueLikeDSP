@@ -1,82 +1,44 @@
-using System.Collections.Generic;
-using Godot;
+using LifeLike.Core;
+using LifeLike.Game.Input;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Screens;
 
-/// <summary>
-/// Ekran końcowy jak na GBA: gradient fioletu, plansza z kodem QR do planbudowlany.online (ui/end.png w 2x),
-/// wynik budowy, doświadczenie i rekord; przy odbiorze sypie się konfetti.
-/// </summary>
-public partial class EndScreen : Control
+/// <summary>Plansza końcowa z kodem QR (run_end na GBA): po odbiorze A = kolejna budowa (NG+), Enter = tytuł.</summary>
+public sealed class EndScreen : Screen
 {
-    public bool Won { get; set; }
-    public string Line1 { get; set; } = "";
-    public string Line2 { get; set; } = "";
-    public string Note { get; set; } = "";
-
-    private float _clock;
-    private readonly List<Vector4> _confetti = new(); // x, y, prędkość, klatka
-    private readonly RandomNumberGenerator _rnd = new();
-
-    public override void _Ready()
+    public EndScreen(App app) : base(app)
     {
-        MouseFilter = MouseFilterEnum.Ignore;
-        SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-        _rnd.Seed = 7;
     }
 
-    public override void _Process(double delta)
+    public override ViewSet Views => ViewSet.End;
+    public override string Music => "";
+
+    public void Open() => Flow.Go(this);
+
+    public override void Enter(bool instant)
     {
-        if (!Visible) return;
-        var dt = (float)delta;
-        _clock += dt;
-        if (Won && _confetti.Count < 60 && _rnd.Randf() < 0.5f)
-            _confetti.Add(new Vector4(_rnd.RandfRange(0, 640), -10, _rnd.RandfRange(40, 90), Assets.PConfetti + _rnd.RandiRange(0, 3)));
-        for (var i = _confetti.Count - 1; i >= 0; i--)
-        {
-            var c = _confetti[i];
-            c.Y += c.Z * dt;
-            c.X += Mathf.Sin(_clock * 3 + i) * 12 * dt;
-            _confetti[i] = c;
-            if (c.Y > 370) _confetti.RemoveAt(i);
-        }
-        QueueRedraw();
+        var g = S.Game;
+        var won = g.St == GameStatus.Won;
+        var v = N.EndView;
+        v.Won = won;
+        v.Line1 = $"Wynik {g.Score}   Dni {g.Turns}   Etap {g.Stage + 1}/{S.Data.Stages.Length}   Dośw. +{S.LastGained}";
+        v.Line2 = $"Rekord {S.Profile.Best}   Doświadczenie w profilu {S.Profile.Xp}" + (won ? "   Dom na Osiedlu!" : "");
+        v.Note = S.Note;
+        N.Banners.Clear();
     }
 
-    public override void _Draw()
+    public override bool HandleInput(InputCmd e)
     {
-        try
+        if (S.Game.St == GameStatus.Won && e.Is(GameAction.A))
         {
-            DrawContent();
+            S.NewGamePlus();
+            App.Refresh();
+            Flow.StageCard.Open();
+            return true;
         }
-        catch (System.Exception ex)
-        {
-            DrawErrors.Record("EndScreen", ex);
-        }
-    }
-
-    private void DrawContent()
-    {
-        var f = PixelFont.I;
-        var w = Size.X;
-        var h = Size.Y;
-        Ui.VioletGradient(this, new Rect2(0, 0, w, h));
-        DrawTextureRect(Assets.Tex("ui/end.png"), new Rect2((w - 480) / 2, 0, 480, 208), false);
-        DrawRect(new Rect2(0, 210, w, 2), Pal.Accent);
-        var title = Won ? "ODBIÓR ZALICZONY!" : "BUDOWA WSTRZYMANA";
-        f.Draw(this, new Vector2(w / 2, 220), title, new Ink(Won ? new Color("b9f5c9") : new Color("ffd0c0"), new Color("2a1d80")), TextAlign.Center, 2);
-        f.Draw(this, new Vector2(w / 2, 256), Line1, Ink.OnBrand, TextAlign.Center);
-        f.Draw(this, new Vector2(w / 2, 273), Line2, Ink.OnBrand, TextAlign.Center);
-        var y = 292f;
-        foreach (var line in f.Wrap(Note, (int)w - 40))
-        {
-            if (y > 316) break;
-            f.Draw(this, new Vector2(w / 2, y), line, new Ink(new Color("ffe08a"), new Color("2a1d80")), TextAlign.Center);
-            y += 16;
-        }
-        var hint = Won ? "Spacja: kolejna budowa (NG+)   Enter: menu" : "Enter: menu";
-        if (((int)(_clock * 1.5f) & 1) == 0) f.Draw(this, new Vector2(w / 2, h - 20), hint, Ink.OnBrand, TextAlign.Center);
-        foreach (var c in _confetti)
-            Assets.DrawFrame(this, Assets.Particles, (int)c.W, Assets.Particle, new Vector2(Mathf.Round(c.X), Mathf.Round(c.Y)));
+        if (!e.Is(GameAction.Start | GameAction.A)) return false;
+        S.Note = "";
+        Flow.Title.Open();
+        return true;
     }
 }

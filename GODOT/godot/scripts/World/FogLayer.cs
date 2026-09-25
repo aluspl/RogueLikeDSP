@@ -1,8 +1,9 @@
 using Godot;
 using LifeLike.Core;
+using LifeLike.Game.Gfx;
 using CoreGame = LifeLike.Core.Game;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.World;
 
 /// <summary>
 /// Mgła wojny z miękkim światłem (odpowiednik 4 palet światła etapu na GBA: pełne przy bohaterze, 80%, 60% na skraju

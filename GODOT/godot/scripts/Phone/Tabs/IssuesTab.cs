@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using Godot;
+using LifeLike.Game.Gfx;
 using CoreGame = LifeLike.Core.Game;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Phone.Tabs;
 
 /// <summary>
 /// Usterki = problemy budowy jako zgłoszenia (tab_issues na GBA): numer, „zdjęcie” (portret problemu), nazwa,

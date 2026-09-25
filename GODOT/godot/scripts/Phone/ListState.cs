@@ -1,4 +1,4 @@
-namespace LifeLike.Game;
+namespace LifeLike.Game.Phone;
 
 /// <summary>Wybór na przewijanej liście (sel / top z oknem widocznych wierszy), jak listy w run_shop na GBA.</summary>
 public sealed class ListState

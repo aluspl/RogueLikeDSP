@@ -1,7 +1,8 @@
 using LifeLike.Core.Data;
+using LifeLike.Game.Gfx;
 using CoreGame = LifeLike.Core.Game;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Phone.Tabs;
 
 /// <summary>
 /// Sprzęt (tab_gear na GBA): narzędzie z obrażeniami i zasięgiem, kask / rękawice / kamizelka / ... z jakością

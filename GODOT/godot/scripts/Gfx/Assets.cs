@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Godot;
 using LifeLike.Core;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Gfx;
 
 /// <summary>
 /// Tekstury z GODOT/godot/assets (eksport z GBA: GODOT/tools/export_godot_assets.py) i numery klatek

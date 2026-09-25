@@ -1,7 +1,8 @@
 using LifeLike.Core;
+using LifeLike.Game.Gfx;
 using CoreGame = LifeLike.Core.Game;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Phone.Tabs;
 
 /// <summary>Zadania = harmonogram budowy: etapy z pastylkami Gotowe / W trakcie / Do zrob., wydarzenie na placu, postęp (tab_tasks na GBA).</summary>
 public sealed class TasksTab : PhonePage

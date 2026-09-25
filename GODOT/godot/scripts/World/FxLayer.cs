@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using Godot;
+using LifeLike.Game.Gfx;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.World;
 
 /// <summary>
 /// Cząsteczki i unoszące się liczby nad mapą (particle_pool i floatery z GBA/src/main.cpp). Symulacja w stałym

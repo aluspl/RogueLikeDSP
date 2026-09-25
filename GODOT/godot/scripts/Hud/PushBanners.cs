@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using Godot;
+using LifeLike.Game.Audio;
+using LifeLike.Game.Gfx;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Hud;
 
 /// <summary>
 /// Powiadomienia push jak z aplikacji PlanBudowlany (push_banner na GBA): biała karta zjeżdża z góry, ikona PB,

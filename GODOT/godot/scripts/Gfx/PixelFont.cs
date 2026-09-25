@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Godot;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Gfx;
 
 /// <summary>
 /// Pikselowy font 8x16 o zmiennej szerokości z GBA (Butano common_variable_8x16 + polskie znaki), wyeksportowany

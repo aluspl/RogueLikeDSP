@@ -1,6 +1,6 @@
 using Godot;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Gfx;
 
 /// <summary>
 /// Kolor tekstu pikselowego fontu: wypełnienie + obrys (cień prawy-dolny z fontu GBA).
@@ -38,4 +38,9 @@ public readonly struct Ink
     public static readonly Ink MapDim = new(new Color("b8b4d8"), MapEdge);
     public static readonly Ink MapBrand = new(new Color("ff9a66"), MapEdge);
     public static readonly Ink OnBrand = new(Colors.White, new Color("3a2a99"));
+    /// <summary>Notatka na fiolecie (odznaki, zlecenia) i nagłówki planszy końcowej.</summary>
+    public static readonly Ink NoteOnBrand = new(new Color("ffe08a"), new Color("3a2a99"));
+    public static readonly Ink EndWin = new(new Color("b9f5c9"), new Color("2a1d80"));
+    public static readonly Ink EndLose = new(new Color("ffd0c0"), new Color("2a1d80"));
+    public static readonly Ink EndNote = new(new Color("ffe08a"), new Color("2a1d80"));
 }
