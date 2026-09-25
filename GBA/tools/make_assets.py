@@ -395,7 +395,7 @@ def make_phone():
     tiles, names = [[0] * 64], ["empty"]
     def add(name, t): names.append(name); tiles.append(t)
     fills = {"card": P_CARD, "group": P_GROUP, "brand": P_BRAND, "prog_bg": P_PROG_BG, "late_bg": P_LATE_BG,
-             "done_bg": P_DONE_BG, "gray": P_BORDER, "bg": P_BG}
+             "done_bg": P_DONE_BG, "gray": P_BORDER, "bg": P_BG, "dark": P_TEXT}
     for n, c in fills.items():
         add("fill_" + n, [c] * 64)
         corner = [0] * 64          # lewy górny róg, promień ~3 px (reszta rogów przez odbicia)
@@ -426,7 +426,10 @@ def make_phone():
     for n, (fill, edge) in {"dark": (DARK, PHONE_PAL[P_CARD]), "dim": (PHONE_PAL[P_DIM], PHONE_PAL[P_CARD]),
                             "brand": (BRAND_VIOLET, PHONE_PAL[P_CARD]), "prog": ((180, 110, 5), PHONE_PAL[P_PROG_BG]),
                             "done": ((4, 120, 87), PHONE_PAL[P_DONE_BG]), "late": ((185, 28, 28), PHONE_PAL[P_LATE_BG]),
-                            "white": ((255, 255, 255), BRAND_VIOLET)}.items():
+                            "white": ((255, 255, 255), BRAND_VIOLET),
+                            # na mapie: kolorowe komunikaty z ciemnym cieniem
+                            "map_bad": ((255, 120, 120), (20, 20, 30)), "map_good": ((130, 235, 150), (20, 20, 30)),
+                            "map_loot": ((255, 215, 90), (20, 20, 30))}.items():
         write_bmp(os.path.join(G, "font_" + n + ".bmp"), [0] * 64, 8, 8, [(255, 0, 255), fill, edge], 4)
         write_json("font_" + n, {"type": "sprite_palette"})
     return len(tiles)

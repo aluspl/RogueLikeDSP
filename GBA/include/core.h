@@ -107,11 +107,16 @@ namespace core
     struct hit { int8_t x, y; int16_t amount; bool on_hero; };   // do liczb obrażeń nad polem
 
     // Dziennik budowy (log zdarzeń) - krótkie linie UTF-8
+    enum log_kind : uint8_t { info, bad, good, loot };   // kolor komunikatu w dzienniku
+
     struct message
     {
         char s[log_len];
         int n = 0;
+        uint8_t kind = info;
+        uint8_t repeat = 1;          // ile razy z rzędu ten sam komunikat (x2, x3...)
         message() { s[0] = 0; }
+        message& as(log_kind k) { kind = k; return *this; }
         message& add(const char* t) { while(*t && n < log_len - 1) s[n++] = *t++; s[n] = 0; return *this; }
         message& add(int v)
         {
@@ -266,11 +271,20 @@ namespace core
             hero.hp = int16_t(hero.hp + data::hp_per_level);
             if(data::dmg_levels_mask & (1 << hero_level)) ++dmg_bonus;
             if(data::def_levels_mask & (1 << hero_level)) ++def_bonus;
-            push(message().add("Awans! Poziom ").add(hero_level));
+            push(message().add("Awans! Poziom ").add(hero_level).as(good));
         }
+
+        int log_serial = 0;          // rośnie przy każdym komunikacie (warstwa GBA pokazuje świeże)
 
         void push(const message& m)
         {
+            ++log_serial;
+            message& last = log[log_lines - 1];
+            if(last.n == m.n && last.kind == m.kind && std::memcmp(last.s, m.s, size_t(m.n)) == 0)
+            {
+                if(last.repeat < 99) ++last.repeat;   // ten sam komunikat: licznik zamiast nowej linii
+                return;
+            }
             for(int i = 0; i < log_lines - 1; ++i) log[i] = log[i + 1];
             log[log_lines - 1] = m;
         }
@@ -389,9 +403,9 @@ namespace core
                 e.alive = false; ++kills; ++stage_kills;
                 if(kills_by_type[e.def_id] < 255) ++kills_by_type[e.def_id]; score += ed.score * score_pct() / 100; gain_xp(data::xp_per_kill);
                 maybe_drop(e.x, e.y);
-                push(message().add(ed.name).add(" - usunięto!"));
+                push(message().add(ed.name).add(" - usunięto!").as(good));
                 if(ei == boss) { score += (500 + 100 * (stage + 1)) * score_pct() / 100; gain_xp(data::xp_boss); st = status::won;
-                    push(message().add("Odbiór techniczny zaliczony!")); }
+                    push(message().add("Odbiór techniczny zaliczony!").as(good)); }
             }
             else
                 push(message().add(weapon().name).add(": -").add(dmg).add(" (").add(ed.name).add(")"));
@@ -606,7 +620,7 @@ namespace core
             if(rarity <= equipped[slot])
             {
                 gain_xp(1 + rarity);
-                push(message().add("Masz lepszy: ").add(data::gear_slots[slot]));
+                push(message().add("Masz lepszy: ").add(data::gear_slots[slot]).as(loot));
                 return;
             }
             if(nw.stat == gear_stat::hp)
@@ -616,7 +630,7 @@ namespace core
                 hero.hp = int16_t(hero.hp + diff);
             }
             equipped[slot] = int8_t(rarity);
-            push(message().add("Sprzęt: ").add(nw.name).add(" +").add(nw.value));
+            push(message().add("Sprzęt: ").add(nw.name).add(" +").add(nw.value).as(loot));
         }
 
         void collect()
@@ -626,15 +640,15 @@ namespace core
                 pickup& p = pickups[i];
                 if(! p.active || p.x != hero.x || p.y != hero.y) continue;
                 p.active = false;
-                if(p.type == coffee) { int h = imin(8 + bonus.coffee, hero.max_hp - hero.hp); hero.hp = int16_t(hero.hp + h); push(message().add("Kawa z termosu: +").add(h).add(" HP")); }
-                else if(p.type == helmet) { ++def_bonus; push(message().add("Nowy kask: obrona +1")); }
-                else if(p.type == plan) { ++dmg_bonus; push(message().add("Projekt wykonawczy: obrażenia +1")); }
+                if(p.type == coffee) { int h = imin(8 + bonus.coffee, hero.max_hp - hero.hp); hero.hp = int16_t(hero.hp + h); push(message().add("Kawa z termosu: +").add(h).add(" HP").as(good)); }
+                else if(p.type == helmet) { ++def_bonus; push(message().add("Nowy kask: obrona +1").as(loot)); }
+                else if(p.type == plan) { ++dmg_bonus; push(message().add("Projekt wykonawczy: obrażenia +1").as(loot)); }
                 else if(p.type == gear_box) equip(p.arg / 3, p.arg % 3);
                 else
                 {
                     weapon_override = data::tools[p.arg].weapon;
                     tools_found = uint8_t(tools_found | (1u << p.arg));
-                    push(message().add("Narzędzie: ").add(weapon().name).add(" ").add(weapon().min_damage).add("-").add(weapon().max_damage));
+                    push(message().add("Narzędzie: ").add(weapon().name).add(" ").add(weapon().min_damage).add("-").add(weapon().max_damage).as(loot));
                 }
             }
         }
@@ -657,9 +671,9 @@ namespace core
                 stage_damage += dmg;
                 hero_hit = true;
                 add_hit(hero.x, hero.y, dmg, true);
-                push(message().add(ed.name).add(": -").add(dmg).add(" HP"));
+                push(message().add(ed.name).add(": -").add(dmg).add(" HP").as(bad));
                 if(hero.hp <= 0) { hero.hp = 0; hero.alive = false; st = status::dead;
-                    push(message().add("Budowa wstrzymana...")); }
+                    push(message().add("Budowa wstrzymana...").as(bad)); }
                 return;
             }
             int dx = isign(hero.x - e.x), dy = isign(hero.y - e.y);
@@ -676,7 +690,7 @@ namespace core
         void end_turn()
         {
             ++turns;
-            if(ability_cd > 0 && --ability_cd == 0) push(message().add("Moc gotowa: ").add(cdef().ability_name));
+            if(ability_cd > 0 && --ability_cd == 0) push(message().add("Moc gotowa: ").add(cdef().ability_name).as(good));
             for(int i = 0; i < walls_count; )
                 if(--walls[i].turns <= 0) { lv.t[walls[i].y][walls[i].x] = tile::floor; walls[i] = walls[--walls_count]; }
                 else ++i;
@@ -689,7 +703,7 @@ namespace core
                 st = status::stage_clear;
                 score += 100 * score_pct() / 100;
                 gain_xp(data::xp_per_stage);
-                push(message().add("Etap zakończony: ").add(data::stages[stage].name));
+                push(message().add("Etap zakończony: ").add(data::stages[stage].name).as(good));
             }
         }
 

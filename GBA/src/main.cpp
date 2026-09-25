@@ -46,6 +46,10 @@
 #include "bn_sprite_palette_items_font_done.h"
 #include "bn_sprite_palette_items_font_late.h"
 #include "bn_sprite_palette_items_font_white.h"
+#include "bn_sprite_palette_items_font_map_bad.h"
+#include "bn_sprite_palette_items_font_map_good.h"
+#include "bn_sprite_palette_items_font_map_loot.h"
+#include "bn_blending.h"
 #include "bn_sprite_palettes.h"
 #include "bn_regular_bg_items_title.h"
 #include "bn_regular_bg_items_end.h"
@@ -1071,6 +1075,22 @@ namespace
         bn::fixed_point cam_base;
         push_banner banner;
         particle_pool fx_particles(cam);
+
+        // Półprzezroczyste ciemne paski pod HUD (u góry) i dziennikiem (u dołu, tylko gdy są komunikaty).
+        bn::unique_ptr<phone_canvas> strips(new phone_canvas());
+        bn::regular_bg_ptr strip_bg = make_canvas_bg(*strips);
+        bn::regular_bg_map_ptr strip_map = strip_bg.map();
+        strip_bg.set_priority(1);
+        strip_bg.set_blending_enabled(true);
+        bn::blending::set_transparency_alpha(bn::fixed(0.55));
+        auto draw_strips = [&](bool bottom) {
+            strips->clear();
+            for(int x = 0; x < 30; ++x) { strips->set(x, 0, phone_tile::fill_dark); strips->set(x, 1, phone_tile::fill_dark); }
+            if(bottom) for(int y = 16; y < 20; ++y) for(int x = 0; x < 30; ++x) strips->set(x, y, phone_tile::fill_dark);
+            strip_map.reload_cells_ref();
+        };
+        draw_strips(false);
+        int log_timer = 0, log_seen = g.log_serial;
         int prev_level = g.hero_level, prev_weapon = g.weapon_override, prev_pickups = g.pickups_count;
         int prev_cd = g.ability_cd;
         int prev_active = 0;
@@ -1339,10 +1359,30 @@ namespace
             if(g.tier > 0) st.add("+").add(g.tier);
             a.text.generate(116, -72, st.s, hud);
 
-            log.clear();
-            a.text.set_left_alignment();
-            a.text.generate(-116, 56, clip(g.log[core::log_lines - 2].s, 29), log);
-            a.text.generate(-116, 72, clip(g.log[core::log_lines - 1].s, 29), log);
+            if(g.log_serial != log_seen)   // nowe komunikaty: pokaż na chwilę, kolor wg rodzaju
+            {
+                log_seen = g.log_serial;
+                log_timer = 150;
+                log.clear();
+                a.text.set_left_alignment();
+                for(int k = 0; k < 2; ++k)
+                {
+                    const core::message& m = g.log[core::log_lines - 2 + k];
+                    if(m.n == 0) continue;
+                    switch(m.kind)
+                    {
+                        case core::bad:  a.text.set_palette_item(bn::sprite_palette_items::font_map_bad); break;
+                        case core::good: a.text.set_palette_item(bn::sprite_palette_items::font_map_good); break;
+                        case core::loot: a.text.set_palette_item(bn::sprite_palette_items::font_map_loot); break;
+                        default:         a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item()); break;
+                    }
+                    core::message line; line.add(clip(m.s, 30).c_str());
+                    if(m.repeat > 1) line.add(" x").add(m.repeat);
+                    a.text.generate(-116, 56 + k * 16, line.s, log);
+                }
+                a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
+                draw_strips(true);
+            }
 
             fx.clear();
             for(int i = 0; i < g.enemies_count; ++i)
@@ -1446,6 +1486,7 @@ namespace
                 hp_left.set_visible(false); hp_right.set_visible(false);
                 tgt_left.set_visible(false); tgt_right.set_visible(false);
                 power_icon.set_visible(false); power_text.clear(); shown_cd = -1;
+                strip_bg.set_visible(false);
                 banner.hide();
                 fx_particles.list.clear();
                 pause_result pr = run_phone(a);
@@ -1461,6 +1502,7 @@ namespace
                 bg.set_visible(true);
                 hero.set_visible(true);
                 hp_left.set_visible(true); hp_right.set_visible(true);
+                strip_bg.set_visible(true);
                 snap_next = true;
                 refresh();
                 hold = 0;
@@ -1471,6 +1513,7 @@ namespace
 
             animate();
             fx_particles.update();
+            if(log_timer > 0 && --log_timer == 0) { log.clear(); draw_strips(false); }   // komunikaty znikają
             if(fx_timer > 0 && --fx_timer == 0) fx.clear();
             for(int i = 0; i < floaters.size(); )
             {
