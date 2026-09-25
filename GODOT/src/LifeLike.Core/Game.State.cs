@@ -91,6 +91,11 @@ public sealed partial class Game
         w.Write(BossWakeDamage);
         w.Write(StageEvent);
         w.Write(Weather);
+        w.Write(HelperCalled);
+        w.Write(GuardTurns);
+        w.Write(AllyTurns);
+        w.Write(AllyX);
+        w.Write(AllyY);
         foreach (var v in new[] { Cash, ActKills, ActBonus }) w.Write(v);
         w.Write(ActCleared);
         w.Write(SlamTimer);
@@ -101,7 +106,7 @@ public sealed partial class Game
         foreach (var v in new[]
                  {
                      Bonus.Hp, Bonus.Def, Bonus.Dmg, Bonus.Coffee, Bonus.Pickups, Bonus.Luck, Bonus.Craft, Bonus.Cooldown, Bonus.Sight,
-                     Bonus.Thermos, Bonus.ToolPct, Bonus.XpPct, Bonus.Cash, Bonus.Crit, Bonus.Tools,
+                     Bonus.Thermos, Bonus.ToolPct, Bonus.XpPct, Bonus.Cash, Bonus.Crit, Bonus.Tools, Bonus.Helpers,
                  })
             w.Write(v);
         foreach (var v in new[] { XpPct, XpBanked, RunXp, HeroLevel, Boss, StairsX, StairsY }) w.Write(v);
@@ -179,6 +184,11 @@ public sealed partial class Game
         BossWakeDamage = r.ReadInt32();
         StageEvent = r.ReadSByte();
         Weather = r.ReadSByte();
+        HelperCalled = r.ReadSByte();
+        GuardTurns = r.ReadSByte();
+        AllyTurns = r.ReadSByte();
+        AllyX = r.ReadSByte();
+        AllyY = r.ReadSByte();
         Cash = r.ReadInt32();
         ActKills = r.ReadInt32();
         ActBonus = r.ReadInt32();
@@ -193,6 +203,7 @@ public sealed partial class Game
             Hp = r.ReadInt32(), Def = r.ReadInt32(), Dmg = r.ReadInt32(), Coffee = r.ReadInt32(), Pickups = r.ReadInt32(),
             Luck = r.ReadInt32(), Craft = r.ReadInt32(), Cooldown = r.ReadInt32(), Sight = r.ReadInt32(), Thermos = r.ReadInt32(),
             ToolPct = r.ReadInt32(), XpPct = r.ReadInt32(), Cash = r.ReadInt32(), Crit = r.ReadInt32(), Tools = r.ReadInt32(),
+            Helpers = r.ReadInt32(),
         };
         XpPct = r.ReadInt32();
         XpBanked = r.ReadInt32();

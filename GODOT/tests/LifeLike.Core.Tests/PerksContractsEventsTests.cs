@@ -222,7 +222,7 @@ public class PerksContractsEventsTests
         var raw = v3.ToBytes();
         for (var i = Profile.V3Size; i < raw.Length; i++) raw[i] = 0xCD; // śmieci
         v3 = Profile.FromBytes(raw);
-        Assert.True(Meta.ProfileFix(D, v3) && v3.MagicIs(Profile.MagicV5));
+        Assert.True(Meta.ProfileFix(D, v3) && v3.MagicIs(Profile.MagicV6));
         Assert.True(v3.Best == 1234 && v3.Runs == 9 && v3.Wins == 4 && v3.Xp == 321 && v3.Levels[1] == 2 && v3.Classes == 0x1F);
         Assert.True(v3.Hard == 1 && v3.Flags == 3 && v3.Tools == 5 && v3.Badges == 0x0123 && v3.Catalog == 0x07FF);
         Assert.True(v3.ClassWins == 0x05 && v3.ToolsFound == 0x0B && v3.HousesCount == 3 && v3.Houses[0] == 0x21 && v3.Houses[2] == 0x35);
@@ -248,7 +248,7 @@ public class PerksContractsEventsTests
         var raw = v4.ToBytes();
         for (var i = Profile.V4Size; i < raw.Length; i++) raw[i] = 0xEE; // śmieci
         v4 = Profile.FromBytes(raw);
-        Assert.True(Meta.ProfileFix(D, v4) && v4.MagicIs(Profile.MagicV5));
+        Assert.True(Meta.ProfileFix(D, v4) && v4.MagicIs(Profile.MagicV6));
         Assert.True(v4.Best == 77 && v4.Xp == 12 && v4.KillsTotal == 150 && v4.PowersTotal == 40 && v4.Contracts == 0x03);
         Assert.True(v4.KeepsakeRuns[0] == 4 && v4.RunKills == 0 && v4.RunPowers == 0 && v4.RunBrand == 0 && v4.RunClean == 0);
         Assert.True(Meta.SelectedKeepsake(D, v4) >= 0 && D.Keepsakes[Meta.SelectedKeepsake(D, v4)].Start);
@@ -298,9 +298,9 @@ public class PerksContractsEventsTests
         Assert.True(p.KillsTotal == kills1 + 5 && p.RunKills == 3);
     }
 
-    /// <summary>Układ bajtów profilu v5 jak struktura core::profile w SRAM (offsety z static_assert w meta.h).</summary>
+    /// <summary>Układ bajtów profilu v6 jak struktura core::profile w SRAM (offsety z static_assert w meta.h).</summary>
     [Fact]
-    public void ProfileV5SramLayout()
+    public void ProfileV6SramLayout()
     {
         var p = Meta.NewProfile(D);
         p.KillsTotal = 0x1234;
@@ -315,12 +315,17 @@ public class PerksContractsEventsTests
         p.RunPowers = 0x0102;
         p.RunBrand = 3;
         p.RunClean = 4;
+        p.Brigade = 0x0C;
+        p.Investor = 0x21;
+        p.BestStake[0] = 5;
+        p.BestStake[7] = 9;
         var b = p.ToBytes();
-        Assert.Equal(80, b.Length);
-        Assert.Equal("PBRL005\0"u8.ToArray(), b[..8]);
+        Assert.Equal(88, b.Length);
+        Assert.Equal("PBRL006\0"u8.ToArray(), b[..8]);
         Assert.Equal(new byte[] { 0x34, 0x12, 0x01, 0x02, 7, 8, 0x2A, 3, 11 }, b[56..65]);
         Assert.Equal(99, b[71]);
-        Assert.Equal(new byte[] { 0x06, 0x05, 0x02, 0x01, 3, 4, 0, 0 }, b[72..80]);
+        Assert.Equal(new byte[] { 0x06, 0x05, 0x02, 0x01, 3, 4, 0x0C, 0x21, 5 }, b[72..81]);
+        Assert.Equal(9, b[87]);
         Assert.Equal(b, Profile.FromBytes(b).ToBytes());
     }
 

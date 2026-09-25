@@ -11,7 +11,7 @@ public static class Meta
     public static void ProfileReset(GameData d, Profile p)
     {
         var fresh = Profile.FromBytes(new byte[Profile.Size]);
-        fresh.Magic = Profile.MagicBytes(Profile.MagicV5);
+        fresh.Magic = Profile.MagicBytes(Profile.MagicV6);
         fresh.Classes = (byte)d.StartClassesMask;
         DefaultKeepsake(d, fresh);
         CopyInto(fresh, p);
@@ -66,22 +66,26 @@ public static class Meta
         dst.RunPowers = copy.RunPowers;
         dst.RunBrand = copy.RunBrand;
         dst.RunClean = copy.RunClean;
+        dst.Brigade = copy.Brigade;
+        dst.Investor = copy.Investor;
+        dst.BestStake = copy.BestStake;
     }
 
     /// <summary>Naprawia wczytany profil. Zwraca true, jeśli trzeba go zapisać (migracja albo pusta pamięć).</summary>
     public static bool ProfileFix(GameData d, Profile p)
     {
-        if (p.MagicIs(Profile.MagicV5)) return false;
-        // v4/v3/v2 -> v5: stare pola zostają, nowe od zera (jak memset od profile_v4_size / v3 / v2);
+        if (p.MagicIs(Profile.MagicV6)) return false;
+        // v5/v4/v3/v2 -> v6: stare pola zostają, nowe od zera (jak memset od profile_v5_size / v4 / v3 / v2);
         // bez wybranej pamiątki – pierwsza odblokowana
-        var keep = p.MagicIs(Profile.MagicV4) ? Profile.V4Size
+        var keep = p.MagicIs(Profile.MagicV5) ? Profile.V5Size
+            : p.MagicIs(Profile.MagicV4) ? Profile.V4Size
             : (p.MagicIs(Profile.MagicV3) ? Profile.V3Size : (p.MagicIs(Profile.MagicV2) ? Profile.V2Size : 0));
         if (keep > 0)
         {
             var b = p.ToBytes();
             Array.Clear(b, keep, b.Length - keep);
             CopyInto(Profile.FromBytes(b), p);
-            p.Magic = Profile.MagicBytes(Profile.MagicV5);
+            p.Magic = Profile.MagicBytes(Profile.MagicV6);
             DefaultKeepsake(d, p);
             return true;
         }
@@ -138,6 +142,19 @@ public static class Meta
         return true;
     }
 
+    /// <summary>Brygada: fachowcy do wezwania (startowi zawsze, reszta za doświadczenie w Szkoleniach).</summary>
+    public static int HelpersMask(GameData d, Profile p) => p.Brigade | d.StartHelpersMask;
+
+    public static bool HelperUnlocked(GameData d, Profile p, int i) => ((HelpersMask(d, p) >> i) & 1) != 0;
+
+    public static bool BuyHelper(GameData d, Profile p, int i)
+    {
+        if (HelperUnlocked(d, p, i) || p.Xp < d.Brigade[i].Cost) return false;
+        p.Xp -= d.Brigade[i].Cost;
+        p.Brigade = (byte)(p.Brigade | (1u << i));
+        return true;
+    }
+
     public static bool BuyHard(GameData d, Profile p)
     {
         if (p.Hard != 0 || p.Xp < d.HardCost) return false;
@@ -150,6 +167,7 @@ public static class Meta
     {
         var m = RunMods.Default(d);
         m.Tools = ToolsMask(d, p);
+        m.Helpers = HelpersMask(d, p);
         for (var i = 0; i < d.Upgrades.Length; ++i)
         {
             var v = d.Upgrades[i].Value * p.Levels[i];
@@ -186,6 +204,7 @@ public static class Meta
             if ((d.StartClassesMask & (1 << i)) == 0) t += d.ClassCost;
         }
         foreach (var tool in d.Tools) t += tool.Cost;
+        foreach (var h in d.Brigade) t += h.Cost;
         return t;
     }
 
@@ -204,6 +223,10 @@ public static class Meta
         for (var i = 0; i < d.Tools.Length; ++i)
         {
             if (ToolUnlocked(d, p, i)) t += d.Tools[i].Cost;
+        }
+        for (var i = 0; i < d.Brigade.Length; ++i)
+        {
+            if (HelperUnlocked(d, p, i)) t += d.Brigade[i].Cost;
         }
         return t;
     }

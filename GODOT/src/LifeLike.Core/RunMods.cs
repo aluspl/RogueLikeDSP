@@ -29,8 +29,10 @@ public struct RunMods
     public int Crit;
     /// <summary>Narzędzia, które mogą wypaść z wrogów (bitmaska).</summary>
     public int Tools;
+    /// <summary>Brygada: fachowcy do wezwania (bitmaska GameData.Brigade).</summary>
+    public int Helpers;
 
-    public static RunMods Default(GameData d) => new() { Tools = d.StartToolsMask };
+    public static RunMods Default(GameData d) => new() { Tools = d.StartToolsMask, Helpers = d.StartHelpersMask };
 
     /// <summary>Dodaje premię (add_perk).</summary>
     public void AddPerk(Perk p)

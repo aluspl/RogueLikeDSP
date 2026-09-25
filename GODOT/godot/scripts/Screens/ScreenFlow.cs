@@ -29,6 +29,7 @@ public sealed class ScreenFlow
         EndMessage = new EndMessageScreen(app);
         End = new EndScreen(app);
         Settings = new SettingsScreen(app);
+        Brigade = new BrigadeScreen(app);
     }
 
     public Screen Current { get; private set; }
@@ -48,6 +49,7 @@ public sealed class ScreenFlow
     public EndMessageScreen EndMessage { get; }
     public EndScreen End { get; }
     public SettingsScreen Settings { get; }
+    public BrigadeScreen Brigade { get; }
 
     /// <summary>Przejście na ekran; instant = bez animacji (telefon od razu na miejscu, tło od razu rozmyte).</summary>
     public void Go(Screen next, bool instant = false)

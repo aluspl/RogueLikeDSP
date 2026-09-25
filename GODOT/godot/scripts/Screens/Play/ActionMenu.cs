@@ -6,7 +6,7 @@ namespace LifeLike.Game.Screens.Play;
 
 /// <summary>
 /// Menu akcji wokół bohatera pod Enter/START (jak GBA v0.21.42): góra Atak, prawo Moc, dół Termos, lewo Czekaj.
-/// Strzałka pierwszy raz wybiera, drugi raz tą samą - wykonuje; A wykonuje wybraną, Enter/B zamyka.
+/// Strzałka pierwszy raz wybiera, drugi raz tą samą - wykonuje; A wykonuje wybraną (bez wyboru: Brygada), Enter/B zamyka.
 /// </summary>
 public sealed class ActionMenu
 {
@@ -53,6 +53,11 @@ public sealed class ActionMenu
             return true;
         }
         if (e.Is(GameAction.A) && N.World.MenuSel >= 0) Execute();
+        else if (e.Is(GameAction.A)) // A bez kierunku: brygada w telefonie
+        {
+            Close();
+            _app.Flow.Brigade.Open();
+        }
         else if (e.Is(GameAction.Start | GameAction.B | GameAction.Cancel))
         {
             Close();
@@ -102,6 +107,6 @@ public sealed class ActionMenu
             3 => "Czekaj turę",
             _ => "Akcje: wybierz strzałką (góra Atak, prawo Moc, dół Termos, lewo Czekaj)",
         };
-        N.Hud.ShowHint(label, sel < 0 ? "Enter/Z: zamknij" : "Ta sama strzałka lub Spacja: wykonaj   Enter/Z: zamknij");
+        N.Hud.ShowHint(label, sel < 0 ? "Spacja: Brygada   Enter/Z: zamknij" : "Ta sama strzałka lub Spacja: wykonaj   Enter/Z: zamknij");
     }
 }

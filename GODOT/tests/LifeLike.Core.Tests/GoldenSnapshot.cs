@@ -54,6 +54,7 @@ public static class GoldenSnapshot
         K("stageEvent", g.StageEvent.ToString());
         K("weather", g.Weather.ToString());
         K("weaponRange", g.WeaponRange().ToString());
+        K("brigade", Arr([g.HelperCalled, g.GuardTurns, g.AllyTurns, g.AllyX, g.AllyY, g.HeroDefense()]));
         K("counters", Arr([g.PowersUsed, g.BrandFound, g.CleanBosses, g.BossWakeDamage]));
         K("stats", Arr([g.HeroStat(Stat.Str), g.HeroStat(Stat.Agi), g.HeroStat(Stat.Intel), g.Luck(), g.CritPct(), g.SightRadius(), g.AbilityCooldown()]));
         K("offer", Arr([g.OfferSlot, g.OfferRarity, g.OfferTrait]));
@@ -91,6 +92,6 @@ public static class GoldenSnapshot
         $"{{\"best\":{p.Best},\"runs\":{p.Runs},\"wins\":{p.Wins},\"xp\":{p.Xp},\"badges\":{p.Badges},\"catalog\":{p.Catalog}," +
         $"\"classWins\":{p.ClassWins},\"toolsFound\":{p.ToolsFound},\"houses\":{Arr(p.Houses.Take(p.HousesCount).Select(h => (int)h))}," +
         $"\"killsTotal\":{p.KillsTotal},\"powersTotal\":{p.PowersTotal},\"brandTotal\":{p.BrandTotal},\"cleanBosses\":{p.CleanBosses}," +
-        $"\"contracts\":{p.Contracts},\"keepsake\":{p.Keepsake},\"keepsakeRuns\":{Arr(p.KeepsakeRuns.Select(x => (int)x))}," +
+        $"\"contracts\":{p.Contracts},\"keepsake\":{p.Keepsake},\"brigade\":{p.Brigade},\"keepsakeRuns\":{Arr(p.KeepsakeRuns.Select(x => (int)x))}," +
         $"\"sram\":\"{Convert.ToHexString(p.ToBytes()).ToLowerInvariant()}\"}}";
 }

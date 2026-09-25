@@ -33,7 +33,7 @@ public sealed class PhoneScreen : Screen
     public override void Enter(bool instant)
     {
         var g = S.Game;
-        PhonePage[] tabs = [new TasksTab(g), new IssuesTab(g), new HomeTab(g, S.Profile), new GearTab(g), new CostsTab(g, S.Profile)];
+        PhonePage[] tabs = [new TasksTab(g), new IssuesTab(g), new HomeTab(g, S.Profile), new GearTab(g, () => Flow.Brigade.Open()), new CostsTab(g, S.Profile)];
         N.Phone.OnTabChanged = i => _lastTab = i;
         N.Phone.OpenTabs(tabs, PhoneTabs.Labels, _tab >= 0 ? _tab : _lastTab, instant);
     }

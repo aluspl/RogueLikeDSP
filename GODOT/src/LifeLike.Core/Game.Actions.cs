@@ -8,14 +8,25 @@ public sealed partial class Game
     /// <summary>Obrażenia = rzut broni + stat/2 + premie - obrona/2, min 1.</summary>
     public void HeroAttack(int ei)
     {
-        ref var e = ref Enemies[ei];
-        var ed = D.Enemies[e.DefId];
+        var ed = D.Enemies[Enemies[ei].DefId];
         if (ei == Boss && BossWakeDamage < 0) BossEngaged(); // walka z bossem trwa
         var dmg = R.Range(Weapon.MinDamage, Weapon.MaxDamage) + HeroStat(Weapon.ScalesWith) / 2 + DmgBonus
                   + GearBonus(GearStat.Dmg) - ed.Defense / 2;
         if (dmg < 1) dmg = 1;
         var crit = R.Range(1, 100) <= CritPct();
         if (crit) dmg *= D.CritMultiplier;
+        DamageEnemy(ei, dmg, crit, Weapon.Name);
+    }
+
+    /// <summary>
+    /// Obrażenia dla problemu (broń bohatera albo brygada; src = nazwa w dzienniku): trafienie, usunięcie, nagrody,
+    /// koniec etapu po bossie.
+    /// </summary>
+    public void DamageEnemy(int ei, int dmg, bool crit, string src)
+    {
+        ref var e = ref Enemies[ei];
+        var ed = D.Enemies[e.DefId];
+        if (ei == Boss && BossWakeDamage < 0) BossEngaged();
         e.Hp = (short)(e.Hp - dmg);
         e.Awake = true;
         LastTarget = ei;
@@ -74,7 +85,7 @@ public sealed partial class Game
         }
         else
         {
-            Push(Msg(crit ? "KRYT! " : "").Add(Weapon.Name).Add(": -").Add(dmg).Add(" (").Add(ed.Name).Add(")").As(crit ? LogKind.Loot : LogKind.Info));
+            Push(Msg(crit ? "KRYT! " : "").Add(src).Add(": -").Add(dmg).Add(" (").Add(ed.Name).Add(")").As(crit ? LogKind.Loot : LogKind.Info));
         }
     }
 
@@ -433,7 +444,7 @@ public sealed partial class Game
                 Push(Msg("Unik! ").Add(ed.Name).Add(" chybia").As(LogKind.Good));
                 return;
             }
-            var dmg = R.Range(ed.MinDamage, ed.MaxDamage) + EnemyDmgBonus() - (CDef.Defense + DefBonus + GearBonus(GearStat.Def)) / 2;
+            var dmg = R.Range(ed.MinDamage, ed.MaxDamage) + EnemyDmgBonus() - HeroDefense() / 2;
             if (dmg < 1) dmg = 1;
             Hero.Hp = (short)(Hero.Hp - dmg);
             StageDamage += dmg;
@@ -486,6 +497,7 @@ public sealed partial class Game
             }
         }
         if (AbilityCd > 0 && --AbilityCd == 0) Push(Msg("Moc gotowa: ").Add(CDef.AbilityName).As(LogKind.Good));
+        if (GuardTurns > 0) --GuardTurns; // ochrona BHP-owca mija
         for (var i = 0; i < WallsCount;)
         {
             if (--Walls[i].Turns <= 0)
@@ -499,13 +511,13 @@ public sealed partial class Game
             }
         }
         UpdateFov();
+        if (AllyTurns > 0 && St == GameStatus.Playing) AllyAct(); // pomocnik z brygady
         if (SlamTimer > 0 && --SlamTimer == 0 && Boss >= 0 && Enemies[Boss].Alive) // cios bossa spada
         {
             var bd = D.Enemies[Enemies[Boss].DefId];
             if (SlamCellAt(Hero.X, Hero.Y))
             {
-                var dmg = R.Range(bd.MinDamage, bd.MaxDamage) + EnemyDmgBonus() + D.SlamDamageBonus
-                          - (CDef.Defense + DefBonus + GearBonus(GearStat.Def)) / 2;
+                var dmg = R.Range(bd.MinDamage, bd.MaxDamage) + EnemyDmgBonus() + D.SlamDamageBonus - HeroDefense() / 2;
                 if (dmg < 1) dmg = 1;
                 Hero.Hp = (short)(Hero.Hp - dmg);
                 StageDamage += dmg;

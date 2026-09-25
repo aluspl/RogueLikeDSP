@@ -17,6 +17,7 @@ public sealed class DebugScenes
         "overview", "phone-tasks", "phone-issues", "phone-start", "phone-gear", "phone-costs", "card", "perks", "schedule",
         "hurtownia", "boss", "endmsg", "end", "banners", "map", "aim", "preview", "prologue",
         "schedule-tip", "help", "settings", "settings-title", "walk", "weather-rain", "weather-snow", "weather-wind", "weather-heat",
+        "brigade", "ally",
     ];
 
     private readonly App _app;
@@ -202,6 +203,23 @@ public sealed class DebugScenes
                 };
                 g.Weather = (sbyte)Array.FindIndex(_app.Session.Data.Weather, w => w.Effect == eff);
                 _app.Refresh();
+                break;
+            }
+            case "brigade": // telefon: Brygada ze 100 zł, wszyscy fachowcy, zaznaczona pompa
+            case "ally": // pomocnik z brygady obok bohatera, baner wezwania
+            {
+                banners.Clear();
+                g.Cash = 100;
+                g.Bonus.Helpers = (1 << g.D.Brigade.Length) - 1;
+                if (scene == "brigade")
+                {
+                    Flow.Brigade.Open(true);
+                    Flow.Brigade.Page.Sel = Array.FindIndex(g.D.Brigade, h => h.Effect == HelperEffect.Pump);
+                }
+                else
+                {
+                    Flow.Brigade.Call(Array.FindIndex(g.D.Brigade, h => h.Effect == HelperEffect.Ally));
+                }
                 break;
             }
             case "preview": // trzymane B: karta najbliższego problemu
