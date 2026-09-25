@@ -574,3 +574,28 @@ def truck_frames():
     b = [CODES[ch] for r in b_rows for ch in r]
     assert len(a) == len(b) == 32 * 16
     return a + b
+
+
+# ------------------------------------------------------------------ menu akcji pod START (16x16): atak, termos, czekaj, ramka wyboru
+MENU_ICONS = [
+    [   # Atak: młotek
+        "................", "................", "....KKKKKKK.....", "...KgllllllK....", "...KggggggKK....",
+        "....KKKTKKK.....", "......KTK.......", "......KTK.......", "......KTK.......", "......KTK.......",
+        "......KTK.......", "......KTK.......", ".....KTTTK......", ".....KKKKK......", "................", "................"],
+    [   # Termos: stalowy termos z pomarańczową nakrętką
+        "................", "......KKKK......", ".....KOOOOK.....", ".....KKKKKK.....", "....KllllllK....",
+        "....KlWllggK....", "....KlWllggK....", "....KOOOOOOK....", "....KlWllggK....", "....KlWllggK....",
+        "....KlWllggK....", "....KlllgggK....", "....KllllggK....", ".....KKKKKK.....", "................", "................"],
+    [   # Czekaj: klepsydra
+        "................", "...KKKKKKKKKK...", "...KTTTTTTTTK...", "....KYYYYYYK....", ".....KYYYYK.....",
+        "......KYYK......", ".......KK.......", "......K..K......", ".....K..Y.K.....", "....K..YYY.K....",
+        "...KYYYYYYYYK...", "...KTTTTTTTTK...", "...KKKKKKKKKK...", "................", "................", "................"],
+    [   # ramka zaznaczenia
+        "WWWW........WWWW", "WYY..........YYW", "WY............YW", "W..............W", "................",
+        "................", "................", "................", "................", "................",
+        "................", "................", "W..............W", "WY............YW", "WYY..........YYW", "WWWW........WWWW"],
+]
+
+
+def menu_icon_frames():
+    return [p for rows in MENU_ICONS for p in parse(rows)]

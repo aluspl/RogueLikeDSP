@@ -22,6 +22,7 @@ static bool connected(const level& lv, int sx, int sy)
 static void bot_step(game& g)
 {
     if(g.has_offer()) { if(g.offer_is_better()) g.accept_offer(); else g.decline_offer(); }
+    if(g.thermos > 0 && g.hero.hp * 100 < g.hero.max_hp * data::bot_drink_below_pct && g.player_drink()) return;
     if(g.slam_cell(g.hero.x, g.hero.y))   // zapowiedziany cios bossa: zejdź z czerwonych pól (jak człowiek)
     {
         int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}}, best=-1, bd=-1;
@@ -130,7 +131,13 @@ int main()
         CHECK(b.def_bonus == 1 && b.dmg_bonus == 2);
         CHECK(b.pickups_count == a.pickups_count + 2);
         b.hero.hp = 1; b.pickups[0] = { b.hero.x, b.hero.y, coffee, true }; b.collect();
-        CHECK(b.hero.hp == 1 + 8 + 4);
+        CHECK(b.hero.hp == 1 && b.thermos == 1);                          // kawa trafia do termosu
+        CHECK(b.player_drink() && b.hero.hp == 1 + data::coffee_heal + 4 && b.thermos == 0 && b.turns == 1);
+        CHECK(!b.player_drink());                                         // pusty termos: bez tury
+        b.thermos = data::thermos_capacity; b.hero.hp = 1;
+        b.pickups[0] = { b.hero.x, b.hero.y, coffee, true }; b.collect();
+        CHECK(b.hero.hp == 1 + data::coffee_heal + 4 && b.thermos == data::thermos_capacity);   // pełny: pije od razu
+        b.hero.hp = b.hero.max_hp; CHECK(!b.player_drink() && b.thermos == data::thermos_capacity);
         b.next_stage(); CHECK(b.pickups_count == a.pickups_count + 2);   // premia trwa w kolejnych etapach
     }
     // 8. doświadczenie: wrogowie, etapy, boss; mnożone przez trudność

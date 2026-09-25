@@ -8,6 +8,7 @@
 //   4 - paczki sprzętu 3 jakości i skrzynka z narzędziem obok bohatera
 //   5 - aktywne stany: zatrucie, poślizg, porażenie
 //   6 - porównanie sprzętu: założony kask i rękawice, obok (w prawo) paczki: lepszy kask i gorsze rękawice
+//   7 - termos: 2 kawy w termosie, ranny bohater (35% HP), kawa na polu w prawo
 //   8 - kryt i unik: markowy sprzęt z cechą Szczęście +1, obok (w lewo) wytrzymała Pleśń atakująca bohatera
 #include "core.h"
 #include "meta.h"
@@ -98,6 +99,12 @@ namespace debug_scenario
                     g.pickups[g.pickups_count++] = { int8_t(g.hero.x + 2), g.hero.y, core::gear_box, true, uint8_t(1 * 3 + 1), 1 };
                 break;
             }
+            case 7:
+                g.pickups_count = 0;
+                g.thermos = 2;
+                g.hero.hp = int16_t(g.hero.max_hp * 35 / 100);
+                g.pickups[g.pickups_count++] = { int8_t(g.hero.x + 1), g.hero.y, core::coffee, true };
+                break;
             case 8:
             {
                 for(int i = 0; i < data::gear_slots_count; ++i) g.equip(i, 2, 0);   // szczęście +3: kryt i unik

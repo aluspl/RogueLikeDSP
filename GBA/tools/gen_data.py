@@ -120,6 +120,10 @@ L += [f"inline constexpr int crit_base_pct = {lk['critBasePct']};",
       f"inline constexpr int rarity_per_luck = {lk['rarityPerLuck']};",
       f"inline constexpr int dodge_per_luck_pct = {lk['dodgePerLuckPct']};",
       f"inline constexpr int dodge_max_pct = {lk['dodgeMaxPct']};", ""]
+th = d["thermos"]
+L += [f"inline constexpr int thermos_capacity = {th['capacity']};",
+      f"inline constexpr int coffee_heal = {th['heal']};",
+      f"inline constexpr int bot_drink_below_pct = {th['botDrinkBelowPct']};", ""]
 eq = d["equipment"]
 L.append("inline constexpr core::gear_def gear[] = {   // indeks = slot * 3 + jakość")
 for sl in eq["slots"]:
