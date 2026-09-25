@@ -39,6 +39,9 @@ public readonly struct InputCmd
 
     public bool IsClick => Click != MouseButton.None;
 
+    /// <summary>Lewy klik albo dotknięcie ekranu (dotyk jest emulowany jako mysz).</summary>
+    public bool IsTap => Click == MouseButton.Left;
+
     /// <summary>Strzałka góra/dół z powtarzaniem: -1 / 1 / 0.</summary>
     public int VDir => Is(GameAction.Up, true) ? -1 : Is(GameAction.Down, true) ? 1 : 0;
 

@@ -17,6 +17,7 @@ public partial class HudLayer : ScaledLayer
     private readonly ScreenTint _tint = new();
     private readonly HudTop _top = new();
     private readonly HudLog _log = new();
+    private readonly EnemyCard _card = new();
 
     public ScreenTint Tint => _tint;
 
@@ -26,6 +27,7 @@ public partial class HudLayer : ScaledLayer
         Root.AddChild(_tint);
         Root.AddChild(_top);
         Root.AddChild(_log);
+        Root.AddChild(_card);
         base._Ready();
     }
 
@@ -40,4 +42,17 @@ public partial class HudLayer : ScaledLayer
     public void ShowHint(string first, string second = "") => _log.Hint(first, second);
 
     public void SilenceLog() => _log.Silence();
+
+    /// <summary>Karta wroga w miejscu dziennika (podgląd pod B); enemy -1 = nikogo w polu widzenia.</summary>
+    public void ShowEnemyCard(CoreGame g, int enemy, int index, int count)
+    {
+        _card.Show(g, enemy, index, count);
+        _log.Visible = false;
+    }
+
+    public void HideEnemyCard()
+    {
+        _card.Visible = false;
+        _log.Visible = true;
+    }
 }

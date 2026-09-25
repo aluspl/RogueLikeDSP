@@ -39,6 +39,8 @@ public partial class WorldView : Node2D
     /// <summary>Menu akcji pod Enter/START: -2 zamknięte, -1 otwarte bez wyboru, 0..3 = góra/prawo/dół/lewo.</summary>
     public int MenuSel { get; set; } = -2;
     public int Marked { get; private set; } = -1;
+    /// <summary>Celownik nad wrogiem (celowanie pod A, podgląd pod B); -1 = brak.</summary>
+    public int Reticle { get; set; } = -1;
     public CoreGame Game => _g;
     public ActorSprite HeroSprite => _hero;
     public FxLayer Fx => _fx;
@@ -83,6 +85,9 @@ public partial class WorldView : Node2D
     public void Mark(int enemy) => Marked = enemy;
 
     public void FlashRange() => _overlay.FlashRange();
+
+    /// <summary>Ramki pól w zasięgu broni na stałe (trzymane A).</summary>
+    public void ShowRange(bool on) => _overlay.RangeHeld = on;
 
     public void ToggleOverview() => _camera.ToggleOverview(_g);
 
