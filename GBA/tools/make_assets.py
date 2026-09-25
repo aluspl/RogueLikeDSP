@@ -222,6 +222,21 @@ def hp_frame(seg, color, fill):
                 px[y][x] = 2
     return [p for row in px for p in row]
 
+def make_mini_hp():
+    """Mini pasek HP nad wrogiem 8x8 (rzędy 0-2): klatka = kolor * 7 + wypełnienie 0..6 px."""
+    frames = []
+    for c in range(3):
+        main = 4 + c * 2
+        for f in range(7):
+            px = [0] * 64
+            for x in range(8):
+                px[0 * 8 + x] = px[2 * 8 + x] = 1
+            px[1 * 8 + 0] = px[1 * 8 + 7] = 1
+            for x in range(1, 7): px[8 + x] = main if x - 1 < f else 2
+            frames += px
+    write_bmp(os.path.join(G, "mini_hp.bmp"), frames, 8, 8 * 21, HP_PAL, 4)
+    write_json("mini_hp", {"type": "sprite", "height": 8})
+
 def make_hp_bar():
     frames = [hp_frame(seg, c, f) for seg in range(2) for c in range(3) for f in range(32)]
     write_bmp(os.path.join(G, "hp_bar.bmp"), [p for fr in frames for p in fr], 32, 8 * len(frames), HP_PAL, 4)
@@ -506,6 +521,7 @@ if __name__ == "__main__":
     print("font glyphs:", make_font())
     print("actor frames:", make_actors())
     print("hp bar frames:", make_hp_bar())
+    make_mini_hp()
     import pixel_art as pa
     write_bmp(os.path.join(G, "particles.bmp"), pa.particle_frames(), 8, 8 * len(pa.PARTICLES), SPR_PAL, 4)
     write_json("particles", {"type": "sprite", "height": 8})
