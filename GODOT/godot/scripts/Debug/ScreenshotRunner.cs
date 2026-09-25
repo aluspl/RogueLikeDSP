@@ -25,6 +25,7 @@ public sealed class ScreenshotRunner
             return;
         }
         if (DebugScenes.UsesDemoProfile(scene)) s.Profile = DemoProfile.Create(s.Data);
+        if (scene != "prologue") s.Profile.SetFlag(Profile.FlagPrologueSeen); // prolog tylko w swojej scenie
         await new DebugScenes(_app).Setup(scene);
         await DebugRunner.Frames(root, 50);
         var img = root.GetViewport().GetTexture().GetImage();

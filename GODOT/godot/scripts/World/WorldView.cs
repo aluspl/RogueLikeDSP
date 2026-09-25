@@ -66,7 +66,7 @@ public partial class WorldView : Node2D
         AddChild(_marks);
         AddChild(_camera);
         _marks.Bind(this);
-        _hero = new ActorSprite { AnimPeriod = 0.4f };
+        _hero = new ActorSprite { AnimPeriod = 0.4f, Breathes = true };
         _actors.AddChild(_hero);
     }
 
@@ -184,8 +184,7 @@ public partial class WorldView : Node2D
     private void SyncHero(bool snap)
     {
         var cls = _g.D.Classes[_g.Cls];
-        _hero.BaseFrame = cls.Frame;
-        _hero.AltFrame = Assets.AnimB(cls.Frame);
+        _hero.BaseFrame = cls.Frame; // w miejscu oddycha (bez klatki B), w kroku - chód z actors_anim
         var heroDst = GridToScreen(_g.Hero.X, _g.Hero.Y);
         if (!snap && heroDst != _hero.Position && _hero.Position.DistanceTo(heroDst) <= Cell * 2) // pył spod butów
         {

@@ -73,12 +73,13 @@ public sealed class App
         }
     }
 
-    /// <summary>Nowa budowa wybranym zawodem: karta etapu z SMS-em.</summary>
+    /// <summary>Nowa budowa wybranym zawodem: przy pierwszej prolog (wjazd na plac), potem karta etapu z SMS-em.</summary>
     public void StartRun()
     {
         Session.StartRun();
         Refresh();
-        Flow.StageCard.Open();
+        if (!Session.Profile.HasFlag(Profile.FlagPrologueSeen)) Flow.Prologue.Open();
+        else Flow.StageCard.Open();
     }
 
     /// <summary>Kolejny etap (harmonogram / Hurtownia -> karta etapu).</summary>

@@ -20,6 +20,7 @@ public sealed class SmokeTest
 {
     private readonly App _app;
     private int _steps, _offers, _drinks, _holds;
+    private bool _prologue;
 
     public SmokeTest(App app) => _app = app;
 
@@ -47,7 +48,7 @@ public sealed class SmokeTest
             if (DrawErrors.Count > 0) throw new Exception($"błędy rysowania: {DrawErrors.Count}, ostatni: {DrawErrors.Last}");
             GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {s.Data.Version}, zawody {s.Data.Classes.Length}, etap {stage + 1}, " +
                      $"dzień {g.Turns}, HP {g.Hero.Hp}/{g.Hero.MaxHp}, wynik {g.Score}, budżet {g.Cash}, kroki {_steps}, " +
-                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
+                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, prolog {(_prologue ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
                      $"ekran {Flow.Current.GetType().Name}");
             _app.Root.GetTree().Quit(ok ? 0 : 1);
         }
@@ -64,6 +65,16 @@ public sealed class SmokeTest
         var g = _app.Session.Game;
         for (; _steps < 4000 && g.Stage < 5; _steps++)
         {
+            if (Flow.Current == Flow.Prologue) // pierwsza budowa: prolog (kawałek osi czasu), pominięcie, SMS
+            {
+                Flow.Prologue.Seek(2f);
+                Flow.Prologue.HandleInput(InputCmd.Of(GameAction.A));
+                if (Flow.Current != Flow.PrologueMessage) throw new Exception("prolog nie przeszedł do SMS-a");
+                Flow.PrologueMessage.HandleInput(InputCmd.Of(GameAction.Start));
+                if (!_app.Session.Profile.HasFlag(Profile.FlagPrologueSeen)) throw new Exception("prolog nie zapisał się w profilu");
+                _prologue = true;
+                continue;
+            }
             if (Flow.Current == Flow.Schedule)
             {
                 Flow.Schedule.Advance();

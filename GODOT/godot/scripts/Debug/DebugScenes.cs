@@ -15,7 +15,7 @@ public sealed class DebugScenes
     [
         "title", "classselect", "profile", "catalog", "estate", "team", "training", "game", "combat", "offer", "menu",
         "overview", "phone-tasks", "phone-issues", "phone-start", "phone-gear", "phone-costs", "card", "perks", "schedule",
-        "hurtownia", "boss", "endmsg", "end", "banners", "map", "aim", "preview",
+        "hurtownia", "boss", "endmsg", "end", "banners", "map", "aim", "preview", "prologue",
     ];
 
     private readonly App _app;
@@ -50,6 +50,11 @@ public sealed class DebugScenes
             case "team":
             case "training":
                 Flow.Profile.Open(Array.IndexOf(new[] { "profile", "catalog", "estate", "team", "training" }, scene), true);
+                return;
+            case "prologue": // pierwsza budowa: plac w połowie przejazdu kamery, drugi podpis
+                s.ClassId = 1;
+                _app.StartRun();
+                Flow.Prologue.Seek(4.2f);
                 return;
             case "card": // karta etapu z wydarzeniem: pierwszy seed, przy którym etap 2 ma wydarzenie
                 s.ClassId = 1;

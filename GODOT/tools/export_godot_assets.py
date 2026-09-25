@@ -9,6 +9,10 @@ Co powstaje:
   sprites/actors.png         postacie, problemy budowy, znajdźki, bossowie: klatki 32x32 (Scale2x z 16x16 GBA),
                              kolejność klatek jak GBA/graphics/actors.bmp (patrz GBA/tools/make_assets.py);
                              sprites/actors_white.png - białe sylwetki do błysku trafienia
+  sprites/actors_anim.png    animacje postaci i problemów budowy (klatki 32x32, wiersz = numer klatki z actors.png):
+                             4 klatki chodu (A, A w kroku, B, B w kroku - tułów o piksel wyżej, nogi zostają) i klatka
+                             oddechu (głowa i tułów o pół piksela GBA niżej); sprites/actors_anim_white.png - sylwetki
+  sprites/truck.png          pickup z prologu (2 klatki kół), Scale2x
   sprites/particles.png      cząsteczki 16x16 (Scale2x z 8x8), kolejność jak particles.bmp
   sprites/houses.png         domy Osiedla 32x32
   sprites/menu_icons.png     menu akcji wokół bohatera 32x32; ui/menu_icons.png 16x16 (HUD: termos)
@@ -142,6 +146,63 @@ def export_sheet(name, frame_h, rel_hd, rel_1x=None, rel_gray=None, rel_white=No
     if rel_white:
         written.append(save(frames_to_image([scale2x(f) for f in frames], white_palette(pal)), rel_white))
     return len(frames), written
+
+
+# ------------------------------------------------------------------ animacje chodu i oddechu
+ANIM_FRAMES = 5          # chód x4 + oddech
+CHARACTER_FRAMES = list(range(0, 15)) + [46, 47]   # zawody, problemy budowy, bossowie (jak anim_b w main.cpp)
+
+
+def anim_b(f):
+    return f + 27 if f < 15 else f + 2
+
+
+def rows_span(frame):
+    """Pierwszy i ostatni niepusty wiersz klatki (indeks 0 = przezroczysty)."""
+    rows = [y for y, row in enumerate(frame) if any(row)]
+    return (rows[0], rows[-1]) if rows else (0, len(frame) - 1)
+
+
+def step_frame(frame):
+    """Klatka „w kroku”: wszystko nad stopami (4 dolne wiersze sylwetki) o piksel wyżej, stopy zostają."""
+    top, bottom = rows_span(frame)
+    feet = max(top, bottom - 3)
+    out = [row[:] for row in frame]
+    for y in range(max(top - 1, 0), feet):
+        out[y] = frame[y + 1][:] if y + 1 < feet else frame[feet - 1][:] if feet - 1 >= 0 else out[y]
+    if top > 0:
+        out[top - 1] = frame[top][:]
+    return out
+
+
+def breath_frame(frame2x):
+    """Oddech (w 32x32 po Scale2x): górne 55% sylwetki o piksel niżej - pierś „opada”."""
+    top, bottom = rows_span(frame2x)
+    mid = top + int((bottom - top) * 0.55)
+    out = [row[:] for row in frame2x]
+    for y in range(mid, top, -1):
+        out[y] = frame2x[y - 1][:]
+    out[top] = [0] * len(frame2x[0])
+    return out
+
+
+def export_actor_anims():
+    """sprites/actors_anim.png: w wierszu klatki postaci 5 klatek (chód A, A w kroku, B, B w kroku, oddech)."""
+    w, h, pixels, pal = load_indexed("actors")
+    frames = frames_of(pixels, w, 16, h // 16)
+    count = len(frames)
+    sheet = Image.new("RGBA", (32 * ANIM_FRAMES, 32 * count), TRANSPARENT)
+    white = Image.new("RGBA", (32 * ANIM_FRAMES, 32 * count), TRANSPARENT)
+    for f in CHARACTER_FRAMES:
+        a, b = frames[f], frames[anim_b(f)]
+        cells = [scale2x(a), scale2x(step_frame(a)), scale2x(b), scale2x(step_frame(b))]
+        cells.append(breath_frame(cells[0]))
+        for k, cell in enumerate(cells):
+            sheet.paste(frames_to_image([cell], pal), (32 * k, 32 * f))
+            white.paste(frames_to_image([cell], white_palette(pal)), (32 * k, 32 * f))
+    save(sheet, "sprites/actors_anim.png")
+    save(white, "sprites/actors_anim_white.png")
+    return len(CHARACTER_FRAMES)
 
 
 # ------------------------------------------------------------------ telefon: ikony zakładek
@@ -500,6 +561,8 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     report = {}
     report["actors"] = export_sheet("actors", 16, "sprites/actors.png", rel_white="sprites/actors_white.png")[0]
+    report["actor_anims"] = export_actor_anims()
+    report["truck"] = export_sheet("truck", 16, "sprites/truck.png")[0]
     report["particles"] = export_sheet("particles", 8, "sprites/particles.png")[0]
     report["houses"] = export_sheet("houses", 16, "sprites/houses.png")[0]
     report["menu_icons"] = export_sheet("menu_icons", 16, "sprites/menu_icons.png", "ui/menu_icons.png")[0]

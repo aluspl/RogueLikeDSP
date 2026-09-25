@@ -10,4 +10,5 @@ public enum ViewSet
     Title = 1,
     ClassSelect = 2,
     End = 4,
+    Prologue = 8,
 }
