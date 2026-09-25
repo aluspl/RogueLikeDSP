@@ -293,13 +293,15 @@ int main()
     }
     // 17. moce zawodów (R)
     {
-        game g; arena(g, 4);                                 // Hydraulik: Zawór (leczenie)
-        CHECK(g.ability_cd == 0 && !g.player_ability());     // pełne HP - nic do leczenia, tura nie mija
+        game g; arena(g, 4);                                 // Hydraulik: Zawór (strumień: leczy i odpycha)
+        CHECK(g.ability_cd == 0 && !g.player_ability());     // pełne HP i nikt obok - nic do zrobienia, tura nie mija
         CHECK(g.turns == 0);
-        g.hero.hp = 10; CHECK(g.player_ability() && g.hero.hp == 18 && g.turns == 1);
-        CHECK(g.ability_cd == g.cdef().ability_cooldown && !g.player_ability());
-        for(int k = 0; k < g.cdef().ability_cooldown; ++k) g.player_wait();
+        g.hero.hp = 10; CHECK(g.player_ability() && g.hero.hp == 16 && g.turns == 1);
+        CHECK(g.ability_cd == g.ability_cooldown() && !g.player_ability());
+        for(int k = 0; k < g.ability_cooldown(); ++k) g.player_wait();
         CHECK(g.ability_cd == 0);
+        g.spawn(4, 8, 7); g.enemies[0].awake = true;         // wróg obok: odepchnięty o 1 pole
+        CHECK(g.player_ability() && g.enemies[0].x >= 9);
     }
     {
         game g; arena(g, 0);                                 // Kierownik: Odprawa (ogłuszenie)
@@ -311,13 +313,30 @@ int main()
         CHECK(g.hero.hp >= hp);                              // ogłuszony nie atakuje (+ ewentualny odpoczynek)
     }
     {
-        game g; arena(g, 1);                                 // Murarz: Ścianka
-        g.spawn(0, 8, 7);                                    // wróg na wschodzie - tam ścianki nie będzie
+        game g; arena(g, 1);                                 // Murarz: Ścianka - mur w poprzek drogi wroga
+        CHECK(!g.player_ability());                          // brak widocznego wroga - nic
+        g.spawn(4, 11, 7);                                   // wróg na wschodzie
         CHECK(g.player_ability());
-        CHECK(g.lv.at(6, 7) == tile::wall && g.lv.at(7, 6) == tile::wall && g.lv.at(7, 8) == tile::wall);
-        CHECK(g.lv.at(8, 7) == tile::floor);
+        CHECK(g.lv.at(8, 6) == tile::wall && g.lv.at(8, 7) == tile::wall && g.lv.at(8, 8) == tile::wall);
+        CHECK(g.lv.at(6, 7) == tile::floor && g.lv.at(7, 6) == tile::floor && g.lv.at(7, 8) == tile::floor);   // nie zamyka bohatera
         for(int k = 0; k < 8; ++k) g.player_wait();
-        CHECK(g.lv.at(6, 7) == tile::floor && g.lv.at(7, 6) == tile::floor && g.lv.at(7, 8) == tile::floor);
+        CHECK(g.lv.at(8, 6) == tile::floor && g.lv.at(8, 7) == tile::floor && g.lv.at(8, 8) == tile::floor);
+        // przy ścianie i w korytarzu też zostaje wyjście
+        game c; arena(c, 1);
+        for(int y = 1; y <= 14; ++y) for(int x = 1; x <= 14; ++x) if(y != 7) c.lv.t[y][x] = tile::wall;   // korytarz poziomy
+        c.update_fov(); c.spawn(4, 10, 7);
+        CHECK(c.player_ability() && c.lv.at(8, 7) == tile::wall && c.lv.at(6, 7) == tile::floor);
+    }
+    {
+        game g; arena(g, 3);                                 // rangi mocy: poziom 3 -> II, poziom 5 -> III
+        CHECK(g.ability_rank() == 1);
+        int cd1 = g.ability_cooldown();
+        g.hero_level = 3; CHECK(g.ability_rank() == 2 && g.ability_cooldown() == cd1 - 2);
+        g.hero_level = 5; CHECK(g.ability_rank() == 3);
+        for(int i = 0; i < 5; ++i) g.spawn(4, 9 + (i % 3) * 2, 7 + (i / 3) * 2);   // cele co 2 pola
+        CHECK(g.player_ability());
+        int hit = 0; for(int i = 0; i < 5; ++i) hit += g.enemies[i].hp < data::enemies[4].max_health * g.enemy_hp_pct() / 100;
+        CHECK(hit == 5);                                     // Łańcuch III: 5 celów
     }
     {
         game g; arena(g, 2);                                 // Cieśla: Seria (zasięg broni 3)

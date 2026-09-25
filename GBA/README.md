@@ -19,7 +19,7 @@ Przekroczony budżet) i bossa **Nieprzekraczalny Termin**. Na końcu ekran z kod
 | SELECT | w grze: telefon z aplikacją PlanBudowlany (Zadania, Usterki, Start, Zespół, Koszty; L/R – zakładki, START – menu: jak grać, zapisz i wyjdź, porzuć budowę); na tytule: Szkolenia (ekran Koszty) |
 | B (tytuł) | ekran „Jak grać” |
 | L (przytrzymaj) | podgląd odkrytej mapy etapu |
-| R | moc zawodu (Odprawa, Ścianka, Seria, Łańcuch, Zawór, Wirówka), odnawia się po kilkunastu turach; „R” w HUD = gotowa |
+| R | moc zawodu (Odprawa, Ścianka, Seria, Łańcuch, Zawór, Wirówka); ikona w prawym górnym rogu: szara z odliczaniem = ładuje się, pulsuje z „R” = gotowa; ranga II od 3. i III od 5. poziomu postaci |
 | góra/dół (wybór zawodu) | poziom trudności: Łatwy / Normalny / Trudny |
 | L+R+SELECT | skrót pokazowy: zalicz etap (do testów i prezentacji na stoisku) |
 

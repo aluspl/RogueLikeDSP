@@ -420,3 +420,36 @@ def house_frame(cls, size):
 
 def house_frames():
     return [p for size in range(4) for cls in range(6) for p in house_frame(cls, size)] + parse(EMPTY_PLOT)
+
+
+# ------------------------------------------------------------------ ikony mocy do HUD (kolejność zawodów)
+ABILITY_ICONS = [
+    [   # Odprawa: megafon
+        "................", "................", "...........KK...", ".........KKWK...", "......KKKWWWK...",
+        "..KKKKWWWWWWK...", "..KPPKWWWWWWK.P.", "..KPPKWWWWWWK..P", "..KPPKWWWWWWK.P.", "..KKKKWWWWWWK...",
+        "....KKKKWWWWK...", "....KTK.KKWWK...", "....KTK...KKK...", "....KKK.........", "................", "................"],
+    [   # Ścianka: cegły
+        "................", "................", "................", ".KKKKKKKKKKKKKK.", ".KOORRKOORRKOOK.",
+        ".KRRRRKRRRRKRRK.", ".KKKKKKKKKKKKKK.", ".KOOKOORRKOORRK.", ".KRRKRRRRKRRRRK.", ".KKKKKKKKKKKKKK.",
+        ".KOORRKOORRKOOK.", ".KRRRRKRRRRKRRK.", ".KKKKKKKKKKKKKK.", "................", "................", "................"],
+    [   # Seria: trzy gwoździe
+        "................", "................", "..g.............", "..glllllllll....", "..g.............",
+        "................", "....g...........", "....glllllllll..", "....g...........", "................",
+        "..g.............", "..glllllllll....", "..g.............", "................", "................", "................"],
+    [   # Łańcuch: piorun
+        "................", ".........KKK....", "........KYYK....", ".......KYYK.....", "......KYYK......",
+        ".....KYYYKKKK...", "....KYYYYYYYK...", "...KKKKYYYYK....", "......KYYYK.....", ".....KYYK.......",
+        "....KYYK........", "....KYK.........", "...KYK..........", "...KK...........", "................", "................"],
+    [   # Zawór: kurek z kroplą
+        "................", "....KKKKKKK.....", "....KRRRRRK.....", "....KKKKKKK.....", ".......K........",
+        "..KKKKKgKKKKKK..", "..KllllgllllgK..", "..KKKKKKKKKKgK..", "...........KgK..", "...........KKK..",
+        "............C...", "...........CCC..", "...........CWC..", "............C...", "................", "................"],
+    [   # Wirówka: tarcza szlifierki
+        "................", "......K..K......", "....KKllllKK....", "...KllllllllK...", "..KlllggggllK...",
+        ".KllgglllgglK...", ".KllglKKKlglK...", ".KllglKWKlglK...", ".KllglKKKlglK...", ".KllgglllgglK...",
+        "..KlllggggllK...", "...KllllllllK...", "....KKllllKK....", "......K..K......", "................", "................"],
+]
+
+
+def ability_icon_frames():
+    return [p for rows in ABILITY_ICONS for p in parse(rows)]

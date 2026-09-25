@@ -13,7 +13,7 @@
       "frame": 0,
       "ability": {
         "name": "Odprawa",
-        "desc": "Ogłusza widocznych wrogów",
+        "desc": "Ogłusza widocznych",
         "effect": "stun",
         "cooldown": 15
       }
@@ -31,7 +31,7 @@
       "frame": 1,
       "ability": {
         "name": "Ścianka",
-        "desc": "Stawia ścianki wokół",
+        "desc": "Mur przed wrogiem",
         "effect": "wall",
         "cooldown": 15
       }
@@ -49,7 +49,7 @@
       "frame": 2,
       "ability": {
         "name": "Seria",
-        "desc": "Trafia wszystkich w zasięgu",
+        "desc": "Gwoździe we wszystkich",
         "effect": "volley",
         "cooldown": 12
       }
@@ -67,7 +67,7 @@
       "frame": 3,
       "ability": {
         "name": "Łańcuch",
-        "desc": "Przeskakuje na 3 cele",
+        "desc": "Prąd skacze po celach",
         "effect": "chain",
         "cooldown": 12
       }
@@ -85,8 +85,8 @@
       "frame": 4,
       "ability": {
         "name": "Zawór",
-        "desc": "Leczy 8 HP",
-        "effect": "heal",
+        "desc": "Odpycha wrogów i leczy",
+        "effect": "flush",
         "cooldown": 20
       }
     },
@@ -103,7 +103,7 @@
       "frame": 5,
       "ability": {
         "name": "Wirówka",
-        "desc": "Trafia wszystkich obok",
+        "desc": "Tnie wszystkich dookoła",
         "effect": "spin",
         "cooldown": 10
       }

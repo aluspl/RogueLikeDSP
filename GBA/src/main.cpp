@@ -25,6 +25,7 @@
 #include "bn_sprite_items_hp_bar.h"
 #include "bn_sprite_items_particles.h"
 #include "bn_sprite_items_houses.h"
+#include "bn_sprite_items_ability_icons.h"
 #include "bn_random.h"
 #include "bn_music.h"
 #include "bn_music_items.h"
@@ -175,6 +176,15 @@ namespace
     void wait_release()
     {
         next_frame();
+    }
+
+    // Nazwa mocy z rangą, np. "Ścianka II".
+    core::message ability_label(const core::game& g)
+    {
+        core::message m; m.add(g.cdef().ability_name);
+        int r = g.ability_rank();
+        if(r > 1) m.add(r == 2 ? " II" : " III");
+        return m;
     }
 
     // ------------------------------------------------------------------ dźwięk (Maxmod; pliki z tools/make_audio.py)
@@ -665,7 +675,7 @@ namespace
         if(g.xp_to_next() < 0) c.bar(14, row_ty(2), 13, phone_tile::bar_brand_0, 1, 1);
         else c.bar(14, row_ty(2), 13, phone_tile::bar_brand_0, g.run_xp - prev, data::level_thresholds[g.hero_level - 1] - prev);
 
-        core::message mc; mc.add("Moc: ").add(g.cdef().ability_name);
+        core::message mc; mc.add("Moc: ").add(ability_label(g).s);
         phone_text(a, t, list_x, row_py(3), mc.s, ink::dark);
         core::message cd; cd.add("za ").add(g.ability_cd);
         phone_pill(a, c, t, pill_end, row_ty(3), g.ability_cd == 0 ? "Gotowa" : cd.s, g.ability_cd == 0 ? pill::done : pill::gray);
@@ -1022,6 +1032,13 @@ namespace
         hp_left.set_bg_priority(0); hp_right.set_bg_priority(0);
         hp_left.set_z_order(-100); hp_right.set_z_order(-100);
         int blink = 0;
+        // Ikona mocy (R) pod HUD: szara z odliczaniem, gdy się ładuje; pulsuje, gdy gotowa.
+        bn::sprite_ptr power_icon = bn::sprite_items::ability_icons.create_sprite(106, -52, g.cls);
+        power_icon.set_bg_priority(0);
+        power_icon.set_z_order(-100);
+        bn::sprite_palette_ptr power_palette = power_icon.palette();
+        text_sprites power_text;
+        int shown_cd = -1;
         a.text.set_bg_priority(0);
         a.text.set_z_order(-100);
         int fx_timer = 0, hurt_timer = 0, hold = 0;
@@ -1035,6 +1052,11 @@ namespace
         int prev_active = 0;
         for(int i = 0; i < g.pickups_count; ++i) prev_active += g.pickups[i].active;
         bool boss_seen = false;
+        if(g.stage == 0 && g.tier == 0)   // podpowiedź na start budowy: moc pod R
+        {
+            core::message t; t.add("R: ").add(g.cdef().ability_name);
+            banner.push(t.s, g.cdef().ability_desc);
+        }
         auto detect_events = [&]() {   // powiadomienia push o ważnych zdarzeniach
             int active_pickups = 0;
             for(int i = 0; i < g.pickups_count; ++i) active_pickups += g.pickups[i].active;
@@ -1043,6 +1065,12 @@ namespace
             if(g.hero_level > prev_level)
             {
                 bn::sound_items::sfx_level.play();
+                int old_rank = 1 + (prev_level >= 3) + (prev_level >= 5);
+                if(g.ability_rank() > old_rank)
+                {
+                    core::message t; t.add("Moc: ").add(ability_label(g).s);
+                    banner.push(t.s, "Silniejsza, szybciej gotowa");
+                }
                 for(int k = 0; k < 8; ++k)   // gwiazdki awansu dookoła bohatera
                 {
                     static constexpr int8_t dir[8][2] = { { 2, 0 }, { 1, 1 }, { 0, 2 }, { -1, 1 }, { -2, 0 }, { -1, -1 }, { 0, -2 }, { 1, -1 } };
@@ -1218,7 +1246,7 @@ namespace
                     }
                     break;
                 }
-                case core::ability_effect::heal:   // krople i zielone plusy
+                case core::ability_effect::flush:   // strumień: krople na boki i zielone plusy
                     flash_color = bn::color(8, 30, 16);
                     for(int k = 0; k < 6; ++k)
                         fx_particles.spawn(h.x() + fx_particles.rand(-112, 112), h.y() + 4, 0, fx_particles.rand(-24, -8), 0, 26,
@@ -1270,7 +1298,6 @@ namespace
             hp_right.set_tiles(bn::sprite_items::hp_bar.tiles_item(), 96 + color * 32 + core::imax(0, fill - 31));
             core::message num; num.add(g.hero.hp).add("/").add(g.hero.max_hp);
             a.text.generate(-30, -72, num.s, hud);
-            if(g.ability_cd == 0) a.text.generate(20, -72, "R", hud);   // moc gotowa
             a.text.set_right_alignment();
             core::message st; st.add("Etap ").add(g.stage + 1).add("/").add(data::stages_count).add(" ");
             st.add(clip(g.ddef().name, 1).c_str());
@@ -1327,6 +1354,7 @@ namespace
             for(auto& s : pickups) s.set_visible(false);
             fx.clear(); log.clear(); floaters.clear(); fx_particles.list.clear();
             tgt_left.set_visible(false); tgt_right.set_visible(false);
+            power_icon.set_visible(false); power_text.clear(); shown_cd = -1;
             a.text.set_left_alignment();
             a.text.generate(-116, 72, "Podgląd mapy (puść L)", log);
             bn::fixed_point hp(g.hero.x * 8 + 4 - 256, g.hero.y * 8 + 4 - 256);
@@ -1382,6 +1410,7 @@ namespace
                 fx.clear(); hud.clear(); log.clear(); floaters.clear();
                 hp_left.set_visible(false); hp_right.set_visible(false);
                 tgt_left.set_visible(false); tgt_right.set_visible(false);
+                power_icon.set_visible(false); power_text.clear(); shown_cd = -1;
                 banner.hide();
                 fx_particles.list.clear();
                 pause_result pr = run_phone(a);
@@ -1434,6 +1463,21 @@ namespace
             ++blink;
             bool banner_on = banner.update(a);
             for(bn::sprite_ptr& sp : hud) sp.set_visible(! banner_on);
+            if(g.ability_cd != shown_cd)   // odliczanie przy ikonie mocy
+            {
+                shown_cd = g.ability_cd;
+                power_text.clear();
+                a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
+                a.text.set_bg_priority(0);
+                a.text.set_right_alignment();
+                if(shown_cd > 0) { core::message m; m.add(shown_cd); a.text.generate(96, -52, m.s, power_text); }
+                else a.text.generate(96, -52, "R", power_text);
+                power_palette.set_grayscale_intensity(shown_cd > 0 ? bn::fixed(1) : bn::fixed(0));
+            }
+            bool ready = g.ability_cd == 0;
+            power_icon.set_visible(! banner_on);
+            power_icon.set_y(ready && ((blink / 8) & 1) ? -53 : -52);   // gotowa moc "podskakuje"
+            for(bn::sprite_ptr& sp : power_text) sp.set_visible(! banner_on && (! ready || ((blink / 16) & 1)));
             hp_left.set_visible(! banner_on && (! low_hp || (blink & 16)));
             hp_right.set_visible(! banner_on && (! low_hp || (blink & 16)));
 

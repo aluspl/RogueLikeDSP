@@ -17,6 +17,7 @@ namespace core
     constexpr int log_len = 48;
     constexpr int fov_radius = 7;       // promień widzenia bohatera w polach
     constexpr int max_hits = 8;         // zdarzenia trafień w jednej turze (dla efektów)
+    constexpr int max_walls = 5;        // tymczasowe mury (Ścianka III ma 5 pól)
 
     enum class tile : uint8_t { wall, floor, stairs };
     enum class status : uint8_t { playing, stage_clear, dead, won };
@@ -174,7 +175,7 @@ namespace core
 
         const class_def& cdef() const { return data::classes[cls]; }
         int ability_cd = 0;          // tury do ponownego użycia mocy (R)
-        temp_wall walls[4];
+        temp_wall walls[max_walls];
         int walls_count = 0;
         int weapon_override = -1;    // podniesione narzędzie zamiast broni zawodu
         const weapon_def& weapon() const { return data::weapons[weapon_override >= 0 ? weapon_override : cdef().weapon]; }
@@ -427,44 +428,75 @@ namespace core
             return false;
         }
 
+        // Ranga mocy rośnie z poziomem postaci: II od 3., III od 5. poziomu. Każda ranga skraca odnowienie o 2 tury.
+        int ability_rank() const { return 1 + (hero_level >= 3) + (hero_level >= 5); }
+        int ability_cooldown() const { return imax(4, cdef().ability_cooldown - 2 * (ability_rank() - 1)); }
+
+        int nearest_visible_enemy() const
+        {
+            int best = -1, bd = 99;
+            for(int i = 0; i < enemies_count; ++i)
+            {
+                const actor& e = enemies[i];
+                int d = cheb(hero.x, hero.y, e.x, e.y);
+                if(e.alive && visible(e.x, e.y) && d < bd) { bd = d; best = i; }
+            }
+            return best;
+        }
+
+        bool place_wall(int x, int y, int turns_left)
+        {
+            if(walls_count >= max_walls || lv.at(x, y) != tile::floor || occupied(x, y) || pickup_at(x, y)) return false;
+            lv.t[y][x] = tile::wall;
+            walls[walls_count++] = { int8_t(x), int8_t(y), int8_t(turns_left) };
+            return true;
+        }
+
         // Moc zawodu (R). Zwraca true, jeśli zużyła turę; bez celu nic się nie dzieje.
         bool player_ability()
         {
             if(st != status::playing || ability_cd > 0) return false;
             const class_def& c = cdef();
+            const int rank = ability_rank();
             bool ok = false;
             switch(c.ability)
             {
-                case ability_effect::stun:
+                case ability_effect::stun:   // Odprawa: ogłusza widocznych na 2/3/4 tury
                     for(int i = 0; i < enemies_count; ++i)
                         if(enemies[i].alive && visible(enemies[i].x, enemies[i].y))
-                        { enemies[i].stun = 2; enemies[i].awake = true; ok = true; }
+                        { enemies[i].stun = int8_t(1 + rank); enemies[i].awake = true; ok = true; }
                     if(ok) push(message().add(c.ability_name).add(": problemy wstrzymane"));
                     break;
-                case ability_effect::wall:
+                case ability_effect::wall:   // Ścianka: mur w poprzek drogi najbliższego wroga (nigdy wokół bohatera)
                 {
-                    const int d[4][2] = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
-                    for(auto& v : d)
-                    {
-                        int x = hero.x + v[0], y = hero.y + v[1];
-                        if(walls_count < 4 && lv.at(x, y) == tile::floor && ! occupied(x, y) && ! pickup_at(x, y))
-                        { lv.t[y][x] = tile::wall; walls[walls_count++] = { int8_t(x), int8_t(y), 6 }; ok = true; }
-                    }
+                    int t = nearest_visible_enemy();
+                    if(t < 0) break;
+                    int dx = isign(enemies[t].x - hero.x), dy = isign(enemies[t].y - hero.y);
+                    if(iabs(enemies[t].x - hero.x) >= iabs(enemies[t].y - hero.y)) dy = 0; else dx = 0;
+                    int cx = hero.x + dx, cy = hero.y + dy;          // środek muru: pole przed bohaterem
+                    int px = dy != 0 ? 1 : 0, py = dx != 0 ? 1 : 0;   // kierunek muru: prostopadle
+                    int half = rank >= 3 ? 2 : 1, dur = 4 + 2 * rank;
+                    for(int k = -half; k <= half; ++k) ok |= place_wall(cx + px * k, cy + py * k, dur);
                     if(ok) push(message().add(c.ability_name).add(" postawiona!"));
                     break;
                 }
-                case ability_effect::volley:
+                case ability_effect::volley:   // Seria: wszyscy widoczni w zasięgu (+1 obrażeń od II, +1 zasięgu na III)
+                {
+                    int range = weapon().range + (rank >= 3 ? 1 : 0);
+                    if(rank >= 2) ++dmg_bonus;
                     for(int i = 0; i < enemies_count && st == status::playing; ++i)
                     {
                         const actor& e = enemies[i];
-                        if(e.alive && visible(e.x, e.y) && cheb(hero.x, hero.y, e.x, e.y) <= weapon().range) { hero_attack(i); ok = true; }
+                        if(e.alive && visible(e.x, e.y) && cheb(hero.x, hero.y, e.x, e.y) <= range) { hero_attack(i); ok = true; }
                     }
+                    if(rank >= 2) --dmg_bonus;
                     break;
-                case ability_effect::chain:
+                }
+                case ability_effect::chain:   // Łańcuch: 3/4/5 celów, skoki do 2 pól
                 {
                     uint32_t done = 0;
                     int t = nearest_target();
-                    for(int k = 0; k < 3 && t >= 0 && st == status::playing; ++k)
+                    for(int k = 0; k < 2 + rank && t >= 0 && st == status::playing; ++k)
                     {
                         int px = enemies[t].x, py = enemies[t].y;
                         hero_attack(t); done |= 1u << t; ok = true;
@@ -477,22 +509,47 @@ namespace core
                     }
                     break;
                 }
-                case ability_effect::heal:
-                    if(hero.hp < hero.max_hp)
+                case ability_effect::flush:   // Zawór: strumień odpycha sąsiadów o 1/2 pola (tracą turę) i leczy 6/8/10 HP
+                {
+                    int push_by = rank >= 2 ? 2 : 1;
+                    for(int i = 0; i < enemies_count; ++i)
                     {
-                        int h = imin(8, hero.max_hp - hero.hp);
-                        hero.hp = int16_t(hero.hp + h); ok = true;
-                        push(message().add(c.ability_name).add(" zakręcony: +").add(h).add(" HP"));
+                        actor& e = enemies[i];
+                        if(! e.alive || cheb(hero.x, hero.y, e.x, e.y) != 1) continue;
+                        int dx = isign(e.x - hero.x), dy = isign(e.y - hero.y);
+                        for(int k = 0; k < push_by; ++k)
+                        {
+                            int nx = e.x + dx, ny = e.y + dy;
+                            if(lv.at(nx, ny) != tile::floor || occupied(nx, ny)) break;
+                            e.x = int8_t(nx); e.y = int8_t(ny);
+                        }
+                        e.awake = true;
+                        e.stun = int8_t(imax(e.stun, 1));   // zalany traci turę, inaczej od razu by wrócił
+                        ok = true;
+                    }
+                    int h = imin(4 + 2 * rank, hero.max_hp - hero.hp);
+                    if(h > 0) { hero.hp = int16_t(hero.hp + h); ok = true; }
+                    if(ok) push(message().add(c.ability_name).add(": strumień! +").add(imax(0, h)).add(" HP"));
+                    break;
+                }
+                case ability_effect::spin:   // Wirówka: wszyscy obok (zasięg 2 na III), od II ogłusza na 1 turę
+                {
+                    int reach = rank >= 3 ? 2 : 1;
+                    for(int i = 0; i < enemies_count && st == status::playing; ++i)
+                    {
+                        int d = cheb(hero.x, hero.y, enemies[i].x, enemies[i].y);
+                        if(enemies[i].alive && d >= 1 && d <= reach)
+                        {
+                            hero_attack(i); ok = true;
+                            if(rank >= 2 && enemies[i].alive) enemies[i].stun = int8_t(imax(enemies[i].stun, 1));
+                        }
                     }
                     break;
-                case ability_effect::spin:
-                    for(int i = 0; i < enemies_count && st == status::playing; ++i)
-                        if(enemies[i].alive && cheb(hero.x, hero.y, enemies[i].x, enemies[i].y) == 1) { hero_attack(i); ok = true; }
-                    break;
+                }
             }
             if(! ok) { push(message().add(c.ability_name).add(": nie teraz")); return false; }
             end_turn();
-            ability_cd = c.ability_cooldown;
+            ability_cd = ability_cooldown();
             return true;
         }
 

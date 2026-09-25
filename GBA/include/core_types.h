@@ -15,7 +15,7 @@ namespace core
         stat scales_with;
     };
 
-    enum class ability_effect : uint8_t { stun, wall, volley, chain, heal, spin };
+    enum class ability_effect : uint8_t { stun, wall, volley, chain, flush, spin };
 
     struct class_def           // zawód budowlany
     {
