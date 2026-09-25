@@ -4,7 +4,8 @@ Wersja Godot gry z demo GBA (`../GBA`): roguelike budowlany, w którym etapy bud
 a wrogami są *problemy budowy*. Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KONCEPCJA.md)
 (telefon z aplikacją PlanBudowlany jako interfejs, oprawa 2.5D – kolejne kamienie milowe).
 
-**Stan: zgodny z GBA v0.21.43** (logika, dane i test złoty z migawki GBA v0.21.43).
+**Stan: zgodny z GBA v0.21.43** (logika, dane i test złoty z migawki GBA v0.21.43); oprawa (grafika, font, dźwięk,
+telefon, nowy wybór zawodu) jak w GBA v0.21.45.
 
 ## Co jest
 
@@ -31,29 +32,38 @@ a wrogami są *problemy budowy*. Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KO
   bierze lepszą paczkę sprzętu (gorszą zostawia) i pije z termosu poniżej `thermos.botDrinkBelowPct` HP.
 - **`tests/LifeLike.Core.Tests`** – testy xUnit przeniesione z `GBA/tests/core_tests.cpp` (łącznie z balansem
   na botach, z mniejszą liczbą przebiegów) + test złoty.
-- **`godot/`** – grywalna wersja 2D: kolorowe prostokąty i litery, mgła wojny przyciemnieniem, HUD tekstowy
-  (szczęście, kryt %, unik %, wzrok, termos, stany z turami i skutkiem, sprzęt z cechami), liczby nad polami
-  (obrażenia, żółte „KRYT! -N”, zielone „Unik!”), menu akcji pod Enter/START (ikony wokół bohatera: ↑ Atak,
-  → Moc, ↓ Termos, ← Czekaj), okno porównania sprzętu przy paczce, ekrany tekstowe (tytuł z wyborem zawodu
-  i poziomu, statystykami z premią „SIŁ 5+2”, wyborem pamiątki i listą uprawnień, Szkolenia, profil z odznakami, zleceniami
-  i pamiątkami, harmonogram po etapie, karta etapu z SMS-em wydarzenia na placu, Hurtownia po akcie, podgląd pod Tab,
-  koniec gry z NG+; HUD pokazuje wydarzenie na placu i postęp najbliższego zlecenia). Profil zapisuje się w `user://profile.sav` (układ bajtów jak SRAM na GBA).
+- **`godot/`** – grywalna wersja 2D z oprawą jak na GBA (kamienie milowe 2 i część 4 z KONCEPCJI):
+  obraz 640x360 skalowany 2x (ostre piksele), kafle etapów 32x32 w paletach z GBA, postacie, problemy budowy,
+  bossowie i znajdźki z GBA (Scale2x) z cieniem, płynnym ruchem, szturchnięciem przy ataku i błyskiem trafienia,
+  mgła wojny z miękkim światłem, czerwone pola zapowiedzianego ciosu bossa, znacznik celu, „!”, mini paski HP,
+  liczby obrażeń / „KRYT!” / „Unik!”, cząsteczki (pył, iskry, moce zawodów, awans, dropy, konfetti), wstrząs i błyski
+  ekranu, podgląd mapy (M). HUD jak na GBA: pasek HP, poziom z doświadczeniem, etap, stany z turami, termos, ikona
+  mocy (szara z odliczaniem / pulsująca), dziennik z gasnącymi kolorowymi liniami, menu akcji wokół bohatera.
+  **Telefon z aplikacją PlanBudowlany** pionowo na środku ekranu (mapa rozmyta i przyciemniona, wysuwa się z dołu,
+  akcje poza czasem gry): w grze Zadania, Usterki, Start, Sprzęt, Koszty; na tytule profil – Odznaki / Zlecenia /
+  Pamiątki, Katalog, Osiedle, Zespół, Koszty = sklep Szkolenia; wiadomości (karta etapu z SMS-em wydarzenia),
+  paczka sprzętu, harmonogram, Hurtownia; powiadomienia push z dźwiękiem. Ekrany: tytuł z logo i wersją z game.json,
+  wybór zawodu (karuzela portretów – odblokowane najpierw, karta z mocą, narzędziem, paskami statystyk z premią,
+  trudnością i pamiątką), koniec gry z kodem QR i konfetti. Dźwięki z GBA na tych samych zdarzeniach, muzyka tytułu
+  i gry. Profil zapisuje się w `user://profile.sav` (układ bajtów jak SRAM na GBA).
 
 ## Sterowanie (jak na GBA)
 
 | Akcja | Klawiatura | Pad | Mysz |
 |---|---|---|---|
 | Ruch / atak wroga na drodze | strzałki, WSAD, numpad | D-pad, lewa gałka | lewy klik obok = krok |
-| A: atak najbliższego celu w zasięgu | Spacja, X, J | A | lewy klik na wroga w zasięgu |
+| A: atak najbliższego celu w zasięgu (bez celu miga zasięg) | Spacja, X, J | A | lewy klik na wroga w zasięgu |
 | B: czekaj turę | Z, Kp5, `.` | B | prawy klik |
 | R: moc zawodu | R, F | RB | |
-| Podgląd tekstowy | Tab | Select | |
-| Menu akcji (strzałka wybiera, ta sama strzałka / A wykonuje, Enter/B zamyka) | Enter | Start | |
+| START: menu akcji (strzałka wybiera, ta sama strzałka / A wykonuje, Enter/B zamyka) | Enter | Start | |
+| SELECT: telefon (zakładki: Q/E albo ←/→, zamknięcie: Tab/Esc/Z) | Tab | Select | |
+| L: podgląd mapy etapu (dowolny klawisz wraca) | M | L3 | |
 | Paczka sprzętu: A zakładam / B zostawiam | Spacja / Z | A / B | |
-| Dalej / start (ekrany) | Enter | Start | |
-| Szkolenia (na ekranie tytułowym) | K | Y | |
-| Pamiątka na budowę (na ekranie tytułowym, jak L/R na GBA) | Q / E | LB / RB | |
-| Profil: odznaki z uprawnieniami, zlecenia, pamiątki (na ekranie tytułowym) | P | X | |
+| Dalej (wiadomości, harmonogram, Hurtownia) | Enter / Spacja | Start / A | |
+| Tytuł: menu (Nowa budowa, Profil, Szkolenia) | ↑/↓ + Enter | D-pad + Start | |
+| Wybór zawodu: zawód / trudność / pamiątka / start / wróć | ←/→, ↑/↓, Q/E, Enter, Esc | D-pad, LB/RB, Start, B | |
+| Profil w telefonie (odznaki, zlecenia, pamiątki; Spacja zmienia stronę) | P | X | |
+| Szkolenia (zakładka Koszty w telefonie profilu, Spacja kupuje) | K | Y | |
 
 ## Wymagania i uruchomienie
 
@@ -62,14 +72,29 @@ a wrogami są *problemy budowy*. Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KO
 - Z terminala: `godot-mono --path GODOT/godot` (opcjonalnie `-- --seed 1234`).
 - Test dymny bez okna (bot gra 3 etapy przez warstwę Godota, kod 0 = OK):
   `godot-mono --headless --path GODOT/godot -- --smoke`
-- Zrzut ekranu po kilku turach bota: `godot-mono --path GODOT/godot -- --screenshot /tmp/shot.png`
-  (opcjonalnie `--scene title|game|combat|offer|menu|overview` – ekran tytułowy, gra, liczby KRYT!/Unik!,
-  porównanie sprzętu, menu akcji z termosem i stanami, podgląd; `profile|card|perks` – profil z uprawnieniami, zleceniami
-  i pamiątkami, karta etapu z wydarzeniem na placu, HUD z premiami „SIŁ 5+3”, wydarzeniem i zleceniem;
-  sceny pokazowe ustawiają stan ręcznie)
+- Zrzut ekranu (1280x720) sceny pokazowej: `godot-mono --path GODOT/godot -- --screenshot /tmp/shot.png --scene game`.
+  Sceny: `title`, `classselect`, `profile`, `catalog`, `estate`, `team`, `training` (telefon profilu), `game`, `combat`
+  (KRYT!/Unik!), `offer` (paczka sprzętu), `menu` (menu akcji), `phone-tasks`, `phone-issues`, `phone-start`
+  (= `overview`), `phone-gear`, `phone-costs`, `card` (karta etapu z wydarzeniem), `perks` (HUD z premiami i wydarzeniem),
+  `schedule`, `hurtownia`, `boss` (boss z zapowiedzianym ciosem), `endmsg`, `end`, `banners`, `map`.
+  Sceny ustawiają stan ręcznie (profil pokazowy, skrót zaliczenia etapu jak L+R+SELECT na GBA); zrzuty i test dymny
+  działają bez dźwięku.
 
 Przy pierwszym uruchomieniu z terminala najpierw `dotnet build GODOT/godot/LifeLike.Game.csproj`
-i `godot-mono --headless --path GODOT/godot --import`.
+i `godot-mono --headless --path GODOT/godot --import` (import grafik i dźwięków z `godot/assets`).
+
+## Grafika, font i dźwięk z GBA
+
+`python3 GODOT/tools/export_godot_assets.py` (Pillow; do muzyki `openmpt123` i `ffmpeg` z libmp3lame) czyta – tylko
+czyta – `GBA/graphics/*.bmp`, `GBA/include/font_widths.h` i `GBA/audio/*` i zapisuje do `godot/assets/`:
+`sprites/` (postacie, wrogowie, bossowie, znajdźki, paczki, celownik – klatki 32x32 powiększone algorytmem Scale2x
+z 16x16, kolejność klatek jak `actors.bmp`; białe sylwetki do błysku; cząsteczki 16x16; domy Osiedla; ikony menu
+i mocy), `ui/` (ikony telefonu aktywne i nieaktywne, ikony HUD 16x16 i szare do ładowania mocy, plansze tytułu
+i końca z przezroczystym tłem), `tiles/stage_N.png` (8 etapów: 4 warianty podłogi, podłoga z cieniem muru, mur,
+lico muru, schody – rysowane w 32x32 w paletach etapów z GBA, bogatsze niż kafle 8x8), `fx/` (cień, pole ciosu,
+ramka zasięgu), `font/` (font 8x16 z polskimi znakami: litery i cień osobno + `font.json` z szerokościami;
+rysuje go `scripts/Gfx/PixelFont.cs`), `audio/` (SFX `.wav` 1:1, muzyka `.mod` wyrenderowana do `.mp3`).
+Wynik jest deterministyczny – po zmianie grafik GBA wystarczy uruchomić skrypt ponownie i zaimportować projekt.
 
 ## Skąd dane
 
@@ -121,6 +146,15 @@ dotnet test GODOT/LifeLike.sln
 ```
 src/LifeLike.Core/          logika gry (Game*.cs, Level, Rng, Meta, Profile, RunSave, Bot, Data/GameData)
 tests/LifeLike.Core.Tests/  testy xUnit + golden/ (dane z migawki GBA i złote przebiegi)
-godot/                      projekt Godota (Main.cs – ekrany i wejście, WorldView.cs – render, Hud.cs, GameInput.cs)
+tools/                      export_godot_assets.py – grafiki, font i dźwięki z GBA do godot/assets
+godot/                      projekt Godota (640x360 skalowane 2x)
+godot/assets/               wynik eksportu z GBA (PNG, font, WAV, MP3) + pliki .import
+godot/scripts/Main*.cs      przejścia ekranów, wejście, zrzuty i test dymny
+godot/scripts/World/        mapa (MapLayer, OverlayLayer, FogLayer), postacie (ActorSprite), cząsteczki (FxLayer), znaczniki
+godot/scripts/Hud/          HUD (HudTop, HudLog, ScreenTint), powiadomienia push, zdarzenia tury, teksty
+godot/scripts/Phone/        telefon (Phone, PhonePainter, Backdrop), zakładki w grze (Tabs/), profilu (Profile/), strony (Pages/)
+godot/scripts/Screens/      tytuł, wybór zawodu, koniec gry
+godot/scripts/Gfx/          paleta, font pikselowy, tekstury i numery klatek, rysowanie UI
+godot/scripts/Audio/        dźwięki i muzyka
 godot/data/                 kopia GBA/data/game.json robiona przy buildzie (poza gitem)
 ```
