@@ -1,43 +1,49 @@
-TODO
-1. Ekwipunek
-    1.1. Uzywany w UI
-    1.2. Lista ekwipunku
-    1.3. Wybor ekwipunku
-    1.4. Uzycie ekwipunku
-    1.5. W przypadku broni dystansowej: Dluzszy zasieg zaznacznai przeciwnikow
-    1.6. Uzywalne (apteczki itp)
-2. Ruch
-    2.1. Poprawic uciekanie w przypadku braku przeciwnikow
-    2.2. Obrot do zaznaczonego przeciwnika    
-3. UI
-    3.1. Ekwipunek z Ikonami
-    3.2. Statystyki z Ikonami
-    3.3. Punkty Doświadczenia
+# TODO – PlanBudowlany RogueLike
 
-4. Postać
-    4.1. Wiecej specjalnych ataków
-    4.2. System poziomów
-    4.3. Grafika postaci
-5. Mapa
-    5.1. System misji: 
-        5.1.1 Dzien / Noc
-        5.1.2 Rozmiar mapy
-        5.1.3 Zmiana Sprite do otoczenia oraz tła
-        5.1.4 Losowo rozmieszczone drzwi lub inne cele misji
-    5.2. Poprawić Generator:
-        5.2.1 Poprawić Drzwi
-        5.2.2 Inne proporcję rozmiarów
-        5.2.3 Poprawić Grafiki
-6. Efekty
-    6.1. Efekt strzału/ Uderzenia nad postacią
-    6.2. Pokazane zadanie obrazenie 
-    6.3. Efekty na kamerze   
-7. Animacje
-    7.1. Animacja ataku
-    7.2. Animacja ruchu
-    7.3. 
-8. Przeciwnicy
-    8.1 Lepszy generator przeciwników oraz przeciwników specjalnych
-9. Statyczne Mapy
-10. Polepszyc okno tworenia postaci
-11. Save !
+Stan na 2026-09-25: GBA v0.21.45 (wydane), Godot – logika zgodna z v0.21.45, oprawa z GBA, refaktor na ekrany,
+wersja mobilna w toku. Opis projektów: [`README.md`](README.md).
+
+Legenda: ✅ zrobione · 🔄 w toku · ⬜ do zrobienia · — nie dotyczy
+
+## W toku i następne
+
+| Zadanie | GODOT (MOBILE) | GBA |
+|---|---|---|
+| Pion na telefonie, marginesy pod wyspę i pasek Home, skalowanie bez czarnych pasów | 🔄 | — |
+| Sterowanie jedną ręką: przesuwanie palcem, stuknięcie w pole/wroga, pasek ikon akcji (Atak, Moc, Termos, Czekaj, Telefon) | 🔄 | — |
+| Opcje pod ikoną klucza (głośność, wibracje, joystick, pasek pod lewą/prawą rękę, wielkość tekstu, Zapisz i wyjdź) | 🔄 | ⬜ (opcje dźwięku w menu) |
+| Przycisk planbudowlany.online na tytule | 🔄 | ✅ (QR na ekranie końcowym) |
+| Instalacja na urządzeniu jedną komendą (`GODOT/tools/ios_deploy.sh`) | 🔄 | — |
+| Test ręczny na sprzęcie i poprawki po graniu | ⬜ iPhone | ⬜ Miyoo, dźwięk |
+| Android: eksport i instalacja (podpis bez sekretów w repo) | ⬜ | — |
+| Wydania do pobrania w Releases | ⬜ .ipa / .apk / desktop | ✅ ROM co wersję |
+| Oprawa 2.5D: kamera 3/4, dynamiczne światło (latarka czołowa), pogoda na etapie Dach | ⬜ | — |
+| Mapy tematyczne etapów (szalunki, otwory okienne, krokwie, bruzdy) i elementy otoczenia (rusztowania, betoniarka, palety) | ⬜ | ⬜ (prostsza wersja) |
+| Zadania etapu jako cele poboczne (odbiór częściowy, dodatkowe doświadczenie) | ⬜ | ⬜ |
+| Drzewka ulepszeń mocy zawodów w zakładce Koszty | ⬜ | ⬜ |
+| Muzyka: pętle bez przerwy | ⬜ (MP3 → OGG) | ✅ |
+| Portret Kierownika na wyborze zawodu lekko przesunięty | — | ⬜ |
+| Czytelniejszy komunikat „Brak celu w zasięgu 1” (`core.h` + port C#) | ⬜ | ⬜ |
+| Balans po nowych funkcjach (bot: Normalny ~54%, pełne Szkolenia ~69%) | wspólny rdzeń | ⬜ |
+
+## Zgodność funkcji
+
+| Funkcja | GODOT (MOBILE) | GBA |
+|---|---|---|
+| Logika gry (etapy, akty, bossowie, moce, sprzęt, szczęście, termos, stany, Hurtownia) | ✅ 1:1 (test złoty) | ✅ |
+| Profil: Szkolenia, odznaki z uprawnieniami, zlecenia, pamiątki, katalog, Osiedle | ✅ | ✅ |
+| Wydarzenia na placu, rady kierownika | ✅ | ✅ |
+| Telefon PlanBudowlany (zakładki, powiadomienia push) | ✅ | ✅ |
+| Wybór zawodu z paskiem portretów, zablokowane na końcu | ✅ | ✅ |
+| Celowanie (przytrzymanie A) i karta wroga (przytrzymanie B) | ✅ klawiatura · 🔄 dotyk | ✅ |
+| Prolog przy pierwszej budowie | ✅ | ✅ |
+| Grafika | ✅ bogatsza (kafle 32 px, 4 klatki chodu, światło) | ✅ |
+| Dźwięk i muzyka | ✅ | ✅ |
+
+## Porządki
+
+- [ ] Stare tagi `v0.2137`–`v0.2140` (błędna numeracja) – usunąć tylko po decyzji właściciela
+- [ ] PR #1 `godot-migration` → `master` – merge robi właściciel
+- [ ] Archiwum Unity 2017 (`Assets/`, `ProjectSettings/`…) – zostawić czy przenieść do osobnego folderu/brancha
+
+Historia zmian: [`GBA/CHANGELOG.md`](GBA/CHANGELOG.md), postęp Godota: [`GODOT/docs/KONCEPCJA.md`](GODOT/docs/KONCEPCJA.md) (sekcja 8).
