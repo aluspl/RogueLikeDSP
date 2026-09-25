@@ -71,11 +71,14 @@ public sealed class PixelFont
 
     private int Advance(char c) => c == ' ' ? _space : _index.TryGetValue(c, out var i) ? _widths[i] : _space;
 
-    public int Measure(string s, int scale = 1)
+    public int Measure(string s, int scale = 1) => Measure(s, scale, false);
+
+    /// <summary>Szerokość tekstu; bold = pogrubienie (każdy znak o 1 piksel szerszy).</summary>
+    public int Measure(string s, int scale, bool bold)
     {
         s = Normalize(s);
         var w = 0;
-        foreach (var c in s) w += Advance(c);
+        foreach (var c in s) w += Advance(c) + (bold && c != ' ' ? 1 : 0);
         return w * scale;
     }
 
@@ -121,10 +124,14 @@ public sealed class PixelFont
     /// Rysuje linię tekstu: pos = lewy górny róg 16-pikselowej linii (dla Center/Right: środek/prawa krawędź).
     /// Zwraca szerokość w pikselach.
     /// </summary>
-    public int Draw(CanvasItem ci, Vector2 pos, string s, Ink ink, TextAlign align = TextAlign.Left, int scale = 1)
+    public int Draw(CanvasItem ci, Vector2 pos, string s, Ink ink, TextAlign align = TextAlign.Left, int scale = 1) =>
+        Draw(ci, pos, s, ink, align, scale, false);
+
+    /// <summary>Jak Draw; bold = pogrubienie jak w nagłówkach aplikacji (znak rysowany dwa razy, odstępy zachowane).</summary>
+    public int Draw(CanvasItem ci, Vector2 pos, string s, Ink ink, TextAlign align, int scale, bool bold)
     {
         s = Normalize(s);
-        var width = Measure(s, scale);
+        var width = Measure(s, scale, bold);
         var x = Mathf.Round(pos.X - (align == TextAlign.Center ? width / 2 : align == TextAlign.Right ? width : 0));
         var y = Mathf.Round(pos.Y);
         var drawEdge = ink.Edge.A > 0.01f;
@@ -139,8 +146,9 @@ public sealed class PixelFont
                 {
                     var src = new Rect2((g % _cols) * CellW, (g / _cols) * CellH, CellW, CellH);
                     ci.DrawTextureRectRegion(tex, new Rect2(cx, y, CellW * scale, CellH * scale), src, col);
+                    if (bold) ci.DrawTextureRectRegion(tex, new Rect2(cx + scale, y, CellW * scale, CellH * scale), src, col);
                 }
-                cx += Advance(c) * scale;
+                cx += (Advance(c) + (bold && c != ' ' ? 1 : 0)) * scale;
             }
         }
         return width;

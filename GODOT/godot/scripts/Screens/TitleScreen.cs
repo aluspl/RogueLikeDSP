@@ -52,7 +52,7 @@ public partial class TitleScreen : Control
         Ui.VioletGradient(this, new Rect2(0, 0, w, h));
         var logo = Assets.Tex("ui/title.png");
         var bob = Mathf.Round(Mathf.Sin(_clock * 1.6f) * 2f);
-        DrawTextureRect(logo, new Rect2((w - 480) / 2, -16 + bob, 480, 256), false);
+        DrawTextureRect(logo, new Rect2((w - 480) / 2, -12 + bob, 480, 256), false);
         Ui.WarningStripe(this, new Rect2(0, h - 14, w, 14), _clock * 12f);
 
         f.Draw(this, new Vector2(6, 4), Version, Ink.OnBrand);
