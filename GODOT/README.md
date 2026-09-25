@@ -4,8 +4,8 @@ Wersja Godot gry z demo GBA (`../GBA`): roguelike budowlany, w którym etapy bud
 a wrogami są *problemy budowy*. Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KONCEPCJA.md)
 (telefon z aplikacją PlanBudowlany jako interfejs, oprawa 2.5D – kolejne kamienie milowe).
 
-**Stan: zgodny z GBA v0.21.43** (logika, dane i test złoty z migawki GBA v0.21.43); oprawa (grafika, font, dźwięk,
-telefon, nowy wybór zawodu) jak w GBA v0.21.45.
+**Stan: zgodny z GBA v0.21.47** (logika, dane i test złoty z migawki GBA v0.21.47: pogoda dnia, brygada, tryb
+inwestora, boss Inspekcja Pracy); oprawa (grafika, font, dźwięk, telefon, wybór zawodu) jak w GBA v0.21.47.
 
 ## Co jest
 
@@ -23,9 +23,12 @@ telefon, nowy wybór zawodu) jak w GBA v0.21.45.
   Szkolenia Kurs BHP II i Warsztaty, **uprawnienia** (każda odznaka daje trwałą premię na budowę, `badges[].perk`),
   **pamiątki** (`keepsakes`: wybór na starcie, rangi I–III po 3 i 8 budowach, odblokowanie od startu / odznaką / zleceniem),
   **zlecenia** (`contracts`: liczniki w profilu – usunięte problemy, moce, markowy sprzęt, czyści bossowie, wygrane – nagroda
-  w doświadczeniu i pamiątce, postęp na żywo w trakcie budowy), **wydarzenia na placu** (`siteEvents`: SMS na starcie etapu
-  bez bossa, 45% – mniej znajdziek, premia, inspekcja, ulewa z poślizgiem, pełny termos). Profil v4 (`PBRL004`, 72 bajty,
-  układ jak SRAM na GBA; migracja v3→v4 zachowuje stare pola, nowe zeruje).
+  w doświadczeniu i pamiątce, postęp na żywo w trakcie budowy), **pogoda dnia** (`weather`: upał, mróz, wiatr,
+  kałuże w deszczu; `WeaponRange`), **brygada** (`brigade`: fachowiec raz na etap za zł – Geodeta, BHP-owiec, Pompa do
+  betonu, pomocnik Elektryk-kolega; `CallHelper`), **tryb inwestora** (`investor`: modyfikatory po pierwszej wygranej,
+  stawka i rekord stawki zawodu), **wydarzenia na placu** (`siteEvents`: SMS na starcie etapu
+  bez bossa, 45% – mniej znajdziek, premia, inspekcja, ulewa z poślizgiem, pełny termos). Profil v6 (`PBRL006`, 88 bajtów,
+  układ jak SRAM na GBA; migracje v1–v5 zachowują stare pola, nowe zerują), zapis budowy `PBRUN06`.
   **Ten sam seed daje identyczną grę co na GBA** (ta sama kolejność wywołań RNG, arytmetyka całkowita,
   rzutowania int8/int16).
 - **`src/LifeLike.Core/Bot.cs`** – deterministyczny bot z testów GBA (testy balansu, test złoty, test dymny);
@@ -69,6 +72,8 @@ telefon, nowy wybór zawodu) jak w GBA v0.21.45.
 | Tytuł: menu (Nowa budowa, Profil, Szkolenia, Jak grać) | ↑/↓ + Enter | D-pad + Start | |
 | Wybór zawodu: zawód / trudność / pamiątka / start / wróć | ←/→, ↑/↓, Q/E, Enter, Esc | D-pad, LB/RB, Start, B | |
 | Profil w telefonie (odznaki, zlecenia, pamiątki; Spacja zmienia stronę) | P | X | |
+| Brygada (menu akcji: Spacja bez kierunku; telefon: Sprzęt → Spacja) | Enter, Spacja | Start, A | |
+| Tryb inwestora na wyborze zawodu (po pierwszej wygranej; Spacja włącza modyfikator) | Tab | Select | |
 | Szkolenia (zakładka Koszty w telefonie profilu, Spacja kupuje) | K | Y | |
 | Ustawienia (także klucz w prawym górnym rogu tytułu i mapy) | Esc | | klik na klucz |
 
@@ -87,6 +92,8 @@ Na iOS/Androidzie (albo z `--touch` na komputerze) gra jest pionowa i sterowana 
 | **Termos** | kawa z termosu (liczba kaw na przycisku) |
 | **Czekaj** | dotknięcie = tura; trzymanie = karta najbliższego problemu (przesunięcie: następny) |
 | **Telefon** | dotknięcie = aplikacja PlanBudowlany na cały ekran; trzymanie = podgląd mapy etapu |
+| Telefon → **Sprzęt → Brygada** | fachowiec raz na etap (przycisk „Wezwij”, zużywa turę) |
+| Wybór zawodu: **Tryb inwestora** | wiersz pod pamiątką po pierwszej wygranej – modyfikatory i stawka |
 | Pasek HUD u góry | pulpit postaci w telefonie |
 | Telefon | ikony zakładek, przesunięcie w bok = zakładka, w górę/dół = lista, przyciski na dole strony, krzyżyk zamyka |
 
@@ -116,7 +123,9 @@ nad paskiem domowym, mapa ~9 pól na szerokość, telefon jako aplikacja na cał
   (= `overview`), `phone-gear`, `phone-costs`, `card` (karta etapu z wydarzeniem), `perks` (HUD z premiami i wydarzeniem),
   `schedule`, `hurtownia`, `boss` (boss z zapowiedzianym ciosem), `endmsg`, `end`, `banners`, `map`, `aim` (trzymane A),
   `preview` (trzymane B), `prologue`, `schedule-tip` (rada kierownika), `help` (Jak grać), `settings` (ustawienia
-  w budowie), `settings-title`, `walk` (marsz po dotknięciu pola).
+  w budowie), `settings-title`, `walk` (marsz po dotknięciu pola), `weather-rain`, `weather-snow`, `weather-wind`,
+  `weather-heat` (pogoda dnia: nakładka, kałuże, ikona w HUD), `brigade` (telefon: Brygada), `ally` (pomocnik obok
+  bohatera), `investor` (tryb inwestora nad wyborem zawodu).
   Sceny ustawiają stan ręcznie (profil pokazowy, skrót zaliczenia etapu jak L+R+SELECT na GBA); zrzuty i test dymny
   działają bez dźwięku.
 
@@ -175,7 +184,8 @@ z cechami, dziennik bajt po bajcie, wydarzenie na placu, liczniki zleceń, staty
 (pola i cały zapis bajt po bajcie jak w SRAM).
 `GoldenTests` odtwarza to samo w C# i porównuje pole po polu.
 
-Odtworzenie plików (z tej samej wersji nagłówków GBA co `golden/game.json`; obecnie migawka v0.21.43,
+Odtworzenie plików (z tej samej wersji nagłówków GBA co `golden/game.json`; obecnie migawka v0.21.47 – bot „smart”
+wzywa też brygadę, dwa przebiegi z trybem inwestora,
 np. `git show d02ba811:GBA/...` rozpakowane do osobnego katalogu `<gba_v43>`):
 
 ```bash
