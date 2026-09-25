@@ -1,6 +1,7 @@
 using Godot;
+using LifeLike.Game.Gfx;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Phone;
 
 /// <summary>
 /// Rysowanie treści aplikacji w telefonie: karty, wiersze list z paskiem statusu po lewej, pastylki statusów,
@@ -77,7 +78,7 @@ public sealed class PhonePainter
         PillKind.Late => (Pal.LateBg, Ink.Late),
         PillKind.Done => (Pal.DoneBg, Ink.Done),
         PillKind.Brand => (Pal.Brand, Ink.White),
-        PillKind.Group => (new Color("e2dafd"), Ink.Brand),
+        PillKind.Group => (Pal.PillGroup, Ink.Brand),
         _ => (Pal.Border, Ink.Dim),
     };
 

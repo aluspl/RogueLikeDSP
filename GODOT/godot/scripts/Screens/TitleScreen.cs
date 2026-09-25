@@ -1,83 +1,71 @@
-using Godot;
+using LifeLike.Game.Audio;
+using LifeLike.Game.Input;
+using LifeLike.Game.Screens.Views;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Screens;
 
-/// <summary>
-/// Ekran tytułowy jak na GBA: gradient fioletu marki, logo PB z napisem (ui/title.png z GBA w 2x), pas ostrzegawczy
-/// placu budowy na dole, wersja z game.json w lewym górnym rogu, rekord w prawym, menu z wyborem.
-/// </summary>
-public partial class TitleScreen : Control
+/// <summary>Tytuł (run_title na GBA): menu Nowa budowa / Profil / Szkolenia, rekord i doświadczenie z profilu.</summary>
+public sealed class TitleScreen : Screen
 {
-    public static readonly string[] Items = ["Nowa budowa", "Profil: odznaki, zlecenia", "Szkolenia (Koszty)"];
+    private int _sel;
 
-    public string Version { get; set; } = "";
-    public int Best { get; set; }
-    public int Runs { get; set; }
-    public int Xp { get; set; }
-    public int Sel { get; set; }
-    public string Note { get; set; } = "";
-
-    private float _clock;
-
-    public override void _Ready()
+    public TitleScreen(App app) : base(app)
     {
-        MouseFilter = MouseFilterEnum.Ignore;
-        SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
     }
 
-    public override void _Process(double delta)
+    public override ViewSet Views => ViewSet.Title;
+    public override string Music => "title";
+
+    public void Open() => Flow.Go(this);
+
+    public override void Enter(bool instant) => Populate();
+
+    /// <summary>Rekord, liczba budów, doświadczenie, wybór i notatka na planszy tytułu (także pod telefonem profilu).</summary>
+    public void Populate()
     {
-        if (!Visible) return;
-        _clock += (float)delta;
-        QueueRedraw();
+        var v = N.TitleView;
+        v.Best = S.Profile.Best;
+        v.Runs = S.Profile.Runs;
+        v.Xp = S.Profile.Xp;
+        v.Sel = _sel;
+        v.Note = S.Note;
     }
 
-    public override void _Draw()
+    public override bool HandleInput(InputCmd e)
     {
-        try
+        var v = e.VDir;
+        if (v != 0)
         {
-            DrawContent();
+            _sel = (_sel + v + TitleView.Items.Length) % TitleView.Items.Length;
+            S.Note = "";
+            Sfx.Play("menu");
+            Populate();
+            return true;
         }
-        catch (System.Exception ex)
+        if (e.Is(GameAction.Profile))
         {
-            DrawErrors.Record("TitleScreen", ex);
+            Flow.Profile.Open(0);
+            return true;
         }
-    }
-
-    private void DrawContent()
-    {
-        var f = PixelFont.I;
-        var w = Size.X;
-        var h = Size.Y;
-        Ui.VioletGradient(this, new Rect2(0, 0, w, h));
-        var logo = Assets.Tex("ui/title.png");
-        var bob = Mathf.Round(Mathf.Sin(_clock * 1.6f) * 2f);
-        DrawTextureRect(logo, new Rect2((w - 480) / 2, -12 + bob, 480, 256), false);
-        Ui.WarningStripe(this, new Rect2(0, h - 14, w, 14), _clock * 12f);
-
-        f.Draw(this, new Vector2(6, 4), Version, Ink.OnBrand);
-        if (Best > 0) f.Draw(this, new Vector2(w - 6, 4), $"Rekord: {Best}", Ink.OnBrand, TextAlign.Right);
-
-        var y = 240f;
-        for (var i = 0; i < Items.Length; i++)
+        if (e.Is(GameAction.Shop))
         {
-            var sel = i == Sel;
-            var tw = f.Measure(Items[i]) + 28;
-            var r = new Rect2(Mathf.Round((w - tw) / 2), y + i * 22, tw, 19);
-            if (sel)
-            {
-                DrawStyleBox(Ui.Box(new Color(0, 0, 0, 0.25f), 9), new Rect2(r.Position + new Vector2(0, 2), r.Size));
-                DrawStyleBox(Ui.Box(Pal.Card, 9), r);
-                f.Draw(this, new Vector2(w / 2, r.Position.Y + 1), Items[i], Ink.Brand, TextAlign.Center);
-                var arrow = ((int)(_clock * 3) & 1) == 1 ? 1 : 0;
-                f.Draw(this, new Vector2(r.Position.X + 6 + arrow, r.Position.Y + 1), ">", new Ink(Pal.Accent, Colors.Transparent));
-            }
-            else
-            {
-                f.Draw(this, new Vector2(w / 2, r.Position.Y + 1), Items[i], Ink.OnBrand, TextAlign.Center);
-            }
+            Flow.Profile.Open(4);
+            return true;
         }
-        var info = Note.Length > 0 ? Note : $"Budowy: {Runs}   Doświadczenie: {Xp}   P: profil   K: Szkolenia";
-        f.Draw(this, new Vector2(w / 2, h - 34), f.Fit(info, (int)w - 12), Note.Length > 0 ? new Ink(new Color("ffe08a"), new Color("3a2a99")) : Ink.OnBrand, TextAlign.Center);
+        if (!e.Is(GameAction.A | GameAction.Start)) return false;
+        Sfx.Play("menu");
+        switch (_sel)
+        {
+            case 0:
+                Flow.ClassSelect.Open();
+                break;
+            case 1:
+                Flow.Profile.Open(0);
+                break;
+            default:
+                Flow.Profile.Open(4);
+                break;
+        }
+        return true;
     }
 }

@@ -1,14 +1,14 @@
-using Godot;
+using LifeLike.Game.Input;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Phone;
 
 /// <summary>
 /// Ekran aplikacji w telefonie (zakładka albo pojedyncza strona: wiadomość, paczka sprzętu, Hurtownia...).
-/// Strona rysuje treść przez PhonePainter; nagłówek, pasek statusu i pasek zakładek rysuje Phone.
+/// Strona rysuje treść przez PhonePainter; nagłówek, pasek statusu i pasek zakładek rysuje PhoneView.
 /// </summary>
 public abstract class PhonePage
 {
-    public Phone Owner { get; set; }
+    public PhoneView Owner { get; set; }
 
     public abstract string Title { get; }
 
@@ -20,8 +20,8 @@ public abstract class PhonePage
 
     public abstract void Draw(PhonePainter p);
 
-    /// <summary>Wejście dla strony; true = obsłużone (Phone nie przełącza wtedy zakładek).</summary>
-    public virtual bool Input(InputEvent e) => false;
+    /// <summary>Wejście dla strony; true = obsłużone (PhoneView nie przełącza wtedy zakładek).</summary>
+    public virtual bool Input(InputCmd e) => false;
 
     /// <summary>Wywoływane przy wejściu na stronę (np. wyzerowanie wyboru).</summary>
     public virtual void Enter()
@@ -29,9 +29,4 @@ public abstract class PhonePage
     }
 
     protected void Redraw() => Owner?.QueueRedraw();
-
-    protected static bool Pressed(InputEvent e, string action, bool echo = false) => e.IsActionPressed(action, echo);
-
-    /// <summary>Strzałka góra/dół z powtarzaniem: -1 / 1 / 0.</summary>
-    protected static int VDir(InputEvent e) => Pressed(e, GameInput.Up, true) ? -1 : Pressed(e, GameInput.Down, true) ? 1 : 0;
 }

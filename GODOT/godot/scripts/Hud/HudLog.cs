@@ -1,9 +1,10 @@
 using System.Collections.Generic;
 using Godot;
 using LifeLike.Core;
+using LifeLike.Game.Gfx;
 using CoreGame = LifeLike.Core.Game;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Hud;
 
 /// <summary>
 /// Dolny pas jak na GBA: nowe komunikaty dziennika pokazują się na chwilę w kolorach rodzaju (zły / dobry / łup)

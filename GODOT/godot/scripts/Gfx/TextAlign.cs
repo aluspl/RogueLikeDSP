@@ -1,4 +1,4 @@
-namespace LifeLike.Game;
+namespace LifeLike.Game.Gfx;
 
 /// <summary>Wyrównanie tekstu względem punktu x (jak set_left/center/right_alignment w Butano).</summary>
 public enum TextAlign

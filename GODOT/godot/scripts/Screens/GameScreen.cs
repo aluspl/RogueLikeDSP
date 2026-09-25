@@ -1,0 +1,70 @@
+using LifeLike.Game.Input;
+using LifeLike.Game.Screens.Play;
+
+namespace LifeLike.Game.Screens;
+
+/// <summary>
+/// Budowa (run_game na GBA): mapa z HUD, ruch, A atak, B czekaj, R moc, START menu akcji, SELECT telefon,
+/// L podgląd mapy, mysz. Po każdej akcji App.AfterAction decyduje o kolejnym ekranie.
+/// </summary>
+public sealed class GameScreen : Screen
+{
+    public GameScreen(App app) : base(app) => Menu = new ActionMenu(app);
+
+    public ActionMenu Menu { get; }
+
+    public override bool InRun => true;
+    public override bool ShowsTarget => !Menu.IsOpen;
+
+    public void Open(bool instant = false) => Flow.Go(this, instant);
+
+    /// <summary>Podgląd całego etapu (L na GBA) z podpowiedzią w dolnym pasie.</summary>
+    public void ToggleOverview()
+    {
+        N.World.ToggleOverview();
+        if (N.World.OverviewOn) N.Hud.ShowHint("Podgląd mapy etapu", "Dowolny klawisz: wróć");
+        else N.Hud.ShowHint(null);
+    }
+
+    public override bool HandleInput(InputCmd e)
+    {
+        if (Menu.IsOpen) return Menu.HandleInput(e);
+        var g = S.Game;
+        var view = N.World;
+        if (view.OverviewOn)
+        {
+            if (!e.AnyKey) return false;
+            ToggleOverview();
+            return true;
+        }
+        if (e.Is(GameAction.Select))
+        {
+            Flow.Phone.Open();
+            return true;
+        }
+        if (e.Is(GameAction.L))
+        {
+            ToggleOverview();
+            return true;
+        }
+        if (e.Is(GameAction.Start))
+        {
+            Menu.Open();
+            return true;
+        }
+        int dx = 0, dy = 0;
+        if (e.Is(GameAction.Up, true)) dy = -1;
+        else if (e.Is(GameAction.Down, true)) dy = 1;
+        else if (e.Is(GameAction.Left, true)) dx = -1;
+        else if (e.Is(GameAction.Right, true)) dx = 1;
+        bool acted;
+        if (dx != 0 || dy != 0) acted = g.PlayerMove(dx, dy);
+        else if (e.Is(GameAction.A)) acted = PlayCommands.AttackNearest(g, view);
+        else if (e.Is(GameAction.B)) acted = g.PlayerWait();
+        else if (e.Is(GameAction.R)) acted = PlayCommands.UseAbility(g, view);
+        else if (e.IsClick) acted = PlayCommands.Mouse(g, view, e.Click);
+        else return false;
+        App.AfterAction(acted);
+        return true;
+    }
+}

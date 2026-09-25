@@ -1,6 +1,7 @@
 using Godot;
+using LifeLike.Game.Gfx;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Hud;
 
 /// <summary>
 /// Błyski ekranu nad mapą (pod HUD): moc zawodu w jej kolorze, czerwony po obrażeniach, żółty przy krycie
@@ -40,7 +41,7 @@ public partial class ScreenTint : Control
         if (LowHp)
         {
             var p = 0.5f + 0.5f * Mathf.Sin(_clock * 4f);
-            DrawRect(r, new Color(0.9f, 0.05f, 0.05f, 0.05f + 0.12f * p));
+            DrawRect(r, new Color(Pal.LowHpTint, 0.05f + 0.12f * p));
         }
         if (_strength > 0) DrawRect(r, new Color(_color, _strength));
     }

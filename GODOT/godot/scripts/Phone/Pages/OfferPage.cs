@@ -1,7 +1,8 @@
 using Godot;
+using LifeLike.Game.Gfx;
 using CoreGame = LifeLike.Core.Game;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Phone.Pages;
 
 /// <summary>
 /// Paczka sprzętu przy zajętym slocie (gear_offer_dialog na GBA): obecny i nowy przedmiot z jakością (pastylka),

@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using Godot;
 using LifeLike.Core.Data;
+using LifeLike.Game.Gfx;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Phone.Pages;
 
 /// <summary>
 /// Wiadomości w telefonie (phone_message na GBA): nadawca z „teraz”, dymek SMS, pod spodem wiersze informacji

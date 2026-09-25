@@ -1,7 +1,7 @@
 using System;
 using Godot;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Gfx;
 
 /// <summary>
 /// Wyjątki z rysowania (_Draw) telefonu, HUD i ekranów: Godot tylko je loguje, więc zbieramy je tutaj,

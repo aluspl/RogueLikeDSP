@@ -1,8 +1,8 @@
 using Godot;
-using LifeLike.Core;
+using LifeLike.Game.Gfx;
 using CoreGame = LifeLike.Core.Game;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Hud;
 
 /// <summary>
 /// Górny pasek HUD jak na GBA (półprzezroczysty ciemny pas): HP z paskiem, poziom z paskiem doświadczenia, etap;

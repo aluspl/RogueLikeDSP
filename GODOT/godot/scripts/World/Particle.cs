@@ -1,6 +1,6 @@
 using Godot;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.World;
 
 /// <summary>Cząsteczka (pył, iskra, konfetti, gwiazdka, cegła, gwóźdź, piorun, kropla...) jak particle w main.cpp.</summary>
 public sealed class Particle

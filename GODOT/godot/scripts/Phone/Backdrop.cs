@@ -1,6 +1,6 @@
 using Godot;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Phone;
 
 /// <summary>
 /// Tło pod telefonem: mapa rozmyta (mipmapy tekstury ekranu) i przyciemniona fioletem marki, z płynnym wejściem.

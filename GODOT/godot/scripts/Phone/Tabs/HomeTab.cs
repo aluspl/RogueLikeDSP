@@ -1,8 +1,9 @@
 using System;
 using LifeLike.Core;
+using LifeLike.Game.Gfx;
 using CoreGame = LifeLike.Core.Game;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Phone.Tabs;
 
 /// <summary>
 /// Start = pulpit postaci (tab_home na GBA): etap, HP z paskiem, poziom z doświadczeniem, moc z gotowością, stany,

@@ -149,12 +149,38 @@ tests/LifeLike.Core.Tests/  testy xUnit + golden/ (dane z migawki GBA i złote p
 tools/                      export_godot_assets.py – grafiki, font i dźwięki z GBA do godot/assets
 godot/                      projekt Godota (640x360 skalowane 2x)
 godot/assets/               wynik eksportu z GBA (PNG, font, WAV, MP3) + pliki .import
-godot/scripts/Main*.cs      przejścia ekranów, wejście, zrzuty i test dymny
-godot/scripts/World/        mapa (MapLayer, OverlayLayer, FogLayer), postacie (ActorSprite), cząsteczki (FxLayer), znaczniki
-godot/scripts/Hud/          HUD (HudTop, HudLog, ScreenTint), powiadomienia push, zdarzenia tury, teksty
-godot/scripts/Phone/        telefon (Phone, PhonePainter, Backdrop), zakładki w grze (Tabs/), profilu (Profile/), strony (Pages/)
-godot/scripts/Screens/      tytuł, wybór zawodu, koniec gry
-godot/scripts/Gfx/          paleta, font pikselowy, tekstury i numery klatek, rysowanie UI
-godot/scripts/Audio/        dźwięki i muzyka
+godot/scripts/              prezentacja (C#, katalog = przestrzeń nazw LifeLike.Game.*) - patrz „Architektura”
 godot/data/                 kopia GBA/data/game.json robiona przy buildzie (poza gitem)
 ```
+
+## Architektura warstwy Godota (`godot/scripts`)
+
+Katalog = przestrzeń nazw (`LifeLike.Game.<Katalog>`), jeden typ na plik. Logika gry jest wyłącznie w `LifeLike.Core`;
+prezentacja tylko ją pokazuje i reaguje na zdarzenia.
+
+```
+Main.cs            korzeń sceny: dane + profil -> App; wejście (klawiatura/pad/mysz/wirtualny kontroler) do ekranu bieżącego
+App.cs             kompozycja: GameSession, SceneNodes, ScreenFlow, obserwatorzy zdarzeń; Refresh / AfterAction / StartRun
+SceneNodes.cs      drzewo węzłów: WorldView, HudLayer (1), plansze (2), telefon z tłem (3), banery (4)
+LaunchOptions.cs   argumenty --seed / --smoke / --screenshot --scene
+Input/             GameAction (A, B, L, R, START, SELECT, strzałki...), InputCmd (zdarzenie jako akcje),
+                   GameInput (mapa klawiszy i pada, Translate, Press/Release dla przycisków ekranowych, IsHeld)
+Session/           GameSession (budowa + profil: start, etap, NG+, odznaki, zlecenia, bankowanie, zapis),
+                   SessionEvents (LevelUp, PickedUp, Dropped, ToolFound, GearEquipped, AbilityReady, BossSpotted,
+                   StageCleared, RunEnded, Achievements), TurnWatcher (wykrywa zdarzenia tury), GodotDataSource
+Screens/           Screen (Enter / Exit / HandleInput / Process + deklaracja warstw i muzyki), ScreenFlow (maszyna
+                   stanów), ekrany: Title, Profile, ClassSelect, Game, Phone, StageCard, Schedule, Hurtownia, Offer,
+                   EndMessage, End; Play/ (ActionMenu, PlayCommands); Views/ (TitleView, ClassSelectView, EndView)
+World/             WorldView (sprite'y, synchronizacja), WorldFx (trafienia, moce, awans, konfetti), WorldCamera,
+                   warstwy: MapLayer, OverlayLayer, FogLayer, FxLayer, MarksLayer, ActorSprite
+Hud/               HudLayer (HudTop, HudLog, ScreenTint), PushBanners (rysowanie), BannerFeed (treść z SessionEvents)
+Phone/             PhoneView (telefon), PhonePage, PhonePainter, Backdrop; Tabs/ (w grze), ProfileTabs/, Pages/
+Gfx/               Pal (tokeny kolorów PlanBudowlany i GBA), Ink, Layout (rozmiar UI - jedyne miejsce), Assets,
+                   PixelFont, Ui, UiText, DrawErrors
+Audio/             Sfx (dźwięki i muzyka), SoundCues (dźwięki zdarzeń sesji)
+Debug/             DebugRunner (--smoke / --screenshot), SmokeTest, ScreenshotRunner, DebugScenes, DemoStaging, DemoProfile
+```
+
+Przepływ: `Main` tłumaczy zdarzenie na `InputCmd` -> `ScreenFlow.Current.HandleInput` -> ekran woła akcję rdzenia
+(np. `PlayerMove`) -> `App.AfterAction` -> `Refresh` (widok mapy zużywa trafienia tury, `TurnWatcher` zgłasza
+zdarzenia -> banery / dźwięki / efekty) -> `GameSession.Resolve` (etap zaliczony, koniec budowy, paczka) -> kolejny ekran.

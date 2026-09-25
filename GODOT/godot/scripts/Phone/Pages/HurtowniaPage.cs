@@ -1,8 +1,10 @@
 using System;
-using Godot;
+using LifeLike.Game.Audio;
+using LifeLike.Game.Gfx;
+using LifeLike.Game.Input;
 using CoreGame = LifeLike.Core.Game;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Phone.Pages;
 
 /// <summary>
 /// Hurtownia między aktami (run_hurtownia na GBA): budżet budowy w nagłówku, premia za akt, lista towarów
@@ -40,9 +42,9 @@ public sealed class HurtowniaPage : PhonePage
         }
     }
 
-    public override bool Input(InputEvent e)
+    public override bool Input(InputCmd e)
     {
-        var v = VDir(e);
+        var v = e.VDir;
         if (v != 0)
         {
             _list.Move(v, _g.D.Hurtownia.Length, Window);
@@ -50,7 +52,7 @@ public sealed class HurtowniaPage : PhonePage
             Sfx.Play("menu");
             return true;
         }
-        if (Pressed(e, GameInput.Attack))
+        if (e.Is(GameAction.A))
         {
             Buy();
             return true;

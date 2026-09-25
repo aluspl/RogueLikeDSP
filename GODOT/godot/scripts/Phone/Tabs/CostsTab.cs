@@ -1,8 +1,9 @@
 using System;
 using LifeLike.Core;
+using LifeLike.Game.Gfx;
 using CoreGame = LifeLike.Core.Game;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.Phone.Tabs;
 
 /// <summary>
 /// Koszty = Szkolenia w trakcie budowy (tab_costs na GBA): całkowity koszt, pasek budżetu, „Pozostało” = doświadczenie,

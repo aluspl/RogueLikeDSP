@@ -1,8 +1,9 @@
 using Godot;
 using LifeLike.Core;
+using LifeLike.Game.Gfx;
 using CoreGame = LifeLike.Core.Game;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.World;
 
 /// <summary>
 /// Kafle etapu 32x32 w palecie etapu (jak bg_map::build w GBA/src/main.cpp): podłoga w 4 wariantach,

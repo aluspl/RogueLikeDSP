@@ -1,8 +1,8 @@
 using Godot;
-using LifeLike.Core;
 using LifeLike.Core.Data;
+using LifeLike.Game.Gfx;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.World;
 
 /// <summary>
 /// Znaczniki nad mapą (nad mgłą): strzałka nad celem krótkiego A, ikona stanu nad bohaterem (zatrucie / porażenie /
@@ -92,7 +92,7 @@ public partial class MarksLayer : Node2D
             if (k == 1)
             {
                 var ready = g.AbilityCd == 0;
-                Assets.DrawFrame(this, Assets.AbilityIcons, g.Cls, s, tl, 1, ready ? Colors.White : new Color(0.55f, 0.55f, 0.6f));
+                Assets.DrawFrame(this, Assets.AbilityIcons, g.Cls, s, tl, 1, ready ? Colors.White : Pal.Grayed);
             }
             else
             {

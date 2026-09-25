@@ -1,6 +1,7 @@
 using Godot;
+using LifeLike.Game.Gfx;
 
-namespace LifeLike.Game;
+namespace LifeLike.Game.World;
 
 /// <summary>Unosząca się liczba obrażeń / „KRYT! -N” / „Unik!” nad polem (floater w main.cpp).</summary>
 public sealed class Floater
