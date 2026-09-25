@@ -86,6 +86,13 @@ Playtest bez okna (Docker + libmgba): skrypt klawiszy -> zrzuty ekranu PNG, np.
 tools/playtest/run.sh moj_skrypt.txt /tmp/zrzuty --fresh   # opis komend w tools/playtest/playtest.c
 ```
 
+Scenariusze testowe (sytuacje, do których skrypt nie dojdzie na ślepo – boss obok, wrogowie w zasięgu, moce,
+sprzęt, stany): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
+```bash
+make TARGET=scn1 BUILD=build_scn1 USERFLAGS="-DPB_SCENARIO=1" BUTANO_PATH=...
+ROM=scn1.gba tools/playtest/run.sh skrypt.txt /tmp/zrzuty --fresh
+```
+
 ## Uruchomienie na Miyoo
 Skopiuj `PlanBudowlanyRogue.gba` do `Roms/GBA/` (OnionOS) lub folderu GBA w MinUI. Działa na rdzeniach
 mGBA i gpSP. Zapis rekordu: SRAM (emulator tworzy plik .sav/.srm).
