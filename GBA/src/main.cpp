@@ -1082,7 +1082,29 @@ namespace
         }
 
         void hide() { timer = 0; queue.clear(); bg.set_visible(false); icon.set_visible(false); text.clear(); }
+
+        bool busy() const { return timer > 0 || ! queue.empty(); }
     };
+
+    // Banery: nowe odznaki (bitmaska z check_badges) i ukończone zlecenia (z check_contracts).
+    void push_achievements(push_banner& banner, int badges_got, int contracts_got)
+    {
+        for(int i = 0; i < data::badges_count; ++i)
+            if(badges_got & (1 << i))
+            {
+                core::message t; t.add("Odznaka: ").add(data::badges[i].name);
+                core::message b; b.add("+").add(data::badges[i].xp).add(" dośw.");
+                banner.push(t.s, b.s);
+            }
+        for(int i = 0; i < data::contracts_count; ++i)
+            if(contracts_got & (1 << i))
+            {
+                const core::contract_def& c = data::contracts[i];
+                core::message t; t.add("Zlecenie: ").add(c.name);
+                core::message b; b.add("Wykonane! +").add(c.xp).add(" dośw.");
+                banner.push(t.s, b.s);
+            }
+    }
 
     // Cząsteczki (pył, iskry, konfetti, gwiazdki). Mała pula; bez wolnych sprite'ów efekt jest pomijany.
     struct particle
@@ -1359,17 +1381,12 @@ namespace
                 banner.hide();
                 banner.push("Etap zaliczony", clip(data::stages[g.stage].name, 24).c_str());
             }
-            if(g.st == core::status::stage_clear || g.st == core::status::won)   // odznaki
+            if(g.st == core::status::stage_clear || g.st == core::status::won)   // odznaki i zlecenia
             {
                 int got = core::check_badges(a.save, g);
-                for(int i = 0; i < data::badges_count; ++i)
-                    if(got & (1 << i))
-                    {
-                        core::message t; t.add("Odznaka: ").add(data::badges[i].name);
-                        core::message b; b.add("+").add(data::badges[i].xp).add(" dośw.");
-                        banner.push(t.s, b.s);
-                    }
-                if(got) bn::sram::write(a.save);
+                int done = core::check_contracts(a.save);
+                push_achievements(banner, got, done);
+                bn::sram::write(a.save);   // liczniki zleceń przeniesione do profilu
             }
             prev_level = g.hero_level; prev_weapon = g.weapon_override; prev_pickups = g.pickups_count; prev_cd = g.ability_cd;
         };
@@ -1939,6 +1956,8 @@ namespace
                 if(pr == pause_result::quit)
                 {
                     if(g.score > a.save.best) a.save.best = g.score;
+                    core::check_badges(a.save, g);   // liczniki zleceń z przerwanej budowy też się liczą
+                    core::check_contracts(a.save);
                     core::bank_xp(a.save, g);
                     bn::sram::write(a.save);
                     clear_run(a);
@@ -2042,9 +2061,10 @@ namespace
             hp_left.set_visible(! banner_on && (! low_hp || (blink & 16)));
             hp_right.set_visible(! banner_on && (! low_hp || (blink & 16)));
 
-            if(g.st == core::status::stage_clear)
+            if(g.st == core::status::stage_clear)   // czeka też na banery odznak i zleceń (A pomija)
             {
-                for(int i = 0; i < 70; ++i) { banner.update(a); animate(); fx_particles.update(); next_frame(); }
+                for(int i = 0; i < 70 || (banner.busy() && i < 420 && ! bn::keypad::a_pressed()); ++i)
+                { banner.update(a); animate(); fx_particles.update(); next_frame(); }
                 return leave(scene::schedule);
             }
             if(g.st == core::status::dead || g.st == core::status::won)
@@ -2107,7 +2127,8 @@ namespace
         if(g.score > a.save.best) a.save.best = g.score;
         if(won) ++a.save.wins;
         if(won) core::add_house(a.save, g);
-        core::check_badges(a.save, g);   // katalog, narzędzia, Osiedle (bez banera - to już ekran końcowy)
+        int badges_got = core::check_badges(a.save, g);   // katalog, narzędzia, Osiedle, liczniki zleceń
+        int contracts_got = core::check_contracts(a.save);
         int gained = core::bank_xp(a.save, g);
         bn::sram::write(a.save);
         clear_run(a);
@@ -2129,8 +2150,11 @@ namespace
         core::message s; s.add("Wynik ").add(g.score).add("  Dośw. +").add(gained);
         a.text.generate(0, 52, s.s, t);
         a.text.generate(0, 70, won ? "A: kolejna  START: koniec" : "START: nowa budowa", t);
+        push_banner banner;   // odznaki i zlecenia zdobyte na koniec budowy (np. Stały klient)
+        push_achievements(banner, badges_got, contracts_got);
         while(true)
         {
+            banner.update(a);
             if(won && bn::keypad::a_pressed()) { g.new_game_plus(); wait_release(); return leave(scene::game); }
             if(bn::keypad::start_pressed() || (! won && bn::keypad::a_pressed())) { wait_release(); return leave(scene::shop); }
             next_frame();
@@ -2323,10 +2347,14 @@ namespace
 
         int sel = 0, top = 0;
         const char* note = nullptr;
+        // Zakładka Odznaki ma strony przełączane A: Odznaki / Zlecenia.
+        const char* badge_pages[] = { "Odznaki", "Zlecenia" };
+        constexpr int badge_pages_count = 2;
+        int page = 0;
         auto list_size = [&]() {
             switch(tab)
             {
-                case 0: return data::badges_count;
+                case 0: return page == 1 ? data::contracts_count : data::badges_count;
                 case 1: return data::enemies_count;
                 case 3: return data::classes_count;
                 case 4: return entries.size();
@@ -2340,7 +2368,15 @@ namespace
             phone_canvas& c = *ph.canvas;
             if(is_sel) stripe(c, r, phone_tile::stripe_brand);
             ink name_ink = is_sel ? ink::brand : ink::dark;
-            if(tab == 0)
+            if(tab == 0 && page == 1)   // zlecenie: nazwa + postęp licznika
+            {
+                bool done = core::contract_done(a.save, i);
+                int pr = core::imin(core::contract_progress(a.save, i), data::contracts[i].target);
+                phone_text(a, t, list_x, row_py(r), clip(data::contracts[i].name, 16).c_str(), done || is_sel ? name_ink : ink::dark);
+                core::message pm; pm.add(pr).add("/").add(data::contracts[i].target);
+                phone_pill(a, c, t, pill_end, row_ty(r), done ? "Wykonane" : pm.s, done ? pill::done : (pr > 0 ? pill::prog : pill::gray));
+            }
+            else if(tab == 0)
             {
                 bool got = a.save.badges & (1u << i);
                 phone_text(a, t, list_x, row_py(r), clip(data::badges[i].name, 16).c_str(), got || is_sel ? name_ink : ink::dim);
@@ -2368,14 +2404,18 @@ namespace
             phone_canvas& c = *ph.canvas;
             core::message sub;
             if(tab == 4) sub.add("A: kup  B: wyjdź");
-            else if(tab == 0) { int n = 0; for(int i = 0; i < data::badges_count; ++i) n += (a.save.badges >> i) & 1;
-                                sub.add(n).add("/").add(data::badges_count); }
+            else if(tab == 0)
+            {
+                int n = 0, total = page == 1 ? data::contracts_count : data::badges_count;
+                for(int i = 0; i < total; ++i) n += ((page == 1 ? a.save.contracts : a.save.badges) >> i) & 1;
+                sub.add(n).add("/").add(total).add("  A: ").add(badge_pages[(page + 1) % badge_pages_count]);
+            }
             else if(tab == 1) { int n = 0; for(int i = 0; i < data::enemies_count; ++i) n += (a.save.catalog >> i) & 1;
                                 sub.add(n).add("/").add(data::enemies_count); }
             else if(tab == 2) sub.add("Domy: ").add(int(a.save.houses_count)).add("/").add(core::max_houses);
             else { int n = 0; for(int i = 0; i < data::classes_count; ++i) n += (a.save.class_wins >> i) & 1;
                    sub.add("Wygrane ").add(n).add("/").add(data::classes_count); }
-            phone_header(a, ph, t, profile_tabs[tab], sub.s);
+            phone_header(a, ph, t, tab == 0 ? badge_pages[page] : profile_tabs[tab], sub.s);
 
             if(tab == 2)   // Osiedle: domy z wygranych budów, 6 x 2 działki
             {
@@ -2431,6 +2471,15 @@ namespace
             // listy: Odznaki (4 wiersze + opis + uprawnienie), Katalog, Zespół (5 wierszy + opis zaznaczonego)
             for(int r = 0; r < list_window() && top + r < list_size(); ++r) draw_list_row(r, top + r, top + r == sel);
             const char* desc = "";
+            if(tab == 0 && page == 1)
+            {
+                const core::contract_def& cd = data::contracts[sel];
+                phone_text(a, t, list_x, row_py(4), clip(cd.desc, 30).c_str(), ink::dim);
+                core::message rm; rm.add("Nagroda: +").add(cd.xp).add(" dośw.");
+                phone_text(a, t, list_x, row_py(5), clip(rm.s, 34).c_str(), core::contract_done(a.save, sel) ? ink::done : ink::dim);
+                ph.commit();
+                return;
+            }
             if(tab == 0)
             {
                 bool got = a.save.badges & (1u << sel);
@@ -2470,6 +2519,13 @@ namespace
                 if(sel >= top + window) top = sel - window + 1;
                 note = nullptr;
                 redraw();
+            }
+            if(tab == 0 && bn::keypad::a_pressed())   // Odznaki <-> Zlecenia
+            {
+                page = (page + 1) % badge_pages_count;
+                sel = top = 0;
+                redraw();
+                bn::sound_items::sfx_menu.play();
             }
             if(tab == 4 && bn::keypad::a_pressed())
             {

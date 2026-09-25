@@ -767,6 +767,58 @@ int main()
         for(int k = 0; k < 300; ++k) { t.pickups_count = 0; t.maybe_drop(3, 3); if(t.pickups_count) { ++drops; tools_n += t.pickups[0].type == tool; } }
         CHECK(drops > 0 && tools_n == drops);
     }
+    // 31. zlecenia: liczniki budowy -> profil (bez podwójnego liczenia), ukończenie daje doświadczenie
+    {
+        profile p; profile_reset(p);
+        CHECK(data::contracts_count >= 5);
+        game g; arena(g, 0);
+        g.spawn(8, 8, 7); g.enemies[0].awake = true; g.enemies[0].hp = 1;
+        CHECK(g.player_ability() && g.powers_used == 1);               // Odprawa: moc użyta
+        g.hero_attack(0); CHECK(g.kills == 1);
+        g.equip(0, 2, 0); g.equip(1, 1, 0); CHECK(g.brand_found == 1);
+        record_run(p, g); record_run(p, g);                             // drugi raz nic nie dodaje
+        CHECK(p.kills_total == 1 && p.powers_total == 1 && p.brand_total == 1 && p.clean_bosses == 0);
+        int i_pow = -1; for(int i = 0; i < data::contracts_count; ++i) if(data::contracts[i].kind == contract_kind::powers) i_pow = i;
+        CHECK(i_pow >= 0 && contract_progress(p, i_pow) == 1);
+        p.powers_total = uint16_t(data::contracts[i_pow].target - 1);
+        CHECK(check_contracts(p) == 0);
+        g.ability_cd = 0; g.spawn(8, 9, 7); g.enemies[1].awake = true;
+        CHECK(g.player_ability());
+        record_run(p, g);
+        int xp0 = p.xp, got = check_contracts(p);
+        CHECK(got == (1 << i_pow) && contract_done(p, i_pow) && p.xp == xp0 + data::contracts[i_pow].xp);
+        CHECK(check_contracts(p) == 0);                                  // raz
+        p.wins = 1000; CHECK(check_contracts(p) != 0);                     // Stały klient itp.
+    }
+    // 31a. boss aktu bez obrażeń w walce z nim (Czysta robota)
+    {
+        game g; g.new_run(1, 21);
+        int bs = 0; while(data::stages[bs].boss < 0) ++bs;
+        g.start_stage(bs); g.stage_damage = 7;                           // obrażenia przed walką się nie liczą
+        CHECK(g.boss_wake_damage < 0);
+        g.enemies[g.boss].hp = 1; g.hero_attack(g.boss);
+        CHECK(g.clean_bosses == 1 && g.boss_wake_damage == 7);
+        game h; h.new_run(1, 21); h.start_stage(bs);
+        h.hero_attack(h.boss); h.stage_damage += 3;                      // trafiony w walce z bossem
+        h.enemies[h.boss].hp = 1; h.hero_attack(h.boss);
+        CHECK(h.clean_bosses == 0);
+    }
+    // 31b. profil v3 -> v4: wszystkie dotychczasowe pola zostają, nowe od zera
+    {
+        profile v3; profile_reset(v3);
+        std::memcpy(v3.magic, "PBRL003", 8); v3.best = 1234; v3.runs = 9; v3.wins = 4; v3.xp = 321; v3.levels[1] = 2;
+        v3.classes = 0x1F; v3.hard = 1; v3.flags = 3; v3.tools = 5; v3.badges = 0x0123; v3.catalog = 0x07FF;
+        v3.class_wins = 0x05; v3.tools_found = 0x0B; v3.houses_count = 3; v3.houses[0] = 0x21; v3.houses[2] = 0x35;
+        std::memset(reinterpret_cast<char*>(&v3) + profile_v3_size, 0xCD, sizeof v3 - profile_v3_size);   // śmieci
+        CHECK(profile_fix(v3) && std::strcmp(v3.magic, profile_magic) == 0);
+        CHECK(v3.best == 1234 && v3.runs == 9 && v3.wins == 4 && v3.xp == 321 && v3.levels[1] == 2 && v3.classes == 0x1F);
+        CHECK(v3.hard == 1 && v3.flags == 3 && v3.tools == 5 && v3.badges == 0x0123 && v3.catalog == 0x07FF);
+        CHECK(v3.class_wins == 0x05 && v3.tools_found == 0x0B && v3.houses_count == 3 && v3.houses[0] == 0x21 && v3.houses[2] == 0x35);
+        CHECK(v3.kills_total == 0 && v3.powers_total == 0 && v3.brand_total == 0 && v3.clean_bosses == 0);
+        CHECK(v3.contracts == 0 && v3.keepsake == 0);
+        for(int i = 0; i < max_keepsakes; ++i) CHECK(v3.keepsake_runs[i] == 0);
+        CHECK(!profile_fix(v3));
+    }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};

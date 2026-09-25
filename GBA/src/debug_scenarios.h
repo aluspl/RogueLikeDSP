@@ -57,8 +57,16 @@ namespace debug_scenario
                 p.levels[i] = uint8_t(data::upgrades[i].levels);
         p.tools = uint8_t((1 << data::tools_count) - 1);
         if(scenario == 10)
+        {
             p.badges = uint16_t((1 << data::badge_bez_usterek) | (1 << data::badge_seryjny) | (1 << data::badge_kolekcjoner)
                                 | (1 << data::badge_osiedle));
+            p.kills_total = 150; p.brand_total = 2; p.class_wins = 3; p.wins = 5;
+            for(int i = 0; i < data::contracts_count; ++i)
+            {
+                if(data::contracts[i].kind == core::contract_kind::powers) p.powers_total = uint16_t(data::contracts[i].target - 1);
+                if(data::contracts[i].kind == core::contract_kind::wins) p.contracts = uint8_t(p.contracts | (1 << i));
+            }
+        }
     }
 
     inline int trait_index(core::trait_effect e)
@@ -157,6 +165,10 @@ namespace debug_scenario
                 g.equip(1, 1, trait_index(core::trait_effect::agi));
                 g.equip(2, 1, trait_index(core::trait_effect::intel));
                 g.pickups[g.pickups_count++] = { int8_t(g.hero.x + 1), g.hero.y, core::tool, true, uint8_t(tool_index("Tablet z projektem")) };
+                break;
+            case 10:
+                g.enemies_count = 0;
+                place_enemy(g, data::enemy_kornik, 2, 3, true, 0);
                 break;
             default:
                 break;

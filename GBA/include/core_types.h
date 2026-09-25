@@ -145,6 +145,19 @@ namespace core
         perk bonus;            // uprawnienie: premia na każdą kolejną budowę (jak w Hades)
     };
 
+    // Zlecenie (jak lista przepowiedni): cel z licznikiem w profilu, nagroda przy ukończeniu.
+    enum class contract_kind : uint8_t { kills, powers, brand, clean_boss, class_wins, wins };
+
+    struct contract_def
+    {
+        const char* name;
+        const char* desc;
+        contract_kind kind;
+        int16_t target;
+        int16_t xp;            // nagroda w doświadczeniu
+        int8_t keepsake;       // odblokowana pamiątka (-1 = brak)
+    };
+
     struct tool_def            // narzędzie do znalezienia (drop), odblokowywane w sklepie
     {
         int8_t weapon;         // indeks w data::weapons
