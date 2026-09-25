@@ -71,6 +71,8 @@ public sealed class SmokeTest
                 Flow.Prologue.HandleInput(InputCmd.Of(GameAction.A));
                 if (Flow.Current != Flow.PrologueMessage) throw new Exception("prolog nie przeszedł do SMS-a");
                 Flow.PrologueMessage.HandleInput(InputCmd.Of(GameAction.Start));
+                if (Flow.Current != Flow.Help) throw new Exception("po prologu brak ekranu Jak grać");
+                Flow.Help.HandleInput(InputCmd.Of(GameAction.A));
                 if (!_app.Session.Profile.HasFlag(Profile.FlagPrologueSeen)) throw new Exception("prolog nie zapisał się w profilu");
                 _prologue = true;
                 continue;

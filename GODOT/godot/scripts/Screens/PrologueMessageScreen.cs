@@ -36,7 +36,8 @@ public sealed class PrologueMessageScreen : Screen
         if (!e.Is(GameAction.A | GameAction.Start)) return false;
         S.Profile.SetFlag(Profile.FlagPrologueSeen);
         S.Save();
-        Flow.StageCard.Open();
+        if (!S.Profile.HasFlag(Profile.FlagHelpSeen)) Flow.Help.Open(false); // pierwsza budowa: jak grać
+        else Flow.StageCard.Open();
         return true;
     }
 }

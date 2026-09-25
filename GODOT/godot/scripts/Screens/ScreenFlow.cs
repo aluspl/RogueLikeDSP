@@ -18,6 +18,7 @@ public sealed class ScreenFlow
         ClassSelect = new ClassSelectScreen(app);
         Prologue = new PrologueScreen(app);
         PrologueMessage = new PrologueMessageScreen(app);
+        Help = new HelpScreen(app);
         Game = new GameScreen(app);
         Phone = new PhoneScreen(app);
         StageCard = new StageCardScreen(app);
@@ -35,6 +36,7 @@ public sealed class ScreenFlow
     public ClassSelectScreen ClassSelect { get; }
     public PrologueScreen Prologue { get; }
     public PrologueMessageScreen PrologueMessage { get; }
+    public HelpScreen Help { get; }
     public GameScreen Game { get; }
     public PhoneScreen Phone { get; }
     public StageCardScreen StageCard { get; }
