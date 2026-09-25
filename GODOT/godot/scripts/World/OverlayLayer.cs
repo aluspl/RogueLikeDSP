@@ -20,6 +20,9 @@ public partial class OverlayLayer : Node2D
     /// <summary>Pokaż zasięg broni na chwilę (range_flash na GBA).</summary>
     public void FlashRange(float seconds = 0.45f) => _range = seconds;
 
+    /// <summary>Zasięg widoczny, dopóki gracz trzyma A (celowanie).</summary>
+    public bool RangeHeld { get; set; }
+
     public override void _Process(double delta)
     {
         _clock += (float)delta;
@@ -43,9 +46,9 @@ public partial class OverlayLayer : Node2D
                     DrawRect(r.Grow(-3), new Color(Pal.StairsGlow, 0.12f + 0.16f * pulse));
                 if (t != Tile.Wall && _g.SlamCell(x, y))
                     DrawTextureRect(Assets.Danger, r, false, new Color(1, 1, 1, 0.55f + 0.45f * pulse));
-                if (_range > 0 && t != Tile.Wall && _g.Visible(x, y) && !(x == _g.Hero.X && y == _g.Hero.Y)
+                if ((_range > 0 || RangeHeld) && t != Tile.Wall && _g.Visible(x, y) && !(x == _g.Hero.X && y == _g.Hero.Y)
                     && CoreGame.Cheb(_g.Hero.X, _g.Hero.Y, x, y) <= _g.Weapon.Range)
-                    DrawTextureRect(Assets.Range, r, false, new Color(1, 1, 1, Mathf.Min(1f, _range * 4f)));
+                    DrawTextureRect(Assets.Range, r, false, new Color(1, 1, 1, RangeHeld ? 0.75f + 0.25f * pulse : Mathf.Min(1f, _range * 4f)));
             }
         }
     }

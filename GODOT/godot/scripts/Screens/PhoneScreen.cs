@@ -10,8 +10,7 @@ namespace LifeLike.Game.Screens;
 /// </summary>
 public sealed class PhoneScreen : Screen
 {
-    private static readonly string[] TabLabels = ["Zadania", "Usterki", "Start", "Sprzęt", "Koszty"];
-    private int _lastTab = 2; // Start
+    private int _lastTab = PhoneTabs.Start;
     private int _tab = -1;
 
     public PhoneScreen(App app) : base(app)
@@ -36,13 +35,19 @@ public sealed class PhoneScreen : Screen
         var g = S.Game;
         PhonePage[] tabs = [new TasksTab(g), new IssuesTab(g), new HomeTab(g, S.Profile), new GearTab(g), new CostsTab(g, S.Profile)];
         N.Phone.OnTabChanged = i => _lastTab = i;
-        N.Phone.OpenTabs(tabs, TabLabels, _tab >= 0 ? _tab : _lastTab, instant);
+        N.Phone.OpenTabs(tabs, PhoneTabs.Labels, _tab >= 0 ? _tab : _lastTab, instant);
     }
 
     public override void Exit() => N.Phone.OnTabChanged = null;
 
     public override bool HandleInput(InputCmd e)
     {
+        if (e.IsTap && N.Banners.Hit(e.Pointer)) // baner obok telefonu: jego zakładka
+        {
+            var tab = N.Banners.TabAt(e.Pointer);
+            if (tab >= 0) N.Phone.ShowTab(tab);
+            return true;
+        }
         if (N.Phone.HandleInput(e)) return true;
         if (!e.Is(GameAction.Select | GameAction.Cancel | GameAction.B | GameAction.Start)) return false;
         Flow.Game.Open();

@@ -101,6 +101,13 @@ public partial class PhoneView : Control
         _slide.TweenCallback(Callable.From(() => Visible = IsOpen));
     }
 
+    /// <summary>Przejście na zakładkę o numerze (np. z kliknięcia banera).</summary>
+    public void ShowTab(int index)
+    {
+        if (!HasTabs || index < 0 || index >= _tabs.Length) return;
+        SwitchTab(index - _tab);
+    }
+
     public void SwitchTab(int d)
     {
         if (!HasTabs) return;

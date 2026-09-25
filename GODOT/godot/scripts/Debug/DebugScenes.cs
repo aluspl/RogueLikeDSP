@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using LifeLike.Core;
 using LifeLike.Core.Data;
+using LifeLike.Game.Input;
 using LifeLike.Game.Screens;
 
 namespace LifeLike.Game.Debug;
@@ -14,7 +15,7 @@ public sealed class DebugScenes
     [
         "title", "classselect", "profile", "catalog", "estate", "team", "training", "game", "combat", "offer", "menu",
         "overview", "phone-tasks", "phone-issues", "phone-start", "phone-gear", "phone-costs", "card", "perks", "schedule",
-        "hurtownia", "boss", "endmsg", "end", "banners", "map",
+        "hurtownia", "boss", "endmsg", "end", "banners", "map", "aim", "preview",
     ];
 
     private readonly App _app;
@@ -70,7 +71,7 @@ public sealed class DebugScenes
     {
         var s = _app.Session;
         var g = s.Game;
-        s.ClassId = scene == "game" ? 0 : scene == "perks" ? 1 : 5;
+        s.ClassId = scene switch { "game" => 0, "perks" => 1, "aim" => 2, _ => 5 }; // Cieśla: gwoździarka z3
         _app.StartRun();
         Flow.StageCard.Advance(); // karta etapu -> gra
         if (scene == "perks") // Murarz z Warsztatami i cechą SIŁ+1, na etapie z wydarzeniem
@@ -153,6 +154,16 @@ public sealed class DebugScenes
             case "map":
                 banners.Clear();
                 Flow.Game.ToggleOverview();
+                break;
+            case "aim": // trzymane A: zasięg, celownik na drugim celu
+                banners.Clear();
+                Flow.Game.HandleInput(InputCmd.Of(GameAction.A));
+                Flow.Game.Aim.Cycle(1);
+                break;
+            case "preview": // trzymane B: karta najbliższego problemu
+                banners.Clear();
+                Flow.Game.HandleInput(InputCmd.Of(GameAction.B));
+                Flow.Game.Look.Reveal();
                 break;
         }
     }

@@ -7,6 +7,7 @@ using LifeLike.Game.Gfx;
 using LifeLike.Game.Input;
 using LifeLike.Game.Phone.ProfileTabs;
 using LifeLike.Game.Screens;
+using LifeLike.Game.Screens.Play;
 
 namespace LifeLike.Game.Debug;
 
@@ -18,7 +19,7 @@ namespace LifeLike.Game.Debug;
 public sealed class SmokeTest
 {
     private readonly App _app;
-    private int _steps, _offers, _drinks;
+    private int _steps, _offers, _drinks, _holds;
 
     public SmokeTest(App app) => _app = app;
 
@@ -35,6 +36,8 @@ public sealed class SmokeTest
             s.Seed = s.Seed != 0 ? s.Seed : 424242u;
             _app.StartRun();
             await PlayStages();
+            new DebugScenes(_app).AdvanceMessages(); // bot kończy na karcie etapu - dalej na mapę
+            if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) ExerciseHolds();
             if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) await ExerciseMenuAndOffer();
             var ok = g.Stage >= 5 || g.St is GameStatus.Dead or GameStatus.Won;
             var stage = g.Stage;
@@ -44,7 +47,7 @@ public sealed class SmokeTest
             if (DrawErrors.Count > 0) throw new Exception($"błędy rysowania: {DrawErrors.Count}, ostatni: {DrawErrors.Last}");
             GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {s.Data.Version}, zawody {s.Data.Classes.Length}, etap {stage + 1}, " +
                      $"dzień {g.Turns}, HP {g.Hero.Hp}/{g.Hero.MaxHp}, wynik {g.Score}, budżet {g.Cash}, kroki {_steps}, " +
-                     $"paczki {_offers}, termos {_drinks}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
+                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
                      $"ekran {Flow.Current.GetType().Name}");
             _app.Root.GetTree().Quit(ok ? 0 : 1);
         }
@@ -102,6 +105,30 @@ public sealed class SmokeTest
         Flow.Game.Menu.Pick(2);
         Flow.Game.Menu.Pick(2);
         _drinks++;
+    }
+
+    /// <summary>Trzymane B (podgląd bez tury), krótkie B (czekanie), trzymane A (celowanie, atak po puszczeniu).</summary>
+    private void ExerciseHolds()
+    {
+        var g = _app.Session.Game;
+        var game = Flow.Game;
+        var turns = g.Turns;
+        game.HandleInput(InputCmd.Of(GameAction.B));
+        game.Process(EnemyLook.HoldTime + 0.1);
+        if (!game.Look.Active || game.Look.Count < 0) throw new Exception("podgląd pod B się nie otworzył");
+        game.HandleInput(InputCmd.Release(GameAction.B));
+        if (g.Turns != turns || game.Look.Active) throw new Exception("podgląd pod B zużył turę albo się nie zamknął");
+        game.HandleInput(InputCmd.Of(GameAction.B));
+        game.HandleInput(InputCmd.Release(GameAction.B));
+        if (g.St == GameStatus.Playing && g.Turns == turns) throw new Exception("krótkie B nie czeka tury");
+        if (Flow.Current != Flow.Game || g.St != GameStatus.Playing) return;
+        game.HandleInput(InputCmd.Of(GameAction.A));
+        game.Process(Aiming.RevealTime + 0.1);
+        if (!game.Aim.Active) throw new Exception("celowanie pod A się nie włączyło");
+        game.Aim.Cycle(1);
+        game.HandleInput(InputCmd.Release(GameAction.A));
+        if (game.Aim.Active) throw new Exception("puszczenie A nie zakończyło celowania");
+        _holds++;
     }
 
     /// <summary>Ścieżki UI, na które bot mógł nie trafić: termos przez menu akcji i okno porównania sprzętu.</summary>

@@ -63,6 +63,15 @@ public partial class MarksLayer : Node2D
             }
         }
 
+        var reticle = _w.EnemySprite(_w.Reticle);
+        if (reticle is not null && reticle.Visible && !reticle.Dying)
+        {
+            var pulse = ((int)(_clock * 4) & 1) == 1 ? 1f : 0f;
+            var size = Assets.Actor + 2 * pulse;
+            DrawTextureRectRegion(Assets.Actors, new Rect2(reticle.Position - new Vector2(size / 2, size / 2 + 2), new Vector2(size, size)),
+                                  Assets.Frame(Assets.FrameReticle, Assets.Actor));
+        }
+
         // ikona stanu nad bohaterem (co 40 klatek następny aktywny stan)
         StatusEffect[] order = [StatusEffect.Poison, StatusEffect.Shock, StatusEffect.Slip];
         var active = new System.Collections.Generic.List<int>();

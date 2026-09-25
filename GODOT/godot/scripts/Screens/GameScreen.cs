@@ -9,12 +9,31 @@ namespace LifeLike.Game.Screens;
 /// </summary>
 public sealed class GameScreen : Screen
 {
-    public GameScreen(App app) : base(app) => Menu = new ActionMenu(app);
+    public GameScreen(App app) : base(app)
+    {
+        Menu = new ActionMenu(app);
+        Aim = new Aiming(app);
+        Look = new EnemyLook(app);
+    }
 
     public ActionMenu Menu { get; }
+    public Aiming Aim { get; }
+    public EnemyLook Look { get; }
 
     public override bool InRun => true;
-    public override bool ShowsTarget => !Menu.IsOpen;
+    public override bool ShowsTarget => !Menu.IsOpen && !Aim.Active;
+
+    public override void Exit()
+    {
+        Aim.Cancel();
+        Look.Cancel();
+    }
+
+    public override void Process(double delta)
+    {
+        Aim.Process(delta);
+        Look.Process(delta);
+    }
 
     public void Open(bool instant = false) => Flow.Go(this, instant);
 
@@ -29,6 +48,14 @@ public sealed class GameScreen : Screen
     public override bool HandleInput(InputCmd e)
     {
         if (Menu.IsOpen) return Menu.HandleInput(e);
+        if (Aim.Active) return Aim.HandleInput(e);
+        if (Look.Active) return Look.HandleInput(e);
+        if (e.IsTap && N.Banners.Hit(e.Pointer)) // dotknięcie powiadomienia: jego zakładka w telefonie
+        {
+            var tab = N.Banners.TabAt(e.Pointer);
+            if (tab >= 0) Flow.Phone.Open(tab);
+            return true;
+        }
         var g = S.Game;
         var view = N.World;
         if (view.OverviewOn)
@@ -59,8 +86,16 @@ public sealed class GameScreen : Screen
         else if (e.Is(GameAction.Right, true)) dx = 1;
         bool acted;
         if (dx != 0 || dy != 0) acted = g.PlayerMove(dx, dy);
-        else if (e.Is(GameAction.A)) acted = PlayCommands.AttackNearest(g, view);
-        else if (e.Is(GameAction.B)) acted = g.PlayerWait();
+        else if (e.Is(GameAction.A))
+        {
+            Aim.Begin(); // atak po puszczeniu A (celowanie jak na GBA)
+            return true;
+        }
+        else if (e.Is(GameAction.B))
+        {
+            Look.Begin(); // krótko - czekaj, przytrzymane - podgląd problemów
+            return true;
+        }
         else if (e.Is(GameAction.R)) acted = PlayCommands.UseAbility(g, view);
         else if (e.IsClick) acted = PlayCommands.Mouse(g, view, e.Click);
         else return false;
