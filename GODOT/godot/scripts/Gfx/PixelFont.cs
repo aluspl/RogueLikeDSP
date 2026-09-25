@@ -71,19 +71,19 @@ public sealed class PixelFont
 
     private int Advance(char c) => c == ' ' ? _space : _index.TryGetValue(c, out var i) ? _widths[i] : _space;
 
-    public int Measure(string s, int scale = 1) => Measure(s, scale, false);
+    public int Measure(string s, float scale = 1) => Measure(s, scale, false);
 
     /// <summary>Szerokość tekstu; bold = pogrubienie (każdy znak o 1 piksel szerszy).</summary>
-    public int Measure(string s, int scale, bool bold)
+    public int Measure(string s, float scale, bool bold)
     {
         s = Normalize(s);
         var w = 0;
         foreach (var c in s) w += Advance(c) + (bold && c != ' ' ? 1 : 0);
-        return w * scale;
+        return Mathf.CeilToInt(w * scale);
     }
 
     /// <summary>Tekst przycięty do szerokości (z „..” na końcu), jak clip() na GBA, ale w pikselach.</summary>
-    public string Fit(string s, int maxWidth, int scale = 1)
+    public string Fit(string s, int maxWidth, float scale = 1)
     {
         s = Normalize(s);
         if (Measure(s, scale) <= maxWidth) return s;
@@ -91,14 +91,14 @@ public sealed class PixelFont
         var w = 0;
         for (var i = 0; i < s.Length; i++)
         {
-            w += Advance(s[i]) * scale;
+            w += Mathf.CeilToInt(Advance(s[i]) * scale);
             if (w + dots > maxWidth) return s[..i].TrimEnd() + "..";
         }
         return s;
     }
 
     /// <summary>Łamanie wierszy po słowach do szerokości maxWidth (znak nowej linii wymusza łamanie).</summary>
-    public List<string> Wrap(string s, int maxWidth, int scale = 1)
+    public List<string> Wrap(string s, int maxWidth, float scale = 1)
     {
         var lines = new List<string>();
         foreach (var para in Normalize(s).Split('\n'))
@@ -124,11 +124,11 @@ public sealed class PixelFont
     /// Rysuje linię tekstu: pos = lewy górny róg 16-pikselowej linii (dla Center/Right: środek/prawa krawędź).
     /// Zwraca szerokość w pikselach.
     /// </summary>
-    public int Draw(CanvasItem ci, Vector2 pos, string s, Ink ink, TextAlign align = TextAlign.Left, int scale = 1) =>
+    public int Draw(CanvasItem ci, Vector2 pos, string s, Ink ink, TextAlign align = TextAlign.Left, float scale = 1) =>
         Draw(ci, pos, s, ink, align, scale, false);
 
     /// <summary>Jak Draw; bold = pogrubienie jak w nagłówkach aplikacji (znak rysowany dwa razy, odstępy zachowane).</summary>
-    public int Draw(CanvasItem ci, Vector2 pos, string s, Ink ink, TextAlign align, int scale, bool bold)
+    public int Draw(CanvasItem ci, Vector2 pos, string s, Ink ink, TextAlign align, float scale, bool bold)
     {
         s = Normalize(s);
         var width = Measure(s, scale, bold);

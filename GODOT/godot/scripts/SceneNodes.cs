@@ -1,5 +1,6 @@
 using Godot;
 using LifeLike.Game.Audio;
+using LifeLike.Game.Gfx;
 using LifeLike.Game.Hud;
 using LifeLike.Game.Phone;
 using LifeLike.Game.Screens.Views;
@@ -38,10 +39,17 @@ public sealed class SceneNodes
         phoneLayer.AddChild(Backdrop);
         phoneLayer.AddChild(Phone);
 
-        var top = new CanvasLayer { Layer = 4 };
-        root.AddChild(top);
         Banners = new PushBanners();
-        top.AddChild(Banners);
+        BannerLayer = new ScaledLayer { Layer = 4 };
+        root.AddChild(BannerLayer);
+        BannerLayer.Root.AddChild(Banners);
+    }
+
+    /// <summary>Banery: przy telefonie wąska kolumna obok niego, na mapie w prawym górnym rogu pod paskiem HUD.</summary>
+    public void SetBannerMode(bool compact, bool underHud)
+    {
+        Banners.Compact = compact;
+        Banners.TopInset = underHud ? Mathf.Ceil((HudTop.Height + 1) * Hud.UiScale) + 4 : 6;
     }
 
     public WorldView World { get; }
@@ -52,4 +60,5 @@ public sealed class SceneNodes
     public Backdrop Backdrop { get; }
     public PhoneView Phone { get; }
     public PushBanners Banners { get; }
+    public ScaledLayer BannerLayer { get; }
 }
