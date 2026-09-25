@@ -55,7 +55,9 @@ public partial class PushBanners : Control
         while (_active.Count < MaxVisible && _queue.Count > 0)
         {
             var (t, b) = _queue.Dequeue();
-            _active.Add(new Banner { Title = t, Body = b });
+            // pierwszy zjeżdża z góry ekranu, kolejne pojawiają się na swoim miejscu w stosie (bez przejazdu przez inne)
+            var top = (Compact ? 40f : 6f) + _active.Count * (H + Gap);
+            _active.Add(new Banner { Title = t, Body = b, Y = _active.Count == 0 ? -H - 8 : top - 12 });
             Sfx.Play("notify", 0.7f);
         }
         for (var i = _active.Count - 1; i >= 0; i--)
@@ -94,7 +96,8 @@ public partial class PushBanners : Control
         {
             var y = Mathf.Round(b.Y);
             // znikanie: przezroczystość w 8 krokach (style kart są buforowane wg koloru)
-            var fade = b.Age > Slide + Hold ? Mathf.Round(Mathf.Clamp(1f - (b.Age - Slide - Hold) / Slide, 0f, 1f) * 8f) / 8f : 1f;
+            var fade = b.Age > Slide + Hold ? Mathf.Clamp(1f - (b.Age - Slide - Hold) / Slide, 0f, 1f) : Mathf.Clamp(b.Age / Slide, 0f, 1f);
+            fade = Mathf.Round(fade * 8f) / 8f;
             var r = new Rect2(x, y, W, H);
             DrawStyleBox(Ui.Box(new Color(0, 0, 0, 0.35f * fade), 7), new Rect2(r.Position + new Vector2(0, 2), r.Size));
             DrawStyleBox(Ui.Box(new Color(Pal.Card, fade), 7, new Color(Pal.Border, fade)), r);

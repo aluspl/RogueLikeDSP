@@ -110,6 +110,7 @@ public partial class Main
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         }
         if (_screen == Screen.Playing && !EnemyInView()) BringEnemies();
+        if (scene is "game" or "perks") _banners.Clear();
         if (_screen == Screen.GearOffer) CloseOffer(_g.OfferIsBetter);
         switch (scene)
         {
@@ -120,6 +121,7 @@ public partial class Main
                 AfterAction(true);
                 break;
             case "menu":
+                _banners.Clear();
                 _g.Thermos = 2;
                 _g.Hero.Hp = (short)(_g.Hero.MaxHp / 2);
                 _g.ApplyStatus(StatusEffect.Poison, 3);
@@ -129,6 +131,7 @@ public partial class Main
                 MenuHint();
                 break;
             case "combat": // pokaz liczb: trafienie krytyczne bohatera i unik przed ciosem problemu
+                _banners.Clear();
                 Combat();
                 break;
             case "overview":
@@ -155,6 +158,7 @@ public partial class Main
                 _banners.Push("Moc gotowa", _g.CDef.AbilityName);
                 break;
             case "map":
+                _banners.Clear();
                 _view.ToggleOverview();
                 _hud.ShowHint("Podgląd mapy etapu", "Dowolny klawisz: wróć");
                 break;

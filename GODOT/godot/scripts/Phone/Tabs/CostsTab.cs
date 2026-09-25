@@ -61,6 +61,6 @@ public sealed class CostsTab : PhonePage
 
         y = p.Section(c1.End.Y + 4, "SZKOLENIA");
         var c2 = p.Card(y, 1);
-        p.Text(p.TextX(c2), p.RowY(c2, 0), "Kupisz po budowie (telefon: Koszty)", Ink.Dim, TextAlign.Left, right - p.TextX(c2));
+        p.Text(p.TextX(c2), p.RowY(c2, 0), "Kupisz po budowie (profil: Koszty)", Ink.Dim, TextAlign.Left, right - p.TextX(c2));
     }
 }

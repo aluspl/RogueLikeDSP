@@ -69,11 +69,7 @@ public sealed class PhonePainter
     }
 
     /// <summary>Pogrubiony tekst (dwa przebiegi przesunięte o piksel) - tytuły jak w aplikacji.</summary>
-    public void Bold(float x, float y, string s, Ink ink, TextAlign a = TextAlign.Left)
-    {
-        F.Draw(C, new Vector2(x, y), s, ink, a);
-        F.Draw(C, new Vector2(x + 1, y), s, ink, a);
-    }
+    public void Bold(float x, float y, string s, Ink ink, TextAlign a = TextAlign.Left) => F.Draw(C, new Vector2(x, y), s, ink, a, 1, true);
 
     public static (Color Bg, Ink Ink) PillColors(PillKind k) => k switch
     {

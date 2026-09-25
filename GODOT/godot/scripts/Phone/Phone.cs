@@ -158,13 +158,12 @@ public partial class Phone : Control
 
         // nagłówek
         var hy = sy + StatusH + 2;
-        var title = f.Fit(page.Title, 120);
-        f.Draw(this, new Vector2(sx + 10, hy), title, Ink.Dark);
-        f.Draw(this, new Vector2(sx + 11, hy), title, Ink.Dark);
+        var title = f.Fit(page.Title, 130);
+        f.Draw(this, new Vector2(sx + 10, hy), title, Ink.Dark, TextAlign.Left, 1, true);
         var sub = page.Sub;
         if (sub.Length > 0)
         {
-            var room = (int)(scr.Size.X - 24 - f.Measure(title));
+            var room = (int)(scr.Size.X - 24 - f.Measure(title, 1, true));
             f.Draw(this, new Vector2(scr.End.X - 10, hy), f.Fit(sub, room), Ink.Dim, TextAlign.Right);
         }
 

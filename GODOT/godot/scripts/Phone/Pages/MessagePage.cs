@@ -58,10 +58,14 @@ public sealed class MessagePage : PhonePage
         var width = (int)(p.Right - 6 - tx);
         var wrapped = new List<List<string>>();
         var rows = 0;
+        var room = (int)((p.Bottom - y - 8) / PhonePainter.RowH); // wiersze, które mieszczą się nad podpowiedzią
+        var extra = room - _info.Count;                           // tyle informacji może zająć drugi wiersz
         foreach (var (text, _) in _info)
         {
             var l = p.F.Wrap(text, width);
-            if (l.Count > 2) l = l.GetRange(0, 2);
+            if (l.Count > 1 && extra > 0) l = l.GetRange(0, 2);
+            else l = [p.F.Fit(text, width)];
+            if (l.Count > 1) extra--;
             wrapped.Add(l);
             rows += l.Count;
         }

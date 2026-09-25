@@ -94,8 +94,7 @@ public partial class ClassSelectScreen : Control
         DrawRect(new Rect2(0, 112, w, 2), Pal.Accent);
         Ui.WarningStripe(this, new Rect2(0, h - 8, w, 8), _clock * 10f);
 
-        f.Draw(this, new Vector2(w / 2, 3), "Wybierz zawód", Ink.OnBrand, TextAlign.Center);
-        f.Draw(this, new Vector2(w / 2 + 1, 3), "Wybierz zawód", Ink.OnBrand, TextAlign.Center);
+        f.Draw(this, new Vector2(w / 2, 3), "Wybierz zawód", Ink.OnBrand, TextAlign.Center, 1, true);
 
         // karuzela portretów
         const float baseY = 70;
@@ -178,7 +177,6 @@ public partial class ClassSelectScreen : Control
         f.Draw(this, new Vector2(x + 64, y), $"< {diff.Name}{diffLock} >", diffLock.Length > 0 ? Ink.Late : Ink.Dark);
         var k = Meta.SelectedKeepsake(_d, _p);
         var keep = k < 0 ? "bez pamiątki" : $"{_d.Keepsakes[k].Name} {UiText.Roman(Meta.KeepsakeRank(_d, _p, k) - 1)}: {RunMods.PerkLabel(Meta.KeepsakePerk(_d, _p, k))}";
-        f.Draw(this, new Vector2(x + colW + 24, y), "Q/E: pamiątka", Ink.Dim);
         y += 18;
         f.Draw(this, new Vector2(x, y), "Pamiątka:", Ink.Dim);
         f.Draw(this, new Vector2(x + 64, y), f.Fit(keep, (int)r.Size.X - 92), k < 0 ? Ink.Dim : Ink.Done);
