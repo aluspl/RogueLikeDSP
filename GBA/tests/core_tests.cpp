@@ -51,6 +51,7 @@ static void arena(game& g, int cls)
     for(auto& row : g.lv.t) for(auto& c : row) c = tile::wall;
     for(int y = 1; y <= 14; ++y) for(int x = 1; x <= 14; ++x) g.lv.t[y][x] = tile::floor;
     g.enemies_count = 0; g.pickups_count = 0; g.stairs_x = g.stairs_y = -1;
+    g.weather = 0;   // bez pogody (testy mocy i zasięgu)
     g.hero.x = 7; g.hero.y = 7; g.update_fov();
 }
 
@@ -98,6 +99,7 @@ int main()
         for(int k=0;k<2;++k)
         {
             game g; g.new_run(3, 7, k);   // Łatwy (-1) vs Normalny
+            g.weather = 0; g.r.seed(7);   // ten sam rzut niezależnie od pogody
             g.enemies_count = 0; g.spawn(8, g.hero.x + 1, g.hero.y); g.enemies[0].awake = true;
             int before = g.hero.hp; g.player_wait(); lost[k] = before - g.hero.hp;
         }
@@ -1001,6 +1003,87 @@ int main()
                 (rain ? slips_rain : slips_dry) += h.status_turns(status_effect::slip) > 0;
             }
         CHECK(slips_dry == 0 && slips_rain > 20);
+    }
+    // 34. pogoda dnia: losowana na starcie etapu z listy dozwolonych, skutki, bez stosu niekorzystnych
+    {
+        int seen[data::stages_count][8] = {};
+        int bad_stack = 0;
+        for(int k = 0; k < 300; ++k)
+        {
+            game g; g.new_run(k % data::classes_count, 900 + k * 17);
+            for(int st = 0; st < data::stages_count; ++st)
+            {
+                if(st > 0) g.next_stage();
+                CHECK(g.weather >= 0 && g.weather < data::weather_count);
+                CHECK(data::weather[g.weather].stages & (1u << st));
+                ++seen[st][g.weather];
+                if(g.stage_event >= 0 && g.wdef().bad && ! data::site_events[g.stage_event].good) ++bad_stack;
+            }
+        }
+        if(data::weather_no_bad_stack) CHECK(bad_stack == 0);
+        for(int st = 0; st < data::stages_count; ++st)
+        {
+            int allowed_weight = 0;
+            for(int w = 0; w < data::weather_count; ++w) if(data::weather[w].stages & (1u << st)) allowed_weight += data::weather[w].weight;
+            for(int w = 0; w < data::weather_count; ++w)
+                if(data::weather[w].stages & (1u << st))   // częstość mniej więcej jak waga (300 prób)
+                    CHECK(seen[st][w] > 300 * data::weather[w].weight / allowed_weight / 3);
+                else CHECK(seen[st][w] == 0);
+        }
+        auto wx_of = [](weather_effect e) { for(int i = 0; i < data::weather_count; ++i) if(data::weather[i].effect == e) return i; return -1; };
+        for(weather_effect e : { weather_effect::none, weather_effect::heat, weather_effect::frost, weather_effect::wind, weather_effect::rain })
+            CHECK(wx_of(e) >= 0);
+        // upał: moc odnawia się dłużej
+        game h; arena(h, 0); int cd = h.ability_cooldown();
+        h.weather = int8_t(wx_of(weather_effect::heat)); CHECK(h.ability_cooldown() == cd + data::weather[h.weather].value);
+        // wiatr: broń z dystansu krótsza (min. 1), wręcz bez zmian
+        for(int c = 0; c < data::classes_count; ++c)
+        {
+            game w; arena(w, c); int rg = w.weapon().range;
+            w.weather = int8_t(wx_of(weather_effect::wind));
+            CHECK(w.weapon_range() == (rg > 1 ? imax(1, rg - data::weather[w.weather].value) : rg));
+        }
+        {   // wiatr: cel na granicy zasięgu przestaje być w zasięgu
+            game w; arena(w, 2); int rg = w.weapon().range; CHECK(rg > 1);
+            w.spawn(data::enemy_kornik, 7 + rg, 7); w.update_fov();
+            CHECK(w.nearest_target() == 0);
+            w.weather = int8_t(wx_of(weather_effect::wind));
+            CHECK(w.nearest_target() < 0 && ! w.player_attack(0));
+        }
+        // mróz: problemy (nie bossowie) stoją co value tur
+        {
+            game f; arena(f, 1); f.weather = int8_t(wx_of(weather_effect::frost));
+            f.spawn(data::enemy_kornik, 12, 7); f.enemies[0].awake = true; f.hero.max_hp = f.hero.hp = 999;
+            int moved = 0, stood = 0;
+            for(int t = 0; t < 12; ++t)
+            {
+                int ox = f.enemies[0].x; f.player_wait();
+                bool frozen = f.turns % data::weather[f.weather].value == 0;
+                if(cheb(f.enemies[0].x, f.enemies[0].y, f.hero.x, f.hero.y) <= 1) break;
+                (f.enemies[0].x == ox ? stood : moved) += 1;
+                CHECK(frozen == (f.enemies[0].x == ox));
+            }
+            CHECK(stood >= 1 && moved >= 2);
+        }
+        // deszcz: kałuże tylko na podłodze, wejście w kałużę = poślizg
+        {
+            game r; arena(r, 1); r.weather = int8_t(wx_of(weather_effect::rain));
+            int puddles = 0, floors = 0;
+            for(int y = 0; y < map_h; ++y) for(int x = 0; x < map_w; ++x)
+            {
+                if(r.puddle(x, y)) { ++puddles; CHECK(r.lv.at(x, y) == tile::floor); }
+                floors += r.lv.at(x, y) == tile::floor;
+            }
+            CHECK(puddles > 0 && puddles < floors / 3);
+            game dry; arena(dry, 1); CHECK(! dry.puddle(7, 7));
+            int px = -1, py = 7;
+            for(int x = 2; x <= 13; ++x) if(r.puddle(x, 7) && ! r.puddle(x - 1, 7)) { px = x; break; }
+            if(px < 0) { py = 8; for(int x = 2; x <= 13; ++x) if(r.puddle(x, 8) && ! r.puddle(x - 1, 8)) { px = x; break; } }
+            CHECK(px >= 0);
+            r.hero.x = int8_t(px - 1); r.hero.y = int8_t(py); r.update_fov();
+            CHECK(r.status_turns(status_effect::slip) == 0);
+            CHECK(r.player_move(1, 0) && r.hero.x == px && r.status_turns(status_effect::slip) > 0);
+        }
     }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");

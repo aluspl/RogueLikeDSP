@@ -20,6 +20,8 @@
 //  13 - Inspekcja Pracy (boss w środku aktu III, sam) kilka pól od bohatera w pełnym sprzęcie: baner "Wszystko zgodnie
 //       z BHP!" (2 tury ogłuszenia), potem Kontrola BHP w krzyż (3 tury na zejście), wezwanie Papierologii;
 //       L+R+SELECT = pokonanie, baner "Protokół bez uwag" i harmonogram bez Hurtowni
+//  14 - pogoda dnia: pierwszy etap w deszczu (kałuże obok bohatera), każdy kolejny etap z kolejną pogodą z listy
+//       (Słonecznie, Upał, Mróz, Wiatr, Deszcz...; L+R+SELECT przechodzi dalej)
 #include "core.h"
 #include "meta.h"
 
@@ -108,10 +110,20 @@ namespace debug_scenario
         g.apply_event(next++ % data::site_events_count);
     }
 
+    // Scenariusz 14: wymusza pogodę (kolejna z listy, od deszczu).
+    inline void force_weather(core::game& g)
+    {
+        static int next = data::weather_count - 1;
+        g.weather = int8_t(next % data::weather_count);
+        next = (next + 1) % data::weather_count;
+        g.push(core::message().add("Pogoda: ").add(g.wdef().name).add(" (").add(g.wdef().short_name).add(")").as(g.wdef().bad ? core::bad : core::good));
+    }
+
     // Wołane po przejściu na kolejny etap (harmonogram, Hurtownia).
     inline void after_next_stage(core::game& g, int scenario)
     {
         if(scenario == 12) force_event(g);
+        if(scenario == 14) { force_weather(g); g.update_fov(); }
     }
 
     // Wołane raz, na wejściu na pierwszy etap budowy.
@@ -200,6 +212,9 @@ namespace debug_scenario
             case 12:
                 g.start_stage(1);
                 force_event(g);
+                break;
+            case 14:
+                force_weather(g);   // deszcz: kałuże widać wokół bohatera
                 break;
             case 13:
             {

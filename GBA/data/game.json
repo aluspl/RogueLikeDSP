@@ -1072,7 +1072,7 @@
       "effect": "ability"
     }
   ],
-  "version": "v0.21.46",
+  "version": "v0.21.47",
   "tips": [
     "Przytrzymaj B: podgląd problemów",
     "Przytrzymaj A: celownik i zasięg",
@@ -1259,6 +1259,81 @@
         "value": 0,
         "info": "Termos pełny",
         "good": true
+      }
+    ]
+  },
+  "weather": {
+    "noBadStack": true,
+    "list": [
+      {
+        "id": "slonce",
+        "name": "Słonecznie",
+        "short": "Pogodnie",
+        "info": "Bez wpływu na etap",
+        "effect": "none",
+        "value": 0,
+        "weight": 40,
+        "bad": false
+      },
+      {
+        "id": "upal",
+        "name": "Upał",
+        "short": "Moc +1 t.",
+        "info": "Moc odnawia się 1 turę dłużej",
+        "effect": "heat",
+        "value": 1,
+        "weight": 16,
+        "bad": true
+      },
+      {
+        "id": "mroz",
+        "name": "Mróz",
+        "short": "Wolniejsi",
+        "info": "Problemy stoją co 3. turę",
+        "effect": "frost",
+        "value": 3,
+        "weight": 14,
+        "bad": false,
+        "stages": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      {
+        "id": "wiatr",
+        "name": "Wiatr",
+        "short": "Zasięg -1",
+        "info": "Broń z dystansu: zasięg -1",
+        "effect": "wind",
+        "value": 1,
+        "weight": 14,
+        "bad": true,
+        "stages": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      {
+        "id": "deszcz",
+        "name": "Deszcz",
+        "short": "Kałuże",
+        "info": "Wejście w kałużę = poślizg",
+        "effect": "rain",
+        "value": 9,
+        "weight": 16,
+        "bad": true,
+        "stages": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
       }
     ]
   }

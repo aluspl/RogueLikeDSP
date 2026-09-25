@@ -233,8 +233,32 @@ namespace core
         uint8_t clean_bosses = 0;    // bossowie aktu bez obrażeń w walce z nimi
         int boss_wake_damage = -1;   // stage_damage w chwili dołączenia bossa do walki (-1 = jeszcze nie)
         int8_t stage_event = -1;     // wydarzenie na placu na bieżącym etapie (data::site_events, -1 = brak)
+        int8_t weather = 0;          // pogoda dnia na bieżącym etapie (data::weather)
 
         bool event_active(event_effect e) const { return stage_event >= 0 && data::site_events[stage_event].effect == e; }
+        const weather_def& wdef() const { return data::weather[weather]; }
+        bool weather_is(weather_effect e) const { return data::weather[weather].effect == e; }
+
+        // Pogoda dnia: losowanie wagami spośród dozwolonych na etapie s.
+        int roll_weather(int s)
+        {
+            int total = 0;
+            for(int i = 0; i < data::weather_count; ++i) if(data::weather[i].stages & (1u << s)) total += data::weather[i].weight;
+            int roll = r.range(1, total);
+            for(int i = 0; i < data::weather_count; ++i)
+            {
+                if(! (data::weather[i].stages & (1u << s))) continue;
+                if(roll <= data::weather[i].weight) return i;
+                roll -= data::weather[i].weight;
+            }
+            return 0;
+        }
+
+        // Deszcz: kałuże na części pól podłogi (stały wzór zależny od etapu); wejście w kałużę = poślizg.
+        bool puddle(int x, int y) const
+        {
+            return weather_is(weather_effect::rain) && lv.at(x, y) == tile::floor && (x * 7 + y * 13 + stage * 5) % wdef().value == 0;
+        }
 
         // Wydarzenie na placu: SMS na starcie etapu, efekt od razu (znajdźki, budżet, termos) albo w trakcie etapu.
         void apply_event(int e)
@@ -375,6 +399,12 @@ namespace core
         }
         int dodge_pct() const { return imin(data::dodge_max_pct, data::dodge_per_luck_pct * luck()); }
         const weapon_def& weapon() const { return data::weapons[weapon_override >= 0 ? weapon_override : cdef().weapon]; }
+        // Zasięg broni z pogodą: wiatr skraca zasięg broni dalekiego zasięgu (nie mniej niż 1).
+        int weapon_range() const
+        {
+            int rg = weapon().range;
+            return weather_is(weather_effect::wind) && rg > 1 ? imax(1, rg - wdef().value) : rg;
+        }
         const difficulty_def& ddef() const { return data::difficulties[diff]; }
 
         // Wiadomość fabularna na wejściu etapu (przy NG+ pierwszy etap ma własną).
@@ -552,8 +582,16 @@ namespace core
                 pickups[pickups_count++] = { int8_t(x), int8_t(y), uint8_t(i == 0 ? coffee : r.range(0, 2)), true };
             }
             push(message().add("Etap ").add(stage + 1).add(": ").add(sd.name));
+            weather = int8_t(roll_weather(s));   // pogoda dnia
+            if(wdef().effect != weather_effect::none)
+                push(message().add("Pogoda: ").add(wdef().name).add(" (").add(wdef().short_name).add(")").as(wdef().bad ? bad : good));
             stage_event = -1;   // wydarzenie na placu: nie na pierwszym etapie i nie u bossa
-            if(s > 0 && sd.boss < 0 && r.range(1, 100) <= data::site_event_chance_pct) apply_event(r.range(0, data::site_events_count - 1));
+            if(s > 0 && sd.boss < 0 && r.range(1, 100) <= data::site_event_chance_pct)
+            {
+                int e = r.range(0, data::site_events_count - 1);
+                // niekorzystna pogoda i niekorzystne wydarzenie naraz to za dużo: wydarzenie przepada
+                if(! (data::weather_no_bad_stack && wdef().bad && ! data::site_events[e].good)) apply_event(e);
+            }
             update_fov();
         }
 
@@ -658,6 +696,8 @@ namespace core
                     int sx = hero.x + dx, sy = hero.y + dy;
                     if(lv.passable(sx, sy) && ! occupied(sx, sy)) { hero.x = int8_t(sx); hero.y = int8_t(sy); collect(); }
                 }
+                else if(puddle(hero.x, hero.y))   // deszcz: kałuża = poślizg
+                    apply_status(status_effect::slip, 2);
             }
             else return false;
             end_turn();
@@ -671,7 +711,7 @@ namespace core
             {
                 const actor& e = enemies[i];
                 int d = cheb(hero.x, hero.y, e.x, e.y);
-                if(e.alive && d <= weapon().range && d < bd) { bd = d; best = i; }
+                if(e.alive && d <= weapon_range() && d < bd) { bd = d; best = i; }
             }
             return best;
         }
@@ -680,7 +720,7 @@ namespace core
         int targets_in_range(int8_t* out, int max) const
         {
             int n = 0;
-            for(int d = 1; d <= weapon().range; ++d)
+            for(int d = 1; d <= weapon_range(); ++d)
                 for(int i = 0; i < enemies_count && n < max; ++i)
                 {
                     const actor& e = enemies[i];
@@ -695,7 +735,7 @@ namespace core
             if(st != status::playing || ei < 0 || ei >= enemies_count) return false;
             if(shocked_turn()) return true;
             const actor& e = enemies[ei];
-            if(! e.alive || ! visible(e.x, e.y) || cheb(hero.x, hero.y, e.x, e.y) > weapon().range) return false;
+            if(! e.alive || ! visible(e.x, e.y) || cheb(hero.x, hero.y, e.x, e.y) > weapon_range()) return false;
             hero_attack(ei);
             end_turn();
             return true;
@@ -706,7 +746,7 @@ namespace core
             if(st != status::playing) return false;
             if(shocked_turn()) return true;
             int t = nearest_target();
-            if(t < 0) { push(message().add("Brak celu w zasięgu ").add(weapon().range)); return false; }
+            if(t < 0) { push(message().add("Brak celu w zasięgu ").add(weapon_range())); return false; }
             hero_attack(t);
             end_turn();
             return true;
@@ -722,7 +762,8 @@ namespace core
         int ability_rank() const { return 1 + (hero_level >= 3) + (hero_level >= 5); }
         int ability_cooldown() const
         {
-            return imax(3, imax(4, cdef().ability_cooldown - 2 * (ability_rank() - 1)) - trait_bonus(trait_effect::cooldown) - bonus.cooldown);
+            return imax(3, imax(4, cdef().ability_cooldown - 2 * (ability_rank() - 1)) - trait_bonus(trait_effect::cooldown) - bonus.cooldown)
+                   + (weather_is(weather_effect::heat) ? wdef().value : 0);   // upał: moc odnawia się dłużej
         }
 
         int nearest_visible_enemy() const
@@ -775,7 +816,7 @@ namespace core
                 }
                 case ability_effect::volley:   // Seria: wszyscy widoczni w zasięgu (+1 obrażeń od II, +1 zasięgu na III)
                 {
-                    int range = weapon().range + (rank >= 3 ? 1 : 0);
+                    int range = weapon_range() + (rank >= 3 ? 1 : 0);
                     if(rank >= 2) ++dmg_bonus;
                     for(int i = 0; i < enemies_count && st == status::playing; ++i)
                     {
@@ -1086,6 +1127,7 @@ namespace core
                     push(message().add("Budowa wstrzymana...").as(bad)); }
                 return;
             }
+            if(weather_is(weather_effect::frost) && i != boss && turns % wdef().value == 0) return;   // mróz: problemy stoją
             int dx = isign(hero.x - e.x), dy = isign(hero.y - e.y);
             bool xfirst = iabs(hero.x - e.x) >= iabs(hero.y - e.y);
             int tries[2][2] = { { xfirst ? dx : 0, xfirst ? 0 : dy }, { xfirst ? 0 : dx, xfirst ? dy : 0 } };

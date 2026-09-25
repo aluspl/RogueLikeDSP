@@ -182,6 +182,16 @@ inline constexpr core::site_event_def site_events[] = {   // wydarzenia na placu
 inline constexpr int site_events_count = 5;
 inline constexpr int site_event_chance_pct = 45;
 
+inline constexpr core::weather_def weather[] = {   // pogoda dnia: losowana na starcie etapu
+    { "Słonecznie", "Pogodnie", "Bez wpływu na etap", core::weather_effect::none, 0, 40, false, 255 },
+    { "Upał", "Moc +1 t.", "Moc odnawia się 1 turę dłużej", core::weather_effect::heat, 1, 16, true, 255 },
+    { "Mróz", "Wolniejsi", "Problemy stoją co 3. turę", core::weather_effect::frost, 3, 14, false, 31 },
+    { "Wiatr", "Zasięg -1", "Broń z dystansu: zasięg -1", core::weather_effect::wind, 1, 14, true, 30 },
+    { "Deszcz", "Kałuże", "Wejście w kałużę = poślizg", core::weather_effect::rain, 9, 16, true, 31 },
+};
+inline constexpr int weather_count = 5;
+inline constexpr bool weather_no_bad_stack = true;
+
 inline constexpr core::tool_def tools[] = {
     { 6, 0 },
     { 7, 20 },
@@ -252,7 +262,7 @@ inline constexpr int hp_per_level = 2;
 inline constexpr int dmg_levels_mask = 32;
 inline constexpr int def_levels_mask = 8;
 
-inline constexpr const char* version = "v0.21.46";   // numer wersji (ekran tytułowy, changelog)
+inline constexpr const char* version = "v0.21.47";   // numer wersji (ekran tytułowy, changelog)
 
 inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonogramu między etapami
     "Przytrzymaj B: podgląd problemów",

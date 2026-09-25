@@ -314,9 +314,19 @@ def t_floor_danger(t):   # zapowiedziany cios bossa: czerwona ramka i ukośne kr
         t[0][i] = 9; t[i][0] = 9
         if i >= 2: t[i][i] = 9
 
+def t_puddle(t):   # kałuża (deszcz): lewa górna ćwiartka elipsy wody (reszta przez odbicia), kolory 10-11
+    t_floor(t)
+    for y in range(8):
+        for x in range(8):
+            dx, dy = (x + 0.5 - 8) / 6.6, (y + 0.5 - 8.6) / 5.0
+            if dx * dx + dy * dy <= 1.0: t[y][x] = 10
+    for x in range(4, 8):   # odbłysk na wodzie
+        if t[5][x] == 10: t[5][x] = 11
+
 # indeksy: 0 pusty, 1 podłoga, 2 mur, 3 lico muru, 4 schody, 5 podłoga z cieniem muru, 6 cień postaci (ćwiartka),
-# 7 podłoga w zasięgu broni (ćwiartka ramki), 8 pole zapowiedzianego ciosu bossa (ćwiartka)
-TILES = [t_empty, t_floor, t_wall, t_walltop, t_stairs, t_floor_wall_shadow, t_actor_shadow, t_floor_range, t_floor_danger]
+# 7 podłoga w zasięgu broni (ćwiartka ramki), 8 pole zapowiedzianego ciosu bossa (ćwiartka), 9 kałuża (ćwiartka)
+TILES = [t_empty, t_floor, t_wall, t_walltop, t_stairs, t_floor_wall_shadow, t_actor_shadow, t_floor_range, t_floor_danger,
+         t_puddle]
 
 def make_tiles():
     px_tiles = [tile(f) for f in TILES]
@@ -341,7 +351,9 @@ def make_tiles():
                 stairs = [tuple(int(v * f) for v in (245, 211, 61)), tuple(int(v * f) for v in (180, 120, 20))]
             shadow = tuple(int(v * 0.45) for v in cols[0])   # cień na podłodze
             danger = tuple(int(v * (0.6 if level == 3 else (1.0, 0.85, 0.7)[level])) for v in (235, 50, 50))
-            pal += [(12, 12, 20)] + cols + stairs + [shadow, danger] + [(0, 0, 0)] * 6
+            lf = 0.55 if level == 3 else (1.0, 0.85, 0.7)[level]
+            water = [tuple(int(v * lf) for v in (64, 112, 176)), tuple(int(v * lf) for v in (150, 196, 236))]   # kałuża
+            pal += [(12, 12, 20)] + cols + stairs + [shadow, danger] + water + [(0, 0, 0)] * 4
         write_bmp(os.path.join(G, f"stage_palettes_{si}.bmp"), [0] * 64, 8, 8, pal, 8)
         write_json(f"stage_palettes_{si}", {"type": "bg_palette", "bpp_mode": "bpp_4", "colors_count": 64})
 
