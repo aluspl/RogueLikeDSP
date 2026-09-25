@@ -1,5 +1,6 @@
 using Godot;
 using LifeLike.Game.Gfx;
+using LifeLike.Game.Input;
 
 namespace LifeLike.Game.Screens.Views;
 
@@ -45,11 +46,15 @@ public partial class PrologueView : Control
         var f = PixelFont.I;
         var w = Size.X;
         var h = Size.Y;
-        f.Draw(ci, new Vector2(w - 6, 4), "Spacja / Enter: pomiń", Ink.MapDim, TextAlign.Right);
+        f.Draw(ci, new Vector2(w - 6, Layout.SafeTop + 4), ButtonNames.Pick("Spacja / Enter: pomiń", "Dotknij: pomiń"), Ink.MapDim, TextAlign.Right);
         if (Caption.Length == 0) return;
         const float ts = 1.5f;
-        var y = h - 48;
-        ci.DrawRect(new Rect2(0, y - 6, w, 40), new Color(Pal.Text, 0.6f * _fade));
-        f.Draw(ci, new Vector2(w / 2, y), f.Fit(Caption, (int)w - 16, ts), Ink.Map.WithAlpha(_fade), TextAlign.Center, ts);
+        var lines = f.Wrap(Caption, (int)w - 16, ts);
+        if (lines.Count > 3) lines = lines.GetRange(0, 3);
+        var lh = PixelFont.LineHeight * ts;
+        var y = h - Layout.SafeBottom - 24 - lines.Count * lh;
+        ci.DrawRect(new Rect2(0, y - 6, w, lines.Count * lh + 16), new Color(Pal.Text, 0.6f * _fade));
+        for (var i = 0; i < lines.Count; i++)
+            f.Draw(ci, new Vector2(w / 2, y + i * lh), lines[i], Ink.Map.WithAlpha(_fade), TextAlign.Center, ts);
     }
 }

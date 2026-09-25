@@ -53,7 +53,8 @@ public partial class HudTop : Control
         if (g is null) return;
         var f = PixelFont.I;
         var w = Size.X;
-        DrawRect(new Rect2(0, 0, w, Height), new Color(Pal.Text, 0.62f));
+        if (OffsetTop > 0) DrawRect(new Rect2(-OffsetLeft, -OffsetTop, w + OffsetLeft - OffsetRight, OffsetTop), new Color(Pal.Text, 0.9f)); // pod wyspą
+        DrawRect(new Rect2(-OffsetLeft, 0, w + OffsetLeft - OffsetRight, Height), new Color(Pal.Text, 0.62f));
         DrawRect(new Rect2(0, Height, w, 1), new Color(Pal.Brand, 0.55f));
 
         // rząd 1: HP, pasek, liczby, poziom z paskiem doświadczenia (szerokości od tekstu - HUD bywa wąski)
@@ -75,8 +76,9 @@ public partial class HudTop : Control
         var sd = g.D.Stages[g.Stage];
         var ng = g.Tier > 0 ? $" +{g.Tier}" : "";
         var right = $"Etap {g.Stage + 1}/{g.D.Stages.Length}: {sd.Name}";
-        f.Draw(this, new Vector2(w - 6, 2), f.Fit(right, (int)(w - xr.End.X - 18)), Ink.Map, TextAlign.Right);
-        f.Draw(this, new Vector2(w - 6, 19), $"{g.DDef.Name}{ng}", Ink.MapDim, TextAlign.Right);
+        var re = w - 6 - Mathf.Ceil((SettingsButton.Side + 4) / Layout.HudScale); // miejsce na klucz ustawień
+        f.Draw(this, new Vector2(re, 2), f.Fit(right, (int)(re - xr.End.X - 12)), Ink.Map, TextAlign.Right);
+        f.Draw(this, new Vector2(re, 19), $"{g.DDef.Name}{ng}", Ink.MapDim, TextAlign.Right);
 
         // rząd 2: stany (ikona + tury)
         x = 6f;

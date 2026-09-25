@@ -45,8 +45,12 @@ public partial class WorldCamera : Camera2D
         if (!Overview) Zoom = Vector2.One * Layout.WorldZoom;
     }
 
+    /// <summary>Zajęte u góry i u dołu (piksele UI): wyspa + pasek HUD, dziennik + pasek akcji + pasek domowy.</summary>
+    private static float TopUsed => Layout.SafeTop + HudTopH * Layout.HudScale;
+    private static float BottomUsed => Layout.BottomReserve + HudBottomH * Layout.HudScale;
+
     /// <summary>Przesunięcie, które stawia bohatera w środku pola między górnym paskiem HUD a dolnym pasem.</summary>
-    private Vector2 HudBias => new(0, -(HudTopH - HudBottomH) * Layout.HudScale / 2f / Zoom.Y);
+    private Vector2 HudBias => new(0, -(TopUsed - BottomUsed) / 2f / Zoom.Y);
 
     /// <summary>Od razu na pozycji (nowy etap).</summary>
     public void SnapTo(Vector2 pos)
@@ -69,7 +73,7 @@ public partial class WorldCamera : Camera2D
             return;
         }
         var r = ExploredBounds(g);
-        var room = Layout.UiSize - new Vector2(24, (HudTopH + HudBottomH) * Layout.HudScale + 16);
+        var room = Layout.UiSize - new Vector2(24, TopUsed + BottomUsed + 16);
         var z = Mathf.Min(room.X / r.Size.X, room.Y / r.Size.Y);
         Zoom = Vector2.One * Mathf.Clamp(z, 0.2f, Layout.WorldZoom);
         Position = r.GetCenter() + HudBias;

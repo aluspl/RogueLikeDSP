@@ -8,6 +8,8 @@ using LifeLike.Game.Input;
 using LifeLike.Game.Phone.ProfileTabs;
 using LifeLike.Game.Screens;
 using LifeLike.Game.Screens.Play;
+using LifeLike.Game.Settings;
+using LifeLike.Game.Touch;
 
 namespace LifeLike.Game.Debug;
 
@@ -20,7 +22,7 @@ public sealed class SmokeTest
 {
     private readonly App _app;
     private int _steps, _offers, _drinks, _holds;
-    private bool _prologue;
+    private bool _prologue, _touch, _portrait;
 
     public SmokeTest(App app) => _app = app;
 
@@ -40,15 +42,17 @@ public sealed class SmokeTest
             new DebugScenes(_app).AdvanceMessages(); // bot kończy na karcie etapu - dalej na mapę
             if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) ExerciseHolds();
             if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) await ExerciseMenuAndOffer();
+            if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) await ExerciseTouchAndSettings();
             var ok = g.Stage >= 5 || g.St is GameStatus.Dead or GameStatus.Won;
             var stage = g.Stage;
             await VisitScreens();
+            await ExercisePortrait();
             var missing = Sfx.Missing();
             if (missing.Length > 0) throw new Exception("brak dźwięków: " + missing);
             if (DrawErrors.Count > 0) throw new Exception($"błędy rysowania: {DrawErrors.Count}, ostatni: {DrawErrors.Last}");
             GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {s.Data.Version}, zawody {s.Data.Classes.Length}, etap {stage + 1}, " +
                      $"dzień {g.Turns}, HP {g.Hero.Hp}/{g.Hero.MaxHp}, wynik {g.Score}, budżet {g.Cash}, kroki {_steps}, " +
-                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, prolog {(_prologue ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
+                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
                      $"ekran {Flow.Current.GetType().Name}");
             _app.Root.GetTree().Quit(ok ? 0 : 1);
         }
@@ -163,6 +167,116 @@ public sealed class SmokeTest
         Flow.Offer.HandleInput(InputCmd.Of(GameAction.A));
         if (Flow.Current != Flow.Game || g.Equipped[0] != 2 || g.EquippedTrait[0] != 1) throw new Exception("zakładanie z porównania nie zadziałało");
         _offers++;
+    }
+
+    /// <summary>
+    /// Sterowanie dotykiem (gesty jak z GestureTracker): dotknięcie Czekaj = tura, przytrzymanie Czekaj = podgląd
+    /// bez tury, Atak, przesunięcie = krok, Telefon; ustawienia bez zużycia tury (zmiana wartości, zamknięcie).
+    /// </summary>
+    private async Task ExerciseTouchAndSettings()
+    {
+        var g = _app.Session.Game;
+        var game = Flow.Game;
+        Layout.Touch = true;
+        try
+        {
+            Flow.Game.Open();
+            await DebugRunner.Frames(_app.Root, 2);
+            if (!_app.Nodes.Touch.Visible) throw new Exception("pasek akcji niewidoczny przy dotyku");
+            Vector2 Btn(BarButton b) => ActionBar.ButtonRect(Array.IndexOf(ActionBar.Order, b)).GetCenter();
+            void Send(GestureKind k, Vector2 p) => game.HandleGesture(new Gesture(k, p, p, Vector2I.Zero, 0));
+            var turns = g.Turns;
+            Send(GestureKind.Down, Btn(BarButton.Wait));
+            game.Process(EnemyLook.HoldTime + 0.1);
+            Send(GestureKind.Up, Btn(BarButton.Wait));
+            if (g.Turns != turns) throw new Exception("przytrzymany Czekaj zużył turę");
+            Send(GestureKind.Down, Btn(BarButton.Wait));
+            Send(GestureKind.Tap, Btn(BarButton.Wait));
+            Send(GestureKind.Up, Btn(BarButton.Wait));
+            if (g.St == GameStatus.Playing && g.Turns == turns) throw new Exception("dotknięty Czekaj nie czeka tury");
+            if (Flow.Current != Flow.Game || g.St != GameStatus.Playing) return;
+            turns = g.Turns;
+            var mid = Layout.UiSize / 2;
+            foreach (var d in new[] { Vector2I.Left, Vector2I.Right, Vector2I.Up, Vector2I.Down })
+            {
+                if (Flow.Current != Flow.Game || g.St != GameStatus.Playing) return;
+                game.HandleGesture(new Gesture(GestureKind.Down, mid, mid, Vector2I.Zero, 0));
+                game.HandleGesture(new Gesture(GestureKind.Swipe, mid + (Vector2)d * 30, mid, d, 0.1f));
+                game.HandleGesture(new Gesture(GestureKind.Up, mid + (Vector2)d * 30, mid, d, 0.1f));
+            }
+            if (Flow.Current == Flow.Game && g.St == GameStatus.Playing && g.Turns == turns) throw new Exception("przesunięcia nie zrobiły kroku");
+            if (Flow.Current != Flow.Game || g.St != GameStatus.Playing) return;
+            Send(GestureKind.Down, Btn(BarButton.Attack));
+            game.Process(Aiming.RevealTime + 0.1);
+            if (!game.Aim.Active) throw new Exception("trzymany Atak nie celuje");
+            Send(GestureKind.Drag, mid);
+            Send(GestureKind.Up, Btn(BarButton.Attack));
+            if (game.Aim.Active) throw new Exception("puszczony Atak nie kończy celowania");
+            if (Flow.Current != Flow.Game || g.St != GameStatus.Playing) return;
+            Send(GestureKind.Down, Btn(BarButton.Phone));
+            Send(GestureKind.Tap, Btn(BarButton.Phone));
+            Send(GestureKind.Up, Btn(BarButton.Phone));
+            if (Flow.Current != Flow.Phone) throw new Exception("Telefon z paska się nie otworzył");
+            await DebugRunner.Frames(_app.Root, 2);
+            Flow.Phone.HandleInput(InputCmd.Of(GameAction.Cancel));
+
+            turns = g.Turns;
+            Flow.Settings.Open(Flow.Game);
+            await DebugRunner.Frames(_app.Root, 2);
+            var music = GameSettings.Music;
+            Flow.Settings.Page.Change(Phone.Pages.SettingsRow.Music, -1);
+            if (GameSettings.Music != Math.Max(0, music - 1)) throw new Exception("ustawienia: głośność muzyki się nie zmienia");
+            Flow.Settings.HandleInput(InputCmd.Of(GameAction.Cancel));
+            if (Flow.Current != Flow.Game || g.Turns != turns) throw new Exception("ustawienia zużyły turę albo nie wróciły do gry");
+            GameSettings.Music = music;
+            _touch = true;
+        }
+        finally
+        {
+            Layout.Touch = false;
+        }
+    }
+
+    /// <summary>Ekran pionowy (telefon 1290x2796): tytuł, gra z paskiem akcji, telefon na cały ekran - bez błędów rysowania.</summary>
+    private async Task ExercisePortrait()
+    {
+        var root = _app.Root.GetTree().Root;
+        var old = root.Size;
+        Layout.Touch = true;
+        try
+        {
+            root.Size = new Vector2I(1290, 2796);
+            Layout.Refresh();
+            await DebugRunner.Frames(_app.Root, 2);
+            if (!Layout.Portrait || Layout.UiSize.X > 500) throw new Exception($"brak układu pionowego: UI {Layout.UiSize}");
+            Flow.Title.Open();
+            await DebugRunner.Frames(_app.Root, 2);
+            Flow.ClassSelect.Open();
+            await DebugRunner.Frames(_app.Root, 2);
+            _app.StartRun();
+            new DebugScenes(_app).AdvanceMessages();
+            while (Flow.Current != Flow.Game && Flow.Current is not null)
+            {
+                if (Flow.Current == Flow.Prologue) Flow.Prologue.HandleInput(InputCmd.Of(GameAction.A));
+                else if (!Flow.Current.HandleInput(InputCmd.Of(GameAction.Start))) break;
+                new DebugScenes(_app).AdvanceMessages();
+            }
+            await DebugRunner.Frames(_app.Root, 2);
+            Flow.Phone.Open(2, true);
+            await DebugRunner.Frames(_app.Root, 2);
+            if (_app.Nodes.Phone.Size != Layout.UiSize) throw new Exception("telefon pionowo nie jest na cały ekran");
+            Flow.Settings.Open(Flow.Game, true);
+            await DebugRunner.Frames(_app.Root, 2);
+            Flow.Title.Open();
+            await DebugRunner.Frames(_app.Root, 2);
+            _portrait = true;
+        }
+        finally
+        {
+            Layout.Touch = false;
+            root.Size = old;
+            Layout.Refresh();
+        }
     }
 
     /// <summary>Wszystkie zakładki telefonu w grze i profilu, wybór zawodu i tytuł - rysowanie bez wyjątków.</summary>
