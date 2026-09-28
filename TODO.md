@@ -1,7 +1,7 @@
 # TODO – PlanBudowlany RogueLike
 
-Stan na 2026-09-28: GBA v0.21.48 wydane, v0.21.49 w toku (Respekt, nagrody za odbiór, nowe zawody, balans Szkoleń – zbudowane,
-niewydane), Godot – logika zgodna z v0.21.49, oprawa z GBA, wersja mobilna na iPhonie. Opis projektów: [`README.md`](README.md).
+Stan na 2026-09-28: GBA v0.21.48 wydane, v0.21.49 w toku (Respekt, nagrody za odbiór, nowe zawody, balans Szkoleń; cz. 2:
+10 etapów, wrogowie etapów z zachowaniami, mechaniki aktów, opis statystyk – zbudowane, niewydane), Godot – logika zgodna z v0.21.49, oprawa z GBA, wersja mobilna na iPhonie. Opis projektów: [`README.md`](README.md).
 
 Legenda: ✅ zrobione · 🔄 w toku · ⬜ do zrobienia · — nie dotyczy
 
@@ -26,6 +26,7 @@ Legenda: ✅ zrobione · 🔄 w toku · ⬜ do zrobienia · — nie dotyczy
 | Czytelniejszy komunikat „Brak celu w zasięgu 1” (`core.h` + port C#) | ⬜ | ⬜ |
 | Bot balansu bez oscylacji (cel po odległości ścieżki, 0 utkniętych przebiegów) i trudniejszy balans v0.21.48 (bot: Łatwy 60%, Normalny 30%, Trudny 12%, pełne Szkolenia 89% – cel 50–60% jeszcze nie osiągnięty, wszystkie modyfikatory 10%) | ✅ wspólny rdzeń | ✅ |
 | Balans v0.21.49 (9 zawodów, bot): Normalny 32%, pełne Szkolenia 57%, + pełny Respekt 74%, + wszystkie modyfikatory 10% | ✅ wspólny rdzeń | ✅ |
+| Balans v0.21.49 cz. 2 (10 etapów, nowi wrogowie, mechaniki aktów): Łatwy 58%, Normalny 30%, Trudny 12%, pełne Szkolenia 57%, + pełny Respekt 71%, + wszystkie modyfikatory 10%; kawa 2,6/budowę (80% budów), bez kawy 17% | ✅ wspólny rdzeń | ✅ |
 
 ## Nowe pomysły (2026-09-25, „zrób wszystko”)
 
@@ -47,18 +48,18 @@ Kolejność: A – rdzeń i GBA (po bossie Inspekcja Pracy), B – Godot i mobil
 | 11 | 2.5D: kamera 3/4, latarka czołowa, cienie ścian | C | ⬜ | — |
 | 12 | Ulewa jako pogoda na etapie Dach (deszcz, kałuże, poślizg) | C | ⬜ | ⬜ (prostszy efekt) |
 | 13 | Po wygranej: harmonogram domu w stylu aplikacji + „Zaplanuj swoją budowę” | A/B | ✅ | ✅ |
-| 14 | Więcej etapów (np. 10–12) i wyraźna różnorodność między aktami – własne kafle/paleta, zestaw problemów, mechanika aktu (np. akt I wykop i błoto, akt II wysokość i wiatr, akt III instalacje i terminy) | A3, cel v0.21.49 | ⬜ | ⬜ |
+| 14 | Więcej etapów (np. 10–12) i wyraźna różnorodność między aktami – własne kafle/paleta, zestaw problemów, mechanika aktu (np. akt I wykop i błoto, akt II wysokość i wiatr, akt III instalacje i terminy) | A3, v0.21.49: 10 etapów (Izolacja fundamentów, Ściany działowe), kafle aktów, błoto / porywy / pył | ✅ | ✅ |
 | 15 | Wyraźny awans na poziom – poświata i napis „AWANS!” | A | ✅ | ✅ |
 | 16 | Przygotowanie pod synchronizację w chmurze – warstwa zapisu (profil + budowa) z lokalną implementacją i miejscem na iCloud / Game Center saved games i Google Play Games Saved Games | A3 | ⬜ | — |
 | 17 | Przedmioty (kawa, termos) mają znaczenie – po zmianie balansu sprawdzić, czy są używane (bot: statystyka użycia kawy). v0.21.49: bot pije 2 kawy na budowę (74% budów), bez kawy Normalny 20% zamiast 32%, z pełnymi Szkoleniami 39% zamiast 57% – kawa ma znaczenie | A3 | ✅ (wspólny rdzeń) | ✅ |
 | 18 | Więcej różnych przedmiotów – nowe jednorazowe (np. apteczka, energetyk, taśma naprawcza, plan awaryjny), nowe elementy sprzętu i cechy, rzadkie przedmioty unikalne | A3 | ⬜ | ⬜ |
-| 19 | Opis statystyk – co robi każda statystyka i jak (wzór w prostych słowach, np. „SIŁ: +1 obrażeń co 2 pkt dla broni SIŁ”), na wyborze zawodu, w telefonie (Start/Sprzęt) i w Jak grać | A3, cel v0.21.49 | ⬜ | ⬜ |
+| 19 | Opis statystyk – co robi każda statystyka i jak (wzór w prostych słowach, np. „SIŁ: +1 obrażeń co 2 pkt dla broni SIŁ”), na wyborze zawodu, w telefonie (Start/Sprzęt) i w Jak grać | A3, v0.21.49: wybór zawodu (GBA START, Godot podpowiedzi), telefon Start → skąd premie, Jak grać | ✅ | ✅ |
 | 20 | Akt 0 „Papierologia” przed stanem surowym – etapy: Działka i mapy (geodeta, granice), Projekt i pozwolenie na budowę, Przyłącza (wodociąg, prąd, kanalizacja); problemy papierowe i sieciowe (Brakujący podpis, Zaginiony wniosek, Termin na odwołanie, Pęknięta rura, Brak ciśnienia) – nigdy urzędnicy; boss aktu np. „Decyzja odmowna” / „Wieczny wniosek”; mechanika: pieczątki i kolejka (zbieranie dokumentów otwiera schody) | A3, cel v0.21.49 | ⬜ | ⬜ |
 | 21 | Bonus między etapami – po każdym etapie wybór 1 z 3 premii na bieżącą budowę (np. +2 max HP, moc -1 t., kryt +5%, kawa +2 HP, brygada -5 zł), rzadkość premii (może się połączyć z wyborem ścieżki #3) | A3 | ⬜ | ⬜ |
 | 22 | Respekt – stała waluta za ukończenie każdego etapu (więcej za bossów i akty), zapisana w profilu (nie przepada przy śmierci); wydawana na stałe ulepszenia procentowe z rangami (lista niżej) – v0.21.49: telefon profilu → Koszty → SELECT = Respekt | A3 | ✅ | ✅ |
 | 23 | Odblokowania za kolejne przejścia (jak Slay the Spire): każda wygrana odblokowuje coś nowego – lepsze narzędzie, element sprzętu, nowy zawód (np. Dekarz, Tynkarz, Operator koparki), nowy akt/etap, nowy tryb; lista nagród po kolei widoczna w profilu – v0.21.49: Młot udarowy, Dekarz, Buty robocze, Pistolet do kotew, Tynkarz, Pas narzędziowy, Operator koparki, Akt 0 (wkrótce); strona Nagrody (Koszty → SELECT → SELECT) | A3 | ✅ | ✅ |
 
-| 24 | Wrogowie pasujący do etapu – każdy etap ma własny zestaw problemów (2–3 nowe na etap), np. Fundamenty: Woda gruntowa, Osuwisko skarpy, Kamień w wykopie; Mury: Krzywy mur, Pęknięty pustak, Mostek termiczny; Strop: Ugięcie stropu, Brak zbrojenia; Dach: Przeciekająca papa, Wichura, Zapchana rynna, Oblodzenie; Okna i drzwi: Nieszczelna ramka, Zła wymiarówka, Przeciąg; Instalacje: Zwarcie (jest), Zapowietrzenie, Kolizja rur, Brak uziemienia; Tynki i wylewki: Rysa skurczowa, Wilgoć w ścianie, Pęcherz tynku; Wykończenie: Fuga nie ta, Odpryski płytek, Poprawki na odbiorze. Każdy z własnym zachowaniem (powolny ale twardy, dzieli się, ucieka, strzela z dystansu, leczy innych, wybucha) – razem z #14 | A3, cel v0.21.49 | ⬜ | ⬜ |
+| 24 | Wrogowie pasujący do etapu – każdy etap ma własny zestaw problemów (2–3 nowe na etap), np. Fundamenty: Woda gruntowa, Osuwisko skarpy, Kamień w wykopie; Mury: Krzywy mur, Pęknięty pustak, Mostek termiczny; Strop: Ugięcie stropu, Brak zbrojenia; Dach: Przeciekająca papa, Wichura, Zapchana rynna, Oblodzenie; Okna i drzwi: Nieszczelna ramka, Zła wymiarówka, Przeciąg; Instalacje: Zwarcie (jest), Zapowietrzenie, Kolizja rur, Brak uziemienia; Tynki i wylewki: Rysa skurczowa, Wilgoć w ścianie, Pęcherz tynku; Wykończenie: Fuga nie ta, Odpryski płytek, Poprawki na odbiorze. Każdy z własnym zachowaniem (powolny ale twardy, dzieli się, ucieka, strzela z dystansu, leczy innych, wybucha) – razem z #14 | A3, v0.21.49: 20 nowych (2 na etap), 9 zachowań z danych | ✅ | ✅ |
 | 25 | Samouczek menu przy pierwszym uruchomieniu – podświetlanie po kolei elementów tytułu i wyboru zawodu (Nowa budowa, Profil/telefon, Szkolenia, Respekt, Codzienna budowa, klucz/opcje, trudność, pamiątka, tryb inwestora) z dymkiem „co to jest”, dalej A/stuknięcie, pomiń; kolejne dymki przy pierwszym odblokowaniu nowej rzeczy; flaga w profilu, powtórka w Jak grać | A3, cel v0.21.49 | ⬜ | ⬜ |
 
 ## Respekt – lista do testów (#22)
