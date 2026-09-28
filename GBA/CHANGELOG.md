@@ -2,6 +2,26 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
+## v0.21.50 – 2026-09-28
+### Nowe
+- **Rozpiska obrażeń broni (#26, jak w D&D / Baldur's Gate 3):** zakres ciosu od-do, kryt i skąd się biorą –
+  liczone tymi samymi wzorami co walka (`dmg_breakdown` w `core.h`, test: zakres z rozpiski = to, co zadaje walka
+  na tysiącach rzutów). Cios = rzut broni + statystyka broni / 2 (w dół) + premie stałe (Szkolenia, odznaki), z budowy
+  (poziom, projekty) i rękawice - OBR problemu / 2 (w dół), najmniej 1; potem +% (Kurs fachowy, Respekt) – część
+  procentowa w dół z resztą przenoszoną na następny cios, więc pojedynczy cios dostaje ją w dół albo w górę (zakres
+  ma oba skraje, średnia dokładna); kryt (5% + 3%/pkt SZCZ + cechy + premie) mnoży wynik po procencie.
+- **Wybór zawodu:** wiersz broni „Kielnia 8-11, kr 16-22 21%” (z premiami profilu); START = Statystyki, dalej
+  strony „Obrażenia broni” (broń, statystyka, premie z podziałem na Szkolenia / Respekt / odznaki / pamiątkę,
+  procent, cios i średnia, kryt z częściami, moc), na końcu „Jak działają”.
+- **Telefon > Sprzęt:** narzędzie z zakresem i krytem, przy każdym przedmiocie co daje („+1 OBR”, „+2 obrażeń”,
+  „unik +8%”); A = rozpiska (w budowie też obrona i unik), **Brygada i naprawy – teraz dół** (START i A bez kierunku
+  jak dawniej).
+- **Porównanie:** paczka sprzętu pokazuje „teraz 12-15 -> 13-16 (średnio +1,1)”, zmianę krytu i OBR (na zmianę);
+  nowe narzędzie – baner „Nowe: Młot udarowy / 13-16 -> 14-19 (śr. +2)”.
+- **Karta problemu** (przytrzymane B): „Zadasz 11-14 (kryt 22-28), on Tobie 1” – po obronie w obie strony i procentach
+  (za długie: osobno z unikiem), OBR problemu w pierwszej linii.
+- „Jak grać” – strona 7 „Obrażenia” (sekcja `damageHelp` w `data/game.json`, wspólna z Godotem). Scenariusz 42.
+
 ## v0.21.49 – 2026-09-28
 ### Nowe
 - **Respekt:** stała waluta za każdy ukończony etap – 2 za zwykły etap, 4 za bossa w środku aktu (Inspekcja Pracy),

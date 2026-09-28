@@ -17,7 +17,7 @@ własne, np. Woda gruntowa, Krzywy mur, Przeciekająca papa, Zapowietrzenie, Pop
 | A | krótko: atak w najbliższy cel; przytrzymaj: podgląd zasięgu i celownik (strzałki zmieniają cel), puść: atak |
 | B | krótko: czekaj turę (co 4 tury +1 HP); przytrzymaj: podgląd widocznych wrogów (nazwa, HP, obrażenia, opis; strzałki zmieniają wroga) |
 | START | w grze: menu akcji wokół bohatera – góra Atak, prawo Moc, dół Termos, lewo Czekaj (strzałka wybiera, A albo ta sama strzałka wykonuje, A bez kierunku = Brygada, START/B zamyka); poza grą: dalej |
-| SELECT | w grze: telefon z aplikacją PlanBudowlany (Zadania, Usterki, Start, Sprzęt, Koszty; L/R – zakładki, START – menu: jak grać, zapisz i wyjdź, porzuć budowę); na tytule: telefon profilu (Odznaki/Zlecenia/Pamiątki – przełączane A, Katalog, Osiedle, Zespół, Koszty = Szkolenia / Respekt / Nagrody – przełączane SELECT) |
+| SELECT | w grze: telefon z aplikacją PlanBudowlany (Zadania, Usterki, Start, Sprzęt, Koszty; L/R – zakładki, START – menu: jak grać, zapisz i wyjdź, porzuć budowę; Sprzęt: A – rozpiska obrażeń broni, dół – Brygada i naprawy); na tytule: telefon profilu (Odznaki/Zlecenia/Pamiątki – przełączane A, Katalog, Osiedle, Zespół, Koszty = Szkolenia / Respekt / Nagrody – przełączane SELECT) |
 | lewo/prawo (wybór zawodu) | zmiana zawodu na pasku portretów (odblokowane najpierw; zablokowany można obejrzeć, A go nie wybierze) |
 | L/R (wybór zawodu) | pamiątka zabierana na budowę (albo „bez pamiątki”) |
 | SELECT (wybór zawodu) | po pierwszej wygranej: tryb inwestora (modyfikatory, A włącza/wyłącza) |
@@ -84,7 +84,20 @@ Później po jednym dymku „Nowość”: pierwszy Respekt, codzienna budowa, tr
 Na wyborze zawodu START otwiera opis statystyk (wartość i co daje), A zmienia stronę na wzory; w telefonie zakładka
 Start → A pokazuje, skąd są premie. Wzory: obrażenia = rzut broni + statystyka broni / 2 + premie - obrona wroga / 2
 (SIŁ/ZRĘ/INT: +1 obrażeń co 2 pkt, tylko statystyka broni); OBR: -1 otrzymanych obrażeń co 2 pkt; SZCZ: kryt 5% +3%/pkt,
-unik 2%/pkt (maks. 20%), łupy +2% szansy/pkt i lepsza jakość. „Jak grać” ma 6 stron (5 – akty i problemy, 6 – statystyki).
+unik 2%/pkt (maks. 20%), łupy +2% szansy/pkt i lepsza jakość. „Jak grać” ma 7 stron (5 – akty i problemy, 6 – statystyki,
+7 – obrażenia).
+
+## Rozpiska obrażeń broni (jak w BG3)
+Zakres ciosu od-do, kryt i skąd się biorą – te same wzory co walka (`dmg_breakdown`, `weapon_breakdown`,
+`class_breakdown` w `core.h`; źródła premii profilu: `meta::mods_part`). Cios = rzut broni + statystyka broni / 2
+(w dół) + premie stałe (Szkolenia, odznaki) + z budowy (poziom, projekty) + rękawice - OBR problemu / 2 (w dół),
+najmniej 1; potem +% (Kurs fachowy, Respekt) – część w dół, reszta przechodzi na kolejny cios, więc pojedynczy cios
+dostaje ją w dół albo w górę (zakres ma oba skraje); kryt mnoży wynik po procencie. Cios problemu (`enemy_hit`):
+rzut + premia etapu + wzrost / 2 - OBR bohatera / 2, najmniej 1, potem -% (Szkolenie BHP, Respekt), znów najmniej 1.
+Gdzie: wybór zawodu (wiersz broni, START → strony Obrażenia broni), telefon → Sprzęt → A, paczka sprzętu
+(„teraz 4-7 -> 5-9 (średnio +1,5)”), baner nowego narzędzia, karta problemu pod B („Zadasz 2-5 (kryt 4-10), on Tobie
+1-3”). Wspólne teksty wierszy (`dmg_line`, `compare_line`, `versus_line`) są w rdzeniu, opis w prostych słowach –
+`damageHelp` w `data/game.json`.
 
 ## Akty i bossowie
 Etapy są pogrupowane w akty (`data/game.json`: `acts`, pole `act` etapu; akt I 4 etapy, akt II 3, akt III 3); każdy akt kończy się bossem:
@@ -145,7 +158,7 @@ niekorzystne wydarzenie na placu się nie łączą (`noBadStack`: wydarzenie prz
 
 ## Brygada
 Raz na etap możesz wezwać najemnego fachowca za zł z budżetu budowy (wezwanie zużywa turę): telefon → zakładka Zespół
-(Sprzęt) → A = strona Brygada (góra/dół, A wezwij, B wróć) albo START i A bez kierunku. Geodeta (mapa etapu i schody),
+(Sprzęt) → dół = strona Brygada (góra/dół, A wezwij, B wróć) albo START i A bez kierunku. Geodeta (mapa etapu i schody),
 BHP-owiec (bez stanów, obrona +2 na 8 tur), Pompa do betonu (-6 HP problemom w zasięgu 2), Elektryk-kolega (pomocnik
 obok bohatera przez 10 tur, cios -3, zajmuje pole). Dwóch pierwszych od początku, pozostałych kupujesz w Szkoleniach
 (Koszty w telefonie profilu). Dane: `brigade` (cena, koszt odblokowania, wartości).
@@ -163,7 +176,7 @@ Szybko i drogo (-2 problemy, -15 zł, -1 znajdźka), Tanio, ryzyko (+1 problem, 
 
 ## Materiały i naprawy
 Cement, stal i drewno (sekcja `materials`) wypadają z problemów (każdy ma swój materiał), bossów i paczek; ikony w HUD
-i w zakładce Sprzęt. Hurtownia ma towary za materiały (Zbrojenie, Wylewka, Deskowanie). Naprawy (telefon → Sprzęt → A,
+i w zakładce Sprzęt. Hurtownia ma towary za materiały (Zbrojenie, Wylewka, Deskowanie). Naprawy (telefon → Sprzęt → dół,
 pod Brygadą; zużywają turę): Załataj (drewno – mur z desek w poprzek drogi problemu) i Kładka (stal – kałuże wokół bez
 poślizgu).
 
@@ -228,7 +241,7 @@ materiały, naprawy i awans (18), codzienna budowa (19), wygrana z harmonogramem
 i nagrody (22), Respekt za etap (23), nagroda po wygranej (24), Dekarz (25), Tynkarz (26), Operator koparki (27), nowe
 narzędzia i sprzęt (28), strzelcy (29), podział i wybuch (30), łatanie, wzrost i stanie (31), odpychanie i powrót
 (32), błoto (33), porywy (34), pył (35), pełny Katalog (36), Akt 0: pieczątki (37), Decyzja odmowna i Odwołanie (38),
-samouczek menu (39), dymki nowości (40), nagroda Akt 0 (41)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
+samouczek menu (39), dymki nowości (40), nagroda Akt 0 (41), rozpiska obrażeń (42)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
 ```bash
 make TARGET=scn1 BUILD=build_scn1 USERFLAGS="-DPB_SCENARIO=1" BUTANO_PATH=...
 ROM=scn1.gba tools/playtest/run.sh skrypt.txt /tmp/zrzuty --fresh
@@ -244,7 +257,7 @@ data/game.json        zawody, narzędzia, wrogowie, etapy (źródło prawdy)
 tools/gen_data.py     JSON -> include/game_data.h
 tools/make_assets.py  proceduralne grafiki: font PL 8x16, sprite'y, kafelki+palety etapów, tytuł, ekran z QR
 assets_src/pb_logo.svg  znak PlanBudowlany
-include/core.h        logika gry (czyste C++, bez Butano) - testowalna na PC
+include/core.h        logika gry (czyste C++, bez Butano) - testowalna na PC; rozpiska obrażeń broni (dmg_breakdown)
 include/meta.h        profil SRAM (v10), samouczek menu, Respekt, nagrody za odbiór, codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
 src/main.cpp          warstwa GBA: sceny, mapa, kamera, HUD, SRAM
 ```
