@@ -7,7 +7,7 @@
 #
 # Podpis: zmienne ANDROID_KEYSTORE_PATH, ANDROID_KEY_ALIAS,
 # ANDROID_KEYSTORE_PASSWORD (i PLAY_SERVICE_ACCOUNT_JSON do wysyłki) – z otoczenia albo z GODOT/.env.local (poza gitem).
-# versionCode = RRDDDGGMM (rok, dzień roku, godzina, minuta) – rośnie z każdym buildem.
+# versionCode = MINOR*10000 + PATCH*100 + BUILD (np. 0.21.49 -> 214900); BUILD (0-99) dla kolejnych wysyłek tej samej wersji.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -34,7 +34,8 @@ step() { printf '\n==> %s\n' "$*"; }
 : "${ANDROID_KEYSTORE_PASSWORD:?ustaw ANDROID_KEYSTORE_PASSWORD}"
 
 VERSION="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"].lstrip("v"))' "$REPO/GBA/data/game.json")"
-CODE="${VERSION_CODE:-$(date +%y%j%H%M | sed 's/^0*//')}"
+BUILD="${BUILD:-0}"
+CODE="${VERSION_CODE:-$(python3 -c 'import sys; a=sys.argv[1].split("."); print(int(a[1])*10000+int(a[2])*100+int(sys.argv[2]))' "$VERSION" "$BUILD")}"
 step "Wersja $VERSION, versionCode $CODE"
 python3 - "$PROJECT/export_presets.cfg" "$VERSION" "$CODE" <<'PY'
 import re, sys
@@ -57,7 +58,7 @@ TEMPLATE=()
 [ -d "$PROJECT/android/build" ] || TEMPLATE=(--install-android-build-template)
 GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$ANDROID_KEYSTORE_PATH" GODOT_ANDROID_KEYSTORE_RELEASE_USER="$ANDROID_KEY_ALIAS" \
 GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD="$ANDROID_KEYSTORE_PASSWORD" \
-    "$GODOT_BIN" --headless --path "$PROJECT" "${TEMPLATE[@]}" --export-release Android "$AAB"
+    "$GODOT_BIN" --headless --path "$PROJECT" ${TEMPLATE[@]+"${TEMPLATE[@]}"} --export-release Android "$AAB"
 [ -f "$AAB" ] || { echo "Eksport nie utworzył $AAB" >&2; exit 1; }
 step "AAB: $AAB"
 
