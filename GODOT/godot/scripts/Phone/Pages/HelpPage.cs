@@ -6,7 +6,8 @@ using LifeLike.Game.Input;
 namespace LifeLike.Game.Phone.Pages;
 
 /// <summary>Jak grać (page_help na GBA): cel budowy, sterowanie z nazwami klawiszy z bieżącej mapy wejścia, pogoda, brygada, tryb inwestora,
-/// ścieżki, materiały, codzienna budowa; strona 2 - mechaniki aktów i zachowania problemów, strona 3 - statystyki (A: dalej).</summary>
+/// ścieżki, materiały, codzienna budowa; strona 2 - mechaniki aktów i zachowania problemów, strona 3 - statystyki,
+/// strona 4 - obrażenia broni (rozpiska #26, teksty damageHelp z game.json jak na GBA) (A: dalej).</summary>
 public sealed class HelpPage : PhonePage
 {
     private static readonly (string Key, string What)[] Controls =
@@ -33,11 +34,11 @@ public sealed class HelpPage : PhonePage
         ("Telefon", "aplikacja (trzymaj: mapa)"),
     ];
 
-    private const int Pages = 3;
+    private const int Pages = 4;
     private readonly GameData _d;
     private int _page;
 
-    /// <summary>Strona 0-2 (sceny zrzutów).</summary>
+    /// <summary>Strona 0-3 (sceny zrzutów).</summary>
     public int Page
     {
         get => _page;
@@ -78,6 +79,11 @@ public sealed class HelpPage : PhonePage
         if (_page == 2)
         {
             DrawList(p, "STATYSTYKI", StatLines(_d), "GDZIE OPIS", WhereLines);
+            return;
+        }
+        if (_page == 3)
+        {
+            DrawList(p, "OBRAŻENIA", _d.DamageHelpLines, "GDZIE ROZPISKA", DamageWhereLines);
             return;
         }
         if (!PhoneView.Full) // telefon w poziomie: nowości w karcie na górze zamiast osobnej sekcji (brak miejsca)
@@ -163,6 +169,10 @@ public sealed class HelpPage : PhonePage
     private static string[] WhereLines => Layout.Touch
         ? ["Wybór zawodu: dotknij statystyki", "Telefon > Start > Opis statystyk"]
         : ["Wybór zawodu: I albo mysz", "Telefon > Start > Spacja"];
+
+    private static string[] DamageWhereLines => Layout.Touch
+        ? ["Wybór zawodu: dotknij narzędzia", "Telefon > Sprzęt > dotknij narzędzia", "Przytrzymaj problem: obrażenia w obie strony"]
+        : ["Wybór zawodu: mysz na narzędziu, I", "Telefon > Sprzęt > I", "Trzymaj Z: obrażenia w obie strony"];
 
     private static Godot.Rect2 DrawControls(PhonePainter p, float y)
     {

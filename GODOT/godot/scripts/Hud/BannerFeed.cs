@@ -52,10 +52,16 @@ public sealed class BannerFeed
         _banners.Push($"Awans! Poziom {level}", body, PhoneTabs.Start);
     }
 
-    private void OnToolFound()
+    /// <summary>Nowe narzędzie: porównanie ciosu z poprzednią bronią (rozpiska #26), np. „6-8 -&gt; 9-13 (śr. +3)”.</summary>
+    private void OnToolFound(int previous)
     {
-        var w = _s.Game.Weapon;
-        _banners.Push("Nowe narzędzie", $"{w.Name} {w.MinDamage}-{w.MaxDamage}", PhoneTabs.Gear);
+        var g = _s.Game;
+        var was = g.WeaponBreakdown(-1, previous >= 0 ? previous : g.CDef.Weapon);
+        var now = g.WeaponBreakdown();
+        var m = DamageHelp.AddRange(new Message(), was.Min, was.Max).Add(" -> ");
+        DamageHelp.AddRange(m, now.Min, now.Max).Add(" (śr. ");
+        DamageHelp.AddTenths(m, now.Avg10 - was.Avg10, true).Add(")");
+        _banners.Push("Nowe: " + g.Weapon.Name, m.Text, PhoneTabs.Gear);
     }
 
     private void OnGearEquipped(int slot)

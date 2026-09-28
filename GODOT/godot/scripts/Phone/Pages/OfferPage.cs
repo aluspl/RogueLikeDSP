@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using Godot;
+using LifeLike.Core;
 using LifeLike.Game.Gfx;
 using LifeLike.Game.Input;
 using CoreGame = LifeLike.Core.Game;
@@ -7,7 +9,8 @@ namespace LifeLike.Game.Phone.Pages;
 
 /// <summary>
 /// Paczka sprzętu przy zajętym slocie (gear_offer_dialog na GBA): obecny i nowy przedmiot z jakością (pastylka),
-/// premią i cechą; A zakładam, B zostawiam (+doświadczenie).
+/// premią i cechą; porównanie ciosu, krytu i obrony (rozpiska #26: „teraz 4-7 -&gt; 5-9 (średnio +1,5)”);
+/// A zakładam, B zostawiam (+doświadczenie).
 /// </summary>
 public sealed class OfferPage : PhonePage
 {
@@ -30,13 +33,43 @@ public sealed class OfferPage : PhonePage
         y = Item(p, y, g.Equipped[slot], g.EquippedTrait[slot], false) + 4;
         y = p.Section(y, "NOWY", g.OfferIsBetter ? "lepszy!" : "");
         y = Item(p, y, g.OfferRarity, g.OfferTrait, true) + 6;
-        var c = p.Card(y, 2);
+        var cmp = Compare(p, (int)(p.Width - 24));
+        var c = p.Card(y, 2 + cmp.Count);
         var verdict = g.OfferIsBetter ? "Nowy jest lepszej jakości."
                     : g.OfferRarity == g.Equipped[slot] ? "Ta sama jakość - inna cecha." : "Nowy jest gorszej jakości.";
         p.Stripe(c, 0, g.OfferIsBetter ? Pal.Done : Pal.Todo);
         p.Text(p.TextX(c), p.RowY(c, 0), verdict, g.OfferIsBetter ? Ink.Done : Ink.Dark, TextAlign.Left, c.End.X - 6 - p.TextX(c));
-        p.Divider(c, 1);
-        p.Text(p.TextX(c), p.RowY(c, 1), "Cecha: " + d.GearTraits[g.OfferTrait].Name, Ink.Dim, TextAlign.Left, c.End.X - 6 - p.TextX(c));
+        for (var i = 0; i < cmp.Count; i++)
+        {
+            p.Divider(c, 1 + i);
+            p.Text(p.TextX(c), p.RowY(c, 1 + i), cmp[i], Ink.Brand, TextAlign.Left, c.End.X - 6 - p.TextX(c));
+        }
+        p.Divider(c, 1 + cmp.Count);
+        p.Text(p.TextX(c), p.RowY(c, 1 + cmp.Count), "Cecha: " + d.GearTraits[g.OfferTrait].Name, Ink.Dim, TextAlign.Left, c.End.X - 6 - p.TextX(c));
+    }
+
+    /// <summary>Co się zmieni po założeniu: cios (średnio), kryt, obrona - tylko to, co się zmienia (jak na GBA).</summary>
+    private List<string> Compare(PhonePainter p, int width)
+    {
+        var g = _g;
+        var slot = g.OfferSlot;
+        var now = g.WeaponBreakdown();
+        var next = g.WeaponBreakdown(-1, -1, slot, g.OfferRarity, g.OfferTrait);
+        var list = new List<string>();
+        if (now.Min != next.Min || now.Max != next.Max || now.Avg10 != next.Avg10)
+        {
+            var line = "Cios: " + DamageHelp.CompareLine(new Message(), now, next).Text;
+            list.Add(p.F.Measure(line) <= width ? line : DamageHelp.CompareLine(new Message(), now, next, true).Text);
+        }
+        if (now.CritChance() != next.CritChance() || now.CritMax != next.CritMax) list.Add(DamageHelp.CompareCrit(new Message(), now, next).Text);
+        var old = g.D.Gear[slot * 3 + g.Equipped[slot]];
+        var gnew = g.D.Gear[slot * 3 + g.OfferRarity];
+        if (old.Stat == LifeLike.Core.Data.GearStat.Def && gnew.Value != old.Value)
+        {
+            int d0 = g.HeroDefense(), d1 = d0 - old.Value + gnew.Value;
+            list.Add($"OBR {d0} -> {d1}: z ciosu -{d0 / 2} -> -{d1 / 2}");
+        }
+        return list;
     }
 
     private float Item(PhonePainter p, float y, int rarity, int trait, bool isNew)

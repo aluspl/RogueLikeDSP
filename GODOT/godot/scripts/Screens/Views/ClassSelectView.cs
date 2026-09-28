@@ -29,10 +29,14 @@ public partial class ClassSelectView : Control
     private readonly Dictionary<string, Rect2> _coach = new();   // samouczek: prostokąty elementów (id kroku)
 
     public int Difficulty { get; set; }
-    /// <summary>Dymek z opisem statystyki (dotknięcie wiersza; na komputerze też najechanie myszą); -1 = brak.</summary>
+    /// <summary>
+    /// Dymek z opisem statystyki (dotknięcie wiersza; na komputerze też najechanie myszą); -1 = brak,
+    /// WeaponTip = rozpiska obrażeń broni (#26) nad wierszem narzędzia.
+    /// </summary>
     public int TipStat { get; set; } = -1;
+    public const int WeaponTip = 6;
     private int _hoverStat = -1;
-    private readonly Rect2[] _statRects = new Rect2[6];
+    private readonly Rect2[] _statRects = new Rect2[7];
     public string Note { get; set; } = "";
 
     /// <summary>Zawód (indeks w danych) pod ramką wyboru.</summary>
@@ -250,7 +254,7 @@ public partial class ClassSelectView : Control
         var wpn = _d.Weapons[c.Weapon];
         var tag = UiText.StatShort(wpn.ScalesWith);
         var tw = f.Measure(tag) + 10;
-        f.Draw(this, new Vector2(x, y), f.Fit($"{wpn.Name} {wpn.MinDamage}-{wpn.MaxDamage}, zasięg {wpn.Range}", cw - tw - 6), Ink.Dark);
+        WeaponRow(new Rect2(x - 4, y - 1, cw + 8, 19), cls, m, cw - tw - 6, 1);
         DrawStyleBox(Ui.Box(Pal.Group, 7), new Rect2(x + cw - tw, y + 2, tw, 14));
         f.Draw(this, new Vector2(x + cw - tw / 2f, y), tag, Ink.Brand, TextAlign.Center);
         y += 24;
@@ -369,7 +373,7 @@ public partial class ClassSelectView : Control
 
         // narzędzie ze statystyką
         var wpn = _d.Weapons[c.Weapon];
-        f.Draw(this, new Vector2(x, y), f.Fit($"{wpn.Name} {wpn.MinDamage}-{wpn.MaxDamage}, zasięg {wpn.Range}", colW - 40, ts), Ink.Dark, TextAlign.Left, ts);
+        WeaponRow(new Rect2(x - 4, y, colW + 8, 24), cls, m, colW - 40, ts);
         var tag = UiText.StatShort(wpn.ScalesWith);
         var tw = f.Measure(tag) + 10;
         DrawStyleBox(Ui.Box(Pal.Group, 7), new Rect2(x + colW - tw, y + 5, tw, 14));
@@ -438,6 +442,72 @@ public partial class ClassSelectView : Control
 
     private int ShownTip => TipStat >= 0 ? TipStat : _hoverStat;
 
+    /// <summary>
+    /// Wiersz narzędzia z zakresem ciosu i krytem jak w walce (rozpiska #26: „Kielnia 8-11, kryt 16-22 (21%)”, co się
+    /// nie mieści – krócej); najechanie / dotknięcie = dymek z rozpiską.
+    /// </summary>
+    private void WeaponRow(Rect2 row, int cls, in RunMods m, int maxW, float scale)
+    {
+        var f = PixelFont.I;
+        var b = DamageRows.ForHero(_d, _p, null, cls, m);
+        var name = $"{_d.Weapons[b.Weapon].Name} {b.Min}-{b.Max}";
+        string[] variants =
+        [
+            $"{name}, kryt {b.CritMin}-{b.CritMax} ({b.CritChance()}%), zasięg {b.Range}",
+            $"{name}, kryt {b.CritMin}-{b.CritMax} ({b.CritChance()}%)",
+            $"{name}, kr {b.CritMin}-{b.CritMax} {b.CritChance()}%",
+        ];
+        var text = "";
+        foreach (var v in variants)
+        {
+            if (f.Measure(v, scale) > maxW) continue;
+            text = v;
+            break;
+        }
+        if (text.Length == 0 && scale > 1)   // w powiększeniu się nie mieści: zwykła wielkość, pełniejszy tekst
+        {
+            scale = 1;
+            text = variants[^1];
+            foreach (var v in variants)
+            {
+                if (f.Measure(v) > maxW) continue;
+                text = v;
+                break;
+            }
+        }
+        if (text.Length == 0) text = variants[^1];
+        _statRects[WeaponTip] = row;
+        _hits.Add((row, ClassSelectHit.Stat, WeaponTip));
+        if (ShownTip == WeaponTip) DrawStyleBox(Ui.Box(new Color(Pal.Brand, 0.12f), 4), row);
+        var dy = scale < 1.5f && row.Size.Y > 20 ? 4 : 1;
+        f.Draw(this, new Vector2(row.Position.X + 4, row.Position.Y + dy), f.Fit(text, maxW, scale), Ink.Dark, TextAlign.Left, scale);
+    }
+
+    /// <summary>Dymek z rozpiską obrażeń broni zawodu (wiersze jak strona Obrażenia w telefonie).</summary>
+    private void DrawWeaponTip(Rect2 row)
+    {
+        var f = PixelFont.I;
+        var cls = Selected;
+        var rows = DamageRows.Build(_d, DamageRows.ForHero(_d, _p, null, cls, Meta.Mods(_d, _p)), null);
+        var maxW = (int)Size.X - 36;
+        var lines = new List<(string Text, Ink Ink)>();
+        foreach (var r in rows)
+        {
+            var wrapped = f.Wrap(r.Text, maxW);
+            for (var k = 0; k < wrapped.Count; k++) lines.Add(((k > 0 ? "  " : "") + wrapped[k], r.Kind == DmgText.Total ? Ink.MapGood : r.Kind == DmgText.Crit ? Ink.MapLoot : r.Kind == DmgText.Weapon ? Ink.Map : Ink.MapDim));
+        }
+        var tw = 0f;
+        foreach (var l in lines) tw = Mathf.Max(tw, f.Measure(l.Text));
+        tw = Mathf.Min(Size.X - 16, tw + 20);
+        var th = lines.Count * 16 + 8;
+        var x = Mathf.Clamp(row.Position.X, 8, Size.X - tw - 8);
+        var y = row.End.Y + 4 + th <= Size.Y - 4 ? row.End.Y + 4 : Mathf.Max(4, row.Position.Y - th - 4);
+        var box = new Rect2(x, y, tw, th);
+        DrawStyleBox(Ui.Box(new Color(0, 0, 0, 0.3f), 8), new Rect2(box.Position + new Vector2(0, 2), box.Size));
+        DrawStyleBox(Ui.Box(Pal.Text, 8, Pal.Brand), box);
+        for (var i = 0; i < lines.Count; i++) f.Draw(this, new Vector2(x + 10, y + 4 + i * 16), lines[i].Text, lines[i].Ink);
+    }
+
     /// <summary>Przycisk „i” (menu_icons 23): strona opisu statystyk.</summary>
     private void InfoButton(Vector2 pos)
     {
@@ -451,6 +521,11 @@ public partial class ClassSelectView : Control
     {
         var i = ShownTip;
         if (i < 0 || i >= _statRects.Length || _statRects[i].Size.X <= 0) return;
+        if (i == WeaponTip)
+        {
+            DrawWeaponTip(_statRects[i]);
+            return;
+        }
         var f = PixelFont.I;
         var cls = Selected;
         var c = _d.Classes[cls];

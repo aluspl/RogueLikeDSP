@@ -100,6 +100,8 @@ public sealed class GameData
     public int DmgLevelsMask { get; private init; }
     public int DefLevelsMask { get; private init; }
     public string Version { get; private init; } = "";
+    /// <summary>v0.21.50: Jak grać, strona Obrażenia – obrażenia broni w prostych słowach (rozpiska #26).</summary>
+    public string[] DamageHelpLines { get; private init; } = [];
     public int DefaultDifficulty { get; private init; }
     public int NgHpPctPerTier { get; private init; }
     public int NgDmgBonusPerTier { get; private init; }
@@ -603,6 +605,7 @@ public sealed class GameData
             DmgLevelsMask = hl.GetProperty("dmgLevels").EnumerateArray().Aggregate(0, (m, l) => m | 1 << l.GetInt32()),
             DefLevelsMask = hl.GetProperty("defLevels").EnumerateArray().Aggregate(0, (m, l) => m | 1 << l.GetInt32()),
             Version = Str(d, "version", ""),
+            DamageHelpLines = d.TryGetProperty("damageHelp", out var dhj) ? dhj.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : [],
             DefaultDifficulty = Int(d, "defaultDifficulty"),
             NgHpPctPerTier = Int(ng, "hpPctPerTier"),
             NgDmgBonusPerTier = Int(ng, "dmgBonusPerTier"),

@@ -118,7 +118,7 @@ public static class DamageHelp
                 }
                 m.Add("Z budowy +").Add(b.FlatLevel + b.FlatFound).Add(":");
                 if (b.FlatLevel != 0) m.Add(" poziom +").Add(b.FlatLevel);
-                if (b.FlatFound != 0) m.Add(b.FlatLevel != 0 ? "," : "").Add(" projekty ").Add(b.FlatFound > 0 ? "+" : "").Add(b.FlatFound);
+                if (b.FlatFound != 0) m.Add(b.FlatLevel != 0 ? "," : "").Add(" projekt ").Add(b.FlatFound > 0 ? "+" : "").Add(b.FlatFound);
                 return true;
             case DmgText.Gear:
                 if (b.GearItem < 0 || b.FlatGear == 0)
@@ -218,11 +218,11 @@ public static class DamageHelp
         return m.Text;
     }
 
-    /// <summary>Porównanie przy zmianie broni / sprzętu: „teraz 4-7 -&gt; 5-9 (średnio +1,5)”.</summary>
-    public static Message CompareLine(Message m, DmgBreakdown now, DmgBreakdown next)
+    /// <summary>Porównanie przy zmianie broni / sprzętu: „teraz 4-7 -&gt; 5-9 (średnio +1,5)” (shortAvg: „śr.”).</summary>
+    public static Message CompareLine(Message m, DmgBreakdown now, DmgBreakdown next, bool shortAvg = false)
     {
         AddRange(m.Add("teraz "), now.Min, now.Max).Add(" -> ");
-        AddRange(m, next.Min, next.Max).Add(" (średnio ");
+        AddRange(m, next.Min, next.Max).Add(shortAvg ? " (śr. " : " (średnio ");
         return AddTenths(m, next.Avg10 - now.Avg10, true).Add(")");
     }
 
@@ -233,11 +233,20 @@ public static class DamageHelp
         return AddRange(m, next.CritMin, next.CritMax).Add(" (").Add(next.CritChance()).Add("%)");
     }
 
+    /// <summary>„Zadasz 2-5 (kryt 4-10)” – część karty problemu.</summary>
+    public static Message VersusHero(Message m, DmgBreakdown b)
+    {
+        AddRange(m.Add("Zadasz "), b.Min, b.Max).Add(" (kryt ");
+        return AddRange(m, b.CritMin, b.CritMax).Add(")");
+    }
+
+    /// <summary>„on Tobie 1-3” – część karty problemu.</summary>
+    public static Message VersusEnemy(Message m, HitRange h) => AddRange(m.Add("on Tobie "), h.Min, h.Max);
+
     /// <summary>Karta problemu: „Zadasz 2-5 (kryt 4-10), on Tobie 1-3”.</summary>
     public static Message VersusLine(Message m, DmgBreakdown b, HitRange h)
     {
-        AddRange(m.Add("Zadasz "), b.Min, b.Max).Add(" (kryt ");
-        AddRange(m, b.CritMin, b.CritMax).Add("), on Tobie ");
-        return AddRange(m, h.Min, h.Max);
+        VersusHero(m, b).Add(", ");
+        return VersusEnemy(m, h);
     }
 }

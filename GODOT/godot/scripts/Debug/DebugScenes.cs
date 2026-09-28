@@ -24,6 +24,7 @@ public sealed class DebugScenes
         "help-acts", "help-stats",
         "tutorial-title", "tutorial-class", "tutorial-stats", "tutorial-unlock", "tutorial-act0", "help-tutorial",
         "act0-card", "act0-stamps", "act0-stairs-open", "act0-boss-phase",
+        "dmg-class", "dmg-stats", "dmg-gear", "dmg-phone", "dmg-crit", "dmg-offer", "dmg-tool", "dmg-enemy", "help-dmg",
     ];
 
     private readonly App _app;
@@ -40,7 +41,7 @@ public sealed class DebugScenes
     public static bool UsesDemoProfile(string scene) =>
         scene is "title" or "classselect" or "profile" or "catalog" or "estate" or "team" or "training" or "card" or "perks" or "investor"
             or "daily" or "death" or "respect" or "rewards" or "classselect-locked" or "stats-class" or "stats-tip" or "catalog-tags"
-            or "tutorial-unlock" or "tutorial-act0";
+            or "tutorial-unlock" or "tutorial-act0" or "dmg-class" or "dmg-stats";
 
     /// <summary>Sceny samouczka menu: profil bez obejrzanych dymków (inne sceny - samouczek już obejrzany).</summary>
     public static bool UsesTutorial(string scene) => scene.StartsWith("tutorial");
@@ -130,9 +131,20 @@ public sealed class DebugScenes
             case "help":
             case "help-acts":
             case "help-stats":
+            case "help-dmg":
                 Flow.Help.Open(true, true);
-                if (_app.Nodes.Phone.Current is Phone.Pages.HelpPage hp) hp.Page = scene == "help" ? 0 : scene == "help-acts" ? 1 : 2;
+                if (_app.Nodes.Phone.Current is Phone.Pages.HelpPage hp) hp.Page = scene == "help" ? 0 : scene == "help-acts" ? 1 : scene == "help-stats" ? 2 : 3;
                 _app.Nodes.Phone.QueueRedraw();
+                return;
+            case "dmg-class": // rozpiska obrażeń broni (#26): dymek nad narzędziem na karcie zawodu
+                s.ClassId = 1;
+                Flow.ClassSelect.Open();
+                _app.Nodes.ClassSelectView.TipStat = Screens.Views.ClassSelectView.WeaponTip;
+                return;
+            case "dmg-stats": // strona Obrażenia broni w opisie statystyk zawodu
+                s.ClassId = 1;
+                Flow.ClassSelect.Open();
+                Flow.Stats.OpenClass(1, Phone.Pages.StatsPage.DamagePage);
                 return;
             case "stats-class": // opis statystyk zawodu (I na wyborze zawodu, START na GBA)
             case "stats-tip":   // dymek nad statystyką (mysz / dotknięcie)
@@ -352,6 +364,44 @@ public sealed class DebugScenes
                 g.HeroDown();
                 _app.AfterAction(true);
                 break;
+            case "dmg-gear": // Sprzęt: narzędzie z zakresem i krytem, przedmioty z tym, co dają
+            case "dmg-phone": // rozpiska obrażeń w trakcie budowy (Sprzęt > I): cios
+            case "dmg-crit":  // ... i druga strona: kryt i obrona
+                banners.Clear();
+                DamageStage(g);
+                _app.Session.ResetWatch();   // bez banerów awansu i sprzętu z przygotowania sceny
+                _app.Refresh();
+                if (scene == "dmg-gear") Flow.Phone.Open(Phone.PhoneTabs.Gear, true);
+                else Flow.Stats.OpenInRun(Phone.Pages.StatsPage.DamagePage + (scene == "dmg-crit" ? 1 : 0), Phone.PhoneTabs.Gear);
+                break;
+            case "dmg-offer": // paczka: markowe rękawice z SIŁ+1 zamiast wzmacnianych z Kryt+5% - porównanie ciosu i krytu
+                banners.Clear();
+                DamageStage(g);
+                _app.Session.ResetWatch();   // bez banerów awansu i sprzętu z przygotowania sceny
+                _app.Refresh();
+                g.Pickups[0] = new Pickup(g.Hero.X, g.Hero.Y, PickupType.GearBox, true, 1 * 3 + 2, Array.FindIndex(g.D.GearTraits, t => t.Effect == TraitEffect.Str));
+                g.Collect();
+                _app.AfterAction(true);
+                break;
+            case "dmg-tool": // skrzynka z Młotem udarowym: baner „teraz -> po zmianie”
+                banners.Clear();
+                DamageStage(g);
+                _app.Session.ResetWatch();   // bez banerów awansu i sprzętu z przygotowania sceny
+                _app.Refresh();
+                g.Pickups[0] = new Pickup(g.Hero.X, g.Hero.Y, PickupType.Tool, true, Array.FindIndex(g.D.Tools, t => g.D.Weapons[t.Weapon].Name == "Młot udarowy"), 0);
+                g.Collect();
+                _app.AfterAction(true);
+                break;
+            case "dmg-enemy": // karta problemu: obrażenia w obie strony
+                banners.Clear();
+                DamageStage(g);
+                _app.Session.ResetWatch();   // bez banerów awansu i sprzętu z przygotowania sceny
+                _app.Refresh();
+                _app.Refresh();
+                _app.Nodes.Touch.Bar.Pressed = Touch.BarButton.Wait;
+                Flow.Game.HandleInput(InputCmd.Of(GameAction.B));
+                Flow.Game.Look.Reveal();
+                break;
             case "banners":
                 banners.Push("Awans! Poziom 2", $"+{_app.Session.Data.HpPerLevel} HP");
                 banners.Push("Nowe narzędzie", "Młotek 3-6");
@@ -421,6 +471,15 @@ public sealed class DebugScenes
                 Flow.Game.Look.Reveal();
                 break;
         }
+    }
+
+    /// <summary>Rozpiska obrażeń (sceny dmg-*): poziom 5, projekt wykonawczy, kask ze Szczęściem, rękawice z Kryt +5%.</summary>
+    private static void DamageStage(LifeLike.Core.Game g)
+    {
+        while (g.HeroLevel < 5) g.GainXp(10);
+        g.DmgBonus++;
+        g.Equip(0, 0, Array.FindIndex(g.D.GearTraits, t => t.Effect == TraitEffect.Luck));
+        g.Equip(1, 1, Array.FindIndex(g.D.GearTraits, t => t.Effect == TraitEffect.Crit));
     }
 
     /// <summary>Przewija etapy skrótem DebugSkip (L+R+SELECT na GBA) do sceny: harmonogram, Hurtownia, boss, koniec.</summary>

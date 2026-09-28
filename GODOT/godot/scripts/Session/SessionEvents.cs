@@ -14,8 +14,8 @@ public sealed class SessionEvents
     public event Action PickedUp;
     /// <summary>Awans bohatera: nowy poziom, czy moc zawodu weszła na wyższą rangę.</summary>
     public event Action<int, bool> LevelUp;
-    /// <summary>Nowe narzędzie w ręku.</summary>
-    public event Action ToolFound;
+    /// <summary>Nowe narzędzie w ręku; argument: poprzednia broń (WeaponOverride, -1 = broń zawodu).</summary>
+    public event Action<int> ToolFound;
     /// <summary>Coś wypadło z usuniętego problemu.</summary>
     public event Action Dropped;
     /// <summary>Założony sprzęt w slocie.</summary>
@@ -44,7 +44,7 @@ public sealed class SessionEvents
     public void RaiseRunStarted() => RunStarted?.Invoke();
     public void RaisePickedUp() => PickedUp?.Invoke();
     public void RaiseLevelUp(int level, bool abilityUp) => LevelUp?.Invoke(level, abilityUp);
-    public void RaiseToolFound() => ToolFound?.Invoke();
+    public void RaiseToolFound(int previous) => ToolFound?.Invoke(previous);
     public void RaiseDropped() => Dropped?.Invoke();
     public void RaiseGearEquipped(int slot) => GearEquipped?.Invoke(slot);
     public void RaiseAbilityReady() => AbilityReady?.Invoke();

@@ -12,7 +12,7 @@ namespace LifeLike.Game.Screens;
 public sealed class StatsScreen : Screen
 {
     private bool _inRun;
-    private int _cls;
+    private int _cls, _page, _back = PhoneTabs.Start;
 
     public StatsScreen(App app) : base(app)
     {
@@ -24,32 +24,39 @@ public sealed class StatsScreen : Screen
     public override string Music => _inRun ? "game" : "title";
 
     /// <summary>Z wyboru zawodu: statystyki zawodu cls z premiami profilu.</summary>
-    public void OpenClass(int cls)
+    public void OpenClass(int cls, int page = 0)
     {
         _inRun = false;
         _cls = cls;
+        _page = page;
         Flow.Go(this);
     }
 
-    /// <summary>Z telefonu w trakcie budowy (zakładka Start).</summary>
-    public void OpenInRun()
+    /// <summary>
+    /// Z telefonu w trakcie budowy: zakładka Start (opis statystyk) albo Sprzęt (page = StatsPage.DamagePage: rozpiska
+    /// obrażeń broni); powrót na zakładkę back.
+    /// </summary>
+    public void OpenInRun(int page = 0, int back = PhoneTabs.Start)
     {
         _inRun = true;
         _cls = S.Game.Cls;
+        _page = page;
+        _back = back;
         Flow.Go(this);
     }
 
     public override void Enter(bool instant)
     {
-        var page = _inRun ? new StatsPage(S.Data, _cls, S.Game.Bonus, S.Game) : new StatsPage(S.Data, _cls, Meta.Mods(S.Data, S.Profile), null);
-        N.Phone.OpenSingle(page, PhoneTabs.Start, instant);
+        var page = _inRun ? new StatsPage(S.Data, _cls, S.Game.Bonus, S.Game, S.Profile, _page)
+                          : new StatsPage(S.Data, _cls, Meta.Mods(S.Data, S.Profile), null, S.Profile, _page);
+        N.Phone.OpenSingle(page, _inRun ? _back : PhoneTabs.Start, instant);
     }
 
     public override bool HandleInput(InputCmd e)
     {
         if (N.Phone.HandleInput(e)) return true;
         if (!e.Is(GameAction.B | GameAction.Cancel | GameAction.Start | GameAction.Select | GameAction.Info)) return false;
-        if (_inRun) Flow.Phone.Open(PhoneTabs.Start);
+        if (_inRun) Flow.Phone.Open(_back);
         else Flow.ClassSelect.Open();
         return true;
     }

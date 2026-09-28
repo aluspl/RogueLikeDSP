@@ -29,7 +29,7 @@ public sealed class SmokeTest
     private int _respectBought = -1, _reward = -1, _newClasses;
     private bool _prologue, _touch, _portrait;
     private int _acts, _splits, _blasts, _shots;
-    private bool _stats, _help;
+    private bool _stats, _help, _damage;
     private int _tutorial, _unlocks, _docs, _phases;
     private bool _act0;
 
@@ -71,6 +71,7 @@ public sealed class SmokeTest
             await ExerciseDaily();
             await ExerciseRespectAndRewards();
             await ExerciseStatsAndHelp();
+            await ExerciseDamageRun();
             if (!_pathOk) throw new Exception("wybór ścieżki: druga oferta nie trafiła na etap");
             await ExercisePortrait();
             var missing = Sfx.Missing();
@@ -78,7 +79,7 @@ public sealed class SmokeTest
             if (DrawErrors.Count > 0) throw new Exception($"błędy rysowania: {DrawErrors.Count}, ostatni: {DrawErrors.Last}");
             GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {s.Data.Version}, zawody {s.Data.Classes.Length}, etap {stage + 1}, " +
                      $"dzień {g.Turns}, HP {g.Hero.Hp}/{g.Hero.MaxHp}, wynik {g.Score}, budżet {g.Cash}, kroki {_steps}, " +
-                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, samouczek {_tutorial} dymków + nowości {_unlocks}, Akt 0 {(_act0 ? "tak" : "nie")} (dokumenty {_docs}, druga faza {_phases}), Jak grać {(_help ? "tak" : "nie")}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
+                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, rozpiska obrażeń {(_damage ? "tak" : "nie")}, samouczek {_tutorial} dymków + nowości {_unlocks}, Akt 0 {(_act0 ? "tak" : "nie")} (dokumenty {_docs}, druga faza {_phases}), Jak grać {(_help ? "tak" : "nie")}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
                      $"ekran {Flow.Current.GetType().Name}");
             _app.Root.GetTree().Quit(ok ? 0 : 1);
         }
@@ -731,12 +732,57 @@ public sealed class SmokeTest
         await DebugRunner.Frames(_app.Root, 1);
     }
 
+    /// <summary>Nowa budowa Murarzem tylko dla rozpiski obrażeń (niezależnie od tego, jak skończyły się wcześniejsze).</summary>
+    private async Task ExerciseDamageRun()
+    {
+        _app.Session.ClassId = 1;
+        _app.StartRun();
+        new DebugScenes(_app).AdvanceMessages();
+        for (var guard = 0; guard < 20 && Flow.Current != Flow.Game && Flow.Current is not null; guard++)
+        {
+            if (Flow.Current == Flow.Prologue) Flow.Prologue.HandleInput(InputCmd.Of(GameAction.A));
+            else if (!Flow.Current.HandleInput(InputCmd.Of(GameAction.Start))) break;
+            new DebugScenes(_app).AdvanceMessages();
+        }
+        await DebugRunner.Frames(_app.Root, 2);
+        if (Flow.Current != Flow.Game) throw new Exception("rozpiska: nie udało się wejść na plac");
+        await ExerciseDamage(_app.Session.Game);
+        Flow.Title.Open();
+        await DebugRunner.Frames(_app.Root, 2);
+    }
+
+    /// <summary>
+    /// Rozpiska obrażeń (#26): Sprzęt > I = strona Obrażenia (zakres jak w rdzeniu), Kryt i obrona, powrót na Sprzęt;
+    /// karta problemu (trzymane B) z obrażeniami w obie strony.
+    /// </summary>
+    private async Task ExerciseDamage(LifeLike.Core.Game g)
+    {
+        Flow.Phone.Open(PhoneTabs.Gear, true);
+        await DebugRunner.Frames(_app.Root, 1);
+        Flow.Phone.HandleInput(InputCmd.Of(GameAction.Info));
+        if (Flow.Current != Flow.Stats || _app.Nodes.Phone.Current is not Phone.Pages.StatsPage sp || sp.Page != Phone.Pages.StatsPage.DamagePage)
+            throw new Exception("Sprzęt > I nie otwiera rozpiski obrażeń");
+        var b = g.WeaponBreakdown();
+        if (b.Min < 1 || b.Max < b.Min || b.CritMin != b.Min * g.D.CritMultiplier || b.CritPct != g.CritPct())
+            throw new Exception($"rozpiska: zakres {b.Min}-{b.Max}, kryt {b.CritMin} / {b.CritPct} vs {g.CritPct()}");
+        await DebugRunner.Frames(_app.Root, 2);
+        Flow.Stats.HandleInput(InputCmd.Of(GameAction.A));
+        if (sp.Page != Phone.Pages.StatsPage.DamagePage + 1) throw new Exception("rozpiska: A nie przechodzi do Kryt i obrona");
+        await DebugRunner.Frames(_app.Root, 2);
+        Flow.Stats.HandleInput(InputCmd.Of(GameAction.B));
+        if (Flow.Current != Flow.Phone || _app.Nodes.Phone.TabIndex != PhoneTabs.Gear) throw new Exception("rozpiska: B nie wraca na Sprzęt");
+        await DebugRunner.Frames(_app.Root, 1);
+        _damage = true;
+    }
+
     /// <summary>Opis statystyk na wyborze zawodu (I, dymek nad wierszem) i 3 strony Jak grać z tytułu.</summary>
     private async Task ExerciseStatsAndHelp()
     {
         Flow.ClassSelect.Open();
         await DebugRunner.Frames(_app.Root, 1);
         _app.Nodes.ClassSelectView.TipStat = 1;
+        await DebugRunner.Frames(_app.Root, 2);
+        _app.Nodes.ClassSelectView.TipStat = Screens.Views.ClassSelectView.WeaponTip;   // rozpiska obrażeń broni (#26)
         await DebugRunner.Frames(_app.Root, 2);
         _app.Nodes.ClassSelectView.TipStat = -1;
         Flow.ClassSelect.HandleInput(InputCmd.Of(GameAction.Info));
@@ -747,12 +793,12 @@ public sealed class SmokeTest
         if (Flow.Current != Flow.ClassSelect) throw new Exception("statystyki: B nie wraca na wybór zawodu");
         _stats = true;
         Flow.Help.Open(true, true);
-        for (var k = 0; k < 3; k++)
+        for (var k = 0; k < 4; k++)
         {
             await DebugRunner.Frames(_app.Root, 1);
             Flow.Help.HandleInput(InputCmd.Of(GameAction.A));
         }
-        if (Flow.Current != Flow.Title) throw new Exception("Jak grać: po 3 stronach brak powrotu na tytuł");
+        if (Flow.Current != Flow.Title) throw new Exception("Jak grać: po 4 stronach brak powrotu na tytuł");
         _help = true;
     }
 

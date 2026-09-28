@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using LifeLike.Core.Data;
 using LifeLike.Game.Gfx;
 using LifeLike.Game.Input;
@@ -6,28 +7,46 @@ using CoreGame = LifeLike.Core.Game;
 namespace LifeLike.Game.Phone.Tabs;
 
 /// <summary>
-/// Sprzęt (tab_gear na GBA): narzędzie z obrażeniami i zasięgiem, kask / rękawice / kamizelka / ... z jakością
-/// (kolor paska) i cechą (pastylka), premie sprzętu oraz szczęście: kryt, unik, wzrok. A / przycisk: Brygada.
+/// Sprzęt (tab_gear na GBA): narzędzie z zakresem ciosu i krytem (rozpiska obrażeń #26: I / dotknięcie narzędzia),
+/// kask / rękawice / kamizelka / ... z jakością (kolor paska), skutkiem (np. „+2 OBR”) i cechą (pastylka), premie
+/// sprzętu oraz szczęście: kryt, unik, wzrok. A / przycisk: Brygada.
 /// </summary>
 public sealed class GearTab : PhonePage
 {
+    private const int WeaponRow = 100;
     private readonly CoreGame _g;
     private readonly System.Action _brigade;
+    private readonly System.Action _breakdown;
 
-    public GearTab(CoreGame g, System.Action brigade = null)
+    public GearTab(CoreGame g, System.Action brigade = null, System.Action breakdown = null)
     {
         _g = g;
         _brigade = brigade;
+        _breakdown = breakdown;
     }
 
     public override string Title => "Sprzęt";
     public override string Sub => _brigade is null ? "Na budowie" : "Spacja: Brygada";
-    public override PageAction[] Actions => _brigade is null ? [] : [new("Brygada", GameAction.A)];
+    public override PageAction[] Actions =>
+        _brigade is null ? [] : _breakdown is null ? [new("Brygada", GameAction.A)] : [new("Obrażenia", GameAction.Info), new("Brygada", GameAction.A)];
 
     public override bool Input(InputCmd e)
     {
+        if (_breakdown is not null && e.Is(GameAction.Info))
+        {
+            _breakdown();
+            return true;
+        }
         if (_brigade is null || !e.Is(GameAction.A)) return false;
         _brigade();
+        return true;
+    }
+
+    /// <summary>Dotknięcie / klik narzędzia: rozpiska obrażeń.</summary>
+    public override bool TapRow(int index)
+    {
+        if (index != WeaponRow || _breakdown is null) return false;
+        _breakdown();
         return true;
     }
 
@@ -35,14 +54,20 @@ public sealed class GearTab : PhonePage
     {
         var g = _g;
         var d = g.D;
-        var y = p.Section(p.Top, "NARZĘDZIE");
-        var c0 = p.Card(y, 1);
+        var y = p.Section(p.Top, "NARZĘDZIE", _breakdown is null ? "" : ButtonNames.Pick("I: rozpiska", "dotknij: rozpiska"));
+        var c0 = p.Card(y, 2);
         var tx = p.TextX(c0);
         var right = c0.End.X - 6;
         var w = g.Weapon;
+        var b = g.WeaponBreakdown();   // zakres ciosu jak w walce (rozpiska #26)
         p.Stripe(c0, 0, Pal.Brand);
         var pw = p.Pill(right, p.RowY(c0, 0), $"z{g.WeaponRange()} {UiText.StatShort(w.ScalesWith)}", PillKind.Group);
-        p.Text(tx, p.RowY(c0, 0), $"{w.Name} {w.MinDamage}-{w.MaxDamage} +{g.DmgBonus}", Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
+        p.Text(tx, p.RowY(c0, 0), $"{w.Name} {b.Min}-{b.Max}", Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
+        p.Divider(c0, 1);
+        var avg = DamageHelp.AddTenths(new Message(), b.Avg10).Text;
+        p.Text(tx, p.RowY(c0, 1), $"kryt {b.CritMin}-{b.CritMax} ({b.CritChance()}%), średnio {avg}", Ink.Prog, TextAlign.Left, right - tx);
+        p.HitRow(c0, 0, WeaponRow);
+        p.HitRow(c0, 1, WeaponRow);
 
         // sloty: kask, rękawice, kamizelka + buty i pas z nagród za odbiór (jeśli odebrane albo założone)
         var slots = new System.Collections.Generic.List<int>();
@@ -66,7 +91,12 @@ public sealed class GearTab : PhonePage
             }
             var gd = d.Gear[i * 3 + rar];
             pw = p.Pill(right, r, d.GearTraits[g.EquippedTrait[i]].Short, rar == 2 ? PillKind.Prog : rar == 1 ? PillKind.Group : PillKind.Gray);
-            p.Text(tx, r, gd.Name, Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
+            // co daje (np. „+2 OBR”, „+3 obrażeń”); nazwa przedmiotu, a gdy się nie mieści - nazwa slotu
+            var eff = DamageHelp.GearLabel(gd);
+            var room = right - pw - 8 - tx - p.F.Measure(eff) - 6;
+            var name = p.F.Measure(gd.Name) <= room ? gd.Name : p.F.Fit(d.GearSlots[i], (int)room);
+            var nx = tx + p.Text(tx, r, name, Ink.Dark) + 6;
+            p.Text(nx, r, eff, Ink.Brand);
         }
 
         y = p.Section(c1.End.Y + 4, "PREMIE I MATERIAŁY");

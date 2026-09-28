@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Godot;
 using LifeLike.Core;
 using LifeLike.Core.Data;
 using LifeLike.Game.Gfx;
@@ -9,35 +10,46 @@ namespace LifeLike.Game.Phone.Pages;
 
 /// <summary>
 /// Opis statystyk (stats_page na GBA, #19): strona 1 - wartości i co dają (wybór zawodu) albo skąd są premie
-/// (w trakcie budowy), strona 2 - wzory w prostych słowach (StatHelp). A / przycisk: strona, B / Esc: wróć.
+/// (w trakcie budowy), strony 2-3 - rozpiska obrażeń broni (#26, jak w BG3: cios od-do i skąd, kryt i obrona),
+/// strona 4 - wzory w prostych słowach (StatHelp). A / strzałki / przycisk: strona, B / Esc: wróć.
 /// </summary>
 public sealed class StatsPage : PhonePage
 {
+    /// <summary>Strona rozpiski obrażeń (Sprzęt: I / dotknięcie narzędzia).</summary>
+    public const int DamagePage = 1;
+    private const int Pages = 4;
+    private static readonly string[] Titles = ["Statystyki", "Obrażenia broni", "Kryt i obrona", "Jak działają"];
+
     private readonly GameData _d;
     private readonly int _cls;
     private readonly RunMods _m;
     private readonly CoreGame _g;
+    private readonly List<DamageRow> _rows;
     private int _page;
 
-    /// <summary>g = null: wybór zawodu (baza + premie z profilu m); inaczej bieżąca budowa.</summary>
-    public StatsPage(GameData d, int cls, RunMods m, CoreGame g)
+    /// <summary>g = null: wybór zawodu (baza + premie z profilu m); inaczej bieżąca budowa. p: profil (źródła premii).</summary>
+    public StatsPage(GameData d, int cls, RunMods m, CoreGame g, Profile p = null, int page = 0)
     {
         _d = d;
         _cls = cls;
         _m = m;
         _g = g;
+        _rows = DamageRows.Build(d, DamageRows.ForHero(d, p, g, cls, m), g);
+        _page = page is >= 0 and < Pages ? page : 0;
     }
 
-    public override string Title => _page == 0 ? "Statystyki" : "Jak działają";
-    public override string Sub => _d.Classes[_cls].Name;
-    public override string Hint => ButtonNames.Localize(_page == 0 ? "A: wzory  B: wróć" : "A: wartości  B: wróć");
-    public override PageAction[] Actions => [new(_page == 0 ? "Wzory" : "Wartości", GameAction.A), new("Wróć", GameAction.B)];
+    public int Page => _page;
+    public override string Title => Titles[_page];
+    public override string Sub => $"{_d.Classes[_cls].Name} {_page + 1}/{Pages}";
+    public override string Hint => ButtonNames.Localize("A: dalej  B: wróć");
+    public override PageAction[] Actions => [new(_page == Pages - 1 ? "Wartości" : "Dalej", GameAction.A), new("Wróć", GameAction.B)];
     public override bool Closable => true;
 
     public override bool Input(InputCmd e)
     {
-        if (!e.Is(GameAction.A | GameAction.Left | GameAction.Right | GameAction.Up | GameAction.Down)) return false;
-        _page ^= 1;
+        if (e.Is(GameAction.A | GameAction.Right | GameAction.Down)) _page = (_page + 1) % Pages;
+        else if (e.Is(GameAction.Left | GameAction.Up)) _page = (_page + Pages - 1) % Pages;
+        else return false;
         return true;
     }
 
@@ -47,8 +59,13 @@ public sealed class StatsPage : PhonePage
 
     public override void Draw(PhonePainter p)
     {
-        var lines = _page == 1 ? Rules() : _g is null ? ClassValues() : RunSources();
-        var y = p.Section(p.Top, _page == 1 ? "WZORY" : _g is null ? "CO DAJĄ" : "SKĄD PREMIE", _page == 0 ? "A: wzory" : "A: wartości");
+        if (_page is 1 or 2)
+        {
+            DrawDamage(p);
+            return;
+        }
+        var lines = _page == 3 ? Rules() : _g is null ? ClassValues() : RunSources();
+        var y = p.Section(p.Top, _page == 3 ? "WZORY" : _g is null ? "CO DAJĄ" : "SKĄD PREMIE", "A: dalej");
         var card = p.Card(y, lines.Count);
         var tx = p.TextX(card);
         var right = card.End.X - 6;
@@ -64,6 +81,36 @@ public sealed class StatsPage : PhonePage
         p.Text(p.TextX(c2), p.RowY(c2, 0), "rzut broni + stat./2 + premie", Ink.Dark, TextAlign.Left, right - p.TextX(c2));
         p.Divider(c2, 1);
         p.Text(p.TextX(c2), p.RowY(c2, 1), "- obrona problemu/2 (min. 1), kryt x2", Ink.Dim, TextAlign.Left, right - p.TextX(c2));
+    }
+
+    /// <summary>Rozpiska: strona 2 - cios (od-do i skąd), strona 3 - kryt, obrona i unik; długie wiersze zawinięte.</summary>
+    private void DrawDamage(PhonePainter p)
+    {
+        var hit = _page == 1;
+        var y = p.Section(p.Top, hit ? "CIOS OD-DO" : "KRYT I OBRONA", hit ? "jak w walce" : "");
+        var width = (int)(p.Width - 24);
+        var lines = new List<(string Text, Ink Ink, Color Stripe)>();
+        foreach (var r in _rows)
+        {
+            if (DamageRows.IsHit(r) != hit) continue;
+            var wrapped = p.F.Wrap(r.Text, width);
+            for (var k = 0; k < wrapped.Count; k++) lines.Add(((k > 0 ? "  " : "") + wrapped[k], r.Ink, k == 0 ? r.Stripe : Colors.Transparent));
+        }
+        var card = p.Card(y, lines.Count);
+        var tx = p.TextX(card);
+        var right = card.End.X - 6;
+        for (var i = 0; i < lines.Count; i++)
+        {
+            if (i > 0 && !lines[i].Text.StartsWith("  ")) p.Divider(card, i);
+            if (lines[i].Stripe.A > 0) p.Stripe(card, i, lines[i].Stripe);
+            p.Text(tx, p.RowY(card, i), lines[i].Text, lines[i].Ink, TextAlign.Left, right - tx);
+        }
+        if (!hit) return;
+        var help = _d.DamageHelpLines;
+        if (help.Length == 0 || card.End.Y + 6 + (help.Length + 1) * PhonePainter.RowH > p.Bottom) return;
+        y = p.Section(card.End.Y + 6, "W SKRÓCIE");
+        var c2 = p.Card(y, help.Length);
+        for (var i = 0; i < help.Length; i++) p.Text(p.TextX(c2), p.RowY(c2, i), help[i], Ink.Dim, TextAlign.Left, right - p.TextX(c2));
     }
 
     /// <summary>Wybór zawodu: wartość (baza + premie z profilu) i co daje.</summary>

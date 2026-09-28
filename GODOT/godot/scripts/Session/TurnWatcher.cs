@@ -57,7 +57,7 @@ public sealed class TurnWatcher
             var oldRank = 1 + (_level >= 3 ? 1 : 0) + (_level >= 5 ? 1 : 0);
             _events.RaiseLevelUp(g.HeroLevel, g.AbilityRank() > oldRank);
         }
-        if (g.WeaponOverride != _weapon && g.WeaponOverride >= 0) _events.RaiseToolFound();
+        if (g.WeaponOverride != _weapon && g.WeaponOverride >= 0) _events.RaiseToolFound(_weapon);
         if (g.PickupsCount > _pickups) _events.RaiseDropped();
         for (var i = 0; i < g.D.GearSlotsCount && i < CoreGame.MaxGearSlots; i++)
         {
