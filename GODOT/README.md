@@ -4,9 +4,17 @@ Wersja Godot gry z demo GBA (`../GBA`): roguelike budowlany, w którym etapy bud
 a wrogami są *problemy budowy*. Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KONCEPCJA.md)
 (telefon z aplikacją PlanBudowlany jako interfejs, oprawa 2.5D – kolejne kamienie milowe).
 
-**Stan: zgodny z GBA v0.21.48** (logika, dane i test złoty z migawki GBA v0.21.48: wybór ścieżki między etapami,
-materiały i naprawy, codzienna budowa, harmonogram domu po wygranej, nowy balans; wcześniej pogoda dnia, brygada,
-tryb inwestora, boss Inspekcja Pracy); oprawa (grafika, font, dźwięk, telefon, wybór zawodu) jak w GBA.
+**Stan: zgodny z GBA v0.21.49** (logika, dane i test złoty z migawki GBA v0.21.49: Respekt za etapy i sklep Respektu,
+nagrody za odbiór – Młot udarowy, Pistolet do kotew, buty, pas, zawody Dekarz, Tynkarz, Operator koparki – nowy balans
+Szkoleń, profil v8; wcześniej wybór ścieżki, materiały, codzienna budowa, pogoda, brygada, tryb inwestora);
+oprawa (grafika, font, dźwięk, telefon, wybór zawodu) jak w GBA.
+
+Nowe w v0.21.49 (warstwa Godota): telefon profilu, zakładka Koszty – strony Szkolenia / Respekt / Nagrody (Tab albo
+przycisk strony na dotyku; Spacja/„Kup” kupuje rangę), 9 zawodów na wyborze zawodu (zawody z nagród: „za N. wygraną”),
+banery „Respekt +N”, „Nagroda: …” i „Druga szansa!”, efekty mocy Rynna, Narzut i Taran, 5 slotów sprzętu (buty, pas),
+ceny brygady i Hurtowni z rabatem. Sceny zrzutów: `respect`, `rewards`, `classselect-locked`, `class-dekarz`,
+`class-tynkarz`, `class-operator`, `gear5`, `respect-banner`, `second-chance`; test dymny kupuje rangę Respektu,
+odbiera nagrodę po wygranej i gra każdym nowym zawodem.
 
 Nowe w v0.21.48 (warstwa Godota): mapka wyboru ścieżki na harmonogramie (strzałki / dotknięcie, Enter), materiały
 w HUD, w Sprzęcie i w Hurtowni (towary za materiały), naprawy Załataj i Kładka na stronie Brygada i naprawy,
