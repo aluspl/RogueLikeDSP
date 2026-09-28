@@ -506,6 +506,60 @@ public static class Meta
         return m;
     }
 
+    /// <summary>
+    /// Premie profilu z jednego źródła (rozpiska obrażeń #26): 0 Szkolenia, 1 Respekt, 2 odznaki, 3 pamiątka
+    /// (DamageHelp.SourceName). Suma premii bojowych = Mods() (bez narzędzi, brygady, slotów i trybu inwestora).
+    /// </summary>
+    public static RunMods ModsPart(GameData d, Profile p, int src)
+    {
+        var m = RunMods.Default(d);
+        if (src == 0)
+        {
+            for (var i = 0; i < d.Upgrades.Length; ++i)
+            {
+                var v = d.Upgrades[i].Value * p.Levels[i];
+                switch (d.Upgrades[i].Effect)
+                {
+                    case UpgradeEffect.Hp: m.Hp += v; break;
+                    case UpgradeEffect.Def: m.Def += v; break;
+                    case UpgradeEffect.Dmg: m.Dmg += v; break;
+                    case UpgradeEffect.Luck: m.Luck += v; break;
+                    case UpgradeEffect.Craft: m.Craft += v; break;
+                    case UpgradeEffect.DmgPct: m.DmgPct += v; break;
+                    case UpgradeEffect.TakenPct: m.TakenPct += v; break;
+                }
+            }
+        }
+        else if (src == 1)
+        {
+            for (var i = 0; i < d.Respect.Length; ++i)
+            {
+                if (RespectRank(d, p, i) > 0) m.AddRespect(d.Respect[i].Effect, RespectValue(d, p, i));
+            }
+        }
+        else if (src == 2)
+        {
+            for (var i = 0; i < d.Badges.Length; ++i)
+            {
+                if ((p.Badges & (1u << i)) != 0) m.AddPerk(d.Badges[i].Bonus);
+            }
+        }
+        else
+        {
+            var k = SelectedKeepsake(d, p);
+            if (k >= 0) m.AddPerk(KeepsakePerk(d, p, k));
+        }
+        return m;
+    }
+
+    /// <summary>Premie profilu ze wszystkich źródeł (DmgBreakdown.SetSources).</summary>
+    public static RunMods[] ModsParts(GameData d, Profile p)
+    {
+        var parts = new RunMods[DmgBreakdown.Sources];
+        for (var s = 0; s < parts.Length; ++s) parts[s] = ModsPart(d, p, s);
+        return parts;
+    }
+
     /// <summary>Ekran „Koszty”: ile kosztuje cały sklep.</summary>
     public static int ShopTotalCost(GameData d)
     {

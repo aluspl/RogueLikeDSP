@@ -1998,6 +1998,11 @@ int main()
             CHECK(b.wmin == 4 && b.wmax == 6 && b.stat_dmg == 2 && b.min == 6 && b.max == 8 && b.avg10 == 70);
             CHECK(b.crit_min == 12 && b.crit_max == 16 && b.crit_chance() == data::crit_base_pct);
             message m; dmg_line(m, b, dmg_text::total); CHECK(std::strcmp(m.s, "Cios 6-8, średnio 7") == 0);
+            message mw; dmg_line(mw, b, dmg_text::weapon); CHECK(std::strcmp(mw.s, "Kielnia 4-6, zasięg 1") == 0);
+            message ms; dmg_line(ms, b, dmg_text::stat); CHECK(std::strcmp(ms.s, "SIŁ 5: +2 (+1 co 2 pkt)") == 0);
+            message mk; dmg_line(mk, b, dmg_text::crit); CHECK(std::strcmp(mk.s, "Kryt x2: 12-16, szansa 5%") == 0);
+            message mg; compare_line(mg, b, g.weapon_breakdown(-1, -1, 1, 2, 0)); CHECK(std::strcmp(mg.s, "teraz 6-8 -> 9-11 (średnio +3)") == 0);
+            message ml; gear_label(ml, data::gear[5]); CHECK(std::strcmp(ml.s, "+3 obrażeń") == 0);
             b.pct = 10; b.finish();   // 6..8 +10%: 6 -> 6 albo 7, 8 -> 8 albo 9
             CHECK(b.min == 6 && b.max == 9 && b.avg10 == 77);
             dmg_breakdown v = g.weapon_breakdown(data::enemy_budzet);   // obrona problemu / 2

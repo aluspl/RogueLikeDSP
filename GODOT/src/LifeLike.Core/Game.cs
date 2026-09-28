@@ -181,9 +181,12 @@ public sealed partial class Game
     public WeaponDef Weapon => D.Weapons[WeaponOverride >= 0 ? WeaponOverride : CDef.Weapon];
 
     /// <summary>Zasięg broni z pogodą: wiatr skraca zasięg broni dalekiego zasięgu (nie mniej niż 1).</summary>
-    public int WeaponRange()
+    public int WeaponRange() => RangeOf(Weapon);
+
+    /// <summary>Zasięg danej broni z pogodą (range_of).</summary>
+    public int RangeOf(WeaponDef w)
     {
-        var rg = Weapon.Range; // Dekarz: wiatr mu nie przeszkadza
+        var rg = w.Range; // Dekarz: wiatr mu nie przeszkadza
         return WeatherIs(WeatherEffect.Wind) && rg > 1 && !HasPassive(ClassPassive.Windproof) ? Math.Max(1, rg - WDef.Value) : rg;
     }
 
