@@ -81,24 +81,24 @@ inline constexpr core::enemy_def enemies[] = {
 };
 
 inline constexpr core::stage_def stages[] = {
-    { "Pozwolenie", { 32, 34, 35, 36 }, 4, 6, -1, 126, 2, 3, 15 },
-    { "Przyłącza", { 37, 38, 39, 33 }, 4, 6, 40, 130, 1, 3, 28 },
-    { "Fundamenty", { 12, 13, 0, 3 }, 4, 5, -1, 95, 0, 0, 48 },
-    { "Izolacja fundamentów", { 14, 15, 12, 0 }, 4, 5, -1, 102, 0, 0, 22 },
-    { "Mury parteru", { 16, 17, 4, 5 }, 4, 6, -1, 108, 0, 0, 62 },
-    { "Strop", { 18, 19, 5, 7 }, 4, 6, 9, 117, 1, 0, 36 },
-    { "Dach", { 20, 21, 6, 3 }, 4, 8, -1, 126, 2, 1, 55 },
-    { "Ściany działowe", { 22, 23, 4, 5 }, 4, 7, -1, 132, 2, 1, 30 },
-    { "Okna i drzwi", { 24, 25, 6, 5 }, 4, 8, 10, 139, 3, 1, 41 },
-    { "Instalacje", { 26, 27, 1, 0 }, 4, 8, 11, 148, 4, 2, 46 },
-    { "Tynki i wylewki", { 28, 29, 2, 0 }, 4, 9, -1, 158, 4, 2, 38 },
-    { "Wykończenie i odbiór", { 30, 31, 2, 7 }, 4, 7, 8, 168, 4, 2, 72 },
+    { "Pozwolenie", { 32, 34, 35, 36 }, 4, 6, -1, 130, 2, 3, 15 },
+    { "Przyłącza", { 37, 38, 39, 33 }, 4, 6, 40, 134, 1, 3, 28 },
+    { "Fundamenty", { 12, 13, 0, 3 }, 4, 5, -1, 107, 0, 0, 48 },
+    { "Izolacja fundamentów", { 14, 15, 12, 0 }, 4, 5, -1, 117, 0, 0, 22 },
+    { "Mury parteru", { 16, 17, 4, 5 }, 4, 6, -1, 126, 0, 0, 62 },
+    { "Strop", { 18, 19, 5, 7 }, 4, 6, 9, 138, 1, 0, 36 },
+    { "Dach", { 20, 21, 6, 3 }, 4, 8, -1, 150, 2, 1, 55 },
+    { "Ściany działowe", { 22, 23, 4, 5 }, 4, 7, -1, 159, 3, 1, 30 },
+    { "Okna i drzwi", { 24, 25, 6, 5 }, 4, 8, 10, 169, 4, 1, 41 },
+    { "Instalacje", { 26, 27, 1, 0 }, 4, 8, 11, 181, 5, 2, 46 },
+    { "Tynki i wylewki", { 28, 29, 2, 0 }, 4, 9, -1, 194, 5, 2, 38 },
+    { "Wykończenie i odbiór", { 30, 31, 2, 7 }, 4, 7, 8, 207, 5, 2, 72 },
 };
 
 inline constexpr core::difficulty_def difficulties[] = {
     { "Łatwy", 100, -1, 50 },
     { "Normalny", 100, 0, 100 },
-    { "Trudny", 140, 0, 150 },
+    { "Trudny", 145, 0, 150 },
 };
 
 inline constexpr core::upgrade_def upgrades[] = {
@@ -156,6 +156,7 @@ inline constexpr int behavior_return_hp_pct = 50;
 inline constexpr int behavior_push_cooldown = 3;
 inline constexpr const char* behavior_names[] = { "strzela z dystansu", "dzieli się", "łata innych", "wybucha", "rośnie", "ucieka", "nie rusza się", "odpycha", "wraca raz" };   // indeks = bit zachowania
 inline constexpr core::shop_item_def hurtownia[] = {
+    { "Ulepsz narzędzie", "+1 obrażeń (maks. +3), od +2 cecha", 0, core::shop_effect::upgrade, -1, 0 },
     { "Kawa z ekspresu", "Pełne HP", 30, core::shop_effect::heal, -1, 0 },
     { "Paczka sprzętu", "Losowy sprzęt, min. solidny", 50, core::shop_effect::gear, -1, 0 },
     { "Nowe narzędzie", "Losowe odblokowane narzędzie", 40, core::shop_effect::tool, -1, 0 },
@@ -175,7 +176,7 @@ inline constexpr core::status_def statuses[] = {   // indeks = core::status_effe
 };
 inline constexpr int paper_delay = 3;
 inline constexpr int acts_count = 4;
-inline constexpr int hurtownia_count = 8;
+inline constexpr int hurtownia_count = 9;
 inline constexpr int slam_every = 4;
 inline constexpr int slam_damage_bonus = 3;
 inline constexpr int slam_radius = 1;
@@ -301,7 +302,7 @@ inline constexpr int start_helpers_mask = 3;
 inline constexpr core::investor_def investor[] = {   // tryb inwestora: modyfikatory po pierwszej wygranej
     { "Budżet -30%", "Mniej zł za problemy i akty", core::investor_effect::cash_pct, -30, 10, 1 },
     { "Bez przerwy na kawę", "Między etapami bez +5 HP", core::investor_effect::no_break, 0, 10, 1 },
-    { "Problemy +25% HP", "Każdy problem ma +25% HP", core::investor_effect::enemy_hp, 25, 15, 2 },
+    { "Problemy +20% HP", "Każdy problem ma +20% HP", core::investor_effect::enemy_hp, 20, 15, 2 },
     { "Hurtownia zamknięta", "Między aktami bez zakupów", core::investor_effect::no_shop, 0, 15, 2 },
     { "Kontrola częściej", "Boss uderza co 3 tury, nie 4", core::investor_effect::slam, 1, 10, 1 },
     { "Termin goni", "Problemy biją o 1 mocniej", core::investor_effect::enemy_dmg, 1, 20, 3 },
@@ -579,6 +580,50 @@ inline constexpr const char* combo_sources[] = { "Mokry: kałuże, Deszcz, woda,
 inline constexpr int combos_count = 3;
 inline constexpr int wet_turns = 3;
 inline constexpr int hero_wet_turns = 2;
+
+inline constexpr core::choice_event_def choice_events[] = {   // wydarzenia z wyborem: pole z SMS-em na etapie
+    { "Betoniarka sąsiada", { "Sąsiad Zenek", { "Mam wolną betoniarkę.", "Za dychę pożyczę na dziś.", "Beton sam się zmiesza!" } }, { { "Pożycz za 20 zł", "Betoniarka kręci: mocne ciosy!", { { core::choice_effect::cash, -20, 100, -1 }, { core::choice_effect::stage_dmg, 2, 100, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 2 }, { "Odmów", "Zenek wzrusza ramionami.", { { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 0 }, { "", "", { { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 0 } }, 2 },
+    { "Tańszy dostawca", { "Kierownik Marek", { "Nowy dostawca da taniej.", "Materiał trochę wilgotny,", "może złapać pleśń." } }, { { "Bierz tanio", "Materiał już na placu.", { { core::choice_effect::mats, 2, 100, -1 }, { core::choice_effect::spawn, 2, 30, 2 }, { core::choice_effect::cash, 0, 0, -1 } }, 2 }, { "Zostań przy starym", "Bez ryzyka, bez zysku.", { { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 0 }, { "", "", { { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 0 } }, 2 },
+    { "Nadgodziny", { "Kierownik Marek", { "Zostaniesz po godzinach?", "Inwestor dopłaci, ale", "będziesz padnięty." } }, { { "Zostaję", "Nocka na budowie się opłaca.", { { core::choice_effect::xp, 15, 100, -1 }, { core::choice_effect::cash, 10, 100, -1 }, { core::choice_effect::hp, -4, 100, -1 } }, 3 }, { "Idę do domu", "Wyspany fachowiec to skarb.", { { core::choice_effect::hp, 4, 100, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 1 }, { "", "", { { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 0 } }, 2 },
+    { "Znaleziony projekt", { "Anna Nowak", { "Znalazłam stary projekt", "z poprawkami architekta.", "Warto go przejrzeć!" } }, { { "Czytaj całą noc", "Nowy pomysł na budowę!", { { core::choice_effect::boon, 1, 100, -1 }, { core::choice_effect::hp, -4, 100, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 2 }, { "Oddaj Markowi", "Marek dziękuje.", { { core::choice_effect::xp, 6, 100, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 1 }, { "", "", { { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 0 } }, 2 },
+    { "Zagubiony kask", { "Kierownik Marek", { "Ktoś zostawił nowy kask", "przy kontenerze. Weźmiesz", "czy oddasz właścicielowi?" } }, { { "Biorę", "Kask jak nowy.", { { core::choice_effect::gear, 1, 100, 0 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 1 }, { "Oddaję", "Cała ekipa to widziała.", { { core::choice_effect::respect, 1, 100, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 1 }, { "Sprzedaję", "Kupiec się znalazł.", { { core::choice_effect::cash, 12, 100, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 1 } }, 3 },
+    { "Ekipa obok prosi", { "Sąsiad Zenek", { "Chłopaki z sąsiedniej", "budowy nie dają rady", "z szalunkiem. Pomożesz?" } }, { { "Pomogę", "Szalunek stoi, jest wdzięczność.", { { core::choice_effect::hp, -3, 100, -1 }, { core::choice_effect::cash, 15, 100, -1 }, { core::choice_effect::respect, 1, 100, -1 } }, 3 }, { "Nie dziś", "Każdy ma swoją budowę.", { { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 0 }, { "", "", { { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 0 } }, 2 },
+    { "Automat z kawą", { "Kierownik Marek", { "Na placu stanął automat", "z kawą. 5 zł za kubek,", "ale bywa kapryśny." } }, { { "Kup 2 kawy", "Kawa do termosu.", { { core::choice_effect::cash, -10, 100, -1 }, { core::choice_effect::coffee, 2, 75, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 2 }, { "Szkoda kasy", "Termos poczeka.", { { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 0 }, { "", "", { { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 0 } }, 2 },
+    { "Stara ostrzałka", { "Sąsiad Zenek", { "Mam w garażu ostrzałkę.", "Podostrzę ci narzędzie,", "tylko uważaj na palce!" } }, { { "Ostrz narzędzie", "Narzędzie jak brzytwa.", { { core::choice_effect::upgrade, 1, 100, -1 }, { core::choice_effect::hp, -3, 35, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 2 }, { "Nie trzeba", "Zenek odkłada ostrzałkę.", { { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 0 }, { "", "", { { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 0 } }, 2 },
+    { "Stal przed czasem", { "Anna Nowak", { "Hurtownia przywiozła stal", "tydzień za wcześnie.", "Przyjmiesz czy odeślesz?" } }, { { "Przyjmij", "Stal na placu.", { { core::choice_effect::mats, 3, 100, 1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 1 }, { "Odeślij", "Hurtownia oddaje za transport.", { { core::choice_effect::cash, 15, 100, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 1 }, { "Weź połowę", "Trochę stali, trochę zł.", { { core::choice_effect::mats, 1, 100, 1 }, { core::choice_effect::cash, 7, 100, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 2 } }, 3 },
+    { "Szybka kontrola BHP", { "Kierownik Marek", { "Za chwilę kontrola BHP.", "Ubierzesz się porządnie", "czy robisz dalej?" } }, { { "Pełne BHP", "Kontrola zadowolona.", { { core::choice_effect::stage_def, 1, 100, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 1 }, { "Robię dalej", "Szybciej, ale ryzykownie.", { { core::choice_effect::xp, 8, 100, -1 }, { core::choice_effect::hp, -3, 50, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 2 }, { "", "", { { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 0 } }, 2 },
+    { "Energetyk od Marka", { "Kierownik Marek", { "Masz energetyka na drogę.", "Da kopa, ale potem", "serce wali jak młot." } }, { { "Wypij od razu", "Moc gotowa!", { { core::choice_effect::power, 1, 100, -1 }, { core::choice_effect::hp, -2, 100, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 2 }, { "Do termosu", "Na czarną godzinę.", { { core::choice_effect::coffee, 1, 100, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 1 }, { "", "", { { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 0 } }, 2 },
+    { "Premia za tempo", { "Anna Nowak", { "Jak skończycie ten etap", "szybko, dorzucę premię.", "Tylko bez fuszerki!" } }, { { "Przyspieszam", "Tempo! Ale mniej ostrożnie.", { { core::choice_effect::cash, 25, 100, -1 }, { core::choice_effect::stage_def, -1, 100, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 2 }, { "Spokojnie", "Dokładność przede wszystkim.", { { core::choice_effect::hp, 4, 100, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 1 }, { "", "", { { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 }, { core::choice_effect::cash, 0, 0, -1 } }, 0 } }, 2 },
+};
+inline constexpr int choice_events_count = 12;
+inline constexpr int choice_event_chance_pct = 55;
+
+inline constexpr core::tool_level_def tool_levels[] = {   // koszt kolejnych poziomów ulepszenia narzędzia
+    { 40, 1, 3 },
+    { 60, 1, 4 },
+    { 80, 1, 5 },
+};
+inline constexpr core::tool_trait_def tool_traits[] = {   // cecha ulepszonego narzędzia (wybór na poziomie traitAt)
+    { "Przebicie", "OBR -2", "Ignoruje 2 OBR problemu", core::tool_trait_effect::pierce, 2 },
+    { "Ostrze", "kryt +5%", "Kryt +5%", core::tool_trait_effect::crit, 5 },
+    { "Wyważenie", "rzut min +1", "Najsłabszy rzut +1", core::tool_trait_effect::steady, 1 },
+};
+inline constexpr int tool_upgrade_max = 3;
+inline constexpr int tool_upgrade_dmg = 1;
+inline constexpr int tool_trait_at = 2;
+inline constexpr int tool_traits_count = 3;
+
+inline constexpr core::secret_kind_def secret_kinds[] = {   // ukryte pomieszczenie: pęknięta ściana / drzwi
+    { "Pęknięta ściana", "Klucz, Operator albo wybuch", true },
+    { "Drzwi magazynu", "Otworzy je tylko klucz", false },
+};
+inline constexpr int secret_kinds_count = 2;
+inline constexpr int secret_chance_pct = 35;
+inline constexpr int secret_guard_pct = 50;
+inline constexpr int chest_respect = 2;
+inline constexpr int chest_mats = 1;
+inline constexpr int chest_cash = 10;
+inline constexpr int chest_gear_min = 1;
 
 inline constexpr const char* version = "v0.21.50";   // numer wersji (ekran tytułowy, changelog)
 

@@ -45,10 +45,14 @@ static void bot_step(game& g)
 {
     static const int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}};
     if(g.has_offer()) { if(g.offer_is_better()) g.accept_offer(); else g.decline_offer(); }
+    if(g.bot_pending()) return;   // v0.21.50 cz. 3: wydarzenie, premia z wydarzenia, cecha narzędzia, narzędzie
+    if(g.can_open_secret() && g.hero.x == g.secret_front_x() && g.hero.y == g.secret_front_y()   // przed magazynem: otwórz
+       && g.player_move(g.secret_x - g.hero.x, g.secret_y - g.hero.y)) return;
     if(g.thermos > 0 && g.hero.hp * 100 < g.hero.max_hp * data::bot_drink_below_pct && g.player_drink()) return;
     static int hd[map_h][map_w], td[map_h][map_w];
     bot_cost(g, g.hero.x, g.hero.y, hd);   // koszt drogi (błoto droższe)
     int tx = g.stairs_x, ty = g.stairs_y, best = 999999;
+    { int gx, gy; if(g.bot_goal(gx, gy) && hd[gy][gx] >= 0) { tx = gx; ty = gy; } }   // klucz, magazyn, skrzynia, wydarzenie
     if(g.stairs_locked())   // pieczątki (Akt 0): najpierw najbliższy dokument, potem schody
     {
         int bdoc = 999999;
@@ -85,6 +89,7 @@ static void bot_step(game& g)
 static void bot_step_smart(game& g)
 {
     if(g.has_offer()) { if(g.offer_rarity >= g.equipped[g.offer_slot]) g.accept_offer(); else g.decline_offer(); }
+    if(g.bot_pending()) return;
     if(g.thermos > 0 && g.hero.hp * 2 < g.hero.max_hp && g.player_drink()) return;
     for(int k = 0; k < data::repairs_count; ++k)   // naprawy: Kładka przy kałużach; Załataj przy niskim HP (problem w polu widzenia)
     {
@@ -100,7 +105,11 @@ static void bot_step_smart(game& g)
     if(!g.danger_cell(g.hero.x, g.hero.y) && g.ability_cd == 0)
     {
         int t = g.nearest_visible_enemy();
-        if(t >= 0 && cheb(g.hero.x, g.hero.y, g.enemies[t].x, g.enemies[t].y) <= 2 && g.player_ability()) return;
+        // Ścianka tylko w obronie (HP poniżej połowy) i nie na problem, który stoi w miejscu - mur zasłania drogę do celu,
+        // a problem, który nie podchodzi (stoi, strzela z dystansu), zostaje za nim: bot czekałby na zniknięcie muru bez końca
+        const bool pointless = t >= 0 && g.cdef().ability == ability_effect::wall
+                               && (g.hero.hp * 2 >= g.hero.max_hp || g.has_tag(g.enemies[t], tag_stationary));
+        if(t >= 0 && ! pointless && cheb(g.hero.x, g.hero.y, g.enemies[t].x, g.enemies[t].y) <= 2 && g.player_ability()) return;
     }
     if(!g.danger_cell(g.hero.x, g.hero.y))
     {
@@ -110,7 +119,7 @@ static void bot_step_smart(game& g)
     bot_step(g);
 }
 
-static void bot_shop(game& g) { for(int i = 0; i < data::hurtownia_count; ++i) g.hurtownia_buy(i); }
+static void bot_shop(game& g) { for(int i = 0; i < data::hurtownia_count; ++i) { g.hurtownia_buy(i); g.bot_pending(); } }
 
 // ------------------------------------------------------------------ skrót stanu (StateDigest.cs)
 struct fnv { uint32_t h = 2166136261u; void add(int v) { uint32_t u = uint32_t(v); for(int i = 0; i < 4; ++i) { h ^= (u >> (8 * i)) & 0xFF; h *= 16777619u; } } };
@@ -175,6 +184,13 @@ static uint32_t digest(const game& g)
     for(int i = 0; i < 3; ++i) f.add(g.boon_offer[i]);
     f.add(g.boon_rerolls); f.add(g.hit_ctx); f.add(g.combo_events); f.add(g.synergy_mask());
     f.add(g.hero_defense()); f.add(g.crit_pct()); f.add(g.thermos_cap()); f.add(g.coffee_heal());
+    // v0.21.50 cz. 3: wydarzenia z wyborem, ulepszenie narzędzia, ukryte pomieszczenia
+    f.add(g.boon_salt); f.add(g.pending_event); f.add(g.stage_choice); f.add(g.stage_choice_pick); f.add(g.choice_done);
+    f.add(g.events_seen); f.add(g.event_dmg); f.add(g.event_def);
+    f.add(g.weapon_lvl); f.add(g.weapon_trait); f.add(g.trait_pending); f.add(g.tool_offer); f.add(g.tool_offer_pickup);
+    f.add(g.secret_x); f.add(g.secret_y); f.add(g.secret_kind); f.add(g.secret_dir); f.add(g.secret_rx); f.add(g.secret_ry);
+    f.add(g.secret_rw); f.add(g.secret_rh); f.add(g.secret_open); f.add(g.key_holder); f.add(g.keys); f.add(g.secrets_found);
+    f.add(g.upgrade_price()); f.add(g.can_open_secret());
     return f.h;
 }
 
@@ -238,6 +254,12 @@ static void snapshot(const game& g, int step)
     wi(g.boon_offer[0]); w(","); wi(g.boon_offer[1]); w(","); wi(g.boon_offer[2]); w(","); wi(g.boon_rerolls); w(",");
     wi(g.synergy_mask()); w(","); wi(g.rerolls_left()); w(","); wi(g.reroll_price()); w(","); wi(g.hero_defense()); w(",");
     wi(g.luck()); w(","); wi(g.dodge_pct()); w("]");
+    w(","); key("part3"); w("["); wi(g.boon_salt); w(","); wi(g.pending_event); w(","); wi(g.stage_choice); w(","); wi(g.stage_choice_pick);
+    w(","); wi(g.choice_done); w(","); wi(g.events_seen); w(","); wi(g.event_dmg); w(","); wi(g.event_def); w(","); wi(g.weapon_lvl);
+    w(","); wi(g.weapon_trait); w(","); wi(g.trait_pending); w(","); wi(g.tool_offer); w(","); wi(g.tool_offer_pickup); w(",");
+    wi(g.secret_x); w(","); wi(g.secret_y); w(","); wi(g.secret_kind); w(","); wi(g.secret_dir); w(","); wi(g.secret_rx); w(",");
+    wi(g.secret_ry); w(","); wi(g.secret_rw); w(","); wi(g.secret_rh); w(","); wi(g.secret_open); w(","); wi(g.key_holder); w(",");
+    wi(g.keys); w(","); wi(g.secrets_found); w(","); wi(g.upgrade_price()); w(","); wi(g.can_open_secret()); w("]");
     w(","); key("killsByType"); w("["); for(int i = 0; i < max_enemy_types; ++i) { if(i) w(","); wi(g.kills_by_type[i]); } w("]");
     w(","); key("rooms"); w("[");
     for(int i = 0; i < g.lv.rooms_count; ++i) { if(i) w(","); const room& r = g.lv.rooms[i]; w("["); wi(r.x); w(","); wi(r.y); w(","); wi(r.w); w(","); wi(r.h); w("]"); }
@@ -397,6 +419,7 @@ int main(int argc, char** argv)
             {
                 check_badges(p, g); check_contracts(p); bank_xp(p, g);
                 if(g.act_cleared && s.shop && ! g.shop_closed()) bot_shop(g);
+                g.bot_upgrade();   // v0.21.50 cz. 3: jak bot balansu - ulepszenie narzędzia, jeśli stać
                 if(s.paths) g.choose_path(g.stage & 1);
                 // v0.21.50 cz. 2: premia 1 z 3 - bot z rdzenia; ścieżki na przemian: też losowanie (płatne) i wybór wg etapu
                 if(g.bot_wants_reroll()) g.reroll_boons();

@@ -129,8 +129,9 @@ assert set(bn) == set(BEH) and all(len(v) <= 18 for v in bn.values())
 L.append("inline constexpr const char* behavior_names[] = { " + ", ".join(s(bn[k]) for k in BEH) + " };   // indeks = bit zachowania")
 L.append("inline constexpr core::shop_item_def hurtownia[] = {")
 for it in d["hurtownia"]:
-    assert it["effect"] in {"heal", "gear", "tool", "maxhp", "ability", "def", "thermos"} and len(it["desc"]) <= 34, it
-    assert ("material" in it) == (it["price"] == 0) and (0 < it.get("matCost", 1) <= 9), it   # zł albo materiał
+    assert it["effect"] in {"heal", "gear", "tool", "maxhp", "ability", "def", "thermos", "upgrade"} and len(it["desc"]) <= 34, it
+    assert it["effect"] == "upgrade" or ("material" in it) == (it["price"] == 0), it   # zł albo materiał (ulepszenie: toolUpgrade)
+    assert 0 < it.get("matCost", 1) <= 9 and (it["effect"] != "upgrade" or (it["price"] == 0 and "material" not in it)), it
     L.append(f'    {{ {s(it["name"])}, {s(it["desc"])}, {it["price"]}, core::shop_effect::{it["effect"]}, '
              f'{mid[it["material"]] if "material" in it else -1}, {it.get("matCost", 0)} }},')
 L.append("};")
@@ -464,6 +465,63 @@ assert len(co["sources"]) == 4 and all(len(x) <= 36 for x in co["sources"])
 L += ["inline constexpr const char* combo_sources[] = { " + ", ".join(s(x) for x in co["sources"]) + " };   // Jak grać: skąd stany",
       f"inline constexpr int combos_count = {len(co['list'])};", f"inline constexpr int wet_turns = {co['wetTurns']};",
       f"inline constexpr int hero_wet_turns = {co['heroWetTurns']};", ""]
+
+# v0.21.50 cz. 3: wydarzenia z wyborem (#30), ulepszanie narzędzia (#31), ukryte pomieszczenia (#32)
+ce = d["choiceEvents"]
+CHE = ["cash", "xp", "hp", "max_hp", "mats", "stage_dmg", "stage_def", "boon", "gear", "respect", "coffee", "spawn", "status",
+       "upgrade", "power"]
+STS = ["none", "poison", "shock", "slip", "paper", "wet"]
+slot_names = [x["name"] for x in d["equipment"]["slots"]]
+def cout(x):
+    assert x["effect"] in CHE and -100 < x["value"] < 100 and 1 <= x.get("chance", 100) <= 100, x
+    arg = -1
+    if x["effect"] == "mats": arg = mid[x["material"]] if "material" in x else -1
+    if x["effect"] == "spawn": arg = eid[x["enemy"]]; assert 1 <= x["value"] <= 3 and not d["enemies"][arg].get("slam"), x
+    if x["effect"] == "status": arg = STS.index(x["status"]); assert arg > 0, x
+    if x["effect"] == "gear": arg = slot_names.index(x["slot"]) if "slot" in x else -1; assert 0 <= x["value"] <= 2, x
+    return f'{{ core::choice_effect::{x["effect"]}, {x["value"]}, {x.get("chance", 100)}, {arg} }}'
+PAD = "{ core::choice_effect::cash, 0, 0, -1 }"
+L.append("inline constexpr core::choice_event_def choice_events[] = {   // wydarzenia z wyborem: pole z SMS-em na etapie")
+for e in ce["list"]:
+    assert len(e["name"]) <= 22 and 2 <= len(e["choices"]) <= 3, e
+    chs = []
+    for c in e["choices"]:
+        assert len(c["label"]) <= 18 and len(c["result"]) <= 34 and len(c["effects"]) <= 3, c
+        outs = [cout(x) for x in c["effects"]] + [PAD] * (3 - len(c["effects"]))
+        chs.append(f'{{ {s(c["label"])}, {s(c["result"])}, {{ {", ".join(outs)} }}, {len(c["effects"])} }}')
+    chs += ['{ "", "", { ' + ", ".join([PAD] * 3) + ' }, 0 }'] * (3 - len(e["choices"]))
+    L.append(f'    {{ {s(e["name"])}, {story(e)}, {{ {", ".join(chs)} }}, {len(e["choices"])} }},')
+L.append("};")
+assert len(ce["list"]) <= 16 and 0 <= ce["chancePct"] <= 100   # bitmaska widzianych w budowie (uint16)
+L += [f"inline constexpr int choice_events_count = {len(ce['list'])};", f"inline constexpr int choice_event_chance_pct = {ce['chancePct']};", ""]
+tu2 = d["toolUpgrade"]
+TTE = ["pierce", "crit", "steady"]
+assert len(tu2["levels"]) == tu2["max"] and 1 <= tu2["traitAt"] <= tu2["max"] and len(tu2["traits"]) == 3
+L.append("inline constexpr core::tool_level_def tool_levels[] = {   // koszt kolejnych poziomów ulepszenia narzędzia")
+for x in tu2["levels"]:
+    assert 0 <= x["cash"] <= 200 and 0 < x["count"] <= 9, x
+    L.append(f'    {{ {x["cash"]}, {mid[x["material"]]}, {x["count"]} }},')
+L.append("};")
+L.append("inline constexpr core::tool_trait_def tool_traits[] = {   // cecha ulepszonego narzędzia (wybór na poziomie traitAt)")
+for x in tu2["traits"]:
+    assert x["effect"] in TTE and len(x["name"]) <= 12 and len(x["short"]) <= 12 and len(x["desc"]) <= 26, x
+    L.append(f'    {{ {s(x["name"])}, {s(x["short"])}, {s(x["desc"])}, core::tool_trait_effect::{x["effect"]}, {x["value"]} }},')
+L.append("};")
+L += [f"inline constexpr int tool_upgrade_max = {tu2['max']};", f"inline constexpr int tool_upgrade_dmg = {tu2['dmg']};",
+      f"inline constexpr int tool_trait_at = {tu2['traitAt']};", f"inline constexpr int tool_traits_count = {len(tu2['traits'])};", ""]
+hr = d["hiddenRooms"]
+assert 1 <= len(hr["kinds"]) <= 2 and 0 <= hr["chancePct"] <= 100 and 0 <= hr["guardPct"] <= 100
+L.append("inline constexpr core::secret_kind_def secret_kinds[] = {   // ukryte pomieszczenie: pęknięta ściana / drzwi")
+for x in hr["kinds"]:
+    assert len(x["name"]) <= 18 and len(x["info"]) <= 30, x
+    L.append(f'    {{ {s(x["name"])}, {s(x["info"])}, {"true" if x["breakable"] else "false"} }},')
+L.append("};")
+chs2 = hr["chest"]
+assert 0 <= chs2["gearMin"] <= 2
+L += [f"inline constexpr int secret_kinds_count = {len(hr['kinds'])};", f"inline constexpr int secret_chance_pct = {hr['chancePct']};",
+      f"inline constexpr int secret_guard_pct = {hr['guardPct']};", f"inline constexpr int chest_respect = {chs2['respect']};",
+      f"inline constexpr int chest_mats = {chs2['mats']};", f"inline constexpr int chest_cash = {chs2['cash']};",
+      f"inline constexpr int chest_gear_min = {chs2['gearMin']};", ""]
 
 L += [f"inline constexpr const char* version = {s(d['version'])};   // numer wersji (ekran tytułowy, changelog)", ""]
 dh = d["damageHelp"]   # v0.21.50: Jak grać, strona Obrażenia (GBA i Godot)

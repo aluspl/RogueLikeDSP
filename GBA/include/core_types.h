@@ -200,7 +200,7 @@ namespace core
         bool prelude = false;      // akt wstępny (Akt 0): w budowie dopiero po nagrodzie za odbiór
     };
 
-    enum class shop_effect : uint8_t { heal, gear, tool, maxhp, ability, def, thermos };
+    enum class shop_effect : uint8_t { heal, gear, tool, maxhp, ability, def, thermos, upgrade };   // upgrade (v0.21.50): ulepszenie narzędzia
 
     struct shop_item_def       // Hurtownia między aktami (płatne budżetem z budowy albo materiałami)
     {
@@ -303,6 +303,62 @@ namespace core
         int8_t screen;
         bool godot_only;       // np. klucz z opcjami
         bool needs_investor;   // tylko po odblokowaniu trybu inwestora
+    };
+
+    // ------------------------------------------------------------------ v0.21.50 cz. 3
+    // Wydarzenie z wyborem (#30): pole z SMS-em na etapie; 2-3 odpowiedzi, każda z 0-3 skutkami (część z szansą).
+    enum class choice_effect : uint8_t { cash, xp, hp, max_hp, mats, stage_dmg, stage_def, boon, gear, respect, coffee, spawn, status,
+                                         upgrade, power };
+
+    struct choice_out
+    {
+        choice_effect effect;
+        int8_t value;
+        int8_t chance;         // % (100 = zawsze)
+        int8_t arg;            // materiał (-1 = każdy), problem (spawn), stan (status), slot sprzętu (gear, -1 = losowy)
+    };
+
+    struct event_choice
+    {
+        const char* label;     // odpowiedź, np. "Pożycz za 10 zł"
+        const char* result;    // skutek słowami, np. "Betoniarka kręci: mocne ciosy!"
+        choice_out out[3];
+        int8_t outs;
+    };
+
+    struct choice_event_def
+    {
+        const char* name;
+        story_msg msg;         // SMS: nadawca + 3 linie
+        event_choice choices[3];
+        int8_t choices_count;
+    };
+
+    // Ulepszanie narzędzia (#31): +1 obrażeń za poziom, od poziomu trait_at jedna cecha.
+    enum class tool_trait_effect : uint8_t { pierce, crit, steady };
+
+    struct tool_trait_def
+    {
+        const char* name;
+        const char* short_name;   // np. "OBR -2" (rozpiska)
+        const char* desc;
+        tool_trait_effect effect;
+        int8_t value;
+    };
+
+    struct tool_level_def      // koszt kolejnego poziomu: zł + materiał
+    {
+        int16_t cash;
+        int8_t material;
+        int8_t count;
+    };
+
+    // Ukryte pomieszczenie (#32): magazyn za pękniętą ścianą (klucz, Operator koparki, wybuch) albo drzwiami (klucz).
+    struct secret_kind_def
+    {
+        const char* name;
+        const char* info;
+        bool breakable;
     };
 
     // Wydarzenie na placu: losowy SMS na starcie etapu (nie pierwszego i nie z bossem) z modyfikatorem etapu.

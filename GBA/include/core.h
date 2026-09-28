@@ -26,7 +26,9 @@ namespace core
     enum class tile : uint8_t { wall, floor, stairs };
     enum class status : uint8_t { playing, stage_clear, dead, won };
     enum sight : uint8_t { unknown = 0, remembered = 1, in_view = 2 };   // mgła wojny
-    enum pickup_type : uint8_t { coffee, helmet, plan, tool, gear_box, document };   // document: Akt 0 (arg = data::documents)
+    enum pickup_type : uint8_t { coffee, helmet, plan, tool, gear_box, document, event_tile, store_key, chest };
+    // document: Akt 0 (arg = data::documents); v0.21.50 cz. 3: event_tile - wydarzenie z wyborem (arg = data::choice_events),
+    // key - klucz do magazynu, chest - skrzynia w ukrytym pomieszczeniu
 
     inline int iabs(int v) { return v < 0 ? -v : v; }
     inline int imax(int a, int b) { return a > b ? a : b; }
@@ -397,10 +399,14 @@ namespace core
         int enemy_elite = 0, elite = -1;     // v0.21.50: + obrona elity (Tarcza), cecha elity (data::elites)
         int luck = 0, crit_trait = 0, crit_bonus = 0;   // szczęście, cechy Kryt +%, premie (odznaki, Respekt)
         int power = 0, power_rank = 1;       // moc dodaje do ciosu (Seria, Rynna od II, Taran +ranga)
+        // v0.21.50 cz. 3: ulepszenie narzędzia (#31) i premia z wydarzenia (#30)
+        int upg_level = 0, flat_upgrade = 0, upg_trait = -1;   // poziom, +obrażeń, cecha (data::tool_traits)
+        int pierce = 0, steady = 0, crit_upg = 0;              // cecha: -OBR problemu, +najsłabszy rzut, +kryt
+        int flat_event = 0;                                     // wydarzenie: ciosy +N na etap
         bool split = false;                  // źródła premii profilu znane (src_*)
         int src_dmg[mods_sources] = {}, src_pct[mods_sources] = {}, src_crit[mods_sources] = {};
         // wyliczone w finish()
-        int stat_value = 0, stat_dmg = 0, flat = 0, def_cut = 0;
+        int stat_value = 0, stat_dmg = 0, flat = 0, def_cut = 0, roll_min = 0;
         int pct_total = 0;                   // procent łącznie (profil + premie po etapach)
         int base_min = 0, base_max = 0;      // przed procentem
         int min = 0, max = 0;                // zakres ciosu
@@ -411,20 +417,21 @@ namespace core
         {
             stat_value = stat_class + stat_craft + stat_trait;
             stat_dmg = stat_value / 2;
-            flat = flat_mods + flat_level + flat_found + flat_gear + flat_boon;
-            def_cut = (enemy_def + enemy_elite) / 2;
+            flat = flat_mods + flat_level + flat_found + flat_gear + flat_boon + flat_upgrade + flat_event;
+            def_cut = imax(0, enemy_def + enemy_elite - pierce) / 2;
             pct_total = pct + pct_boon;
+            roll_min = imin(wmax, wmin + steady);   // Wyważenie: najsłabszy rzut wyżej
             const int add = stat_dmg + flat - def_cut;
-            base_min = imax(1, wmin + add);
+            base_min = imax(1, roll_min + add);
             base_max = imax(1, wmax + add);
             min = base_min + pct_floor(base_min, pct_total);
             max = base_max + pct_ceil(base_max, pct_total);
             int sum = 0, n = 0;
-            for(int r = wmin; r <= wmax; ++r, ++n) sum += imax(1, r + add) * (100 + imax(0, pct_total));
+            for(int r = roll_min; r <= wmax; ++r, ++n) sum += imax(1, r + add) * (100 + imax(0, pct_total));
             avg10 = n ? div_round(sum, 10 * n) : 0;
             crit_base = data::crit_base_pct;
             crit_luck = data::crit_per_luck_pct * luck;
-            crit_pct = crit_base + crit_luck + crit_trait + crit_bonus + crit_boon;
+            crit_pct = crit_base + crit_luck + crit_trait + crit_bonus + crit_boon + crit_upg;
             crit_mult = data::crit_multiplier;
             crit_min = min * crit_mult;
             crit_max = max * crit_mult;
@@ -474,8 +481,9 @@ namespace core
     }
 
     // Teksty rozpiski (GBA: strona Obrażenia, Godot: podpowiedzi) - wspólne, krótkie (bufor message 48 bajtów).
-    enum class dmg_text : uint8_t { weapon, stat, stat_parts, profile, run, gear, pct, enemy, total, crit, crit_parts, crit_extra, power, boon };
-    constexpr int dmg_texts = 14;
+    enum class dmg_text : uint8_t { weapon, stat, stat_parts, profile, run, gear, pct, enemy, total, crit, crit_parts, crit_extra, power, boon,
+                                    upgrade };
+    constexpr int dmg_texts = 15;
 
     inline message& add_range(message& m, int lo, int hi) { m.add(lo); if(hi != lo) m.add("-").add(hi); return m; }
     // Liczba x10 jako "7" albo "7,5" (ze znakiem, gdy sign).
@@ -508,7 +516,9 @@ namespace core
         switch(k)
         {
             case dmg_text::weapon:
-                m.add(data::weapons[b.weapon].name).add(" ").add(b.wmin).add("-").add(b.wmax).add(", zasięg ").add(b.range);
+                m.add(data::weapons[b.weapon].name);
+                if(b.upg_level) m.add("+").add(b.upg_level);   // ulepszone narzędzie: "Kielnia+2"
+                m.add(" ").add(b.wmin).add("-").add(b.wmax).add(", zasięg ").add(b.range);
                 if(b.range < b.range_base) m.add(" (wiatr)");
                 return true;
             case dmg_text::stat:
@@ -530,11 +540,16 @@ namespace core
                 return true;
             }
             case dmg_text::run:
-                if(! b.flat_level && ! b.flat_found) { m.add("Z budowy: brak"); return false; }
-                m.add("Z budowy +").add(b.flat_level + b.flat_found).add(":");
-                if(b.flat_level) m.add(" poziom +").add(b.flat_level);
-                if(b.flat_found) m.add(b.flat_level ? "," : "").add(" projekt ").add(b.flat_found > 0 ? "+" : "").add(b.flat_found);
+            {
+                if(! b.flat_level && ! b.flat_found && ! b.flat_event) { m.add("Z budowy: brak"); return false; }
+                const int sum = b.flat_level + b.flat_found + b.flat_event;
+                m.add("Z budowy ").add(sum >= 0 ? "+" : "").add(sum).add(":");
+                bool first = true;
+                if(b.flat_level) { m.add(" poziom +").add(b.flat_level); first = false; }
+                if(b.flat_found) { m.add(first ? "" : ",").add(" projekt ").add(b.flat_found > 0 ? "+" : "").add(b.flat_found); first = false; }
+                if(b.flat_event) m.add(first ? "" : ",").add(" wydarzenie ").add(b.flat_event > 0 ? "+" : "").add(b.flat_event);
                 return true;
+            }
             case dmg_text::gear:
                 if(b.gear_item < 0 || ! b.flat_gear) { m.add("Sprzęt: bez premii"); return false; }
                 m.add(data::gear[b.gear_item].name).add(": +").add(b.flat_gear);
@@ -553,6 +568,7 @@ namespace core
                 if(! b.vs_enemy) { m.add("OBR problemu: -1 co 2 pkt"); return false; }
                 m.add("OBR problemu ").add(b.enemy_def);
                 if(b.enemy_elite) m.add("+").add(b.enemy_elite).add(" (elita)");
+                if(b.pierce) m.add(" -").add(b.pierce).add(" (przebicie)");
                 m.add(": -").add(b.def_cut);
                 return b.def_cut > 0;
             case dmg_text::total:
@@ -569,10 +585,11 @@ namespace core
                 return true;
             case dmg_text::crit_extra:
             {
-                if(! b.crit_trait && ! b.crit_bonus) { m.add("Kryt: bez premii"); return false; }
+                if(! b.crit_trait && ! b.crit_bonus && ! b.crit_upg) { m.add("Kryt: bez premii"); return false; }
                 m.add("+");
                 bool first = true;
                 if(b.crit_trait) { m.add(" cecha ").add(b.crit_trait).add("%"); first = false; }
+                if(b.crit_upg) { m.add(first ? " " : ", ").add("ostrze ").add(b.crit_upg).add("%"); first = false; }
                 if(! b.split) { if(b.crit_bonus) m.add(first ? " " : ", ").add("premie ").add(b.crit_bonus).add("%"); return true; }
                 for(int s = 0; s < mods_sources; ++s)
                     if(b.src_crit[s]) { m.add(first ? " " : ", ").add(mods_source_name(s)).add(" ").add(b.src_crit[s]).add("%"); first = false; }
@@ -592,6 +609,13 @@ namespace core
                 if(b.flat_boon) { m.add(" +").add(b.flat_boon); first = false; }
                 if(b.pct_boon) { m.add(first ? " +" : ", +").add(b.pct_boon).add("%"); first = false; }
                 if(b.crit_boon) m.add(first ? " kryt +" : ", kryt +").add(b.crit_boon).add("%");
+                return true;
+            }
+            case dmg_text::upgrade:   // v0.21.50 cz. 3: ulepszenie narzędzia (#31)
+            {
+                if(! b.upg_level) { m.add("Ulepszenie: brak"); return false; }
+                m.add("Ulepszenie +").add(b.upg_level).add(": +").add(b.flat_upgrade).add(" obr.");
+                if(b.upg_trait >= 0) m.add(", ").add(data::tool_traits[b.upg_trait].name).add(" ").add(data::tool_traits[b.upg_trait].short_name);
                 return true;
             }
             default: return false;
@@ -622,6 +646,51 @@ namespace core
     {
         versus_hero(m, b).add(", ");
         return versus_enemy(m, h);
+    }
+
+    // ------------------------------------------------------------------ wydarzenia z wyborem (#30): opis skutków
+    // Skutek odpowiedzi słowami, np. "-10 zł", "ciosy +2 na etap", "30%: 2x Pleśń obok" (telefon, Godot, dziennik).
+    inline message& choice_out_label(message& m, const choice_out& o)
+    {
+        const int v = o.value;
+        if(o.chance < 100) m.add(o.chance).add("%: ");
+        switch(o.effect)
+        {
+            case choice_effect::cash:      return m.add(v > 0 ? "+" : "").add(v).add(" zł");
+            case choice_effect::xp:        return m.add("+").add(v).add(" dośw.");
+            case choice_effect::hp:        return m.add(v > 0 ? "+" : "").add(v).add(" HP");
+            case choice_effect::max_hp:    return m.add(v > 0 ? "+" : "").add(v).add(" max HP");
+            case choice_effect::mats:
+                if(o.arg >= 0) return m.add(data::materials[o.arg].name).add(v > 0 ? " +" : " ").add(v);
+                return m.add("materiały ").add(v > 0 ? "+" : "").add(v);
+            case choice_effect::stage_dmg: return m.add("ciosy ").add(v > 0 ? "+" : "").add(v).add(" na etap");
+            case choice_effect::stage_def: return m.add("OBR ").add(v > 0 ? "+" : "").add(v).add(" na etap");
+            case choice_effect::boon:      return m.add("premia 1 z 3");
+            case choice_effect::gear:
+                m.add(o.arg >= 0 ? data::gear_slots[o.arg] : "sprzęt");
+                if(v > 0) m.add(" (").add(data::gear_rarities[v]).add(")");
+                return m;
+            case choice_effect::respect:   return m.add("Respekt +").add(v);
+            case choice_effect::coffee:    return m.add("kawa +").add(v);
+            case choice_effect::spawn:     return m.add(v).add("x ").add(data::enemies[o.arg].name).add(" obok");
+            case choice_effect::status:    return m.add(data::statuses[o.arg].name).add(" ").add(v).add(" t.");
+            case choice_effect::upgrade:   return m.add("narzędzie +").add(v);
+            case choice_effect::power:     return m.add("moc gotowa");
+            default:                       return m;
+        }
+    }
+    // Wszystkie skutki odpowiedzi po przecinku ("bez skutków", gdy brak).
+    inline message& choice_label(message& m, const event_choice& c)
+    {
+        if(c.outs == 0) return m.add("bez skutków");
+        for(int i = 0; i < c.outs; ++i) { if(i) m.add(", "); choice_out_label(m, c.out[i]); }
+        return m;
+    }
+    // Koszt kolejnego poziomu ulepszenia narzędzia, np. "20 zł + 2 Stal".
+    inline message& tool_level_label(message& m, int level, int cash)
+    {
+        const tool_level_def& t = data::tool_levels[level];
+        return m.add(cash).add(" zł + ").add(t.count).add(" ").add(data::materials[t.material].short_name);
     }
 
     static_assert(data::enemies_count <= max_enemy_types);
@@ -692,6 +761,24 @@ namespace core
         uint8_t boon_rerolls = 0;    // losowania oferty w tej budowie (1 płatne + darmowe z Respektu)
         uint8_t hit_ctx = 0;         // żywioł ciosu z mocy zawodu (bity 1 prąd, 2 iskra) - tylko w trakcie mocy
         uint8_t combo_events = 0;    // bitmaska: kombinacje w tej turze (bit = combo_effect, +8 = na bohaterze; warstwa GBA czyta i zeruje)
+        uint8_t boon_salt = 0;       // v0.21.50 cz. 3: oferta premii z wydarzenia (inna niż po etapie)
+        // v0.21.50 cz. 3: wydarzenia z wyborem (#30), ulepszanie narzędzia (#31), ukryte pomieszczenia (#32)
+        int8_t pending_event = -1;   // wydarzenie czeka na odpowiedź (data::choice_events), -1 = brak
+        int8_t stage_choice = -1, stage_choice_pick = -1;   // wydarzenie etapu i wybrana odpowiedź (telefon: Zadania)
+        uint8_t choice_done = 0;     // bity skutków ostatniej odpowiedzi, które zaszły (szansa)
+        uint16_t events_seen = 0;    // wydarzenia już wylosowane w tej budowie (bez powtórek)
+        int8_t event_dmg = 0, event_def = 0;   // z wydarzenia: ciosy / OBR do końca etapu
+        int8_t weapon_lvl = 0;       // ulepszenie narzędzia (+1 obrażeń za poziom), przepada przy zmianie narzędzia
+        int8_t weapon_trait = -1;    // cecha ulepszenia (data::tool_traits), -1 = brak
+        bool trait_pending = false;  // poziom z cechą: czeka na wybór cechy
+        int8_t tool_offer = -1, tool_offer_pickup = -1;   // narzędzie na polu czeka na decyzję (ulepszenia by przepadły)
+        int8_t secret_x = -1, secret_y = -1;   // ukryte pomieszczenie: pole pękniętej ściany / drzwi (-1 = brak na etapie)
+        int8_t secret_kind = 0, secret_dir = 0;   // rodzaj (data::secret_kinds), kierunek od ściany do wnętrza (gust_vec)
+        int8_t secret_rx = 0, secret_ry = 0, secret_rw = 0, secret_rh = 0;   // wnętrze magazynu
+        bool secret_open = false;
+        int8_t key_holder = -1;      // problem z kluczem do magazynu (indeks w enemies), -1 = brak
+        uint8_t keys = 0;            // klucze do magazynu (na etap)
+        uint8_t secrets_found = 0;   // otwarte magazyny w budowie
 
         // Numer etapu dla gracza (1..) i liczba etapów tej budowy (bez Aktu 0, gdy nieodblokowany).
         int stage_number() const { return stage - first_stage + 1; }
@@ -944,7 +1031,8 @@ namespace core
         int luck() const { return cdef().luck + bonus.luck + trait_bonus(trait_effect::luck) + boon_luck(); }
         int crit_pct() const
         {
-            return data::crit_base_pct + data::crit_per_luck_pct * luck() + trait_bonus(trait_effect::crit) + bonus.crit + boon_sum(boon_effect::crit);
+            return data::crit_base_pct + data::crit_per_luck_pct * luck() + trait_bonus(trait_effect::crit) + bonus.crit + boon_sum(boon_effect::crit)
+                   + tool_trait_value(tool_trait_effect::crit);
         }
         int sight_radius() const   // pył (akt III)
         {
@@ -1037,11 +1125,12 @@ namespace core
             return imax(10, data::boon_rarities[0].weight - l * (data::boon_luck_rare + data::boon_luck_legend));
         }
         // Oferta 1 z 3 po etapie: osobny generator z seeda budowy, etapu i losowania (bez wpływu na RNG gry, ta sama dla seeda).
-        void roll_boons()
+        void roll_boons(int salt = 0)   // salt: oferta z wydarzenia (#30) inna niż po etapie
         {
             for(auto& o : boon_offer) o = -1;
+            boon_salt = uint8_t(salt);
             rng br;
-            br.seed((run_seed ^ (uint32_t(stage + 1 + tier * 16) * 2654435761u) ^ (uint32_t(boon_rerolls + 1) * 40503u)) * 2246822519u);
+            br.seed((run_seed ^ (uint32_t(stage + 1 + tier * 16) * 2654435761u) ^ (uint32_t(boon_rerolls + 1 + boon_salt) * 40503u)) * 2246822519u);
             for(int k = 0; k < 3; ++k)
             {
                 int total = boon_weight(0) + boon_weight(1) + boon_weight(2), roll = br.range(1, total), rar = 0;
@@ -1087,7 +1176,7 @@ namespace core
             if(! can_reroll()) return false;
             cash -= reroll_price();
             ++boon_rerolls;
-            roll_boons();
+            roll_boons(boon_salt);
             push(message().add("Nowa oferta premii"));
             return true;
         }
@@ -1180,6 +1269,7 @@ namespace core
                 if(cheb(x, y, enemies[i].x, enemies[i].y) <= rad) enemies[i].flags = uint8_t(enemies[i].flags & ~actor_dusty);
             for(int i = 0; i < enemies_count && st == status::playing; ++i)
                 if(enemies[i].alive && cheb(x, y, enemies[i].x, enemies[i].y) <= rad) damage_enemy(i, dmg, false, c.name);
+            blast_secret(x, y, rad);
         }
         // Zamróz + uderzenie: cios wręcz w zmrożony pęka go (+value% ciosu, osobno).
         void combo_crack(int ei, int dmg)
@@ -1189,6 +1279,369 @@ namespace core
             combo_events = uint8_t(combo_events | (1u << int(combo_effect::crack)));
             push(message().add(c.short_name).add(" ").add(c.name).as(good));
             damage_enemy(ei, imax(1, dmg * c.value / 100), false, c.name);
+        }
+
+        // ------------------------------------------------------------------ v0.21.50 cz. 3: wspólny generator etapu
+        // Osobny generator z seeda budowy, etapu i soli (wydarzenia, magazyn) - bez wpływu na RNG gry, ten sam dla seeda.
+        rng side_rng(uint32_t salt) const
+        {
+            rng s;
+            s.seed((run_seed ^ (uint32_t(stage + 1 + tier * 16) * 2654435761u) ^ (salt * 40503u)) * 2246822519u);
+            return s;
+        }
+        // Wolne pole podłogi w losowym pokoju (bez pierwszego): bez postaci, znajdziek i schodów.
+        bool side_free_cell(rng& sr, int& ox, int& oy) const
+        {
+            for(int t = 0; t < 60; ++t)
+            {
+                const room& rm = lv.rooms[sr.range(1, lv.rooms_count - 1)];
+                int x = sr.range(rm.x, rm.x + rm.w - 1), y = sr.range(rm.y, rm.y + rm.h - 1);
+                if(lv.at(x, y) == tile::floor && ! occupied(x, y) && ! pickup_at(x, y)) { ox = x; oy = y; return true; }
+            }
+            return false;
+        }
+
+        // ------------------------------------------------------------------ wydarzenia z wyborem (#30)
+        // 0-1 pole wydarzenia na etapie (nie pierwszym budowy i nie z bossem); wydarzenie bez powtórek w budowie.
+        void place_event()
+        {
+            if(data::stages[stage].boss >= 0 || stage == first_stage || lv.rooms_count < 2 || pickups_count >= max_pickups) return;
+            rng er = side_rng(101);
+            if(er.range(1, 100) > data::choice_event_chance_pct) return;
+            int n = 0;
+            for(int e = 0; e < data::choice_events_count; ++e) n += ! ((events_seen >> e) & 1);
+            if(n == 0) return;
+            int k = er.range(0, n - 1), ev = 0;
+            for(int e = 0; e < data::choice_events_count; ++e) if(! ((events_seen >> e) & 1) && k-- == 0) { ev = e; break; }
+            int x, y;
+            if(! side_free_cell(er, x, y)) return;
+            events_seen = uint16_t(events_seen | (1u << ev));
+            pickups[pickups_count++] = { int8_t(x), int8_t(y), uint8_t(event_tile), true, uint8_t(ev) };
+        }
+        const choice_event_def& pending_def() const { return data::choice_events[pending_event]; }
+        // Odpowiedź k na wydarzenie: skutki po kolei (z szansą - osobny generator); premia 1 z 3 - oferta czeka na wybór,
+        // ulepszenie z cechą - wybór cechy (warstwa gry pokazuje oba ekrany zaraz po odpowiedzi).
+        bool choose_event(int k)
+        {
+            if(pending_event < 0) return false;
+            const choice_event_def& ev = pending_def();
+            if(k < 0 || k >= ev.choices_count) return false;
+            const event_choice& c = ev.choices[k];
+            rng er = side_rng(111 + uint32_t(k));
+            stage_choice = pending_event; stage_choice_pick = int8_t(k); pending_event = -1; choice_done = 0;
+            push(message().add("Odpowiedź: ").add(c.label));
+            for(int i = 0; i < c.outs; ++i)
+            {
+                const choice_out& o = c.out[i];
+                if(o.chance < 100 && er.range(1, 100) > o.chance) continue;
+                choice_done = uint8_t(choice_done | (1u << i));
+                apply_choice(o);
+            }
+            if(c.result[0]) push(message().add(c.result).as(good));
+            return true;
+        }
+        void apply_choice(const choice_out& o)
+        {
+            const int v = o.value;
+            switch(o.effect)
+            {
+                case choice_effect::cash:
+                    cash = imax(0, cash + (v > 0 ? income(v) : v));
+                    push(message().add(v > 0 ? "Budżet +" : "Budżet ").add(v > 0 ? income(v) : v).add(" zł").as(v > 0 ? good : bad));
+                    break;
+                case choice_effect::xp: gain_xp(v); push(message().add("+").add(v).add(" dośw.").as(good)); break;
+                case choice_effect::hp:
+                    hero.hp = int16_t(v > 0 ? imin(hero.max_hp, hero.hp + v) : imax(1, hero.hp + v));
+                    push(message().add(v > 0 ? "+" : "").add(v).add(" HP").as(v > 0 ? good : bad));
+                    break;
+                case choice_effect::max_hp:
+                    hero.max_hp = int16_t(imax(1, hero.max_hp + v)); hero.hp = int16_t(imin(hero.max_hp, imax(1, hero.hp + v)));
+                    break;
+                case choice_effect::mats:
+                    for(int m = 0; m < data::materials_count; ++m) if(o.arg < 0 || o.arg == m) add_material(m, v);
+                    break;
+                case choice_effect::stage_dmg: event_dmg = int8_t(event_dmg + v); break;
+                case choice_effect::stage_def: event_def = int8_t(event_def + v); break;
+                case choice_effect::boon: roll_boons(50); break;
+                case choice_effect::gear:
+                {
+                    const int slot = o.arg >= 0 ? o.arg : random_slot();
+                    take_gear(slot, imax(v, 0), r.range(0, data::gear_traits_count - 1));
+                    break;
+                }
+                case choice_effect::respect: respect += v; push(message().add("Respekt +").add(v).as(loot)); break;
+                case choice_effect::coffee: thermos = imin(thermos_cap(), thermos + v); push(message().add("Kawa do termosu (").add(thermos).add("/").add(thermos_cap()).add(")").as(good)); break;
+                case choice_effect::spawn:
+                    for(int k = 0; k < v; ++k)
+                    {
+                        int x, y, slot;
+                        if(! free_around(hero.x, hero.y, hero.x, hero.y, x, y) || (slot = free_slot()) < 0) break;
+                        actor& a = enemies[slot];
+                        a = actor();
+                        a.x = int8_t(x); a.y = int8_t(y); a.def_id = o.arg;
+                        a.hp = a.max_hp = int16_t(imax(1, data::enemies[o.arg].max_health * enemy_hp_pct() / 100));
+                        a.alive = true; a.awake = true; a.stun = 1;
+                        if(dust_sight() > 0) a.flags = uint8_t(a.flags | actor_dusty);
+                        push(message().add(data::enemies[o.arg].name).add(" wyłazi!").as(bad));
+                    }
+                    break;
+                case choice_effect::status: apply_status(status_effect(o.arg), v); break;
+                case choice_effect::upgrade: for(int k = 0; k < v && can_upgrade_weapon(); ++k) upgrade_weapon(); break;
+                case choice_effect::power:
+                    ability_cd = 0;
+                    push(message().add("Moc gotowa: ").add(cdef().ability_name).as(good));
+                    break;
+                default: break;
+            }
+        }
+        // Wybór bota (testy balansu, test złoty): prosta ocena skutków (wartość x szansa), remis - pierwsza odpowiedź.
+        int bot_event_choice() const
+        {
+            const choice_event_def& ev = pending_def();
+            int best = 0, bv = -1000000;
+            for(int k = 0; k < ev.choices_count; ++k)
+            {
+                int v = 0;
+                for(int i = 0; i < ev.choices[k].outs; ++i)
+                {
+                    const choice_out& o = ev.choices[k].out[i];
+                    int w = 0;
+                    switch(o.effect)
+                    {
+                        case choice_effect::cash:      w = o.value; break;
+                        case choice_effect::xp:        w = o.value; break;
+                        case choice_effect::hp:        w = o.value * (hero.hp * 2 < hero.max_hp ? 6 : 3); break;
+                        case choice_effect::max_hp:    w = o.value * 5; break;
+                        case choice_effect::mats:      w = o.value * (o.arg < 0 ? 9 : 3); break;
+                        case choice_effect::stage_dmg: w = o.value * 12; break;
+                        case choice_effect::stage_def: w = o.value * 10; break;
+                        case choice_effect::boon:      w = 25; break;
+                        case choice_effect::gear:      w = 15; break;
+                        case choice_effect::respect:   w = o.value * 6; break;
+                        case choice_effect::coffee:    w = o.value * 8; break;
+                        case choice_effect::spawn:     w = -10 * o.value; break;
+                        case choice_effect::status:    w = -8; break;
+                        case choice_effect::upgrade:   w = can_upgrade_weapon() ? 20 : 0; break;
+                        case choice_effect::power:     w = 4; break;
+                        default: break;
+                    }
+                    v += w * o.chance;
+                }
+                if(v > bv) { bv = v; best = k; }
+            }
+            return best;
+        }
+
+        // ------------------------------------------------------------------ ulepszanie narzędzia (#31)
+        bool can_upgrade_weapon() const { return weapon_lvl < data::tool_upgrade_max && ! trait_pending; }
+        // Cena kolejnego poziomu w zł (Rabat z Respektu i premie jak w Hurtowni) i czy stać (zł + materiał).
+        int upgrade_price() const
+        {
+            return data::tool_levels[imin(weapon_lvl, data::tool_upgrade_max - 1)].cash * (100 - imin(90, bonus.shop_pct + boon_sum(boon_effect::shop_pct))) / 100;
+        }
+        bool upgrade_affordable() const
+        {
+            if(! can_upgrade_weapon()) return false;
+            const tool_level_def& t = data::tool_levels[weapon_lvl];
+            return cash >= upgrade_price() && mats[t.material] >= t.count;
+        }
+        // +1 poziom (za darmo - płaci Hurtownia albo wydarzenie); na poziomie trait_at czeka wybór cechy.
+        void upgrade_weapon()
+        {
+            if(weapon_lvl >= data::tool_upgrade_max) return;
+            ++weapon_lvl;
+            if(weapon_lvl >= data::tool_trait_at && weapon_trait < 0) trait_pending = true;
+            push(message().add("Ulepszenie: ").add(weapon().name).add("+").add(weapon_lvl).as(loot));
+        }
+        bool choose_trait(int t)
+        {
+            if(! trait_pending || t < 0 || t >= data::tool_traits_count) return false;
+            trait_pending = false;
+            weapon_trait = int8_t(t);
+            push(message().add("Cecha narzędzia: ").add(data::tool_traits[t].name).as(loot));
+            return true;
+        }
+        int bot_trait_choice() const { return 0; }   // bot: zawsze pierwsza cecha (Przebicie)
+        int upgrade_dmg() const { return weapon_lvl * data::tool_upgrade_dmg; }
+        int tool_trait_value(tool_trait_effect e) const
+        {
+            return weapon_trait >= 0 && data::tool_traits[weapon_trait].effect == e ? data::tool_traits[weapon_trait].value : 0;
+        }
+        void reset_upgrade() { weapon_lvl = 0; weapon_trait = -1; trait_pending = false; }
+        // Nazwa narzędzia z poziomem ulepszenia ("Kielnia+2").
+        message& weapon_title(message& m) const
+        {
+            m.add(weapon().name);
+            if(weapon_lvl > 0) m.add("+").add(weapon_lvl);
+            return m;
+        }
+        // Narzędzie na polu przy ulepszonym: decyzja gracza (ulepszenia przepadną). Nie zużywa tury.
+        bool has_tool_offer() const { return tool_offer >= 0; }
+        void accept_tool()
+        {
+            if(! has_tool_offer()) return;
+            pickups[tool_offer_pickup].active = false;
+            const int t = tool_offer;
+            tool_offer = tool_offer_pickup = -1;
+            take_tool(t);
+        }
+        void decline_tool()
+        {
+            if(! has_tool_offer()) return;
+            tool_offer = tool_offer_pickup = -1;
+            push(message().add("Zostajesz przy ulepszonym narzędziu"));
+        }
+        void take_tool(int t)
+        {
+            reset_upgrade();
+            weapon_override = data::tools[t].weapon;
+            tools_found = uint8_t(tools_found | (1u << t));
+            push(message().add("Narzędzie: ").add(weapon().name).add(" ").add(weapon().min_damage).add("-").add(weapon().max_damage).as(loot));
+        }
+        // Bot bierze nowe narzędzie, gdy średni cios (bez problemu) jest wyższy niż ulepszonym obecnym.
+        bool bot_tool_accept() const
+        {
+            return weapon_breakdown(-1, data::tools[tool_offer].weapon).avg10 > weapon_breakdown().avg10;
+        }
+
+        // ------------------------------------------------------------------ ukryte pomieszczenia (#32)
+        // Magazyn 3x3 za ścianą przy krawędzi pokoju: ściana E graniczy z podłogą pokoju, wnętrze i jego obrys to same
+        // mury (poza E), więc bez otwarcia nie ma do niego drogi ani widoku. Klucz ma problem (najpierw elita), czasem
+        // w środku śpi elita-strażnik; na środku skrzynia.
+        void place_secret()
+        {
+            if(data::stages[stage].boss >= 0 || lv.rooms_count < 2) return;
+            rng sr = side_rng(202);
+            if(sr.range(1, 100) > data::secret_chance_pct) return;
+            for(int a = 0; a < 80 && secret_x < 0; ++a)
+            {
+                const room& rm = lv.rooms[sr.range(0, lv.rooms_count - 1)];
+                const int d = sr.range(0, 3), dx = gust_vec[d][0], dy = gust_vec[d][1];
+                int fx, fy;
+                if(dx) { fx = dx > 0 ? rm.x + rm.w - 1 : rm.x; fy = sr.range(rm.y, rm.y + rm.h - 1); }
+                else { fy = dy > 0 ? rm.y + rm.h - 1 : rm.y; fx = sr.range(rm.x, rm.x + rm.w - 1); }
+                const int ex = fx + dx, ey = fy + dy;
+                const int ix = dx ? (dx > 0 ? ex + 1 : ex - 3) : ex - 1, iy = dy ? (dy > 0 ? ey + 1 : ey - 3) : ey - 1;
+                if(lv.at(fx, fy) != tile::floor || ix - 1 < 0 || iy - 1 < 0 || ix + 3 >= map_w || iy + 3 >= map_h) continue;
+                bool ok = true;
+                for(int y = iy - 1; y <= iy + 3 && ok; ++y)
+                    for(int x = ix - 1; x <= ix + 3; ++x) if(lv.t[y][x] != tile::wall) { ok = false; break; }
+                if(! ok) continue;
+                for(int y = iy; y < iy + 3; ++y) for(int x = ix; x < ix + 3; ++x) lv.t[y][x] = tile::floor;
+                secret_x = int8_t(ex); secret_y = int8_t(ey); secret_dir = int8_t(d);
+                secret_rx = int8_t(ix); secret_ry = int8_t(iy); secret_rw = 3; secret_rh = 3;
+                secret_kind = int8_t(sr.range(0, data::secret_kinds_count - 1));
+            }
+            if(secret_x < 0) return;
+            const int cx = secret_rx + 1, cy = secret_ry + 1;
+            if(pickups_count < max_pickups) pickups[pickups_count++] = { int8_t(cx), int8_t(cy), uint8_t(chest), true };
+            const stage_def& sd = data::stages[stage];
+            if(sr.range(1, 100) <= data::secret_guard_pct && enemies_count < max_enemies)   // strażnik: elita, śpi w kącie
+            {
+                const int gx = secret_rx + 2 * (sr.range(0, 1)), gy = secret_ry + 2 * (sr.range(0, 1));
+                spawn(sd.pool[sr.range(0, sd.pool_count - 1)], gx, gy);
+                make_elite(enemies_count - 1, sr.range(0, data::elites_count - 1));
+            }
+            // klucz: pierwsza elita poza magazynem, inaczej losowy problem (bez bossa i strażnika)
+            int outside = 0;
+            for(int i = 0; i < enemies_count; ++i) outside += ! in_secret(enemies[i].x, enemies[i].y);
+            for(int i = 0; i < enemies_count && key_holder < 0; ++i) if(enemies[i].elite >= 0 && ! in_secret(enemies[i].x, enemies[i].y)) key_holder = int8_t(i);
+            if(key_holder < 0 && outside > 0)
+            {
+                int k = sr.range(0, outside - 1);
+                for(int i = 0; i < enemies_count; ++i) if(! in_secret(enemies[i].x, enemies[i].y) && k-- == 0) { key_holder = int8_t(i); break; }
+            }
+        }
+        bool has_secret() const { return secret_x >= 0; }
+        bool secret_closed() const { return secret_x >= 0 && ! secret_open; }
+        bool secret_is(int x, int y) const { return secret_x >= 0 && x == secret_x && y == secret_y; }
+        bool in_secret(int x, int y) const
+        {
+            return secret_x >= 0 && x >= secret_rx && x < secret_rx + secret_rw && y >= secret_ry && y < secret_ry + secret_rh;
+        }
+        const secret_kind_def& secret_def() const { return data::secret_kinds[secret_kind]; }
+        // Pole przed ścianą magazynu (od strony pokoju) - tam trzeba stanąć, żeby otworzyć.
+        int secret_front_x() const { return secret_x - gust_vec[secret_dir][0]; }
+        int secret_front_y() const { return secret_y - gust_vec[secret_dir][1]; }
+        bool can_open_secret() const { return secret_closed() && (keys > 0 || (secret_def().breakable && has_passive(class_passive::push))); }
+        void open_secret(const char* how)
+        {
+            if(! secret_closed()) return;
+            secret_open = true;
+            lv.t[secret_y][secret_x] = tile::floor;
+            if(secrets_found < 255) ++secrets_found;
+            push(message().add(how).add(" Magazyn otwarty!").as(good));
+            update_fov();
+        }
+        // Wejście w ścianę magazynu: klucz, łyżka Operatora koparki (pęknięta ściana); inaczej podpowiedź, bez tury.
+        bool try_open_secret()
+        {
+            if(keys > 0) { --keys; open_secret("Klucz pasuje!"); return true; }
+            if(secret_def().breakable && has_passive(class_passive::push)) { open_secret("Łyżka kruszy ścianę!"); return true; }
+            push(message().add(secret_def().name).add(": ").add(secret_def().info));
+            return false;
+        }
+        // Wybuch w promieniu rad od (x, y) kruszy pękniętą ścianę.
+        void blast_secret(int x, int y, int rad)
+        {
+            if(secret_closed() && secret_def().breakable && cheb(x, y, secret_x, secret_y) <= rad) open_secret("Wybuch kruszy ścianę!");
+        }
+        // Klucz z problemu: na polu usunięcia (albo obok), bez miejsca na znajdźkę - od razu do kieszeni.
+        void drop_key(int x, int y)
+        {
+            key_holder = -1;
+            int kx = x, ky = y;
+            if((pickup_at(x, y) && ! free_around(x, y, hero.x, hero.y, kx, ky)) || pickups_count >= max_pickups)
+            {
+                ++keys;
+                push(message().add("Klucz do magazynu!").as(loot));
+                return;
+            }
+            pickups[pickups_count++] = { int8_t(kx), int8_t(ky), uint8_t(store_key), true };
+            push(message().add("Wypadł klucz do magazynu!").as(loot));
+        }
+        void open_chest()
+        {
+            respect += data::chest_respect;
+            cash += income(data::chest_cash);
+            for(int m = 0; m < data::materials_count; ++m) add_material(m, data::chest_mats);
+            push(message().add("Skrzynia! Respekt +").add(data::chest_respect).add(", +").add(income(data::chest_cash)).add(" zł").as(loot));
+            take_gear(random_slot(), data::chest_gear_min, r.range(0, data::gear_traits_count - 1));
+        }
+        // Cel bota zamiast schodów: klucz, pole przed magazynem (gdy da się otworzyć), skrzynia, wydarzenie.
+        bool bot_goal(int& gx, int& gy) const
+        {
+            for(int i = 0; i < pickups_count; ++i) if(pickups[i].active && pickups[i].type == store_key) { gx = pickups[i].x; gy = pickups[i].y; return true; }
+            if(can_open_secret()) { gx = secret_front_x(); gy = secret_front_y(); return true; }
+            for(int i = 0; i < pickups_count; ++i)
+                if(pickups[i].active && (pickups[i].type == chest ? secret_open : pickups[i].type == event_tile)) { gx = pickups[i].x; gy = pickups[i].y; return true; }
+            return false;
+        }
+        // Bot: rozstrzyga oczekujące decyzje (wydarzenie, premia z wydarzenia, cecha narzędzia, narzędzie). true = coś zrobił.
+        bool bot_pending()
+        {
+            if(pending_event >= 0) { choose_event(bot_event_choice()); return true; }
+            if(has_boon_offer() && st == status::playing) { pick_boon(bot_boon_choice()); return true; }
+            if(trait_pending) { choose_trait(bot_trait_choice()); return true; }
+            if(has_tool_offer()) { if(bot_tool_accept()) accept_tool(); else decline_tool(); return true; }
+            return false;
+        }
+        // Bot w Hurtowni (po bossie aktu): ulepsza narzędzie o 1 poziom, jeśli stać (cecha - pierwsza).
+        void bot_upgrade()
+        {
+            if(! act_cleared || shop_closed()) return;
+            for(int i = 0; i < data::hurtownia_count; ++i)
+                if(data::hurtownia[i].effect == shop_effect::upgrade && hurtownia_buy(i)) bot_pending();
+        }
+        // Sprzęt z wydarzenia / skrzyni: pusty slot - zakłada, zajęty - porównanie (jak paczka).
+        void take_gear(int slot, int rarity, int trait)
+        {
+            if(equipped[slot] < 0) equip(slot, rarity, trait);
+            else if(! has_offer())
+            {
+                offer_slot = int8_t(slot); offer_rarity = int8_t(rarity); offer_trait = int8_t(trait);
+                push(message().add("Paczka: ").add(data::gear[slot * 3 + rarity].name).as(loot));
+            }
         }
 
         // Suma cech założonego sprzętu danego rodzaju.
@@ -1208,7 +1661,8 @@ namespace core
         // Obrona bohatera: zawód + premie + sprzęt + ochrona BHP-owca z brygady.
         int hero_defense() const
         {
-            return cdef().defense + def_bonus + gear_bonus(gear_stat::def) + (guard_turns > 0 ? data::brigade[helper_called].value : 0) + boon_defense();
+            return cdef().defense + def_bonus + gear_bonus(gear_stat::def) + (guard_turns > 0 ? data::brigade[helper_called].value : 0) + boon_defense()
+                   + event_def;   // wydarzenie (#30): OBR na etap
         }
         const weapon_def& weapon() const { return data::weapons[weapon_override >= 0 ? weapon_override : cdef().weapon]; }
         // Zasięg broni z pogodą: wiatr skraca zasięg broni dalekiego zasięgu (nie mniej niż 1).
@@ -1366,6 +1820,10 @@ namespace core
             act_cleared = false; slam_timer = 0; slam_x = slam_y = -1; slam_counter = 0; summon_counter = 0; summons_used = 0;
             helper_called = -1; guard_turns = 0; ally_turns = 0; ally_x = ally_y = -1;   // brygada: raz na etap
             blast_timer = 0; blast_x = blast_y = -1; shot_events = 0; docs = 0;
+            pending_event = -1; stage_choice = stage_choice_pick = -1; choice_done = 0; event_dmg = event_def = 0;   // v0.21.50 cz. 3
+            tool_offer = tool_offer_pickup = -1;
+            secret_x = secret_y = -1; secret_open = false; secret_kind = secret_dir = 0; key_holder = -1; keys = 0;
+            secret_rx = secret_ry = secret_rw = secret_rh = 0;
             for(auto& row : fov) for(auto& c : row) c = unknown;
             const stage_def& sd = data::stages[stage];
             const room& first = lv.rooms[0];
@@ -1424,6 +1882,8 @@ namespace core
                 if(! (data::weather_no_bad_stack && wdef().bad && ! data::site_events[e].good)) apply_event(e);
             }
             place_documents();
+            place_event();    // v0.21.50 cz. 3: pole wydarzenia z wyborem (#30)
+            place_secret();   // ukryte pomieszczenie (#32): magazyn, skrzynia, klucz, strażnik
             // kombinacje stanów (#29): w pyle (akt III) problemy są zapylone, w Mróz - zmrożone (boss nie)
             for(int i = 0; i < enemies_count; ++i)
             {
@@ -1513,6 +1973,14 @@ namespace core
             b.crit_bonus = bonus.crit;
             b.power_rank = ability_rank();
             b.power = power_dmg_bonus();
+            b.flat_event = event_dmg;
+            if(weapon_idx < 0)   // ulepszenie (#31) tylko obecnego narzędzia - przy zamianie przepada
+            {
+                b.upg_level = weapon_lvl; b.flat_upgrade = upgrade_dmg(); b.upg_trait = weapon_trait;
+                b.pierce = tool_trait_value(tool_trait_effect::pierce);
+                b.steady = tool_trait_value(tool_trait_effect::steady);
+                b.crit_upg = tool_trait_value(tool_trait_effect::crit);
+            }
             b.finish();
             return b;
         }
@@ -1555,8 +2023,10 @@ namespace core
             const int ex = enemies[ei].x, ey = enemies[ei].y;
             const bool was_wet = enemy_wet(ei), was_dusty = enemy_dusty(ei), was_frozen = enemy_frozen(ei);
             const bool melee = cheb(hero.x, hero.y, ex, ey) <= 1;
-            int dmg = r.range(weapon().min_damage, weapon().max_damage) + hero_stat(weapon().scales_with) / 2 + dmg_bonus
-                    + gear_bonus(gear_stat::dmg) + boon_sum(boon_effect::dmg) - enemy_defense(ei) / 2;
+            const weapon_def& w = weapon();   // ulepszenie (#31): +obrażeń, Wyważenie (rzut), Przebicie (OBR)
+            int dmg = r.range(imin(w.max_damage, w.min_damage + tool_trait_value(tool_trait_effect::steady)), w.max_damage)
+                    + hero_stat(w.scales_with) / 2 + dmg_bonus + gear_bonus(gear_stat::dmg) + boon_sum(boon_effect::dmg) + upgrade_dmg() + event_dmg
+                    - imax(0, enemy_defense(ei) - tool_trait_value(tool_trait_effect::pierce)) / 2;
             if(dmg < 1) dmg = 1;
             dmg += pct_part(dmg, bonus.dmg_pct + boon_sum(boon_effect::dmg_pct), dmg_carry);   // Kurs fachowy, Respekt, premie: +%
             bool crit = r.range(1, 100) <= crit_pct();
@@ -1640,6 +2110,7 @@ namespace core
                 score += ed.score * score_pct() / 100; gain_xp(data::xp_per_kill);
                 if(e.elite >= 0) elite_reward(ei);   // elita: pewna paczka (lepsza), materiały, Respekt
                 maybe_drop(e.x, e.y);
+                if(ei == key_holder) drop_key(e.x, e.y);   // klucz do magazynu (#32)
                 push(message().add(ed.name).add(" - usunięto!").as(good));
                 const int kh = boon_sum(boon_effect::kill_heal);   // Drożdżówka: HP za usunięty problem
                 if(kh > 0 && hero.alive && hero.hp < hero.max_hp) hero.hp = int16_t(imin(hero.max_hp, hero.hp + kh));
@@ -1743,6 +2214,7 @@ namespace core
             int ei = enemy_at(nx, ny);
             bool stuck = false;
             if(ei >= 0) hero_attack(ei);
+            else if(secret_closed() && secret_is(nx, ny)) { if(! try_open_secret()) return false; }   // magazyn (#32)
             else if(lv.passable(nx, ny))
             {
                 hero.x = int8_t(nx); hero.y = int8_t(ny); collect();
@@ -2034,6 +2506,7 @@ namespace core
                             ok = true;
                             break;
                         }
+                        if(secret_closed() && secret_is(nx, ny) && secret_def().breakable) { open_secret("Taran kruszy ścianę!"); ok = true; break; }
                         if(! lv.passable(nx, ny) || occupied(nx, ny)) break;
                         hero.x = int8_t(nx); hero.y = int8_t(ny); moved = ok = true;
                     }
@@ -2168,10 +2641,15 @@ namespace core
         bool hurtownia_can(int i) const
         {
             const shop_item_def& it = data::hurtownia[i];
+            if(it.effect == shop_effect::upgrade) return upgrade_affordable();   // ulepszenie narzędzia: zł + materiał
             return it.material >= 0 ? mats[it.material] >= it.mat_cost : cash >= hurtownia_price(i);
         }
         // Cena towaru w zł po rabacie z Respektu.
-        int hurtownia_price(int i) const { return data::hurtownia[i].price * (100 - imin(90, bonus.shop_pct + boon_sum(boon_effect::shop_pct))) / 100; }
+        int hurtownia_price(int i) const
+        {
+            if(data::hurtownia[i].effect == shop_effect::upgrade) return upgrade_price();
+            return data::hurtownia[i].price * (100 - imin(90, bonus.shop_pct + boon_sum(boon_effect::shop_pct))) / 100;
+        }
 
         // Losowy slot sprzętu spośród dostępnych (nagrody dokładają buty i pas); przy 3 slotach jak dawniej.
         int random_slot()
@@ -2187,6 +2665,14 @@ namespace core
         {
             const shop_item_def& it = data::hurtownia[i];
             if(! hurtownia_can(i)) return false;
+            if(it.effect == shop_effect::upgrade)   // ulepszenie narzędzia (#31): zł i materiał, potem +1 poziom
+            {
+                const tool_level_def& t = data::tool_levels[weapon_lvl];
+                cash -= upgrade_price();
+                mats[t.material] = uint8_t(mats[t.material] - t.count);
+                upgrade_weapon();
+                return true;
+            }
             switch(it.effect)
             {
                 case shop_effect::heal: hero.hp = hero.max_hp; break;
@@ -2206,7 +2692,7 @@ namespace core
                     int n = 0; for(int t = 0; t < data::tools_count; ++t) n += (bonus.tools >> t) & 1;
                     int k = r.range(0, imax(0, n - 1));
                     for(int t = 0; t < data::tools_count; ++t)
-                        if(((bonus.tools >> t) & 1) && k-- == 0) { weapon_override = data::tools[t].weapon; tools_found = uint8_t(tools_found | (1u << t)); break; }
+                        if(((bonus.tools >> t) & 1) && k-- == 0) { reset_upgrade(); weapon_override = data::tools[t].weapon; tools_found = uint8_t(tools_found | (1u << t)); break; }
                     break;
                 }
                 default: break;
@@ -2426,7 +2912,24 @@ namespace core
                 pickup& p = pickups[i];
                 if(! p.active || p.x != hero.x || p.y != hero.y) continue;
                 if(p.type == gear_box && has_offer()) continue;   // najpierw decyzja o poprzedniej paczce
+                if(p.type == tool && (weapon_lvl > 0 || weapon_trait >= 0))   // ulepszone narzędzie: decyzja (ulepszenia przepadną)
+                {
+                    if(! has_tool_offer())
+                    {
+                        tool_offer = int8_t(p.arg); tool_offer_pickup = int8_t(i);
+                        push(message().add("Narzędzie: ").add(data::weapons[data::tools[p.arg].weapon].name).add(" - zamienić?").as(loot));
+                    }
+                    continue;
+                }
                 p.active = false;
+                if(p.type == event_tile)   // wydarzenie z wyborem (#30): SMS czeka na odpowiedź
+                {
+                    pending_event = int8_t(p.arg);
+                    push(message().add("SMS: ").add(pending_def().name).as(loot));
+                    continue;
+                }
+                if(p.type == store_key) { ++keys; push(message().add("Klucz do magazynu!").as(loot)); continue; }
+                if(p.type == chest) { open_chest(); continue; }
                 if(p.type == coffee)
                 {
                     if(thermos < thermos_cap())   // kawa do termosu; pełny termos - pije od razu
@@ -2455,12 +2958,7 @@ namespace core
                         push(message().add("Paczka: ").add(data::gear[p.arg].name).as(loot));
                     }
                 }
-                else
-                {
-                    weapon_override = data::tools[p.arg].weapon;
-                    tools_found = uint8_t(tools_found | (1u << p.arg));
-                    push(message().add("Narzędzie: ").add(weapon().name).add(" ").add(weapon().min_damage).add("-").add(weapon().max_damage).as(loot));
-                }
+                else take_tool(p.arg);
             }
         }
 
@@ -2768,6 +3266,7 @@ namespace core
                     if(hero.hp <= 0) hero_down();
                 }
                 else push(message().add("Wybuch obok - uff!").as(good));
+                blast_secret(blast_x, blast_y, data::behavior_blast_radius);   // wybuch kruszy pękniętą ścianę magazynu
                 blast_x = blast_y = -1;
             }
             if(st == status::playing && act_is(act_mechanic::gust)) gust_tick();   // akt II: porywy wiatru
@@ -2826,6 +3325,7 @@ namespace core
         {
             if(st != status::won) return false;
             ++tier;
+            events_seen = 0;   // nowa budowa: wydarzenia od nowa
             for(auto& e : enemies) e = actor();
             hero.hp = hero.max_hp;
             start_stage(first_stage);

@@ -868,7 +868,7 @@ namespace core
     // Cały stan gry (game jest trywialnie kopiowalny) za profilem w SRAM. Rozmiar i suma kontrolna
     // odrzucają zapisy uszkodzone i z innej wersji gry.
     static_assert(std::is_trivially_copyable_v<game>);
-    constexpr char run_magic[8] = "PBRUN11";   // 11: premie po etapie, elity, kombinacje stanów; 10: Akt 0; 09: 10 etapów, zachowania
+    constexpr char run_magic[8] = "PBRUN12";   // 12: wydarzenia z wyborem, ulepszenie narzędzia, magazyn; 11: premie po etapie, elity, kombinacje stanów; 10: Akt 0; 09: 10 etapów, zachowania
     constexpr int run_save_offset = 256;
     static_assert(sizeof(profile) <= run_save_offset);
 

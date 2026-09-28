@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cassert>
 #include <queue>
+#include <cstring>
 #include "core.h"
 #include "meta.h"
 using namespace core;
@@ -10,13 +11,14 @@ static int fails = 0;
 static constexpr int F0 = data::prelude_stages;   // bez nagrody Akt 0 budowa zaczyna się od etapu F0 (Fundamenty)
 #define CHECK(c) do{ if(!(c)){ std::printf("FAIL %s:%d %s\n", __FILE__, __LINE__, #c); ++fails; } }while(0)
 
-static bool connected(const level& lv, int sx, int sy)
+// Spójność: cała podłoga osiągalna ze startu (g: bez zamkniętego magazynu - v0.21.50 cz. 3, #32).
+static bool connected(const level& lv, int sx, int sy, const game* g = nullptr)
 {
     bool seen[map_h][map_w] = {};
     std::queue<std::pair<int,int>> q; q.push({sx, sy}); seen[sy][sx] = true; int n = 1;
     while(!q.empty()){ auto [x,y]=q.front(); q.pop(); int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}};
         for(auto& v:d){int nx=x+v[0],ny=y+v[1]; if(lv.passable(nx,ny)&&!seen[ny][nx]){seen[ny][nx]=true;++n;q.push({nx,ny});}}}
-    int total=0; for(int y=0;y<map_h;++y) for(int x=0;x<map_w;++x) total+=lv.passable(x,y);
+    int total=0; for(int y=0;y<map_h;++y) for(int x=0;x<map_w;++x) total+=lv.passable(x,y) && !(g && g->secret_closed() && g->in_secret(x,y));
     return n==total;
 }
 
@@ -53,10 +55,14 @@ static void bot_step(game& g)
 {
     static const int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}};
     if(g.has_offer()) { if(g.offer_is_better()) g.accept_offer(); else g.decline_offer(); }
+    if(g.bot_pending()) return;   // v0.21.50 cz. 3: wydarzenie, premia z wydarzenia, cecha narzędzia, narzędzie
+    if(g.can_open_secret() && g.hero.x == g.secret_front_x() && g.hero.y == g.secret_front_y()   // przed magazynem: otwórz
+       && g.player_move(g.secret_x - g.hero.x, g.secret_y - g.hero.y)) return;
     if(! bot_no_coffee && g.thermos > 0 && g.hero.hp * 100 < g.hero.max_hp * data::bot_drink_below_pct && g.player_drink()) { ++bot_drinks; return; }
     static int hd[map_h][map_w], td[map_h][map_w];
     bot_cost(g, g.hero.x, g.hero.y, hd);   // koszt drogi (błoto droższe)
     int tx = g.stairs_x, ty = g.stairs_y, best = 999999;
+    { int gx, gy; if(g.bot_goal(gx, gy) && hd[gy][gx] >= 0) { tx = gx; ty = gy; } }   // klucz, magazyn, skrzynia, wydarzenie
     if(g.stairs_locked())   // pieczątki (Akt 0): najpierw najbliższy dokument, potem schody
     {
         int bdoc = 999999;
@@ -94,6 +100,7 @@ static void bot_next(game& g)
 {
     if(g.bot_wants_reroll() && ! bot_no_boons) g.reroll_boons();
     if(g.has_boon_offer() && ! bot_no_boons) g.pick_boon(g.bot_boon_choice());
+    g.bot_upgrade();   // v0.21.50 cz. 3: Hurtownia - bot ulepsza narzędzie, jeśli stać (nic więcej nie kupuje)
     g.next_stage();
 }
 
@@ -117,7 +124,7 @@ int main()
     {
         game g; g.new_run(seed % data::classes_count, seed);
         CHECK(g.lv.rooms_count >= 2);
-        CHECK(connected(g.lv, g.hero.x, g.hero.y));
+        CHECK(connected(g.lv, g.hero.x, g.hero.y, &g));
         CHECK(g.lv.passable(g.hero.x, g.hero.y));
         game h; h.new_run(seed % data::classes_count, seed);
         CHECK(std::memcmp(g.lv.t, h.lv.t, sizeof g.lv.t) == 0);
@@ -193,7 +200,8 @@ int main()
         b.pickups[0] = { b.hero.x, b.hero.y, coffee, true }; b.collect();
         CHECK(b.hero.hp == 1 + data::coffee_heal + 4 && b.thermos == data::thermos_capacity);   // pełny: pije od razu
         b.hero.hp = b.hero.max_hp; CHECK(!b.player_drink() && b.thermos == data::thermos_capacity);
-        b.next_stage(); CHECK(b.pickups_count == a.pickups_count + 2);   // premia trwa w kolejnych etapach
+        auto regular = [](const game& x) { int n = 0; for(int i = 0; i < x.pickups_count; ++i) n += x.pickups[i].type <= plan; return n; };
+        b.next_stage(); CHECK(regular(b) == regular(a) + 2);   // premia trwa w kolejnych etapach (bez wydarzeń i skrzyń)
     }
     // 8. doświadczenie: wrogowie, etapy, boss; mnożone przez trudność
     {
@@ -328,7 +336,7 @@ int main()
         {
             game g; g.new_run(1, seed);
             int before = g.pickups_count;
-            g.enemies_count = 0; g.spawn(0, g.hero.x + 1, g.hero.y); g.enemies[0].hp = 1;
+            g.enemies_count = 0; g.key_holder = -1; g.spawn(0, g.hero.x + 1, g.hero.y); g.enemies[0].hp = 1;
             g.player_move(1, 0);
             if(g.pickups_count > before)
             {
@@ -690,6 +698,7 @@ int main()
         for(int i = 0; i < data::hurtownia_count; ++i)
         {
             const shop_item_def& it = data::hurtownia[i];
+            if(it.effect == shop_effect::upgrade) continue;   // ulepszenie narzędzia: test 48
             if(it.material >= 0)   // płatne materiałem: bez materiału nie, z materiałem - zł zostają
             {
                 ++mat_items;
@@ -706,6 +715,7 @@ int main()
                 case shop_effect::maxhp:   CHECK(g.hero.max_hp == maxhp + 3); break;
                 case shop_effect::ability: CHECK(g.ability_cd == 0); break;
                 case shop_effect::tool:    CHECK(g.weapon_override >= 0); break;
+                case shop_effect::upgrade: break;   // test 48
                 case shop_effect::gear:    { bool any = false; for(int s2 = 0; s2 < data::gear_slots_count; ++s2) any |= g.equipped[s2] >= 1; CHECK(any); break; }
                 case shop_effect::def:     CHECK(g.def_bonus == def + 1); break;
                 case shop_effect::thermos: CHECK(g.thermos == imin(2, g.thermos_cap())); break;
@@ -1544,8 +1554,14 @@ int main()
         {   // brygada i Hurtownia taniej
             game a; a.new_run(1, 5); a.bonus.brigade_pct = 30; a.bonus.shop_pct = 25;
             CHECK(a.helper_price(0) == data::brigade[0].price * 70 / 100);
-            for(int i = 0; i < data::hurtownia_count; ++i) CHECK(a.hurtownia_price(i) == data::hurtownia[i].price * 75 / 100);
-            a.cash = a.hurtownia_price(0); CHECK(a.hurtownia_can(0) && a.hurtownia_buy(0) && a.cash == 0);
+            int first = -1;
+            for(int i = 0; i < data::hurtownia_count; ++i)
+            {
+                if(data::hurtownia[i].effect == shop_effect::upgrade) { CHECK(a.hurtownia_price(i) == data::tool_levels[0].cash * 75 / 100); continue; }
+                CHECK(a.hurtownia_price(i) == data::hurtownia[i].price * 75 / 100);
+                if(first < 0 && data::hurtownia[i].material < 0) first = i;
+            }
+            a.cash = a.hurtownia_price(first); CHECK(a.hurtownia_can(first) && a.hurtownia_buy(first) && a.cash == 0);
         }
     }
     // 43. nagrody za odbiór: każda wygrana odblokowuje kolejną (narzędzia, sprzęt, zawody); profil v7 -> v8
@@ -1790,7 +1806,7 @@ int main()
             CHECK(profile_fix(p) && std::strcmp(p.magic, profile_magic) == 0 && p.catalog_hi == 0 && p.best == 4321 && p.respect == 77 && p.catalog == 0x0F0F);
             catalog_add(p, 20); catalog_add(p, 31);
             CHECK(catalog_has(p, 20) && catalog_has(p, 31) && !catalog_has(p, 21) && catalog_count(p) == 8 + 2);
-            CHECK(std::strcmp(run_magic, "PBRUN11") == 0);
+            CHECK(std::strcmp(run_magic, "PBRUN12") == 0);
         }
     }
     // 41. v0.21.49 cz. 3: Akt 0 (Papierologia) - nagroda za odbiór, pieczątki zamykają schody, druga faza bossa;
@@ -2229,10 +2245,190 @@ int main()
         {
             game g; g.new_run(3, 42); clear_stage(g); g.pick_boon(1);
             run_save* sv = new run_save(); run_save_make(*sv, g);
-            CHECK(run_save_valid(*sv) && sv->g.boons == g.boons && std::memcmp(sv->magic, "PBRUN11", 7) == 0);
+            CHECK(run_save_valid(*sv) && sv->g.boons == g.boons && std::memcmp(sv->magic, "PBRUN12", 7) == 0);
             delete sv;
         }
     }
+    // 48. v0.21.50 cz. 3: wydarzenia z wyborem (#30), ulepszanie narzędzia (#31), ukryte pomieszczenia (#32)
+    {
+        // wydarzenia: pole tylko poza pierwszym etapem i bossem, deterministyczne z seeda, bez powtórek w budowie
+        int tiles = 0, stages_n = 0;
+        for(uint32_t seed = 1; seed <= 60; ++seed)
+        {
+            game a, b; a.new_run(int(seed % data::classes_count), seed * 131u); b.new_run(int(seed % data::classes_count), seed * 131u);
+            uint16_t seen = 0;
+            for(int st = a.first_stage; st < data::stages_count; ++st)
+            {
+                if(st != a.first_stage) { a.start_stage(st); b.start_stage(st); }
+                int ev = -1, n = 0;
+                for(int i = 0; i < a.pickups_count; ++i) if(a.pickups[i].type == event_tile) { ev = a.pickups[i].arg; ++n; }
+                int evb = -1; for(int i = 0; i < b.pickups_count; ++i) if(b.pickups[i].type == event_tile) evb = b.pickups[i].arg;
+                CHECK(ev == evb && n <= 1);
+                if(ev >= 0)
+                {
+                    CHECK(data::stages[st].boss < 0 && st != a.first_stage && ! ((seen >> ev) & 1));
+                    seen = uint16_t(seen | (1u << ev)); ++tiles;
+                    for(int i = 0; i < a.pickups_count; ++i)
+                        if(a.pickups[i].type == event_tile) CHECK(a.lv.at(a.pickups[i].x, a.pickups[i].y) == tile::floor && ! a.occupied(a.pickups[i].x, a.pickups[i].y));
+                }
+                ++stages_n;
+            }
+        }
+        CHECK(tiles > stages_n / 5 && tiles < stages_n * 3 / 4);
+        // każda odpowiedź każdego wydarzenia: skutki bez błędów, ten sam seed = ten sam wynik (szansa z osobnego generatora)
+        for(int e = 0; e < data::choice_events_count; ++e)
+            for(int k = 0; k < data::choice_events[e].choices_count; ++k)
+            {
+                static game a, b;
+                a.new_run(1, 777u + uint32_t(e)); a.start_stage(F0 + 1); a.enemies_count = 1;
+                a.hero.hp = a.hero.max_hp - 5; a.cash = 50; for(auto& m : a.mats) m = 3;
+                b = a;
+                const int cash0 = a.cash, hp0 = a.hero.hp, n0 = a.enemies_count;
+                a.pending_event = int8_t(e); b.pending_event = int8_t(e);
+                CHECK(a.choose_event(k) && b.choose_event(k));
+                CHECK(a.choice_done == b.choice_done && a.cash == b.cash && a.hero.hp == b.hero.hp && a.enemies_count == b.enemies_count);
+                CHECK(a.pending_event < 0 && a.stage_choice == e && a.stage_choice_pick == k && a.hero.hp >= 1);
+                const event_choice& c = data::choice_events[e].choices[k];
+                for(int i = 0; i < c.outs; ++i)
+                {
+                    const choice_out& o = c.out[i];
+                    const bool done = (a.choice_done >> i) & 1;
+                    CHECK(done || o.chance < 100);
+                    if(! done) continue;
+                    if(o.effect == choice_effect::cash && c.outs == 1) CHECK(a.cash == imax(0, cash0 + (o.value > 0 ? a.income(o.value) : o.value)));
+                    if(o.effect == choice_effect::hp && c.outs == 1) CHECK(a.hero.hp == imin(a.hero.max_hp, imax(1, hp0 + o.value)));
+                    if(o.effect == choice_effect::spawn) CHECK(a.enemies_count > n0 && a.enemies[a.enemies_count - 1].def_id == o.arg);
+                    if(o.effect == choice_effect::boon) CHECK(a.has_boon_offer());
+                    if(o.effect == choice_effect::stage_dmg) CHECK(a.event_dmg == o.value && a.weapon_breakdown().flat_event == o.value);
+                    if(o.effect == choice_effect::stage_def) CHECK(a.event_def == o.value);
+                    if(o.effect == choice_effect::upgrade) CHECK(a.weapon_lvl == 1);
+                }
+                message m; choice_label(m, c); CHECK(m.n > 0 && m.n < log_len - 1);
+                a.bot_pending(); a.bot_pending();
+                CHECK(! a.has_boon_offer() && ! a.trait_pending);
+            }
+        {   // premia z wydarzenia: inna oferta niż po etapie, wybór czyści ofertę; etap zeruje premie z wydarzenia
+            game g; g.new_run(0, 4242); g.start_stage(F0 + 1);
+            g.roll_boons(); int8_t o1[3]; for(int k = 0; k < 3; ++k) o1[k] = g.boon_offer[k];
+            g.roll_boons(50); CHECK(o1[0] != g.boon_offer[0] || o1[1] != g.boon_offer[1] || o1[2] != g.boon_offer[2]);
+            g.skip_boons();
+            g.event_dmg = 2; g.event_def = 2; const int d0 = g.hero_defense();
+            g.start_stage(F0 + 2); CHECK(g.event_dmg == 0 && g.event_def == 0 && g.hero_defense() == d0 - 2);
+            // bot: wybór wg wartości (Betoniarka: pożycza)
+            g.pending_event = 0; CHECK(g.bot_event_choice() == 0);
+        }
+        // ulepszenie narzędzia: Hurtownia (zł + stal), maks. +3, od +2 cecha; rozpiska = walka (przebicie, ostrze, wyważenie)
+        {
+            game g; arena(g, 1);
+            int up = -1; for(int i = 0; i < data::hurtownia_count; ++i) if(data::hurtownia[i].effect == shop_effect::upgrade) up = i;
+            CHECK(up >= 0);
+            g.cash = 0; g.mats[1] = 0; CHECK(! g.hurtownia_can(up));
+            g.cash = 500; g.mats[1] = 9;
+            const dmg_breakdown b0 = g.weapon_breakdown();
+            CHECK(g.hurtownia_price(up) == data::tool_levels[0].cash && g.hurtownia_buy(up) && g.weapon_lvl == 1);
+            CHECK(g.cash == 500 - data::tool_levels[0].cash && g.mats[1] == 9 - data::tool_levels[0].count);
+            const dmg_breakdown b1 = g.weapon_breakdown();
+            CHECK(b1.min == b0.min + 1 && b1.max == b0.max + 1 && b1.upg_level == 1);
+            { message m; dmg_line(m, b1, dmg_text::weapon); CHECK(std::strstr(m.s, "+1 ") != nullptr); }
+            CHECK(g.hurtownia_buy(up) && g.weapon_lvl == 2 && g.trait_pending && ! g.hurtownia_can(up));   // cecha czeka
+            CHECK(! g.choose_trait(9) && g.choose_trait(0) && g.weapon_trait == 0 && ! g.trait_pending);
+            g.mats[1] = 9; CHECK(g.hurtownia_buy(up) && g.weapon_lvl == 3 && ! g.hurtownia_can(up));
+            { message m; g.weapon_title(m); CHECK(std::strstr(m.s, "+3") != nullptr); }
+            // każda cecha: zakres z rozpiski = walka (także z premią z wydarzenia), teksty w buforze
+            for(int t = 0; t < data::tool_traits_count; ++t)
+                for(int ed : { data::enemy_kamien, data::enemy_przeciek, data::enemy_zbrojenie })
+                {
+                    g.weapon_trait = int8_t(t); g.event_dmg = int8_t(t);
+                    dmg_breakdown b = g.weapon_breakdown(ed);
+                    CHECK(b.crit_pct == g.crit_pct());
+                    rng pick; pick.seed(uint32_t(9 + t * 7 + ed));
+                    int lo = 999, hi = 0;
+                    for(int k = 0; k < 2000; ++k)
+                    {
+                        g.dmg_carry = pick.range(0, 99); g.hits_count = 0;
+                        g.spawn(ed, 8, 7);
+                        actor& e = g.enemies[g.enemies_count - 1]; e.hp = e.max_hp = 30000;
+                        g.hero_attack(g.enemies_count - 1);
+                        if(g.hits[0].kind != hit_crit) { lo = imin(lo, g.hits[0].amount); hi = imax(hi, g.hits[0].amount); }
+                        g.enemies_count = 0;
+                    }
+                    CHECK(lo == b.min && hi == b.max);
+                    for(int x = 0; x < dmg_texts; ++x) { message m; dmg_line(m, b, dmg_text(x)); CHECK(m.n > 0 && m.n < log_len - 1); }
+                }
+            g.event_dmg = 0;
+            // narzędzie na polu przy ulepszonym: decyzja; zostawiam - ulepszenie zostaje, biorę - przepada
+            g.pickups[0] = { int8_t(g.hero.x + 1), int8_t(g.hero.y), uint8_t(tool), true, 0 }; g.pickups_count = 1;
+            g.player_move(1, 0);
+            CHECK(g.has_tool_offer() && g.pickups[0].active && g.weapon_lvl == 3);
+            const dmg_breakdown cur = g.weapon_breakdown(), nw = g.weapon_breakdown(-1, data::tools[0].weapon);
+            CHECK(nw.upg_level == 0 && cur.upg_level == 3 && g.bot_tool_accept() == (nw.avg10 > cur.avg10));
+            g.decline_tool(); CHECK(! g.has_tool_offer() && g.weapon_lvl == 3 && g.pickups[0].active);
+            g.player_move(-1, 0); g.player_move(1, 0); CHECK(g.has_tool_offer());
+            g.accept_tool(); CHECK(g.weapon_lvl == 0 && g.weapon_trait < 0 && g.weapon_override == data::tools[0].weapon && ! g.pickups[0].active);
+            // nowe narzędzie z Hurtowni też kasuje ulepszenie
+            g.weapon_lvl = 2; g.weapon_trait = 1;
+            for(int i = 0; i < data::hurtownia_count; ++i) if(data::hurtownia[i].effect == shop_effect::tool) { g.cash = 500; g.hurtownia_buy(i); }
+            CHECK(g.weapon_lvl == 0 && g.weapon_trait < 0);
+            // wydarzenie z ulepszeniem (Stara ostrzałka) i bot w Hurtowni
+            game h; h.new_run(2, 99); h.act_cleared = true; h.cash = 300; for(auto& m : h.mats) m = 9;
+            h.bot_upgrade(); h.bot_upgrade(); CHECK(h.weapon_lvl == 2 && h.weapon_trait == h.bot_trait_choice() && ! h.trait_pending);
+        }
+        // ukryte pomieszczenia: tylko poza bossem, ściana graniczy z pokojem, wnętrze niedostępne bez otwarcia, skrzynia,
+        // klucz ma problem poza magazynem; otwarcie kluczem / Operatorem / wybuchem (drzwi - tylko klucz)
+        {
+            int found = 0, guards = 0, kinds[2] = {}, stages_n = 0;
+            for(uint32_t seed = 1; seed <= 80; ++seed)
+                for(int st = F0; st < data::stages_count; ++st)
+                {
+                    static game g; g.new_run(int(seed % data::classes_count), seed * 7u + 3u); g.start_stage(st);
+                    ++stages_n;
+                    if(! g.has_secret()) continue;
+                    ++found; ++kinds[g.secret_kind];
+                    CHECK(data::stages[st].boss < 0 && g.lv.at(g.secret_x, g.secret_y) == tile::wall);
+                    CHECK(g.lv.at(g.secret_front_x(), g.secret_front_y()) == tile::floor && connected(g.lv, g.hero.x, g.hero.y) == false);
+                    int chest_i = -1;
+                    for(int i = 0; i < g.pickups_count; ++i) if(g.pickups[i].type == chest) chest_i = i;
+                    CHECK(chest_i >= 0 && g.in_secret(g.pickups[chest_i].x, g.pickups[chest_i].y));
+                    CHECK(g.key_holder >= 0 && g.key_holder < g.enemies_count && ! g.in_secret(g.enemies[g.key_holder].x, g.enemies[g.key_holder].y));
+                    for(int i = 0; i < g.enemies_count; ++i) if(g.in_secret(g.enemies[i].x, g.enemies[i].y)) { ++guards; CHECK(g.enemies[i].elite >= 0); }
+                    // przed otwarciem: magazyn nieosiągalny; po: cała podłoga spójna
+                    bool seen[map_h][map_w] = {};
+                    std::queue<std::pair<int,int>> q; q.push({g.hero.x, g.hero.y}); seen[g.hero.y][g.hero.x] = true;
+                    while(! q.empty()) { auto [x, y] = q.front(); q.pop(); const int dd[4][2] = {{1,0},{-1,0},{0,1},{0,-1}};
+                        for(auto& v : dd) { int nx = x + v[0], ny = y + v[1]; if(g.lv.passable(nx, ny) && ! seen[ny][nx]) { seen[ny][nx] = true; q.push({nx, ny}); } } }
+                    CHECK(seen[g.secret_front_y()][g.secret_front_x()] && ! seen[g.pickups[chest_i].y][g.pickups[chest_i].x]);
+                    game o = g; o.keys = 1; o.hero.x = int8_t(o.secret_front_x()); o.hero.y = int8_t(o.secret_front_y());
+                    for(int i = 0; i < o.enemies_count; ++i) if(o.enemies[i].alive && cheb(o.enemies[i].x, o.enemies[i].y, o.hero.x, o.hero.y) <= 1) o.enemies[i].alive = false;
+                    CHECK(o.can_open_secret() && o.player_move(o.secret_x - o.hero.x, o.secret_y - o.hero.y));
+                    CHECK(o.secret_open && o.keys == 0 && connected(o.lv, o.hero.x, o.hero.y) && o.secrets_found == 1);
+                    if(seed <= 6)   // klucz z problemu, wybuch, Operator
+                    {
+                        game k = g; const int kh = k.key_holder; const int kx = k.enemies[kh].x, ky = k.enemies[kh].y;
+                        k.damage_enemy(kh, 30000, false, "test");
+                        if(k.enemies[kh].alive || (k.enemies[kh].flags & actor_reviving)) continue;   // wraca raz: klucz przy ostatecznym usunięciu
+                        int key_i = -1; for(int i = 0; i < k.pickups_count; ++i) if(k.pickups[i].type == store_key && k.pickups[i].active) key_i = i;
+                        CHECK((key_i >= 0 && cheb(k.pickups[key_i].x, k.pickups[key_i].y, kx, ky) <= 1) || k.keys == 1);
+                        CHECK(k.key_holder < 0);
+                        game b = g; b.blast_secret(b.secret_x, b.secret_y + 1, 1); CHECK(b.secret_open == b.secret_def().breakable);
+                        game op = g; op.cls = 8; op.hero.x = int8_t(op.secret_front_x()); op.hero.y = int8_t(op.secret_front_y());
+                        CHECK(op.can_open_secret() == op.secret_def().breakable);
+                    }
+                }
+            std::printf("magazyny: %d/%d etapów (strażnik %d, pęknięcie %d, drzwi %d)\n", found, stages_n, guards, kinds[0], kinds[1]);
+            CHECK(found > stages_n / 8 && kinds[0] > 0 && kinds[1] > 0 && guards > 0);
+            // skrzynia: Respekt, zł, materiały, sprzęt markowy
+            game g; arena(g, 0); g.pickups[0] = { 8, 7, uint8_t(chest), true }; g.pickups_count = 1;
+            const int r0 = g.respect, c0 = g.cash;
+            g.player_move(1, 0);
+            CHECK(g.respect == r0 + data::chest_respect && g.cash == c0 + g.income(data::chest_cash) && g.mats[0] == data::chest_mats);
+            bool gear = false; for(int s = 0; s < data::gear_slots_count; ++s) gear |= g.equipped[s] == data::chest_gear_min;
+            CHECK(gear);
+            // bot: cel - klucz, potem magazyn, potem skrzynia
+            game t = g; t.pickups[1] = { 3, 3, uint8_t(store_key), true }; t.pickups_count = 2; int gx, gy;
+            CHECK(t.bot_goal(gx, gy) && gx == 3 && gy == 3);
+        }
+    }
+
     if(std::getenv("PB_NO_BALANCE")) { std::printf(fails ? "\n%d FAIL\n" : "\nOK (bez balansu)\n", fails); return fails != 0; }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
