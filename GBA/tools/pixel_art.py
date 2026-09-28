@@ -258,6 +258,100 @@ def enemy_frame(index, frame):
     return px
 
 
+# ------------------------------------------------------------------ v0.21.49: problemy etapów (klatki 61-80, druga 81-100)
+# Kolejność jak nowe wrogi w data/game.json (od "woda"); klatka B = oddech jak u pozostałych.
+STAGE_ENEMIES = {
+"woda": [
+"................","................","......KKKK......",".....KCCCCK.....","....KCWCCCCK....","....KCCCCCCK....",
+"...KCCKCCKCCK...","...KCCKCCKCCK...","...KCCCCCCCCK...","..KCCCBBBBCCCK..",".KCCBCCCCCCBCCK.",".KBCCCCCCCCCCBK.",
+"KTTKBBBBBBBBKTTK","KTTTKKKKKKKKTTTK",".KTTTTTTTTTTTTK.","..KKKKKKKKKKKK.."],
+"kamien": [
+"................","................","................",".....KKKKKK.....","...KKlllgggKK...","..KllllggggggK..",
+"..KlWllgggggggK.",".KlllKKgggKKggK.",".KlllgggggggggK.",".KllggggKKKgggK.",".KgggggggggggDK.",".KggggggggggDDK.",
+"..KgggDgggggDK..","...KKKKKKKKKK...","..TTTTTTTTTTTT..","................"],
+"osuwisko": [
+"................","................","........KK......",".......KTTK.....","......KTTTTK....",".....KTWKTTTK...",
+"....KTTKKTWKTK..","...KTTTTTTKKTTK.","..KTTgTTTTTTTTK.",".KTTTTTKKKTTgTTK","KTTTgTTTTTTTTTTK","KKKKKKKKKKKKKKKK",
+"l.l...l...l.....","..l.l...l...l...","................","................"],
+"folia": [
+"................","..KKKKKKKKKKKK..","..KNNNNNNNNNNK..","..KNWKNNNNWKNK..","..KNKKNNNNKKNK..","..KNNNN..NNNNK..",
+"..KNNN....NNNK..","..KNNNN..NNNNK..","..KNYYYNNNNNNK..","..KNYYYNNNNNNK..","..KNNNNNNNKKNK..","..KNNNNNNNK.KK..",
+"..KNNNNNNNNNNK..","...KNNKNNNKNNK..","....KK.KKK.KK...","................"],
+"krzywy_mur": [
+"................","....KKKKKKKK....","....KRRKORRK....","...KKKKKKKKKK...","...KORRKRRORK...","..KKKKKKKKKKK...",
+"..KRWKRRWKRRK...","..KRKKRRKKRRK...",".KKKKKKKKKKKK...",".KORRKRRORRKK...",".KKKKKKKKKKKK...","KRRORKRRRKRRK...",
+"KKKKKKKKKKKKK...","TTTTTTTTTTTTTT..","................","................"],
+"mostek": [
+"................","...R....R.......","....R..R..R.....","...R....R.......","..KKKKKKKKKKKK..","..KBBBBBBBBBBK..",
+"..KBWKBBBBWKBK..","..KBKKBBBBKKBK..","..KCCCCCCCCCCK..","..KCCCKKKKCCCK..","..KCCCCCCCCCCK..","..KBBBBBBBBBBK..",
+"..KKKKKKKKKKKK..","...W...W...W....","....W...W...W...","................"],
+"ugiecie": [
+"................","................","KKK..........KKK","KllKK......KKllK","KlllllKKKKKllllK",".KllllllllllllK.",
+".KlllWKllWKlllK.","..KllKKllKKllK..","..KllllllllllK..","...KlllKKlllK...","...KllKllKllK...","....KKllllKK....",
+"......KKKK......","......g..g......","................","................"],
+"zbrojenie": [
+"................","....K......K....","...KOK....KOK...","...KOK....KOK...","..KKKKKK.KKKKK..","..KlllllKKlllK..",
+"..KlWKllKlWKlK..","..KlKKlKllKKlK..","..KllllKlllllK..","..KlllKllllllK..","..KllllKllKKlK..","..KlllllKlllK...",
+"..KKKKKK.KKKKK..","................","................","................"],
+"papa": [
+"................","..KKKKKKKKKKKK..",".KNNNNNNNNNNNNK.",".KNgNNNNNNNNgNK.",".KNWKNNNNNWKNNK.",".KNKKNNNNNKKNNK.",
+".KNNNNNKKNNNNNK.","..KKKKKKKKKKKK..","...KC....KC.....","...KC.....KC....","....C..C...C....","..C...KCK.......",
+".....KCCCK..C...","......KKK.......","................","................"],
+"rynna": [
+"................","......G..D......","....DGGDGGDG....","KKKKGDGGDGDGKKKK","KlllKGDKKDGKlllK","KlllllllllllllgK",
+"KgWKllllllWKllgK",".KKKllllllKKlgK.","..KgllllllllgK..","...KKKKKKKKKK...","....C....C......","....C..C.C..C...",
+"...CCC.C...CCC..","....C...........","................","................"],
+"pustak": [
+"................","................","..KKKKKKKKKKKK..","..KOOOOOKOOOOK..","..KOKKOKOKKOOK..","..KOKKOOKKKOOK..",
+"..KOOOOKOOOOOK..","..KRWKRRKRWKRK..","..KRKKRKRRKKRK..","..KRRRRRKRRRRK..","..KRRKKRRKRRRK..","..KRRRRKRRRRRK..",
+"..KKKKKKKKKKKK..","...Y..Y...Y.....","....Y....Y......","................"],
+"wymiarowka": [
+"................","................","...KKKKKKK......","..KYYYYYYYK.....","..KYWKYWKYK.....","..KYKKYKKYK.....",
+"..KYYYYYYYKKKKKK","..KYYKKKYYYYKYYK","..KYYYYYYYKKKKKK","..KgggggggK.....","...KKKKKKK......","....K...K.......",
+"................","................","................","................"],
+"ramka": [
+"..KKKKKKKKKKKK..","..KWWWWWWWWWWK..","..KWCCCCKCCCWK..","..KWCWKCKCWKWK..","..KWCKKCKCKKWK..","..KWCCCCKCCCWK..",
+"..KWKKKKKKKKWK..","..KWCCCCKCCCWK..","..KWCCKKKKCCWK..","..KWCCCCKCCCWK..","..KWWWWWWWWWWK..","..KKKKKKKKKKKK..",
+"l..............l",".l............l.","................","................"],
+"przeciag": [
+"................","......KKKKK.....","....KKlllllKK...","...KllWWlllllK..","..KllWKlllWKlK..","..KlllKKllKKlK..",
+"..KllllllllllK..","...KlllKKKllK...","....KllllllK....",".....KlllllK....","....KlllKKK.....","...KllK.........",
+"..KlK...........","..KK............","................","................"],
+"zapowietrzenie": [
+"................","................","......KKKK......","....KKWWCCKK....","...KWWCCCCCCK...","...KWCWKCWKCK...",
+"...KCCKKCKKCK...","...KCCCCCCCCK...","...KCCCKKCCCK...","....KKCCCCKK....","KKKKKKKKKKKKKKKK","gggggggggggggggg",
+"llllllllllllllll","KKKKKKKKKKKKKKKK","................","................"],
+"uziemienie": [
+"................","..Y.........Y...","...Y..KKKK.Y....","....KKggggKK....","...KggggggggK...","...KgWKggWKgK...",
+"...KgKKggKKgK...","...KggggggggK...","...KggKKKKggK...","...KgKOKKOKgK...","...KggggggggK...","....KKKKKKKK....",
+"......KYK.......",".....KYK........","....KYK.........","....KK.........."],
+"rysa": [
+"................","..KKKKKKKKKKKK..","..KlWWWWKWWWWK..","..KWWWWKWWWWlK..","..KWKWWWKWWKWK..","..KWWWWKWWWWWK..",
+"..KWWWWWKWWWWK..","..KWWKKWWKKWWK..","..KWWWKKKKWWWK..","..KlWWWWKWWWWK..","..KWWWWKWWWWlK..","..KKKKKKKKKKKK..",
+"................","................","................","................"],
+"wilgoc": [
+"................","................",".....KKKKKK.....","...KKBBBBBBKK...","..KBBNBBBBNBBK..","..KBBBBBBBBBBK..",
+".KBBWKBBBBWKBBK.",".KBBKKBBBBKKBBK.",".KBBBBBGBBBBBBK.",".KBNBBBBBBBBNBK.","..KBBBKKKKBBBK..","..KBBBBBBBBBBK..",
+"...KBKBBBKBKK...","....K.KBK.K.....",".......C........","................"],
+"odpryski": [
+"................",".l.........W....","...W....l.......","....KKKKKKKK..l.","....KCCCCCCK....","...KCWKCCWKCK...",
+"...KCKKCCKKCK...","...KCCCCCCCCK...","...KCCKKKKCCK...","...KCCCCCCCK....","....KCCCCCK.....",".....KKKKK..W...",
+"..W.............","........l.......","................","................"],
+"poprawki": [
+"................","...KKKKKKKKK....","...KYYYYYYYKK...","...KYRYYYRYYK...","...KYYRYRYYYK...","...KYYYRYYYYK...",
+"...KYYRYRYYYK...","...KYRYYYRYYK...","...KYYYYYYYYK...","...KYWKYYWKYK...","...KYKKYYKKYK...","...KYYYYYYYYK...",
+"...KYYKKKKYYK...","...KKKKKKKKKK...","................","................"],
+}
+STAGE_ENEMY_ORDER = list(STAGE_ENEMIES)
+
+
+def stage_enemy_frame(index, frame):
+    px = parse(STAGE_ENEMIES[STAGE_ENEMY_ORDER[index]])
+    if frame == 1:
+        px = [0] * 16 + px[:16 * 15]
+    return px
+
+
 # ------------------------------------------------------------------ znajdźki
 PICKUPS = {
     "coffee": [
@@ -703,6 +797,23 @@ MENU_ICONS = [
         "....KKK..KKK....", "....KRRK.KBK....", ".....KRRKBK.....", "......KKKK......", ".....KKYYKK.....",
         "....KYYWYYYK....", "...KYYYYYYYYK...", "...KYYYWYYYYK...", "...KYWWWWWYYK...", "...KYYWWWYYYK...",
         "...KYYWYWYYYK...", "...KYYYYYYYOK...", "....KYYYYYOK....", ".....KKKKKK.....", "................", "................"],
+    # 20-22: mechaniki aktów (błoto, porywy wiatru, pył), 23: statystyki (pomoc "i")
+    [   # błoto: płaska brązowa kałuża z bąblami
+        "................", "................", "................", "......KK....K...", ".....KOOK..KOK..",
+        "......KK....K...", "..KKKKKKKKKKKK..", ".KTTTTTTTTTTTTK.", "KTTOTTTTTTTOTTTK", "KTTTTTTTTTTTTTTK",
+        ".KTTTOTTTTTTTTK.", "..KKKKKKKKKKKK..", "................", "................", "................", "................"],
+    [   # porywy: zawijasy wiatru
+        "................", "................", "........KKK.....", ".......KlllK....", "KKKKKKKKK.lK....",
+        "lllllllllKlK....", "KKKKKKKKKKK.....", "................", "KKKKKKKKKKKKK...", "llllllllllllK...",
+        "KKKKKKKKKK.lK...", ".........KlK....", "........KlK.....", ".........K......", "................", "................"],
+    [   # pył: szara chmura z drobinkami
+        "................", "................", "..l....l........", "......KKKK...l..", "..l.KKggggKK....",
+        "...KggllggggK...", "..KgglllgggggK..", ".KggggggggglgK..", ".KgglggggggggK..", "..KgggggglggK..l",
+        "...KKggggggK....", "....l.KKKK..l...", "..l.......l.....", "......l.........", "................", "................"],
+    [   # statystyki: fioletowe kółko z "i"
+        "................", "....KKKKKKK.....", "...KPPPPPPPK....", "..KPPPPWPPPPK...", "..KPPPPPPPPPK...",
+        "..KPPPWWPPPPK...", "..KPPPPWPPPPK...", "..KPPPPWPPPPK...", "..KPPPPWPPPPK...", "..KPPPWWWPPPK...",
+        "...KPPPPPPPK....", "....KKKKKKK.....", "................", "................", "................", "................"],
 ]
 
 

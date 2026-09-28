@@ -13,7 +13,8 @@ namespace core
     constexpr int max_respect = 16;
     static_assert(data::classes_count <= max_classes && data::respect_count <= max_respect && data::rewards_count <= 255);
 
-    constexpr char profile_magic[8] = "PBRL008";
+    constexpr char profile_magic[8] = "PBRL009";
+    constexpr char profile_magic_v8[8] = "PBRL008";
     constexpr char profile_magic_v7[8] = "PBRL007";
     constexpr char profile_magic_v6[8] = "PBRL006";
     constexpr char profile_magic_v5[8] = "PBRL005";
@@ -27,12 +28,13 @@ namespace core
     constexpr int profile_v5_size = 78;   // v6 = v5 + brygada i tryb inwestora
     constexpr int profile_v6_size = 88;   // v7 = v6 + codzienna budowa (data, najlepsze wyniki dni)
     constexpr int profile_v7_size = 124;  // v8 = v7 + Respekt, nagrody za odbiór, wygrane i stawki zawodów 8-11
+    constexpr int profile_v8_size = 152;  // v9 = v8 + katalog usterek 16-47 (nowe problemy etapów)
     constexpr int daily_slots = 5;
     static_assert(data::daily_history <= daily_slots);
     constexpr int max_keepsakes = 8;
     static_assert(data::contracts_count <= 8 && data::keepsakes_count <= max_keepsakes);
     constexpr int max_houses = 12;        // działki na Osiedlu
-    static_assert(data::badges_count <= 16 && data::enemies_count <= 16);
+    static_assert(data::badges_count <= 16 && data::enemies_count <= 48);
 
     // Pierwsze pola jak w zapisie v1 (magic, best, runs, wins) - migracja zachowuje rekord.
     struct profile
@@ -88,13 +90,25 @@ namespace core
         uint8_t class_wins_hi;         // zawody 8-15, którymi wygrano (dalszy ciąg class_wins)
         uint8_t respect_ranks[max_respect];   // kupione rangi Respektu
         uint8_t best_stake_hi[4];      // rekord stawki zawodów 8-11
+        // --- v9: katalog usterek - rodzaje problemów 16-47 (dalszy ciąg catalog)
+        uint32_t catalog_hi;
     };
     static_assert(offsetof(profile, badges) == profile_v2_size);
     static_assert(offsetof(profile, kills_total) == profile_v3_size);
     static_assert(offsetof(profile, run_kills) == profile_v4_size);
     static_assert(offsetof(profile, brigade) == profile_v5_size);
     static_assert(offsetof(profile, daily_d) == profile_v6_size && offsetof(profile, daily_score) == 104);
-    static_assert(offsetof(profile, respect) == profile_v7_size && offsetof(profile, respect_ranks) == 132 && sizeof(profile) == 152);
+    static_assert(offsetof(profile, respect) == profile_v7_size && offsetof(profile, respect_ranks) == 132);
+    static_assert(offsetof(profile, catalog_hi) == profile_v8_size && sizeof(profile) == 156);
+
+    // Katalog usterek: rodzaje 0-15 w catalog, 16-47 w catalog_hi.
+    inline bool catalog_has(const profile& p, int d) { return d < 16 ? (p.catalog >> d) & 1 : (p.catalog_hi >> (d - 16)) & 1; }
+    inline void catalog_add(profile& p, int d)
+    {
+        if(d < 16) p.catalog = uint16_t(p.catalog | (1u << d));
+        else p.catalog_hi |= 1u << (d - 16);
+    }
+    inline int catalog_count(const profile& p) { int n = 0; for(int d = 0; d < data::enemies_count; ++d) n += catalog_has(p, d); return n; }
 
     enum profile_flag : uint8_t { help_seen = 1, prologue_seen = 2 };
 
@@ -191,7 +205,14 @@ namespace core
     inline bool profile_fix(profile& p)
     {
         if(std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0) return clamp_levels(p);
-        // v7/v6/v5/v4/v3/v2 -> v8: stare pola zostają, nowe od zera; bez wybranej pamiątki - pierwsza odblokowana
+        if(std::memcmp(p.magic, profile_magic_v8, sizeof p.magic) == 0)   // v8 -> v9: katalog 16-47 od zera
+        {
+            std::memset(reinterpret_cast<char*>(&p) + profile_v8_size, 0, sizeof p - profile_v8_size);
+            std::memcpy(p.magic, profile_magic, sizeof p.magic);
+            clamp_levels(p);
+            return true;
+        }
+        // v7/v6/v5/v4/v3/v2 -> v9: stare pola zostają, nowe od zera; bez wybranej pamiątki - pierwsza odblokowana
         int keep = std::memcmp(p.magic, profile_magic_v7, sizeof p.magic) == 0 ? profile_v7_size
                  : std::memcmp(p.magic, profile_magic_v6, sizeof p.magic) == 0 ? profile_v6_size
                  : std::memcmp(p.magic, profile_magic_v5, sizeof p.magic) == 0 ? profile_v5_size
@@ -525,7 +546,7 @@ namespace core
     inline void record_run(profile& p, game& g)
     {
         bank_counters(p, g);
-        for(int d = 0; d < data::enemies_count; ++d) if(g.kills_by_type[d]) p.catalog = uint16_t(p.catalog | (1u << d));
+        for(int d = 0; d < data::enemies_count; ++d) if(g.kills_by_type[d]) catalog_add(p, d);
         p.tools_found = uint8_t(p.tools_found | g.tools_found);
         if(g.st == status::won) set_class_won(p, g.cls);
         int stake = investor_stake(g.bonus.investor);   // rekord stawki zawodu (wygrana w trybie inwestora)
@@ -548,7 +569,7 @@ namespace core
         cond[data::badge_twardziel] = won && g.diff == data::difficulties_count - 1;
         cond[data::badge_pelny_zespol] = classes_won(p) == data::classes_count;
         cond[data::badge_kolekcjoner] = (p.tools_found & all_tools) == all_tools;
-        cond[data::badge_katalog] = p.catalog == (1 << data::enemies_count) - 1;
+        cond[data::badge_katalog] = catalog_count(p) == data::enemies_count;
         cond[data::badge_osiedle] = p.houses_count >= 5;
         int got = 0;
         for(int i = 0; i < data::badges_count; ++i)
@@ -726,7 +747,7 @@ namespace core
     // Cały stan gry (game jest trywialnie kopiowalny) za profilem w SRAM. Rozmiar i suma kontrolna
     // odrzucają zapisy uszkodzone i z innej wersji gry.
     static_assert(std::is_trivially_copyable_v<game>);
-    constexpr char run_magic[8] = "PBRUN08";   // 08: Respekt, sloty sprzętu z nagród; 07: ścieżki, materiały, codzienna budowa
+    constexpr char run_magic[8] = "PBRUN09";   // 09: 10 etapów, zachowania problemów, mechaniki aktów; 08: Respekt, sloty z nagród
     constexpr int run_save_offset = 256;
     static_assert(sizeof(profile) <= run_save_offset);
 

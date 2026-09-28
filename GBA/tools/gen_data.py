@@ -27,6 +27,12 @@ for c in d["classes"]:
              f'{s(ab["name"])}, {s(ab["desc"])}, core::ability_effect::{ab["effect"]}, {ab["cooldown"]}, '
              f'core::class_passive::{c.get("passive", "none")} }},')
 L.append("};\n")
+BEH = ["ranged", "splits", "heals", "explodes", "grows", "flees", "stationary", "pushes", "returns"]
+def tags(e):
+    b = e.get("behaviors", [])
+    assert all(x in BEH for x in b) and not (e.get("slam") and b), e   # bossowie bez zachowań
+    assert not ("stationary" in b and "flees" in b), e
+    return sum(1 << BEH.index(x) for x in b)
 L.append("inline constexpr core::enemy_def enemies[] = {")
 for e in d["enemies"]:
     sm, rw = e.get("summon", {}), e.get("reward", {})
@@ -38,7 +44,7 @@ for e in d["enemies"]:
              f'core::status_effect::{e.get("onHit", {}).get("status", "none")}, {e.get("onHit", {}).get("chancePct", 0)}, '
              f'{e.get("onHit", {}).get("turns", 0)}, core::slam_shape::{e.get("slamShape", "square")}, {s(e.get("slamName", ""))}, '
              f'{eid[sm["enemy"]] if sm else -1}, {sm.get("every", 0)}, {sm.get("max", 0)}, {e.get("gearStun", 0)}, '
-             f'{rw.get("cash", 0)}, {s(rw.get("title", ""))}, {mid[e["material"]] if "material" in e else -1} }},')
+             f'{rw.get("cash", 0)}, {s(rw.get("title", ""))}, {mid[e["material"]] if "material" in e else -1}, {tags(e)} }},')
 L.append("};\n")
 L.append("inline constexpr core::stage_def stages[] = {")
 for st in d["stages"]:
@@ -77,15 +83,30 @@ L.append("")
 acts = d["acts"]
 path_more = max(0, max(x["enemies"] for x in d["paths"]["list"]))   # ścieżka może dodać problemy
 for st in d["stages"]:   # boss z wezwaniami: etap + boss + wezwani mieszczą się w core::max_enemies (12)
-    assert st["count"] + path_more <= 12, st
+    assert st["count"] + path_more <= 12, st   # core::max_enemies 16: miejsce na dwa podziały (zachowanie "splits")
     if "boss" in st:
         assert st["count"] + path_more + 1 + d["enemies"][eid[st["boss"]]].get("summon", {}).get("max", 0) <= 12, st
 for ai in range(len(acts)):   # każdy akt kończy się etapem z bossem
     last = max(i for i, st in enumerate(d["stages"]) if st["act"] == ai)
     assert "boss" in d["stages"][last], f"akt {ai} bez bossa"
-L.append("inline constexpr core::act_def acts[] = {")
-L += [f'    {{ {s(a["name"])}, {a["bonusPerStage"]}, {a["bonusPerKill"]} }},' for a in acts]
+L.append("inline constexpr core::act_def acts[] = {   // mechanika aktu: błoto, porywy wiatru, pył")
+for a in acts:
+    mc = a.get("mechanic", {"effect": "none", "value": 0, "name": "", "short": "", "info": ""})
+    assert mc["effect"] in {"none", "mud", "gust", "dust"} and len(mc["name"]) <= 20 and len(mc["short"]) <= 8 and len(mc["info"]) <= 23, mc   # info = baner (23 znaki)
+    assert mc["effect"] not in ("mud", "gust") or mc["value"] >= 3, mc
+    L.append(f'    {{ {s(a["name"])}, {a["bonusPerStage"]}, {a["bonusPerKill"]}, core::act_mechanic::{mc["effect"]}, {mc["value"]}, '
+             f'{s(mc["name"])}, {s(mc["short"])}, {s(mc["info"])} }},')
 L.append("};")
+bp = d["behaviorParams"]
+assert 2 <= bp["rangedReach"] <= 4 and 0 < bp["splitHpPct"] <= 100 and bp["blastDelay"] >= 2 and bp["growEvery"] >= 2
+L += [f"inline constexpr int behavior_{k} = {v};" for k, v in [("ranged_reach", bp["rangedReach"]), ("split_hp_pct", bp["splitHpPct"]),
+      ("heal_value", bp["healValue"]), ("heal_every", bp["healEvery"]), ("blast_damage", bp["blastDamage"]),
+      ("blast_radius", bp["blastRadius"]), ("blast_delay", bp["blastDelay"]), ("grow_every", bp["growEvery"]),
+      ("grow_hp", bp["growHp"]), ("grow_max", bp["growMax"]), ("flee_cooldown", bp["fleeCooldown"]),
+      ("return_turns", bp["returnTurns"]), ("return_hp_pct", bp["returnHpPct"]), ("push_cooldown", bp["pushCooldown"])]]
+bn = d["behaviorNames"]
+assert set(bn) == set(BEH) and all(len(v) <= 18 for v in bn.values())
+L.append("inline constexpr const char* behavior_names[] = { " + ", ".join(s(bn[k]) for k in BEH) + " };   // indeks = bit zachowania")
 L.append("inline constexpr core::shop_item_def hurtownia[] = {")
 for it in d["hurtownia"]:
     assert it["effect"] in {"heal", "gear", "tool", "maxhp", "ability", "def", "thermos"} and len(it["desc"]) <= 34, it
@@ -158,7 +179,7 @@ L += [f"inline constexpr int site_events_count = {len(se['list'])};",
       f"inline constexpr int site_event_chance_pct = {se['chancePct']};", ""]
 wt = d["weather"]
 all_stages = (1 << len(d["stages"])) - 1
-assert wt["list"][0]["effect"] == "none" and len(d["stages"]) <= 8   # pierwsza = bez skutku (domyślna)
+assert wt["list"][0]["effect"] == "none" and len(d["stages"]) <= 12   # pierwsza = bez skutku (domyślna)
 L.append("inline constexpr core::weather_def weather[] = {   // pogoda dnia: losowana na starcie etapu")
 for w in wt["list"]:
     assert w["effect"] in {"none", "heat", "frost", "wind", "rain"} and len(w["short"]) <= 10, w

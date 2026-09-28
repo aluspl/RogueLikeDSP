@@ -22,14 +22,18 @@ static bool bot_open(const game& g, int x, int y)
     return false;
 }
 
-// Odległość po ścieżce (4 kierunki, przez pola przechodnie) od (sx, sy) do każdego pola; -1 = nieosiągalne.
-static void bot_bfs(const game& g, int sx, int sy, int (&dist)[map_h][map_w])
+// Koszt drogi bota: krok = waga pola, z którego + waga pola, na które (zwykłe 2, błoto 6 - kosztuje turę), więc koszt
+// jest symetryczny i maleje wzdłuż drogi do celu (bez przeskakiwania między celami). Bez błota = 4 x liczba kroków.
+static int bot_w(const game& g, int x, int y) { return g.mud(x, y) ? 6 : 2; }
+static void bot_cost(const game& g, int sx, int sy, int (&dist)[map_h][map_w])
 {
     static const int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}};
     for(auto& r:dist) for(auto& c:r) c=-1;
-    std::queue<std::pair<int,int>> q; q.push({sx,sy}); dist[sy][sx]=0;
-    while(!q.empty()){ auto [x,y]=q.front(); q.pop();
-        for(int k=0;k<4;++k){int nx=x+d[k][0],ny=y+d[k][1]; if(bot_open(g,nx,ny)&&dist[ny][nx]<0){dist[ny][nx]=dist[y][x]+1;q.push({nx,ny});}}}
+    std::priority_queue<std::pair<int,int>, std::vector<std::pair<int,int>>, std::greater<>> q;
+    dist[sy][sx]=0; q.push({0, sy*map_w+sx});
+    while(!q.empty()){ auto [c,p]=q.top(); q.pop(); int x=p%map_w, y=p/map_w; if(c!=dist[y][x]) continue;
+        for(int k=0;k<4;++k){int nx=x+d[k][0],ny=y+d[k][1]; if(!bot_open(g,nx,ny)) continue;
+            int nc=c+bot_w(g,x,y)+bot_w(g,nx,ny); if(dist[ny][nx]<0||nc<dist[ny][nx]){dist[ny][nx]=nc;q.push({nc,ny*map_w+nx});}}}
 }
 
 // Prosty bot: idź do najbliższego (po ścieżce) wroga albo schodów, atakuj z dystansu, gdy się da.
@@ -43,17 +47,17 @@ static void bot_step(game& g)
     if(g.has_offer()) { if(g.offer_is_better()) g.accept_offer(); else g.decline_offer(); }
     if(g.thermos > 0 && g.hero.hp * 100 < g.hero.max_hp * data::bot_drink_below_pct && g.player_drink()) return;
     static int hd[map_h][map_w], td[map_h][map_w];
-    bot_bfs(g, g.hero.x, g.hero.y, hd);
-    int tx = g.stairs_x, ty = g.stairs_y, best = 999;
-    for(int i=0;i<g.enemies_count;++i){ auto& e=g.enemies[i]; int dd=hd[e.y][e.x]; if(e.alive&&dd>=0&&dd<best&&(dd<8||g.stairs_x<0)){best=dd;tx=e.x;ty=e.y;} }
+    bot_cost(g, g.hero.x, g.hero.y, hd);   // koszt drogi (błoto droższe)
+    int tx = g.stairs_x, ty = g.stairs_y, best = 999999;
+    for(int i=0;i<g.enemies_count;++i){ auto& e=g.enemies[i]; int dd=hd[e.y][e.x]; if(e.alive&&dd>=0&&dd<best&&(dd<32||g.stairs_x<0)){best=dd;tx=e.x;ty=e.y;} }
     bool has_target = tx>=0 && hd[ty][tx]>=0;
-    if(has_target) bot_bfs(g, tx, ty, td);
-    if(g.slam_cell(g.hero.x, g.hero.y))   // zapowiedziany cios bossa: zejdź z czerwonych pól (jak człowiek; nie wraca na nie)
+    if(has_target) bot_cost(g, tx, ty, td);
+    if(g.danger_cell(g.hero.x, g.hero.y))   // zapowiedziany cios bossa: zejdź z czerwonych pól (jak człowiek; nie wraca na nie)
     {
         int bk=-1, bs=-1000000;
         for(int k=0;k<4;++k){ int nx=g.hero.x+d[k][0], ny=g.hero.y+d[k][1];
             if(!g.lv.passable(nx,ny)||g.occupied(nx,ny)) continue;
-            int s=(g.slam_cell(nx,ny)?0:1000)-(has_target&&td[ny][nx]>=0?td[ny][nx]:500); if(s>bs){bs=s;bk=k;} }
+            int s=(g.danger_cell(nx,ny)?0:10000)-(has_target&&td[ny][nx]>=0?td[ny][nx]:5000); if(s>bs){bs=s;bk=k;} }
         if(bk>=0 && g.player_move(d[bk][0],d[bk][1])) return;
     }
     if(g.nearest_target() >= 0 && g.weapon().range > 1) { g.player_attack_nearest(); return; }
@@ -61,9 +65,9 @@ static void bot_step(game& g)
     for(int k=0;k<4;++k)   // krok na sąsiednie pole bliżej celu
     {
         int nx=g.hero.x+d[k][0], ny=g.hero.y+d[k][1];
-        if(!bot_open(g,nx,ny)||td[ny][nx]!=td[g.hero.y][g.hero.x]-1) continue;
+        if(!bot_open(g,nx,ny)||td[ny][nx]<0||td[ny][nx]+bot_w(g,nx,ny)+bot_w(g,g.hero.x,g.hero.y)!=td[g.hero.y][g.hero.x]) continue;
         if(!g.lv.passable(nx,ny)){ g.player_wait(); return; }   // mur Ścianki na drodze: czekaj, aż zniknie
-        if(g.slam_cell(nx,ny)&&g.enemy_at(nx,ny)<0){ g.player_wait(); return; }   // nie wchodzi na czerwone pola przed ciosem
+        if(g.danger_cell(nx,ny)&&g.enemy_at(nx,ny)<0){ g.player_wait(); return; }   // nie wchodzi na czerwone pola przed ciosem
         if(!g.player_move(d[k][0],d[k][1])) g.player_wait();
         return;
     }
@@ -87,12 +91,12 @@ static void bot_step_smart(game& g)
             int h = (g.stage + k) % data::brigade_count;
             if(g.helper_blocked(h) == game::helper_ok && g.call_helper(h)) return;
         }
-    if(!g.slam_cell(g.hero.x, g.hero.y) && g.ability_cd == 0)
+    if(!g.danger_cell(g.hero.x, g.hero.y) && g.ability_cd == 0)
     {
         int t = g.nearest_visible_enemy();
         if(t >= 0 && cheb(g.hero.x, g.hero.y, g.enemies[t].x, g.enemies[t].y) <= 2 && g.player_ability()) return;
     }
-    if(!g.slam_cell(g.hero.x, g.hero.y))
+    if(!g.danger_cell(g.hero.x, g.hero.y))
     {
         int8_t targets[max_enemies]; int n = g.targets_in_range(targets, max_enemies);
         if(n > 0 && g.player_attack(targets[0])) return;
@@ -117,6 +121,7 @@ static uint32_t digest(const game& g)
     {
         const actor& e = g.enemies[i];
         f.add(e.x); f.add(e.y); f.add(e.hp); f.add(e.max_hp); f.add(e.def_id); f.add(e.alive); f.add(e.awake); f.add(e.stun);
+        f.add(e.flags); f.add(e.grow); f.add(e.timer);   // v0.21.49 cz. 2: zachowania problemów
     }
     f.add(g.pickups_count);
     for(int i = 0; i < g.pickups_count; ++i)
@@ -150,9 +155,12 @@ static uint32_t digest(const game& g)
     f.add(g.bridges);
     for(int i = 0; i < g.bridges; ++i) { f.add(g.bridge_x[i]); f.add(g.bridge_y[i]); }
     f.add(g.daily); f.add(g.daily_day);
-    for(int i = 0; i < 8; ++i) f.add(g.stage_days[i]);
+    for(int i = 0; i < max_stages; ++i) f.add(g.stage_days[i]);
     // v0.21.49: Respekt, reszty procentów obrażeń, Druga szansa
     f.add(g.respect); f.add(g.dmg_carry); f.add(g.taken_carry); f.add(g.second_used);
+    // v0.21.49 cz. 2: wybuch, porywy (kolejny poryw), pole widzenia z pyłem
+    f.add(g.blast_x); f.add(g.blast_y); f.add(g.blast_timer); f.add(g.blast_dmg); f.add(g.gust_in()); f.add(g.sight_radius());
+    for(int i = 0; i < max_enemy_types; ++i) f.add(g.kills_by_type[i]);
     return f.h;
 }
 
@@ -203,12 +211,14 @@ static void snapshot(const game& g, int step)
     w(","); key("mats"); w("["); for(int i = 0; i < 3; ++i) { if(i) w(","); wi(g.mats[i]); } w("]");
     w(","); key("bridges"); w("["); for(int i = 0; i < g.bridges; ++i) { if(i) w(","); w("["); wi(g.bridge_x[i]); w(","); wi(g.bridge_y[i]); w("]"); } w("]");
     w(","); key("daily"); w("["); wi(g.daily); w(","); wi(g.daily_day); w("]");
-    w(","); key("stageDays"); w("["); for(int i = 0; i < 8; ++i) { if(i) w(","); wi(g.stage_days[i]); } w("]");
+    w(","); key("stageDays"); w("["); for(int i = 0; i < max_stages; ++i) { if(i) w(","); wi(g.stage_days[i]); } w("]");
+    w(","); key("blast"); w("["); wi(g.blast_x); w(","); wi(g.blast_y); w(","); wi(g.blast_timer); w(","); wi(g.blast_dmg); w(",");
+    wi(g.gust_in()); w(","); wi(g.gust_dir()); w("]");
     w(","); key("offer"); w("["); wi(g.offer_slot); w(","); wi(g.offer_rarity); w(","); wi(g.offer_trait); w("]");
     w(","); key("respect"); w("["); wi(g.respect); w(","); wi(g.stage_respect()); w(","); wi(g.dmg_carry); w(","); wi(g.taken_carry); w(",");
     wi(g.second_used); w(","); wi(g.dodge_pct()); w(","); wi(g.coffee_heal()); w(","); wi(g.bonus.gear_slots); w(","); wi(g.bonus.tools); w("]");
     w(","); key("heroStatus"); w("["); for(int i = 0; i < 5; ++i) { if(i) w(","); wi(g.hero_status[i]); } w("]");
-    w(","); key("killsByType"); w("["); for(int i = 0; i < 16; ++i) { if(i) w(","); wi(g.kills_by_type[i]); } w("]");
+    w(","); key("killsByType"); w("["); for(int i = 0; i < max_enemy_types; ++i) { if(i) w(","); wi(g.kills_by_type[i]); } w("]");
     w(","); key("rooms"); w("[");
     for(int i = 0; i < g.lv.rooms_count; ++i) { if(i) w(","); const room& r = g.lv.rooms[i]; w("["); wi(r.x); w(","); wi(r.y); w(","); wi(r.w); w(","); wi(r.h); w("]"); }
     w("]");
@@ -233,7 +243,8 @@ static void snapshot(const game& g, int step)
     {
         const actor& e = g.enemies[i];
         if(i) w(",");
-        w("["); wi(e.def_id); w(","); wi(e.x); w(","); wi(e.y); w(","); wi(e.hp); w(","); wi(e.max_hp); w(","); wi(e.alive); w(","); wi(e.awake); w(","); wi(e.stun); w("]");
+        w("["); wi(e.def_id); w(","); wi(e.x); w(","); wi(e.y); w(","); wi(e.hp); w(","); wi(e.max_hp); w(","); wi(e.alive); w(","); wi(e.awake); w(","); wi(e.stun);
+        w(","); wi(e.flags); w(","); wi(e.grow); w(","); wi(e.timer); w("]");
     }
     w("]");
     w(","); key("pickups"); w("[");
@@ -273,6 +284,7 @@ static void profile_json(const profile& p)
     w(","); key("dailyScore"); w("["); for(int i = 0; i < daily_slots; ++i) { if(i) w(","); wi(p.daily_score[i]); } w("]");
     w(","); key("respect"); w("["); wi(p.respect); w(","); wi(p.respect_total); w(","); wi(p.run_respect); w(","); wi(p.rewards); w(",");
     wi(p.class_wins_hi); w("]");
+    w(","); key("catalogHi"); wi(p.catalog_hi);
     w(","); key("sram"); hex_bytes(reinterpret_cast<const char*>(&p), sizeof p);   // profil bajt po bajcie jak w SRAM
     w("}");
 }

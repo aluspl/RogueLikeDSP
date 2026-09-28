@@ -65,6 +65,8 @@
 #include "bn_bg_palette_items_stage_palettes_5.h"
 #include "bn_bg_palette_items_stage_palettes_6.h"
 #include "bn_bg_palette_items_stage_palettes_7.h"
+#include "bn_bg_palette_items_stage_palettes_8.h"
+#include "bn_bg_palette_items_stage_palettes_9.h"
 
 #include "core.h"
 #include "meta.h"
@@ -98,14 +100,31 @@ namespace
     constexpr int frame_toolbox = 26;
     constexpr int frame_anim_b = 27;     // + klatka zawodu/wroga (0..14) = druga klatka animacji
 
-    // druga klatka: zawody/wrogowie 0-14 -> +27, bossowie aktów 46-47 -> 48-49, Inspekcja 50 -> 51, zawody z nagród 52-54 -> 55-57
-    int anim_b(int frame) { return frame < 15 ? frame + frame_anim_b : (frame < 48 ? frame + 2 : (frame < 52 ? frame + 1 : frame + 3)); }
+    // druga klatka: zawody/wrogowie 0-14 -> +27, bossowie aktów 46-47 -> 48-49, Inspekcja 50 -> 51, zawody z nagród 52-54 -> 55-57,
+    // problemy etapów 61-80 -> 81-100
+    constexpr int frame_stage_enemy = 61, stage_enemies = 20;
+    int anim_b(int frame)
+    {
+        if(frame >= frame_stage_enemy) return frame + stage_enemies;
+        return frame < 15 ? frame + frame_anim_b : (frame < 48 ? frame + 2 : (frame < 52 ? frame + 1 : frame + 3));
+    }
     int silhouette_frame(int cls) { return cls < 6 ? frame_silhouette + cls : frame_silhouette_ext + cls - 6; }
     // Osiedle: dom = wielkość * liczba zawodów + zawód; pusta działka na końcu arkusza
     int house_frame(uint8_t h) { return (h >> 4) * data::classes_count + (h & 15); }
     constexpr int house_empty = 4 * data::classes_count;
-    // menu_icons: nagrody za odbiór (narzędzia 15-16, buty 17, pas 18), Respekt 19
+    // menu_icons: nagrody za odbiór (narzędzia 15-16, buty 17, pas 18), Respekt 19, mechaniki aktów 20-22, statystyki 23
     constexpr int icon_respect = 19;
+    constexpr int icon_act = 20;   // + mechanika aktu - 1 (błoto, porywy, pył)
+    constexpr int icon_stats = 23;
+    // Zachowania problemu, np. "strzela z dystansu, ucieka" (karta wroga, Katalog usterek).
+    core::message behaviors_line(int def)
+    {
+        core::message m;
+        const int tags = data::enemies[def].tags;
+        for(int b = 0; b < core::behaviors_count; ++b)
+            if(tags & (1 << b)) m.add(m.n ? ", " : "").add(data::behavior_names[b]);
+        return m;
+    }
     int reward_icon(const core::reward_def& r)
     {
         if(r.kind == core::reward_kind::tool) return r.index == data::tools_count - 1 ? 16 : 15;
@@ -380,6 +399,8 @@ namespace
         }
 
         // Kafel pola z uwzględnieniem mgły wojny: 0 = nieznane (czarne).
+        // Kafle aktu: akt I 1-10, akt II 11-20, akt III 21-30 (ziemia i bloczki / deski i cegła / płytki i tynk).
+        static int act_tile(const core::game& g, int t) { return t == 0 ? 0 : t + 10 * data::stages[g.stage].act; }
         static int tile_of(const core::game& g, int x, int y, int& palette)
         {
             palette = light_level(g, x, y);
@@ -388,6 +409,12 @@ namespace
             if(k == core::tile::floor) return g.lv.at(x, y - 1) == core::tile::wall ? 5 : 1;   // cień muru u góry
             if(k == core::tile::stairs) return 4;
             return g.lv.at(x, y + 1) != core::tile::wall ? 3 : 2;   // lico muru nad podłogą / mur
+        }
+        void quad(const core::game& g, int x, int y, int t, int pal)   // pole z ćwiartki odbijanej na 4 strony
+        {
+            t = act_tile(g, t);
+            set(x * 2, y * 2, t, pal); set(x * 2 + 1, y * 2, t, pal, true);
+            set(x * 2, y * 2 + 1, t, pal, false, true); set(x * 2 + 1, y * 2 + 1, t, pal, true, true);
         }
 
         // Czy na polu stoi coś, co rzuca cień (bohater, widoczny wróg, znajdźka)?
@@ -408,31 +435,19 @@ namespace
                 for(int x = 0; x < core::map_w; ++x)
                 {
                     int pal, t = tile_of(g, x, y, pal);
-                    if((t == 1 || t == 5) && g.slam_cell(x, y))   // zapowiedziany cios bossa
-                    {
-                        set(x * 2, y * 2, 8, pal); set(x * 2 + 1, y * 2, 8, pal, true);
-                        set(x * 2, y * 2 + 1, 8, pal, false, true); set(x * 2 + 1, y * 2 + 1, 8, pal, true, true);
-                        continue;
-                    }
-                    if((t == 1 || t == 5) && highlight && highlight[y][x])   // ramka pola w zasięgu
-                    {
-                        set(x * 2, y * 2, 7, pal); set(x * 2 + 1, y * 2, 7, pal, true);
-                        set(x * 2, y * 2 + 1, 7, pal, false, true); set(x * 2 + 1, y * 2 + 1, 7, pal, true, true);
-                        continue;
-                    }
-                    if((t == 1 || t == 5) && g.puddle(x, y))   // deszcz: kałuża
-                    {
-                        set(x * 2, y * 2, 9, pal); set(x * 2 + 1, y * 2, 9, pal, true);
-                        set(x * 2, y * 2 + 1, 9, pal, false, true); set(x * 2 + 1, y * 2 + 1, 9, pal, true, true);
-                        continue;
-                    }
-                    bool top_shadow = t == 5;
-                    int base = top_shadow ? 1 : t;
+                    bool flat = t == 1 || t == 5;
+                    if(flat && g.danger_cell(x, y)) { quad(g, x, y, 8, pal); continue; }                  // cios bossa / wybuch
+                    if(flat && highlight && highlight[y][x]) { quad(g, x, y, 7, pal); continue; }         // ramka pola w zasięgu
+                    if(flat && g.puddle(x, y)) { quad(g, x, y, 9, pal); continue; }                       // deszcz: kałuża
+                    if(flat && g.mud(x, y)) { quad(g, x, y, 10, pal); continue; }                         // akt I: błoto
+                    t = act_tile(g, t);
+                    bool top_shadow = t == act_tile(g, 5);
+                    int base = top_shadow ? act_tile(g, 1) : t;
                     set(x * 2, y * 2, t, pal); set(x * 2 + 1, y * 2, t, pal);
-                    if((t == 1 || t == 5) && g.visible(x, y) && casts_shadow(g, x, y))
+                    if(flat && g.visible(x, y) && casts_shadow(g, x, y))
                     {
-                        set(x * 2, y * 2 + 1, 6, pal);
-                        set(x * 2 + 1, y * 2 + 1, 6, pal, true);
+                        set(x * 2, y * 2 + 1, act_tile(g, 6), pal);
+                        set(x * 2 + 1, y * 2 + 1, act_tile(g, 6), pal, true);
                     }
                     else { set(x * 2, y * 2 + 1, base, pal); set(x * 2 + 1, y * 2 + 1, base, pal); }
                 }
@@ -443,7 +458,7 @@ namespace
         {
             bn::memory::clear(cells);
             for(int y = 0; y < core::map_h; ++y)
-                for(int x = 0; x < core::map_w; ++x) { int pal, t = tile_of(g, x, y, pal); set(x, y, t, pal); }
+                for(int x = 0; x < core::map_w; ++x) { int pal, t = tile_of(g, x, y, pal); set(x, y, act_tile(g, t), pal); }
         }
     };
 
@@ -461,9 +476,12 @@ namespace
 
     void page_help(app& a)
     {
-        constexpr int pages_count = 4;
+        constexpr int pages_count = 6;
+        core::message luck1, luck2;   // wzory z danych (sekcja luck)
+        luck1.add("SZCZ: kryt ").add(data::crit_base_pct).add("%+").add(data::crit_per_luck_pct).add("%/pkt, unik");
+        luck2.add(data::dodge_per_luck_pct).add("%/pkt (maks. ").add(data::dodge_max_pct).add("%), łupy +").add(data::drop_per_luck_pct).add("%.");
         const char* pages[pages_count][7] = {
-            { "8 etapów w 3 aktach, każdy", "kończy boss. Schody = dalej.", "D-pad: ruch i atak wręcz",
+            { "10 etapów w 3 aktach, każdy", "kończy boss. Schody = dalej.", "D-pad: ruch i atak wręcz",
               "A: atak (trzymaj: celuj)", "B: czekaj (trzymaj: podgląd)", "R: moc zawodu  L: mapa",
               "START: akcje  SELECT: telefon" },
             { "Pogoda dnia: ikona w HUD,", "skutek w telefonie (Zadania).", "Brygada raz na etap za zł:",
@@ -471,7 +489,11 @@ namespace
             { "Między etapami wybierz", "ścieżkę (lewo/prawo, A).", "Materiały z problemów:", "Hurtownia i naprawy (Sprzęt,", "A): Załataj, Kładka.",
               "Tytuł, R: budowa dnia (ustaw", "datę) - dla wszystkich ta sama." },
             { "Respekt za każdy etap (boss", "więcej) zostaje po porażce.", "Telefon profilu, Koszty,", "SELECT: Respekt - stałe",
-              "premie z rangami. Każda wygrana", "to nagroda za odbiór: sprzęt,", "narzędzia, nowe zawody." } };
+              "premie z rangami. Każda wygrana", "to nagroda za odbiór: sprzęt,", "narzędzia, nowe zawody." },
+            { "Każdy akt ma swoją mechanikę:", "I: błoto - wejście = tura,", "II: porywy wiatru spychają,", "III: pył - widzisz mniej.",
+              "Problemy strzelają, dzielą się,", "wybuchają (czerwone pola -", "odejdź!), rosną i wracają." },
+            { "SIŁ/ZRĘ/INT: +1 obr. co 2 pkt", "(tylko statystyka broni).", "OBR: -1 obrażeń co 2 pkt.", luck1.s, luck2.s,
+              "Wybór zawodu: START = opis,", "telefon: Start, A = premie." } };
         for(int pg = 0; pg < pages_count; ++pg)
         {
             page_sprites t;
@@ -665,8 +687,8 @@ namespace
         else sub.add(", ").add(g.score).add(" pkt");
         phone_header(a, ph, t, tab_names[0], sub.s);
         phone_canvas& c = *ph.canvas;
-        int first = core::imax(0, core::imin(g.stage - 1, data::stages_count - 4));   // okno 4 etapów wokół bieżącego
-        for(int r = 0; r < 4 && first + r < data::stages_count; ++r)
+        int first = core::imax(0, core::imin(g.stage - 1, data::stages_count - 3));   // okno 3 etapów wokół bieżącego
+        for(int r = 0; r < 3 && first + r < data::stages_count; ++r)
         {
             int i = first + r;
             bool done = i < g.stage || (i == g.stage && g.st == core::status::won);
@@ -676,6 +698,15 @@ namespace
             const char* state = done ? "Gotowe" : (cur ? "W trakcie" : "Do zrob.");
             phone_text(a, t, list_x, row_py(r), fit(a, m.s, pill_room(state)).c_str(), done ? ink::dim : ink::dark);
             phone_pill(a, c, t, pill_end, row_ty(r), state, done ? pill::done : (cur ? pill::prog : pill::gray));
+        }
+        {   // mechanika aktu (błoto, porywy, pył)
+            const core::act_def& ad = g.adef();
+            stripe(c, 3, phone_tile::stripe_late);
+            core::message am;
+            if(g.gust_in() > 0) am.add("Poryw za ").add(g.gust_in()).add(" t. ").add(core::game::dir_name(g.gust_dir()));
+            else am.add(ad.mech_name);
+            phone_text(a, t, list_x, row_py(3), fit(a, am.s, pill_room(ad.mech_short)).c_str(), ink::dark);
+            phone_pill(a, c, t, pill_end, row_ty(3), ad.mech_short, pill::late);
         }
         if(g.stage_event >= 0)   // wydarzenie na placu na tym etapie
         {
@@ -782,8 +813,9 @@ namespace
 
         core::message sl = status_line(g);
         phone_text(a, t, list_x, row_py(4), fit(a, sl.s, phone_text_w).c_str(), sl.kind == core::bad ? ink::late : ink::dim);
-        core::message sc = hero_stats_line(g);   // statystyki efektywne (baza+premie); kryt i unik w zakładce Sprzęt
-        phone_text(a, t, list_x, row_py(5), fit(a, sc.s, phone_text_w).c_str(), ink::dim);
+        core::message sc = hero_stats_line(g);   // statystyki efektywne (baza+premie); A - opis i skąd premie
+        phone_text(a, t, list_x, row_py(5), fit(a, sc.s, pill_room("A: opis")).c_str(), ink::dim);
+        phone_pill(a, c, t, pill_end, row_ty(5), "A: opis", pill::group);
     }
 
     void mats_line(core::message& m, const core::game& g);
@@ -957,6 +989,8 @@ namespace
         ph.commit();
     }
 
+    void stats_page(app& a, phone_screen& ph, page_sprites& t, const core::game* g, int cls, const core::run_mods& m);
+
     enum class pause_result { resume, quit, save_exit };
 
     // Telefon pod SELECT. L/R lub strzałki: zakładki; START: menu akcji; B/SELECT: powrót do gry.
@@ -1041,6 +1075,13 @@ namespace
                     if(bn::keypad::b_pressed()) { brigade = false; redraw(); bn::sound_items::sfx_menu.play(); next_frame(); continue; }
                 }
                 else if(a.phone_tab == 3 && bn::keypad::a_pressed()) { brigade = true; bsel = 0; redraw(); bn::sound_items::sfx_menu.play(); }
+                else if(a.phone_tab == 2 && bn::keypad::a_pressed())   // Start: A = statystyki i skąd są premie
+                {
+                    stats_page(a, ph, t, a.g, a.g->cls, a.g->bonus);
+                    redraw();
+                    next_frame();
+                    continue;
+                }
                 if(bn::keypad::start_pressed()) { sheet = true; sel = 0; redraw(); }
                 if(bn::keypad::b_pressed() || bn::keypad::select_pressed()) return finish(pause_result::resume);
             }
@@ -1101,6 +1142,111 @@ namespace
         wait_release();
     }
 
+    // Opis statystyk (#19): strona 1 - wartości i co dają (na wyborze zawodu) albo skąd są premie (w trakcie budowy),
+    // strona 2 - wzory w prostych słowach. A / strzałki: strona, B / START / SELECT: wróć.
+    void stats_page(app& a, phone_screen& ph, page_sprites& t, const core::game* g, int cls, const core::run_mods& m)
+    {
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        const core::class_def& c = data::classes[cls];
+        const core::weapon_def& w = g ? g->weapon() : data::weapons[c.weapon];
+        const core::stat stats[3] = { core::stat::str, core::stat::agi, core::stat::intel };
+        int page = 0;
+        auto redraw = [&]() {
+            phone_header(a, ph, t, page == 0 ? "Statystyki" : "Jak działają", page == 0 ? c.name : "A: strona  B: wróć");
+            phone_canvas& cv = *ph.canvas;
+            for(int r = 0; r < 6; ++r)
+            {
+                core::message l;
+                ink k = ink::dark;
+                if(page == 1)   // wzory: statystyka broni, obrona, szczęście (3 wiersze), HP
+                {
+                    const core::stat_kind ws = w.scales_with == core::stat::str ? core::stat_kind::str
+                                             : (w.scales_with == core::stat::agi ? core::stat_kind::agi : core::stat_kind::intel);
+                    const core::stat_kind rk[6] = { ws, core::stat_kind::def, core::stat_kind::luck, core::stat_kind::luck, core::stat_kind::luck,
+                                                    core::stat_kind::hp };
+                    core::stat_rule(l, rk[r], r >= 2 && r <= 4 ? r - 2 : 0);
+                    k = r == 0 ? ink::brand : (r == 3 || r == 4 ? ink::dim : ink::dark);
+                    if(r == 0) stripe(cv, r, phone_tile::stripe_brand);
+                }
+                else if(! g)   // wybór zawodu: wartość (baza + premie z profilu) i co daje
+                {
+                    const core::stat_kind kinds[6] = { core::stat_kind::hp, core::stat_kind::str, core::stat_kind::agi, core::stat_kind::intel,
+                                                       core::stat_kind::def, core::stat_kind::luck };
+                    int base = r == 0 ? c.max_health : (r <= 3 ? core::class_base_stat(cls, stats[r - 1]) : (r == 4 ? c.defense : c.luck));
+                    int bonus = r == 0 ? m.hp : (r <= 3 ? core::mods_stat_bonus(m, cls, stats[r - 1]) : (r == 4 ? m.def : m.luck));
+                    bool wstat = r >= 1 && r <= 3 && stats[r - 1] == w.scales_with;
+                    l.add(core::stat_kind_name(kinds[r])).add(" ").add(base + bonus).add(": ");
+                    core::stat_effect(l, kinds[r], base + bonus, wstat);
+                    k = wstat ? ink::brand : (r >= 1 && r <= 3 ? ink::dim : ink::dark);
+                    if(wstat) stripe(cv, r, phone_tile::stripe_brand);
+                }
+                else   // w trakcie budowy: skąd są premie
+                {
+                    const core::game& G = *g;
+                    int ws = G.hero_stat(w.scales_with), wb = core::class_base_stat(cls, w.scales_with);
+                    switch(r)
+                    {
+                        case 0:
+                            l.add("Broń: ").add(stat_short(w.scales_with)).add(" ").add(ws).add(" = +").add(ws / 2).add(" obrażeń");
+                            k = ink::brand; stripe(cv, r, phone_tile::stripe_brand);
+                            break;
+                        case 1:
+                            l.add("zawód ").add(wb);
+                            if(core::mods_stat_bonus(G.bonus, cls, w.scales_with)) l.add(", Warsztaty +").add(core::mods_stat_bonus(G.bonus, cls, w.scales_with));
+                            if(G.trait_bonus(core::stat_trait(w.scales_with))) l.add(", sprzęt +").add(G.trait_bonus(core::stat_trait(w.scales_with)));
+                            k = ink::dim;
+                            break;
+                        case 2:
+                            l.add("Obrażenia +").add(G.dmg_bonus);
+                            if(G.gear_bonus(core::gear_stat::dmg)) l.add(", rękawice +").add(G.gear_bonus(core::gear_stat::dmg));
+                            if(G.bonus.dmg_pct) l.add(", +").add(G.bonus.dmg_pct).add("%");
+                            break;
+                        case 3:
+                        {
+                            int def = G.hero_defense();
+                            l.add("OBR ").add(def).add(" = zawód ").add(c.defense);
+                            if(G.def_bonus) l.add(", premie +").add(G.def_bonus);
+                            if(G.gear_bonus(core::gear_stat::def)) l.add(", kask +").add(G.gear_bonus(core::gear_stat::def));
+                            l.add(": -").add(def / 2);
+                            if(G.bonus.taken_pct) l.add(", -").add(G.bonus.taken_pct).add("%");
+                            break;
+                        }
+                        case 4:
+                            l.add("SZCZ ").add(G.luck()).add(": kryt ").add(G.crit_pct()).add("%, unik ").add(G.dodge_pct()).add("%, łupy +")
+                             .add(data::drop_per_luck_pct * G.luck()).add("%");
+                            break;
+                        default:
+                        {
+                            int lvl = data::hp_per_level * (G.hero_level - 1), gear = G.gear_bonus(core::gear_stat::hp);
+                            l.add("HP ").add(G.hero.max_hp).add(" = zawód ").add(c.max_health);
+                            if(G.bonus.hp) l.add(", Szkol. +").add(G.bonus.hp);
+                            if(lvl) l.add(", poziomy +").add(lvl);
+                            if(gear) l.add(", kamizelka +").add(gear);
+                            int rest = G.hero.max_hp - c.max_health - G.bonus.hp - lvl - gear;
+                            if(rest > 0) l.add(", inne +").add(rest);
+                            break;
+                        }
+                    }
+                }
+                phone_text(a, t, list_x, row_py(r), fit(a, l.s, phone_text_w).c_str(), k);
+            }
+            ph.commit();
+        };
+        redraw();
+        bn::sound_items::sfx_menu.play();
+        wait_release();
+        while(true)
+        {
+            if(bn::keypad::a_pressed() || bn::keypad::left_pressed() || bn::keypad::right_pressed() || bn::keypad::up_pressed() || bn::keypad::down_pressed())
+            { page ^= 1; redraw(); bn::sound_items::sfx_menu.play(); }
+            if(bn::keypad::b_pressed() || bn::keypad::start_pressed() || bn::keypad::select_pressed()) break;
+            next_frame();
+        }
+        t.clear();
+        a.text.set_palette_item(default_ink);
+        wait_release();
+    }
+
     // Wiadomość w telefonie (fabuła): nadawca, dymek z 3 liniami, 2 wiersze informacji. A/START: dalej.
     void phone_message(app& a, const core::story_msg& m, const char* sub, const char* info1, ink info1_ink, const char* info2)
     {
@@ -1135,7 +1281,7 @@ namespace
         core::message i1;
         if(boss) i1.add("Uwaga: ").add(clip(data::enemies[data::stages[g.stage].boss].name, 18).c_str()).add("!");
         else i1.add(clip(data::stages[g.stage].name, 12).c_str()).add(": problemy ").add(g.enemy_hp_pct()).add("%");
-        core::message i2; i2.add("Pogoda: ").add(g.wdef().name);   // pogoda dnia (skutek w telefonie: Zadania); trudność w HUD
+        core::message i2; i2.add("Pogoda: ").add(g.wdef().name).add(", ").add(g.adef().mech_short);   // pogoda dnia i mechanika aktu
         if(g.stage_path >= 0) i2.add(", ").add(data::paths[g.stage_path].short_name);   // wybrana ścieżka
         if(g.tier > 0) i2.add(", NG+").add(g.tier);
         phone_message(a, g.stage_story(), sub.s, i1.s, boss ? ink::late : ink::dim, fit(a, i2.s, 150).c_str());
@@ -1318,8 +1464,9 @@ namespace
         const bn::bg_palette_item* stage_pals[] = { &bn::bg_palette_items::stage_palettes_0, &bn::bg_palette_items::stage_palettes_1,
                                                     &bn::bg_palette_items::stage_palettes_2, &bn::bg_palette_items::stage_palettes_3,
                                                     &bn::bg_palette_items::stage_palettes_4, &bn::bg_palette_items::stage_palettes_5,
-                                                    &bn::bg_palette_items::stage_palettes_6, &bn::bg_palette_items::stage_palettes_7 };
-        static_assert(data::stages_count <= 8);
+                                                    &bn::bg_palette_items::stage_palettes_6, &bn::bg_palette_items::stage_palettes_7,
+                                                    &bn::bg_palette_items::stage_palettes_8, &bn::bg_palette_items::stage_palettes_9 };
+        static_assert(data::stages_count == int(sizeof(stage_pals) / sizeof(stage_pals[0])));
         bn::regular_bg_item item(bn::regular_bg_tiles_items::tiles, *stage_pals[g.stage], map->map_item);
         bn::regular_bg_ptr bg = item.create_bg(0, 0);
         bn::regular_bg_map_ptr bg_map_ptr = bg.map();
@@ -1384,6 +1531,14 @@ namespace
         bn::sprite_ptr weather_icon = bn::sprite_items::menu_icons.create_sprite(28, -52, frame_weather + int(g.wdef().effect));
         weather_icon.set_bg_priority(0);
         weather_icon.set_z_order(-100);
+        // Mechanika aktu w HUD pod ikoną mocy (menu_icons 20-22: błoto, porywy, pył); przy porywach tury do kolejnego.
+        const int act_mech = int(g.adef().mechanic);
+        bn::sprite_ptr act_icon = bn::sprite_items::menu_icons.create_sprite(106, -33, icon_act + core::imax(0, act_mech - 1));
+        act_icon.set_bg_priority(0);
+        act_icon.set_z_order(-100);
+        act_icon.set_visible(act_mech > 0);
+        text_sprites act_text;
+        int shown_gust = -1;
         // Materiały w HUD (cement, stal, drewno): małe ikony z liczbą, widoczne, gdy coś masz (menu_icons 11-13).
         constexpr int frame_material = 11, mat_x0 = -46, mat_dx = 22;
         bn::vector<bn::sprite_ptr, 3> mat_icons;
@@ -1404,6 +1559,7 @@ namespace
             status_text.clear(); shown_status = -1;
             thermos_icon.set_visible(false); thermos_text.clear(); shown_thermos = -1;
             weather_icon.set_visible(false);
+            act_icon.set_visible(false); act_text.clear(); shown_gust = -1;
         };
         a.text.set_bg_priority(0);
         a.text.set_z_order(-100);
@@ -1497,6 +1653,12 @@ namespace
                 core::message kb; core::perk_label(kb, { data::keepsakes[k].effect, data::keepsakes[k].values[rank - 1] });
                 banner.push(kt.s, kb.s);
             }
+        }
+        if(g.turns == g.stage_start_turn && (g.stage == 0 || data::stages[g.stage - 1].act != data::stages[g.stage].act)
+           && g.adef().mechanic != core::act_mechanic::none)   // nowy akt: jego mechanika (błoto, porywy, pył)
+        {
+            core::message t; t.add("Akt ").add(roman(data::stages[g.stage].act)).add(": ").add(g.adef().mech_short);
+            banner.push(t.s, g.adef().mech_info);
         }
         bool second_seen = g.second_used;   // Druga szansa: baner raz
         int flash_timer = 0;
@@ -1666,7 +1828,10 @@ namespace
             }
             int hf = (phase || hero_moving) ? anim_b(data::classes[g.cls].frame) : data::classes[g.cls].frame;
             if(hf != hero_shown) { hero.set_tiles(bn::sprite_items::actors.tiles_item(), hf); hero_shown = hf; }
-            for(int i = 0; i < g.enemies_count; ++i)
+            if(g.act_is(core::act_mechanic::dust) && anim_clock % 18 == 0 && ! ally_hidden)   // akt III: pył wisi w powietrzu
+                fx_particles.spawn(hero_cur.x() + fx_particles.rand(-1600, 1600), hero_cur.y() + fx_particles.rand(-1100, 1100),
+                                   fx_particles.rand(-4, 4), fx_particles.rand(-3, 1), 0, 60, particle_pool::dust + 1, 2);
+            for(int i = 0; i < g.enemies_count && i < enemies.size(); ++i)
             {
                 approach(enemy_cur[i], enemy_dst[i]);
                 enemies[i].set_position(enemy_cur[i]);
@@ -1864,7 +2029,70 @@ namespace
             return true;
         };
 
+        // Nowe problemy w trakcie etapu (podział): sprite'y, pozycje i paski dla dodatkowych miejsc.
+        uint32_t prev_alive = 0;
+        for(int i = 0; i < g.enemies_count; ++i) if(g.enemies[i].alive) prev_alive |= 1u << i;
+        int prev_blast = g.blast_timer, prev_blast_x = g.blast_x, prev_blast_y = g.blast_y, prev_turns = g.turns;
+        auto sync_enemies = [&]() {
+            while(enemies.size() < g.enemies_count)
+            {
+                int i = enemies.size();
+                bn::sprite_ptr sp = bn::sprite_items::actors.create_sprite(world(g.enemies[i].x, g.enemies[i].y), data::enemies[g.enemies[i].def_id].frame);
+                sp.set_camera(cam);
+                enemies.push_back(sp);
+                enemy_cur.push_back(world(g.enemies[i].x, g.enemies[i].y)); enemy_dst.push_back(enemy_cur.back());
+                enemy_shown.push_back(-1);
+                mini_bars.push_back(bn::optional<bn::sprite_ptr>());
+            }
+        };
+        // Efekty zachowań i mechanik: strzały z dystansu, wybuch, poryw wiatru, nowe problemy z podziału / powrotu.
+        auto behavior_fx = [&]() {
+            bn::fixed_point h = world(g.hero.x, g.hero.y);
+            for(int i = 0; i < g.enemies_count; ++i)
+            {
+                const core::actor& e = g.enemies[i];
+                if(g.shot_events & (1u << i))   // strzał: iskry lecą od strzelca do bohatera
+                {
+                    bn::fixed_point p = world(e.x, e.y);
+                    for(int k = 1; k <= 3; ++k)
+                        fx_particles.spawn(p.x() + (h.x() - p.x()) * k / 4, p.y() + (h.y() - p.y()) * k / 4, (h.x() - p.x()) / 24, (h.y() - p.y()) / 24,
+                                           0, 10 + k * 3, particle_pool::spark, 2);
+                }
+                bool alive_now = e.alive, was = prev_alive & (1u << i);
+                if(alive_now && ! was)   // podział albo powrót: pojawia się z kurzem, bez przesuwania z dawnego miejsca
+                {
+                    enemy_cur[i] = enemy_dst[i];
+                    bn::fixed_point p = world(e.x, e.y);
+                    if(g.visible(e.x, e.y)) for(int k = -1; k <= 1; k += 2) fx_particles.spawn(p.x() + k * 4, p.y() + 6, bn::fixed(k) / 3, bn::fixed(-0.3), 0, 18, particle_pool::dust, 3);
+                }
+                if(alive_now) prev_alive |= 1u << i; else prev_alive &= ~(1u << i);
+            }
+            g.shot_events = 0;
+            if(prev_blast > 0 && g.blast_timer == 0 && prev_blast_x >= 0)   // wybuch spadł
+            {
+                bn::fixed_point b = world(prev_blast_x, prev_blast_y);
+                fx_particles.burst(b, 8, particle_pool::spark, 2, 40, 20);
+                for(int k = 0; k < 4; ++k) fx_particles.spawn(b.x(), b.y(), fx_particles.rand(-24, 24), fx_particles.rand(-24, 8), 0, 22, particle_pool::dust, 3);
+                flash_color = bn::color(31, 16, 4); flash_timer = 8; shake_timer = 6;
+                bn::sound_items::sfx_hurt.play();
+            }
+            prev_blast = g.blast_timer; prev_blast_x = g.blast_x; prev_blast_y = g.blast_y;
+            if(g.turns != prev_turns && g.act_is(core::act_mechanic::gust))   // poryw wiatru: pył w stronę porywu
+            {
+                int v = g.adef().mech_value, t = g.turns - g.stage_start_turn;
+                if(t > 0 && t % v == 0)
+                {
+                    int d = (t / v + g.stage) & 3;
+                    for(int k = 0; k < 6; ++k)
+                        fx_particles.spawn(h.x() - core::game::gust_vec[d][0] * 40 + fx_particles.rand(-64, 64), h.y() - core::game::gust_vec[d][1] * 40 + fx_particles.rand(-64, 64),
+                                           bn::fixed(core::game::gust_vec[d][0]) * 3, bn::fixed(core::game::gust_vec[d][1]) * 3, 0, 24, particle_pool::dust, 3);
+                    bn::sound_items::sfx_menu.play();
+                }
+            }
+            prev_turns = g.turns;
+        };
         auto refresh = [&]() {
+            sync_enemies();
             map->build(g);
             bg_map_ptr.reload_cells_ref();
             bn::fixed_point old_dst = hero_dst;
@@ -1879,6 +2107,7 @@ namespace
                 enemy_dst[i] = world(g.enemies[i].x, g.enemies[i].y);
             }
             if(g.ally_turns > 0) ally_dst = world(g.ally_x, g.ally_y);
+            behavior_fx();
             if(snap_next)
             {
                 hero_cur = hero_dst;
@@ -2268,9 +2497,10 @@ namespace
                     const core::actor& e = g.enemies[look_list[look_sel]];
                     reticle.set_position(world(e.x, e.y));
                     reticle.set_visible(true);
-                    if(look_shown != look_list[look_sel])   // karta wroga w miejscu dziennika
+                    int look_key = look_list[look_sel] + 32 * ((look_frames / 100) & 1);   // druga linia na zmianę: opis / zachowania
+                    if(look_shown != look_key)   // karta wroga w miejscu dziennika
                     {
-                        look_shown = look_list[look_sel];
+                        look_shown = look_key;
                         const core::enemy_def& ed = data::enemies[e.def_id];
                         log.clear();
                         a.text.set_left_alignment();
@@ -2279,7 +2509,9 @@ namespace
                         l1.add("  obr. ").add(ed.min_damage + g.enemy_dmg_bonus()).add("-").add(ed.max_damage + g.enemy_dmg_bonus());
                         a.text.generate(-116, 56, fit(a, l1.s, 232).c_str(), log);
                         a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
-                        a.text.generate(-116, 72, ed.desc, log);
+                        core::message bl = behaviors_line(e.def_id);
+                        if(bl.n > 0 && (look_key & 32)) { core::message l2; l2.add("Cechy: ").add(bl.s); a.text.generate(-116, 72, fit(a, l2.s, 232).c_str(), log); }
+                        else a.text.generate(-116, 72, ed.desc, log);
                         draw_strips(true);
                         log_timer = 0;
                     }
@@ -2458,6 +2690,23 @@ namespace
                 for(bn::sprite_ptr& sp : mat_text) sp.set_visible(! banner_on && any_mat);
                 thermos_icon.set_visible(! banner_on);
                 weather_icon.set_visible(! banner_on);
+                act_icon.set_visible(! banner_on && act_mech > 0);
+                int gin = g.gust_in();
+                if(gin != shown_gust)   // porywy: tury do kolejnego (ostatnia tura - na czerwono)
+                {
+                    shown_gust = gin;
+                    act_text.clear();
+                    if(gin > 0)
+                    {
+                        a.text.set_palette_item(gin == 1 ? bn::sprite_palette_items::font_map_bad : bn::sprite_items::font_8x16.palette_item());
+                        a.text.set_bg_priority(0);
+                        a.text.set_right_alignment();
+                        core::message m; m.add(gin);
+                        a.text.generate(96, -33, m.s, act_text);
+                        a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
+                    }
+                }
+                for(bn::sprite_ptr& sp : act_text) sp.set_visible(! banner_on);
                 for(bn::sprite_ptr& sp : thermos_text) sp.set_visible(! banner_on);
             }
             bool ready = g.ability_cd == 0;
@@ -3071,6 +3320,8 @@ namespace
         ability.set_bg_priority(1);
         bn::sprite_ptr arrows = bn::sprite_items::menu_icons.create_sprite(0, 0, frame_arrows);
         arrows.set_bg_priority(1);
+        bn::sprite_ptr info = bn::sprite_items::menu_icons.create_sprite(220 - 120, row3 + 8 - 80 + oy, icon_stats);   // START: opis statystyk
+        info.set_bg_priority(1);
 
         page_sprites card_t;          // tekst karty (przesuwa się przy zmianie zawodu)
         text_sprites pill_t, keep_t;  // napisy na pastylce (kafle stoją) i pod kartą
@@ -3264,7 +3515,26 @@ namespace
                 pop = 4;
                 bn::sound_items::sfx_menu.play();
             }
-            if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
+            if(bn::keypad::start_pressed())   // opis statystyk wybranego zawodu (co daje każda i wzory)
+            {
+                card_t.clear(); pill_t.clear(); keep_t.clear();
+                bg.set_visible(false);
+                for(bn::sprite_ptr& sp : small) sp.set_visible(false);
+                for(bn::sprite_ptr& sp : locks) sp.set_visible(false);
+                big.set_visible(false); big_lock.set_visible(false); ability.set_visible(false); arrows.set_visible(false); info.set_visible(false);
+                {
+                    phone_screen ph(2);
+                    ph.icon.set_visible(false);
+                    page_sprites st;
+                    stats_page(a, ph, st, nullptr, order[sel], core::mods(a.save));
+                }
+                a.text.set_bg_priority(1);
+                bg.set_visible(true); big.set_visible(true); ability.set_visible(true); info.set_visible(true);
+                redraw_all();
+                next_frame();
+                continue;
+            }
+            if(bn::keypad::a_pressed())
             {
                 if(core::class_unlocked(a.save, a.chosen_class))
                 {
@@ -3422,7 +3692,7 @@ namespace
             }
         };
 
-        auto list_window = [&]() { return tab == 4 || tab == 0 ? 4 : 5; };   // widoczne wiersze listy
+        auto list_window = [&]() { return tab == 4 || tab == 0 || tab == 1 ? 4 : 5; };   // widoczne wiersze listy
 
         auto draw_list_row = [&](int r, int i, bool is_sel) {   // zakładki 0, 1, 3
             phone_canvas& c = *ph.canvas;
@@ -3454,7 +3724,7 @@ namespace
             }
             else if(tab == 1)
             {
-                bool known = a.save.catalog & (1u << i);
+                bool known = core::catalog_has(a.save, i);
                 core::message m; m.add("#").add(i + 1).add(" ").add(known ? clip(data::enemies[i].name, 14).c_str() : "???");
                 phone_text(a, t, list_x, row_py(r), m.s, known || is_sel ? name_ink : ink::dim);
                 phone_pill(a, c, t, pill_end, row_ty(r), known ? "ZAMKNIĘTA" : "NIEZNANA", known ? pill::done : pill::gray);
@@ -3481,8 +3751,7 @@ namespace
                     n += page == 2 ? core::keepsake_unlocked(a.save, i) : ((page == 1 ? a.save.contracts : a.save.badges) >> i) & 1;
                 sub.add(n).add("/").add(total).add("  A: ").add(badge_pages[(page + 1) % badge_pages_count]);
             }
-            else if(tab == 1) { int n = 0; for(int i = 0; i < data::enemies_count; ++i) n += (a.save.catalog >> i) & 1;
-                                sub.add(n).add("/").add(data::enemies_count); }
+            else if(tab == 1) sub.add(core::catalog_count(a.save)).add("/").add(data::enemies_count);
             else if(tab == 2) sub.add("Domy: ").add(int(a.save.houses_count)).add("/").add(core::max_houses);
             else { int n = core::classes_won(a.save);
                    sub.add("Wygrane ").add(n).add("/").add(data::classes_count); }
@@ -3664,7 +3933,13 @@ namespace
                 ph.commit();
                 return;
             }
-            else if(tab == 1) desc = (a.save.catalog & (1u << sel)) ? data::enemies[sel].desc : "Pokonaj, żeby poznać";
+            else if(tab == 1)   // Katalog: zachowania i opis (po pokonaniu)
+            {
+                bool known = core::catalog_has(a.save, sel);
+                core::message bl = behaviors_line(sel);
+                if(known && bl.n > 0) { core::message m; m.add("Cechy: ").add(bl.s); phone_text(a, t, list_x, row_py(4), fit(a, m.s, phone_text_w).c_str(), ink::late); }
+                desc = known ? data::enemies[sel].desc : "Pokonaj, żeby poznać";
+            }
             else desc = data::classes[sel].ability_desc;
             phone_text(a, t, list_x, row_py(5), fit(a, desc, phone_text_w).c_str(), ink::dim);
             ph.commit();

@@ -1,5 +1,6 @@
 // Testy rdzenia na PC: g++ -std=c++20 -I../include core_tests.cpp && ./a.out
 #include <cstdio>
+#include <cstdlib>
 #include <cassert>
 #include <queue>
 #include "core.h"
@@ -26,14 +27,18 @@ static bool bot_open(const game& g, int x, int y)
     return false;
 }
 
-// Odległość po ścieżce (4 kierunki, przez pola przechodnie) od (sx, sy) do każdego pola; -1 = nieosiągalne.
-static void bot_bfs(const game& g, int sx, int sy, int (&dist)[map_h][map_w])
+// Koszt drogi bota: krok = waga pola, z którego + waga pola, na które (zwykłe 2, błoto 6 - kosztuje turę), więc koszt
+// jest symetryczny i maleje wzdłuż drogi do celu (bez przeskakiwania między celami). Bez błota = 4 x liczba kroków.
+static int bot_w(const game& g, int x, int y) { return g.mud(x, y) ? 6 : 2; }
+static void bot_cost(const game& g, int sx, int sy, int (&dist)[map_h][map_w])
 {
     static const int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}};
     for(auto& r:dist) for(auto& c:r) c=-1;
-    std::queue<std::pair<int,int>> q; q.push({sx,sy}); dist[sy][sx]=0;
-    while(!q.empty()){ auto [x,y]=q.front(); q.pop();
-        for(int k=0;k<4;++k){int nx=x+d[k][0],ny=y+d[k][1]; if(bot_open(g,nx,ny)&&dist[ny][nx]<0){dist[ny][nx]=dist[y][x]+1;q.push({nx,ny});}}}
+    std::priority_queue<std::pair<int,int>, std::vector<std::pair<int,int>>, std::greater<>> q;
+    dist[sy][sx]=0; q.push({0, sy*map_w+sx});
+    while(!q.empty()){ auto [c,p]=q.top(); q.pop(); int x=p%map_w, y=p/map_w; if(c!=dist[y][x]) continue;
+        for(int k=0;k<4;++k){int nx=x+d[k][0],ny=y+d[k][1]; if(!bot_open(g,nx,ny)) continue;
+            int nc=c+bot_w(g,x,y)+bot_w(g,nx,ny); if(dist[ny][nx]<0||nc<dist[ny][nx]){dist[ny][nx]=nc;q.push({nc,ny*map_w+nx});}}}
 }
 
 // Prosty bot: idź do najbliższego (po ścieżce) wroga albo schodów, atakuj z dystansu, gdy się da.
@@ -49,17 +54,17 @@ static void bot_step(game& g)
     if(g.has_offer()) { if(g.offer_is_better()) g.accept_offer(); else g.decline_offer(); }
     if(! bot_no_coffee && g.thermos > 0 && g.hero.hp * 100 < g.hero.max_hp * data::bot_drink_below_pct && g.player_drink()) { ++bot_drinks; return; }
     static int hd[map_h][map_w], td[map_h][map_w];
-    bot_bfs(g, g.hero.x, g.hero.y, hd);
-    int tx = g.stairs_x, ty = g.stairs_y, best = 999;
-    for(int i=0;i<g.enemies_count;++i){ auto& e=g.enemies[i]; int dd=hd[e.y][e.x]; if(e.alive&&dd>=0&&dd<best&&(dd<8||g.stairs_x<0)){best=dd;tx=e.x;ty=e.y;} }
+    bot_cost(g, g.hero.x, g.hero.y, hd);   // koszt drogi (błoto droższe)
+    int tx = g.stairs_x, ty = g.stairs_y, best = 999999;
+    for(int i=0;i<g.enemies_count;++i){ auto& e=g.enemies[i]; int dd=hd[e.y][e.x]; if(e.alive&&dd>=0&&dd<best&&(dd<32||g.stairs_x<0)){best=dd;tx=e.x;ty=e.y;} }
     bool has_target = tx>=0 && hd[ty][tx]>=0;
-    if(has_target) bot_bfs(g, tx, ty, td);
-    if(g.slam_cell(g.hero.x, g.hero.y))   // zapowiedziany cios bossa: zejdź z czerwonych pól (jak człowiek; nie wraca na nie)
+    if(has_target) bot_cost(g, tx, ty, td);
+    if(g.danger_cell(g.hero.x, g.hero.y))   // zapowiedziany cios bossa: zejdź z czerwonych pól (jak człowiek; nie wraca na nie)
     {
         int bk=-1, bs=-1000000;
         for(int k=0;k<4;++k){ int nx=g.hero.x+d[k][0], ny=g.hero.y+d[k][1];
             if(!g.lv.passable(nx,ny)||g.occupied(nx,ny)) continue;
-            int s=(g.slam_cell(nx,ny)?0:1000)-(has_target&&td[ny][nx]>=0?td[ny][nx]:500); if(s>bs){bs=s;bk=k;} }
+            int s=(g.danger_cell(nx,ny)?0:10000)-(has_target&&td[ny][nx]>=0?td[ny][nx]:5000); if(s>bs){bs=s;bk=k;} }
         if(bk>=0 && g.player_move(d[bk][0],d[bk][1])) return;
     }
     if(g.nearest_target() >= 0 && g.weapon().range > 1) { g.player_attack_nearest(); return; }
@@ -67,9 +72,9 @@ static void bot_step(game& g)
     for(int k=0;k<4;++k)   // krok na sąsiednie pole bliżej celu
     {
         int nx=g.hero.x+d[k][0], ny=g.hero.y+d[k][1];
-        if(!bot_open(g,nx,ny)||td[ny][nx]!=td[g.hero.y][g.hero.x]-1) continue;
+        if(!bot_open(g,nx,ny)||td[ny][nx]<0||td[ny][nx]+bot_w(g,nx,ny)+bot_w(g,g.hero.x,g.hero.y)!=td[g.hero.y][g.hero.x]) continue;
         if(!g.lv.passable(nx,ny)){ g.player_wait(); return; }   // mur Ścianki na drodze: czekaj, aż zniknie
-        if(g.slam_cell(nx,ny)&&g.enemy_at(nx,ny)<0){ g.player_wait(); return; }   // nie wchodzi na czerwone pola przed ciosem
+        if(g.danger_cell(nx,ny)&&g.enemy_at(nx,ny)<0){ g.player_wait(); return; }   // nie wchodzi na czerwone pola przed ciosem
         if(!g.player_move(d[k][0],d[k][1])) g.player_wait();
         return;
     }
@@ -487,7 +492,7 @@ int main()
         g.hero_level = data::max_hero_level;
         int got = check_badges(p, g);
         CHECK(got & (1 << data::badge_katalog) && got & (1 << data::badge_kolekcjoner) && got & (1 << data::badge_zawodowiec));
-        CHECK(p.catalog == (1 << data::enemies_count) - 1);
+        CHECK(p.catalog == 0xFFFF && catalog_count(p) == data::enemies_count && catalog_has(p, data::enemies_count - 1));
         // zebranie narzędzia zapisuje je w liczniku budowy
         game h; arena(h, 1); h.pickups[0] = { h.hero.x, h.hero.y, tool, true, 2 }; h.pickups_count = 1; h.collect();
         CHECK(h.tools_found == (1 << 2));
@@ -1018,7 +1023,8 @@ int main()
         CHECK(counts[0] == 0);
         for(int st = 0; st < data::stages_count; ++st)
             if(data::stages[st].boss >= 0) CHECK(counts[st] == 0);
-            else if(st > 0) CHECK(counts[st] > 200 * data::site_event_chance_pct / 200 && counts[st] < 200 * (data::site_event_chance_pct + 20) / 100);
+            else if(st > 0) CHECK(counts[st] > 200 * data::site_event_chance_pct / 300 &&   // zła pogoda zabiera złe wydarzenia
+                                   counts[st] < 200 * (data::site_event_chance_pct + 20) / 100);
         auto ev_of = [](event_effect e) { for(int i = 0; i < data::site_events_count; ++i) if(data::site_events[i].effect == e) return i; return -1; };
         for(event_effect e : { event_effect::fewer_pickups, event_effect::cash, event_effect::inspection, event_effect::rain, event_effect::thermos })
             CHECK(ev_of(e) >= 0);
@@ -1335,7 +1341,7 @@ int main()
         }
         {   // Kładka: tylko przy kałużach; kałuże w zasięgu przestają działać, poślizg znika
             const repair_def& rd = data::repairs[bridge];
-            game dry; arena(dry, 1); dry.mats[rd.material] = 3;
+            game dry; arena(dry, 1); dry.stage = 4; dry.mats[rd.material] = 3;   // akt II: bez błota (Kładka działa też na błoto)
             CHECK(dry.repair_blocked(bridge) == game::repair_no_puddle && !dry.player_repair(bridge));
             game r; arena(r, 1); r.weather = 0;
             for(int i = 0; i < data::weather_count; ++i) if(data::weather[i].effect == weather_effect::rain) r.weather = int8_t(i);
@@ -1656,6 +1662,120 @@ int main()
         }
         CHECK(seen0 == data::gear_base_mask && seen1 == (1 << data::gear_slots_count) - 1);
     }
+    // 40. v0.21.49 cz. 2: zachowania problemów (każdy znacznik), mechaniki aktów, 10 etapów, profil v9
+    {
+        auto def_with = [](int tag) { for(int d = 0; d < data::enemies_count; ++d) if(data::enemies[d].tags & tag) return d; return -1; };
+        auto put = [](game& g, int def, int x, int y) { g.spawn(def, x, y); actor& e = g.enemies[g.enemies_count - 1]; e.awake = true; return g.enemies_count - 1; };
+        CHECK(data::stages_count == 10 && data::enemies_count <= max_enemy_types);
+        for(int s = 0; s < data::stages_count; ++s)   // każdy etap ma problemy z zachowaniami
+        {
+            int tagged = 0;
+            for(int k = 0; k < data::stages[s].pool_count; ++k) tagged += data::enemies[data::stages[s].pool[k]].tags != 0;
+            CHECK(tagged >= 2);
+        }
+        for(int a = 0; a < data::acts_count; ++a) CHECK(data::acts[a].mechanic != act_mechanic::none);
+        for(int t = 1; t <= tag_returns; t <<= 1) CHECK(def_with(t) >= 0);
+        {   // ranged: strzał w linii z 3 pól, bez ruchu; mur po drodze blokuje
+            game g; arena(g, 1); g.stage = 4; g.stage_start_turn = -100;   // akt II (bez błota), porywy nie w tej turze
+            int d = def_with(tag_ranged); int i = put(g, d, 10, 7);
+            int hp = g.hero.hp; g.player_wait();
+            CHECK(g.hero.hp < hp && g.enemies[i].x == 10 && (g.shot_events & (1u << i)));
+            game h; arena(h, 1); h.stage = 4; int j = put(h, d, 10, 7); h.lv.t[7][9] = tile::wall; h.lv.t[6][9] = tile::wall; h.lv.t[8][9] = tile::wall;
+            hp = h.hero.hp; h.player_wait();
+            CHECK(h.hero.hp == hp && !(h.shot_events & (1u << j)));
+        }
+        {   // splits: dwa dzieci z połową max HP, dzieci się nie dzielą
+            game g; arena(g, 1); int d = def_with(tag_splits); int i = put(g, d, 8, 7);
+            int mx = g.enemies[i].max_hp; g.enemies[i].hp = 1; g.hero_attack(i);
+            int kids = 0, kid = -1;
+            for(int k = 0; k < g.enemies_count; ++k) if(g.enemies[k].alive && (g.enemies[k].flags & actor_child)) { ++kids; kid = k; CHECK(g.enemies[k].max_hp == imax(1, mx * data::behavior_split_hp_pct / 100)); }
+            CHECK(kids == 2 && g.kills == 1);
+            int n = g.enemies_count; g.enemies[kid].hp = 1; g.hero_attack(kid);
+            CHECK(g.enemies_count == n && g.kills == 2);
+        }
+        {   // heals: łata rannego sąsiada (nie obok bohatera), potem odnowienie
+            game g; arena(g, 1); int d = def_with(tag_heals); put(g, d, 11, 7); int j = put(g, data::enemy_plesn, 11, 9);
+            g.enemies[j].stun = 5; g.enemies[j].hp = int16_t(g.enemies[j].max_hp - 5);
+            g.player_wait();
+            CHECK(g.enemies[j].hp == g.enemies[j].max_hp - 5 + data::behavior_heal_value);
+        }
+        {   // explodes: czerwone pola, tura na zejście; zostanie = obrażenia, zejście = bez
+            game g; arena(g, 1); int d = def_with(tag_explodes); int i = put(g, d, 8, 7);
+            g.enemies[i].hp = 1; g.hero_attack(i); g.end_turn();
+            CHECK(g.blast_timer == 1 && g.danger_cell(7, 7) && g.danger_cell(9, 8) && !g.danger_cell(10, 7));
+            int hp = g.hero.hp; g.player_wait();
+            CHECK(g.hero.hp < hp && g.blast_timer == 0);
+            game h; arena(h, 1); int k = put(h, d, 8, 7); h.enemies[k].hp = 1; h.hero_attack(k); h.end_turn();
+            h.hero.x = 5; hp = h.hero.hp; h.player_wait();
+            CHECK(h.hero.hp == hp);
+        }
+        {   // grows + stationary: rośnie co kilka tur, stoi w miejscu
+            game g; arena(g, 1); int d = -1;
+            for(int k = 0; k < data::enemies_count; ++k) if((data::enemies[k].tags & tag_grows) && (data::enemies[k].tags & tag_stationary)) d = k;
+            CHECK(d >= 0);
+            int i = put(g, d, 11, 11); int mx = g.enemies[i].max_hp;
+            for(int t = 0; t < data::behavior_grow_every * 2; ++t) g.player_wait();
+            CHECK(g.enemies[i].grow == 2 && g.enemies[i].max_hp == mx + 2 * data::behavior_grow_hp && g.enemies[i].x == 11 && g.enemies[i].y == 11);
+            for(int t = 0; t < data::behavior_grow_every * 10; ++t) g.player_wait();
+            CHECK(g.enemies[i].grow == data::behavior_grow_max);
+        }
+        {   // flees: obok bohatera odskakuje, potem odnowienie
+            game g; arena(g, 1); int d = def_with(tag_flees); int i = put(g, d, 8, 7);
+            g.player_wait();
+            CHECK(cheb(g.enemies[i].x, g.enemies[i].y, 7, 7) == 2 && g.enemies[i].timer == data::behavior_flee_cooldown);
+        }
+        {   // pushes: cios odpycha o pole, potem odnowienie
+            game g; arena(g, 1); int d = -1;
+            for(int k = 0; k < data::enemies_count; ++k) if(data::enemies[k].tags == tag_pushes) d = k;
+            int i = put(g, d, 8, 7);
+            g.player_wait();
+            CHECK(g.hero.x == 6 && g.hero.y == 7 && g.enemies[i].timer == data::behavior_push_cooldown);
+        }
+        {   // returns: pierwsze usunięcie - wraca po kilku turach z połową HP; drugie na zawsze
+            game g; arena(g, 1); int d = -1;
+            for(int k = 0; k < data::enemies_count; ++k) if(data::enemies[k].tags == tag_returns) d = k;
+            int i = put(g, d, 11, 11); g.enemies[i].stun = 99;
+            g.enemies[i].hp = 1; g.hero_attack(i);
+            CHECK(!g.enemies[i].alive && (g.enemies[i].flags & actor_reviving) && g.kills == 0);
+            for(int t = 0; t < data::behavior_return_turns; ++t) g.player_wait();
+            CHECK(g.enemies[i].alive && g.enemies[i].hp == imax(1, g.enemies[i].max_hp * data::behavior_return_hp_pct / 100));
+            g.enemies[i].hp = 1; g.hero_attack(i);
+            for(int t = 0; t < data::behavior_return_turns * 2; ++t) g.player_wait();
+            CHECK(!g.enemies[i].alive && g.kills == 1);
+        }
+        {   // akt I: błoto kosztuje turę; Kładka je wyłącza
+            game g; arena(g, 1);
+            int mx = -1, my = -1;
+            for(int y = 2; y <= 13 && mx < 0; ++y) for(int x = 2; x <= 13; ++x) if(g.mud(x, y) && !g.mud(x - 1, y)) { mx = x; my = y; break; }
+            CHECK(mx >= 0);
+            g.hero.x = int8_t(mx - 1); g.hero.y = int8_t(my); int t0 = g.turns;
+            CHECK(g.player_move(1, 0) && g.turns == t0 + 2);
+            g.bridges = 1; g.bridge_x[0] = int8_t(mx); g.bridge_y[0] = int8_t(my); CHECK(!g.mud(mx, my));
+        }
+        {   // akt II: poryw co kilka tur spycha o pole (zapowiedź turę wcześniej)
+            game g; arena(g, 1); g.stage = 4; g.stage_start_turn = g.turns;
+            CHECK(g.act_is(act_mechanic::gust));
+            int v = data::acts[1].mech_value;
+            for(int t = 0; t < v - 1; ++t) g.player_wait();
+            CHECK(g.gust_in() == 1);
+            int dir = g.gust_dir(), hx = g.hero.x, hy = g.hero.y;
+            g.player_wait();
+            CHECK(g.hero.x == hx + game::gust_vec[dir][0] && g.hero.y == hy + game::gust_vec[dir][1]);
+        }
+        {   // akt III: pył - mniejsze pole widzenia
+            game g; arena(g, 1); int r0 = g.sight_radius(); g.stage = 8;
+            CHECK(g.act_is(act_mechanic::dust) && g.sight_radius() == r0 - data::acts[2].mech_value);
+        }
+        {   // profil v8 -> v9: katalog 16-47 od zera, reszta bez zmian; zapis budowy PBRUN09
+            profile p; profile_reset(p); p.best = 4321; p.respect = 77; p.catalog = 0x0F0F; p.catalog_hi = 0xDEADBEEF;
+            std::memcpy(p.magic, "PBRL008", 8);
+            CHECK(profile_fix(p) && std::strcmp(p.magic, profile_magic) == 0 && p.catalog_hi == 0 && p.best == 4321 && p.respect == 77 && p.catalog == 0x0F0F);
+            catalog_add(p, 20); catalog_add(p, 31);
+            CHECK(catalog_has(p, 20) && catalog_has(p, 31) && !catalog_has(p, 21) && catalog_count(p) == 8 + 2);
+            CHECK(std::strcmp(run_magic, "PBRUN09") == 0);
+        }
+    }
+    if(std::getenv("PB_NO_BALANCE")) { std::printf(fails ? "\n%d FAIL\n" : "\nOK (bez balansu)\n", fails); return fails != 0; }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};
@@ -1678,6 +1798,11 @@ int main()
         std::printf("%-18s %-9s %6d %6.1f %6ld %8ld\n", data::classes[c].name, data::difficulties[df].name, wins*100/runs, double(stages)/runs, turns/runs, score/runs);
     }
     for(int df=1;df<data::difficulties_count;++df) CHECK(diff_wins[df-1] > diff_wins[df]);   // trudniej = mniej wygranych
+    {
+        int easy = diff_wins[0] * 100 / (300 * data::classes_count), hard = diff_wins[data::difficulties_count - 1] * 100 / (300 * data::classes_count);
+        std::printf("Łatwy %d%%, Trudny %d%%\n", easy, hard);
+        CHECK(easy >= 50 && easy <= 60 && hard >= 8 && hard <= 15);   // cele balansu v0.21.49
+    }
     // Tabela balansu (Normalny, wszystkie zawody): Szkolenia, Respekt, tryb inwestora; kawa bota (czy przedmioty mają znaczenie)
     {
         auto win_rate = [](const run_mods& m, long& drinks, int& drank_runs) {

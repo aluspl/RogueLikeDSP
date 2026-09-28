@@ -11,13 +11,15 @@ namespace core
     constexpr int map_w = 32;
     constexpr int map_h = 32;
     constexpr int max_rooms = 10;
-    constexpr int max_enemies = 12;
+    constexpr int max_enemies = 16;     // v0.21.49: 12 z etapu (z bossem i wezwanymi) + miejsce na podziały
     constexpr int max_pickups = 10;
     constexpr int log_lines = 3;
     constexpr int log_len = 48;
     constexpr int fov_radius = 7;       // promień widzenia bohatera w polach
     constexpr int max_hits = 8;         // zdarzenia trafień w jednej turze (dla efektów)
     constexpr int max_walls = 5;        // tymczasowe mury (Ścianka III ma 5 pól)
+    constexpr int max_enemy_types = 48;  // rodzaje problemów (katalog: 16 + 32 bity w profilu)
+    constexpr int max_stages = 12;
     constexpr int max_gear_slots = 6;   // kask, rękawice, kamizelka + sloty z nagród (buty, pas)
     static_assert(data::gear_slots_count <= max_gear_slots);
 
@@ -101,7 +103,11 @@ namespace core
         bool alive = false;
         bool awake = false;
         int8_t stun = 0;        // tury ogłuszenia (Odprawa)
+        uint8_t flags = 0;      // actor_flag: dziecko z podziału, już wrócił, czeka na powrót
+        int8_t grow = 0;        // stopnie wzrostu (zachowanie "grows")
+        int8_t timer = 0;       // odnowienie ucieczki / łatania / odepchnięcia; u czekającego na powrót - tury do powrotu
     };
+    enum actor_flag : uint8_t { actor_child = 1, actor_returned = 2, actor_reviving = 4 };
 
     struct temp_wall { int8_t x, y, turns; };   // Ścianka Murarza
 
@@ -277,6 +283,50 @@ namespace core
         }
     }
 
+    // Opis statystyki w prostych słowach z prawdziwym wzorem (wybór zawodu, telefon: Start, Jak grać).
+    // v = wartość statystyki; weapon_stat = broń skaluje się z tą statystyką (SIŁ/ZRĘ/INT).
+    enum class stat_kind : uint8_t { hp, str, agi, intel, def, luck };
+    constexpr int stat_kinds = 6;
+    inline const char* stat_kind_name(stat_kind k)
+    {
+        static const char* n[stat_kinds] = { "HP", "SIŁ", "ZRĘ", "INT", "OBR", "SZCZ" };
+        return n[int(k)];
+    }
+    inline int luck_crit_pct(int luck) { return data::crit_base_pct + data::crit_per_luck_pct * luck; }
+    inline int luck_dodge_pct(int luck) { return imin(data::dodge_max_pct, data::dodge_per_luck_pct * imax(0, luck)); }
+    inline message& stat_effect(message& m, stat_kind k, int v, bool weapon_stat)
+    {
+        switch(k)
+        {
+            case stat_kind::hp:   return m.add("zdrowie (0 = koniec)");
+            case stat_kind::str:
+            case stat_kind::agi:
+            case stat_kind::intel:
+                if(weapon_stat) return m.add("+").add(v / 2).add(" obrażeń broni");
+                return m.add("nie dla tej broni");
+            case stat_kind::def:  return m.add("-").add(v / 2).add(" obrażeń od problemów");
+            case stat_kind::luck: return m.add("kryt ").add(luck_crit_pct(v)).add("%, unik ").add(luck_dodge_pct(v)).add("%");
+            default:              return m;
+        }
+    }
+    // Ogólny wzór statystyki (bez wartości) - strona "Jak działają" / Jak grać. Szczęście ma 3 części (part 0-2).
+    inline message& stat_rule(message& m, stat_kind k, int part = 0)
+    {
+        switch(k)
+        {
+            case stat_kind::hp:   return m.add("HP: zdrowie, leczy kawa");
+            case stat_kind::str:  return m.add("SIŁ: +1 obr. co 2 pkt (broń SIŁ)");
+            case stat_kind::agi:  return m.add("ZRĘ: +1 obr. co 2 pkt (broń ZRĘ)");
+            case stat_kind::intel:return m.add("INT: +1 obr. co 2 pkt (broń INT)");
+            case stat_kind::def:  return m.add("OBR: -1 obrażeń co 2 pkt");
+            case stat_kind::luck:
+                if(part == 1) return m.add("unik +").add(data::dodge_per_luck_pct).add("%/pkt (maks. ").add(data::dodge_max_pct).add("%)");
+                if(part == 2) return m.add("łupy: +").add(data::drop_per_luck_pct).add("% szansy/pkt");
+                return m.add("SZCZ: kryt ").add(data::crit_base_pct).add("% +").add(data::crit_per_luck_pct).add("%/pkt");
+            default:              return m;
+        }
+    }
+
     inline int class_base_stat(int cls, stat s)
     {
         const class_def& c = data::classes[cls];
@@ -294,8 +344,8 @@ namespace core
         return s == stat::str ? trait_effect::str : (s == stat::agi ? trait_effect::agi : trait_effect::intel);
     }
 
-    static_assert(sizeof(data::enemies) / sizeof(data::enemies[0]) <= 16);
-    static_assert(data::materials_count <= 4 && data::stages_count <= 8);
+    static_assert(data::enemies_count <= max_enemy_types);
+    static_assert(data::materials_count <= 4 && data::stages_count <= max_stages);
 
     // Kładka: zasięg (pola) z danych naprawy "bridge".
     constexpr int bridge_reach()
@@ -320,7 +370,7 @@ namespace core
         int tier = 0;                // NG+: ile razy budowa została już ukończona
         int def_bonus = 0, dmg_bonus = 0;
         int turns = 0, kills = 0, score = 0;
-        uint8_t kills_by_type[16] = {};   // pokonane problemy wg rodzaju (zakładka Usterki)
+        uint8_t kills_by_type[max_enemy_types] = {};   // pokonane problemy wg rodzaju (zakładka Usterki)
         int stage_damage = 0;        // obrażenia otrzymane na bieżącym etapie (odznaka Bez usterek)
         int stage_kills = 0;         // problemy usunięte na bieżącym etapie (odznaka Seryjny)
         int stage_start_turn = 0;    // tura wejścia na etap (odznaka Przed terminem)
@@ -345,11 +395,62 @@ namespace core
         int8_t bridge_x[max_bridges] = {}, bridge_y[max_bridges] = {};
         bool daily = false;          // codzienna budowa (seed dnia)
         uint16_t daily_day = 0;      // numer dnia codziennej budowy
-        uint16_t stage_days[8] = {}; // tury na każdym etapie (harmonogram domu po wygranej)
+        uint16_t stage_days[max_stages] = {}; // tury na każdym etapie (harmonogram domu po wygranej)
         // v0.21.49: Respekt za etapy, reszty procentów obrażeń, Druga szansa
         int respect = 0;             // Respekt zdobyty w tej budowie (profil: bank_respect)
         int dmg_carry = 0, taken_carry = 0;   // reszty z procentowych premii obrażeń (pct_part)
         bool second_used = false;    // Druga szansa zużyta
+        // v0.21.49 (część 2): wybuch po usunięciu problemu (czerwone pola), strzały z dystansu (efekty warstwy GBA)
+        int8_t blast_x = -1, blast_y = -1, blast_timer = 0, blast_dmg = 0;
+        uint32_t shot_events = 0;    // bitmaska: którzy wrogowie strzelili w tej turze (warstwa GBA czyta i zeruje)
+
+        // ------------------------------------------------------------------ mechanika aktu: błoto, porywy, pył
+        const act_def& adef() const { return data::acts[data::stages[stage].act]; }
+        bool act_is(act_mechanic m) const { return adef().mechanic == m; }
+        // Błoto (akt I): stały wzór na podłodze zależny od etapu; wejście kosztuje dodatkową turę. Kładka też na błoto.
+        bool mud(int x, int y) const
+        {
+            if(! act_is(act_mechanic::mud) || lv.at(x, y) != tile::floor || (x * 5 + y * 11 + stage * 3) % adef().mech_value != 0) return false;
+            for(int i = 0; i < bridges; ++i) if(cheb(x, y, bridge_x[i], bridge_y[i]) <= bridge_reach()) return false;
+            return true;
+        }
+        // Porywy (akt II): co mech_value tur od wejścia na etap poryw spycha bohatera o pole; kierunek zmienia się co poryw.
+        int gust_in() const   // tury do kolejnego porywu (0 = brak porywów w tym akcie)
+        {
+            if(! act_is(act_mechanic::gust)) return 0;
+            int v = adef().mech_value, t = turns - stage_start_turn;
+            return v - t % v;
+        }
+        int gust_dir() const   // kierunek kolejnego porywu: 0 prawo, 1 dół, 2 lewo, 3 góra
+        {
+            int t = turns - stage_start_turn + gust_in();
+            return (t / imax(1, adef().mech_value) + stage) & 3;
+        }
+        static constexpr int8_t gust_vec[4][2] = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } };
+        static const char* dir_name(int d) { static const char* n[4] = { "w prawo", "w dół", "w lewo", "w górę" }; return n[d & 3]; }
+        void gust_tick()
+        {
+            int v = adef().mech_value, t = turns - stage_start_turn;
+            if(t <= 0) return;
+            if(t % v == v - 1) { push(message().add("Poryw wiatru za 1 t. ").add(dir_name(gust_dir())).as(bad)); return; }
+            if(t % v != 0) return;
+            int d = (t / v + stage) & 3, nx = hero.x + gust_vec[d][0], ny = hero.y + gust_vec[d][1];
+            if(lv.passable(nx, ny) && ! occupied(nx, ny))
+            {
+                hero.x = int8_t(nx); hero.y = int8_t(ny);
+                collect(); update_fov();
+                push(message().add("Poryw! Spycha cię ").add(dir_name(d)).as(bad));
+            }
+            else push(message().add("Poryw - trzymasz się muru").as(good));
+        }
+        int dust_sight() const { return act_is(act_mechanic::dust) ? adef().mech_value : 0; }
+
+        // ------------------------------------------------------------------ zachowania problemów
+        bool has_tag(const actor& e, int t) const { return e.def_id >= 0 && (data::enemies[e.def_id].tags & t) != 0; }
+        // Wybuch po usunięciu problemu: pola w promieniu wokół miejsca (czerwone), tura na zejście.
+        bool blast_cell(int x, int y) const { return blast_timer > 0 && cheb(x, y, blast_x, blast_y) <= data::behavior_blast_radius; }
+        // Pole zagrożone: zapowiedziany cios bossa albo wybuch.
+        bool danger_cell(int x, int y) const { return slam_cell(x, y) || blast_cell(x, y); }
 
         bool event_active(event_effect e) const { return stage_event >= 0 && data::site_events[stage_event].effect == e; }
         const weather_def& wdef() const { return data::weather[weather]; }
@@ -531,7 +632,7 @@ namespace core
         // Szczęście: kryt (x2), mały unik przed ciosem wroga, częstsze i lepsze dropy.
         int luck() const { return cdef().luck + bonus.luck + trait_bonus(trait_effect::luck); }
         int crit_pct() const { return data::crit_base_pct + data::crit_per_luck_pct * luck() + trait_bonus(trait_effect::crit) + bonus.crit; }
-        int sight_radius() const { return fov_radius + trait_bonus(trait_effect::sight) + bonus.sight; }
+        int sight_radius() const { return imax(3, fov_radius + trait_bonus(trait_effect::sight) + bonus.sight - dust_sight()); }   // pył (akt III)
         int thermos_cap() const { return data::thermos_capacity + bonus.thermos + gear_bonus(gear_stat::thermos); }
 
         // Suma cech założonego sprzętu danego rodzaju.
@@ -703,6 +804,7 @@ namespace core
             stage_damage = 0; stage_kills = 0; stage_start_turn = turns; boss_wake_damage = -1;
             act_cleared = false; slam_timer = 0; slam_x = slam_y = -1; slam_counter = 0; summon_counter = 0; summons_used = 0;
             helper_called = -1; guard_turns = 0; ally_turns = 0; ally_x = ally_y = -1;   // brygada: raz na etap
+            blast_timer = 0; blast_x = blast_y = -1; shot_events = 0;
             for(auto& row : fov) for(auto& c : row) c = unknown;
             const stage_def& sd = data::stages[stage];
             const room& first = lv.rooms[0];
@@ -849,6 +951,14 @@ namespace core
             last_target = ei;
             add_hit(e.x, e.y, dmg, false, crit ? hit_crit : hit_normal);
             turn_events |= 1u << ei;
+            if(e.hp <= 0 && ei != boss && (ed.tags & tag_returns) && ! (e.flags & actor_returned))   // wraca raz
+            {
+                e.alive = false; e.hp = 0;
+                e.flags = uint8_t(e.flags | actor_returned | actor_reviving);
+                e.timer = int8_t(data::behavior_return_turns);
+                push(message().add(ed.name).add(" - wróci za ").add(data::behavior_return_turns).add(" t.!").as(bad));
+                return;
+            }
             if(e.hp <= 0)
             {
                 e.alive = false; ++kills; ++stage_kills; ++act_kills;
@@ -857,6 +967,8 @@ namespace core
                 score += ed.score * score_pct() / 100; gain_xp(data::xp_per_kill);
                 maybe_drop(e.x, e.y);
                 push(message().add(ed.name).add(" - usunięto!").as(good));
+                if(ed.tags & tag_explodes) arm_blast(e.x, e.y, ed);
+                if((ed.tags & tag_splits) && ! (e.flags & actor_child)) split(ei);
                 if(ei == boss)   // boss: po kilka sztuk każdego materiału
                     for(int m = 0; m < data::materials_count; ++m) add_material(m, data::material_boss_drop);
                 else if(r.range(1, 100) <= data::material_drop_pct * (100 + bonus.mats_pct) / 100)   // Respekt: Zapasy
@@ -908,6 +1020,7 @@ namespace core
             if(shocked_turn()) return true;
             int nx = hero.x + dx, ny = hero.y + dy;
             int ei = enemy_at(nx, ny);
+            bool stuck = false;
             if(ei >= 0) hero_attack(ei);
             else if(lv.passable(nx, ny))
             {
@@ -921,9 +1034,15 @@ namespace core
                 }
                 else if(puddle(hero.x, hero.y))   // deszcz: kałuża = poślizg
                     apply_status(status_effect::slip, 2);
+                if(mud(hero.x, hero.y) && ! puddle(hero.x, hero.y))   // akt I: błoto - grzęźniesz, tura przepada
+                {
+                    stuck = true;
+                    push(message().add("Błoto! Grzęźniesz - tura stracona").as(bad));
+                }
             }
             else return false;
             end_turn();
+            if(stuck && st == status::playing) end_turn();
             return true;
         }
 
@@ -1374,10 +1493,10 @@ namespace core
 
         enum repair_block : uint8_t { repair_ok, repair_busy, repair_material, repair_no_target, repair_no_room, repair_no_puddle };
 
-        bool puddle_near(int reach) const
+        bool puddle_near(int reach) const   // kałuże albo błoto (Kładka działa na oba)
         {
             for(int y = hero.y - reach; y <= hero.y + reach; ++y)
-                for(int x = hero.x - reach; x <= hero.x + reach; ++x) if(puddle(x, y)) return true;
+                for(int x = hero.x - reach; x <= hero.x + reach; ++x) if(puddle(x, y) || mud(x, y)) return true;
             return false;
         }
 
@@ -1637,29 +1756,17 @@ namespace core
             }
             // Termin: porusza się co drugą turę, poniżej połowy HP przyspiesza
             if(i == boss && e.hp * 2 > e.max_hp && (turns & 1)) return;
+            const uint16_t tg = ed.tags;
+            if(tg & tag_grows) grow_tick(i);
+            if(e.timer > 0) --e.timer;   // odnowienie ucieczki / łatania
             int manh = iabs(e.x - hero.x) + iabs(e.y - hero.y);
-            if(manh == 1)
-            {
-                if(dodge_pct() > 0 && r.range(1, 100) <= dodge_pct())   // szczęście: unik
-                {
-                    add_hit(hero.x, hero.y, 0, true, hit_dodge);
-                    push(message().add("Unik! ").add(ed.name).add(" chybia").as(good));
-                    return;
-                }
-                int dmg = taken_damage(r.range(ed.min_damage, ed.max_damage) + enemy_dmg_bonus() - hero_defense() / 2);
-                hero.hp = int16_t(hero.hp - dmg);
-                stage_damage += dmg;
-                hero_hit = true;
-                add_hit(hero.x, hero.y, dmg, true);
-                push(message().add(ed.name).add(": -").add(dmg).add(" HP").as(bad));
-                if(ed.on_hit != status_effect::none && hero.hp > 0 && r.range(1, 100) <= ed.status_chance)
-                    apply_status(ed.on_hit, ed.status_turns);
-                if(event_active(event_effect::rain) && hero.hp > 0 && r.range(1, 100) <= data::site_events[stage_event].value)
-                    apply_status(status_effect::slip, 2);   // Ulewa w nocy: błoto na placu
-                if(hero.hp <= 0) hero_down();
-                return;
-            }
+            if((tg & tag_heals) && manh != 1 && e.timer == 0 && heal_near(i)) { e.timer = int8_t(data::behavior_heal_every); return; }
+            if((tg & tag_flees) && manh == 1 && e.timer == 0 && flee_step(i)) { e.timer = int8_t(data::behavior_flee_cooldown); return; }
+            if(manh == 1) { enemy_strike(i, false); return; }
+            if((tg & tag_ranged) && shot_line(e.x, e.y)) { shot_events |= 1u << i; enemy_strike(i, true); return; }
+            if(tg & tag_stationary) return;
             if(weather_is(weather_effect::frost) && i != boss && turns % wdef().value == 0) return;   // mróz: problemy stoją
+            if((tg & tag_ranged) && ranged_step(i)) return;
             int dx = isign(hero.x - e.x), dy = isign(hero.y - e.y);
             bool xfirst = iabs(hero.x - e.x) >= iabs(hero.y - e.y);
             int tries[2][2] = { { xfirst ? dx : 0, xfirst ? 0 : dy }, { xfirst ? 0 : dx, xfirst ? dy : 0 } };
@@ -1669,6 +1776,158 @@ namespace core
                 int nx = e.x + t[0], ny = e.y + t[1];
                 if(lv.at(nx, ny) == tile::floor && ! occupied(nx, ny)) { e.x = int8_t(nx); e.y = int8_t(ny); return; }
             }
+        }
+
+        // Cios problemu (wręcz albo z dystansu): unik ze szczęścia, obrażenia po obronie, stan, odepchnięcie.
+        void enemy_strike(int i, bool ranged)
+        {
+            actor& e = enemies[i];
+            const enemy_def& ed = data::enemies[e.def_id];
+            if(dodge_pct() > 0 && r.range(1, 100) <= dodge_pct())   // szczęście: unik
+            {
+                add_hit(hero.x, hero.y, 0, true, hit_dodge);
+                push(message().add("Unik! ").add(ed.name).add(" chybia").as(good));
+                return;
+            }
+            int dmg = taken_damage(r.range(ed.min_damage, ed.max_damage) + enemy_dmg_bonus() + e.grow / 2 - hero_defense() / 2);
+            hero.hp = int16_t(hero.hp - dmg);
+            stage_damage += dmg;
+            hero_hit = true;
+            add_hit(hero.x, hero.y, dmg, true);
+            push(message().add(ed.name).add(ranged ? " z dystansu: -" : ": -").add(dmg).add(" HP").as(bad));
+            if(ed.on_hit != status_effect::none && hero.hp > 0 && r.range(1, 100) <= ed.status_chance)
+                apply_status(ed.on_hit, ed.status_turns);
+            if(event_active(event_effect::rain) && hero.hp > 0 && r.range(1, 100) <= data::site_events[stage_event].value)
+                apply_status(status_effect::slip, 2);   // Ulewa w nocy: błoto na placu
+            if((ed.tags & tag_pushes) && ! ranged && hero.hp > 0 && e.timer == 0)   // odepchnięcie o pole (co kilka tur)
+            {
+                e.timer = int8_t(data::behavior_push_cooldown);
+                int nx = hero.x + isign(hero.x - e.x), ny = hero.y + isign(hero.y - e.y);
+                if(lv.passable(nx, ny) && ! occupied(nx, ny))
+                {
+                    hero.x = int8_t(nx); hero.y = int8_t(ny);
+                    collect(); update_fov();
+                    push(message().add(ed.name).add(" odpycha cię!").as(bad));
+                }
+            }
+            if(hero.hp <= 0) hero_down();
+        }
+
+        // Linia strzału z (x, y) do bohatera: odległość 2..zasięg, prosto albo po skosie, bez murów i postaci po drodze.
+        bool shot_line(int x, int y) const
+        {
+            int dx = hero.x - x, dy = hero.y - y, d = cheb(x, y, hero.x, hero.y);
+            if(d < 2 || d > data::behavior_ranged_reach || ! (dx == 0 || dy == 0 || iabs(dx) == iabs(dy))) return false;
+            for(int k = 1; k < d; ++k)
+            {
+                int cx = x + isign(dx) * k, cy = y + isign(dy) * k;
+                if(! lv.passable(cx, cy) || occupied(cx, cy)) return false;
+            }
+            return true;
+        }
+
+        // Strzelec ustawia się w linii: krok na pole, z którego ma czysty strzał.
+        bool ranged_step(int i)
+        {
+            actor& e = enemies[i];
+            for(const auto& o : around8)
+            {
+                if(o[0] != 0 && o[1] != 0) continue;   // problemy chodzą tylko prosto
+                int nx = e.x + o[0], ny = e.y + o[1];
+                if(lv.at(nx, ny) == tile::floor && ! occupied(nx, ny) && shot_line(nx, ny)) { e.x = int8_t(nx); e.y = int8_t(ny); return true; }
+            }
+            return false;
+        }
+
+        // Ucieczka: krok prosto na pole dalej od bohatera (bez miejsca - nie ucieka).
+        bool flee_step(int i)
+        {
+            actor& e = enemies[i];
+            int bd = cheb(e.x, e.y, hero.x, hero.y), bx = -1, by = -1;
+            for(const auto& o : around8)
+            {
+                if(o[0] != 0 && o[1] != 0) continue;
+                int nx = e.x + o[0], ny = e.y + o[1];
+                if(lv.at(nx, ny) != tile::floor || occupied(nx, ny)) continue;
+                int d = cheb(nx, ny, hero.x, hero.y);
+                if(d > bd) { bd = d; bx = nx; by = ny; }
+            }
+            if(bx < 0) return false;
+            e.x = int8_t(bx); e.y = int8_t(by);
+            if(visible(bx, by)) push(message().add(data::enemies[e.def_id].name).add(" ucieka"));
+            return true;
+        }
+
+        // Łatanie: najbardziej ranny problem w zasięgu 2 (bez bossa) dostaje HP.
+        bool heal_near(int i)
+        {
+            const actor& e = enemies[i];
+            int best = -1, lack = 0;
+            for(int j = 0; j < enemies_count; ++j)
+            {
+                const actor& o = enemies[j];
+                if(j == i || j == boss || ! o.alive || cheb(e.x, e.y, o.x, o.y) > 2 || o.max_hp - o.hp <= lack) continue;
+                best = j; lack = o.max_hp - o.hp;
+            }
+            if(best < 0) return false;
+            actor& o = enemies[best];
+            int h = imin(data::behavior_heal_value, lack);
+            o.hp = int16_t(o.hp + h);
+            if(visible(e.x, e.y) || visible(o.x, o.y))
+                push(message().add(data::enemies[e.def_id].name).add(" łata: ").add(data::enemies[o.def_id].name).add(" +").add(h).as(bad));
+            return true;
+        }
+
+        // Wzrost: co kilka tur (w walce) +HP, co drugi stopień +1 obrażeń.
+        void grow_tick(int i)
+        {
+            actor& e = enemies[i];
+            if(e.grow >= data::behavior_grow_max || turns % data::behavior_grow_every != 0) return;
+            ++e.grow;
+            e.max_hp = int16_t(e.max_hp + data::behavior_grow_hp);
+            e.hp = int16_t(e.hp + data::behavior_grow_hp);
+            if(visible(e.x, e.y)) push(message().add(data::enemies[e.def_id].name).add(" rośnie!").as(bad));
+        }
+
+        // Wybuch po usunięciu: czerwone pola wokół, spada po data::behavior_blast_delay turach (tura na zejście).
+        void arm_blast(int x, int y, const enemy_def& ed)
+        {
+            blast_x = int8_t(x); blast_y = int8_t(y);
+            blast_timer = int8_t(data::behavior_blast_delay);
+            blast_dmg = int8_t(data::behavior_blast_damage + enemy_dmg_bonus());
+            push(message().add(ed.name).add(": wybuch za ").add(data::behavior_blast_delay - 1).add(" t.! Odejdź").as(bad));
+        }
+
+        // Miejsce na nowy problem (podział): wolny slot na końcu albo po usuniętym (nie boss, nie wezwani, nie czekający).
+        int free_slot()
+        {
+            if(enemies_count < max_enemies) return enemies_count++;
+            int reserve = boss >= 0 ? data::enemies[enemies[boss].def_id].summon_max : 0;
+            for(int j = 0; j < enemies_count; ++j)
+                if(! enemies[j].alive && ! (enemies[j].flags & actor_reviving) && j != boss && ! (boss >= 0 && j > boss && j <= boss + reserve))
+                    return j;
+            return -1;
+        }
+
+        // Podział: dwa słabsze problemy (połowa max HP) na polu usuniętego i obok; same się już nie dzielą.
+        void split(int ei)
+        {
+            const actor p = enemies[ei];
+            int made = 0;
+            for(int k = 0; k < 2; ++k)
+            {
+                int x = p.x, y = p.y;
+                if(k == 1 || occupied(x, y)) { if(! free_around(p.x, p.y, hero.x, hero.y, x, y)) break; }
+                int slot = free_slot();
+                if(slot < 0) break;
+                actor& c = enemies[slot];
+                c = actor();
+                c.x = int8_t(x); c.y = int8_t(y); c.def_id = p.def_id;
+                c.hp = c.max_hp = int16_t(imax(1, p.max_hp * data::behavior_split_hp_pct / 100));
+                c.alive = true; c.awake = true; c.stun = 1; c.flags = actor_child;
+                ++made;
+            }
+            if(made) push(message().add(data::enemies[p.def_id].name).add(" dzieli się!").as(bad));
         }
 
         void end_turn()
@@ -1702,6 +1961,32 @@ namespace core
                 }
                 else push(message().add("Unik! Cios poszedł obok").as(good));
                 slam_x = slam_y = -1;
+            }
+            if(blast_timer > 0 && --blast_timer == 0 && st == status::playing)   // wybuch po usuniętym problemie
+            {
+                if(cheb(hero.x, hero.y, blast_x, blast_y) <= data::behavior_blast_radius)
+                {
+                    int dmg = taken_damage(blast_dmg - hero_defense() / 2);
+                    hero.hp = int16_t(hero.hp - dmg);
+                    stage_damage += dmg;
+                    hero_hit = true;
+                    add_hit(hero.x, hero.y, dmg, true);
+                    push(message().add("Wybuch: -").add(dmg).add(" HP").as(bad));
+                    if(hero.hp <= 0) hero_down();
+                }
+                else push(message().add("Wybuch obok - uff!").as(good));
+                blast_x = blast_y = -1;
+            }
+            if(st == status::playing && act_is(act_mechanic::gust)) gust_tick();   // akt II: porywy wiatru
+            for(int i = 0; i < enemies_count && st == status::playing; ++i)   // "wraca raz": powrót po kilku turach
+            {
+                actor& e = enemies[i];
+                if(e.alive || ! (e.flags & actor_reviving) || --e.timer > 0) continue;
+                if(occupied(e.x, e.y)) { e.timer = 1; continue; }
+                e.alive = true; e.awake = true;
+                e.hp = int16_t(imax(1, e.max_hp * data::behavior_return_hp_pct / 100));
+                e.flags = uint8_t(e.flags & ~actor_reviving);
+                push(message().add(data::enemies[e.def_id].name).add(" wraca!").as(bad));
             }
             if(st == status::playing)
                 for(int i = 0; i < enemies_count && st == status::playing; ++i)

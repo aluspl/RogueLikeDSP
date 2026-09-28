@@ -185,7 +185,7 @@ UI_SPR = [ui_lock]
 # klatki: 0-5 zawody, 6-14 wrogowie, 15-17 znajdźki, 18 efekt trafienia, 19 kłódka, 20-25 sylwetki zawodów,
 # 26 skrzynka z narzędziem, 27-41 druga klatka animacji zawodów i wrogów, 42-44 paczki sprzętu (pixel-art: tools/pixel_art.py),
 # 45 celownik, 46-51 bossowie; v0.21.49: 52-54 zawody z nagród (Dekarz, Tynkarz, Operator koparki), 55-57 ich druga klatka,
-# 58-60 ich sylwetki
+# 58-60 ich sylwetki; 61-80 problemy etapów (pixel_art.STAGE_ENEMIES), 81-100 ich druga klatka
 def make_actors():
     import pixel_art as pa
     workers = [pa.worker_frame(i, 0) for i in range(6)]
@@ -203,6 +203,12 @@ def make_actors():
     extra = [pa.worker_frame(i, 0) for i in range(6, len(pa.WORKERS))]   # 52-54 zawody z nagród za odbiór
     frames += extra + [pa.worker_frame(i, 1) for i in range(6, len(pa.WORKERS))]   # 55-57 ich druga klatka
     frames += [silhouette(f) for f in extra]                               # 58-60 ich sylwetki
+    n = len(pa.STAGE_ENEMY_ORDER)
+    assert len(frames) == 61
+    frames += [pa.stage_enemy_frame(i, 0) for i in range(n)] + [pa.stage_enemy_frame(i, 1) for i in range(n)]   # 61.. problemy etapów
+    data = json.load(open(os.path.join(ROOT, "data", "game.json"), encoding="utf-8"))
+    ids = [e["id"] for e in data["enemies"] if e["frame"] >= 61]
+    assert ids == pa.STAGE_ENEMY_ORDER, "kolejność rysunków = kolejność wrogów w game.json"
     px = [p for fr in frames for p in fr]
     write_bmp(os.path.join(G, "actors.bmp"), px, 16, 16 * len(frames), SPR_PAL, 4)
     write_json("actors", {"type": "sprite", "height": 16})
@@ -254,9 +260,11 @@ def make_hp_bar():
 STAGE_COLORS = [
     # (podłoga, detal, ściana, jasny, cień) - kolejność jak etapy w data/game.json
     [(96, 70, 44), (80, 58, 36), (150, 138, 118), (180, 170, 150), (100, 92, 80)],        # Fundamenty
+    [(104, 80, 52), (84, 62, 40), (72, 70, 80), (116, 112, 124), (40, 38, 46)],           # Izolacja fundamentów (papa, folia)
     [(118, 118, 118), (100, 100, 100), (178, 82, 59), (222, 200, 170), (120, 50, 36)],   # Mury parteru
     [(128, 128, 124), (108, 108, 104), (150, 150, 146), (190, 190, 186), (90, 90, 88)],  # Strop (beton)
     [(169, 116, 59), (130, 86, 40), (122, 46, 46), (170, 80, 70), (80, 28, 28)],         # Dach
+    [(146, 140, 130), (124, 118, 110), (214, 208, 196), (238, 234, 224), (150, 144, 132)], # Ściany działowe (silikaty)
     [(150, 104, 62), (122, 82, 46), (210, 210, 200), (240, 240, 232), (120, 140, 170)],  # Okna i drzwi
     [(160, 160, 160), (135, 135, 135), (90, 111, 143), (200, 120, 60), (56, 70, 96)],    # Instalacje
     [(200, 196, 184), (176, 170, 156), (226, 218, 196), (246, 240, 224), (150, 140, 120)],  # Tynki i wylewki
@@ -269,21 +277,48 @@ def tile(fn):
     return [c for row in t for c in row]
 
 def t_empty(t): pass
+
+# v0.21.49: każdy akt ma własne kafle - akt I ziemia i bloczki betonowe, akt II deski i cegła, akt III płytki i tynk.
+ACT = [0]   # akt kafli generowanych w tej chwili (make_tiles ustawia)
+
 def t_floor(t):
+    a = ACT[0]
     for y in range(8):
         for x in range(8):
             t[y][x] = 1
-    for (x, y) in [(1, 2), (5, 5), (6, 1), (2, 6)]:
-        t[y][x] = 2
-def t_wall(t):   # mur z fugami (wzór cegieł przez 2 kafle w pionie się powtarza)
+    if a == 0:     # ziemia z kamykami
+        for (x, y) in [(1, 2), (5, 5), (6, 1), (2, 6)]:
+            t[y][x] = 2
+    elif a == 1:   # deski: poziome szczeliny, przesunięte łączenia
+        for x in range(8):
+            t[3][x] = 2; t[7][x] = 2
+        t[0][5] = t[1][5] = t[2][5] = 2
+        t[4][1] = t[5][1] = t[6][1] = 2
+    else:          # płytki: fuga co 8 px, odblask w rogu
+        for i in range(8):
+            t[7][i] = 2; t[i][7] = 2
+        t[1][1] = t[1][2] = t[2][1] = 14
+def t_wall(t):
+    a = ACT[0]
     for y in range(8):
         for x in range(8):
             t[y][x] = 3
-    for x in range(8):
-        t[3][x] = 5; t[7][x] = 5
-    t[0][3] = t[1][3] = t[2][3] = 5
-    t[4][7] = t[5][7] = t[6][7] = 5
-    t[0][0] = t[4][4] = 4
+    if a == 0:     # bloczki betonowe: duże, pojedyncza spoina
+        for x in range(8):
+            t[7][x] = 5
+        for y in range(7):
+            t[y][7] = 5
+        t[1][1] = t[2][4] = t[5][2] = 4
+    elif a == 1:   # mur z fugami (wzór cegieł przez 2 kafle w pionie się powtarza)
+        for x in range(8):
+            t[3][x] = 5; t[7][x] = 5
+        t[0][3] = t[1][3] = t[2][3] = 5
+        t[4][7] = t[5][7] = t[6][7] = 5
+        t[0][0] = t[4][4] = 4
+    else:          # gładki tynk z drobnymi plamkami
+        for (x, y) in [(1, 1), (5, 3), (2, 5), (6, 6)]:
+            t[y][x] = 4
+        t[4][6] = 5
 def t_walltop(t):  # ściana z podłogą poniżej: jasna krawędź u góry
     t_wall(t)
     for x in range(8):
@@ -313,7 +348,7 @@ def t_floor_range(t):   # pole w zasięgu broni: narożnik ramki (4 ćwiartki pr
     for x, y in ((0, 0), (1, 0), (2, 0), (0, 1), (0, 2), (1, 1)):
         t[y][x] = 6
 
-def t_floor_danger(t):   # zapowiedziany cios bossa: czerwona ramka i ukośne kreski (ćwiartka pola)
+def t_floor_danger(t):   # zapowiedziany cios bossa / wybuch: czerwona ramka i ukośne kreski (ćwiartka pola)
     t_floor(t)
     for i in range(8):
         t[0][i] = 9; t[i][0] = 9
@@ -328,13 +363,28 @@ def t_puddle(t):   # kałuża (deszcz): lewa górna ćwiartka elipsy wody (reszt
     for x in range(4, 8):   # odbłysk na wodzie
         if t[5][x] == 10: t[5][x] = 11
 
-# indeksy: 0 pusty, 1 podłoga, 2 mur, 3 lico muru, 4 schody, 5 podłoga z cieniem muru, 6 cień postaci (ćwiartka),
-# 7 podłoga w zasięgu broni (ćwiartka ramki), 8 pole zapowiedzianego ciosu bossa (ćwiartka), 9 kałuża (ćwiartka)
-TILES = [t_empty, t_floor, t_wall, t_walltop, t_stairs, t_floor_wall_shadow, t_actor_shadow, t_floor_range, t_floor_danger,
-         t_puddle]
+def t_mud(t):   # błoto (akt I): lewa górna ćwiartka plamy (reszta przez odbicia), kolory 12-13 (grudki)
+    t_floor(t)
+    for y in range(8):
+        for x in range(8):
+            dx, dy = (x + 0.5 - 8) / 7.2, (y + 0.5 - 8.4) / 6.2
+            if dx * dx + dy * dy <= 1.0: t[y][x] = 12
+    for x, y in ((4, 5), (6, 3), (5, 7), (2, 7)):
+        if t[y][x] == 12: t[y][x] = 13
+
+# indeksy w akcie (+10 za każdy akt: akt II 11-20, akt III 21-30): 0 pusty, 1 podłoga, 2 mur, 3 lico muru, 4 schody,
+# 5 podłoga z cieniem muru, 6 cień postaci (ćwiartka), 7 podłoga w zasięgu broni (ćwiartka ramki), 8 pole zapowiedzianego
+# ciosu bossa / wybuchu (ćwiartka), 9 kałuża (ćwiartka), 10 błoto (ćwiartka)
+TILES = [t_floor, t_wall, t_walltop, t_stairs, t_floor_wall_shadow, t_actor_shadow, t_floor_range, t_floor_danger,
+         t_puddle, t_mud]
+ACT_TILES = len(TILES)
 
 def make_tiles():
-    px_tiles = [tile(f) for f in TILES]
+    px_tiles = [tile(t_empty)]
+    for a in range(3):   # kafle każdego aktu
+        ACT[0] = a
+        px_tiles += [tile(f) for f in TILES]
+    ACT[0] = 0
     w = 8 * len(px_tiles)
     px = []
     for y in range(8):
@@ -358,7 +408,9 @@ def make_tiles():
             danger = tuple(int(v * (0.6 if level == 3 else (1.0, 0.85, 0.7)[level])) for v in (235, 50, 50))
             lf = 0.55 if level == 3 else (1.0, 0.85, 0.7)[level]
             water = [tuple(int(v * lf) for v in (64, 112, 176)), tuple(int(v * lf) for v in (150, 196, 236))]   # kałuża
-            pal += [(12, 12, 20)] + cols + stairs + [shadow, danger] + water + [(0, 0, 0)] * 4
+            mud = [tuple(int(v * lf) for v in (58, 38, 22)), tuple(int(v * lf) for v in (122, 92, 58))]    # błoto (akt I)
+            gloss = tuple(min(255, int(v * 1.12 + 12)) for v in cols[0])                                  # odblask płytek
+            pal += [(12, 12, 20)] + cols + stairs + [shadow, danger] + water + mud + [gloss, (0, 0, 0)]
         write_bmp(os.path.join(G, f"stage_palettes_{si}.bmp"), [0] * 64, 8, 8, pal, 8)
         write_json(f"stage_palettes_{si}", {"type": "bg_palette", "bpp_mode": "bpp_4", "colors_count": 64})
 

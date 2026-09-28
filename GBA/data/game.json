@@ -531,12 +531,370 @@
         "cash": 60,
         "title": "Protokół bez uwag"
       }
+    },
+    {
+      "id": "woda",
+      "name": "Woda gruntowa",
+      "maxHealth": 8,
+      "minDamage": 1,
+      "maxDamage": 2,
+      "defense": 0,
+      "sight": 6,
+      "score": 12,
+      "frame": 61,
+      "desc": "Wybija tam, gdzie kopiesz. I obok",
+      "slam": false,
+      "material": "cement",
+      "behaviors": [
+        "splits"
+      ]
+    },
+    {
+      "id": "kamien",
+      "name": "Kamień w wykopie",
+      "maxHealth": 16,
+      "minDamage": 2,
+      "maxDamage": 3,
+      "defense": 3,
+      "sight": 4,
+      "score": 14,
+      "frame": 62,
+      "desc": "Nie ruszy się. Koparka też nie",
+      "slam": false,
+      "material": "cement",
+      "behaviors": [
+        "stationary"
+      ]
+    },
+    {
+      "id": "osuwisko",
+      "name": "Osuwisko skarpy",
+      "maxHealth": 10,
+      "minDamage": 1,
+      "maxDamage": 3,
+      "defense": 1,
+      "sight": 6,
+      "score": 12,
+      "frame": 63,
+      "desc": "Zjeżdża prosto na ciebie",
+      "slam": false,
+      "material": "cement",
+      "behaviors": [
+        "pushes"
+      ]
+    },
+    {
+      "id": "folia",
+      "name": "Dziurawa folia",
+      "maxHealth": 7,
+      "minDamage": 1,
+      "maxDamage": 2,
+      "defense": 0,
+      "sight": 6,
+      "score": 12,
+      "frame": 64,
+      "desc": "Załatana? Tylko tak wygląda",
+      "slam": false,
+      "material": "stal",
+      "behaviors": [
+        "returns"
+      ]
+    },
+    {
+      "id": "krzywy_mur",
+      "name": "Krzywy mur",
+      "maxHealth": 12,
+      "minDamage": 1,
+      "maxDamage": 3,
+      "defense": 2,
+      "sight": 5,
+      "score": 14,
+      "frame": 65,
+      "desc": "Pion? Jaki pion?",
+      "slam": false,
+      "material": "cement",
+      "behaviors": [
+        "stationary",
+        "pushes"
+      ]
+    },
+    {
+      "id": "mostek",
+      "name": "Mostek termiczny",
+      "maxHealth": 7,
+      "minDamage": 1,
+      "maxDamage": 2,
+      "defense": 0,
+      "sight": 8,
+      "score": 14,
+      "frame": 66,
+      "desc": "Ucieka ciepło. I sam ucieka",
+      "slam": false,
+      "material": "stal",
+      "behaviors": [
+        "ranged",
+        "flees"
+      ]
+    },
+    {
+      "id": "ugiecie",
+      "name": "Ugięcie stropu",
+      "maxHealth": 12,
+      "minDamage": 1,
+      "maxDamage": 3,
+      "defense": 1,
+      "sight": 5,
+      "score": 15,
+      "frame": 67,
+      "desc": "Z każdym dniem trochę niżej",
+      "slam": false,
+      "material": "stal",
+      "behaviors": [
+        "stationary",
+        "grows"
+      ]
+    },
+    {
+      "id": "zbrojenie",
+      "name": "Brak zbrojenia",
+      "maxHealth": 10,
+      "minDamage": 2,
+      "maxDamage": 3,
+      "defense": 1,
+      "sight": 6,
+      "score": 14,
+      "frame": 68,
+      "desc": "Beton bez stali pęka na pół",
+      "slam": false,
+      "material": "stal",
+      "behaviors": [
+        "splits"
+      ]
+    },
+    {
+      "id": "papa",
+      "name": "Przeciekająca papa",
+      "maxHealth": 8,
+      "minDamage": 1,
+      "maxDamage": 3,
+      "defense": 0,
+      "sight": 8,
+      "score": 14,
+      "frame": 69,
+      "desc": "Kapie z góry, i to celnie",
+      "slam": false,
+      "material": "drewno",
+      "behaviors": [
+        "ranged"
+      ]
+    },
+    {
+      "id": "rynna",
+      "name": "Zapchana rynna",
+      "maxHealth": 9,
+      "minDamage": 1,
+      "maxDamage": 2,
+      "defense": 0,
+      "sight": 6,
+      "score": 14,
+      "frame": 70,
+      "desc": "Zaraz się przeleje. Na ciebie",
+      "slam": false,
+      "material": "stal",
+      "behaviors": [
+        "explodes"
+      ]
+    },
+    {
+      "id": "pustak",
+      "name": "Pęknięty pustak",
+      "maxHealth": 8,
+      "minDamage": 2,
+      "maxDamage": 3,
+      "defense": 1,
+      "sight": 6,
+      "score": 14,
+      "frame": 71,
+      "desc": "Rozsypie się przy pierwszej okazji",
+      "slam": false,
+      "material": "cement",
+      "behaviors": [
+        "explodes"
+      ]
+    },
+    {
+      "id": "wymiarowka",
+      "name": "Zła wymiarówka",
+      "maxHealth": 10,
+      "minDamage": 1,
+      "maxDamage": 3,
+      "defense": 1,
+      "sight": 6,
+      "score": 15,
+      "frame": 72,
+      "desc": "Im dłużej, tym gorzej pasuje",
+      "slam": false,
+      "material": "drewno",
+      "behaviors": [
+        "grows"
+      ]
+    },
+    {
+      "id": "ramka",
+      "name": "Nieszczelna ramka",
+      "maxHealth": 13,
+      "minDamage": 1,
+      "maxDamage": 3,
+      "defense": 2,
+      "sight": 7,
+      "score": 15,
+      "frame": 73,
+      "desc": "Wieje z każdej szczeliny",
+      "slam": false,
+      "material": "drewno",
+      "behaviors": [
+        "stationary",
+        "ranged"
+      ]
+    },
+    {
+      "id": "przeciag",
+      "name": "Przeciąg",
+      "maxHealth": 8,
+      "minDamage": 1,
+      "maxDamage": 3,
+      "defense": 0,
+      "sight": 8,
+      "score": 14,
+      "frame": 74,
+      "desc": "Drzwi trzaskają same",
+      "slam": false,
+      "material": "drewno",
+      "behaviors": [
+        "pushes",
+        "flees"
+      ]
+    },
+    {
+      "id": "zapowietrzenie",
+      "name": "Zapowietrzenie",
+      "maxHealth": 8,
+      "minDamage": 1,
+      "maxDamage": 3,
+      "defense": 0,
+      "sight": 7,
+      "score": 14,
+      "frame": 75,
+      "desc": "Odpowietrzysz, a ono wraca",
+      "slam": false,
+      "material": "stal",
+      "behaviors": [
+        "flees",
+        "returns"
+      ]
+    },
+    {
+      "id": "uziemienie",
+      "name": "Brak uziemienia",
+      "maxHealth": 9,
+      "minDamage": 2,
+      "maxDamage": 3,
+      "defense": 0,
+      "sight": 7,
+      "score": 15,
+      "frame": 76,
+      "desc": "Dotknij obudowy. Albo nie",
+      "slam": false,
+      "onHit": {
+        "status": "shock",
+        "chancePct": 12,
+        "turns": 1
+      },
+      "material": "stal",
+      "behaviors": [
+        "explodes"
+      ]
+    },
+    {
+      "id": "rysa",
+      "name": "Rysa skurczowa",
+      "maxHealth": 10,
+      "minDamage": 1,
+      "maxDamage": 3,
+      "defense": 1,
+      "sight": 6,
+      "score": 14,
+      "frame": 77,
+      "desc": "Jedna rysa, dwie rysy, dziesięć",
+      "slam": false,
+      "material": "cement",
+      "behaviors": [
+        "splits"
+      ]
+    },
+    {
+      "id": "wilgoc",
+      "name": "Wilgoć w ścianie",
+      "maxHealth": 11,
+      "minDamage": 1,
+      "maxDamage": 2,
+      "defense": 1,
+      "sight": 6,
+      "score": 15,
+      "frame": 78,
+      "desc": "Karmi pleśń i sąsiadów",
+      "slam": false,
+      "onHit": {
+        "status": "poison",
+        "chancePct": 15,
+        "turns": 2
+      },
+      "material": "cement",
+      "behaviors": [
+        "heals"
+      ]
+    },
+    {
+      "id": "odpryski",
+      "name": "Odpryski płytek",
+      "maxHealth": 9,
+      "minDamage": 2,
+      "maxDamage": 3,
+      "defense": 0,
+      "sight": 8,
+      "score": 15,
+      "frame": 79,
+      "desc": "Lecą przy każdym cięciu",
+      "slam": false,
+      "material": "cement",
+      "behaviors": [
+        "ranged"
+      ]
+    },
+    {
+      "id": "poprawki",
+      "name": "Poprawki na odbiorze",
+      "maxHealth": 12,
+      "minDamage": 2,
+      "maxDamage": 4,
+      "defense": 1,
+      "sight": 7,
+      "score": 18,
+      "frame": 80,
+      "desc": "Zamknięte? Inspektor ma inne zdanie",
+      "slam": false,
+      "material": "stal",
+      "behaviors": [
+        "returns"
+      ]
     }
   ],
   "stages": [
     {
       "name": "Fundamenty",
       "enemies": [
+        "woda",
+        "kamien",
         "przeciek",
         "kornik"
       ],
@@ -547,11 +905,26 @@
       "cost": 48
     },
     {
+      "name": "Izolacja fundamentów",
+      "enemies": [
+        "osuwisko",
+        "folia",
+        "woda",
+        "przeciek"
+      ],
+      "count": 5,
+      "hpPct": 98,
+      "dmgBonus": 0,
+      "act": 0,
+      "cost": 22
+    },
+    {
       "name": "Mury parteru",
       "enemies": [
+        "krzywy_mur",
+        "mostek",
         "papierologia",
-        "dostawa",
-        "kornik"
+        "dostawa"
       ],
       "count": 6,
       "hpPct": 100,
@@ -562,9 +935,10 @@
     {
       "name": "Strop",
       "enemies": [
+        "ugiecie",
+        "zbrojenie",
         "dostawa",
-        "budzet",
-        "kornik"
+        "budzet"
       ],
       "count": 6,
       "hpPct": 105,
@@ -576,9 +950,10 @@
     {
       "name": "Dach",
       "enemies": [
+        "papa",
+        "rynna",
         "ulewa",
-        "kornik",
-        "przeciek"
+        "kornik"
       ],
       "count": 8,
       "hpPct": 110,
@@ -587,11 +962,26 @@
       "cost": 55
     },
     {
+      "name": "Ściany działowe",
+      "enemies": [
+        "pustak",
+        "wymiarowka",
+        "papierologia",
+        "dostawa"
+      ],
+      "count": 7,
+      "hpPct": 112,
+      "dmgBonus": 1,
+      "act": 1,
+      "cost": 30
+    },
+    {
       "name": "Okna i drzwi",
       "enemies": [
-        "dostawa",
+        "ramka",
+        "przeciag",
         "ulewa",
-        "papierologia"
+        "dostawa"
       ],
       "count": 8,
       "hpPct": 115,
@@ -603,9 +993,10 @@
     {
       "name": "Instalacje",
       "enemies": [
+        "zapowietrzenie",
+        "uziemienie",
         "zwarcie",
-        "przeciek",
-        "plesn"
+        "przeciek"
       ],
       "count": 8,
       "hpPct": 120,
@@ -617,9 +1008,10 @@
     {
       "name": "Tynki i wylewki",
       "enemies": [
+        "rysa",
+        "wilgoc",
         "plesn",
-        "przeciek",
-        "zwarcie"
+        "przeciek"
       ],
       "count": 9,
       "hpPct": 126,
@@ -630,6 +1022,8 @@
     {
       "name": "Wykończenie i odbiór",
       "enemies": [
+        "odpryski",
+        "poprawki",
         "plesn",
         "budzet"
       ],
@@ -659,7 +1053,7 @@
     {
       "id": "trudny",
       "name": "Trudny",
-      "hpPct": 125,
+      "hpPct": 130,
       "dmgBonus": 0,
       "scorePct": 150
     }
@@ -936,7 +1330,11 @@
     "stages": [
       {
         "from": "Anna Nowak",
-        "text": "Działka nasza! Liczę na|mocne fundamenty. Uważaj|na wilgoć w wykopie."
+        "text": "Działka nasza! Liczę na|mocne fundamenty. Uważaj|na wodę i błoto w dole."
+      },
+      {
+        "from": "Kierownik Marek",
+        "text": "Fundament stoi. Teraz|folia i izolacja - bez|dziur, bo woda wróci."
       },
       {
         "from": "Kierownik Marek",
@@ -949,6 +1347,10 @@
       {
         "from": "Anna Nowak",
         "text": "Prognoza: ulewa. Zdążysz|z dachem przed deszczem?|Kornik też nie śpi."
+      },
+      {
+        "from": "Anna Nowak",
+        "text": "Dach jest! Teraz ściany|działowe - chcę duży|salon i małą spiżarnię."
       },
       {
         "from": "Kierownik Marek",
@@ -1164,17 +1566,38 @@
     {
       "name": "Stan surowy",
       "bonusPerStage": 10,
-      "bonusPerKill": 2
+      "bonusPerKill": 2,
+      "mechanic": {
+        "effect": "mud",
+        "name": "Błoto w wykopie",
+        "short": "Błoto",
+        "info": "Wejście w błoto = tura",
+        "value": 7
+      }
     },
     {
       "name": "Pod dachem",
       "bonusPerStage": 10,
-      "bonusPerKill": 2
+      "bonusPerKill": 2,
+      "mechanic": {
+        "effect": "gust",
+        "name": "Porywy na wysokości",
+        "short": "Porywy",
+        "info": "Poryw co 6 tur spycha",
+        "value": 6
+      }
     },
     {
       "name": "Wykończenie",
       "bonusPerStage": 10,
-      "bonusPerKill": 2
+      "bonusPerKill": 2,
+      "mechanic": {
+        "effect": "dust",
+        "name": "Pył z szlifowania",
+        "short": "Pył",
+        "info": "Pył: widzenie -2",
+        "value": 2
+      }
     }
   ],
   "slam": {
@@ -1288,7 +1711,10 @@
     "Co 4 tury czekania (B) +1 HP",
     "Między etapami wybierz ścieżkę",
     "Drewno: Załataj drogę problemom",
-    "Stal: Kładka nad kałużami"
+    "Stal: Kładka nad kałużami",
+    "Czerwone pola po wybuchu: odejdź",
+    "Błoto w akcie I kosztuje turę",
+    "START na wyborze: opis statystyk"
   ],
   "contracts": [
     {
@@ -1505,7 +1931,9 @@
           1,
           2,
           3,
-          4
+          4,
+          5,
+          6
         ]
       },
       {
@@ -1518,10 +1946,11 @@
         "weight": 14,
         "bad": true,
         "stages": [
-          1,
           2,
           3,
-          4
+          4,
+          5,
+          6
         ]
       },
       {
@@ -1538,7 +1967,9 @@
           1,
           2,
           3,
-          4
+          4,
+          5,
+          6
         ]
       }
     ]
@@ -2064,5 +2495,32 @@
   },
   "passives": {
     "pushChancePct": 20
+  },
+  "behaviorParams": {
+    "rangedReach": 3,
+    "splitHpPct": 50,
+    "healValue": 3,
+    "healEvery": 2,
+    "blastDamage": 4,
+    "blastRadius": 1,
+    "blastDelay": 2,
+    "growEvery": 4,
+    "growHp": 2,
+    "growMax": 4,
+    "fleeCooldown": 3,
+    "returnTurns": 4,
+    "returnHpPct": 50,
+    "pushCooldown": 3
+  },
+  "behaviorNames": {
+    "ranged": "strzela z dystansu",
+    "splits": "dzieli się",
+    "heals": "łata innych",
+    "explodes": "wybucha",
+    "grows": "rośnie",
+    "flees": "ucieka",
+    "stationary": "nie rusza się",
+    "pushes": "odpycha",
+    "returns": "wraca raz"
   }
 }

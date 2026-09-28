@@ -77,7 +77,23 @@ namespace core
         int16_t reward_cash = 0;      // premia (zł) za pokonanie bossa
         const char* reward_title = "";   // baner nagrody, np. "Protokół bez uwag"
         int8_t material = -1;         // materiał z usuniętego problemu (data::materials), -1 = losowy
+        uint16_t tags = 0;            // v0.21.49: zachowania (bity core::behavior), łączone dowolnie
     };
+
+    // Zachowania problemów budowy (pole "behaviors" wroga; parametry w data::behavior_*).
+    enum behavior : uint16_t
+    {
+        tag_ranged = 1,        // strzela z odległości 2-3 w linii (prosto albo po skosie)
+        tag_splits = 2,        // po usunięciu dzieli się na dwa słabsze
+        tag_heals = 4,         // łata rannych sąsiadów (co kilka tur)
+        tag_explodes = 8,      // po usunięciu wybucha: czerwone pola wokół, tura na zejście
+        tag_grows = 16,        // rośnie z czasem: +HP, co 2 stopnie +1 obrażeń
+        tag_flees = 32,        // trzyma dystans: obok bohatera odskakuje (co kilka tur)
+        tag_stationary = 64,   // nie rusza się (za to twardy)
+        tag_pushes = 128,      // cios odpycha bohatera o pole
+        tag_returns = 256      // raz wraca po usunięciu (po kilku turach, z połową HP)
+    };
+    constexpr int behaviors_count = 9;
 
     struct stage_def           // etap budowy = piętro lochu
     {
@@ -92,11 +108,20 @@ namespace core
         int16_t cost;          // koszt etapu w tys. zł (harmonogram domu po wygranej)
     };
 
+    // Mechanika aktu (v0.21.49): akt I błoto (wejście kosztuje turę), akt II porywy wiatru (spychają o pole),
+    // akt III pył (mniejsze pole widzenia).
+    enum class act_mechanic : uint8_t { none, mud, gust, dust };
+
     struct act_def             // akt budowy: kilka etapów zakończonych bossem, potem Hurtownia
     {
         const char* name;
         int8_t bonus_per_stage;   // premia (zł) za ukończenie aktu: za każdy etap aktu
         int8_t bonus_per_kill;    // ... i za każdy usunięty problem w akcie
+        act_mechanic mechanic = act_mechanic::none;
+        int8_t mech_value = 0;    // błoto: 1 pole na tyle; porywy: co tyle tur; pył: -widzenie
+        const char* mech_name = "";
+        const char* mech_short = "";
+        const char* mech_info = "";
     };
 
     enum class shop_effect : uint8_t { heal, gear, tool, maxhp, ability, def, thermos };
@@ -218,7 +243,7 @@ namespace core
         int8_t value;             // upał: +tury mocy; mróz: co ile tur problemy stoją; wiatr: -zasięg; deszcz: 1 kałuża na tyle pól
         int8_t weight;            // waga losowania
         bool bad;                 // niekorzystna (z niekorzystnym wydarzeniem na placu się nie łączy)
-        uint8_t stages;           // bitmaska etapów, na których może wypaść
+        uint16_t stages;          // bitmaska etapów, na których może wypaść
     };
 
     // Brygada: najemny fachowiec wzywany raz na etap z telefonu (płatny budżetem budowy).

@@ -32,6 +32,29 @@ Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
   nadal kask, rękawice i kamizelka.
 - Wybór zawodu: pasek portretów przewija się (9 zawodów); zawód z nagrody pokazuje „Za N. wygraną”.
 - „Jak grać” – czwarta strona (Respekt i nagrody). Scenariusze testowe 22–28.
+- **Wrogowie pasujący do etapu (#24):** 20 nowych problemów, każdy etap ma własny zestaw (2 nowe + znajomi):
+  Fundamenty – Woda gruntowa, Kamień w wykopie; Izolacja fundamentów – Osuwisko skarpy, Dziurawa folia; Mury parteru –
+  Krzywy mur, Mostek termiczny; Strop – Ugięcie stropu, Brak zbrojenia; Dach – Przeciekająca papa, Zapchana rynna;
+  Ściany działowe – Pęknięty pustak, Zła wymiarówka; Okna i drzwi – Nieszczelna ramka, Przeciąg; Instalacje –
+  Zapowietrzenie, Brak uziemienia; Tynki i wylewki – Rysa skurczowa, Wilgoć w ścianie; Wykończenie – Odpryski płytek,
+  Poprawki na odbiorze. Zachowania z danych (pole `behaviors`, parametry `behaviorParams`), łączone dowolnie:
+  **strzela z dystansu** (2–3 pola w linii, prosto albo po skosie; iskry lecą do bohatera), **dzieli się** (dwa słabsze
+  z połową HP), **łata innych** (+3 HP rannemu sąsiadowi), **wybucha** (czerwone pola wokół, tura na zejście),
+  **rośnie** (co 4 tury +2 HP, co drugi stopień +1 obrażeń), **ucieka** (odskakuje, gdy stoisz obok), **nie rusza się**
+  (za to twardy), **odpycha** (cios przesuwa o pole, co 3 tury), **wraca raz** (po 4 turach z połową HP). Pixel-art
+  w stylu reszty (klatki 61–100), opisy z humorem w Katalogu usterek, „Cechy: …” na karcie wroga (przytrzymane B,
+  na zmianę z opisem) i w Katalogu. Bot omija czerwone pola wybuchu.
+- **10 etapów i różne akty (#14):** nowe etapy Izolacja fundamentów (akt I) i Ściany działowe (akt II), własne palety
+  i wiadomości. Każdy akt ma własne kafle – akt I ziemia i bloczki betonowe, akt II deski i cegła, akt III płytki
+  i tynk – oraz mechanikę (sekcja `mechanic` aktu): **akt I błoto** (wejście w błoto = stracona tura; Kładka działa
+  też na błoto; bot omija błoto, jeśli się da), **akt II porywy wiatru** (co 6 tur poryw spycha o pole, zapowiedź turę
+  wcześniej, licznik w HUD pod ikoną mocy), **akt III pył** (widzenie -2, pył w powietrzu). Baner na początku aktu,
+  wiersz w zakładce Zadania („Poryw za N t. w lewo”), mechanika na karcie etapu.
+- **Opis statystyk (#19):** na wyborze zawodu START = strona Statystyki (wartość i co daje, np. „SIŁ 5: +2 obrażeń
+  broni”, „SZCZ 2: kryt 11%, unik 4%”) i strona „Jak działają” (wzory: +1 obr. co 2 pkt statystyki broni, -1
+  obrażeń co 2 pkt OBR, kryt 5% +3%/pkt, unik +2%/pkt do 20%, łupy +2%/pkt). W telefonie zakładka Start → A:
+  skąd są premie (zawód, Warsztaty, sprzęt, poziomy, kask, rękawice, kamizelka). „Jak grać” – strony 5 (akty
+  i problemy) i 6 (statystyki). Scenariusze testowe 29–36.
 ### Balans
 v0.21.48 miało z pełnymi Szkoleniami 89% wygranych bota (cel 50–60%). Nie tylko BHP (+1 obrony) i Kurs fachowy (+1
 obrażeń) – bot reaguje mocno na każdą premię, więc Szkolenia są lżejsze: **Szkolenie BHP -2% otrzymanych obrażeń**,
@@ -42,20 +65,27 @@ Dostawy 30, Kurs BHP II i Warsztaty po 40). Tryb inwestora łagodniej: Problemy 
 Kawa ma znaczenie (#17): bot pije średnio 2 kawy na budowę (74% budów), a bez picia kawy wygrywa 20% zamiast 32%
 (z pełnymi Szkoleniami 39% zamiast 57%).
 
-| Wygrane bota (300 przebiegów na zawód) | v0.21.48 (6 zawodów) | v0.21.49 (9 zawodów) |
-|---|---|---|
-| Łatwy | 60% | 61% |
-| Normalny | 30% | 32% |
-| Trudny | 12% | 13% |
-| Normalny, pełne Szkolenia | 89% | 57% |
-| Normalny, pełne Szkolenia + pełny Respekt | – | 74% |
-| Normalny, pełne Szkolenia (i Respekt) + wszystkie modyfikatory | 10% | 10% |
-| Normalny bez picia kawy (bez meta / pełne Szkolenia) | – | 20% / 39% |
+| Wygrane bota (300 przebiegów na zawód) | v0.21.48 (6 zawodów) | v0.21.49 cz. 1 (9 zawodów) | v0.21.49 (10 etapów, nowi wrogowie) |
+|---|---|---|---|
+| Łatwy | 60% | 61% | 58% |
+| Normalny | 30% | 32% | 30% |
+| Trudny | 12% | 13% | 12% |
+| Normalny, pełne Szkolenia | 89% | 57% | 57% |
+| Normalny, pełne Szkolenia + pełny Respekt | – | 74% | 71% |
+| Normalny, pełne Szkolenia (i Respekt) + wszystkie modyfikatory | 10% | 10% | 10% |
+| Normalny bez picia kawy (bez meta / pełne Szkolenia) | – | 20% / 39% | 17% / 38% |
+
+Po dodaniu 2 etapów, nowych wrogów i mechanik aktów: odepchnięcie działa co 3 tury (bez tego Krzywy mur zamykał
+walkę wręcz – bot ginął na Murach parteru), Krzywy mur i Mostek termiczny słabsze, Trudny: problemy 130% HP (było 125%).
+Bot szuka drogi z kosztem (błoto droższe) – 0 utkniętych przebiegów na Normalnym. Kawa: bot pije średnio 2,6 kawy
+na budowę (80% budów), bez kawy wygrywa 17% zamiast 30%. Etapy 1–2 dalej bez śmierci bota.
 
 ### Zmiany
-- Profil w SRAM v8 (PBRL008, 152 bajty: Respekt, rangi, nagrody, wygrane i stawki zawodów 8–11) – starsze profile
-  przenoszą się bez utraty danych (nagrody za wygrane, zwrot doświadczenia za zmienione Szkolenia).
-- Nowy zapis budowy (PBRUN08) – przerwana budowa z v0.21.48 nie wznowi się.
+- Profil w SRAM v9 (PBRL009, 156 bajtów: v8 – Respekt, rangi, nagrody, wygrane i stawki zawodów 8–11; v9 – Katalog
+  usterek dla problemów 17–48) – starsze profile przenoszą się bez utraty danych (nagrody za wygrane, zwrot
+  doświadczenia za zmienione Szkolenia).
+- Nowy zapis budowy (PBRUN09) – przerwana budowa z v0.21.48 nie wznowi się.
+- Do 16 problemów naraz na etapie (miejsce na podział), harmonogram domu i zakładka Zadania z 10 etapami.
 - Zawody i narzędzia z nagród nie są na sprzedaż w Szkoleniach; ceny brygady i Hurtowni z rabatem Respektu.
 
 ## v0.21.48 – 2026-09-25

@@ -42,6 +42,16 @@
 //  27 - Operator koparki: wytrzymały problem 3 pola w prawo; R = Taran, potem D-pad w prawo = ciosy (czasem odpychają)
 //  28 - nowe narzędzia i sprzęt: obok bohatera (w prawo) skrzynki Młot udarowy i Pistolet do kotew, paczki Buty i Pas;
 //       telefon -> Sprzęt (5 slotów)
+//  29 - strzelcy (etap Mury parteru): Mostek termiczny 3 pola w prawo (strzela i ucieka), Przeciekająca papa 3 pola w dół
+//  30 - dzieli się i wybucha: Woda gruntowa (1 HP) w prawo, Pęknięty pustak (1 HP) w lewo - A w prawo = podział,
+//       D-pad w lewo = wybuch (czerwone pola, tura na zejście)
+//  31 - łata, rośnie, stoi (etap Tynki, akt III - pył): Wilgoć 3 pola w prawo przy rannej Pleśni, Ugięcie stropu 2 w lewo,
+//       Kamień w wykopie 3 w górę
+//  32 - odpycha i wraca: Osuwisko skarpy obok w prawo, Dziurawa folia (1 HP, ogłuszona) w lewo
+//  33 - akt I, błoto (etap Izolacja fundamentów): pole w prawo to błoto (wejście = tura)
+//  34 - akt II, porywy (etap Ściany działowe): poryw za 2 tury (licznik w HUD), B = czekaj
+//  35 - akt III, pył (etap Tynki i wylewki): mniejsze pole widzenia, pył w powietrzu, płytki i tynk
+//  36 - Katalog usterek: wszystkie problemy znane (tytuł -> SELECT -> Katalog, zachowania pod listą)
 #include "core.h"
 #include "meta.h"
 
@@ -111,6 +121,7 @@ namespace debug_scenario
             p.respect_ranks[0] = 1; p.respect_ranks[5] = 2; p.respect_ranks[8] = 3; p.respect_ranks[12] = 1;
         }
         if(scenario == 23) { p.respect = 12; p.respect_total = 12; }
+        if(scenario == 36) { p.catalog = 0xFFFF; p.catalog_hi = 0xFFFFFFFFu; }
         if(scenario == 24) { p.wins = 0; p.rewards = 0; p.respect = 30; }
         if(scenario == 16)
         {
@@ -392,6 +403,57 @@ namespace debug_scenario
                 g.enemies_count = 0;
                 break;
             }
+            case 29:
+                g.start_stage(2);
+                g.enemies_count = 0;
+                clear_area(g, -1, -1, 4, 4);
+                place_at(g, data::enemy_mostek, 3, 0, 0);
+                place_at(g, data::enemy_papa, 0, 3, 0);
+                break;
+            case 30:
+                g.enemies_count = 0;
+                clear_area(g, -3, -2, 3, 2);
+                place_at(g, data::enemy_woda, 1, 0, 6);
+                place_at(g, data::enemy_pustak, -1, 0, 6);
+                for(int i = 0; i < g.enemies_count; ++i) g.enemies[i].hp = 1;
+                break;
+            case 31:
+                g.start_stage(8);
+                g.enemies_count = 0;
+                clear_area(g, -3, -3, 4, 3);
+                place_at(g, data::enemy_wilgoc, 3, 0, 0);
+                place_at(g, data::enemy_plesn, 3, 2, 40);
+                if(g.enemies_count > 1) g.enemies[1].hp = int16_t(g.enemies[1].max_hp - 7);
+                place_at(g, data::enemy_ugiecie, -2, 0, 0);
+                place_at(g, data::enemy_kamien, 0, -3, 0);
+                break;
+            case 32:
+                g.enemies_count = 0;
+                clear_area(g, -2, -1, 3, 1);
+                place_at(g, data::enemy_osuwisko, 1, 0, 0);
+                place_at(g, data::enemy_folia, -1, 0, 8);
+                if(g.enemies_count > 1) g.enemies[1].hp = 1;
+                break;
+            case 33:
+            {
+                g.start_stage(1);
+                g.enemies_count = 0;
+                int best = 999, hx = g.hero.x, hy = g.hero.y;
+                for(int y = 1; y < core::map_h - 1; ++y)   // najbliższe błoto z wolnym polem po lewej
+                    for(int x = 2; x < core::map_w - 1; ++x)
+                        if(g.mud(x, y) && g.lv.at(x - 1, y) == core::tile::floor && ! g.mud(x - 1, y) && core::cheb(x, y, hx, hy) < best)
+                        { best = core::cheb(x, y, hx, hy); g.hero.x = int8_t(x - 1); g.hero.y = int8_t(y); }
+                break;
+            }
+            case 34:
+                g.start_stage(5);
+                g.enemies_count = 0;
+                g.stage_start_turn = g.turns - (data::acts[1].mech_value - 2);   // poryw za 2 tury
+                break;
+            case 35:
+                g.start_stage(8);
+                for(int i = 0; i < g.enemies_count; ++i) g.enemies[i].stun = 60;
+                break;
             case 21:
             {
                 g.hero.hp = 1;

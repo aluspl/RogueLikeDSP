@@ -3,9 +3,9 @@
 Marketingowe demo roguelike na Game Boy Advance / emulatory (Miyoo, mGBA). Zbudowane na rdzeniu logiki
 przeniesionym z LifeLike (folder `../GODOT`): generator map z seedem, tury, walka, AI wrogów.
 
-Zbuduj dom w 8 etapach: **Fundamenty → Mury parteru → Strop → Dach → Okna i drzwi → Instalacje → Tynki i wylewki → Wykończenie i odbiór**.
-Pokonaj „problemy budowy” (Przeciek, Zwarcie, Pleśń, Kornik, Papierologia, Opóźniona dostawa, Ulewa,
-Przekroczony budżet) i bossów (Zepsuta Betoniarka, Nawałnica, Inspekcja Pracy, **Nieprzekraczalny Termin**). Na końcu ekran z kodem QR do planbudowlany.online.
+Zbuduj dom w 10 etapach: **Fundamenty → Izolacja fundamentów → Mury parteru → Strop → Dach → Ściany działowe → Okna
+i drzwi → Instalacje → Tynki i wylewki → Wykończenie i odbiór**. Pokonaj „problemy budowy” (32 rodzaje – każdy etap ma
+własne, np. Woda gruntowa, Krzywy mur, Przeciekająca papa, Zapowietrzenie, Poprawki na odbiorze) i bossów (Zepsuta Betoniarka, Nawałnica, Inspekcja Pracy, **Nieprzekraczalny Termin**). Na końcu ekran z kodem QR do planbudowlany.online.
 
 ![ekran tytułowy](docs/preview_title.png) ![ekran końcowy z QR](docs/preview_end.png)
 
@@ -49,8 +49,28 @@ zablokowanego zawodu – gdzie go odblokować (Koszty w telefonie profilu) i ile
 Powiadomienia push jak w aplikacji: awans, nowe narzędzie, drop, moc gotowa, zaliczony etap, pojawienie się bossa („Przypisano Ci usterkę”).
 Mgła wojny: widzisz na 7 pól (ściany zasłaniają), odkryte pola zostają przyciemnione, wrogowie poza polem widzenia są ukryci.
 
+## Problemy etapów i ich zachowania
+Każdy etap ma w puli 2 własne problemy (i 2 znane wcześniej). Zachowania są w danych (`behaviors` wroga, parametry
+`behaviorParams`, nazwy `behaviorNames`) i łączą się dowolnie: strzela z dystansu (2–3 pola w linii prosto albo po
+skosie), dzieli się (po usunięciu dwa słabsze z połową HP), łata innych (+3 HP rannemu w zasięgu 2), wybucha (czerwone
+pola wokół, tura na zejście), rośnie (co 4 tury +2 HP, co drugi stopień +1 obrażeń), ucieka (odskakuje, gdy stoisz
+obok), nie rusza się (za to twardy), odpycha (cios przesuwa o pole, co 3 tury), wraca raz (po 4 turach z połową HP).
+Na karcie wroga (przytrzymane B) i w Katalogu usterek: „Cechy: …”.
+
+## Mechaniki aktów
+Każdy akt ma własne kafle (akt I ziemia i bloczki betonowe, akt II deski i cegła, akt III płytki i tynk) i mechanikę
+(`mechanic` aktu): **akt I błoto** – wejście w błoto kosztuje dodatkową turę (Kładka działa też na błoto), **akt II
+porywy wiatru** – co 6 tur poryw spycha bohatera o pole (zapowiedź w dzienniku turę wcześniej, licznik pod ikoną mocy),
+**akt III pył** – widzenie -2. Ikona w HUD pod ikoną mocy, baner na początku aktu, wiersz w zakładce Zadania.
+
+## Statystyki
+Na wyborze zawodu START otwiera opis statystyk (wartość i co daje), A zmienia stronę na wzory; w telefonie zakładka
+Start → A pokazuje, skąd są premie. Wzory: obrażenia = rzut broni + statystyka broni / 2 + premie - obrona wroga / 2
+(SIŁ/ZRĘ/INT: +1 obrażeń co 2 pkt, tylko statystyka broni); OBR: -1 otrzymanych obrażeń co 2 pkt; SZCZ: kryt 5% +3%/pkt,
+unik 2%/pkt (maks. 20%), łupy +2% szansy/pkt i lepsza jakość. „Jak grać” ma 6 stron (5 – akty i problemy, 6 – statystyki).
+
 ## Akty i bossowie
-Etapy są pogrupowane w akty (`data/game.json`: `acts`, pole `act` etapu); każdy akt kończy się bossem:
+Etapy są pogrupowane w akty (`data/game.json`: `acts`, pole `act` etapu; akt I 4 etapy, akt II 3, akt III 3); każdy akt kończy się bossem:
 Akt I Stan surowy – **Zepsuta Betoniarka**, Akt II Pod dachem – **Nawałnica**, Akt III Wykończenie – **Nieprzekraczalny Termin**.
 W środku aktu III (etap Instalacje) czeka **Inspekcja Pracy** – kontrola BHP bez zapowiedzi (podkładka z protokołem
 i pieczątką). Etap z bossem nie ma schodów: kończy go pokonanie bossa.
@@ -95,7 +115,7 @@ Teksty są w `data/game.json` (`story`).
 - **Nagrody za odbiór** (sekcja `rewards`, jak w Slay the Spire) – każda wygrana odblokowuje kolejną: narzędzia
   (Młot udarowy, Pistolet do kotew), sprzęt (buty, pas), zawody (Dekarz, Tynkarz, Operator koparki), dalej Akt 0
   „wkrótce”. Strona Nagrody (Koszty → SELECT → SELECT) pokazuje, co odebrane i za którą wygraną następna.
-- **Katalog usterek** - pokonane rodzaje problemów z opisami.
+- **Katalog usterek** - pokonane rodzaje problemów (32) z opisami i zachowaniami („Cechy: …”).
 - **Osiedle** - dom za każdą wygraną budowę, wielkość zależy od wyniku.
 - SELECT na tytule: telefon profilu (Odznaki/Zlecenia/Pamiątki, Katalog, Osiedle, Zespół, Koszty).
 
@@ -155,7 +175,8 @@ Zadania telefonu. Teksty i wartości: `siteEvents` w `data/game.json`.
   +1 szczęścia, Warsztaty: +1 do statystyki broni zawodu), więcej znajdziek,
   nowe zawody, narzędzia, poziom Trudny.
 - Profil (rekord, doświadczenie, zakupy, odznaki, liczniki zleceń, pamiątki, brygada, tryb inwestora) zapisuje się
-  w SRAM (format v8, z Respektem i nagrodami za odbiór); starsze zapisy (v1-v7) są przenoszone bez utraty danych.
+  w SRAM (format v9, z Respektem, nagrodami za odbiór i Katalogiem dla 48 rodzajów problemów); starsze zapisy (v1-v8)
+  są przenoszone bez utraty danych.
 - Liczniki zleceń trafiają do profilu na końcu etapu; profil pamięta, ile z bieżącej budowy już przeniesiono, więc
   wznowienie budowy po wyłączeniu konsoli nie liczy etapu drugi raz.
 - Harmonogram między etapami pokazuje radę kierownika (sterowanie i mechaniki; lista `tips` w `data/game.json`).
@@ -188,7 +209,8 @@ sprzęt, stany, porównanie sprzętu, termos, kryt i unik, statystyki (9), upraw
 wydarzenia na placu (12), Inspekcja Pracy (13), pogoda (14), brygada (15), tryb inwestora (16), wybór ścieżki (17),
 materiały, naprawy i awans (18), codzienna budowa (19), wygrana z harmonogramem domu (20), porażka (21), sklep Respektu
 i nagrody (22), Respekt za etap (23), nagroda po wygranej (24), Dekarz (25), Tynkarz (26), Operator koparki (27), nowe
-narzędzia i sprzęt (28)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
+narzędzia i sprzęt (28), strzelcy (29), podział i wybuch (30), łatanie, wzrost i stanie (31), odpychanie i powrót
+(32), błoto (33), porywy (34), pył (35), pełny Katalog (36)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
 ```bash
 make TARGET=scn1 BUILD=build_scn1 USERFLAGS="-DPB_SCENARIO=1" BUTANO_PATH=...
 ROM=scn1.gba tools/playtest/run.sh skrypt.txt /tmp/zrzuty --fresh
@@ -205,7 +227,7 @@ tools/gen_data.py     JSON -> include/game_data.h
 tools/make_assets.py  proceduralne grafiki: font PL 8x16, sprite'y, kafelki+palety etapów, tytuł, ekran z QR
 assets_src/pb_logo.svg  znak PlanBudowlany
 include/core.h        logika gry (czyste C++, bez Butano) - testowalna na PC
-include/meta.h        profil SRAM (v8), Respekt, nagrody za odbiór, codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
+include/meta.h        profil SRAM (v9), Respekt, nagrody za odbiór, codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
 src/main.cpp          warstwa GBA: sceny, mapa, kamera, HUD, SRAM
 ```
 Grafiki są placeholderami generowanymi kodem: podmień pliki w `graphics/` pixel-artem z Aseprite
