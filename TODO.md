@@ -1,6 +1,7 @@
 # TODO – PlanBudowlany RogueLike
 
-Stan na 2026-09-28: GBA v0.21.49 wydane, **v0.21.50 w toku** (cz. 1: rozpiska obrażeń broni #26 – GBA i Godot),
+Stan na 2026-09-28: GBA v0.21.49 wydane, **v0.21.50 w toku** (cz. 1: rozpiska obrażeń broni #26; cz. 2: premie po etapie #27, elity #28, kombinacje
+stanów #29 – GBA i Godot; balans: Łatwy 54%, Normalny 30%, Trudny 11%, Szkolenia 52%, + Respekt 68%, z Aktem 0 68%),
 wcześniej v0.21.49 (Respekt, nagrody za odbiór, nowe zawody, balans
 Szkoleń; cz. 2: 10 etapów, wrogowie etapów z zachowaniami, mechaniki aktów, opis statystyk; cz. 3: Akt 0 „Papierologia”,
 samouczek menu), Godot – logika zgodna z v0.21.49, oprawa z GBA, wersja mobilna na iPhonie. Opis projektów: [`README.md`](README.md).
@@ -94,9 +95,9 @@ dlatego premie bojowe są małe – cel „pełne Szkolenia + pełny Respekt 65�
 | # | Pomysł | Część | GODOT (MOBILE) | GBA |
 |---|---|---|---|---|
 | 26 | Rozpiska obrażeń broni (jak BG3): od–do, kryt, wpływ statystyk, porównanie, karta wroga – v0.21.50 cz. 1 | 1 | ✅ | ✅ |
-| 27 | Premia 1 z 3 po etapie (rzadkość, znaczniki, synergie, premie zawodów) – dawne #21 | 2 | ⬜ | ⬜ |
-| 28 | Wzmocnione problemy (elity) z cechą i lepszą nagrodą | 2 | ⬜ | ⬜ |
-| 29 | Kombinacje stanów (mokry + prąd = porażenie, pył + iskra = wybuch) | 2 | ⬜ | ⬜ |
+| 27 | Premia 1 z 3 po etapie (rzadkość, znaczniki, synergie, premie zawodów) – dawne #21 – v0.21.50 cz. 2 | 2 | ✅ | ✅ |
+| 28 | Wzmocnione problemy (elity) z cechą i lepszą nagrodą – v0.21.50 cz. 2 | 2 | ✅ | ✅ |
+| 29 | Kombinacje stanów (mokry + prąd = porażenie, pył + iskra = wybuch) – v0.21.50 cz. 2 | 2 | ✅ | ✅ |
 | 30 | Wydarzenia z wyborem w trakcie etapu (SMS: ryzyko/nagroda) | 3 | ⬜ | ⬜ |
 | 31 | Ulepszanie narzędzia w trakcie budowy (Hurtownia, materiały) | 3 | ⬜ | ⬜ |
 | 32 | Ukryte pomieszczenia (klucz, magazyn ze skrzynią) | 3 | ⬜ | ⬜ |

@@ -440,7 +440,7 @@ inline constexpr core::respect_def respect[] = {   // Respekt: stałe ulepszenia
     { "Rabat", "Hurtownia taniej", core::respect_effect::shop_pct, 5, { 5, 10, 15, 20, 25 }, { 5, 10, 16, 25, 36 } },
     { "Zapasy", "Więcej materiałów", core::respect_effect::mats_pct, 5, { 10, 20, 30, 40, 50 }, { 5, 10, 16, 25, 36 } },
     { "Druga szansa", "Raz na budowę: 1 HP zamiast końca", core::respect_effect::second_chance, 1, { 1, 0, 0, 0, 0 }, { 120, 0, 0, 0, 0 } },
-    { "Druga oferta", "Darmowe losowanie premii", core::respect_effect::reroll, 1, { 1, 0, 0, 0, 0 }, { 30, 0, 0, 0, 0 } },
+    { "Druga oferta", "Darmowe losowanie", core::respect_effect::reroll, 1, { 1, 0, 0, 0, 0 }, { 30, 0, 0, 0, 0 } },
 };
 inline constexpr int push_chance_pct = 20;   // Operator koparki: cios wręcz odpycha
 inline constexpr int respect_count = 16;
@@ -572,7 +572,7 @@ inline constexpr int elite_gear_min = 1;
 
 inline constexpr core::combo_def combos[] = {   // kombinacje stanów (kolejność = core::combo_effect)
     { "Porażenie", "Mokry + prąd!", "Prąd w mokry: +3 i na mokrych obok", "Ty mokry + prąd: +2 i tracisz turę", core::combo_effect::shock_area, 3, 1, 2 },
-    { "Wybuch pyłu", "Pył + iskra!", "Iskra w zapylony: wybuch 4 wokół", "Wybuch w pyle (akt III): +2 dla Ciebie", core::combo_effect::dust_blast, 4, 1, 2 },
+    { "Wybuch pyłu", "Pył + iskra!", "Iskra w zapylony: wybuch 4 wokół", "Wybuch w pyle: +2 dla Ciebie", core::combo_effect::dust_blast, 4, 1, 2 },
     { "Pęknięcie", "Zamróz + uderzenie!", "Cios wręcz w zmrożony: +50%", "", core::combo_effect::crack, 50, 0, 0 },
 };
 inline constexpr const char* combo_sources[] = { "Mokry: kałuże, Deszcz, woda, Zawór", "Prąd: Próbnik, Łańcuch, Zwarcie", "Pył: akt III; iskra: Szlifierka", "Zamróz: Mróz, Suchy lód" };   // Jak grać: skąd stany

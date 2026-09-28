@@ -2748,7 +2748,7 @@
       {
         "id": "oferta",
         "name": "Druga oferta",
-        "desc": "Darmowe losowanie premii",
+        "desc": "Darmowe losowanie",
         "effect": "reroll",
         "values": [
           1
@@ -3695,7 +3695,7 @@
         "info": "Iskra w zapylony: wybuch 4 wokół",
         "value": 4,
         "radius": 1,
-        "hero": "Wybuch w pyle (akt III): +2 dla Ciebie",
+        "hero": "Wybuch w pyle: +2 dla Ciebie",
         "heroValue": 2
       },
       {

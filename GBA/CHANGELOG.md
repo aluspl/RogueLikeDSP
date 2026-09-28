@@ -21,6 +21,65 @@ Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 - **Karta problemu** (przytrzymane B): „Zadasz 11-14 (kryt 22-28), on Tobie 1” – po obronie w obie strony i procentach
   (za długie: osobno z unikiem), OBR problemu w pierwszej linii.
 - „Jak grać” – strona 7 „Obrażenia” (sekcja `damageHelp` w `data/game.json`, wspólna z Godotem). Scenariusz 42.
+- **Premia 1 z 3 po etapie (#27, jak w Hades / Slay the Spire, cz. 2):** po każdym zaliczonym etapie (przed
+  Hurtownią i harmonogramem, jeden ciąg ekranów) wybierasz 1 z 3 premii na bieżącą budowę. 41 premii w danych
+  (sekcja `boons`): 30 ogólnych i 11 premii zawodów (każdy zawód 1–2, np. Twarda odprawa – Odprawa ogłusza +1 t.,
+  Gruba ścianka, Pełny magazynek, Mocny łańcuch, Mocny strumień, Szybka wirówka, Długa rynna, Gęsty tynk, Ciężka
+  łyżka). Rzadkość **zwykła / rzadka / legendarna** (wagi 70/24/6, każdy punkt SZCZ przesuwa trochę ku rzadszym),
+  znaczniki **Woda, Prąd, Beton, BHP, Szczęście, Kawa, Brygada, Materiały, Iskra**. **Synergie** (2+ premie z tym
+  samym znacznikiem, baner „Synergia: …”): Przepięcie (woda + prąd – ciosy z prądem, porażenie dalej), Zbrojenie
+  (beton – +1 OBR za każdą premię Beton), Espresso (kawa ładuje moc -3 t.), Pełne BHP (bez zatrucia i porażenia),
+  Fart (+2 SZCZ), Stała ekipa (brygada -50%), Magazyn (materiały 2x częściej), Iskrzenie (wybuch pyłu +3 i szerzej).
+  Raz na budowę można wylosować ofertę jeszcze raz za 25 zł; nowe ulepszenie Respektu **Druga oferta** daje darmowe
+  losowanie. Oferta pochodzi z osobnego generatora (seed budowy, etap, losowanie) – ten sam seed = te same premie.
+  Ekran wyboru: 3 karty w kolorze rzadkości, znaczniki, znacznik „Synergia!”, góra/dół i A, SELECT = losuj. Wybrane
+  premie z opisami i aktywne synergie są w telefonie (Sprzęt → góra = strona Premie), premie do ciosu mają w rozpisce
+  obrażeń własny wiersz „Premie etapów: +2, +6%, kryt +4%”.
+- **Elity (#28):** część problemów (akt I 7%, akt II 11%, akt III 15%, Akt 0 5%; Łatwy -3, Trudny +5, NG+ +4 pkt)
+  pojawia się wzmocniona: złota ramka, przedrostek nazwy zgodny z rodzajem („Zbrojony Przeciek”, „Uparta Pleśń”,
+  „Szybkie Zwarcie”), +50% HP, +1 obrażeń i jedna cecha – **Tarcza** (+4 OBR – rozpiska i „Zadasz” na karcie liczą
+  z nią), **Szybki** (2 kroki na turę), **Regeneracja** (+1 HP co turę), **Wybuchowy** (wybucha po usunięciu),
+  **Wzywa pomoc** (przy 50% HP raz wzywa słabszy problem). Nagroda: pewny drop (paczka sprzętu co najmniej solidna),
+  2 materiały i Respekt +1. Sekcja `elites`.
+- **Kombinacje stanów (#29):** problemy i bohater mają stany z otoczenia – **mokry** (kałuże w Deszczu, problemy
+  wodne jak Przeciek czy Ulewa, Zawór Hydraulika, premia Wąż ogrodowy), **zapylony** (akt III), **zmrożony** (Mróz,
+  premia Suchy lód) – a ciosy żywioł: **prąd** (Próbnik, Łańcuch, premia Przedłużacz; po stronie problemów Zwarcie,
+  Brak uziemienia, Kolizja z kablem), **iskra** (Szlifierka, Pistolet do kotew, Wirówka, premia Krzesiwo),
+  **uderzenie** (cios wręcz). Kombinacje: **Mokry + prąd = Porażenie** (+3 celowi i mokrym obok), **Pył + iskra =
+  Wybuch pyłu** (4 wokół celu, pył znika), **Zamróz + uderzenie = Pęknięcie** (+50% ciosu). Na bohaterze: mokry
+  (nowy stan „Mokry”) i trafiony prądem – +2 i tracisz turę; wybuch w pyle aktu III +2. Ikony stanów nad problemami,
+  napis „Mokry + prąd!” przy kombinacji, stany na karcie problemu, ikona Mokry w HUD. „Jak grać” ma 10 stron (nowe:
+  Kombinacje, Skąd stany, Premie i elity). Sekcja `combos`, żywioły broni i problemów (`element`), rodzaj nazwy
+  problemu (`gender`). Scenariusze testowe 43–51 (oferty każdej rzadkości, synergia, lista premii, elity, każda
+  kombinacja, mokry bohater). Godot: te same ekrany (sceny `boon-*`, `elite-*`, `combo-*`, `help-combos`).
+
+### Balans
+Premie po etapie są mocne (bot bez nich: Normalny 1%, pełne Szkolenia 8%), więc problemy rosną z etapem: HP etapów
+budowy +4 pkt proc. za każdy kolejny etap (Fundamenty 95% … Wykończenie 168%), obrażenia +1 od Stropu i kolejne +1 od
+Okien i drzwi, etapy Aktu 0 +20% HP, Trudny 140% HP (było 130%). Premie osłabione przed balansem (+1 obrażeń tylko
+w rzadkich, max HP +4/+8, procenty 6–10%). Nagroda za elitę to pewny drop, nie zawsze sprzęt (inaczej elity
+ułatwiały grę o 10 pkt). Bot wybiera premię prostą kolejnością (obrażenia, %, OBR, HP, moc…, rzadsza wyżej,
++20 za nową synergię) i losuje ponownie tylko za darmo przy samych zwykłych. Kawa ma znaczenie: bot pije średnio
+2,75 kawy na budowę (80% budów), bez picia kawy wygrywa 20% zamiast 30% (z pełnymi Szkoleniami 36% zamiast 52%).
+Na budowę średnio 6 kombinacji stanów i 2,8 elity (Normalny, bez meta).
+
+| Wygrane bota (300 przebiegów na zawód) | v0.21.49 | v0.21.50 (premie, elity, kombinacje) |
+|---|---|---|
+| Łatwy | 58% | 54% |
+| Normalny | 30% | 30% |
+| Trudny | 12% | 11% |
+| Normalny, pełne Szkolenia | 57% | 52% |
+| Normalny, pełne Szkolenia + pełny Respekt | 71% | 68% |
+| Normalny, pełne Szkolenia (i Respekt) + wszystkie modyfikatory | 10% | 14% |
+| Normalny bez picia kawy (bez meta / pełne Szkolenia) | 17% / 38% | 20% / 36% |
+| Normalny, pełne Szkolenia + pełny Respekt + Akt 0 (wszystkie nagrody) | 66% | 68% |
+| Normalny bez premii po etapie (bez meta / pełne Szkolenia) | – | 1% / 8% |
+
+### Zmiany
+- Nowy zapis budowy (PBRUN11) – przerwana budowa z wcześniejszej wersji nie wznowi się. Profil bez zmian (PBRL010,
+  160 bajtów; Druga oferta to 16. ranga Respektu w istniejącej tablicy).
+- Karta etapu pokazuje wyższy procent HP problemów na późnych etapach; 3 nowe rady kierownika (premie, mokry + prąd,
+  złota ramka elity).
 
 ## v0.21.49 – 2026-09-28
 ### Nowe
