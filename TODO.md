@@ -88,6 +88,21 @@ dlatego premie bojowe są małe – cel „pełne Szkolenia + pełny Respekt 65�
 - ✅ druga szansa 1×/budowę (1 HP zamiast końca) → Druga szansa (najmocniejsza: +5 pkt wygranych)
 - ⬜ start z przedmiotem – pominięte, na razie nie ma przedmiotów do zabrania (czeka na #18)
 
+## v0.21.50 – regrywalność (cel: wszystko w jednym wydaniu)
+
+| # | Pomysł | Część | GODOT (MOBILE) | GBA |
+|---|---|---|---|---|
+| 26 | Rozpiska obrażeń broni (jak BG3): od–do, kryt, wpływ statystyk, porównanie, karta wroga | 1 | 🔄 | 🔄 |
+| 27 | Premia 1 z 3 po etapie (rzadkość, znaczniki, synergie, premie zawodów) – dawne #21 | 2 | ⬜ | ⬜ |
+| 28 | Wzmocnione problemy (elity) z cechą i lepszą nagrodą | 2 | ⬜ | ⬜ |
+| 29 | Kombinacje stanów (mokry + prąd = porażenie, pył + iskra = wybuch) | 2 | ⬜ | ⬜ |
+| 30 | Wydarzenia z wyborem w trakcie etapu (SMS: ryzyko/nagroda) | 3 | ⬜ | ⬜ |
+| 31 | Ulepszanie narzędzia w trakcie budowy (Hurtownia, materiały) | 3 | ⬜ | ⬜ |
+| 32 | Ukryte pomieszczenia (klucz, magazyn ze skrzynią) | 3 | ⬜ | ⬜ |
+| 33 | Podsumowanie po śmierci (co zabiło, oś czasu, najbliższy cel) | 4 | ⬜ | ⬜ |
+| 34 | Wyzwania tygodnia (seed + zasady, osobne wyniki) | 4 | ⬜ | ⬜ |
+| 35 | Fabuła odkrywana z kolejnymi budowami (SMS-y, Osiedle) | 4 | ⬜ | ⬜ |
+
 ## Zgodność funkcji
 
 | Funkcja | GODOT (MOBILE) | GBA |
