@@ -198,7 +198,7 @@ public class PathsMaterialsDailyTests
         var bytes = v6.ToBytes();
         for (var i = Profile.V6Size; i < bytes.Length; i++) bytes[i] = 0xEE;
         var p = Profile.FromBytes(bytes);
-        Assert.True(Meta.ProfileFix(D, p) && p.MagicIs(Profile.MagicV7) && p.Best == 321 && p.Investor == 5 && p.BestStake[2] == 4);
+        Assert.True(Meta.ProfileFix(D, p) && p.MagicIs(Profile.MagicV8) && p.Best == 321 && p.Investor == 5 && p.BestStake[2] == 4);
         Assert.True(p.DailyY == 0 && p.DailyRuns == 0 && p.DailyWon == 0 && p.DailyDay.All(x => x == 0) && p.DailyScore.All(x => x == 0));
         var c = Meta.NewProfile(D);
         c.Xp = 10;

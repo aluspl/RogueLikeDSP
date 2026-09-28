@@ -50,11 +50,11 @@ public class PerksContractsEventsTests
         var p = Meta.NewProfile(D);
         int iLuck = Array.FindIndex(D.Upgrades, u => u.Effect == UpgradeEffect.Luck);
         int iCraft = Array.FindIndex(D.Upgrades, u => u.Effect == UpgradeEffect.Craft);
-        Assert.True(iLuck >= 0 && iCraft >= 0 && D.Upgrades[iLuck].Levels == 2 && D.Upgrades[iCraft].Levels == 2);
-        p.Levels[iLuck] = 2;
+        Assert.True(iLuck >= 0 && iCraft >= 0 && D.Upgrades[iLuck].Levels >= 1 && D.Upgrades[iCraft].Levels >= 1);
+        p.Levels[iLuck] = 1;
         p.Levels[iCraft] = 1;
         var pm = Meta.Mods(D, p);
-        Assert.True(pm.Luck == 2 && pm.Craft == 1);
+        Assert.True(pm.Luck == D.Upgrades[iLuck].Value && pm.Craft == D.Upgrades[iCraft].Value);
         // co najmniej 3 narzędzia skalowane INT do odblokowania
         var intTools = D.Tools.Count(t => D.Weapons[t.Weapon].ScalesWith == Stat.Intel && t.Cost > 0);
         Assert.True(intTools >= 3);
@@ -222,7 +222,7 @@ public class PerksContractsEventsTests
         var raw = v3.ToBytes();
         for (var i = Profile.V3Size; i < raw.Length; i++) raw[i] = 0xCD; // śmieci
         v3 = Profile.FromBytes(raw);
-        Assert.True(Meta.ProfileFix(D, v3) && v3.MagicIs(Profile.MagicV7));
+        Assert.True(Meta.ProfileFix(D, v3) && v3.MagicIs(Profile.MagicV8));
         Assert.True(v3.Best == 1234 && v3.Runs == 9 && v3.Wins == 4 && v3.Xp == 321 && v3.Levels[0] == 2 && v3.Classes == 0x1F);
         Assert.True(v3.Hard == 1 && v3.Flags == 3 && v3.Tools == 5 && v3.Badges == 0x0123 && v3.Catalog == 0x07FF);
         Assert.True(v3.ClassWins == 0x05 && v3.ToolsFound == 0x0B && v3.HousesCount == 3 && v3.Houses[0] == 0x21 && v3.Houses[2] == 0x35);
@@ -248,7 +248,7 @@ public class PerksContractsEventsTests
         var raw = v4.ToBytes();
         for (var i = Profile.V4Size; i < raw.Length; i++) raw[i] = 0xEE; // śmieci
         v4 = Profile.FromBytes(raw);
-        Assert.True(Meta.ProfileFix(D, v4) && v4.MagicIs(Profile.MagicV7));
+        Assert.True(Meta.ProfileFix(D, v4) && v4.MagicIs(Profile.MagicV8));
         Assert.True(v4.Best == 77 && v4.Xp == 12 && v4.KillsTotal == 150 && v4.PowersTotal == 40 && v4.Contracts == 0x03);
         Assert.True(v4.KeepsakeRuns[0] == 4 && v4.RunKills == 0 && v4.RunPowers == 0 && v4.RunBrand == 0 && v4.RunClean == 0);
         Assert.True(Meta.SelectedKeepsake(D, v4) >= 0 && D.Keepsakes[Meta.SelectedKeepsake(D, v4)].Start);
@@ -300,7 +300,7 @@ public class PerksContractsEventsTests
 
     /// <summary>Układ bajtów profilu v6 jak struktura core::profile w SRAM (offsety z static_assert w meta.h).</summary>
     [Fact]
-    public void ProfileV7SramLayout()
+    public void ProfileV8SramLayout()
     {
         var p = Meta.NewProfile(D);
         p.KillsTotal = 0x1234;
@@ -326,9 +326,20 @@ public class PerksContractsEventsTests
         p.DailyRuns = 42;
         p.DailyScore[0] = 0x01020304;
         p.DailyScore[4] = -2;
+        p.Respect = 0x0102;
+        p.RespectTotal = 0x0304;
+        p.RunRespect = 0x0506;
+        p.Rewards = 7;
+        p.ClassWinsHi = 1;
+        p.RespectRanks[0] = 5;
+        p.RespectRanks[15] = 2;
+        p.BestStakeHi[3] = 6;
         var b = p.ToBytes();
-        Assert.Equal(124, b.Length);
-        Assert.Equal("PBRL007\0"u8.ToArray(), b[..8]);
+        Assert.Equal(152, b.Length);
+        Assert.Equal("PBRL008\0"u8.ToArray(), b[..8]);
+        Assert.Equal(new byte[] { 0x02, 0x01, 0x04, 0x03, 0x06, 0x05, 7, 1, 5 }, b[124..133]);
+        Assert.Equal(2, b[147]);
+        Assert.Equal(6, b[151]);
         Assert.Equal(new byte[] { 25, 9, 0xEA, 0x07, 0x02, 0x01 }, b[88..94]);
         Assert.Equal(new byte[] { 0x04, 0x03, 0x11, 42, 0x04, 0x03, 0x02, 0x01 }, b[100..108]);
         Assert.Equal(new byte[] { 0xFE, 0xFF, 0xFF, 0xFF }, b[120..124]);
@@ -482,6 +493,6 @@ public class PerksContractsEventsTests
         Assert.True(l.StageEvent == g.StageEvent && l.PowersUsed == 12 && l.BrandFound == 2 && l.CleanBosses == 1 && l.BossWakeDamage == 5);
         Assert.True(l.Bonus.Crit == g.Bonus.Crit && l.Bonus.XpPct == g.Bonus.XpPct && l.Bonus.Thermos == g.Bonus.Thermos && l.ThermosCap() == g.ThermosCap());
         Assert.Equal(StateDigest.Of(g), StateDigest.Of(l));
-        Assert.Equal("PBRUN07", RunSave.RunMagic);
+        Assert.Equal("PBRUN08", RunSave.RunMagic);
     }
 }

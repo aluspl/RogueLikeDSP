@@ -25,6 +25,9 @@ public sealed partial class Game
         return bd < 99;
     }
 
+    /// <summary>Cena fachowca (zł) po rabacie z Respektu (Znajomości).</summary>
+    public int HelperPrice(int h) => D.Brigade[h].Price * (100 - Bonus.BrigadePct) / 100;
+
     /// <summary>Czy fachowca h można teraz wezwać (bez skutków ubocznych – telefon i bot).</summary>
     public HelperBlock HelperBlocked(int h)
     {
@@ -32,7 +35,7 @@ public sealed partial class Game
         if (St != GameStatus.Playing) return HelperBlock.Busy;
         if (HelperCalled >= 0) return HelperBlock.Used;
         if (((Bonus.Helpers >> h) & 1) == 0) return HelperBlock.Locked;
-        if (Cash < hd.Price) return HelperBlock.Cash;
+        if (Cash < HelperPrice(h)) return HelperBlock.Cash;
         if (hd.Effect == HelperEffect.Pump)
         {
             for (var i = 0; i < EnemiesCount; ++i)
@@ -60,7 +63,7 @@ public sealed partial class Game
                 Push(Msg("Brygada już była na tym etapie"));
                 return false;
             case HelperBlock.Cash:
-                Push(Msg("Brygada: za mały budżet (").Add(hd.Price).Add(" zł)"));
+                Push(Msg("Brygada: za mały budżet (").Add(HelperPrice(h)).Add(" zł)"));
                 return false;
             case HelperBlock.NoTarget:
                 Push(Msg(hd.Name).Add(": nikogo w zasięgu"));
@@ -72,7 +75,7 @@ public sealed partial class Game
                 return false;
         }
         if (ShockedTurn()) return true;
-        Cash -= hd.Price;
+        Cash -= HelperPrice(h);
         HelperCalled = (sbyte)h;
         Push(Msg("Brygada: ").Add(hd.Name).As(LogKind.Good));
         switch (hd.Effect)

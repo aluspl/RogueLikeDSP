@@ -8,8 +8,8 @@ public class GameDataTests
     [Fact]
     public void DerivedConstantsMatchGeneratedHeader()
     {
-        Assert.Equal(6, D.Classes.Length);
-        Assert.Equal(12, D.Weapons.Length);
+        Assert.Equal(9, D.Classes.Length);
+        Assert.Equal(17, D.Weapons.Length);
         Assert.Equal(12, D.Enemies.Length);
         Assert.Equal(8, D.Stages.Length);
         Assert.Equal(1, D.StartToolsMask);
@@ -30,7 +30,7 @@ public class GameDataTests
         Assert.Equal(AbilityEffect.Flush, D.Classes[4].Ability);
         Assert.Equal(StatusEffect.Paper, D.Enemies[8].OnHit);
         Assert.Equal(StatusEffect.None, D.Enemies[3].OnHit);
-        Assert.Equal(9, D.Gear.Length);
+        Assert.Equal(15, D.Gear.Length);
         Assert.Equal(GearStat.Hp, D.Gear[7].Stat);
         Assert.Equal(ShopEffect.MaxHp, D.Hurtownia[3].Effect);
         Assert.Equal(0, D.BadgeBezUsterek);
@@ -54,8 +54,8 @@ public class GameDataTests
     [Fact]
     public void V42SectionsAreParsed()
     {
-        Assert.Equal(new[] { 2, 0, 2, 1, 2, 4 }, D.Classes.Select(c => c.Luck).ToArray());
-        Assert.Equal(8, D.GearTraitsCount);
+        Assert.Equal(new[] { 2, 0, 2, 1, 2, 4, 3, 2, 0 }, D.Classes.Select(c => c.Luck).ToArray());
+        Assert.Equal(9, D.GearTraitsCount);
         Assert.Equal(TraitEffect.PoisonRes, D.GearTraits[2].Effect);
         Assert.Equal("Zatrucie", D.Statuses[(int)StatusEffect.Poison].Name);
         Assert.Equal("-1 HP/turę", D.Statuses[(int)StatusEffect.Poison].Effect);
@@ -63,7 +63,7 @@ public class GameDataTests
         Assert.True(D.CritBasePct == 5 && D.CritPerLuckPct == 3 && D.CritMultiplier == 2 && D.DodgeMaxPct == 20);
         Assert.True(D.ThermosCapacity == 3 && D.CoffeeHeal == 8 && D.BotDrinkBelowPct == 40 && D.GearDeclineXp == 1);
         Assert.Equal(95, D.Stages[0].HpPct);
-        Assert.Equal("v0.21.48", D.Version);
+        Assert.Equal("v0.21.49", D.Version);
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class GameDataTests
         Assert.Equal(7, D.Upgrades.Length);
         Assert.Equal(UpgradeEffect.Luck, D.Upgrades[5].Effect);
         Assert.Equal(UpgradeEffect.Craft, D.Upgrades[6].Effect);
-        Assert.Equal(6, D.Tools.Length);
+        Assert.Equal(8, D.Tools.Length);
         Assert.Equal(new Perk(PerkEffect.Hp, 2), D.Badges[D.BadgeBezUsterek].Bonus);
         Assert.Equal(new Perk(PerkEffect.ToolPct, 10), D.Badges[D.BadgeKolekcjoner].Bonus);
         Assert.Equal(new Perk(PerkEffect.XpPct, 10), D.Badges[D.BadgeOsiedle].Bonus);

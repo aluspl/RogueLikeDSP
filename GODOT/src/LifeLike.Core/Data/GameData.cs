@@ -121,6 +121,24 @@ public sealed class GameData
     /// <summary>Doświadczenie za odrzucenie paczki sprzętu (plus jakość paczki).</summary>
     public int GearDeclineXp { get; private init; }
 
+    // v0.21.49: Respekt, nagrody za odbiór, cechy zawodów
+    /// <summary>Ulepszenia za Respekt (sekcja "respect"); bez sekcji – pusta lista.</summary>
+    public RespectDef[] Respect { get; private init; } = [];
+    /// <summary>Respekt za etap: zwykły, boss w środku aktu, boss aktu, ostatni.</summary>
+    public int RespectStage { get; private init; }
+    public int RespectBoss { get; private init; }
+    public int RespectActBoss { get; private init; }
+    public int RespectFinal { get; private init; }
+    /// <summary>Nagrody za odbiór (sekcja "rewards"): każda wygrana odblokowuje kolejną.</summary>
+    public RewardDef[] Rewards { get; private init; } = [];
+    /// <summary>Operator koparki: szansa (%), że cios wręcz odepchnie problem.</summary>
+    public int PushChancePct { get; private init; }
+    /// <summary>Sloty sprzętu z nagród (buty, pas) i sloty bazowe (pełny sprzęt BHP).</summary>
+    public int GearRewardMask { get; private init; }
+    public int GearBaseMask { get; private init; } = 7;
+    /// <summary>Zawody odblokowywane tylko nagrodą za odbiór.</summary>
+    public int RewardClassesMask { get; private init; }
+
     public int MaxHeroLevel => LevelThresholds.Length + 1;
     public int GearSlotsCount => GearSlots.Length;
     public int GearTraitsCount => GearTraits.Length;
@@ -173,7 +191,7 @@ public sealed class GameData
             return new ClassDef(Str(c, "id"), Str(c, "name"), Str(c, "desc"), Int(c, "maxHealth"), Int(c, "strength"),
                 Int(c, "agility"), Int(c, "intelligence"), Int(c, "defense"), Int(c, "luck", 0), Lookup(wid, Str(c, "weapon"), "broń"),
                 Int(c, "frame"), Str(ab, "name"), Str(ab, "desc"), ParseEnum<AbilityEffect>(Str(ab, "effect")),
-                Int(ab, "cooldown"));
+                Int(ab, "cooldown"), ParseEnum<ClassPassive>(Str(c, "passive", "none")), Bool(c, "reward"));
         }).ToArray();
 
         var enemies = enemiesJson.Select(e =>
@@ -230,7 +248,7 @@ public sealed class GameData
         var meta = d.GetProperty("meta");
         var upgrades = meta.GetProperty("upgrades").EnumerateArray().Select(u => new UpgradeDef(
             Str(u, "id", ""), Str(u, "name"), Str(u, "desc"), ParseUpgrade(Str(u, "effect")), Int(u, "value"),
-            u.GetProperty("costs").EnumerateArray().Select(c => c.GetInt32()).ToArray(), Int(u, "refund", 0))).ToArray();
+            u.GetProperty("costs").EnumerateArray().Select(c => c.GetInt32()).ToArray(), Int(u, "refund", 0), Int(u, "resetRefund", 0))).ToArray();
         foreach (var u in upgrades)
         {
             Require(u.Costs.Length is >= 1 and <= 4, $"ulepszenie {u.Name}: 1-4 poziomy");
@@ -238,7 +256,9 @@ public sealed class GameData
 
         var classesJson = d.GetProperty("classes").EnumerateArray().ToArray();
         var cid = Index(classesJson);
-        var tools = meta.GetProperty("tools").EnumerateArray().Select(t => new ToolDef(Lookup(wid, Str(t, "weapon"), "narzędzie"), Int(t, "cost"))).ToArray();
+        var tools = meta.GetProperty("tools").EnumerateArray().Select(t => new ToolDef(Lookup(wid, Str(t, "weapon"), "narzędzie"), Int(t, "cost"),
+            Bool(t, "reward"))).ToArray();
+        Require(tools.Length <= 8, "narzędzia: maks. 8 (bitmaska w profilu)");
 
         var story = d.GetProperty("story");
         var storyStages = story.GetProperty("stages").EnumerateArray().Select(Story).ToArray();
@@ -345,8 +365,11 @@ public sealed class GameData
         var rarities = eq.GetProperty("rarities").EnumerateArray().Select(r => r.GetString() ?? "").ToArray();
         var gear = new List<GearDef>();
         var slots = new List<string>();
+        int gearReward = 0, gearBase = 0;
         foreach (var sl in eq.GetProperty("slots").EnumerateArray())
         {
+            if (Bool(sl, "reward")) gearReward |= 1 << slots.Count;
+            else gearBase |= 1 << slots.Count;
             slots.Add(Str(sl, "name"));
             var gs = ParseEnum<GearStat>(Str(sl, "stat"));
             var items = sl.GetProperty("items").EnumerateArray().ToArray();
@@ -373,10 +396,67 @@ public sealed class GameData
         var ng = d.GetProperty("newGamePlus");
         var slamJson = d.GetProperty("slam");
 
+        Require(slots.Count is >= 3 and <= Game.MaxGearSlots, "sprzęt: 3-6 slotów");
         var startTools = 0;
         for (var i = 0; i < tools.Length; i++)
         {
-            if (tools[i].Cost == 0) startTools |= 1 << i;
+            if (tools[i].Cost == 0 && !tools[i].Reward) startTools |= 1 << i;
+        }
+        var rewardClasses = 0;
+        for (var i = 0; i < classes.Length; i++)
+        {
+            if (classes[i].Reward) rewardClasses |= 1 << i;
+            else Require(i < 8, "zawody do kupienia: bitmaska uint8 w profilu");
+        }
+        Require(classes.Length <= 12, "maks. 12 zawodów");
+
+        var hasRespect = d.TryGetProperty("respect", out var rsj);
+        var respect = hasRespect
+            ? rsj.GetProperty("upgrades").EnumerateArray().Select(x => new RespectDef(Str(x, "id"), Str(x, "name"), Str(x, "desc"),
+                ParseRespect(Str(x, "effect")), x.GetProperty("values").EnumerateArray().Select(v => v.GetInt32()).ToArray(),
+                x.GetProperty("costs").EnumerateArray().Select(v => v.GetInt32()).ToArray())).ToArray()
+            : [];
+        Require(respect.Length <= 16, "Respekt: maks. 16 ulepszeń");
+        foreach (var x in respect) Require(x.Values.Length is >= 1 and <= 5 && x.Values.Length == x.Costs.Length, $"Respekt {x.Id}: 1-5 rang");
+        var rewards = new List<RewardDef>();
+        if (d.TryGetProperty("rewards", out var rwj))
+        {
+            var tid = new Dictionary<string, int>();
+            var tj = meta.GetProperty("tools").EnumerateArray().ToArray();
+            for (var i = 0; i < tj.Length; i++) tid[Str(tj[i], "weapon")] = i;
+            foreach (var x in rwj.GetProperty("list").EnumerateArray())
+            {
+                var kind = Str(x, "kind");
+                var id = Str(x, "id");
+                int idx;
+                string name;
+                RewardKind rk;
+                switch (kind)
+                {
+                    case "tool":
+                        rk = RewardKind.Tool;
+                        idx = Lookup(tid, id, "narzędzie nagrody");
+                        name = weapons[tools[idx].Weapon].Name;
+                        break;
+                    case "gear":
+                        rk = RewardKind.Gear;
+                        idx = slots.IndexOf(id);
+                        Require(idx >= 0, $"nagroda: nieznany slot {id}");
+                        name = slots[idx];
+                        break;
+                    case "class":
+                        rk = RewardKind.Cls;
+                        idx = Lookup(cid, id, "zawód nagrody");
+                        name = classes[idx].Name;
+                        break;
+                    default:
+                        rk = RewardKind.Soon;
+                        idx = -1;
+                        name = "";
+                        break;
+                }
+                rewards.Add(new RewardDef(rk, idx, Str(x, "name", name), Str(x, "desc")));
+            }
         }
         var startClasses = 0;
         foreach (var c in meta.GetProperty("startClasses").EnumerateArray()) startClasses |= 1 << Lookup(cid, c.GetString() ?? "", "zawód");
@@ -483,6 +563,16 @@ public sealed class GameData
             BadgeKolekcjoner = BadgeIdx("kolekcjoner"),
             BadgeKatalog = BadgeIdx("katalog"),
             BadgeOsiedle = BadgeIdx("osiedle"),
+            Respect = respect,
+            RespectStage = hasRespect ? Int(rsj, "stage") : 0,
+            RespectBoss = hasRespect ? Int(rsj, "boss") : 0,
+            RespectActBoss = hasRespect ? Int(rsj, "actBoss") : 0,
+            RespectFinal = hasRespect ? Int(rsj, "final") : 0,
+            Rewards = rewards.ToArray(),
+            PushChancePct = d.TryGetProperty("passives", out var psj) ? Int(psj, "pushChancePct", 0) : 0,
+            GearRewardMask = gearReward,
+            GearBaseMask = gearBase,
+            RewardClassesMask = rewardClasses,
         };
     }
 
@@ -513,6 +603,9 @@ public sealed class GameData
     private static int Int(JsonElement e, string name) =>
         e.TryGetProperty(name, out var v) ? v.GetInt32() : throw new GameDataException($"brak pola '{name}'");
 
+    private static bool Bool(JsonElement e, string name) =>
+        e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.True;
+
     private static int Int(JsonElement e, string name, int fallback) =>
         e.TryGetProperty(name, out var v) ? v.GetInt32() : fallback;
 
@@ -534,6 +627,7 @@ public sealed class GameData
         "str" => TraitEffect.Str,
         "agi" => TraitEffect.Agi,
         "intel" => TraitEffect.Intel,
+        "slip_res" => TraitEffect.SlipRes,
         _ => TraitEffect.Unknown, // nowsza wersja danych: cecha bez działania
     };
 
@@ -586,8 +680,39 @@ public sealed class GameData
         _ => throw new GameDataException($"nieznany modyfikator inwestora: {s}"),
     };
 
-    private static UpgradeEffect ParseUpgrade(string s) =>
-        Enum.TryParse<UpgradeEffect>(s, ignoreCase: true, out var v) && v != UpgradeEffect.Unknown ? v : UpgradeEffect.Unknown;
+    private static UpgradeEffect ParseUpgrade(string s) => s switch
+    {
+        "hp" => UpgradeEffect.Hp,
+        "def" => UpgradeEffect.Def,
+        "dmg" => UpgradeEffect.Dmg,
+        "coffee" => UpgradeEffect.Coffee,
+        "pickups" => UpgradeEffect.Pickups,
+        "luck" => UpgradeEffect.Luck,
+        "craft" => UpgradeEffect.Craft,
+        "dmg_pct" => UpgradeEffect.DmgPct,
+        "taken_pct" => UpgradeEffect.TakenPct,
+        _ => UpgradeEffect.Unknown, // nowsza wersja danych: ulepszenie bez działania
+    };
+
+    private static RespectEffect ParseRespect(string s) => s switch
+    {
+        "dmg_pct" => RespectEffect.DmgPct,
+        "taken_pct" => RespectEffect.TakenPct,
+        "gear_pct" => RespectEffect.GearPct,
+        "crit" => RespectEffect.Crit,
+        "dodge" => RespectEffect.Dodge,
+        "coffee_pct" => RespectEffect.CoffeePct,
+        "thermos" => RespectEffect.Thermos,
+        "cooldown" => RespectEffect.Cooldown,
+        "cash" => RespectEffect.Cash,
+        "xp_pct" => RespectEffect.XpPct,
+        "brigade_pct" => RespectEffect.BrigadePct,
+        "sight" => RespectEffect.Sight,
+        "shop_pct" => RespectEffect.ShopPct,
+        "mats_pct" => RespectEffect.MatsPct,
+        "second_chance" => RespectEffect.SecondChance,
+        _ => RespectEffect.Unknown,
+    };
 
     private static T ParseEnum<T>(string s) where T : struct, Enum =>
         Enum.TryParse<T>(s, ignoreCase: true, out var v) ? v : throw new GameDataException($"nieznana wartość {typeof(T).Name}: {s}");

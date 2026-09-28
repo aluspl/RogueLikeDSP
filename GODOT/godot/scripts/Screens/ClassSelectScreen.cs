@@ -131,7 +131,7 @@ public sealed class ClassSelectScreen : Screen
         var view = N.ClassSelectView;
         var d = S.Data;
         S.ClassId = view.Selected;
-        if (!Meta.ClassUnlocked(S.Profile, S.ClassId))
+        if (!Meta.ClassUnlocked(S.Data, S.Profile, S.ClassId))
         {
             view.Note = $"Ten zawód odblokujesz w Szkoleniach{ButtonNames.Pick(" (K)", "")} za {d.ClassCost} dośw.";
             Sfx.Play("hurt", 0.5f);

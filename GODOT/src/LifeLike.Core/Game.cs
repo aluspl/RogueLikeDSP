@@ -16,6 +16,8 @@ public sealed partial class Game
     public const int MaxHits = 8;
     public const int MaxWalls = 5;
     public const int MaxBridges = 3;
+    /// <summary>Kask, rękawice, kamizelka + sloty z nagród (buty, pas).</summary>
+    public const int MaxGearSlots = 6;
 
     public GameData D { get; }
 
@@ -96,9 +98,9 @@ public sealed partial class Game
     public readonly TempWall[] Walls = new TempWall[MaxWalls];
     public int WallsCount;
     /// <summary>Sprzęt: jakość w slocie (kask, rękawice, kamizelka), -1 = brak.</summary>
-    public readonly sbyte[] Equipped = [-1, -1, -1, -1];
+    public readonly sbyte[] Equipped = [-1, -1, -1, -1, -1, -1];
     /// <summary>Cecha przedmiotu w slocie (GameData.GearTraits).</summary>
-    public readonly sbyte[] EquippedTrait = new sbyte[4];
+    public readonly sbyte[] EquippedTrait = new sbyte[MaxGearSlots];
     /// <summary>Kawy w termosie (pije się z menu akcji).</summary>
     public int Thermos;
     /// <summary>Paczka czeka na decyzję (zakładam / zostawiam): slot (-1 = brak), jakość, cecha.</summary>
@@ -122,6 +124,13 @@ public sealed partial class Game
     public ushort DailyDay;
     /// <summary>Tury na każdym etapie (harmonogram domu po wygranej).</summary>
     public readonly ushort[] StageDays = new ushort[8];
+    // v0.21.49: Respekt za etapy, reszty procentów obrażeń, Druga szansa
+    /// <summary>Respekt zdobyty w tej budowie (profil: Meta.BankCounters).</summary>
+    public int Respect;
+    /// <summary>Reszty z procentowych premii obrażeń (Pct.Part).</summary>
+    public int DmgCarry, TakenCarry;
+    /// <summary>Druga szansa zużyta.</summary>
+    public bool SecondUsed;
 
     public Game(GameData data)
     {
@@ -147,8 +156,16 @@ public sealed partial class Game
     /// <summary>Zasięg broni z pogodą: wiatr skraca zasięg broni dalekiego zasięgu (nie mniej niż 1).</summary>
     public int WeaponRange()
     {
-        var rg = Weapon.Range;
-        return WeatherIs(WeatherEffect.Wind) && rg > 1 ? Math.Max(1, rg - WDef.Value) : rg;
+        var rg = Weapon.Range; // Dekarz: wiatr mu nie przeszkadza
+        return WeatherIs(WeatherEffect.Wind) && rg > 1 && !HasPassive(ClassPassive.Windproof) ? Math.Max(1, rg - WDef.Value) : rg;
+    }
+
+    public bool HasPassive(ClassPassive p) => CDef.Passive == p;
+
+    /// <summary>Unik: szczęście + Respekt + buty, łącznie najwyżej DodgeMaxPct.</summary>
+    public int DodgePct()
+    {
+        return Math.Min(D.DodgeMaxPct, D.DodgePerLuckPct * Luck() + Bonus.Dodge + GearBonus(GearStat.Dodge));
     }
 
     // ------------------------------------------------------------------ pogoda dnia
@@ -241,12 +258,12 @@ public sealed partial class Game
         return Cheb(x, y, SlamX, SlamY) <= D.SlamRadius;
     }
 
-    /// <summary>Pełny sprzęt: założony przedmiot w każdym slocie (kask, rękawice, kamizelka).</summary>
+    /// <summary>Pełny sprzęt: założony przedmiot w każdym slocie bazowym (kask, rękawice, kamizelka).</summary>
     public bool FullGear()
     {
         for (var i = 0; i < D.GearSlotsCount; ++i)
         {
-            if (Equipped[i] < 0) return false;
+            if (((D.GearBaseMask >> i) & 1) != 0 && Equipped[i] < 0) return false;
         }
         return true;
     }
@@ -281,7 +298,7 @@ public sealed partial class Game
     public int SightRadius() => FovRadius + TraitBonus(TraitEffect.Sight) + Bonus.Sight;
 
     /// <summary>Pojemność termosu (+ uprawnienia i pamiątka).</summary>
-    public int ThermosCap() => D.ThermosCapacity + Bonus.Thermos;
+    public int ThermosCap() => D.ThermosCapacity + Bonus.Thermos + GearBonus(GearStat.Thermos);
 
     // ------------------------------------------------------------------ wydarzenia na placu
     public bool EventActive(EventEffect e) => StageEvent >= 0 && D.SiteEvents[StageEvent].Effect == e;
@@ -315,7 +332,6 @@ public sealed partial class Game
         return b;
     }
 
-    public int DodgePct() => Math.Min(D.DodgeMaxPct, D.DodgePerLuckPct * Luck());
 
     /// <summary>Obrona bohatera: zawód + premie + sprzęt + ochrona BHP-owca z brygady.</summary>
     public int HeroDefense() => CDef.Defense + DefBonus + GearBonus(GearStat.Def) + (GuardTurns > 0 ? D.Brigade[HelperCalled].Value : 0);
@@ -355,6 +371,11 @@ public sealed partial class Game
         if (s == StatusEffect.Poison && TraitBonus(TraitEffect.PoisonRes) > 0)
         {
             Push(Msg("Odporność: bez zatrucia").As(LogKind.Good));
+            return;
+        }
+        if (s == StatusEffect.Slip && TraitBonus(TraitEffect.SlipRes) > 0)
+        {
+            Push(Msg("Odporność: bez poślizgu").As(LogKind.Good));
             return;
         }
         HeroStatus[(int)s] = (sbyte)Math.Max(HeroStatus[(int)s], t);

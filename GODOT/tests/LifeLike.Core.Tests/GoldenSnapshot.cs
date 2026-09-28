@@ -64,6 +64,8 @@ public static class GoldenSnapshot
         K("daily", Arr([g.Daily ? 1 : 0, g.DailyDay]));
         K("stageDays", Arr(g.StageDays.Select(x => (int)x)));
         K("offer", Arr([g.OfferSlot, g.OfferRarity, g.OfferTrait]));
+        K("respect", Arr([g.Respect, g.StageRespect(), g.DmgCarry, g.TakenCarry, g.SecondUsed ? 1 : 0, g.DodgePct(), g.CoffeeHeal(),
+            g.Bonus.GearSlots, g.Bonus.Tools]));
         K("heroStatus", Arr(g.HeroStatus.Select(x => (int)x)));
         K("killsByType", Arr(g.KillsByType.Select(x => (int)x)));
         K("rooms", "[" + string.Join(",", g.Lv.Rooms.Take(g.Lv.RoomsCount).Select(r => Arr([r.X, r.Y, r.W, r.H]))) + "]");
@@ -100,5 +102,6 @@ public static class GoldenSnapshot
         $"\"killsTotal\":{p.KillsTotal},\"powersTotal\":{p.PowersTotal},\"brandTotal\":{p.BrandTotal},\"cleanBosses\":{p.CleanBosses}," +
         $"\"contracts\":{p.Contracts},\"keepsake\":{p.Keepsake},\"brigade\":{p.Brigade},\"investor\":{p.Investor},\"bestStake\":{Arr(p.BestStake.Select(x => (int)x))},\"keepsakeRuns\":{Arr(p.KeepsakeRuns.Select(x => (int)x))}," +
         $"\"daily\":{Arr([p.DailyWon, p.DailyRuns])},\"dailyDay\":{Arr(p.DailyDay.Select(x => (int)x))},\"dailyScore\":{Arr(p.DailyScore)}," +
+        $"\"respect\":{Arr([p.Respect, p.RespectTotal, p.RunRespect, p.Rewards, p.ClassWinsHi])}," +
         $"\"sram\":\"{Convert.ToHexString(p.ToBytes()).ToLowerInvariant()}\"}}";
 }

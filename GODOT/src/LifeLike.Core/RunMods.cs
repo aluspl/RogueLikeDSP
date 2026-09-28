@@ -33,8 +33,75 @@ public struct RunMods
     public int Helpers;
     /// <summary>Tryb inwestora: włączone modyfikatory (bitmaska GameData.Investor).</summary>
     public int Investor;
+    // v0.21.49: procentowe premie (Szkolenia BHP i Kurs fachowy, Respekt), nagrody za odbiór
+    /// <summary>+% zadawanych obrażeń.</summary>
+    public int DmgPct;
+    /// <summary>-% otrzymanych obrażeń.</summary>
+    public int TakenPct;
+    /// <summary>+ do rzutu na jakość sprzętu z paczek.</summary>
+    public int GearPct;
+    /// <summary>Unik +% (łącznie maks. GameData.DodgeMaxPct).</summary>
+    public int Dodge;
+    /// <summary>Kawa leczy +%.</summary>
+    public int CoffeePct;
+    /// <summary>Brygada taniej o %.</summary>
+    public int BrigadePct;
+    /// <summary>Hurtownia (zł) taniej o %.</summary>
+    public int ShopPct;
+    /// <summary>Materiały z problemów częściej o %.</summary>
+    public int MatsPct;
+    /// <summary>Druga szansa: raz na budowę 1 HP zamiast końca.</summary>
+    public int SecondChance;
+    /// <summary>Sloty sprzętu w dropach (bitmaska; nagrody: buty, pas).</summary>
+    public int GearSlots;
 
-    public static RunMods Default(GameData d) => new() { Tools = d.StartToolsMask, Helpers = d.StartHelpersMask };
+    public static RunMods Default(GameData d) => new() { Tools = d.StartToolsMask, Helpers = d.StartHelpersMask, GearSlots = d.GearBaseMask };
+
+    /// <summary>Premia z rangi Respektu (add_respect; wartość łączna rangi).</summary>
+    public void AddRespect(RespectEffect e, int v)
+    {
+        switch (e)
+        {
+            case RespectEffect.DmgPct: DmgPct += v; break;
+            case RespectEffect.TakenPct: TakenPct += v; break;
+            case RespectEffect.GearPct: GearPct += v; break;
+            case RespectEffect.Crit: Crit += v; break;
+            case RespectEffect.Dodge: Dodge += v; break;
+            case RespectEffect.CoffeePct: CoffeePct += v; break;
+            case RespectEffect.Thermos: Thermos += v; break;
+            case RespectEffect.Cooldown: Cooldown += v; break;
+            case RespectEffect.Cash: Cash += v; break;
+            case RespectEffect.XpPct: XpPct += v; break;
+            case RespectEffect.BrigadePct: BrigadePct += v; break;
+            case RespectEffect.Sight: Sight += v; break;
+            case RespectEffect.ShopPct: ShopPct += v; break;
+            case RespectEffect.MatsPct: MatsPct += v; break;
+            case RespectEffect.SecondChance: SecondChance += v; break;
+        }
+    }
+
+    /// <summary>Skutek rangi Respektu dla gracza, np. „+8% obrażeń” (respect_label).</summary>
+    public static Message RespectLabel(Message m, RespectEffect e, int v) => e switch
+    {
+        RespectEffect.DmgPct => m.Add("+").Add(v).Add("% obrażeń"),
+        RespectEffect.TakenPct => m.Add("-").Add(v).Add("% otrzymanych obrażeń"),
+        RespectEffect.GearPct => m.Add("+").Add(v).Add(" do jakości sprzętu"),
+        RespectEffect.Crit => m.Add("Kryt +").Add(v).Add("%"),
+        RespectEffect.Dodge => m.Add("Unik +").Add(v).Add("%"),
+        RespectEffect.CoffeePct => m.Add("Kawa leczy +").Add(v).Add("%"),
+        RespectEffect.Thermos => m.Add("Termos +").Add(v).Add(v == 1 ? " miejsce" : " miejsca"),
+        RespectEffect.Cooldown => m.Add("Moc -").Add(v).Add(" t. odnowienia"),
+        RespectEffect.Cash => m.Add("+").Add(v).Add(" zł na start"),
+        RespectEffect.XpPct => m.Add("+").Add(v).Add("% doświadczenia"),
+        RespectEffect.BrigadePct => m.Add("Brygada -").Add(v).Add("% ceny"),
+        RespectEffect.Sight => m.Add("Widzenie +").Add(v),
+        RespectEffect.ShopPct => m.Add("Hurtownia -").Add(v).Add("% ceny"),
+        RespectEffect.MatsPct => m.Add("Materiały +").Add(v).Add("% częściej"),
+        RespectEffect.SecondChance => m.Add("Raz na budowę: 1 HP zamiast końca"),
+        _ => m,
+    };
+
+    public static string RespectLabel(RespectEffect e, int v) => RespectLabel(new Message(), e, v).Text;
 
     /// <summary>Dodaje premię (add_perk).</summary>
     public void AddPerk(Perk p)

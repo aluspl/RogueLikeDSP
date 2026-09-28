@@ -5,8 +5,8 @@ namespace LifeLike.Core;
 
 /// <summary>
 /// Profil gracza (odpowiednik core::profile z meta.h): rekord, doświadczenie, zakupy, odznaki, Osiedle.
-/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v7: 124 bajty, little-endian, bajt 55 to wyrównanie),
-/// więc migracje v1/v2/v3/v4/v5/v6 działają tak samo.
+/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v8: 152 bajty, little-endian, bajt 55 to wyrównanie),
+/// więc migracje v1–v7 działają tak samo.
 /// </summary>
 public sealed class Profile
 {
@@ -21,9 +21,15 @@ public sealed class Profile
     public const int V5Size = 78;
     /// <summary>v7 = v6 + codzienna budowa (data, najlepsze wyniki dni) od tego offsetu.</summary>
     public const int V6Size = 88;
-    public const int Size = 124;
+    /// <summary>v8 = v7 + Respekt, nagrody za odbiór, wygrane i stawki zawodów 8-11 od tego offsetu.</summary>
+    public const int V7Size = 124;
+    public const int Size = 152;
+    public const int MaxRespect = 16;
+    /// <summary>Zawody 0-7: bitmaska Classes (Szkolenia), 8-11: tylko z nagród za odbiór.</summary>
+    public const int MaxClasses = 12;
     public const int MaxKeepsakes = 8;
     public const int DailySlots = 5;
+    public const string MagicV8 = "PBRL008";
     public const string MagicV7 = "PBRL007";
     public const string MagicV6 = "PBRL006";
     public const string MagicV5 = "PBRL005";
@@ -92,6 +98,21 @@ public sealed class Profile
     public byte DailyRuns;
     /// <summary>Najlepszy wynik dnia.</summary>
     public int[] DailyScore = new int[DailySlots];
+    // --- v8: Respekt (stała waluta za etapy) i nagrody za odbiór (każda wygrana odblokowuje kolejną)
+    /// <summary>Respekt do wydania.</summary>
+    public ushort Respect;
+    /// <summary>Respekt zdobyty łącznie.</summary>
+    public ushort RespectTotal;
+    /// <summary>Ile Respektu bieżącej budowy już przeniesiono (znak wodny jak RunKills).</summary>
+    public ushort RunRespect;
+    /// <summary>Odblokowane nagrody za odbiór (pierwsze N z GameData.Rewards).</summary>
+    public byte Rewards;
+    /// <summary>Zawody 8-15, którymi wygrano (dalszy ciąg ClassWins).</summary>
+    public byte ClassWinsHi;
+    /// <summary>Kupione rangi Respektu.</summary>
+    public byte[] RespectRanks = new byte[MaxRespect];
+    /// <summary>Rekord stawki zawodów 8-11.</summary>
+    public byte[] BestStakeHi = new byte[4];
 
     public static byte[] MagicBytes(string s)
     {
@@ -148,6 +169,13 @@ public sealed class Profile
         b[102] = DailyWon;
         b[103] = DailyRuns;
         for (var i = 0; i < DailySlots; i++) BinaryPrimitives.WriteInt32LittleEndian(b.AsSpan(104 + i * 4), DailyScore[i]);
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(124), Respect);
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(126), RespectTotal);
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(128), RunRespect);
+        b[130] = Rewards;
+        b[131] = ClassWinsHi;
+        RespectRanks.CopyTo(b, 132);
+        BestStakeHi.CopyTo(b, 148);
         return b;
     }
 
@@ -193,6 +221,13 @@ public sealed class Profile
             DailyY = BinaryPrimitives.ReadUInt16LittleEndian(b[90..]),
             DailyWon = b[102],
             DailyRuns = b[103],
+            Respect = BinaryPrimitives.ReadUInt16LittleEndian(b[124..]),
+            RespectTotal = BinaryPrimitives.ReadUInt16LittleEndian(b[126..]),
+            RunRespect = BinaryPrimitives.ReadUInt16LittleEndian(b[128..]),
+            Rewards = b[130],
+            ClassWinsHi = b[131],
+            RespectRanks = b.Slice(132, MaxRespect).ToArray(),
+            BestStakeHi = b.Slice(148, 4).ToArray(),
         };
         for (var i = 0; i < DailySlots; i++)
         {

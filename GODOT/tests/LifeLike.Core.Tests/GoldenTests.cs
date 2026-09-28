@@ -32,6 +32,7 @@ public class GoldenTests
         int badges = Opt("badges"), contracts = Opt("contracts"), keepsake = Opt("keepsake"), keepsakeRuns = Opt("keepsakeRuns");
         var investor = Opt("investor");
         int paths = Opt("paths"), daily = Opt("daily");
+        int respect = Opt("respect"), rewards = Opt("rewards");
         var snaps = j.GetProperty("snapshots").EnumerateArray().ToList();
         var digests = j.GetProperty("digests").EnumerateArray().Select(x => x.GetString()).ToList();
 
@@ -51,6 +52,11 @@ public class GoldenTests
             p.Investor = (byte)investor;
         }
         if (keepsake > 0) p.KeepsakeRuns[keepsake - 1] = (byte)keepsakeRuns;
+        if (respect != 0)
+        {
+            for (var i = 0; i < d.Respect.Length; i++) p.RespectRanks[i] = (byte)d.Respect[i].Ranks;
+        }
+        p.Rewards = (byte)rewards;
         var m = Meta.Mods(d, p); // przed StartRun: ranga pamiątki z budów przed tą
         var g = new Game(d);
         if (daily > 0) Daily.Start(g, daily); // codzienna budowa: zawód i seed z dnia, bez Szkoleń
@@ -97,7 +103,7 @@ public class GoldenTests
             if (g.St == GameStatus.Won && ngplus && !didNg)
             {
                 if (g.Score > p.Best) p.Best = g.Score;
-                ++p.Wins;
+                Meta.RecordWin(d, p);
                 Meta.AddHouse(p, g);
                 Meta.CheckBadges(d, p, g);
                 Meta.CheckContracts(d, p);
@@ -116,7 +122,7 @@ public class GoldenTests
         if (g.Score > p.Best) p.Best = g.Score;
         if (g.St == GameStatus.Won)
         {
-            ++p.Wins;
+            Meta.RecordWin(d, p);
             Meta.AddHouse(p, g);
         }
         Meta.CheckBadges(d, p, g);

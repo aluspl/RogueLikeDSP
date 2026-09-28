@@ -11,7 +11,7 @@ public static class Meta
     public static void ProfileReset(GameData d, Profile p)
     {
         var fresh = Profile.FromBytes(new byte[Profile.Size]);
-        fresh.Magic = Profile.MagicBytes(Profile.MagicV7);
+        fresh.Magic = Profile.MagicBytes(Profile.MagicV8);
         fresh.Classes = (byte)d.StartClassesMask;
         DefaultKeepsake(d, fresh);
         CopyInto(fresh, p);
@@ -76,6 +76,90 @@ public static class Meta
         dst.DailyWon = copy.DailyWon;
         dst.DailyRuns = copy.DailyRuns;
         dst.DailyScore = copy.DailyScore;
+        dst.Respect = copy.Respect;
+        dst.RespectTotal = copy.RespectTotal;
+        dst.RunRespect = copy.RunRespect;
+        dst.Rewards = copy.Rewards;
+        dst.ClassWinsHi = copy.ClassWinsHi;
+        dst.RespectRanks = copy.RespectRanks;
+        dst.BestStakeHi = copy.BestStakeHi;
+    }
+
+    // ------------------------------------------------------------------ nagrody za odbiór
+    /// <summary>Nagroda i jest odebrana, gdy i &lt; p.Rewards (każda wygrana odblokowuje kolejną; „wkrótce” się nie odblokowuje).</summary>
+    public static bool RewardOwned(Profile p, int i) => i < p.Rewards;
+
+    public static bool RewardUnlocked(GameData d, Profile p, RewardKind k, int index)
+    {
+        for (var i = 0; i < d.Rewards.Length && i < p.Rewards; ++i)
+        {
+            if (d.Rewards[i].Kind == k && d.Rewards[i].Index == index) return true;
+        }
+        return false;
+    }
+
+    /// <summary>Ile nagród da się odebrać (bez „wkrótce” na końcu listy).</summary>
+    public static int RewardsAvailable(GameData d)
+    {
+        var n = 0;
+        while (n < d.Rewards.Length && d.Rewards[n].Kind != RewardKind.Soon) ++n;
+        return n;
+    }
+
+    /// <summary>Numer wygranej (licząc od 1), która odblokuje nagrodę i (dla odebranych i „wkrótce”: -1).</summary>
+    public static int RewardWin(GameData d, Profile p, int i)
+    {
+        if (RewardOwned(p, i) || i >= RewardsAvailable(d)) return -1;
+        return p.Wins + (i - p.Rewards) + 1;
+    }
+
+    /// <summary>Wygrana budowa: licznik i kolejna nagroda. Zwraca indeks odblokowanej nagrody albo -1.</summary>
+    public static int RecordWin(GameData d, Profile p)
+    {
+        ++p.Wins;
+        if (p.Rewards >= RewardsAvailable(d)) return -1;
+        return p.Rewards++;
+    }
+
+    /// <summary>Zawód wygrany (odznaka Pełny zespół, zlecenie Trzy fachy): bity 0-7 w ClassWins, 8-15 w ClassWinsHi.</summary>
+    public static bool ClassWon(Profile p, int c) => c < 8 ? ((p.ClassWins >> c) & 1) != 0 : ((p.ClassWinsHi >> (c - 8)) & 1) != 0;
+
+    public static void SetClassWon(Profile p, int c)
+    {
+        if (c < 8) p.ClassWins = (byte)(p.ClassWins | (1u << c));
+        else p.ClassWinsHi = (byte)(p.ClassWinsHi | (1u << (c - 8)));
+    }
+
+    public static int ClassesWon(GameData d, Profile p)
+    {
+        var n = 0;
+        for (var c = 0; c < d.Classes.Length; ++c) n += ClassWon(p, c) ? 1 : 0;
+        return n;
+    }
+
+    public static int BestStake(Profile p, int c) => c < 8 ? p.BestStake[c] : p.BestStakeHi[c - 8];
+
+    public static void SetBestStake(Profile p, int c, int v)
+    {
+        if (c < 8) p.BestStake[c] = (byte)v;
+        else p.BestStakeHi[c - 8] = (byte)v;
+    }
+
+    /// <summary>
+    /// v0.21.49 (profil sprzed v8): ulepszenia ze zmienionym działaniem (BHP, Kurs fachowy) wracają jako doświadczenie,
+    /// nagrody za odbiór za dotychczasowe wygrane.
+    /// </summary>
+    public static void MigrateV8(GameData d, Profile p)
+    {
+        for (var i = 0; i < d.Upgrades.Length; ++i)
+        {
+            if (d.Upgrades[i].ResetRefund > 0 && p.Levels[i] > 0)
+            {
+                p.Xp += d.Upgrades[i].ResetRefund * p.Levels[i];
+                p.Levels[i] = 0;
+            }
+        }
+        p.Rewards = (byte)Math.Min(Math.Max(0, p.Wins), RewardsAvailable(d));
     }
 
     /// <summary>
@@ -100,10 +184,11 @@ public static class Meta
     /// <summary>Naprawia wczytany profil. Zwraca true, jeśli trzeba go zapisać (migracja albo pusta pamięć).</summary>
     public static bool ProfileFix(GameData d, Profile p)
     {
-        if (p.MagicIs(Profile.MagicV7)) return ClampLevels(d, p);
-        // v6/v5/v4/v3/v2 -> v7: stare pola zostają, nowe od zera (jak memset od profile_v6_size / v5 / v4 / v3 / v2);
+        if (p.MagicIs(Profile.MagicV8)) return ClampLevels(d, p);
+        // v7/v6/v5/v4/v3/v2 -> v8: stare pola zostają, nowe od zera (jak memset od profile_v7_size / v6 / ...);
         // bez wybranej pamiątki – pierwsza odblokowana
-        var keep = p.MagicIs(Profile.MagicV6) ? Profile.V6Size
+        var keep = p.MagicIs(Profile.MagicV7) ? Profile.V7Size
+            : p.MagicIs(Profile.MagicV6) ? Profile.V6Size
             : p.MagicIs(Profile.MagicV5) ? Profile.V5Size
             : p.MagicIs(Profile.MagicV4) ? Profile.V4Size
             : (p.MagicIs(Profile.MagicV3) ? Profile.V3Size : (p.MagicIs(Profile.MagicV2) ? Profile.V2Size : 0));
@@ -112,9 +197,10 @@ public static class Meta
             var b = p.ToBytes();
             Array.Clear(b, keep, b.Length - keep);
             CopyInto(Profile.FromBytes(b), p);
-            p.Magic = Profile.MagicBytes(Profile.MagicV7);
+            p.Magic = Profile.MagicBytes(Profile.MagicV8);
             DefaultKeepsake(d, p);
             ClampLevels(d, p);
+            MigrateV8(d, p);
             return true;
         }
         if (p.MagicIs(Profile.MagicV1))
@@ -124,13 +210,19 @@ public static class Meta
             p.Best = best;
             p.Runs = runs;
             p.Wins = wins;
+            MigrateV8(d, p);
             return true;
         }
         ProfileReset(d, p);
         return true;
     }
 
-    public static bool ClassUnlocked(Profile p, int c) => (p.Classes & (1u << c)) != 0;
+    /// <summary>Zawód tylko z nagrody za odbiór (nie do kupienia w Szkoleniach).</summary>
+    public static bool ClassReward(GameData d, int c) => ((d.RewardClassesMask >> c) & 1) != 0;
+
+    /// <summary>Zawód: startowy / kupiony w Szkoleniach (bitmaska) albo z nagrody za odbiór.</summary>
+    public static bool ClassUnlocked(GameData d, Profile p, int c) =>
+        ClassReward(d, c) ? RewardUnlocked(d, p, RewardKind.Cls, c) : (p.Classes & (1u << c)) != 0;
 
     public static bool DifficultyUnlocked(GameData d, Profile p, int diff) => diff < d.Difficulties.Length - 1 || p.Hard != 0;
 
@@ -152,19 +244,38 @@ public static class Meta
 
     public static bool BuyClass(GameData d, Profile p, int c)
     {
-        if (ClassUnlocked(p, c) || p.Xp < d.ClassCost) return false;
+        if (ClassReward(d, c) || ClassUnlocked(d, p, c) || p.Xp < d.ClassCost) return false;
         p.Xp -= d.ClassCost;
         p.Classes = (byte)(p.Classes | (1u << c));
         return true;
     }
 
-    public static int ToolsMask(GameData d, Profile p) => p.Tools | d.StartToolsMask;
+    public static int ToolsMask(GameData d, Profile p)
+    {
+        var m = p.Tools | d.StartToolsMask;
+        for (var i = 0; i < d.Tools.Length; ++i)
+        {
+            if (d.Tools[i].Reward) m = RewardUnlocked(d, p, RewardKind.Tool, i) ? m | (1 << i) : m & ~(1 << i);
+        }
+        return m;
+    }
+
+    /// <summary>Sloty sprzętu w dropach: kask, rękawice, kamizelka + odebrane w nagrodach (buty, pas).</summary>
+    public static int GearSlotsMask(GameData d, Profile p)
+    {
+        var m = d.GearBaseMask;
+        for (var i = 0; i < d.GearSlotsCount; ++i)
+        {
+            if (RewardUnlocked(d, p, RewardKind.Gear, i)) m |= 1 << i;
+        }
+        return m;
+    }
 
     public static bool ToolUnlocked(GameData d, Profile p, int i) => ((ToolsMask(d, p) >> i) & 1) != 0;
 
     public static bool BuyTool(GameData d, Profile p, int i)
     {
-        if (ToolUnlocked(d, p, i) || p.Xp < d.Tools[i].Cost) return false;
+        if (d.Tools[i].Reward || ToolUnlocked(d, p, i) || p.Xp < d.Tools[i].Cost) return false;
         p.Xp -= d.Tools[i].Cost;
         p.Tools = (byte)(p.Tools | (1u << i));
         return true;
@@ -191,6 +302,52 @@ public static class Meta
         return true;
     }
 
+    // ------------------------------------------------------------------ Respekt (telefon profilu, strona Respekt)
+    public static int RespectRank(GameData d, Profile p, int i) => Math.Min(p.RespectRanks[i], d.Respect[i].Ranks);
+
+    /// <summary>Koszt kolejnej rangi; -1 = maksymalna.</summary>
+    public static int RespectCost(GameData d, Profile p, int i)
+    {
+        var r = RespectRank(d, p, i);
+        return r < d.Respect[i].Ranks ? d.Respect[i].Costs[r] : -1;
+    }
+
+    public static bool BuyRespect(GameData d, Profile p, int i)
+    {
+        var c = RespectCost(d, p, i);
+        if (c < 0 || p.Respect < c) return false;
+        p.Respect = (ushort)(p.Respect - c);
+        ++p.RespectRanks[i];
+        return true;
+    }
+
+    /// <summary>Wartość kupionej rangi (0 = nic nie kupiono).</summary>
+    public static int RespectValue(GameData d, Profile p, int i)
+    {
+        var r = RespectRank(d, p, i);
+        return r > 0 ? d.Respect[i].Values[r - 1] : 0;
+    }
+
+    public static int RespectTotalCost(GameData d)
+    {
+        var t = 0;
+        foreach (var x in d.Respect)
+        {
+            foreach (var c in x.Costs) t += c;
+        }
+        return t;
+    }
+
+    public static int RespectSpent(GameData d, Profile p)
+    {
+        var t = 0;
+        for (var i = 0; i < d.Respect.Length; ++i)
+        {
+            for (var r = 0; r < RespectRank(d, p, i); ++r) t += d.Respect[i].Costs[r];
+        }
+        return t;
+    }
+
     /// <summary>Tryb inwestora: odblokowany po pierwszej wygranej; wybór na ekranie zawodu.</summary>
     public static bool InvestorUnlocked(Profile p) => p.Wins > 0;
 
@@ -215,8 +372,15 @@ public static class Meta
                 case UpgradeEffect.Pickups: m.Pickups += v; break;
                 case UpgradeEffect.Luck: m.Luck += v; break;
                 case UpgradeEffect.Craft: m.Craft += v; break;
+                case UpgradeEffect.DmgPct: m.DmgPct += v; break;
+                case UpgradeEffect.TakenPct: m.TakenPct += v; break;
             }
         }
+        for (var i = 0; i < d.Respect.Length; ++i) // Respekt: kupione rangi
+        {
+            if (RespectRank(d, p, i) > 0) m.AddRespect(d.Respect[i].Effect, RespectValue(d, p, i));
+        }
+        m.GearSlots = GearSlotsMask(d, p); // nagrody za odbiór: buty, pas
         for (var i = 0; i < d.Badges.Length; ++i) // uprawnienia ze zdobytych odznak
         {
             if ((p.Badges & (1u << i)) != 0) m.AddPerk(d.Badges[i].Bonus);
@@ -238,7 +402,7 @@ public static class Meta
         }
         for (var i = 0; i < d.Classes.Length; ++i)
         {
-            if ((d.StartClassesMask & (1 << i)) == 0) t += d.ClassCost;
+            if ((d.StartClassesMask & (1 << i)) == 0 && !ClassReward(d, i)) t += d.ClassCost;
         }
         foreach (var tool in d.Tools) t += tool.Cost;
         foreach (var h in d.Brigade) t += h.Cost;
@@ -255,7 +419,7 @@ public static class Meta
         }
         for (var i = 0; i < d.Classes.Length; ++i)
         {
-            if (ClassUnlocked(p, i) && (d.StartClassesMask & (1 << i)) == 0) t += d.ClassCost;
+            if (ClassUnlocked(d, p, i) && (d.StartClassesMask & (1 << i)) == 0 && !ClassReward(d, i)) t += d.ClassCost;
         }
         for (var i = 0; i < d.Tools.Length; ++i)
         {
@@ -272,7 +436,7 @@ public static class Meta
     public static bool AddHouse(Profile p, Game g)
     {
         if (g.St != GameStatus.Won) return false;
-        var h = (byte)((g.Cls & 15) | (Math.Min(3, g.Score / 1000) << 4));
+        var h = (byte)((g.Cls & 15) | (Math.Min(3, g.Score / 1000) << 4)); // klatka domu: wielkość * liczba zawodów + zawód
         if (p.HousesCount < Profile.MaxHouses)
         {
             p.Houses[p.HousesCount++] = h;
@@ -331,6 +495,7 @@ public static class Meta
         p.RunPowers = 0;
         p.RunBrand = 0;
         p.RunClean = 0;
+        p.RunRespect = 0;
         var k = SelectedKeepsake(d, p);
         if (k >= 0 && p.KeepsakeRuns[k] < 255) ++p.KeepsakeRuns[k];
     }
@@ -354,11 +519,11 @@ public static class Meta
         for (var i = 0; i < d.Upgrades.Length; ++i) Take(0, i, UpgradeCost(d, p, i));
         for (var i = 0; i < d.Classes.Length; ++i)
         {
-            if (!ClassUnlocked(p, i)) Take(1, i, d.ClassCost);
+            if (!ClassUnlocked(d, p, i) && !ClassReward(d, i)) Take(1, i, d.ClassCost);
         }
         for (var i = 0; i < d.Tools.Length; ++i)
         {
-            if (!ToolUnlocked(d, p, i)) Take(2, i, d.Tools[i].Cost);
+            if (!ToolUnlocked(d, p, i) && !d.Tools[i].Reward) Take(2, i, d.Tools[i].Cost);
         }
         for (var i = 0; i < d.Brigade.Length; ++i)
         {
@@ -382,6 +547,13 @@ public static class Meta
     /// </summary>
     public static void BankCounters(Profile p, Game g)
     {
+        var rd = g.Respect - p.RunRespect; // Respekt za ukończone etapy – od razu w profilu (śmierć go nie zabiera)
+        if (rd > 0)
+        {
+            p.Respect = AddSat16(p.Respect, rd);
+            p.RespectTotal = AddSat16(p.RespectTotal, rd);
+        }
+        p.RunRespect = (ushort)Math.Max(p.RunRespect, Math.Min(65535, g.Respect));
         p.KillsTotal = AddSat16(p.KillsTotal, g.Kills - p.RunKills);
         p.RunKills = (ushort)Math.Max(p.RunKills, Math.Min(65535, g.Kills));
         p.PowersTotal = AddSat16(p.PowersTotal, g.PowersUsed - p.RunPowers);
@@ -392,13 +564,6 @@ public static class Meta
         p.RunClean = Math.Max(p.RunClean, g.CleanBosses);
     }
 
-    private static int PopCount(uint v)
-    {
-        var n = 0;
-        for (; v != 0; v &= v - 1) ++n;
-        return n;
-    }
-
     /// <summary>Postęp zlecenia (licznik z profilu).</summary>
     public static int ContractProgress(GameData d, Profile p, int i) => d.Contracts[i].Kind switch
     {
@@ -406,7 +571,7 @@ public static class Meta
         ContractKind.Powers => p.PowersTotal,
         ContractKind.Brand => p.BrandTotal,
         ContractKind.CleanBoss => p.CleanBosses,
-        ContractKind.ClassWins => PopCount(p.ClassWins),
+        ContractKind.ClassWins => ClassesWon(d, p),
         ContractKind.Wins => p.Wins,
         _ => 0,
     };
@@ -472,9 +637,9 @@ public static class Meta
             if (g.KillsByType[e] != 0) p.Catalog = (ushort)(p.Catalog | (1u << e));
         }
         p.ToolsFound = (byte)(p.ToolsFound | g.ToolsFound);
-        if (g.St == GameStatus.Won) p.ClassWins = (byte)(p.ClassWins | (1u << g.Cls));
+        if (g.St == GameStatus.Won) SetClassWon(p, g.Cls);
         var stake = Investor.Stake(d, g.Bonus.Investor); // rekord stawki zawodu (wygrana w trybie inwestora)
-        if (g.St == GameStatus.Won && stake > p.BestStake[g.Cls]) p.BestStake[g.Cls] = (byte)stake;
+        if (g.St == GameStatus.Won && stake > BestStake(p, g.Cls)) SetBestStake(p, g.Cls, stake);
     }
 
     /// <summary>Sprawdza odznaki po ważnym momencie; nowe dają doświadczenie. Zwraca bitmaskę zdobytych teraz.</summary>
@@ -483,7 +648,7 @@ public static class Meta
         RecordRun(d, p, g);
         var cleared = g.St == GameStatus.StageClear || g.St == GameStatus.Won;
         var won = g.St == GameStatus.Won;
-        int allClasses = (1 << d.Classes.Length) - 1, allTools = (1 << d.Tools.Length) - 1;
+        var allTools = (1 << d.Tools.Length) - 1;
         var cond = new bool[16];
         void Set(int idx, bool v)
         {
@@ -494,7 +659,7 @@ public static class Meta
         Set(d.BadgeSeryjny, g.StageKills >= 8);
         Set(d.BadgeZawodowiec, g.HeroLevel >= d.MaxHeroLevel);
         Set(d.BadgeTwardziel, won && g.Diff == d.Difficulties.Length - 1);
-        Set(d.BadgePelnyZespol, (p.ClassWins & allClasses) == allClasses);
+        Set(d.BadgePelnyZespol, ClassesWon(d, p) == d.Classes.Length);
         Set(d.BadgeKolekcjoner, (p.ToolsFound & allTools) == allTools);
         Set(d.BadgeKatalog, p.Catalog == (1 << d.Enemies.Length) - 1);
         Set(d.BadgeOsiedle, p.HousesCount >= 5);

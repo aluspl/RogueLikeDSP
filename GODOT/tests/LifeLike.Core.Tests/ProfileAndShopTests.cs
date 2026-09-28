@@ -15,7 +15,7 @@ public class ProfileAndShopTests
         p.Runs = 3;
         p.Wins = 1;
         Assert.True(Meta.ProfileFix(D, p));
-        Assert.True(p.MagicIs(Profile.MagicV7) && p.Best == 500 && p.Runs == 3 && p.Wins == 1);
+        Assert.True(p.MagicIs(Profile.MagicV8) && p.Best == 500 && p.Runs == 3 && p.Wins == 1);
         Assert.True(p.Xp == 0 && p.Classes == D.StartClassesMask && p.Hard == 0);
         Assert.All(p.Levels, l => Assert.Equal(0, l));
         var q = Profile.FromBytes(Enumerable.Repeat((byte)0xFF, Profile.Size).ToArray());
@@ -49,7 +49,7 @@ public class ProfileAndShopTests
     public void ShopCostsLevelsClassesHardAndMods()
     {
         var p = Meta.NewProfile(D);
-        Assert.True(!Meta.ClassUnlocked(p, 2) && Meta.ClassUnlocked(p, 1));
+        Assert.True(!Meta.ClassUnlocked(D, p, 2) && Meta.ClassUnlocked(D, p, 1));
         Assert.True(!Meta.DifficultyUnlocked(D, p, 2) && Meta.DifficultyUnlocked(D, p, 1));
         Assert.False(Meta.BuyUpgrade(D, p, 0));
         p.Xp = 1000;
@@ -57,7 +57,7 @@ public class ProfileAndShopTests
         Assert.True(c0 == D.Upgrades[0].Costs[0] && Meta.BuyUpgrade(D, p, 0) && p.Levels[0] == 1 && p.Xp == 1000 - c0);
         while (Meta.UpgradeCost(D, p, 0) > 0) Assert.True(Meta.BuyUpgrade(D, p, 0));
         Assert.True(p.Levels[0] == D.Upgrades[0].Levels && !Meta.BuyUpgrade(D, p, 0));
-        Assert.True(Meta.BuyClass(D, p, 2) && Meta.ClassUnlocked(p, 2) && !Meta.BuyClass(D, p, 2));
+        Assert.True(Meta.BuyClass(D, p, 2) && Meta.ClassUnlocked(D, p, 2) && !Meta.BuyClass(D, p, 2));
         Assert.True(Meta.BuyHard(D, p) && Meta.DifficultyUnlocked(D, p, 2) && !Meta.BuyHard(D, p));
         var m = Meta.Mods(D, p);
         Assert.True(m.Hp == D.Upgrades[0].Value * D.Upgrades[0].Levels && m.Def == 0);
@@ -136,7 +136,7 @@ public class ProfileAndShopTests
         for (var i = Profile.V2Size; i < raw.Length; i++) raw[i] = 0xEE; // śmieci za starym końcem struktury
         v2 = Profile.FromBytes(raw);
         Assert.True(Meta.ProfileFix(D, v2));
-        Assert.True(v2.MagicIs(Profile.MagicV7) && v2.Xp == 77 && v2.Levels[0] == 2 && v2.Classes == 0x3F);
+        Assert.True(v2.MagicIs(Profile.MagicV8) && v2.Xp == 77 && v2.Levels[0] == 2 && v2.Classes == 0x3F);
         Assert.True(v2.Hard == 1 && v2.Flags == 1 && v2.Tools == 2 && v2.Best == 900);
         Assert.True(v2.Badges == 0 && v2.Catalog == 0 && v2.HousesCount == 0 && v2.ClassWins == 0 && v2.ToolsFound == 0);
         Assert.True(v2.KillsTotal == 0 && v2.PowersTotal == 0 && v2.Contracts == 0 && v2.KeepsakeRuns.All(x => x == 0));

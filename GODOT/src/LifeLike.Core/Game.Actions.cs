@@ -13,9 +13,56 @@ public sealed partial class Game
         var dmg = R.Range(Weapon.MinDamage, Weapon.MaxDamage) + HeroStat(Weapon.ScalesWith) / 2 + DmgBonus
                   + GearBonus(GearStat.Dmg) - ed.Defense / 2;
         if (dmg < 1) dmg = 1;
+        dmg += Pct.Part(dmg, Bonus.DmgPct, ref DmgCarry); // Kurs fachowy, Respekt: +% obrażeń
         var crit = R.Range(1, 100) <= CritPct();
         if (crit) dmg *= D.CritMultiplier;
         DamageEnemy(ei, dmg, crit, Weapon.Name);
+        // Operator koparki: cios wręcz czasem odpycha problem o pole (bossa nie)
+        var e = Enemies[ei];
+        if (HasPassive(ClassPassive.Push) && e.Alive && ei != Boss && Cheb(Hero.X, Hero.Y, e.X, e.Y) == 1
+            && R.Range(1, 100) <= D.PushChancePct)
+        {
+            Shove(ei, Math.Sign(e.X - Hero.X), Math.Sign(e.Y - Hero.Y), 1);
+        }
+    }
+
+    /// <summary>Odepchnięcie problemu o n pól w kierunku (dx, dy), dopóki pole wolne; zwraca, o ile przesunięto.</summary>
+    public int Shove(int ei, int dx, int dy, int n)
+    {
+        var moved = 0;
+        for (var k = 0; k < n; ++k)
+        {
+            int nx = Enemies[ei].X + dx, ny = Enemies[ei].Y + dy;
+            if (Lv.At(nx, ny) != Tile.Floor || Occupied(nx, ny)) break;
+            Enemies[ei].X = (sbyte)nx;
+            Enemies[ei].Y = (sbyte)ny;
+            ++moved;
+        }
+        return moved;
+    }
+
+    /// <summary>Obrażenia dla bohatera po obronie: Szkolenie BHP i Respekt zmniejszają je o %, najmniej 1.</summary>
+    public int TakenDamage(int dmg)
+    {
+        if (dmg < 1) dmg = 1;
+        dmg -= Pct.Part(dmg, Bonus.TakenPct, ref TakenCarry);
+        return dmg < 1 ? 1 : dmg;
+    }
+
+    /// <summary>Bohater bez HP: Druga szansa (Respekt) raz na budowę zostawia 1 HP; inaczej koniec budowy.</summary>
+    public void HeroDown()
+    {
+        if (Bonus.SecondChance > 0 && !SecondUsed)
+        {
+            SecondUsed = true;
+            Hero.Hp = 1;
+            Push(Msg("Druga szansa! Zostaje 1 HP").As(LogKind.Good));
+            return;
+        }
+        Hero.Hp = 0;
+        Hero.Alive = false;
+        St = GameStatus.Dead;
+        Push(Msg("Budowa wstrzymana...").As(LogKind.Bad));
     }
 
     /// <summary>
@@ -50,7 +97,7 @@ public sealed partial class Game
                 {
                     for (var m = 0; m < D.Materials.Length; ++m) AddMaterial(m, D.MaterialBossDrop);
                 }
-                else if (R.Range(1, 100) <= D.MaterialDropPct)
+                else if (R.Range(1, 100) <= D.MaterialDropPct * (100 + Bonus.MatsPct) / 100) // Respekt: Zapasy
                 {
                     AddMaterial(ed.Material >= 0 ? ed.Material : R.Range(0, D.Materials.Length - 1));
                 }
@@ -209,7 +256,8 @@ public sealed partial class Game
         return false;
     }
 
-    public int CoffeeHeal() => D.CoffeeHeal + Bonus.Coffee;
+    /// <summary>Kawa leczy (Lepszy termos, Respekt: Mocna kawa +%).</summary>
+    public int CoffeeHeal() => Pct.DivRound((D.CoffeeHeal + Bonus.Coffee) * (100 + Bonus.CoffeePct), 100);
 
     public void DrinkCoffee()
     {
@@ -263,9 +311,9 @@ public sealed partial class Game
         int arg = 0, trait = 0;
         if (type == (int)PickupType.GearBox) // slot losowy, jakość lepsza na późnych etapach i ze szczęściem
         {
-            var q = R.Range(1, 100) + Stage * D.GearStageBonus + D.RarityPerLuck * Luck();
+            var q = R.Range(1, 100) + Stage * D.GearStageBonus + D.RarityPerLuck * Luck() + Bonus.GearPct;
             var rarity = q >= D.GearBrandFrom ? 2 : (q >= D.GearSolidFrom ? 1 : 0);
-            arg = (byte)(R.Range(0, D.GearSlotsCount - 1) * 3 + rarity);
+            arg = (byte)(RandomSlot() * 3 + rarity);
             trait = (byte)R.Range(0, D.GearTraitsCount - 1);
         }
         if (type == (int)PickupType.Tool)
@@ -304,6 +352,7 @@ public sealed partial class Game
         }
         Equipped[slot] = (sbyte)rarity;
         EquippedTrait[slot] = (sbyte)trait;
+        Thermos = Math.Min(Thermos, ThermosCap()); // słabszy pas: kawy ponad miejsca przepadają
         if (rarity == 2 && BrandFound < 255) ++BrandFound; // zlecenie Markowy styl
         UpdateFov(); // cecha Widzenie zmienia pole widzenia
         Push(Msg("Sprzęt: ").Add(nw.Name).Add(" +").Add(nw.Value).As(LogKind.Loot));
@@ -457,8 +506,7 @@ public sealed partial class Game
                 Push(Msg("Unik! ").Add(ed.Name).Add(" chybia").As(LogKind.Good));
                 return;
             }
-            var dmg = R.Range(ed.MinDamage, ed.MaxDamage) + EnemyDmgBonus() - HeroDefense() / 2;
-            if (dmg < 1) dmg = 1;
+            var dmg = TakenDamage(R.Range(ed.MinDamage, ed.MaxDamage) + EnemyDmgBonus() - HeroDefense() / 2);
             Hero.Hp = (short)(Hero.Hp - dmg);
             StageDamage += dmg;
             HeroHit = true;
@@ -468,13 +516,7 @@ public sealed partial class Game
                 ApplyStatus(ed.OnHit, ed.StatusTurns);
             if (EventActive(EventEffect.Rain) && Hero.Hp > 0 && R.Range(1, 100) <= D.SiteEvents[StageEvent].Value)
                 ApplyStatus(StatusEffect.Slip, 2); // Ulewa w nocy: błoto na placu
-            if (Hero.Hp <= 0)
-            {
-                Hero.Hp = 0;
-                Hero.Alive = false;
-                St = GameStatus.Dead;
-                Push(Msg("Budowa wstrzymana...").As(LogKind.Bad));
-            }
+            if (Hero.Hp <= 0) HeroDown();
             return;
         }
         if (WeatherIs(WeatherEffect.Frost) && i != Boss && Turns % WDef.Value == 0) return; // mróz: problemy stoją
@@ -530,20 +572,13 @@ public sealed partial class Game
             var bd = D.Enemies[Enemies[Boss].DefId];
             if (SlamCellAt(Hero.X, Hero.Y))
             {
-                var dmg = R.Range(bd.MinDamage, bd.MaxDamage) + EnemyDmgBonus() + D.SlamDamageBonus - HeroDefense() / 2;
-                if (dmg < 1) dmg = 1;
+                var dmg = TakenDamage(R.Range(bd.MinDamage, bd.MaxDamage) + EnemyDmgBonus() + D.SlamDamageBonus - HeroDefense() / 2);
                 Hero.Hp = (short)(Hero.Hp - dmg);
                 StageDamage += dmg;
                 HeroHit = true;
                 AddHit(Hero.X, Hero.Y, dmg, true);
                 Push(Msg(bd.SlamName.Length > 0 ? bd.SlamName : "Uderzenie").Add(": -").Add(dmg).Add(" HP").As(LogKind.Bad));
-                if (Hero.Hp <= 0)
-                {
-                    Hero.Hp = 0;
-                    Hero.Alive = false;
-                    St = GameStatus.Dead;
-                    Push(Msg("Budowa wstrzymana...").As(LogKind.Bad));
-                }
+                if (Hero.Hp <= 0) HeroDown();
             }
             else
             {

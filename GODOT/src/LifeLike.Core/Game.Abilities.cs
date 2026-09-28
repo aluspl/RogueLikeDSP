@@ -189,6 +189,78 @@ public sealed partial class Game
                 }
                 break;
             }
+            case AbilityEffect.Line: // Rynna (Dekarz): dachówki lecą linią przez najbliższy widoczny problem (4/5/6 pól)
+            {
+                var t = NearestVisibleEnemy();
+                if (t < 0) break;
+                int dx = Enemies[t].X - Hero.X, dy = Enemies[t].Y - Hero.Y, len = Math.Max(Math.Abs(dx), Math.Abs(dy));
+                if (rank >= 2) ++DmgBonus;
+                uint done = 0;
+                for (var k = 1; k <= 3 + rank && St == GameStatus.Playing; ++k)
+                {
+                    int x = Hero.X + Pct.DivRound(dx * k, len), y = Hero.Y + Pct.DivRound(dy * k, len);
+                    if (!Lv.Passable(x, y)) break; // mur zatrzymuje dachówki
+                    var ei = EnemyAt(x, y);
+                    if (ei >= 0 && (done & (1u << ei)) == 0)
+                    {
+                        HeroAttack(ei);
+                        done |= 1u << ei;
+                        ok = true;
+                    }
+                }
+                if (rank >= 2) --DmgBonus;
+                if (ok) Push(Msg(c.AbilityName).Add(": dachówki w linii!"));
+                break;
+            }
+            case AbilityEffect.Splash: // Narzut (Tynkarz): tynk na obszar wokół celu w zasięgu (3x3, 5x5 na III), od II ogłusza
+            {
+                var t = NearestTarget();
+                if (t < 0) break;
+                int cx = Enemies[t].X, cy = Enemies[t].Y, rad = rank >= 3 ? 2 : 1;
+                for (var i = 0; i < EnemiesCount && St == GameStatus.Playing; ++i)
+                {
+                    if (Enemies[i].Alive && Cheb(cx, cy, Enemies[i].X, Enemies[i].Y) <= rad)
+                    {
+                        HeroAttack(i);
+                        ok = true;
+                        if (rank >= 2 && Enemies[i].Alive) Enemies[i].Stun = (sbyte)Math.Max((int)Enemies[i].Stun, 1);
+                    }
+                }
+                break;
+            }
+            case AbilityEffect.Ram: // Taran (Operator koparki): szarża 3/4/5 pól do problemu, cios +ranga, odepchnięcie o 2
+            {
+                var t = NearestVisibleEnemy();
+                if (t < 0) break;
+                int ex = Enemies[t].X - Hero.X, ey = Enemies[t].Y - Hero.Y;
+                int dx = Math.Abs(ey) >= 2 * Math.Abs(ex) ? 0 : Math.Sign(ex), dy = Math.Abs(ex) >= 2 * Math.Abs(ey) ? 0 : Math.Sign(ey);
+                var moved = false;
+                for (var k = 0; k < 2 + rank; ++k)
+                {
+                    int nx = Hero.X + dx, ny = Hero.Y + dy;
+                    var ei = EnemyAt(nx, ny);
+                    if (ei >= 0)
+                    {
+                        DmgBonus += rank;
+                        HeroAttack(ei);
+                        DmgBonus -= rank;
+                        if (Enemies[ei].Alive && St == GameStatus.Playing)
+                        {
+                            if (ei != Boss) Shove(ei, dx, dy, 2);
+                            Enemies[ei].Stun = (sbyte)Math.Max((int)Enemies[ei].Stun, 1);
+                        }
+                        ok = true;
+                        break;
+                    }
+                    if (!Lv.Passable(nx, ny) || Occupied(nx, ny)) break;
+                    Hero.X = (sbyte)nx;
+                    Hero.Y = (sbyte)ny;
+                    moved = ok = true;
+                }
+                if (moved) Collect();
+                if (ok) Push(Msg(c.AbilityName).Add("!"));
+                break;
+            }
         }
         if (!ok)
         {
@@ -205,7 +277,23 @@ public sealed partial class Game
     public bool HurtowniaCan(int i)
     {
         var it = D.Hurtownia[i];
-        return it.Material >= 0 ? Mats[it.Material] >= it.MatCost : Cash >= it.Price;
+        return it.Material >= 0 ? Mats[it.Material] >= it.MatCost : Cash >= HurtowniaPrice(i);
+    }
+
+    /// <summary>Cena towaru w zł po rabacie z Respektu.</summary>
+    public int HurtowniaPrice(int i) => D.Hurtownia[i].Price * (100 - Bonus.ShopPct) / 100;
+
+    /// <summary>Losowy slot sprzętu spośród dostępnych (nagrody dokładają buty i pas); przy 3 slotach jak dawniej.</summary>
+    public int RandomSlot()
+    {
+        var n = 0;
+        for (var i = 0; i < D.GearSlotsCount; ++i) n += (Bonus.GearSlots >> i) & 1;
+        var k = R.Range(0, Math.Max(1, n) - 1);
+        for (var i = 0; i < D.GearSlotsCount; ++i)
+        {
+            if (((Bonus.GearSlots >> i) & 1) != 0 && k-- == 0) return i;
+        }
+        return 0;
     }
 
     /// <summary>Hurtownia między aktami: zakup za budżet budowy albo materiał.</summary>
@@ -233,7 +321,7 @@ public sealed partial class Game
                 break;
             case ShopEffect.Gear:
             {
-                var slot = R.Range(0, D.GearSlotsCount - 1);
+                var slot = RandomSlot();
                 var rarity = R.Range(1, 2);
                 if (rarity <= Equipped[slot]) rarity = Math.Min(2, Equipped[slot] + 1);
                 if (rarity > Equipped[slot]) Equip(slot, rarity, R.Range(0, D.GearTraitsCount - 1));
@@ -258,7 +346,7 @@ public sealed partial class Game
             }
         }
         if (it.Material >= 0) Mats[it.Material] = (byte)(Mats[it.Material] - it.MatCost);
-        else Cash -= it.Price;
+        else Cash -= HurtowniaPrice(i);
         Push(Msg("Hurtownia: ").Add(it.Name).As(LogKind.Loot));
         return true;
     }

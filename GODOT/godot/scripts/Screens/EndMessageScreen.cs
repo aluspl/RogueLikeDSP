@@ -30,7 +30,7 @@ public sealed class EndMessageScreen : Screen
         if (g.Score > S.PrevBest) page.Info($"Nowy rekord! (poprzedni {S.PrevBest})", Ink.Done);
         else page.Info(won ? "Dom na Osiedlu!" : $"Rekord {p.Best} - do pobicia", won ? Ink.Done : Ink.Dim);
         var stake = Investor.Stake(d, g.Bonus.Investor);
-        if (stake > 0) page.Info($"Tryb inwestora: stawka {stake}" + (won ? $" (rekord zawodu {p.BestStake[g.Cls]})" : ""), Ink.Brand);
+        if (stake > 0) page.Info($"Tryb inwestora: stawka {stake}" + (won ? $" (rekord zawodu {Meta.BestStake(p, g.Cls)})" : ""), Ink.Brand);
         if (!won) Motivation(page);
         N.Phone.OpenSingle(page, 2, instant);
     }

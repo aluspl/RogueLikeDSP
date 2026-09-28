@@ -75,8 +75,8 @@ public static class StateDigest
             f.Add(p.Trait);
         }
         for (var i = 0; i < 5; i++) f.Add(g.HeroStatus[i]);
-        for (var i = 0; i < 4; i++) f.Add(g.Equipped[i]);
-        for (var i = 0; i < 4; i++) f.Add(g.EquippedTrait[i]);
+        for (var i = 0; i < Game.MaxGearSlots; i++) f.Add(g.Equipped[i]);
+        for (var i = 0; i < Game.MaxGearSlots; i++) f.Add(g.EquippedTrait[i]);
         f.Add(g.Thermos);
         f.Add(g.OfferSlot);
         f.Add(g.OfferRarity);
@@ -133,6 +133,11 @@ public static class StateDigest
         f.Add(g.Daily ? 1 : 0);
         f.Add(g.DailyDay);
         foreach (var d in g.StageDays) f.Add(d);
+        // v0.21.49: Respekt, reszty procentów obrażeń, Druga szansa
+        f.Add(g.Respect);
+        f.Add(g.DmgCarry);
+        f.Add(g.TakenCarry);
+        f.Add(g.SecondUsed ? 1 : 0);
         return f.H;
     }
 }

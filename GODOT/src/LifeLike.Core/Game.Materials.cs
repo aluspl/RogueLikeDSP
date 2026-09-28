@@ -108,5 +108,20 @@ public sealed partial class Game
     public void ChoosePath(int k) => NextPath = (sbyte)(k & 1);
 
     /// <summary>Etap zaliczony: ile tur trwał (harmonogram domu po wygranej).</summary>
-    public void FinishStage() => StageDays[Stage] = (ushort)Math.Min(65535, Turns - StageStartTurn);
+    public void FinishStage()
+    {
+        StageDays[Stage] = (ushort)Math.Min(65535, Turns - StageStartTurn);
+        var got = StageRespect();
+        Respect += got;
+        Push(Msg("Respekt +").Add(got).As(LogKind.Loot));
+    }
+
+    /// <summary>Respekt za bieżący etap: zwykły, boss w środku aktu, boss aktu, ostatni; mnożnik jak wynik (trudność, NG+).</summary>
+    public int StageRespect()
+    {
+        var sd = D.Stages[Stage];
+        var b = Stage == D.Stages.Length - 1 ? D.RespectFinal
+            : (sd.Boss < 0 ? D.RespectStage : (D.Stages[Stage + 1].Act == sd.Act ? D.RespectBoss : D.RespectActBoss));
+        return Math.Max(1, b * ScorePct() / 100);
+    }
 }

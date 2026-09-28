@@ -48,7 +48,8 @@ public class WeatherTests
             var w = TestData.Arena(c);
             var rg = w.Weapon.Range;
             w.Weather = (sbyte)WeatherOf(WeatherEffect.Wind);
-            Assert.Equal(rg > 1 ? Math.Max(1, rg - D.Weather[w.Weather].Value) : rg, w.WeaponRange());
+            var windproof = D.Classes[c].Passive == ClassPassive.Windproof; // Dekarz: wiatr mu nie przeszkadza
+            Assert.Equal(rg > 1 && !windproof ? Math.Max(1, rg - D.Weather[w.Weather].Value) : rg, w.WeaponRange());
         }
         var g = TestData.Arena(2);
         var range = g.Weapon.Range;

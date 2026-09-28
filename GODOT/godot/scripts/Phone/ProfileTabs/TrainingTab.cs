@@ -52,7 +52,7 @@ public sealed class TrainingTab : PhonePage
         for (var i = 0; i < _d.Upgrades.Length; i++) _entries.Add((TrainingKind.Upgrade, i));
         for (var i = 0; i < _d.Classes.Length; i++)
         {
-            if (!Meta.ClassUnlocked(_p, i)) _entries.Add((TrainingKind.Class, i));
+            if (!Meta.ClassUnlocked(_d, _p, i)) _entries.Add((TrainingKind.Class, i));
         }
         for (var i = 0; i < _d.Tools.Length; i++)
         {

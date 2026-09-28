@@ -45,7 +45,7 @@ public partial class ClassSelectView : Control
         _d = d;
         _p = p;
         var all = Enumerable.Range(0, d.Classes.Length).ToList();
-        _order = all.Where(i => Meta.ClassUnlocked(p, i)).Concat(all.Where(i => !Meta.ClassUnlocked(p, i))).ToArray();
+        _order = all.Where(i => Meta.ClassUnlocked(d, p, i)).Concat(all.Where(i => !Meta.ClassUnlocked(d, p, i))).ToArray();
         _pos = Math.Max(0, Array.IndexOf(_order, cls));
         _slide = _pos;
         foreach (var i in all) _scale[i] = i == Selected ? 2f : 1f;
@@ -130,7 +130,7 @@ public partial class ClassSelectView : Control
         for (var k = 0; k < _order.Length; k++)
         {
             var cls = _order[k];
-            var unl = Meta.ClassUnlocked(_p, cls);
+            var unl = Meta.ClassUnlocked(_d, _p, cls);
             var sc = _scale[cls];
             var sel = k == _pos;
             var x = SlotX(k);
@@ -167,7 +167,7 @@ public partial class ClassSelectView : Control
             DrawPortraitCard(new Rect2(12 + _cardShift, head + 10, w - 24, by - head - 20));
             var bw = (w - 36) / 3;
             Button(new Rect2(12, by, bw, bh), "Wróć", false, ClassSelectHit.Back);
-            Button(new Rect2(24 + bw, by, w - 36 - bw, bh), Meta.ClassUnlocked(_p, Selected) ? "Start budowy" : "Zablokowany", true, ClassSelectHit.Start);
+            Button(new Rect2(24 + bw, by, w - 36 - bw, bh), Meta.ClassUnlocked(_d, _p, Selected) ? "Start budowy" : "Zablokowany", true, ClassSelectHit.Start);
             return;
         }
         DrawCard(new Rect2(40 + _cardShift, 122, w - 80, 204));
@@ -196,7 +196,7 @@ public partial class ClassSelectView : Control
         var f = PixelFont.I;
         var cls = Selected;
         var c = _d.Classes[cls];
-        var unl = Meta.ClassUnlocked(_p, cls);
+        var unl = Meta.ClassUnlocked(_d, _p, cls);
         var m = Meta.Mods(_d, _p);
         DrawStyleBox(Ui.Box(new Color(0, 0, 0, 0.35f), 10), new Rect2(r.Position + new Vector2(0, 3), r.Size));
         DrawStyleBox(Ui.Box(Pal.Card, 10), r);
@@ -268,7 +268,7 @@ public partial class ClassSelectView : Control
     }
 
     /// <summary>Stawka włączonych modyfikatorów i rekord zawodu, np. „stawka 5, rekord 3”.</summary>
-    private string InvestorLabel() => $"stawka {Investor.Stake(_d, Meta.InvestorMask(_d, _p))}, rekord {_p.BestStake[Selected]}";
+    private string InvestorLabel() => $"stawka {Investor.Stake(_d, Meta.InvestorMask(_d, _p))}, rekord {Meta.BestStake(_p, Selected)}";
 
     /// <summary>Paski statystyk (bazowa w kolorze marki, premia Szkoleń na zielono); zwraca dół.</summary>
     private float DrawStats(float sx, float sy, float width, int cls, ClassDef c, in RunMods m, bool unl, float step)
@@ -306,7 +306,7 @@ public partial class ClassSelectView : Control
         var f = PixelFont.I;
         var cls = Selected;
         var c = _d.Classes[cls];
-        var unl = Meta.ClassUnlocked(_p, cls);
+        var unl = Meta.ClassUnlocked(_d, _p, cls);
         var m = Meta.Mods(_d, _p);
         DrawStyleBox(Ui.Box(new Color(0, 0, 0, 0.35f), 10), new Rect2(r.Position + new Vector2(0, 3), r.Size));
         DrawStyleBox(Ui.Box(Pal.Card, 10), r);

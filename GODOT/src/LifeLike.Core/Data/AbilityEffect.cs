@@ -1,3 +1,3 @@
 namespace LifeLike.Core.Data;
 
-public enum AbilityEffect : byte { Stun, Wall, Volley, Chain, Flush, Spin }
+public enum AbilityEffect : byte { Stun, Wall, Volley, Chain, Flush, Spin, Line, Splash, Ram }

@@ -200,7 +200,7 @@ z cechami, dziennik bajt po bajcie, wydarzenie na placu, liczniki zleceń, staty
 (pola i cały zapis bajt po bajcie jak w SRAM).
 `GoldenTests` odtwarza to samo w C# i porównuje pole po polu.
 
-Odtworzenie plików (z tej samej wersji nagłówków GBA co `golden/game.json`; obecnie migawka v0.21.47 – bot „smart”
+Odtworzenie plików (z tej samej wersji nagłówków GBA co `golden/game.json`; obecnie migawka v0.21.49, 37 przebiegów (w tym nowe zawody, pełny Respekt, nagrody za odbiór, Druga szansa) – bot „smart”
 wzywa też brygadę, dwa przebiegi z trybem inwestora,
 np. `git show d02ba811:GBA/...` rozpakowane do osobnego katalogu `<gba_v43>`):
 

@@ -20,7 +20,7 @@ public sealed class TeamTab : PhonePage
     }
 
     public override string Title => "Zespół";
-    public override string Sub => $"Wygrane {UiText.BitCount(_p.ClassWins)}/{_d.Classes.Length}";
+    public override string Sub => $"Wygrane {Meta.ClassesWon(_d, _p)}/{_d.Classes.Length}";
     public override string Hint => "Q/E: zakładki  Esc: wróć";
 
     public override bool Input(InputCmd e)
@@ -43,15 +43,15 @@ public sealed class TeamTab : PhonePage
             var sel = i == _list.Sel;
             if (sel) p.Selected(card, i);
             else if (i > 0) p.Divider(card, i);
-            var won = (_p.ClassWins & (1 << i)) != 0;
-            var unl = Meta.ClassUnlocked(_p, i);
+            var won = Meta.ClassWon(_p, i);
+            var unl = Meta.ClassUnlocked(_d, _p, i);
             var pw = p.Pill(right, y, won ? "Wygrana" : unl ? "Dostępny" : "Zablok.", won ? PillKind.Done : unl ? PillKind.Group : PillKind.Gray);
             p.Text(tx, y, _d.Classes[i].Name, sel ? Ink.Brand : unl ? Ink.Dark : Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
         }
         var s = _list.Sel;
         var c = _d.Classes[s];
         var dc = p.CardH(card.End.Y + 6, 66);
-        var unlocked = Meta.ClassUnlocked(_p, s);
+        var unlocked = Meta.ClassUnlocked(_d, _p, s);
         var photo = new Rect2(dc.Position.X + 8, dc.Position.Y + 8, 32, 32);
         p.C.DrawStyleBox(Ui.Box(Pal.Group, 5), photo);
         p.Icon(Assets.Actors, unlocked ? c.Frame : Assets.FrameSilhouette + s, Assets.Actor, photo.Position);

@@ -97,6 +97,6 @@ public sealed class InvestorPage : PhonePage
         p.Divider(dc, 1);
         p.Text(tx, p.RowY(dc, 1), $"Stawka {Investor.Stake(_d, mask)}, doświadczenie +{Investor.Xp(_d, mask)}%", Ink.Dark, TextAlign.Left, right - tx);
         p.Divider(dc, 2);
-        p.Text(tx, p.RowY(dc, 2), $"Rekord: {_d.Classes[_cls].Name} - stawka {_p.BestStake[_cls]}", Ink.Done, TextAlign.Left, right - tx);
+        p.Text(tx, p.RowY(dc, 2), $"Rekord: {_d.Classes[_cls].Name} - stawka {Meta.BestStake(_p, _cls)}", Ink.Done, TextAlign.Left, right - tx);
     }
 }

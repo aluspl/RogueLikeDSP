@@ -107,6 +107,8 @@ public sealed partial class Game
                  {
                      Bonus.Hp, Bonus.Def, Bonus.Dmg, Bonus.Coffee, Bonus.Pickups, Bonus.Luck, Bonus.Craft, Bonus.Cooldown, Bonus.Sight,
                      Bonus.Thermos, Bonus.ToolPct, Bonus.XpPct, Bonus.Cash, Bonus.Crit, Bonus.Tools, Bonus.Helpers, Bonus.Investor,
+                     Bonus.DmgPct, Bonus.TakenPct, Bonus.GearPct, Bonus.Dodge, Bonus.CoffeePct, Bonus.BrigadePct, Bonus.ShopPct,
+                     Bonus.MatsPct, Bonus.SecondChance, Bonus.GearSlots,
                  })
             w.Write(v);
         foreach (var v in new[] { XpPct, XpBanked, RunXp, HeroLevel, Boss, StairsX, StairsY }) w.Write(v);
@@ -159,6 +161,10 @@ public sealed partial class Game
         w.Write(Daily);
         w.Write(DailyDay);
         foreach (var d in StageDays) w.Write(d);
+        w.Write(Respect);
+        w.Write(DmgCarry);
+        w.Write(TakenCarry);
+        w.Write(SecondUsed);
     }
 
     public void Read(BinaryReader r)
@@ -215,6 +221,9 @@ public sealed partial class Game
             ToolPct = r.ReadInt32(), XpPct = r.ReadInt32(), Cash = r.ReadInt32(), Crit = r.ReadInt32(), Tools = r.ReadInt32(),
             Helpers = r.ReadInt32(),
             Investor = r.ReadInt32(),
+            DmgPct = r.ReadInt32(), TakenPct = r.ReadInt32(), GearPct = r.ReadInt32(), Dodge = r.ReadInt32(), CoffeePct = r.ReadInt32(),
+            BrigadePct = r.ReadInt32(), ShopPct = r.ReadInt32(), MatsPct = r.ReadInt32(), SecondChance = r.ReadInt32(),
+            GearSlots = r.ReadInt32(),
         };
         XpPct = r.ReadInt32();
         XpBanked = r.ReadInt32();
@@ -264,5 +273,9 @@ public sealed partial class Game
         Daily = r.ReadBoolean();
         DailyDay = r.ReadUInt16();
         for (var i = 0; i < StageDays.Length; i++) StageDays[i] = r.ReadUInt16();
+        Respect = r.ReadInt32();
+        DmgCarry = r.ReadInt32();
+        TakenCarry = r.ReadInt32();
+        SecondUsed = r.ReadBoolean();
     }
 }
