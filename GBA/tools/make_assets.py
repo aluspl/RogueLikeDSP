@@ -183,7 +183,9 @@ def p_toolbox(d):   # skrzynka z narzędziem (drop)
 UI_SPR = [ui_lock]
 
 # klatki: 0-5 zawody, 6-14 wrogowie, 15-17 znajdźki, 18 efekt trafienia, 19 kłódka, 20-25 sylwetki zawodów,
-# 26 skrzynka z narzędziem, 27-41 druga klatka animacji zawodów i wrogów, 42-44 paczki sprzętu (pixel-art: tools/pixel_art.py)
+# 26 skrzynka z narzędziem, 27-41 druga klatka animacji zawodów i wrogów, 42-44 paczki sprzętu (pixel-art: tools/pixel_art.py),
+# 45 celownik, 46-51 bossowie; v0.21.49: 52-54 zawody z nagród (Dekarz, Tynkarz, Operator koparki), 55-57 ich druga klatka,
+# 58-60 ich sylwetki
 def make_actors():
     import pixel_art as pa
     workers = [pa.worker_frame(i, 0) for i in range(6)]
@@ -198,6 +200,9 @@ def make_actors():
     frames += [gf[i * 256:(i + 1) * 256] for i in range(3)]   # 42-44 paczki sprzętu wg jakości
     frames += [pa.reticle_frame()]                             # 45 celownik
     frames += pa.boss_frames()                                 # 46-47 bossowie aktów, 48-49 ich druga klatka, 50-51 Inspekcja
+    extra = [pa.worker_frame(i, 0) for i in range(6, len(pa.WORKERS))]   # 52-54 zawody z nagród za odbiór
+    frames += extra + [pa.worker_frame(i, 1) for i in range(6, len(pa.WORKERS))]   # 55-57 ich druga klatka
+    frames += [silhouette(f) for f in extra]                               # 58-60 ich sylwetki
     px = [p for fr in frames for p in fr]
     write_bmp(os.path.join(G, "actors.bmp"), px, 16, 16 * len(frames), SPR_PAL, 4)
     write_json("actors", {"type": "sprite", "height": 16})
@@ -552,7 +557,7 @@ if __name__ == "__main__":
     import pixel_art as pa
     write_bmp(os.path.join(G, "particles.bmp"), pa.particle_frames(), 8, 8 * len(pa.PARTICLES), SPR_PAL, 4)
     write_json("particles", {"type": "sprite", "height": 8})
-    write_bmp(os.path.join(G, "houses.bmp"), pa.house_frames(), 16, 16 * 25, SPR_PAL, 4)
+    write_bmp(os.path.join(G, "houses.bmp"), pa.house_frames(), 16, 16 * (4 * len(pa.WORKERS) + 1), SPR_PAL, 4)
     write_json("houses", {"type": "sprite", "height": 16})
     # osobna paleta (inaczej Butano współdzieli ją z postaciami i szarość ikony objęłaby bohatera)
     icon_pal = list(SPR_PAL); icon_pal[SK] = (0, 0, 0)   # kolor skóry nieużywany w ikonach

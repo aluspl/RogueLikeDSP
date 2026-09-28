@@ -33,6 +33,15 @@
 //  19 - codzienna budowa: profil z datą 25.09.2026 i wynikami trzech wcześniejszych dni (R na tytule)
 //  20 - wygrana: ostatni etap z bossem, dni poprzednich etapów wypełnione (L+R+SELECT = odbiór, harmonogram domu)
 //  21 - porażka: 1 HP, obok przebudzony problem (B = czekaj, koniec budowy z motywacją: rekord, zlecenie, Szkolenia)
+//  22 - Respekt: profil z Respektem i częścią rang, 3 wygrane (3 nagrody); tytuł -> SELECT -> Koszty -> SELECT = Respekt,
+//       A kupuje, SELECT = Nagrody za odbiór
+//  23 - Respekt za etap: profil z 12 Respektu; L+R+SELECT = etap zaliczony, baner "Respekt +2"; telefon -> Koszty
+//  24 - nagroda za odbiór: profil bez wygranych, ostatni etap z bossem (L+R+SELECT = odbiór, "Nagroda: Młot udarowy")
+//  25 - Dekarz: trzy problemy w linii w prawo (ogłuszone), wiatr (zasięg bez zmian); R = Rynna
+//  26 - Tynkarz: trzy problemy w grupie 2 pola w prawo; R = Narzut
+//  27 - Operator koparki: wytrzymały problem 3 pola w prawo; R = Taran, potem D-pad w prawo = ciosy (czasem odpychają)
+//  28 - nowe narzędzia i sprzęt: obok bohatera (w prawo) skrzynki Młot udarowy i Pistolet do kotew, paczki Buty i Pas;
+//       telefon -> Sprzęt (5 slotów)
 #include "core.h"
 #include "meta.h"
 
@@ -61,7 +70,8 @@ namespace debug_scenario
 
     inline void unlock_all(core::profile& p)
     {
-        p.classes = uint8_t((1 << data::classes_count) - 1);
+        p.classes = uint8_t(((1 << data::classes_count) - 1) & ~data::reward_classes_mask);
+        p.rewards = uint8_t(core::rewards_available());   // nagrody za odbiór: nowe zawody, narzędzia, buty i pas
         p.hard = 1;
         core::set_flag(p, core::help_seen);
     }
@@ -95,6 +105,13 @@ namespace debug_scenario
             core::record_daily(p, day - 4, 2210, false);
         }
         if(scenario == 21) { p.best = 4200; p.xp = 12; p.kills_total = 180; }
+        if(scenario == 22)
+        {
+            p.respect = 180; p.respect_total = 420; p.wins = 3; p.rewards = 3;
+            p.respect_ranks[0] = 1; p.respect_ranks[5] = 2; p.respect_ranks[8] = 3; p.respect_ranks[12] = 1;
+        }
+        if(scenario == 23) { p.respect = 12; p.respect_total = 12; }
+        if(scenario == 24) { p.wins = 0; p.rewards = 0; p.respect = 30; }
         if(scenario == 16)
         {
             p.wins = 1;
@@ -153,9 +170,39 @@ namespace debug_scenario
         if(scenario == 15) g.cash = 100;
     }
 
+    // Zawód z mocą e (nowe zawody z nagród za odbiór).
+    inline int class_of(core::ability_effect e)
+    {
+        for(int c = 0; c < data::classes_count; ++c) if(data::classes[c].ability == e) return c;
+        return 0;
+    }
+
+    // Podłoga w prostokącie wokół bohatera (scenariusze mocy potrzebują miejsca w linii).
+    inline void clear_area(core::game& g, int dx0, int dy0, int dx1, int dy1)
+    {
+        for(int y = g.hero.y + dy0; y <= g.hero.y + dy1; ++y)
+            for(int x = g.hero.x + dx0; x <= g.hero.x + dx1; ++x)
+                if(x >= 1 && y >= 1 && x < core::map_w - 1 && y < core::map_h - 1 && g.lv.t[y][x] == core::tile::wall) g.lv.t[y][x] = core::tile::floor;
+    }
+
+    inline void place_at(core::game& g, int def, int dx, int dy, int stun)
+    {
+        int x = g.hero.x + dx, y = g.hero.y + dy;
+        if(g.enemies_count >= core::max_enemies || g.lv.at(x, y) != core::tile::floor || g.occupied(x, y)) return;
+        g.spawn(def, x, y);
+        g.enemies[g.enemies_count - 1].awake = true;
+        g.enemies[g.enemies_count - 1].stun = int8_t(stun);
+    }
+
     // Wołane raz, na wejściu na pierwszy etap budowy.
     inline void apply(core::game& g, int scenario)
     {
+        if(scenario >= 25 && scenario <= 27)   // nowy zawód niezależnie od wyboru na ekranie zawodu
+        {
+            const core::ability_effect e[3] = { core::ability_effect::line, core::ability_effect::splash, core::ability_effect::ram };
+            core::run_mods m = g.bonus;
+            g.new_run(class_of(e[scenario - 25]), g.run_seed, g.diff, m);
+        }
         switch(scenario)
         {
             case 1:
@@ -285,6 +332,64 @@ namespace debug_scenario
                 g.score = 4800;
                 g.turns = 240;
                 g.stage_start_turn = 200;
+                break;
+            }
+            case 23:
+                g.enemies_count = 0;
+                place_enemy(g, data::enemy_kornik, 3, 4, false, 0);
+                break;
+            case 24:
+            {
+                g.start_stage(data::stages_count - 1);
+                for(int s = 0; s < data::stages_count - 1; ++s) g.stage_days[s] = uint16_t(15 + (s * 5) % 9);
+                g.score = 3900;
+                g.respect = 24;
+                break;
+            }
+            case 25:
+            {
+                clear_area(g, -1, -2, 6, 2);
+                g.enemies_count = 0;
+                for(int k = 2; k <= 4; ++k) place_at(g, k == 3 ? data::enemy_kornik : data::enemy_przeciek, k, 0, 30);
+                for(int i = 0; i < data::weather_count; ++i) if(data::weather[i].effect == core::weather_effect::wind) g.weather = int8_t(i);
+                g.push(core::message().add("Pogoda: ").add(g.wdef().name).add(" (").add(g.wdef().short_name).add(")").as(core::bad));
+                break;
+            }
+            case 26:
+            {
+                clear_area(g, -1, -2, 5, 2);
+                g.enemies_count = 0;
+                place_at(g, data::enemy_kornik, 2, 0, 30);
+                place_at(g, data::enemy_przeciek, 3, 1, 30);
+                place_at(g, data::enemy_plesn, 3, -1, 30);
+                place_at(g, data::enemy_kornik, -1, 2, 30);
+                break;
+            }
+            case 27:
+            {
+                clear_area(g, -1, -2, 6, 2);
+                g.enemies_count = 0;
+                place_at(g, data::enemy_budzet, 3, 0, 30);
+                if(g.enemies_count > 0) g.enemies[0].hp = g.enemies[0].max_hp = 80;   // wytrzyma szarżę i kilka ciosów (odepchnięcie)
+                place_at(g, data::enemy_kornik, -3, 2, 40);   // dalej niż cel szarży
+                break;
+            }
+            case 28:
+            {
+                clear_area(g, -1, -1, 5, 1);
+                g.pickups_count = 0;
+                int udarowy = -1, kotwy = -1, boots = -1, belt = -1, slip = trait_index(core::trait_effect::slip_res);
+                for(int i = 0; i < data::tools_count; ++i) if(data::tools[i].reward) (udarowy < 0 ? udarowy : kotwy) = i;
+                for(int i = 0; i < data::gear_slots_count; ++i)
+                {
+                    if(data::gear[i * 3].stat == core::gear_stat::dodge) boots = i;
+                    if(data::gear[i * 3].stat == core::gear_stat::thermos) belt = i;
+                }
+                g.pickups[g.pickups_count++] = { int8_t(g.hero.x + 1), g.hero.y, core::tool, true, uint8_t(udarowy) };
+                g.pickups[g.pickups_count++] = { int8_t(g.hero.x + 2), g.hero.y, core::gear_box, true, uint8_t(boots * 3 + 2), uint8_t(slip) };
+                g.pickups[g.pickups_count++] = { int8_t(g.hero.x + 3), g.hero.y, core::gear_box, true, uint8_t(belt * 3 + 1), 0 };
+                g.pickups[g.pickups_count++] = { int8_t(g.hero.x + 4), g.hero.y, core::tool, true, uint8_t(kotwy) };
+                g.enemies_count = 0;
                 break;
             }
             case 21:

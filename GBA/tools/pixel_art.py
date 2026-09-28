@@ -67,11 +67,20 @@ TOOLS = {
     "wrench":  [(12, 11, "g"), (13, 10, "g"), (14, 9, "g"), (14, 8, "g"), (15, 8, "g"), (15, 7, "K")],    # klucz
     "grinder": [(12, 9, "l"), (13, 9, "l"), (14, 8, "g"), (15, 8, "g"), (14, 10, "g"), (15, 10, "g"),
                 (15, 9, "Y")],                                                                             # szlifierka
+    "tile":    [(12, 7, "K"), (13, 7, "K"), (14, 7, "K"), (15, 7, "K"), (12, 8, "R"), (13, 8, "O"), (14, 8, "R"),
+                (15, 8, "K"), (12, 9, "R"), (13, 9, "R"), (14, 9, "O"), (15, 9, "K"), (13, 10, "K"), (14, 10, "K")],  # dachówka
+    "hawk":    [(11, 8, "W"), (12, 7, "W"), (13, 7, "W"), (14, 7, "W"), (12, 8, "W"), (13, 8, "W"), (14, 8, "W"),
+                (15, 8, "K"), (11, 9, "g"), (12, 9, "g"), (13, 9, "g"), (14, 9, "g"), (15, 9, "K"), (13, 10, "T"),
+                (13, 11, "T")],                                                                            # paca z tynkiem
+    "bucket":  [(12, 7, "K"), (13, 7, "Y"), (14, 7, "Y"), (15, 7, "K"), (12, 8, "Y"), (13, 8, "Y"), (14, 8, "Y"),
+                (15, 8, "K"), (12, 9, "Y"), (13, 9, "Y"), (14, 9, "Y"), (15, 9, "K"), (12, 10, "l"), (13, 10, "K"),
+                (14, 10, "l"), (15, 10, "K")],                                                             # łyżka koparki z zębami
 }
 
 # (kask, kamizelka, narzędzie) w kolejności zawodów z data/game.json
 WORKERS = [("W", "O", "log"), ("O", "B", "trowel"), ("Y", "T", "nailgun"),
-           ("B", "N", "tester"), ("R", "B", "wrench"), ("G", "g", "grinder")]
+           ("B", "N", "tester"), ("R", "B", "wrench"), ("G", "g", "grinder"),
+           ("C", "R", "tile"), ("l", "P", "hawk"), ("D", "O", "bucket")]   # v0.21.49: Dekarz, Tynkarz, Operator koparki
 
 
 def worker_frame(index, frame):
@@ -374,7 +383,7 @@ def particle_frames():
 
 
 # ------------------------------------------------------------------ Osiedle: domy 16x16
-# klatka = wielkość * 6 + zawód (dach w kolorze kasku zawodu), 24 = pusta działka
+# klatka = wielkość * 9 + zawód (dach w kolorze kasku zawodu), 36 = pusta działka
 HOUSE_SMALL = [
     "................",
     "................",
@@ -426,8 +435,8 @@ def house_frame(cls, size):
     return px
 
 
-def house_frames():
-    return [p for size in range(4) for cls in range(6) for p in house_frame(cls, size)] + parse(EMPTY_PLOT)
+def house_frames():   # klatka = wielkość * liczba zawodów + zawód; ostatnia = pusta działka
+    return [p for size in range(4) for cls in range(len(WORKERS)) for p in house_frame(cls, size)] + parse(EMPTY_PLOT)
 
 
 # ------------------------------------------------------------------ ikony mocy do HUD (kolejność zawodów)
@@ -456,6 +465,18 @@ ABILITY_ICONS = [
         "................", "......K..K......", "....KKllllKK....", "...KllllllllK...", "..KlllggggllK...",
         ".KllgglllgglK...", ".KllglKKKlglK...", ".KllglKWKlglK...", ".KllglKKKlglK...", ".KllgglllgglK...",
         "..KlllggggllK...", "...KllllllllK...", "....KKllllKK....", "......K..K......", "................", "................"],
+    [   # Rynna: dachówki lecą w linii
+        "................", "...........KKKK.", "..........KROROK", "..........KRRRRK", "...........KKKK.",
+        "......KKKK......", ".....KROROK.....", ".....KRRRRK.....", "......KKKK......", "..KKKK..........",
+        ".KROROK.........", ".KRRRRK.........", "..KKKK..........", "................", "l.l.l.l.........", "................"],
+    [   # Narzut: kielnia i chlapnięcie tynku
+        "..W......W......", "....W..W....W...", ".W..KKKKK..W....", "...KWWWWWK......", "..KWWWWWWWK..W..",
+        "W.KWWlWWWWK.....", "..KWWWWWlWK.W...", "...KWWWWWK......", "....KKKKK..W....", "..W...KgK.......",
+        "......KgK...W...", ".....KgggK......", "....KggggK......", "....KKKKKK......", ".......KTK......", ".......KKK......"],
+    [   # Taran: łyżka koparki z ramieniem, pęd z lewej
+        "................", "................", ".....KKKK.......", "....KgggK.......", ".....KKgK.......",
+        "......KgKKKKK...", "l.l..KYYYYYYYK..", ".....KYYYYYYYYK.", "llll.KYYYYYYYYK.", ".....KYYYYYYYKlK",
+        "l.l..KKYYYYYKlK.", "......KKKKKKlK..", "................", "................", "................", "................"],
 ]
 
 
@@ -598,7 +619,8 @@ def truck_frames():
 
 # ------------------------------------------------------------------ menu akcji pod START (16x16): atak, termos, czekaj, ramka wyboru;
 # 4-5: mała kłódka i strzałki góra/dół (wybór zawodu); 6-10: pogoda dnia (Słonecznie, Upał, Mróz, Wiatr, Deszcz);
-# 11-13: materiały w HUD (cement, stal, drewno - małe, w lewej części klatki, cyfra obok); 14: kalendarz (budowa dnia)
+# 11-13: materiały w HUD (cement, stal, drewno - małe, w lewej części klatki, cyfra obok); 14: kalendarz (budowa dnia);
+# 15-18: nagrody za odbiór (Młot udarowy, Pistolet do kotew, Buty robocze, Pas narzędziowy); 19: Respekt
 MENU_ICONS = [
     [   # Atak: młotek
         "................", "................", "....KKKKKKK.....", "...KgllllllK....", "...KggggggKK....",
@@ -660,6 +682,27 @@ MENU_ICONS = [
         "................", "...K......K.....", "..KKKKKKKKKKK...", "..KRRRRRRRRRK...", "..KRRRRRRRRRK...",
         "..KKKKKKKKKKK...", "..KWWWWWWWWWK...", "..KWKWKWKWWWK...", "..KWWWWWWWWWK...", "..KWKWKWPPWWK...",
         "..KWWWWWPPWWK...", "..KWKWKWWWWWK...", "..KWWWWWWWWWK...", "..KKKKKKKKKKK...", "................", "................"],
+    # 15-18: nagrody za odbiór (Młot udarowy, Pistolet do kotew, Buty robocze, Pas narzędziowy), 19: Respekt (medal)
+    [   # Młot udarowy: żółta obudowa, czarny uchwyt, grot
+        "................", "................", "....KKKKKKK.....", "...KYYYYYYYKKKK.", "...KYYWYYYYKllK.",
+        "...KYYYYYYYKKKKK", "...KKKKKYYYK.KlK", ".......KYYYK..KK", "......KKKKKK....", "......KKKKK.....",
+        ".....KKKKK......", ".....KKKK.......", "....KKKK........", "................", "................", "................"],
+    [   # Pistolet do kotew: pomarańczowy korpus, szara lufa, kotwa
+        "................", "................", "................", "..KKKKKKKKKKK...", ".KOOOOOOOOOOKKK.",
+        ".KOOWOOOOOOOKlK.", ".KOOOOOOOOOOKgK.", ".KKKKKOOOKKKKKKK", ".....KOOOK...KgK", ".....KOOOK....K.",
+        "....KOOOOK......", "....KOOOK.......", "....KKKKK.......", "................", "................", "................"],
+    [   # Buty robocze: brązowe z pomarańczowym noskiem
+        "................", "................", "....KKKKK.......", "....KTTTK.......", "....KTTTK.......",
+        "....KTlTK.......", "....KTTTK.......", "....KTTTKKKKK...", "...KTTTTTTTOOK..", "...KTTTTTTOOOOK.",
+        "...KKKKKKKKKKKK.", "...KggggggggggK.", "....KKKKKKKKKK..", "................", "................", "................"],
+    [   # Pas narzędziowy: pas z kieszeniami i młotkiem
+        "................", "................", "................", "KKKKKKKKKKKKKKKK", "TTTTTTYYTTTTTTTT",
+        "KKKKKKKKKKKKKKKK", "..KTTTK..KTTTK..", "..KTOTK..KTTTK.g", "..KTTTK..KTlTKgg", "..KTTTK..KTTTK.T",
+        "...KKK....KKK..T", "...............T", "................", "................", "................", "................"],
+    [   # Respekt: medal z gwiazdą
+        "....KKK..KKK....", "....KRRK.KBK....", ".....KRRKBK.....", "......KKKK......", ".....KKYYKK.....",
+        "....KYYWYYYK....", "...KYYYYYYYYK...", "...KYYYWYYYYK...", "...KYWWWWWYYK...", "...KYYWWWYYYK...",
+        "...KYYWYWYYYK...", "...KYYYYYYYOK...", "....KYYYYYOK....", ".....KKKKKK.....", "................", "................"],
 ]
 
 

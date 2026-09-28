@@ -363,10 +363,10 @@ inline constexpr int respect_act_boss = 6;
 inline constexpr int respect_final = 10;
 
 inline constexpr core::reward_def rewards[] = {   // nagrody za odbiór: każda wygrana odblokowuje kolejną
-    { core::reward_kind::tool, 6, "Młot udarowy", "Nowe narzędzie w dropach" },
+    { core::reward_kind::tool, 6, "Młot udarowy", "Narzędzie w dropach" },
     { core::reward_kind::cls, 6, "Dekarz", "Nowy zawód: z dystansu" },
     { core::reward_kind::gear, 3, "Buty robocze", "Nowy sprzęt: unik" },
-    { core::reward_kind::tool, 7, "Pistolet do kotew", "Nowe narzędzie w dropach" },
+    { core::reward_kind::tool, 7, "Pistolet do kotew", "Narzędzie w dropach" },
     { core::reward_kind::cls, 7, "Tynkarz", "Nowy zawód: obszar" },
     { core::reward_kind::gear, 4, "Pas narzędziowy", "Nowy sprzęt: termos" },
     { core::reward_kind::cls, 8, "Operator koparki", "Nowy zawód: taran" },

@@ -332,7 +332,7 @@ L.append("inline constexpr core::reward_def rewards[] = {   // nagrody za odbió
 seen = set()
 for x in rw:
     k = x["kind"]
-    assert k in RK and len(x["desc"]) <= 26, x
+    assert k in RK and len(x["desc"]) <= 23, x   # baner: 23 znaki
     if k == "tool": idx = tid[x["id"]]; assert m["tools"][idx].get("reward"), x; name = d["weapons"][wid[x["id"]]]["name"]
     elif k == "gear": idx = slid[x["id"]]; assert eq["slots"][idx].get("reward"), x; name = eq["slots"][idx]["name"]
     elif k == "class": idx = cid[x["id"]]; assert d["classes"][idx].get("reward"), x; name = d["classes"][idx]["name"]
