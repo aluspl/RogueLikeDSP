@@ -1,11 +1,12 @@
 # RogueLikeDSP – PlanBudowlany RogueLike (dawniej LifeLike)
 
-Roguelike o budowie domu: przechodzisz 10 etapów budowy w 3 aktach (Fundamenty → … → Wykończenie i odbiór), a
+Roguelike o budowie domu: przechodzisz 10 etapów budowy w 3 aktach (Fundamenty → … → Wykończenie i odbiór; po
+8. wygranej przed nimi Akt 0 „Papierologia” – pozwolenie i przyłącza, boss Decyzja odmowna), a
 przeciwnikami są problemy budowy – każdy etap ma własne, z zachowaniami (Woda gruntowa się dzieli, Przeciekająca papa
 strzela z dystansu, Pęknięty pustak wybucha, Poprawki na odbiorze wracają…) – i bossowie aktów (Zepsuta Betoniarka,
 Nawałnica, Nieprzekraczalny Termin). Każdy akt ma swoją mechanikę: błoto, porywy wiatru, pył. Menu gry to smartfon bohatera z aplikacją [PlanBudowlany](https://planbudowlany.online).
 Za ukończone etapy zbierasz Respekt na stałe ulepszenia, a każda wygrana odblokowuje nagrodę za odbiór (nowe zawody,
-narzędzia, sprzęt).
+narzędzia, sprzęt, Akt 0). Przy pierwszym uruchomieniu Kierownik Marek oprowadza po menu (samouczek w dymkach).
 
 Projekt zaczął się w 2017 roku jako LifeLike (Unity, konkurs DSP2017), a w 2026 wrócił w dwóch nowych wersjach.
 
