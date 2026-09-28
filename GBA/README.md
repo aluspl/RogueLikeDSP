@@ -17,12 +17,13 @@ własne, np. Woda gruntowa, Krzywy mur, Przeciekająca papa, Zapowietrzenie, Pop
 | A | krótko: atak w najbliższy cel; przytrzymaj: podgląd zasięgu i celownik (strzałki zmieniają cel), puść: atak |
 | B | krótko: czekaj turę (co 4 tury +1 HP); przytrzymaj: podgląd widocznych wrogów (nazwa, HP, obrażenia, opis; strzałki zmieniają wroga) |
 | START | w grze: menu akcji wokół bohatera – góra Atak, prawo Moc, dół Termos, lewo Czekaj (strzałka wybiera, A albo ta sama strzałka wykonuje, A bez kierunku = Brygada, START/B zamyka); poza grą: dalej |
-| SELECT | w grze: telefon z aplikacją PlanBudowlany (Zadania, Usterki, Start, Sprzęt, Koszty; L/R – zakładki, START – menu: jak grać, zapisz i wyjdź, porzuć budowę; Sprzęt: A – rozpiska obrażeń broni, dół – Brygada i naprawy); na tytule: telefon profilu (Odznaki/Zlecenia/Pamiątki – przełączane A, Katalog, Osiedle, Zespół, Koszty = Szkolenia / Respekt / Nagrody – przełączane SELECT) |
+| SELECT | w grze: telefon z aplikacją PlanBudowlany (Zadania, Usterki, Start, Sprzęt, Koszty; L/R – zakładki, START – menu: jak grać, zapisz i wyjdź, porzuć budowę; Sprzęt: A – rozpiska obrażeń broni, góra – Premie z tej budowy, dół – Brygada i naprawy); na tytule: telefon profilu (Odznaki/Zlecenia/Pamiątki – przełączane A, Katalog, Osiedle, Zespół, Koszty = Szkolenia / Respekt / Nagrody – przełączane SELECT) |
 | lewo/prawo (wybór zawodu) | zmiana zawodu na pasku portretów (odblokowane najpierw; zablokowany można obejrzeć, A go nie wybierze) |
 | L/R (wybór zawodu) | pamiątka zabierana na budowę (albo „bez pamiątki”) |
 | SELECT (wybór zawodu) | po pierwszej wygranej: tryb inwestora (modyfikatory, A włącza/wyłącza) |
 | B (tytuł) | ekran „Jak grać” |
 | R (tytuł) | codzienna budowa (data strzałkami, A – start) |
+| góra/dół, A, SELECT (premia po etapie) | wybór 1 z 3 premii, A – biorę, SELECT – losuj jeszcze raz (raz na budowę za zł, Druga oferta z Respektu za darmo) |
 | lewo/prawo (harmonogram) | wybór ścieżki na kolejny etap, A – dalej |
 | L (przytrzymaj) | podgląd odkrytej mapy etapu |
 | R | moc zawodu (Odprawa, Ścianka, Seria, Łańcuch, Zawór, Wirówka); ikona w prawym górnym rogu: szara z odliczaniem = ładuje się, pulsuje z „R” = gotowa; ranga II od 3. i III od 5. poziomu postaci |
@@ -84,8 +85,8 @@ Później po jednym dymku „Nowość”: pierwszy Respekt, codzienna budowa, tr
 Na wyborze zawodu START otwiera opis statystyk (wartość i co daje), A zmienia stronę na wzory; w telefonie zakładka
 Start → A pokazuje, skąd są premie. Wzory: obrażenia = rzut broni + statystyka broni / 2 + premie - obrona wroga / 2
 (SIŁ/ZRĘ/INT: +1 obrażeń co 2 pkt, tylko statystyka broni); OBR: -1 otrzymanych obrażeń co 2 pkt; SZCZ: kryt 5% +3%/pkt,
-unik 2%/pkt (maks. 20%), łupy +2% szansy/pkt i lepsza jakość. „Jak grać” ma 7 stron (5 – akty i problemy, 6 – statystyki,
-7 – obrażenia).
+unik 2%/pkt (maks. 20%), łupy +2% szansy/pkt i lepsza jakość. „Jak grać” ma 10 stron (5 – akty i problemy, 6 – statystyki,
+7 – obrażenia, 8–9 – kombinacje stanów, 10 – premie i elity).
 
 ## Rozpiska obrażeń broni (jak w BG3)
 Zakres ciosu od-do, kryt i skąd się biorą – te same wzory co walka (`dmg_breakdown`, `weapon_breakdown`,
@@ -98,6 +99,29 @@ Gdzie: wybór zawodu (wiersz broni, START → strony Obrażenia broni), telefon 
 („teraz 4-7 -> 5-9 (średnio +1,5)”), baner nowego narzędzia, karta problemu pod B („Zadasz 2-5 (kryt 4-10), on Tobie
 1-3”). Wspólne teksty wierszy (`dmg_line`, `compare_line`, `versus_line`) są w rdzeniu, opis w prostych słowach –
 `damageHelp` w `data/game.json`.
+
+## Premie po etapie (#27)
+Po każdym zaliczonym etapie (przed harmonogramem i Hurtownią) ekran „Premia za etap”: 3 premie z puli 41 (sekcja
+`boons`), kolor = rzadkość (zwykła, rzadka – fioletowa, legendarna – złota; szczęście trochę podnosi rzadkość),
+opis i znaczniki (Woda, Prąd, Beton, BHP, Szczęście, Kawa, Brygada, Materiały, Iskra). Każdy zawód ma 1–2 własne
+premie (wzmocnienie mocy). 2+ premie z tym samym znacznikiem (albo Woda + Prąd) włączają **synergię** – np. Zbrojenie
+(+1 OBR za każdą premię Beton), Espresso (kawa ładuje moc), Przepięcie (ciosy z prądem, porażenie dalej); karta
+z pastylką „Synergia!”, po wyborze ekran synergii. SELECT – nowa oferta raz na budowę (25 zł; Druga oferta z Respektu
+– za darmo). Lista premii i aktywnych synergii: telefon → Sprzęt → góra. Premie w rozpisce: wiersz „Premie etapów”.
+
+## Elity (#28)
+Część problemów pojawia się jako elita (szansa rośnie z aktem, trudnością i NG+; sekcja `elites`): złoty obrys
+i odcień sprite'a, przedrostek nazwy („Zbrojony Przeciek”, „Uparta Pleśń”), +50% HP, +1 obrażeń i jedna cecha –
+Tarcza (+4 OBR), Szybki (2 ruchy), Regeneracja (+1 HP/turę), Wybuchowy (wybucha po usunięciu), Wzywa pomoc (przy
+50% HP). Nagroda: pewny drop (paczka co najmniej solidna), materiały, Respekt +1. Karta problemu (B): „Elita: …”,
+„Zadasz” liczone z obroną elity.
+
+## Kombinacje stanów (#29)
+Sekcja `combos`: **mokry + prąd** = porażenie (+3 celowi i mokrym obok; mokry z kałuży, Deszczu, problemu wodnego,
+Zaworu, Węża ogrodowego; prąd z Próbnika, Łańcucha, premii), **pył + iskra** = wybuch pyłu (akt III: problemy
+zapylone; iskra ze Szlifierki, Pistoletu do kotew, Wirówki), **zamróz + uderzenie** = pęknięcie (cios wręcz
+w zmrożony +50%; Mróz, Suchy lód). Na bohaterze: mokry (ikona w HUD) + cios prądu = -2 HP i stracona tura, wybuch
+w pyle +2. Ikony stanów nad problemami, baner „Mokry + prąd!”, Jak grać strony 8–10.
 
 ## Akty i bossowie
 Etapy są pogrupowane w akty (`data/game.json`: `acts`, pole `act` etapu; akt I 4 etapy, akt II 3, akt III 3); każdy akt kończy się bossem:
@@ -241,7 +265,9 @@ materiały, naprawy i awans (18), codzienna budowa (19), wygrana z harmonogramem
 i nagrody (22), Respekt za etap (23), nagroda po wygranej (24), Dekarz (25), Tynkarz (26), Operator koparki (27), nowe
 narzędzia i sprzęt (28), strzelcy (29), podział i wybuch (30), łatanie, wzrost i stanie (31), odpychanie i powrót
 (32), błoto (33), porywy (34), pył (35), pełny Katalog (36), Akt 0: pieczątki (37), Decyzja odmowna i Odwołanie (38),
-samouczek menu (39), dymki nowości (40), nagroda Akt 0 (41), rozpiska obrażeń (42)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
+samouczek menu (39), dymki nowości (40), nagroda Akt 0 (41), rozpiska obrażeń (42), premia po etapie – zwykłe,
+rzadkie, legendarne (43–45), lista premii w telefonie (46), elity (47), mokry + prąd (48), pył + iskra (49),
+zamróz + uderzenie (50), mokry bohater + prąd (51)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
 ```bash
 make TARGET=scn1 BUILD=build_scn1 USERFLAGS="-DPB_SCENARIO=1" BUTANO_PATH=...
 ROM=scn1.gba tools/playtest/run.sh skrypt.txt /tmp/zrzuty --fresh
