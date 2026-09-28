@@ -5,7 +5,7 @@ przeniesionym z LifeLike (folder `../GODOT`): generator map z seedem, tury, walk
 
 Zbuduj dom w 10 etapach: **Fundamenty → Izolacja fundamentów → Mury parteru → Strop → Dach → Ściany działowe → Okna
 i drzwi → Instalacje → Tynki i wylewki → Wykończenie i odbiór** (po 8. wygranej przed nimi **Akt 0 „Papierologia”**:
-Działka i pozwolenie, Przyłącza). Pokonaj „problemy budowy” (41 rodzajów – każdy etap ma
+Pozwolenie, Przyłącza). Pokonaj „problemy budowy” (41 rodzajów – każdy etap ma
 własne, np. Woda gruntowa, Krzywy mur, Przeciekająca papa, Zapowietrzenie, Poprawki na odbiorze) i bossów (Decyzja odmowna, Zepsuta Betoniarka, Nawałnica, Inspekcja Pracy, **Nieprzekraczalny Termin**). Na końcu ekran z kodem QR do planbudowlany.online.
 
 ![ekran tytułowy](docs/preview_title.png) ![ekran końcowy z QR](docs/preview_end.png)
@@ -66,7 +66,7 @@ porywy wiatru** – co 6 tur poryw spycha bohatera o pole (zapowiedź w dziennik
 kompletu kłódka na schodach, licznik 0/3). Ikona w HUD pod ikoną mocy, baner na początku aktu, wiersz w zakładce Zadania.
 
 ## Akt 0 „Papierologia”
-Nagroda za 8. odbiór: każda kolejna budowa (poza budową dnia) zaczyna się od dwóch etapów – **Działka i pozwolenie**
+Nagroda za 8. odbiór: każda kolejna budowa (poza budową dnia) zaczyna się od dwóch etapów – **Pozwolenie**
 (biuro z segregatorami) i **Przyłącza** (wykop z rurami) – z własnymi problemami (Brakujący podpis, Zaginiony wniosek,
 Termin na odwołanie, Niezgodność z planem, Pieczątka nie ta, Pęknięta rura, Brak ciśnienia, Kolizja z kablem) i bossem
 **Decyzja odmowna** (stos pism z pieczątką; Stempel ODMOWA w obszar, wzywa Zaginione wnioski; przy 50% HP druga faza

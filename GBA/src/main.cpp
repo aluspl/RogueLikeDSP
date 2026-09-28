@@ -412,7 +412,7 @@ namespace
 
         // Kafel pola z uwzględnieniem mgły wojny: 0 = nieznane (czarne).
         // Kafle aktu: akt I 1-10, akt II 11-20, akt III 21-30 (ziemia i bloczki / deski i cegła / płytki i tynk);
-        // Akt 0: 31-40 biuro z segregatorami (Działka i pozwolenie), 41-50 wykop z rurami (Przyłącza).
+        // Akt 0: 31-40 biuro z segregatorami (Pozwolenie), 41-50 wykop z rurami (Przyłącza).
         static int tile_set(const core::game& g) { return g.stage < data::prelude_stages ? 3 + g.stage : data::stages[g.stage].act; }
         static int act_tile(const core::game& g, int t) { return t == 0 ? 0 : t + 10 * tile_set(g); }
         static int tile_of(const core::game& g, int x, int y, int& palette)
@@ -769,8 +769,12 @@ namespace
             text(a, 32, py + 8, s.title, ink::brand);
             pill(a, 28, ty + 1, counter, false);
             for(int i = 0; i < 3; ++i) text(a, 22, py + 26 + i * 15, s.msg.lines[i], ink::dark);
-            if(s.gba[0]) pill(a, 2 + (a.text.width(s.gba) + 15) / 8 + 1, ty + 9, s.gba, true);   // klawisz na GBA
-            text(a, 226, py + 72, link ? "START: opis  A: dalej" : "A: dalej  B: pomiń", ink::dim, 1);
+            int key_end = 0;   // prawy brzeg pastylki klawisza (px)
+            if(s.gba[0]) key_end = 8 * (2 + (a.text.width(s.gba) + 15) / 8 + 1);
+            if(s.gba[0]) pill(a, key_end / 8, ty + 9, s.gba, true);   // klawisz na GBA
+            const char* hint = link ? "START: opis  A: dalej" : "A: dalej  B: pomiń";
+            if(226 - a.text.width(hint) < key_end + 6) hint = "A: dalej";   // długi klawisz: skrócona podpowiedź, bez nachodzenia
+            text(a, 226, py + 72, hint, ink::dim, 1);
             dim_map.reload_cells_ref();
             card_map.reload_cells_ref();
         }
@@ -3540,6 +3544,7 @@ namespace
         big.set_double_size_mode(bn::sprite_double_size_mode::ENABLED);
         big.set_bg_priority(1);
         big.set_z_order(-2);
+        big.set_scale(2);
         bn::sprite_ptr big_lock = bn::sprite_items::menu_icons.create_sprite(0, 0, frame_small_lock);
         big_lock.set_bg_priority(1);
         big_lock.set_z_order(-3);
@@ -3601,7 +3606,7 @@ namespace
             const int c = order[sel];
             bool unl = core::class_unlocked(a.save, c);
             big.set_tiles(bn::sprite_items::actors.tiles_item(), unl ? data::classes[c].frame : silhouette_frame(c));
-            big.set_x(slot_cx(sel - first) - 120);
+            big.set_position(slot_cx(sel - first) - 120, big_cy - 80 + oy);   // też przed pętlą (samouczek), inaczej środek ekranu pod kartą
             big_lock.set_position(slot_cx(sel - first) - 120 + 12, big_cy - 80 + oy + 8);
             big_lock.set_visible(! unl);
         };

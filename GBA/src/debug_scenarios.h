@@ -52,7 +52,7 @@
 //  34 - akt II, porywy (etap Ściany działowe): poryw za 2 tury (licznik w HUD), B = czekaj
 //  35 - akt III, pył (etap Tynki i wylewki): mniejsze pole widzenia, pył w powietrzu, płytki i tynk
 //  36 - Katalog usterek: wszystkie problemy znane (tytuł -> SELECT -> Katalog, zachowania pod listą)
-//  37 - Akt 0, etap Działka i pozwolenie (pieczątki): trzy dokumenty w prawo od bohatera, dalej zamknięte schody
+//  37 - Akt 0, etap Pozwolenie (pieczątki): trzy dokumenty w prawo od bohatera, dalej zamknięte schody
 //       (kłódka, HUD 0/3); D-pad w prawo zbiera dokumenty (banery), komplet otwiera schody, wejście = etap zaliczony
 //  38 - Akt 0, boss Decyzja odmowna obok bohatera (w prawo), HP tuż nad połową: A = druga faza Odwołanie (baner, +HP,
 //       wezwanie Zaginionego wniosku), dalej Stempel ODMOWA; L+R+SELECT = pokonanie (Pozwolenie wydane, premia za akt)

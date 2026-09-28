@@ -56,7 +56,7 @@ Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
   skąd są premie (zawód, Warsztaty, sprzęt, poziomy, kask, rękawice, kamizelka). „Jak grać” – strony 5 (akty
   i problemy) i 6 (statystyki). Scenariusze testowe 29–36.
 - **Akt 0 „Papierologia” (#20)** – nagroda za 8. odbiór; od tej chwili każda nowa budowa (poza budową dnia) zaczyna się
-  od dwóch etapów przed stanem surowym: **Działka i pozwolenie** (biuro: segregatory, kartki) i **Przyłącza** (wykop
+  od dwóch etapów przed stanem surowym: **Pozwolenie** (biuro: segregatory, kartki) i **Przyłącza** (wykop
   z rurami). 8 nowych problemów – zawsze przedmioty, nigdy ludzie: Brakujący podpis (ucieka), Zaginiony wniosek (wraca
   raz), Termin na odwołanie (rośnie), Niezgodność z planem (strzela uwagami), Pieczątka nie ta (odpycha, papierologia),
   Pęknięta rura (dzieli się, poślizg), Brak ciśnienia (stoi i łata innych), Kolizja z kablem (wybucha, porażenie).
@@ -112,6 +112,8 @@ na budowę (80% budów), bez kawy wygrywa 17% zamiast 30%. Etapy 1–2 dalej bez
 - Nowy zapis budowy (PBRUN10) – przerwana budowa z wcześniejszej wersji nie wznowi się.
 - Do 16 problemów naraz na etapie (miejsce na podział), harmonogram domu i zakładka Zadania z 10 (12 z Aktem 0) etapami.
 - Zawody i narzędzia z nagród nie są na sprzedaż w Szkoleniach; ceny brygady i Hurtowni z rabatem Respektu.
+- Dymki samouczka menu: długi klawisz (np. „SELECT, Koszty”) nie nachodzi na podpowiedź „A: dalej  B: pomiń”,
+  portret wybranego zawodu widoczny pod dymkiem; etap Aktu 0 nazywa się krótko **Pozwolenie** (mieści się w telefonie).
 
 ## v0.21.48 – 2026-09-25
 ### Nowe

@@ -81,7 +81,7 @@ inline constexpr core::enemy_def enemies[] = {
 };
 
 inline constexpr core::stage_def stages[] = {
-    { "Działka i pozwolenie", { 32, 34, 35, 36 }, 4, 6, -1, 106, 2, 3, 15 },
+    { "Pozwolenie", { 32, 34, 35, 36 }, 4, 6, -1, 106, 2, 3, 15 },
     { "Przyłącza", { 37, 38, 39, 33 }, 4, 6, 40, 110, 1, 3, 28 },
     { "Fundamenty", { 12, 13, 0, 3 }, 4, 5, -1, 95, 0, 0, 48 },
     { "Izolacja fundamentów", { 14, 15, 12, 0 }, 4, 5, -1, 98, 0, 0, 22 },
@@ -463,7 +463,7 @@ inline constexpr core::tutorial_step tutorial_steps[] = {   // samouczek menu: t
     { "new", "Nowa budowa", { "Kierownik Marek", { "Tu zaczynasz budowę domu", "Nowaków: zawód, trudność", "i na plac. Powodzenia!" } }, "START / A", 0, false, false },
     { "phone", "Profil w telefonie", { "Kierownik Marek", { "Twój telefon: odznaki,", "zlecenia, pamiątki,", "Katalog usterek, Osiedle." } }, "SELECT", 0, false, false },
     { "training", "Szkolenia", { "Kierownik Marek", { "Za doświadczenie z budów", "kupisz Szkolenia: HP,", "nowe zawody, narzędzia." } }, "SELECT, Koszty", 0, false, false },
-    { "respect", "Respekt", { "Kierownik Marek", { "Respekt dostajesz za", "każdy etap i zostaje po", "porażce. Stałe premie!" } }, "Koszty, SELECT", 0, false, false },
+    { "respect", "Respekt", { "Kierownik Marek", { "Respekt dostajesz za", "każdy etap i zostaje po", "porażce. Stałe premie!" } }, "SELECT, Koszty", 0, false, false },
     { "daily", "Codzienna budowa", { "Kierownik Marek", { "Budowa dnia: ten sam", "plac i zawód dla", "wszystkich. Pobij wynik!" } }, "R", 0, false, false },
     { "help", "Jak grać", { "Kierownik Marek", { "Sterowanie, akty,", "statystyki. Tam też", "powtórzysz samouczek." } }, "B", 0, false, false },
     { "options", "Opcje", { "Kierownik Marek", { "Dźwięk, wibracje,", "sterowanie i wielkość", "tekstu są pod kluczem." } }, "", 0, true, false },

@@ -1077,7 +1077,7 @@
   ],
   "stages": [
     {
-      "name": "Działka i pozwolenie",
+      "name": "Pozwolenie",
       "enemies": [
         "podpis",
         "termin_odw",
@@ -2802,7 +2802,7 @@
         "title": "Respekt",
         "text": "Respekt dostajesz za|każdy etap i zostaje po|porażce. Stałe premie!",
         "screen": "title",
-        "gba": "Koszty, SELECT"
+        "gba": "SELECT, Koszty"
       },
       {
         "id": "daily",

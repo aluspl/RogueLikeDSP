@@ -265,7 +265,7 @@ def make_hp_bar():
 # indeksy: 0 tło, 1 podłoga, 2 detal podłogi, 3 ściana, 4 jasny detal ściany, 5 cień ściany, 6/7 schody
 STAGE_COLORS = [
     # (podłoga, detal, ściana, jasny, cień) - kolejność jak etapy w data/game.json
-    [(214, 208, 190), (190, 182, 160), (70, 96, 150), (236, 232, 220), (40, 52, 90)],     # Działka i pozwolenie (biuro: segregatory)
+    [(214, 208, 190), (190, 182, 160), (70, 96, 150), (236, 232, 220), (40, 52, 90)],     # Pozwolenie (biuro: segregatory)
     [(112, 86, 58), (88, 66, 44), (98, 72, 48), (150, 120, 86), (60, 42, 28)],            # Przyłącza (wykop z rurami)
     [(96, 70, 44), (80, 58, 36), (150, 138, 118), (180, 170, 150), (100, 92, 80)],        # Fundamenty
     [(104, 80, 52), (84, 62, 40), (72, 70, 80), (116, 112, 124), (40, 38, 46)],           # Izolacja fundamentów (papa, folia)
@@ -287,7 +287,7 @@ def tile(fn):
 def t_empty(t): pass
 
 # v0.21.49: każdy akt ma własne kafle - akt I ziemia i bloczki betonowe, akt II deski i cegła, akt III płytki i tynk;
-# zestawy 3-4: Akt 0 - biuro z segregatorami (Działka i pozwolenie) i wykop z rurami (Przyłącza).
+# zestawy 3-4: Akt 0 - biuro z segregatorami (Pozwolenie) i wykop z rurami (Przyłącza).
 ACT = [0]   # zestaw kafli generowany w tej chwili (make_tiles ustawia)
 
 def t_floor(t):
