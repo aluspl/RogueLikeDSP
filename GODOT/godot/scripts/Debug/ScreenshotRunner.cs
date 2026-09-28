@@ -25,6 +25,11 @@ public sealed class ScreenshotRunner
             return;
         }
         if (DebugScenes.UsesDemoProfile(scene)) s.Profile = DemoProfile.Create(s.Data);
+        if (!DebugScenes.UsesTutorial(scene)) // samouczek menu i dymki nowości już obejrzane (poza scenami samouczka)
+        {
+            s.Profile.Tutorial = 0x3F;
+            s.Profile.ClassesSeen = 0xFFFF;
+        }
         if (scene != "prologue") s.Profile.SetFlag(Profile.FlagPrologueSeen | Profile.FlagHelpSeen); // prolog tylko w swojej scenie
         await new DebugScenes(_app).Setup(scene);
         await DebugRunner.Frames(root, 50);

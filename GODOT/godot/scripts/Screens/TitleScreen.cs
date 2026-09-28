@@ -34,6 +34,29 @@ public sealed class TitleScreen : Screen
         _hasRun = S.HasRun;
         _sel = 0;
         Populate();
+        App.Coach.Begin(this, 0, CoachHole, () => { });   // samouczek menu przy pierwszym uruchomieniu, potem dymki nowości
+    }
+
+    public override void Process(double delta) => App.Coach.Update();
+
+    /// <summary>Samouczek: element tytułu omawiany w dymku (pozycja menu albo klucz ustawień).</summary>
+    private Rect2 CoachHole(string id)
+    {
+        if (id == "options") return Hud.SettingsButton.Rect;
+        var label = id switch
+        {
+            "phone" => "Profil",
+            "training" or "respect" => "Szkolenia",
+            "daily" => "Codzienna",
+            "help" => "Jak grać",
+            _ => "Nowa budowa",
+        };
+        var items = Items;
+        for (var i = 0; i < items.Length; i++)
+        {
+            if (items[i].StartsWith(label)) return N.TitleView.ItemRect(i);
+        }
+        return new Rect2();
     }
 
     /// <summary>Rekord, liczba budów, doświadczenie, wybór i notatka na planszy tytułu (także pod telefonem profilu).</summary>
@@ -51,6 +74,7 @@ public sealed class TitleScreen : Screen
 
     public override bool HandleInput(InputCmd e)
     {
+        if (App.Coach.HandleInput(e)) return true;
         var n = Items.Length;
         var v = e.VDir;
         if (v != 0)

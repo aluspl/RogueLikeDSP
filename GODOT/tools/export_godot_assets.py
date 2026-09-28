@@ -430,14 +430,10 @@ def draw_floor(c, col, kind, rnd):
             c.vline(k, 0, 31, grid)
         for _ in range(18):
             c.set(rnd.randrange(32), rnd.randrange(32), dt)
-        if rnd.random() < 0.6:   # kartka
-            x, y = rnd.randrange(3, 20), rnd.randrange(3, 20)
-            paper = mix(col["light"], (255, 255, 255), 0.6)
-            c.rect(x, y, x + 7, y + 9, paper)
-            c.vline(x + 8, y + 1, y + 10, shade(fl, 0.8))
-            c.hline(x + 1, x + 8, y + 10, shade(fl, 0.8))
-            for ly in (y + 2, y + 4, y + 6):
-                c.hline(x + 1, x + 5, ly, shade(dt, 0.8))
+        if rnd.random() < 0.3:   # zgubiona karteczka (mała, bez tekstu - nie myli się z dokumentami)
+            x, y = rnd.randrange(4, 24), rnd.randrange(4, 24)
+            c.rect(x, y, x + 4, y + 3, mix(fl, (255, 255, 255), 0.55))
+            c.hline(x + 1, x + 5, y + 4, shade(fl, 0.85))
     elif kind in ("screed", "slab"):   # wylewka: drobne ziarno, w stropie fugi płyt
         for _ in range(34):
             c.set(rnd.randrange(32), rnd.randrange(32), dt if rnd.random() < 0.7 else mix(fl, (255, 255, 255), 0.12))

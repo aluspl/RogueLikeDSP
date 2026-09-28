@@ -22,6 +22,8 @@ public sealed class DebugScenes
         "respect", "rewards", "classselect-locked", "class-dekarz", "class-tynkarz", "class-operator", "gear5", "respect-banner",
         "second-chance", "behaviors", "act-mud", "act-gust", "act-dust", "stats-class", "stats-tip", "stats-phone", "catalog-tags",
         "help-acts", "help-stats",
+        "tutorial-title", "tutorial-class", "tutorial-stats", "tutorial-unlock", "tutorial-act0", "help-tutorial",
+        "act0-card", "act0-stamps", "act0-stairs-open", "act0-boss-phase",
     ];
 
     private readonly App _app;
@@ -37,7 +39,11 @@ public sealed class DebugScenes
 
     public static bool UsesDemoProfile(string scene) =>
         scene is "title" or "classselect" or "profile" or "catalog" or "estate" or "team" or "training" or "card" or "perks" or "investor"
-            or "daily" or "death" or "respect" or "rewards" or "classselect-locked" or "stats-class" or "stats-tip" or "catalog-tags";
+            or "daily" or "death" or "respect" or "rewards" or "classselect-locked" or "stats-class" or "stats-tip" or "catalog-tags"
+            or "tutorial-unlock" or "tutorial-act0";
+
+    /// <summary>Sceny samouczka menu: profil bez obejrzanych dymków (inne sceny - samouczek już obejrzany).</summary>
+    public static bool UsesTutorial(string scene) => scene.StartsWith("tutorial");
 
     public async Task Setup(string scene)
     {
@@ -46,6 +52,48 @@ public sealed class DebugScenes
         {
             case "title":
                 Flow.Title.Open();
+                return;
+            case "tutorial-title": // pierwsze uruchomienie: trzeci dymek (Szkolenia) nad przyciemnionym tytułem
+                Flow.Title.Open();
+                _app.Coach.Next();
+                _app.Coach.Next();
+                return;
+            case "tutorial-class": // wybór zawodu: dymek o trudności
+            case "tutorial-stats": // dymek o statystykach z przyciskiem do ich opisu
+                Meta.TutorialDone(s.Profile, 0);
+                s.ClassId = 1;
+                Flow.ClassSelect.Open();
+                while (_app.Coach.Active && _app.Coach.CurrentId != (scene == "tutorial-class" ? "difficulty" : "stats")) _app.Coach.Next();
+                return;
+            case "tutorial-unlock": // dymek nowości: nowy zawód z nagrody (Dekarz) na wyborze zawodu
+                s.Profile.Tutorial = (ushort)(Tutorial.Title | Tutorial.Class | Tutorial.Investor);
+                s.Profile.ClassesSeen = 0;
+                s.ClassId = 1;
+                Flow.ClassSelect.Open();
+                return;
+            case "tutorial-act0": // dymek nowości na tytule: Akt 0 po ósmej wygranej
+                s.Profile.Wins = s.Data.Rewards.Length;
+                s.Profile.Rewards = (byte)s.Data.Rewards.Length;
+                s.Profile.Tutorial = (ushort)(0x3F & ~Tutorial.Act0);
+                Flow.Title.Open();
+                return;
+            case "help-tutorial": // Jak grać z tytułu: przycisk „Samouczek jeszcze raz”
+                Flow.Help.Open(true, true);
+                return;
+            case "act0-card":
+            case "act0-stamps":
+            case "act0-stairs-open":
+            case "act0-boss-phase":
+                s.Profile.Rewards = (byte)s.Data.Rewards.Length;   // nagroda Akt 0: budowa zaczyna się od Papierologii
+                s.ClassId = 1;
+                _app.StartRun();
+                if (scene == "act0-card") return;
+                Flow.StageCard.Advance();
+                _app.Nodes.Banners.Clear();
+                if (scene == "act0-stamps") _app.Banners.ActHint();
+                if (scene == "act0-boss-phase") _stage.Act0BossPhase();
+                else _stage.Act0Stamps(scene == "act0-stairs-open");
+                await DebugRunner.Frames(_app.Root, 4);
                 return;
             case "classselect":
                 s.ClassId = 1;
@@ -177,7 +225,7 @@ public sealed class DebugScenes
                 g.Equip(1, 2, Array.FindIndex(s.Data.GearTraits, t => t.Effect == TraitEffect.Str));
                 Flow.Stats.OpenInRun();
             }
-            else _stage.ActShowcase(scene == "act-mud" ? 1 : scene == "act-gust" ? 5 : 8);
+            else _stage.ActShowcase(s.Data.PreludeStages + (scene == "act-mud" ? 1 : scene == "act-gust" ? 5 : 8));
             await DebugRunner.Frames(_app.Root, 4);
             return;
         }

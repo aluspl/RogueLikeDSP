@@ -65,7 +65,7 @@ public partial class OverlayLayer : Node2D
                 if (locked && !(x == _g.Hero.X && y == _g.Hero.Y))
                 {
                     DrawRect(r.Grow(-3), new Color(0.05f, 0.04f, 0.1f, 0.45f));
-                    DrawTextureRectRegion(Assets.Actors, new Rect2(r.Position + new Vector2(4, 4), new Vector2(24, 24)), Assets.Frame(Assets.FrameLock, 16));
+                    DrawTextureRectRegion(Assets.Actors, new Rect2(r.Position + new Vector2(2, 2 - 2 * pulse), new Vector2(28, 28)), Assets.Frame(Assets.FrameLock, Assets.Actor));
                 }
                 if (t != Tile.Wall && _g.DangerCell(x, y))
                     DrawTextureRect(Assets.Danger, r, false, new Color(1, 1, 1, 0.55f + 0.45f * pulse));

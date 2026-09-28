@@ -25,10 +25,14 @@ public sealed class ClassSelectScreen : Screen
         v.Setup(S.Data, S.Profile, S.ClassId);
         v.Difficulty = S.Difficulty;
         v.Note = "";
+        App.Coach.Begin(this, 1, v.CoachRect, () => Flow.Stats.OpenClass(N.ClassSelectView.Selected));   // samouczek menu, dymki nowości
     }
+
+    public override void Process(double delta) => App.Coach.Update();
 
     public override bool HandleInput(InputCmd e)
     {
+        if (App.Coach.HandleInput(e)) return true;
         var view = N.ClassSelectView;
         var d = S.Data;
         if (e.IsTap) return Tap(e);

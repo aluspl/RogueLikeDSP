@@ -53,6 +53,9 @@ public partial class TitleView : Control
 
     public bool LinkAt(Vector2 p) => _link.Grow(4).HasPoint(p);
 
+    /// <summary>Prostokąt pozycji menu (samouczek: podświetlenie), pusty przed pierwszym rysowaniem.</summary>
+    public Rect2 ItemRect(int i) => i >= 0 && i < _items.Count ? _items[i] : new Rect2();
+
     public override void _Draw()
     {
         try

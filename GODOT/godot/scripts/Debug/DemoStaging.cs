@@ -251,4 +251,59 @@ public sealed class DemoStaging
         _app.Nodes.World.Sync();
         _app.Refresh();
     }
+
+    /// <summary>
+    /// Akt 0, etap z pieczątkami: dokumenty w linii w prawo od bohatera, dalej zamknięte schody (kłódka, HUD 0/3);
+    /// open = dokumenty zebrane (komplet, schody otwarte, baner).
+    /// </summary>
+    public void Act0Stamps(bool open)
+    {
+        var g = G;
+        ClearAround(-1, -2, 7, 2);
+        g.EnemiesCount = 0;
+        var k = 0;
+        for (var i = 0; i < g.PickupsCount; i++)
+        {
+            if (g.Pickups[i].Type != PickupType.Document)
+            {
+                g.Pickups[i].Active = false;
+                continue;
+            }
+            g.Pickups[i].X = (sbyte)(g.Hero.X + 1 + k);
+            g.Pickups[i].Y = g.Hero.Y;
+            k++;
+        }
+        g.Lv[g.StairsX, g.StairsY] = Tile.Floor;
+        g.StairsX = g.Hero.X + 5;
+        g.StairsY = g.Hero.Y;
+        g.Lv[g.StairsX, g.StairsY] = Tile.Stairs;
+        Place("niezgodnosc", 3, -2, 0, 40);
+        Place("pieczatka", 2, 2, 0, 40);
+        g.UpdateFov();
+        _app.Nodes.World.Sync();
+        _app.Refresh();
+        if (!open) return;
+        for (var s = 0; s < 3; s++) _app.AfterAction(g.PlayerMove(1, 0));
+    }
+
+    /// <summary>Akt 0, Decyzja odmowna obok bohatera tuż nad progiem drugiej fazy; cios = Odwołanie (baner, błysk, wezwanie).</summary>
+    public void Act0BossPhase()
+    {
+        var g = G;
+        g.StartStage(g.FirstStage + 1);
+        for (var i = 0; i < g.Boss; i++) g.Enemies[i].Alive = false;
+        ClearAround(-2, -2, 3, 2);
+        ref var b = ref g.Enemies[g.Boss];
+        b.X = (sbyte)(g.Hero.X + 1);
+        b.Y = g.Hero.Y;
+        b.Awake = true;
+        b.Stun = 2;
+        var bd = g.D.Enemies[b.DefId];
+        b.Hp = (short)(b.MaxHp * bd.PhasePct / 100 + 1);
+        g.Hero.MaxHp = g.Hero.Hp = 120;
+        g.UpdateFov();
+        _app.Nodes.World.Sync();
+        _app.Refresh();
+        _app.AfterAction(g.PlayerMove(1, 0));
+    }
 }

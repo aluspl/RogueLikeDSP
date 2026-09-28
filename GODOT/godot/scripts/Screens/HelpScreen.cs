@@ -36,11 +36,18 @@ public sealed class HelpScreen : Screen
         Flow.Go(this);
     }
 
-    public override void Enter(bool instant) => N.Phone.OpenSingle(new HelpPage(S.Data), 2, instant);
+    public override void Enter(bool instant) => N.Phone.OpenSingle(new HelpPage(S.Data, _fromTitle && !_fromSettings), 2, instant);
 
     public override bool HandleInput(InputCmd e)
     {
         if (N.Phone.HandleInput(e)) return true; // kolejne strony Jak grać
+        if (_fromTitle && !_fromSettings && e.Is(GameAction.Select)) // samouczek menu jeszcze raz (#25): dymki od nowa na tytule
+        {
+            Meta.TutorialReset(S.Profile);
+            S.Save();
+            Flow.Title.Open();
+            return true;
+        }
         if (!e.Is(GameAction.A | GameAction.Start | GameAction.B | GameAction.Cancel)) return false;
         if (!S.Profile.HasFlag(Profile.FlagHelpSeen))
         {

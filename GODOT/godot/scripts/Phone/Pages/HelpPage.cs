@@ -44,12 +44,21 @@ public sealed class HelpPage : PhonePage
         set => _page = System.Math.Clamp(value, 0, Pages - 1);
     }
 
-    public HelpPage(GameData d) => _d = d;
+    public HelpPage(GameData d, bool fromTitle = false)
+    {
+        _d = d;
+        FromTitle = fromTitle;
+    }
+
+    /// <summary>Z menu tytułu: przycisk „Samouczek jeszcze raz” (SELECT / Tab) - dymki menu od nowa.</summary>
+    public bool FromTitle { get; }
 
     public override string Title => "Jak grać";
     public override string Sub => $"{_page + 1}/{Pages}";
-    public override string Hint => ButtonNames.Localize("A: dalej");
-    public override PageAction[] Actions => [new("Dalej", GameAction.A)];
+    public override string Hint => ButtonNames.Localize(FromTitle ? "A: dalej  SELECT: samouczek menu" : "A: dalej");
+    public override PageAction[] Actions => FromTitle
+        ? [new("Samouczek jeszcze raz", GameAction.Select), new("Dalej", GameAction.A)]
+        : [new("Dalej", GameAction.A)];
 
     /// <summary>A / Start: kolejna strona (akty i problemy, statystyki); na ostatniej - wyjście (HelpScreen).</summary>
     public override bool Input(InputCmd e)
@@ -75,7 +84,7 @@ public sealed class HelpPage : PhonePage
         {
             var top = p.Card(p.Top, 1 + ShortNews.Length);
             p.Stripe(top, 0, Pal.Brand);
-            p.Text(p.TextX(top), p.RowY(top, 0), "10 etapów, 3 akty z bossami", Ink.Dark, TextAlign.Left, top.End.X - 6 - p.TextX(top));
+            p.Text(p.TextX(top), p.RowY(top, 0), "3 akty z bossami, z nagrody Akt 0", Ink.Dark, TextAlign.Left, top.End.X - 6 - p.TextX(top));
             for (var i = 0; i < ShortNews.Length; i++)
             {
                 p.Divider(top, i + 1);
@@ -87,8 +96,8 @@ public sealed class HelpPage : PhonePage
         var intro = p.Card(p.Top, 2);
         p.Stripe(intro, 0, Pal.Brand);
         p.Stripe(intro, 1, Pal.Brand);
-        p.Text(p.TextX(intro), p.RowY(intro, 0), "10 etapów w 3 aktach, każdy", Ink.Dark);
-        p.Text(p.TextX(intro), p.RowY(intro, 1), "kończy boss. Schody = dalej.", Ink.Dark);
+        p.Text(p.TextX(intro), p.RowY(intro, 0), "10 etapów w 3 aktach (+ Akt 0 z nagrody),", Ink.Dark);
+        p.Text(p.TextX(intro), p.RowY(intro, 1), "każdy kończy boss. Schody = dalej.", Ink.Dark);
         var card = DrawControls(p, p.Section(intro.End.Y + 6, "STEROWANIE"));
         var tx = p.TextX(card);
         var right = card.End.X - 6;
@@ -123,6 +132,7 @@ public sealed class HelpPage : PhonePage
 
     private static readonly string[] ActLines =
     [
+        "0: pieczątki - 3 dokumenty = schody",
         "I: błoto - wejście = tura",
         "II: porywy wiatru spychają",
         "III: pył - widzisz mniej",

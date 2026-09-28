@@ -30,6 +30,8 @@ public sealed class SmokeTest
     private bool _prologue, _touch, _portrait;
     private int _acts, _splits, _blasts, _shots;
     private bool _stats, _help;
+    private int _tutorial, _unlocks, _docs, _phases;
+    private bool _act0;
 
     public SmokeTest(App app) => _app = app;
 
@@ -45,6 +47,13 @@ public sealed class SmokeTest
             s.Difficulty = 0;
             s.Seed = s.Seed != 0 ? s.Seed : 424242u;
             s.Events.LevelUp += (_, _) => _levelUps++;
+            await ExerciseTutorial();   // świeży profil: samouczek menu, dymki nowości, powtórka z Jak grać
+            await ExerciseAct0();       // Akt 0 z nagrody: pieczątki, Decyzja odmowna z drugą fazą, dalej Fundamenty
+            s.Profile = Meta.NewProfile(s.Data);
+            s.Profile.Tutorial = 0x3F;  // dalej bez dymków (obejrzane)
+            s.Profile.ClassesSeen = 0xFFFF;
+            s.ClassId = 0;
+            s.Difficulty = 0;
             _app.StartRun();
             await PlayStages();
             new DebugScenes(_app).AdvanceMessages(); // bot kończy na karcie etapu - dalej na mapę
@@ -69,7 +78,7 @@ public sealed class SmokeTest
             if (DrawErrors.Count > 0) throw new Exception($"błędy rysowania: {DrawErrors.Count}, ostatni: {DrawErrors.Last}");
             GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {s.Data.Version}, zawody {s.Data.Classes.Length}, etap {stage + 1}, " +
                      $"dzień {g.Turns}, HP {g.Hero.Hp}/{g.Hero.MaxHp}, wynik {g.Score}, budżet {g.Cash}, kroki {_steps}, " +
-                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, Jak grać {(_help ? "tak" : "nie")}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
+                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, samouczek {_tutorial} dymków + nowości {_unlocks}, Akt 0 {(_act0 ? "tak" : "nie")} (dokumenty {_docs}, druga faza {_phases}), Jak grać {(_help ? "tak" : "nie")}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
                      $"ekran {Flow.Current.GetType().Name}");
             _app.Root.GetTree().Quit(ok ? 0 : 1);
         }
@@ -78,6 +87,123 @@ public sealed class SmokeTest
             GD.PushError($"SMOKE FAIL: {ex}");
             _app.Root.GetTree().Quit(1);
         }
+    }
+
+    /// <summary>
+    /// Samouczek menu (#25) na świeżym profilu: wszystkie dymki tytułu i wyboru zawodu (A), w kroku o statystykach
+    /// I otwiera ich opis i po powrocie samouczek trwa dalej; potem po jednym dymku nowości (Respekt, budowa dnia,
+    /// Akt 0, tryb inwestora, nowe zawody) - każdy raz; „Samouczek jeszcze raz” w Jak grać (SELECT) i pominięcie (B).
+    /// </summary>
+    private async Task ExerciseTutorial()
+    {
+        var s = _app.Session;
+        var d = s.Data;
+        var coach = _app.Coach;
+        s.Profile.SetFlag(Profile.FlagPrologueSeen | Profile.FlagHelpSeen);
+        for (var screen = 0; screen < 2; screen++)
+        {
+            if (screen == 0) Flow.Title.Open();
+            else Flow.ClassSelect.Open();
+            Screen cur = screen == 0 ? Flow.Title : Flow.ClassSelect;
+            var want = 0;
+            for (var i = 0; i < d.TutorialSteps.Length; i++) want += d.TutorialSteps[i].Screen == screen && Meta.TutorialStepShown(d, s.Profile, i, true) ? 1 : 0;
+            if (!coach.Active || coach.StepsCount != want) throw new Exception($"samouczek ekranu {screen}: {coach.StepsCount} kroków zamiast {want}");
+            var seen = 0;
+            for (var k = 0; k < 40 && coach.Active; k++)
+            {
+                await DebugRunner.Frames(_app.Root, 2);
+                if (!_app.Nodes.Coach.Visible) throw new Exception("samouczek: dymek niewidoczny");
+                if (_app.Nodes.Coach.Hole.Size.X <= 0 && _app.Nodes.ClassSelectView.Size.X >= 320) // bez okna (headless) widoki bywają malutkie
+                    throw new Exception($"samouczek: brak podświetlenia dla {coach.CurrentId}");
+                seen++;
+                if (coach.CurrentId == "stats")   // link: opis statystyk i powrót
+                {
+                    cur.HandleInput(InputCmd.Of(GameAction.Info));
+                    if (Flow.Current != Flow.Stats) throw new Exception("samouczek: I nie otwiera opisu statystyk");
+                    Flow.Stats.HandleInput(InputCmd.Of(GameAction.B));
+                    if (Flow.Current != Flow.ClassSelect || coach.CurrentId != "stats") throw new Exception("samouczek: po opisie statystyk dymek nie wrócił");
+                }
+                cur.HandleInput(InputCmd.Of(GameAction.A));
+            }
+            if (coach.Active || seen != want || Meta.TutorialPending(s.Profile, screen)) throw new Exception($"samouczek ekranu {screen} niedokończony ({seen}/{want})");
+            _tutorial += seen;
+        }
+        // dymki nowości: każdy raz, po jednym
+        s.Profile.RespectTotal = 4;
+        s.Profile.Runs = 1;
+        s.Profile.Wins = d.Rewards.Length;
+        s.Profile.Rewards = (byte)d.Rewards.Length;
+        for (var pass = 0; pass < 2; pass++)
+        {
+            var got = 0;
+            foreach (var screen in new[] { 0, 1 })
+            {
+                if (screen == 0) Flow.Title.Open();
+                else Flow.ClassSelect.Open();
+                Screen cur = screen == 0 ? Flow.Title : Flow.ClassSelect;
+                for (var k = 0; k < 20 && coach.Active; k++)
+                {
+                    await DebugRunner.Frames(_app.Root, 1);
+                    got++;
+                    cur.HandleInput(InputCmd.Of(k % 2 == 0 ? GameAction.A : GameAction.B));
+                }
+            }
+            var reward = 0;
+            foreach (var c in d.Classes) reward += c.Reward ? 1 : 0;
+            if (pass == 0 && got != 4 + reward) throw new Exception($"dymki nowości: {got} zamiast {4 + reward}");
+            if (pass == 1 && got != 0) throw new Exception("dymki nowości pokazują się drugi raz");
+            _unlocks += got;
+        }
+        // Jak grać z tytułu: SELECT = samouczek od nowa, B pomija resztę
+        Flow.Help.Open(true, true);
+        Flow.Help.HandleInput(InputCmd.Of(GameAction.Select));
+        if (Flow.Current != Flow.Title || !coach.Active || coach.CurrentId != d.TutorialSteps[0].Id) throw new Exception("Jak grać: samouczek nie wrócił");
+        Flow.Title.HandleInput(InputCmd.Of(GameAction.B));
+        if (coach.Active || Meta.TutorialPending(s.Profile, 0)) throw new Exception("samouczek: B nie pomija");
+        await DebugRunner.Frames(_app.Root, 2);
+    }
+
+    /// <summary>
+    /// Akt 0 (nagroda za odbiór): budowa od Działki; bot zbiera dokumenty (schody zamknięte do kompletu), na Przyłączach
+    /// Decyzja odmowna wchodzi w drugą fazę (Odwołanie), po niej Hurtownia i etap Fundamenty.
+    /// </summary>
+    private async Task ExerciseAct0()
+    {
+        var s = _app.Session;
+        var g = s.Game;
+        s.Profile = Meta.NewProfile(s.Data);
+        s.Profile.Rewards = (byte)s.Data.Rewards.Length;
+        s.Profile.Tutorial = 0x3F;
+        s.Profile.ClassesSeen = 0xFFFF;
+        s.Profile.SetFlag(Profile.FlagPrologueSeen | Profile.FlagHelpSeen);
+        s.Events.DocumentFound += (_, _) => _docs++;
+        s.Events.BossPhase += _ => _phases++;
+        s.ClassId = 1;
+        _app.StartRun();
+        if (g.Stage != 0 || g.FirstStage != 0 || !g.StairsLocked() || g.ActNumeral() != "0") throw new Exception("Akt 0: budowa nie zaczyna się od Papierologii");
+        for (var step = 0; step < 4000 && g.Stage < s.Data.PreludeStages; step++)
+        {
+            if (Flow.Current == Flow.Offer)
+            {
+                Flow.Offer.Decide(g.OfferIsBetter);
+                continue;
+            }
+            if (Flow.Current != Flow.Game)
+            {
+                new DebugScenes(_app).AdvanceMessages();
+                if (Flow.Current != Flow.Game && Flow.Current != Flow.Offer) break;
+                continue;
+            }
+            g.Hero.Hp = g.Hero.MaxHp;   // test przejścia, nie balansu
+            Bot.Step(g);
+            _app.AfterAction(true);
+            if (step % 100 == 0) await DebugRunner.Frames(_app.Root, 1);
+        }
+        new DebugScenes(_app).AdvanceMessages();
+        if (g.Stage != s.Data.PreludeStages || g.ActNumeral() != "I") throw new Exception($"Akt 0: bot nie doszedł do Fundamentów (etap {g.Stage}, {g.St})");
+        if (_docs != s.Data.Documents.Length || _phases != 1) throw new Exception($"Akt 0: dokumenty {_docs}, druga faza {_phases}");
+        _act0 = true;
+        await DebugRunner.Frames(_app.Root, 2);
     }
 
     /// <summary>Bot gra do 5. etapu: harmonogram, karta etapu, Hurtownia, paczki i termos przez menu akcji.</summary>
@@ -592,7 +718,7 @@ public sealed class SmokeTest
             await DebugRunner.Frames(_app.Root, 2);
             if (g.ShotEvents != 0) throw new Exception("warstwa Godota nie wyzerowała strzałów po turze");
         }
-        if (_splits == 0 || _blasts == 0) throw new Exception($"pokaz zachowań: podział {_splits}, wybuch {_blasts} (problemów {before} -> {g.EnemiesCount})");
+        if (_splits == 0 || _blasts == 0) throw new Exception($"pokaz zachowań: podział {_splits}, wybuch {_blasts} (problemów {before} -> {g.EnemiesCount}) etap {g.Stage} klasa {g.Cls} log: {string.Join(" | ", System.Linq.Enumerable.Select(g.Log, m => m.Text))}");
         Flow.Phone.Open(PhoneTabs.Start, true);
         await DebugRunner.Frames(_app.Root, 1);
         Flow.Phone.HandleInput(InputCmd.Of(GameAction.A));

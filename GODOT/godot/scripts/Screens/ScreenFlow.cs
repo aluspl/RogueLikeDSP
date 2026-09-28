@@ -69,6 +69,7 @@ public sealed class ScreenFlow
         n.Hud.Visible = next.InRun;
         n.Touch.Visible = Layout.Touch && next == Game;
         n.Settings.Visible = next.ShowsSettings;
+        n.Coach.Visible = false;   // samouczek: pokazuje go ekran-właściciel (Coach.Update)
         n.TitleView.Visible = (next.Views & ViewSet.Title) != 0;
         n.ClassSelectView.Visible = (next.Views & ViewSet.ClassSelect) != 0;
         n.EndView.Visible = (next.Views & ViewSet.End) != 0;

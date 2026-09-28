@@ -26,6 +26,7 @@ public partial class ClassSelectView : Control
     private float _cardShift;  // wjazd karty przy zmianie zawodu
     private readonly Dictionary<int, float> _scale = new();
     private readonly List<(Rect2 Rect, ClassSelectHit Hit, int Arg)> _hits = new();
+    private readonly Dictionary<string, Rect2> _coach = new();   // samouczek: prostokąty elementów (id kroku)
 
     public int Difficulty { get; set; }
     /// <summary>Dymek z opisem statystyki (dotknięcie wiersza; na komputerze też najechanie myszą); -1 = brak.</summary>
@@ -66,6 +67,13 @@ public partial class ClassSelectView : Control
     }
 
     /// <summary>Co jest pod punktem (dotyk / klik): portret (Arg = pozycja w karuzeli), trudność, pamiątka, przyciski.</summary>
+    /// <summary>Samouczek: element omawiany w kroku id (zawód, trudność, pamiątka, statystyki, tryb inwestora, start).</summary>
+    public Rect2 CoachRect(string id)
+    {
+        if (id is "new" or "class") id = "class";
+        return _coach.TryGetValue(id, out var r) ? r : _coach.TryGetValue("class", out var c) ? c : new Rect2();
+    }
+
     public (ClassSelectHit Hit, int Arg) HitAt(Vector2 p)
     {
         foreach (var (r, hit, arg) in _hits)
@@ -123,6 +131,7 @@ public partial class ClassSelectView : Control
     {
         if (_d is null) return;
         _hits.Clear();
+        _coach.Clear();
         var f = PixelFont.I;
         var w = Size.X;
         var h = Size.Y;
@@ -169,6 +178,7 @@ public partial class ClassSelectView : Control
         }
         for (var k = 0; k < _order.Length; k++)
             _hits.Add((new Rect2(SlotX(k) - Spacing / 2, baseY - 50, Spacing, 84), ClassSelectHit.Portrait, k));
+        _coach["class"] = new Rect2(4, baseY - 54, w - 8, 88);
         if (!portrait)
         {
             f.Draw(this, new Vector2(SlotX(0) - 50, baseY - 10), "<", Ink.OnBrand, TextAlign.Center);
@@ -183,6 +193,7 @@ public partial class ClassSelectView : Control
             var bw = (w - 36) / 3;
             Button(new Rect2(12, by, bw, bh), "Wróć", false, ClassSelectHit.Back);
             Button(new Rect2(24 + bw, by, w - 36 - bw, bh), Meta.ClassUnlocked(_d, _p, Selected) ? "Start budowy" : "Zablokowany", true, ClassSelectHit.Start);
+            _coach["go"] = new Rect2(24 + bw, by, w - 36 - bw, bh);
             DrawStatTip();
             return;
         }
@@ -192,9 +203,11 @@ public partial class ClassSelectView : Control
         {
             Button(new Rect2(40, h - 30, 120, 24), "Wróć", false, ClassSelectHit.Back);
             Button(new Rect2(w - 160, h - 30, 120, 24), "Start budowy", true, ClassSelectHit.Start);
+            _coach["go"] = new Rect2(w - 160, h - 30, 120, 24);
         }
         else
         {
+            _coach["go"] = new Rect2(40, h - 30, w - 80, 22);
             f.Draw(this, new Vector2(w / 2, h - 26), "Strzałki: zawód / trudność   Q/E: pamiątka   I: statystyki   Enter: start   Esc: wróć", Ink.MapDim, TextAlign.Center);
         }
     }
@@ -241,7 +254,9 @@ public partial class ClassSelectView : Control
         DrawStyleBox(Ui.Box(Pal.Group, 7), new Rect2(x + cw - tw, y + 2, tw, 14));
         f.Draw(this, new Vector2(x + cw - tw / 2f, y), tag, Ink.Brand, TextAlign.Center);
         y += 24;
+        var statsTop = y;
         y = DrawStats(x, y, cw, cls, c, m, unl, 18) + 6;
+        _coach["stats"] = new Rect2(x - 4, statsTop - 4, cw + 8, y - statsTop);
 
         DrawRect(new Rect2(x, y, cw, 1), Pal.Border);
         y += 4;
@@ -253,6 +268,7 @@ public partial class ClassSelectView : Control
         f.Draw(this, new Vector2(x + 6, Mathf.Round(dr.GetCenter().Y - 8)), "Trudność", Ink.Dim);
         f.Draw(this, new Vector2(x + cw - 6, Mathf.Round(dr.GetCenter().Y - 8)), $"< {diff.Name}{diffLock} >", diffLock.Length > 0 ? Ink.Late : Ink.Brand, TextAlign.Right);
         _hits.Add((dr, ClassSelectHit.Difficulty, 0));
+        _coach["difficulty"] = dr;
         y += rowH + 4;
         var k2 = Meta.SelectedKeepsake(_d, _p);
         var keep = k2 < 0 ? "bez pamiątki" : $"{_d.Keepsakes[k2].Name} {UiText.Roman(Meta.KeepsakeRank(_d, _p, k2) - 1)}";
@@ -261,6 +277,7 @@ public partial class ClassSelectView : Control
         f.Draw(this, new Vector2(x + 6, Mathf.Round(kr.GetCenter().Y - 8)), "Pamiątka", Ink.Dim);
         f.Draw(this, new Vector2(x + cw - 6, Mathf.Round(kr.GetCenter().Y - 8)), f.Fit($"< {keep} >", cw - 90), k2 < 0 ? Ink.Dim : Ink.Done, TextAlign.Right);
         _hits.Add((kr, ClassSelectHit.Keepsake, 0));
+        _coach["keepsake"] = kr;
         y += rowH + 4;
         if (Meta.InvestorUnlocked(_p)) // tryb inwestora: stawka, dotknięcie = modyfikatory
         {
@@ -269,6 +286,7 @@ public partial class ClassSelectView : Control
             f.Draw(this, new Vector2(x + 6, Mathf.Round(ir.GetCenter().Y - 8)), "Tryb inwestora", Ink.Dim);
             f.Draw(this, new Vector2(x + cw - 6, Mathf.Round(ir.GetCenter().Y - 8)), InvestorLabel(), Ink.Brand, TextAlign.Right);
             _hits.Add((ir, ClassSelectHit.Investor, 0));
+            _coach["investor"] = ir;
             y += rowH + 4;
         }
         y += 2;
@@ -364,17 +382,20 @@ public partial class ClassSelectView : Control
         var diff = _d.Difficulties[Difficulty];
         var diffLock = Meta.DifficultyUnlocked(_d, _p, Difficulty) ? "" : " (zablok.)";
         f.Draw(this, new Vector2(x, y), "Trudność:", Ink.Dim);
+        _coach["difficulty"] = new Rect2(x - 4, y - 1, r.Size.X / 2 - 16, 19);
         f.Draw(this, new Vector2(x + 64, y), $"< {diff.Name}{diffLock} >", diffLock.Length > 0 ? Ink.Late : Ink.Dark);
         if (Meta.InvestorUnlocked(_p)) // tryb inwestora (Tab) w tym samym wierszu
         {
             var ix = r.Position.X + r.Size.X / 2 + 10;
             f.Draw(this, new Vector2(ix, y), "Inwestor:", Ink.Dim);
+            _coach["investor"] = new Rect2(ix - 4, y - 1, r.End.X - ix - 6, 19);
             f.Draw(this, new Vector2(ix + 62, y), f.Fit($"{InvestorLabel()} (Tab)", (int)(r.End.X - ix - 76)), Ink.Brand);
         }
         var k = Meta.SelectedKeepsake(_d, _p);
         var keep = k < 0 ? "bez pamiątki" : $"{_d.Keepsakes[k].Name} {UiText.Roman(Meta.KeepsakeRank(_d, _p, k) - 1)}: {RunMods.PerkLabel(Meta.KeepsakePerk(_d, _p, k))}";
         y += 18;
         f.Draw(this, new Vector2(x, y), "Pamiątka:", Ink.Dim);
+        _coach["keepsake"] = new Rect2(x - 4, y - 1, r.Size.X - 20, 19);
         f.Draw(this, new Vector2(x + 64, y), f.Fit(keep, (int)r.Size.X - 92), k < 0 ? Ink.Dim : Ink.Done);
         y += 18;
         var perks = UiText.Perks(_d, _p);
@@ -395,6 +416,7 @@ public partial class ClassSelectView : Control
         ];
         var bw = r.Size.X / 2 - 110;
         InfoButton(new Vector2(r.End.X - 30, r.Position.Y + 8));
+        _coach["stats"] = new Rect2(sx - 6, r.Position.Y + 6, r.End.X - sx, sy - r.Position.Y + 6 * 17f + 2);   // z przyciskiem „i”
         for (var i = 0; i < stats.Length; i++)
         {
             var (label, b, bonus, max) = stats[i];
