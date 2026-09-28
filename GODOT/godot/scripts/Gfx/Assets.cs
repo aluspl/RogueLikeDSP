@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Godot;
 using LifeLike.Core;
+using LifeLike.Core.Data;
 
 namespace LifeLike.Game.Gfx;
 
@@ -20,6 +21,7 @@ public static class Assets
     public const int FrameFx = 18;
     public const int FrameLock = 19;
     public const int FrameSilhouette = 20;
+    public const int FrameSilhouetteExt = 58;   // sylwetki zawodów z nagród (indeks 6+)
     public const int FrameToolbox = 26;
     public const int FrameAnimB = 27;
     public const int FrameGear = 42;
@@ -31,6 +33,8 @@ public static class Assets
 
     // menu_icons.png: 0 atak, 1 termos, 2 czekaj, 3 ramka, 4 kłódka, 5 strzałki, 6-10 pogoda dnia (wg WeatherEffect)
     public const int MenuWeather = 6;
+    // menu_icons.png 15-18: nagrody za odbiór (Młot udarowy, Pistolet do kotew, Buty, Pas), 19: Respekt, 14: kalendarz
+    public const int MenuRewardTool = 15, MenuRewardTool2 = 16, MenuBoots = 17, MenuBelt = 18, MenuRespect = 19, MenuCalendar = 14;
 
     // tiles/stage_N.png: 4 podłogi, 2 podłogi z cieniem muru, mur, lico muru, schody
     public const int TileFloor = 0, TileFloorShadow = 4, TileWall = 6, TileWallFace = 7, TileStairs = 8;
@@ -76,13 +80,30 @@ public static class Assets
     public static Rect2 AnimFrame(int row, int k) => new(k * Actor, row * Actor, Actor, Actor);
 
     /// <summary>Czy klatka ma animację chodu (zawody, problemy budowy, bossowie).</summary>
-    public static bool HasWalk(int frame) => frame is >= 0 and < 15 or 46 or 47 or 50;
+    public static bool HasWalk(int frame) => frame is >= 0 and < 15 or 46 or 47 or 50 or 52 or 53 or 54;
 
     /// <summary>Region klatki size x size w pionowym pasku.</summary>
     public static Rect2 Frame(int index, int size) => new(0, index * size, size, size);
 
-    /// <summary>Druga klatka animacji (anim_b z main.cpp): zawody i wrogowie 0..14 -> +27, bossowie 46-47 -> 48-49, 50 -> 51.</summary>
-    public static int AnimB(int frame) => frame < 15 ? frame + FrameAnimB : (frame < 48 ? frame + 2 : frame + 1);
+    /// <summary>Druga klatka animacji (anim_b z main.cpp): zawody i wrogowie 0..14 -> +27, bossowie 46-47 -> 48-49, 50 -> 51,
+    /// zawody z nagród 52-54 -> 55-57.</summary>
+    public static int AnimB(int frame) => frame < 15 ? frame + FrameAnimB : (frame < 48 ? frame + 2 : (frame < 52 ? frame + 1 : frame + 3));
+
+    /// <summary>Sylwetka zablokowanego zawodu (0-5: 20+, zawody z nagród: 58+).</summary>
+    public static int Silhouette(int cls) => cls < 6 ? FrameSilhouette + cls : FrameSilhouetteExt + cls - 6;
+
+    /// <summary>Klatka domu na Osiedlu: wielkość * liczba zawodów + zawód (pusta działka: HouseEmpty).</summary>
+    public static int HouseFrame(int house, int classes) => (house >> 4) * classes + (house & 15);
+
+    public static int HouseEmpty(int classes) => 4 * classes;
+
+    /// <summary>Ikona nagrody za odbiór w menu_icons (narzędzie, sprzęt).</summary>
+    public static int RewardIcon(GameData d, RewardDef r)
+    {
+        if (r.Kind == RewardKind.Tool) return r.Index == d.Tools.Length - 1 ? MenuRewardTool2 : MenuRewardTool;
+        if (r.Kind == RewardKind.Gear) return d.Gear[r.Index * 3].Stat == GearStat.Thermos ? MenuBelt : MenuBoots;
+        return MenuCalendar;
+    }
 
     /// <summary>Klatka znajdźki jak pickup_frame() w main.cpp.</summary>
     public static int PickupFrame(in Pickup p) => p.Type switch

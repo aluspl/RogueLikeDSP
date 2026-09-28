@@ -44,14 +44,21 @@ public sealed class GearTab : PhonePage
         var pw = p.Pill(right, p.RowY(c0, 0), $"z{g.WeaponRange()} {UiText.StatShort(w.ScalesWith)}", PillKind.Group);
         p.Text(tx, p.RowY(c0, 0), $"{w.Name} {w.MinDamage}-{w.MaxDamage} +{g.DmgBonus}", Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
 
-        y = p.Section(c0.End.Y + 4, "SPRZĘT", $"{CountEquipped()}/{d.GearSlotsCount}");
-        var c1 = p.Card(y, d.GearSlotsCount);
+        // sloty: kask, rękawice, kamizelka + buty i pas z nagród za odbiór (jeśli odebrane albo założone)
+        var slots = new System.Collections.Generic.List<int>();
         for (var i = 0; i < d.GearSlotsCount; i++)
         {
-            var r = p.RowY(c1, i);
-            if (i > 0) p.Divider(c1, i);
+            if (((g.Bonus.GearSlots >> i) & 1) != 0 || g.Equipped[i] >= 0) slots.Add(i);
+        }
+        y = p.Section(c0.End.Y + 4, "SPRZĘT", $"{CountEquipped()}/{slots.Count}");
+        var c1 = p.Card(y, slots.Count);
+        for (var k = 0; k < slots.Count; k++)
+        {
+            var i = slots[k];
+            var r = p.RowY(c1, k);
+            if (k > 0) p.Divider(c1, k);
             var rar = g.Equipped[i];
-            p.Stripe(c1, i, rar < 0 ? Pal.Todo : rar == 2 ? Pal.Prog : rar == 1 ? Pal.Brand : Pal.Done);
+            p.Stripe(c1, k, rar < 0 ? Pal.Todo : rar == 2 ? Pal.Prog : rar == 1 ? Pal.Brand : Pal.Done);
             if (rar < 0)
             {
                 p.Text(tx, r, $"{d.GearSlots[i]}: brak", Ink.Dim);

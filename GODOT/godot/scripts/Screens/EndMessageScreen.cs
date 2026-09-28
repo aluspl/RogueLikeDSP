@@ -31,6 +31,11 @@ public sealed class EndMessageScreen : Screen
         else page.Info(won ? "Dom na Osiedlu!" : $"Rekord {p.Best} - do pobicia", won ? Ink.Done : Ink.Dim);
         var stake = Investor.Stake(d, g.Bonus.Investor);
         if (stake > 0) page.Info($"Tryb inwestora: stawka {stake}" + (won ? $" (rekord zawodu {Meta.BestStake(p, g.Cls)})" : ""), Ink.Brand);
+        if (S.LastReward >= 0) page.Info($"Nagroda: {d.Rewards[S.LastReward].Name}! {d.Rewards[S.LastReward].Desc}", Ink.Done);
+        page.Info($"Respekt z budowy +{g.Respect}, masz {p.Respect}", Ink.Brand);
+        var nr = p.Rewards;
+        if (nr < d.Rewards.Length)
+            page.Info(d.Rewards[nr].Kind == LifeLike.Core.Data.RewardKind.Soon ? $"{d.Rewards[nr].Name} - wkrótce" : $"Za kolejny odbiór: {d.Rewards[nr].Name}", Ink.Dim);
         if (!won) Motivation(page);
         N.Phone.OpenSingle(page, 2, instant);
     }

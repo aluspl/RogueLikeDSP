@@ -51,7 +51,7 @@ public sealed class HouseSchedulePage : PhonePage
         // zdjęcie domu i podsumowanie
         var head = p.CardH(p.Top, Mathf.Max(photo + 12, 3 * 16 + 12));
         var size = Mathf.Min(3, _g.Score / 1000);
-        var frame = size * 6 + _g.Cls;
+        var frame = size * d.Classes.Length + _g.Cls;
         var ph = head.Position + new Vector2(6, (head.Size.Y - photo) / 2);
         p.C.DrawStyleBox(Ui.Box(Pal.Group, 6), new Rect2(ph, new Vector2(photo, photo)));
         p.Icon(Assets.Houses, frame, Assets.Actor, ph, big ? 2 : 1);

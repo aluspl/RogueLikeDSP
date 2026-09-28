@@ -25,6 +25,7 @@ public sealed class SmokeTest
     private int _pathWanted = -1;
     private bool _pathOk, _daily, _house;
     private bool _investor;
+    private int _respectBought = -1, _reward = -1, _newClasses;
     private bool _prologue, _touch, _portrait;
 
     public SmokeTest(App app) => _app = app;
@@ -55,6 +56,7 @@ public sealed class SmokeTest
             await VisitScreens();
             await ExerciseInvestor();
             await ExerciseDaily();
+            await ExerciseRespectAndRewards();
             if (!_pathOk) throw new Exception("wybór ścieżki: druga oferta nie trafiła na etap");
             await ExercisePortrait();
             var missing = Sfx.Missing();
@@ -62,7 +64,7 @@ public sealed class SmokeTest
             if (DrawErrors.Count > 0) throw new Exception($"błędy rysowania: {DrawErrors.Count}, ostatni: {DrawErrors.Last}");
             GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {s.Data.Version}, zawody {s.Data.Classes.Length}, etap {stage + 1}, " +
                      $"dzień {g.Turns}, HP {g.Hero.Hp}/{g.Hero.MaxHp}, wynik {g.Score}, budżet {g.Cash}, kroki {_steps}, " +
-                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
+                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
                      $"ekran {Flow.Current.GetType().Name}");
             _app.Root.GetTree().Quit(ok ? 0 : 1);
         }
@@ -398,6 +400,78 @@ public sealed class SmokeTest
     }
 
     /// <summary>Tryb inwestora: zablokowany przed wygraną, po wygranej Tab na wyborze zawodu, przełączanie, Mods, powrót.</summary>
+    /// <summary>
+    /// Respekt z ukończonych etapów w profilu, zakup rangi na stronie Respekt (Tab w Kosztach), wygrana odblokowuje
+    /// nagrodę za odbiór, każdy nowy zawód (Dekarz, Tynkarz, Operator koparki) używa mocy na mapie.
+    /// </summary>
+    private async Task ExerciseRespectAndRewards()
+    {
+        var s = _app.Session;
+        var p = s.Profile;
+        var d = s.Data;
+        if (p.RespectTotal <= 0) throw new Exception("brak Respektu w profilu po zaliczonych etapach");
+        Flow.Profile.Open(4, true);
+        await DebugRunner.Frames(_app.Root, 2);
+        if (_app.Nodes.Phone.Current is not TrainingTab tt) throw new Exception("brak zakładki Koszty");
+        Flow.Profile.HandleInput(InputCmd.Of(GameAction.Select));
+        if (tt.Page != 1) throw new Exception("Tab w Kosztach nie otwiera strony Respekt");
+        p.Respect = (ushort)Math.Max((int)p.Respect, 500);
+        var rank = Meta.RespectRank(d, p, 0);
+        Flow.Profile.HandleInput(InputCmd.Of(GameAction.A));
+        _respectBought = Meta.RespectRank(d, p, 0);
+        if (_respectBought != rank + 1) throw new Exception("zakup rangi Respektu nie zadziałał");
+        Flow.Profile.HandleInput(InputCmd.Of(GameAction.Select));
+        await DebugRunner.Frames(_app.Root, 2);
+        if (tt.Page != 2) throw new Exception("Tab nie otwiera strony Nagrody");
+        Flow.Profile.HandleInput(InputCmd.Of(GameAction.Select));
+        Flow.Title.Open();
+
+        // wygrana (skrót DebugSkip) - kolejna nagroda za odbiór
+        var before = p.Rewards;
+        s.ClassId = 1;
+        _app.StartRun();
+        var scenes = new DebugScenes(_app);
+        for (var guard = 0; guard < 60 && Flow.Current != Flow.EndMessage; guard++)
+        {
+            scenes.AdvanceMessages();
+            if (Flow.Current == Flow.Prologue) Flow.Prologue.HandleInput(InputCmd.Of(GameAction.A));
+            if (Flow.Current == Flow.Offer) Flow.Offer.Decide(true);
+            if (Flow.Current != Flow.Game) continue;
+            s.Game.DebugSkip();
+            _app.AfterAction(true);
+            await DebugRunner.Frames(_app.Root, 1);
+        }
+        if (Flow.Current != Flow.EndMessage || s.Game.St != GameStatus.Won) throw new Exception("skrót nie doprowadził do odbioru");
+        if (before < Meta.RewardsAvailable(d))
+        {
+            if (p.Rewards != before + 1 || s.LastReward != before) throw new Exception("wygrana nie odblokowała nagrody za odbiór");
+            _reward = s.LastReward;
+        }
+        await DebugRunner.Frames(_app.Root, 2);
+
+        // nowe zawody: moc na mapie i kilka tur bota
+        var staging = new DemoStaging(_app);
+        foreach (var eff in new[] { LifeLike.Core.Data.AbilityEffect.Line, LifeLike.Core.Data.AbilityEffect.Splash, LifeLike.Core.Data.AbilityEffect.Ram })
+        {
+            s.ClassId = Array.FindIndex(d.Classes, c => c.Ability == eff);
+            _app.StartRun();
+            scenes.AdvanceMessages();
+            if (Flow.Current != Flow.Game) throw new Exception($"nowy zawód {d.Classes[s.ClassId].Name}: brak mapy");
+            staging.NewClassShowcase(eff);
+            if (!PlayCommands.UseAbility(s.Game, _app.Nodes.World)) throw new Exception($"{d.Classes[s.ClassId].Name}: moc nie zadziałała");
+            _app.AfterAction(true);
+            for (var k = 0; k < 20 && Flow.Current == Flow.Game && s.Game.St == GameStatus.Playing; k++)
+            {
+                Bot.StepSmart(s.Game);
+                _app.AfterAction(true);
+            }
+            await DebugRunner.Frames(_app.Root, 2);
+            _newClasses++;
+        }
+        Flow.Title.Open();
+        await DebugRunner.Frames(_app.Root, 2);
+    }
+
     private async Task ExerciseInvestor()
     {
         var s = _app.Session;

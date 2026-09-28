@@ -19,6 +19,8 @@ public sealed class DebugScenes
         "schedule-tip", "help", "settings", "settings-title", "walk", "weather-rain", "weather-snow", "weather-wind", "weather-heat",
         "brigade", "ally", "investor",
         "schedule-path", "materials", "repairs", "hurtownia-mats", "daily", "house", "levelup", "death",
+        "respect", "rewards", "classselect-locked", "class-dekarz", "class-tynkarz", "class-operator", "gear5", "respect-banner",
+        "second-chance",
     ];
 
     private readonly App _app;
@@ -34,7 +36,7 @@ public sealed class DebugScenes
 
     public static bool UsesDemoProfile(string scene) =>
         scene is "title" or "classselect" or "profile" or "catalog" or "estate" or "team" or "training" or "card" or "perks" or "investor"
-            or "daily" or "death";
+            or "daily" or "death" or "respect" or "rewards" or "classselect-locked";
 
     public async Task Setup(string scene)
     {
@@ -54,6 +56,22 @@ public sealed class DebugScenes
             case "team":
             case "training":
                 Flow.Profile.Open(Array.IndexOf(new[] { "profile", "catalog", "estate", "team", "training" }, scene), true);
+                return;
+            case "respect": // telefon profilu: Koszty, strona Respekt (część rang kupiona)
+            case "rewards": // telefon profilu: Koszty, strona Nagrody za odbiór (3 odebrane)
+            {
+                Flow.Profile.Open(4, true);
+                if (_app.Nodes.Phone.Current is Phone.ProfileTabs.TrainingTab tt)
+                {
+                    tt.Page = scene == "respect" ? 1 : 2;
+                    tt.Select(scene == "respect" ? 5 : 3);
+                }
+                _app.Nodes.Phone.QueueRedraw();
+                return;
+            }
+            case "classselect-locked": // zawód z nagrody za odbiór, jeszcze zablokowany
+                s.ClassId = Array.FindIndex(s.Data.Classes, c => c.Ability == AbilityEffect.Splash);
+                Flow.ClassSelect.Open();
                 return;
             case "prologue": // pierwsza budowa: plac w połowie przejazdu kamery, drugi podpis
                 s.ClassId = 1;
@@ -109,9 +127,26 @@ public sealed class DebugScenes
     {
         var s = _app.Session;
         var g = s.Game;
-        s.ClassId = scene switch { "game" => 0, "perks" => 1, "aim" => 2, _ => 5 }; // Cieśla: gwoździarka z3
+        var newClass = scene switch
+        {
+            "class-dekarz" => AbilityEffect.Line,
+            "class-tynkarz" => AbilityEffect.Splash,
+            "class-operator" => AbilityEffect.Ram,
+            _ => AbilityEffect.Stun,
+        };
+        s.ClassId = newClass != AbilityEffect.Stun ? Array.FindIndex(s.Data.Classes, c => c.Ability == newClass)
+                  : scene switch { "game" => 0, "perks" => 1, "aim" => 2, _ => 5 }; // Cieśla: gwoździarka z3
         _app.StartRun();
         Flow.StageCard.Advance(); // karta etapu -> gra
+        if (newClass != AbilityEffect.Stun) // nowy zawód: problemy pod moc i moc (efekt w trakcie)
+        {
+            _app.Nodes.Banners.Clear();
+            _stage.NewClassShowcase(newClass);
+            var acted = Screens.Play.PlayCommands.UseAbility(g, _app.Nodes.World);
+            _app.AfterAction(acted);
+            await DebugRunner.Frames(_app.Root, 6);
+            return;
+        }
         if (scene == "perks") // Murarz z Warsztatami i cechą SIŁ+1, na etapie z wydarzeniem
         {
             for (var seed = s.Seed; g.StageEvent < 0; seed++)
@@ -212,6 +247,28 @@ public sealed class DebugScenes
                 break;
             case "phone-costs":
                 Flow.Phone.Open(4, true);
+                break;
+            case "gear5": // telefon: Sprzęt z butami i pasem (nagrody za odbiór)
+                g.Bonus.GearSlots = (1 << g.D.GearSlotsCount) - 1;
+                g.Mats[0] = 2;
+                g.Mats[2] = 4;
+                g.Equip(0, 1, 1);
+                g.Equip(2, 2, 3);
+                g.Equip(3, 2, Array.FindIndex(g.D.GearTraits, t => t.Effect == TraitEffect.SlipRes));
+                g.Equip(4, 1, 0);
+                Flow.Phone.Open(3, true);
+                break;
+            case "respect-banner": // etap zaliczony: baner Respektu (jak po schodach)
+                banners.Clear();
+                _app.Session.Events.RaiseStageCleared();
+                _app.Session.Events.RaiseRespectGained(g.StageRespect(), _app.Session.Profile.Respect + g.StageRespect());
+                break;
+            case "second-chance": // Druga szansa z Respektu: 1 HP zamiast końca budowy
+                banners.Clear();
+                g.Bonus.SecondChance = 1;
+                g.Hero.Hp = 0;
+                g.HeroDown();
+                _app.AfterAction(true);
                 break;
             case "banners":
                 banners.Push("Awans! Poziom 2", $"+{_app.Session.Data.HpPerLevel} HP");

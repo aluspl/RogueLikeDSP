@@ -114,4 +114,53 @@ public sealed class DemoStaging
         }
         return (g.Hero.X + 1, g.Hero.Y);
     }
+
+    /// <summary>
+    /// Pokaz nowego zawodu (scenariusze 25-27 na GBA): podłoga wokół bohatera i problemy ustawione pod moc -
+    /// Rynna: trzy w linii w prawo, Narzut: grupa 2 pola w prawo, Taran: wytrzymały problem 3 pola w prawo.
+    /// </summary>
+    public void NewClassShowcase(LifeLike.Core.Data.AbilityEffect effect)
+    {
+        var g = G;
+        var d = g.D;
+        for (var y = g.Hero.Y - 2; y <= g.Hero.Y + 2; y++)
+        {
+            for (var x = g.Hero.X - 1; x <= g.Hero.X + 6; x++)
+            {
+                if (x >= 1 && y >= 1 && x < Level.W - 1 && y < Level.H - 1 && g.Lv[x, y] == Tile.Wall) g.Lv[x, y] = Tile.Floor;
+            }
+        }
+        g.EnemiesCount = 0;
+        int Def(string id) => Math.Max(0, Array.FindIndex(d.Enemies, e => e.Id == id));
+        void Put(string id, int dx, int dy, int hp)
+        {
+            int x = g.Hero.X + dx, y = g.Hero.Y + dy;
+            if (g.Lv.At(x, y) != Tile.Floor || g.Occupied(x, y)) return;
+            g.Spawn(Def(id), x, y);
+            ref var e = ref g.Enemies[g.EnemiesCount - 1];
+            e.Awake = true;
+            e.Stun = 30;
+            if (hp > 0) e.Hp = e.MaxHp = (short)hp;
+        }
+        switch (effect)
+        {
+            case LifeLike.Core.Data.AbilityEffect.Line:
+                Put("przeciek", 2, 0, 40);
+                Put("kornik", 3, 0, 40);
+                Put("przeciek", 4, 0, 40);
+                break;
+            case LifeLike.Core.Data.AbilityEffect.Splash:
+                Put("kornik", 2, 0, 40);
+                Put("przeciek", 3, 1, 40);
+                Put("plesn", 3, -1, 40);
+                break;
+            default:
+                Put("budzet", 3, 0, 80);
+                break;
+        }
+        g.PickupsCount = 0;
+        g.UpdateFov();
+        _app.Nodes.World.Sync();
+        _app.Refresh();
+    }
 }

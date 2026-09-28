@@ -29,6 +29,9 @@ public sealed class BannerFeed
         ev.BossSpotted += def => _banners.Push("Przypisano Ci usterkę", _s.Data.Enemies[def].Name, PhoneTabs.Issues);
         ev.StageCleared += OnStageCleared;
         ev.Achievements += OnAchievements;
+        ev.RespectGained += (gained, total) => _banners.Push($"Respekt +{gained}", $"Razem: {total} (Koszty)", PhoneTabs.Costs);
+        ev.RewardUnlocked += i => _banners.Push("Nagroda: " + _s.Data.Rewards[i].Name, _s.Data.Rewards[i].Desc, PhoneTabs.Start);
+        ev.SecondChance += () => _banners.Push("Druga szansa!", "Zostaje 1 HP - uważaj", PhoneTabs.Start);
     }
 
     private void OnLevelUp(int level, bool abilityUp)

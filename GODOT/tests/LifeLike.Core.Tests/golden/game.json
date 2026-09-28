@@ -727,7 +727,8 @@
         "costs": [
           10
         ],
-        "refund": 20
+        "refund": 20,
+        "resetRefund": 10
       },
       {
         "id": "dostawy",
@@ -2019,7 +2020,7 @@
       {
         "kind": "tool",
         "id": "udarowy",
-        "desc": "Nowe narzędzie w dropach"
+        "desc": "Narzędzie w dropach"
       },
       {
         "kind": "class",
@@ -2035,7 +2036,7 @@
       {
         "kind": "tool",
         "id": "kotwy",
-        "desc": "Nowe narzędzie w dropach"
+        "desc": "Narzędzie w dropach"
       },
       {
         "kind": "class",

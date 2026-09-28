@@ -35,6 +35,12 @@ public static class DemoProfile
             p.KeepsakeRuns[kielnia] = 4;
         }
         p.KeepsakeRuns[0] = 2;
+        p.Rewards = 3;            // nagrody za odbiór za 3 wygrane: Młot udarowy, Dekarz, Buty robocze
+        p.Respect = 140;
+        p.RespectTotal = 320;
+        p.RespectRanks[0] = 1;
+        p.RespectRanks[5] = 2;
+        p.RespectRanks[8] = 3;
         return p;
     }
 }

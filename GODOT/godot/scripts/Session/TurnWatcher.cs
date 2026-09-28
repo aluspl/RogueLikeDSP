@@ -11,8 +11,8 @@ public sealed class TurnWatcher
 {
     private readonly SessionEvents _events;
     private int _level, _weapon, _pickups, _cd, _active;
-    private readonly sbyte[] _equipped = new sbyte[4];
-    private bool _bossSeen;
+    private readonly sbyte[] _equipped = new sbyte[CoreGame.MaxGearSlots];
+    private bool _bossSeen, _second;
     private int _stage = -1, _tier = -1;
 
     public TurnWatcher(SessionEvents events) => _events = events;
@@ -25,8 +25,9 @@ public sealed class TurnWatcher
         _pickups = g.PickupsCount;
         _cd = g.AbilityCd;
         _active = ActivePickups(g);
-        for (var i = 0; i < 4; i++) _equipped[i] = g.Equipped[i];
+        for (var i = 0; i < CoreGame.MaxGearSlots; i++) _equipped[i] = g.Equipped[i];
         _bossSeen = false;
+        _second = g.SecondUsed;
         _stage = g.Stage;
         _tier = g.Tier;
     }
@@ -54,12 +55,14 @@ public sealed class TurnWatcher
         }
         if (g.WeaponOverride != _weapon && g.WeaponOverride >= 0) _events.RaiseToolFound();
         if (g.PickupsCount > _pickups) _events.RaiseDropped();
-        for (var i = 0; i < g.D.GearSlotsCount && i < 4; i++)
+        for (var i = 0; i < g.D.GearSlotsCount && i < CoreGame.MaxGearSlots; i++)
         {
             if (g.Equipped[i] != _equipped[i] && g.Equipped[i] >= 0) _events.RaiseGearEquipped(i);
             _equipped[i] = g.Equipped[i];
         }
         if (_cd > 0 && g.AbilityCd == 0) _events.RaiseAbilityReady();
+        if (g.SecondUsed && !_second) _events.RaiseSecondChance();   // Druga szansa z Respektu
+        _second = g.SecondUsed;
         if (!_bossSeen && g.Boss >= 0 && g.Enemies[g.Boss].Alive && g.Visible(g.Enemies[g.Boss].X, g.Enemies[g.Boss].Y))
         {
             _bossSeen = true;

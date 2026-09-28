@@ -39,6 +39,8 @@ public sealed class GameSession
     public string Note { get; set; } = "";
     /// <summary>Doświadczenie zabankowane na koniec budowy.</summary>
     public int LastGained { get; private set; }
+    /// <summary>Nagroda za odbiór odblokowana ostatnią wygraną (indeks w GameData.Rewards), -1 = brak.</summary>
+    public int LastReward { get; private set; } = -1;
     /// <summary>Rekord sprzed zakończonej budowy (do „Nowy rekord!”).</summary>
     public int PrevBest { get; private set; }
     /// <summary>Codzienna budowa pobiła najlepszy wynik dnia (Daily.Record).</summary>
@@ -191,6 +193,7 @@ public sealed class GameSession
         {
             Events.RaiseStageCleared();
             Note = CheckProgress();
+            Events.RaiseRespectGained(g.StageRespect(), Profile.Respect);
             if (g.Score > Profile.Best) Profile.Best = g.Score;
             Meta.BankXp(Profile, g);
             Save();
@@ -202,13 +205,12 @@ public sealed class GameSession
             PrevBest = Profile.Best;
             if (g.Score > Profile.Best) Profile.Best = g.Score;
             DailyRecord = g.Daily && Daily.Record(Data, Profile, g.DailyDay, g.Score, won);
-            if (won)
-            {
-                ++Profile.Wins;
-                Meta.AddHouse(Profile, g);
-            }
+            LastReward = won ? Meta.RecordWin(Data, Profile) : -1;   // nagroda za odbiór: każda wygrana odblokowuje kolejną
+            if (won) Meta.AddHouse(Profile, g);
             Events.RaiseRunEnded(won);
             Note = CheckProgress();
+            if (won) Events.RaiseRespectGained(g.StageRespect(), Profile.Respect);
+            if (LastReward >= 0) Events.RaiseRewardUnlocked(LastReward);
             LastGained = Meta.BankXp(Profile, g);
             Save();
             ClearRun();

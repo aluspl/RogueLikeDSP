@@ -26,6 +26,7 @@ public sealed class App
         Banners = new BannerFeed(Session, Nodes.Banners);
         SoundCues.Attach(Session.Events);
         Session.Events.LevelUp += (level, abilityUp) => Nodes.World.Effects.LevelUp(level, abilityUp);
+        Session.Events.SecondChance += () => Nodes.World.Effects.SecondChance();
         Session.Events.RunEnded += won =>
         {
             if (won) Nodes.World.Effects.Confetti();

@@ -86,9 +86,9 @@ public sealed class HelpPage : PhonePage
 
     /// <summary>Nowości w wąskim telefonie (poziomo): krótko.</summary>
     private static readonly string[] ShortNews =
-        ["Między etapami: wybór ścieżki", "Materiały: Hurtownia i naprawy", "Codzienna budowa: menu tytułu", "Pogoda, brygada: telefon > Sprzęt"];
+        ["Między etapami: wybór ścieżki", "Respekt i nagrody: profil > Koszty", "Codzienna budowa: menu tytułu", "Pogoda, brygada: telefon > Sprzęt"];
 
-    /// <summary>Pogoda, brygada i tryb inwestora (v0.21.47), ścieżki, materiały i codzienna budowa (v0.21.48).</summary>
+    /// <summary>Pogoda, brygada i tryb inwestora (v0.21.47), ścieżki, materiały i codzienna budowa (v0.21.48), Respekt i nagrody (v0.21.49).</summary>
     private static string[] News => Layout.Touch
         ?
         [
@@ -96,6 +96,8 @@ public sealed class HelpPage : PhonePage
             "Załataj (drewno): deski przed problemem", "Kładka (stal): kałuże bez poślizgu", "Codzienna budowa: menu tytułu, jedna na dzień",
             "Pogoda dnia: ikona w HUD, skutek w Zadaniach", "Brygada: Telefon > Sprzęt > Brygada (raz na etap)",
             "Po wygranej: Tryb inwestora na wyborze zawodu",
+            "Respekt za każdy etap zostaje po porażce: profil > Koszty > Respekt",
+            "Każda wygrana: nagroda za odbiór (sprzęt, narzędzia, zawody)",
         ]
         :
         [
@@ -103,5 +105,7 @@ public sealed class HelpPage : PhonePage
             "Załataj (drewno): deski przed problemem", "Kładka (stal): kałuże bez poślizgu", "Codzienna budowa: menu tytułu, jedna na dzień",
             "Pogoda dnia: ikona w HUD, skutek w Zadaniach", "Brygada: Enter, Spacja (albo telefon > Sprzęt)",
             "Po wygranej: Tab na wyborze zawodu = tryb inwestora",
+            "Respekt za każdy etap zostaje po porażce: profil (P) > Koszty > Tab",
+            "Każda wygrana: nagroda za odbiór (sprzęt, narzędzia, zawody)",
         ];
 }

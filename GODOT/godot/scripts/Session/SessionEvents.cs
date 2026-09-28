@@ -30,6 +30,12 @@ public sealed class SessionEvents
     public event Action<bool> RunEnded;
     /// <summary>Nowe odznaki i wykonane zlecenia (maski bitowe).</summary>
     public event Action<int, int> Achievements;
+    /// <summary>Respekt za ukończony etap (zdobyty, razem w profilu) - już w profilu.</summary>
+    public event Action<int, int> RespectGained;
+    /// <summary>Wygrana odblokowała nagrodę za odbiór (indeks w GameData.Rewards).</summary>
+    public event Action<int> RewardUnlocked;
+    /// <summary>Druga szansa (Respekt): bohater przeżył z 1 HP.</summary>
+    public event Action SecondChance;
 
     public void RaiseRunStarted() => RunStarted?.Invoke();
     public void RaisePickedUp() => PickedUp?.Invoke();
@@ -42,4 +48,7 @@ public sealed class SessionEvents
     public void RaiseStageCleared() => StageCleared?.Invoke();
     public void RaiseRunEnded(bool won) => RunEnded?.Invoke(won);
     public void RaiseAchievements(int badges, int contracts) => Achievements?.Invoke(badges, contracts);
+    public void RaiseRespectGained(int gained, int total) => RespectGained?.Invoke(gained, total);
+    public void RaiseRewardUnlocked(int index) => RewardUnlocked?.Invoke(index);
+    public void RaiseSecondChance() => SecondChance?.Invoke();
 }

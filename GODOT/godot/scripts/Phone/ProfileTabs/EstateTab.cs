@@ -35,8 +35,8 @@ public sealed class EstateTab : PhonePage
             var cx = x0 + (i % cols) * cellW;
             var cy = card.Position.Y + 6 + (i / cols) * cellH;
             p.C.DrawRect(new Rect2(cx + 4, cy + 34, cellW - 8, 4), i < _p.HousesCount ? Pal.EstateBar : Pal.Border);
-            var frame = 24;
-            if (i < _p.HousesCount) frame = (_p.Houses[i] >> 4) * 6 + (_p.Houses[i] & 15);
+            var frame = Assets.HouseEmpty(_d.Classes.Length);
+            if (i < _p.HousesCount) frame = Assets.HouseFrame(_p.Houses[i], _d.Classes.Length);
             p.Icon(Assets.Houses, frame, Assets.Actor, new Vector2(cx + (cellW - 32) / 2, cy + 4));
         }
         var c2 = p.Card(card.End.Y + 6, 2);

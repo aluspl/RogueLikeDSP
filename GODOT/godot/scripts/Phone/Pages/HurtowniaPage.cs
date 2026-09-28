@@ -93,7 +93,7 @@ public sealed class HurtowniaPage : PhonePage
             if (sel) p.Selected(card, r);
             else if (r > 0) p.Divider(card, r);
             p.HitRow(card, r, i);
-            var price = it.Material >= 0 ? $"{it.MatCost}x {d.Materials[it.Material].Short}" : $"{it.Price} zł";
+            var price = it.Material >= 0 ? $"{it.MatCost}x {d.Materials[it.Material].Short}" : $"{_g.HurtowniaPrice(i)} zł";
             var pw = p.Pill(right, y, price, _g.HurtowniaCan(i) ? PillKind.Group : PillKind.Gray);
             var nx = tx;
             if (it.Material >= 0)

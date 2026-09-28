@@ -52,7 +52,14 @@ public static class UiText
         return "Stany: " + string.Join(", ", active.Select(s => $"{g.D.Statuses[(int)s].Short} {g.StatusTurns(s)}")) + " t.";
     }
 
-    public static string GearStatName(GearStat s) => s == GearStat.Def ? "Obrona" : s == GearStat.Dmg ? "Obrażenia" : "Max HP";
+    public static string GearStatName(GearStat s) => s switch
+    {
+        GearStat.Def => "Obrona",
+        GearStat.Dmg => "Obrażenia",
+        GearStat.Dodge => "Unik %",
+        GearStat.Thermos => "Termos",
+        _ => "Max HP",
+    };
 
     /// <summary>Założony sprzęt z cechami, np. „Kask budowlany [Kryt+5%]”.</summary>
     public static string Gear(CoreGame g)

@@ -116,8 +116,8 @@ public sealed class BrigadePage : PhonePage
             if (sel) p.Selected(card, i);
             else if (i > 0) p.Divider(card, i);
             p.HitRow(card, i, i);
-            var pill = here ? "Na placu" : unl ? $"{h.Price} zł" : "Zablok.";
-            var kind = here ? PillKind.Done : unl && _g.Cash >= h.Price ? PillKind.Group : PillKind.Gray;
+            var pill = here ? "Na placu" : unl ? $"{_g.HelperPrice(i)} zł" : "Zablok.";
+            var kind = here ? PillKind.Done : unl && _g.Cash >= _g.HelperPrice(i) ? PillKind.Group : PillKind.Gray;
             var pw = p.Pill(right, ry, pill, kind);
             p.Text(tx, ry, h.Name, sel ? Ink.Brand : unl ? Ink.Dark : Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
         }

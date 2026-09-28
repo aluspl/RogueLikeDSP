@@ -171,12 +171,50 @@ public sealed class WorldFx
                 for (var k = 0; k < 10; k++)
                     Fx.Spawn(h + new Vector2(Fx.Rand(-150, 150), 8), new Vector2(0, Fx.Rand(-3f, -1f)), 0, 26, (k & 1) == 1 ? Assets.PPlus : Assets.PDrop);
                 break;
+            case AbilityEffect.Line:   // Rynna: dachówki lecą linią do trafionych
+                flash = new Color(1f, 0.45f, 0.25f);
+                for (var i = 0; i < g.HitsCount; i++)
+                {
+                    if (g.Hits[i].OnHero) continue;
+                    var t = _w.GridToScreen(g.Hits[i].X, g.Hits[i].Y);
+                    for (var k = 0; k < 2; k++) Fx.Spawn(h - new Vector2(0, 8 * k), (t - h) / 12f, 0, 12, Assets.PBrick);
+                }
+                break;
+            case AbilityEffect.Splash:   // Narzut: tynk chlapie na obszar wokół celu
+                flash = new Color(0.95f, 0.95f, 0.9f);
+                for (var i = 0; i < g.HitsCount; i++)
+                {
+                    if (g.Hits[i].OnHero) continue;
+                    Fx.Burst(_w.GridToScreen(g.Hits[i].X, g.Hits[i].Y), 6, Assets.PDust, 3, 1.3f, 18);
+                }
+                break;
+            case AbilityEffect.Ram:   // Taran: kurz spod gąsienic i gwiazdki przy uderzeniu
+            {
+                flash = new Color(1f, 0.78f, 0.15f);
+                var at = _w.GridToScreen(g.Hero.X, g.Hero.Y);
+                for (var k = 0; k < 8; k++) Fx.Spawn(at + new Vector2(Fx.Rand(-12, 12), 12), new Vector2(Fx.Rand(-1, 1), -0.6f), 0, 20, Assets.PDust, 3);
+                for (var i = 0; i < g.HitsCount; i++)
+                {
+                    if (g.Hits[i].OnHero) continue;
+                    var t = _w.GridToScreen(g.Hits[i].X, g.Hits[i].Y);
+                    for (var k = 0; k < 3; k++) Fx.Spawn(t - new Vector2(0, 16), new Vector2(Fx.Rand(-1, 1), -1.2f), 0.1f, 24, Assets.PStar);
+                }
+                break;
+            }
             default:
                 flash = Colors.White;
                 foreach (var d in Dir8) Fx.Spawn(h + d * 12, new Vector2(-d.Y, d.X) * 1.6f, 0, 16, Assets.PSpark, 2);
                 break;
         }
         _w.Flash(flash, 0.38f);
+    }
+
+    /// <summary>Druga szansa (Respekt): złoty błysk i gwiazdki wokół bohatera.</summary>
+    public void SecondChance()
+    {
+        foreach (var d in Dir8) Fx.Spawn(Hero.Position, d * 2f, 0, 26, Assets.PStar);
+        Hero.Flash(Pal.LevelFlash);
+        _w.Flash(Pal.LevelGlow, 0.4f);
     }
 
     /// <summary>Brygada: efekt wezwania fachowca (brigade_fx w main.cpp) i błysk.</summary>

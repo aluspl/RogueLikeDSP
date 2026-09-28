@@ -41,6 +41,7 @@ public sealed class CostsTab : PhonePage
         r = p.RowY(c0, 3);
         p.Divider(c0, 3);
         p.Text(tx, r, $"Z tej budowy: +{_g.Xp - _g.XpBanked}", Ink.Dim);
+        p.Text(right, r, $"Respekt {_p.Respect}", Ink.Brand, TextAlign.Right);   // Respekt za etapy jest już w profilu
 
         y = p.Section(c0.End.Y + 4, "ZLECENIE");
         var c1 = p.Card(y, 2);
@@ -62,6 +63,6 @@ public sealed class CostsTab : PhonePage
 
         y = p.Section(c1.End.Y + 4, "SZKOLENIA");
         var c2 = p.Card(y, 1);
-        p.Text(p.TextX(c2), p.RowY(c2, 0), "Kupisz po budowie (profil: Koszty)", Ink.Dim, TextAlign.Left, right - p.TextX(c2));
+        p.Text(p.TextX(c2), p.RowY(c2, 0), "Kupisz po budowie (profil: Koszty, Tab: Respekt)", Ink.Dim, TextAlign.Left, right - p.TextX(c2));
     }
 }

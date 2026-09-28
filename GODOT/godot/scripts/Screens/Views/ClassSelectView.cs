@@ -136,7 +136,7 @@ public partial class ClassSelectView : Control
             var x = SlotX(k);
             var anim = sel && unl && ((int)(_clock / 0.4f) & 1) == 1;
             var bob = sel ? Mathf.Round(Mathf.Sin(_clock * 4f) * 1.5f) : 0;
-            var frame = unl ? _d.Classes[cls].Frame + (anim ? Assets.FrameAnimB : 0) : Assets.FrameSilhouette + cls;
+            var frame = unl ? (anim ? Assets.AnimB(_d.Classes[cls].Frame) : _d.Classes[cls].Frame) : Assets.Silhouette(cls);
             var size = 32 * sc;
             var feet = baseY + 14;
             DrawTextureRect(Assets.Shadow, new Rect2(x - 12 * sc / 1.4f, feet - 3, 24 * sc / 1.4f, 7), false);
@@ -145,11 +145,12 @@ public partial class ClassSelectView : Control
             if (!unl)
             {
                 DrawTextureRectRegion(Assets.Actors, new Rect2(Mathf.Round(x + size / 2 - 18), Mathf.Round(feet - 18), 16, 16), Assets.Frame(Assets.FrameLock, Assets.Actor));
-                f.Draw(this, new Vector2(x, feet + 6), $"{_d.ClassCost} dośw.", Ink.MapDim, TextAlign.Center);
+                if (!sel && f.Measure(LockedShort(cls)) <= Spacing - 2)   // wąski pasek (pion, 9 zawodów): bez podpisów, żeby się nie nakładały
+                    f.Draw(this, new Vector2(x, feet + 6), LockedShort(cls), Ink.MapDim, TextAlign.Center);
             }
             else if (!sel)
             {
-                f.Draw(this, new Vector2(x, feet + 6), f.Fit(_d.Classes[cls].Name.Split(' ')[0], 70), Ink.MapDim, TextAlign.Center);
+                f.Draw(this, new Vector2(x, feet + 6), f.Fit(_d.Classes[cls].Name.Split(' ')[0], (int)Math.Min(70, Spacing - 2)), Ink.MapDim, TextAlign.Center);
             }
         }
         for (var k = 0; k < _order.Length; k++)
@@ -257,7 +258,7 @@ public partial class ClassSelectView : Control
         y += 2;
         var perkText = k2 >= 0 ? RunMods.PerkLabel(Meta.KeepsakePerk(_d, _p, k2)) : "";
         var perks = UiText.Perks(_d, _p);
-        var bottom = Note.Length > 0 ? Note : !unl ? $"Zablokowany: {_d.ClassCost} dośw. w Szkoleniach"
+        var bottom = Note.Length > 0 ? Note : !unl ? LockedText(cls, false)
                    : (perkText.Length > 0 ? $"Pamiątka: {perkText}. " : "") + "Uprawnienia: " + (perks.Length > 0 ? perks : "brak - zdobywaj odznaki");
         foreach (var line in f.Wrap(bottom, cw))
         {
@@ -357,7 +358,7 @@ public partial class ClassSelectView : Control
         f.Draw(this, new Vector2(x + 64, y), f.Fit(keep, (int)r.Size.X - 92), k < 0 ? Ink.Dim : Ink.Done);
         y += 18;
         var perks = UiText.Perks(_d, _p);
-        var bottom = Note.Length > 0 ? Note : !unl ? $"Zablokowany: {_d.ClassCost} dośw. w Szkoleniach (K)" : "Uprawnienia: " + (perks.Length > 0 ? perks : "brak - zdobywaj odznaki");
+        var bottom = Note.Length > 0 ? Note : !unl ? LockedText(cls, true) : "Uprawnienia: " + (perks.Length > 0 ? perks : "brak - zdobywaj odznaki");
         f.Draw(this, new Vector2(x, y), f.Fit(bottom, (int)r.Size.X - 28), Note.Length > 0 || !unl ? Ink.Late : Ink.Dim);
 
         // statystyki jako paski (prawa kolumna)
@@ -388,4 +389,18 @@ public partial class ClassSelectView : Control
             f.Draw(this, new Vector2(bar.End.X + 6, yy), UiText.StatText("", b, bonus).Trim(), bonus > 0 ? Ink.Done : Ink.Dark);
         }
     }
+
+    // Zawód z nagrody za odbiór: numer wygranej, która go odblokuje (-1 = brak na liście).
+    private int RewardWinOf(int cls)
+    {
+        for (var i = 0; i < _d.Rewards.Length; i++)
+            if (_d.Rewards[i].Kind == RewardKind.Cls && _d.Rewards[i].Index == cls) return Meta.RewardWin(_d, _p, i);
+        return -1;
+    }
+
+    private string LockedShort(int cls) => Meta.ClassReward(_d, cls) ? $"{RewardWinOf(cls)}. wygr." : $"{_d.ClassCost} dośw.";
+
+    private string LockedText(int cls, bool keys) => Meta.ClassReward(_d, cls)
+        ? $"Nagroda za odbiór budowy: za {RewardWinOf(cls)}. wygraną, masz {_p.Wins}"
+        : $"Zablokowany: {_d.ClassCost} dośw. w Szkoleniach" + (keys ? " (K)" : "");
 }

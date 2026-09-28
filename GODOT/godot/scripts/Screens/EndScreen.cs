@@ -25,7 +25,7 @@ public sealed class EndScreen : Screen
         v.Line1 = $"Wynik {g.Score}   Dni {g.Turns}   Etap {g.Stage + 1}/{S.Data.Stages.Length}   Dośw. +{S.LastGained}";
         var record = g.Score > S.PrevBest ? "Nowy rekord!" : $"Rekord {S.Profile.Best}";
         var daily = g.Daily ? (S.DailyRecord ? "   Rekord dnia!" : $"   Budowa dnia nr {g.DailyDay}") : "";
-        v.Line2 = $"{record}   Doświadczenie w profilu {S.Profile.Xp}" + (won ? "   Dom na Osiedlu!" : "") + daily;
+        v.Line2 = $"{record}   Doświadczenie w profilu {S.Profile.Xp}   Respekt +{g.Respect} (masz {S.Profile.Respect})" + (won ? "   Dom na Osiedlu!" : "") + daily;
         v.Note = S.Note;
         N.Banners.Clear();
     }
