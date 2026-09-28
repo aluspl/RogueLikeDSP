@@ -5,6 +5,7 @@ using LifeLike.Core;
 using LifeLike.Game.Audio;
 using LifeLike.Game.Gfx;
 using LifeLike.Game.Input;
+using LifeLike.Game.Phone;
 using LifeLike.Game.Phone.ProfileTabs;
 using LifeLike.Game.Screens;
 using LifeLike.Game.Screens.Play;
@@ -27,6 +28,8 @@ public sealed class SmokeTest
     private bool _investor;
     private int _respectBought = -1, _reward = -1, _newClasses;
     private bool _prologue, _touch, _portrait;
+    private int _acts, _splits, _blasts, _shots;
+    private bool _stats, _help;
 
     public SmokeTest(App app) => _app = app;
 
@@ -51,12 +54,14 @@ public sealed class SmokeTest
             if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) await ExerciseRepairs();
             if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) await ExerciseMenuAndOffer();
             if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) await ExerciseTouchAndSettings();
+            if (Flow.Current == Flow.Game && g.St == GameStatus.Playing) await ExerciseActsAndBehaviors();
             var ok = g.Stage >= 5 || g.St is GameStatus.Dead or GameStatus.Won;
             var stage = g.Stage;
             await VisitScreens();
             await ExerciseInvestor();
             await ExerciseDaily();
             await ExerciseRespectAndRewards();
+            await ExerciseStatsAndHelp();
             if (!_pathOk) throw new Exception("wybór ścieżki: druga oferta nie trafiła na etap");
             await ExercisePortrait();
             var missing = Sfx.Missing();
@@ -64,7 +69,7 @@ public sealed class SmokeTest
             if (DrawErrors.Count > 0) throw new Exception($"błędy rysowania: {DrawErrors.Count}, ostatni: {DrawErrors.Last}");
             GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {s.Data.Version}, zawody {s.Data.Classes.Length}, etap {stage + 1}, " +
                      $"dzień {g.Turns}, HP {g.Hero.Hp}/{g.Hero.MaxHp}, wynik {g.Score}, budżet {g.Cash}, kroki {_steps}, " +
-                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
+                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, Jak grać {(_help ? "tak" : "nie")}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
                      $"ekran {Flow.Current.GetType().Name}");
             _app.Root.GetTree().Quit(ok ? 0 : 1);
         }
@@ -88,7 +93,8 @@ public sealed class SmokeTest
                 if (Flow.Current != Flow.PrologueMessage) throw new Exception("prolog nie przeszedł do SMS-a");
                 Flow.PrologueMessage.HandleInput(InputCmd.Of(GameAction.Start));
                 if (Flow.Current != Flow.Help) throw new Exception("po prologu brak ekranu Jak grać");
-                Flow.Help.HandleInput(InputCmd.Of(GameAction.A));
+                for (var k = 0; k < 5 && Flow.Current == Flow.Help; k++) Flow.Help.HandleInput(InputCmd.Of(GameAction.A)); // 3 strony Jak grać
+                if (Flow.Current == Flow.Help) throw new Exception("Jak grać: A nie przechodzi dalej");
                 if (!_app.Session.Profile.HasFlag(Profile.FlagPrologueSeen)) throw new Exception("prolog nie zapisał się w profilu");
                 _prologue = true;
                 continue;
@@ -543,6 +549,85 @@ public sealed class SmokeTest
             root.Size = old;
             Layout.Refresh();
         }
+    }
+
+    /// <summary>
+    /// Mechaniki aktów (błoto, porywy, pył) na etapach każdego aktu i zachowania problemów (strzał, podział, wybuch):
+    /// kilka tur bota z rysowaniem; potem statystyki z zakładki Start telefonu.
+    /// </summary>
+    private async Task ExerciseActsAndBehaviors()
+    {
+        var g = _app.Session.Game;
+        var d = g.D;
+        var staging = new DemoStaging(_app);
+        foreach (var mech in new[] { Core.Data.ActMechanic.Mud, Core.Data.ActMechanic.Gust, Core.Data.ActMechanic.Dust })
+        {
+            var st = Array.FindIndex(d.Stages, x => d.Acts[x.Act].Mechanic == mech && x.Boss < 0);
+            if (st < 0) throw new Exception("brak etapu z mechaniką " + mech);
+            g.Hero.Hp = g.Hero.MaxHp = 300;
+            staging.ActShowcase(st);
+            if (!g.ActIs(mech)) throw new Exception("etap bez mechaniki aktu " + mech);
+            if (mech == Core.Data.ActMechanic.Dust && g.DustSight() <= 0) throw new Exception("pył nie zmniejsza widzenia");
+            for (var k = 0; k < 8 && g.St == GameStatus.Playing && Flow.Current == Flow.Game; k++)
+            {
+                Bot.StepSmart(g);
+                _app.AfterAction(true);
+                await DebugRunner.Frames(_app.Root, 1);
+            }
+            _acts++;
+            if (Flow.Current == Flow.Offer) Flow.Offer.Decide(g.OfferIsBetter);
+        }
+        if (g.St != GameStatus.Playing || Flow.Current != Flow.Game) return;
+        g.Hero.Hp = g.Hero.MaxHp = 300;
+        var before = g.EnemiesCount;
+        staging.BehaviorShowcase();
+        foreach (var m in g.Log) if (m.Text.Contains("z dystansu")) _shots++;   // strzał Mostka termicznego w pokazie
+        _splits = g.EnemiesCount > 3 ? 1 : 0;
+        _blasts = g.BlastTimer > 0 || g.DangerCell(g.Hero.X, g.Hero.Y) ? 1 : 0;
+        for (var k = 0; k < 4 && g.St == GameStatus.Playing; k++)
+        {
+            var acted = g.PlayerWait();
+            if (g.ShotEvents != 0) _shots++; // strzał z dystansu w tej turze (warstwa Godota zeruje po narysowaniu)
+            _app.AfterAction(acted);
+            await DebugRunner.Frames(_app.Root, 2);
+            if (g.ShotEvents != 0) throw new Exception("warstwa Godota nie wyzerowała strzałów po turze");
+        }
+        if (_splits == 0 || _blasts == 0) throw new Exception($"pokaz zachowań: podział {_splits}, wybuch {_blasts} (problemów {before} -> {g.EnemiesCount})");
+        Flow.Phone.Open(PhoneTabs.Start, true);
+        await DebugRunner.Frames(_app.Root, 1);
+        Flow.Phone.HandleInput(InputCmd.Of(GameAction.A));
+        if (Flow.Current != Flow.Stats) throw new Exception("Start > A nie otwiera opisu statystyk");
+        Flow.Stats.HandleInput(InputCmd.Of(GameAction.A));
+        await DebugRunner.Frames(_app.Root, 2);
+        Flow.Stats.HandleInput(InputCmd.Of(GameAction.B));
+        if (Flow.Current != Flow.Phone) throw new Exception("statystyki: B nie wraca do telefonu");
+        Flow.Phone.HandleInput(InputCmd.Of(GameAction.Select));
+        await DebugRunner.Frames(_app.Root, 1);
+    }
+
+    /// <summary>Opis statystyk na wyborze zawodu (I, dymek nad wierszem) i 3 strony Jak grać z tytułu.</summary>
+    private async Task ExerciseStatsAndHelp()
+    {
+        Flow.ClassSelect.Open();
+        await DebugRunner.Frames(_app.Root, 1);
+        _app.Nodes.ClassSelectView.TipStat = 1;
+        await DebugRunner.Frames(_app.Root, 2);
+        _app.Nodes.ClassSelectView.TipStat = -1;
+        Flow.ClassSelect.HandleInput(InputCmd.Of(GameAction.Info));
+        if (Flow.Current != Flow.Stats) throw new Exception("wybór zawodu: I nie otwiera opisu statystyk");
+        Flow.Stats.HandleInput(InputCmd.Of(GameAction.A));
+        await DebugRunner.Frames(_app.Root, 2);
+        Flow.Stats.HandleInput(InputCmd.Of(GameAction.B));
+        if (Flow.Current != Flow.ClassSelect) throw new Exception("statystyki: B nie wraca na wybór zawodu");
+        _stats = true;
+        Flow.Help.Open(true, true);
+        for (var k = 0; k < 3; k++)
+        {
+            await DebugRunner.Frames(_app.Root, 1);
+            Flow.Help.HandleInput(InputCmd.Of(GameAction.A));
+        }
+        if (Flow.Current != Flow.Title) throw new Exception("Jak grać: po 3 stronach brak powrotu na tytuł");
+        _help = true;
     }
 
     /// <summary>Wszystkie zakładki telefonu w grze i profilu, wybór zawodu i tytuł - rysowanie bez wyjątków.</summary>

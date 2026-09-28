@@ -120,8 +120,8 @@ public sealed class PhonePainter
     /// <summary>Nagłówek sekcji nad kartą (wersaliki w kolorze textDim).</summary>
     public float Section(float y, string title, string right = "")
     {
-        Text(Left + 4, y, title, Ink.Dim);
-        if (right.Length > 0) Text(Right - 4, y, right, Ink.Brand, TextAlign.Right);
+        var tw = Text(Left + 4, y, title, Ink.Dim);
+        if (right.Length > 0) Text(Right - 4, y, F.Fit(right, (int)(Right - Left - 18 - tw)), Ink.Brand, TextAlign.Right);
         return y + RowH;
     }
 

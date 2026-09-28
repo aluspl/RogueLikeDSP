@@ -9,6 +9,18 @@ namespace LifeLike.Game.Gfx;
 /// <summary>Teksty wspólne dla HUD, telefonu i ekranów (odpowiedniki pomocniczych funkcji z GBA/src/main.cpp).</summary>
 public static class UiText
 {
+    /// <summary>Zachowania problemu, np. „strzela z dystansu, ucieka” (karta wroga, Katalog; pusty, gdy brak).</summary>
+    public static string Behaviors(GameData d, int def)
+    {
+        var tags = d.Enemies[def].Tags;
+        var parts = new List<string>();
+        for (var b = 0; b < d.BehaviorNames.Length; b++)
+        {
+            if ((tags & (1 << b)) != 0) parts.Add(d.BehaviorNames[b]);
+        }
+        return string.Join(", ", parts);
+    }
+
     public static string Roman(int i) => i switch { 0 => "I", 1 => "II", 2 => "III", 3 => "IV", 4 => "V", _ => (i + 1).ToString() };
 
     private static readonly (Stat S, string Name)[] StatNames = [(Stat.Str, "SIŁ"), (Stat.Agi, "ZRĘ"), (Stat.Intel, "INT")];

@@ -6,7 +6,7 @@ namespace LifeLike.Game.Hud;
 
 /// <summary>
 /// Górny pasek HUD jak na GBA (półprzezroczysty ciemny pas): HP z paskiem, poziom z paskiem doświadczenia, etap;
-/// w drugim rzędzie stany z liczbą tur, termos, pogoda dnia, materiały, wydarzenie na placu, ostrzeżenie o ciosie bossa, termos i ikona mocy
+/// w drugim rzędzie stany z liczbą tur, termos, pogoda dnia, mechanika aktu (porywy: tury do kolejnego), materiały, wydarzenie na placu, ostrzeżenie o ciosie bossa, termos i ikona mocy
 /// (szara z odliczaniem, gdy się ładuje; „R” i podskakiwanie, gdy gotowa).
 /// </summary>
 public partial class HudTop : Control
@@ -100,6 +100,17 @@ public partial class HudTop : Control
         // pogoda dnia (menu_icons 6-10 jak na GBA)
         Assets.DrawFrame(this, Assets.UiMenu, Assets.MenuWeather + (int)g.WDef.Effect, Assets.Icon, new Vector2(x, 20));
         x += 20;
+
+        // mechanika aktu (menu_icons 20-22: błoto, porywy, pył); przy porywach tury do kolejnego (ostatnia na czerwono)
+        var mech = (int)g.ADef.Mechanic;
+        if (mech > 0)
+        {
+            Assets.DrawFrame(this, Assets.UiMenu, Assets.MenuAct + mech - 1, Assets.Icon, new Vector2(x, 20));
+            x += 17;
+            var gin = g.GustIn();
+            if (gin > 0) x += f.Draw(this, new Vector2(x, 19), gin.ToString(), gin == 1 ? Ink.MapBad : Ink.Map) + 6;
+            else x += 3;
+        }
 
         // moc zawodu: ikona szara z odliczaniem albo pulsująca z „R”
         var ready = g.AbilityCd == 0;

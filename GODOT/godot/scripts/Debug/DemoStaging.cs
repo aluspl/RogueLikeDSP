@@ -163,4 +163,92 @@ public sealed class DemoStaging
         _app.Nodes.World.Sync();
         _app.Refresh();
     }
+
+    /// <summary>Podłoga w prostokącie wokół bohatera (pokazy potrzebują miejsca).</summary>
+    private void ClearAround(int dx0, int dy0, int dx1, int dy1)
+    {
+        var g = G;
+        for (var y = g.Hero.Y + dy0; y <= g.Hero.Y + dy1; y++)
+        {
+            for (var x = g.Hero.X + dx0; x <= g.Hero.X + dx1; x++)
+            {
+                if (x >= 1 && y >= 1 && x < Level.W - 1 && y < Level.H - 1 && g.Lv[x, y] == Tile.Wall) g.Lv[x, y] = Tile.Floor;
+            }
+        }
+    }
+
+    /// <summary>Problem o identyfikatorze id na polu (bohater + dx, dy), przebudzony; hp > 0 = ustawione HP.</summary>
+    private void Place(string id, int dx, int dy, int hp, int stun)
+    {
+        var g = G;
+        int x = g.Hero.X + dx, y = g.Hero.Y + dy;
+        if (g.EnemiesCount >= CoreGame.MaxEnemies || g.Lv.At(x, y) != Tile.Floor || g.Occupied(x, y)) return;
+        g.Spawn(Math.Max(0, Array.FindIndex(g.D.Enemies, e => e.Id == id)), x, y);
+        ref var e = ref g.Enemies[g.EnemiesCount - 1];
+        e.Awake = true;
+        e.Stun = (sbyte)stun;
+        if (hp > 0) e.Hp = (short)hp;
+    }
+
+    /// <summary>
+    /// Pokaz zachowań (scenariusze 29-30 na GBA): Mostek termiczny strzela z 3 pól, Woda gruntowa (1 HP) dzieli się po
+    /// ciosie, Pęknięty pustak (1 HP) wybucha - czerwone pola i tura na zejście.
+    /// </summary>
+    public void BehaviorShowcase()
+    {
+        var g = G;
+        ClearAround(-3, -3, 3, 3);
+        g.EnemiesCount = 0;
+        g.PickupsCount = 0;
+        Place("mostek", 0, 3, 0, 0);
+        Place("woda", 1, 0, 1, 4);
+        Place("pustak", -1, 0, 1, 4);
+        g.UpdateFov();
+        _app.Nodes.World.Sync();
+        _app.AfterAction(g.PlayerMove(1, 0));    // podział
+        _app.AfterAction(g.PlayerMove(-1, 0));   // wybuch za turę + strzał Mostka
+    }
+
+    /// <summary>Etap s aktu z mechaniką (błoto / porywy / pył): bohater obok błota albo poryw w tej turze.</summary>
+    public void ActShowcase(int stage)
+    {
+        var g = G;
+        g.StartStage(stage);
+        for (var i = 0; i < g.EnemiesCount; i++) g.Enemies[i].Stun = 60;
+        if (g.ActIs(LifeLike.Core.Data.ActMechanic.Mud)) // najbliższe błoto z wolnym polem po lewej: krok w nie
+        {
+            int best = 999, hx = g.Hero.X, hy = g.Hero.Y, bx = hx, by = hy;
+            for (var y = 1; y < Level.H - 1; y++)
+            {
+                for (var x = 2; x < Level.W - 1; x++)
+                {
+                    if (!g.Mud(x, y) || g.Lv.At(x - 1, y) != Tile.Floor || g.Mud(x - 1, y) || g.Occupied(x - 1, y)) continue;
+                    var d = CoreGame.Cheb(x, y, hx, hy);
+                    if (d < best)
+                    {
+                        best = d;
+                        bx = x - 1;
+                        by = y;
+                    }
+                }
+            }
+            g.Hero.X = (sbyte)bx;
+            g.Hero.Y = (sbyte)by;
+            g.UpdateFov();
+            _app.Nodes.World.Sync();
+            _app.AfterAction(g.PlayerMove(1, 0));
+            return;
+        }
+        if (g.ActIs(LifeLike.Core.Data.ActMechanic.Gust)) // poryw właśnie spycha
+        {
+            g.StageStartTurn = g.Turns - (g.ADef.MechValue - 1);
+            g.UpdateFov();
+            _app.Nodes.World.Sync();
+            _app.AfterAction(g.PlayerWait());
+            return;
+        }
+        g.UpdateFov();
+        _app.Nodes.World.Sync();
+        _app.Refresh();
+    }
 }

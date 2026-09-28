@@ -1,23 +1,36 @@
 using System;
 using LifeLike.Core;
 using LifeLike.Game.Gfx;
+using LifeLike.Game.Input;
 using CoreGame = LifeLike.Core.Game;
 
 namespace LifeLike.Game.Phone.Tabs;
 
 /// <summary>
 /// Start = pulpit postaci (tab_home na GBA): etap, HP z paskiem, poziom z doświadczeniem, moc z gotowością, stany,
-/// statystyki; do tego wynik, dzień, budżet i najbliższe zlecenie z postępem na żywo.
+/// statystyki (A: opis statystyk i skąd premie); do tego wynik, dzień, budżet i najbliższe zlecenie z postępem na żywo.
 /// </summary>
 public sealed class HomeTab : PhonePage
 {
     private readonly CoreGame _g;
     private readonly Profile _p;
+    private readonly Action _stats;
 
-    public HomeTab(CoreGame g, Profile p)
+    public HomeTab(CoreGame g, Profile p, Action stats = null)
     {
         _g = g;
         _p = p;
+        _stats = stats;
+    }
+
+    /// <summary>Opis statystyk i skąd są premie (Spacja / „Opis”).</summary>
+    public override PageAction[] Actions => _stats is null ? [] : [new("Opis statystyk", GameAction.A)];
+
+    public override bool Input(InputCmd e)
+    {
+        if (_stats is null || !e.Is(GameAction.A)) return false;
+        _stats();
+        return true;
     }
 
     public override string Title => "Start";
@@ -63,7 +76,8 @@ public sealed class HomeTab : PhonePage
 
         r = p.RowY(card, 5);
         p.Divider(card, 5);
-        p.Text(tx, r, UiText.HeroStatsLine(g), Ink.Dim, TextAlign.Left, right - tx);
+        pw = _stats is null ? 0 : p.Pill(right, r, ButtonNames.Localize("A: opis"), PillKind.Group);
+        p.Text(tx, r, UiText.HeroStatsLine(g), Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
 
         r = p.RowY(card, 6);
         p.Divider(card, 6);

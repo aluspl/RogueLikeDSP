@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Godot;
+using LifeLike.Core.Data;
 using LifeLike.Game.Gfx;
 using CoreGame = LifeLike.Core.Game;
 
@@ -34,6 +35,10 @@ public partial class WorldView : Node2D
     private int _stage = -1;
     private int _turns = -1;
     private int _tier = -1;
+    private int _prevBlast;
+    private int _prevBlastX = -1, _prevBlastY = -1;
+    private int _prevGustTurn = -1;
+    private float _dustClock;
 
     public WorldView() => Effects = new WorldFx(this);
 
@@ -118,20 +123,31 @@ public partial class WorldView : Node2D
         _pickupActive.Clear();
         _fx.Clear();
         _prevAwake = 0;
-        for (var i = 0; i < _g.EnemiesCount; i++)
-        {
-            var def = _g.D.Enemies[_g.Enemies[i].DefId];
-            var s = new ActorSprite { BaseFrame = def.Frame, AltFrame = Assets.AnimB(def.Frame), AnimPeriod = 0.33f, AnimPhase = i * 0.33f };
-            _actors.AddChild(s);
-            _enemies.Add(s);
-            _enemyAlive.Add(_g.Enemies[i].Alive);
-            s.MoveTo(GridToScreen(_g.Enemies[i].X, _g.Enemies[i].Y), true);
-        }
+        AddEnemySprites();
+        _prevBlast = _g.BlastTimer;
+        _prevGustTurn = -1;
         SyncPickups(true);
         _hero.MoveTo(GridToScreen(_g.Hero.X, _g.Hero.Y), true);
         _camera.SnapTo(_hero.Position);
         _stage = _g.Stage;
         _tier = _g.Tier;
+    }
+
+    /// <summary>Sprite'y dla nowych miejsc na problemy (start etapu, podział w trakcie etapu).</summary>
+    private void AddEnemySprites()
+    {
+        for (var i = _enemies.Count; i < _g.EnemiesCount; i++)
+        {
+            var def = _g.D.Enemies[_g.Enemies[i].DefId];
+            var s = new ActorSprite { BaseFrame = def.Frame, AltFrame = Assets.AnimB(def.Frame), AnimPeriod = 0.33f, AnimPhase = i * 0.33f };
+            _actors.AddChild(s);
+            _enemies.Add(s);
+            _enemyAlive.Add(false);
+            s.Visible = false;
+            s.MoveTo(GridToScreen(_g.Enemies[i].X, _g.Enemies[i].Y), true);
+            if (_g.Enemies[i].Alive && _g.Visible(_g.Enemies[i].X, _g.Enemies[i].Y)) s.Visible = true;
+            _enemyAlive[i] = _g.Enemies[i].Alive;
+        }
     }
 
     private void SyncPickups(bool snap)
@@ -173,10 +189,16 @@ public partial class WorldView : Node2D
     {
         if (_g is null || _hero is null) return;
         var snap = false;
-        if (_g.Stage != _stage || _g.Turns < _turns || _g.Tier != _tier || _g.EnemiesCount != _enemies.Count)
+        if (_g.Stage != _stage || _g.Turns < _turns || _g.Tier != _tier || _g.EnemiesCount < _enemies.Count)
         {
             ResetStage();
             snap = true;
+        }
+        else if (_g.EnemiesCount > _enemies.Count) // podział: nowe miejsca na problemy
+        {
+            var first = _enemies.Count;
+            AddEnemySprites();
+            for (var i = first; i < _enemies.Count; i++) _enemyAlive[i] = false; // pojawienie się z kurzem w SyncEnemy
         }
         _turns = _g.Turns;
         _map.QueueRedraw();
@@ -184,6 +206,11 @@ public partial class WorldView : Node2D
         SyncAlly(snap);
         for (var i = 0; i < _g.EnemiesCount; i++) SyncEnemy(i, snap);
         SyncPickups(snap);
+        if (!snap) BehaviorFx();
+        _g.ShotEvents = 0;
+        _prevBlast = _g.BlastTimer;
+        _prevBlastX = _g.BlastX;
+        _prevBlastY = _g.BlastY;
         Effects.TakeHits();
         _fog.Sync(snap);
     }
@@ -224,7 +251,17 @@ public partial class WorldView : Node2D
         var e = _g.Enemies[i];
         var s = _enemies[i];
         var vis = e.Alive && _g.Visible(e.X, e.Y);
-        if (_enemyAlive[i] && !e.Alive) // usunięty problem: błysk, zanikanie, pył
+        if (!_enemyAlive[i] && e.Alive) // podział albo powrót: pojawia się w miejscu, z kurzem
+        {
+            var def = _g.D.Enemies[e.DefId];
+            s.BaseFrame = def.Frame;
+            s.AltFrame = Assets.AnimB(def.Frame);
+            s.Revive();
+            s.MoveTo(GridToScreen(e.X, e.Y), true);
+            s.Visible = vis;
+            if (vis && !snap) _fx.Burst(GridToScreen(e.X, e.Y), 6, Assets.PDust, 3, 1.2f, 20);
+        }
+        else if (_enemyAlive[i] && !e.Alive) // usunięty problem: błysk, zanikanie, pył
         {
             s.Die();
             _fx.Burst(s.Position, 8, Assets.PDust, 3, 1.6f, 22);
@@ -248,9 +285,54 @@ public partial class WorldView : Node2D
         else _prevAwake &= ~(1u << i);
     }
 
+    /// <summary>Efekty zachowań i mechanik aktu: strzały z dystansu, wybuch, poryw wiatru.</summary>
+    private void BehaviorFx()
+    {
+        var h = _hero.Position;
+        for (var i = 0; i < _g.EnemiesCount; i++)
+        {
+            if ((_g.ShotEvents & (1u << i)) == 0) continue;
+            var p = GridToScreen(_g.Enemies[i].X, _g.Enemies[i].Y);
+            var dir = (h - p) / 14f;
+            for (var k = 1; k <= 4; k++)
+                _fx.Spawn(p + (h - p) * (k / 5f), dir * 0.6f, 0, 8 + k * 3, Assets.PSpark, 2);
+        }
+        if (_prevBlast > 0 && _g.BlastTimer == 0 && _prevBlastX >= 0) // wybuch spadł
+        {
+            var b = GridToScreen(_prevBlastX, _prevBlastY);
+            _fx.Burst(b, 12, Assets.PSpark, 2, 2.6f, 22);
+            _fx.Burst(b, 8, Assets.PDust, 3, 1.8f, 26);
+            Flash(new Color(1f, 0.55f, 0.15f), 0.35f);
+            _camera.Shake(0.25f);
+        }
+        if (_g.ActIs(ActMechanic.Gust)) // poryw: pył leci w stronę porywu
+        {
+            var v = _g.ADef.MechValue;
+            var t = _g.Turns - _g.StageStartTurn;
+            if (t > 0 && t % v == 0 && _g.Turns != _prevGustTurn)
+            {
+                _prevGustTurn = _g.Turns;
+                var d = (t / v + _g.Stage) & 3;
+                var gv = new Vector2(CoreGame.GustVec[d, 0], CoreGame.GustVec[d, 1]);
+                for (var k = 0; k < 10; k++)
+                    _fx.Spawn(h - gv * 70 + new Vector2((float)GD.RandRange(-40, 40), (float)GD.RandRange(-40, 40)), gv * 5f, 0, 24, Assets.PDust, 3);
+            }
+        }
+    }
+
     public override void _Process(double delta)
     {
         if (_hero is null) return;
         _camera.Follow(_hero.Position, delta);
+        if (_g is not null && _g.ActIs(ActMechanic.Dust)) // akt III: pył wisi w powietrzu
+        {
+            _dustClock += (float)delta;
+            if (_dustClock > 0.12f)
+            {
+                _dustClock = 0;
+                _fx.Spawn(_hero.Position + new Vector2((float)GD.RandRange(-220, 220), (float)GD.RandRange(-150, 150)),
+                    new Vector2((float)GD.RandRange(-0.3, 0.3), (float)GD.RandRange(-0.25, 0.05)), 0, 90, Assets.PDust, 3);
+            }
+        }
     }
 }

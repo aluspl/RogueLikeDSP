@@ -20,7 +20,7 @@ Co powstaje:
   ui/phone_icons.png         ikony zakładek telefonu (aktywne, fiolet) + ikona aplikacji PB (klatka 5)
   ui/phone_icons_dim.png     te same ikony w kolorze nieaktywnym (wycięte z phone_chrome.bmp)
   ui/title.png, ui/end.png   logo z napisem (tytuł) i plansza z kodem QR (koniec), tło przezroczyste
-  tiles/stage_N.png          kafle 32x32 etapu N (8 etapów): 4 warianty podłogi, 2 podłogi z cieniem muru,
+  tiles/stage_N.png          kafle 32x32 etapu N (10 etapów): 4 warianty podłogi, 2 podłogi z cieniem muru,
                              mur, lico muru, schody - rysowane w paletach etapów z GBA, bogatsze niż 8x8 z GBA
   fx/shadow.png, fx/danger.png, fx/range.png   cień pod postacią, pole zapowiedzianego ciosu, ramka zasięgu
   font/glyphs.png, font/glyphs_edge.png, font/font.json
@@ -152,10 +152,14 @@ def export_sheet(name, frame_h, rel_hd, rel_1x=None, rel_gray=None, rel_white=No
 
 # ------------------------------------------------------------------ animacje chodu i oddechu
 ANIM_FRAMES = 5          # chód x4 + oddech
-CHARACTER_FRAMES = list(range(0, 15)) + [46, 47, 50, 52, 53, 54]   # zawody, problemy budowy, bossowie, zawody z nagród (jak anim_b w main.cpp)
+STAGE_ENEMY_FRAME, STAGE_ENEMIES = 61, 20   # v0.21.49: problemy etapów 61-80, druga klatka 81-100
+CHARACTER_FRAMES = (list(range(0, 15)) + [46, 47, 50, 52, 53, 54]
+                    + list(range(STAGE_ENEMY_FRAME, STAGE_ENEMY_FRAME + STAGE_ENEMIES)))   # jak anim_b w main.cpp
 
 
 def anim_b(f):
+    if f >= STAGE_ENEMY_FRAME:
+        return f + STAGE_ENEMIES
     if f < 15:
         return f + 27
     if f < 48:
@@ -393,9 +397,10 @@ class Canvas:
         self.rect(x, y0, x, y1, c)
 
 
-# rodzaje podłóg i murów etapów (kolejność jak etapy w GBA/data/game.json)
-FLOOR_KIND = ["dirt", "screed", "slab", "planks", "planks", "screed", "screed", "tiles"]
-WALL_KIND = ["formwork", "brick", "concrete", "rooftile", "plaster", "pipes", "plaster", "tiles"]
+# rodzaje podłóg i murów etapów (kolejność jak etapy w GBA/data/game.json); podłoga jak akt na GBA:
+# akt I ziemia (strop: płyta), akt II deski, akt III płytki
+FLOOR_KIND = ["dirt", "dirt", "dirt", "slab", "planks", "planks", "planks", "tiles", "tiles", "tiles"]
+WALL_KIND = ["formwork", "membrane", "blocks", "concrete", "rooftile", "brick", "plaster", "pipes", "plaster", "tiles"]
 
 
 def draw_floor(c, col, kind, rnd):
@@ -503,6 +508,24 @@ def draw_wall(c, col, kind, rnd):
         c.vline(20, 0, 31, mix(wl, (255, 255, 255), 0.3))
         c.vline(23, 0, 31, sh)
         c.rect(19, 8, 23, 13, mix(pipe, sh, 0.3))
+    elif kind == "blocks":   # bloczki betonowe 16x16 z pojedynczą spoiną (akt I na GBA)
+        for k in (15, 31):
+            c.hline(0, 31, k, sh)
+        for row in range(2):
+            x = 15 if row == 0 else 7
+            c.vline(x, row * 16, row * 16 + 14, sh)
+            c.vline((x + 16) % 32, row * 16, row * 16 + 14, sh)
+        for _ in range(30):
+            c.set(rnd.randrange(32), rnd.randrange(32), mix(wl, lt, 0.4) if rnd.random() < 0.5 else shade(wl, 0.9))
+    elif kind == "membrane":   # izolacja: papa/folia z zakładami i łatami
+        for k in range(0, 32, 10):
+            c.hline(0, 31, k, mix(wl, lt, 0.5))
+            c.hline(0, 31, k + 1, shade(wl, 0.8))
+        for _ in range(3):
+            x, y = rnd.randrange(2, 26), rnd.randrange(3, 26)
+            c.rect(x, y, x + 5, y + 3, mix(wl, (230, 200, 60), 0.35))
+        for _ in range(24):
+            c.set(rnd.randrange(32), rnd.randrange(32), shade(wl, 0.85 if rnd.random() < 0.5 else 1.15))
     elif kind == "tiles":   # glazura 8x8
         grout = mix(lt, (255, 255, 255), 0.3)
         for k in range(0, 32, 8):
@@ -599,6 +622,24 @@ def make_fx(danger):
                 px[cx + sx * k, cy + sy * t] = (255, 230, 120, 230)
                 px[cx + sx * t, cy + sy * k] = (255, 230, 120, 230)
     save(im, "fx/range.png")
+    # błoto (akt I): plama z grudkami, półprzezroczysta krawędź; kolory z palety etapu (12-13 na GBA)
+    im = Image.new("RGBA", (32, 32), TRANSPARENT)
+    px = im.load()
+    rnd = random.Random(7)
+    dark, light, rim = (40, 26, 14), (122, 92, 58), (150, 118, 80)
+    for y in range(32):
+        for x in range(32):
+            dx, dy = (x - 15.5) / 14.5, (y - 16.5) / 12.0
+            d = dx * dx + dy * dy
+            if d <= 1.0:
+                px[x, y] = (rim + (230,)) if d > 0.82 else (dark + (245,))
+    for _ in range(10):
+        x, y = rnd.randrange(6, 26), rnd.randrange(8, 24)
+        px[x, y] = light + (255,)
+        px[x + 1, y] = light + (220,)
+    for x in range(9, 20):
+        px[x, 11] = mix(dark, (255, 255, 255), 0.25) + (200,)
+    save(im, "fx/mud.png")
 
 
 # ------------------------------------------------------------------ dźwięk
@@ -651,7 +692,8 @@ def main():
     export_screen("end", 104, "ui/end.png")
     report["font_glyphs"] = export_font()
     danger = None
-    for i in range(8):
+    stages = len(json.load(open(os.path.join(GBA, "data", "game.json"), encoding="utf-8"))["stages"])
+    for i in range(stages):
         col = make_stage_tiles(i)
         danger = danger or col["danger"]
     make_fx(danger)

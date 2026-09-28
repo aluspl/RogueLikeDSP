@@ -8,7 +8,7 @@ namespace LifeLike.Game.World;
 /// <summary>
 /// Nakładki na podłogę pod postaciami: pulsujące pola zapowiedzianego ciosu bossa (czerwona ramka z kreskami),
 /// ramki pól w zasięgu broni (mignięcie, gdy atak nie ma celu), poświata schodów (pulsowanie palety na GBA)
-/// i kałuże w deszczu (wejście = poślizg).
+/// kałuże w deszczu (wejście = poślizg), błoto w akcie I (wejście = tura) i pola wybuchu problemu.
 /// </summary>
 public partial class OverlayLayer : Node2D
 {
@@ -58,9 +58,10 @@ public partial class OverlayLayer : Node2D
                 var r = new Rect2(x * c, y * c, c, c);
                 var t = _g.Lv[x, y];
                 if (_g.Puddle(x, y)) DrawPuddle(r, pulse, _g.Visible(x, y));
+                else if (_g.Mud(x, y)) DrawTextureRect(Assets.Mud, r, false, new Color(1, 1, 1, _g.Visible(x, y) ? 1f : 0.45f));
                 if (t == Tile.Stairs && _g.Visible(x, y))
                     DrawRect(r.Grow(-3), new Color(Pal.StairsGlow, 0.12f + 0.16f * pulse));
-                if (t != Tile.Wall && _g.SlamCell(x, y))
+                if (t != Tile.Wall && _g.DangerCell(x, y))
                     DrawTextureRect(Assets.Danger, r, false, new Color(1, 1, 1, 0.55f + 0.45f * pulse));
                 if ((_range > 0 || RangeHeld) && t != Tile.Wall && _g.Visible(x, y) && !(x == _g.Hero.X && y == _g.Hero.Y)
                     && CoreGame.Cheb(_g.Hero.X, _g.Hero.Y, x, y) <= _g.WeaponRange())

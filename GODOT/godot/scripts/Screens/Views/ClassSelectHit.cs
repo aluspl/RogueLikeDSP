@@ -10,4 +10,6 @@ public enum ClassSelectHit
     Start,
     Back,
     Investor,
+    Stat,       // wiersz statystyki (Arg = 0..5: HP, SIŁ, ZRĘ, INT, OBR, SZCZ) - dymek z opisem
+    Stats,      // przycisk „i” - strona opisu statystyk
 }

@@ -28,6 +28,10 @@ public partial class ClassSelectView : Control
     private readonly List<(Rect2 Rect, ClassSelectHit Hit, int Arg)> _hits = new();
 
     public int Difficulty { get; set; }
+    /// <summary>Dymek z opisem statystyki (dotknięcie wiersza; na komputerze też najechanie myszą); -1 = brak.</summary>
+    public int TipStat { get; set; } = -1;
+    private int _hoverStat = -1;
+    private readonly Rect2[] _statRects = new Rect2[6];
     public string Note { get; set; } = "";
 
     /// <summary>Zawód (indeks w danych) pod ramką wyboru.</summary>
@@ -54,6 +58,7 @@ public partial class ClassSelectView : Control
 
     public void Move(int d)
     {
+        TipStat = -1;
         if (_order.Length == 0) return;
         _pos = (_pos + d + _order.Length) % _order.Length;
         _cardShift = d * 18f;
@@ -86,6 +91,15 @@ public partial class ClassSelectView : Control
         if (Mathf.Abs(_slide - _pos) < 0.01f) _slide = _pos;
         _cardShift = Mathf.MoveToward(_cardShift, 0, dt * 140f);
         foreach (var i in _order) _scale[i] = Mathf.MoveToward(_scale[i], i == Selected ? 2f : 1f, dt * 8f);
+        if (!Layout.Touch) // dymek statystyki pod kursorem myszy
+        {
+            var mouse = GetLocalMousePosition();
+            _hoverStat = -1;
+            for (var k = 0; k < _statRects.Length; k++)
+            {
+                if (_statRects[k].HasPoint(mouse)) _hoverStat = k;
+            }
+        }
         QueueRedraw();
     }
 
@@ -169,9 +183,11 @@ public partial class ClassSelectView : Control
             var bw = (w - 36) / 3;
             Button(new Rect2(12, by, bw, bh), "Wróć", false, ClassSelectHit.Back);
             Button(new Rect2(24 + bw, by, w - 36 - bw, bh), Meta.ClassUnlocked(_d, _p, Selected) ? "Start budowy" : "Zablokowany", true, ClassSelectHit.Start);
+            DrawStatTip();
             return;
         }
         DrawCard(new Rect2(40 + _cardShift, 122, w - 80, 204));
+        DrawStatTip();
         if (Layout.Touch)
         {
             Button(new Rect2(40, h - 30, 120, 24), "Wróć", false, ClassSelectHit.Back);
@@ -179,7 +195,7 @@ public partial class ClassSelectView : Control
         }
         else
         {
-            f.Draw(this, new Vector2(w / 2, h - 26), "Strzałki: zawód / trudność   Q/E: pamiątka   Enter: start   Esc: wróć", Ink.MapDim, TextAlign.Center);
+            f.Draw(this, new Vector2(w / 2, h - 26), "Strzałki: zawód / trudność   Q/E: pamiątka   I: statystyki   Enter: start   Esc: wróć", Ink.MapDim, TextAlign.Center);
         }
     }
 
@@ -285,11 +301,15 @@ public partial class ClassSelectView : Control
             ("SZCZ", c.Luck, m.Luck, 8),
         ];
         var bw = width - 90;
+        InfoButton(new Vector2(sx + width - 18, sy - 1));
         for (var i = 0; i < stats.Length; i++)
         {
             var (label, b, bonus, max) = stats[i];
             max = Math.Max(max, b + bonus);
             var yy = sy + i * step;
+            _statRects[i] = new Rect2(sx, yy, width, step);
+            _hits.Add((_statRects[i], ClassSelectHit.Stat, i));
+            if (i == ShownTip) DrawStyleBox(Ui.Box(new Color(Pal.Brand, 0.12f), 4), _statRects[i]);
             f.Draw(this, new Vector2(sx, yy), label, Ink.Dim);
             var bar = new Rect2(sx + 40, yy + 5, bw, 7);
             DrawStyleBox(Ui.Box(Pal.Group, 3), bar);
@@ -374,11 +394,15 @@ public partial class ClassSelectView : Control
             ("SZCZ", c.Luck, m.Luck, 8),
         ];
         var bw = r.Size.X / 2 - 110;
+        InfoButton(new Vector2(r.End.X - 30, r.Position.Y + 8));
         for (var i = 0; i < stats.Length; i++)
         {
             var (label, b, bonus, max) = stats[i];
             max = Math.Max(max, b + bonus);
             var yy = sy + i * 17f;
+            _statRects[i] = new Rect2(sx - 4, yy, r.End.X - sx - 10, 17);
+            _hits.Add((_statRects[i], ClassSelectHit.Stat, i));
+            if (i == ShownTip) DrawStyleBox(Ui.Box(new Color(Pal.Brand, 0.12f), 4), _statRects[i]);
             f.Draw(this, new Vector2(sx, yy), label, Ink.Dim);
             var bar = new Rect2(sx + 40, yy + 5, bw, 7);
             DrawStyleBox(Ui.Box(Pal.Group, 3), bar);
@@ -388,6 +412,47 @@ public partial class ClassSelectView : Control
             if (bwBase > 0) DrawStyleBox(Ui.Box(unl ? Pal.Brand : Pal.Todo, 3), new Rect2(bar.Position, new Vector2(Mathf.Max(bwBase, 4), 7)));
             f.Draw(this, new Vector2(bar.End.X + 6, yy), UiText.StatText("", b, bonus).Trim(), bonus > 0 ? Ink.Done : Ink.Dark);
         }
+    }
+
+    private int ShownTip => TipStat >= 0 ? TipStat : _hoverStat;
+
+    /// <summary>Przycisk „i” (menu_icons 23): strona opisu statystyk.</summary>
+    private void InfoButton(Vector2 pos)
+    {
+        var r = new Rect2(pos, new Vector2(20, 20));
+        Assets.DrawFrame(this, Assets.UiMenu, Assets.MenuStats, Assets.Icon, pos + new Vector2(2, 2));
+        _hits.Add((r.Grow(8), ClassSelectHit.Stats, 0));
+    }
+
+    /// <summary>Dymek nad wierszem statystyki: wartość i co daje (StatHelp.Effect) oraz ogólny wzór (StatHelp.Rule).</summary>
+    private void DrawStatTip()
+    {
+        var i = ShownTip;
+        if (i < 0 || i >= _statRects.Length || _statRects[i].Size.X <= 0) return;
+        var f = PixelFont.I;
+        var cls = Selected;
+        var c = _d.Classes[cls];
+        var m = Meta.Mods(_d, _p);
+        var ws = _d.Weapons[c.Weapon].ScalesWith;
+        StatKind[] kinds = [StatKind.Hp, StatKind.Str, StatKind.Agi, StatKind.Intel, StatKind.Def, StatKind.Luck];
+        int[] values =
+        [
+            c.MaxHealth + m.Hp, c.Strength + RunMods.StatBonus(_d, m, cls, Stat.Str), c.Agility + RunMods.StatBonus(_d, m, cls, Stat.Agi),
+            c.Intelligence + RunMods.StatBonus(_d, m, cls, Stat.Intel), c.Defense + m.Def, c.Luck + m.Luck,
+        ];
+        var weapon = (i == 1 && ws == Stat.Str) || (i == 2 && ws == Stat.Agi) || (i == 3 && ws == Stat.Intel);
+        var l1 = StatHelp.Effect(_d, new Message().Add(StatHelp.Name(kinds[i])).Add(" ").Add(values[i]).Add(": "), kinds[i], values[i], weapon).Text;
+        var rule = StatHelp.Rule(_d, new Message(), kinds[i]).Text;
+        var l2 = kinds[i] == StatKind.Luck ? rule + ", " + StatHelp.Rule(_d, new Message(), kinds[i], 1).Text : rule;
+        var tw = Mathf.Min(Size.X - 16, Mathf.Max(f.Measure(l1), f.Measure(l2)) + 20);
+        var row = _statRects[i];
+        var x = Mathf.Clamp(row.Position.X + row.Size.X - tw, 8, Size.X - tw - 8);
+        var y = row.Position.Y - 44 < 4 ? row.End.Y + 4 : row.Position.Y - 44;
+        var box = new Rect2(x, y, tw, 40);
+        DrawStyleBox(Ui.Box(new Color(0, 0, 0, 0.3f), 8), new Rect2(box.Position + new Vector2(0, 2), box.Size));
+        DrawStyleBox(Ui.Box(Pal.Text, 8, Pal.Brand), box);
+        f.Draw(this, new Vector2(x + 10, y + 3), f.Fit(l1, (int)tw - 20), weapon ? Ink.MapLoot : Ink.Map);
+        f.Draw(this, new Vector2(x + 10, y + 20), f.Fit(l2, (int)tw - 20), Ink.MapDim);
     }
 
     // Zawód z nagrody za odbiór: numer wygranej, która go odblokuje (-1 = brak na liście).

@@ -1,9 +1,12 @@
+using LifeLike.Core;
+using LifeLike.Core.Data;
 using LifeLike.Game.Gfx;
 using LifeLike.Game.Input;
 
 namespace LifeLike.Game.Phone.Pages;
 
-/// <summary>Jak grać (page_help na GBA): cel budowy, sterowanie z nazwami klawiszy z bieżącej mapy wejścia, pogoda, brygada, tryb inwestora, ścieżki, materiały, codzienna budowa.</summary>
+/// <summary>Jak grać (page_help na GBA): cel budowy, sterowanie z nazwami klawiszy z bieżącej mapy wejścia, pogoda, brygada, tryb inwestora,
+/// ścieżki, materiały, codzienna budowa; strona 2 - mechaniki aktów i zachowania problemów, strona 3 - statystyki (A: dalej).</summary>
 public sealed class HelpPage : PhonePage
 {
     private static readonly (string Key, string What)[] Controls =
@@ -30,18 +33,49 @@ public sealed class HelpPage : PhonePage
         ("Telefon", "aplikacja (trzymaj: mapa)"),
     ];
 
+    private const int Pages = 3;
+    private readonly GameData _d;
+    private int _page;
+
+    /// <summary>Strona 0-2 (sceny zrzutów).</summary>
+    public int Page
+    {
+        get => _page;
+        set => _page = System.Math.Clamp(value, 0, Pages - 1);
+    }
+
+    public HelpPage(GameData d) => _d = d;
+
     public override string Title => "Jak grać";
-    public override string Sub => "Kierownik budowy";
+    public override string Sub => $"{_page + 1}/{Pages}";
     public override string Hint => ButtonNames.Localize("A: dalej");
     public override PageAction[] Actions => [new("Dalej", GameAction.A)];
 
+    /// <summary>A / Start: kolejna strona (akty i problemy, statystyki); na ostatniej - wyjście (HelpScreen).</summary>
+    public override bool Input(InputCmd e)
+    {
+        if (!e.Is(GameAction.A | GameAction.Start) || _page >= Pages - 1) return false;
+        _page++;
+        return true;
+    }
+
     public override void Draw(PhonePainter p)
     {
+        if (_page == 1)
+        {
+            DrawList(p, "AKTY: MECHANIKI", ActLines, "PROBLEMY: ZACHOWANIA", BehaviorLines);
+            return;
+        }
+        if (_page == 2)
+        {
+            DrawList(p, "STATYSTYKI", StatLines(_d), "GDZIE OPIS", WhereLines);
+            return;
+        }
         if (!PhoneView.Full) // telefon w poziomie: nowości w karcie na górze zamiast osobnej sekcji (brak miejsca)
         {
             var top = p.Card(p.Top, 1 + ShortNews.Length);
             p.Stripe(top, 0, Pal.Brand);
-            p.Text(p.TextX(top), p.RowY(top, 0), "8 etapów, 3 akty z bossami", Ink.Dark, TextAlign.Left, top.End.X - 6 - p.TextX(top));
+            p.Text(p.TextX(top), p.RowY(top, 0), "10 etapów, 3 akty z bossami", Ink.Dark, TextAlign.Left, top.End.X - 6 - p.TextX(top));
             for (var i = 0; i < ShortNews.Length; i++)
             {
                 p.Divider(top, i + 1);
@@ -53,7 +87,7 @@ public sealed class HelpPage : PhonePage
         var intro = p.Card(p.Top, 2);
         p.Stripe(intro, 0, Pal.Brand);
         p.Stripe(intro, 1, Pal.Brand);
-        p.Text(p.TextX(intro), p.RowY(intro, 0), "8 etapów w 3 aktach, każdy", Ink.Dark);
+        p.Text(p.TextX(intro), p.RowY(intro, 0), "10 etapów w 3 aktach, każdy", Ink.Dark);
         p.Text(p.TextX(intro), p.RowY(intro, 1), "kończy boss. Schody = dalej.", Ink.Dark);
         var card = DrawControls(p, p.Section(intro.End.Y + 6, "STEROWANIE"));
         var tx = p.TextX(card);
@@ -66,6 +100,59 @@ public sealed class HelpPage : PhonePage
             p.Text(tx, p.RowY(news, i), News[i], Ink.Dark, TextAlign.Left, right - tx);
         }
     }
+
+    private static void DrawList(PhonePainter p, string t1, string[] l1, string t2, string[] l2)
+    {
+        var y = p.Section(p.Top, t1);
+        var card = p.Card(y, l1.Length);
+        var tx = p.TextX(card);
+        var right = card.End.X - 6;
+        for (var i = 0; i < l1.Length; i++)
+        {
+            if (i > 0) p.Divider(card, i);
+            p.Text(tx, p.RowY(card, i), l1[i], Ink.Dark, TextAlign.Left, right - tx);
+        }
+        y = p.Section(card.End.Y + 6, t2);
+        var c2 = p.Card(y, l2.Length);
+        for (var i = 0; i < l2.Length; i++)
+        {
+            if (i > 0) p.Divider(c2, i);
+            p.Text(tx, p.RowY(c2, i), l2[i], Ink.Dim, TextAlign.Left, right - tx);
+        }
+    }
+
+    private static readonly string[] ActLines =
+    [
+        "I: błoto - wejście = tura",
+        "II: porywy wiatru spychają",
+        "III: pył - widzisz mniej",
+        "Kładka działa też na błoto",
+    ];
+
+    private static readonly string[] BehaviorLines =
+    [
+        "Strzelają z 2-3 pól, dzielą się",
+        "Łatają sąsiadów, rosną z czasem",
+        "Wybuch: zejdź z czerwonych pól!",
+        "Uciekają albo stoją jak mur",
+        "Odpychają, wracają raz",
+    ];
+
+    /// <summary>Wzory statystyk z danych (StatHelp jak stat_rule w core.h).</summary>
+    private static string[] StatLines(GameData d) =>
+    [
+        "SIŁ/ZRĘ/INT: +1 obr. co 2 pkt",
+        "(liczy się tylko statystyka broni)",
+        StatHelp.Rule(d, new Message(), StatKind.Def).Text,
+        StatHelp.Rule(d, new Message(), StatKind.Luck).Text,
+        StatHelp.Rule(d, new Message(), StatKind.Luck, 1).Text,
+        StatHelp.Rule(d, new Message(), StatKind.Luck, 2).Text,
+        StatHelp.Rule(d, new Message(), StatKind.Hp).Text,
+    ];
+
+    private static string[] WhereLines => Layout.Touch
+        ? ["Wybór zawodu: dotknij statystyki", "Telefon > Start > Opis statystyk"]
+        : ["Wybór zawodu: I albo mysz", "Telefon > Start > Spacja"];
 
     private static Godot.Rect2 DrawControls(PhonePainter p, float y)
     {

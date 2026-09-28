@@ -7,13 +7,22 @@ namespace LifeLike.Game.Hud;
 
 /// <summary>
 /// Karta wroga pod trzymanym B (podgląd na GBA, w miejscu dziennika): portret, nazwa, HP z paskiem,
-/// obrażenia z premią etapu i trudności, opis; „Nikogo w polu widzenia”, gdy lista jest pusta.
+/// obrażenia z premią etapu i trudności, opis na zmianę z zachowaniami („Cechy: ...”); „Nikogo w polu widzenia”, gdy lista jest pusta.
 /// </summary>
 public partial class EnemyCard : Control
 {
     private const int CardH = 58;
     private CoreGame _g;
     private int _enemy = -1, _index, _count;
+    private float _clock;
+
+    public override void _Process(double delta)
+    {
+        if (!Visible) return;
+        var before = (int)(_clock / 2f);
+        _clock += (float)delta;
+        if ((int)(_clock / 2f) != before) QueueRedraw(); // opis / zachowania na zmianę co 2 s
+    }
 
     public override void _Ready()
     {
@@ -73,7 +82,9 @@ public partial class EnemyCard : Control
         DrawRect(new Rect2(bar.Position, new Vector2(Mathf.Max(1, Mathf.Round(bar.Size.X * fill)), bar.Size.Y)), Pal.HpMain[Pal.HpColor(e.Hp, e.MaxHp)]);
         var stats = $"HP {e.Hp}/{e.MaxHp}   obr. {ed.MinDamage + bonus}-{ed.MaxDamage + bonus}";
         f.Draw(this, new Vector2(bar.End.X + 8, top + 2), f.Fit(stats, (int)(w - bar.End.X - 14)), Ink.Map);
-        f.Draw(this, new Vector2(x, top + 20), f.Fit(ed.Desc, (int)(w - x - 8)), Ink.MapDim);
+        var tags = UiText.Behaviors(_g.D, e.DefId);
+        var showTags = tags.Length > 0 && ((int)(_clock / 2f) & 1) == 1;
+        f.Draw(this, new Vector2(x, top + 20), f.Fit(showTags ? "Cechy: " + tags : ed.Desc, (int)(w - x - 8)), showTags ? Ink.MapBad : Ink.MapDim);
         var back = ButtonNames.Pick("Puść Z: wróć", "Puść: wróć");
         var hint = _count > 1 ? $"{_index + 1}/{_count}  {ButtonNames.Pick("Strzałki: następny", "Przesuń: następny")}   {back}" : back;
         f.Draw(this, new Vector2(w - 6, top + 38), hint, Ink.MapDim, TextAlign.Right);

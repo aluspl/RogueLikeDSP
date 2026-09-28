@@ -74,6 +74,8 @@ public static class GameInput
         Pad(GameAction.TabPrev, JoyButton.LeftShoulder);
         Add(GameAction.TabNext, Key.E);
         Pad(GameAction.TabNext, JoyButton.RightShoulder);
+        Add(GameAction.Info, Key.I);
+        Pad(GameAction.Info, JoyButton.RightStick);
         Add(GameAction.Profile, Key.P);
         Pad(GameAction.Profile, JoyButton.X);
     }

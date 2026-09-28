@@ -5,7 +5,7 @@ using LifeLike.Game.Input;
 
 namespace LifeLike.Game.Phone.ProfileTabs;
 
-/// <summary>Katalog usterek (zakładka 1 profilu na GBA): poznane problemy budowy z portretem i opisem, reszta „???”.</summary>
+/// <summary>Katalog usterek (zakładka 1 profilu na GBA): poznane problemy budowy z portretem, opisem i zachowaniami, reszta „???”.</summary>
 public sealed class CatalogTab : PhonePage
 {
     private const int Window = 8;
@@ -20,7 +20,7 @@ public sealed class CatalogTab : PhonePage
     }
 
     public override string Title => "Katalog";
-    public override string Sub => $"{UiText.BitCount(_p.Catalog)}/{_d.Enemies.Length}";
+    public override string Sub => $"{Meta.CatalogCount(_d, _p)}/{_d.Enemies.Length}";
     public override string Hint => "Q/E: zakładki  Esc: wróć";
 
     public override bool TapRow(int index)
@@ -29,7 +29,14 @@ public sealed class CatalogTab : PhonePage
         return true;
     }
 
-    private bool Known(int i) => (_p.Catalog & (1 << i)) != 0;
+    private bool Known(int i) => Meta.CatalogHas(_p, i);
+
+    /// <summary>Zaznacza problem i (sceny zrzutów).</summary>
+    public void Select(int i)
+    {
+        _list.Sel = System.Math.Max(0, i);
+        _list.Top = System.Math.Max(0, i - Window / 2);
+    }
 
     public override bool Input(InputCmd e)
     {
@@ -59,7 +66,7 @@ public sealed class CatalogTab : PhonePage
             var pw = p.Pill(right, y, known ? "ZAMKNIĘTA" : "NIEZNANA", known ? PillKind.Done : PillKind.Gray);
             p.Text(tx, y, $"#{i + 1} {(known ? _d.Enemies[i].Name : "???")}", sel ? Ink.Brand : known ? Ink.Dark : Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
         }
-        var dc = p.CardH(card.End.Y + 6, 48);
+        var dc = p.CardH(card.End.Y + 6, 62);
         var s = _list.Sel;
         var photo = new Godot.Rect2(dc.Position.X + 8, dc.Position.Y + 8, 32, 32);
         p.C.DrawStyleBox(Ui.Box(Known(s) ? Pal.DoneBg : Pal.Group, 5), photo);
@@ -68,5 +75,7 @@ public sealed class CatalogTab : PhonePage
         var lines = p.F.Wrap(Known(s) ? _d.Enemies[s].Desc : "Pokonaj, żeby poznać", (int)(right - x));
         p.Text(x, dc.Position.Y + 4, Known(s) ? _d.Enemies[s].Name : "???", Ink.Dark, TextAlign.Left, right - x);
         if (lines.Count > 0) p.Text(x, dc.Position.Y + 22, lines[0], Ink.Dim, TextAlign.Left, right - x);
+        var tags = UiText.Behaviors(_d, s);
+        if (Known(s) && tags.Length > 0) p.Text(x, dc.Position.Y + 40, "Cechy: " + tags, Ink.Late, TextAlign.Left, right - x);
     }
 }

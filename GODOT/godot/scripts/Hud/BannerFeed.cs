@@ -79,6 +79,16 @@ public sealed class BannerFeed
         }
     }
 
+    /// <summary>Pierwszy etap aktu: baner z mechaniką aktu (błoto, porywy, pył) jak na GBA.</summary>
+    public void ActHint()
+    {
+        var g = _s.Game;
+        var d = _s.Data;
+        var act = d.Stages[g.Stage].Act;
+        if (g.ADef.Mechanic == ActMechanic.None || (g.Stage > 0 && d.Stages[g.Stage - 1].Act == act)) return;
+        _banners.Push($"Akt {UiText.Roman(act)}: {g.ADef.MechShort}", g.ADef.MechInfo, PhoneTabs.Tasks);
+    }
+
     /// <summary>Podpowiedź na start budowy: moc pod R i zabrana pamiątka z rangą (jak na GBA).</summary>
     public void FirstStageHints()
     {

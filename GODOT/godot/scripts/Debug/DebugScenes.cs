@@ -20,7 +20,8 @@ public sealed class DebugScenes
         "brigade", "ally", "investor",
         "schedule-path", "materials", "repairs", "hurtownia-mats", "daily", "house", "levelup", "death",
         "respect", "rewards", "classselect-locked", "class-dekarz", "class-tynkarz", "class-operator", "gear5", "respect-banner",
-        "second-chance",
+        "second-chance", "behaviors", "act-mud", "act-gust", "act-dust", "stats-class", "stats-tip", "stats-phone", "catalog-tags",
+        "help-acts", "help-stats",
     ];
 
     private readonly App _app;
@@ -36,7 +37,7 @@ public sealed class DebugScenes
 
     public static bool UsesDemoProfile(string scene) =>
         scene is "title" or "classselect" or "profile" or "catalog" or "estate" or "team" or "training" or "card" or "perks" or "investor"
-            or "daily" or "death" or "respect" or "rewards" or "classselect-locked";
+            or "daily" or "death" or "respect" or "rewards" or "classselect-locked" or "stats-class" or "stats-tip" or "catalog-tags";
 
     public async Task Setup(string scene)
     {
@@ -79,8 +80,28 @@ public sealed class DebugScenes
                 Flow.Prologue.Seek(4.2f);
                 return;
             case "help":
+            case "help-acts":
+            case "help-stats":
                 Flow.Help.Open(true, true);
+                if (_app.Nodes.Phone.Current is Phone.Pages.HelpPage hp) hp.Page = scene == "help" ? 0 : scene == "help-acts" ? 1 : 2;
+                _app.Nodes.Phone.QueueRedraw();
                 return;
+            case "stats-class": // opis statystyk zawodu (I na wyborze zawodu, START na GBA)
+            case "stats-tip":   // dymek nad statystyką (mysz / dotknięcie)
+                s.ClassId = 1;
+                Flow.ClassSelect.Open();
+                if (scene == "stats-tip") _app.Nodes.ClassSelectView.TipStat = 1;
+                else Flow.Stats.OpenClass(1);
+                return;
+            case "catalog-tags": // Katalog: wszystko poznane, zaznaczony Mostek termiczny z zachowaniami
+            {
+                s.Profile.Catalog = 0xFFFF;
+                s.Profile.CatalogHi = 0xFFFFFFFFu;
+                Flow.Profile.Open(1, true);
+                if (_app.Nodes.Phone.Current is Phone.ProfileTabs.CatalogTab ct) ct.Select(Array.FindIndex(s.Data.Enemies, e => e.Id == "mostek"));
+                _app.Nodes.Phone.QueueRedraw();
+                return;
+            }
             case "daily": // codzienna budowa: stała data, wyniki kilku dni w profilu, notatka po „Wyślij wynik”
             {
                 s.FixedToday = Tuple.Create(2026, 9, 25);
@@ -135,7 +156,7 @@ public sealed class DebugScenes
             _ => AbilityEffect.Stun,
         };
         s.ClassId = newClass != AbilityEffect.Stun ? Array.FindIndex(s.Data.Classes, c => c.Ability == newClass)
-                  : scene switch { "game" => 0, "perks" => 1, "aim" => 2, _ => 5 }; // Cieśla: gwoździarka z3
+                  : scene switch { "game" => 0, "perks" => 1, "aim" => 2, "behaviors" => 1, _ => 5 }; // Cieśla: gwoździarka z3
         _app.StartRun();
         Flow.StageCard.Advance(); // karta etapu -> gra
         if (newClass != AbilityEffect.Stun) // nowy zawód: problemy pod moc i moc (efekt w trakcie)
@@ -145,6 +166,19 @@ public sealed class DebugScenes
             var acted = Screens.Play.PlayCommands.UseAbility(g, _app.Nodes.World);
             _app.AfterAction(acted);
             await DebugRunner.Frames(_app.Root, 6);
+            return;
+        }
+        if (scene is "behaviors" or "act-mud" or "act-gust" or "act-dust" or "stats-phone")
+        {
+            _app.Nodes.Banners.Clear();
+            if (scene == "behaviors") _stage.BehaviorShowcase();
+            else if (scene == "stats-phone")
+            {
+                g.Equip(1, 2, Array.FindIndex(s.Data.GearTraits, t => t.Effect == TraitEffect.Str));
+                Flow.Stats.OpenInRun();
+            }
+            else _stage.ActShowcase(scene == "act-mud" ? 1 : scene == "act-gust" ? 5 : 8);
+            await DebugRunner.Frames(_app.Root, 4);
             return;
         }
         if (scene == "perks") // Murarz z Warsztatami i cechą SIŁ+1, na etapie z wydarzeniem

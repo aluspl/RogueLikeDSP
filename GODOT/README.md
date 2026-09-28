@@ -4,10 +4,23 @@ Wersja Godot gry z demo GBA (`../GBA`): roguelike budowlany, w którym etapy bud
 a wrogami są *problemy budowy*. Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KONCEPCJA.md)
 (telefon z aplikacją PlanBudowlany jako interfejs, oprawa 2.5D – kolejne kamienie milowe).
 
-**Stan: zgodny z GBA v0.21.49** (logika, dane i test złoty z migawki GBA v0.21.49: Respekt za etapy i sklep Respektu,
+**Stan: zgodny z GBA v0.21.49** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 2: 10 etapów, 20 nowych problemów
+z zachowaniami, mechaniki aktów, opis statystyk; wcześniej Respekt za etapy i sklep Respektu,
 nagrody za odbiór – Młot udarowy, Pistolet do kotew, buty, pas, zawody Dekarz, Tynkarz, Operator koparki – nowy balans
 Szkoleń, profil v8; wcześniej wybór ścieżki, materiały, codzienna budowa, pogoda, brygada, tryb inwestora);
 oprawa (grafika, font, dźwięk, telefon, wybór zawodu) jak w GBA.
+
+Nowe w v0.21.49 cz. 2 (warstwa Godota): 10 etapów z kaflami wg aktu (akt I ziemia i bloczki / izolacja, akt II
+deski, dachówka, cegła, akt III płytki, tynk, instalacje), 20 nowych problemów etapów (klatki 61-100, oddech jak
+reszta) - pojawiają się w trakcie etapu (podział, powrót), strzały z dystansu (iskry od strzelca), wybuch (czerwone
+pola jak cios bossa, eksplozja), błoto w akcie I (plama na podłodze), porywy w akcie II (ikona z licznikiem w HUD,
+pył w stronę porywu), pył w akcie III (drobinki w powietrzu), baner mechaniki na starcie aktu, wiersz mechaniki
+w Zadaniach i na karcie etapu, zachowania („Cechy: ...”) na karcie problemu i w Katalogu. Opis statystyk (#19): na
+wyborze zawodu dymek nad statystyką (mysz albo dotknięcie), I / przycisk „i” = strona Statystyki (wartości i co dają,
+Spacja: wzory), w telefonie Start > Spacja / „Opis statystyk” = skąd są premie; Jak grać ma 3 strony (sterowanie,
+akty i zachowania problemów, statystyki). Sceny zrzutów: `behaviors`, `act-mud`, `act-gust`, `act-dust`,
+`stats-class`, `stats-tip`, `stats-phone`, `catalog-tags`, `help-acts`, `help-stats`; test dymny gra etap każdego aktu,
+pokaz zachowań (podział, wybuch, strzał), statystyki z telefonu i wyboru zawodu oraz 3 strony Jak grać.
 
 Nowe w v0.21.49 (warstwa Godota): telefon profilu, zakładka Koszty – strony Szkolenia / Respekt / Nagrody (Tab albo
 przycisk strony na dotyku; Spacja/„Kup” kupuje rangę), 9 zawodów na wyborze zawodu (zawody z nagród: „za N. wygraną”),
@@ -95,6 +108,8 @@ wygranej (dom z Osiedla, daty, dni, koszty i link planbudowlany.online), wyraźn
 | Codzienna budowa (menu tytułu): start / wyślij wynik / wróć | Spacja, Tab, Esc | A, Select, B | przyciski |
 | Harmonogram domu po wygranej: planbudowlany.online / dalej | Spacja / Enter | A / Start | przyciski |
 | Szkolenia (zakładka Koszty w telefonie profilu, Spacja kupuje) | K | Y | |
+| Opis statystyk na wyborze zawodu (dymek: mysz nad statystyką) | I | R3 | „i” na karcie |
+| Opis statystyk w trakcie budowy (telefon: Start) | Spacja | A | „Opis statystyk” |
 | Ustawienia (także klucz w prawym górnym rogu tytułu i mapy) | Esc | | klik na klucz |
 
 ## Telefon: pion i dotyk jedną ręką
@@ -149,7 +164,9 @@ nad paskiem domowym, mapa ~9 pól na szerokość, telefon jako aplikacja na cał
   `weather-heat` (pogoda dnia: nakładka, kałuże, ikona w HUD), `brigade` (telefon: Brygada), `ally` (pomocnik obok
   bohatera), `investor` (tryb inwestora nad wyborem zawodu), `schedule-path` (wybór ścieżki), `materials` (HUD
   z materiałami), `repairs` (Brygada i naprawy), `hurtownia-mats` (towary za materiały), `daily` (codzienna budowa),
-  `house` (harmonogram domu po wygranej), `levelup` (wyraźny awans), `death` (SMS po porażce: co zostaje).
+  `house` (harmonogram domu po wygranej), `levelup` (wyraźny awans), `death` (SMS po porażce: co zostaje),
+  `behaviors` (strzał, podział, wybuch), `act-mud`, `act-gust`, `act-dust` (mechaniki aktów), `stats-class`, `stats-tip`,
+  `stats-phone` (opis statystyk), `catalog-tags` (Katalog z zachowaniami), `help-acts`, `help-stats` (strony Jak grać).
   Sceny ustawiają stan ręcznie (profil pokazowy, skrót zaliczenia etapu jak L+R+SELECT na GBA); zrzuty i test dymny
   działają bez dźwięku.
 
@@ -173,11 +190,11 @@ i `godot-mono --headless --path GODOT/godot --import` (import grafik i dźwięk�
 
 `python3 GODOT/tools/export_godot_assets.py` (Pillow; do muzyki `openmpt123` i `ffmpeg` z libmp3lame) czyta – tylko
 czyta – `GBA/graphics/*.bmp`, `GBA/include/font_widths.h` i `GBA/audio/*` i zapisuje do `godot/assets/`:
-`sprites/` (postacie, wrogowie, bossowie, znajdźki, paczki, celownik – klatki 32x32 powiększone algorytmem Scale2x
+`sprites/` (postacie, wrogowie, w tym problemy etapów 61-100, bossowie, znajdźki, paczki, celownik – klatki 32x32 powiększone algorytmem Scale2x
 z 16x16, kolejność klatek jak `actors.bmp`; białe sylwetki do błysku; cząsteczki 16x16; domy Osiedla; ikony menu
 i mocy), `ui/` (ikony telefonu aktywne i nieaktywne, ikony HUD 16x16 i szare do ładowania mocy, plansze tytułu
-i końca z przezroczystym tłem), `tiles/stage_N.png` (8 etapów: 4 warianty podłogi, podłoga z cieniem muru, mur,
-lico muru, schody – rysowane w 32x32 w paletach etapów z GBA, bogatsze niż kafle 8x8), `fx/` (cień, pole ciosu,
+i końca z przezroczystym tłem), `tiles/stage_N.png` (10 etapów, podłoga wg aktu: 4 warianty podłogi, podłoga z cieniem muru, mur,
+lico muru, schody – rysowane w 32x32 w paletach etapów z GBA, bogatsze niż kafle 8x8), `fx/` (cień, pole ciosu i wybuchu, błoto,
 ramka zasięgu), `font/` (font 8x16 z polskimi znakami: litery i cień osobno + `font.json` z szerokościami;
 rysuje go `scripts/Gfx/PixelFont.cs`), `audio/` (SFX `.wav` 1:1, muzyka `.mod` wyrenderowana do `.mp3`).
 Wynik jest deterministyczny – po zmianie grafik GBA wystarczy uruchomić skrypt ponownie i zaimportować projekt.
@@ -208,7 +225,8 @@ z cechami, dziennik bajt po bajcie, wydarzenie na placu, liczniki zleceń, staty
 (pola i cały zapis bajt po bajcie jak w SRAM).
 `GoldenTests` odtwarza to samo w C# i porównuje pole po polu.
 
-Odtworzenie plików (z tej samej wersji nagłówków GBA co `golden/game.json`; obecnie migawka v0.21.49, 37 przebiegów (w tym nowe zawody, pełny Respekt, nagrody za odbiór, Druga szansa) – bot „smart”
+Odtworzenie plików (z tej samej wersji nagłówków GBA co `golden/game.json`; obecnie migawka v0.21.49 cz. 2 – 10 etapów,
+zachowania problemów, mechaniki aktów, bot omija błoto i czerwone pola wybuchu – 37 przebiegów (w tym nowe zawody, pełny Respekt, nagrody za odbiór, Druga szansa) – bot „smart”
 wzywa też brygadę, dwa przebiegi z trybem inwestora,
 np. `git show d02ba811:GBA/...` rozpakowane do osobnego katalogu `<gba_v43>`):
 

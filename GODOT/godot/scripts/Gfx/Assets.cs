@@ -35,6 +35,11 @@ public static class Assets
     public const int MenuWeather = 6;
     // menu_icons.png 15-18: nagrody za odbiór (Młot udarowy, Pistolet do kotew, Buty, Pas), 19: Respekt, 14: kalendarz
     public const int MenuRewardTool = 15, MenuRewardTool2 = 16, MenuBoots = 17, MenuBelt = 18, MenuRespect = 19, MenuCalendar = 14;
+    // menu_icons.png 20-22: mechaniki aktów (błoto, porywy, pył; + ActMechanic - 1), 23: statystyki ("i")
+    public const int MenuAct = 20, MenuStats = 23;
+
+    // actors.png 61-80: problemy etapów (v0.21.49), 81-100 ich druga klatka
+    public const int FrameStageEnemy = 61, StageEnemies = 20;
 
     // tiles/stage_N.png: 4 podłogi, 2 podłogi z cieniem muru, mur, lico muru, schody
     public const int TileFloor = 0, TileFloorShadow = 4, TileWall = 6, TileWallFace = 7, TileStairs = 8;
@@ -71,8 +76,9 @@ public static class Assets
     public static Texture2D Shadow => Tex("fx/shadow.png");
     public static Texture2D Danger => Tex("fx/danger.png");
     public static Texture2D Range => Tex("fx/range.png");
+    public static Texture2D Mud => Tex("fx/mud.png");
 
-    public static Texture2D StageTiles(int stage) => Tex($"tiles/stage_{Mathf.Clamp(stage, 0, 7)}.png");
+    public static Texture2D StageTiles(int stage) => Tex($"tiles/stage_{Mathf.Max(0, stage)}.png");
 
     public const int AnimWalkFrames = 4, AnimBreath = 4;
 
@@ -80,14 +86,22 @@ public static class Assets
     public static Rect2 AnimFrame(int row, int k) => new(k * Actor, row * Actor, Actor, Actor);
 
     /// <summary>Czy klatka ma animację chodu (zawody, problemy budowy, bossowie).</summary>
-    public static bool HasWalk(int frame) => frame is >= 0 and < 15 or 46 or 47 or 50 or 52 or 53 or 54;
+    public static bool HasWalk(int frame) =>
+        frame is >= 0 and < 15 or 46 or 47 or 50 or 52 or 53 or 54 || (frame >= FrameStageEnemy && frame < FrameStageEnemy + StageEnemies);
 
     /// <summary>Region klatki size x size w pionowym pasku.</summary>
     public static Rect2 Frame(int index, int size) => new(0, index * size, size, size);
 
     /// <summary>Druga klatka animacji (anim_b z main.cpp): zawody i wrogowie 0..14 -> +27, bossowie 46-47 -> 48-49, 50 -> 51,
-    /// zawody z nagród 52-54 -> 55-57.</summary>
-    public static int AnimB(int frame) => frame < 15 ? frame + FrameAnimB : (frame < 48 ? frame + 2 : (frame < 52 ? frame + 1 : frame + 3));
+    /// zawody z nagród 52-54 -> 55-57, problemy etapów 61-80 -> 81-100.</summary>
+    public static int AnimB(int frame)
+    {
+        if (frame >= FrameStageEnemy)
+        {
+            return frame + StageEnemies;
+        }
+        return frame < 15 ? frame + FrameAnimB : (frame < 48 ? frame + 2 : (frame < 52 ? frame + 1 : frame + 3));
+    }
 
     /// <summary>Sylwetka zablokowanego zawodu (0-5: 20+, zawody z nagród: 58+).</summary>
     public static int Silhouette(int cls) => cls < 6 ? FrameSilhouette + cls : FrameSilhouetteExt + cls - 6;

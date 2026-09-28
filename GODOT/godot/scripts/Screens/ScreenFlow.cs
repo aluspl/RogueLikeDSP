@@ -33,6 +33,7 @@ public sealed class ScreenFlow
         Investor = new InvestorScreen(app);
         Daily = new DailyScreen(app);
         HouseSchedule = new HouseScheduleScreen(app);
+        Stats = new StatsScreen(app);
     }
 
     public Screen Current { get; private set; }
@@ -56,6 +57,7 @@ public sealed class ScreenFlow
     public InvestorScreen Investor { get; }
     public DailyScreen Daily { get; }
     public HouseScheduleScreen HouseSchedule { get; }
+    public StatsScreen Stats { get; }
 
     /// <summary>Przejście na ekran; instant = bez animacji (telefon od razu na miejscu, tło od razu rozmyte).</summary>
     public void Go(Screen next, bool instant = false)

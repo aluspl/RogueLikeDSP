@@ -5,7 +5,8 @@ using LifeLike.Game.Screens.Views;
 
 namespace LifeLike.Game.Screens;
 
-/// <summary>Wybór zawodu (run_class_select na GBA): zawód ←/→, trudność ↑/↓, pamiątka Q/E, tryb inwestora Tab, start budowy.</summary>
+/// <summary>Wybór zawodu (run_class_select na GBA): zawód ←/→, trudność ↑/↓, pamiątka Q/E, tryb inwestora Tab, I = opis statystyk
+/// (dotknięcie wiersza statystyki = dymek), start budowy.</summary>
 public sealed class ClassSelectScreen : Screen
 {
     public ClassSelectScreen(App app) : base(app)
@@ -60,6 +61,12 @@ public sealed class ClassSelectScreen : Screen
             Flow.Investor.Open();
             return true;
         }
+        if (e.Is(GameAction.Info)) // opis statystyk zawodu (START na GBA)
+        {
+            S.ClassId = view.Selected;
+            Flow.Stats.OpenClass(view.Selected);
+            return true;
+        }
         if (e.Is(GameAction.Profile))
         {
             Flow.Profile.Open(0);
@@ -101,6 +108,13 @@ public sealed class ClassSelectScreen : Screen
                 return true;
             case ClassSelectHit.Start:
                 Start();
+                return true;
+            case ClassSelectHit.Stat: // dymek z opisem statystyki (drugie dotknięcie chowa)
+                view.TipStat = view.TipStat == arg ? -1 : arg;
+                return true;
+            case ClassSelectHit.Stats:
+                S.ClassId = view.Selected;
+                Flow.Stats.OpenClass(view.Selected);
                 return true;
             default:
                 return false;
