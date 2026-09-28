@@ -5,8 +5,8 @@ namespace LifeLike.Core;
 
 /// <summary>
 /// Profil gracza (odpowiednik core::profile z meta.h): rekord, doświadczenie, zakupy, odznaki, Osiedle.
-/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v8: 152 bajty, little-endian, bajt 55 to wyrównanie),
-/// więc migracje v1–v7 działają tak samo.
+/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v9: 156 bajtów, little-endian, bajt 55 to wyrównanie),
+/// więc migracje v1–v8 działają tak samo.
 /// </summary>
 public sealed class Profile
 {
@@ -23,12 +23,15 @@ public sealed class Profile
     public const int V6Size = 88;
     /// <summary>v8 = v7 + Respekt, nagrody za odbiór, wygrane i stawki zawodów 8-11 od tego offsetu.</summary>
     public const int V7Size = 124;
-    public const int Size = 152;
+    /// <summary>v9 = v8 + katalog usterek 16-47 od tego offsetu.</summary>
+    public const int V8Size = 152;
+    public const int Size = 156;
     public const int MaxRespect = 16;
     /// <summary>Zawody 0-7: bitmaska Classes (Szkolenia), 8-11: tylko z nagród za odbiór.</summary>
     public const int MaxClasses = 12;
     public const int MaxKeepsakes = 8;
     public const int DailySlots = 5;
+    public const string MagicV9 = "PBRL009";
     public const string MagicV8 = "PBRL008";
     public const string MagicV7 = "PBRL007";
     public const string MagicV6 = "PBRL006";
@@ -113,6 +116,8 @@ public sealed class Profile
     public byte[] RespectRanks = new byte[MaxRespect];
     /// <summary>Rekord stawki zawodów 8-11.</summary>
     public byte[] BestStakeHi = new byte[4];
+    /// <summary>v9: katalog usterek – rodzaje problemów 16-47 (dalszy ciąg Catalog).</summary>
+    public uint CatalogHi;
 
     public static byte[] MagicBytes(string s)
     {
@@ -176,6 +181,7 @@ public sealed class Profile
         b[131] = ClassWinsHi;
         RespectRanks.CopyTo(b, 132);
         BestStakeHi.CopyTo(b, 148);
+        BinaryPrimitives.WriteUInt32LittleEndian(b.AsSpan(152), CatalogHi);
         return b;
     }
 
@@ -228,6 +234,7 @@ public sealed class Profile
             ClassWinsHi = b[131],
             RespectRanks = b.Slice(132, MaxRespect).ToArray(),
             BestStakeHi = b.Slice(148, 4).ToArray(),
+            CatalogHi = BinaryPrimitives.ReadUInt32LittleEndian(b[152..]),
         };
         for (var i = 0; i < DailySlots; i++)
         {

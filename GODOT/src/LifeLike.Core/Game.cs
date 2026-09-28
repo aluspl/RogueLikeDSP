@@ -9,7 +9,11 @@ namespace LifeLike.Core;
 /// </summary>
 public sealed partial class Game
 {
-    public const int MaxEnemies = 12;
+    /// <summary>v0.21.49: 12 z etapu (z bossem i wezwanymi) + miejsce na podziały.</summary>
+    public const int MaxEnemies = 16;
+    /// <summary>Rodzaje problemów (katalog: 16 + 32 bity w profilu).</summary>
+    public const int MaxEnemyTypes = 48;
+    public const int MaxStages = 12;
     public const int MaxPickups = 10;
     public const int LogLines = 3;
     public const int FovRadius = 7;
@@ -37,7 +41,7 @@ public sealed partial class Game
     public int DefBonus, DmgBonus;
     public int Turns, Kills, Score;
     /// <summary>Pokonane problemy wg rodzaju (zakładka Usterki).</summary>
-    public readonly byte[] KillsByType = new byte[16];
+    public readonly byte[] KillsByType = new byte[MaxEnemyTypes];
     public int StageDamage;
     public int StageKills;
     public int StageStartTurn;
@@ -123,7 +127,7 @@ public sealed partial class Game
     public bool Daily;
     public ushort DailyDay;
     /// <summary>Tury na każdym etapie (harmonogram domu po wygranej).</summary>
-    public readonly ushort[] StageDays = new ushort[8];
+    public readonly ushort[] StageDays = new ushort[MaxStages];
     // v0.21.49: Respekt za etapy, reszty procentów obrażeń, Druga szansa
     /// <summary>Respekt zdobyty w tej budowie (profil: Meta.BankCounters).</summary>
     public int Respect;
@@ -131,6 +135,10 @@ public sealed partial class Game
     public int DmgCarry, TakenCarry;
     /// <summary>Druga szansa zużyta.</summary>
     public bool SecondUsed;
+    // v0.21.49 (część 2): wybuch po usunięciu problemu (czerwone pola), strzały z dystansu (efekty warstwy Godota)
+    public sbyte BlastX = -1, BlastY = -1, BlastTimer, BlastDmg;
+    /// <summary>Bitmaska: którzy wrogowie strzelili w tej turze (warstwa prezentacji czyta i zeruje).</summary>
+    public uint ShotEvents;
 
     public Game(GameData data)
     {
@@ -295,7 +303,8 @@ public sealed partial class Game
 
     public int CritPct() => D.CritBasePct + D.CritPerLuckPct * Luck() + TraitBonus(TraitEffect.Crit) + Bonus.Crit;
 
-    public int SightRadius() => FovRadius + TraitBonus(TraitEffect.Sight) + Bonus.Sight;
+    /// <summary>Pole widzenia; pył (akt III) zmniejsza, najmniej 3.</summary>
+    public int SightRadius() => Math.Max(3, FovRadius + TraitBonus(TraitEffect.Sight) + Bonus.Sight - DustSight());
 
     /// <summary>Pojemność termosu (+ uprawnienia i pamiątka).</summary>
     public int ThermosCap() => D.ThermosCapacity + Bonus.Thermos + GearBonus(GearStat.Thermos);
@@ -550,6 +559,9 @@ public sealed partial class Game
         GuardTurns = 0;
         AllyTurns = 0;
         AllyX = AllyY = -1;
+        BlastTimer = 0;
+        BlastX = BlastY = -1;
+        ShotEvents = 0;
         Array.Fill(Fov, Sight.Unknown);
         var sd = D.Stages[Stage];
         var first = Lv.Rooms[0];

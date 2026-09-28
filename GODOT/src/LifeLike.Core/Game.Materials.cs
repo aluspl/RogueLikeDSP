@@ -29,7 +29,7 @@ public sealed partial class Game
         {
             for (var x = Hero.X - reach; x <= Hero.X + reach; ++x)
             {
-                if (Puddle(x, y)) return true;
+                if (Puddle(x, y) || Mud(x, y)) return true; // Kładka działa też na błoto
             }
         }
         return false;

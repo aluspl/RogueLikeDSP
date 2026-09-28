@@ -63,6 +63,7 @@ public static class GoldenSnapshot
         K("bridges", "[" + string.Join(",", Enumerable.Range(0, g.Bridges).Select(i => Arr([g.BridgeX[i], g.BridgeY[i]]))) + "]");
         K("daily", Arr([g.Daily ? 1 : 0, g.DailyDay]));
         K("stageDays", Arr(g.StageDays.Select(x => (int)x)));
+        K("blast", Arr([g.BlastX, g.BlastY, g.BlastTimer, g.BlastDmg, g.GustIn(), g.GustDir()]));
         K("offer", Arr([g.OfferSlot, g.OfferRarity, g.OfferTrait]));
         K("respect", Arr([g.Respect, g.StageRespect(), g.DmgCarry, g.TakenCarry, g.SecondUsed ? 1 : 0, g.DodgePct(), g.CoffeeHeal(),
             g.Bonus.GearSlots, g.Bonus.Tools]));
@@ -86,7 +87,7 @@ public static class GoldenSnapshot
         K("map", "[" + string.Join(",", map) + "]");
         K("fov", "[" + string.Join(",", fov) + "]");
         K("enemies", "[" + string.Join(",", g.Enemies.Take(g.EnemiesCount).Select(e =>
-            Arr([e.DefId, e.X, e.Y, e.Hp, e.MaxHp, e.Alive ? 1 : 0, e.Awake ? 1 : 0, e.Stun]))) + "]");
+            Arr([e.DefId, e.X, e.Y, e.Hp, e.MaxHp, e.Alive ? 1 : 0, e.Awake ? 1 : 0, e.Stun, e.Flags, e.Grow, e.Timer]))) + "]");
         K("pickups", "[" + string.Join(",", g.Pickups.Take(g.PickupsCount).Select(p =>
             Arr([p.X, p.Y, (int)p.Type, p.Active ? 1 : 0, p.Arg, p.Trait]))) + "]");
         K("walls", "[" + string.Join(",", g.Walls.Take(g.WallsCount).Select(w => Arr([w.X, w.Y, w.Turns]))) + "]");
@@ -102,6 +103,6 @@ public static class GoldenSnapshot
         $"\"killsTotal\":{p.KillsTotal},\"powersTotal\":{p.PowersTotal},\"brandTotal\":{p.BrandTotal},\"cleanBosses\":{p.CleanBosses}," +
         $"\"contracts\":{p.Contracts},\"keepsake\":{p.Keepsake},\"brigade\":{p.Brigade},\"investor\":{p.Investor},\"bestStake\":{Arr(p.BestStake.Select(x => (int)x))},\"keepsakeRuns\":{Arr(p.KeepsakeRuns.Select(x => (int)x))}," +
         $"\"daily\":{Arr([p.DailyWon, p.DailyRuns])},\"dailyDay\":{Arr(p.DailyDay.Select(x => (int)x))},\"dailyScore\":{Arr(p.DailyScore)}," +
-        $"\"respect\":{Arr([p.Respect, p.RespectTotal, p.RunRespect, p.Rewards, p.ClassWinsHi])}," +
+        $"\"respect\":{Arr([p.Respect, p.RespectTotal, p.RunRespect, p.Rewards, p.ClassWinsHi])},\"catalogHi\":{p.CatalogHi}," +
         $"\"sram\":\"{Convert.ToHexString(p.ToBytes()).ToLowerInvariant()}\"}}";
 }

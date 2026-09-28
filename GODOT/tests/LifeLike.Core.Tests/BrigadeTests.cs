@@ -143,7 +143,7 @@ public class BrigadeTests
         Profile.MagicBytes(Profile.MagicV5).CopyTo(raw, 0);
         for (var i = Profile.V5Size; i < raw.Length; i++) raw[i] = 0xEE; // śmieci
         var v5 = Profile.FromBytes(raw);
-        Assert.True(Meta.ProfileFix(D, v5) && v5.MagicIs(Profile.MagicV8));
+        Assert.True(Meta.ProfileFix(D, v5) && v5.MagicIs(Profile.MagicV9));
         Assert.True(v5.Best == 4321 && v5.RunClean == 3 && v5.Xp == 99 && v5.Brigade == 0 && v5.Investor == 0);
         Assert.All(v5.BestStake, b => Assert.Equal(0, b));
     }

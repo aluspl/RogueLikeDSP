@@ -124,6 +124,7 @@ public class PathsMaterialsDailyTests
 
         var br = D.Repairs[bridge];
         var dry = TestData.Arena(1);
+        dry.Stage = 4; // akt II: bez błota (Kładka działa też na błoto)
         dry.Mats[br.Material] = 3;
         Assert.True(dry.RepairBlocked(bridge) == RepairBlock.NoPuddle && !dry.PlayerRepair(bridge));
         var r = TestData.Arena(1);
@@ -198,7 +199,7 @@ public class PathsMaterialsDailyTests
         var bytes = v6.ToBytes();
         for (var i = Profile.V6Size; i < bytes.Length; i++) bytes[i] = 0xEE;
         var p = Profile.FromBytes(bytes);
-        Assert.True(Meta.ProfileFix(D, p) && p.MagicIs(Profile.MagicV8) && p.Best == 321 && p.Investor == 5 && p.BestStake[2] == 4);
+        Assert.True(Meta.ProfileFix(D, p) && p.MagicIs(Profile.MagicV9) && p.Best == 321 && p.Investor == 5 && p.BestStake[2] == 4);
         Assert.True(p.DailyY == 0 && p.DailyRuns == 0 && p.DailyWon == 0 && p.DailyDay.All(x => x == 0) && p.DailyScore.All(x => x == 0));
         var c = Meta.NewProfile(D);
         c.Xp = 10;

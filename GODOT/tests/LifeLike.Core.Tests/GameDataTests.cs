@@ -10,18 +10,27 @@ public class GameDataTests
     {
         Assert.Equal(9, D.Classes.Length);
         Assert.Equal(17, D.Weapons.Length);
-        Assert.Equal(12, D.Enemies.Length);
-        Assert.Equal(8, D.Stages.Length);
+        Assert.Equal(32, D.Enemies.Length);
+        Assert.Equal(10, D.Stages.Length);
         Assert.Equal(1, D.StartToolsMask);
         Assert.Equal(19, D.StartClassesMask);
         Assert.Equal(32, D.DmgLevelsMask);
         Assert.Equal(8, D.DefLevelsMask);
         Assert.Equal(5, D.MaxHeroLevel);
         Assert.Equal([40, 5, 5, 15, 35], D.DropWeights);
-        Assert.Equal(new[] { 0, 3 }, D.Stages[0].Pool);
-        Assert.Equal(9, D.Stages[2].Boss);
+        Assert.Equal(new[] { 12, 13, 0, 3 }, D.Stages[0].Pool);
+        Assert.Equal(9, D.Stages[3].Boss);
         Assert.Equal(-1, D.Stages[0].Boss);
-        Assert.Equal(11, D.Stages[5].Boss); // v0.21.46: Inspekcja Pracy w środku aktu III
+        Assert.Equal(11, D.Stages[7].Boss); // v0.21.46: Inspekcja Pracy w środku aktu III
+        // v0.21.49 cz. 2: zachowania problemów (bity jak w gen_data.py), mechaniki aktów
+        Assert.Equal(Behavior.Splits, D.Enemies[12].Tags);
+        Assert.Equal(Behavior.Stationary | Behavior.Pushes, D.Enemies[D.EnemyIndex("krzywy_mur")].Tags);
+        Assert.Equal(Behavior.Ranged | Behavior.Flees, D.Enemies[D.EnemyIndex("mostek")].Tags);
+        Assert.Equal(0, D.Enemies[0].Tags);
+        Assert.True(D.Acts[0].Mechanic == ActMechanic.Mud && D.Acts[1].Mechanic == ActMechanic.Gust && D.Acts[2].Mechanic == ActMechanic.Dust);
+        Assert.True(D.Acts[0].MechValue == 7 && D.Acts[1].MechValue == 6 && D.Acts[2].MechValue == 2);
+        Assert.True(D.BehaviorRangedReach == 3 && D.BehaviorPushCooldown == 3 && D.BehaviorBlastDelay == 2 && D.BehaviorNames[3] == "wybucha");
+        Assert.Equal(0x7F, D.Weather[D.Weather.Length - 1].StagesMask); // deszcz: etapy 1-7
         Assert.True(D.Enemies[11].Shape == SlamShape.Cross && D.Enemies[11].Summon == 4 && D.Enemies[11].SummonMax == 2);
         Assert.True(D.Enemies[11].GearStun == 2 && D.Enemies[11].RewardCash == 60 && D.Enemies[11].RewardTitle == "Protokół bez uwag");
         Assert.True(D.Enemies[9].Shape == SlamShape.Square && D.Enemies[9].Summon == -1 && D.Enemies[9].SlamName == "");

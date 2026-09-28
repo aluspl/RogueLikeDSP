@@ -79,6 +79,15 @@ public sealed partial class Game
         LastTarget = ei;
         AddHit(e.X, e.Y, dmg, false, crit ? HitKind.Crit : HitKind.Normal);
         TurnEvents |= 1u << ei;
+        if (e.Hp <= 0 && ei != Boss && (ed.Tags & Behavior.Returns) != 0 && (e.Flags & ActorFlag.Returned) == 0) // wraca raz
+        {
+            e.Alive = false;
+            e.Hp = 0;
+            e.Flags = (byte)(e.Flags | ActorFlag.Returned | ActorFlag.Reviving);
+            e.Timer = (sbyte)D.BehaviorReturnTurns;
+            Push(Msg(ed.Name).Add(" - wróci za ").Add(D.BehaviorReturnTurns).Add(" t.!").As(LogKind.Bad));
+            return;
+        }
         if (e.Hp <= 0)
         {
             e.Alive = false;
@@ -91,6 +100,8 @@ public sealed partial class Game
             GainXp(D.XpPerKill);
             MaybeDrop(e.X, e.Y);
             Push(Msg(ed.Name).Add(" - usunięto!").As(LogKind.Good));
+            if ((ed.Tags & Behavior.Explodes) != 0) ArmBlast(e.X, e.Y, ed);
+            if ((ed.Tags & Behavior.Splits) != 0 && (e.Flags & ActorFlag.Child) == 0) Split(ei);
             if (D.Materials.Length > 0)
             {
                 if (ei == Boss) // boss: po kilka sztuk każdego materiału
@@ -155,6 +166,7 @@ public sealed partial class Game
         if (ShockedTurn()) return true;
         int nx = Hero.X + dx, ny = Hero.Y + dy;
         var ei = EnemyAt(nx, ny);
+        var stuck = false;
         if (ei >= 0)
         {
             HeroAttack(ei);
@@ -180,12 +192,18 @@ public sealed partial class Game
             {
                 ApplyStatus(StatusEffect.Slip, 2);
             }
+            if (Mud(Hero.X, Hero.Y) && !Puddle(Hero.X, Hero.Y)) // akt I: błoto – grzęźniesz, tura przepada
+            {
+                stuck = true;
+                Push(Msg("Błoto! Grzęźniesz - tura stracona").As(LogKind.Bad));
+            }
         }
         else
         {
             return false;
         }
         EndTurn();
+        if (stuck && St == GameStatus.Playing) EndTurn();
         return true;
     }
 
@@ -497,29 +515,34 @@ public sealed partial class Game
         }
         // Termin: porusza się co drugą turę, poniżej połowy HP przyspiesza
         if (i == Boss && e.Hp * 2 > e.MaxHp && (Turns & 1) != 0) return;
+        var tg = ed.Tags;
+        if ((tg & Behavior.Grows) != 0) GrowTick(i);
+        if (e.Timer > 0) --e.Timer; // odnowienie ucieczki / łatania
         var manh = Math.Abs(e.X - Hero.X) + Math.Abs(e.Y - Hero.Y);
-        if (manh == 1)
+        if ((tg & Behavior.Heals) != 0 && manh != 1 && e.Timer == 0 && HealNear(i))
         {
-            if (DodgePct() > 0 && R.Range(1, 100) <= DodgePct()) // szczęście: unik
-            {
-                AddHit(Hero.X, Hero.Y, 0, true, HitKind.Dodge);
-                Push(Msg("Unik! ").Add(ed.Name).Add(" chybia").As(LogKind.Good));
-                return;
-            }
-            var dmg = TakenDamage(R.Range(ed.MinDamage, ed.MaxDamage) + EnemyDmgBonus() - HeroDefense() / 2);
-            Hero.Hp = (short)(Hero.Hp - dmg);
-            StageDamage += dmg;
-            HeroHit = true;
-            AddHit(Hero.X, Hero.Y, dmg, true);
-            Push(Msg(ed.Name).Add(": -").Add(dmg).Add(" HP").As(LogKind.Bad));
-            if (ed.OnHit != StatusEffect.None && Hero.Hp > 0 && R.Range(1, 100) <= ed.StatusChance)
-                ApplyStatus(ed.OnHit, ed.StatusTurns);
-            if (EventActive(EventEffect.Rain) && Hero.Hp > 0 && R.Range(1, 100) <= D.SiteEvents[StageEvent].Value)
-                ApplyStatus(StatusEffect.Slip, 2); // Ulewa w nocy: błoto na placu
-            if (Hero.Hp <= 0) HeroDown();
+            e.Timer = (sbyte)D.BehaviorHealEvery;
             return;
         }
+        if ((tg & Behavior.Flees) != 0 && manh == 1 && e.Timer == 0 && FleeStep(i))
+        {
+            e.Timer = (sbyte)D.BehaviorFleeCooldown;
+            return;
+        }
+        if (manh == 1)
+        {
+            EnemyStrike(i, false);
+            return;
+        }
+        if ((tg & Behavior.Ranged) != 0 && ShotLine(e.X, e.Y))
+        {
+            ShotEvents |= 1u << i;
+            EnemyStrike(i, true);
+            return;
+        }
+        if ((tg & Behavior.Stationary) != 0) return;
         if (WeatherIs(WeatherEffect.Frost) && i != Boss && Turns % WDef.Value == 0) return; // mróz: problemy stoją
+        if ((tg & Behavior.Ranged) != 0 && RangedStep(i)) return;
         int dx = Math.Sign(Hero.X - e.X), dy = Math.Sign(Hero.Y - e.Y);
         var xfirst = Math.Abs(Hero.X - e.X) >= Math.Abs(Hero.Y - e.Y);
         Span<int> tries = [xfirst ? dx : 0, xfirst ? 0 : dy, xfirst ? 0 : dx, xfirst ? dy : 0];
@@ -585,6 +608,40 @@ public sealed partial class Game
                 Push(Msg("Unik! Cios poszedł obok").As(LogKind.Good));
             }
             SlamX = SlamY = -1;
+        }
+        if (BlastTimer > 0 && --BlastTimer == 0 && St == GameStatus.Playing) // wybuch po usuniętym problemie
+        {
+            if (Cheb(Hero.X, Hero.Y, BlastX, BlastY) <= D.BehaviorBlastRadius)
+            {
+                var dmg = TakenDamage(BlastDmg - HeroDefense() / 2);
+                Hero.Hp = (short)(Hero.Hp - dmg);
+                StageDamage += dmg;
+                HeroHit = true;
+                AddHit(Hero.X, Hero.Y, dmg, true);
+                Push(Msg("Wybuch: -").Add(dmg).Add(" HP").As(LogKind.Bad));
+                if (Hero.Hp <= 0) HeroDown();
+            }
+            else
+            {
+                Push(Msg("Wybuch obok - uff!").As(LogKind.Good));
+            }
+            BlastX = BlastY = -1;
+        }
+        if (St == GameStatus.Playing && ActIs(ActMechanic.Gust)) GustTick(); // akt II: porywy wiatru
+        for (var i = 0; i < EnemiesCount && St == GameStatus.Playing; ++i) // „wraca raz”: powrót po kilku turach
+        {
+            ref var e = ref Enemies[i];
+            if (e.Alive || (e.Flags & ActorFlag.Reviving) == 0 || --e.Timer > 0) continue;
+            if (Occupied(e.X, e.Y))
+            {
+                e.Timer = 1;
+                continue;
+            }
+            e.Alive = true;
+            e.Awake = true;
+            e.Hp = (short)Math.Max(1, e.MaxHp * D.BehaviorReturnHpPct / 100);
+            e.Flags = (byte)(e.Flags & ~ActorFlag.Reviving);
+            Push(Msg(D.Enemies[e.DefId].Name).Add(" wraca!").As(LogKind.Bad));
         }
         if (St == GameStatus.Playing)
         {

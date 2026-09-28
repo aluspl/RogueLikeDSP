@@ -62,6 +62,9 @@ public static class StateDigest
             f.Add(e.Alive ? 1 : 0);
             f.Add(e.Awake ? 1 : 0);
             f.Add(e.Stun);
+            f.Add(e.Flags); // v0.21.49 cz. 2: zachowania problemów
+            f.Add(e.Grow);
+            f.Add(e.Timer);
         }
         f.Add(g.PickupsCount);
         for (var i = 0; i < g.PickupsCount; i++)
@@ -138,6 +141,14 @@ public static class StateDigest
         f.Add(g.DmgCarry);
         f.Add(g.TakenCarry);
         f.Add(g.SecondUsed ? 1 : 0);
+        // v0.21.49 cz. 2: wybuch, porywy (kolejny poryw), pole widzenia z pyłem
+        f.Add(g.BlastX);
+        f.Add(g.BlastY);
+        f.Add(g.BlastTimer);
+        f.Add(g.BlastDmg);
+        f.Add(g.GustIn());
+        f.Add(g.SightRadius());
+        foreach (var k in g.KillsByType) f.Add(k);
         return f.H;
     }
 }

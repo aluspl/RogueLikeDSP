@@ -139,6 +139,23 @@ public sealed class GameData
     /// <summary>Zawody odblokowywane tylko nagrodą za odbiór.</summary>
     public int RewardClassesMask { get; private init; }
 
+    // v0.21.49 (część 2): zachowania problemów (sekcja "behaviorParams"), nazwy zachowań (indeks = bit)
+    public int BehaviorRangedReach { get; private init; } = 3;
+    public int BehaviorSplitHpPct { get; private init; } = 50;
+    public int BehaviorHealValue { get; private init; } = 3;
+    public int BehaviorHealEvery { get; private init; } = 2;
+    public int BehaviorBlastDamage { get; private init; } = 4;
+    public int BehaviorBlastRadius { get; private init; } = 1;
+    public int BehaviorBlastDelay { get; private init; } = 2;
+    public int BehaviorGrowEvery { get; private init; } = 4;
+    public int BehaviorGrowHp { get; private init; } = 2;
+    public int BehaviorGrowMax { get; private init; } = 4;
+    public int BehaviorFleeCooldown { get; private init; } = 3;
+    public int BehaviorReturnTurns { get; private init; } = 4;
+    public int BehaviorReturnHpPct { get; private init; } = 50;
+    public int BehaviorPushCooldown { get; private init; } = 3;
+    public string[] BehaviorNames { get; private init; } = Behavior.Ids;
+
     public int MaxHeroLevel => LevelThresholds.Length + 1;
     public int GearSlotsCount => GearSlots.Length;
     public int GearTraitsCount => GearTraits.Length;
@@ -213,7 +230,8 @@ public sealed class GameData
                 Int(e, "gearStun", 0),
                 hasReward ? Int(rw, "cash", 0) : 0,
                 hasReward ? Str(rw, "title", "") : "",
-                e.TryGetProperty("material", out var em) ? Lookup(mid, em.GetString() ?? "", "materiał") : -1);
+                e.TryGetProperty("material", out var em) ? Lookup(mid, em.GetString() ?? "", "materiał") : -1,
+                BehaviorTags(e));
         }).ToArray();
         foreach (var e in enemies)
         {
@@ -264,7 +282,10 @@ public sealed class GameData
         var storyStages = story.GetProperty("stages").EnumerateArray().Select(Story).ToArray();
         Require(storyStages.Length == stages.Length, "fabuła: tyle wiadomości, ile etapów");
 
-        var acts = d.GetProperty("acts").EnumerateArray().Select(a => new ActDef(Str(a, "name"), Int(a, "bonusPerStage"), Int(a, "bonusPerKill"))).ToArray();
+        var acts = d.GetProperty("acts").EnumerateArray().Select(a => a.TryGetProperty("mechanic", out var mc)
+            ? new ActDef(Str(a, "name"), Int(a, "bonusPerStage"), Int(a, "bonusPerKill"), ParseEnum<ActMechanic>(Str(mc, "effect")), Int(mc, "value", 0),
+                Str(mc, "name", ""), Str(mc, "short", ""), Str(mc, "info", ""))
+            : new ActDef(Str(a, "name"), Int(a, "bonusPerStage"), Int(a, "bonusPerKill"))).ToArray();
         for (var ai = 0; ai < acts.Length; ai++)
         {
             var last = Array.FindLastIndex(stages, s => s.Act == ai);
@@ -284,7 +305,7 @@ public sealed class GameData
         var badgesJson = d.GetProperty("badges").EnumerateArray().ToArray();
         var badges = badgesJson.Select(b => new BadgeDef(Str(b, "id"), Str(b, "name"), Str(b, "desc"), Int(b, "xp"),
             b.TryGetProperty("perk", out var pk) ? new Perk(ParsePerk(Str(pk, "effect")), Int(pk, "value")) : new Perk(PerkEffect.Unknown, 0))).ToArray();
-        Require(badges.Length <= 16 && enemies.Length <= 16, "maks. 16 odznak i 16 rodzajów wrogów");
+        Require(badges.Length <= 16 && enemies.Length <= Game.MaxEnemyTypes, "maks. 16 odznak i 48 rodzajów wrogów");
         var bid = Index(badgesJson);
         // pamiątki i zlecenia (od v0.21.43; starsze dane – puste listy)
         var keepsakesJson = d.TryGetProperty("keepsakes", out var ksj) ? ksj.GetProperty("list").EnumerateArray().ToArray() : [];
@@ -463,6 +484,10 @@ public sealed class GameData
 
         int BadgeIdx(string id) => Array.FindIndex(badges, b => b.Id == id);
         var hasDaily = d.TryGetProperty("daily", out var dj);
+        var hasBp = d.TryGetProperty("behaviorParams", out var bpj);
+        var behaviorNames = d.TryGetProperty("behaviorNames", out var bnj)
+            ? Behavior.Ids.Select(id => Str(bnj, id, id)).ToArray()
+            : Behavior.Ids;
         var hasSchedule = d.TryGetProperty("schedule", out var scj);
         var difficultiesJson = d.GetProperty("difficulties").EnumerateArray().ToArray();
 
@@ -573,7 +598,35 @@ public sealed class GameData
             GearRewardMask = gearReward,
             GearBaseMask = gearBase,
             RewardClassesMask = rewardClasses,
+            BehaviorRangedReach = hasBp ? Int(bpj, "rangedReach", 3) : 3,
+            BehaviorSplitHpPct = hasBp ? Int(bpj, "splitHpPct", 50) : 50,
+            BehaviorHealValue = hasBp ? Int(bpj, "healValue", 3) : 3,
+            BehaviorHealEvery = hasBp ? Int(bpj, "healEvery", 2) : 2,
+            BehaviorBlastDamage = hasBp ? Int(bpj, "blastDamage", 4) : 4,
+            BehaviorBlastRadius = hasBp ? Int(bpj, "blastRadius", 1) : 1,
+            BehaviorBlastDelay = hasBp ? Int(bpj, "blastDelay", 2) : 2,
+            BehaviorGrowEvery = hasBp ? Int(bpj, "growEvery", 4) : 4,
+            BehaviorGrowHp = hasBp ? Int(bpj, "growHp", 2) : 2,
+            BehaviorGrowMax = hasBp ? Int(bpj, "growMax", 4) : 4,
+            BehaviorFleeCooldown = hasBp ? Int(bpj, "fleeCooldown", 3) : 3,
+            BehaviorReturnTurns = hasBp ? Int(bpj, "returnTurns", 4) : 4,
+            BehaviorReturnHpPct = hasBp ? Int(bpj, "returnHpPct", 50) : 50,
+            BehaviorPushCooldown = hasBp ? Int(bpj, "pushCooldown", 3) : 3,
+            BehaviorNames = behaviorNames,
         };
+    }
+
+    // Zachowania problemu: lista "behaviors" -> bitmaska (nieznane ignorowane - nowsza wersja danych).
+    private static int BehaviorTags(JsonElement e)
+    {
+        if (!e.TryGetProperty("behaviors", out var b)) return 0;
+        var tags = 0;
+        foreach (var x in b.EnumerateArray())
+        {
+            var i = Array.IndexOf(Behavior.Ids, x.GetString() ?? "");
+            if (i >= 0) tags |= 1 << i;
+        }
+        return tags;
     }
 
     private static StoryMsg Story(JsonElement m)

@@ -11,7 +11,7 @@ public static class Meta
     public static void ProfileReset(GameData d, Profile p)
     {
         var fresh = Profile.FromBytes(new byte[Profile.Size]);
-        fresh.Magic = Profile.MagicBytes(Profile.MagicV8);
+        fresh.Magic = Profile.MagicBytes(Profile.MagicV9);
         fresh.Classes = (byte)d.StartClassesMask;
         DefaultKeepsake(d, fresh);
         CopyInto(fresh, p);
@@ -83,6 +83,26 @@ public static class Meta
         dst.ClassWinsHi = copy.ClassWinsHi;
         dst.RespectRanks = copy.RespectRanks;
         dst.BestStakeHi = copy.BestStakeHi;
+        dst.CatalogHi = copy.CatalogHi;
+    }
+
+    // ------------------------------------------------------------------ katalog usterek (rodzaje 0-15 w Catalog, 16-47 w CatalogHi)
+    public static bool CatalogHas(Profile p, int d) => d < 16 ? ((p.Catalog >> d) & 1) != 0 : ((p.CatalogHi >> (d - 16)) & 1) != 0;
+
+    public static void CatalogAdd(Profile p, int d)
+    {
+        if (d < 16) p.Catalog = (ushort)(p.Catalog | (1u << d));
+        else p.CatalogHi |= 1u << (d - 16);
+    }
+
+    public static int CatalogCount(GameData d, Profile p)
+    {
+        var n = 0;
+        for (var e = 0; e < d.Enemies.Length; ++e)
+        {
+            if (CatalogHas(p, e)) n++;
+        }
+        return n;
     }
 
     // ------------------------------------------------------------------ nagrody za odbiór
@@ -184,8 +204,17 @@ public static class Meta
     /// <summary>Naprawia wczytany profil. Zwraca true, jeśli trzeba go zapisać (migracja albo pusta pamięć).</summary>
     public static bool ProfileFix(GameData d, Profile p)
     {
-        if (p.MagicIs(Profile.MagicV8)) return ClampLevels(d, p);
-        // v7/v6/v5/v4/v3/v2 -> v8: stare pola zostają, nowe od zera (jak memset od profile_v7_size / v6 / ...);
+        if (p.MagicIs(Profile.MagicV9)) return ClampLevels(d, p);
+        if (p.MagicIs(Profile.MagicV8)) // v8 -> v9: katalog 16-47 od zera
+        {
+            var b8 = p.ToBytes();
+            Array.Clear(b8, Profile.V8Size, b8.Length - Profile.V8Size);
+            CopyInto(Profile.FromBytes(b8), p);
+            p.Magic = Profile.MagicBytes(Profile.MagicV9);
+            ClampLevels(d, p);
+            return true;
+        }
+        // v7/v6/v5/v4/v3/v2 -> v9: stare pola zostają, nowe od zera (jak memset od profile_v7_size / v6 / ...);
         // bez wybranej pamiątki – pierwsza odblokowana
         var keep = p.MagicIs(Profile.MagicV7) ? Profile.V7Size
             : p.MagicIs(Profile.MagicV6) ? Profile.V6Size
@@ -197,7 +226,7 @@ public static class Meta
             var b = p.ToBytes();
             Array.Clear(b, keep, b.Length - keep);
             CopyInto(Profile.FromBytes(b), p);
-            p.Magic = Profile.MagicBytes(Profile.MagicV8);
+            p.Magic = Profile.MagicBytes(Profile.MagicV9);
             DefaultKeepsake(d, p);
             ClampLevels(d, p);
             MigrateV8(d, p);
@@ -634,7 +663,7 @@ public static class Meta
         BankCounters(p, g);
         for (var e = 0; e < d.Enemies.Length; ++e)
         {
-            if (g.KillsByType[e] != 0) p.Catalog = (ushort)(p.Catalog | (1u << e));
+            if (g.KillsByType[e] != 0) CatalogAdd(p, e);
         }
         p.ToolsFound = (byte)(p.ToolsFound | g.ToolsFound);
         if (g.St == GameStatus.Won) SetClassWon(p, g.Cls);
@@ -661,7 +690,7 @@ public static class Meta
         Set(d.BadgeTwardziel, won && g.Diff == d.Difficulties.Length - 1);
         Set(d.BadgePelnyZespol, ClassesWon(d, p) == d.Classes.Length);
         Set(d.BadgeKolekcjoner, (p.ToolsFound & allTools) == allTools);
-        Set(d.BadgeKatalog, p.Catalog == (1 << d.Enemies.Length) - 1);
+        Set(d.BadgeKatalog, CatalogCount(d, p) == d.Enemies.Length);
         Set(d.BadgeOsiedle, p.HousesCount >= 5);
         var got = 0;
         for (var i = 0; i < d.Badges.Length; ++i)

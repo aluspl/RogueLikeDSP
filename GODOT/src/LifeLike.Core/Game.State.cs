@@ -42,6 +42,9 @@ public sealed partial class Game
         w.Write(a.Alive);
         w.Write(a.Awake);
         w.Write(a.Stun);
+        w.Write(a.Flags);
+        w.Write(a.Grow);
+        w.Write(a.Timer);
     }
 
     private static Actor ReadActor(BinaryReader r) => new()
@@ -54,6 +57,9 @@ public sealed partial class Game
         Alive = r.ReadBoolean(),
         Awake = r.ReadBoolean(),
         Stun = r.ReadSByte(),
+        Flags = r.ReadByte(),
+        Grow = r.ReadSByte(),
+        Timer = r.ReadSByte(),
     };
 
     public void Write(BinaryWriter w)
@@ -165,6 +171,11 @@ public sealed partial class Game
         w.Write(DmgCarry);
         w.Write(TakenCarry);
         w.Write(SecondUsed);
+        w.Write(BlastX);
+        w.Write(BlastY);
+        w.Write(BlastTimer);
+        w.Write(BlastDmg);
+        w.Write(ShotEvents);
     }
 
     public void Read(BinaryReader r)
@@ -277,5 +288,10 @@ public sealed partial class Game
         DmgCarry = r.ReadInt32();
         TakenCarry = r.ReadInt32();
         SecondUsed = r.ReadBoolean();
+        BlastX = r.ReadSByte();
+        BlastY = r.ReadSByte();
+        BlastTimer = r.ReadSByte();
+        BlastDmg = r.ReadSByte();
+        ShotEvents = r.ReadUInt32();
     }
 }

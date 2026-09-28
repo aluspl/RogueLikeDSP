@@ -5,8 +5,8 @@ namespace LifeLike.Core;
 /// <summary>
 /// Deterministyczny bot z GBA/tests/core_tests.cpp (bot_step): idzie do najbliższego (po ścieżce) wroga albo schodów,
 /// atakuje z dystansu, schodzi z pól zapowiedzianego ciosu bossa w stronę celu, przy paczce sprzętu bierze lepszą
-/// (gorszą zostawia), pije z termosu poniżej BotDrinkBelowPct HP. Cel wybiera odległość po ścieżce (do 7 pól drogi;
-/// na etapie z bossem każdy problem) - z każdym krokiem maleje, więc bot nie krąży między dwoma celami.
+/// (gorszą zostawia), pije z termosu poniżej BotDrinkBelowPct HP. Cel wybiera koszt drogi (do 7 pól drogi, błoto droższe;
+/// na etapie z bossem każdy problem); omija czerwone pola ciosu bossa i wybuchu - z każdym krokiem maleje, więc bot nie krąży między dwoma celami.
 /// Używany w testach balansu, teście złotym i teście dymnym Godota.
 /// </summary>
 public static class Bot
@@ -24,24 +24,34 @@ public static class Bot
         return false;
     }
 
-    /// <summary>Odległość po ścieżce (4 kierunki, pola przechodnie) od (sx, sy) do każdego pola; -1 = nieosiągalne.</summary>
-    private static int[] Distances(Game g, int sx, int sy)
+    /// <summary>Waga pola dla bota: zwykłe 2, błoto 6 (kosztuje turę).</summary>
+    private static int W(Game g, int x, int y) => g.Mud(x, y) ? 6 : 2;
+
+    /// <summary>
+    /// Koszt drogi bota (4 kierunki, pola przechodnie) od (sx, sy) do każdego pola; -1 = nieosiągalne. Krok = waga pola,
+    /// z którego + waga pola, na które - koszt symetryczny i maleje wzdłuż drogi do celu. Bez błota = 4 x liczba kroków.
+    /// </summary>
+    private static int[] Costs(Game g, int sx, int sy)
     {
         var dist = new int[Level.W * Level.H];
         Array.Fill(dist, -1);
-        var q = new Queue<(int X, int Y)>();
-        q.Enqueue((sx, sy));
+        var q = new PriorityQueue<int, (int Cost, int Pos)>();
         dist[sy * Level.W + sx] = 0;
-        while (q.Count > 0)
+        q.Enqueue(sy * Level.W + sx, (0, sy * Level.W + sx));
+        while (q.TryDequeue(out var p, out var pr))
         {
-            var (x, y) = q.Dequeue();
+            if (pr.Cost != dist[p]) continue;
+            int x = p % Level.W, y = p / Level.W;
             for (var k = 0; k < 4; ++k)
             {
                 int nx = x + Dirs[k, 0], ny = y + Dirs[k, 1];
-                if (Open(g, nx, ny) && dist[ny * Level.W + nx] < 0)
+                if (!Open(g, nx, ny)) continue;
+                var nc = pr.Cost + W(g, x, y) + W(g, nx, ny);
+                var ni = ny * Level.W + nx;
+                if (dist[ni] < 0 || nc < dist[ni])
                 {
-                    dist[ny * Level.W + nx] = dist[y * Level.W + x] + 1;
-                    q.Enqueue((nx, ny));
+                    dist[ni] = nc;
+                    q.Enqueue(ni, (nc, ni));
                 }
             }
         }
@@ -56,13 +66,13 @@ public static class Bot
             else g.DeclineOffer();
         }
         if (g.Thermos > 0 && g.Hero.Hp * 100 < g.Hero.MaxHp * g.D.BotDrinkBelowPct && g.PlayerDrink()) return;
-        var hd = Distances(g, g.Hero.X, g.Hero.Y);
-        int tx = g.StairsX, ty = g.StairsY, best = 999;
+        var hd = Costs(g, g.Hero.X, g.Hero.Y); // koszt drogi (błoto droższe)
+        int tx = g.StairsX, ty = g.StairsY, best = 999999;
         for (var i = 0; i < g.EnemiesCount; ++i)
         {
             var e = g.Enemies[i];
             var dd = hd[e.Y * Level.W + e.X];
-            if (e.Alive && dd >= 0 && dd < best && (dd < 8 || g.StairsX < 0))
+            if (e.Alive && dd >= 0 && dd < best && (dd < 32 || g.StairsX < 0))
             {
                 best = dd;
                 tx = e.X;
@@ -70,16 +80,16 @@ public static class Bot
             }
         }
         var hasTarget = tx >= 0 && hd[ty * Level.W + tx] >= 0;
-        var td = hasTarget ? Distances(g, tx, ty) : hd;
-        if (g.SlamCell(g.Hero.X, g.Hero.Y)) // zapowiedziany cios bossa: zejdź z czerwonych pól w stronę celu
+        var td = hasTarget ? Costs(g, tx, ty) : hd;
+        if (g.DangerCell(g.Hero.X, g.Hero.Y)) // zapowiedziany cios bossa / wybuch: zejdź z czerwonych pól w stronę celu
         {
             int bk = -1, bs = -1000000;
             for (var k = 0; k < 4; ++k)
             {
                 int nx = g.Hero.X + Dirs[k, 0], ny = g.Hero.Y + Dirs[k, 1];
                 if (!g.Lv.Passable(nx, ny) || g.Occupied(nx, ny)) continue;
-                var toTarget = hasTarget && td[ny * Level.W + nx] >= 0 ? td[ny * Level.W + nx] : 500;
-                var s = (g.SlamCell(nx, ny) ? 0 : 1000) - toTarget; // najpierw pole poza zasięgiem, potem bliżej celu
+                var toTarget = hasTarget && td[ny * Level.W + nx] >= 0 ? td[ny * Level.W + nx] : 5000;
+                var s = (g.DangerCell(nx, ny) ? 0 : 10000) - toTarget; // najpierw pole poza zasięgiem, potem bliżej celu
                 if (s > bs)
                 {
                     bs = s;
@@ -101,13 +111,14 @@ public static class Bot
         for (var k = 0; k < 4; ++k) // krok na sąsiednie pole bliżej celu
         {
             int nx = g.Hero.X + Dirs[k, 0], ny = g.Hero.Y + Dirs[k, 1];
-            if (!Open(g, nx, ny) || td[ny * Level.W + nx] != td[g.Hero.Y * Level.W + g.Hero.X] - 1) continue;
+            var tn = td[ny * Level.W + nx];
+            if (!Open(g, nx, ny) || tn < 0 || tn + W(g, nx, ny) + W(g, g.Hero.X, g.Hero.Y) != td[g.Hero.Y * Level.W + g.Hero.X]) continue;
             if (!g.Lv.Passable(nx, ny)) // mur Ścianki na drodze: czekaj, aż zniknie
             {
                 g.PlayerWait();
                 return;
             }
-            if (g.SlamCell(nx, ny) && g.EnemyAt(nx, ny) < 0) // nie wchodzi na czerwone pola przed ciosem
+            if (g.DangerCell(nx, ny) && g.EnemyAt(nx, ny) < 0) // nie wchodzi na czerwone pola przed ciosem
             {
                 g.PlayerWait();
                 return;
@@ -145,12 +156,12 @@ public static class Bot
                 if (g.HelperBlocked(h) == HelperBlock.Ok && g.CallHelper(h)) return;
             }
         }
-        if (!g.SlamCell(g.Hero.X, g.Hero.Y) && g.AbilityCd == 0)
+        if (!g.DangerCell(g.Hero.X, g.Hero.Y) && g.AbilityCd == 0)
         {
             var t = g.NearestVisibleEnemy();
             if (t >= 0 && Game.Cheb(g.Hero.X, g.Hero.Y, g.Enemies[t].X, g.Enemies[t].Y) <= 2 && g.PlayerAbility()) return;
         }
-        if (!g.SlamCell(g.Hero.X, g.Hero.Y))
+        if (!g.DangerCell(g.Hero.X, g.Hero.Y))
         {
             Span<sbyte> targets = stackalloc sbyte[Game.MaxEnemies];
             var n = g.TargetsInRange(targets);
