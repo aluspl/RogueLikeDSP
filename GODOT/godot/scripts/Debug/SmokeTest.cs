@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Godot;
 using LifeLike.Core;
@@ -32,6 +33,7 @@ public sealed class SmokeTest
     private bool _stats, _help, _damage;
     private int _tutorial, _unlocks, _docs, _phases;
     private bool _act0;
+    private int _boons, _boonList;
 
     public SmokeTest(App app) => _app = app;
 
@@ -73,13 +75,14 @@ public sealed class SmokeTest
             await ExerciseStatsAndHelp();
             await ExerciseDamageRun();
             if (!_pathOk) throw new Exception("wybór ścieżki: druga oferta nie trafiła na etap");
+            if (_boons == 0 || _boonList == 0) throw new Exception($"premie po etapie: wybrane {_boons}, lista w telefonie {_boonList}");
             await ExercisePortrait();
             var missing = Sfx.Missing();
             if (missing.Length > 0) throw new Exception("brak dźwięków: " + missing);
             if (DrawErrors.Count > 0) throw new Exception($"błędy rysowania: {DrawErrors.Count}, ostatni: {DrawErrors.Last}");
             GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {s.Data.Version}, zawody {s.Data.Classes.Length}, etap {stage + 1}, " +
                      $"dzień {g.Turns}, HP {g.Hero.Hp}/{g.Hero.MaxHp}, wynik {g.Score}, budżet {g.Cash}, kroki {_steps}, " +
-                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, rozpiska obrażeń {(_damage ? "tak" : "nie")}, samouczek {_tutorial} dymków + nowości {_unlocks}, Akt 0 {(_act0 ? "tak" : "nie")} (dokumenty {_docs}, druga faza {_phases}), Jak grać {(_help ? "tak" : "nie")}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
+                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, rozpiska obrażeń {(_damage ? "tak" : "nie")}, samouczek {_tutorial} dymków + nowości {_unlocks}, Akt 0 {(_act0 ? "tak" : "nie")} (dokumenty {_docs}, druga faza {_phases}), premie {_boons} (lista {_boonList}, synergie {g.SynergyMask()}), Jak grać {(_help ? "tak" : "nie")}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
                      $"ekran {Flow.Current.GetType().Name}");
             _app.Root.GetTree().Quit(ok ? 0 : 1);
         }
@@ -207,6 +210,44 @@ public sealed class SmokeTest
         await DebugRunner.Frames(_app.Root, 2);
     }
 
+    /// <summary>
+    /// Premia 1 z 3 po etapie (v0.21.50 cz. 2): strzałka zmienia kartę, R losuje raz (budżet), Enter bierze premię,
+    /// potem harmonogram; za pierwszym razem telefon > Sprzęt > R = lista premii i synergii (strzałka: synergie).
+    /// </summary>
+    private async Task ExerciseBoons()
+    {
+        var g = _app.Session.Game;
+        var page = Flow.Boons.Page;
+        if (page is null || !g.HasBoonOffer) throw new Exception("premia po etapie: brak oferty");
+        if (_boons == 0)
+        {
+            g.Cash = Math.Max(g.Cash, g.D.BoonRerollCost);
+            var before = g.BoonOffer.ToArray();
+            Flow.Boons.HandleInput(InputCmd.Of(GameAction.R));
+            if (g.BoonRerolls != 1 || before.SequenceEqual(g.BoonOffer)) throw new Exception("premia po etapie: R nie losuje nowej oferty");
+            Flow.Boons.HandleInput(InputCmd.Of(GameAction.Down));
+            if (page.Sel != 1) throw new Exception("premia po etapie: strzałka nie zmienia karty");
+            await DebugRunner.Frames(_app.Root, 1);
+        }
+        var want = g.BoonOffer[page.Sel];
+        var owned = g.BoonsOwned();
+        Flow.Boons.HandleInput(InputCmd.Of(GameAction.A));
+        if (!g.HasBoon(want) || g.BoonsOwned() != owned + 1 || Flow.Current != Flow.Schedule) throw new Exception("premia po etapie: wybór nie działa");
+        _boons++;
+        if (_boonList > 0) return;
+        Flow.Phone.Open(Phone.PhoneTabs.Gear, true);
+        Flow.Phone.HandleInput(InputCmd.Of(GameAction.R));
+        if (Flow.Current != Flow.BoonList) throw new Exception("telefon > Sprzęt: R nie otwiera listy premii");
+        await DebugRunner.Frames(_app.Root, 1);
+        Flow.BoonList.HandleInput(InputCmd.Of(GameAction.Right));
+        if (Flow.BoonList.Page.Mode != 1) throw new Exception("lista premii: strzałka nie przełącza na synergie");
+        await DebugRunner.Frames(_app.Root, 1);
+        Flow.BoonList.HandleInput(InputCmd.Of(GameAction.B));
+        if (Flow.Current != Flow.Phone) throw new Exception("lista premii: B nie wraca do telefonu");
+        _boonList++;
+        Flow.Schedule.Open();
+    }
+
     /// <summary>Bot gra do 5. etapu: harmonogram, karta etapu, Hurtownia, paczki i termos przez menu akcji.</summary>
     private async Task PlayStages()
     {
@@ -220,10 +261,15 @@ public sealed class SmokeTest
                 if (Flow.Current != Flow.PrologueMessage) throw new Exception("prolog nie przeszedł do SMS-a");
                 Flow.PrologueMessage.HandleInput(InputCmd.Of(GameAction.Start));
                 if (Flow.Current != Flow.Help) throw new Exception("po prologu brak ekranu Jak grać");
-                for (var k = 0; k < 5 && Flow.Current == Flow.Help; k++) Flow.Help.HandleInput(InputCmd.Of(GameAction.A)); // 3 strony Jak grać
+                for (var k = 0; k < 6 && Flow.Current == Flow.Help; k++) Flow.Help.HandleInput(InputCmd.Of(GameAction.A)); // 5 stron Jak grać
                 if (Flow.Current == Flow.Help) throw new Exception("Jak grać: A nie przechodzi dalej");
                 if (!_app.Session.Profile.HasFlag(Profile.FlagPrologueSeen)) throw new Exception("prolog nie zapisał się w profilu");
                 _prologue = true;
+                continue;
+            }
+            if (Flow.Current == Flow.Boons)
+            {
+                await ExerciseBoons();
                 continue;
             }
             if (Flow.Current == Flow.Schedule)
@@ -492,6 +538,7 @@ public sealed class SmokeTest
             if (Flow.Current != Flow.Game || g.St != GameStatus.Playing) return;
             turns = g.Turns;
             var mid = Layout.UiSize / 2;
+            if (ActionBar.HitTest(mid) != BarButton.None || VirtualStick.Hit(mid)) mid = new Vector2(mid.X, Layout.UiSize.Y * 0.3f); // środek pod paskiem akcji: wyżej
             foreach (var d in new[] { Vector2I.Left, Vector2I.Right, Vector2I.Up, Vector2I.Down })
             {
                 if (Flow.Current != Flow.Game || g.St != GameStatus.Playing) return;
@@ -499,7 +546,8 @@ public sealed class SmokeTest
                 game.HandleGesture(new Gesture(GestureKind.Swipe, mid + (Vector2)d * 30, mid, d, 0.1f));
                 game.HandleGesture(new Gesture(GestureKind.Up, mid + (Vector2)d * 30, mid, d, 0.1f));
             }
-            if (Flow.Current == Flow.Game && g.St == GameStatus.Playing && g.Turns == turns) throw new Exception("przesunięcia nie zrobiły kroku");
+            var degenerate = ActionBar.HitTest(mid) != BarButton.None; // headless: okno 64x64, pasek akcji zasłania wszystko
+            if (!degenerate && Flow.Current == Flow.Game && g.St == GameStatus.Playing && g.Turns == turns) throw new Exception("przesunięcia nie zrobiły kroku");
             if (Flow.Current != Flow.Game || g.St != GameStatus.Playing) return;
             Send(GestureKind.Down, Btn(BarButton.Attack));
             game.Process(Aiming.RevealTime + 0.1);
@@ -793,12 +841,12 @@ public sealed class SmokeTest
         if (Flow.Current != Flow.ClassSelect) throw new Exception("statystyki: B nie wraca na wybór zawodu");
         _stats = true;
         Flow.Help.Open(true, true);
-        for (var k = 0; k < 4; k++)
+        for (var k = 0; k < 5; k++) // 5 stron: v0.21.50 cz. 2 - kombinacje stanów
         {
             await DebugRunner.Frames(_app.Root, 1);
             Flow.Help.HandleInput(InputCmd.Of(GameAction.A));
         }
-        if (Flow.Current != Flow.Title) throw new Exception("Jak grać: po 4 stronach brak powrotu na tytuł");
+        if (Flow.Current != Flow.Title) throw new Exception("Jak grać: po 5 stronach brak powrotu na tytuł");
         _help = true;
     }
 

@@ -34,11 +34,11 @@ public sealed class HelpPage : PhonePage
         ("Telefon", "aplikacja (trzymaj: mapa)"),
     ];
 
-    private const int Pages = 4;
+    private const int Pages = 5;
     private readonly GameData _d;
     private int _page;
 
-    /// <summary>Strona 0-3 (sceny zrzutów).</summary>
+    /// <summary>Strona 0-4 (sceny zrzutów); 4 = kombinacje stanów, premie i elity (v0.21.50 cz. 2).</summary>
     public int Page
     {
         get => _page;
@@ -84,6 +84,11 @@ public sealed class HelpPage : PhonePage
         if (_page == 3)
         {
             DrawList(p, "OBRAŻENIA", _d.DamageHelpLines, "GDZIE ROZPISKA", DamageWhereLines);
+            return;
+        }
+        if (_page == 4)
+        {
+            DrawList(p, "KOMBINACJE STANÓW", ComboLines(_d), "SKĄD STANY, PREMIE, ELITY", ComboWhereLines(_d));
             return;
         }
         if (!PhoneView.Full) // telefon w poziomie: nowości w karcie na górze zamiast osobnej sekcji (brak miejsca)
@@ -134,6 +139,28 @@ public sealed class HelpPage : PhonePage
             if (i > 0) p.Divider(c2, i);
             p.Text(tx, p.RowY(c2, i), l2[i], Ink.Dim, TextAlign.Left, right - tx);
         }
+    }
+
+    /// <summary>Kombinacje z danych: „Mokry + prąd! Porażenie”, skutek, skutek na bohaterze.</summary>
+    private static string[] ComboLines(GameData d)
+    {
+        var l = new System.Collections.Generic.List<string>();
+        foreach (var c in d.Combos)
+        {
+            l.Add($"{c.Short} {c.Name}");
+            l.Add((PhoneView.Full ? "  " : "") + c.Info);
+            if (c.Hero.Length > 0 && PhoneView.Full) l.Add("  " + c.Hero);
+        }
+        return l.ToArray();
+    }
+
+    private static string[] ComboWhereLines(GameData d)
+    {
+        var l = new System.Collections.Generic.List<string>(d.ComboSources);
+        if (!PhoneView.Full) return l.ToArray(); // telefon w poziomie: bez miejsca na premie i elity (krótko na stronie 1)
+        l.Add("Po etapie: premia 1 z 3 (2+ znaczniki = synergia)");
+        l.Add("Złota ramka: elita, lepsza nagroda");
+        return l.ToArray();
     }
 
     private static readonly string[] ActLines =
@@ -193,13 +220,13 @@ public sealed class HelpPage : PhonePage
 
     /// <summary>Nowości w wąskim telefonie (poziomo): krótko.</summary>
     private static readonly string[] ShortNews =
-        ["Między etapami: wybór ścieżki", "Respekt i nagrody: profil > Koszty", "Codzienna budowa: menu tytułu", "Pogoda, brygada: telefon > Sprzęt"];
+        ["Po etapie: premia 1 z 3 i ścieżka", "Respekt i nagrody: profil > Koszty", "Codzienna budowa: menu tytułu", "Pogoda, brygada: telefon > Sprzęt"];
 
     /// <summary>Pogoda, brygada i tryb inwestora (v0.21.47), ścieżki, materiały i codzienna budowa (v0.21.48), Respekt i nagrody (v0.21.49).</summary>
     private static string[] News => Layout.Touch
         ?
         [
-            "Między etapami: wybierz ścieżkę kolejnego etapu", "Materiały z problemów: Hurtownia i naprawy (Brygada)",
+            "Po etapie: premia 1 z 3, potem ścieżka etapu", "Złota ramka: elita (cecha, lepsza nagroda)", "Materiały z problemów: Hurtownia i naprawy (Brygada)",
             "Załataj (drewno): deski przed problemem", "Kładka (stal): kałuże bez poślizgu", "Codzienna budowa: menu tytułu, jedna na dzień",
             "Pogoda dnia: ikona w HUD, skutek w Zadaniach", "Brygada: Telefon > Sprzęt > Brygada (raz na etap)",
             "Po wygranej: Tryb inwestora na wyborze zawodu",
@@ -208,7 +235,7 @@ public sealed class HelpPage : PhonePage
         ]
         :
         [
-            "Między etapami: strzałki = ścieżka kolejnego etapu", "Materiały z problemów: Hurtownia i naprawy (Brygada)",
+            "Po etapie: premia 1 z 3, potem ścieżka etapu", "Złota ramka: elita (cecha, lepsza nagroda)", "Materiały z problemów: Hurtownia i naprawy (Brygada)",
             "Załataj (drewno): deski przed problemem", "Kładka (stal): kałuże bez poślizgu", "Codzienna budowa: menu tytułu, jedna na dzień",
             "Pogoda dnia: ikona w HUD, skutek w Zadaniach", "Brygada: Enter, Spacja (albo telefon > Sprzęt)",
             "Po wygranej: Tab na wyborze zawodu = tryb inwestora",

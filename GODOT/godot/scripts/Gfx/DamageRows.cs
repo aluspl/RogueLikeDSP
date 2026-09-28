@@ -15,7 +15,7 @@ public static class DamageRows
 {
     private static readonly DmgText[] Order =
     [
-        DmgText.Weapon, DmgText.Stat, DmgText.StatParts, DmgText.Profile, DmgText.Run, DmgText.Gear, DmgText.Pct, DmgText.Total,
+        DmgText.Weapon, DmgText.Stat, DmgText.StatParts, DmgText.Profile, DmgText.Run, DmgText.Gear, DmgText.Pct, DmgText.Boon, DmgText.Total,
         DmgText.Power, DmgText.Crit, DmgText.CritParts, DmgText.CritExtra,
     ];
 
@@ -42,6 +42,7 @@ public static class DamageRows
                 DmgText.Total => Ink.Done,
                 DmgText.Crit => Ink.Prog,
                 DmgText.Stat or DmgText.Profile or DmgText.Run or DmgText.Gear or DmgText.Pct => Ink.Dark,
+                DmgText.Boon => Ink.Rare,
                 _ => Ink.Dim,
             };
             var stripe = k switch

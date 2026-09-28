@@ -63,6 +63,53 @@ public sealed class WorldFx
         g.HitsCount = 0;
         g.TurnEvents = 0;
         g.HeroHit = false;
+        Combos();
+    }
+
+    /// <summary>
+    /// Kombinacje stanów z rdzenia (Game.ComboEvents, v0.21.50 cz. 2): napis „Mokry + prąd!” / „Pył + iskra!” /
+    /// „Zamróz + uderzenie!” nad celem (albo bohaterem, gdy dotyczy jego), błyskawice, pył albo odłamki i błysk ekranu.
+    /// </summary>
+    private void Combos()
+    {
+        var g = G;
+        if (g.ComboEvents == 0) return;
+        var t = g.LastTarget >= 0 && g.LastTarget < g.EnemiesCount ? g.LastTarget : -1;
+        var at = t >= 0 ? _w.GridToScreen(g.Enemies[t].X, g.Enemies[t].Y) : Hero.Position;
+        for (var c = 0; c < g.D.Combos.Length && c < 3; c++)
+        {
+            var onEnemy = (g.ComboEvents & (1 << c)) != 0;
+            var onHero = (g.ComboEvents & (8 << c)) != 0;
+            if (!onEnemy && !onHero) continue;
+            var pos = onEnemy ? at : Hero.Position;
+            var cd = g.D.Combos[c];
+            var ink = (ComboEffect)c switch
+            {
+                ComboEffect.ShockArea => Ink.MapWet,
+                ComboEffect.DustBlast => Ink.MapBrand,
+                _ => Ink.Map,
+            };
+            // napis nad bohaterem, wyżej niż liczby trafień (nie nachodzi na „-3”)
+            Fx.AddFloater(new Floater { Pos = Hero.Position + new Vector2(0, -60 - 16 * c), Text = cd.Short, Ink = onHero ? Ink.MapBad : ink, Life = 1.5f });
+            switch ((ComboEffect)c)
+            {
+                case ComboEffect.ShockArea:
+                    Fx.Burst(pos, 10, Assets.PBolt, 1, 2.2f, 20);
+                    _w.Flash(Pal.FlashChain, 0.3f);
+                    break;
+                case ComboEffect.DustBlast:
+                    Fx.Burst(pos, 14, Assets.PDust, 3, 2.6f, 26);
+                    Fx.Burst(pos, 8, Assets.PSpark, 2, 2.2f, 18);
+                    _w.Flash(new Color(1f, 0.6f, 0.2f), 0.35f);
+                    _w.Camera.Shake(0.2f);
+                    break;
+                default:
+                    Fx.Burst(pos, 8, Assets.PBrick, 1, 2f, 22);
+                    _w.Flash(Pal.FrostCyan, 0.25f);
+                    break;
+            }
+        }
+        g.ComboEvents = 0;
     }
 
     private Floater HitFloater(Hit h, Vector2 pos)

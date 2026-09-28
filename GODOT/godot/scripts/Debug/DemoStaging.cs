@@ -209,6 +209,58 @@ public sealed class DemoStaging
         _app.AfterAction(g.PlayerMove(-1, 0));   // wybuch za turę + strzał Mostka
     }
 
+    /// <summary>
+    /// Pokaz elit (v0.21.50 cz. 2): Zbrojony Przeciek (Tarcza) obok bohatera, dalej Uparta Pleśń i Szybki Kornik –
+    /// złote ramki, poświata i stany nad głową.
+    /// </summary>
+    public void EliteShowcase()
+    {
+        var g = G;
+        ClearAround(-3, -3, 3, 3);
+        g.EnemiesCount = 0;
+        g.PickupsCount = 0;
+        int Trait(LifeLike.Core.Data.EliteEffect e) => Array.FindIndex(g.D.Elites, t => t.Effect == e);
+        Place("przeciek", 1, 0, 0, 3);
+        if (g.EnemiesCount > 0) g.MakeElite(g.EnemiesCount - 1, Trait(LifeLike.Core.Data.EliteEffect.Shield));
+        Place("plesn", -2, 1, 0, 3);
+        if (g.EnemiesCount > 1) g.MakeElite(g.EnemiesCount - 1, Trait(LifeLike.Core.Data.EliteEffect.Regen));
+        Place("kornik", 2, -2, 0, 3);
+        g.UpdateFov();
+        _app.Nodes.World.Sync();
+        _app.Refresh();
+    }
+
+    /// <summary>
+    /// Pokaz kombinacji stanów: 0 mokry + prąd (Elektryk, Przeciek i mokry Kornik obok), 1 pył + iskra (Glazurnik,
+    /// zapyleni obok), 2 zamróz + uderzenie (zmrożony obok); jeden cios bohatera i efekt na mapie.
+    /// </summary>
+    public void ComboShowcase(int kind)
+    {
+        var g = G;
+        ClearAround(-3, -3, 3, 3);
+        g.EnemiesCount = 0;
+        g.PickupsCount = 0;
+        if (kind == 0)
+        {
+            Place("przeciek", 1, 0, 30, 3);
+            Place("kornik", 2, 0, 30, 3);
+            Place("kornik", 2, 1, 30, 3);
+            if (g.EnemiesCount > 1) g.Enemies[1].Wet = 3;
+        }
+        else
+        {
+            Place("kornik", 1, 0, 30, 3);
+            Place("kornik", 2, 1, 30, 3);
+            Place("kornik", 1, -1, 30, 3);
+            for (var i = 0; i < g.EnemiesCount; i++)
+                g.Enemies[i].Flags = (byte)(g.Enemies[i].Flags | (kind == 1 ? LifeLike.Core.ActorFlag.Dusty : LifeLike.Core.ActorFlag.Frozen));
+        }
+        g.UpdateFov();
+        _app.Nodes.World.Sync();
+        _app.Refresh();
+        if (g.EnemiesCount > 0) _app.AfterAction(g.PlayerAttack(0));
+    }
+
     /// <summary>Etap s aktu z mechaniką (błoto / porywy / pył): bohater obok błota albo poryw w tej turze.</summary>
     public void ActShowcase(int stage)
     {

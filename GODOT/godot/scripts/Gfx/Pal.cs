@@ -69,6 +69,14 @@ public static class Pal
     public static readonly Color FlashChain = new(0.4f, 0.9f, 1f);
     public static readonly Color FlashFlush = new(0.26f, 0.97f, 0.52f);
 
+    /// <summary>v0.21.50 cz. 2: rzadkość premii (zwykła = Todo), złota ramka elity, stany problemów.</summary>
+    public static readonly Color Rare = new("3b82f6");
+    public static readonly Color Legend = new("e0a100");
+    public static readonly Color EliteGold = new(1f, 0.82f, 0.25f);
+    public static readonly Color WetBlue = new("4fb3ff");
+    public static readonly Color DustGray = new("c9b99a");
+    public static readonly Color FrostCyan = new("bfefff");
+
     /// <summary>Kolor paska HP wg progu jak na GBA: &gt;50% zielony, &gt;25% żółty, reszta czerwony.</summary>
     public static int HpColor(int hp, int max) => hp * 2 > max ? 0 : hp * 4 > max ? 1 : 2;
 }

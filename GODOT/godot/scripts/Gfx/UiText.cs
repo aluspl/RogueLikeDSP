@@ -53,7 +53,7 @@ public static class UiText
     /// <summary>Aktywne stany z turami: jeden - pełna nazwa i skutek, kilka - skróty (status_line na GBA).</summary>
     public static string StatusLine(CoreGame g, out bool any)
     {
-        var active = HudStatuses.Where(s => g.StatusTurns(s) > 0).ToList();
+        var active = HudStatuses.Append(StatusEffect.Wet).Where(s => g.StatusTurns(s) > 0).ToList();
         any = active.Count > 0;
         if (active.Count == 0) return "Stany: brak";
         if (active.Count == 1)

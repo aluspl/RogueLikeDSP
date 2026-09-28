@@ -71,24 +71,36 @@ public partial class EnemyCard : Control
         }
         var e = _g.Enemies[_enemy];
         var ed = _g.D.Enemies[e.DefId];
+        var elite = e.Elite >= 0;
         var photo = new Rect2(6, top + 5, 36, 36);
-        DrawStyleBox(Ui.Box(new Color(Pal.Late, 0.35f), 5), photo);
+        DrawStyleBox(Ui.Box(new Color(elite ? Pal.EliteGold : Pal.Late, 0.35f), 5), photo);
+        if (elite) DrawRect(photo.Grow(1), Pal.EliteGold, false, 2); // elita: złota ramka portretu
         Assets.DrawFrame(this, Assets.Actors, ed.Frame, Assets.Actor, photo.Position + new Vector2(2, 2));
         var x = photo.End.X + 8;
-        var nx = x + f.Draw(this, new Vector2(x, top + 2), ed.Name, Ink.MapLoot) + 8;
+        var name = _g.EnemyName(_enemy); // elita: „Zbrojony Przeciek”
+        var nx = x + f.Draw(this, new Vector2(x, top + 2), f.Fit(name, (int)(w * 0.45f)), elite ? Ink.MapLoot : Ink.Map) + 8;
         var bar = new Rect2(nx, top + 8, 48, 6);
         DrawRect(bar.Grow(1), Pal.HpEdge);
         DrawRect(bar, Pal.HpBack);
         var fill = e.MaxHp > 0 ? Mathf.Clamp(e.Hp / (float)e.MaxHp, 0f, 1f) : 0f;
         DrawRect(new Rect2(bar.Position, new Vector2(Mathf.Max(1, Mathf.Round(bar.Size.X * fill)), bar.Size.Y)), Pal.HpMain[Pal.HpColor(e.Hp, e.MaxHp)]);
-        var stats = $"HP {e.Hp}/{e.MaxHp}" + (ed.Defense > 0 ? $"   OBR {ed.Defense}" : "");
+        var def = _g.EnemyDefense(_enemy);
+        var stats = $"HP {e.Hp}/{e.MaxHp}" + (def > 0 ? $"   OBR {def}" : "");
         f.Draw(this, new Vector2(bar.End.X + 8, top + 2), f.Fit(stats, (int)(w - bar.End.X - 14)), Ink.Map);
-        var tags = UiText.Behaviors(_g.D, e.DefId);
-        var showTags = tags.Length > 0 && ((int)(_clock / 2f) & 1) == 1;
-        var vs = DamageHelp.VersusLine(new Message(), _g.WeaponBreakdown(e.DefId), _g.EnemyHit(_enemy)).Text + $", unik {_g.DodgePct()}%";
-        if (f.Measure(vs) > w - x - 8) vs = DamageHelp.VersusLine(new Message(), _g.WeaponBreakdown(e.DefId), _g.EnemyHit(_enemy)).Text;
+        // „Zadasz” z obroną elity (Tarcza) – ActorBreakdown
+        var b = _g.ActorBreakdown(_enemy);
+        var vs = DamageHelp.VersusLine(new Message(), b, _g.EnemyHit(_enemy)).Text + $", unik {_g.DodgePct()}%";
+        if (f.Measure(vs) > w - x - 8) vs = DamageHelp.VersusLine(new Message(), b, _g.EnemyHit(_enemy)).Text;
         f.Draw(this, new Vector2(x, top + 20), f.Fit(vs, (int)(w - x - 8)), Ink.Map);
-        f.Draw(this, new Vector2(x, top + 38), f.Fit(showTags ? "Cechy: " + tags : ed.Desc, (int)(w - x - 8)), showTags ? Ink.MapBad : Ink.MapDim);
+        // trzeci wiersz na zmianę: opis, cechy, elita, stany (kombinacje)
+        var lines = new System.Collections.Generic.List<(string Text, Ink Ink)> { (ed.Desc, Ink.MapDim) };
+        var tags = UiText.Behaviors(_g.D, e.DefId);
+        if (tags.Length > 0) lines.Add(("Cechy: " + tags, Ink.MapBad));
+        if (elite) lines.Add((BoonLook.Elite(_g, _enemy), Ink.MapLoot));
+        var states = BoonLook.States(_g, _enemy);
+        if (states.Length > 0) lines.Add(("Stan: " + states, Ink.MapWet));
+        var line = lines[(int)(_clock / 2f) % lines.Count];
+        f.Draw(this, new Vector2(x, top + 38), f.Fit(line.Text, (int)(w - x - 8)), line.Ink);
         var back = ButtonNames.Pick("Puść Z: wróć", "Puść: wróć");
         var hint = _count > 1 ? $"{_index + 1}/{_count}  {ButtonNames.Pick("Strzałki: następny", "Przesuń: następny")}   {back}" : back;
         f.Draw(this, new Vector2(w - 6, top + 56), hint, Ink.MapDim, TextAlign.Right);

@@ -67,8 +67,9 @@ public sealed class App
         if (!acted) return;
         switch (Session.Resolve())
         {
-            case TurnOutcome.StageCleared:
-                Flow.Schedule.Open();
+            case TurnOutcome.StageCleared: // premia 1 z 3, potem harmonogram (i Hurtownia po akcie)
+                if (Session.Game.HasBoonOffer) Flow.Boons.Open();
+                else Flow.Schedule.Open();
                 break;
             case TurnOutcome.RunEnded:
                 Flow.EndMessage.Open();

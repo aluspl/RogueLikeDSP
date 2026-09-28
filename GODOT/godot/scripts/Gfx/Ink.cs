@@ -29,6 +29,8 @@ public readonly struct Ink
     public static readonly Ink Done = new(new Color("047857"), Colors.Transparent);
     public static readonly Ink Late = new(new Color("b91c1c"), Colors.Transparent);
     public static readonly Ink White = new(Colors.White, Colors.Transparent);
+    public static readonly Ink Rare = new(new Color("1d4ed8"), Colors.Transparent);
+    public static readonly Ink Legend = new(new Color("a16207"), Colors.Transparent);
 
     // mapa i ekrany na ciemnym tle (z cieniem)
     public static readonly Ink Map = new(new Color("fafafa"), MapEdge);
@@ -37,6 +39,7 @@ public readonly struct Ink
     public static readonly Ink MapLoot = new(new Color("ffd75a"), MapEdge);
     public static readonly Ink MapDim = new(new Color("b8b4d8"), MapEdge);
     public static readonly Ink MapBrand = new(new Color("ff9a66"), MapEdge);
+    public static readonly Ink MapWet = new(new Color("7cc8ff"), MapEdge);
     public static readonly Ink OnBrand = new(Colors.White, new Color("3a2a99"));
     /// <summary>Notatka na fiolecie (odznaki, zlecenia) i nagłówki planszy końcowej.</summary>
     public static readonly Ink NoteOnBrand = new(new Color("ffe08a"), new Color("3a2a99"));

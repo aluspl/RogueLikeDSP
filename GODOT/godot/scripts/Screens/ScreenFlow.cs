@@ -34,6 +34,8 @@ public sealed class ScreenFlow
         Daily = new DailyScreen(app);
         HouseSchedule = new HouseScheduleScreen(app);
         Stats = new StatsScreen(app);
+        Boons = new BoonScreen(app);
+        BoonList = new BoonListScreen(app);
     }
 
     public Screen Current { get; private set; }
@@ -58,6 +60,9 @@ public sealed class ScreenFlow
     public DailyScreen Daily { get; }
     public HouseScheduleScreen HouseSchedule { get; }
     public StatsScreen Stats { get; }
+    /// <summary>v0.21.50 cz. 2: premia 1 z 3 po etapie i lista premii w telefonie.</summary>
+    public BoonScreen Boons { get; }
+    public BoonListScreen BoonList { get; }
 
     /// <summary>Przejście na ekran; instant = bez animacji (telefon od razu na miejscu, tło od razu rozmyte).</summary>
     public void Go(Screen next, bool instant = false)

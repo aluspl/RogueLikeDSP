@@ -278,6 +278,8 @@ public partial class WorldView : Node2D
         var showBar = vis && (e.Awake || e.Hp < e.MaxHp) && e.MaxHp > 0;
         s.HpFill = showBar ? Mathf.Clamp(e.Hp / (float)e.MaxHp, 0f, 1f) : -1f;
         s.HpColor = Pal.HpColor(e.Hp, e.MaxHp);
+        s.Elite = e.Elite >= 0;
+        s.States = vis ? BoonLook.StateBits(_g, i) : 0;
         var aw = e.Alive && e.Awake;
         if (aw && (_prevAwake & (1u << i)) == 0 && vis && !snap) // „!” nad problemem, który Cię zauważył
             _fx.Spawn(s.Position + new Vector2(0, -30), new Vector2(0, -0.3f), 0, 40, Assets.PAlert);

@@ -25,6 +25,8 @@ public sealed class DebugScenes
         "tutorial-title", "tutorial-class", "tutorial-stats", "tutorial-unlock", "tutorial-act0", "help-tutorial",
         "act0-card", "act0-stamps", "act0-stairs-open", "act0-boss-phase",
         "dmg-class", "dmg-stats", "dmg-gear", "dmg-phone", "dmg-crit", "dmg-offer", "dmg-tool", "dmg-enemy", "help-dmg",
+        "boon-pick", "boon-synergy", "boon-phone", "boon-synergies", "elite-map", "elite-card", "combo-shock", "combo-dust", "combo-crack",
+        "help-combos",
     ];
 
     private readonly App _app;
@@ -132,8 +134,10 @@ public sealed class DebugScenes
             case "help-acts":
             case "help-stats":
             case "help-dmg":
+            case "help-combos":
                 Flow.Help.Open(true, true);
-                if (_app.Nodes.Phone.Current is Phone.Pages.HelpPage hp) hp.Page = scene == "help" ? 0 : scene == "help-acts" ? 1 : scene == "help-stats" ? 2 : 3;
+                if (_app.Nodes.Phone.Current is Phone.Pages.HelpPage hp)
+                    hp.Page = scene == "help" ? 0 : scene == "help-acts" ? 1 : scene == "help-stats" ? 2 : scene == "help-dmg" ? 3 : 4;
                 _app.Nodes.Phone.QueueRedraw();
                 return;
             case "dmg-class": // rozpiska obrażeń broni (#26): dymek nad narzędziem na karcie zawodu
@@ -216,7 +220,12 @@ public sealed class DebugScenes
             _ => AbilityEffect.Stun,
         };
         s.ClassId = newClass != AbilityEffect.Stun ? Array.FindIndex(s.Data.Classes, c => c.Ability == newClass)
-                  : scene switch { "game" => 0, "perks" => 1, "aim" => 2, "behaviors" => 1, _ => 5 }; // Cieśla: gwoździarka z3
+                  : scene switch
+                  {
+                      "game" => 0, "perks" => 1, "aim" => 2, "behaviors" => 1, "combo-shock" => 3, "combo-crack" => 1, "elite-card" => 1,
+                      "elite-map" => 1, "boon-pick" => 1, "boon-synergy" => 1, "boon-phone" => 1, "boon-synergies" => 1,
+                      _ => 5,
+                  }; // domyślnie Glazurnik
         _app.StartRun();
         Flow.StageCard.Advance(); // karta etapu -> gra
         if (newClass != AbilityEffect.Stun) // nowy zawód: problemy pod moc i moc (efekt w trakcie)
@@ -252,6 +261,11 @@ public sealed class DebugScenes
             }
             g.Equip(1, 2, Array.FindIndex(s.Data.GearTraits, t => t.Effect == TraitEffect.Str));
             _app.Refresh();
+        }
+        if (scene.StartsWith("boon-"))
+        {
+            await BoonScene(scene);
+            return;
         }
         if (scene is "schedule" or "schedule-tip" or "hurtownia" or "endmsg" or "end" or "boss" or "schedule-path" or "hurtownia-mats" or "house")
         {
@@ -402,6 +416,25 @@ public sealed class DebugScenes
                 Flow.Game.HandleInput(InputCmd.Of(GameAction.B));
                 Flow.Game.Look.Reveal();
                 break;
+            case "elite-map": // elity: złote ramki, poświata, przedrostki
+            case "elite-card": // karta elity: „Zbrojony Przeciek”, OBR z Tarczą, cecha
+                banners.Clear();
+                _stage.EliteShowcase();
+                _app.Session.ResetWatch();
+                if (scene == "elite-card")
+                {
+                    _app.Nodes.Touch.Bar.Pressed = Touch.BarButton.Wait;
+                    Flow.Game.HandleInput(InputCmd.Of(GameAction.B));
+                    Flow.Game.Look.Reveal();
+                }
+                break;
+            case "combo-shock": // mokry + prąd: Elektryk w mokry Przeciek, porażenie mokrego obok
+            case "combo-dust":  // pył + iskra: Szlifierka w zapylonego, wybuch pyłu
+            case "combo-crack": // zamróz + uderzenie: Kielnia w zmrożonego, pęknięcie
+                banners.Clear();
+                _app.Session.ResetWatch();
+                _stage.ComboShowcase(scene == "combo-shock" ? 0 : scene == "combo-dust" ? 1 : 2);
+                break;
             case "banners":
                 banners.Push("Awans! Poziom 2", $"+{_app.Session.Data.HpPerLevel} HP");
                 banners.Push("Nowe narzędzie", "Młotek 3-6");
@@ -473,6 +506,49 @@ public sealed class DebugScenes
         }
     }
 
+    /// <summary>
+    /// Sceny premii (v0.21.50 cz. 2): boon-pick – oferta z każdą rzadkością (jedna włącza synergię), boon-synergy – baner
+    /// synergii po wyborze, boon-phone / boon-synergies – telefon > Sprzęt > Premie (lista i synergie).
+    /// </summary>
+    private async Task BoonScene(string scene)
+    {
+        var g = _app.Session.Game;
+        var d = g.D;
+        int Idx(string n) => Array.FindIndex(d.Boons, b => b.Name == n);
+        void Give(string n)
+        {
+            g.BoonOffer[0] = (sbyte)Idx(n);
+            g.PickBoon(0);
+        }
+        _app.Nodes.Banners.Clear();
+        if (scene is "boon-phone" or "boon-synergies")
+        {
+            foreach (var n in new[] { "Beton B30", "Hartowana kielnia", "Wąż ogrodowy", "Przedłużacz", "Koniczyna", "Młot mistrza", "Podwójne espresso" }) Give(n);
+            _app.Session.ResetWatch();
+            _app.Refresh();
+            Flow.BoonList.Open(scene == "boon-synergies" ? 1 : 0, true);
+            return;
+        }
+        Give("Wąż ogrodowy");
+        g.DebugSkip();
+        _app.Session.ResetWatch();
+        _app.AfterAction(true);
+        await DebugRunner.Frames(_app.Root, 1);
+        if (Flow.Current != Flow.Boons) return;
+        g.BoonOffer[0] = (sbyte)Idx("Przedłużacz");   // zwykła: włączy Przepięcie (woda + prąd)
+        g.BoonOffer[1] = (sbyte)Idx("Instrukcja BHP"); // rzadka
+        g.BoonOffer[2] = (sbyte)Idx("Młot mistrza");   // legendarna
+        _app.Nodes.Banners.Clear();
+        if (scene == "boon-synergy")
+        {
+            Flow.Boons.Page.Sel = 0;
+            Flow.Boons.Pick();
+            return;
+        }
+        Flow.Boons.Page.Sel = 2;
+        _app.Nodes.Phone.QueueRedraw();
+    }
+
     /// <summary>Rozpiska obrażeń (sceny dmg-*): poziom 5, projekt wykonawczy, kask ze Szczęściem, rękawice z Kryt +5%.</summary>
     private static void DamageStage(LifeLike.Core.Game g)
     {
@@ -497,6 +573,7 @@ public sealed class DebugScenes
             g.DebugSkip();
             _app.AfterAction(true);
             await DebugRunner.Frames(_app.Root, 1);
+            if (Flow.Current == Flow.Boons) Flow.Boons.Pick(); // premia po etapie: pierwsza z oferty
             if (Flow.Current == Flow.Schedule && scene == "schedule") return;
             if (Flow.Current == Flow.Schedule && scene == "schedule-path" && g.Stage >= 1)
             {
@@ -537,7 +614,8 @@ public sealed class DebugScenes
     {
         while (true)
         {
-            if (Flow.Current == Flow.Schedule) Flow.Schedule.Advance();
+            if (Flow.Current == Flow.Boons) Flow.Boons.Pick();
+            else if (Flow.Current == Flow.Schedule) Flow.Schedule.Advance();
             else if (Flow.Current == Flow.StageCard) Flow.StageCard.Advance();
             else if (Flow.Current == Flow.Hurtownia) Flow.Hurtownia.Advance();
             else return;

@@ -17,24 +17,33 @@ public sealed class GearTab : PhonePage
     private readonly CoreGame _g;
     private readonly System.Action _brigade;
     private readonly System.Action _breakdown;
+    private readonly System.Action _boons;
 
-    public GearTab(CoreGame g, System.Action brigade = null, System.Action breakdown = null)
+    public GearTab(CoreGame g, System.Action brigade = null, System.Action breakdown = null, System.Action boons = null)
     {
         _g = g;
         _brigade = brigade;
         _breakdown = breakdown;
+        _boons = boons;
     }
 
     public override string Title => "Sprzęt";
     public override string Sub => _brigade is null ? "Na budowie" : "Spacja: Brygada";
     public override PageAction[] Actions =>
-        _brigade is null ? [] : _breakdown is null ? [new("Brygada", GameAction.A)] : [new("Obrażenia", GameAction.Info), new("Brygada", GameAction.A)];
+        _brigade is null ? [] : _breakdown is null ? [new("Brygada", GameAction.A)]
+        : _boons is null ? [new("Obrażenia", GameAction.Info), new("Brygada", GameAction.A)]
+        : [new("Obrażenia", GameAction.Info), new("Premie", GameAction.R), new("Brygada", GameAction.A)];
 
     public override bool Input(InputCmd e)
     {
         if (_breakdown is not null && e.Is(GameAction.Info))
         {
             _breakdown();
+            return true;
+        }
+        if (_boons is not null && e.Is(GameAction.R)) // premie po etapach i synergie
+        {
+            _boons();
             return true;
         }
         if (_brigade is null || !e.Is(GameAction.A)) return false;
@@ -99,7 +108,8 @@ public sealed class GearTab : PhonePage
             p.Text(nx, r, eff, Ink.Brand);
         }
 
-        y = p.Section(c1.End.Y + 4, "PREMIE I MATERIAŁY");
+        var boonsRight = _boons is null ? "" : ButtonNames.Pick($"R: premie {g.BoonsOwned()}", $"premie: {g.BoonsOwned()}");
+        y = p.Section(c1.End.Y + 4, "PREMIE I MATERIAŁY", boonsRight);
         var c2 = p.Card(y, d.Materials.Length > 0 ? 4 : 3);
         p.Text(tx, p.RowY(c2, 0), $"Obrona +{g.GearBonus(GearStat.Def)}  Obraż. +{g.GearBonus(GearStat.Dmg)}  HP +{g.GearBonus(GearStat.Hp)}", Ink.Dim, TextAlign.Left, right - tx);
         p.Divider(c2, 1);

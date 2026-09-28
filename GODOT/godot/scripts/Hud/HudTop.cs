@@ -1,4 +1,5 @@
 using Godot;
+using LifeLike.Core.Data;
 using LifeLike.Game.Gfx;
 using CoreGame = LifeLike.Core.Game;
 
@@ -89,6 +90,13 @@ public partial class HudTop : Control
             Assets.DrawFrame(this, Assets.Particles, Assets.PStatus + k, Assets.Particle, new Vector2(x, 20));
             x += 16;
             x += f.Draw(this, new Vector2(x, 19), t.ToString(), Ink.MapBad) + 6;
+        }
+        var wet = g.StatusTurns(StatusEffect.Wet); // v0.21.50: mokry (prąd boli bardziej)
+        if (wet > 0)
+        {
+            Assets.DrawFrame(this, Assets.Particles, Assets.PDrop, Assets.Particle, new Vector2(x, 20));
+            x += 16;
+            x += f.Draw(this, new Vector2(x, 19), wet.ToString(), Ink.MapWet) + 6;
         }
         if (x > 6) x += 4;
 

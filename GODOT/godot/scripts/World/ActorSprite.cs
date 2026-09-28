@@ -25,6 +25,10 @@ public partial class ActorSprite : Node2D
     /// <summary>Mini pasek HP nad głową (0..1, &lt;0 = ukryty) i kolor (0 zielony, 1 żółty, 2 czerwony).</summary>
     public float HpFill { get; set; } = -1f;
     public int HpColor { get; set; }
+    /// <summary>v0.21.50: elita – złota ramka i poświata.</summary>
+    public bool Elite { get; set; }
+    /// <summary>v0.21.50: stany nad głową (bity: 1 mokry, 2 zapylony, 4 zmrożony).</summary>
+    public int States { get; set; }
 
     private Vector2 _bump;
     private float _flash;
@@ -123,6 +127,11 @@ public partial class ActorSprite : Node2D
             scale = 1f - t * 0.4f;
         }
         if (HasShadow) DrawTextureRect(Assets.Shadow, new Rect2(DrawOffset + new Vector2(-12, 9), new Vector2(24, 8)), false, new Color(1, 1, 1, alpha));
+        if (Elite && _dying < 0f) // elita: złota poświata pod stopami (pulsuje)
+        {
+            var pulse = 0.55f + 0.25f * Mathf.Sin(_clock * 4f);
+            DrawArc(DrawOffset + new Vector2(0, 13), 13f, 0, Mathf.Tau, 24, new Color(Pal.EliteGold, pulse), 2f);
+        }
         if (_blink > 0 && ((int)(_blink * 16) & 1) == 1) return;
         var off = DrawOffset + _bump + new Vector2(0, bobY);
         DrawSetTransform(off + new Vector2(0, (1 - scale) * s / 2), 0, new Vector2(Flip ? -scale : scale, scale));
@@ -130,8 +139,33 @@ public partial class ActorSprite : Node2D
         var (tex, white, src) = Source(frame);
         DrawTextureRectRegion(tex, dst, src, new Color(1, 1, 1, alpha));
         if (_flash > 0) DrawTextureRectRegion(white, dst, src, new Color(_flashColor, _flash * 0.85f * alpha));
+        if (Elite) // elita: złoty odcień i narożniki ramki
+        {
+            DrawTextureRectRegion(white, dst, src, new Color(Pal.EliteGold, 0.2f * alpha));
+            var gc = new Color(Pal.EliteGold, alpha);
+            var r = dst.Grow(1);
+            const float k = 6f;
+            foreach (var (c, dx, dy) in new[] { (r.Position, 1, 1), (new Vector2(r.End.X, r.Position.Y), -1, 1), (new Vector2(r.Position.X, r.End.Y), 1, -1), (r.End, -1, -1) })
+            {
+                DrawLine(c, c + new Vector2(dx * k, 0), gc, 2f);
+                DrawLine(c, c + new Vector2(0, dy * k), gc, 2f);
+            }
+        }
         DrawSetTransform(Vector2.Zero, 0, Vector2.One);
         if (HpFill >= 0f && _dying < 0f) DrawMiniHp(off + new Vector2(0, -22));
+        if (States != 0 && _dying < 0f) // stany: kropla, pył, płatek (kombinacje stanów)
+        {
+            var n = 0;
+            for (var b = 1; b <= 4; b <<= 1) n += (States & b) != 0 ? 1 : 0;
+            var x = off.X - (n - 1) * 5f;
+            for (var b = 1; b <= 4; b <<= 1)
+            {
+                if ((States & b) == 0) continue;
+                DrawCircle(new Vector2(x, off.Y - 31), 5.5f, new Color(0.08f, 0.08f, 0.12f, 0.7f));
+                BoonLook.DrawState(this, b, new Vector2(x, off.Y - 31));
+                x += 10f;
+            }
+        }
     }
 
     /// <summary>Tekstura i region klatki: chód z actors_anim w trakcie kroku, oddech w miejscu, inaczej klatka A/B.</summary>

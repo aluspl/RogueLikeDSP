@@ -4,7 +4,7 @@ Wersja Godot gry z demo GBA (`../GBA`): roguelike budowlany, w którym etapy bud
 a wrogami są *problemy budowy*. Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KONCEPCJA.md)
 (telefon z aplikacją PlanBudowlany jako interfejs, oprawa 2.5D – kolejne kamienie milowe).
 
-**Stan: zgodny z GBA v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
+**Stan: zgodny z GBA v0.21.50 cz. 2 (rdzeń i test złoty), wcześniej v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
 z pieczątkami i Decyzją odmowną, samouczek menu, profil v10; wcześniej 10 etapów, 20 nowych problemów
 z zachowaniami, mechaniki aktów, opis statystyk; Respekt za etapy i sklep Respektu,
 nagrody za odbiór – Młot udarowy, Pistolet do kotew, buty, pas, zawody Dekarz, Tynkarz, Operator koparki – nowy balans
@@ -20,6 +20,20 @@ krytu i OBR; baner nowego narzędzia „teraz -> po zmianie”; karta problemu �
 unik 10%”; Jak grać – strona Obrażenia (`damageHelp` z game.json). Sceny zrzutów: `dmg-class`, `dmg-stats`,
 `dmg-gear`, `dmg-phone`, `dmg-crit`, `dmg-offer`, `dmg-tool`, `dmg-enemy`, `help-dmg`; test dymny: Sprzęt > I >
 rozpiska > B.
+
+Nowe w v0.21.50 cz. 2 (premie po etapie, elity, kombinacje stanów): rdzeń `Game.Boons` (port 1:1 z `core.h`: oferta
+1 z 3 z osobnego generatora, rzadkość zwykła / rzadka / legendarna, znaczniki i synergie, premie zawodów, losowanie
+raz na budowę + Druga oferta z Respektu, elity z cechą i nagrodą, mokry + prąd, pył + iskra, zamróz + uderzenie; zapis
+PBRUN11, test złoty z nowymi polami). Po zaliczonym etapie ekran **Premia za etap** (`BoonScreen` / `BoonPickPage`):
+3 karty z paskiem w kolorze rzadkości, skutkiem, znacznikami i pastylką „Synergia: …”, strzałki / dotknięcie,
+Enter bierze, R / „Losuj” losuje jeszcze raz; potem harmonogram (i Hurtownia po akcie), nowa synergia – baner i opis
+na harmonogramie. Telefon > Sprzęt > R / „Premie” (`BoonListScreen`): lista premii i strona Synergie (postęp
+znaczników). Elity: złota ramka, poświata i odcień na mapie, na karcie problemu „Zbrojony Przeciek”, OBR z Tarczą,
+„Elita: …” i „Zadasz” z `ActorBreakdown`; stany nad problemem (kropla, pył, płatek), Mokry w HUD, napis „Mokry + prąd!”
+z błyskawicami / wybuchem / odłamkami (`WorldFx.Combos`); rozpiska: wiersz „Premie etapów”; Jak grać – strona 5
+Kombinacje (`combos`, `sources` z game.json). Sceny zrzutów: `boon-pick`, `boon-synergy`, `boon-phone`,
+`boon-synergies`, `elite-map`, `elite-card`, `combo-shock`, `combo-dust`, `combo-crack`, `help-combos`; test dymny:
+losowanie, wybór premii, telefon > Sprzęt > R > synergie > B.
 
 Nowe w v0.21.49 cz. 3 (warstwa Godota): **Akt 0 „Papierologia”** z nagrody za odbiór - kafle biura z regałami
 segregatorów (Działka i pozwolenie) i wykopu z rurą (Przyłącza), 8 nowych problemów i boss Decyzja odmowna (klatki
