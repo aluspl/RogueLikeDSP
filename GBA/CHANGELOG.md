@@ -16,8 +16,8 @@ Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
   1 HP zamiast końca). Pełny Respekt to ok. 1150 Respektu (kilkadziesiąt wygranych budów). „Start z przedmiotem”
   pominięty – na razie nie ma przedmiotów do zabrania (pomysł #18).
 - **Nagrody za odbiór** (jak w Slay the Spire): każda wygrana odblokowuje kolejną nagrodę z listy – Młot udarowy,
-  Dekarz, Buty robocze, Pistolet do kotew, Tynkarz, Pas narzędziowy, Operator koparki, dalej „Akt 0: Papierologia –
-  wkrótce”. Lista z postępem na stronie Nagrody (Koszty → SELECT → SELECT), baner nagrody po wygranej, SMS „Nagroda:
+  Dekarz, Buty robocze, Pistolet do kotew, Tynkarz, Pas narzędziowy, Operator koparki i (8. wygrana) **Akt 0:
+  Papierologia**. Lista z postępem na stronie Nagrody (Koszty → SELECT → SELECT), baner nagrody po wygranej, SMS „Nagroda:
   …!”, na ekranie końcowym „Za kolejny odbiór: …”. Stare profile dostają nagrody za dotychczasowe wygrane.
   Sekcja `rewards`.
 - **Nowe zawody** (z nagród; pixel-art jak pozostali fachowcy, 2 klatki, sylwetka, ikona mocy, domy na Osiedlu):
@@ -55,6 +55,25 @@ Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
   obrażeń co 2 pkt OBR, kryt 5% +3%/pkt, unik +2%/pkt do 20%, łupy +2%/pkt). W telefonie zakładka Start → A:
   skąd są premie (zawód, Warsztaty, sprzęt, poziomy, kask, rękawice, kamizelka). „Jak grać” – strony 5 (akty
   i problemy) i 6 (statystyki). Scenariusze testowe 29–36.
+- **Akt 0 „Papierologia” (#20)** – nagroda za 8. odbiór; od tej chwili każda nowa budowa (poza budową dnia) zaczyna się
+  od dwóch etapów przed stanem surowym: **Działka i pozwolenie** (biuro: segregatory, kartki) i **Przyłącza** (wykop
+  z rurami). 8 nowych problemów – zawsze przedmioty, nigdy ludzie: Brakujący podpis (ucieka), Zaginiony wniosek (wraca
+  raz), Termin na odwołanie (rośnie), Niezgodność z planem (strzela uwagami), Pieczątka nie ta (odpycha, papierologia),
+  Pęknięta rura (dzieli się, poślizg), Brak ciśnienia (stoi i łata innych), Kolizja z kablem (wybucha, porażenie).
+  Boss **Decyzja odmowna** – stos pism z pieczątką ODMOWA (Stempel ODMOWA w obszar, wzywa Zaginione wnioski); przy 50%
+  HP **druga faza Odwołanie**: raz odzyskuje 30% HP i od razu wzywa wniosek (baner, czerwony błysk). Pokonana:
+  „Pozwolenie wydane” +40 zł, premia za Akt 0 i Hurtownia. Mechanika aktu **pieczątki**: na etapie leżą 3 dokumenty
+  (podpis, mapa, uzgodnienie) – schody widać, ale są zamknięte (kłódka) do kompletu; licznik 0/3 w HUD pod ikoną mocy,
+  wiersz w Zadaniach, banery „Dokument: …” i „Komplet! Schody otwarte”. Anna pisze, że najpierw papiery; Akt 0 ma
+  numer „0” na kartach etapów, a numeracja etapów liczy się od pierwszego etapu budowy (12 z Aktem 0, 10 bez). Wzory
+  błota, kałuż, porywów i oferta ścieżek liczone od Fundamentów – Akt 0 nie zmienia etapów budowy.
+- **Samouczek menu (#25)** – przy pierwszym uruchomieniu ekran przygasa, a Kierownik Marek w dymku jak powiadomienie
+  PlanBudowlany opisuje po kolei: Nowa budowa, telefon profilu, Szkolenia, Respekt, codzienna budowa, Jak grać
+  (tytuł) oraz zawód, trudność, pamiątkę, statystyki (START otwiera ich opis), tryb inwestora (po odblokowaniu) i start
+  (wybór zawodu; omawiany element podświetlony). A – dalej, B – pomiń. Później jeden dymek „Nowość” przy pierwszym
+  odblokowaniu: Respekt, codzienna budowa (po pierwszej budowie), tryb inwestora, Akt 0 i każdy nowy zawód z nagrody.
+  „Jak grać” z tytułu kończy się stroną „pokaż samouczek jeszcze raz”. Teksty wspólne z Godotem (sekcja `tutorial`
+  w `data/game.json`). Scenariusze testowe 37–41.
 ### Balans
 v0.21.48 miało z pełnymi Szkoleniami 89% wygranych bota (cel 50–60%). Nie tylko BHP (+1 obrony) i Kurs fachowy (+1
 obrażeń) – bot reaguje mocno na każdą premię, więc Szkolenia są lżejsze: **Szkolenie BHP -2% otrzymanych obrażeń**,
@@ -74,6 +93,11 @@ Kawa ma znaczenie (#17): bot pije średnio 2 kawy na budowę (74% budów), a bez
 | Normalny, pełne Szkolenia + pełny Respekt | – | 74% | 71% |
 | Normalny, pełne Szkolenia (i Respekt) + wszystkie modyfikatory | 10% | 10% | 10% |
 | Normalny bez picia kawy (bez meta / pełne Szkolenia) | – | 20% / 39% | 17% / 38% |
+| Normalny, pełne Szkolenia + pełny Respekt + Akt 0 (wszystkie nagrody) | – | – | 66% |
+
+Akt 0 jest zablokowany dla nowych graczy, więc wyniki bez meta liczone są bez niego (Normalny 30%). Z Aktem 0 budowa
+ma 12 etapów: przy pełnym meta 66% wygranych (bez Aktu 0 71%) – bot ginie głównie u Decyzji odmownej (etapy Aktu 0:
+HP problemów 106/110%, obrażenia +2/+1, boss 34 HP, 3–5 obrażeń).
 
 Po dodaniu 2 etapów, nowych wrogów i mechanik aktów: odepchnięcie działa co 3 tury (bez tego Krzywy mur zamykał
 walkę wręcz – bot ginął na Murach parteru), Krzywy mur i Mostek termiczny słabsze, Trudny: problemy 130% HP (było 125%).
@@ -81,11 +105,12 @@ Bot szuka drogi z kosztem (błoto droższe) – 0 utkniętych przebiegów na Nor
 na budowę (80% budów), bez kawy wygrywa 17% zamiast 30%. Etapy 1–2 dalej bez śmierci bota.
 
 ### Zmiany
-- Profil w SRAM v9 (PBRL009, 156 bajtów: v8 – Respekt, rangi, nagrody, wygrane i stawki zawodów 8–11; v9 – Katalog
+- Profil w SRAM v10 (PBRL010, 160 bajtów: v10 – obejrzane dymki samouczka i zawody z nagród, o których był dymek;
+  profile v9 dostają Akt 0 za 8+ dotychczasowych wygranych, a kto już grał, nie ogląda głównego samouczka). Wcześniej v9 (PBRL009, 156 bajtów: v8 – Respekt, rangi, nagrody, wygrane i stawki zawodów 8–11; v9 – Katalog
   usterek dla problemów 17–48) – starsze profile przenoszą się bez utraty danych (nagrody za wygrane, zwrot
   doświadczenia za zmienione Szkolenia).
-- Nowy zapis budowy (PBRUN09) – przerwana budowa z v0.21.48 nie wznowi się.
-- Do 16 problemów naraz na etapie (miejsce na podział), harmonogram domu i zakładka Zadania z 10 etapami.
+- Nowy zapis budowy (PBRUN10) – przerwana budowa z wcześniejszej wersji nie wznowi się.
+- Do 16 problemów naraz na etapie (miejsce na podział), harmonogram domu i zakładka Zadania z 10 (12 z Aktem 0) etapami.
 - Zawody i narzędzia z nagród nie są na sprzedaż w Szkoleniach; ceny brygady i Hurtowni z rabatem Respektu.
 
 ## v0.21.48 – 2026-09-25

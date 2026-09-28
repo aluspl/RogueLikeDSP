@@ -4,8 +4,9 @@ Marketingowe demo roguelike na Game Boy Advance / emulatory (Miyoo, mGBA). Zbudo
 przeniesionym z LifeLike (folder `../GODOT`): generator map z seedem, tury, walka, AI wrogów.
 
 Zbuduj dom w 10 etapach: **Fundamenty → Izolacja fundamentów → Mury parteru → Strop → Dach → Ściany działowe → Okna
-i drzwi → Instalacje → Tynki i wylewki → Wykończenie i odbiór**. Pokonaj „problemy budowy” (32 rodzaje – każdy etap ma
-własne, np. Woda gruntowa, Krzywy mur, Przeciekająca papa, Zapowietrzenie, Poprawki na odbiorze) i bossów (Zepsuta Betoniarka, Nawałnica, Inspekcja Pracy, **Nieprzekraczalny Termin**). Na końcu ekran z kodem QR do planbudowlany.online.
+i drzwi → Instalacje → Tynki i wylewki → Wykończenie i odbiór** (po 8. wygranej przed nimi **Akt 0 „Papierologia”**:
+Działka i pozwolenie, Przyłącza). Pokonaj „problemy budowy” (41 rodzajów – każdy etap ma
+własne, np. Woda gruntowa, Krzywy mur, Przeciekająca papa, Zapowietrzenie, Poprawki na odbiorze) i bossów (Decyzja odmowna, Zepsuta Betoniarka, Nawałnica, Inspekcja Pracy, **Nieprzekraczalny Termin**). Na końcu ekran z kodem QR do planbudowlany.online.
 
 ![ekran tytułowy](docs/preview_title.png) ![ekran końcowy z QR](docs/preview_end.png)
 
@@ -61,7 +62,23 @@ Na karcie wroga (przytrzymane B) i w Katalogu usterek: „Cechy: …”.
 Każdy akt ma własne kafle (akt I ziemia i bloczki betonowe, akt II deski i cegła, akt III płytki i tynk) i mechanikę
 (`mechanic` aktu): **akt I błoto** – wejście w błoto kosztuje dodatkową turę (Kładka działa też na błoto), **akt II
 porywy wiatru** – co 6 tur poryw spycha bohatera o pole (zapowiedź w dzienniku turę wcześniej, licznik pod ikoną mocy),
-**akt III pył** – widzenie -2. Ikona w HUD pod ikoną mocy, baner na początku aktu, wiersz w zakładce Zadania.
+**akt III pył** – widzenie -2, **Akt 0 pieczątki** – 3 dokumenty (podpis, mapa, uzgodnienie) otwierają schody (do
+kompletu kłódka na schodach, licznik 0/3). Ikona w HUD pod ikoną mocy, baner na początku aktu, wiersz w zakładce Zadania.
+
+## Akt 0 „Papierologia”
+Nagroda za 8. odbiór: każda kolejna budowa (poza budową dnia) zaczyna się od dwóch etapów – **Działka i pozwolenie**
+(biuro z segregatorami) i **Przyłącza** (wykop z rurami) – z własnymi problemami (Brakujący podpis, Zaginiony wniosek,
+Termin na odwołanie, Niezgodność z planem, Pieczątka nie ta, Pęknięta rura, Brak ciśnienia, Kolizja z kablem) i bossem
+**Decyzja odmowna** (stos pism z pieczątką; Stempel ODMOWA w obszar, wzywa Zaginione wnioski; przy 50% HP druga faza
+**Odwołanie**: raz +30% HP i wezwanie). Pokonana: „Pozwolenie wydane” +40 zł, premia za akt i Hurtownia. Dane: akt
+z `prelude: true` i `numeral` („0”), `documents`, pole `phase` bossa.
+
+## Samouczek menu
+Pierwsze uruchomienie: ekran przygasa, a dymek Kierownika Marka (styl powiadomienia PlanBudowlany, klawisz na
+pastylce) opisuje po kolei elementy tytułu i wyboru zawodu; A – dalej, B – pomiń, START przy statystykach – ich opis.
+Później po jednym dymku „Nowość”: pierwszy Respekt, codzienna budowa, tryb inwestora, Akt 0, nowy zawód. Jak grać
+(B na tytule) kończy się stroną „A: pokaż samouczek jeszcze raz”. Teksty: sekcja `tutorial` w `data/game.json`
+(wspólna z Godotem), flagi w profilu (v10).
 
 ## Statystyki
 Na wyborze zawodu START otwiera opis statystyk (wartość i co daje), A zmienia stronę na wzory; w telefonie zakładka
@@ -113,9 +130,9 @@ Teksty są w `data/game.json` (`story`).
   strona Respekt, 15 stałych ulepszeń z rangami i rosnącą ceną (procent obrażeń, otrzymanych obrażeń, lepszy sprzęt,
   kryt, unik, kawa, termos, moc, budżet, doświadczenie, brygada, widzenie, Hurtownia, materiały, Druga szansa).
 - **Nagrody za odbiór** (sekcja `rewards`, jak w Slay the Spire) – każda wygrana odblokowuje kolejną: narzędzia
-  (Młot udarowy, Pistolet do kotew), sprzęt (buty, pas), zawody (Dekarz, Tynkarz, Operator koparki), dalej Akt 0
-  „wkrótce”. Strona Nagrody (Koszty → SELECT → SELECT) pokazuje, co odebrane i za którą wygraną następna.
-- **Katalog usterek** - pokonane rodzaje problemów (32) z opisami i zachowaniami („Cechy: …”).
+  (Młot udarowy, Pistolet do kotew), sprzęt (buty, pas), zawody (Dekarz, Tynkarz, Operator koparki), na końcu Akt 0
+  „Papierologia”. Strona Nagrody (Koszty → SELECT → SELECT) pokazuje, co odebrane i za którą wygraną następna.
+- **Katalog usterek** - pokonane rodzaje problemów (41) z opisami i zachowaniami („Cechy: …”).
 - **Osiedle** - dom za każdą wygraną budowę, wielkość zależy od wyniku.
 - SELECT na tytule: telefon profilu (Odznaki/Zlecenia/Pamiątki, Katalog, Osiedle, Zespół, Koszty).
 
@@ -175,7 +192,7 @@ Zadania telefonu. Teksty i wartości: `siteEvents` w `data/game.json`.
   +1 szczęścia, Warsztaty: +1 do statystyki broni zawodu), więcej znajdziek,
   nowe zawody, narzędzia, poziom Trudny.
 - Profil (rekord, doświadczenie, zakupy, odznaki, liczniki zleceń, pamiątki, brygada, tryb inwestora) zapisuje się
-  w SRAM (format v9, z Respektem, nagrodami za odbiór i Katalogiem dla 48 rodzajów problemów); starsze zapisy (v1-v8)
+  w SRAM (format v10, z Respektem, nagrodami za odbiór, Katalogiem dla 48 rodzajów problemów i samouczkiem menu); starsze zapisy (v1-v9)
   są przenoszone bez utraty danych.
 - Liczniki zleceń trafiają do profilu na końcu etapu; profil pamięta, ile z bieżącej budowy już przeniesiono, więc
   wznowienie budowy po wyłączeniu konsoli nie liczy etapu drugi raz.
@@ -210,7 +227,8 @@ wydarzenia na placu (12), Inspekcja Pracy (13), pogoda (14), brygada (15), tryb 
 materiały, naprawy i awans (18), codzienna budowa (19), wygrana z harmonogramem domu (20), porażka (21), sklep Respektu
 i nagrody (22), Respekt za etap (23), nagroda po wygranej (24), Dekarz (25), Tynkarz (26), Operator koparki (27), nowe
 narzędzia i sprzęt (28), strzelcy (29), podział i wybuch (30), łatanie, wzrost i stanie (31), odpychanie i powrót
-(32), błoto (33), porywy (34), pył (35), pełny Katalog (36)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
+(32), błoto (33), porywy (34), pył (35), pełny Katalog (36), Akt 0: pieczątki (37), Decyzja odmowna i Odwołanie (38),
+samouczek menu (39), dymki nowości (40), nagroda Akt 0 (41)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
 ```bash
 make TARGET=scn1 BUILD=build_scn1 USERFLAGS="-DPB_SCENARIO=1" BUTANO_PATH=...
 ROM=scn1.gba tools/playtest/run.sh skrypt.txt /tmp/zrzuty --fresh
@@ -227,7 +245,7 @@ tools/gen_data.py     JSON -> include/game_data.h
 tools/make_assets.py  proceduralne grafiki: font PL 8x16, sprite'y, kafelki+palety etapów, tytuł, ekran z QR
 assets_src/pb_logo.svg  znak PlanBudowlany
 include/core.h        logika gry (czyste C++, bez Butano) - testowalna na PC
-include/meta.h        profil SRAM (v9), Respekt, nagrody za odbiór, codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
+include/meta.h        profil SRAM (v10), samouczek menu, Respekt, nagrody za odbiór, codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
 src/main.cpp          warstwa GBA: sceny, mapa, kamera, HUD, SRAM
 ```
 Grafiki są placeholderami generowanymi kodem: podmień pliki w `graphics/` pixel-artem z Aseprite
