@@ -23,7 +23,7 @@ public sealed class StageCardScreen : Screen
         var g = S.Game;
         var d = S.Data;
         var sd = d.Stages[g.Stage];
-        var page = new MessagePage($"Akt {UiText.Roman(sd.Act)}, {g.Stage + 1}/{d.Stages.Length}", "Enter: do roboty");
+        var page = new MessagePage($"Akt {g.ActNumeral()}, {g.StageNumber()}/{g.StagesInRun()}", "Enter: do roboty");
         page.Add(g.StageStory);
         var ev = g.CurrentEvent;
         if (ev is not null && g.Turns == g.StageStartTurn) page.Add(ev.Msg);
@@ -34,7 +34,7 @@ public sealed class StageCardScreen : Screen
         var wd = g.WDef; // pogoda dnia (skutek w zakładce Zadania) i trudność w jednym wierszu
         var weather = wd.Effect == WeatherEffect.None ? wd.Name : $"{wd.Name} ({wd.Short})";
         page.Info($"Pogoda: {weather}, {g.DDef.Name}" + (g.Tier > 0 ? $" NG+{g.Tier}" : ""), wd.Bad ? Ink.Late : Ink.Dim);
-        page.Info($"Akt {UiText.Roman(sd.Act)}: {g.ADef.MechName} ({g.ADef.MechInfo})", Ink.Late); // mechanika aktu
+        page.Info($"Akt {g.ActNumeral()}: {g.ADef.MechName} ({g.ADef.MechInfo})", Ink.Late); // mechanika aktu
         N.Phone.OpenSingle(page, 2, instant);
         Sfx.Play("notify", 0.7f);
     }
@@ -51,7 +51,7 @@ public sealed class StageCardScreen : Screen
     {
         var g = S.Game;
         Flow.Game.Open();
-        if (S.FirstStage && g.Stage == 0 && g.Tier == 0) App.Banners.FirstStageHints();
+        if (S.FirstStage && g.Stage == g.FirstStage && g.Tier == 0) App.Banners.FirstStageHints();
         if (g.Turns == g.StageStartTurn) App.Banners.ActHint(); // nowy akt: jego mechanika
         S.FirstStage = false;
         App.Refresh();

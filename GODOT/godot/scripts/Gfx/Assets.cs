@@ -37,9 +37,13 @@ public static class Assets
     public const int MenuRewardTool = 15, MenuRewardTool2 = 16, MenuBoots = 17, MenuBelt = 18, MenuRespect = 19, MenuCalendar = 14;
     // menu_icons.png 20-22: mechaniki aktów (błoto, porywy, pył; + ActMechanic - 1), 23: statystyki ("i")
     public const int MenuAct = 20, MenuStats = 23;
+    // menu_icons.png 24: mechanika Aktu 0 - pieczątki
+    public const int MenuStamps = 24;
 
     // actors.png 61-80: problemy etapów (v0.21.49), 81-100 ich druga klatka
     public const int FrameStageEnemy = 61, StageEnemies = 20;
+    // actors.png 101-109: problemy Aktu 0 i Decyzja odmowna, 110-118 ich druga klatka, 119-121 dokumenty (podpis, mapa, uzgodnienie)
+    public const int FramePreludeEnemy = 101, PreludeEnemies = 9, FrameDocument = 119;
 
     // tiles/stage_N.png: 4 podłogi, 2 podłogi z cieniem muru, mur, lico muru, schody
     public const int TileFloor = 0, TileFloorShadow = 4, TileWall = 6, TileWallFace = 7, TileStairs = 8;
@@ -87,15 +91,23 @@ public static class Assets
 
     /// <summary>Czy klatka ma animację chodu (zawody, problemy budowy, bossowie).</summary>
     public static bool HasWalk(int frame) =>
-        frame is >= 0 and < 15 or 46 or 47 or 50 or 52 or 53 or 54 || (frame >= FrameStageEnemy && frame < FrameStageEnemy + StageEnemies);
+        frame is >= 0 and < 15 or 46 or 47 or 50 or 52 or 53 or 54 || (frame >= FrameStageEnemy && frame < FrameStageEnemy + StageEnemies)
+        || (frame >= FramePreludeEnemy && frame < FramePreludeEnemy + PreludeEnemies);
+
+    /// <summary>Ikona mechaniki aktu w menu_icons (błoto, porywy, pył; pieczątki Aktu 0).</summary>
+    public static int ActIcon(ActMechanic m) => m == ActMechanic.Stamps ? MenuStamps : MenuAct + Mathf.Max(0, (int)m - 1);
 
     /// <summary>Region klatki size x size w pionowym pasku.</summary>
     public static Rect2 Frame(int index, int size) => new(0, index * size, size, size);
 
     /// <summary>Druga klatka animacji (anim_b z main.cpp): zawody i wrogowie 0..14 -> +27, bossowie 46-47 -> 48-49, 50 -> 51,
-    /// zawody z nagród 52-54 -> 55-57, problemy etapów 61-80 -> 81-100.</summary>
+    /// zawody z nagród 52-54 -> 55-57, problemy etapów 61-80 -> 81-100, Akt 0 101-109 -> 110-118.</summary>
     public static int AnimB(int frame)
     {
+        if (frame >= FramePreludeEnemy)
+        {
+            return frame + PreludeEnemies;
+        }
         if (frame >= FrameStageEnemy)
         {
             return frame + StageEnemies;
@@ -116,6 +128,7 @@ public static class Assets
     {
         if (r.Kind == RewardKind.Tool) return r.Index == d.Tools.Length - 1 ? MenuRewardTool2 : MenuRewardTool;
         if (r.Kind == RewardKind.Gear) return d.Gear[r.Index * 3].Stat == GearStat.Thermos ? MenuBelt : MenuBoots;
+        if (r.Kind == RewardKind.Act) return MenuStamps;
         return MenuCalendar;
     }
 
@@ -124,6 +137,7 @@ public static class Assets
     {
         PickupType.Tool => FrameToolbox,
         PickupType.GearBox => FrameGear + p.Arg % 3,
+        PickupType.Document => FrameDocument + p.Arg,
         _ => FrameCoffee + (int)p.Type,
     };
 

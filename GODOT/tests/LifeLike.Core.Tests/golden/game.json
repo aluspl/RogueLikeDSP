@@ -2781,42 +2781,42 @@
         "title": "Nowa budowa",
         "text": "Tu zaczynasz budowę domu|Nowaków: zawód, trudność|i na plac. Powodzenia!",
         "screen": "title",
-        "gba": "START / A: nowa budowa"
+        "gba": "START / A"
       },
       {
         "id": "phone",
         "title": "Profil w telefonie",
         "text": "Twój telefon: odznaki,|zlecenia, pamiątki,|Katalog usterek, Osiedle.",
         "screen": "title",
-        "gba": "SELECT: telefon profilu"
+        "gba": "SELECT"
       },
       {
         "id": "training",
         "title": "Szkolenia",
         "text": "Za doświadczenie z budów|kupisz Szkolenia: HP,|nowe zawody, narzędzia.",
         "screen": "title",
-        "gba": "SELECT, Koszty: Szkolenia"
+        "gba": "SELECT, Koszty"
       },
       {
         "id": "respect",
         "title": "Respekt",
         "text": "Respekt dostajesz za|każdy etap i zostaje po|porażce. Stałe premie!",
         "screen": "title",
-        "gba": "Koszty, SELECT: Respekt"
+        "gba": "Koszty, SELECT"
       },
       {
         "id": "daily",
         "title": "Codzienna budowa",
         "text": "Budowa dnia: ten sam|plac i zawód dla|wszystkich. Pobij wynik!",
         "screen": "title",
-        "gba": "R: codzienna budowa"
+        "gba": "R"
       },
       {
         "id": "help",
         "title": "Jak grać",
         "text": "Sterowanie, akty,|statystyki. Tam też|powtórzysz samouczek.",
         "screen": "title",
-        "gba": "B: jak grać"
+        "gba": "B"
       },
       {
         "id": "options",
@@ -2830,28 +2830,28 @@
         "title": "Zawód",
         "text": "Każdy fach ma broń, moc|i statystyki. Nowe fachy|kupisz albo wygrasz.",
         "screen": "class",
-        "gba": "lewo / prawo: zawód"
+        "gba": "lewo / prawo"
       },
       {
         "id": "difficulty",
         "title": "Trudność",
         "text": "Łatwy, Normalny, Trudny:|silniejsze problemy,|więcej punktów.",
         "screen": "class",
-        "gba": "góra / dół: trudność"
+        "gba": "góra / dół"
       },
       {
         "id": "keepsake",
         "title": "Pamiątka",
         "text": "Jedna pamiątka na|budowę. Im częściej ją|bierzesz, tym mocniejsza.",
         "screen": "class",
-        "gba": "L / R: pamiątka"
+        "gba": "L / R"
       },
       {
         "id": "stats",
         "title": "Statystyki",
         "text": "Co daje SIŁ, ZRĘ, INT,|OBR i SZCZ - wzory|w prostych słowach.",
         "screen": "class",
-        "gba": "START: statystyki",
+        "gba": "START",
         "link": "stats"
       },
       {
@@ -2859,7 +2859,7 @@
         "title": "Tryb inwestora",
         "text": "Utrudnienia za więcej|doświadczenia. Stawka|to Twój rekord zawodu.",
         "screen": "class",
-        "gba": "SELECT: tryb inwestora",
+        "gba": "SELECT",
         "requires": "investor"
       },
       {
@@ -2867,7 +2867,7 @@
         "title": "Na plac!",
         "text": "Wybierz fach i ruszamy.|Będę pisał po drodze.|Powodzenia, szefie!",
         "screen": "class",
-        "gba": "A: start budowy"
+        "gba": "A"
       }
     ],
     "unlocks": [
@@ -2876,35 +2876,35 @@
         "title": "Pierwszy Respekt!",
         "text": "Respekt zostaje na stałe.|Wydasz go w telefonie:|Koszty, strona Respekt.",
         "screen": "title",
-        "gba": "SELECT: telefon profilu"
+        "gba": "SELECT, Koszty"
       },
       {
         "id": "daily",
         "title": "Codzienna budowa",
         "text": "Po pierwszej budowie|spróbuj budowy dnia:|ten sam plac dla każdego.",
         "screen": "title",
-        "gba": "R: codzienna budowa"
+        "gba": "R"
       },
       {
         "id": "investor",
         "title": "Tryb inwestora",
         "text": "Pierwszy odbiór! Na|wyborze zawodu włączysz|utrudnienia za dośw.",
         "screen": "class",
-        "gba": "SELECT: tryb inwestora"
+        "gba": "SELECT"
       },
       {
         "id": "act0",
         "title": "Akt 0: Papierologia",
         "text": "Najpierw papiery! Nowe|budowy zaczną się od|pozwoleń i przyłączy.",
         "screen": "title",
-        "gba": "START / A: nowa budowa"
+        "gba": "START / A"
       },
       {
         "id": "class",
         "title": "Nowy zawód",
         "text": "Nowy fach w ekipie!|Czeka na pasku zawodów.|Wypróbuj go na placu.",
         "screen": "class",
-        "gba": "lewo / prawo: zawód"
+        "gba": "lewo / prawo"
       }
     ]
   }

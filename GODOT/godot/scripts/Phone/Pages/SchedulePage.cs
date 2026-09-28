@@ -52,7 +52,7 @@ public sealed class SchedulePage : PhonePage
     }
 
     public override string Title => "Harmonogram";
-    public override string Sub => _g.ActCleared ? $"Akt {UiText.Roman(_g.D.Stages[_g.Stage].Act)} zaliczony!" : "Etap zaliczony";
+    public override string Sub => _g.ActCleared ? $"Akt {_g.ActNumeral()} zaliczony!" : "Etap zaliczony";
     public override string Hint => (HasChoice ? "Strzałki: ścieżka  " : "") + (_g.ActCleared && !_g.ShopClosed ? "Enter: do Hurtowni" : HasChoice ? "Enter: dalej" : $"Enter: dalej{Break}");
     public override PageAction[] Actions => [new(_g.ActCleared && !_g.ShopClosed ? "Do Hurtowni" : HasChoice ? $"Dalej: {_g.D.Paths[_g.PathOffer(Sel)].Short}" : $"Dalej{Break}", GameAction.Start)];
 
@@ -68,7 +68,7 @@ public sealed class SchedulePage : PhonePage
         var summaryRows = 1 + (_g.ActCleared ? 1 : 0) + Math.Min(notes.Count, 2);
         var tipRows = Math.Min(tips.Count, 2);
         var below = summaryRows * PhonePainter.RowH + 8 + Gap + (tipRows > 0 ? PhonePainter.RowH + tipRows * PhonePainter.RowH + 8 + Gap : 0);
-        var n = _g.D.Stages.Length;
+        var n = _g.StagesInRun();
         var top = p.Top;
         if (HasChoice)
         {
@@ -97,8 +97,9 @@ public sealed class SchedulePage : PhonePage
     private Godot.Rect2 Stages(PhonePainter p, int rows, float top)
     {
         var d = _g.D;
+        var f0 = _g.FirstStage;   // bez Aktu 0: od Fundamentów
         var n = d.Stages.Length;
-        var first = Math.Clamp(_g.Stage - (rows > 3 ? 1 : 0), 0, n - rows);
+        var first = Math.Clamp(_g.Stage - (rows > 3 ? 1 : 0), f0, n - rows);
         var card = p.Card(top, rows);
         var tx = p.TextX(card);
         var right = card.End.X - 6;
@@ -112,7 +113,7 @@ public sealed class SchedulePage : PhonePage
             if (next) p.Selected(card, r);
             p.Stripe(card, r, done ? Pal.Done : next ? Pal.Brand : Pal.Todo);
             var pw = p.Pill(right, y, done ? "Gotowe" : next ? "Następny" : "Do zrob.", done ? PillKind.Done : next ? PillKind.Brand : PillKind.Gray);
-            p.Text(tx, y, $"{i + 1}. {d.Stages[i].Name}", done ? Ink.Dim : next ? Ink.Brand : Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
+            p.Text(tx, y, $"{i - f0 + 1}. {d.Stages[i].Name}", done ? Ink.Dim : next ? Ink.Brand : Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
         }
         return card;
     }
@@ -125,7 +126,7 @@ public sealed class SchedulePage : PhonePage
     {
         var d = _g.D;
         var next = d.Stages[_g.Stage + 1];
-        var y = p.Section(top, "WYBIERZ ŚCIEŻKĘ", $"{_g.Stage + 2}. {next.Name}");
+        var y = p.Section(top, "WYBIERZ ŚCIEŻKĘ", $"{_g.StageNumber() + 1}. {next.Name}");
         var rowH = PhonePainter.RowH;
         var tx0 = p.Left + 38 + 12;
         var descW = (int)(p.Right - 6 - tx0);

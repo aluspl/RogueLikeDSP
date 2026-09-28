@@ -77,7 +77,7 @@ public sealed class HurtowniaPage : PhonePage
         var c0 = p.Card(p.Top, 1);
         var tx = p.TextX(c0);
         var right = c0.End.X - 6;
-        var bonus = $"Premia za akt {UiText.Roman(d.Stages[_g.Stage].Act)}: +{_g.ActBonus} zł";
+        var bonus = $"Premia za akt {_g.ActNumeral()}: +{_g.ActBonus} zł";
         p.Stripe(c0, 0, _note.Length > 0 ? Pal.Brand : Pal.Done);
         p.Text(tx, p.RowY(c0, 0), _note.Length > 0 ? _note : bonus, _note.Length > 0 ? Ink.Brand : Ink.Done, TextAlign.Left, right - tx);
         var n = d.Hurtownia.Length;

@@ -22,7 +22,7 @@ public sealed class EndScreen : Screen
         var v = N.EndView;
         v.Won = won;
         v.CanContinue = won && !g.Daily; // codzienna budowa: bez NG+
-        v.Line1 = $"Wynik {g.Score}   Dni {g.Turns}   Etap {g.Stage + 1}/{S.Data.Stages.Length}   Dośw. +{S.LastGained}";
+        v.Line1 = $"Wynik {g.Score}   Dni {g.Turns}   Etap {g.StageNumber()}/{g.StagesInRun()}   Dośw. +{S.LastGained}";
         var record = g.Score > S.PrevBest ? "Nowy rekord!" : $"Rekord {S.Profile.Best}";
         var daily = g.Daily ? (S.DailyRecord ? "   Rekord dnia!" : $"   Budowa dnia nr {g.DailyDay}") : "";
         v.Line2 = $"{record}   Doświadczenie w profilu {S.Profile.Xp}   Respekt +{g.Respect} (masz {S.Profile.Respect})" + (won ? "   Dom na Osiedlu!" : "") + daily;

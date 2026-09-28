@@ -75,7 +75,7 @@ public partial class HudTop : Control
         // etap i poziom trudności (prawa strona, jak „Etap 1/8 N” na GBA)
         var sd = g.D.Stages[g.Stage];
         var ng = g.Tier > 0 ? $" +{g.Tier}" : "";
-        var right = $"Etap {g.Stage + 1}/{g.D.Stages.Length}: {sd.Name}";
+        var right = $"Etap {g.StageNumber()}/{g.StagesInRun()}: {sd.Name}";
         var re = w - 6 - Mathf.Ceil((SettingsButton.Side + 4) / Layout.HudScale); // miejsce na klucz ustawień
         f.Draw(this, new Vector2(re, 2), f.Fit(right, (int)(re - xr.End.X - 12)), Ink.Map, TextAlign.Right);
         f.Draw(this, new Vector2(re, 19), $"{g.DDef.Name}{ng}", Ink.MapDim, TextAlign.Right);
@@ -101,14 +101,15 @@ public partial class HudTop : Control
         Assets.DrawFrame(this, Assets.UiMenu, Assets.MenuWeather + (int)g.WDef.Effect, Assets.Icon, new Vector2(x, 20));
         x += 20;
 
-        // mechanika aktu (menu_icons 20-22: błoto, porywy, pył); przy porywach tury do kolejnego (ostatnia na czerwono)
+        // mechanika aktu (menu_icons 20-22: błoto, porywy, pył; 24: pieczątki Aktu 0); przy porywach tury do kolejnego (ostatnia na czerwono)
         var mech = (int)g.ADef.Mechanic;
         if (mech > 0)
         {
-            Assets.DrawFrame(this, Assets.UiMenu, Assets.MenuAct + mech - 1, Assets.Icon, new Vector2(x, 20));
+            Assets.DrawFrame(this, Assets.UiMenu, Assets.ActIcon(g.ADef.Mechanic), Assets.Icon, new Vector2(x, 20));
             x += 17;
             var gin = g.GustIn();
-            if (gin > 0) x += f.Draw(this, new Vector2(x, 19), gin.ToString(), gin == 1 ? Ink.MapBad : Ink.Map) + 6;
+            if (g.DocsNeeded() > 0) x += f.Draw(this, new Vector2(x, 19), $"{g.DocsCount()}/{g.DocsNeeded()}", g.StairsLocked() ? Ink.Map : Ink.MapGood) + 6;   // pieczątki
+            else if (gin > 0) x += f.Draw(this, new Vector2(x, 19), gin.ToString(), gin == 1 ? Ink.MapBad : Ink.Map) + 6;
             else x += 3;
         }
 

@@ -32,6 +32,14 @@ public sealed class BannerFeed
         ev.RespectGained += (gained, total) => _banners.Push($"Respekt +{gained}", $"Razem: {total} (Koszty)", PhoneTabs.Costs);
         ev.RewardUnlocked += i => _banners.Push("Nagroda: " + _s.Data.Rewards[i].Name, _s.Data.Rewards[i].Desc, PhoneTabs.Start);
         ev.SecondChance += () => _banners.Push("Druga szansa!", "Zostaje 1 HP - uważaj", PhoneTabs.Start);
+        ev.DocumentFound += (doc, complete) => _banners.Push("Dokument: " + _s.Data.Documents[doc],
+            complete ? "Komplet! Schody otwarte" : $"Pieczątki {_s.Game.DocsCount()}/{_s.Game.DocsNeeded()}", PhoneTabs.Tasks);
+        ev.BossPhase += def =>
+        {
+            var bd = _s.Data.Enemies[def];
+            var b = _s.Game.Enemies[_s.Game.Boss];
+            _banners.Push($"Druga faza: {bd.PhaseName}!", $"{bd.Name} +{b.MaxHp * bd.PhaseHeal / 100} HP", PhoneTabs.Issues);
+        };
     }
 
     private void OnLevelUp(int level, bool abilityUp)
@@ -85,8 +93,8 @@ public sealed class BannerFeed
         var g = _s.Game;
         var d = _s.Data;
         var act = d.Stages[g.Stage].Act;
-        if (g.ADef.Mechanic == ActMechanic.None || (g.Stage > 0 && d.Stages[g.Stage - 1].Act == act)) return;
-        _banners.Push($"Akt {UiText.Roman(act)}: {g.ADef.MechShort}", g.ADef.MechInfo, PhoneTabs.Tasks);
+        if (g.ADef.Mechanic == ActMechanic.None || (g.Stage > g.FirstStage && d.Stages[g.Stage - 1].Act == act)) return;
+        _banners.Push($"Akt {g.ActNumeral()}: {g.ADef.MechShort}", g.ADef.MechInfo, PhoneTabs.Tasks);
     }
 
     /// <summary>Podpowiedź na start budowy: moc pod R i zabrana pamiątka z rangą (jak na GBA).</summary>

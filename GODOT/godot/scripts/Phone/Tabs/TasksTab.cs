@@ -15,15 +15,16 @@ public sealed class TasksTab : PhonePage
     public TasksTab(CoreGame g) => _g = g;
 
     public override string Title => "Zadania";
-    public override string Sub => $"Etap {_g.Stage + 1}/{_g.D.Stages.Length}, {_g.Score} pkt";
+    public override string Sub => $"Etap {_g.StageNumber()}/{_g.StagesInRun()}, {_g.Score} pkt";
 
     public override void Draw(PhonePainter p)
     {
         var d = _g.D;
-        var y = p.Section(p.Top, "HARMONOGRAM", $"Akt {UiText.Roman(d.Stages[_g.Stage].Act)}");
-        var n = d.Stages.Length;
+        var y = p.Section(p.Top, "HARMONOGRAM", $"Akt {_g.ActNumeral()}");
+        var f0 = _g.FirstStage;   // bez Aktu 0: od Fundamentów
+        var n = d.Stages.Length - f0;
         var rows = PhoneView.Full ? n : Math.Min(n, 5);   // wąski telefon (poziomo): okno etapów wokół bieżącego
-        var first = Math.Max(0, Math.Min(_g.Stage - 1, n - rows));
+        var first = f0 + Math.Max(0, Math.Min(_g.Stage - f0 - 1, n - rows));
         var card = p.Card(y, rows);
         for (var r = 0; r < rows; r++)
         {
@@ -35,7 +36,7 @@ public sealed class TasksTab : PhonePage
             p.Stripe(card, r, done ? Pal.Done : cur ? Pal.Prog : Pal.Todo);
             var pill = done ? "Gotowe" : cur ? "W trakcie" : "Do zrob.";
             var pw = p.Pill(card.End.X - 6, ry, pill, done ? PillKind.Done : cur ? PillKind.Prog : PillKind.Gray);
-            p.Text(p.TextX(card), ry, $"{i + 1}. {d.Stages[i].Name}", done ? Ink.Dim : Ink.Dark, TextAlign.Left, card.End.X - 12 - pw - p.TextX(card));
+            p.Text(p.TextX(card), ry, $"{i - f0 + 1}. {d.Stages[i].Name}", done ? Ink.Dim : Ink.Dark, TextAlign.Left, card.End.X - 12 - pw - p.TextX(card));
         }
         y = card.End.Y + 4;
         y = p.Section(y, "PLAC BUDOWY");
@@ -65,7 +66,9 @@ public sealed class TasksTab : PhonePage
         p.Stripe(c2, 2, Pal.Late);
         var ap = p.Pill(c2.End.X - 6, r2, ad.MechShort, PillKind.Late);
         var gin = _g.GustIn();
-        var mech = gin > 0 ? $"Poryw za {gin} t. {CoreGame.DirName(_g.GustDir())}" : ad.MechName;
+        var mech = gin > 0 ? $"Poryw za {gin} t. {CoreGame.DirName(_g.GustDir())}"
+            : _g.DocsNeeded() > 0 ? $"Dokumenty {_g.DocsCount()}/{_g.DocsNeeded()}, schody " + (_g.StairsLocked() ? "zamknięte" : "otwarte")
+            : ad.MechName;
         p.Text(p.TextX(c2), r2, mech, Ink.Dark, TextAlign.Left, c2.End.X - 12 - ap - p.TextX(c2));
         if (!hasPath) return;
         var path = d.Paths[_g.StagePath]; // ścieżka wybrana na harmonogramie

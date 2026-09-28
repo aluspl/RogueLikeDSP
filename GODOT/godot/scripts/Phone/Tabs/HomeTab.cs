@@ -48,7 +48,7 @@ public sealed class HomeTab : PhonePage
         var r = p.RowY(card, 0);
         p.Stripe(card, 0, Pal.Prog);
         var pw = p.Pill(right, r, "W trakcie", PillKind.Prog);
-        p.Text(tx, r, $"Etap {g.Stage + 1}: {d.Stages[g.Stage].Name}", Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
+        p.Text(tx, r, $"Etap {g.StageNumber()}: {d.Stages[g.Stage].Name}", Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
 
         r = p.RowY(card, 1);
         p.Divider(card, 1);

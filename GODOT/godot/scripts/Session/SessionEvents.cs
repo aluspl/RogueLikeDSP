@@ -36,6 +36,10 @@ public sealed class SessionEvents
     public event Action<int> RewardUnlocked;
     /// <summary>Druga szansa (Respekt): bohater przeżył z 1 HP.</summary>
     public event Action SecondChance;
+    /// <summary>Akt 0 (pieczątki): zebrany dokument (indeks w GameData.Documents); drugi argument = komplet (schody otwarte).</summary>
+    public event Action<int, bool> DocumentFound;
+    /// <summary>Boss wszedł w drugą fazę (np. Decyzja odmowna: Odwołanie) - indeks definicji wroga.</summary>
+    public event Action<int> BossPhase;
 
     public void RaiseRunStarted() => RunStarted?.Invoke();
     public void RaisePickedUp() => PickedUp?.Invoke();
@@ -51,4 +55,6 @@ public sealed class SessionEvents
     public void RaiseRespectGained(int gained, int total) => RespectGained?.Invoke(gained, total);
     public void RaiseRewardUnlocked(int index) => RewardUnlocked?.Invoke(index);
     public void RaiseSecondChance() => SecondChance?.Invoke();
+    public void RaiseDocumentFound(int doc, bool complete) => DocumentFound?.Invoke(doc, complete);
+    public void RaiseBossPhase(int def) => BossPhase?.Invoke(def);
 }

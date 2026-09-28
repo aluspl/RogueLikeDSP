@@ -217,6 +217,19 @@ public sealed class WorldFx
         _w.Flash(Pal.LevelGlow, 0.4f);
     }
 
+    /// <summary>Druga faza bossa (Odwołanie): czerwony błysk, wstrząs i kartki wylatujące z bossa.</summary>
+    public void BossPhase()
+    {
+        var g = G;
+        if (g.Boss < 0) return;
+        var b = _w.GridToScreen(g.Enemies[g.Boss].X, g.Enemies[g.Boss].Y);
+        foreach (var d in Dir8) Fx.Spawn(b, d * 2.2f, 0.05f, 28, Assets.PRing, 2);
+        Fx.Burst(b, 10, Assets.PSpark, 2, 2.4f, 24);
+        _w.EnemySprite(g.Boss)?.Flash(Pal.HurtTint);
+        _w.Camera.Shake(0.3f);
+        _w.Flash(new Color(1f, 0.25f, 0.2f), 0.45f);
+    }
+
     /// <summary>Brygada: efekt wezwania fachowca (brigade_fx w main.cpp) i błysk.</summary>
     public void Brigade(HelperEffect effect)
     {

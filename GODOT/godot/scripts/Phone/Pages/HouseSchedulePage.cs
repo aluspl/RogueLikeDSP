@@ -23,7 +23,7 @@ public sealed class HouseSchedulePage : PhonePage
     }
 
     public override string Title => "Harmonogram domu";
-    public override string Sub => $"{_g.D.Stages.Length}/{_g.D.Stages.Length}";
+    public override string Sub => $"{_g.StagesInRun()}/{_g.StagesInRun()}";
     public override string Hint => "Spacja: planbudowlany.online  Enter: dalej";
     public override PageAction[] Actions => [new("Zaplanuj swoją budowę", GameAction.A), new("Dalej", GameAction.Start)];
 
@@ -45,7 +45,7 @@ public sealed class HouseSchedulePage : PhonePage
     public override void Draw(PhonePainter p)
     {
         var d = _g.D;
-        var n = d.Stages.Length;
+        var n = _g.StagesInRun();   // bez Aktu 0: od Fundamentów
         var big = PhoneView.Full; // pionowy telefon: większe zdjęcie domu
         var photo = big ? 64 : 32;
         // zdjęcie domu i podsumowanie
@@ -69,7 +69,7 @@ public sealed class HouseSchedulePage : PhonePage
         var card = p.Card(y, rows);
         var cx = p.TextX(card);
         var cr = card.End.X - 6;
-        var first = n - rows; // mało miejsca: ostatnie etapy (odbiór)
+        var first = d.Stages.Length - rows; // mało miejsca: ostatnie etapy (odbiór)
         for (var r = 0; r < rows; r++)
         {
             var s = first + r;

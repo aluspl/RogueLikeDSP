@@ -312,7 +312,7 @@ public partial class WorldView : Node2D
             if (t > 0 && t % v == 0 && _g.Turns != _prevGustTurn)
             {
                 _prevGustTurn = _g.Turns;
-                var d = (t / v + _g.Stage) & 3;
+                var d = (t / v + _g.PatternStage()) & 3;
                 var gv = new Vector2(CoreGame.GustVec[d, 0], CoreGame.GustVec[d, 1]);
                 for (var k = 0; k < 10; k++)
                     _fx.Spawn(h - gv * 70 + new Vector2((float)GD.RandRange(-40, 40), (float)GD.RandRange(-40, 40)), gv * 5f, 0, 24, Assets.PDust, 3);

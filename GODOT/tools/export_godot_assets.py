@@ -153,11 +153,15 @@ def export_sheet(name, frame_h, rel_hd, rel_1x=None, rel_gray=None, rel_white=No
 # ------------------------------------------------------------------ animacje chodu i oddechu
 ANIM_FRAMES = 5          # chód x4 + oddech
 STAGE_ENEMY_FRAME, STAGE_ENEMIES = 61, 20   # v0.21.49: problemy etapów 61-80, druga klatka 81-100
+PRELUDE_ENEMY_FRAME, PRELUDE_ENEMIES = 101, 9   # v0.21.49 cz. 3: Akt 0 - problemy i Decyzja odmowna 101-109, druga klatka 110-118
 CHARACTER_FRAMES = (list(range(0, 15)) + [46, 47, 50, 52, 53, 54]
-                    + list(range(STAGE_ENEMY_FRAME, STAGE_ENEMY_FRAME + STAGE_ENEMIES)))   # jak anim_b w main.cpp
+                    + list(range(STAGE_ENEMY_FRAME, STAGE_ENEMY_FRAME + STAGE_ENEMIES))
+                    + list(range(PRELUDE_ENEMY_FRAME, PRELUDE_ENEMY_FRAME + PRELUDE_ENEMIES)))   # jak anim_b w main.cpp
 
 
 def anim_b(f):
+    if f >= PRELUDE_ENEMY_FRAME:
+        return f + PRELUDE_ENEMIES
     if f >= STAGE_ENEMY_FRAME:
         return f + STAGE_ENEMIES
     if f < 15:
@@ -362,7 +366,8 @@ def stage_colors(i):
     """Paleta pełnego światła etapu z GBA: podłoga, detal, ściana, jasny, cień, schody x2, cień podłogi, zagrożenie."""
     _, _, _, pal = load_indexed("stage_palettes_%d" % i)
     return {"floor": pal[1], "detail": pal[2], "wall": pal[3], "light": pal[4], "shadow": pal[5],
-            "stairs": pal[6], "stairs2": pal[7], "floor_shadow": pal[8], "danger": pal[9]}
+            "stairs": pal[6], "stairs2": pal[7], "floor_shadow": pal[8], "danger": pal[9],
+            "extra": pal[12], "extra2": pal[13]}   # 12-13: błoto; w Akcie 0 grzbiety segregatorów / rura
 
 
 def mix(a, b, t):
@@ -398,9 +403,11 @@ class Canvas:
 
 
 # rodzaje podłóg i murów etapów (kolejność jak etapy w GBA/data/game.json); podłoga jak akt na GBA:
-# akt I ziemia (strop: płyta), akt II deski, akt III płytki
-FLOOR_KIND = ["dirt", "dirt", "dirt", "slab", "planks", "planks", "planks", "tiles", "tiles", "tiles"]
-WALL_KIND = ["formwork", "membrane", "blocks", "concrete", "rooftile", "brick", "plaster", "pipes", "plaster", "tiles"]
+# Akt 0 biuro (wykładzina, regał z segregatorami) i wykop (ziemia, ściana z rurą), akt I ziemia (strop: płyta),
+# akt II deski, akt III płytki
+FLOOR_KIND = ["carpet", "dirt", "dirt", "dirt", "dirt", "slab", "planks", "planks", "planks", "tiles", "tiles", "tiles"]
+WALL_KIND = ["binders", "trench", "formwork", "membrane", "blocks", "concrete", "rooftile", "brick", "plaster", "pipes",
+             "plaster", "tiles"]
 
 
 def draw_floor(c, col, kind, rnd):
@@ -416,6 +423,21 @@ def draw_floor(c, col, kind, rnd):
             c.set(x, y, mix(fl, col["light"], 0.5))
             c.set(x + 1, y, mix(fl, col["light"], 0.3))
             c.set(x, y + 1, shade(dt, 0.8))
+    elif kind == "carpet":   # biuro: wykładzina w kratkę i porozrzucane kartki
+        grid = shade(fl, 0.93)
+        for k in (0, 16):
+            c.hline(0, 31, k, grid)
+            c.vline(k, 0, 31, grid)
+        for _ in range(18):
+            c.set(rnd.randrange(32), rnd.randrange(32), dt)
+        if rnd.random() < 0.6:   # kartka
+            x, y = rnd.randrange(3, 20), rnd.randrange(3, 20)
+            paper = mix(col["light"], (255, 255, 255), 0.6)
+            c.rect(x, y, x + 7, y + 9, paper)
+            c.vline(x + 8, y + 1, y + 10, shade(fl, 0.8))
+            c.hline(x + 1, x + 8, y + 10, shade(fl, 0.8))
+            for ly in (y + 2, y + 4, y + 6):
+                c.hline(x + 1, x + 5, ly, shade(dt, 0.8))
     elif kind in ("screed", "slab"):   # wylewka: drobne ziarno, w stropie fugi płyt
         for _ in range(34):
             c.set(rnd.randrange(32), rnd.randrange(32), dt if rnd.random() < 0.7 else mix(fl, (255, 255, 255), 0.12))
@@ -508,6 +530,35 @@ def draw_wall(c, col, kind, rnd):
         c.vline(20, 0, 31, mix(wl, (255, 255, 255), 0.3))
         c.vline(23, 0, 31, sh)
         c.rect(19, 8, 23, 13, mix(pipe, sh, 0.3))
+    elif kind == "binders":   # regał z segregatorami: grzbiety w trzech kolorach, etykiety, półka
+        cols = [wl, col["extra"], col["extra2"], shade(wl, 1.15)]
+        shelf = shade(sh, 0.9)
+        for row in range(2):
+            y0 = row * 16
+            x = 0
+            k = rnd.randrange(4)
+            while x < 32:
+                bw = 4 + rnd.randrange(3)
+                bc = cols[k % 4]
+                c.rect(x, y0, min(31, x + bw - 2), y0 + 13, bc)
+                c.vline(min(31, x + bw - 1), y0, y0 + 13, shade(bc, 0.55))
+                c.rect(x + 1, y0 + 3, min(31, x + bw - 3), y0 + 5, mix(lt, (255, 255, 255), 0.5))   # etykieta
+                c.set(x + 1, y0 + 9, shade(bc, 0.6))   # otwór na palec
+                x += bw
+                k += 1
+            c.rect(0, y0 + 14, 31, y0 + 15, shelf)
+            c.hline(0, 31, y0 + 14, mix(shelf, lt, 0.4))
+    elif kind == "trench":   # ściana wykopu: ziemia warstwami i przekrój rury
+        for _ in range(40):
+            c.set(rnd.randrange(32), rnd.randrange(32), shade(wl, 0.85 if rnd.random() < 0.6 else 1.15))
+        c.hline(0, 31, 6, shade(wl, 0.8))
+        c.hline(0, 31, 24, shade(wl, 0.8))
+        pipe, glint = col["extra"], col["extra2"]
+        c.rect(0, 12, 31, 18, pipe)
+        c.hline(0, 31, 13, glint)
+        c.hline(0, 31, 18, shade(pipe, 0.6))
+        c.rect(14, 11, 17, 19, shade(pipe, 0.8))   # złączka
+        c.vline(14, 11, 19, glint)
     elif kind == "blocks":   # bloczki betonowe 16x16 z pojedynczą spoiną (akt I na GBA)
         for k in (15, 31):
             c.hline(0, 31, k, sh)

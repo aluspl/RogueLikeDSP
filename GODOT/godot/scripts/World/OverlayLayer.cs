@@ -59,14 +59,28 @@ public partial class OverlayLayer : Node2D
                 var t = _g.Lv[x, y];
                 if (_g.Puddle(x, y)) DrawPuddle(r, pulse, _g.Visible(x, y));
                 else if (_g.Mud(x, y)) DrawTextureRect(Assets.Mud, r, false, new Color(1, 1, 1, _g.Visible(x, y) ? 1f : 0.45f));
-                if (t == Tile.Stairs && _g.Visible(x, y))
+                var locked = t == Tile.Stairs && _g.StairsLocked();   // pieczątki (Akt 0): schody zamknięte do kompletu dokumentów
+                if (t == Tile.Stairs && _g.Visible(x, y) && !locked)
                     DrawRect(r.Grow(-3), new Color(Pal.StairsGlow, 0.12f + 0.16f * pulse));
+                if (locked && !(x == _g.Hero.X && y == _g.Hero.Y))
+                {
+                    DrawRect(r.Grow(-3), new Color(0.05f, 0.04f, 0.1f, 0.45f));
+                    DrawTextureRectRegion(Assets.Actors, new Rect2(r.Position + new Vector2(4, 4), new Vector2(24, 24)), Assets.Frame(Assets.FrameLock, 16));
+                }
                 if (t != Tile.Wall && _g.DangerCell(x, y))
                     DrawTextureRect(Assets.Danger, r, false, new Color(1, 1, 1, 0.55f + 0.45f * pulse));
                 if ((_range > 0 || RangeHeld) && t != Tile.Wall && _g.Visible(x, y) && !(x == _g.Hero.X && y == _g.Hero.Y)
                     && CoreGame.Cheb(_g.Hero.X, _g.Hero.Y, x, y) <= _g.WeaponRange())
                     DrawTextureRect(Assets.Range, r, false, new Color(1, 1, 1, RangeHeld ? 0.75f + 0.25f * pulse : Mathf.Min(1f, _range * 4f)));
             }
+        }
+        for (var i = 0; i < _g.PickupsCount; i++)   // dokumenty Aktu 0: złota poświata pod kartką
+        {
+            var p = _g.Pickups[i];
+            if (!p.Active || p.Type != PickupType.Document || !_g.Explored(p.X, p.Y)) continue;
+            var center = new Vector2(p.X * c + c / 2f, p.Y * c + c / 2f + 2);
+            DrawCircle(center, 13f, new Color(1f, 0.85f, 0.3f, 0.10f + 0.12f * pulse));
+            DrawCircle(center, 8f, new Color(1f, 0.92f, 0.5f, 0.10f + 0.10f * pulse));
         }
     }
 }

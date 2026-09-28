@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using CoreGame = LifeLike.Core.Game;
 
 namespace LifeLike.Game.Session;
@@ -12,7 +13,8 @@ public sealed class TurnWatcher
     private readonly SessionEvents _events;
     private int _level, _weapon, _pickups, _cd, _active;
     private readonly sbyte[] _equipped = new sbyte[CoreGame.MaxGearSlots];
-    private bool _bossSeen, _second;
+    private bool _bossSeen, _second, _phase;
+    private int _docs;
     private int _stage = -1, _tier = -1;
 
     public TurnWatcher(SessionEvents events) => _events = events;
@@ -28,6 +30,8 @@ public sealed class TurnWatcher
         for (var i = 0; i < CoreGame.MaxGearSlots; i++) _equipped[i] = g.Equipped[i];
         _bossSeen = false;
         _second = g.SecondUsed;
+        _docs = g.Docs;
+        _phase = g.Boss >= 0 && (g.Enemies[g.Boss].Flags & ActorFlag.Phase) != 0;
         _stage = g.Stage;
         _tier = g.Tier;
     }
@@ -63,6 +67,19 @@ public sealed class TurnWatcher
         if (_cd > 0 && g.AbilityCd == 0) _events.RaiseAbilityReady();
         if (g.SecondUsed && !_second) _events.RaiseSecondChance();   // Druga szansa z Respektu
         _second = g.SecondUsed;
+        if (g.Docs != _docs)   // Akt 0: nowy dokument (komplet otwiera schody)
+        {
+            for (var i = 0; i < g.D.Documents.Length; i++)
+            {
+                if ((g.Docs >> i & 1) != 0 && (_docs >> i & 1) == 0) _events.RaiseDocumentFound(i, !g.StairsLocked());
+            }
+            _docs = g.Docs;
+        }
+        if (!_phase && g.Boss >= 0 && g.Enemies[g.Boss].Alive && (g.Enemies[g.Boss].Flags & ActorFlag.Phase) != 0)   // druga faza bossa
+        {
+            _phase = true;
+            _events.RaiseBossPhase(g.Enemies[g.Boss].DefId);
+        }
         if (!_bossSeen && g.Boss >= 0 && g.Enemies[g.Boss].Alive && g.Visible(g.Enemies[g.Boss].X, g.Enemies[g.Boss].Y))
         {
             _bossSeen = true;
