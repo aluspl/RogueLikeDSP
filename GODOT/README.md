@@ -4,11 +4,30 @@ Wersja Godot gry z demo GBA (`../GBA`): roguelike budowlany, w którym etapy bud
 a wrogami są *problemy budowy*. Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KONCEPCJA.md)
 (telefon z aplikacją PlanBudowlany jako interfejs, oprawa 2.5D – kolejne kamienie milowe).
 
-**Stan: zgodny z GBA v0.21.49** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 2: 10 etapów, 20 nowych problemów
-z zachowaniami, mechaniki aktów, opis statystyk; wcześniej Respekt za etapy i sklep Respektu,
+**Stan: zgodny z GBA v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
+z pieczątkami i Decyzją odmowną, samouczek menu, profil v10; wcześniej 10 etapów, 20 nowych problemów
+z zachowaniami, mechaniki aktów, opis statystyk; Respekt za etapy i sklep Respektu,
 nagrody za odbiór – Młot udarowy, Pistolet do kotew, buty, pas, zawody Dekarz, Tynkarz, Operator koparki – nowy balans
 Szkoleń, profil v8; wcześniej wybór ścieżki, materiały, codzienna budowa, pogoda, brygada, tryb inwestora);
 oprawa (grafika, font, dźwięk, telefon, wybór zawodu) jak w GBA.
+
+Nowe w v0.21.49 cz. 3 (warstwa Godota): **Akt 0 „Papierologia”** z nagrody za odbiór - kafle biura z regałami
+segregatorów (Działka i pozwolenie) i wykopu z rurą (Przyłącza), 8 nowych problemów i boss Decyzja odmowna (klatki
+101-118, chód jak reszta), dokumenty do zebrania (klatki 119-121, złota poświata), kłódka na zamkniętych schodach,
+ikona pieczątek z licznikiem „n/3” w HUD (zielony po komplecie), wiersz „Dokumenty n/3, schody zamknięte/otwarte”
+w Zadaniach, banery „Dokument: …”, „Komplet! Schody otwarte” i „Druga faza: Odwołanie!” (czerwony błysk, wstrząs,
+wezwanie); numer etapu i aktu z rdzenia („Akt 0, 1/12”, bez Aktu 0 „Etap 1/10”), harmonogram i harmonogram domu od
+pierwszego etapu budowy, nagroda „Akt 0” z ikoną pieczątki. **Samouczek menu (#25)** (`scripts/Guide`: Coach,
+CoachView): przy pierwszym uruchomieniu tytuł i wybór zawodu przyciemniają się, podświetlony element (pozycja menu,
+klucz opcji, pasek zawodów, trudność, pamiątka, statystyki, tryb inwestora, start) i dymek jak powiadomienie
+PlanBudowlany od Kierownika Marka (teksty `tutorial` z game.json - te same co na GBA, licznik kroków); Spacja / Enter
+/ dotknięcie = dalej, Esc / B / „Pomiń” = pomiń, przy statystykach I / „Statystyki” otwiera ich opis (samouczek trwa
+dalej po powrocie). Potem jeden dymek przy pierwszym odblokowaniu: Respekt, codzienna budowa, Akt 0 (tytuł), tryb
+inwestora i nowy zawód (wybór zawodu). Jak grać z tytułu: Tab / „Samouczek jeszcze raz”. Sceny zrzutów:
+`tutorial-title`, `tutorial-class`, `tutorial-stats`, `tutorial-unlock`, `tutorial-act0`, `help-tutorial`, `act0-card`,
+`act0-stamps`, `act0-stairs-open`, `act0-boss-phase`; test dymny przechodzi cały samouczek na świeżym profilu (z opisem
+statystyk), dymki nowości (każdy raz), powtórkę z Jak grać oraz Akt 0 (bot zbiera dokumenty, druga faza bossa,
+dalej Fundamenty).
 
 Nowe w v0.21.49 cz. 2 (warstwa Godota): 10 etapów z kaflami wg aktu (akt I ziemia i bloczki / izolacja, akt II
 deski, dachówka, cegła, akt III płytki, tynk, instalacje), 20 nowych problemów etapów (klatki 61-100, oddech jak
@@ -111,6 +130,8 @@ wygranej (dom z Osiedla, daty, dni, koszty i link planbudowlany.online), wyraźn
 | Opis statystyk na wyborze zawodu (dymek: mysz nad statystyką) | I | R3 | „i” na karcie |
 | Opis statystyk w trakcie budowy (telefon: Start) | Spacja | A | „Opis statystyk” |
 | Ustawienia (także klucz w prawym górnym rogu tytułu i mapy) | Esc | | klik na klucz |
+| Samouczek menu: dalej / pomiń / opis statystyk | Spacja, Enter / Esc / I | A / B / R3 | przyciski dymka |
+| Jak grać z tytułu: samouczek jeszcze raz | Tab | Select | „Samouczek jeszcze raz” |
 
 ## Telefon: pion i dotyk jedną ręką
 
@@ -166,7 +187,9 @@ nad paskiem domowym, mapa ~9 pól na szerokość, telefon jako aplikacja na cał
   z materiałami), `repairs` (Brygada i naprawy), `hurtownia-mats` (towary za materiały), `daily` (codzienna budowa),
   `house` (harmonogram domu po wygranej), `levelup` (wyraźny awans), `death` (SMS po porażce: co zostaje),
   `behaviors` (strzał, podział, wybuch), `act-mud`, `act-gust`, `act-dust` (mechaniki aktów), `stats-class`, `stats-tip`,
-  `stats-phone` (opis statystyk), `catalog-tags` (Katalog z zachowaniami), `help-acts`, `help-stats` (strony Jak grać).
+  `stats-phone` (opis statystyk), `catalog-tags` (Katalog z zachowaniami), `help-acts`, `help-stats` (strony Jak grać),
+  `tutorial-title`, `tutorial-class`, `tutorial-stats` (samouczek menu), `tutorial-unlock`, `tutorial-act0` (dymki
+  nowości), `help-tutorial`, `act0-card`, `act0-stamps`, `act0-stairs-open`, `act0-boss-phase` (Akt 0).
   Sceny ustawiają stan ręcznie (profil pokazowy, skrót zaliczenia etapu jak L+R+SELECT na GBA); zrzuty i test dymny
   działają bez dźwięku.
 
@@ -193,7 +216,7 @@ czyta – `GBA/graphics/*.bmp`, `GBA/include/font_widths.h` i `GBA/audio/*` i za
 `sprites/` (postacie, wrogowie, w tym problemy etapów 61-100, bossowie, znajdźki, paczki, celownik – klatki 32x32 powiększone algorytmem Scale2x
 z 16x16, kolejność klatek jak `actors.bmp`; białe sylwetki do błysku; cząsteczki 16x16; domy Osiedla; ikony menu
 i mocy), `ui/` (ikony telefonu aktywne i nieaktywne, ikony HUD 16x16 i szare do ładowania mocy, plansze tytułu
-i końca z przezroczystym tłem), `tiles/stage_N.png` (10 etapów, podłoga wg aktu: 4 warianty podłogi, podłoga z cieniem muru, mur,
+i końca z przezroczystym tłem), `tiles/stage_N.png` (12 etapów, w tym Akt 0 - biuro z segregatorami i wykop z rurą, podłoga wg aktu: 4 warianty podłogi, podłoga z cieniem muru, mur,
 lico muru, schody – rysowane w 32x32 w paletach etapów z GBA, bogatsze niż kafle 8x8), `fx/` (cień, pole ciosu i wybuchu, błoto,
 ramka zasięgu), `font/` (font 8x16 z polskimi znakami: litery i cień osobno + `font.json` z szerokościami;
 rysuje go `scripts/Gfx/PixelFont.cs`), `audio/` (SFX `.wav` 1:1, muzyka `.mod` wyrenderowana do `.mp3`).
@@ -293,6 +316,8 @@ Gfx/               Pal (tokeny kolorów PlanBudowlany i GBA), Ink, Layout (rozmi
                    obszar - jedyne miejsce), ScaledLayer (warstwa z własną skalą), Assets, PixelFont (skala
                    ułamkowa), Ui, UiText, DrawHook, DrawErrors
 Audio/             Sfx (dźwięki i muzyka), SoundCues (dźwięki zdarzeń sesji)
+Guide/             Coach (samouczek menu i dymki nowości: kroki, flagi w profilu), CoachView (przyciemnienie, podświetlenie,
+                   dymek Kierownika Marka), CoachHit
 Debug/             DebugRunner (--smoke / --screenshot), SmokeTest, ScreenshotRunner, DebugScenes, DemoStaging, DemoProfile
 ```
 
