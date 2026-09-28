@@ -5,23 +5,23 @@
 namespace data {
 
 inline constexpr core::weapon_def weapons[] = {
-    { "Dziennik budowy", 2, 4, 2, core::stat::intel },
-    { "Kielnia", 4, 6, 1, core::stat::str },
-    { "Gwoździarka", 2, 3, 3, core::stat::agi },
-    { "Próbnik napięcia", 3, 5, 2, core::stat::intel },
-    { "Klucz nastawny", 4, 7, 1, core::stat::str },
-    { "Szlifierka", 4, 7, 1, core::stat::agi },
-    { "Łom", 3, 6, 1, core::stat::str },
-    { "Wkrętarka", 2, 5, 2, core::stat::agi },
-    { "Poziomica laserowa", 2, 4, 4, core::stat::intel },
-    { "Młot wyburzeniowy", 5, 8, 1, core::stat::str },
-    { "Tablet z projektem", 3, 5, 2, core::stat::intel },
-    { "Miernik laserowy", 2, 5, 3, core::stat::intel },
-    { "Dachówki", 2, 3, 3, core::stat::agi },
-    { "Agregat tynkarski", 2, 4, 2, core::stat::str },
-    { "Łyżka koparki", 4, 7, 1, core::stat::str },
-    { "Młot udarowy", 5, 9, 1, core::stat::str },
-    { "Pistolet do kotew", 3, 5, 3, core::stat::agi },
+    { "Dziennik budowy", 2, 4, 2, core::stat::intel, core::element::none },
+    { "Kielnia", 4, 6, 1, core::stat::str, core::element::none },
+    { "Gwoździarka", 2, 3, 3, core::stat::agi, core::element::none },
+    { "Próbnik napięcia", 3, 5, 2, core::stat::intel, core::element::power },
+    { "Klucz nastawny", 4, 7, 1, core::stat::str, core::element::none },
+    { "Szlifierka", 4, 7, 1, core::stat::agi, core::element::spark },
+    { "Łom", 3, 6, 1, core::stat::str, core::element::none },
+    { "Wkrętarka", 2, 5, 2, core::stat::agi, core::element::none },
+    { "Poziomica laserowa", 2, 4, 4, core::stat::intel, core::element::none },
+    { "Młot wyburzeniowy", 5, 8, 1, core::stat::str, core::element::none },
+    { "Tablet z projektem", 3, 5, 2, core::stat::intel, core::element::none },
+    { "Miernik laserowy", 2, 5, 3, core::stat::intel, core::element::none },
+    { "Dachówki", 2, 3, 3, core::stat::agi, core::element::none },
+    { "Agregat tynkarski", 2, 4, 2, core::stat::str, core::element::none },
+    { "Łyżka koparki", 4, 7, 1, core::stat::str, core::element::none },
+    { "Młot udarowy", 5, 9, 1, core::stat::str, core::element::none },
+    { "Pistolet do kotew", 3, 5, 3, core::stat::agi, core::element::spark },
 };
 
 inline constexpr core::class_def classes[] = {
@@ -37,68 +37,68 @@ inline constexpr core::class_def classes[] = {
 };
 
 inline constexpr core::enemy_def enemies[] = {
-    { "Przeciek", "Kapie tam, gdzie nie powinno", 6, 1, 3, 0, 7, 10, 6, false, core::status_effect::slip, 14, 2, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 0, 0, 0, 0, "" },
-    { "Zwarcie", "Iskrzy przy każdej okazji", 5, 2, 4, 0, 8, 12, 7, false, core::status_effect::shock, 17, 1, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 0, 0, 0, 0, "" },
-    { "Pleśń", "Lubi wilgoć i zimne ściany", 9, 1, 2, 1, 5, 10, 8, false, core::status_effect::poison, 24, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 0, 0, 0, 0, "" },
-    { "Kornik", "Drąży więźbę po cichu", 7, 1, 3, 1, 6, 10, 9, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 0, 0, 0, 0, "" },
-    { "Papierologia", "Brakuje jednej pieczątki", 12, 1, 2, 2, 5, 15, 10, false, core::status_effect::paper, 35, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 0, 0, 0, 0, "" },
-    { "Opóźniona dostawa", "Będzie jutro. Na pewno.", 10, 2, 4, 1, 7, 15, 11, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 0, 0, 0, 0, "" },
-    { "Ulewa", "Zawsze tuż przed dachem", 8, 2, 3, 0, 9, 12, 12, false, core::status_effect::slip, 28, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 0, 0, 0, 0, "" },
-    { "Przekroczony budżet", "Rośnie szybciej niż mury", 14, 2, 5, 2, 7, 25, 13, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 0, 0, 0, 0, "" },
-    { "Nieprzekraczalny Termin", "Nieprzesuwalny. Podobno.", 42, 4, 6, 3, 12, 200, 14, true, core::status_effect::paper, 28, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", -1, 0, 0, 0, 0, "" },
-    { "Zepsuta Betoniarka", "Kręci się, ale nie tam", 28, 3, 5, 2, 10, 150, 46, true, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", -1, 0, 0, 0, 0, "" },
-    { "Nawałnica", "Leje jak z cebra", 32, 3, 5, 2, 12, 180, 47, true, core::status_effect::slip, 35, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", -1, 0, 0, 0, 0, "" },
-    { "Inspekcja Pracy", "Sprawdza kask i barierki", 30, 3, 5, 2, 12, 170, 50, true, core::status_effect::paper, 30, 0, core::slam_shape::cross, "Kontrola BHP", 4, 6, 2, 2, 60, "Protokół bez uwag", -1, 0, 0, 0, 0, "" },
-    { "Woda gruntowa", "Wybija tam, gdzie kopiesz. I obok", 8, 1, 2, 0, 6, 12, 61, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 2, 0, 0, 0, "" },
-    { "Kamień w wykopie", "Nie ruszy się. Koparka też nie", 16, 2, 3, 3, 4, 14, 62, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 64, 0, 0, 0, "" },
-    { "Osuwisko skarpy", "Zjeżdża prosto na ciebie", 10, 1, 3, 1, 6, 12, 63, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 128, 0, 0, 0, "" },
-    { "Dziurawa folia", "Załatana? Tylko tak wygląda", 7, 1, 2, 0, 6, 12, 64, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 256, 0, 0, 0, "" },
-    { "Krzywy mur", "Pion? Jaki pion?", 12, 1, 3, 2, 5, 14, 65, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 192, 0, 0, 0, "" },
-    { "Mostek termiczny", "Ucieka ciepło. I sam ucieka", 7, 1, 2, 0, 8, 14, 66, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 33, 0, 0, 0, "" },
-    { "Ugięcie stropu", "Z każdym dniem trochę niżej", 12, 1, 3, 1, 5, 15, 67, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 80, 0, 0, 0, "" },
-    { "Brak zbrojenia", "Beton bez stali pęka na pół", 10, 2, 3, 1, 6, 14, 68, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 2, 0, 0, 0, "" },
-    { "Przeciekająca papa", "Kapie z góry, i to celnie", 8, 1, 3, 0, 8, 14, 69, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 1, 0, 0, 0, "" },
-    { "Zapchana rynna", "Zaraz się przeleje. Na ciebie", 9, 1, 2, 0, 6, 14, 70, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 8, 0, 0, 0, "" },
-    { "Pęknięty pustak", "Rozsypie się przy pierwszej okazji", 8, 2, 3, 1, 6, 14, 71, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 8, 0, 0, 0, "" },
-    { "Zła wymiarówka", "Im dłużej, tym gorzej pasuje", 10, 1, 3, 1, 6, 15, 72, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 16, 0, 0, 0, "" },
-    { "Nieszczelna ramka", "Wieje z każdej szczeliny", 13, 1, 3, 2, 7, 15, 73, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 65, 0, 0, 0, "" },
-    { "Przeciąg", "Drzwi trzaskają same", 8, 1, 3, 0, 8, 14, 74, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 160, 0, 0, 0, "" },
-    { "Zapowietrzenie", "Odpowietrzysz, a ono wraca", 8, 1, 3, 0, 7, 14, 75, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 288, 0, 0, 0, "" },
-    { "Brak uziemienia", "Dotknij obudowy. Albo nie", 9, 2, 3, 0, 7, 15, 76, false, core::status_effect::shock, 12, 1, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 8, 0, 0, 0, "" },
-    { "Rysa skurczowa", "Jedna rysa, dwie rysy, dziesięć", 10, 1, 3, 1, 6, 14, 77, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 2, 0, 0, 0, "" },
-    { "Wilgoć w ścianie", "Karmi pleśń i sąsiadów", 11, 1, 2, 1, 6, 15, 78, false, core::status_effect::poison, 15, 2, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 4, 0, 0, 0, "" },
-    { "Odpryski płytek", "Lecą przy każdym cięciu", 9, 2, 3, 0, 8, 15, 79, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 1, 0, 0, 0, "" },
-    { "Poprawki na odbiorze", "Zamknięte? Inspektor ma inne zdanie", 12, 2, 4, 1, 7, 18, 80, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 256, 0, 0, 0, "" },
-    { "Brakujący podpis", "Uciekł, zanim ktoś podpisał", 7, 1, 2, 0, 7, 12, 101, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 32, 0, 0, 0, "" },
-    { "Zaginiony wniosek", "Zgubiony. Znajdzie się. Dwa razy", 8, 1, 2, 0, 6, 12, 102, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 256, 0, 0, 0, "" },
-    { "Termin na odwołanie", "Tyka i rośnie z każdym dniem", 9, 1, 2, 0, 6, 13, 103, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 16, 0, 0, 0, "" },
-    { "Niezgodność z planem", "Rzuca uwagami z daleka", 7, 1, 2, 0, 8, 13, 104, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 1, 0, 0, 0, "" },
-    { "Pieczątka nie ta", "Stempluje i odsyła na początek", 10, 1, 3, 1, 5, 13, 105, false, core::status_effect::paper, 20, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 128, 0, 0, 0, "" },
-    { "Pęknięta rura", "Jedna dziura, zaraz dwie", 8, 1, 2, 0, 6, 12, 106, false, core::status_effect::slip, 15, 2, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 2, 0, 0, 0, "" },
-    { "Brak ciśnienia", "Stoi i dopompowuje innych", 12, 1, 2, 2, 4, 13, 107, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 68, 0, 0, 0, "" },
-    { "Kolizja z kablem", "Koparka trafiła w kabel. Iskry!", 7, 1, 3, 0, 7, 13, 108, false, core::status_effect::shock, 12, 1, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 8, 0, 0, 0, "" },
-    { "Decyzja odmowna", "Stos pism z pieczątką ODMOWA", 34, 3, 5, 2, 12, 140, 109, true, core::status_effect::paper, 25, 0, core::slam_shape::square, "Stempel ODMOWA", 33, 6, 3, 0, 40, "Pozwolenie wydane", -1, 0, 50, 30, 1, "Odwołanie" },
+    { "Przeciek", "Kapie tam, gdzie nie powinno", 6, 1, 3, 0, 7, 10, 6, false, core::status_effect::slip, 14, 2, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 0, 0, 0, 0, "", core::element::water, 0 },
+    { "Zwarcie", "Iskrzy przy każdej okazji", 5, 2, 4, 0, 8, 12, 7, false, core::status_effect::shock, 17, 1, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 0, 0, 0, 0, "", core::element::power, 2 },
+    { "Pleśń", "Lubi wilgoć i zimne ściany", 9, 1, 2, 1, 5, 10, 8, false, core::status_effect::poison, 24, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 0, 0, 0, 0, "", core::element::none, 1 },
+    { "Kornik", "Drąży więźbę po cichu", 7, 1, 3, 1, 6, 10, 9, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 0, 0, 0, 0, "", core::element::none, 0 },
+    { "Papierologia", "Brakuje jednej pieczątki", 12, 1, 2, 2, 5, 15, 10, false, core::status_effect::paper, 35, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 0, 0, 0, 0, "", core::element::none, 1 },
+    { "Opóźniona dostawa", "Będzie jutro. Na pewno.", 10, 2, 4, 1, 7, 15, 11, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 0, 0, 0, 0, "", core::element::none, 1 },
+    { "Ulewa", "Zawsze tuż przed dachem", 8, 2, 3, 0, 9, 12, 12, false, core::status_effect::slip, 28, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 0, 0, 0, 0, "", core::element::water, 1 },
+    { "Przekroczony budżet", "Rośnie szybciej niż mury", 14, 2, 5, 2, 7, 25, 13, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 0, 0, 0, 0, "", core::element::none, 0 },
+    { "Nieprzekraczalny Termin", "Nieprzesuwalny. Podobno.", 42, 4, 6, 3, 12, 200, 14, true, core::status_effect::paper, 28, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", -1, 0, 0, 0, 0, "", core::element::none, 0 },
+    { "Zepsuta Betoniarka", "Kręci się, ale nie tam", 28, 3, 5, 2, 10, 150, 46, true, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", -1, 0, 0, 0, 0, "", core::element::none, 1 },
+    { "Nawałnica", "Leje jak z cebra", 32, 3, 5, 2, 12, 180, 47, true, core::status_effect::slip, 35, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", -1, 0, 0, 0, 0, "", core::element::water, 1 },
+    { "Inspekcja Pracy", "Sprawdza kask i barierki", 30, 3, 5, 2, 12, 170, 50, true, core::status_effect::paper, 30, 0, core::slam_shape::cross, "Kontrola BHP", 4, 6, 2, 2, 60, "Protokół bez uwag", -1, 0, 0, 0, 0, "", core::element::none, 1 },
+    { "Woda gruntowa", "Wybija tam, gdzie kopiesz. I obok", 8, 1, 2, 0, 6, 12, 61, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 2, 0, 0, 0, "", core::element::water, 1 },
+    { "Kamień w wykopie", "Nie ruszy się. Koparka też nie", 16, 2, 3, 3, 4, 14, 62, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 64, 0, 0, 0, "", core::element::none, 0 },
+    { "Osuwisko skarpy", "Zjeżdża prosto na ciebie", 10, 1, 3, 1, 6, 12, 63, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 128, 0, 0, 0, "", core::element::none, 2 },
+    { "Dziurawa folia", "Załatana? Tylko tak wygląda", 7, 1, 2, 0, 6, 12, 64, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 256, 0, 0, 0, "", core::element::water, 1 },
+    { "Krzywy mur", "Pion? Jaki pion?", 12, 1, 3, 2, 5, 14, 65, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 192, 0, 0, 0, "", core::element::none, 0 },
+    { "Mostek termiczny", "Ucieka ciepło. I sam ucieka", 7, 1, 2, 0, 8, 14, 66, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 33, 0, 0, 0, "", core::element::none, 0 },
+    { "Ugięcie stropu", "Z każdym dniem trochę niżej", 12, 1, 3, 1, 5, 15, 67, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 80, 0, 0, 0, "", core::element::none, 2 },
+    { "Brak zbrojenia", "Beton bez stali pęka na pół", 10, 2, 3, 1, 6, 14, 68, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 2, 0, 0, 0, "", core::element::none, 0 },
+    { "Przeciekająca papa", "Kapie z góry, i to celnie", 8, 1, 3, 0, 8, 14, 69, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 1, 0, 0, 0, "", core::element::water, 1 },
+    { "Zapchana rynna", "Zaraz się przeleje. Na ciebie", 9, 1, 2, 0, 6, 14, 70, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 8, 0, 0, 0, "", core::element::none, 1 },
+    { "Pęknięty pustak", "Rozsypie się przy pierwszej okazji", 8, 2, 3, 1, 6, 14, 71, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 8, 0, 0, 0, "", core::element::none, 0 },
+    { "Zła wymiarówka", "Im dłużej, tym gorzej pasuje", 10, 1, 3, 1, 6, 15, 72, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 16, 0, 0, 0, "", core::element::none, 1 },
+    { "Nieszczelna ramka", "Wieje z każdej szczeliny", 13, 1, 3, 2, 7, 15, 73, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 65, 0, 0, 0, "", core::element::none, 1 },
+    { "Przeciąg", "Drzwi trzaskają same", 8, 1, 3, 0, 8, 14, 74, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 160, 0, 0, 0, "", core::element::none, 0 },
+    { "Zapowietrzenie", "Odpowietrzysz, a ono wraca", 8, 1, 3, 0, 7, 14, 75, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 288, 0, 0, 0, "", core::element::none, 2 },
+    { "Brak uziemienia", "Dotknij obudowy. Albo nie", 9, 2, 3, 0, 7, 15, 76, false, core::status_effect::shock, 12, 1, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 8, 0, 0, 0, "", core::element::power, 0 },
+    { "Rysa skurczowa", "Jedna rysa, dwie rysy, dziesięć", 10, 1, 3, 1, 6, 14, 77, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 2, 0, 0, 0, "", core::element::none, 1 },
+    { "Wilgoć w ścianie", "Karmi pleśń i sąsiadów", 11, 1, 2, 1, 6, 15, 78, false, core::status_effect::poison, 15, 2, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 4, 0, 0, 0, "", core::element::water, 1 },
+    { "Odpryski płytek", "Lecą przy każdym cięciu", 9, 2, 3, 0, 8, 15, 79, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 1, 0, 0, 0, "", core::element::none, 2 },
+    { "Poprawki na odbiorze", "Zamknięte? Inspektor ma inne zdanie", 12, 2, 4, 1, 7, 18, 80, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 256, 0, 0, 0, "", core::element::none, 2 },
+    { "Brakujący podpis", "Uciekł, zanim ktoś podpisał", 7, 1, 2, 0, 7, 12, 101, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 32, 0, 0, 0, "", core::element::none, 0 },
+    { "Zaginiony wniosek", "Zgubiony. Znajdzie się. Dwa razy", 8, 1, 2, 0, 6, 12, 102, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 256, 0, 0, 0, "", core::element::none, 0 },
+    { "Termin na odwołanie", "Tyka i rośnie z każdym dniem", 9, 1, 2, 0, 6, 13, 103, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 16, 0, 0, 0, "", core::element::none, 0 },
+    { "Niezgodność z planem", "Rzuca uwagami z daleka", 7, 1, 2, 0, 8, 13, 104, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 1, 0, 0, 0, "", core::element::none, 1 },
+    { "Pieczątka nie ta", "Stempluje i odsyła na początek", 10, 1, 3, 1, 5, 13, 105, false, core::status_effect::paper, 20, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 128, 0, 0, 0, "", core::element::none, 1 },
+    { "Pęknięta rura", "Jedna dziura, zaraz dwie", 8, 1, 2, 0, 6, 12, 106, false, core::status_effect::slip, 15, 2, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 2, 0, 0, 0, "", core::element::water, 1 },
+    { "Brak ciśnienia", "Stoi i dopompowuje innych", 12, 1, 2, 2, 4, 13, 107, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 68, 0, 0, 0, "", core::element::none, 0 },
+    { "Kolizja z kablem", "Koparka trafiła w kabel. Iskry!", 7, 1, 3, 0, 7, 13, 108, false, core::status_effect::shock, 12, 1, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 8, 0, 0, 0, "", core::element::power, 1 },
+    { "Decyzja odmowna", "Stos pism z pieczątką ODMOWA", 34, 3, 5, 2, 12, 140, 109, true, core::status_effect::paper, 25, 0, core::slam_shape::square, "Stempel ODMOWA", 33, 6, 3, 0, 40, "Pozwolenie wydane", -1, 0, 50, 30, 1, "Odwołanie", core::element::none, 1 },
 };
 
 inline constexpr core::stage_def stages[] = {
-    { "Pozwolenie", { 32, 34, 35, 36 }, 4, 6, -1, 106, 2, 3, 15 },
-    { "Przyłącza", { 37, 38, 39, 33 }, 4, 6, 40, 110, 1, 3, 28 },
+    { "Pozwolenie", { 32, 34, 35, 36 }, 4, 6, -1, 126, 2, 3, 15 },
+    { "Przyłącza", { 37, 38, 39, 33 }, 4, 6, 40, 130, 1, 3, 28 },
     { "Fundamenty", { 12, 13, 0, 3 }, 4, 5, -1, 95, 0, 0, 48 },
-    { "Izolacja fundamentów", { 14, 15, 12, 0 }, 4, 5, -1, 98, 0, 0, 22 },
-    { "Mury parteru", { 16, 17, 4, 5 }, 4, 6, -1, 100, 0, 0, 62 },
-    { "Strop", { 18, 19, 5, 7 }, 4, 6, 9, 105, 0, 0, 36 },
-    { "Dach", { 20, 21, 6, 3 }, 4, 8, -1, 110, 1, 1, 55 },
-    { "Ściany działowe", { 22, 23, 4, 5 }, 4, 7, -1, 112, 1, 1, 30 },
-    { "Okna i drzwi", { 24, 25, 6, 5 }, 4, 8, 10, 115, 1, 1, 41 },
-    { "Instalacje", { 26, 27, 1, 0 }, 4, 8, 11, 120, 2, 2, 46 },
-    { "Tynki i wylewki", { 28, 29, 2, 0 }, 4, 9, -1, 126, 2, 2, 38 },
-    { "Wykończenie i odbiór", { 30, 31, 2, 7 }, 4, 7, 8, 132, 2, 2, 72 },
+    { "Izolacja fundamentów", { 14, 15, 12, 0 }, 4, 5, -1, 102, 0, 0, 22 },
+    { "Mury parteru", { 16, 17, 4, 5 }, 4, 6, -1, 108, 0, 0, 62 },
+    { "Strop", { 18, 19, 5, 7 }, 4, 6, 9, 117, 1, 0, 36 },
+    { "Dach", { 20, 21, 6, 3 }, 4, 8, -1, 126, 2, 1, 55 },
+    { "Ściany działowe", { 22, 23, 4, 5 }, 4, 7, -1, 132, 2, 1, 30 },
+    { "Okna i drzwi", { 24, 25, 6, 5 }, 4, 8, 10, 139, 3, 1, 41 },
+    { "Instalacje", { 26, 27, 1, 0 }, 4, 8, 11, 148, 4, 2, 46 },
+    { "Tynki i wylewki", { 28, 29, 2, 0 }, 4, 9, -1, 158, 4, 2, 38 },
+    { "Wykończenie i odbiór", { 30, 31, 2, 7 }, 4, 7, 8, 168, 4, 2, 72 },
 };
 
 inline constexpr core::difficulty_def difficulties[] = {
     { "Łatwy", 100, -1, 50 },
     { "Normalny", 100, 0, 100 },
-    { "Trudny", 130, 0, 150 },
+    { "Trudny", 140, 0, 150 },
 };
 
 inline constexpr core::upgrade_def upgrades[] = {
@@ -171,6 +171,7 @@ inline constexpr core::status_def statuses[] = {   // indeks = core::status_effe
     { "Porażenie", "Poraż.", "tracisz turę" },
     { "Poślizg", "Pośl.", "ruch o 2 pola" },
     { "Papierologia", "Papier.", "moc później" },
+    { "Mokry", "Mokry", "prąd boli bardziej" },
 };
 inline constexpr int paper_delay = 3;
 inline constexpr int acts_count = 4;
@@ -439,9 +440,10 @@ inline constexpr core::respect_def respect[] = {   // Respekt: stałe ulepszenia
     { "Rabat", "Hurtownia taniej", core::respect_effect::shop_pct, 5, { 5, 10, 15, 20, 25 }, { 5, 10, 16, 25, 36 } },
     { "Zapasy", "Więcej materiałów", core::respect_effect::mats_pct, 5, { 10, 20, 30, 40, 50 }, { 5, 10, 16, 25, 36 } },
     { "Druga szansa", "Raz na budowę: 1 HP zamiast końca", core::respect_effect::second_chance, 1, { 1, 0, 0, 0, 0 }, { 120, 0, 0, 0, 0 } },
+    { "Druga oferta", "Darmowe losowanie premii", core::respect_effect::reroll, 1, { 1, 0, 0, 0, 0 }, { 30, 0, 0, 0, 0 } },
 };
 inline constexpr int push_chance_pct = 20;   // Operator koparki: cios wręcz odpycha
-inline constexpr int respect_count = 15;
+inline constexpr int respect_count = 16;
 inline constexpr int respect_stage = 2;   // Respekt za etap: zwykły, boss w środku aktu, boss aktu, ostatni
 inline constexpr int respect_boss = 4;
 inline constexpr int respect_act_boss = 6;
@@ -484,6 +486,100 @@ inline constexpr core::tutorial_step tutorial_unlocks[] = {   // dymki przy pier
 inline constexpr int tutorial_steps_count = 13;
 inline constexpr int tutorial_unlocks_count = 5;
 
+inline constexpr core::boon_rarity_def boon_rarities[] = {   // premie: rzadkość i waga losowania
+    { "zwykła", 70 },
+    { "rzadka", 24 },
+    { "legendarna", 6 },
+};
+inline constexpr const char* boon_tags[] = { "Woda", "Prąd", "Beton", "BHP", "Szczęście", "Kawa", "Brygada", "Materiały", "Iskra" };   // znaczniki premii
+inline constexpr core::boon_def boons[] = {   // premie po etapie: 1 z 3 (rzadkość, znaczniki, skutek, zawód)
+    { "Hartowana kielnia", "+1 obrażeń", 1, 4, core::boon_effect::dmg, 1, -1 },
+    { "Beton B30", "+1 OBR", 1, 4, core::boon_effect::def, 1, -1 },
+    { "Płyta warstwowa", "+4 max HP", 0, 8, core::boon_effect::max_hp, 4, -1 },
+    { "Zbrojona rękawica", "+1 obrażeń", 1, 128, core::boon_effect::dmg, 1, -1 },
+    { "Młot mistrza", "+10% obrażeń", 2, 4, core::boon_effect::dmg_pct, 10, -1 },
+    { "Szelki asekuracyjne", "Unik +4%", 0, 8, core::boon_effect::dodge, 4, -1 },
+    { "Apteczka na placu", "+4 HP na start etapu", 0, 40, core::boon_effect::regen_stage, 4, -1 },
+    { "Kask z latarką", "Widzenie +1", 0, 8, core::boon_effect::sight, 1, -1 },
+    { "Instrukcja BHP", "Stany krócej o 1 t.", 1, 8, core::boon_effect::status_res, 1, -1 },
+    { "Anioł stróż", "+8 max HP", 2, 8, core::boon_effect::max_hp, 8, -1 },
+    { "Podwójne espresso", "Kawa leczy +3 HP", 0, 32, core::boon_effect::coffee, 3, -1 },
+    { "Termos z bufetu", "Termos +1 miejsce", 0, 32, core::boon_effect::thermos, 1, -1 },
+    { "Druga zmiana", "Moc -2 t. odnowienia", 1, 32, core::boon_effect::cooldown, 2, -1 },
+    { "Drożdżówka", "+1 HP za usunięty problem", 2, 32, core::boon_effect::kill_heal, 1, -1 },
+    { "Koniczyna", "+1 SZCZ", 0, 16, core::boon_effect::luck, 1, -1 },
+    { "Szczęśliwa moneta", "Kryt +4%", 0, 16, core::boon_effect::crit, 4, -1 },
+    { "Złota podkowa", "+2 SZCZ", 2, 16, core::boon_effect::luck, 2, -1 },
+    { "Wąż ogrodowy", "Ciosy moczą problem", 0, 1, core::boon_effect::wet_hits, 3, -1 },
+    { "Suchy lód", "Ciosy zmrażają problem", 1, 1, core::boon_effect::frost_hits, 1, -1 },
+    { "Hydrofor", "+6% obrażeń", 1, 3, core::boon_effect::dmg_pct, 6, -1 },
+    { "Przedłużacz", "Ciosy z prądem", 0, 2, core::boon_effect::electric, 1, -1 },
+    { "Transformator", "+2 obrażeń", 2, 258, core::boon_effect::dmg, 2, -1 },
+    { "Krzesiwo", "Ciosy krzeszą iskry", 0, 256, core::boon_effect::spark, 1, -1 },
+    { "Tarcza tnąca", "Kryt +6%", 1, 256, core::boon_effect::crit, 6, -1 },
+    { "Numer do ekipy", "Brygada -25% ceny", 0, 64, core::boon_effect::brigade_pct, 25, -1 },
+    { "Premia od inwestora", "+40 zł od razu", 0, 64, core::boon_effect::cash, 40, -1 },
+    { "Brygadzista", "Kryt +6%", 1, 80, core::boon_effect::crit, 6, -1 },
+    { "Paleta materiałów", "+2 każdego materiału", 0, 128, core::boon_effect::mats, 2, -1 },
+    { "Karta hurtowni", "Hurtownia -25% ceny", 0, 128, core::boon_effect::shop_pct, 25, -1 },
+    { "Skład na placu", "Materiały +60% częściej", 1, 128, core::boon_effect::mats_pct, 60, -1 },
+    { "Twarda odprawa", "Odprawa ogłusza +1 t.", 1, 8, core::boon_effect::power, 1, 0 },
+    { "Harmonogram", "Moc -3 t. odnowienia", 0, 32, core::boon_effect::cooldown, 3, 0 },
+    { "Gruba ścianka", "Ścianka stoi +3 t.", 0, 4, core::boon_effect::power, 3, 1 },
+    { "Pełny magazynek", "Seria: zasięg +1", 1, 128, core::boon_effect::power, 1, 2 },
+    { "Mocny łańcuch", "Łańcuch: +1 cel", 1, 2, core::boon_effect::power, 1, 3 },
+    { "Gumowe rękawice", "+2 OBR", 0, 10, core::boon_effect::def, 2, 3 },
+    { "Mocny strumień", "Zawór leczy +4 HP", 0, 1, core::boon_effect::power, 4, 4 },
+    { "Szybka wirówka", "Wirówka +2 obrażeń", 1, 256, core::boon_effect::power, 2, 5 },
+    { "Długa rynna", "Rynna: +2 pola", 0, 1, core::boon_effect::power, 2, 6 },
+    { "Gęsty tynk", "Narzut ogłusza +1 t.", 1, 4, core::boon_effect::power, 1, 7 },
+    { "Ciężka łyżka", "Taran +2 obrażeń", 1, 4, core::boon_effect::power, 2, 8 },
+};
+inline constexpr core::synergy_def synergies[] = {   // synergie: 2+ premie z tym samym znacznikiem
+    { "Przepięcie", "Ciosy z prądem, porażenie dalej", 3, core::synergy_effect::conduct, 1 },
+    { "Zbrojenie", "+1 OBR za każdą premię Beton", 4, core::synergy_effect::armor, 1 },
+    { "Espresso", "Kawa ładuje moc (-3 t.)", 32, core::synergy_effect::espresso, 3 },
+    { "Pełne BHP", "Bez zatrucia i porażenia", 8, core::synergy_effect::safety, 0 },
+    { "Fart", "+2 SZCZ", 16, core::synergy_effect::luck, 2 },
+    { "Stała ekipa", "Brygada -50% ceny", 64, core::synergy_effect::brigade, 50 },
+    { "Magazyn", "Materiały 2x częściej", 128, core::synergy_effect::stock, 100 },
+    { "Iskrzenie", "Wybuch pyłu +3 i szerzej", 256, core::synergy_effect::sparks, 3 },
+};
+inline constexpr int boons_count = 41;
+inline constexpr int boon_tags_count = 9;
+inline constexpr int synergies_count = 8;
+inline constexpr int boon_reroll_cost = 25;
+inline constexpr int synergy_at = 2;
+inline constexpr int boon_luck_rare = 2;
+inline constexpr int boon_luck_legend = 1;
+
+inline constexpr core::elite_def elites[] = {   // elity: cecha, przedrostek nazwy wg rodzaju
+    { "Tarcza", { "Zbrojony", "Zbrojona", "Zbrojone" }, "+4 OBR", core::elite_effect::shield, 4 },
+    { "Szybki", { "Szybki", "Szybka", "Szybkie" }, "2 ruchy na turę", core::elite_effect::fast, 2 },
+    { "Regeneracja", { "Uparty", "Uparta", "Uparte" }, "+1 HP co turę", core::elite_effect::regen, 1 },
+    { "Wybuchowy", { "Wybuchowy", "Wybuchowa", "Wybuchowe" }, "Wybucha po usunięciu", core::elite_effect::explode, 0 },
+    { "Wzywa pomoc", { "Zaraźliwy", "Zaraźliwa", "Zaraźliwe" }, "Przy 50% HP wzywa pomoc", core::elite_effect::summon, 50 },
+};
+inline constexpr int elites_count = 5;
+inline constexpr int elite_act_pct[] = { 7, 11, 15, 5 };   // szansa na elitę wg aktu (data::acts)
+inline constexpr int elite_diff_pct[] = { -3, 0, 5 };
+inline constexpr int elite_tier_pct = 4;
+inline constexpr int elite_hp_pct = 150;
+inline constexpr int elite_dmg = 1;
+inline constexpr int elite_respect = 1;
+inline constexpr int elite_mats = 2;
+inline constexpr int elite_gear_min = 1;
+
+inline constexpr core::combo_def combos[] = {   // kombinacje stanów (kolejność = core::combo_effect)
+    { "Porażenie", "Mokry + prąd!", "Prąd w mokry: +3 i na mokrych obok", "Ty mokry + prąd: +2 i tracisz turę", core::combo_effect::shock_area, 3, 1, 2 },
+    { "Wybuch pyłu", "Pył + iskra!", "Iskra w zapylony: wybuch 4 wokół", "Wybuch w pyle (akt III): +2 dla Ciebie", core::combo_effect::dust_blast, 4, 1, 2 },
+    { "Pęknięcie", "Zamróz + uderzenie!", "Cios wręcz w zmrożony: +50%", "", core::combo_effect::crack, 50, 0, 0 },
+};
+inline constexpr const char* combo_sources[] = { "Mokry: kałuże, Deszcz, woda, Zawór", "Prąd: Próbnik, Łańcuch, Zwarcie", "Pył: akt III; iskra: Szlifierka", "Zamróz: Mróz, Suchy lód" };   // Jak grać: skąd stany
+inline constexpr int combos_count = 3;
+inline constexpr int wet_turns = 3;
+inline constexpr int hero_wet_turns = 2;
+
 inline constexpr const char* version = "v0.21.50";   // numer wersji (ekran tytułowy, changelog)
 
 inline constexpr const char* damage_help[] = {   // Jak grać: obrażenia broni w prostych słowach (rozpiska #26)
@@ -513,8 +609,11 @@ inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonog
     "Błoto w akcie I kosztuje turę",
     "START na wyborze: opis statystyk",
     "Akt 0: 3 dokumenty otwierają schody",
+    "Po etapie: wybierz 1 z 3 premii",
+    "Mokry + prąd = porażenie obok",
+    "Złota ramka: elita, lepsza nagroda",
 };
-inline constexpr int tips_count = 16;
+inline constexpr int tips_count = 19;
 
 inline constexpr int classes_count = 9;
 inline constexpr int stages_count = 12;

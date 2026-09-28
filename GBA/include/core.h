@@ -106,8 +106,12 @@ namespace core
         uint8_t flags = 0;      // actor_flag: dziecko z podziału, już wrócił, czeka na powrót
         int8_t grow = 0;        // stopnie wzrostu (zachowanie "grows")
         int8_t timer = 0;       // odnowienie ucieczki / łatania / odepchnięcia; u czekającego na powrót - tury do powrotu
+        int8_t elite = -1;      // v0.21.50: cecha elity (data::elites), -1 = zwykły problem
+        int8_t wet = 0;         // v0.21.50: tury mokrego (kałuża, Zawór, Wąż ogrodowy); problem wodny jest mokry zawsze
     };
-    enum actor_flag : uint8_t { actor_child = 1, actor_returned = 2, actor_reviving = 4, actor_phase = 8 };   // phase: boss w drugiej fazie
+    // phase: boss w drugiej fazie; v0.21.50: dusty - zapylony (akt III), frozen - zmrożony (Mróz, Suchy lód), called - elita już wezwała
+    enum actor_flag : uint8_t { actor_child = 1, actor_returned = 2, actor_reviving = 4, actor_phase = 8, actor_dusty = 16, actor_frozen = 32,
+                                actor_called = 64 };
 
     struct temp_wall { int8_t x, y, turns; };   // Ścianka Murarza
 
@@ -166,6 +170,7 @@ namespace core
         int second_chance = 0;       // Druga szansa: raz na budowę 1 HP zamiast końca
         int gear_slots = data::gear_base_mask;   // sloty sprzętu w dropach (nagrody: buty, pas)
         int act0 = 0;                // v0.21.49: Akt 0 (Papierologia) z nagrody za odbiór - budowa zaczyna się od niego
+        int rerolls = 0;             // v0.21.50: Respekt Druga oferta - darmowe losowanie premii po etapie
     };
 
     // Tryb inwestora: stawka i premia doświadczenia za zestaw modyfikatorów.
@@ -202,6 +207,7 @@ namespace core
             case respect_effect::shop_pct:      m.shop_pct += v; break;
             case respect_effect::mats_pct:      m.mats_pct += v; break;
             case respect_effect::second_chance: m.second_chance += v; break;
+            case respect_effect::reroll:        m.rerolls += v; break;
             default: break;
         }
     }
@@ -226,6 +232,7 @@ namespace core
             case respect_effect::shop_pct:      return m.add("Hurtownia -").add(v).add("% ceny");
             case respect_effect::mats_pct:      return m.add("Materiały +").add(v).add("% częściej");
             case respect_effect::second_chance: return m.add("Raz na budowę: 1 HP zamiast końca");
+            case respect_effect::reroll:        return m.add("Premie: +").add(v).add(" darmowe losowanie");
             default:                            return m;
         }
     }
@@ -384,14 +391,17 @@ namespace core
         int flat_found = 0;                  // z budowy: projekty wykonawcze (reszta dmg_bonus)
         int flat_gear = 0, gear_item = -1;   // sprzęt +obrażenia (rękawice), przedmiot w data::gear
         int pct = 0;                         // +% (Kurs fachowy, Respekt)
+        int flat_boon = 0, pct_boon = 0, crit_boon = 0;   // v0.21.50: premie po etapach (osobno od premii profilu)
         bool vs_enemy = false;
         int enemy_def = 0;                   // obrona problemu
+        int enemy_elite = 0, elite = -1;     // v0.21.50: + obrona elity (Tarcza), cecha elity (data::elites)
         int luck = 0, crit_trait = 0, crit_bonus = 0;   // szczęście, cechy Kryt +%, premie (odznaki, Respekt)
         int power = 0, power_rank = 1;       // moc dodaje do ciosu (Seria, Rynna od II, Taran +ranga)
         bool split = false;                  // źródła premii profilu znane (src_*)
         int src_dmg[mods_sources] = {}, src_pct[mods_sources] = {}, src_crit[mods_sources] = {};
         // wyliczone w finish()
         int stat_value = 0, stat_dmg = 0, flat = 0, def_cut = 0;
+        int pct_total = 0;                   // procent łącznie (profil + premie po etapach)
         int base_min = 0, base_max = 0;      // przed procentem
         int min = 0, max = 0;                // zakres ciosu
         int avg10 = 0;                       // średni cios (bez kryt) x10
@@ -401,19 +411,20 @@ namespace core
         {
             stat_value = stat_class + stat_craft + stat_trait;
             stat_dmg = stat_value / 2;
-            flat = flat_mods + flat_level + flat_found + flat_gear;
-            def_cut = enemy_def / 2;
+            flat = flat_mods + flat_level + flat_found + flat_gear + flat_boon;
+            def_cut = (enemy_def + enemy_elite) / 2;
+            pct_total = pct + pct_boon;
             const int add = stat_dmg + flat - def_cut;
             base_min = imax(1, wmin + add);
             base_max = imax(1, wmax + add);
-            min = base_min + pct_floor(base_min, pct);
-            max = base_max + pct_ceil(base_max, pct);
+            min = base_min + pct_floor(base_min, pct_total);
+            max = base_max + pct_ceil(base_max, pct_total);
             int sum = 0, n = 0;
-            for(int r = wmin; r <= wmax; ++r, ++n) sum += imax(1, r + add) * (100 + imax(0, pct));
+            for(int r = wmin; r <= wmax; ++r, ++n) sum += imax(1, r + add) * (100 + imax(0, pct_total));
             avg10 = n ? div_round(sum, 10 * n) : 0;
             crit_base = data::crit_base_pct;
             crit_luck = data::crit_per_luck_pct * luck;
-            crit_pct = crit_base + crit_luck + crit_trait + crit_bonus;
+            crit_pct = crit_base + crit_luck + crit_trait + crit_bonus + crit_boon;
             crit_mult = data::crit_multiplier;
             crit_min = min * crit_mult;
             crit_max = max * crit_mult;
@@ -463,8 +474,8 @@ namespace core
     }
 
     // Teksty rozpiski (GBA: strona Obrażenia, Godot: podpowiedzi) - wspólne, krótkie (bufor message 48 bajtów).
-    enum class dmg_text : uint8_t { weapon, stat, stat_parts, profile, run, gear, pct, enemy, total, crit, crit_parts, crit_extra, power };
-    constexpr int dmg_texts = 13;
+    enum class dmg_text : uint8_t { weapon, stat, stat_parts, profile, run, gear, pct, enemy, total, crit, crit_parts, crit_extra, power, boon };
+    constexpr int dmg_texts = 14;
 
     inline message& add_range(message& m, int lo, int hi) { m.add(lo); if(hi != lo) m.add("-").add(hi); return m; }
     // Liczba x10 jako "7" albo "7,5" (ze znakiem, gdy sign).
@@ -540,7 +551,9 @@ namespace core
             }
             case dmg_text::enemy:
                 if(! b.vs_enemy) { m.add("OBR problemu: -1 co 2 pkt"); return false; }
-                m.add("OBR problemu ").add(b.enemy_def).add(": -").add(b.def_cut);
+                m.add("OBR problemu ").add(b.enemy_def);
+                if(b.enemy_elite) m.add("+").add(b.enemy_elite).add(" (elita)");
+                m.add(": -").add(b.def_cut);
                 return b.def_cut > 0;
             case dmg_text::total:
                 add_range(m.add("Cios "), b.min, b.max).add(", średnio ");
@@ -569,6 +582,16 @@ namespace core
             {
                 if(! b.power) { m.add("Moc: bez premii do ciosu"); return false; }
                 m.add("Moc (").add(rank_numeral(b.power_rank)).add("): +").add(b.power).add(" do ciosu");
+                return true;
+            }
+            case dmg_text::boon:   // v0.21.50: premie wybrane po etapach (#27)
+            {
+                if(! b.flat_boon && ! b.pct_boon && ! b.crit_boon) { m.add("Premie etapów: brak"); return false; }
+                m.add("Premie etapów:");
+                bool first = true;
+                if(b.flat_boon) { m.add(" +").add(b.flat_boon); first = false; }
+                if(b.pct_boon) { m.add(first ? " +" : ", +").add(b.pct_boon).add("%"); first = false; }
+                if(b.crit_boon) m.add(first ? " kryt +" : ", kryt +").add(b.crit_boon).add("%");
                 return true;
             }
             default: return false;
@@ -663,6 +686,12 @@ namespace core
         // v0.21.49 (część 3): Akt 0 - pierwszy etap budowy (0 z Aktem 0, inaczej za nim), zebrane dokumenty (pieczątki)
         int8_t first_stage = 0;
         uint8_t docs = 0;            // bitmaska zebranych dokumentów (data::documents)
+        // v0.21.50 cz. 2: premie po etapie (#27), kombinacje stanów (#29)
+        uint64_t boons = 0;          // wybrane premie (bity data::boons)
+        int8_t boon_offer[3] = { -1, -1, -1 };   // oferta po etapie (1 z 3), -1 = brak
+        uint8_t boon_rerolls = 0;    // losowania oferty w tej budowie (1 płatne + darmowe z Respektu)
+        uint8_t hit_ctx = 0;         // żywioł ciosu z mocy zawodu (bity 1 prąd, 2 iskra) - tylko w trakcie mocy
+        uint8_t combo_events = 0;    // bitmaska: kombinacje w tej turze (bit = combo_effect, +8 = na bohaterze; warstwa GBA czyta i zeruje)
 
         // Numer etapu dla gracza (1..) i liczba etapów tej budowy (bez Aktu 0, gdy nieodblokowany).
         int stage_number() const { return stage - first_stage + 1; }
@@ -796,7 +825,7 @@ namespace core
         int slam_counter = 0;
         int summon_counter = 0;      // boss z wezwaniami: tury do kolejnego wezwania
         int summons_used = 0;        // ilu wezwano w tej walce (uśpione miejsca za bossem w enemies[])
-        int8_t hero_status[5] = {};  // tury aktywnych stanów bohatera (indeks = status_effect)
+        int8_t hero_status[status_slots] = {};  // tury aktywnych stanów bohatera (indeks = status_effect)
 
         int status_turns(status_effect s) const { return hero_status[int(s)]; }
 
@@ -815,6 +844,16 @@ namespace core
             {
                 push(message().add("Odporność: bez zatrucia").as(good));
                 return;
+            }
+            if((s == status_effect::poison || s == status_effect::shock) && synergy_on(synergy_effect::safety))   // synergia Pełne BHP
+            {
+                push(message().add("Pełne BHP: bez stanu").as(good));
+                return;
+            }
+            if(s != status_effect::wet && boon_sum(boon_effect::status_res) > 0)   // Instrukcja BHP: stany krócej
+            {
+                t -= boon_sum(boon_effect::status_res);
+                if(t <= 0) { push(message().add("Instrukcja BHP: bez stanu").as(good)); return; }
             }
             if(s == status_effect::slip && trait_bonus(trait_effect::slip_res) > 0)
             {
@@ -902,10 +941,255 @@ namespace core
             return b;
         }
         // Szczęście: kryt (x2), mały unik przed ciosem wroga, częstsze i lepsze dropy.
-        int luck() const { return cdef().luck + bonus.luck + trait_bonus(trait_effect::luck); }
-        int crit_pct() const { return data::crit_base_pct + data::crit_per_luck_pct * luck() + trait_bonus(trait_effect::crit) + bonus.crit; }
-        int sight_radius() const { return imax(3, fov_radius + trait_bonus(trait_effect::sight) + bonus.sight - dust_sight()); }   // pył (akt III)
-        int thermos_cap() const { return data::thermos_capacity + bonus.thermos + gear_bonus(gear_stat::thermos); }
+        int luck() const { return cdef().luck + bonus.luck + trait_bonus(trait_effect::luck) + boon_luck(); }
+        int crit_pct() const
+        {
+            return data::crit_base_pct + data::crit_per_luck_pct * luck() + trait_bonus(trait_effect::crit) + bonus.crit + boon_sum(boon_effect::crit);
+        }
+        int sight_radius() const   // pył (akt III)
+        {
+            return imax(3, fov_radius + trait_bonus(trait_effect::sight) + bonus.sight + boon_sum(boon_effect::sight) - dust_sight());
+        }
+        int thermos_cap() const { return data::thermos_capacity + bonus.thermos + gear_bonus(gear_stat::thermos) + boon_sum(boon_effect::thermos); }
+
+        // ------------------------------------------------------------------ premie po etapie (#27)
+        bool has_boon(int b) const { return (boons >> b) & 1u; }
+        int boons_owned() const { int n = 0; for(int b = 0; b < data::boons_count; ++b) n += has_boon(b); return n; }
+        // Suma wartości wybranych premii danego rodzaju.
+        int boon_sum(boon_effect e) const
+        {
+            int v = 0;
+            for(int b = 0; b < data::boons_count && (boons >> b) != 0; ++b)
+                if(has_boon(b) && data::boons[b].effect == e) v += data::boons[b].value;
+            return v;
+        }
+        // Ile premii ze zbioru m (bity data::boons) ma znacznik t (data::boon_tags).
+        static int tag_count_in(uint64_t m, int t)
+        {
+            int n = 0;
+            for(int b = 0; b < data::boons_count && (m >> b) != 0; ++b) n += ((m >> b) & 1u) && ((data::boons[b].tags >> t) & 1);
+            return n;
+        }
+        int tag_count(int t) const { return tag_count_in(boons, t); }
+        // Synergia s: jeden znacznik - 2+ premie z nim; dwa znaczniki - po jednej z każdego (razem 2+).
+        static bool synergy_active_in(uint64_t m, int s)
+        {
+            const uint16_t tg = data::synergies[s].tags;
+            int any = 0, tags = 0;
+            for(int t = 0; t < data::boon_tags_count; ++t)
+            {
+                if(! ((tg >> t) & 1)) continue;
+                ++tags;
+                if(tag_count_in(m, t) == 0) return false;
+            }
+            for(int b = 0; b < data::boons_count && (m >> b) != 0; ++b) any += ((m >> b) & 1u) && (data::boons[b].tags & tg) != 0;
+            return tags > 0 && any >= data::synergy_at;
+        }
+        bool synergy_active(int s) const { return synergy_active_in(boons, s); }
+        static uint16_t synergy_mask_in(uint64_t m)
+        {
+            uint16_t r = 0;
+            for(int s = 0; s < data::synergies_count; ++s) if(synergy_active_in(m, s)) r = uint16_t(r | (1u << s));
+            return r;
+        }
+        uint16_t synergy_mask() const { return synergy_mask_in(boons); }
+        // Wartość aktywnych synergii danego rodzaju (0 = żadna).
+        int synergy_value(synergy_effect e) const
+        {
+            int v = 0;
+            for(int s = 0; s < data::synergies_count; ++s) if(data::synergies[s].effect == e && synergy_active(s)) v += data::synergies[s].value;
+            return v;
+        }
+        bool synergy_on(synergy_effect e) const
+        {
+            for(int s = 0; s < data::synergies_count; ++s) if(data::synergies[s].effect == e && synergy_active(s)) return true;
+            return false;
+        }
+        int boon_luck() const { return boon_sum(boon_effect::luck) + synergy_value(synergy_effect::luck); }
+        // Obrona z premii: Beton B30 i podobne + Zbrojenie (+1 za każdą premię Beton).
+        int boon_defense() const
+        {
+            int v = boon_sum(boon_effect::def);
+            for(int s = 0; s < data::synergies_count; ++s)
+                if(data::synergies[s].effect == synergy_effect::armor && synergy_active(s))
+                    for(int t = 0; t < data::boon_tags_count; ++t) if((data::synergies[s].tags >> t) & 1) v += data::synergies[s].value * tag_count(t);
+            return v;
+        }
+        int boon_power() const { return boon_sum(boon_effect::power); }   // premia zawodu: wzmocnienie mocy (opis w danych)
+
+        bool has_boon_offer() const { return boon_offer[0] >= 0; }
+        // Losowania oferty: 1 płatne na budowę + darmowe z Respektu (Druga oferta, zużywane najpierw).
+        int rerolls_left() const { return imax(0, 1 + bonus.rerolls - boon_rerolls); }
+        int reroll_price() const { return boon_rerolls < bonus.rerolls ? 0 : data::boon_reroll_cost; }
+        bool can_reroll() const { return has_boon_offer() && rerolls_left() > 0 && cash >= reroll_price(); }
+        bool boon_available(int b) const
+        {
+            if(has_boon(b) || (data::boons[b].cls >= 0 && data::boons[b].cls != cls)) return false;
+            for(int k = 0; k < 3; ++k) if(boon_offer[k] == b) return false;
+            return true;
+        }
+        // Wagi rzadkości: szczęście przesuwa trochę z zwykłych na rzadkie i legendarne.
+        int boon_weight(int rarity) const
+        {
+            const int l = imax(0, luck());
+            if(rarity == 1) return data::boon_rarities[1].weight + l * data::boon_luck_rare;
+            if(rarity == 2) return data::boon_rarities[2].weight + l * data::boon_luck_legend;
+            return imax(10, data::boon_rarities[0].weight - l * (data::boon_luck_rare + data::boon_luck_legend));
+        }
+        // Oferta 1 z 3 po etapie: osobny generator z seeda budowy, etapu i losowania (bez wpływu na RNG gry, ta sama dla seeda).
+        void roll_boons()
+        {
+            for(auto& o : boon_offer) o = -1;
+            rng br;
+            br.seed((run_seed ^ (uint32_t(stage + 1 + tier * 16) * 2654435761u) ^ (uint32_t(boon_rerolls + 1) * 40503u)) * 2246822519u);
+            for(int k = 0; k < 3; ++k)
+            {
+                int total = boon_weight(0) + boon_weight(1) + boon_weight(2), roll = br.range(1, total), rar = 0;
+                while(rar < 2 && roll > boon_weight(rar)) roll -= boon_weight(rar++);
+                static constexpr int8_t order[3][3] = { { 0, 1, 2 }, { 1, 0, 2 }, { 2, 1, 0 } };   // brak w rzadkości: najpierw niższa
+                for(int o = 0; o < 3 && boon_offer[k] < 0; ++o)
+                {
+                    int want = order[rar][o], n = 0;
+                    for(int b = 0; b < data::boons_count; ++b) n += boon_available(b) && data::boons[b].rarity == want;
+                    if(n == 0) continue;
+                    int pick = br.range(0, n - 1);
+                    for(int b = 0; b < data::boons_count; ++b)
+                        if(boon_available(b) && data::boons[b].rarity == want && pick-- == 0) { boon_offer[k] = int8_t(b); break; }
+                }
+            }
+        }
+        // Wybór premii k z oferty: skutki natychmiastowe (max HP, budżet, materiały, termos) od razu; nowa synergia - baner.
+        bool pick_boon(int k)
+        {
+            if(k < 0 || k > 2 || boon_offer[k] < 0) return false;
+            const int b = boon_offer[k];
+            const boon_def& bd = data::boons[b];
+            const uint16_t before = synergy_mask();
+            boons |= uint64_t(1) << b;
+            for(auto& o : boon_offer) o = -1;
+            switch(bd.effect)
+            {
+                case boon_effect::max_hp:  hero.max_hp = int16_t(hero.max_hp + bd.value); hero.hp = int16_t(hero.hp + bd.value); break;
+                case boon_effect::cash:    cash += income(bd.value); break;
+                case boon_effect::mats:    for(int m = 0; m < data::materials_count; ++m) add_material(m, bd.value); break;
+                case boon_effect::thermos: thermos = imin(thermos_cap(), thermos + 1); break;
+                case boon_effect::sight:   update_fov(); break;
+                default: break;
+            }
+            push(message().add("Premia: ").add(bd.name).as(loot));
+            const uint16_t now = synergy_mask();
+            for(int s = 0; s < data::synergies_count; ++s)
+                if(((now >> s) & 1) && ! ((before >> s) & 1)) push(message().add("Synergia: ").add(data::synergies[s].name).add("!").as(good));
+            return true;
+        }
+        bool reroll_boons()
+        {
+            if(! can_reroll()) return false;
+            cash -= reroll_price();
+            ++boon_rerolls;
+            roll_boons();
+            push(message().add("Nowa oferta premii"));
+            return true;
+        }
+        void skip_boons() { for(auto& o : boon_offer) o = -1; }
+        // Wybór bota (testy balansu, test złoty): prosta kolejność skutków, rzadkość, nowa synergia.
+        int boon_priority(int b) const
+        {
+            static constexpr int8_t prio[] = { 60, 58, 40, 50, 55, 28, 30, 25, 35, 8, 5, 38, 15, 15, 18, 18, 3, 30, 30, 20, 45, 5, 3, 10 };
+            static_assert(sizeof prio == int(boon_effect::sight) + 1);
+            const boon_def& bd = data::boons[b];
+            int v = bd.rarity * 100 + prio[int(bd.effect)];
+            if(synergy_mask_in(boons | (uint64_t(1) << b)) != synergy_mask()) v += 20;   // włączy synergię
+            return v;
+        }
+        int bot_boon_choice() const
+        {
+            int best = -1, bv = -1;
+            for(int k = 0; k < 3; ++k) if(boon_offer[k] >= 0 && boon_priority(boon_offer[k]) > bv) { bv = boon_priority(boon_offer[k]); best = k; }
+            return best;
+        }
+        // Bot losuje ofertę jeszcze raz tylko za darmo (Druga oferta) i gdy same zwykłe premie.
+        bool bot_wants_reroll() const
+        {
+            return has_boon_offer() && reroll_price() == 0 && can_reroll() && boon_priority(boon_offer[bot_boon_choice()]) < 100;
+        }
+
+        // ------------------------------------------------------------------ elity (#28)
+        bool is_elite(int ei) const { return enemies[ei].elite >= 0; }
+        bool elite_is(const actor& e, elite_effect x) const { return e.elite >= 0 && data::elites[e.elite].effect == x; }
+        int elite_chance() const
+        {
+            return imax(0, data::elite_act_pct[data::stages[stage].act] + data::elite_diff_pct[diff] + tier * data::elite_tier_pct);
+        }
+        void make_elite(int i, int trait)
+        {
+            actor& a = enemies[i];
+            a.elite = int8_t(trait);
+            a.hp = a.max_hp = int16_t(imax(1, a.max_hp * data::elite_hp_pct / 100));
+        }
+        // Obrona problemu ei: z danych + Tarcza elity.
+        int enemy_elite_def(int ei) const { return elite_is(enemies[ei], elite_effect::shield) ? data::elites[enemies[ei].elite].value : 0; }
+        int enemy_defense(int ei) const { return data::enemies[enemies[ei].def_id].defense + enemy_elite_def(ei); }
+        // Nazwa problemu z przedrostkiem elity ("Zbrojony Przeciek", "Uparta Pleśń").
+        message& enemy_name(message& m, int ei) const
+        {
+            const actor& e = enemies[ei];
+            const enemy_def& ed = data::enemies[e.def_id];
+            if(e.elite >= 0) m.add(data::elites[e.elite].prefix[ed.gender]).add(" ");
+            return m.add(ed.name);
+        }
+
+        // ------------------------------------------------------------------ kombinacje stanów (#29)
+        bool enemy_wet(int ei) const { const actor& e = enemies[ei]; return e.wet > 0 || data::enemies[e.def_id].elem == element::water; }
+        bool enemy_dusty(int ei) const { return enemies[ei].flags & actor_dusty; }
+        bool enemy_frozen(int ei) const { return enemies[ei].flags & actor_frozen; }
+        bool hero_wet() const { return hero_status[int(status_effect::wet)] > 0; }
+        // Bohater mokry (kałuża, cios wody): komunikat tylko, gdy był suchy.
+        void soak_hero()
+        {
+            if(hero_wet()) hero_status[int(status_effect::wet)] = int8_t(imax(hero_status[int(status_effect::wet)], data::hero_wet_turns));
+            else apply_status(status_effect::wet, data::hero_wet_turns);
+        }
+        // Żywioł ciosu bohatera: broń (Próbnik - prąd, Szlifierka - iskra), premie, synergia Przepięcie, moc zawodu.
+        bool hit_power() const
+        {
+            return weapon().elem == element::power || (hit_ctx & 1) || boon_sum(boon_effect::electric) > 0 || synergy_on(synergy_effect::conduct);
+        }
+        bool hit_spark() const { return weapon().elem == element::spark || (hit_ctx & 2) || boon_sum(boon_effect::spark) > 0; }
+        // Mokry + prąd: porażenie celu i mokrych problemów obok (Przepięcie: dalej).
+        void combo_shock(int ei, int x, int y)
+        {
+            const combo_def& c = data::combos[int(combo_effect::shock_area)];
+            const int rad = c.radius + synergy_value(synergy_effect::conduct);
+            combo_events = uint8_t(combo_events | (1u << int(combo_effect::shock_area)));
+            push(message().add(c.short_name).add(" ").add(c.name).as(good));
+            for(int i = 0; i < enemies_count && st == status::playing; ++i)
+            {
+                const actor& e = enemies[i];
+                if(e.alive && (i == ei || (enemy_wet(i) && cheb(x, y, e.x, e.y) <= rad))) damage_enemy(i, c.value, false, c.name);
+            }
+        }
+        // Pył + iskra: wybuch pyłu wokół zapylonego celu (pył znika z trafionych).
+        void combo_dust(int x, int y)
+        {
+            const combo_def& c = data::combos[int(combo_effect::dust_blast)];
+            const int sp = synergy_value(synergy_effect::sparks), rad = c.radius + (sp > 0 ? 1 : 0), dmg = c.value + sp;
+            combo_events = uint8_t(combo_events | (1u << int(combo_effect::dust_blast)));
+            push(message().add(c.short_name).add(" ").add(c.name).as(good));
+            for(int i = 0; i < enemies_count; ++i)
+                if(cheb(x, y, enemies[i].x, enemies[i].y) <= rad) enemies[i].flags = uint8_t(enemies[i].flags & ~actor_dusty);
+            for(int i = 0; i < enemies_count && st == status::playing; ++i)
+                if(enemies[i].alive && cheb(x, y, enemies[i].x, enemies[i].y) <= rad) damage_enemy(i, dmg, false, c.name);
+        }
+        // Zamróz + uderzenie: cios wręcz w zmrożony pęka go (+value% ciosu, osobno).
+        void combo_crack(int ei, int dmg)
+        {
+            const combo_def& c = data::combos[int(combo_effect::crack)];
+            enemies[ei].flags = uint8_t(enemies[ei].flags & ~actor_frozen);
+            combo_events = uint8_t(combo_events | (1u << int(combo_effect::crack)));
+            push(message().add(c.short_name).add(" ").add(c.name).as(good));
+            damage_enemy(ei, imax(1, dmg * c.value / 100), false, c.name);
+        }
 
         // Suma cech założonego sprzętu danego rodzaju.
         int trait_bonus(trait_effect e) const
@@ -916,12 +1200,15 @@ namespace core
             return b;
         }
         // Unik: szczęście + Respekt + buty, łącznie najwyżej data::dodge_max_pct.
-        int dodge_pct() const { return imin(data::dodge_max_pct, data::dodge_per_luck_pct * luck() + bonus.dodge + gear_bonus(gear_stat::dodge)); }
+        int dodge_pct() const
+        {
+            return imin(data::dodge_max_pct, data::dodge_per_luck_pct * luck() + bonus.dodge + gear_bonus(gear_stat::dodge) + boon_sum(boon_effect::dodge));
+        }
         bool has_passive(class_passive p) const { return cdef().passive == p; }
         // Obrona bohatera: zawód + premie + sprzęt + ochrona BHP-owca z brygady.
         int hero_defense() const
         {
-            return cdef().defense + def_bonus + gear_bonus(gear_stat::def) + (guard_turns > 0 ? data::brigade[helper_called].value : 0);
+            return cdef().defense + def_bonus + gear_bonus(gear_stat::def) + (guard_turns > 0 ? data::brigade[helper_called].value : 0) + boon_defense();
         }
         const weapon_def& weapon() const { return data::weapons[weapon_override >= 0 ? weapon_override : cdef().weapon]; }
         // Zasięg broni z pogodą: wiatr skraca zasięg broni dalekiego zasięgu (nie mniej niż 1).
@@ -1095,6 +1382,7 @@ namespace core
                 if(room_i >= lv.rooms_count) room_i = lv.rooms_count - 1;
                 int x, y; random_free_cell_in_room(lv.rooms[room_i], x, y);
                 spawn(sd.pool[r.range(0, sd.pool_count - 1)], x, y);
+                if(r.range(1, 100) <= elite_chance()) make_elite(enemies_count - 1, r.range(0, data::elites_count - 1));   // elita (#28)
             }
             if(sd.boss >= 0)
             {
@@ -1136,6 +1424,13 @@ namespace core
                 if(! (data::weather_no_bad_stack && wdef().bad && ! data::site_events[e].good)) apply_event(e);
             }
             place_documents();
+            // kombinacje stanów (#29): w pyle (akt III) problemy są zapylone, w Mróz - zmrożone (boss nie)
+            for(int i = 0; i < enemies_count; ++i)
+            {
+                if(i == boss) continue;
+                if(dust_sight() > 0) enemies[i].flags = uint8_t(enemies[i].flags | actor_dusty);
+                if(weather_is(weather_effect::frost)) enemies[i].flags = uint8_t(enemies[i].flags | actor_frozen);
+            }
             update_fov();
         }
 
@@ -1209,16 +1504,28 @@ namespace core
             b.flat_level = level_dmg(hero_level);
             b.flat_found = dmg_bonus - bonus.dmg - b.flat_level;
             b.pct = bonus.dmg_pct;
+            b.flat_boon = boon_sum(boon_effect::dmg);
+            b.pct_boon = boon_sum(boon_effect::dmg_pct);
+            b.crit_boon = boon_sum(boon_effect::crit);
             b.vs_enemy = enemy_def_id >= 0;
             b.enemy_def = b.vs_enemy ? data::enemies[enemy_def_id].defense : 0;
-            b.luck = cdef().luck + bonus.luck + luck_t;
+            b.luck = cdef().luck + bonus.luck + luck_t + boon_luck();
             b.crit_bonus = bonus.crit;
             b.power_rank = ability_rank();
             b.power = power_dmg_bonus();
             b.finish();
             return b;
         }
-        // Premia mocy do ciosu (ability): Seria i Rynna +1 od rangi II, Taran +ranga.
+        // Rozpiska przeciw konkretnemu problemowi na planszy (karta problemu): z obroną elity (Tarcza).
+        dmg_breakdown actor_breakdown(int ei) const
+        {
+            dmg_breakdown b = weapon_breakdown(enemies[ei].def_id);
+            b.enemy_elite = enemy_elite_def(ei);
+            b.elite = enemies[ei].elite;
+            b.finish();
+            return b;
+        }
+        // Premia mocy do ciosu (ability): Seria i Rynna +1 od rangi II, Taran +ranga; premie zawodów: Wirówka, Taran.
         int power_dmg_bonus() const
         {
             int rank = ability_rank();
@@ -1226,32 +1533,43 @@ namespace core
             {
                 case ability_effect::volley:
                 case ability_effect::line: return rank >= 2 ? 1 : 0;
-                case ability_effect::ram:  return rank;
+                case ability_effect::ram:  return rank + boon_power();
+                case ability_effect::spin: return boon_power();
                 default:                   return 0;
             }
         }
+        // Premia obrażeń problemu: etap, trudność, wzrost, elita.
+        int enemy_bonus(const actor& e) const { return enemy_dmg_bonus() + e.grow / 2 + (e.elite >= 0 ? data::elite_dmg : 0); }
         // Cios problemu ei w bohatera (zakres po OBR i -%).
         hit_range enemy_hit(int ei) const
         {
             const actor& e = enemies[ei];
             const enemy_def& ed = data::enemies[e.def_id];
-            return enemy_hit_range(ed.min_damage, ed.max_damage, enemy_dmg_bonus() + e.grow / 2, hero_defense(), bonus.taken_pct);
+            return enemy_hit_range(ed.min_damage, ed.max_damage, enemy_bonus(e), hero_defense(), bonus.taken_pct);
         }
 
         // obrażenia = rzut broni + stat/2 + premie - obrona/2, min 1
         void hero_attack(int ei)
         {
-            const enemy_def& ed = data::enemies[enemies[ei].def_id];
             if(ei == boss && boss_wake_damage < 0) boss_engaged();   // walka z bossem trwa
+            const int ex = enemies[ei].x, ey = enemies[ei].y;
+            const bool was_wet = enemy_wet(ei), was_dusty = enemy_dusty(ei), was_frozen = enemy_frozen(ei);
+            const bool melee = cheb(hero.x, hero.y, ex, ey) <= 1;
             int dmg = r.range(weapon().min_damage, weapon().max_damage) + hero_stat(weapon().scales_with) / 2 + dmg_bonus
-                    + gear_bonus(gear_stat::dmg) - ed.defense / 2;
+                    + gear_bonus(gear_stat::dmg) + boon_sum(boon_effect::dmg) - enemy_defense(ei) / 2;
             if(dmg < 1) dmg = 1;
-            dmg += pct_part(dmg, bonus.dmg_pct, dmg_carry);   // Kurs fachowy, Respekt: +% obrażeń
+            dmg += pct_part(dmg, bonus.dmg_pct + boon_sum(boon_effect::dmg_pct), dmg_carry);   // Kurs fachowy, Respekt, premie: +%
             bool crit = r.range(1, 100) <= crit_pct();
             if(crit) dmg *= data::crit_multiplier;
             damage_enemy(ei, dmg, crit, weapon().name);
-            // Operator koparki: cios wręcz czasem odpycha problem o pole (bossa nie)
+            // kombinacje stanów (#29): stan celu sprzed ciosu + żywioł ciosu
+            if(st == status::playing && hit_power() && was_wet) combo_shock(ei, ex, ey);
+            if(st == status::playing && hit_spark() && was_dusty) combo_dust(ex, ey);
+            if(st == status::playing && melee && was_frozen && enemies[ei].alive && enemy_frozen(ei)) combo_crack(ei, dmg);
             actor& e = enemies[ei];
+            if(e.alive && boon_sum(boon_effect::wet_hits) > 0) e.wet = int8_t(imax(e.wet, boon_sum(boon_effect::wet_hits)));   // Wąż ogrodowy
+            if(e.alive && boon_sum(boon_effect::frost_hits) > 0 && ei != boss) e.flags = uint8_t(e.flags | actor_frozen);      // Suchy lód
+            // Operator koparki: cios wręcz czasem odpycha problem o pole (bossa nie)
             if(has_passive(class_passive::push) && e.alive && ei != boss && cheb(hero.x, hero.y, e.x, e.y) == 1
                && r.range(1, 100) <= data::push_chance_pct)
                 shove(ei, isign(e.x - hero.x), isign(e.y - hero.y), 1);
@@ -1320,13 +1638,17 @@ namespace core
                 cash += income(ed.score / data::cash_per_score);
                 if(kills_by_type[e.def_id] < 255) ++kills_by_type[e.def_id];
                 score += ed.score * score_pct() / 100; gain_xp(data::xp_per_kill);
+                if(e.elite >= 0) elite_reward(ei);   // elita: pewna paczka (lepsza), materiały, Respekt
                 maybe_drop(e.x, e.y);
                 push(message().add(ed.name).add(" - usunięto!").as(good));
-                if(ed.tags & tag_explodes) arm_blast(e.x, e.y, ed);
+                const int kh = boon_sum(boon_effect::kill_heal);   // Drożdżówka: HP za usunięty problem
+                if(kh > 0 && hero.alive && hero.hp < hero.max_hp) hero.hp = int16_t(imin(hero.max_hp, hero.hp + kh));
+                if((ed.tags & tag_explodes) || elite_is(e, elite_effect::explode)) arm_blast(e.x, e.y, ed);
                 if((ed.tags & tag_splits) && ! (e.flags & actor_child)) split(ei);
                 if(ei == boss)   // boss: po kilka sztuk każdego materiału
                     for(int m = 0; m < data::materials_count; ++m) add_material(m, data::material_boss_drop);
-                else if(r.range(1, 100) <= data::material_drop_pct * (100 + bonus.mats_pct) / 100)   // Respekt: Zapasy
+                else if(r.range(1, 100) <= data::material_drop_pct * (100 + bonus.mats_pct + boon_sum(boon_effect::mats_pct)
+                                                                          + synergy_value(synergy_effect::stock)) / 100)   // Respekt: Zapasy
                     add_material(ed.material >= 0 ? ed.material : r.range(0, data::materials_count - 1));
                 if(ei == boss)
                 {
@@ -1365,7 +1687,38 @@ namespace core
                 }
             }
             else
+            {
                 push(message().add(crit ? "KRYT! " : "").add(src).add(": -").add(dmg).add(" (").add(ed.name).add(")").as(crit ? loot : info));
+                if(elite_is(e, elite_effect::summon) && ! (e.flags & actor_called) && e.hp * 100 <= e.max_hp * data::elites[e.elite].value)
+                    elite_call(ei);
+            }
+        }
+
+        // Elita "wzywa pomoc": raz, przy value% HP - słabszy problem tego samego rodzaju obok (połowa HP, bez cechy).
+        void elite_call(int ei)
+        {
+            actor& e = enemies[ei];
+            e.flags = uint8_t(e.flags | actor_called);
+            int x, y;
+            if(! free_around(e.x, e.y, hero.x, hero.y, x, y)) return;
+            int slot = free_slot();
+            if(slot < 0) return;
+            actor& c = enemies[slot];
+            c = actor();
+            c.x = int8_t(x); c.y = int8_t(y); c.def_id = enemies[ei].def_id;
+            c.hp = c.max_hp = int16_t(imax(1, data::enemies[c.def_id].max_health * enemy_hp_pct() / 100 / 2));
+            c.alive = true; c.awake = true; c.stun = 1; c.flags = actor_child;
+            push(message().add(data::enemies[c.def_id].name).add(": wzywa pomoc!").as(bad));
+        }
+
+        // Nagroda za elitę: pewny drop (paczka sprzętu co najmniej solidna), materiały, Respekt.
+        void elite_reward(int ei)
+        {
+            const actor& e = enemies[ei];
+            respect += data::elite_respect;
+            add_material(r.range(0, data::materials_count - 1), data::elite_mats);
+            if(pickups_count < max_pickups && ! pickup_at(e.x, e.y)) drop_at(e.x, e.y, data::elite_gear_min);
+            push(message().add("Elita usunięta! Respekt +").add(data::elite_respect).as(loot));
         }
 
         // Druga faza bossa (Decyzja odmowna: Odwołanie): raz, gdy HP spadnie do phase_pct% (także ciosem, który by go
@@ -1402,6 +1755,7 @@ namespace core
                 }
                 else if(puddle(hero.x, hero.y))   // deszcz: kałuża = poślizg
                     apply_status(status_effect::slip, 2);
+                if(puddle(hero.x, hero.y)) soak_hero();   // kałuża moczy (#29)
                 if(mud(hero.x, hero.y) && ! puddle(hero.x, hero.y))   // akt I: błoto - grzęźniesz, tura przepada
                 {
                     stuck = true;
@@ -1472,7 +1826,8 @@ namespace core
         int ability_rank() const { return 1 + (hero_level >= 3) + (hero_level >= 5); }
         int ability_cooldown() const
         {
-            return imax(3, imax(4, cdef().ability_cooldown - 2 * (ability_rank() - 1)) - trait_bonus(trait_effect::cooldown) - bonus.cooldown)
+            return imax(3, imax(4, cdef().ability_cooldown - 2 * (ability_rank() - 1)) - trait_bonus(trait_effect::cooldown) - bonus.cooldown
+                           - boon_sum(boon_effect::cooldown))
                    + (weather_is(weather_effect::heat) ? wdef().value : 0);   // upał: moc odnawia się dłużej
         }
 
@@ -1543,16 +1898,16 @@ namespace core
                 case ability_effect::stun:   // Odprawa: ogłusza widocznych na 2/3/4 tury
                     for(int i = 0; i < enemies_count; ++i)
                         if(enemies[i].alive && visible(enemies[i].x, enemies[i].y))
-                        { enemies[i].stun = int8_t(1 + rank); enemies[i].awake = true; ok = true; }
+                        { enemies[i].stun = int8_t(1 + rank + boon_power()); enemies[i].awake = true; ok = true; }
                     if(ok) push(message().add(c.ability_name).add(": problemy wstrzymane"));
                     break;
                 case ability_effect::wall:   // Ścianka: mur w poprzek drogi najbliższego wroga (nigdy wokół bohatera)
-                    ok = wall_toward_enemy(rank >= 3 ? 2 : 1, 4 + 2 * rank);
+                    ok = wall_toward_enemy(rank >= 3 ? 2 : 1, 4 + 2 * rank + boon_power());
                     if(ok) push(message().add(c.ability_name).add(" postawiona!"));
                     break;
                 case ability_effect::volley:   // Seria: wszyscy widoczni w zasięgu (+1 obrażeń od II, +1 zasięgu na III)
                 {
-                    int range = weapon_range() + (rank >= 3 ? 1 : 0);
+                    int range = weapon_range() + (rank >= 3 ? 1 : 0) + boon_power();
                     if(rank >= 2) ++dmg_bonus;
                     for(int i = 0; i < enemies_count && st == status::playing; ++i)
                     {
@@ -1566,7 +1921,8 @@ namespace core
                 {
                     uint32_t done = 0;
                     int t = nearest_target();
-                    for(int k = 0; k < 2 + rank && t >= 0 && st == status::playing; ++k)
+                    hit_ctx = 1;   // Łańcuch: prąd (mokry + prąd = porażenie)
+                    for(int k = 0; k < 2 + rank + boon_power() && t >= 0 && st == status::playing; ++k)
                     {
                         int px = enemies[t].x, py = enemies[t].y;
                         hero_attack(t); done |= 1u << t; ok = true;
@@ -1577,6 +1933,7 @@ namespace core
                             if(e.alive && ! (done & (1u << i)) && visible(e.x, e.y) && cheb(px, py, e.x, e.y) <= 2) { t = i; break; }
                         }
                     }
+                    hit_ctx = 0;
                     break;
                 }
                 case ability_effect::flush:   // Zawór: strumień odpycha sąsiadów o 1/2 pola (tracą turę) i leczy 6/8/10 HP
@@ -1595,9 +1952,10 @@ namespace core
                         }
                         e.awake = true;
                         e.stun = int8_t(imax(e.stun, 1));   // zalany traci turę, inaczej od razu by wrócił
+                        e.wet = int8_t(imax(e.wet, data::wet_turns));   // i jest mokry (#29)
                         ok = true;
                     }
-                    int h = imin(4 + 2 * rank, hero.max_hp - hero.hp);
+                    int h = imin(4 + 2 * rank + boon_power(), hero.max_hp - hero.hp);
                     if(h > 0) { hero.hp = int16_t(hero.hp + h); ok = true; }
                     if(ok) push(message().add(c.ability_name).add(": strumień! +").add(imax(0, h)).add(" HP"));
                     break;
@@ -1605,6 +1963,8 @@ namespace core
                 case ability_effect::spin:   // Wirówka: wszyscy obok (zasięg 2 na III), od II ogłusza na 1 turę
                 {
                     int reach = rank >= 3 ? 2 : 1;
+                    hit_ctx = 2;   // Wirówka: iskry (pył + iskra = wybuch)
+                    dmg_bonus += boon_power();
                     for(int i = 0; i < enemies_count && st == status::playing; ++i)
                     {
                         int d = cheb(hero.x, hero.y, enemies[i].x, enemies[i].y);
@@ -1614,6 +1974,8 @@ namespace core
                             if(rank >= 2 && enemies[i].alive) enemies[i].stun = int8_t(imax(enemies[i].stun, 1));
                         }
                     }
+                    dmg_bonus -= boon_power();
+                    hit_ctx = 0;
                     break;
                 }
                 case ability_effect::line:   // Rynna (Dekarz): dachówki lecą linią przez najbliższy widoczny problem (4/5/6 pól)
@@ -1623,7 +1985,7 @@ namespace core
                     int dx = enemies[t].x - hero.x, dy = enemies[t].y - hero.y, len = imax(iabs(dx), iabs(dy));
                     if(rank >= 2) ++dmg_bonus;
                     uint32_t done = 0;
-                    for(int k = 1; k <= 3 + rank && st == status::playing; ++k)
+                    for(int k = 1; k <= 3 + rank + boon_power() && st == status::playing; ++k)
                     {
                         int x = hero.x + div_round(dx * k, len), y = hero.y + div_round(dy * k, len);
                         if(! lv.passable(x, y)) break;   // mur zatrzymuje dachówki
@@ -1643,7 +2005,8 @@ namespace core
                         if(enemies[i].alive && cheb(cx, cy, enemies[i].x, enemies[i].y) <= rad)
                         {
                             hero_attack(i); ok = true;
-                            if(rank >= 2 && enemies[i].alive) enemies[i].stun = int8_t(imax(enemies[i].stun, 1));
+                            const int stun = (rank >= 2 ? 1 : 0) + boon_power();   // premia Gęsty tynk: dłużej
+                            if(stun > 0 && enemies[i].alive) enemies[i].stun = int8_t(imax(enemies[i].stun, stun));
                         }
                     break;
                 }
@@ -1660,9 +2023,9 @@ namespace core
                         int ei = enemy_at(nx, ny);
                         if(ei >= 0)
                         {
-                            dmg_bonus += rank;
+                            dmg_bonus += rank + boon_power();
                             hero_attack(ei);
-                            dmg_bonus -= rank;
+                            dmg_bonus -= rank + boon_power();
                             if(enemies[ei].alive && st == status::playing)
                             {
                                 if(ei != boss) shove(ei, dx, dy, 2);
@@ -1707,7 +2070,10 @@ namespace core
         enum helper_block : uint8_t { helper_ok, helper_busy, helper_used, helper_locked, helper_cash, helper_no_target, helper_no_room };
 
         // Cena fachowca (zł) po rabacie z Respektu (Znajomości).
-        int helper_price(int h) const { return data::brigade[h].price * (100 - bonus.brigade_pct) / 100; }
+        int helper_price(int h) const
+        {
+            return data::brigade[h].price * (100 - imin(90, bonus.brigade_pct + boon_sum(boon_effect::brigade_pct) + synergy_value(synergy_effect::brigade))) / 100;
+        }
 
         // Czy fachowca h można teraz wezwać (bez skutków ubocznych - telefon i bot).
         int helper_blocked(int h) const
@@ -1805,7 +2171,7 @@ namespace core
             return it.material >= 0 ? mats[it.material] >= it.mat_cost : cash >= hurtownia_price(i);
         }
         // Cena towaru w zł po rabacie z Respektu.
-        int hurtownia_price(int i) const { return data::hurtownia[i].price * (100 - bonus.shop_pct) / 100; }
+        int hurtownia_price(int i) const { return data::hurtownia[i].price * (100 - imin(90, bonus.shop_pct + boon_sum(boon_effect::shop_pct))) / 100; }
 
         // Losowy slot sprzętu spośród dostępnych (nagrody dokładają buty i pas); przy 3 slotach jak dawniej.
         int random_slot()
@@ -1929,6 +2295,7 @@ namespace core
             int got = stage_respect();
             respect += got;
             push(message().add("Respekt +").add(got).as(loot));
+            if(stage < data::stages_count - 1) roll_boons();   // premia 1 z 3 przed harmonogramem (nie po odbiorze)
         }
 
         // Respekt za bieżący etap: zwykły, boss w środku aktu, boss aktu, ostatni; mnożnik jak wynik (trudność, NG+).
@@ -1940,13 +2307,22 @@ namespace core
             return imax(1, base * score_pct() / 100);
         }
 
-        int coffee_heal() const { return div_round((data::coffee_heal + bonus.coffee) * (100 + bonus.coffee_pct), 100); }   // Respekt: Mocna kawa
+        int coffee_heal() const   // Respekt: Mocna kawa; premia Podwójne espresso
+        {
+            return div_round((data::coffee_heal + bonus.coffee + boon_sum(boon_effect::coffee)) * (100 + bonus.coffee_pct), 100);
+        }
 
         void drink_coffee()
         {
             int h = imin(coffee_heal(), hero.max_hp - hero.hp);
             hero.hp = int16_t(hero.hp + h);
             push(message().add("Kawa z termosu: +").add(h).add(" HP").as(good));
+            const int es = synergy_value(synergy_effect::espresso);   // synergia Espresso: kawa ładuje moc
+            if(es > 0 && ability_cd > 0)
+            {
+                ability_cd = imax(0, ability_cd - es);
+                push(message().add("Espresso: moc -").add(es).add(" t.").as(good));
+            }
         }
 
         // Picie z termosu (menu pod START): leczy, zużywa turę.
@@ -1975,6 +2351,11 @@ namespace core
         {
             if(r.range(1, 100) > data::drop_chance_pct + data::drop_per_luck_pct * luck() || pickups_count >= max_pickups) return;
             for(int i = 0; i < pickups_count; ++i) if(pickups[i].active && pickups[i].x == x && pickups[i].y == y) return;
+            drop_at(x, y);
+        }
+        // Drop w polu (typ losowany wagami); paczka sprzętu co najmniej jakości min_rarity (elita: solidna).
+        void drop_at(int x, int y, int min_rarity = 0)
+        {
             int total = 0; for(int w : data::drop_weights) total += w;
             int roll = r.range(1, total), type = 0;
             while(roll > data::drop_weights[type]) roll -= data::drop_weights[type++];
@@ -1983,7 +2364,7 @@ namespace core
             if(type == gear_box)   // slot losowy, jakość lepsza na późnych etapach
             {
                 int q = r.range(1, 100) + imax(0, pattern_stage()) * data::gear_stage_bonus + data::rarity_per_luck * luck() + bonus.gear_pct;
-                int rarity = q >= data::gear_brand_from ? 2 : (q >= data::gear_solid_from ? 1 : 0);
+                int rarity = imax(min_rarity, q >= data::gear_brand_from ? 2 : (q >= data::gear_solid_from ? 1 : 0));
                 arg = uint8_t(random_slot() * 3 + rarity);
                 trait = uint8_t(r.range(0, data::gear_traits_count - 1));
             }
@@ -2109,6 +2490,8 @@ namespace core
             int d = cheb(e.x, e.y, hero.x, hero.y);
             if(! e.awake) { if(d <= ed.sight) e.awake = true; else return; }
             if(i == boss && boss_wake_damage < 0) boss_engaged();
+            if(elite_is(e, elite_effect::regen) && e.hp < e.max_hp)   // elita Uparta: +HP co turę
+                e.hp = int16_t(imin(e.max_hp, e.hp + data::elites[e.elite].value));
             if(e.stun > 0) { --e.stun; return; }
             if(ed.slam && i == boss)   // boss: co kilka tur zapowiada uderzenie w obszar wokół bohatera
             {
@@ -2141,6 +2524,13 @@ namespace core
             if(tg & tag_stationary) return;
             if(weather_is(weather_effect::frost) && i != boss && turns % wdef().value == 0) return;   // mróz: problemy stoją
             if((tg & tag_ranged) && ranged_step(i)) return;
+            // elita Szybka: drugi krok, jeśli jeszcze nie stoi obok bohatera
+            if(chase_step(e) && elite_is(e, elite_effect::fast) && iabs(e.x - hero.x) + iabs(e.y - hero.y) != 1) chase_step(e);
+        }
+
+        // Krok problemu prosto w stronę bohatera (najpierw oś z większą odległością).
+        bool chase_step(actor& e)
+        {
             int dx = isign(hero.x - e.x), dy = isign(hero.y - e.y);
             bool xfirst = iabs(hero.x - e.x) >= iabs(hero.y - e.y);
             int tries[2][2] = { { xfirst ? dx : 0, xfirst ? 0 : dy }, { xfirst ? 0 : dx, xfirst ? dy : 0 } };
@@ -2148,8 +2538,9 @@ namespace core
             {
                 if(t[0] == 0 && t[1] == 0) continue;
                 int nx = e.x + t[0], ny = e.y + t[1];
-                if(lv.at(nx, ny) == tile::floor && ! occupied(nx, ny)) { e.x = int8_t(nx); e.y = int8_t(ny); return; }
+                if(lv.at(nx, ny) == tile::floor && ! occupied(nx, ny)) { e.x = int8_t(nx); e.y = int8_t(ny); return true; }
             }
+            return false;
         }
 
         // Cios problemu (wręcz albo z dystansu): unik ze szczęścia, obrażenia po obronie, stan, odepchnięcie.
@@ -2163,7 +2554,8 @@ namespace core
                 push(message().add("Unik! ").add(ed.name).add(" chybia").as(good));
                 return;
             }
-            int dmg = taken_damage(r.range(ed.min_damage, ed.max_damage) + enemy_dmg_bonus() + e.grow / 2 - hero_defense() / 2);
+            const bool was_wet = hero_wet();
+            int dmg = taken_damage(r.range(ed.min_damage, ed.max_damage) + enemy_bonus(e) - hero_defense() / 2);
             hero.hp = int16_t(hero.hp - dmg);
             stage_damage += dmg;
             hero_hit = true;
@@ -2171,6 +2563,17 @@ namespace core
             push(message().add(ed.name).add(ranged ? " z dystansu: -" : ": -").add(dmg).add(" HP").as(bad));
             if(ed.on_hit != status_effect::none && hero.hp > 0 && r.range(1, 100) <= ed.status_chance)
                 apply_status(ed.on_hit, ed.status_turns);
+            if(ed.elem == element::water && hero.hp > 0) soak_hero();   // woda moczy
+            if(ed.elem == element::power && was_wet && hero.hp > 0)   // mokry + prąd: porażenie bohatera
+            {
+                const combo_def& c = data::combos[int(combo_effect::shock_area)];
+                hero.hp = int16_t(hero.hp - c.hero_value);
+                stage_damage += c.hero_value;
+                add_hit(hero.x, hero.y, c.hero_value, true);
+                combo_events = uint8_t(combo_events | (8u << int(combo_effect::shock_area)));
+                push(message().add(c.short_name).add(" -").add(c.hero_value).add(" HP").as(bad));
+                if(hero.hp > 0) apply_status(status_effect::shock, 1);
+            }
             if(event_active(event_effect::rain) && hero.hp > 0 && r.range(1, 100) <= data::site_events[stage_event].value)
                 apply_status(status_effect::slip, 2);   // Ulewa w nocy: błoto na placu
             if((ed.tags & tag_pushes) && ! ranged && hero.hp > 0 && e.timer == 0)   // odepchnięcie o pole (co kilka tur)
@@ -2314,6 +2717,15 @@ namespace core
                 if(hero.hp > 1) { hero.hp = int16_t(hero.hp - 1); stage_damage += 1; add_hit(hero.x, hero.y, 1, true); }
             }
             if(ability_cd > 0 && --ability_cd == 0) push(message().add("Moc gotowa: ").add(cdef().ability_name).as(good));
+            int8_t& wet = hero_status[int(status_effect::wet)];
+            if(wet > 0) --wet;   // mokry schnie
+            for(int i = 0; i < enemies_count; ++i)   // problemy: kałuża moczy, poza nią schną
+            {
+                actor& e = enemies[i];
+                if(! e.alive) continue;
+                if(puddle(e.x, e.y)) e.wet = int8_t(data::wet_turns);
+                else if(e.wet > 0) --e.wet;
+            }
             if(guard_turns > 0) --guard_turns;   // ochrona BHP-owca mija
             for(int i = 0; i < walls_count; )
                 if(--walls[i].turns <= 0) { lv.t[walls[i].y][walls[i].x] = tile::floor; walls[i] = walls[--walls_count]; }
@@ -2341,11 +2753,18 @@ namespace core
                 if(cheb(hero.x, hero.y, blast_x, blast_y) <= data::behavior_blast_radius)
                 {
                     int dmg = taken_damage(blast_dmg - hero_defense() / 2);
+                    const bool dusty = dust_sight() > 0;   // pył + iskra (wybuch) na bohaterze (#29)
+                    if(dusty) dmg += data::combos[int(combo_effect::dust_blast)].hero_value;
                     hero.hp = int16_t(hero.hp - dmg);
                     stage_damage += dmg;
                     hero_hit = true;
                     add_hit(hero.x, hero.y, dmg, true);
-                    push(message().add("Wybuch: -").add(dmg).add(" HP").as(bad));
+                    if(dusty)
+                    {
+                        combo_events = uint8_t(combo_events | (8u << int(combo_effect::dust_blast)));
+                        push(message().add(data::combos[int(combo_effect::dust_blast)].short_name).add(" Wybuch: -").add(dmg).add(" HP").as(bad));
+                    }
+                    else push(message().add("Wybuch: -").add(dmg).add(" HP").as(bad));
                     if(hero.hp <= 0) hero_down();
                 }
                 else push(message().add("Wybuch obok - uff!").as(good));
@@ -2394,6 +2813,8 @@ namespace core
         void next_stage()
         {
             if(! investor_has(investor_effect::no_break)) hero.hp = int16_t(imin(hero.max_hp, hero.hp + 5));   // tryb inwestora: bez przerwy
+            if(boon_sum(boon_effect::regen_stage) > 0) hero.hp = int16_t(imin(hero.max_hp, hero.hp + boon_sum(boon_effect::regen_stage)));
+            skip_boons();   // oferta bez wyboru przepada
             int path = path_offer(next_path);
             next_path = 0;
             start_stage(stage + 1, path);

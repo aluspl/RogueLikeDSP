@@ -8,13 +8,17 @@ STAT = {"strength": "stat::str", "agility": "stat::agi", "intelligence": "stat::
 wid = {w["id"]: i for i, w in enumerate(d["weapons"])}
 eid = {e["id"]: i for i, e in enumerate(d["enemies"])}
 mid = {x["id"]: i for i, x in enumerate(d["materials"]["list"])}
+ELEM = {"none": "none", "woda": "water", "prad": "power", "iskra": "spark"}   # v0.21.50: żywioły (kombinacje stanów)
+GEN = {"m": 0, "f": 1, "n": 2}
 def s(x): return '"' + x.replace('"', '\\"') + '"'
 L = ["// WYGENEROWANE przez tools/gen_data.py z data/game.json - nie edytuj ręcznie.",
      "#pragma once", '#include "core_types.h"', "", "namespace data {", ""]
 L.append("inline constexpr core::weapon_def weapons[] = {")
 for w in d["weapons"]:
     assert w["minDamage"] <= w["maxDamage"] and w["range"] >= 1, w
-    L.append(f'    {{ {s(w["name"])}, {w["minDamage"]}, {w["maxDamage"]}, {w["range"]}, core::{STAT[w["scalesWith"]]} }},')
+    assert w.get("element", "none") in ELEM, w
+    L.append(f'    {{ {s(w["name"])}, {w["minDamage"]}, {w["maxDamage"]}, {w["range"]}, core::{STAT[w["scalesWith"]]}, '
+             f'core::element::{ELEM[w.get("element", "none")]} }},')
 L.append("};\n")
 L.append("inline constexpr core::class_def classes[] = {")
 for c in d["classes"]:
@@ -48,7 +52,8 @@ for e in d["enemies"]:
              f'{e.get("onHit", {}).get("turns", 0)}, core::slam_shape::{e.get("slamShape", "square")}, {s(e.get("slamName", ""))}, '
              f'{eid[sm["enemy"]] if sm else -1}, {sm.get("every", 0)}, {sm.get("max", 0)}, {e.get("gearStun", 0)}, '
              f'{rw.get("cash", 0)}, {s(rw.get("title", ""))}, {mid[e["material"]] if "material" in e else -1}, {tags(e)}, '
-             f'{ph.get("atPct", 0)}, {ph.get("healPct", 0)}, {ph.get("summon", 0)}, {s(ph.get("name", ""))} }},')
+             f'{ph.get("atPct", 0)}, {ph.get("healPct", 0)}, {ph.get("summon", 0)}, {s(ph.get("name", ""))}, '
+             f'core::element::{ELEM[e.get("element", "none")]}, {GEN[e.get("gender", "m")]} }},')
 L.append("};\n")
 L.append("inline constexpr core::stage_def stages[] = {")
 for st in d["stages"]:
@@ -132,7 +137,7 @@ L.append("};")
 stt = d["statuses"]
 L.append("inline constexpr core::status_def statuses[] = {   // indeks = core::status_effect")
 L.append('    { "", "", "" },')
-for k in ("poison", "shock", "slip", "paper"):
+for k in ("poison", "shock", "slip", "paper", "wet"):
     x = stt[k]
     assert len(x["short"]) <= 8 and len(x["name"]) + len(x["effect"]) <= 30, x
     L.append(f'    {{ {s(x["name"])}, {s(x["short"])}, {s(x["effect"])} }},')
@@ -343,7 +348,7 @@ L += [f"inline constexpr int level_thresholds[] = {{ {', '.join(map(str, hl['thr
       f"inline constexpr int def_levels_mask = {sum(1 << l for l in hl['defLevels'])};", ""]
 rs = d["respect"]
 REFF = {"dmg_pct", "taken_pct", "gear_pct", "crit", "dodge", "coffee_pct", "thermos", "cooldown", "cash", "xp_pct",
-        "brigade_pct", "sight", "shop_pct", "mats_pct", "second_chance"}
+        "brigade_pct", "sight", "shop_pct", "mats_pct", "second_chance", "reroll"}
 assert 1 <= len(rs["upgrades"]) <= 16 and all(0 < rs[k] < 50 for k in ("stage", "boss", "actBoss", "final"))
 L.append("inline constexpr core::respect_def respect[] = {   // Respekt: stałe ulepszenia z rangami")
 for x in rs["upgrades"]:
@@ -398,6 +403,68 @@ assert [x["id"] for x in tu["unlocks"]] == UNL
 L.append("inline constexpr core::tutorial_step tutorial_unlocks[] = {   // dymki przy pierwszym odblokowaniu (kolejność = core::tutorial_unlock)")
 L += [tut(x) for x in tu["unlocks"]] + ["};"]
 L += [f"inline constexpr int tutorial_steps_count = {len(tu['steps'])};", f"inline constexpr int tutorial_unlocks_count = {len(tu['unlocks'])};", ""]
+# v0.21.50 cz. 2: premie po etapie (#27), elity (#28), kombinacje stanów (#29)
+bo = d["boons"]
+BTAG = [x["id"] for x in bo["tags"]]
+BEFF = ["dmg", "dmg_pct", "crit", "max_hp", "def", "dodge", "coffee", "thermos", "cooldown", "cash", "mats", "luck", "wet_hits",
+        "frost_hits", "electric", "spark", "brigade_pct", "regen_stage", "kill_heal", "status_res", "power", "mats_pct", "shop_pct", "sight"]
+RAR = {x["id"]: i for i, x in enumerate(bo["rarities"])}
+cid2 = {c["id"]: i for i, c in enumerate(d["classes"])}
+assert len(bo["rarities"]) == 3 and len(BTAG) <= 16 and 2 <= len(bo["list"]) <= 64 and 0 < bo["rerollCost"] <= 200
+def tagmask(t): assert all(x in BTAG for x in t) and 1 <= len(t) <= 2, t; return sum(1 << BTAG.index(x) for x in t)
+L += ["inline constexpr core::boon_rarity_def boon_rarities[] = {   // premie: rzadkość i waga losowania"]
+L += [f'    {{ {s(x["name"])}, {x["weight"]} }},' for x in bo["rarities"]] + ["};"]
+L += ["inline constexpr const char* boon_tags[] = { " + ", ".join(s(x["name"]) for x in bo["tags"]) + " };   // znaczniki premii"]
+L.append("inline constexpr core::boon_def boons[] = {   // premie po etapie: 1 z 3 (rzadkość, znaczniki, skutek, zawód)")
+for x in bo["list"]:
+    assert x["effect"] in BEFF and len(x["name"]) <= 20 and len(x["desc"]) <= 26 and -128 < x["value"] < 128, x
+    assert x["effect"] != "power" or "class" in x, x   # wzmocnienie mocy tylko w premiach zawodów
+    L.append(f'    {{ {s(x["name"])}, {s(x["desc"])}, {RAR[x["rarity"]]}, {tagmask(x["tags"])}, core::boon_effect::{x["effect"]}, '
+             f'{x["value"]}, {cid2[x["class"]] if "class" in x else -1} }},')
+L.append("};")
+for c in range(len(d["classes"])):   # każdy zawód ma 1-2 własne premie
+    n = sum(1 for x in bo["list"] if cid2.get(x.get("class"), -1) == c)
+    assert 1 <= n <= 2, (d["classes"][c]["id"], n)
+for r in bo["rarities"]:
+    assert any(x["rarity"] == r["id"] and "class" not in x for x in bo["list"]), r
+SEFF = ["conduct", "armor", "espresso", "safety", "luck", "brigade", "stock", "sparks"]
+L.append("inline constexpr core::synergy_def synergies[] = {   // synergie: 2+ premie z tym samym znacznikiem")
+for x in bo["synergies"]:
+    assert x["effect"] in SEFF and len(x["name"]) <= 14 and len(x["desc"]) <= 32, x
+    L.append(f'    {{ {s(x["name"])}, {s(x["desc"])}, {tagmask(x["tags"])}, core::synergy_effect::{x["effect"]}, {x["value"]} }},')
+L.append("};")
+L += [f"inline constexpr int boons_count = {len(bo['list'])};", f"inline constexpr int boon_tags_count = {len(BTAG)};",
+      f"inline constexpr int synergies_count = {len(bo['synergies'])};", f"inline constexpr int boon_reroll_cost = {bo['rerollCost']};",
+      f"inline constexpr int synergy_at = {bo['synergyAt']};", f"inline constexpr int boon_luck_rare = {bo['luckRare']};",
+      f"inline constexpr int boon_luck_legend = {bo['luckLegend']};", ""]
+el = d["elites"]
+EEFF = ["shield", "fast", "regen", "explode", "summon"]
+assert len(el["actPct"]) == len(acts) and len(el["diffPct"]) == len(d["difficulties"]) and 100 <= el["hpPct"] <= 300
+L.append("inline constexpr core::elite_def elites[] = {   // elity: cecha, przedrostek nazwy wg rodzaju")
+for x in el["traits"]:
+    assert x["effect"] in EEFF and len(x["prefix"]) == 3 and all(len(p) <= 10 for p in x["prefix"]) and len(x["info"]) <= 24, x
+    L.append(f'    {{ {s(x["name"])}, {{ {", ".join(s(p) for p in x["prefix"])} }}, {s(x["info"])}, core::elite_effect::{x["effect"]}, {x["value"]} }},')
+L.append("};")
+L += [f"inline constexpr int elites_count = {len(el['traits'])};",
+      f"inline constexpr int elite_act_pct[] = {{ {', '.join(map(str, el['actPct']))} }};   // szansa na elitę wg aktu (data::acts)",
+      f"inline constexpr int elite_diff_pct[] = {{ {', '.join(map(str, el['diffPct']))} }};",
+      f"inline constexpr int elite_tier_pct = {el['tierPct']};", f"inline constexpr int elite_hp_pct = {el['hpPct']};",
+      f"inline constexpr int elite_dmg = {el['dmg']};", f"inline constexpr int elite_respect = {el['reward']['respect']};",
+      f"inline constexpr int elite_mats = {el['reward']['mats']};", f"inline constexpr int elite_gear_min = {el['reward']['gearMin']};", ""]
+co = d["combos"]
+CEFF = ["shock_area", "dust_blast", "crack"]
+assert [x["effect"] for x in co["list"]] == CEFF   # kolejność = core::combo_effect
+L.append("inline constexpr core::combo_def combos[] = {   // kombinacje stanów (kolejność = core::combo_effect)")
+for x in co["list"]:
+    assert len(x["name"]) <= 14 and len(x["short"]) <= 20 and len(x["info"]) <= 36 and len(x["hero"]) <= 40, x
+    L.append(f'    {{ {s(x["name"])}, {s(x["short"])}, {s(x["info"])}, {s(x["hero"])}, core::combo_effect::{x["effect"]}, '
+             f'{x["value"]}, {x["radius"]}, {x["heroValue"]} }},')
+L.append("};")
+assert len(co["sources"]) == 4 and all(len(x) <= 36 for x in co["sources"])
+L += ["inline constexpr const char* combo_sources[] = { " + ", ".join(s(x) for x in co["sources"]) + " };   // Jak grać: skąd stany",
+      f"inline constexpr int combos_count = {len(co['list'])};", f"inline constexpr int wet_turns = {co['wetTurns']};",
+      f"inline constexpr int hero_wet_turns = {co['heroWetTurns']};", ""]
+
 L += [f"inline constexpr const char* version = {s(d['version'])};   // numer wersji (ekran tytułowy, changelog)", ""]
 dh = d["damageHelp"]   # v0.21.50: Jak grać, strona Obrażenia (GBA i Godot)
 assert len(dh) == 6 and all(len(x) <= 36 for x in dh), dh

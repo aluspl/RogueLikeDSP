@@ -88,6 +88,15 @@ static void bot_step(game& g)
     g.player_wait();
 }
 
+// Po etapie: bot wybiera premię (kolejność skutków z core: bot_boon_choice) i idzie dalej.
+static bool bot_no_boons = false;   // wariant bez premii (porównanie)
+static void bot_next(game& g)
+{
+    if(g.bot_wants_reroll() && ! bot_no_boons) g.reroll_boons();
+    if(g.has_boon_offer() && ! bot_no_boons) g.pick_boon(g.bot_boon_choice());
+    g.next_stage();
+}
+
 // Otwarta arena 14x14 bez wrogów i znajdziek, bohater na (7,7) - do testów mocy.
 static void arena(game& g, int cls)
 {
@@ -1261,7 +1270,7 @@ int main()
                 game g; g.new_run(k % data::classes_count, 3000 + k * 131, data::default_difficulty, mm);
                 for(int step = 0; step < 4000; ++step)
                 {
-                    if(g.st == status::stage_clear) { g.next_stage(); continue; }
+                    if(g.st == status::stage_clear) { bot_next(g); continue; }
                     if(g.st != status::playing) break;
                     bot_step(g);
                 }
@@ -1781,7 +1790,7 @@ int main()
             CHECK(profile_fix(p) && std::strcmp(p.magic, profile_magic) == 0 && p.catalog_hi == 0 && p.best == 4321 && p.respect == 77 && p.catalog == 0x0F0F);
             catalog_add(p, 20); catalog_add(p, 31);
             CHECK(catalog_has(p, 20) && catalog_has(p, 31) && !catalog_has(p, 21) && catalog_count(p) == 8 + 2);
-            CHECK(std::strcmp(run_magic, "PBRUN10") == 0);
+            CHECK(std::strcmp(run_magic, "PBRUN11") == 0);
         }
     }
     // 41. v0.21.49 cz. 3: Akt 0 (Papierologia) - nagroda za odbiór, pieczątki zamykają schody, druga faza bossa;
@@ -1842,9 +1851,10 @@ int main()
             {
                 game b; b.new_run(k % data::classes_count, 300 + k * 13, 0, mods(p));
                 for(int step = 0; step < 3000 && b.st == status::playing && b.stage < F0; ++step) bot_step(b);
-                while(b.st == status::stage_clear && b.stage < F0) { b.next_stage(); for(int step = 0; step < 3000 && b.st == status::playing; ++step) bot_step(b); }
+                while(b.st == status::stage_clear && b.stage < F0) { bot_next(b); for(int step = 0; step < 3000 && b.st == status::playing; ++step) bot_step(b); }
                 won_act0 += b.stage >= F0 || (b.st == status::stage_clear && b.stage == F0 - 1);
             }
+            std::printf("Akt 0 (bot, Łatwy): %d/20\n", won_act0);
             CHECK(won_act0 >= 14);
         }
         // samouczek: główny na tytule i wyborze zawodu, potem dymki odblokowań (każdy raz)
@@ -1934,7 +1944,7 @@ int main()
                     actor& e = g.enemies[g.enemies_count - 1];
                     e.hp = e.max_hp = 30000;
                     g.hero_attack(g.enemies_count - 1);
-                    int dealt = 30000 - g.enemies[g.enemies_count - 1].hp;
+                    int dealt = g.hits[0].amount;   // pierwszy wpis = cios (kombinacje stanów to osobne trafienia)
                     bool crit = g.hits_count > 0 && g.hits[0].kind == hit_crit;
                     if(crit) { ++crits; clo = imin(clo, dealt); chi = imax(chi, dealt); }
                     else { lo = imin(lo, dealt); hi = imax(hi, dealt); }
@@ -2009,6 +2019,220 @@ int main()
             CHECK(v.min == imax(1, 6 - data::enemies[data::enemy_budzet].defense / 2));
         }
     }
+    // 47. v0.21.50 cz. 2: premie po etapie (#27), elity (#28), kombinacje stanów (#29)
+    {
+        auto boon_idx = [](const char* n) { for(int b = 0; b < data::boons_count; ++b) if(std::strcmp(data::boons[b].name, n) == 0) return b; return -1; };
+        auto syn_idx = [](const char* n) { for(int s = 0; s < data::synergies_count; ++s) if(std::strcmp(data::synergies[s].name, n) == 0) return s; return -1; };
+        auto clear_stage = [](game& g) { g.debug_skip(); };
+        // oferta: po etapie 3 różne premie, dostępne dla zawodu, deterministyczne dla seeda (osobny generator - RNG gry bez zmian)
+        int differ = 0;
+        for(uint32_t seed = 1; seed <= 60; ++seed)
+        {
+            game a; a.new_run(int(seed % data::classes_count), seed); clear_stage(a);
+            game b; b.new_run(int(seed % data::classes_count), seed); clear_stage(b);
+            game c; c.new_run(int(seed % data::classes_count), seed + 1000); clear_stage(c);
+            CHECK(a.st == status::stage_clear && a.has_boon_offer());
+            CHECK(std::memcmp(a.boon_offer, b.boon_offer, 3) == 0 && a.r.s == b.r.s);
+            differ += std::memcmp(a.boon_offer, c.boon_offer, 3) != 0;
+            for(int k = 0; k < 3; ++k)
+            {
+                int bo = a.boon_offer[k];
+                CHECK(bo >= 0 && bo < data::boons_count && (data::boons[bo].cls < 0 || data::boons[bo].cls == a.cls) && ! a.has_boon(bo));
+                for(int j = 0; j < k; ++j) CHECK(a.boon_offer[j] != bo);
+            }
+            uint32_t rs = a.r.s;
+            game p = a; p.pick_boon(0); CHECK(p.r.s == rs && ! p.has_boon_offer() && p.has_boon(a.boon_offer[0]) && p.boons_owned() == 1);
+            game n = a; n.next_stage(); CHECK(! n.has_boon_offer() && n.boons == 0);   // bez wyboru oferta przepada
+        }
+        CHECK(differ >= 50);
+        {   // ostatni etap (odbiór): bez oferty
+            game g; g.new_run(0, 5); g.start_stage(data::stages_count - 1);
+            g.enemies[g.boss].hp = 1; g.hero_attack(g.boss);
+            if(g.st != status::won) { g.enemies[g.boss].hp = 1; g.debug_skip(); }
+            CHECK(g.st == status::won && ! g.has_boon_offer());
+        }
+        // rzadkość: wagi z danych, szczęście przesuwa ku rzadkim i legendarnym
+        {
+            int cnt[2][3] = {};
+            for(int lk = 0; lk < 2; ++lk)
+                for(uint32_t seed = 1; seed <= 400; ++seed)
+                {
+                    game g; g.new_run(1, seed * 13); if(lk) g.bonus.luck = 5;
+                    clear_stage(g);
+                    for(int k = 0; k < 3; ++k) ++cnt[lk][data::boons[g.boon_offer[k]].rarity];
+                }
+            std::printf("Premie: rzadkość bez szczęścia %d/%d/%d, SZCZ 5: %d/%d/%d\n", cnt[0][0], cnt[0][1], cnt[0][2], cnt[1][0], cnt[1][1], cnt[1][2]);
+            CHECK(cnt[0][0] > cnt[0][1] && cnt[0][1] > cnt[0][2] && cnt[0][2] > 0);
+            CHECK(cnt[1][1] + cnt[1][2] > cnt[0][1] + cnt[0][2] && cnt[1][2] > cnt[0][2]);
+            game g; g.new_run(1, 3); CHECK(g.boon_weight(0) == data::boon_rarities[0].weight && g.boon_weight(2) == data::boon_rarities[2].weight);
+        }
+        // losowanie: raz płatne na budowę, Druga oferta (Respekt) daje darmowe; nowa oferta inna
+        {
+            game g; g.new_run(2, 77); clear_stage(g);
+            int8_t before[3]; std::memcpy(before, g.boon_offer, 3);
+            g.cash = data::boon_reroll_cost - 1; CHECK(! g.can_reroll() && ! g.reroll_boons());
+            g.cash = data::boon_reroll_cost + 5; CHECK(g.reroll_price() == data::boon_reroll_cost && g.reroll_boons());
+            CHECK(g.cash == 5 && g.rerolls_left() == 0 && ! g.reroll_boons() && std::memcmp(before, g.boon_offer, 3) != 0 && g.has_boon_offer());
+            run_mods m; m.rerolls = 1;
+            game f; f.new_run(2, 77, data::default_difficulty, m); clear_stage(f);
+            f.cash = 0; CHECK(f.reroll_price() == 0 && f.reroll_boons() && f.cash == 0 && f.rerolls_left() == 1);
+            f.cash = 100; CHECK(f.reroll_price() == data::boon_reroll_cost && f.reroll_boons() && f.cash == 100 - data::boon_reroll_cost);
+            profile p; profile_reset(p); for(int i = 0; i < data::respect_count; ++i) p.respect_ranks[i] = uint8_t(data::respect[i].ranks);
+            CHECK(mods(p).rerolls == 1);
+        }
+        // skutki premii: natychmiastowe i stałe; rozpiska = walka z premiami i elitą (Tarcza)
+        {
+            game g; arena(g, 1);
+            int hp = g.hero.max_hp, cash = g.cash, def = g.hero_defense(), cool = g.ability_cooldown(), cap = g.thermos_cap();
+            auto give = [&](const char* n) { int b = boon_idx(n); CHECK(b >= 0); g.boon_offer[0] = int8_t(b); CHECK(g.pick_boon(0)); };
+            auto val = [&](const char* n) { return int(data::boons[boon_idx(n)].value); };
+            give("Płyta warstwowa"); CHECK(g.hero.max_hp == hp + val("Płyta warstwowa"));
+            give("Premia od inwestora"); CHECK(g.cash == cash + g.income(val("Premia od inwestora")));
+            give("Paleta materiałów"); for(int mm = 0; mm < data::materials_count; ++mm) CHECK(g.mats[mm] == val("Paleta materiałów"));
+            int zb = syn_idx("Zbrojenie");
+            give("Beton B30"); CHECK(g.hero_defense() == def + val("Beton B30") && ! g.synergy_active(zb));
+            give("Druga zmiana"); CHECK(g.ability_cooldown() == imax(3, cool - val("Druga zmiana")));
+            give("Termos z bufetu"); CHECK(g.thermos_cap() == cap + 1 && g.thermos == 1);
+            dmg_breakdown b0 = g.weapon_breakdown();
+            give("Hartowana kielnia"); give("Zbrojona rękawica"); give("Hydrofor"); give("Szczęśliwa moneta");
+            dmg_breakdown b1 = g.weapon_breakdown();
+            const int fb = val("Hartowana kielnia") + val("Zbrojona rękawica"), pb = val("Hydrofor"), cb = val("Szczęśliwa moneta");
+            CHECK(b1.flat_boon == fb && b1.pct_boon == pb && b1.crit_boon == cb && b1.crit_pct == g.crit_pct() && b1.min > b0.min);
+            message ml, me; me.add("Premie etapów: +").add(fb).add(", +").add(pb).add("%, kryt +").add(cb).add("%");
+            CHECK(dmg_line(ml, b1, dmg_text::boon) && std::strcmp(ml.s, me.s) == 0);
+            // Zbrojenie: 2+ premie Beton (B30, Hartowana kielnia) -> +1 OBR za każdą
+            CHECK(zb >= 0 && g.synergy_active(zb) && g.tag_count(2) == 2);
+            CHECK(g.hero_defense() == def + val("Beton B30") + 2 * data::synergies[zb].value);
+            // walka: z premiami i elitą (Tarcza) w zakresie rozpiski
+            for(int t = 0; t < data::elites_count; ++t)
+            {
+                g.enemies_count = 0; g.spawn(data::enemy_kornik, 8, 7); g.make_elite(0, t);
+                g.enemies[0].hp = g.enemies[0].max_hp = 30000;
+                dmg_breakdown be = g.actor_breakdown(0);
+                CHECK(be.enemy_elite == g.enemy_elite_def(0) && be.def_cut == g.enemy_defense(0) / 2);
+                int lo = 999, hi = 0;
+                for(int k = 0; k < 1500; ++k)
+                {
+                    g.dmg_carry = k % 100; g.hits_count = 0;
+                    g.hero_attack(0);
+                    if(g.hits[0].kind == hit_crit) continue;
+                    lo = imin(lo, g.hits[0].amount); hi = imax(hi, g.hits[0].amount);
+                }
+                CHECK(lo == be.min && hi == be.max);
+                hit_range h = g.enemy_hit(0); hit_range h0 = enemy_hit_range(1, 3, g.enemy_dmg_bonus() + data::elite_dmg, g.hero_defense(), 0);
+                CHECK(h.min == h0.min && h.max == h0.max);
+                message m; dmg_line(m, be, dmg_text::enemy); CHECK(m.n < log_len - 1);
+                message nm; g.enemy_name(nm, 0); CHECK(std::strncmp(nm.s, data::elites[t].prefix[0], std::strlen(data::elites[t].prefix[0])) == 0);
+            }
+        }
+        // synergie: Przepięcie (woda + prąd), nowa synergia w dzienniku
+        {
+            game g; arena(g, 1);
+            int pr = syn_idx("Przepięcie");
+            g.boon_offer[0] = int8_t(boon_idx("Wąż ogrodowy")); g.pick_boon(0); CHECK(! g.synergy_active(pr) && ! g.hit_power());
+            g.boon_offer[0] = int8_t(boon_idx("Przedłużacz")); g.pick_boon(0); CHECK(g.synergy_active(pr) && g.hit_power());
+            CHECK(std::strstr(g.log[log_lines - 1].s, "Synergia: Przepięcie") != nullptr);
+            int bhp = syn_idx("Pełne BHP");
+            g.boon_offer[0] = int8_t(boon_idx("Szelki asekuracyjne")); g.pick_boon(0);
+            g.boon_offer[0] = int8_t(boon_idx("Kask z latarką")); g.pick_boon(0); CHECK(g.synergy_active(bhp));
+            g.apply_status(status_effect::shock, 1); g.apply_status(status_effect::poison, 3);
+            CHECK(g.status_turns(status_effect::shock) == 0 && g.status_turns(status_effect::poison) == 0);
+            // Espresso: kawa ładuje moc
+            game e; arena(e, 1);
+            e.boon_offer[0] = int8_t(boon_idx("Podwójne espresso")); e.pick_boon(0);
+            e.boon_offer[0] = int8_t(boon_idx("Termos z bufetu")); e.pick_boon(0);
+            e.ability_cd = 10; e.hero.hp = 5; e.thermos = 1; CHECK(e.player_drink() && e.ability_cd <= 10 - 3);
+            // premie zawodów: tylko własny zawód
+            for(int b = 0; b < data::boons_count; ++b)
+                if(data::boons[b].cls >= 0) { game q; q.new_run(data::boons[b].cls == 0 ? 1 : 0, 3); CHECK(! q.boon_available(b)); }
+        }
+        // elity: szansa rośnie z aktem i trudnością, więcej HP, cechy, nagroda
+        {
+            game a; a.new_run(0, 9, 0); game h; h.new_run(0, 9, 2);
+            CHECK(a.elite_chance() < h.elite_chance());
+            game l; l.new_run(0, 9); int c1 = l.elite_chance(); l.start_stage(data::stages_count - 2); CHECK(l.elite_chance() > c1);
+            int elites = 0, all = 0;
+            for(uint32_t seed = 1; seed <= 300; ++seed)
+            {
+                game g; g.new_run(0, seed); g.start_stage(F0 + 8);
+                for(int i = 0; i < g.enemies_count; ++i) if(i != g.boss && g.enemies[i].alive) { ++all; elites += g.enemies[i].elite >= 0; }
+            }
+            std::printf("Elity: %d z %d problemów (%d%%) na etapie %d\n", elites, all, elites * 100 / imax(1, all), F0 + 9);
+            CHECK(elites > 0 && iabs(elites * 100 / all - l.elite_chance()) <= 6);
+            auto trait = [](elite_effect e) { for(int t = 0; t < data::elites_count; ++t) if(data::elites[t].effect == e) return t; return -1; };
+            game g; arena(g, 1);
+            g.spawn(data::enemy_kornik, 10, 7); int base_hp = g.enemies[0].max_hp; g.make_elite(0, trait(elite_effect::fast));
+            CHECK(g.enemies[0].max_hp == base_hp * data::elite_hp_pct / 100 && g.is_elite(0));
+            g.enemies[0].awake = true; g.player_wait(); CHECK(g.enemies[0].x == 8);   // szybka: 2 pola na turę
+            game rg; arena(rg, 1); rg.spawn(data::enemy_kamien, 12, 12); rg.make_elite(0, trait(elite_effect::regen));
+            rg.enemies[0].awake = true; rg.enemies[0].hp = 5; rg.player_wait(); CHECK(rg.enemies[0].hp == 5 + data::elites[trait(elite_effect::regen)].value);
+            game ex; arena(ex, 1); ex.spawn(data::enemy_kornik, 8, 7); ex.make_elite(0, trait(elite_effect::explode));
+            ex.enemies[0].hp = 1; ex.hero_attack(0); CHECK(ex.blast_timer > 0);
+            int resp = ex.respect; (void)resp;
+            CHECK(ex.respect == data::elite_respect);
+            bool box = false;   // pewny drop w polu elity (paczka co najmniej solidna)
+            for(int i = 0; i < ex.pickups_count; ++i)
+                box |= ex.pickups[i].x == 8 && ex.pickups[i].y == 7 && (ex.pickups[i].type != gear_box || ex.pickups[i].arg % 3 >= data::elite_gear_min);
+            CHECK(box);
+            game sm; arena(sm, 1); sm.spawn(data::enemy_kornik, 8, 7); sm.make_elite(0, trait(elite_effect::summon));
+            sm.enemies[0].hp = 3; sm.damage_enemy(0, 1, false, "t"); CHECK(sm.enemies_count == 2 && sm.enemies[1].alive && (sm.enemies[0].flags & actor_called));
+            sm.damage_enemy(0, 1, false, "t"); CHECK(sm.enemies_count == 2);   // tylko raz
+        }
+        // kombinacje: mokry + prąd (porażenie obok), pył + iskra (wybuch), zamróz + uderzenie (pęknięcie), na bohaterze
+        {
+            game g; arena(g, 3);   // Elektryk: Próbnik (prąd)
+            CHECK(g.hit_power() && ! g.hit_spark());
+            g.spawn(data::enemy_przeciek, 8, 7); g.spawn(data::enemy_kornik, 9, 7); g.spawn(data::enemy_kornik, 9, 8);
+            for(int i = 0; i < 3; ++i) g.enemies[i].hp = g.enemies[i].max_hp = 500;
+            g.enemies[1].wet = 3;   // mokry obok celu; [2] suchy
+            g.hero_attack(0);
+            CHECK(g.combo_events & 1);
+            CHECK(g.enemies[1].hp == 500 - data::combos[0].value && g.enemies[2].hp == 500);
+            game d; arena(d, 5);   // Glazurnik: Szlifierka (iskra)
+            CHECK(d.hit_spark());
+            d.spawn(data::enemy_kornik, 8, 7); d.spawn(data::enemy_kornik, 9, 8); d.spawn(data::enemy_kornik, 11, 7);
+            for(int i = 0; i < 3; ++i) { d.enemies[i].hp = d.enemies[i].max_hp = 500; d.enemies[i].flags = actor_dusty; }
+            d.hero_attack(0);
+            CHECK((d.combo_events & 2) && d.enemies[1].hp == 500 - data::combos[1].value && d.enemies[2].hp == 500);
+            CHECK(! d.enemy_dusty(0) && ! d.enemy_dusty(1) && d.enemy_dusty(2));
+            game f; arena(f, 1);   // Murarz: wręcz
+            f.spawn(data::enemy_kornik, 8, 7); f.enemies[0].hp = f.enemies[0].max_hp = 500; f.enemies[0].flags = actor_frozen;
+            f.hero_attack(0);
+            CHECK((f.combo_events & 4) && ! f.enemy_frozen(0) && f.hits_count == 2 && f.hits[1].amount == imax(1, f.hits[0].amount * data::combos[2].value / 100));
+            // na starcie etapu: akt III - zapyleni, Mróz - zmrożeni
+            game t; t.new_run(0, 4); t.start_stage(F0 + 8);
+            for(int i = 0; i < t.enemies_count; ++i) if(i != t.boss && t.enemies[i].alive) CHECK(t.enemy_dusty(i));
+            // bohater: mokry (kałuża, cios wody) + prąd = porażenie
+            game hh; arena(hh, 1);
+            hh.spawn(data::enemy_przeciek, 8, 7); hh.spawn(data::enemy_zwarcie, 6, 7);
+            hh.hero.hp = hh.hero.max_hp = 500;
+            int guard = 0;
+            while(! hh.hero_wet() && guard++ < 50) hh.enemy_strike(0, false);
+            CHECK(hh.hero_wet());
+            int before = hh.hero.hp;
+            for(guard = 0; guard < 50 && hh.hero.hp == before; ++guard) hh.enemy_strike(1, false);
+            CHECK(hh.combo_events & 8);
+            CHECK(hh.status_turns(status_effect::shock) > 0 || (hh.bonus.second_chance && false));
+            // Zawór moczy odepchniętych, Wąż ogrodowy moczy cel, kałuża moczy problem
+            game z; arena(z, 4); z.spawn(data::enemy_kornik, 8, 7); z.enemies[0].hp = 99; z.hero.hp = 1;
+            CHECK(z.player_ability() && z.enemies[0].wet > 0);
+            game w; arena(w, 1); w.boon_offer[0] = int8_t(boon_idx("Wąż ogrodowy")); w.pick_boon(0);
+            w.spawn(data::enemy_kornik, 8, 7); w.enemies[0].hp = 99; w.hero_attack(0); CHECK(w.enemy_wet(0));
+            // teksty mieszczą się w buforze
+            for(int c = 0; c < data::combos_count; ++c) { message m; m.add(data::combos[c].short_name).add(" ").add(data::combos[c].name); CHECK(m.n < log_len - 1); }
+            for(int b = 0; b < data::boons_count; ++b) { message m; m.add("Premia: ").add(data::boons[b].name); CHECK(m.n < log_len - 1); }
+            for(int e = 0; e < data::enemies_count; ++e)
+                for(int t2 = 0; t2 < data::elites_count; ++t2)
+                { message m; m.add(data::elites[t2].prefix[data::enemies[e].gender]).add(" ").add(data::enemies[e].name); CHECK(m.n < log_len - 1); }
+        }
+        // zapis budowy: premie, oferta i elity w stanie gry (nowa magia)
+        {
+            game g; g.new_run(3, 42); clear_stage(g); g.pick_boon(1);
+            run_save* sv = new run_save(); run_save_make(*sv, g);
+            CHECK(run_save_valid(*sv) && sv->g.boons == g.boons && std::memcmp(sv->magic, "PBRUN11", 7) == 0);
+            delete sv;
+        }
+    }
     if(std::getenv("PB_NO_BALANCE")) { std::printf(fails ? "\n%d FAIL\n" : "\nOK (bez balansu)\n", fails); return fails != 0; }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
@@ -2022,7 +2246,7 @@ int main()
             game g; g.new_run(c, 1000+k*7919, df);
             for(int step=0; step<4000; ++step)
             {
-                if(g.st==status::stage_clear){ g.next_stage(); continue; }
+                if(g.st==status::stage_clear){ bot_next(g); continue; }
                 if(g.st!=status::playing) break;
                 bot_step(g);
             }
@@ -2049,7 +2273,7 @@ int main()
                     bot_drinks = 0;
                     for(int step = 0; step < 4000; ++step)
                     {
-                        if(g.st == status::stage_clear) { g.next_stage(); continue; }
+                        if(g.st == status::stage_clear) { bot_next(g); continue; }
                         if(g.st != status::playing) break;
                         bot_step(g);
                     }

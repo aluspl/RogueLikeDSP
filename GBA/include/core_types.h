@@ -6,6 +6,9 @@ namespace core
 {
     enum class stat : uint8_t { str, agi, intel };
 
+    // v0.21.50 cz. 2 (#29): żywioł ciosu / problemu - kombinacje stanów (mokry + prąd, pył + iskra).
+    enum class element : uint8_t { none, water, power, spark };
+
     struct weapon_def
     {
         const char* name;
@@ -13,6 +16,7 @@ namespace core
         int8_t max_damage;
         int8_t range;          // odległość Czebyszewa w polach; 1 = wręcz
         stat scales_with;
+        element elem = element::none;   // prąd (Próbnik), iskra (Szlifierka, Pistolet do kotew)
     };
 
     enum class ability_effect : uint8_t { stun, wall, volley, chain, flush, spin, line, splash, ram };
@@ -40,7 +44,8 @@ namespace core
     };
 
     // Stan nakładany przez problem budowy przy trafieniu bohatera.
-    enum class status_effect : uint8_t { none, poison, shock, slip, paper };
+    enum class status_effect : uint8_t { none, poison, shock, slip, paper, wet };   // wet (v0.21.50): mokry - prąd boli bardziej
+    constexpr int status_slots = 6;
 
     struct status_def          // opis stanu (komunikat przy nałożeniu, HUD, telefon)
     {
@@ -83,6 +88,70 @@ namespace core
         int8_t phase_heal = 0;
         int8_t phase_summon = 0;
         const char* phase_name = "";
+        element elem = element::none;   // v0.21.50: woda (zawsze mokry, moczy bohatera), prąd (porażenie mokrego)
+        int8_t gender = 0;              // rodzaj nazwy: 0 m, 1 ż, 2 n / l.mn. (przedrostek elity: Zbrojony / Zbrojona / Zbrojone)
+    };
+
+    // ------------------------------------------------------------------ v0.21.50 cz. 2
+    // Premia po etapie (#27, jak w Hades / Slay the Spire): 1 z 3 po każdym etapie, rzadkość, znaczniki, synergie.
+    enum class boon_effect : uint8_t { dmg, dmg_pct, crit, max_hp, def, dodge, coffee, thermos, cooldown, cash, mats, luck,
+                                       wet_hits, frost_hits, electric, spark, brigade_pct, regen_stage, kill_heal, status_res,
+                                       power, mats_pct, shop_pct, sight };
+
+    struct boon_def
+    {
+        const char* name;
+        const char* desc;
+        int8_t rarity;         // 0 zwykła, 1 rzadka, 2 legendarna
+        uint16_t tags;         // bity data::boon_tags
+        boon_effect effect;
+        int8_t value;
+        int8_t cls;            // premia zawodu (-1 = dla każdego)
+    };
+
+    struct boon_rarity_def
+    {
+        const char* name;
+        int8_t weight;
+    };
+
+    // Synergia: 2+ premie z tym samym znacznikiem (albo po jednej z dwóch) włączają dodatkowy skutek.
+    enum class synergy_effect : uint8_t { conduct, armor, espresso, safety, luck, brigade, stock, sparks };
+
+    struct synergy_def
+    {
+        const char* name;
+        const char* desc;
+        uint16_t tags;         // 1 znacznik: 2+ premie z nim; 2 znaczniki: po jednej z każdego
+        synergy_effect effect;
+        int8_t value;
+    };
+
+    // Elita (#28): wzmocniony problem z jedną cechą, więcej HP i lepszą nagrodą.
+    enum class elite_effect : uint8_t { shield, fast, regen, explode, summon };
+
+    struct elite_def
+    {
+        const char* name;
+        const char* prefix[3]; // przedrostek nazwy wg rodzaju (m, ż, n / l.mn.)
+        const char* info;
+        elite_effect effect;
+        int8_t value;
+    };
+
+    // Kombinacja stanów (#29): mokry + prąd, pył + iskra, zamróz + uderzenie.
+    enum class combo_effect : uint8_t { shock_area, dust_blast, crack };
+
+    struct combo_def
+    {
+        const char* name;
+        const char* short_name;   // zapowiedź, np. "Mokry + prąd!"
+        const char* info;         // skutek na problemie
+        const char* hero;         // skutek na bohaterze ("" = nie dotyczy)
+        combo_effect effect;
+        int8_t value;
+        int8_t radius;
+        int8_t hero_value;
     };
 
     // Zachowania problemów budowy (pole "behaviors" wroga; parametry w data::behavior_*).
@@ -195,7 +264,7 @@ namespace core
 
     // Respekt: stała waluta za ukończone etapy, wydawana na stałe ulepszenia procentowe z rangami (telefon profilu).
     enum class respect_effect : uint8_t { dmg_pct, taken_pct, gear_pct, crit, dodge, coffee_pct, thermos, cooldown, cash, xp_pct,
-                                          brigade_pct, sight, shop_pct, mats_pct, second_chance };
+                                          brigade_pct, sight, shop_pct, mats_pct, second_chance, reroll };
 
     struct respect_def
     {

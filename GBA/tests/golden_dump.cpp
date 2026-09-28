@@ -128,6 +128,7 @@ static uint32_t digest(const game& g)
         const actor& e = g.enemies[i];
         f.add(e.x); f.add(e.y); f.add(e.hp); f.add(e.max_hp); f.add(e.def_id); f.add(e.alive); f.add(e.awake); f.add(e.stun);
         f.add(e.flags); f.add(e.grow); f.add(e.timer);   // v0.21.49 cz. 2: zachowania problemów
+        f.add(e.elite); f.add(e.wet);                     // v0.21.50 cz. 2: elity, mokry
     }
     f.add(g.pickups_count);
     for(int i = 0; i < g.pickups_count; ++i)
@@ -135,7 +136,7 @@ static uint32_t digest(const game& g)
         const pickup& p = g.pickups[i];
         f.add(p.x); f.add(p.y); f.add(p.type); f.add(p.active); f.add(p.arg); f.add(p.trait);
     }
-    for(int i = 0; i < 5; ++i) f.add(g.hero_status[i]);
+    for(int i = 0; i < status_slots; ++i) f.add(g.hero_status[i]);
     for(int i = 0; i < max_gear_slots; ++i) f.add(g.equipped[i]);
     for(int i = 0; i < max_gear_slots; ++i) f.add(g.equipped_trait[i]);
     f.add(g.thermos); f.add(g.offer_slot); f.add(g.offer_rarity); f.add(g.offer_trait);
@@ -169,6 +170,11 @@ static uint32_t digest(const game& g)
     // v0.21.49 cz. 3: Akt 0 - pierwszy etap, dokumenty (pieczątki)
     f.add(g.first_stage); f.add(g.docs); f.add(g.stairs_locked());
     for(int i = 0; i < max_enemy_types; ++i) f.add(g.kills_by_type[i]);
+    // v0.21.50 cz. 2: premie po etapie, synergie, kombinacje stanów
+    f.add(int(uint32_t(g.boons))); f.add(int(uint32_t(g.boons >> 32)));
+    for(int i = 0; i < 3; ++i) f.add(g.boon_offer[i]);
+    f.add(g.boon_rerolls); f.add(g.hit_ctx); f.add(g.combo_events); f.add(g.synergy_mask());
+    f.add(g.hero_defense()); f.add(g.crit_pct()); f.add(g.thermos_cap()); f.add(g.coffee_heal());
     return f.h;
 }
 
@@ -227,7 +233,11 @@ static void snapshot(const game& g, int step)
     wi(g.second_used); w(","); wi(g.dodge_pct()); w(","); wi(g.coffee_heal()); w(","); wi(g.bonus.gear_slots); w(","); wi(g.bonus.tools); w("]");
     w(","); key("act0"); w("["); wi(g.first_stage); w(","); wi(g.docs); w(","); wi(g.docs_needed()); w(","); wi(g.stairs_locked()); w(",");
     wi(g.stage_number()); w(","); wi(g.stages_in_run()); w("]");
-    w(","); key("heroStatus"); w("["); for(int i = 0; i < 5; ++i) { if(i) w(","); wi(g.hero_status[i]); } w("]");
+    w(","); key("heroStatus"); w("["); for(int i = 0; i < status_slots; ++i) { if(i) w(","); wi(g.hero_status[i]); } w("]");
+    w(","); key("boons"); w("["); wi(long(uint32_t(g.boons))); w(","); wi(long(uint32_t(g.boons >> 32))); w(",");
+    wi(g.boon_offer[0]); w(","); wi(g.boon_offer[1]); w(","); wi(g.boon_offer[2]); w(","); wi(g.boon_rerolls); w(",");
+    wi(g.synergy_mask()); w(","); wi(g.rerolls_left()); w(","); wi(g.reroll_price()); w(","); wi(g.hero_defense()); w(",");
+    wi(g.luck()); w(","); wi(g.dodge_pct()); w("]");
     w(","); key("killsByType"); w("["); for(int i = 0; i < max_enemy_types; ++i) { if(i) w(","); wi(g.kills_by_type[i]); } w("]");
     w(","); key("rooms"); w("[");
     for(int i = 0; i < g.lv.rooms_count; ++i) { if(i) w(","); const room& r = g.lv.rooms[i]; w("["); wi(r.x); w(","); wi(r.y); w(","); wi(r.w); w(","); wi(r.h); w("]"); }
@@ -254,7 +264,7 @@ static void snapshot(const game& g, int step)
         const actor& e = g.enemies[i];
         if(i) w(",");
         w("["); wi(e.def_id); w(","); wi(e.x); w(","); wi(e.y); w(","); wi(e.hp); w(","); wi(e.max_hp); w(","); wi(e.alive); w(","); wi(e.awake); w(","); wi(e.stun);
-        w(","); wi(e.flags); w(","); wi(e.grow); w(","); wi(e.timer); w("]");
+        w(","); wi(e.flags); w(","); wi(e.grow); w(","); wi(e.timer); w(","); wi(e.elite); w(","); wi(e.wet); w("]");
     }
     w("]");
     w(","); key("pickups"); w("[");
@@ -388,9 +398,13 @@ int main(int argc, char** argv)
                 check_badges(p, g); check_contracts(p); bank_xp(p, g);
                 if(g.act_cleared && s.shop && ! g.shop_closed()) bot_shop(g);
                 if(s.paths) g.choose_path(g.stage & 1);
+                // v0.21.50 cz. 2: premia 1 z 3 - bot z rdzenia; ścieżki na przemian: też losowanie (płatne) i wybór wg etapu
+                if(g.bot_wants_reroll()) g.reroll_boons();
+                if(s.paths && g.stage % 4 == 1 && g.can_reroll()) g.reroll_boons();
+                if(g.has_boon_offer()) g.pick_boon(s.paths ? g.stage % 3 : g.bot_boon_choice());
                 g.next_stage();
                 w(","); snapshot(g, step);
-                digests.push_back(digest(g)); g.hits_count = 0;
+                digests.push_back(digest(g)); g.hits_count = 0; g.combo_events = 0;
                 continue;
             }
             if(g.st == status::won && s.ngplus && ! did_ng)
@@ -400,7 +414,7 @@ int main(int argc, char** argv)
                 did_ng = true;
                 g.new_game_plus();
                 w(","); snapshot(g, step);
-                digests.push_back(digest(g)); g.hits_count = 0;
+                digests.push_back(digest(g)); g.hits_count = 0; g.combo_events = 0;
                 continue;
             }
             if(g.st != status::playing) break;
@@ -408,7 +422,7 @@ int main(int argc, char** argv)
             if(s.smart) bot_step_smart(g); else bot_step(g);
             if(called < 0 && g.helper_called >= 0) ++helper_hits[g.helper_called];
             if(g.turns == g.stage_start_turn + 1 && g.stage_event >= 0) ++event_hits[g.stage_event];
-            digests.push_back(digest(g)); g.hits_count = 0;   // warstwa GBA zeruje trafienia po każdej turze
+            digests.push_back(digest(g)); g.hits_count = 0; g.combo_events = 0;   // warstwa GBA zeruje trafienia po każdej turze
         }
         if(g.score > p.best) p.best = g.score;
         if(g.st == status::won) { record_win(p); add_house(p, g); }
