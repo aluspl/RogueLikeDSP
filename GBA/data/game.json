@@ -113,6 +113,68 @@
         "effect": "spin",
         "cooldown": 10
       }
+    },
+    {
+      "id": "dekarz",
+      "name": "Dekarz",
+      "desc": "Wiatr mu nie przeszkadza.",
+      "maxHealth": 26,
+      "strength": 3,
+      "agility": 5,
+      "intelligence": 2,
+      "defense": 2,
+      "luck": 3,
+      "weapon": "dachowka",
+      "frame": 52,
+      "passive": "windproof",
+      "reward": true,
+      "ability": {
+        "name": "Rynna",
+        "desc": "Bije całą linię",
+        "effect": "line",
+        "cooldown": 12
+      }
+    },
+    {
+      "id": "tynkarz",
+      "name": "Tynkarz",
+      "desc": "Tynk na cały pokój.",
+      "maxHealth": 30,
+      "strength": 4,
+      "agility": 3,
+      "intelligence": 2,
+      "defense": 3,
+      "luck": 2,
+      "weapon": "agregat",
+      "frame": 53,
+      "reward": true,
+      "ability": {
+        "name": "Narzut",
+        "desc": "Tynk na obszar 3x3",
+        "effect": "splash",
+        "cooldown": 12
+      }
+    },
+    {
+      "id": "operator",
+      "name": "Operator koparki",
+      "desc": "Wolny, ale pcha wszystko.",
+      "maxHealth": 32,
+      "strength": 5,
+      "agility": 1,
+      "intelligence": 1,
+      "defense": 4,
+      "luck": 0,
+      "weapon": "lyzka",
+      "frame": 54,
+      "passive": "push",
+      "reward": true,
+      "ability": {
+        "name": "Taran",
+        "desc": "Szarża i odepchnięcie",
+        "effect": "ram",
+        "cooldown": 16
+      }
     }
   ],
   "weapons": [
@@ -211,6 +273,46 @@
       "maxDamage": 5,
       "range": 3,
       "scalesWith": "intelligence"
+    },
+    {
+      "id": "dachowka",
+      "name": "Dachówki",
+      "minDamage": 2,
+      "maxDamage": 3,
+      "range": 3,
+      "scalesWith": "agility"
+    },
+    {
+      "id": "agregat",
+      "name": "Agregat tynkarski",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 2,
+      "scalesWith": "strength"
+    },
+    {
+      "id": "lyzka",
+      "name": "Łyżka koparki",
+      "minDamage": 4,
+      "maxDamage": 7,
+      "range": 1,
+      "scalesWith": "strength"
+    },
+    {
+      "id": "udarowy",
+      "name": "Młot udarowy",
+      "minDamage": 5,
+      "maxDamage": 9,
+      "range": 1,
+      "scalesWith": "strength"
+    },
+    {
+      "id": "kotwy",
+      "name": "Pistolet do kotew",
+      "minDamage": 3,
+      "maxDamage": 5,
+      "range": 3,
+      "scalesWith": "agility"
     }
   ],
   "enemies": [
@@ -588,42 +690,44 @@
         "value": 2,
         "costs": [
           10,
-          20,
-          35
-        ]
+          20
+        ],
+        "refund": 35
       },
       {
         "id": "bhp",
         "name": "Szkolenie BHP",
-        "desc": "+1 obrona",
-        "effect": "def",
-        "value": 1,
+        "desc": "-2% otrzymanych obrażeń",
+        "effect": "taken_pct",
+        "value": 2,
         "costs": [
           15
         ],
+        "resetRefund": 15,
         "refund": 30
       },
       {
         "id": "fach",
         "name": "Kurs fachowy",
-        "desc": "+1 obrażenia",
-        "effect": "dmg",
-        "value": 1,
+        "desc": "+2% obrażeń",
+        "effect": "dmg_pct",
+        "value": 2,
         "costs": [
           20
         ],
+        "resetRefund": 20,
         "refund": 40
       },
       {
         "id": "termos",
         "name": "Lepszy termos",
-        "desc": "Kawa leczy +2 HP",
+        "desc": "Kawa leczy +1 HP",
         "effect": "coffee",
-        "value": 2,
+        "value": 1,
         "costs": [
-          10,
-          20
-        ]
+          10
+        ],
+        "refund": 20
       },
       {
         "id": "dostawy",
@@ -632,9 +736,9 @@
         "effect": "pickups",
         "value": 1,
         "costs": [
-          15,
-          30
-        ]
+          15
+        ],
+        "refund": 30
       },
       {
         "id": "bhp2",
@@ -643,9 +747,9 @@
         "effect": "luck",
         "value": 1,
         "costs": [
-          20,
-          40
-        ]
+          20
+        ],
+        "refund": 40
       },
       {
         "id": "warsztaty",
@@ -654,9 +758,9 @@
         "effect": "craft",
         "value": 1,
         "costs": [
-          20,
-          40
-        ]
+          20
+        ],
+        "refund": 40
       }
     ],
     "tools": [
@@ -683,6 +787,16 @@
       {
         "weapon": "miernik",
         "cost": 35
+      },
+      {
+        "weapon": "udarowy",
+        "cost": 0,
+        "reward": true
+      },
+      {
+        "weapon": "kotwy",
+        "cost": 0,
+        "reward": true
       }
     ]
   },
@@ -938,6 +1052,44 @@
             12
           ]
         ]
+      },
+      {
+        "name": "Buty",
+        "stat": "dodge",
+        "reward": true,
+        "items": [
+          [
+            "Buty robocze",
+            3
+          ],
+          [
+            "Buty z podnoskiem",
+            5
+          ],
+          [
+            "Buty markowe",
+            8
+          ]
+        ]
+      },
+      {
+        "name": "Pas",
+        "stat": "thermos",
+        "reward": true,
+        "items": [
+          [
+            "Pas narzędziowy",
+            1
+          ],
+          [
+            "Pas z kaburą",
+            1
+          ],
+          [
+            "Pas markowy",
+            2
+          ]
+        ]
       }
     ],
     "traits": [
@@ -995,6 +1147,13 @@
         "name": "Inteligencja +1",
         "short": "INT+1",
         "effect": "intel",
+        "value": 1
+      },
+      {
+        "id": "slip",
+        "name": "Bez poślizgu",
+        "short": "Bez pośl.",
+        "effect": "slip_res",
         "value": 1
       }
     ],
@@ -1115,7 +1274,7 @@
       "effect": "thermos"
     }
   ],
-  "version": "v0.21.48",
+  "version": "v0.21.49",
   "tips": [
     "Przytrzymaj B: podgląd problemów",
     "Przytrzymaj A: celownik i zasięg",
@@ -1454,10 +1613,10 @@
       },
       {
         "id": "problemy",
-        "name": "Problemy +35% HP",
-        "desc": "Każdy problem ma +35% HP",
+        "name": "Problemy +25% HP",
+        "desc": "Każdy problem ma +25% HP",
         "effect": "enemy_hp",
-        "value": 35,
+        "value": 25,
         "xpPct": 15,
         "stake": 2
       },
@@ -1482,9 +1641,9 @@
       {
         "id": "termin",
         "name": "Termin goni",
-        "desc": "Problemy biją o 2 mocniej",
+        "desc": "Problemy biją o 1 mocniej",
         "effect": "enemy_dmg",
-        "value": 2,
+        "value": 1,
         "xpPct": 20,
         "stake": 3
       }
@@ -1606,5 +1765,303 @@
     "minDays": 4,
     "turnsPerDay": 3,
     "url": "planbudowlany.online"
+  },
+  "respect": {
+    "stage": 2,
+    "boss": 4,
+    "actBoss": 6,
+    "final": 10,
+    "upgrades": [
+      {
+        "id": "reka",
+        "name": "Pewna ręka",
+        "desc": "Obrażenia",
+        "effect": "dmg_pct",
+        "values": [
+          1,
+          2
+        ],
+        "costs": [
+          15,
+          40
+        ]
+      },
+      {
+        "id": "skora",
+        "name": "Gruba skóra",
+        "desc": "Otrzymane obrażenia",
+        "effect": "taken_pct",
+        "values": [
+          1,
+          2
+        ],
+        "costs": [
+          15,
+          40
+        ]
+      },
+      {
+        "id": "zrodla",
+        "name": "Dobre źródła",
+        "desc": "Szansa na lepszy sprzęt",
+        "effect": "gear_pct",
+        "values": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "costs": [
+          6,
+          12,
+          20,
+          32,
+          48
+        ]
+      },
+      {
+        "id": "oko",
+        "name": "Oko fachowca",
+        "desc": "Szansa na kryt",
+        "effect": "crit",
+        "values": [
+          1,
+          2
+        ],
+        "costs": [
+          15,
+          40
+        ]
+      },
+      {
+        "id": "unik",
+        "name": "Zwinność",
+        "desc": "Unik (łącznie maks. 20%)",
+        "effect": "dodge",
+        "values": [
+          1,
+          2
+        ],
+        "costs": [
+          15,
+          40
+        ]
+      },
+      {
+        "id": "kawa",
+        "name": "Mocna kawa",
+        "desc": "Kawa leczy więcej",
+        "effect": "coffee_pct",
+        "values": [
+          5,
+          10
+        ],
+        "costs": [
+          10,
+          30
+        ]
+      },
+      {
+        "id": "termos",
+        "name": "Duży termos",
+        "desc": "Termos: miejsce na kawę",
+        "effect": "thermos",
+        "values": [
+          1
+        ],
+        "costs": [
+          40
+        ]
+      },
+      {
+        "id": "rutyna",
+        "name": "Rutyna",
+        "desc": "Moc odnawia się szybciej",
+        "effect": "cooldown",
+        "values": [
+          1,
+          2
+        ],
+        "costs": [
+          30,
+          60
+        ]
+      },
+      {
+        "id": "budzet",
+        "name": "Oszczędności",
+        "desc": "Budżet na start",
+        "effect": "cash",
+        "values": [
+          10,
+          20,
+          30,
+          40,
+          50
+        ],
+        "costs": [
+          5,
+          10,
+          16,
+          25,
+          36
+        ]
+      },
+      {
+        "id": "dosw",
+        "name": "Nauka",
+        "desc": "Doświadczenie",
+        "effect": "xp_pct",
+        "values": [
+          4,
+          8,
+          12,
+          16,
+          20
+        ],
+        "costs": [
+          6,
+          12,
+          20,
+          32,
+          48
+        ]
+      },
+      {
+        "id": "brygada",
+        "name": "Znajomości",
+        "desc": "Brygada taniej",
+        "effect": "brigade_pct",
+        "values": [
+          6,
+          12,
+          18,
+          24,
+          30
+        ],
+        "costs": [
+          5,
+          10,
+          16,
+          25,
+          36
+        ]
+      },
+      {
+        "id": "wzrok",
+        "name": "Czujność",
+        "desc": "Pole widzenia",
+        "effect": "sight",
+        "values": [
+          1
+        ],
+        "costs": [
+          40
+        ]
+      },
+      {
+        "id": "hurtownia",
+        "name": "Rabat",
+        "desc": "Hurtownia taniej",
+        "effect": "shop_pct",
+        "values": [
+          5,
+          10,
+          15,
+          20,
+          25
+        ],
+        "costs": [
+          5,
+          10,
+          16,
+          25,
+          36
+        ]
+      },
+      {
+        "id": "zapasy",
+        "name": "Zapasy",
+        "desc": "Więcej materiałów",
+        "effect": "mats_pct",
+        "values": [
+          10,
+          20,
+          30,
+          40,
+          50
+        ],
+        "costs": [
+          5,
+          10,
+          16,
+          25,
+          36
+        ]
+      },
+      {
+        "id": "szansa",
+        "name": "Druga szansa",
+        "desc": "Raz na budowę: 1 HP zamiast końca",
+        "effect": "second_chance",
+        "values": [
+          1
+        ],
+        "costs": [
+          120
+        ]
+      }
+    ]
+  },
+  "rewards": {
+    "list": [
+      {
+        "kind": "tool",
+        "id": "udarowy",
+        "desc": "Nowe narzędzie w dropach"
+      },
+      {
+        "kind": "class",
+        "id": "dekarz",
+        "desc": "Nowy zawód: z dystansu"
+      },
+      {
+        "kind": "gear",
+        "id": "Buty",
+        "desc": "Nowy sprzęt: unik",
+        "name": "Buty robocze"
+      },
+      {
+        "kind": "tool",
+        "id": "kotwy",
+        "desc": "Nowe narzędzie w dropach"
+      },
+      {
+        "kind": "class",
+        "id": "tynkarz",
+        "desc": "Nowy zawód: obszar"
+      },
+      {
+        "kind": "gear",
+        "id": "Pas",
+        "desc": "Nowy sprzęt: termos",
+        "name": "Pas narzędziowy"
+      },
+      {
+        "kind": "class",
+        "id": "operator",
+        "desc": "Nowy zawód: taran"
+      },
+      {
+        "kind": "soon",
+        "id": "akt0",
+        "name": "Akt 0: Papierologia",
+        "desc": "Wkrótce"
+      }
+    ]
+  },
+  "passives": {
+    "pushChancePct": 20
   }
 }

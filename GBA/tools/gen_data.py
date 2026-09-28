@@ -20,10 +20,12 @@ L.append("inline constexpr core::class_def classes[] = {")
 for c in d["classes"]:
     ab = c["ability"]
     assert len(ab["desc"]) <= 23, ab   # mieści się w banerze obok ikony
-    assert ab["effect"] in {"stun", "wall", "volley", "chain", "flush", "spin"}, ab
+    assert ab["effect"] in {"stun", "wall", "volley", "chain", "flush", "spin", "line", "splash", "ram"}, ab
+    assert c.get("passive", "none") in {"none", "windproof", "push"}, c
     L.append(f'    {{ {s(c["name"])}, {s(c["desc"])}, {c["maxHealth"]}, {c["strength"]}, {c["agility"]}, '
              f'{c["intelligence"]}, {c["defense"]}, {c["luck"]}, {wid[c["weapon"]]}, {c["frame"]}, '
-             f'{s(ab["name"])}, {s(ab["desc"])}, core::ability_effect::{ab["effect"]}, {ab["cooldown"]} }},')
+             f'{s(ab["name"])}, {s(ab["desc"])}, core::ability_effect::{ab["effect"]}, {ab["cooldown"]}, '
+             f'core::class_passive::{c.get("passive", "none")} }},')
 L.append("};\n")
 L.append("inline constexpr core::enemy_def enemies[] = {")
 for e in d["enemies"]:
@@ -51,13 +53,13 @@ for df in d["difficulties"]:
 L.append("};\n")
 m = d["meta"]
 cid = {c["id"]: i for i, c in enumerate(d["classes"])}
-EFF = {"hp", "def", "dmg", "coffee", "pickups", "luck", "craft"}
+EFF = {"hp", "def", "dmg", "coffee", "pickups", "luck", "craft", "dmg_pct", "taken_pct"}
 L.append("inline constexpr core::upgrade_def upgrades[] = {")
 for u in m["upgrades"]:
     assert u["effect"] in EFF and 1 <= len(u["costs"]) <= 4, u
     costs = u["costs"] + [0] * (4 - len(u["costs"]))
     L.append(f'    {{ {s(u["name"])}, {s(u["desc"])}, core::upgrade_effect::{u["effect"]}, {u["value"]}, '
-             f'{len(u["costs"])}, {{ {", ".join(map(str, costs))} }}, {u.get("refund", 0)} }},')
+             f'{len(u["costs"])}, {{ {", ".join(map(str, costs))} }}, {u.get("refund", 0)}, {u.get("resetRefund", 0)} }},')
 L.append("};\n")
 def story(m):
     lines = m["text"].split("|")
@@ -238,10 +240,12 @@ L += [f"inline constexpr int schedule_min_days = {sc['minDays']};   // harmonogr
       f"inline constexpr const char* schedule_url = {s(sc['url'])};", ""]
 L.append("inline constexpr core::tool_def tools[] = {")
 for t in m["tools"]:
-    L.append(f'    {{ {wid[t["weapon"]]}, {t["cost"]} }},')
+    assert not t.get("reward") or t["cost"] == 0, t   # narzędzie z nagrody nie jest na sprzedaż
+    L.append(f'    {{ {wid[t["weapon"]]}, {t["cost"]}, {"true" if t.get("reward") else "false"} }},')
 L.append("};\n")
 dr = d["drops"]
-start_tools = sum(1 << i for i, t in enumerate(m["tools"]) if t["cost"] == 0)
+start_tools = sum(1 << i for i, t in enumerate(m["tools"]) if t["cost"] == 0 and not t.get("reward"))
+assert len(m["tools"]) <= 8   # profil: bitmaska uint8
 L += [f"inline constexpr int tools_count = {len(m['tools'])};",
       f"inline constexpr int start_tools_mask = {start_tools};",
       f"inline constexpr int drop_chance_pct = {dr['chancePct']};",
@@ -270,22 +274,29 @@ L.append("inline constexpr const char* gear_slots[] = { " + ", ".join(s(sl["name
 L.append("inline constexpr const char* gear_rarities[] = { " + ", ".join(s(r) for r in eq["rarities"]) + " };")
 L.append("inline constexpr core::trait_def gear_traits[] = {   // cechy sprzętu (losowane do każdego przedmiotu)")
 for t in eq["traits"]:
-    assert t["effect"] in {"luck", "crit", "poison_res", "sight", "cooldown", "str", "agi", "intel"} and len(t["short"]) <= 9 and len(t["name"]) <= 22, t
+    assert t["effect"] in {"luck", "crit", "poison_res", "sight", "cooldown", "str", "agi", "intel", "slip_res"} and len(t["short"]) <= 9 and len(t["name"]) <= 22, t
     L.append(f'    {{ {s(t["name"])}, {s(t["short"])}, core::trait_effect::{t["effect"]}, {t["value"]} }},')
 L.append("};")
 L.append(f"inline constexpr int gear_traits_count = {len(eq['traits'])};")
 L.append(f"inline constexpr int gear_decline_xp = {eq['declineXp']};")
 rr = eq["rarityRoll"]
+assert 3 <= len(eq["slots"]) <= 6 and all(sl["stat"] in {"def", "dmg", "hp", "dodge", "thermos"} for sl in eq["slots"])
 L += [f"inline constexpr int gear_slots_count = {len(eq['slots'])};",
+      f"inline constexpr int gear_reward_mask = {sum(1 << i for i, sl in enumerate(eq['slots']) if sl.get('reward'))};   // sloty z nagród",
+      f"inline constexpr int gear_base_mask = {sum(1 << i for i, sl in enumerate(eq['slots']) if not sl.get('reward'))};   // pełny sprzęt (BHP)",
       f"inline constexpr int gear_solid_from = {rr['solidFrom']};",
       f"inline constexpr int gear_brand_from = {rr['brandFrom']};",
       f"inline constexpr int gear_stage_bonus = {rr['stageBonus']};", ""]
 start_mask = sum(1 << cid[c] for c in m["startClasses"])
+assert all(not d["classes"][cid[c]].get("reward") for c in m["startClasses"])
+assert all(i < 8 for i, c in enumerate(d["classes"]) if not c.get("reward")), "zawody do kupienia: bitmaska uint8 w profilu"
+assert len(d["classes"]) <= 12 and all(0 <= c["frame"] < 64 for c in d["classes"])
 L += [f"inline constexpr int upgrades_count = {len(m['upgrades'])};",
       f"inline constexpr int xp_per_kill = {m['xpPerKill']};",
       f"inline constexpr int xp_per_stage = {m['xpPerStage']};",
       f"inline constexpr int xp_boss = {m['xpBoss']};",
       f"inline constexpr int start_classes_mask = {start_mask};",
+      f"inline constexpr int reward_classes_mask = {sum(1 << i for i, c in enumerate(d['classes']) if c.get('reward'))};",
       f"inline constexpr int class_cost = {m['classCost']};",
       f"inline constexpr int hard_cost = {m['hardCost']};", ""]
 hl = d["heroLevels"]
@@ -294,6 +305,48 @@ L += [f"inline constexpr int level_thresholds[] = {{ {', '.join(map(str, hl['thr
       f"inline constexpr int hp_per_level = {hl['hpPerLevel']};",
       f"inline constexpr int dmg_levels_mask = {sum(1 << l for l in hl['dmgLevels'])};",
       f"inline constexpr int def_levels_mask = {sum(1 << l for l in hl['defLevels'])};", ""]
+rs = d["respect"]
+REFF = {"dmg_pct", "taken_pct", "gear_pct", "crit", "dodge", "coffee_pct", "thermos", "cooldown", "cash", "xp_pct",
+        "brigade_pct", "sight", "shop_pct", "mats_pct", "second_chance"}
+assert 1 <= len(rs["upgrades"]) <= 16 and all(0 < rs[k] < 50 for k in ("stage", "boss", "actBoss", "final"))
+L.append("inline constexpr core::respect_def respect[] = {   // Respekt: stałe ulepszenia z rangami")
+for x in rs["upgrades"]:
+    assert x["effect"] in REFF and 1 <= len(x["values"]) == len(x["costs"]) <= 5 and len(x["name"]) <= 16, x
+    assert all(0 < v < 128 for v in x["values"]) and x["values"] == sorted(x["values"]) and all(0 < c < 1000 for c in x["costs"]), x
+    vals = x["values"] + [0] * (5 - len(x["values"])); costs = x["costs"] + [0] * (5 - len(x["costs"]))
+    L.append(f'    {{ {s(x["name"])}, {s(x["desc"])}, core::respect_effect::{x["effect"]}, {len(x["values"])}, '
+             f'{{ {", ".join(map(str, vals))} }}, {{ {", ".join(map(str, costs))} }} }},')
+L.append("};")
+L += [f"inline constexpr int push_chance_pct = {d['passives']['pushChancePct']};   // Operator koparki: cios wręcz odpycha",
+      f"inline constexpr int respect_count = {len(rs['upgrades'])};",
+      f"inline constexpr int respect_stage = {rs['stage']};   // Respekt za etap: zwykły, boss w środku aktu, boss aktu, ostatni",
+      f"inline constexpr int respect_boss = {rs['boss']};",
+      f"inline constexpr int respect_act_boss = {rs['actBoss']};",
+      f"inline constexpr int respect_final = {rs['final']};", ""]
+rw = d["rewards"]["list"]
+tid = {t["weapon"]: i for i, t in enumerate(m["tools"])}
+slid = {sl["name"]: i for i, sl in enumerate(eq["slots"])}
+RK = {"tool": "tool", "gear": "gear", "class": "cls", "soon": "soon"}
+assert 1 <= len(rw) <= 16
+L.append("inline constexpr core::reward_def rewards[] = {   // nagrody za odbiór: każda wygrana odblokowuje kolejną")
+seen = set()
+for x in rw:
+    k = x["kind"]
+    assert k in RK and len(x["desc"]) <= 26, x
+    if k == "tool": idx = tid[x["id"]]; assert m["tools"][idx].get("reward"), x; name = d["weapons"][wid[x["id"]]]["name"]
+    elif k == "gear": idx = slid[x["id"]]; assert eq["slots"][idx].get("reward"), x; name = eq["slots"][idx]["name"]
+    elif k == "class": idx = cid[x["id"]]; assert d["classes"][idx].get("reward"), x; name = d["classes"][idx]["name"]
+    else: idx = -1; name = x["name"]
+    assert (k, idx) not in seen; seen.add((k, idx))
+    L.append(f'    {{ core::reward_kind::{RK[k]}, {idx}, {s(x.get("name", name))}, {s(x["desc"])} }},')
+L.append("};")
+for i, t in enumerate(m["tools"]):   # każde narzędzie / slot / zawód z nagrody jest na liście nagród
+    assert not t.get("reward") or ("tool", i) in seen, t
+for i, sl in enumerate(eq["slots"]):
+    assert not sl.get("reward") or ("gear", i) in seen, sl
+for i, c in enumerate(d["classes"]):
+    assert not c.get("reward") or ("class", i) in seen, c["id"]
+L += [f"inline constexpr int rewards_count = {len(rw)};", ""]
 L += [f"inline constexpr const char* version = {s(d['version'])};   // numer wersji (ekran tytułowy, changelog)", ""]
 L += ["inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonogramu między etapami"]
 L += [f"    {s(t)}," for t in d["tips"]] + ["};", f"inline constexpr int tips_count = {len(d['tips'])};", ""]

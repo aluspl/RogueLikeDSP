@@ -41,11 +41,13 @@ static void bot_bfs(const game& g, int sx, int sy, int (&dist)[map_h][map_w])
 // jego odległość maleje i bot nie przeskakuje między dwoma celami (dawniej odległość w linii prostej przez ścianę:
 // krok w stronę celu oddalał go, bot wracał do schodów i kręcił się do limitu kroków). Przed ciosem bossa schodzi
 // z czerwonych pól w stronę celu (dawniej zawsze w tę samą stronę - w wąskim korytarzu cofał się bez końca).
+static int bot_drinks = 0;          // statystyka: kawy wypite przez bota (czy przedmioty mają znaczenie)
+static bool bot_no_coffee = false;  // wariant bez picia kawy (porównanie)
 static void bot_step(game& g)
 {
     static const int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}};
     if(g.has_offer()) { if(g.offer_is_better()) g.accept_offer(); else g.decline_offer(); }
-    if(g.thermos > 0 && g.hero.hp * 100 < g.hero.max_hp * data::bot_drink_below_pct && g.player_drink()) return;
+    if(! bot_no_coffee && g.thermos > 0 && g.hero.hp * 100 < g.hero.max_hp * data::bot_drink_below_pct && g.player_drink()) { ++bot_drinks; return; }
     static int hd[map_h][map_w], td[map_h][map_w];
     bot_bfs(g, g.hero.x, g.hero.y, hd);
     int tx = g.stairs_x, ty = g.stairs_y, best = 999;
@@ -819,10 +821,10 @@ int main()
             if(data::upgrades[i].effect == upgrade_effect::luck) i_luck = i;
             if(data::upgrades[i].effect == upgrade_effect::craft) i_craft = i;
         }
-        CHECK(i_luck >= 0 && i_craft >= 0 && data::upgrades[i_luck].levels == 2 && data::upgrades[i_craft].levels == 2);
-        p.levels[i_luck] = 2; p.levels[i_craft] = 1;
+        CHECK(i_luck >= 0 && i_craft >= 0 && data::upgrades[i_luck].levels >= 1 && data::upgrades[i_craft].levels >= 1);
+        p.levels[i_luck] = 1; p.levels[i_craft] = 1;
         run_mods pm = mods(p);
-        CHECK(pm.luck == 2 && pm.craft == 1);
+        CHECK(pm.luck == data::upgrades[i_luck].value && pm.craft == data::upgrades[i_craft].value);
         // co najmniej 2 narzędzia skalowane INT do odblokowania
         int int_tools = 0;
         for(int i = 0; i < data::tools_count; ++i)
@@ -1083,7 +1085,8 @@ int main()
         {
             game w; arena(w, c); int rg = w.weapon().range;
             w.weather = int8_t(wx_of(weather_effect::wind));
-            CHECK(w.weapon_range() == (rg > 1 ? imax(1, rg - data::weather[w.weather].value) : rg));
+            bool windproof = data::classes[c].passive == class_passive::windproof;   // Dekarz: wiatr mu nie przeszkadza
+            CHECK(w.weapon_range() == (rg > 1 && ! windproof ? imax(1, rg - data::weather[w.weather].value) : rg));
         }
         {   // wiatr: cel na granicy zasięgu przestaje być w zasięgu
             game w; arena(w, 2); int rg = w.weapon().range; CHECK(rg > 1);
@@ -1423,6 +1426,236 @@ int main()
         buy_hard(p);
         CHECK(next_unlock(p, kind, idx) == -1);
     }
+    // 42. Respekt: za każdy ukończony etap (więcej za bossów), od razu w profilu, śmierć go nie zabiera; sklep z rangami
+    {
+        auto rx_of = [](respect_effect e) { for(int i = 0; i < data::respect_count; ++i) if(data::respect[i].effect == e) return i; return -1; };
+        game g; g.new_run(1, 4242);
+        profile p; profile_reset(p); start_run(p);
+        CHECK(g.respect == 0 && g.stage_respect() == data::respect_stage);
+        g.debug_skip();
+        CHECK(g.st == status::stage_clear && g.respect == data::respect_stage);
+        check_badges(p, g);
+        CHECK(p.respect == data::respect_stage && p.respect_total == data::respect_stage && p.run_respect == data::respect_stage);
+        check_badges(p, g); CHECK(p.respect == data::respect_stage);   // drugi raz nie dolicza
+        int expect = data::respect_stage;
+        while(g.st == status::stage_clear)
+        {
+            g.next_stage();
+            int want = g.stage_respect();
+            const stage_def& sd = data::stages[g.stage];
+            if(g.stage == data::stages_count - 1) CHECK(want == data::respect_final);
+            else if(sd.boss >= 0) CHECK(want == (data::stages[g.stage + 1].act == sd.act ? data::respect_boss : data::respect_act_boss));
+            else CHECK(want == data::respect_stage);
+            g.hero.hp = g.hero.max_hp = 999;
+            g.debug_skip();
+            expect += want;
+            check_badges(p, g);
+            CHECK(g.respect == expect && p.respect == expect);
+        }
+        CHECK(g.st == status::won && expect > 10 * data::respect_stage);
+        game e; e.new_run(1, 1, 0); CHECK(e.stage_respect() == imax(1, data::respect_stage * data::difficulties[0].score_pct / 100));   // Łatwy mniej
+        // śmierć: Respekt z ukończonych etapów zostaje w profilu, nowa budowa liczy od zera
+        profile q; profile_reset(q); start_run(q);
+        game d; d.new_run(0, 77); d.debug_skip(); check_badges(q, d); d.next_stage();
+        d.hero.hp = 1; d.hero_down(); CHECK(d.st == status::dead);
+        check_badges(q, d); CHECK(q.respect == data::respect_stage);
+        start_run(q); CHECK(q.run_respect == 0);
+        game d2; d2.new_run(0, 78); d2.debug_skip(); check_badges(q, d2); CHECK(q.respect == 2 * data::respect_stage);
+        // sklep: rangi po kolei, rosnąca cena, maksimum
+        profile s; profile_reset(s);
+        CHECK(respect_cost(s, 0) == data::respect[0].costs[0] && ! buy_respect(s, 0));
+        s.respect = 60000;
+        int spent = 0;
+        for(int i = 0; i < data::respect_count; ++i)
+        {
+            for(int r = 0; r < data::respect[i].ranks; ++r)
+            {
+                if(r > 0) CHECK(data::respect[i].costs[r] > data::respect[i].costs[r - 1]);
+                CHECK(respect_cost(s, i) == data::respect[i].costs[r] && buy_respect(s, i));
+                spent += data::respect[i].costs[r];
+                CHECK(respect_value(s, i) == data::respect[i].values[r]);
+            }
+            CHECK(respect_cost(s, i) == -1 && ! buy_respect(s, i));
+        }
+        CHECK(s.respect == 60000 - spent && respect_spent(s) == respect_total_cost() && spent == respect_total_cost());
+        CHECK(respect_total_cost() > 30 * (2 * data::respect_stage + data::respect_final));   // pełny Respekt = wiele budów
+        run_mods m = mods(s), m0 = mods(p);
+        int dmg = rx_of(respect_effect::dmg_pct), tak = rx_of(respect_effect::taken_pct), cof = rx_of(respect_effect::coffee_pct);
+        int dod = rx_of(respect_effect::dodge), brg = rx_of(respect_effect::brigade_pct), shp = rx_of(respect_effect::shop_pct);
+        int sec = rx_of(respect_effect::second_chance), gpc = rx_of(respect_effect::gear_pct), mat = rx_of(respect_effect::mats_pct);
+        CHECK(dmg >= 0 && tak >= 0 && cof >= 0 && dod >= 0 && brg >= 0 && shp >= 0 && sec >= 0 && gpc >= 0 && mat >= 0);
+        CHECK(m.dmg_pct == m0.dmg_pct + respect_value(s, dmg) && m.taken_pct == m0.taken_pct + respect_value(s, tak));
+        CHECK(m.second_chance > 0 && m.gear_pct == respect_value(s, gpc) && m.mats_pct == respect_value(s, mat));
+        CHECK(daily_mods(1).dmg_pct == 0 && daily_mods(1).second_chance == 0);   // budowa dnia bez Respektu
+        // obrażenia +%: średnio dokładnie (reszta przenoszona), bez losowania
+        {
+            game a; arena(a, 1); game b; arena(b, 1); b.bonus.dmg_pct = 25;
+            long sa = 0, sb = 0;
+            for(int k = 0; k < 400; ++k)
+            {
+                a.r.seed(900 + k); b.r.seed(900 + k);
+                a.spawn(data::enemy_budzet, 8, 7); b.spawn(data::enemy_budzet, 8, 7);
+                a.enemies[a.enemies_count - 1].hp = b.enemies[b.enemies_count - 1].hp = 999;
+                a.hero_attack(a.enemies_count - 1); b.hero_attack(b.enemies_count - 1);
+                sa += 999 - a.enemies[a.enemies_count - 1].hp; sb += 999 - b.enemies[b.enemies_count - 1].hp;
+                a.enemies_count = b.enemies_count = 0;
+            }
+            CHECK(sb * 100 >= sa * 122 && sb * 100 <= sa * 128);
+        }
+        {   // otrzymane obrażenia -%: mniej, ale zawsze co najmniej 1
+            game a; a.new_run(1, 5); game b; b.new_run(1, 5); b.bonus.taken_pct = 30;
+            long ta = 0, tb = 0;
+            for(int k = 0; k < 300; ++k) { int d0 = 1 + k % 7; ta += a.taken_damage(d0); tb += b.taken_damage(d0); CHECK(b.taken_damage(1) >= 1); }
+            CHECK(tb * 100 >= ta * 66 && tb * 100 <= ta * 80);   // 1 HP nie da się zmniejszyć
+        }
+        {   // kawa +%, unik z limitem, Druga szansa raz na budowę
+            game a; a.new_run(1, 5); a.bonus.coffee_pct = 50;
+            CHECK(a.coffee_heal() == div_round(data::coffee_heal * 150, 100));
+            game u; u.new_run(5, 5); u.bonus.dodge = 90; CHECK(u.dodge_pct() == data::dodge_max_pct);
+            game z; z.new_run(1, 5); z.bonus.second_chance = 1;
+            z.hero.hp = 0; z.hero_down(); CHECK(z.st == status::playing && z.hero.hp == 1 && z.hero.alive && z.second_used);
+            z.hero.hp = 0; z.hero_down(); CHECK(z.st == status::dead && ! z.hero.alive);
+            game n; n.new_run(1, 5); n.hero.hp = 0; n.hero_down(); CHECK(n.st == status::dead);
+        }
+        {   // brygada i Hurtownia taniej
+            game a; a.new_run(1, 5); a.bonus.brigade_pct = 30; a.bonus.shop_pct = 25;
+            CHECK(a.helper_price(0) == data::brigade[0].price * 70 / 100);
+            for(int i = 0; i < data::hurtownia_count; ++i) CHECK(a.hurtownia_price(i) == data::hurtownia[i].price * 75 / 100);
+            a.cash = a.hurtownia_price(0); CHECK(a.hurtownia_can(0) && a.hurtownia_buy(0) && a.cash == 0);
+        }
+    }
+    // 43. nagrody za odbiór: każda wygrana odblokowuje kolejną (narzędzia, sprzęt, zawody); profil v7 -> v8
+    {
+        profile p; profile_reset(p);
+        int avail = rewards_available();
+        CHECK(avail > 0 && avail <= data::rewards_count && p.rewards == 0);
+        for(int i = 0; i < data::classes_count; ++i) if(class_reward(i)) CHECK(! class_unlocked(p, i) && ! buy_class(p, i));
+        for(int i = 0; i < data::tools_count; ++i) if(data::tools[i].reward) CHECK(! tool_unlocked(p, i));
+        CHECK(gear_slots_mask(p) == data::gear_base_mask && mods(p).gear_slots == data::gear_base_mask);
+        CHECK(reward_win(p, 0) == 1 && reward_win(p, 2) == 3);
+        p.xp = 1 << 20;
+        for(int i = 0; i < data::tools_count; ++i) if(data::tools[i].reward) CHECK(! buy_tool(p, i));
+        for(int k = 0; k < avail; ++k)
+        {
+            CHECK(record_win(p) == k && p.wins == k + 1 && reward_owned(p, k) && reward_win(p, k) == -1);
+            const reward_def& rd = data::rewards[k];
+            if(rd.kind == reward_kind::cls) CHECK(class_unlocked(p, rd.index));
+            if(rd.kind == reward_kind::tool) CHECK(tool_unlocked(p, rd.index) && (mods(p).tools >> rd.index) & 1);
+            if(rd.kind == reward_kind::gear) CHECK((gear_slots_mask(p) >> rd.index) & 1);
+        }
+        CHECK(record_win(p) == -1 && p.rewards == avail);   // "wkrótce" się nie odblokowuje
+        for(int i = 0; i < data::classes_count; ++i) CHECK(class_unlocked(p, i) == (class_reward(i) || (p.classes >> i) & 1));
+        // wygrane i stawki zawodów 8+
+        profile w; profile_reset(w);
+        for(int c = 0; c < data::classes_count; ++c) { CHECK(! class_won(w, c)); set_class_won(w, c); CHECK(class_won(w, c)); set_best_stake(w, c, c + 1); }
+        CHECK(classes_won(w) == data::classes_count);
+        for(int c = 0; c < data::classes_count; ++c) CHECK(best_stake(w, c) == c + 1);
+        game wg; wg.new_run(data::classes_count - 1, 3); wg.st = status::won;
+        profile w2; profile_reset(w2); record_run(w2, wg); CHECK(class_won(w2, data::classes_count - 1) && w2.class_wins == 0);
+        // v7 -> v8: stare pola zostają, nagrody za dotychczasowe wygrane, zmienione Szkolenia wracają jako doświadczenie
+        profile v7; profile_reset(v7); std::memcpy(v7.magic, "PBRL007", 8);
+        v7.wins = 3; v7.xp = 11; v7.best = 777; v7.daily_score[4] = 55;
+        int refund = 0;
+        for(int i = 0; i < data::upgrades_count; ++i)
+            if(data::upgrades[i].reset_refund > 0) { v7.levels[i] = 1; refund += data::upgrades[i].reset_refund; }
+        CHECK(refund > 0);
+        std::memset(reinterpret_cast<char*>(&v7) + profile_v7_size, 0xEE, sizeof v7 - profile_v7_size);
+        CHECK(profile_fix(v7) && std::strcmp(v7.magic, profile_magic) == 0);
+        CHECK(v7.best == 777 && v7.wins == 3 && v7.daily_score[4] == 55 && v7.rewards == imin(3, avail) && v7.xp == 11 + refund);
+        CHECK(v7.respect == 0 && v7.respect_total == 0 && v7.class_wins_hi == 0 && v7.respect_ranks[0] == 0 && v7.best_stake_hi[0] == 0);
+        for(int i = 0; i < data::upgrades_count; ++i) if(data::upgrades[i].reset_refund > 0) CHECK(v7.levels[i] == 0);
+        CHECK(! profile_fix(v7));
+        profile v1; std::memset(&v1, 0, sizeof v1); std::memcpy(v1.magic, "PBRL001", 8); v1.wins = 99;
+        CHECK(profile_fix(v1) && v1.wins == 99 && v1.rewards == avail);
+    }
+    // 44. nowe zawody: Rynna (linia), Narzut (obszar), Taran (szarża, odepchnięcie), cechy: wiatr, odepchnięcie
+    {
+        auto class_of = [](ability_effect e) { for(int c = 0; c < data::classes_count; ++c) if(data::classes[c].ability == e) return c; return -1; };
+        int roofer = class_of(ability_effect::line), plaster = class_of(ability_effect::splash), digger = class_of(ability_effect::ram);
+        CHECK(roofer >= 0 && plaster >= 0 && digger >= 0);
+        CHECK(data::classes[roofer].passive == class_passive::windproof && data::classes[digger].passive == class_passive::push);
+        {   // Rynna: wszyscy na linii (także za celem), mur zatrzymuje
+            game g; arena(g, roofer);
+            g.spawn(data::enemy_budzet, 9, 7); g.spawn(data::enemy_budzet, 11, 7); g.spawn(data::enemy_budzet, 7, 10);
+            for(int i = 0; i < 3; ++i) g.enemies[i].hp = 99;
+            g.update_fov();
+            CHECK(g.player_ability());
+            CHECK(g.enemies[0].hp < 99 && g.enemies[1].hp < 99 && g.enemies[2].hp == 99 && g.ability_cd > 0);
+            game w; arena(w, roofer); w.lv.t[7][10] = tile::wall;
+            w.spawn(data::enemy_budzet, 9, 7); w.spawn(data::enemy_budzet, 11, 7); w.enemies[0].hp = w.enemies[1].hp = 99; w.update_fov();
+            CHECK(w.player_ability() && w.enemies[0].hp < 99 && w.enemies[1].hp == 99);
+            game n; arena(n, roofer); CHECK(! n.player_ability() && n.turns == 0);   // bez celu nic
+            // wiatr nie skraca zasięgu Dekarza
+            game wd; arena(wd, roofer); int rg = wd.weapon_range();
+            for(int i = 0; i < data::weather_count; ++i) if(data::weather[i].effect == weather_effect::wind) wd.weather = int8_t(i);
+            CHECK(wd.weapon_range() == rg && rg > 1);
+        }
+        {   // Narzut: cel w zasięgu i sąsiedzi celu, dalszy problem bez zmian; od rangi II ogłusza
+            game g; arena(g, plaster);
+            g.spawn(data::enemy_budzet, 9, 7); g.spawn(data::enemy_budzet, 10, 8); g.spawn(data::enemy_budzet, 12, 7);
+            for(int i = 0; i < 3; ++i) g.enemies[i].hp = 99;
+            g.update_fov();
+            CHECK(g.player_ability() && g.enemies[0].hp < 99 && g.enemies[1].hp < 99 && g.enemies[2].hp == 99);
+            game r2; arena(r2, plaster); r2.hero_level = 3; r2.spawn(data::enemy_budzet, 8, 7); r2.enemies[0].hp = 99; r2.update_fov();
+            CHECK(r2.player_ability() && r2.enemies[0].stun >= 0 && r2.enemies[0].hp < 99);
+        }
+        {   // Taran: szarża do problemu, cios i odepchnięcie o 2
+            game g; arena(g, digger);
+            g.spawn(data::enemy_budzet, 10, 7); g.enemies[0].hp = 99; g.update_fov();
+            CHECK(g.player_ability());
+            CHECK(g.hero.x == 9 && g.hero.y == 7 && g.enemies[0].hp < 99 && g.enemies[0].x == 12 && g.enemies[0].stun >= 0);
+            game b; arena(b, digger); b.spawn(data::enemy_budzet, 7, 3); b.enemies[0].hp = 99; b.update_fov();
+            CHECK(b.player_ability() && b.hero.x == 7 && b.hero.y == 4 && b.enemies[0].hp == 99);   // za daleko: tylko szarża
+            game c; arena(c, digger); c.spawn(data::enemy_budzet, 7, 4); c.enemies[0].hp = 99; c.update_fov();
+            CHECK(c.player_ability() && c.hero.x == 7 && c.hero.y == 5 && c.enemies[0].y == 2 && c.enemies[0].hp < 99);   // pionowo
+        }
+        {   // Operator: cios wręcz czasem odpycha (nie bossa)
+            int pushed = 0;
+            for(uint32_t seed = 1; seed <= 200; ++seed)
+            {
+                game g; arena(g, digger); g.r.seed(seed);
+                g.spawn(data::enemy_budzet, 8, 7); g.enemies[0].hp = 99;
+                g.hero_attack(0);
+                pushed += g.enemies[0].x == 9;
+                CHECK(g.enemies[0].x == 8 || g.enemies[0].x == 9);
+            }
+            CHECK(pushed > 200 * data::push_chance_pct / 200 && pushed < 200 * data::push_chance_pct * 2 / 100);
+            game o; arena(o, 1); o.spawn(data::enemy_budzet, 8, 7); o.enemies[0].hp = 99;
+            for(int k = 0; k < 30; ++k) o.hero_attack(0);
+            CHECK(o.enemies[0].x == 8);   // inne zawody nie pchają
+        }
+    }
+    // 45. sprzęt z nagród: buty (unik), pas (termos), cecha Bez poślizgu; pełny sprzęt BHP = sloty bazowe
+    {
+        int boots = -1, belt = -1, slip = -1;
+        for(int i = 0; i < data::gear_slots_count; ++i)
+        {
+            if(data::gear[i * 3].stat == gear_stat::dodge) boots = i;
+            if(data::gear[i * 3].stat == gear_stat::thermos) belt = i;
+        }
+        for(int i = 0; i < data::gear_traits_count; ++i) if(data::gear_traits[i].effect == trait_effect::slip_res) slip = i;
+        CHECK(boots >= 0 && belt >= 0 && slip >= 0 && (data::gear_reward_mask >> boots) & 1 && (data::gear_reward_mask >> belt) & 1);
+        game g; arena(g, 1);
+        int d0 = g.dodge_pct(), cap0 = g.thermos_cap(), plain = 0;
+        for(int i = 0; i < data::gear_traits_count; ++i) if(data::gear_traits[i].effect == trait_effect::sight) plain = i;   // cecha bez wpływu na unik
+        g.equip(boots, 2, plain); CHECK(g.dodge_pct() == imin(data::dodge_max_pct, d0 + data::gear[boots * 3 + 2].value));
+        g.equip(belt, 2, plain); CHECK(g.thermos_cap() == cap0 + data::gear[belt * 3 + 2].value);
+        g.thermos = g.thermos_cap(); g.equip(belt, 0, plain); CHECK(g.thermos == g.thermos_cap());   // słabszy pas: kawy ponad limit przepadają
+        g.equip(0, 0, slip); g.apply_status(status_effect::slip, 3); CHECK(g.status_turns(status_effect::slip) == 0);
+        game f; arena(f, 1);
+        for(int i = 0; i < data::gear_slots_count; ++i) if((data::gear_base_mask >> i) & 1) f.equip(i, 0, 0);
+        CHECK(f.full_gear());
+        // dropy: bez nagród tylko sloty bazowe, z nagrodami też buty i pas
+        int seen0 = 0, seen1 = 0;
+        for(uint32_t seed = 1; seed <= 300; ++seed)
+        {
+            game a; arena(a, 1); a.r.seed(seed); seen0 |= 1 << a.random_slot();
+            game b; arena(b, 1); b.bonus.gear_slots = (1 << data::gear_slots_count) - 1; b.r.seed(seed); seen1 |= 1 << b.random_slot();
+            game c; arena(c, 1); c.r.seed(seed); rng r2; r2.seed(seed);
+            CHECK(c.random_slot() == r2.range(0, 2));   // 3 sloty: to samo losowanie co dawniej
+        }
+        CHECK(seen0 == data::gear_base_mask && seen1 == (1 << data::gear_slots_count) - 1);
+    }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};
@@ -1445,27 +1678,45 @@ int main()
         std::printf("%-18s %-9s %6d %6.1f %6ld %8ld\n", data::classes[c].name, data::difficulties[df].name, wins*100/runs, double(stages)/runs, turns/runs, score/runs);
     }
     for(int df=1;df<data::difficulties_count;++df) CHECK(diff_wins[df-1] > diff_wins[df]);   // trudniej = mniej wygranych
-    // pełne ulepszenia ze sklepu wyraźnie pomagają (Normalny, wszystkie zawody)
+    // Tabela balansu (Normalny, wszystkie zawody): Szkolenia, Respekt, tryb inwestora; kawa bota (czy przedmioty mają znaczenie)
     {
-        profile p; profile_reset(p);
-        for(int i=0;i<data::upgrades_count;++i) p.levels[i] = uint8_t(data::upgrades[i].levels);
-        run_mods m = mods(p);
-        int wins=0; const int runs=300;
-        for(int c=0;c<data::classes_count;++c)
-            for(int k=0;k<runs;++k)
-            {
-                game g; g.new_run(c, 1000+k*7919, data::default_difficulty, m);
-                for(int step=0; step<4000; ++step)
+        auto win_rate = [](const run_mods& m, long& drinks, int& drank_runs) {
+            int wins = 0; const int runs = 300;
+            drinks = 0; drank_runs = 0;
+            for(int c = 0; c < data::classes_count; ++c)
+                for(int k = 0; k < runs; ++k)
                 {
-                    if(g.st==status::stage_clear){ g.next_stage(); continue; }
-                    if(g.st!=status::playing) break;
-                    bot_step(g);
+                    game g; g.new_run(c, 1000 + k * 7919, data::default_difficulty, m);
+                    bot_drinks = 0;
+                    for(int step = 0; step < 4000; ++step)
+                    {
+                        if(g.st == status::stage_clear) { g.next_stage(); continue; }
+                        if(g.st != status::playing) break;
+                        bot_step(g);
+                    }
+                    wins += g.st == status::won; drinks += bot_drinks; drank_runs += bot_drinks > 0;
                 }
-                wins += g.st==status::won;
-            }
-        int base = diff_wins[data::default_difficulty];
-        std::printf("Normalny: bez ulepszeń %d%%, z pełnymi %d%%\n", base*100/(runs*data::classes_count), wins*100/(runs*data::classes_count));
-        CHECK(wins > base);
+            return wins * 100 / (runs * data::classes_count);
+        };
+        const int n = 300 * data::classes_count;
+        profile none; profile_reset(none);
+        profile szk = none; for(int i = 0; i < data::upgrades_count; ++i) szk.levels[i] = uint8_t(data::upgrades[i].levels);
+        profile full = szk; for(int i = 0; i < data::respect_count; ++i) full.respect_ranks[i] = uint8_t(data::respect[i].ranks);
+        profile inv = full; inv.wins = 1; inv.investor = uint8_t((1 << data::investor_count) - 1);
+        long dr0, dr1, dr2, dr3, drx; int k0, k1, k2, k3, kx;
+        int w0 = win_rate(mods(none), dr0, k0), w1 = win_rate(mods(szk), dr1, k1), w2 = win_rate(mods(full), dr2, k2), w3 = win_rate(mods(inv), dr3, k3);
+        bot_no_coffee = true;
+        int wx = win_rate(mods(none), drx, kx), wx1 = win_rate(mods(szk), drx, kx);
+        bot_no_coffee = false;
+        std::printf("Normalny: bez meta %d%%, pełne Szkolenia %d%%, + pełny Respekt %d%%, + wszystkie modyfikatory %d%%\n", w0, w1, w2, w3);
+        std::printf("Kawa (bot): %.2f/budowę, pije w %d%% budów (bez meta); bez picia kawy: %d%% (pełne Szkolenia %d%%)\n",
+                    double(dr0) / n, k0 * 100 / n, wx, wx1);
+        CHECK(w0 >= 25 && w0 <= 35);   // cele balansu v0.21.49
+        CHECK(w1 >= 50 && w1 <= 60);
+        CHECK(w2 >= 65 && w2 <= 75);
+        CHECK(w3 >= 5 && w3 <= 15);
+        CHECK(wx < w0 && dr0 > 0);     // kawa ma znaczenie
+        (void)dr1; (void)dr2; (void)dr3; (void)k1; (void)k2; (void)k3;
     }
     std::printf(fails ? "\n%d FAIL\n" : "\nOK - wszystkie testy przeszły\n", fails);
     return fails != 0;

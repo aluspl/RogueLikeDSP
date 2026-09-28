@@ -17,15 +17,23 @@ inline constexpr core::weapon_def weapons[] = {
     { "Młot wyburzeniowy", 5, 8, 1, core::stat::str },
     { "Tablet z projektem", 3, 5, 2, core::stat::intel },
     { "Miernik laserowy", 2, 5, 3, core::stat::intel },
+    { "Dachówki", 2, 3, 3, core::stat::agi },
+    { "Agregat tynkarski", 2, 4, 2, core::stat::str },
+    { "Łyżka koparki", 4, 7, 1, core::stat::str },
+    { "Młot udarowy", 5, 9, 1, core::stat::str },
+    { "Pistolet do kotew", 3, 5, 3, core::stat::agi },
 };
 
 inline constexpr core::class_def classes[] = {
-    { "Kierownik budowy", "Trzyma harmonogram w ryzach.", 30, 3, 3, 5, 3, 2, 0, 0, "Odprawa", "Ogłusza widocznych", core::ability_effect::stun, 15 },
-    { "Murarz", "Twardy jak pustak.", 34, 5, 2, 1, 4, 0, 1, 1, "Ścianka", "Mur przed wrogiem", core::ability_effect::wall, 15 },
-    { "Cieśla-dekarz", "Gwoździe wbija z daleka.", 30, 4, 4, 1, 3, 2, 2, 2, "Seria", "Gwoździe we wszystkich", core::ability_effect::volley, 12 },
-    { "Elektryk", "Wie, gdzie jest faza.", 24, 2, 4, 5, 2, 1, 3, 3, "Łańcuch", "Prąd skacze po celach", core::ability_effect::chain, 12 },
-    { "Hydraulik", "Żaden przeciek mu nie straszny.", 34, 4, 3, 3, 3, 2, 4, 4, "Zawór", "Odpycha wrogów i leczy", core::ability_effect::flush, 20 },
-    { "Glazurnik", "Precyzja co do fugi.", 30, 3, 5, 2, 3, 4, 5, 5, "Wirówka", "Tnie wszystkich dookoła", core::ability_effect::spin, 10 },
+    { "Kierownik budowy", "Trzyma harmonogram w ryzach.", 30, 3, 3, 5, 3, 2, 0, 0, "Odprawa", "Ogłusza widocznych", core::ability_effect::stun, 15, core::class_passive::none },
+    { "Murarz", "Twardy jak pustak.", 34, 5, 2, 1, 4, 0, 1, 1, "Ścianka", "Mur przed wrogiem", core::ability_effect::wall, 15, core::class_passive::none },
+    { "Cieśla-dekarz", "Gwoździe wbija z daleka.", 30, 4, 4, 1, 3, 2, 2, 2, "Seria", "Gwoździe we wszystkich", core::ability_effect::volley, 12, core::class_passive::none },
+    { "Elektryk", "Wie, gdzie jest faza.", 24, 2, 4, 5, 2, 1, 3, 3, "Łańcuch", "Prąd skacze po celach", core::ability_effect::chain, 12, core::class_passive::none },
+    { "Hydraulik", "Żaden przeciek mu nie straszny.", 34, 4, 3, 3, 3, 2, 4, 4, "Zawór", "Odpycha wrogów i leczy", core::ability_effect::flush, 20, core::class_passive::none },
+    { "Glazurnik", "Precyzja co do fugi.", 30, 3, 5, 2, 3, 4, 5, 5, "Wirówka", "Tnie wszystkich dookoła", core::ability_effect::spin, 10, core::class_passive::none },
+    { "Dekarz", "Wiatr mu nie przeszkadza.", 26, 3, 5, 2, 2, 3, 12, 52, "Rynna", "Bije całą linię", core::ability_effect::line, 12, core::class_passive::windproof },
+    { "Tynkarz", "Tynk na cały pokój.", 30, 4, 3, 2, 3, 2, 13, 53, "Narzut", "Tynk na obszar 3x3", core::ability_effect::splash, 12, core::class_passive::none },
+    { "Operator koparki", "Wolny, ale pcha wszystko.", 32, 5, 1, 1, 4, 0, 14, 54, "Taran", "Szarża i odepchnięcie", core::ability_effect::ram, 16, core::class_passive::push },
 };
 
 inline constexpr core::enemy_def enemies[] = {
@@ -61,13 +69,13 @@ inline constexpr core::difficulty_def difficulties[] = {
 };
 
 inline constexpr core::upgrade_def upgrades[] = {
-    { "Kondycja", "+2 HP na start", core::upgrade_effect::hp, 2, 3, { 10, 20, 35, 0 }, 0 },
-    { "Szkolenie BHP", "+1 obrona", core::upgrade_effect::def, 1, 1, { 15, 0, 0, 0 }, 30 },
-    { "Kurs fachowy", "+1 obrażenia", core::upgrade_effect::dmg, 1, 1, { 20, 0, 0, 0 }, 40 },
-    { "Lepszy termos", "Kawa leczy +2 HP", core::upgrade_effect::coffee, 2, 2, { 10, 20, 0, 0 }, 0 },
-    { "Dostawy", "+1 znajdźka na etap", core::upgrade_effect::pickups, 1, 2, { 15, 30, 0, 0 }, 0 },
-    { "Kurs BHP II", "+1 szczęścia", core::upgrade_effect::luck, 1, 2, { 20, 40, 0, 0 }, 0 },
-    { "Warsztaty", "+1 do statystyki broni", core::upgrade_effect::craft, 1, 2, { 20, 40, 0, 0 }, 0 },
+    { "Kondycja", "+2 HP na start", core::upgrade_effect::hp, 2, 2, { 10, 20, 0, 0 }, 35, 0 },
+    { "Szkolenie BHP", "-2% otrzymanych obrażeń", core::upgrade_effect::taken_pct, 2, 1, { 15, 0, 0, 0 }, 30, 15 },
+    { "Kurs fachowy", "+2% obrażeń", core::upgrade_effect::dmg_pct, 2, 1, { 20, 0, 0, 0 }, 40, 20 },
+    { "Lepszy termos", "Kawa leczy +1 HP", core::upgrade_effect::coffee, 1, 1, { 10, 0, 0, 0 }, 20, 0 },
+    { "Dostawy", "+1 znajdźka na etap", core::upgrade_effect::pickups, 1, 1, { 15, 0, 0, 0 }, 30, 0 },
+    { "Kurs BHP II", "+1 szczęścia", core::upgrade_effect::luck, 1, 1, { 20, 0, 0, 0 }, 40, 0 },
+    { "Warsztaty", "+1 do statystyki broni", core::upgrade_effect::craft, 1, 1, { 20, 0, 0, 0 }, 40, 0 },
 };
 
 inline constexpr core::story_msg story_stages[] = {
@@ -207,10 +215,10 @@ inline constexpr int start_helpers_mask = 3;
 inline constexpr core::investor_def investor[] = {   // tryb inwestora: modyfikatory po pierwszej wygranej
     { "Budżet -30%", "Mniej zł za problemy i akty", core::investor_effect::cash_pct, -30, 10, 1 },
     { "Bez przerwy na kawę", "Między etapami bez +5 HP", core::investor_effect::no_break, 0, 10, 1 },
-    { "Problemy +35% HP", "Każdy problem ma +35% HP", core::investor_effect::enemy_hp, 35, 15, 2 },
+    { "Problemy +25% HP", "Każdy problem ma +25% HP", core::investor_effect::enemy_hp, 25, 15, 2 },
     { "Hurtownia zamknięta", "Między aktami bez zakupów", core::investor_effect::no_shop, 0, 15, 2 },
     { "Kontrola częściej", "Boss uderza co 3 tury, nie 4", core::investor_effect::slam, 1, 10, 1 },
-    { "Termin goni", "Problemy biją o 2 mocniej", core::investor_effect::enemy_dmg, 2, 20, 3 },
+    { "Termin goni", "Problemy biją o 1 mocniej", core::investor_effect::enemy_dmg, 1, 20, 3 },
 };
 inline constexpr int investor_count = 6;
 
@@ -249,15 +257,17 @@ inline constexpr int schedule_turns_per_day = 3;
 inline constexpr const char* schedule_url = "planbudowlany.online";
 
 inline constexpr core::tool_def tools[] = {
-    { 6, 0 },
-    { 7, 20 },
-    { 8, 30 },
-    { 9, 40 },
-    { 10, 25 },
-    { 11, 35 },
+    { 6, 0, false },
+    { 7, 20, false },
+    { 8, 30, false },
+    { 9, 40, false },
+    { 10, 25, false },
+    { 11, 35, false },
+    { 15, 0, true },
+    { 16, 0, true },
 };
 
-inline constexpr int tools_count = 6;
+inline constexpr int tools_count = 8;
 inline constexpr int start_tools_mask = 1;
 inline constexpr int drop_chance_pct = 25;
 inline constexpr int drop_weights[] = { 40, 5, 5, 15, 35 };
@@ -284,8 +294,14 @@ inline constexpr core::gear_def gear[] = {   // indeks = slot * 3 + jakość
     { "Kamizelka odblaskowa", core::gear_stat::hp, 4 },
     { "Kamizelka ocieplana", core::gear_stat::hp, 8 },
     { "Kamizelka markowa", core::gear_stat::hp, 12 },
+    { "Buty robocze", core::gear_stat::dodge, 3 },
+    { "Buty z podnoskiem", core::gear_stat::dodge, 5 },
+    { "Buty markowe", core::gear_stat::dodge, 8 },
+    { "Pas narzędziowy", core::gear_stat::thermos, 1 },
+    { "Pas z kaburą", core::gear_stat::thermos, 1 },
+    { "Pas markowy", core::gear_stat::thermos, 2 },
 };
-inline constexpr const char* gear_slots[] = { "Kask", "Rękawice", "Kamizelka" };
+inline constexpr const char* gear_slots[] = { "Kask", "Rękawice", "Kamizelka", "Buty", "Pas" };
 inline constexpr const char* gear_rarities[] = { "Zwykły", "Solidny", "Markowy" };
 inline constexpr core::trait_def gear_traits[] = {   // cechy sprzętu (losowane do każdego przedmiotu)
     { "Szczęście +1", "Szcz.+1", core::trait_effect::luck, 1 },
@@ -296,10 +312,13 @@ inline constexpr core::trait_def gear_traits[] = {   // cechy sprzętu (losowane
     { "Siła +1", "SIŁ+1", core::trait_effect::str, 1 },
     { "Zręczność +1", "ZRĘ+1", core::trait_effect::agi, 1 },
     { "Inteligencja +1", "INT+1", core::trait_effect::intel, 1 },
+    { "Bez poślizgu", "Bez pośl.", core::trait_effect::slip_res, 1 },
 };
-inline constexpr int gear_traits_count = 8;
+inline constexpr int gear_traits_count = 9;
 inline constexpr int gear_decline_xp = 1;
-inline constexpr int gear_slots_count = 3;
+inline constexpr int gear_slots_count = 5;
+inline constexpr int gear_reward_mask = 24;   // sloty z nagród
+inline constexpr int gear_base_mask = 7;   // pełny sprzęt (BHP)
 inline constexpr int gear_solid_from = 70;
 inline constexpr int gear_brand_from = 94;
 inline constexpr int gear_stage_bonus = 5;
@@ -309,6 +328,7 @@ inline constexpr int xp_per_kill = 1;
 inline constexpr int xp_per_stage = 5;
 inline constexpr int xp_boss = 20;
 inline constexpr int start_classes_mask = 19;
+inline constexpr int reward_classes_mask = 448;
 inline constexpr int class_cost = 25;
 inline constexpr int hard_cost = 40;
 
@@ -318,7 +338,43 @@ inline constexpr int hp_per_level = 2;
 inline constexpr int dmg_levels_mask = 32;
 inline constexpr int def_levels_mask = 8;
 
-inline constexpr const char* version = "v0.21.48";   // numer wersji (ekran tytułowy, changelog)
+inline constexpr core::respect_def respect[] = {   // Respekt: stałe ulepszenia z rangami
+    { "Pewna ręka", "Obrażenia", core::respect_effect::dmg_pct, 2, { 1, 2, 0, 0, 0 }, { 15, 40, 0, 0, 0 } },
+    { "Gruba skóra", "Otrzymane obrażenia", core::respect_effect::taken_pct, 2, { 1, 2, 0, 0, 0 }, { 15, 40, 0, 0, 0 } },
+    { "Dobre źródła", "Szansa na lepszy sprzęt", core::respect_effect::gear_pct, 5, { 1, 2, 3, 4, 5 }, { 6, 12, 20, 32, 48 } },
+    { "Oko fachowca", "Szansa na kryt", core::respect_effect::crit, 2, { 1, 2, 0, 0, 0 }, { 15, 40, 0, 0, 0 } },
+    { "Zwinność", "Unik (łącznie maks. 20%)", core::respect_effect::dodge, 2, { 1, 2, 0, 0, 0 }, { 15, 40, 0, 0, 0 } },
+    { "Mocna kawa", "Kawa leczy więcej", core::respect_effect::coffee_pct, 2, { 5, 10, 0, 0, 0 }, { 10, 30, 0, 0, 0 } },
+    { "Duży termos", "Termos: miejsce na kawę", core::respect_effect::thermos, 1, { 1, 0, 0, 0, 0 }, { 40, 0, 0, 0, 0 } },
+    { "Rutyna", "Moc odnawia się szybciej", core::respect_effect::cooldown, 2, { 1, 2, 0, 0, 0 }, { 30, 60, 0, 0, 0 } },
+    { "Oszczędności", "Budżet na start", core::respect_effect::cash, 5, { 10, 20, 30, 40, 50 }, { 5, 10, 16, 25, 36 } },
+    { "Nauka", "Doświadczenie", core::respect_effect::xp_pct, 5, { 4, 8, 12, 16, 20 }, { 6, 12, 20, 32, 48 } },
+    { "Znajomości", "Brygada taniej", core::respect_effect::brigade_pct, 5, { 6, 12, 18, 24, 30 }, { 5, 10, 16, 25, 36 } },
+    { "Czujność", "Pole widzenia", core::respect_effect::sight, 1, { 1, 0, 0, 0, 0 }, { 40, 0, 0, 0, 0 } },
+    { "Rabat", "Hurtownia taniej", core::respect_effect::shop_pct, 5, { 5, 10, 15, 20, 25 }, { 5, 10, 16, 25, 36 } },
+    { "Zapasy", "Więcej materiałów", core::respect_effect::mats_pct, 5, { 10, 20, 30, 40, 50 }, { 5, 10, 16, 25, 36 } },
+    { "Druga szansa", "Raz na budowę: 1 HP zamiast końca", core::respect_effect::second_chance, 1, { 1, 0, 0, 0, 0 }, { 120, 0, 0, 0, 0 } },
+};
+inline constexpr int push_chance_pct = 20;   // Operator koparki: cios wręcz odpycha
+inline constexpr int respect_count = 15;
+inline constexpr int respect_stage = 2;   // Respekt za etap: zwykły, boss w środku aktu, boss aktu, ostatni
+inline constexpr int respect_boss = 4;
+inline constexpr int respect_act_boss = 6;
+inline constexpr int respect_final = 10;
+
+inline constexpr core::reward_def rewards[] = {   // nagrody za odbiór: każda wygrana odblokowuje kolejną
+    { core::reward_kind::tool, 6, "Młot udarowy", "Nowe narzędzie w dropach" },
+    { core::reward_kind::cls, 6, "Dekarz", "Nowy zawód: z dystansu" },
+    { core::reward_kind::gear, 3, "Buty robocze", "Nowy sprzęt: unik" },
+    { core::reward_kind::tool, 7, "Pistolet do kotew", "Nowe narzędzie w dropach" },
+    { core::reward_kind::cls, 7, "Tynkarz", "Nowy zawód: obszar" },
+    { core::reward_kind::gear, 4, "Pas narzędziowy", "Nowy sprzęt: termos" },
+    { core::reward_kind::cls, 8, "Operator koparki", "Nowy zawód: taran" },
+    { core::reward_kind::soon, -1, "Akt 0: Papierologia", "Wkrótce" },
+};
+inline constexpr int rewards_count = 8;
+
+inline constexpr const char* version = "v0.21.49";   // numer wersji (ekran tytułowy, changelog)
 
 inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonogramu między etapami
     "Przytrzymaj B: podgląd problemów",
@@ -336,7 +392,7 @@ inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonog
 };
 inline constexpr int tips_count = 12;
 
-inline constexpr int classes_count = 6;
+inline constexpr int classes_count = 9;
 inline constexpr int stages_count = 8;
 inline constexpr int difficulties_count = 3;
 inline constexpr int default_difficulty = 1;

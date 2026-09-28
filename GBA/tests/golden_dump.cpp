@@ -125,8 +125,8 @@ static uint32_t digest(const game& g)
         f.add(p.x); f.add(p.y); f.add(p.type); f.add(p.active); f.add(p.arg); f.add(p.trait);
     }
     for(int i = 0; i < 5; ++i) f.add(g.hero_status[i]);
-    for(int i = 0; i < 4; ++i) f.add(g.equipped[i]);
-    for(int i = 0; i < 4; ++i) f.add(g.equipped_trait[i]);
+    for(int i = 0; i < max_gear_slots; ++i) f.add(g.equipped[i]);
+    for(int i = 0; i < max_gear_slots; ++i) f.add(g.equipped_trait[i]);
     f.add(g.thermos); f.add(g.offer_slot); f.add(g.offer_rarity); f.add(g.offer_trait);
     f.add(g.hits_count);
     for(int i = 0; i < g.hits_count; ++i) { const hit& h = g.hits[i]; f.add(h.x); f.add(h.y); f.add(h.amount); f.add(h.on_hero); f.add(h.kind); }
@@ -151,6 +151,8 @@ static uint32_t digest(const game& g)
     for(int i = 0; i < g.bridges; ++i) { f.add(g.bridge_x[i]); f.add(g.bridge_y[i]); }
     f.add(g.daily); f.add(g.daily_day);
     for(int i = 0; i < 8; ++i) f.add(g.stage_days[i]);
+    // v0.21.49: Respekt, reszty procentów obrażeń, Druga szansa
+    f.add(g.respect); f.add(g.dmg_carry); f.add(g.taken_carry); f.add(g.second_used);
     return f.h;
 }
 
@@ -185,8 +187,8 @@ static void snapshot(const game& g, int step)
     w(","); key("toolsFound"); wi(g.tools_found); w(","); key("logSerial"); wi(g.log_serial);
     w(","); key("stageDamage"); wi(g.stage_damage); w(","); key("stageKills"); wi(g.stage_kills); w(","); key("stageStartTurn"); wi(g.stage_start_turn);
     w(","); key("slam"); w("["); wi(g.slam_timer); w(","); wi(g.slam_x); w(","); wi(g.slam_y); w(","); wi(g.slam_counter); w("]");
-    w(","); key("equipped"); w("["); for(int i = 0; i < 4; ++i) { if(i) w(","); wi(g.equipped[i]); } w("]");
-    w(","); key("equippedTrait"); w("["); for(int i = 0; i < 4; ++i) { if(i) w(","); wi(g.equipped_trait[i]); } w("]");
+    w(","); key("equipped"); w("["); for(int i = 0; i < max_gear_slots; ++i) { if(i) w(","); wi(g.equipped[i]); } w("]");
+    w(","); key("equippedTrait"); w("["); for(int i = 0; i < max_gear_slots; ++i) { if(i) w(","); wi(g.equipped_trait[i]); } w("]");
     w(","); key("thermos"); wi(g.thermos); w(","); key("thermosCap"); wi(g.thermos_cap());
     w(","); key("stageEvent"); wi(g.stage_event);
     w(","); key("weather"); wi(g.weather); w(","); key("weaponRange"); wi(g.weapon_range());
@@ -203,6 +205,8 @@ static void snapshot(const game& g, int step)
     w(","); key("daily"); w("["); wi(g.daily); w(","); wi(g.daily_day); w("]");
     w(","); key("stageDays"); w("["); for(int i = 0; i < 8; ++i) { if(i) w(","); wi(g.stage_days[i]); } w("]");
     w(","); key("offer"); w("["); wi(g.offer_slot); w(","); wi(g.offer_rarity); w(","); wi(g.offer_trait); w("]");
+    w(","); key("respect"); w("["); wi(g.respect); w(","); wi(g.stage_respect()); w(","); wi(g.dmg_carry); w(","); wi(g.taken_carry); w(",");
+    wi(g.second_used); w(","); wi(g.dodge_pct()); w(","); wi(g.coffee_heal()); w(","); wi(g.bonus.gear_slots); w(","); wi(g.bonus.tools); w("]");
     w(","); key("heroStatus"); w("["); for(int i = 0; i < 5; ++i) { if(i) w(","); wi(g.hero_status[i]); } w("]");
     w(","); key("killsByType"); w("["); for(int i = 0; i < 16; ++i) { if(i) w(","); wi(g.kills_by_type[i]); } w("]");
     w(","); key("rooms"); w("[");
@@ -267,6 +271,8 @@ static void profile_json(const profile& p)
     w(","); key("daily"); w("["); wi(p.daily_won); w(","); wi(p.daily_runs); w("]");
     w(","); key("dailyDay"); w("["); for(int i = 0; i < daily_slots; ++i) { if(i) w(","); wi(p.daily_day[i]); } w("]");
     w(","); key("dailyScore"); w("["); for(int i = 0; i < daily_slots; ++i) { if(i) w(","); wi(p.daily_score[i]); } w("]");
+    w(","); key("respect"); w("["); wi(p.respect); w(","); wi(p.respect_total); w(","); wi(p.run_respect); w(","); wi(p.rewards); w(",");
+    wi(p.class_wins_hi); w("]");
     w(","); key("sram"); hex_bytes(reinterpret_cast<const char*>(&p), sizeof p);   // profil bajt po bajcie jak w SRAM
     w("}");
 }
@@ -275,8 +281,10 @@ static void profile_json(const profile& p)
 // keepsake: wybrana pamiątka + 1; keepsake_runs: budowy z nią przed tą (ranga)
 // paths: wybór ścieżki na harmonogramie (0 = zawsze pierwsza z oferty, 1 = na przemian: stage & 1);
 // daily: numer dnia codziennej budowy (0 = zwykła budowa; zawód i seed z dnia, bez Szkoleń)
+// respect: rangi Respektu (0 = brak, 1 = wszystkie maksymalne); rewards: odebrane nagrody za odbiór (narzędzia, buty, pas, zawody)
 struct scenario { int cls; uint32_t seed; int diff; bool full_mods; bool smart; bool shop; bool ngplus; int steps;
-                  int badges = 0; int contracts = 0; int keepsake = 0; int keepsake_runs = 0; int investor = 0; int paths = 0; int daily = 0; };
+                  int badges = 0; int contracts = 0; int keepsake = 0; int keepsake_runs = 0; int investor = 0; int paths = 0; int daily = 0;
+                  int respect = 0; int rewards = 0; };
 
 int main(int argc, char** argv)
 {
@@ -304,6 +312,15 @@ int main(int argc, char** argv)
     sc.push_back({ 1, 48048u, 1, true, true, true, true, 6000, 0, 0, 1, 0, 0, 1 });
     sc.push_back({ 3, 20260925u, 0, false, true, true, false, 5000, 0, 0, 0, 0, 0, 1 });
     sc.push_back({ 0, 0u, 1, false, true, true, false, 5000, 0, 0, 0, 0, 0, 1, daily_number(2026, 9, 25) });
+    // v0.21.49: pełny Respekt (Druga szansa, procenty obrażeń, kawa, rabaty), nagrody za odbiór (buty, pas, nowe narzędzia),
+    // nowe zawody z Respektem; bot z testów i "smart" (moce Rynna, Narzut, Taran)
+    const int all_rewards = rewards_available();
+    sc.push_back({ 6, 4949u, 1, true, true, true, true, 6000, 0, 0, 1, 0, 0, 1, 0, 1, all_rewards });
+    sc.push_back({ 7, 5050u, 1, false, true, true, false, 5000, 0, 0, 0, 0, 0, 0, 0, 1, all_rewards });
+    sc.push_back({ 8, 5151u, 2, true, true, true, true, 6000, all_badges, all_contracts, 2, 3, 0x21, 1, 0, 1, all_rewards });
+    sc.push_back({ 1, 5252u, 1, true, false, false, false, 4000, 0, 0, 1, 0, 0, 0, 0, 1, 3 });
+    sc.push_back({ 4, 5353u, 0, false, true, true, true, 6000, 0, 0, 0, 0, 0, 1, 0, 0, all_rewards });
+    sc.push_back({ 1, 5454u, 2, false, false, false, false, 4000, 0, 0, 1, 0, 0, 0, 0, 1, 0 });            // Trudny: Druga szansa, potem koniec
 
     for(size_t si = 0; si < sc.size(); ++si)
     {
@@ -318,6 +335,8 @@ int main(int argc, char** argv)
         p.badges = uint16_t(s.badges); p.contracts = uint8_t(s.contracts); p.keepsake = uint8_t(s.keepsake);
         if(s.investor) { p.wins = 1; p.investor = uint8_t(s.investor); }   // tryb inwestora po pierwszej wygranej
         if(s.keepsake > 0) p.keepsake_runs[s.keepsake - 1] = uint8_t(s.keepsake_runs);
+        if(s.respect) for(int i = 0; i < data::respect_count; ++i) p.respect_ranks[i] = uint8_t(data::respect[i].ranks);
+        p.rewards = uint8_t(s.rewards);
         run_mods m = mods(p);   // przed start_run: ranga pamiątki z budów przed tą
         static game g;
         if(s.daily > 0) start_daily(g, s.daily);
@@ -330,6 +349,7 @@ int main(int argc, char** argv)
         w(","); key("badges"); wi(s.badges); w(","); key("contracts"); wi(s.contracts); w(","); key("keepsake"); wi(s.keepsake);
         w(","); key("keepsakeRuns"); wi(s.keepsake_runs); w(","); key("investor"); wi(s.investor);
         w(","); key("paths"); wi(s.paths); w(","); key("daily"); wi(s.daily);
+        w(","); key("respect"); wi(s.respect); w(","); key("rewards"); wi(s.rewards);
         w(","); key("snapshots"); w("[");
         snapshot(g, 0);
         std::vector<uint32_t> digests;
@@ -350,7 +370,7 @@ int main(int argc, char** argv)
             if(g.st == status::won && s.ngplus && ! did_ng)
             {
                 if(g.score > p.best) p.best = g.score;
-                ++p.wins; add_house(p, g); check_badges(p, g); check_contracts(p); bank_xp(p, g);
+                record_win(p); add_house(p, g); check_badges(p, g); check_contracts(p); bank_xp(p, g);
                 did_ng = true;
                 g.new_game_plus();
                 w(","); snapshot(g, step);
@@ -365,7 +385,7 @@ int main(int argc, char** argv)
             digests.push_back(digest(g)); g.hits_count = 0;   // warstwa GBA zeruje trafienia po każdej turze
         }
         if(g.score > p.best) p.best = g.score;
-        if(g.st == status::won) { ++p.wins; add_house(p, g); }
+        if(g.st == status::won) { record_win(p); add_house(p, g); }
         check_badges(p, g); check_contracts(p); bank_xp(p, g);
         if(g.daily) record_daily(p, g.daily_day, g.score, g.st == status::won);
         w("]"); w(","); key("endStep"); wi(step);

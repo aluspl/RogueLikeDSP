@@ -15,7 +15,10 @@ namespace core
         stat scales_with;
     };
 
-    enum class ability_effect : uint8_t { stun, wall, volley, chain, flush, spin };
+    enum class ability_effect : uint8_t { stun, wall, volley, chain, flush, spin, line, splash, ram };
+
+    // Cecha zawodu działająca cały czas: Dekarz - wiatr nie skraca zasięgu, Operator koparki - cios wręcz czasem odpycha.
+    enum class class_passive : uint8_t { none, windproof, push };
 
     struct class_def           // zawód budowlany
     {
@@ -33,6 +36,7 @@ namespace core
         const char* ability_desc;
         ability_effect ability;
         int8_t ability_cooldown;    // w turach
+        class_passive passive = class_passive::none;
     };
 
     // Stan nakładany przez problem budowy przy trafieniu bohatera.
@@ -142,7 +146,8 @@ namespace core
         bool no_event;         // bez wydarzenia na placu
     };
 
-    enum class upgrade_effect : uint8_t { hp, def, dmg, coffee, pickups, luck, craft };   // craft: +statystyka broni zawodu
+    // craft: +statystyka broni zawodu; dmg_pct / taken_pct: +% zadawanych / -% otrzymanych obrażeń
+    enum class upgrade_effect : uint8_t { hp, def, dmg, coffee, pickups, luck, craft, dmg_pct, taken_pct };
 
     struct upgrade_def         // ulepszenie ze sklepu "Szkolenia" (meta-progresja)
     {
@@ -153,6 +158,32 @@ namespace core
         int8_t levels;
         int16_t costs[4];      // koszt kolejnych poziomów w doświadczeniu
         int16_t refund = 0;    // zwrot (dośw.) za poziom ponad maksimum (profil sprzed zmiany liczby poziomów)
+        int16_t reset_refund = 0;   // v0.21.49: ulepszenie zmienione - profil sprzed v8 dostaje zwrot za poziom, poziom od zera
+    };
+
+    // Respekt: stała waluta za ukończone etapy, wydawana na stałe ulepszenia procentowe z rangami (telefon profilu).
+    enum class respect_effect : uint8_t { dmg_pct, taken_pct, gear_pct, crit, dodge, coffee_pct, thermos, cooldown, cash, xp_pct,
+                                          brigade_pct, sight, shop_pct, mats_pct, second_chance };
+
+    struct respect_def
+    {
+        const char* name;
+        const char* desc;
+        respect_effect effect;
+        int8_t ranks;
+        int8_t values[5];      // wartość na randze 1..ranks (łącznie, nie przyrost)
+        int16_t costs[5];      // koszt kolejnych rang w Respekcie
+    };
+
+    // Nagroda za odbiór (jak odblokowania w Slay the Spire): każda wygrana odblokowuje kolejną z listy.
+    enum class reward_kind : uint8_t { tool, gear, cls, soon };
+
+    struct reward_def
+    {
+        reward_kind kind;
+        int8_t index;          // narzędzie (data::tools), slot sprzętu, zawód; -1 = wkrótce
+        const char* name;
+        const char* desc;
     };
 
     struct story_msg           // wiadomość w telefonie (fabuła): nadawca + 3 linie dymka
@@ -219,7 +250,7 @@ namespace core
         int8_t stake;          // punkty stawki
     };
 
-    enum class gear_stat : uint8_t { def, dmg, hp };
+    enum class gear_stat : uint8_t { def, dmg, hp, dodge, thermos };   // dodge: % uniku; thermos: miejsca w termosie
 
     struct gear_def            // sprzęt z dropów: slot x jakość
     {
@@ -228,7 +259,7 @@ namespace core
         int8_t value;
     };
 
-    enum class trait_effect : uint8_t { luck, crit, poison_res, sight, cooldown, str, agi, intel };
+    enum class trait_effect : uint8_t { luck, crit, poison_res, sight, cooldown, str, agi, intel, slip_res };
 
     struct trait_def           // cecha przedmiotu sprzętu
     {
@@ -283,6 +314,7 @@ namespace core
     {
         int8_t weapon;         // indeks w data::weapons
         int16_t cost;          // 0 = dostępne od początku
+        bool reward = false;   // odblokowuje nagroda za odbiór (nie Szkolenia)
     };
 
     struct difficulty_def      // poziom trudności wybierany na starcie

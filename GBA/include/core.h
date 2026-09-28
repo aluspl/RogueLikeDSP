@@ -18,6 +18,8 @@ namespace core
     constexpr int fov_radius = 7;       // promień widzenia bohatera w polach
     constexpr int max_hits = 8;         // zdarzenia trafień w jednej turze (dla efektów)
     constexpr int max_walls = 5;        // tymczasowe mury (Ścianka III ma 5 pól)
+    constexpr int max_gear_slots = 6;   // kask, rękawice, kamizelka + sloty z nagród (buty, pas)
+    static_assert(data::gear_slots_count <= max_gear_slots);
 
     enum class tile : uint8_t { wall, floor, stairs };
     enum class status : uint8_t { playing, stage_clear, dead, won };
@@ -146,6 +148,17 @@ namespace core
         int tools = data::start_tools_mask;   // narzędzia, które mogą wypaść z wrogów
         int helpers = data::start_helpers_mask;   // brygada: fachowcy do wezwania (Szkolenia)
         int investor = 0;            // tryb inwestora: włączone modyfikatory (bitmaska data::investor)
+        // v0.21.49: procentowe premie (Szkolenia BHP i Kurs fachowy, Respekt), nagrody za odbiór
+        int dmg_pct = 0;             // +% zadawanych obrażeń
+        int taken_pct = 0;           // -% otrzymanych obrażeń
+        int gear_pct = 0;            // + do rzutu na jakość sprzętu z paczek
+        int dodge = 0;               // unik +% (łącznie maks. data::dodge_max_pct)
+        int coffee_pct = 0;          // kawa leczy +%
+        int brigade_pct = 0;         // brygada taniej o %
+        int shop_pct = 0;            // Hurtownia (zł) taniej o %
+        int mats_pct = 0;            // materiały z problemów częściej o %
+        int second_chance = 0;       // Druga szansa: raz na budowę 1 HP zamiast końca
+        int gear_slots = data::gear_base_mask;   // sloty sprzętu w dropach (nagrody: buty, pas)
     };
 
     // Tryb inwestora: stawka i premia doświadczenia za zestaw modyfikatorów.
@@ -161,6 +174,66 @@ namespace core
         for(int i = 0; i < data::investor_count; ++i) if(mask & (1 << i)) s += data::investor[i].xp_pct;
         return s;
     }
+
+    // Premia z rangi Respektu (wartość łączna rangi).
+    inline void add_respect(run_mods& m, respect_effect e, int v)
+    {
+        switch(e)
+        {
+            case respect_effect::dmg_pct:       m.dmg_pct += v; break;
+            case respect_effect::taken_pct:     m.taken_pct += v; break;
+            case respect_effect::gear_pct:      m.gear_pct += v; break;
+            case respect_effect::crit:          m.crit += v; break;
+            case respect_effect::dodge:         m.dodge += v; break;
+            case respect_effect::coffee_pct:    m.coffee_pct += v; break;
+            case respect_effect::thermos:       m.thermos += v; break;
+            case respect_effect::cooldown:      m.cooldown += v; break;
+            case respect_effect::cash:          m.cash += v; break;
+            case respect_effect::xp_pct:        m.xp_pct += v; break;
+            case respect_effect::brigade_pct:   m.brigade_pct += v; break;
+            case respect_effect::sight:         m.sight += v; break;
+            case respect_effect::shop_pct:      m.shop_pct += v; break;
+            case respect_effect::mats_pct:      m.mats_pct += v; break;
+            case respect_effect::second_chance: m.second_chance += v; break;
+            default: break;
+        }
+    }
+
+    // Skutek rangi Respektu dla gracza, np. "+8% obrażeń", "Moc -1 t." (telefon profilu).
+    inline message& respect_label(message& m, respect_effect e, int v)
+    {
+        switch(e)
+        {
+            case respect_effect::dmg_pct:       return m.add("+").add(v).add("% obrażeń");
+            case respect_effect::taken_pct:     return m.add("-").add(v).add("% otrzymanych obrażeń");
+            case respect_effect::gear_pct:      return m.add("+").add(v).add(" do jakości sprzętu");
+            case respect_effect::crit:          return m.add("Kryt +").add(v).add("%");
+            case respect_effect::dodge:         return m.add("Unik +").add(v).add("%");
+            case respect_effect::coffee_pct:    return m.add("Kawa leczy +").add(v).add("%");
+            case respect_effect::thermos:       return m.add("Termos +").add(v).add(v == 1 ? " miejsce" : " miejsca");
+            case respect_effect::cooldown:      return m.add("Moc -").add(v).add(" t. odnowienia");
+            case respect_effect::cash:          return m.add("+").add(v).add(" zł na start");
+            case respect_effect::xp_pct:        return m.add("+").add(v).add("% doświadczenia");
+            case respect_effect::brigade_pct:   return m.add("Brygada -").add(v).add("% ceny");
+            case respect_effect::sight:         return m.add("Widzenie +").add(v);
+            case respect_effect::shop_pct:      return m.add("Hurtownia -").add(v).add("% ceny");
+            case respect_effect::mats_pct:      return m.add("Materiały +").add(v).add("% częściej");
+            case respect_effect::second_chance: return m.add("Raz na budowę: 1 HP zamiast końca");
+            default:                            return m;
+        }
+    }
+
+    // Część procentowa z przeniesieniem reszty (bez losowania, dokładna średnio): (v * pct + carry) / 100.
+    inline int pct_part(int v, int pct, int& carry)
+    {
+        if(pct <= 0 || v <= 0) return 0;
+        int t = v * pct + carry;
+        carry = t % 100;
+        return t / 100;
+    }
+
+    // Zaokrąglenie ilorazu a / b (b > 0) do najbliższej, połówki od zera (tak samo w C#).
+    inline int div_round(int a, int b) { return a >= 0 ? (2 * a + b) / (2 * b) : -((-2 * a + b) / (2 * b)); }
 
     inline void add_perk(run_mods& m, const perk& p)
     {
@@ -273,6 +346,10 @@ namespace core
         bool daily = false;          // codzienna budowa (seed dnia)
         uint16_t daily_day = 0;      // numer dnia codziennej budowy
         uint16_t stage_days[8] = {}; // tury na każdym etapie (harmonogram domu po wygranej)
+        // v0.21.49: Respekt za etapy, reszty procentów obrażeń, Druga szansa
+        int respect = 0;             // Respekt zdobyty w tej budowie (profil: bank_respect)
+        int dmg_carry = 0, taken_carry = 0;   // reszty z procentowych premii obrażeń (pct_part)
+        bool second_used = false;    // Druga szansa zużyta
 
         bool event_active(event_effect e) const { return stage_event >= 0 && data::site_events[stage_event].effect == e; }
         const weather_def& wdef() const { return data::weather[weather]; }
@@ -366,6 +443,11 @@ namespace core
                 push(message().add("Odporność: bez zatrucia").as(good));
                 return;
             }
+            if(s == status_effect::slip && trait_bonus(trait_effect::slip_res) > 0)
+            {
+                push(message().add("Odporność: bez poślizgu").as(good));
+                return;
+            }
             hero_status[int(s)] = int8_t(imax(hero_status[int(s)], t));
             push(message().add(sd.name).add(": ").add(sd.effect).add(", ").add(hero_status[int(s)]).add(" t.").as(bad));
         }
@@ -393,7 +475,7 @@ namespace core
         // Pełny sprzęt: założony przedmiot w każdym slocie (kask, rękawice, kamizelka).
         bool full_gear() const
         {
-            for(int i = 0; i < data::gear_slots_count; ++i) if(equipped[i] < 0) return false;
+            for(int i = 0; i < data::gear_slots_count; ++i) if(((data::gear_base_mask >> i) & 1) && equipped[i] < 0) return false;
             return true;
         }
 
@@ -433,8 +515,8 @@ namespace core
         int ability_cd = 0;          // tury do ponownego użycia mocy (R)
         temp_wall walls[max_walls];
         int walls_count = 0;
-        int8_t equipped[4] = { -1, -1, -1, -1 };   // sprzęt: jakość w slocie (kask, rękawice, kamizelka), -1 = brak
-        int8_t equipped_trait[4] = {};              // cecha przedmiotu w slocie (data::gear_traits)
+        int8_t equipped[max_gear_slots] = { -1, -1, -1, -1, -1, -1 };   // sprzęt: jakość w slocie (kask, rękawice, kamizelka, buty, pas), -1 = brak
+        int8_t equipped_trait[max_gear_slots] = {};                      // cecha przedmiotu w slocie (data::gear_traits)
         int thermos = 0;                            // kawy w termosie (pije się z menu pod START)
         int8_t offer_slot = -1, offer_rarity = 0, offer_trait = 0;   // paczka czeka na decyzję: zakładam / zostawiam
         int weapon_override = -1;    // podniesione narzędzie zamiast broni zawodu
@@ -450,7 +532,7 @@ namespace core
         int luck() const { return cdef().luck + bonus.luck + trait_bonus(trait_effect::luck); }
         int crit_pct() const { return data::crit_base_pct + data::crit_per_luck_pct * luck() + trait_bonus(trait_effect::crit) + bonus.crit; }
         int sight_radius() const { return fov_radius + trait_bonus(trait_effect::sight) + bonus.sight; }
-        int thermos_cap() const { return data::thermos_capacity + bonus.thermos; }
+        int thermos_cap() const { return data::thermos_capacity + bonus.thermos + gear_bonus(gear_stat::thermos); }
 
         // Suma cech założonego sprzętu danego rodzaju.
         int trait_bonus(trait_effect e) const
@@ -460,7 +542,9 @@ namespace core
                 if(equipped[i] >= 0 && data::gear_traits[equipped_trait[i]].effect == e) b += data::gear_traits[equipped_trait[i]].value;
             return b;
         }
-        int dodge_pct() const { return imin(data::dodge_max_pct, data::dodge_per_luck_pct * luck()); }
+        // Unik: szczęście + Respekt + buty, łącznie najwyżej data::dodge_max_pct.
+        int dodge_pct() const { return imin(data::dodge_max_pct, data::dodge_per_luck_pct * luck() + bonus.dodge + gear_bonus(gear_stat::dodge)); }
+        bool has_passive(class_passive p) const { return cdef().passive == p; }
         // Obrona bohatera: zawód + premie + sprzęt + ochrona BHP-owca z brygady.
         int hero_defense() const
         {
@@ -470,8 +554,8 @@ namespace core
         // Zasięg broni z pogodą: wiatr skraca zasięg broni dalekiego zasięgu (nie mniej niż 1).
         int weapon_range() const
         {
-            int rg = weapon().range;
-            return weather_is(weather_effect::wind) && rg > 1 ? imax(1, rg - wdef().value) : rg;
+            int rg = weapon().range;   // Dekarz: wiatr mu nie przeszkadza
+            return weather_is(weather_effect::wind) && rg > 1 && ! has_passive(class_passive::windproof) ? imax(1, rg - wdef().value) : rg;
         }
         const difficulty_def& ddef() const { return data::difficulties[diff]; }
 
@@ -706,9 +790,51 @@ namespace core
             int dmg = r.range(weapon().min_damage, weapon().max_damage) + hero_stat(weapon().scales_with) / 2 + dmg_bonus
                     + gear_bonus(gear_stat::dmg) - ed.defense / 2;
             if(dmg < 1) dmg = 1;
+            dmg += pct_part(dmg, bonus.dmg_pct, dmg_carry);   // Kurs fachowy, Respekt: +% obrażeń
             bool crit = r.range(1, 100) <= crit_pct();
             if(crit) dmg *= data::crit_multiplier;
             damage_enemy(ei, dmg, crit, weapon().name);
+            // Operator koparki: cios wręcz czasem odpycha problem o pole (bossa nie)
+            actor& e = enemies[ei];
+            if(has_passive(class_passive::push) && e.alive && ei != boss && cheb(hero.x, hero.y, e.x, e.y) == 1
+               && r.range(1, 100) <= data::push_chance_pct)
+                shove(ei, isign(e.x - hero.x), isign(e.y - hero.y), 1);
+        }
+
+        // Odepchnięcie problemu o n pól w kierunku (dx, dy), dopóki pole wolne; zwraca, o ile przesunięto.
+        int shove(int ei, int dx, int dy, int n)
+        {
+            actor& e = enemies[ei];
+            int moved = 0;
+            for(int k = 0; k < n; ++k)
+            {
+                int nx = e.x + dx, ny = e.y + dy;
+                if(lv.at(nx, ny) != tile::floor || occupied(nx, ny)) break;
+                e.x = int8_t(nx); e.y = int8_t(ny); ++moved;
+            }
+            return moved;
+        }
+
+        // Obrażenia dla bohatera po obronie: Szkolenie BHP i Respekt zmniejszają je o %, najmniej 1.
+        int taken_damage(int dmg)
+        {
+            if(dmg < 1) dmg = 1;
+            dmg -= pct_part(dmg, bonus.taken_pct, taken_carry);
+            return dmg < 1 ? 1 : dmg;
+        }
+
+        // Bohater bez HP: Druga szansa (Respekt) raz na budowę zostawia 1 HP; inaczej koniec budowy.
+        void hero_down()
+        {
+            if(bonus.second_chance > 0 && ! second_used)
+            {
+                second_used = true;
+                hero.hp = 1;
+                push(message().add("Druga szansa! Zostaje 1 HP").as(good));
+                return;
+            }
+            hero.hp = 0; hero.alive = false; st = status::dead;
+            push(message().add("Budowa wstrzymana...").as(bad));
         }
 
         // Obrażenia dla problemu (broń bohatera albo brygada; src = nazwa w dzienniku): trafienie, usunięcie, nagrody,
@@ -733,7 +859,7 @@ namespace core
                 push(message().add(ed.name).add(" - usunięto!").as(good));
                 if(ei == boss)   // boss: po kilka sztuk każdego materiału
                     for(int m = 0; m < data::materials_count; ++m) add_material(m, data::material_boss_drop);
-                else if(r.range(1, 100) <= data::material_drop_pct)
+                else if(r.range(1, 100) <= data::material_drop_pct * (100 + bonus.mats_pct) / 100)   // Respekt: Zapasy
                     add_material(ed.material >= 0 ? ed.material : r.range(0, data::materials_count - 1));
                 if(ei == boss)
                 {
@@ -1003,6 +1129,68 @@ namespace core
                     }
                     break;
                 }
+                case ability_effect::line:   // Rynna (Dekarz): dachówki lecą linią przez najbliższy widoczny problem (4/5/6 pól)
+                {
+                    int t = nearest_visible_enemy();
+                    if(t < 0) break;
+                    int dx = enemies[t].x - hero.x, dy = enemies[t].y - hero.y, len = imax(iabs(dx), iabs(dy));
+                    if(rank >= 2) ++dmg_bonus;
+                    uint32_t done = 0;
+                    for(int k = 1; k <= 3 + rank && st == status::playing; ++k)
+                    {
+                        int x = hero.x + div_round(dx * k, len), y = hero.y + div_round(dy * k, len);
+                        if(! lv.passable(x, y)) break;   // mur zatrzymuje dachówki
+                        int ei = enemy_at(x, y);
+                        if(ei >= 0 && ! (done & (1u << ei))) { hero_attack(ei); done |= 1u << ei; ok = true; }
+                    }
+                    if(rank >= 2) --dmg_bonus;
+                    if(ok) push(message().add(c.ability_name).add(": dachówki w linii!"));
+                    break;
+                }
+                case ability_effect::splash:   // Narzut (Tynkarz): tynk na obszar wokół celu w zasięgu (3x3, 5x5 na III), od II ogłusza
+                {
+                    int t = nearest_target();
+                    if(t < 0) break;
+                    int cx = enemies[t].x, cy = enemies[t].y, rad = rank >= 3 ? 2 : 1;
+                    for(int i = 0; i < enemies_count && st == status::playing; ++i)
+                        if(enemies[i].alive && cheb(cx, cy, enemies[i].x, enemies[i].y) <= rad)
+                        {
+                            hero_attack(i); ok = true;
+                            if(rank >= 2 && enemies[i].alive) enemies[i].stun = int8_t(imax(enemies[i].stun, 1));
+                        }
+                    break;
+                }
+                case ability_effect::ram:   // Taran (Operator koparki): szarża 3/4/5 pól do problemu, cios +ranga, odepchnięcie o 2
+                {
+                    int t = nearest_visible_enemy();
+                    if(t < 0) break;
+                    int ex = enemies[t].x - hero.x, ey = enemies[t].y - hero.y;
+                    int dx = iabs(ey) >= 2 * iabs(ex) ? 0 : isign(ex), dy = iabs(ex) >= 2 * iabs(ey) ? 0 : isign(ey);
+                    bool moved = false;
+                    for(int k = 0; k < 2 + rank; ++k)
+                    {
+                        int nx = hero.x + dx, ny = hero.y + dy;
+                        int ei = enemy_at(nx, ny);
+                        if(ei >= 0)
+                        {
+                            dmg_bonus += rank;
+                            hero_attack(ei);
+                            dmg_bonus -= rank;
+                            if(enemies[ei].alive && st == status::playing)
+                            {
+                                if(ei != boss) shove(ei, dx, dy, 2);
+                                enemies[ei].stun = int8_t(imax(enemies[ei].stun, 1));
+                            }
+                            ok = true;
+                            break;
+                        }
+                        if(! lv.passable(nx, ny) || occupied(nx, ny)) break;
+                        hero.x = int8_t(nx); hero.y = int8_t(ny); moved = ok = true;
+                    }
+                    if(moved) collect();
+                    if(ok) push(message().add(c.ability_name).add("!"));
+                    break;
+                }
                 default: break;
             }
             if(! ok) { push(message().add(c.ability_name).add(": nie teraz")); return false; }
@@ -1031,6 +1219,9 @@ namespace core
 
         enum helper_block : uint8_t { helper_ok, helper_busy, helper_used, helper_locked, helper_cash, helper_no_target, helper_no_room };
 
+        // Cena fachowca (zł) po rabacie z Respektu (Znajomości).
+        int helper_price(int h) const { return data::brigade[h].price * (100 - bonus.brigade_pct) / 100; }
+
         // Czy fachowca h można teraz wezwać (bez skutków ubocznych - telefon i bot).
         int helper_blocked(int h) const
         {
@@ -1038,7 +1229,7 @@ namespace core
             if(st != status::playing) return helper_busy;
             if(helper_called >= 0) return helper_used;
             if(! ((bonus.helpers >> h) & 1)) return helper_locked;
-            if(cash < hd.price) return helper_cash;
+            if(cash < helper_price(h)) return helper_cash;
             if(hd.effect == helper_effect::pump)
             {
                 for(int i = 0; i < enemies_count; ++i)
@@ -1059,13 +1250,13 @@ namespace core
             {
                 case helper_ok: break;
                 case helper_used: push(message().add("Brygada już była na tym etapie")); return false;
-                case helper_cash: push(message().add("Brygada: za mały budżet (").add(hd.price).add(" zł)")); return false;
+                case helper_cash: push(message().add("Brygada: za mały budżet (").add(helper_price(h)).add(" zł)")); return false;
                 case helper_no_target: push(message().add(hd.name).add(": nikogo w zasięgu")); return false;
                 case helper_no_room: push(message().add(hd.name).add(": brak miejsca obok")); return false;
                 default: return false;
             }
             if(shocked_turn()) return true;
-            cash -= hd.price;
+            cash -= helper_price(h);
             helper_called = int8_t(h);
             push(message().add("Brygada: ").add(hd.name).as(good));
             switch(hd.effect)
@@ -1124,7 +1315,19 @@ namespace core
         bool hurtownia_can(int i) const
         {
             const shop_item_def& it = data::hurtownia[i];
-            return it.material >= 0 ? mats[it.material] >= it.mat_cost : cash >= it.price;
+            return it.material >= 0 ? mats[it.material] >= it.mat_cost : cash >= hurtownia_price(i);
+        }
+        // Cena towaru w zł po rabacie z Respektu.
+        int hurtownia_price(int i) const { return data::hurtownia[i].price * (100 - bonus.shop_pct) / 100; }
+
+        // Losowy slot sprzętu spośród dostępnych (nagrody dokładają buty i pas); przy 3 slotach jak dawniej.
+        int random_slot()
+        {
+            int n = 0;
+            for(int i = 0; i < data::gear_slots_count; ++i) n += (bonus.gear_slots >> i) & 1;
+            int k = r.range(0, imax(1, n) - 1);
+            for(int i = 0; i < data::gear_slots_count; ++i) if(((bonus.gear_slots >> i) & 1) && k-- == 0) return i;
+            return 0;
         }
 
         bool hurtownia_buy(int i)
@@ -1140,7 +1343,7 @@ namespace core
                 case shop_effect::thermos: thermos = imin(thermos_cap(), thermos + 2); break;
                 case shop_effect::gear:
                 {
-                    int slot = r.range(0, data::gear_slots_count - 1), rarity = r.range(1, 2);
+                    int slot = random_slot(), rarity = r.range(1, 2);
                     if(rarity <= equipped[slot]) rarity = imin(2, equipped[slot] + 1);
                     if(rarity > equipped[slot]) equip(slot, rarity, r.range(0, data::gear_traits_count - 1)); else gain_xp(3);
                     break;
@@ -1156,7 +1359,7 @@ namespace core
                 default: break;
             }
             if(it.material >= 0) mats[it.material] = uint8_t(mats[it.material] - it.mat_cost);
-            else cash -= it.price;
+            else cash -= hurtownia_price(i);
             push(message().add("Hurtownia: ").add(it.name).as(loot));
             return true;
         }
@@ -1233,9 +1436,24 @@ namespace core
         void choose_path(int k) { next_path = int8_t(k & 1); }
 
         // Etap zaliczony: ile tur trwał (harmonogram domu po wygranej).
-        void finish_stage() { stage_days[stage] = uint16_t(imin(65535, turns - stage_start_turn)); }
+        void finish_stage()
+        {
+            stage_days[stage] = uint16_t(imin(65535, turns - stage_start_turn));
+            int got = stage_respect();
+            respect += got;
+            push(message().add("Respekt +").add(got).as(loot));
+        }
 
-        int coffee_heal() const { return data::coffee_heal + bonus.coffee; }
+        // Respekt za bieżący etap: zwykły, boss w środku aktu, boss aktu, ostatni; mnożnik jak wynik (trudność, NG+).
+        int stage_respect() const
+        {
+            const stage_def& sd = data::stages[stage];
+            int base = stage == data::stages_count - 1 ? data::respect_final
+                     : (sd.boss < 0 ? data::respect_stage : (data::stages[stage + 1].act == sd.act ? data::respect_boss : data::respect_act_boss));
+            return imax(1, base * score_pct() / 100);
+        }
+
+        int coffee_heal() const { return div_round((data::coffee_heal + bonus.coffee) * (100 + bonus.coffee_pct), 100); }   // Respekt: Mocna kawa
 
         void drink_coffee()
         {
@@ -1277,9 +1495,9 @@ namespace core
             uint8_t arg = 0, trait = 0;
             if(type == gear_box)   // slot losowy, jakość lepsza na późnych etapach
             {
-                int q = r.range(1, 100) + stage * data::gear_stage_bonus + data::rarity_per_luck * luck();
+                int q = r.range(1, 100) + stage * data::gear_stage_bonus + data::rarity_per_luck * luck() + bonus.gear_pct;
                 int rarity = q >= data::gear_brand_from ? 2 : (q >= data::gear_solid_from ? 1 : 0);
-                arg = uint8_t(r.range(0, data::gear_slots_count - 1) * 3 + rarity);
+                arg = uint8_t(random_slot() * 3 + rarity);
                 trait = uint8_t(r.range(0, data::gear_traits_count - 1));
             }
             if(type == tool)
@@ -1307,6 +1525,7 @@ namespace core
             }
             equipped[slot] = int8_t(rarity);
             equipped_trait[slot] = int8_t(trait);
+            thermos = imin(thermos, thermos_cap());   // słabszy pas: kawy ponad miejsca przepadają
             if(rarity == 2 && brand_found < 255) ++brand_found;   // zlecenie Markowy styl
             update_fov();   // cecha Widzenie zmienia pole widzenia
             push(message().add("Sprzęt: ").add(nw.name).add(" +").add(nw.value).as(loot));
@@ -1427,8 +1646,7 @@ namespace core
                     push(message().add("Unik! ").add(ed.name).add(" chybia").as(good));
                     return;
                 }
-                int dmg = r.range(ed.min_damage, ed.max_damage) + enemy_dmg_bonus() - hero_defense() / 2;
-                if(dmg < 1) dmg = 1;
+                int dmg = taken_damage(r.range(ed.min_damage, ed.max_damage) + enemy_dmg_bonus() - hero_defense() / 2);
                 hero.hp = int16_t(hero.hp - dmg);
                 stage_damage += dmg;
                 hero_hit = true;
@@ -1438,8 +1656,7 @@ namespace core
                     apply_status(ed.on_hit, ed.status_turns);
                 if(event_active(event_effect::rain) && hero.hp > 0 && r.range(1, 100) <= data::site_events[stage_event].value)
                     apply_status(status_effect::slip, 2);   // Ulewa w nocy: błoto na placu
-                if(hero.hp <= 0) { hero.hp = 0; hero.alive = false; st = status::dead;
-                    push(message().add("Budowa wstrzymana...").as(bad)); }
+                if(hero.hp <= 0) hero_down();
                 return;
             }
             if(weather_is(weather_effect::frost) && i != boss && turns % wdef().value == 0) return;   // mróz: problemy stoją
@@ -1475,14 +1692,13 @@ namespace core
                 const enemy_def& bd = data::enemies[enemies[boss].def_id];
                 if(slam_cell_at(hero.x, hero.y))
                 {
-                    int dmg = r.range(bd.min_damage, bd.max_damage) + enemy_dmg_bonus() + data::slam_damage_bonus - hero_defense() / 2;
-                    if(dmg < 1) dmg = 1;
+                    int dmg = taken_damage(r.range(bd.min_damage, bd.max_damage) + enemy_dmg_bonus() + data::slam_damage_bonus - hero_defense() / 2);
                     hero.hp = int16_t(hero.hp - dmg);
                     stage_damage += dmg;
                     hero_hit = true;
                     add_hit(hero.x, hero.y, dmg, true);
                     push(message().add(bd.slam_name[0] ? bd.slam_name : "Uderzenie").add(": -").add(dmg).add(" HP").as(bad));
-                    if(hero.hp <= 0) { hero.hp = 0; hero.alive = false; st = status::dead; push(message().add("Budowa wstrzymana...").as(bad)); }
+                    if(hero.hp <= 0) hero_down();
                 }
                 else push(message().add("Unik! Cios poszedł obok").as(good));
                 slam_x = slam_y = -1;
