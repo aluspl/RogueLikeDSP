@@ -522,7 +522,7 @@ namespace core
                 if(! b.flat_level && ! b.flat_found) { m.add("Z budowy: brak"); return false; }
                 m.add("Z budowy +").add(b.flat_level + b.flat_found).add(":");
                 if(b.flat_level) m.add(" poziom +").add(b.flat_level);
-                if(b.flat_found) m.add(b.flat_level ? "," : "").add(" projekty ").add(b.flat_found > 0 ? "+" : "").add(b.flat_found);
+                if(b.flat_found) m.add(b.flat_level ? "," : "").add(" projekt ").add(b.flat_found > 0 ? "+" : "").add(b.flat_found);
                 return true;
             case dmg_text::gear:
                 if(b.gear_item < 0 || ! b.flat_gear) { m.add("Sprzęt: bez premii"); return false; }
@@ -575,11 +575,11 @@ namespace core
         }
     }
 
-    // Porównanie przy zmianie broni / sprzętu: "teraz 4-7 -> 5-9 (średnio +1,5)".
-    inline message& compare_line(message& m, const dmg_breakdown& now, const dmg_breakdown& next)
+    // Porównanie przy zmianie broni / sprzętu: "teraz 4-7 -> 5-9 (średnio +1,5)" (short: "śr.").
+    inline message& compare_line(message& m, const dmg_breakdown& now, const dmg_breakdown& next, bool short_avg = false)
     {
         add_range(m.add("teraz "), now.min, now.max).add(" -> ");
-        add_range(m, next.min, next.max).add(" (średnio ");
+        add_range(m, next.min, next.max).add(short_avg ? " (śr. " : " (średnio ");
         return add_tenths(m, next.avg10 - now.avg10, true).add(")");
     }
     // "kryt 8-14 (11%) -> 10-18 (16%)"
@@ -588,12 +588,17 @@ namespace core
         add_range(m.add("kryt "), now.crit_min, now.crit_max).add(" (").add(now.crit_chance()).add("%) -> ");
         return add_range(m, next.crit_min, next.crit_max).add(" (").add(next.crit_chance()).add("%)");
     }
-    // Karta problemu: "Zadasz 2-5 (kryt 4-10), on Tobie 1-3".
-    inline message& versus_line(message& m, const dmg_breakdown& b, const hit_range& h)
+    // Karta problemu: "Zadasz 2-5 (kryt 4-10), on Tobie 1-3" (na wąskim ekranie osobno: versus_hero, versus_enemy).
+    inline message& versus_hero(message& m, const dmg_breakdown& b)
     {
         add_range(m.add("Zadasz "), b.min, b.max).add(" (kryt ");
-        add_range(m, b.crit_min, b.crit_max).add("), on Tobie ");
-        return add_range(m, h.min, h.max);
+        return add_range(m, b.crit_min, b.crit_max).add(")");
+    }
+    inline message& versus_enemy(message& m, const hit_range& h) { return add_range(m.add("on Tobie "), h.min, h.max); }
+    inline message& versus_line(message& m, const dmg_breakdown& b, const hit_range& h)
+    {
+        versus_hero(m, b).add(", ");
+        return versus_enemy(m, h);
     }
 
     static_assert(data::enemies_count <= max_enemy_types);

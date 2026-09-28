@@ -484,7 +484,17 @@ inline constexpr core::tutorial_step tutorial_unlocks[] = {   // dymki przy pier
 inline constexpr int tutorial_steps_count = 13;
 inline constexpr int tutorial_unlocks_count = 5;
 
-inline constexpr const char* version = "v0.21.49";   // numer wersji (ekran tytułowy, changelog)
+inline constexpr const char* version = "v0.21.50";   // numer wersji (ekran tytułowy, changelog)
+
+inline constexpr const char* damage_help[] = {   // Jak grać: obrażenia broni w prostych słowach (rozpiska #26)
+    "Cios = rzut broni + premie:",
+    "SIŁ/ZRĘ/INT broni +1 co 2 pkt,",
+    "Szkolenia, odznaki, poziom,",
+    "projekty, rękawice; potem +%.",
+    "OBR problemu: -1 co 2 pkt (min. 1).",
+    "Kryt mnoży cios, SZCZ go podnosi.",
+};
+inline constexpr int damage_help_count = 6;
 
 inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonogramu między etapami
     "Przytrzymaj B: podgląd problemów",

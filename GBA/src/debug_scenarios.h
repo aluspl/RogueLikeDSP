@@ -61,6 +61,11 @@
 //  40 - dymki nowości: Respekt, codzienna budowa, Akt 0 (tytuł), tryb inwestora i nowe zawody (wybór zawodu)
 //  41 - nagroda Akt 0: 7 wygranych, ostatni etap z bossem (L+R+SELECT = odbiór, "Nagroda: Akt 0: Papierologia"),
 //       potem dymek nowości na tytule i nowa budowa od Aktu 0
+//  42 - rozpiska obrażeń (#26): profil z Kursem fachowym, Warsztatami, Kursem BHP II, Respektem (Pewna ręka, Oko
+//       fachowca), odznakami Seryjny i Zawodowiec, Szczęśliwą kielnią; w budowie poziom 5, projekt wykonawczy,
+//       rękawice z cechą Kryt +5%; obok w prawo paczka markowych rękawic (porównanie), dalej skrzynka z Młotem
+//       udarowym (baner "teraz -> po zmianie"); 2 pola w górę ogłuszone Kamień w wykopie i Przekroczony budżet (karta
+//       pod B: obrażenia w obie strony); wybór zawodu: karta z krytem, START -> A = strony Obrażenia broni
 #include "core.h"
 #include "meta.h"
 
@@ -149,6 +154,17 @@ namespace debug_scenario
             p.respect_total = 14; p.respect = 14; p.runs = 9; p.wins = 8; p.rewards = uint8_t(data::rewards_count);
         }
         if(scenario == 41) { p.wins = 7; p.rewards = uint8_t(act0_reward()); p.respect = 20; }
+        if(scenario == 42)
+        {
+            for(int i = 0; i < data::upgrades_count; ++i)
+                if(data::upgrades[i].effect == core::upgrade_effect::dmg_pct) p.levels[i] = uint8_t(data::upgrades[i].levels);
+            for(int i = 0; i < data::respect_count; ++i)
+                if(data::respect[i].effect == core::respect_effect::dmg_pct || data::respect[i].effect == core::respect_effect::crit)
+                    p.respect_ranks[i] = uint8_t(data::respect[i].ranks);
+            p.badges = uint16_t((1 << data::badge_seryjny) | (1 << data::badge_zawodowiec));
+            for(int i = 0; i < data::contracts_count; ++i) if(data::contracts[i].keepsake >= 0) p.contracts = uint8_t(p.contracts | (1 << i));
+            p.keepsake = 3;   // Szczęśliwa kielnia (+2 szczęścia)
+        }
         if(scenario == 24) { p.wins = 0; p.rewards = 0; p.respect = 30; }
         if(scenario == 16)
         {
@@ -513,6 +529,21 @@ namespace debug_scenario
                 g.start_stage(data::stages_count - 1);
                 for(int s = g.first_stage; s < data::stages_count - 1; ++s) g.stage_days[s] = uint16_t(16 + (s * 3) % 7);
                 g.score = 4100;
+                break;
+            }
+            case 42:
+            {
+                clear_area(g, -2, -3, 3, 1);
+                g.enemies_count = 0; g.pickups_count = 0;
+                while(g.hero_level < 5) g.gain_xp(10);                   // poziom 5: +1 obrażeń, moc III
+                ++g.dmg_bonus;                                            // projekt wykonawczy
+                g.equip(0, 0, trait_index(core::trait_effect::luck));    // kask, Szczęście +1
+                g.equip(1, 1, trait_index(core::trait_effect::crit));    // rękawice wzmacniane, Kryt +5%
+                g.pickups[g.pickups_count++] = { int8_t(g.hero.x + 1), g.hero.y, core::gear_box, true, uint8_t(1 * 3 + 2),
+                                                 uint8_t(trait_index(core::trait_effect::str)) };
+                g.pickups[g.pickups_count++] = { int8_t(g.hero.x + 2), g.hero.y, core::tool, true, uint8_t(tool_index("Młot udarowy")) };
+                place_at(g, data::enemy_kamien, 0, -2, 90);
+                place_at(g, data::enemy_budzet, 1, -2, 90);
                 break;
             }
             case 21:

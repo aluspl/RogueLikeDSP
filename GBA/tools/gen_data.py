@@ -399,6 +399,10 @@ L.append("inline constexpr core::tutorial_step tutorial_unlocks[] = {   // dymki
 L += [tut(x) for x in tu["unlocks"]] + ["};"]
 L += [f"inline constexpr int tutorial_steps_count = {len(tu['steps'])};", f"inline constexpr int tutorial_unlocks_count = {len(tu['unlocks'])};", ""]
 L += [f"inline constexpr const char* version = {s(d['version'])};   // numer wersji (ekran tytułowy, changelog)", ""]
+dh = d["damageHelp"]   # v0.21.50: Jak grać, strona Obrażenia (GBA i Godot)
+assert len(dh) == 6 and all(len(x) <= 36 for x in dh), dh
+L += ["inline constexpr const char* damage_help[] = {   // Jak grać: obrażenia broni w prostych słowach (rozpiska #26)"]
+L += [f"    {s(t)}," for t in dh] + ["};", f"inline constexpr int damage_help_count = {len(dh)};", ""]
 L += ["inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonogramu między etapami"]
 L += [f"    {s(t)}," for t in d["tips"]] + ["};", f"inline constexpr int tips_count = {len(d['tips'])};", ""]
 L += [f"inline constexpr int classes_count = {len(d['classes'])};",

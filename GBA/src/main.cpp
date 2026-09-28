@@ -490,7 +490,7 @@ namespace
 
     void page_help(app& a)
     {
-        constexpr int pages_count = 6;
+        constexpr int pages_count = 7;
         core::message luck1, luck2;   // wzory z danych (sekcja luck)
         luck1.add("SZCZ: kryt ").add(data::crit_base_pct).add("%+").add(data::crit_per_luck_pct).add("%/pkt, unik");
         luck2.add(data::dodge_per_luck_pct).add("%/pkt (maks. ").add(data::dodge_max_pct).add("%), łupy +").add(data::drop_per_luck_pct).add("%.");
@@ -499,15 +499,17 @@ namespace
               "A: atak (trzymaj: celuj)", "B: czekaj (trzymaj: podgląd)", "R: moc zawodu  L: mapa",
               "START: akcje  SELECT: telefon" },
             { "Pogoda dnia: ikona w HUD,", "skutek w telefonie (Zadania).", "Brygada raz na etap za zł:",
-              "telefon, Zespół, A (albo", "START i A). Po wygranej:", "SELECT na wyborze zawodu =", "tryb inwestora (stawka)." },
-            { "Między etapami wybierz", "ścieżkę (lewo/prawo, A).", "Materiały z problemów:", "Hurtownia i naprawy (Sprzęt,", "A): Załataj, Kładka.",
+              "telefon, Sprzęt, dół (albo", "START i A). Po wygranej:", "SELECT na wyborze zawodu =", "tryb inwestora (stawka)." },
+            { "Między etapami wybierz", "ścieżkę (lewo/prawo, A).", "Materiały z problemów:", "Hurtownia i naprawy (Sprzęt,", "dół): Załataj, Kładka.",
               "Tytuł, R: budowa dnia (ustaw", "datę) - dla wszystkich ta sama." },
             { "Respekt za każdy etap (boss", "więcej) zostaje po porażce.", "Telefon profilu, Koszty,", "SELECT: Respekt - stałe",
               "premie z rangami. Każda wygrana", "to nagroda za odbiór: sprzęt,", "narzędzia, nowe zawody." },
             { "Mechanika aktu: 0 pieczątki -", "3 dokumenty otwierają schody,", "I błoto (wejście = tura), II", "porywy spychają, III pył.",
               "Problemy strzelają, dzielą się,", "wybuchają (czerwone pola -", "odejdź!), rosną i wracają." },
             { "SIŁ/ZRĘ/INT: +1 obr. co 2 pkt", "(tylko statystyka broni).", "OBR: -1 obrażeń co 2 pkt.", luck1.s, luck2.s,
-              "Wybór zawodu: START = opis,", "telefon: Start, A = premie." } };
+              "Wybór zawodu: START = opis,", "telefon: Start, A = premie." },
+            { data::damage_help[0], data::damage_help[1], data::damage_help[2], data::damage_help[3], data::damage_help[4],
+              data::damage_help[5], "Telefon: Sprzęt, A = rozpiska." } };
         for(int pg = 0; pg < pages_count; ++pg)
         {
             page_sprites t;
@@ -999,46 +1001,48 @@ namespace
 
     void mats_line(core::message& m, const core::game& g);
 
-    // Sprzęt: narzędzie + kask, rękawice, kamizelka (+ buty i pas z nagród za odbiór), materiały, premie.
-    // Przy 4-5 slotach materiały przechodzą do nagłówka, a wiersz premii znika (kryt i unik zostają w wierszu broni).
+    // Sprzęt: narzędzie z zakresem ciosu i krytem (rozpiska #26 pod A) + kask, rękawice, kamizelka (+ buty i pas z nagród
+    // za odbiór) - każdy przedmiot z tym, co daje (np. "+2 OBR"), cecha na pastylce; materiały, gdy jest miejsce
+    // (przy 5 slotach tylko w HUD). Dół: Brygada i naprawy.
     void tab_gear(app& a, phone_screen& ph, page_sprites& t)
     {
         const core::game& g = *a.g;
         int slots[core::max_gear_slots], n = 0;
         for(int i = 0; i < data::gear_slots_count; ++i) if(((g.bonus.gear_slots >> i) & 1) || g.equipped[i] >= 0) slots[n++] = i;
-        core::message sub;
-        if(n > 3) { mats_line(sub, g); sub.add("  A: Brygada"); }
-        else sub.add("A: Brygada, naprawy");
-        phone_header(a, ph, t, tab_names[3], sub.s);
+        phone_header(a, ph, t, tab_names[3], "A: obrażenia  dół: Brygada");
         phone_canvas& c = *ph.canvas;
-        core::message w; w.add(g.weapon().name).add(" ").add(g.weapon().min_damage).add("-").add(g.weapon().max_damage)
-                               .add(" z").add(g.weapon_range()).add(" +").add(g.dmg_bonus);
-        if(n > 4) w.add(" Kr").add(g.crit_pct()).add("% U").add(g.dodge_pct()).add("%");
+        const core::dmg_breakdown b = g.weapon_breakdown();
+        core::message w; w.add(g.weapon().name).add(" ");
+        core::add_range(w, b.min, b.max).add(", kryt ");
+        core::add_range(w, b.crit_min, b.crit_max).add(" (").add(b.crit_chance()).add("%)");
         stripe(c, 0, phone_tile::stripe_brand);
         phone_text(a, t, list_x, row_py(0), fit(a, w.s, phone_text_w).c_str(), ink::dark);
         for(int k = 0; k < n; ++k)
         {
             int i = slots[k], r = g.equipped[i];
-            core::message m;
-            if(r >= 0) m.add(data::gear[i * 3 + r].name);
-            else m.add(data::gear_slots[i]).add(": brak");
             stripe(c, 1 + k, r < 0 ? phone_tile::stripe_todo : (r == 2 ? phone_tile::stripe_prog : (r == 1 ? phone_tile::stripe_brand : phone_tile::stripe_done)));
-            phone_text(a, t, list_x, row_py(1 + k), clip(m.s, 17).c_str(), r >= 0 ? ink::dark : ink::dim);
-            if(r >= 0)   // pastylka = cecha przedmiotu, kolor = jakość
-                phone_pill(a, c, t, pill_end, row_ty(1 + k), data::gear_traits[g.equipped_trait[i]].short_name,
-                           r == 2 ? pill::prog : (r == 1 ? pill::group : pill::gray));
-        }
-        if(n <= 3)
-        {
-            core::message s1; s1.add("Materiały: ");   // cement, stal, drewno (Hurtownia, naprawy pod A)
-            for(int m = 0; m < data::materials_count; ++m) s1.add(m ? ", " : "").add(data::materials[m].short_name).add(" ").add(g.mats[m]);
-            phone_text(a, t, list_x, row_py(4), fit(a, s1.s, phone_text_w).c_str(), ink::dark);
+            if(r < 0)
+            {
+                core::message m; m.add(data::gear_slots[i]).add(": brak");
+                phone_text(a, t, list_x, row_py(1 + k), m.s, ink::dim);
+                continue;
+            }
+            const core::gear_def& gd = data::gear[i * 3 + r];
+            const char* trait = data::gear_traits[g.equipped_trait[i]].short_name;
+            core::message eff; core::gear_label(eff, gd);   // co daje: "+2 obrażeń", "+1 OBR", "+8 HP"...
+            int room = pill_room(trait), ew = a.text.width(eff.s);
+            // pełna nazwa, a gdy się nie mieści obok skutku - nazwa slotu ("Rękawice +2 obrażeń"; jakość = kolor paska)
+            bn::string<96> name = a.text.width(gd.name) <= room - ew - 6 ? bn::string<96>(gd.name) : fit(a, data::gear_slots[i], room - ew - 6);
+            phone_text(a, t, list_x, row_py(1 + k), name.c_str(), ink::dark);
+            phone_text(a, t, list_x + a.text.width(name) + 6, row_py(1 + k), eff.s, ink::brand);
+            // pastylka = cecha przedmiotu, kolor = jakość
+            phone_pill(a, c, t, pill_end, row_ty(1 + k), trait, r == 2 ? pill::prog : (r == 1 ? pill::group : pill::gray));
         }
         if(n <= 4)
         {
-            core::message s2; s2.add("Obr +").add(g.gear_bonus(core::gear_stat::def)).add(" Obraż +").add(g.gear_bonus(core::gear_stat::dmg))
-                                    .add(" Kryt ").add(g.crit_pct()).add("% Unik ").add(g.dodge_pct()).add("%");
-            phone_text(a, t, list_x, row_py(5), fit(a, s2.s, phone_text_w).c_str(), ink::dim);
+            core::message s1; s1.add("Materiały: ");   // cement, stal, drewno (Hurtownia, naprawy pod dół)
+            for(int m = 0; m < data::materials_count; ++m) s1.add(m ? ", " : "").add(data::materials[m].short_name).add(" ").add(g.mats[m]);
+            phone_text(a, t, list_x, row_py(n + 1), fit(a, s1.s, phone_text_w).c_str(), ink::dim);
         }
     }
 
@@ -1168,7 +1172,7 @@ namespace
         ph.commit();
     }
 
-    void stats_page(app& a, phone_screen& ph, page_sprites& t, const core::game* g, int cls, const core::run_mods& m);
+    void stats_page(app& a, phone_screen& ph, page_sprites& t, const core::game* g, int cls, const core::run_mods& m, int start_page = 0);
 
     enum class pause_result { resume, quit, save_exit };
 
@@ -1253,7 +1257,14 @@ namespace
                     }
                     if(bn::keypad::b_pressed()) { brigade = false; redraw(); bn::sound_items::sfx_menu.play(); next_frame(); continue; }
                 }
-                else if(a.phone_tab == 3 && bn::keypad::a_pressed()) { brigade = true; bsel = 0; redraw(); bn::sound_items::sfx_menu.play(); }
+                else if(a.phone_tab == 3 && bn::keypad::down_pressed()) { brigade = true; bsel = 0; redraw(); bn::sound_items::sfx_menu.play(); }
+                else if(a.phone_tab == 3 && bn::keypad::a_pressed())   // Sprzęt: A = rozpiska obrażeń broni (#26)
+                {
+                    stats_page(a, ph, t, a.g, a.g->cls, a.g->bonus, 1);
+                    redraw();
+                    next_frame();
+                    continue;
+                }
                 else if(a.phone_tab == 2 && bn::keypad::a_pressed())   // Start: A = statystyki i skąd są premie
                 {
                     stats_page(a, ph, t, a.g, a.g->cls, a.g->bonus);
@@ -1303,41 +1314,153 @@ namespace
         };
         item_rows(0, g.equipped[slot], g.equipped_trait[slot], false);
         item_rows(2, g.offer_rarity, g.offer_trait, true);
-        core::message cm; cm.add("Cecha: ").add(data::gear_traits[g.offer_trait].name);
-        phone_text(a, t, list_x, row_py(4), fit(a, cm.s, phone_text_w).c_str(), ink::dim);
+        // wiersz 4: porównanie (rozpiska #26) - cios, kryt, obrona; kilka zmian na zmianę co ~1,5 s, bez zmian - cecha
+        const core::dmg_breakdown now = g.weapon_breakdown(), next = g.weapon_breakdown(-1, -1, slot, g.offer_rarity, g.offer_trait);
+        core::message cmp[3]; int cmp_n = 0;
+        if(now.min != next.min || now.max != next.max || now.avg10 != next.avg10) { core::compare_line(cmp[cmp_n], now, next); if(a.text.width(cmp[cmp_n].s) > phone_text_w) { cmp[cmp_n] = core::message(); core::compare_line(cmp[cmp_n], now, next, true); } ++cmp_n; }
+        if(now.crit_chance() != next.crit_chance() || now.crit_max != next.crit_max) core::compare_crit(cmp[cmp_n++], now, next);
+        const core::gear_def& gold = data::gear[slot * 3 + g.equipped[slot]], &gnew = data::gear[slot * 3 + g.offer_rarity];
+        if(gold.stat == core::gear_stat::def && gnew.value != gold.value)
+        {
+            int d0 = g.hero_defense(), d1 = d0 - gold.value + gnew.value;
+            cmp[cmp_n++].add("OBR ").add(d0).add(" -> ").add(d1).add(": z ciosu -").add(d0 / 2).add(" -> -").add(d1 / 2);
+        }
+        const bool neutral = cmp_n == 0;   // bez wpływu na walkę: jak dawniej cecha nowego przedmiotu
+        if(neutral) cmp[cmp_n++].add("Cecha: ").add(data::gear_traits[g.offer_trait].name);
+        page_sprites t4;
+        auto draw_cmp = [&](int i) {
+            t4.clear();
+            phone_text(a, t4, list_x, row_py(4), fit(a, cmp[i].s, phone_text_w).c_str(), neutral ? ink::dim : ink::brand);
+        };
+        draw_cmp(0);
         core::message km; km.add("A: zakładam  B: zostawiam (+").add(data::gear_decline_xp + g.offer_rarity).add(")");
         phone_text(a, t, list_x, row_py(5), km.s, g.offer_is_better() ? ink::done : ink::dark);
         ph.commit();
         bn::sound_items::sfx_notify.play(bn::fixed(0.7));
         wait_release();
+        int clock = 0;
         while(g.has_offer())
         {
             if(bn::keypad::a_pressed()) { g.accept_offer(); bn::sound_items::sfx_buy.play(); }
             else if(bn::keypad::b_pressed()) { g.decline_offer(); bn::sound_items::sfx_menu.play(); }
+            else if(cmp_n > 1 && ++clock % 90 == 0) draw_cmp((clock / 90) % cmp_n);
             next_frame();
         }
+        t4.clear();
         t.clear();
         a.text.set_palette_item(default_ink);
         wait_release();
     }
 
+    // Rozpiska obrażeń broni (#26) jako lista wierszy telefonu: broń, statystyka, premie (tylko te, które coś dają),
+    // cios, kryt z częściami, moc, obrona i unik (w trakcie budowy). Zwraca liczbę wierszy.
+    struct dmg_rows { core::message line[20]; ink k[20]; int stripe[20]; int n = 0; };
+
+    // Wiersz rozpiski; dłuższy niż telefon dzieli się po ostatnim ", " / ": " / " + ", które się mieści - reszta
+    // w kolejnym wierszu z wcięciem.
+    void push_row(app& a, dmg_rows& out, const core::message& l, ink k, int stripe_tile)
+    {
+        if(out.n >= 20) return;
+        int cut = -1;
+        if(a.text.width(l.s) > phone_text_w)
+            for(int p = 1; p + 2 < l.n; ++p)
+                if(l.s[p] == ' ' && (l.s[p - 1] == ',' || l.s[p - 1] == ':' || (l.s[p + 1] == '+' && l.s[p + 2] == ' ')))
+                {
+                    bn::string<96> pre(l.s, p);
+                    if(a.text.width(pre) <= phone_text_w) cut = p;
+                }
+        if(cut < 0 || out.n >= 19) { out.line[out.n] = l; out.k[out.n] = k; out.stripe[out.n++] = stripe_tile; return; }
+        core::message first; first.kind = l.kind;
+        bn::string<96> pre(l.s, cut);
+        first.add(pre.c_str());
+        out.line[out.n] = first; out.k[out.n] = k; out.stripe[out.n++] = stripe_tile;
+        core::message rest; rest.add("   ").add(l.s + cut + 1);
+        out.line[out.n] = rest; out.k[out.n] = k; out.stripe[out.n++] = -1;
+    }
+
+    // Rozpiska obrażeń broni (#26) jako lista wierszy telefonu: broń, statystyka, premie (tylko te, które coś dają),
+    // cios, kryt z częściami, moc, obrona i unik (w trakcie budowy).
+    void breakdown_rows(app& a, dmg_rows& out, const core::dmg_breakdown& b, const core::game* g)
+    {
+        using core::dmg_text;
+        const dmg_text order[] = { dmg_text::weapon, dmg_text::stat, dmg_text::stat_parts, dmg_text::profile, dmg_text::run,
+                                   dmg_text::gear, dmg_text::pct, dmg_text::total, dmg_text::power, dmg_text::crit,
+                                   dmg_text::crit_parts, dmg_text::crit_extra };
+        for(dmg_text k : order)
+        {
+            core::message l;
+            bool shown = core::dmg_line(l, b, k);
+            bool always = k == dmg_text::weapon || k == dmg_text::stat || k == dmg_text::total || k == dmg_text::crit
+                       || k == dmg_text::crit_parts;
+            if(! shown && ! always) continue;
+            ink i = k == dmg_text::weapon ? ink::brand : (k == dmg_text::total ? ink::done
+                  : (k == dmg_text::crit ? ink::prog : (k == dmg_text::stat || k == dmg_text::profile || k == dmg_text::run
+                                                        || k == dmg_text::gear || k == dmg_text::pct ? ink::dark : ink::dim)));
+            int st = k == dmg_text::weapon ? phone_tile::stripe_brand : (k == dmg_text::total ? phone_tile::stripe_done
+                   : (k == dmg_text::crit ? phone_tile::stripe_prog : -1));
+            push_row(a, out, l, i, st);
+        }
+        if(g)   // obrona i unik: co zmniejsza ciosy problemów
+        {
+            const core::game& G = *g;
+            core::message d; d.add("OBR ").add(G.hero_defense()).add(": -").add(G.hero_defense() / 2).add(" z ciosu problemu");
+            if(G.bonus.taken_pct) d.add(", -").add(G.bonus.taken_pct).add("%");
+            push_row(a, out, d, ink::dark, -1);
+            core::message u; u.add("Unik ").add(G.dodge_pct()).add("% (SZCZ ").add(G.luck()).add(" x ").add(data::dodge_per_luck_pct).add("%");
+            if(G.gear_bonus(core::gear_stat::dodge)) u.add(", buty +").add(G.gear_bonus(core::gear_stat::dodge)).add("%");
+            if(G.bonus.dodge) u.add(", premie +").add(G.bonus.dodge).add("%");
+            u.add(")");
+            push_row(a, out, u, ink::dim, -1);
+        }
+    }
+
+    // Rozpiska obrażeń: z bieżącej budowy (g) albo dla zawodu przed budową; źródła premii z profilu, gdy się zgadzają.
+    core::dmg_breakdown hero_breakdown(app& a, const core::game* g, int cls, const core::run_mods& m)
+    {
+        core::dmg_breakdown b = g ? g->weapon_breakdown() : core::class_breakdown(cls, m);
+        core::run_mods parts[core::mods_sources];
+        core::mods_parts(a.save, parts);
+        b.set_sources(parts);
+        return b;
+    }
+
     // Opis statystyk (#19): strona 1 - wartości i co dają (na wyborze zawodu) albo skąd są premie (w trakcie budowy),
-    // strona 2 - wzory w prostych słowach. A / strzałki: strona, B / START / SELECT: wróć.
-    void stats_page(app& a, phone_screen& ph, page_sprites& t, const core::game* g, int cls, const core::run_mods& m)
+    // strony 2+ - rozpiska obrażeń broni (#26, jak w BG3), ostatnia - wzory w prostych słowach.
+    // A / prawo / dół: następna strona, lewo / góra: poprzednia, B / START / SELECT: wróć. start_page 1 = obrażenia.
+    void stats_page(app& a, phone_screen& ph, page_sprites& t, const core::game* g, int cls, const core::run_mods& m, int start_page)
     {
         bn::sprite_palette_item default_ink = a.text.palette_item();
         const core::class_def& c = data::classes[cls];
         const core::weapon_def& w = g ? g->weapon() : data::weapons[c.weapon];
         const core::stat stats[3] = { core::stat::str, core::stat::agi, core::stat::intel };
-        int page = 0;
+        dmg_rows dr;
+        breakdown_rows(a, dr, hero_breakdown(a, g, cls, m), g);
+        const int dmg_pages = (dr.n + 5) / 6, pages = dmg_pages + 2;
+        int page = start_page < pages ? start_page : 0;
         auto redraw = [&]() {
-            phone_header(a, ph, t, page == 0 ? "Statystyki" : "Jak działają", page == 0 ? c.name : "A: strona  B: wróć");
+            core::message sub;
+            if(page == 0) sub.add(c.name);
+            else if(page == pages - 1) sub.add("A: strona  B: wróć");
+            else sub.add(page).add("/").add(dmg_pages).add("  A: dalej");
+            phone_header(a, ph, t, page == 0 ? "Statystyki" : (page == pages - 1 ? "Jak działają" : "Obrażenia broni"), sub.s);
             phone_canvas& cv = *ph.canvas;
+            if(page > 0 && page < pages - 1)
+            {
+                for(int r = 0; r < 6; ++r)
+                {
+                    int i = (page - 1) * 6 + r;
+                    if(i >= dr.n) break;
+                    if(dr.stripe[i] >= 0) stripe(cv, r, dr.stripe[i]);
+                    phone_text(a, t, list_x, row_py(r), fit(a, dr.line[i].s, phone_text_w).c_str(), dr.k[i]);
+                }
+                ph.commit();
+                return;
+            }
             for(int r = 0; r < 6; ++r)
             {
                 core::message l;
                 ink k = ink::dark;
-                if(page == 1)   // wzory: statystyka broni, obrona, szczęście (3 wiersze), HP
+                if(page == pages - 1)   // wzory: statystyka broni, obrona, szczęście (3 wiersze), HP
                 {
                     const core::stat_kind ws = w.scales_with == core::stat::str ? core::stat_kind::str
                                              : (w.scales_with == core::stat::agi ? core::stat_kind::agi : core::stat_kind::intel);
@@ -1416,8 +1539,9 @@ namespace
         wait_release();
         while(true)
         {
-            if(bn::keypad::a_pressed() || bn::keypad::left_pressed() || bn::keypad::right_pressed() || bn::keypad::up_pressed() || bn::keypad::down_pressed())
-            { page ^= 1; redraw(); bn::sound_items::sfx_menu.play(); }
+            int d = (bn::keypad::a_pressed() || bn::keypad::right_pressed() || bn::keypad::down_pressed()) ? 1
+                  : ((bn::keypad::left_pressed() || bn::keypad::up_pressed()) ? -1 : 0);
+            if(d) { page = (page + d + pages) % pages; redraw(); bn::sound_items::sfx_menu.play(); }
             if(bn::keypad::b_pressed() || bn::keypad::start_pressed() || bn::keypad::select_pressed()) break;
             next_frame();
         }
@@ -1882,11 +2006,14 @@ namespace
                 banner.push(t.s, b.s);
                 levelup_pending = g.hero_level;
             }
-            if(g.weapon_override != prev_weapon && g.weapon_override >= 0)
+            if(g.weapon_override != prev_weapon && g.weapon_override >= 0)   // porównanie ciosu (rozpiska #26)
             {
-                const core::weapon_def& w = g.weapon();
-                core::message b; b.add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage);
-                banner.push("Nowe narzędzie", clip(b.s, 24).c_str());
+                const core::dmg_breakdown was = g.weapon_breakdown(-1, prev_weapon >= 0 ? prev_weapon : g.cdef().weapon), now = g.weapon_breakdown();
+                core::message t; t.add("Nowe: ").add(g.weapon().name);
+                core::message b; core::add_range(b, was.min, was.max).add(" -> ");
+                core::add_range(b, now.min, now.max).add(" (śr. ");
+                core::add_tenths(b, now.avg10 - was.avg10, true).add(")");
+                banner.push(t.s, b.s);
             }
             if(g.pickups_count > prev_pickups) banner.push("Coś wypadło!", "Sprawdź miejsce usterki");
             for(int i = 0; i < data::gear_slots_count; ++i)
@@ -2717,7 +2844,7 @@ namespace
                     const core::actor& e = g.enemies[look_list[look_sel]];
                     reticle.set_position(world(e.x, e.y));
                     reticle.set_visible(true);
-                    int look_key = look_list[look_sel] + 32 * ((look_frames / 100) & 1);   // druga linia na zmianę: opis / zachowania
+                    int look_key = look_list[look_sel] + 32 * ((look_frames / 100) % 12);   // druga linia na zmianę: obrażenia / opis / zachowania
                     if(look_shown != look_key)   // karta wroga w miejscu dziennika
                     {
                         look_shown = look_key;
@@ -2726,12 +2853,24 @@ namespace
                         a.text.set_left_alignment();
                         a.text.set_palette_item(bn::sprite_palette_items::font_map_loot);
                         core::message l1; l1.add(ed.name).add("  HP ").add(e.hp).add("/").add(e.max_hp);
-                        l1.add("  obr. ").add(ed.min_damage + g.enemy_dmg_bonus()).add("-").add(ed.max_damage + g.enemy_dmg_bonus());
+                        if(ed.defense) l1.add("  OBR ").add(ed.defense);
                         a.text.generate(-116, 56, fit(a, l1.s, 232).c_str(), log);
                         a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
+                        // druga linia na zmianę: obrażenia w obie strony (rozpiska #26), opis, zachowania
                         core::message bl = behaviors_line(e.def_id);
-                        if(bl.n > 0 && (look_key & 32)) { core::message l2; l2.add("Cechy: ").add(bl.s); a.text.generate(-116, 72, fit(a, l2.s, 232).c_str(), log); }
-                        else a.text.generate(-116, 72, ed.desc, log);
+                        const core::dmg_breakdown vb = g.weapon_breakdown(e.def_id);
+                        const core::hit_range vh = g.enemy_hit(look_list[look_sel]);
+                        core::message vs; core::versus_line(vs, vb, vh);
+                        const bool split = a.text.width(vs.s) > 232;   // za długie: "Zadasz..." i "on Tobie..." osobno
+                        const int phases = 2 + (split ? 1 : 0) + (bl.n > 0 ? 1 : 0);
+                        int phase = (look_key >> 5) % phases;
+                        if(! split && phase >= 1) ++phase;             // 0 obrażenia, (1 on Tobie), 2 opis, 3 cechy
+                        core::message l2;
+                        if(phase == 0) { if(split) core::versus_hero(l2, vb); else l2 = vs; }
+                        else if(phase == 1) { core::add_range(l2.add("On Tobie "), vh.min, vh.max).add(", unik ").add(g.dodge_pct()).add("%"); }
+                        else if(phase == 3) l2.add("Cechy: ").add(bl.s);
+                        else l2.add(ed.desc);
+                        a.text.generate(-116, 72, fit(a, l2.s, 232).c_str(), log);
                         draw_strips(true);
                         log_timer = 0;
                     }
@@ -3635,14 +3774,20 @@ namespace
             ability.set_position(18 - 120, row2 + 8 - 80);
             int x = 29 + put(card_t, 29, row2, c.ability_name, ink_palette(ink::brand));
             put(card_t, x + 4, row2, fit(a, c.ability_desc, 229 - x - 4).c_str(), ink_palette(ink::dim));
-            // broń: nazwa, obrażenia i zasięg, statystyka skalowania (fiolet)
-            core::message wn; wn.add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage);
+            // broń: nazwa i zakres ciosu z premiami profilu, kryt (rozpiska #26), zasięg, statystyka skalowania (fiolet);
+            // co się nie mieści, skraca się ("zasięg" -> "z.", "kryt" -> "kr", bez zasięgu)
+            const core::dmg_breakdown bd = core::class_breakdown(ci, core::mods(a.save));
+            core::message wn; wn.add(w.name).add(" "); core::add_range(wn, bd.min, bd.max);
             core::message tag; tag.add("(").add(stat_short(w.scales_with)).add(")");
-            core::message rng; rng.add(", zasięg ").add(w.range);
-            int room = 228 - 16 - a.text.width(wn.s) - 4 - a.text.width(tag.s);
-            if(a.text.width(rng.s) > room) { rng = core::message(); rng.add(", zas. ").add(w.range); }
+            core::message ex[4];
+            core::add_range(ex[0].add(", kryt "), bd.crit_min, bd.crit_max).add(" (").add(bd.crit_chance()).add("%), zasięg ").add(w.range);
+            core::add_range(ex[1].add(", kryt "), bd.crit_min, bd.crit_max).add(" (").add(bd.crit_chance()).add("%), z. ").add(w.range);
+            core::add_range(ex[2].add(", kr "), bd.crit_min, bd.crit_max).add(" ").add(bd.crit_chance()).add("%, z. ").add(w.range);
+            core::add_range(ex[3].add(", kr "), bd.crit_min, bd.crit_max).add(" ").add(bd.crit_chance()).add("%");
+            int room = 212 - 16 - a.text.width(wn.s) - 4 - a.text.width(tag.s), e = 0;   // do przycisku "i" (opis statystyk)
+            while(e < 3 && a.text.width(ex[e].s) > room) ++e;
             x = 16 + put(card_t, 16, row3, wn.s, ink_palette(ink::dark));
-            x += put(card_t, x, row3, rng.s, ink_palette(ink::dim));
+            x += put(card_t, x, row3, fit(a, ex[e].s, room).c_str(), ink_palette(ink::dim));
             put(card_t, x + 4, row3, tag.s, ink_palette(ink::brand));
             // statystyki efektywne: zawód + Szkolenia, uprawnienia, pamiątka - "baza+premia"
             const core::run_mods m = core::mods(a.save);

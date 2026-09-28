@@ -1938,7 +1938,15 @@
       "effect": "thermos"
     }
   ],
-  "version": "v0.21.49",
+  "version": "v0.21.50",
+  "damageHelp": [
+    "Cios = rzut broni + premie:",
+    "SIŁ/ZRĘ/INT broni +1 co 2 pkt,",
+    "Szkolenia, odznaki, poziom,",
+    "projekty, rękawice; potem +%.",
+    "OBR problemu: -1 co 2 pkt (min. 1).",
+    "Kryt mnoży cios, SZCZ go podnosi."
+  ],
   "tips": [
     "Przytrzymaj B: podgląd problemów",
     "Przytrzymaj A: celownik i zasięg",
