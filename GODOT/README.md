@@ -11,6 +11,16 @@ nagrody za odbiór – Młot udarowy, Pistolet do kotew, buty, pas, zawody Dekar
 Szkoleń, profil v8; wcześniej wybór ścieżki, materiały, codzienna budowa, pogoda, brygada, tryb inwestora);
 oprawa (grafika, font, dźwięk, telefon, wybór zawodu) jak w GBA.
 
+Nowe w v0.21.50 (rozpiska obrażeń broni #26, jak w BG3): rdzeń `DmgBreakdown` / `Game.WeaponBreakdown` / `EnemyHit`
+/ `DamageHelp` (port 1:1 z `core.h`, testy: zakres = walka na tysiącach rzutów), warstwa `Gfx/DamageRows` (te same
+wiersze co na GBA). Wybór zawodu: narzędzie z zakresem i krytem, najechanie myszą / dotknięcie = dymek z rozpiską;
+opis statystyk ma 4 strony (wartości, Obrażenia broni, Kryt i obrona, wzory); telefon > Sprzęt: zakres, kryt i
+średnia, przy przedmiotach co dają, I / „Obrażenia” / dotknięcie narzędzia = rozpiska; paczka: porównanie ciosu,
+krytu i OBR; baner nowego narzędzia „teraz -> po zmianie”; karta problemu „Zadasz 9-12 (kryt 18-24), on Tobie 1,
+unik 10%”; Jak grać – strona Obrażenia (`damageHelp` z game.json). Sceny zrzutów: `dmg-class`, `dmg-stats`,
+`dmg-gear`, `dmg-phone`, `dmg-crit`, `dmg-offer`, `dmg-tool`, `dmg-enemy`, `help-dmg`; test dymny: Sprzęt > I >
+rozpiska > B.
+
 Nowe w v0.21.49 cz. 3 (warstwa Godota): **Akt 0 „Papierologia”** z nagrody za odbiór - kafle biura z regałami
 segregatorów (Działka i pozwolenie) i wykopu z rurą (Przyłącza), 8 nowych problemów i boss Decyzja odmowna (klatki
 101-118, chód jak reszta), dokumenty do zebrania (klatki 119-121, złota poświata), kłódka na zamkniętych schodach,
@@ -129,6 +139,7 @@ wygranej (dom z Osiedla, daty, dni, koszty i link planbudowlany.online), wyraźn
 | Szkolenia (zakładka Koszty w telefonie profilu, Spacja kupuje) | K | Y | |
 | Opis statystyk na wyborze zawodu (dymek: mysz nad statystyką) | I | R3 | „i” na karcie |
 | Opis statystyk w trakcie budowy (telefon: Start) | Spacja | A | „Opis statystyk” |
+| Rozpiska obrażeń broni (telefon: Sprzęt; na wyborze zawodu dymek nad narzędziem) | I | R3 | „Obrażenia” / dotknięcie narzędzia |
 | Ustawienia (także klucz w prawym górnym rogu tytułu i mapy) | Esc | | klik na klucz |
 | Samouczek menu: dalej / pomiń / opis statystyk | Spacja, Enter / Esc / I | A / B / R3 | przyciski dymka |
 | Jak grać z tytułu: samouczek jeszcze raz | Tab | Select | „Samouczek jeszcze raz” |
@@ -189,7 +200,8 @@ nad paskiem domowym, mapa ~9 pól na szerokość, telefon jako aplikacja na cał
   `behaviors` (strzał, podział, wybuch), `act-mud`, `act-gust`, `act-dust` (mechaniki aktów), `stats-class`, `stats-tip`,
   `stats-phone` (opis statystyk), `catalog-tags` (Katalog z zachowaniami), `help-acts`, `help-stats` (strony Jak grać),
   `tutorial-title`, `tutorial-class`, `tutorial-stats` (samouczek menu), `tutorial-unlock`, `tutorial-act0` (dymki
-  nowości), `help-tutorial`, `act0-card`, `act0-stamps`, `act0-stairs-open`, `act0-boss-phase` (Akt 0).
+  nowości), `help-tutorial`, `act0-card`, `act0-stamps`, `act0-stairs-open`, `act0-boss-phase` (Akt 0), `dmg-class`, `dmg-stats`, `dmg-gear`,
+  `dmg-phone`, `dmg-crit`, `dmg-offer`, `dmg-tool`, `dmg-enemy`, `help-dmg` (rozpiska obrażeń broni).
   Sceny ustawiają stan ręcznie (profil pokazowy, skrót zaliczenia etapu jak L+R+SELECT na GBA); zrzuty i test dymny
   działają bez dźwięku.
 
