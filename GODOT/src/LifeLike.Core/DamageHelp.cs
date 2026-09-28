@@ -156,7 +156,9 @@ public static class DamageHelp
                     m.Add("OBR problemu: -1 co 2 pkt");
                     return false;
                 }
-                m.Add("OBR problemu ").Add(b.EnemyDef).Add(": -").Add(b.DefCut);
+                m.Add("OBR problemu ").Add(b.EnemyDef);
+                if (b.EnemyElite != 0) m.Add("+").Add(b.EnemyElite).Add(" (elita)");
+                m.Add(": -").Add(b.DefCut);
                 return b.DefCut > 0;
             case DmgText.Total:
                 AddRange(m.Add("Cios "), b.Min, b.Max).Add(", średnio ");
@@ -205,6 +207,28 @@ public static class DamageHelp
                 }
                 m.Add("Moc (").Add(RankNumeral(b.PowerRank)).Add("): +").Add(b.Power).Add(" do ciosu");
                 return true;
+            case DmgText.Boon: // v0.21.50: premie wybrane po etapach (#27)
+            {
+                if (b.FlatBoon == 0 && b.PctBoon == 0 && b.CritBoon == 0)
+                {
+                    m.Add("Premie etapów: brak");
+                    return false;
+                }
+                m.Add("Premie etapów:");
+                var first = true;
+                if (b.FlatBoon != 0)
+                {
+                    m.Add(" +").Add(b.FlatBoon);
+                    first = false;
+                }
+                if (b.PctBoon != 0)
+                {
+                    m.Add(first ? " +" : ", +").Add(b.PctBoon).Add("%");
+                    first = false;
+                }
+                if (b.CritBoon != 0) m.Add(first ? " kryt +" : ", kryt +").Add(b.CritBoon).Add("%");
+                return true;
+            }
             default:
                 return false;
         }

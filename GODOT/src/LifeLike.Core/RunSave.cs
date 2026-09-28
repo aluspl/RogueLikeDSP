@@ -8,7 +8,7 @@ namespace LifeLike.Core;
 /// </summary>
 public sealed class RunSave
 {
-    public const string RunMagic = "PBRUN10"; // 10: Akt 0 (pieczątki, druga faza bossa); 09: 10 etapów, zachowania, mechaniki aktów
+    public const string RunMagic = "PBRUN11"; // 11: premie po etapie, elity, kombinacje stanów; 10: Akt 0; 09: 10 etapów, zachowania
 
     public byte[] Magic = new byte[8];
     public uint Size;

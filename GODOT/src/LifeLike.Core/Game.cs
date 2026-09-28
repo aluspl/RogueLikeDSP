@@ -22,6 +22,8 @@ public sealed partial class Game
     public const int MaxBridges = 3;
     /// <summary>Kask, rękawice, kamizelka + sloty z nagród (buty, pas).</summary>
     public const int MaxGearSlots = 6;
+    /// <summary>Stany bohatera (indeks = StatusEffect; v0.21.50: + Mokry).</summary>
+    public const int StatusSlots = 6;
 
     public GameData D { get; }
 
@@ -80,7 +82,7 @@ public sealed partial class Game
     /// <summary>Ilu wezwano w tej walce (uśpione miejsca za bossem w Enemies).</summary>
     public int SummonsUsed;
     /// <summary>Tury aktywnych stanów bohatera (indeks = StatusEffect).</summary>
-    public readonly sbyte[] HeroStatus = new sbyte[5];
+    public readonly sbyte[] HeroStatus = new sbyte[StatusSlots];
     public RunMods Bonus;
     /// <summary>Doświadczenie x100 (mnożnik trudności bez gubienia ułamków).</summary>
     public int XpPct;
@@ -195,7 +197,7 @@ public sealed partial class Game
     /// <summary>Unik: szczęście + Respekt + buty, łącznie najwyżej DodgeMaxPct.</summary>
     public int DodgePct()
     {
-        return Math.Min(D.DodgeMaxPct, D.DodgePerLuckPct * Luck() + Bonus.Dodge + GearBonus(GearStat.Dodge));
+        return Math.Min(D.DodgeMaxPct, D.DodgePerLuckPct * Luck() + Bonus.Dodge + GearBonus(GearStat.Dodge) + BoonSum(BoonEffect.Dodge));
     }
 
     // ------------------------------------------------------------------ pogoda dnia
@@ -321,15 +323,15 @@ public sealed partial class Game
     }
 
     /// <summary>Szczęście: kryt (x2), mały unik przed ciosem wroga, częstsze i lepsze dropy.</summary>
-    public int Luck() => CDef.Luck + Bonus.Luck + TraitBonus(TraitEffect.Luck);
+    public int Luck() => CDef.Luck + Bonus.Luck + TraitBonus(TraitEffect.Luck) + BoonLuck();
 
-    public int CritPct() => D.CritBasePct + D.CritPerLuckPct * Luck() + TraitBonus(TraitEffect.Crit) + Bonus.Crit;
+    public int CritPct() => D.CritBasePct + D.CritPerLuckPct * Luck() + TraitBonus(TraitEffect.Crit) + Bonus.Crit + BoonSum(BoonEffect.Crit);
 
     /// <summary>Pole widzenia; pył (akt III) zmniejsza, najmniej 3.</summary>
-    public int SightRadius() => Math.Max(3, FovRadius + TraitBonus(TraitEffect.Sight) + Bonus.Sight - DustSight());
+    public int SightRadius() => Math.Max(3, FovRadius + TraitBonus(TraitEffect.Sight) + Bonus.Sight + BoonSum(BoonEffect.Sight) - DustSight());
 
     /// <summary>Pojemność termosu (+ uprawnienia i pamiątka).</summary>
-    public int ThermosCap() => D.ThermosCapacity + Bonus.Thermos + GearBonus(GearStat.Thermos);
+    public int ThermosCap() => D.ThermosCapacity + Bonus.Thermos + GearBonus(GearStat.Thermos) + BoonSum(BoonEffect.Thermos);
 
     // ------------------------------------------------------------------ wydarzenia na placu
     public bool EventActive(EventEffect e) => StageEvent >= 0 && D.SiteEvents[StageEvent].Effect == e;
@@ -365,7 +367,8 @@ public sealed partial class Game
 
 
     /// <summary>Obrona bohatera: zawód + premie + sprzęt + ochrona BHP-owca z brygady.</summary>
-    public int HeroDefense() => CDef.Defense + DefBonus + GearBonus(GearStat.Def) + (GuardTurns > 0 ? D.Brigade[HelperCalled].Value : 0);
+    public int HeroDefense() =>
+        CDef.Defense + DefBonus + GearBonus(GearStat.Def) + (GuardTurns > 0 ? D.Brigade[HelperCalled].Value : 0) + BoonDefense();
 
     public void AddHit(int x, int y, int amount, bool onHero, HitKind kind = HitKind.Normal)
     {
@@ -403,6 +406,20 @@ public sealed partial class Game
         {
             Push(Msg("Odporność: bez zatrucia").As(LogKind.Good));
             return;
+        }
+        if ((s == StatusEffect.Poison || s == StatusEffect.Shock) && SynergyOn(SynergyEffect.Safety)) // synergia Pełne BHP
+        {
+            Push(Msg("Pełne BHP: bez stanu").As(LogKind.Good));
+            return;
+        }
+        if (s != StatusEffect.Wet && BoonSum(BoonEffect.StatusRes) > 0) // Instrukcja BHP: stany krócej
+        {
+            t -= BoonSum(BoonEffect.StatusRes);
+            if (t <= 0)
+            {
+                Push(Msg("Instrukcja BHP: bez stanu").As(LogKind.Good));
+                return;
+            }
         }
         if (s == StatusEffect.Slip && TraitBonus(TraitEffect.SlipRes) > 0)
         {
@@ -609,6 +626,7 @@ public sealed partial class Game
             if (roomI >= Lv.RoomsCount) roomI = Lv.RoomsCount - 1;
             RandomFreeCellInRoom(Lv.Rooms[roomI], out var x, out var y);
             Spawn(sd.Pool[R.Range(0, sd.Pool.Length - 1)], x, y);
+            if (R.Range(1, 100) <= EliteChance()) MakeElite(EnemiesCount - 1, R.Range(0, D.Elites.Length - 1)); // elita
         }
         if (sd.Boss >= 0)
         {
@@ -650,6 +668,13 @@ public sealed partial class Game
             if (!(D.WeatherNoBadStack && WDef.Bad && !D.SiteEvents[e].Good)) ApplyEvent(e);
         }
         PlaceDocuments();
+        // kombinacje stanów: w pyle (akt III) problemy są zapylone, w Mróz – zmrożone (boss nie)
+        for (var i = 0; i < EnemiesCount; ++i)
+        {
+            if (i == Boss) continue;
+            if (DustSight() > 0) Enemies[i].Flags = (byte)(Enemies[i].Flags | ActorFlag.Dusty);
+            if (WeatherIs(WeatherEffect.Frost)) Enemies[i].Flags = (byte)(Enemies[i].Flags | ActorFlag.Frozen);
+        }
         UpdateFov();
     }
 
@@ -708,6 +733,8 @@ public sealed partial class Game
     public void NextStage()
     {
         if (!InvestorHas(InvestorEffect.NoBreak)) Hero.Hp = (short)Math.Min(Hero.MaxHp, Hero.Hp + 5); // tryb inwestora: bez przerwy
+        if (BoonSum(BoonEffect.RegenStage) > 0) Hero.Hp = (short)Math.Min(Hero.MaxHp, Hero.Hp + BoonSum(BoonEffect.RegenStage));
+        SkipBoons(); // oferta bez wyboru przepada
         var path = D.Paths.Length >= 2 ? PathOffer(NextPath) : -1;
         NextPath = 0;
         StartStage(Stage + 1, path);

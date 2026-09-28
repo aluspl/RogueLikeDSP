@@ -88,7 +88,7 @@ public static class TestData
         {
             if (g.St == GameStatus.StageClear)
             {
-                g.NextStage();
+                Bot.Next(g); // premia 1 z 3 jak bot z core_tests.cpp
                 continue;
             }
             if (g.St != GameStatus.Playing) break;

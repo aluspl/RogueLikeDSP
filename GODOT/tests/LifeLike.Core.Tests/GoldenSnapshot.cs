@@ -69,6 +69,11 @@ public static class GoldenSnapshot
             g.Bonus.GearSlots, g.Bonus.Tools]));
         K("act0", Arr([g.FirstStage, g.Docs, g.DocsNeeded(), g.StairsLocked() ? 1 : 0, g.StageNumber(), g.StagesInRun()]));
         K("heroStatus", Arr(g.HeroStatus.Select(x => (int)x)));
+        K("boons", "[" + string.Join(",", new long[]
+        {
+            (uint)g.Boons, (uint)(g.Boons >> 32), g.BoonOffer[0], g.BoonOffer[1], g.BoonOffer[2], g.BoonRerolls, g.SynergyMask(),
+            g.RerollsLeft(), g.RerollPrice(), g.HeroDefense(), g.Luck(), g.DodgePct(),
+        }) + "]");
         K("killsByType", Arr(g.KillsByType.Select(x => (int)x)));
         K("rooms", "[" + string.Join(",", g.Lv.Rooms.Take(g.Lv.RoomsCount).Select(r => Arr([r.X, r.Y, r.W, r.H]))) + "]");
         var map = new List<string>();
@@ -88,7 +93,7 @@ public static class GoldenSnapshot
         K("map", "[" + string.Join(",", map) + "]");
         K("fov", "[" + string.Join(",", fov) + "]");
         K("enemies", "[" + string.Join(",", g.Enemies.Take(g.EnemiesCount).Select(e =>
-            Arr([e.DefId, e.X, e.Y, e.Hp, e.MaxHp, e.Alive ? 1 : 0, e.Awake ? 1 : 0, e.Stun, e.Flags, e.Grow, e.Timer]))) + "]");
+            Arr([e.DefId, e.X, e.Y, e.Hp, e.MaxHp, e.Alive ? 1 : 0, e.Awake ? 1 : 0, e.Stun, e.Flags, e.Grow, e.Timer, e.Elite, e.Wet]))) + "]");
         K("pickups", "[" + string.Join(",", g.Pickups.Take(g.PickupsCount).Select(p =>
             Arr([p.X, p.Y, (int)p.Type, p.Active ? 1 : 0, p.Arg, p.Trait]))) + "]");
         K("walls", "[" + string.Join(",", g.Walls.Take(g.WallsCount).Select(w => Arr([w.X, w.Y, w.Turns]))) + "]");

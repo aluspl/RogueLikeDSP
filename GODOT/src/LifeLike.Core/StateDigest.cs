@@ -65,6 +65,8 @@ public static class StateDigest
             f.Add(e.Flags); // v0.21.49 cz. 2: zachowania problemów
             f.Add(e.Grow);
             f.Add(e.Timer);
+            f.Add(e.Elite); // v0.21.50 cz. 2: elity, mokry
+            f.Add(e.Wet);
         }
         f.Add(g.PickupsCount);
         for (var i = 0; i < g.PickupsCount; i++)
@@ -77,7 +79,7 @@ public static class StateDigest
             f.Add(p.Arg);
             f.Add(p.Trait);
         }
-        for (var i = 0; i < 5; i++) f.Add(g.HeroStatus[i]);
+        for (var i = 0; i < Game.StatusSlots; i++) f.Add(g.HeroStatus[i]);
         for (var i = 0; i < Game.MaxGearSlots; i++) f.Add(g.Equipped[i]);
         for (var i = 0; i < Game.MaxGearSlots; i++) f.Add(g.EquippedTrait[i]);
         f.Add(g.Thermos);
@@ -153,6 +155,18 @@ public static class StateDigest
         f.Add(g.Docs);
         f.Add(g.StairsLocked() ? 1 : 0);
         foreach (var k in g.KillsByType) f.Add(k);
+        // v0.21.50 cz. 2: premie po etapie, synergie, kombinacje stanów
+        f.Add((int)(uint)g.Boons);
+        f.Add((int)(uint)(g.Boons >> 32));
+        for (var i = 0; i < 3; i++) f.Add(g.BoonOffer[i]);
+        f.Add(g.BoonRerolls);
+        f.Add(g.HitCtx);
+        f.Add(g.ComboEvents);
+        f.Add(g.SynergyMask());
+        f.Add(g.HeroDefense());
+        f.Add(g.CritPct());
+        f.Add(g.ThermosCap());
+        f.Add(g.CoffeeHeal());
         return f.H;
     }
 }

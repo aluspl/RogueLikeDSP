@@ -103,7 +103,8 @@ public sealed partial class Game
             Push(Msg("Unik! ").Add(ed.Name).Add(" chybia").As(LogKind.Good));
             return;
         }
-        var dmg = TakenDamage(R.Range(ed.MinDamage, ed.MaxDamage) + EnemyDmgBonus() + e.Grow / 2 - HeroDefense() / 2);
+        var wasWet = HeroWet();
+        var dmg = TakenDamage(R.Range(ed.MinDamage, ed.MaxDamage) + EnemyBonus(e) - HeroDefense() / 2);
         Hero.Hp = (short)(Hero.Hp - dmg);
         StageDamage += dmg;
         HeroHit = true;
@@ -111,6 +112,17 @@ public sealed partial class Game
         Push(Msg(ed.Name).Add(ranged ? " z dystansu: -" : ": -").Add(dmg).Add(" HP").As(LogKind.Bad));
         if (ed.OnHit != StatusEffect.None && Hero.Hp > 0 && R.Range(1, 100) <= ed.StatusChance)
             ApplyStatus(ed.OnHit, ed.StatusTurns);
+        if (ed.Elem == Element.Water && Hero.Hp > 0) SoakHero(); // woda moczy
+        if (ed.Elem == Element.Power && wasWet && Hero.Hp > 0) // mokry + prąd: porażenie bohatera
+        {
+            var c = D.Combos[(int)ComboEffect.ShockArea];
+            Hero.Hp = (short)(Hero.Hp - c.HeroValue);
+            StageDamage += c.HeroValue;
+            AddHit(Hero.X, Hero.Y, c.HeroValue, true);
+            ComboEvents = (byte)(ComboEvents | (8 << (int)ComboEffect.ShockArea));
+            Push(Msg(c.Short).Add(" -").Add(c.HeroValue).Add(" HP").As(LogKind.Bad));
+            if (Hero.Hp > 0) ApplyStatus(StatusEffect.Shock, 1);
+        }
         if (EventActive(EventEffect.Rain) && Hero.Hp > 0 && R.Range(1, 100) <= D.SiteEvents[StageEvent].Value)
             ApplyStatus(StatusEffect.Slip, 2); // Ulewa w nocy: błoto na placu
         if ((ed.Tags & Behavior.Pushes) != 0 && !ranged && Hero.Hp > 0 && e.Timer == 0) // odepchnięcie o pole (co kilka tur)

@@ -26,7 +26,8 @@ public sealed partial class Game
     }
 
     /// <summary>Cena fachowca (zł) po rabacie z Respektu (Znajomości).</summary>
-    public int HelperPrice(int h) => D.Brigade[h].Price * (100 - Bonus.BrigadePct) / 100;
+    public int HelperPrice(int h) =>
+        D.Brigade[h].Price * (100 - Math.Min(90, Bonus.BrigadePct + BoonSum(BoonEffect.BrigadePct) + SynergyValue(SynergyEffect.Brigade))) / 100;
 
     /// <summary>Czy fachowca h można teraz wezwać (bez skutków ubocznych – telefon i bot).</summary>
     public HelperBlock HelperBlocked(int h)

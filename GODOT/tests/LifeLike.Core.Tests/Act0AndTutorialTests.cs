@@ -115,7 +115,7 @@ public class Act0AndTutorialTests
             for (var step = 0; step < 3000 && b.St == GameStatus.Playing && b.Stage < F0; ++step) Bot.Step(b);
             while (b.St == GameStatus.StageClear && b.Stage < F0)
             {
-                b.NextStage();
+                Bot.Next(b); // z premią po etapie jak bot_next w core_tests.cpp
                 for (var step = 0; step < 3000 && b.St == GameStatus.Playing; ++step) Bot.Step(b);
             }
             if (b.Stage >= F0 || (b.St == GameStatus.StageClear && b.Stage == F0 - 1)) ++passed;

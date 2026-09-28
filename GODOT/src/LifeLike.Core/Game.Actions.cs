@@ -8,15 +8,23 @@ public sealed partial class Game
     /// <summary>Obrażenia = rzut broni + stat/2 + premie - obrona/2, min 1.</summary>
     public void HeroAttack(int ei)
     {
-        var ed = D.Enemies[Enemies[ei].DefId];
         if (ei == Boss && BossWakeDamage < 0) BossEngaged(); // walka z bossem trwa
+        int ex = Enemies[ei].X, ey = Enemies[ei].Y;
+        bool wasWet = EnemyWet(ei), wasDusty = EnemyDusty(ei), wasFrozen = EnemyFrozen(ei);
+        var melee = Cheb(Hero.X, Hero.Y, ex, ey) <= 1;
         var dmg = R.Range(Weapon.MinDamage, Weapon.MaxDamage) + HeroStat(Weapon.ScalesWith) / 2 + DmgBonus
-                  + GearBonus(GearStat.Dmg) - ed.Defense / 2;
+                  + GearBonus(GearStat.Dmg) + BoonSum(BoonEffect.Dmg) - EnemyDefense(ei) / 2;
         if (dmg < 1) dmg = 1;
-        dmg += Pct.Part(dmg, Bonus.DmgPct, ref DmgCarry); // Kurs fachowy, Respekt: +% obrażeń
+        dmg += Pct.Part(dmg, Bonus.DmgPct + BoonSum(BoonEffect.DmgPct), ref DmgCarry); // Kurs fachowy, Respekt, premie: +%
         var crit = R.Range(1, 100) <= CritPct();
         if (crit) dmg *= D.CritMultiplier;
         DamageEnemy(ei, dmg, crit, Weapon.Name);
+        // kombinacje stanów: stan celu sprzed ciosu + żywioł ciosu
+        if (St == GameStatus.Playing && HitPower() && wasWet) ComboShock(ei, ex, ey);
+        if (St == GameStatus.Playing && HitSpark() && wasDusty) ComboDust(ex, ey);
+        if (St == GameStatus.Playing && melee && wasFrozen && Enemies[ei].Alive && EnemyFrozen(ei)) ComboCrack(ei, dmg);
+        if (Enemies[ei].Alive && BoonSum(BoonEffect.WetHits) > 0) Enemies[ei].Wet = (sbyte)Math.Max(Enemies[ei].Wet, BoonSum(BoonEffect.WetHits)); // Wąż ogrodowy
+        if (Enemies[ei].Alive && BoonSum(BoonEffect.FrostHits) > 0 && ei != Boss) Enemies[ei].Flags = (byte)(Enemies[ei].Flags | ActorFlag.Frozen); // Suchy lód
         // Operator koparki: cios wręcz czasem odpycha problem o pole (bossa nie)
         var e = Enemies[ei];
         if (HasPassive(ClassPassive.Push) && e.Alive && ei != Boss && Cheb(Hero.X, Hero.Y, e.X, e.Y) == 1
@@ -115,9 +123,12 @@ public sealed partial class Game
             if (KillsByType[e.DefId] < 255) ++KillsByType[e.DefId];
             Score += ed.Score * ScorePct() / 100;
             GainXp(D.XpPerKill);
+            if (e.Elite >= 0) EliteReward(ei); // elita: pewny drop, materiały, Respekt
             MaybeDrop(e.X, e.Y);
             Push(Msg(ed.Name).Add(" - usunięto!").As(LogKind.Good));
-            if ((ed.Tags & Behavior.Explodes) != 0) ArmBlast(e.X, e.Y, ed);
+            var kh = BoonSum(BoonEffect.KillHeal); // Drożdżówka: HP za usunięty problem
+            if (kh > 0 && Hero.Alive && Hero.Hp < Hero.MaxHp) Hero.Hp = (short)Math.Min(Hero.MaxHp, Hero.Hp + kh);
+            if ((ed.Tags & Behavior.Explodes) != 0 || EliteIs(e, EliteEffect.Explode)) ArmBlast(e.X, e.Y, ed);
             if ((ed.Tags & Behavior.Splits) != 0 && (e.Flags & ActorFlag.Child) == 0) Split(ei);
             if (D.Materials.Length > 0)
             {
@@ -125,7 +136,8 @@ public sealed partial class Game
                 {
                     for (var m = 0; m < D.Materials.Length; ++m) AddMaterial(m, D.MaterialBossDrop);
                 }
-                else if (R.Range(1, 100) <= D.MaterialDropPct * (100 + Bonus.MatsPct) / 100) // Respekt: Zapasy
+                else if (R.Range(1, 100) <= D.MaterialDropPct * (100 + Bonus.MatsPct + BoonSum(BoonEffect.MatsPct)
+                                                                  + SynergyValue(SynergyEffect.Stock)) / 100) // Respekt: Zapasy
                 {
                     AddMaterial(ed.Material >= 0 ? ed.Material : R.Range(0, D.Materials.Length - 1));
                 }
@@ -173,6 +185,7 @@ public sealed partial class Game
         else
         {
             Push(Msg(crit ? "KRYT! " : "").Add(src).Add(": -").Add(dmg).Add(" (").Add(ed.Name).Add(")").As(crit ? LogKind.Loot : LogKind.Info));
+            if (EliteIs(e, EliteEffect.Summon) && (e.Flags & ActorFlag.Called) == 0 && e.Hp * 100 <= e.MaxHp * D.Elites[e.Elite].Value) EliteCall(ei);
         }
     }
 
@@ -209,6 +222,7 @@ public sealed partial class Game
             {
                 ApplyStatus(StatusEffect.Slip, 2);
             }
+            if (Puddle(Hero.X, Hero.Y)) SoakHero(); // kałuża moczy
             if (Mud(Hero.X, Hero.Y) && !Puddle(Hero.X, Hero.Y)) // akt I: błoto – grzęźniesz, tura przepada
             {
                 stuck = true;
@@ -292,13 +306,19 @@ public sealed partial class Game
     }
 
     /// <summary>Kawa leczy (Lepszy termos, Respekt: Mocna kawa +%).</summary>
-    public int CoffeeHeal() => Pct.DivRound((D.CoffeeHeal + Bonus.Coffee) * (100 + Bonus.CoffeePct), 100);
+    public int CoffeeHeal() => Pct.DivRound((D.CoffeeHeal + Bonus.Coffee + BoonSum(BoonEffect.Coffee)) * (100 + Bonus.CoffeePct), 100);
 
     public void DrinkCoffee()
     {
         var h = Math.Min(CoffeeHeal(), Hero.MaxHp - Hero.Hp);
         Hero.Hp = (short)(Hero.Hp + h);
         Push(Msg("Kawa z termosu: +").Add(h).Add(" HP").As(LogKind.Good));
+        var es = SynergyValue(SynergyEffect.Espresso); // synergia Espresso: kawa ładuje moc
+        if (es > 0 && AbilityCd > 0)
+        {
+            AbilityCd = Math.Max(0, AbilityCd - es);
+            Push(Msg("Espresso: moc -").Add(es).Add(" t.").As(LogKind.Good));
+        }
     }
 
     /// <summary>Picie z termosu (menu akcji): leczy, zużywa turę.</summary>
@@ -338,6 +358,12 @@ public sealed partial class Game
         {
             if (Pickups[i].Active && Pickups[i].X == x && Pickups[i].Y == y) return;
         }
+        DropAt(x, y);
+    }
+
+    /// <summary>Drop w polu (typ losowany wagami); paczka sprzętu co najmniej jakości minRarity (elita: solidna).</summary>
+    public void DropAt(int x, int y, int minRarity = 0)
+    {
         var total = 0;
         foreach (var w in D.DropWeights) total += w;
         int roll = R.Range(1, total), type = 0;
@@ -347,7 +373,7 @@ public sealed partial class Game
         if (type == (int)PickupType.GearBox) // slot losowy, jakość lepsza na późnych etapach i ze szczęściem
         {
             var q = R.Range(1, 100) + Math.Max(0, PatternStage()) * D.GearStageBonus + D.RarityPerLuck * Luck() + Bonus.GearPct;
-            var rarity = q >= D.GearBrandFrom ? 2 : (q >= D.GearSolidFrom ? 1 : 0);
+            var rarity = Math.Max(minRarity, q >= D.GearBrandFrom ? 2 : (q >= D.GearSolidFrom ? 1 : 0));
             arg = (byte)(RandomSlot() * 3 + rarity);
             trait = (byte)R.Range(0, D.GearTraitsCount - 1);
         }
@@ -512,6 +538,7 @@ public sealed partial class Game
             else return;
         }
         if (i == Boss && BossWakeDamage < 0) BossEngaged();
+        if (EliteIs(e, EliteEffect.Regen) && e.Hp < e.MaxHp) e.Hp = (short)Math.Min(e.MaxHp, e.Hp + D.Elites[e.Elite].Value); // elita Uparta
         if (e.Stun > 0)
         {
             --e.Stun;
@@ -566,21 +593,8 @@ public sealed partial class Game
         if ((tg & Behavior.Stationary) != 0) return;
         if (WeatherIs(WeatherEffect.Frost) && i != Boss && Turns % WDef.Value == 0) return; // mróz: problemy stoją
         if ((tg & Behavior.Ranged) != 0 && RangedStep(i)) return;
-        int dx = Math.Sign(Hero.X - e.X), dy = Math.Sign(Hero.Y - e.Y);
-        var xfirst = Math.Abs(Hero.X - e.X) >= Math.Abs(Hero.Y - e.Y);
-        Span<int> tries = [xfirst ? dx : 0, xfirst ? 0 : dy, xfirst ? 0 : dx, xfirst ? dy : 0];
-        for (var t = 0; t < 2; t++)
-        {
-            int tx = tries[t * 2], ty = tries[t * 2 + 1];
-            if (tx == 0 && ty == 0) continue;
-            int nx = e.X + tx, ny = e.Y + ty;
-            if (Lv.At(nx, ny) == Tile.Floor && !Occupied(nx, ny))
-            {
-                e.X = (sbyte)nx;
-                e.Y = (sbyte)ny;
-                return;
-            }
-        }
+        // elita Szybka: drugi krok, jeśli jeszcze nie stoi obok bohatera
+        if (ChaseStep(i) && EliteIs(Enemies[i], EliteEffect.Fast) && Math.Abs(Enemies[i].X - Hero.X) + Math.Abs(Enemies[i].Y - Hero.Y) != 1) ChaseStep(i);
     }
 
     public void EndTurn()
@@ -598,6 +612,15 @@ public sealed partial class Game
             }
         }
         if (AbilityCd > 0 && --AbilityCd == 0) Push(Msg("Moc gotowa: ").Add(CDef.AbilityName).As(LogKind.Good));
+        ref var wet = ref HeroStatus[(int)StatusEffect.Wet];
+        if (wet > 0) --wet; // mokry schnie
+        for (var i = 0; i < EnemiesCount; ++i) // problemy: kałuża moczy, poza nią schną
+        {
+            ref var e = ref Enemies[i];
+            if (!e.Alive) continue;
+            if (Puddle(e.X, e.Y)) e.Wet = (sbyte)D.WetTurns;
+            else if (e.Wet > 0) --e.Wet;
+        }
         if (GuardTurns > 0) --GuardTurns; // ochrona BHP-owca mija
         for (var i = 0; i < WallsCount;)
         {
@@ -637,11 +660,21 @@ public sealed partial class Game
             if (Cheb(Hero.X, Hero.Y, BlastX, BlastY) <= D.BehaviorBlastRadius)
             {
                 var dmg = TakenDamage(BlastDmg - HeroDefense() / 2);
+                var dusty = DustSight() > 0; // pył + iskra (wybuch) na bohaterze
+                if (dusty) dmg += D.Combos[(int)ComboEffect.DustBlast].HeroValue;
                 Hero.Hp = (short)(Hero.Hp - dmg);
                 StageDamage += dmg;
                 HeroHit = true;
                 AddHit(Hero.X, Hero.Y, dmg, true);
-                Push(Msg("Wybuch: -").Add(dmg).Add(" HP").As(LogKind.Bad));
+                if (dusty)
+                {
+                    ComboEvents = (byte)(ComboEvents | (8 << (int)ComboEffect.DustBlast));
+                    Push(Msg(D.Combos[(int)ComboEffect.DustBlast].Short).Add(" Wybuch: -").Add(dmg).Add(" HP").As(LogKind.Bad));
+                }
+                else
+                {
+                    Push(Msg("Wybuch: -").Add(dmg).Add(" HP").As(LogKind.Bad));
+                }
                 if (Hero.Hp <= 0) HeroDown();
             }
             else

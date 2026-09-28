@@ -168,6 +168,36 @@ public sealed class GameData
     /// <summary>Dymki przy pierwszym odblokowaniu; kolejność = TutorialUnlock.</summary>
     public TutorialStep[] TutorialUnlocks { get; private init; } = [];
 
+    // v0.21.50 cz. 2: premie po etapie (#27), elity (#28), kombinacje stanów (#29)
+    /// <summary>Rzadkości premii (zwykła, rzadka, legendarna) z wagami.</summary>
+    public BoonRarityDef[] BoonRarities { get; private init; } = [];
+    /// <summary>Nazwy znaczników premii (indeks = bit w BoonDef.Tags).</summary>
+    public string[] BoonTags { get; private init; } = [];
+    public BoonDef[] Boons { get; private init; } = [];
+    public SynergyDef[] Synergies { get; private init; } = [];
+    public int BoonRerollCost { get; private init; }
+    /// <summary>Ile premii ze znacznikiem włącza synergię.</summary>
+    public int SynergyAt { get; private init; } = 2;
+    /// <summary>Szczęście: +waga rzadkich i legendarnych za punkt (tyle mniej zwykłych).</summary>
+    public int BoonLuckRare { get; private init; }
+    public int BoonLuckLegend { get; private init; }
+    public EliteDef[] Elites { get; private init; } = [];
+    /// <summary>Szansa na elitę wg aktu (GameData.Acts) i trudności, +za NG+.</summary>
+    public int[] EliteActPct { get; private init; } = [];
+    public int[] EliteDiffPct { get; private init; } = [];
+    public int EliteTierPct { get; private init; }
+    public int EliteHpPct { get; private init; } = 100;
+    public int EliteDmg { get; private init; }
+    public int EliteRespect { get; private init; }
+    public int EliteMats { get; private init; }
+    public int EliteGearMin { get; private init; }
+    /// <summary>Kombinacje stanów (indeks = ComboEffect).</summary>
+    public ComboDef[] Combos { get; private init; } = [];
+    /// <summary>Jak grać: skąd stany (mokry, prąd, pył, zamróz).</summary>
+    public string[] ComboSources { get; private init; } = [];
+    public int WetTurns { get; private init; } = 3;
+    public int HeroWetTurns { get; private init; } = 2;
+
     public int MaxHeroLevel => LevelThresholds.Length + 1;
     public int GearSlotsCount => GearSlots.Length;
     public int GearTraitsCount => GearTraits.Length;
@@ -208,7 +238,7 @@ public sealed class GameData
 
         var weapons = weaponsJson.Select(w => new WeaponDef(
             Str(w, "id"), Str(w, "name"), Int(w, "minDamage"), Int(w, "maxDamage"), Int(w, "range"),
-            ParseStat(Str(w, "scalesWith")))).ToArray();
+            ParseStat(Str(w, "scalesWith")), ParseElement(Str(w, "element", "none")))).ToArray();
         foreach (var w in weapons)
         {
             Require(w.MinDamage <= w.MaxDamage && w.Range >= 1, $"broń {w.Id}: złe obrażenia/zasięg");
@@ -247,7 +277,9 @@ public sealed class GameData
                 e.TryGetProperty("phase", out var ph) ? Int(ph, "atPct") : 0,
                 e.TryGetProperty("phase", out var ph2) ? Int(ph2, "healPct") : 0,
                 e.TryGetProperty("phase", out var ph3) ? Int(ph3, "summon", 0) : 0,
-                e.TryGetProperty("phase", out var ph4) ? Str(ph4, "name") : "");
+                e.TryGetProperty("phase", out var ph4) ? Str(ph4, "name") : "",
+                ParseElement(Str(e, "element", "none")),
+                Str(e, "gender", "m") switch { "f" => 1, "n" => 2, _ => 0 });
         }).ToArray();
         foreach (var e in enemies)
         {
@@ -535,8 +567,90 @@ public sealed class GameData
             Require(tutUnlocks.Select(x => x.Id).SequenceEqual(new[] { "respect", "daily", "investor", "act0", "class" }), "samouczek: 5 dymków odblokowań");
         }
 
+        // v0.21.50 cz. 2: premie po etapie (#27), elity (#28), kombinacje stanów (#29); bez sekcji – puste listy
+        BoonRarityDef[] boonRarities = [];
+        string[] boonTagNames = [];
+        BoonDef[] boons = [];
+        SynergyDef[] synergies = [];
+        int rerollCost = 0, synergyAt = 2, luckRare = 0, luckLegend = 0;
+        if (d.TryGetProperty("boons", out var boj))
+        {
+            boonRarities = boj.GetProperty("rarities").EnumerateArray().Select(x => new BoonRarityDef(Str(x, "id"), Str(x, "name"), Int(x, "weight"))).ToArray();
+            var rarId = boonRarities.Select(x => x.Id).ToList();
+            var tagIds = boj.GetProperty("tags").EnumerateArray().Select(x => Str(x, "id")).ToList();
+            boonTagNames = boj.GetProperty("tags").EnumerateArray().Select(x => Str(x, "name")).ToArray();
+            int TagMask(JsonElement x) => x.GetProperty("tags").EnumerateArray().Aggregate(0, (m, t) =>
+            {
+                var i = tagIds.IndexOf(t.GetString() ?? "");
+                Require(i >= 0, $"premia: nieznany znacznik {t.GetString()}");
+                return m | 1 << i;
+            });
+            boons = boj.GetProperty("list").EnumerateArray().Select(x => new BoonDef(Str(x, "id"), Str(x, "name"), Str(x, "desc"),
+                rarId.IndexOf(Str(x, "rarity")), TagMask(x), ParseSnakeOr(Str(x, "effect"), BoonEffect.Unknown), Int(x, "value"),
+                x.TryGetProperty("class", out var bc) ? Lookup(cid, bc.GetString() ?? "", "zawód premii") : -1)).ToArray();
+            synergies = boj.GetProperty("synergies").EnumerateArray().Select(x => new SynergyDef(Str(x, "id"), Str(x, "name"), Str(x, "desc"),
+                TagMask(x), ParseSnake<SynergyEffect>(Str(x, "effect")), Int(x, "value"))).ToArray();
+            Require(boonRarities.Length == 3 && boons.Length <= 64 && boons.All(b => b.Rarity >= 0), "premie: 3 rzadkości, maks. 64 premie");
+            rerollCost = Int(boj, "rerollCost");
+            synergyAt = Int(boj, "synergyAt", 2);
+            luckRare = Int(boj, "luckRare", 0);
+            luckLegend = Int(boj, "luckLegend", 0);
+        }
+        EliteDef[] elites = [];
+        int[] eliteActPct = new int[acts.Length], eliteDiffPct = new int[difficulties.Length];
+        int eliteTierPct = 0, eliteHpPct = 100, eliteDmg = 0, eliteRespect = 0, eliteMats = 0, eliteGearMin = 0;
+        if (d.TryGetProperty("elites", out var elj))
+        {
+            elites = elj.GetProperty("traits").EnumerateArray().Select(x => new EliteDef(Str(x, "id"), Str(x, "name"),
+                x.GetProperty("prefix").EnumerateArray().Select(p => p.GetString() ?? "").ToArray(), Str(x, "info"),
+                ParseSnake<EliteEffect>(Str(x, "effect")), Int(x, "value"))).ToArray();
+            eliteActPct = elj.GetProperty("actPct").EnumerateArray().Select(x => x.GetInt32()).ToArray();
+            eliteDiffPct = elj.GetProperty("diffPct").EnumerateArray().Select(x => x.GetInt32()).ToArray();
+            Require(eliteActPct.Length == acts.Length && eliteDiffPct.Length == difficulties.Length && elites.All(e => e.Prefix.Length == 3), "elity: złe dane");
+            eliteTierPct = Int(elj, "tierPct");
+            eliteHpPct = Int(elj, "hpPct");
+            eliteDmg = Int(elj, "dmg");
+            var erw = elj.GetProperty("reward");
+            eliteRespect = Int(erw, "respect");
+            eliteMats = Int(erw, "mats");
+            eliteGearMin = Int(erw, "gearMin");
+        }
+        ComboDef[] combos = [];
+        string[] comboSources = [];
+        int wetTurns = 3, heroWetTurns = 2;
+        if (d.TryGetProperty("combos", out var coj))
+        {
+            combos = coj.GetProperty("list").EnumerateArray().Select(x => new ComboDef(Str(x, "id"), Str(x, "name"), Str(x, "short"), Str(x, "info"),
+                Str(x, "hero", ""), ParseSnake<ComboEffect>(Str(x, "effect")), Int(x, "value"), Int(x, "radius", 0), Int(x, "heroValue", 0))).ToArray();
+            for (var i = 0; i < combos.Length; i++) Require((int)combos[i].Effect == i, "kombinacje: kolejność = ComboEffect");
+            comboSources = coj.TryGetProperty("sources", out var csj) ? csj.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : [];
+            wetTurns = Int(coj, "wetTurns");
+            heroWetTurns = Int(coj, "heroWetTurns");
+        }
+
         return new GameData
         {
+            BoonRarities = boonRarities,
+            BoonTags = boonTagNames,
+            Boons = boons,
+            Synergies = synergies,
+            BoonRerollCost = rerollCost,
+            SynergyAt = synergyAt,
+            BoonLuckRare = luckRare,
+            BoonLuckLegend = luckLegend,
+            Elites = elites,
+            EliteActPct = eliteActPct,
+            EliteDiffPct = eliteDiffPct,
+            EliteTierPct = eliteTierPct,
+            EliteHpPct = eliteHpPct,
+            EliteDmg = eliteDmg,
+            EliteRespect = eliteRespect,
+            EliteMats = eliteMats,
+            EliteGearMin = eliteGearMin,
+            Combos = combos,
+            ComboSources = comboSources,
+            WetTurns = wetTurns,
+            HeroWetTurns = heroWetTurns,
             Weapons = weapons,
             Classes = classes,
             Enemies = enemies,
@@ -610,7 +724,8 @@ public sealed class GameData
             NgHpPctPerTier = Int(ng, "hpPctPerTier"),
             NgDmgBonusPerTier = Int(ng, "dmgBonusPerTier"),
             NgScorePctPerTier = Int(ng, "scorePctPerTier"),
-            Statuses = [new StatusDef("", "", ""), StatusOf("poison"), StatusOf("shock"), StatusOf("slip"), StatusOf("paper")],
+            Statuses = [new StatusDef("", "", ""), StatusOf("poison"), StatusOf("shock"), StatusOf("slip"), StatusOf("paper"),
+                stt.TryGetProperty("wet", out _) ? StatusOf("wet") : new StatusDef("Mokry", "Mokry", "prąd boli bardziej")],
             PaperDelay = Int(stt.GetProperty("paper"), "delay"),
             GearTraits = traits,
             GearDeclineXp = Int(eq, "declineXp"),
@@ -813,7 +928,24 @@ public sealed class GameData
         "shop_pct" => RespectEffect.ShopPct,
         "mats_pct" => RespectEffect.MatsPct,
         "second_chance" => RespectEffect.SecondChance,
+        "reroll" => RespectEffect.Reroll,
         _ => RespectEffect.Unknown,
+    };
+
+    // "wet_hits" -> WetHits (skutki premii, synergii, elit i kombinacji w danych)
+    private static T ParseSnake<T>(string s) where T : struct, Enum =>
+        ParseEnum<T>(string.Concat(s.Split('_').Select(p => p.Length > 0 ? char.ToUpperInvariant(p[0]) + p[1..] : p)));
+
+    private static T ParseSnakeOr<T>(string s, T fallback) where T : struct, Enum =>
+        Enum.TryParse<T>(string.Concat(s.Split('_').Select(p => p.Length > 0 ? char.ToUpperInvariant(p[0]) + p[1..] : p)), true, out var v) ? v : fallback;
+
+    private static Element ParseElement(string s) => s switch
+    {
+        "woda" => Element.Water,
+        "prad" => Element.Power,
+        "iskra" => Element.Spark,
+        "none" => Element.None,
+        _ => throw new GameDataException($"nieznany żywioł: {s}"),
     };
 
     private static T ParseEnum<T>(string s) where T : struct, Enum =>

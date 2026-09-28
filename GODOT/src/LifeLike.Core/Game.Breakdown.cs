@@ -41,9 +41,12 @@ public sealed partial class Game
         b.FlatLevel = DamageHelp.LevelDmg(D, HeroLevel);
         b.FlatFound = DmgBonus - Bonus.Dmg - b.FlatLevel;
         b.Pct = Bonus.DmgPct;
+        b.FlatBoon = BoonSum(BoonEffect.Dmg);
+        b.PctBoon = BoonSum(BoonEffect.DmgPct);
+        b.CritBoon = BoonSum(BoonEffect.Crit);
         b.VsEnemy = enemyDefId >= 0;
         b.EnemyDef = b.VsEnemy ? D.Enemies[enemyDefId].Defense : 0;
-        b.Luck = CDef.Luck + Bonus.Luck + luckT;
+        b.Luck = CDef.Luck + Bonus.Luck + luckT + BoonLuck();
         b.CritBonus = Bonus.Crit;
         b.PowerRank = AbilityRank();
         b.Power = PowerDmgBonus();
@@ -51,7 +54,17 @@ public sealed partial class Game
         return b;
     }
 
-    /// <summary>Premia mocy do ciosu: Seria i Rynna +1 od rangi II, Taran +ranga.</summary>
+    /// <summary>Rozpiska przeciw konkretnemu problemowi na planszy (karta problemu): z obroną elity (Tarcza).</summary>
+    public DmgBreakdown ActorBreakdown(int ei)
+    {
+        var b = WeaponBreakdown(Enemies[ei].DefId);
+        b.EnemyElite = EnemyEliteDef(ei);
+        b.Elite = Enemies[ei].Elite;
+        b.Finish(D);
+        return b;
+    }
+
+    /// <summary>Premia mocy do ciosu: Seria i Rynna +1 od rangi II, Taran +ranga; premie zawodów: Wirówka, Taran.</summary>
     public int PowerDmgBonus()
     {
         var rank = AbilityRank();
@@ -61,7 +74,9 @@ public sealed partial class Game
             case AbilityEffect.Line:
                 return rank >= 2 ? 1 : 0;
             case AbilityEffect.Ram:
-                return rank;
+                return rank + BoonPower();
+            case AbilityEffect.Spin:
+                return BoonPower();
             default:
                 return 0;
         }
@@ -72,6 +87,9 @@ public sealed partial class Game
     {
         var e = Enemies[ei];
         var ed = D.Enemies[e.DefId];
-        return DamageHelp.EnemyHitRange(ed.MinDamage, ed.MaxDamage, EnemyDmgBonus() + e.Grow / 2, HeroDefense(), Bonus.TakenPct);
+        return DamageHelp.EnemyHitRange(ed.MinDamage, ed.MaxDamage, EnemyBonus(e), HeroDefense(), Bonus.TakenPct);
     }
+
+    /// <summary>Premia obrażeń problemu: etap, trudność, wzrost, elita.</summary>
+    public int EnemyBonus(in Actor e) => EnemyDmgBonus() + e.Grow / 2 + (e.Elite >= 0 ? D.EliteDmg : 0);
 }

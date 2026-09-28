@@ -45,6 +45,8 @@ public sealed partial class Game
         w.Write(a.Flags);
         w.Write(a.Grow);
         w.Write(a.Timer);
+        w.Write(a.Elite);
+        w.Write(a.Wet);
     }
 
     private static Actor ReadActor(BinaryReader r) => new()
@@ -60,6 +62,8 @@ public sealed partial class Game
         Flags = r.ReadByte(),
         Grow = r.ReadSByte(),
         Timer = r.ReadSByte(),
+        Elite = r.ReadSByte(),
+        Wet = r.ReadSByte(),
     };
 
     public void Write(BinaryWriter w)
@@ -114,7 +118,7 @@ public sealed partial class Game
                      Bonus.Hp, Bonus.Def, Bonus.Dmg, Bonus.Coffee, Bonus.Pickups, Bonus.Luck, Bonus.Craft, Bonus.Cooldown, Bonus.Sight,
                      Bonus.Thermos, Bonus.ToolPct, Bonus.XpPct, Bonus.Cash, Bonus.Crit, Bonus.Tools, Bonus.Helpers, Bonus.Investor,
                      Bonus.DmgPct, Bonus.TakenPct, Bonus.GearPct, Bonus.Dodge, Bonus.CoffeePct, Bonus.BrigadePct, Bonus.ShopPct,
-                     Bonus.MatsPct, Bonus.SecondChance, Bonus.GearSlots, Bonus.Act0,
+                     Bonus.MatsPct, Bonus.SecondChance, Bonus.GearSlots, Bonus.Act0, Bonus.Rerolls,
                  })
             w.Write(v);
         foreach (var v in new[] { XpPct, XpBanked, RunXp, HeroLevel, Boss, StairsX, StairsY }) w.Write(v);
@@ -178,6 +182,11 @@ public sealed partial class Game
         w.Write(ShotEvents);
         w.Write(FirstStage);
         w.Write(Docs);
+        w.Write(Boons);
+        foreach (var o in BoonOffer) w.Write(o);
+        w.Write(BoonRerolls);
+        w.Write(HitCtx);
+        w.Write(ComboEvents);
     }
 
     public void Read(BinaryReader r)
@@ -236,7 +245,7 @@ public sealed partial class Game
             Investor = r.ReadInt32(),
             DmgPct = r.ReadInt32(), TakenPct = r.ReadInt32(), GearPct = r.ReadInt32(), Dodge = r.ReadInt32(), CoffeePct = r.ReadInt32(),
             BrigadePct = r.ReadInt32(), ShopPct = r.ReadInt32(), MatsPct = r.ReadInt32(), SecondChance = r.ReadInt32(),
-            GearSlots = r.ReadInt32(), Act0 = r.ReadInt32(),
+            GearSlots = r.ReadInt32(), Act0 = r.ReadInt32(), Rerolls = r.ReadInt32(),
         };
         XpPct = r.ReadInt32();
         XpBanked = r.ReadInt32();
@@ -297,5 +306,10 @@ public sealed partial class Game
         ShotEvents = r.ReadUInt32();
         FirstStage = r.ReadSByte();
         Docs = r.ReadByte();
+        Boons = r.ReadUInt64();
+        for (var i = 0; i < BoonOffer.Length; i++) BoonOffer[i] = r.ReadSByte();
+        BoonRerolls = r.ReadByte();
+        HitCtx = r.ReadByte();
+        ComboEvents = r.ReadByte();
     }
 }

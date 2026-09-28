@@ -80,7 +80,7 @@ public class DamageBreakdownTests
                     var ei = g.EnemiesCount - 1;
                     g.Enemies[ei].Hp = g.Enemies[ei].MaxHp = 30000;
                     g.HeroAttack(ei);
-                    var dealt = 30000 - g.Enemies[ei].Hp;
+                    var dealt = (int)g.Hits[0].Amount; // pierwszy wpis = cios (kombinacje stanów to osobne trafienia)
                     var crit = g.HitsCount > 0 && g.Hits[0].Kind == HitKind.Crit;
                     if (crit)
                     {

@@ -56,6 +56,8 @@ public struct RunMods
     public int GearSlots;
     /// <summary>v0.21.49: Akt 0 (Papierologia) z nagrody za odbiór – budowa zaczyna się od niego (1 = tak).</summary>
     public int Act0;
+    /// <summary>v0.21.50: Respekt Druga oferta – darmowe losowanie premii po etapie.</summary>
+    public int Rerolls;
 
     public static RunMods Default(GameData d) => new() { Tools = d.StartToolsMask, Helpers = d.StartHelpersMask, GearSlots = d.GearBaseMask };
 
@@ -79,6 +81,7 @@ public struct RunMods
             case RespectEffect.ShopPct: ShopPct += v; break;
             case RespectEffect.MatsPct: MatsPct += v; break;
             case RespectEffect.SecondChance: SecondChance += v; break;
+            case RespectEffect.Reroll: Rerolls += v; break;
         }
     }
 
@@ -100,6 +103,7 @@ public struct RunMods
         RespectEffect.ShopPct => m.Add("Hurtownia -").Add(v).Add("% ceny"),
         RespectEffect.MatsPct => m.Add("Materiały +").Add(v).Add("% częściej"),
         RespectEffect.SecondChance => m.Add("Raz na budowę: 1 HP zamiast końca"),
+        RespectEffect.Reroll => m.Add("Premie: +").Add(v).Add(" darmowe losowanie"),
         _ => m,
     };
 

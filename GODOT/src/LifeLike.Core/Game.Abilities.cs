@@ -10,7 +10,8 @@ public sealed partial class Game
 
     /// <summary>Każda ranga skraca odnowienie o 2 tury (minimum 4), cecha sprzętu dalej (minimum 3); upał wydłuża.</summary>
     public int AbilityCooldown() =>
-        Math.Max(3, Math.Max(4, CDef.AbilityCooldown - 2 * (AbilityRank() - 1)) - TraitBonus(TraitEffect.Cooldown) - Bonus.Cooldown)
+        Math.Max(3, Math.Max(4, CDef.AbilityCooldown - 2 * (AbilityRank() - 1)) - TraitBonus(TraitEffect.Cooldown) - Bonus.Cooldown
+                    - BoonSum(BoonEffect.Cooldown))
         + (WeatherIs(WeatherEffect.Heat) ? WDef.Value : 0);
 
     public int NearestVisibleEnemy()
@@ -96,7 +97,7 @@ public sealed partial class Game
                 {
                     if (Enemies[i].Alive && Visible(Enemies[i].X, Enemies[i].Y))
                     {
-                        Enemies[i].Stun = (sbyte)(1 + rank);
+                        Enemies[i].Stun = (sbyte)(1 + rank + BoonPower());
                         Enemies[i].Awake = true;
                         ok = true;
                     }
@@ -104,12 +105,12 @@ public sealed partial class Game
                 if (ok) Push(Msg(c.AbilityName).Add(": problemy wstrzymane"));
                 break;
             case AbilityEffect.Wall: // Ścianka: mur w poprzek drogi najbliższego wroga (nigdy wokół bohatera)
-                ok = WallTowardEnemy(rank >= 3 ? 2 : 1, 4 + 2 * rank);
+                ok = WallTowardEnemy(rank >= 3 ? 2 : 1, 4 + 2 * rank + BoonPower());
                 if (ok) Push(Msg(c.AbilityName).Add(" postawiona!"));
                 break;
             case AbilityEffect.Volley: // Seria: wszyscy widoczni w zasięgu (+1 obrażeń od II, +1 zasięgu na III)
             {
-                var range = WeaponRange() + (rank >= 3 ? 1 : 0);
+                var range = WeaponRange() + (rank >= 3 ? 1 : 0) + BoonPower();
                 if (rank >= 2) ++DmgBonus;
                 for (var i = 0; i < EnemiesCount && St == GameStatus.Playing; ++i)
                 {
@@ -127,7 +128,8 @@ public sealed partial class Game
             {
                 uint done = 0;
                 var t = NearestTarget();
-                for (var k = 0; k < 2 + rank && t >= 0 && St == GameStatus.Playing; ++k)
+                HitCtx = 1; // Łańcuch: prąd (mokry + prąd = porażenie)
+                for (var k = 0; k < 2 + rank + BoonPower() && t >= 0 && St == GameStatus.Playing; ++k)
                 {
                     int px = Enemies[t].X, py = Enemies[t].Y;
                     HeroAttack(t);
@@ -144,6 +146,7 @@ public sealed partial class Game
                         }
                     }
                 }
+                HitCtx = 0;
                 break;
             }
             case AbilityEffect.Flush: // Zawór: strumień odpycha sąsiadów o 1/2 pola (tracą turę) i leczy 6/8/10 HP
@@ -163,9 +166,10 @@ public sealed partial class Game
                     }
                     e.Awake = true;
                     e.Stun = (sbyte)Math.Max((int)e.Stun, 1); // zalany traci turę, inaczej od razu by wrócił
+                    e.Wet = (sbyte)Math.Max((int)e.Wet, D.WetTurns); // i jest mokry
                     ok = true;
                 }
-                var h = Math.Min(4 + 2 * rank, Hero.MaxHp - Hero.Hp);
+                var h = Math.Min(4 + 2 * rank + BoonPower(), Hero.MaxHp - Hero.Hp);
                 if (h > 0)
                 {
                     Hero.Hp = (short)(Hero.Hp + h);
@@ -177,6 +181,8 @@ public sealed partial class Game
             case AbilityEffect.Spin: // Wirówka: wszyscy obok (zasięg 2 na III), od II ogłusza na 1 turę
             {
                 var reach = rank >= 3 ? 2 : 1;
+                HitCtx = 2; // Wirówka: iskry (pył + iskra = wybuch)
+                DmgBonus += BoonPower();
                 for (var i = 0; i < EnemiesCount && St == GameStatus.Playing; ++i)
                 {
                     var d = Cheb(Hero.X, Hero.Y, Enemies[i].X, Enemies[i].Y);
@@ -187,6 +193,8 @@ public sealed partial class Game
                         if (rank >= 2 && Enemies[i].Alive) Enemies[i].Stun = (sbyte)Math.Max((int)Enemies[i].Stun, 1);
                     }
                 }
+                DmgBonus -= BoonPower();
+                HitCtx = 0;
                 break;
             }
             case AbilityEffect.Line: // Rynna (Dekarz): dachówki lecą linią przez najbliższy widoczny problem (4/5/6 pól)
@@ -196,7 +204,7 @@ public sealed partial class Game
                 int dx = Enemies[t].X - Hero.X, dy = Enemies[t].Y - Hero.Y, len = Math.Max(Math.Abs(dx), Math.Abs(dy));
                 if (rank >= 2) ++DmgBonus;
                 uint done = 0;
-                for (var k = 1; k <= 3 + rank && St == GameStatus.Playing; ++k)
+                for (var k = 1; k <= 3 + rank + BoonPower() && St == GameStatus.Playing; ++k)
                 {
                     int x = Hero.X + Pct.DivRound(dx * k, len), y = Hero.Y + Pct.DivRound(dy * k, len);
                     if (!Lv.Passable(x, y)) break; // mur zatrzymuje dachówki
@@ -223,7 +231,8 @@ public sealed partial class Game
                     {
                         HeroAttack(i);
                         ok = true;
-                        if (rank >= 2 && Enemies[i].Alive) Enemies[i].Stun = (sbyte)Math.Max((int)Enemies[i].Stun, 1);
+                        var stun = (rank >= 2 ? 1 : 0) + BoonPower(); // premia Gęsty tynk: dłużej
+                        if (stun > 0 && Enemies[i].Alive) Enemies[i].Stun = (sbyte)Math.Max((int)Enemies[i].Stun, stun);
                     }
                 }
                 break;
@@ -241,9 +250,9 @@ public sealed partial class Game
                     var ei = EnemyAt(nx, ny);
                     if (ei >= 0)
                     {
-                        DmgBonus += rank;
+                        DmgBonus += rank + BoonPower();
                         HeroAttack(ei);
-                        DmgBonus -= rank;
+                        DmgBonus -= rank + BoonPower();
                         if (Enemies[ei].Alive && St == GameStatus.Playing)
                         {
                             if (ei != Boss) Shove(ei, dx, dy, 2);
@@ -281,7 +290,7 @@ public sealed partial class Game
     }
 
     /// <summary>Cena towaru w zł po rabacie z Respektu.</summary>
-    public int HurtowniaPrice(int i) => D.Hurtownia[i].Price * (100 - Bonus.ShopPct) / 100;
+    public int HurtowniaPrice(int i) => D.Hurtownia[i].Price * (100 - Math.Min(90, Bonus.ShopPct + BoonSum(BoonEffect.ShopPct))) / 100;
 
     /// <summary>Losowy slot sprzętu spośród dostępnych (nagrody dokładają buty i pas); przy 3 slotach jak dawniej.</summary>
     public int RandomSlot()

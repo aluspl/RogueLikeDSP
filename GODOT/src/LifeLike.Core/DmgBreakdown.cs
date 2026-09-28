@@ -30,8 +30,12 @@ public sealed class DmgBreakdown
     public int FlatGear, GearItem = -1;
     /// <summary>+% (Kurs fachowy, Respekt).</summary>
     public int Pct;
+    /// <summary>v0.21.50: premie po etapach (osobno od premii profilu): płaskie, %, kryt.</summary>
+    public int FlatBoon, PctBoon, CritBoon;
     public bool VsEnemy;
     public int EnemyDef;
+    /// <summary>v0.21.50: + obrona elity (Tarcza) i cecha elity (GameData.Elites, -1 = brak).</summary>
+    public int EnemyElite, Elite = -1;
     public int Luck, CritTrait, CritBonus;
     /// <summary>Moc dodaje do ciosu (Seria, Rynna od II, Taran +ranga) i ranga mocy.</summary>
     public int Power, PowerRank = 1;
@@ -41,6 +45,8 @@ public sealed class DmgBreakdown
 
     // wyliczone w Finish()
     public int StatValue, StatDmg, Flat, DefCut;
+    /// <summary>Procent łącznie (profil + premie po etapach).</summary>
+    public int PctTotal;
     public int BaseMin, BaseMax;
     public int Min, Max;
     /// <summary>Średni cios bez krytu x10.</summary>
@@ -51,19 +57,20 @@ public sealed class DmgBreakdown
     {
         StatValue = StatClass + StatCraft + StatTrait;
         StatDmg = StatValue / 2;
-        Flat = FlatMods + FlatLevel + FlatFound + FlatGear;
-        DefCut = EnemyDef / 2;
+        Flat = FlatMods + FlatLevel + FlatFound + FlatGear + FlatBoon;
+        DefCut = (EnemyDef + EnemyElite) / 2;
+        PctTotal = Pct + PctBoon;
         var add = StatDmg + Flat - DefCut;
         BaseMin = Math.Max(1, WMin + add);
         BaseMax = Math.Max(1, WMax + add);
-        Min = BaseMin + DamageHelp.PctFloor(BaseMin, Pct);
-        Max = BaseMax + DamageHelp.PctCeil(BaseMax, Pct);
+        Min = BaseMin + DamageHelp.PctFloor(BaseMin, PctTotal);
+        Max = BaseMax + DamageHelp.PctCeil(BaseMax, PctTotal);
         int sum = 0, n = 0;
-        for (var r = WMin; r <= WMax; ++r, ++n) sum += Math.Max(1, r + add) * (100 + Math.Max(0, Pct));
+        for (var r = WMin; r <= WMax; ++r, ++n) sum += Math.Max(1, r + add) * (100 + Math.Max(0, PctTotal));
         Avg10 = n > 0 ? LifeLike.Core.Pct.DivRound(sum, 10 * n) : 0;
         CritBase = d.CritBasePct;
         CritLuck = d.CritPerLuckPct * Luck;
-        CritPct = CritBase + CritLuck + CritTrait + CritBonus;
+        CritPct = CritBase + CritLuck + CritTrait + CritBonus + CritBoon;
         CritMult = d.CritMultiplier;
         CritMin = Min * CritMult;
         CritMax = Max * CritMult;

@@ -81,7 +81,7 @@ public class GameDataTests
         Assert.True(D.CritBasePct == 5 && D.CritPerLuckPct == 3 && D.CritMultiplier == 2 && D.DodgeMaxPct == 20);
         Assert.True(D.ThermosCapacity == 3 && D.CoffeeHeal == 8 && D.BotDrinkBelowPct == 40 && D.GearDeclineXp == 1);
         Assert.Equal(95, D.Stages[2].HpPct);
-        Assert.Equal("v0.21.49", D.Version);
+        Assert.Equal("v0.21.50", D.Version);
     }
 
     [Fact]
@@ -149,6 +149,7 @@ public class GameDataTests
         Assert.Contains(d.Upgrades, u => u.Effect == UpgradeEffect.Unknown);
         Assert.Equal(PerkEffect.Unknown, d.Badges[d.BadgeOsiedle].Bonus.Effect);
         Assert.Equal(PerkEffect.Unknown, d.Keepsakes[4].Effect); // Notes kierownika: cooldown -> nieznany
+        Assert.Contains(d.Boons, b => b.Effect == BoonEffect.Unknown); // Druga zmiana: cooldown -> bez działania
     }
 
     [Fact]

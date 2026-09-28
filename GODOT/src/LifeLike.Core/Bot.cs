@@ -185,6 +185,14 @@ public static class Bot
         Step(g);
     }
 
+    /// <summary>Po etapie: bot wybiera premię (BotBoonChoice, darmowe losowanie przy samych zwykłych) i idzie dalej.</summary>
+    public static void Next(Game g)
+    {
+        if (g.BotWantsReroll()) g.RerollBoons();
+        if (g.HasBoonOffer) g.PickBoon(g.BotBoonChoice());
+        g.NextStage();
+    }
+
     /// <summary>Hurtownia bota: kupuje po kolei wszystko, na co starcza budżetu (deterministycznie).</summary>
     public static void Shop(Game g)
     {

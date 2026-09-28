@@ -114,6 +114,7 @@ public sealed partial class Game
         var got = StageRespect();
         Respect += got;
         Push(Msg("Respekt +").Add(got).As(LogKind.Loot));
+        if (Stage < D.Stages.Length - 1) RollBoons(); // premia 1 z 3 przed harmonogramem (nie po odbiorze)
     }
 
     /// <summary>Respekt za bieżący etap: zwykły, boss w środku aktu, boss aktu, ostatni; mnożnik jak wynik (trudność, NG+).</summary>

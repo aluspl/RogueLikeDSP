@@ -81,6 +81,7 @@ public class GoldenTests
             }
             digestIndex++;
             g.HitsCount = 0; // jak warstwa GBA po każdej turze
+            g.ComboEvents = 0;
         }
 
         CheckSnapshot(0);
@@ -95,6 +96,10 @@ public class GoldenTests
                 Meta.BankXp(p, g);
                 if (g.ActCleared && shop && !g.ShopClosed) Bot.Shop(g);
                 if (paths != 0) g.ChoosePath(g.Stage & 1);
+                // v0.21.50 cz. 2: premia 1 z 3 – bot z rdzenia; ścieżki na przemian: też losowanie (płatne) i wybór wg etapu
+                if (g.BotWantsReroll()) g.RerollBoons();
+                if (paths != 0 && g.Stage % 4 == 1 && g.CanReroll()) g.RerollBoons();
+                if (g.HasBoonOffer) g.PickBoon(paths != 0 ? g.Stage % 3 : g.BotBoonChoice());
                 g.NextStage();
                 CheckSnapshot(step);
                 CheckDigest(step);

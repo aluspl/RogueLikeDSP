@@ -208,7 +208,8 @@
       "minDamage": 3,
       "maxDamage": 5,
       "range": 2,
-      "scalesWith": "intelligence"
+      "scalesWith": "intelligence",
+      "element": "prad"
     },
     {
       "id": "klucz",
@@ -224,7 +225,8 @@
       "minDamage": 4,
       "maxDamage": 7,
       "range": 1,
-      "scalesWith": "agility"
+      "scalesWith": "agility",
+      "element": "iskra"
     },
     {
       "id": "lom",
@@ -312,7 +314,8 @@
       "minDamage": 3,
       "maxDamage": 5,
       "range": 3,
-      "scalesWith": "agility"
+      "scalesWith": "agility",
+      "element": "iskra"
     }
   ],
   "enemies": [
@@ -333,7 +336,8 @@
         "chancePct": 14,
         "turns": 2
       },
-      "material": "cement"
+      "material": "cement",
+      "element": "woda"
     },
     {
       "id": "zwarcie",
@@ -352,7 +356,9 @@
         "chancePct": 17,
         "turns": 1
       },
-      "material": "stal"
+      "material": "stal",
+      "element": "prad",
+      "gender": "n"
     },
     {
       "id": "plesn",
@@ -371,7 +377,8 @@
         "chancePct": 24,
         "turns": 3
       },
-      "material": "drewno"
+      "material": "drewno",
+      "gender": "f"
     },
     {
       "id": "kornik",
@@ -404,7 +411,8 @@
         "chancePct": 35,
         "turns": 0
       },
-      "material": "drewno"
+      "material": "drewno",
+      "gender": "f"
     },
     {
       "id": "dostawa",
@@ -418,7 +426,8 @@
       "frame": 11,
       "desc": "Będzie jutro. Na pewno.",
       "slam": false,
-      "material": "stal"
+      "material": "stal",
+      "gender": "f"
     },
     {
       "id": "ulewa",
@@ -437,7 +446,9 @@
         "chancePct": 28,
         "turns": 3
       },
-      "material": "cement"
+      "material": "cement",
+      "element": "woda",
+      "gender": "f"
     },
     {
       "id": "budzet",
@@ -482,7 +493,8 @@
       "sight": 10,
       "score": 150,
       "frame": 46,
-      "slam": true
+      "slam": true,
+      "gender": "f"
     },
     {
       "id": "nawalnica",
@@ -500,7 +512,9 @@
         "status": "slip",
         "chancePct": 35,
         "turns": 3
-      }
+      },
+      "element": "woda",
+      "gender": "f"
     },
     {
       "id": "inspekcja",
@@ -530,7 +544,8 @@
       "reward": {
         "cash": 60,
         "title": "Protokół bez uwag"
-      }
+      },
+      "gender": "f"
     },
     {
       "id": "woda",
@@ -547,7 +562,9 @@
       "material": "cement",
       "behaviors": [
         "splits"
-      ]
+      ],
+      "element": "woda",
+      "gender": "f"
     },
     {
       "id": "kamien",
@@ -581,7 +598,8 @@
       "material": "cement",
       "behaviors": [
         "pushes"
-      ]
+      ],
+      "gender": "n"
     },
     {
       "id": "folia",
@@ -598,7 +616,9 @@
       "material": "stal",
       "behaviors": [
         "returns"
-      ]
+      ],
+      "element": "woda",
+      "gender": "f"
     },
     {
       "id": "krzywy_mur",
@@ -652,7 +672,8 @@
       "behaviors": [
         "stationary",
         "grows"
-      ]
+      ],
+      "gender": "n"
     },
     {
       "id": "zbrojenie",
@@ -686,7 +707,9 @@
       "material": "drewno",
       "behaviors": [
         "ranged"
-      ]
+      ],
+      "element": "woda",
+      "gender": "f"
     },
     {
       "id": "rynna",
@@ -703,7 +726,8 @@
       "material": "stal",
       "behaviors": [
         "explodes"
-      ]
+      ],
+      "gender": "f"
     },
     {
       "id": "pustak",
@@ -737,7 +761,8 @@
       "material": "drewno",
       "behaviors": [
         "grows"
-      ]
+      ],
+      "gender": "f"
     },
     {
       "id": "ramka",
@@ -755,7 +780,8 @@
       "behaviors": [
         "stationary",
         "ranged"
-      ]
+      ],
+      "gender": "f"
     },
     {
       "id": "przeciag",
@@ -791,7 +817,8 @@
       "behaviors": [
         "flees",
         "returns"
-      ]
+      ],
+      "gender": "n"
     },
     {
       "id": "uziemienie",
@@ -813,7 +840,8 @@
       "material": "stal",
       "behaviors": [
         "explodes"
-      ]
+      ],
+      "element": "prad"
     },
     {
       "id": "rysa",
@@ -830,7 +858,8 @@
       "material": "cement",
       "behaviors": [
         "splits"
-      ]
+      ],
+      "gender": "f"
     },
     {
       "id": "wilgoc",
@@ -852,7 +881,9 @@
       "material": "cement",
       "behaviors": [
         "heals"
-      ]
+      ],
+      "element": "woda",
+      "gender": "f"
     },
     {
       "id": "odpryski",
@@ -869,7 +900,8 @@
       "material": "cement",
       "behaviors": [
         "ranged"
-      ]
+      ],
+      "gender": "n"
     },
     {
       "id": "poprawki",
@@ -886,7 +918,8 @@
       "material": "stal",
       "behaviors": [
         "returns"
-      ]
+      ],
+      "gender": "n"
     },
     {
       "id": "podpis",
@@ -954,7 +987,8 @@
       "material": "drewno",
       "behaviors": [
         "ranged"
-      ]
+      ],
+      "gender": "f"
     },
     {
       "id": "pieczatka",
@@ -976,7 +1010,8 @@
       "material": "drewno",
       "behaviors": [
         "pushes"
-      ]
+      ],
+      "gender": "f"
     },
     {
       "id": "rura",
@@ -998,7 +1033,9 @@
       "material": "stal",
       "behaviors": [
         "splits"
-      ]
+      ],
+      "element": "woda",
+      "gender": "f"
     },
     {
       "id": "cisnienie",
@@ -1038,7 +1075,9 @@
       "material": "stal",
       "behaviors": [
         "explodes"
-      ]
+      ],
+      "element": "prad",
+      "gender": "f"
     },
     {
       "id": "decyzja",
@@ -1072,12 +1111,13 @@
       "reward": {
         "cash": 40,
         "title": "Pozwolenie wydane"
-      }
+      },
+      "gender": "f"
     }
   ],
   "stages": [
     {
-      "name": "Działka i pozwolenie",
+      "name": "Pozwolenie",
       "enemies": [
         "podpis",
         "termin_odw",
@@ -1085,7 +1125,7 @@
         "pieczatka"
       ],
       "count": 6,
-      "hpPct": 106,
+      "hpPct": 126,
       "dmgBonus": 2,
       "act": 3,
       "cost": 15
@@ -1099,7 +1139,7 @@
         "wniosek"
       ],
       "count": 6,
-      "hpPct": 110,
+      "hpPct": 130,
       "dmgBonus": 1,
       "act": 3,
       "boss": "decyzja",
@@ -1128,7 +1168,7 @@
         "przeciek"
       ],
       "count": 5,
-      "hpPct": 98,
+      "hpPct": 102,
       "dmgBonus": 0,
       "act": 0,
       "cost": 22
@@ -1142,7 +1182,7 @@
         "dostawa"
       ],
       "count": 6,
-      "hpPct": 100,
+      "hpPct": 108,
       "dmgBonus": 0,
       "act": 0,
       "cost": 62
@@ -1156,8 +1196,8 @@
         "budzet"
       ],
       "count": 6,
-      "hpPct": 105,
-      "dmgBonus": 0,
+      "hpPct": 117,
+      "dmgBonus": 1,
       "act": 0,
       "boss": "betoniarka",
       "cost": 36
@@ -1171,8 +1211,8 @@
         "kornik"
       ],
       "count": 8,
-      "hpPct": 110,
-      "dmgBonus": 1,
+      "hpPct": 126,
+      "dmgBonus": 2,
       "act": 1,
       "cost": 55
     },
@@ -1185,8 +1225,8 @@
         "dostawa"
       ],
       "count": 7,
-      "hpPct": 112,
-      "dmgBonus": 1,
+      "hpPct": 132,
+      "dmgBonus": 2,
       "act": 1,
       "cost": 30
     },
@@ -1199,8 +1239,8 @@
         "dostawa"
       ],
       "count": 8,
-      "hpPct": 115,
-      "dmgBonus": 1,
+      "hpPct": 139,
+      "dmgBonus": 3,
       "act": 1,
       "boss": "nawalnica",
       "cost": 41
@@ -1214,8 +1254,8 @@
         "przeciek"
       ],
       "count": 8,
-      "hpPct": 120,
-      "dmgBonus": 2,
+      "hpPct": 148,
+      "dmgBonus": 4,
       "act": 2,
       "boss": "inspekcja",
       "cost": 46
@@ -1229,8 +1269,8 @@
         "przeciek"
       ],
       "count": 9,
-      "hpPct": 126,
-      "dmgBonus": 2,
+      "hpPct": 158,
+      "dmgBonus": 4,
       "act": 2,
       "cost": 38
     },
@@ -1243,8 +1283,8 @@
         "budzet"
       ],
       "count": 7,
-      "hpPct": 132,
-      "dmgBonus": 2,
+      "hpPct": 168,
+      "dmgBonus": 4,
       "act": 2,
       "boss": "termin",
       "cost": 72
@@ -1268,7 +1308,7 @@
     {
       "id": "trudny",
       "name": "Trudny",
-      "hpPct": 130,
+      "hpPct": 140,
       "dmgBonus": 0,
       "scorePct": 150
     }
@@ -1869,6 +1909,11 @@
       "short": "Papier.",
       "effect": "moc później",
       "delay": 3
+    },
+    "wet": {
+      "name": "Mokry",
+      "short": "Mokry",
+      "effect": "prąd boli bardziej"
     }
   },
   "cash": {
@@ -1938,7 +1983,15 @@
       "effect": "thermos"
     }
   ],
-  "version": "v0.21.49",
+  "version": "v0.21.50",
+  "damageHelp": [
+    "Cios = rzut broni + premie:",
+    "SIŁ/ZRĘ/INT broni +1 co 2 pkt,",
+    "Szkolenia, odznaki, poziom,",
+    "projekty, rękawice; potem +%.",
+    "OBR problemu: -1 co 2 pkt (min. 1).",
+    "Kryt mnoży cios, SZCZ go podnosi."
+  ],
   "tips": [
     "Przytrzymaj B: podgląd problemów",
     "Przytrzymaj A: celownik i zasięg",
@@ -1955,7 +2008,10 @@
     "Czerwone pola po wybuchu: odejdź",
     "Błoto w akcie I kosztuje turę",
     "START na wyborze: opis statystyk",
-    "Akt 0: 3 dokumenty otwierają schody"
+    "Akt 0: 3 dokumenty otwierają schody",
+    "Po etapie: wybierz 1 z 3 premii",
+    "Mokry + prąd = porażenie obok",
+    "Złota ramka: elita, lepsza nagroda"
   ],
   "contracts": [
     {
@@ -2688,6 +2744,18 @@
         "costs": [
           120
         ]
+      },
+      {
+        "id": "oferta",
+        "name": "Druga oferta",
+        "desc": "Darmowe losowanie premii",
+        "effect": "reroll",
+        "values": [
+          1
+        ],
+        "costs": [
+          30
+        ]
       }
     ]
   },
@@ -2802,7 +2870,7 @@
         "title": "Respekt",
         "text": "Respekt dostajesz za|każdy etap i zostaje po|porażce. Stałe premie!",
         "screen": "title",
-        "gba": "Koszty, SELECT"
+        "gba": "SELECT, Koszty"
       },
       {
         "id": "daily",
@@ -2906,6 +2974,747 @@
         "screen": "class",
         "gba": "lewo / prawo"
       }
+    ]
+  },
+  "boons": {
+    "rerollCost": 25,
+    "synergyAt": 2,
+    "rarities": [
+      {
+        "id": "zwykla",
+        "name": "zwykła",
+        "weight": 70
+      },
+      {
+        "id": "rzadka",
+        "name": "rzadka",
+        "weight": 24
+      },
+      {
+        "id": "legendarna",
+        "name": "legendarna",
+        "weight": 6
+      }
+    ],
+    "luckRare": 2,
+    "luckLegend": 1,
+    "tags": [
+      {
+        "id": "woda",
+        "name": "Woda"
+      },
+      {
+        "id": "prad",
+        "name": "Prąd"
+      },
+      {
+        "id": "beton",
+        "name": "Beton"
+      },
+      {
+        "id": "bhp",
+        "name": "BHP"
+      },
+      {
+        "id": "szczescie",
+        "name": "Szczęście"
+      },
+      {
+        "id": "kawa",
+        "name": "Kawa"
+      },
+      {
+        "id": "brygada",
+        "name": "Brygada"
+      },
+      {
+        "id": "materialy",
+        "name": "Materiały"
+      },
+      {
+        "id": "iskra",
+        "name": "Iskra"
+      }
+    ],
+    "list": [
+      {
+        "id": "kielnia_hart",
+        "name": "Hartowana kielnia",
+        "desc": "+1 obrażeń",
+        "rarity": "rzadka",
+        "tags": [
+          "beton"
+        ],
+        "effect": "dmg",
+        "value": 1
+      },
+      {
+        "id": "beton_b30",
+        "name": "Beton B30",
+        "desc": "+1 OBR",
+        "rarity": "rzadka",
+        "tags": [
+          "beton"
+        ],
+        "effect": "def",
+        "value": 1
+      },
+      {
+        "id": "plyta",
+        "name": "Płyta warstwowa",
+        "desc": "+4 max HP",
+        "rarity": "zwykla",
+        "tags": [
+          "bhp"
+        ],
+        "effect": "max_hp",
+        "value": 4
+      },
+      {
+        "id": "zbrojona",
+        "name": "Zbrojona rękawica",
+        "desc": "+1 obrażeń",
+        "rarity": "rzadka",
+        "tags": [
+          "materialy"
+        ],
+        "effect": "dmg",
+        "value": 1
+      },
+      {
+        "id": "mlot_mistrza",
+        "name": "Młot mistrza",
+        "desc": "+10% obrażeń",
+        "rarity": "legendarna",
+        "tags": [
+          "beton"
+        ],
+        "effect": "dmg_pct",
+        "value": 10
+      },
+      {
+        "id": "szelki",
+        "name": "Szelki asekuracyjne",
+        "desc": "Unik +4%",
+        "rarity": "zwykla",
+        "tags": [
+          "bhp"
+        ],
+        "effect": "dodge",
+        "value": 4
+      },
+      {
+        "id": "apteczka",
+        "name": "Apteczka na placu",
+        "desc": "+4 HP na start etapu",
+        "rarity": "zwykla",
+        "tags": [
+          "bhp",
+          "kawa"
+        ],
+        "effect": "regen_stage",
+        "value": 4
+      },
+      {
+        "id": "kask_led",
+        "name": "Kask z latarką",
+        "desc": "Widzenie +1",
+        "rarity": "zwykla",
+        "tags": [
+          "bhp"
+        ],
+        "effect": "sight",
+        "value": 1
+      },
+      {
+        "id": "instrukcja",
+        "name": "Instrukcja BHP",
+        "desc": "Stany krócej o 1 t.",
+        "rarity": "rzadka",
+        "tags": [
+          "bhp"
+        ],
+        "effect": "status_res",
+        "value": 1
+      },
+      {
+        "id": "aniol",
+        "name": "Anioł stróż",
+        "desc": "+8 max HP",
+        "rarity": "legendarna",
+        "tags": [
+          "bhp"
+        ],
+        "effect": "max_hp",
+        "value": 8
+      },
+      {
+        "id": "espresso",
+        "name": "Podwójne espresso",
+        "desc": "Kawa leczy +3 HP",
+        "rarity": "zwykla",
+        "tags": [
+          "kawa"
+        ],
+        "effect": "coffee",
+        "value": 3
+      },
+      {
+        "id": "termos_bufet",
+        "name": "Termos z bufetu",
+        "desc": "Termos +1 miejsce",
+        "rarity": "zwykla",
+        "tags": [
+          "kawa"
+        ],
+        "effect": "thermos",
+        "value": 1
+      },
+      {
+        "id": "druga_zmiana",
+        "name": "Druga zmiana",
+        "desc": "Moc -2 t. odnowienia",
+        "rarity": "rzadka",
+        "tags": [
+          "kawa"
+        ],
+        "effect": "cooldown",
+        "value": 2
+      },
+      {
+        "id": "drozdzowka",
+        "name": "Drożdżówka",
+        "desc": "+1 HP za usunięty problem",
+        "rarity": "legendarna",
+        "tags": [
+          "kawa"
+        ],
+        "effect": "kill_heal",
+        "value": 1
+      },
+      {
+        "id": "koniczyna",
+        "name": "Koniczyna",
+        "desc": "+1 SZCZ",
+        "rarity": "zwykla",
+        "tags": [
+          "szczescie"
+        ],
+        "effect": "luck",
+        "value": 1
+      },
+      {
+        "id": "moneta",
+        "name": "Szczęśliwa moneta",
+        "desc": "Kryt +4%",
+        "rarity": "zwykla",
+        "tags": [
+          "szczescie"
+        ],
+        "effect": "crit",
+        "value": 4
+      },
+      {
+        "id": "podkowa",
+        "name": "Złota podkowa",
+        "desc": "+2 SZCZ",
+        "rarity": "legendarna",
+        "tags": [
+          "szczescie"
+        ],
+        "effect": "luck",
+        "value": 2
+      },
+      {
+        "id": "waz",
+        "name": "Wąż ogrodowy",
+        "desc": "Ciosy moczą problem",
+        "rarity": "zwykla",
+        "tags": [
+          "woda"
+        ],
+        "effect": "wet_hits",
+        "value": 3
+      },
+      {
+        "id": "suchy_lod",
+        "name": "Suchy lód",
+        "desc": "Ciosy zmrażają problem",
+        "rarity": "rzadka",
+        "tags": [
+          "woda"
+        ],
+        "effect": "frost_hits",
+        "value": 1
+      },
+      {
+        "id": "hydrofor",
+        "name": "Hydrofor",
+        "desc": "+6% obrażeń",
+        "rarity": "rzadka",
+        "tags": [
+          "woda",
+          "prad"
+        ],
+        "effect": "dmg_pct",
+        "value": 6
+      },
+      {
+        "id": "przedluzacz",
+        "name": "Przedłużacz",
+        "desc": "Ciosy z prądem",
+        "rarity": "zwykla",
+        "tags": [
+          "prad"
+        ],
+        "effect": "electric",
+        "value": 1
+      },
+      {
+        "id": "transformator",
+        "name": "Transformator",
+        "desc": "+2 obrażeń",
+        "rarity": "legendarna",
+        "tags": [
+          "prad",
+          "iskra"
+        ],
+        "effect": "dmg",
+        "value": 2
+      },
+      {
+        "id": "krzesiwo",
+        "name": "Krzesiwo",
+        "desc": "Ciosy krzeszą iskry",
+        "rarity": "zwykla",
+        "tags": [
+          "iskra"
+        ],
+        "effect": "spark",
+        "value": 1
+      },
+      {
+        "id": "tarcza_tnaca",
+        "name": "Tarcza tnąca",
+        "desc": "Kryt +6%",
+        "rarity": "rzadka",
+        "tags": [
+          "iskra"
+        ],
+        "effect": "crit",
+        "value": 6
+      },
+      {
+        "id": "ekipa",
+        "name": "Numer do ekipy",
+        "desc": "Brygada -25% ceny",
+        "rarity": "zwykla",
+        "tags": [
+          "brygada"
+        ],
+        "effect": "brigade_pct",
+        "value": 25
+      },
+      {
+        "id": "premia",
+        "name": "Premia od inwestora",
+        "desc": "+40 zł od razu",
+        "rarity": "zwykla",
+        "tags": [
+          "brygada"
+        ],
+        "effect": "cash",
+        "value": 40
+      },
+      {
+        "id": "brygadzista",
+        "name": "Brygadzista",
+        "desc": "Kryt +6%",
+        "rarity": "rzadka",
+        "tags": [
+          "brygada",
+          "szczescie"
+        ],
+        "effect": "crit",
+        "value": 6
+      },
+      {
+        "id": "paleta",
+        "name": "Paleta materiałów",
+        "desc": "+2 każdego materiału",
+        "rarity": "zwykla",
+        "tags": [
+          "materialy"
+        ],
+        "effect": "mats",
+        "value": 2
+      },
+      {
+        "id": "karta_hurt",
+        "name": "Karta hurtowni",
+        "desc": "Hurtownia -25% ceny",
+        "rarity": "zwykla",
+        "tags": [
+          "materialy"
+        ],
+        "effect": "shop_pct",
+        "value": 25
+      },
+      {
+        "id": "sklad",
+        "name": "Skład na placu",
+        "desc": "Materiały +60% częściej",
+        "rarity": "rzadka",
+        "tags": [
+          "materialy"
+        ],
+        "effect": "mats_pct",
+        "value": 60
+      },
+      {
+        "id": "odprawa_plus",
+        "name": "Twarda odprawa",
+        "desc": "Odprawa ogłusza +1 t.",
+        "rarity": "rzadka",
+        "tags": [
+          "bhp"
+        ],
+        "effect": "power",
+        "value": 1,
+        "class": "kierownik"
+      },
+      {
+        "id": "harmonogram",
+        "name": "Harmonogram",
+        "desc": "Moc -3 t. odnowienia",
+        "rarity": "zwykla",
+        "tags": [
+          "kawa"
+        ],
+        "effect": "cooldown",
+        "value": 3,
+        "class": "kierownik"
+      },
+      {
+        "id": "gruba_scianka",
+        "name": "Gruba ścianka",
+        "desc": "Ścianka stoi +3 t.",
+        "rarity": "zwykla",
+        "tags": [
+          "beton"
+        ],
+        "effect": "power",
+        "value": 3,
+        "class": "murarz"
+      },
+      {
+        "id": "magazynek",
+        "name": "Pełny magazynek",
+        "desc": "Seria: zasięg +1",
+        "rarity": "rzadka",
+        "tags": [
+          "materialy"
+        ],
+        "effect": "power",
+        "value": 1,
+        "class": "ciesla"
+      },
+      {
+        "id": "mocny_lancuch",
+        "name": "Mocny łańcuch",
+        "desc": "Łańcuch: +1 cel",
+        "rarity": "rzadka",
+        "tags": [
+          "prad"
+        ],
+        "effect": "power",
+        "value": 1,
+        "class": "elektryk"
+      },
+      {
+        "id": "gumowe",
+        "name": "Gumowe rękawice",
+        "desc": "+2 OBR",
+        "rarity": "zwykla",
+        "tags": [
+          "bhp",
+          "prad"
+        ],
+        "effect": "def",
+        "value": 2,
+        "class": "elektryk"
+      },
+      {
+        "id": "strumien",
+        "name": "Mocny strumień",
+        "desc": "Zawór leczy +4 HP",
+        "rarity": "zwykla",
+        "tags": [
+          "woda"
+        ],
+        "effect": "power",
+        "value": 4,
+        "class": "hydraulik"
+      },
+      {
+        "id": "wirowka_plus",
+        "name": "Szybka wirówka",
+        "desc": "Wirówka +2 obrażeń",
+        "rarity": "rzadka",
+        "tags": [
+          "iskra"
+        ],
+        "effect": "power",
+        "value": 2,
+        "class": "glazurnik"
+      },
+      {
+        "id": "dluga_rynna",
+        "name": "Długa rynna",
+        "desc": "Rynna: +2 pola",
+        "rarity": "zwykla",
+        "tags": [
+          "woda"
+        ],
+        "effect": "power",
+        "value": 2,
+        "class": "dekarz"
+      },
+      {
+        "id": "gesty_tynk",
+        "name": "Gęsty tynk",
+        "desc": "Narzut ogłusza +1 t.",
+        "rarity": "rzadka",
+        "tags": [
+          "beton"
+        ],
+        "effect": "power",
+        "value": 1,
+        "class": "tynkarz"
+      },
+      {
+        "id": "ciezka_lyzka",
+        "name": "Ciężka łyżka",
+        "desc": "Taran +2 obrażeń",
+        "rarity": "rzadka",
+        "tags": [
+          "beton"
+        ],
+        "effect": "power",
+        "value": 2,
+        "class": "operator"
+      }
+    ],
+    "synergies": [
+      {
+        "id": "przepiecie",
+        "name": "Przepięcie",
+        "tags": [
+          "woda",
+          "prad"
+        ],
+        "effect": "conduct",
+        "value": 1,
+        "desc": "Ciosy z prądem, porażenie dalej"
+      },
+      {
+        "id": "zbrojenie",
+        "name": "Zbrojenie",
+        "tags": [
+          "beton"
+        ],
+        "effect": "armor",
+        "value": 1,
+        "desc": "+1 OBR za każdą premię Beton"
+      },
+      {
+        "id": "espresso",
+        "name": "Espresso",
+        "tags": [
+          "kawa"
+        ],
+        "effect": "espresso",
+        "value": 3,
+        "desc": "Kawa ładuje moc (-3 t.)"
+      },
+      {
+        "id": "pelne_bhp",
+        "name": "Pełne BHP",
+        "tags": [
+          "bhp"
+        ],
+        "effect": "safety",
+        "value": 0,
+        "desc": "Bez zatrucia i porażenia"
+      },
+      {
+        "id": "fart",
+        "name": "Fart",
+        "tags": [
+          "szczescie"
+        ],
+        "effect": "luck",
+        "value": 2,
+        "desc": "+2 SZCZ"
+      },
+      {
+        "id": "stala_ekipa",
+        "name": "Stała ekipa",
+        "tags": [
+          "brygada"
+        ],
+        "effect": "brigade",
+        "value": 50,
+        "desc": "Brygada -50% ceny"
+      },
+      {
+        "id": "magazyn",
+        "name": "Magazyn",
+        "tags": [
+          "materialy"
+        ],
+        "effect": "stock",
+        "value": 100,
+        "desc": "Materiały 2x częściej"
+      },
+      {
+        "id": "iskrzenie",
+        "name": "Iskrzenie",
+        "tags": [
+          "iskra"
+        ],
+        "effect": "sparks",
+        "value": 3,
+        "desc": "Wybuch pyłu +3 i szerzej"
+      }
+    ]
+  },
+  "elites": {
+    "actPct": [
+      7,
+      11,
+      15,
+      5
+    ],
+    "diffPct": [
+      -3,
+      0,
+      5
+    ],
+    "tierPct": 4,
+    "hpPct": 150,
+    "dmg": 1,
+    "reward": {
+      "respect": 1,
+      "mats": 2,
+      "gearMin": 1
+    },
+    "traits": [
+      {
+        "id": "tarcza",
+        "name": "Tarcza",
+        "prefix": [
+          "Zbrojony",
+          "Zbrojona",
+          "Zbrojone"
+        ],
+        "effect": "shield",
+        "value": 4,
+        "info": "+4 OBR"
+      },
+      {
+        "id": "szybki",
+        "name": "Szybki",
+        "prefix": [
+          "Szybki",
+          "Szybka",
+          "Szybkie"
+        ],
+        "effect": "fast",
+        "value": 2,
+        "info": "2 ruchy na turę"
+      },
+      {
+        "id": "regeneracja",
+        "name": "Regeneracja",
+        "prefix": [
+          "Uparty",
+          "Uparta",
+          "Uparte"
+        ],
+        "effect": "regen",
+        "value": 1,
+        "info": "+1 HP co turę"
+      },
+      {
+        "id": "wybuchowy",
+        "name": "Wybuchowy",
+        "prefix": [
+          "Wybuchowy",
+          "Wybuchowa",
+          "Wybuchowe"
+        ],
+        "effect": "explode",
+        "value": 0,
+        "info": "Wybucha po usunięciu"
+      },
+      {
+        "id": "wzywa",
+        "name": "Wzywa pomoc",
+        "prefix": [
+          "Zaraźliwy",
+          "Zaraźliwa",
+          "Zaraźliwe"
+        ],
+        "effect": "summon",
+        "value": 50,
+        "info": "Przy 50% HP wzywa pomoc"
+      }
+    ]
+  },
+  "combos": {
+    "wetTurns": 3,
+    "heroWetTurns": 2,
+    "list": [
+      {
+        "id": "porazenie",
+        "effect": "shock_area",
+        "name": "Porażenie",
+        "short": "Mokry + prąd!",
+        "info": "Prąd w mokry: +3 i na mokrych obok",
+        "value": 3,
+        "radius": 1,
+        "hero": "Ty mokry + prąd: +2 i tracisz turę",
+        "heroValue": 2
+      },
+      {
+        "id": "wybuch",
+        "effect": "dust_blast",
+        "name": "Wybuch pyłu",
+        "short": "Pył + iskra!",
+        "info": "Iskra w zapylony: wybuch 4 wokół",
+        "value": 4,
+        "radius": 1,
+        "hero": "Wybuch w pyle (akt III): +2 dla Ciebie",
+        "heroValue": 2
+      },
+      {
+        "id": "pekniecie",
+        "effect": "crack",
+        "name": "Pęknięcie",
+        "short": "Zamróz + uderzenie!",
+        "info": "Cios wręcz w zmrożony: +50%",
+        "value": 50,
+        "radius": 0,
+        "hero": "",
+        "heroValue": 0
+      }
+    ],
+    "sources": [
+      "Mokry: kałuże, Deszcz, woda, Zawór",
+      "Prąd: Próbnik, Łańcuch, Zwarcie",
+      "Pył: akt III; iskra: Szlifierka",
+      "Zamróz: Mróz, Suchy lód"
     ]
   }
 }
