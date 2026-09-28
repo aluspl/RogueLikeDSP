@@ -2,3 +2,6 @@
 godot/data/game.json
 # Wyniki eksportu (iOS: projekt Xcode, DerivedData, .app; Android: .apk)
 /build/
+# Szablon buildu Androida (instalowany przez tools/android_release.sh) i lokalne zmienne podpisu
+godot/android/
+.env.local
