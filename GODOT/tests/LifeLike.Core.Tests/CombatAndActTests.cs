@@ -88,9 +88,10 @@ public class CombatAndActTests
     public void ActBossGivesBonusAndHurtowniaLastBossWins()
     {
         var g = TestData.Run(1, 5);
-        var lastOfAct0 = 0;
-        while (D.Stages[lastOfAct0 + 1].Act == 0) ++lastOfAct0;
-        for (var k = 0; k < lastOfAct0; ++k)
+        var act1 = D.Stages[TestData.F0].Act; // pierwszy akt budowy bez Aktu 0 (Stan surowy)
+        var lastOfAct0 = TestData.F0;
+        while (D.Stages[lastOfAct0 + 1].Act == act1) ++lastOfAct0;
+        for (var k = TestData.F0; k < lastOfAct0; ++k)
         {
             g.DebugSkip();
             Assert.True(g.St == GameStatus.StageClear && !g.ActCleared);
@@ -100,8 +101,8 @@ public class CombatAndActTests
         var c0 = g.Cash;
         g.DebugSkip();
         Assert.True(g.St == GameStatus.StageClear && g.ActCleared);
-        var stagesInAct = lastOfAct0 + 1;
-        Assert.Equal(D.Acts[0].BonusPerStage * stagesInAct + D.Acts[0].BonusPerKill * 1, g.ActBonus);
+        var stagesInAct = lastOfAct0 - TestData.F0 + 1;
+        Assert.Equal(D.Acts[act1].BonusPerStage * stagesInAct + D.Acts[act1].BonusPerKill * 1, g.ActBonus);
         Assert.Equal(c0 + g.ActBonus + D.Enemies[g.Enemies[g.Boss].DefId].Score / D.CashPerScore, g.Cash);
         g.NextStage();
         Assert.True(!g.ActCleared && D.Stages[g.Stage].Act == 1);
@@ -213,7 +214,7 @@ public class CombatAndActTests
         var id = D.Enemies[ii];
         Assert.True(st + 1 < D.Stages.Length && D.Stages[st + 1].Act == D.Stages[st].Act);
         var g = TestData.Run(1, 31);
-        for (var k = 0; k < st; ++k)
+        for (var k = TestData.F0; k < st; ++k)
         {
             g.DebugSkip();
             g.ActCleared = false;

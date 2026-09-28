@@ -98,7 +98,7 @@ public sealed partial class Game
     public int PathOffer(int k)
     {
         var n = (uint)D.Paths.Length;
-        var h = (RunSeed ^ ((uint)(Stage + 1 + Tier * 16) * 2654435761u)) * 2246822519u;
+        var h = (RunSeed ^ (unchecked((uint)(PatternStage() + 1 + Tier * 16)) * 2654435761u)) * 2246822519u;
         h ^= h >> 15;
         var a = (int)(h % n);
         if (k == 0) return a;

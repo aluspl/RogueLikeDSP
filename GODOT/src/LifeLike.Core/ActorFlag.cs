@@ -9,4 +9,6 @@ public static class ActorFlag
     public const byte Returned = 2;
     /// <summary>Usunięty, czeka na powrót.</summary>
     public const byte Reviving = 4;
+    /// <summary>Boss w drugiej fazie (Decyzja odmowna: Odwołanie).</summary>
+    public const byte Phase = 8;
 }

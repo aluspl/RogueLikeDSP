@@ -148,6 +148,10 @@ public static class StateDigest
         f.Add(g.BlastDmg);
         f.Add(g.GustIn());
         f.Add(g.SightRadius());
+        // v0.21.49 cz. 3: Akt 0 – pierwszy etap, dokumenty (pieczątki)
+        f.Add(g.FirstStage);
+        f.Add(g.Docs);
+        f.Add(g.StairsLocked() ? 1 : 0);
         foreach (var k in g.KillsByType) f.Add(k);
         return f.H;
     }

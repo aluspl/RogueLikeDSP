@@ -139,6 +139,25 @@ public sealed partial class Game
     public sbyte BlastX = -1, BlastY = -1, BlastTimer, BlastDmg;
     /// <summary>Bitmaska: którzy wrogowie strzelili w tej turze (warstwa prezentacji czyta i zeruje).</summary>
     public uint ShotEvents;
+    // v0.21.49 (część 3): Akt 0 – pierwszy etap budowy (0 z Aktem 0, inaczej za nim), zebrane dokumenty (pieczątki)
+    public sbyte FirstStage;
+    /// <summary>Bitmaska zebranych dokumentów (GameData.Documents).</summary>
+    public byte Docs;
+
+    /// <summary>Numer etapu dla gracza (1..).</summary>
+    public int StageNumber() => Stage - FirstStage + 1;
+
+    /// <summary>Liczba etapów tej budowy (bez Aktu 0, gdy nieodblokowany).</summary>
+    public int StagesInRun() => D.Stages.Length - FirstStage;
+
+    /// <summary>Numer aktu bieżącego etapu dla gracza ("0", "I", "II", "III").</summary>
+    public string ActNumeral() => D.Acts[D.Stages[Stage].Act].Numeral;
+
+    /// <summary>
+    /// Etap we wzorach (błoto, kałuże, porywy, oferta ścieżek) liczony od Fundamentów: Akt 0 nie zmienia wzorów etapów
+    /// budowy (Akt 0 ma ujemne numery).
+    /// </summary>
+    public int PatternStage() => Stage - D.PreludeStages;
 
     public Game(GameData data)
     {
@@ -238,7 +257,7 @@ public sealed partial class Game
     /// </summary>
     public bool Puddle(int x, int y)
     {
-        if (!WeatherIs(WeatherEffect.Rain) || Lv.At(x, y) != Tile.Floor || (x * 7 + y * 13 + Stage * 5) % WDef.Value != 0) return false;
+        if (!WeatherIs(WeatherEffect.Rain) || Lv.At(x, y) != Tile.Floor || (x * 7 + y * 13 + PatternStage() * 5) % WDef.Value != 0) return false;
         for (var i = 0; i < Bridges; ++i)
         {
             if (Cheb(x, y, BridgeX[i], BridgeY[i]) <= BridgeReach()) return false;
@@ -249,7 +268,7 @@ public sealed partial class Game
     public int StatusTurns(StatusEffect s) => HeroStatus[(int)s];
 
     /// <summary>Wiadomość fabularna na wejściu etapu (przy NG+ pierwszy etap ma własną).</summary>
-    public StoryMsg StageStory => Tier > 0 && Stage == 0 ? D.StoryNgPlus : D.StoryStages[Stage];
+    public StoryMsg StageStory => Tier > 0 && Stage == FirstStage ? D.StoryNgPlus : D.StoryStages[Stage];
 
     public bool Visible(int x, int y) => Level.In(x, y) && Fov[y * Level.W + x] == Sight.InView;
     public bool Explored(int x, int y) => Level.In(x, y) && Fov[y * Level.W + x] != Sight.Unknown;
@@ -506,7 +525,8 @@ public sealed partial class Game
         Hero.MaxHp = Hero.Hp = (short)(CDef.MaxHealth + mods.Hp);
         Hero.Alive = true;
         Cash = mods.Cash;
-        StartStage(0);
+        FirstStage = (sbyte)(mods.Act0 != 0 ? 0 : D.PreludeStages); // bez nagrody Akt 0 budowa zaczyna się od Fundamentów
+        StartStage(FirstStage);
     }
 
     public bool Occupied(int x, int y)
@@ -562,6 +582,7 @@ public sealed partial class Game
         BlastTimer = 0;
         BlastX = BlastY = -1;
         ShotEvents = 0;
+        Docs = 0;
         Array.Fill(Fov, Sight.Unknown);
         var sd = D.Stages[Stage];
         var first = Lv.Rooms[0];
@@ -608,7 +629,7 @@ public sealed partial class Game
             RandomFreeCellInRoom(rm, out var x, out var y);
             Pickups[PickupsCount++] = new Pickup(x, y, i == 0 ? PickupType.Coffee : (PickupType)R.Range(0, 2), true);
         }
-        Push(Msg("Etap ").Add(Stage + 1).Add(": ").Add(sd.Name));
+        Push(Msg("Etap ").Add(StageNumber()).Add(": ").Add(sd.Name));
         if (pd != null) // ścieżka z harmonogramu: budżet i materiały od razu
         {
             Push(Msg("Ścieżka: ").Add(pd.Name));
@@ -619,13 +640,39 @@ public sealed partial class Game
         if (WDef.Effect != WeatherEffect.None)
             Push(Msg("Pogoda: ").Add(WDef.Name).Add(" (").Add(WDef.Short).Add(")").As(WDef.Bad ? LogKind.Bad : LogKind.Good));
         StageEvent = -1; // wydarzenie na placu: nie na pierwszym etapie i nie u bossa
-        if (s > 0 && sd.Boss < 0 && !(pd != null && pd.NoEvent) && R.Range(1, 100) <= D.SiteEventChancePct)
+        if (s > FirstStage && sd.Boss < 0 && !(pd != null && pd.NoEvent) && R.Range(1, 100) <= D.SiteEventChancePct)
         {
             var e = R.Range(0, D.SiteEvents.Length - 1);
             // niekorzystna pogoda i niekorzystne wydarzenie naraz to za dużo: wydarzenie przepada
             if (!(D.WeatherNoBadStack && WDef.Bad && !D.SiteEvents[e].Good)) ApplyEvent(e);
         }
+        PlaceDocuments();
         UpdateFov();
+    }
+
+    /// <summary>Pieczątki (Akt 0): dokumenty w różnych pokojach (bez pierwszego), na wolnych polach bez znajdziek.</summary>
+    public void PlaceDocuments()
+    {
+        var n = DocsNeeded();
+        if (n == 0 || Lv.RoomsCount < 2) return;
+        int span = Lv.RoomsCount - 1, bas = R.Range(0, span - 1);
+        for (var k = 0; k < n && PickupsCount < MaxPickups; ++k)
+        {
+            var rm = Lv.Rooms[1 + (bas + k * Math.Max(1, span / n)) % span];
+            int x = rm.Cx, y = rm.Cy;
+            for (var t = 0; t < 40; ++t)
+            {
+                int cx = R.Range(rm.X, rm.X + rm.W - 1), cy = R.Range(rm.Y, rm.Y + rm.H - 1);
+                if (Lv.At(cx, cy) == Tile.Floor && !Occupied(cx, cy) && !PickupAt(cx, cy))
+                {
+                    x = cx;
+                    y = cy;
+                    break;
+                }
+            }
+            Pickups[PickupsCount++] = new Pickup(x, y, PickupType.Document, true, k);
+        }
+        Push(Msg("Pieczątki: zbierz ").Add(n).Add(" dokumenty").As(LogKind.Bad));
     }
 
     public void Spawn(int defId, int x, int y)
@@ -673,7 +720,7 @@ public sealed partial class Game
         ++Tier;
         for (var i = 0; i < Enemies.Length; i++) Enemies[i] = new Actor();
         Hero.Hp = Hero.MaxHp;
-        StartStage(0);
+        StartStage(FirstStage);
         Push(Msg("Kolejna budowa! Poziom ").Add(Tier + 1));
         return true;
     }
@@ -685,10 +732,12 @@ public sealed partial class Game
         if (Boss >= 0 && Enemies[Boss].Alive)
         {
             Enemies[Boss].Hp = 1;
+            Enemies[Boss].Flags = (byte)(Enemies[Boss].Flags | ActorFlag.Phase);
             HeroAttack(Boss);
         }
         else if (StairsX >= 0)
         {
+            Docs = (byte)((1 << DocsNeeded()) - 1);
             Hero.X = (sbyte)StairsX;
             Hero.Y = (sbyte)StairsY;
             EndTurn();

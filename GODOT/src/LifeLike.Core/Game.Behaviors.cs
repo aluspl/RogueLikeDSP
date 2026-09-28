@@ -20,7 +20,7 @@ public sealed partial class Game
     /// <summary>Błoto (akt I): stały wzór na podłodze zależny od etapu; wejście kosztuje dodatkową turę. Kładka też na błoto.</summary>
     public bool Mud(int x, int y)
     {
-        if (!ActIs(ActMechanic.Mud) || Lv.At(x, y) != Tile.Floor || (x * 5 + y * 11 + Stage * 3) % ADef.MechValue != 0) return false;
+        if (!ActIs(ActMechanic.Mud) || Lv.At(x, y) != Tile.Floor || (x * 5 + y * 11 + PatternStage() * 3) % ADef.MechValue != 0) return false;
         for (var i = 0; i < Bridges; ++i)
         {
             if (Cheb(x, y, BridgeX[i], BridgeY[i]) <= BridgeReach()) return false;
@@ -40,7 +40,7 @@ public sealed partial class Game
     public int GustDir()
     {
         var t = Turns - StageStartTurn + GustIn();
-        return (t / Math.Max(1, ADef.MechValue) + Stage) & 3;
+        return (t / Math.Max(1, ADef.MechValue) + PatternStage()) & 3;
     }
 
     public void GustTick()
@@ -53,7 +53,7 @@ public sealed partial class Game
             return;
         }
         if (t % v != 0) return;
-        int d = (t / v + Stage) & 3, nx = Hero.X + GustVec[d, 0], ny = Hero.Y + GustVec[d, 1];
+        int d = (t / v + PatternStage()) & 3, nx = Hero.X + GustVec[d, 0], ny = Hero.Y + GustVec[d, 1];
         if (Lv.Passable(nx, ny) && !Occupied(nx, ny))
         {
             Hero.X = (sbyte)nx;
@@ -69,6 +69,19 @@ public sealed partial class Game
     }
 
     public int DustSight() => ActIs(ActMechanic.Dust) ? ADef.MechValue : 0;
+
+    /// <summary>Pieczątki (Akt 0): ile dokumentów otwiera schody na tym etapie (0 = bez pieczątek, np. etap z bossem).</summary>
+    public int DocsNeeded() => ActIs(ActMechanic.Stamps) && D.Stages[Stage].Boss < 0 ? ADef.MechValue : 0;
+
+    public int DocsCount()
+    {
+        var n = 0;
+        for (var i = 0; i < D.Documents.Length; i++) n += (Docs >> i) & 1;
+        return n;
+    }
+
+    /// <summary>Schody zamknięte, dopóki nie zebrano wszystkich dokumentów.</summary>
+    public bool StairsLocked() => DocsCount() < DocsNeeded();
 
     // ------------------------------------------------------------------ zachowania problemów
     public bool HasTag(in Actor e, int t) => e.DefId >= 0 && (D.Enemies[e.DefId].Tags & t) != 0;

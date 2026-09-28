@@ -2,7 +2,7 @@ namespace LifeLike.Core.Tests;
 
 /// <summary>
 /// core_tests.cpp: 40 (v0.21.49 cz. 2) – zachowania problemów (każdy znacznik), mechaniki aktów (błoto, porywy, pył),
-/// 10 etapów, profil v9 z katalogiem 16-47, zapis budowy PBRUN09.
+/// 10 etapów (+2 Aktu 0), profil z katalogiem 16-47 (v9), zapis budowy.
 /// </summary>
 public class BehaviorAndActTests
 {
@@ -36,7 +36,7 @@ public class BehaviorAndActTests
     [Fact]
     public void StagesPoolsAndActsHaveNewContent()
     {
-        Assert.True(D.Stages.Length == 10 && D.Enemies.Length <= Game.MaxEnemyTypes);
+        Assert.True(D.Stages.Length == 12 && D.Enemies.Length <= Game.MaxEnemyTypes);
         foreach (var st in D.Stages)
         {
             var tagged = st.Pool.Count(p => D.Enemies[p].Tags != 0);
@@ -50,7 +50,7 @@ public class BehaviorAndActTests
     public void RangedShootsInLineAndWallBlocks()
     {
         var g = TestData.Arena(1);
-        g.Stage = 4; // akt II (bez błota), porywy nie w tej turze
+        g.Stage = TestData.F0 + 4; // akt II (bez błota), porywy nie w tej turze
         g.StageStartTurn = -100;
         var d = DefWith(Behavior.Ranged);
         var i = Put(g, d, 10, 7);
@@ -58,7 +58,7 @@ public class BehaviorAndActTests
         g.PlayerWait();
         Assert.True(g.Hero.Hp < hp && g.Enemies[i].X == 10 && (g.ShotEvents & (1u << i)) != 0);
         var h = TestData.Arena(1);
-        h.Stage = 4;
+        h.Stage = TestData.F0 + 4;
         var j = Put(h, d, 10, 7);
         h.Lv[9, 7] = Tile.Wall;
         h.Lv[9, 6] = Tile.Wall;
@@ -210,7 +210,7 @@ public class BehaviorAndActTests
     public void GustPushesHeroAfterWarning()
     {
         var g = TestData.Arena(1);
-        g.Stage = 4;
+        g.Stage = TestData.F0 + 4;
         g.StageStartTurn = g.Turns;
         Assert.True(g.ActIs(ActMechanic.Gust));
         var v = D.Acts[1].MechValue;
@@ -226,7 +226,7 @@ public class BehaviorAndActTests
     {
         var g = TestData.Arena(1);
         var r0 = g.SightRadius();
-        g.Stage = 8;
+        g.Stage = TestData.F0 + 8;
         Assert.True(g.ActIs(ActMechanic.Dust) && g.SightRadius() == r0 - D.Acts[2].MechValue);
     }
 
@@ -239,11 +239,11 @@ public class BehaviorAndActTests
         p.Catalog = 0x0F0F;
         p.CatalogHi = 0xDEADBEEF;
         p.Magic = Profile.MagicBytes(Profile.MagicV8);
-        Assert.True(Meta.ProfileFix(D, p) && p.MagicIs(Profile.MagicV9) && p.CatalogHi == 0 && p.Best == 4321 && p.Respect == 77 && p.Catalog == 0x0F0F);
+        Assert.True(Meta.ProfileFix(D, p) && p.MagicIs(Profile.MagicV10) && p.CatalogHi == 0 && p.Best == 4321 && p.Respect == 77 && p.Catalog == 0x0F0F);
         Meta.CatalogAdd(p, 20);
         Meta.CatalogAdd(p, 31);
         Assert.True(Meta.CatalogHas(p, 20) && Meta.CatalogHas(p, 31) && !Meta.CatalogHas(p, 21) && Meta.CatalogCount(D, p) == 8 + 2);
-        Assert.Equal("PBRUN09", RunSave.RunMagic);
+        Assert.Equal("PBRUN10", RunSave.RunMagic);
     }
 
     [Fact]

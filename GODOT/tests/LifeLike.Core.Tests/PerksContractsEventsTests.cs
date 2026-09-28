@@ -180,7 +180,7 @@ public class PerksContractsEventsTests
     [Fact]
     public void CleanBossCountsOnlyDamageDuringFight()
     {
-        var bs = Array.FindIndex(D.Stages, s => s.Boss >= 0);
+        var bs = Array.FindIndex(D.Stages, TestData.F0, s => s.Boss >= 0);
         var g = TestData.Run(1, 21);
         g.StartStage(bs);
         g.StageDamage = 7; // obrażenia przed walką się nie liczą
@@ -222,7 +222,7 @@ public class PerksContractsEventsTests
         var raw = v3.ToBytes();
         for (var i = Profile.V3Size; i < raw.Length; i++) raw[i] = 0xCD; // śmieci
         v3 = Profile.FromBytes(raw);
-        Assert.True(Meta.ProfileFix(D, v3) && v3.MagicIs(Profile.MagicV9));
+        Assert.True(Meta.ProfileFix(D, v3) && v3.MagicIs(Profile.MagicV10));
         Assert.True(v3.Best == 1234 && v3.Runs == 9 && v3.Wins == 4 && v3.Xp == 321 && v3.Levels[0] == 2 && v3.Classes == 0x1F);
         Assert.True(v3.Hard == 1 && v3.Flags == 3 && v3.Tools == 5 && v3.Badges == 0x0123 && v3.Catalog == 0x07FF);
         Assert.True(v3.ClassWins == 0x05 && v3.ToolsFound == 0x0B && v3.HousesCount == 3 && v3.Houses[0] == 0x21 && v3.Houses[2] == 0x35);
@@ -248,7 +248,7 @@ public class PerksContractsEventsTests
         var raw = v4.ToBytes();
         for (var i = Profile.V4Size; i < raw.Length; i++) raw[i] = 0xEE; // śmieci
         v4 = Profile.FromBytes(raw);
-        Assert.True(Meta.ProfileFix(D, v4) && v4.MagicIs(Profile.MagicV9));
+        Assert.True(Meta.ProfileFix(D, v4) && v4.MagicIs(Profile.MagicV10));
         Assert.True(v4.Best == 77 && v4.Xp == 12 && v4.KillsTotal == 150 && v4.PowersTotal == 40 && v4.Contracts == 0x03);
         Assert.True(v4.KeepsakeRuns[0] == 4 && v4.RunKills == 0 && v4.RunPowers == 0 && v4.RunBrand == 0 && v4.RunClean == 0);
         Assert.True(Meta.SelectedKeepsake(D, v4) >= 0 && D.Keepsakes[Meta.SelectedKeepsake(D, v4)].Start);
@@ -335,9 +335,12 @@ public class PerksContractsEventsTests
         p.RespectRanks[15] = 2;
         p.BestStakeHi[3] = 6;
         p.CatalogHi = 0x01020304;
+        p.Tutorial = 0x0A0B;
+        p.ClassesSeen = 0x0C0D;
         var b = p.ToBytes();
-        Assert.Equal(156, b.Length);
-        Assert.Equal("PBRL009\0"u8.ToArray(), b[..8]);
+        Assert.Equal(160, b.Length);
+        Assert.Equal("PBRL010\0"u8.ToArray(), b[..8]);
+        Assert.Equal(new byte[] { 0x0B, 0x0A, 0x0D, 0x0C }, b[156..160]);
         Assert.Equal(new byte[] { 0x04, 0x03, 0x02, 0x01 }, b[152..156]);
         Assert.Equal(new byte[] { 0x02, 0x01, 0x04, 0x03, 0x06, 0x05, 7, 1, 5 }, b[124..133]);
         Assert.Equal(2, b[147]);
@@ -414,18 +417,18 @@ public class PerksContractsEventsTests
         for (var k = 0; k < 200; ++k)
         {
             var g0 = TestData.Run(k % D.Classes.Length, (uint)(500 + k * 31));
-            for (var st = 0; st < D.Stages.Length; ++st)
+            for (var st = TestData.F0; st < D.Stages.Length; ++st)
             {
-                if (st > 0) g0.NextStage();
+                if (st > TestData.F0) g0.NextStage();
                 if (g0.StageEvent >= 0) ++counts[st];
                 Assert.True(g0.StageEvent < D.SiteEvents.Length);
             }
         }
-        Assert.Equal(0, counts[0]);
-        for (var st = 0; st < D.Stages.Length; ++st)
+        Assert.Equal(0, counts[TestData.F0]);
+        for (var st = TestData.F0; st < D.Stages.Length; ++st)
         {
             if (D.Stages[st].Boss >= 0) Assert.Equal(0, counts[st]);
-            else if (st > 0) Assert.True(counts[st] > 200 * D.SiteEventChancePct / 300 && // zła pogoda zabiera złe wydarzenia
+            else if (st > TestData.F0) Assert.True(counts[st] > 200 * D.SiteEventChancePct / 300 && // zła pogoda zabiera złe wydarzenia
                  counts[st] < 200 * (D.SiteEventChancePct + 20) / 100, $"etap {st}: {counts[st]}");
         }
         foreach (var e in new[] { EventEffect.FewerPickups, EventEffect.Cash, EventEffect.Inspection, EventEffect.Rain, EventEffect.Thermos })
@@ -496,6 +499,6 @@ public class PerksContractsEventsTests
         Assert.True(l.StageEvent == g.StageEvent && l.PowersUsed == 12 && l.BrandFound == 2 && l.CleanBosses == 1 && l.BossWakeDamage == 5);
         Assert.True(l.Bonus.Crit == g.Bonus.Crit && l.Bonus.XpPct == g.Bonus.XpPct && l.Bonus.Thermos == g.Bonus.Thermos && l.ThermosCap() == g.ThermosCap());
         Assert.Equal(StateDigest.Of(g), StateDigest.Of(l));
-        Assert.Equal("PBRUN09", RunSave.RunMagic);
+        Assert.Equal("PBRUN10", RunSave.RunMagic);
     }
 }

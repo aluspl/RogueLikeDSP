@@ -11,7 +11,7 @@ public static class Meta
     public static void ProfileReset(GameData d, Profile p)
     {
         var fresh = Profile.FromBytes(new byte[Profile.Size]);
-        fresh.Magic = Profile.MagicBytes(Profile.MagicV9);
+        fresh.Magic = Profile.MagicBytes(Profile.MagicV10);
         fresh.Classes = (byte)d.StartClassesMask;
         DefaultKeepsake(d, fresh);
         CopyInto(fresh, p);
@@ -84,6 +84,8 @@ public static class Meta
         dst.RespectRanks = copy.RespectRanks;
         dst.BestStakeHi = copy.BestStakeHi;
         dst.CatalogHi = copy.CatalogHi;
+        dst.Tutorial = copy.Tutorial;
+        dst.ClassesSeen = copy.ClassesSeen;
     }
 
     // ------------------------------------------------------------------ katalog usterek (rodzaje 0-15 w Catalog, 16-47 w CatalogHi)
@@ -204,14 +206,17 @@ public static class Meta
     /// <summary>Naprawia wczytany profil. Zwraca true, jeśli trzeba go zapisać (migracja albo pusta pamięć).</summary>
     public static bool ProfileFix(GameData d, Profile p)
     {
-        if (p.MagicIs(Profile.MagicV9)) return ClampLevels(d, p);
-        if (p.MagicIs(Profile.MagicV8)) // v8 -> v9: katalog 16-47 od zera
+        if (p.MagicIs(Profile.MagicV10)) return ClampLevels(d, p);
+        var v9 = p.MagicIs(Profile.MagicV9);
+        if (v9 || p.MagicIs(Profile.MagicV8)) // v8 -> v9: katalog 16-47 od zera; v9 -> v10: samouczek
         {
+            var keep8 = v9 ? Profile.V9Size : Profile.V8Size;
             var b8 = p.ToBytes();
-            Array.Clear(b8, Profile.V8Size, b8.Length - Profile.V8Size);
+            Array.Clear(b8, keep8, b8.Length - keep8);
             CopyInto(Profile.FromBytes(b8), p);
-            p.Magic = Profile.MagicBytes(Profile.MagicV9);
+            p.Magic = Profile.MagicBytes(Profile.MagicV10);
             ClampLevels(d, p);
+            MigrateV10(d, p);
             return true;
         }
         // v7/v6/v5/v4/v3/v2 -> v9: stare pola zostają, nowe od zera (jak memset od profile_v7_size / v6 / ...);
@@ -226,10 +231,11 @@ public static class Meta
             var b = p.ToBytes();
             Array.Clear(b, keep, b.Length - keep);
             CopyInto(Profile.FromBytes(b), p);
-            p.Magic = Profile.MagicBytes(Profile.MagicV9);
+            p.Magic = Profile.MagicBytes(Profile.MagicV10);
             DefaultKeepsake(d, p);
             ClampLevels(d, p);
             MigrateV8(d, p);
+            MigrateV10(d, p);
             return true;
         }
         if (p.MagicIs(Profile.MagicV1))
@@ -240,6 +246,7 @@ public static class Meta
             p.Runs = runs;
             p.Wins = wins;
             MigrateV8(d, p);
+            MigrateV10(d, p);
             return true;
         }
         ProfileReset(d, p);
@@ -254,6 +261,83 @@ public static class Meta
         ClassReward(d, c) ? RewardUnlocked(d, p, RewardKind.Cls, c) : (p.Classes & (1u << c)) != 0;
 
     public static bool DifficultyUnlocked(GameData d, Profile p, int diff) => diff < d.Difficulties.Length - 1 || p.Hard != 0;
+
+    /// <summary>
+    /// v9 -> v10: nagroda Akt 0 za dotychczasowe wygrane (wcześniej „wkrótce”); samouczek – kto już grał, nie ogląda
+    /// głównego samouczka ani dymków o tym, co już zna (Akt 0 z migracji dostaje dymek).
+    /// </summary>
+    public static void MigrateV10(GameData d, Profile p)
+    {
+        p.Rewards = (byte)Math.Max(p.Rewards, Math.Min(Math.Max(0, p.Wins), RewardsAvailable(d)));
+        p.Tutorial = 0;
+        p.ClassesSeen = 0;
+        if (p.Runs > 0) p.Tutorial = Tutorial.Title | Tutorial.Class | Tutorial.Daily;
+        if (p.RespectTotal > 0) p.Tutorial |= Tutorial.Respect;
+        if (p.Wins > 0) p.Tutorial |= Tutorial.Investor;
+        for (var c = 0; c < d.Classes.Length; ++c)
+        {
+            if (ClassReward(d, c) && ClassUnlocked(d, p, c)) p.ClassesSeen = (ushort)(p.ClassesSeen | (1u << c));
+        }
+    }
+
+    /// <summary>Akt 0 (Papierologia) z nagrody za odbiór: budowa zaczyna się od jego etapów.</summary>
+    public static bool Act0Unlocked(GameData d, Profile p)
+    {
+        for (var i = 0; i < d.Rewards.Length && i < p.Rewards; ++i)
+        {
+            if (d.Rewards[i].Kind == RewardKind.Act) return true;
+        }
+        return false;
+    }
+
+    // ------------------------------------------------------------------ samouczek menu (#25)
+    // Pierwsze uruchomienie: dymki po kolei na tytule i wyborze zawodu; potem jeden dymek przy pierwszym odblokowaniu
+    // (Respekt, codzienna budowa, tryb inwestora, Akt 0, nowy zawód). „Pokaż samouczek jeszcze raz” w Jak grać.
+
+    /// <summary>Główny samouczek ekranu (0 tytuł, 1 wybór zawodu) jeszcze nieobejrzany.</summary>
+    public static bool TutorialPending(Profile p, int screen) => (p.Tutorial & (screen == 0 ? Tutorial.Title : Tutorial.Class)) == 0;
+
+    public static void TutorialDone(Profile p, int screen) => p.Tutorial |= screen == 0 ? Tutorial.Title : Tutorial.Class;
+
+    public static void TutorialReset(Profile p) => p.Tutorial = (ushort)(p.Tutorial & ~(Tutorial.Title | Tutorial.Class));
+
+    /// <summary>Krok samouczka widoczny na ekranie (bez kroków tylko dla Godota na GBA; tryb inwestora po odblokowaniu).</summary>
+    public static bool TutorialStepShown(GameData d, Profile p, int i, bool godot)
+    {
+        var t = d.TutorialSteps[i];
+        return (godot || !t.GodotOnly) && (!t.NeedsInvestor || InvestorUnlocked(p));
+    }
+
+    /// <summary>Dymek odblokowania do pokazania na ekranie (-1 = brak; indeks = TutorialUnlock); cls = nowy zawód z nagrody.</summary>
+    public static int PendingUnlock(GameData d, Profile p, int screen, out int cls)
+    {
+        cls = -1;
+        if (TutorialPending(p, screen)) return -1; // najpierw główny samouczek
+        if (screen == 0)
+        {
+            if (p.RespectTotal > 0 && (p.Tutorial & Tutorial.Respect) == 0) return TutorialUnlock.Respect;
+            if (p.Runs > 0 && (p.Tutorial & Tutorial.Daily) == 0) return TutorialUnlock.Daily;
+            if (Act0Unlocked(d, p) && (p.Tutorial & Tutorial.Act0) == 0) return TutorialUnlock.Act0;
+            return -1;
+        }
+        if (InvestorUnlocked(p) && (p.Tutorial & Tutorial.Investor) == 0) return TutorialUnlock.Investor;
+        for (var c = 0; c < d.Classes.Length; ++c)
+        {
+            if (ClassReward(d, c) && ClassUnlocked(d, p, c) && ((p.ClassesSeen >> c) & 1) == 0)
+            {
+                cls = c;
+                return TutorialUnlock.Class;
+            }
+        }
+        return -1;
+    }
+
+    public static void MarkUnlock(Profile p, int u, int cls)
+    {
+        ushort[] bits = [Tutorial.Respect, Tutorial.Daily, Tutorial.Investor, Tutorial.Act0];
+        if (u is >= 0 and < 4) p.Tutorial |= bits[u];
+        if (u == TutorialUnlock.Class && cls >= 0) p.ClassesSeen = (ushort)(p.ClassesSeen | (1u << cls));
+    }
 
     /// <summary>Koszt kolejnego poziomu ulepszenia; -1 = maksymalny poziom.</summary>
     public static int UpgradeCost(GameData d, Profile p, int i)
@@ -410,6 +494,7 @@ public static class Meta
             if (RespectRank(d, p, i) > 0) m.AddRespect(d.Respect[i].Effect, RespectValue(d, p, i));
         }
         m.GearSlots = GearSlotsMask(d, p); // nagrody za odbiór: buty, pas
+        m.Act0 = Act0Unlocked(d, p) ? 1 : 0; // nagroda za odbiór: Akt 0 przed budową
         for (var i = 0; i < d.Badges.Length; ++i) // uprawnienia ze zdobytych odznak
         {
             if ((p.Badges & (1u << i)) != 0) m.AddPerk(d.Badges[i].Bonus);

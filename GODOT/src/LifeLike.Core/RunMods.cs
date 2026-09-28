@@ -54,6 +54,8 @@ public struct RunMods
     public int SecondChance;
     /// <summary>Sloty sprzętu w dropach (bitmaska; nagrody: buty, pas).</summary>
     public int GearSlots;
+    /// <summary>v0.21.49: Akt 0 (Papierologia) z nagrody za odbiór – budowa zaczyna się od niego (1 = tak).</summary>
+    public int Act0;
 
     public static RunMods Default(GameData d) => new() { Tools = d.StartToolsMask, Helpers = d.StartHelpersMask, GearSlots = d.GearBaseMask };
 

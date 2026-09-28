@@ -10,6 +10,9 @@ public static class TestData
 
     public static GameData D => Lazy.Value;
 
+    /// <summary>Bez nagrody Akt 0 budowa zaczyna się od etapu F0 (Fundamenty).</summary>
+    public static int F0 => D.PreludeStages;
+
     public static string GoldenPath(string file) => Path.Combine(AppContext.BaseDirectory, "golden", file);
 
     public static Game NewGame() => new(D);

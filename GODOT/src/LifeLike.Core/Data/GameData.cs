@@ -156,6 +156,16 @@ public sealed class GameData
     public int BehaviorPushCooldown { get; private init; } = 3;
     public string[] BehaviorNames { get; private init; } = Behavior.Ids;
 
+    // v0.21.49 (część 3): Akt 0 (pieczątki, druga faza bossa), samouczek menu
+    /// <summary>Etapy aktu wstępnego (Akt 0) na początku listy: bez nagrody za odbiór budowa zaczyna się za nimi.</summary>
+    public int PreludeStages { get; private init; }
+    /// <summary>Dokumenty etapu z pieczątkami (podpis, mapa, uzgodnienie).</summary>
+    public string[] Documents { get; private init; } = [];
+    /// <summary>Samouczek menu: kroki na tytule i wyborze zawodu, nadawca dymków.</summary>
+    public TutorialStep[] TutorialSteps { get; private init; } = [];
+    /// <summary>Dymki przy pierwszym odblokowaniu; kolejność = TutorialUnlock.</summary>
+    public TutorialStep[] TutorialUnlocks { get; private init; } = [];
+
     public int MaxHeroLevel => LevelThresholds.Length + 1;
     public int GearSlotsCount => GearSlots.Length;
     public int GearTraitsCount => GearTraits.Length;
@@ -231,10 +241,15 @@ public sealed class GameData
                 hasReward ? Int(rw, "cash", 0) : 0,
                 hasReward ? Str(rw, "title", "") : "",
                 e.TryGetProperty("material", out var em) ? Lookup(mid, em.GetString() ?? "", "materiał") : -1,
-                BehaviorTags(e));
+                BehaviorTags(e),
+                e.TryGetProperty("phase", out var ph) ? Int(ph, "atPct") : 0,
+                e.TryGetProperty("phase", out var ph2) ? Int(ph2, "healPct") : 0,
+                e.TryGetProperty("phase", out var ph3) ? Int(ph3, "summon", 0) : 0,
+                e.TryGetProperty("phase", out var ph4) ? Str(ph4, "name") : "");
         }).ToArray();
         foreach (var e in enemies)
         {
+            Require(e.PhasePct == 0 || (e.Slam && e.PhasePct is >= 10 and <= 90 && e.PhaseSummon <= e.SummonMax), $"wróg {e.Id}: zła druga faza");
             Require(e.Summon < 0 || (!enemies[e.Summon].Slam && e.SummonEvery > 0 && e.SummonMax is > 0 and <= 3),
                 $"wróg {e.Id}: złe wezwania");
         }
@@ -284,13 +299,19 @@ public sealed class GameData
 
         var acts = d.GetProperty("acts").EnumerateArray().Select(a => a.TryGetProperty("mechanic", out var mc)
             ? new ActDef(Str(a, "name"), Int(a, "bonusPerStage"), Int(a, "bonusPerKill"), ParseEnum<ActMechanic>(Str(mc, "effect")), Int(mc, "value", 0),
-                Str(mc, "name", ""), Str(mc, "short", ""), Str(mc, "info", ""))
-            : new ActDef(Str(a, "name"), Int(a, "bonusPerStage"), Int(a, "bonusPerKill"))).ToArray();
+                Str(mc, "name", ""), Str(mc, "short", ""), Str(mc, "info", ""), Str(a, "numeral", ""), Bool(a, "prelude"))
+            : new ActDef(Str(a, "name"), Int(a, "bonusPerStage"), Int(a, "bonusPerKill"), Numeral: Str(a, "numeral", ""), Prelude: Bool(a, "prelude"))).ToArray();
         for (var ai = 0; ai < acts.Length; ai++)
         {
             var last = Array.FindLastIndex(stages, s => s.Act == ai);
             Require(last >= 0 && stages[last].Boss >= 0, $"akt {ai} bez bossa");
         }
+        // Akt wstępny (Akt 0): jego etapy na początku listy, za nimi etapy budowy.
+        var preludeStages = stages.Count(st => acts[st.Act].Prelude);
+        for (var i = 0; i < stages.Length; i++) Require(acts[stages[i].Act].Prelude == i < preludeStages, "Akt 0: etapy na początku listy");
+        var documents = d.TryGetProperty("documents", out var docj) ? docj.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : [];
+        Require(documents.Length <= 4, "pieczątki: maks. 4 dokumenty");
+        foreach (var a in acts) Require(a.Mechanic != ActMechanic.Stamps || a.MechValue == documents.Length, "pieczątki: tyle dokumentów, ile w mechanice");
 
         var hurtownia = d.GetProperty("hurtownia").EnumerateArray().Select(it => new ShopItemDef(
             Str(it, "id", ""), Str(it, "name"), Str(it, "desc"), Int(it, "price"), ParseEnum<ShopEffect>(Str(it, "effect")),
@@ -470,6 +491,12 @@ public sealed class GameData
                         idx = Lookup(cid, id, "zawód nagrody");
                         name = classes[idx].Name;
                         break;
+                    case "act":
+                        rk = RewardKind.Act;
+                        idx = Array.FindIndex(acts, a => a.Prelude);
+                        Require(idx >= 0, "nagroda: brak aktu wstępnego");
+                        name = acts[idx].Name;
+                        break;
                     default:
                         rk = RewardKind.Soon;
                         idx = -1;
@@ -490,6 +517,21 @@ public sealed class GameData
             : Behavior.Ids;
         var hasSchedule = d.TryGetProperty("schedule", out var scj);
         var difficultiesJson = d.GetProperty("difficulties").EnumerateArray().ToArray();
+        TutorialStep[] tutSteps = [], tutUnlocks = [];
+        if (d.TryGetProperty("tutorial", out var tuj))
+        {
+            var from = Str(tuj, "from");
+            TutorialStep Tut(JsonElement x)
+            {
+                var lines = Str(x, "text").Split('|').ToList();
+                while (lines.Count < 3) lines.Add("");
+                return new TutorialStep(Str(x, "id"), Str(x, "title"), new StoryMsg(from, lines.ToArray()), Str(x, "gba", ""),
+                    Str(x, "screen") == "class" ? 1 : 0, Bool(x, "godotOnly"), Str(x, "requires", "") == "investor", Str(x, "link", ""));
+            }
+            tutSteps = tuj.GetProperty("steps").EnumerateArray().Select(Tut).ToArray();
+            tutUnlocks = tuj.GetProperty("unlocks").EnumerateArray().Select(Tut).ToArray();
+            Require(tutUnlocks.Select(x => x.Id).SequenceEqual(new[] { "respect", "daily", "investor", "act0", "class" }), "samouczek: 5 dymków odblokowań");
+        }
 
         return new GameData
         {
@@ -613,6 +655,10 @@ public sealed class GameData
             BehaviorReturnHpPct = hasBp ? Int(bpj, "returnHpPct", 50) : 50,
             BehaviorPushCooldown = hasBp ? Int(bpj, "pushCooldown", 3) : 3,
             BehaviorNames = behaviorNames,
+            PreludeStages = preludeStages,
+            Documents = documents,
+            TutorialSteps = tutSteps,
+            TutorialUnlocks = tutUnlocks,
         };
     }
 

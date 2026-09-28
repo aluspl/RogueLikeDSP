@@ -2,7 +2,8 @@ namespace LifeLike.Core;
 
 /// <summary>
 /// Harmonogram domu po wygranej (port z GBA/include/meta.h): dni etapu z liczby tur (ScheduleMinDays + tury /
-/// ScheduleTurnsPerDay), koszty etapów z danych, daty liczone wstecz od dnia odbioru.
+/// ScheduleTurnsPerDay), koszty etapów z danych, daty liczone wstecz od dnia odbioru; od pierwszego etapu budowy (Akt 0 tylko,
+/// gdy był w budowie).
 /// </summary>
 public static class HouseSchedule
 {
@@ -11,14 +12,14 @@ public static class HouseSchedule
     public static int TotalDays(Game g)
     {
         var t = 0;
-        for (var s = 0; s < g.D.Stages.Length; ++s) t += Days(g, s);
+        for (var s = g.FirstStage; s < g.D.Stages.Length; ++s) t += Days(g, s);
         return t;
     }
 
     public static int TotalCost(Game g)
     {
         var t = 0;
-        foreach (var st in g.D.Stages) t += st.Cost;
+        for (var s = g.FirstStage; s < g.D.Stages.Length; ++s) t += g.D.Stages[s].Cost;
         return t;
     }
 
@@ -26,7 +27,7 @@ public static class HouseSchedule
     public static int StartDay(Game g, int s, int endDay)
     {
         var d = endDay - TotalDays(g);
-        for (var i = 0; i < s; ++i) d += Days(g, i);
+        for (var i = g.FirstStage; i < s; ++i) d += Days(g, i);
         return d;
     }
 }

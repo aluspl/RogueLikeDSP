@@ -10,9 +10,9 @@ public class DifficultyAndProgressionTests
     {
         var n = TestData.Run(0, 42, 1);
         Assert.True(n.Diff == 1 && n.Tier == 0);
-        Assert.Equal(D.Stages[0].HpPct, n.EnemyHpPct());
+        Assert.Equal(D.Stages[TestData.F0].HpPct, n.EnemyHpPct());
         for (var i = 0; i < n.EnemiesCount; ++i)
-            Assert.Equal(D.Enemies[n.Enemies[i].DefId].MaxHealth * D.Stages[0].HpPct / 100, n.Enemies[i].MaxHp);
+            Assert.Equal(D.Enemies[n.Enemies[i].DefId].MaxHealth * D.Stages[TestData.F0].HpPct / 100, n.Enemies[i].MaxHp);
         var e = TestData.Run(0, 42, 0);
         var h = TestData.Run(0, 42, 2);
         Assert.True(e.EnemyHpPct() <= n.EnemyHpPct() && n.EnemyHpPct() < h.EnemyHpPct());
@@ -21,7 +21,7 @@ public class DifficultyAndProgressionTests
         for (var i = 0; i < e.EnemiesCount; ++i) Assert.True(e.Enemies[i].MaxHp >= 1);
         var s = TestData.Run(0, 42, 1);
         int prevHp = s.EnemyHpPct(), prevDmg = s.EnemyDmgBonus();
-        for (var k = 1; k < D.Stages.Length; ++k)
+        for (var k = TestData.F0 + 1; k < D.Stages.Length; ++k)
         {
             s.NextStage();
             Assert.True(s.EnemyHpPct() >= prevHp);
@@ -73,11 +73,11 @@ public class DifficultyAndProgressionTests
         g.Score = 1234;
         g.St = GameStatus.Won;
         g.Stage = D.Stages.Length - 1;
-        var dmg0 = D.Stages[0].DmgBonus;
+        var dmg0 = D.Stages[TestData.F0].DmgBonus;
         Assert.True(g.NewGamePlus());
-        Assert.True(g.Tier == 1 && g.Stage == 0 && g.St == GameStatus.Playing && g.Cls == 2 && g.Diff == 1);
+        Assert.True(g.Tier == 1 && g.Stage == TestData.F0 && g.St == GameStatus.Playing && g.Cls == 2 && g.Diff == 1);
         Assert.True(g.DmgBonus == 2 && g.DefBonus == 1 && g.Score == 1234 && g.Hero.Hp == g.Hero.MaxHp);
-        Assert.True(g.EnemyHpPct() > D.Stages[0].HpPct && g.EnemyDmgBonus() > dmg0);
+        Assert.True(g.EnemyHpPct() > D.Stages[TestData.F0].HpPct && g.EnemyDmgBonus() > dmg0);
     }
 
     [Fact]
@@ -131,7 +131,7 @@ public class DifficultyAndProgressionTests
         h.DebugSkip();
         Assert.Equal((D.XpPerKill + D.XpPerStage) * h.ScorePct() / 100, h.Xp);
         var w = TestData.Run(1, 7);
-        for (var k = 0; k < D.Stages.Length - 1; ++k)
+        for (var k = TestData.F0; k < D.Stages.Length - 1; ++k)
         {
             w.DebugSkip();
             w.NextStage();
@@ -168,9 +168,9 @@ public class DifficultyAndProgressionTests
     public void StageStoryAndNgPlusStory()
     {
         var g = TestData.Run(1, 3);
-        Assert.Same(D.StoryStages[0], g.StageStory);
+        Assert.Same(D.StoryStages[TestData.F0], g.StageStory);
         g.NextStage();
-        Assert.Same(D.StoryStages[1], g.StageStory);
+        Assert.Same(D.StoryStages[TestData.F0 + 1], g.StageStory);
         g.St = GameStatus.Won;
         g.Stage = D.Stages.Length - 1;
         g.NewGamePlus();

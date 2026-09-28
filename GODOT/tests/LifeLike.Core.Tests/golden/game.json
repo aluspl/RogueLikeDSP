@@ -887,9 +887,224 @@
       "behaviors": [
         "returns"
       ]
+    },
+    {
+      "id": "podpis",
+      "name": "Brakujący podpis",
+      "maxHealth": 7,
+      "minDamage": 1,
+      "maxDamage": 2,
+      "defense": 0,
+      "sight": 7,
+      "score": 12,
+      "frame": 101,
+      "desc": "Uciekł, zanim ktoś podpisał",
+      "slam": false,
+      "material": "drewno",
+      "behaviors": [
+        "flees"
+      ]
+    },
+    {
+      "id": "wniosek",
+      "name": "Zaginiony wniosek",
+      "maxHealth": 8,
+      "minDamage": 1,
+      "maxDamage": 2,
+      "defense": 0,
+      "sight": 6,
+      "score": 12,
+      "frame": 102,
+      "desc": "Zgubiony. Znajdzie się. Dwa razy",
+      "slam": false,
+      "material": "drewno",
+      "behaviors": [
+        "returns"
+      ]
+    },
+    {
+      "id": "termin_odw",
+      "name": "Termin na odwołanie",
+      "maxHealth": 9,
+      "minDamage": 1,
+      "maxDamage": 2,
+      "defense": 0,
+      "sight": 6,
+      "score": 13,
+      "frame": 103,
+      "desc": "Tyka i rośnie z każdym dniem",
+      "slam": false,
+      "material": "drewno",
+      "behaviors": [
+        "grows"
+      ]
+    },
+    {
+      "id": "niezgodnosc",
+      "name": "Niezgodność z planem",
+      "maxHealth": 7,
+      "minDamage": 1,
+      "maxDamage": 2,
+      "defense": 0,
+      "sight": 8,
+      "score": 13,
+      "frame": 104,
+      "desc": "Rzuca uwagami z daleka",
+      "slam": false,
+      "material": "drewno",
+      "behaviors": [
+        "ranged"
+      ]
+    },
+    {
+      "id": "pieczatka",
+      "name": "Pieczątka nie ta",
+      "maxHealth": 10,
+      "minDamage": 1,
+      "maxDamage": 3,
+      "defense": 1,
+      "sight": 5,
+      "score": 13,
+      "frame": 105,
+      "desc": "Stempluje i odsyła na początek",
+      "slam": false,
+      "onHit": {
+        "status": "paper",
+        "chancePct": 20,
+        "turns": 0
+      },
+      "material": "drewno",
+      "behaviors": [
+        "pushes"
+      ]
+    },
+    {
+      "id": "rura",
+      "name": "Pęknięta rura",
+      "maxHealth": 8,
+      "minDamage": 1,
+      "maxDamage": 2,
+      "defense": 0,
+      "sight": 6,
+      "score": 12,
+      "frame": 106,
+      "desc": "Jedna dziura, zaraz dwie",
+      "slam": false,
+      "onHit": {
+        "status": "slip",
+        "chancePct": 15,
+        "turns": 2
+      },
+      "material": "stal",
+      "behaviors": [
+        "splits"
+      ]
+    },
+    {
+      "id": "cisnienie",
+      "name": "Brak ciśnienia",
+      "maxHealth": 12,
+      "minDamage": 1,
+      "maxDamage": 2,
+      "defense": 2,
+      "sight": 4,
+      "score": 13,
+      "frame": 107,
+      "desc": "Stoi i dopompowuje innych",
+      "slam": false,
+      "material": "stal",
+      "behaviors": [
+        "stationary",
+        "heals"
+      ]
+    },
+    {
+      "id": "kabel",
+      "name": "Kolizja z kablem",
+      "maxHealth": 7,
+      "minDamage": 1,
+      "maxDamage": 3,
+      "defense": 0,
+      "sight": 7,
+      "score": 13,
+      "frame": 108,
+      "desc": "Koparka trafiła w kabel. Iskry!",
+      "slam": false,
+      "onHit": {
+        "status": "shock",
+        "chancePct": 12,
+        "turns": 1
+      },
+      "material": "stal",
+      "behaviors": [
+        "explodes"
+      ]
+    },
+    {
+      "id": "decyzja",
+      "name": "Decyzja odmowna",
+      "desc": "Stos pism z pieczątką ODMOWA",
+      "maxHealth": 34,
+      "minDamage": 3,
+      "maxDamage": 5,
+      "defense": 2,
+      "sight": 12,
+      "score": 140,
+      "frame": 109,
+      "slam": true,
+      "slamName": "Stempel ODMOWA",
+      "onHit": {
+        "status": "paper",
+        "chancePct": 25,
+        "turns": 0
+      },
+      "summon": {
+        "enemy": "wniosek",
+        "every": 6,
+        "max": 3
+      },
+      "phase": {
+        "atPct": 50,
+        "healPct": 30,
+        "name": "Odwołanie",
+        "summon": 1
+      },
+      "reward": {
+        "cash": 40,
+        "title": "Pozwolenie wydane"
+      }
     }
   ],
   "stages": [
+    {
+      "name": "Działka i pozwolenie",
+      "enemies": [
+        "podpis",
+        "termin_odw",
+        "niezgodnosc",
+        "pieczatka"
+      ],
+      "count": 6,
+      "hpPct": 106,
+      "dmgBonus": 2,
+      "act": 3,
+      "cost": 15
+    },
+    {
+      "name": "Przyłącza",
+      "enemies": [
+        "rura",
+        "cisnienie",
+        "kabel",
+        "wniosek"
+      ],
+      "count": 6,
+      "hpPct": 110,
+      "dmgBonus": 1,
+      "act": 3,
+      "boss": "decyzja",
+      "cost": 28
+    },
     {
       "name": "Fundamenty",
       "enemies": [
@@ -1330,6 +1545,14 @@
     "stages": [
       {
         "from": "Anna Nowak",
+        "text": "Najpierw papiery! Mapa,|warunki zabudowy,|pozwolenie. Bez tego nic."
+      },
+      {
+        "from": "Kierownik Marek",
+        "text": "Pozwolenie prawie jest.|Teraz przyłącza: woda,|prąd, kanaliza. Uważaj!"
+      },
+      {
+        "from": "Anna Nowak",
         "text": "Działka nasza! Liczę na|mocne fundamenty. Uważaj|na wodę i błoto w dole."
       },
       {
@@ -1573,7 +1796,8 @@
         "short": "Błoto",
         "info": "Wejście w błoto = tura",
         "value": 7
-      }
+      },
+      "numeral": "I"
     },
     {
       "name": "Pod dachem",
@@ -1585,7 +1809,8 @@
         "short": "Porywy",
         "info": "Poryw co 6 tur spycha",
         "value": 6
-      }
+      },
+      "numeral": "II"
     },
     {
       "name": "Wykończenie",
@@ -1597,6 +1822,21 @@
         "short": "Pył",
         "info": "Pył: widzenie -2",
         "value": 2
+      },
+      "numeral": "III"
+    },
+    {
+      "name": "Papierologia",
+      "numeral": "0",
+      "prelude": true,
+      "bonusPerStage": 4,
+      "bonusPerKill": 2,
+      "mechanic": {
+        "effect": "stamps",
+        "name": "Pieczątki i kolejka",
+        "short": "Pieczątki",
+        "info": "3 dokumenty = schody",
+        "value": 3
       }
     }
   ],
@@ -1714,7 +1954,8 @@
     "Stal: Kładka nad kałużami",
     "Czerwone pola po wybuchu: odejdź",
     "Błoto w akcie I kosztuje turę",
-    "START na wyborze: opis statystyk"
+    "START na wyborze: opis statystyk",
+    "Akt 0: 3 dokumenty otwierają schody"
   ],
   "contracts": [
     {
@@ -1933,7 +2174,9 @@
           3,
           4,
           5,
-          6
+          6,
+          7,
+          8
         ]
       },
       {
@@ -1946,11 +2189,11 @@
         "weight": 14,
         "bad": true,
         "stages": [
-          2,
-          3,
           4,
           5,
-          6
+          6,
+          7,
+          8
         ]
       },
       {
@@ -1969,7 +2212,9 @@
           3,
           4,
           5,
-          6
+          6,
+          7,
+          8
         ]
       }
     ]
@@ -2486,10 +2731,10 @@
         "desc": "Nowy zawód: taran"
       },
       {
-        "kind": "soon",
+        "kind": "act",
         "id": "akt0",
         "name": "Akt 0: Papierologia",
-        "desc": "Wkrótce"
+        "desc": "Nowy akt przed budową"
       }
     ]
   },
@@ -2522,5 +2767,145 @@
     "stationary": "nie rusza się",
     "pushes": "odpycha",
     "returns": "wraca raz"
+  },
+  "documents": [
+    "Podpis",
+    "Mapa",
+    "Uzgodnienie"
+  ],
+  "tutorial": {
+    "from": "Kierownik Marek",
+    "steps": [
+      {
+        "id": "new",
+        "title": "Nowa budowa",
+        "text": "Tu zaczynasz budowę domu|Nowaków: zawód, trudność|i na plac. Powodzenia!",
+        "screen": "title",
+        "gba": "START / A: nowa budowa"
+      },
+      {
+        "id": "phone",
+        "title": "Profil w telefonie",
+        "text": "Twój telefon: odznaki,|zlecenia, pamiątki,|Katalog usterek, Osiedle.",
+        "screen": "title",
+        "gba": "SELECT: telefon profilu"
+      },
+      {
+        "id": "training",
+        "title": "Szkolenia",
+        "text": "Za doświadczenie z budów|kupisz Szkolenia: HP,|nowe zawody, narzędzia.",
+        "screen": "title",
+        "gba": "SELECT, Koszty: Szkolenia"
+      },
+      {
+        "id": "respect",
+        "title": "Respekt",
+        "text": "Respekt dostajesz za|każdy etap i zostaje po|porażce. Stałe premie!",
+        "screen": "title",
+        "gba": "Koszty, SELECT: Respekt"
+      },
+      {
+        "id": "daily",
+        "title": "Codzienna budowa",
+        "text": "Budowa dnia: ten sam|plac i zawód dla|wszystkich. Pobij wynik!",
+        "screen": "title",
+        "gba": "R: codzienna budowa"
+      },
+      {
+        "id": "help",
+        "title": "Jak grać",
+        "text": "Sterowanie, akty,|statystyki. Tam też|powtórzysz samouczek.",
+        "screen": "title",
+        "gba": "B: jak grać"
+      },
+      {
+        "id": "options",
+        "title": "Opcje",
+        "text": "Dźwięk, wibracje,|sterowanie i wielkość|tekstu są pod kluczem.",
+        "screen": "title",
+        "godotOnly": true
+      },
+      {
+        "id": "class",
+        "title": "Zawód",
+        "text": "Każdy fach ma broń, moc|i statystyki. Nowe fachy|kupisz albo wygrasz.",
+        "screen": "class",
+        "gba": "lewo / prawo: zawód"
+      },
+      {
+        "id": "difficulty",
+        "title": "Trudność",
+        "text": "Łatwy, Normalny, Trudny:|silniejsze problemy,|więcej punktów.",
+        "screen": "class",
+        "gba": "góra / dół: trudność"
+      },
+      {
+        "id": "keepsake",
+        "title": "Pamiątka",
+        "text": "Jedna pamiątka na|budowę. Im częściej ją|bierzesz, tym mocniejsza.",
+        "screen": "class",
+        "gba": "L / R: pamiątka"
+      },
+      {
+        "id": "stats",
+        "title": "Statystyki",
+        "text": "Co daje SIŁ, ZRĘ, INT,|OBR i SZCZ - wzory|w prostych słowach.",
+        "screen": "class",
+        "gba": "START: statystyki",
+        "link": "stats"
+      },
+      {
+        "id": "investor",
+        "title": "Tryb inwestora",
+        "text": "Utrudnienia za więcej|doświadczenia. Stawka|to Twój rekord zawodu.",
+        "screen": "class",
+        "gba": "SELECT: tryb inwestora",
+        "requires": "investor"
+      },
+      {
+        "id": "go",
+        "title": "Na plac!",
+        "text": "Wybierz fach i ruszamy.|Będę pisał po drodze.|Powodzenia, szefie!",
+        "screen": "class",
+        "gba": "A: start budowy"
+      }
+    ],
+    "unlocks": [
+      {
+        "id": "respect",
+        "title": "Pierwszy Respekt!",
+        "text": "Respekt zostaje na stałe.|Wydasz go w telefonie:|Koszty, strona Respekt.",
+        "screen": "title",
+        "gba": "SELECT: telefon profilu"
+      },
+      {
+        "id": "daily",
+        "title": "Codzienna budowa",
+        "text": "Po pierwszej budowie|spróbuj budowy dnia:|ten sam plac dla każdego.",
+        "screen": "title",
+        "gba": "R: codzienna budowa"
+      },
+      {
+        "id": "investor",
+        "title": "Tryb inwestora",
+        "text": "Pierwszy odbiór! Na|wyborze zawodu włączysz|utrudnienia za dośw.",
+        "screen": "class",
+        "gba": "SELECT: tryb inwestora"
+      },
+      {
+        "id": "act0",
+        "title": "Akt 0: Papierologia",
+        "text": "Najpierw papiery! Nowe|budowy zaczną się od|pozwoleń i przyłączy.",
+        "screen": "title",
+        "gba": "START / A: nowa budowa"
+      },
+      {
+        "id": "class",
+        "title": "Nowy zawód",
+        "text": "Nowy fach w ekipie!|Czeka na pasku zawodów.|Wypróbuj go na placu.",
+        "screen": "class",
+        "gba": "lewo / prawo: zawód"
+      }
+    ]
   }
 }

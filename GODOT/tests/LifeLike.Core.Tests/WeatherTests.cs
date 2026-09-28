@@ -15,9 +15,9 @@ public class WeatherTests
         for (var k = 0; k < 120; ++k)
         {
             var g = TestData.Run(k % D.Classes.Length, (uint)(900 + k * 17));
-            for (var st = 0; st < D.Stages.Length; ++st)
+            for (var st = TestData.F0; st < D.Stages.Length; ++st)
             {
-                if (st > 0) g.NextStage();
+                if (st > TestData.F0) g.NextStage();
                 Assert.InRange(g.Weather, 0, D.Weather.Length - 1);
                 Assert.True((D.Weather[g.Weather].StagesMask & (1 << st)) != 0);
                 seen[st, g.Weather]++;

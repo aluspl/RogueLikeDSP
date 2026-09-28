@@ -34,13 +34,13 @@ public class PathsMaterialsDailyTests
             var want = a.PathOffer(k);
             a.ChoosePath(k);
             a.NextStage();
-            Assert.True(a.Stage == 1 && a.StagePath == want && a.NextPath == 0);
+            Assert.True(a.Stage == TestData.F0 + 1 && a.StagePath == want && a.NextPath == 0);
         }
         Assert.Equal(-1, TestData.Run(2, 99).StagePath);
         int more = PathWhere(p => p.Enemies > 0), fewer = PathWhere(p => p.Enemies < 0);
         int calm = PathWhere(p => p.NoEvent), risky = PathWhere(p => p.BadWeather), stock = PathWhere(p => p.Materials > 0);
         Assert.True(more >= 0 && fewer >= 0 && calm >= 0 && risky >= 0 && stock >= 0);
-        var bs = Array.FindIndex(D.Stages, s => s.Boss >= 0);
+        var bs = Array.FindIndex(D.Stages, TestData.F0, s => s.Boss >= 0);
         foreach (var path in new[] { more, fewer })
         {
             var a = TestData.Run(1, 31);
@@ -58,15 +58,15 @@ public class PathsMaterialsDailyTests
         for (var seed = 1u; seed <= 100; ++seed)
         {
             var w = TestData.Run(1, seed);
-            w.StartStage(1, risky);
+            w.StartStage(TestData.F0 + 1, risky);
             badOk += w.WDef.Bad ? 1 : 0;
             var e = TestData.Run(1, seed);
-            e.StartStage(1, calm);
+            e.StartStage(TestData.F0 + 1, calm);
             events += e.StageEvent >= 0 ? 1 : 0;
         }
         Assert.True(badOk == 100 && events == 0);
         var m = TestData.Run(1, 5);
-        m.StartStage(1, stock);
+        m.StartStage(TestData.F0 + 1, stock);
         Assert.Equal(D.Paths[stock].Materials, m.Mats[0] + m.Mats[1] + m.Mats[2]);
     }
 
@@ -124,7 +124,7 @@ public class PathsMaterialsDailyTests
 
         var br = D.Repairs[bridge];
         var dry = TestData.Arena(1);
-        dry.Stage = 4; // akt II: bez błota (Kładka działa też na błoto)
+        dry.Stage = TestData.F0 + 4; // akt II: bez błota (Kładka działa też na błoto)
         dry.Mats[br.Material] = 3;
         Assert.True(dry.RepairBlocked(bridge) == RepairBlock.NoPuddle && !dry.PlayerRepair(bridge));
         var r = TestData.Arena(1);
@@ -199,7 +199,7 @@ public class PathsMaterialsDailyTests
         var bytes = v6.ToBytes();
         for (var i = Profile.V6Size; i < bytes.Length; i++) bytes[i] = 0xEE;
         var p = Profile.FromBytes(bytes);
-        Assert.True(Meta.ProfileFix(D, p) && p.MagicIs(Profile.MagicV9) && p.Best == 321 && p.Investor == 5 && p.BestStake[2] == 4);
+        Assert.True(Meta.ProfileFix(D, p) && p.MagicIs(Profile.MagicV10) && p.Best == 321 && p.Investor == 5 && p.BestStake[2] == 4);
         Assert.True(p.DailyY == 0 && p.DailyRuns == 0 && p.DailyWon == 0 && p.DailyDay.All(x => x == 0) && p.DailyScore.All(x => x == 0));
         var c = Meta.NewProfile(D);
         c.Xp = 10;
@@ -220,7 +220,8 @@ public class PathsMaterialsDailyTests
             g.PlayerWait();
         }
         g.DebugSkip();
-        Assert.True(g.St == GameStatus.StageClear && g.StageDays[0] == g.Turns);
+        var f = g.FirstStage; // bez Aktu 0: od Fundamentów
+        Assert.True(g.St == GameStatus.StageClear && g.StageDays[f] == g.Turns);
         while (g.St == GameStatus.StageClear)
         {
             g.NextStage();
@@ -232,17 +233,17 @@ public class PathsMaterialsDailyTests
             g.DebugSkip();
         }
         Assert.Equal(GameStatus.Won, g.St);
-        for (var s = 1; s < D.Stages.Length; ++s) Assert.True(g.StageDays[s] >= 2 + s);
+        for (var s = f + 1; s < D.Stages.Length; ++s) Assert.True(g.StageDays[s] >= 2 + s);
         var total = 0;
-        for (var s = 0; s < D.Stages.Length; ++s)
+        for (var s = f; s < D.Stages.Length; ++s)
         {
             Assert.True(HouseSchedule.Days(g, s) >= D.ScheduleMinDays);
             total += HouseSchedule.Days(g, s);
         }
         Assert.True(HouseSchedule.TotalDays(g) == total && HouseSchedule.TotalCost(g) > 0);
         var end = Daily.DaysFromCivil(2026, 10, 1);
-        Assert.Equal(end - total, HouseSchedule.StartDay(g, 0, end));
-        Assert.Equal(end - total + HouseSchedule.Days(g, 0), HouseSchedule.StartDay(g, 1, end));
+        Assert.Equal(end - total, HouseSchedule.StartDay(g, f, end));
+        Assert.Equal(end - total + HouseSchedule.Days(g, f), HouseSchedule.StartDay(g, f + 1, end));
     }
 
     [Fact]

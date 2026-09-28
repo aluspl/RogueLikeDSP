@@ -66,6 +66,22 @@ public sealed partial class Game
     }
 
     /// <summary>
+    /// Druga faza bossa (Decyzja odmowna: Odwołanie): raz, gdy HP spadnie do PhasePct% (także ciosem, który by go usunął) –
+    /// odzyskuje PhaseHeal% max HP i od razu wzywa PhaseSummon problemów.
+    /// </summary>
+    public void BossPhase(int ei)
+    {
+        ref var e = ref Enemies[ei];
+        var ed = D.Enemies[e.DefId];
+        e.Flags = (byte)(e.Flags | ActorFlag.Phase);
+        var heal = e.MaxHp * ed.PhaseHeal / 100;
+        e.Hp = (short)Math.Min(e.MaxHp, Math.Max(1, (int)e.Hp) + heal);
+        Push(Msg(ed.PhaseName).Add("! ").Add(ed.Name).Add(" +").Add(heal).Add(" HP").As(LogKind.Bad));
+        int bx = e.X, by = e.Y;
+        for (var k = 0; k < ed.PhaseSummon && SummonsUsed < ed.SummonMax; ++k) SummonNear(bx, by);
+    }
+
+    /// <summary>
     /// Obrażenia dla problemu (broń bohatera albo brygada; src = nazwa w dzienniku): trafienie, usunięcie, nagrody,
     /// koniec etapu po bossie.
     /// </summary>
@@ -77,6 +93,7 @@ public sealed partial class Game
         e.Hp = (short)(e.Hp - dmg);
         e.Awake = true;
         LastTarget = ei;
+        if (ei == Boss && ed.PhasePct > 0 && (e.Flags & ActorFlag.Phase) == 0 && e.Hp * 100 <= e.MaxHp * ed.PhasePct) BossPhase(ei);
         AddHit(e.X, e.Y, dmg, false, crit ? HitKind.Crit : HitKind.Normal);
         TurnEvents |= 1u << ei;
         if (e.Hp <= 0 && ei != Boss && (ed.Tags & Behavior.Returns) != 0 && (e.Flags & ActorFlag.Returned) == 0) // wraca raz
@@ -116,7 +133,7 @@ public sealed partial class Game
             if (ei == Boss)
             {
                 if (StageDamage == BossWakeDamage && CleanBosses < 255) ++CleanBosses; // zlecenie Czysta robota
-                Score += (500 + 100 * (Stage + 1)) * ScorePct() / 100;
+                Score += (500 + 100 * Math.Max(0, PatternStage() + 1)) * ScorePct() / 100;
                 GainXp(D.XpBoss);
                 SlamTimer = 0;
                 if (ed.RewardCash > 0) // nagroda bossa (Inspekcja: Protokół bez uwag)
@@ -329,7 +346,7 @@ public sealed partial class Game
         int arg = 0, trait = 0;
         if (type == (int)PickupType.GearBox) // slot losowy, jakość lepsza na późnych etapach i ze szczęściem
         {
-            var q = R.Range(1, 100) + Stage * D.GearStageBonus + D.RarityPerLuck * Luck() + Bonus.GearPct;
+            var q = R.Range(1, 100) + Math.Max(0, PatternStage()) * D.GearStageBonus + D.RarityPerLuck * Luck() + Bonus.GearPct;
             var rarity = q >= D.GearBrandFrom ? 2 : (q >= D.GearSolidFrom ? 1 : 0);
             arg = (byte)(RandomSlot() * 3 + rarity);
             trait = (byte)R.Range(0, D.GearTraitsCount - 1);
@@ -427,6 +444,12 @@ public sealed partial class Game
             {
                 ++DmgBonus;
                 Push(Msg("Projekt wykonawczy: obrażenia +1").As(LogKind.Loot));
+            }
+            else if (p.Type == PickupType.Document) // pieczątki: komplet otwiera schody
+            {
+                Docs = (byte)(Docs | (1 << p.Arg));
+                Push(Msg("Dokument: ").Add(D.Documents[p.Arg]).Add(" (").Add(DocsCount()).Add("/").Add(DocsNeeded()).Add(")").As(LogKind.Loot));
+                if (!StairsLocked()) Push(Msg("Komplet pieczątek! Schody otwarte").As(LogKind.Good));
             }
             else if (p.Type == PickupType.GearBox)
             {
@@ -650,7 +673,11 @@ public sealed partial class Game
                 if (Enemies[i].Alive) EnemyAct(i);
             }
         }
-        if (St == GameStatus.Playing && Hero.X == StairsX && Hero.Y == StairsY)
+        if (St == GameStatus.Playing && Hero.X == StairsX && Hero.Y == StairsY && StairsLocked())
+        {
+            Push(Msg("Schody zamknięte: dokumenty ").Add(DocsCount()).Add("/").Add(DocsNeeded()).As(LogKind.Bad));
+        }
+        else if (St == GameStatus.Playing && Hero.X == StairsX && Hero.Y == StairsY)
         {
             St = GameStatus.StageClear;
             FinishStage();

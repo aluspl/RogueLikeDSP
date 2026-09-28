@@ -68,6 +68,21 @@ public static class Bot
         if (g.Thermos > 0 && g.Hero.Hp * 100 < g.Hero.MaxHp * g.D.BotDrinkBelowPct && g.PlayerDrink()) return;
         var hd = Costs(g, g.Hero.X, g.Hero.Y); // koszt drogi (błoto droższe)
         int tx = g.StairsX, ty = g.StairsY, best = 999999;
+        if (g.StairsLocked()) // pieczątki (Akt 0): najpierw najbliższy dokument, potem schody
+        {
+            var bdoc = 999999;
+            for (var i = 0; i < g.PickupsCount; ++i)
+            {
+                var p = g.Pickups[i];
+                var dd = hd[p.Y * Level.W + p.X];
+                if (p.Active && p.Type == PickupType.Document && dd >= 0 && dd < bdoc)
+                {
+                    bdoc = dd;
+                    tx = p.X;
+                    ty = p.Y;
+                }
+            }
+        }
         for (var i = 0; i < g.EnemiesCount; ++i)
         {
             var e = g.Enemies[i];

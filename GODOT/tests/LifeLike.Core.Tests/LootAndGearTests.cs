@@ -106,7 +106,7 @@ public class LootAndGearTests
             for (uint seed = 1; seed <= 1500; ++seed)
             {
                 var g = KillAdjacent(seed);
-                g.Stage = st == 0 ? 0 : D.Stages.Length - 1;
+                g.Stage = st == 0 ? TestData.F0 : D.Stages.Length - 1;
                 g.PlayerMove(1, 0);
                 var p = g.Pickups[g.PickupsCount - 1];
                 if (p.Type == PickupType.GearBox)
