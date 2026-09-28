@@ -66,6 +66,16 @@
 //       rękawice z cechą Kryt +5%; obok w prawo paczka markowych rękawic (porównanie), dalej skrzynka z Młotem
 //       udarowym (baner "teraz -> po zmianie"); 2 pola w górę ogłuszone Kamień w wykopie i Przekroczony budżet (karta
 //       pod B: obrażenia w obie strony); wybór zawodu: karta z krytem, START -> A = strony Obrażenia broni
+//  43 - premia po etapie (#27): L+R+SELECT = etap zaliczony, oferta 3 zwykłych premii, 40 zł (SELECT = losuj za 25 zł)
+//  44 - oferta 3 rzadkich premii; mając Beton B30 i Szelki - dwie z nich włączą synergię ("Synergia!" na karcie)
+//  45 - oferta 3 legendarnych; mając Krzesiwo - Transformator włącza synergię Iskrzenie (A = ekran "Synergia!")
+//  46 - lista premii w telefonie: 8 premii i 3 synergie (telefon -> Sprzęt -> góra; góra/dół przewija)
+//  47 - elity: po jednej każdej cechy wokół bohatera (ogłuszone), złota paleta; B trzymane = karta z przedrostkiem,
+//       "Elita: ...", "Zadasz" z obroną elity (Tarcza)
+//  48 - mokry + prąd: Elektryk, obok w prawo mokry Przeciek, za nim mokry Kornik, niżej suchy Kornik; A = Porażenie
+//  49 - pył + iskra: Glazurnik w akcie III (pył), obok w prawo zapylony Kornik i dwa obok niego; A = Wybuch pyłu
+//  50 - zamróz + uderzenie: Mróz, obok w prawo zmrożony Kamień w wykopie; D-pad w prawo = Pęknięcie
+//  51 - mokry + prąd na bohaterze: bohater mokry (ikona w HUD), obok Zwarcie; B = czekaj, porażenie bohatera
 #include "core.h"
 #include "meta.h"
 
@@ -248,9 +258,44 @@ namespace debug_scenario
         g.enemies[g.enemies_count - 1].stun = int8_t(stun);
     }
 
+    // Premia po nazwie (data::boons), -1 gdy brak.
+    inline int boon_index(const char* name)
+    {
+        for(int b = 0; b < data::boons_count; ++b)
+        {
+            const char* x = data::boons[b].name;
+            const char* y = name;
+            while(*x && *x == *y) { ++x; ++y; }
+            if(*x == *y) return b;
+        }
+        return -1;
+    }
+    inline void give_boon(core::game& g, const char* name)
+    {
+        int b = boon_index(name);
+        if(b >= 0) { g.boon_offer[0] = int8_t(b); g.pick_boon(0); }
+    }
+    inline void offer(core::game& g, const char* b0, const char* b1, const char* b2)
+    {
+        g.boon_offer[0] = int8_t(boon_index(b0)); g.boon_offer[1] = int8_t(boon_index(b1)); g.boon_offer[2] = int8_t(boon_index(b2));
+    }
+
+    // Wołane przed ekranem premii po etapie (scenariusze 43-45: oferta danej rzadkości).
+    inline void before_boon_pick(core::game& g, int scenario)
+    {
+        if(scenario == 43) { offer(g, "Koniczyna", "Szczęśliwa moneta", "Termos z bufetu"); g.cash = 40; }
+        if(scenario == 44) offer(g, "Hartowana kielnia", "Instrukcja BHP", "Tarcza tnąca");
+        if(scenario == 45) offer(g, "Transformator", "Młot mistrza", "Anioł stróż");
+    }
+
     // Wołane raz, na wejściu na pierwszy etap budowy.
     inline void apply(core::game& g, int scenario)
     {
+        if(scenario == 48 || scenario == 49)   // kombinacje: Elektryk (prąd) / Glazurnik (iskra)
+        {
+            core::run_mods m = g.bonus;
+            g.new_run(scenario == 48 ? class_of(core::ability_effect::chain) : class_of(core::ability_effect::spin), g.run_seed, g.diff, m);
+        }
         if(scenario >= 25 && scenario <= 27)   // nowy zawód niezależnie od wyboru na ekranie zawodu
         {
             const core::ability_effect e[3] = { core::ability_effect::line, core::ability_effect::splash, core::ability_effect::ram };
@@ -544,6 +589,66 @@ namespace debug_scenario
                 g.pickups[g.pickups_count++] = { int8_t(g.hero.x + 2), g.hero.y, core::tool, true, uint8_t(tool_index("Młot udarowy")) };
                 place_at(g, data::enemy_kamien, 0, -2, 90);
                 place_at(g, data::enemy_budzet, 1, -2, 90);
+                break;
+            }
+            case 44: give_boon(g, "Beton B30"); give_boon(g, "Szelki asekuracyjne"); break;
+            case 45: give_boon(g, "Krzesiwo"); break;
+            case 46:
+                for(const char* n : { "Beton B30", "Hartowana kielnia", "Wąż ogrodowy", "Przedłużacz", "Podwójne espresso",
+                                      "Termos z bufetu", "Złota podkowa", "Szczęśliwa moneta" })
+                    give_boon(g, n);
+                break;
+            case 47:   // elity: każda cecha, ogłuszone wokół bohatera
+            {
+                clear_area(g, -2, -2, 2, 2);
+                g.enemies_count = 0;
+                const int defs[5] = { data::enemy_przeciek, data::enemy_kornik, data::enemy_plesn, data::enemy_zwarcie, data::enemy_woda };
+                const int8_t pos[5][2] = { { 1, 0 }, { 2, -1 }, { -1, -2 }, { 0, 2 }, { -2, 1 } };
+                for(int t = 0; t < 5 && t < data::elites_count; ++t)
+                {
+                    place_at(g, defs[t], pos[t][0], pos[t][1], 90);
+                    g.make_elite(g.enemies_count - 1, t);
+                }
+                break;
+            }
+            case 48:
+            {
+                clear_area(g, -1, -1, 3, 2);
+                g.enemies_count = 0;
+                place_at(g, data::enemy_przeciek, 1, 0, 90);
+                place_at(g, data::enemy_kornik, 2, 0, 90);
+                place_at(g, data::enemy_kornik, 1, 1, 90);
+                for(int i = 0; i < g.enemies_count; ++i) g.enemies[i].hp = g.enemies[i].max_hp = 40;
+                g.enemies[1].wet = 9;   // mokry obok celu; [2] suchy
+                break;
+            }
+            case 49:
+            {
+                g.start_stage(F + 8);
+                clear_area(g, -1, -2, 3, 2);
+                g.enemies_count = 0; g.boss = -1;
+                place_at(g, data::enemy_kornik, 1, 0, 90);
+                place_at(g, data::enemy_kornik, 2, -1, 90);
+                place_at(g, data::enemy_kornik, 2, 1, 90);
+                for(int i = 0; i < g.enemies_count; ++i) { g.enemies[i].hp = g.enemies[i].max_hp = 40; g.enemies[i].flags = core::actor_dusty; }
+                break;
+            }
+            case 50:
+            {
+                clear_area(g, -1, -1, 2, 1);
+                g.enemies_count = 0;
+                for(int w = 0; w < data::weather_count; ++w) if(data::weather[w].effect == core::weather_effect::frost) g.weather = int8_t(w);
+                place_at(g, data::enemy_kamien, 1, 0, 90);
+                g.enemies[0].flags = core::actor_frozen;
+                break;
+            }
+            case 51:
+            {
+                clear_area(g, -1, -1, 1, 1);
+                g.enemies_count = 0;
+                g.hero.max_hp = g.hero.hp = 60;
+                g.apply_status(core::status_effect::wet, 6);
+                place_at(g, data::enemy_zwarcie, 1, 0, 0);
                 break;
             }
             case 21:

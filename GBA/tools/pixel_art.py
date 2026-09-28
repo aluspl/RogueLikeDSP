@@ -532,6 +532,10 @@ PARTICLES = [
     [".KKKK...", "KGGDGK..", "KGDGGK..", "KGGGDK..", ".KGGK...", "..KK....", "........", "........"],
     ["...KYK..", "..KYK...", ".KYYYK..", "..KYK...", ".KYK....", ".KK.....", "........", "........"],
     ["........", ".C...C..", "C.C.C.C.", "...C...C", "........", "CCCCCCC.", "........", "........"],
+    # 24 stan Mokry (bohater i problemy): niebieska kropla; 25 zapylony (szara chmurka); 26 zmrożony (płatek)
+    ["...K....", "..KBK...", ".KBBBK..", "KBBWBBK.", "KBBBWBK.", ".KBBBK..", "..KKK...", "........"],
+    ["........", "..KKK...", ".KglgK..", "KgllggK.", "KggglgK.", ".KKKKK..", "l..l..l.", "........"],
+    ["...C....", ".C.C.C..", "..CWC...", "CCWWWCC.", "..CWC...", ".C.C.C..", "...C....", "........"],
 ]
 
 
@@ -886,6 +890,15 @@ MENU_ICONS = [
         "................", ".....KKKK.......", "....KTTTTK......", "....KTOTTK......", ".....KTTK.......",
         ".....KTTK.......", "...KKKKKKKK.....", "...KTTTTTTK.....", "..KKKKKKKKKK....", "..KRRRRRRRRK....",
         "..KKKKKKKKKK....", "..........RR....", ".........R..R...", "........R.RR.R..", ".........R..R...", "..........RR...."],
+    # 25: premia po etapie (paczka z kokardą i gwiazdką), 26: kombinacja stanów (kropla + piorun)
+    [   # premia
+        "................", "....KK....KK....", "...KYYK..KYYK...", "....KYYKKYYK....", ".....KKYYKK.....",
+        "..KKKKKYYKKKKK..", "..KPPPPYYPPPPK..", "..KKKKKYYKKKKK..", "...KPPPYYPPPK...", "...KPPPYYPPPK...",
+        "...KPWPYYPPPK...", "...KPPPYYPPPK...", "...KPPPYYPPPK...", "...KKKKKKKKKK...", "................", "................"],
+    [   # kombinacja: kropla wody i piorun
+        "................", "...K........KK..", "..KBK......KYK..", ".KBBBK....KYK...", "KBBWBBK..KYYK...",
+        "KBBBWBK.KYYYKK..", "KBBBBBK.KKYYYK..", ".KBBBK....KYK...", "..KKK....KYK....", "........KYK.....",
+        "........KK......", "................", "................", "................", "................", "................"],
 ]
 
 

@@ -634,6 +634,18 @@ def make_end():
     screen_bg("end", im)
     return qr.version, q.size
 
+# Elita (#28): paleta postaci ze złotym obrysem i ciepłym, złotawym odcieniem (sprite problemu zmienia tylko paletę).
+ELITE_GOLD = (255, 196, 40)
+def elite_palette():
+    pal = [SPR_PAL[0], (255, 204, 40)]   # obrys (K) złoty = "złota ramka"
+    for c in SPR_PAL[2:]:
+        pal.append(tuple(int(c[i] * 0.5 + ELITE_GOLD[i] * 0.5) for i in range(3)))
+    return pal
+
+def make_elite_palette():
+    write_bmp(os.path.join(G, "actors_elite.bmp"), [0] * 256, 16, 16, elite_palette(), 4)
+    write_json("actors_elite", {"type": "sprite", "height": 16})
+
 if __name__ == "__main__":
     os.makedirs(G, exist_ok=True)
     os.makedirs(DOCS, exist_ok=True)
@@ -653,6 +665,7 @@ if __name__ == "__main__":
     # menu akcji pod START (atak, termos, czekaj, ramka wyboru), kłódka i strzałki wyboru zawodu; też ikona termosu w HUD
     write_bmp(os.path.join(G, "menu_icons.bmp"), pa.menu_icon_frames(), 16, 16 * len(pa.MENU_ICONS), SPR_PAL, 4)
     write_json("menu_icons", {"type": "sprite", "height": 16})
+    make_elite_palette()
     # prolog: pickup (32x16, 2 klatki kół)
     tf = pa.truck_frames()
     write_bmp(os.path.join(G, "truck.bmp"), tf, 32, 32, SPR_PAL, 4)
