@@ -1877,6 +1877,133 @@ int main()
         CHECK(profile_fix(nv) && tutorial_pending(nv, 0) && nv.rewards == 0 && nv.tutorial == 0);
         CHECK(sizeof(profile) == 160 && std::strcmp(profile_magic, "PBRL010") == 0);
     }
+    // 46. v0.21.50: rozpiska obrażeń broni (#26) - zakres z rozpiski = to, co naprawdę zadaje walka (wiele rzutów z seedem)
+    {
+        // źródła premii profilu: suma części = mods()
+        profile p; profile_reset(p);
+        for(int i = 0; i < data::upgrades_count; ++i) p.levels[i] = uint8_t(data::upgrades[i].levels);
+        for(int i = 0; i < data::respect_count; ++i) p.respect_ranks[i] = uint8_t(data::respect[i].ranks);
+        p.badges = 0xFFFFFFFFu & ((1u << data::badges_count) - 1);
+        for(int k = 0; k < data::keepsakes_count; ++k) p.keepsake_runs[k] = 9;
+        p.keepsake = 3;   // Szczęśliwa kielnia (albo co wybierze select)
+        const run_mods full = mods(p);
+        run_mods parts[mods_sources]; mods_parts(p, parts);
+        int sd = 0, sp = 0, sc = 0, sl = 0, sk = 0, sf = 0, st = 0, sh = 0;
+        for(auto& q : parts) { sd += q.dmg; sp += q.dmg_pct; sc += q.crit; sl += q.luck; sk += q.craft; sf += q.def; st += q.taken_pct; sh += q.hp; }
+        CHECK(sd == full.dmg && sp == full.dmg_pct && sc == full.crit && sl == full.luck && sk == full.craft && sf == full.def
+              && st == full.taken_pct && sh == full.hp);
+        CHECK(full.dmg_pct > 0 && full.crit > 0 && parts[1].dmg_pct > 0 && parts[2].crit > 0);   // Respekt i odznaki coś dają
+        // wybór zawodu: rozpiska zawodu = rozpiska na starcie budowy
+        for(int c = 0; c < data::classes_count; ++c)
+        {
+            dmg_breakdown a = class_breakdown(c, full);
+            game g; g.new_run(c, 5, data::default_difficulty, full);
+            dmg_breakdown b = g.weapon_breakdown();
+            CHECK(a.min == b.min && a.max == b.max && a.crit_pct == b.crit_pct && a.avg10 == b.avg10 && a.stat_value == g.hero_stat(g.weapon().scales_with));
+            CHECK(b.crit_pct == g.crit_pct() && b.range == g.weapon_range());
+            b.set_sources(parts); CHECK(b.split);
+            game d; d.new_run(c, 5, data::default_difficulty, daily_mods(3));   // budowa dnia: inne premie, bez podziału
+            dmg_breakdown bd = d.weapon_breakdown(); bd.set_sources(parts); CHECK(! bd.split || (full.dmg == 0 && daily_mods(3).dmg_pct == full.dmg_pct));
+        }
+        // walka: min/max ciosu i kryt w zakresie rozpiski, skraje osiągane, częstość kryt ~ szansa
+        int configs = 0, reached = 0;
+        for(int c = 0; c < data::classes_count; ++c)
+            for(int v = 0; v < 6; ++v)
+            {
+                game g; arena(g, c);
+                rng pick; pick.seed(uint32_t(1000 + c * 17 + v));
+                g.bonus.dmg_pct = v == 0 ? 0 : pick.range(0, 30);
+                g.bonus.crit = pick.range(0, 10);
+                g.bonus.dmg = pick.range(0, 2); g.dmg_bonus = g.bonus.dmg;
+                for(int l = 0; l < v; ++l) g.gain_xp(20);                          // awanse
+                g.dmg_bonus += pick.range(0, 2);                                   // projekty wykonawcze
+                for(int s = 0; s < data::gear_slots_count; ++s)
+                    if(pick.range(0, 2)) g.equip(s, pick.range(0, 2), pick.range(0, data::gear_traits_count - 1));
+                if(v >= 3) g.weapon_override = data::tools[pick.range(0, data::tools_count - 1)].weapon;
+                int ed = pick.range(0, data::enemies_count - 1);
+                dmg_breakdown b = g.weapon_breakdown(ed);
+                CHECK(b.crit_pct == g.crit_pct() && b.stat_value == g.hero_stat(g.weapon().scales_with));
+                CHECK(b.flat == g.dmg_bonus + g.gear_bonus(gear_stat::dmg) && b.flat_found >= 0);
+                int lo = 999, hi = 0, clo = 999, chi = 0, crits = 0;
+                const int n = 3000;
+                for(int k = 0; k < n; ++k)
+                {
+                    g.dmg_carry = pick.range(0, 99);   // reszta z poprzednich ciosów
+                    g.hits_count = 0;
+                    g.spawn(ed, 8, 7);
+                    actor& e = g.enemies[g.enemies_count - 1];
+                    e.hp = e.max_hp = 30000;
+                    g.hero_attack(g.enemies_count - 1);
+                    int dealt = 30000 - g.enemies[g.enemies_count - 1].hp;
+                    bool crit = g.hits_count > 0 && g.hits[0].kind == hit_crit;
+                    if(crit) { ++crits; clo = imin(clo, dealt); chi = imax(chi, dealt); }
+                    else { lo = imin(lo, dealt); hi = imax(hi, dealt); }
+                    g.enemies_count = 0;
+                }
+                CHECK(lo >= b.min && hi <= b.max);
+                if(crits) CHECK(clo >= b.crit_min && chi <= b.crit_max);
+                if(b.crit_chance() < 100) CHECK(lo == b.min && hi == b.max);   // skraje osiągalne (reszta procentu 0 i 99)
+                CHECK(iabs(crits * 100 - b.crit_chance() * n) <= 4 * n);        // +-4 pkt proc.
+                ++configs; reached += crits > 0 && clo == b.crit_min && chi == b.crit_max;
+                // teksty rozpiski mieszczą się w buforze (bez uciętych znaków)
+                b.set_sources(parts);
+                for(int t = 0; t < dmg_texts; ++t) { message m; dmg_line(m, b, dmg_text(t)); CHECK(m.n > 0 && m.n < log_len - 1); }
+                // cios problemu: w zakresie enemy_hit (bez uniku)
+                g.spawn(ed, 8, 7);
+                int ei = g.enemies_count - 1;
+                g.bonus.taken_pct = pick.range(0, 20);
+                hit_range h = g.enemy_hit(ei);
+                int tlo = 999, thi = 0;
+                for(int k = 0; k < 600; ++k)
+                {
+                    g.taken_carry = pick.range(0, 99);
+                    g.hits_count = 0; g.hero.hp = 30000; g.hero.alive = true; g.st = status::playing;
+                    g.enemy_strike(ei, true);
+                    if(g.hits_count && g.hits[0].kind == hit_dodge) continue;
+                    int got = 30000 - g.hero.hp;
+                    tlo = imin(tlo, got); thi = imax(thi, got);
+                }
+                CHECK(tlo >= h.min && thi <= h.max && tlo == h.min && thi == h.max);
+                message vm; versus_line(vm, b, h); CHECK(vm.n < log_len - 1);
+            }
+        std::printf("Rozpiska obrażeń: %d konfiguracji zgodnych z walką, skraje kryt osiągnięte w %d\n", configs, reached);
+        CHECK(reached * 10 >= configs * 8);   // kryt: skraje też osiągane (poza rzadkimi krytami)
+        // porównanie: rozpiska z zamianą sprzętu / broni = rozpiska po zamianie
+        {
+            game g; arena(g, 1);
+            for(int s = 0; s < data::gear_slots_count; ++s)
+                for(int r = 0; r < 3; ++r)
+                    for(int t = 0; t < data::gear_traits_count; ++t)
+                    {
+                        dmg_breakdown w = g.weapon_breakdown(-1, -1, s, r, t);
+                        game h = g; h.equip(s, r, t);
+                        dmg_breakdown x = h.weapon_breakdown();
+                        CHECK(w.min == x.min && w.max == x.max && w.crit_pct == x.crit_pct && w.avg10 == x.avg10);
+                    }
+            for(int t = 0; t < data::tools_count; ++t)
+            {
+                dmg_breakdown w = g.weapon_breakdown(-1, data::tools[t].weapon);
+                game h = g; h.weapon_override = data::tools[t].weapon;
+                dmg_breakdown x = h.weapon_breakdown();
+                CHECK(w.min == x.min && w.max == x.max && w.range == x.range);
+            }
+            dmg_breakdown a = g.weapon_breakdown(), b = g.weapon_breakdown(-1, -1, 1, 2, 0);   // rękawice markowe
+            message m; compare_line(m, a, b);
+            CHECK(b.min == a.min + data::gear[3 + 2].value && m.n < log_len - 1);
+            message mc; compare_crit(mc, a, b); CHECK(mc.n < log_len - 1);
+        }
+        {   // przykład: Murarz (Kielnia 4-6, SIŁ 5), bez premii: 6-8, kryt x2 12-16, szansa 5%
+            game g; arena(g, 1);
+            dmg_breakdown b = g.weapon_breakdown();
+            CHECK(b.wmin == 4 && b.wmax == 6 && b.stat_dmg == 2 && b.min == 6 && b.max == 8 && b.avg10 == 70);
+            CHECK(b.crit_min == 12 && b.crit_max == 16 && b.crit_chance() == data::crit_base_pct);
+            message m; dmg_line(m, b, dmg_text::total); CHECK(std::strcmp(m.s, "Cios 6-8, średnio 7") == 0);
+            b.pct = 10; b.finish();   // 6..8 +10%: 6 -> 6 albo 7, 8 -> 8 albo 9
+            CHECK(b.min == 6 && b.max == 9 && b.avg10 == 77);
+            dmg_breakdown v = g.weapon_breakdown(data::enemy_budzet);   // obrona problemu / 2
+            CHECK(v.min == imax(1, 6 - data::enemies[data::enemy_budzet].defense / 2));
+        }
+    }
     if(std::getenv("PB_NO_BALANCE")) { std::printf(fails ? "\n%d FAIL\n" : "\nOK (bez balansu)\n", fails); return fails != 0; }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");

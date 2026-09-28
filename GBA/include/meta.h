@@ -507,6 +507,49 @@ namespace core
         return m;
     }
 
+    // Premie profilu z jednego źródła (rozpiska obrażeń #26): 0 Szkolenia, 1 Respekt, 2 odznaki, 3 pamiątka
+    // (core::mods_source_name). Suma premii bojowych = mods() (bez narzędzi, brygady, slotów i trybu inwestora).
+    inline run_mods mods_part(const profile& p, int src)
+    {
+        run_mods m;
+        if(src == 0)
+            for(int i = 0; i < data::upgrades_count; ++i)
+            {
+                int v = data::upgrades[i].value * p.levels[i];
+                switch(data::upgrades[i].effect)
+                {
+                    case upgrade_effect::hp:        m.hp += v; break;
+                    case upgrade_effect::def:       m.def += v; break;
+                    case upgrade_effect::dmg:       m.dmg += v; break;
+                    case upgrade_effect::luck:      m.luck += v; break;
+                    case upgrade_effect::craft:     m.craft += v; break;
+                    case upgrade_effect::dmg_pct:   m.dmg_pct += v; break;
+                    case upgrade_effect::taken_pct: m.taken_pct += v; break;
+                    default: break;
+                }
+            }
+        else if(src == 1)
+        {
+            for(int i = 0; i < data::respect_count; ++i)
+                if(respect_rank(p, i) > 0) add_respect(m, data::respect[i].effect, respect_value(p, i));
+        }
+        else if(src == 2)
+        {
+            for(int i = 0; i < data::badges_count; ++i)
+                if(p.badges & (1u << i)) add_perk(m, data::badges[i].bonus);
+        }
+        else
+        {
+            int k = selected_keepsake(p);
+            if(k >= 0) add_perk(m, keepsake_perk(p, k));
+        }
+        return m;
+    }
+    inline void mods_parts(const profile& p, run_mods (&out)[mods_sources])
+    {
+        for(int s = 0; s < mods_sources; ++s) out[s] = mods_part(p, s);
+    }
+
     // Ekran "Koszty": ile kosztuje cały sklep i ile już wydano (pasek budżetu).
     inline int shop_total_cost()
     {

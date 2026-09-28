@@ -345,6 +345,257 @@ namespace core
         return s == stat::str ? trait_effect::str : (s == stat::agi ? trait_effect::agi : trait_effect::intel);
     }
 
+    // ------------------------------------------------------------------ rozpiska obrażeń broni (#26, jak w D&D / BG3)
+    // Zakres ciosu liczony TYMI SAMYMI wzorami co hero_attack, bez losowania (liczby na ekranie = walka):
+    //   cios = rzut broni (min..max) + statystyka broni / 2 (w dół) + premie płaskie - obrona problemu / 2 (w dół), min. 1;
+    //   potem +% (Kurs fachowy, Respekt) przez pct_part: część procentowa w dół, a reszta przechodzi na następny cios -
+    //   pojedynczy cios dostaje ją w dół albo w górę (średnio dokładnie), więc zakres ma oba skraje (min w dół, max w górę);
+    //   kryt (szansa = baza + SZCZ x %/pkt + cechy sprzętu + premie, r.range(1, 100) <= szansa) mnoży wynik po procencie.
+    // Cios problemu (enemy_strike) tak samo: rzut + premia etapu + wzrost / 2 - OBR bohatera / 2, min. 1, potem -%
+    // (Szkolenie BHP, Respekt) z resztą, znów min. 1.
+    inline int pct_floor(int v, int pct) { return pct <= 0 || v <= 0 ? 0 : v * pct / 100; }
+    inline int pct_ceil(int v, int pct) { return pct <= 0 || v <= 0 ? 0 : (v * pct + 99) / 100; }
+
+    // Źródła premii z profilu (meta::mods_part): Szkolenia, Respekt, odznaki (uprawnienia), pamiątka.
+    constexpr int mods_sources = 4;
+    inline const char* mods_source_name(int s)
+    {
+        static const char* n[mods_sources] = { "Szkolenia", "Respekt", "odznaki", "pamiątka" };
+        return n[s];
+    }
+    inline const char* stat_name(stat s) { return s == stat::str ? "SIŁ" : (s == stat::agi ? "ZRĘ" : "INT"); }
+    // Premia do obrażeń z awansów do poziomu level (data::dmg_levels_mask).
+    inline int level_dmg(int level)
+    {
+        int n = 0;
+        for(int l = 2; l <= level; ++l) n += (data::dmg_levels_mask >> l) & 1;
+        return n;
+    }
+
+    struct dmg_breakdown
+    {
+        int weapon = 0;                      // indeks w data::weapons
+        int wmin = 0, wmax = 0;              // rzut broni
+        int range = 1, range_base = 1;       // zasięg (z pogodą) i zasięg broni
+        stat scales = stat::str;             // statystyka broni
+        int stat_class = 0, stat_craft = 0, stat_trait = 0;   // statystyka = zawód + Warsztaty + cechy sprzętu
+        int flat_mods = 0;                   // premie stałe z profilu (Szkolenia, odznaki: run_mods.dmg)
+        int flat_level = 0;                  // awanse (data::dmg_levels_mask)
+        int flat_found = 0;                  // z budowy: projekty wykonawcze (reszta dmg_bonus)
+        int flat_gear = 0, gear_item = -1;   // sprzęt +obrażenia (rękawice), przedmiot w data::gear
+        int pct = 0;                         // +% (Kurs fachowy, Respekt)
+        bool vs_enemy = false;
+        int enemy_def = 0;                   // obrona problemu
+        int luck = 0, crit_trait = 0, crit_bonus = 0;   // szczęście, cechy Kryt +%, premie (odznaki, Respekt)
+        int power = 0, power_rank = 1;       // moc dodaje do ciosu (Seria, Rynna od II, Taran +ranga)
+        bool split = false;                  // źródła premii profilu znane (src_*)
+        int src_dmg[mods_sources] = {}, src_pct[mods_sources] = {}, src_crit[mods_sources] = {};
+        // wyliczone w finish()
+        int stat_value = 0, stat_dmg = 0, flat = 0, def_cut = 0;
+        int base_min = 0, base_max = 0;      // przed procentem
+        int min = 0, max = 0;                // zakres ciosu
+        int avg10 = 0;                       // średni cios (bez kryt) x10
+        int crit_base = 0, crit_luck = 0, crit_pct = 0, crit_mult = 1, crit_min = 0, crit_max = 0;
+
+        void finish()
+        {
+            stat_value = stat_class + stat_craft + stat_trait;
+            stat_dmg = stat_value / 2;
+            flat = flat_mods + flat_level + flat_found + flat_gear;
+            def_cut = enemy_def / 2;
+            const int add = stat_dmg + flat - def_cut;
+            base_min = imax(1, wmin + add);
+            base_max = imax(1, wmax + add);
+            min = base_min + pct_floor(base_min, pct);
+            max = base_max + pct_ceil(base_max, pct);
+            int sum = 0, n = 0;
+            for(int r = wmin; r <= wmax; ++r, ++n) sum += imax(1, r + add) * (100 + imax(0, pct));
+            avg10 = n ? div_round(sum, 10 * n) : 0;
+            crit_base = data::crit_base_pct;
+            crit_luck = data::crit_per_luck_pct * luck;
+            crit_pct = crit_base + crit_luck + crit_trait + crit_bonus;
+            crit_mult = data::crit_multiplier;
+            crit_min = min * crit_mult;
+            crit_max = max * crit_mult;
+        }
+        int crit_chance() const { return imax(0, imin(100, crit_pct)); }
+        // Źródła premii profilu (parts = meta::mods_part dla każdego źródła); tylko gdy sumy się zgadzają (nie budowa dnia).
+        void set_sources(const run_mods (&parts)[mods_sources])
+        {
+            int d = 0, p = 0, c = 0;
+            for(int s = 0; s < mods_sources; ++s)
+            {
+                src_dmg[s] = parts[s].dmg; src_pct[s] = parts[s].dmg_pct; src_crit[s] = parts[s].crit;
+                d += parts[s].dmg; p += parts[s].dmg_pct; c += parts[s].crit;
+            }
+            split = d == flat_mods && p == pct && c == crit_bonus;
+        }
+    };
+
+    // Rozpiska dla zawodu przed budową (wybór zawodu): broń zawodu, premie z profilu, bez sprzętu i awansów.
+    inline dmg_breakdown class_breakdown(int cls, const run_mods& m, int enemy_def = -1)
+    {
+        const class_def& c = data::classes[cls];
+        const weapon_def& w = data::weapons[c.weapon];
+        dmg_breakdown b;
+        b.weapon = c.weapon;
+        b.wmin = w.min_damage; b.wmax = w.max_damage;
+        b.range = b.range_base = w.range;
+        b.scales = w.scales_with;
+        b.stat_class = class_base_stat(cls, w.scales_with);
+        b.stat_craft = mods_stat_bonus(m, cls, w.scales_with);
+        b.flat_mods = m.dmg;
+        b.pct = m.dmg_pct;
+        b.vs_enemy = enemy_def >= 0;
+        b.enemy_def = imax(0, enemy_def);
+        b.luck = c.luck + m.luck;
+        b.crit_bonus = m.crit;
+        b.finish();
+        return b;
+    }
+
+    struct hit_range { int min = 0, max = 0; };
+    // Cios problemu w bohatera (enemy_strike bez losowania): bonus = premia etapu/trudności + wzrost / 2.
+    inline hit_range enemy_hit_range(int dmin, int dmax, int bonus, int hero_def, int taken_pct)
+    {
+        int lo = imax(1, dmin + bonus - hero_def / 2), hi = imax(1, dmax + bonus - hero_def / 2);
+        return { imax(1, lo - pct_ceil(lo, taken_pct)), imax(1, hi - pct_floor(hi, taken_pct)) };
+    }
+
+    // Teksty rozpiski (GBA: strona Obrażenia, Godot: podpowiedzi) - wspólne, krótkie (bufor message 48 bajtów).
+    enum class dmg_text : uint8_t { weapon, stat, stat_parts, profile, run, gear, pct, enemy, total, crit, crit_parts, crit_extra, power };
+    constexpr int dmg_texts = 13;
+
+    inline message& add_range(message& m, int lo, int hi) { m.add(lo); if(hi != lo) m.add("-").add(hi); return m; }
+    // Liczba x10 jako "7" albo "7,5" (ze znakiem, gdy sign).
+    inline message& add_tenths(message& m, int v10, bool sign = false)
+    {
+        if(v10 < 0) { m.add("-"); v10 = -v10; }
+        else if(sign) m.add("+");
+        m.add(v10 / 10);
+        if(v10 % 10) m.add(",").add(v10 % 10);
+        return m;
+    }
+    inline const char* rank_numeral(int r) { return r >= 3 ? "III" : (r == 2 ? "II" : "I"); }
+
+    // Skutek przedmiotu sprzętu, np. "+2 obrażeń", "+1 OBR", "+8 HP", "unik +5%", "termos +1".
+    inline message& gear_label(message& m, const gear_def& gd)
+    {
+        switch(gd.stat)
+        {
+            case gear_stat::def:     return m.add("+").add(gd.value).add(" OBR");
+            case gear_stat::dmg:     return m.add("+").add(gd.value).add(" obrażeń");
+            case gear_stat::dodge:   return m.add("unik +").add(gd.value).add("%");
+            case gear_stat::thermos: return m.add("termos +").add(gd.value);
+            default:                 return m.add("+").add(gd.value).add(" HP");
+        }
+    }
+
+    // Wiersz rozpiski k; false = ten składnik nic nie daje (warstwa gry może go pominąć), tekst i tak jest.
+    inline bool dmg_line(message& m, const dmg_breakdown& b, dmg_text k)
+    {
+        switch(k)
+        {
+            case dmg_text::weapon:
+                m.add(data::weapons[b.weapon].name).add(" ").add(b.wmin).add("-").add(b.wmax).add(", zasięg ").add(b.range);
+                if(b.range < b.range_base) m.add(" (wiatr)");
+                return true;
+            case dmg_text::stat:
+                m.add(stat_name(b.scales)).add(" ").add(b.stat_value).add(": +").add(b.stat_dmg).add(" (+1 co 2 pkt)");
+                return true;
+            case dmg_text::stat_parts:
+                m.add(stat_name(b.scales)).add(" ").add(b.stat_value).add(" = zawód ").add(b.stat_class);
+                if(b.stat_craft) m.add(" + Warsztaty ").add(b.stat_craft);
+                if(b.stat_trait) m.add(" + sprzęt ").add(b.stat_trait);
+                return b.stat_craft || b.stat_trait;
+            case dmg_text::profile:
+            {
+                if(! b.flat_mods) { m.add("Premie stałe: brak"); return false; }
+                m.add("Premie stałe +").add(b.flat_mods);
+                if(! b.split) return true;
+                bool first = true;
+                for(int s = 0; s < mods_sources; ++s)
+                    if(b.src_dmg[s]) { m.add(first ? ": " : ", ").add(mods_source_name(s)).add(" +").add(b.src_dmg[s]); first = false; }
+                return true;
+            }
+            case dmg_text::run:
+                if(! b.flat_level && ! b.flat_found) { m.add("Z budowy: brak"); return false; }
+                m.add("Z budowy +").add(b.flat_level + b.flat_found).add(":");
+                if(b.flat_level) m.add(" poziom +").add(b.flat_level);
+                if(b.flat_found) m.add(b.flat_level ? "," : "").add(" projekty ").add(b.flat_found > 0 ? "+" : "").add(b.flat_found);
+                return true;
+            case dmg_text::gear:
+                if(b.gear_item < 0 || ! b.flat_gear) { m.add("Sprzęt: bez premii"); return false; }
+                m.add(data::gear[b.gear_item].name).add(": +").add(b.flat_gear);
+                return true;
+            case dmg_text::pct:
+            {
+                if(b.pct <= 0) { m.add("Procent: brak"); return false; }
+                m.add("+").add(b.pct).add("%");
+                if(! b.split) { m.add(" (Szkolenia, Respekt)"); return true; }
+                bool first = true;
+                for(int s = 0; s < mods_sources; ++s)
+                    if(b.src_pct[s]) { m.add(first ? ": " : ", ").add(mods_source_name(s)).add(" +").add(b.src_pct[s]).add("%"); first = false; }
+                return true;
+            }
+            case dmg_text::enemy:
+                if(! b.vs_enemy) { m.add("OBR problemu: -1 co 2 pkt"); return false; }
+                m.add("OBR problemu ").add(b.enemy_def).add(": -").add(b.def_cut);
+                return b.def_cut > 0;
+            case dmg_text::total:
+                add_range(m.add("Cios "), b.min, b.max).add(", średnio ");
+                add_tenths(m, b.avg10);
+                return true;
+            case dmg_text::crit:
+                m.add("Kryt x").add(b.crit_mult).add(": ");
+                add_range(m, b.crit_min, b.crit_max).add(", szansa ").add(b.crit_chance()).add("%");
+                return true;
+            case dmg_text::crit_parts:
+                m.add("Kryt ").add(b.crit_chance()).add("% = ").add(b.crit_base).add("% + SZCZ ").add(b.luck).add(" x ")
+                 .add(data::crit_per_luck_pct).add("%");
+                return true;
+            case dmg_text::crit_extra:
+            {
+                if(! b.crit_trait && ! b.crit_bonus) { m.add("Kryt: bez premii"); return false; }
+                m.add("+");
+                bool first = true;
+                if(b.crit_trait) { m.add(" cecha ").add(b.crit_trait).add("%"); first = false; }
+                if(! b.split) { if(b.crit_bonus) m.add(first ? " " : ", ").add("premie ").add(b.crit_bonus).add("%"); return true; }
+                for(int s = 0; s < mods_sources; ++s)
+                    if(b.src_crit[s]) { m.add(first ? " " : ", ").add(mods_source_name(s)).add(" ").add(b.src_crit[s]).add("%"); first = false; }
+                return true;
+            }
+            case dmg_text::power:
+            {
+                if(! b.power) { m.add("Moc: bez premii do ciosu"); return false; }
+                m.add("Moc (").add(rank_numeral(b.power_rank)).add("): +").add(b.power).add(" do ciosu");
+                return true;
+            }
+            default: return false;
+        }
+    }
+
+    // Porównanie przy zmianie broni / sprzętu: "teraz 4-7 -> 5-9 (średnio +1,5)".
+    inline message& compare_line(message& m, const dmg_breakdown& now, const dmg_breakdown& next)
+    {
+        add_range(m.add("teraz "), now.min, now.max).add(" -> ");
+        add_range(m, next.min, next.max).add(" (średnio ");
+        return add_tenths(m, next.avg10 - now.avg10, true).add(")");
+    }
+    // "kryt 8-14 (11%) -> 10-18 (16%)"
+    inline message& compare_crit(message& m, const dmg_breakdown& now, const dmg_breakdown& next)
+    {
+        add_range(m.add("kryt "), now.crit_min, now.crit_max).add(" (").add(now.crit_chance()).add("%) -> ");
+        return add_range(m, next.crit_min, next.crit_max).add(" (").add(next.crit_chance()).add("%)");
+    }
+    // Karta problemu: "Zadasz 2-5 (kryt 4-10), on Tobie 1-3".
+    inline message& versus_line(message& m, const dmg_breakdown& b, const hit_range& h)
+    {
+        add_range(m.add("Zadasz "), b.min, b.max).add(" (kryt ");
+        add_range(m, b.crit_min, b.crit_max).add("), on Tobie ");
+        return add_range(m, h.min, h.max);
+    }
+
     static_assert(data::enemies_count <= max_enemy_types);
     static_assert(data::materials_count <= 4 && data::stages_count <= max_stages);
 
@@ -669,9 +920,10 @@ namespace core
         }
         const weapon_def& weapon() const { return data::weapons[weapon_override >= 0 ? weapon_override : cdef().weapon]; }
         // Zasięg broni z pogodą: wiatr skraca zasięg broni dalekiego zasięgu (nie mniej niż 1).
-        int weapon_range() const
+        int weapon_range() const { return range_of(weapon()); }
+        int range_of(const weapon_def& w) const
         {
-            int rg = weapon().range;   // Dekarz: wiatr mu nie przeszkadza
+            int rg = w.range;   // Dekarz: wiatr mu nie przeszkadza
             return weather_is(weather_effect::wind) && rg > 1 && ! has_passive(class_passive::windproof) ? imax(1, rg - wdef().value) : rg;
         }
         const difficulty_def& ddef() const { return data::difficulties[diff]; }
@@ -921,6 +1173,65 @@ namespace core
         // Statystyka efektywna: zawód + Warsztaty + cechy sprzętu (SIŁ/ZRĘ/INT +1).
         int hero_stat(stat s) const { return class_base_stat(cls, s) + stat_bonus(s); }
         int stat_bonus(stat s) const { return mods_stat_bonus(bonus, cls, s) + trait_bonus(stat_trait(s)); }
+
+        // Rozpiska obrażeń broni (#26) - wzory jak hero_attack niżej (opis przy dmg_breakdown). enemy_def_id: problem
+        // (jego obrona; -1 = bez), weapon_idx: inna broń (-1 = obecna), swap_*: sprzęt w slocie po zamianie (paczka).
+        dmg_breakdown weapon_breakdown(int enemy_def_id = -1, int weapon_idx = -1, int swap_slot = -1, int swap_rarity = -1,
+                                       int swap_trait = 0) const
+        {
+            dmg_breakdown b;
+            b.weapon = weapon_idx >= 0 ? weapon_idx : (weapon_override >= 0 ? weapon_override : cdef().weapon);
+            const weapon_def& w = data::weapons[b.weapon];
+            b.wmin = w.min_damage; b.wmax = w.max_damage;
+            b.range_base = w.range; b.range = range_of(w);
+            b.scales = w.scales_with;
+            const trait_effect st_tr = stat_trait(w.scales_with);
+            int luck_t = 0;
+            for(int i = 0; i < data::gear_slots_count; ++i)
+            {
+                int rar = i == swap_slot ? swap_rarity : equipped[i], tr = i == swap_slot ? swap_trait : equipped_trait[i];
+                if(rar < 0) continue;
+                const gear_def& gd = data::gear[i * 3 + rar];
+                if(gd.stat == gear_stat::dmg) { b.flat_gear += gd.value; b.gear_item = i * 3 + rar; }
+                const trait_def& td = data::gear_traits[tr];
+                if(td.effect == trait_effect::luck) luck_t += td.value;
+                else if(td.effect == trait_effect::crit) b.crit_trait += td.value;
+                else if(td.effect == st_tr) b.stat_trait += td.value;
+            }
+            b.stat_class = class_base_stat(cls, w.scales_with);
+            b.stat_craft = mods_stat_bonus(bonus, cls, w.scales_with);
+            b.flat_mods = bonus.dmg;
+            b.flat_level = level_dmg(hero_level);
+            b.flat_found = dmg_bonus - bonus.dmg - b.flat_level;
+            b.pct = bonus.dmg_pct;
+            b.vs_enemy = enemy_def_id >= 0;
+            b.enemy_def = b.vs_enemy ? data::enemies[enemy_def_id].defense : 0;
+            b.luck = cdef().luck + bonus.luck + luck_t;
+            b.crit_bonus = bonus.crit;
+            b.power_rank = ability_rank();
+            b.power = power_dmg_bonus();
+            b.finish();
+            return b;
+        }
+        // Premia mocy do ciosu (ability): Seria i Rynna +1 od rangi II, Taran +ranga.
+        int power_dmg_bonus() const
+        {
+            int rank = ability_rank();
+            switch(cdef().ability)
+            {
+                case ability_effect::volley:
+                case ability_effect::line: return rank >= 2 ? 1 : 0;
+                case ability_effect::ram:  return rank;
+                default:                   return 0;
+            }
+        }
+        // Cios problemu ei w bohatera (zakres po OBR i -%).
+        hit_range enemy_hit(int ei) const
+        {
+            const actor& e = enemies[ei];
+            const enemy_def& ed = data::enemies[e.def_id];
+            return enemy_hit_range(ed.min_damage, ed.max_damage, enemy_dmg_bonus() + e.grow / 2, hero_defense(), bonus.taken_pct);
+        }
 
         // obrażenia = rzut broni + stat/2 + premie - obrona/2, min 1
         void hero_attack(int ei)
