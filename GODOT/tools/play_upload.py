@@ -3,8 +3,7 @@
 
     python3 GODOT/tools/play_upload.py plik.aab [--track internal] [--changelog GBA/CHANGELOG.md --version v0.21.49]
 
-Konto serwisowe: PLAY_SERVICE_ACCOUNT_JSON (domyślnie Organizacja/Mobile/play-service-account.json) – to samo co
-w planbudowlany-mobile; w Play Console musi mieć uprawnienia do aplikacji online.planbudowlany.rogue.
+Konto serwisowe: PLAY_SERVICE_ACCOUNT_JSON (z otoczenia albo GODOT/.env.local); w Play Console musi mieć uprawnienia do aplikacji online.planbudowlany.rogue.
 Klucz konta służy tylko do podpisania tokenu (nie jest wypisywany). Pierwszy AAB nowej aplikacji Google każe
 wgrać ręcznie w Play Console; kolejne może wysyłać ten skrypt.
 """
@@ -15,6 +14,20 @@ from cryptography.hazmat.primitives.asymmetric import padding
 PACKAGE = "online.planbudowlany.rogue"
 API = "https://androidpublisher.googleapis.com/androidpublisher/v3/applications"
 UPLOAD = "https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications"
+
+
+def env(name):
+    """Zmienna z otoczenia albo z GODOT/.env.local (poza gitem; wzór GODOT/.env.example)."""
+    if name in os.environ:
+        return os.environ[name]
+    path = pathlib.Path(__file__).resolve().parent.parent / ".env.local"
+    if path.exists():
+        for line in path.read_text().splitlines():
+            if "=" in line and not line.lstrip().startswith("#"):
+                k, v = line.split("=", 1)
+                if k.strip() == name:
+                    return os.path.expandvars(v.strip())
+    return None
 
 
 def b64(data):
@@ -73,8 +86,7 @@ def main():
     ap.add_argument("--status", default="completed", help="completed albo draft (draft dla aplikacji przed publikacją)")
     ap.add_argument("--changelog")
     ap.add_argument("--version")
-    ap.add_argument("--account", default=os.environ.get("PLAY_SERVICE_ACCOUNT_JSON",
-                                                        f"{home}/Dev/PlanerBudowlany/Organizacja/Mobile/play-service-account.json"))
+    ap.add_argument("--account", default=env("PLAY_SERVICE_ACCOUNT_JSON"))
     a = ap.parse_args()
 
     tok = access_token(a.account)

@@ -5,7 +5,7 @@
 #   GODOT/tools/android_release.sh            AAB release
 #   GODOT/tools/android_release.sh --upload   AAB release + wysyłka do Google Play (internal)
 #
-# Podpis jak w planbudowlany-mobile (Organizacja/Mobile/DEPLOY.md): zmienne ANDROID_KEYSTORE_PATH, ANDROID_KEY_ALIAS,
+# Podpis: zmienne ANDROID_KEYSTORE_PATH, ANDROID_KEY_ALIAS,
 # ANDROID_KEYSTORE_PASSWORD (i PLAY_SERVICE_ACCOUNT_JSON do wysyłki) – z otoczenia albo z GODOT/.env.local (poza gitem).
 # versionCode = RRDDDGGMM (rok, dzień roku, godzina, minuta) – rośnie z każdym buildem.
 set -euo pipefail

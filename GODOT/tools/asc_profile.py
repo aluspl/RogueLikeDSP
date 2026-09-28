@@ -13,6 +13,20 @@ from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 API = "https://api.appstoreconnect.apple.com/v1"
 
 
+def env(name):
+    """Zmienna z otoczenia albo z GODOT/.env.local (poza gitem; wzór GODOT/.env.example)."""
+    if name in os.environ:
+        return os.environ[name]
+    path = pathlib.Path(__file__).resolve().parent.parent / ".env.local"
+    if path.exists():
+        for line in path.read_text().splitlines():
+            if "=" in line and not line.lstrip().startswith("#"):
+                k, v = line.split("=", 1)
+                if k.strip() == name:
+                    return os.path.expandvars(v.strip())
+    return None
+
+
 def b64(data):
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
 
@@ -41,9 +55,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--name", default="PB-Rogue-AppStore")
     ap.add_argument("--bundle", default="online.planbudowlany.rogue")
-    ap.add_argument("--key", default=os.environ.get("ASC_KEY", f"{home}/Dev/PlanerBudowlany/Organizacja/Mobile/certs/AuthKey_REDACTED_KEY_ID.p8"))
-    ap.add_argument("--key-id", default=os.environ.get("ASC_KEY_ID", "REDACTED_KEY_ID"))
-    ap.add_argument("--issuer", default=os.environ.get("ASC_ISSUER_ID", "REDACTED_ISSUER_ID"))
+    ap.add_argument("--key", default=env("ASC_KEY"))
+    ap.add_argument("--key-id", default=env("ASC_KEY_ID"))
+    ap.add_argument("--issuer", default=env("ASC_ISSUER_ID"))
     a = ap.parse_args()
     tok = token(a.key, a.key_id, a.issuer)
 

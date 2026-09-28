@@ -5,8 +5,8 @@
 #   GODOT/tools/ios_deploy.sh --export     tylko eksport projektu Xcode (GODOT/build/ios)
 #   GODOT/tools/ios_deploy.sh --no-launch  bez uruchamiania po instalacji
 #
-# Zmienne (opcjonalne):
-#   UDID     identyfikator urządzenia (xcrun devicectl list devices), domyślnie iPhone (Szymon)
+# Zmienne (z otoczenia albo GODOT/.env.local):
+#   UDID     identyfikator urządzenia (xcrun devicectl list devices)
 #   ASC_KEY  klucz App Store Connect API (.p8) do automatycznego podpisu; zawartości klucza skrypt nie czyta
 #   ASC_KEY_ID, ASC_ISSUER_ID, TEAM_ID, BUNDLE_ID
 #
@@ -18,13 +18,15 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GODOT_DIR="$(cd "$HERE/.." && pwd)"
 REPO="$(cd "$GODOT_DIR/.." && pwd)"
 PROJECT="$GODOT_DIR/godot"
+# Lokalne ścieżki i identyfikatory (klucze, zespół, urządzenie) – GODOT/.env.local, poza gitem (wzór: GODOT/.env.example)
+if [ -f "$HERE/../.env.local" ]; then set -a; . "$HERE/../.env.local"; set +a; fi
 OUT="$GODOT_DIR/build/ios"
 
-UDID="${UDID:-REDACTED_UDID}"
-ASC_KEY="${ASC_KEY:-$HOME/Dev/PlanerBudowlany/Organizacja/Mobile/certs/AuthKey_REDACTED_KEY_ID.p8}"
-ASC_KEY_ID="${ASC_KEY_ID:-REDACTED_KEY_ID}"
-ASC_ISSUER_ID="${ASC_ISSUER_ID:-REDACTED_ISSUER_ID}"
-TEAM_ID="${TEAM_ID:-REDACTED_TEAM_ID}"
+: "${UDID:?ustaw UDID (GODOT/.env.local)}"
+: "${ASC_KEY:?ustaw ASC_KEY (GODOT/.env.local)}"
+: "${ASC_KEY_ID:?ustaw ASC_KEY_ID}"
+: "${ASC_ISSUER_ID:?ustaw ASC_ISSUER_ID}"
+: "${TEAM_ID:?ustaw TEAM_ID}"
 BUNDLE_ID="${BUNDLE_ID:-online.planbudowlany.rogue}"
 GODOT_BIN="${GODOT_BIN:-godot-mono}"
 
@@ -39,6 +41,18 @@ for a in "$@"; do
 done
 
 step() { printf '\n==> %s\n' "$*"; }
+
+# Zespół Apple wstawiany do presetu tylko na czas eksportu (w repo pole zostaje puste)
+PRESET="$PROJECT/export_presets.cfg"
+set_team() { python3 - "$PRESET" "$1" <<'PY'
+import re, sys
+p, team = sys.argv[1], sys.argv[2]
+s = open(p).read()
+open(p, "w").write(re.sub(r'application/app_store_team_id="[^"]*"', f'application/app_store_team_id="{team}"', s))
+PY
+}
+trap 'set_team ""' EXIT
+set_team "$TEAM_ID"
 
 # 1. Wersja aplikacji z game.json (np. v0.21.45 -> 0.21.45) do presetu eksportu
 VERSION="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"].lstrip("v"))' "$REPO/GBA/data/game.json")"

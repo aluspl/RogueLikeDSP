@@ -8,7 +8,7 @@
 # to data i godzina (RRMMDDGGMM), więc każdy upload ma nowy numer.
 #
 # Podpis: lokalny certyfikat „Apple Distribution” + profil App Store z asc_profile.py.
-# Zmienne (opcjonalne): ASC_KEY (.p8 – zawartości skrypt nie czyta), ASC_KEY_ID, ASC_ISSUER_ID, TEAM_ID, BUNDLE_ID,
+# Zmienne (z otoczenia albo GODOT/.env.local): ASC_KEY (.p8 – zawartości skrypt nie czyta), ASC_KEY_ID, ASC_ISSUER_ID, TEAM_ID, BUNDLE_ID,
 #   GODOT_DIR (inny katalog GODOT, np. rozpakowany commit), BUILD_NUMBER.
 set -euo pipefail
 
@@ -16,12 +16,14 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GODOT_DIR="${GODOT_DIR:-$(cd "$HERE/.." && pwd)}"
 REPO="$(cd "$GODOT_DIR/.." && pwd)"
 PROJECT="$GODOT_DIR/godot"
+# Lokalne ścieżki i identyfikatory (klucze, zespół, urządzenie) – GODOT/.env.local, poza gitem (wzór: GODOT/.env.example)
+if [ -f "$HERE/../.env.local" ]; then set -a; . "$HERE/../.env.local"; set +a; fi
 OUT="$GODOT_DIR/build/testflight"
 
-ASC_KEY="${ASC_KEY:-$HOME/Dev/PlanerBudowlany/Organizacja/Mobile/certs/AuthKey_REDACTED_KEY_ID.p8}"
-ASC_KEY_ID="${ASC_KEY_ID:-REDACTED_KEY_ID}"
-ASC_ISSUER_ID="${ASC_ISSUER_ID:-REDACTED_ISSUER_ID}"
-TEAM_ID="${TEAM_ID:-REDACTED_TEAM_ID}"
+: "${ASC_KEY:?ustaw ASC_KEY (GODOT/.env.local)}"
+: "${ASC_KEY_ID:?ustaw ASC_KEY_ID}"
+: "${ASC_ISSUER_ID:?ustaw ASC_ISSUER_ID}"
+: "${TEAM_ID:?ustaw TEAM_ID}"
 BUNDLE_ID="${BUNDLE_ID:-online.planbudowlany.rogue}"
 GODOT_BIN="${GODOT_BIN:-godot-mono}"
 BUILD_NUMBER="${BUILD_NUMBER:-$(date +%y%m%d%H%M)}"
@@ -35,6 +37,18 @@ for a in "$@"; do
 done
 
 step() { printf '\n==> %s\n' "$*"; }
+
+# Zespół Apple wstawiany do presetu tylko na czas eksportu (w repo pole zostaje puste)
+PRESET="$PROJECT/export_presets.cfg"
+set_team() { python3 - "$PRESET" "$1" <<'PY'
+import re, sys
+p, team = sys.argv[1], sys.argv[2]
+s = open(p).read()
+open(p, "w").write(re.sub(r'application/app_store_team_id="[^"]*"', f'application/app_store_team_id="{team}"', s))
+PY
+}
+trap 'set_team ""' EXIT
+set_team "$TEAM_ID"
 [ -f "$ASC_KEY" ] || { echo "Brak klucza App Store Connect (ASC_KEY): $ASC_KEY" >&2; exit 1; }
 AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$ASC_KEY" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
 

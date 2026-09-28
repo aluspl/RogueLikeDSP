@@ -193,18 +193,35 @@ nad paskiem domowym, mapa ~9 pól na szerokość, telefon jako aplikacja na cał
   Sceny ustawiają stan ręcznie (profil pokazowy, skrót zaliczenia etapu jak L+R+SELECT na GBA); zrzuty i test dymny
   działają bez dźwięku.
 
+### Ustawienia lokalne (klucze, zespół, urządzenie)
+
+Repo jest publiczne, więc ścieżki do kluczy, identyfikatory kluczy API, zespół Apple i UDID urządzenia są tylko
+w `GODOT/.env.local` (w .gitignore; wzór bez wartości: `GODOT/.env.example`). Skrypty z `GODOT/tools` czytają zmienne
+z otoczenia albo z tego pliku. Same klucze (`.p8`, keystore, konto serwisowe) leżą poza repo; hasła dopisuje się
+ręcznie do `.env.local`. Pole zespołu w `godot/export_presets.cfg` jest puste – skrypty wstawiają je tylko na czas eksportu.
+
 ### iPhone (iOS)
 
 `GODOT/tools/ios_deploy.sh` – wersja z `GBA/data/game.json` do presetu, `dotnet build`, eksport projektu Xcode
-(`godot-mono --headless --export-debug iOS`, preset w `godot/export_presets.cfg`), `xcodebuild` z automatycznym
-podpisem (klucz API App Store Connect), instalacja i uruchomienie przez `xcrun devicectl` na iPhonie (USB albo Wi-Fi).
-Opcje: `--export` (tylko projekt Xcode), `--no-launch`; zmienne `UDID` (domyślnie iPhone Szymona), `ASC_KEY`
-(ścieżka do `.p8`, domyślnie w `~/Dev/PlanerBudowlany/Organizacja/Mobile/certs`; klucza nie ma w repo), `TEAM_ID`,
-`BUNDLE_ID`. Wyniki w `GODOT/build/ios` (poza gitem). Wymaga szablonów eksportu 4.7.2.stable.mono, Xcode i:
-`rendering/textures/vram_compression/import_etc2_astc=true` w project.godot (bez tego eksport iOS kończy się po cichu)
-oraz `godot/LifeLike.Game.sln` obok project.godot (eksport C# szuka tam rozwiązania; testy dalej z `GODOT/LifeLike.sln`).
-Ikona `godot/icon.png` (1024x1024) powstaje w `tools/export_godot_assets.py`. Preset „Android” jest bez sekretów podpisu
-(klucz debug z ustawień edytora).
+(`godot-mono --headless --export-debug iOS`), `xcodebuild` z automatycznym podpisem (klucz API App Store Connect),
+instalacja i uruchomienie przez `xcrun devicectl` (USB albo Wi-Fi). Opcje: `--export` (tylko projekt Xcode),
+`--no-launch`; zmienne `UDID`, `ASC_KEY`, `ASC_KEY_ID`, `ASC_ISSUER_ID`, `TEAM_ID`, `BUNDLE_ID`. Wyniki w `GODOT/build/ios`.
+Wymaga szablonów eksportu 4.7.2.stable.mono, Xcode i: `rendering/textures/vram_compression/import_etc2_astc=true`
+w project.godot (bez tego eksport iOS kończy się po cichu) oraz `godot/LifeLike.Game.sln` obok project.godot.
+Ikona `godot/icon.png` (1024x1024) powstaje w `tools/export_godot_assets.py`.
+
+### TestFlight
+
+`GODOT/tools/testflight_upload.sh` – eksport release, archiwum, podpis lokalnym certyfikatem „Apple Distribution”
+z profilem App Store (tworzy/instaluje go `tools/asc_profile.py` przez App Store Connect API) i wysyłka do App Store Connect.
+Numer buildu = data i godzina. `--no-upload` – tylko .ipa w `GODOT/build/testflight`.
+
+### Android i Google Play
+
+`GODOT/tools/android_release.sh` – AAB release przez gradle (szablon buildu instaluje się sam, JDK 17, Android SDK),
+podpisany kluczem uploadu z `ANDROID_KEYSTORE_PATH` / `ANDROID_KEY_ALIAS` / `ANDROID_KEYSTORE_PASSWORD`;
+`--upload` wysyła go przez `tools/play_upload.py` (konto serwisowe `PLAY_SERVICE_ACCOUNT_JSON`) na ścieżkę internal.
+Pierwszy AAB nowej aplikacji trzeba wgrać ręcznie w Play Console.
 
 Przy pierwszym uruchomieniu z terminala najpierw `dotnet build GODOT/godot/LifeLike.Game.csproj`
 i `godot-mono --headless --path GODOT/godot --import` (import grafik i dźwięków z `godot/assets`).
