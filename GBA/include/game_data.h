@@ -37,41 +37,52 @@ inline constexpr core::class_def classes[] = {
 };
 
 inline constexpr core::enemy_def enemies[] = {
-    { "Przeciek", "Kapie tam, gdzie nie powinno", 6, 1, 3, 0, 7, 10, 6, false, core::status_effect::slip, 14, 2, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 0 },
-    { "Zwarcie", "Iskrzy przy każdej okazji", 5, 2, 4, 0, 8, 12, 7, false, core::status_effect::shock, 17, 1, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 0 },
-    { "Pleśń", "Lubi wilgoć i zimne ściany", 9, 1, 2, 1, 5, 10, 8, false, core::status_effect::poison, 24, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 0 },
-    { "Kornik", "Drąży więźbę po cichu", 7, 1, 3, 1, 6, 10, 9, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 0 },
-    { "Papierologia", "Brakuje jednej pieczątki", 12, 1, 2, 2, 5, 15, 10, false, core::status_effect::paper, 35, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 0 },
-    { "Opóźniona dostawa", "Będzie jutro. Na pewno.", 10, 2, 4, 1, 7, 15, 11, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 0 },
-    { "Ulewa", "Zawsze tuż przed dachem", 8, 2, 3, 0, 9, 12, 12, false, core::status_effect::slip, 28, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 0 },
-    { "Przekroczony budżet", "Rośnie szybciej niż mury", 14, 2, 5, 2, 7, 25, 13, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 0 },
-    { "Nieprzekraczalny Termin", "Nieprzesuwalny. Podobno.", 42, 4, 6, 3, 12, 200, 14, true, core::status_effect::paper, 28, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", -1, 0 },
-    { "Zepsuta Betoniarka", "Kręci się, ale nie tam", 28, 3, 5, 2, 10, 150, 46, true, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", -1, 0 },
-    { "Nawałnica", "Leje jak z cebra", 32, 3, 5, 2, 12, 180, 47, true, core::status_effect::slip, 35, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", -1, 0 },
-    { "Inspekcja Pracy", "Sprawdza kask i barierki", 30, 3, 5, 2, 12, 170, 50, true, core::status_effect::paper, 30, 0, core::slam_shape::cross, "Kontrola BHP", 4, 6, 2, 2, 60, "Protokół bez uwag", -1, 0 },
-    { "Woda gruntowa", "Wybija tam, gdzie kopiesz. I obok", 8, 1, 2, 0, 6, 12, 61, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 2 },
-    { "Kamień w wykopie", "Nie ruszy się. Koparka też nie", 16, 2, 3, 3, 4, 14, 62, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 64 },
-    { "Osuwisko skarpy", "Zjeżdża prosto na ciebie", 10, 1, 3, 1, 6, 12, 63, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 128 },
-    { "Dziurawa folia", "Załatana? Tylko tak wygląda", 7, 1, 2, 0, 6, 12, 64, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 256 },
-    { "Krzywy mur", "Pion? Jaki pion?", 12, 1, 3, 2, 5, 14, 65, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 192 },
-    { "Mostek termiczny", "Ucieka ciepło. I sam ucieka", 7, 1, 2, 0, 8, 14, 66, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 33 },
-    { "Ugięcie stropu", "Z każdym dniem trochę niżej", 12, 1, 3, 1, 5, 15, 67, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 80 },
-    { "Brak zbrojenia", "Beton bez stali pęka na pół", 10, 2, 3, 1, 6, 14, 68, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 2 },
-    { "Przeciekająca papa", "Kapie z góry, i to celnie", 8, 1, 3, 0, 8, 14, 69, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 1 },
-    { "Zapchana rynna", "Zaraz się przeleje. Na ciebie", 9, 1, 2, 0, 6, 14, 70, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 8 },
-    { "Pęknięty pustak", "Rozsypie się przy pierwszej okazji", 8, 2, 3, 1, 6, 14, 71, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 8 },
-    { "Zła wymiarówka", "Im dłużej, tym gorzej pasuje", 10, 1, 3, 1, 6, 15, 72, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 16 },
-    { "Nieszczelna ramka", "Wieje z każdej szczeliny", 13, 1, 3, 2, 7, 15, 73, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 65 },
-    { "Przeciąg", "Drzwi trzaskają same", 8, 1, 3, 0, 8, 14, 74, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 160 },
-    { "Zapowietrzenie", "Odpowietrzysz, a ono wraca", 8, 1, 3, 0, 7, 14, 75, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 288 },
-    { "Brak uziemienia", "Dotknij obudowy. Albo nie", 9, 2, 3, 0, 7, 15, 76, false, core::status_effect::shock, 12, 1, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 8 },
-    { "Rysa skurczowa", "Jedna rysa, dwie rysy, dziesięć", 10, 1, 3, 1, 6, 14, 77, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 2 },
-    { "Wilgoć w ścianie", "Karmi pleśń i sąsiadów", 11, 1, 2, 1, 6, 15, 78, false, core::status_effect::poison, 15, 2, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 4 },
-    { "Odpryski płytek", "Lecą przy każdym cięciu", 9, 2, 3, 0, 8, 15, 79, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 1 },
-    { "Poprawki na odbiorze", "Zamknięte? Inspektor ma inne zdanie", 12, 2, 4, 1, 7, 18, 80, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 256 },
+    { "Przeciek", "Kapie tam, gdzie nie powinno", 6, 1, 3, 0, 7, 10, 6, false, core::status_effect::slip, 14, 2, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 0, 0, 0, 0, "" },
+    { "Zwarcie", "Iskrzy przy każdej okazji", 5, 2, 4, 0, 8, 12, 7, false, core::status_effect::shock, 17, 1, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 0, 0, 0, 0, "" },
+    { "Pleśń", "Lubi wilgoć i zimne ściany", 9, 1, 2, 1, 5, 10, 8, false, core::status_effect::poison, 24, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 0, 0, 0, 0, "" },
+    { "Kornik", "Drąży więźbę po cichu", 7, 1, 3, 1, 6, 10, 9, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 0, 0, 0, 0, "" },
+    { "Papierologia", "Brakuje jednej pieczątki", 12, 1, 2, 2, 5, 15, 10, false, core::status_effect::paper, 35, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 0, 0, 0, 0, "" },
+    { "Opóźniona dostawa", "Będzie jutro. Na pewno.", 10, 2, 4, 1, 7, 15, 11, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 0, 0, 0, 0, "" },
+    { "Ulewa", "Zawsze tuż przed dachem", 8, 2, 3, 0, 9, 12, 12, false, core::status_effect::slip, 28, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 0, 0, 0, 0, "" },
+    { "Przekroczony budżet", "Rośnie szybciej niż mury", 14, 2, 5, 2, 7, 25, 13, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 0, 0, 0, 0, "" },
+    { "Nieprzekraczalny Termin", "Nieprzesuwalny. Podobno.", 42, 4, 6, 3, 12, 200, 14, true, core::status_effect::paper, 28, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", -1, 0, 0, 0, 0, "" },
+    { "Zepsuta Betoniarka", "Kręci się, ale nie tam", 28, 3, 5, 2, 10, 150, 46, true, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", -1, 0, 0, 0, 0, "" },
+    { "Nawałnica", "Leje jak z cebra", 32, 3, 5, 2, 12, 180, 47, true, core::status_effect::slip, 35, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", -1, 0, 0, 0, 0, "" },
+    { "Inspekcja Pracy", "Sprawdza kask i barierki", 30, 3, 5, 2, 12, 170, 50, true, core::status_effect::paper, 30, 0, core::slam_shape::cross, "Kontrola BHP", 4, 6, 2, 2, 60, "Protokół bez uwag", -1, 0, 0, 0, 0, "" },
+    { "Woda gruntowa", "Wybija tam, gdzie kopiesz. I obok", 8, 1, 2, 0, 6, 12, 61, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 2, 0, 0, 0, "" },
+    { "Kamień w wykopie", "Nie ruszy się. Koparka też nie", 16, 2, 3, 3, 4, 14, 62, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 64, 0, 0, 0, "" },
+    { "Osuwisko skarpy", "Zjeżdża prosto na ciebie", 10, 1, 3, 1, 6, 12, 63, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 128, 0, 0, 0, "" },
+    { "Dziurawa folia", "Załatana? Tylko tak wygląda", 7, 1, 2, 0, 6, 12, 64, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 256, 0, 0, 0, "" },
+    { "Krzywy mur", "Pion? Jaki pion?", 12, 1, 3, 2, 5, 14, 65, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 192, 0, 0, 0, "" },
+    { "Mostek termiczny", "Ucieka ciepło. I sam ucieka", 7, 1, 2, 0, 8, 14, 66, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 33, 0, 0, 0, "" },
+    { "Ugięcie stropu", "Z każdym dniem trochę niżej", 12, 1, 3, 1, 5, 15, 67, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 80, 0, 0, 0, "" },
+    { "Brak zbrojenia", "Beton bez stali pęka na pół", 10, 2, 3, 1, 6, 14, 68, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 2, 0, 0, 0, "" },
+    { "Przeciekająca papa", "Kapie z góry, i to celnie", 8, 1, 3, 0, 8, 14, 69, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 1, 0, 0, 0, "" },
+    { "Zapchana rynna", "Zaraz się przeleje. Na ciebie", 9, 1, 2, 0, 6, 14, 70, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 8, 0, 0, 0, "" },
+    { "Pęknięty pustak", "Rozsypie się przy pierwszej okazji", 8, 2, 3, 1, 6, 14, 71, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 8, 0, 0, 0, "" },
+    { "Zła wymiarówka", "Im dłużej, tym gorzej pasuje", 10, 1, 3, 1, 6, 15, 72, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 16, 0, 0, 0, "" },
+    { "Nieszczelna ramka", "Wieje z każdej szczeliny", 13, 1, 3, 2, 7, 15, 73, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 65, 0, 0, 0, "" },
+    { "Przeciąg", "Drzwi trzaskają same", 8, 1, 3, 0, 8, 14, 74, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 160, 0, 0, 0, "" },
+    { "Zapowietrzenie", "Odpowietrzysz, a ono wraca", 8, 1, 3, 0, 7, 14, 75, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 288, 0, 0, 0, "" },
+    { "Brak uziemienia", "Dotknij obudowy. Albo nie", 9, 2, 3, 0, 7, 15, 76, false, core::status_effect::shock, 12, 1, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 8, 0, 0, 0, "" },
+    { "Rysa skurczowa", "Jedna rysa, dwie rysy, dziesięć", 10, 1, 3, 1, 6, 14, 77, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 2, 0, 0, 0, "" },
+    { "Wilgoć w ścianie", "Karmi pleśń i sąsiadów", 11, 1, 2, 1, 6, 15, 78, false, core::status_effect::poison, 15, 2, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 4, 0, 0, 0, "" },
+    { "Odpryski płytek", "Lecą przy każdym cięciu", 9, 2, 3, 0, 8, 15, 79, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 0, 1, 0, 0, 0, "" },
+    { "Poprawki na odbiorze", "Zamknięte? Inspektor ma inne zdanie", 12, 2, 4, 1, 7, 18, 80, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 256, 0, 0, 0, "" },
+    { "Brakujący podpis", "Uciekł, zanim ktoś podpisał", 7, 1, 2, 0, 7, 12, 101, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 32, 0, 0, 0, "" },
+    { "Zaginiony wniosek", "Zgubiony. Znajdzie się. Dwa razy", 8, 1, 2, 0, 6, 12, 102, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 256, 0, 0, 0, "" },
+    { "Termin na odwołanie", "Tyka i rośnie z każdym dniem", 9, 1, 2, 0, 6, 13, 103, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 16, 0, 0, 0, "" },
+    { "Niezgodność z planem", "Rzuca uwagami z daleka", 7, 1, 2, 0, 8, 13, 104, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 1, 0, 0, 0, "" },
+    { "Pieczątka nie ta", "Stempluje i odsyła na początek", 10, 1, 3, 1, 5, 13, 105, false, core::status_effect::paper, 20, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 128, 0, 0, 0, "" },
+    { "Pęknięta rura", "Jedna dziura, zaraz dwie", 8, 1, 2, 0, 6, 12, 106, false, core::status_effect::slip, 15, 2, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 2, 0, 0, 0, "" },
+    { "Brak ciśnienia", "Stoi i dopompowuje innych", 12, 1, 2, 2, 4, 13, 107, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 68, 0, 0, 0, "" },
+    { "Kolizja z kablem", "Koparka trafiła w kabel. Iskry!", 7, 1, 3, 0, 7, 13, 108, false, core::status_effect::shock, 12, 1, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 8, 0, 0, 0, "" },
+    { "Decyzja odmowna", "Stos pism z pieczątką ODMOWA", 34, 3, 5, 2, 12, 140, 109, true, core::status_effect::paper, 25, 0, core::slam_shape::square, "Stempel ODMOWA", 33, 6, 3, 0, 40, "Pozwolenie wydane", -1, 0, 50, 30, 1, "Odwołanie" },
 };
 
 inline constexpr core::stage_def stages[] = {
+    { "Działka i pozwolenie", { 32, 34, 35, 36 }, 4, 6, -1, 106, 2, 3, 15 },
+    { "Przyłącza", { 37, 38, 39, 33 }, 4, 6, 40, 110, 1, 3, 28 },
     { "Fundamenty", { 12, 13, 0, 3 }, 4, 5, -1, 95, 0, 0, 48 },
     { "Izolacja fundamentów", { 14, 15, 12, 0 }, 4, 5, -1, 98, 0, 0, 22 },
     { "Mury parteru", { 16, 17, 4, 5 }, 4, 6, -1, 100, 0, 0, 62 },
@@ -101,6 +112,8 @@ inline constexpr core::upgrade_def upgrades[] = {
 };
 
 inline constexpr core::story_msg story_stages[] = {
+    { "Anna Nowak", { "Najpierw papiery! Mapa,", "warunki zabudowy,", "pozwolenie. Bez tego nic." } },
+    { "Kierownik Marek", { "Pozwolenie prawie jest.", "Teraz przyłącza: woda,", "prąd, kanaliza. Uważaj!" } },
     { "Anna Nowak", { "Działka nasza! Liczę na", "mocne fundamenty. Uważaj", "na wodę i błoto w dole." } },
     { "Kierownik Marek", { "Fundament stoi. Teraz", "folia i izolacja - bez", "dziur, bo woda wróci." } },
     { "Kierownik Marek", { "Stal jest, papierów brak.", "Papierologia już czeka.", "Trzymaj się planu!" } },
@@ -119,10 +132,14 @@ inline constexpr core::story_msg story_prologue = { "Anna Nowak", { "Witaj na bu
 inline constexpr const char* prologue_captions[] = { "Działka przy ul. Budowlanej 7...", "...a problemy już czekają." };
 
 inline constexpr core::act_def acts[] = {   // mechanika aktu: błoto, porywy wiatru, pył
-    { "Stan surowy", 10, 2, core::act_mechanic::mud, 7, "Błoto w wykopie", "Błoto", "Wejście w błoto = tura" },
-    { "Pod dachem", 10, 2, core::act_mechanic::gust, 6, "Porywy na wysokości", "Porywy", "Poryw co 6 tur spycha" },
-    { "Wykończenie", 10, 2, core::act_mechanic::dust, 2, "Pył z szlifowania", "Pył", "Pył: widzenie -2" },
+    { "Stan surowy", 10, 2, core::act_mechanic::mud, 7, "Błoto w wykopie", "Błoto", "Wejście w błoto = tura", "I", false },
+    { "Pod dachem", 10, 2, core::act_mechanic::gust, 6, "Porywy na wysokości", "Porywy", "Poryw co 6 tur spycha", "II", false },
+    { "Wykończenie", 10, 2, core::act_mechanic::dust, 2, "Pył z szlifowania", "Pył", "Pył: widzenie -2", "III", false },
+    { "Papierologia", 4, 2, core::act_mechanic::stamps, 3, "Pieczątki i kolejka", "Pieczątki", "3 dokumenty = schody", "0", true },
 };
+inline constexpr int prelude_stages = 2;   // etapy aktu wstępnego (Akt 0) - z nagrody za odbiór
+inline constexpr const char* documents[] = { "Podpis", "Mapa", "Uzgodnienie" };   // pieczątki: dokumenty etapu
+inline constexpr int documents_count = 3;
 inline constexpr int behavior_ranged_reach = 3;
 inline constexpr int behavior_split_hp_pct = 50;
 inline constexpr int behavior_heal_value = 3;
@@ -156,7 +173,7 @@ inline constexpr core::status_def statuses[] = {   // indeks = core::status_effe
     { "Papierologia", "Papier.", "moc później" },
 };
 inline constexpr int paper_delay = 3;
-inline constexpr int acts_count = 3;
+inline constexpr int acts_count = 4;
 inline constexpr int hurtownia_count = 8;
 inline constexpr int slam_every = 4;
 inline constexpr int slam_damage_bonus = 3;
@@ -197,6 +214,15 @@ inline constexpr int enemy_rysa = 28;
 inline constexpr int enemy_wilgoc = 29;
 inline constexpr int enemy_odpryski = 30;
 inline constexpr int enemy_poprawki = 31;
+inline constexpr int enemy_podpis = 32;
+inline constexpr int enemy_wniosek = 33;
+inline constexpr int enemy_termin_odw = 34;
+inline constexpr int enemy_niezgodnosc = 35;
+inline constexpr int enemy_pieczatka = 36;
+inline constexpr int enemy_rura = 37;
+inline constexpr int enemy_cisnienie = 38;
+inline constexpr int enemy_kabel = 39;
+inline constexpr int enemy_decyzja = 40;
 
 inline constexpr core::badge_def badges[] = {   // perk = uprawnienie: trwała premia na każdą budowę
     { "Bez usterek", "Etap bez żadnych obrażeń", 20, { core::perk_effect::hp, 2 } },
@@ -211,7 +237,7 @@ inline constexpr core::badge_def badges[] = {   // perk = uprawnienie: trwała p
 };
 
 inline constexpr int badges_count = 9;
-inline constexpr int enemies_count = 32;
+inline constexpr int enemies_count = 41;
 inline constexpr int badge_bez_usterek = 0;
 inline constexpr int badge_przed_terminem = 1;
 inline constexpr int badge_seryjny = 2;
@@ -253,11 +279,11 @@ inline constexpr int site_events_count = 5;
 inline constexpr int site_event_chance_pct = 45;
 
 inline constexpr core::weather_def weather[] = {   // pogoda dnia: losowana na starcie etapu
-    { "Słonecznie", "Pogodnie", "Bez wpływu na etap", core::weather_effect::none, 0, 40, false, 1023 },
-    { "Upał", "Moc +1 t.", "Moc odnawia się 1 turę dłużej", core::weather_effect::heat, 1, 16, true, 1023 },
-    { "Mróz", "Wolniejsi", "Problemy stoją co 3. turę", core::weather_effect::frost, 3, 14, false, 127 },
-    { "Wiatr", "Zasięg -1", "Broń z dystansu: zasięg -1", core::weather_effect::wind, 1, 14, true, 124 },
-    { "Deszcz", "Kałuże", "Wejście w kałużę = poślizg", core::weather_effect::rain, 9, 16, true, 127 },
+    { "Słonecznie", "Pogodnie", "Bez wpływu na etap", core::weather_effect::none, 0, 40, false, 4095 },
+    { "Upał", "Moc +1 t.", "Moc odnawia się 1 turę dłużej", core::weather_effect::heat, 1, 16, true, 4095 },
+    { "Mróz", "Wolniejsi", "Problemy stoją co 3. turę", core::weather_effect::frost, 3, 14, false, 511 },
+    { "Wiatr", "Zasięg -1", "Broń z dystansu: zasięg -1", core::weather_effect::wind, 1, 14, true, 496 },
+    { "Deszcz", "Kałuże", "Wejście w kałużę = poślizg", core::weather_effect::rain, 9, 16, true, 511 },
 };
 inline constexpr int weather_count = 5;
 inline constexpr bool weather_no_bad_stack = true;
@@ -429,9 +455,34 @@ inline constexpr core::reward_def rewards[] = {   // nagrody za odbiór: każda 
     { core::reward_kind::cls, 7, "Tynkarz", "Nowy zawód: obszar" },
     { core::reward_kind::gear, 4, "Pas narzędziowy", "Nowy sprzęt: termos" },
     { core::reward_kind::cls, 8, "Operator koparki", "Nowy zawód: taran" },
-    { core::reward_kind::soon, -1, "Akt 0: Papierologia", "Wkrótce" },
+    { core::reward_kind::act, 3, "Akt 0: Papierologia", "Nowy akt przed budową" },
 };
 inline constexpr int rewards_count = 8;
+
+inline constexpr core::tutorial_step tutorial_steps[] = {   // samouczek menu: tytuł (0) i wybór zawodu (1)
+    { "new", "Nowa budowa", { "Kierownik Marek", { "Tu zaczynasz budowę domu", "Nowaków: zawód, trudność", "i na plac. Powodzenia!" } }, "START / A", 0, false, false },
+    { "phone", "Profil w telefonie", { "Kierownik Marek", { "Twój telefon: odznaki,", "zlecenia, pamiątki,", "Katalog usterek, Osiedle." } }, "SELECT", 0, false, false },
+    { "training", "Szkolenia", { "Kierownik Marek", { "Za doświadczenie z budów", "kupisz Szkolenia: HP,", "nowe zawody, narzędzia." } }, "SELECT, Koszty", 0, false, false },
+    { "respect", "Respekt", { "Kierownik Marek", { "Respekt dostajesz za", "każdy etap i zostaje po", "porażce. Stałe premie!" } }, "Koszty, SELECT", 0, false, false },
+    { "daily", "Codzienna budowa", { "Kierownik Marek", { "Budowa dnia: ten sam", "plac i zawód dla", "wszystkich. Pobij wynik!" } }, "R", 0, false, false },
+    { "help", "Jak grać", { "Kierownik Marek", { "Sterowanie, akty,", "statystyki. Tam też", "powtórzysz samouczek." } }, "B", 0, false, false },
+    { "options", "Opcje", { "Kierownik Marek", { "Dźwięk, wibracje,", "sterowanie i wielkość", "tekstu są pod kluczem." } }, "", 0, true, false },
+    { "class", "Zawód", { "Kierownik Marek", { "Każdy fach ma broń, moc", "i statystyki. Nowe fachy", "kupisz albo wygrasz." } }, "lewo / prawo", 1, false, false },
+    { "difficulty", "Trudność", { "Kierownik Marek", { "Łatwy, Normalny, Trudny:", "silniejsze problemy,", "więcej punktów." } }, "góra / dół", 1, false, false },
+    { "keepsake", "Pamiątka", { "Kierownik Marek", { "Jedna pamiątka na", "budowę. Im częściej ją", "bierzesz, tym mocniejsza." } }, "L / R", 1, false, false },
+    { "stats", "Statystyki", { "Kierownik Marek", { "Co daje SIŁ, ZRĘ, INT,", "OBR i SZCZ - wzory", "w prostych słowach." } }, "START", 1, false, false },
+    { "investor", "Tryb inwestora", { "Kierownik Marek", { "Utrudnienia za więcej", "doświadczenia. Stawka", "to Twój rekord zawodu." } }, "SELECT", 1, false, true },
+    { "go", "Na plac!", { "Kierownik Marek", { "Wybierz fach i ruszamy.", "Będę pisał po drodze.", "Powodzenia, szefie!" } }, "A", 1, false, false },
+};
+inline constexpr core::tutorial_step tutorial_unlocks[] = {   // dymki przy pierwszym odblokowaniu (kolejność = core::tutorial_unlock)
+    { "respect", "Pierwszy Respekt!", { "Kierownik Marek", { "Respekt zostaje na stałe.", "Wydasz go w telefonie:", "Koszty, strona Respekt." } }, "SELECT, Koszty", 0, false, false },
+    { "daily", "Codzienna budowa", { "Kierownik Marek", { "Po pierwszej budowie", "spróbuj budowy dnia:", "ten sam plac dla każdego." } }, "R", 0, false, false },
+    { "investor", "Tryb inwestora", { "Kierownik Marek", { "Pierwszy odbiór! Na", "wyborze zawodu włączysz", "utrudnienia za dośw." } }, "SELECT", 1, false, false },
+    { "act0", "Akt 0: Papierologia", { "Kierownik Marek", { "Najpierw papiery! Nowe", "budowy zaczną się od", "pozwoleń i przyłączy." } }, "START / A", 0, false, false },
+    { "class", "Nowy zawód", { "Kierownik Marek", { "Nowy fach w ekipie!", "Czeka na pasku zawodów.", "Wypróbuj go na placu." } }, "lewo / prawo", 1, false, false },
+};
+inline constexpr int tutorial_steps_count = 13;
+inline constexpr int tutorial_unlocks_count = 5;
 
 inline constexpr const char* version = "v0.21.49";   // numer wersji (ekran tytułowy, changelog)
 
@@ -451,11 +502,12 @@ inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonog
     "Czerwone pola po wybuchu: odejdź",
     "Błoto w akcie I kosztuje turę",
     "START na wyborze: opis statystyk",
+    "Akt 0: 3 dokumenty otwierają schody",
 };
-inline constexpr int tips_count = 15;
+inline constexpr int tips_count = 16;
 
 inline constexpr int classes_count = 9;
-inline constexpr int stages_count = 10;
+inline constexpr int stages_count = 12;
 inline constexpr int difficulties_count = 3;
 inline constexpr int default_difficulty = 1;
 inline constexpr int ng_hp_pct_per_tier = 20;

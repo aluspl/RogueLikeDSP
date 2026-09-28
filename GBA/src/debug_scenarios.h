@@ -52,6 +52,15 @@
 //  34 - akt II, porywy (etap Ściany działowe): poryw za 2 tury (licznik w HUD), B = czekaj
 //  35 - akt III, pył (etap Tynki i wylewki): mniejsze pole widzenia, pył w powietrzu, płytki i tynk
 //  36 - Katalog usterek: wszystkie problemy znane (tytuł -> SELECT -> Katalog, zachowania pod listą)
+//  37 - Akt 0, etap Działka i pozwolenie (pieczątki): trzy dokumenty w prawo od bohatera, dalej zamknięte schody
+//       (kłódka, HUD 0/3); D-pad w prawo zbiera dokumenty (banery), komplet otwiera schody, wejście = etap zaliczony
+//  38 - Akt 0, boss Decyzja odmowna obok bohatera (w prawo), HP tuż nad połową: A = druga faza Odwołanie (baner, +HP,
+//       wezwanie Zaginionego wniosku), dalej Stempel ODMOWA; L+R+SELECT = pokonanie (Pozwolenie wydane, premia za akt)
+//  39 - samouczek menu na profilu po pierwszej wygranej (tryb inwestora odblokowany): wszystkie dymki tytułu
+//       i wyboru zawodu (A dalej, START przy statystykach); B na tytule -> Jak grać -> "pokaż samouczek jeszcze raz"
+//  40 - dymki nowości: Respekt, codzienna budowa, Akt 0 (tytuł), tryb inwestora i nowe zawody (wybór zawodu)
+//  41 - nagroda Akt 0: 7 wygranych, ostatni etap z bossem (L+R+SELECT = odbiór, "Nagroda: Akt 0: Papierologia"),
+//       potem dymek nowości na tytule i nowa budowa od Aktu 0
 #include "core.h"
 #include "meta.h"
 
@@ -78,12 +87,22 @@ namespace debug_scenario
         g.enemies[g.enemies_count - 1].stun = int8_t(stun);
     }
 
+    constexpr int F = data::prelude_stages;   // pierwszy etap budowy bez Aktu 0 (Fundamenty)
+
+    // Nagroda Akt 0 (ostatnia na liście).
+    inline int act0_reward()
+    {
+        for(int i = 0; i < data::rewards_count; ++i) if(data::rewards[i].kind == core::reward_kind::act) return i;
+        return data::rewards_count;
+    }
+
     inline void unlock_all(core::profile& p)
     {
         p.classes = uint8_t(((1 << data::classes_count) - 1) & ~data::reward_classes_mask);
-        p.rewards = uint8_t(core::rewards_available());   // nagrody za odbiór: nowe zawody, narzędzia, buty i pas
+        p.rewards = uint8_t(act0_reward());   // nagrody za odbiór: nowe zawody, narzędzia, buty i pas (Akt 0 tylko w 37-41)
         p.hard = 1;
         core::set_flag(p, core::help_seen);
+        p.tutorial = 0x3F; p.classes_seen = 0xFFFF;   // samouczek i dymki nowości już obejrzane (poza 39-40)
     }
 
     // Profil scenariusza (po unlock_all, przed ekranem tytułowym).
@@ -122,6 +141,14 @@ namespace debug_scenario
         }
         if(scenario == 23) { p.respect = 12; p.respect_total = 12; }
         if(scenario == 36) { p.catalog = 0xFFFF; p.catalog_hi = 0xFFFFFFFFu; }
+        if(scenario == 37 || scenario == 38) { p.rewards = uint8_t(data::rewards_count); p.wins = 8; }   // Akt 0 odebrany
+        if(scenario == 39) { p.tutorial = 0; p.wins = 1; p.rewards = 1; p.investor = 0; core::set_flag(p, core::prologue_seen); }
+        if(scenario == 40)
+        {
+            p.tutorial = uint16_t(core::tut_title | core::tut_class); p.classes_seen = 0;
+            p.respect_total = 14; p.respect = 14; p.runs = 9; p.wins = 8; p.rewards = uint8_t(data::rewards_count);
+        }
+        if(scenario == 41) { p.wins = 7; p.rewards = uint8_t(act0_reward()); p.respect = 20; }
         if(scenario == 24) { p.wins = 0; p.rewards = 0; p.respect = 30; }
         if(scenario == 16)
         {
@@ -160,7 +187,7 @@ namespace debug_scenario
     inline void force_event(core::game& g)
     {
         static int next = 0;
-        if(g.stage_event >= 0 || g.stage == 0 || data::stages[g.stage].boss >= 0) return;
+        if(g.stage_event >= 0 || g.stage == g.first_stage || data::stages[g.stage].boss >= 0) return;
         g.apply_event(next++ % data::site_events_count);
     }
 
@@ -218,7 +245,7 @@ namespace debug_scenario
         {
             case 1:
             {
-                int boss_stage = 0;
+                int boss_stage = F;
                 while(data::stages[boss_stage].boss < 0) ++boss_stage;
                 g.start_stage(boss_stage);
                 core::actor& b = g.enemies[g.boss];
@@ -295,7 +322,7 @@ namespace debug_scenario
                 place_enemy(g, data::enemy_kornik, 2, 3, true, 0);
                 break;
             case 12:
-                g.start_stage(1);
+                g.start_stage(F + 1);
                 force_event(g);
                 break;
             case 14:
@@ -312,7 +339,7 @@ namespace debug_scenario
                 break;
             case 13:
             {
-                int st = 0;
+                int st = F;
                 while(data::stages[st].boss != data::enemy_inspekcja) ++st;
                 g.start_stage(st);
                 for(int i = 0; i < g.boss; ++i) g.enemies[i].alive = false;          // sam boss (bez problemów etapu)
@@ -339,7 +366,7 @@ namespace debug_scenario
             case 20:
             {
                 g.start_stage(data::stages_count - 1);
-                for(int s = 0; s < data::stages_count - 1; ++s) g.stage_days[s] = uint16_t(18 + (s * 7) % 11);
+                for(int s = g.first_stage; s < data::stages_count - 1; ++s) g.stage_days[s] = uint16_t(18 + (s * 7) % 11);
                 g.score = 4800;
                 g.turns = 240;
                 g.stage_start_turn = 200;
@@ -352,7 +379,7 @@ namespace debug_scenario
             case 24:
             {
                 g.start_stage(data::stages_count - 1);
-                for(int s = 0; s < data::stages_count - 1; ++s) g.stage_days[s] = uint16_t(15 + (s * 5) % 9);
+                for(int s = g.first_stage; s < data::stages_count - 1; ++s) g.stage_days[s] = uint16_t(15 + (s * 5) % 9);
                 g.score = 3900;
                 g.respect = 24;
                 break;
@@ -404,7 +431,7 @@ namespace debug_scenario
                 break;
             }
             case 29:
-                g.start_stage(2);
+                g.start_stage(F + 2);
                 g.enemies_count = 0;
                 clear_area(g, -1, -1, 4, 4);
                 place_at(g, data::enemy_mostek, 3, 0, 0);
@@ -418,7 +445,7 @@ namespace debug_scenario
                 for(int i = 0; i < g.enemies_count; ++i) g.enemies[i].hp = 1;
                 break;
             case 31:
-                g.start_stage(8);
+                g.start_stage(F + 8);
                 g.enemies_count = 0;
                 clear_area(g, -3, -3, 4, 3);
                 place_at(g, data::enemy_wilgoc, 3, 0, 0);
@@ -436,7 +463,7 @@ namespace debug_scenario
                 break;
             case 33:
             {
-                g.start_stage(1);
+                g.start_stage(F + 1);
                 g.enemies_count = 0;
                 int best = 999, hx = g.hero.x, hy = g.hero.y;
                 for(int y = 1; y < core::map_h - 1; ++y)   // najbliższe błoto z wolnym polem po lewej
@@ -446,14 +473,48 @@ namespace debug_scenario
                 break;
             }
             case 34:
-                g.start_stage(5);
+                g.start_stage(F + 5);
                 g.enemies_count = 0;
                 g.stage_start_turn = g.turns - (data::acts[1].mech_value - 2);   // poryw za 2 tury
                 break;
             case 35:
-                g.start_stage(8);
+                g.start_stage(F + 8);
                 for(int i = 0; i < g.enemies_count; ++i) g.enemies[i].stun = 60;
                 break;
+            case 37:   // Akt 0: dokumenty w linii w prawo, zamknięte schody za nimi
+            {
+                clear_area(g, -1, -1, 7, 1);
+                g.enemies_count = 0;
+                int k = 0;
+                for(int i = 0; i < g.pickups_count; ++i)
+                    if(g.pickups[i].type == core::document) { g.pickups[i].x = int8_t(g.hero.x + 1 + k); g.pickups[i].y = g.hero.y; ++k; }
+                    else g.pickups[i].active = false;
+                g.lv.t[g.stairs_y][g.stairs_x] = core::tile::floor;
+                g.stairs_x = g.hero.x + 5; g.stairs_y = g.hero.y;
+                g.lv.t[g.stairs_y][g.stairs_x] = core::tile::stairs;
+                place_at(g, data::enemy_niezgodnosc, 3, -1, 40);   // ogłuszony strzelec obok (do obejrzenia)
+                break;
+            }
+            case 38:   // Akt 0: Decyzja odmowna obok, HP tuż nad progiem drugiej fazy
+            {
+                g.start_stage(g.first_stage + 1);
+                for(int i = 0; i < g.boss; ++i) g.enemies[i].alive = false;
+                clear_area(g, -2, -2, 3, 2);
+                core::actor& b = g.enemies[g.boss];
+                b.x = int8_t(g.hero.x + 1); b.y = g.hero.y;
+                b.awake = true; b.stun = 2;
+                const core::enemy_def& bd = data::enemies[b.def_id];
+                b.hp = int16_t(b.max_hp * bd.phase_pct / 100 + 1);
+                g.hero.max_hp = g.hero.hp = 120;
+                break;
+            }
+            case 41:
+            {
+                g.start_stage(data::stages_count - 1);
+                for(int s = g.first_stage; s < data::stages_count - 1; ++s) g.stage_days[s] = uint16_t(16 + (s * 3) % 7);
+                g.score = 4100;
+                break;
+            }
             case 21:
             {
                 g.hero.hp = 1;

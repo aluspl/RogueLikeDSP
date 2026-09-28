@@ -7,6 +7,7 @@
 #include "meta.h"
 using namespace core;
 static int fails = 0;
+static constexpr int F0 = data::prelude_stages;   // bez nagrody Akt 0 budowa zaczyna się od etapu F0 (Fundamenty)
 #define CHECK(c) do{ if(!(c)){ std::printf("FAIL %s:%d %s\n", __FILE__, __LINE__, #c); ++fails; } }while(0)
 
 static bool connected(const level& lv, int sx, int sy)
@@ -56,6 +57,12 @@ static void bot_step(game& g)
     static int hd[map_h][map_w], td[map_h][map_w];
     bot_cost(g, g.hero.x, g.hero.y, hd);   // koszt drogi (błoto droższe)
     int tx = g.stairs_x, ty = g.stairs_y, best = 999999;
+    if(g.stairs_locked())   // pieczątki (Akt 0): najpierw najbliższy dokument, potem schody
+    {
+        int bdoc = 999999;
+        for(int i=0;i<g.pickups_count;++i){ const pickup& p=g.pickups[i]; int dd=hd[p.y][p.x];
+            if(p.active&&p.type==document&&dd>=0&&dd<bdoc){bdoc=dd;tx=p.x;ty=p.y;} }
+    }
     for(int i=0;i<g.enemies_count;++i){ auto& e=g.enemies[i]; int dd=hd[e.y][e.x]; if(e.alive&&dd>=0&&dd<best&&(dd<32||g.stairs_x<0)){best=dd;tx=e.x;ty=e.y;} }
     bool has_target = tx>=0 && hd[ty][tx]>=0;
     if(has_target) bot_cost(g, tx, ty, td);
@@ -113,9 +120,9 @@ int main()
     {
         game n; n.new_run(0, 42, 1);
         CHECK(n.diff == 1 && n.tier == 0);
-        CHECK(n.enemy_hp_pct() == data::stages[0].hp_pct);
+        CHECK(n.enemy_hp_pct() == data::stages[F0].hp_pct);
         for(int i=0;i<n.enemies_count;++i)
-            CHECK(n.enemies[i].max_hp == data::enemies[n.enemies[i].def_id].max_health * data::stages[0].hp_pct / 100);
+            CHECK(n.enemies[i].max_hp == data::enemies[n.enemies[i].def_id].max_health * data::stages[F0].hp_pct / 100);
         game e; e.new_run(0, 42, 0);
         game h; h.new_run(0, 42, 2);
         CHECK(e.enemy_hp_pct() <= n.enemy_hp_pct() && n.enemy_hp_pct() < h.enemy_hp_pct());
@@ -125,7 +132,7 @@ int main()
         // etapy: mnożnik nie maleje
         game s; s.new_run(0, 42, 1);
         int prev_hp = s.enemy_hp_pct(), prev_dmg = s.enemy_dmg_bonus();
-        for(int k=1;k<data::stages_count;++k){ s.next_stage(); CHECK(s.enemy_hp_pct() >= prev_hp); CHECK(s.enemy_dmg_bonus() >= prev_dmg); prev_hp=s.enemy_hp_pct(); prev_dmg=s.enemy_dmg_bonus(); }
+        for(int k=F0+1;k<data::stages_count;++k){ s.next_stage(); CHECK(s.enemy_hp_pct() >= prev_hp); CHECK(s.enemy_dmg_bonus() >= prev_dmg); prev_hp=s.enemy_hp_pct(); prev_dmg=s.enemy_dmg_bonus(); }
         // boss też skalowany
         CHECK(s.boss >= 0 && s.enemies[s.boss].max_hp > data::enemies[data::stages[s.stage].boss].max_health);
     }
@@ -155,11 +162,11 @@ int main()
         game g; g.new_run(2, 99, 1);
         CHECK(!g.new_game_plus());
         g.dmg_bonus = 2; g.def_bonus = 1; g.score = 1234; g.st = status::won; g.stage = data::stages_count - 1;
-        int dmg0 = data::stages[0].dmg_bonus;
+        int dmg0 = data::stages[F0].dmg_bonus;
         CHECK(g.new_game_plus());
-        CHECK(g.tier == 1 && g.stage == 0 && g.st == status::playing && g.cls == 2 && g.diff == 1);
+        CHECK(g.tier == 1 && g.stage == F0 && g.st == status::playing && g.cls == 2 && g.diff == 1);
         CHECK(g.dmg_bonus == 2 && g.def_bonus == 1 && g.score == 1234 && g.hero.hp == g.hero.max_hp);
-        CHECK(g.enemy_hp_pct() > data::stages[0].hp_pct && g.enemy_dmg_bonus() > dmg0);
+        CHECK(g.enemy_hp_pct() > data::stages[F0].hp_pct && g.enemy_dmg_bonus() > dmg0);
     }
     // 7. premie z meta-progresji (run_mods) działają na start budowy
     {
@@ -191,7 +198,7 @@ int main()
         h.debug_skip();
         CHECK(h.xp() == (data::xp_per_kill + data::xp_per_stage) * h.score_pct() / 100);
         game w; w.new_run(1, 7);
-        for(int k=0;k<data::stages_count-1;++k){ w.debug_skip(); w.next_stage(); }
+        for(int k=F0;k<data::stages_count-1;++k){ w.debug_skip(); w.next_stage(); }
         int before = w.xp(); w.debug_skip();
         CHECK(w.st == status::won && w.xp() == before + data::xp_per_kill + data::xp_boss);
     }
@@ -500,8 +507,8 @@ int main()
     // 20. fabuła: wiadomość etapu, NG+ ma własną
     {
         game g; g.new_run(1, 3);
-        CHECK(&g.stage_story() == &data::story_stages[0]);
-        g.next_stage(); CHECK(&g.stage_story() == &data::story_stages[1]);
+        CHECK(&g.stage_story() == &data::story_stages[F0]);
+        g.next_stage(); CHECK(&g.stage_story() == &data::story_stages[F0 + 1]);
         g.st = status::won; g.stage = data::stages_count - 1; g.new_game_plus();
         CHECK(&g.stage_story() == &data::story_ngplus);
         for(int i = 0; i < data::stages_count; ++i) CHECK(data::story_stages[i].from && data::story_stages[i].lines[0][0]);
@@ -548,7 +555,7 @@ int main()
         for(int st = 0; st < 2; ++st)
             for(uint32_t seed = 1; seed <= 1500; ++seed)
             {
-                game g; g.new_run(1, seed); g.stage = st == 0 ? 0 : data::stages_count - 1;
+                game g; g.new_run(1, seed); g.stage = st == 0 ? F0 : data::stages_count - 1;
                 g.enemies_count = 0; g.spawn(0, g.hero.x + 1, g.hero.y); g.enemies[0].hp = 1; g.player_move(1, 0);
                 const pickup& p = g.pickups[g.pickups_count - 1];
                 if(p.type == gear_box) { CHECK(p.arg < data::gear_slots_count * 3); ++gear_drops; brand[st] += p.arg % 3 == 2; }
@@ -587,15 +594,16 @@ int main()
     }
     {
         game g; g.new_run(1, 5);
-        int last_of_act0 = 0;
-        while(data::stages[last_of_act0 + 1].act == 0) ++last_of_act0;
-        for(int k = 0; k < last_of_act0; ++k) { g.debug_skip(); CHECK(g.st == status::stage_clear && !g.act_cleared); g.next_stage(); }
+        const int act1 = data::stages[F0].act;   // pierwszy akt budowy bez Aktu 0 (Stan surowy)
+        int last_of_act0 = F0;
+        while(data::stages[last_of_act0 + 1].act == act1) ++last_of_act0;
+        for(int k = F0; k < last_of_act0; ++k) { g.debug_skip(); CHECK(g.st == status::stage_clear && !g.act_cleared); g.next_stage(); }
         CHECK(g.boss >= 0 && data::enemies[g.enemies[g.boss].def_id].slam);
         int c0 = g.cash;
         g.debug_skip();                                                   // boss aktu I
         CHECK(g.st == status::stage_clear && g.act_cleared);
-        int stages_in_act = last_of_act0 + 1;
-        CHECK(g.act_bonus == data::acts[0].bonus_per_stage * stages_in_act + data::acts[0].bonus_per_kill * 1);
+        int stages_in_act = last_of_act0 - F0 + 1;
+        CHECK(g.act_bonus == data::acts[act1].bonus_per_stage * stages_in_act + data::acts[act1].bonus_per_kill * 1);
         CHECK(g.cash == c0 + g.act_bonus + data::enemies[g.enemies[g.boss].def_id].score / data::cash_per_score);
         g.next_stage();
         CHECK(!g.act_cleared && data::stages[g.stage].act == 1);
@@ -656,7 +664,7 @@ int main()
             CHECK(g.boss_wake_damage >= 0 && g.enemies[g.boss].stun == (gear ? id.gear_stun - 1 : 0));
         }
         game g; g.new_run(1, 31);
-        for(int k = 0; k < is; ++k) { g.debug_skip(); if(g.act_cleared) g.act_cleared = false; g.next_stage(); }
+        for(int k = F0; k < is; ++k) { g.debug_skip(); if(g.act_cleared) g.act_cleared = false; g.next_stage(); }
         int cash = g.cash, act_kills = g.act_kills;
         g.debug_skip();
         CHECK(g.st == status::stage_clear && !g.act_cleared);
@@ -899,7 +907,7 @@ int main()
     // 31a. boss aktu bez obrażeń w walce z nim (Czysta robota)
     {
         game g; g.new_run(1, 21);
-        int bs = 0; while(data::stages[bs].boss < 0) ++bs;
+        int bs = F0; while(data::stages[bs].boss < 0) ++bs;
         g.start_stage(bs); g.stage_damage = 7;                           // obrażenia przed walką się nie liczą
         CHECK(g.boss_wake_damage < 0);
         g.enemies[g.boss].hp = 1; g.hero_attack(g.boss);
@@ -1013,17 +1021,17 @@ int main()
         for(int k = 0; k < 200; ++k)
         {
             game g; g.new_run(k % data::classes_count, 500 + k * 31);
-            for(int st = 0; st < data::stages_count; ++st)
+            for(int st = F0; st < data::stages_count; ++st)
             {
-                if(st > 0) g.next_stage();
+                if(st > F0) g.next_stage();
                 if(g.stage_event >= 0) ++counts[st];
                 CHECK(g.stage_event < data::site_events_count);
             }
         }
-        CHECK(counts[0] == 0);
-        for(int st = 0; st < data::stages_count; ++st)
+        CHECK(counts[F0] == 0);
+        for(int st = F0; st < data::stages_count; ++st)
             if(data::stages[st].boss >= 0) CHECK(counts[st] == 0);
-            else if(st > 0) CHECK(counts[st] > 200 * data::site_event_chance_pct / 300 &&   // zła pogoda zabiera złe wydarzenia
+            else if(st > F0) CHECK(counts[st] > 200 * data::site_event_chance_pct / 300 &&   // zła pogoda zabiera złe wydarzenia
                                    counts[st] < 200 * (data::site_event_chance_pct + 20) / 100);
         auto ev_of = [](event_effect e) { for(int i = 0; i < data::site_events_count; ++i) if(data::site_events[i].effect == e) return i; return -1; };
         for(event_effect e : { event_effect::fewer_pickups, event_effect::cash, event_effect::inspection, event_effect::rain, event_effect::thermos })
@@ -1061,9 +1069,9 @@ int main()
         for(int k = 0; k < 300; ++k)
         {
             game g; g.new_run(k % data::classes_count, 900 + k * 17);
-            for(int st = 0; st < data::stages_count; ++st)
+            for(int st = F0; st < data::stages_count; ++st)
             {
-                if(st > 0) g.next_stage();
+                if(st > F0) g.next_stage();
                 CHECK(g.weather >= 0 && g.weather < data::weather_count);
                 CHECK(data::weather[g.weather].stages & (1u << st));
                 ++seen[st][g.weather];
@@ -1071,7 +1079,7 @@ int main()
             }
         }
         if(data::weather_no_bad_stack) CHECK(bad_stack == 0);
-        for(int st = 0; st < data::stages_count; ++st)
+        for(int st = F0; st < data::stages_count; ++st)
         {
             int allowed_weight = 0;
             for(int w = 0; w < data::weather_count; ++w) if(data::weather[w].stages & (1u << st)) allowed_weight += data::weather[w].weight;
@@ -1280,7 +1288,7 @@ int main()
             game a; a.new_run(2, 4242); a.debug_skip();
             int want = a.path_offer(k);
             a.choose_path(k); a.next_stage();
-            CHECK(a.stage == 1 && a.stage_path == want && a.next_path == 0);
+            CHECK(a.stage == F0 + 1 && a.stage_path == want && a.next_path == 0);
         }
         game f; f.new_run(2, 99); CHECK(f.stage_path == -1);   // pierwszy etap bez ścieżki
         // skutki: start_stage z konkretną ścieżką vs bez (ten sam seed)
@@ -1288,7 +1296,7 @@ int main()
         int calm = px_of([](const path_def& p) { return p.no_event; }), risky = px_of([](const path_def& p) { return p.bad_weather; });
         int stock = px_of([](const path_def& p) { return p.materials > 0; });
         CHECK(more >= 0 && fewer >= 0 && calm >= 0 && risky >= 0 && stock >= 0);
-        int bs = 0; while(data::stages[bs].boss < 0) ++bs;   // etap z bossem: bez wydarzenia na placu (budżet bez premii)
+        int bs = F0; while(data::stages[bs].boss < 0) ++bs;   // etap z bossem: bez wydarzenia na placu (budżet bez premii)
         for(int path : { more, fewer })
         {
             game a; a.new_run(1, 31); a.cash = 50; a.r.seed(1234); a.start_stage(bs);
@@ -1299,11 +1307,11 @@ int main()
         int bad_ok = 0, events = 0;
         for(uint32_t seed = 1; seed <= 100; ++seed)
         {
-            game w; w.new_run(1, seed); w.start_stage(1, risky); bad_ok += data::weather[w.weather].bad;
-            game e; e.new_run(1, seed); e.start_stage(1, calm); events += e.stage_event >= 0;
+            game w; w.new_run(1, seed); w.start_stage(F0 + 1, risky); bad_ok += data::weather[w.weather].bad;
+            game e; e.new_run(1, seed); e.start_stage(F0 + 1, calm); events += e.stage_event >= 0;
         }
         CHECK(bad_ok == 100 && events == 0);
-        game m; m.new_run(1, 5); m.start_stage(1, stock);
+        game m; m.new_run(1, 5); m.start_stage(F0 + 1, stock);
         CHECK(m.mats[0] + m.mats[1] + m.mats[2] == data::paths[stock].materials);
     }
     // 38. materiały: z problemów, bossów i paczek, limit; naprawy: Załataj (mur z desek), Kładka (kałuże bez poślizgu)
@@ -1341,7 +1349,7 @@ int main()
         }
         {   // Kładka: tylko przy kałużach; kałuże w zasięgu przestają działać, poślizg znika
             const repair_def& rd = data::repairs[bridge];
-            game dry; arena(dry, 1); dry.stage = 4; dry.mats[rd.material] = 3;   // akt II: bez błota (Kładka działa też na błoto)
+            game dry; arena(dry, 1); dry.stage = F0 + 4; dry.mats[rd.material] = 3;   // akt II: bez błota (Kładka działa też na błoto)
             CHECK(dry.repair_blocked(bridge) == game::repair_no_puddle && !dry.player_repair(bridge));
             game r; arena(r, 1); r.weather = 0;
             for(int i = 0; i < data::weather_count; ++i) if(data::weather[i].effect == weather_effect::rain) r.weather = int8_t(i);
@@ -1403,7 +1411,8 @@ int main()
         game g; g.new_run(1, 7);
         for(int k = 0; k < 5; ++k) { g.hero.hp = g.hero.max_hp = 999; g.player_wait(); }
         g.debug_skip();
-        CHECK(g.st == status::stage_clear && g.stage_days[0] == g.turns);
+        const int f = g.first_stage;   // bez Aktu 0: od Fundamentów
+        CHECK(g.st == status::stage_clear && g.stage_days[f] == g.turns);
         while(g.st == status::stage_clear)
         {
             g.next_stage();
@@ -1411,11 +1420,11 @@ int main()
             g.debug_skip();
         }
         CHECK(g.st == status::won);
-        for(int s2 = 1; s2 < data::stages_count; ++s2) CHECK(g.stage_days[s2] >= 2 + s2);
-        int total = 0; for(int s2 = 0; s2 < data::stages_count; ++s2) { CHECK(schedule_days(g, s2) >= data::schedule_min_days); total += schedule_days(g, s2); }
-        CHECK(schedule_total_days(g) == total && schedule_total_cost() > 0);
+        for(int s2 = f + 1; s2 < data::stages_count; ++s2) CHECK(g.stage_days[s2] >= 2 + s2);
+        int total = 0; for(int s2 = f; s2 < data::stages_count; ++s2) { CHECK(schedule_days(g, s2) >= data::schedule_min_days); total += schedule_days(g, s2); }
+        CHECK(schedule_total_days(g) == total && schedule_total_cost(g) > 0);
         int end = days_from_civil(2026, 10, 1);
-        CHECK(schedule_start_day(g, 0, end) == end - total && schedule_start_day(g, 1, end) == end - total + schedule_days(g, 0));
+        CHECK(schedule_start_day(g, f, end) == end - total && schedule_start_day(g, f + 1, end) == end - total + schedule_days(g, f));
     }
     // 41. po budowie: najbliższe do kupienia w Szkoleniach
     {
@@ -1666,7 +1675,7 @@ int main()
     {
         auto def_with = [](int tag) { for(int d = 0; d < data::enemies_count; ++d) if(data::enemies[d].tags & tag) return d; return -1; };
         auto put = [](game& g, int def, int x, int y) { g.spawn(def, x, y); actor& e = g.enemies[g.enemies_count - 1]; e.awake = true; return g.enemies_count - 1; };
-        CHECK(data::stages_count == 10 && data::enemies_count <= max_enemy_types);
+        CHECK(data::stages_count == 12 && data::enemies_count <= max_enemy_types);
         for(int s = 0; s < data::stages_count; ++s)   // każdy etap ma problemy z zachowaniami
         {
             int tagged = 0;
@@ -1676,11 +1685,11 @@ int main()
         for(int a = 0; a < data::acts_count; ++a) CHECK(data::acts[a].mechanic != act_mechanic::none);
         for(int t = 1; t <= tag_returns; t <<= 1) CHECK(def_with(t) >= 0);
         {   // ranged: strzał w linii z 3 pól, bez ruchu; mur po drodze blokuje
-            game g; arena(g, 1); g.stage = 4; g.stage_start_turn = -100;   // akt II (bez błota), porywy nie w tej turze
+            game g; arena(g, 1); g.stage = F0 + 4; g.stage_start_turn = -100;   // akt II (bez błota), porywy nie w tej turze
             int d = def_with(tag_ranged); int i = put(g, d, 10, 7);
             int hp = g.hero.hp; g.player_wait();
             CHECK(g.hero.hp < hp && g.enemies[i].x == 10 && (g.shot_events & (1u << i)));
-            game h; arena(h, 1); h.stage = 4; int j = put(h, d, 10, 7); h.lv.t[7][9] = tile::wall; h.lv.t[6][9] = tile::wall; h.lv.t[8][9] = tile::wall;
+            game h; arena(h, 1); h.stage = F0 + 4; int j = put(h, d, 10, 7); h.lv.t[7][9] = tile::wall; h.lv.t[6][9] = tile::wall; h.lv.t[8][9] = tile::wall;
             hp = h.hero.hp; h.player_wait();
             CHECK(h.hero.hp == hp && !(h.shot_events & (1u << j)));
         }
@@ -1753,7 +1762,7 @@ int main()
             g.bridges = 1; g.bridge_x[0] = int8_t(mx); g.bridge_y[0] = int8_t(my); CHECK(!g.mud(mx, my));
         }
         {   // akt II: poryw co kilka tur spycha o pole (zapowiedź turę wcześniej)
-            game g; arena(g, 1); g.stage = 4; g.stage_start_turn = g.turns;
+            game g; arena(g, 1); g.stage = F0 + 4; g.stage_start_turn = g.turns;
             CHECK(g.act_is(act_mechanic::gust));
             int v = data::acts[1].mech_value;
             for(int t = 0; t < v - 1; ++t) g.player_wait();
@@ -1763,7 +1772,7 @@ int main()
             CHECK(g.hero.x == hx + game::gust_vec[dir][0] && g.hero.y == hy + game::gust_vec[dir][1]);
         }
         {   // akt III: pył - mniejsze pole widzenia
-            game g; arena(g, 1); int r0 = g.sight_radius(); g.stage = 8;
+            game g; arena(g, 1); int r0 = g.sight_radius(); g.stage = F0 + 8;
             CHECK(g.act_is(act_mechanic::dust) && g.sight_radius() == r0 - data::acts[2].mech_value);
         }
         {   // profil v8 -> v9: katalog 16-47 od zera, reszta bez zmian; zapis budowy PBRUN09
@@ -1772,8 +1781,101 @@ int main()
             CHECK(profile_fix(p) && std::strcmp(p.magic, profile_magic) == 0 && p.catalog_hi == 0 && p.best == 4321 && p.respect == 77 && p.catalog == 0x0F0F);
             catalog_add(p, 20); catalog_add(p, 31);
             CHECK(catalog_has(p, 20) && catalog_has(p, 31) && !catalog_has(p, 21) && catalog_count(p) == 8 + 2);
-            CHECK(std::strcmp(run_magic, "PBRUN09") == 0);
+            CHECK(std::strcmp(run_magic, "PBRUN10") == 0);
         }
+    }
+    // 41. v0.21.49 cz. 3: Akt 0 (Papierologia) - nagroda za odbiór, pieczątki zamykają schody, druga faza bossa;
+    //     samouczek menu (flagi w profilu, dymki odblokowań), profil v10
+    {
+        profile p; profile_reset(p);
+        CHECK(!act0_unlocked(p) && mods(p).act0 == 0);
+        int ai = -1; for(int i = 0; i < data::rewards_count; ++i) if(data::rewards[i].kind == reward_kind::act) ai = i;
+        CHECK(ai == data::rewards_count - 1 && rewards_available() == data::rewards_count);
+        for(int k = 0; k <= ai; ++k) CHECK(record_win(p) == k);
+        CHECK(act0_unlocked(p) && mods(p).act0 == 1);
+        game n; n.new_run(1, 11);
+        CHECK(n.first_stage == F0 && n.stage == F0 && n.stage_number() == 1 && n.stages_in_run() == data::stages_count - F0);
+        game dly; start_daily(dly, 42); CHECK(dly.first_stage == F0);   // budowa dnia bez Aktu 0
+        game g; g.new_run(1, 11, data::default_difficulty, mods(p));
+        CHECK(g.first_stage == 0 && g.stage == 0 && g.stage_number() == 1 && g.stages_in_run() == data::stages_count);
+        CHECK(data::acts[data::stages[0].act].prelude && g.act_is(act_mechanic::stamps) && std::strcmp(g.act_numeral(), "0") == 0);
+        CHECK(std::strcmp(data::acts[data::stages[F0].act].numeral, "I") == 0);
+        // pieczątki: dokumenty na etapie, schody zamknięte do kompletu
+        int docs = 0; for(int i = 0; i < g.pickups_count; ++i) if(g.pickups[i].type == document && g.pickups[i].active) ++docs;
+        CHECK(g.docs_needed() == data::documents_count && docs == data::documents_count && g.stairs_locked() && g.stairs_x >= 0);
+        g.enemies_count = 0;
+        g.hero.x = int8_t(g.stairs_x); g.hero.y = int8_t(g.stairs_y); g.player_wait();
+        CHECK(g.st == status::playing && g.stairs_locked());
+        for(int i = 0; i < g.pickups_count; ++i)
+            if(g.pickups[i].type == document && g.pickups[i].active) { g.hero.x = g.pickups[i].x; g.hero.y = g.pickups[i].y; g.collect(); }
+        CHECK(!g.stairs_locked() && g.docs_count() == data::documents_count);
+        g.hero.x = int8_t(g.stairs_x); g.hero.y = int8_t(g.stairs_y); g.player_wait();
+        CHECK(g.st == status::stage_clear);
+        // etap z bossem Aktu 0: bez dokumentów i schodów; druga faza (Odwołanie) raz, przy phase_pct% HP
+        g.next_stage();
+        CHECK(g.stage == 1 && g.docs_needed() == 0 && g.stairs_x < 0 && g.boss >= 0);
+        const enemy_def& bd = data::enemies[g.enemies[g.boss].def_id];
+        CHECK(bd.phase_pct > 0 && bd.phase_heal > 0 && bd.phase_summon > 0 && bd.summon >= 0 && bd.slam);
+        {
+            actor& b = g.enemies[g.boss]; b.awake = true;
+            const int mx = b.max_hp, at = mx * bd.phase_pct / 100;
+            b.hp = int16_t(at + 2);
+            int alive0 = 0; for(int i = 0; i < g.enemies_count; ++i) alive0 += g.enemies[i].alive;
+            g.damage_enemy(g.boss, 2, false, "test");
+            int alive1 = 0; for(int i = 0; i < g.enemies_count; ++i) alive1 += g.enemies[i].alive;
+            CHECK((b.flags & actor_phase) && b.hp == imin(mx, at + mx * bd.phase_heal / 100));
+            CHECK(g.summons_used == bd.phase_summon && alive1 == alive0 + bd.phase_summon);
+            b.hp = 3; g.damage_enemy(g.boss, 1, false, "test"); CHECK(b.hp == 2 && g.summons_used == bd.phase_summon);   // tylko raz
+        }
+        {   // cios, który by usunął bossa przed drugą fazą: zostaje z 1 HP + leczenie
+            game h; h.new_run(1, 12, data::default_difficulty, mods(p)); h.start_stage(1);
+            actor& b = h.enemies[h.boss]; b.awake = true;
+            h.damage_enemy(h.boss, 999, false, "test");
+            CHECK(b.alive && (b.flags & actor_phase) && b.hp == imin(b.max_hp, 1 + b.max_hp * bd.phase_heal / 100));
+            h.debug_skip();   // skrót pokazowy: boss Aktu 0 = boss aktu (premia, Hurtownia, Respekt za akt)
+            CHECK(h.st == status::stage_clear && h.act_cleared && h.respect == data::respect_act_boss * h.score_pct() / 100);
+            h.next_stage(); CHECK(h.stage == F0 && std::strcmp(h.act_numeral(), "I") == 0);
+        }
+        {   // bot przechodzi Akt 0 (zbiera dokumenty)
+            int won_act0 = 0;
+            for(int k = 0; k < 20; ++k)
+            {
+                game b; b.new_run(k % data::classes_count, 300 + k * 13, 0, mods(p));
+                for(int step = 0; step < 3000 && b.st == status::playing && b.stage < F0; ++step) bot_step(b);
+                while(b.st == status::stage_clear && b.stage < F0) { b.next_stage(); for(int step = 0; step < 3000 && b.st == status::playing; ++step) bot_step(b); }
+                won_act0 += b.stage >= F0 || (b.st == status::stage_clear && b.stage == F0 - 1);
+            }
+            CHECK(won_act0 >= 14);
+        }
+        // samouczek: główny na tytule i wyborze zawodu, potem dymki odblokowań (każdy raz)
+        profile t; profile_reset(t); int cls = -1;
+        CHECK(tutorial_pending(t, 0) && tutorial_pending(t, 1) && pending_unlock(t, 0, cls) == -1);
+        int gba = 0, godot = 0; for(int i = 0; i < data::tutorial_steps_count; ++i) { gba += tutorial_step_shown(t, i, false); godot += tutorial_step_shown(t, i, true); }
+        CHECK(gba > 5 && godot == gba + 1);   // klucz z opcjami tylko w Godocie; tryb inwestora jeszcze ukryty
+        tutorial_done(t, 0); tutorial_done(t, 1);
+        CHECK(!tutorial_pending(t, 0) && !tutorial_pending(t, 1) && pending_unlock(t, 0, cls) == -1 && pending_unlock(t, 1, cls) == -1);
+        t.respect_total = 2; CHECK(pending_unlock(t, 0, cls) == unlock_respect); mark_unlock(t, unlock_respect, -1);
+        t.runs = 1; CHECK(pending_unlock(t, 0, cls) == unlock_daily); mark_unlock(t, unlock_daily, -1);
+        CHECK(pending_unlock(t, 0, cls) == -1);
+        record_win(t); CHECK(pending_unlock(t, 1, cls) == unlock_investor); mark_unlock(t, unlock_investor, -1);
+        int gba2 = 0; for(int i = 0; i < data::tutorial_steps_count; ++i) gba2 += tutorial_step_shown(t, i, false);
+        CHECK(gba2 == gba + 1);   // krok o trybie inwestora po odblokowaniu
+        while(pending_unlock(t, 1, cls) == -1 && t.rewards < data::rewards_count) record_win(t);
+        CHECK(pending_unlock(t, 1, cls) == unlock_class && class_reward(cls) && class_unlocked(t, cls));
+        mark_unlock(t, unlock_class, cls); CHECK(pending_unlock(t, 1, cls) != unlock_class || cls >= 0);
+        while(t.rewards < data::rewards_count) record_win(t);
+        for(int k = 0; k < data::classes_count; ++k) { int c2; if(pending_unlock(t, 1, c2) == unlock_class) mark_unlock(t, unlock_class, c2); }
+        CHECK(pending_unlock(t, 1, cls) == -1 && pending_unlock(t, 0, cls) == unlock_act0);
+        mark_unlock(t, unlock_act0, -1); CHECK(pending_unlock(t, 0, cls) == -1);
+        tutorial_reset(t); CHECK(tutorial_pending(t, 0) && tutorial_pending(t, 1) && (t.tutorial & tut_act0));   // powtórka z Jak grać
+        // profil v9 -> v10: kto grał, nie ogląda głównego samouczka; Akt 0 za dotychczasowe wygrane (z dymkiem)
+        profile v; profile_reset(v); std::memcpy(v.magic, "PBRL009", 8);
+        v.runs = 12; v.wins = 9; v.rewards = uint8_t(ai); v.respect_total = 40; v.best = 999; v.tutorial = 0xABCD; v.classes_seen = 0x1234;
+        CHECK(profile_fix(v) && std::strcmp(v.magic, profile_magic) == 0 && v.best == 999 && v.rewards == data::rewards_count && act0_unlocked(v));
+        CHECK(!tutorial_pending(v, 0) && !tutorial_pending(v, 1) && pending_unlock(v, 0, cls) == unlock_act0 && pending_unlock(v, 1, cls) == -1);
+        profile nv; profile_reset(nv); std::memcpy(nv.magic, "PBRL009", 8);
+        CHECK(profile_fix(nv) && tutorial_pending(nv, 0) && nv.rewards == 0 && nv.tutorial == 0);
+        CHECK(sizeof(profile) == 160 && std::strcmp(profile_magic, "PBRL010") == 0);
     }
     if(std::getenv("PB_NO_BALANCE")) { std::printf(fails ? "\n%d FAIL\n" : "\nOK (bez balansu)\n", fails); return fails != 0; }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
@@ -1828,20 +1930,23 @@ int main()
         profile szk = none; for(int i = 0; i < data::upgrades_count; ++i) szk.levels[i] = uint8_t(data::upgrades[i].levels);
         profile full = szk; for(int i = 0; i < data::respect_count; ++i) full.respect_ranks[i] = uint8_t(data::respect[i].ranks);
         profile inv = full; inv.wins = 1; inv.investor = uint8_t((1 << data::investor_count) - 1);
-        long dr0, dr1, dr2, dr3, drx; int k0, k1, k2, k3, kx;
+        profile fullr = full; fullr.rewards = uint8_t(data::rewards_count);   // + wszystkie nagrody za odbiór, w tym Akt 0
+        long dr0, dr1, dr2, dr3, dr4, drx; int k0, k1, k2, k3, k4, kx;
         int w0 = win_rate(mods(none), dr0, k0), w1 = win_rate(mods(szk), dr1, k1), w2 = win_rate(mods(full), dr2, k2), w3 = win_rate(mods(inv), dr3, k3);
+        int w4 = win_rate(mods(fullr), dr4, k4);
         bot_no_coffee = true;
         int wx = win_rate(mods(none), drx, kx), wx1 = win_rate(mods(szk), drx, kx);
         bot_no_coffee = false;
-        std::printf("Normalny: bez meta %d%%, pełne Szkolenia %d%%, + pełny Respekt %d%%, + wszystkie modyfikatory %d%%\n", w0, w1, w2, w3);
+        std::printf("Normalny: bez meta %d%%, pełne Szkolenia %d%%, + pełny Respekt %d%%, + wszystkie modyfikatory %d%%, pełne meta z Aktem 0 %d%%\n", w0, w1, w2, w3, w4);
         std::printf("Kawa (bot): %.2f/budowę, pije w %d%% budów (bez meta); bez picia kawy: %d%% (pełne Szkolenia %d%%)\n",
                     double(dr0) / n, k0 * 100 / n, wx, wx1);
         CHECK(w0 >= 25 && w0 <= 35);   // cele balansu v0.21.49
         CHECK(w1 >= 50 && w1 <= 60);
         CHECK(w2 >= 65 && w2 <= 75);
         CHECK(w3 >= 5 && w3 <= 15);
+        CHECK(w4 >= 60 && w4 <= 70);   // v0.21.49 cz. 3: dłuższa budowa z Aktem 0
         CHECK(wx < w0 && dr0 > 0);     // kawa ma znaczenie
-        (void)dr1; (void)dr2; (void)dr3; (void)k1; (void)k2; (void)k3;
+        (void)dr1; (void)dr2; (void)dr3; (void)dr4; (void)k1; (void)k2; (void)k3; (void)k4;
     }
     std::printf(fails ? "\n%d FAIL\n" : "\nOK - wszystkie testy przeszły\n", fails);
     return fails != 0;

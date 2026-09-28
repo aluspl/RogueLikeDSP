@@ -13,7 +13,8 @@ namespace core
     constexpr int max_respect = 16;
     static_assert(data::classes_count <= max_classes && data::respect_count <= max_respect && data::rewards_count <= 255);
 
-    constexpr char profile_magic[8] = "PBRL009";
+    constexpr char profile_magic[8] = "PBRL010";
+    constexpr char profile_magic_v9[8] = "PBRL009";
     constexpr char profile_magic_v8[8] = "PBRL008";
     constexpr char profile_magic_v7[8] = "PBRL007";
     constexpr char profile_magic_v6[8] = "PBRL006";
@@ -29,6 +30,7 @@ namespace core
     constexpr int profile_v6_size = 88;   // v7 = v6 + codzienna budowa (data, najlepsze wyniki dni)
     constexpr int profile_v7_size = 124;  // v8 = v7 + Respekt, nagrody za odbiór, wygrane i stawki zawodów 8-11
     constexpr int profile_v8_size = 152;  // v9 = v8 + katalog usterek 16-47 (nowe problemy etapów)
+    constexpr int profile_v9_size = 156;  // v10 = v9 + samouczek menu (#25): obejrzane dymki
     constexpr int daily_slots = 5;
     static_assert(data::daily_history <= daily_slots);
     constexpr int max_keepsakes = 8;
@@ -92,6 +94,9 @@ namespace core
         uint8_t best_stake_hi[4];      // rekord stawki zawodów 8-11
         // --- v9: katalog usterek - rodzaje problemów 16-47 (dalszy ciąg catalog)
         uint32_t catalog_hi;
+        // --- v10: samouczek menu - obejrzane dymki (bity tutorial_flag) i zawody z nagród, o których już był dymek
+        uint16_t tutorial;
+        uint16_t classes_seen;
     };
     static_assert(offsetof(profile, badges) == profile_v2_size);
     static_assert(offsetof(profile, kills_total) == profile_v3_size);
@@ -99,7 +104,7 @@ namespace core
     static_assert(offsetof(profile, brigade) == profile_v5_size);
     static_assert(offsetof(profile, daily_d) == profile_v6_size && offsetof(profile, daily_score) == 104);
     static_assert(offsetof(profile, respect) == profile_v7_size && offsetof(profile, respect_ranks) == 132);
-    static_assert(offsetof(profile, catalog_hi) == profile_v8_size && sizeof(profile) == 156);
+    static_assert(offsetof(profile, catalog_hi) == profile_v8_size && offsetof(profile, tutorial) == profile_v9_size && sizeof(profile) == 160);
 
     // Katalog usterek: rodzaje 0-15 w catalog, 16-47 w catalog_hi.
     inline bool catalog_has(const profile& p, int d) { return d < 16 ? (p.catalog >> d) & 1 : (p.catalog_hi >> (d - 16)) & 1; }
@@ -202,14 +207,19 @@ namespace core
         p.rewards = uint8_t(imin(imax(0, p.wins), rewards_available()));
     }
 
+    inline void migrate_v10(profile& p);
+
     inline bool profile_fix(profile& p)
     {
         if(std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0) return clamp_levels(p);
-        if(std::memcmp(p.magic, profile_magic_v8, sizeof p.magic) == 0)   // v8 -> v9: katalog 16-47 od zera
+        bool v9 = std::memcmp(p.magic, profile_magic_v9, sizeof p.magic) == 0;
+        if(v9 || std::memcmp(p.magic, profile_magic_v8, sizeof p.magic) == 0)   // v8 -> v9: katalog 16-47 od zera; v9 -> v10: samouczek
         {
-            std::memset(reinterpret_cast<char*>(&p) + profile_v8_size, 0, sizeof p - profile_v8_size);
+            int keep = v9 ? profile_v9_size : profile_v8_size;
+            std::memset(reinterpret_cast<char*>(&p) + keep, 0, sizeof p - keep);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             clamp_levels(p);
+            migrate_v10(p);
             return true;
         }
         // v7/v6/v5/v4/v3/v2 -> v9: stare pola zostają, nowe od zera; bez wybranej pamiątki - pierwsza odblokowana
@@ -226,6 +236,7 @@ namespace core
             default_keepsake(p);
             clamp_levels(p);
             migrate_v8(p);
+            migrate_v10(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v1, sizeof p.magic) == 0)
@@ -234,10 +245,63 @@ namespace core
             profile_reset(p);
             p.best = best; p.runs = runs; p.wins = wins;
             migrate_v8(p);
+            migrate_v10(p);
             return true;
         }
         profile_reset(p);
         return true;
+    }
+
+    // Akt 0 (Papierologia) z nagrody za odbiór: budowa zaczyna się od jego etapów.
+    inline bool act0_unlocked(const profile& p)
+    {
+        for(int i = 0; i < data::rewards_count && i < p.rewards; ++i) if(data::rewards[i].kind == reward_kind::act) return true;
+        return false;
+    }
+
+    // ------------------------------------------------------------------ samouczek menu (#25)
+    // Pierwsze uruchomienie: dymki po kolei na tytule i wyborze zawodu; potem jeden dymek przy pierwszym odblokowaniu
+    // (Respekt, codzienna budowa, tryb inwestora, Akt 0, nowy zawód). "Pokaż samouczek jeszcze raz" w Jak grać.
+    enum tutorial_flag : uint16_t { tut_title = 1, tut_class = 2, tut_respect = 4, tut_daily = 8, tut_investor = 16, tut_act0 = 32 };
+    enum tutorial_unlock : int { unlock_respect, unlock_daily, unlock_investor, unlock_act0, unlock_class };   // = data::tutorial_unlocks
+    static_assert(data::tutorial_unlocks_count == 5);
+
+    inline bool class_reward(int c);
+    inline bool class_unlocked(const profile& p, int c);
+    inline bool investor_unlocked(const profile& p);
+
+    // Główny samouczek ekranu (0 tytuł, 1 wybór zawodu) jeszcze nieobejrzany.
+    inline bool tutorial_pending(const profile& p, int screen) { return ! (p.tutorial & (screen == 0 ? tut_title : tut_class)); }
+    inline void tutorial_done(profile& p, int screen) { p.tutorial = uint16_t(p.tutorial | (screen == 0 ? tut_title : tut_class)); }
+    inline void tutorial_reset(profile& p) { p.tutorial = uint16_t(p.tutorial & ~(tut_title | tut_class)); }
+    // Kroki samouczka widoczne na ekranie (bez kroków tylko dla Godota na GBA; tryb inwestora dopiero po odblokowaniu).
+    inline bool tutorial_step_shown(const profile& p, int i, bool godot)
+    {
+        const tutorial_step& t = data::tutorial_steps[i];
+        return (godot || ! t.godot_only) && (! t.needs_investor || investor_unlocked(p));
+    }
+    // Dymek odblokowania do pokazania na ekranie (-1 = brak); cls = nowy zawód z nagrody (unlock_class).
+    inline int pending_unlock(const profile& p, int screen, int& cls)
+    {
+        cls = -1;
+        if(tutorial_pending(p, screen)) return -1;   // najpierw główny samouczek
+        if(screen == 0)
+        {
+            if(p.respect_total > 0 && ! (p.tutorial & tut_respect)) return unlock_respect;
+            if(p.runs > 0 && ! (p.tutorial & tut_daily)) return unlock_daily;
+            if(act0_unlocked(p) && ! (p.tutorial & tut_act0)) return unlock_act0;
+            return -1;
+        }
+        if(investor_unlocked(p) && ! (p.tutorial & tut_investor)) return unlock_investor;
+        for(int c = 0; c < data::classes_count; ++c)
+            if(class_reward(c) && class_unlocked(p, c) && ! ((p.classes_seen >> c) & 1)) { cls = c; return unlock_class; }
+        return -1;
+    }
+    inline void mark_unlock(profile& p, int u, int cls)
+    {
+        static constexpr uint16_t bits[4] = { tut_respect, tut_daily, tut_investor, tut_act0 };
+        if(u >= 0 && u < 4) p.tutorial = uint16_t(p.tutorial | bits[u]);
+        if(u == unlock_class && cls >= 0) p.classes_seen = uint16_t(p.classes_seen | (1u << cls));
     }
 
     // Zawód: startowy / kupiony w Szkoleniach (bitmaska) albo z nagrody za odbiór.
@@ -247,6 +311,19 @@ namespace core
         return class_reward(c) ? reward_unlocked(p, reward_kind::cls, c) : (p.classes & (1u << c)) != 0;
     }
     inline bool difficulty_unlocked(const profile& p, int d) { return d < data::difficulties_count - 1 || p.hard; }
+
+    // v9 -> v10: nagroda Akt 0 za dotychczasowe wygrane (wcześniej "wkrótce"); samouczek - kto już grał, nie ogląda
+    // głównego samouczka ani dymków o tym, co już zna (Akt 0 z migracji dostaje dymek).
+    inline void migrate_v10(profile& p)
+    {
+        p.rewards = uint8_t(imax(p.rewards, imin(imax(0, p.wins), rewards_available())));
+        p.tutorial = 0; p.classes_seen = 0;
+        if(p.runs > 0) p.tutorial = uint16_t(tut_title | tut_class | tut_daily);
+        if(p.respect_total > 0) p.tutorial = uint16_t(p.tutorial | tut_respect);
+        if(p.wins > 0) p.tutorial = uint16_t(p.tutorial | tut_investor);
+        for(int c = 0; c < data::classes_count; ++c)
+            if(class_reward(c) && class_unlocked(p, c)) p.classes_seen = uint16_t(p.classes_seen | (1u << c));
+    }
 
     // Koszt kolejnego poziomu ulepszenia; -1 = maksymalny poziom.
     inline int upgrade_cost(const profile& p, int i)
@@ -420,6 +497,7 @@ namespace core
         for(int i = 0; i < data::respect_count; ++i)   // Respekt: kupione rangi
             if(respect_rank(p, i) > 0) add_respect(m, data::respect[i].effect, respect_value(p, i));
         m.gear_slots = gear_slots_mask(p);   // nagrody za odbiór: buty, pas
+        m.act0 = act0_unlocked(p) ? 1 : 0;   // nagroda za odbiór: Akt 0 przed budową
         for(int i = 0; i < data::badges_count; ++i)   // uprawnienia z zdobytych odznak
             if(p.badges & (1u << i)) add_perk(m, data::badges[i].bonus);
         int k = selected_keepsake(p);   // pamiątka zabrana na budowę
@@ -719,13 +797,13 @@ namespace core
     // ------------------------------------------------------------------ harmonogram domu po wygranej
     // Dni etapu z liczby tur (min + tury / turnsPerDay) i data końca etapu, licząc wstecz od daty odbioru.
     inline int schedule_days(const game& g, int s) { return data::schedule_min_days + g.stage_days[s] / data::schedule_turns_per_day; }
-    inline int schedule_total_days(const game& g) { int t = 0; for(int s = 0; s < data::stages_count; ++s) t += schedule_days(g, s); return t; }
-    inline int schedule_total_cost() { int t = 0; for(int s = 0; s < data::stages_count; ++s) t += data::stages[s].cost; return t; }
+    inline int schedule_total_days(const game& g) { int t = 0; for(int s = g.first_stage; s < data::stages_count; ++s) t += schedule_days(g, s); return t; }
+    inline int schedule_total_cost(const game& g) { int t = 0; for(int s = g.first_stage; s < data::stages_count; ++s) t += data::stages[s].cost; return t; }
     // Dzień (days_from_civil) rozpoczęcia etapu s, gdy odbiór był w dniu end_day.
     inline int schedule_start_day(const game& g, int s, int end_day)
     {
         int d = end_day - schedule_total_days(g);
-        for(int i = 0; i < s; ++i) d += schedule_days(g, i);
+        for(int i = g.first_stage; i < s; ++i) d += schedule_days(g, i);
         return d;
     }
 
@@ -747,7 +825,7 @@ namespace core
     // Cały stan gry (game jest trywialnie kopiowalny) za profilem w SRAM. Rozmiar i suma kontrolna
     // odrzucają zapisy uszkodzone i z innej wersji gry.
     static_assert(std::is_trivially_copyable_v<game>);
-    constexpr char run_magic[8] = "PBRUN09";   // 09: 10 etapów, zachowania problemów, mechaniki aktów; 08: Respekt, sloty z nagród
+    constexpr char run_magic[8] = "PBRUN10";   // 10: Akt 0 (pieczątki, druga faza bossa); 09: 10 etapów, zachowania, mechaniki aktów
     constexpr int run_save_offset = 256;
     static_assert(sizeof(profile) <= run_save_offset);
 

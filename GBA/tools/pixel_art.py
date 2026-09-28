@@ -344,6 +344,73 @@ STAGE_ENEMIES = {
 }
 STAGE_ENEMY_ORDER = list(STAGE_ENEMIES)
 
+# v0.21.49 (część 3): Akt 0 „Papierologia” - problemy papierowe i sieciowe (klatki 101-109, druga klatka 110-118).
+# Zawsze przedmioty (kartki, pieczątki, rury), nigdy ludzie. Ostatni: boss Decyzja odmowna (stos pism z pieczątką).
+PRELUDE_ENEMIES = {
+"podpis": [   # kartka z pustym miejscem na podpis (czerwony krzyżyk), ucieka na cienkich nóżkach
+"................","....KKKKKKKK....","....KWWWWWWKK...","....KWggggWWKK..","....KWWWWWWWWK..","....KWKWWKWWWK..",
+"....KWKWWKWWWK..","....KWWWWWWWWK..","....KWRWRWWWWK..","....KWWRWWWWWK..","....KWRWRggggK..","....KWWWWWWWWK..",
+"....KKKKKKKKKK..",".....K.K..K.K...","....KK.K..KK.K..","................"],
+"wniosek": [   # teczka z wnioskiem i znakiem zapytania - raz znika, potem wraca
+"................","................","..KKKKK.........",".KYYYYYKKKKKKK..",".KYYYYYYYYYYYYK.",".KTTTTTTTTTTTTK.",
+".KYYYYYKKKYYYYK.",".KYKKYKYYYKYYYK.",".KYKKYYYYKYYYYK.",".KYYYYYYKYYYYYK.",".KYYYYYYYYYYYYK.",".KYYYKKYYKYYYYK.",
+".KYYYYKKYYYYYYK.",".KTTTTTTTTTTTTK.","..KKKKKKKKKKKK..","................"],
+"termin_odw": [   # kartka z kalendarza z datą w czerwonym kółku i tykającym zegarkiem
+"................","...K..K..K..K...","..KKKKKKKKKKKK..","..KRRRRRRRRRRK..","..KKKKKKKKKKKK..","..KWWWWWWWWWWK..",
+"..KWKWWWWWKWWK..","..KWKWWWWWKWWK..","..KWWWRRRWWWWK..","..KWWRWKWRWWWK..","..KWWRWKKRWWWK..","..KWWRWWWRWWWK..",
+"..KWWWRRRWWWWK..","..KWWWWWWWWWWK..","..KKKKKKKKKKKK..","................"],
+"niezgodnosc": [   # plan (niebieski rysunek) przekreślony na czerwono, rzuca uwagami z daleka
+"................","................",".KKKKKKKKKKKKKK.",".KBBBBBBBBBBBRK.",".KBWWWWWWWWBRBK.",".KBWBBBBBBWRBBK.",
+".KBWBKBBKRBBBBK.",".KBWBKBBRBWBBBK.",".KBWBBBRBBWBBBK.",".KBWBBRBBBWBBBK.",".KBWWRWWWWWBBBK.",".KBBRBBBBBBBBBK.",
+".KBRBBBBBBBBBBK.",".KKKKKKKKKKKKKK.","................","................"],
+"pieczatka": [   # pieczątka: drewniany uchwyt, gumowa stopka z czerwonym tuszem, groźne oczy
+"................","......KKKK......",".....KTTTTK.....",".....KTOTTK.....","......KTTK......","......KTTK......",
+"....KKKKKKKK....","...KTTTTTTTTK...","...KTKKTTKKTK...","...KTTKTTKTTK...","...KTTTTTTTTK...","..KKKKKKKKKKKK..",
+"..KRRRRRRRRRRK..","..KRRWRRRRWRRK..","...KKKKKKKKKK...","................"],
+"rura": [   # pęknięta rura z tryskającą wodą
+"................","........C.......","......C.C.C.....","........C.......","..KKKKKK.KKKKK..",".KllllllKlllllK.",
+"KlWWllllgKlllllK","KlllKllllKllKlgK","KlllKllllKllKlgK","KgggggggggKggggK",".KKKKKKKKKKKKKK.","....K......K....",
+"...KgK....KgK...","...KKK....KKK...","......C.........","....C...C......."],
+"cisnienie": [   # manometr ze wskazówką na zerze - stoi i dopompowuje innych
+"................","......KKKK......",".....KllllK.....","....KKKKKKKK....","..KKWWWWWWWWKK..",".KWWRWWWWWWBWWK.",
+".KWWWWWWWWWWWWK.","KWWWKWWWWKWWWWK.","KWWWKWWWWKWWWWK.","KWRKKWWWWWWWBWK.","KWKKWWWWWWWWWWK.",".KWWWWWKKWWWWK..",
+".KWWWWWWWWWWWK..","..KKWWWWWWWKK...","....KKKKKKK.....","......KgK......."],
+"kabel": [   # zwój kabla z iskrami - koparka w niego trafiła
+"...Y......Y.....","....Y....Y......","..Y..KKKKK...Y..","....KOOOOOK.....","...KOKKKKKOK....","..KOKOOOOOKOK...",
+"..KOKOKKKOKOK...","..KOKOKWKOKOK.Y.","..KOKOKKKOKOK...","..KOKOOOOOKOKKKK","..KOKKKKKKKOOOOK","...KOOOOOOOKKKKK",
+"....KKKKKKKK..Y.","..Y.KWK.KWK.....","....KKK.KKK..Y..","................"],
+"decyzja": [   # boss: stos pism z wielką czerwoną pieczątką ODMOWA i gniewnymi oczami
+".KKKKKKKKKKKKK..",".KWWWWWWWWWWWWK.","KKKKKKKKKKKKKWK.","KWWWWWWWWWWWKWK.","KWKKWWWWWKKWKWK.","KWWKKWWWKKWWKKK.",
+"KWWKKWWWKKWWK...","KWWWWWWWWWWWK...","KRRRRRRRRRRRRK..","KRWRWRWWRWRWRK..","KRWRWRWRRWRWRK..","KRRRRRRRRRRRRK..",
+"KWWWWKKKKWWWWK..","KWggggggggggWK..","KWWWWWWWWWWWWK..","KKKKKKKKKKKKKK.."],
+}
+PRELUDE_ENEMY_ORDER = list(PRELUDE_ENEMIES)
+
+
+def prelude_enemy_frame(index, frame):
+    px = parse(PRELUDE_ENEMIES[PRELUDE_ENEMY_ORDER[index]])
+    if frame == 1:
+        px = [0] * 16 + px[:16 * 15]
+    return px
+
+
+# Dokumenty Aktu 0 (pieczątki, klatki 119-121): podpis, mapa, uzgodnienie - złota poświata, bez oczu (to znajdźki).
+DOCUMENTS = [
+    ["................",".Y..........Y...","....KKKKKKKK....","....KWWWWWWKK...","....KWggggWWWK..","....KWWWWWWWWK..",
+     "....KWggggggWK..","....KWWWWWWWWK..","....KWWWWWBWWK..","....KWWBWBWBWK..","....KWBWBWWWBK..","....KWggggggWK..",
+     "....KWWWWWWWWK..","....KKKKKKKKKK..","..Y..........Y..","................"],   # podpis (niebieski zawijas)
+    ["................","..Y.........Y...","..KKKKKKKKKKKK..","..KGGGBBBGGGGK..","..KGGBBGGGGYGK..","..KGBBGGGGGGGK..",
+     "..KKKKKKKKKKKK..","..KGGGGGBBGGGK..","..KGRRGGBBBGGK..","..KGRRGGGBBGGK..","..KKKKKKKKKKKK..","..KGGGGGGGBBGK..",
+     "..KGGGGGGGGBBK..","..KKKKKKKKKKKK..",".Y..........Y...","................"],   # mapa (zgięta w harmonijkę)
+    ["................",".Y...........Y..","...KKKKKKKKKK...","...KWWWWWWWWKK..","...KWggggggWWK..","...KWWWWWWWWWK..",
+     "...KWgggggWWWK..","...KWWWWRRRWWK..","...KWWWRWWWRWK..","...KWWWRWRWRWK..","...KWWWRWWWRWK..","...KWWWWRRRWWK..",
+     "...KWWWWWWWWWK..","...KKKKKKKKKKK..","..Y.........Y...","................"],   # uzgodnienie (czerwona pieczęć)
+]
+
+
+def document_frame(i):
+    return parse(DOCUMENTS[i])
+
 
 def stage_enemy_frame(index, frame):
     px = parse(STAGE_ENEMIES[STAGE_ENEMY_ORDER[index]])
@@ -814,6 +881,11 @@ MENU_ICONS = [
         "................", "....KKKKKKK.....", "...KPPPPPPPK....", "..KPPPPWPPPPK...", "..KPPPPPPPPPK...",
         "..KPPPWWPPPPK...", "..KPPPPWPPPPK...", "..KPPPPWPPPPK...", "..KPPPPWPPPPK...", "..KPPPWWWPPPK...",
         "...KPPPPPPPK....", "....KKKKKKK.....", "................", "................", "................", "................"],
+    # 24: mechanika Aktu 0 - pieczątki (pieczątka z czerwonym odciskiem)
+    [   # pieczątka
+        "................", ".....KKKK.......", "....KTTTTK......", "....KTOTTK......", ".....KTTK.......",
+        ".....KTTK.......", "...KKKKKKKK.....", "...KTTTTTTK.....", "..KKKKKKKKKK....", "..KRRRRRRRRK....",
+        "..KKKKKKKKKK....", "..........RR....", ".........R..R...", "........R.RR.R..", ".........R..R...", "..........RR...."],
 ]
 
 

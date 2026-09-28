@@ -19,14 +19,14 @@ namespace core
     constexpr int max_hits = 8;         // zdarzenia trafień w jednej turze (dla efektów)
     constexpr int max_walls = 5;        // tymczasowe mury (Ścianka III ma 5 pól)
     constexpr int max_enemy_types = 48;  // rodzaje problemów (katalog: 16 + 32 bity w profilu)
-    constexpr int max_stages = 12;
+    constexpr int max_stages = 12;      // v0.21.49: 10 etapów + 2 Aktu 0
     constexpr int max_gear_slots = 6;   // kask, rękawice, kamizelka + sloty z nagród (buty, pas)
     static_assert(data::gear_slots_count <= max_gear_slots);
 
     enum class tile : uint8_t { wall, floor, stairs };
     enum class status : uint8_t { playing, stage_clear, dead, won };
     enum sight : uint8_t { unknown = 0, remembered = 1, in_view = 2 };   // mgła wojny
-    enum pickup_type : uint8_t { coffee, helmet, plan, tool, gear_box };
+    enum pickup_type : uint8_t { coffee, helmet, plan, tool, gear_box, document };   // document: Akt 0 (arg = data::documents)
 
     inline int iabs(int v) { return v < 0 ? -v : v; }
     inline int imax(int a, int b) { return a > b ? a : b; }
@@ -107,7 +107,7 @@ namespace core
         int8_t grow = 0;        // stopnie wzrostu (zachowanie "grows")
         int8_t timer = 0;       // odnowienie ucieczki / łatania / odepchnięcia; u czekającego na powrót - tury do powrotu
     };
-    enum actor_flag : uint8_t { actor_child = 1, actor_returned = 2, actor_reviving = 4 };
+    enum actor_flag : uint8_t { actor_child = 1, actor_returned = 2, actor_reviving = 4, actor_phase = 8 };   // phase: boss w drugiej fazie
 
     struct temp_wall { int8_t x, y, turns; };   // Ścianka Murarza
 
@@ -165,6 +165,7 @@ namespace core
         int mats_pct = 0;            // materiały z problemów częściej o %
         int second_chance = 0;       // Druga szansa: raz na budowę 1 HP zamiast końca
         int gear_slots = data::gear_base_mask;   // sloty sprzętu w dropach (nagrody: buty, pas)
+        int act0 = 0;                // v0.21.49: Akt 0 (Papierologia) z nagrody za odbiór - budowa zaczyna się od niego
     };
 
     // Tryb inwestora: stawka i premia doświadczenia za zestaw modyfikatorów.
@@ -403,6 +404,17 @@ namespace core
         // v0.21.49 (część 2): wybuch po usunięciu problemu (czerwone pola), strzały z dystansu (efekty warstwy GBA)
         int8_t blast_x = -1, blast_y = -1, blast_timer = 0, blast_dmg = 0;
         uint32_t shot_events = 0;    // bitmaska: którzy wrogowie strzelili w tej turze (warstwa GBA czyta i zeruje)
+        // v0.21.49 (część 3): Akt 0 - pierwszy etap budowy (0 z Aktem 0, inaczej za nim), zebrane dokumenty (pieczątki)
+        int8_t first_stage = 0;
+        uint8_t docs = 0;            // bitmaska zebranych dokumentów (data::documents)
+
+        // Numer etapu dla gracza (1..) i liczba etapów tej budowy (bez Aktu 0, gdy nieodblokowany).
+        int stage_number() const { return stage - first_stage + 1; }
+        int stages_in_run() const { return data::stages_count - first_stage; }
+        const char* act_numeral() const { return data::acts[data::stages[stage].act].numeral; }
+        // Etap we wzorach (błoto, kałuże, porywy, oferta ścieżek) liczony od Fundamentów: Akt 0 nie zmienia wzorów
+        // etapów budowy (Akt 0 ma ujemne numery).
+        int pattern_stage() const { return stage - data::prelude_stages; }
 
         // ------------------------------------------------------------------ mechanika aktu: błoto, porywy, pył
         const act_def& adef() const { return data::acts[data::stages[stage].act]; }
@@ -410,7 +422,7 @@ namespace core
         // Błoto (akt I): stały wzór na podłodze zależny od etapu; wejście kosztuje dodatkową turę. Kładka też na błoto.
         bool mud(int x, int y) const
         {
-            if(! act_is(act_mechanic::mud) || lv.at(x, y) != tile::floor || (x * 5 + y * 11 + stage * 3) % adef().mech_value != 0) return false;
+            if(! act_is(act_mechanic::mud) || lv.at(x, y) != tile::floor || (x * 5 + y * 11 + pattern_stage() * 3) % adef().mech_value != 0) return false;
             for(int i = 0; i < bridges; ++i) if(cheb(x, y, bridge_x[i], bridge_y[i]) <= bridge_reach()) return false;
             return true;
         }
@@ -424,7 +436,7 @@ namespace core
         int gust_dir() const   // kierunek kolejnego porywu: 0 prawo, 1 dół, 2 lewo, 3 góra
         {
             int t = turns - stage_start_turn + gust_in();
-            return (t / imax(1, adef().mech_value) + stage) & 3;
+            return (t / imax(1, adef().mech_value) + pattern_stage()) & 3;
         }
         static constexpr int8_t gust_vec[4][2] = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } };
         static const char* dir_name(int d) { static const char* n[4] = { "w prawo", "w dół", "w lewo", "w górę" }; return n[d & 3]; }
@@ -434,7 +446,7 @@ namespace core
             if(t <= 0) return;
             if(t % v == v - 1) { push(message().add("Poryw wiatru za 1 t. ").add(dir_name(gust_dir())).as(bad)); return; }
             if(t % v != 0) return;
-            int d = (t / v + stage) & 3, nx = hero.x + gust_vec[d][0], ny = hero.y + gust_vec[d][1];
+            int d = (t / v + pattern_stage()) & 3, nx = hero.x + gust_vec[d][0], ny = hero.y + gust_vec[d][1];
             if(lv.passable(nx, ny) && ! occupied(nx, ny))
             {
                 hero.x = int8_t(nx); hero.y = int8_t(ny);
@@ -444,6 +456,10 @@ namespace core
             else push(message().add("Poryw - trzymasz się muru").as(good));
         }
         int dust_sight() const { return act_is(act_mechanic::dust) ? adef().mech_value : 0; }
+        // Pieczątki (Akt 0): na etapie ze schodami leżą dokumenty; dopóki nie zbierzesz wszystkich, schody są zamknięte.
+        int docs_needed() const { return act_is(act_mechanic::stamps) && data::stages[stage].boss < 0 ? adef().mech_value : 0; }
+        int docs_count() const { int n = 0; for(int i = 0; i < data::documents_count; ++i) n += (docs >> i) & 1; return n; }
+        bool stairs_locked() const { return docs_count() < docs_needed(); }
 
         // ------------------------------------------------------------------ zachowania problemów
         bool has_tag(const actor& e, int t) const { return e.def_id >= 0 && (data::enemies[e.def_id].tags & t) != 0; }
@@ -496,7 +512,7 @@ namespace core
         // Deszcz: kałuże na części pól podłogi (stały wzór zależny od etapu); wejście w kałużę = poślizg.
         bool puddle(int x, int y) const
         {
-            if(! weather_is(weather_effect::rain) || lv.at(x, y) != tile::floor || (x * 7 + y * 13 + stage * 5) % wdef().value != 0) return false;
+            if(! weather_is(weather_effect::rain) || lv.at(x, y) != tile::floor || (x * 7 + y * 13 + pattern_stage() * 5) % wdef().value != 0) return false;
             for(int i = 0; i < bridges; ++i) if(cheb(x, y, bridge_x[i], bridge_y[i]) <= bridge_reach()) return false;   // Kładka
             return true;
         }
@@ -661,7 +677,7 @@ namespace core
         const difficulty_def& ddef() const { return data::difficulties[diff]; }
 
         // Wiadomość fabularna na wejściu etapu (przy NG+ pierwszy etap ma własną).
-        const story_msg& stage_story() const { return tier > 0 && stage == 0 ? data::story_ngplus : data::story_stages[stage]; }
+        const story_msg& stage_story() const { return tier > 0 && stage == first_stage ? data::story_ngplus : data::story_stages[stage]; }
 
         bool visible(int x, int y) const { return lv.in(x, y) && fov[y][x] == in_view; }
         bool explored(int x, int y) const { return lv.in(x, y) && fov[y][x] != unknown; }
@@ -770,7 +786,8 @@ namespace core
             hero.max_hp = hero.hp = int16_t(cdef().max_health + mods.hp);
             hero.alive = true;
             cash = mods.cash;
-            start_stage(0);
+            first_stage = int8_t(mods.act0 ? 0 : data::prelude_stages);   // bez nagrody Akt 0 budowa zaczyna się od Fundamentów
+            start_stage(first_stage);
         }
 
         bool occupied(int x, int y) const
@@ -804,7 +821,7 @@ namespace core
             stage_damage = 0; stage_kills = 0; stage_start_turn = turns; boss_wake_damage = -1;
             act_cleared = false; slam_timer = 0; slam_x = slam_y = -1; slam_counter = 0; summon_counter = 0; summons_used = 0;
             helper_called = -1; guard_turns = 0; ally_turns = 0; ally_x = ally_y = -1;   // brygada: raz na etap
-            blast_timer = 0; blast_x = blast_y = -1; shot_events = 0;
+            blast_timer = 0; blast_x = blast_y = -1; shot_events = 0; docs = 0;
             for(auto& row : fov) for(auto& c : row) c = unknown;
             const stage_def& sd = data::stages[stage];
             const room& first = lv.rooms[0];
@@ -844,7 +861,7 @@ namespace core
                 int x, y; random_free_cell_in_room(rm, x, y);
                 pickups[pickups_count++] = { int8_t(x), int8_t(y), uint8_t(i == 0 ? coffee : r.range(0, 2)), true };
             }
-            push(message().add("Etap ").add(stage + 1).add(": ").add(sd.name));
+            push(message().add("Etap ").add(stage_number()).add(": ").add(sd.name));
             if(pd)   // ścieżka z harmonogramu: budżet i materiały od razu
             {
                 push(message().add("Ścieżka: ").add(pd->name));
@@ -855,13 +872,34 @@ namespace core
             if(wdef().effect != weather_effect::none)
                 push(message().add("Pogoda: ").add(wdef().name).add(" (").add(wdef().short_name).add(")").as(wdef().bad ? bad : good));
             stage_event = -1;   // wydarzenie na placu: nie na pierwszym etapie i nie u bossa
-            if(s > 0 && sd.boss < 0 && ! (pd && pd->no_event) && r.range(1, 100) <= data::site_event_chance_pct)
+            if(s > first_stage && sd.boss < 0 && ! (pd && pd->no_event) && r.range(1, 100) <= data::site_event_chance_pct)
             {
                 int e = r.range(0, data::site_events_count - 1);
                 // niekorzystna pogoda i niekorzystne wydarzenie naraz to za dużo: wydarzenie przepada
                 if(! (data::weather_no_bad_stack && wdef().bad && ! data::site_events[e].good)) apply_event(e);
             }
+            place_documents();
             update_fov();
+        }
+
+        // Pieczątki (Akt 0): dokumenty w różnych pokojach (bez pierwszego), na wolnych polach bez znajdziek.
+        void place_documents()
+        {
+            const int n = docs_needed();
+            if(n == 0 || lv.rooms_count < 2) return;
+            const int span = lv.rooms_count - 1, base = r.range(0, span - 1);
+            for(int k = 0; k < n && pickups_count < max_pickups; ++k)
+            {
+                const room& rm = lv.rooms[1 + (base + k * imax(1, span / n)) % span];
+                int x = rm.cx(), y = rm.cy();
+                for(int t = 0; t < 40; ++t)
+                {
+                    int cx = r.range(rm.x, rm.x + rm.w - 1), cy = r.range(rm.y, rm.y + rm.h - 1);
+                    if(lv.at(cx, cy) == tile::floor && ! occupied(cx, cy) && ! pickup_at(cx, cy)) { x = cx; y = cy; break; }
+                }
+                pickups[pickups_count++] = { int8_t(x), int8_t(y), uint8_t(document), true, uint8_t(k) };
+            }
+            push(message().add("Pieczątki: zbierz ").add(n).add(" dokumenty").as(bad));
         }
 
         void spawn(int def_id, int x, int y)
@@ -949,6 +987,7 @@ namespace core
             e.hp = int16_t(e.hp - dmg);
             e.awake = true;
             last_target = ei;
+            if(ei == boss && ed.phase_pct > 0 && ! (e.flags & actor_phase) && e.hp * 100 <= e.max_hp * ed.phase_pct) boss_phase(ei);
             add_hit(e.x, e.y, dmg, false, crit ? hit_crit : hit_normal);
             turn_events |= 1u << ei;
             if(e.hp <= 0 && ei != boss && (ed.tags & tag_returns) && ! (e.flags & actor_returned))   // wraca raz
@@ -976,7 +1015,7 @@ namespace core
                 if(ei == boss)
                 {
                     if(stage_damage == boss_wake_damage && clean_bosses < 255) ++clean_bosses;   // zlecenie Czysta robota
-                    score += (500 + 100 * (stage + 1)) * score_pct() / 100;
+                    score += (500 + 100 * imax(0, pattern_stage() + 1)) * score_pct() / 100;
                     gain_xp(data::xp_boss);
                     slam_timer = 0;
                     if(ed.reward_cash > 0)   // nagroda bossa (Inspekcja: Protokół bez uwag)
@@ -1011,6 +1050,19 @@ namespace core
             }
             else
                 push(message().add(crit ? "KRYT! " : "").add(src).add(": -").add(dmg).add(" (").add(ed.name).add(")").as(crit ? loot : info));
+        }
+
+        // Druga faza bossa (Decyzja odmowna: Odwołanie): raz, gdy HP spadnie do phase_pct% (także ciosem, który by go
+        // usunął) - odzyskuje phase_heal% max HP i od razu wzywa phase_summon problemów.
+        void boss_phase(int ei)
+        {
+            actor& e = enemies[ei];
+            const enemy_def& ed = data::enemies[e.def_id];
+            e.flags = uint8_t(e.flags | actor_phase);
+            int heal = e.max_hp * ed.phase_heal / 100;
+            e.hp = int16_t(imin(e.max_hp, imax(1, e.hp) + heal));
+            push(message().add(ed.phase_name).add("! ").add(ed.name).add(" +").add(heal).add(" HP").as(bad));
+            for(int k = 0; k < ed.phase_summon && summons_used < ed.summon_max; ++k) summon_near(e.x, e.y);
         }
 
         // Akcje gracza. Zwracają true, jeśli zużyły turę.
@@ -1546,7 +1598,7 @@ namespace core
         // Oferta na kolejny etap: dwie różne ścieżki zależne od seeda budowy i etapu (bez losowania z RNG gry).
         int path_offer(int k) const
         {
-            uint32_t h = (run_seed ^ (uint32_t(stage + 1 + tier * 16) * 2654435761u)) * 2246822519u;
+            uint32_t h = (run_seed ^ (uint32_t(pattern_stage() + 1 + tier * 16) * 2654435761u)) * 2246822519u;
             h ^= h >> 15;
             int a = int(h % uint32_t(data::paths_count));
             if(k == 0) return a;
@@ -1614,7 +1666,7 @@ namespace core
             uint8_t arg = 0, trait = 0;
             if(type == gear_box)   // slot losowy, jakość lepsza na późnych etapach
             {
-                int q = r.range(1, 100) + stage * data::gear_stage_bonus + data::rarity_per_luck * luck() + bonus.gear_pct;
+                int q = r.range(1, 100) + imax(0, pattern_stage()) * data::gear_stage_bonus + data::rarity_per_luck * luck() + bonus.gear_pct;
                 int rarity = q >= data::gear_brand_from ? 2 : (q >= data::gear_solid_from ? 1 : 0);
                 arg = uint8_t(random_slot() * 3 + rarity);
                 trait = uint8_t(r.range(0, data::gear_traits_count - 1));
@@ -1689,6 +1741,12 @@ namespace core
                 }
                 else if(p.type == helmet) { ++def_bonus; push(message().add("Nowy kask: obrona +1").as(loot)); }
                 else if(p.type == plan) { ++dmg_bonus; push(message().add("Projekt wykonawczy: obrażenia +1").as(loot)); }
+                else if(p.type == document)   // pieczątki: komplet otwiera schody
+                {
+                    docs = uint8_t(docs | (1u << p.arg));
+                    push(message().add("Dokument: ").add(data::documents[p.arg]).add(" (").add(docs_count()).add("/").add(docs_needed()).add(")").as(loot));
+                    if(! stairs_locked()) push(message().add("Komplet pieczątek! Schody otwarte").as(good));
+                }
                 else if(p.type == gear_box)
                 {
                     add_material(r.range(0, data::materials_count - 1), data::material_gear_box);   // w paczce też materiał
@@ -1991,7 +2049,9 @@ namespace core
             if(st == status::playing)
                 for(int i = 0; i < enemies_count && st == status::playing; ++i)
                     if(enemies[i].alive) enemy_act(i);
-            if(st == status::playing && hero.x == stairs_x && hero.y == stairs_y)
+            if(st == status::playing && hero.x == stairs_x && hero.y == stairs_y && stairs_locked())
+                push(message().add("Schody zamknięte: dokumenty ").add(docs_count()).add("/").add(docs_needed()).as(bad));
+            else if(st == status::playing && hero.x == stairs_x && hero.y == stairs_y)
             {
                 st = status::stage_clear;
                 finish_stage();
@@ -2010,8 +2070,8 @@ namespace core
         void debug_skip()
         {
             if(st != status::playing) return;
-            if(boss >= 0 && enemies[boss].alive) { enemies[boss].hp = 1; hero_attack(boss); }
-            else if(stairs_x >= 0) { hero.x = int8_t(stairs_x); hero.y = int8_t(stairs_y); end_turn(); }
+            if(boss >= 0 && enemies[boss].alive) { enemies[boss].hp = 1; enemies[boss].flags = uint8_t(enemies[boss].flags | actor_phase); hero_attack(boss); }
+            else if(stairs_x >= 0) { docs = uint8_t((1u << docs_needed()) - 1); hero.x = int8_t(stairs_x); hero.y = int8_t(stairs_y); end_turn(); }
         }
 
         // Przejście do kolejnego etapu (po ekranie harmonogramu) wybraną ścieżką. Przerwa na kawę: +5 HP.
@@ -2031,7 +2091,7 @@ namespace core
             ++tier;
             for(auto& e : enemies) e = actor();
             hero.hp = hero.max_hp;
-            start_stage(0);
+            start_stage(first_stage);
             push(message().add("Kolejna budowa! Poziom ").add(tier + 1));
             return true;
         }

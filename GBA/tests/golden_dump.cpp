@@ -49,6 +49,12 @@ static void bot_step(game& g)
     static int hd[map_h][map_w], td[map_h][map_w];
     bot_cost(g, g.hero.x, g.hero.y, hd);   // koszt drogi (błoto droższe)
     int tx = g.stairs_x, ty = g.stairs_y, best = 999999;
+    if(g.stairs_locked())   // pieczątki (Akt 0): najpierw najbliższy dokument, potem schody
+    {
+        int bdoc = 999999;
+        for(int i=0;i<g.pickups_count;++i){ const pickup& p=g.pickups[i]; int dd=hd[p.y][p.x];
+            if(p.active&&p.type==document&&dd>=0&&dd<bdoc){bdoc=dd;tx=p.x;ty=p.y;} }
+    }
     for(int i=0;i<g.enemies_count;++i){ auto& e=g.enemies[i]; int dd=hd[e.y][e.x]; if(e.alive&&dd>=0&&dd<best&&(dd<32||g.stairs_x<0)){best=dd;tx=e.x;ty=e.y;} }
     bool has_target = tx>=0 && hd[ty][tx]>=0;
     if(has_target) bot_cost(g, tx, ty, td);
@@ -160,6 +166,8 @@ static uint32_t digest(const game& g)
     f.add(g.respect); f.add(g.dmg_carry); f.add(g.taken_carry); f.add(g.second_used);
     // v0.21.49 cz. 2: wybuch, porywy (kolejny poryw), pole widzenia z pyłem
     f.add(g.blast_x); f.add(g.blast_y); f.add(g.blast_timer); f.add(g.blast_dmg); f.add(g.gust_in()); f.add(g.sight_radius());
+    // v0.21.49 cz. 3: Akt 0 - pierwszy etap, dokumenty (pieczątki)
+    f.add(g.first_stage); f.add(g.docs); f.add(g.stairs_locked());
     for(int i = 0; i < max_enemy_types; ++i) f.add(g.kills_by_type[i]);
     return f.h;
 }
@@ -217,6 +225,8 @@ static void snapshot(const game& g, int step)
     w(","); key("offer"); w("["); wi(g.offer_slot); w(","); wi(g.offer_rarity); w(","); wi(g.offer_trait); w("]");
     w(","); key("respect"); w("["); wi(g.respect); w(","); wi(g.stage_respect()); w(","); wi(g.dmg_carry); w(","); wi(g.taken_carry); w(",");
     wi(g.second_used); w(","); wi(g.dodge_pct()); w(","); wi(g.coffee_heal()); w(","); wi(g.bonus.gear_slots); w(","); wi(g.bonus.tools); w("]");
+    w(","); key("act0"); w("["); wi(g.first_stage); w(","); wi(g.docs); w(","); wi(g.docs_needed()); w(","); wi(g.stairs_locked()); w(",");
+    wi(g.stage_number()); w(","); wi(g.stages_in_run()); w("]");
     w(","); key("heroStatus"); w("["); for(int i = 0; i < 5; ++i) { if(i) w(","); wi(g.hero_status[i]); } w("]");
     w(","); key("killsByType"); w("["); for(int i = 0; i < max_enemy_types; ++i) { if(i) w(","); wi(g.kills_by_type[i]); } w("]");
     w(","); key("rooms"); w("[");
@@ -285,6 +295,7 @@ static void profile_json(const profile& p)
     w(","); key("respect"); w("["); wi(p.respect); w(","); wi(p.respect_total); w(","); wi(p.run_respect); w(","); wi(p.rewards); w(",");
     wi(p.class_wins_hi); w("]");
     w(","); key("catalogHi"); wi(p.catalog_hi);
+    w(","); key("tutorial"); w("["); wi(p.tutorial); w(","); wi(p.classes_seen); w("]");
     w(","); key("sram"); hex_bytes(reinterpret_cast<const char*>(&p), sizeof p);   // profil bajt po bajcie jak w SRAM
     w("}");
 }
@@ -333,6 +344,9 @@ int main(int argc, char** argv)
     sc.push_back({ 1, 5252u, 1, true, false, false, false, 4000, 0, 0, 1, 0, 0, 0, 0, 1, 3 });
     sc.push_back({ 4, 5353u, 0, false, true, true, true, 6000, 0, 0, 0, 0, 0, 1, 0, 0, all_rewards });
     sc.push_back({ 1, 5454u, 2, false, false, false, false, 4000, 0, 0, 1, 0, 0, 0, 0, 1, 0 });            // Trudny: Druga szansa, potem koniec
+    // v0.21.49 cz. 3: Akt 0 (nagroda za odbiór) - pieczątki, Decyzja odmowna z drugą fazą; bot z testów i "smart"
+    sc.push_back({ 0, 4900u, 1, false, false, false, false, 4000, 0, 0, 1, 0, 0, 0, 0, 0, all_rewards });
+    sc.push_back({ 5, 4901u, 0, true, true, true, false, 5000, 0, 0, 0, 0, 0, 1, 0, 1, all_rewards });
 
     for(size_t si = 0; si < sc.size(); ++si)
     {

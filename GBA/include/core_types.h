@@ -78,6 +78,11 @@ namespace core
         const char* reward_title = "";   // baner nagrody, np. "Protokół bez uwag"
         int8_t material = -1;         // materiał z usuniętego problemu (data::materials), -1 = losowy
         uint16_t tags = 0;            // v0.21.49: zachowania (bity core::behavior), łączone dowolnie
+        // druga faza bossa (Decyzja odmowna: Odwołanie) - raz przy phase_pct% HP: +phase_heal% max HP i phase_summon wezwań
+        int8_t phase_pct = 0;
+        int8_t phase_heal = 0;
+        int8_t phase_summon = 0;
+        const char* phase_name = "";
     };
 
     // Zachowania problemów budowy (pole "behaviors" wroga; parametry w data::behavior_*).
@@ -109,8 +114,8 @@ namespace core
     };
 
     // Mechanika aktu (v0.21.49): akt I błoto (wejście kosztuje turę), akt II porywy wiatru (spychają o pole),
-    // akt III pył (mniejsze pole widzenia).
-    enum class act_mechanic : uint8_t { none, mud, gust, dust };
+    // akt III pył (mniejsze pole widzenia), Akt 0 pieczątki (dokumenty na etapie otwierają schody).
+    enum class act_mechanic : uint8_t { none, mud, gust, dust, stamps };
 
     struct act_def             // akt budowy: kilka etapów zakończonych bossem, potem Hurtownia
     {
@@ -118,10 +123,12 @@ namespace core
         int8_t bonus_per_stage;   // premia (zł) za ukończenie aktu: za każdy etap aktu
         int8_t bonus_per_kill;    // ... i za każdy usunięty problem w akcie
         act_mechanic mechanic = act_mechanic::none;
-        int8_t mech_value = 0;    // błoto: 1 pole na tyle; porywy: co tyle tur; pył: -widzenie
+        int8_t mech_value = 0;    // błoto: 1 pole na tyle; porywy: co tyle tur; pył: -widzenie; pieczątki: dokumenty
         const char* mech_name = "";
         const char* mech_short = "";
         const char* mech_info = "";
+        const char* numeral = "";  // numer aktu dla gracza ("0", "I", "II", "III")
+        bool prelude = false;      // akt wstępny (Akt 0): w budowie dopiero po nagrodzie za odbiór
     };
 
     enum class shop_effect : uint8_t { heal, gear, tool, maxhp, ability, def, thermos };
@@ -201,12 +208,12 @@ namespace core
     };
 
     // Nagroda za odbiór (jak odblokowania w Slay the Spire): każda wygrana odblokowuje kolejną z listy.
-    enum class reward_kind : uint8_t { tool, gear, cls, soon };
+    enum class reward_kind : uint8_t { tool, gear, cls, soon, act };
 
     struct reward_def
     {
         reward_kind kind;
-        int8_t index;          // narzędzie (data::tools), slot sprzętu, zawód; -1 = wkrótce
+        int8_t index;          // narzędzie (data::tools), slot sprzętu, zawód, akt (data::acts); -1 = wkrótce
         const char* name;
         const char* desc;
     };
@@ -215,6 +222,18 @@ namespace core
     {
         const char* from;
         const char* lines[3];
+    };
+
+    // Samouczek menu (#25): dymek Kierownika nad elementem tytułu (screen 0) albo wyboru zawodu (1).
+    struct tutorial_step
+    {
+        const char* id;
+        const char* title;
+        story_msg msg;         // nadawca + 3 linie dymka
+        const char* gba;       // klawisz na GBA ("" = tylko Godot)
+        int8_t screen;
+        bool godot_only;       // np. klucz z opcjami
+        bool needs_investor;   // tylko po odblokowaniu trybu inwestora
     };
 
     // Wydarzenie na placu: losowy SMS na starcie etapu (nie pierwszego i nie z bossem) z modyfikatorem etapu.

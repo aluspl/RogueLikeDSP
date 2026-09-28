@@ -67,6 +67,8 @@
 #include "bn_bg_palette_items_stage_palettes_7.h"
 #include "bn_bg_palette_items_stage_palettes_8.h"
 #include "bn_bg_palette_items_stage_palettes_9.h"
+#include "bn_bg_palette_items_stage_palettes_10.h"
+#include "bn_bg_palette_items_stage_palettes_11.h"
 
 #include "core.h"
 #include "meta.h"
@@ -101,10 +103,13 @@ namespace
     constexpr int frame_anim_b = 27;     // + klatka zawodu/wroga (0..14) = druga klatka animacji
 
     // druga klatka: zawody/wrogowie 0-14 -> +27, bossowie aktów 46-47 -> 48-49, Inspekcja 50 -> 51, zawody z nagród 52-54 -> 55-57,
-    // problemy etapów 61-80 -> 81-100
+    // problemy etapów 61-80 -> 81-100, Akt 0: problemy i Decyzja odmowna 101-109 -> 110-118
     constexpr int frame_stage_enemy = 61, stage_enemies = 20;
+    constexpr int frame_prelude_enemy = 101, prelude_enemies = 9;
+    constexpr int frame_document = 119;   // dokumenty Aktu 0 (podpis, mapa, uzgodnienie)
     int anim_b(int frame)
     {
+        if(frame >= frame_prelude_enemy) return frame + prelude_enemies;
         if(frame >= frame_stage_enemy) return frame + stage_enemies;
         return frame < 15 ? frame + frame_anim_b : (frame < 48 ? frame + 2 : (frame < 52 ? frame + 1 : frame + 3));
     }
@@ -116,6 +121,8 @@ namespace
     constexpr int icon_respect = 19;
     constexpr int icon_act = 20;   // + mechanika aktu - 1 (błoto, porywy, pył)
     constexpr int icon_stats = 23;
+    constexpr int icon_stamps = 24;   // mechanika Aktu 0: pieczątki
+    int act_icon_frame(core::act_mechanic m) { return m == core::act_mechanic::stamps ? icon_stamps : icon_act + core::imax(0, int(m) - 1); }
     // Zachowania problemu, np. "strzela z dystansu, ucieka" (karta wroga, Katalog usterek).
     core::message behaviors_line(int def)
     {
@@ -129,6 +136,7 @@ namespace
     {
         if(r.kind == core::reward_kind::tool) return r.index == data::tools_count - 1 ? 16 : 15;
         if(r.kind == core::reward_kind::gear) return data::gear[r.index * 3].stat == core::gear_stat::thermos ? 18 : 17;
+        if(r.kind == core::reward_kind::act) return icon_stamps;
         return 14;
     }
 
@@ -140,6 +148,7 @@ namespace
     {
         if(p.type == core::tool) return frame_toolbox;
         if(p.type == core::gear_box) return frame_gear + p.arg % 3;
+        if(p.type == core::document) return frame_document + p.arg;
         return frame_coffee + p.type;
     }
 
@@ -319,6 +328,8 @@ namespace
         return bn::color((r1 + (r2 - r1) * t / max) >> 3, (g1 + (g2 - g1) * t / max) >> 3, (b1 + (b2 - b1) * t / max) >> 3);
     }
 
+    void title_tutorial(app& a);   // samouczek menu na tytule (niżej, przy telefonie)
+
     // ------------------------------------------------------------------ ekran tytułowy
     scene run_title(app& a)
     {
@@ -326,6 +337,7 @@ namespace
         bn::regular_bg_ptr bg = bn::regular_bg_items::title.create_bg(8, 48);   // lewy górny róg obrazu = róg ekranu
         bn::bg_palette_color_hbe_ptr gradient = make_gradient(bg, screen_info::title_bg_index);
         play_song(song::title);
+        title_tutorial(a);   // pierwsze uruchomienie: dymki po kolei; potem dymki nowości (Respekt, budowa dnia, Akt 0)
         text_sprites prompt, record;
         a.text.set_center_alignment();
         if(a.save.best > 0)
@@ -399,8 +411,10 @@ namespace
         }
 
         // Kafel pola z uwzględnieniem mgły wojny: 0 = nieznane (czarne).
-        // Kafle aktu: akt I 1-10, akt II 11-20, akt III 21-30 (ziemia i bloczki / deski i cegła / płytki i tynk).
-        static int act_tile(const core::game& g, int t) { return t == 0 ? 0 : t + 10 * data::stages[g.stage].act; }
+        // Kafle aktu: akt I 1-10, akt II 11-20, akt III 21-30 (ziemia i bloczki / deski i cegła / płytki i tynk);
+        // Akt 0: 31-40 biuro z segregatorami (Działka i pozwolenie), 41-50 wykop z rurami (Przyłącza).
+        static int tile_set(const core::game& g) { return g.stage < data::prelude_stages ? 3 + g.stage : data::stages[g.stage].act; }
+        static int act_tile(const core::game& g, int t) { return t == 0 ? 0 : t + 10 * tile_set(g); }
         static int tile_of(const core::game& g, int x, int y, int& palette)
         {
             palette = light_level(g, x, y);
@@ -481,7 +495,7 @@ namespace
         luck1.add("SZCZ: kryt ").add(data::crit_base_pct).add("%+").add(data::crit_per_luck_pct).add("%/pkt, unik");
         luck2.add(data::dodge_per_luck_pct).add("%/pkt (maks. ").add(data::dodge_max_pct).add("%), łupy +").add(data::drop_per_luck_pct).add("%.");
         const char* pages[pages_count][7] = {
-            { "10 etapów w 3 aktach, każdy", "kończy boss. Schody = dalej.", "D-pad: ruch i atak wręcz",
+            { "3 akty (10 etapów), po nagrodzie", "Akt 0. Boss kończy akt.", "D-pad: ruch i atak wręcz",
               "A: atak (trzymaj: celuj)", "B: czekaj (trzymaj: podgląd)", "R: moc zawodu  L: mapa",
               "START: akcje  SELECT: telefon" },
             { "Pogoda dnia: ikona w HUD,", "skutek w telefonie (Zadania).", "Brygada raz na etap za zł:",
@@ -490,7 +504,7 @@ namespace
               "Tytuł, R: budowa dnia (ustaw", "datę) - dla wszystkich ta sama." },
             { "Respekt za każdy etap (boss", "więcej) zostaje po porażce.", "Telefon profilu, Koszty,", "SELECT: Respekt - stałe",
               "premie z rangami. Każda wygrana", "to nagroda za odbiór: sprzęt,", "narzędzia, nowe zawody." },
-            { "Każdy akt ma swoją mechanikę:", "I: błoto - wejście = tura,", "II: porywy wiatru spychają,", "III: pył - widzisz mniej.",
+            { "Mechanika aktu: 0 pieczątki -", "3 dokumenty otwierają schody,", "I błoto (wejście = tura), II", "porywy spychają, III pył.",
               "Problemy strzelają, dzielą się,", "wybuchają (czerwone pola -", "odejdź!), rosną i wracają." },
             { "SIŁ/ZRĘ/INT: +1 obr. co 2 pkt", "(tylko statystyka broni).", "OBR: -1 obrażeń co 2 pkt.", luck1.s, luck2.s,
               "Wybór zawodu: START = opis,", "telefon: Start, A = premie." } };
@@ -513,6 +527,22 @@ namespace
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         page_help(a);
         if(! core::has_flag(a.save, core::help_seen)) { core::set_flag(a.save, core::help_seen); bn::sram::write(a.save); }
+        if(a.after_help == scene::title)   // z tytułu: samouczek menu jeszcze raz (#25)
+        {
+            page_sprites t;
+            a.text.set_center_alignment();
+            a.text.generate(0, -70, "Samouczek menu", t);
+            a.text.set_left_alignment();
+            const char* lines[] = { "Dymki Kierownika Marka", "pokazują po kolei, co jest", "na tytule i na wyborze", "zawodu (klawisz i opis)." };
+            for(int i = 0; i < 4; ++i) a.text.generate(-108, -48 + i * 16, lines[i], t);
+            a.text.set_center_alignment();
+            a.text.generate(0, 40, "A: pokaż samouczek jeszcze raz", t);
+            a.text.generate(0, 72, "B: wróć", t);
+            wait_release();
+            while(! bn::keypad::a_pressed() && ! bn::keypad::b_pressed() && ! bn::keypad::select_pressed()) next_frame();
+            if(bn::keypad::a_pressed()) { core::tutorial_reset(a.save); bn::sram::write(a.save); }
+            wait_release();
+        }
         return leave(a.after_help);
     }
 
@@ -679,22 +709,165 @@ namespace
         ph.canvas->rounded(1, 4, 28, 12, phone_tile::fill_card, phone_tile::corner_card);
     }
 
+    // ------------------------------------------------------------------ samouczek menu (#25)
+    // Dymek Kierownika Marka jak powiadomienie PlanBudowlany nad przyciemnionym ekranem: półprzezroczysta ciemna
+    // warstwa z "dziurą" nad omawianym elementem (reszta przygaszona) i karta z tekstem z data::tutorial_steps
+    // (te same teksty co w Godocie). A - dalej, B - pomiń resztę, START przy kroku o statystykach - otwiera ich opis.
+    struct coach_hole { int8_t tx, ty, tw, th; bool top; };   // podświetlony prostokąt (kafle 8x8); dymek u góry / na dole
+    bool same(const char* x, const char* y) { while(*x && *x == *y) { ++x; ++y; } return *x == *y; }   // bez strcmp (Butano bez libc)
+
+    struct coach
+    {
+        bn::unique_ptr<phone_canvas> dim, card;
+        bn::regular_bg_ptr dim_bg, card_bg;
+        bn::regular_bg_map_ptr dim_map, card_map;
+        bn::sprite_ptr avatar;
+        page_sprites t;
+
+        coach() :
+            dim(new phone_canvas()), card(new phone_canvas()),
+            dim_bg(make_canvas_bg(*dim)), card_bg(make_canvas_bg(*card)),
+            dim_map(dim_bg.map()), card_map(card_bg.map()),
+            avatar(bn::sprite_items::actors.create_sprite(0, 0, data::classes[0].frame))   // Kierownik Marek
+        {
+            dim_bg.set_priority(0); dim_bg.set_z_order(10); dim_bg.set_blending_enabled(true);
+            card_bg.set_priority(0); card_bg.set_z_order(-10);
+            avatar.set_bg_priority(0); avatar.set_z_order(-120);
+            bn::blending::set_transparency_alpha(bn::fixed(0.66));
+        }
+
+        void text(app& a, int px, int py, const char* s, ink i, int align = -1)
+        {
+            a.text.set_palette_item(ink_palette(i));
+            a.text.set_bg_priority(0);
+            a.text.set_z_order(-120);
+            if(align < 0) a.text.set_left_alignment();
+            else if(align > 0) a.text.set_right_alignment();
+            else a.text.set_center_alignment();
+            a.text.generate(px - 120, py - 72, s, t);
+        }
+
+        int pill(app& a, int tx_end, int ty, const char* s, bool brand)   // pastylka na karcie (szerokość z tekstu); zwraca pierwszy kafel
+        {
+            int tw = (a.text.width(s) + 15) / 8 + 1, tx = tx_end - tw;
+            card->rounded(tx, ty, tw, 2, brand ? phone_tile::fill_brand : phone_tile::fill_group, brand ? phone_tile::corner_brand : phone_tile::corner_group);
+            text(a, tx * 8 + tw * 4, ty * 8, s, brand ? ink::white : ink::brand, 0);
+            return tx;
+        }
+
+        // Karta: awatar i tytuł, pastylka (np. "2/6" albo "Nowość"), 3 linie dymka, klawisz na GBA i A / B.
+        void show(app& a, const core::tutorial_step& s, const char* counter, const coach_hole& h, bool link)
+        {
+            dim->clear(); card->clear(); t.clear();
+            for(int y = 0; y < 20; ++y)
+                for(int x = 0; x < 30; ++x)
+                    if(! (x >= h.tx && x < h.tx + h.tw && y >= h.ty && y < h.ty + h.th)) dim->set(x, y, phone_tile::fill_dark);
+            const int ty = h.top ? 0 : 9, py = ty * 8;
+            card->rounded(1, ty, 28, 11, phone_tile::fill_card, phone_tile::corner_card);
+            card->rounded(2, ty + 3, 26, 6, phone_tile::fill_group, phone_tile::corner_group);   // dymek wiadomości
+            avatar.set_position(20 - 120, py + 16 - 80);
+            text(a, 32, py + 8, s.title, ink::brand);
+            pill(a, 28, ty + 1, counter, false);
+            for(int i = 0; i < 3; ++i) text(a, 22, py + 26 + i * 15, s.msg.lines[i], ink::dark);
+            if(s.gba[0]) pill(a, 2 + (a.text.width(s.gba) + 15) / 8 + 1, ty + 9, s.gba, true);   // klawisz na GBA
+            text(a, 226, py + 72, link ? "START: opis  A: dalej" : "A: dalej  B: pomiń", ink::dim, 1);
+            dim_map.reload_cells_ref();
+            card_map.reload_cells_ref();
+        }
+    };
+
+    // Kroki samouczka ekranu (0 tytuł, 1 wybór zawodu): hole_of(id) - co podświetlić, on_link() - START przy kroku
+    // o statystykach (opis statystyk; dymek na chwilę znika, bo telefon potrzebuje dwóch warstw tła).
+    template<class HoleFn, class LinkFn>
+    void run_tutorial(app& a, int screen, HoleFn hole_of, LinkFn on_link)
+    {
+        const bn::sprite_palette_item ink0 = a.text.palette_item();
+        const int prio0 = a.text.bg_priority(), z0 = a.text.z_order();
+        int ids[data::tutorial_steps_count], n = 0;
+        for(int i = 0; i < data::tutorial_steps_count; ++i)
+            if(data::tutorial_steps[i].screen == screen && core::tutorial_step_shown(a.save, i, false)) ids[n++] = i;
+        bn::optional<coach> c;
+        for(int k = 0; k < n; ++k)
+        {
+            const core::tutorial_step& s = data::tutorial_steps[ids[k]];
+            const bool link = same(s.id, "stats");
+            core::message cnt; cnt.add(k + 1).add("/").add(n);
+            if(! c) c.emplace();
+            c->show(a, s, cnt.s, hole_of(s.id), link);
+            bn::sound_items::sfx_notify.play(bn::fixed(0.6));
+            wait_release();
+            int res = 0;   // 1 dalej, 2 pomiń
+            while(! res)
+            {
+                if(bn::keypad::a_pressed()) res = 1;
+                else if(bn::keypad::b_pressed()) res = 2;
+                else if(link && bn::keypad::start_pressed())
+                {
+                    c.reset();
+                    a.text.set_palette_item(ink0); a.text.set_bg_priority(prio0); a.text.set_z_order(z0);
+                    on_link();
+                    c.emplace();
+                    c->show(a, s, cnt.s, hole_of(s.id), link);
+                }
+                next_frame();
+            }
+            bn::sound_items::sfx_menu.play();
+            if(res == 2) break;
+        }
+        c.reset();
+        a.text.set_palette_item(ink0); a.text.set_bg_priority(prio0); a.text.set_z_order(z0);
+        core::tutorial_done(a.save, screen);
+        bn::sram::write(a.save);
+        wait_release();
+    }
+
+    // Dymki przy pierwszym odblokowaniu (Respekt, codzienna budowa, tryb inwestora, Akt 0, nowy zawód) - po jednym.
+    template<class HoleFn>
+    void run_unlocks(app& a, int screen, HoleFn hole_of)
+    {
+        const bn::sprite_palette_item ink0 = a.text.palette_item();
+        const int prio0 = a.text.bg_priority(), z0 = a.text.z_order();
+        int cls = -1;
+        for(int u = core::pending_unlock(a.save, screen, cls); u >= 0; u = core::pending_unlock(a.save, screen, cls))
+        {
+            const core::tutorial_step& s = data::tutorial_unlocks[u];
+            {
+                coach c;
+                c.show(a, s, cls >= 0 ? clip(data::classes[cls].name, 12).c_str() : "Nowość", hole_of(s.id), false);
+                bn::sound_items::sfx_notify.play(bn::fixed(0.7));
+                wait_release();
+                while(! bn::keypad::a_pressed() && ! bn::keypad::b_pressed() && ! bn::keypad::start_pressed()) next_frame();
+            }
+            core::mark_unlock(a.save, u, cls);
+            bn::sram::write(a.save);
+            a.text.set_palette_item(ink0); a.text.set_bg_priority(prio0); a.text.set_z_order(z0);
+            wait_release();
+        }
+    }
+
+    void title_tutorial(app& a)
+    {
+        auto hole = [](const char*) { return coach_hole{ 0, 0, 0, 0, false }; };   // tytuł: klawisz na karcie, logo przygaszone
+        if(core::tutorial_pending(a.save, 0)) run_tutorial(a, 0, hole, [] {});
+        run_unlocks(a, 0, hole);
+    }
+
     void tab_tasks(app& a, phone_screen& ph, page_sprites& t)   // Zadania = harmonogram budowy
     {
         const core::game& g = *a.g;
-        core::message sub; sub.add("Etap ").add(g.stage + 1).add("/").add(data::stages_count);
+        core::message sub; sub.add("Etap ").add(g.stage_number()).add("/").add(g.stages_in_run());
         if(g.stage_path >= 0) sub.add(", ").add(data::paths[g.stage_path].short_name);   // wybrana ścieżka
         else sub.add(", ").add(g.score).add(" pkt");
         phone_header(a, ph, t, tab_names[0], sub.s);
         phone_canvas& c = *ph.canvas;
-        int first = core::imax(0, core::imin(g.stage - 1, data::stages_count - 3));   // okno 3 etapów wokół bieżącego
+        int first = core::imax(int(g.first_stage), core::imin(g.stage - 1, data::stages_count - 3));   // okno 3 etapów wokół bieżącego
         for(int r = 0; r < 3 && first + r < data::stages_count; ++r)
         {
             int i = first + r;
             bool done = i < g.stage || (i == g.stage && g.st == core::status::won);
             bool cur = i == g.stage && ! done;
             stripe(c, r, done ? phone_tile::stripe_done : (cur ? phone_tile::stripe_prog : phone_tile::stripe_todo));
-            core::message m; m.add(i + 1).add(". ").add(data::stages[i].name);
+            core::message m; m.add(i - g.first_stage + 1).add(". ").add(data::stages[i].name);
             const char* state = done ? "Gotowe" : (cur ? "W trakcie" : "Do zrob.");
             phone_text(a, t, list_x, row_py(r), fit(a, m.s, pill_room(state)).c_str(), done ? ink::dim : ink::dark);
             phone_pill(a, c, t, pill_end, row_ty(r), state, done ? pill::done : (cur ? pill::prog : pill::gray));
@@ -704,6 +877,8 @@ namespace
             stripe(c, 3, phone_tile::stripe_late);
             core::message am;
             if(g.gust_in() > 0) am.add("Poryw za ").add(g.gust_in()).add(" t. ").add(core::game::dir_name(g.gust_dir()));
+            else if(g.docs_needed() > 0)   // pieczątki: dokumenty otwierają schody
+                am.add(g.stairs_locked() ? "Dokumenty " : "Schody otwarte ").add(g.docs_count()).add("/").add(g.docs_needed());
             else am.add(ad.mech_name);
             phone_text(a, t, list_x, row_py(3), fit(a, am.s, pill_room(ad.mech_short)).c_str(), ink::dark);
             phone_pill(a, c, t, pill_end, row_ty(3), ad.mech_short, pill::late);
@@ -789,7 +964,7 @@ namespace
         sub.add(", ").add(g.cash).add(" zł");
         phone_header(a, ph, t, tab_names[2], sub.s);
         phone_canvas& c = *ph.canvas;
-        core::message r0; r0.add("Etap ").add(g.stage + 1).add(": ").add(data::stages[g.stage].name);
+        core::message r0; r0.add("Etap ").add(g.stage_number()).add(": ").add(data::stages[g.stage].name);
         phone_text(a, t, list_x, row_py(0), fit(a, r0.s, pill_room("W trakcie")).c_str(), ink::dark);
         phone_pill(a, c, t, pill_end, row_ty(0), "W trakcie", pill::prog);
         stripe(c, 0, phone_tile::stripe_prog);
@@ -1276,14 +1451,21 @@ namespace
     void stage_card(app& a)
     {
         const core::game& g = *a.g;
-        core::message sub; sub.add("Akt ").add(roman(data::stages[g.stage].act)).add(", ").add(g.stage + 1).add("/").add(data::stages_count);
+        core::message sub; sub.add("Akt ").add(g.act_numeral()).add(", ").add(g.stage_number()).add("/").add(g.stages_in_run());
         bool boss = data::stages[g.stage].boss >= 0;
         core::message i1;
         if(boss) i1.add("Uwaga: ").add(clip(data::enemies[data::stages[g.stage].boss].name, 18).c_str()).add("!");
         else i1.add(clip(data::stages[g.stage].name, 12).c_str()).add(": problemy ").add(g.enemy_hp_pct()).add("%");
-        core::message i2; i2.add("Pogoda: ").add(g.wdef().name).add(", ").add(g.adef().mech_short);   // pogoda dnia i mechanika aktu
-        if(g.stage_path >= 0) i2.add(", ").add(data::paths[g.stage_path].short_name);   // wybrana ścieżka
-        if(g.tier > 0) i2.add(", NG+").add(g.tier);
+        auto card_line = [&](bool prefix) {   // pogoda dnia i mechanika aktu, wybrana ścieżka, NG+
+            core::message m;
+            if(prefix) m.add("Pogoda: ");
+            m.add(g.wdef().name).add(", ").add(g.adef().mech_short);
+            if(g.stage_path >= 0) m.add(", ").add(data::paths[g.stage_path].short_name);
+            if(g.tier > 0) m.add(", NG+").add(g.tier);
+            return m;
+        };
+        core::message i2 = card_line(true);
+        if(a.text.width(i2.s) > 150) i2 = card_line(false);   // za długo (np. Pieczątki): bez "Pogoda:"
         phone_message(a, g.stage_story(), sub.s, i1.s, boss ? ink::late : ink::dim, fit(a, i2.s, 150).c_str());
         if(g.stage_event >= 0 && g.turns == g.stage_start_turn)   // wydarzenie na placu: drugi SMS (nie po wznowieniu w trakcie)
         {
@@ -1465,7 +1647,8 @@ namespace
                                                     &bn::bg_palette_items::stage_palettes_2, &bn::bg_palette_items::stage_palettes_3,
                                                     &bn::bg_palette_items::stage_palettes_4, &bn::bg_palette_items::stage_palettes_5,
                                                     &bn::bg_palette_items::stage_palettes_6, &bn::bg_palette_items::stage_palettes_7,
-                                                    &bn::bg_palette_items::stage_palettes_8, &bn::bg_palette_items::stage_palettes_9 };
+                                                    &bn::bg_palette_items::stage_palettes_8, &bn::bg_palette_items::stage_palettes_9,
+                                                    &bn::bg_palette_items::stage_palettes_10, &bn::bg_palette_items::stage_palettes_11 };
         static_assert(data::stages_count == int(sizeof(stage_pals) / sizeof(stage_pals[0])));
         bn::regular_bg_item item(bn::regular_bg_tiles_items::tiles, *stage_pals[g.stage], map->map_item);
         bn::regular_bg_ptr bg = item.create_bg(0, 0);
@@ -1494,6 +1677,11 @@ namespace
         };
         sync_pickups();
         bn::vector<bn::sprite_ptr, core::max_enemies> fx;
+        // Pieczątki (Akt 0): kłódka na schodach, dopóki brakuje dokumentów.
+        bn::sprite_ptr stairs_lock = bn::sprite_items::actors.create_sprite(world(core::imax(0, g.stairs_x), core::imax(0, g.stairs_y)), frame_lock);
+        stairs_lock.set_camera(cam);
+        stairs_lock.set_z_order(5);
+        stairs_lock.set_visible(false);
 
         text_sprites hud, log;
         bn::sprite_ptr hp_left = bn::sprite_items::hp_bar.create_sprite(-82, -72, 0);
@@ -1533,7 +1721,7 @@ namespace
         weather_icon.set_z_order(-100);
         // Mechanika aktu w HUD pod ikoną mocy (menu_icons 20-22: błoto, porywy, pył); przy porywach tury do kolejnego.
         const int act_mech = int(g.adef().mechanic);
-        bn::sprite_ptr act_icon = bn::sprite_items::menu_icons.create_sprite(106, -33, icon_act + core::imax(0, act_mech - 1));
+        bn::sprite_ptr act_icon = bn::sprite_items::menu_icons.create_sprite(106, -33, act_icon_frame(g.adef().mechanic));
         act_icon.set_bg_priority(0);
         act_icon.set_z_order(-100);
         act_icon.set_visible(act_mech > 0);
@@ -1639,7 +1827,7 @@ namespace
         for(int i = 0; i < g.pickups_count; ++i) prev_active += g.pickups[i].active;
         bool boss_seen = false;
         bool boss_engaged = g.boss_wake_damage >= 0;   // Inspekcja: baner "zgodnie z BHP" przy pełnym sprzęcie
-        if(g.stage == 0 && g.tier == 0 && g.turns == 0)   // podpowiedź na start budowy: moc pod R, zabrana pamiątka
+        if(g.stage == g.first_stage && g.tier == 0 && g.turns == 0)   // podpowiedź na start budowy: moc pod R, zabrana pamiątka
         {
             core::message t; t.add("R: ").add(g.cdef().ability_name);
             banner.push(t.s, g.cdef().ability_desc);
@@ -1654,13 +1842,15 @@ namespace
                 banner.push(kt.s, kb.s);
             }
         }
-        if(g.turns == g.stage_start_turn && (g.stage == 0 || data::stages[g.stage - 1].act != data::stages[g.stage].act)
-           && g.adef().mechanic != core::act_mechanic::none)   // nowy akt: jego mechanika (błoto, porywy, pył)
+        if(g.turns == g.stage_start_turn && (g.stage == g.first_stage || data::stages[g.stage - 1].act != data::stages[g.stage].act)
+           && g.adef().mechanic != core::act_mechanic::none)   // nowy akt: jego mechanika (błoto, porywy, pył, pieczątki)
         {
-            core::message t; t.add("Akt ").add(roman(data::stages[g.stage].act)).add(": ").add(g.adef().mech_short);
+            core::message t; t.add("Akt ").add(g.act_numeral()).add(": ").add(g.adef().mech_short);
             banner.push(t.s, g.adef().mech_info);
         }
         bool second_seen = g.second_used;   // Druga szansa: baner raz
+        int prev_docs = g.docs;             // pieczątki: nowy dokument = baner
+        bool phase_seen = g.boss >= 0 && (g.enemies[g.boss].flags & core::actor_phase);   // druga faza bossa: baner raz
         int flash_timer = 0;
         bn::color flash_color;
         int levelup_pending = 0;   // awans w tej turze: napis nad bohaterem i błysk (obsługa w pętli, gdzie są efekty)
@@ -1737,6 +1927,29 @@ namespace
                 banner.push(rt.s, rb.s);
                 push_achievements(banner, got, done);
                 bn::sram::write(a.save);   // liczniki zleceń przeniesione do profilu
+            }
+            if(g.docs != prev_docs)   // Akt 0: dokument zebrany, komplet otwiera schody
+            {
+                for(int i = 0; i < data::documents_count; ++i)
+                    if(((g.docs >> i) & 1) && ! ((prev_docs >> i) & 1))
+                    {
+                        core::message t; t.add("Dokument: ").add(data::documents[i]);
+                        core::message b; b.add("Pieczątki ").add(g.docs_count()).add("/").add(g.docs_needed());
+                        if(! g.stairs_locked()) b = core::message(), b.add("Komplet! Schody otwarte");
+                        banner.push(t.s, b.s);
+                    }
+                prev_docs = g.docs;
+            }
+            if(! phase_seen && g.boss >= 0 && (g.enemies[g.boss].flags & core::actor_phase) && g.enemies[g.boss].alive)   // druga faza
+            {
+                phase_seen = true;
+                const core::enemy_def& bd = data::enemies[g.enemies[g.boss].def_id];
+                core::message t; t.add("Druga faza: ").add(bd.phase_name).add("!");
+                core::message b; b.add(bd.name).add(" +").add(g.enemies[g.boss].max_hp * bd.phase_heal / 100).add(" HP");
+                banner.push(t.s, b.s);
+                flash_color = bn::color(31, 8, 6);
+                flash_timer = 10;
+                shake_timer = 8;
             }
             if(g.second_used && ! second_seen)   // Druga szansa z Respektu
             {
@@ -2082,7 +2295,7 @@ namespace
                 int v = g.adef().mech_value, t = g.turns - g.stage_start_turn;
                 if(t > 0 && t % v == 0)
                 {
-                    int d = (t / v + g.stage) & 3;
+                    int d = (t / v + g.pattern_stage()) & 3;
                     for(int k = 0; k < 6; ++k)
                         fx_particles.spawn(h.x() - core::game::gust_vec[d][0] * 40 + fx_particles.rand(-64, 64), h.y() - core::game::gust_vec[d][1] * 40 + fx_particles.rand(-64, 64),
                                            bn::fixed(core::game::gust_vec[d][0]) * 3, bn::fixed(core::game::gust_vec[d][1]) * 3, 0, 24, particle_pool::dust, 3);
@@ -2118,6 +2331,7 @@ namespace
             sync_pickups();
             for(int i = 0; i < g.pickups_count; ++i)
                 pickups[i].set_visible(g.pickups[i].active && g.explored(g.pickups[i].x, g.pickups[i].y));
+            stairs_lock.set_visible(g.stairs_locked() && g.explored(g.stairs_x, g.stairs_y) && ! (g.hero.x == g.stairs_x && g.hero.y == g.stairs_y));
             animate();
 
             hud.clear();
@@ -2131,7 +2345,7 @@ namespace
             core::message num; num.add(g.hero.hp).add("/").add(g.hero.max_hp);
             a.text.generate(-30, -72, num.s, hud);
             a.text.set_right_alignment();
-            core::message st; st.add("Etap ").add(g.stage + 1).add("/").add(data::stages_count).add(" ");
+            core::message st; st.add("Etap ").add(g.stage_number()).add("/").add(g.stages_in_run()).add(" ");
             st.add(clip(g.ddef().name, 1).c_str());
             if(g.tier > 0) st.add("+").add(g.tier);
             a.text.generate(116, -72, st.s, hud);
@@ -2229,6 +2443,7 @@ namespace
             bg_map_ptr.reload_cells_ref();
             for(auto& s : enemies) s.set_visible(false);
             for(auto& s : pickups) s.set_visible(false);
+            stairs_lock.set_visible(false);
             fx.clear(); log.clear(); floaters.clear(); fx_particles.list.clear(); levelup_text.clear(); levelup_timer = 0;
             hide_mini_bars(); target_marker.set_visible(false); status_sprite.set_visible(false);
             power_icon.set_visible(false); power_text.clear(); shown_cd = -1; hide_status_hud();
@@ -2259,6 +2474,7 @@ namespace
             hero.set_visible(false);
             for(auto& sp : enemies) sp.set_visible(false);
             for(auto& sp : pickups) sp.set_visible(false);
+            stairs_lock.set_visible(false);
             fx.clear(); hud.clear(); log.clear(); floaters.clear(); levelup_text.clear(); levelup_timer = 0;
             hp_left.set_visible(false); hp_right.set_visible(false);
             hide_mini_bars(); target_marker.set_visible(false); status_sprite.set_visible(false);
@@ -2692,11 +2908,21 @@ namespace
                 weather_icon.set_visible(! banner_on);
                 act_icon.set_visible(! banner_on && act_mech > 0);
                 int gin = g.gust_in();
-                if(gin != shown_gust)   // porywy: tury do kolejnego (ostatnia tura - na czerwono)
+                int akey = g.docs_needed() > 0 ? 100 + g.docs_count() : gin;   // pieczątki: dokumenty zebrane / potrzebne
+                if(akey != shown_gust)   // porywy: tury do kolejnego (ostatnia tura - na czerwono)
                 {
-                    shown_gust = gin;
+                    shown_gust = akey;
                     act_text.clear();
-                    if(gin > 0)
+                    if(g.docs_needed() > 0)
+                    {
+                        a.text.set_palette_item(g.stairs_locked() ? bn::sprite_items::font_8x16.palette_item() : bn::sprite_palette_items::font_map_good);
+                        a.text.set_bg_priority(0);
+                        a.text.set_right_alignment();
+                        core::message m; m.add(g.docs_count()).add("/").add(g.docs_needed());
+                        a.text.generate(96, -33, m.s, act_text);
+                        a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
+                    }
+                    else if(gin > 0)
                     {
                         a.text.set_palette_item(gin == 1 ? bn::sprite_palette_items::font_map_bad : bn::sprite_items::font_8x16.palette_item());
                         a.text.set_bg_priority(0);
@@ -2767,11 +2993,11 @@ namespace
             phone_canvas& c = *ph.canvas;
             // zaliczony etap i kolejny (węzeł)
             stripe(c, 0, phone_tile::stripe_done);
-            core::message m0; m0.add(g.stage + 1).add(". ").add(data::stages[g.stage].name);
+            core::message m0; m0.add(g.stage_number()).add(". ").add(data::stages[g.stage].name);
             phone_text(a, t, list_x, row_py(0), fit(a, m0.s, pill_room("Gotowe")).c_str(), ink::dim);
             phone_pill(a, c, t, pill_end, row_ty(0), "Gotowe", pill::done);
             stripe(c, 1, phone_tile::stripe_prog);
-            core::message m1; m1.add(next + 1).add(". ").add(data::stages[next].name);
+            core::message m1; m1.add(g.stage_number() + 1).add(". ").add(data::stages[next].name);
             const char* rest = g.investor_has(core::investor_effect::no_break) ? "Bez przerwy" : "Kawa +5 HP";
             phone_text(a, t, list_x, row_py(1), fit(a, m1.s, pill_room(rest)).c_str(), ink::dark);
             phone_pill(a, c, t, pill_end, row_ty(1), rest, pill::gray);
@@ -2830,13 +3056,13 @@ namespace
         int y, m, d;
         core::daily_date(a.save, y, m, d);   // dzień odbioru: data z ekranu budowy dnia (GBA bez zegara)
         const int end_day = core::days_from_civil(y, m, d);
-        int top = 0;
+        int top = g.first_stage;   // bez Aktu 0: od Fundamentów
         auto date = [](core::message& msg, int day) {
             int yy, mm, dd; core::civil_from_days(day, yy, mm, dd);
             msg.add(dd < 10 ? "0" : "").add(dd).add(".").add(mm < 10 ? "0" : "").add(mm);
         };
         auto redraw = [&]() {
-            core::message sub; sub.add(core::schedule_total_days(g)).add(" dni, ").add(core::schedule_total_cost()).add(" tys. zł");
+            core::message sub; sub.add(core::schedule_total_days(g)).add(" dni, ").add(core::schedule_total_cost(g)).add(" tys. zł");
             phone_header(a, ph, t, "Twój dom", sub.s);
             phone_canvas& c = *ph.canvas;
             core::message r0; r0.add("Odbiór ");
@@ -2866,10 +3092,10 @@ namespace
         for(int f = 0; ! bn::keypad::a_pressed() && ! bn::keypad::start_pressed(); ++f)
         {
             int v = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
-            if(f > 0 && f % 150 == 0 && ! v) v = top + 4 < data::stages_count ? 1 : -top;   // sama przewija listę etapów
+            if(f > 0 && f % 150 == 0 && ! v) v = top + 4 < data::stages_count ? 1 : g.first_stage - top;   // sama przewija listę etapów
             if(v)
             {
-                top = core::imax(0, core::imin(data::stages_count - 4, top + v));
+                top = core::imax(int(g.first_stage), core::imin(data::stages_count - 4, top + v));
                 redraw();
             }
             next_frame();
@@ -2907,7 +3133,7 @@ namespace
             else if(stake > 0) i2.add("Stawka ").add(stake).add(stake_record ? " - rekord!" : "").add(won ? ", dom!" : "");
             else if(record && prev_best > 0) i2.add("Nowy rekord! (było ").add(prev_best).add(")");
             else i2.add(won ? "Dom na Osiedlu!" : "Dośw. zostaje");
-            phone_message(a, won ? data::story_win : data::story_lose, won ? "Odbiór" : "Budowa", i1.s, ink::dark, i2.s);
+            phone_message(a, won ? data::story_win : data::story_lose, won ? "Odbiór" : "Budowa", i1.s, ink::dark, fit(a, i2.s, 150).c_str());
             leave(scene::end);
             if(won) { house_page(a); leave(scene::end); }   // harmonogram domu w stylu aplikacji PlanBudowlany
         }
@@ -2968,6 +3194,7 @@ namespace
         if(reward >= 0)
         {
             core::message rt; rt.add("Nagroda: ").add(data::rewards[reward].name);
+            if(utf8_len(rt.s) > 23) rt = core::message(), rt.add(data::rewards[reward].name).add("!");   // Akt 0: Papierologia
             banner.push(rt.s, data::rewards[reward].desc);
         }
         push_achievements(banner, badges_got, contracts_got);
@@ -3010,7 +3237,7 @@ namespace
                     else if((y == 3 || y == 14) && x >= 4) t = y == 3 ? 3 : 2;
                     for(int dy = 0; dy < 2; ++dy) for(int dx = 0; dx < 2; ++dx) map->set(x * 2 + dx, y * 2 + dy, t, 0);
                 }
-            bn::regular_bg_item item(bn::regular_bg_tiles_items::tiles, bn::bg_palette_items::stage_palettes_0, map->map_item);
+            bn::regular_bg_item item(bn::regular_bg_tiles_items::tiles, bn::bg_palette_items::stage_palettes_2, map->map_item);   // Fundamenty
             bn::regular_bg_ptr bg = item.create_bg(0, 0);
             bn::bg_tiles::set_allow_offset(true);
             bg.set_camera(cam);
@@ -3102,7 +3329,7 @@ namespace
             mats_line(sub, g);
             phone_header(a, ph, t, "Hurtownia", sub.s);
             phone_canvas& c = *ph.canvas;
-            core::message b; b.add("Premia za akt ").add(roman(data::stages[g.stage].act)).add(": +").add(g.act_bonus).add(" zł");
+            core::message b; b.add("Premia za akt ").add(g.act_numeral()).add(": +").add(g.act_bonus).add(" zł");
             phone_text(a, t, list_x, row_py(0), note ? note : b.s, note ? ink::brand : ink::done);
             for(int r = 0; r < 4 && top + r < data::hurtownia_count; ++r)   // 4 wiersze, przewijane
             {
@@ -3485,7 +3712,36 @@ namespace
             for(bn::sprite_ptr& s : card_t) s.set_x(s.x() + dx);
             ability.set_x(ability.x() + dx);
         };
+        auto open_stats = [&]() {   // opis statystyk wybranego zawodu (co daje każda i wzory)
+            card_t.clear(); pill_t.clear(); keep_t.clear();
+            bg.set_visible(false);
+            for(bn::sprite_ptr& sp : small) sp.set_visible(false);
+            for(bn::sprite_ptr& sp : locks) sp.set_visible(false);
+            big.set_visible(false); big_lock.set_visible(false); ability.set_visible(false); arrows.set_visible(false); info.set_visible(false);
+            {
+                phone_screen ph(2);
+                ph.icon.set_visible(false);
+                page_sprites st;
+                stats_page(a, ph, st, nullptr, order[sel], core::mods(a.save));
+            }
+            a.text.set_bg_priority(1);
+            bg.set_visible(true); big.set_visible(true); ability.set_visible(true); info.set_visible(true);
+            redraw_all();
+        };
         redraw_all();
+        {   // samouczek menu: pierwsze wejście - dymki po kolei; potem nowości (tryb inwestora, nowy zawód z nagrody)
+            auto hole = [](const char* id) {
+                auto is = [&](const char* k) { return same(id, k); };
+                if(is("difficulty")) return coach_hole{ 13, 5, 16, 4, false };
+                if(is("keepsake")) return coach_hole{ 0, 16, 30, 4, true };
+                if(is("stats")) return coach_hole{ 1, 10, 28, 6, true };
+                if(is("investor")) return coach_hole{ 14, 17, 16, 3, true };
+                return coach_hole{ 0, 0, 30, 5, false };   // zawód, na plac, nowy zawód: pasek portretów
+            };
+            if(core::tutorial_pending(a.save, 1)) run_tutorial(a, 1, hole, open_stats);
+            run_unlocks(a, 1, hole);
+            a.text.set_bg_priority(1);
+        }
 
         while(true)
         {
@@ -3517,20 +3773,7 @@ namespace
             }
             if(bn::keypad::start_pressed())   // opis statystyk wybranego zawodu (co daje każda i wzory)
             {
-                card_t.clear(); pill_t.clear(); keep_t.clear();
-                bg.set_visible(false);
-                for(bn::sprite_ptr& sp : small) sp.set_visible(false);
-                for(bn::sprite_ptr& sp : locks) sp.set_visible(false);
-                big.set_visible(false); big_lock.set_visible(false); ability.set_visible(false); arrows.set_visible(false); info.set_visible(false);
-                {
-                    phone_screen ph(2);
-                    ph.icon.set_visible(false);
-                    page_sprites st;
-                    stats_page(a, ph, st, nullptr, order[sel], core::mods(a.save));
-                }
-                a.text.set_bg_priority(1);
-                bg.set_visible(true); big.set_visible(true); ability.set_visible(true); info.set_visible(true);
-                redraw_all();
+                open_stats();
                 next_frame();
                 continue;
             }

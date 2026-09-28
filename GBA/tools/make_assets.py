@@ -185,7 +185,8 @@ UI_SPR = [ui_lock]
 # klatki: 0-5 zawody, 6-14 wrogowie, 15-17 znajdźki, 18 efekt trafienia, 19 kłódka, 20-25 sylwetki zawodów,
 # 26 skrzynka z narzędziem, 27-41 druga klatka animacji zawodów i wrogów, 42-44 paczki sprzętu (pixel-art: tools/pixel_art.py),
 # 45 celownik, 46-51 bossowie; v0.21.49: 52-54 zawody z nagród (Dekarz, Tynkarz, Operator koparki), 55-57 ich druga klatka,
-# 58-60 ich sylwetki; 61-80 problemy etapów (pixel_art.STAGE_ENEMIES), 81-100 ich druga klatka
+# 58-60 ich sylwetki; 61-80 problemy etapów (pixel_art.STAGE_ENEMIES), 81-100 ich druga klatka;
+# Akt 0: 101-109 problemy i boss Decyzja odmowna (pixel_art.PRELUDE_ENEMIES), 110-118 druga klatka, 119-121 dokumenty
 def make_actors():
     import pixel_art as pa
     workers = [pa.worker_frame(i, 0) for i in range(6)]
@@ -208,7 +209,12 @@ def make_actors():
     frames += [pa.stage_enemy_frame(i, 0) for i in range(n)] + [pa.stage_enemy_frame(i, 1) for i in range(n)]   # 61.. problemy etapów
     data = json.load(open(os.path.join(ROOT, "data", "game.json"), encoding="utf-8"))
     ids = [e["id"] for e in data["enemies"] if e["frame"] >= 61]
-    assert ids == pa.STAGE_ENEMY_ORDER, "kolejność rysunków = kolejność wrogów w game.json"
+    assert ids[:n] == pa.STAGE_ENEMY_ORDER, "kolejność rysunków = kolejność wrogów w game.json"
+    m = len(pa.PRELUDE_ENEMY_ORDER)   # v0.21.49 cz. 3: Akt 0 - 101-109 problemy i boss, 110-118 druga klatka, 119-121 dokumenty
+    assert len(frames) == 101 and ids[n:] == pa.PRELUDE_ENEMY_ORDER, "Akt 0: kolejność rysunków = kolejność w game.json"
+    assert [e["frame"] for e in data["enemies"] if e["id"] in pa.PRELUDE_ENEMY_ORDER] == list(range(101, 101 + m))
+    frames += [pa.prelude_enemy_frame(i, 0) for i in range(m)] + [pa.prelude_enemy_frame(i, 1) for i in range(m)]
+    frames += [pa.document_frame(i) for i in range(len(pa.DOCUMENTS))]
     px = [p for fr in frames for p in fr]
     write_bmp(os.path.join(G, "actors.bmp"), px, 16, 16 * len(frames), SPR_PAL, 4)
     write_json("actors", {"type": "sprite", "height": 16})
@@ -259,6 +265,8 @@ def make_hp_bar():
 # indeksy: 0 tło, 1 podłoga, 2 detal podłogi, 3 ściana, 4 jasny detal ściany, 5 cień ściany, 6/7 schody
 STAGE_COLORS = [
     # (podłoga, detal, ściana, jasny, cień) - kolejność jak etapy w data/game.json
+    [(214, 208, 190), (190, 182, 160), (70, 96, 150), (236, 232, 220), (40, 52, 90)],     # Działka i pozwolenie (biuro: segregatory)
+    [(112, 86, 58), (88, 66, 44), (98, 72, 48), (150, 120, 86), (60, 42, 28)],            # Przyłącza (wykop z rurami)
     [(96, 70, 44), (80, 58, 36), (150, 138, 118), (180, 170, 150), (100, 92, 80)],        # Fundamenty
     [(104, 80, 52), (84, 62, 40), (72, 70, 80), (116, 112, 124), (40, 38, 46)],           # Izolacja fundamentów (papa, folia)
     [(118, 118, 118), (100, 100, 100), (178, 82, 59), (222, 200, 170), (120, 50, 36)],   # Mury parteru
@@ -278,8 +286,9 @@ def tile(fn):
 
 def t_empty(t): pass
 
-# v0.21.49: każdy akt ma własne kafle - akt I ziemia i bloczki betonowe, akt II deski i cegła, akt III płytki i tynk.
-ACT = [0]   # akt kafli generowanych w tej chwili (make_tiles ustawia)
+# v0.21.49: każdy akt ma własne kafle - akt I ziemia i bloczki betonowe, akt II deski i cegła, akt III płytki i tynk;
+# zestawy 3-4: Akt 0 - biuro z segregatorami (Działka i pozwolenie) i wykop z rurami (Przyłącza).
+ACT = [0]   # zestaw kafli generowany w tej chwili (make_tiles ustawia)
 
 def t_floor(t):
     a = ACT[0]
@@ -294,6 +303,15 @@ def t_floor(t):
             t[3][x] = 2; t[7][x] = 2
         t[0][5] = t[1][5] = t[2][5] = 2
         t[4][1] = t[5][1] = t[6][1] = 2
+    elif a == 3:   # biuro: jasna wykładzina w kratkę i porozrzucane kartki (biały róg)
+        for i in range(8):
+            t[7][i] = 2; t[i][7] = 2
+        t[2][2] = t[2][3] = t[3][2] = t[3][3] = t[4][2] = 4
+        t[2][4] = 4
+    elif a == 4:   # wykop: ubita ziemia z tłuczniem
+        for (x, y) in [(1, 1), (4, 3), (6, 6), (2, 5), (5, 0)]:
+            t[y][x] = 2
+        t[3][6] = 5
     else:          # płytki: fuga co 8 px, odblask w rogu
         for i in range(8):
             t[7][i] = 2; t[i][7] = 2
@@ -315,6 +333,19 @@ def t_wall(t):
         t[0][3] = t[1][3] = t[2][3] = 5
         t[4][7] = t[5][7] = t[6][7] = 5
         t[0][0] = t[4][4] = 4
+    elif a == 3:   # regał z segregatorami: grzbiety 3 px (niebieski 3 / czerwony 12), jasne etykiety, żółte kółka, półka
+        for y in range(8):
+            for x in range(8):
+                t[y][x] = 5 if x in (3, 7) or y == 7 else (3 if x < 3 else 12)
+        for x in (1, 5):
+            t[1][x] = t[2][x] = 4
+            t[5][x] = 13
+    elif a == 4:   # ściana wykopu: ziemia z przekrojem rury (kolory 12-13)
+        for (x, y) in [(1, 1), (5, 0), (6, 6), (2, 6)]:
+            t[y][x] = 4
+        for x in range(8):
+            t[3][x] = 12; t[4][x] = 13; t[5][x] = 12
+        t[3][7] = t[4][7] = t[5][7] = 5
     else:          # gładki tynk z drobnymi plamkami
         for (x, y) in [(1, 1), (5, 3), (2, 5), (6, 6)]:
             t[y][x] = 4
@@ -381,7 +412,7 @@ ACT_TILES = len(TILES)
 
 def make_tiles():
     px_tiles = [tile(t_empty)]
-    for a in range(3):   # kafle każdego aktu
+    for a in range(5):   # kafle każdego aktu (3-4: Akt 0 - biuro, wykop)
         ACT[0] = a
         px_tiles += [tile(f) for f in TILES]
     ACT[0] = 0
@@ -409,6 +440,10 @@ def make_tiles():
             lf = 0.55 if level == 3 else (1.0, 0.85, 0.7)[level]
             water = [tuple(int(v * lf) for v in (64, 112, 176)), tuple(int(v * lf) for v in (150, 196, 236))]   # kałuża
             mud = [tuple(int(v * lf) for v in (58, 38, 22)), tuple(int(v * lf) for v in (122, 92, 58))]    # błoto (akt I)
+            if si == 0:   # Akt 0, biuro: kolory 12-13 = grzbiety segregatorów (czerwony, żółty)
+                mud = [tuple(int(v * lf) for v in (190, 60, 56)), tuple(int(v * lf) for v in (222, 180, 64))]
+            elif si == 1:   # Akt 0, wykop: kolory 12-13 = rura (szara, jasny odblask)
+                mud = [tuple(int(v * lf) for v in (92, 104, 120)), tuple(int(v * lf) for v in (170, 184, 200))]
             gloss = tuple(min(255, int(v * 1.12 + 12)) for v in cols[0])                                  # odblask płytek
             pal += [(12, 12, 20)] + cols + stairs + [shadow, danger] + water + mud + [gloss, (0, 0, 0)]
         write_bmp(os.path.join(G, f"stage_palettes_{si}.bmp"), [0] * 64, 8, 8, pal, 8)

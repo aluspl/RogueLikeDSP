@@ -39,12 +39,16 @@ for e in d["enemies"]:
     assert e.get("slamShape", "square") in {"square", "cross"} and len(e.get("slamName", "")) <= 16, e
     assert not sm or (sm["enemy"] in eid and not d["enemies"][eid[sm["enemy"]]].get("slam") and sm["every"] > 0 and 0 < sm["max"] <= 3), e
     assert len(rw.get("title", "")) <= 24 and 0 <= rw.get("cash", 0) <= 500, e
+    ph = e.get("phase", {})   # druga faza bossa (np. Odwołanie): raz przy atPct% HP leczy healPct% i wzywa
+    assert not ph or (e.get("slam") and 10 <= ph["atPct"] <= 90 and 0 <= ph["healPct"] <= 60 and len(ph["name"]) <= 16
+                      and 0 <= ph.get("summon", 0) <= sm.get("max", 0)), e
     L.append(f'    {{ {s(e["name"])}, {s(e["desc"])}, {e["maxHealth"]}, {e["minDamage"]}, {e["maxDamage"]}, {e["defense"]}, '
              f'{e["sight"]}, {e["score"]}, {e["frame"]}, {"true" if e.get("slam") else "false"}, '
              f'core::status_effect::{e.get("onHit", {}).get("status", "none")}, {e.get("onHit", {}).get("chancePct", 0)}, '
              f'{e.get("onHit", {}).get("turns", 0)}, core::slam_shape::{e.get("slamShape", "square")}, {s(e.get("slamName", ""))}, '
              f'{eid[sm["enemy"]] if sm else -1}, {sm.get("every", 0)}, {sm.get("max", 0)}, {e.get("gearStun", 0)}, '
-             f'{rw.get("cash", 0)}, {s(rw.get("title", ""))}, {mid[e["material"]] if "material" in e else -1}, {tags(e)} }},')
+             f'{rw.get("cash", 0)}, {s(rw.get("title", ""))}, {mid[e["material"]] if "material" in e else -1}, {tags(e)}, '
+             f'{ph.get("atPct", 0)}, {ph.get("healPct", 0)}, {ph.get("summon", 0)}, {s(ph.get("name", ""))} }},')
 L.append("};\n")
 L.append("inline constexpr core::stage_def stages[] = {")
 for st in d["stages"]:
@@ -89,14 +93,25 @@ for st in d["stages"]:   # boss z wezwaniami: etap + boss + wezwani mieszczą si
 for ai in range(len(acts)):   # każdy akt kończy się etapem z bossem
     last = max(i for i, st in enumerate(d["stages"]) if st["act"] == ai)
     assert "boss" in d["stages"][last], f"akt {ai} bez bossa"
+# Akt wstępny (Akt 0, "prelude"): jego etapy są na początku listy, bez nagrody za odbiór budowa zaczyna się za nimi.
+prelude_stages = sum(1 for st in d["stages"] if acts[st["act"]].get("prelude"))
+assert all(acts[st["act"]].get("prelude") for st in d["stages"][:prelude_stages]) and prelude_stages < len(d["stages"])
+assert not acts[d["stages"][prelude_stages]["act"]].get("prelude")
+docs = d.get("documents", [])
+assert len(docs) <= 4 and all(len(x) <= 12 for x in docs)
 L.append("inline constexpr core::act_def acts[] = {   // mechanika aktu: błoto, porywy wiatru, pył")
 for a in acts:
     mc = a.get("mechanic", {"effect": "none", "value": 0, "name": "", "short": "", "info": ""})
-    assert mc["effect"] in {"none", "mud", "gust", "dust"} and len(mc["name"]) <= 20 and len(mc["short"]) <= 8 and len(mc["info"]) <= 23, mc   # info = baner (23 znaki)
+    assert mc["effect"] in {"none", "mud", "gust", "dust", "stamps"} and len(mc["name"]) <= 20 and len(mc["short"]) <= 9 and len(mc["info"]) <= 23, mc   # info = baner (23 znaki)
+    assert mc["effect"] != "stamps" or mc["value"] == len(docs), mc   # pieczątki: tyle dokumentów otwiera schody
+    assert len(a.get("numeral", "")) <= 3, a
     assert mc["effect"] not in ("mud", "gust") or mc["value"] >= 3, mc
     L.append(f'    {{ {s(a["name"])}, {a["bonusPerStage"]}, {a["bonusPerKill"]}, core::act_mechanic::{mc["effect"]}, {mc["value"]}, '
-             f'{s(mc["name"])}, {s(mc["short"])}, {s(mc["info"])} }},')
+             f'{s(mc["name"])}, {s(mc["short"])}, {s(mc["info"])}, {s(a.get("numeral", ""))}, {"true" if a.get("prelude") else "false"} }},')
 L.append("};")
+L += [f"inline constexpr int prelude_stages = {prelude_stages};   // etapy aktu wstępnego (Akt 0) - z nagrody za odbiór",
+      "inline constexpr const char* documents[] = { " + ", ".join(s(x) for x in docs or [""]) + " };   // pieczątki: dokumenty etapu",
+      f"inline constexpr int documents_count = {len(docs)};"]
 bp = d["behaviorParams"]
 assert 2 <= bp["rangedReach"] <= 4 and 0 < bp["splitHpPct"] <= 100 and bp["blastDelay"] >= 2 and bp["growEvery"] >= 2
 L += [f"inline constexpr int behavior_{k} = {v};" for k, v in [("ranged_reach", bp["rangedReach"]), ("split_hp_pct", bp["splitHpPct"]),
@@ -347,7 +362,7 @@ L += [f"inline constexpr int push_chance_pct = {d['passives']['pushChancePct']};
 rw = d["rewards"]["list"]
 tid = {t["weapon"]: i for i, t in enumerate(m["tools"])}
 slid = {sl["name"]: i for i, sl in enumerate(eq["slots"])}
-RK = {"tool": "tool", "gear": "gear", "class": "cls", "soon": "soon"}
+RK = {"tool": "tool", "gear": "gear", "class": "cls", "act": "act", "soon": "soon"}
 assert 1 <= len(rw) <= 16
 L.append("inline constexpr core::reward_def rewards[] = {   // nagrody za odbiór: każda wygrana odblokowuje kolejną")
 seen = set()
@@ -357,6 +372,7 @@ for x in rw:
     if k == "tool": idx = tid[x["id"]]; assert m["tools"][idx].get("reward"), x; name = d["weapons"][wid[x["id"]]]["name"]
     elif k == "gear": idx = slid[x["id"]]; assert eq["slots"][idx].get("reward"), x; name = eq["slots"][idx]["name"]
     elif k == "class": idx = cid[x["id"]]; assert d["classes"][idx].get("reward"), x; name = d["classes"][idx]["name"]
+    elif k == "act": idx = next(i for i, a in enumerate(acts) if a.get("prelude")); name = x["name"]
     else: idx = -1; name = x["name"]
     assert (k, idx) not in seen; seen.add((k, idx))
     L.append(f'    {{ core::reward_kind::{RK[k]}, {idx}, {s(x.get("name", name))}, {s(x["desc"])} }},')
@@ -367,7 +383,21 @@ for i, sl in enumerate(eq["slots"]):
     assert not sl.get("reward") or ("gear", i) in seen, sl
 for i, c in enumerate(d["classes"]):
     assert not c.get("reward") or ("class", i) in seen, c["id"]
+assert not prelude_stages or any(k == "act" for k, _ in seen), "Akt 0 bez nagrody za odbiór"
 L += [f"inline constexpr int rewards_count = {len(rw)};", ""]
+tu = d["tutorial"]
+TSCR = {"title": 0, "class": 1}
+def tut(x):
+    assert x["screen"] in TSCR and len(x["title"]) <= 20 and len(x.get("gba", "")) <= 26 and x.get("requires", "") in ("", "investor"), x
+    return (f'    {{ {s(x["id"])}, {s(x["title"])}, {story({"from": tu["from"], "text": x["text"]})}, {s(x.get("gba", ""))}, '
+            f'{TSCR[x["screen"]]}, {"true" if x.get("godotOnly") else "false"}, {"true" if x.get("requires") == "investor" else "false"} }},')
+L.append("inline constexpr core::tutorial_step tutorial_steps[] = {   // samouczek menu: tytuł (0) i wybór zawodu (1)")
+L += [tut(x) for x in tu["steps"]] + ["};"]
+UNL = ["respect", "daily", "investor", "act0", "class"]
+assert [x["id"] for x in tu["unlocks"]] == UNL
+L.append("inline constexpr core::tutorial_step tutorial_unlocks[] = {   // dymki przy pierwszym odblokowaniu (kolejność = core::tutorial_unlock)")
+L += [tut(x) for x in tu["unlocks"]] + ["};"]
+L += [f"inline constexpr int tutorial_steps_count = {len(tu['steps'])};", f"inline constexpr int tutorial_unlocks_count = {len(tu['unlocks'])};", ""]
 L += [f"inline constexpr const char* version = {s(d['version'])};   // numer wersji (ekran tytułowy, changelog)", ""]
 L += ["inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonogramu między etapami"]
 L += [f"    {s(t)}," for t in d["tips"]] + ["};", f"inline constexpr int tips_count = {len(d['tips'])};", ""]
