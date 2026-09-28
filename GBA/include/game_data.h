@@ -72,7 +72,7 @@ inline constexpr core::upgrade_def upgrades[] = {
     { "Kondycja", "+2 HP na start", core::upgrade_effect::hp, 2, 2, { 10, 20, 0, 0 }, 35, 0 },
     { "Szkolenie BHP", "-2% otrzymanych obrażeń", core::upgrade_effect::taken_pct, 2, 1, { 15, 0, 0, 0 }, 30, 15 },
     { "Kurs fachowy", "+2% obrażeń", core::upgrade_effect::dmg_pct, 2, 1, { 20, 0, 0, 0 }, 40, 20 },
-    { "Lepszy termos", "Kawa leczy +1 HP", core::upgrade_effect::coffee, 1, 1, { 10, 0, 0, 0 }, 20, 0 },
+    { "Lepszy termos", "Kawa leczy +1 HP", core::upgrade_effect::coffee, 1, 1, { 10, 0, 0, 0 }, 20, 10 },
     { "Dostawy", "+1 znajdźka na etap", core::upgrade_effect::pickups, 1, 1, { 15, 0, 0, 0 }, 30, 0 },
     { "Kurs BHP II", "+1 szczęścia", core::upgrade_effect::luck, 1, 1, { 20, 0, 0, 0 }, 40, 0 },
     { "Warsztaty", "+1 do statystyki broni", core::upgrade_effect::craft, 1, 1, { 20, 0, 0, 0 }, 40, 0 },

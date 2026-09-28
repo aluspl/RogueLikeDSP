@@ -16,7 +16,7 @@ Przekroczony budżet) i bossów (Zepsuta Betoniarka, Nawałnica, Inspekcja Pracy
 | A | krótko: atak w najbliższy cel; przytrzymaj: podgląd zasięgu i celownik (strzałki zmieniają cel), puść: atak |
 | B | krótko: czekaj turę (co 4 tury +1 HP); przytrzymaj: podgląd widocznych wrogów (nazwa, HP, obrażenia, opis; strzałki zmieniają wroga) |
 | START | w grze: menu akcji wokół bohatera – góra Atak, prawo Moc, dół Termos, lewo Czekaj (strzałka wybiera, A albo ta sama strzałka wykonuje, A bez kierunku = Brygada, START/B zamyka); poza grą: dalej |
-| SELECT | w grze: telefon z aplikacją PlanBudowlany (Zadania, Usterki, Start, Sprzęt, Koszty; L/R – zakładki, START – menu: jak grać, zapisz i wyjdź, porzuć budowę); na tytule: telefon profilu (Odznaki/Zlecenia/Pamiątki – przełączane A, Katalog, Osiedle, Zespół, Koszty = Szkolenia) |
+| SELECT | w grze: telefon z aplikacją PlanBudowlany (Zadania, Usterki, Start, Sprzęt, Koszty; L/R – zakładki, START – menu: jak grać, zapisz i wyjdź, porzuć budowę); na tytule: telefon profilu (Odznaki/Zlecenia/Pamiątki – przełączane A, Katalog, Osiedle, Zespół, Koszty = Szkolenia / Respekt / Nagrody – przełączane SELECT) |
 | lewo/prawo (wybór zawodu) | zmiana zawodu na pasku portretów (odblokowane najpierw; zablokowany można obejrzeć, A go nie wybierze) |
 | L/R (wybór zawodu) | pamiątka zabierana na budowę (albo „bez pamiątki”) |
 | SELECT (wybór zawodu) | po pierwszej wygranej: tryb inwestora (modyfikatory, A włącza/wyłącza) |
@@ -31,10 +31,14 @@ Przekroczony budżet) i bossów (Zepsuta Betoniarka, Nawałnica, Inspekcja Pracy
 ## Zawody (dane w `data/game.json`)
 Kierownik budowy (Dziennik budowy, zasięg 2) · Murarz (Kielnia) · Cieśla-dekarz (Gwoździarka, zasięg 3) ·
 Elektryk (Próbnik napięcia, zasięg 2) · Hydraulik (Klucz nastawny) · Glazurnik (Szlifierka).
+Z nagród za odbiór: **Dekarz** (Dachówki, zasięg 3; wiatr nie skraca zasięgu; moc Rynna – linia), **Tynkarz**
+(Agregat tynkarski, zasięg 2; moc Narzut – obszar 3x3), **Operator koparki** (Łyżka koparki; wolny, bez uników, cios
+wręcz czasem odpycha; moc Taran – szarża i odepchnięcie). Cecha zawodu: pole `passive`, szansa odepchnięcia: `passives`.
 Znajdźki: kawa (trafia do termosu – 3 miejsca, pije się z menu pod START za turę; przy pełnym termosie pije od razu), kask (+obrona), projekt wykonawczy (+obrażenia). Ikona termosu z liczbą kaw jest w HUD.
-Sprzęt: z wrogów wypadają paczki (zwykły / solidny / markowy) – kask (+obrona), rękawice (+obrażenia), kamizelka (+max HP). Każdy przedmiot ma losową cechę (Szczęście +1, Kryt +5%, Odporność na zatrucie, Widzenie +1, Odnowienie mocy -1, Siła/Zręczność/Inteligencja +1; `equipment.traits`). Cechy SIŁ/ZRĘ/INT podnoszą statystykę, z którą skaluje się broń (obrażenia = rzut broni + statystyka/2 + premie). Do pustego slotu zakłada się sam; przy zajętym okno porównania (obecny vs nowy): A – zakładam, B – zostawiam (doświadczenie). W telefonie zakładka Sprzęt z cechami.
+Sprzęt: z wrogów wypadają paczki (zwykły / solidny / markowy) – kask (+obrona), rękawice (+obrażenia), kamizelka (+max HP),
+a po nagrodach za odbiór także buty (+unik) i pas (+miejsca w termosie); cecha Bez poślizgu. Każdy przedmiot ma losową cechę (Szczęście +1, Kryt +5%, Odporność na zatrucie, Widzenie +1, Odnowienie mocy -1, Siła/Zręczność/Inteligencja +1; `equipment.traits`). Cechy SIŁ/ZRĘ/INT podnoszą statystykę, z którą skaluje się broń (obrażenia = rzut broni + statystyka/2 + premie). Do pustego slotu zakłada się sam; przy zajętym okno porównania (obecny vs nowy): A – zakładam, B – zostawiam (doświadczenie). W telefonie zakładka Sprzęt z cechami.
 **Szczęście** (`luck` zawodu + cechy): kryt 5% + 3%/pkt (obrażenia x2, żółte „KRYT!”), unik przed ciosem wroga 2%/pkt (maks. 20%), częstsze i lepsze dropy – parametry w sekcji `luck` pliku `data/game.json`. Glazurnik ma najwięcej szczęścia, Murarz wcale.
-Dropy: z pokonanych wrogów może wypaść kawa, kask, projekt albo skrzynka z narzędziem (Łom, Wkrętarka, Poziomica laserowa, Młot wyburzeniowy, Tablet z projektem, Miernik laserowy – zastępuje broń zawodu; kolejne narzędzia odblokowujesz w Szkoleniach; trzy ostatnie skalują się z INT).
+Dropy: z pokonanych wrogów może wypaść kawa, kask, projekt albo skrzynka z narzędziem (Łom, Wkrętarka, Poziomica laserowa, Młot wyburzeniowy, Tablet z projektem, Miernik laserowy, a z nagród za odbiór Młot udarowy i Pistolet do kotew – zastępuje broń zawodu; kolejne narzędzia odblokowujesz w Szkoleniach; Tablet i oba mierniki skalują się z INT).
 Statystyki efektywne (baza zawodu + premie ze Szkoleń, pamiątki i sprzętu, np. „SIŁ 5+2”) są na wyborze zawodu i w telefonie (zakładka Start).
 **Wybór zawodu:** u góry pasek portretów wszystkich zawodów – najpierw odblokowane (w kolejności z danych), potem
 zablokowane jako ciemne sylwetki z kłódką; wybrany portret jest powiększony na fioletowym polu i przebiera nogami.
@@ -84,6 +88,13 @@ Teksty są w `data/game.json` (`story`).
   (termos +1 miejsce, od początku – nowy profil zabiera go domyślnie), Kask ojca (+1 obrony, odznaka Bez usterek), Szczęśliwa kielnia (+2 szczęścia),
   Stara poziomica (widzenie +1), Notes kierownika (moc -1 t.) – trzy ostatnie za zlecenia. Ranga II po 3, III po 8
   budowach z pamiątką (`rankRuns`, wartości `values`). Strona Pamiątki w telefonie profilu.
+- **Respekt** (sekcja `respect`) – stała waluta za każdy ukończony etap (2, boss w środku aktu 4, boss aktu 6, odbiór
+  10; mnożnik jak wynik), od razu w profilu (porażka go nie zabiera). Wydawany w telefonie profilu: Koszty → SELECT =
+  strona Respekt, 15 stałych ulepszeń z rangami i rosnącą ceną (procent obrażeń, otrzymanych obrażeń, lepszy sprzęt,
+  kryt, unik, kawa, termos, moc, budżet, doświadczenie, brygada, widzenie, Hurtownia, materiały, Druga szansa).
+- **Nagrody za odbiór** (sekcja `rewards`, jak w Slay the Spire) – każda wygrana odblokowuje kolejną: narzędzia
+  (Młot udarowy, Pistolet do kotew), sprzęt (buty, pas), zawody (Dekarz, Tynkarz, Operator koparki), dalej Akt 0
+  „wkrótce”. Strona Nagrody (Koszty → SELECT → SELECT) pokazuje, co odebrane i za którą wygraną następna.
 - **Katalog usterek** - pokonane rodzaje problemów z opisami.
 - **Osiedle** - dom za każdą wygraną budowę, wielkość zależy od wyniku.
 - SELECT na tytule: telefon profilu (Odznaki/Zlecenia/Pamiątki, Katalog, Osiedle, Zespół, Koszty).
@@ -140,10 +151,11 @@ Zadania telefonu. Teksty i wartości: `siteEvents` w `data/game.json`.
 - Poziomy postaci w trakcie budowy: awans za doświadczenie daje +HP, na 3. poziomie +obrona, na 5. +obrażenia.
 - Po wygranej: „Kolejna budowa” (NG+) – ten sam zawód i premie, mocniejsi wrogowie.
 - Doświadczenie za wrogów, etapy i bossa wydajesz w sklepie „Szkolenia” (po budowie i z tytułu):
-  ulepszenia statystyk (m.in. Kurs BHP II: +1 szczęścia, Warsztaty: +1 do statystyki broni zawodu), więcej znajdziek,
+  ulepszenia statystyk (m.in. Szkolenie BHP: -2% otrzymanych obrażeń, Kurs fachowy: +2% obrażeń, Kurs BHP II:
+  +1 szczęścia, Warsztaty: +1 do statystyki broni zawodu), więcej znajdziek,
   nowe zawody, narzędzia, poziom Trudny.
 - Profil (rekord, doświadczenie, zakupy, odznaki, liczniki zleceń, pamiątki, brygada, tryb inwestora) zapisuje się
-  w SRAM (format v7, z wynikami codziennej budowy); starsze zapisy (v1-v6) są przenoszone bez utraty danych.
+  w SRAM (format v8, z Respektem i nagrodami za odbiór); starsze zapisy (v1-v7) są przenoszone bez utraty danych.
 - Liczniki zleceń trafiają do profilu na końcu etapu; profil pamięta, ile z bieżącej budowy już przeniesiono, więc
   wznowienie budowy po wyłączeniu konsoli nie liczy etapu drugi raz.
 - Harmonogram między etapami pokazuje radę kierownika (sterowanie i mechaniki; lista `tips` w `data/game.json`).
@@ -174,7 +186,9 @@ tools/playtest/run.sh moj_skrypt.txt /tmp/zrzuty --fresh   # opis komend w tools
 Scenariusze testowe (sytuacje, do których skrypt nie dojdzie na ślepo – boss obok, wrogowie w zasięgu, moce,
 sprzęt, stany, porównanie sprzętu, termos, kryt i unik, statystyki (9), uprawnienia i zlecenia (10), pamiątki (11),
 wydarzenia na placu (12), Inspekcja Pracy (13), pogoda (14), brygada (15), tryb inwestora (16), wybór ścieżki (17),
-materiały, naprawy i awans (18), codzienna budowa (19), wygrana z harmonogramem domu (20), porażka (21)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
+materiały, naprawy i awans (18), codzienna budowa (19), wygrana z harmonogramem domu (20), porażka (21), sklep Respektu
+i nagrody (22), Respekt za etap (23), nagroda po wygranej (24), Dekarz (25), Tynkarz (26), Operator koparki (27), nowe
+narzędzia i sprzęt (28)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
 ```bash
 make TARGET=scn1 BUILD=build_scn1 USERFLAGS="-DPB_SCENARIO=1" BUTANO_PATH=...
 ROM=scn1.gba tools/playtest/run.sh skrypt.txt /tmp/zrzuty --fresh
@@ -191,7 +205,7 @@ tools/gen_data.py     JSON -> include/game_data.h
 tools/make_assets.py  proceduralne grafiki: font PL 8x16, sprite'y, kafelki+palety etapów, tytuł, ekran z QR
 assets_src/pb_logo.svg  znak PlanBudowlany
 include/core.h        logika gry (czyste C++, bez Butano) - testowalna na PC
-include/meta.h        profil SRAM (v7), codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
+include/meta.h        profil SRAM (v8), Respekt, nagrody za odbiór, codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
 src/main.cpp          warstwa GBA: sceny, mapa, kamera, HUD, SRAM
 ```
 Grafiki są placeholderami generowanymi kodem: podmień pliki w `graphics/` pixel-artem z Aseprite

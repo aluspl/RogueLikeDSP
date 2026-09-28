@@ -727,7 +727,8 @@
         "costs": [
           10
         ],
-        "refund": 20
+        "refund": 20,
+        "resetRefund": 10
       },
       {
         "id": "dostawy",

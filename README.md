@@ -3,6 +3,8 @@
 Roguelike o budowie domu: przechodzisz etapy budowy (Fundamenty → … → Wykończenie i odbiór), a przeciwnikami są
 problemy budowy (Przeciek, Zwarcie, Pleśń, Papierologia…) i bossowie aktów (Zepsuta Betoniarka, Nawałnica,
 Nieprzekraczalny Termin). Menu gry to smartfon bohatera z aplikacją [PlanBudowlany](https://planbudowlany.online).
+Za ukończone etapy zbierasz Respekt na stałe ulepszenia, a każda wygrana odblokowuje nagrodę za odbiór (nowe zawody,
+narzędzia, sprzęt).
 
 Projekt zaczął się w 2017 roku jako LifeLike (Unity, konkurs DSP2017), a w 2026 wrócił w dwóch nowych wersjach.
 

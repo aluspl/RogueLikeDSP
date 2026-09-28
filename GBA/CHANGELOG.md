@@ -2,6 +2,62 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
+## v0.21.49 – 2026-09-28
+### Nowe
+- **Respekt:** stała waluta za każdy ukończony etap – 2 za zwykły etap, 4 za bossa w środku aktu (Inspekcja Pracy),
+  6 za bossa aktu, 10 za odbiór (mnożnik jak wynik: Łatwy mniej, Trudny i NG+ więcej). Trafia do profilu od razu po
+  etapie, więc po porażce zostaje. Baner „Respekt +N” po etapie, stan w zakładce Koszty w trakcie budowy, na końcu
+  budowy „Respekt z budowy”. Sekcja `respect` w `data/game.json`.
+- **Sklep Respektu** (telefon profilu → Koszty → SELECT = strona Respekt): 15 stałych ulepszeń z rangami i rosnącą
+  ceną – Pewna ręka (obrażenia +1/+2%), Gruba skóra (otrzymane -1/-2%), Dobre źródła (lepszy sprzęt), Oko fachowca
+  (kryt +1/+2%), Zwinność (unik +1/+2%, łącznie maks. 20%), Mocna kawa (+5/+10%), Duży termos (+1 miejsce), Rutyna
+  (moc -1/-2 t.), Oszczędności (+10–50 zł na start), Nauka (+4–20% doświadczenia), Znajomości (brygada -6–30%),
+  Czujność (widzenie +1), Rabat (Hurtownia -5–25%), Zapasy (materiały +10–50% częściej), Druga szansa (raz na budowę
+  1 HP zamiast końca). Pełny Respekt to ok. 1150 Respektu (kilkadziesiąt wygranych budów). „Start z przedmiotem”
+  pominięty – na razie nie ma przedmiotów do zabrania (pomysł #18).
+- **Nagrody za odbiór** (jak w Slay the Spire): każda wygrana odblokowuje kolejną nagrodę z listy – Młot udarowy,
+  Dekarz, Buty robocze, Pistolet do kotew, Tynkarz, Pas narzędziowy, Operator koparki, dalej „Akt 0: Papierologia –
+  wkrótce”. Lista z postępem na stronie Nagrody (Koszty → SELECT → SELECT), baner nagrody po wygranej, SMS „Nagroda:
+  …!”, na ekranie końcowym „Za kolejny odbiór: …”. Stare profile dostają nagrody za dotychczasowe wygrane.
+  Sekcja `rewards`.
+- **Nowe zawody** (z nagród; pixel-art jak pozostali fachowcy, 2 klatki, sylwetka, ikona mocy, domy na Osiedlu):
+  **Dekarz** (Dachówki 2-3, zasięg 3, ZRĘ; wiatr nie skraca mu zasięgu) – moc **Rynna**: dachówki lecą linią przez
+  najbliższy widoczny problem i trafiają wszystkich na linii (4/5/6 pól, mur zatrzymuje); **Tynkarz** (Agregat
+  tynkarski 2-4, zasięg 2, SIŁ) – moc **Narzut**: tynk na obszar 3x3 wokół celu (5x5 na III, od II ogłusza);
+  **Operator koparki** (Łyżka koparki 4-7, dużo HP i obrony, ZRĘ 1 i zero szczęścia – wolny, bez uników; cios wręcz
+  w 20% odpycha problem o pole) – moc **Taran**: szarża do problemu, cios +ranga i odepchnięcie o 2 pola.
+- **Nowe narzędzia** w dropach (z nagród): Młot udarowy (5-9, SIŁ) i Pistolet do kotew (3-5, zasięg 3, ZRĘ).
+- **Nowy sprzęt** (z nagród): **Buty** (unik +3/+5/+8%) i **Pas** (termos +1/+1/+2 miejsca); nowa cecha **Bez
+  poślizgu**. Zakładka Sprzęt pokazuje 5 slotów (materiały wtedy w nagłówku). Pełny sprzęt dla Inspekcji Pracy to
+  nadal kask, rękawice i kamizelka.
+- Wybór zawodu: pasek portretów przewija się (9 zawodów); zawód z nagrody pokazuje „Za N. wygraną”.
+- „Jak grać” – czwarta strona (Respekt i nagrody). Scenariusze testowe 22–28.
+### Balans
+v0.21.48 miało z pełnymi Szkoleniami 89% wygranych bota (cel 50–60%). Nie tylko BHP (+1 obrony) i Kurs fachowy (+1
+obrażeń) – bot reaguje mocno na każdą premię, więc Szkolenia są lżejsze: **Szkolenie BHP -2% otrzymanych obrażeń**,
+**Kurs fachowy +2% obrażeń** (procent z przeniesieniem reszty, bez losowania), Kondycja 2 poziomy, Lepszy termos
+(kawa +1 HP), Dostawy, Kurs BHP II i Warsztaty po 1 poziomie. Siła przechodzi do Respektu. Stare profile: kupione BHP, Kurs
+fachowy i Lepszy termos wracają jako doświadczenie (15, 20 i 10), poziomy ponad nowe maksimum też (Kondycja 35, Lepszy termos 20,
+Dostawy 30, Kurs BHP II i Warsztaty po 40). Tryb inwestora łagodniej: Problemy +25% HP, Termin goni +1.
+Kawa ma znaczenie (#17): bot pije średnio 2 kawy na budowę (74% budów), a bez picia kawy wygrywa 20% zamiast 32%
+(z pełnymi Szkoleniami 39% zamiast 57%).
+
+| Wygrane bota (300 przebiegów na zawód) | v0.21.48 (6 zawodów) | v0.21.49 (9 zawodów) |
+|---|---|---|
+| Łatwy | 60% | 61% |
+| Normalny | 30% | 32% |
+| Trudny | 12% | 13% |
+| Normalny, pełne Szkolenia | 89% | 57% |
+| Normalny, pełne Szkolenia + pełny Respekt | – | 74% |
+| Normalny, pełne Szkolenia (i Respekt) + wszystkie modyfikatory | 10% | 10% |
+| Normalny bez picia kawy (bez meta / pełne Szkolenia) | – | 20% / 39% |
+
+### Zmiany
+- Profil w SRAM v8 (PBRL008, 152 bajty: Respekt, rangi, nagrody, wygrane i stawki zawodów 8–11) – starsze profile
+  przenoszą się bez utraty danych (nagrody za wygrane, zwrot doświadczenia za zmienione Szkolenia).
+- Nowy zapis budowy (PBRUN08) – przerwana budowa z v0.21.48 nie wznowi się.
+- Zawody i narzędzia z nagród nie są na sprzedaż w Szkoleniach; ceny brygady i Hurtowni z rabatem Respektu.
+
 ## v0.21.48 – 2026-09-25
 ### Nowe
 - **Wybór ścieżki:** na harmonogramie między etapami dwa warianty kolejnego etapu jako rozgałęzienie (lewo/prawo, A) –
