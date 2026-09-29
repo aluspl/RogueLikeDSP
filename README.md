@@ -16,6 +16,8 @@ a za pękniętą ścianą albo drzwiami bywa ukryty magazyn ze skrzynią – klu
 podsumowanie mówi, co Cię zatrzymało, pokazuje oś czasu etapów i najbliższy cel; co tydzień czeka wyzwanie tygodnia
 z własnymi zasadami (np. „Tylko Glazurnik, bez kawy”, „Mokry tydzień”) i osobnym wynikiem, a z kolejnymi budowami
 odkrywasz historię w SMS-ach od Anny, Marka i sąsiadów, a Osiedle rośnie (ławka, latarnia, plac zabaw…).
+Sterowanie w oknach jest wszędzie takie samo: A / „Wybierz” (zawsze po prawej) zatwierdza, B / „Wróć” (po lewej)
+wraca, strzałka albo pierwsze dotknięcie tylko zaznacza, a świeżo otwarte okno przez chwilę ignoruje przyciski.
 
 Projekt zaczął się w 2017 roku jako LifeLike (Unity, konkurs DSP2017), a w 2026 wrócił w dwóch nowych wersjach.
 

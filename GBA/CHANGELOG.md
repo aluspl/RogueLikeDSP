@@ -2,6 +2,67 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
+## v0.21.51 – 2026-09-29
+### Najważniejsze
+Poprawki po graniu na iPhonie (pion) – czytelniejsza mapa i sterowanie „nie do pomylenia” (GBA i Godot):
+1. **Autokafle ścian (#36)** – mur wygląda jak mur, a nie rząd klocków z jasnym paskiem na każdym polu.
+2. **Błoto (#37)** – dwa razy rzadziej i jako płaska mokra plama, nie ciemna dziura.
+3. **Spójne sterowanie i blokada wejścia (#38)** – A / „Wybierz” zawsze po prawej, B / „Wróć” po lewej, chwila
+   blokady po otwarciu okna, nieodwracalne wybory przez zaznaczenie.
+
+### Nowe
+- **Autokafle ścian (#36):** widok 3/4 ze światłem z lewej góry. Pole muru z murem poniżej to ciemny **wierzch masy
+  muru** (bez pasów i fug), pole z podłogą poniżej to **lico** – krawędź wierzchu u góry i wzór materiału (bloczki,
+  papa, cegła, deski, płytki) z cieniem przy podłodze. Godot: kafle generowane w eksporcie dla palety każdego etapu
+  (`export_godot_assets.py`: wierzch, lico i 6 nakładek – jasna krawędź od podłogi u góry i z lewej, ciemna z prawej,
+  końce lica, róg wewnętrzny), dobierane w `MapLayer` wg sąsiadów; ciemne palety mają wierzch rozjaśniony, żeby nie
+  zlewał się z tłem. Skraj odkrytej części etapu gaśnie miękko w ciemność (mgła 4 teksele na pole, zanikanie ~pół
+  pola, także po skosie) zamiast twardych schodków. GBA (wersja lżejsza): 12 kafli na zestaw – nowy wierzch masy muru
+  i dolna połowa lica; górna połowa lica ma jedną jasną krawędź zamiast dwóch pasków na polu.
+- **Błoto (#37):** mechanika aktu I co 14. pole zamiast co 7. (`acts[0].mechanic.value` w `data/game.json` – gęstość
+  z danych). Wygląd: płaska mokra plama o nierównym brzegu – jaśniejszy brąz z połyskiem, mniejsza niż pole (Godot:
+  3 warianty, odbicia; GBA: nowy kafel i kolory 12-13 palet etapów).
+- **Spójne sterowanie (#38):** w każdym oknie i przejściu (premia po etapie, Hurtownia, SMS z wyborem, harmonogram
+  i wybór ścieżki, paczka sprzętu, zamiana narzędzia, cecha narzędzia, karta etapu, podsumowanie, harmonogram domu)
+  A = wybierz / dalej, B = wróć / zostaw. Godot: Spacja i Enter = A, Z i Esc = B (Hurtownia: Enter kupuje zaznaczone,
+  Z/Esc – dalej; paczka: Enter zakłada; harmonogram domu: Enter – dalej, Tab / dotknięcie linku – planbudowlany.online);
+  na dotyku główny przycisk („Wybierz”, „Biorę”, „Dalej”, „Kup”) zawsze w prawym dolnym rogu w fiolecie, powrót
+  („Wróć”, „Zostaw”, „Zostaję”) po lewej, sam jeden przycisk zajmuje prawą połowę (rola przycisku w `PageAction`).
+- **Blokada wejścia:** Godot – 0,4 s po otwarciu okna i dopóki telefon wjeżdża wciśnięcia i dotknięcia są ignorowane
+  (stuknięcie w mapę tuż przed końcem etapu nie wybiera premii, nie pomija SMS-a); GBA – ~20 klatek po otwarciu okna
+  (i po zmianie strony SMS-a), A liczy się dopiero wciśnięte na nowo.
+- **Nieodwracalne wybory przez zaznaczenie:** premia, zakup, odpowiedź na SMS, cecha – strzałka / pierwsze dotknięcie
+  zaznacza, A / „Wybierz” / drugie dotknięcie tego samego zatwierdza. **Zamiana ulepszonego narzędzia** ma teraz dwa
+  wiersze: zaznaczone na start „Zostaję: Kielnia+2”, strzałka – „Zamieniam na …”, A zatwierdza, B zostaje (A z rozpędu
+  nie zabiera ulepszenia).
+- „Jak grać”: GBA – nowa strona 2 „Okna i wybory” (14 stron); Godot – wiersz „Okna” w sterowaniu dotykiem i zasada na
+  stronie 1.
+- **HUD (Godot, pion):** gdy „Etap 2/10: Izolacja fundamentów” nie mieści się w pierwszym rzędzie, jest „Etap 2/10,
+  Normalny”, a pełna nazwa etapu w drugim rzędzie po prawej (mierzona po ikonach; pastylka wydarzenia tylko, gdy
+  starczy miejsca, ostrzeżenie bossa skraca się do „Cios za N!”).
+
+### Balans
+Rzadsze błoto ledwie rusza bota (omija je i tak): wyniki w granicach szumu.
+
+| Wygrane bota (300 przebiegów na zawód) | v0.21.50 | v0.21.51 |
+|---|---|---|
+| Łatwy | 53% | 54% |
+| Normalny | 32% | 32% |
+| Trudny | 10% | 10% |
+| Normalny, pełne Szkolenia | 54% | 54% |
+| Normalny, pełne Szkolenia + pełny Respekt | 70% | 69% |
+| Normalny, pełne Szkolenia (i Respekt) + wszystkie modyfikatory | 9% | 10% |
+| Normalny bez picia kawy (bez meta / pełne Szkolenia) | 22% / 40% | 23% / 39% |
+| Normalny, pełne Szkolenia + pełny Respekt + Akt 0 (wszystkie nagrody) | 66% | 67% |
+
+Wyzwania tygodnia: Glazurnik bez kawy 10%, Elity x2 30%, Mokry tydzień 36%, Bez Hurtowni 17%, Szklany kask 29%,
+Kierownik na placu 32%.
+
+### Zmiany
+- Zapis budowy i profil bez zmian (PBRUN13, profil v11) – przerwana budowa z v0.21.50 wznowi się (błoto na etapie
+  aktu I może leżeć gdzie indziej).
+- Test złoty (Godot) z migawki v0.21.51.
+
 ## v0.21.50 – 2026-09-29
 ### Najważniejsze
 Regrywalność – 10 nowości w jednym wydaniu (GBA i Godot, wspólny rdzeń i test złoty):

@@ -29,11 +29,12 @@ własne, np. Woda gruntowa, Krzywy mur, Przeciekająca papa, Zapowietrzenie, Pop
 | góra/dół, A, SELECT (premia po etapie) | wybór 1 z 3 premii, A – biorę, SELECT – losuj jeszcze raz (raz na budowę za zł, Druga oferta z Respektu za darmo) |
 | A, góra/dół (wydarzenie z SMS-em) | A – odpowiedz, góra/dół – odpowiedź, A – wybieram, A – dalej po wyniku |
 | góra/dół, A (cecha narzędzia przy +2) | Przebicie / Ostrze / Wyważenie, A – biorę |
-| A / B (nowe narzędzie przy ulepszonym) | A – zamieniam (ulepszenie przepada), B – zostaję |
+| góra/dół, A / B (nowe narzędzie przy ulepszonym) | na start zaznaczone „Zostaję”, góra/dół – „Zamieniam”, A zatwierdza zaznaczone (zamiana: ulepszenie przepada), B – zostaję |
 | lewo/prawo (harmonogram) | wybór ścieżki na kolejny etap, A – dalej |
 | L (przytrzymaj) | podgląd odkrytej mapy etapu |
 | R | moc zawodu (Odprawa, Ścianka, Seria, Łańcuch, Zawór, Wirówka); ikona w prawym górnym rogu: szara z odliczaniem = ładuje się, pulsuje z „R” = gotowa; ranga II od 3. i III od 5. poziomu postaci |
 | góra/dół (wybór zawodu) | poziom trudności: Łatwy / Normalny / Trudny |
+| każde okno (premia, Hurtownia, SMS, harmonogram, paczka, podsumowanie) | A = wybierz / dalej, B = wróć / zostaw; góra/dół tylko zaznacza; przez ~20 klatek po otwarciu okna przyciski nie działają (v0.21.51) |
 | L+R+SELECT | skrót pokazowy: zalicz etap (do testów i prezentacji na stoisku) |
 
 ## Zawody (dane w `data/game.json`)
@@ -66,8 +67,9 @@ obok), nie rusza się (za to twardy), odpycha (cios przesuwa o pole, co 3 tury),
 Na karcie wroga (przytrzymane B) i w Katalogu usterek: „Cechy: …”.
 
 ## Mechaniki aktów
-Każdy akt ma własne kafle (akt I ziemia i bloczki betonowe, akt II deski i cegła, akt III płytki i tynk) i mechanikę
-(`mechanic` aktu): **akt I błoto** – wejście w błoto kosztuje dodatkową turę (Kładka działa też na błoto), **akt II
+Każdy akt ma własne kafle (akt I ziemia i bloczki betonowe, akt II deski i cegła, akt III płytki i tynk; od v0.21.51
+mur z autokaflami: ciemny wierzch masy muru, lico z jasną krawędzią tylko nad podłogą) i mechanikę
+(`mechanic` aktu): **akt I błoto** – wejście w błoto (płaska mokra plama, co 14. pole) kosztuje dodatkową turę (Kładka działa też na błoto), **akt II
 porywy wiatru** – co 6 tur poryw spycha bohatera o pole (zapowiedź w dzienniku turę wcześniej, licznik pod ikoną mocy),
 **akt III pył** – widzenie -2, **Akt 0 pieczątki** – 3 dokumenty (podpis, mapa, uzgodnienie) otwierają schody (do
 kompletu kłódka na schodach, licznik 0/3). Ikona w HUD pod ikoną mocy, baner na początku aktu, wiersz w zakładce Zadania.
@@ -91,8 +93,8 @@ Później po jednym dymku „Nowość”: pierwszy Respekt, codzienna budowa, tr
 Na wyborze zawodu START otwiera opis statystyk (wartość i co daje), A zmienia stronę na wzory; w telefonie zakładka
 Start → A pokazuje, skąd są premie. Wzory: obrażenia = rzut broni + statystyka broni / 2 + premie - obrona wroga / 2
 (SIŁ/ZRĘ/INT: +1 obrażeń co 2 pkt, tylko statystyka broni); OBR: -1 otrzymanych obrażeń co 2 pkt; SZCZ: kryt 5% +3%/pkt,
-unik 2%/pkt (maks. 20%), łupy +2% szansy/pkt i lepsza jakość. „Jak grać” ma 13 stron (5 – akty i problemy, 6 – statystyki,
-7 – obrażenia, 8–9 – kombinacje stanów, 10 – premie i elity, 11 – wydarzenia i ulepszenia, 12 – magazyn, 13 – po budowie:
+unik 2%/pkt (maks. 20%), łupy +2% szansy/pkt i lepsza jakość. „Jak grać” ma 14 stron (2 – okna i wybory, 6 – akty i problemy, 7 – statystyki,
+8 – obrażenia, 9–10 – kombinacje stanów, 11 – premie i elity, 12 – wydarzenia i ulepszenia, 13 – magazyn, 14 – po budowie:
 podsumowanie, wyzwanie tygodnia, fabuła).
 
 ## Rozpiska obrażeń broni (jak w BG3)

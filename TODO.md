@@ -1,6 +1,8 @@
 # TODO – PlanBudowlany RogueLike
 
-Stan na 2026-09-29: GBA v0.21.49 wydane, **v0.21.50 gotowe do wydania** (cz. 1: rozpiska obrażeń broni #26; cz. 2: premie po etapie #27, elity #28,
+Stan na 2026-09-29: GBA v0.21.50 wydane, **v0.21.51 cz. 1 gotowe** (autokafle ścian #36, rzadsze błoto jako mokra plama #37,
+spójne sterowanie i blokada wejścia #38 – GBA i Godot, HUD z pełną nazwą etapu w pionie; balans bez zmian: Łatwy 54%,
+Normalny 32%, Trudny 10%), cz. 2 – sekretne zlecenia #39 do zrobienia; wcześniej v0.21.50 (cz. 1: rozpiska obrażeń broni #26; cz. 2: premie po etapie #27, elity #28,
 kombinacje stanów #29; cz. 3: wydarzenia z wyborem #30, ulepszanie narzędzia #31, ukryte pomieszczenia #32; cz. 4: podsumowanie
 budowy #33, wyzwania tygodnia #34, fabuła odkrywana z budowami #35 – GBA i Godot; balans: Łatwy 53%, Normalny 32%, Trudny 10%,
 Szkolenia 54%, + Respekt 70%, z Aktem 0 66%, wszystkie modyfikatory 9%; wyzwania tygodnia 11–35%),
@@ -35,6 +37,7 @@ Legenda: ✅ zrobione · 🔄 w toku · ⬜ do zrobienia · — nie dotyczy
 | Balans v0.21.49 cz. 3 (Akt 0): bez meta (Akt 0 zablokowany) 30%, pełne Szkolenia + pełny Respekt 71%, z Aktem 0 (wszystkie nagrody) 66% | ✅ wspólny rdzeń | ✅ |
 | Balans v0.21.50 cz. 3 (wydarzenia, ulepszenia, magazyn): Łatwy 53%, Normalny 32%, Trudny 10%, pełne Szkolenia 54%, + pełny Respekt 70%, z Aktem 0 66%, + wszystkie modyfikatory 9% | ✅ wspólny rdzeń | ✅ |
 | Balans v0.21.50 cz. 4: bez zmian (podsumowanie tylko zapisuje), wyzwania tygodnia (bot): Glazurnik bez kawy 11%, Elity x2 31%, Mokry tydzień 35%, Bez Hurtowni 18%, Szklany kask 24%, Kierownik na placu 33% | ✅ wspólny rdzeń | ✅ |
+| Balans v0.21.51 cz. 1 (błoto co 14. pole): Łatwy 54%, Normalny 32%, Trudny 10%, pełne Szkolenia 54%, + pełny Respekt 69%, z Aktem 0 67%, + wszystkie modyfikatory 10%; wyzwania tygodnia 10–36% | ✅ wspólny rdzeń | ✅ |
 
 ## Nowe pomysły (2026-09-25, „zrób wszystko”)
 
@@ -108,6 +111,15 @@ dlatego premie bojowe są małe – cel „pełne Szkolenia + pełny Respekt 65�
 | 33 | Podsumowanie po śmierci (co zabiło, oś czasu, najbliższy cel) – v0.21.50 cz. 4: też po wygranej; ostatnie ciosy, najmocniejsze ciosy, oś czasu etapów, nagrody, cel i rada; GBA 3 strony, Godot jedna przewijana | 4 | ✅ | ✅ |
 | 34 | Wyzwania tygodnia (seed + zasady, osobne wyniki) – v0.21.50 cz. 4: 6 zasad z danych, wyniki 3 tygodni w profilu v11, Godot: zaślepka tabeli tygodnia (`ILeaderboard.WeeklyBoardId`) | 4 | ✅ | ✅ (tydzień z daty budowy dnia) |
 | 35 | Fabuła odkrywana z kolejnymi budowami (SMS-y, Osiedle) – v0.21.50 cz. 4: 19 wątków za kamienie milowe, Wiadomości w Osiedlu, 6 ozdób Osiedla | 4 | ✅ | ✅ |
+
+## v0.21.51 – poprawki po graniu na iPhonie
+
+| # | Pomysł | Część | GODOT (MOBILE) | GBA |
+|---|---|---|---|---|
+| 36 | Autokafle ścian: wierzch masy muru bez pasów, lico tylko nad podłogą, krawędzie i końce wg sąsiadów, światło z lewej góry, miękkie przejście w nieodkrytą ciemność (Godot: kafle z eksportu dla palety etapu) | 1 | ✅ | ✅ (lżej: wierzch + dolna połowa lica) |
+| 37 | Błoto: dwa razy rzadziej (co 14. pole, z danych) i jako płaska mokra plama z połyskiem zamiast ciemnych dziur | 1 | ✅ (3 warianty) | ✅ |
+| 38 | Spójne sterowanie i blokada wejścia: A / „Wybierz” zawsze po prawej, B / „Wróć” po lewej, Enter/Spacja = A, Esc/Z = B, 0,4 s blokady po otwarciu okna (GBA ~20 klatek), nieodwracalne wybory przez zaznaczenie (zamiana narzędzia: domyślnie „Zostaję”), zasada w Jak grać; HUD: pełna nazwa etapu w drugim rzędzie | 1 | ✅ | ✅ |
+| 39 | „Sekretne zlecenia” – ukryte cele profilu (widoczne jako „???” z podpowiedzią), odblokowujące ukryte zawody (np. Spawacz, Geodeta, Majster „złota rączka”), unikalne bronie (Złota kielnia, Młot Zenka, Poziomica mistrza) i kosmetykę (kolory kasku); warunki nietypowe (np. wygraj bez kawy, pokonaj Termin samą brygadą, znajdź 5 magazynów w jednej budowie, wygraj każdym zawodem, przejdź Akt 0 bez obrażeń od Papierologii) | 2 | ⬜ | ⬜ |
 
 ## Zgodność funkcji
 
