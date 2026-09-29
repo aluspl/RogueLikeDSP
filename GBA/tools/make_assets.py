@@ -186,7 +186,8 @@ UI_SPR = [ui_lock]
 # 26 skrzynka z narzędziem, 27-41 druga klatka animacji zawodów i wrogów, 42-44 paczki sprzętu (pixel-art: tools/pixel_art.py),
 # 45 celownik, 46-51 bossowie; v0.21.49: 52-54 zawody z nagród (Dekarz, Tynkarz, Operator koparki), 55-57 ich druga klatka,
 # 58-60 ich sylwetki; 61-80 problemy etapów (pixel_art.STAGE_ENEMIES), 81-100 ich druga klatka;
-# Akt 0: 101-109 problemy i boss Decyzja odmowna (pixel_art.PRELUDE_ENEMIES), 110-118 druga klatka, 119-121 dokumenty
+# Akt 0: 101-109 problemy i boss Decyzja odmowna (pixel_art.PRELUDE_ENEMIES), 110-118 druga klatka, 119-121 dokumenty;
+# v0.21.50 cz. 3: 122 pole wydarzenia, 123 klucz, 124 skrzynia, 125 pęknięcie muru, 126 drzwi magazynu (pixel_art.PART3)
 def make_actors():
     import pixel_art as pa
     workers = [pa.worker_frame(i, 0) for i in range(6)]
@@ -215,6 +216,8 @@ def make_actors():
     assert [e["frame"] for e in data["enemies"] if e["id"] in pa.PRELUDE_ENEMY_ORDER] == list(range(101, 101 + m))
     frames += [pa.prelude_enemy_frame(i, 0) for i in range(m)] + [pa.prelude_enemy_frame(i, 1) for i in range(m)]
     frames += [pa.document_frame(i) for i in range(len(pa.DOCUMENTS))]
+    assert len(frames) == 122   # v0.21.50 cz. 3: 122 wydarzenie, 123 klucz, 124 skrzynia, 125 pęknięcie muru, 126 drzwi magazynu
+    frames += [pa.part3_frame(n) for n in pa.PART3_ORDER]
     px = [p for fr in frames for p in fr]
     write_bmp(os.path.join(G, "actors.bmp"), px, 16, 16 * len(frames), SPR_PAL, 4)
     write_json("actors", {"type": "sprite", "height": 16})

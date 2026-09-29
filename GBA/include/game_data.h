@@ -638,18 +638,18 @@ inline constexpr const char* damage_help[] = {   // Jak grać: obrażenia broni 
 inline constexpr int damage_help_count = 6;
 
 inline constexpr const char* extras_help[] = {   // Jak grać: wydarzenia z wyborem, ulepszanie narzędzia, magazyn
-    "Pole z SMS-em na etapie: wydarzenie.",
-    "Wybierz odpowiedź: ryzyko albo zysk.",
-    "Szansa (np. 30%) losuje się raz.",
-    "Hurtownia: ulepszenie za zł i stal.",
-    "+1 obrażeń za poziom, maks. +3.",
-    "Od +2 cecha. Nowe narzędzie: strata.",
-    "Pęknięta ściana albo drzwi magazynu.",
-    "Klucz ma problem - często elita.",
-    "Ścianę skruszy Operator albo wybuch.",
-    "Drzwi otworzy tylko klucz.",
-    "W środku skrzynia: sprzęt, Respekt.",
-    "Uwaga: czasem śpi tam elita!",
+    "Pole z SMS-em: wydarzenie.",
+    "Odpowiedź: ryzyko albo zysk,",
+    "szansa (np. 30%) raz.",
+    "Hurtownia: ulepsz (zł+stal):",
+    "+1 obrażeń za poziom, maks. +3,",
+    "od +2 cecha. Zmiana: strata!",
+    "Pęknięta ściana / drzwi:",
+    "magazyn. Klucz ma problem",
+    "(często elita). Ścianę kruszy",
+    "Operator albo wybuch, drzwi -",
+    "tylko klucz. Skrzynia: sprzęt,",
+    "Respekt. Czasem śpi tam elita!",
 };
 inline constexpr int extras_help_count = 12;
 

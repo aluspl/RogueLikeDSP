@@ -496,6 +496,102 @@ def pickup_frame(name):
     return parse(PICKUPS[name])
 
 
+# v0.21.50 cz. 3 (klatki 122-126): pole wydarzenia (telefon z dymkiem "!"), klucz do magazynu, skrzynia, pęknięcie muru
+# (nakładka na kafel muru, przezroczysta), drzwi magazynu z kłódką.
+PART3 = {
+    "event": [
+        ".......KKKKKKK..",
+        "......KYYYKYYYK.",
+        "......KYYYKYYYK.",
+        "......KYYYKYYYK.",
+        "......KYYYYYYYK.",
+        "......KYYYKYYYK.",
+        ".......KKKYKKK..",
+        "..KKKKKK..K.....",
+        "..KNNNNK........",
+        "..KCWWCK........",
+        "..KCCCCK........",
+        "..KCWWCK........",
+        "..KCCCCK........",
+        "..KCWCCK........",
+        "..KNNNNK........",
+        "..KKKKKK........"],
+    "key": [
+        "................",
+        "................",
+        "................",
+        "................",
+        "..KKKK..........",
+        ".KYYYYK.........",
+        "KYYKKYYKKKKKKKK.",
+        "KYK..KYYYYYYYYYK",
+        "KYYKKYYKKKKYKYK.",
+        ".KYYYYK....KYK..",
+        "..KKKK......K...",
+        "................",
+        "................",
+        "................",
+        "................",
+        "................"],
+    "chest": [
+        "................",
+        "................",
+        "...KKKKKKKKKK...",
+        "..KTTTTTTTTTTK..",
+        "..KTOTTTTTTOTK..",
+        "..KTTTTTTTTTTK..",
+        "..KKKKKYYKKKKK..",
+        "..KYYYYKKYYYYK..",
+        "..KTTTTKYKTTTK..",
+        "..KTOTTTKTTOTK..",
+        "..KTTTTTTTTTTK..",
+        "..KTTTTTTTTTTK..",
+        "..KKKKKKKKKKKK..",
+        "...KK......KK...",
+        "................",
+        "................"],
+    "crack": [
+        "................",
+        ".......K........",
+        "......Kl........",
+        "......KK........",
+        ".......Kl..K....",
+        "........K.Kl....",
+        "........KK......",
+        ".......K.Kl.....",
+        "......Kl..K.....",
+        ".....K.....K....",
+        "....KKl.....K...",
+        "...K.........K..",
+        "..K..g...g......",
+        "................",
+        "....g.g...g.g...",
+        "................"],
+    "door": [
+        "KKKKKKKKKKKKKKKK",
+        "KggggggggggggggK",
+        "KgKKKKKKKKKKKKgK",
+        "KgKTTTTTTTTTTKgK",
+        "KgKTOTTTTTTOTKgK",
+        "KgKTTTTTTTTTTKgK",
+        "KgKKKKKKKKKKKKgK",
+        "KgKTTTTKKTTTTKgK",
+        "KgKTTTKgKKTTTKgK",
+        "KgKTTKYYYYKTTKgK",
+        "KgKTTKYKKYKTTKgK",
+        "KgKTTKYYYYKTTKgK",
+        "KgKTOTKKKKTTOKgK",
+        "KgKTTTTTTTTTTKgK",
+        "KgKKKKKKKKKKKKgK",
+        "KKKKKKKKKKKKKKKK"],
+}
+PART3_ORDER = ["event", "key", "chest", "crack", "door"]
+
+
+def part3_frame(name):
+    return parse(PART3[name])
+
+
 # ------------------------------------------------------------------ cząsteczki 8x8
 # klatki: 0-2 pył (duży -> mały), 3-4 iskra, 5-8 konfetti (4 kolory), 9 gwiazdka awansu
 PARTICLES = [
@@ -536,6 +632,9 @@ PARTICLES = [
     ["...K....", "..KBK...", ".KBBBK..", "KBBWBBK.", "KBBBWBK.", ".KBBBK..", "..KKK...", "........"],
     ["........", "..KKK...", ".KglgK..", "KgllggK.", "KggglgK.", ".KKKKK..", "l..l..l.", "........"],
     ["...C....", ".C.C.C..", "..CWC...", "CCWWWCC.", "..CWC...", ".C.C.C..", "...C....", "........"],
+    # 27-28 (v0.21.50 cz. 3) podgląd mapy: magazyn (pęknięta ściana / drzwi), skrzynia
+    ["YYYYYYY.", "Y..K..Y.", "Y.K...Y.", "Y..KK.Y.", "Y...K.Y.", "Y..K..Y.", "YYYYYYY.", "........"],
+    ["........", ".KKKKK..", "KTTTTTK.", "KYYKYYK.", "KTTYTTK.", "KTTTTTK.", ".KKKKK..", "........"],
 ]
 
 
@@ -899,6 +998,19 @@ MENU_ICONS = [
         "................", "...K........KK..", "..KBK......KYK..", ".KBBBK....KYK...", "KBBWBBK..KYYK...",
         "KBBBWBK.KYYYKK..", "KBBBBBK.KKYYYK..", ".KBBBK....KYK...", "..KKK....KYK....", "........KYK.....",
         "........KK......", "................", "................", "................", "................", "................"],
+    # 27-29 (v0.21.50 cz. 3): wydarzenie z wyborem (SMS z "!"), ulepszenie narzędzia (klucz i plus), klucz do magazynu
+    [   # wydarzenie: telefon z dymkiem "!"
+        ".......KKKKKKK..", "......KYYYKYYYK.", "......KYYYKYYYK.", "......KYYYKYYYK.", "......KYYYYYYYK.",
+        "......KYYYKYYYK.", "..KKKKKKKKYKK...", "..KNNNNNK.......", "..KCWWWCK.......", "..KCCCCCK.......",
+        "..KCWWCCK.......", "..KCCCCCK.......", "..KCWWWCK.......", "..KNNNNNK.......", "..KKKKKKK.......", "................"],
+    [   # ulepszenie: klucz płaski i zielony plus
+        "................", "...........KKK..", "...........KGK..", ".KK......KKKGKKK", "KllK.....KGGGGGK",
+        "KlKlK....KKKGKKK", ".KlllK.....KGK..", "..KlllK....KKK..", "...KlllK........", "....KlllK.......",
+        ".....KlllK......", "......KlllKK....", ".......KllllK...", "........KlKlK...", ".........KKlK...", "..........KK...."],
+    [   # klucz do magazynu
+        "................", "................", "................", "..KKKK..........", ".KYYYYK.........",
+        "KYYKKYYK........", "KYK..KYKKKKKKKK.", "KYK..KYYYYYYYYYK", "KYYKKYYKKKKYKYK.", ".KYYYYK....KYK..",
+        "..KKKK......K...", "................", "................", "................", "................", "................"],
 ]
 
 

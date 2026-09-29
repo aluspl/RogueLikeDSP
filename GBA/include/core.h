@@ -3285,7 +3285,12 @@ namespace core
                     if(enemies[i].alive) enemy_act(i);
             if(st == status::playing && hero.x == stairs_x && hero.y == stairs_y && stairs_locked())
                 push(message().add("Schody zamknięte: dokumenty ").add(docs_count()).add("/").add(docs_needed()).as(bad));
-            else if(st == status::playing && hero.x == stairs_x && hero.y == stairs_y)
+            else if(st == status::playing && hero.x == stairs_x && hero.y == stairs_y) clear_stage();
+        }
+
+        // Wejście na otwarte schody: etap zaliczony (Respekt, oferta premii, wynik, doświadczenie, Inspekcja nadzoru).
+        void clear_stage()
+        {
             {
                 st = status::stage_clear;
                 finish_stage();
@@ -3305,7 +3310,12 @@ namespace core
         {
             if(st != status::playing) return;
             if(boss >= 0 && enemies[boss].alive) { enemies[boss].hp = 1; enemies[boss].flags = uint8_t(enemies[boss].flags | actor_phase); hero_attack(boss); }
-            else if(stairs_x >= 0) { docs = uint8_t((1u << docs_needed()) - 1); hero.x = int8_t(stairs_x); hero.y = int8_t(stairs_y); end_turn(); }
+            else if(stairs_x >= 0)   // na schody i od razu zaliczony (problem obok mógłby zepchnąć bohatera w tej turze)
+            {
+                docs = uint8_t((1u << docs_needed()) - 1); hero.x = int8_t(stairs_x); hero.y = int8_t(stairs_y);
+                ++turns;
+                clear_stage();
+            }
         }
 
         // Przejście do kolejnego etapu (po ekranie harmonogramu) wybraną ścieżką. Przerwa na kawę: +5 HP.

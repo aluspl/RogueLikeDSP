@@ -76,6 +76,16 @@
 //  49 - pył + iskra: Glazurnik w akcie III (pył), obok w prawo zapylony Kornik i dwa obok niego; A = Wybuch pyłu
 //  50 - zamróz + uderzenie: Mróz, obok w prawo zmrożony Kamień w wykopie; D-pad w prawo = Pęknięcie
 //  51 - mokry + prąd na bohaterze: bohater mokry (ikona w HUD), obok Zwarcie; B = czekaj, porażenie bohatera
+//  52 - wydarzenia z wyborem (#30): w prawo trzy pola z SMS-em - Tańszy dostawca (30%: Pleśń), Znaleziony projekt
+//       (premia 1 z 3 od razu), Stara ostrzałka (ulepszenie narzędzia); D-pad w prawo = SMS, A = odpowiedzi, A = wynik
+//  53 - ulepszenie w Hurtowni (#31): etap Strop z bossem, Kielnia+1, 200 zł i 9 stali; L+R+SELECT = boss pokonany,
+//       premia, harmonogram, Hurtownia: pierwszy wiersz "Ulepsz narzędzie" (A = +2 i wybór cechy)
+//  54 - narzędzie przy ulepszonym (#31): Kielnia+2 z Przebiciem, obok w prawo skrzynka z Młotem udarowym
+//       (okno: porównanie i "ulepszenie przepadnie", A zamienia, B zostaje); telefon -> Sprzęt -> A = rozpiska z Ulepszeniem
+//  55 - magazyn za pękniętą ścianą (#32): ściana w prawo od bohatera, klucz w kieszeni, 2 pola dalej ogłuszony problem
+//       z kluczem (B trzymane: "Ma klucz do magazynu!"); D-pad w prawo = otwarcie, 3x w prawo = skrzynia; L = mapa
+//  56 - drzwi magazynu (#32): drzwi w prawo, bez klucza (podpowiedź "potrzebny klucz"), Operator koparki nie pomoże;
+//       L = podgląd mapy ze znacznikiem magazynu; telefon -> Zadania: wiersz Magazyn
 #include "core.h"
 #include "meta.h"
 
@@ -286,6 +296,37 @@ namespace debug_scenario
         if(scenario == 43) { offer(g, "Koniczyna", "Szczęśliwa moneta", "Termos z bufetu"); g.cash = 40; }
         if(scenario == 44) offer(g, "Hartowana kielnia", "Instrukcja BHP", "Tarcza tnąca");
         if(scenario == 45) offer(g, "Transformator", "Młot mistrza", "Anioł stróż");
+    }
+
+    // Scenariusze 55-56: etap z magazynem danego rodzaju, ściana w prawo od pokoju; bohater przed nią, bez strażnika.
+    inline void secret_stage(core::game& g, int kind)
+    {
+        const uint32_t base = g.run_seed;
+        for(uint32_t k = 1; k < 4000; ++k)
+        {
+            g.run_seed = base + k * 7919u;
+            g.start_stage(F + 1);
+            if(g.has_secret() && g.secret_kind == kind && g.secret_dir == 0) break;
+        }
+        g.hero.x = int8_t(g.secret_front_x()); g.hero.y = int8_t(g.secret_front_y());
+        for(int i = 0; i < g.enemies_count; ++i)   // bez strażnika i bez problemów tuż obok
+            if(g.in_secret(g.enemies[i].x, g.enemies[i].y) || core::cheb(g.enemies[i].x, g.enemies[i].y, g.hero.x, g.hero.y) <= 3)
+                g.enemies[i].alive = false;
+        g.key_holder = -1; g.stage_event = -1;   // bez SMS-a z placu (skrypt: jedna wiadomość)
+        for(int i = 0; i < g.pickups_count; ++i) if(g.pickups[i].type == core::event_tile) g.pickups[i].active = false;
+        for(int y = g.hero.y - 3; y <= g.hero.y + 3; ++y)   // odkryty kawałek obok (ściana widoczna)
+            for(int x = g.hero.x - 3; x <= g.hero.x + 3; ++x) if(g.lv.in(x, y) && ! g.in_secret(x, y)) g.fov[y][x] = core::remembered;
+    }
+    // Pole wydarzenia (po nazwie) na polu (dx, 0) od bohatera.
+    inline void event_at(core::game& g, const char* name, int dx)
+    {
+        for(int e = 0; e < data::choice_events_count; ++e)
+        {
+            const char* x = data::choice_events[e].name; const char* y = name;
+            while(*x && *x == *y) { ++x; ++y; }
+            if(*x == *y && g.pickups_count < core::max_pickups)
+                g.pickups[g.pickups_count++] = { int8_t(g.hero.x + dx), g.hero.y, core::event_tile, true, uint8_t(e) };
+        }
     }
 
     // Wołane raz, na wejściu na pierwszy etap budowy.
@@ -640,6 +681,53 @@ namespace debug_scenario
                 for(int w = 0; w < data::weather_count; ++w) if(data::weather[w].effect == core::weather_effect::frost) g.weather = int8_t(w);
                 place_at(g, data::enemy_kamien, 1, 0, 90);
                 g.enemies[0].flags = core::actor_frozen;
+                break;
+            }
+            case 52:
+            {
+                clear_area(g, -1, -1, 4, 1);
+                g.enemies_count = 0; g.pickups_count = 0; g.key_holder = -1;
+                event_at(g, "Tańszy dostawca", 1);
+                event_at(g, "Znaleziony projekt", 2);
+                event_at(g, "Stara ostrzałka", 3);
+                g.weapon_lvl = 1;   // ostrzałka: +2 i wybór cechy
+                break;
+            }
+            case 53:
+            {
+                g.start_stage(F + 3);   // Strop: boss aktu I, potem Hurtownia
+                g.cash = 200; g.mats[1] = 9; g.weapon_lvl = 1;
+                break;
+            }
+            case 54:
+            {
+                clear_area(g, -1, -1, 2, 1);
+                g.enemies_count = 0; g.pickups_count = 0; g.key_holder = -1;
+                g.weapon_lvl = 2; g.weapon_trait = 0;
+                g.pickups[g.pickups_count++] = { int8_t(g.hero.x + 1), g.hero.y, core::tool, true, uint8_t(tool_index("Młot udarowy")) };
+                place_at(g, data::enemy_kamien, 0, -1, 90);
+                break;
+            }
+            case 55:
+            {
+                secret_stage(g, 0);
+                g.keys = 1;
+                int x = -1, y = -1;   // wolne pole 2-3 od bohatera, poza magazynem
+                for(int yy = g.hero.y - 3; yy <= g.hero.y + 3 && x < 0; ++yy)
+                    for(int xx = g.hero.x - 3; xx <= g.hero.x; ++xx)
+                        if(core::cheb(xx, yy, g.hero.x, g.hero.y) >= 2 && g.lv.at(xx, yy) == core::tile::floor && ! g.occupied(xx, yy)
+                           && ! g.pickup_at(xx, yy) && ! g.in_secret(xx, yy)) { x = xx; y = yy; break; }
+                if(x >= 0 && g.enemies_count < core::max_enemies)
+                {
+                    g.spawn(data::enemy_kornik, x, y);
+                    g.enemies[g.enemies_count - 1].awake = true; g.enemies[g.enemies_count - 1].stun = 90;
+                    g.key_holder = int8_t(g.enemies_count - 1);
+                }
+                break;
+            }
+            case 56:
+            {
+                secret_stage(g, 1);
                 break;
             }
             case 51:

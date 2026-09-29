@@ -529,7 +529,7 @@ assert len(dh) == 6 and all(len(x) <= 36 for x in dh), dh
 L += ["inline constexpr const char* damage_help[] = {   // Jak grać: obrażenia broni w prostych słowach (rozpiska #26)"]
 L += [f"    {s(t)}," for t in dh] + ["};", f"inline constexpr int damage_help_count = {len(dh)};", ""]
 eh = d["extrasHelp"]   # v0.21.50 cz. 3: Jak grać - wydarzenia, ulepszenia, magazyn (GBA 2 strony po 6 linii, Godot jedna)
-assert len(eh) == 12 and all(len(x) <= 36 for x in eh), eh
+assert len(eh) == 12 and all(len(x) <= 31 for x in eh), eh   # GBA: 224 px
 L += ["inline constexpr const char* extras_help[] = {   // Jak grać: wydarzenia z wyborem, ulepszanie narzędzia, magazyn"]
 L += [f"    {s(t)}," for t in eh] + ["};", f"inline constexpr int extras_help_count = {len(eh)};", ""]
 L += ["inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonogramu między etapami"]
