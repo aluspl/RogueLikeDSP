@@ -28,7 +28,8 @@ public class GameDataTests
         Assert.Equal(Behavior.Ranged | Behavior.Flees, D.Enemies[D.EnemyIndex("mostek")].Tags);
         Assert.Equal(0, D.Enemies[0].Tags);
         Assert.True(D.Acts[0].Mechanic == ActMechanic.Mud && D.Acts[1].Mechanic == ActMechanic.Gust && D.Acts[2].Mechanic == ActMechanic.Dust);
-        Assert.True(D.Acts[0].MechValue == 7 && D.Acts[1].MechValue == 6 && D.Acts[2].MechValue == 2);
+        Assert.True(D.Acts[0].MechValue == 14 && // v0.21.51: błoto rzadziej (co 14. pole)
+             D.Acts[1].MechValue == 6 && D.Acts[2].MechValue == 2);
         Assert.True(D.BehaviorRangedReach == 3 && D.BehaviorPushCooldown == 3 && D.BehaviorBlastDelay == 2 && D.BehaviorNames[3] == "wybucha");
         Assert.Equal(0x1FF, D.Weather[D.Weather.Length - 1].StagesMask); // deszcz: Akt 0 i etapy 1-7
         Assert.True(D.Enemies[11].Shape == SlamShape.Cross && D.Enemies[11].Summon == 4 && D.Enemies[11].SummonMax == 2);
@@ -81,7 +82,7 @@ public class GameDataTests
         Assert.True(D.CritBasePct == 5 && D.CritPerLuckPct == 3 && D.CritMultiplier == 2 && D.DodgeMaxPct == 20);
         Assert.True(D.ThermosCapacity == 3 && D.CoffeeHeal == 8 && D.BotDrinkBelowPct == 40 && D.GearDeclineXp == 1);
         Assert.Equal(107, D.Stages[2].HpPct);
-        Assert.Equal("v0.21.50", D.Version);
+        Assert.Equal("v0.21.51", D.Version);
     }
 
     [Fact]
