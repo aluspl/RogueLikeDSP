@@ -30,7 +30,7 @@ public sealed class DebugScenes
         "event-map", "event-sms", "event-choices", "event-result", "event-boon", "upgrade-shop", "upgrade-trait", "upgrade-gear",
         "tool-swap", "secret-crack", "secret-card", "secret-open", "secret-door", "secret-map", "tasks-extras", "help-extras",
         "recap-endmsg", "recap-death", "recap-death-scroll", "recap-win", "recap-end", "weekly", "weekly-card", "weekly-run",
-        "story-archive", "story-thread", "estate-grow",
+        "story-archive", "story-thread", "estate-grow", "help-meta",
     ];
 
     private readonly App _app;
@@ -147,9 +147,10 @@ public sealed class DebugScenes
             case "help-dmg":
             case "help-combos":
             case "help-extras":
+            case "help-meta":
                 Flow.Help.Open(true, true);
                 if (_app.Nodes.Phone.Current is Phone.Pages.HelpPage hp)
-                    hp.Page = scene == "help" ? 0 : scene == "help-acts" ? 1 : scene == "help-stats" ? 2 : scene == "help-dmg" ? 3 : scene == "help-combos" ? 4 : 5;
+                    hp.Page = scene == "help" ? 0 : scene == "help-acts" ? 1 : scene == "help-stats" ? 2 : scene == "help-dmg" ? 3 : scene == "help-combos" ? 4 : scene == "help-extras" ? 5 : 6;
                 _app.Nodes.Phone.QueueRedraw();
                 return;
             case "dmg-class": // rozpiska obrażeń broni (#26): dymek nad narzędziem na karcie zawodu

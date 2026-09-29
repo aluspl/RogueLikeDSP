@@ -104,6 +104,8 @@ public sealed class GameData
     public string[] DamageHelpLines { get; private init; } = [];
     /// <summary>v0.21.50 cz. 3: Jak grać – wydarzenia z wyborem, ulepszanie narzędzia, magazyn (sekcja "extrasHelp").</summary>
     public string[] ExtrasHelpLines { get; private init; } = [];
+    /// <summary>v0.21.50 cz. 4: Jak grać – podsumowanie budowy, wyzwanie tygodnia, fabuła (sekcja "metaHelp").</summary>
+    public string[] MetaHelpLines { get; private init; } = [];
     /// <summary>Wydarzenia z wyborem (#30, sekcja "choiceEvents") i szansa na pole wydarzenia na etapie.</summary>
     public ChoiceEventDef[] ChoiceEvents { get; private init; } = [];
     public int ChoiceEventChancePct { get; private init; }
@@ -803,6 +805,7 @@ public sealed class GameData
             ChestMats = chestMats,
             ChestCash = chestCash,
             ChestGearMin = chestGearMin,
+            MetaHelpLines = d.TryGetProperty("metaHelp", out var mhj) ? mhj.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : [],
             ExtrasHelpLines = d.TryGetProperty("extrasHelp", out var ehj) ? ehj.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : [],
             Combos = combos,
             ComboSources = comboSources,

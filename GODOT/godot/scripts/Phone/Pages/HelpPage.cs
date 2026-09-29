@@ -34,11 +34,12 @@ public sealed class HelpPage : PhonePage
         ("Telefon", "aplikacja (trzymaj: mapa)"),
     ];
 
-    private const int Pages = 6;
+    private const int Pages = 7;
     private readonly GameData _d;
     private int _page;
 
-    /// <summary>Strona 0-5 (sceny zrzutów); 4 = kombinacje stanów, premie i elity (v0.21.50 cz. 2); 5 = wydarzenia, ulepszenia, magazyn (cz. 3).</summary>
+    /// <summary>Strona 0-6 (sceny zrzutów); 4 = kombinacje stanów, premie i elity (v0.21.50 cz. 2); 5 = wydarzenia, ulepszenia, magazyn (cz. 3);
+    /// 6 = podsumowanie budowy, wyzwanie tygodnia, fabuła (cz. 4).</summary>
     public int Page
     {
         get => _page;
@@ -89,6 +90,11 @@ public sealed class HelpPage : PhonePage
         if (_page == 4)
         {
             DrawList(p, "KOMBINACJE STANÓW", ComboLines(_d), "SKĄD STANY, PREMIE, ELITY", ComboWhereLines(_d));
+            return;
+        }
+        if (_page == 6)
+        {
+            DrawList(p, "PO BUDOWIE, TYDZIEŃ, FABUŁA", _d.MetaHelpLines, "GDZIE", MetaWhereLines);
             return;
         }
         if (_page == 5)
@@ -183,6 +189,13 @@ public sealed class HelpPage : PhonePage
         for (var i = from; i < from + 6 && i < d.ExtrasHelpLines.Length; i++) l.Add(d.ExtrasHelpLines[i]);
         return string.Join(" ", l);
     }
+
+    private static readonly string[] MetaWhereLines =
+    [
+        "Podsumowanie: po końcu budowy",
+        "Tytuł: Wyzwanie tygodnia",
+        "Profil > Osiedle: Wiadomości",
+    ];
 
     private static readonly string[] ActLines =
     [
