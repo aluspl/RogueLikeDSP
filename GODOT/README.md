@@ -4,7 +4,7 @@ Wersja Godot gry z demo GBA (`../GBA`): roguelike budowlany, w którym etapy bud
 a wrogami są *problemy budowy*. Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KONCEPCJA.md)
 (telefon z aplikacją PlanBudowlany jako interfejs, oprawa 2.5D – kolejne kamienie milowe).
 
-**Stan: zgodny z GBA v0.21.50 cz. 3 (rdzeń i test złoty), wcześniej v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
+**Stan: zgodny z GBA v0.21.50 cz. 4 (rdzeń i test złoty), wcześniej v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
 z pieczątkami i Decyzją odmowną, samouczek menu, profil v10; wcześniej 10 etapów, 20 nowych problemów
 z zachowaniami, mechaniki aktów, opis statystyk; Respekt za etapy i sklep Respektu,
 nagrody za odbiór – Młot udarowy, Pistolet do kotew, buty, pas, zawody Dekarz, Tynkarz, Operator koparki – nowy balans
@@ -51,6 +51,24 @@ wydarzenia (z odpowiedzią) albo magazynu; Jak grać – strona 6 (`extrasHelp`)
 `tool-swap`, `secret-crack`, `secret-card`, `secret-open`, `secret-door`, `secret-map`, `tasks-extras`,
 `help-extras`; test dymny: wydarzenie (strzałka, odpowiedź, wynik), ulepszenie z cechą w Hurtowni, zostawienie
 ulepszonego narzędzia, drzwi bez klucza, pęknięta ściana z kluczem i skrzynia.
+
+Nowe w v0.21.50 cz. 4 (podsumowanie budowy #33, wyzwania tygodnia #34, fabuła #35): rdzeń `Game.Recap` (port 1:1
+z `core.h`: ostatnie ciosy w bohatera z rodzajem i elitą, najmocniejsze ciosy, oś czasu etapów – dni, usunięte, premia,
+SMS, magazyn, ulepszenie, elita, boss, kombinacje, synergia), `Recap` (rada – pierwsza pasująca z `recap.tips` – i najbliższy
+cel: najtańsza ranga Respektu albo Szkolenie), `Weekly` (tydzień od poniedziałku `weekly.epoch`, seed z numeru tygodnia,
+zasady z `weekly.list`: zawód, bez kawy – kawa na wynos, elity %, pogoda, bez Hurtowni, materiały %, HP %, ciosy %,
+budżet; wyniki 3 tygodni), `Story` (wątki `story.arc` za kamienie milowe, nowe / przeczytane, ozdoby Osiedla `estate.decor`);
+profil v11 (188 bajtów, migracja z v10), zapis PBRUN13, test złoty z polem `part4` i 6 budowami tygodnia, testy
+`RecapWeeklyStoryTests`. Po SMS-ie końca budowy (i harmonogramie domu po wygranej) **Podsumowanie** (`RecapScreen` /
+`RecapPage`): jedna przewijana strona – co zatrzymało budowę („Pokonało Cię: Zwarcie”, etap i akt), ostatnie ciosy,
+najmocniejsze ciosy, oś czasu, nagrody (doświadczenie, Respekt, zlecenie, rekord dnia / tygodnia), najbliższy cel i rada;
+góra/dół albo dotknięcie górnej / dolnej połowy przewija. Tytuł: **Wyzwanie tygodnia** (`WeeklyScreen` / `WeeklyPage`:
+zasady, zawód, wyniki tygodni, „Wyślij wynik” – `ILeaderboard.WeeklyBoardId` / `SubmitWeekly`, zaślepka bez sieci),
+zasada w telefonie > Zadania, bez NG+. Profil > Osiedle: ozdoby rosną z wygranymi, **Wiadomości** (archiwum wątków,
+„Nowa” do przeczytania, zablokowane z podpowiedzią), baner „Nowa wiadomość” na planszy końcowej; Jak grać – strona 7.
+Sceny zrzutów: `recap-endmsg`, `recap-death`, `recap-death-scroll`, `recap-win`, `recap-end`, `weekly`, `weekly-card`,
+`weekly-run`, `story-archive`, `story-thread`, `estate-grow`, `help-meta`; test dymny: wyzwanie tygodnia (start z zasadą,
+porażka, podsumowanie z przewijaniem, bez NG+, tabela tygodnia), podsumowanie po wygranej, Wiadomości (wątek przeczytany).
 
 Nowe w v0.21.49 cz. 3 (warstwa Godota): **Akt 0 „Papierologia”** z nagrody za odbiór - kafle biura z regałami
 segregatorów (Działka i pozwolenie) i wykopu z rurą (Przyłącza), 8 nowych problemów i boss Decyzja odmowna (klatki
