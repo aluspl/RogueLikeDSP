@@ -75,17 +75,39 @@ TOOLS = {
     "bucket":  [(12, 7, "K"), (13, 7, "Y"), (14, 7, "Y"), (15, 7, "K"), (12, 8, "Y"), (13, 8, "Y"), (14, 8, "Y"),
                 (15, 8, "K"), (12, 9, "Y"), (13, 9, "Y"), (14, 9, "Y"), (15, 9, "K"), (12, 10, "l"), (13, 10, "K"),
                 (14, 10, "l"), (15, 10, "K")],                                                             # łyżka koparki z zębami
+    # v0.21.51 cz. 2: zawody z sekretnych zleceń
+    "torch":   [(12, 10, "K"), (13, 10, "g"), (13, 9, "g"), (14, 8, "g"), (15, 7, "C"), (15, 6, "W"), (14, 5, "Y"),
+                (13, 6, "Y")],                                                                             # uchwyt spawalniczy, płomień, iskry
+    "pole":    [(13, 2, "K"), (13, 3, "R"), (13, 4, "W"), (13, 5, "R"), (13, 6, "W"), (13, 7, "R"), (13, 8, "W"),
+                (13, 9, "R"), (13, 10, "W"), (13, 11, "R"), (13, 12, "K")],                                # łata geodezyjna w pasy
+    "hammer":  [(12, 7, "K"), (13, 7, "l"), (14, 7, "l"), (15, 7, "K"), (12, 8, "K"), (13, 8, "g"), (14, 8, "g"),
+                (15, 8, "K"), (13, 9, "T"), (13, 10, "T"), (13, 11, "T")],                                 # młotek ciesielski
+}
+
+# Twarz fachowca inna niż wspólna (przyłbica spawacza): wiersz -> 16 znaków ("." = bez zmian).
+FACES = {
+    "torch": {5: "....KNNNNNNK....", 6: "....KNCNNCNK....", 7: "....KNNNNNNK...."},
 }
 
 # (kask, kamizelka, narzędzie) w kolejności zawodów z data/game.json
 WORKERS = [("W", "O", "log"), ("O", "B", "trowel"), ("Y", "T", "nailgun"),
            ("B", "N", "tester"), ("R", "B", "wrench"), ("G", "g", "grinder"),
-           ("C", "R", "tile"), ("l", "P", "hawk"), ("D", "O", "bucket")]   # v0.21.49: Dekarz, Tynkarz, Operator koparki
+           ("C", "R", "tile"), ("l", "P", "hawk"), ("D", "O", "bucket"),     # v0.21.49: Dekarz, Tynkarz, Operator koparki
+           ("g", "N", "torch"), ("P", "O", "pole"), ("T", "Y", "hammer")]   # v0.21.51 cz. 2: Spawacz, Geodeta, Majster
 
 
-def worker_frame(index, frame):
+def worker_frame(index, frame, stripes=False):
     helmet, vest, tool = WORKERS[index]
     px = worker(helmet, vest, frame)
+    if stripes:   # v0.21.51 cz. 2: kask w paski (wygląd z sekretnego zlecenia) - biało-czerwone pasy na kasku
+        for y in range(1, 4):
+            for x in range(16):
+                if WORKER_TOP[y][x] in "HW":
+                    px[y * 16 + x] = CODES["W" if x % 2 == 0 else "R"]
+    for y, row in FACES.get(tool, {}).items():
+        for x, ch in enumerate(row):
+            if ch != ".":
+                px[y * 16 + x] = CODES[ch]
     for x, y, ch in TOOLS[tool]:
         px[y * 16 + x] = CODES[ch]
     return px
@@ -647,7 +669,7 @@ def particle_frames():
 
 
 # ------------------------------------------------------------------ Osiedle: domy 16x16
-# klatka = wielkość * 9 + zawód (dach w kolorze kasku zawodu), 36 = pusta działka
+# klatka = wielkość * liczba zawodów + zawód (dach w kolorze kasku zawodu), potem pusta działka
 HOUSE_SMALL = [
     "................",
     "................",
@@ -777,6 +799,19 @@ ABILITY_ICONS = [
         "................", "................", ".....KKKK.......", "....KgggK.......", ".....KKgK.......",
         "......KgKKKKK...", "l.l..KYYYYYYYK..", ".....KYYYYYYYYK.", "llll.KYYYYYYYYK.", ".....KYYYYYYYKlK",
         "l.l..KKYYYYYKlK.", "......KKKKKKlK..", "................", "................", "................", "................"],
+    # v0.21.51 cz. 2: zawody z sekretnych zleceń
+    [   # Spaw: uchwyt spawalniczy z niebieskim płomieniem i iskrami
+        "................", "..........Y..Y..", "...........Y....", "........Y.KWK.Y.", "..........KCK...",
+        ".......Y..KCK...", ".........KgK.Y..", "........KgK.....", ".......KgK......", "......KggK......",
+        ".....KggK.......", "....KNNK........", "...KNNK.........", "..KNNK..........", "..KKK...........", "................"],
+    [   # Tyczenie: łata w pasy i celownik
+        "................", ".......K........", "......KRK.......", "......KWK...K...", "......KRK...K...",
+        "......KWK.KKKKK.", "......KRK...K...", "......KWK...K...", "......KRK.......", "......KWK.......",
+        "......KRK.......", ".....KKKKK......", "....KT...TK.....", "...KT.....TK....", "..KK.......KK...", "................"],
+    [   # Złota rączka: złota skrzynka z narzędziami
+        "................", "................", "......KKKK......", ".....KK..KK.....", "...KKKKKKKKKK...",
+        "..KgKlK.KKYYK...", "..KgKlK.KYYYK...", "..KKKKKKKKKKKK..", "..KYYYYYYYYYYK..", "..KYYYYKKYYYYK..",
+        "..KOOOOKKOOOOK..", "..KYYYYYYYYYYK..", "..KOOOOOOOOOOK..", "..KKKKKKKKKKKK..", "................", "................"],
 ]
 
 
@@ -1047,6 +1082,27 @@ MENU_ICONS = [
         "................", "................", "................", "..KKKK..........", ".KYYYYK.........",
         "KYYKKYYK........", "KYK..KYKKKKKKKK.", "KYK..KYYYYYYYYYK", "KYYKKYYKKKKYKYK.", ".KYYYYK....KYK..",
         "..KKKK......K...", "................", "................", "................", "................", "................"],
+    # 30-34 (v0.21.51 cz. 2): sekretne zlecenie (koperta z "?"), Młot Zenka, Poziomica mistrza, Złota kielnia, Kask w paski
+    [   # sekret: zapieczętowana koperta z "?"
+        "................", "................", ".KKKKKKKKKKKKKK.", ".KNPPPPPPPPPPNK.", ".KPNPPPPPPPPNPK.",
+        ".KPPNPWWWWPNPPK.", ".KPPPNPPPWNPPPK.", ".KPPPPNWWNPPPPK.", ".KPPPPPWNPPPPPK.", ".KPPPPPPPPPPPPK.",
+        ".KPPPPPWPPPPPPK.", ".KKKKKKKKKKKKKK.", "................", "................", "................", "................"],
+    [   # Młot Zenka: ciężki młot z pędem
+        "................", "..KKKKKKK.......", ".KllllllgK......", ".KllllllgK..l...", ".KggggggggK.....",
+        "..KKKTKKKK..ll..", ".....KTK........", ".....KTK...l....", ".....KTK........", ".....KTK........",
+        ".....KTK........", ".....KTK........", ".....KTK........", ".....KRK........", ".....KKK........", "................"],
+    [   # Poziomica mistrza: złota poziomica z pęcherzykiem
+        "................", "................", "................", "................", "KKKKKKKKKKKKKKKK",
+        "KYYYYYYYYYYYYYYK", "KYOYYKKKKKYYOYYK", "KYOYYKCWCKYYOYYK", "KYYYYKKKKKYYYYYK", "KOOOOOOOOOOOOOOK",
+        "KKKKKKKKKKKKKKKK", "................", "......W.........", ".....WYW........", "......W.........", "................"],
+    [   # Złota kielnia: trójkątne złote ostrze z błyskiem, trzonek w lewo w dół
+        "................", "..........W.....", ".........WYW....", "....KK....W.....", "....KYKK........",
+        "....KYYYKK......", "....KYWYYYKK....", "....KYYWYYYYKK..", "....KYYYYYYYYYK.", "....KYYYYYYYKK..",
+        "....KYYYYYKK....", "....KYYYKK......", "...KTKKK........", "..KTK...........", ".KTK............", ".KK............."],
+    [   # Kask w paski: biało-czerwony kask
+        "................", "................", "................", ".....KKKKKK.....", "....KRWRWRWK....",
+        "...KRWRWRWRWK...", "...KRWRWRWRWK...", "..KRWRWRWRWRWK..", "..KRWRWRWRWRWK..", ".KKKKKKKKKKKKKK.",
+        ".KWWWWWWWWWWWWK.", ".KKKKKKKKKKKKKK.", "................", "................", "................", "................"],
 ]
 
 

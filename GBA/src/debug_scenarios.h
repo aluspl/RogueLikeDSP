@@ -93,6 +93,19 @@
 //  59 - wyzwanie tygodnia (#34): data 29.09.2026 i wyniki dwóch wcześniejszych tygodni (L na tytule; A = start z zasadą)
 //  60 - fabuła i Osiedle (#35): 6 wygranych (6 domów, 4 ozdoby), część wątków odblokowana i nieprzeczytana
 //       (tytuł -> SELECT -> Osiedle -> A = Wiadomości, A = wątek)
+//  v0.21.51 cz. 2: sekretne zlecenia (#39)
+//  61 - strona Sekrety: 3 z 8 wykonane (Bez kofeiny, Mokra robota, Na styk), reszta "???" z podpowiedzią (tytuł ->
+//       SELECT -> Odznaki -> A x3); Koszty -> SELECT = Respekt: na dole "???" (Zaprawiony w boju - sekret)
+//  62 - baner sekretu w budowie: 5. magazyn otwarty (licznik), L+R+SELECT = etap zaliczony, baner "Sekretne zlecenie!"
+//       (Poziomica mistrza), potem na tytule dymek "Nowość"
+//  63 - Spawacz (wszystkie sekrety wykonane): trzy ogłuszone problemy w linii w prawo; R = Spaw (iskry i dym), A = wybuch pyłu
+//  64 - Geodeta: cały plac odkryty od startu (L = mapa), obok w prawo ogłuszony problem; R = Tyczenie, A = cios z premią
+//  65 - Majster: moc innego fachu na etap (ikona w HUD), problemy wokół; R = pożyczona moc, L+R+SELECT = kolejny etap, inna moc
+//  66 - narzędzia i wygląd z sekretów: kask w paski i złota kielnia, w prawo skrzynki Młot Zenka i Poziomica mistrza,
+//       ogłuszony problem dalej (A po podniesieniu młota = kryt ze złotym błyskiem i odepchnięcie); magazyn na etapie (L = mapa
+//       z magazynem dzięki Poziomicy)
+//  67 - wygrana z sekretami: ostatni etap z bossem, 2 HP, bez kawy, szybkie etapy; L+R+SELECT = odbiór, banery 3 sekretów
+//       (Bez kofeiny, Na styk, Szybka ekipa), na tytule dymki "Nowość"
 #include "core.h"
 #include "meta.h"
 
@@ -126,6 +139,18 @@ namespace debug_scenario
     {
         for(int i = 0; i < data::rewards_count; ++i) if(data::rewards[i].kind == core::reward_kind::act) return i;
         return data::rewards_count;
+    }
+
+    // Wszystkie sekretne zlecenia wykonane (nowe zawody, narzędzia, wygląd, Respekt), bez dymków nowości.
+    inline void all_secrets(core::profile& p)
+    {
+        p.secrets = uint16_t((1 << data::secrets_count) - 1); p.secrets_new = 0;
+        p.cosmetic = uint8_t(1 << data::cosmetic_stripes);
+    }
+    inline int secret_index(core::secret_kind k)
+    {
+        for(int i = 0; i < data::secrets_count; ++i) if(data::secrets[i].kind == k) return i;
+        return 0;
     }
 
     inline void unlock_all(core::profile& p)
@@ -189,6 +214,14 @@ namespace debug_scenario
             p.respect_ranks[0] = 1; p.respect_ranks[5] = 2; p.respect_ranks[8] = 3; p.respect_ranks[12] = 1;
         }
         if(scenario == 23) { p.respect = 12; p.respect_total = 12; }
+        if(scenario == 61)
+        {
+            p.secrets = uint16_t((1 << secret_index(core::secret_kind::no_coffee_win)) | (1 << secret_index(core::secret_kind::shock_combos))
+                                 | (1 << secret_index(core::secret_kind::low_hp_win)));
+            p.respect = 40; p.respect_total = 90; p.wins = 3; p.rewards = 3;
+        }
+        if(scenario >= 63 && scenario <= 66) all_secrets(p);
+        if(scenario == 67) { p.wins = 4; p.rewards = 4; p.runs = 6; }
         if(scenario == 36) { p.catalog = 0xFFFF; p.catalog_hi = 0xFFFFFFFFu; }
         if(scenario == 37 || scenario == 38) { p.rewards = uint8_t(data::rewards_count); p.wins = 8; }   // Akt 0 odebrany
         if(scenario == 39) { p.tutorial = 0; p.wins = 1; p.rewards = 1; p.investor = 0; core::set_flag(p, core::prologue_seen); }
@@ -204,7 +237,7 @@ namespace debug_scenario
                 if(data::upgrades[i].effect == core::upgrade_effect::dmg_pct) p.levels[i] = uint8_t(data::upgrades[i].levels);
             for(int i = 0; i < data::respect_count; ++i)
                 if(data::respect[i].effect == core::respect_effect::dmg_pct || data::respect[i].effect == core::respect_effect::crit)
-                    p.respect_ranks[i] = uint8_t(data::respect[i].ranks);
+                    core::set_respect_rank(p, i, data::respect[i].ranks);
             p.badges = uint16_t((1 << data::badge_seryjny) | (1 << data::badge_zawodowiec));
             for(int i = 0; i < data::contracts_count; ++i) if(data::contracts[i].keepsake >= 0) p.contracts = uint8_t(p.contracts | (1 << i));
             p.keepsake = 3;   // Szczęśliwa kielnia (+2 szczęścia)
@@ -360,6 +393,12 @@ namespace debug_scenario
         {
             core::run_mods m = g.bonus;
             g.new_run(scenario == 48 ? class_of(core::ability_effect::chain) : class_of(core::ability_effect::spin), g.run_seed, g.diff, m);
+        }
+        if(scenario >= 63 && scenario <= 65)   // v0.21.51 cz. 2: zawód z sekretu niezależnie od wyboru na ekranie zawodu
+        {
+            const core::ability_effect e[3] = { core::ability_effect::weld, core::ability_effect::mark, core::ability_effect::borrow };
+            core::run_mods m = g.bonus;
+            g.new_run(class_of(e[scenario - 63]), g.run_seed, g.diff, m);
         }
         if(scenario >= 25 && scenario <= 27)   // nowy zawód niezależnie od wyboru na ekranie zawodu
         {
@@ -793,6 +832,50 @@ namespace debug_scenario
                     g.apply_status(core::status_effect::wet, 6);
                     place_at(g, data::enemy_zwarcie, 1, 0, 0);
                 }
+                break;
+            }
+            case 62:   // 5. magazyn: licznik w budowie, na końcu etapu baner sekretu
+            {
+                g.secrets_found = uint8_t(data::secrets[secret_index(core::secret_kind::storerooms)].value);
+                break;
+            }
+            case 63:   // Spawacz: trzy problemy w linii w prawo
+            case 65:   // Majster: pożyczona moc (ten sam układ - linia i obok)
+            {
+                clear_area(g, -1, -2, 5, 2);
+                g.enemies_count = 0;
+                for(int k = 1; k <= 3; ++k) place_at(g, data::enemy_kornik, k + 1, 0, 90);
+                if(scenario == 65) { place_at(g, data::enemy_plesn, 0, -1, 90); place_at(g, data::enemy_kornik, 1, 1, 90); }
+                for(int i = 0; i < g.enemies_count; ++i) g.enemies[i].hp = g.enemies[i].max_hp = 60;
+                break;
+            }
+            case 64:   // Geodeta: plac odkryty od startu, problem obok w prawo
+            {
+                clear_area(g, -1, -1, 2, 1);
+                g.enemies_count = 0;
+                place_at(g, data::enemy_kornik, 1, 0, 3);
+                g.enemies[0].hp = g.enemies[0].max_hp = 60;
+                break;
+            }
+            case 66:   // Młot Zenka, Poziomica mistrza, kryt ze złotym błyskiem
+            {
+                secret_stage(g, 0);
+                clear_area(g, -3, -2, -1, 2);
+                const int t0 = tool_index("Młot Zenka"), t1 = tool_index("Poziomica mistrza");
+                g.pickups[g.pickups_count++] = { int8_t(g.hero.x - 1), g.hero.y, core::tool, true, uint8_t(t0) };
+                g.pickups[g.pickups_count++] = { int8_t(g.hero.x - 1), int8_t(g.hero.y + 1), core::tool, true, uint8_t(t1) };
+                place_at(g, data::enemy_kornik, -2, 0, 90);
+                if(g.enemies_count > 0) g.enemies[g.enemies_count - 1].hp = g.enemies[g.enemies_count - 1].max_hp = 80;
+                g.bonus.crit = 100;   // każdy cios kryt (pokaz złotego błysku)
+                break;
+            }
+            case 67:   // wygrana: 2 HP, bez kawy, szybkie etapy
+            {
+                g.start_stage(data::stages_count - 1);
+                for(int s = g.first_stage; s < data::stages_count; ++s) g.stage_days[s] = 3;
+                g.stage_start_turn = g.turns;
+                g.hero.hp = 2;
+                g.enemies_count = g.boss + 1;
                 break;
             }
             case 21:

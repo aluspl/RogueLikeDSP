@@ -766,6 +766,17 @@ inline constexpr const char* meta_help[] = {   // Jak grać: podsumowanie budowy
 };
 inline constexpr int meta_help_count = 6;
 
+inline constexpr const char* secrets_help[] = {   // Jak grać: sekretne zlecenia
+    "Sekretne zlecenia: telefon",
+    "profilu, Odznaki, A = strony.",
+    "Na liście \"???\" z podpowiedzią,",
+    "warunek poznasz po wykonaniu.",
+    "Nagrody: nowe zawody, narzędzia",
+    "w dropach, wygląd, Respekt.",
+    "Wykonane: baner i dymek Nowość.",
+};
+inline constexpr int secrets_help_count = 7;
+
 inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonogramu między etapami
     "Przytrzymaj B: podgląd problemów",
     "Przytrzymaj A: celownik i zasięg",

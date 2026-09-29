@@ -202,8 +202,8 @@ def make_actors():
     frames += [gf[i * 256:(i + 1) * 256] for i in range(3)]   # 42-44 paczki sprzętu wg jakości
     frames += [pa.reticle_frame()]                             # 45 celownik
     frames += pa.boss_frames()                                 # 46-47 bossowie aktów, 48-49 ich druga klatka, 50-51 Inspekcja
-    extra = [pa.worker_frame(i, 0) for i in range(6, len(pa.WORKERS))]   # 52-54 zawody z nagród za odbiór
-    frames += extra + [pa.worker_frame(i, 1) for i in range(6, len(pa.WORKERS))]   # 55-57 ich druga klatka
+    extra = [pa.worker_frame(i, 0) for i in range(6, 9)]   # 52-54 zawody z nagród za odbiór
+    frames += extra + [pa.worker_frame(i, 1) for i in range(6, 9)]   # 55-57 ich druga klatka
     frames += [silhouette(f) for f in extra]                               # 58-60 ich sylwetki
     n = len(pa.STAGE_ENEMY_ORDER)
     assert len(frames) == 61
@@ -218,6 +218,12 @@ def make_actors():
     frames += [pa.document_frame(i) for i in range(len(pa.DOCUMENTS))]
     assert len(frames) == 122   # v0.21.50 cz. 3: 122 wydarzenie, 123 klucz, 124 skrzynia, 125 pęknięcie muru, 126 drzwi magazynu
     frames += [pa.part3_frame(n) for n in pa.PART3_ORDER]
+    # v0.21.51 cz. 2: 127-129 zawody z sekretnych zleceń (Spawacz, Geodeta, Majster), 130-132 ich druga klatka,
+    # 133-135 ich sylwetki; 136-159 kask w paski (wygląd): zawód * 2 + klatka animacji (A, B) dla wszystkich 12 zawodów
+    assert len(frames) == 127 and len(pa.WORKERS) == 12
+    secret = [pa.worker_frame(i, 0) for i in range(9, 12)]
+    frames += secret + [pa.worker_frame(i, 1) for i in range(9, 12)] + [silhouette(f) for f in secret]
+    frames += [pa.worker_frame(c, k, stripes=True) for c in range(12) for k in range(2)]
     px = [p for fr in frames for p in fr]
     write_bmp(os.path.join(G, "actors.bmp"), px, 16, 16 * len(frames), SPR_PAL, 4)
     write_json("actors", {"type": "sprite", "height": 16})

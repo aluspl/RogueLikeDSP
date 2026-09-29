@@ -645,6 +645,10 @@ mh = d["metaHelp"]   # v0.21.50 cz. 4: Jak grać - podsumowanie, wyzwanie tygodn
 assert len(mh) == 6 and all(len(x) <= 31 for x in mh), mh
 L += ["inline constexpr const char* meta_help[] = {   // Jak grać: podsumowanie budowy, wyzwanie tygodnia, fabuła"]
 L += [f"    {s(t)}," for t in mh] + ["};", f"inline constexpr int meta_help_count = {len(mh)};", ""]
+sh = d["secretsHelp"]   # v0.21.51 cz. 2: Jak grać - sekretne zlecenia (GBA strona 15, Godot)
+assert len(sh) == 7 and all(len(x) <= 31 for x in sh), sh
+L += ["inline constexpr const char* secrets_help[] = {   // Jak grać: sekretne zlecenia"]
+L += [f"    {s(t)}," for t in sh] + ["};", f"inline constexpr int secrets_help_count = {len(sh)};", ""]
 L += ["inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonogramu między etapami"]
 L += [f"    {s(t)}," for t in d["tips"]] + ["};", f"inline constexpr int tips_count = {len(d['tips'])};", ""]
 L += [f"inline constexpr int classes_count = {len(d['classes'])};",

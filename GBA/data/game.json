@@ -4987,5 +4987,14 @@
         "desc": "Kask w biało-czerwone pasy"
       }
     ]
-  }
+  },
+  "secretsHelp": [
+    "Sekretne zlecenia: telefon",
+    "profilu, Odznaki, A = strony.",
+    "Na liście \"???\" z podpowiedzią,",
+    "warunek poznasz po wykonaniu.",
+    "Nagrody: nowe zawody, narzędzia",
+    "w dropach, wygląd, Respekt.",
+    "Wykonane: baner i dymek Nowość."
+  ]
 }
