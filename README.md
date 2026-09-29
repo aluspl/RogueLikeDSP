@@ -12,7 +12,10 @@ Broń ma rozpiskę obrażeń jak w Baldur's Gate 3: cios od-do, kryt i wpływ st
 (rzadkość, znaczniki i synergie jak w Hadesie), część problemów to elity ze złotą ramką i cechą, a stany się łączą:
 mokry + prąd = porażenie, pył + iskra = wybuch, zamróz + uderzenie = pęknięcie. Na placu czekają SMS-y z wyborem (ryzyko
 albo zysk: pożyczona betoniarka, tańszy dostawca, nadgodziny), narzędzie ulepszasz w Hurtowni do „Kielnia+3” z cechą,
-a za pękniętą ścianą albo drzwiami bywa ukryty magazyn ze skrzynią – klucz ma jeden z problemów.
+a za pękniętą ścianą albo drzwiami bywa ukryty magazyn ze skrzynią – klucz ma jeden z problemów. Po każdej budowie
+podsumowanie mówi, co Cię zatrzymało, pokazuje oś czasu etapów i najbliższy cel; co tydzień czeka wyzwanie tygodnia
+z własnymi zasadami (np. „Tylko Glazurnik, bez kawy”, „Mokry tydzień”) i osobnym wynikiem, a z kolejnymi budowami
+odkrywasz historię w SMS-ach od Anny, Marka i sąsiadów, a Osiedle rośnie (ławka, latarnia, plac zabaw…).
 
 Projekt zaczął się w 2017 roku jako LifeLike (Unity, konkurs DSP2017), a w 2026 wrócił w dwóch nowych wersjach.
 

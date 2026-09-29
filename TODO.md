@@ -1,8 +1,9 @@
 # TODO – PlanBudowlany RogueLike
 
-Stan na 2026-09-28: GBA v0.21.49 wydane, **v0.21.50 w toku** (cz. 1: rozpiska obrażeń broni #26; cz. 2: premie po etapie #27, elity #28, kombinacje
-stanów #29; cz. 3: wydarzenia z wyborem #30, ulepszanie narzędzia #31, ukryte pomieszczenia #32 – GBA i Godot; balans:
-Łatwy 53%, Normalny 32%, Trudny 10%, Szkolenia 54%, + Respekt 70%, z Aktem 0 66%, wszystkie modyfikatory 9%),
+Stan na 2026-09-29: GBA v0.21.49 wydane, **v0.21.50 gotowe do wydania** (cz. 1: rozpiska obrażeń broni #26; cz. 2: premie po etapie #27, elity #28,
+kombinacje stanów #29; cz. 3: wydarzenia z wyborem #30, ulepszanie narzędzia #31, ukryte pomieszczenia #32; cz. 4: podsumowanie
+budowy #33, wyzwania tygodnia #34, fabuła odkrywana z budowami #35 – GBA i Godot; balans: Łatwy 53%, Normalny 32%, Trudny 10%,
+Szkolenia 54%, + Respekt 70%, z Aktem 0 66%, wszystkie modyfikatory 9%; wyzwania tygodnia 11–35%),
 wcześniej v0.21.49 (Respekt, nagrody za odbiór, nowe zawody, balans
 Szkoleń; cz. 2: 10 etapów, wrogowie etapów z zachowaniami, mechaniki aktów, opis statystyk; cz. 3: Akt 0 „Papierologia”,
 samouczek menu), Godot – logika zgodna z v0.21.49, oprawa z GBA, wersja mobilna na iPhonie. Opis projektów: [`README.md`](README.md).
@@ -33,6 +34,7 @@ Legenda: ✅ zrobione · 🔄 w toku · ⬜ do zrobienia · — nie dotyczy
 | Balans v0.21.49 cz. 2 (10 etapów, nowi wrogowie, mechaniki aktów): Łatwy 58%, Normalny 30%, Trudny 12%, pełne Szkolenia 57%, + pełny Respekt 71%, + wszystkie modyfikatory 10%; kawa 2,6/budowę (80% budów), bez kawy 17% | ✅ wspólny rdzeń | ✅ |
 | Balans v0.21.49 cz. 3 (Akt 0): bez meta (Akt 0 zablokowany) 30%, pełne Szkolenia + pełny Respekt 71%, z Aktem 0 (wszystkie nagrody) 66% | ✅ wspólny rdzeń | ✅ |
 | Balans v0.21.50 cz. 3 (wydarzenia, ulepszenia, magazyn): Łatwy 53%, Normalny 32%, Trudny 10%, pełne Szkolenia 54%, + pełny Respekt 70%, z Aktem 0 66%, + wszystkie modyfikatory 9% | ✅ wspólny rdzeń | ✅ |
+| Balans v0.21.50 cz. 4: bez zmian (podsumowanie tylko zapisuje), wyzwania tygodnia (bot): Glazurnik bez kawy 11%, Elity x2 31%, Mokry tydzień 35%, Bez Hurtowni 18%, Szklany kask 24%, Kierownik na placu 33% | ✅ wspólny rdzeń | ✅ |
 
 ## Nowe pomysły (2026-09-25, „zrób wszystko”)
 
@@ -103,9 +105,9 @@ dlatego premie bojowe są małe – cel „pełne Szkolenia + pełny Respekt 65�
 | 30 | Wydarzenia z wyborem w trakcie etapu (SMS: ryzyko/nagroda) – v0.21.50 cz. 3: 12 wydarzeń, pole na etapie, skutki z szansą | 3 | ✅ | ✅ |
 | 31 | Ulepszanie narzędzia w trakcie budowy (Hurtownia, materiały) – v0.21.50 cz. 3: do +3, od +2 cecha, ostrzeżenie przy zmianie | 3 | ✅ | ✅ |
 | 32 | Ukryte pomieszczenia (klucz, magazyn ze skrzynią) – v0.21.50 cz. 3: pęknięta ściana / drzwi, klucz od problemu, strażnik | 3 | ✅ | ✅ |
-| 33 | Podsumowanie po śmierci (co zabiło, oś czasu, najbliższy cel) | 4 | ⬜ | ⬜ |
-| 34 | Wyzwania tygodnia (seed + zasady, osobne wyniki) | 4 | ⬜ | ⬜ |
-| 35 | Fabuła odkrywana z kolejnymi budowami (SMS-y, Osiedle) | 4 | ⬜ | ⬜ |
+| 33 | Podsumowanie po śmierci (co zabiło, oś czasu, najbliższy cel) – v0.21.50 cz. 4: też po wygranej; ostatnie ciosy, najmocniejsze ciosy, oś czasu etapów, nagrody, cel i rada; GBA 3 strony, Godot jedna przewijana | 4 | ✅ | ✅ |
+| 34 | Wyzwania tygodnia (seed + zasady, osobne wyniki) – v0.21.50 cz. 4: 6 zasad z danych, wyniki 3 tygodni w profilu v11, Godot: zaślepka tabeli tygodnia (`ILeaderboard.WeeklyBoardId`) | 4 | ✅ | ✅ (tydzień z daty budowy dnia) |
+| 35 | Fabuła odkrywana z kolejnymi budowami (SMS-y, Osiedle) – v0.21.50 cz. 4: 19 wątków za kamienie milowe, Wiadomości w Osiedlu, 6 ozdób Osiedla | 4 | ✅ | ✅ |
 
 ## Zgodność funkcji
 

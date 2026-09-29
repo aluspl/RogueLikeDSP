@@ -2,7 +2,20 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
-## v0.21.50 – 2026-09-28
+## v0.21.50 – 2026-09-29
+### Najważniejsze
+Regrywalność – 10 nowości w jednym wydaniu (GBA i Godot, wspólny rdzeń i test złoty):
+1. **Rozpiska obrażeń broni (#26)** – cios od-do, kryt i skąd się biorą, porównanie przy zmianie sprzętu, karta problemu.
+2. **Premia 1 z 3 po etapie (#27)** – 41 premii, rzadkość, znaczniki, 8 synergii, premie zawodów.
+3. **Elity (#28)** – złota ramka, przedrostek nazwy, jedna z 5 cech, lepsza nagroda.
+4. **Kombinacje stanów (#29)** – mokry + prąd, pył + iskra, zamróz + uderzenie.
+5. **Wydarzenia z wyborem (#30)** – 12 SMS-ów na placu, ryzyko albo zysk.
+6. **Ulepszanie narzędzia (#31)** – Hurtownia do +3, od +2 cecha (Przebicie, Ostrze, Wyważenie).
+7. **Ukryte pomieszczenia (#32)** – magazyn za pękniętą ścianą albo drzwiami, klucz, strażnik, skrzynia.
+8. **Podsumowanie budowy (#33)** – co zatrzymało budowę, ostatnie ciosy, oś czasu, nagrody, najbliższy cel i rada.
+9. **Wyzwania tygodnia (#34)** – seed tygodnia i zasady z danych, osobne wyniki, miejsce na tabelę tygodnia.
+10. **Fabuła odkrywana z budowami (#35)** – 19 wątków SMS za kamienie milowe, Wiadomości w profilu, Osiedle rośnie.
+
 ### Nowe
 - **Rozpiska obrażeń broni (#26, jak w D&D / Baldur's Gate 3):** zakres ciosu od-do, kryt i skąd się biorą –
   liczone tymi samymi wzorami co walka (`dmg_breakdown` w `core.h`, test: zakres z rozpiski = to, co zadaje walka
@@ -83,6 +96,35 @@ Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
   (wydarzenia, Hurtownia z ulepszeniem i cechą, zamiana ulepszonego narzędzia, pęknięta ściana z kluczem, drzwi).
   Godot: te same ekrany (sceny `event-*`, `upgrade-*`, `tool-swap`, `secret-*`, `help-extras`).
 
+- **Podsumowanie budowy (#33, cz. 4):** po porażce i po wygranej (po SMS-ie i harmonogramie domu) – na GBA 3 strony
+  w telefonie, w Godocie jedna przewijana strona. **Co zatrzymało budowę:** „Pokonało Cię: Zwarcie” (czasownik wg rodzaju,
+  przedrostek elity: „Uparty Kornik”), etap i akt („5/10, Akt II”), ostatnie 3 ciosy („Zwarcie: -2 (mokry + prąd)”,
+  „Zepsuta Betoniarka: -7 (cios bossa)”, „Inspekcja Pracy: -5 (Kontrola BHP)”, wybuch, wybuch pyłu, z dystansu),
+  najmocniejszy cios w Ciebie i Twój („Twój cios: 21 (kryt) w Zepsuta Betoniarka”). **Oś czasu:** każdy etap z dniami
+  i usuniętymi, pod nim SMS z placu, magazyn / ulepszenie / elita / boss / kombinacje / synergia / premia z SMS-a
+  i wybrana premia po etapie, na końcu „Tu stanęła budowa”. **Nagrody i cele:** doświadczenie i Respekt z budowy,
+  najbliższe zlecenie, rekord dnia / tygodnia, najbliższy cel („Jeszcze 3 Respektu do: Pewna ręka II”, potem Szkolenia)
+  i rada – pierwsza pasująca z listy (sekcja `recap`): mokry + prąd, cios bossa, wybuch, niewypita kawa, strzelec, elita,
+  boss, bez kombinacji („Mokry + prąd zadaje +3: spróbuj premii Przepięcie”), wygrana (tryb inwestora / Trudny).
+- **Wyzwania tygodnia (#34):** tydzień od poniedziałku (nr 1 = 5.01.2026), seed z numeru tygodnia, zasady po kolei
+  z listy (sekcja `weekly`, do 3 zasad: zawód, bez kawy – kawa na wynos za zł, elity %, pogoda na każdym etapie, bez
+  Hurtowni, materiały %, HP %, ciosy %, budżet): **Tylko Glazurnik, bez kawy** (HP +25%), **Elity x2**, **Mokry tydzień**
+  (deszcz na każdym etapie), **Bez Hurtowni, x2 materiały**, **Szklany kask** (HP -50%, ciosy +15%), **Kierownik na
+  placu** (więcej elit, HP -25%). Bez Szkoleń i pamiątek, Normalny, bez NG+; profil pamięta najlepszy wynik 3 ostatnich
+  tygodni. GBA: L na tytule albo SELECT na budowie dnia (tydzień z daty budowy dnia, góra/dół – inny tydzień); Godot:
+  „Wyzwanie tygodnia” w menu tytułu (data z systemu), „Wyślij wynik” – zaślepka tabeli tygodnia (`ILeaderboard`:
+  `WeeklyBoardId`, bez sieci). Zasada tygodnia w telefonie (Zadania), rekord tygodnia na końcu budowy.
+- **Fabuła odkrywana z budowami (#35):** 19 wątków SMS (1–2 wiadomości, sekcja `story.arc`) od Anny, kierownika Marka,
+  sąsiada Zenka i inwestorki Ewy – za 1., 5. i 10. budowę, 1., 3., 5. i 10. wygraną, każdego bossa (pierwsze
+  pokonanie), pierwszą elitę, magazyn, SMS na placu, synergię, budowę dnia, wyzwanie tygodnia i Akt 0. Na końcu budowy
+  baner „Nowa wiadomość”, w telefonie profilu Osiedle > A (Godot: „Wiadomości”) – archiwum: odblokowane z pastylką „Nowa”
+  do przeczytania, zablokowane „???” z podpowiedzią, jak je zdobyć. Osiedle rośnie z wygranymi: Lipa (1), Ławka Zenka
+  (3), Latarnia (4), Plac zabaw (5), Tablica PlanBudowlany (8), Fontanna (10) – nowe klatki pixel-art w `houses.bmp`
+  (Godot: te same, eksport).
+- „Jak grać”: GBA 13 stron (nowa „Po budowie”), Godot 7 (sekcja `metaHelp`, wspólna). Scenariusze testowe 57–60
+  (podsumowanie po porażce i po wygranej, wyzwanie tygodnia, Wiadomości i Osiedle). Godot: sceny `recap-*`, `weekly*`,
+  `story-*`, `estate-grow`, `help-meta`; test dymny przechodzi wyzwanie tygodnia, podsumowania i archiwum.
+
 ### Balans
 Premie po etapie są mocne (bot bez nich: Normalny 1%, pełne Szkolenia 8%), więc problemy rosną z etapem: HP etapów
 budowy +4 pkt proc. za każdy kolejny etap (Fundamenty 95% … Wykończenie 168%), obrażenia +1 od Stropu i kolejne +1 od
@@ -99,21 +141,39 @@ Bot w części 3: pole wydarzenia i klucz / magazyn / skrzynia jako cel zamiast 
 skutków, w Hurtowni jedno ulepszenie na wizytę (cecha: Przebicie), nowe narzędzie tylko gdy lepsze niż ulepszone.
 Na budowę (Normalny, bez meta): 2,2 wydarzenia, 0,8 magazynu, narzędzie +1,6; kawa 3,1 na budowę (82% budów).
 
-| Wygrane bota (300 przebiegów na zawód) | v0.21.49 | v0.21.50 cz. 2 (premie, elity, kombinacje) | v0.21.50 cz. 3 (wydarzenia, ulepszenia, magazyn) |
-|---|---|---|---|
-| Łatwy | 58% | 54% | 53% |
-| Normalny | 30% | 30% | 32% |
-| Trudny | 12% | 11% | 10% |
-| Normalny, pełne Szkolenia | 57% | 52% | 54% |
-| Normalny, pełne Szkolenia + pełny Respekt | 71% | 68% | 70% |
-| Normalny, pełne Szkolenia (i Respekt) + wszystkie modyfikatory | 10% | 14% | 9% |
-| Normalny bez picia kawy (bez meta / pełne Szkolenia) | 17% / 38% | 20% / 36% | 22% / 40% |
-| Normalny, pełne Szkolenia + pełny Respekt + Akt 0 (wszystkie nagrody) | 66% | 68% | 66% |
-| Normalny bez premii po etapie (bez meta / pełne Szkolenia) | – | 1% / 8% | 4% / 14% |
+Część 4 nie zmienia logiki gry poza zapisem podsumowania (ciosy, oś czasu – bez losowania) i zasadami wyzwania tygodnia
+(działają tylko w budowie tygodnia): wyniki bota są identyczne jak w części 3, a stare przebiegi testu złotego dają ten sam
+stan (poza nowymi polami).
+
+| Wygrane bota (300 przebiegów na zawód) | v0.21.49 | v0.21.50 cz. 2 (premie, elity, kombinacje) | v0.21.50 cz. 3 (wydarzenia, ulepszenia, magazyn) | v0.21.50 (wydanie, cz. 4) |
+|---|---|---|---|---|
+| Łatwy | 58% | 54% | 53% | 53% |
+| Normalny | 30% | 30% | 32% | 32% |
+| Trudny | 12% | 11% | 10% | 10% |
+| Normalny, pełne Szkolenia | 57% | 52% | 54% | 54% |
+| Normalny, pełne Szkolenia + pełny Respekt | 71% | 68% | 70% | 70% |
+| Normalny, pełne Szkolenia (i Respekt) + wszystkie modyfikatory | 10% | 14% | 9% | 9% |
+| Normalny bez picia kawy (bez meta / pełne Szkolenia) | 17% / 38% | 20% / 36% | 22% / 40% | 22% / 40% |
+| Normalny, pełne Szkolenia + pełny Respekt + Akt 0 (wszystkie nagrody) | 66% | 68% | 66% | 66% |
+| Normalny bez premii po etapie (bez meta / pełne Szkolenia) | – | 1% / 8% | 4% / 14% | 4% / 14% |
+
+Wyzwania tygodnia (bot, Normalny bez meta; 100 przebiegów na zawód, a przy zasadzie zawodu 900 tym zawodem) – każde
+do przejścia, żadne nie łatwiejsze niż zwykły Normalny o więcej niż kilka punktów:
+
+| Wyzwanie | Wygrane bota | Uwagi |
+|---|---|---|
+| Tylko Glazurnik, bez kawy (HP +25%) | 11% | bez HP +25%: 7%; Glazurnik zwykle 25% |
+| Elity x2 | 31% | elita = lepsza nagroda, trudność prawie bez zmian |
+| Mokry tydzień (deszcz na każdym etapie) | 35% | kałuże: poślizg, ale też mokry + prąd dla bohatera |
+| Bez Hurtowni, x2 materiały | 18% | bez ulepszeń narzędzia i siłowni |
+| Szklany kask (HP -50%, ciosy +15%) | 24% | wersja -30% / +30% dawała 42% |
+| Kierownik na placu (więcej elit, HP -25%) | 33% | Kierownik zwykle 38% |
 
 ### Zmiany
-- Nowy zapis budowy (PBRUN12; w cz. 2 PBRUN11) – przerwana budowa z wcześniejszej wersji nie wznowi się. Profil bez
-  zmian (PBRL010, 160 bajtów; Druga oferta to 16. ranga Respektu w istniejącej tablicy).
+- Nowy zapis budowy (PBRUN13; w cz. 3 PBRUN12, w cz. 2 PBRUN11) – przerwana budowa z wcześniejszej wersji nie wznowi
+  się. Profil v11 (PBRL011, 188 bajtów): wyniki 3 tygodni i wątki fabuły; migracja z v10 zachowuje wszystko, a wątki za
+  to, co już osiągnięte (liczba budów i wygranych, bossowie z Katalogu, Akt 0), czekają w Wiadomościach jako nowe.
+- Menu tytułu (Godot): nowa pozycja „Wyzwanie tygodnia”; GBA: podpowiedź „R: budowa dnia  L: tydzień”.
 - Karta etapu pokazuje wyższy procent HP problemów na późnych etapach; 3 nowe rady kierownika (premie, mokry + prąd,
   złota ramka elity).
 

@@ -22,7 +22,10 @@ własne, np. Woda gruntowa, Krzywy mur, Przeciekająca papa, Zapowietrzenie, Pop
 | L/R (wybór zawodu) | pamiątka zabierana na budowę (albo „bez pamiątki”) |
 | SELECT (wybór zawodu) | po pierwszej wygranej: tryb inwestora (modyfikatory, A włącza/wyłącza) |
 | B (tytuł) | ekran „Jak grać” |
-| R (tytuł) | codzienna budowa (data strzałkami, A – start) |
+| R (tytuł) | codzienna budowa (data strzałkami, A – start, SELECT – wyzwanie tygodnia) |
+| L (tytuł) | wyzwanie tygodnia (tydzień z daty budowy dnia, góra/dół – inny tydzień, A – start, SELECT – budowa dnia) |
+| A / prawo, B / lewo, góra/dół, START (podsumowanie) | kolejna / poprzednia strona, przewijanie osi czasu, pominięcie |
+| A (telefon profilu, Osiedle) | Wiadomości: wątki fabuły (góra/dół, A – czytaj, A – dalej, B – wróć) |
 | góra/dół, A, SELECT (premia po etapie) | wybór 1 z 3 premii, A – biorę, SELECT – losuj jeszcze raz (raz na budowę za zł, Druga oferta z Respektu za darmo) |
 | A, góra/dół (wydarzenie z SMS-em) | A – odpowiedz, góra/dół – odpowiedź, A – wybieram, A – dalej po wyniku |
 | góra/dół, A (cecha narzędzia przy +2) | Przebicie / Ostrze / Wyważenie, A – biorę |
@@ -88,8 +91,9 @@ Później po jednym dymku „Nowość”: pierwszy Respekt, codzienna budowa, tr
 Na wyborze zawodu START otwiera opis statystyk (wartość i co daje), A zmienia stronę na wzory; w telefonie zakładka
 Start → A pokazuje, skąd są premie. Wzory: obrażenia = rzut broni + statystyka broni / 2 + premie - obrona wroga / 2
 (SIŁ/ZRĘ/INT: +1 obrażeń co 2 pkt, tylko statystyka broni); OBR: -1 otrzymanych obrażeń co 2 pkt; SZCZ: kryt 5% +3%/pkt,
-unik 2%/pkt (maks. 20%), łupy +2% szansy/pkt i lepsza jakość. „Jak grać” ma 12 stron (5 – akty i problemy, 6 – statystyki,
-7 – obrażenia, 8–9 – kombinacje stanów, 10 – premie i elity, 11 – wydarzenia i ulepszenia, 12 – magazyn).
+unik 2%/pkt (maks. 20%), łupy +2% szansy/pkt i lepsza jakość. „Jak grać” ma 13 stron (5 – akty i problemy, 6 – statystyki,
+7 – obrażenia, 8–9 – kombinacje stanów, 10 – premie i elity, 11 – wydarzenia i ulepszenia, 12 – magazyn, 13 – po budowie:
+podsumowanie, wyzwanie tygodnia, fabuła).
 
 ## Rozpiska obrażeń broni (jak w BG3)
 Zakres ciosu od-do, kryt i skąd się biorą – te same wzory co walka (`dmg_breakdown`, `weapon_breakdown`,
@@ -146,6 +150,34 @@ Taran, wybuch obok) albo drzwiami (tylko klucz). Klucz ma jeden problem (najpier
 magazynu!”), wypada po jego usunięciu. W środku skrzynia (Respekt, zł, materiały, sprzęt solidny+), czasem śpiąca
 elita. Pęknięcie / drzwi widać na polu muru, podgląd mapy (L) ma znacznik magazynu i skrzyni; Zadania – wiersz Magazyn.
 
+## Podsumowanie budowy (#33)
+Po porażce i po wygranej (po SMS-ie i harmonogramie domu, przed ekranem z QR) 3 strony w telefonie: **Podsumowanie** –
+„Pokonał / Pokonała / Pokonało Cię: Zbrojony Przeciek”, etap i akt, ostatnie 3 ciosy (źródło z przedrostkiem elity,
+obrażenia, rodzaj: cios, z dystansu, cios bossa z nazwą uderzenia, wybuch, mokry + prąd, wybuch pyłu), Twój najmocniejszy
+cios (po wygranej: usunięte, elity, kombinacje, najmocniejszy cios w Ciebie); **Oś czasu** – każdy etap z dniami
+i usuniętymi, pod nim SMS, magazyn / ulepszenie / elita / boss / kombinacje / synergia i wybrana premia (góra/dół
+przewija); **Nagrody i cele** – doświadczenie i Respekt z budowy, najbliższe zlecenie, najbliższy cel („Jeszcze 3
+Respektu do: Pewna ręka II”, gdy Respekt wykupiony – Szkolenie) i rada zależna od tego, co zabiło (np. „Mokry + prąd
+boli: wyjdź z kałuży przed Zwarciem”, „Kawa została w termosie”, bez kombinacji – „Mokry + prąd zadaje +3: spróbuj
+premii Przepięcie”). Rdzeń: `log_hit`, `recap_timeline`, `recap_killer` (`core.h`), `recap_tip_index`, `recap_goal`
+(`meta.h`); teksty: sekcja `recap`. Zapis budowy PBRUN13 (ciosy i oś czasu są w stanie gry).
+
+## Wyzwanie tygodnia (#34)
+L na tytule (albo SELECT na budowie dnia). Tydzień nr 1 zaczyna się w poniedziałek 5.01.2026; GBA liczy tydzień z daty
+ustawionej dla budowy dnia (góra/dół – tydzień dalej / wcześniej). Seed z numeru tygodnia, zasady po kolei z listy
+(sekcja `weekly`): Tylko Glazurnik, bez kawy (kawa na wynos: +5 zł, HP +25%), Elity x2, Mokry tydzień (deszcz na każdym
+etapie), Bez Hurtowni i materiały 2x częściej, Szklany kask (HP -50%, ciosy +15%), Kierownik na placu (więcej elit,
+HP -25%). Bez Szkoleń i pamiątek, Normalny, bez NG+. Profil pamięta najlepszy wynik 3 ostatnich tygodni (i wygraną).
+Zasada tygodnia jest w telefonie (Zadania). Bot: patrz CHANGELOG (każda zasada 11–35% wygranych).
+
+## Fabuła odkrywana z budowami (#35)
+19 wątków SMS (sekcja `story.arc`) od Anny, Marka, sąsiada Zenka i inwestorki Ewy odblokowuje się za kamienie milowe:
+1., 5. i 10. budowa, 1., 3., 5. i 10. wygrana, każdy boss pokonany pierwszy raz, pierwsza elita, magazyn, SMS na placu,
+synergia, budowa dnia, wyzwanie tygodnia, Akt 0. Baner „Nowa wiadomość” na ekranie końcowym; telefon profilu > Osiedle
+> A = **Wiadomości** (odblokowane – „Nowa” do przeczytania, zablokowane – „???”, a zaznaczone – jak odblokować).
+Osiedle rośnie z wygranymi: Lipa, Ławka Zenka, Latarnia, Plac zabaw, Tablica PlanBudowlany, Fontanna (sekcja `estate`,
+klatki w `houses.bmp` za pustą działką) – stoją między domami.
+
 ## Akty i bossowie
 Etapy są pogrupowane w akty (`data/game.json`: `acts`, pole `act` etapu; akt I 4 etapy, akt II 3, akt III 3); każdy akt kończy się bossem:
 Akt I Stan surowy – **Zepsuta Betoniarka**, Akt II Pod dachem – **Nawałnica**, Akt III Wykończenie – **Nieprzekraczalny Termin**.
@@ -168,7 +200,7 @@ papierologia (Papierologia, Inspekcja Pracy, Termin: moc odnawia się 3 tury dł
 
 ## Fabuła
 Budujesz dom dla rodziny Nowaków. Pierwszą budowę otwiera prolog: pickup wjeżdża na działkę pełną porozrzucanych problemów (A pomija). Każdy etap otwiera wiadomość w telefonie od inwestorki Anny Nowak albo
-kierownika Marka; po wygranej i porażce przychodzi wiadomość z morałem: plan pokonuje chaos budowy.
+kierownika Marka; po wygranej i porażce przychodzi wiadomość z morałem: plan pokonuje chaos budowy. Z kolejnymi budowami odkrywasz dalsze wątki (Wiadomości w telefonie profilu, sekcja `story.arc`).
 Teksty są w `data/game.json` (`story`).
 
 ## Motywacja
@@ -193,7 +225,8 @@ Teksty są w `data/game.json` (`story`).
   (Młot udarowy, Pistolet do kotew), sprzęt (buty, pas), zawody (Dekarz, Tynkarz, Operator koparki), na końcu Akt 0
   „Papierologia”. Strona Nagrody (Koszty → SELECT → SELECT) pokazuje, co odebrane i za którą wygraną następna.
 - **Katalog usterek** - pokonane rodzaje problemów (41) z opisami i zachowaniami („Cechy: …”).
-- **Osiedle** - dom za każdą wygraną budowę, wielkość zależy od wyniku.
+- **Osiedle** - dom za każdą wygraną budowę, wielkość zależy od wyniku; z wygranymi rosną ozdoby (ławka, latarnia, plac
+  zabaw…), A = Wiadomości (fabuła).
 - SELECT na tytule: telefon profilu (Odznaki/Zlecenia/Pamiątki, Katalog, Osiedle, Zespół, Koszty).
 
 ## Pogoda dnia
@@ -233,8 +266,8 @@ i modyfikatory dnia (dla wszystkich takie same, bez Szkoleń i pamiątek). Profi
 Sekcja `daily`.
 
 ## Po wygranej
-Harmonogram domu w telefonie (zdjęcie domu, daty, dni i koszty etapów – pole `cost` etapów, sekcja `schedule`), potem
-ekran z kodem QR planbudowlany.online. Po porażce ekran końcowy przypomina rekord, najbliższe zlecenie i najbliższe
+Harmonogram domu w telefonie (zdjęcie domu, daty, dni i koszty etapów – pole `cost` etapów, sekcja `schedule`),
+podsumowanie budowy (3 strony), potem ekran z kodem QR planbudowlany.online. Po porażce ekran końcowy przypomina rekord, najbliższe zlecenie i najbliższe
 Szkolenie.
 
 ## Wydarzenia na placu
@@ -252,7 +285,8 @@ Zadania telefonu. Teksty i wartości: `siteEvents` w `data/game.json`.
   +1 szczęścia, Warsztaty: +1 do statystyki broni zawodu), więcej znajdziek,
   nowe zawody, narzędzia, poziom Trudny.
 - Profil (rekord, doświadczenie, zakupy, odznaki, liczniki zleceń, pamiątki, brygada, tryb inwestora) zapisuje się
-  w SRAM (format v10, z Respektem, nagrodami za odbiór, Katalogiem dla 48 rodzajów problemów i samouczkiem menu); starsze zapisy (v1-v9)
+  w SRAM (format v11, 188 bajtów, z Respektem, nagrodami za odbiór, Katalogiem dla 48 rodzajów problemów, samouczkiem menu,
+wynikami tygodni i wątkami fabuły); starsze zapisy (v1-v10)
   są przenoszone bez utraty danych.
 - Liczniki zleceń trafiają do profilu na końcu etapu; profil pamięta, ile z bieżącej budowy już przeniesiono, więc
   wznowienie budowy po wyłączeniu konsoli nie liczy etapu drugi raz.
@@ -291,7 +325,8 @@ narzędzia i sprzęt (28), strzelcy (29), podział i wybuch (30), łatanie, wzro
 samouczek menu (39), dymki nowości (40), nagroda Akt 0 (41), rozpiska obrażeń (42), premia po etapie – zwykłe,
 rzadkie, legendarne (43–45), lista premii w telefonie (46), elity (47), mokry + prąd (48), pył + iskra (49),
 zamróz + uderzenie (50), mokry bohater + prąd (51), wydarzenia z wyborem (52), Hurtownia z ulepszeniem i cechą (53),
-zamiana ulepszonego narzędzia (54), pęknięta ściana z kluczem i skrzynia (55), drzwi magazynu (56)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
+zamiana ulepszonego narzędzia (54), pęknięta ściana z kluczem i skrzynia (55), drzwi magazynu (56), podsumowanie po
+porażce (57), podsumowanie po wygranej (58), wyzwanie tygodnia (59), Wiadomości i Osiedle z ozdobami (60)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
 ```bash
 make TARGET=scn1 BUILD=build_scn1 USERFLAGS="-DPB_SCENARIO=1" BUTANO_PATH=...
 ROM=scn1.gba tools/playtest/run.sh skrypt.txt /tmp/zrzuty --fresh
@@ -309,7 +344,7 @@ tools/make_assets.py  proceduralne grafiki: font PL 8x16, sprite'y, kafelki+pale
 assets_src/pb_logo.svg  znak PlanBudowlany
 include/core.h        logika gry (czyste C++, bez Butano) - testowalna na PC; rozpiska obrażeń broni (dmg_breakdown);
                       wydarzenia z wyborem, ulepszanie narzędzia, magazyn (v0.21.50 cz. 3)
-include/meta.h        profil SRAM (v10), samouczek menu, Respekt, nagrody za odbiór, codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
+include/meta.h        profil SRAM (v11), wyzwanie tygodnia, fabuła (Wiadomości, ozdoby Osiedla), rada i cel podsumowania, samouczek menu, Respekt, nagrody za odbiór, codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
 src/main.cpp          warstwa GBA: sceny, mapa, kamera, HUD, SRAM
 ```
 Grafiki są placeholderami generowanymi kodem: podmień pliki w `graphics/` pixel-artem z Aseprite
