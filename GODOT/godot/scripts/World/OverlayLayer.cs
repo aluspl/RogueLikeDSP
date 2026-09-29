@@ -74,6 +74,19 @@ public partial class OverlayLayer : Node2D
                     DrawTextureRect(Assets.Range, r, false, new Color(1, 1, 1, RangeHeld ? 0.75f + 0.25f * pulse : Mathf.Min(1f, _range * 4f)));
             }
         }
+        if (_g.SecretClosed() && _g.Explored(_g.SecretX, _g.SecretY))   // magazyn: pęknięcie albo drzwi na polu muru
+        {
+            var r = new Rect2(_g.SecretX * c, _g.SecretY * c, c, c);
+            var frame = _g.SecretDef.Breakable ? Assets.FrameCrack : Assets.FrameDoor;
+            DrawTextureRectRegion(Assets.Actors, r, Assets.Frame(frame, Assets.Actor), new Color(1, 1, 1, _g.Visible(_g.SecretX, _g.SecretY) ? 1f : 0.6f));
+            if (_g.Keys > 0 || _g.CanOpenSecret()) DrawRect(r.Grow(-1), new Color(1f, 0.85f, 0.3f, 0.35f + 0.4f * pulse), false, 2f);
+        }
+        for (var i = 0; i < _g.PickupsCount; i++)   // pole wydarzenia: poświata jak powiadomienie
+        {
+            var p = _g.Pickups[i];
+            if (!p.Active || p.Type != PickupType.EventTile || !_g.Explored(p.X, p.Y)) continue;
+            DrawCircle(new Vector2(p.X * c + c / 2f, p.Y * c + c / 2f + 2), 14f, new Color(0.42f, 0.31f, 1f, 0.12f + 0.14f * pulse));
+        }
         for (var i = 0; i < _g.PickupsCount; i++)   // dokumenty Aktu 0: złota poświata pod kartką
         {
             var p = _g.Pickups[i];

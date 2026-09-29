@@ -34,11 +34,11 @@ public sealed class HelpPage : PhonePage
         ("Telefon", "aplikacja (trzymaj: mapa)"),
     ];
 
-    private const int Pages = 5;
+    private const int Pages = 6;
     private readonly GameData _d;
     private int _page;
 
-    /// <summary>Strona 0-4 (sceny zrzutów); 4 = kombinacje stanów, premie i elity (v0.21.50 cz. 2).</summary>
+    /// <summary>Strona 0-5 (sceny zrzutów); 4 = kombinacje stanów, premie i elity (v0.21.50 cz. 2); 5 = wydarzenia, ulepszenia, magazyn (cz. 3).</summary>
     public int Page
     {
         get => _page;
@@ -89,6 +89,19 @@ public sealed class HelpPage : PhonePage
         if (_page == 4)
         {
             DrawList(p, "KOMBINACJE STANÓW", ComboLines(_d), "SKĄD STANY, PREMIE, ELITY", ComboWhereLines(_d));
+            return;
+        }
+        if (_page == 5)
+        {
+            // krótkie linie z GBA złączone i zawinięte na szerokość telefonu; jedna karta, żeby zmieścić się w poziomie
+            var width = (int)(p.Right - 6 - p.Left - 12);
+            var a = p.F.Wrap(ExtrasText(_d, 0), width);
+            var b = p.F.Wrap("Magazyn: " + ExtrasText(_d, 6), width);
+            var ec = p.Card(p.Section(p.Top, "WYDARZENIA, ULEPSZENIA, MAGAZYN"), a.Count + b.Count);
+            var ex = p.TextX(ec);
+            for (var i = 0; i < a.Count; i++) p.Text(ex, p.RowY(ec, i), a[i], Ink.Dark, TextAlign.Left, ec.End.X - 6 - ex);
+            p.Divider(ec, a.Count);
+            for (var i = 0; i < b.Count; i++) p.Text(ex, p.RowY(ec, a.Count + i), b[i], Ink.Dim, TextAlign.Left, ec.End.X - 6 - ex);
             return;
         }
         if (!PhoneView.Full) // telefon w poziomie: nowości w karcie na górze zamiast osobnej sekcji (brak miejsca)
@@ -161,6 +174,14 @@ public sealed class HelpPage : PhonePage
         l.Add("Po etapie: premia 1 z 3 (2+ znaczniki = synergia)");
         l.Add("Złota ramka: elita, lepsza nagroda");
         return l.ToArray();
+    }
+
+    /// <summary>Tekst extrasHelp (wspólny z GBA): od 0 wydarzenia i ulepszanie narzędzia, od 6 magazyn.</summary>
+    private static string ExtrasText(GameData d, int from)
+    {
+        var l = new System.Collections.Generic.List<string>();
+        for (var i = from; i < from + 6 && i < d.ExtrasHelpLines.Length; i++) l.Add(d.ExtrasHelpLines[i]);
+        return string.Join(" ", l);
     }
 
     private static readonly string[] ActLines =

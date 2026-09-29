@@ -4,7 +4,7 @@ Wersja Godot gry z demo GBA (`../GBA`): roguelike budowlany, w którym etapy bud
 a wrogami są *problemy budowy*. Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KONCEPCJA.md)
 (telefon z aplikacją PlanBudowlany jako interfejs, oprawa 2.5D – kolejne kamienie milowe).
 
-**Stan: zgodny z GBA v0.21.50 cz. 2 (rdzeń i test złoty), wcześniej v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
+**Stan: zgodny z GBA v0.21.50 cz. 3 (rdzeń i test złoty), wcześniej v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
 z pieczątkami i Decyzją odmowną, samouczek menu, profil v10; wcześniej 10 etapów, 20 nowych problemów
 z zachowaniami, mechaniki aktów, opis statystyk; Respekt za etapy i sklep Respektu,
 nagrody za odbiór – Młot udarowy, Pistolet do kotew, buty, pas, zawody Dekarz, Tynkarz, Operator koparki – nowy balans
@@ -34,6 +34,23 @@ z błyskawicami / wybuchem / odłamkami (`WorldFx.Combos`); rozpiska: wiersz „
 Kombinacje (`combos`, `sources` z game.json). Sceny zrzutów: `boon-pick`, `boon-synergy`, `boon-phone`,
 `boon-synergies`, `elite-map`, `elite-card`, `combo-shock`, `combo-dust`, `combo-crack`, `help-combos`; test dymny:
 losowanie, wybór premii, telefon > Sprzęt > R > synergie > B.
+
+Nowe w v0.21.50 cz. 3 (wydarzenia z wyborem, ulepszanie narzędzia, magazyn): rdzeń `Game.Extras` (port 1:1
+z `core.h`: pole wydarzenia z osobnego generatora, odpowiedzi ze skutkami i szansą, ulepszenie narzędzia z cechą
+Przebicie / Ostrze / Wyważenie, magazyn za pękniętą ścianą albo drzwiami, klucz, strażnik, skrzynia; `ChoiceText`
+– te same teksty skutków co GBA; zapis PBRUN12, test złoty z polem `part3`, testy `UpgradesEventsSecretsTests`).
+Wejście na pole z SMS-em otwiera **Wydarzenie** (`EventScreen` / `EventPage`): SMS, odpowiedzi ze skutkami
+(strzałki / dotknięcie, Enter), wynik – co zaszło, a co „nie tym razem”; premia z projektu – ekran premii „Premia:
+projekt” i powrót na plac. Hurtownia: wiersz „Ulepsz narzędzie” (zł + stal, poziom i koszt w opisie, „maks.”), przy
++2 **Cecha narzędzia** (`TraitScreen`), ostrzeżenie przy „Nowe narzędzie”; nowe narzędzie na polu przy ulepszonym –
+**Nowe narzędzie** (`ToolOfferScreen`: porównanie ciosu, „ulepszenie +2 przepadnie!”, Spacja zamieniam / Z zostaję).
+Nazwa „Kielnia+2” w Sprzęcie i rozpisce (wiersz Ulepszenie), pęknięcie / drzwi magazynu na polu muru (złota ramka,
+gdy możesz otworzyć), klucz i skrzynia na mapie, karta problemu „Ma klucz do magazynu!”, telefon > Zadania: wiersz
+wydarzenia (z odpowiedzią) albo magazynu; Jak grać – strona 6 (`extrasHelp`). Sceny zrzutów: `event-map`,
+`event-sms`, `event-choices`, `event-result`, `event-boon`, `upgrade-shop`, `upgrade-trait`, `upgrade-gear`,
+`tool-swap`, `secret-crack`, `secret-card`, `secret-open`, `secret-door`, `secret-map`, `tasks-extras`,
+`help-extras`; test dymny: wydarzenie (strzałka, odpowiedź, wynik), ulepszenie z cechą w Hurtowni, zostawienie
+ulepszonego narzędzia, drzwi bez klucza, pęknięta ściana z kluczem i skrzynia.
 
 Nowe w v0.21.49 cz. 3 (warstwa Godota): **Akt 0 „Papierologia”** z nagrody za odbiór - kafle biura z regałami
 segregatorów (Działka i pozwolenie) i wykopu z rurą (Przyłącza), 8 nowych problemów i boss Decyzja odmowna (klatki

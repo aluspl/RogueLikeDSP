@@ -45,9 +45,11 @@ public sealed class BoonScreen : Screen
     public void Pick()
     {
         var g = S.Game;
+        var midStage = g.St == LifeLike.Core.GameStatus.Playing; // premia z projektu (wydarzenie) – z powrotem na plac
         if (!g.HasBoonOffer)
         {
-            Flow.Schedule.Open();
+            if (midStage) Flow.Game.Open();
+            else Flow.Schedule.Open();
             return;
         }
         var before = g.SynergyMask();
@@ -66,6 +68,11 @@ public sealed class BoonScreen : Screen
             Sfx.Play("level", 0.8f);
         }
         App.Refresh();
-        Flow.Schedule.Open();
+        if (midStage)
+        {
+            Flow.Game.Open();
+            App.AfterAction(true);
+        }
+        else Flow.Schedule.Open();
     }
 }

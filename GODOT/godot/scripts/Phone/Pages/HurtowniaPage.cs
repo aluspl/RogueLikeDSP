@@ -39,18 +39,42 @@ public sealed class HurtowniaPage : PhonePage
         set => _list.Sel = value;
     }
 
+    /// <summary>Zakup udany (ekran: cecha narzędzia przy +2).</summary>
+    public System.Action Bought { get; set; }
+
     public void Buy()
     {
+        var it = _g.D.Hurtownia[_list.Sel];
+        var upgrade = it.Effect == LifeLike.Core.Data.ShopEffect.Upgrade;
         if (_g.HurtowniaBuy(_list.Sel))
         {
             Sfx.Play("buy");
-            _note = "Kupione! Enter: dalej";
+            _note = upgrade ? $"Ulepszone: {_g.WeaponTitle()}" : "Kupione! Enter: dalej";
+            Bought?.Invoke();
+        }
+        else if (upgrade)
+        {
+            _note = _g.WeaponLvl >= _g.D.ToolUpgradeMax ? "Maksymalne ulepszenie" : "Za mało zł albo stali";
         }
         else
         {
-            var it = _g.D.Hurtownia[_list.Sel];
             _note = it.Material >= 0 ? $"Za mało: {_g.D.Materials[it.Material].Name}" : "Za mały budżet";
         }
+    }
+
+    /// <summary>Opis zaznaczonego: ulepszenie – poziom i koszt, nowe narzędzie – ostrzeżenie o utracie ulepszenia.</summary>
+    private (string Text, Ink Ink) Describe(int i)
+    {
+        var it = _g.D.Hurtownia[i];
+        if (it.Effect == LifeLike.Core.Data.ShopEffect.Upgrade)
+        {
+            if (_g.WeaponLvl >= _g.D.ToolUpgradeMax) return ($"{_g.WeaponTitle()}: maksymalne ulepszenie", Ink.Brand);
+            var cost = LifeLike.Core.ChoiceText.ToolLevelLabel(_g.D, new LifeLike.Core.Message(), _g.WeaponLvl, _g.UpgradePrice()).Text;
+            var trait = _g.WeaponLvl + 1 == _g.D.ToolTraitAt ? ", wybór cechy" : "";
+            return ($"{_g.WeaponTitle()} -> +{_g.WeaponLvl + 1}: {cost}{trait}. {it.Desc}", Ink.Brand);
+        }
+        if (it.Effect == LifeLike.Core.Data.ShopEffect.Tool && _g.WeaponLvl > 0) return ($"Uwaga: {_g.WeaponTitle()} przepadnie! {it.Desc}", Ink.Late);
+        return (it.Desc, Ink.Dim);
     }
 
     public override bool Input(InputCmd e)
@@ -93,7 +117,9 @@ public sealed class HurtowniaPage : PhonePage
             if (sel) p.Selected(card, r);
             else if (r > 0) p.Divider(card, r);
             p.HitRow(card, r, i);
-            var price = it.Material >= 0 ? $"{it.MatCost}x {d.Materials[it.Material].Short}" : $"{_g.HurtowniaPrice(i)} zł";
+            var price = it.Effect == LifeLike.Core.Data.ShopEffect.Upgrade && _g.WeaponLvl >= d.ToolUpgradeMax ? "maks."
+                      : it.Effect == LifeLike.Core.Data.ShopEffect.Upgrade ? $"{_g.HurtowniaPrice(i)} zł + {d.ToolLevels[_g.WeaponLvl].Count}x {d.Materials[d.ToolLevels[_g.WeaponLvl].Material].Short}"
+                      : it.Material >= 0 ? $"{it.MatCost}x {d.Materials[it.Material].Short}" : $"{_g.HurtowniaPrice(i)} zł";
             var pw = p.Pill(right, y, price, _g.HurtowniaCan(i) ? PillKind.Group : PillKind.Gray);
             var nx = tx;
             if (it.Material >= 0)
@@ -104,8 +130,9 @@ public sealed class HurtowniaPage : PhonePage
             p.Text(nx, y, it.Name, sel ? Ink.Brand : Ink.Dark, TextAlign.Left, right - pw - 4 - nx);
         }
         var dc = p.Card(card.End.Y + 6, 3);
-        var lines = p.F.Wrap(d.Hurtownia[_list.Sel].Desc, (int)(right - tx));
-        for (var k = 0; k < 2 && k < lines.Count; k++) p.Text(tx, p.RowY(dc, k), lines[k], Ink.Dim);
+        var (desc, ink) = Describe(_list.Sel);
+        var lines = p.F.Wrap(desc, (int)(right - tx));
+        for (var k = 0; k < 2 && k < lines.Count; k++) p.Text(tx, p.RowY(dc, k), lines[k], ink);
         p.Divider(dc, 2);
         var info = $"HP {_g.Hero.Hp}/{_g.Hero.MaxHp}";
         for (var m = 0; m < d.Materials.Length; m++) info += $"  {d.Materials[m].Short} {_g.Mats[m]}";

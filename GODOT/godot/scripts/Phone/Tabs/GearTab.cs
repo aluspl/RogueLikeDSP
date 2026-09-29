@@ -71,7 +71,7 @@ public sealed class GearTab : PhonePage
         var b = g.WeaponBreakdown();   // zakres ciosu jak w walce (rozpiska #26)
         p.Stripe(c0, 0, Pal.Brand);
         var pw = p.Pill(right, p.RowY(c0, 0), $"z{g.WeaponRange()} {UiText.StatShort(w.ScalesWith)}", PillKind.Group);
-        p.Text(tx, p.RowY(c0, 0), $"{w.Name} {b.Min}-{b.Max}", Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
+        p.Text(tx, p.RowY(c0, 0), $"{g.WeaponTitle()} {b.Min}-{b.Max}", Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
         p.Divider(c0, 1);
         var avg = DamageHelp.AddTenths(new Message(), b.Avg10).Text;
         p.Text(tx, p.RowY(c0, 1), $"kryt {b.CritMin}-{b.CritMax} ({b.CritChance()}%), średnio {avg}", Ink.Prog, TextAlign.Left, right - tx);

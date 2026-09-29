@@ -358,4 +358,58 @@ public sealed class DemoStaging
         _app.Refresh();
         _app.AfterAction(g.PlayerMove(1, 0));
     }
+
+    /// <summary>v0.21.50 cz. 3: pola wydarzeń w prawo od bohatera (po nazwie z game.json), pusto wokół.</summary>
+    public void EventTiles(params string[] names)
+    {
+        var g = G;
+        ClearAround(-1, -1, names.Length + 1, 1);
+        g.EnemiesCount = 0;
+        g.PickupsCount = 0;
+        g.KeyHolder = -1;
+        for (var k = 0; k < names.Length; k++)
+        {
+            var e = Array.FindIndex(g.D.ChoiceEvents, x => x.Name == names[k]);
+            if (e >= 0) g.Pickups[g.PickupsCount++] = new Pickup(g.Hero.X + 1 + k, g.Hero.Y, PickupType.EventTile, true, e);
+        }
+        g.UpdateFov();
+        _app.Session.ResetWatch();
+        _app.Refresh();
+    }
+
+    /// <summary>Etap z magazynem danego rodzaju (0 pęknięta ściana, 1 drzwi), ściana w prawo; bohater przed nią.</summary>
+    public void SecretStage(int kind)
+    {
+        var g = G;
+        var bas = g.RunSeed;
+        for (uint k = 1; k < 4000; k++)
+        {
+            g.RunSeed = bas + k * 7919u;
+            g.StartStage(g.D.PreludeStages + 1);
+            if (g.HasSecret && g.SecretKind == kind && g.SecretDir == 0) break;
+        }
+        g.Hero.X = (sbyte)g.SecretFrontX();
+        g.Hero.Y = (sbyte)g.SecretFrontY();
+        for (var i = 0; i < g.EnemiesCount; i++)
+        {
+            if (g.InSecret(g.Enemies[i].X, g.Enemies[i].Y) || CoreGame.Cheb(g.Enemies[i].X, g.Enemies[i].Y, g.Hero.X, g.Hero.Y) <= 3) g.Enemies[i].Alive = false;
+        }
+        g.KeyHolder = -1;
+        g.StageEvent = -1;
+        for (var i = 0; i < g.PickupsCount; i++)
+        {
+            if (g.Pickups[i].Type == PickupType.EventTile) g.Pickups[i].Active = false;
+        }
+        g.UpdateFov();
+        for (var y = g.Hero.Y - 3; y <= g.Hero.Y + 3; y++)
+        {
+            for (var x = g.Hero.X - 3; x <= g.Hero.X + 3; x++)
+            {
+                if (Level.In(x, y) && !g.InSecret(x, y) && g.Fov[y * Level.W + x] == Sight.Unknown) g.Fov[y * Level.W + x] = Sight.Remembered;
+            }
+        }
+        _app.Session.ResetWatch();
+        _app.Nodes.World.Sync();
+        _app.Refresh();
+    }
 }

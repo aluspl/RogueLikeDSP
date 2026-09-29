@@ -65,6 +65,7 @@ public sealed class App
     {
         Refresh();
         if (!acted) return;
+        if (OpenPending()) return;
         switch (Session.Resolve())
         {
             case TurnOutcome.StageCleared: // premia 1 z 3, potem harmonogram (i Hurtownia po akcie)
@@ -78,6 +79,22 @@ public sealed class App
                 Flow.Offer.Open();
                 break;
         }
+    }
+
+    /// <summary>
+    /// Decyzje w trakcie etapu (v0.21.50 cz. 3): SMS wydarzenia, premia z projektu, cecha narzędzia, nowe narzędzie
+    /// przy ulepszonym. true = otwarto ekran decyzji.
+    /// </summary>
+    public bool OpenPending()
+    {
+        var g = Session.Game;
+        if (g.St != GameStatus.Playing) return false;
+        if (g.PendingEvent >= 0) Flow.Event.Open();
+        else if (g.HasBoonOffer) Flow.Boons.Open();
+        else if (g.TraitPending) Flow.Trait.Open();
+        else if (g.HasToolOffer) Flow.ToolOffer.Open();
+        else return false;
+        return true;
     }
 
     /// <summary>Nowa budowa wybranym zawodem: przy pierwszej prolog (wjazd na plac), potem karta etapu z SMS-em.</summary>

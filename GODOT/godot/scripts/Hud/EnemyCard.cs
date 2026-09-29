@@ -94,6 +94,7 @@ public partial class EnemyCard : Control
         f.Draw(this, new Vector2(x, top + 20), f.Fit(vs, (int)(w - x - 8)), Ink.Map);
         // trzeci wiersz na zmianę: opis, cechy, elita, stany (kombinacje)
         var lines = new System.Collections.Generic.List<(string Text, Ink Ink)> { (ed.Desc, Ink.MapDim) };
+        if (_enemy == _g.KeyHolder) lines.Insert(0, ("Ma klucz do magazynu!", Ink.MapLoot));
         var tags = UiText.Behaviors(_g.D, e.DefId);
         if (tags.Length > 0) lines.Add(("Cechy: " + tags, Ink.MapBad));
         if (elite) lines.Add((BoonLook.Elite(_g, _enemy), Ink.MapLoot));

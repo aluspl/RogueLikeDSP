@@ -41,7 +41,8 @@ public sealed class TasksTab : PhonePage
         y = card.End.Y + 4;
         y = p.Section(y, "PLAC BUDOWY");
         var hasPath = _g.StagePath >= 0 && _g.StagePath < d.Paths.Length;
-        var c2 = p.Card(y, hasPath ? 4 : 3);
+        var extra = ExtraRow(out var extraText, out var extraPill, out var extraKind);
+        var c2 = p.Card(y, (hasPath ? 4 : 3) + (extra ? 1 : 0));
         var r0 = p.RowY(c2, 0);
         if (_g.CurrentEvent is { } ev)
         {
@@ -70,6 +71,15 @@ public sealed class TasksTab : PhonePage
             : _g.DocsNeeded() > 0 ? $"Dokumenty {_g.DocsCount()}/{_g.DocsNeeded()}, schody " + (_g.StairsLocked() ? "zamknięte" : "otwarte")
             : ad.MechName;
         p.Text(p.TextX(c2), r2, mech, Ink.Dark, TextAlign.Left, c2.End.X - 12 - ap - p.TextX(c2));
+        if (extra) // wydarzenie z wyborem (z odpowiedzią) albo magazyn na etapie
+        {
+            var re = hasPath ? 4 : 3;
+            var ry = p.RowY(c2, re);
+            p.Divider(c2, re);
+            p.Stripe(c2, re, extraKind == PillKind.Done ? Pal.Done : Pal.Brand);
+            var ep = p.Pill(c2.End.X - 6, ry, extraPill, extraKind);
+            p.Text(p.TextX(c2), ry, extraText, Ink.Dark, TextAlign.Left, c2.End.X - 12 - ep - p.TextX(c2));
+        }
         if (!hasPath) return;
         var path = d.Paths[_g.StagePath]; // ścieżka wybrana na harmonogramie
         var r3 = p.RowY(c2, 3);
@@ -77,5 +87,36 @@ public sealed class TasksTab : PhonePage
         p.Stripe(c2, 3, Pal.Brand);
         var pp = p.Pill(c2.End.X - 6, r3, path.Short, PillKind.Group);
         p.Text(p.TextX(c2), r3, $"Ścieżka: {path.Desc}", Ink.Dark, TextAlign.Left, c2.End.X - 12 - pp - p.TextX(c2));
+    }
+
+    /// <summary>Wiersz v0.21.50 cz. 3: wydarzenie etapu i odpowiedź, a bez niego magazyn (odkryty) albo klucz w kieszeni.</summary>
+    private bool ExtraRow(out string text, out string pill, out PillKind kind)
+    {
+        var g = _g;
+        if (g.StageChoice >= 0)
+        {
+            var ev = g.D.ChoiceEvents[g.StageChoice];
+            text = $"{ev.Name}: {ev.Choices[g.StageChoicePick].Label}";
+            pill = "SMS";
+            kind = PillKind.Brand;
+            return true;
+        }
+        if (g.HasSecret && (g.Explored(g.SecretX, g.SecretY) || g.Keys > 0))
+        {
+            text = g.SecretOpen ? "Magazyn otwarty" : g.SecretDef.Name + (g.Keys > 0 ? ", masz klucz" : g.SecretDef.Breakable ? ", klucz lub wybuch" : ", potrzebny klucz");
+            pill = g.SecretOpen ? "Otwarty" : "Magazyn";
+            kind = g.SecretOpen ? PillKind.Done : PillKind.Prog;
+            return true;
+        }
+        if (g.Keys > 0)
+        {
+            text = $"Klucz do magazynu: {g.Keys}";
+            pill = "Klucz";
+            kind = PillKind.Prog;
+            return true;
+        }
+        text = pill = "";
+        kind = PillKind.Gray;
+        return false;
     }
 }

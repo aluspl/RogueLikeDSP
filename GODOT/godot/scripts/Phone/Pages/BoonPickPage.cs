@@ -25,8 +25,8 @@ public sealed class BoonPickPage : PhonePage
     /// <summary>Wybór zatwierdzony (A / Enter / drugie dotknięcie) – ekran bierze premię.</summary>
     public System.Action Picked { get; set; }
 
-    public override string Title => "Premia za etap";
-    public override string Sub => $"Etap {_g.StageNumber()} zaliczony";
+    public override string Title => _g.St == LifeLike.Core.GameStatus.Playing ? "Premia: projekt" : "Premia za etap";
+    public override string Sub => _g.St == LifeLike.Core.GameStatus.Playing ? "Znaleziony projekt" : $"Etap {_g.StageNumber()} zaliczony";
     public override string Hint => "Strzałki: wybór  Enter: biorę" + (_g.RerollsLeft() > 0 ? "  R: losuj" : "");
     public override PageAction[] Actions =>
         _g.RerollsLeft() > 0 ? [new("Biorę", GameAction.A), new("Losuj", GameAction.R)] : [new("Biorę", GameAction.A)];

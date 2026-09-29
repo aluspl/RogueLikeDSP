@@ -44,6 +44,10 @@ public static class Assets
     public const int FrameStageEnemy = 61, StageEnemies = 20;
     // actors.png 101-109: problemy Aktu 0 i Decyzja odmowna, 110-118 ich druga klatka, 119-121 dokumenty (podpis, mapa, uzgodnienie)
     public const int FramePreludeEnemy = 101, PreludeEnemies = 9, FrameDocument = 119;
+    // actors.png 122-126 (v0.21.50 cz. 3): pole wydarzenia, klucz do magazynu, skrzynia, pęknięcie muru, drzwi magazynu
+    public const int FrameEvent = 122, FrameKey = 123, FrameChest = 124, FrameCrack = 125, FrameDoor = 126;
+    // menu_icons.png 27-29: wydarzenie z wyborem, ulepszenie narzędzia, klucz do magazynu
+    public const int MenuEvent = 27, MenuUpgrade = 28, MenuKey = 29;
 
     // tiles/stage_N.png: 4 podłogi, 2 podłogi z cieniem muru, mur, lico muru, schody
     public const int TileFloor = 0, TileFloorShadow = 4, TileWall = 6, TileWallFace = 7, TileStairs = 8;
@@ -138,6 +142,9 @@ public static class Assets
         PickupType.Tool => FrameToolbox,
         PickupType.GearBox => FrameGear + p.Arg % 3,
         PickupType.Document => FrameDocument + p.Arg,
+        PickupType.EventTile => FrameEvent,
+        PickupType.StoreKey => FrameKey,
+        PickupType.Chest => FrameChest,
         _ => FrameCoffee + (int)p.Type,
     };
 

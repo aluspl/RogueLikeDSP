@@ -27,6 +27,8 @@ public sealed class DebugScenes
         "dmg-class", "dmg-stats", "dmg-gear", "dmg-phone", "dmg-crit", "dmg-offer", "dmg-tool", "dmg-enemy", "help-dmg",
         "boon-pick", "boon-synergy", "boon-phone", "boon-synergies", "elite-map", "elite-card", "combo-shock", "combo-dust", "combo-crack",
         "help-combos",
+        "event-map", "event-sms", "event-choices", "event-result", "event-boon", "upgrade-shop", "upgrade-trait", "upgrade-gear",
+        "tool-swap", "secret-crack", "secret-card", "secret-open", "secret-door", "secret-map", "tasks-extras", "help-extras",
     ];
 
     private readonly App _app;
@@ -135,9 +137,10 @@ public sealed class DebugScenes
             case "help-stats":
             case "help-dmg":
             case "help-combos":
+            case "help-extras":
                 Flow.Help.Open(true, true);
                 if (_app.Nodes.Phone.Current is Phone.Pages.HelpPage hp)
-                    hp.Page = scene == "help" ? 0 : scene == "help-acts" ? 1 : scene == "help-stats" ? 2 : scene == "help-dmg" ? 3 : 4;
+                    hp.Page = scene == "help" ? 0 : scene == "help-acts" ? 1 : scene == "help-stats" ? 2 : scene == "help-dmg" ? 3 : scene == "help-combos" ? 4 : 5;
                 _app.Nodes.Phone.QueueRedraw();
                 return;
             case "dmg-class": // rozpiska obrażeń broni (#26): dymek nad narzędziem na karcie zawodu
@@ -228,6 +231,11 @@ public sealed class DebugScenes
                   }; // domyślnie Glazurnik
         _app.StartRun();
         Flow.StageCard.Advance(); // karta etapu -> gra
+        if (scene.StartsWith("event-") || scene.StartsWith("upgrade-") || scene.StartsWith("secret-") || scene is "tool-swap" or "tasks-extras")
+        {
+            await ExtrasScene(scene);
+            return;
+        }
         if (newClass != AbilityEffect.Stun) // nowy zawód: problemy pod moc i moc (efekt w trakcie)
         {
             _app.Nodes.Banners.Clear();
@@ -282,6 +290,102 @@ public sealed class DebugScenes
         if (scene is "game" or "perks") _app.Nodes.Banners.Clear();
         if (Flow.Current == Flow.Offer) Flow.Offer.Decide(g.OfferIsBetter);
         Showcase(scene);
+    }
+
+    /// <summary>v0.21.50 cz. 3: wydarzenia z wyborem, ulepszanie narzędzia, magazyn.</summary>
+    private async Task ExtrasScene(string scene)
+    {
+        var g = _app.Session.Game;
+        var banners = _app.Nodes.Banners;
+        banners.Clear();
+        switch (scene)
+        {
+            case "event-map":
+            case "event-sms":
+            case "event-choices":
+            case "event-result":
+            case "event-boon":
+            case "tasks-extras":
+                _stage.EventTiles(scene == "event-boon" ? "Znaleziony projekt" : "Tańszy dostawca", "Stara ostrzałka");
+                if (scene == "event-map") break;
+                _app.AfterAction(g.PlayerMove(1, 0));
+                if (scene == "event-sms") break;
+                Flow.Event.Advance();
+                if (scene == "event-choices") break;
+                Flow.Event.Advance();
+                if (scene == "event-result") break;
+                Flow.Event.Advance(); // wynik -> plac (premia z projektu albo zakładka Zadania)
+                if (scene == "tasks-extras")
+                {
+                    banners.Clear();
+                    Flow.Phone.Open(0, true);
+                }
+                break;
+            case "upgrade-shop":
+                g.WeaponLvl = 1;
+                g.Cash = 200;
+                g.Mats[1] = 9;
+                g.ActCleared = true;
+                Flow.Hurtownia.Open(true);
+                break;
+            case "upgrade-trait":
+                g.WeaponLvl = 2;
+                g.TraitPending = true;
+                Flow.Trait.Open(null, true);
+                break;
+            case "upgrade-gear":
+                g.WeaponLvl = 2;
+                g.WeaponTrait = 0;
+                _app.Refresh();
+                Flow.Phone.Open(3, true);
+                break;
+            case "tool-swap":
+                _stage.EventTiles();
+                g.WeaponLvl = 2;
+                g.WeaponTrait = 0;
+                g.Pickups[g.PickupsCount++] = new Pickup(g.Hero.X + 1, g.Hero.Y, PickupType.Tool, true,
+                    Array.FindIndex(g.D.Tools, t => g.D.Weapons[t.Weapon].Name == "Młot udarowy"));
+                _app.AfterAction(g.PlayerMove(1, 0));
+                break;
+            case "secret-crack":
+            case "secret-card":
+            case "secret-open":
+                _stage.SecretStage(0);
+                g.Keys = 1;
+                if (scene == "secret-card")
+                {
+                    int kx = g.Hero.X - 1, ky = g.Hero.Y;
+                    foreach (var (dx, dy) in new[] { (-1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (-2, 0) })
+                    {
+                        if (g.Lv.At(g.Hero.X + dx, g.Hero.Y + dy) != Tile.Floor || g.Occupied(g.Hero.X + dx, g.Hero.Y + dy)) continue;
+                        kx = g.Hero.X + dx;
+                        ky = g.Hero.Y + dy;
+                        break;
+                    }
+                    g.Spawn(g.D.EnemyIndex("kornik"), kx, ky);
+                    g.Enemies[g.EnemiesCount - 1].Stun = 90;
+                    g.Enemies[g.EnemiesCount - 1].Awake = true;
+                    g.KeyHolder = (sbyte)(g.EnemiesCount - 1);
+                    g.UpdateFov();
+                    _app.Nodes.World.Sync();
+                    _app.Refresh();
+                    _app.Nodes.Touch.Bar.Pressed = Touch.BarButton.Wait;
+                    Flow.Game.HandleInput(InputCmd.Of(GameAction.B));
+                    Flow.Game.Look.Reveal();
+                }
+                if (scene == "secret-open")
+                {
+                    for (var k = 0; k < 4 && Flow.Current == Flow.Game; k++) _app.AfterAction(g.PlayerMove(1, 0));
+                }
+                break;
+            case "secret-door":
+            case "secret-map":
+                _stage.SecretStage(1);
+                _app.AfterAction(g.PlayerMove(1, 0)); // bez klucza: podpowiedź w dzienniku, bez tury
+                if (scene == "secret-map") Flow.Game.ToggleOverview();
+                break;
+        }
+        await DebugRunner.Frames(_app.Root, 4);
     }
 
     private void Showcase(string scene)
@@ -615,6 +719,9 @@ public sealed class DebugScenes
         while (true)
         {
             if (Flow.Current == Flow.Boons) Flow.Boons.Pick();
+            else if (Flow.Current == Flow.Event) Flow.Event.Advance();
+            else if (Flow.Current == Flow.Trait) Flow.Trait.Pick();
+            else if (Flow.Current == Flow.ToolOffer) Flow.ToolOffer.Decide(false);
             else if (Flow.Current == Flow.Schedule) Flow.Schedule.Advance();
             else if (Flow.Current == Flow.StageCard) Flow.StageCard.Advance();
             else if (Flow.Current == Flow.Hurtownia) Flow.Hurtownia.Advance();

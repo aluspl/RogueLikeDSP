@@ -20,7 +20,12 @@ public sealed class HurtowniaScreen : Screen
 
     public override void Enter(bool instant)
     {
-        Page = new HurtowniaPage(S.Game);
+        var sel = Page?.Sel ?? 0;
+        Page = new HurtowniaPage(S.Game) { Sel = sel };
+        Page.Bought = () =>
+        {
+            if (S.Game.TraitPending) Flow.Trait.Open(this); // +2: cecha narzędzia, potem z powrotem do Hurtowni
+        };
         N.Phone.OpenSingle(Page, 4, instant);
         Sfx.Play("notify", 0.7f);
     }
