@@ -2,7 +2,7 @@
 
 Stan na 2026-09-29: GBA v0.21.50 wydane, **v0.21.51 cz. 1 gotowe** (autokafle ścian #36, rzadsze błoto jako mokra plama #37,
 spójne sterowanie i blokada wejścia #38 – GBA i Godot, HUD z pełną nazwą etapu w pionie; balans bez zmian: Łatwy 54%,
-Normalny 32%, Trudny 10%), cz. 2 – sekretne zlecenia #39 do zrobienia; wcześniej v0.21.50 (cz. 1: rozpiska obrażeń broni #26; cz. 2: premie po etapie #27, elity #28,
+Normalny 32%, Trudny 10%), cz. 2 – sekretne zlecenia #39: GBA gotowe, Godot bez ekranów (patrz „Gdzie skończyliśmy”); wcześniej v0.21.50 (cz. 1: rozpiska obrażeń broni #26; cz. 2: premie po etapie #27, elity #28,
 kombinacje stanów #29; cz. 3: wydarzenia z wyborem #30, ulepszanie narzędzia #31, ukryte pomieszczenia #32; cz. 4: podsumowanie
 budowy #33, wyzwania tygodnia #34, fabuła odkrywana z budowami #35 – GBA i Godot; balans: Łatwy 53%, Normalny 32%, Trudny 10%,
 Szkolenia 54%, + Respekt 70%, z Aktem 0 66%, wszystkie modyfikatory 9%; wyzwania tygodnia 11–35%),
@@ -119,7 +119,25 @@ dlatego premie bojowe są małe – cel „pełne Szkolenia + pełny Respekt 65�
 | 36 | Autokafle ścian: wierzch masy muru bez pasów, lico tylko nad podłogą, krawędzie i końce wg sąsiadów, światło z lewej góry, miękkie przejście w nieodkrytą ciemność (Godot: kafle z eksportu dla palety etapu) | 1 | ✅ | ✅ (lżej: wierzch + dolna połowa lica) |
 | 37 | Błoto: dwa razy rzadziej (co 14. pole, z danych) i jako płaska mokra plama z połyskiem zamiast ciemnych dziur | 1 | ✅ (3 warianty) | ✅ |
 | 38 | Spójne sterowanie i blokada wejścia: A / „Wybierz” zawsze po prawej, B / „Wróć” po lewej, Enter/Spacja = A, Esc/Z = B, 0,4 s blokady po otwarciu okna (GBA ~20 klatek), nieodwracalne wybory przez zaznaczenie (zamiana narzędzia: domyślnie „Zostaję”), zasada w Jak grać; HUD: pełna nazwa etapu w drugim rzędzie | 1 | ✅ | ✅ |
-| 39 | „Sekretne zlecenia” – ukryte cele profilu (widoczne jako „???” z podpowiedzią), odblokowujące ukryte zawody (np. Spawacz, Geodeta, Majster „złota rączka”), unikalne bronie (Złota kielnia, Młot Zenka, Poziomica mistrza) i kosmetykę (kolory kasku); warunki nietypowe (np. wygraj bez kawy, pokonaj Termin samą brygadą, znajdź 5 magazynów w jednej budowie, wygraj każdym zawodem, przejdź Akt 0 bez obrażeń od Papierologii) | 2 | ⬜ | ⬜ |
+| 39 | „Sekretne zlecenia” – ukryte cele profilu (widoczne jako „???” z podpowiedzią), odblokowujące ukryte zawody (np. Spawacz, Geodeta, Majster „złota rączka”), unikalne bronie (Złota kielnia, Młot Zenka, Poziomica mistrza) i kosmetykę (kolory kasku); warunki nietypowe (np. wygraj bez kawy, pokonaj Termin samą brygadą, znajdź 5 magazynów w jednej budowie, wygraj każdym zawodem, przejdź Akt 0 bez obrażeń od Papierologii) | 2 | 🔄 rdzeń ✅, ekrany ⬜ | ✅ (rdzeń, ekrany, grafika, scenariusze 61–67) |
+
+### Gdzie skończyliśmy (2026-09-29, przerwane limitem sesji)
+
+Zrobione i w repo (cz. 2): rdzeń sekretów GBA (8 zleceń z `secrets`, liczniki budowy, profil v12 196 B z migracją v11,
+zawody Spawacz / Geodeta / Majster, Młot Zenka, Poziomica mistrza, Respekt „Zaprawiony w boju”, wygląd, PBRUN14;
+balans nowych zawodów 35/36/23%), port C# + test złoty (55 przebiegów) + SecretsTests, ekrany GBA (strona Sekrety,
+banery, dymek Nowość, kask w paski, złoty błysk kryta, Poziomica na mapie, moc Majstra w HUD, pixel art klatki 127–159,
+Jak grać str. 15, scenariusze 61–67, kolejka banerów końca budowy).
+
+Zostało do wydania v0.21.51:
+1. Godot – ekrany sekretów: strona Sekrety w profilu („???” + podpowiedź / warunek i nagroda), banery i dymek Nowość,
+   nowe zawody na wyborze zawodu (portrety, moce Spaw / Tyczenie / Złota rączka, HUD mocy Majstra), bronie, wygląd
+   (kask w paski, złoty błysk), Poziomica na podglądzie mapy; eksport nowych klatek (127–159) w `export_godot_assets.py`;
+   test dymny i zrzuty.
+2. Godot – mgła: krawędź z cz. 1 zbyt rozmyta; zrobić stopniowane / ditherowane zanikanie w rozdzielczości kafla (porównanie przed/po).
+3. Dokumentacja: CHANGELOG v0.21.51 (cz. 2), READMEs, #39 ✅ w obu kolumnach.
+4. Wydanie: GitHub Release + Drive, karta SD (`sudo GBA/tools/sd_copy.sh`), iPhone (`GODOT/tools/ios_deploy.sh`);
+   TestFlight i Google Play dopiero po sygnale sesji PB-platnosci (priorytet: wydanie PlanBudowlany iOS 0.9.2).
 
 ## Zgodność funkcji
 
