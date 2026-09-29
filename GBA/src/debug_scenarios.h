@@ -94,7 +94,7 @@
 //  60 - fabuła i Osiedle (#35): 6 wygranych (6 domów, 4 ozdoby), część wątków odblokowana i nieprzeczytana
 //       (tytuł -> SELECT -> Osiedle -> A = Wiadomości, A = wątek)
 //  v0.21.51 cz. 2: sekretne zlecenia (#39)
-//  61 - strona Sekrety: 3 z 8 wykonane (Bez kofeiny, Mokra robota, Na styk), reszta "???" z podpowiedzią (tytuł ->
+//  61 - dymek Nowość (Na styk) na tytule, strona Sekrety: 3 z 8 wykonane (Bez kofeiny, Mokra robota, Na styk), reszta "???" z podpowiedzią (tytuł ->
 //       SELECT -> Odznaki -> A x3); Koszty -> SELECT = Respekt: na dole "???" (Zaprawiony w boju - sekret)
 //  62 - baner sekretu w budowie: 5. magazyn otwarty (licznik), L+R+SELECT = etap zaliczony, baner "Sekretne zlecenie!"
 //       (Poziomica mistrza), potem na tytule dymek "Nowość"
@@ -104,7 +104,7 @@
 //  66 - narzędzia i wygląd z sekretów: kask w paski i złota kielnia, w prawo skrzynki Młot Zenka i Poziomica mistrza,
 //       ogłuszony problem dalej (A po podniesieniu młota = kryt ze złotym błyskiem i odepchnięcie); magazyn na etapie (L = mapa
 //       z magazynem dzięki Poziomicy)
-//  67 - wygrana z sekretami: ostatni etap z bossem, 2 HP, bez kawy, szybkie etapy; L+R+SELECT = odbiór, banery 3 sekretów
+//  67 - wygrana z sekretami: ostatni etap z bossem, 1 HP (+2 za awans), bez kawy, szybkie etapy; L+R+SELECT = odbiór, banery 3 sekretów
 //       (Bez kofeiny, Na styk, Szybka ekipa), na tytule dymki "Nowość"
 #include "core.h"
 #include "meta.h"
@@ -219,6 +219,7 @@ namespace debug_scenario
             p.secrets = uint16_t((1 << secret_index(core::secret_kind::no_coffee_win)) | (1 << secret_index(core::secret_kind::shock_combos))
                                  | (1 << secret_index(core::secret_kind::low_hp_win)));
             p.respect = 40; p.respect_total = 90; p.wins = 3; p.rewards = 3;
+            p.secrets_new = uint16_t(1 << secret_index(core::secret_kind::low_hp_win));   // dymek "Nowość" na tytule
         }
         if(scenario >= 63 && scenario <= 66) all_secrets(p);
         if(scenario == 67) { p.wins = 4; p.rewards = 4; p.runs = 6; }
@@ -874,7 +875,7 @@ namespace debug_scenario
                 g.start_stage(data::stages_count - 1);
                 for(int s = g.first_stage; s < data::stages_count; ++s) g.stage_days[s] = 3;
                 g.stage_start_turn = g.turns;
-                g.hero.hp = 2;
+                g.hero.hp = 1;   // awans za bossa: +2 HP = 3 (Na styk: 1-3 HP)
                 g.enemies_count = g.boss + 1;
                 break;
             }

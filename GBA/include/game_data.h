@@ -704,7 +704,7 @@ inline constexpr core::secret_def secrets[] = {   // sekretne zlecenia: "???" z 
     { "Każdy fach się przyda", "Wygraj każdym z 9 zawodów", core::secret_kind::class_wins, 9, core::secret_reward::cls, 11, "Nowy zawód: Majster", { "Kierownik Marek", { "Każdy fach wygrany!", "Majster: co etap moc", "innego fachu." } } },
     { "Papierologia? Nie tym razem", "Akt 0 bez ciosu od papierów", core::secret_kind::paper_clean, 0, core::secret_reward::cls, 10, "Nowy zawód: Geodeta", { "Kierownik Marek", { "Akt 0 bez obrażeń!", "Geodeta widzi cały plac", "od startu etapu." } } },
     { "Mokra robota", "20x mokry + prąd w budowie", core::secret_kind::shock_combos, 20, core::secret_reward::cosmetic, 0, "Wygląd: Złota kielnia", { "Kierownik Marek", { "20 porażeń w budowie!", "Złota kielnia: złoty", "błysk przy krycie." } } },
-    { "Na styk", "Wygraj z 1-3 HP", core::secret_kind::low_hp_win, 3, core::secret_reward::cosmetic, 1, "Wygląd: Kask w paski", { "Kierownik Marek", { "Odbiór na ostatnich HP!", "Kask w paski: wybierz", "go na wyborze zawodu." } } },
+    { "Na styk", "Wygraj z 1-3 HP", core::secret_kind::low_hp_win, 3, core::secret_reward::cosmetic, 1, "Wygląd: Kask w paski", { "Kierownik Marek", { "Odbiór na ostatnich HP!", "Kask w paski: wybór", "zawodu, SELECT: Wygląd." } } },
     { "Szybka ekipa", "Wygraj w 150 dni (bez Aktu 0)", core::secret_kind::fast_win, 150, core::secret_reward::respect, 16, "Respekt: Zaprawiony", { "Kierownik Marek", { "Dom w rekordowym czasie!", "Respekt: Zaprawiony", "w boju - kawa na start." } } },
 };
 inline constexpr core::cosmetic_def cosmetics[] = {   // wygląd z sekretnych zleceń (tylko oprawa)

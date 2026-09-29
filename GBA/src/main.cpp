@@ -2029,7 +2029,7 @@ namespace
         bn::sprite_ptr icon;
         bn::vector<bn::sprite_ptr, 24> text;
         bn::vector<bn::fixed, 24> text_y;
-        bn::vector<notice, 4> queue;
+        bn::vector<notice, 8> queue;   // v0.21.51 cz. 2: koniec budowy - nagroda, sekrety, odznaki, zlecenia, fabuła
         int timer = 0;   // 0 = brak banera
 
         push_banner() :
@@ -5084,7 +5084,7 @@ namespace
             {
                 const core::secret_def& sd = data::secrets[i];
                 const bool done = core::secret_done(a.save, i);
-                core::message h; h.add("\"").add(sd.hint).add("\"");
+                core::message h; h.add(sd.hint);
                 const char* pill_s = done ? "Wykonane" : "???";
                 phone_text(a, t, list_x + 18, row_py(r), fit(a, h.s, pill_room(pill_s) - 18).c_str(), done || is_sel ? name_ink : ink::dim);
                 phone_pill(a, c, t, pill_end, row_ty(r), pill_s, done ? pill::done : pill::gray);
