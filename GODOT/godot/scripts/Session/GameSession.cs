@@ -70,6 +70,22 @@ public sealed class GameSession
             return Daily.Number(Data, y, m, d);
         }
     }
+    /// <summary>Numer bieżącego tygodnia (wyzwanie tygodnia #34).</summary>
+    public int TodayWeek
+    {
+        get
+        {
+            var (y, m, d) = Today;
+            return Weekly.Number(Data, y, m, d);
+        }
+    }
+
+    /// <summary>Wyzwanie tygodnia pobiło najlepszy wynik tygodnia (Weekly.Record).</summary>
+    public bool WeeklyRecord { get; private set; }
+
+    /// <summary>Wątki fabuły odblokowane na koniec ostatniej budowy (bity GameData.StoryArc).</summary>
+    public uint LastStory { get; set; }
+
     /// <summary>Rady kierownika z game.json (ekran harmonogramu).</summary>
     public string[] Tips { get; set; } = [];
 
@@ -158,6 +174,21 @@ public sealed class GameSession
         GD.Print($"Codzienna budowa nr {day}: {Game.CDef.Name}, seed {Game.RunSeed}");
     }
 
+    /// <summary>Wyzwanie tygodnia `week`: zawód, seed i zasady tygodnia, bez Szkoleń i pamiątek.</summary>
+    public void StartWeekly(int week)
+    {
+        Weekly.Start(Game, week);
+        ClassId = Game.Cls;
+        Meta.StartRun(Data, Profile);
+        Save();
+        SaveRun();
+        Note = "";
+        FirstStage = true;
+        Events.RaiseRunStarted();
+        _watcher.Reset(Game);
+        GD.Print($"Wyzwanie tygodnia nr {week}: {Data.Weekly[Game.Bonus.Weekly].Name}, {Game.CDef.Name}, seed {Game.RunSeed}");
+    }
+
     /// <summary>Kolejny etap (po harmonogramie albo Hurtowni).</summary>
     public void NextStage()
     {
@@ -212,6 +243,8 @@ public sealed class GameSession
             if (won) Events.RaiseRespectGained(g.StageRespect(), Profile.Respect);
             if (LastReward >= 0) Events.RaiseRewardUnlocked(LastReward);
             LastGained = Meta.BankXp(Profile, g);
+            WeeklyRecord = g.WeeklyWeek != 0 && Weekly.Record(Data, Profile, g.WeeklyWeek, g.Score, won); // wyzwanie tygodnia (#34)
+            LastStory = Story.Check(Data, Profile, g); // fabuła (#35): nowe wątki SMS za kamienie milowe
             Save();
             ClearRun();
             return TurnOutcome.RunEnded;

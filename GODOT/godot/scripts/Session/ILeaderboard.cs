@@ -11,4 +11,10 @@ public interface ILeaderboard
 
     /// <summary>Wysłanie wyniku dnia; zwraca komunikat dla gracza.</summary>
     string Submit(int day, int score);
+
+    /// <summary>Identyfikator tabeli wyzwania tygodnia (#34) – miejsce na tabelę Game Center / Google Play Games.</summary>
+    string WeeklyBoardId(int week);
+
+    /// <summary>Wysłanie wyniku tygodnia; zwraca komunikat dla gracza.</summary>
+    string SubmitWeekly(int week, int score);
 }

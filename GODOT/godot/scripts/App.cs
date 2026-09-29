@@ -114,6 +114,14 @@ public sealed class App
         Flow.StageCard.Open();
     }
 
+    /// <summary>Wyzwanie tygodnia (bez prologu): karta etapu z SMS-em.</summary>
+    public void StartWeekly(int week)
+    {
+        Session.StartWeekly(week);
+        Refresh();
+        Flow.StageCard.Open();
+    }
+
     /// <summary>Kolejny etap (harmonogram / Hurtownia -> karta etapu).</summary>
     public void NextStage()
     {

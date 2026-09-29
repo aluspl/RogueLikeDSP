@@ -71,6 +71,7 @@ public sealed class SmokeTest
             await VisitScreens();
             await ExerciseInvestor();
             await ExerciseDaily();
+            await ExerciseWeeklyAndStory();
             await ExerciseRespectAndRewards();
             await ExerciseStatsAndHelp();
             await ExerciseDamageRun();
@@ -83,7 +84,7 @@ public sealed class SmokeTest
             if (DrawErrors.Count > 0) throw new Exception($"błędy rysowania: {DrawErrors.Count}, ostatni: {DrawErrors.Last}");
             GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {s.Data.Version}, zawody {s.Data.Classes.Length}, etap {stage + 1}, " +
                      $"dzień {g.Turns}, HP {g.Hero.Hp}/{g.Hero.MaxHp}, wynik {g.Score}, budżet {g.Cash}, kroki {_steps}, " +
-                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, rozpiska obrażeń {(_damage ? "tak" : "nie")}, samouczek {_tutorial} dymków + nowości {_unlocks}, Akt 0 {(_act0 ? "tak" : "nie")} (dokumenty {_docs}, druga faza {_phases}), premie {_boons} (lista {_boonList}, synergie {g.SynergyMask()}), wydarzenia {_events} (ekran {(_extras ? "tak" : "nie")}), Jak grać {(_help ? "tak" : "nie")}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
+                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, tydzień {(_weekly ? "tak" : "nie")}, podsumowanie {_recapRows} wierszy, fabuła {_story} wątków, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, rozpiska obrażeń {(_damage ? "tak" : "nie")}, samouczek {_tutorial} dymków + nowości {_unlocks}, Akt 0 {(_act0 ? "tak" : "nie")} (dokumenty {_docs}, druga faza {_phases}), premie {_boons} (lista {_boonList}, synergie {g.SynergyMask()}), wydarzenia {_events} (ekran {(_extras ? "tak" : "nie")}), Jak grać {(_help ? "tak" : "nie")}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
                      $"ekran {Flow.Current.GetType().Name}");
             _app.Root.GetTree().Quit(ok ? 0 : 1);
         }
@@ -454,6 +455,77 @@ public sealed class SmokeTest
     /// Codzienna budowa z tytułu (stała data): ekran dnia, „Wyślij wynik” (lokalna zaślepka), start budowy dnia,
     /// kilka kroków bota, porażka – rekord dnia w profilu, bez NG+; potem wygrana – harmonogram domu z linkiem.
     /// </summary>
+    private bool _weekly;
+    private int _recapRows;
+    private int _story;
+
+    /// <summary>
+    /// v0.21.50 cz. 4: wyzwanie tygodnia (strona, wyślij wynik – tabela tygodnia, start z zasadą), porażka -> SMS ->
+    /// podsumowanie (przewijanie) -> plansza końcowa bez NG+; wynik tygodnia i wątki fabuły w profilu; Osiedle ->
+    /// Wiadomości -> wątek (przeczytany) -> wstecz.
+    /// </summary>
+    private async Task ExerciseWeeklyAndStory()
+    {
+        var s = _app.Session;
+        var g = s.Game;
+        s.FixedToday = Tuple.Create(2026, 9, 29);
+        Flow.Title.Open();
+        Flow.Weekly.Open(true);
+        await DebugRunner.Frames(_app.Root, 2);
+        var week = Flow.Weekly.Page.Week;
+        if (week != Weekly.Number(s.Data, 2026, 9, 29)) throw new Exception("tydzień: zły numer");
+        Flow.Weekly.HandleInput(InputCmd.Of(GameAction.A));
+        if (g.WeeklyWeek != week || g.Bonus.Weekly != Weekly.Index(s.Data, week) || g.Cls != Weekly.ClassOf(s.Data, week))
+            throw new Exception("wyzwanie tygodnia nie wystartowało");
+        new DebugScenes(_app).AdvanceMessages();
+        for (var i = 0; i < 20 && Flow.Current == Flow.Game && g.St == GameStatus.Playing; i++)
+        {
+            Bot.StepSmart(g);
+            _app.AfterAction(true);
+            new DebugScenes(_app).AdvanceMessages();
+        }
+        if (g.St == GameStatus.Playing)
+        {
+            var zw = Array.FindIndex(s.Data.Enemies, e => e.Id == "zwarcie");
+            g.Spawn(zw, g.Hero.X, g.Hero.Y);
+            g.Hero.Hp = 1;
+            g.Bonus.SecondChance = 0;
+            g.EnemyStrike(g.EnemiesCount - 1, false);
+            _app.AfterAction(true);
+        }
+        if (Weekly.Best(s.Data, s.Profile, week) != g.Score || s.Profile.WeeklyRuns == 0) throw new Exception("tydzień: brak wyniku w profilu");
+        if (Flow.Current == Flow.EndMessage) Flow.EndMessage.HandleInput(InputCmd.Of(GameAction.A));
+        if (Flow.Current != Flow.Recap) throw new Exception("porażka: brak podsumowania budowy");
+        var page = Flow.Recap.Page;
+        _recapRows = page.Count;
+        await DebugRunner.Frames(_app.Root, 2);
+        Flow.Recap.HandleInput(InputCmd.Of(GameAction.Down));
+        await DebugRunner.Frames(_app.Root, 1);
+        if (page.Count > 12 && page.Top == 0) throw new Exception("podsumowanie: nie przewija się");
+        Flow.Recap.HandleInput(InputCmd.Of(GameAction.Start));
+        if (Flow.Current != Flow.End || _app.Nodes.EndView.CanContinue) throw new Exception("tydzień: plansza końcowa z NG+");
+        Flow.Weekly.Open(true);
+        Flow.Weekly.Submit();
+        if (!Flow.Weekly.Page.Note.Contains("pb.weekly.")) throw new Exception("tydzień: brak tabeli tygodnia (zaślepka)");
+        _weekly = true;
+        // fabuła: wątek „Pierwsza budowa” jest już odblokowany (budowy > 0); archiwum w telefonie profilu
+        _story = Story.Count(s.Data, s.Profile);
+        if (_story == 0) throw new Exception("fabuła: brak wątków po budowach");
+        Flow.Profile.Open(2, true);
+        await DebugRunner.Frames(_app.Root, 2);
+        if (_app.Nodes.Phone.Current is not Phone.ProfileTabs.EstateTab et) throw new Exception("Osiedle: brak zakładki");
+        _app.Nodes.Phone.HandleInput(InputCmd.Of(GameAction.A));
+        if (et.Mode != 1) throw new Exception("Osiedle: A nie otwiera Wiadomości");
+        var first = Enumerable.Range(0, s.Data.StoryArc.Length).First(i => Story.Unlocked(s.Profile, i));
+        et.OpenThread(first);
+        await DebugRunner.Frames(_app.Root, 2);
+        if (Story.Unread(s.Profile, first) || et.Mode != 2) throw new Exception("Wiadomości: wątek nie został przeczytany");
+        _app.Nodes.Phone.HandleInput(InputCmd.Of(GameAction.B));
+        _app.Nodes.Phone.HandleInput(InputCmd.Of(GameAction.B));
+        if (et.Mode != 0) throw new Exception("Wiadomości: B nie wraca na Osiedle");
+        Flow.Title.Open();
+    }
+
     private async Task ExerciseDaily()
     {
         var s = _app.Session;
@@ -482,6 +554,7 @@ public sealed class SmokeTest
         }
         if (Daily.Best(s.Data, s.Profile, day) != g.Score) throw new Exception("codzienna budowa: brak wyniku dnia w profilu");
         if (Flow.Current == Flow.EndMessage) Flow.EndMessage.HandleInput(InputCmd.Of(GameAction.A));
+        if (Flow.Current == Flow.Recap) Flow.Recap.HandleInput(InputCmd.Of(GameAction.Start)); // podsumowanie budowy (#33)
         if (Flow.Current == Flow.End && _app.Nodes.EndView.CanContinue) throw new Exception("codzienna budowa: NG+ nie powinno być");
         await DebugRunner.Frames(_app.Root, 2);
         _daily = true;
@@ -503,6 +576,8 @@ public sealed class SmokeTest
         Flow.HouseSchedule.HandleInput(InputCmd.Of(GameAction.A));
         if (Flow.HouseSchedule.LinkOpened != 1) throw new Exception("harmonogram domu: link nie działa");
         Flow.HouseSchedule.HandleInput(InputCmd.Of(GameAction.Start));
+        if (Flow.Current != Flow.Recap || Flow.Recap.Page.Count < 10) throw new Exception("wygrana: brak podsumowania budowy");
+        Flow.Recap.HandleInput(InputCmd.Of(GameAction.Start));
         if (Flow.Current != Flow.End || !_app.Nodes.EndView.CanContinue) throw new Exception("po harmonogramie domu brak planszy końcowej z NG+");
         await DebugRunner.Frames(_app.Root, 2);
         _house = true;

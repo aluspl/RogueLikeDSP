@@ -89,7 +89,8 @@ public sealed class TasksTab : PhonePage
         p.Text(p.TextX(c2), r3, $"Ścieżka: {path.Desc}", Ink.Dark, TextAlign.Left, c2.End.X - 12 - pp - p.TextX(c2));
     }
 
-    /// <summary>Wiersz v0.21.50 cz. 3: wydarzenie etapu i odpowiedź, a bez niego magazyn (odkryty) albo klucz w kieszeni.</summary>
+    /// <summary>Wiersz v0.21.50 cz. 3: wydarzenie etapu i odpowiedź, a bez niego magazyn (odkryty), klucz w kieszeni albo zasada
+    /// wyzwania tygodnia (cz. 4).</summary>
     private bool ExtraRow(out string text, out string pill, out PillKind kind)
     {
         var g = _g;
@@ -113,6 +114,13 @@ public sealed class TasksTab : PhonePage
             text = $"Klucz do magazynu: {g.Keys}";
             pill = "Klucz";
             kind = PillKind.Prog;
+            return true;
+        }
+        if (g.Bonus.Weekly >= 0) // v0.21.50 cz. 4: wyzwanie tygodnia (#34)
+        {
+            text = g.D.Weekly[g.Bonus.Weekly].Name;
+            pill = "Tydzień";
+            kind = PillKind.Late;
             return true;
         }
         text = pill = "";

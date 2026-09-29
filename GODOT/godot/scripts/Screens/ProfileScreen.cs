@@ -34,7 +34,7 @@ public sealed class ProfileScreen : Screen
         [
             new BadgesTab(d, p),
             new CatalogTab(d, p),
-            new EstateTab(d, p),
+            new EstateTab(d, p, S.Save),
             new TeamTab(d, p),
             new TrainingTab(d, p, S.Save),
         ];

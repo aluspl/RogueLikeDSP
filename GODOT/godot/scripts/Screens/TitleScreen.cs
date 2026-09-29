@@ -7,7 +7,8 @@ using LifeLike.Game.Screens.Views;
 namespace LifeLike.Game.Screens;
 
 /// <summary>
-/// Tytuł (run_title na GBA): menu Kontynuuj budowę (gdy jest zapis) / Nowa budowa / Codzienna budowa / Profil / Szkolenia / Jak grać,
+/// Tytuł (run_title na GBA): menu Kontynuuj budowę (gdy jest zapis) / Nowa budowa / Codzienna budowa / Wyzwanie tygodnia / Profil /
+/// Szkolenia / Jak grać,
 /// rekord i doświadczenie z profilu, link planbudowlany.online, klucz ustawień (także Esc). Dotyk: przyciski menu.
 /// </summary>
 public sealed class TitleScreen : Screen
@@ -24,8 +25,8 @@ public sealed class TitleScreen : Screen
     public override bool ShowsSettings => true;
 
     private string[] Items => _hasRun
-        ? ["Kontynuuj budowę", "Nowa budowa", "Codzienna budowa", "Profil: odznaki, zlecenia", "Szkolenia (Koszty)", "Jak grać"]
-        : ["Nowa budowa", "Codzienna budowa", "Profil: odznaki, zlecenia", "Szkolenia (Koszty)", "Jak grać"];
+        ? ["Kontynuuj budowę", "Nowa budowa", "Codzienna budowa", "Wyzwanie tygodnia", "Profil: odznaki, zlecenia", "Szkolenia (Koszty)", "Jak grać"]
+        : ["Nowa budowa", "Codzienna budowa", "Wyzwanie tygodnia", "Profil: odznaki, zlecenia", "Szkolenia (Koszty)", "Jak grać"];
 
     public void Open() => Flow.Go(this);
 
@@ -146,9 +147,12 @@ public sealed class TitleScreen : Screen
                 Flow.Daily.Open();
                 break;
             case 2:
-                Flow.Profile.Open(0);
+                Flow.Weekly.Open();
                 break;
             case 3:
+                Flow.Profile.Open(0);
+                break;
+            case 4:
                 Flow.Profile.Open(4);
                 break;
             default:

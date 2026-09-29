@@ -41,7 +41,7 @@ public sealed class HouseScheduleScreen : Screen
             return true;
         }
         if (!e.Is(GameAction.Start | GameAction.B | GameAction.Cancel)) return false;
-        Flow.End.Open();
+        Flow.Recap.Open(); // podsumowanie budowy (#33)
         return true;
     }
 }

@@ -16,4 +16,16 @@ public sealed class LocalLeaderboard : ILeaderboard
         Last = (day, score);
         return $"Wynik {score} zapisany lokalnie. Tabela Game Center wkrótce.";
     }
+
+    /// <summary>Ostatnio „wysłany” wynik tygodnia (tabela, wynik) – do testu dymnego.</summary>
+    public (string Board, int Score) LastWeekly { get; private set; }
+
+    /// <summary>Zaślepka: identyfikator tabeli tygodnia (bez sieci; przyszła tabela Game Center / Google Play Games).</summary>
+    public string WeeklyBoardId(int week) => $"pb.weekly.{week:000}";
+
+    public string SubmitWeekly(int week, int score)
+    {
+        LastWeekly = (WeeklyBoardId(week), score);
+        return $"Wynik tygodnia {score} zapisany lokalnie ({WeeklyBoardId(week)}).";
+    }
 }

@@ -32,6 +32,8 @@ public sealed class ScreenFlow
         Brigade = new BrigadeScreen(app);
         Investor = new InvestorScreen(app);
         Daily = new DailyScreen(app);
+        Weekly = new WeeklyScreen(app);
+        Recap = new RecapScreen(app);
         HouseSchedule = new HouseScheduleScreen(app);
         Stats = new StatsScreen(app);
         Boons = new BoonScreen(app);
@@ -61,6 +63,9 @@ public sealed class ScreenFlow
     public BrigadeScreen Brigade { get; }
     public InvestorScreen Investor { get; }
     public DailyScreen Daily { get; }
+    /// <summary>v0.21.50 cz. 4: wyzwanie tygodnia (#34) i podsumowanie budowy (#33).</summary>
+    public WeeklyScreen Weekly { get; }
+    public RecapScreen Recap { get; }
     public HouseScheduleScreen HouseSchedule { get; }
     public StatsScreen Stats { get; }
     /// <summary>v0.21.50 cz. 2: premia 1 z 3 po etapie i lista premii w telefonie.</summary>

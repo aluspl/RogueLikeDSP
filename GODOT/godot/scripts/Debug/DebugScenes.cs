@@ -29,15 +29,19 @@ public sealed class DebugScenes
         "help-combos",
         "event-map", "event-sms", "event-choices", "event-result", "event-boon", "upgrade-shop", "upgrade-trait", "upgrade-gear",
         "tool-swap", "secret-crack", "secret-card", "secret-open", "secret-door", "secret-map", "tasks-extras", "help-extras",
+        "recap-endmsg", "recap-death", "recap-death-scroll", "recap-win", "recap-end", "weekly", "weekly-card", "weekly-run",
+        "story-archive", "story-thread", "estate-grow",
     ];
 
     private readonly App _app;
     private readonly DemoStaging _stage;
+    private readonly RecapStaging _recap;
 
     public DebugScenes(App app)
     {
         _app = app;
         _stage = new DemoStaging(app);
+        _recap = new RecapStaging(app);
     }
 
     private ScreenFlow Flow => _app.Flow;
@@ -53,6 +57,11 @@ public sealed class DebugScenes
     public async Task Setup(string scene)
     {
         var s = _app.Session;
+        if (RecapStaging.Handles(scene)) // v0.21.50 cz. 4: podsumowanie, wyzwanie tygodnia, fabuła
+        {
+            await _recap.Setup(scene);
+            return;
+        }
         switch (scene)
         {
             case "title":

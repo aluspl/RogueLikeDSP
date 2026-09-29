@@ -26,6 +26,7 @@ public sealed class EndMessageScreen : Screen
         var page = new MessagePage(won ? "Odbiór" : "Budowa");
         page.Add(won ? d.StoryWin : d.StoryLose);
         page.Info($"Wynik {g.Score}  Dośw. +{S.LastGained} (w profilu {p.Xp})", Ink.Dark);
+        if (g.WeeklyWeek != 0) page.Info(S.WeeklyRecord ? $"Rekord tygodnia! {S.Data.Weekly[g.Bonus.Weekly].Name}" : $"Wyzwanie tygodnia: najlepszy {Weekly.Best(d, p, g.WeeklyWeek)}", S.WeeklyRecord ? Ink.Done : Ink.Dim);
         if (g.Daily) page.Info(S.DailyRecord ? $"Rekord dnia! Budowa dnia nr {g.DailyDay}" : $"Budowa dnia nr {g.DailyDay}: najlepszy {Daily.Best(d, p, g.DailyDay)}", S.DailyRecord ? Ink.Done : Ink.Dim);
         if (g.Score > S.PrevBest) page.Info($"Nowy rekord! (poprzedni {S.PrevBest})", Ink.Done);
         else page.Info(won ? "Dom na Osiedlu!" : $"Rekord {p.Best} - do pobicia", won ? Ink.Done : Ink.Dim);
@@ -68,7 +69,7 @@ public sealed class EndMessageScreen : Screen
     {
         if (!e.Is(GameAction.A | GameAction.Start)) return false;
         if (S.Game.St == GameStatus.Won && S.Data.Stages.Length > 0) Flow.HouseSchedule.Open();
-        else Flow.End.Open();
+        else Flow.Recap.Open(); // podsumowanie budowy (#33)
         return true;
     }
 }

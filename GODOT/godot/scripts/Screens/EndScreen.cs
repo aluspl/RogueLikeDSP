@@ -21,13 +21,18 @@ public sealed class EndScreen : Screen
         var won = g.St == GameStatus.Won;
         var v = N.EndView;
         v.Won = won;
-        v.CanContinue = won && !g.Daily; // codzienna budowa: bez NG+
+        v.CanContinue = won && !g.Daily && g.WeeklyWeek == 0; // budowa dnia / tygodnia: bez NG+
         v.Line1 = $"Wynik {g.Score}   Dni {g.Turns}   Etap {g.StageNumber()}/{g.StagesInRun()}   Dośw. +{S.LastGained}";
         var record = g.Score > S.PrevBest ? "Nowy rekord!" : $"Rekord {S.Profile.Best}";
         var daily = g.Daily ? (S.DailyRecord ? "   Rekord dnia!" : $"   Budowa dnia nr {g.DailyDay}") : "";
+        if (g.WeeklyWeek != 0) daily = S.WeeklyRecord ? "   Rekord tygodnia!" : $"   Tydzień nr {g.WeeklyWeek}";
         v.Line2 = $"{record}   Doświadczenie w profilu {S.Profile.Xp}   Respekt +{g.Respect} (masz {S.Profile.Respect})" + (won ? "   Dom na Osiedlu!" : "") + daily;
         v.Note = S.Note;
         N.Banners.Clear();
+        for (var i = 0; i < S.Data.StoryArc.Length; i++) // fabuła (#35): nowy wątek w Wiadomościach (Profil > Osiedle)
+        {
+            if (((S.LastStory >> i) & 1) != 0) N.Banners.Push("Nowa wiadomość", S.Data.StoryArc[i].Name);
+        }
     }
 
     public override bool HandleInput(InputCmd e)
@@ -38,7 +43,7 @@ public sealed class EndScreen : Screen
             if (b == 0) return false;
             e = InputCmd.Of(b == 1 ? GameAction.A : GameAction.Start);
         }
-        if (S.Game.St == GameStatus.Won && !S.Game.Daily && e.Is(GameAction.A))
+        if (S.Game.St == GameStatus.Won && !S.Game.Daily && S.Game.WeeklyWeek == 0 && e.Is(GameAction.A))
         {
             S.NewGamePlus();
             App.Refresh();
