@@ -102,6 +102,25 @@ public sealed class GameData
     public string Version { get; private init; } = "";
     /// <summary>v0.21.50: Jak grać, strona Obrażenia – obrażenia broni w prostych słowach (rozpiska #26).</summary>
     public string[] DamageHelpLines { get; private init; } = [];
+    /// <summary>v0.21.50 cz. 3: Jak grać – wydarzenia z wyborem, ulepszanie narzędzia, magazyn (sekcja "extrasHelp").</summary>
+    public string[] ExtrasHelpLines { get; private init; } = [];
+    /// <summary>Wydarzenia z wyborem (#30, sekcja "choiceEvents") i szansa na pole wydarzenia na etapie.</summary>
+    public ChoiceEventDef[] ChoiceEvents { get; private init; } = [];
+    public int ChoiceEventChancePct { get; private init; }
+    /// <summary>Ulepszanie narzędzia (#31, sekcja "toolUpgrade"): koszt poziomów, cechy, maks., +obrażeń, poziom cechy.</summary>
+    public ToolLevelDef[] ToolLevels { get; private init; } = [];
+    public ToolTraitDef[] ToolTraits { get; private init; } = [];
+    public int ToolUpgradeMax { get; private init; }
+    public int ToolUpgradeDmg { get; private init; }
+    public int ToolTraitAt { get; private init; }
+    /// <summary>Ukryte pomieszczenia (#32, sekcja "hiddenRooms"): rodzaje, szansa, strażnik, zawartość skrzyni.</summary>
+    public SecretKindDef[] SecretKinds { get; private init; } = [];
+    public int SecretChancePct { get; private init; }
+    public int SecretGuardPct { get; private init; }
+    public int ChestRespect { get; private init; }
+    public int ChestMats { get; private init; }
+    public int ChestCash { get; private init; }
+    public int ChestGearMin { get; private init; }
     public int DefaultDifficulty { get; private init; }
     public int NgHpPctPerTier { get; private init; }
     public int NgDmgBonusPerTier { get; private init; }
@@ -615,6 +634,47 @@ public sealed class GameData
             eliteMats = Int(erw, "mats");
             eliteGearMin = Int(erw, "gearMin");
         }
+        // v0.21.50 cz. 3: wydarzenia z wyborem, ulepszanie narzędzia, ukryte pomieszczenia
+        var slotNames = slots.ToArray();
+        ChoiceEventDef[] choiceEvents = [];
+        var choiceChance = 0;
+        if (d.TryGetProperty("choiceEvents", out var cej))
+        {
+            choiceChance = Int(cej, "chancePct");
+            choiceEvents = cej.GetProperty("list").EnumerateArray().Select(e => new ChoiceEventDef(Str(e, "id"), Str(e, "name"), Story(e),
+                e.GetProperty("choices").EnumerateArray().Select(c => new EventChoice(Str(c, "label"), Str(c, "result"),
+                    c.GetProperty("effects").EnumerateArray().Select(x => ParseChoiceOut(x, mid, eid, slotNames)).ToArray())).ToArray())).ToArray();
+            Require(choiceEvents.Length <= 16 && choiceEvents.All(e => e.Choices.Length is >= 2 and <= 3 && e.Choices.All(c => c.Outs.Length <= 3)),
+                "wydarzenia: maks. 16, 2-3 odpowiedzi, 0-3 skutki");
+        }
+        ToolLevelDef[] toolLevels = [];
+        ToolTraitDef[] toolTraits = [];
+        int toolMax = 0, toolDmg = 0, toolTraitAt = 0;
+        if (d.TryGetProperty("toolUpgrade", out var tupj))
+        {
+            toolMax = Int(tupj, "max");
+            toolDmg = Int(tupj, "dmg");
+            toolTraitAt = Int(tupj, "traitAt");
+            toolLevels = tupj.GetProperty("levels").EnumerateArray().Select(x => new ToolLevelDef(Int(x, "cash"),
+                Lookup(mid, Str(x, "material"), "materiał"), Int(x, "count"))).ToArray();
+            toolTraits = tupj.GetProperty("traits").EnumerateArray().Select(x => new ToolTraitDef(Str(x, "id"), Str(x, "name"), Str(x, "short"),
+                Str(x, "desc"), ParseEnum<ToolTraitEffect>(Str(x, "effect")), Int(x, "value"))).ToArray();
+            Require(toolLevels.Length == toolMax && toolTraits.Length == 3, "ulepszenie narzędzia: poziomy = maks., 3 cechy");
+        }
+        SecretKindDef[] secretKinds = [];
+        int secretChance = 0, secretGuard = 0, chestRespect = 0, chestMats = 0, chestCash = 0, chestGearMin = 0;
+        if (d.TryGetProperty("hiddenRooms", out var hrj))
+        {
+            secretChance = Int(hrj, "chancePct");
+            secretGuard = Int(hrj, "guardPct");
+            secretKinds = hrj.GetProperty("kinds").EnumerateArray().Select(x => new SecretKindDef(Str(x, "id"), Str(x, "name"), Str(x, "info"),
+                Bool(x, "breakable"))).ToArray();
+            var chj = hrj.GetProperty("chest");
+            chestRespect = Int(chj, "respect");
+            chestMats = Int(chj, "mats");
+            chestCash = Int(chj, "cash");
+            chestGearMin = Int(chj, "gearMin");
+        }
         ComboDef[] combos = [];
         string[] comboSources = [];
         int wetTurns = 3, heroWetTurns = 2;
@@ -647,6 +707,21 @@ public sealed class GameData
             EliteRespect = eliteRespect,
             EliteMats = eliteMats,
             EliteGearMin = eliteGearMin,
+            ChoiceEvents = choiceEvents,
+            ChoiceEventChancePct = choiceChance,
+            ToolLevels = toolLevels,
+            ToolTraits = toolTraits,
+            ToolUpgradeMax = toolMax,
+            ToolUpgradeDmg = toolDmg,
+            ToolTraitAt = toolTraitAt,
+            SecretKinds = secretKinds,
+            SecretChancePct = secretChance,
+            SecretGuardPct = secretGuard,
+            ChestRespect = chestRespect,
+            ChestMats = chestMats,
+            ChestCash = chestCash,
+            ChestGearMin = chestGearMin,
+            ExtrasHelpLines = d.TryGetProperty("extrasHelp", out var ehj) ? ehj.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : [],
             Combos = combos,
             ComboSources = comboSources,
             WetTurns = wetTurns,
@@ -791,6 +866,21 @@ public sealed class GameData
             if (i >= 0) tags |= 1 << i;
         }
         return tags;
+    }
+
+    /// <summary>Skutek odpowiedzi na wydarzenie: argument z materiału, problemu, stanu albo slotu sprzętu.</summary>
+    private static ChoiceOut ParseChoiceOut(JsonElement x, Dictionary<string, int> mid, Dictionary<string, int> eid, string[] slots)
+    {
+        var effect = ParseSnake<ChoiceEffect>(Str(x, "effect"));
+        var arg = effect switch
+        {
+            ChoiceEffect.Mats => x.TryGetProperty("material", out var m) ? Lookup(mid, m.GetString() ?? "", "materiał") : -1,
+            ChoiceEffect.Spawn => Lookup(eid, Str(x, "enemy"), "problem"),
+            ChoiceEffect.Status => (int)ParseEnum<StatusEffect>(Str(x, "status")),
+            ChoiceEffect.Gear => x.TryGetProperty("slot", out var sl) ? Array.IndexOf(slots, sl.GetString() ?? "") : -1,
+            _ => -1,
+        };
+        return new ChoiceOut(effect, Int(x, "value"), Int(x, "chance", 100), arg);
     }
 
     private static StoryMsg Story(JsonElement m)

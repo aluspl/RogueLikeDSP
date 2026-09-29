@@ -243,7 +243,7 @@ public class BehaviorAndActTests
         Meta.CatalogAdd(p, 20);
         Meta.CatalogAdd(p, 31);
         Assert.True(Meta.CatalogHas(p, 20) && Meta.CatalogHas(p, 31) && !Meta.CatalogHas(p, 21) && Meta.CatalogCount(D, p) == 8 + 2);
-        Assert.Equal("PBRUN11", RunSave.RunMagic);
+        Assert.Equal("PBRUN12", RunSave.RunMagic);
     }
 
     [Fact]

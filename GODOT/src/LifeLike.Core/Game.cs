@@ -325,7 +325,8 @@ public sealed partial class Game
     /// <summary>Szczęście: kryt (x2), mały unik przed ciosem wroga, częstsze i lepsze dropy.</summary>
     public int Luck() => CDef.Luck + Bonus.Luck + TraitBonus(TraitEffect.Luck) + BoonLuck();
 
-    public int CritPct() => D.CritBasePct + D.CritPerLuckPct * Luck() + TraitBonus(TraitEffect.Crit) + Bonus.Crit + BoonSum(BoonEffect.Crit);
+    public int CritPct() => D.CritBasePct + D.CritPerLuckPct * Luck() + TraitBonus(TraitEffect.Crit) + Bonus.Crit + BoonSum(BoonEffect.Crit)
+                            + ToolTraitValue(ToolTraitEffect.Crit);
 
     /// <summary>Pole widzenia; pył (akt III) zmniejsza, najmniej 3.</summary>
     public int SightRadius() => Math.Max(3, FovRadius + TraitBonus(TraitEffect.Sight) + Bonus.Sight + BoonSum(BoonEffect.Sight) - DustSight());
@@ -368,7 +369,8 @@ public sealed partial class Game
 
     /// <summary>Obrona bohatera: zawód + premie + sprzęt + ochrona BHP-owca z brygady.</summary>
     public int HeroDefense() =>
-        CDef.Defense + DefBonus + GearBonus(GearStat.Def) + (GuardTurns > 0 ? D.Brigade[HelperCalled].Value : 0) + BoonDefense();
+        CDef.Defense + DefBonus + GearBonus(GearStat.Def) + (GuardTurns > 0 ? D.Brigade[HelperCalled].Value : 0) + BoonDefense()
+        + EventDef; // wydarzenie (#30): OBR na etap
 
     public void AddHit(int x, int y, int amount, bool onHero, HitKind kind = HitKind.Normal)
     {
@@ -603,6 +605,17 @@ public sealed partial class Game
         BlastX = BlastY = -1;
         ShotEvents = 0;
         Docs = 0;
+        PendingEvent = -1; // v0.21.50 cz. 3
+        StageChoice = StageChoicePick = -1;
+        ChoiceDone = 0;
+        EventDmg = EventDef = 0;
+        ToolOffer = ToolOfferPickup = -1;
+        SecretX = SecretY = -1;
+        SecretOpen = false;
+        SecretKind = SecretDir = 0;
+        KeyHolder = -1;
+        Keys = 0;
+        SecretRx = SecretRy = SecretRw = SecretRh = 0;
         Array.Fill(Fov, Sight.Unknown);
         var sd = D.Stages[Stage];
         var first = Lv.Rooms[0];
@@ -668,6 +681,8 @@ public sealed partial class Game
             if (!(D.WeatherNoBadStack && WDef.Bad && !D.SiteEvents[e].Good)) ApplyEvent(e);
         }
         PlaceDocuments();
+        PlaceEvent(); // v0.21.50 cz. 3: pole wydarzenia z wyborem (#30)
+        PlaceSecret(); // ukryte pomieszczenie (#32): magazyn, skrzynia, klucz, strażnik
         // kombinacje stanów: w pyle (akt III) problemy są zapylone, w Mróz – zmrożone (boss nie)
         for (var i = 0; i < EnemiesCount; ++i)
         {
@@ -748,6 +763,7 @@ public sealed partial class Game
     {
         if (St != GameStatus.Won) return false;
         ++Tier;
+        EventsSeen = 0; // nowa budowa: wydarzenia od nowa
         for (var i = 0; i < Enemies.Length; i++) Enemies[i] = new Actor();
         Hero.Hp = Hero.MaxHp;
         StartStage(FirstStage);
@@ -765,12 +781,13 @@ public sealed partial class Game
             Enemies[Boss].Flags = (byte)(Enemies[Boss].Flags | ActorFlag.Phase);
             HeroAttack(Boss);
         }
-        else if (StairsX >= 0)
+        else if (StairsX >= 0) // na schody i od razu zaliczony (problem obok mógłby zepchnąć bohatera w tej turze)
         {
             Docs = (byte)((1 << DocsNeeded()) - 1);
             Hero.X = (sbyte)StairsX;
             Hero.Y = (sbyte)StairsY;
-            EndTurn();
+            ++Turns;
+            ClearStage();
         }
     }
 }

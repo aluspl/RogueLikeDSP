@@ -41,7 +41,7 @@ public class GameDataTests
         Assert.Equal(StatusEffect.None, D.Enemies[3].OnHit);
         Assert.Equal(15, D.Gear.Length);
         Assert.Equal(GearStat.Hp, D.Gear[7].Stat);
-        Assert.Equal(ShopEffect.MaxHp, D.Hurtownia[3].Effect);
+        Assert.Equal(ShopEffect.MaxHp, D.Hurtownia[4].Effect);
         Assert.Equal(0, D.BadgeBezUsterek);
         Assert.Equal(8, D.BadgeOsiedle);
         Assert.Equal("Anna Nowak", D.StoryStages[0].From);
@@ -80,7 +80,7 @@ public class GameDataTests
         Assert.Equal(3, D.PaperDelay);
         Assert.True(D.CritBasePct == 5 && D.CritPerLuckPct == 3 && D.CritMultiplier == 2 && D.DodgeMaxPct == 20);
         Assert.True(D.ThermosCapacity == 3 && D.CoffeeHeal == 8 && D.BotDrinkBelowPct == 40 && D.GearDeclineXp == 1);
-        Assert.Equal(95, D.Stages[2].HpPct);
+        Assert.Equal(107, D.Stages[2].HpPct);
         Assert.Equal("v0.21.50", D.Version);
     }
 

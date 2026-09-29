@@ -261,6 +261,12 @@ public sealed partial class Game
                         ok = true;
                         break;
                     }
+                    if (SecretClosed() && SecretIs(nx, ny) && SecretDef.Breakable)
+                    {
+                        OpenSecret("Taran kruszy ścianę!");
+                        ok = true;
+                        break;
+                    }
                     if (!Lv.Passable(nx, ny) || Occupied(nx, ny)) break;
                     Hero.X = (sbyte)nx;
                     Hero.Y = (sbyte)ny;
@@ -286,11 +292,13 @@ public sealed partial class Game
     public bool HurtowniaCan(int i)
     {
         var it = D.Hurtownia[i];
+        if (it.Effect == ShopEffect.Upgrade) return UpgradeAffordable(); // ulepszenie narzędzia: zł + materiał
         return it.Material >= 0 ? Mats[it.Material] >= it.MatCost : Cash >= HurtowniaPrice(i);
     }
 
-    /// <summary>Cena towaru w zł po rabacie z Respektu.</summary>
-    public int HurtowniaPrice(int i) => D.Hurtownia[i].Price * (100 - Math.Min(90, Bonus.ShopPct + BoonSum(BoonEffect.ShopPct))) / 100;
+    /// <summary>Cena towaru w zł po rabacie z Respektu (ulepszenie narzędzia: kolejny poziom).</summary>
+    public int HurtowniaPrice(int i) =>
+        D.Hurtownia[i].Effect == ShopEffect.Upgrade ? UpgradePrice() : D.Hurtownia[i].Price * (100 - Math.Min(90, Bonus.ShopPct + BoonSum(BoonEffect.ShopPct))) / 100;
 
     /// <summary>Losowy slot sprzętu spośród dostępnych (nagrody dokładają buty i pas); przy 3 slotach jak dawniej.</summary>
     public int RandomSlot()
@@ -310,6 +318,14 @@ public sealed partial class Game
     {
         var it = D.Hurtownia[i];
         if (!HurtowniaCan(i)) return false;
+        if (it.Effect == ShopEffect.Upgrade) // ulepszenie narzędzia (#31): zł i materiał, potem +1 poziom
+        {
+            var t = D.ToolLevels[WeaponLvl];
+            Cash -= UpgradePrice();
+            Mats[t.Material] = (byte)(Mats[t.Material] - t.Count);
+            UpgradeWeapon();
+            return true;
+        }
         switch (it.Effect)
         {
             case ShopEffect.Heal:
@@ -346,6 +362,7 @@ public sealed partial class Game
                 {
                     if (((Bonus.Tools >> t) & 1) != 0 && k-- == 0)
                     {
+                        ResetUpgrade();
                         WeaponOverride = D.Tools[t].Weapon;
                         ToolsFound = (byte)(ToolsFound | (1u << t));
                         break;

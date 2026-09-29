@@ -9,6 +9,7 @@ public class LootAndGearTests
     {
         var g = TestData.Run(1, seed);
         g.EnemiesCount = 0;
+        g.KeyHolder = -1;
         g.Spawn(0, g.Hero.X + 1, g.Hero.Y);
         g.Enemies[0].Hp = 1;
         return g;

@@ -155,13 +155,17 @@ public sealed partial class Game
 
     private static readonly int[,] RarityOrder = { { 0, 1, 2 }, { 1, 0, 2 }, { 2, 1, 0 } };
 
-    /// <summary>Oferta 1 z 3 po etapie: osobny generator z seeda budowy, etapu i losowania (bez wpływu na RNG gry).</summary>
-    public void RollBoons()
+    /// <summary>
+    /// Oferta 1 z 3 po etapie: osobny generator z seeda budowy, etapu i losowania (bez wpływu na RNG gry).
+    /// salt: oferta z wydarzenia (#30) inna niż po etapie.
+    /// </summary>
+    public void RollBoons(int salt = 0)
     {
         for (var k = 0; k < 3; ++k) BoonOffer[k] = -1;
+        BoonSalt = (byte)salt;
         if (D.Boons.Length == 0) return;
         var br = new Rng();
-        br.Seed((RunSeed ^ ((uint)(Stage + 1 + Tier * 16) * 2654435761u) ^ ((uint)(BoonRerolls + 1) * 40503u)) * 2246822519u);
+        br.Seed((RunSeed ^ ((uint)(Stage + 1 + Tier * 16) * 2654435761u) ^ ((uint)(BoonRerolls + 1 + BoonSalt) * 40503u)) * 2246822519u);
         for (var k = 0; k < 3; ++k)
         {
             int total = BoonWeight(0) + BoonWeight(1) + BoonWeight(2), roll = br.Range(1, total), rar = 0;
@@ -223,7 +227,7 @@ public sealed partial class Game
         if (!CanReroll()) return false;
         Cash -= RerollPrice();
         ++BoonRerolls;
-        RollBoons();
+        RollBoons(BoonSalt);
         Push(Msg("Nowa oferta premii"));
         return true;
     }
@@ -346,6 +350,7 @@ public sealed partial class Game
         {
             if (Enemies[i].Alive && Cheb(x, y, Enemies[i].X, Enemies[i].Y) <= rad) DamageEnemy(i, dmg, false, c.Name);
         }
+        BlastSecret(x, y, rad);
     }
 
     /// <summary>Zamróz + uderzenie: cios wręcz w zmrożony pęka go (+Value% ciosu, osobno).</summary>

@@ -11,7 +11,7 @@ public class MapAndFovTests
         {
             var g = TestData.Run((int)(seed % (uint)d.Classes.Length), seed);
             Assert.True(g.Lv.RoomsCount >= 2);
-            Assert.True(TestData.Connected(g.Lv, g.Hero.X, g.Hero.Y));
+            Assert.True(TestData.Connected(g.Lv, g.Hero.X, g.Hero.Y, g));
             Assert.True(g.Lv.Passable(g.Hero.X, g.Hero.Y));
             var h = TestData.Run((int)(seed % (uint)d.Classes.Length), seed);
             Assert.Equal(g.Lv.T, h.Lv.T);

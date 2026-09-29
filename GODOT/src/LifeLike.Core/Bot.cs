@@ -65,9 +65,17 @@ public static class Bot
             if (g.OfferIsBetter) g.AcceptOffer();
             else g.DeclineOffer();
         }
+        if (g.BotPending()) return; // wydarzenie, premia z wydarzenia, cecha narzędzia, narzędzie
+        if (g.CanOpenSecret() && g.Hero.X == g.SecretFrontX() && g.Hero.Y == g.SecretFrontY() // przed magazynem: otwórz
+            && g.PlayerMove(g.SecretX - g.Hero.X, g.SecretY - g.Hero.Y)) return;
         if (g.Thermos > 0 && g.Hero.Hp * 100 < g.Hero.MaxHp * g.D.BotDrinkBelowPct && g.PlayerDrink()) return;
         var hd = Costs(g, g.Hero.X, g.Hero.Y); // koszt drogi (błoto droższe)
         int tx = g.StairsX, ty = g.StairsY, best = 999999;
+        if (g.BotGoal(out var gx, out var gy) && hd[gy * Level.W + gx] >= 0) // klucz, magazyn, skrzynia, wydarzenie
+        {
+            tx = gx;
+            ty = gy;
+        }
         if (g.StairsLocked()) // pieczątki (Akt 0): najpierw najbliższy dokument, potem schody
         {
             var bdoc = 999999;
@@ -157,6 +165,7 @@ public static class Bot
             if (g.OfferRarity >= g.Equipped[g.OfferSlot]) g.AcceptOffer();
             else g.DeclineOffer();
         }
+        if (g.BotPending()) return;
         if (g.Thermos > 0 && g.Hero.Hp * 2 < g.Hero.MaxHp && g.PlayerDrink()) return;
         for (var k = 0; k < g.D.Repairs.Length; ++k) // naprawy: Kładka przy kałużach; Załataj przy niskim HP (problem w polu widzenia)
         {
@@ -174,7 +183,11 @@ public static class Bot
         if (!g.DangerCell(g.Hero.X, g.Hero.Y) && g.AbilityCd == 0)
         {
             var t = g.NearestVisibleEnemy();
-            if (t >= 0 && Game.Cheb(g.Hero.X, g.Hero.Y, g.Enemies[t].X, g.Enemies[t].Y) <= 2 && g.PlayerAbility()) return;
+            // Ścianka tylko w obronie (HP poniżej połowy) i nie na problem, który stoi w miejscu – mur zasłania drogę do celu,
+            // a problem, który nie podchodzi, zostaje za nim: bot czekałby na zniknięcie muru bez końca
+            var pointless = t >= 0 && g.CDef.Ability == AbilityEffect.Wall
+                            && (g.Hero.Hp * 2 >= g.Hero.MaxHp || g.HasTag(g.Enemies[t], Behavior.Stationary));
+            if (t >= 0 && !pointless && Game.Cheb(g.Hero.X, g.Hero.Y, g.Enemies[t].X, g.Enemies[t].Y) <= 2 && g.PlayerAbility()) return;
         }
         if (!g.DangerCell(g.Hero.X, g.Hero.Y))
         {
@@ -190,12 +203,17 @@ public static class Bot
     {
         if (g.BotWantsReroll()) g.RerollBoons();
         if (g.HasBoonOffer) g.PickBoon(g.BotBoonChoice());
+        g.BotUpgrade(); // Hurtownia: bot ulepsza narzędzie, jeśli stać (nic więcej nie kupuje)
         g.NextStage();
     }
 
     /// <summary>Hurtownia bota: kupuje po kolei wszystko, na co starcza budżetu (deterministycznie).</summary>
     public static void Shop(Game g)
     {
-        for (var i = 0; i < g.D.Hurtownia.Length; i++) g.HurtowniaBuy(i);
+        for (var i = 0; i < g.D.Hurtownia.Length; i++)
+        {
+            g.HurtowniaBuy(i);
+            g.BotPending();
+        }
     }
 }

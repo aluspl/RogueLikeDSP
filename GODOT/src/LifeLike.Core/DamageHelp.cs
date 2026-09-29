@@ -81,7 +81,9 @@ public static class DamageHelp
         switch (k)
         {
             case DmgText.Weapon:
-                m.Add(d.Weapons[b.Weapon].Name).Add(" ").Add(b.WMin).Add("-").Add(b.WMax).Add(", zasięg ").Add(b.Range);
+                m.Add(d.Weapons[b.Weapon].Name);
+                if (b.UpgLevel != 0) m.Add("+").Add(b.UpgLevel); // ulepszone narzędzie: „Kielnia+2”
+                m.Add(" ").Add(b.WMin).Add("-").Add(b.WMax).Add(", zasięg ").Add(b.Range);
                 if (b.Range < b.RangeBase) m.Add(" (wiatr)");
                 return true;
             case DmgText.Stat:
@@ -111,15 +113,28 @@ public static class DamageHelp
                 return true;
             }
             case DmgText.Run:
-                if (b.FlatLevel == 0 && b.FlatFound == 0)
+            {
+                if (b.FlatLevel == 0 && b.FlatFound == 0 && b.FlatEvent == 0)
                 {
                     m.Add("Z budowy: brak");
                     return false;
                 }
-                m.Add("Z budowy +").Add(b.FlatLevel + b.FlatFound).Add(":");
-                if (b.FlatLevel != 0) m.Add(" poziom +").Add(b.FlatLevel);
-                if (b.FlatFound != 0) m.Add(b.FlatLevel != 0 ? "," : "").Add(" projekt ").Add(b.FlatFound > 0 ? "+" : "").Add(b.FlatFound);
+                var sum = b.FlatLevel + b.FlatFound + b.FlatEvent;
+                m.Add("Z budowy ").Add(sum >= 0 ? "+" : "").Add(sum).Add(":");
+                var first = true;
+                if (b.FlatLevel != 0)
+                {
+                    m.Add(" poziom +").Add(b.FlatLevel);
+                    first = false;
+                }
+                if (b.FlatFound != 0)
+                {
+                    m.Add(first ? "" : ",").Add(" projekt ").Add(b.FlatFound > 0 ? "+" : "").Add(b.FlatFound);
+                    first = false;
+                }
+                if (b.FlatEvent != 0) m.Add(first ? "" : ",").Add(" wydarzenie ").Add(b.FlatEvent > 0 ? "+" : "").Add(b.FlatEvent);
                 return true;
+            }
             case DmgText.Gear:
                 if (b.GearItem < 0 || b.FlatGear == 0)
                 {
@@ -158,6 +173,7 @@ public static class DamageHelp
                 }
                 m.Add("OBR problemu ").Add(b.EnemyDef);
                 if (b.EnemyElite != 0) m.Add("+").Add(b.EnemyElite).Add(" (elita)");
+                if (b.Pierce != 0) m.Add(" -").Add(b.Pierce).Add(" (przebicie)");
                 m.Add(": -").Add(b.DefCut);
                 return b.DefCut > 0;
             case DmgText.Total:
@@ -174,7 +190,7 @@ public static class DamageHelp
                 return true;
             case DmgText.CritExtra:
             {
-                if (b.CritTrait == 0 && b.CritBonus == 0)
+                if (b.CritTrait == 0 && b.CritBonus == 0 && b.CritUpg == 0)
                 {
                     m.Add("Kryt: bez premii");
                     return false;
@@ -184,6 +200,11 @@ public static class DamageHelp
                 if (b.CritTrait != 0)
                 {
                     m.Add(" cecha ").Add(b.CritTrait).Add("%");
+                    first = false;
+                }
+                if (b.CritUpg != 0)
+                {
+                    m.Add(first ? " " : ", ").Add("ostrze ").Add(b.CritUpg).Add("%");
                     first = false;
                 }
                 if (!b.Split)
@@ -229,6 +250,15 @@ public static class DamageHelp
                 if (b.CritBoon != 0) m.Add(first ? " kryt +" : ", kryt +").Add(b.CritBoon).Add("%");
                 return true;
             }
+            case DmgText.Upgrade: // v0.21.50 cz. 3: ulepszenie narzędzia (#31)
+                if (b.UpgLevel == 0)
+                {
+                    m.Add("Ulepszenie: brak");
+                    return false;
+                }
+                m.Add("Ulepszenie +").Add(b.UpgLevel).Add(": +").Add(b.FlatUpgrade).Add(" obr.");
+                if (b.UpgTrait >= 0) m.Add(", ").Add(d.ToolTraits[b.UpgTrait].Name).Add(" ").Add(d.ToolTraits[b.UpgTrait].Short);
+                return true;
             default:
                 return false;
         }

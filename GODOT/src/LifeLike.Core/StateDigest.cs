@@ -167,6 +167,34 @@ public static class StateDigest
         f.Add(g.CritPct());
         f.Add(g.ThermosCap());
         f.Add(g.CoffeeHeal());
+        // v0.21.50 cz. 3: wydarzenia z wyborem, ulepszenie narzędzia, ukryte pomieszczenia
+        f.Add(g.BoonSalt);
+        f.Add(g.PendingEvent);
+        f.Add(g.StageChoice);
+        f.Add(g.StageChoicePick);
+        f.Add(g.ChoiceDone);
+        f.Add(g.EventsSeen);
+        f.Add(g.EventDmg);
+        f.Add(g.EventDef);
+        f.Add(g.WeaponLvl);
+        f.Add(g.WeaponTrait);
+        f.Add(g.TraitPending ? 1 : 0);
+        f.Add(g.ToolOffer);
+        f.Add(g.ToolOfferPickup);
+        f.Add(g.SecretX);
+        f.Add(g.SecretY);
+        f.Add(g.SecretKind);
+        f.Add(g.SecretDir);
+        f.Add(g.SecretRx);
+        f.Add(g.SecretRy);
+        f.Add(g.SecretRw);
+        f.Add(g.SecretRh);
+        f.Add(g.SecretOpen ? 1 : 0);
+        f.Add(g.KeyHolder);
+        f.Add(g.Keys);
+        f.Add(g.SecretsFound);
+        f.Add(g.UpgradePrice());
+        f.Add(g.CanOpenSecret() ? 1 : 0);
         return f.H;
     }
 }

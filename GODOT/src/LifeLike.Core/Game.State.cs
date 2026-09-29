@@ -187,6 +187,31 @@ public sealed partial class Game
         w.Write(BoonRerolls);
         w.Write(HitCtx);
         w.Write(ComboEvents);
+        w.Write(BoonSalt);
+        w.Write(PendingEvent);
+        w.Write(StageChoice);
+        w.Write(StageChoicePick);
+        w.Write(ChoiceDone);
+        w.Write(EventsSeen);
+        w.Write(EventDmg);
+        w.Write(EventDef);
+        w.Write(WeaponLvl);
+        w.Write(WeaponTrait);
+        w.Write(TraitPending);
+        w.Write(ToolOffer);
+        w.Write(ToolOfferPickup);
+        w.Write(SecretX);
+        w.Write(SecretY);
+        w.Write(SecretKind);
+        w.Write(SecretDir);
+        w.Write(SecretRx);
+        w.Write(SecretRy);
+        w.Write(SecretRw);
+        w.Write(SecretRh);
+        w.Write(SecretOpen);
+        w.Write(KeyHolder);
+        w.Write(Keys);
+        w.Write(SecretsFound);
     }
 
     public void Read(BinaryReader r)
@@ -311,5 +336,30 @@ public sealed partial class Game
         BoonRerolls = r.ReadByte();
         HitCtx = r.ReadByte();
         ComboEvents = r.ReadByte();
+        BoonSalt = r.ReadByte();
+        PendingEvent = r.ReadSByte();
+        StageChoice = r.ReadSByte();
+        StageChoicePick = r.ReadSByte();
+        ChoiceDone = r.ReadByte();
+        EventsSeen = r.ReadUInt16();
+        EventDmg = r.ReadSByte();
+        EventDef = r.ReadSByte();
+        WeaponLvl = r.ReadSByte();
+        WeaponTrait = r.ReadSByte();
+        TraitPending = r.ReadBoolean();
+        ToolOffer = r.ReadSByte();
+        ToolOfferPickup = r.ReadSByte();
+        SecretX = r.ReadSByte();
+        SecretY = r.ReadSByte();
+        SecretKind = r.ReadSByte();
+        SecretDir = r.ReadSByte();
+        SecretRx = r.ReadSByte();
+        SecretRy = r.ReadSByte();
+        SecretRw = r.ReadSByte();
+        SecretRh = r.ReadSByte();
+        SecretOpen = r.ReadBoolean();
+        KeyHolder = r.ReadSByte();
+        Keys = r.ReadByte();
+        SecretsFound = r.ReadByte();
     }
 }

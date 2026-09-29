@@ -109,7 +109,7 @@ public class DifficultyAndProgressionTests
         b.Hero.Hp = b.Hero.MaxHp;
         Assert.True(!b.PlayerDrink() && b.Thermos == D.ThermosCapacity);
         b.NextStage();
-        Assert.Equal(a.PickupsCount + 2, b.PickupsCount);
+        Assert.Equal(Regular(a) + 2, Regular(b)); // premia trwa w kolejnych etapach (bez wydarzeń i skrzyń)
     }
 
     [Fact]
@@ -176,5 +176,15 @@ public class DifficultyAndProgressionTests
         g.NewGamePlus();
         Assert.Same(D.StoryNgPlus, g.StageStory);
         foreach (var s in D.StoryStages) Assert.True(s.From.Length > 0 && s.Lines[0].Length > 0);
+    }
+
+    private static int Regular(Game g)
+    {
+        var n = 0;
+        for (var i = 0; i < g.PickupsCount; ++i)
+        {
+            if (g.Pickups[i].Type <= PickupType.Plan) n++;
+        }
+        return n;
     }
 }

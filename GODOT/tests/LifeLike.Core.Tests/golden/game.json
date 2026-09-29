@@ -1125,7 +1125,7 @@
         "pieczatka"
       ],
       "count": 6,
-      "hpPct": 126,
+      "hpPct": 130,
       "dmgBonus": 2,
       "act": 3,
       "cost": 15
@@ -1139,7 +1139,7 @@
         "wniosek"
       ],
       "count": 6,
-      "hpPct": 130,
+      "hpPct": 134,
       "dmgBonus": 1,
       "act": 3,
       "boss": "decyzja",
@@ -1154,7 +1154,7 @@
         "kornik"
       ],
       "count": 5,
-      "hpPct": 95,
+      "hpPct": 107,
       "dmgBonus": 0,
       "act": 0,
       "cost": 48
@@ -1168,7 +1168,7 @@
         "przeciek"
       ],
       "count": 5,
-      "hpPct": 102,
+      "hpPct": 117,
       "dmgBonus": 0,
       "act": 0,
       "cost": 22
@@ -1182,7 +1182,7 @@
         "dostawa"
       ],
       "count": 6,
-      "hpPct": 108,
+      "hpPct": 126,
       "dmgBonus": 0,
       "act": 0,
       "cost": 62
@@ -1196,7 +1196,7 @@
         "budzet"
       ],
       "count": 6,
-      "hpPct": 117,
+      "hpPct": 138,
       "dmgBonus": 1,
       "act": 0,
       "boss": "betoniarka",
@@ -1211,7 +1211,7 @@
         "kornik"
       ],
       "count": 8,
-      "hpPct": 126,
+      "hpPct": 150,
       "dmgBonus": 2,
       "act": 1,
       "cost": 55
@@ -1225,8 +1225,8 @@
         "dostawa"
       ],
       "count": 7,
-      "hpPct": 132,
-      "dmgBonus": 2,
+      "hpPct": 159,
+      "dmgBonus": 3,
       "act": 1,
       "cost": 30
     },
@@ -1239,8 +1239,8 @@
         "dostawa"
       ],
       "count": 8,
-      "hpPct": 139,
-      "dmgBonus": 3,
+      "hpPct": 169,
+      "dmgBonus": 4,
       "act": 1,
       "boss": "nawalnica",
       "cost": 41
@@ -1254,8 +1254,8 @@
         "przeciek"
       ],
       "count": 8,
-      "hpPct": 148,
-      "dmgBonus": 4,
+      "hpPct": 181,
+      "dmgBonus": 5,
       "act": 2,
       "boss": "inspekcja",
       "cost": 46
@@ -1269,8 +1269,8 @@
         "przeciek"
       ],
       "count": 9,
-      "hpPct": 158,
-      "dmgBonus": 4,
+      "hpPct": 194,
+      "dmgBonus": 5,
       "act": 2,
       "cost": 38
     },
@@ -1283,8 +1283,8 @@
         "budzet"
       ],
       "count": 7,
-      "hpPct": 168,
-      "dmgBonus": 4,
+      "hpPct": 207,
+      "dmgBonus": 5,
       "act": 2,
       "boss": "termin",
       "cost": 72
@@ -1308,7 +1308,7 @@
     {
       "id": "trudny",
       "name": "Trudny",
-      "hpPct": 140,
+      "hpPct": 145,
       "dmgBonus": 0,
       "scorePct": 150
     }
@@ -1921,6 +1921,13 @@
   },
   "hurtownia": [
     {
+      "id": "ulepszenie",
+      "name": "Ulepsz narzędzie",
+      "desc": "+1 obrażeń (maks. +3), od +2 cecha",
+      "price": 0,
+      "effect": "upgrade"
+    },
+    {
       "id": "kawa",
       "name": "Kawa z ekspresu",
       "desc": "Pełne HP",
@@ -2346,10 +2353,10 @@
       },
       {
         "id": "problemy",
-        "name": "Problemy +25% HP",
-        "desc": "Każdy problem ma +25% HP",
+        "name": "Problemy +20% HP",
+        "desc": "Każdy problem ma +20% HP",
         "effect": "enemy_hp",
-        "value": 25,
+        "value": 20,
         "xpPct": 15,
         "stake": 2
       },
@@ -3716,5 +3723,487 @@
       "Pył: akt III; iskra: Szlifierka",
       "Zamróz: Mróz, Suchy lód"
     ]
-  }
+  },
+  "choiceEvents": {
+    "chancePct": 55,
+    "list": [
+      {
+        "id": "betoniarka",
+        "name": "Betoniarka sąsiada",
+        "from": "Sąsiad Zenek",
+        "text": "Mam wolną betoniarkę.|Za dychę pożyczę na dziś.|Beton sam się zmiesza!",
+        "choices": [
+          {
+            "label": "Pożycz za 20 zł",
+            "result": "Betoniarka kręci: mocne ciosy!",
+            "effects": [
+              {
+                "effect": "cash",
+                "value": -20
+              },
+              {
+                "effect": "stage_dmg",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "label": "Odmów",
+            "result": "Zenek wzrusza ramionami.",
+            "effects": []
+          }
+        ]
+      },
+      {
+        "id": "dostawca",
+        "name": "Tańszy dostawca",
+        "from": "Kierownik Marek",
+        "text": "Nowy dostawca da taniej.|Materiał trochę wilgotny,|może złapać pleśń.",
+        "choices": [
+          {
+            "label": "Bierz tanio",
+            "result": "Materiał już na placu.",
+            "effects": [
+              {
+                "effect": "mats",
+                "value": 2
+              },
+              {
+                "effect": "spawn",
+                "value": 2,
+                "enemy": "plesn",
+                "chance": 30
+              }
+            ]
+          },
+          {
+            "label": "Zostań przy starym",
+            "result": "Bez ryzyka, bez zysku.",
+            "effects": []
+          }
+        ]
+      },
+      {
+        "id": "nadgodziny",
+        "name": "Nadgodziny",
+        "from": "Kierownik Marek",
+        "text": "Zostaniesz po godzinach?|Inwestor dopłaci, ale|będziesz padnięty.",
+        "choices": [
+          {
+            "label": "Zostaję",
+            "result": "Nocka na budowie się opłaca.",
+            "effects": [
+              {
+                "effect": "xp",
+                "value": 15
+              },
+              {
+                "effect": "cash",
+                "value": 10
+              },
+              {
+                "effect": "hp",
+                "value": -4
+              }
+            ]
+          },
+          {
+            "label": "Idę do domu",
+            "result": "Wyspany fachowiec to skarb.",
+            "effects": [
+              {
+                "effect": "hp",
+                "value": 4
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "projekt",
+        "name": "Znaleziony projekt",
+        "from": "Anna Nowak",
+        "text": "Znalazłam stary projekt|z poprawkami architekta.|Warto go przejrzeć!",
+        "choices": [
+          {
+            "label": "Czytaj całą noc",
+            "result": "Nowy pomysł na budowę!",
+            "effects": [
+              {
+                "effect": "boon",
+                "value": 1
+              },
+              {
+                "effect": "hp",
+                "value": -4
+              }
+            ]
+          },
+          {
+            "label": "Oddaj Markowi",
+            "result": "Marek dziękuje.",
+            "effects": [
+              {
+                "effect": "xp",
+                "value": 6
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "kask",
+        "name": "Zagubiony kask",
+        "from": "Kierownik Marek",
+        "text": "Ktoś zostawił nowy kask|przy kontenerze. Weźmiesz|czy oddasz właścicielowi?",
+        "choices": [
+          {
+            "label": "Biorę",
+            "result": "Kask jak nowy.",
+            "effects": [
+              {
+                "effect": "gear",
+                "value": 1,
+                "slot": "Kask"
+              }
+            ]
+          },
+          {
+            "label": "Oddaję",
+            "result": "Cała ekipa to widziała.",
+            "effects": [
+              {
+                "effect": "respect",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "label": "Sprzedaję",
+            "result": "Kupiec się znalazł.",
+            "effects": [
+              {
+                "effect": "cash",
+                "value": 12
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "pomoc",
+        "name": "Ekipa obok prosi",
+        "from": "Sąsiad Zenek",
+        "text": "Chłopaki z sąsiedniej|budowy nie dają rady|z szalunkiem. Pomożesz?",
+        "choices": [
+          {
+            "label": "Pomogę",
+            "result": "Szalunek stoi, jest wdzięczność.",
+            "effects": [
+              {
+                "effect": "hp",
+                "value": -3
+              },
+              {
+                "effect": "cash",
+                "value": 15
+              },
+              {
+                "effect": "respect",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "label": "Nie dziś",
+            "result": "Każdy ma swoją budowę.",
+            "effects": []
+          }
+        ]
+      },
+      {
+        "id": "automat",
+        "name": "Automat z kawą",
+        "from": "Kierownik Marek",
+        "text": "Na placu stanął automat|z kawą. 5 zł za kubek,|ale bywa kapryśny.",
+        "choices": [
+          {
+            "label": "Kup 2 kawy",
+            "result": "Kawa do termosu.",
+            "effects": [
+              {
+                "effect": "cash",
+                "value": -10
+              },
+              {
+                "effect": "coffee",
+                "value": 2,
+                "chance": 75
+              }
+            ]
+          },
+          {
+            "label": "Szkoda kasy",
+            "result": "Termos poczeka.",
+            "effects": []
+          }
+        ]
+      },
+      {
+        "id": "ostrzalka",
+        "name": "Stara ostrzałka",
+        "from": "Sąsiad Zenek",
+        "text": "Mam w garażu ostrzałkę.|Podostrzę ci narzędzie,|tylko uważaj na palce!",
+        "choices": [
+          {
+            "label": "Ostrz narzędzie",
+            "result": "Narzędzie jak brzytwa.",
+            "effects": [
+              {
+                "effect": "upgrade",
+                "value": 1
+              },
+              {
+                "effect": "hp",
+                "value": -3,
+                "chance": 35
+              }
+            ]
+          },
+          {
+            "label": "Nie trzeba",
+            "result": "Zenek odkłada ostrzałkę.",
+            "effects": []
+          }
+        ]
+      },
+      {
+        "id": "stal",
+        "name": "Stal przed czasem",
+        "from": "Anna Nowak",
+        "text": "Hurtownia przywiozła stal|tydzień za wcześnie.|Przyjmiesz czy odeślesz?",
+        "choices": [
+          {
+            "label": "Przyjmij",
+            "result": "Stal na placu.",
+            "effects": [
+              {
+                "effect": "mats",
+                "value": 3,
+                "material": "stal"
+              }
+            ]
+          },
+          {
+            "label": "Odeślij",
+            "result": "Hurtownia oddaje za transport.",
+            "effects": [
+              {
+                "effect": "cash",
+                "value": 15
+              }
+            ]
+          },
+          {
+            "label": "Weź połowę",
+            "result": "Trochę stali, trochę zł.",
+            "effects": [
+              {
+                "effect": "mats",
+                "value": 1,
+                "material": "stal"
+              },
+              {
+                "effect": "cash",
+                "value": 7
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "bhp",
+        "name": "Szybka kontrola BHP",
+        "from": "Kierownik Marek",
+        "text": "Za chwilę kontrola BHP.|Ubierzesz się porządnie|czy robisz dalej?",
+        "choices": [
+          {
+            "label": "Pełne BHP",
+            "result": "Kontrola zadowolona.",
+            "effects": [
+              {
+                "effect": "stage_def",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "label": "Robię dalej",
+            "result": "Szybciej, ale ryzykownie.",
+            "effects": [
+              {
+                "effect": "xp",
+                "value": 8
+              },
+              {
+                "effect": "hp",
+                "value": -3,
+                "chance": 50
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "energetyk",
+        "name": "Energetyk od Marka",
+        "from": "Kierownik Marek",
+        "text": "Masz energetyka na drogę.|Da kopa, ale potem|serce wali jak młot.",
+        "choices": [
+          {
+            "label": "Wypij od razu",
+            "result": "Moc gotowa!",
+            "effects": [
+              {
+                "effect": "power",
+                "value": 1
+              },
+              {
+                "effect": "hp",
+                "value": -2
+              }
+            ]
+          },
+          {
+            "label": "Do termosu",
+            "result": "Na czarną godzinę.",
+            "effects": [
+              {
+                "effect": "coffee",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "tempo",
+        "name": "Premia za tempo",
+        "from": "Anna Nowak",
+        "text": "Jak skończycie ten etap|szybko, dorzucę premię.|Tylko bez fuszerki!",
+        "choices": [
+          {
+            "label": "Przyspieszam",
+            "result": "Tempo! Ale mniej ostrożnie.",
+            "effects": [
+              {
+                "effect": "cash",
+                "value": 25
+              },
+              {
+                "effect": "stage_def",
+                "value": -1
+              }
+            ]
+          },
+          {
+            "label": "Spokojnie",
+            "result": "Dokładność przede wszystkim.",
+            "effects": [
+              {
+                "effect": "hp",
+                "value": 4
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "toolUpgrade": {
+    "max": 3,
+    "dmg": 1,
+    "traitAt": 2,
+    "levels": [
+      {
+        "cash": 40,
+        "material": "stal",
+        "count": 3
+      },
+      {
+        "cash": 60,
+        "material": "stal",
+        "count": 4
+      },
+      {
+        "cash": 80,
+        "material": "stal",
+        "count": 5
+      }
+    ],
+    "traits": [
+      {
+        "id": "przebicie",
+        "name": "Przebicie",
+        "short": "OBR -2",
+        "desc": "Ignoruje 2 OBR problemu",
+        "effect": "pierce",
+        "value": 2
+      },
+      {
+        "id": "ostrze",
+        "name": "Ostrze",
+        "short": "kryt +5%",
+        "desc": "Kryt +5%",
+        "effect": "crit",
+        "value": 5
+      },
+      {
+        "id": "wywazenie",
+        "name": "Wyważenie",
+        "short": "rzut min +1",
+        "desc": "Najsłabszy rzut +1",
+        "effect": "steady",
+        "value": 1
+      }
+    ]
+  },
+  "hiddenRooms": {
+    "chancePct": 35,
+    "guardPct": 50,
+    "kinds": [
+      {
+        "id": "pekniecie",
+        "name": "Pęknięta ściana",
+        "info": "Klucz, Operator albo wybuch",
+        "breakable": true
+      },
+      {
+        "id": "drzwi",
+        "name": "Drzwi magazynu",
+        "info": "Otworzy je tylko klucz",
+        "breakable": false
+      }
+    ],
+    "chest": {
+      "respect": 2,
+      "mats": 1,
+      "cash": 10,
+      "gearMin": 1
+    }
+  },
+  "extrasHelp": [
+    "Pole z SMS-em: wydarzenie.",
+    "Odpowiedź: ryzyko albo zysk,",
+    "szansa (np. 30%) raz.",
+    "Hurtownia: ulepsz (zł+stal):",
+    "+1 obrażeń za poziom, maks. +3,",
+    "od +2 cecha. Zmiana: strata!",
+    "Pęknięta ściana / drzwi:",
+    "magazyn. Klucz ma problem",
+    "(często elita). Ścianę kruszy",
+    "Operator albo wybuch, drzwi -",
+    "tylko klucz. Skrzynia: sprzęt,",
+    "Respekt. Czasem śpi tam elita!"
+  ]
 }

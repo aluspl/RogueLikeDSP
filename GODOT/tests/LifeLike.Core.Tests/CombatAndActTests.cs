@@ -239,6 +239,7 @@ public class CombatAndActTests
         for (var i = 0; i < D.Hurtownia.Length; ++i)
         {
             var it = D.Hurtownia[i];
+            if (it.Effect == ShopEffect.Upgrade) continue; // ulepszenie narzędzia: UpgradesEventsSecretsTests
             if (it.Material >= 0) // płatne materiałem: bez materiału nie, z materiałem – zł zostają
             {
                 ++matItems;

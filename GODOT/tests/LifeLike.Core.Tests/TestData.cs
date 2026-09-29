@@ -49,8 +49,8 @@ public static class TestData
         return g;
     }
 
-    /// <summary>Czy wszystkie przechodnie pola są osiągalne z (sx, sy).</summary>
-    public static bool Connected(Level lv, int sx, int sy)
+    /// <summary>Czy wszystkie przechodnie pola są osiągalne z (sx, sy); g: bez zamkniętego magazynu (v0.21.50 cz. 3).</summary>
+    public static bool Connected(Level lv, int sx, int sy, Game g = null)
     {
         var seen = new bool[Level.W * Level.H];
         var q = new Queue<(int, int)>();
@@ -75,7 +75,7 @@ public static class TestData
         var total = 0;
         for (var y = 0; y < Level.H; ++y)
             for (var x = 0; x < Level.W; ++x)
-                if (lv.Passable(x, y)) total++;
+                if (lv.Passable(x, y) && !(g != null && g.SecretClosed() && g.InSecret(x, y))) total++;
         return n == total;
     }
 

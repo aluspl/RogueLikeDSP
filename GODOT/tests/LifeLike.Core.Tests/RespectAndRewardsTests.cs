@@ -148,9 +148,19 @@ public class RespectAndRewardsTests
         h.Bonus.BrigadePct = 30;
         h.Bonus.ShopPct = 25;
         Assert.Equal(D.Brigade[0].Price * 70 / 100, h.HelperPrice(0));
-        for (var i = 0; i < D.Hurtownia.Length; ++i) Assert.Equal(D.Hurtownia[i].Price * 75 / 100, h.HurtowniaPrice(i));
-        h.Cash = h.HurtowniaPrice(0);
-        Assert.True(h.HurtowniaCan(0) && h.HurtowniaBuy(0) && h.Cash == 0);
+        var first = -1;
+        for (var i = 0; i < D.Hurtownia.Length; ++i)
+        {
+            if (D.Hurtownia[i].Effect == ShopEffect.Upgrade)
+            {
+                Assert.Equal(D.ToolLevels[0].Cash * 75 / 100, h.HurtowniaPrice(i));
+                continue;
+            }
+            Assert.Equal(D.Hurtownia[i].Price * 75 / 100, h.HurtowniaPrice(i));
+            if (first < 0 && D.Hurtownia[i].Material < 0) first = i;
+        }
+        h.Cash = h.HurtowniaPrice(first);
+        Assert.True(h.HurtowniaCan(first) && h.HurtowniaBuy(first) && h.Cash == 0);
     }
 
     [Fact]

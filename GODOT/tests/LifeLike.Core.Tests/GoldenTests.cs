@@ -95,6 +95,7 @@ public class GoldenTests
                 Meta.CheckContracts(d, p);
                 Meta.BankXp(p, g);
                 if (g.ActCleared && shop && !g.ShopClosed) Bot.Shop(g);
+                g.BotUpgrade(); // v0.21.50 cz. 3: jak bot balansu – ulepszenie narzędzia, jeśli stać
                 if (paths != 0) g.ChoosePath(g.Stage & 1);
                 // v0.21.50 cz. 2: premia 1 z 3 – bot z rdzenia; ścieżki na przemian: też losowanie (płatne) i wybór wg etapu
                 if (g.BotWantsReroll()) g.RerollBoons();

@@ -39,12 +39,18 @@ public sealed class DmgBreakdown
     public int Luck, CritTrait, CritBonus;
     /// <summary>Moc dodaje do ciosu (Seria, Rynna od II, Taran +ranga) i ranga mocy.</summary>
     public int Power, PowerRank = 1;
+    /// <summary>v0.21.50 cz. 3: ulepszenie narzędzia (#31) – poziom, +obrażeń, cecha (GameData.ToolTraits, -1 = brak).</summary>
+    public int UpgLevel, FlatUpgrade, UpgTrait = -1;
+    /// <summary>Cecha ulepszenia: -OBR problemu (Przebicie), +najsłabszy rzut (Wyważenie), +kryt (Ostrze).</summary>
+    public int Pierce, Steady, CritUpg;
+    /// <summary>Wydarzenie z wyborem (#30): ciosy +N na etap.</summary>
+    public int FlatEvent;
     /// <summary>Źródła premii profilu znane (Src*): Szkolenia, Respekt, odznaki, pamiątka.</summary>
     public bool Split;
     public readonly int[] SrcDmg = new int[Sources], SrcPct = new int[Sources], SrcCrit = new int[Sources];
 
     // wyliczone w Finish()
-    public int StatValue, StatDmg, Flat, DefCut;
+    public int StatValue, StatDmg, Flat, DefCut, RollMin;
     /// <summary>Procent łącznie (profil + premie po etapach).</summary>
     public int PctTotal;
     public int BaseMin, BaseMax;
@@ -57,20 +63,21 @@ public sealed class DmgBreakdown
     {
         StatValue = StatClass + StatCraft + StatTrait;
         StatDmg = StatValue / 2;
-        Flat = FlatMods + FlatLevel + FlatFound + FlatGear + FlatBoon;
-        DefCut = (EnemyDef + EnemyElite) / 2;
+        Flat = FlatMods + FlatLevel + FlatFound + FlatGear + FlatBoon + FlatUpgrade + FlatEvent;
+        DefCut = Math.Max(0, EnemyDef + EnemyElite - Pierce) / 2;
         PctTotal = Pct + PctBoon;
+        RollMin = Math.Min(WMax, WMin + Steady); // Wyważenie: najsłabszy rzut wyżej
         var add = StatDmg + Flat - DefCut;
-        BaseMin = Math.Max(1, WMin + add);
+        BaseMin = Math.Max(1, RollMin + add);
         BaseMax = Math.Max(1, WMax + add);
         Min = BaseMin + DamageHelp.PctFloor(BaseMin, PctTotal);
         Max = BaseMax + DamageHelp.PctCeil(BaseMax, PctTotal);
         int sum = 0, n = 0;
-        for (var r = WMin; r <= WMax; ++r, ++n) sum += Math.Max(1, r + add) * (100 + Math.Max(0, PctTotal));
+        for (var r = RollMin; r <= WMax; ++r, ++n) sum += Math.Max(1, r + add) * (100 + Math.Max(0, PctTotal));
         Avg10 = n > 0 ? LifeLike.Core.Pct.DivRound(sum, 10 * n) : 0;
         CritBase = d.CritBasePct;
         CritLuck = d.CritPerLuckPct * Luck;
-        CritPct = CritBase + CritLuck + CritTrait + CritBonus + CritBoon;
+        CritPct = CritBase + CritLuck + CritTrait + CritBonus + CritBoon + CritUpg;
         CritMult = d.CritMultiplier;
         CritMin = Min * CritMult;
         CritMax = Max * CritMult;

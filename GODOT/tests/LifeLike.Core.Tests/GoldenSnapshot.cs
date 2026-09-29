@@ -74,6 +74,10 @@ public static class GoldenSnapshot
             (uint)g.Boons, (uint)(g.Boons >> 32), g.BoonOffer[0], g.BoonOffer[1], g.BoonOffer[2], g.BoonRerolls, g.SynergyMask(),
             g.RerollsLeft(), g.RerollPrice(), g.HeroDefense(), g.Luck(), g.DodgePct(),
         }) + "]");
+        K("part3", Arr([g.BoonSalt, g.PendingEvent, g.StageChoice, g.StageChoicePick, g.ChoiceDone, g.EventsSeen, g.EventDmg, g.EventDef,
+            g.WeaponLvl, g.WeaponTrait, g.TraitPending ? 1 : 0, g.ToolOffer, g.ToolOfferPickup, g.SecretX, g.SecretY, g.SecretKind, g.SecretDir,
+            g.SecretRx, g.SecretRy, g.SecretRw, g.SecretRh, g.SecretOpen ? 1 : 0, g.KeyHolder, g.Keys, g.SecretsFound, g.UpgradePrice(),
+            g.CanOpenSecret() ? 1 : 0]));
         K("killsByType", Arr(g.KillsByType.Select(x => (int)x)));
         K("rooms", "[" + string.Join(",", g.Lv.Rooms.Take(g.Lv.RoomsCount).Select(r => Arr([r.X, r.Y, r.W, r.H]))) + "]");
         var map = new List<string>();

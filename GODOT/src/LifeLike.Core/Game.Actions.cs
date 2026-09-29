@@ -12,8 +12,10 @@ public sealed partial class Game
         int ex = Enemies[ei].X, ey = Enemies[ei].Y;
         bool wasWet = EnemyWet(ei), wasDusty = EnemyDusty(ei), wasFrozen = EnemyFrozen(ei);
         var melee = Cheb(Hero.X, Hero.Y, ex, ey) <= 1;
-        var dmg = R.Range(Weapon.MinDamage, Weapon.MaxDamage) + HeroStat(Weapon.ScalesWith) / 2 + DmgBonus
-                  + GearBonus(GearStat.Dmg) + BoonSum(BoonEffect.Dmg) - EnemyDefense(ei) / 2;
+        var w = Weapon; // ulepszenie (#31): +obrażeń, Wyważenie (rzut), Przebicie (OBR)
+        var dmg = R.Range(Math.Min(w.MaxDamage, w.MinDamage + ToolTraitValue(ToolTraitEffect.Steady)), w.MaxDamage)
+                  + HeroStat(w.ScalesWith) / 2 + DmgBonus + GearBonus(GearStat.Dmg) + BoonSum(BoonEffect.Dmg) + UpgradeDmg() + EventDmg
+                  - Math.Max(0, EnemyDefense(ei) - ToolTraitValue(ToolTraitEffect.Pierce)) / 2;
         if (dmg < 1) dmg = 1;
         dmg += Pct.Part(dmg, Bonus.DmgPct + BoonSum(BoonEffect.DmgPct), ref DmgCarry); // Kurs fachowy, Respekt, premie: +%
         var crit = R.Range(1, 100) <= CritPct();
@@ -125,6 +127,7 @@ public sealed partial class Game
             GainXp(D.XpPerKill);
             if (e.Elite >= 0) EliteReward(ei); // elita: pewny drop, materiały, Respekt
             MaybeDrop(e.X, e.Y);
+            if (ei == KeyHolder) DropKey(e.X, e.Y); // klucz do magazynu (#32)
             Push(Msg(ed.Name).Add(" - usunięto!").As(LogKind.Good));
             var kh = BoonSum(BoonEffect.KillHeal); // Drożdżówka: HP za usunięty problem
             if (kh > 0 && Hero.Alive && Hero.Hp < Hero.MaxHp) Hero.Hp = (short)Math.Min(Hero.MaxHp, Hero.Hp + kh);
@@ -200,6 +203,10 @@ public sealed partial class Game
         if (ei >= 0)
         {
             HeroAttack(ei);
+        }
+        else if (SecretClosed() && SecretIs(nx, ny)) // magazyn (#32)
+        {
+            if (!TryOpenSecret()) return false;
         }
         else if (Lv.Passable(nx, ny))
         {
@@ -448,7 +455,34 @@ public sealed partial class Game
             ref var p = ref Pickups[i];
             if (!p.Active || p.X != Hero.X || p.Y != Hero.Y) continue;
             if (p.Type == PickupType.GearBox && HasOffer) continue; // najpierw decyzja o poprzedniej paczce
+            if (p.Type == PickupType.Tool && (WeaponLvl > 0 || WeaponTrait >= 0)) // ulepszone narzędzie: decyzja (ulepszenia przepadną)
+            {
+                if (!HasToolOffer)
+                {
+                    ToolOffer = (sbyte)p.Arg;
+                    ToolOfferPickup = (sbyte)i;
+                    Push(Msg("Narzędzie: ").Add(D.Weapons[D.Tools[p.Arg].Weapon].Name).Add(" - zamienić?").As(LogKind.Loot));
+                }
+                continue;
+            }
             p.Active = false;
+            if (p.Type == PickupType.EventTile) // wydarzenie z wyborem (#30): SMS czeka na odpowiedź
+            {
+                PendingEvent = (sbyte)p.Arg;
+                Push(Msg("SMS: ").Add(PendingDef.Name).As(LogKind.Loot));
+                continue;
+            }
+            if (p.Type == PickupType.StoreKey)
+            {
+                ++Keys;
+                Push(Msg("Klucz do magazynu!").As(LogKind.Loot));
+                continue;
+            }
+            if (p.Type == PickupType.Chest)
+            {
+                OpenChest();
+                continue;
+            }
             if (p.Type == PickupType.Coffee)
             {
                 if (Thermos < ThermosCap()) // kawa do termosu; pełny termos – pije od razu
@@ -495,9 +529,7 @@ public sealed partial class Game
             }
             else
             {
-                WeaponOverride = D.Tools[p.Arg].Weapon;
-                ToolsFound = (byte)(ToolsFound | (1u << p.Arg));
-                Push(Msg("Narzędzie: ").Add(Weapon.Name).Add(" ").Add(Weapon.MinDamage).Add("-").Add(Weapon.MaxDamage).As(LogKind.Loot));
+                TakeTool(p.Arg);
             }
         }
     }
@@ -681,6 +713,7 @@ public sealed partial class Game
             {
                 Push(Msg("Wybuch obok - uff!").As(LogKind.Good));
             }
+            BlastSecret(BlastX, BlastY, D.BehaviorBlastRadius); // wybuch kruszy pękniętą ścianę magazynu
             BlastX = BlastY = -1;
         }
         if (St == GameStatus.Playing && ActIs(ActMechanic.Gust)) GustTick(); // akt II: porywy wiatru
@@ -711,6 +744,14 @@ public sealed partial class Game
             Push(Msg("Schody zamknięte: dokumenty ").Add(DocsCount()).Add("/").Add(DocsNeeded()).As(LogKind.Bad));
         }
         else if (St == GameStatus.Playing && Hero.X == StairsX && Hero.Y == StairsY)
+        {
+            ClearStage();
+        }
+    }
+
+    /// <summary>Wejście na otwarte schody: etap zaliczony (Respekt, oferta premii, wynik, doświadczenie, Inspekcja nadzoru).</summary>
+    public void ClearStage()
+    {
         {
             St = GameStatus.StageClear;
             FinishStage();

@@ -50,6 +50,16 @@ public sealed partial class Game
         b.CritBonus = Bonus.Crit;
         b.PowerRank = AbilityRank();
         b.Power = PowerDmgBonus();
+        b.FlatEvent = EventDmg;
+        if (weaponIdx < 0) // ulepszenie (#31) tylko obecnego narzędzia – przy zamianie przepada
+        {
+            b.UpgLevel = WeaponLvl;
+            b.FlatUpgrade = UpgradeDmg();
+            b.UpgTrait = WeaponTrait;
+            b.Pierce = ToolTraitValue(ToolTraitEffect.Pierce);
+            b.Steady = ToolTraitValue(ToolTraitEffect.Steady);
+            b.CritUpg = ToolTraitValue(ToolTraitEffect.Crit);
+        }
         b.Finish(D);
         return b;
     }
