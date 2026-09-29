@@ -139,6 +139,12 @@ Zostało do wydania v0.21.51:
 4. Wydanie: GitHub Release + Drive, karta SD (`sudo GBA/tools/sd_copy.sh`), iPhone (`GODOT/tools/ios_deploy.sh`);
    TestFlight i Google Play dopiero po sygnale sesji PB-platnosci (priorytet: wydanie PlanBudowlany iOS 0.9.2).
 
+## Następne wydania
+
+| # | Pomysł | GODOT (MOBILE) | GBA |
+|---|---|---|---|
+| 40 | Obsługa wielu języków (PL/EN): wszystkie teksty w `game.json` jako słowniki `pl`/`en` (fabuła, opisy, samouczek, Jak grać), wybór języka w opcjach (Godot: klucz / domyślnie z języka systemu; GBA: opcja w telefonie profilu, zapis w profilu), font z pełnym zestawem znaków (GBA: kontrola `gen_data.py --check` dla obu języków; teksty EN krótsze/dłuższe – dopasowanie `fit()`), nazwy wrogów i przedmiotów po angielsku, sklepy (App Store / Play) z opisem EN | ⬜ | ⬜ |
+
 ## Zgodność funkcji
 
 | Funkcja | GODOT (MOBILE) | GBA |
