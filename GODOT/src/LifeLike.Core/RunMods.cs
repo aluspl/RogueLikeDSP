@@ -58,6 +58,15 @@ public struct RunMods
     public int Act0;
     /// <summary>v0.21.50: Respekt Druga oferta – darmowe losowanie premii po etapie.</summary>
     public int Rerolls;
+    /// <summary>v0.21.50 cz. 4: wyzwanie tygodnia + 1 (0 = zwykła budowa – domyślna wartość struktury).</summary>
+    public int WeeklyPlus1;
+
+    /// <summary>Wyzwanie tygodnia (GameData.Weekly), -1 = zwykła budowa (jak run_mods::weekly na GBA).</summary>
+    public int Weekly
+    {
+        readonly get => WeeklyPlus1 - 1;
+        set => WeeklyPlus1 = value + 1;
+    }
 
     public static RunMods Default(GameData d) => new() { Tools = d.StartToolsMask, Helpers = d.StartHelpersMask, GearSlots = d.GearBaseMask };
 

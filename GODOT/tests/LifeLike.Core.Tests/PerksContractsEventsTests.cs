@@ -222,7 +222,7 @@ public class PerksContractsEventsTests
         var raw = v3.ToBytes();
         for (var i = Profile.V3Size; i < raw.Length; i++) raw[i] = 0xCD; // śmieci
         v3 = Profile.FromBytes(raw);
-        Assert.True(Meta.ProfileFix(D, v3) && v3.MagicIs(Profile.MagicV10));
+        Assert.True(Meta.ProfileFix(D, v3) && v3.MagicIs(Profile.MagicV11));
         Assert.True(v3.Best == 1234 && v3.Runs == 9 && v3.Wins == 4 && v3.Xp == 321 && v3.Levels[0] == 2 && v3.Classes == 0x1F);
         Assert.True(v3.Hard == 1 && v3.Flags == 3 && v3.Tools == 5 && v3.Badges == 0x0123 && v3.Catalog == 0x07FF);
         Assert.True(v3.ClassWins == 0x05 && v3.ToolsFound == 0x0B && v3.HousesCount == 3 && v3.Houses[0] == 0x21 && v3.Houses[2] == 0x35);
@@ -248,7 +248,7 @@ public class PerksContractsEventsTests
         var raw = v4.ToBytes();
         for (var i = Profile.V4Size; i < raw.Length; i++) raw[i] = 0xEE; // śmieci
         v4 = Profile.FromBytes(raw);
-        Assert.True(Meta.ProfileFix(D, v4) && v4.MagicIs(Profile.MagicV10));
+        Assert.True(Meta.ProfileFix(D, v4) && v4.MagicIs(Profile.MagicV11));
         Assert.True(v4.Best == 77 && v4.Xp == 12 && v4.KillsTotal == 150 && v4.PowersTotal == 40 && v4.Contracts == 0x03);
         Assert.True(v4.KeepsakeRuns[0] == 4 && v4.RunKills == 0 && v4.RunPowers == 0 && v4.RunBrand == 0 && v4.RunClean == 0);
         Assert.True(Meta.SelectedKeepsake(D, v4) >= 0 && D.Keepsakes[Meta.SelectedKeepsake(D, v4)].Start);
@@ -337,10 +337,20 @@ public class PerksContractsEventsTests
         p.CatalogHi = 0x01020304;
         p.Tutorial = 0x0A0B;
         p.ClassesSeen = 0x0C0D;
+        p.WeeklyWeek[0] = 0x0102;
+        p.WeeklyWon = 5;
+        p.WeeklyRuns = 9;
+        p.WeeklyScore[2] = 0x0A0B0C0D;
+        p.Story = 0x01020304;
+        p.StoryNew = 0x0506;
         var b = p.ToBytes();
-        Assert.Equal(160, b.Length);
-        Assert.Equal("PBRL010\0"u8.ToArray(), b[..8]);
+        Assert.Equal(188, b.Length);
+        Assert.Equal("PBRL011\0"u8.ToArray(), b[..8]);
         Assert.Equal(new byte[] { 0x0B, 0x0A, 0x0D, 0x0C }, b[156..160]);
+        Assert.Equal(new byte[] { 0x02, 0x01 }, b[160..162]);
+        Assert.Equal(new byte[] { 5, 9 }, b[166..168]);
+        Assert.Equal(new byte[] { 0x0D, 0x0C, 0x0B, 0x0A }, b[176..180]);
+        Assert.Equal(new byte[] { 0x04, 0x03, 0x02, 0x01, 0x06, 0x05, 0, 0 }, b[180..188]);
         Assert.Equal(new byte[] { 0x04, 0x03, 0x02, 0x01 }, b[152..156]);
         Assert.Equal(new byte[] { 0x02, 0x01, 0x04, 0x03, 0x06, 0x05, 7, 1, 5 }, b[124..133]);
         Assert.Equal(2, b[147]);
@@ -499,6 +509,6 @@ public class PerksContractsEventsTests
         Assert.True(l.StageEvent == g.StageEvent && l.PowersUsed == 12 && l.BrandFound == 2 && l.CleanBosses == 1 && l.BossWakeDamage == 5);
         Assert.True(l.Bonus.Crit == g.Bonus.Crit && l.Bonus.XpPct == g.Bonus.XpPct && l.Bonus.Thermos == g.Bonus.Thermos && l.ThermosCap() == g.ThermosCap());
         Assert.Equal(StateDigest.Of(g), StateDigest.Of(l));
-        Assert.Equal("PBRUN12", RunSave.RunMagic);
+        Assert.Equal("PBRUN13", RunSave.RunMagic);
     }
 }

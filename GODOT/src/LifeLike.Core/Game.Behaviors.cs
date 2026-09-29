@@ -108,6 +108,7 @@ public sealed partial class Game
         Hero.Hp = (short)(Hero.Hp - dmg);
         StageDamage += dmg;
         HeroHit = true;
+        LogHit(e.DefId, e.Elite, ranged ? RecapKind.Ranged : RecapKind.Melee, dmg);
         AddHit(Hero.X, Hero.Y, dmg, true);
         Push(Msg(ed.Name).Add(ranged ? " z dystansu: -" : ": -").Add(dmg).Add(" HP").As(LogKind.Bad));
         if (ed.OnHit != StatusEffect.None && Hero.Hp > 0 && R.Range(1, 100) <= ed.StatusChance)
@@ -118,6 +119,7 @@ public sealed partial class Game
             var c = D.Combos[(int)ComboEffect.ShockArea];
             Hero.Hp = (short)(Hero.Hp - c.HeroValue);
             StageDamage += c.HeroValue;
+            LogHit(e.DefId, e.Elite, RecapKind.Shock, c.HeroValue);
             AddHit(Hero.X, Hero.Y, c.HeroValue, true);
             ComboEvents = (byte)(ComboEvents | (8 << (int)ComboEffect.ShockArea));
             Push(Msg(c.Short).Add(" -").Add(c.HeroValue).Add(" HP").As(LogKind.Bad));
@@ -234,6 +236,7 @@ public sealed partial class Game
         BlastY = (sbyte)y;
         BlastTimer = (sbyte)D.BehaviorBlastDelay;
         BlastDmg = (sbyte)(D.BehaviorBlastDamage + EnemyDmgBonus());
+        BlastSrc = (sbyte)Array.IndexOf(D.Enemies, ed); // podsumowanie: źródło wybuchu
         Push(Msg(ed.Name).Add(": wybuch za ").Add(D.BehaviorBlastDelay - 1).Add(" t.! Odejdź").As(LogKind.Bad));
     }
 

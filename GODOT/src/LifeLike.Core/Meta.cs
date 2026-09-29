@@ -11,7 +11,7 @@ public static class Meta
     public static void ProfileReset(GameData d, Profile p)
     {
         var fresh = Profile.FromBytes(new byte[Profile.Size]);
-        fresh.Magic = Profile.MagicBytes(Profile.MagicV10);
+        fresh.Magic = Profile.MagicBytes(Profile.MagicV11);
         fresh.Classes = (byte)d.StartClassesMask;
         DefaultKeepsake(d, fresh);
         CopyInto(fresh, p);
@@ -86,6 +86,12 @@ public static class Meta
         dst.CatalogHi = copy.CatalogHi;
         dst.Tutorial = copy.Tutorial;
         dst.ClassesSeen = copy.ClassesSeen;
+        dst.WeeklyWeek = copy.WeeklyWeek;
+        dst.WeeklyWon = copy.WeeklyWon;
+        dst.WeeklyRuns = copy.WeeklyRuns;
+        dst.WeeklyScore = copy.WeeklyScore;
+        dst.Story = copy.Story;
+        dst.StoryNew = copy.StoryNew;
     }
 
     // ------------------------------------------------------------------ katalog usterek (rodzaje 0-15 w Catalog, 16-47 w CatalogHi)
@@ -206,7 +212,17 @@ public static class Meta
     /// <summary>Naprawia wczytany profil. Zwraca true, jeśli trzeba go zapisać (migracja albo pusta pamięć).</summary>
     public static bool ProfileFix(GameData d, Profile p)
     {
-        if (p.MagicIs(Profile.MagicV10)) return ClampLevels(d, p);
+        if (p.MagicIs(Profile.MagicV11)) return ClampLevels(d, p);
+        if (p.MagicIs(Profile.MagicV10)) // v10 -> v11: wyzwania tygodnia i fabuła od zera
+        {
+            var b10 = p.ToBytes();
+            Array.Clear(b10, Profile.V10Size, b10.Length - Profile.V10Size);
+            CopyInto(Profile.FromBytes(b10), p);
+            p.Magic = Profile.MagicBytes(Profile.MagicV11);
+            ClampLevels(d, p);
+            Story.MigrateV11(d, p);
+            return true;
+        }
         var v9 = p.MagicIs(Profile.MagicV9);
         if (v9 || p.MagicIs(Profile.MagicV8)) // v8 -> v9: katalog 16-47 od zera; v9 -> v10: samouczek
         {
@@ -214,9 +230,10 @@ public static class Meta
             var b8 = p.ToBytes();
             Array.Clear(b8, keep8, b8.Length - keep8);
             CopyInto(Profile.FromBytes(b8), p);
-            p.Magic = Profile.MagicBytes(Profile.MagicV10);
+            p.Magic = Profile.MagicBytes(Profile.MagicV11);
             ClampLevels(d, p);
             MigrateV10(d, p);
+            Story.MigrateV11(d, p);
             return true;
         }
         // v7/v6/v5/v4/v3/v2 -> v9: stare pola zostają, nowe od zera (jak memset od profile_v7_size / v6 / ...);
@@ -231,11 +248,12 @@ public static class Meta
             var b = p.ToBytes();
             Array.Clear(b, keep, b.Length - keep);
             CopyInto(Profile.FromBytes(b), p);
-            p.Magic = Profile.MagicBytes(Profile.MagicV10);
+            p.Magic = Profile.MagicBytes(Profile.MagicV11);
             DefaultKeepsake(d, p);
             ClampLevels(d, p);
             MigrateV8(d, p);
             MigrateV10(d, p);
+            Story.MigrateV11(d, p);
             return true;
         }
         if (p.MagicIs(Profile.MagicV1))
@@ -247,6 +265,7 @@ public static class Meta
             p.Wins = wins;
             MigrateV8(d, p);
             MigrateV10(d, p);
+            Story.MigrateV11(d, p);
             return true;
         }
         ProfileReset(d, p);

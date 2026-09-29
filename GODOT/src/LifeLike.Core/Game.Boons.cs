@@ -199,6 +199,8 @@ public sealed partial class Game
         var bd = D.Boons[b];
         var before = SynergyMask();
         Boons |= 1ul << b;
+        if (St == GameStatus.StageClear) StageBoon[Stage] = (sbyte)b; // podsumowanie: premia po etapie
+        else StageFlags[Stage] |= RecapFlag.EventBoon;
         for (var i = 0; i < 3; ++i) BoonOffer[i] = -1;
         switch (bd.Effect)
         {
@@ -217,7 +219,9 @@ public sealed partial class Game
         var now = SynergyMask();
         for (var s = 0; s < D.Synergies.Length; ++s)
         {
-            if (((now >> s) & 1) != 0 && ((before >> s) & 1) == 0) Push(Msg("Synergia: ").Add(D.Synergies[s].Name).Add("!").As(LogKind.Good));
+            if (((now >> s) & 1) == 0 || ((before >> s) & 1) != 0) continue;
+            Push(Msg("Synergia: ").Add(D.Synergies[s].Name).Add("!").As(LogKind.Good));
+            StageFlags[Stage] |= RecapFlag.Synergy;
         }
         return true;
     }
@@ -270,8 +274,11 @@ public sealed partial class Game
 
     public bool EliteIs(in Actor e, EliteEffect x) => e.Elite >= 0 && D.Elites[e.Elite].Effect == x;
 
-    public int EliteChance() =>
-        D.EliteActPct.Length == 0 ? 0 : Math.Max(0, D.EliteActPct[D.Stages[Stage].Act] + D.EliteDiffPct[Diff] + Tier * D.EliteTierPct);
+    public int EliteChance()
+    {
+        var c = D.EliteActPct.Length == 0 ? 0 : Math.Max(0, D.EliteActPct[D.Stages[Stage].Act] + D.EliteDiffPct[Diff] + Tier * D.EliteTierPct);
+        return WeeklyHas(WeeklyRule.ElitePct) ? c * WeeklyValue(WeeklyRule.ElitePct) / 100 : c; // wyzwanie: Elity x2
+    }
 
     public void MakeElite(int i, int trait)
     {
@@ -326,6 +333,7 @@ public sealed partial class Game
         var c = D.Combos[(int)ComboEffect.ShockArea];
         var rad = c.Radius + SynergyValue(SynergyEffect.Conduct);
         ComboEvents = (byte)(ComboEvents | (1 << (int)ComboEffect.ShockArea));
+        NoteCombo();
         Push(Msg(c.Short).Add(" ").Add(c.Name).As(LogKind.Good));
         for (var i = 0; i < EnemiesCount && St == GameStatus.Playing; ++i)
         {
@@ -341,6 +349,7 @@ public sealed partial class Game
         var sp = SynergyValue(SynergyEffect.Sparks);
         int rad = c.Radius + (sp > 0 ? 1 : 0), dmg = c.Value + sp;
         ComboEvents = (byte)(ComboEvents | (1 << (int)ComboEffect.DustBlast));
+        NoteCombo();
         Push(Msg(c.Short).Add(" ").Add(c.Name).As(LogKind.Good));
         for (var i = 0; i < EnemiesCount; ++i)
         {
@@ -359,6 +368,7 @@ public sealed partial class Game
         var c = D.Combos[(int)ComboEffect.Crack];
         Enemies[ei].Flags = (byte)(Enemies[ei].Flags & ~ActorFlag.Frozen);
         ComboEvents = (byte)(ComboEvents | (1 << (int)ComboEffect.Crack));
+        NoteCombo();
         Push(Msg(c.Short).Add(" ").Add(c.Name).As(LogKind.Good));
         DamageEnemy(ei, Math.Max(1, dmg * c.Value / 100), false, c.Name);
     }

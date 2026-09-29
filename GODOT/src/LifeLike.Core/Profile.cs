@@ -5,8 +5,8 @@ namespace LifeLike.Core;
 
 /// <summary>
 /// Profil gracza (odpowiednik core::profile z meta.h): rekord, doświadczenie, zakupy, odznaki, Osiedle.
-/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v10: 160 bajtów, little-endian, bajt 55 to wyrównanie),
-/// więc migracje v1–v9 działają tak samo.
+/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v11: 188 bajtów, little-endian, bajt 55 to wyrównanie),
+/// więc migracje v1–v10 działają tak samo.
 /// </summary>
 public sealed class Profile
 {
@@ -27,12 +27,16 @@ public sealed class Profile
     public const int V8Size = 152;
     /// <summary>v10 = v9 + samouczek menu (obejrzane dymki) od tego offsetu.</summary>
     public const int V9Size = 156;
-    public const int Size = 160;
+    /// <summary>v11 = v10 + wyzwania tygodnia i fabuła od tego offsetu.</summary>
+    public const int V10Size = 160;
+    public const int Size = 188;
+    public const int WeeklySlots = 3;
     public const int MaxRespect = 16;
     /// <summary>Zawody 0-7: bitmaska Classes (Szkolenia), 8-11: tylko z nagród za odbiór.</summary>
     public const int MaxClasses = 12;
     public const int MaxKeepsakes = 8;
     public const int DailySlots = 5;
+    public const string MagicV11 = "PBRL011";
     public const string MagicV10 = "PBRL010";
     public const string MagicV9 = "PBRL009";
     public const string MagicV8 = "PBRL008";
@@ -126,6 +130,19 @@ public sealed class Profile
     public ushort Tutorial;
     /// <summary>Zawody z nagród, o których już był dymek odblokowania (bitmaska).</summary>
     public ushort ClassesSeen;
+    // --- v11: wyzwania tygodnia (#34) i fabuła odkrywana z budowami (#35)
+    /// <summary>Numery tygodni z wynikiem (0 = pusty).</summary>
+    public ushort[] WeeklyWeek = new ushort[WeeklySlots];
+    /// <summary>Bity: wygrana w tym tygodniu.</summary>
+    public byte WeeklyWon;
+    /// <summary>Rozegrane wyzwania tygodnia (do 255).</summary>
+    public byte WeeklyRuns;
+    /// <summary>Najlepszy wynik tygodnia.</summary>
+    public int[] WeeklyScore = new int[WeeklySlots];
+    /// <summary>Odblokowane wątki fabuły (bity GameData.StoryArc).</summary>
+    public uint Story;
+    /// <summary>Jeszcze nieprzeczytane wątki.</summary>
+    public uint StoryNew;
 
     public static byte[] MagicBytes(string s)
     {
@@ -192,6 +209,15 @@ public sealed class Profile
         BinaryPrimitives.WriteUInt32LittleEndian(b.AsSpan(152), CatalogHi);
         BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(156), Tutorial);
         BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(158), ClassesSeen);
+        for (var i = 0; i < WeeklySlots; i++)
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(160 + i * 2), WeeklyWeek[i]);
+            BinaryPrimitives.WriteInt32LittleEndian(b.AsSpan(168 + i * 4), WeeklyScore[i]);
+        }
+        b[166] = WeeklyWon;
+        b[167] = WeeklyRuns;
+        BinaryPrimitives.WriteUInt32LittleEndian(b.AsSpan(180), Story);
+        BinaryPrimitives.WriteUInt32LittleEndian(b.AsSpan(184), StoryNew);
         return b;
     }
 
@@ -247,7 +273,16 @@ public sealed class Profile
             CatalogHi = BinaryPrimitives.ReadUInt32LittleEndian(b[152..]),
             Tutorial = BinaryPrimitives.ReadUInt16LittleEndian(b[156..]),
             ClassesSeen = BinaryPrimitives.ReadUInt16LittleEndian(b[158..]),
+            WeeklyWon = b[166],
+            WeeklyRuns = b[167],
+            Story = BinaryPrimitives.ReadUInt32LittleEndian(b[180..]),
+            StoryNew = BinaryPrimitives.ReadUInt32LittleEndian(b[184..]),
         };
+        for (var i = 0; i < WeeklySlots; i++)
+        {
+            p.WeeklyWeek[i] = BinaryPrimitives.ReadUInt16LittleEndian(b[(160 + i * 2)..]);
+            p.WeeklyScore[i] = BinaryPrimitives.ReadInt32LittleEndian(b[(168 + i * 4)..]);
+        }
         for (var i = 0; i < DailySlots; i++)
         {
             p.DailyDay[i] = BinaryPrimitives.ReadUInt16LittleEndian(b[(92 + i * 2)..]);

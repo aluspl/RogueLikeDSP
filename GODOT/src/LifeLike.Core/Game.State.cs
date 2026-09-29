@@ -118,7 +118,7 @@ public sealed partial class Game
                      Bonus.Hp, Bonus.Def, Bonus.Dmg, Bonus.Coffee, Bonus.Pickups, Bonus.Luck, Bonus.Craft, Bonus.Cooldown, Bonus.Sight,
                      Bonus.Thermos, Bonus.ToolPct, Bonus.XpPct, Bonus.Cash, Bonus.Crit, Bonus.Tools, Bonus.Helpers, Bonus.Investor,
                      Bonus.DmgPct, Bonus.TakenPct, Bonus.GearPct, Bonus.Dodge, Bonus.CoffeePct, Bonus.BrigadePct, Bonus.ShopPct,
-                     Bonus.MatsPct, Bonus.SecondChance, Bonus.GearSlots, Bonus.Act0, Bonus.Rerolls,
+                     Bonus.MatsPct, Bonus.SecondChance, Bonus.GearSlots, Bonus.Act0, Bonus.Rerolls, Bonus.Weekly,
                  })
             w.Write(v);
         foreach (var v in new[] { XpPct, XpBanked, RunXp, HeroLevel, Boss, StairsX, StairsY }) w.Write(v);
@@ -212,7 +212,33 @@ public sealed partial class Game
         w.Write(KeyHolder);
         w.Write(Keys);
         w.Write(SecretsFound);
+        // v0.21.50 cz. 4: podsumowanie budowy, wyzwanie tygodnia
+        foreach (var h in LastHits) WriteHit(w, h);
+        WriteHit(w, WorstHit);
+        w.Write(BestHit);
+        w.Write(BestHitDef);
+        w.Write(BestHitCrit);
+        w.Write(BlastSrc);
+        w.Write(StageKillLog);
+        foreach (var b in StageBoon) w.Write(b);
+        w.Write(StageEventLog);
+        w.Write(StageFlags);
+        w.Write(ElitesKilled);
+        w.Write(CombosRun);
+        w.Write(WeeklyWeek);
     }
+
+    private static void WriteHit(BinaryWriter w, in RecapHit h)
+    {
+        w.Write(h.Src);
+        w.Write(h.Elite);
+        w.Write(h.Kind);
+        w.Write(h.Stage);
+        w.Write(h.Amount);
+    }
+
+    private static RecapHit ReadHit(BinaryReader r) =>
+        new() { Src = r.ReadSByte(), Elite = r.ReadSByte(), Kind = r.ReadByte(), Stage = r.ReadSByte(), Amount = r.ReadInt16() };
 
     public void Read(BinaryReader r)
     {
@@ -270,7 +296,7 @@ public sealed partial class Game
             Investor = r.ReadInt32(),
             DmgPct = r.ReadInt32(), TakenPct = r.ReadInt32(), GearPct = r.ReadInt32(), Dodge = r.ReadInt32(), CoffeePct = r.ReadInt32(),
             BrigadePct = r.ReadInt32(), ShopPct = r.ReadInt32(), MatsPct = r.ReadInt32(), SecondChance = r.ReadInt32(),
-            GearSlots = r.ReadInt32(), Act0 = r.ReadInt32(), Rerolls = r.ReadInt32(),
+            GearSlots = r.ReadInt32(), Act0 = r.ReadInt32(), Rerolls = r.ReadInt32(), Weekly = r.ReadInt32(),
         };
         XpPct = r.ReadInt32();
         XpBanked = r.ReadInt32();
@@ -361,5 +387,18 @@ public sealed partial class Game
         KeyHolder = r.ReadSByte();
         Keys = r.ReadByte();
         SecretsFound = r.ReadByte();
+        for (var i = 0; i < LastHits.Length; i++) LastHits[i] = ReadHit(r);
+        WorstHit = ReadHit(r);
+        BestHit = r.ReadInt16();
+        BestHitDef = r.ReadSByte();
+        BestHitCrit = r.ReadBoolean();
+        BlastSrc = r.ReadSByte();
+        r.Read(StageKillLog, 0, StageKillLog.Length);
+        for (var i = 0; i < StageBoon.Length; i++) StageBoon[i] = r.ReadSByte();
+        r.Read(StageEventLog, 0, StageEventLog.Length);
+        r.Read(StageFlags, 0, StageFlags.Length);
+        ElitesKilled = r.ReadByte();
+        CombosRun = r.ReadUInt16();
+        WeeklyWeek = r.ReadUInt16();
     }
 }

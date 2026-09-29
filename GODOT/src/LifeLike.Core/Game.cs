@@ -231,7 +231,7 @@ public sealed partial class Game
     public int SlamEvery() => Math.Max(2, D.SlamEvery - InvestorValue(InvestorEffect.Slam));
 
     /// <summary>Hurtownia zamknięta: po akcie od razu kolejny etap.</summary>
-    public bool ShopClosed => InvestorHas(InvestorEffect.NoShop);
+    public bool ShopClosed => InvestorHas(InvestorEffect.NoShop) || WeeklyHas(WeeklyRule.NoShop);
 
     public bool WeatherIs(WeatherEffect e) => D.Weather[Weather].Effect == e;
 
@@ -671,6 +671,7 @@ public sealed partial class Game
             for (var k = 0; k < pd.Materials; ++k) AddMaterial(R.Range(0, D.Materials.Length - 1));
         }
         Weather = (sbyte)RollWeather(s, pd != null && pd.BadWeather); // pogoda dnia
+        if (WeeklyHas(WeeklyRule.Weather)) Weather = (sbyte)WeeklyValue(WeeklyRule.Weather); // wyzwanie: Mokry tydzień
         if (WDef.Effect != WeatherEffect.None)
             Push(Msg("Pogoda: ").Add(WDef.Name).Add(" (").Add(WDef.Short).Add(")").As(WDef.Bad ? LogKind.Bad : LogKind.Good));
         StageEvent = -1; // wydarzenie na placu: nie na pierwszym etapie i nie u bossa
@@ -764,6 +765,7 @@ public sealed partial class Game
         if (St != GameStatus.Won) return false;
         ++Tier;
         EventsSeen = 0; // nowa budowa: wydarzenia od nowa
+        ClearTimeline(); // podsumowanie: oś czasu nowej budowy
         for (var i = 0; i < Enemies.Length; i++) Enemies[i] = new Actor();
         Hero.Hp = Hero.MaxHp;
         StartStage(FirstStage);

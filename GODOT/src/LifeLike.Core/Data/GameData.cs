@@ -121,6 +121,19 @@ public sealed class GameData
     public int ChestMats { get; private init; }
     public int ChestCash { get; private init; }
     public int ChestGearMin { get; private init; }
+    /// <summary>v0.21.50 cz. 4: podsumowanie budowy (#33) – rodzaje ciosów (= RecapKind), czasowniki wg rodzaju, rady.</summary>
+    public string[] RecapKindNames { get; private init; } = [];
+    public string[] RecapVerbs { get; private init; } = ["Pokonał", "Pokonała", "Pokonało"];
+    public RecapTipDef[] RecapTips { get; private init; } = [];
+    /// <summary>Wyzwania tygodnia (#34, sekcja "weekly"): lista zasad, tydzień nr 1 (poniedziałek), trudność, historia, kawa na wynos.</summary>
+    public WeeklyDef[] Weekly { get; private init; } = [];
+    public int[] WeeklyEpoch { get; private init; } = [2026, 1, 5];
+    public int WeeklyDifficulty { get; private init; } = 1;
+    public int WeeklyHistory { get; private init; } = 3;
+    public int WeeklyCoffeeCash { get; private init; }
+    /// <summary>Fabuła odkrywana z budowami (#35, story.arc) i ozdoby Osiedla (estate.decor).</summary>
+    public StoryThread[] StoryArc { get; private init; } = [];
+    public DecorDef[] EstateDecor { get; private init; } = [];
     public int DefaultDifficulty { get; private init; }
     public int NgHpPctPerTier { get; private init; }
     public int NgDmgBonusPerTier { get; private init; }
@@ -688,8 +701,77 @@ public sealed class GameData
             heroWetTurns = Int(coj, "heroWetTurns");
         }
 
+        // v0.21.50 cz. 4: podsumowanie budowy (#33), wyzwania tygodnia (#34), fabuła odkrywana z budowami (#35)
+        string[] recapKinds = [], recapVerbs = ["Pokonał", "Pokonała", "Pokonało"];
+        RecapTipDef[] recapTips = [];
+        if (d.TryGetProperty("recap", out var rcj))
+        {
+            recapKinds = rcj.GetProperty("kinds").EnumerateArray().Select(x => x.GetString() ?? "").ToArray();
+            recapVerbs = rcj.GetProperty("verbs").EnumerateArray().Select(x => x.GetString() ?? "").ToArray();
+            recapTips = rcj.GetProperty("tips").EnumerateArray().Select(x =>
+            {
+                var lines = Str(x, "text").Split('|').ToList();
+                while (lines.Count < 2) lines.Add("");
+                return new RecapTipDef(ParseSnake<RecapTip>(Str(x, "when")), lines.ToArray());
+            }).ToArray();
+            Require(recapKinds.Length == 6 && recapVerbs.Length == 3 && recapTips.Length > 0 && recapTips[^1].When == RecapTip.Any,
+                "podsumowanie: 6 rodzajów ciosów, 3 czasowniki, ostatnia rada \"any\"");
+        }
+        WeeklyDef[] weekly = [];
+        int[] weeklyEpoch = [2026, 1, 5];
+        int weeklyDiff = 1, weeklyHistory = 3, weeklyCoffee = 0;
+        if (d.TryGetProperty("weekly", out var wkj))
+        {
+            var weatherIds = weather.Select(w => w.Id).ToList();
+            WeeklyRuleDef Rule(JsonElement x)
+            {
+                var r = Str(x, "rule");
+                if (r == "class") return new WeeklyRuleDef(WeeklyRule.Cls, Lookup(cid, Str(x, "class"), "zawód tygodnia"));
+                var rule = ParseSnake<WeeklyRule>(r);
+                if (rule == WeeklyRule.Weather)
+                {
+                    var wi = weatherIds.IndexOf(Str(x, "weather"));
+                    Require(wi >= 0, "tydzień: nieznana pogoda");
+                    return new WeeklyRuleDef(rule, wi);
+                }
+                return new WeeklyRuleDef(rule, Int(x, "value", 0));
+            }
+            weekly = wkj.GetProperty("list").EnumerateArray().Select(x => new WeeklyDef(Str(x, "id"), Str(x, "name"), Str(x, "short"),
+                Str(x, "desc").Split('|'), x.GetProperty("rules").EnumerateArray().Select(Rule).ToArray())).ToArray();
+            weeklyEpoch = wkj.GetProperty("epoch").EnumerateArray().Select(x => x.GetInt32()).ToArray();
+            weeklyDiff = Lookup(Index(difficultiesJson), Str(wkj, "difficulty"), "trudność tygodnia");
+            weeklyHistory = Int(wkj, "history");
+            weeklyCoffee = Int(wkj, "coffeeCash", 0);
+            Require(weekly.Length is >= 1 and <= 16 && weekly.All(w => w.Rules.Length is >= 1 and <= 3 && w.Desc.Length == 2) && weeklyHistory is >= 1 and <= 3,
+                "wyzwania tygodnia: 1-16, 1-3 zasady, opis w 2 liniach, historia 1-3");
+        }
+        StoryThread[] arc = [];
+        if (story.TryGetProperty("arc", out var arj))
+        {
+            arc = arj.EnumerateArray().Select(x =>
+            {
+                var trig = ParseSnake<StoryTrigger>(Str(x, "trigger"));
+                var v = trig == StoryTrigger.Boss ? Lookup(eid, Str(x, "value"), "boss wątku") : Int(x, "value");
+                return new StoryThread(Str(x, "id"), Str(x, "name"), Str(x, "hint"), trig, v, x.GetProperty("messages").EnumerateArray().Select(Story).ToArray());
+            }).ToArray();
+            Require(arc.Length <= 32 && arc.All(t => t.Messages.Length is >= 1 and <= 2), "fabuła: maks. 32 wątki po 1-2 wiadomości");
+        }
+        var decor = d.TryGetProperty("estate", out var esj)
+            ? esj.GetProperty("decor").EnumerateArray().Select(x => new DecorDef(Str(x, "id"), Str(x, "name"), Int(x, "wins"))).ToArray()
+            : [];
+
         return new GameData
         {
+            RecapKindNames = recapKinds,
+            RecapVerbs = recapVerbs,
+            RecapTips = recapTips,
+            Weekly = weekly,
+            WeeklyEpoch = weeklyEpoch,
+            WeeklyDifficulty = weeklyDiff,
+            WeeklyHistory = weeklyHistory,
+            WeeklyCoffeeCash = weeklyCoffee,
+            StoryArc = arc,
+            EstateDecor = decor,
             BoonRarities = boonRarities,
             BoonTags = boonTagNames,
             Boons = boons,

@@ -32,7 +32,7 @@ public class GoldenTests
         int badges = Opt("badges"), contracts = Opt("contracts"), keepsake = Opt("keepsake"), keepsakeRuns = Opt("keepsakeRuns");
         var investor = Opt("investor");
         int paths = Opt("paths"), daily = Opt("daily");
-        int respect = Opt("respect"), rewards = Opt("rewards");
+        int respect = Opt("respect"), rewards = Opt("rewards"), weekly = Opt("weekly");
         var snaps = j.GetProperty("snapshots").EnumerateArray().ToList();
         var digests = j.GetProperty("digests").EnumerateArray().Select(x => x.GetString()).ToList();
 
@@ -59,7 +59,8 @@ public class GoldenTests
         p.Rewards = (byte)rewards;
         var m = Meta.Mods(d, p); // przed StartRun: ranga pamiątki z budów przed tą
         var g = new Game(d);
-        if (daily > 0) Daily.Start(g, daily); // codzienna budowa: zawód i seed z dnia, bez Szkoleń
+        if (weekly > 0) Weekly.Start(g, weekly); // v0.21.50 cz. 4: wyzwanie tygodnia – zawód, seed i zasady z tygodnia
+        else if (daily > 0) Daily.Start(g, daily); // codzienna budowa: zawód i seed z dnia, bez Szkoleń
         else g.NewRun(cls, seed, diff, m);
         Meta.StartRun(d, p);
 
@@ -135,6 +136,8 @@ public class GoldenTests
         Meta.CheckContracts(d, p);
         Meta.BankXp(p, g);
         if (g.Daily) Daily.Record(d, p, g.DailyDay, g.Score, g.St == GameStatus.Won);
+        if (g.WeeklyWeek != 0) Weekly.Record(d, p, g.WeeklyWeek, g.Score, g.St == GameStatus.Won);
+        Story.Check(d, p, g); // v0.21.50 cz. 4: fabuła – wątki za kamienie milowe
 
         Assert.Equal(snaps.Count, snapIndex);
         Assert.Equal(digests.Count, digestIndex);

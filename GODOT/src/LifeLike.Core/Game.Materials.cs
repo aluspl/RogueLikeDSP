@@ -111,6 +111,7 @@ public sealed partial class Game
     public void FinishStage()
     {
         StageDays[Stage] = (ushort)Math.Min(65535, Turns - StageStartTurn);
+        StageKillLog[Stage] = (byte)Math.Min(255, StageKills);
         var got = StageRespect();
         Respect += got;
         Push(Msg("Respekt +").Add(got).As(LogKind.Loot));

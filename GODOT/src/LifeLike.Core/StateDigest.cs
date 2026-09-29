@@ -195,6 +195,30 @@ public static class StateDigest
         f.Add(g.SecretsFound);
         f.Add(g.UpgradePrice());
         f.Add(g.CanOpenSecret() ? 1 : 0);
+        // v0.21.50 cz. 4: podsumowanie budowy (ciosy, oś czasu), wyzwanie tygodnia
+        foreach (var h in g.LastHits.Append(g.WorstHit))
+        {
+            f.Add(h.Src);
+            f.Add(h.Elite);
+            f.Add(h.Kind);
+            f.Add(h.Stage);
+            f.Add(h.Amount);
+        }
+        f.Add(g.BestHit);
+        f.Add(g.BestHitDef);
+        f.Add(g.BestHitCrit ? 1 : 0);
+        f.Add(g.BlastSrc);
+        for (var i = 0; i < Game.MaxStages; i++)
+        {
+            f.Add(g.StageKillLog[i]);
+            f.Add(g.StageBoon[i]);
+            f.Add(g.StageEventLog[i]);
+            f.Add(g.StageFlags[i]);
+        }
+        f.Add(g.ElitesKilled);
+        f.Add(g.CombosRun);
+        f.Add(g.WeeklyWeek);
+        f.Add(g.Bonus.Weekly);
         return f.H;
     }
 }

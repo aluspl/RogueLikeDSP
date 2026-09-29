@@ -100,6 +100,12 @@ public sealed partial class Game
         ref var e = ref Enemies[ei];
         var ed = D.Enemies[e.DefId];
         if (ei == Boss && BossWakeDamage < 0) BossEngaged();
+        if (dmg > BestHit) // podsumowanie: najmocniejszy cios bohatera
+        {
+            BestHit = (short)Math.Min(32767, dmg);
+            BestHitDef = e.DefId;
+            BestHitCrit = crit;
+        }
         e.Hp = (short)(e.Hp - dmg);
         e.Awake = true;
         LastTarget = ei;
@@ -125,7 +131,12 @@ public sealed partial class Game
             if (KillsByType[e.DefId] < 255) ++KillsByType[e.DefId];
             Score += ed.Score * ScorePct() / 100;
             GainXp(D.XpPerKill);
-            if (e.Elite >= 0) EliteReward(ei); // elita: pewny drop, materiały, Respekt
+            if (e.Elite >= 0) // elita: pewny drop, materiały, Respekt
+            {
+                EliteReward(ei);
+                if (ElitesKilled < 255) ++ElitesKilled;
+                StageFlags[Stage] |= RecapFlag.Elite;
+            }
             MaybeDrop(e.X, e.Y);
             if (ei == KeyHolder) DropKey(e.X, e.Y); // klucz do magazynu (#32)
             Push(Msg(ed.Name).Add(" - usunięto!").As(LogKind.Good));
@@ -139,7 +150,7 @@ public sealed partial class Game
                 {
                     for (var m = 0; m < D.Materials.Length; ++m) AddMaterial(m, D.MaterialBossDrop);
                 }
-                else if (R.Range(1, 100) <= D.MaterialDropPct * (100 + Bonus.MatsPct + BoonSum(BoonEffect.MatsPct)
+                else if (R.Range(1, 100) <= D.MaterialDropPct * (100 + Bonus.MatsPct + BoonSum(BoonEffect.MatsPct) + WeeklyValue(WeeklyRule.MatsPct)
                                                                   + SynergyValue(SynergyEffect.Stock)) / 100) // Respekt: Zapasy
                 {
                     AddMaterial(ed.Material >= 0 ? ed.Material : R.Range(0, D.Materials.Length - 1));
@@ -147,6 +158,7 @@ public sealed partial class Game
             }
             if (ei == Boss)
             {
+                StageFlags[Stage] |= RecapFlag.Boss;
                 if (StageDamage == BossWakeDamage && CleanBosses < 255) ++CleanBosses; // zlecenie Czysta robota
                 Score += (500 + 100 * Math.Max(0, PatternStage() + 1)) * ScorePct() / 100;
                 GainXp(D.XpBoss);
@@ -332,6 +344,11 @@ public sealed partial class Game
     public bool PlayerDrink()
     {
         if (St != GameStatus.Playing) return false;
+        if (WeeklyHas(WeeklyRule.NoCoffee))
+        {
+            Push(Msg("Tydzień bez kawy!").As(LogKind.Bad));
+            return false;
+        }
         if (Thermos <= 0)
         {
             Push(Msg("Termos pusty"));
@@ -483,7 +500,12 @@ public sealed partial class Game
                 OpenChest();
                 continue;
             }
-            if (p.Type == PickupType.Coffee)
+            if (p.Type == PickupType.Coffee && WeeklyHas(WeeklyRule.NoCoffee)) // wyzwanie: bez kawy – kawa na wynos (zł)
+            {
+                Cash += Income(D.WeeklyCoffeeCash);
+                Push(Msg("Bez kawy: na wynos +").Add(Income(D.WeeklyCoffeeCash)).Add(" zł").As(LogKind.Loot));
+            }
+            else if (p.Type == PickupType.Coffee)
             {
                 if (Thermos < ThermosCap()) // kawa do termosu; pełny termos – pije od razu
                 {
@@ -677,6 +699,7 @@ public sealed partial class Game
                 Hero.Hp = (short)(Hero.Hp - dmg);
                 StageDamage += dmg;
                 HeroHit = true;
+                LogHit(Enemies[Boss].DefId, Enemies[Boss].Elite, RecapKind.Slam, dmg);
                 AddHit(Hero.X, Hero.Y, dmg, true);
                 Push(Msg(bd.SlamName.Length > 0 ? bd.SlamName : "Uderzenie").Add(": -").Add(dmg).Add(" HP").As(LogKind.Bad));
                 if (Hero.Hp <= 0) HeroDown();
@@ -697,6 +720,7 @@ public sealed partial class Game
                 Hero.Hp = (short)(Hero.Hp - dmg);
                 StageDamage += dmg;
                 HeroHit = true;
+                LogHit(BlastSrc, -1, dusty ? RecapKind.Dust : RecapKind.Blast, dmg);
                 AddHit(Hero.X, Hero.Y, dmg, true);
                 if (dusty)
                 {

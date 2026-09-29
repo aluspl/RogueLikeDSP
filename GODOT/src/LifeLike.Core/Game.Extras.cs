@@ -106,6 +106,7 @@ public sealed partial class Game
         if (k < 0 || k >= ev.Choices.Length) return false;
         var c = ev.Choices[k];
         var er = SideRng(111 + (uint)k);
+        StageEventLog[Stage] = (byte)(PendingEvent * 4 + k); // podsumowanie: wydarzenie i odpowiedź
         StageChoice = PendingEvent;
         StageChoicePick = (sbyte)k;
         PendingEvent = -1;
@@ -259,6 +260,7 @@ public sealed partial class Game
     {
         if (WeaponLvl >= D.ToolUpgradeMax) return;
         ++WeaponLvl;
+        StageFlags[Stage] |= RecapFlag.Upgrade;
         if (WeaponLvl >= D.ToolTraitAt && WeaponTrait < 0) TraitPending = true;
         Push(Msg("Ulepszenie: ").Add(Weapon.Name).Add("+").Add(WeaponLvl).As(LogKind.Loot));
     }
@@ -441,6 +443,7 @@ public sealed partial class Game
         SecretOpen = true;
         Lv[SecretX, SecretY] = Tile.Floor;
         if (SecretsFound < 255) ++SecretsFound;
+        StageFlags[Stage] |= RecapFlag.Secret;
         Push(Msg(how).Add(" Magazyn otwarty!").As(LogKind.Good));
         UpdateFov();
     }
