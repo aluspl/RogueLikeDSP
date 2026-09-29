@@ -93,7 +93,7 @@ namespace
     using text_sprites = bn::vector<bn::sprite_ptr, 48>;
     using page_sprites = bn::vector<bn::sprite_ptr, 80>;   // pełnoekranowe strony menu
 
-    enum class scene { title, class_select, game, schedule, end, shop, help, hurtownia, prologue, investor, daily };
+    enum class scene { title, class_select, game, schedule, end, shop, help, hurtownia, prologue, investor, daily, weekly };
 
     constexpr int frame_coffee = 15;
     constexpr int frame_fx = 18;
@@ -394,7 +394,7 @@ namespace
             if(frame % 150 == 0 || frame % 150 == 75)   // podpowiedź na dole na zmianę: telefon i pomoc / budowa dnia
             {
                 shop_hint.clear();
-                a.text.generate(0, 66, frame % 150 == 0 ? "SELECT: telefon  B: pomoc" : "R: codzienna budowa", shop_hint);
+                a.text.generate(0, 66, frame % 150 == 0 ? "SELECT: telefon  B: pomoc" : "R: budowa dnia  L: tydzień", shop_hint);
             }
             if((frame % 60) == 40) prompt.clear();
             if(a.has_run && bn::keypad::start_pressed())   // kontynuuj przerwaną budowę
@@ -407,6 +407,7 @@ namespace
             if(bn::keypad::select_pressed()) { wait_release(); return leave(scene::shop); }
             if(bn::keypad::b_pressed()) { a.after_help = scene::title; wait_release(); return leave(scene::help); }
             if(bn::keypad::r_pressed()) { wait_release(); return leave(scene::daily); }
+            if(bn::keypad::l_pressed()) { wait_release(); return leave(scene::weekly); }   // wyzwanie tygodnia (#34)
             next_frame();
         }
     }
@@ -957,6 +958,7 @@ namespace
                 pl = g.secret_open ? "Otwarty" : "Magazyn"; pk = g.secret_open ? pill::done : pill::prog;
             }
             else if(g.keys > 0) { em.add("Klucz do magazynu: ").add(int(g.keys)); pl = "Klucz"; pk = pill::prog; }
+            else if(g.bonus.weekly >= 0) { em.add(data::weekly[g.bonus.weekly].name); pl = "Tydzień"; pk = pill::late; }   // wyzwanie tygodnia (#34)
             if(pl)
             {
                 stripe(c, 3, pk == pill::done ? phone_tile::stripe_done : phone_tile::stripe_brand);
@@ -3852,6 +3854,136 @@ namespace
         wait_release();
     }
 
+    // ------------------------------------------------------------------ podsumowanie budowy (#33): 3 strony w telefonie
+    // 1 - co zatrzymało budowę (albo odbiór), ostatnie ciosy, najmocniejszy cios; 2 - oś czasu etapów (góra/dół);
+    // 3 - nagrody z budowy, zlecenie, najbliższy cel i rada. A / prawo - dalej, B / lewo - wstecz, START - pomiń.
+    ink recap_ink(uint8_t k) { return k == core::bad ? ink::late : (k == core::good ? ink::done : (k == core::loot ? ink::brand : ink::dark)); }
+
+    void recap_pages(app& a, int gained)
+    {
+        core::game& g = *a.g;
+        const bool won = g.st == core::status::won;
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
+        phone_screen ph(2);
+        ph.icon.set_visible(false);
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        page_sprites t;
+        static core::recap_line lines[64];
+        const int n_lines = g.recap_timeline(lines, 64);
+        int page = 0, top = 0;
+        auto draw = [&]() {
+            phone_canvas& c = *ph.canvas;
+            core::message sub; sub.add(page + 1).add("/3").add(page == 1 ? "  ^v  A: dalej" : "  A: dalej");
+            static const char* titles[3] = { "Podsumowanie", "Oś czasu", "Nagrody i cele" };
+            phone_header(a, ph, t, titles[page], sub.s);
+            if(page == 0)
+            {
+                core::message w; g.recap_where(w);
+                if(won)
+                {
+                    stripe(c, 0, phone_tile::stripe_done);
+                    phone_text(a, t, list_x, row_py(0), "Odbiór zaliczony!", ink::done);
+                    core::message dd; dd.add(core::schedule_total_days(g)).add(" dni");
+                    phone_pill(a, c, t, pill_end, row_ty(0), dd.s, pill::done);
+                }
+                else
+                {
+                    stripe(c, 0, phone_tile::stripe_late);
+                    core::message k; g.recap_killer(k);
+                    phone_text(a, t, list_x, row_py(0), fit(a, k.s, phone_text_w).c_str(), ink::late);
+                }
+                phone_text(a, t, list_x, row_py(1), fit(a, data::stages[g.stage].name, pill_room(w.s)).c_str(), ink::dark);
+                phone_pill(a, c, t, pill_end, row_ty(1), w.s, won ? pill::done : pill::late);
+                int r = 2;
+                if(won)
+                {
+                    core::message tot; tot.add("Usunięte ").add(g.kills).add(", elity ").add(int(g.elites_killed)).add(", kombinacje ").add(int(g.combos_run));
+                    phone_text(a, t, list_x, row_py(r++), fit(a, tot.s, phone_text_w).c_str(), ink::dark);
+                    if(g.worst_hit.amount > 0)
+                    {
+                        phone_text(a, t, list_x, row_py(r++), "Najmocniej oberwałeś:", ink::dim);
+                        core::message wh; core::game::recap_hit_line(wh, g.worst_hit);
+                        phone_text(a, t, list_x, row_py(r++), fit(a, wh.s, phone_text_w).c_str(), ink::dark);
+                    }
+                }
+                else
+                {
+                    phone_text(a, t, list_x, row_py(r++), "Ostatnie ciosy:", ink::dim);
+                    for(int i = 0; i < core::recap_hits_n && r < 5; ++i)
+                    {
+                        const core::recap_hit& h = g.last_hits[i];
+                        if(h.amount <= 0) break;
+                        if(i == 0) stripe(c, r, phone_tile::stripe_late);
+                        core::message hm; core::game::recap_hit_line(hm, h);
+                        phone_text(a, t, list_x, row_py(r++), fit(a, hm.s, phone_text_w).c_str(), i == 0 ? ink::late : ink::dark);
+                    }
+                }
+                if(g.best_hit > 0)
+                {
+                    core::message bh; bh.add("Twój cios: ").add(int(g.best_hit)).add(g.best_hit_crit ? " (kryt) w " : " w ").add(data::enemies[g.best_hit_def].name);
+                    phone_text(a, t, list_x, row_py(5), fit(a, bh.s, phone_text_w).c_str(), ink::brand);
+                }
+            }
+            else if(page == 1)
+            {
+                for(int r = 0; r < 6 && top + r < n_lines; ++r)
+                {
+                    const core::recap_line& l = lines[top + r];
+                    const bool head = l.text.s[0] != ' ';
+                    if(head) stripe(c, r, l.ink == core::bad ? phone_tile::stripe_late : phone_tile::stripe_done);
+                    const int room = l.tail.n ? pill_room(l.tail.s) : phone_text_w;
+                    phone_text(a, t, list_x, row_py(r), fit(a, l.text.s, room).c_str(), recap_ink(l.ink));
+                    if(l.tail.n) phone_pill(a, c, t, pill_end, row_ty(r), l.tail.s, pill::gray);
+                }
+            }
+            else
+            {
+                core::message xm; xm.add("Dośw. +").add(gained).add(", Respekt +").add(g.respect);
+                core::message rm; rm.add("masz ").add(int(a.save.respect));
+                phone_text(a, t, list_x, row_py(0), fit(a, xm.s, pill_room(rm.s)).c_str(), ink::dark);
+                phone_pill(a, c, t, pill_end, row_ty(0), rm.s, pill::brand);
+                int ci = core::next_contract(a.save, g);
+                if(ci >= 0)
+                {
+                    core::message cm; cm.add("Zlecenie ").add(data::contracts[ci].name);
+                    core::message pm; pm.add(core::imin(data::contracts[ci].target, core::contract_progress(a.save, ci))).add("/").add(data::contracts[ci].target);
+                    phone_text(a, t, list_x, row_py(1), fit(a, cm.s, pill_room(pm.s)).c_str(), ink::dark);
+                    phone_pill(a, c, t, pill_end, row_ty(1), pm.s, pill::prog);
+                }
+                core::message lead, name;
+                if(core::recap_goal(a.save, lead, name))
+                {
+                    phone_text(a, t, list_x, row_py(2), fit(a, lead.s, phone_text_w).c_str(), ink::dim);
+                    stripe(c, 3, phone_tile::stripe_brand);
+                    phone_text(a, t, list_x, row_py(3), fit(a, name.s, phone_text_w).c_str(), ink::brand);
+                }
+                const core::recap_tip_def& tip = data::recap_tips[core::recap_tip_index(g)];
+                stripe(c, 4, phone_tile::stripe_prog); stripe(c, 5, phone_tile::stripe_prog);
+                phone_text(a, t, list_x, row_py(4), fit(a, tip.lines[0], phone_text_w).c_str(), ink::prog);
+                phone_text(a, t, list_x, row_py(5), fit(a, tip.lines[1], phone_text_w).c_str(), ink::prog);
+            }
+            ph.commit();
+        };
+        draw();
+        wait_release();
+        while(true)
+        {
+            if(bn::keypad::start_pressed()) break;
+            if(bn::keypad::a_pressed() || bn::keypad::right_pressed())
+            {
+                if(page == 2) break;
+                ++page; draw(); bn::sound_items::sfx_menu.play();
+            }
+            else if((bn::keypad::b_pressed() || bn::keypad::left_pressed()) && page > 0) { --page; draw(); bn::sound_items::sfx_menu.play(); }
+            else if(page == 1 && bn::keypad::down_pressed() && top + 6 < n_lines) { ++top; draw(); }
+            else if(page == 1 && bn::keypad::up_pressed() && top > 0) { --top; draw(); }
+            next_frame();
+        }
+        t.clear();
+        a.text.set_palette_item(default_ink);
+        wait_release();
+    }
+
     // ------------------------------------------------------------------ ekran końcowy z QR
     scene run_end(app& a)
     {
@@ -3868,6 +4000,8 @@ namespace
         int badges_got = core::check_badges(a.save, g);   // katalog, narzędzia, Osiedle, liczniki zleceń, rekord stawki
         int contracts_got = core::check_contracts(a.save);
         int gained = core::bank_xp(a.save, g);
+        bool weekly_record = g.weekly_week && core::record_weekly(a.save, g.weekly_week, g.score, won);   // wyzwanie tygodnia (#34)
+        uint32_t story_got = core::story_check(a.save, &g);   // fabuła (#35): nowe wątki SMS za kamienie milowe
         bn::sram::write(a.save);
         clear_run(a);
         play_song(song::none);
@@ -3876,6 +4010,7 @@ namespace
             core::message i1; i1.add("Wynik ").add(g.score).add("  Dośw. +").add(gained);
             core::message i2;
             if(g.daily) i2.add("Budowa dnia: ").add(daily_record ? "rekord dnia!" : "zapisana");
+            else if(g.weekly_week) i2.add("Tydzień: ").add(weekly_record ? "rekord tygodnia!" : "zapisany");
             else if(reward >= 0) i2.add("Nagroda: ").add(data::rewards[reward].name).add("!");
             else if(stake > 0) i2.add("Stawka ").add(stake).add(stake_record ? " - rekord!" : "").add(won ? ", dom!" : "");
             else if(record && prev_best > 0) i2.add("Nowy rekord! (było ").add(prev_best).add(")");
@@ -3883,6 +4018,8 @@ namespace
             phone_message(a, won ? data::story_win : data::story_lose, won ? "Odbiór" : "Budowa", i1.s, ink::dark, fit(a, i2.s, 150).c_str());
             leave(scene::end);
             if(won) { house_page(a); leave(scene::end); }   // harmonogram domu w stylu aplikacji PlanBudowlany
+            recap_pages(a, gained);   // podsumowanie budowy (#33)
+            leave(scene::end);
         }
         // Co dała ta budowa (motywacja do kolejnej próby): rekord, najbliższe zlecenie, najbliższe do kupienia w Szkoleniach.
         bn::vector<core::message, 5> motiv;
@@ -3891,6 +4028,7 @@ namespace
             if(record && prev_best > 0) m.add("Nowy rekord: ").add(g.score).add("!");
             else m.add("Rekord: ").add(int(a.save.best));
             if(daily_record) { m = core::message(); m.add("Rekord dnia: ").add(g.score).add("!"); }
+            if(weekly_record) { m = core::message(); m.add("Rekord tygodnia: ").add(g.score).add("!"); }
             motiv.push_back(m);
             int ci = core::next_contract(a.save, g);
             if(ci >= 0)
@@ -3928,7 +4066,7 @@ namespace
         a.text.generate(0, 30, won ? "ODBIÓR ZALICZONY!" : "BUDOWA WSTRZYMANA", t);
         core::message s; s.add("Wynik ").add(g.score).add("  Dośw. +").add(gained);
         a.text.generate(0, 46, s.s, t);
-        const bool ngplus = won && ! g.daily;   // budowa dnia: bez kolejnej budowy (NG+)
+        const bool ngplus = won && ! g.daily && ! g.weekly_week;   // budowa dnia / tygodnia: bez kolejnej budowy (NG+)
         const char* keys = ngplus ? "A: kolejna  START: koniec" : "START: nowa budowa";
         text_sprites rot;   // wiersz na zmianę: motywacja i klawisze
         int rot_i = -1;
@@ -3945,6 +4083,8 @@ namespace
             banner.push(rt.s, data::rewards[reward].desc);
         }
         push_achievements(banner, badges_got, contracts_got);
+        for(int i = 0; i < data::story_arc_count; ++i)   // fabuła: nowy wątek w Wiadomościach (telefon profilu, Osiedle)
+            if((story_got >> i) & 1) banner.push("Nowa wiadomość", data::story_arc[i].name);
         for(int f = 0; ; ++f)
         {
             banner.update(a);
@@ -4204,7 +4344,7 @@ namespace
                 hist.add(shown ? ", " : "").add(pd).add(".").add(pm < 10 ? "0" : "").add(pm).add(" ").add(int(a.save.daily_score[pick]));
                 ++shown;
             }
-            if(! shown) hist = core::message().add("GBA bez zegara: ustaw datę");
+            if(! shown) hist = core::message().add("SELECT: wyzwanie tygodnia");
             phone_text(a, t, list_x, row_py(5), fit(a, hist.s, phone_text_w).c_str(), ink::dim);
             ph.commit();
         };
@@ -4239,6 +4379,90 @@ namespace
                 return leave(scene::game);
             }
             if(bn::keypad::b_pressed()) { finish(); return leave(scene::title); }
+            if(bn::keypad::select_pressed()) { finish(); return leave(scene::weekly); }   // wyzwanie tygodnia z tej samej daty
+            next_frame();
+        }
+    }
+
+    // ------------------------------------------------------------------ wyzwanie tygodnia (#34, L na tytule)
+    // Tydzień z daty budowy dnia (GBA bez zegara; góra/dół = tydzień dalej / wcześniej). Seed z numeru tygodnia, zasady
+    // z listy po kolei, osobne wyniki ostatnich tygodni w profilu. A - start, SELECT - budowa dnia, B - tytuł.
+    scene run_weekly(app& a)
+    {
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
+        phone_screen ph(0);
+        ph.icon.set_visible(false);
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        page_sprites t;
+        bn::sprite_ptr cal = bn::sprite_items::menu_icons.create_sprite(14 + 8 - 120, row_py(0) + 8 - 80, 14);   // kalendarz
+        cal.set_bg_priority(1);
+        int y, m, d;
+        core::daily_date(a.save, y, m, d);
+        int week = core::weekly_number(y, m, d);
+        auto redraw = [&]() {
+            const int wi = core::weekly_index(week);
+            const core::weekly_def& wd = data::weekly[wi];
+            core::message title; title.add("Tydzień nr ").add(week);
+            phone_header(a, ph, t, title.s, "A: start");
+            phone_canvas& c = *ph.canvas;
+            int fy, fm, fd, ly, lm, ld;
+            core::civil_from_days(core::weekly_first_day(week), fy, fm, fd);
+            core::civil_from_days(core::weekly_first_day(week) + 6, ly, lm, ld);
+            core::message dm; dm.add(fd).add(".").add(fm < 10 ? "0" : "").add(fm).add(" - ").add(ld).add(".").add(lm < 10 ? "0" : "").add(lm).add(".").add(ly);
+            phone_text(a, t, list_x + 18, row_py(0), dm.s, ink::dark);
+            phone_text(a, t, 226, row_py(0), "^v", ink::dim, 1);
+            stripe(c, 1, phone_tile::stripe_late);
+            phone_text(a, t, list_x, row_py(1), fit(a, wd.name, phone_text_w).c_str(), ink::late);
+            phone_text(a, t, list_x, row_py(2), fit(a, wd.desc[0], phone_text_w).c_str(), ink::dark);
+            phone_text(a, t, list_x, row_py(3), fit(a, wd.desc[1], phone_text_w).c_str(), ink::dark);
+            core::message cl; cl.add("Zawód: ").add(data::classes[core::weekly_class(week)].name);
+            int best = core::weekly_best(a.save, week);
+            core::message bm;
+            if(best >= 0) bm.add("Wynik: ").add(best);
+            else bm.add("Bez wyniku");
+            phone_text(a, t, list_x, row_py(4), fit(a, cl.s, 120).c_str(), ink::dim);
+            const bool won_week = best >= 0 && core::weekly_won(a.save, week);
+            phone_pill(a, c, t, pill_end, row_ty(4), bm.s, won_week ? pill::done : (best >= 0 ? pill::prog : pill::gray));
+            core::message hist; hist.add("Ostatnio: ");   // inne tygodnie z profilu
+            int shown = 0;
+            for(int i = 0; i < data::weekly_history; ++i)
+                if(a.save.weekly_week[i] > 0 && a.save.weekly_week[i] != week)
+                {
+                    hist.add(shown ? ", " : "").add("t.").add(int(a.save.weekly_week[i])).add(" ").add(int(a.save.weekly_score[i]));
+                    ++shown;
+                }
+            if(! shown) hist = core::message().add("SELECT: budowa dnia");
+            phone_text(a, t, list_x, row_py(5), fit(a, hist.s, phone_text_w).c_str(), ink::dim);
+            ph.commit();
+        };
+        redraw();
+        wait_release();
+        auto finish = [&]() {
+            if(core::weekly_number(y, m, d) != week) core::civil_from_days(core::weekly_first_day(week), y, m, d);   // inny tydzień: jego poniedziałek
+            core::set_daily_date(a.save, y, m, d);   // data wspólna z budową dnia
+            bn::sram::write(a.save);
+            t.clear();
+            a.text.set_palette_item(default_ink);
+            wait_release();
+        };
+        while(true)
+        {
+            int v = bn::keypad::up_pressed() ? 1 : (bn::keypad::down_pressed() ? -1 : 0);
+            if(v && week + v >= 1 && core::weekly_first_day(week + v) <= core::days_from_civil(2099, 12, 25))
+            {
+                week += v;
+                redraw(); bn::sound_items::sfx_menu.play();
+            }
+            if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
+            {
+                finish();
+                core::start_weekly(*a.g, week);
+                core::start_run(a.save);
+                bn::sram::write(a.save);
+                return leave(scene::game);
+            }
+            if(bn::keypad::b_pressed()) { finish(); return leave(scene::title); }
+            if(bn::keypad::select_pressed()) { finish(); return leave(scene::daily); }
             next_frame();
         }
     }
@@ -4667,7 +4891,8 @@ namespace
         phone_screen ph(tab);
         bn::sprite_palette_item default_ink = a.text.palette_item();
         page_sprites t;
-        bn::vector<bn::sprite_ptr, core::max_houses> houses;
+        bn::vector<bn::sprite_ptr, core::max_houses + 8> houses;   // domy i ozdoby Osiedla
+        int arch = 0, asel = 0, atop = 0, amsg = 0;   // Osiedle: 0 domy, 1 Wiadomości (archiwum fabuły #35), 2 wątek
         const char* profile_tabs[] = { "Odznaki", "Katalog", "Osiedle", "Zespół", "Koszty" };
 
         // --- sklep (zakładka Koszty)
@@ -4777,9 +5002,57 @@ namespace
                    sub.add("Wygrane ").add(n).add("/").add(data::classes_count); }
             phone_header(a, ph, t, tab == 0 ? badge_pages[page] : (tab == 4 ? cost_pages[kpage] : profile_tabs[tab]), sub.s);
 
-            if(tab == 2)   // Osiedle: domy z wygranych budów, 6 x 2 działki
+            if(tab == 2 && arch == 1)   // Wiadomości: wątki fabuły (odblokowane kamieniami milowymi), zablokowane z podpowiedzią
             {
-                phone_text(a, t, list_x, row_py(0), "Twoje ukończone budowy", ink::dim);
+                core::message sb; sb.add(core::story_count(a.save)).add("/").add(data::story_arc_count).add("  A: czytaj");
+                phone_header(a, ph, t, "Wiadomości", sb.s);
+                for(int r = 0; r < 6 && atop + r < data::story_arc_count; ++r)
+                {
+                    const int i = atop + r;
+                    const bool unl = core::story_unlocked(a.save, i), is_sel = i == asel;
+                    if(is_sel) stripe(c, r, phone_tile::stripe_brand);
+                    if(unl)
+                    {
+                        const bool nw = core::story_unread(a.save, i);
+                        phone_text(a, t, list_x, row_py(r), fit(a, data::story_arc[i].name, pill_room(nw ? "Nowa" : "SMS")).c_str(), is_sel ? ink::brand : ink::dark);
+                        phone_pill(a, c, t, pill_end, row_ty(r), nw ? "Nowa" : "SMS", nw ? pill::brand : pill::gray);
+                    }
+                    else
+                    {
+                        phone_text(a, t, list_x, row_py(r), fit(a, is_sel ? data::story_arc[i].hint : "???", pill_room("Zablok.")).c_str(), ink::dim);
+                        phone_pill(a, c, t, pill_end, row_ty(r), "Zablok.", pill::gray);
+                    }
+                }
+                ph.commit();
+                return;
+            }
+            if(tab == 2 && arch == 2)   // wątek: SMS po SMS-ie (A dalej)
+            {
+                const core::story_thread& th = data::story_arc[asel];
+                const core::story_msg& m = th.msgs[amsg];
+                core::message sb; sb.add(amsg + 1).add("/").add(th.msgs_count).add("  B: wróć");
+                phone_header(a, ph, t, fit(a, th.name, 120).c_str(), sb.s);
+                phone_text(a, t, list_x, row_py(0), m.from, ink::dark);
+                phone_pill(a, c, t, pill_end, row_ty(0), "SMS", pill::gray);
+                c.rounded(2, row_ty(1), 26, 6, phone_tile::fill_group, phone_tile::corner_group);   // dymek wiadomości
+                for(int i = 0; i < 3; ++i) phone_text(a, t, 22, row_py(1 + i), m.lines[i], ink::dark);
+                phone_text(a, t, 226, row_py(5), amsg + 1 < th.msgs_count ? "A: dalej" : "A: lista", ink::brand, 1);
+                ph.commit();
+                return;
+            }
+            if(tab == 2)   // Osiedle: domy z wygranych budów, 6 x 2 działki, między nimi ozdoby (rosną z wygranymi)
+            {
+                core::message wm; wm.add("Wiadomości ").add(core::story_count(a.save)).add("/").add(data::story_arc_count);
+                const int unread = core::story_unread_count(a.save);
+                core::message pm; if(unread) pm.add(unread).add(" nowe"); else pm.add("A");
+                phone_text(a, t, list_x, row_py(0), wm.s, ink::dim);
+                phone_pill(a, c, t, pill_end, row_ty(0), pm.s, unread ? pill::brand : pill::gray);
+                for(int k = 0; k < core::estate_decor(a.save); ++k)   // ozdoby w przerwach między domami
+                {
+                    bn::sprite_ptr ds = bn::sprite_items::houses.create_sprite(48 + (k % 5) * 36 - 120, 64 + (k / 5) * 28 - 80, house_empty + 1 + k);
+                    ds.set_bg_priority(1);
+                    houses.push_back(ds);
+                }
                 for(int i = 0; i < core::max_houses; ++i)
                 {
                     int frame = house_empty;
@@ -4969,6 +5242,45 @@ namespace
 
         while(true)
         {
+            if(tab == 2 && arch > 0)   // Wiadomości (fabuła #35)
+            {
+                if(arch == 1)
+                {
+                    int dir = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+                    if(dir)
+                    {
+                        asel = (asel + dir + data::story_arc_count) % data::story_arc_count;
+                        if(asel < atop) atop = asel;
+                        if(asel >= atop + 6) atop = asel - 5;
+                        redraw();
+                    }
+                    if(bn::keypad::a_pressed() && core::story_unlocked(a.save, asel))
+                    {
+                        arch = 2; amsg = 0;
+                        if(core::story_unread(a.save, asel)) { core::story_mark_read(a.save, asel); bn::sram::write(a.save); }
+                        bn::sound_items::sfx_notify.play(bn::fixed(0.6));
+                        redraw();
+                    }
+                    else if(bn::keypad::b_pressed()) { arch = 0; redraw(); bn::sound_items::sfx_menu.play(); }
+                }
+                else if(bn::keypad::a_pressed())
+                {
+                    if(amsg + 1 < data::story_arc[asel].msgs_count) ++amsg; else arch = 1;
+                    redraw(); bn::sound_items::sfx_menu.play();
+                }
+                else if(bn::keypad::b_pressed()) { arch = 1; redraw(); bn::sound_items::sfx_menu.play(); }
+                next_frame();
+                continue;
+            }
+            if(tab == 2 && bn::keypad::a_pressed())   // Osiedle -> Wiadomości
+            {
+                arch = 1;
+                for(int i = 0; i < data::story_arc_count; ++i) if(core::story_unread(a.save, i)) { asel = i; break; }
+                atop = core::imax(0, core::imin(asel, data::story_arc_count - 6));
+                redraw(); bn::sound_items::sfx_menu.play();
+                wait_release();
+                continue;
+            }
             int d = (bn::keypad::r_pressed() || bn::keypad::right_pressed()) ? 1
                   : ((bn::keypad::l_pressed() || bn::keypad::left_pressed()) ? -1 : 0);
             if(d)
@@ -5075,6 +5387,7 @@ int main()
             case scene::prologue:     s = run_prologue(a); break;
             case scene::investor:     s = run_investor(a); break;
             case scene::daily:        s = run_daily(a); break;
+            case scene::weekly:       s = run_weekly(a); break;
             default: break;
         }
     }

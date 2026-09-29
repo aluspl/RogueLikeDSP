@@ -699,8 +699,44 @@ def house_frame(cls, size):
     return px
 
 
-def house_frames():   # klatka = wielkość * liczba zawodów + zawód; ostatnia = pusta działka
-    return [p for size in range(4) for cls in range(len(WORKERS)) for p in house_frame(cls, size)] + parse(EMPTY_PLOT)
+# v0.21.50 cz. 4 (#35): ozdoby Osiedla - rosną z wygranymi (data/game.json: estate.decor), klatki za pustą działką
+DECOR = [
+    [   # Lipa
+        "................", "......GGGG......", "....GGGDGGGG....", "...GGDGGGGDGG...", "..GGGGGGDGGGGG..",
+        "..GDGGGGGGGDGG..", "..GGGGDGGGGGGG..", "...GGGGGGDGGG...", "....GGDGGGGG....", "......GTTG......",
+        ".......TT.......", ".......TT.......", ".......TT.......", "......TTTT......", "................",
+        "..GGGGGGGGGGGG.."],
+    [   # Ławka Zenka
+        "................", "................", "................", "................", "................",
+        "................", "................", "................", "..KKKKKKKKKKKK..", "..KTTTTTTTTTTK..",
+        "..KKKKKKKKKKKK..", "..KTTTTTTTTTTK..", "..KKKKKKKKKKKK..", "...KgK....KgK...", "...KgK....KgK...",
+        "..GGGGGGGGGGGG.."],
+    [   # Latarnia
+        "................", "......KKKK......", ".....KYYYYK.....", ".....KYWWYK.....", ".....KYYYYK.....",
+        "......KKKK......", ".......gg.......", ".......gg.......", ".......gg.......", ".......gg.......",
+        ".......gg.......", ".......gg.......", ".......gg.......", "......gggg......", "................",
+        "..GGGGGGGGGGGG.."],
+    [   # Plac zabaw: huśtawka
+        "................", "..KKKKKKKKKKKK..", "..KRRRRRRRRRRK..", "..KKKKKKKKKKKK..", "..KBK.K..K.KBK..",
+        "..KBK.K..K.KBK..", "..KBK.K..K.KBK..", "..KBK.K..K.KBK..", "..KBKKOOOOKKBK..", "..KBK......KBK..",
+        "..KBK......KBK..", "..KBK......KBK..", "..KBK......KBK..", "..KBK......KBK..", "..KKK......KKK..",
+        "..GGGGGGGGGGGG.."],
+    [   # Tablica PlanBudowlany ("PB")
+        "................", "................", ".KKKKKKKKKKKKKK.", ".KOOOOOOOOOOOOK.",
+        ".KOOWWOOWWOOOOK.", ".KOOWOWOWOWOOOK.", ".KOOWWOOWWOOOOK.", ".KOOWOOOWOWOOOK.", ".KOOWOOOWWOOOOK.",
+        ".KOOOOOOOOOOOOK.", ".KKKKKKKKKKKKKK.", "......KgK.......", "......KgK.......", "......KgK.......", "......KgK.......",
+        "..GGGGGGGGGGGG.."],
+    [   # Fontanna
+        "................", "................", ".......CC.......", "......C..C......", ".....C.CC.C.....",
+        "......CCCC......", ".......ll.......", "....C..ll..C....", "...CC..ll..CC...", "..KKKKKKKKKKKK..",
+        "..KlCCCCCCCClK..", "..KlCCWCCCWClK..", "..KllllllllllK..", "..KKKKKKKKKKKK..", "................",
+        "..GGGGGGGGGGGG.."],
+]
+
+
+def house_frames():   # klatka = wielkość * liczba zawodów + zawód; potem pusta działka i ozdoby Osiedla
+    return ([p for size in range(4) for cls in range(len(WORKERS)) for p in house_frame(cls, size)] + parse(EMPTY_PLOT)
+            + [p for rows in DECOR for p in parse(rows)])
 
 
 # ------------------------------------------------------------------ ikony mocy do HUD (kolejność zawodów)

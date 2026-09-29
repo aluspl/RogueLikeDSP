@@ -659,7 +659,7 @@ if __name__ == "__main__":
     import pixel_art as pa
     write_bmp(os.path.join(G, "particles.bmp"), pa.particle_frames(), 8, 8 * len(pa.PARTICLES), SPR_PAL, 4)
     write_json("particles", {"type": "sprite", "height": 8})
-    write_bmp(os.path.join(G, "houses.bmp"), pa.house_frames(), 16, 16 * (4 * len(pa.WORKERS) + 1), SPR_PAL, 4)
+    write_bmp(os.path.join(G, "houses.bmp"), pa.house_frames(), 16, 16 * (4 * len(pa.WORKERS) + 1 + len(pa.DECOR)), SPR_PAL, 4)
     write_json("houses", {"type": "sprite", "height": 16})
     # osobna paleta (inaczej Butano współdzieli ją z postaciami i szarość ikony objęłaby bohatera)
     icon_pal = list(SPR_PAL); icon_pal[SK] = (0, 0, 0)   # kolor skóry nieużywany w ikonach

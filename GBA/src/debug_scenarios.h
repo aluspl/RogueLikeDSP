@@ -86,6 +86,13 @@
 //       z kluczem (B trzymane: "Ma klucz do magazynu!"); D-pad w prawo = otwarcie, 3x w prawo = skrzynia; L = mapa
 //  56 - drzwi magazynu (#32): drzwi w prawo, bez klucza (podpowiedź "potrzebny klucz"), Operator koparki nie pomoże;
 //       L = podgląd mapy ze znacznikiem magazynu; telefon -> Zadania: wiersz Magazyn
+//  57 - podsumowanie po porażce (#33): etap Dach, oś czasu 4 etapów (premie, SMS-y, magazyn, elita), bohater mokry
+//       z 2 HP obok Zwarcia; B = czekaj -> Mokry + prąd, koniec budowy: SMS, 3 strony podsumowania, baner "Nowa
+//       wiadomość" (elita, magazyn, SMS) na ekranie końcowym
+//  58 - podsumowanie po wygranej: ostatni etap z bossem, oś czasu całej budowy (L+R+SELECT = odbiór)
+//  59 - wyzwanie tygodnia (#34): data 29.09.2026 i wyniki dwóch wcześniejszych tygodni (L na tytule; A = start z zasadą)
+//  60 - fabuła i Osiedle (#35): 6 wygranych (6 domów, 4 ozdoby), część wątków odblokowana i nieprzeczytana
+//       (tytuł -> SELECT -> Osiedle -> A = Wiadomości, A = wątek)
 #include "core.h"
 #include "meta.h"
 
@@ -159,6 +166,23 @@ namespace debug_scenario
             core::record_daily(p, day - 4, 2210, false);
         }
         if(scenario == 21) { p.best = 4200; p.xp = 12; p.kills_total = 180; }
+        if(scenario == 57) { p.best = 4200; p.respect = 23; p.respect_total = 60; p.runs = 3; p.kills_total = 120; p.story = 1; }
+        if(scenario == 59)
+        {
+            core::set_daily_date(p, 2026, 9, 29);
+            const int w = core::weekly_number(2026, 9, 29);
+            core::record_weekly(p, w - 1, 2890, true);
+            core::record_weekly(p, w - 2, 1320, false);
+            p.story = 0xFFFFFFFFu >> (32 - data::story_arc_count);   // bez banera fabuły przy starcie
+        }
+        if(scenario == 60)
+        {
+            p.wins = 6; p.runs = 9; p.rewards = 6;
+            for(int i = 0; i < 6; ++i) p.houses[p.houses_count++] = uint8_t((i % data::classes_count) | ((i % 4) << 4));
+            core::catalog_add(p, data::enemy_betoniarka);
+            core::story_check(p, nullptr);
+            p.story_new = p.story & ~3u;   // dwa pierwsze przeczytane
+        }
         if(scenario == 22)
         {
             p.respect = 180; p.respect_total = 420; p.wins = 3; p.rewards = 3;
@@ -737,6 +761,38 @@ namespace debug_scenario
                 g.hero.max_hp = g.hero.hp = 60;
                 g.apply_status(core::status_effect::wet, 6);
                 place_at(g, data::enemy_zwarcie, 1, 0, 0);
+                break;
+            }
+            case 57:
+            case 58:
+            {
+                const int last = scenario == 57 ? F + 4 : data::stages_count - 1;
+                g.start_stage(last);
+                g.boons = 0;
+                for(int s = g.first_stage; s < last; ++s)
+                {
+                    g.stage_days[s] = uint16_t(14 + (s * 7) % 11);
+                    g.stage_kill_log[s] = uint8_t(5 + s % 4);
+                    g.stage_boon[s] = int8_t((s * 5) % data::boons_count);
+                    g.boons |= uint64_t(1) << g.stage_boon[s];
+                    if(s % 3 == 1) g.stage_event_log[s] = uint8_t(((s / 3) % data::choice_events_count) * 4 + s % 2);
+                }
+                g.stage_flags[g.first_stage + 1] = core::recap_secret | core::recap_elite;
+                g.stage_flags[g.first_stage + 3] = core::recap_boss | core::recap_combo | core::recap_upgrade | core::recap_synergy;
+                g.kills = 30; g.elites_killed = 2; g.combos_run = 5; g.secrets_found = 1;
+                g.best_hit = 21; g.best_hit_def = data::enemy_betoniarka; g.best_hit_crit = true;
+                g.worst_hit = { int8_t(data::enemy_betoniarka), -1, uint8_t(core::recap_kind::slam), int8_t(g.first_stage + 3), 8 };
+                g.respect = 14; g.score = 3100; g.turns = 260; g.stage_start_turn = 240;
+                if(scenario == 57)
+                {
+                    g.log_hit(data::enemy_kornik, 2, core::recap_kind::melee, 4);
+                    g.enemies_count = 0;
+                    clear_area(g, -1, -1, 1, 1);
+                    g.hero.hp = 3;
+                    g.bonus.second_chance = 0;
+                    g.apply_status(core::status_effect::wet, 6);
+                    place_at(g, data::enemy_zwarcie, 1, 0, 0);
+                }
                 break;
             }
             case 21:
