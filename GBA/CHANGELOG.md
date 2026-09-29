@@ -53,6 +53,36 @@ Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
   problemu (`gender`). Scenariusze testowe 43–51 (oferty każdej rzadkości, synergia, lista premii, elity, każda
   kombinacja, mokry bohater). Godot: te same ekrany (sceny `boon-*`, `elite-*`, `combo-*`, `help-combos`).
 
+- **Wydarzenia z wyborem (#30, cz. 3):** na etapie (nie pierwszym budowy i nie z bossem, szansa 55%) leży pole
+  z SMS-em (ikona telefonu z „!”). Wejście otwiera wiadomość, potem 2–3 odpowiedzi ze skutkami i wynik: co zaszło,
+  a co „nie tym razem”. 12 wydarzeń w danych (sekcja `choiceEvents`), bez powtórek w budowie: Betoniarka sąsiada
+  (-20 zł, ciosy +2 na etap / odmów), Tańszy dostawca (materiały +2, 30%: 2x Pleśń obok), Nadgodziny (+15 dośw.,
+  +10 zł, -4 HP / +4 HP), Znaleziony projekt (premia 1 z 3 od razu za -4 HP / +6 dośw.), Zagubiony kask (kask
+  solidny / Respekt +1 / +12 zł), Ekipa obok prosi, Automat z kawą (75%: kawa +2), Stara ostrzałka (narzędzie +1,
+  35%: -3 HP), Stal przed czasem, Szybka kontrola BHP (OBR +1 na etap / dośw. z ryzykiem), Energetyk od Marka (moc
+  gotowa), Premia za tempo (+25 zł, OBR -1 na etap). Skutki: zł, dośw., HP, max HP, materiały, ciosy / OBR do końca
+  etapu, premia 1 z 3, sprzęt, Respekt, kawa, problemy obok, stan, ulepszenie narzędzia, moc. Pole, wydarzenie
+  i los szansy pochodzą z osobnego generatora (seed budowy, etap) – ten sam seed = te same wydarzenia i wyniki.
+  Wpis w dzienniku („SMS: …”, „Odpowiedź: …”, skutki) i w telefonie (Zadania: wydarzenie z odpowiedzią).
+- **Ulepszanie narzędzia (#31):** Hurtownia ma pierwszy wiersz „Ulepsz narzędzie” – +1 obrażeń za poziom, maks. +3
+  (koszt 40/60/80 zł + 3/4/5 stali, Rabat z Respektu działa na zł; także z wydarzenia Stara ostrzałka). Przy +2
+  wybór cechy: **Przebicie** (ignoruje 2 OBR problemu), **Ostrze** (kryt +5%), **Wyważenie** (najsłabszy rzut +1).
+  Nazwa „Kielnia+2” w telefonie (Sprzęt) i rozpisce, wiersz „Ulepszenie +2: +2 obr., Przebicie OBR -2”, przebicie
+  w wierszu OBR problemu, ostrze w krycie – zakres z rozpiski = walka (test). Nowe narzędzie przy ulepszonym nie
+  zakłada się samo: okno z porównaniem ciosu i „Uwaga: ulepszenie +2 przepadnie!” (A zamieniam, B zostaję);
+  Hurtownia „Nowe narzędzie” ostrzega i też kasuje ulepszenie.
+- **Ukryte pomieszczenia (#32):** 35% etapów bez bossa ma magazyn 3x3 za **pękniętą ścianą** (otworzy ją klucz,
+  Operator koparki – wejście albo Taran – i każdy wybuch obok: wybuchowy problem, wybuch pyłu) albo **drzwiami
+  magazynu** (tylko klucz). Klucz ma jeden problem – najpierw elita (karta pod B: „Ma klucz do magazynu!”), wypada po
+  jego usunięciu; w połowie magazynów śpi elita-strażnik. W środku skrzynia: Respekt +2, +10 zł, po 1 każdego
+  materiału i sprzęt co najmniej solidny. Pęknięcie / drzwi widać na polu muru, a na podglądzie mapy (L) – znacznik
+  magazynu i skrzyni, gdy odkryte; w telefonie (Zadania) wiersz Magazyn. Bez klucza wejście w ścianę daje tylko
+  podpowiedź (bez tury). Sekcja `hiddenRooms`.
+- „Jak grać” ma 12 stron (nowe: Wydarzenia, Magazyn; sekcja `extrasHelp`, wspólna z Godotem). Skrót L+R+SELECT zalicza
+  etap od razu (problem obok schodów nie spycha już bohatera w tej samej turze). Scenariusze testowe 52–56
+  (wydarzenia, Hurtownia z ulepszeniem i cechą, zamiana ulepszonego narzędzia, pęknięta ściana z kluczem, drzwi).
+  Godot: te same ekrany (sceny `event-*`, `upgrade-*`, `tool-swap`, `secret-*`, `help-extras`).
+
 ### Balans
 Premie po etapie są mocne (bot bez nich: Normalny 1%, pełne Szkolenia 8%), więc problemy rosną z etapem: HP etapów
 budowy +4 pkt proc. za każdy kolejny etap (Fundamenty 95% … Wykończenie 168%), obrażenia +1 od Stropu i kolejne +1 od
@@ -62,22 +92,28 @@ ułatwiały grę o 10 pkt). Bot wybiera premię prostą kolejnością (obrażeni
 +20 za nową synergię) i losuje ponownie tylko za darmo przy samych zwykłych. Kawa ma znaczenie: bot pije średnio
 2,75 kawy na budowę (80% budów), bez picia kawy wygrywa 20% zamiast 30% (z pełnymi Szkoleniami 36% zamiast 52%).
 Na budowę średnio 6 kombinacji stanów i 2,8 elity (Normalny, bez meta).
+Część 3 dokłada graczowi siły (bot sam: ulepszenie +13 pkt, wydarzenia +7, magazyny +6 wygranych), więc problemy
+znów rosną: HP etapów budowy +12 pkt proc. i +3 pkt za każdy kolejny etap (Fundamenty 107% … Wykończenie 207%),
++1 obrażeń od Ścian działowych, etapy Aktu 0 +4 pkt HP, Trudny 145% HP, inwestor „Problemy +20% HP” (było +25%).
+Bot w części 3: pole wydarzenia i klucz / magazyn / skrzynia jako cel zamiast schodów, odpowiedź wg prostej wartości
+skutków, w Hurtowni jedno ulepszenie na wizytę (cecha: Przebicie), nowe narzędzie tylko gdy lepsze niż ulepszone.
+Na budowę (Normalny, bez meta): 2,2 wydarzenia, 0,8 magazynu, narzędzie +1,6; kawa 3,1 na budowę (82% budów).
 
-| Wygrane bota (300 przebiegów na zawód) | v0.21.49 | v0.21.50 (premie, elity, kombinacje) |
-|---|---|---|
-| Łatwy | 58% | 54% |
-| Normalny | 30% | 30% |
-| Trudny | 12% | 11% |
-| Normalny, pełne Szkolenia | 57% | 52% |
-| Normalny, pełne Szkolenia + pełny Respekt | 71% | 68% |
-| Normalny, pełne Szkolenia (i Respekt) + wszystkie modyfikatory | 10% | 14% |
-| Normalny bez picia kawy (bez meta / pełne Szkolenia) | 17% / 38% | 20% / 36% |
-| Normalny, pełne Szkolenia + pełny Respekt + Akt 0 (wszystkie nagrody) | 66% | 68% |
-| Normalny bez premii po etapie (bez meta / pełne Szkolenia) | – | 1% / 8% |
+| Wygrane bota (300 przebiegów na zawód) | v0.21.49 | v0.21.50 cz. 2 (premie, elity, kombinacje) | v0.21.50 cz. 3 (wydarzenia, ulepszenia, magazyn) |
+|---|---|---|---|
+| Łatwy | 58% | 54% | 53% |
+| Normalny | 30% | 30% | 32% |
+| Trudny | 12% | 11% | 10% |
+| Normalny, pełne Szkolenia | 57% | 52% | 54% |
+| Normalny, pełne Szkolenia + pełny Respekt | 71% | 68% | 70% |
+| Normalny, pełne Szkolenia (i Respekt) + wszystkie modyfikatory | 10% | 14% | 9% |
+| Normalny bez picia kawy (bez meta / pełne Szkolenia) | 17% / 38% | 20% / 36% | 22% / 40% |
+| Normalny, pełne Szkolenia + pełny Respekt + Akt 0 (wszystkie nagrody) | 66% | 68% | 66% |
+| Normalny bez premii po etapie (bez meta / pełne Szkolenia) | – | 1% / 8% | 4% / 14% |
 
 ### Zmiany
-- Nowy zapis budowy (PBRUN11) – przerwana budowa z wcześniejszej wersji nie wznowi się. Profil bez zmian (PBRL010,
-  160 bajtów; Druga oferta to 16. ranga Respektu w istniejącej tablicy).
+- Nowy zapis budowy (PBRUN12; w cz. 2 PBRUN11) – przerwana budowa z wcześniejszej wersji nie wznowi się. Profil bez
+  zmian (PBRL010, 160 bajtów; Druga oferta to 16. ranga Respektu w istniejącej tablicy).
 - Karta etapu pokazuje wyższy procent HP problemów na późnych etapach; 3 nowe rady kierownika (premie, mokry + prąd,
   złota ramka elity).
 

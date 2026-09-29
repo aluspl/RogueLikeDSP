@@ -10,7 +10,9 @@ narzędzia, sprzęt, Akt 0). Przy pierwszym uruchomieniu Kierownik Marek oprowad
 Broń ma rozpiskę obrażeń jak w Baldur's Gate 3: cios od-do, kryt i wpływ statystyk, Szkoleń, Respektu i sprzętu
 (wybór zawodu, telefon > Sprzęt, porównanie przy zmianie, karta problemu). Po każdym etapie wybierasz 1 z 3 premii
 (rzadkość, znaczniki i synergie jak w Hadesie), część problemów to elity ze złotą ramką i cechą, a stany się łączą:
-mokry + prąd = porażenie, pył + iskra = wybuch, zamróz + uderzenie = pęknięcie.
+mokry + prąd = porażenie, pył + iskra = wybuch, zamróz + uderzenie = pęknięcie. Na placu czekają SMS-y z wyborem (ryzyko
+albo zysk: pożyczona betoniarka, tańszy dostawca, nadgodziny), narzędzie ulepszasz w Hurtowni do „Kielnia+3” z cechą,
+a za pękniętą ścianą albo drzwiami bywa ukryty magazyn ze skrzynią – klucz ma jeden z problemów.
 
 Projekt zaczął się w 2017 roku jako LifeLike (Unity, konkurs DSP2017), a w 2026 wrócił w dwóch nowych wersjach.
 

@@ -24,6 +24,9 @@ własne, np. Woda gruntowa, Krzywy mur, Przeciekająca papa, Zapowietrzenie, Pop
 | B (tytuł) | ekran „Jak grać” |
 | R (tytuł) | codzienna budowa (data strzałkami, A – start) |
 | góra/dół, A, SELECT (premia po etapie) | wybór 1 z 3 premii, A – biorę, SELECT – losuj jeszcze raz (raz na budowę za zł, Druga oferta z Respektu za darmo) |
+| A, góra/dół (wydarzenie z SMS-em) | A – odpowiedz, góra/dół – odpowiedź, A – wybieram, A – dalej po wyniku |
+| góra/dół, A (cecha narzędzia przy +2) | Przebicie / Ostrze / Wyważenie, A – biorę |
+| A / B (nowe narzędzie przy ulepszonym) | A – zamieniam (ulepszenie przepada), B – zostaję |
 | lewo/prawo (harmonogram) | wybór ścieżki na kolejny etap, A – dalej |
 | L (przytrzymaj) | podgląd odkrytej mapy etapu |
 | R | moc zawodu (Odprawa, Ścianka, Seria, Łańcuch, Zawór, Wirówka); ikona w prawym górnym rogu: szara z odliczaniem = ładuje się, pulsuje z „R” = gotowa; ranga II od 3. i III od 5. poziomu postaci |
@@ -85,8 +88,8 @@ Później po jednym dymku „Nowość”: pierwszy Respekt, codzienna budowa, tr
 Na wyborze zawodu START otwiera opis statystyk (wartość i co daje), A zmienia stronę na wzory; w telefonie zakładka
 Start → A pokazuje, skąd są premie. Wzory: obrażenia = rzut broni + statystyka broni / 2 + premie - obrona wroga / 2
 (SIŁ/ZRĘ/INT: +1 obrażeń co 2 pkt, tylko statystyka broni); OBR: -1 otrzymanych obrażeń co 2 pkt; SZCZ: kryt 5% +3%/pkt,
-unik 2%/pkt (maks. 20%), łupy +2% szansy/pkt i lepsza jakość. „Jak grać” ma 10 stron (5 – akty i problemy, 6 – statystyki,
-7 – obrażenia, 8–9 – kombinacje stanów, 10 – premie i elity).
+unik 2%/pkt (maks. 20%), łupy +2% szansy/pkt i lepsza jakość. „Jak grać” ma 12 stron (5 – akty i problemy, 6 – statystyki,
+7 – obrażenia, 8–9 – kombinacje stanów, 10 – premie i elity, 11 – wydarzenia i ulepszenia, 12 – magazyn).
 
 ## Rozpiska obrażeń broni (jak w BG3)
 Zakres ciosu od-do, kryt i skąd się biorą – te same wzory co walka (`dmg_breakdown`, `weapon_breakdown`,
@@ -122,6 +125,26 @@ Zaworu, Węża ogrodowego; prąd z Próbnika, Łańcucha, premii), **pył + iskr
 zapylone; iskra ze Szlifierki, Pistoletu do kotew, Wirówki), **zamróz + uderzenie** = pęknięcie (cios wręcz
 w zmrożony +50%; Mróz, Suchy lód). Na bohaterze: mokry (ikona w HUD) + cios prądu = -2 HP i stracona tura, wybuch
 w pyle +2. Ikony stanów nad problemami, baner „Mokry + prąd!”, Jak grać strony 8–10.
+
+## Wydarzenia z wyborem (#30)
+Na etapie (nie pierwszym budowy i nie z bossem, 55%) leży pole z SMS-em (telefon z „!”). Wejście: wiadomość od Anny,
+Marka albo sąsiada Zenka, potem 2–3 odpowiedzi ze skutkami (np. „Pożycz za 20 zł – -20 zł, ciosy +2 na etap”,
+„Bierz tanio – materiały +2, 30%: 2x Pleśń obok”) i wynik: co zaszło, a co „nie tym razem”. 12 wydarzeń bez powtórek
+w budowie (sekcja `choiceEvents`: `choices` z `effects` – `effect`, `value`, opcjonalnie `chance`, `material`,
+`enemy`, `status`, `slot`). Skutki do końca etapu (ciosy, OBR) są w rozpisce („Z budowy: … wydarzenie +2”); premia
+z projektu – od razu ekran premii. Telefon > Zadania: wydarzenie z odpowiedzią. Osobny generator (seed + etap).
+
+## Ulepszanie narzędzia (#31)
+Hurtownia: „Ulepsz narzędzie” (sekcja `toolUpgrade`) – +1 obrażeń za poziom do +3, koszt zł + stal (opis: „Kielnia+1
+-> +2: 60 zł + 4 Stal”), od +2 cecha: Przebicie (OBR problemu -2), Ostrze (kryt +5%), Wyważenie (najsłabszy rzut +1).
+Nazwa „Kielnia+2” w Sprzęcie i rozpisce (wiersz Ulepszenie). Nowe narzędzie przy ulepszonym – okno porównania
+z ostrzeżeniem, że ulepszenie przepadnie; „Nowe narzędzie” w Hurtowni też ostrzega.
+
+## Ukryte pomieszczenia (#32)
+Część etapów bez bossa (35%, sekcja `hiddenRooms`) ma magazyn 3x3 za pękniętą ścianą (klucz, Operator koparki,
+Taran, wybuch obok) albo drzwiami (tylko klucz). Klucz ma jeden problem (najpierw elita – karta pod B: „Ma klucz do
+magazynu!”), wypada po jego usunięciu. W środku skrzynia (Respekt, zł, materiały, sprzęt solidny+), czasem śpiąca
+elita. Pęknięcie / drzwi widać na polu muru, podgląd mapy (L) ma znacznik magazynu i skrzyni; Zadania – wiersz Magazyn.
 
 ## Akty i bossowie
 Etapy są pogrupowane w akty (`data/game.json`: `acts`, pole `act` etapu; akt I 4 etapy, akt II 3, akt III 3); każdy akt kończy się bossem:
@@ -267,7 +290,8 @@ narzędzia i sprzęt (28), strzelcy (29), podział i wybuch (30), łatanie, wzro
 (32), błoto (33), porywy (34), pył (35), pełny Katalog (36), Akt 0: pieczątki (37), Decyzja odmowna i Odwołanie (38),
 samouczek menu (39), dymki nowości (40), nagroda Akt 0 (41), rozpiska obrażeń (42), premia po etapie – zwykłe,
 rzadkie, legendarne (43–45), lista premii w telefonie (46), elity (47), mokry + prąd (48), pył + iskra (49),
-zamróz + uderzenie (50), mokry bohater + prąd (51)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
+zamróz + uderzenie (50), mokry bohater + prąd (51), wydarzenia z wyborem (52), Hurtownia z ulepszeniem i cechą (53),
+zamiana ulepszonego narzędzia (54), pęknięta ściana z kluczem i skrzynia (55), drzwi magazynu (56)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
 ```bash
 make TARGET=scn1 BUILD=build_scn1 USERFLAGS="-DPB_SCENARIO=1" BUTANO_PATH=...
 ROM=scn1.gba tools/playtest/run.sh skrypt.txt /tmp/zrzuty --fresh
@@ -283,7 +307,8 @@ data/game.json        zawody, narzędzia, wrogowie, etapy (źródło prawdy)
 tools/gen_data.py     JSON -> include/game_data.h
 tools/make_assets.py  proceduralne grafiki: font PL 8x16, sprite'y, kafelki+palety etapów, tytuł, ekran z QR
 assets_src/pb_logo.svg  znak PlanBudowlany
-include/core.h        logika gry (czyste C++, bez Butano) - testowalna na PC; rozpiska obrażeń broni (dmg_breakdown)
+include/core.h        logika gry (czyste C++, bez Butano) - testowalna na PC; rozpiska obrażeń broni (dmg_breakdown);
+                      wydarzenia z wyborem, ulepszanie narzędzia, magazyn (v0.21.50 cz. 3)
 include/meta.h        profil SRAM (v10), samouczek menu, Respekt, nagrody za odbiór, codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
 src/main.cpp          warstwa GBA: sceny, mapa, kamera, HUD, SRAM
 ```
