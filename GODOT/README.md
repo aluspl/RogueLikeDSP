@@ -4,12 +4,24 @@ Wersja Godot gry z demo GBA (`../GBA`): roguelike budowlany, w którym etapy bud
 a wrogami są *problemy budowy*. Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KONCEPCJA.md)
 (telefon z aplikacją PlanBudowlany jako interfejs, oprawa 2.5D – kolejne kamienie milowe).
 
-**Stan: zgodny z GBA v0.21.50 cz. 4 (rdzeń i test złoty), wcześniej v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
+**Stan: zgodny z GBA v0.21.51 (rdzeń i test złoty; wcześniej v0.21.50 cz. 4), v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
 z pieczątkami i Decyzją odmowną, samouczek menu, profil v10; wcześniej 10 etapów, 20 nowych problemów
 z zachowaniami, mechaniki aktów, opis statystyk; Respekt za etapy i sklep Respektu,
 nagrody za odbiór – Młot udarowy, Pistolet do kotew, buty, pas, zawody Dekarz, Tynkarz, Operator koparki – nowy balans
 Szkoleń, profil v8; wcześniej wybór ścieżki, materiały, codzienna budowa, pogoda, brygada, tryb inwestora);
 oprawa (grafika, font, dźwięk, telefon, wybór zawodu) jak w GBA.
+
+Nowe w v0.21.51 (poprawki po graniu na iPhonie): **autokafle muru (#36)** – eksport generuje dla palety każdego etapu
+wierzch masy muru, lico i 6 nakładek (krawędź wierzchu góra / lewa / prawa, końce lica, róg wewnętrzny), `MapLayer`
+dobiera je wg sąsiadów (mur z murem poniżej = ciemny wierzch bez pasów, z podłogą poniżej = lico z wzorem), `FogLayer`
+ma 4 teksele na pole i miękko wygasza skraj odkrytej części w ciemność (bez schodków); **błoto (#37)** co 14. pole
+(dane) jako płaska mokra plama z połyskiem (`fx/mud.png`, 3 warianty); HUD w wąskim pionie: „Etap 2/10, Normalny”
+i pełna nazwa etapu w drugim rzędzie; **spójne sterowanie (#38)**: `PageAction` ma rolę (główny / powrót / zwykły),
+`PhoneView` rysuje główny przycisk zawsze po prawej, powrót po lewej (jeden przycisk – prawa połowa), `InputCmd.IsConfirm`
+(A, Enter) i `IsBack` (B, Esc) w oknach, **blokada wejścia** `ScreenFlow.InputLocked` (0,4 s po otwarciu okna i w czasie
+wjazdu telefonu – Main połyka wciśnięcia i dotknięcia), zamiana ulepszonego narzędzia przez zaznaczenie (domyślnie
+„Zostaję”); Jak grać – wiersz „Okna”. Test dymny: A / Enter / stuknięcie w kartę tuż po otwarciu premii nic nie robi,
+po blokadzie pierwsze stuknięcie tylko zaznacza; A przy zamianie narzędzia bez zaznaczenia zostawia ulepszenie.
 
 Nowe w v0.21.50 (rozpiska obrażeń broni #26, jak w BG3): rdzeń `DmgBreakdown` / `Game.WeaponBreakdown` / `EnemyHit`
 / `DamageHelp` (port 1:1 z `core.h`, testy: zakres = walka na tysiącach rzutów), warstwa `Gfx/DamageRows` (te same
@@ -172,8 +184,10 @@ wygranej (dom z Osiedla, daty, dni, koszty i link planbudowlany.online), wyraźn
 | START: menu akcji (strzałka wybiera, ta sama strzałka / A wykonuje, Enter/B zamyka) | Enter | Start | |
 | SELECT: telefon (zakładki: Q/E albo ←/→, zamknięcie: Tab/Esc/Z) | Tab | Select | |
 | L: podgląd mapy etapu (dowolny klawisz wraca) | M | L3 | |
-| Paczka sprzętu: A zakładam / B zostawiam | Spacja / Z | A / B | |
-| Dalej (wiadomości, harmonogram, Hurtownia) | Enter / Spacja | Start / A | |
+| Okna (v0.21.51, wszędzie tak samo): wybierz / dalej – wróć / zostaw | Spacja, Enter – Z, Esc | A, Start – B | przycisk po prawej – po lewej |
+| Paczka sprzętu: A zakładam / B zostawiam | Spacja, Enter / Z, Esc | A / B | |
+| Dalej (wiadomości, harmonogram); Hurtownia: kup zaznaczone / dalej | Enter / Spacja; Z / Esc = dalej z Hurtowni | Start / A; B | |
+| Nowe narzędzie przy ulepszonym: zaznacz / zatwierdź / zostaję | strzałki, Spacja/Enter, Z/Esc | D-pad, A, B | wiersz, „Wybierz”, „Zostaję” |
 | Powiadomienie push: otwórz jego zakładkę w telefonie | | | lewy klik / dotknięcie |
 | Prolog: pomiń | Spacja / Enter | A / Start | klik |
 | Tytuł: menu (Nowa budowa, Profil, Szkolenia, Jak grać) | ↑/↓ + Enter | D-pad + Start | |
@@ -184,7 +198,7 @@ wygranej (dom z Osiedla, daty, dni, koszty i link planbudowlany.online), wyraźn
 | Harmonogram: wybór ścieżki kolejnego etapu | ←/→ (↑/↓), Enter | D-pad, Start | dotknięcie gałęzi |
 | Naprawy (telefon: Sprzęt → Brygada i naprawy, Spacja) | Spacja | A | dotknięcie |
 | Codzienna budowa (menu tytułu): start / wyślij wynik / wróć | Spacja, Tab, Esc | A, Select, B | przyciski |
-| Harmonogram domu po wygranej: planbudowlany.online / dalej | Spacja / Enter | A / Start | przyciski |
+| Harmonogram domu po wygranej: planbudowlany.online / dalej | Tab / Spacja, Enter | Select / A, Start | przyciski |
 | Szkolenia (zakładka Koszty w telefonie profilu, Spacja kupuje) | K | Y | |
 | Opis statystyk na wyborze zawodu (dymek: mysz nad statystyką) | I | R3 | „i” na karcie |
 | Opis statystyk w trakcie budowy (telefon: Start) | Spacja | A | „Opis statystyk” |
@@ -326,7 +340,7 @@ z cechami, dziennik bajt po bajcie, wydarzenie na placu, liczniki zleceń, staty
 (pola i cały zapis bajt po bajcie jak w SRAM).
 `GoldenTests` odtwarza to samo w C# i porównuje pole po polu.
 
-Odtworzenie plików (z tej samej wersji nagłówków GBA co `golden/game.json`; obecnie migawka v0.21.49 cz. 2 – 10 etapów,
+Odtworzenie plików (z tej samej wersji nagłówków GBA co `golden/game.json`; obecnie migawka v0.21.51 (wcześniej v0.21.49 cz. 2) – 10 etapów,
 zachowania problemów, mechaniki aktów, bot omija błoto i czerwone pola wybuchu – 37 przebiegów (w tym nowe zawody, pełny Respekt, nagrody za odbiór, Druga szansa) – bot „smart”
 wzywa też brygadę, dwa przebiegi z trybem inwestora,
 np. `git show d02ba811:GBA/...` rozpakowane do osobnego katalogu `<gba_v43>`):
