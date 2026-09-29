@@ -9,11 +9,12 @@ namespace core
 {
     constexpr int max_upgrades = 8;
     static_assert(data::upgrades_count <= max_upgrades);
-    constexpr int max_classes = 12;       // zawody 0-7: bitmaska classes (Szkolenia), 8-11: tylko z nagród za odbiór
-    constexpr int max_respect = 16;
+    constexpr int max_classes = 12;       // zawody 0-7: bitmaska classes (Szkolenia), 8-11: z nagród za odbiór i sekretnych zleceń
+    constexpr int max_respect = 19;       // 16 w respect_ranks + 3 w respect_ranks_hi (v12)
     static_assert(data::classes_count <= max_classes && data::respect_count <= max_respect && data::rewards_count <= 255);
 
-    constexpr char profile_magic[8] = "PBRL011";
+    constexpr char profile_magic[8] = "PBRL012";
+    constexpr char profile_magic_v11[8] = "PBRL011";
     constexpr char profile_magic_v10[8] = "PBRL010";
     constexpr char profile_magic_v9[8] = "PBRL009";
     constexpr char profile_magic_v8[8] = "PBRL008";
@@ -33,6 +34,8 @@ namespace core
     constexpr int profile_v8_size = 152;  // v9 = v8 + katalog usterek 16-47 (nowe problemy etapów)
     constexpr int profile_v9_size = 156;  // v10 = v9 + samouczek menu (#25): obejrzane dymki
     constexpr int profile_v10_size = 160; // v11 = v10 + wyzwania tygodnia (#34) i fabuła odkrywana z budowami (#35)
+    constexpr int profile_v11_size = 188; // v12 = v11 + sekretne zlecenia (#39), wygląd, Respekt 16-18
+    static_assert(data::secrets_count <= 16 && data::cosmetics_count <= 8);
     constexpr int weekly_slots = 3;
     static_assert(data::weekly_history <= weekly_slots && data::story_arc_count <= 32);
     constexpr int daily_slots = 5;
@@ -94,7 +97,7 @@ namespace core
         uint16_t run_respect;          // ile Respektu bieżącej budowy już przeniesiono (znak wodny jak run_kills)
         uint8_t rewards;               // odblokowane nagrody za odbiór (pierwsze N z data::rewards)
         uint8_t class_wins_hi;         // zawody 8-15, którymi wygrano (dalszy ciąg class_wins)
-        uint8_t respect_ranks[max_respect];   // kupione rangi Respektu
+        uint8_t respect_ranks[16];     // kupione rangi Respektu 0-15
         uint8_t best_stake_hi[4];      // rekord stawki zawodów 8-11
         // --- v9: katalog usterek - rodzaje problemów 16-47 (dalszy ciąg catalog)
         uint32_t catalog_hi;
@@ -108,6 +111,11 @@ namespace core
         int32_t weekly_score[weekly_slots];
         uint32_t story;                // odblokowane wątki (bity data::story_arc)
         uint32_t story_new;            // jeszcze nieprzeczytane
+        // --- v12: sekretne zlecenia (#39) - wykonane i jeszcze nieogłoszone (dymek "Nowość"), wybrany wygląd, Respekt 16-18
+        uint16_t secrets;              // wykonane (bity data::secrets)
+        uint16_t secrets_new;          // wykonane, dymek na tytule jeszcze nie pokazany
+        uint8_t cosmetic;              // wybrany wygląd (bity data::cosmetics; tylko odblokowane działają)
+        uint8_t respect_ranks_hi[3];   // kupione rangi Respektu 16-18 (dalszy ciąg respect_ranks)
     };
     static_assert(offsetof(profile, badges) == profile_v2_size);
     static_assert(offsetof(profile, kills_total) == profile_v3_size);
@@ -116,7 +124,8 @@ namespace core
     static_assert(offsetof(profile, daily_d) == profile_v6_size && offsetof(profile, daily_score) == 104);
     static_assert(offsetof(profile, respect) == profile_v7_size && offsetof(profile, respect_ranks) == 132);
     static_assert(offsetof(profile, catalog_hi) == profile_v8_size && offsetof(profile, tutorial) == profile_v9_size);
-    static_assert(offsetof(profile, weekly_week) == profile_v10_size && offsetof(profile, weekly_score) == 168 && sizeof(profile) == 188);
+    static_assert(offsetof(profile, weekly_week) == profile_v10_size && offsetof(profile, weekly_score) == 168);
+    static_assert(offsetof(profile, secrets) == profile_v11_size && offsetof(profile, respect_ranks_hi) == 193 && sizeof(profile) == 196);
 
     // Katalog usterek: rodzaje 0-15 w catalog, 16-47 w catalog_hi.
     inline bool catalog_has(const profile& p, int d) { return d < 16 ? (p.catalog >> d) & 1 : (p.catalog_hi >> (d - 16)) & 1; }
@@ -171,6 +180,7 @@ namespace core
         else p.class_wins_hi = uint8_t(p.class_wins_hi | (1u << (c - 8)));
     }
     inline int classes_won(const profile& p) { int n = 0; for(int c = 0; c < data::classes_count; ++c) n += class_won(p, c); return n; }
+    inline int open_classes_won(const profile& p) { int n = 0; for(int c = 0; c < data::open_classes_count; ++c) n += class_won(p, c); return n; }
     inline int best_stake(const profile& p, int c) { return c < 8 ? p.best_stake[c] : p.best_stake_hi[c - 8]; }
     inline void set_best_stake(profile& p, int c, int v) { (c < 8 ? p.best_stake[c] : p.best_stake_hi[c - 8]) = uint8_t(v); }
 
@@ -221,17 +231,27 @@ namespace core
 
     inline void migrate_v10(profile& p);
     inline void migrate_v11(profile& p);
+    inline void migrate_v12(profile& p);
     inline int next_unlock(const profile& p, int& kind, int& index);
 
     inline bool profile_fix(profile& p)
     {
         if(std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0) return clamp_levels(p);
+        if(std::memcmp(p.magic, profile_magic_v11, sizeof p.magic) == 0)   // v11 -> v12: sekretne zlecenia z tego, co już widać w profilu
+        {
+            std::memset(reinterpret_cast<char*>(&p) + profile_v11_size, 0, sizeof p - profile_v11_size);
+            std::memcpy(p.magic, profile_magic, sizeof p.magic);
+            clamp_levels(p);
+            migrate_v12(p);
+            return true;
+        }
         if(std::memcmp(p.magic, profile_magic_v10, sizeof p.magic) == 0)   // v10 -> v11: wyzwania tygodnia i fabuła od zera
         {
             std::memset(reinterpret_cast<char*>(&p) + profile_v10_size, 0, sizeof p - profile_v10_size);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             clamp_levels(p);
             migrate_v11(p);
+            migrate_v12(p);
             return true;
         }
         bool v9 = std::memcmp(p.magic, profile_magic_v9, sizeof p.magic) == 0;
@@ -243,6 +263,7 @@ namespace core
             clamp_levels(p);
             migrate_v10(p);
             migrate_v11(p);
+            migrate_v12(p);
             return true;
         }
         // v7/v6/v5/v4/v3/v2 -> v9: stare pola zostają, nowe od zera; bez wybranej pamiątki - pierwsza odblokowana
@@ -261,6 +282,7 @@ namespace core
             migrate_v8(p);
             migrate_v10(p);
             migrate_v11(p);
+            migrate_v12(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v1, sizeof p.magic) == 0)
@@ -271,6 +293,7 @@ namespace core
             migrate_v8(p);
             migrate_v10(p);
             migrate_v11(p);
+            migrate_v12(p);
             return true;
         }
         profile_reset(p);
@@ -288,8 +311,8 @@ namespace core
     // Pierwsze uruchomienie: dymki po kolei na tytule i wyborze zawodu; potem jeden dymek przy pierwszym odblokowaniu
     // (Respekt, codzienna budowa, tryb inwestora, Akt 0, nowy zawód). "Pokaż samouczek jeszcze raz" w Jak grać.
     enum tutorial_flag : uint16_t { tut_title = 1, tut_class = 2, tut_respect = 4, tut_daily = 8, tut_investor = 16, tut_act0 = 32 };
-    enum tutorial_unlock : int { unlock_respect, unlock_daily, unlock_investor, unlock_act0, unlock_class };   // = data::tutorial_unlocks
-    static_assert(data::tutorial_unlocks_count == 5);
+    enum tutorial_unlock : int { unlock_respect, unlock_daily, unlock_investor, unlock_act0, unlock_class, unlock_secret };   // = data::tutorial_unlocks
+    static_assert(data::tutorial_unlocks_count == 6);
 
     inline bool class_reward(int c);
     inline bool class_unlocked(const profile& p, int c);
@@ -305,7 +328,8 @@ namespace core
         const tutorial_step& t = data::tutorial_steps[i];
         return (godot || ! t.godot_only) && (! t.needs_investor || investor_unlocked(p));
     }
-    // Dymek odblokowania do pokazania na ekranie (-1 = brak); cls = nowy zawód z nagrody (unlock_class).
+    // Dymek odblokowania do pokazania na ekranie (-1 = brak); cls = nowy zawód z nagrody (unlock_class) albo wykonane
+    // sekretne zlecenie (unlock_secret, v0.21.51 cz. 2).
     inline int pending_unlock(const profile& p, int screen, int& cls)
     {
         cls = -1;
@@ -315,6 +339,7 @@ namespace core
             if(p.respect_total > 0 && ! (p.tutorial & tut_respect)) return unlock_respect;
             if(p.runs > 0 && ! (p.tutorial & tut_daily)) return unlock_daily;
             if(act0_unlocked(p) && ! (p.tutorial & tut_act0)) return unlock_act0;
+            for(int i = 0; i < data::secrets_count; ++i) if((p.secrets_new >> i) & 1) { cls = i; return unlock_secret; }
             return -1;
         }
         if(investor_unlocked(p) && ! (p.tutorial & tut_investor)) return unlock_investor;
@@ -327,12 +352,35 @@ namespace core
         static constexpr uint16_t bits[4] = { tut_respect, tut_daily, tut_investor, tut_act0 };
         if(u >= 0 && u < 4) p.tutorial = uint16_t(p.tutorial | bits[u]);
         if(u == unlock_class && cls >= 0) p.classes_seen = uint16_t(p.classes_seen | (1u << cls));
+        if(u == unlock_secret && cls >= 0) p.secrets_new = uint16_t(p.secrets_new & ~(1u << cls));
     }
 
-    // Zawód: startowy / kupiony w Szkoleniach (bitmaska) albo z nagrody za odbiór.
-    inline bool class_reward(int c) { return (data::reward_classes_mask >> c) & 1; }
+    // ------------------------------------------------------------------ sekretne zlecenia (#39, v0.21.51 cz. 2)
+    inline bool secret_done(const profile& p, int i) { return (p.secrets >> i) & 1; }
+    // Nagroda z wykonanego sekretnego zlecenia (zawód, narzędzie, wygląd, Respekt).
+    inline bool secret_owned(const profile& p, secret_reward k, int index)
+    {
+        for(int i = 0; i < data::secrets_count; ++i)
+            if(data::secrets[i].reward == k && data::secrets[i].index == index && secret_done(p, i)) return true;
+        return false;
+    }
+    // Sekretne zlecenie, które daje tę nagrodę (-1 = żadne).
+    inline int secret_of(secret_reward k, int index)
+    {
+        for(int i = 0; i < data::secrets_count; ++i) if(data::secrets[i].reward == k && data::secrets[i].index == index) return i;
+        return -1;
+    }
+    inline bool cosmetic_unlocked(const profile& p, int k) { return k >= 0 && secret_owned(p, secret_reward::cosmetic, k); }
+    // Wygląd na budowie: wybrany i odblokowany (kask w paski - wybór zawodu; złota kielnia - zawsze po odblokowaniu).
+    inline bool cosmetic_on(const profile& p, int k) { return cosmetic_unlocked(p, k) && (k == data::cosmetic_gold || ((p.cosmetic >> k) & 1)); }
+    inline void toggle_cosmetic(profile& p, int k) { if(cosmetic_unlocked(p, k)) p.cosmetic = uint8_t(p.cosmetic ^ (1u << k)); }
+
+    // Zawód: startowy / kupiony w Szkoleniach (bitmaska), z nagrody za odbiór albo z sekretnego zlecenia.
+    inline bool class_secret(int c) { return (data::secret_classes_mask >> c) & 1; }
+    inline bool class_reward(int c) { return ((data::reward_classes_mask | data::secret_classes_mask) >> c) & 1; }   // nie na sprzedaż
     inline bool class_unlocked(const profile& p, int c)
     {
+        if(class_secret(c)) return secret_owned(p, secret_reward::cls, c);
         return class_reward(c) ? reward_unlocked(p, reward_kind::cls, c) : (p.classes & (1u << c)) != 0;
     }
     inline bool difficulty_unlocked(const profile& p, int d) { return d < data::difficulties_count - 1 || p.hard; }
@@ -375,7 +423,11 @@ namespace core
     inline int tools_mask(const profile& p)
     {
         int m = p.tools | data::start_tools_mask;
-        for(int i = 0; i < data::tools_count; ++i) if(data::tools[i].reward) m = reward_unlocked(p, reward_kind::tool, i) ? m | (1 << i) : m & ~(1 << i);
+        for(int i = 0; i < data::tools_count; ++i)
+        {
+            if(data::tools[i].reward) m = reward_unlocked(p, reward_kind::tool, i) ? m | (1 << i) : m & ~(1 << i);
+            if(data::tools[i].secret) m = secret_owned(p, secret_reward::tool, i) ? m | (1 << i) : m & ~(1 << i);
+        }
         return m;
     }
     inline bool tool_unlocked(const profile& p, int i) { return (tools_mask(p) >> i) & 1; }
@@ -389,7 +441,7 @@ namespace core
 
     inline bool buy_tool(profile& p, int i)
     {
-        if(data::tools[i].reward || tool_unlocked(p, i) || p.xp < data::tools[i].cost) return false;
+        if(data::tools[i].reward || data::tools[i].secret || tool_unlocked(p, i) || p.xp < data::tools[i].cost) return false;
         p.xp -= data::tools[i].cost; p.tools = uint8_t(p.tools | (1u << i));
         return true;
     }
@@ -463,7 +515,11 @@ namespace core
     }
 
     // ------------------------------------------------------------------ Respekt (telefon profilu, strona Respekt)
-    inline int respect_rank(const profile& p, int i) { return imin(p.respect_ranks[i], data::respect[i].ranks); }
+    inline uint8_t respect_slot(const profile& p, int i) { return i < 16 ? p.respect_ranks[i] : p.respect_ranks_hi[i - 16]; }
+    inline void set_respect_rank(profile& p, int i, int r) { (i < 16 ? p.respect_ranks[i] : p.respect_ranks_hi[i - 16]) = uint8_t(r); }
+    // Ranga z sekretnego zlecenia (Zaprawiony w boju) - dopiero po jego wykonaniu.
+    inline bool respect_unlocked(const profile& p, int i) { return data::respect[i].secret < 0 || secret_done(p, data::respect[i].secret); }
+    inline int respect_rank(const profile& p, int i) { return imin(respect_slot(p, i), data::respect[i].ranks); }
     // Koszt kolejnej rangi; -1 = maksymalna.
     inline int respect_cost(const profile& p, int i)
     {
@@ -473,8 +529,8 @@ namespace core
     inline bool buy_respect(profile& p, int i)
     {
         int c = respect_cost(p, i);
-        if(c < 0 || p.respect < c) return false;
-        p.respect = uint16_t(p.respect - c); ++p.respect_ranks[i];
+        if(c < 0 || p.respect < c || ! respect_unlocked(p, i)) return false;
+        p.respect = uint16_t(p.respect - c); set_respect_rank(p, i, respect_slot(p, i) + 1);
         return true;
     }
     // Wartość kupionej rangi (0 = nic nie kupiono).
@@ -706,14 +762,14 @@ namespace core
         record_run(p, g);
         bool cleared = g.st == status::stage_clear || g.st == status::won;
         bool won = g.st == status::won;
-        int all_tools = (1 << data::tools_count) - 1;
+        int all_tools = ((1 << data::tools_count) - 1) & ~data::secret_tools_mask;   // sekretne narzędzia się nie liczą
         bool cond[16] = {};
         cond[data::badge_bez_usterek] = cleared && g.stage_damage == 0;
         cond[data::badge_przed_terminem] = won && g.turns - g.stage_start_turn <= 150;
         cond[data::badge_seryjny] = g.stage_kills >= 8;
         cond[data::badge_zawodowiec] = g.hero_level >= data::max_hero_level;
         cond[data::badge_twardziel] = won && g.diff == data::difficulties_count - 1;
-        cond[data::badge_pelny_zespol] = classes_won(p) == data::classes_count;
+        cond[data::badge_pelny_zespol] = open_classes_won(p) == data::open_classes_count;   // zawody z sekretów się nie liczą
         cond[data::badge_kolekcjoner] = (p.tools_found & all_tools) == all_tools;
         cond[data::badge_katalog] = catalog_count(p) == data::enemies_count;
         cond[data::badge_osiedle] = p.houses_count >= 5;
@@ -783,7 +839,7 @@ namespace core
     }
 
     // Zawód dnia i modyfikatory dnia (tryb inwestora) z seeda - dla wszystkich takie same.
-    inline int daily_class(uint32_t seed) { return int(seed % uint32_t(data::classes_count)); }
+    inline int daily_class(uint32_t seed) { return int(seed % uint32_t(data::open_classes_count)); }   // bez zawodów z sekretów
     inline int daily_investor(uint32_t seed)
     {
         int mask = 0;
@@ -982,6 +1038,44 @@ namespace core
     // v10 -> v11: wątki za to, co już osiągnięte (liczniki, bossowie z Katalogu, Akt 0) - czekają jako nowe.
     inline void migrate_v11(profile& p) { p.story = 0; p.story_new = 0; story_check(p, nullptr); }
 
+    // ------------------------------------------------------------------ sekretne zlecenia (#39): warunki i sprawdzanie
+    // g = nullptr: tylko profil (migracja v11 -> v12: np. wygrane każdym zawodem); reszta liczy się w budowie.
+    inline bool secret_condition(const profile& p, const game* g, int i)
+    {
+        const secret_def& sd = data::secrets[i];
+        const bool won = g && g->st == status::won;
+        switch(sd.kind)
+        {
+            case secret_kind::no_coffee_win: return won && g->coffee_drunk == 0;
+            case secret_kind::helper_boss:   return g && (g->secret_flags & game::secret_helper_boss);
+            case secret_kind::storerooms:    return g && g->secrets_found >= sd.value;
+            case secret_kind::class_wins:    return open_classes_won(p) >= sd.value;
+            case secret_kind::paper_clean:   return g && (g->secret_flags & game::secret_paper_clean);
+            case secret_kind::shock_combos:  return g && g->shock_combos >= sd.value;
+            case secret_kind::low_hp_win:    return won && g->hero.hp >= 1 && g->hero.hp <= sd.value;
+            case secret_kind::fast_win:      return won && g->build_days() <= sd.value;
+            default:                         return false;
+        }
+    }
+    // Postęp do pokazania po wykonaniu nie jest potrzebny ("???" do końca); zwraca bitmaskę wykonanych właśnie teraz.
+    inline int check_secrets(profile& p, const game* g)
+    {
+        int got = 0;
+        for(int i = 0; i < data::secrets_count; ++i)
+            if(! secret_done(p, i) && secret_condition(p, g, i)) got |= 1 << i;
+        p.secrets = uint16_t(p.secrets | got);
+        p.secrets_new = uint16_t(p.secrets_new | got);
+        return got;
+    }
+    inline int secrets_done_count(const profile& p) { int n = 0; for(int i = 0; i < data::secrets_count; ++i) n += secret_done(p, i); return n; }
+    // v11 -> v12: sekrety za to, co już jest w profilu (wygrane każdym zawodem) - czekają na dymek jak nowe.
+    inline void migrate_v12(profile& p)
+    {
+        p.secrets = 0; p.secrets_new = 0; p.cosmetic = 0;
+        for(auto& r : p.respect_ranks_hi) r = 0;
+        check_secrets(p, nullptr);
+    }
+
     // Osiedle rośnie z wygranymi: ile ozdób już stoi (data::estate_decor po progach wygranych).
     inline int estate_decor(const profile& p)
     {
@@ -1024,7 +1118,7 @@ namespace core
         int best = -1, bc = 0;
         for(int i = 0; i < data::respect_count; ++i)
         {
-            const int c = respect_cost(p, i);
+            const int c = respect_unlocked(p, i) ? respect_cost(p, i) : -1;
             if(c >= 0 && (best < 0 || c < bc)) { best = i; bc = c; }
         }
         if(best >= 0)
@@ -1068,7 +1162,7 @@ namespace core
         auto take = [&](int k, int i, int c) { if(c >= 0 && (best < 0 || c < best)) { best = c; kind = k; index = i; } };
         for(int i = 0; i < data::upgrades_count; ++i) take(0, i, upgrade_cost(p, i));
         for(int i = 0; i < data::classes_count; ++i) if(! class_unlocked(p, i) && ! class_reward(i)) take(1, i, data::class_cost);
-        for(int i = 0; i < data::tools_count; ++i) if(! tool_unlocked(p, i) && ! data::tools[i].reward) take(2, i, data::tools[i].cost);
+        for(int i = 0; i < data::tools_count; ++i) if(! tool_unlocked(p, i) && ! data::tools[i].reward && ! data::tools[i].secret) take(2, i, data::tools[i].cost);
         for(int i = 0; i < data::brigade_count; ++i) if(! helper_unlocked(p, i)) take(3, i, data::brigade[i].cost);
         if(! p.hard) take(4, 0, data::hard_cost);
         return best;
@@ -1078,7 +1172,7 @@ namespace core
     // Cały stan gry (game jest trywialnie kopiowalny) za profilem w SRAM. Rozmiar i suma kontrolna
     // odrzucają zapisy uszkodzone i z innej wersji gry.
     static_assert(std::is_trivially_copyable_v<game>);
-    constexpr char run_magic[8] = "PBRUN13";   // 13: podsumowanie budowy (ciosy, oś czasu), wyzwanie tygodnia; 12: wydarzenia z wyborem, ulepszenie narzędzia, magazyn; 11: premie po etapie, elity, kombinacje stanów; 10: Akt 0; 09: 10 etapów, zachowania
+    constexpr char run_magic[8] = "PBRUN14";   // 14: sekretne zlecenia (liczniki budowy), nowe zawody; 13: podsumowanie budowy (ciosy, oś czasu), wyzwanie tygodnia; 12: wydarzenia z wyborem, ulepszenie narzędzia, magazyn; 11: premie po etapie, elity, kombinacje stanów; 10: Akt 0; 09: 10 etapów, zachowania
     constexpr int run_save_offset = 256;
     static_assert(sizeof(profile) <= run_save_offset);
 

@@ -197,6 +197,9 @@ static uint32_t digest(const game& g)
     f.add(g.best_hit); f.add(g.best_hit_def); f.add(g.best_hit_crit); f.add(g.blast_src);
     for(int i = 0; i < max_stages; ++i) { f.add(g.stage_kill_log[i]); f.add(g.stage_boon[i]); f.add(g.stage_event_log[i]); f.add(g.stage_flags[i]); }
     f.add(g.elites_killed); f.add(g.combos_run); f.add(g.weekly_week); f.add(g.bonus.weekly);
+    // v0.21.51 cz. 2: sekretne zlecenia (liczniki budowy), Majster, Geodeta, kawa na start
+    f.add(g.coffee_drunk); f.add(g.shock_combos); f.add(g.paper_hits); f.add(g.secret_flags); f.add(g.helper_ctx);
+    f.add(g.borrow_cls); f.add(g.mark_target); f.add(g.mark_turns); f.add(g.power_cls()); f.add(g.build_days()); f.add(g.bonus.start_coffee);
     return f.h;
 }
 
@@ -273,6 +276,9 @@ static void snapshot(const game& g, int step)
     for(int i = 0; i < max_stages; ++i) { w(","); wi(g.stage_kill_log[i]); w(","); wi(g.stage_boon[i]); w(","); wi(g.stage_event_log[i]); w(","); wi(g.stage_flags[i]); }
     w(","); wi(g.elites_killed); w(","); wi(g.combos_run); w(","); wi(g.weekly_week); w(","); wi(g.bonus.weekly);
     w(","); wi(g.elite_chance()); w(","); wi(g.shop_closed()); w(","); wi(recap_tip_index(g)); w("]");
+    w(","); key("part5"); w("["); wi(g.coffee_drunk); w(","); wi(g.shock_combos); w(","); wi(g.paper_hits); w(","); wi(g.secret_flags);
+    w(","); wi(g.helper_ctx); w(","); wi(g.borrow_cls); w(","); wi(g.mark_target); w(","); wi(g.mark_turns); w(","); wi(g.power_cls());
+    w(","); wi(g.build_days()); w(","); wi(g.bonus.start_coffee); w(","); wi(g.ability_cooldown()); w("]");
     w(","); key("killsByType"); w("["); for(int i = 0; i < max_enemy_types; ++i) { if(i) w(","); wi(g.kills_by_type[i]); } w("]");
     w(","); key("rooms"); w("[");
     for(int i = 0; i < g.lv.rooms_count; ++i) { if(i) w(","); const room& r = g.lv.rooms[i]; w("["); wi(r.x); w(","); wi(r.y); w(","); wi(r.w); w(","); wi(r.h); w("]"); }
@@ -344,6 +350,7 @@ static void profile_json(const profile& p)
     w(","); key("weekly"); w("["); wi(p.weekly_won); w(","); wi(p.weekly_runs);
     for(int i = 0; i < weekly_slots; ++i) { w(","); wi(p.weekly_week[i]); w(","); wi(p.weekly_score[i]); } w("]");
     w(","); key("story"); w("["); wi(long(p.story)); w(","); wi(long(p.story_new)); w(","); wi(estate_decor(p)); w("]");
+    w(","); key("secrets"); w("["); wi(p.secrets); w(","); wi(p.secrets_new); w(","); wi(p.cosmetic); w(","); wi(secrets_done_count(p)); w("]");
     w(","); key("sram"); hex_bytes(reinterpret_cast<const char*>(&p), sizeof p);   // profil bajt po bajcie jak w SRAM
     w("}");
 }
@@ -355,7 +362,7 @@ static void profile_json(const profile& p)
 // respect: rangi Respektu (0 = brak, 1 = wszystkie maksymalne); rewards: odebrane nagrody za odbiór (narzędzia, buty, pas, zawody)
 struct scenario { int cls; uint32_t seed; int diff; bool full_mods; bool smart; bool shop; bool ngplus; int steps;
                   int badges = 0; int contracts = 0; int keepsake = 0; int keepsake_runs = 0; int investor = 0; int paths = 0; int daily = 0;
-                  int respect = 0; int rewards = 0; int weekly = 0; };
+                  int respect = 0; int rewards = 0; int weekly = 0; int secrets = 0; };
 
 int main(int argc, char** argv)
 {
@@ -398,6 +405,13 @@ int main(int argc, char** argv)
     // v0.21.50 cz. 4: wyzwania tygodnia (każda zasada: zawód, bez kawy, elity, deszcz, bez Hurtowni, HP / ciosy, budżet)
     for(int wk = 1; wk <= data::weekly_count; ++wk)
         sc.push_back({ 0, 0u, 1, false, wk % 2 == 0, true, false, 5000, 0, 0, 0, 0, 0, wk % 3 == 0, 0, 0, 0, wk });
+    // v0.21.51 cz. 2: sekretne zlecenia - wszystkie wykonane (Młot Zenka i Poziomica mistrza w dropach, Zaprawiony w boju: kawa
+    // na start), nowe zawody z bota z testów i "smart" (Spaw, Tyczenie, Złota rączka), Geodeta z Aktem 0
+    const int all_secrets = (1 << data::secrets_count) - 1;
+    sc.push_back({ 9, 3901u, 1, true, true, true, true, 6000, 0, 0, 1, 0, 0, 1, 0, 1, all_rewards, 0, all_secrets });
+    sc.push_back({ 10, 3902u, 0, true, true, true, false, 5000, 0, 0, 0, 0, 0, 0, 0, 1, all_rewards, 0, all_secrets });
+    sc.push_back({ 11, 3903u, 1, false, true, true, true, 6000, all_badges, all_contracts, 2, 3, 0, 1, 0, 1, all_rewards, 0, all_secrets });
+    sc.push_back({ 1, 3904u, 1, true, false, false, false, 4000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, all_secrets });
 
     for(size_t si = 0; si < sc.size(); ++si)
     {
@@ -412,7 +426,8 @@ int main(int argc, char** argv)
         p.badges = uint16_t(s.badges); p.contracts = uint8_t(s.contracts); p.keepsake = uint8_t(s.keepsake);
         if(s.investor) { p.wins = 1; p.investor = uint8_t(s.investor); }   // tryb inwestora po pierwszej wygranej
         if(s.keepsake > 0) p.keepsake_runs[s.keepsake - 1] = uint8_t(s.keepsake_runs);
-        if(s.respect) for(int i = 0; i < data::respect_count; ++i) p.respect_ranks[i] = uint8_t(data::respect[i].ranks);
+        p.secrets = uint16_t(s.secrets);   // przed Respektem: Zaprawiony w boju tylko po sekrecie
+        if(s.respect) for(int i = 0; i < data::respect_count; ++i) if(respect_unlocked(p, i)) set_respect_rank(p, i, data::respect[i].ranks);
         p.rewards = uint8_t(s.rewards);
         run_mods m = mods(p);   // przed start_run: ranga pamiątki z budów przed tą
         static game g;
@@ -428,6 +443,7 @@ int main(int argc, char** argv)
         w(","); key("keepsakeRuns"); wi(s.keepsake_runs); w(","); key("investor"); wi(s.investor);
         w(","); key("paths"); wi(s.paths); w(","); key("daily"); wi(s.daily);
         w(","); key("respect"); wi(s.respect); w(","); key("rewards"); wi(s.rewards); w(","); key("weekly"); wi(s.weekly);
+        w(","); key("secrets"); wi(s.secrets);
         w(","); key("snapshots"); w("[");
         snapshot(g, 0);
         std::vector<uint32_t> digests;
@@ -437,7 +453,7 @@ int main(int argc, char** argv)
         {
             if(g.st == status::stage_clear)
             {
-                check_badges(p, g); check_contracts(p); bank_xp(p, g);
+                check_badges(p, g); check_contracts(p); check_secrets(p, &g); bank_xp(p, g);
                 if(g.act_cleared && s.shop && ! g.shop_closed()) bot_shop(g);
                 g.bot_upgrade();   // v0.21.50 cz. 3: jak bot balansu - ulepszenie narzędzia, jeśli stać
                 if(s.paths) g.choose_path(g.stage & 1);
@@ -453,7 +469,7 @@ int main(int argc, char** argv)
             if(g.st == status::won && s.ngplus && ! did_ng)
             {
                 if(g.score > p.best) p.best = g.score;
-                record_win(p); add_house(p, g); check_badges(p, g); check_contracts(p); bank_xp(p, g);
+                record_win(p); add_house(p, g); check_badges(p, g); check_contracts(p); check_secrets(p, &g); bank_xp(p, g);
                 did_ng = true;
                 g.new_game_plus();
                 w(","); snapshot(g, step);
@@ -469,7 +485,7 @@ int main(int argc, char** argv)
         }
         if(g.score > p.best) p.best = g.score;
         if(g.st == status::won) { record_win(p); add_house(p, g); }
-        check_badges(p, g); check_contracts(p); bank_xp(p, g);
+        check_badges(p, g); check_contracts(p); check_secrets(p, &g); bank_xp(p, g);
         if(g.daily) record_daily(p, g.daily_day, g.score, g.st == status::won);
         if(g.weekly_week) record_weekly(p, g.weekly_week, g.score, g.st == status::won);
         story_check(p, &g);   // v0.21.50 cz. 4: fabuła - wątki za kamienie milowe

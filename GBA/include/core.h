@@ -130,11 +130,11 @@ namespace core
 
     struct message
     {
-        char s[log_len];
+        char s[log_len] = {};        // v0.21.51 cz. 2: całe zerowane (bez śmieci za końcem tekstu - zapis i porównania stanu)
         int n = 0;
         uint8_t kind = info;
         uint8_t repeat = 1;          // ile razy z rzędu ten sam komunikat (x2, x3...)
-        message() { s[0] = 0; }
+        message() {}
         message& as(log_kind k) { kind = k; return *this; }
         message& add(const char* t) { while(*t && n < log_len - 1) s[n++] = *t++; s[n] = 0; return *this; }
         message& add(int v)
@@ -193,6 +193,8 @@ namespace core
         int act0 = 0;                // v0.21.49: Akt 0 (Papierologia) z nagrody za odbiór - budowa zaczyna się od niego
         int rerolls = 0;             // v0.21.50: Respekt Druga oferta - darmowe losowanie premii po etapie
         int weekly = -1;             // v0.21.50 cz. 4: wyzwanie tygodnia (data::weekly), -1 = zwykła budowa
+        int start_coffee = 0;        // v0.21.51 cz. 2: Respekt Zaprawiony w boju - kawy w termosie na start
+        int reserved = 0;            // wyrównanie do 8 bajtów (game bez dziur: memcmp i suma kontrolna zapisu)
     };
 
     // Tryb inwestora: stawka i premia doświadczenia za zestaw modyfikatorów.
@@ -230,6 +232,7 @@ namespace core
             case respect_effect::mats_pct:      m.mats_pct += v; break;
             case respect_effect::second_chance: m.second_chance += v; break;
             case respect_effect::reroll:        m.rerolls += v; break;
+            case respect_effect::veteran:       m.start_coffee += v; break;
             default: break;
         }
     }
@@ -255,6 +258,7 @@ namespace core
             case respect_effect::mats_pct:      return m.add("Materiały +").add(v).add("% częściej");
             case respect_effect::second_chance: return m.add("Raz na budowę: 1 HP zamiast końca");
             case respect_effect::reroll:        return m.add("Premie: +").add(v).add(" darmowe losowanie");
+            case respect_effect::veteran:       return m.add("Na start: ").add(v).add(v == 1 ? " kawa" : " kawy").add(" w termosie");
             default:                            return m;
         }
     }
@@ -422,6 +426,7 @@ namespace core
         // v0.21.50 cz. 3: ulepszenie narzędzia (#31) i premia z wydarzenia (#30)
         int upg_level = 0, flat_upgrade = 0, upg_trait = -1;   // poziom, +obrażeń, cecha (data::tool_traits)
         int pierce = 0, steady = 0, crit_upg = 0;              // cecha: -OBR problemu, +najsłabszy rzut, +kryt
+        int crit_weapon = 0;                                    // v0.21.51 cz. 2: kryt broni (Poziomica mistrza)
         int flat_event = 0;                                     // wydarzenie: ciosy +N na etap
         bool split = false;                  // źródła premii profilu znane (src_*)
         int src_dmg[mods_sources] = {}, src_pct[mods_sources] = {}, src_crit[mods_sources] = {};
@@ -451,7 +456,7 @@ namespace core
             avg10 = n ? div_round(sum, 10 * n) : 0;
             crit_base = data::crit_base_pct;
             crit_luck = data::crit_per_luck_pct * luck;
-            crit_pct = crit_base + crit_luck + crit_trait + crit_bonus + crit_boon + crit_upg;
+            crit_pct = crit_base + crit_luck + crit_trait + crit_bonus + crit_boon + crit_upg + crit_weapon;
             crit_mult = data::crit_multiplier;
             crit_min = min * crit_mult;
             crit_max = max * crit_mult;
@@ -488,6 +493,7 @@ namespace core
         b.enemy_def = imax(0, enemy_def);
         b.luck = c.luck + m.luck;
         b.crit_bonus = m.crit;
+        b.crit_weapon = w.crit;
         b.finish();
         return b;
     }
@@ -605,9 +611,10 @@ namespace core
                 return true;
             case dmg_text::crit_extra:
             {
-                if(! b.crit_trait && ! b.crit_bonus && ! b.crit_upg) { m.add("Kryt: bez premii"); return false; }
+                if(! b.crit_trait && ! b.crit_bonus && ! b.crit_upg && ! b.crit_weapon) { m.add("Kryt: bez premii"); return false; }
                 m.add("+");
                 bool first = true;
+                if(b.crit_weapon) { m.add(" broń ").add(b.crit_weapon).add("%"); first = false; }
                 if(b.crit_trait) { m.add(" cecha ").add(b.crit_trait).add("%"); first = false; }
                 if(b.crit_upg) { m.add(first ? " " : ", ").add("ostrze ").add(b.crit_upg).add("%"); first = false; }
                 if(! b.split) { if(b.crit_bonus) m.add(first ? " " : ", ").add("premie ").add(b.crit_bonus).add("%"); return true; }
@@ -813,8 +820,18 @@ namespace core
         uint8_t elites_killed = 0;
         uint16_t combos_run = 0;     // kombinacje stanów wywołane przez bohatera
         uint16_t weekly_week = 0;    // numer tygodnia wyzwania (0 = zwykła budowa)
+        // v0.21.51 cz. 2: sekretne zlecenia (#39) - liczniki budowy (profil sprawdza je w check_secrets) i nowe zawody
+        uint8_t coffee_drunk = 0;    // kawy wypite w budowie (termos, pełny termos, Hurtownia)
+        uint8_t shock_combos = 0;    // mokry + prąd wywołane przez bohatera
+        uint8_t paper_hits = 0;      // ciosy problemów papierowych (data::secret_paper_mask) w Akcie 0
+        uint8_t secret_flags = 0;    // bity secret_flag: boss pokonany ciosem brygady, Akt 0 bez obrażeń od papierów
+        uint8_t helper_ctx = 0;      // cios brygady (pompa, pomocnik) - tylko w trakcie ciosu
+        int8_t borrow_cls = -1;      // Majster (Złota rączka): zawód, którego moc ma na tym etapie
+        int8_t mark_target = -1, mark_turns = 0;   // Geodeta (Tyczenie): oznaczony problem i tury znaku
 
         // Numer etapu dla gracza (1..) i liczba etapów tej budowy (bez Aktu 0, gdy nieodblokowany).
+        enum secret_flag : uint8_t { secret_helper_boss = 1, secret_paper_clean = 2 };
+
         int stage_number() const { return stage - first_stage + 1; }
         int stages_in_run() const { return data::stages_count - first_stage; }
         const char* act_numeral() const { return data::acts[data::stages[stage].act].numeral; }
@@ -1060,6 +1077,19 @@ namespace core
         }
 
         const class_def& cdef() const { return data::classes[cls]; }
+        // Zawód, którego moc działa (Majster: pożyczony na ten etap) - moc, ikona, odnowienie, premia do ciosu.
+        int power_cls() const { return cdef().ability == ability_effect::borrow && borrow_cls >= 0 ? borrow_cls : cls; }
+        const class_def& pdef() const { return data::classes[power_cls()]; }
+        // Geodeta (Tyczenie): cios w oznaczony problem +1 + ranga mocy (+ premia zawodu).
+        int mark_bonus(int ei) const { return ei == mark_target && mark_turns > 0 ? 1 + ability_rank() + boon_power() : 0; }
+        // Dni budowy jak w harmonogramie domu, bez Aktu 0 (sekretne zlecenie Szybka ekipa).
+        int build_days() const
+        {
+            int t = 0;
+            for(int s = imax(first_stage, data::prelude_stages); s < data::stages_count; ++s)
+                t += data::schedule_min_days + stage_days[s] / data::schedule_turns_per_day;
+            return t;
+        }
         int ability_cd = 0;          // tury do ponownego użycia mocy (R)
         temp_wall walls[max_walls];
         int walls_count = 0;
@@ -1081,7 +1111,7 @@ namespace core
         int crit_pct() const
         {
             return data::crit_base_pct + data::crit_per_luck_pct * luck() + trait_bonus(trait_effect::crit) + bonus.crit + boon_sum(boon_effect::crit)
-                   + tool_trait_value(tool_trait_effect::crit);
+                   + tool_trait_value(tool_trait_effect::crit) + weapon().crit;
         }
         int sight_radius() const   // pył (akt III)
         {
@@ -1292,6 +1322,7 @@ namespace core
             recap_hit& h = last_hits[0];
             h.src = int8_t(src); h.elite = int8_t(elite); h.kind = uint8_t(k); h.stage = int8_t(stage); h.amount = int16_t(imin(32767, amount));
             if(h.amount > worst_hit.amount) worst_hit = h;
+            if(stage < data::prelude_stages && src >= 0 && ((data::secret_paper_mask >> src) & 1) && paper_hits < 255) ++paper_hits;
         }
         void note_combo()
         {
@@ -1399,6 +1430,7 @@ namespace core
             const int rad = c.radius + synergy_value(synergy_effect::conduct);
             combo_events = uint8_t(combo_events | (1u << int(combo_effect::shock_area)));
             note_combo();
+            if(shock_combos < 255) ++shock_combos;   // sekretne zlecenie Mokra robota
             push(message().add(c.short_name).add(" ").add(c.name).as(good));
             for(int i = 0; i < enemies_count && st == status::playing; ++i)
             {
@@ -1540,7 +1572,7 @@ namespace core
                 case choice_effect::upgrade: for(int k = 0; k < v && can_upgrade_weapon(); ++k) upgrade_weapon(); break;
                 case choice_effect::power:
                     ability_cd = 0;
-                    push(message().add("Moc gotowa: ").add(cdef().ability_name).as(good));
+                    push(message().add("Moc gotowa: ").add(pdef().ability_name).as(good));
                     break;
                 default: break;
             }
@@ -1939,6 +1971,7 @@ namespace core
             cash = mods.cash;
             first_stage = int8_t(mods.act0 ? 0 : data::prelude_stages);   // bez nagrody Akt 0 budowa zaczyna się od Fundamentów
             start_stage(first_stage);
+            thermos = imin(thermos_cap(), mods.start_coffee);   // Respekt: Zaprawiony w boju
         }
 
         bool occupied(int x, int y) const
@@ -1977,6 +2010,16 @@ namespace core
             tool_offer = tool_offer_pickup = -1;
             secret_x = secret_y = -1; secret_open = false; secret_kind = secret_dir = 0; key_holder = -1; keys = 0;
             secret_rx = secret_ry = secret_rw = secret_rh = 0;
+            mark_target = -1; mark_turns = 0;   // v0.21.51 cz. 2: Tyczenie tylko na etap
+            if(s == 0) paper_hits = 0;          // Akt 0 od nowa (NG+): ciosy od papierów liczone od pierwszego etapu
+            if(cdef().ability == ability_effect::borrow)   // Majster: moc innego fachu na ten etap (osobny generator)
+            {
+                rng br = side_rng(7);
+                const bool open = cls < data::open_classes_count;   // zawody z sekretów są za zwykłymi
+                int k = br.range(0, data::open_classes_count - (open ? 2 : 1));
+                if(open && k >= cls) ++k;   // nigdy własna
+                borrow_cls = int8_t(k);
+            }
             for(auto& row : fov) for(auto& c : row) c = unknown;
             const stage_def& sd = data::stages[stage];
             const room& first = lv.rooms[0];
@@ -2046,6 +2089,7 @@ namespace core
                 if(weather_is(weather_effect::frost)) enemies[i].flags = uint8_t(enemies[i].flags | actor_frozen);
             }
             update_fov();
+            if(has_passive(class_passive::surveyor)) reveal_map();   // Geodeta: cały plac (i dokumenty Aktu 0) od startu
         }
 
         // Pieczątki (Akt 0): dokumenty w różnych pokojach (bez pierwszego), na wolnych polach bez znajdziek.
@@ -2099,6 +2143,7 @@ namespace core
             b.wmin = w.min_damage; b.wmax = w.max_damage;
             b.range_base = w.range; b.range = range_of(w);
             b.scales = w.scales_with;
+            b.crit_weapon = w.crit;
             const trait_effect st_tr = stat_trait(w.scales_with);
             int luck_t = 0;
             for(int i = 0; i < data::gear_slots_count; ++i)
@@ -2151,7 +2196,7 @@ namespace core
         int power_dmg_bonus() const
         {
             int rank = ability_rank();
-            switch(cdef().ability)
+            switch(pdef().ability)
             {
                 case ability_effect::volley:
                 case ability_effect::line: return rank >= 2 ? 1 : 0;
@@ -2180,6 +2225,7 @@ namespace core
             const weapon_def& w = weapon();   // ulepszenie (#31): +obrażeń, Wyważenie (rzut), Przebicie (OBR)
             int dmg = r.range(imin(w.max_damage, w.min_damage + tool_trait_value(tool_trait_effect::steady)), w.max_damage)
                     + hero_stat(w.scales_with) / 2 + dmg_bonus + gear_bonus(gear_stat::dmg) + boon_sum(boon_effect::dmg) + upgrade_dmg() + event_dmg
+                    + mark_bonus(ei)   // Tyczenie (Geodeta)
                     - imax(0, enemy_defense(ei) - tool_trait_value(tool_trait_effect::pierce)) / 2;
             if(dmg < 1) dmg = 1;
             dmg += pct_part(dmg, bonus.dmg_pct + boon_sum(boon_effect::dmg_pct), dmg_carry);   // Kurs fachowy, Respekt, premie: +%
@@ -2196,6 +2242,8 @@ namespace core
             // Operator koparki: cios wręcz czasem odpycha problem o pole (bossa nie)
             if(has_passive(class_passive::push) && e.alive && ei != boss && cheb(hero.x, hero.y, e.x, e.y) == 1
                && r.range(1, 100) <= data::push_chance_pct)
+                shove(ei, isign(e.x - hero.x), isign(e.y - hero.y), 1);
+            else if(w.knockback && e.alive && ei != boss && melee && cheb(hero.x, hero.y, e.x, e.y) == 1)   // Młot Zenka: zawsze odpycha
                 shove(ei, isign(e.x - hero.x), isign(e.y - hero.y), 1);
         }
 
@@ -2260,6 +2308,8 @@ namespace core
             if(e.hp <= 0)
             {
                 e.alive = false; ++kills; ++stage_kills; ++act_kills;
+                if(ei == mark_target) { mark_target = -1; mark_turns = 0; }
+                if(ei == boss && helper_ctx && e.def_id == data::secret_helper_boss) secret_flags = uint8_t(secret_flags | secret_helper_boss);
                 cash += income(ed.score / data::cash_per_score);
                 if(kills_by_type[e.def_id] < 255) ++kills_by_type[e.def_id];
                 score += ed.score * score_pct() / 100; gain_xp(data::xp_per_kill);
@@ -2285,6 +2335,8 @@ namespace core
                 {
                     stage_flags[stage] = uint8_t(stage_flags[stage] | recap_boss);
                     if(stage_damage == boss_wake_damage && clean_bosses < 255) ++clean_bosses;   // zlecenie Czysta robota
+                    if(stage == data::prelude_stages - 1 && first_stage == 0 && paper_hits == 0)   // Akt 0 bez ciosu od papierów
+                        secret_flags = uint8_t(secret_flags | secret_paper_clean);
                     score += (500 + 100 * imax(0, pattern_stage() + 1)) * score_pct() / 100;
                     gain_xp(data::xp_boss);
                     slam_timer = 0;
@@ -2459,7 +2511,7 @@ namespace core
         int ability_rank() const { return 1 + (hero_level >= 3) + (hero_level >= 5); }
         int ability_cooldown() const
         {
-            return imax(3, imax(4, cdef().ability_cooldown - 2 * (ability_rank() - 1)) - trait_bonus(trait_effect::cooldown) - bonus.cooldown
+            return imax(3, imax(4, pdef().ability_cooldown - 2 * (ability_rank() - 1)) - trait_bonus(trait_effect::cooldown) - bonus.cooldown
                            - boon_sum(boon_effect::cooldown))
                    + (weather_is(weather_effect::heat) ? wdef().value : 0);   // upał: moc odnawia się dłużej
         }
@@ -2523,7 +2575,7 @@ namespace core
         bool player_ability()
         {
             if(st != status::playing || ability_cd > 0) return false;
-            const class_def& c = cdef();
+            const class_def& c = pdef();   // Majster: moc pożyczona na ten etap
             const int rank = ability_rank();
             bool ok = false;
             switch(c.ability)
@@ -2675,6 +2727,38 @@ namespace core
                     if(ok) push(message().add(c.ability_name).add("!"));
                     break;
                 }
+                case ability_effect::weld:   // Spaw (Spawacz): iskry linią przez najbliższy widoczny problem (3/4/5 pól), trafieni
+                {                            // w dymie spawalniczym (zapyleni) - kolejna iskra = wybuch pyłu (#29)
+                    int t = nearest_visible_enemy();
+                    if(t < 0) break;
+                    int dx = enemies[t].x - hero.x, dy = enemies[t].y - hero.y, len = imax(iabs(dx), iabs(dy));
+                    uint32_t done = 0;
+                    hit_ctx = 2;   // iskra
+                    for(int k = 1; k <= 2 + rank + boon_power() && st == status::playing; ++k)
+                    {
+                        int x = hero.x + div_round(dx * k, len), y = hero.y + div_round(dy * k, len);
+                        if(! lv.passable(x, y)) break;   // mur zatrzymuje iskry
+                        int ei = enemy_at(x, y);
+                        if(ei >= 0 && ! (done & (1u << ei)))
+                        {
+                            hero_attack(ei); done |= 1u << ei; ok = true;
+                            if(enemies[ei].alive) enemies[ei].flags = uint8_t(enemies[ei].flags | actor_dusty);   // dym spawalniczy
+                        }
+                    }
+                    hit_ctx = 0;
+                    if(ok) push(message().add(c.ability_name).add(": iskry i dym!"));
+                    break;
+                }
+                case ability_effect::mark:   // Tyczenie (Geodeta): najbliższy widoczny problem oznaczony na kilka tur, ogłuszony na turę
+                {
+                    int t = nearest_visible_enemy();
+                    if(t < 0) break;
+                    mark_target = int8_t(t); mark_turns = int8_t(data::mark_turns);
+                    enemies[t].stun = int8_t(imax(enemies[t].stun, 1)); enemies[t].awake = true;
+                    ok = true;
+                    push(message().add(c.ability_name).add(": ").add(data::enemies[enemies[t].def_id].name).add(" +").add(mark_bonus(t)));
+                    break;
+                }
                 default: break;
             }
             if(! ok) { push(message().add(c.ability_name).add(": nie teraz")); return false; }
@@ -2749,18 +2833,14 @@ namespace core
             switch(hd.effect)
             {
                 case helper_effect::reveal:   // podłoga, schody i mury przy nich
-                    for(int y = 0; y < map_h; ++y)
-                        for(int x = 0; x < map_w; ++x)
-                        {
-                            if(fov[y][x] != unknown) continue;
-                            bool near = false;
-                            for(int dy = -1; dy <= 1 && ! near; ++dy) for(int dx = -1; dx <= 1; ++dx) if(lv.passable(x + dx, y + dy)) { near = true; break; }
-                            if(near) fov[y][x] = remembered;
-                        }
+                    reveal_map();
                     break;
                 case helper_effect::pump:
                     for(int i = 0; i < enemies_count && st == status::playing; ++i)
-                        if(enemies[i].alive && cheb(hero.x, hero.y, enemies[i].x, enemies[i].y) <= hd.reach) damage_enemy(i, hd.value, false, hd.name);
+                        if(enemies[i].alive && cheb(hero.x, hero.y, enemies[i].x, enemies[i].y) <= hd.reach)
+                        {
+                            helper_ctx = 1; damage_enemy(i, hd.value, false, hd.name); helper_ctx = 0;
+                        }
                     break;
                 case helper_effect::safety:
                     hero_status[int(status_effect::poison)] = hero_status[int(status_effect::shock)] = hero_status[int(status_effect::slip)] = 0;
@@ -2779,6 +2859,19 @@ namespace core
             return true;
         }
 
+        // Mapa etapu odkryta (Geodeta z brygady, zawód Geodeta na starcie etapu): podłoga, schody i mury przy nich.
+        void reveal_map()
+        {
+            for(int y = 0; y < map_h; ++y)
+                for(int x = 0; x < map_w; ++x)
+                {
+                    if(fov[y][x] != unknown) continue;
+                    bool near = false;
+                    for(int dy = -1; dy <= 1 && ! near; ++dy) for(int dx = -1; dx <= 1; ++dx) if(lv.passable(x + dx, y + dy)) { near = true; break; }
+                    if(near) fov[y][x] = remembered;
+                }
+        }
+
         // Pomocnik: trzyma się obok bohatera i bije problem obok siebie (bez rzutu - stałe obrażenia).
         void ally_act()
         {
@@ -2789,7 +2882,11 @@ namespace core
                 if(free_around(hero.x, hero.y, ally_x, ally_y, x, y)) { ally_x = int8_t(x); ally_y = int8_t(y); }
             }
             for(int i = 0; i < enemies_count; ++i)
-                if(enemies[i].alive && cheb(ally_x, ally_y, enemies[i].x, enemies[i].y) == 1) { damage_enemy(i, hd.value, false, hd.name); break; }
+                if(enemies[i].alive && cheb(ally_x, ally_y, enemies[i].x, enemies[i].y) == 1)
+                {
+                    helper_ctx = 1; damage_enemy(i, hd.value, false, hd.name); helper_ctx = 0;
+                    break;
+                }
             if(--ally_turns == 0)
             {
                 ally_x = ally_y = -1;
@@ -2836,7 +2933,7 @@ namespace core
             }
             switch(it.effect)
             {
-                case shop_effect::heal: hero.hp = hero.max_hp; break;
+                case shop_effect::heal: hero.hp = hero.max_hp; if(coffee_drunk < 255) ++coffee_drunk; break;   // kawa z ekspresu
                 case shop_effect::maxhp: hero.max_hp = int16_t(hero.max_hp + 3); hero.hp = int16_t(hero.hp + 3); break;
                 case shop_effect::ability: ability_cd = 0; break;
                 case shop_effect::def: ++def_bonus; break;
@@ -2964,6 +3061,7 @@ namespace core
         {
             int h = imin(coffee_heal(), hero.max_hp - hero.hp);
             hero.hp = int16_t(hero.hp + h);
+            if(coffee_drunk < 255) ++coffee_drunk;
             push(message().add("Kawa z termosu: +").add(h).add(" HP").as(good));
             const int es = synergy_value(synergy_effect::espresso);   // synergia Espresso: kawa ładuje moc
             if(es > 0 && ability_cd > 0)
@@ -3385,7 +3483,8 @@ namespace core
                 --poison;
                 if(hero.hp > 1) { hero.hp = int16_t(hero.hp - 1); stage_damage += 1; add_hit(hero.x, hero.y, 1, true); }
             }
-            if(ability_cd > 0 && --ability_cd == 0) push(message().add("Moc gotowa: ").add(cdef().ability_name).as(good));
+            if(ability_cd > 0 && --ability_cd == 0) push(message().add("Moc gotowa: ").add(pdef().ability_name).as(good));
+            if(mark_turns > 0 && --mark_turns == 0) mark_target = -1;   // Tyczenie mija
             int8_t& wet = hero_status[int(status_effect::wet)];
             if(wet > 0) --wet;   // mokry schnie
             for(int i = 0; i < enemies_count; ++i)   // problemy: kałuża moczy, poza nią schną

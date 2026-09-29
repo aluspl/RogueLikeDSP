@@ -17,12 +17,17 @@ namespace core
         int8_t range;          // odległość Czebyszewa w polach; 1 = wręcz
         stat scales_with;
         element elem = element::none;   // prąd (Próbnik), iskra (Szlifierka, Pistolet do kotew)
+        int8_t crit = 0;       // v0.21.51 cz. 2: kryt +% (Poziomica mistrza)
+        bool knockback = false;   // cios wręcz odpycha problem o pole (Młot Zenka; bossa nie)
+        bool reveal = false;   // magazyn widać na podglądzie mapy (Poziomica mistrza)
     };
 
-    enum class ability_effect : uint8_t { stun, wall, volley, chain, flush, spin, line, splash, ram };
+    enum class ability_effect : uint8_t { stun, wall, volley, chain, flush, spin, line, splash, ram,
+                                         weld, mark, borrow };   // v0.21.51 cz. 2: Spaw, Tyczenie, Złota rączka (moc innego fachu)
 
-    // Cecha zawodu działająca cały czas: Dekarz - wiatr nie skraca zasięgu, Operator koparki - cios wręcz czasem odpycha.
-    enum class class_passive : uint8_t { none, windproof, push };
+    // Cecha zawodu działająca cały czas: Dekarz - wiatr nie skraca zasięgu, Operator koparki - cios wręcz czasem odpycha,
+    // Geodeta - widzi mapę etapu od startu.
+    enum class class_passive : uint8_t { none, windproof, push, surveyor };
 
     struct class_def           // zawód budowlany
     {
@@ -35,7 +40,7 @@ namespace core
         int8_t defense;
         int8_t luck;           // szczęście: kryt, unik, dropy
         int8_t weapon;
-        int8_t frame;          // klatka w graphics/actors.bmp
+        int16_t frame;         // klatka w graphics/actors.bmp (v0.21.51 cz. 2: zawody z sekretów od 127)
         const char* ability_name;   // moc zawodu (przycisk R)
         const char* ability_desc;
         ability_effect ability;
@@ -264,7 +269,8 @@ namespace core
 
     // Respekt: stała waluta za ukończone etapy, wydawana na stałe ulepszenia procentowe z rangami (telefon profilu).
     enum class respect_effect : uint8_t { dmg_pct, taken_pct, gear_pct, crit, dodge, coffee_pct, thermos, cooldown, cash, xp_pct,
-                                          brigade_pct, sight, shop_pct, mats_pct, second_chance, reroll };
+                                          brigade_pct, sight, shop_pct, mats_pct, second_chance, reroll,
+                                          veteran };   // v0.21.51 cz. 2: Zaprawiony w boju - kawa w termosie na start
 
     struct respect_def
     {
@@ -274,6 +280,7 @@ namespace core
         int8_t ranks;
         int8_t values[5];      // wartość na randze 1..ranks (łącznie, nie przyrost)
         int16_t costs[5];      // koszt kolejnych rang w Respekcie
+        int8_t secret = -1;    // v0.21.51 cz. 2: odblokowuje sekretne zlecenie (data::secrets), -1 = od początku
     };
 
     // Nagroda za odbiór (jak odblokowania w Slay the Spire): każda wygrana odblokowuje kolejną z listy.
@@ -545,6 +552,31 @@ namespace core
         int8_t weapon;         // indeks w data::weapons
         int16_t cost;          // 0 = dostępne od początku
         bool reward = false;   // odblokowuje nagroda za odbiór (nie Szkolenia)
+        bool secret = false;   // v0.21.51 cz. 2: odblokowuje sekretne zlecenie
+    };
+
+    // ------------------------------------------------------------------ v0.21.51 cz. 2
+    // Sekretne zlecenie (#39): ukryty cel profilu ("???" z podpowiedzią do wykonania), nagroda: zawód, narzędzie,
+    // wygląd albo ranga Respektu.
+    enum class secret_kind : uint8_t { no_coffee_win, helper_boss, storerooms, class_wins, paper_clean, shock_combos, low_hp_win, fast_win };
+    enum class secret_reward : uint8_t { cls, tool, cosmetic, respect };
+
+    struct secret_def
+    {
+        const char* hint;      // podpowiedź (widoczna od początku)
+        const char* desc;      // warunek (po wykonaniu)
+        secret_kind kind;
+        int16_t value;         // liczba (magazyny, zawody, kombinacje, HP, dni) albo problem (helper_boss)
+        secret_reward reward;
+        int8_t index;          // zawód, narzędzie (data::tools), wygląd (data::cosmetics), Respekt (data::respect)
+        const char* reward_text;   // baner, np. "Nowy zawód: Spawacz"
+        story_msg news;        // dymek "Nowość" na tytule
+    };
+
+    struct cosmetic_def        // wygląd z sekretnego zlecenia (tylko oprawa)
+    {
+        const char* name;
+        const char* desc;
     };
 
     struct difficulty_def      // poziom trudności wybierany na starcie

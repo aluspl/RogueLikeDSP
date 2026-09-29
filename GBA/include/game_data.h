@@ -5,23 +5,28 @@
 namespace data {
 
 inline constexpr core::weapon_def weapons[] = {
-    { "Dziennik budowy", 2, 4, 2, core::stat::intel, core::element::none },
-    { "Kielnia", 4, 6, 1, core::stat::str, core::element::none },
-    { "Gwoździarka", 2, 3, 3, core::stat::agi, core::element::none },
-    { "Próbnik napięcia", 3, 5, 2, core::stat::intel, core::element::power },
-    { "Klucz nastawny", 4, 7, 1, core::stat::str, core::element::none },
-    { "Szlifierka", 4, 7, 1, core::stat::agi, core::element::spark },
-    { "Łom", 3, 6, 1, core::stat::str, core::element::none },
-    { "Wkrętarka", 2, 5, 2, core::stat::agi, core::element::none },
-    { "Poziomica laserowa", 2, 4, 4, core::stat::intel, core::element::none },
-    { "Młot wyburzeniowy", 5, 8, 1, core::stat::str, core::element::none },
-    { "Tablet z projektem", 3, 5, 2, core::stat::intel, core::element::none },
-    { "Miernik laserowy", 2, 5, 3, core::stat::intel, core::element::none },
-    { "Dachówki", 2, 3, 3, core::stat::agi, core::element::none },
-    { "Agregat tynkarski", 2, 4, 2, core::stat::str, core::element::none },
-    { "Łyżka koparki", 4, 7, 1, core::stat::str, core::element::none },
-    { "Młot udarowy", 5, 9, 1, core::stat::str, core::element::none },
-    { "Pistolet do kotew", 3, 5, 3, core::stat::agi, core::element::spark },
+    { "Dziennik budowy", 2, 4, 2, core::stat::intel, core::element::none, 0, false, false },
+    { "Kielnia", 4, 6, 1, core::stat::str, core::element::none, 0, false, false },
+    { "Gwoździarka", 2, 3, 3, core::stat::agi, core::element::none, 0, false, false },
+    { "Próbnik napięcia", 3, 5, 2, core::stat::intel, core::element::power, 0, false, false },
+    { "Klucz nastawny", 4, 7, 1, core::stat::str, core::element::none, 0, false, false },
+    { "Szlifierka", 4, 7, 1, core::stat::agi, core::element::spark, 0, false, false },
+    { "Łom", 3, 6, 1, core::stat::str, core::element::none, 0, false, false },
+    { "Wkrętarka", 2, 5, 2, core::stat::agi, core::element::none, 0, false, false },
+    { "Poziomica laserowa", 2, 4, 4, core::stat::intel, core::element::none, 0, false, false },
+    { "Młot wyburzeniowy", 5, 8, 1, core::stat::str, core::element::none, 0, false, false },
+    { "Tablet z projektem", 3, 5, 2, core::stat::intel, core::element::none, 0, false, false },
+    { "Miernik laserowy", 2, 5, 3, core::stat::intel, core::element::none, 0, false, false },
+    { "Dachówki", 2, 3, 3, core::stat::agi, core::element::none, 0, false, false },
+    { "Agregat tynkarski", 2, 4, 2, core::stat::str, core::element::none, 0, false, false },
+    { "Łyżka koparki", 4, 7, 1, core::stat::str, core::element::none, 0, false, false },
+    { "Młot udarowy", 5, 9, 1, core::stat::str, core::element::none, 0, false, false },
+    { "Pistolet do kotew", 3, 5, 3, core::stat::agi, core::element::spark, 0, false, false },
+    { "Spawarka", 2, 4, 2, core::stat::agi, core::element::spark, 0, false, false },
+    { "Tyczka geodezyjna", 2, 4, 2, core::stat::intel, core::element::none, 0, false, false },
+    { "Młotek ciesielski", 4, 7, 1, core::stat::str, core::element::none, 0, false, false },
+    { "Młot Zenka", 4, 7, 1, core::stat::str, core::element::none, 0, true, false },
+    { "Poziomica mistrza", 2, 5, 3, core::stat::intel, core::element::none, 10, false, true },
 };
 
 inline constexpr core::class_def classes[] = {
@@ -34,6 +39,9 @@ inline constexpr core::class_def classes[] = {
     { "Dekarz", "Wiatr mu nie przeszkadza.", 26, 3, 5, 2, 2, 3, 12, 52, "Rynna", "Bije całą linię", core::ability_effect::line, 12, core::class_passive::windproof },
     { "Tynkarz", "Tynk na cały pokój.", 30, 4, 3, 2, 3, 2, 13, 53, "Narzut", "Tynk na obszar 3x3", core::ability_effect::splash, 12, core::class_passive::none },
     { "Operator koparki", "Wolny, ale pcha wszystko.", 32, 5, 1, 1, 4, 0, 14, 54, "Taran", "Szarża i odepchnięcie", core::ability_effect::ram, 16, core::class_passive::push },
+    { "Spawacz", "Iskry i dym - jeden spaw.", 28, 3, 4, 2, 2, 2, 17, 127, "Spaw", "Iskry w linii i dym", core::ability_effect::weld, 12, core::class_passive::none },
+    { "Geodeta", "Widzi cały plac, bije słabo.", 26, 2, 3, 4, 2, 3, 18, 128, "Tyczenie", "Cel: ciosy +, ogłusza", core::ability_effect::mark, 12, core::class_passive::surveyor },
+    { "Majster", "Złota rączka: zna każdy fach.", 34, 5, 2, 2, 4, 2, 19, 129, "Złota rączka", "Co etap inna moc fachu", core::ability_effect::borrow, 14, core::class_passive::none },
 };
 
 inline constexpr core::enemy_def enemies[] = {
@@ -344,17 +352,20 @@ inline constexpr int schedule_turns_per_day = 3;
 inline constexpr const char* schedule_url = "planbudowlany.online";
 
 inline constexpr core::tool_def tools[] = {
-    { 6, 0, false },
-    { 7, 20, false },
-    { 8, 30, false },
-    { 9, 40, false },
-    { 10, 25, false },
-    { 11, 35, false },
-    { 15, 0, true },
-    { 16, 0, true },
+    { 6, 0, false, false },
+    { 7, 20, false, false },
+    { 8, 30, false, false },
+    { 9, 40, false, false },
+    { 10, 25, false, false },
+    { 11, 35, false, false },
+    { 15, 0, true, false },
+    { 16, 0, true, false },
+    { 20, 0, false, true },
+    { 21, 0, false, true },
 };
 
-inline constexpr int tools_count = 8;
+inline constexpr int tools_count = 10;
+inline constexpr int secret_tools_mask = 768;   // z sekretnych zleceń
 inline constexpr int start_tools_mask = 1;
 inline constexpr int drop_chance_pct = 25;
 inline constexpr int drop_weights[] = { 40, 5, 5, 15, 35 };
@@ -416,6 +427,8 @@ inline constexpr int xp_per_stage = 5;
 inline constexpr int xp_boss = 20;
 inline constexpr int start_classes_mask = 19;
 inline constexpr int reward_classes_mask = 448;
+inline constexpr int secret_classes_mask = 3584;   // z sekretnych zleceń
+inline constexpr int open_classes_count = 9;   // zawody bez sekretów (budowa dnia, balans, Pełny zespół)
 inline constexpr int class_cost = 25;
 inline constexpr int hard_cost = 40;
 
@@ -426,25 +439,27 @@ inline constexpr int dmg_levels_mask = 32;
 inline constexpr int def_levels_mask = 8;
 
 inline constexpr core::respect_def respect[] = {   // Respekt: stałe ulepszenia z rangami
-    { "Pewna ręka", "Obrażenia", core::respect_effect::dmg_pct, 2, { 1, 2, 0, 0, 0 }, { 15, 40, 0, 0, 0 } },
-    { "Gruba skóra", "Otrzymane obrażenia", core::respect_effect::taken_pct, 2, { 1, 2, 0, 0, 0 }, { 15, 40, 0, 0, 0 } },
-    { "Dobre źródła", "Szansa na lepszy sprzęt", core::respect_effect::gear_pct, 5, { 1, 2, 3, 4, 5 }, { 6, 12, 20, 32, 48 } },
-    { "Oko fachowca", "Szansa na kryt", core::respect_effect::crit, 2, { 1, 2, 0, 0, 0 }, { 15, 40, 0, 0, 0 } },
-    { "Zwinność", "Unik (łącznie maks. 20%)", core::respect_effect::dodge, 2, { 1, 2, 0, 0, 0 }, { 15, 40, 0, 0, 0 } },
-    { "Mocna kawa", "Kawa leczy więcej", core::respect_effect::coffee_pct, 2, { 5, 10, 0, 0, 0 }, { 10, 30, 0, 0, 0 } },
-    { "Duży termos", "Termos: miejsce na kawę", core::respect_effect::thermos, 1, { 1, 0, 0, 0, 0 }, { 40, 0, 0, 0, 0 } },
-    { "Rutyna", "Moc odnawia się szybciej", core::respect_effect::cooldown, 2, { 1, 2, 0, 0, 0 }, { 30, 60, 0, 0, 0 } },
-    { "Oszczędności", "Budżet na start", core::respect_effect::cash, 5, { 10, 20, 30, 40, 50 }, { 5, 10, 16, 25, 36 } },
-    { "Nauka", "Doświadczenie", core::respect_effect::xp_pct, 5, { 4, 8, 12, 16, 20 }, { 6, 12, 20, 32, 48 } },
-    { "Znajomości", "Brygada taniej", core::respect_effect::brigade_pct, 5, { 6, 12, 18, 24, 30 }, { 5, 10, 16, 25, 36 } },
-    { "Czujność", "Pole widzenia", core::respect_effect::sight, 1, { 1, 0, 0, 0, 0 }, { 40, 0, 0, 0, 0 } },
-    { "Rabat", "Hurtownia taniej", core::respect_effect::shop_pct, 5, { 5, 10, 15, 20, 25 }, { 5, 10, 16, 25, 36 } },
-    { "Zapasy", "Więcej materiałów", core::respect_effect::mats_pct, 5, { 10, 20, 30, 40, 50 }, { 5, 10, 16, 25, 36 } },
-    { "Druga szansa", "Raz na budowę: 1 HP zamiast końca", core::respect_effect::second_chance, 1, { 1, 0, 0, 0, 0 }, { 120, 0, 0, 0, 0 } },
-    { "Druga oferta", "Darmowe losowanie", core::respect_effect::reroll, 1, { 1, 0, 0, 0, 0 }, { 30, 0, 0, 0, 0 } },
+    { "Pewna ręka", "Obrażenia", core::respect_effect::dmg_pct, 2, { 1, 2, 0, 0, 0 }, { 15, 40, 0, 0, 0 }, -1 },
+    { "Gruba skóra", "Otrzymane obrażenia", core::respect_effect::taken_pct, 2, { 1, 2, 0, 0, 0 }, { 15, 40, 0, 0, 0 }, -1 },
+    { "Dobre źródła", "Szansa na lepszy sprzęt", core::respect_effect::gear_pct, 5, { 1, 2, 3, 4, 5 }, { 6, 12, 20, 32, 48 }, -1 },
+    { "Oko fachowca", "Szansa na kryt", core::respect_effect::crit, 2, { 1, 2, 0, 0, 0 }, { 15, 40, 0, 0, 0 }, -1 },
+    { "Zwinność", "Unik (łącznie maks. 20%)", core::respect_effect::dodge, 2, { 1, 2, 0, 0, 0 }, { 15, 40, 0, 0, 0 }, -1 },
+    { "Mocna kawa", "Kawa leczy więcej", core::respect_effect::coffee_pct, 2, { 5, 10, 0, 0, 0 }, { 10, 30, 0, 0, 0 }, -1 },
+    { "Duży termos", "Termos: miejsce na kawę", core::respect_effect::thermos, 1, { 1, 0, 0, 0, 0 }, { 40, 0, 0, 0, 0 }, -1 },
+    { "Rutyna", "Moc odnawia się szybciej", core::respect_effect::cooldown, 2, { 1, 2, 0, 0, 0 }, { 30, 60, 0, 0, 0 }, -1 },
+    { "Oszczędności", "Budżet na start", core::respect_effect::cash, 5, { 10, 20, 30, 40, 50 }, { 5, 10, 16, 25, 36 }, -1 },
+    { "Nauka", "Doświadczenie", core::respect_effect::xp_pct, 5, { 4, 8, 12, 16, 20 }, { 6, 12, 20, 32, 48 }, -1 },
+    { "Znajomości", "Brygada taniej", core::respect_effect::brigade_pct, 5, { 6, 12, 18, 24, 30 }, { 5, 10, 16, 25, 36 }, -1 },
+    { "Czujność", "Pole widzenia", core::respect_effect::sight, 1, { 1, 0, 0, 0, 0 }, { 40, 0, 0, 0, 0 }, -1 },
+    { "Rabat", "Hurtownia taniej", core::respect_effect::shop_pct, 5, { 5, 10, 15, 20, 25 }, { 5, 10, 16, 25, 36 }, -1 },
+    { "Zapasy", "Więcej materiałów", core::respect_effect::mats_pct, 5, { 10, 20, 30, 40, 50 }, { 5, 10, 16, 25, 36 }, -1 },
+    { "Druga szansa", "Raz na budowę: 1 HP zamiast końca", core::respect_effect::second_chance, 1, { 1, 0, 0, 0, 0 }, { 120, 0, 0, 0, 0 }, -1 },
+    { "Druga oferta", "Darmowe losowanie", core::respect_effect::reroll, 1, { 1, 0, 0, 0, 0 }, { 30, 0, 0, 0, 0 }, -1 },
+    { "Zaprawiony w boju", "Kawa w termosie na start", core::respect_effect::veteran, 2, { 1, 2, 0, 0, 0 }, { 20, 45, 0, 0, 0 }, 7 },
 };
 inline constexpr int push_chance_pct = 20;   // Operator koparki: cios wręcz odpycha
-inline constexpr int respect_count = 16;
+inline constexpr int mark_turns = 6;   // Geodeta: Tyczenie trwa tyle tur
+inline constexpr int respect_count = 17;
 inline constexpr int respect_stage = 2;   // Respekt za etap: zwykły, boss w środku aktu, boss aktu, ostatni
 inline constexpr int respect_boss = 4;
 inline constexpr int respect_act_boss = 6;
@@ -483,9 +498,10 @@ inline constexpr core::tutorial_step tutorial_unlocks[] = {   // dymki przy pier
     { "investor", "Tryb inwestora", { "Kierownik Marek", { "Pierwszy odbiór! Na", "wyborze zawodu włączysz", "utrudnienia za dośw." } }, "SELECT", 1, false, false },
     { "act0", "Akt 0: Papierologia", { "Kierownik Marek", { "Najpierw papiery! Nowe", "budowy zaczną się od", "pozwoleń i przyłączy." } }, "START / A", 0, false, false },
     { "class", "Nowy zawód", { "Kierownik Marek", { "Nowy fach w ekipie!", "Czeka na pasku zawodów.", "Wypróbuj go na placu." } }, "lewo / prawo", 1, false, false },
+    { "secret", "Sekretne zlecenie!", { "Kierownik Marek", { "Wykonane! Nagroda czeka.", "Telefon: Odznaki, A:", "strona Sekrety." } }, "SELECT, A", 0, false, false },
 };
 inline constexpr int tutorial_steps_count = 13;
-inline constexpr int tutorial_unlocks_count = 5;
+inline constexpr int tutorial_unlocks_count = 6;
 
 inline constexpr core::boon_rarity_def boon_rarities[] = {   // premie: rzadkość i waga losowania
     { "zwykła", 70 },
@@ -535,6 +551,9 @@ inline constexpr core::boon_def boons[] = {   // premie po etapie: 1 z 3 (rzadko
     { "Długa rynna", "Rynna: +2 pola", 0, 1, core::boon_effect::power, 2, 6 },
     { "Gęsty tynk", "Narzut ogłusza +1 t.", 1, 4, core::boon_effect::power, 1, 7 },
     { "Ciężka łyżka", "Taran +2 obrażeń", 1, 4, core::boon_effect::power, 2, 8 },
+    { "Długi spaw", "Spaw: +2 pola", 0, 256, core::boon_effect::power, 2, 9 },
+    { "Dokładny pomiar", "Tyczenie: ciosy +2", 1, 16, core::boon_effect::power, 2, 10 },
+    { "Pełna skrzynka", "Moc innego fachu +1", 1, 128, core::boon_effect::power, 1, 11 },
 };
 inline constexpr core::synergy_def synergies[] = {   // synergie: 2+ premie z tym samym znacznikiem
     { "Przepięcie", "Ciosy z prądem, porażenie dalej", 3, core::synergy_effect::conduct, 1 },
@@ -546,7 +565,7 @@ inline constexpr core::synergy_def synergies[] = {   // synergie: 2+ premie z ty
     { "Magazyn", "Materiały 2x częściej", 128, core::synergy_effect::stock, 100 },
     { "Iskrzenie", "Wybuch pyłu +3 i szerzej", 256, core::synergy_effect::sparks, 3 },
 };
-inline constexpr int boons_count = 41;
+inline constexpr int boons_count = 44;
 inline constexpr int boon_tags_count = 9;
 inline constexpr int synergies_count = 8;
 inline constexpr int boon_reroll_cost = 25;
@@ -678,6 +697,27 @@ inline constexpr core::story_thread story_arc[] = {   // fabuła odkrywana z bud
 };
 inline constexpr int story_arc_count = 19;
 
+inline constexpr core::secret_def secrets[] = {   // sekretne zlecenia: "???" z podpowiedzią, nagroda po wykonaniu
+    { "Bez kofeiny też się da", "Wygraj bez picia kawy", core::secret_kind::no_coffee_win, 0, core::secret_reward::cls, 9, "Nowy zawód: Spawacz", { "Kierownik Marek", { "Wygrana bez kawy!", "Nowy zawód: Spawacz -", "Spaw: iskry i dym." } } },
+    { "Szef tylko dzwoni", "Termin pokonany przez brygadę", core::secret_kind::helper_boss, 8, core::secret_reward::tool, 8, "Narzędzie: Młot Zenka", { "Kierownik Marek", { "Termin padł od brygady!", "Młot Zenka w dropach:", "cios odpycha problem." } } },
+    { "Szczur magazynowy", "5 magazynów w serii budów", core::secret_kind::storerooms, 5, core::secret_reward::tool, 9, "Poziomica mistrza", { "Kierownik Marek", { "5 magazynów w serii!", "Poziomica mistrza: kryt", "i magazyny na mapie." } } },
+    { "Każdy fach się przyda", "Wygraj każdym z 9 zawodów", core::secret_kind::class_wins, 9, core::secret_reward::cls, 11, "Nowy zawód: Majster", { "Kierownik Marek", { "Każdy fach wygrany!", "Majster: co etap moc", "innego fachu." } } },
+    { "Papierologia? Nie tym razem", "Akt 0 bez ciosu od papierów", core::secret_kind::paper_clean, 0, core::secret_reward::cls, 10, "Nowy zawód: Geodeta", { "Kierownik Marek", { "Akt 0 bez obrażeń!", "Geodeta widzi cały plac", "od startu etapu." } } },
+    { "Mokra robota", "20x mokry + prąd w budowie", core::secret_kind::shock_combos, 20, core::secret_reward::cosmetic, 0, "Wygląd: Złota kielnia", { "Kierownik Marek", { "20 porażeń w budowie!", "Złota kielnia: złoty", "błysk przy krycie." } } },
+    { "Na styk", "Wygraj z 1-3 HP", core::secret_kind::low_hp_win, 3, core::secret_reward::cosmetic, 1, "Wygląd: Kask w paski", { "Kierownik Marek", { "Odbiór na ostatnich HP!", "Kask w paski: wybierz", "go na wyborze zawodu." } } },
+    { "Szybka ekipa", "Wygraj w 150 dni (bez Aktu 0)", core::secret_kind::fast_win, 150, core::secret_reward::respect, 16, "Respekt: Zaprawiony", { "Kierownik Marek", { "Dom w rekordowym czasie!", "Respekt: Zaprawiony", "w boju - kawa na start." } } },
+};
+inline constexpr core::cosmetic_def cosmetics[] = {   // wygląd z sekretnych zleceń (tylko oprawa)
+    { "Złota kielnia", "Złoty błysk broni przy krycie" },
+    { "Kask w paski", "Kask w biało-czerwone pasy" },
+};
+inline constexpr int secrets_count = 8;
+inline constexpr int cosmetics_count = 2;
+inline constexpr uint64_t secret_paper_mask = 1232655613952ull;   // problemy papierowe (Akt 0 bez obrażeń)
+inline constexpr int secret_helper_boss = 8;   // boss pokonany ciosem brygady (Szef tylko dzwoni)
+inline constexpr int cosmetic_gold = 0;   // złoty błysk broni przy krycie
+inline constexpr int cosmetic_stripes = 1;   // kask w paski (wybór zawodu)
+
 inline constexpr core::decor_def estate_decor[] = {   // ozdoby Osiedla (klatki w houses.bmp za pustą działką)
     { "Lipa", 1 },
     { "Ławka Zenka", 3 },
@@ -749,7 +789,7 @@ inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonog
 };
 inline constexpr int tips_count = 19;
 
-inline constexpr int classes_count = 9;
+inline constexpr int classes_count = 12;
 inline constexpr int stages_count = 12;
 inline constexpr int difficulties_count = 3;
 inline constexpr int default_difficulty = 1;

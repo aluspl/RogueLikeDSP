@@ -115,6 +115,12 @@ static void arena(game& g, int cls)
     g.hero.x = 7; g.hero.y = 7; g.update_fov();
 }
 
+// Pełny Respekt (secret = false: bez rang z sekretnych zleceń - tabela balansu porównywalna z poprzednimi wersjami).
+static void full_respect(profile& p, bool secret = true)
+{
+    for(int i = 0; i < data::respect_count; ++i) if(secret || data::respect[i].secret < 0) set_respect_rank(p, i, data::respect[i].ranks);
+}
+
 static int g_dummy_crit(int cls) { game g; g.new_run(cls, 1); return g.crit_pct(); }
 
 int main()
@@ -1277,7 +1283,7 @@ int main()
             for(int mode = 0; mode < 2; ++mode)
             {
                 run_mods mm; if(mode) mm.investor = all;
-                game g; g.new_run(k % data::classes_count, 3000 + k * 131, data::default_difficulty, mm);
+                game g; g.new_run(k % data::open_classes_count, 3000 + k * 131, data::default_difficulty, mm);
                 for(int step = 0; step < 4000; ++step)
                 {
                     if(g.st == status::stage_clear) { bot_next(g); continue; }
@@ -1400,7 +1406,7 @@ int main()
         int bits = 0; for(int i = 0; i < data::investor_count; ++i) bits += (a.bonus.investor >> i) & 1;
         CHECK(bits == data::daily_investor_mods);
         int classes_seen = 0; for(int d = 1; d <= 60; ++d) classes_seen |= 1 << daily_class(daily_seed(d));
-        CHECK(classes_seen == (1 << data::classes_count) - 1);
+        CHECK(classes_seen == (1 << data::open_classes_count) - 1);   // bez zawodów z sekretów
         profile p; profile_reset(p);
         int y, m, d; daily_date(p, y, m, d);
         CHECK(y == data::daily_default_date[0] && m == data::daily_default_date[1] && d == data::daily_default_date[2]);
@@ -1499,6 +1505,7 @@ int main()
         profile s; profile_reset(s);
         CHECK(respect_cost(s, 0) == data::respect[0].costs[0] && ! buy_respect(s, 0));
         s.respect = 60000;
+        s.secrets = uint16_t((1 << data::secrets_count) - 1);   // Respekt z sekretnego zlecenia (Zaprawiony w boju) odblokowany
         int spent = 0;
         for(int i = 0; i < data::respect_count; ++i)
         {
@@ -1584,7 +1591,7 @@ int main()
             if(rd.kind == reward_kind::gear) CHECK((gear_slots_mask(p) >> rd.index) & 1);
         }
         CHECK(record_win(p) == -1 && p.rewards == avail);   // "wkrótce" się nie odblokowuje
-        for(int i = 0; i < data::classes_count; ++i) CHECK(class_unlocked(p, i) == (class_reward(i) || (p.classes >> i) & 1));
+        for(int i = 0; i < data::classes_count; ++i) CHECK(class_unlocked(p, i) == ((class_reward(i) && ! class_secret(i)) || (p.classes >> i) & 1));
         // wygrane i stawki zawodów 8+
         profile w; profile_reset(w);
         for(int c = 0; c < data::classes_count; ++c) { CHECK(! class_won(w, c)); set_class_won(w, c); CHECK(class_won(w, c)); set_best_stake(w, c, c + 1); }
@@ -1806,7 +1813,7 @@ int main()
             CHECK(profile_fix(p) && std::strcmp(p.magic, profile_magic) == 0 && p.catalog_hi == 0 && p.best == 4321 && p.respect == 77 && p.catalog == 0x0F0F);
             catalog_add(p, 20); catalog_add(p, 31);
             CHECK(catalog_has(p, 20) && catalog_has(p, 31) && !catalog_has(p, 21) && catalog_count(p) == 8 + 2);
-            CHECK(std::strcmp(run_magic, "PBRUN13") == 0);
+            CHECK(std::strcmp(run_magic, "PBRUN14") == 0);
         }
     }
     // 41. v0.21.49 cz. 3: Akt 0 (Papierologia) - nagroda za odbiór, pieczątki zamykają schody, druga faza bossa;
@@ -1865,7 +1872,7 @@ int main()
             int won_act0 = 0;
             for(int k = 0; k < 20; ++k)
             {
-                game b; b.new_run(k % data::classes_count, 300 + k * 13, 0, mods(p));
+                game b; b.new_run(k % data::open_classes_count, 300 + k * 13, 0, mods(p));
                 for(int step = 0; step < 3000 && b.st == status::playing && b.stage < F0; ++step) bot_step(b);
                 while(b.st == status::stage_clear && b.stage < F0) { bot_next(b); for(int step = 0; step < 3000 && b.st == status::playing; ++step) bot_step(b); }
                 won_act0 += b.stage >= F0 || (b.st == status::stage_clear && b.stage == F0 - 1);
@@ -1901,14 +1908,14 @@ int main()
         CHECK(!tutorial_pending(v, 0) && !tutorial_pending(v, 1) && pending_unlock(v, 0, cls) == unlock_act0 && pending_unlock(v, 1, cls) == -1);
         profile nv; profile_reset(nv); std::memcpy(nv.magic, "PBRL009", 8);
         CHECK(profile_fix(nv) && tutorial_pending(nv, 0) && nv.rewards == 0 && nv.tutorial == 0);
-        CHECK(sizeof(profile) == 188 && std::strcmp(profile_magic, "PBRL011") == 0);
+        CHECK(sizeof(profile) == 196 && std::strcmp(profile_magic, "PBRL012") == 0);
     }
     // 46. v0.21.50: rozpiska obrażeń broni (#26) - zakres z rozpiski = to, co naprawdę zadaje walka (wiele rzutów z seedem)
     {
         // źródła premii profilu: suma części = mods()
         profile p; profile_reset(p);
         for(int i = 0; i < data::upgrades_count; ++i) p.levels[i] = uint8_t(data::upgrades[i].levels);
-        for(int i = 0; i < data::respect_count; ++i) p.respect_ranks[i] = uint8_t(data::respect[i].ranks);
+        full_respect(p);
         p.badges = 0xFFFFFFFFu & ((1u << data::badges_count) - 1);
         for(int k = 0; k < data::keepsakes_count; ++k) p.keepsake_runs[k] = 9;
         p.keepsake = 3;   // Szczęśliwa kielnia (albo co wybierze select)
@@ -2093,7 +2100,7 @@ int main()
             game f; f.new_run(2, 77, data::default_difficulty, m); clear_stage(f);
             f.cash = 0; CHECK(f.reroll_price() == 0 && f.reroll_boons() && f.cash == 0 && f.rerolls_left() == 1);
             f.cash = 100; CHECK(f.reroll_price() == data::boon_reroll_cost && f.reroll_boons() && f.cash == 100 - data::boon_reroll_cost);
-            profile p; profile_reset(p); for(int i = 0; i < data::respect_count; ++i) p.respect_ranks[i] = uint8_t(data::respect[i].ranks);
+            profile p; profile_reset(p); full_respect(p);
             CHECK(mods(p).rerolls == 1);
         }
         // skutki premii: natychmiastowe i stałe; rozpiska = walka z premiami i elitą (Tarcza)
@@ -2245,7 +2252,7 @@ int main()
         {
             game g; g.new_run(3, 42); clear_stage(g); g.pick_boon(1);
             run_save* sv = new run_save(); run_save_make(*sv, g);
-            CHECK(run_save_valid(*sv) && sv->g.boons == g.boons && std::memcmp(sv->magic, "PBRUN13", 7) == 0);
+            CHECK(run_save_valid(*sv) && sv->g.boons == g.boons && std::memcmp(sv->magic, "PBRUN14", 7) == 0);
             delete sv;
         }
     }
@@ -2522,7 +2529,7 @@ int main()
             profile p; profile_reset(p); message lead, name;
             CHECK(recap_goal(p, lead, name) && std::strncmp(lead.s, "Jeszcze ", 8) == 0 && std::strstr(name.s, " I") != nullptr);
             p.respect = 9999; message l2, n2; CHECK(recap_goal(p, l2, n2) && std::strncmp(l2.s, "Stać Cię", 9) == 0);
-            for(int i = 0; i < data::respect_count; ++i) p.respect_ranks[i] = uint8_t(data::respect[i].ranks);
+            full_respect(p);
             message l3, n3; CHECK(recap_goal(p, l3, n3) && std::strstr(l3.s, "dośw.") != nullptr);
         }
         // wyzwanie tygodnia: numer tygodnia od poniedziałku, seed i zasady deterministyczne, zasady działają
@@ -2616,13 +2623,13 @@ int main()
                 const int week = wi + 1;
                 const bool one = weekly_rule_value(wi, weekly_rule::cls, -1) >= 0;
                 int wins = 0, runs = 0; long drinks = 0;
-                for(int c = 0; c < data::classes_count; ++c)
+                for(int c = 0; c < data::open_classes_count; ++c)   // bez zawodów z sekretów (wyniki jak w poprzednich wersjach)
                     for(int k = 0; k < 100; ++k)
                     {
                         const int cls = one ? weekly_class(week) : c;
                         run_mods m = weekly_mods(week);
                         m.hp = data::classes[cls].max_health * weekly_rule_value(wi, weekly_rule::hp_pct, 0) / 100;
-                        game g; g.new_run(cls, 1000 + uint32_t(k * data::classes_count + c) * 7919u, data::weekly_difficulty, m);
+                        game g; g.new_run(cls, 1000 + uint32_t(k * data::open_classes_count + c) * 7919u, data::weekly_difficulty, m);
                         bot_drinks = 0;
                         for(int step = 0; step < 4000; ++step)
                         {
@@ -2638,10 +2645,210 @@ int main()
         }
     }
 
+    // 52. v0.21.51 cz. 2: sekretne zlecenia (#39) - warunki, nagrody, migracja v11 -> v12, nowe zawody i narzędzia
+    {
+        auto secret_idx = [](secret_kind k) { for(int i = 0; i < data::secrets_count; ++i) if(data::secrets[i].kind == k) return i; return -1; };
+        auto class_idx = [](ability_effect e) { for(int c = 0; c < data::classes_count; ++c) if(data::classes[c].ability == e) return c; return -1; };
+        auto tool_of = [](bool knock) { for(int t = 0; t < data::tools_count; ++t) if(data::tools[t].secret && data::weapons[data::tools[t].weapon].knockback == knock) return t; return -1; };
+        const int spawacz = class_idx(ability_effect::weld), geodeta = class_idx(ability_effect::mark), majster = class_idx(ability_effect::borrow);
+        CHECK(spawacz >= data::open_classes_count && geodeta >= data::open_classes_count && majster >= data::open_classes_count);
+        CHECK(data::classes_count == 12 && data::open_classes_count == 9 && data::secrets_count == 8);
+        for(int k = 0; k < 8; ++k) CHECK(secret_idx(secret_kind(k)) >= 0);
+        // nowy profil: nic z sekretów, zawody i narzędzia zablokowane, nie do kupienia
+        profile p; profile_reset(p); p.xp = 1 << 20; p.respect = 60000;
+        for(int c = data::open_classes_count; c < data::classes_count; ++c) CHECK(! class_unlocked(p, c) && ! buy_class(p, c) && class_reward(c) && class_secret(c));
+        const int zenka = tool_of(true), poz = tool_of(false);
+        CHECK(zenka >= 0 && poz >= 0 && ! tool_unlocked(p, zenka) && ! buy_tool(p, zenka) && ! ((mods(p).tools >> poz) & 1));
+        const int vet = [] { for(int i = 0; i < data::respect_count; ++i) if(data::respect[i].effect == respect_effect::veteran) return i; return -1; }();
+        CHECK(vet >= 16 && ! respect_unlocked(p, vet) && ! buy_respect(p, vet) && respect_rank(p, vet) == 0);
+        CHECK(! cosmetic_unlocked(p, data::cosmetic_gold) && ! cosmetic_on(p, data::cosmetic_stripes));
+        { int kind = -1, idx = -1; next_unlock(p, kind, idx); CHECK(! (kind == 1 && class_secret(idx))); }
+        // budowa dnia: zawody bez sekretów
+        for(int d = 1; d <= 200; ++d) CHECK(daily_class(daily_seed(d)) < data::open_classes_count);
+
+        // 1. wygrana bez kawy (Spawacz); kawa z termosu, pełny termos i Hurtownia liczą się jako wypita
+        {
+            game g; g.new_run(1, 11); g.st = status::won;
+            const int i = secret_idx(secret_kind::no_coffee_win);
+            CHECK(secret_condition(p, &g, i));
+            g.st = status::playing; g.hero.hp = 3; g.thermos = 1; CHECK(g.player_drink() && g.coffee_drunk == 1);
+            g.st = status::won; CHECK(! secret_condition(p, &g, i));
+            game h; h.new_run(1, 11); h.cash = 999;
+            int heal = -1; for(int k = 0; k < data::hurtownia_count; ++k) if(data::hurtownia[k].effect == shop_effect::heal) heal = k;
+            h.hero.hp = 1; CHECK(heal >= 0 && h.hurtownia_buy(heal) && h.coffee_drunk == 1);
+            game n; n.new_run(1, 11); CHECK(! secret_condition(p, &n, i));   // bez wygranej nic
+            profile q; profile_reset(q); CHECK(! ((check_secrets(q, &g) >> i) & 1) && ! class_unlocked(q, spawacz));
+            g.coffee_drunk = 0; CHECK(check_secrets(q, &g) == (1 << i) && secret_done(q, i) && class_unlocked(q, spawacz));
+            CHECK(check_secrets(q, &g) == 0);   // raz
+        }
+        // 2. Termin pokonany ciosem brygady (Młot Zenka): pompa dobija bossa ostatniego etapu
+        {
+            run_mods m; m.helpers = (1 << data::brigade_count) - 1;
+            game g; arena(g, 0);
+            g.new_run(0, 77, data::default_difficulty, m);
+            for(auto& row : g.lv.t) for(auto& c : row) c = tile::wall;
+            for(int y = 1; y <= 14; ++y) for(int x = 1; x <= 14; ++x) g.lv.t[y][x] = tile::floor;
+            g.enemies_count = 0; g.pickups_count = 0; g.stairs_x = g.stairs_y = -1; g.weather = 0;
+            g.hero.x = 7; g.hero.y = 7; g.stage = data::stages_count - 1; g.update_fov();
+            g.spawn(data::secret_helper_boss, 8, 7); g.boss = 0; g.enemies[0].hp = 2; g.cash = 500;
+            int pump = -1; for(int h = 0; h < data::brigade_count; ++h) if(data::brigade[h].effect == helper_effect::pump) pump = h;
+            CHECK(pump >= 0 && g.call_helper(pump));
+            CHECK(! g.enemies[0].alive && g.st == status::won && (g.secret_flags & game::secret_helper_boss));
+            profile q; profile_reset(q); const int i = secret_idx(secret_kind::helper_boss);
+            CHECK((check_secrets(q, &g) >> i) & 1);
+            CHECK(tool_unlocked(q, zenka) && (mods(q).tools >> zenka) & 1 && ! tool_unlocked(q, poz));
+            game b; arena(b, 0); b.stage = data::stages_count - 1; b.spawn(data::secret_helper_boss, 8, 7); b.boss = 0; b.enemies[0].hp = 2;
+            b.hero_attack(0); CHECK(b.st == status::won && ! (b.secret_flags & game::secret_helper_boss));   // cios bohatera się nie liczy
+        }
+        // 3. 5 magazynów w budowie (Poziomica mistrza: kryt +, magazyn na podglądzie mapy)
+        {
+            game g; g.new_run(1, 5); const int i = secret_idx(secret_kind::storerooms);
+            g.secrets_found = uint8_t(data::secrets[i].value - 1); CHECK(! secret_condition(p, &g, i));
+            g.secrets_found = uint8_t(data::secrets[i].value); CHECK(secret_condition(p, &g, i));
+            const weapon_def& w = data::weapons[data::tools[poz].weapon];
+            CHECK(w.reveal && w.crit > 0);
+            game t; t.new_run(1, 5); int c0 = t.crit_pct(); t.take_tool(poz); CHECK(t.crit_pct() == c0 + w.crit && t.weapon().reveal);
+            CHECK(t.weapon_breakdown().crit_pct == t.crit_pct());
+        }
+        // 4. wygrana każdym z 9 zawodów (Majster) - też z migracji v11 -> v12 (dane w profilu)
+        {
+            const int i = secret_idx(secret_kind::class_wins);
+            profile q; profile_reset(q);
+            for(int c = 0; c < data::open_classes_count - 1; ++c) set_class_won(q, c);
+            CHECK(! secret_condition(q, nullptr, i));
+            set_class_won(q, data::open_classes_count - 1); CHECK(secret_condition(q, nullptr, i));
+            profile v11 = q; std::memcpy(v11.magic, profile_magic_v11, sizeof v11.magic);
+            std::memset(reinterpret_cast<char*>(&v11) + profile_v11_size, 0xCD, sizeof v11 - profile_v11_size);
+            v11.best = 4321; v11.wins = 9; v11.story = 7; v11.tutorial = 0xFFFF;   // samouczek obejrzany
+            CHECK(profile_fix(v11) && std::strcmp(v11.magic, profile_magic) == 0 && v11.best == 4321 && v11.story == 7);
+            CHECK(v11.secrets == (1 << i) && v11.secrets_new == (1 << i) && v11.cosmetic == 0 && v11.respect_ranks_hi[0] == 0);
+            CHECK(class_unlocked(v11, majster) && ! class_unlocked(v11, spawacz));
+            int cls = -1; CHECK(pending_unlock(v11, 0, cls) == unlock_secret && cls == i);
+            mark_unlock(v11, unlock_secret, cls); CHECK(v11.secrets_new == 0 && pending_unlock(v11, 0, cls) == -1);
+            CHECK(pending_unlock(v11, 1, cls) == unlock_class && cls == majster);   // dymek nowego zawodu na wyborze zawodu
+            CHECK(! profile_fix(v11));
+            profile old; profile_reset(old); std::memcpy(old.magic, profile_magic_v11, sizeof old.magic);   // bez wygranych: nic
+            CHECK(profile_fix(old) && old.secrets == 0);
+            profile v10; profile_reset(v10); std::memcpy(v10.magic, profile_magic_v10, sizeof v10.magic);
+            for(int c = 0; c < data::open_classes_count; ++c) set_class_won(v10, c);
+            CHECK(profile_fix(v10) && secret_done(v10, i));   // starsze profile też przez migrate_v12
+            // Pełny zespół (odznaka) nadal tylko zwykłe zawody
+            game w; w.new_run(0, 3); w.st = status::won; profile b; profile_reset(b);
+            for(int c = 0; c < data::open_classes_count; ++c) set_class_won(b, c);
+            check_badges(b, w); CHECK(b.badges & (1u << data::badge_pelny_zespol));
+        }
+        // 5. Akt 0 bez ciosu od papierów (Geodeta)
+        {
+            const int i = secret_idx(secret_kind::paper_clean);
+            run_mods m; m.act0 = 1;
+            game g; g.new_run(1, 21, data::default_difficulty, m); CHECK(g.first_stage == 0 && g.stage == 0);
+            g.debug_skip(); CHECK(g.st == status::stage_clear); g.next_stage(); CHECK(g.stage == data::prelude_stages - 1);
+            game h = g;
+            g.debug_skip(); CHECK(g.st == status::stage_clear && (g.secret_flags & game::secret_paper_clean) && secret_condition(p, &g, i));
+            h.log_hit(data::enemy_podpis, -1, recap_kind::melee, 3); CHECK(h.paper_hits == 1);
+            h.debug_skip(); CHECK(! (h.secret_flags & game::secret_paper_clean));
+            game r = g; r.paper_hits = 0; r.log_hit(data::enemy_rura, -1, recap_kind::melee, 3); CHECK(r.paper_hits == 0);   // rura to nie papier
+            game f; f.new_run(1, 21); f.log_hit(data::enemy_papierologia, -1, recap_kind::melee, 3); CHECK(f.paper_hits == 0);   // poza Aktem 0
+            profile q; profile_reset(q); CHECK((check_secrets(q, &g) >> i) & 1); CHECK(class_unlocked(q, geodeta));
+        }
+        // 6. 20x mokry + prąd w budowie (Złota kielnia)
+        {
+            const int i = secret_idx(secret_kind::shock_combos);
+            game g; arena(g, 3);
+            g.spawn(data::enemy_przeciek, 8, 7); g.enemies[0].hp = g.enemies[0].max_hp = 500;
+            for(int k = 0; k < data::secrets[i].value; ++k) { CHECK(! secret_condition(p, &g, i)); g.hero_attack(0); }
+            CHECK(g.shock_combos == data::secrets[i].value && secret_condition(p, &g, i));
+            profile q; profile_reset(q); check_secrets(q, &g);
+            CHECK(cosmetic_unlocked(q, data::cosmetic_gold) && cosmetic_on(q, data::cosmetic_gold));   // złota kielnia: zawsze po odblokowaniu
+        }
+        // 7. wygrana na 1-3 HP (Kask w paski - wybór na ekranie zawodu)
+        {
+            const int i = secret_idx(secret_kind::low_hp_win);
+            game g; g.new_run(1, 5); g.st = status::won; g.hero.hp = 4; CHECK(! secret_condition(p, &g, i));
+            g.hero.hp = 3; CHECK(secret_condition(p, &g, i)); g.hero.hp = 1; CHECK(secret_condition(p, &g, i));
+            profile q; profile_reset(q); toggle_cosmetic(q, data::cosmetic_stripes); CHECK(q.cosmetic == 0);   // zablokowany
+            check_secrets(q, &g); CHECK(cosmetic_unlocked(q, data::cosmetic_stripes) && ! cosmetic_on(q, data::cosmetic_stripes));
+            toggle_cosmetic(q, data::cosmetic_stripes); CHECK(cosmetic_on(q, data::cosmetic_stripes));
+            toggle_cosmetic(q, data::cosmetic_stripes); CHECK(! cosmetic_on(q, data::cosmetic_stripes));
+        }
+        // 8. szybka wygrana (Zaprawiony w boju: Respekt - kawa w termosie na start); dni bez Aktu 0
+        {
+            const int i = secret_idx(secret_kind::fast_win);
+            game g; g.new_run(1, 5); g.st = status::won;
+            for(int s2 = 0; s2 < data::stages_count; ++s2) g.stage_days[s2] = 0;
+            const int n = data::stages_count - data::prelude_stages;
+            CHECK(g.build_days() == n * data::schedule_min_days);
+            g.stage_days[0] = 3000; CHECK(g.build_days() == n * data::schedule_min_days);   // Akt 0 się nie liczy
+            CHECK(secret_condition(p, &g, i) == (n * data::schedule_min_days <= data::secrets[i].value));
+            g.stage_days[F0] = uint16_t((data::secrets[i].value + 1) * data::schedule_turns_per_day); CHECK(! secret_condition(p, &g, i));
+            profile q; profile_reset(q); q.respect = 500;
+            g.stage_days[F0] = 0; check_secrets(q, &g);
+            CHECK(respect_unlocked(q, vet) && buy_respect(q, vet) && respect_rank(q, vet) == 1 && q.respect_ranks_hi[vet - 16] == 1);
+            game s; s.new_run(1, 5, data::default_difficulty, mods(q)); CHECK(s.thermos == data::respect[vet].values[0]);
+            message l; respect_label(l, respect_effect::veteran, 2); CHECK(std::strstr(l.s, "kawy") != nullptr);
+        }
+        // nowe zawody: Spaw (iskry w linii i dym -> wybuch pyłu), Tyczenie (+ do ciosu w cel), Geodeta widzi plac, Majster pożycza moc
+        {
+            game g; arena(g, spawacz);
+            CHECK(g.weapon().elem == element::spark && g.hit_spark());
+            g.spawn(data::enemy_kornik, 9, 7); g.spawn(data::enemy_kornik, 10, 7); g.spawn(data::enemy_kornik, 11, 7);
+            for(int k = 0; k < 3; ++k) { g.enemies[k].hp = g.enemies[k].max_hp = 500; g.enemies[k].stun = 9; }
+            CHECK(g.player_ability());
+            CHECK(g.enemies[0].hp < 500 && g.enemies[1].hp < 500 && g.enemies[2].hp == 500);   // Spaw I: 3 pola
+            CHECK(g.enemy_dusty(0) && g.enemy_dusty(1) && ! g.enemy_dusty(2) && g.ability_cd > 0);
+            g.combo_events = 0; g.hero_attack(0); CHECK(g.combo_events & 2);                   // iskra w dymie: wybuch pyłu
+            game t; arena(t, geodeta);
+            t.spawn(data::enemy_kornik, 8, 7); t.enemies[0].hp = t.enemies[0].max_hp = 500;
+            const int thp = t.hero.hp;
+            CHECK(t.mark_bonus(0) == 0 && t.player_ability() && t.mark_target == 0 && t.mark_turns > 0 && t.hero.hp == thp);   // ogłuszony nie bije
+            CHECK(t.mark_bonus(0) == 1 + t.ability_rank());
+            int turns = t.mark_turns; for(int k = 0; k < turns; ++k) t.player_wait();
+            CHECK(t.mark_turns == 0 && t.mark_target == -1);
+            game a; a.new_run(geodeta, 31); game b; b.new_run(0, 31);
+            int ea = 0, eb = 0; for(int y = 0; y < map_h; ++y) for(int x = 0; x < map_w; ++x) { ea += a.explored(x, y); eb += b.explored(x, y); }
+            CHECK(ea > eb && a.explored(a.stairs_x, a.stairs_y));
+            run_mods m0; m0.act0 = 1; game d; d.new_run(geodeta, 31, data::default_difficulty, m0);
+            for(int k = 0; k < d.pickups_count; ++k) if(d.pickups[k].type == document) CHECK(d.explored(d.pickups[k].x, d.pickups[k].y));
+            int seen = 0;
+            for(uint32_t seed = 1; seed <= 40; ++seed)
+            {
+                game mj; mj.new_run(majster, seed); game mj2; mj2.new_run(majster, seed);
+                CHECK(mj.borrow_cls >= 0 && mj.borrow_cls < data::open_classes_count && mj.borrow_cls == mj2.borrow_cls);
+                CHECK(mj.power_cls() == mj.borrow_cls && &mj.pdef() == &data::classes[mj.borrow_cls]);
+                seen |= 1 << mj.borrow_cls;
+                int prev = mj.borrow_cls; mj.start_stage(mj.stage + 1); CHECK(mj.borrow_cls >= 0);
+                (void)prev;
+            }
+            CHECK(seen == (1 << data::open_classes_count) - 1);   // każdy fach się trafia
+            game o; o.new_run(0, 3); CHECK(o.borrow_cls == -1 && o.power_cls() == 0);
+            game mh; arena(mh, majster); mh.borrow_cls = int8_t(class_idx(ability_effect::flush)); mh.hero.hp = 5;
+            CHECK(mh.player_ability() && mh.hero.hp > 5 && mh.ability_cd == mh.ability_cooldown());   // Zawór Hydraulika
+            CHECK(mh.ability_cooldown() <= data::classes[mh.borrow_cls].ability_cooldown);
+        }
+        // Młot Zenka: cios wręcz odpycha (bossa nie)
+        {
+            game g; arena(g, 1); g.take_tool(zenka); CHECK(g.weapon().knockback);
+            g.spawn(data::enemy_kornik, 8, 7); g.enemies[0].hp = g.enemies[0].max_hp = 500;
+            g.hero_attack(0); CHECK(g.enemies[0].x == 9);
+            g.spawn(data::enemy_termin, 7, 8); g.boss = 1; g.enemies[1].hp = g.enemies[1].max_hp = 500;
+            g.hero_attack(1); CHECK(g.enemies[1].x == 7 && g.enemies[1].y == 8);
+            profile q; profile_reset(q); q.tools_found = 0xFF; game w; w.new_run(0, 3); w.tools_found = uint8_t((1 << 8) - 1);
+            q.tools_found = w.tools_found; check_badges(q, w); CHECK(q.badges & (1u << data::badge_kolekcjoner));   // sekretne się nie liczą
+        }
+        // zapis budowy: nowe pola w PBRUN14
+        {
+            game g; g.new_run(majster, 9); g.coffee_drunk = 2; g.shock_combos = 7; g.secret_flags = 3;
+            run_save* sv = new run_save(); run_save_make(*sv, g);
+            CHECK(run_save_valid(*sv) && sv->g.shock_combos == 7 && sv->g.borrow_cls == g.borrow_cls && std::memcmp(sv->magic, "PBRUN14", 7) == 0);
+            delete sv;
+        }
+    }
+
     if(std::getenv("PB_NO_BALANCE")) { std::printf(fails ? "\n%d FAIL\n" : "\nOK (bez balansu)\n", fails); return fails != 0; }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
     int diff_wins[data::difficulties_count] = {};
+    int class_rate[data::difficulties_count][data::classes_count] = {};   // v0.21.51 cz. 2: nowe zawody w rozrzucie zwykłych
     for(int df=0;df<data::difficulties_count;++df)
     for(int c=0;c<data::classes_count;++c)
     {
@@ -2657,12 +2864,25 @@ int main()
             }
             wins += g.st==status::won; stages += g.stage+1; turns += g.turns; score += g.score;
         }
-        diff_wins[df] += wins;
+        class_rate[df][c] = wins * 100 / runs;
+        if(c < data::open_classes_count) diff_wins[df] += wins;   // średnie: zawody bez sekretów (porównywalne z v0.21.51 cz. 1)
         std::printf("%-18s %-9s %6d %6.1f %6ld %8ld\n", data::classes[c].name, data::difficulties[df].name, wins*100/runs, double(stages)/runs, turns/runs, score/runs);
     }
     for(int df=1;df<data::difficulties_count;++df) CHECK(diff_wins[df-1] > diff_wins[df]);   // trudniej = mniej wygranych
     {
-        int easy = diff_wins[0] * 100 / (300 * data::classes_count), hard = diff_wins[data::difficulties_count - 1] * 100 / (300 * data::classes_count);
+        const int nd = data::default_difficulty;
+        int lo = 100, hi = 0;
+        for(int c = 0; c < data::open_classes_count; ++c) { lo = imin(lo, class_rate[nd][c]); hi = imax(hi, class_rate[nd][c]); }
+        std::printf("Zawody z sekretów (Normalny):");
+        for(int c = data::open_classes_count; c < data::classes_count; ++c)
+        {
+            std::printf(" %s %d%%", data::classes[c].name, class_rate[nd][c]);
+            CHECK(class_rate[nd][c] >= lo && class_rate[nd][c] <= hi);   // inne, nie mocniejsze: w rozrzucie zwykłych zawodów
+        }
+        std::printf(" (zwykłe %d-%d%%)\n", lo, hi);
+    }
+    {
+        int easy = diff_wins[0] * 100 / (300 * data::open_classes_count), hard = diff_wins[data::difficulties_count - 1] * 100 / (300 * data::open_classes_count);
         std::printf("Łatwy %d%%, Trudny %d%%\n", easy, hard);
         CHECK(easy >= 50 && easy <= 60 && hard >= 8 && hard <= 15);   // cele balansu v0.21.49
     }
@@ -2671,7 +2891,7 @@ int main()
         auto win_rate = [](const run_mods& m, long& drinks, int& drank_runs) {
             int wins = 0; const int runs = 300;
             drinks = 0; drank_runs = 0;
-            for(int c = 0; c < data::classes_count; ++c)
+            for(int c = 0; c < data::open_classes_count; ++c)
                 for(int k = 0; k < runs; ++k)
                 {
                     game g; g.new_run(c, 1000 + k * 7919, data::default_difficulty, m);
@@ -2684,12 +2904,12 @@ int main()
                     }
                     wins += g.st == status::won; drinks += bot_drinks; drank_runs += bot_drinks > 0;
                 }
-            return wins * 100 / (runs * data::classes_count);
+            return wins * 100 / (runs * data::open_classes_count);
         };
-        const int n = 300 * data::classes_count;
+        const int n = 300 * data::open_classes_count;
         profile none; profile_reset(none);
         profile szk = none; for(int i = 0; i < data::upgrades_count; ++i) szk.levels[i] = uint8_t(data::upgrades[i].levels);
-        profile full = szk; for(int i = 0; i < data::respect_count; ++i) full.respect_ranks[i] = uint8_t(data::respect[i].ranks);
+        profile full = szk; full_respect(full, false);
         profile inv = full; inv.wins = 1; inv.investor = uint8_t((1 << data::investor_count) - 1);
         profile fullr = full; fullr.rewards = uint8_t(data::rewards_count);   // + wszystkie nagrody za odbiór, w tym Akt 0
         long dr0, dr1, dr2, dr3, dr4, drx; int k0, k1, k2, k3, k4, kx;
