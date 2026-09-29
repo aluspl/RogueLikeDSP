@@ -6,7 +6,8 @@ using CoreGame = LifeLike.Core.Game;
 namespace LifeLike.Game.Hud;
 
 /// <summary>
-/// Górny pasek HUD jak na GBA (półprzezroczysty ciemny pas): HP z paskiem, poziom z paskiem doświadczenia, etap;
+/// Górny pasek HUD jak na GBA (półprzezroczysty ciemny pas): HP z paskiem, poziom z paskiem doświadczenia, etap
+/// (w wąskim pionie numer etapu z trudnością w 1. rzędzie, pełna nazwa etapu w 2. rzędzie po prawej);
 /// w drugim rzędzie stany z liczbą tur, termos, pogoda dnia, mechanika aktu (porywy: tury do kolejnego), materiały, wydarzenie na placu, ostrzeżenie o ciosie bossa, termos i ikona mocy
 /// (szara z odliczaniem, gdy się ładuje; „R” i podskakiwanie, gdy gotowa).
 /// </summary>
@@ -76,10 +77,19 @@ public partial class HudTop : Control
         // etap i poziom trudności (prawa strona, jak „Etap 1/8 N” na GBA)
         var sd = g.D.Stages[g.Stage];
         var ng = g.Tier > 0 ? $" +{g.Tier}" : "";
-        var right = $"Etap {g.StageNumber()}/{g.StagesInRun()}: {sd.Name}";
+        // v0.21.51: gdy „Etap 2/10: nazwa” nie mieści się w 1. rzędzie (wąski pion na telefonie), 1. rząd = „Etap 2/10,
+        // Normalny”, a pełna nazwa etapu idzie do 2. rzędu po prawej (mierzona po ikonach - bez ucinania „Izolacja fu..”)
+        var stageNo = $"Etap {g.StageNumber()}/{g.StagesInRun()}";
+        var right = $"{stageNo}: {sd.Name}";
         var re = w - 6 - Mathf.Ceil((SettingsButton.Side + 4) / Layout.HudScale); // miejsce na klucz ustawień
-        f.Draw(this, new Vector2(re, 2), f.Fit(right, (int)(re - xr.End.X - 12)), Ink.Map, TextAlign.Right);
-        f.Draw(this, new Vector2(re, 19), $"{g.DDef.Name}{ng}", Ink.MapDim, TextAlign.Right);
+        var room1 = (int)(re - xr.End.X - 12);
+        var nameBelow = f.Measure(right) > room1;
+        if (nameBelow) f.Draw(this, new Vector2(re, 2), f.Fit($"{stageNo}, {g.DDef.Name}{ng}", room1), Ink.Map, TextAlign.Right);
+        else
+        {
+            f.Draw(this, new Vector2(re, 2), right, Ink.Map, TextAlign.Right);
+            f.Draw(this, new Vector2(re, 19), $"{g.DDef.Name}{ng}", Ink.MapDim, TextAlign.Right);
+        }
 
         // rząd 2: stany (ikona + tury)
         x = 6f;
@@ -139,13 +149,24 @@ public partial class HudTop : Control
             x += f.Draw(this, new Vector2(x, 19), g.Mats[m].ToString(), Ink.Map) + 6;
         }
 
-        // wydarzenie na placu / zapowiedź ciosu bossa
+        // nazwa etapu w 2. rzędzie (gdy nie zmieściła się w 1.): pierwszeństwo przed pastylką wydarzenia
+        var nameRoom = re - x - 6;
+        if (nameBelow)
+        {
+            var nw = Mathf.Min(f.Measure(sd.Name), (int)nameRoom);
+            f.Draw(this, new Vector2(re, 19), f.Fit(sd.Name, (int)nameRoom), Ink.Map, TextAlign.Right);
+            nameRoom -= nw + 8;
+        }
+
+        // wydarzenie na placu / zapowiedź ciosu bossa (gdy jest miejsce obok nazwy etapu)
         if (g.SlamTimer > 0)
         {
             var pulse = ((int)(_clock * 6) & 1) == 1;
-            f.Draw(this, new Vector2(x + 4, 19), $"UWAGA: cios za {g.SlamTimer}!", pulse ? Ink.MapBad : Ink.MapLoot);
+            var warn = $"UWAGA: cios za {g.SlamTimer}!";
+            if (f.Measure(warn) + 4 > nameRoom) warn = $"Cios za {g.SlamTimer}!";
+            f.Draw(this, new Vector2(x + 4, 19), warn, pulse ? Ink.MapBad : Ink.MapLoot);
         }
-        else if (g.CurrentEvent is { } ev)
+        else if (g.CurrentEvent is { } ev && f.Measure(ev.Short) + 14 <= nameRoom)
         {
             var pill = f.Measure(ev.Short) + 10;
             var r = new Rect2(x + 4, 21, pill, 13);
