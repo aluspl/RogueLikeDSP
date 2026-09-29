@@ -716,6 +716,16 @@ inline constexpr const char* extras_help[] = {   // Jak grać: wydarzenia z wybo
 };
 inline constexpr int extras_help_count = 12;
 
+inline constexpr const char* meta_help[] = {   // Jak grać: podsumowanie budowy, wyzwanie tygodnia, fabuła
+    "Po budowie: podsumowanie -",
+    "co zatrzymało, oś czasu,",
+    "najbliższy cel i rada.",
+    "Wyzwanie tygodnia: seed i",
+    "zasady tygodnia, osobny wynik.",
+    "Fabuła: SMS-y w Osiedlu (A).",
+};
+inline constexpr int meta_help_count = 6;
+
 inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonogramu między etapami
     "Przytrzymaj B: podgląd problemów",
     "Przytrzymaj A: celownik i zasięg",

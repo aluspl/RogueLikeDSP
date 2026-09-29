@@ -586,6 +586,10 @@ eh = d["extrasHelp"]   # v0.21.50 cz. 3: Jak grać - wydarzenia, ulepszenia, mag
 assert len(eh) == 12 and all(len(x) <= 31 for x in eh), eh   # GBA: 224 px
 L += ["inline constexpr const char* extras_help[] = {   // Jak grać: wydarzenia z wyborem, ulepszanie narzędzia, magazyn"]
 L += [f"    {s(t)}," for t in eh] + ["};", f"inline constexpr int extras_help_count = {len(eh)};", ""]
+mh = d["metaHelp"]   # v0.21.50 cz. 4: Jak grać - podsumowanie, wyzwanie tygodnia, fabuła (GBA i Godot)
+assert len(mh) == 6 and all(len(x) <= 31 for x in mh), mh
+L += ["inline constexpr const char* meta_help[] = {   // Jak grać: podsumowanie budowy, wyzwanie tygodnia, fabuła"]
+L += [f"    {s(t)}," for t in mh] + ["};", f"inline constexpr int meta_help_count = {len(mh)};", ""]
 L += ["inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonogramu między etapami"]
 L += [f"    {s(t)}," for t in d["tips"]] + ["};", f"inline constexpr int tips_count = {len(d['tips'])};", ""]
 L += [f"inline constexpr int classes_count = {len(d['classes'])};",

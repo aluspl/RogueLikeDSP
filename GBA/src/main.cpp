@@ -524,7 +524,7 @@ namespace
 
     void page_help(app& a)
     {
-        constexpr int pages_count = 12;
+        constexpr int pages_count = 13;
         core::message cmb[3];   // kombinacje stanów (#29): "Mokry + prąd! Porażenie"
         for(int k = 0; k < 3 && k < data::combos_count; ++k) cmb[k].add(data::combos[k].short_name).add(" ").add(data::combos[k].name);
         core::message luck1, luck2;   // wzory z danych (sekcja luck)
@@ -556,12 +556,14 @@ namespace
             { data::extras_help[0], data::extras_help[1], data::extras_help[2], data::extras_help[3], data::extras_help[4],
               data::extras_help[5], "Karta problemu (B): Ma klucz." },
             { data::extras_help[6], data::extras_help[7], data::extras_help[8], data::extras_help[9], data::extras_help[10],
-              data::extras_help[11], "L: mapa pokazuje magazyn." } };
+              data::extras_help[11], "L: mapa pokazuje magazyn." },
+            { data::meta_help[0], data::meta_help[1], data::meta_help[2], data::meta_help[3], data::meta_help[4],
+              data::meta_help[5], "Tytuł: L = wyzwanie tygodnia." } };
         for(int pg = 0; pg < pages_count; ++pg)
         {
             page_sprites t;
             a.text.set_center_alignment();
-            static const char* const names[5] = { "Kombinacje", "Skąd stany", "Premie i elity", "Wydarzenia", "Magazyn" };   // strony 8-12 (v0.21.50)
+            static const char* const names[6] = { "Kombinacje", "Skąd stany", "Premie i elity", "Wydarzenia", "Magazyn", "Po budowie" };   // strony 8-13 (v0.21.50)
             core::message title; title.add(pg >= 7 ? names[pg - 7] : "Jak grać").add(" (").add(pg + 1).add("/").add(pages_count).add(")");
             a.text.generate(0, -70, title.s, t);
             a.text.set_left_alignment();
