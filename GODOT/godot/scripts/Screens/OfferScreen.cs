@@ -24,8 +24,8 @@ public sealed class OfferScreen : Screen
 
     public override bool HandleInput(InputCmd e)
     {
-        if (e.Is(GameAction.A)) Decide(true);
-        else if (e.Is(GameAction.B | GameAction.Cancel)) Decide(false);
+        if (e.IsConfirm) Decide(true);
+        else if (e.IsBack) Decide(false);
         else return false;
         return true;
     }

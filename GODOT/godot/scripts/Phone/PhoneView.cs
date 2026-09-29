@@ -39,6 +39,9 @@ public partial class PhoneView : Control
     public PhonePage Current => _single ?? (_tabs.Length > 0 ? _tabs[_tab] : null);
     public bool HasTabs => _single is null && _tabs.Length > 1;
 
+    /// <summary>Telefon wjeżdża / zjeżdża (blokada wejścia w ScreenFlow).</summary>
+    public bool Sliding => _slide is not null && _slide.IsValid() && _slide.IsRunning();
+
     /// <summary>Wywoływane po zmianie zakładki (np. zapamiętanie ostatniej, jak phone_tab na GBA).</summary>
     public Action<int> OnTabChanged;
 
@@ -344,21 +347,58 @@ public partial class PhoneView : Control
         for (var k = 0; k < 4; k++) DrawRect(new Rect2(bx - 34 + k * 4, sy + 11 - k * 2 - 2, 3, k * 2 + 2), Pal.Text);
     }
 
-    /// <summary>Przyciski strony w rzędzie: pierwszy w fiolecie marki (główna akcja), kolejne jasne.</summary>
+    /// <summary>
+    /// Przyciski strony w rzędzie (v0.21.51 - ten sam układ wszędzie): główny (wybierz / dalej) w fiolecie marki zawsze
+    /// po prawej, powrót (wróć / zostaw) po lewej, pozostałe między nimi; sam jeden przycisk zajmuje prawą połowę, żeby
+    /// stuknięcie z lewej nigdy niczego nie zatwierdzało.
+    /// </summary>
     private void DrawButtons(PageAction[] actions, Rect2 area)
     {
         _buttons.Clear();
         if (actions.Length == 0) return;
+        var ordered = Arrange(actions);
         var f = PixelFont.I;
         var gap = 8f;
-        var w = (area.Size.X - gap * (actions.Length - 1)) / actions.Length;
+        var slots = Mathf.Max(2, ordered.Length);
+        var w = (area.Size.X - gap * (slots - 1)) / slots;
+        var first = slots - ordered.Length;
+        for (var i = 0; i < ordered.Length; i++)
+        {
+            var a = ordered[i];
+            var r = new Rect2(Mathf.Round(area.Position.X + (first + i) * (w + gap)), area.Position.Y, Mathf.Round(w), area.Size.Y);
+            var primary = a.Resolved == PageRole.Primary;
+            DrawStyleBox(Ui.Box(primary ? Pal.Brand : Pal.Card, 10, primary ? Pal.Brand : Pal.Border), r);
+            f.Draw(this, new Vector2(r.GetCenter().X, Mathf.Round(r.GetCenter().Y - 9)), f.Fit(a.Label, (int)r.Size.X - 8), primary ? Ink.White : Ink.Brand, TextAlign.Center, 1, true);
+            _buttons.Add((r, a.Action));
+        }
+    }
+
+    /// <summary>Kolejność od lewej: powrót, zwykłe, główny (pierwszy główny z listy; kolejne główne jak zwykłe).</summary>
+    public static PageAction[] Arrange(PageAction[] actions)
+    {
+        var list = new List<PageAction>();
+        foreach (var a in actions) if (a.Resolved == PageRole.Back) list.Add(a);
+        var primaryAt = Array.FindIndex(actions, a => a.Resolved == PageRole.Primary);
         for (var i = 0; i < actions.Length; i++)
         {
-            var r = new Rect2(Mathf.Round(area.Position.X + i * (w + gap)), area.Position.Y, Mathf.Round(w), area.Size.Y);
-            var primary = i == 0;
-            DrawStyleBox(Ui.Box(primary ? Pal.Brand : Pal.Card, 10, primary ? Pal.Brand : Pal.Border), r);
-            f.Draw(this, new Vector2(r.GetCenter().X, Mathf.Round(r.GetCenter().Y - 9)), f.Fit(actions[i].Label, (int)r.Size.X - 8), primary ? Ink.White : Ink.Brand, TextAlign.Center, 1, true);
-            _buttons.Add((r, actions[i].Action));
+            var r = actions[i].Resolved;
+            if (r == PageRole.Other || (r == PageRole.Primary && i != primaryAt)) list.Add(actions[i] with { Role = PageRole.Other });
         }
+        if (primaryAt >= 0) list.Add(actions[primaryAt]);
+        return list.ToArray();
+    }
+
+    /// <summary>Prostokąt wiersza listy z indeksem w pikselach UI (test dymny: stuknięcie w kartę).</summary>
+    public Rect2? RowRect(int index)
+    {
+        foreach (var (rect, i) in _hits) if (i == index) return new Rect2(rect.Position + Position, rect.Size);
+        return null;
+    }
+
+    /// <summary>Prostokąt przycisku strony z akcją (test dymny: stuknięcie w przycisk po lewej / prawej).</summary>
+    public Rect2? ButtonRect(GameAction a)
+    {
+        foreach (var (rect, action) in _buttons) if (action == a) return new Rect2(rect.Position + Position, rect.Size);
+        return null;
     }
 }

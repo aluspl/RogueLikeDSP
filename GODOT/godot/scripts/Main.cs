@@ -17,6 +17,7 @@ namespace LifeLike.Game;
 /// w LifeLike.Core (port 1:1 z GBA), przejścia ekranów w Screens/, zrzuty i test dymny w Debug/.
 /// Przy sterowaniu dotykiem (telefon albo --touch) dotyk / lewy przycisk idzie przez GestureTracker jako gesty;
 /// klucz ustawień w rogu obsługuje Main przed ekranem. Gdy system usypia aplikację w trakcie budowy - zapis budowy.
+/// Blokada wejścia (ScreenFlow.InputLocked, v0.21.51): świeżo otwarte okno ignoruje wciśnięcia i dotknięcia.
 /// </summary>
 public partial class Main : Node2D
 {
@@ -86,8 +87,12 @@ public partial class Main : Node2D
             if (g.Kind == GestureKind.Up) _wrenchDown = false;
             return;
         }
+        if (_app.Flow.InputLocked && g.Kind is GestureKind.Tap or GestureKind.Swipe or GestureKind.SwipeRepeat or GestureKind.LongPress) return;
         _app.Flow.Current.HandleGesture(g);
     }
+
+    /// <summary>Gest jak z ekranu dotykowego (test dymny: blokada wejścia, stuknięcia w karty).</summary>
+    public void InjectGesture(Gesture g) => OnGesture(g);
 
     private bool WrenchHit(Vector2 p) => _app is not null && _app.Flow.Current is { ShowsSettings: true } && !_app.Nodes.Coach.Visible && _app.Nodes.Settings.Hit(p);
 
@@ -105,7 +110,12 @@ public partial class Main : Node2D
     }
 
     /// <summary>Akcja gracza (klawiatura, pad, mysz albo wirtualny kontroler) do ekranu bieżącego.</summary>
-    private bool Dispatch(InputCmd cmd) => _app?.Flow.Current is not null && _app.Flow.Current.HandleInput(cmd);
+    private bool Dispatch(InputCmd cmd)
+    {
+        if (_app?.Flow.Current is null) return false;
+        if (_app.Flow.InputLocked && (cmd.Pressed != GameAction.None || cmd.IsClick)) return true; // świeże okno: połknij
+        return _app.Flow.Current.HandleInput(cmd);
+    }
 
     private void OnInjected(InputCmd cmd) => Dispatch(cmd);
 

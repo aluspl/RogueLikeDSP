@@ -24,15 +24,15 @@ public sealed class HouseSchedulePage : PhonePage
 
     public override string Title => "Harmonogram domu";
     public override string Sub => $"{_g.StagesInRun()}/{_g.StagesInRun()}";
-    public override string Hint => "Spacja: planbudowlany.online  Enter: dalej";
-    public override PageAction[] Actions => [new("Zaplanuj swoją budowę", GameAction.A), new("Dalej", GameAction.Start)];
+    public override string Hint => "Tab: planbudowlany.online  Spacja/Enter: dalej";
+    public override PageAction[] Actions => [new("Dalej", GameAction.Start), new("Zaplanuj swoją budowę", GameAction.Select)];
 
-    /// <summary>Dotknięcie linku (indeks 0) = to samo co A.</summary>
+    /// <summary>Dotknięcie linku (indeks 0) = to samo co SELECT (v0.21.51: A / Enter zawsze = dalej).</summary>
     public override bool TapRow(int index)
     {
         if (index != 0) return false;
-        GameInput.Press(GameAction.A);
-        GameInput.Release(GameAction.A);
+        GameInput.Press(GameAction.Select);
+        GameInput.Release(GameAction.Select);
         return true;
     }
 

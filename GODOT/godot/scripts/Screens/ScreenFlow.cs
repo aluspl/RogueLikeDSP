@@ -1,3 +1,4 @@
+using Godot;
 using LifeLike.Game.Audio;
 using LifeLike.Game.Gfx;
 
@@ -6,6 +7,8 @@ namespace LifeLike.Game.Screens;
 /// <summary>
 /// Maszyna stanów ekranów (pętla scen w main() na GBA): jeden bieżący ekran, przejście ustawia widoczność warstw
 /// (mapa + HUD, telefon z rozmytym tłem, plansze), muzykę i woła Enter nowego ekranu.
+/// v0.21.51: blokada wejścia - przez LockSeconds po otwarciu każdego okna / przejścia (poza mapą) i dopóki telefon
+/// wjeżdża, Main ignoruje wciśnięcia i dotknięcia (stuknięcie w mapę nie wybiera od razu premii, nie pomija SMS-a).
 /// </summary>
 public sealed class ScreenFlow
 {
@@ -45,6 +48,18 @@ public sealed class ScreenFlow
 
     public Screen Current { get; private set; }
 
+    /// <summary>Czas blokady wejścia po otwarciu okna (s).</summary>
+    public const float LockSeconds = 0.4f;
+
+    private ulong _lockUntil;
+
+    /// <summary>Czy wejście gracza (wciśnięcia, dotknięcia) jest teraz ignorowane: świeżo otwarte okno albo animacja telefonu.</summary>
+    public bool InputLocked => Current is not null && Current != Game
+        && (Time.GetTicksMsec() < _lockUntil || _app.Nodes.Phone.Sliding);
+
+    /// <summary>Blokada wejścia na seconds od teraz (przejście, animacja).</summary>
+    public void LockInput(float seconds = LockSeconds) => _lockUntil = System.Math.Max(_lockUntil, Time.GetTicksMsec() + (ulong)(seconds * 1000));
+
     public TitleScreen Title { get; }
     public ProfileScreen Profile { get; }
     public ClassSelectScreen ClassSelect { get; }
@@ -81,6 +96,7 @@ public sealed class ScreenFlow
     {
         Current?.Exit();
         Current = next;
+        if (next != Game) LockInput();
         var n = _app.Nodes;
         n.World.Visible = next.InRun;
         n.Hud.Visible = next.InRun;

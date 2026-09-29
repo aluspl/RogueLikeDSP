@@ -37,7 +37,8 @@ public sealed class HurtowniaScreen : Screen
             N.Hud.ShowGame(S.Game);
             return true;
         }
-        if (!e.Is(GameAction.Start | GameAction.B | GameAction.Cancel)) return false;
+        if (!e.IsBack) return false; // v0.21.51: A / Enter kupuje zaznaczone, B / Esc = dalej
+
         Advance();
         return true;
     }

@@ -5,8 +5,8 @@ using LifeLike.Game.Phone.Pages;
 namespace LifeLike.Game.Screens;
 
 /// <summary>
-/// Po wygranej, przed planszą końcową: harmonogram gotowego domu w telefonie (odbiór dziś – data systemu). A / link
-/// otwiera planbudowlany.online, Enter – plansza końcowa.
+/// Po wygranej, przed planszą końcową: harmonogram gotowego domu w telefonie (odbiór dziś – data systemu). SELECT (Tab)
+/// / link otwiera planbudowlany.online, A / Enter (i B) – dalej (v0.21.51: A zawsze zatwierdza).
 /// </summary>
 public sealed class HouseScheduleScreen : Screen
 {
@@ -34,13 +34,13 @@ public sealed class HouseScheduleScreen : Screen
     public override bool HandleInput(InputCmd e)
     {
         if (N.Phone.HandleInput(e)) return true;
-        if (e.Is(GameAction.A))
+        if (e.Is(GameAction.Select))
         {
             LinkOpened++;
             if (OpenBrowser) OS.ShellOpen(SettingsPage.Url);
             return true;
         }
-        if (!e.Is(GameAction.Start | GameAction.B | GameAction.Cancel)) return false;
+        if (!e.IsConfirm && !e.IsBack) return false;
         Flow.Recap.Open(); // podsumowanie budowy (#33)
         return true;
     }

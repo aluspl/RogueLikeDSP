@@ -1,4 +1,7 @@
+using System;
+using Godot;
 using LifeLike.Core;
+using LifeLike.Game.Audio;
 using LifeLike.Game.Gfx;
 using LifeLike.Game.Input;
 using CoreGame = LifeLike.Core.Game;
@@ -7,7 +10,9 @@ namespace LifeLike.Game.Phone.Pages;
 
 /// <summary>
 /// Nowe narzędzie na polu przy ulepszonym (v0.21.50 cz. 3, tool_offer_dialog na GBA): obecne „Kielnia+2” i nowe,
-/// porównanie ciosu i ostrzeżenie, że ulepszenie (i cecha) przepadnie. A zamieniam, B zostaję.
+/// porównanie ciosu i ostrzeżenie, że ulepszenie (i cecha) przepadnie. v0.21.51: dwa wiersze wyboru – zaznaczony na
+/// start „Zostaję” – strzałki / dotknięcie zaznacza, A / Enter / „Wybierz” (albo drugie dotknięcie) zatwierdza,
+/// B / Esc / „Zostaję” zostawia – zamiana nigdy nie dzieje się jednym przypadkowym dotknięciem.
 /// </summary>
 public sealed class ToolOfferPage : PhonePage
 {
@@ -17,8 +22,34 @@ public sealed class ToolOfferPage : PhonePage
 
     public override string Title => "Nowe narzędzie";
     public override string Sub => _g.ToolOffer >= 0 ? _g.D.Weapons[_g.D.Tools[_g.ToolOffer].Weapon].Name : "";
-    public override string Hint => "Spacja: zamieniam  Z: zostaję";
-    public override PageAction[] Actions => [new("Zamieniam", GameAction.A), new("Zostaję", GameAction.B)];
+    /// <summary>Zaznaczony wybór: 0 = zostaję przy ulepszonym (domyślnie), 1 = zamieniam.</summary>
+    public int Sel { get; set; }
+
+    /// <summary>Zatwierdzenie: true = zamiana (ToolOfferScreen.Decide).</summary>
+    public Action<bool> Decided;
+
+    public override string Hint => "Strzałki: wybór  Spacja/Enter: wybierz  Z/Esc: zostaję";
+    public override PageAction[] Actions => [new("Wybierz", GameAction.A), new("Zostaję", GameAction.B)];
+
+    public override void Enter() => Sel = 0;
+
+    public override bool Input(InputCmd e)
+    {
+        var d = e.VDir != 0 ? e.VDir : e.HDir;
+        if (d == 0) return false;
+        Sel = 1 - Sel;
+        Sfx.Play("menu");
+        return true;
+    }
+
+    /// <summary>Dotknięcie wiersza: pierwsze zaznacza, drugie na zaznaczonym zatwierdza.</summary>
+    public override bool TapRow(int index)
+    {
+        if (index is < 0 or > 1) return false;
+        if (index == Sel) Decided?.Invoke(Sel == 1);
+        else Sel = index;
+        return true;
+    }
 
     public override void Draw(PhonePainter p)
     {
@@ -43,8 +74,16 @@ public sealed class ToolOfferPage : PhonePage
         var cmp = "Cios: " + DamageHelp.CompareLine(new Message(), now, next).Text;
         if (p.F.Measure(cmp) > right - tx) cmp = DamageHelp.CompareLine(new Message(), now, next, true).Text;
         p.Text(tx, p.RowY(c1, 1), cmp, next.Avg10 > now.Avg10 ? Ink.Done : Ink.Late, TextAlign.Left, right - tx);
-        var c2 = p.Card(c1.End.Y + 6, 1);
-        p.Stripe(c2, 0, Pal.Late);
-        p.Text(tx, p.RowY(c2, 0), $"Uwaga: ulepszenie +{_g.WeaponLvl} przepadnie!", Ink.Late, TextAlign.Left, right - tx);
+        y = p.Section(c1.End.Y + 4, "WYBIERZ");
+        var c2 = p.Card(y, 2);
+        string[] rows = [$"Zostaję: {_g.WeaponTitle()}", $"Zamieniam: {d.Weapons[w].Name} (+{_g.WeaponLvl} przepadnie!)"];
+        for (var k = 0; k < 2; k++)
+        {
+            if (k > 0) p.Divider(c2, k);
+            if (k == Sel) p.Selected(c2, k);
+            else p.Stripe(c2, k, k == 1 ? Pal.Late : Pal.Todo);
+            p.HitRow(c2, k, k);
+            p.Text(tx, p.RowY(c2, k), rows[k], k == Sel ? Ink.Brand : k == 1 ? Ink.Late : Ink.Dark, TextAlign.Left, right - tx);
+        }
     }
 }

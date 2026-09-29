@@ -40,6 +40,15 @@ public readonly struct InputCmd
 
     public bool IsReleased(GameAction a) => (Released & a) != 0;
 
+    /// <summary>Potwierdzenie w oknach i przejściach (v0.21.51, wszędzie tak samo): A (Spacja) albo START (Enter).</summary>
+    public bool IsConfirm => Is(Confirm);
+
+    /// <summary>Powrót / zostaw w oknach i przejściach: B (Z) albo Cancel (Esc).</summary>
+    public bool IsBack => Is(Back);
+
+    public const GameAction Confirm = GameAction.A | GameAction.Start;
+    public const GameAction Back = GameAction.B | GameAction.Cancel;
+
     public bool IsClick => Click != MouseButton.None;
 
     /// <summary>Lewy klik albo dotknięcie ekranu (dotyk jest emulowany jako mysz).</summary>

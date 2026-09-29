@@ -22,8 +22,8 @@ public sealed class HurtowniaPage : PhonePage
 
     public override string Title => "Hurtownia";
     public override string Sub => $"Budżet: {_g.Cash} zł";
-    public override string Hint => "Spacja: kup  Enter: dalej";
-    public override PageAction[] Actions => [new("Kup", GameAction.A), new("Dalej", GameAction.Start)];
+    public override string Hint => "Spacja/Enter: kup zaznaczone  Z/Esc: dalej";
+    public override PageAction[] Actions => [new("Kup", GameAction.A), new("Dalej", GameAction.B, PageRole.Back)];
 
     public override bool TapRow(int index)
     {
@@ -87,7 +87,7 @@ public sealed class HurtowniaPage : PhonePage
             Sfx.Play("menu");
             return true;
         }
-        if (e.Is(GameAction.A))
+        if (e.IsConfirm) // v0.21.51: A i Enter tak samo - kup zaznaczone (wyjście: B / Esc)
         {
             Buy();
             return true;

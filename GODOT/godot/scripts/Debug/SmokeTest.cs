@@ -34,6 +34,7 @@ public sealed class SmokeTest
     private int _tutorial, _unlocks, _docs, _phases;
     private bool _act0;
     private int _boons, _boonList;
+    private bool _inputLock;
 
     public SmokeTest(App app) => _app = app;
 
@@ -78,13 +79,14 @@ public sealed class SmokeTest
             await ExerciseExtras();
             if (!_pathOk) throw new Exception("wybór ścieżki: druga oferta nie trafiła na etap");
             if (_boons == 0 || _boonList == 0) throw new Exception($"premie po etapie: wybrane {_boons}, lista w telefonie {_boonList}");
+            if (!_inputLock) throw new Exception("blokada wejścia: nie sprawdzona");
             await ExercisePortrait();
             var missing = Sfx.Missing();
             if (missing.Length > 0) throw new Exception("brak dźwięków: " + missing);
             if (DrawErrors.Count > 0) throw new Exception($"błędy rysowania: {DrawErrors.Count}, ostatni: {DrawErrors.Last}");
             GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {s.Data.Version}, zawody {s.Data.Classes.Length}, etap {stage + 1}, " +
                      $"dzień {g.Turns}, HP {g.Hero.Hp}/{g.Hero.MaxHp}, wynik {g.Score}, budżet {g.Cash}, kroki {_steps}, " +
-                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, tydzień {(_weekly ? "tak" : "nie")}, podsumowanie {_recapRows} wierszy, fabuła {_story} wątków, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, rozpiska obrażeń {(_damage ? "tak" : "nie")}, samouczek {_tutorial} dymków + nowości {_unlocks}, Akt 0 {(_act0 ? "tak" : "nie")} (dokumenty {_docs}, druga faza {_phases}), premie {_boons} (lista {_boonList}, synergie {g.SynergyMask()}), wydarzenia {_events} (ekran {(_extras ? "tak" : "nie")}), Jak grać {(_help ? "tak" : "nie")}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
+                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, tydzień {(_weekly ? "tak" : "nie")}, podsumowanie {_recapRows} wierszy, fabuła {_story} wątków, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, rozpiska obrażeń {(_damage ? "tak" : "nie")}, samouczek {_tutorial} dymków + nowości {_unlocks}, Akt 0 {(_act0 ? "tak" : "nie")} (dokumenty {_docs}, druga faza {_phases}), premie {_boons} (lista {_boonList}, synergie {g.SynergyMask()}, blokada wejścia {(_inputLock ? "tak" : "nie")}), wydarzenia {_events} (ekran {(_extras ? "tak" : "nie")}), Jak grać {(_help ? "tak" : "nie")}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
                      $"ekran {Flow.Current.GetType().Name}");
             _app.Root.GetTree().Quit(ok ? 0 : 1);
         }
@@ -223,6 +225,8 @@ public sealed class SmokeTest
         if (page is null || !g.HasBoonOffer) throw new Exception("premia po etapie: brak oferty");
         if (_boons == 0)
         {
+            page = await ExerciseInputLock();
+            if (!g.HasBoonOffer) throw new Exception("blokada wejścia: premia wybrana przed zatwierdzeniem");
             g.Cash = Math.Max(g.Cash, g.D.BoonRerollCost);
             var before = g.BoonOffer.ToArray();
             Flow.Boons.HandleInput(InputCmd.Of(GameAction.R));
@@ -250,6 +254,37 @@ public sealed class SmokeTest
         if (Flow.Current != Flow.Phone) throw new Exception("lista premii: B nie wraca do telefonu");
         _boonList++;
         Flow.Schedule.Open();
+    }
+
+    /// <summary>
+    /// Blokada wejścia (v0.21.51): świeżo otwarta premia ignoruje A z klawiatury i stuknięcie w kartę (jak stuknięcie
+    /// w mapę tuż przed końcem etapu); po LockSeconds pierwsze stuknięcie w kartę tylko ją zaznacza (bez wyboru).
+    /// </summary>
+    private async Task<Phone.Pages.BoonPickPage> ExerciseInputLock()
+    {
+        var g = _app.Session.Game;
+        var main = (Main)_app.Root;
+        await DebugRunner.Frames(_app.Root, 2); // wiersze kart narysowane (cele dotyku)
+        Flow.Boons.Open(); // świeże otwarcie: blokada od teraz (telefon już na miejscu, te same cele dotyku)
+        var page = Flow.Boons.Page;
+        var card = _app.Nodes.Phone.RowRect(2) ?? throw new Exception("premia po etapie: brak celu dotyku karty 3");
+        var owned = g.BoonsOwned();
+        if (!Flow.InputLocked) throw new Exception("blokada wejścia: okno premii otwarte bez blokady");
+        GameInput.Press(GameAction.A);
+        GameInput.Release(GameAction.A);
+        GameInput.Press(GameAction.Start);
+        GameInput.Release(GameAction.Start);
+        var tap = new Gesture(GestureKind.Tap, card.GetCenter(), card.GetCenter(), Vector2I.Zero, 0.05f);
+        main.InjectGesture(tap);
+        main.InjectGesture(tap);
+        if (g.BoonsOwned() != owned || page.Sel != 0) throw new Exception("blokada wejścia: A / stuknięcie tuż po otwarciu wybrało premię");
+        await _app.Root.ToSignal(_app.Root.GetTree().CreateTimer(ScreenFlow.LockSeconds + 0.15f), SceneTreeTimer.SignalName.Timeout);
+        if (Flow.InputLocked) throw new Exception("blokada wejścia: nie mija");
+        main.InjectGesture(tap);
+        if (page.Sel != 2 || g.BoonsOwned() != owned) throw new Exception("premia: pierwsze stuknięcie w kartę powinno ją tylko zaznaczyć");
+        page.Sel = 0;
+        _inputLock = true;
+        return page;
     }
 
     /// <summary>Bot gra do 5. etapu: harmonogram, karta etapu, Hurtownia, paczki i termos przez menu akcji.</summary>
@@ -573,7 +608,7 @@ public sealed class SmokeTest
         if (Flow.Current != Flow.HouseSchedule) throw new Exception("wygrana: brak harmonogramu domu");
         Flow.HouseSchedule.OpenBrowser = false;
         await DebugRunner.Frames(_app.Root, 2);
-        Flow.HouseSchedule.HandleInput(InputCmd.Of(GameAction.A));
+        Flow.HouseSchedule.HandleInput(InputCmd.Of(GameAction.Select));
         if (Flow.HouseSchedule.LinkOpened != 1) throw new Exception("harmonogram domu: link nie działa");
         Flow.HouseSchedule.HandleInput(InputCmd.Of(GameAction.Start));
         if (Flow.Current != Flow.Recap || Flow.Recap.Page.Count < 10) throw new Exception("wygrana: brak podsumowania budowy");
@@ -925,8 +960,8 @@ public sealed class SmokeTest
         _app.AfterAction(g.PlayerMove(1, 0));
         if (Flow.Current != Flow.ToolOffer) throw new Exception("narzędzie przy ulepszonym: brak okna decyzji");
         await DebugRunner.Frames(_app.Root, 1);
-        Flow.ToolOffer.HandleInput(InputCmd.Of(GameAction.B));
-        if (g.WeaponLvl != 2 || Flow.Current != Flow.Game) throw new Exception("narzędzie: B nie zostawia ulepszenia");
+        Flow.ToolOffer.HandleInput(InputCmd.Of(GameAction.A)); // v0.21.51: zaznaczone na start „Zostaję” - A nie zamienia
+        if (g.WeaponLvl != 2 || Flow.Current != Flow.Game) throw new Exception("narzędzie: A bez zaznaczenia zamiany nie może zabrać ulepszenia");
         st.SecretStage(1);
         var turns = g.Turns;
         _app.AfterAction(g.PlayerMove(1, 0));
