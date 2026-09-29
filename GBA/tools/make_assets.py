@@ -397,20 +397,33 @@ def t_puddle(t):   # kałuża (deszcz): lewa górna ćwiartka elipsy wody (reszt
     for x in range(4, 8):   # odbłysk na wodzie
         if t[5][x] == 10: t[5][x] = 11
 
-def t_mud(t):   # błoto (akt I): lewa górna ćwiartka plamy (reszta przez odbicia), kolory 12-13 (grudki)
-    t_floor(t)
+def t_mud(t):   # błoto (akt I, v0.21.51): płaska mokra plama (ćwiartka, reszta przez odbicia) - jaśniejszy brąz
+    t_floor(t)     # (kolor 12) z nierównym brzegiem i połyskiem (13), mniejsza niż pole - nie wygląda jak dziura
     for y in range(8):
         for x in range(8):
-            dx, dy = (x + 0.5 - 8) / 7.2, (y + 0.5 - 8.4) / 6.2
-            if dx * dx + dy * dy <= 1.0: t[y][x] = 12
-    for x, y in ((4, 5), (6, 3), (5, 7), (2, 7)):
+            dx, dy = (x + 0.5 - 8) / 5.6, (y + 0.5 - 8.2) / 4.6
+            wob = 0.18 if (x + 2 * y) % 5 == 0 else 0.0   # nieregularny brzeg
+            if dx * dx + dy * dy <= 1.0 - wob: t[y][x] = 12
+    for x, y in ((5, 5), (6, 5), (6, 6)):   # połysk mokrej powierzchni
         if t[y][x] == 12: t[y][x] = 13
 
-# indeksy w akcie (+10 za każdy akt: akt II 11-20, akt III 21-30): 0 pusty, 1 podłoga, 2 mur, 3 lico muru, 4 schody,
+def t_wall_cap(t):   # v0.21.51: wierzch masy muru (mur z murem poniżej) - ciemny, bez pasów i fug
+    for y in range(8):
+        for x in range(8):
+            t[y][x] = 5
+    t[2][1] = t[5][5] = 3
+
+def t_wall_face_low(t):   # v0.21.51: dolna połowa lica muru (nad podłogą) - wzór bez jasnej krawędzi, cień u dołu
+    t_wall(t)
+    for x in range(8):
+        t[7][x] = 5
+
+# indeksy w akcie (+12 za każdy zestaw: akt II 13-24, akt III 25-36): 0 pusty, 1 podłoga, 2 mur, 3 lico muru, 4 schody,
 # 5 podłoga z cieniem muru, 6 cień postaci (ćwiartka), 7 podłoga w zasięgu broni (ćwiartka ramki), 8 pole zapowiedzianego
-# ciosu bossa / wybuchu (ćwiartka), 9 kałuża (ćwiartka), 10 błoto (ćwiartka)
+# ciosu bossa / wybuchu (ćwiartka), 9 kałuża (ćwiartka), 10 błoto (ćwiartka); v0.21.51 autokafle muru: 11 wierzch
+# masy muru (mur z murem poniżej), 12 dolna połowa lica (górna = 3 z jasną krawędzią) - razem 12 kafli na zestaw
 TILES = [t_floor, t_wall, t_walltop, t_stairs, t_floor_wall_shadow, t_actor_shadow, t_floor_range, t_floor_danger,
-         t_puddle, t_mud]
+         t_puddle, t_mud, t_wall_cap, t_wall_face_low]
 ACT_TILES = len(TILES)
 
 def make_tiles():
@@ -442,7 +455,7 @@ def make_tiles():
             danger = tuple(int(v * (0.6 if level == 3 else (1.0, 0.85, 0.7)[level])) for v in (235, 50, 50))
             lf = 0.55 if level == 3 else (1.0, 0.85, 0.7)[level]
             water = [tuple(int(v * lf) for v in (64, 112, 176)), tuple(int(v * lf) for v in (150, 196, 236))]   # kałuża
-            mud = [tuple(int(v * lf) for v in (58, 38, 22)), tuple(int(v * lf) for v in (122, 92, 58))]    # błoto (akt I)
+            mud = [tuple(int(v * lf) for v in (132, 98, 62)), tuple(int(v * lf) for v in (236, 216, 180))]  # błoto (akt I): mokra plama, połysk
             if si == 0:   # Akt 0, biuro: kolory 12-13 = grzbiety segregatorów (czerwony, żółty)
                 mud = [tuple(int(v * lf) for v in (190, 60, 56)), tuple(int(v * lf) for v in (222, 180, 64))]
             elif si == 1:   # Akt 0, wykop: kolory 12-13 = rura (szara, jasny odblask)

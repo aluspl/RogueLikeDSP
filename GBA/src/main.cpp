@@ -297,6 +297,15 @@ namespace
         next_frame();
     }
 
+    // v0.21.51: blokada wejścia po otwarciu okna / przejścia (premia, Hurtownia, SMS z wyborem, harmonogram, paczka,
+    // zamiana narzędzia, karta etapu, podsumowanie) - przez ~20 klatek (1/3 s) przyciski nie działają; wciśnięcia
+    // w tym czasie przepadają, więc A liczy się dopiero wciśnięte na nowo (puszczone i wciśnięte po otwarciu).
+    constexpr int modal_guard_frames = 20;
+    void modal_guard()
+    {
+        for(int i = 0; i < modal_guard_frames; ++i) next_frame();
+    }
+
     // Nazwa mocy z rangą, np. "Ścianka II".
     core::message ability_label(const core::game& g)
     {
@@ -445,10 +454,11 @@ namespace
         }
 
         // Kafel pola z uwzględnieniem mgły wojny: 0 = nieznane (czarne).
-        // Kafle aktu: akt I 1-10, akt II 11-20, akt III 21-30 (ziemia i bloczki / deski i cegła / płytki i tynk);
-        // Akt 0: 31-40 biuro z segregatorami (Pozwolenie), 41-50 wykop z rurami (Przyłącza).
+        // Kafle aktu (12 na zestaw): akt I 1-12, akt II 13-24, akt III 25-36 (ziemia i bloczki / deski i cegła / płytki
+        // i tynk); Akt 0: 37-48 biuro z segregatorami (Pozwolenie), 49-60 wykop z rurami (Przyłącza).
         static int tile_set(const core::game& g) { return g.stage < data::prelude_stages ? 3 + g.stage : data::stages[g.stage].act; }
-        static int act_tile(const core::game& g, int t) { return t == 0 ? 0 : t + 10 * tile_set(g); }
+        static int act_tile(const core::game& g, int t) { return t == 0 ? 0 : t + tiles_per_set * tile_set(g); }
+        static constexpr int tiles_per_set = 12;   // tools/make_assets.py: TILES
         static int tile_of(const core::game& g, int x, int y, int& palette)
         {
             palette = light_level(g, x, y);
@@ -488,6 +498,13 @@ namespace
                     if(flat && highlight && highlight[y][x]) { quad(g, x, y, 7, pal); continue; }         // ramka pola w zasięgu
                     if(flat && g.puddle(x, y)) { quad(g, x, y, 9, pal); continue; }                       // deszcz: kałuża
                     if(flat && g.mud(x, y)) { quad(g, x, y, 10, pal); continue; }                         // akt I: błoto
+                    if(t == 2 || t == 3)   // v0.21.51 autokafle muru: lico (podłoga poniżej) = krawędź u góry + wzór
+                    {                      // z cieniem u dołu; mur z murem poniżej = ciemny wierzch masy muru
+                        int top = act_tile(g, t == 3 ? 3 : 11), low = act_tile(g, t == 3 ? 12 : 11);
+                        set(x * 2, y * 2, top, pal); set(x * 2 + 1, y * 2, top, pal);
+                        set(x * 2, y * 2 + 1, low, pal); set(x * 2 + 1, y * 2 + 1, low, pal);
+                        continue;
+                    }
                     t = act_tile(g, t);
                     bool top_shadow = t == act_tile(g, 5);
                     int base = top_shadow ? act_tile(g, 1) : t;
@@ -524,7 +541,7 @@ namespace
 
     void page_help(app& a)
     {
-        constexpr int pages_count = 13;
+        constexpr int pages_count = 14;
         core::message cmb[3];   // kombinacje stanów (#29): "Mokry + prąd! Porażenie"
         for(int k = 0; k < 3 && k < data::combos_count; ++k) cmb[k].add(data::combos[k].short_name).add(" ").add(data::combos[k].name);
         core::message luck1, luck2;   // wzory z danych (sekcja luck)
@@ -534,6 +551,8 @@ namespace
             { "3 akty (10 etapów), po nagrodzie", "Akt 0. Boss kończy akt.", "D-pad: ruch i atak wręcz",
               "A: atak (trzymaj: celuj)", "B: czekaj (trzymaj: podgląd)", "R: moc zawodu  L: mapa",
               "START: akcje  SELECT: telefon" },
+            { "W każdym oknie tak samo:", "A = wybierz / dalej,", "B = wróć / zostaw.", "Góra/dół tylko zaznacza,",
+              "A zatwierdza (premia, zakup,", "SMS, zamiana narzędzia).", "Po otwarciu chwila blokady." },   // v0.21.51
             { "Pogoda dnia: ikona w HUD,", "skutek w telefonie (Zadania).", "Brygada raz na etap za zł:",
               "telefon, Sprzęt, dół (albo", "START i A). Po wygranej:", "SELECT na wyborze zawodu =", "tryb inwestora (stawka)." },
             { "Między etapami wybierz", "ścieżkę (lewo/prawo, A).", "Materiały z problemów:", "Hurtownia i naprawy (Sprzęt,", "dół): Załataj, Kładka.",
@@ -563,8 +582,8 @@ namespace
         {
             page_sprites t;
             a.text.set_center_alignment();
-            static const char* const names[6] = { "Kombinacje", "Skąd stany", "Premie i elity", "Wydarzenia", "Magazyn", "Po budowie" };   // strony 8-13 (v0.21.50)
-            core::message title; title.add(pg >= 7 ? names[pg - 7] : "Jak grać").add(" (").add(pg + 1).add("/").add(pages_count).add(")");
+            static const char* const names[6] = { "Kombinacje", "Skąd stany", "Premie i elity", "Wydarzenia", "Magazyn", "Po budowie" };   // strony 9-14 (v0.21.50)
+            core::message title; title.add(pg >= 8 ? names[pg - 8] : (pg == 1 ? "Okna i wybory" : "Jak grać")).add(" (").add(pg + 1).add("/").add(pages_count).add(")");
             a.text.generate(0, -70, title.s, t);
             a.text.set_left_alignment();
             for(int i = 0; i < 7; ++i) a.text.generate(-108, -48 + i * 16, fit(a, pages[pg][i], 224).c_str(), t);
@@ -1472,7 +1491,7 @@ namespace
         };
         redraw();
         bn::sound_items::sfx_notify.play(bn::fixed(0.7));
-        wait_release();
+        modal_guard();
         while(g.trait_pending)
         {
             int d = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
@@ -1566,7 +1585,7 @@ namespace
         };
         redraw();
         bn::sound_items::sfx_notify.play(bn::fixed(0.7));
-        wait_release();
+        modal_guard();
         while(true)
         {
             if(page == 1)
@@ -1579,8 +1598,8 @@ namespace
                 if(page == 1) { g.choose_event(sel); bn::sound_items::sfx_buy.play(); }
                 if(page == 2) break;
                 ++page;
-                wait_release();
                 redraw();
+                modal_guard();   // nowa strona (odpowiedzi / wynik): bez przypadkowego wyboru z rozpędu
             }
             next_frame();
         }
@@ -1613,24 +1632,40 @@ namespace
         core::message m2; core::compare_line(m2, now, next);
         if(a.text.width(m2.s) > phone_text_w) { m2 = core::message(); core::compare_line(m2, now, next, true); }
         phone_text(a, t, list_x, row_py(2), fit(a, m2.s, phone_text_w).c_str(), next.avg10 > now.avg10 ? ink::done : ink::late);
-        core::message m3; m3.add("Uwaga: ulepszenie +").add(g.weapon_lvl).add(" przepadnie!");
+        core::message m3; m3.add("Uwaga: +").add(g.weapon_lvl);
+        if(g.weapon_trait >= 0) m3.add(" i ").add(data::tool_traits[g.weapon_trait].short_name).add(" przepadną!");
+        else m3.add(" przepadnie!");
         stripe(c, 3, phone_tile::stripe_late);
-        phone_text(a, t, list_x, row_py(3), m3.s, ink::late);
-        if(g.weapon_trait >= 0)
-        {
-            core::message m4; m4.add("Też cecha: ").add(data::tool_traits[g.weapon_trait].name).add(" (").add(data::tool_traits[g.weapon_trait].short_name).add(")");
-            phone_text(a, t, list_x, row_py(4), fit(a, m4.s, phone_text_w).c_str(), ink::dim);
-        }
-        phone_text(a, t, list_x, row_py(5), "A: zamieniam  B: zostaję", ink::dark);
+        phone_text(a, t, list_x, row_py(3), fit(a, m3.s, phone_text_w).c_str(), ink::late);
         ph.commit();
+        // v0.21.51: wybór zaznaczeniem - na start „Zostaję”, góra/dół zaznacza, A zatwierdza, B zostaję
+        int sel = 0;
+        page_sprites rows;
+        auto draw_rows = [&]() {
+            rows.clear();
+            for(int k = 0; k < 2; ++k)
+            {
+                const bool on = k == sel;
+                c.rounded(1, row_ty(4 + k), 28, 2, on ? phone_tile::fill_group : phone_tile::fill_card, on ? phone_tile::corner_group : phone_tile::corner_card);
+                stripe(c, 4 + k, on ? phone_tile::stripe_brand : (k == 1 ? phone_tile::stripe_late : phone_tile::stripe_todo));
+                core::message r; r.add(on ? "> " : "  ");
+                if(k == 0) { r.add("Zostaję: "); g.weapon_title(r); }
+                else r.add("Zamieniam na ").add(data::weapons[w].name);
+                phone_text(a, rows, list_x, row_py(4 + k), fit(a, r.s, phone_text_w).c_str(), on ? ink::brand : (k == 1 ? ink::late : ink::dark));
+            }
+            ph.commit();
+        };
+        draw_rows();
         bn::sound_items::sfx_notify.play(bn::fixed(0.7));
-        wait_release();
+        modal_guard();
         while(g.has_tool_offer())
         {
-            if(bn::keypad::a_pressed()) { g.accept_tool(); bn::sound_items::sfx_buy.play(); }
-            else if(bn::keypad::b_pressed()) { g.decline_tool(); bn::sound_items::sfx_menu.play(); }
+            if(bn::keypad::up_pressed() || bn::keypad::down_pressed()) { sel = 1 - sel; draw_rows(); bn::sound_items::sfx_menu.play(); }
+            else if(bn::keypad::a_pressed() && sel == 1) { g.accept_tool(); bn::sound_items::sfx_buy.play(); }
+            else if(bn::keypad::a_pressed() || bn::keypad::b_pressed()) { g.decline_tool(); bn::sound_items::sfx_menu.play(); }
             next_frame();
         }
+        rows.clear();
         t.clear();
         a.text.set_palette_item(default_ink);
         wait_release();
@@ -1682,7 +1717,7 @@ namespace
         phone_text(a, t, list_x, row_py(5), km.s, g.offer_is_better() ? ink::done : ink::dark);
         ph.commit();
         bn::sound_items::sfx_notify.play(bn::fixed(0.7));
-        wait_release();
+        modal_guard();
         int clock = 0;
         while(g.has_offer())
         {
@@ -1916,7 +1951,7 @@ namespace
         phone_text(a, t, 226, row_py(5), "A: dalej", ink::brand, 1);
         ph.commit();
         bn::sound_items::sfx_notify.play(bn::fixed(0.7));
-        wait_release();
+        modal_guard();
         for(int i = 0; i < 600 && ! bn::keypad::a_pressed() && ! bn::keypad::start_pressed(); ++i) next_frame();
         t.clear();
         a.text.set_palette_item(default_ink);
@@ -3688,7 +3723,7 @@ namespace
             ph.commit();
         };
         redraw();
-        wait_release();
+        modal_guard();
         while(true)
         {
             if(synergy >= 0)
@@ -3771,7 +3806,7 @@ namespace
             ph.commit();
         };
         redraw();
-        wait_release();
+        modal_guard();
         while(true)
         {
             int d = bn::keypad::left_pressed() ? -1 : (bn::keypad::right_pressed() ? 1 : 0);
@@ -3839,7 +3874,7 @@ namespace
         };
         redraw();
         bn::sound_items::sfx_notify.play(bn::fixed(0.7));
-        wait_release();
+        modal_guard();
         for(int f = 0; ! bn::keypad::a_pressed() && ! bn::keypad::start_pressed(); ++f)
         {
             int v = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
@@ -3967,7 +4002,7 @@ namespace
             ph.commit();
         };
         draw();
-        wait_release();
+        modal_guard();
         while(true)
         {
             if(bn::keypad::start_pressed()) break;
@@ -4251,7 +4286,7 @@ namespace
             ph.commit();
         };
         redraw();
-        wait_release();
+        modal_guard();
         while(true)
         {
             int n = data::hurtownia_count;
