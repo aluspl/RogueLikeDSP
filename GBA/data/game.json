@@ -4175,13 +4175,13 @@
       {
         "id": "pekniecie",
         "name": "Pęknięta ściana",
-        "info": "Klucz, Operator albo wybuch",
+        "info": "klucz, Operator lub wybuch",
         "breakable": true
       },
       {
         "id": "drzwi",
         "name": "Drzwi magazynu",
-        "info": "Otworzy je tylko klucz",
+        "info": "tylko klucz",
         "breakable": false
       }
     ],

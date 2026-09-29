@@ -614,8 +614,8 @@ inline constexpr int tool_trait_at = 2;
 inline constexpr int tool_traits_count = 3;
 
 inline constexpr core::secret_kind_def secret_kinds[] = {   // ukryte pomieszczenie: pęknięta ściana / drzwi
-    { "Pęknięta ściana", "Klucz, Operator albo wybuch", true },
-    { "Drzwi magazynu", "Otworzy je tylko klucz", false },
+    { "Pęknięta ściana", "klucz, Operator lub wybuch", true },
+    { "Drzwi magazynu", "tylko klucz", false },
 };
 inline constexpr int secret_kinds_count = 2;
 inline constexpr int secret_chance_pct = 35;
