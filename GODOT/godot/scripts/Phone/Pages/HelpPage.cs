@@ -32,6 +32,7 @@ public sealed class HelpPage : PhonePage
         ("Termos", "kawa leczy (tura)"),
         ("Czekaj", "tura (trzymaj: podgląd)"),
         ("Telefon", "aplikacja (trzymaj: mapa)"),
+        ("Okna", "dotknij = zaznacz; Wybierz: prawo, Wróć: lewo"),   // v0.21.51: ten sam układ w każdym oknie
     ];
 
     private const int Pages = 7;
@@ -254,7 +255,7 @@ public sealed class HelpPage : PhonePage
 
     /// <summary>Nowości w wąskim telefonie (poziomo): krótko.</summary>
     private static readonly string[] ShortNews =
-        ["Po etapie: premia 1 z 3 i ścieżka", "Respekt i nagrody: profil > Koszty", "Codzienna budowa: menu tytułu", "Pogoda, brygada: telefon > Sprzęt"];
+        ["Okna: A bierze, B wraca (wszędzie)", "Respekt i nagrody: profil > Koszty", "Codzienna budowa: menu tytułu", "Pogoda, brygada: telefon > Sprzęt"];
 
     /// <summary>Pogoda, brygada i tryb inwestora (v0.21.47), ścieżki, materiały i codzienna budowa (v0.21.48), Respekt i nagrody (v0.21.49).</summary>
     private static string[] News => Layout.Touch
@@ -269,7 +270,8 @@ public sealed class HelpPage : PhonePage
         ]
         :
         [
-            "Po etapie: premia 1 z 3, potem ścieżka etapu", "Złota ramka: elita (cecha, lepsza nagroda)", "Materiały z problemów: Hurtownia i naprawy (Brygada)",
+            "Okna: strzałki zaznaczają, A (Spacja/Enter) bierze, B (Z/Esc) wraca", "Po etapie: premia 1 z 3, potem ścieżka etapu",
+            "Złota ramka: elita (cecha, lepsza nagroda)", "Materiały z problemów: Hurtownia i naprawy (Brygada)",
             "Załataj (drewno): deski przed problemem", "Kładka (stal): kałuże bez poślizgu", "Codzienna budowa: menu tytułu, jedna na dzień",
             "Pogoda dnia: ikona w HUD, skutek w Zadaniach", "Brygada: Enter, Spacja (albo telefon > Sprzęt)",
             "Po wygranej: Tab na wyborze zawodu = tryb inwestora",
