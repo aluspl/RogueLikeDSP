@@ -20,9 +20,11 @@ Co powstaje:
   ui/phone_icons.png         ikony zakładek telefonu (aktywne, fiolet) + ikona aplikacji PB (klatka 5)
   ui/phone_icons_dim.png     te same ikony w kolorze nieaktywnym (wycięte z phone_chrome.bmp)
   ui/title.png, ui/end.png   logo z napisem (tytuł) i plansza z kodem QR (koniec), tło przezroczyste
-  tiles/stage_N.png          kafle 32x32 etapu N (10 etapów): 4 warianty podłogi, 2 podłogi z cieniem muru,
-                             mur, lico muru, schody - rysowane w paletach etapów z GBA, bogatsze niż 8x8 z GBA
+  tiles/stage_N.png          kafle 32x32 etapu N (12 etapów): 4 warianty podłogi, 2 podłogi z cieniem muru,
+                             wierzch muru, lico muru, schody, 6 nakładek autokafli muru (krawędzie wierzchu, końce
+                             lica, róg) - rysowane w paletach etapów z GBA, bogatsze niż 8x8 z GBA
   fx/shadow.png, fx/danger.png, fx/range.png   cień pod postacią, pole zapowiedzianego ciosu, ramka zasięgu
+  fx/mud.png                 błoto aktu I: 3 warianty płaskiej mokrej plamy z połyskiem (pasek 32x96)
   font/glyphs.png, font/glyphs_edge.png, font/font.json
                              pikselowy font 8x16 z polskimi znakami (litery i cień osobno, szerokości znaków)
   ui/touch_icons.png         ikony sterowania dotykiem 16x16 (klucz ustawień, telefon, mapa, link, zamknij, wstecz)
@@ -582,6 +584,103 @@ def draw_wall(c, col, kind, rnd):
             c.hline(x, x + 5, y, mix(wl, (255, 255, 255), 0.35))
 
 
+# ------------------------------------------------------------------ autokafle muru (v0.21.51)
+# Widok 3/4 ze światłem z lewej góry: mur = ciemny wierzch (masa muru) + lico z wzorem materiału tylko tam, gdzie
+# poniżej jest podłoga. Nakładki (półprzezroczyste) dokłada MapLayer wg sąsiadów: jasna krawędź wierzchu od strony
+# podłogi u góry i z lewej, ciemna z prawej, jasny / ciemny koniec lica. Stała kolejność kafli:
+# 9 krawędź góra, 10 krawędź lewa, 11 krawędź prawa, 12 lewy koniec lica, 13 prawy koniec lica, 14 róg wewnętrzny.
+MUD_VARIANTS = 3   # warianty plamy błota (fx/mud.png)
+WALL_LIP = 6   # wysokość krawędzi wierzchu nad licem (px w 32x32)
+
+
+def wall_top_color(col):
+    """Wierzch muru: kolor muru przygaszony ku cieniowi; ciemne palety podniesione, żeby wierzch nie zlewał się z tłem."""
+    top = mix(col["wall"], col["shadow"], 0.45)
+    lum = 0.3 * top[0] + 0.59 * top[1] + 0.11 * top[2]
+    return mix(top, col["light"], 0.35) if lum < 70 else top
+
+
+def make_wall_top(wall, col):
+    """Wierzch muru: jednolity ciemny kolor z delikatnym śladem materiału (bez pasów i fug co pole)."""
+    top = wall_top_color(col)
+    c = Canvas(top)
+    for y in range(32):
+        for x in range(32):
+            c.set(x, y, mix(top, wall.get(x, y), 0.14))
+    return c
+
+
+def make_wall_face(wall, col):
+    """Lico muru: u góry krawędź wierzchu (jasna linia załamania), niżej wzór materiału, u dołu cień przy podłodze."""
+    top = wall_top_color(col)
+    c = Canvas(col["wall"])
+    c.im.paste(wall.im, (0, 0))
+    c.px = c.im.load()
+    for y in range(WALL_LIP):
+        for x in range(32):
+            c.set(x, y, mix(top, wall.get(x, y), 0.14))
+    c.hline(0, 31, WALL_LIP, mix(col["light"], (255, 255, 255), 0.25))       # załamanie wierzch / lico - najjaśniej
+    c.hline(0, 31, WALL_LIP + 1, mix(col["light"], col["wall"], 0.45))
+    for y in range(WALL_LIP + 2, 32):   # lico jaśniejsze u góry, ciemniejsze u dołu (światło z góry)
+        f = (y - WALL_LIP - 2) / (31.0 - WALL_LIP - 2)
+        for x in range(32):
+            v = c.get(x, y)
+            v = mix(v, col["light"], 0.10 * (1 - f)) if f < 0.5 else mix(v, col["shadow"], (f - 0.5) * 0.7)
+            c.set(x, y, v)
+    c.hline(0, 31, 31, shade(col["shadow"], 0.7))
+    return c
+
+
+def make_wall_edges(col):
+    lt = mix(col["light"], (255, 255, 255), 0.3)
+    dk = shade(col["shadow"], 0.6)
+    out = []
+
+    def layer():
+        im = Image.new("RGBA", (32, 32), TRANSPARENT)
+        return im, im.load()
+
+    im, px = layer()   # 9: krawędź wierzchu od góry (podłoga nad murem)
+    for x in range(32):
+        px[x, 0] = lt + (230,)
+        px[x, 1] = lt + (120,)
+        px[x, 2] = lt + (45,)
+    out.append(im)
+    im, px = layer()   # 10: krawędź z lewej (podłoga z lewej) - jasna
+    for y in range(32):
+        px[0, y] = lt + (200,)
+        px[1, y] = lt + (90,)
+    out.append(im)
+    im, px = layer()   # 11: krawędź z prawej - ciemna (strona w cieniu)
+    for y in range(32):
+        px[31, y] = dk + (220,)
+        px[30, y] = dk + (110,)
+    out.append(im)
+    im, px = layer()   # 12: lewy koniec lica (róg zewnętrzny, oświetlony)
+    for y in range(WALL_LIP, 32):
+        px[0, y] = lt + (170,)
+        px[1, y] = lt + (70,)
+    out.append(im)
+    im, px = layer()   # 13: prawy koniec lica (róg w cieniu)
+    for y in range(WALL_LIP, 32):
+        px[31, y] = dk + (230,)
+        px[30, y] = dk + (140,)
+        px[29, y] = dk + (60,)
+    out.append(im)
+    im, px = layer()   # 14: róg wewnętrzny (mur po skosie w lewo-górę, podłoga wokół) - mały jasny narożnik
+    for k in range(3):
+        for t in range(3 - k):
+            px[k, t] = lt + (200 - 60 * (k + t),)
+    out.append(im)
+    res = []
+    for im in out:
+        c = Canvas((0, 0, 0))
+        c.im = im
+        c.px = im.load()
+        res.append(c)
+    return res
+
+
 def make_stage_tiles(i):
     col = stage_colors(i)
     rnd = random.Random(1000 + i)
@@ -602,17 +701,8 @@ def make_stage_tiles(i):
         cells.append(c)
     wall = Canvas(col["wall"])
     draw_wall(wall, col, WALL_KIND[i], rnd)
-    cells.append(wall)
-    face = Canvas(col["wall"])   # lico muru nad podłogą: jasna korona u góry, ciemniejszy dół
-    face.im.paste(wall.im, (0, 0))
-    face.px = face.im.load()
-    face.rect(0, 0, 31, 3, col["light"])
-    face.hline(0, 31, 4, mix(col["light"], col["wall"], 0.5))
-    face.hline(0, 31, 0, mix(col["light"], (255, 255, 255), 0.35))
-    for y in range(26, 32):
-        for x in range(32):
-            face.set(x, y, mix(face.get(x, y), col["shadow"], 0.25 + (y - 26) * 0.1))
-    cells.append(face)
+    cells.append(make_wall_top(wall, col))     # 6: wierzch muru (masa muru, pole z murem poniżej) - bez pasów
+    cells.append(make_wall_face(wall, col))    # 7: lico muru nad podłogą - krawędź wierzchu, wzór materiału, cień u dołu
     st = Canvas(col["wall"])   # schody w dół: boczne ściany, stopnie coraz ciemniejsze, u dołu otwór
     for k in range(5):
         y0 = 2 + k * 6
@@ -628,6 +718,7 @@ def make_stage_tiles(i):
     st.rect(0, 0, 31, 1, col["light"])
     st.rect(4, 30, 27, 31, (12, 12, 20))
     cells.append(st)
+    cells += make_wall_edges(col)              # 9-14: nakładki autokafli muru (krawędzie wierzchu, końce lica)
     sheet = Image.new("RGBA", (32 * len(cells), 32), TRANSPARENT)
     for k, c in enumerate(cells):
         sheet.paste(c.im, (k * 32, 0))
@@ -669,23 +760,35 @@ def make_fx(danger):
                 px[cx + sx * k, cy + sy * t] = (255, 230, 120, 230)
                 px[cx + sx * t, cy + sy * k] = (255, 230, 120, 230)
     save(im, "fx/range.png")
-    # błoto (akt I): plama z grudkami, półprzezroczysta krawędź; kolory z palety etapu (12-13 na GBA)
-    im = Image.new("RGBA", (32, 32), TRANSPARENT)
+    # błoto (akt I, v0.21.51): płaskie mokre plamy o nieregularnym brzegu - jaśniejszy brąz z połyskiem, nie ciemne
+    # dziury; 3 warianty w pionowym pasku 32x96 (MapLayer / OverlayLayer wybiera skrótem pozycji pola)
+    im = Image.new("RGBA", (32, 32 * MUD_VARIANTS), TRANSPARENT)
     px = im.load()
     rnd = random.Random(7)
-    dark, light, rim = (40, 26, 14), (122, 92, 58), (150, 118, 80)
-    for y in range(32):
-        for x in range(32):
-            dx, dy = (x - 15.5) / 14.5, (y - 16.5) / 12.0
-            d = dx * dx + dy * dy
-            if d <= 1.0:
-                px[x, y] = (rim + (230,)) if d > 0.82 else (dark + (245,))
-    for _ in range(10):
-        x, y = rnd.randrange(6, 26), rnd.randrange(8, 24)
-        px[x, y] = light + (255,)
-        px[x + 1, y] = light + (220,)
-    for x in range(9, 20):
-        px[x, 11] = mix(dark, (255, 255, 255), 0.25) + (200,)
+    wet, edge, gloss = (128, 94, 58), (150, 116, 78), (236, 216, 180)
+    for v in range(MUD_VARIANTS):
+        blobs = [(15.5 + rnd.uniform(-2, 2), 16.5 + rnd.uniform(-1, 2), rnd.uniform(8.5, 10.5), rnd.uniform(6, 7.5))]
+        for _ in range(3):   # nieregularny brzeg: kilka mniejszych plam wokół środka
+            blobs.append((15.5 + rnd.uniform(-7, 7), 16.5 + rnd.uniform(-5, 5), rnd.uniform(4, 6.5), rnd.uniform(3, 5)))
+        oy = v * 32
+        for y in range(32):
+            for x in range(32):
+                d = min(((x - bx) / rx) ** 2 + ((y - by) / ry) ** 2 for (bx, by, rx, ry) in blobs)
+                if d <= 1.0:
+                    px[x, oy + y] = (edge + (170,)) if d > 0.72 else (wet + (225,))
+        # połysk mokrej powierzchni: krótkie jasne pociągnięcia u góry plamy i kilka błysków
+        bx, by, rx, ry = blobs[0]
+        gy = int(by - ry * 0.45)
+        for x in range(int(bx - rx * 0.45), int(bx + rx * 0.1)):
+            if px[x, oy + gy][3] > 0:
+                px[x, oy + gy] = gloss + (215,)
+        for x in range(int(bx - rx * 0.3), int(bx - rx * 0.05)):
+            if px[x, oy + gy + 1][3] > 0:
+                px[x, oy + gy + 1] = mix(gloss, wet, 0.4) + (200,)
+        for _ in range(3):
+            x, y = int(bx + rnd.uniform(-rx * 0.6, rx * 0.6)), int(by + rnd.uniform(-1, ry * 0.5))
+            if px[x, oy + y][3] > 0:
+                px[x, oy + y] = gloss + (180,)
     save(im, "fx/mud.png")
 
 

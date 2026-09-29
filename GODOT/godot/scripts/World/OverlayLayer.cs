@@ -45,6 +45,15 @@ public partial class OverlayLayer : Node2D
         if (lit) DrawLine(center + new Vector2(-6, -3), center + new Vector2(3, -3), new Color(0.75f, 0.88f, 1f, 0.5f + 0.3f * pulse), 2f);
     }
 
+    /// <summary>Błoto (akt I): płaska mokra plama w jednym z 3 wariantów (skrót pozycji), lekko obrócona odbiciem.</summary>
+    private void DrawMud(Rect2 r, int x, int y)
+    {
+        var h = (int)(((uint)(x * 19349663) ^ (uint)(y * 83492791)) >> 4);
+        var src = Assets.Frame(h % Assets.MudVariants, Assets.Cell);
+        if ((h & 8) != 0) r = new Rect2(r.Position.X + r.Size.X, r.Position.Y, -r.Size.X, r.Size.Y); // odbicie w poziomie
+        DrawTextureRectRegion(Assets.Mud, r, src, new Color(1, 1, 1, _g.Visible(x, y) ? 1f : 0.5f));
+    }
+
     public override void _Draw()
     {
         if (_g is null) return;
@@ -58,7 +67,7 @@ public partial class OverlayLayer : Node2D
                 var r = new Rect2(x * c, y * c, c, c);
                 var t = _g.Lv[x, y];
                 if (_g.Puddle(x, y)) DrawPuddle(r, pulse, _g.Visible(x, y));
-                else if (_g.Mud(x, y)) DrawTextureRect(Assets.Mud, r, false, new Color(1, 1, 1, _g.Visible(x, y) ? 1f : 0.45f));
+                else if (_g.Mud(x, y)) DrawMud(r, x, y);
                 var locked = t == Tile.Stairs && _g.StairsLocked();   // pieczątki (Akt 0): schody zamknięte do kompletu dokumentów
                 if (t == Tile.Stairs && _g.Visible(x, y) && !locked)
                     DrawRect(r.Grow(-3), new Color(Pal.StairsGlow, 0.12f + 0.16f * pulse));

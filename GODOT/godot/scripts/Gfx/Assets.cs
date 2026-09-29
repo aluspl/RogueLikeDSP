@@ -49,8 +49,13 @@ public static class Assets
     // menu_icons.png 27-29: wydarzenie z wyborem, ulepszenie narzędzia, klucz do magazynu
     public const int MenuEvent = 27, MenuUpgrade = 28, MenuKey = 29;
 
-    // tiles/stage_N.png: 4 podłogi, 2 podłogi z cieniem muru, mur, lico muru, schody
+    // tiles/stage_N.png: 4 podłogi, 2 podłogi z cieniem muru, wierzch muru, lico muru, schody;
+    // v0.21.51 autokafle muru - nakładki: krawędź wierzchu góra / lewa / prawa, lewy / prawy koniec lica, róg wewnętrzny
     public const int TileFloor = 0, TileFloorShadow = 4, TileWall = 6, TileWallFace = 7, TileStairs = 8;
+    public const int TileEdgeTop = 9, TileEdgeLeft = 10, TileEdgeRight = 11, TileFaceLeft = 12, TileFaceRight = 13, TileInnerCorner = 14;
+
+    /// <summary>Warianty plamy błota w fx/mud.png (pionowy pasek 32x32).</summary>
+    public const int MudVariants = 3;
 
     private static readonly Dictionary<string, Texture2D> Cache = new();
 
