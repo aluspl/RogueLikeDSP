@@ -132,7 +132,7 @@ inline constexpr core::story_msg story_prologue = { "Anna Nowak", { "Witaj na bu
 inline constexpr const char* prologue_captions[] = { "Działka przy ul. Budowlanej 7...", "...a problemy już czekają." };
 
 inline constexpr core::act_def acts[] = {   // mechanika aktu: błoto, porywy wiatru, pył
-    { "Stan surowy", 10, 2, core::act_mechanic::mud, 7, "Błoto w wykopie", "Błoto", "Wejście w błoto = tura", "I", false },
+    { "Stan surowy", 10, 2, core::act_mechanic::mud, 14, "Błoto w wykopie", "Błoto", "Wejście w błoto = tura", "I", false },
     { "Pod dachem", 10, 2, core::act_mechanic::gust, 6, "Porywy na wysokości", "Porywy", "Poryw co 6 tur spycha", "II", false },
     { "Wykończenie", 10, 2, core::act_mechanic::dust, 2, "Pył z szlifowania", "Pył", "Pył: widzenie -2", "III", false },
     { "Papierologia", 4, 2, core::act_mechanic::stamps, 3, "Pieczątki i kolejka", "Pieczątki", "3 dokumenty = schody", "0", true },
@@ -688,7 +688,7 @@ inline constexpr core::decor_def estate_decor[] = {   // ozdoby Osiedla (klatki 
 };
 inline constexpr int estate_decor_count = 6;
 
-inline constexpr const char* version = "v0.21.50";   // numer wersji (ekran tytułowy, changelog)
+inline constexpr const char* version = "v0.21.51";   // numer wersji (ekran tytułowy, changelog)
 
 inline constexpr const char* damage_help[] = {   // Jak grać: obrażenia broni w prostych słowach (rozpiska #26)
     "Cios = rzut broni + premie:",

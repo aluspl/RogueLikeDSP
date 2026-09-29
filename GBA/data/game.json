@@ -2112,7 +2112,7 @@
         "name": "Błoto w wykopie",
         "short": "Błoto",
         "info": "Wejście w błoto = tura",
-        "value": 7
+        "value": 14
       },
       "numeral": "I"
     },
@@ -2267,7 +2267,7 @@
       "effect": "thermos"
     }
   ],
-  "version": "v0.21.50",
+  "version": "v0.21.51",
   "damageHelp": [
     "Cios = rzut broni + premie:",
     "SIŁ/ZRĘ/INT broni +1 co 2 pkt,",
