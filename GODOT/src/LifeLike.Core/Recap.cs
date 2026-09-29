@@ -39,7 +39,7 @@ public static class Recap
         int best = -1, bc = 0;
         for (var i = 0; i < d.Respect.Length; ++i)
         {
-            var c = Meta.RespectCost(d, p, i);
+            var c = Meta.RespectUnlocked(d, p, i) ? Meta.RespectCost(d, p, i) : -1;
             if (c >= 0 && (best < 0 || c < bc))
             {
                 best = i;

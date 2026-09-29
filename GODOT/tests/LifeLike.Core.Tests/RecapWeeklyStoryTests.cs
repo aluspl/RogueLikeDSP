@@ -160,7 +160,7 @@ public class RecapWeeklyStoryTests
         var raw = v.ToBytes();
         Array.Fill(raw, (byte)0xAB, Profile.V10Size, Profile.Size - Profile.V10Size);
         var q = Profile.FromBytes(raw);
-        Assert.True(Meta.ProfileFix(D, q) && q.MagicIs(Profile.MagicV11) && q.Best == 777 && q.WeeklyRuns == 0 && q.WeeklyScore[2] == 0);
+        Assert.True(Meta.ProfileFix(D, q) && q.MagicIs(Profile.MagicV12) && q.Best == 777 && q.WeeklyRuns == 0 && q.WeeklyScore[2] == 0);
         Assert.True(Story.Count(D, q) >= 3 && Story.Count(D, q) == Story.UnreadCount(D, q));
         Assert.False(Meta.ProfileFix(D, q));
     }

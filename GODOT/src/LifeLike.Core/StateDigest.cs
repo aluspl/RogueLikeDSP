@@ -219,6 +219,13 @@ public static class StateDigest
         f.Add(g.CombosRun);
         f.Add(g.WeeklyWeek);
         f.Add(g.Bonus.Weekly);
+        // v0.21.51 cz. 2: sekretne zlecenia (liczniki budowy), Majster, Geodeta, kawa na start
+        foreach (var v in new[]
+                 {
+                     g.CoffeeDrunk, g.ShockCombos, g.PaperHits, g.SecretFlags, g.HelperCtx, g.BorrowCls, g.MarkTarget, g.MarkTurns, g.PowerCls(),
+                     g.BuildDays(), g.Bonus.StartCoffee,
+                 })
+            f.Add(v);
         return f.H;
     }
 }

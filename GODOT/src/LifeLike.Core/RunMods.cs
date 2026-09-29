@@ -60,6 +60,8 @@ public struct RunMods
     public int Rerolls;
     /// <summary>v0.21.50 cz. 4: wyzwanie tygodnia + 1 (0 = zwykła budowa – domyślna wartość struktury).</summary>
     public int WeeklyPlus1;
+    /// <summary>v0.21.51 cz. 2: Respekt Zaprawiony w boju – kawy w termosie na start.</summary>
+    public int StartCoffee;
 
     /// <summary>Wyzwanie tygodnia (GameData.Weekly), -1 = zwykła budowa (jak run_mods::weekly na GBA).</summary>
     public int Weekly
@@ -91,6 +93,7 @@ public struct RunMods
             case RespectEffect.MatsPct: MatsPct += v; break;
             case RespectEffect.SecondChance: SecondChance += v; break;
             case RespectEffect.Reroll: Rerolls += v; break;
+            case RespectEffect.Veteran: StartCoffee += v; break;
         }
     }
 
@@ -113,6 +116,7 @@ public struct RunMods
         RespectEffect.MatsPct => m.Add("Materiały +").Add(v).Add("% częściej"),
         RespectEffect.SecondChance => m.Add("Raz na budowę: 1 HP zamiast końca"),
         RespectEffect.Reroll => m.Add("Premie: +").Add(v).Add(" darmowe losowanie"),
+        RespectEffect.Veteran => m.Add("Na start: ").Add(v).Add(v == 1 ? " kawa" : " kawy").Add(" w termosie"),
         _ => m,
     };
 

@@ -5,8 +5,8 @@ namespace LifeLike.Core;
 
 /// <summary>
 /// Profil gracza (odpowiednik core::profile z meta.h): rekord, doświadczenie, zakupy, odznaki, Osiedle.
-/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v11: 188 bajtów, little-endian, bajt 55 to wyrównanie),
-/// więc migracje v1–v10 działają tak samo.
+/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v12: 196 bajtów, little-endian, bajt 55 to wyrównanie),
+/// więc migracje v1–v11 działają tak samo.
 /// </summary>
 public sealed class Profile
 {
@@ -29,13 +29,18 @@ public sealed class Profile
     public const int V9Size = 156;
     /// <summary>v11 = v10 + wyzwania tygodnia i fabuła od tego offsetu.</summary>
     public const int V10Size = 160;
-    public const int Size = 188;
+    /// <summary>v12 = v11 + sekretne zlecenia (#39), wygląd, Respekt 16-18 od tego offsetu.</summary>
+    public const int V11Size = 188;
+    public const int Size = 196;
     public const int WeeklySlots = 3;
     public const int MaxRespect = 16;
+    /// <summary>Rangi Respektu 16-18 (v12, dalszy ciąg RespectRanks).</summary>
+    public const int MaxRespectHi = 3;
     /// <summary>Zawody 0-7: bitmaska Classes (Szkolenia), 8-11: tylko z nagród za odbiór.</summary>
     public const int MaxClasses = 12;
     public const int MaxKeepsakes = 8;
     public const int DailySlots = 5;
+    public const string MagicV12 = "PBRL012";
     public const string MagicV11 = "PBRL011";
     public const string MagicV10 = "PBRL010";
     public const string MagicV9 = "PBRL009";
@@ -143,6 +148,15 @@ public sealed class Profile
     public uint Story;
     /// <summary>Jeszcze nieprzeczytane wątki.</summary>
     public uint StoryNew;
+    // --- v12: sekretne zlecenia (#39)
+    /// <summary>Wykonane sekretne zlecenia (bity GameData.Secrets).</summary>
+    public ushort Secrets;
+    /// <summary>Wykonane, dymek „Nowość” na tytule jeszcze nie pokazany.</summary>
+    public ushort SecretsNew;
+    /// <summary>Wybrany wygląd (bity GameData.Cosmetics; działa tylko odblokowany).</summary>
+    public byte Cosmetic;
+    /// <summary>Kupione rangi Respektu 16-18.</summary>
+    public byte[] RespectRanksHi = new byte[MaxRespectHi];
 
     public static byte[] MagicBytes(string s)
     {
@@ -218,6 +232,10 @@ public sealed class Profile
         b[167] = WeeklyRuns;
         BinaryPrimitives.WriteUInt32LittleEndian(b.AsSpan(180), Story);
         BinaryPrimitives.WriteUInt32LittleEndian(b.AsSpan(184), StoryNew);
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(188), Secrets);
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(190), SecretsNew);
+        b[192] = Cosmetic;
+        RespectRanksHi.CopyTo(b, 193);
         return b;
     }
 
@@ -277,6 +295,10 @@ public sealed class Profile
             WeeklyRuns = b[167],
             Story = BinaryPrimitives.ReadUInt32LittleEndian(b[180..]),
             StoryNew = BinaryPrimitives.ReadUInt32LittleEndian(b[184..]),
+            Secrets = BinaryPrimitives.ReadUInt16LittleEndian(b[188..]),
+            SecretsNew = BinaryPrimitives.ReadUInt16LittleEndian(b[190..]),
+            Cosmetic = b[192],
+            RespectRanksHi = b.Slice(193, MaxRespectHi).ToArray(),
         };
         for (var i = 0; i < WeeklySlots; i++)
         {

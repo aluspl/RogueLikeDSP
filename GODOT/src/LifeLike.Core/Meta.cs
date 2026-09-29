@@ -11,7 +11,7 @@ public static class Meta
     public static void ProfileReset(GameData d, Profile p)
     {
         var fresh = Profile.FromBytes(new byte[Profile.Size]);
-        fresh.Magic = Profile.MagicBytes(Profile.MagicV11);
+        fresh.Magic = Profile.MagicBytes(Profile.MagicV12);
         fresh.Classes = (byte)d.StartClassesMask;
         DefaultKeepsake(d, fresh);
         CopyInto(fresh, p);
@@ -92,6 +92,10 @@ public static class Meta
         dst.WeeklyScore = copy.WeeklyScore;
         dst.Story = copy.Story;
         dst.StoryNew = copy.StoryNew;
+        dst.Secrets = copy.Secrets;
+        dst.SecretsNew = copy.SecretsNew;
+        dst.Cosmetic = copy.Cosmetic;
+        dst.RespectRanksHi = copy.RespectRanksHi;
     }
 
     // ------------------------------------------------------------------ katalog usterek (rodzaje 0-15 w Catalog, 16-47 w CatalogHi)
@@ -165,6 +169,14 @@ public static class Meta
         return n;
     }
 
+    /// <summary>Wygrane zwykłymi zawodami (bez zawodów z sekretów): odznaka Pełny zespół, sekret Każdy fach się przyda.</summary>
+    public static int OpenClassesWon(GameData d, Profile p)
+    {
+        var n = 0;
+        for (var c = 0; c < d.OpenClassesCount; ++c) n += ClassWon(p, c) ? 1 : 0;
+        return n;
+    }
+
     public static int BestStake(Profile p, int c) => c < 8 ? p.BestStake[c] : p.BestStakeHi[c - 8];
 
     public static void SetBestStake(Profile p, int c, int v)
@@ -212,15 +224,26 @@ public static class Meta
     /// <summary>Naprawia wczytany profil. Zwraca true, jeśli trzeba go zapisać (migracja albo pusta pamięć).</summary>
     public static bool ProfileFix(GameData d, Profile p)
     {
-        if (p.MagicIs(Profile.MagicV11)) return ClampLevels(d, p);
+        if (p.MagicIs(Profile.MagicV12)) return ClampLevels(d, p);
+        if (p.MagicIs(Profile.MagicV11)) // v11 -> v12: sekretne zlecenia z tego, co już widać w profilu
+        {
+            var b11 = p.ToBytes();
+            Array.Clear(b11, Profile.V11Size, b11.Length - Profile.V11Size);
+            CopyInto(Profile.FromBytes(b11), p);
+            p.Magic = Profile.MagicBytes(Profile.MagicV12);
+            ClampLevels(d, p);
+            Secrets.MigrateV12(d, p);
+            return true;
+        }
         if (p.MagicIs(Profile.MagicV10)) // v10 -> v11: wyzwania tygodnia i fabuła od zera
         {
             var b10 = p.ToBytes();
             Array.Clear(b10, Profile.V10Size, b10.Length - Profile.V10Size);
             CopyInto(Profile.FromBytes(b10), p);
-            p.Magic = Profile.MagicBytes(Profile.MagicV11);
+            p.Magic = Profile.MagicBytes(Profile.MagicV12);
             ClampLevels(d, p);
             Story.MigrateV11(d, p);
+            Secrets.MigrateV12(d, p);
             return true;
         }
         var v9 = p.MagicIs(Profile.MagicV9);
@@ -230,10 +253,11 @@ public static class Meta
             var b8 = p.ToBytes();
             Array.Clear(b8, keep8, b8.Length - keep8);
             CopyInto(Profile.FromBytes(b8), p);
-            p.Magic = Profile.MagicBytes(Profile.MagicV11);
+            p.Magic = Profile.MagicBytes(Profile.MagicV12);
             ClampLevels(d, p);
             MigrateV10(d, p);
             Story.MigrateV11(d, p);
+            Secrets.MigrateV12(d, p);
             return true;
         }
         // v7/v6/v5/v4/v3/v2 -> v9: stare pola zostają, nowe od zera (jak memset od profile_v7_size / v6 / ...);
@@ -248,12 +272,13 @@ public static class Meta
             var b = p.ToBytes();
             Array.Clear(b, keep, b.Length - keep);
             CopyInto(Profile.FromBytes(b), p);
-            p.Magic = Profile.MagicBytes(Profile.MagicV11);
+            p.Magic = Profile.MagicBytes(Profile.MagicV12);
             DefaultKeepsake(d, p);
             ClampLevels(d, p);
             MigrateV8(d, p);
             MigrateV10(d, p);
             Story.MigrateV11(d, p);
+            Secrets.MigrateV12(d, p);
             return true;
         }
         if (p.MagicIs(Profile.MagicV1))
@@ -266,18 +291,25 @@ public static class Meta
             MigrateV8(d, p);
             MigrateV10(d, p);
             Story.MigrateV11(d, p);
+            Secrets.MigrateV12(d, p);
             return true;
         }
         ProfileReset(d, p);
         return true;
     }
 
-    /// <summary>Zawód tylko z nagrody za odbiór (nie do kupienia w Szkoleniach).</summary>
-    public static bool ClassReward(GameData d, int c) => ((d.RewardClassesMask >> c) & 1) != 0;
+    /// <summary>Zawód z sekretnego zlecenia (v0.21.51 cz. 2).</summary>
+    public static bool ClassSecret(GameData d, int c) => ((d.SecretClassesMask >> c) & 1) != 0;
 
-    /// <summary>Zawód: startowy / kupiony w Szkoleniach (bitmaska) albo z nagrody za odbiór.</summary>
-    public static bool ClassUnlocked(GameData d, Profile p, int c) =>
-        ClassReward(d, c) ? RewardUnlocked(d, p, RewardKind.Cls, c) : (p.Classes & (1u << c)) != 0;
+    /// <summary>Zawód nie do kupienia w Szkoleniach: z nagrody za odbiór albo z sekretnego zlecenia.</summary>
+    public static bool ClassReward(GameData d, int c) => (((d.RewardClassesMask | d.SecretClassesMask) >> c) & 1) != 0;
+
+    /// <summary>Zawód: startowy / kupiony w Szkoleniach (bitmaska), z nagrody za odbiór albo z sekretnego zlecenia.</summary>
+    public static bool ClassUnlocked(GameData d, Profile p, int c)
+    {
+        if (ClassSecret(d, c)) return Secrets.Owned(d, p, SecretReward.Cls, c);
+        return ClassReward(d, c) ? RewardUnlocked(d, p, RewardKind.Cls, c) : (p.Classes & (1u << c)) != 0;
+    }
 
     public static bool DifficultyUnlocked(GameData d, Profile p, int diff) => diff < d.Difficulties.Length - 1 || p.Hard != 0;
 
@@ -337,6 +369,12 @@ public static class Meta
             if (p.RespectTotal > 0 && (p.Tutorial & Tutorial.Respect) == 0) return TutorialUnlock.Respect;
             if (p.Runs > 0 && (p.Tutorial & Tutorial.Daily) == 0) return TutorialUnlock.Daily;
             if (Act0Unlocked(d, p) && (p.Tutorial & Tutorial.Act0) == 0) return TutorialUnlock.Act0;
+            for (var i = 0; i < d.Secrets.Length; ++i)
+            {
+                if (((p.SecretsNew >> i) & 1) == 0) continue;
+                cls = i;
+                return TutorialUnlock.Secret;
+            }
             return -1;
         }
         if (InvestorUnlocked(p) && (p.Tutorial & Tutorial.Investor) == 0) return TutorialUnlock.Investor;
@@ -356,6 +394,7 @@ public static class Meta
         ushort[] bits = [Tutorial.Respect, Tutorial.Daily, Tutorial.Investor, Tutorial.Act0];
         if (u is >= 0 and < 4) p.Tutorial |= bits[u];
         if (u == TutorialUnlock.Class && cls >= 0) p.ClassesSeen = (ushort)(p.ClassesSeen | (1u << cls));
+        if (u == TutorialUnlock.Secret && cls >= 0) p.SecretsNew = (ushort)(p.SecretsNew & ~(1u << cls));
     }
 
     /// <summary>Koszt kolejnego poziomu ulepszenia; -1 = maksymalny poziom.</summary>
@@ -388,6 +427,7 @@ public static class Meta
         for (var i = 0; i < d.Tools.Length; ++i)
         {
             if (d.Tools[i].Reward) m = RewardUnlocked(d, p, RewardKind.Tool, i) ? m | (1 << i) : m & ~(1 << i);
+            if (d.Tools[i].Secret) m = Secrets.Owned(d, p, SecretReward.Tool, i) ? m | (1 << i) : m & ~(1 << i);
         }
         return m;
     }
@@ -407,7 +447,7 @@ public static class Meta
 
     public static bool BuyTool(GameData d, Profile p, int i)
     {
-        if (d.Tools[i].Reward || ToolUnlocked(d, p, i) || p.Xp < d.Tools[i].Cost) return false;
+        if (d.Tools[i].Reward || d.Tools[i].Secret || ToolUnlocked(d, p, i) || p.Xp < d.Tools[i].Cost) return false;
         p.Xp -= d.Tools[i].Cost;
         p.Tools = (byte)(p.Tools | (1u << i));
         return true;
@@ -435,7 +475,19 @@ public static class Meta
     }
 
     // ------------------------------------------------------------------ Respekt (telefon profilu, strona Respekt)
-    public static int RespectRank(GameData d, Profile p, int i) => Math.Min(p.RespectRanks[i], d.Respect[i].Ranks);
+    /// <summary>Kupiona ranga (surowa): 0-15 w RespectRanks, 16-18 w RespectRanksHi (v12).</summary>
+    public static int RespectSlot(Profile p, int i) => i < Profile.MaxRespect ? p.RespectRanks[i] : p.RespectRanksHi[i - Profile.MaxRespect];
+
+    public static void SetRespectRank(Profile p, int i, int r)
+    {
+        if (i < Profile.MaxRespect) p.RespectRanks[i] = (byte)r;
+        else p.RespectRanksHi[i - Profile.MaxRespect] = (byte)r;
+    }
+
+    /// <summary>Ranga z sekretnego zlecenia (Zaprawiony w boju) – dopiero po jego wykonaniu.</summary>
+    public static bool RespectUnlocked(GameData d, Profile p, int i) => d.Respect[i].Secret < 0 || Secrets.Done(p, d.Respect[i].Secret);
+
+    public static int RespectRank(GameData d, Profile p, int i) => Math.Min(RespectSlot(p, i), d.Respect[i].Ranks);
 
     /// <summary>Koszt kolejnej rangi; -1 = maksymalna.</summary>
     public static int RespectCost(GameData d, Profile p, int i)
@@ -447,9 +499,9 @@ public static class Meta
     public static bool BuyRespect(GameData d, Profile p, int i)
     {
         var c = RespectCost(d, p, i);
-        if (c < 0 || p.Respect < c) return false;
+        if (c < 0 || p.Respect < c || !RespectUnlocked(d, p, i)) return false;
         p.Respect = (ushort)(p.Respect - c);
-        ++p.RespectRanks[i];
+        SetRespectRank(p, i, RespectSlot(p, i) + 1);
         return true;
     }
 
@@ -710,7 +762,7 @@ public static class Meta
         }
         for (var i = 0; i < d.Tools.Length; ++i)
         {
-            if (!ToolUnlocked(d, p, i) && !d.Tools[i].Reward) Take(2, i, d.Tools[i].Cost);
+            if (!ToolUnlocked(d, p, i) && !d.Tools[i].Reward && !d.Tools[i].Secret) Take(2, i, d.Tools[i].Cost);
         }
         for (var i = 0; i < d.Brigade.Length; ++i)
         {
@@ -835,7 +887,7 @@ public static class Meta
         RecordRun(d, p, g);
         var cleared = g.St == GameStatus.StageClear || g.St == GameStatus.Won;
         var won = g.St == GameStatus.Won;
-        var allTools = (1 << d.Tools.Length) - 1;
+        var allTools = ((1 << d.Tools.Length) - 1) & ~d.SecretToolsMask; // sekretne narzędzia się nie liczą
         var cond = new bool[16];
         void Set(int idx, bool v)
         {
@@ -846,7 +898,7 @@ public static class Meta
         Set(d.BadgeSeryjny, g.StageKills >= 8);
         Set(d.BadgeZawodowiec, g.HeroLevel >= d.MaxHeroLevel);
         Set(d.BadgeTwardziel, won && g.Diff == d.Difficulties.Length - 1);
-        Set(d.BadgePelnyZespol, ClassesWon(d, p) == d.Classes.Length);
+        Set(d.BadgePelnyZespol, OpenClassesWon(d, p) == d.OpenClassesCount); // zawody z sekretów się nie liczą
         Set(d.BadgeKolekcjoner, (p.ToolsFound & allTools) == allTools);
         Set(d.BadgeKatalog, CatalogCount(d, p) == d.Enemies.Length);
         Set(d.BadgeOsiedle, p.HousesCount >= 5);

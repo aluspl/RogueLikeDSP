@@ -239,7 +239,7 @@ public class BehaviorAndActTests
         p.Catalog = 0x0F0F;
         p.CatalogHi = 0xDEADBEEF;
         p.Magic = Profile.MagicBytes(Profile.MagicV8);
-        Assert.True(Meta.ProfileFix(D, p) && p.MagicIs(Profile.MagicV11) && p.CatalogHi == 0 && p.Best == 4321 && p.Respect == 77 && p.Catalog == 0x0F0F);
+        Assert.True(Meta.ProfileFix(D, p) && p.MagicIs(Profile.MagicV12) && p.CatalogHi == 0 && p.Best == 4321 && p.Respect == 77 && p.Catalog == 0x0F0F);
         Meta.CatalogAdd(p, 20);
         Meta.CatalogAdd(p, 31);
         Assert.True(Meta.CatalogHas(p, 20) && Meta.CatalogHas(p, 31) && !Meta.CatalogHas(p, 21) && Meta.CatalogCount(D, p) == 8 + 2);

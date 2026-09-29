@@ -32,7 +32,7 @@ public class GoldenTests
         int badges = Opt("badges"), contracts = Opt("contracts"), keepsake = Opt("keepsake"), keepsakeRuns = Opt("keepsakeRuns");
         var investor = Opt("investor");
         int paths = Opt("paths"), daily = Opt("daily");
-        int respect = Opt("respect"), rewards = Opt("rewards"), weekly = Opt("weekly");
+        int respect = Opt("respect"), rewards = Opt("rewards"), weekly = Opt("weekly"), secrets = Opt("secrets");
         var snaps = j.GetProperty("snapshots").EnumerateArray().ToList();
         var digests = j.GetProperty("digests").EnumerateArray().Select(x => x.GetString()).ToList();
 
@@ -52,9 +52,13 @@ public class GoldenTests
             p.Investor = (byte)investor;
         }
         if (keepsake > 0) p.KeepsakeRuns[keepsake - 1] = (byte)keepsakeRuns;
+        p.Secrets = (ushort)secrets; // v0.21.51 cz. 2: przed Respektem – Zaprawiony w boju tylko po sekrecie
         if (respect != 0)
         {
-            for (var i = 0; i < d.Respect.Length; i++) p.RespectRanks[i] = (byte)d.Respect[i].Ranks;
+            for (var i = 0; i < d.Respect.Length; i++)
+            {
+                if (Meta.RespectUnlocked(d, p, i)) Meta.SetRespectRank(p, i, d.Respect[i].Ranks);
+            }
         }
         p.Rewards = (byte)rewards;
         var m = Meta.Mods(d, p); // przed StartRun: ranga pamiątki z budów przed tą
@@ -94,6 +98,7 @@ public class GoldenTests
             {
                 Meta.CheckBadges(d, p, g);
                 Meta.CheckContracts(d, p);
+                Secrets.Check(d, p, g);
                 Meta.BankXp(p, g);
                 if (g.ActCleared && shop && !g.ShopClosed) Bot.Shop(g);
                 g.BotUpgrade(); // v0.21.50 cz. 3: jak bot balansu – ulepszenie narzędzia, jeśli stać
@@ -114,6 +119,7 @@ public class GoldenTests
                 Meta.AddHouse(p, g);
                 Meta.CheckBadges(d, p, g);
                 Meta.CheckContracts(d, p);
+                Secrets.Check(d, p, g);
                 Meta.BankXp(p, g);
                 didNg = true;
                 g.NewGamePlus();
@@ -134,6 +140,7 @@ public class GoldenTests
         }
         Meta.CheckBadges(d, p, g);
         Meta.CheckContracts(d, p);
+        Secrets.Check(d, p, g);
         Meta.BankXp(p, g);
         if (g.Daily) Daily.Record(d, p, g.DailyDay, g.Score, g.St == GameStatus.Won);
         if (g.WeeklyWeek != 0) Weekly.Record(d, p, g.WeeklyWeek, g.Score, g.St == GameStatus.Won);

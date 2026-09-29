@@ -190,13 +190,18 @@ public static class DamageHelp
                 return true;
             case DmgText.CritExtra:
             {
-                if (b.CritTrait == 0 && b.CritBonus == 0 && b.CritUpg == 0)
+                if (b.CritTrait == 0 && b.CritBonus == 0 && b.CritUpg == 0 && b.CritWeapon == 0)
                 {
                     m.Add("Kryt: bez premii");
                     return false;
                 }
                 m.Add("+");
                 var first = true;
+                if (b.CritWeapon != 0)
+                {
+                    m.Add(" broń ").Add(b.CritWeapon).Add("%");
+                    first = false;
+                }
                 if (b.CritTrait != 0)
                 {
                     m.Add(" cecha ").Add(b.CritTrait).Add("%");

@@ -65,6 +65,7 @@ public class RespectAndRewardsTests
         var s = Meta.NewProfile(D);
         Assert.True(Meta.RespectCost(D, s, 0) == D.Respect[0].Costs[0] && !Meta.BuyRespect(D, s, 0));
         s.Respect = 60000;
+        s.Secrets = (ushort)((1 << D.Secrets.Length) - 1); // Respekt z sekretnego zlecenia (Zaprawiony w boju) odblokowany
         var spent = 0;
         for (var i = 0; i < D.Respect.Length; ++i)
         {
@@ -195,7 +196,7 @@ public class RespectAndRewardsTests
         Assert.True(Meta.RecordWin(D, p) == -1 && p.Rewards == avail); // „wkrótce” się nie odblokowuje
         for (var i = 0; i < D.Classes.Length; ++i)
         {
-            Assert.Equal(Meta.ClassReward(D, i) || ((p.Classes >> i) & 1) != 0, Meta.ClassUnlocked(D, p, i));
+            Assert.Equal((Meta.ClassReward(D, i) && !Meta.ClassSecret(D, i)) || ((p.Classes >> i) & 1) != 0, Meta.ClassUnlocked(D, p, i));
         }
         // wygrane i stawki zawodów 8+
         var w = Meta.NewProfile(D);
@@ -236,7 +237,7 @@ public class RespectAndRewardsTests
         var b = v7.ToBytes();
         for (var i = Profile.V7Size; i < b.Length; ++i) b[i] = 0xEE;
         var p = Profile.FromBytes(b);
-        Assert.True(Meta.ProfileFix(D, p) && p.MagicIs(Profile.MagicV11));
+        Assert.True(Meta.ProfileFix(D, p) && p.MagicIs(Profile.MagicV12));
         Assert.True(p.Best == 777 && p.Wins == 3 && p.DailyScore[4] == 55 && p.Rewards == Math.Min(3, avail) && p.Xp == 11 + refund);
         Assert.True(p.Respect == 0 && p.RespectTotal == 0 && p.ClassWinsHi == 0 && p.RespectRanks[0] == 0 && p.BestStakeHi[0] == 0);
         for (var i = 0; i < D.Upgrades.Length; ++i)

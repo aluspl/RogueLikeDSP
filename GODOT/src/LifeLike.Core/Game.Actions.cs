@@ -15,6 +15,7 @@ public sealed partial class Game
         var w = Weapon; // ulepszenie (#31): +obrażeń, Wyważenie (rzut), Przebicie (OBR)
         var dmg = R.Range(Math.Min(w.MaxDamage, w.MinDamage + ToolTraitValue(ToolTraitEffect.Steady)), w.MaxDamage)
                   + HeroStat(w.ScalesWith) / 2 + DmgBonus + GearBonus(GearStat.Dmg) + BoonSum(BoonEffect.Dmg) + UpgradeDmg() + EventDmg
+                  + MarkBonus(ei) // Tyczenie (Geodeta)
                   - Math.Max(0, EnemyDefense(ei) - ToolTraitValue(ToolTraitEffect.Pierce)) / 2;
         if (dmg < 1) dmg = 1;
         dmg += Pct.Part(dmg, Bonus.DmgPct + BoonSum(BoonEffect.DmgPct), ref DmgCarry); // Kurs fachowy, Respekt, premie: +%
@@ -31,6 +32,10 @@ public sealed partial class Game
         var e = Enemies[ei];
         if (HasPassive(ClassPassive.Push) && e.Alive && ei != Boss && Cheb(Hero.X, Hero.Y, e.X, e.Y) == 1
             && R.Range(1, 100) <= D.PushChancePct)
+        {
+            Shove(ei, Math.Sign(e.X - Hero.X), Math.Sign(e.Y - Hero.Y), 1);
+        }
+        else if (w.Knockback && e.Alive && ei != Boss && melee && Cheb(Hero.X, Hero.Y, e.X, e.Y) == 1) // Młot Zenka: zawsze odpycha
         {
             Shove(ei, Math.Sign(e.X - Hero.X), Math.Sign(e.Y - Hero.Y), 1);
         }
@@ -124,6 +129,12 @@ public sealed partial class Game
         if (e.Hp <= 0)
         {
             e.Alive = false;
+            if (ei == MarkTarget)
+            {
+                MarkTarget = -1;
+                MarkTurns = 0;
+            }
+            if (ei == Boss && HelperCtx != 0 && e.DefId == D.SecretHelperBoss) SecretFlags |= SecretHelperBossFlag;
             ++Kills;
             ++StageKills;
             ++ActKills;
@@ -160,6 +171,7 @@ public sealed partial class Game
             {
                 StageFlags[Stage] |= RecapFlag.Boss;
                 if (StageDamage == BossWakeDamage && CleanBosses < 255) ++CleanBosses; // zlecenie Czysta robota
+                if (Stage == D.PreludeStages - 1 && FirstStage == 0 && PaperHits == 0) SecretFlags |= SecretPaperCleanFlag; // Akt 0 bez papierów
                 Score += (500 + 100 * Math.Max(0, PatternStage() + 1)) * ScorePct() / 100;
                 GainXp(D.XpBoss);
                 SlamTimer = 0;
@@ -331,6 +343,7 @@ public sealed partial class Game
     {
         var h = Math.Min(CoffeeHeal(), Hero.MaxHp - Hero.Hp);
         Hero.Hp = (short)(Hero.Hp + h);
+        if (CoffeeDrunk < 255) ++CoffeeDrunk;
         Push(Msg("Kawa z termosu: +").Add(h).Add(" HP").As(LogKind.Good));
         var es = SynergyValue(SynergyEffect.Espresso); // synergia Espresso: kawa ładuje moc
         if (es > 0 && AbilityCd > 0)
@@ -665,7 +678,8 @@ public sealed partial class Game
                 AddHit(Hero.X, Hero.Y, 1, true);
             }
         }
-        if (AbilityCd > 0 && --AbilityCd == 0) Push(Msg("Moc gotowa: ").Add(CDef.AbilityName).As(LogKind.Good));
+        if (AbilityCd > 0 && --AbilityCd == 0) Push(Msg("Moc gotowa: ").Add(PDef.AbilityName).As(LogKind.Good));
+        if (MarkTurns > 0 && --MarkTurns == 0) MarkTarget = -1; // Tyczenie mija
         ref var wet = ref HeroStatus[(int)StatusEffect.Wet];
         if (wet > 0) --wet; // mokry schnie
         for (var i = 0; i < EnemiesCount; ++i) // problemy: kałuża moczy, poza nią schną

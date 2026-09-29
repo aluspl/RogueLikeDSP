@@ -56,6 +56,7 @@ public sealed partial class Game
         for (var i = RecapHitsN - 1; i > 0; --i) LastHits[i] = LastHits[i - 1];
         LastHits[0] = new RecapHit { Src = (sbyte)src, Elite = (sbyte)elite, Kind = (byte)k, Stage = (sbyte)Stage, Amount = (short)Math.Min(32767, amount) };
         if (LastHits[0].Amount > WorstHit.Amount) WorstHit = LastHits[0];
+        NotePaperHit(src);
     }
 
     public void NoteCombo()

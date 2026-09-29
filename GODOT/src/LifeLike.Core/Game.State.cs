@@ -118,7 +118,7 @@ public sealed partial class Game
                      Bonus.Hp, Bonus.Def, Bonus.Dmg, Bonus.Coffee, Bonus.Pickups, Bonus.Luck, Bonus.Craft, Bonus.Cooldown, Bonus.Sight,
                      Bonus.Thermos, Bonus.ToolPct, Bonus.XpPct, Bonus.Cash, Bonus.Crit, Bonus.Tools, Bonus.Helpers, Bonus.Investor,
                      Bonus.DmgPct, Bonus.TakenPct, Bonus.GearPct, Bonus.Dodge, Bonus.CoffeePct, Bonus.BrigadePct, Bonus.ShopPct,
-                     Bonus.MatsPct, Bonus.SecondChance, Bonus.GearSlots, Bonus.Act0, Bonus.Rerolls, Bonus.Weekly,
+                     Bonus.MatsPct, Bonus.SecondChance, Bonus.GearSlots, Bonus.Act0, Bonus.Rerolls, Bonus.Weekly, Bonus.StartCoffee,
                  })
             w.Write(v);
         foreach (var v in new[] { XpPct, XpBanked, RunXp, HeroLevel, Boss, StairsX, StairsY }) w.Write(v);
@@ -226,6 +226,15 @@ public sealed partial class Game
         w.Write(ElitesKilled);
         w.Write(CombosRun);
         w.Write(WeeklyWeek);
+        // v0.21.51 cz. 2: sekretne zlecenia, Majster, Geodeta
+        w.Write(CoffeeDrunk);
+        w.Write(ShockCombos);
+        w.Write(PaperHits);
+        w.Write(SecretFlags);
+        w.Write(HelperCtx);
+        w.Write(BorrowCls);
+        w.Write(MarkTarget);
+        w.Write(MarkTurns);
     }
 
     private static void WriteHit(BinaryWriter w, in RecapHit h)
@@ -296,7 +305,7 @@ public sealed partial class Game
             Investor = r.ReadInt32(),
             DmgPct = r.ReadInt32(), TakenPct = r.ReadInt32(), GearPct = r.ReadInt32(), Dodge = r.ReadInt32(), CoffeePct = r.ReadInt32(),
             BrigadePct = r.ReadInt32(), ShopPct = r.ReadInt32(), MatsPct = r.ReadInt32(), SecondChance = r.ReadInt32(),
-            GearSlots = r.ReadInt32(), Act0 = r.ReadInt32(), Rerolls = r.ReadInt32(), Weekly = r.ReadInt32(),
+            GearSlots = r.ReadInt32(), Act0 = r.ReadInt32(), Rerolls = r.ReadInt32(), Weekly = r.ReadInt32(), StartCoffee = r.ReadInt32(),
         };
         XpPct = r.ReadInt32();
         XpBanked = r.ReadInt32();
@@ -400,5 +409,13 @@ public sealed partial class Game
         ElitesKilled = r.ReadByte();
         CombosRun = r.ReadUInt16();
         WeeklyWeek = r.ReadUInt16();
+        CoffeeDrunk = r.ReadByte();
+        ShockCombos = r.ReadByte();
+        PaperHits = r.ReadByte();
+        SecretFlags = r.ReadByte();
+        HelperCtx = r.ReadByte();
+        BorrowCls = r.ReadSByte();
+        MarkTarget = r.ReadSByte();
+        MarkTurns = r.ReadSByte();
     }
 }

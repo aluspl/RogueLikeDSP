@@ -334,6 +334,7 @@ public sealed partial class Game
         var rad = c.Radius + SynergyValue(SynergyEffect.Conduct);
         ComboEvents = (byte)(ComboEvents | (1 << (int)ComboEffect.ShockArea));
         NoteCombo();
+        if (ShockCombos < 255) ++ShockCombos; // sekretne zlecenie Mokra robota
         Push(Msg(c.Short).Add(" ").Add(c.Name).As(LogKind.Good));
         for (var i = 0; i < EnemiesCount && St == GameStatus.Playing; ++i)
         {

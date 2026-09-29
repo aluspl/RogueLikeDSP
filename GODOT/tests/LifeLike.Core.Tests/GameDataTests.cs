@@ -8,8 +8,9 @@ public class GameDataTests
     [Fact]
     public void DerivedConstantsMatchGeneratedHeader()
     {
-        Assert.Equal(9, D.Classes.Length);
-        Assert.Equal(17, D.Weapons.Length);
+        Assert.Equal(12, D.Classes.Length); // v0.21.51 cz. 2: + 3 zawody z sekretnych zleceń
+        Assert.Equal(9, D.OpenClassesCount);
+        Assert.Equal(22, D.Weapons.Length);
         Assert.Equal(41, D.Enemies.Length);
         Assert.Equal(12, D.Stages.Length);
         Assert.Equal(1, D.StartToolsMask);
@@ -54,7 +55,7 @@ public class GameDataTests
         Assert.True(dec.PhasePct == 50 && dec.PhaseHeal > 0 && dec.PhaseSummon == 1 && dec.PhaseName == "Odwołanie" && dec.Summon == D.EnemyIndex("wniosek"));
         Assert.Equal(D.EnemyIndex("decyzja"), D.Stages[1].Boss);
         Assert.True(D.Rewards[^1].Kind == RewardKind.Act && D.Rewards[^1].Index == 3);
-        Assert.True(D.TutorialSteps.Length > 6 && D.TutorialUnlocks.Length == 5 && D.TutorialSteps[0].Msg.From == "Kierownik Marek");
+        Assert.True(D.TutorialSteps.Length > 6 && D.TutorialUnlocks.Length == 6 && D.TutorialSteps[0].Msg.From == "Kierownik Marek");
         Assert.True(D.TutorialSteps.Any(t => t.GodotOnly) && D.TutorialSteps.Any(t => t.NeedsInvestor) && D.TutorialSteps.Any(t => t.Link == "stats"));
     }
 
@@ -73,7 +74,7 @@ public class GameDataTests
     [Fact]
     public void V42SectionsAreParsed()
     {
-        Assert.Equal(new[] { 2, 0, 2, 1, 2, 4, 3, 2, 0 }, D.Classes.Select(c => c.Luck).ToArray());
+        Assert.Equal(new[] { 2, 0, 2, 1, 2, 4, 3, 2, 0, 2, 3, 2 }, D.Classes.Select(c => c.Luck).ToArray());
         Assert.Equal(9, D.GearTraitsCount);
         Assert.Equal(TraitEffect.PoisonRes, D.GearTraits[2].Effect);
         Assert.Equal("Zatrucie", D.Statuses[(int)StatusEffect.Poison].Name);
@@ -93,7 +94,8 @@ public class GameDataTests
         Assert.Equal(7, D.Upgrades.Length);
         Assert.Equal(UpgradeEffect.Luck, D.Upgrades[5].Effect);
         Assert.Equal(UpgradeEffect.Craft, D.Upgrades[6].Effect);
-        Assert.Equal(8, D.Tools.Length);
+        Assert.Equal(10, D.Tools.Length); // v0.21.51 cz. 2: + Młot Zenka, Poziomica mistrza (sekretne)
+        Assert.Equal(0b11_0000_0000, D.SecretToolsMask);
         Assert.Equal(new Perk(PerkEffect.Hp, 2), D.Badges[D.BadgeBezUsterek].Bonus);
         Assert.Equal(new Perk(PerkEffect.ToolPct, 10), D.Badges[D.BadgeKolekcjoner].Bonus);
         Assert.Equal(new Perk(PerkEffect.XpPct, 10), D.Badges[D.BadgeOsiedle].Bonus);

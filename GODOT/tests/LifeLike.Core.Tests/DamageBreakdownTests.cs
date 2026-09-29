@@ -9,7 +9,7 @@ public class DamageBreakdownTests
     {
         var p = Meta.NewProfile(D);
         for (var i = 0; i < D.Upgrades.Length; ++i) p.Levels[i] = (byte)D.Upgrades[i].Levels;
-        for (var i = 0; i < D.Respect.Length; ++i) p.RespectRanks[i] = (byte)D.Respect[i].Ranks;
+        for (var i = 0; i < D.Respect.Length; ++i) Meta.SetRespectRank(p, i, D.Respect[i].Ranks);
         p.Badges = (ushort)((1 << D.Badges.Length) - 1);
         for (var k = 0; k < D.Keepsakes.Length; ++k) p.KeepsakeRuns[k] = 9;
         p.Keepsake = 3;

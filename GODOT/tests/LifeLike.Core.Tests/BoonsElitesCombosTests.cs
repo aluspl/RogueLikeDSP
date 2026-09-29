@@ -99,7 +99,7 @@ public class BoonsElitesCombosTests
         Assert.True(f.RerollPrice() == D.BoonRerollCost && f.RerollBoons() && f.Cash == 100 - D.BoonRerollCost);
 
         var p = Meta.NewProfile(D);
-        for (var i = 0; i < D.Respect.Length; ++i) p.RespectRanks[i] = (byte)D.Respect[i].Ranks;
+        for (var i = 0; i < D.Respect.Length; ++i) Meta.SetRespectRank(p, i, D.Respect[i].Ranks);
         Assert.Equal(1, Meta.Mods(D, p).Rerolls);
     }
 

@@ -82,29 +82,15 @@ public sealed partial class Game
         switch (hd.Effect)
         {
             case HelperEffect.Reveal: // podłoga, schody i mury przy nich
-                for (var y = 0; y < Level.H; ++y)
-                {
-                    for (var x = 0; x < Level.W; ++x)
-                    {
-                        if (Fov[y * Level.W + x] != Sight.Unknown) continue;
-                        var near = false;
-                        for (var dy = -1; dy <= 1 && !near; ++dy)
-                        {
-                            for (var dx = -1; dx <= 1; ++dx)
-                            {
-                                if (!Lv.Passable(x + dx, y + dy)) continue;
-                                near = true;
-                                break;
-                            }
-                        }
-                        if (near) Fov[y * Level.W + x] = Sight.Remembered;
-                    }
-                }
+                RevealMap();
                 break;
             case HelperEffect.Pump:
                 for (var i = 0; i < EnemiesCount && St == GameStatus.Playing; ++i)
                 {
-                    if (Enemies[i].Alive && Cheb(Hero.X, Hero.Y, Enemies[i].X, Enemies[i].Y) <= hd.Reach) DamageEnemy(i, hd.Value, false, hd.Name);
+                    if (!Enemies[i].Alive || Cheb(Hero.X, Hero.Y, Enemies[i].X, Enemies[i].Y) > hd.Reach) continue;
+                    HelperCtx = 1;
+                    DamageEnemy(i, hd.Value, false, hd.Name);
+                    HelperCtx = 0;
                 }
                 break;
             case HelperEffect.Safety:
@@ -134,7 +120,9 @@ public sealed partial class Game
         for (var i = 0; i < EnemiesCount; ++i)
         {
             if (!Enemies[i].Alive || Cheb(AllyX, AllyY, Enemies[i].X, Enemies[i].Y) != 1) continue;
+            HelperCtx = 1;
             DamageEnemy(i, hd.Value, false, hd.Name);
+            HelperCtx = 0;
             break;
         }
         if (--AllyTurns == 0)

@@ -8,4 +8,6 @@ public static class TutorialUnlock
     public const int Investor = 2;
     public const int Act0 = 3;
     public const int Class = 4;
+    /// <summary>v0.21.51 cz. 2: wykonane sekretne zlecenie (cls = indeks GameData.Secrets).</summary>
+    public const int Secret = 5;
 }

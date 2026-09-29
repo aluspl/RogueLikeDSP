@@ -42,7 +42,7 @@ public class BalanceTests
         });
         Assert.True(upgraded > diffWins[D.DefaultDifficulty], $"bez ulepszeń {diffWins[D.DefaultDifficulty]}, z pełnymi {upgraded}");
         // pełny Respekt na pełnych Szkoleniach pomaga dalej (cele v0.21.49: 25-35% / 50-60% / 65-75%)
-        for (var i = 0; i < D.Respect.Length; ++i) p.RespectRanks[i] = (byte)D.Respect[i].Ranks;
+        for (var i = 0; i < D.Respect.Length; ++i) Meta.SetRespectRank(p, i, D.Respect[i].Ranks);
         var mr = Meta.Mods(D, p);
         var respected = 0;
         Parallel.For(0, D.Classes.Length, c =>

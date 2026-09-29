@@ -54,7 +54,7 @@ public static class Daily
         return h != 0 ? h : 1u;
     }
 
-    public static int ClassOf(GameData d, uint seed) => (int)(seed % (uint)d.Classes.Length);
+    public static int ClassOf(GameData d, uint seed) => (int)(seed % (uint)d.OpenClassesCount); // bez zawodów z sekretów
 
     /// <summary>Modyfikatory dnia (tryb inwestora): DailyInvestorMods różnych bitów z seeda.</summary>
     public static int InvestorOf(GameData d, uint seed)

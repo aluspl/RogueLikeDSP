@@ -325,7 +325,7 @@ public sealed partial class Game
     /// <summary>Szczęście: kryt (x2), mały unik przed ciosem wroga, częstsze i lepsze dropy.</summary>
     public int Luck() => CDef.Luck + Bonus.Luck + TraitBonus(TraitEffect.Luck) + BoonLuck();
 
-    public int CritPct() => D.CritBasePct + D.CritPerLuckPct * Luck() + TraitBonus(TraitEffect.Crit) + Bonus.Crit + BoonSum(BoonEffect.Crit)
+    public int CritPct() => Weapon.Crit + D.CritBasePct + D.CritPerLuckPct * Luck() + TraitBonus(TraitEffect.Crit) + Bonus.Crit + BoonSum(BoonEffect.Crit)
                             + ToolTraitValue(ToolTraitEffect.Crit);
 
     /// <summary>Pole widzenia; pył (akt III) zmniejsza, najmniej 3.</summary>
@@ -549,6 +549,7 @@ public sealed partial class Game
         Cash = mods.Cash;
         FirstStage = (sbyte)(mods.Act0 != 0 ? 0 : D.PreludeStages); // bez nagrody Akt 0 budowa zaczyna się od Fundamentów
         StartStage(FirstStage);
+        Thermos = Math.Min(ThermosCap(), mods.StartCoffee); // Respekt: Zaprawiony w boju
     }
 
     public bool Occupied(int x, int y)
@@ -616,6 +617,10 @@ public sealed partial class Game
         KeyHolder = -1;
         Keys = 0;
         SecretRx = SecretRy = SecretRw = SecretRh = 0;
+        MarkTarget = -1; // v0.21.51 cz. 2: Tyczenie tylko na etap
+        MarkTurns = 0;
+        if (s == 0) PaperHits = 0; // Akt 0 od nowa (NG+): ciosy od papierów liczone od pierwszego etapu
+        RollBorrow(); // Majster: moc innego fachu na ten etap
         Array.Fill(Fov, Sight.Unknown);
         var sd = D.Stages[Stage];
         var first = Lv.Rooms[0];
@@ -692,6 +697,7 @@ public sealed partial class Game
             if (WeatherIs(WeatherEffect.Frost)) Enemies[i].Flags = (byte)(Enemies[i].Flags | ActorFlag.Frozen);
         }
         UpdateFov();
+        if (HasPassive(ClassPassive.Surveyor)) RevealMap(); // Geodeta: cały plac (i dokumenty Aktu 0) od startu
     }
 
     /// <summary>Pieczątki (Akt 0): dokumenty w różnych pokojach (bez pierwszego), na wolnych polach bez znajdziek.</summary>

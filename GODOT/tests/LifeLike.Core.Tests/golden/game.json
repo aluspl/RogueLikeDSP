@@ -175,6 +175,67 @@
         "effect": "ram",
         "cooldown": 16
       }
+    },
+    {
+      "id": "spawacz",
+      "name": "Spawacz",
+      "desc": "Iskry i dym - jeden spaw.",
+      "maxHealth": 28,
+      "strength": 3,
+      "agility": 4,
+      "intelligence": 2,
+      "defense": 2,
+      "luck": 2,
+      "weapon": "spawarka",
+      "frame": 127,
+      "secret": true,
+      "ability": {
+        "name": "Spaw",
+        "desc": "Iskry w linii i dym",
+        "effect": "weld",
+        "cooldown": 12
+      }
+    },
+    {
+      "id": "geodeta",
+      "name": "Geodeta",
+      "desc": "Widzi cały plac, bije słabo.",
+      "maxHealth": 26,
+      "strength": 2,
+      "agility": 3,
+      "intelligence": 4,
+      "defense": 2,
+      "luck": 3,
+      "weapon": "tyczka",
+      "frame": 128,
+      "passive": "surveyor",
+      "secret": true,
+      "ability": {
+        "name": "Tyczenie",
+        "desc": "Cel: ciosy +, ogłusza",
+        "effect": "mark",
+        "cooldown": 12
+      }
+    },
+    {
+      "id": "majster",
+      "name": "Majster",
+      "desc": "Złota rączka: zna każdy fach.",
+      "maxHealth": 34,
+      "strength": 5,
+      "agility": 2,
+      "intelligence": 2,
+      "defense": 4,
+      "luck": 2,
+      "weapon": "mlotek",
+      "frame": 129,
+      "secret": true,
+      "ability": {
+        "name": "Złota rączka",
+        "desc": "Co etap inna moc fachu",
+        "effect": "borrow",
+        "cooldown": 14
+      }
     }
   ],
   "weapons": [
@@ -316,6 +377,50 @@
       "range": 3,
       "scalesWith": "agility",
       "element": "iskra"
+    },
+    {
+      "id": "spawarka",
+      "name": "Spawarka",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 2,
+      "scalesWith": "agility",
+      "element": "iskra"
+    },
+    {
+      "id": "tyczka",
+      "name": "Tyczka geodezyjna",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 2,
+      "scalesWith": "intelligence"
+    },
+    {
+      "id": "mlotek",
+      "name": "Młotek ciesielski",
+      "minDamage": 4,
+      "maxDamage": 7,
+      "range": 1,
+      "scalesWith": "strength"
+    },
+    {
+      "id": "mlot_zenka",
+      "name": "Młot Zenka",
+      "minDamage": 4,
+      "maxDamage": 7,
+      "range": 1,
+      "scalesWith": "strength",
+      "knockback": true
+    },
+    {
+      "id": "poziomica_m",
+      "name": "Poziomica mistrza",
+      "minDamage": 2,
+      "maxDamage": 5,
+      "range": 3,
+      "scalesWith": "intelligence",
+      "crit": 10,
+      "reveal": true
     }
   ],
   "enemies": [
@@ -1447,6 +1552,16 @@
         "weapon": "kotwy",
         "cost": 0,
         "reward": true
+      },
+      {
+        "weapon": "mlot_zenka",
+        "cost": 0,
+        "secret": true
+      },
+      {
+        "weapon": "poziomica_m",
+        "cost": 0,
+        "secret": true
       }
     ]
   },
@@ -3040,6 +3155,21 @@
         "costs": [
           30
         ]
+      },
+      {
+        "id": "zaprawiony",
+        "name": "Zaprawiony w boju",
+        "desc": "Kawa w termosie na start",
+        "effect": "veteran",
+        "values": [
+          1,
+          2
+        ],
+        "costs": [
+          20,
+          45
+        ],
+        "secret": "szybka_ekipa"
       }
     ]
   },
@@ -3091,7 +3221,8 @@
     ]
   },
   "passives": {
-    "pushChancePct": 20
+    "pushChancePct": 20,
+    "markTurns": 6
   },
   "behaviorParams": {
     "rangedReach": 3,
@@ -3257,6 +3388,13 @@
         "text": "Nowy fach w ekipie!|Czeka na pasku zawodów.|Wypróbuj go na placu.",
         "screen": "class",
         "gba": "lewo / prawo"
+      },
+      {
+        "id": "secret",
+        "title": "Sekretne zlecenie!",
+        "text": "Wykonane! Nagroda czeka.|Telefon: Odznaki, A:|strona Sekrety.",
+        "screen": "title",
+        "gba": "SELECT, A"
       }
     ]
   },
@@ -3787,6 +3925,42 @@
         "effect": "power",
         "value": 2,
         "class": "operator"
+      },
+      {
+        "id": "dlugi_spaw",
+        "name": "Długi spaw",
+        "desc": "Spaw: +2 pola",
+        "rarity": "zwykla",
+        "tags": [
+          "iskra"
+        ],
+        "effect": "power",
+        "value": 2,
+        "class": "spawacz"
+      },
+      {
+        "id": "dokladny_pomiar",
+        "name": "Dokładny pomiar",
+        "desc": "Tyczenie: ciosy +2",
+        "rarity": "rzadka",
+        "tags": [
+          "szczescie"
+        ],
+        "effect": "power",
+        "value": 2,
+        "class": "geodeta"
+      },
+      {
+        "id": "pelna_skrzynka",
+        "name": "Pełna skrzynka",
+        "desc": "Moc innego fachu +1",
+        "rarity": "rzadka",
+        "tags": [
+          "materialy"
+        ],
+        "effect": "power",
+        "value": 1,
+        "class": "majster"
       }
     ],
     "synergies": [
@@ -4687,5 +4861,131 @@
     "Wyzwanie tygodnia: seed i",
     "zasady tygodnia, osobny wynik.",
     "Fabuła: SMS-y w Osiedlu (A)."
-  ]
+  ],
+  "secrets": {
+    "paper": [
+      "podpis",
+      "wniosek",
+      "termin_odw",
+      "niezgodnosc",
+      "pieczatka",
+      "decyzja"
+    ],
+    "list": [
+      {
+        "id": "bez_kawy",
+        "hint": "Bez kofeiny też się da",
+        "desc": "Wygraj bez picia kawy",
+        "kind": "no_coffee_win",
+        "reward": {
+          "kind": "class",
+          "id": "spawacz"
+        },
+        "rewardText": "Nowy zawód: Spawacz",
+        "news": "Wygrana bez kawy!|Nowy zawód: Spawacz -|Spaw: iskry i dym."
+      },
+      {
+        "id": "szef_dzwoni",
+        "hint": "Szef tylko dzwoni",
+        "desc": "Termin pokonany przez brygadę",
+        "kind": "helper_boss",
+        "enemy": "termin",
+        "reward": {
+          "kind": "tool",
+          "id": "mlot_zenka"
+        },
+        "rewardText": "Narzędzie: Młot Zenka",
+        "news": "Termin padł od brygady!|Młot Zenka w dropach:|cios odpycha problem."
+      },
+      {
+        "id": "szczur",
+        "hint": "Szczur magazynowy",
+        "desc": "5 magazynów w serii budów",
+        "kind": "storerooms",
+        "value": 5,
+        "reward": {
+          "kind": "tool",
+          "id": "poziomica_m"
+        },
+        "rewardText": "Poziomica mistrza",
+        "news": "5 magazynów w serii!|Poziomica mistrza: kryt|i magazyny na mapie."
+      },
+      {
+        "id": "kazdy_fach",
+        "hint": "Każdy fach się przyda",
+        "desc": "Wygraj każdym z 9 zawodów",
+        "kind": "class_wins",
+        "value": 9,
+        "reward": {
+          "kind": "class",
+          "id": "majster"
+        },
+        "rewardText": "Nowy zawód: Majster",
+        "news": "Każdy fach wygrany!|Majster: co etap moc|innego fachu."
+      },
+      {
+        "id": "papierologia",
+        "hint": "Papierologia? Nie tym razem",
+        "desc": "Akt 0 bez ciosu od papierów",
+        "kind": "paper_clean",
+        "reward": {
+          "kind": "class",
+          "id": "geodeta"
+        },
+        "rewardText": "Nowy zawód: Geodeta",
+        "news": "Akt 0 bez obrażeń!|Geodeta widzi cały plac|od startu etapu."
+      },
+      {
+        "id": "mokra_robota",
+        "hint": "Mokra robota",
+        "desc": "20x mokry + prąd w budowie",
+        "kind": "shock_combos",
+        "value": 20,
+        "reward": {
+          "kind": "cosmetic",
+          "id": "zlota_kielnia"
+        },
+        "rewardText": "Wygląd: Złota kielnia",
+        "news": "20 porażeń w budowie!|Złota kielnia: złoty|błysk przy krycie."
+      },
+      {
+        "id": "na_styk",
+        "hint": "Na styk",
+        "desc": "Wygraj z 1-3 HP",
+        "kind": "low_hp_win",
+        "value": 3,
+        "reward": {
+          "kind": "cosmetic",
+          "id": "kask_paski"
+        },
+        "rewardText": "Wygląd: Kask w paski",
+        "news": "Odbiór na ostatnich HP!|Kask w paski: wybierz|go na wyborze zawodu."
+      },
+      {
+        "id": "szybka_ekipa",
+        "hint": "Szybka ekipa",
+        "desc": "Wygraj w 150 dni (bez Aktu 0)",
+        "kind": "fast_win",
+        "value": 150,
+        "reward": {
+          "kind": "respect",
+          "id": "zaprawiony"
+        },
+        "rewardText": "Respekt: Zaprawiony",
+        "news": "Dom w rekordowym czasie!|Respekt: Zaprawiony|w boju - kawa na start."
+      }
+    ],
+    "cosmetics": [
+      {
+        "id": "zlota_kielnia",
+        "name": "Złota kielnia",
+        "desc": "Złoty błysk broni przy krycie"
+      },
+      {
+        "id": "kask_paski",
+        "name": "Kask w paski",
+        "desc": "Kask w biało-czerwone pasy"
+      }
+    ]
+  }
 }

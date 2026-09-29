@@ -10,7 +10,7 @@ public sealed partial class Game
 
     /// <summary>Każda ranga skraca odnowienie o 2 tury (minimum 4), cecha sprzętu dalej (minimum 3); upał wydłuża.</summary>
     public int AbilityCooldown() =>
-        Math.Max(3, Math.Max(4, CDef.AbilityCooldown - 2 * (AbilityRank() - 1)) - TraitBonus(TraitEffect.Cooldown) - Bonus.Cooldown
+        Math.Max(3, Math.Max(4, PDef.AbilityCooldown - 2 * (AbilityRank() - 1)) - TraitBonus(TraitEffect.Cooldown) - Bonus.Cooldown
                     - BoonSum(BoonEffect.Cooldown))
         + (WeatherIs(WeatherEffect.Heat) ? WDef.Value : 0);
 
@@ -87,7 +87,7 @@ public sealed partial class Game
     public bool PlayerAbility()
     {
         if (St != GameStatus.Playing || AbilityCd > 0) return false;
-        var c = CDef;
+        var c = PDef; // Majster: moc pożyczona na ten etap
         var rank = AbilityRank();
         var ok = false;
         switch (c.Ability)
@@ -276,6 +276,12 @@ public sealed partial class Game
                 if (ok) Push(Msg(c.AbilityName).Add("!"));
                 break;
             }
+            case AbilityEffect.Weld: // Spaw (Spawacz): iskry linią (3/4/5 pól), trafieni w dymie – kolejna iskra = wybuch pyłu
+                ok = AbilityWeld(c, rank);
+                break;
+            case AbilityEffect.Mark: // Tyczenie (Geodeta): najbliższy widoczny problem oznaczony na kilka tur, ogłuszony na turę
+                ok = AbilityMark(c);
+                break;
         }
         if (!ok)
         {
@@ -330,6 +336,7 @@ public sealed partial class Game
         {
             case ShopEffect.Heal:
                 Hero.Hp = Hero.MaxHp;
+                if (CoffeeDrunk < 255) ++CoffeeDrunk; // kawa z ekspresu
                 break;
             case ShopEffect.MaxHp:
                 Hero.MaxHp = (short)(Hero.MaxHp + 3);

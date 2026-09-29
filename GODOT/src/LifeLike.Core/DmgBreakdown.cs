@@ -43,6 +43,8 @@ public sealed class DmgBreakdown
     public int UpgLevel, FlatUpgrade, UpgTrait = -1;
     /// <summary>Cecha ulepszenia: -OBR problemu (Przebicie), +najsłabszy rzut (Wyważenie), +kryt (Ostrze).</summary>
     public int Pierce, Steady, CritUpg;
+    /// <summary>v0.21.51 cz. 2: kryt broni (Poziomica mistrza).</summary>
+    public int CritWeapon;
     /// <summary>Wydarzenie z wyborem (#30): ciosy +N na etap.</summary>
     public int FlatEvent;
     /// <summary>Źródła premii profilu znane (Src*): Szkolenia, Respekt, odznaki, pamiątka.</summary>
@@ -77,7 +79,7 @@ public sealed class DmgBreakdown
         Avg10 = n > 0 ? LifeLike.Core.Pct.DivRound(sum, 10 * n) : 0;
         CritBase = d.CritBasePct;
         CritLuck = d.CritPerLuckPct * Luck;
-        CritPct = CritBase + CritLuck + CritTrait + CritBonus + CritBoon + CritUpg;
+        CritPct = CritBase + CritLuck + CritTrait + CritBonus + CritBoon + CritUpg + CritWeapon;
         CritMult = d.CritMultiplier;
         CritMin = Min * CritMult;
         CritMax = Max * CritMult;
@@ -122,6 +124,7 @@ public sealed class DmgBreakdown
             EnemyDef = Math.Max(0, enemyDef),
             Luck = c.Luck + m.Luck,
             CritBonus = m.Crit,
+            CritWeapon = w.Crit,
         };
         b.Finish(d);
         return b;

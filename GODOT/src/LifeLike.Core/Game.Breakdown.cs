@@ -18,6 +18,7 @@ public sealed partial class Game
         b.RangeBase = w.Range;
         b.Range = RangeOf(w);
         b.Scales = w.ScalesWith;
+        b.CritWeapon = w.Crit;
         var stTr = RunMods.StatTrait(w.ScalesWith);
         var luckT = 0;
         for (var i = 0; i < D.GearSlotsCount; ++i)
@@ -78,7 +79,7 @@ public sealed partial class Game
     public int PowerDmgBonus()
     {
         var rank = AbilityRank();
-        switch (CDef.Ability)
+        switch (PDef.Ability)
         {
             case AbilityEffect.Volley:
             case AbilityEffect.Line:

@@ -175,6 +175,26 @@ public sealed class GameData
     /// <summary>Zawody odblokowywane tylko nagrodą za odbiór.</summary>
     public int RewardClassesMask { get; private init; }
 
+    // v0.21.51 cz. 2: sekretne zlecenia (#39)
+    /// <summary>Sekretne zlecenia (sekcja "secrets"); bez sekcji – pusta lista.</summary>
+    public SecretDef[] Secrets { get; private init; } = [];
+    /// <summary>Wygląd z sekretnych zleceń (tylko oprawa).</summary>
+    public CosmeticDef[] Cosmetics { get; private init; } = [];
+    /// <summary>Zawody z sekretnych zleceń (na końcu listy) i liczba zwykłych zawodów (budowa dnia, balans, Pełny zespół).</summary>
+    public int SecretClassesMask { get; private init; }
+    public int OpenClassesCount { get; private init; }
+    /// <summary>Narzędzia z sekretnych zleceń (w dropach dopiero po wykonaniu).</summary>
+    public int SecretToolsMask { get; private init; }
+    /// <summary>Problemy papierowe (Akt 0 bez obrażeń od papierów), bity indeksów GameData.Enemies.</summary>
+    public ulong SecretPaperMask { get; private init; }
+    /// <summary>Boss pokonany ciosem brygady (Szef tylko dzwoni), -1 = brak.</summary>
+    public int SecretHelperBoss { get; private init; } = -1;
+    /// <summary>Wygląd: złoty błysk broni przy krycie, kask w paski (-1 = brak).</summary>
+    public int CosmeticGold { get; private init; } = -1;
+    public int CosmeticStripes { get; private init; } = -1;
+    /// <summary>Geodeta: Tyczenie trwa tyle tur.</summary>
+    public int MarkTurns { get; private init; } = 6;
+
     // v0.21.49 (część 2): zachowania problemów (sekcja "behaviorParams"), nazwy zachowań (indeks = bit)
     public int BehaviorRangedReach { get; private init; } = 3;
     public int BehaviorSplitHpPct { get; private init; } = 50;
@@ -272,7 +292,8 @@ public sealed class GameData
 
         var weapons = weaponsJson.Select(w => new WeaponDef(
             Str(w, "id"), Str(w, "name"), Int(w, "minDamage"), Int(w, "maxDamage"), Int(w, "range"),
-            ParseStat(Str(w, "scalesWith")), ParseElement(Str(w, "element", "none")))).ToArray();
+            ParseStat(Str(w, "scalesWith")), ParseElement(Str(w, "element", "none")), Int(w, "crit", 0), Bool(w, "knockback"),
+            Bool(w, "reveal"))).ToArray();
         foreach (var w in weapons)
         {
             Require(w.MinDamage <= w.MaxDamage && w.Range >= 1, $"broń {w.Id}: złe obrażenia/zasięg");
@@ -284,7 +305,7 @@ public sealed class GameData
             return new ClassDef(Str(c, "id"), Str(c, "name"), Str(c, "desc"), Int(c, "maxHealth"), Int(c, "strength"),
                 Int(c, "agility"), Int(c, "intelligence"), Int(c, "defense"), Int(c, "luck", 0), Lookup(wid, Str(c, "weapon"), "broń"),
                 Int(c, "frame"), Str(ab, "name"), Str(ab, "desc"), ParseEnum<AbilityEffect>(Str(ab, "effect")),
-                Int(ab, "cooldown"), ParseEnum<ClassPassive>(Str(c, "passive", "none")), Bool(c, "reward"));
+                Int(ab, "cooldown"), ParseEnum<ClassPassive>(Str(c, "passive", "none")), Bool(c, "reward"), Bool(c, "secret"));
         }).ToArray();
 
         var enemies = enemiesJson.Select(e =>
@@ -358,8 +379,8 @@ public sealed class GameData
         var classesJson = d.GetProperty("classes").EnumerateArray().ToArray();
         var cid = Index(classesJson);
         var tools = meta.GetProperty("tools").EnumerateArray().Select(t => new ToolDef(Lookup(wid, Str(t, "weapon"), "narzędzie"), Int(t, "cost"),
-            Bool(t, "reward"))).ToArray();
-        Require(tools.Length <= 8, "narzędzia: maks. 8 (bitmaska w profilu)");
+            Bool(t, "reward"), Bool(t, "secret"))).ToArray();
+        Require(tools.Length <= 12 && tools.Select((t, i) => t.Secret || i < 8).All(x => x), "narzędzia: bitmaska uint8 w profilu (sekretne za nią)");
 
         var story = d.GetProperty("story");
         var storyStages = story.GetProperty("stages").EnumerateArray().Select(Story).ToArray();
@@ -510,23 +531,34 @@ public sealed class GameData
         var startTools = 0;
         for (var i = 0; i < tools.Length; i++)
         {
-            if (tools[i].Cost == 0 && !tools[i].Reward) startTools |= 1 << i;
+            if (tools[i].Cost == 0 && !tools[i].Reward && !tools[i].Secret) startTools |= 1 << i;
         }
-        var rewardClasses = 0;
+        int rewardClasses = 0, secretClasses = 0, secretTools = 0;
         for (var i = 0; i < classes.Length; i++)
         {
             if (classes[i].Reward) rewardClasses |= 1 << i;
+            else if (classes[i].Secret) secretClasses |= 1 << i;
             else Require(i < 8, "zawody do kupienia: bitmaska uint8 w profilu");
         }
         Require(classes.Length <= 12, "maks. 12 zawodów");
+        var openClasses = classes.Count(c => !c.Secret);
+        Require(classes.Skip(openClasses).All(c => c.Secret), "zawody z sekretnych zleceń na końcu listy");
+        for (var i = 0; i < tools.Length; i++)
+        {
+            if (tools[i].Secret) secretTools |= 1 << i;
+        }
 
+        var hasSecrets = d.TryGetProperty("secrets", out var secj);
+        var secretsJson = hasSecrets ? secj.GetProperty("list").EnumerateArray().ToArray() : [];
+        var sid = Index(secretsJson);
         var hasRespect = d.TryGetProperty("respect", out var rsj);
         var respect = hasRespect
             ? rsj.GetProperty("upgrades").EnumerateArray().Select(x => new RespectDef(Str(x, "id"), Str(x, "name"), Str(x, "desc"),
                 ParseRespect(Str(x, "effect")), x.GetProperty("values").EnumerateArray().Select(v => v.GetInt32()).ToArray(),
-                x.GetProperty("costs").EnumerateArray().Select(v => v.GetInt32()).ToArray())).ToArray()
+                x.GetProperty("costs").EnumerateArray().Select(v => v.GetInt32()).ToArray(),
+                x.TryGetProperty("secret", out var rsec) ? Lookup(sid, rsec.GetString() ?? "", "sekretne zlecenie Respektu") : -1)).ToArray()
             : [];
-        Require(respect.Length <= 16, "Respekt: maks. 16 ulepszeń");
+        Require(respect.Length <= 19, "Respekt: maks. 19 ulepszeń (16 + 3 w profilu v12)");
         foreach (var x in respect) Require(x.Values.Length is >= 1 and <= 5 && x.Values.Length == x.Costs.Length, $"Respekt {x.Id}: 1-5 rang");
         var rewards = new List<RewardDef>();
         if (d.TryGetProperty("rewards", out var rwj))
@@ -598,8 +630,46 @@ public sealed class GameData
             }
             tutSteps = tuj.GetProperty("steps").EnumerateArray().Select(Tut).ToArray();
             tutUnlocks = tuj.GetProperty("unlocks").EnumerateArray().Select(Tut).ToArray();
-            Require(tutUnlocks.Select(x => x.Id).SequenceEqual(new[] { "respect", "daily", "investor", "act0", "class" }), "samouczek: 5 dymków odblokowań");
+            var unlockIds = tutUnlocks.Select(x => x.Id).ToArray();
+            Require(unlockIds.SequenceEqual(new[] { "respect", "daily", "investor", "act0", "class" })
+                    || unlockIds.SequenceEqual(new[] { "respect", "daily", "investor", "act0", "class", "secret" }), "samouczek: 5-6 dymków odblokowań");
         }
+        // v0.21.51 cz. 2: sekretne zlecenia (#39) – nagroda: zawód, narzędzie, wygląd, ranga Respektu
+        var cosmeticsJson = hasSecrets ? secj.GetProperty("cosmetics").EnumerateArray().ToArray() : [];
+        var cosmetics = cosmeticsJson.Select(x => new CosmeticDef(Str(x, "id"), Str(x, "name"), Str(x, "desc"))).ToArray();
+        var coid = Index(cosmeticsJson);
+        var rsid = new Dictionary<string, int>();
+        for (var i = 0; i < respect.Length; i++) rsid[respect[i].Id] = i;
+        var tid2 = new Dictionary<string, int>();
+        var toolsJson = meta.GetProperty("tools").EnumerateArray().ToArray();
+        for (var i = 0; i < toolsJson.Length; i++) tid2[Str(toolsJson[i], "weapon")] = i;
+        var tutFrom = d.TryGetProperty("tutorial", out var tfj) ? Str(tfj, "from") : "";
+        var secrets = secretsJson.Select(x =>
+        {
+            var kind = ParseSnake<SecretKind>(Str(x, "kind"));
+            var rw = x.GetProperty("reward");
+            var rk = Str(rw, "kind");
+            var id = Str(rw, "id");
+            var (reward, idx) = rk switch
+            {
+                "class" => (SecretReward.Cls, Lookup(cid, id, "zawód sekretu")),
+                "tool" => (SecretReward.Tool, Lookup(tid2, id, "narzędzie sekretu")),
+                "cosmetic" => (SecretReward.Cosmetic, Lookup(coid, id, "wygląd sekretu")),
+                _ => (SecretReward.Respect, Lookup(rsid, id, "Respekt sekretu")),
+            };
+            var value = kind == SecretKind.HelperBoss ? Lookup(eid, Str(x, "enemy"), "boss sekretu") : Int(x, "value", 0);
+            var lines = Str(x, "news").Split('|').ToList();
+            while (lines.Count < 3) lines.Add("");
+            return new SecretDef(Str(x, "id"), Str(x, "hint"), Str(x, "desc"), kind, value, reward, idx, Str(x, "rewardText"),
+                new StoryMsg(tutFrom, lines.ToArray()));
+        }).ToArray();
+        Require(secrets.Length <= 16 && cosmetics.Length <= 8, "sekrety: maks. 16 zleceń i 8 wyglądów");
+        var paperMask = 0UL;
+        if (hasSecrets)
+        {
+            foreach (var pe in secj.GetProperty("paper").EnumerateArray()) paperMask |= 1UL << Lookup(eid, pe.GetString() ?? "", "problem papierowy");
+        }
+        var helperBoss = secrets.FirstOrDefault(x => x.Kind == SecretKind.HelperBoss)?.Value ?? -1;
 
         // v0.21.50 cz. 2: premie po etapie (#27), elity (#28), kombinacje stanów (#29); bez sekcji – puste listy
         BoonRarityDef[] boonRarities = [];
@@ -937,6 +1007,16 @@ public sealed class GameData
             Documents = documents,
             TutorialSteps = tutSteps,
             TutorialUnlocks = tutUnlocks,
+            Secrets = secrets,
+            Cosmetics = cosmetics,
+            SecretClassesMask = secretClasses,
+            OpenClassesCount = openClasses,
+            SecretToolsMask = secretTools,
+            SecretPaperMask = paperMask,
+            SecretHelperBoss = helperBoss,
+            CosmeticGold = coid.TryGetValue("zlota_kielnia", out var cg) ? cg : -1,
+            CosmeticStripes = coid.TryGetValue("kask_paski", out var cs) ? cs : -1,
+            MarkTurns = d.TryGetProperty("passives", out var mtj) ? Int(mtj, "markTurns", 6) : 6,
         };
     }
 
@@ -1104,6 +1184,7 @@ public sealed class GameData
         "mats_pct" => RespectEffect.MatsPct,
         "second_chance" => RespectEffect.SecondChance,
         "reroll" => RespectEffect.Reroll,
+        "veteran" => RespectEffect.Veteran,
         _ => RespectEffect.Unknown,
     };
 

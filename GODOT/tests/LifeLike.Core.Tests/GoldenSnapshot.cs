@@ -84,6 +84,8 @@ public static class GoldenSnapshot
         for (var i = 0; i < Game.MaxStages; i++) p4.AddRange([g.StageKillLog[i], g.StageBoon[i], g.StageEventLog[i], g.StageFlags[i]]);
         p4.AddRange([g.ElitesKilled, g.CombosRun, g.WeeklyWeek, g.Bonus.Weekly, g.EliteChance(), g.ShopClosed ? 1 : 0, Recap.TipIndex(g.D, g)]);
         K("part4", Arr(p4));
+        K("part5", Arr([g.CoffeeDrunk, g.ShockCombos, g.PaperHits, g.SecretFlags, g.HelperCtx, g.BorrowCls, g.MarkTarget, g.MarkTurns,
+            g.PowerCls(), g.BuildDays(), g.Bonus.StartCoffee, g.AbilityCooldown()]));
         K("killsByType", Arr(g.KillsByType.Select(x => (int)x)));
         K("rooms", "[" + string.Join(",", g.Lv.Rooms.Take(g.Lv.RoomsCount).Select(r => Arr([r.X, r.Y, r.W, r.H]))) + "]");
         var map = new List<string>();
@@ -123,5 +125,6 @@ public static class GoldenSnapshot
         $"\"tutorial\":{Arr([p.Tutorial, p.ClassesSeen])}," +
         $"\"weekly\":{Arr([p.WeeklyWon, p.WeeklyRuns, p.WeeklyWeek[0], p.WeeklyScore[0], p.WeeklyWeek[1], p.WeeklyScore[1], p.WeeklyWeek[2], p.WeeklyScore[2]])}," +
         $"\"story\":{Arr([(int)p.Story, (int)p.StoryNew, Story.EstateDecor(TestData.D, p)])}," +
+        $"\"secrets\":{Arr([p.Secrets, p.SecretsNew, p.Cosmetic, Secrets.DoneCount(TestData.D, p)])}," +
         $"\"sram\":\"{Convert.ToHexString(p.ToBytes()).ToLowerInvariant()}\"}}";
 }

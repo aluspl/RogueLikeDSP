@@ -194,7 +194,7 @@ public sealed partial class Game
                 break;
             case ChoiceEffect.Power:
                 AbilityCd = 0;
-                Push(Msg("Moc gotowa: ").Add(CDef.AbilityName).As(LogKind.Good));
+                Push(Msg("Moc gotowa: ").Add(PDef.AbilityName).As(LogKind.Good));
                 break;
         }
     }
