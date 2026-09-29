@@ -1806,7 +1806,7 @@ int main()
             CHECK(profile_fix(p) && std::strcmp(p.magic, profile_magic) == 0 && p.catalog_hi == 0 && p.best == 4321 && p.respect == 77 && p.catalog == 0x0F0F);
             catalog_add(p, 20); catalog_add(p, 31);
             CHECK(catalog_has(p, 20) && catalog_has(p, 31) && !catalog_has(p, 21) && catalog_count(p) == 8 + 2);
-            CHECK(std::strcmp(run_magic, "PBRUN12") == 0);
+            CHECK(std::strcmp(run_magic, "PBRUN13") == 0);
         }
     }
     // 41. v0.21.49 cz. 3: Akt 0 (Papierologia) - nagroda za odbiór, pieczątki zamykają schody, druga faza bossa;
@@ -1901,7 +1901,7 @@ int main()
         CHECK(!tutorial_pending(v, 0) && !tutorial_pending(v, 1) && pending_unlock(v, 0, cls) == unlock_act0 && pending_unlock(v, 1, cls) == -1);
         profile nv; profile_reset(nv); std::memcpy(nv.magic, "PBRL009", 8);
         CHECK(profile_fix(nv) && tutorial_pending(nv, 0) && nv.rewards == 0 && nv.tutorial == 0);
-        CHECK(sizeof(profile) == 160 && std::strcmp(profile_magic, "PBRL010") == 0);
+        CHECK(sizeof(profile) == 188 && std::strcmp(profile_magic, "PBRL011") == 0);
     }
     // 46. v0.21.50: rozpiska obrażeń broni (#26) - zakres z rozpiski = to, co naprawdę zadaje walka (wiele rzutów z seedem)
     {
@@ -2245,7 +2245,7 @@ int main()
         {
             game g; g.new_run(3, 42); clear_stage(g); g.pick_boon(1);
             run_save* sv = new run_save(); run_save_make(*sv, g);
-            CHECK(run_save_valid(*sv) && sv->g.boons == g.boons && std::memcmp(sv->magic, "PBRUN12", 7) == 0);
+            CHECK(run_save_valid(*sv) && sv->g.boons == g.boons && std::memcmp(sv->magic, "PBRUN13", 7) == 0);
             delete sv;
         }
     }
@@ -2426,6 +2426,215 @@ int main()
             // bot: cel - klucz, potem magazyn, potem skrzynia
             game t = g; t.pickups[1] = { 3, 3, uint8_t(store_key), true }; t.pickups_count = 2; int gx, gy;
             CHECK(t.bot_goal(gx, gy) && gx == 3 && gy == 3);
+        }
+    }
+
+    // 49. v0.21.50 cz. 4: podsumowanie budowy (#33), wyzwania tygodnia (#34), fabuła odkrywana z budowami (#35)
+    {
+        auto str_eq = [](const message& m, const char* s) { return std::strcmp(m.s, s) == 0; };
+        // ostatnie ciosy: najnowszy pierwszy, najmocniejszy zapamiętany, źródło z przedrostkiem elity
+        {
+            game g; arena(g, 1);   // Murarz: SZCZ 0 = bez uniku
+            CHECK(g.dodge_pct() == 0 && g.last_hits[0].src < 0 && g.worst_hit.amount == 0);
+            int ea = -1, eb = -1;   // bez żywiołu i stanów (inaczej mokry + prąd dopisuje osobny cios)
+            for(int e = 0; e < data::enemies_count; ++e)
+                if(data::enemies[e].elem == element::none && data::enemies[e].on_hit == status_effect::none && ! data::enemies[e].slam && data::enemies[e].tags == 0) { if(ea < 0) ea = e; else if(eb < 0) eb = e; }
+            g.spawn(ea, 8, 7); g.spawn(eb, 6, 7); g.make_elite(1, 0);
+            int hp = g.hero.hp;
+            g.enemy_strike(0, false); const int d0 = hp - g.hero.hp; hp = g.hero.hp;
+            g.enemy_strike(1, true); const int d1 = hp - g.hero.hp; hp = g.hero.hp;
+            g.enemy_strike(0, false); const int d2 = hp - g.hero.hp;
+            CHECK(d0 > 0 && d1 > 0 && d2 > 0);
+            CHECK(g.last_hits[0].src == ea && g.last_hits[0].amount == d2 && g.last_hits[0].kind == uint8_t(recap_kind::melee));
+            CHECK(g.last_hits[1].src == eb && g.last_hits[1].amount == d1 && g.last_hits[1].kind == uint8_t(recap_kind::ranged) && g.last_hits[1].elite == 0);
+            CHECK(g.last_hits[2].src == ea && g.last_hits[2].amount == d0 && g.last_hits[2].stage == g.stage);
+            CHECK(g.worst_hit.amount == imax(d0, imax(d1, d2)));
+            message m; game::recap_hit_line(m, g.last_hits[1]);
+            message want; want.add(data::elites[0].prefix[data::enemies[eb].gender]).add(" ").add(data::enemies[eb].name).add(": -").add(d1).add(" (z dystansu)");
+            CHECK(str_eq(m, want.s));
+            g.hero.hp = 1; g.bonus.second_chance = 0;
+            g.enemy_strike(0, false);
+            CHECK(g.st == status::dead);
+            message k; g.recap_killer(k);
+            message kw; kw.add(data::recap_verbs[data::enemies[ea].gender]).add(" Cię: ").add(data::enemies[ea].name);
+            CHECK(str_eq(k, kw.s));
+            message w; g.recap_where(w); CHECK(std::strncmp(w.s, "1/", 2) == 0 && std::strstr(w.s, ", Akt ") != nullptr);
+            // cios bossa (nazwa uderzenia) i wybuch (źródło: problem wybuchowy)
+            game b; arena(b, 1);
+            int ins = -1; for(int e = 0; e < data::enemies_count; ++e) if(data::enemies[e].slam && data::enemies[e].slam_name[0]) ins = e;
+            b.spawn(ins, 12, 12); b.boss = 0; b.slam_timer = 1; b.slam_x = b.hero.x; b.slam_y = b.hero.y;
+            b.enemies[0].stun = 5; b.end_turn();
+            if(b.last_hits[0].amount > 0)
+            {
+                CHECK(b.last_hits[0].kind == uint8_t(recap_kind::slam) && b.last_hits[0].src == ins);
+                message sm; game::recap_hit_line(sm, b.last_hits[0]); CHECK(std::strstr(sm.s, data::enemies[ins].slam_name) != nullptr);
+            }
+            game x; arena(x, 1);
+            int boom = -1; for(int e = 0; e < data::enemies_count; ++e) if(data::enemies[e].tags & tag_explodes) boom = e;
+            x.arm_blast(8, 7, data::enemies[boom]); x.blast_timer = 1; x.end_turn();
+            CHECK(x.last_hits[0].kind == uint8_t(recap_kind::blast) && x.last_hits[0].src == boom && x.last_hits[0].amount > 0);
+        }
+        // oś czasu: dni i usunięte jak w harmonogramie, premie i wydarzenia z etapu, etap porażki na końcu
+        {
+            int checked = 0;
+            for(uint32_t seed = 1; seed <= 40; ++seed)
+            {
+                game g; g.new_run(int(seed % data::classes_count), seed * 977u);
+                for(int step = 0; step < 4000; ++step)
+                {
+                    if(g.st == status::stage_clear) { bot_next(g); continue; }
+                    if(g.st != status::playing) break;
+                    bot_step(g);
+                }
+                int sum = 0;
+                for(int s = g.first_stage; s <= g.stage; ++s) sum += g.recap_kills(s);
+                CHECK(sum == g.kills);
+                for(int s = g.first_stage; s < g.stage; ++s) CHECK(g.recap_days(s) == schedule_days(g, s));
+                recap_line lines[64]; const int n = g.recap_timeline(lines, 64);
+                int stage_rows = 0, boon_rows = 0, sms_rows = 0;
+                for(int i = 0; i < n; ++i)
+                {
+                    stage_rows += lines[i].text.s[0] != ' ';
+                    boon_rows += std::strncmp(lines[i].text.s, "  Premia: ", 10) == 0;
+                    sms_rows += std::strncmp(lines[i].text.s, "  SMS: ", 7) == 0;
+                }
+                CHECK(stage_rows == g.stage - g.first_stage + 1);
+                int boons_n = 0, events_n = 0;
+                for(int s = 0; s < max_stages; ++s) { boons_n += g.stage_boon[s] >= 0; events_n += g.stage_event_log[s] != 255; }
+                CHECK(boon_rows == boons_n && sms_rows == events_n);
+                CHECK(std::strncmp(lines[0].text.s, "1. ", 3) == 0 && std::strstr(lines[0].text.s, data::stages[g.first_stage].name) != nullptr);
+                if(g.st == status::dead) { CHECK(lines[n - 1].ink == bad && g.last_hits[0].amount > 0 && g.last_hits[0].stage == g.stage); ++checked; }
+                CHECK(g.worst_hit.amount >= g.last_hits[0].amount && g.best_hit > 0 && g.best_hit_def >= 0);
+                if(g.secrets_found) { bool f = false; for(int s = 0; s < max_stages; ++s) f |= (g.stage_flags[s] & recap_secret) != 0; CHECK(f); }
+            }
+            CHECK(checked > 5);
+            // NG+: oś czasu od nowa
+            game w; w.new_run(1, 5); w.stage_boon[w.stage] = 3; w.st = status::won; w.new_game_plus(); CHECK(w.stage_boon[w.first_stage] == -1);
+        }
+        // rada i najbliższy cel
+        {
+            game g; arena(g, 1); g.spawn(0, 8, 7); g.hero.hp = 1; g.thermos = 1; g.enemy_strike(0, false);
+            CHECK(g.st == status::dead && data::recap_tips[recap_tip_index(g)].when == recap_tip::coffee);
+            g.thermos = 0; CHECK(data::recap_tips[recap_tip_index(g)].when == recap_tip::no_combo);
+            g.combos_run = 1; CHECK(data::recap_tips[recap_tip_index(g)].when == recap_tip::any);
+            g.last_hits[0].kind = uint8_t(recap_kind::shock); CHECK(data::recap_tips[recap_tip_index(g)].when == recap_tip::shock);
+            g.st = status::won; CHECK(data::recap_tips[recap_tip_index(g)].when == recap_tip::won);
+            profile p; profile_reset(p); message lead, name;
+            CHECK(recap_goal(p, lead, name) && std::strncmp(lead.s, "Jeszcze ", 8) == 0 && std::strstr(name.s, " I") != nullptr);
+            p.respect = 9999; message l2, n2; CHECK(recap_goal(p, l2, n2) && std::strncmp(l2.s, "Stać Cię", 9) == 0);
+            for(int i = 0; i < data::respect_count; ++i) p.respect_ranks[i] = uint8_t(data::respect[i].ranks);
+            message l3, n3; CHECK(recap_goal(p, l3, n3) && std::strstr(l3.s, "dośw.") != nullptr);
+        }
+        // wyzwanie tygodnia: numer tygodnia od poniedziałku, seed i zasady deterministyczne, zasady działają
+        {
+            CHECK(weekly_number(data::weekly_epoch[0], data::weekly_epoch[1], data::weekly_epoch[2]) == 1);
+            int y, mo, d; civil_from_days(weekly_first_day(1) + 6, y, mo, d); CHECK(weekly_number(y, mo, d) == 1);
+            civil_from_days(weekly_first_day(1) + 7, y, mo, d); CHECK(weekly_number(y, mo, d) == 2);
+            civil_from_days(weekly_first_day(40) + 3, y, mo, d); CHECK(weekly_number(y, mo, d) == 40);
+            CHECK(weekly_seed(40) == weekly_seed(40) && weekly_seed(40) != weekly_seed(41) && weekly_seed(40) != daily_seed(40));
+            for(int w = 1; w <= data::weekly_count * 2; ++w)
+            {
+                static game a, b; start_weekly(a, w); start_weekly(b, w);
+                CHECK(std::memcmp(&a, &b, sizeof a) == 0 && a.bonus.weekly == weekly_index(w) && a.weekly_week == w && ! a.daily);
+                CHECK(a.cls == weekly_class(w) && a.diff == data::weekly_difficulty);
+                const weekly_def& wd = data::weekly[weekly_index(w)];
+                for(int r = 0; r < wd.rules_count; ++r)
+                {
+                    const weekly_rule_def& rd = wd.rules[r];
+                    if(rd.rule == weekly_rule::cls) CHECK(a.cls == rd.value);
+                    if(rd.rule == weekly_rule::no_shop) CHECK(a.shop_closed());
+                    if(rd.rule == weekly_rule::hp_pct) CHECK(a.hero.max_hp == data::classes[a.cls].max_health * (100 + rd.value) / 100
+                                                             || a.hero.max_hp == data::classes[a.cls].max_health + data::classes[a.cls].max_health * rd.value / 100);
+                    if(rd.rule == weekly_rule::dmg_pct) CHECK(a.bonus.dmg_pct == rd.value);
+                    if(rd.rule == weekly_rule::cash) CHECK(a.cash == rd.value);
+                    if(rd.rule == weekly_rule::weather)
+                        for(int s = a.first_stage; s < data::stages_count; ++s) { a.start_stage(s); CHECK(a.weather == rd.value); }
+                    if(rd.rule == weekly_rule::elite_pct)
+                    {
+                        game n; n.new_run(a.cls, a.run_seed, data::weekly_difficulty);
+                        CHECK(a.elite_chance() == n.elite_chance() * rd.value / 100);
+                    }
+                    if(rd.rule == weekly_rule::no_coffee)
+                    {
+                        game c = a; c.pickups[0] = { int8_t(c.hero.x + 1), c.hero.y, uint8_t(coffee), true }; c.pickups_count = 1;
+                        for(int i = 0; i < c.enemies_count; ++i) c.enemies[i].alive = false;
+                        c.lv.t[c.hero.y][c.hero.x + 1] = tile::floor;
+                        const int cash0 = c.cash, th0 = c.thermos;
+                        c.player_move(1, 0);
+                        CHECK(c.cash == cash0 + c.income(data::weekly_coffee_cash) && c.thermos == th0);
+                        c.thermos = 1; c.hero.hp = 1; CHECK(! c.player_drink() && c.thermos == 1);
+                    }
+                }
+                game z; z.new_run(a.cls, a.run_seed); CHECK(! z.shop_closed() || z.investor_has(investor_effect::no_shop));
+            }
+            profile p; profile_reset(p);
+            CHECK(weekly_best(p, 5) < 0 && record_weekly(p, 5, 100, false) && weekly_best(p, 5) == 100 && ! weekly_won(p, 5));
+            CHECK(! record_weekly(p, 5, 50, true) && weekly_best(p, 5) == 100 && weekly_won(p, 5));
+            CHECK(record_weekly(p, 6, 10, false) && record_weekly(p, 7, 10, false) && record_weekly(p, 8, 10, false));
+            CHECK(weekly_best(p, 5) < 0 && weekly_best(p, 8) == 10 && p.weekly_runs == 5);   // najstarszy tydzień ustępuje
+        }
+        // fabuła: wątki z kamieni milowych, raz; nieprzeczytane do otwarcia; ozdoby Osiedla z wygranymi
+        {
+            profile p; profile_reset(p);
+            CHECK(story_check(p, nullptr) == 0 && story_count(p) == 0 && estate_decor(p) == 0);
+            auto idx = [](story_trigger t, int v) { for(int i = 0; i < data::story_arc_count; ++i) if(data::story_arc[i].trigger == t && data::story_arc[i].value == v) return i; return -1; };
+            p.runs = 1; uint32_t got = story_check(p, nullptr);
+            CHECK(got == (1u << idx(story_trigger::runs, 1)) && story_unread(p, idx(story_trigger::runs, 1)));
+            CHECK(story_check(p, nullptr) == 0);
+            story_mark_read(p, idx(story_trigger::runs, 1)); CHECK(story_unread_count(p) == 0 && story_count(p) == 1);
+            game g; g.new_run(1, 3); g.elites_killed = 1; g.secrets_found = 1;
+            got = story_check(p, &g);
+            CHECK(((got >> idx(story_trigger::elite, 0)) & 1) && ((got >> idx(story_trigger::secret, 0)) & 1));
+            p.wins = 3; catalog_add(p, data::stages[data::stages_count - 1].boss);
+            got = story_check(p, nullptr);
+            CHECK(((got >> idx(story_trigger::wins, 1)) & 1) && ((got >> idx(story_trigger::wins, 3)) & 1) && ! ((got >> idx(story_trigger::wins, 5)) & 1));
+            CHECK((got >> idx(story_trigger::boss, data::stages[data::stages_count - 1].boss)) & 1);
+            CHECK(estate_decor(p) == 2);
+            p.wins = 100; CHECK(estate_decor(p) == data::estate_decor_count);
+        }
+        // profil v10 -> v11: stare pola zostają, wyzwania od zera, wątki za dotychczasowe osiągnięcia (jako nowe)
+        {
+            profile p; profile_reset(p);
+            p.best = 777; p.runs = 6; p.wins = 1; p.xp = 55; p.respect = 12; p.tutorial = 5;
+            std::memcpy(p.magic, profile_magic_v10, sizeof p.magic);
+            std::memset(reinterpret_cast<char*>(&p) + profile_v10_size, 0xAB, sizeof p - profile_v10_size);
+            CHECK(profile_fix(p));
+            CHECK(std::strcmp(p.magic, profile_magic) == 0 && p.best == 777 && p.runs == 6 && p.wins == 1 && p.xp == 55 && p.respect == 12 && p.tutorial == 5);
+            CHECK(p.weekly_runs == 0 && p.weekly_week[0] == 0 && p.weekly_score[2] == 0);
+            int want = 0; for(int i = 0; i < data::story_arc_count; ++i) want += story_condition(p, nullptr, i);
+            CHECK(story_count(p) == want && story_unread_count(p) == want && want >= 3);   // 1 i 5 budów, 1 wygrana
+            CHECK(! profile_fix(p));
+            profile q; std::memset(&q, 0, sizeof q); std::memcpy(q.magic, profile_magic_v9, sizeof q.magic); q.runs = 2;
+            CHECK(profile_fix(q) && std::strcmp(q.magic, profile_magic) == 0 && story_count(q) == 1);
+        }
+        // wyzwania tygodnia nie są niemożliwe: bot na każdej zasadzie (tabela w CHANGELOG)
+        if(! std::getenv("PB_NO_BALANCE"))
+        {
+            std::printf("Wyzwania tygodnia (bot, 100 przebiegów na zawód albo 900 jednym zawodem):\n");
+            for(int wi = 0; wi < data::weekly_count; ++wi)
+            {
+                const int week = wi + 1;
+                const bool one = weekly_rule_value(wi, weekly_rule::cls, -1) >= 0;
+                int wins = 0, runs = 0; long drinks = 0;
+                for(int c = 0; c < data::classes_count; ++c)
+                    for(int k = 0; k < 100; ++k)
+                    {
+                        const int cls = one ? weekly_class(week) : c;
+                        run_mods m = weekly_mods(week);
+                        m.hp = data::classes[cls].max_health * weekly_rule_value(wi, weekly_rule::hp_pct, 0) / 100;
+                        game g; g.new_run(cls, 1000 + uint32_t(k * data::classes_count + c) * 7919u, data::weekly_difficulty, m);
+                        bot_drinks = 0;
+                        for(int step = 0; step < 4000; ++step)
+                        {
+                            if(g.st == status::stage_clear) { bot_next(g); continue; }
+                            if(g.st != status::playing) break;
+                            bot_step(g);
+                        }
+                        wins += g.st == status::won; ++runs; drinks += bot_drinks;
+                    }
+                std::printf("  %-28s %3d%% (kawa %.2f/budowę)\n", data::weekly[wi].name, wins * 100 / runs, double(drinks) / runs);
+                CHECK(wins * 100 / runs >= 5);   // do przejścia (cel: 5-40%)
+            }
         }
     }
 

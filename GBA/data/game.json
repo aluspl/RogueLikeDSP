@@ -1651,6 +1651,283 @@
     "prologueCaptions": [
       "Działka przy ul. Budowlanej 7...",
       "...a problemy już czekają."
+    ],
+    "arc": [
+      {
+        "id": "start",
+        "name": "Pierwsza budowa",
+        "hint": "Rozegraj 1 budowę",
+        "trigger": "runs",
+        "value": 1,
+        "messages": [
+          {
+            "from": "Kierownik Marek",
+            "text": "Pierwsza budowa za nami.|Notuję w PlanBudowlany,|co poszło nie tak."
+          },
+          {
+            "from": "Anna Nowak",
+            "text": "A ja notuję, kto wypił|moją kawę z termosu.|Marek, patrzę na Ciebie."
+          }
+        ]
+      },
+      {
+        "id": "elita",
+        "name": "Złota ramka",
+        "hint": "Usuń elitę",
+        "trigger": "elite",
+        "value": 0,
+        "messages": [
+          {
+            "from": "Kierownik Marek",
+            "text": "Ten problem miał złotą|ramkę. Takie to elity -|trudniejsze, ale płacą."
+          }
+        ]
+      },
+      {
+        "id": "betoniarka",
+        "name": "Betoniarka",
+        "hint": "Pokonaj Zepsutą Betoniarkę",
+        "trigger": "boss",
+        "value": "betoniarka",
+        "messages": [
+          {
+            "from": "Sąsiad Zenek",
+            "text": "Słyszałem huk. To moja|stara betoniarka? Nie|płaczę. No, trochę."
+          },
+          {
+            "from": "Kierownik Marek",
+            "text": "Stan surowy bez niej|idzie szybciej. Zenek,|kupisz nową w Hurtowni."
+          }
+        ]
+      },
+      {
+        "id": "magazyn",
+        "name": "Stary magazyn",
+        "hint": "Otwórz ukryty magazyn",
+        "trigger": "secret",
+        "value": 0,
+        "messages": [
+          {
+            "from": "Sąsiad Zenek",
+            "text": "Znalazłeś mój magazyn?|Bierz, co chcesz. Tylko|oddaj taczkę z 1998."
+          }
+        ]
+      },
+      {
+        "id": "sms",
+        "name": "Szybka decyzja",
+        "hint": "Odpowiedz na SMS na placu",
+        "trigger": "event",
+        "value": 0,
+        "messages": [
+          {
+            "from": "Kierownik Marek",
+            "text": "Na placu co chwilę coś.|Odpisuj szybko, ale|czytaj drobny druk!"
+          }
+        ]
+      },
+      {
+        "id": "synergia",
+        "name": "Synergia",
+        "hint": "Połącz premie w synergię",
+        "trigger": "synergy",
+        "value": 0,
+        "messages": [
+          {
+            "from": "Anna Nowak",
+            "text": "Marek mówi, że premie|się łączą. Jak my dwoje|z kredytem. Brawo!"
+          }
+        ]
+      },
+      {
+        "id": "nawalnica",
+        "name": "Po burzy",
+        "hint": "Pokonaj Nawałnicę",
+        "trigger": "boss",
+        "value": "nawalnica",
+        "messages": [
+          {
+            "from": "Anna Nowak",
+            "text": "Po Nawałnicy dach suchy!|Dzieci pytają, czy mogą|już malować pokoje."
+          },
+          {
+            "from": "Kierownik Marek",
+            "text": "Mogą. Ale najpierw|tynki. I okna. I drzwi.|Pędzle trzymam u siebie."
+          }
+        ]
+      },
+      {
+        "id": "inspekcja",
+        "name": "Protokół",
+        "hint": "Pokonaj Inspekcję Pracy",
+        "trigger": "boss",
+        "value": "inspekcja",
+        "messages": [
+          {
+            "from": "Kierownik Marek",
+            "text": "Inspekcja: bez uwag!|Pierwszy raz w mojej|karierze. Oprawię to."
+          }
+        ]
+      },
+      {
+        "id": "odbior",
+        "name": "Klucze",
+        "hint": "Wygraj budowę",
+        "trigger": "wins",
+        "value": 1,
+        "messages": [
+          {
+            "from": "Anna Nowak",
+            "text": "Pierwsza noc w nowym|domu! Cisza, ciepło,|nic nie cieknie."
+          },
+          {
+            "from": "Sąsiad Zenek",
+            "text": "Sąsiad Zenek. Też chcę|taki dom. Masz wolny|termin? Mam działkę obok."
+          }
+        ]
+      },
+      {
+        "id": "termin",
+        "name": "Na czas",
+        "hint": "Pokonaj Termin",
+        "trigger": "boss",
+        "value": "termin",
+        "messages": [
+          {
+            "from": "Anna Nowak",
+            "text": "Termin pokonany! W|harmonogramie wszystko|na zielono. Pierwszy raz!"
+          }
+        ]
+      },
+      {
+        "id": "piec",
+        "name": "Stała ekipa",
+        "hint": "Rozegraj 5 budów",
+        "trigger": "runs",
+        "value": 5,
+        "messages": [
+          {
+            "from": "Kierownik Marek",
+            "text": "5 budów. Ekipa zna|już Twoje tempo. Kawa|stoi gotowa o 6:00."
+          }
+        ]
+      },
+      {
+        "id": "osiedle",
+        "name": "Osiedle rośnie",
+        "hint": "Wygraj 3 budowy",
+        "trigger": "wins",
+        "value": 3,
+        "messages": [
+          {
+            "from": "Sąsiad Zenek",
+            "text": "Na ulicy już 3 domy.|Robi się osiedle! Stawiam|ławkę pod lipą."
+          },
+          {
+            "from": "Anna Nowak",
+            "text": "Zenek postawił ławkę.|W sobotę grill dla|całej ekipy!"
+          }
+        ]
+      },
+      {
+        "id": "dzien",
+        "name": "Budowa dnia",
+        "hint": "Zagraj budowę dnia",
+        "trigger": "daily",
+        "value": 0,
+        "messages": [
+          {
+            "from": "Kierownik Marek",
+            "text": "Budowa dnia jest jak|poranna odprawa: ta sama|dla każdej ekipy."
+          }
+        ]
+      },
+      {
+        "id": "tydzien",
+        "name": "Zasady tygodnia",
+        "hint": "Zagraj wyzwanie tygodnia",
+        "trigger": "weekly",
+        "value": 0,
+        "messages": [
+          {
+            "from": "Inwestorka Ewa",
+            "text": "Tu Ewa, inwestorka.|Co tydzień nowe zasady.|Zobaczymy, kto da radę."
+          }
+        ]
+      },
+      {
+        "id": "papiery",
+        "name": "Papierologia",
+        "hint": "Odblokuj Akt 0",
+        "trigger": "act0",
+        "value": 0,
+        "messages": [
+          {
+            "from": "Inwestorka Ewa",
+            "text": "Nowa działka, nowe|papiery. Akt 0 czeka.|Pieczątki w dłoń!"
+          }
+        ]
+      },
+      {
+        "id": "decyzja",
+        "name": "Odwołanie",
+        "hint": "Pokonaj Decyzję odmowną",
+        "trigger": "boss",
+        "value": "decyzja",
+        "messages": [
+          {
+            "from": "Kierownik Marek",
+            "text": "Decyzja odmowna?|Odwołanie wygrane!|Urzędnik aż wstał."
+          }
+        ]
+      },
+      {
+        "id": "dziesiec",
+        "name": "Dziesiąta budowa",
+        "hint": "Rozegraj 10 budów",
+        "trigger": "runs",
+        "value": 10,
+        "messages": [
+          {
+            "from": "Anna Nowak",
+            "text": "10 budów! Marek robi|z Twoich notatek plan|w aplikacji dla innych."
+          }
+        ]
+      },
+      {
+        "id": "piecdomow",
+        "name": "Nasze osiedle",
+        "hint": "Wygraj 5 budów",
+        "trigger": "wins",
+        "value": 5,
+        "messages": [
+          {
+            "from": "Inwestorka Ewa",
+            "text": "5 domów, jedno osiedle.|Chcę tu plac zabaw.|Budżet? Znajdzie się."
+          },
+          {
+            "from": "Anna Nowak",
+            "text": "Plac zabaw! Dzieci już|rysują plan. Na kartce,|ale z harmonogramem."
+          }
+        ]
+      },
+      {
+        "id": "dziesiecdomow",
+        "name": "Dom za domem",
+        "hint": "Wygraj 10 budów",
+        "trigger": "wins",
+        "value": 10,
+        "messages": [
+          {
+            "from": "Kierownik Marek",
+            "text": "10 odbiorów. Plan|pokonał chaos. Dzięki|- bez Ciebie ani rusz."
+          },
+          {
+            "from": "Anna Nowak",
+            "text": "Ulica ma nazwę: Planowa.|Tabliczkę wieszamy|w sobotę. Przyjdź!"
+          }
+        ]
+      }
     ]
   },
   "equipment": {
@@ -4205,5 +4482,202 @@
     "Operator albo wybuch, drzwi -",
     "tylko klucz. Skrzynia: sprzęt,",
     "Respekt. Czasem śpi tam elita!"
-  ]
+  ],
+  "recap": {
+    "kinds": [
+      "cios",
+      "z dystansu",
+      "cios bossa",
+      "wybuch",
+      "mokry + prąd",
+      "wybuch pyłu"
+    ],
+    "verbs": [
+      "Pokonał",
+      "Pokonała",
+      "Pokonało"
+    ],
+    "tips": [
+      {
+        "when": "shock",
+        "text": "Mokry + prąd boli: wyjdź|z kałuży przed Zwarciem"
+      },
+      {
+        "when": "slam",
+        "text": "Czerwone pola bossa: masz|2 tury, zejdź po skosie"
+      },
+      {
+        "when": "blast",
+        "text": "Wybuchowy problem: po|usunięciu odejdź o 2 pola"
+      },
+      {
+        "when": "coffee",
+        "text": "Kawa została w termosie:|pij przy 40% HP (START)"
+      },
+      {
+        "when": "ranged",
+        "text": "Strzelec trafia w linii:|podchodź po skosie"
+      },
+      {
+        "when": "elite",
+        "text": "Złota ramka = elita:|cecha na karcie pod B"
+      },
+      {
+        "when": "boss",
+        "text": "Przed bossem: pełny|termos i gotowa moc (R)"
+      },
+      {
+        "when": "no_combo",
+        "text": "Mokry + prąd zadaje +3:|spróbuj premii Przepięcie"
+      },
+      {
+        "when": "won",
+        "text": "Czas na więcej: tryb|inwestora albo Trudny"
+      },
+      {
+        "when": "any",
+        "text": "Harmonogram ma radę|kierownika po każdym etapie"
+      }
+    ]
+  },
+  "weekly": {
+    "epoch": [
+      2026,
+      1,
+      5
+    ],
+    "difficulty": "normalny",
+    "history": 3,
+    "list": [
+      {
+        "id": "glazurnik",
+        "name": "Tylko Glazurnik, bez kawy",
+        "short": "Glazurnik bez kawy",
+        "desc": "Bez kawy, za to HP +25%.|Kawa idzie na wynos (zł)",
+        "rules": [
+          {
+            "rule": "class",
+            "class": "glazurnik"
+          },
+          {
+            "rule": "no_coffee"
+          },
+          {
+            "rule": "hp_pct",
+            "value": 25
+          }
+        ]
+      },
+      {
+        "id": "elity",
+        "name": "Elity x2",
+        "short": "Elity x2",
+        "desc": "Dwa razy więcej elit -|i dwa razy więcej łupów",
+        "rules": [
+          {
+            "rule": "elite_pct",
+            "value": 200
+          }
+        ]
+      },
+      {
+        "id": "mokry",
+        "name": "Mokry tydzień",
+        "short": "Mokry tydzień",
+        "desc": "Deszcz na każdym etapie:|kałuże, poślizg, mokro",
+        "rules": [
+          {
+            "rule": "weather",
+            "weather": "deszcz"
+          }
+        ]
+      },
+      {
+        "id": "hurt",
+        "name": "Bez Hurtowni, x2 materiały",
+        "short": "Bez Hurtowni",
+        "desc": "Hurtownia zamknięta,|materiały 2x częściej",
+        "rules": [
+          {
+            "rule": "no_shop"
+          },
+          {
+            "rule": "mats_pct",
+            "value": 100
+          }
+        ]
+      },
+      {
+        "id": "szklo",
+        "name": "Szklany kask",
+        "short": "Szklany kask",
+        "desc": "HP -50%, ale Twoje|ciosy +15%",
+        "rules": [
+          {
+            "rule": "hp_pct",
+            "value": -50
+          },
+          {
+            "rule": "dmg_pct",
+            "value": 15
+          }
+        ]
+      },
+      {
+        "id": "kierownik",
+        "name": "Kierownik na placu",
+        "short": "Tylko Kierownik",
+        "desc": "Tylko Kierownik, więcej|elit, HP -25%",
+        "rules": [
+          {
+            "rule": "class",
+            "class": "kierownik"
+          },
+          {
+            "rule": "elite_pct",
+            "value": 175
+          },
+          {
+            "rule": "hp_pct",
+            "value": -25
+          }
+        ]
+      }
+    ],
+    "coffeeCash": 5
+  },
+  "estate": {
+    "decor": [
+      {
+        "id": "drzewo",
+        "name": "Lipa",
+        "wins": 1
+      },
+      {
+        "id": "lawka",
+        "name": "Ławka Zenka",
+        "wins": 3
+      },
+      {
+        "id": "latarnia",
+        "name": "Latarnia",
+        "wins": 4
+      },
+      {
+        "id": "plac",
+        "name": "Plac zabaw",
+        "wins": 5
+      },
+      {
+        "id": "tablica",
+        "name": "Tablica PlanBudowlany",
+        "wins": 8
+      },
+      {
+        "id": "fontanna",
+        "name": "Fontanna",
+        "wins": 10
+      }
+    ]
+  }
 }

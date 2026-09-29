@@ -523,6 +523,60 @@ L += [f"inline constexpr int secret_kinds_count = {len(hr['kinds'])};", f"inline
       f"inline constexpr int chest_mats = {chs2['mats']};", f"inline constexpr int chest_cash = {chs2['cash']};",
       f"inline constexpr int chest_gear_min = {chs2['gearMin']};", ""]
 
+# v0.21.50 cz. 4: podsumowanie budowy (#33), wyzwania tygodnia (#34), fabuła odkrywana z budowami (#35)
+rc = d["recap"]
+RTIP = ["shock", "slam", "blast", "coffee", "ranged", "elite", "boss", "no_combo", "won", "any"]
+assert len(rc["kinds"]) == 6 and all(len(x) <= 14 for x in rc["kinds"]) and len(rc["verbs"]) == 3
+assert rc["tips"][-1]["when"] == "any"   # zawsze jakaś rada
+def tip2(t):
+    lines = t.split("|"); assert 1 <= len(lines) <= 2 and all(len(l) <= 28 for l in lines), t
+    return ", ".join(s(l) for l in lines + [""] * (2 - len(lines)))
+L.append("inline constexpr const char* recap_kind_names[] = { " + ", ".join(s(x) for x in rc["kinds"]) + " };   // = core::recap_kind")
+L.append("inline constexpr const char* recap_verbs[] = { " + ", ".join(s(x) for x in rc["verbs"]) + " };   // Pokonał / Pokonała / Pokonało Cię")
+L.append("inline constexpr core::recap_tip_def recap_tips[] = {   // rada w podsumowaniu: pierwsza pasująca")
+for x in rc["tips"]:
+    assert x["when"] in RTIP, x
+    L.append(f'    {{ core::recap_tip::{x["when"]}, {{ {tip2(x["text"])} }} }},')
+L += ["};", f"inline constexpr int recap_tips_count = {len(rc['tips'])};", ""]
+wk = d["weekly"]
+WRULE = ["cls", "no_coffee", "elite_pct", "weather", "no_shop", "mats_pct", "hp_pct", "dmg_pct", "cash"]
+wid2 = {x["id"]: i for i, x in enumerate(d["weather"]["list"])}
+assert 1 <= wk["history"] <= 3 and 1 <= len(wk["list"]) <= 16 and 0 <= wk["coffeeCash"] <= 50
+def wrule(x):
+    r = {"class": "cls"}.get(x["rule"], x["rule"]); assert r in WRULE, x
+    v = cid2[x["class"]] if r == "cls" else (wid2[x["weather"]] if r == "weather" else x.get("value", 0))
+    assert -90 <= v <= 400, x
+    return f'{{ core::weekly_rule::{r}, {v} }}'
+L.append("inline constexpr core::weekly_def weekly[] = {   // wyzwania tygodnia: kolejne tygodnie po kolei z listy")
+for x in wk["list"]:
+    ds = x["desc"].split("|"); assert len(ds) == 2 and all(len(l) <= 28 for l in ds), x
+    assert len(x["name"]) <= 26 and len(x["short"]) <= 18 and 1 <= len(x["rules"]) <= 3, x
+    assert sum(1 for r in x["rules"] if r["rule"] == "class") <= 1, x
+    rules = [wrule(r) for r in x["rules"]] + ["{ core::weekly_rule::cash, 0 }"] * (3 - len(x["rules"]))
+    L.append(f'    {{ {s(x["name"])}, {s(x["short"])}, {{ {s(ds[0])}, {s(ds[1])} }}, {{ {", ".join(rules)} }}, {len(x["rules"])} }},')
+L += ["};", f"inline constexpr int weekly_count = {len(wk['list'])};",
+      f"inline constexpr int weekly_epoch[] = {{ {', '.join(map(str, wk['epoch']))} }};   // tydzień nr 1 (poniedziałek)",
+      f"inline constexpr int weekly_difficulty = {dif[wk['difficulty']]};", f"inline constexpr int weekly_history = {wk['history']};",
+      f"inline constexpr int weekly_coffee_cash = {wk['coffeeCash']};", ""]
+import datetime
+assert datetime.date(*wk["epoch"]).weekday() == 0, "epoka tygodni: poniedziałek"
+arc = d["story"]["arc"]
+STRG = ["runs", "wins", "boss", "elite", "secret", "event", "synergy", "daily", "weekly", "act0"]
+assert 1 <= len(arc) <= 32   # bity w profilu (uint32)
+L.append("inline constexpr core::story_thread story_arc[] = {   // fabuła odkrywana z budowami: wątki SMS-ów (archiwum Wiadomości)")
+for x in arc:
+    assert x["trigger"] in STRG and len(x["name"]) <= 18 and len(x["hint"]) <= 28 and 1 <= len(x["messages"]) <= 2, x
+    v = eid[x["value"]] if x["trigger"] == "boss" else x["value"]
+    if x["trigger"] == "boss": assert d["enemies"][v].get("slam"), x
+    assert 0 <= v <= 100, x
+    msgs = [story(mm) for mm in x["messages"]] + ['{ "", { "", "", "" } }'] * (2 - len(x["messages"]))
+    L.append(f'    {{ {s(x["name"])}, {s(x["hint"])}, core::story_trigger::{x["trigger"]}, {v}, {{ {", ".join(msgs)} }}, {len(x["messages"])} }},')
+L += ["};", f"inline constexpr int story_arc_count = {len(arc)};", ""]
+es = d["estate"]["decor"]
+assert 1 <= len(es) <= 8 and all(es[i]["wins"] < es[i + 1]["wins"] for i in range(len(es) - 1))
+L.append("inline constexpr core::decor_def estate_decor[] = {   // ozdoby Osiedla (klatki w houses.bmp za pustą działką)")
+L += [f'    {{ {s(x["name"])}, {x["wins"]} }},' for x in es] + ["};", f"inline constexpr int estate_decor_count = {len(es)};", ""]
+
 L += [f"inline constexpr const char* version = {s(d['version'])};   // numer wersji (ekran tytułowy, changelog)", ""]
 dh = d["damageHelp"]   # v0.21.50: Jak grać, strona Obrażenia (GBA i Godot)
 assert len(dh) == 6 and all(len(x) <= 36 for x in dh), dh

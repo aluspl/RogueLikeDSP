@@ -361,6 +361,67 @@ namespace core
         bool breakable;
     };
 
+    // ------------------------------------------------------------------ v0.21.50 cz. 4
+    // Podsumowanie budowy (#33): ostatnie ciosy w bohatera (rodzaj, źródło, etap), rada na koniec budowy.
+    enum class recap_kind : uint8_t { melee, ranged, slam, blast, shock, dust };
+    constexpr int recap_kinds = 6;
+
+    struct recap_hit
+    {
+        int8_t src = -1;       // problem (data::enemies), -1 = brak
+        int8_t elite = -1;     // cecha elity (data::elites), -1 = zwykły
+        uint8_t kind = 0;      // recap_kind
+        int8_t stage = -1;     // etap (data::stages)
+        int16_t amount = 0;    // obrażenia
+    };
+
+    // Rada w podsumowaniu: pierwsza pasująca z listy (kolejność z danych).
+    enum class recap_tip : uint8_t { shock, slam, blast, coffee, ranged, elite, boss, no_combo, won, any };
+
+    struct recap_tip_def
+    {
+        recap_tip when;
+        const char* lines[2];
+    };
+
+    // Wyzwanie tygodnia (#34): seed z numeru tygodnia i stałe zasady z danych (do 3 na tydzień).
+    enum class weekly_rule : uint8_t { cls, no_coffee, elite_pct, weather, no_shop, mats_pct, hp_pct, dmg_pct, cash };
+
+    struct weekly_rule_def
+    {
+        weekly_rule rule;
+        int16_t value;         // zawód (cls), pogoda (weather), procent albo zł
+    };
+
+    struct weekly_def
+    {
+        const char* name;
+        const char* short_name;
+        const char* desc[2];
+        weekly_rule_def rules[3];
+        int8_t rules_count;
+    };
+
+    // Fabuła odkrywana z budowami (#35): wątek SMS-ów odblokowany kamieniem milowym, archiwum w telefonie profilu.
+    enum class story_trigger : uint8_t { runs, wins, boss, elite, secret, event, synergy, daily, weekly, act0 };
+
+    struct story_thread
+    {
+        const char* name;
+        const char* hint;      // jak odblokować (zablokowany wątek w archiwum)
+        story_trigger trigger;
+        int8_t value;          // liczba budów / wygranych albo boss (data::enemies)
+        story_msg msgs[2];
+        int8_t msgs_count;
+    };
+
+    // Ozdoba Osiedla: pojawia się po tylu wygranych.
+    struct decor_def
+    {
+        const char* name;
+        int8_t wins;
+    };
+
     // Wydarzenie na placu: losowy SMS na starcie etapu (nie pierwszego i nie z bossem) z modyfikatorem etapu.
     enum class event_effect : uint8_t { fewer_pickups, cash, inspection, rain, thermos };
 

@@ -19,8 +19,12 @@ namespace core
     constexpr int max_hits = 8;         // zdarzenia trafień w jednej turze (dla efektów)
     constexpr int max_walls = 5;        // tymczasowe mury (Ścianka III ma 5 pól)
     constexpr int max_enemy_types = 48;  // rodzaje problemów (katalog: 16 + 32 bity w profilu)
-    constexpr int max_stages = 12;      // v0.21.49: 10 etapów + 2 Aktu 0
-    constexpr int max_gear_slots = 6;   // kask, rękawice, kamizelka + sloty z nagród (buty, pas)
+    constexpr int max_stages = 12;      // v0.21.49: 10 etapów + 2 Aktu 0 (podsumowanie: 12 wartości w tablicach game)
+    constexpr int max_gear_slots = 6;
+    constexpr int recap_hits_n = 3;     // v0.21.50 cz. 4: ostatnie ciosy w bohatera (podsumowanie budowy)
+    // Oś czasu podsumowania (#33): co się działo na etapie (bity w game::stage_flags).
+    enum recap_flag : uint8_t { recap_secret = 1, recap_upgrade = 2, recap_elite = 4, recap_boss = 8, recap_combo = 16, recap_synergy = 32,
+                                recap_event_boon = 64 };   // kask, rękawice, kamizelka + sloty z nagród (buty, pas)
     static_assert(data::gear_slots_count <= max_gear_slots);
 
     enum class tile : uint8_t { wall, floor, stairs };
@@ -143,6 +147,21 @@ namespace core
         }
     };
 
+    // Wiersz podsumowania budowy (#33): tekst, dopisek po prawej (dni, usunięte) i kolor (log_kind).
+    struct recap_line
+    {
+        message text;
+        message tail;
+        uint8_t ink = info;
+    };
+
+    // Rzymska liczba rangi (1-5): Respekt, Szkolenia w podsumowaniu.
+    inline const char* roman_numeral(int n)
+    {
+        static const char* r[6] = { "", "I", "II", "III", "IV", "V" };
+        return r[n < 0 ? 0 : (n > 5 ? 5 : n)];
+    }
+
     // Premie z meta-progresji (sklep "Szkolenia"), stałe przez całą budowę.
     struct run_mods
     {
@@ -173,6 +192,7 @@ namespace core
         int gear_slots = data::gear_base_mask;   // sloty sprzętu w dropach (nagrody: buty, pas)
         int act0 = 0;                // v0.21.49: Akt 0 (Papierologia) z nagrody za odbiór - budowa zaczyna się od niego
         int rerolls = 0;             // v0.21.50: Respekt Druga oferta - darmowe losowanie premii po etapie
+        int weekly = -1;             // v0.21.50 cz. 4: wyzwanie tygodnia (data::weekly), -1 = zwykła budowa
     };
 
     // Tryb inwestora: stawka i premia doświadczenia za zestaw modyfikatorów.
@@ -779,6 +799,20 @@ namespace core
         int8_t key_holder = -1;      // problem z kluczem do magazynu (indeks w enemies), -1 = brak
         uint8_t keys = 0;            // klucze do magazynu (na etap)
         uint8_t secrets_found = 0;   // otwarte magazyny w budowie
+        // v0.21.50 cz. 4: podsumowanie budowy (#33) - ostatnie ciosy, najmocniejsze ciosy, oś czasu etapów; wyzwanie tygodnia (#34)
+        recap_hit last_hits[recap_hits_n] = {};   // ciosy w bohatera (0 = ostatni)
+        recap_hit worst_hit = {};    // najmocniejszy cios w bohatera w tej budowie
+        int16_t best_hit = 0;        // najmocniejszy cios bohatera (obrażenia) ...
+        int8_t best_hit_def = -1;    // ... w problem (data::enemies)
+        bool best_hit_crit = false;
+        int8_t blast_src = -1;       // problem, po którym czeka wybuch (źródło ciosu)
+        uint8_t stage_kill_log[max_stages] = {};   // usunięte problemy na etapie
+        int8_t stage_boon[max_stages] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };   // premia wybrana po etapie
+        uint8_t stage_event_log[max_stages] = { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };   // wydarzenie * 4 + odpowiedź
+        uint8_t stage_flags[max_stages] = {};      // recap_flag
+        uint8_t elites_killed = 0;
+        uint16_t combos_run = 0;     // kombinacje stanów wywołane przez bohatera
+        uint16_t weekly_week = 0;    // numer tygodnia wyzwania (0 = zwykła budowa)
 
         // Numer etapu dla gracza (1..) i liczba etapów tej budowy (bez Aktu 0, gdy nieodblokowany).
         int stage_number() const { return stage - first_stage + 1; }
@@ -858,7 +892,22 @@ namespace core
         // Przychód budowy (zł) z modyfikatorem budżetu.
         int income(int v) const { return v * (100 + investor_value(investor_effect::cash_pct)) / 100; }
         int slam_every() const { return imax(2, data::slam_every - investor_value(investor_effect::slam)); }
-        bool shop_closed() const { return investor_has(investor_effect::no_shop); }
+        bool shop_closed() const { return investor_has(investor_effect::no_shop) || weekly_has(weekly_rule::no_shop); }
+        // Wyzwanie tygodnia (#34): zasada włączona / wartość zasady (0, gdy brak).
+        bool weekly_has(weekly_rule w) const
+        {
+            if(bonus.weekly < 0) return false;
+            const weekly_def& wd = data::weekly[bonus.weekly];
+            for(int i = 0; i < wd.rules_count; ++i) if(wd.rules[i].rule == w) return true;
+            return false;
+        }
+        int weekly_value(weekly_rule w) const
+        {
+            if(bonus.weekly < 0) return 0;
+            const weekly_def& wd = data::weekly[bonus.weekly];
+            for(int i = 0; i < wd.rules_count; ++i) if(wd.rules[i].rule == w) return wd.rules[i].value;
+            return 0;
+        }
         bool weather_is(weather_effect e) const { return data::weather[weather].effect == e; }
 
         // Pogoda dnia: losowanie wagami spośród dozwolonych na etapie s (bad_only: tylko niekorzystne, jeśli są).
@@ -1155,6 +1204,8 @@ namespace core
             const boon_def& bd = data::boons[b];
             const uint16_t before = synergy_mask();
             boons |= uint64_t(1) << b;
+            if(st == status::stage_clear) stage_boon[stage] = int8_t(b);   // podsumowanie: premia po etapie
+            else stage_flags[stage] = uint8_t(stage_flags[stage] | recap_event_boon);
             for(auto& o : boon_offer) o = -1;
             switch(bd.effect)
             {
@@ -1168,7 +1219,11 @@ namespace core
             push(message().add("Premia: ").add(bd.name).as(loot));
             const uint16_t now = synergy_mask();
             for(int s = 0; s < data::synergies_count; ++s)
-                if(((now >> s) & 1) && ! ((before >> s) & 1)) push(message().add("Synergia: ").add(data::synergies[s].name).add("!").as(good));
+                if(((now >> s) & 1) && ! ((before >> s) & 1))
+                {
+                    push(message().add("Synergia: ").add(data::synergies[s].name).add("!").as(good));
+                    stage_flags[stage] = uint8_t(stage_flags[stage] | recap_synergy);
+                }
             return true;
         }
         bool reroll_boons()
@@ -1208,7 +1263,8 @@ namespace core
         bool elite_is(const actor& e, elite_effect x) const { return e.elite >= 0 && data::elites[e.elite].effect == x; }
         int elite_chance() const
         {
-            return imax(0, data::elite_act_pct[data::stages[stage].act] + data::elite_diff_pct[diff] + tier * data::elite_tier_pct);
+            const int c = imax(0, data::elite_act_pct[data::stages[stage].act] + data::elite_diff_pct[diff] + tier * data::elite_tier_pct);
+            return weekly_has(weekly_rule::elite_pct) ? c * weekly_value(weekly_rule::elite_pct) / 100 : c;   // wyzwanie: Elity x2
         }
         void make_elite(int i, int trait)
         {
@@ -1226,6 +1282,97 @@ namespace core
             const enemy_def& ed = data::enemies[e.def_id];
             if(e.elite >= 0) m.add(data::elites[e.elite].prefix[ed.gender]).add(" ");
             return m.add(ed.name);
+        }
+
+        // ------------------------------------------------------------------ podsumowanie budowy (#33)
+        // Cios w bohatera do podsumowania: ostatnie recap_hits_n (0 = ostatni) i najmocniejszy w budowie.
+        void log_hit(int src, int elite, recap_kind k, int amount)
+        {
+            for(int i = recap_hits_n - 1; i > 0; --i) last_hits[i] = last_hits[i - 1];
+            recap_hit& h = last_hits[0];
+            h.src = int8_t(src); h.elite = int8_t(elite); h.kind = uint8_t(k); h.stage = int8_t(stage); h.amount = int16_t(imin(32767, amount));
+            if(h.amount > worst_hit.amount) worst_hit = h;
+        }
+        void note_combo()
+        {
+            if(combos_run < 65535) ++combos_run;
+            stage_flags[stage] = uint8_t(stage_flags[stage] | recap_combo);
+        }
+        void clear_timeline()
+        {
+            for(int s = 0; s < max_stages; ++s) { stage_kill_log[s] = 0; stage_boon[s] = -1; stage_event_log[s] = 255; stage_flags[s] = 0; }
+        }
+        // Źródło ciosu z przedrostkiem elity ("Zbrojony Przeciek").
+        static message& recap_src(message& m, const recap_hit& h)
+        {
+            if(h.src < 0) return m.add("Wybuch");
+            const enemy_def& ed = data::enemies[h.src];
+            if(h.elite >= 0) m.add(data::elites[h.elite].prefix[ed.gender]).add(" ");
+            return m.add(ed.name);
+        }
+        // Rodzaj ciosu słowami (cios bossa: nazwa uderzenia, np. "Kontrola BHP").
+        static message& recap_kind_name(message& m, const recap_hit& h)
+        {
+            if(h.kind == uint8_t(recap_kind::slam) && h.src >= 0 && data::enemies[h.src].slam_name[0]) return m.add(data::enemies[h.src].slam_name);
+            return m.add(data::recap_kind_names[h.kind < recap_kinds ? h.kind : 0]);
+        }
+        // Cios w bohatera: "Zbrojony Przeciek: -4 (cios)".
+        static message& recap_hit_line(message& m, const recap_hit& h)
+        {
+            recap_src(m, h).add(": -").add(h.amount).add(" (");
+            recap_kind_name(m, h);
+            return m.add(")");
+        }
+        // "Pokonał Cię: Zbrojony Przeciek" (czasownik wg rodzaju nazwy problemu).
+        message& recap_killer(message& m) const
+        {
+            const recap_hit& h = last_hits[0];
+            if(h.src < 0 && h.amount == 0) return m.add("Budowa wstrzymana");
+            m.add(data::recap_verbs[h.src >= 0 ? data::enemies[h.src].gender : 0]).add(" Cię: ");
+            return recap_src(m, h);
+        }
+        // "3/10, Akt I" (etap budowy i akt)
+        message& recap_where(message& m) const
+        {
+            return m.add(stage_number()).add("/").add(stages_in_run()).add(", Akt ").add(act_numeral());
+        }
+        // Dni etapu jak w harmonogramie domu (min. + tury / tury na dzień); etap w toku - do teraz.
+        bool recap_current(int s) const { return s == stage && (st == status::dead || st == status::playing); }
+        int recap_days(int s) const
+        {
+            return data::schedule_min_days + (recap_current(s) ? turns - stage_start_turn : stage_days[s]) / data::schedule_turns_per_day;
+        }
+        int recap_kills(int s) const { return recap_current(s) ? stage_kills : stage_kill_log[s]; }
+        // Oś czasu: etap (numer, nazwa; dni i usunięte po prawej), pod nim SMS, co się działo, premia; koniec budowy.
+        int recap_timeline(recap_line* out, int max) const
+        {
+            int n = 0;
+            auto add = [&](const recap_line& l) { if(n < max) out[n++] = l; };
+            static const char* flag_names[7] = { "magazyn", "ulepszenie", "elita", "boss pokonany", "kombinacje", "synergia", "premia z SMS" };
+            for(int s = first_stage; s <= stage && s < data::stages_count; ++s)
+            {
+                const bool dead_here = recap_current(s) && st == status::dead;
+                recap_line l;
+                l.text.add(s - first_stage + 1).add(". ").add(data::stages[s].name);
+                l.tail.add(recap_days(s)).add(" d., ").add(recap_kills(s)).add(" usun.");
+                l.ink = uint8_t(dead_here ? bad : info);
+                add(l);
+                if(stage_event_log[s] != 255)
+                {
+                    recap_line e; e.text.add("  SMS: ").add(data::choice_events[stage_event_log[s] / 4].name); e.ink = good; add(e);
+                }
+                recap_line f; int items = 0;
+                for(int b = 0; b < 7; ++b)
+                {
+                    if(! ((stage_flags[s] >> b) & 1)) continue;
+                    if(items == 3) { add(f); f = recap_line(); items = 0; }
+                    f.text.add(items ? ", " : "  + ").add(flag_names[b]); f.ink = good; ++items;
+                }
+                if(items) add(f);
+                if(stage_boon[s] >= 0) { recap_line b; b.text.add("  Premia: ").add(data::boons[stage_boon[s]].name); b.ink = loot; add(b); }
+                if(dead_here) { recap_line d; d.text.add("  Tu stanęła budowa"); d.ink = bad; add(d); }
+            }
+            return n;
         }
 
         // ------------------------------------------------------------------ kombinacje stanów (#29)
@@ -1251,6 +1398,7 @@ namespace core
             const combo_def& c = data::combos[int(combo_effect::shock_area)];
             const int rad = c.radius + synergy_value(synergy_effect::conduct);
             combo_events = uint8_t(combo_events | (1u << int(combo_effect::shock_area)));
+            note_combo();
             push(message().add(c.short_name).add(" ").add(c.name).as(good));
             for(int i = 0; i < enemies_count && st == status::playing; ++i)
             {
@@ -1264,6 +1412,7 @@ namespace core
             const combo_def& c = data::combos[int(combo_effect::dust_blast)];
             const int sp = synergy_value(synergy_effect::sparks), rad = c.radius + (sp > 0 ? 1 : 0), dmg = c.value + sp;
             combo_events = uint8_t(combo_events | (1u << int(combo_effect::dust_blast)));
+            note_combo();
             push(message().add(c.short_name).add(" ").add(c.name).as(good));
             for(int i = 0; i < enemies_count; ++i)
                 if(cheb(x, y, enemies[i].x, enemies[i].y) <= rad) enemies[i].flags = uint8_t(enemies[i].flags & ~actor_dusty);
@@ -1277,6 +1426,7 @@ namespace core
             const combo_def& c = data::combos[int(combo_effect::crack)];
             enemies[ei].flags = uint8_t(enemies[ei].flags & ~actor_frozen);
             combo_events = uint8_t(combo_events | (1u << int(combo_effect::crack)));
+            note_combo();
             push(message().add(c.short_name).add(" ").add(c.name).as(good));
             damage_enemy(ei, imax(1, dmg * c.value / 100), false, c.name);
         }
@@ -1328,6 +1478,7 @@ namespace core
             if(k < 0 || k >= ev.choices_count) return false;
             const event_choice& c = ev.choices[k];
             rng er = side_rng(111 + uint32_t(k));
+            stage_event_log[stage] = uint8_t(pending_event * 4 + k);   // podsumowanie: wydarzenie i odpowiedź
             stage_choice = pending_event; stage_choice_pick = int8_t(k); pending_event = -1; choice_done = 0;
             push(message().add("Odpowiedź: ").add(c.label));
             for(int i = 0; i < c.outs; ++i)
@@ -1450,6 +1601,7 @@ namespace core
         {
             if(weapon_lvl >= data::tool_upgrade_max) return;
             ++weapon_lvl;
+            stage_flags[stage] = uint8_t(stage_flags[stage] | recap_upgrade);
             if(weapon_lvl >= data::tool_trait_at && weapon_trait < 0) trait_pending = true;
             push(message().add("Ulepszenie: ").add(weapon().name).add("+").add(weapon_lvl).as(loot));
         }
@@ -1570,6 +1722,7 @@ namespace core
             secret_open = true;
             lv.t[secret_y][secret_x] = tile::floor;
             if(secrets_found < 255) ++secrets_found;
+            stage_flags[stage] = uint8_t(stage_flags[stage] | recap_secret);
             push(message().add(how).add(" Magazyn otwarty!").as(good));
             update_fov();
         }
@@ -1872,6 +2025,7 @@ namespace core
                 for(int k = 0; k < pd->materials; ++k) add_material(r.range(0, data::materials_count - 1));
             }
             weather = int8_t(roll_weather(s, pd && pd->bad_weather));   // pogoda dnia
+            if(weekly_has(weekly_rule::weather)) weather = int8_t(weekly_value(weekly_rule::weather));   // wyzwanie: Mokry tydzień
             if(wdef().effect != weather_effect::none)
                 push(message().add("Pogoda: ").add(wdef().name).add(" (").add(wdef().short_name).add(")").as(wdef().bad ? bad : good));
             stage_event = -1;   // wydarzenie na placu: nie na pierwszym etapie i nie u bossa
@@ -2088,6 +2242,7 @@ namespace core
             actor& e = enemies[ei];
             const enemy_def& ed = data::enemies[e.def_id];
             if(ei == boss && boss_wake_damage < 0) boss_engaged();
+            if(dmg > best_hit) { best_hit = int16_t(imin(32767, dmg)); best_hit_def = e.def_id; best_hit_crit = crit; }   // podsumowanie
             e.hp = int16_t(e.hp - dmg);
             e.awake = true;
             last_target = ei;
@@ -2108,7 +2263,12 @@ namespace core
                 cash += income(ed.score / data::cash_per_score);
                 if(kills_by_type[e.def_id] < 255) ++kills_by_type[e.def_id];
                 score += ed.score * score_pct() / 100; gain_xp(data::xp_per_kill);
-                if(e.elite >= 0) elite_reward(ei);   // elita: pewna paczka (lepsza), materiały, Respekt
+                if(e.elite >= 0)   // elita: pewna paczka (lepsza), materiały, Respekt
+                {
+                    elite_reward(ei);
+                    if(elites_killed < 255) ++elites_killed;
+                    stage_flags[stage] = uint8_t(stage_flags[stage] | recap_elite);
+                }
                 maybe_drop(e.x, e.y);
                 if(ei == key_holder) drop_key(e.x, e.y);   // klucz do magazynu (#32)
                 push(message().add(ed.name).add(" - usunięto!").as(good));
@@ -2118,11 +2278,12 @@ namespace core
                 if((ed.tags & tag_splits) && ! (e.flags & actor_child)) split(ei);
                 if(ei == boss)   // boss: po kilka sztuk każdego materiału
                     for(int m = 0; m < data::materials_count; ++m) add_material(m, data::material_boss_drop);
-                else if(r.range(1, 100) <= data::material_drop_pct * (100 + bonus.mats_pct + boon_sum(boon_effect::mats_pct)
+                else if(r.range(1, 100) <= data::material_drop_pct * (100 + bonus.mats_pct + boon_sum(boon_effect::mats_pct) + weekly_value(weekly_rule::mats_pct)
                                                                           + synergy_value(synergy_effect::stock)) / 100)   // Respekt: Zapasy
                     add_material(ed.material >= 0 ? ed.material : r.range(0, data::materials_count - 1));
                 if(ei == boss)
                 {
+                    stage_flags[stage] = uint8_t(stage_flags[stage] | recap_boss);
                     if(stage_damage == boss_wake_damage && clean_bosses < 255) ++clean_bosses;   // zlecenie Czysta robota
                     score += (500 + 100 * imax(0, pattern_stage() + 1)) * score_pct() / 100;
                     gain_xp(data::xp_boss);
@@ -2778,6 +2939,7 @@ namespace core
         void finish_stage()
         {
             stage_days[stage] = uint16_t(imin(65535, turns - stage_start_turn));
+            stage_kill_log[stage] = uint8_t(imin(255, stage_kills));
             int got = stage_respect();
             respect += got;
             push(message().add("Respekt +").add(got).as(loot));
@@ -2815,6 +2977,7 @@ namespace core
         bool player_drink()
         {
             if(st != status::playing) return false;
+            if(weekly_has(weekly_rule::no_coffee)) { push(message().add("Tydzień bez kawy!").as(bad)); return false; }
             if(thermos <= 0) { push(message().add("Termos pusty")); return false; }
             if(hero.hp >= hero.max_hp) { push(message().add("HP pełne - kawa poczeka")); return false; }
             if(shocked_turn()) return true;
@@ -2930,7 +3093,12 @@ namespace core
                 }
                 if(p.type == store_key) { ++keys; push(message().add("Klucz do magazynu!").as(loot)); continue; }
                 if(p.type == chest) { open_chest(); continue; }
-                if(p.type == coffee)
+                if(p.type == coffee && weekly_has(weekly_rule::no_coffee))   // wyzwanie: bez kawy - kawa na wynos (zł)
+                {
+                    cash += income(data::weekly_coffee_cash);
+                    push(message().add("Bez kawy: na wynos +").add(income(data::weekly_coffee_cash)).add(" zł").as(loot));
+                }
+                else if(p.type == coffee)
                 {
                     if(thermos < thermos_cap())   // kawa do termosu; pełny termos - pije od razu
                     {
@@ -3057,6 +3225,7 @@ namespace core
             hero.hp = int16_t(hero.hp - dmg);
             stage_damage += dmg;
             hero_hit = true;
+            log_hit(e.def_id, e.elite, ranged ? recap_kind::ranged : recap_kind::melee, dmg);
             add_hit(hero.x, hero.y, dmg, true);
             push(message().add(ed.name).add(ranged ? " z dystansu: -" : ": -").add(dmg).add(" HP").as(bad));
             if(ed.on_hit != status_effect::none && hero.hp > 0 && r.range(1, 100) <= ed.status_chance)
@@ -3067,6 +3236,7 @@ namespace core
                 const combo_def& c = data::combos[int(combo_effect::shock_area)];
                 hero.hp = int16_t(hero.hp - c.hero_value);
                 stage_damage += c.hero_value;
+                log_hit(e.def_id, e.elite, recap_kind::shock, c.hero_value);
                 add_hit(hero.x, hero.y, c.hero_value, true);
                 combo_events = uint8_t(combo_events | (8u << int(combo_effect::shock_area)));
                 push(message().add(c.short_name).add(" -").add(c.hero_value).add(" HP").as(bad));
@@ -3170,6 +3340,7 @@ namespace core
             blast_x = int8_t(x); blast_y = int8_t(y);
             blast_timer = int8_t(data::behavior_blast_delay);
             blast_dmg = int8_t(data::behavior_blast_damage + enemy_dmg_bonus());
+            blast_src = int8_t(&ed - data::enemies);   // podsumowanie: źródło wybuchu
             push(message().add(ed.name).add(": wybuch za ").add(data::behavior_blast_delay - 1).add(" t.! Odejdź").as(bad));
         }
 
@@ -3238,6 +3409,7 @@ namespace core
                     int dmg = taken_damage(r.range(bd.min_damage, bd.max_damage) + enemy_dmg_bonus() + data::slam_damage_bonus - hero_defense() / 2);
                     hero.hp = int16_t(hero.hp - dmg);
                     stage_damage += dmg;
+                    log_hit(enemies[boss].def_id, enemies[boss].elite, recap_kind::slam, dmg);
                     hero_hit = true;
                     add_hit(hero.x, hero.y, dmg, true);
                     push(message().add(bd.slam_name[0] ? bd.slam_name : "Uderzenie").add(": -").add(dmg).add(" HP").as(bad));
@@ -3256,6 +3428,7 @@ namespace core
                     hero.hp = int16_t(hero.hp - dmg);
                     stage_damage += dmg;
                     hero_hit = true;
+                    log_hit(blast_src, -1, dusty ? recap_kind::dust : recap_kind::blast, dmg);
                     add_hit(hero.x, hero.y, dmg, true);
                     if(dusty)
                     {
@@ -3336,6 +3509,7 @@ namespace core
             if(st != status::won) return false;
             ++tier;
             events_seen = 0;   // nowa budowa: wydarzenia od nowa
+            clear_timeline();  // podsumowanie: oś czasu nowej budowy
             for(auto& e : enemies) e = actor();
             hero.hp = hero.max_hp;
             start_stage(first_stage);

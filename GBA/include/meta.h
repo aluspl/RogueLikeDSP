@@ -13,7 +13,8 @@ namespace core
     constexpr int max_respect = 16;
     static_assert(data::classes_count <= max_classes && data::respect_count <= max_respect && data::rewards_count <= 255);
 
-    constexpr char profile_magic[8] = "PBRL010";
+    constexpr char profile_magic[8] = "PBRL011";
+    constexpr char profile_magic_v10[8] = "PBRL010";
     constexpr char profile_magic_v9[8] = "PBRL009";
     constexpr char profile_magic_v8[8] = "PBRL008";
     constexpr char profile_magic_v7[8] = "PBRL007";
@@ -31,6 +32,9 @@ namespace core
     constexpr int profile_v7_size = 124;  // v8 = v7 + Respekt, nagrody za odbiór, wygrane i stawki zawodów 8-11
     constexpr int profile_v8_size = 152;  // v9 = v8 + katalog usterek 16-47 (nowe problemy etapów)
     constexpr int profile_v9_size = 156;  // v10 = v9 + samouczek menu (#25): obejrzane dymki
+    constexpr int profile_v10_size = 160; // v11 = v10 + wyzwania tygodnia (#34) i fabuła odkrywana z budowami (#35)
+    constexpr int weekly_slots = 3;
+    static_assert(data::weekly_history <= weekly_slots && data::story_arc_count <= 32);
     constexpr int daily_slots = 5;
     static_assert(data::daily_history <= daily_slots);
     constexpr int max_keepsakes = 8;
@@ -97,6 +101,13 @@ namespace core
         // --- v10: samouczek menu - obejrzane dymki (bity tutorial_flag) i zawody z nagród, o których już był dymek
         uint16_t tutorial;
         uint16_t classes_seen;
+        // --- v11: wyzwania tygodnia (najlepszy wynik ostatnich tygodni) i fabuła (odblokowane / nieprzeczytane wątki SMS)
+        uint16_t weekly_week[weekly_slots];   // numery tygodni z wynikiem (0 = pusty)
+        uint8_t weekly_won;            // bity: wygrana w tym tygodniu
+        uint8_t weekly_runs;           // rozegrane wyzwania tygodnia (do 255)
+        int32_t weekly_score[weekly_slots];
+        uint32_t story;                // odblokowane wątki (bity data::story_arc)
+        uint32_t story_new;            // jeszcze nieprzeczytane
     };
     static_assert(offsetof(profile, badges) == profile_v2_size);
     static_assert(offsetof(profile, kills_total) == profile_v3_size);
@@ -104,7 +115,8 @@ namespace core
     static_assert(offsetof(profile, brigade) == profile_v5_size);
     static_assert(offsetof(profile, daily_d) == profile_v6_size && offsetof(profile, daily_score) == 104);
     static_assert(offsetof(profile, respect) == profile_v7_size && offsetof(profile, respect_ranks) == 132);
-    static_assert(offsetof(profile, catalog_hi) == profile_v8_size && offsetof(profile, tutorial) == profile_v9_size && sizeof(profile) == 160);
+    static_assert(offsetof(profile, catalog_hi) == profile_v8_size && offsetof(profile, tutorial) == profile_v9_size);
+    static_assert(offsetof(profile, weekly_week) == profile_v10_size && offsetof(profile, weekly_score) == 168 && sizeof(profile) == 188);
 
     // Katalog usterek: rodzaje 0-15 w catalog, 16-47 w catalog_hi.
     inline bool catalog_has(const profile& p, int d) { return d < 16 ? (p.catalog >> d) & 1 : (p.catalog_hi >> (d - 16)) & 1; }
@@ -208,10 +220,20 @@ namespace core
     }
 
     inline void migrate_v10(profile& p);
+    inline void migrate_v11(profile& p);
+    inline int next_unlock(const profile& p, int& kind, int& index);
 
     inline bool profile_fix(profile& p)
     {
         if(std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0) return clamp_levels(p);
+        if(std::memcmp(p.magic, profile_magic_v10, sizeof p.magic) == 0)   // v10 -> v11: wyzwania tygodnia i fabuła od zera
+        {
+            std::memset(reinterpret_cast<char*>(&p) + profile_v10_size, 0, sizeof p - profile_v10_size);
+            std::memcpy(p.magic, profile_magic, sizeof p.magic);
+            clamp_levels(p);
+            migrate_v11(p);
+            return true;
+        }
         bool v9 = std::memcmp(p.magic, profile_magic_v9, sizeof p.magic) == 0;
         if(v9 || std::memcmp(p.magic, profile_magic_v8, sizeof p.magic) == 0)   // v8 -> v9: katalog 16-47 od zera; v9 -> v10: samouczek
         {
@@ -220,6 +242,7 @@ namespace core
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             clamp_levels(p);
             migrate_v10(p);
+            migrate_v11(p);
             return true;
         }
         // v7/v6/v5/v4/v3/v2 -> v9: stare pola zostają, nowe od zera; bez wybranej pamiątki - pierwsza odblokowana
@@ -237,6 +260,7 @@ namespace core
             clamp_levels(p);
             migrate_v8(p);
             migrate_v10(p);
+            migrate_v11(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v1, sizeof p.magic) == 0)
@@ -246,6 +270,7 @@ namespace core
             p.best = best; p.runs = runs; p.wins = wins;
             migrate_v8(p);
             migrate_v10(p);
+            migrate_v11(p);
             return true;
         }
         profile_reset(p);
@@ -837,6 +862,191 @@ namespace core
         return true;
     }
 
+    // ------------------------------------------------------------------ wyzwanie tygodnia (#34)
+    // Tydzień nr 1 zaczyna się w poniedziałek data::weekly_epoch; seed z numeru tygodnia, zasady z listy po kolei.
+    // GBA: data z ekranu budowy dnia (ustawiana ręcznie), Godot: z systemu. Bez Szkoleń i pamiątek - równo dla wszystkich.
+    inline int weekly_number(int y, int m, int d)
+    {
+        const int t = days_from_civil(y, m, d) - days_from_civil(data::weekly_epoch[0], data::weekly_epoch[1], data::weekly_epoch[2]);
+        return imax(1, (t >= 0 ? t / 7 : -((-t + 6) / 7)) + 1);
+    }
+    // Poniedziałek tygodnia (dni od 1970-01-01).
+    inline int weekly_first_day(int week)
+    {
+        return days_from_civil(data::weekly_epoch[0], data::weekly_epoch[1], data::weekly_epoch[2]) + (week - 1) * 7;
+    }
+    inline int weekly_index(int week) { return ((week - 1) % data::weekly_count + data::weekly_count) % data::weekly_count; }
+    inline uint32_t weekly_seed(int week)
+    {
+        uint32_t h = uint32_t(week) * 2246822519u + 0x85EBCA6Bu;
+        h ^= h >> 15; h *= 2654435761u; h ^= h >> 13;
+        return h ? h : 1u;
+    }
+    inline int weekly_rule_value(int wi, weekly_rule w, int fallback)
+    {
+        const weekly_def& wd = data::weekly[wi];
+        for(int i = 0; i < wd.rules_count; ++i) if(wd.rules[i].rule == w) return wd.rules[i].value;
+        return fallback;
+    }
+    // Zawód tygodnia: z zasady albo z seeda (jak budowa dnia).
+    inline int weekly_class(int week) { return weekly_rule_value(weekly_index(week), weekly_rule::cls, daily_class(weekly_seed(week))); }
+    // Premie z zasad (obrażenia %, budżet, HP %) - bez meta-progresji.
+    inline run_mods weekly_mods(int week)
+    {
+        const int wi = weekly_index(week);
+        run_mods m;
+        m.weekly = wi;
+        m.dmg_pct = weekly_rule_value(wi, weekly_rule::dmg_pct, 0);
+        m.cash = weekly_rule_value(wi, weekly_rule::cash, 0);
+        const int hp = data::classes[weekly_class(week)].max_health;
+        m.hp = hp * weekly_rule_value(wi, weekly_rule::hp_pct, 0) / 100;
+        return m;
+    }
+    inline void start_weekly(game& g, int week)
+    {
+        g.new_run(weekly_class(week), weekly_seed(week), data::weekly_difficulty, weekly_mods(week));
+        g.weekly_week = uint16_t(week);
+    }
+    // Najlepszy wynik tygodnia (-1 = brak) i wygrana.
+    inline int weekly_best(const profile& p, int week)
+    {
+        for(int i = 0; i < data::weekly_history; ++i) if(p.weekly_week[i] == week && week > 0) return p.weekly_score[i];
+        return -1;
+    }
+    inline bool weekly_won(const profile& p, int week)
+    {
+        for(int i = 0; i < data::weekly_history; ++i) if(p.weekly_week[i] == week && week > 0) return (p.weekly_won >> i) & 1;
+        return false;
+    }
+    // Wynik wyzwania: najlepszy tygodnia zostaje, nowy tydzień zastępuje najstarszy. true = nowy rekord tygodnia.
+    inline bool record_weekly(profile& p, int week, int score, bool won)
+    {
+        if(p.weekly_runs < 255) ++p.weekly_runs;
+        int slot = -1, oldest = 0;
+        for(int i = 0; i < data::weekly_history; ++i)
+        {
+            if(p.weekly_week[i] == week) { slot = i; break; }
+            if(p.weekly_week[i] < p.weekly_week[oldest]) oldest = i;
+        }
+        if(slot < 0)
+        {
+            slot = oldest;
+            p.weekly_week[slot] = uint16_t(week); p.weekly_score[slot] = score;
+            p.weekly_won = uint8_t((p.weekly_won & ~(1u << slot)) | (won ? 1u << slot : 0u));
+            return true;
+        }
+        if(won) p.weekly_won = uint8_t(p.weekly_won | (1u << slot));
+        if(score <= p.weekly_score[slot]) return false;
+        p.weekly_score[slot] = score;
+        return true;
+    }
+
+    // ------------------------------------------------------------------ fabuła odkrywana z budowami (#35)
+    // Wątek SMS-ów odblokowuje się, gdy warunek jest spełniony (profil po budowie + ta budowa); archiwum w telefonie
+    // profilu (Osiedle -> A = Wiadomości), nowe wątki z kropką aż do przeczytania. g = nullptr: tylko profil (migracja).
+    inline bool story_condition(const profile& p, const game* g, int i)
+    {
+        const story_thread& t = data::story_arc[i];
+        switch(t.trigger)
+        {
+            case story_trigger::runs:    return p.runs >= t.value;
+            case story_trigger::wins:    return p.wins >= t.value;
+            case story_trigger::boss:    return catalog_has(p, t.value);
+            case story_trigger::elite:   return g && g->elites_killed > 0;
+            case story_trigger::secret:  return g && g->secrets_found > 0;
+            case story_trigger::event:
+                if(g) for(int s = 0; s < max_stages; ++s) if(g->stage_event_log[s] != 255) return true;
+                return false;
+            case story_trigger::synergy: return g && g->synergy_mask() != 0;
+            case story_trigger::daily:   return p.daily_runs > 0;
+            case story_trigger::weekly:  return p.weekly_runs > 0;
+            case story_trigger::act0:    return act0_unlocked(p);
+            default:                     return false;
+        }
+    }
+    // Sprawdza wątki (koniec budowy). Zwraca bitmaskę odblokowanych właśnie teraz.
+    inline uint32_t story_check(profile& p, const game* g)
+    {
+        uint32_t got = 0;
+        for(int i = 0; i < data::story_arc_count; ++i)
+            if(! ((p.story >> i) & 1) && story_condition(p, g, i)) got |= 1u << i;
+        p.story |= got;
+        p.story_new |= got;
+        return got;
+    }
+    inline bool story_unlocked(const profile& p, int i) { return (p.story >> i) & 1; }
+    inline bool story_unread(const profile& p, int i) { return (p.story_new >> i) & 1; }
+    inline void story_mark_read(profile& p, int i) { p.story_new &= ~(1u << i); }
+    inline int story_count(const profile& p) { int n = 0; for(int i = 0; i < data::story_arc_count; ++i) n += story_unlocked(p, i); return n; }
+    inline int story_unread_count(const profile& p) { int n = 0; for(int i = 0; i < data::story_arc_count; ++i) n += story_unread(p, i); return n; }
+    // v10 -> v11: wątki za to, co już osiągnięte (liczniki, bossowie z Katalogu, Akt 0) - czekają jako nowe.
+    inline void migrate_v11(profile& p) { p.story = 0; p.story_new = 0; story_check(p, nullptr); }
+
+    // Osiedle rośnie z wygranymi: ile ozdób już stoi (data::estate_decor po progach wygranych).
+    inline int estate_decor(const profile& p)
+    {
+        int n = 0;
+        while(n < data::estate_decor_count && p.wins >= data::estate_decor[n].wins) ++n;
+        return n;
+    }
+
+    // ------------------------------------------------------------------ podsumowanie budowy (#33): rada i najbliższy cel
+    // Rada: pierwsza pasująca z data::recap_tips (co zabiło, niewypita kawa, bez kombinacji, wygrana...).
+    inline int recap_tip_index(const game& g)
+    {
+        const recap_hit& h = g.last_hits[0];
+        const bool dead = g.st == status::dead;
+        for(int i = 0; i < data::recap_tips_count; ++i)
+        {
+            bool ok = false;
+            switch(data::recap_tips[i].when)
+            {
+                case recap_tip::shock:    ok = dead && h.kind == uint8_t(recap_kind::shock); break;
+                case recap_tip::slam:     ok = dead && h.kind == uint8_t(recap_kind::slam); break;
+                case recap_tip::blast:    ok = dead && (h.kind == uint8_t(recap_kind::blast) || h.kind == uint8_t(recap_kind::dust)); break;
+                case recap_tip::coffee:   ok = dead && g.thermos > 0 && ! g.weekly_has(weekly_rule::no_coffee); break;
+                case recap_tip::ranged:   ok = dead && h.kind == uint8_t(recap_kind::ranged); break;
+                case recap_tip::elite:    ok = dead && h.elite >= 0; break;
+                case recap_tip::boss:     ok = dead && h.src >= 0 && data::enemies[h.src].slam; break;
+                case recap_tip::no_combo: ok = g.combos_run == 0; break;
+                case recap_tip::won:      ok = g.st == status::won; break;
+                case recap_tip::any:      ok = true; break;
+                default: break;
+            }
+            if(ok) return i;
+        }
+        return data::recap_tips_count - 1;
+    }
+    // Najbliższy cel: najtańsza ranga Respektu ("Jeszcze 3 Respektu do:" + "Pewna ręka II"); wszystko kupione -
+    // najbliższe Szkolenie za doświadczenie. false = nic nie zostało.
+    inline bool recap_goal(const profile& p, message& lead, message& name)
+    {
+        int best = -1, bc = 0;
+        for(int i = 0; i < data::respect_count; ++i)
+        {
+            const int c = respect_cost(p, i);
+            if(c >= 0 && (best < 0 || c < bc)) { best = i; bc = c; }
+        }
+        if(best >= 0)
+        {
+            if(p.respect >= bc) lead.add("Stać Cię (Respekt):");
+            else lead.add("Jeszcze ").add(bc - int(p.respect)).add(" Respektu do:");
+            name.add(data::respect[best].name).add(" ").add(roman_numeral(respect_rank(p, best) + 1));
+            return true;
+        }
+        int kind = -1, idx = -1;
+        const int cost = next_unlock(p, kind, idx);
+        if(cost < 0) return false;
+        if(p.xp >= cost) lead.add("Stać Cię (Szkolenia):");
+        else lead.add("Jeszcze ").add(cost - p.xp).add(" dośw. do:");
+        if(kind == 0) name.add(data::upgrades[idx].name).add(" ").add(roman_numeral(p.levels[idx] + 1));
+        else if(kind == 1) name.add(data::classes[idx].name);
+        else if(kind == 2) name.add(data::weapons[data::tools[idx].weapon].name);
+        else if(kind == 3) name.add(data::brigade[idx].name);
+        else name.add(data::difficulties[data::difficulties_count - 1].name);
+        return true;
+    }
+
     // ------------------------------------------------------------------ harmonogram domu po wygranej
     // Dni etapu z liczby tur (min + tury / turnsPerDay) i data końca etapu, licząc wstecz od daty odbioru.
     inline int schedule_days(const game& g, int s) { return data::schedule_min_days + g.stage_days[s] / data::schedule_turns_per_day; }
@@ -868,7 +1078,7 @@ namespace core
     // Cały stan gry (game jest trywialnie kopiowalny) za profilem w SRAM. Rozmiar i suma kontrolna
     // odrzucają zapisy uszkodzone i z innej wersji gry.
     static_assert(std::is_trivially_copyable_v<game>);
-    constexpr char run_magic[8] = "PBRUN12";   // 12: wydarzenia z wyborem, ulepszenie narzędzia, magazyn; 11: premie po etapie, elity, kombinacje stanów; 10: Akt 0; 09: 10 etapów, zachowania
+    constexpr char run_magic[8] = "PBRUN13";   // 13: podsumowanie budowy (ciosy, oś czasu), wyzwanie tygodnia; 12: wydarzenia z wyborem, ulepszenie narzędzia, magazyn; 11: premie po etapie, elity, kombinacje stanów; 10: Akt 0; 09: 10 etapów, zachowania
     constexpr int run_save_offset = 256;
     static_assert(sizeof(profile) <= run_save_offset);
 

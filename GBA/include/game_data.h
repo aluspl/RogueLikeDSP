@@ -625,6 +625,69 @@ inline constexpr int chest_mats = 1;
 inline constexpr int chest_cash = 10;
 inline constexpr int chest_gear_min = 1;
 
+inline constexpr const char* recap_kind_names[] = { "cios", "z dystansu", "cios bossa", "wybuch", "mokry + prąd", "wybuch pyłu" };   // = core::recap_kind
+inline constexpr const char* recap_verbs[] = { "Pokonał", "Pokonała", "Pokonało" };   // Pokonał / Pokonała / Pokonało Cię
+inline constexpr core::recap_tip_def recap_tips[] = {   // rada w podsumowaniu: pierwsza pasująca
+    { core::recap_tip::shock, { "Mokry + prąd boli: wyjdź", "z kałuży przed Zwarciem" } },
+    { core::recap_tip::slam, { "Czerwone pola bossa: masz", "2 tury, zejdź po skosie" } },
+    { core::recap_tip::blast, { "Wybuchowy problem: po", "usunięciu odejdź o 2 pola" } },
+    { core::recap_tip::coffee, { "Kawa została w termosie:", "pij przy 40% HP (START)" } },
+    { core::recap_tip::ranged, { "Strzelec trafia w linii:", "podchodź po skosie" } },
+    { core::recap_tip::elite, { "Złota ramka = elita:", "cecha na karcie pod B" } },
+    { core::recap_tip::boss, { "Przed bossem: pełny", "termos i gotowa moc (R)" } },
+    { core::recap_tip::no_combo, { "Mokry + prąd zadaje +3:", "spróbuj premii Przepięcie" } },
+    { core::recap_tip::won, { "Czas na więcej: tryb", "inwestora albo Trudny" } },
+    { core::recap_tip::any, { "Harmonogram ma radę", "kierownika po każdym etapie" } },
+};
+inline constexpr int recap_tips_count = 10;
+
+inline constexpr core::weekly_def weekly[] = {   // wyzwania tygodnia: kolejne tygodnie po kolei z listy
+    { "Tylko Glazurnik, bez kawy", "Glazurnik bez kawy", { "Bez kawy, za to HP +25%.", "Kawa idzie na wynos (zł)" }, { { core::weekly_rule::cls, 5 }, { core::weekly_rule::no_coffee, 0 }, { core::weekly_rule::hp_pct, 25 } }, 3 },
+    { "Elity x2", "Elity x2", { "Dwa razy więcej elit -", "i dwa razy więcej łupów" }, { { core::weekly_rule::elite_pct, 200 }, { core::weekly_rule::cash, 0 }, { core::weekly_rule::cash, 0 } }, 1 },
+    { "Mokry tydzień", "Mokry tydzień", { "Deszcz na każdym etapie:", "kałuże, poślizg, mokro" }, { { core::weekly_rule::weather, 4 }, { core::weekly_rule::cash, 0 }, { core::weekly_rule::cash, 0 } }, 1 },
+    { "Bez Hurtowni, x2 materiały", "Bez Hurtowni", { "Hurtownia zamknięta,", "materiały 2x częściej" }, { { core::weekly_rule::no_shop, 0 }, { core::weekly_rule::mats_pct, 100 }, { core::weekly_rule::cash, 0 } }, 2 },
+    { "Szklany kask", "Szklany kask", { "HP -50%, ale Twoje", "ciosy +15%" }, { { core::weekly_rule::hp_pct, -50 }, { core::weekly_rule::dmg_pct, 15 }, { core::weekly_rule::cash, 0 } }, 2 },
+    { "Kierownik na placu", "Tylko Kierownik", { "Tylko Kierownik, więcej", "elit, HP -25%" }, { { core::weekly_rule::cls, 0 }, { core::weekly_rule::elite_pct, 175 }, { core::weekly_rule::hp_pct, -25 } }, 3 },
+};
+inline constexpr int weekly_count = 6;
+inline constexpr int weekly_epoch[] = { 2026, 1, 5 };   // tydzień nr 1 (poniedziałek)
+inline constexpr int weekly_difficulty = 1;
+inline constexpr int weekly_history = 3;
+inline constexpr int weekly_coffee_cash = 5;
+
+inline constexpr core::story_thread story_arc[] = {   // fabuła odkrywana z budowami: wątki SMS-ów (archiwum Wiadomości)
+    { "Pierwsza budowa", "Rozegraj 1 budowę", core::story_trigger::runs, 1, { { "Kierownik Marek", { "Pierwsza budowa za nami.", "Notuję w PlanBudowlany,", "co poszło nie tak." } }, { "Anna Nowak", { "A ja notuję, kto wypił", "moją kawę z termosu.", "Marek, patrzę na Ciebie." } } }, 2 },
+    { "Złota ramka", "Usuń elitę", core::story_trigger::elite, 0, { { "Kierownik Marek", { "Ten problem miał złotą", "ramkę. Takie to elity -", "trudniejsze, ale płacą." } }, { "", { "", "", "" } } }, 1 },
+    { "Betoniarka", "Pokonaj Zepsutą Betoniarkę", core::story_trigger::boss, 9, { { "Sąsiad Zenek", { "Słyszałem huk. To moja", "stara betoniarka? Nie", "płaczę. No, trochę." } }, { "Kierownik Marek", { "Stan surowy bez niej", "idzie szybciej. Zenek,", "kupisz nową w Hurtowni." } } }, 2 },
+    { "Stary magazyn", "Otwórz ukryty magazyn", core::story_trigger::secret, 0, { { "Sąsiad Zenek", { "Znalazłeś mój magazyn?", "Bierz, co chcesz. Tylko", "oddaj taczkę z 1998." } }, { "", { "", "", "" } } }, 1 },
+    { "Szybka decyzja", "Odpowiedz na SMS na placu", core::story_trigger::event, 0, { { "Kierownik Marek", { "Na placu co chwilę coś.", "Odpisuj szybko, ale", "czytaj drobny druk!" } }, { "", { "", "", "" } } }, 1 },
+    { "Synergia", "Połącz premie w synergię", core::story_trigger::synergy, 0, { { "Anna Nowak", { "Marek mówi, że premie", "się łączą. Jak my dwoje", "z kredytem. Brawo!" } }, { "", { "", "", "" } } }, 1 },
+    { "Po burzy", "Pokonaj Nawałnicę", core::story_trigger::boss, 10, { { "Anna Nowak", { "Po Nawałnicy dach suchy!", "Dzieci pytają, czy mogą", "już malować pokoje." } }, { "Kierownik Marek", { "Mogą. Ale najpierw", "tynki. I okna. I drzwi.", "Pędzle trzymam u siebie." } } }, 2 },
+    { "Protokół", "Pokonaj Inspekcję Pracy", core::story_trigger::boss, 11, { { "Kierownik Marek", { "Inspekcja: bez uwag!", "Pierwszy raz w mojej", "karierze. Oprawię to." } }, { "", { "", "", "" } } }, 1 },
+    { "Klucze", "Wygraj budowę", core::story_trigger::wins, 1, { { "Anna Nowak", { "Pierwsza noc w nowym", "domu! Cisza, ciepło,", "nic nie cieknie." } }, { "Sąsiad Zenek", { "Sąsiad Zenek. Też chcę", "taki dom. Masz wolny", "termin? Mam działkę obok." } } }, 2 },
+    { "Na czas", "Pokonaj Termin", core::story_trigger::boss, 8, { { "Anna Nowak", { "Termin pokonany! W", "harmonogramie wszystko", "na zielono. Pierwszy raz!" } }, { "", { "", "", "" } } }, 1 },
+    { "Stała ekipa", "Rozegraj 5 budów", core::story_trigger::runs, 5, { { "Kierownik Marek", { "5 budów. Ekipa zna", "już Twoje tempo. Kawa", "stoi gotowa o 6:00." } }, { "", { "", "", "" } } }, 1 },
+    { "Osiedle rośnie", "Wygraj 3 budowy", core::story_trigger::wins, 3, { { "Sąsiad Zenek", { "Na ulicy już 3 domy.", "Robi się osiedle! Stawiam", "ławkę pod lipą." } }, { "Anna Nowak", { "Zenek postawił ławkę.", "W sobotę grill dla", "całej ekipy!" } } }, 2 },
+    { "Budowa dnia", "Zagraj budowę dnia", core::story_trigger::daily, 0, { { "Kierownik Marek", { "Budowa dnia jest jak", "poranna odprawa: ta sama", "dla każdej ekipy." } }, { "", { "", "", "" } } }, 1 },
+    { "Zasady tygodnia", "Zagraj wyzwanie tygodnia", core::story_trigger::weekly, 0, { { "Inwestorka Ewa", { "Tu Ewa, inwestorka.", "Co tydzień nowe zasady.", "Zobaczymy, kto da radę." } }, { "", { "", "", "" } } }, 1 },
+    { "Papierologia", "Odblokuj Akt 0", core::story_trigger::act0, 0, { { "Inwestorka Ewa", { "Nowa działka, nowe", "papiery. Akt 0 czeka.", "Pieczątki w dłoń!" } }, { "", { "", "", "" } } }, 1 },
+    { "Odwołanie", "Pokonaj Decyzję odmowną", core::story_trigger::boss, 40, { { "Kierownik Marek", { "Decyzja odmowna?", "Odwołanie wygrane!", "Urzędnik aż wstał." } }, { "", { "", "", "" } } }, 1 },
+    { "Dziesiąta budowa", "Rozegraj 10 budów", core::story_trigger::runs, 10, { { "Anna Nowak", { "10 budów! Marek robi", "z Twoich notatek plan", "w aplikacji dla innych." } }, { "", { "", "", "" } } }, 1 },
+    { "Nasze osiedle", "Wygraj 5 budów", core::story_trigger::wins, 5, { { "Inwestorka Ewa", { "5 domów, jedno osiedle.", "Chcę tu plac zabaw.", "Budżet? Znajdzie się." } }, { "Anna Nowak", { "Plac zabaw! Dzieci już", "rysują plan. Na kartce,", "ale z harmonogramem." } } }, 2 },
+    { "Dom za domem", "Wygraj 10 budów", core::story_trigger::wins, 10, { { "Kierownik Marek", { "10 odbiorów. Plan", "pokonał chaos. Dzięki", "- bez Ciebie ani rusz." } }, { "Anna Nowak", { "Ulica ma nazwę: Planowa.", "Tabliczkę wieszamy", "w sobotę. Przyjdź!" } } }, 2 },
+};
+inline constexpr int story_arc_count = 19;
+
+inline constexpr core::decor_def estate_decor[] = {   // ozdoby Osiedla (klatki w houses.bmp za pustą działką)
+    { "Lipa", 1 },
+    { "Ławka Zenka", 3 },
+    { "Latarnia", 4 },
+    { "Plac zabaw", 5 },
+    { "Tablica PlanBudowlany", 8 },
+    { "Fontanna", 10 },
+};
+inline constexpr int estate_decor_count = 6;
+
 inline constexpr const char* version = "v0.21.50";   // numer wersji (ekran tytułowy, changelog)
 
 inline constexpr const char* damage_help[] = {   // Jak grać: obrażenia broni w prostych słowach (rozpiska #26)
