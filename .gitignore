@@ -31,3 +31,7 @@ GBA/scn*.elf
 GBA/build_scn*/
 .claude/
 __pycache__/
+
+# macOS
+.DS_Store
+**/.DS_Store
