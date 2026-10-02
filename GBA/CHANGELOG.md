@@ -9,6 +9,8 @@ Poprawki po graniu na iPhonie (pion) – czytelniejsza mapa i sterowanie „nie 
 2. **Błoto (#37)** – dwa razy rzadziej i jako płaska mokra plama, nie ciemna dziura.
 3. **Spójne sterowanie i blokada wejścia (#38)** – A / „Wybierz” zawsze po prawej, B / „Wróć” po lewej, chwila
    blokady po otwarciu okna, nieodwracalne wybory przez zaznaczenie.
+4. **Sekretne zlecenia (#39, cz. 2)** – 8 ukrytych celów profilu („???” z podpowiedzią), za nie 3 ukryte zawody
+   (Spawacz, Geodeta, Majster), 2 bronie, 2 wyglądy i ranga Respektu.
 
 ### Nowe
 - **Autokafle ścian (#36):** widok 3/4 ze światłem z lewej góry. Pole muru z murem poniżej to ciemny **wierzch masy
@@ -40,6 +42,42 @@ Poprawki po graniu na iPhonie (pion) – czytelniejsza mapa i sterowanie „nie 
 - **HUD (Godot, pion):** gdy „Etap 2/10: Izolacja fundamentów” nie mieści się w pierwszym rzędzie, jest „Etap 2/10,
   Normalny”, a pełna nazwa etapu w drugim rzędzie po prawej (mierzona po ikonach; pastylka wydarzenia tylko, gdy
   starczy miejsca, ostrzeżenie bossa skraca się do „Cios za N!”).
+
+### Nowe – cz. 2: sekretne zlecenia (#39)
+- **8 sekretnych zleceń** (sekcja `secrets` w `data/game.json`): w profilu (Odznaki > A na GBA, Spacja w Godocie) strona
+  **Sekrety** – niewykonane jako „???” z podpowiedzią, wykonane z warunkiem i nagrodą (ikona / portret). Sprawdzane po
+  etapie, po porzuceniu i na końcu budowy; baner „Sekretne zlecenie!” w złotej ramce (kolejka końca budowy do 8 banerów:
+  nagroda, sekrety, odznaki, zlecenia, fabuła) i dymek „Nowość” na tytule z treścią sekretu.
+
+  | Podpowiedź | Warunek | Nagroda |
+  |---|---|---|
+  | Bez kofeiny też się da | wygraj bez picia kawy | zawód **Spawacz** |
+  | Szef tylko dzwoni | Termin pokonany przez brygadę | narzędzie **Młot Zenka** |
+  | Szczur magazynowy | 5 magazynów w serii budów | narzędzie **Poziomica mistrza** |
+  | Każdy fach się przyda | wygraj każdym z 9 zawodów | zawód **Majster** |
+  | Papierologia? Nie tym razem | Akt 0 bez ciosu od papierów | zawód **Geodeta** |
+  | Mokra robota | 20x mokry + prąd w jednej budowie | wygląd **Złota kielnia** |
+  | Na styk | wygraj z 1–3 HP | wygląd **Kask w paski** |
+  | Szybka ekipa | wygraj w 150 dni (bez Aktu 0) | Respekt **Zaprawiony w boju** |
+
+- **Nowe zawody:** **Spawacz** (Spawarka, iskra; moc **Spaw** – iskry w linii i dym), **Geodeta** (Tyczka geodezyjna;
+  widzi cały plac od startu etapu, moc **Tyczenie** – oznaczony cel dostaje mocniejsze ciosy i jest ogłuszony, znak
+  nad celem), **Majster** „złota rączka” (Młotek; moc **Złota rączka** – co etap moc innego fachu, ikona w HUD).
+  Na wyborze zawodu i w Zespole zablokowane jako „Sekret” z podpowiedzią. Pixel art klatek 127–135 (z chodem
+  i oddechem), sylwetki.
+- **Bronie:** **Młot Zenka** (4–7, cios odpycha problem) i **Poziomica mistrza** (2–5, zasięg 3, kryt +10%, magazyny
+  i skrzynie widać na podglądzie mapy) – w dropach dopiero po sekrecie, poza Szkoleniami.
+- **Wygląd:** **Złota kielnia** – złoty błysk broni przy krycie; **Kask w paski** – biało-czerwony kask bohatera
+  i portretów 12 zawodów (klatki 136–159), włączany na wyborze zawodu (SELECT: Wygląd, Godot: Tryb inwestora).
+- **Respekt Zaprawiony w boju** – kawa w termosie na start budowy; na liście Respektu zablokowany do sekretu.
+- Liczniki budowy dla sekretów (wypite kawy, mokry + prąd, ciosy papierów w Akcie 0, boss od brygady). Odznaka Pełny
+  zespół, zlecenia i budowa dnia liczą tylko 9 zwykłych zawodów; sekretne narzędzia nie liczą się do Kolekcjonera.
+- **Profil v12** (196 B): sekrety, nieogłoszone sekrety, wygląd, Respekt 16–18. Migracja z v11 – sekret „Każdy fach”
+  od razu, jeśli w profilu są już wygrane każdym zawodem (dymek jak przy nowym). Zapis budowy **PBRUN14** (nowe liczniki
+  i zawody) – przerwana budowa z v0.21.50 / v0.21.51 cz. 1 się nie wznowi.
+- „Jak grać”: GBA strona 15 „Sekrety”, Godot strona 8 (sekcja `secretsHelp`). Scenariusze 61–67 (dymek Nowość,
+  strona Sekrety, nowe zawody, moc Majstra, kask w paski, Poziomica na mapie, 1 HP + awans).
+- Balans nowych zawodów (bot, Normalny, bez meta): Spawacz 35%, Geodeta 36%, Majster 23%.
 
 ### Balans
 Rzadsze błoto ledwie rusza bota (omija je i tak): wyniki w granicach szumu.
@@ -79,9 +117,8 @@ Kierownik na placu 32%.
   sprite'ów, kafli i stosu. Opis w README.
 
 ### Zmiany
-- Zapis budowy i profil bez zmian (PBRUN13, profil v11) – przerwana budowa z v0.21.50 wznowi się (błoto na etapie
-  aktu I może leżeć gdzie indziej).
-- Test złoty (Godot) z migawki v0.21.51.
+- Cz. 1 nie zmieniała zapisów; cz. 2: profil v12 z migracją, zapis budowy PBRUN14 (patrz wyżej).
+- Test złoty (Godot) z migawki v0.21.51 cz. 2 (55 przebiegów).
 
 
 ### Godot (cz. 2: sekretne zlecenia, mgła, test małpy)
