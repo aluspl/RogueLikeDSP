@@ -17,7 +17,7 @@ namespace LifeLike.Game.Phone;
 /// zamiast podpowiedzi klawiszy są przyciski strony (PhonePage.Actions) i krzyżyk w nagłówku.
 /// Akcje w telefonie są poza czasem gry.
 /// </summary>
-public partial class PhoneView : Control
+public partial class PhoneView : Control, Touch.ITapTargets
 {
     public const int W = 256, H = 348;
     private const int Bezel = 5, StatusH = 14, HeaderH = 24, TabH = 36;
@@ -192,6 +192,18 @@ public partial class PhoneView : Control
             default:
                 return false;
         }
+    }
+
+    public void TapTargets(System.Collections.Generic.List<Rect2> into)
+    {
+        if (!IsOpen) return;
+        if (Layout.Touch && Closable) into.Add(_close);
+        foreach (var (rect, _) in _buttons) into.Add(rect);
+        if (HasTabs)
+        {
+            for (var i = 0; i < 5; i++) into.Add(new Rect2(_tabBar.Position.X + i * _tabBar.Size.X / 5f, _tabBar.Position.Y, _tabBar.Size.X / 5f, _tabBar.Size.Y));
+        }
+        foreach (var (rect, _) in _hits) into.Add(rect);
     }
 
     private bool Tap(Vector2 p)

@@ -27,7 +27,7 @@ public static class DemoProfile
         p.Houses[2] = 0x34;
         Meta.CheckContracts(d, p);
         var craft = Array.FindIndex(d.Upgrades, u => u.Effect == UpgradeEffect.Craft);
-        if (craft >= 0) p.Levels[craft] = 2;
+        if (craft >= 0) p.Levels[craft] = (byte)Math.Min(2, d.Upgrades[craft].Levels); // Warsztaty mają dziś 1 poziom
         var kielnia = Array.FindIndex(d.Keepsakes, k => k.Effect == PerkEffect.Luck);
         if (kielnia >= 0)
         {

@@ -90,7 +90,7 @@ public sealed class TitleScreen : Screen
         {
             if (N.TitleView.LinkAt(e.Pointer))
             {
-                OS.ShellOpen(SettingsPage.Url);
+                LifeLike.Game.Session.ExternalLinks.Open(SettingsPage.Url);
                 return true;
             }
             var i = N.TitleView.ItemAt(e.Pointer);

@@ -15,7 +15,7 @@ namespace LifeLike.Game.Screens.Views;
 /// marki, zablokowane jako sylwetki z kłódką i ceną. Pod spodem karta: nazwa, moc z ikoną i opisem, narzędzie ze
 /// statystyką, paski statystyk z premią Szkoleń, trudność (↑/↓) i pamiątka (Q/E), uprawnienia z odznak.
 /// </summary>
-public partial class ClassSelectView : Control
+public partial class ClassSelectView : Control, Touch.ITapTargets
 {
     private GameData _d;
     private Profile _p;
@@ -76,6 +76,11 @@ public partial class ClassSelectView : Control
     {
         if (id is "new" or "class") id = "class";
         return _coach.TryGetValue(id, out var r) ? r : _coach.TryGetValue("class", out var c) ? c : new Rect2();
+    }
+
+    public void TapTargets(List<Rect2> into)
+    {
+        foreach (var (r, _, _) in _hits) into.Add(r);
     }
 
     public (ClassSelectHit Hit, int Arg) HitAt(Vector2 p)

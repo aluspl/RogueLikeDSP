@@ -37,7 +37,7 @@ public sealed class HouseScheduleScreen : Screen
         if (e.Is(GameAction.Select))
         {
             LinkOpened++;
-            if (OpenBrowser) OS.ShellOpen(SettingsPage.Url);
+            if (OpenBrowser) LifeLike.Game.Session.ExternalLinks.Open(SettingsPage.Url);
             return true;
         }
         if (!e.IsConfirm && !e.IsBack) return false;

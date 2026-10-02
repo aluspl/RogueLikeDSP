@@ -10,7 +10,7 @@ namespace LifeLike.Game.Guide;
 /// karta w stylu powiadomienia PlanBudowlany podpisana przez Kierownika Marka (awatar, tytuł, 3 linie, licznik kroków)
 /// i przyciski Pomiń / (Statystyki) / Dalej. Rysuje tylko to, co ustawi Coach; prostokąty przycisków do dotyku.
 /// </summary>
-public partial class CoachView : Control
+public partial class CoachView : Control, Touch.ITapTargets
 {
     public Rect2 Hole { get; set; }
     public string Title { get; set; } = "";
@@ -42,6 +42,11 @@ public partial class CoachView : Control
         if (!Visible) return;
         _clock += (float)delta;
         QueueRedraw();
+    }
+
+    public void TapTargets(List<Rect2> into)
+    {
+        foreach (var (r, _) in _hits) into.Add(r);
     }
 
     public CoachHit HitAt(Vector2 p)

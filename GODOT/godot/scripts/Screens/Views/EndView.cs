@@ -8,7 +8,7 @@ namespace LifeLike.Game.Screens.Views;
 /// Ekran końcowy jak na GBA: gradient fioletu, plansza z kodem QR do planbudowlany.online (ui/end.png w 2x),
 /// wynik budowy, doświadczenie i rekord; przy odbiorze sypie się konfetti.
 /// </summary>
-public partial class EndView : Control
+public partial class EndView : Control, Touch.ITapTargets
 {
     public bool Won { get; set; }
     /// <summary>Przycisk „Kolejna budowa (NG+)” (nie po codziennej budowie).</summary>
@@ -21,6 +21,12 @@ public partial class EndView : Control
     private Rect2 _next, _menu;
 
     /// <summary>Przycisk pod punktem: 1 = kolejna budowa (NG+), 2 = menu, 0 = nic.</summary>
+    public void TapTargets(System.Collections.Generic.List<Rect2> into)
+    {
+        if (CanContinue) into.Add(_next);
+        into.Add(_menu);
+    }
+
     public int ButtonAt(Vector2 p) => CanContinue && _next.HasPoint(p) ? 1 : _menu.HasPoint(p) ? 2 : 0;
     private readonly List<Vector4> _confetti = new(); // x, y, prędkość, klatka
     private readonly RandomNumberGenerator _rnd = new();

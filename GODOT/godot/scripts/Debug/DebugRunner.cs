@@ -12,6 +12,12 @@ public static class DebugRunner
     /// <summary>true = uruchomiono tryb testowy (gra nie pokazuje tytułu).</summary>
     public static bool TryStart(App app, LaunchOptions opts)
     {
+        LifeLike.Game.Session.ExternalLinks.Enabled = !opts.Harness;
+        if (opts.Monkey)
+        {
+            new MonkeyTest(app, opts.MonkeySeed, opts.MonkeySteps).Run();
+            return true;
+        }
         if (opts.Smoke)
         {
             new SmokeTest(app).Run();

@@ -11,7 +11,7 @@ namespace LifeLike.Game.Touch;
 /// szara z odliczaniem albo pulsująca, gdy gotowa), Termos (liczba kaw), Czekaj (klepsydra), Telefon. Dla prawej
 /// ręki Atak jest najbliżej kciuka (prawa krawędź), dla lewej - odwrotnie. Nad paskiem domowym (bezpieczny obszar).
 /// </summary>
-public partial class ActionBar : Control
+public partial class ActionBar : Control, ITapTargets
 {
     private static readonly BarButton[] RightHand = [BarButton.Phone, BarButton.Wait, BarButton.Thermos, BarButton.Ability, BarButton.Attack];
     private static readonly BarButton[] LeftHand = [BarButton.Attack, BarButton.Ability, BarButton.Thermos, BarButton.Wait, BarButton.Phone];
@@ -40,6 +40,11 @@ public partial class ActionBar : Control
         if (!IsVisibleInTree()) return;
         _clock += (float)delta;
         QueueRedraw();
+    }
+
+    public void TapTargets(System.Collections.Generic.List<Rect2> into)
+    {
+        for (var i = 0; i < Order.Length; i++) into.Add(ButtonRect(i));
     }
 
     public static Rect2 ButtonRect(int slot)

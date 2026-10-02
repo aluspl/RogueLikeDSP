@@ -136,7 +136,7 @@ public sealed class SettingsPage : PhonePage
                 Change(row, cur >= GameSettings.VolumeSteps ? -GameSettings.VolumeSteps : 1); // Spacja: +1, po maksimum od zera
                 return;
             case SettingsRow.Link:
-                OS.ShellOpen(Url);
+                LifeLike.Game.Session.ExternalLinks.Open(Url);
                 return;
             case SettingsRow.Abandon when !_confirm:
                 _confirm = true;

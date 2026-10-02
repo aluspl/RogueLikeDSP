@@ -11,7 +11,7 @@ namespace LifeLike.Game.Screens.Views;
 /// najpierw „Kontynuuj budowę”), link planbudowlany.online. Pionowo (telefon) menu to duże przyciski pod logo.
 /// Prostokąty przycisków i linku są zapamiętywane do dotyku / kliknięcia.
 /// </summary>
-public partial class TitleView : Control
+public partial class TitleView : Control, Touch.ITapTargets
 {
     public const string Link = "planbudowlany.online";
 
@@ -49,6 +49,12 @@ public partial class TitleView : Control
             if (_items[i].Grow(2).HasPoint(p)) return i;
         }
         return -1;
+    }
+
+    public void TapTargets(List<Rect2> into)
+    {
+        into.AddRange(_items);
+        into.Add(_link);
     }
 
     public bool LinkAt(Vector2 p) => _link.Grow(4).HasPoint(p);
