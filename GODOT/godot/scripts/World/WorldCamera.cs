@@ -73,6 +73,8 @@ public partial class WorldCamera : Camera2D
             return;
         }
         var r = ExploredBounds(g);
+        if (g.HasSecret && g.Weapon.Reveal && !g.SecretOpen) // Poziomica mistrza: magazyn też w kadrze
+            r = r.Merge(new Rect2((g.SecretX - 1) * Cell, (g.SecretY - 2) * Cell, 3 * Cell, 3 * Cell));
         var room = Layout.UiSize - new Vector2(24, TopUsed + BottomUsed + 16);
         var z = Mathf.Min(room.X / r.Size.X, room.Y / r.Size.Y);
         Zoom = Vector2.One * Mathf.Clamp(z, 0.2f, Layout.WorldZoom);

@@ -1,4 +1,5 @@
 using System;
+using Godot;
 using LifeLike.Core;
 using LifeLike.Core.Data;
 using LifeLike.Game.Audio;
@@ -11,6 +12,7 @@ namespace LifeLike.Game.Phone.Pages;
 /// Tryb inwestora (run_investor na GBA): modyfikatory trudności po pierwszej wygranej - lista z pastylką stawki
 /// (zielona „WŁ” = włączony), opis zaznaczonego, suma: stawka, premia doświadczenia i rekord stawki zawodu.
 /// Spacja / dotknięcie zaznaczonego włącza i wyłącza (zapis profilu od razu), Esc wraca do wyboru zawodu.
+/// v0.21.51 cz. 2: za modyfikatorami wiersz wyglądu „Kask w paski” (po sekretnym zleceniu Na styk; tylko wygląd).
 /// </summary>
 public sealed class InvestorPage : PhonePage
 {
@@ -40,9 +42,15 @@ public sealed class InvestorPage : PhonePage
         set => _list.Sel = value;
     }
 
+    /// <summary>Wiersz wyglądu „Kask w paski” (odblokowany sekretnym zleceniem).</summary>
+    private bool Stripes => _d.CosmeticStripes >= 0 && Secrets.CosmeticUnlocked(_d, _p, _d.CosmeticStripes);
+
+    private int Rows => _d.Investor.Length + (Stripes ? 1 : 0);
+
     public void Toggle()
     {
-        Meta.ToggleInvestor(_p, _list.Sel);
+        if (_list.Sel >= _d.Investor.Length) Secrets.ToggleCosmetic(_d, _p, _d.CosmeticStripes);
+        else Meta.ToggleInvestor(_p, _list.Sel);
         _saved?.Invoke();
         Sfx.Play("buy");
         Redraw();
@@ -60,7 +68,7 @@ public sealed class InvestorPage : PhonePage
         var v = e.VDir;
         if (v != 0)
         {
-            _list.Move(v, _d.Investor.Length, _d.Investor.Length);
+            _list.Move(v, Rows, Rows);
             Sfx.Play("menu");
             return true;
         }
@@ -73,13 +81,26 @@ public sealed class InvestorPage : PhonePage
     {
         var n = _d.Investor.Length;
         var mask = Meta.InvestorMask(_d, _p);
-        _list.Clamp(n, n);
+        _list.Clamp(Rows, Rows);
         var y = p.Section(p.Top, "MODYFIKATORY", "za doświadczenie");
-        var card = p.Card(y, n);
+        var card = p.Card(y, Rows);
         var tx = p.TextX(card);
         var right = card.End.X - 6;
-        for (var i = 0; i < n; i++)
+        for (var i = 0; i < Rows; i++)
         {
+            if (i >= n) // wygląd: kask w paski
+            {
+                var son = Secrets.CosmeticOn(_d, _p, _d.CosmeticStripes);
+                var ssel = i == _list.Sel;
+                var sy = p.RowY(card, i);
+                if (ssel) p.Selected(card, i);
+                else p.Divider(card, i);
+                p.HitRow(card, i, i);
+                var spw = p.Pill(right, sy, son ? "WŁ" : "Wygląd", son ? PillKind.Done : PillKind.Gray);
+                p.Icon(Assets.UiMenu, Assets.MenuStripes, Assets.Icon, new Vector2(tx - 2, sy + (PhonePainter.RowH - 16) / 2f));
+                p.Text(tx + 18, sy, _d.Cosmetics[_d.CosmeticStripes].Name, ssel ? Ink.Brand : son ? Ink.Dark : Ink.Dim, TextAlign.Left, right - spw - 4 - tx - 18);
+                continue;
+            }
             var m = _d.Investor[i];
             var on = ((mask >> i) & 1) != 0;
             var sel = i == _list.Sel;
@@ -91,9 +112,10 @@ public sealed class InvestorPage : PhonePage
             var pw = p.Pill(right, ry, on ? $"WŁ +{m.Stake}" : $"+{m.Stake}", on ? PillKind.Done : PillKind.Gray);
             p.Text(tx, ry, m.Name, sel ? Ink.Brand : on ? Ink.Dark : Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
         }
-        var cur = _d.Investor[_list.Sel];
         var dc = p.Card(card.End.Y + 6, 3);
-        p.Text(tx, p.RowY(dc, 0), $"{cur.Desc}, dośw. +{cur.XpPct}%", Ink.Dim, TextAlign.Left, right - tx);
+        var desc = _list.Sel >= n ? "Wygląd: " + _d.Cosmetics[_d.CosmeticStripes].Desc
+                 : $"{_d.Investor[_list.Sel].Desc}, dośw. +{_d.Investor[_list.Sel].XpPct}%";
+        p.Text(tx, p.RowY(dc, 0), desc, Ink.Dim, TextAlign.Left, right - tx);
         p.Divider(dc, 1);
         p.Text(tx, p.RowY(dc, 1), $"Stawka {Investor.Stake(_d, mask)}, doświadczenie +{Investor.Xp(_d, mask)}%", Ink.Dark, TextAlign.Left, right - tx);
         p.Divider(dc, 2);

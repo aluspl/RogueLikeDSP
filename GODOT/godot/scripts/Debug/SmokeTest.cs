@@ -22,6 +22,7 @@ namespace LifeLike.Game.Debug;
 /// </summary>
 public sealed class SmokeTest
 {
+    private string _secrets = "-";
     private readonly App _app;
     private int _steps, _offers, _drinks, _holds, _weathers, _helpers, _repairs, _levelUps;
     private int _pathWanted = -1;
@@ -74,6 +75,9 @@ public sealed class SmokeTest
             await ExerciseDaily();
             await ExerciseWeeklyAndStory();
             await ExerciseRespectAndRewards();
+            var secrets = new SmokeSecrets(_app);
+            await secrets.Run();
+            _secrets = $"{secrets.Done} wykonane, banery {secrets.Banners}, zawody {secrets.Classes}";
             await ExerciseStatsAndHelp();
             await ExerciseDamageRun();
             await ExerciseExtras();
@@ -86,7 +90,7 @@ public sealed class SmokeTest
             if (DrawErrors.Count > 0) throw new Exception($"błędy rysowania: {DrawErrors.Count}, ostatni: {DrawErrors.Last}");
             GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {s.Data.Version}, zawody {s.Data.Classes.Length}, etap {stage + 1}, " +
                      $"dzień {g.Turns}, HP {g.Hero.Hp}/{g.Hero.MaxHp}, wynik {g.Score}, budżet {g.Cash}, kroki {_steps}, " +
-                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, tydzień {(_weekly ? "tak" : "nie")}, podsumowanie {_recapRows} wierszy, fabuła {_story} wątków, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, rozpiska obrażeń {(_damage ? "tak" : "nie")}, samouczek {_tutorial} dymków + nowości {_unlocks}, Akt 0 {(_act0 ? "tak" : "nie")} (dokumenty {_docs}, druga faza {_phases}), premie {_boons} (lista {_boonList}, synergie {g.SynergyMask()}, blokada wejścia {(_inputLock ? "tak" : "nie")}), wydarzenia {_events} (ekran {(_extras ? "tak" : "nie")}), Jak grać {(_help ? "tak" : "nie")}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
+                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, tydzień {(_weekly ? "tak" : "nie")}, podsumowanie {_recapRows} wierszy, fabuła {_story} wątków, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, rozpiska obrażeń {(_damage ? "tak" : "nie")}, samouczek {_tutorial} dymków + nowości {_unlocks}, Akt 0 {(_act0 ? "tak" : "nie")} (dokumenty {_docs}, druga faza {_phases}), premie {_boons} (lista {_boonList}, synergie {g.SynergyMask()}, blokada wejścia {(_inputLock ? "tak" : "nie")}), wydarzenia {_events} (ekran {(_extras ? "tak" : "nie")}), Jak grać {(_help ? "tak" : "nie")}, sekrety {_secrets}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
                      $"ekran {Flow.Current.GetType().Name}");
             _app.Root.GetTree().Quit(ok ? 0 : 1);
         }
@@ -1042,12 +1046,12 @@ public sealed class SmokeTest
         if (Flow.Current != Flow.ClassSelect) throw new Exception("statystyki: B nie wraca na wybór zawodu");
         _stats = true;
         Flow.Help.Open(true, true);
-        for (var k = 0; k < 7; k++) // 7 stron: v0.21.50 cz. 4 - po budowie, tydzień, fabuła
+        for (var k = 0; k < 8; k++) // 8 stron: v0.21.50 cz. 4 - po budowie, tydzień, fabuła; v0.21.51 cz. 2 - sekrety
         {
             await DebugRunner.Frames(_app.Root, 1);
             Flow.Help.HandleInput(InputCmd.Of(GameAction.A));
         }
-        if (Flow.Current != Flow.Title) throw new Exception("Jak grać: po 7 stronach brak powrotu na tytuł");
+        if (Flow.Current != Flow.Title) throw new Exception("Jak grać: po 8 stronach brak powrotu na tytuł");
         _help = true;
     }
 

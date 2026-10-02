@@ -45,7 +45,7 @@ public static class UiText
     public static string AbilityLabel(CoreGame g)
     {
         var r = g.AbilityRank();
-        return g.CDef.AbilityName + (r > 1 ? " " + Roman(r - 1) : "");
+        return g.PDef.AbilityName + (r > 1 ? " " + Roman(r - 1) : "");
     }
 
     public static readonly StatusEffect[] HudStatuses = [StatusEffect.Poison, StatusEffect.Shock, StatusEffect.Slip];

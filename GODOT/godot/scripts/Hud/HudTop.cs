@@ -134,7 +134,7 @@ public partial class HudTop : Control
         // moc zawodu: ikona szara z odliczaniem albo pulsująca z „R”
         var ready = g.AbilityCd == 0;
         var bob = ready && ((int)(_clock * 4) & 1) == 1 ? -1 : 0;
-        Assets.DrawFrame(this, ready ? Assets.UiAbility : Assets.UiAbilityGray, g.Cls, Assets.Icon, new Vector2(x, 20 + bob));
+        Assets.DrawFrame(this, ready ? Assets.UiAbility : Assets.UiAbilityGray, g.PowerCls(), Assets.Icon, new Vector2(x, 20 + bob));
         x += 18;
         if (!ready) x += f.Draw(this, new Vector2(x, 19), g.AbilityCd.ToString(), Ink.MapDim) + 8;
         else if (((int)(_clock * 2) & 1) == 0) x += f.Draw(this, new Vector2(x, 19), "R", Ink.MapGood) + 8;

@@ -168,14 +168,16 @@ public sealed class Coach
     private void Show()
     {
         var s = _mode == 1 ? D.TutorialSteps[_steps[_k]] : D.TutorialUnlocks[_unlock];
+        var secret = _mode == 2 && _unlock == TutorialUnlock.Secret && _cls >= 0 && _cls < D.Secrets.Length;
+        var msg = secret ? D.Secrets[_cls].News : s.Msg; // v0.21.51 cz. 2: co wykonano i jaka nagroda
         V.Title = s.Title;
-        V.From = s.Msg.From;
-        V.Lines = Array.ConvertAll(s.Msg.Lines, ButtonNames.Localize);
+        V.From = msg.From.Length > 0 ? msg.From : s.Msg.From;
+        V.Lines = Array.ConvertAll(msg.Lines, ButtonNames.Localize);
         V.Avatar = D.Classes[0].Frame;   // Kierownik budowy
         V.Single = _mode == 2;
         V.Link = _mode == 1 && s.Link.Length > 0;
         V.Last = _mode == 1 && _k == _steps.Count - 1;
-        V.Pill = _mode == 1 ? $"{_k + 1}/{_steps.Count}" : _cls >= 0 ? D.Classes[_cls].Name : "Nowość";
+        V.Pill = _mode == 1 ? $"{_k + 1}/{_steps.Count}" : _cls >= 0 && !secret ? D.Classes[_cls].Name : "Nowość";
         V.PillBrand = _mode == 2;
         Sfx.Play("notify", 0.6f);
         Update();

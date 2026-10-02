@@ -112,12 +112,12 @@ public partial class ActionBar : Control
                     var bob = ((int)(_clock * 4) & 1) == 1 ? -2 : 0;
                     var pulse = 0.5f + 0.5f * Mathf.Sin(_clock * 6f);
                     DrawStyleBox(Ui.Box(new Color(Pal.Accent, 0.15f + 0.25f * pulse), 8), new Rect2(icon - new Vector2(3, 2), new Vector2(38, 36)));
-                    Assets.DrawFrame(this, Assets.AbilityIcons, g.Cls, 32, icon + new Vector2(0, bob));
+                    Assets.DrawFrame(this, Assets.AbilityIcons, g.PowerCls(), 32, icon + new Vector2(0, bob));
                     label = "Moc";
                 }
                 else
                 {
-                    Assets.DrawFrame(this, Assets.UiAbilityGray, g.Cls, Assets.Icon, icon, 2, new Color(1, 1, 1, 0.6f));
+                    Assets.DrawFrame(this, Assets.UiAbilityGray, g.PowerCls(), Assets.Icon, icon, 2, new Color(1, 1, 1, 0.6f));
                     f.Draw(this, icon + new Vector2(16, 6), g.AbilityCd.ToString(), Ink.Map, TextAlign.Center, 1.5f);
                     label = $"Moc {g.AbilityCd}";
                 }

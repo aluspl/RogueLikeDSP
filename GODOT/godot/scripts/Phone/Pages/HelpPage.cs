@@ -35,12 +35,12 @@ public sealed class HelpPage : PhonePage
         ("Okna", "dotknij = zaznacz; Wybierz: prawo, Wróć: lewo"),   // v0.21.51: ten sam układ w każdym oknie
     ];
 
-    private const int Pages = 7;
+    private const int Pages = 8;
     private readonly GameData _d;
     private int _page;
 
     /// <summary>Strona 0-6 (sceny zrzutów); 4 = kombinacje stanów, premie i elity (v0.21.50 cz. 2); 5 = wydarzenia, ulepszenia, magazyn (cz. 3);
-    /// 6 = podsumowanie budowy, wyzwanie tygodnia, fabuła (cz. 4).</summary>
+    /// 6 = podsumowanie budowy, wyzwanie tygodnia, fabuła (cz. 4); 7 = sekretne zlecenia (v0.21.51 cz. 2).</summary>
     public int Page
     {
         get => _page;
@@ -91,6 +91,22 @@ public sealed class HelpPage : PhonePage
         if (_page == 4)
         {
             DrawList(p, "KOMBINACJE STANÓW", ComboLines(_d), "SKĄD STANY, PREMIE, ELITY", ComboWhereLines(_d));
+            return;
+        }
+        if (_page == 7)
+        {
+            var width = (int)(p.Right - 6 - p.Left - 12);
+            var lines = p.F.Wrap(ButtonNames.Localize(string.Join(" ", SecretsHelp)), width);
+            var sc = p.Card(p.Section(p.Top, "SEKRETNE ZLECENIA"), lines.Count);
+            var sx = p.TextX(sc);
+            for (var i = 0; i < lines.Count; i++) p.Text(sx, p.RowY(sc, i), lines[i], Ink.Dark, TextAlign.Left, sc.End.X - 6 - sx);
+            var y2 = p.Section(sc.End.Y + 6, "GDZIE");
+            var c2 = p.Card(y2, SecretWhereLines.Length);
+            for (var i = 0; i < SecretWhereLines.Length; i++)
+            {
+                if (i > 0) p.Divider(c2, i);
+                p.Text(sx, p.RowY(c2, i), SecretWhereLines[i], Ink.Dim, TextAlign.Left, c2.End.X - 6 - sx);
+            }
             return;
         }
         if (_page == 6)
@@ -190,6 +206,17 @@ public sealed class HelpPage : PhonePage
         for (var i = from; i < from + 6 && i < d.ExtrasHelpLines.Length; i++) l.Add(d.ExtrasHelpLines[i]);
         return string.Join(" ", l);
     }
+
+    private static string[] _secretsHelp;
+    /// <summary>Tekst secretsHelp z game.json (wspólny z GBA), wczytany raz.</summary>
+    private static string[] SecretsHelp => _secretsHelp ??= Session.GodotDataSource.LoadStrings("secretsHelp");
+
+    private static readonly string[] SecretWhereLines =
+    [
+        "Profil > Odznaki > Sekrety",
+        "Nowe zawody: wybór zawodu",
+        "Kask w paski: Tryb inwestora",
+    ];
 
     private static readonly string[] MetaWhereLines =
     [

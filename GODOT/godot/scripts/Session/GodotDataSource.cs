@@ -36,6 +36,15 @@ public static class GodotDataSource
         return tips.EnumerateArray().Select(t => t.GetString() ?? "").Where(t => t.Length > 0).ToArray();
     }
 
+    /// <summary>Tablica napisów z game.json (np. "secretsHelp" – strona Jak grać); brak = pusta.</summary>
+    public static string[] LoadStrings(string key)
+    {
+        if (!FileAccess.FileExists(GameJson)) return [];
+        using var doc = JsonDocument.Parse(FileAccess.GetFileAsString(GameJson));
+        if (!doc.RootElement.TryGetProperty(key, out var arr) || arr.ValueKind != JsonValueKind.Array) return [];
+        return arr.EnumerateArray().Select(t => t.GetString() ?? "").Where(t => t.Length > 0).ToArray();
+    }
+
     public static Profile LoadProfile(GameData d)
     {
         var p = FileAccess.FileExists(ProfilePath)

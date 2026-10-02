@@ -54,7 +54,7 @@ public sealed class TeamTab : PhonePage
         var unlocked = Meta.ClassUnlocked(_d, _p, s);
         var photo = new Rect2(dc.Position.X + 8, dc.Position.Y + 8, 32, 32);
         p.C.DrawStyleBox(Ui.Box(Pal.Group, 5), photo);
-        p.Icon(Assets.Actors, unlocked ? c.Frame : Assets.Silhouette(s), Assets.Actor, photo.Position);
+        p.Icon(Assets.Actors, unlocked ? Assets.HeroFrame(_d, _p, s) : Assets.Silhouette(s), Assets.Actor, photo.Position);
         var x = photo.End.X + 8;
         p.Text(x, dc.Position.Y + 4, "Moc: " + c.AbilityName, Ink.Dark, TextAlign.Left, right - x);
         var lines = p.F.Wrap(c.AbilityDesc, (int)(right - x));
@@ -65,6 +65,11 @@ public sealed class TeamTab : PhonePage
     // Zablokowany zawód: z nagrody za odbiór (za którą wygraną) albo do kupienia w Szkoleniach.
     private string LockedHint(int cls)
     {
+        if (Meta.ClassSecret(_d, cls)) // v0.21.51 cz. 2: zawód z sekretnego zlecenia
+        {
+            var si = Secrets.Of(_d, SecretReward.Cls, cls);
+            return "Sekret: " + (si >= 0 ? _d.Secrets[si].Hint : "???");
+        }
         if (!Meta.ClassReward(_d, cls)) return $"Odblokujesz w Kosztach: {_d.ClassCost} dośw.";
         for (var i = 0; i < _d.Rewards.Length; i++)
             if (_d.Rewards[i].Kind == RewardKind.Cls && _d.Rewards[i].Index == cls) return $"Nagroda za {Meta.RewardWin(_d, _p, i)}. wygraną";

@@ -31,17 +31,20 @@ public sealed class DebugScenes
         "tool-swap", "secret-crack", "secret-card", "secret-open", "secret-door", "secret-map", "tasks-extras", "help-extras",
         "recap-endmsg", "recap-death", "recap-death-scroll", "recap-win", "recap-end", "weekly", "weekly-card", "weekly-run",
         "story-archive", "story-thread", "estate-grow", "help-meta",
+        .. SecretStaging.Names,
     ];
 
     private readonly App _app;
     private readonly DemoStaging _stage;
     private readonly RecapStaging _recap;
+    private readonly SecretStaging _secrets;
 
     public DebugScenes(App app)
     {
         _app = app;
         _stage = new DemoStaging(app);
         _recap = new RecapStaging(app);
+        _secrets = new SecretStaging(app);
     }
 
     private ScreenFlow Flow => _app.Flow;
@@ -49,7 +52,7 @@ public sealed class DebugScenes
     public static bool UsesDemoProfile(string scene) =>
         scene is "title" or "classselect" or "profile" or "catalog" or "estate" or "team" or "training" or "card" or "perks" or "investor"
             or "daily" or "death" or "respect" or "rewards" or "classselect-locked" or "stats-class" or "stats-tip" or "catalog-tags"
-            or "tutorial-unlock" or "tutorial-act0" or "dmg-class" or "dmg-stats";
+            or "tutorial-unlock" or "tutorial-act0" or "dmg-class" or "dmg-stats" || SecretStaging.UsesDemoProfile(scene);
 
     /// <summary>Sceny samouczka menu: profil bez obejrzanych dymków (inne sceny - samouczek już obejrzany).</summary>
     public static bool UsesTutorial(string scene) => scene.StartsWith("tutorial");
@@ -60,6 +63,11 @@ public sealed class DebugScenes
         if (RecapStaging.Handles(scene)) // v0.21.50 cz. 4: podsumowanie, wyzwanie tygodnia, fabuła
         {
             await _recap.Setup(scene);
+            return;
+        }
+        if (SecretStaging.Handles(scene)) // v0.21.51 cz. 2: sekretne zlecenia
+        {
+            await _secrets.Setup(scene);
             return;
         }
         switch (scene)

@@ -1,4 +1,5 @@
 using System.Linq;
+using Godot;
 using LifeLike.Core;
 using LifeLike.Core.Data;
 using LifeLike.Game.Audio;
@@ -8,13 +9,15 @@ using LifeLike.Game.Input;
 namespace LifeLike.Game.Phone.ProfileTabs;
 
 /// <summary>
-/// Profil: strony Odznaki / Zlecenia / Pamiątki przełączane A (jak zakładka 0 w run_shop na GBA): lista z pastylkami
-/// (Zdobyta / +XP, Wykonane / postęp, Ranga / Zablok.) i opis zaznaczonej pozycji z premią lub nagrodą.
+/// Profil: strony Odznaki / Zlecenia / Pamiątki / Sekrety przełączane A (jak zakładka 0 w run_shop na GBA): lista z pastylkami
+/// (Zdobyta / +XP, Wykonane / postęp, Ranga / Zablok., Wykonane / ???) i opis zaznaczonej pozycji z premią lub nagrodą.
+/// Sekrety (#39, v0.21.51 cz. 2): na liście podpowiedź z ikoną koperty, warunek i nagroda (z ikoną) dopiero po wykonaniu.
 /// </summary>
 public sealed class BadgesTab : PhonePage
 {
     private const int Window = 7;
-    private static readonly string[] Pages = ["Odznaki", "Zlecenia", "Pamiątki"];
+    private static readonly string[] Pages = ["Odznaki", "Zlecenia", "Pamiątki", "Sekrety"];
+    public const int SecretsPage = 3;
     private readonly GameData _d;
     private readonly Profile _p;
     private readonly ListState _list = new();
@@ -34,14 +37,33 @@ public sealed class BadgesTab : PhonePage
         get
         {
             var total = Count;
-            var n = _page == 2 ? Enumerable.Range(0, total).Count(k => Meta.KeepsakeUnlocked(_d, _p, k))
+            var n = _page == SecretsPage ? Secrets.DoneCount(_d, _p)
+                  : _page == 2 ? Enumerable.Range(0, total).Count(k => Meta.KeepsakeUnlocked(_d, _p, k))
                   : UiText.BitCount(_page == 1 ? _p.Contracts : _p.Badges);
             return $"{n}/{total}";
         }
     }
 
-    public override string Hint => $"Spacja: {Pages[(_page + 1) % 3]}  Q/E: zakładki";
-    public override PageAction[] Actions => [new(Pages[(_page + 1) % 3] + " >", GameAction.A)];
+    public override string Hint => $"Spacja: {Pages[(_page + 1) % Pages.Length]}  Q/E: zakładki";
+    public override PageAction[] Actions => [new(Pages[(_page + 1) % Pages.Length] + " >", GameAction.A)];
+
+    /// <summary>Bieżąca strona (0 Odznaki, 1 Zlecenia, 2 Pamiątki, 3 Sekrety) – test dymny i zrzuty.</summary>
+    public int Page
+    {
+        get => _page;
+        set
+        {
+            _page = System.Math.Clamp(value, 0, Pages.Length - 1);
+            _list.Reset();
+        }
+    }
+
+    /// <summary>Zaznaczona pozycja listy (zrzuty).</summary>
+    public void Select(int i)
+    {
+        _list.Reset();
+        _list.Move(i, Count, Window);
+    }
 
     public override bool TapRow(int index)
     {
@@ -49,7 +71,7 @@ public sealed class BadgesTab : PhonePage
         return true;
     }
 
-    private int Count => _page == 2 ? _d.Keepsakes.Length : _page == 1 ? _d.Contracts.Length : _d.Badges.Length;
+    private int Count => _page == SecretsPage ? _d.Secrets.Length : _page == 2 ? _d.Keepsakes.Length : _page == 1 ? _d.Contracts.Length : _d.Badges.Length;
 
     public override bool Input(InputCmd e)
     {
@@ -61,7 +83,7 @@ public sealed class BadgesTab : PhonePage
         }
         if (e.Is(GameAction.A))
         {
-            _page = (_page + 1) % 3;
+            _page = (_page + 1) % Pages.Length;
             _list.Reset();
             Sfx.Play("menu");
             return true;
@@ -88,6 +110,21 @@ public sealed class BadgesTab : PhonePage
             string name, pill;
             PillKind kind;
             bool on;
+            if (_page == SecretsPage)
+            {
+                var sd = _d.Secrets[i];
+                on = Secrets.Done(_p, i);
+                name = sd.Hint;
+                pill = on ? "Wykonane" : "???";
+                kind = on ? PillKind.Done : PillKind.Gray;
+                var ic = new Rect2(tx - 2, y + (PhonePainter.RowH - 16) / 2f, 16, 16);
+                if (on && sd.Reward == SecretReward.Cls) // nowy zawód: mały portret
+                    p.C.DrawTextureRectRegion(Assets.Actors, ic, Assets.Frame(_d.Classes[sd.Index].Frame, Assets.Actor));
+                else p.Icon(Assets.UiMenu, on ? Assets.SecretIcon(_d, sd) : Assets.MenuSecret, Assets.Icon, ic.Position);
+                var spw = p.Pill(right, y, pill, kind);
+                p.Text(tx + 18, y, name, sel ? Ink.Brand : on ? Ink.Dark : Ink.Dim, TextAlign.Left, right - spw - 4 - tx - 18);
+                continue;
+            }
             if (_page == 2)
             {
                 on = Meta.KeepsakeUnlocked(_d, _p, i);
@@ -130,6 +167,13 @@ public sealed class BadgesTab : PhonePage
     /// <summary>Opis zaznaczonej pozycji: (opis, wiersz premii / nagrody / rangi, jego kolor).</summary>
     private (string, string, Ink) Describe(int i)
     {
+        if (_page == SecretsPage)
+        {
+            var sd = _d.Secrets[i];
+            var done = Secrets.Done(_p, i);
+            return (done ? $"{sd.Hint}. Warunek: {sd.Desc}." : $"{sd.Hint}. Warunek: ??? – poznasz go po wykonaniu.",
+                    "Nagroda: " + (done ? sd.RewardText : "???"), done ? Ink.Done : Ink.Dim);
+        }
         if (_page == 2)
         {
             var kd = _d.Keepsakes[i];

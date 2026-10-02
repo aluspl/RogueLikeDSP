@@ -33,6 +33,7 @@ public sealed class WorldFx
             var pos = _w.GridToScreen(h.X, h.Y);
             Fx.AddFloater(HitFloater(h, pos + new Vector2(0, -26 - 15 * (i % 3))));
             if (h.Kind != HitKind.Dodge) Fx.Burst(pos, h.OnHero ? 3 : 5, Assets.PSpark, 2, 1.5f, 16);
+            if (h.Kind == HitKind.Crit && !h.OnHero && _w.GoldGlint) GoldGlint(pos);
             if (!h.OnHero && h.Kind != HitKind.Dodge)
             {
                 var ei = g.EnemyAt(h.X, h.Y);
@@ -112,6 +113,17 @@ public sealed class WorldFx
         g.ComboEvents = 0;
     }
 
+    /// <summary>Złota kielnia (wygląd z sekretnego zlecenia): złote iskry z broni bohatera i złoty błysk przy krycie.</summary>
+    public void GoldGlint(Vector2 target)
+    {
+        var w = Hero.Position + new Vector2(Hero.Flip ? -10 : 10, -4); // broń w ręce
+        Fx.AddGlow(new Glow { Pos = w, Color = new Color(Pal.EliteGold, 0.7f), Life = 0.8f, Radius = 30 });
+        Fx.Burst(w, 10, Assets.PStar, 1, 1.4f, 40);
+        for (var k = 1; k <= 3; k++) Fx.Spawn(w + (target - w) * k / 4f, new Vector2(0, -0.4f), 0, 30, Assets.PStar);
+        Hero.Flash(Pal.EliteGold);
+        _w.Flash(Pal.EliteGold, 0.22f);
+    }
+
     private Floater HitFloater(Hit h, Vector2 pos)
     {
         var f = new Floater { Pos = pos };
@@ -182,7 +194,7 @@ public sealed class WorldFx
         var g = G;
         var h = Hero.Position;
         Color flash;
-        switch (g.CDef.Ability)
+        switch (g.PDef.Ability) // Majster: moc pożyczona na etap
         {
             case AbilityEffect.Stun:
                 flash = Pal.FlashStun;
@@ -248,6 +260,25 @@ public sealed class WorldFx
                 }
                 break;
             }
+            case AbilityEffect.Weld:   // Spaw: niebieski błysk, iskry linią do trafionych i dym na nich
+                flash = new Color(0.45f, 0.78f, 1f);
+                for (var i = 0; i < g.HitsCount; i++)
+                {
+                    if (g.Hits[i].OnHero) continue;
+                    var t = _w.GridToScreen(g.Hits[i].X, g.Hits[i].Y);
+                    for (var k = 0; k < 3; k++) Fx.Spawn(h, (t - h) / (8 + 2 * k), 0, 12, Assets.PSpark, 2);
+                    Fx.Spawn(t - new Vector2(0, 12), new Vector2(0.2f, -0.6f), 0, 30, Assets.PDust, 3); // dym spawalniczy
+                }
+                break;
+            case AbilityEffect.Mark:   // Tyczenie: znacznik nad oznaczonym problemem i gwiazdki
+                flash = new Color(0.78f, 0.5f, 1f);
+                if (g.MarkTarget >= 0)
+                {
+                    var t = _w.GridToScreen(g.Enemies[g.MarkTarget].X, g.Enemies[g.MarkTarget].Y);
+                    Fx.Spawn(t - new Vector2(0, 24), new Vector2(0, -0.4f), 0, 40, Assets.PMarker);
+                    for (var k = 0; k < 4; k++) Fx.Spawn(t, Dir8[k * 2], 0, 16, Assets.PStar);
+                }
+                break;
             default:
                 flash = Colors.White;
                 foreach (var d in Dir8) Fx.Spawn(h + d * 12, new Vector2(-d.Y, d.X) * 1.6f, 0, 16, Assets.PSpark, 2);

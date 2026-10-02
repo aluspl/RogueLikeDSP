@@ -153,6 +153,7 @@ public sealed class GameSession
         Save();
         SaveRun();
         Note = "";
+        LastSecrets = 0;
         FirstStage = true;
         Events.RaiseRunStarted();
         _watcher.Reset(Game);
@@ -168,6 +169,7 @@ public sealed class GameSession
         Save();
         SaveRun();
         Note = "";
+        LastSecrets = 0;
         FirstStage = true;
         Events.RaiseRunStarted();
         _watcher.Reset(Game);
@@ -183,6 +185,7 @@ public sealed class GameSession
         Save();
         SaveRun();
         Note = "";
+        LastSecrets = 0;
         FirstStage = true;
         Events.RaiseRunStarted();
         _watcher.Reset(Game);
@@ -239,9 +242,9 @@ public sealed class GameSession
             LastReward = won ? Meta.RecordWin(Data, Profile) : -1;   // nagroda za odbiór: każda wygrana odblokowuje kolejną
             if (won) Meta.AddHouse(Profile, g);
             Events.RaiseRunEnded(won);
+            if (LastReward >= 0) Events.RaiseRewardUnlocked(LastReward);
             Note = CheckProgress();
             if (won) Events.RaiseRespectGained(g.StageRespect(), Profile.Respect);
-            if (LastReward >= 0) Events.RaiseRewardUnlocked(LastReward);
             LastGained = Meta.BankXp(Profile, g);
             WeeklyRecord = g.WeeklyWeek != 0 && Weekly.Record(Data, Profile, g.WeeklyWeek, g.Score, won); // wyzwanie tygodnia (#34)
             LastStory = Story.Check(Data, Profile, g); // fabuła (#35): nowe wątki SMS za kamienie milowe
@@ -252,12 +255,18 @@ public sealed class GameSession
         return g.St == GameStatus.Playing && g.HasOffer ? TurnOutcome.Offer : TurnOutcome.None;
     }
 
-    /// <summary>Odznaki (z bankowaniem liczników zleceń) i zlecenia - jak main.cpp na GBA: check_badges, potem check_contracts.</summary>
+    /// <summary>Odznaki (z bankowaniem liczników zleceń), zlecenia i sekretne zlecenia (#39) - jak main.cpp na GBA:
+    /// check_badges, check_contracts, check_secrets.</summary>
     private string CheckProgress()
     {
         var got = Meta.CheckBadges(Data, Profile, Game);
         var done = Meta.CheckContracts(Data, Profile);
-        Events.RaiseAchievements(got, done);
-        return ProgressNotes.Join(Data, got, done);
+        var secrets = LifeLike.Core.Secrets.Check(Data, Profile, Game);
+        LastSecrets |= secrets;
+        Events.RaiseAchievements(got, done, secrets);
+        return ProgressNotes.Join(Data, got, done, secrets);
     }
+
+    /// <summary>Sekretne zlecenia wykonane w tej budowie (bity GameData.Secrets) – plansza końcowa.</summary>
+    public int LastSecrets { get; private set; }
 }

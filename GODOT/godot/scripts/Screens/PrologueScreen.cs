@@ -30,7 +30,7 @@ public sealed class PrologueScreen : Screen
     {
         _t = 0;
         _dustTick = -1;
-        View.Stage.Setup(S.Data, S.Data.Classes[S.Game.Cls].Frame);
+        View.Stage.Setup(S.Data, Gfx.Assets.HeroFrame(S.Data, S.Profile, S.Game.Cls));
         View.Caption = "";
         Apply();
     }

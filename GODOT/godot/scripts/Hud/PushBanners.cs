@@ -40,10 +40,22 @@ public partial class PushBanners : Control
     }
 
     /// <summary>Nowe powiadomienie; tab = zakładka telefonu otwierana kliknięciem (-1 brak).</summary>
-    public void Push(string title, string body, int tab = -1)
+    public void Push(string title, string body, int tab = -1) => Push(new PushBanner { Title = title, Body = body, Tab = tab });
+
+    public void Push(PushBanner b)
     {
-        if (_queue.Count >= 6) _queue.Dequeue();
-        _queue.Enqueue(new PushBanner { Title = title, Body = body, Tab = tab });
+        if (_queue.Count >= 8) _queue.Dequeue(); // koniec budowy: nagroda, sekrety, odznaki, zlecenia, fabuła
+        _queue.Enqueue(b);
+    }
+
+    /// <summary>Banery w kolejce i na ekranie (test dymny, zrzuty).</summary>
+    public IEnumerable<PushBanner> All
+    {
+        get
+        {
+            foreach (var b in _active) yield return b;
+            foreach (var b in _queue) yield return b;
+        }
     }
 
     public void Clear()
@@ -122,8 +134,10 @@ public partial class PushBanners : Control
             fade = Mathf.Round(fade * 8f) / 8f;
             var r = new Rect2(x, y, W, H);
             DrawStyleBox(Ui.Box(new Color(0, 0, 0, 0.35f * fade), 7), new Rect2(r.Position + new Vector2(0, 2), r.Size));
-            DrawStyleBox(Ui.Box(new Color(Pal.Card, fade), 7, new Color(Pal.Border, fade)), r);
-            Assets.DrawFrame(this, Assets.PhoneIcons, 5, Assets.Icon, new Vector2(x + 8, y + 10), 1, new Color(1, 1, 1, fade));
+            DrawStyleBox(Ui.Box(new Color(Pal.Card, fade), 7, new Color(b.Gold ? Pal.EliteGold : Pal.Border, fade)), r);
+            if (b.Gold) DrawRect(new Rect2(x + 1, y + 6, 2, H - 12), new Color(Pal.EliteGold, fade)); // złoty pasek sekretu
+            if (b.Icon >= 0) Assets.DrawFrame(this, Assets.UiMenu, b.Icon, Assets.Icon, new Vector2(x + 8, y + 10), 1, new Color(1, 1, 1, fade));
+            else Assets.DrawFrame(this, Assets.PhoneIcons, 5, Assets.Icon, new Vector2(x + 8, y + 10), 1, new Color(1, 1, 1, fade));
             var stamp = b.Tab >= 0 && !Compact ? "otwórz >" : "teraz";
             if (!Compact) f.Draw(this, new Vector2(x + W - 8, y + 2), stamp, (b.Tab >= 0 ? Ink.Brand : Ink.Dim).WithAlpha(fade), TextAlign.Right);
             f.Draw(this, new Vector2(x + 30, y + 2), f.Fit(b.Title, W - 30 - (Compact ? 6 : 14 + f.Measure(stamp))), Ink.Dark.WithAlpha(fade));

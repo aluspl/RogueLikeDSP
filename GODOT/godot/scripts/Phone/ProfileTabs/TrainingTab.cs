@@ -83,7 +83,7 @@ public sealed class TrainingTab : PhonePage
         }
         for (var i = 0; i < _d.Tools.Length; i++)
         {
-            if (!Meta.ToolUnlocked(_d, _p, i) && !_d.Tools[i].Reward) _entries.Add((TrainingKind.Tool, i));
+            if (!Meta.ToolUnlocked(_d, _p, i) && !_d.Tools[i].Reward && !_d.Tools[i].Secret) _entries.Add((TrainingKind.Tool, i));
         }
         for (var i = 0; i < _d.Brigade.Length; i++)
         {
@@ -164,7 +164,8 @@ public sealed class TrainingTab : PhonePage
             _saved?.Invoke();
             return true;
         }
-        _note = Meta.RespectCost(_d, _p, i) < 0 ? "Maksymalna ranga" : "Za mało Respektu - kończ etapy";
+        _note = !Meta.RespectUnlocked(_d, _p, i) ? "Najpierw sekretne zlecenie"
+              : Meta.RespectCost(_d, _p, i) < 0 ? "Maksymalna ranga" : "Za mało Respektu - kończ etapy";
         return false;
     }
 
@@ -254,14 +255,27 @@ public sealed class TrainingTab : PhonePage
             else if (r > 0) p.Divider(card, r);
             p.HitRow(card, r, i);
             var cost = Meta.RespectCost(_d, _p, i);
-            var pw = p.Pill(right, y, cost < 0 ? "MAX" : cost.ToString(), cost < 0 ? PillKind.Done : cost <= _p.Respect ? PillKind.Group : PillKind.Gray);
             var rd = _d.Respect[i];
+            if (!Meta.RespectUnlocked(_d, _p, i)) // v0.21.51 cz. 2: ranga z sekretnego zlecenia (Zaprawiony w boju)
+            {
+                var lw = p.Pill(right, y, "Sekret", PillKind.Gray);
+                p.Icon(Assets.UiMenu, Assets.MenuSecret, Assets.Icon, new Vector2(tx - 2, y + (PhonePainter.RowH - 16) / 2f));
+                p.Text(tx + 18, y, "???", sel ? Ink.Brand : Ink.Dim, TextAlign.Left, right - lw - 4 - tx - 18);
+                continue;
+            }
+            var pw = p.Pill(right, y, cost < 0 ? "MAX" : cost.ToString(), cost < 0 ? PillKind.Done : cost <= _p.Respect ? PillKind.Group : PillKind.Gray);
             p.Text(tx, y, $"{rd.Name} {Meta.RespectRank(_d, _p, i)}/{rd.Ranks}", sel ? Ink.Brand : Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
         }
         var dc = p.Card(card.End.Y + 6, 2);
         var s = _list.Sel;
         var def = _d.Respect[s];
         var rank = Meta.RespectRank(_d, _p, s);
+        if (!Meta.RespectUnlocked(_d, _p, s))
+        {
+            p.Text(tx, p.RowY(dc, 0), "Sekret: " + _d.Secrets[def.Secret].Hint, Ink.Dim, TextAlign.Left, right - tx);
+            p.Text(tx, p.RowY(dc, 1), _note.Length > 0 ? _note : "Odblokujesz sekretnym zleceniem", _note.Length > 0 ? Ink.Late : Ink.Brand, TextAlign.Left, right - tx);
+            return;
+        }
         var now = rank > 0 ? RunMods.RespectLabel(def.Effect, Meta.RespectValue(_d, _p, s)) : def.Desc + ": brak";
         p.Text(tx, p.RowY(dc, 0), now, Ink.Dark, TextAlign.Left, right - tx);
         if (_note.Length > 0) p.Text(tx, p.RowY(dc, 1), _note, _note == "Kupione!" ? Ink.Done : Ink.Late, TextAlign.Left, right - tx);

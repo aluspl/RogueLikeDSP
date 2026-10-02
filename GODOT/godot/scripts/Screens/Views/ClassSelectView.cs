@@ -163,7 +163,8 @@ public partial class ClassSelectView : Control
             var x = SlotX(k);
             var anim = sel && unl && ((int)(_clock / 0.4f) & 1) == 1;
             var bob = sel ? Mathf.Round(Mathf.Sin(_clock * 4f) * 1.5f) : 0;
-            var frame = unl ? (anim ? Assets.AnimB(_d.Classes[cls].Frame) : _d.Classes[cls].Frame) : Assets.Silhouette(cls);
+            var hf = Assets.HeroFrame(_d, _p, cls); // kask w paski (wygląd z sekretnego zlecenia)
+            var frame = unl ? (anim ? Assets.AnimB(hf) : hf) : Assets.Silhouette(cls);
             var size = 32 * sc;
             var feet = baseY + 14;
             DrawTextureRect(Assets.Shadow, new Rect2(x - 12 * sc / 1.4f, feet - 3, 24 * sc / 1.4f, 7), false);
@@ -560,9 +561,18 @@ public partial class ClassSelectView : Control
         return -1;
     }
 
-    private string LockedShort(int cls) => Meta.ClassReward(_d, cls) ? $"{RewardWinOf(cls)}. wygr." : $"{_d.ClassCost} dośw.";
+    private string LockedShort(int cls) => Meta.ClassSecret(_d, cls) ? "Sekret" : Meta.ClassReward(_d, cls) ? $"{RewardWinOf(cls)}. wygr." : $"{_d.ClassCost} dośw.";
 
-    private string LockedText(int cls, bool keys) => Meta.ClassReward(_d, cls)
+    /// <summary>Podpowiedź sekretnego zlecenia, które odblokowuje zawód (v0.21.51 cz. 2).</summary>
+    private string SecretHint(int cls)
+    {
+        var si = Secrets.Of(_d, SecretReward.Cls, cls);
+        return si >= 0 ? _d.Secrets[si].Hint : "???";
+    }
+
+    private string LockedText(int cls, bool keys) => Meta.ClassSecret(_d, cls)
+        ? $"Sekretne zlecenie (telefon, Odznaki > Sekrety): {SecretHint(cls)}"
+        : Meta.ClassReward(_d, cls)
         ? $"Nagroda za odbiór budowy: za {RewardWinOf(cls)}. wygraną, masz {_p.Wins}"
         : $"Zablokowany: {_d.ClassCost} dośw. w Szkoleniach" + (keys ? " (K)" : "");
 }

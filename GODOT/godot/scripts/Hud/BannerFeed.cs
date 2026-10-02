@@ -25,7 +25,7 @@ public sealed class BannerFeed
         ev.ToolFound += OnToolFound;
         ev.Dropped += () => _banners.Push("Coś wypadło!", "Sprawdź miejsce usterki", PhoneTabs.Issues);
         ev.GearEquipped += OnGearEquipped;
-        ev.AbilityReady += () => _banners.Push("Moc gotowa", _s.Game.CDef.AbilityName, PhoneTabs.Start);
+        ev.AbilityReady += () => _banners.Push("Moc gotowa", _s.Game.PDef.AbilityName, PhoneTabs.Start);
         ev.BossSpotted += def => _banners.Push("Przypisano Ci usterkę", _s.Data.Enemies[def].Name, PhoneTabs.Issues);
         ev.StageCleared += OnStageCleared;
         ev.Achievements += OnAchievements;
@@ -77,10 +77,14 @@ public sealed class BannerFeed
         _banners.Push("Etap zaliczony", _s.Data.Stages[_s.Game.Stage].Name, PhoneTabs.Tasks);
     }
 
-    /// <summary>Nowe odznaki i zlecenia (push_achievements na GBA).</summary>
-    private void OnAchievements(int badges, int contracts)
+    /// <summary>Sekretne zlecenia, nowe odznaki i zlecenia (push_achievements na GBA).</summary>
+    private void OnAchievements(int badges, int contracts, int secrets)
     {
         var d = _s.Data;
+        for (var i = 0; i < d.Secrets.Length; i++)
+        {
+            if ((secrets & (1 << i)) != 0) _banners.Push(new PushBanner { Title = "Sekretne zlecenie!", Body = d.Secrets[i].RewardText, Icon = Assets.MenuSecret, Gold = true });
+        }
         for (var i = 0; i < d.Badges.Length; i++)
         {
             if ((badges & (1 << i)) != 0) _banners.Push("Odznaka: " + d.Badges[i].Name, $"+{d.Badges[i].Xp} dośw.", PhoneTabs.Start);
@@ -109,7 +113,7 @@ public sealed class BannerFeed
         var g = _s.Game;
         var d = _s.Data;
         var p = _s.Profile;
-        _banners.Push("R: " + g.CDef.AbilityName, g.CDef.AbilityDesc, PhoneTabs.Start);
+        _banners.Push("R: " + g.PDef.AbilityName, g.PDef.AbilityDesc, PhoneTabs.Start); // Majster: moc pożyczona na etap
         var k = Meta.SelectedKeepsake(d, p);
         if (k < 0) return;
         var runs = p.KeepsakeRuns[k] - 1;

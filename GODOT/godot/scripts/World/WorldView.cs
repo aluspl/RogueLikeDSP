@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Godot;
+using LifeLike.Core;
 using LifeLike.Core.Data;
 using LifeLike.Game.Gfx;
 using CoreGame = LifeLike.Core.Game;
@@ -48,6 +49,10 @@ public partial class WorldView : Node2D
     /// <summary>Celownik nad wrogiem (celowanie pod A, podgląd pod B); -1 = brak.</summary>
     public int Reticle { get; set; } = -1;
     public CoreGame Game => _g;
+    /// <summary>Profil gracza (wygląd z sekretnych zleceń: kask w paski, złota kielnia); null = bez wyglądu.</summary>
+    public Func<Profile> ProfileSource { get; set; } = () => null;
+    /// <summary>Złota kielnia włączona – złoty błysk broni przy krycie.</summary>
+    public bool GoldGlint => ProfileSource() is { } p && _g.D.CosmeticGold >= 0 && Secrets.CosmeticOn(_g.D, p, _g.D.CosmeticGold);
     public ActorSprite HeroSprite => _hero;
     public FxLayer Fx => _fx;
     public WorldCamera Camera => _camera;
@@ -217,8 +222,7 @@ public partial class WorldView : Node2D
 
     private void SyncHero(bool snap)
     {
-        var cls = _g.D.Classes[_g.Cls];
-        _hero.BaseFrame = cls.Frame; // w miejscu oddycha (bez klatki B), w kroku - chód z actors_anim
+        _hero.BaseFrame = Assets.HeroFrame(_g.D, ProfileSource(), _g.Cls); // kask w paski z sekretu; w miejscu oddycha (bez klatki B), w kroku - chód z actors_anim
         var heroDst = GridToScreen(_g.Hero.X, _g.Hero.Y);
         if (!snap && heroDst != _hero.Position && _hero.Position.DistanceTo(heroDst) <= Cell * 2) // pył spod butów
         {

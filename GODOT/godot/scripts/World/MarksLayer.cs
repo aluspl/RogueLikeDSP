@@ -33,6 +33,21 @@ public partial class MarksLayer : Node2D
         }
     }
 
+    /// <summary>Poziomica mistrza (sekretne zlecenie): na podglądzie mapy magazyn widać zawsze, także pod mgłą –
+    /// drzwi albo pęknięcie w złotej, pulsującej ramce z ikoną poziomicy.</summary>
+    private void LevelReveal(LifeLike.Core.Game g)
+    {
+        if (!g.HasSecret || !g.Weapon.Reveal || g.SecretOpen || g.Explored(g.SecretX, g.SecretY)) return;
+        const int c = Assets.Cell;
+        var pulse = 0.5f + 0.5f * Mathf.Sin(_clock * 5f);
+        var r = new Rect2(g.SecretX * c, g.SecretY * c, c, c);
+        DrawRect(r.Grow(2), new Color(0.05f, 0.04f, 0.1f, 0.75f));
+        DrawTextureRectRegion(Assets.Actors, r, Assets.Frame(g.SecretDef.Breakable ? Assets.FrameCrack : Assets.FrameDoor, Assets.Actor));
+        DrawRect(r.Grow(2), new Color(Pal.EliteGold, 0.55f + 0.45f * pulse), false, 4f);
+        DrawArc(r.GetCenter(), c * (1.4f + 0.3f * pulse), 0, Mathf.Tau, 24, new Color(Pal.EliteGold, 0.5f), 4f); // widać przy oddaleniu
+        Assets.DrawFrame(this, Assets.UiMenu, Assets.MenuLevel, Assets.Icon, r.Position + new Vector2(c / 2f - 16, -40 - 4 * pulse), 2);
+    }
+
     private void DrawContent()
     {
         var g = _w?.Game;
@@ -40,11 +55,14 @@ public partial class MarksLayer : Node2D
         const int p = Assets.Particle;
         var ptex = Assets.Particles;
         var hero = _w.HeroSprite.Position;
+        if (_w.OverviewOn) LevelReveal(g);
 
         for (var i = 0; i < g.EnemiesCount; i++)
         {
             var sp = _w.EnemySprite(i);
             if (sp is null || !sp.Visible || sp.Dying || !g.Enemies[i].Alive) continue;
+            if (i == g.MarkTarget && g.MarkTurns > 0) // Tyczenie: znak geodety nad oznaczonym problemem
+                Assets.DrawFrame(this, ptex, Assets.PMarker, p, sp.Position + new Vector2(-8, -46 - ((int)(_clock * 4) & 1)));
             if (g.Enemies[i].Stun > 0)
             {
                 var zy = ((int)(_clock * 3 + i) & 1) == 1 ? -2 : 0;
@@ -101,7 +119,7 @@ public partial class MarksLayer : Node2D
             if (k == 1)
             {
                 var ready = g.AbilityCd == 0;
-                Assets.DrawFrame(this, Assets.AbilityIcons, g.Cls, s, tl, 1, ready ? Colors.White : Pal.Grayed);
+                Assets.DrawFrame(this, Assets.AbilityIcons, g.PowerCls(), s, tl, 1, ready ? Colors.White : Pal.Grayed);
             }
             else
             {
