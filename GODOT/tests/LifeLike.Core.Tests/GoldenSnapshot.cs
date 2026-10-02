@@ -85,7 +85,8 @@ public static class GoldenSnapshot
         p4.AddRange([g.ElitesKilled, g.CombosRun, g.WeeklyWeek, g.Bonus.Weekly, g.EliteChance(), g.ShopClosed ? 1 : 0, Recap.TipIndex(g.D, g)]);
         K("part4", Arr(p4));
         K("part5", Arr([g.CoffeeDrunk, g.ShockCombos, g.PaperHits, g.SecretFlags, g.HelperCtx, g.BorrowCls, g.MarkTarget, g.MarkTurns,
-            g.PowerCls(), g.BuildDays(), g.Bonus.StartCoffee, g.AbilityCooldown()]));
+            g.PowerCls(), g.BuildDays(), g.Bonus.StartCoffee, g.AbilityCooldown(),
+            g.Bonus.Mastery, g.MasterCrit(), g.BoonPower(), Progress.RunProgressXp(TestData.D, g)])); // v0.21.52 cz. b
         K("killsByType", Arr(g.KillsByType.Select(x => (int)x)));
         K("rooms", "[" + string.Join(",", g.Lv.Rooms.Take(g.Lv.RoomsCount).Select(r => Arr([r.X, r.Y, r.W, r.H]))) + "]");
         var map = new List<string>();
@@ -127,5 +128,26 @@ public static class GoldenSnapshot
         $"\"story\":{Arr([(int)p.Story, (int)p.StoryNew, Story.EstateDecor(TestData.D, p)])}," +
         $"\"secrets\":{Arr([p.Secrets, p.SecretsNew, p.Cosmetic, Secrets.DoneCount(TestData.D, p)])}," +
         $"\"looks\":{Arr([p.Title, p.Helmet, Titles.OwnedCount(TestData.D, p), Secrets.HelmetsUnlocked(TestData.D, p), Meta.ClassCost(TestData.D, p), Meta.ToolCost(TestData.D, p), Meta.ShopSpent(TestData.D, p)])}," +
+        $"\"progress\":{Arr(ProgressList(p))}," +
         $"\"sram\":\"{Convert.ToHexString(p.ToBytes()).ToLowerInvariant()}\"}}";
+
+    /// <summary>v0.21.52 cz. b: poziom inspektora, mistrzostwo zawodów, stopnie inwestora (jak golden_dump.cpp: "progress").</summary>
+    private static int[] ProgressList(Profile p)
+    {
+        var d = TestData.D;
+        var l = new List<int>
+        {
+            (int)p.InspectorXp, Progress.InspectorLevel(d, p), p.PowerAlt, p.RunProgress, p.Keepsake2, Progress.MaxStake(d, p),
+            Progress.StakeRank(d, p), Story.EstateDecor(d, p),
+        };
+        for (var c = 0; c < Profile.MaxClasses; ++c)
+        {
+            l.Add(p.MasteryXp[c]);
+            l.Add(Progress.MasteryLevel(d, p, c));
+            l.Add(Progress.MasteryBits(d, p, c));
+        }
+        l.Add(Progress.KeepsakeSlot2(d, p) ? 1 : 0);
+        l.Add(Meta.SelectedKeepsake2(d, p));
+        return l.ToArray();
+    }
 }

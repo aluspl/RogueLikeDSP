@@ -33,6 +33,7 @@ public class GoldenTests
         var investor = Opt("investor");
         int paths = Opt("paths"), daily = Opt("daily");
         int respect = Opt("respect"), rewards = Opt("rewards"), weekly = Opt("weekly"), secrets = Opt("secrets");
+        int mastery = Opt("mastery"), insp = Opt("insp"), keepsake2 = Opt("keepsake2"); // v0.21.52 cz. b
         var snaps = j.GetProperty("snapshots").EnumerateArray().ToList();
         var digests = j.GetProperty("digests").EnumerateArray().Select(x => x.GetString()).ToList();
 
@@ -61,7 +62,14 @@ public class GoldenTests
             }
         }
         p.Rewards = (byte)rewards;
-        var m = Meta.Mods(d, p); // przed StartRun: ranga pamiątki z budów przed tą
+        p.InspectorXp = (uint)insp;
+        p.Keepsake2 = (byte)keepsake2;
+        if (mastery > 0)
+        {
+            p.MasteryXp[cls] = (ushort)Progress.Floor(d.MasteryLevels, mastery);
+            if (mastery >= 3) p.PowerAlt = (ushort)(1 << cls);
+        }
+        var m = Meta.Mods(d, p, cls); // przed StartRun: ranga pamiątki z budów przed tą; v0.21.52 cz. b: mistrzostwo zawodu
         var g = new Game(d);
         if (weekly > 0) Weekly.Start(g, weekly); // v0.21.50 cz. 4: wyzwanie tygodnia – zawód, seed i zasady z tygodnia
         else if (daily > 0) Daily.Start(g, daily); // codzienna budowa: zawód i seed z dnia, bez Szkoleń
@@ -121,6 +129,7 @@ public class GoldenTests
                 Meta.CheckContracts(d, p);
                 Secrets.Check(d, p, g);
                 Meta.BankXp(p, g);
+                Progress.Bank(d, p, g); // v0.21.52 cz. b: inspektor i mistrzostwo (NG+ – dalej znak wodny)
                 didNg = true;
                 g.NewGamePlus();
                 CheckSnapshot(step);
@@ -144,6 +153,7 @@ public class GoldenTests
         Meta.BankXp(p, g);
         if (g.Daily) Daily.Record(d, p, g.DailyDay, g.Score, g.St == GameStatus.Won);
         if (g.WeeklyWeek != 0) Weekly.Record(d, p, g.WeeklyWeek, g.Score, g.St == GameStatus.Won);
+        Progress.Bank(d, p, g); // v0.21.52 cz. b: poziom inspektora i mistrzostwo (przed fabułą: wątki inspektora)
         Story.Check(d, p, g); // v0.21.50 cz. 4: fabuła – wątki za kamienie milowe
 
         Assert.Equal(snaps.Count, snapIndex);

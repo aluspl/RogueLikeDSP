@@ -11,7 +11,7 @@ public sealed partial class Game
     /// <summary>Każda ranga skraca odnowienie o 2 tury (minimum 4), cecha sprzętu dalej (minimum 3); upał wydłuża.</summary>
     public int AbilityCooldown() =>
         Math.Max(3, Math.Max(4, PDef.AbilityCooldown - 2 * (AbilityRank() - 1)) - TraitBonus(TraitEffect.Cooldown) - Bonus.Cooldown
-                    - BoonSum(BoonEffect.Cooldown))
+                    - BoonSum(BoonEffect.Cooldown) + MasteryCooldown()) // v0.21.52 cz. b: wariant mocy
         + (WeatherIs(WeatherEffect.Heat) ? WDef.Value : 0);
 
     public int NearestVisibleEnemy()

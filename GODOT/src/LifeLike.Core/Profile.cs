@@ -5,8 +5,8 @@ namespace LifeLike.Core;
 
 /// <summary>
 /// Profil gracza (odpowiednik core::profile z meta.h): rekord, doświadczenie, zakupy, odznaki, Osiedle.
-/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v13: 200 bajtów, little-endian, bajt 55 to wyrównanie),
-/// więc migracje v1–v12 działają tak samo.
+/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v14: 240 bajtów, little-endian, bajt 55 to wyrównanie),
+/// więc migracje v1–v13 działają tak samo.
 /// </summary>
 public sealed class Profile
 {
@@ -33,7 +33,9 @@ public sealed class Profile
     public const int V11Size = 188;
     /// <summary>v13 = v12 + tytuł i kolor kasku (v0.21.52) od tego offsetu.</summary>
     public const int V12Size = 196;
-    public const int Size = 200;
+    /// <summary>v14 = v13 + poziom inspektora, mistrzostwo zawodów, druga pamiątka (v0.21.52 cz. b) od tego offsetu.</summary>
+    public const int V13Size = 200;
+    public const int Size = 240;
     public const int WeeklySlots = 3;
     public const int MaxRespect = 16;
     /// <summary>Rangi Respektu 16-18 (v12, dalszy ciąg RespectRanks).</summary>
@@ -42,8 +44,9 @@ public sealed class Profile
     public const int MaxClasses = 12;
     public const int MaxKeepsakes = 8;
     public const int DailySlots = 5;
-    /// <summary>Bieżący format (v13, v0.21.52).</summary>
-    public const string MagicCurrent = "PBRL013";
+    /// <summary>Bieżący format (v14, v0.21.52 cz. b).</summary>
+    public const string MagicCurrent = "PBRL014";
+    public const string MagicV13 = "PBRL013";
     public const string MagicV12 = "PBRL012";
     public const string MagicV11 = "PBRL011";
     public const string MagicV10 = "PBRL010";
@@ -166,6 +169,17 @@ public sealed class Profile
     public byte Title;
     /// <summary>Wybrany kolor kasku: wygląd + 1 (0 = kask zawodu).</summary>
     public byte Helmet;
+    // --- v14 (v0.21.52 cz. b): poziom inspektora (#44), mistrzostwo zawodów (#45), druga pamiątka
+    /// <summary>Dośw. inspektora łącznie (poziom z progów GameData.InspectorLevels).</summary>
+    public uint InspectorXp;
+    /// <summary>Dośw. mistrzostwa każdego zawodu (poziom 1-10 z GameData.MasteryLevels).</summary>
+    public ushort[] MasteryXp = new ushort[MaxClasses];
+    /// <summary>Bity: wariant mocy włączony (zawód; działa od poziomu mistrzostwa z nagrodą „power”).</summary>
+    public ushort PowerAlt;
+    /// <summary>Ile dośw. inspektora z bieżącej budowy już przeniesiono (znak wodny jak RunKills).</summary>
+    public ushort RunProgress;
+    /// <summary>Druga pamiątka + 1 (0 = bez; slot z poziomu inspektora).</summary>
+    public byte Keepsake2;
 
     public static byte[] MagicBytes(string s)
     {
@@ -247,6 +261,11 @@ public sealed class Profile
         RespectRanksHi.CopyTo(b, 193);
         b[196] = Title;
         b[197] = Helmet;
+        BinaryPrimitives.WriteUInt32LittleEndian(b.AsSpan(200), InspectorXp);
+        for (var i = 0; i < MaxClasses; i++) BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(204 + i * 2), MasteryXp[i]);
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(228), PowerAlt);
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(230), RunProgress);
+        b[232] = Keepsake2;
         return b;
     }
 
@@ -312,7 +331,12 @@ public sealed class Profile
             RespectRanksHi = b.Slice(193, MaxRespectHi).ToArray(),
             Title = b[196],
             Helmet = b[197],
+            InspectorXp = BinaryPrimitives.ReadUInt32LittleEndian(b[200..]),
+            PowerAlt = BinaryPrimitives.ReadUInt16LittleEndian(b[228..]),
+            RunProgress = BinaryPrimitives.ReadUInt16LittleEndian(b[230..]),
+            Keepsake2 = b[232],
         };
+        for (var i = 0; i < MaxClasses; i++) p.MasteryXp[i] = BinaryPrimitives.ReadUInt16LittleEndian(b[(204 + i * 2)..]);
         for (var i = 0; i < WeeklySlots; i++)
         {
             p.WeeklyWeek[i] = BinaryPrimitives.ReadUInt16LittleEndian(b[(160 + i * 2)..]);

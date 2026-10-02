@@ -62,6 +62,8 @@ public struct RunMods
     public int WeeklyPlus1;
     /// <summary>v0.21.51 cz. 2: Respekt Zaprawiony w boju – kawy w termosie na start.</summary>
     public int StartCoffee;
+    /// <summary>v0.21.52 cz. b: mistrzostwo zawodu (bity MasteryBit): wariant mocy, broń mistrza, premia mistrzostwa w ofercie.</summary>
+    public int Mastery;
 
     /// <summary>Wyzwanie tygodnia (GameData.Weekly), -1 = zwykła budowa (jak run_mods::weekly na GBA).</summary>
     public int Weekly

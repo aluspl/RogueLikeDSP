@@ -25,6 +25,7 @@ public static class Story
             case StoryTrigger.Daily: return p.DailyRuns > 0;
             case StoryTrigger.Weekly: return p.WeeklyRuns > 0;
             case StoryTrigger.Act0: return Meta.Act0Unlocked(d, p);
+            case StoryTrigger.Inspector: return Progress.InspectorLevel(d, p) >= t.Value; // v0.21.52 cz. b
             default: return false;
         }
     }
@@ -60,11 +61,13 @@ public static class Story
         Check(d, p, null);
     }
 
-    /// <summary>Osiedle rośnie z wygranymi: ile ozdób już stoi.</summary>
-    public static int EstateDecor(GameData d, Profile p)
+    /// <summary>v0.21.52 cz. b: ozdoba z wygranych albo z poziomu inspektora – każda ma swoje miejsce (k).</summary>
+    public static bool DecorUnlocked(GameData d, Profile p, int k)
     {
-        var n = 0;
-        while (n < d.EstateDecor.Length && p.Wins >= d.EstateDecor[n].Wins) ++n;
-        return n;
+        var dd = d.EstateDecor[k];
+        return dd.Inspector > 0 ? Progress.InspectorLevel(d, p) >= dd.Inspector : p.Wins >= dd.Wins;
     }
+
+    /// <summary>Osiedle rośnie z wygranymi i poziomem inspektora: ile ozdób już stoi.</summary>
+    public static int EstateDecor(GameData d, Profile p) => Enumerable.Range(0, d.EstateDecor.Length).Count(k => DecorUnlocked(d, p, k));
 }

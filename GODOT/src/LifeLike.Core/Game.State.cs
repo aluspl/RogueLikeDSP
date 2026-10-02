@@ -119,6 +119,7 @@ public sealed partial class Game
                      Bonus.Thermos, Bonus.ToolPct, Bonus.XpPct, Bonus.Cash, Bonus.Crit, Bonus.Tools, Bonus.Helpers, Bonus.Investor,
                      Bonus.DmgPct, Bonus.TakenPct, Bonus.GearPct, Bonus.Dodge, Bonus.CoffeePct, Bonus.BrigadePct, Bonus.ShopPct,
                      Bonus.MatsPct, Bonus.SecondChance, Bonus.GearSlots, Bonus.Act0, Bonus.Rerolls, Bonus.Weekly, Bonus.StartCoffee,
+                     Bonus.Mastery,
                  })
             w.Write(v);
         foreach (var v in new[] { XpPct, XpBanked, RunXp, HeroLevel, Boss, StairsX, StairsY }) w.Write(v);
@@ -306,6 +307,7 @@ public sealed partial class Game
             DmgPct = r.ReadInt32(), TakenPct = r.ReadInt32(), GearPct = r.ReadInt32(), Dodge = r.ReadInt32(), CoffeePct = r.ReadInt32(),
             BrigadePct = r.ReadInt32(), ShopPct = r.ReadInt32(), MatsPct = r.ReadInt32(), SecondChance = r.ReadInt32(),
             GearSlots = r.ReadInt32(), Act0 = r.ReadInt32(), Rerolls = r.ReadInt32(), Weekly = r.ReadInt32(), StartCoffee = r.ReadInt32(),
+            Mastery = r.ReadInt32(),
         };
         XpPct = r.ReadInt32();
         XpBanked = r.ReadInt32();

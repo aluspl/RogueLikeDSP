@@ -326,7 +326,7 @@ public sealed partial class Game
     public int Luck() => CDef.Luck + Bonus.Luck + TraitBonus(TraitEffect.Luck) + BoonLuck();
 
     public int CritPct() => Weapon.Crit + D.CritBasePct + D.CritPerLuckPct * Luck() + TraitBonus(TraitEffect.Crit) + Bonus.Crit + BoonSum(BoonEffect.Crit)
-                            + ToolTraitValue(ToolTraitEffect.Crit);
+                            + ToolTraitValue(ToolTraitEffect.Crit) + MasterCrit();
 
     /// <summary>Pole widzenia; pył (akt III) zmniejsza, najmniej 3.</summary>
     public int SightRadius() => Math.Max(3, FovRadius + TraitBonus(TraitEffect.Sight) + Bonus.Sight + BoonSum(BoonEffect.Sight) - DustSight());

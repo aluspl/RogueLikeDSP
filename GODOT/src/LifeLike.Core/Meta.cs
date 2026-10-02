@@ -98,6 +98,11 @@ public static class Meta
         dst.RespectRanksHi = copy.RespectRanksHi;
         dst.Title = copy.Title;
         dst.Helmet = copy.Helmet;
+        dst.InspectorXp = copy.InspectorXp;
+        dst.MasteryXp = copy.MasteryXp;
+        dst.PowerAlt = copy.PowerAlt;
+        dst.RunProgress = copy.RunProgress;
+        dst.Keepsake2 = copy.Keepsake2;
     }
 
     // ------------------------------------------------------------------ katalog usterek (rodzaje 0-15 w Catalog, 16-47 w CatalogHi)
@@ -243,6 +248,15 @@ public static class Meta
     public static bool ProfileFix(GameData d, Profile p)
     {
         if (p.MagicIs(Profile.MagicCurrent)) return ClampLevels(d, p);
+        if (p.MagicIs(Profile.MagicV13)) // v13 -> v14: inspektor i mistrzostwo z dotychczasowych statystyk
+        {
+            var b13 = p.ToBytes();
+            Array.Clear(b13, Profile.V13Size, b13.Length - Profile.V13Size);
+            CopyInto(Profile.FromBytes(b13), p);
+            p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
+            Progress.MigrateV14(d, p);
+            return true;
+        }
         if (p.MagicIs(Profile.MagicV12)) // v12 -> v13: zwrot za Szkolenia, tytuł i kask od zera
         {
             var b12 = p.ToBytes();
@@ -250,6 +264,7 @@ public static class Meta
             CopyInto(Profile.FromBytes(b12), p);
             p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
             MigrateV13(d, p);
+            Progress.MigrateV14(d, p);
             return true;
         }
         if (p.MagicIs(Profile.MagicV11)) // v11 -> v12: sekretne zlecenia z tego, co już widać w profilu
@@ -260,6 +275,7 @@ public static class Meta
             p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
             MigrateV13(d, p);
             Secrets.MigrateV12(d, p);
+            Progress.MigrateV14(d, p);
             return true;
         }
         if (p.MagicIs(Profile.MagicV10)) // v10 -> v11: wyzwania tygodnia i fabuła od zera
@@ -271,6 +287,7 @@ public static class Meta
             MigrateV13(d, p);
             Story.MigrateV11(d, p);
             Secrets.MigrateV12(d, p);
+            Progress.MigrateV14(d, p);
             return true;
         }
         var v9 = p.MagicIs(Profile.MagicV9);
@@ -285,6 +302,7 @@ public static class Meta
             MigrateV10(d, p);
             Story.MigrateV11(d, p);
             Secrets.MigrateV12(d, p);
+            Progress.MigrateV14(d, p);
             return true;
         }
         // v7/v6/v5/v4/v3/v2 -> v9: stare pola zostają, nowe od zera (jak memset od profile_v7_size / v6 / ...);
@@ -306,6 +324,7 @@ public static class Meta
             MigrateV10(d, p);
             Story.MigrateV11(d, p);
             Secrets.MigrateV12(d, p);
+            Progress.MigrateV14(d, p);
             return true;
         }
         if (p.MagicIs(Profile.MagicV1))
@@ -319,6 +338,7 @@ public static class Meta
             MigrateV10(d, p);
             Story.MigrateV11(d, p);
             Secrets.MigrateV12(d, p);
+            Progress.MigrateV14(d, p);
             return true;
         }
         ProfileReset(d, p);
@@ -649,8 +669,18 @@ public static class Meta
         }
         var k = SelectedKeepsake(d, p); // pamiątka zabrana na budowę
         if (k >= 0) m.AddPerk(KeepsakePerk(d, p, k));
+        var k2 = SelectedKeepsake2(d, p); // v0.21.52 cz. b: druga pamiątka (poziom inspektora) – zawsze na randze I
+        if (k2 >= 0) m.AddPerk(Keepsake2Perk(d, k2));
         m.Investor = InvestorMask(d, p); // tryb inwestora: modyfikatory i premia doświadczenia
         m.XpPct += Investor.Xp(d, m.Investor);
+        return m;
+    }
+
+    /// <summary>Premie na budowę zawodem cls: Mods() + mistrzostwo zawodu (wariant mocy, broń mistrza, premia w ofercie).</summary>
+    public static RunMods Mods(GameData d, Profile p, int cls)
+    {
+        var m = Mods(d, p);
+        m.Mastery = Progress.MasteryBits(d, p, cls);
         return m;
     }
 
@@ -696,6 +726,8 @@ public static class Meta
         {
             var k = SelectedKeepsake(d, p);
             if (k >= 0) m.AddPerk(KeepsakePerk(d, p, k));
+            var k2 = SelectedKeepsake2(d, p);
+            if (k2 >= 0) m.AddPerk(Keepsake2Perk(d, k2));
         }
         return m;
     }
@@ -802,6 +834,29 @@ public static class Meta
         p.Keepsake = (byte)k;
     }
 
+    /// <summary>v0.21.52 cz. b: druga pamiątka działa na randze I (drobna premia, nie podwójna pamiątka).</summary>
+    public static Perk Keepsake2Perk(GameData d, int k) => new(d.Keepsakes[k].Effect, d.Keepsakes[k].Values[0]);
+
+    /// <summary>v0.21.52 cz. b: druga pamiątka (slot z poziomu inspektora) – inna niż pierwsza; -1 = brak.</summary>
+    public static int SelectedKeepsake2(GameData d, Profile p)
+    {
+        var k = p.Keepsake2 - 1;
+        return Progress.KeepsakeSlot2(d, p) && k >= 0 && k < d.Keepsakes.Length && KeepsakeUnlocked(d, p, k) && k != SelectedKeepsake(d, p) ? k : -1;
+    }
+
+    /// <summary>Wybór drugiej pamiątki: kolejna odblokowana (bez pierwszej) albo „bez”.</summary>
+    public static void CycleKeepsake2(GameData d, Profile p, int dir)
+    {
+        if (!Progress.KeepsakeSlot2(d, p)) return;
+        int n = d.Keepsakes.Length + 1, k = p.Keepsake2;
+        for (var i = 0; i < n; ++i)
+        {
+            k = (k + dir + n) % n;
+            if (k == 0 || (KeepsakeUnlocked(d, p, k - 1) && k - 1 != SelectedKeepsake(d, p))) break;
+        }
+        p.Keepsake2 = (byte)k;
+    }
+
     /// <summary>Start budowy: licznik budów i budów z wybraną pamiątką (Mods() wołać wcześniej – ranga z budów przed tą).</summary>
     public static void StartRun(GameData d, Profile p)
     {
@@ -811,8 +866,11 @@ public static class Meta
         p.RunBrand = 0;
         p.RunClean = 0;
         p.RunRespect = 0;
+        p.RunProgress = 0; // v0.21.52 cz. b: dośw. inspektora z nowej budowy – nic jeszcze nie przeniesiono
         var k = SelectedKeepsake(d, p);
         if (k >= 0 && p.KeepsakeRuns[k] < 255) ++p.KeepsakeRuns[k];
+        var k2 = SelectedKeepsake2(d, p);
+        if (k2 >= 0 && p.KeepsakeRuns[k2] < 255) ++p.KeepsakeRuns[k2];
     }
 
     /// <summary>
@@ -851,7 +909,7 @@ public static class Meta
     }
 
     // ------------------------------------------------------------------ zlecenia
-    private static ushort AddSat16(ushort a, int delta) => (ushort)Math.Min(65535, a + Math.Max(0, delta));
+    internal static ushort AddSat16(ushort a, int delta) => (ushort)Math.Min(65535, a + Math.Max(0, delta));
 
     private static byte AddSat8(byte a, int delta) => (byte)Math.Min(255, a + Math.Max(0, delta));
 
@@ -954,7 +1012,12 @@ public static class Meta
         p.ToolsFound = (byte)(p.ToolsFound | g.ToolsFound);
         if (g.St == GameStatus.Won) SetClassWon(p, g.Cls);
         var stake = Investor.Stake(d, g.Bonus.Investor); // rekord stawki zawodu (wygrana w trybie inwestora)
-        if (g.St == GameStatus.Won && stake > BestStake(p, g.Cls)) SetBestStake(p, g.Cls, stake);
+        if (g.St == GameStatus.Won && stake > BestStake(p, g.Cls))
+        {
+            var before = Progress.StakeRank(d, p);
+            SetBestStake(p, g.Cls, stake);
+            Progress.GrantStakeRanks(d, p, before); // v0.21.52 cz. b (#48): stopnie inwestora – Respekt za nowe progi
+        }
     }
 
     /// <summary>Sprawdza odznaki po ważnym momencie; nowe dają doświadczenie. Zwraca bitmaskę zdobytych teraz.</summary>

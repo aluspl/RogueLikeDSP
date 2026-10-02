@@ -15,6 +15,18 @@ public static class TestData
 
     public static string GoldenPath(string file) => Path.Combine(AppContext.BaseDirectory, "golden", file);
 
+    /// <summary>v0.21.52 cz. b: Respekt z poziomów inspektora osiągniętych z dośw. xp (migracja v14 daje go starym profilom).</summary>
+    public static int InspRespect(int xp)
+    {
+        var p = Meta.NewProfile(D);
+        Progress.AddInspectorXp(D, p, xp, new ProgressGain());
+        return p.Respect;
+    }
+
+    /// <summary>Dośw. inspektora z migracji v13 -> v14.</summary>
+    public static int InspMigrated(int runs, int wins, int respectTotal) =>
+        runs * D.InspectorMigrateRun + wins * D.InspectorMigrateWin + respectTotal * D.InspectorMigrateRespectPct / 100;
+
     public static Game NewGame() => new(D);
 
     public static Game Run(int cls, uint seed)

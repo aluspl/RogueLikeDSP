@@ -123,7 +123,7 @@ public sealed partial class Game
     }
 
     /// <summary>Premia zawodu: wzmocnienie mocy (opis w danych).</summary>
-    public int BoonPower() => BoonSum(BoonEffect.Power);
+    public int BoonPower() => BoonSum(BoonEffect.Power) + MasteryPower();
 
     public bool HasBoonOffer => BoonOffer[0] >= 0;
 
@@ -137,6 +137,7 @@ public sealed partial class Game
     public bool BoonAvailable(int b)
     {
         if (HasBoon(b) || (D.Boons[b].Cls >= 0 && D.Boons[b].Cls != Cls)) return false;
+        if (D.Boons[b].Mastery && (Bonus.Mastery & MasteryBit.Boon) == 0) return false; // v0.21.52 cz. b: premia mistrzostwa zawodu
         for (var k = 0; k < 3; ++k)
         {
             if (BoonOffer[k] == b) return false;

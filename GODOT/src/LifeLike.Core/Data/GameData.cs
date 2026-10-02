@@ -139,6 +139,35 @@ public sealed class GameData
     /// <summary>Fabuła odkrywana z budowami (#35, story.arc) i ozdoby Osiedla (estate.decor).</summary>
     public StoryThread[] StoryArc { get; private init; } = [];
     public DecorDef[] EstateDecor { get; private init; } = [];
+
+    // v0.21.52 cz. b: poziom inspektora (#44), mistrzostwo zawodu (#45), stopnie inwestora (#48)
+    /// <summary>Poziomy inspektora: dośw. na poziom i nagroda (sekcja "inspector").</summary>
+    public ProgressLevel[] InspectorLevels { get; private init; } = [];
+    /// <summary>Dośw. inspektora z budowy: budowa, etap, boss, elita, magazyn, wygrana; x procent trudności.</summary>
+    public int InspectorXpRun { get; private init; }
+    public int InspectorXpStage { get; private init; }
+    public int InspectorXpBoss { get; private init; }
+    public int InspectorXpElite { get; private init; }
+    public int InspectorXpStoreroom { get; private init; }
+    public int InspectorXpWin { get; private init; }
+    public int[] InspectorDiffPct { get; private init; } = [];
+    /// <summary>Migracja profilu v13 -> v14: dośw. inspektora za budowę, wygraną i % Respektu łącznie.</summary>
+    public int InspectorMigrateRun { get; private init; }
+    public int InspectorMigrateWin { get; private init; }
+    public int InspectorMigrateRespectPct { get; private init; }
+    /// <summary>Mistrzostwo zawodu 1-10: dośw. na poziom i nagroda (sekcja "mastery").</summary>
+    public ProgressLevel[] MasteryLevels { get; private init; } = [];
+    /// <summary>Wariant mocy, broń mistrza i premia mistrzostwa (indeks = zawód).</summary>
+    public MasteryClassDef[] MasteryClasses { get; private init; } = [];
+    /// <summary>Migracja: dośw. mistrzostwa za dom zawodu na Osiedlu i za wygraną zawodem.</summary>
+    public int MasteryMigrateWin { get; private init; }
+    public int MasteryMigrateClassWin { get; private init; }
+    /// <summary>Stopnie inwestora: nagroda za nowy najwyższy próg stawki (Xp = stawka; investor.ranks).</summary>
+    public ProgressLevel[] StakeRanks { get; private init; } = [];
+    /// <summary>Tytuły z poziomu inspektora i stopni inwestora (po tytułach z odznak i zleceń).</summary>
+    public ProgressTitle[] ProgressTitles { get; private init; } = [];
+    /// <summary>Jak grać: poziom inspektora i mistrzostwo zawodu.</summary>
+    public string[] ProgressHelpLines { get; private init; } = [];
     public int DefaultDifficulty { get; private init; }
     public int NgHpPctPerTier { get; private init; }
     public int NgDmgBonusPerTier { get; private init; }
@@ -679,7 +708,8 @@ public sealed class GameData
             return new SecretDef(Str(x, "id"), Str(x, "hint"), Str(x, "desc"), kind, value, reward, idx, Str(x, "rewardText"),
                 new StoryMsg(tutFrom, lines.ToArray()));
         }).ToArray();
-        Require(secrets.Length <= 16 && cosmetics.Length <= 8, "sekrety: maks. 16 zleceń i 8 wyglądów");
+        Require(secrets.Length <= 16 && cosmetics.Length <= 24 && cosmetics.Skip(8).All(x => x.IsHelmet),
+            "sekrety: maks. 16 zleceń i 24 wyglądy (przełączniki tylko wśród pierwszych 8)");
         var paperMask = 0UL;
         if (hasSecrets)
         {
@@ -707,7 +737,7 @@ public sealed class GameData
             });
             boons = boj.GetProperty("list").EnumerateArray().Select(x => new BoonDef(Str(x, "id"), Str(x, "name"), Str(x, "desc"),
                 rarId.IndexOf(Str(x, "rarity")), TagMask(x), ParseSnakeOr(Str(x, "effect"), BoonEffect.Unknown), Int(x, "value"),
-                x.TryGetProperty("class", out var bc) ? Lookup(cid, bc.GetString() ?? "", "zawód premii") : -1)).ToArray();
+                x.TryGetProperty("class", out var bc) ? Lookup(cid, bc.GetString() ?? "", "zawód premii") : -1, Bool(x, "mastery"))).ToArray();
             synergies = boj.GetProperty("synergies").EnumerateArray().Select(x => new SynergyDef(Str(x, "id"), Str(x, "name"), Str(x, "desc"),
                 TagMask(x), ParseSnake<SynergyEffect>(Str(x, "effect")), Int(x, "value"))).ToArray();
             Require(boonRarities.Length == 3 && boons.Length <= 64 && boons.All(b => b.Rarity >= 0), "premie: 3 rzadkości, maks. 64 premie");
@@ -845,8 +875,69 @@ public sealed class GameData
             Require(arc.Length <= 32 && arc.All(t => t.Messages.Length is >= 1 and <= 2), "fabuła: maks. 32 wątki po 1-2 wiadomości");
         }
         var decor = d.TryGetProperty("estate", out var esj)
-            ? esj.GetProperty("decor").EnumerateArray().Select(x => new DecorDef(Str(x, "id"), Str(x, "name"), Int(x, "wins"))).ToArray()
+            ? esj.GetProperty("decor").EnumerateArray().Select(x => new DecorDef(Str(x, "id"), Str(x, "name"), Int(x, "wins", 0), Int(x, "inspector", 0))).ToArray()
             : [];
+        // v0.21.52 cz. b: poziom inspektora (#44), mistrzostwo zawodu (#45), stopnie inwestora (#48)
+        var arcIds = arc.Select((t, i) => (t.Id, i)).ToDictionary(x => x.Id, x => x.i);
+        var decorIds = decor.Select((t, i) => (t.Id, i)).ToDictionary(x => x.Id, x => x.i);
+        ProgressLevel Level(JsonElement x, int xp)
+        {
+            var reward = ParseSnake<ProgressReward>(Str(x, "reward"));
+            var id = Str(x, "id", "");
+            var index = reward switch
+            {
+                ProgressReward.Helmet => Lookup(coid, id, "kolor kasku"),
+                ProgressReward.Story => Lookup(arcIds, id, "wątek fabuły"),
+                ProgressReward.Decor => Lookup(decorIds, id, "ozdoba Osiedla"),
+                _ => -1,
+            };
+            return new ProgressLevel(xp, reward, index, Int(x, "value", 0), Str(x, "title", ""));
+        }
+        ProgressLevel[] inspLevels = [], masteryLevels = [], stakeRanks = [];
+        MasteryClassDef[] masteryClasses = [];
+        int[] inspDiffPct = [];
+        int ixRun = 0, ixStage = 0, ixBoss = 0, ixElite = 0, ixStore = 0, ixWin = 0, imRun = 0, imWin = 0, imResp = 0, mmWin = 0, mmClassWin = 0;
+        if (d.TryGetProperty("inspector", out var insj))
+        {
+            inspLevels = insj.GetProperty("levels").EnumerateArray().Select(x => Level(x, Int(x, "xp"))).ToArray();
+            var ix = insj.GetProperty("xp");
+            ixRun = Int(ix, "run");
+            ixStage = Int(ix, "stage");
+            ixBoss = Int(ix, "boss");
+            ixElite = Int(ix, "elite");
+            ixStore = Int(ix, "storeroom");
+            ixWin = Int(ix, "win");
+            inspDiffPct = insj.GetProperty("diffPct").EnumerateArray().Select(v => v.GetInt32()).ToArray();
+            var im = insj.GetProperty("migrate");
+            imRun = Int(im, "run");
+            imWin = Int(im, "win");
+            imResp = Int(im, "respectPct");
+            Require(inspLevels.Length is >= 20 and <= 40 && inspDiffPct.Length == difficulties.Length, "inspektor: 20-40 poziomów, % na każdą trudność");
+        }
+        if (d.TryGetProperty("mastery", out var maj))
+        {
+            masteryLevels = maj.GetProperty("levels").EnumerateArray().Select(x => Level(x, Int(x, "xp"))).ToArray();
+            var boonIds = boons.Select((b, i) => (b.Id, i)).ToDictionary(x => x.Id, x => x.i);
+            masteryClasses = maj.GetProperty("classes").EnumerateArray().Select(x =>
+            {
+                var pw = x.GetProperty("power");
+                var wp = x.GetProperty("weapon");
+                var pk = wp.GetProperty("perk");
+                return new MasteryClassDef(Str(pw, "name"), Str(pw, "desc"), Int(pw, "power"), Int(pw, "cooldown"), Str(wp, "name"),
+                    new Perk(ParsePerk(Str(pk, "effect")), Int(pk, "value")), Lookup(boonIds, Str(x, "boon"), "premia mistrzostwa"));
+            }).ToArray();
+            var mm = maj.GetProperty("migrate");
+            mmWin = Int(mm, "win");
+            mmClassWin = Int(mm, "classWin");
+            Require(masteryLevels.Length == 10 && masteryClasses.Length == classes.Length, "mistrzostwo: 10 poziomów, wiersz na każdy zawód");
+        }
+        if (d.TryGetProperty("investor", out var invj2) && invj2.TryGetProperty("ranks", out var rkj))
+        {
+            stakeRanks = rkj.EnumerateArray().Select(x => Level(x, Int(x, "stake"))).ToArray();
+        }
+        var progressTitles = inspLevels.Select((l, i) => (l, i)).Where(x => x.l.Reward == ProgressReward.Title)
+            .Select(x => new ProgressTitle(x.l.Title, 0, x.i + 1))
+            .Concat(stakeRanks.Where(x => x.Reward == ProgressReward.Title).Select(x => new ProgressTitle(x.Title, 1, x.Xp))).ToArray();
 
         return new GameData
         {
@@ -860,6 +951,24 @@ public sealed class GameData
             WeeklyCoffeeCash = weeklyCoffee,
             StoryArc = arc,
             EstateDecor = decor,
+            InspectorLevels = inspLevels,
+            InspectorXpRun = ixRun,
+            InspectorXpStage = ixStage,
+            InspectorXpBoss = ixBoss,
+            InspectorXpElite = ixElite,
+            InspectorXpStoreroom = ixStore,
+            InspectorXpWin = ixWin,
+            InspectorDiffPct = inspDiffPct,
+            InspectorMigrateRun = imRun,
+            InspectorMigrateWin = imWin,
+            InspectorMigrateRespectPct = imResp,
+            MasteryLevels = masteryLevels,
+            MasteryClasses = masteryClasses,
+            MasteryMigrateWin = mmWin,
+            MasteryMigrateClassWin = mmClassWin,
+            StakeRanks = stakeRanks,
+            ProgressTitles = progressTitles,
+            ProgressHelpLines = d.TryGetProperty("progressHelp", out var phj) ? phj.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : [],
             BoonRarities = boonRarities,
             BoonTags = boonTagNames,
             Boons = boons,

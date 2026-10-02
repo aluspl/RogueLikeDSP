@@ -238,7 +238,8 @@ public class RespectAndRewardsTests
         var p = Profile.FromBytes(b);
         Assert.True(Meta.ProfileFix(D, p) && p.MagicIs(Profile.MagicCurrent));
         Assert.True(p.Best == 777 && p.Wins == 3 && p.DailyScore[4] == 55 && p.Rewards == Math.Min(3, avail) && p.Xp == 11 + refund);
-        Assert.True(p.Respect == 0 && p.RespectTotal == 0 && p.ClassWinsHi == 0 && p.RespectRanks[0] == 0 && p.BestStakeHi[0] == 0);
+        var r7 = TestData.InspRespect(TestData.InspMigrated(0, 3, 0)); // v0.21.52 cz. b: Respekt z poziomów inspektora (migracja v14)
+        Assert.True(p.Respect == r7 && p.RespectTotal == r7 && p.ClassWinsHi == 0 && p.RespectRanks[0] == 0 && p.BestStakeHi[0] == 0);
         for (var i = 0; i < D.Upgrades.Length; ++i) Assert.Equal(0, p.Levels[i]);
         Assert.False(Meta.ProfileFix(D, p));
         var v1 = Profile.FromBytes(new byte[Profile.Size]);

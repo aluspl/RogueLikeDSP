@@ -124,7 +124,7 @@ public sealed class DmgBreakdown
             EnemyDef = Math.Max(0, enemyDef),
             Luck = c.Luck + m.Luck,
             CritBonus = m.Crit,
-            CritWeapon = w.Crit,
+            CritWeapon = w.Crit + ((m.Mastery & MasteryBit.Weapon) != 0 ? d.MasteryClasses[cls].WeaponPerk.Value : 0), // broń mistrza
         };
         b.Finish(d);
         return b;

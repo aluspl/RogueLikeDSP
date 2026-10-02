@@ -18,7 +18,7 @@ public sealed partial class Game
         b.RangeBase = w.Range;
         b.Range = RangeOf(w);
         b.Scales = w.ScalesWith;
-        b.CritWeapon = w.Crit;
+        b.CritWeapon = w.Crit + (b.Weapon == CDef.Weapon ? MasterCrit() : 0); // v0.21.52 cz. b: broń mistrza
         var stTr = RunMods.StatTrait(w.ScalesWith);
         var luckT = 0;
         for (var i = 0; i < D.GearSlotsCount; ++i)

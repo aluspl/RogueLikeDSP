@@ -37,8 +37,29 @@ public static class Secrets
         {
             if (d.Contracts[i].Cosmetic == k && (p.Contracts & (1u << i)) != 0) return true;
         }
+        // v0.21.52 cz. b: poziom inspektora, stopnie inwestora, kask mistrza (dowolny zawód na poziomie z nagrodą „helmet”)
+        for (var l = 0; l < d.InspectorLevels.Length; ++l)
+        {
+            if (d.InspectorLevels[l].Reward == ProgressReward.Helmet && d.InspectorLevels[l].Index == k) return Progress.InspectorLevel(d, p) > l;
+        }
+        for (var l = 0; l < d.StakeRanks.Length; ++l)
+        {
+            if (d.StakeRanks[l].Reward == ProgressReward.Helmet && d.StakeRanks[l].Index == k) return Progress.StakeRank(d, p) > l;
+        }
+        for (var l = 0; l < d.MasteryLevels.Length; ++l)
+        {
+            if (d.MasteryLevels[l].Reward != ProgressReward.Helmet || d.MasteryLevels[l].Index != k) continue;
+            for (var c = 0; c < d.Classes.Length; ++c)
+            {
+                if (Progress.MasteryLevel(d, p, c) > l) return true;
+            }
+            return false;
+        }
         return false;
     }
+
+    /// <summary>Kask mistrza zawodu (nagroda mistrzostwa): działa tylko zawodem z tym poziomem.</summary>
+    public static bool MasteryHelmet(GameData d, int k) => d.MasteryLevels.Any(l => l.Reward == ProgressReward.Helmet && l.Index == k);
 
     public static bool CosmeticHelmet(GameData d, int k) => k >= 0 && k < d.Cosmetics.Length && d.Cosmetics[k].IsHelmet;
 
@@ -51,11 +72,16 @@ public static class Secrets
         if (!CosmeticHelmet(d, k) && CosmeticUnlocked(d, p, k)) p.Cosmetic = (byte)(p.Cosmetic ^ (1 << k));
     }
 
-    /// <summary>Kolor kasku na budowie: wybrany i odblokowany wygląd (-1 = kask zawodu); kask w paski ma pierwszeństwo.</summary>
-    public static int HelmetCosmetic(GameData d, Profile p)
+    /// <summary>
+    /// Kolor kasku na budowie: wybrany i odblokowany wygląd (-1 = kask zawodu); kask w paski ma pierwszeństwo.
+    /// cls &gt;= 0: kask mistrza tylko zawodem, który ma ten poziom mistrzostwa (inny zawód – kask zawodu).
+    /// </summary>
+    public static int HelmetCosmetic(GameData d, Profile p, int cls = -1)
     {
         var k = p.Helmet - 1;
-        return CosmeticHelmet(d, k) && CosmeticUnlocked(d, p, k) ? k : -1;
+        if (!CosmeticHelmet(d, k) || !CosmeticUnlocked(d, p, k)) return -1;
+        if (cls >= 0 && MasteryHelmet(d, k) && !Progress.MasteryHas(d, p, cls, ProgressReward.Helmet)) return -1;
+        return k;
     }
 
     /// <summary>Wybór koloru kasku: kolejny odblokowany albo kask zawodu.</summary>

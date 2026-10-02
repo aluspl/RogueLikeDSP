@@ -78,7 +78,8 @@ public class ProgressionPaceTests
         Assert.All(D.Badges, b => Assert.True(b.Xp <= 15 && b.Title.Length > 0));
         Assert.All(D.Contracts, c => Assert.True(c.Xp <= 15 && c.Title.Length > 0));
         var helmets = Enumerable.Range(0, D.Cosmetics.Length).Count(k => Secrets.CosmeticHelmet(D, k));
-        Assert.True(helmets >= 3 && helmets == D.Badges.Count(b => b.Cosmetic >= 0) + D.Contracts.Count(c => c.Cosmetic >= 0));
+        var fromProgress = D.InspectorLevels.Concat(D.StakeRanks).Concat(D.MasteryLevels).Count(l => l.Reward == ProgressReward.Helmet); // cz. b
+        Assert.True(helmets >= 3 && helmets == D.Badges.Count(b => b.Cosmetic >= 0) + D.Contracts.Count(c => c.Cosmetic >= 0) + fromProgress);
         Assert.False(Secrets.CosmeticHelmet(D, D.CosmeticGold));
 
         var p = Meta.NewProfile(D);
@@ -142,7 +143,7 @@ public class ProgressionPaceTests
         var p = Profile.FromBytes(raw);
         Assert.True(Meta.ProfileFix(D, p) && p.MagicIs(Profile.MagicCurrent));
         Assert.True(p.Xp == want && want > 33 && p.Best == 4444 && p.Wins == 7 && p.Classes == 0x3F && p.Tools == 0x0E && p.Hard == 1);
-        Assert.True(p.Brigade == 3 && p.Secrets == 0x15 && p.Respect == 77 && p.RespectRanksHi[0] == 1 && p.Title == 0 && p.Helmet == 0);
+        Assert.True(p.Brigade == 3 && p.Secrets == 0x15 && p.Respect == 77 + TestData.InspRespect(TestData.InspMigrated(0, 7, 0)) && p.RespectRanksHi[0] == 1 && p.Title == 0 && p.Helmet == 0);
         Assert.All(p.Levels, l => Assert.Equal(0, l));
         Assert.False(Meta.ProfileFix(D, p));
         var o = Meta.NewProfile(D);

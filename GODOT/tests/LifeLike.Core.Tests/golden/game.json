@@ -2205,6 +2205,113 @@
             "text": "Ulica ma nazwę: Planowa.|Tabliczkę wieszamy|w sobotę. Przyjdź!"
           }
         ]
+      },
+      {
+        "id": "insp_kontrola",
+        "name": "Pierwsza kontrola",
+        "hint": "Poziom inspektora 3",
+        "trigger": "inspector",
+        "value": 3,
+        "messages": [
+          {
+            "from": "Inspektor Kowal",
+            "text": "Dzień dobry, inspektor|Kowal. Będę zaglądał|na Pana budowy."
+          },
+          {
+            "from": "Kierownik Marek",
+            "text": "Spokojnie, mamy|wszystko w PlanBudowlany.|Nawet kawę."
+          }
+        ]
+      },
+      {
+        "id": "insp_dziennik",
+        "name": "Dziennik budowy",
+        "hint": "Poziom inspektora 7",
+        "trigger": "inspector",
+        "value": 7,
+        "messages": [
+          {
+            "from": "Inspektor Kowal",
+            "text": "Dziennik budowy|prowadzony starannie.|Rzadko to widuję."
+          }
+        ]
+      },
+      {
+        "id": "insp_kask",
+        "name": "Kask na głowie",
+        "hint": "Poziom inspektora 9",
+        "trigger": "inspector",
+        "value": 9,
+        "messages": [
+          {
+            "from": "Inspektor Kowal",
+            "text": "Widziałem kask na głowie,|nie na łopacie. Plus|w protokole."
+          },
+          {
+            "from": "Sąsiad Zenek",
+            "text": "A ja widziałem|inspektora w moim|ogródku. Też plus?"
+          }
+        ]
+      },
+      {
+        "id": "insp_protokol",
+        "name": "Protokół bez uwag",
+        "hint": "Poziom inspektora 15",
+        "trigger": "inspector",
+        "value": 15,
+        "messages": [
+          {
+            "from": "Inspektor Kowal",
+            "text": "Protokół bez uwag.|Pierwszy w tym roku.|Proszę nie zapeszać."
+          }
+        ]
+      },
+      {
+        "id": "insp_polecenie",
+        "name": "Polecenie",
+        "hint": "Poziom inspektora 20",
+        "trigger": "inspector",
+        "value": 20,
+        "messages": [
+          {
+            "from": "Inspektor Kowal",
+            "text": "Poleciłem Pana firmę|koledze z nadzoru.|Niech się uczy."
+          },
+          {
+            "from": "Anna Nowak",
+            "text": "Inspektor nas poleca?|Marek, zapisz to|złotymi literami."
+          }
+        ]
+      },
+      {
+        "id": "insp_szkolenie",
+        "name": "Szkolenie",
+        "hint": "Poziom inspektora 25",
+        "trigger": "inspector",
+        "value": 25,
+        "messages": [
+          {
+            "from": "Inspektor Kowal",
+            "text": "Prowadzę szkolenie dla|nowych inspektorów.|Pokażę Pana budowy."
+          }
+        ]
+      },
+      {
+        "id": "insp_emerytura",
+        "name": "Emerytura",
+        "hint": "Poziom inspektora 30",
+        "trigger": "inspector",
+        "value": 30,
+        "messages": [
+          {
+            "from": "Inspektor Kowal",
+            "text": "Idę niedługo na|emeryturę. Następca|zna Pana z opowieści."
+          },
+          {
+            "from": "Kierownik Marek",
+            "text": "Bez niego to już nie|będzie to samo. Kawa|dla niego zawsze była."
+          }
+        ]
       }
     ]
   },
@@ -2948,6 +3055,58 @@
         "value": 1,
         "xpPct": 20,
         "stake": 3
+      }
+    ],
+    "ranks": [
+      {
+        "stake": 1,
+        "reward": "respect",
+        "value": 15
+      },
+      {
+        "stake": 2,
+        "reward": "title",
+        "title": "Ryzykant"
+      },
+      {
+        "stake": 3,
+        "reward": "helmet",
+        "id": "kask_miedziany"
+      },
+      {
+        "stake": 4,
+        "reward": "respect",
+        "value": 20
+      },
+      {
+        "stake": 5,
+        "reward": "title",
+        "title": "Negocjator"
+      },
+      {
+        "stake": 6,
+        "reward": "respect",
+        "value": 25
+      },
+      {
+        "stake": 7,
+        "reward": "helmet",
+        "id": "kask_granatowy"
+      },
+      {
+        "stake": 8,
+        "reward": "title",
+        "title": "Pupil inwestora"
+      },
+      {
+        "stake": 9,
+        "reward": "respect",
+        "value": 30
+      },
+      {
+        "stake": 10,
+        "reward": "title",
+        "title": "Budowa marzeń"
       }
     ]
   },
@@ -4131,6 +4290,164 @@
         "effect": "power",
         "value": 1,
         "class": "majster"
+      },
+      {
+        "id": "autorytet",
+        "name": "Autorytet",
+        "desc": "+8% obrażeń",
+        "rarity": "rzadka",
+        "tags": [
+          "bhp"
+        ],
+        "effect": "dmg_pct",
+        "value": 8,
+        "class": "kierownik",
+        "mastery": true
+      },
+      {
+        "id": "mur_oporowy",
+        "name": "Mur oporowy",
+        "desc": "+2 OBR",
+        "rarity": "rzadka",
+        "tags": [
+          "beton"
+        ],
+        "effect": "def",
+        "value": 2,
+        "class": "murarz",
+        "mastery": true
+      },
+      {
+        "id": "hartowane",
+        "name": "Gwoździe hartowane",
+        "desc": "Kryt +8%",
+        "rarity": "rzadka",
+        "tags": [
+          "materialy"
+        ],
+        "effect": "crit",
+        "value": 8,
+        "class": "ciesla",
+        "mastery": true
+      },
+      {
+        "id": "napiecie",
+        "name": "Wysokie napięcie",
+        "desc": "Łańcuch: +2 cele",
+        "rarity": "legendarna",
+        "tags": [
+          "prad"
+        ],
+        "effect": "power",
+        "value": 2,
+        "class": "elektryk",
+        "mastery": true
+      },
+      {
+        "id": "splyw",
+        "name": "Szybki spływ",
+        "desc": "+6 HP na start etapu",
+        "rarity": "rzadka",
+        "tags": [
+          "woda",
+          "kawa"
+        ],
+        "effect": "regen_stage",
+        "value": 6,
+        "class": "hydraulik",
+        "mastery": true
+      },
+      {
+        "id": "fuga",
+        "name": "Fuga epoksydowa",
+        "desc": "Unik +6%",
+        "rarity": "rzadka",
+        "tags": [
+          "bhp"
+        ],
+        "effect": "dodge",
+        "value": 6,
+        "class": "glazurnik",
+        "mastery": true
+      },
+      {
+        "id": "lina",
+        "name": "Lina asekuracyjna",
+        "desc": "+8 max HP",
+        "rarity": "rzadka",
+        "tags": [
+          "bhp"
+        ],
+        "effect": "max_hp",
+        "value": 8,
+        "class": "dekarz",
+        "mastery": true
+      },
+      {
+        "id": "tynk_mistrza",
+        "name": "Tynk mistrza",
+        "desc": "Narzut ogłusza +1 t.",
+        "rarity": "legendarna",
+        "tags": [
+          "beton"
+        ],
+        "effect": "power",
+        "value": 1,
+        "class": "tynkarz",
+        "mastery": true
+      },
+      {
+        "id": "gasienice",
+        "name": "Gąsienice",
+        "desc": "+2 OBR",
+        "rarity": "rzadka",
+        "tags": [
+          "beton"
+        ],
+        "effect": "def",
+        "value": 2,
+        "class": "operator",
+        "mastery": true
+      },
+      {
+        "id": "maska",
+        "name": "Maska spawalnicza",
+        "desc": "Stany krócej o 2 t.",
+        "rarity": "rzadka",
+        "tags": [
+          "bhp",
+          "iskra"
+        ],
+        "effect": "status_res",
+        "value": 2,
+        "class": "spawacz",
+        "mastery": true
+      },
+      {
+        "id": "teodolit",
+        "name": "Teodolit",
+        "desc": "Widzenie +2",
+        "rarity": "rzadka",
+        "tags": [
+          "szczescie"
+        ],
+        "effect": "sight",
+        "value": 2,
+        "class": "geodeta",
+        "mastery": true
+      },
+      {
+        "id": "klucze",
+        "name": "Komplet kluczy",
+        "desc": "+1 obrażeń",
+        "rarity": "rzadka",
+        "tags": [
+          "materialy"
+        ],
+        "effect": "dmg",
+        "value": 1,
+        "class": "majster",
+        "mastery": true
       }
     ],
     "synergies": [
@@ -5021,6 +5338,36 @@
         "id": "fontanna",
         "name": "Fontanna",
         "wins": 10
+      },
+      {
+        "id": "betoniarka",
+        "name": "Nowa betoniarka",
+        "inspector": 5
+      },
+      {
+        "id": "rusztowanie",
+        "name": "Rusztowanie",
+        "inspector": 12
+      },
+      {
+        "id": "paleta",
+        "name": "Paleta cegieł",
+        "inspector": 17
+      },
+      {
+        "id": "zuraw",
+        "name": "Żuraw",
+        "inspector": 22
+      },
+      {
+        "id": "piaskownica",
+        "name": "Piaskownica",
+        "inspector": 27
+      },
+      {
+        "id": "altana",
+        "name": "Altana",
+        "inspector": 32
       }
     ]
   },
@@ -5205,6 +5552,96 @@
           240,
           240
         ]
+      },
+      {
+        "id": "kask_czerwony",
+        "name": "Czerwony kask",
+        "desc": "Kask bohatera na czerwono",
+        "helmet": [
+          214,
+          48,
+          49
+        ]
+      },
+      {
+        "id": "kask_fioletowy",
+        "name": "Fioletowy kask",
+        "desc": "Kask bohatera na fioletowo",
+        "helmet": [
+          124,
+          77,
+          255
+        ]
+      },
+      {
+        "id": "kask_turkusowy",
+        "name": "Turkusowy kask",
+        "desc": "Kask bohatera na turkusowo",
+        "helmet": [
+          40,
+          190,
+          190
+        ]
+      },
+      {
+        "id": "kask_rozowy",
+        "name": "Różowy kask",
+        "desc": "Kask bohatera na różowo",
+        "helmet": [
+          236,
+          110,
+          170
+        ]
+      },
+      {
+        "id": "kask_srebrny",
+        "name": "Srebrny kask",
+        "desc": "Kask bohatera ze srebra",
+        "helmet": [
+          184,
+          192,
+          204
+        ]
+      },
+      {
+        "id": "kask_brazowy",
+        "name": "Brązowy kask",
+        "desc": "Kask bohatera na brązowo",
+        "helmet": [
+          120,
+          72,
+          40
+        ]
+      },
+      {
+        "id": "kask_miedziany",
+        "name": "Miedziany kask",
+        "desc": "Kask bohatera z miedzi",
+        "helmet": [
+          184,
+          115,
+          51
+        ]
+      },
+      {
+        "id": "kask_granatowy",
+        "name": "Granatowy kask",
+        "desc": "Kask bohatera na granatowo",
+        "helmet": [
+          30,
+          44,
+          120
+        ]
+      },
+      {
+        "id": "kask_mistrza",
+        "name": "Kask mistrza",
+        "desc": "Złoty kask mistrza zawodu",
+        "helmet": [
+          255,
+          214,
+          0
+        ]
       }
     ]
   },
@@ -5216,5 +5653,471 @@
     "Nagrody: nowe zawody, narzędzia",
     "w dropach, wygląd, Respekt.",
     "Wykonane: baner i dymek Nowość."
+  ],
+  "mastery": {
+    "levels": [
+      {
+        "xp": 80,
+        "reward": "respect",
+        "value": 5
+      },
+      {
+        "xp": 120,
+        "reward": "respect",
+        "value": 5
+      },
+      {
+        "xp": 160,
+        "reward": "power"
+      },
+      {
+        "xp": 200,
+        "reward": "respect",
+        "value": 5
+      },
+      {
+        "xp": 260,
+        "reward": "weapon"
+      },
+      {
+        "xp": 320,
+        "reward": "respect",
+        "value": 10
+      },
+      {
+        "xp": 400,
+        "reward": "boon"
+      },
+      {
+        "xp": 480,
+        "reward": "respect",
+        "value": 10
+      },
+      {
+        "xp": 560,
+        "reward": "respect",
+        "value": 10
+      },
+      {
+        "xp": 640,
+        "reward": "helmet",
+        "id": "kask_mistrza"
+      }
+    ],
+    "classes": [
+      {
+        "class": "kierownik",
+        "power": {
+          "name": "Długa odprawa",
+          "desc": "Ogłusza +1 t., odn. +2 t.",
+          "power": 1,
+          "cooldown": 2
+        },
+        "weapon": {
+          "name": "Dziennik mistrza",
+          "perk": {
+            "effect": "crit",
+            "value": 3
+          }
+        },
+        "boon": "autorytet"
+      },
+      {
+        "class": "murarz",
+        "power": {
+          "name": "Mur na zakładkę",
+          "desc": "Stoi +3 t., odn. +1 t.",
+          "power": 3,
+          "cooldown": 1
+        },
+        "weapon": {
+          "name": "Kielnia mistrza",
+          "perk": {
+            "effect": "crit",
+            "value": 3
+          }
+        },
+        "boon": "mur_oporowy"
+      },
+      {
+        "class": "ciesla",
+        "power": {
+          "name": "Seria z dystansu",
+          "desc": "Zasięg +1, odn. +2 t.",
+          "power": 1,
+          "cooldown": 2
+        },
+        "weapon": {
+          "name": "Gwoździarka mistrza",
+          "perk": {
+            "effect": "crit",
+            "value": 2
+          }
+        },
+        "boon": "hartowane"
+      },
+      {
+        "class": "elektryk",
+        "power": {
+          "name": "Długi łańcuch",
+          "desc": "+1 cel, odn. +2 t.",
+          "power": 1,
+          "cooldown": 2
+        },
+        "weapon": {
+          "name": "Próbnik mistrza",
+          "perk": {
+            "effect": "crit",
+            "value": 4
+          }
+        },
+        "boon": "napiecie"
+      },
+      {
+        "class": "hydraulik",
+        "power": {
+          "name": "Szybki zawór",
+          "desc": "Leczy -2 HP, odn. -4 t.",
+          "power": -2,
+          "cooldown": -4
+        },
+        "weapon": {
+          "name": "Klucz mistrza",
+          "perk": {
+            "effect": "crit",
+            "value": 3
+          }
+        },
+        "boon": "splyw"
+      },
+      {
+        "class": "glazurnik",
+        "power": {
+          "name": "Tarcza diamentowa",
+          "desc": "+2 obrażeń, odn. +2 t.",
+          "power": 2,
+          "cooldown": 2
+        },
+        "weapon": {
+          "name": "Szlifierka mistrza",
+          "perk": {
+            "effect": "crit",
+            "value": 2
+          }
+        },
+        "boon": "fuga"
+      },
+      {
+        "class": "dekarz",
+        "power": {
+          "name": "Rynna z kalenicy",
+          "desc": "+2 pola, odn. +1 t.",
+          "power": 2,
+          "cooldown": 1
+        },
+        "weapon": {
+          "name": "Dachówka mistrza",
+          "perk": {
+            "effect": "crit",
+            "value": 3
+          }
+        },
+        "boon": "lina"
+      },
+      {
+        "class": "tynkarz",
+        "power": {
+          "name": "Gruby narzut",
+          "desc": "Ogłusza +1 t., odn. +2 t.",
+          "power": 1,
+          "cooldown": 2
+        },
+        "weapon": {
+          "name": "Agregat mistrza",
+          "perk": {
+            "effect": "crit",
+            "value": 3
+          }
+        },
+        "boon": "tynk_mistrza"
+      },
+      {
+        "class": "operator",
+        "power": {
+          "name": "Lekki taran",
+          "desc": "-1 obrażeń, odn. -4 t.",
+          "power": -1,
+          "cooldown": -4
+        },
+        "weapon": {
+          "name": "Łyżka mistrza",
+          "perk": {
+            "effect": "crit",
+            "value": 3
+          }
+        },
+        "boon": "gasienice"
+      },
+      {
+        "class": "spawacz",
+        "power": {
+          "name": "Długi łuk",
+          "desc": "+2 pola, odn. +1 t.",
+          "power": 2,
+          "cooldown": 1
+        },
+        "weapon": {
+          "name": "Spawarka mistrza",
+          "perk": {
+            "effect": "crit",
+            "value": 3
+          }
+        },
+        "boon": "maska"
+      },
+      {
+        "class": "geodeta",
+        "power": {
+          "name": "Szybkie tyczenie",
+          "desc": "Ciosy -1, odn. -4 t.",
+          "power": -1,
+          "cooldown": -4
+        },
+        "weapon": {
+          "name": "Tyczka mistrza",
+          "perk": {
+            "effect": "crit",
+            "value": 2
+          }
+        },
+        "boon": "teodolit"
+      },
+      {
+        "class": "majster",
+        "power": {
+          "name": "Skrzynka mistrza",
+          "desc": "Moc fachu +1, odn. +1 t.",
+          "power": 1,
+          "cooldown": 1
+        },
+        "weapon": {
+          "name": "Młotek mistrza",
+          "perk": {
+            "effect": "crit",
+            "value": 3
+          }
+        },
+        "boon": "klucze"
+      }
+    ],
+    "migrate": {
+      "win": 120,
+      "classWin": 60
+    }
+  },
+  "inspector": {
+    "xp": {
+      "run": 8,
+      "stage": 6,
+      "boss": 10,
+      "elite": 3,
+      "storeroom": 4,
+      "win": 25
+    },
+    "diffPct": [
+      80,
+      100,
+      125
+    ],
+    "levels": [
+      {
+        "xp": 114,
+        "reward": "respect",
+        "value": 10
+      },
+      {
+        "xp": 128,
+        "reward": "title",
+        "title": "Praktykant"
+      },
+      {
+        "xp": 142,
+        "reward": "story",
+        "id": "insp_kontrola"
+      },
+      {
+        "xp": 156,
+        "reward": "helmet",
+        "id": "kask_czerwony"
+      },
+      {
+        "xp": 170,
+        "reward": "decor",
+        "id": "betoniarka"
+      },
+      {
+        "xp": 184,
+        "reward": "respect",
+        "value": 15
+      },
+      {
+        "xp": 198,
+        "reward": "story",
+        "id": "insp_dziennik"
+      },
+      {
+        "xp": 212,
+        "reward": "title",
+        "title": "Stażysta"
+      },
+      {
+        "xp": 226,
+        "reward": "story",
+        "id": "insp_kask"
+      },
+      {
+        "xp": 240,
+        "reward": "keepsake_slot"
+      },
+      {
+        "xp": 254,
+        "reward": "respect",
+        "value": 20
+      },
+      {
+        "xp": 268,
+        "reward": "decor",
+        "id": "rusztowanie"
+      },
+      {
+        "xp": 282,
+        "reward": "helmet",
+        "id": "kask_fioletowy"
+      },
+      {
+        "xp": 296,
+        "reward": "title",
+        "title": "Rzeczoznawca"
+      },
+      {
+        "xp": 310,
+        "reward": "story",
+        "id": "insp_protokol"
+      },
+      {
+        "xp": 324,
+        "reward": "respect",
+        "value": 20
+      },
+      {
+        "xp": 338,
+        "reward": "decor",
+        "id": "paleta"
+      },
+      {
+        "xp": 352,
+        "reward": "helmet",
+        "id": "kask_turkusowy"
+      },
+      {
+        "xp": 366,
+        "reward": "title",
+        "title": "Inspektor"
+      },
+      {
+        "xp": 380,
+        "reward": "story",
+        "id": "insp_polecenie"
+      },
+      {
+        "xp": 394,
+        "reward": "respect",
+        "value": 25
+      },
+      {
+        "xp": 408,
+        "reward": "decor",
+        "id": "zuraw"
+      },
+      {
+        "xp": 422,
+        "reward": "helmet",
+        "id": "kask_rozowy"
+      },
+      {
+        "xp": 436,
+        "reward": "title",
+        "title": "Kierownik robót"
+      },
+      {
+        "xp": 450,
+        "reward": "story",
+        "id": "insp_szkolenie"
+      },
+      {
+        "xp": 464,
+        "reward": "respect",
+        "value": 25
+      },
+      {
+        "xp": 478,
+        "reward": "decor",
+        "id": "piaskownica"
+      },
+      {
+        "xp": 492,
+        "reward": "helmet",
+        "id": "kask_srebrny"
+      },
+      {
+        "xp": 506,
+        "reward": "title",
+        "title": "Nadzór budowlany"
+      },
+      {
+        "xp": 520,
+        "reward": "story",
+        "id": "insp_emerytura"
+      },
+      {
+        "xp": 534,
+        "reward": "respect",
+        "value": 30
+      },
+      {
+        "xp": 548,
+        "reward": "decor",
+        "id": "altana"
+      },
+      {
+        "xp": 562,
+        "reward": "helmet",
+        "id": "kask_brazowy"
+      },
+      {
+        "xp": 576,
+        "reward": "respect",
+        "value": 40
+      },
+      {
+        "xp": 590,
+        "reward": "title",
+        "title": "Główny inspektor"
+      }
+    ],
+    "migrate": {
+      "run": 20,
+      "win": 60,
+      "respectPct": 50
+    }
+  },
+  "progressHelp": [
+    "Każda budowa (też przegrana)",
+    "daje dośw. inspektora: etapy,",
+    "bossowie, elity, magazyny.",
+    "Poziom: SMS, ozdoba, kask,",
+    "tytuł, Respekt, 2. pamiątka.",
+    "Mistrzostwo zawodu 1-10: moc,",
+    "broń mistrza, premia, kask."
   ]
 }
