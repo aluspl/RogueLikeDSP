@@ -156,12 +156,21 @@ def export_sheet(name, frame_h, rel_hd, rel_1x=None, rel_gray=None, rel_white=No
 ANIM_FRAMES = 5          # chód x4 + oddech
 STAGE_ENEMY_FRAME, STAGE_ENEMIES = 61, 20   # v0.21.49: problemy etapów 61-80, druga klatka 81-100
 PRELUDE_ENEMY_FRAME, PRELUDE_ENEMIES = 101, 9   # v0.21.49 cz. 3: Akt 0 - problemy i Decyzja odmowna 101-109, druga klatka 110-118
+# v0.21.51 cz. 2: zawody z sekretnych zleceń 127-129 (druga klatka 130-132, sylwetki 133-135), kask w paski 136-159
+# (zawód * 2 + klatka animacji A/B)
+SECRET_CLASS_FRAME, SECRET_CLASSES, STRIPES_FRAME, STRIPES_CLASSES = 127, 3, 136, 12
 CHARACTER_FRAMES = (list(range(0, 15)) + [46, 47, 50, 52, 53, 54]
                     + list(range(STAGE_ENEMY_FRAME, STAGE_ENEMY_FRAME + STAGE_ENEMIES))
-                    + list(range(PRELUDE_ENEMY_FRAME, PRELUDE_ENEMY_FRAME + PRELUDE_ENEMIES)))   # jak anim_b w main.cpp
+                    + list(range(PRELUDE_ENEMY_FRAME, PRELUDE_ENEMY_FRAME + PRELUDE_ENEMIES))
+                    + list(range(SECRET_CLASS_FRAME, SECRET_CLASS_FRAME + SECRET_CLASSES))
+                    + [STRIPES_FRAME + 2 * c for c in range(STRIPES_CLASSES)])   # jak anim_b w main.cpp
 
 
 def anim_b(f):
+    if f >= STRIPES_FRAME:
+        return f | 1
+    if f >= SECRET_CLASS_FRAME:
+        return f + SECRET_CLASSES
     if f >= PRELUDE_ENEMY_FRAME:
         return f + PRELUDE_ENEMIES
     if f >= STAGE_ENEMY_FRAME:

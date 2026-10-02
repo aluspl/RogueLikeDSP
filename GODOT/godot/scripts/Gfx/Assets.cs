@@ -48,6 +48,11 @@ public static class Assets
     public const int FrameEvent = 122, FrameKey = 123, FrameChest = 124, FrameCrack = 125, FrameDoor = 126;
     // menu_icons.png 27-29: wydarzenie z wyborem, ulepszenie narzędzia, klucz do magazynu
     public const int MenuEvent = 27, MenuUpgrade = 28, MenuKey = 29;
+    // v0.21.51 cz. 2: actors.png 127-129 zawody z sekretnych zleceń (Spawacz, Geodeta, Majster), 130-132 ich druga klatka,
+    // 133-135 sylwetki; 136-159 kask w paski (zawód * 2 + klatka animacji A/B)
+    public const int FrameSecretClass = 127, SecretClasses = 3, FrameSecretSilhouette = 133, FrameStripes = 136;
+    // menu_icons.png 30-34: sekretne zlecenie (koperta z „?”), Młot Zenka, Poziomica mistrza, Złota kielnia, Kask w paski
+    public const int MenuSecret = 30, MenuZenka = 31, MenuLevel = 32, MenuGold = 33, MenuStripes = 34;
 
     // tiles/stage_N.png: 4 podłogi, 2 podłogi z cieniem muru, wierzch muru, lico muru, schody;
     // v0.21.51 autokafle muru - nakładki: krawędź wierzchu góra / lewa / prawa, lewy / prawy koniec lica, róg wewnętrzny
@@ -101,7 +106,9 @@ public static class Assets
     /// <summary>Czy klatka ma animację chodu (zawody, problemy budowy, bossowie).</summary>
     public static bool HasWalk(int frame) =>
         frame is >= 0 and < 15 or 46 or 47 or 50 or 52 or 53 or 54 || (frame >= FrameStageEnemy && frame < FrameStageEnemy + StageEnemies)
-        || (frame >= FramePreludeEnemy && frame < FramePreludeEnemy + PreludeEnemies);
+        || (frame >= FramePreludeEnemy && frame < FramePreludeEnemy + PreludeEnemies)
+        || (frame >= FrameSecretClass && frame < FrameSecretClass + SecretClasses)
+        || (frame >= FrameStripes && frame < FrameStripes + 24 && (frame & 1) == 0);
 
     /// <summary>Ikona mechaniki aktu w menu_icons (błoto, porywy, pył; pieczątki Aktu 0).</summary>
     public static int ActIcon(ActMechanic m) => m == ActMechanic.Stamps ? MenuStamps : MenuAct + Mathf.Max(0, (int)m - 1);
@@ -110,9 +117,12 @@ public static class Assets
     public static Rect2 Frame(int index, int size) => new(0, index * size, size, size);
 
     /// <summary>Druga klatka animacji (anim_b z main.cpp): zawody i wrogowie 0..14 -> +27, bossowie 46-47 -> 48-49, 50 -> 51,
-    /// zawody z nagród 52-54 -> 55-57, problemy etapów 61-80 -> 81-100, Akt 0 101-109 -> 110-118.</summary>
+    /// zawody z nagród 52-54 -> 55-57, problemy etapów 61-80 -> 81-100, Akt 0 101-109 -> 110-118,
+    /// zawody z sekretów 127-129 -> 130-132, kask w paski 136+2k -> 137+2k.</summary>
     public static int AnimB(int frame)
     {
+        if (frame >= FrameStripes) return frame | 1;
+        if (frame >= FrameSecretClass) return frame + SecretClasses;
         if (frame >= FramePreludeEnemy)
         {
             return frame + PreludeEnemies;
@@ -124,8 +134,22 @@ public static class Assets
         return frame < 15 ? frame + FrameAnimB : (frame < 48 ? frame + 2 : (frame < 52 ? frame + 1 : frame + 3));
     }
 
-    /// <summary>Sylwetka zablokowanego zawodu (0-5: 20+, zawody z nagród: 58+).</summary>
-    public static int Silhouette(int cls) => cls < 6 ? FrameSilhouette + cls : FrameSilhouetteExt + cls - 6;
+    /// <summary>Sylwetka zablokowanego zawodu (0-5: 20+, zawody z nagród: 58+, z sekretów: 133+).</summary>
+    public static int Silhouette(int cls) =>
+        cls < 6 ? FrameSilhouette + cls : (cls < 9 ? FrameSilhouetteExt + cls - 6 : FrameSecretSilhouette + cls - 9);
+
+    /// <summary>Klatka bohatera (hero_base z main.cpp): zawód albo – wygląd z sekretnego zlecenia – ten sam zawód w kasku w paski.</summary>
+    public static int HeroFrame(GameData d, Profile p, int cls) =>
+        p != null && d.CosmeticStripes >= 0 && Secrets.CosmeticOn(d, p, d.CosmeticStripes) ? FrameStripes + cls * 2 : d.Classes[cls].Frame;
+
+    /// <summary>Ikona nagrody sekretnego zlecenia w menu_icons (secret_icon z main.cpp; zawód – osobno portretem).</summary>
+    public static int SecretIcon(GameData d, SecretDef sd) => sd.Reward switch
+    {
+        SecretReward.Tool => d.Weapons[d.Tools[sd.Index].Weapon].Knockback ? MenuZenka : MenuLevel,
+        SecretReward.Cosmetic => sd.Index == d.CosmeticGold ? MenuGold : MenuStripes,
+        SecretReward.Respect => MenuRespect,
+        _ => MenuSecret,
+    };
 
     /// <summary>Klatka domu na Osiedlu: wielkość * liczba zawodów + zawód (pusta działka: HouseEmpty).</summary>
     public static int HouseFrame(int house, int classes) => (house >> 4) * classes + (house & 15);
@@ -135,7 +159,7 @@ public static class Assets
     /// <summary>Ikona nagrody za odbiór w menu_icons (narzędzie, sprzęt).</summary>
     public static int RewardIcon(GameData d, RewardDef r)
     {
-        if (r.Kind == RewardKind.Tool) return r.Index == d.Tools.Length - 1 ? MenuRewardTool2 : MenuRewardTool;
+        if (r.Kind == RewardKind.Tool) return d.Weapons[d.Tools[r.Index].Weapon].Elem == Element.Spark ? MenuRewardTool2 : MenuRewardTool;   // Pistolet do kotew
         if (r.Kind == RewardKind.Gear) return d.Gear[r.Index * 3].Stat == GearStat.Thermos ? MenuBelt : MenuBoots;
         if (r.Kind == RewardKind.Act) return MenuStamps;
         return MenuCalendar;
