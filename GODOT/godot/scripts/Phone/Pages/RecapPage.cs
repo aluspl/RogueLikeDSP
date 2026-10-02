@@ -134,6 +134,14 @@ public sealed class RecapPage : PhonePage
         _ => "Trudność: " + d.Difficulties[^1].Name,
     };
 
+    /// <summary>Przewiń do nagłówka sekcji (sceny zrzutów: „POSTĘP”).</summary>
+    public void ScrollTo(string header)
+    {
+        var i = _rows.FindIndex(r => r.Header && r.Text == header);
+        if (i >= 0) _top = i;
+        Redraw();
+    }
+
     public override bool TapRow(int index)
     {
         Scroll(index == -1 ? -_window / 2 : _window / 2);

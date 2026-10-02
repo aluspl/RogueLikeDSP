@@ -138,6 +138,7 @@ public sealed class RecapStaging
         if (scene == "recap-endmsg") return;
         Flow.Recap.Open(true);
         if (scene == "recap-death-scroll") Flow.Recap.Page.TapRow(-2);
+        if (scene == "recap-progress") Flow.Recap.Page.ScrollTo("POSTĘP"); // v0.21.52: karta z paskami postępu
         if (scene == "recap-end")
         {
             Flow.End.Open();

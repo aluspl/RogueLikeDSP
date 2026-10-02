@@ -30,6 +30,7 @@ public sealed class DebugScenes
         "event-map", "event-sms", "event-choices", "event-result", "event-boon", "upgrade-shop", "upgrade-trait", "upgrade-gear",
         "tool-swap", "secret-crack", "secret-card", "secret-open", "secret-door", "secret-map", "tasks-extras", "help-extras",
         "recap-endmsg", "recap-death", "recap-death-scroll", "recap-win", "recap-end", "weekly", "weekly-card", "weekly-run",
+        "recap-progress", "titles", "looks",
         "story-archive", "story-thread", "estate-grow", "help-meta",
         .. SecretStaging.Names,
     ];
@@ -52,7 +53,7 @@ public sealed class DebugScenes
     public static bool UsesDemoProfile(string scene) =>
         scene is "title" or "classselect" or "profile" or "catalog" or "estate" or "team" or "training" or "card" or "perks" or "investor"
             or "daily" or "death" or "respect" or "rewards" or "classselect-locked" or "stats-class" or "stats-tip" or "catalog-tags"
-            or "tutorial-unlock" or "tutorial-act0" or "dmg-class" or "dmg-stats" || SecretStaging.UsesDemoProfile(scene);
+            or "tutorial-unlock" or "tutorial-act0" or "dmg-class" or "dmg-stats" or "titles" or "looks" or "recap-progress" || SecretStaging.UsesDemoProfile(scene);
 
     /// <summary>Sceny samouczka menu: profil bez obejrzanych dymków (inne sceny - samouczek już obejrzany).</summary>
     public static bool UsesTutorial(string scene) => scene.StartsWith("tutorial");
@@ -208,6 +209,22 @@ public sealed class DebugScenes
                 Flow.ClassSelect.Open();
                 Flow.Investor.Open(true);
                 Flow.Investor.Page.Sel = 2;
+                return;
+            case "titles": // v0.21.52: Odznaki > Tytuły, zaznaczony wybrany tytuł
+                Flow.Profile.Open(0, true);
+                if (_app.Nodes.Phone.Current is Phone.ProfileTabs.BadgesTab tb)
+                {
+                    tb.Page = Phone.ProfileTabs.BadgesTab.TitlesPage;
+                    tb.Select(Math.Max(0, Titles.Selected(s.Data, s.Profile)));
+                }
+                _app.Nodes.Phone.QueueRedraw();
+                return;
+            case "looks": // v0.21.52: Wygląd – kolor kasku (wiersz za modyfikatorami inwestora)
+                s.ClassId = 1;
+                s.Profile.Wins = Math.Max(1, s.Profile.Wins);
+                Flow.ClassSelect.Open();
+                Flow.Investor.Open(true);
+                Flow.Investor.Page.Sel = s.Data.Investor.Length + (Secrets.CosmeticUnlocked(s.Data, s.Profile, s.Data.CosmeticStripes) ? 1 : 0);
                 return;
             case "settings-title":
                 Flow.Title.Open();

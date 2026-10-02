@@ -13,8 +13,9 @@ public static class DemoProfile
         p.Runs = 14;
         p.Wins = 3;
         p.Best = 5613;
-        p.Xp = 85;
-        p.Badges = (ushort)((1 << d.BadgeBezUsterek) | (1 << d.BadgeSeryjny) | (1 << d.BadgeKolekcjoner));
+        p.Xp = 140;
+        var terminowy = d.BadgeIndex("przed_terminem"); // v0.21.52: tytuł i niebieski kask
+        p.Badges = (ushort)((1 << d.BadgeBezUsterek) | (1 << d.BadgeSeryjny) | (1 << d.BadgeKolekcjoner) | (terminowy >= 0 ? 1 << terminowy : 0));
         p.ClassWins = 0x03;
         p.KillsTotal = 163;
         p.PowersTotal = 71;
@@ -27,7 +28,13 @@ public static class DemoProfile
         p.Houses[2] = 0x34;
         Meta.CheckContracts(d, p);
         var craft = Array.FindIndex(d.Upgrades, u => u.Effect == UpgradeEffect.Craft);
-        if (craft >= 0) p.Levels[craft] = (byte)Math.Min(2, d.Upgrades[craft].Levels); // Warsztaty mają dziś 1 poziom
+        if (craft >= 0) p.Levels[craft] = (byte)Math.Min(2, d.Upgrades[craft].Levels);
+        var hp = Array.FindIndex(d.Upgrades, u => u.Effect == UpgradeEffect.Hp); // v0.21.52: Szkolenia w trakcie (poziomy)
+        if (hp >= 0) p.Levels[hp] = 2;
+        var bhp = Array.FindIndex(d.Upgrades, u => u.Effect == UpgradeEffect.TakenPct);
+        if (bhp >= 0) p.Levels[bhp] = 1;
+        p.Title = (byte)(d.BadgeSeryjny + 1);
+        if (terminowy >= 0 && d.Badges[terminowy].Cosmetic >= 0) p.Helmet = (byte)(d.Badges[terminowy].Cosmetic + 1);
         var kielnia = Array.FindIndex(d.Keepsakes, k => k.Effect == PerkEffect.Luck);
         if (kielnia >= 0)
         {
