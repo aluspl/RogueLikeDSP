@@ -51,12 +51,13 @@ public class PerksContractsEventsTests
         int iLuck = Array.FindIndex(D.Upgrades, u => u.Effect == UpgradeEffect.Luck);
         int iCraft = Array.FindIndex(D.Upgrades, u => u.Effect == UpgradeEffect.Craft);
         Assert.True(iLuck >= 0 && iCraft >= 0 && D.Upgrades[iLuck].Levels >= 1 && D.Upgrades[iCraft].Levels >= 1);
-        p.Levels[iLuck] = 1;
-        p.Levels[iCraft] = 1;
+        p.Levels[iLuck] = (byte)D.Upgrades[iLuck].Levels;
+        p.Levels[iCraft] = (byte)D.Upgrades[iCraft].Levels;
         var pm = Meta.Mods(D, p);
-        Assert.True(pm.Luck == D.Upgrades[iLuck].Value && pm.Craft == D.Upgrades[iCraft].Value);
+        Assert.True(pm.Luck == Meta.UpgradeTotal(D, iLuck, 9, UpgradeEffect.Luck) && pm.Luck >= 1);
+        Assert.True(pm.Craft == Meta.UpgradeTotal(D, iCraft, 9, UpgradeEffect.Craft) && pm.Craft >= 1);
         // co najmniej 3 narzędzia skalowane INT do odblokowania
-        var intTools = D.Tools.Count(t => D.Weapons[t.Weapon].ScalesWith == Stat.Intel && t.Cost > 0);
+        var intTools = D.Tools.Count(t => D.Weapons[t.Weapon].ScalesWith == Stat.Intel && t.Shop);
         Assert.True(intTools >= 3);
     }
 
@@ -222,8 +223,9 @@ public class PerksContractsEventsTests
         var raw = v3.ToBytes();
         for (var i = Profile.V3Size; i < raw.Length; i++) raw[i] = 0xCD; // śmieci
         v3 = Profile.FromBytes(raw);
-        Assert.True(Meta.ProfileFix(D, v3) && v3.MagicIs(Profile.MagicV12));
-        Assert.True(v3.Best == 1234 && v3.Runs == 9 && v3.Wins == 4 && v3.Xp == 321 && v3.Levels[0] == 2 && v3.Classes == 0x1F);
+        Assert.True(Meta.ProfileFix(D, v3) && v3.MagicIs(Profile.MagicCurrent));
+        var r3 = D.Upgrades[0].LegacyCosts[0] + D.Upgrades[0].LegacyCosts[1]; // v13: zwrot po starej cenie
+        Assert.True(v3.Best == 1234 && v3.Runs == 9 && v3.Wins == 4 && v3.Xp == 321 + r3 && v3.Levels[0] == 0 && v3.Classes == 0x1F);
         Assert.True(v3.Hard == 1 && v3.Flags == 3 && v3.Tools == 5 && v3.Badges == 0x0123 && v3.Catalog == 0x07FF);
         Assert.True(v3.ClassWins == 0x05 && v3.ToolsFound == 0x0B && v3.HousesCount == 3 && v3.Houses[0] == 0x21 && v3.Houses[2] == 0x35);
         Assert.True(v3.KillsTotal == 0 && v3.PowersTotal == 0 && v3.BrandTotal == 0 && v3.CleanBosses == 0);
@@ -248,7 +250,7 @@ public class PerksContractsEventsTests
         var raw = v4.ToBytes();
         for (var i = Profile.V4Size; i < raw.Length; i++) raw[i] = 0xEE; // śmieci
         v4 = Profile.FromBytes(raw);
-        Assert.True(Meta.ProfileFix(D, v4) && v4.MagicIs(Profile.MagicV12));
+        Assert.True(Meta.ProfileFix(D, v4) && v4.MagicIs(Profile.MagicCurrent));
         Assert.True(v4.Best == 77 && v4.Xp == 12 && v4.KillsTotal == 150 && v4.PowersTotal == 40 && v4.Contracts == 0x03);
         Assert.True(v4.KeepsakeRuns[0] == 4 && v4.RunKills == 0 && v4.RunPowers == 0 && v4.RunBrand == 0 && v4.RunClean == 0);
         Assert.True(Meta.SelectedKeepsake(D, v4) >= 0 && D.Keepsakes[Meta.SelectedKeepsake(D, v4)].Start);
@@ -349,8 +351,8 @@ public class PerksContractsEventsTests
         p.RespectRanksHi[0] = 1;
         p.RespectRanksHi[2] = 3;
         var b = p.ToBytes();
-        Assert.Equal(196, b.Length);
-        Assert.Equal("PBRL012\0"u8.ToArray(), b[..8]);
+        Assert.Equal(200, b.Length);
+        Assert.Equal("PBRL013\0"u8.ToArray(), b[..8]);
         Assert.Equal(new byte[] { 0x02, 0x01, 0x04, 0x03, 2, 1, 0, 3 }, b[188..196]);
         Assert.Equal(new byte[] { 0x0B, 0x0A, 0x0D, 0x0C }, b[156..160]);
         Assert.Equal(new byte[] { 0x02, 0x01 }, b[160..162]);

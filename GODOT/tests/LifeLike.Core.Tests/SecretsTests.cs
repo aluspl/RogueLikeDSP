@@ -123,7 +123,7 @@ public class SecretsTests
         Array.Fill(b, (byte)0xCD, Profile.V11Size, Profile.Size - Profile.V11Size);
         var v11 = Profile.FromBytes(b);
         v11.Magic = Profile.MagicBytes(Profile.MagicV11);
-        Assert.True(Meta.ProfileFix(D, v11) && v11.MagicIs(Profile.MagicV12) && v11.Best == 4321);
+        Assert.True(Meta.ProfileFix(D, v11) && v11.MagicIs(Profile.MagicCurrent) && v11.Best == 4321);
         Assert.True(v11.Secrets == 1 << i && v11.SecretsNew == 1 << i && v11.Cosmetic == 0 && v11.RespectRanksHi[0] == 0);
         Assert.True(Meta.ClassUnlocked(D, v11, ClassOf(AbilityEffect.Borrow)));
         Assert.True(Meta.PendingUnlock(D, v11, 0, out var cls) == TutorialUnlock.Secret && cls == i);

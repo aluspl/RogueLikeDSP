@@ -11,7 +11,7 @@ public static class Meta
     public static void ProfileReset(GameData d, Profile p)
     {
         var fresh = Profile.FromBytes(new byte[Profile.Size]);
-        fresh.Magic = Profile.MagicBytes(Profile.MagicV12);
+        fresh.Magic = Profile.MagicBytes(Profile.MagicCurrent);
         fresh.Classes = (byte)d.StartClassesMask;
         DefaultKeepsake(d, fresh);
         CopyInto(fresh, p);
@@ -96,6 +96,8 @@ public static class Meta
         dst.SecretsNew = copy.SecretsNew;
         dst.Cosmetic = copy.Cosmetic;
         dst.RespectRanksHi = copy.RespectRanksHi;
+        dst.Title = copy.Title;
+        dst.Helmet = copy.Helmet;
     }
 
     // ------------------------------------------------------------------ katalog usterek (rodzaje 0-15 w Catalog, 16-47 w CatalogHi)
@@ -186,20 +188,36 @@ public static class Meta
     }
 
     /// <summary>
-    /// v0.21.49 (profil sprzed v8): ulepszenia ze zmienionym działaniem (BHP, Kurs fachowy) wracają jako doświadczenie,
-    /// nagrody za odbiór za dotychczasowe wygrane.
+    /// v0.21.49 (profil sprzed v8): nagrody za odbiór za dotychczasowe wygrane (zwrot za zmienione Szkolenia BHP i Kurs
+    /// fachowy robi teraz MigrateV13 – ta sama kwota: stary koszt poziomu).
     /// </summary>
     public static void MigrateV8(GameData d, Profile p)
     {
-        for (var i = 0; i < d.Upgrades.Length; ++i)
-        {
-            if (d.Upgrades[i].ResetRefund > 0 && p.Levels[i] > 0)
-            {
-                p.Xp += d.Upgrades[i].ResetRefund * p.Levels[i];
-                p.Levels[i] = 0;
-            }
-        }
         p.Rewards = (byte)Math.Min(Math.Max(0, p.Wins), RewardsAvailable(d));
+    }
+
+    /// <summary>Zwrot po starej cenie (sprzed v0.21.52) za kupione poziomy Szkolenia i; poziom ponad stare maksimum: Refund.</summary>
+    public static int LegacyRefund(GameData d, Profile p, int i)
+    {
+        var u = d.Upgrades[i];
+        var t = 0;
+        for (var l = 0; l < p.Levels[i]; ++l) t += l < u.LegacyCosts.Length ? u.LegacyCosts[l] : u.Refund;
+        return t;
+    }
+
+    /// <summary>
+    /// v12 -> v13 (v0.21.52): Szkolenia mają 4-5 poziomów z mniejszymi krokami i wyższą ceną – kupione poziomy wracają jako
+    /// doświadczenie po starej cenie, poziomy od zera. Zawody, narzędzia, Trudny i brygada zostają; tytuł i kask bez wyboru.
+    /// </summary>
+    public static void MigrateV13(GameData d, Profile p)
+    {
+        for (var i = 0; i < Profile.MaxUpgrades; ++i)
+        {
+            if (i < d.Upgrades.Length) p.Xp += LegacyRefund(d, p, i);
+            p.Levels[i] = 0;
+        }
+        p.Title = 0;
+        p.Helmet = 0;
     }
 
     /// <summary>
@@ -224,14 +242,23 @@ public static class Meta
     /// <summary>Naprawia wczytany profil. Zwraca true, jeśli trzeba go zapisać (migracja albo pusta pamięć).</summary>
     public static bool ProfileFix(GameData d, Profile p)
     {
-        if (p.MagicIs(Profile.MagicV12)) return ClampLevels(d, p);
+        if (p.MagicIs(Profile.MagicCurrent)) return ClampLevels(d, p);
+        if (p.MagicIs(Profile.MagicV12)) // v12 -> v13: zwrot za Szkolenia, tytuł i kask od zera
+        {
+            var b12 = p.ToBytes();
+            Array.Clear(b12, Profile.V12Size, b12.Length - Profile.V12Size);
+            CopyInto(Profile.FromBytes(b12), p);
+            p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
+            MigrateV13(d, p);
+            return true;
+        }
         if (p.MagicIs(Profile.MagicV11)) // v11 -> v12: sekretne zlecenia z tego, co już widać w profilu
         {
             var b11 = p.ToBytes();
             Array.Clear(b11, Profile.V11Size, b11.Length - Profile.V11Size);
             CopyInto(Profile.FromBytes(b11), p);
-            p.Magic = Profile.MagicBytes(Profile.MagicV12);
-            ClampLevels(d, p);
+            p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
+            MigrateV13(d, p);
             Secrets.MigrateV12(d, p);
             return true;
         }
@@ -240,8 +267,8 @@ public static class Meta
             var b10 = p.ToBytes();
             Array.Clear(b10, Profile.V10Size, b10.Length - Profile.V10Size);
             CopyInto(Profile.FromBytes(b10), p);
-            p.Magic = Profile.MagicBytes(Profile.MagicV12);
-            ClampLevels(d, p);
+            p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
+            MigrateV13(d, p);
             Story.MigrateV11(d, p);
             Secrets.MigrateV12(d, p);
             return true;
@@ -253,8 +280,8 @@ public static class Meta
             var b8 = p.ToBytes();
             Array.Clear(b8, keep8, b8.Length - keep8);
             CopyInto(Profile.FromBytes(b8), p);
-            p.Magic = Profile.MagicBytes(Profile.MagicV12);
-            ClampLevels(d, p);
+            p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
+            MigrateV13(d, p);
             MigrateV10(d, p);
             Story.MigrateV11(d, p);
             Secrets.MigrateV12(d, p);
@@ -272,9 +299,9 @@ public static class Meta
             var b = p.ToBytes();
             Array.Clear(b, keep, b.Length - keep);
             CopyInto(Profile.FromBytes(b), p);
-            p.Magic = Profile.MagicBytes(Profile.MagicV12);
+            p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
             DefaultKeepsake(d, p);
-            ClampLevels(d, p);
+            MigrateV13(d, p);
             MigrateV8(d, p);
             MigrateV10(d, p);
             Story.MigrateV11(d, p);
@@ -401,8 +428,71 @@ public static class Meta
     public static int UpgradeCost(GameData d, Profile p, int i)
     {
         var u = d.Upgrades[i];
-        return p.Levels[i] < u.Levels ? u.Costs[p.Levels[i]] : -1;
+        return p.Levels[i] < u.Levels ? u.Cost(p.Levels[i]) : -1;
     }
+
+    /// <summary>Łączna wartość działania e z poziomów 1..levels Szkolenia i (upgrade_total).</summary>
+    public static int UpgradeTotal(GameData d, int i, int levels, UpgradeEffect e)
+    {
+        var u = d.Upgrades[i];
+        var t = 0;
+        for (var l = 0; l < levels && l < u.Levels; ++l)
+        {
+            if (u.Steps[l].Effect == e) t += u.Steps[l].Value;
+        }
+        return t;
+    }
+
+    /// <summary>Razem z poziomów 1..levels Szkolenia i, działania w kolejności poziomów („Kryt +1%, +1 szczęścia”).</summary>
+    public static Message UpgradeSummary(GameData d, Message m, int i, int levels)
+    {
+        var u = d.Upgrades[i];
+        var any = false;
+        for (var l = 0; l < levels && l < u.Levels; ++l)
+        {
+            var seen = false;
+            for (var k = 0; k < l; ++k) seen |= u.Steps[k].Effect == u.Steps[l].Effect;
+            if (seen) continue;
+            if (any) m.Add(", ");
+            RunMods.UpgradeLabel(m, u.Steps[l].Effect, UpgradeTotal(d, i, levels, u.Steps[l].Effect));
+            any = true;
+        }
+        return m;
+    }
+
+    public static string UpgradeSummary(GameData d, int i, int levels) => UpgradeSummary(d, new Message(), i, levels).Text;
+
+    /// <summary>v0.21.52: zawód na sprzedaż w Szkoleniach (nie startowy, nie z nagrody ani sekretu).</summary>
+    public static bool ClassForSale(GameData d, int c) => (d.StartClassesMask & (1 << c)) == 0 && !ClassReward(d, c);
+
+    public static int ClassesBought(GameData d, Profile p)
+    {
+        var n = 0;
+        for (var c = 0; c < d.Classes.Length; ++c)
+        {
+            if (ClassForSale(d, c) && (p.Classes & (1u << c)) != 0) ++n;
+        }
+        return n;
+    }
+
+    /// <summary>Cena zawodu kupowanego jako bought+1 (rośnie z każdym zakupem; ostatnia dla następnych).</summary>
+    public static int ClassPrice(GameData d, int bought) => d.ClassCosts[Math.Min(bought, d.ClassCosts.Length - 1)];
+
+    public static int ClassCost(GameData d, Profile p) => ClassPrice(d, ClassesBought(d, p));
+
+    public static int ToolsBought(GameData d, Profile p)
+    {
+        var n = 0;
+        for (var i = 0; i < d.Tools.Length; ++i)
+        {
+            if (d.Tools[i].Shop && ((p.Tools >> i) & 1) != 0) ++n;
+        }
+        return n;
+    }
+
+    public static int ToolPrice(GameData d, int bought) => d.ToolCosts[Math.Min(bought, d.ToolCosts.Length - 1)];
+
+    public static int ToolCost(GameData d, Profile p) => ToolPrice(d, ToolsBought(d, p));
 
     public static bool BuyUpgrade(GameData d, Profile p, int i)
     {
@@ -415,8 +505,9 @@ public static class Meta
 
     public static bool BuyClass(GameData d, Profile p, int c)
     {
-        if (ClassReward(d, c) || ClassUnlocked(d, p, c) || p.Xp < d.ClassCost) return false;
-        p.Xp -= d.ClassCost;
+        var cost = ClassCost(d, p);
+        if (ClassReward(d, c) || ClassUnlocked(d, p, c) || p.Xp < cost) return false;
+        p.Xp -= cost;
         p.Classes = (byte)(p.Classes | (1u << c));
         return true;
     }
@@ -447,8 +538,9 @@ public static class Meta
 
     public static bool BuyTool(GameData d, Profile p, int i)
     {
-        if (d.Tools[i].Reward || d.Tools[i].Secret || ToolUnlocked(d, p, i) || p.Xp < d.Tools[i].Cost) return false;
-        p.Xp -= d.Tools[i].Cost;
+        var cost = ToolCost(d, p);
+        if (!d.Tools[i].Shop || ToolUnlocked(d, p, i) || p.Xp < cost) return false;
+        p.Xp -= cost;
         p.Tools = (byte)(p.Tools | (1u << i));
         return true;
     }
@@ -544,22 +636,7 @@ public static class Meta
         var m = RunMods.Default(d);
         m.Tools = ToolsMask(d, p);
         m.Helpers = HelpersMask(d, p);
-        for (var i = 0; i < d.Upgrades.Length; ++i)
-        {
-            var v = d.Upgrades[i].Value * p.Levels[i];
-            switch (d.Upgrades[i].Effect)
-            {
-                case UpgradeEffect.Hp: m.Hp += v; break;
-                case UpgradeEffect.Def: m.Def += v; break;
-                case UpgradeEffect.Dmg: m.Dmg += v; break;
-                case UpgradeEffect.Coffee: m.Coffee += v; break;
-                case UpgradeEffect.Pickups: m.Pickups += v; break;
-                case UpgradeEffect.Luck: m.Luck += v; break;
-                case UpgradeEffect.Craft: m.Craft += v; break;
-                case UpgradeEffect.DmgPct: m.DmgPct += v; break;
-                case UpgradeEffect.TakenPct: m.TakenPct += v; break;
-            }
-        }
+        for (var i = 0; i < d.Upgrades.Length; ++i) m.AddUpgradeLevels(d.Upgrades[i], p.Levels[i]);
         for (var i = 0; i < d.Respect.Length; ++i) // Respekt: kupione rangi
         {
             if (RespectRank(d, p, i) > 0) m.AddRespect(d.Respect[i].Effect, RespectValue(d, p, i));
@@ -586,19 +663,19 @@ public static class Meta
         var m = RunMods.Default(d);
         if (src == 0)
         {
-            for (var i = 0; i < d.Upgrades.Length; ++i)
+            for (var i = 0; i < d.Upgrades.Length; ++i) // premie bojowe (bez kawy, termosu, znajdziek, materiałów, sprzętu, zł)
             {
-                var v = d.Upgrades[i].Value * p.Levels[i];
-                switch (d.Upgrades[i].Effect)
-                {
-                    case UpgradeEffect.Hp: m.Hp += v; break;
-                    case UpgradeEffect.Def: m.Def += v; break;
-                    case UpgradeEffect.Dmg: m.Dmg += v; break;
-                    case UpgradeEffect.Luck: m.Luck += v; break;
-                    case UpgradeEffect.Craft: m.Craft += v; break;
-                    case UpgradeEffect.DmgPct: m.DmgPct += v; break;
-                    case UpgradeEffect.TakenPct: m.TakenPct += v; break;
-                }
+                var u = RunMods.Default(d);
+                u.AddUpgradeLevels(d.Upgrades[i], p.Levels[i]);
+                m.Hp += u.Hp;
+                m.Def += u.Def;
+                m.Dmg += u.Dmg;
+                m.Luck += u.Luck;
+                m.Craft += u.Craft;
+                m.DmgPct += u.DmgPct;
+                m.TakenPct += u.TakenPct;
+                m.Crit += u.Crit;
+                m.Dodge += u.Dodge;
             }
         }
         else if (src == 1)
@@ -631,19 +708,24 @@ public static class Meta
         return parts;
     }
 
-    /// <summary>Ekran „Koszty”: ile kosztuje cały sklep.</summary>
+    /// <summary>Ekran „Koszty”: ile kosztuje cały sklep (v0.21.52: zawody i narzędzia po cenach rosnących).</summary>
     public static int ShopTotalCost(GameData d)
     {
         var t = d.HardCost;
         foreach (var u in d.Upgrades)
         {
-            foreach (var c in u.Costs) t += c;
+            foreach (var st in u.Steps) t += st.Cost;
         }
+        var nc = 0;
         for (var i = 0; i < d.Classes.Length; ++i)
         {
-            if ((d.StartClassesMask & (1 << i)) == 0 && !ClassReward(d, i)) t += d.ClassCost;
+            if (ClassForSale(d, i)) t += ClassPrice(d, nc++);
         }
-        foreach (var tool in d.Tools) t += tool.Cost;
+        var nt = 0;
+        foreach (var tool in d.Tools)
+        {
+            if (tool.Shop) t += ToolPrice(d, nt++);
+        }
         foreach (var h in d.Brigade) t += h.Cost;
         return t;
     }
@@ -654,16 +736,10 @@ public static class Meta
         var t = p.Hard != 0 ? d.HardCost : 0;
         for (var i = 0; i < d.Upgrades.Length; ++i)
         {
-            for (var l = 0; l < p.Levels[i]; ++l) t += d.Upgrades[i].Costs[l];
+            for (var l = 0; l < p.Levels[i] && l < d.Upgrades[i].Levels; ++l) t += d.Upgrades[i].Cost(l);
         }
-        for (var i = 0; i < d.Classes.Length; ++i)
-        {
-            if (ClassUnlocked(d, p, i) && (d.StartClassesMask & (1 << i)) == 0 && !ClassReward(d, i)) t += d.ClassCost;
-        }
-        for (var i = 0; i < d.Tools.Length; ++i)
-        {
-            if (ToolUnlocked(d, p, i)) t += d.Tools[i].Cost;
-        }
+        for (int k = 0, n = ClassesBought(d, p); k < n; ++k) t += ClassPrice(d, k);
+        for (int k = 0, n = ToolsBought(d, p); k < n; ++k) t += ToolPrice(d, k);
         for (var i = 0; i < d.Brigade.Length; ++i)
         {
             if (HelperUnlocked(d, p, i)) t += d.Brigade[i].Cost;
@@ -758,11 +834,11 @@ public static class Meta
         for (var i = 0; i < d.Upgrades.Length; ++i) Take(0, i, UpgradeCost(d, p, i));
         for (var i = 0; i < d.Classes.Length; ++i)
         {
-            if (!ClassUnlocked(d, p, i) && !ClassReward(d, i)) Take(1, i, d.ClassCost);
+            if (!ClassUnlocked(d, p, i) && !ClassReward(d, i)) Take(1, i, ClassCost(d, p));
         }
         for (var i = 0; i < d.Tools.Length; ++i)
         {
-            if (!ToolUnlocked(d, p, i) && !d.Tools[i].Reward && !d.Tools[i].Secret) Take(2, i, d.Tools[i].Cost);
+            if (!ToolUnlocked(d, p, i) && d.Tools[i].Shop) Take(2, i, ToolCost(d, p));
         }
         for (var i = 0; i < d.Brigade.Length; ++i)
         {

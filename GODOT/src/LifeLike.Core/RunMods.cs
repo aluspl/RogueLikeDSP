@@ -97,6 +97,58 @@ public struct RunMods
         }
     }
 
+    /// <summary>Premia jednego poziomu Szkolenia (add_upgrade; v0.21.52: poziomy mogą mieć różne działanie).</summary>
+    public void AddUpgrade(UpgradeEffect e, int v)
+    {
+        switch (e)
+        {
+            case UpgradeEffect.Hp: Hp += v; break;
+            case UpgradeEffect.Def: Def += v; break;
+            case UpgradeEffect.Dmg: Dmg += v; break;
+            case UpgradeEffect.Coffee: Coffee += v; break;
+            case UpgradeEffect.Pickups: Pickups += v; break;
+            case UpgradeEffect.Luck: Luck += v; break;
+            case UpgradeEffect.Craft: Craft += v; break;
+            case UpgradeEffect.DmgPct: DmgPct += v; break;
+            case UpgradeEffect.TakenPct: TakenPct += v; break;
+            case UpgradeEffect.Crit: Crit += v; break;
+            case UpgradeEffect.Dodge: Dodge += v; break;
+            case UpgradeEffect.Thermos: Thermos += v; break;
+            case UpgradeEffect.MatsPct: MatsPct += v; break;
+            case UpgradeEffect.GearPct: GearPct += v; break;
+            case UpgradeEffect.Cash: Cash += v; break;
+        }
+    }
+
+    /// <summary>Suma kupionych poziomów Szkolenia (premie poziomów 1..levels).</summary>
+    public void AddUpgradeLevels(UpgradeDef u, int levels)
+    {
+        for (var l = 0; l < levels && l < u.Levels; ++l) AddUpgrade(u.Steps[l].Effect, u.Steps[l].Value);
+    }
+
+    /// <summary>Skutek poziomu Szkolenia, np. „+1 HP na start”, „Kryt +1%” (upgrade_label).</summary>
+    public static Message UpgradeLabel(Message m, UpgradeEffect e, int v) => e switch
+    {
+        UpgradeEffect.Hp => m.Add("+").Add(v).Add(" HP na start"),
+        UpgradeEffect.Def => m.Add("+").Add(v).Add(" OBR"),
+        UpgradeEffect.Dmg => m.Add("+").Add(v).Add(" obrażeń"),
+        UpgradeEffect.Coffee => m.Add("Kawa leczy +").Add(v).Add(" HP"),
+        UpgradeEffect.Pickups => m.Add("+").Add(v).Add(v == 1 ? " znajdźka" : " znajdźki"),
+        UpgradeEffect.Luck => m.Add("+").Add(v).Add(" szczęścia"),
+        UpgradeEffect.Craft => m.Add("+").Add(v).Add(" stat. broni"),
+        UpgradeEffect.DmgPct => m.Add("+").Add(v).Add("% obrażeń"),
+        UpgradeEffect.TakenPct => m.Add("-").Add(v).Add("% otrzym. obr."),
+        UpgradeEffect.Crit => m.Add("Kryt +").Add(v).Add("%"),
+        UpgradeEffect.Dodge => m.Add("Unik +").Add(v).Add("%"),
+        UpgradeEffect.Thermos => m.Add("Termos +").Add(v).Add(v == 1 ? " miejsce" : " miejsca"),
+        UpgradeEffect.MatsPct => m.Add("Materiały +").Add(v).Add("%"),
+        UpgradeEffect.GearPct => m.Add("Sprzęt +").Add(v),
+        UpgradeEffect.Cash => m.Add("Budżet +").Add(v).Add(" zł"),
+        _ => m,
+    };
+
+    public static string UpgradeLabel(UpgradeEffect e, int v) => UpgradeLabel(new Message(), e, v).Text;
+
     /// <summary>Skutek rangi Respektu dla gracza, np. „+8% obrażeń” (respect_label).</summary>
     public static Message RespectLabel(Message m, RespectEffect e, int v) => e switch
     {

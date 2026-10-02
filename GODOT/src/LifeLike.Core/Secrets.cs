@@ -24,16 +24,55 @@ public static class Secrets
     public static int Of(GameData d, SecretReward k, int index) =>
         Array.FindIndex(d.Secrets, s => s.Reward == k && s.Index == index);
 
-    public static bool CosmeticUnlocked(GameData d, Profile p, int k) => k >= 0 && Owned(d, p, SecretReward.Cosmetic, k);
+    /// <summary>Wygląd: z sekretnego zlecenia albo (v0.21.52) z odznaki / zlecenia – kolory kasku.</summary>
+    public static bool CosmeticUnlocked(GameData d, Profile p, int k)
+    {
+        if (k < 0) return false;
+        if (Owned(d, p, SecretReward.Cosmetic, k)) return true;
+        for (var i = 0; i < d.Badges.Length; ++i)
+        {
+            if (d.Badges[i].Cosmetic == k && (p.Badges & (1u << i)) != 0) return true;
+        }
+        for (var i = 0; i < d.Contracts.Length; ++i)
+        {
+            if (d.Contracts[i].Cosmetic == k && (p.Contracts & (1u << i)) != 0) return true;
+        }
+        return false;
+    }
 
-    /// <summary>Wygląd na budowie: wybrany i odblokowany (złota kielnia – zawsze po odblokowaniu).</summary>
+    public static bool CosmeticHelmet(GameData d, int k) => k >= 0 && k < d.Cosmetics.Length && d.Cosmetics[k].IsHelmet;
+
+    /// <summary>Wygląd na budowie: wybrany i odblokowany (złota kielnia – zawsze po odblokowaniu); kolory kasku osobno.</summary>
     public static bool CosmeticOn(GameData d, Profile p, int k) =>
-        CosmeticUnlocked(d, p, k) && (k == d.CosmeticGold || ((p.Cosmetic >> k) & 1) != 0);
+        !CosmeticHelmet(d, k) && CosmeticUnlocked(d, p, k) && (k == d.CosmeticGold || ((p.Cosmetic >> k) & 1) != 0);
 
     public static void ToggleCosmetic(GameData d, Profile p, int k)
     {
-        if (CosmeticUnlocked(d, p, k)) p.Cosmetic = (byte)(p.Cosmetic ^ (1 << k));
+        if (!CosmeticHelmet(d, k) && CosmeticUnlocked(d, p, k)) p.Cosmetic = (byte)(p.Cosmetic ^ (1 << k));
     }
+
+    /// <summary>Kolor kasku na budowie: wybrany i odblokowany wygląd (-1 = kask zawodu); kask w paski ma pierwszeństwo.</summary>
+    public static int HelmetCosmetic(GameData d, Profile p)
+    {
+        var k = p.Helmet - 1;
+        return CosmeticHelmet(d, k) && CosmeticUnlocked(d, p, k) ? k : -1;
+    }
+
+    /// <summary>Wybór koloru kasku: kolejny odblokowany albo kask zawodu.</summary>
+    public static void CycleHelmet(GameData d, Profile p, int dir)
+    {
+        var n = d.Cosmetics.Length + 1;
+        int k = p.Helmet;
+        for (var i = 0; i < n; ++i)
+        {
+            k = (k + dir + n) % n;
+            if (k == 0 || (CosmeticHelmet(d, k - 1) && CosmeticUnlocked(d, p, k - 1))) break;
+        }
+        p.Helmet = (byte)k;
+    }
+
+    public static int HelmetsUnlocked(GameData d, Profile p) =>
+        Enumerable.Range(0, d.Cosmetics.Length).Count(k => CosmeticHelmet(d, k) && CosmeticUnlocked(d, p, k));
 
     /// <summary>Warunek (g = null: tylko profil – migracja, np. wygrane każdym zawodem).</summary>
     public static bool Condition(GameData d, Profile p, Game g, int i)

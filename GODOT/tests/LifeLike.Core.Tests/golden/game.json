@@ -1433,16 +1433,48 @@
       "murarz",
       "hydraulik"
     ],
-    "classCost": 25,
-    "hardCost": 40,
+    "classCosts": [
+      60,
+      100,
+      150
+    ],
+    "hardCost": 100,
+    "toolCosts": [
+      60,
+      80,
+      100,
+      125,
+      150
+    ],
     "upgrades": [
       {
         "id": "kondycja",
         "name": "Kondycja",
-        "desc": "+2 HP na start",
+        "desc": "Więcej HP na start",
         "effect": "hp",
-        "value": 2,
-        "costs": [
+        "steps": [
+          {
+            "effect": "hp",
+            "value": 1,
+            "cost": 25
+          },
+          {
+            "effect": "hp",
+            "value": 1,
+            "cost": 50
+          },
+          {
+            "effect": "hp",
+            "value": 1,
+            "cost": 90
+          },
+          {
+            "effect": "hp",
+            "value": 1,
+            "cost": 150
+          }
+        ],
+        "legacyCosts": [
           10,
           20
         ],
@@ -1451,46 +1483,127 @@
       {
         "id": "bhp",
         "name": "Szkolenie BHP",
-        "desc": "-2% otrzymanych obrażeń",
+        "desc": "Mniej otrzymanych obrażeń",
         "effect": "taken_pct",
-        "value": 2,
-        "costs": [
+        "steps": [
+          {
+            "effect": "taken_pct",
+            "value": 1,
+            "cost": 30
+          },
+          {
+            "effect": "gear_pct",
+            "value": 1,
+            "cost": 60
+          },
+          {
+            "effect": "taken_pct",
+            "value": 1,
+            "cost": 110
+          },
+          {
+            "effect": "cash",
+            "value": 5,
+            "cost": 180
+          }
+        ],
+        "legacyCosts": [
           15
         ],
-        "resetRefund": 15,
         "refund": 30
       },
       {
         "id": "fach",
         "name": "Kurs fachowy",
-        "desc": "+2% obrażeń",
+        "desc": "Więcej zadawanych obrażeń",
         "effect": "dmg_pct",
-        "value": 2,
-        "costs": [
+        "steps": [
+          {
+            "effect": "dmg_pct",
+            "value": 1,
+            "cost": 35
+          },
+          {
+            "effect": "gear_pct",
+            "value": 1,
+            "cost": 70
+          },
+          {
+            "effect": "dmg_pct",
+            "value": 1,
+            "cost": 125
+          },
+          {
+            "effect": "crit",
+            "value": 1,
+            "cost": 200
+          }
+        ],
+        "legacyCosts": [
           20
         ],
-        "resetRefund": 20,
         "refund": 40
       },
       {
         "id": "termos",
         "name": "Lepszy termos",
-        "desc": "Kawa leczy +1 HP",
+        "desc": "Kawa leczy więcej, większy termos",
         "effect": "coffee",
-        "value": 1,
-        "costs": [
+        "steps": [
+          {
+            "effect": "thermos",
+            "value": 1,
+            "cost": 25
+          },
+          {
+            "effect": "coffee",
+            "value": 1,
+            "cost": 50
+          },
+          {
+            "effect": "thermos",
+            "value": 1,
+            "cost": 90
+          },
+          {
+            "effect": "thermos",
+            "value": 1,
+            "cost": 150
+          }
+        ],
+        "legacyCosts": [
           10
         ],
-        "refund": 20,
-        "resetRefund": 10
+        "refund": 20
       },
       {
         "id": "dostawy",
         "name": "Dostawy",
-        "desc": "+1 znajdźka na etap",
+        "desc": "Więcej znajdziek i materiałów",
         "effect": "pickups",
-        "value": 1,
-        "costs": [
+        "steps": [
+          {
+            "effect": "mats_pct",
+            "value": 5,
+            "cost": 25
+          },
+          {
+            "effect": "pickups",
+            "value": 1,
+            "cost": 50
+          },
+          {
+            "effect": "cash",
+            "value": 5,
+            "cost": 90
+          },
+          {
+            "effect": "mats_pct",
+            "value": 5,
+            "cost": 150
+          }
+        ],
+        "legacyCosts": [
           15
         ],
         "refund": 30
@@ -1498,10 +1611,31 @@
       {
         "id": "bhp2",
         "name": "Kurs BHP II",
-        "desc": "+1 szczęścia",
+        "desc": "Szczęście, kryt i unik",
         "effect": "luck",
-        "value": 1,
-        "costs": [
+        "steps": [
+          {
+            "effect": "gear_pct",
+            "value": 1,
+            "cost": 30
+          },
+          {
+            "effect": "luck",
+            "value": 1,
+            "cost": 60
+          },
+          {
+            "effect": "gear_pct",
+            "value": 1,
+            "cost": 110
+          },
+          {
+            "effect": "gear_pct",
+            "value": 1,
+            "cost": 180
+          }
+        ],
+        "legacyCosts": [
           20
         ],
         "refund": 40
@@ -1509,10 +1643,31 @@
       {
         "id": "warsztaty",
         "name": "Warsztaty",
-        "desc": "+1 do statystyki broni",
+        "desc": "Lepsza broń i sprzęt",
         "effect": "craft",
-        "value": 1,
-        "costs": [
+        "steps": [
+          {
+            "effect": "gear_pct",
+            "value": 1,
+            "cost": 35
+          },
+          {
+            "effect": "craft",
+            "value": 1,
+            "cost": 70
+          },
+          {
+            "effect": "gear_pct",
+            "value": 1,
+            "cost": 125
+          },
+          {
+            "effect": "gear_pct",
+            "value": 1,
+            "cost": 200
+          }
+        ],
+        "legacyCosts": [
           20
         ],
         "refund": 40
@@ -1520,47 +1675,42 @@
     ],
     "tools": [
       {
-        "weapon": "lom",
-        "cost": 0
+        "weapon": "lom"
       },
       {
         "weapon": "wkretarka",
-        "cost": 20
+        "shop": true
       },
       {
         "weapon": "laser",
-        "cost": 30
+        "shop": true
       },
       {
         "weapon": "mlot",
-        "cost": 40
+        "shop": true
       },
       {
         "weapon": "tablet",
-        "cost": 25
+        "shop": true
       },
       {
         "weapon": "miernik",
-        "cost": 35
+        "shop": true
       },
       {
         "weapon": "udarowy",
-        "cost": 0,
         "reward": true
       },
       {
         "weapon": "kotwy",
-        "cost": 0,
         "reward": true
       },
       {
         "weapon": "mlot_zenka",
-        "cost": 0,
         "secret": true
       },
       {
         "weapon": "poziomica_m",
-        "cost": 0,
         "secret": true
       }
     ]
@@ -1609,91 +1759,104 @@
       "id": "bez_usterek",
       "name": "Bez usterek",
       "desc": "Etap bez żadnych obrażeń",
-      "xp": 20,
+      "xp": 5,
       "perk": {
         "effect": "hp",
         "value": 2
-      }
+      },
+      "title": "Bez skazy"
     },
     {
       "id": "przed_terminem",
       "name": "Przed terminem",
       "desc": "Termin pokonany w 150 tur",
-      "xp": 30,
+      "xp": 10,
       "perk": {
         "effect": "cooldown",
         "value": 1
-      }
+      },
+      "title": "Terminowy",
+      "cosmetic": "kask_niebieski"
     },
     {
       "id": "seryjny",
       "name": "Seryjny",
       "desc": "8 problemów na jednym etapie",
-      "xp": 15,
+      "xp": 5,
       "perk": {
         "effect": "dmg",
         "value": 1
-      }
+      },
+      "title": "Seryjny pogromca"
     },
     {
       "id": "zawodowiec",
       "name": "Zawodowiec",
       "desc": "Poziom postaci 5",
-      "xp": 20,
+      "xp": 5,
       "perk": {
         "effect": "crit",
         "value": 5
-      }
+      },
+      "title": "Stary wyga"
     },
     {
       "id": "twardziel",
       "name": "Twardziel",
       "desc": "Wygrana na Trudnym",
-      "xp": 40,
+      "xp": 15,
       "perk": {
         "effect": "def",
         "value": 1
-      }
+      },
+      "title": "Twarda sztuka",
+      "cosmetic": "kask_czarny"
     },
     {
       "id": "pelny_zespol",
       "name": "Pełny zespół",
       "desc": "Wygrana każdym zawodem",
-      "xp": 60,
+      "xp": 15,
       "perk": {
         "effect": "cash",
         "value": 20
-      }
+      },
+      "title": "Wszechstronny"
     },
     {
       "id": "kolekcjoner",
       "name": "Kolekcjoner",
       "desc": "Znajdź wszystkie narzędzia",
-      "xp": 30,
+      "xp": 10,
       "perk": {
         "effect": "tool_pct",
         "value": 10
-      }
+      },
+      "title": "Narzędziowiec"
     },
     {
       "id": "katalog",
       "name": "Katalog usterek",
       "desc": "Pokonaj każdy problem",
-      "xp": 30,
+      "xp": 10,
       "perk": {
         "effect": "luck",
         "value": 1
-      }
+      },
+      "title": "Encyklopedia",
+      "cosmetic": "kask_zielony"
     },
     {
       "id": "osiedle",
       "name": "Osiedle",
       "desc": "Zbuduj 5 domów",
-      "xp": 50,
+      "xp": 10,
       "perk": {
         "effect": "xp_pct",
         "value": 10
-      }
+      },
+      "title": "Deweloper",
+      "cosmetic": "kask_zloty"
     }
   ],
   "story": {
@@ -2382,7 +2545,7 @@
       "effect": "thermos"
     }
   ],
-  "version": "v0.21.51",
+  "version": "v0.21.52",
   "damageHelp": [
     "Cios = rzut broni + premie:",
     "SIŁ/ZRĘ/INT broni +1 co 2 pkt,",
@@ -2419,7 +2582,8 @@
       "desc": "Wygraj 3 różnymi zawodami",
       "kind": "class_wins",
       "target": 3,
-      "xp": 40
+      "xp": 10,
+      "title": "Fachowiec"
     },
     {
       "id": "czysta_robota",
@@ -2427,8 +2591,9 @@
       "desc": "Boss aktu bez obrażeń w walce",
       "kind": "clean_boss",
       "target": 1,
-      "xp": 30,
-      "keepsake": "poziomica"
+      "xp": 10,
+      "keepsake": "poziomica",
+      "title": "Perfekcjonista"
     },
     {
       "id": "markowy_styl",
@@ -2436,8 +2601,9 @@
       "desc": "Zbierz 5 markowych przedmiotów",
       "kind": "brand",
       "target": 5,
-      "xp": 30,
-      "keepsake": "kielnia"
+      "xp": 10,
+      "keepsake": "kielnia",
+      "title": "Elegant"
     },
     {
       "id": "mocarz",
@@ -2445,8 +2611,9 @@
       "desc": "Użyj mocy zawodu 100 razy",
       "kind": "powers",
       "target": 100,
-      "xp": 40,
-      "keepsake": "notes"
+      "xp": 10,
+      "keepsake": "notes",
+      "title": "Siłacz"
     },
     {
       "id": "pogromca",
@@ -2454,7 +2621,8 @@
       "desc": "Usuń 200 problemów",
       "kind": "kills",
       "target": 200,
-      "xp": 60
+      "xp": 15,
+      "title": "Pogromca usterek"
     },
     {
       "id": "staly_klient",
@@ -2462,7 +2630,9 @@
       "desc": "Wygraj 5 budów",
       "kind": "wins",
       "target": 5,
-      "xp": 50
+      "xp": 15,
+      "title": "Stały bywalec",
+      "cosmetic": "kask_bialy"
     }
   ],
   "keepsakes": {
@@ -2707,7 +2877,7 @@
         "turns": 0,
         "reach": 2,
         "price": 15,
-        "cost": 30
+        "cost": 50
       },
       {
         "id": "kolega",
@@ -2718,7 +2888,7 @@
         "turns": 10,
         "reach": 1,
         "price": 15,
-        "cost": 35,
+        "cost": 60,
         "frame": 3
       }
     ]
@@ -4959,7 +5129,7 @@
           "id": "kask_paski"
         },
         "rewardText": "Wygląd: Kask w paski",
-        "news": "Odbiór na ostatnich HP!|Kask w paski: wybierz|go na wyborze zawodu."
+        "news": "Odbiór na ostatnich HP!|Kask w paski: wybór|zawodu, SELECT: Wygląd."
       },
       {
         "id": "szybka_ekipa",
@@ -4985,7 +5155,66 @@
         "id": "kask_paski",
         "name": "Kask w paski",
         "desc": "Kask w biało-czerwone pasy"
+      },
+      {
+        "id": "kask_niebieski",
+        "name": "Niebieski kask",
+        "desc": "Kask bohatera na niebiesko",
+        "helmet": [
+          58,
+          123,
+          213
+        ]
+      },
+      {
+        "id": "kask_czarny",
+        "name": "Czarny kask",
+        "desc": "Kask bohatera na czarno",
+        "helmet": [
+          52,
+          52,
+          60
+        ]
+      },
+      {
+        "id": "kask_zielony",
+        "name": "Zielony kask",
+        "desc": "Kask bohatera na zielono",
+        "helmet": [
+          76,
+          175,
+          80
+        ]
+      },
+      {
+        "id": "kask_zloty",
+        "name": "Złoty kask",
+        "desc": "Kask bohatera ze złota",
+        "helmet": [
+          240,
+          190,
+          40
+        ]
+      },
+      {
+        "id": "kask_bialy",
+        "name": "Biały kask",
+        "desc": "Kask bohatera na biało",
+        "helmet": [
+          240,
+          240,
+          240
+        ]
       }
     ]
-  }
+  },
+  "secretsHelp": [
+    "Sekretne zlecenia: telefon",
+    "profilu, Odznaki, A = strony.",
+    "Na liście \"???\" z podpowiedzią,",
+    "warunek poznasz po wykonaniu.",
+    "Nagrody: nowe zawody, narzędzia",
+    "w dropach, wygląd, Respekt.",
+    "Wykonane: baner i dymek Nowość."
+  ]
 }

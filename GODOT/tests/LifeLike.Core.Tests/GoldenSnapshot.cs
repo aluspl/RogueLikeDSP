@@ -126,5 +126,6 @@ public static class GoldenSnapshot
         $"\"weekly\":{Arr([p.WeeklyWon, p.WeeklyRuns, p.WeeklyWeek[0], p.WeeklyScore[0], p.WeeklyWeek[1], p.WeeklyScore[1], p.WeeklyWeek[2], p.WeeklyScore[2]])}," +
         $"\"story\":{Arr([(int)p.Story, (int)p.StoryNew, Story.EstateDecor(TestData.D, p)])}," +
         $"\"secrets\":{Arr([p.Secrets, p.SecretsNew, p.Cosmetic, Secrets.DoneCount(TestData.D, p)])}," +
+        $"\"looks\":{Arr([p.Title, p.Helmet, Titles.OwnedCount(TestData.D, p), Secrets.HelmetsUnlocked(TestData.D, p), Meta.ClassCost(TestData.D, p), Meta.ToolCost(TestData.D, p), Meta.ShopSpent(TestData.D, p)])}," +
         $"\"sram\":\"{Convert.ToHexString(p.ToBytes()).ToLowerInvariant()}\"}}";
 }

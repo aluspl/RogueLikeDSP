@@ -83,7 +83,7 @@ public class GameDataTests
         Assert.True(D.CritBasePct == 5 && D.CritPerLuckPct == 3 && D.CritMultiplier == 2 && D.DodgeMaxPct == 20);
         Assert.True(D.ThermosCapacity == 3 && D.CoffeeHeal == 8 && D.BotDrinkBelowPct == 40 && D.GearDeclineXp == 1);
         Assert.Equal(107, D.Stages[2].HpPct);
-        Assert.Equal("v0.21.51", D.Version);
+        Assert.Equal("v0.21.52", D.Version);
     }
 
     [Fact]
@@ -106,7 +106,8 @@ public class GameDataTests
         Assert.Equal(new[] { 2, 3, 4 }, D.Keepsakes[2].Values);
         Assert.Equal(6, D.Contracts.Length);
         Assert.True(D.Contracts[1].Kind == ContractKind.CleanBoss && D.Contracts[1].Keepsake == 3 && D.Contracts[0].Keepsake == -1);
-        Assert.True(D.Contracts[3].Kind == ContractKind.Powers && D.Contracts[3].Target == 100 && D.Contracts[3].Xp == 40);
+        Assert.True(D.Contracts[3].Kind == ContractKind.Powers && D.Contracts[3].Target == 100 && D.Contracts[3].Xp == 10); // v0.21.52: mniej dośw.
+        Assert.True(D.Contracts[3].Title == "Siłacz" && D.Contracts[5].Cosmetic >= 0 && D.Cosmetics[D.Contracts[5].Cosmetic].IsHelmet);
         Assert.Equal(5, D.SiteEvents.Length);
         Assert.Equal(45, D.SiteEventChancePct);
         Assert.True(D.SiteEvents[0].Effect == EventEffect.FewerPickups && D.SiteEvents[0].Value == 2 && !D.SiteEvents[0].Good);

@@ -15,7 +15,7 @@ public class ProfileAndShopTests
         p.Runs = 3;
         p.Wins = 1;
         Assert.True(Meta.ProfileFix(D, p));
-        Assert.True(p.MagicIs(Profile.MagicV12) && p.Best == 500 && p.Runs == 3 && p.Wins == 1);
+        Assert.True(p.MagicIs(Profile.MagicCurrent) && p.Best == 500 && p.Runs == 3 && p.Wins == 1);
         Assert.True(p.Xp == 0 && p.Classes == D.StartClassesMask && p.Hard == 0);
         Assert.All(p.Levels, l => Assert.Equal(0, l));
         var q = Profile.FromBytes(Enumerable.Repeat((byte)0xFF, Profile.Size).ToArray());
@@ -54,13 +54,13 @@ public class ProfileAndShopTests
         Assert.False(Meta.BuyUpgrade(D, p, 0));
         p.Xp = 1000;
         var c0 = Meta.UpgradeCost(D, p, 0);
-        Assert.True(c0 == D.Upgrades[0].Costs[0] && Meta.BuyUpgrade(D, p, 0) && p.Levels[0] == 1 && p.Xp == 1000 - c0);
+        Assert.True(c0 == D.Upgrades[0].Cost(0) && Meta.BuyUpgrade(D, p, 0) && p.Levels[0] == 1 && p.Xp == 1000 - c0);
         while (Meta.UpgradeCost(D, p, 0) > 0) Assert.True(Meta.BuyUpgrade(D, p, 0));
         Assert.True(p.Levels[0] == D.Upgrades[0].Levels && !Meta.BuyUpgrade(D, p, 0));
         Assert.True(Meta.BuyClass(D, p, 2) && Meta.ClassUnlocked(D, p, 2) && !Meta.BuyClass(D, p, 2));
         Assert.True(Meta.BuyHard(D, p) && Meta.DifficultyUnlocked(D, p, 2) && !Meta.BuyHard(D, p));
         var m = Meta.Mods(D, p);
-        Assert.True(m.Hp == D.Upgrades[0].Value * D.Upgrades[0].Levels && m.Def == 0);
+        Assert.True(m.Hp == Meta.UpgradeTotal(D, 0, D.Upgrades[0].Levels, UpgradeEffect.Hp) && m.Hp > 0 && m.Def == 0);
         Assert.Equal(1000 - p.Xp, Meta.ShopSpent(D, p));
         Assert.Equal(0, Meta.ShopSpent(D, Meta.NewProfile(D)));
         p.Xp = 100000;
@@ -98,7 +98,7 @@ public class ProfileAndShopTests
         var p = Meta.NewProfile(D);
         Assert.True(Meta.ToolUnlocked(D, p, 0) && !Meta.ToolUnlocked(D, p, 3) && !Meta.BuyTool(D, p, 3));
         p.Xp = 100;
-        Assert.True(Meta.BuyTool(D, p, 3) && Meta.ToolUnlocked(D, p, 3) && !Meta.BuyTool(D, p, 3) && p.Xp == 100 - D.Tools[3].Cost);
+        Assert.True(Meta.BuyTool(D, p, 3) && Meta.ToolUnlocked(D, p, 3) && !Meta.BuyTool(D, p, 3) && p.Xp == 100 - D.ToolCosts[0]);
         Assert.Equal(D.StartToolsMask | (1 << 3), Meta.Mods(D, p).Tools);
         var m = RunMods.Default(D);
         m.Tools = (1 << D.Tools.Length) - 1;
@@ -136,7 +136,8 @@ public class ProfileAndShopTests
         for (var i = Profile.V2Size; i < raw.Length; i++) raw[i] = 0xEE; // śmieci za starym końcem struktury
         v2 = Profile.FromBytes(raw);
         Assert.True(Meta.ProfileFix(D, v2));
-        Assert.True(v2.MagicIs(Profile.MagicV12) && v2.Xp == 77 && v2.Levels[0] == 2 && v2.Classes == 0x3F);
+        var r2 = D.Upgrades[0].LegacyCosts[0] + D.Upgrades[0].LegacyCosts[1]; // v13: Szkolenia wracają jako doświadczenie
+        Assert.True(v2.MagicIs(Profile.MagicCurrent) && v2.Xp == 77 + r2 && v2.Levels[0] == 0 && v2.Classes == 0x3F);
         Assert.True(v2.Hard == 1 && v2.Flags == 1 && v2.Tools == 2 && v2.Best == 900);
         Assert.True(v2.Badges == 0 && v2.Catalog == 0 && v2.HousesCount == 0 && v2.ClassWins == 0 && v2.ToolsFound == 0);
         Assert.True(v2.KillsTotal == 0 && v2.PowersTotal == 0 && v2.Contracts == 0 && v2.KeepsakeRuns.All(x => x == 0));

@@ -94,7 +94,10 @@ public sealed class GameData
     public int XpPerStage { get; private init; }
     public int XpBoss { get; private init; }
     public int StartClassesMask { get; private init; }
-    public int ClassCost { get; private init; }
+    /// <summary>v0.21.52: cena kolejnego kupionego zawodu (rośnie z każdym zakupem; ostatnia dla następnych).</summary>
+    public int[] ClassCosts { get; private init; } = [];
+    /// <summary>v0.21.52: cena kolejnego kupionego narzędzia.</summary>
+    public int[] ToolCosts { get; private init; } = [];
     public int HardCost { get; private init; }
     public int HpPerLevel { get; private init; }
     public int DmgLevelsMask { get; private init; }
@@ -368,18 +371,25 @@ public sealed class GameData
             Str(x, "id", ""), Str(x, "name"), Int(x, "hpPct"), Int(x, "dmgBonus"), Int(x, "scorePct"))).ToArray();
 
         var meta = d.GetProperty("meta");
+        // v0.21.52: poziomy Szkoleń (steps: działanie, przyrost, koszt), stare koszty do zwrotu przy migracji profilu v12
         var upgrades = meta.GetProperty("upgrades").EnumerateArray().Select(u => new UpgradeDef(
-            Str(u, "id", ""), Str(u, "name"), Str(u, "desc"), ParseUpgrade(Str(u, "effect")), Int(u, "value"),
-            u.GetProperty("costs").EnumerateArray().Select(c => c.GetInt32()).ToArray(), Int(u, "refund", 0), Int(u, "resetRefund", 0))).ToArray();
+            Str(u, "id", ""), Str(u, "name"), Str(u, "desc"), ParseUpgrade(Str(u, "effect")),
+            u.GetProperty("steps").EnumerateArray().Select(x => new UpgradeStep(ParseUpgrade(Str(x, "effect")), Int(x, "value"), Int(x, "cost"))).ToArray(),
+            u.TryGetProperty("legacyCosts", out var lc) ? lc.EnumerateArray().Select(c => c.GetInt32()).ToArray() : [],
+            Int(u, "refund", 0))).ToArray();
         foreach (var u in upgrades)
         {
-            Require(u.Costs.Length is >= 1 and <= 4, $"ulepszenie {u.Name}: 1-4 poziomy");
+            Require(u.Levels is >= 1 and <= 5 && u.LegacyCosts.Length <= 4, $"ulepszenie {u.Name}: 1-5 poziomów");
         }
+        var classCosts = meta.GetProperty("classCosts").EnumerateArray().Select(c => c.GetInt32()).ToArray();
+        var toolCosts = meta.GetProperty("toolCosts").EnumerateArray().Select(c => c.GetInt32()).ToArray();
+        Require(classCosts.Length >= 1 && toolCosts.Length >= 1, "ceny zawodów i narzędzi");
 
         var classesJson = d.GetProperty("classes").EnumerateArray().ToArray();
         var cid = Index(classesJson);
-        var tools = meta.GetProperty("tools").EnumerateArray().Select(t => new ToolDef(Lookup(wid, Str(t, "weapon"), "narzędzie"), Int(t, "cost"),
+        var tools = meta.GetProperty("tools").EnumerateArray().Select(t => new ToolDef(Lookup(wid, Str(t, "weapon"), "narzędzie"), Bool(t, "shop"),
             Bool(t, "reward"), Bool(t, "secret"))).ToArray();
+        Require(tools.Count(t => t.Shop) == toolCosts.Length, "ceny narzędzi: tyle, ile narzędzi na sprzedaż");
         Require(tools.Length <= 12 && tools.Select((t, i) => t.Secret || i < 8).All(x => x), "narzędzia: bitmaska uint8 w profilu (sekretne za nią)");
 
         var story = d.GetProperty("story");
@@ -413,8 +423,12 @@ public sealed class GameData
             : [];
 
         var badgesJson = d.GetProperty("badges").EnumerateArray().ToArray();
+        // v0.21.52: tytuł i wygląd (kolor kasku) z odznak i zleceń
+        var cosmeticIds = d.TryGetProperty("secrets", out var sec0) ? Index(sec0.GetProperty("cosmetics").EnumerateArray().ToArray()) : new Dictionary<string, int>();
+        int CosmeticOf(JsonElement x) => x.TryGetProperty("cosmetic", out var xc) ? Lookup(cosmeticIds, xc.GetString() ?? "", "wygląd") : -1;
         var badges = badgesJson.Select(b => new BadgeDef(Str(b, "id"), Str(b, "name"), Str(b, "desc"), Int(b, "xp"),
-            b.TryGetProperty("perk", out var pk) ? new Perk(ParsePerk(Str(pk, "effect")), Int(pk, "value")) : new Perk(PerkEffect.Unknown, 0))).ToArray();
+            b.TryGetProperty("perk", out var pk) ? new Perk(ParsePerk(Str(pk, "effect")), Int(pk, "value")) : new Perk(PerkEffect.Unknown, 0),
+            Str(b, "title", ""), CosmeticOf(b))).ToArray();
         Require(badges.Length <= 16 && enemies.Length <= Game.MaxEnemyTypes, "maks. 16 odznak i 48 rodzajów wrogów");
         var bid = Index(badgesJson);
         // pamiątki i zlecenia (od v0.21.43; starsze dane – puste listy)
@@ -422,7 +436,8 @@ public sealed class GameData
         var kid = Index(keepsakesJson);
         var contractsJson = d.TryGetProperty("contracts", out var cj) ? cj.EnumerateArray().ToArray() : [];
         var contracts = contractsJson.Select(c => new ContractDef(Str(c, "id"), Str(c, "name"), Str(c, "desc"), ParseContract(Str(c, "kind")),
-            Int(c, "target"), Int(c, "xp"), c.TryGetProperty("keepsake", out var ck) ? Lookup(kid, ck.GetString() ?? "", "pamiątka") : -1)).ToArray();
+            Int(c, "target"), Int(c, "xp"), c.TryGetProperty("keepsake", out var ck) ? Lookup(kid, ck.GetString() ?? "", "pamiątka") : -1,
+            Str(c, "title", ""), CosmeticOf(c))).ToArray();
         foreach (var c in contracts) Require(c.Target is > 0 and < 30000, $"zlecenie {c.Id}: zły cel");
         var keepsakes = keepsakesJson.Select(k => new KeepsakeDef(Str(k, "id"), Str(k, "name"), Str(k, "desc"), ParsePerk(Str(k, "effect")),
             k.GetProperty("values").EnumerateArray().Select(v => v.GetInt32()).ToArray(),
@@ -531,7 +546,7 @@ public sealed class GameData
         var startTools = 0;
         for (var i = 0; i < tools.Length; i++)
         {
-            if (tools[i].Cost == 0 && !tools[i].Reward && !tools[i].Secret) startTools |= 1 << i;
+            if (!tools[i].Shop && !tools[i].Reward && !tools[i].Secret) startTools |= 1 << i;
         }
         int rewardClasses = 0, secretClasses = 0, secretTools = 0;
         for (var i = 0; i < classes.Length; i++)
@@ -636,7 +651,8 @@ public sealed class GameData
         }
         // v0.21.51 cz. 2: sekretne zlecenia (#39) – nagroda: zawód, narzędzie, wygląd, ranga Respektu
         var cosmeticsJson = hasSecrets ? secj.GetProperty("cosmetics").EnumerateArray().ToArray() : [];
-        var cosmetics = cosmeticsJson.Select(x => new CosmeticDef(Str(x, "id"), Str(x, "name"), Str(x, "desc"))).ToArray();
+        var cosmetics = cosmeticsJson.Select(x => new CosmeticDef(Str(x, "id"), Str(x, "name"), Str(x, "desc"),
+            x.TryGetProperty("helmet", out var hj) ? hj.EnumerateArray().Aggregate(0, (acc, v) => (acc << 8) | v.GetInt32()) : -1)).ToArray();
         var coid = Index(cosmeticsJson);
         var rsid = new Dictionary<string, int>();
         for (var i = 0; i < respect.Length; i++) rsid[respect[i].Id] = i;
@@ -943,7 +959,8 @@ public sealed class GameData
             XpPerStage = Int(meta, "xpPerStage"),
             XpBoss = Int(meta, "xpBoss"),
             StartClassesMask = startClasses,
-            ClassCost = Int(meta, "classCost"),
+            ClassCosts = classCosts,
+            ToolCosts = toolCosts,
             HardCost = Int(meta, "hardCost"),
             HpPerLevel = Int(hl, "hpPerLevel"),
             DmgLevelsMask = hl.GetProperty("dmgLevels").EnumerateArray().Aggregate(0, (m, l) => m | 1 << l.GetInt32()),
@@ -1163,6 +1180,12 @@ public sealed class GameData
         "craft" => UpgradeEffect.Craft,
         "dmg_pct" => UpgradeEffect.DmgPct,
         "taken_pct" => UpgradeEffect.TakenPct,
+        "crit" => UpgradeEffect.Crit,
+        "dodge" => UpgradeEffect.Dodge,
+        "thermos" => UpgradeEffect.Thermos,
+        "mats_pct" => UpgradeEffect.MatsPct,
+        "gear_pct" => UpgradeEffect.GearPct,
+        "cash" => UpgradeEffect.Cash,
         _ => UpgradeEffect.Unknown, // nowsza wersja danych: ulepszenie bez działania
     };
 

@@ -179,13 +179,13 @@ public class Act0AndTutorialTests
         v.Best = 999;
         v.Tutorial = 0xABCD;
         v.ClassesSeen = 0x1234;
-        Assert.True(Meta.ProfileFix(D, v) && v.MagicIs(Profile.MagicV12) && v.Best == 999 && v.Rewards == D.Rewards.Length && Meta.Act0Unlocked(D, v));
+        Assert.True(Meta.ProfileFix(D, v) && v.MagicIs(Profile.MagicCurrent) && v.Best == 999 && v.Rewards == D.Rewards.Length && Meta.Act0Unlocked(D, v));
         Assert.True(!Meta.TutorialPending(v, 0) && !Meta.TutorialPending(v, 1));
         Assert.True(Meta.PendingUnlock(D, v, 0, out _) == TutorialUnlock.Act0 && Meta.PendingUnlock(D, v, 1, out _) == -1);
         var nv = Meta.NewProfile(D);
         nv.Magic = Profile.MagicBytes(Profile.MagicV9);
         Assert.True(Meta.ProfileFix(D, nv) && Meta.TutorialPending(nv, 0) && nv.Rewards == 0 && nv.Tutorial == 0);
-        Assert.Equal(196, v.ToBytes().Length);
+        Assert.Equal(200, v.ToBytes().Length);
     }
 
     [Fact]

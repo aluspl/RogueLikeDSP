@@ -227,23 +227,19 @@ public class RespectAndRewardsTests
         v7.Best = 777;
         v7.DailyScore[4] = 55;
         var refund = 0;
-        for (var i = 0; i < D.Upgrades.Length; ++i)
+        for (var i = 0; i < D.Upgrades.Length; ++i) // v13: Szkolenia wracają jako doświadczenie po starej cenie
         {
-            if (D.Upgrades[i].ResetRefund <= 0) continue;
             v7.Levels[i] = 1;
-            refund += D.Upgrades[i].ResetRefund;
+            refund += D.Upgrades[i].LegacyCosts[0];
         }
         Assert.True(refund > 0);
         var b = v7.ToBytes();
         for (var i = Profile.V7Size; i < b.Length; ++i) b[i] = 0xEE;
         var p = Profile.FromBytes(b);
-        Assert.True(Meta.ProfileFix(D, p) && p.MagicIs(Profile.MagicV12));
+        Assert.True(Meta.ProfileFix(D, p) && p.MagicIs(Profile.MagicCurrent));
         Assert.True(p.Best == 777 && p.Wins == 3 && p.DailyScore[4] == 55 && p.Rewards == Math.Min(3, avail) && p.Xp == 11 + refund);
         Assert.True(p.Respect == 0 && p.RespectTotal == 0 && p.ClassWinsHi == 0 && p.RespectRanks[0] == 0 && p.BestStakeHi[0] == 0);
-        for (var i = 0; i < D.Upgrades.Length; ++i)
-        {
-            if (D.Upgrades[i].ResetRefund > 0) Assert.Equal(0, p.Levels[i]);
-        }
+        for (var i = 0; i < D.Upgrades.Length; ++i) Assert.Equal(0, p.Levels[i]);
         Assert.False(Meta.ProfileFix(D, p));
         var v1 = Profile.FromBytes(new byte[Profile.Size]);
         v1.Magic = Profile.MagicBytes(Profile.MagicV1);

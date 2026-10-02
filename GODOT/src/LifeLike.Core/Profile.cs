@@ -5,8 +5,8 @@ namespace LifeLike.Core;
 
 /// <summary>
 /// Profil gracza (odpowiednik core::profile z meta.h): rekord, doświadczenie, zakupy, odznaki, Osiedle.
-/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v12: 196 bajtów, little-endian, bajt 55 to wyrównanie),
-/// więc migracje v1–v11 działają tak samo.
+/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v13: 200 bajtów, little-endian, bajt 55 to wyrównanie),
+/// więc migracje v1–v12 działają tak samo.
 /// </summary>
 public sealed class Profile
 {
@@ -31,7 +31,9 @@ public sealed class Profile
     public const int V10Size = 160;
     /// <summary>v12 = v11 + sekretne zlecenia (#39), wygląd, Respekt 16-18 od tego offsetu.</summary>
     public const int V11Size = 188;
-    public const int Size = 196;
+    /// <summary>v13 = v12 + tytuł i kolor kasku (v0.21.52) od tego offsetu.</summary>
+    public const int V12Size = 196;
+    public const int Size = 200;
     public const int WeeklySlots = 3;
     public const int MaxRespect = 16;
     /// <summary>Rangi Respektu 16-18 (v12, dalszy ciąg RespectRanks).</summary>
@@ -40,6 +42,8 @@ public sealed class Profile
     public const int MaxClasses = 12;
     public const int MaxKeepsakes = 8;
     public const int DailySlots = 5;
+    /// <summary>Bieżący format (v13, v0.21.52).</summary>
+    public const string MagicCurrent = "PBRL013";
     public const string MagicV12 = "PBRL012";
     public const string MagicV11 = "PBRL011";
     public const string MagicV10 = "PBRL010";
@@ -157,6 +161,11 @@ public sealed class Profile
     public byte Cosmetic;
     /// <summary>Kupione rangi Respektu 16-18.</summary>
     public byte[] RespectRanksHi = new byte[MaxRespectHi];
+    // --- v13 (v0.21.52): tytuł z odznaki / zlecenia, kolor kasku
+    /// <summary>Wybrany tytuł + 1 (0 = bez tytułu): odznaki 0..N-1, potem zlecenia.</summary>
+    public byte Title;
+    /// <summary>Wybrany kolor kasku: wygląd + 1 (0 = kask zawodu).</summary>
+    public byte Helmet;
 
     public static byte[] MagicBytes(string s)
     {
@@ -236,6 +245,8 @@ public sealed class Profile
         BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(190), SecretsNew);
         b[192] = Cosmetic;
         RespectRanksHi.CopyTo(b, 193);
+        b[196] = Title;
+        b[197] = Helmet;
         return b;
     }
 
@@ -299,6 +310,8 @@ public sealed class Profile
             SecretsNew = BinaryPrimitives.ReadUInt16LittleEndian(b[190..]),
             Cosmetic = b[192],
             RespectRanksHi = b.Slice(193, MaxRespectHi).ToArray(),
+            Title = b[196],
+            Helmet = b[197],
         };
         for (var i = 0; i < WeeklySlots; i++)
         {
