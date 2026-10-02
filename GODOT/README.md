@@ -4,12 +4,25 @@ Wersja Godot gry z demo GBA (`../GBA`): roguelike budowlany, w którym etapy bud
 a wrogami są *problemy budowy*. Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KONCEPCJA.md)
 (telefon z aplikacją PlanBudowlany jako interfejs, oprawa 2.5D – kolejne kamienie milowe).
 
-**Stan: zgodny z GBA v0.21.51 cz. 2 (rdzeń, test złoty i ekrany sekretnych zleceń; wcześniej v0.21.50 cz. 4), v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
+**Stan: zgodny z GBA v0.21.52 cz. a (tempo postępu: rdzeń, test złoty i ekrany), wcześniej v0.21.51 cz. 2 (sekretne zlecenia), v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
 z pieczątkami i Decyzją odmowną, samouczek menu, profil v10; wcześniej 10 etapów, 20 nowych problemów
 z zachowaniami, mechaniki aktów, opis statystyk; Respekt za etapy i sklep Respektu,
 nagrody za odbiór – Młot udarowy, Pistolet do kotew, buty, pas, zawody Dekarz, Tynkarz, Operator koparki – nowy balans
 Szkoleń, profil v8; wcześniej wybór ścieżki, materiały, codzienna budowa, pogoda, brygada, tryb inwestora);
 oprawa (grafika, font, dźwięk, telefon, wybór zawodu) jak w GBA.
+
+Nowe w v0.21.52 cz. a (tempo postępu #41–#43, #52): Szkolenia po 4 poziomy z danych (`UpgradeDef.Steps`: działanie,
+przyrost, koszt; `RunMods.AddUpgrade`, `UpgradeLabel`, `Meta.UpgradeSummary`) – Koszty: „Kondycja 2/4”, opis „Poziom III:
++1 HP na start (teraz: +2 HP na start)”, na maksimum „Razem”; zawody i narzędzia drożeją z każdym zakupem
+(`Meta.ClassCost` / `ToolCost`, `ToolDef.Shop`), Trudny 100. Odznaki i zlecenia: mało doświadczenia, za to **tytuły**
+(`Titles`, profil > Odznaki – piąta strona **Tytuły**: Tab / „Wybierz” albo drugie stuknięcie; wybrany na Osiedlu
+i w podsumowaniu, banery z tytułem) i **kolory kasku** (`Secrets.HelmetCosmetic` / `CycleHelmet`; wybór zawodu > Tab –
+strona Wygląd za modyfikatorami inwestora, także przed pierwszą wygraną; klatki 160–183 z eksportu z kaskiem w kolorze
+indeksu D i shader `HelmetTint` na bohaterze, portretach wyboru zawodu i w prologu). Podsumowanie: karta **POSTĘP**
+z paskami (najbliższe Szkolenie – dośw./koszt albo „Stać Cię!”; mistrzostwo i inspektor – „wkrótce”, cz. b). Profil v13
+(200 B, `Meta.MigrateV13` – zwrot za Szkolenia po starej cenie). Sceny zrzutów: `titles`, `looks`, `recap-progress`;
+test dymny wyboru tytułu. Test małpy spędza mniej czasu w Ustawieniach; seria pion + dotyk znalazła i poprawiono błąd
+marszu po dotknięciu (`AutoWalk`).
 
 Nowe w v0.21.51 (poprawki po graniu na iPhonie): **autokafle muru (#36)** – eksport generuje dla palety każdego etapu
 wierzch masy muru, lico i 6 nakładek (krawędź wierzchu góra / lewa / prawa, końce lica, róg wewnętrzny), `MapLayer`
