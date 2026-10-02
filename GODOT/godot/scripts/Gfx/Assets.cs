@@ -51,6 +51,8 @@ public static class Assets
     // v0.21.51 cz. 2: actors.png 127-129 zawody z sekretnych zleceń (Spawacz, Geodeta, Majster), 130-132 ich druga klatka,
     // 133-135 sylwetki; 136-159 kask w paski (zawód * 2 + klatka animacji A/B)
     public const int FrameSecretClass = 127, SecretClasses = 3, FrameSecretSilhouette = 133, FrameStripes = 136;
+    /// <summary>v0.21.52: kask do pokolorowania (160 + zawód * 2 + klatka A/B) – kolor kasku z odznak i zleceń (HelmetTint).</summary>
+    public const int FrameHelmet = 160;
     // menu_icons.png 30-34: sekretne zlecenie (koperta z „?”), Młot Zenka, Poziomica mistrza, Złota kielnia, Kask w paski
     public const int MenuSecret = 30, MenuZenka = 31, MenuLevel = 32, MenuGold = 33, MenuStripes = 34;
 
@@ -108,7 +110,7 @@ public static class Assets
         frame is >= 0 and < 15 or 46 or 47 or 50 or 52 or 53 or 54 || (frame >= FrameStageEnemy && frame < FrameStageEnemy + StageEnemies)
         || (frame >= FramePreludeEnemy && frame < FramePreludeEnemy + PreludeEnemies)
         || (frame >= FrameSecretClass && frame < FrameSecretClass + SecretClasses)
-        || (frame >= FrameStripes && frame < FrameStripes + 24 && (frame & 1) == 0);
+        || (frame >= FrameStripes && frame < FrameHelmet + 24 && (frame & 1) == 0);
 
     /// <summary>Ikona mechaniki aktu w menu_icons (błoto, porywy, pył; pieczątki Aktu 0).</summary>
     public static int ActIcon(ActMechanic m) => m == ActMechanic.Stamps ? MenuStamps : MenuAct + Mathf.Max(0, (int)m - 1);
@@ -138,9 +140,17 @@ public static class Assets
     public static int Silhouette(int cls) =>
         cls < 6 ? FrameSilhouette + cls : (cls < 9 ? FrameSilhouetteExt + cls - 6 : FrameSecretSilhouette + cls - 9);
 
-    /// <summary>Klatka bohatera (hero_base z main.cpp): zawód albo – wygląd z sekretnego zlecenia – ten sam zawód w kasku w paski.</summary>
-    public static int HeroFrame(GameData d, Profile p, int cls) =>
-        p != null && d.CosmeticStripes >= 0 && Secrets.CosmeticOn(d, p, d.CosmeticStripes) ? FrameStripes + cls * 2 : d.Classes[cls].Frame;
+    /// <summary>Klatka bohatera (hero_base z main.cpp): zawód albo – wygląd z sekretnego zlecenia – ten sam zawód w kasku w paski,
+    /// albo (v0.21.52) w kasku do pokolorowania (HelmetTint podmienia kolor).</summary>
+    public static int HeroFrame(GameData d, Profile p, int cls)
+    {
+        if (p != null && d.CosmeticStripes >= 0 && Secrets.CosmeticOn(d, p, d.CosmeticStripes)) return FrameStripes + cls * 2;
+        return HeroHelmet(d, p) >= 0 ? FrameHelmet + cls * 2 : d.Classes[cls].Frame;
+    }
+
+    /// <summary>Kolor kasku bohatera (wygląd z odznaki / zlecenia; -1 = kask zawodu albo kask w paski).</summary>
+    public static int HeroHelmet(GameData d, Profile p) =>
+        p == null || (d.CosmeticStripes >= 0 && Secrets.CosmeticOn(d, p, d.CosmeticStripes)) ? -1 : Secrets.HelmetCosmetic(d, p);
 
     /// <summary>Ikona nagrody sekretnego zlecenia w menu_icons (secret_icon z main.cpp; zawód – osobno portretem).</summary>
     public static int SecretIcon(GameData d, SecretDef sd) => sd.Reward switch

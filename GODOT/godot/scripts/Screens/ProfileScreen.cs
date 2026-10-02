@@ -32,7 +32,7 @@ public sealed class ProfileScreen : Screen
         var p = S.Profile;
         PhonePage[] tabs =
         [
-            new BadgesTab(d, p),
+            new BadgesTab(d, p) { Saved = S.Save },
             new CatalogTab(d, p),
             new EstateTab(d, p, S.Save),
             new TeamTab(d, p),

@@ -1,6 +1,7 @@
 using LifeLike.Core;
 using LifeLike.Game.Audio;
 using LifeLike.Game.Input;
+using LifeLike.Game.Phone.Pages;
 using LifeLike.Game.Screens.Views;
 
 namespace LifeLike.Game.Screens;
@@ -59,7 +60,7 @@ public sealed class ClassSelectScreen : Screen
             Flow.Profile.Open(4);
             return true;
         }
-        if (e.Is(GameAction.Select) && Meta.InvestorUnlocked(S.Profile))
+        if (e.Is(GameAction.Select) && InvestorPage.Available(S.Data, S.Profile))
         {
             S.ClassId = view.Selected;
             Flow.Investor.Open();
@@ -151,7 +152,7 @@ public sealed class ClassSelectScreen : Screen
         S.ClassId = view.Selected;
         if (!Meta.ClassUnlocked(S.Data, S.Profile, S.ClassId))
         {
-            view.Note = $"Ten zawód odblokujesz w Szkoleniach{ButtonNames.Pick(" (K)", "")} za {d.ClassCost} dośw.";
+            view.Note = $"Ten zawód odblokujesz w Szkoleniach{ButtonNames.Pick(" (K)", "")} za {Meta.ClassCost(d, S.Profile)} dośw.";
             Sfx.Play("hurt", 0.5f);
             return;
         }

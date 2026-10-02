@@ -4,6 +4,7 @@ using System.Linq;
 using Godot;
 using LifeLike.Core;
 using LifeLike.Core.Data;
+using LifeLike.Game.Phone.Pages;
 using LifeLike.Game.Audio;
 using LifeLike.Game.Gfx;
 
@@ -117,6 +118,7 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
                 if (_statRects[k].HasPoint(mouse)) _hoverStat = k;
             }
         }
+        if (_d != null) HelmetTint.Apply(this, _d, _p); // v0.21.52: kolor kasku na portretach (klatki do pokolorowania)
         QueueRedraw();
     }
 
@@ -289,11 +291,11 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         _hits.Add((kr, ClassSelectHit.Keepsake, 0));
         _coach["keepsake"] = kr;
         y += rowH + 4;
-        if (Meta.InvestorUnlocked(_p)) // tryb inwestora: stawka, dotknięcie = modyfikatory
+        if (InvestorPage.Available(_d, _p)) // tryb inwestora: stawka, dotknięcie = modyfikatory (v0.21.52: albo sam wygląd)
         {
             var ir = new Rect2(x - 4, y, cw + 8, rowH);
             DrawStyleBox(Ui.Box(Pal.Group, 8), ir.Grow(-2));
-            f.Draw(this, new Vector2(x + 6, Mathf.Round(ir.GetCenter().Y - 8)), "Tryb inwestora", Ink.Dim);
+            f.Draw(this, new Vector2(x + 6, Mathf.Round(ir.GetCenter().Y - 8)), Meta.InvestorUnlocked(_p) ? "Tryb inwestora" : "Wygląd", Ink.Dim);
             f.Draw(this, new Vector2(x + cw - 6, Mathf.Round(ir.GetCenter().Y - 8)), InvestorLabel(), Ink.Brand, TextAlign.Right);
             _hits.Add((ir, ClassSelectHit.Investor, 0));
             _coach["investor"] = ir;
@@ -313,7 +315,15 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
     }
 
     /// <summary>Stawka włączonych modyfikatorów i rekord zawodu, np. „stawka 5, rekord 3”.</summary>
-    private string InvestorLabel() => $"stawka {Investor.Stake(_d, Meta.InvestorMask(_d, _p))}, rekord {Meta.BestStake(_p, Selected)}";
+    private string InvestorLabel()
+    {
+        if (!Meta.InvestorUnlocked(_p)) // v0.21.52: przed pierwszą wygraną – sam wygląd (kolor kasku)
+        {
+            var hk = Secrets.HelmetCosmetic(_d, _p);
+            return hk >= 0 ? _d.Cosmetics[hk].Name : "kask zawodu";
+        }
+        return $"stawka {Investor.Stake(_d, Meta.InvestorMask(_d, _p))}, rekord {Meta.BestStake(_p, Selected)}";
+    }
 
     /// <summary>Paski statystyk (bazowa w kolorze marki, premia Szkoleń na zielono); zwraca dół.</summary>
     private float DrawStats(float sx, float sy, float width, int cls, ClassDef c, in RunMods m, bool unl, float step)
@@ -394,10 +404,10 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         f.Draw(this, new Vector2(x, y), "Trudność:", Ink.Dim);
         _coach["difficulty"] = new Rect2(x - 4, y - 1, r.Size.X / 2 - 16, 19);
         f.Draw(this, new Vector2(x + 64, y), $"< {diff.Name}{diffLock} >", diffLock.Length > 0 ? Ink.Late : Ink.Dark);
-        if (Meta.InvestorUnlocked(_p)) // tryb inwestora (Tab) w tym samym wierszu
+        if (InvestorPage.Available(_d, _p)) // tryb inwestora (Tab) w tym samym wierszu (v0.21.52: albo sam wygląd)
         {
             var ix = r.Position.X + r.Size.X / 2 + 10;
-            f.Draw(this, new Vector2(ix, y), "Inwestor:", Ink.Dim);
+            f.Draw(this, new Vector2(ix, y), Meta.InvestorUnlocked(_p) ? "Inwestor:" : "Wygląd:", Ink.Dim);
             _coach["investor"] = new Rect2(ix - 4, y - 1, r.End.X - ix - 6, 19);
             f.Draw(this, new Vector2(ix + 62, y), f.Fit($"{InvestorLabel()} (Tab)", (int)(r.End.X - ix - 76)), Ink.Brand);
         }
@@ -566,7 +576,7 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         return -1;
     }
 
-    private string LockedShort(int cls) => Meta.ClassSecret(_d, cls) ? "Sekret" : Meta.ClassReward(_d, cls) ? $"{RewardWinOf(cls)}. wygr." : $"{_d.ClassCost} dośw.";
+    private string LockedShort(int cls) => Meta.ClassSecret(_d, cls) ? "Sekret" : Meta.ClassReward(_d, cls) ? $"{RewardWinOf(cls)}. wygr." : $"{Meta.ClassCost(_d, _p)} dośw.";
 
     /// <summary>Podpowiedź sekretnego zlecenia, które odblokowuje zawód (v0.21.51 cz. 2).</summary>
     private string SecretHint(int cls)
@@ -579,5 +589,5 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         ? $"Sekretne zlecenie (telefon, Odznaki > Sekrety): {SecretHint(cls)}"
         : Meta.ClassReward(_d, cls)
         ? $"Nagroda za odbiór budowy: za {RewardWinOf(cls)}. wygraną, masz {_p.Wins}"
-        : $"Zablokowany: {_d.ClassCost} dośw. w Szkoleniach" + (keys ? " (K)" : "");
+        : $"Zablokowany: {Meta.ClassCost(_d, _p)} dośw. w Szkoleniach" + (keys ? " (K)" : "");
 }

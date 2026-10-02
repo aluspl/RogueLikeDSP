@@ -69,7 +69,21 @@ public sealed class SmokeSecrets
         Flow.Profile.HandleInput(InputCmd.Of(GameAction.Down));
         await DebugRunner.Frames(_app.Root, 2);
         Flow.Profile.HandleInput(InputCmd.Of(GameAction.A));
-        if (bt.Page != 0) throw new Exception("sekrety: A na stronie Sekrety nie wraca do Odznak");
+        if (bt.Page != BadgesTab.TitlesPage) throw new Exception("sekrety: A na stronie Sekrety nie przechodzi do Tytułów");
+        // v0.21.52: tytuł z odznaki – Tab („Wybierz”) wybiera zdobyty, drugi raz zdejmuje; niezdobytego nie da się wybrać
+        var tp = _app.Session.Profile;
+        var badges0 = tp.Badges;
+        bt.Select(1);
+        Flow.Profile.HandleInput(InputCmd.Of(GameAction.Select));
+        if (Titles.Selected(d, tp) != -1 && (badges0 & 2) == 0) throw new Exception("tytuły: wybrano niezdobyty tytuł");
+        tp.Badges = (ushort)(badges0 | 2);
+        Flow.Profile.HandleInput(InputCmd.Of(GameAction.Select));
+        if (Titles.Selected(d, tp) != 1) throw new Exception($"tytuły: Tab nie wybiera tytułu ({tp.Title})");
+        Flow.Profile.HandleInput(InputCmd.Of(GameAction.Select));
+        if (tp.Title != 0) throw new Exception("tytuły: drugi Tab nie zdejmuje tytułu");
+        tp.Badges = badges0;
+        Flow.Profile.HandleInput(InputCmd.Of(GameAction.A));
+        if (bt.Page != 0) throw new Exception("sekrety: A na stronie Tytuły nie wraca do Odznak");
         for (var c = 0; c < d.Classes.Length; c++)
         {
             if (Meta.ClassSecret(d, c) && Meta.ClassUnlocked(d, p, c)) throw new Exception($"sekrety: {d.Classes[c].Name} odblokowany od startu");

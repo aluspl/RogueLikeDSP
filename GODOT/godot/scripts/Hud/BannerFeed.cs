@@ -87,13 +87,13 @@ public sealed class BannerFeed
         }
         for (var i = 0; i < d.Badges.Length; i++)
         {
-            if ((badges & (1 << i)) != 0) _banners.Push("Odznaka: " + d.Badges[i].Name, $"+{d.Badges[i].Xp} dośw.", PhoneTabs.Start);
+            if ((badges & (1 << i)) != 0) _banners.Push("Odznaka: " + d.Badges[i].Name, $"Tytuł: {d.Badges[i].Title}, +{d.Badges[i].Xp} dośw.", PhoneTabs.Start);
         }
         for (var i = 0; i < d.Contracts.Length; i++)
         {
             if ((contracts & (1 << i)) == 0) continue;
             var c = d.Contracts[i];
-            _banners.Push("Zlecenie: " + c.Name, c.Keepsake >= 0 ? $"+{c.Xp}, {d.Keepsakes[c.Keepsake].Name}" : $"Wykonane! +{c.Xp} dośw.", PhoneTabs.Start);
+            _banners.Push("Zlecenie: " + c.Name, c.Keepsake >= 0 ? $"{d.Keepsakes[c.Keepsake].Name}, tytuł {c.Title}" : $"Tytuł: {c.Title}, +{c.Xp} dośw.", PhoneTabs.Start);
         }
     }
 

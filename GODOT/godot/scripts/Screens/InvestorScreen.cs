@@ -19,7 +19,7 @@ public sealed class InvestorScreen : Screen
 
     public void Open(bool instant = false)
     {
-        if (!Meta.InvestorUnlocked(S.Profile)) return;
+        if (!InvestorPage.Available(S.Data, S.Profile)) return;
         Flow.Go(this, instant);
     }
 

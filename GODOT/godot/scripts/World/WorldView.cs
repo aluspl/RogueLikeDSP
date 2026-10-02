@@ -223,6 +223,7 @@ public partial class WorldView : Node2D
     private void SyncHero(bool snap)
     {
         _hero.BaseFrame = Assets.HeroFrame(_g.D, ProfileSource(), _g.Cls); // kask w paski z sekretu; w miejscu oddycha (bez klatki B), w kroku - chód z actors_anim
+        HelmetTint.Apply(_hero, _g.D, ProfileSource()); // v0.21.52: kolor kasku
         var heroDst = GridToScreen(_g.Hero.X, _g.Hero.Y);
         if (!snap && heroDst != _hero.Position && _hero.Position.DistanceTo(heroDst) <= Cell * 2) // pył spod butów
         {

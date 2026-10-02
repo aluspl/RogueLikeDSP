@@ -70,7 +70,7 @@ public sealed class TeamTab : PhonePage
             var si = Secrets.Of(_d, SecretReward.Cls, cls);
             return "Sekret: " + (si >= 0 ? _d.Secrets[si].Hint : "???");
         }
-        if (!Meta.ClassReward(_d, cls)) return $"Odblokujesz w Kosztach: {_d.ClassCost} dośw.";
+        if (!Meta.ClassReward(_d, cls)) return $"Odblokujesz w Kosztach: {Meta.ClassCost(_d, _p)} dośw.";
         for (var i = 0; i < _d.Rewards.Length; i++)
             if (_d.Rewards[i].Kind == RewardKind.Cls && _d.Rewards[i].Index == cls) return $"Nagroda za {Meta.RewardWin(_d, _p, i)}. wygraną";
         return "Nagroda za odbiór";

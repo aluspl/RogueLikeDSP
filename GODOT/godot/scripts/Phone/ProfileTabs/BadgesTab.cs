@@ -12,12 +12,15 @@ namespace LifeLike.Game.Phone.ProfileTabs;
 /// Profil: strony Odznaki / Zlecenia / Pamiątki / Sekrety przełączane A (jak zakładka 0 w run_shop na GBA): lista z pastylkami
 /// (Zdobyta / +XP, Wykonane / postęp, Ranga / Zablok., Wykonane / ???) i opis zaznaczonej pozycji z premią lub nagrodą.
 /// Sekrety (#39, v0.21.51 cz. 2): na liście podpowiedź z ikoną koperty, warunek i nagroda (z ikoną) dopiero po wykonaniu.
+/// Tytuły (v0.21.52, #43): tytuły z odznak i zleceń – Tab / „Wybierz” (SELECT na GBA) albo drugie stuknięcie wybiera
+/// tytuł widoczny w profilu i na końcu budowy.
 /// </summary>
 public sealed class BadgesTab : PhonePage
 {
     private const int Window = 7;
-    private static readonly string[] Pages = ["Odznaki", "Zlecenia", "Pamiątki", "Sekrety"];
+    private static readonly string[] Pages = ["Odznaki", "Zlecenia", "Pamiątki", "Sekrety", "Tytuły"];
     public const int SecretsPage = 3;
+    public const int TitlesPage = 4;
     private readonly GameData _d;
     private readonly Profile _p;
     private readonly ListState _list = new();
@@ -37,15 +40,21 @@ public sealed class BadgesTab : PhonePage
         get
         {
             var total = Count;
-            var n = _page == SecretsPage ? Secrets.DoneCount(_d, _p)
+            var n = _page == TitlesPage ? Titles.OwnedCount(_d, _p)
+                  : _page == SecretsPage ? Secrets.DoneCount(_d, _p)
                   : _page == 2 ? Enumerable.Range(0, total).Count(k => Meta.KeepsakeUnlocked(_d, _p, k))
                   : UiText.BitCount(_page == 1 ? _p.Contracts : _p.Badges);
             return $"{n}/{total}";
         }
     }
 
-    public override string Hint => $"Spacja: {Pages[(_page + 1) % Pages.Length]}  Q/E: zakładki";
-    public override PageAction[] Actions => [new(Pages[(_page + 1) % Pages.Length] + " >", GameAction.A)];
+    public override string Hint => _page == TitlesPage
+        ? $"Tab: wybierz tytuł  Spacja: {Pages[0]}  Q/E: zakładki"
+        : $"Spacja: {Pages[(_page + 1) % Pages.Length]}  Q/E: zakładki";
+
+    public override PageAction[] Actions => _page == TitlesPage
+        ? [new("Wybierz", GameAction.Select), new(Pages[0] + " >", GameAction.A)]
+        : [new(Pages[(_page + 1) % Pages.Length] + " >", GameAction.A)];
 
     /// <summary>Bieżąca strona (0 Odznaki, 1 Zlecenia, 2 Pamiątki, 3 Sekrety) – test dymny i zrzuty.</summary>
     public int Page
@@ -67,11 +76,26 @@ public sealed class BadgesTab : PhonePage
 
     public override bool TapRow(int index)
     {
+        if (_page == TitlesPage && index == _list.Sel) ChooseTitle();
         _list.Sel = index;
         return true;
     }
 
-    private int Count => _page == SecretsPage ? _d.Secrets.Length : _page == 2 ? _d.Keepsakes.Length : _page == 1 ? _d.Contracts.Length : _d.Badges.Length;
+    /// <summary>Wybór zaznaczonego tytułu (drugi raz – bez tytułu); tylko zdobyte.</summary>
+    public bool ChooseTitle()
+    {
+        var t = _list.Sel;
+        if (!Titles.Owned(_d, _p, t)) return false;
+        _p.Title = (byte)(Titles.Selected(_d, _p) == t ? 0 : t + 1);
+        Sfx.Play("buy");
+        Saved?.Invoke();
+        return true;
+    }
+
+    /// <summary>Zapis profilu po wyborze tytułu (ustawia ekran profilu).</summary>
+    public System.Action Saved { get; set; }
+
+    private int Count => _page == TitlesPage ? Titles.Count(_d) : _page == SecretsPage ? _d.Secrets.Length : _page == 2 ? _d.Keepsakes.Length : _page == 1 ? _d.Contracts.Length : _d.Badges.Length;
 
     public override bool Input(InputCmd e)
     {
@@ -79,6 +103,11 @@ public sealed class BadgesTab : PhonePage
         if (v != 0)
         {
             _list.Move(v, Count, Window);
+            return true;
+        }
+        if (_page == TitlesPage && e.Is(GameAction.Select))
+        {
+            ChooseTitle();
             return true;
         }
         if (e.Is(GameAction.A))
@@ -110,6 +139,14 @@ public sealed class BadgesTab : PhonePage
             string name, pill;
             PillKind kind;
             bool on;
+            if (_page == TitlesPage)
+            {
+                on = Titles.Owned(_d, _p, i);
+                var chosen = Titles.Selected(_d, _p) == i;
+                var tpw = p.Pill(right, y, chosen ? "Wybrany" : on ? "Masz" : "Zablok.", chosen ? PillKind.Prog : on ? PillKind.Done : PillKind.Gray);
+                p.Text(tx, y, Titles.Name(_d, i), sel ? Ink.Brand : on ? Ink.Dark : Ink.Dim, TextAlign.Left, right - tpw - 4 - tx);
+                continue;
+            }
             if (_page == SecretsPage)
             {
                 var sd = _d.Secrets[i];
@@ -167,6 +204,18 @@ public sealed class BadgesTab : PhonePage
     /// <summary>Opis zaznaczonej pozycji: (opis, wiersz premii / nagrody / rangi, jego kolor).</summary>
     private (string, string, Ink) Describe(int i)
     {
+        if (_page == TitlesPage)
+        {
+            var fromBadge = i < _d.Badges.Length;
+            var si = fromBadge ? i : i - _d.Badges.Length;
+            var src = fromBadge ? $"Odznaka „{_d.Badges[si].Name}”: {_d.Badges[si].Desc}" : $"Zlecenie „{_d.Contracts[si].Name}”: {_d.Contracts[si].Desc}";
+            var ck = fromBadge ? _d.Badges[si].Cosmetic : _d.Contracts[si].Cosmetic;
+            var own = Titles.Owned(_d, _p, i);
+            var sel = Titles.Selected(_d, _p);
+            var extra = sel >= 0 ? "Twój tytuł: " + Titles.Name(_d, sel) : own ? "Wybierz: Tab / „Wybierz”" : "Bez tytułu";
+            if (ck >= 0) src += $" Też: {_d.Cosmetics[ck].Name}.";
+            return (src, extra, sel >= 0 ? Ink.Done : Ink.Brand);
+        }
         if (_page == SecretsPage)
         {
             var sd = _d.Secrets[i];
@@ -190,11 +239,13 @@ public sealed class BadgesTab : PhonePage
         if (_page == 1)
         {
             var c = _d.Contracts[i];
-            var reward = $"Nagroda: +{c.Xp}" + (c.Keepsake >= 0 ? ", " + _d.Keepsakes[c.Keepsake].Name : " dośw.");
+            var reward = $"Nagroda: +{c.Xp} dośw., tytuł „{c.Title}”" + (c.Keepsake >= 0 ? ", " + _d.Keepsakes[c.Keepsake].Name
+                       : c.Cosmetic >= 0 ? ", " + _d.Cosmetics[c.Cosmetic].Name : "");
             return (c.Desc, reward, Meta.ContractDone(_p, i) ? Ink.Done : Ink.Brand);
         }
         var b = _d.Badges[i];
         var got = (_p.Badges & (1 << i)) != 0;
-        return (b.Desc, "Premia: " + RunMods.PerkLabel(b.Bonus), got ? Ink.Done : Ink.Brand);
+        return ($"{b.Desc}. Tytuł „{b.Title}”" + (b.Cosmetic >= 0 ? ", " + _d.Cosmetics[b.Cosmetic].Name : ""),
+                "Premia: " + RunMods.PerkLabel(b.Bonus), got ? Ink.Done : Ink.Brand);
     }
 }

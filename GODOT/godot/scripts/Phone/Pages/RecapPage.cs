@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Godot;
 using LifeLike.Core;
+using LifeLike.Core.Data;
 using LifeLike.Game.Audio;
 using LifeLike.Game.Gfx;
 using LifeLike.Game.Input;
@@ -13,7 +14,8 @@ namespace LifeLike.Game.Phone.Pages;
 /// <summary>
 /// Podsumowanie budowy (#33) – jedna przewijana strona w telefonie (na GBA 3 strony): co zatrzymało budowę (albo
 /// odbiór), ostatnie ciosy, najmocniejsze ciosy, oś czasu etapów (dni, usunięte, SMS, magazyn, premie), nagrody z budowy
-/// (doświadczenie, Respekt, zlecenie, rekord dnia / tygodnia), najbliższy cel i rada. Góra/dół albo dotknięcie górnej /
+/// (doświadczenie, Respekt, zlecenie, rekord dnia / tygodnia), v0.21.52: karta „Postęp” z paskami (najbliższe Szkolenie,
+/// mistrzostwo zawodu i poziom inspektora – te dwa w cz. b), najbliższy cel i rada. Góra/dół albo dotknięcie górnej /
 /// dolnej połowy przewija, Enter – dalej.
 /// </summary>
 public sealed class RecapPage : PhonePage
@@ -91,6 +93,28 @@ public sealed class RecapPage : PhonePage
         }
         if (g.Daily) Row(s.DailyRecord ? "Rekord dnia!" : $"Budowa dnia nr {g.DailyDay}", "", s.DailyRecord ? Ink.Done : Ink.Dim, none);
         if (g.WeeklyWeek != 0) Row(s.WeeklyRecord ? "Rekord tygodnia!" : $"Wyzwanie: {d.Weekly[g.Bonus.Weekly].Name}", "", s.WeeklyRecord ? Ink.Done : Ink.Dim, none);
+        var ti = Titles.Selected(d, p);
+        if (ti >= 0) Row("Tytuł: " + Titles.Name(d, ti), "", Ink.Brand, none);
+
+        // v0.21.52 (#52): paski postępu – najbliższe Szkolenie za doświadczenie; mistrzostwo i inspektor w cz. b
+        Head("POSTĘP");
+        void Bar(float v, Color c) => rows.Add(new RecapRow("", "", Ink.Dim, none, false, Math.Clamp(v, 0f, 1f), c));
+        var cost = Meta.NextUnlock(d, p, out var kind, out var idx);
+        if (cost < 0)
+        {
+            Row("Szkolenia: wszystko kupione", "MAX", Ink.Done, Pal.Done);
+            Bar(1f, Pal.Done);
+        }
+        else
+        {
+            var ready = p.Xp >= cost;
+            Row(UnlockName(d, p, kind, idx), ready ? "Stać Cię!" : $"{p.Xp}/{cost}", Ink.Dark, ready ? Pal.Done : Pal.Brand);
+            Bar(ready ? 1f : p.Xp / (float)cost, ready ? Pal.Done : Pal.Brand);
+        }
+        Row("Mistrzostwo: " + d.Classes[g.Cls].Name, "wkrótce", Ink.Dim, none);
+        Bar(0f, Pal.Brand);
+        Row("Poziom inspektora", "wkrótce", Ink.Dim, none);
+        Bar(0f, Pal.Brand);
 
         Head("NAJBLIŻSZY CEL");
         if (Recap.Goal(d, p, out var lead, out var name)) Row($"{lead} {name}", "", Ink.Brand, Pal.Brand);
@@ -99,6 +123,16 @@ public sealed class RecapPage : PhonePage
         if (tip.Lines[1].Length > 0) Row(tip.Lines[1], "", Ink.Prog, Pal.Prog);
         return rows;
     }
+
+    /// <summary>Nazwa najbliższego zakupu w Szkoleniach (next_unlock): „Kondycja III”, „Zawód: Elektryk”...</summary>
+    private static string UnlockName(GameData d, Profile p, int kind, int i) => kind switch
+    {
+        0 => $"{d.Upgrades[i].Name} {UiText.Roman(p.Levels[i])}",
+        1 => "Zawód: " + d.Classes[i].Name,
+        2 => d.Weapons[d.Tools[i].Weapon].Name,
+        3 => "Brygada: " + d.Brigade[i].Name,
+        _ => "Trudność: " + d.Difficulties[^1].Name,
+    };
 
     public override bool TapRow(int index)
     {
@@ -138,6 +172,13 @@ public sealed class RecapPage : PhonePage
             {
                 if (r > 0) p.Divider(card, r);
                 p.Text(card.Position.X + 6, y, row.Text, Ink.Dim);
+                continue;
+            }
+            if (row.Bar >= 0f) // pasek postępu: tor i wypełnienie
+            {
+                var track = new Rect2(tx, y + PhonePainter.RowH / 2f - 5, right - tx, 10);
+                p.C.DrawRect(track, Pal.Border);
+                if (row.Bar > 0f) p.C.DrawRect(new Rect2(track.Position, new Vector2(Mathf.Max(3, track.Size.X * row.Bar), track.Size.Y)), row.BarColor);
                 continue;
             }
             if (row.Stripe.A > 0) p.Stripe(card, r, row.Stripe);

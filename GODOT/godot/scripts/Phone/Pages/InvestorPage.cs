@@ -12,7 +12,9 @@ namespace LifeLike.Game.Phone.Pages;
 /// Tryb inwestora (run_investor na GBA): modyfikatory trudności po pierwszej wygranej - lista z pastylką stawki
 /// (zielona „WŁ” = włączony), opis zaznaczonego, suma: stawka, premia doświadczenia i rekord stawki zawodu.
 /// Spacja / dotknięcie zaznaczonego włącza i wyłącza (zapis profilu od razu), Esc wraca do wyboru zawodu.
-/// v0.21.51 cz. 2: za modyfikatorami wiersz wyglądu „Kask w paski” (po sekretnym zleceniu Na styk; tylko wygląd).
+/// v0.21.51 cz. 2: za modyfikatorami wiersz wyglądu „Kask w paski” (po sekretnym zleceniu Na styk; tylko wygląd);
+/// v0.21.52: wiersz koloru kasku (odznaki i zlecenia) – stuknięcie / Spacja zmienia na kolejny; przed pierwszą wygraną
+/// strona „Wygląd” bez modyfikatorów.
 /// </summary>
 public sealed class InvestorPage : PhonePage
 {
@@ -30,10 +32,15 @@ public sealed class InvestorPage : PhonePage
         _saved = saved;
     }
 
-    public override string Title => "Tryb inwestora";
-    public override string Sub => $"Stawka {Investor.Stake(_d, Meta.InvestorMask(_d, _p))}";
-    public override string Hint => "Spacja: wł./wył.  Esc: wróć";
-    public override PageAction[] Actions => [new("Wł. / wył.", GameAction.A), new("Gotowe", GameAction.Cancel)];
+    /// <summary>Strona dostępna: tryb inwestora (po pierwszej wygranej) albo (v0.21.52) odblokowany kolor kasku.</summary>
+    public static bool Available(GameData d, Profile p) => Meta.InvestorUnlocked(p) || Secrets.HelmetsUnlocked(d, p) > 0;
+
+    private int Inv => Meta.InvestorUnlocked(_p) ? _d.Investor.Length : 0;
+
+    public override string Title => Inv > 0 ? "Tryb inwestora" : "Wygląd";
+    public override string Sub => Inv > 0 ? $"Stawka {Investor.Stake(_d, Meta.InvestorMask(_d, _p))}" : "kask";
+    public override string Hint => "Spacja: wł./wył. / zmień  Esc: wróć";
+    public override PageAction[] Actions => [new(_list.Sel == HelmetRow ? "Zmień" : "Wł. / wył.", GameAction.A), new("Gotowe", GameAction.Cancel)];
     public override bool Closable => true;
 
     public int Sel
@@ -45,11 +52,20 @@ public sealed class InvestorPage : PhonePage
     /// <summary>Wiersz wyglądu „Kask w paski” (odblokowany sekretnym zleceniem).</summary>
     private bool Stripes => _d.CosmeticStripes >= 0 && Secrets.CosmeticUnlocked(_d, _p, _d.CosmeticStripes);
 
-    private int Rows => _d.Investor.Length + (Stripes ? 1 : 0);
+    /// <summary>v0.21.52: wiersz koloru kasku (z odznak i zleceń).</summary>
+    private bool Helmets => Secrets.HelmetsUnlocked(_d, _p) > 0;
+
+    private int StripesRow => Stripes ? Inv : -1;
+
+    private int HelmetRow => Helmets ? Inv + (Stripes ? 1 : 0) : -1;
+
+    private int Rows => Inv + (Stripes ? 1 : 0) + (Helmets ? 1 : 0);
 
     public void Toggle()
     {
-        if (_list.Sel >= _d.Investor.Length) Secrets.ToggleCosmetic(_d, _p, _d.CosmeticStripes);
+        if (Rows == 0) return;
+        if (_list.Sel == StripesRow) Secrets.ToggleCosmetic(_d, _p, _d.CosmeticStripes);
+        else if (_list.Sel == HelmetRow) Secrets.CycleHelmet(_d, _p, 1);
         else Meta.ToggleInvestor(_p, _list.Sel);
         _saved?.Invoke();
         Sfx.Play("buy");
@@ -79,26 +95,34 @@ public sealed class InvestorPage : PhonePage
 
     public override void Draw(PhonePainter p)
     {
-        var n = _d.Investor.Length;
+        var n = Inv;
         var mask = Meta.InvestorMask(_d, _p);
         _list.Clamp(Rows, Rows);
-        var y = p.Section(p.Top, "MODYFIKATORY", "za doświadczenie");
-        var card = p.Card(y, Rows);
+        var y = p.Section(p.Top, n > 0 ? "MODYFIKATORY" : "WYGLĄD", n > 0 ? "za doświadczenie" : "tylko oprawa");
+        var card = p.Card(y, Math.Max(1, Rows));
         var tx = p.TextX(card);
         var right = card.End.X - 6;
         for (var i = 0; i < Rows; i++)
         {
-            if (i >= n) // wygląd: kask w paski
+            if (i == StripesRow || i == HelmetRow) // wygląd: kask w paski / kolor kasku
             {
-                var son = Secrets.CosmeticOn(_d, _p, _d.CosmeticStripes);
+                var stripes = i == StripesRow;
+                var hk = Secrets.HelmetCosmetic(_d, _p);
+                var son = stripes ? Secrets.CosmeticOn(_d, _p, _d.CosmeticStripes) : hk >= 0;
                 var ssel = i == _list.Sel;
                 var sy = p.RowY(card, i);
                 if (ssel) p.Selected(card, i);
-                else p.Divider(card, i);
+                else if (i > 0) p.Divider(card, i);
                 p.HitRow(card, i, i);
-                var spw = p.Pill(right, sy, son ? "WŁ" : "Wygląd", son ? PillKind.Done : PillKind.Gray);
+                var spw = p.Pill(right, sy, stripes ? (son ? "WŁ" : "Wygląd") : "Wygląd", son ? PillKind.Done : PillKind.Gray);
                 p.Icon(Assets.UiMenu, Assets.MenuStripes, Assets.Icon, new Vector2(tx - 2, sy + (PhonePainter.RowH - 16) / 2f));
-                p.Text(tx + 18, sy, _d.Cosmetics[_d.CosmeticStripes].Name, ssel ? Ink.Brand : son ? Ink.Dark : Ink.Dim, TextAlign.Left, right - spw - 4 - tx - 18);
+                var label = stripes ? _d.Cosmetics[_d.CosmeticStripes].Name : "Kask: " + (hk >= 0 ? _d.Cosmetics[hk].Name : "zawodu");
+                p.Text(tx + 18, sy, label, ssel ? Ink.Brand : son ? Ink.Dark : Ink.Dim, TextAlign.Left, right - spw - 4 - tx - 18);
+                if (!stripes && hk >= 0) // próbka koloru kasku
+                {
+                    var c = _d.Cosmetics[hk].Helmet;
+                    p.C.DrawRect(new Rect2(right - spw - 18, sy + PhonePainter.RowH / 2f - 5, 10, 10), Color.Color8((byte)(c >> 16), (byte)((c >> 8) & 255), (byte)(c & 255)));
+                }
                 continue;
             }
             var m = _d.Investor[i];
@@ -113,10 +137,23 @@ public sealed class InvestorPage : PhonePage
             p.Text(tx, ry, m.Name, sel ? Ink.Brand : on ? Ink.Dark : Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
         }
         var dc = p.Card(card.End.Y + 6, 3);
-        var desc = _list.Sel >= n ? "Wygląd: " + _d.Cosmetics[_d.CosmeticStripes].Desc
-                 : $"{_d.Investor[_list.Sel].Desc}, dośw. +{_d.Investor[_list.Sel].XpPct}%";
+        string desc;
+        if (_list.Sel == StripesRow) desc = "Wygląd: " + _d.Cosmetics[_d.CosmeticStripes].Desc;
+        else if (_list.Sel == HelmetRow)
+        {
+            var hk = Secrets.HelmetCosmetic(_d, _p);
+            desc = (hk >= 0 ? "Wygląd: " + _d.Cosmetics[hk].Desc : "Kolor kasku zawodu") + $" (kolorów: {Secrets.HelmetsUnlocked(_d, _p)})";
+        }
+        else desc = n > 0 ? $"{_d.Investor[_list.Sel].Desc}, dośw. +{_d.Investor[_list.Sel].XpPct}%" : "";
         p.Text(tx, p.RowY(dc, 0), desc, Ink.Dim, TextAlign.Left, right - tx);
         p.Divider(dc, 1);
+        if (n == 0)
+        {
+            p.Text(tx, p.RowY(dc, 1), "Kolory kasku: odznaki i zlecenia", Ink.Dark, TextAlign.Left, right - tx);
+            p.Divider(dc, 2);
+            p.Text(tx, p.RowY(dc, 2), "Tryb inwestora: po pierwszej wygranej", Ink.Dim, TextAlign.Left, right - tx);
+            return;
+        }
         p.Text(tx, p.RowY(dc, 1), $"Stawka {Investor.Stake(_d, mask)}, doświadczenie +{Investor.Xp(_d, mask)}%", Ink.Dark, TextAlign.Left, right - tx);
         p.Divider(dc, 2);
         p.Text(tx, p.RowY(dc, 2), $"Rekord: {_d.Classes[_cls].Name} - stawka {Meta.BestStake(_p, _cls)}", Ink.Done, TextAlign.Left, right - tx);

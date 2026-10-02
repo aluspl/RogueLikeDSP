@@ -83,7 +83,7 @@ public sealed class TrainingTab : PhonePage
         }
         for (var i = 0; i < _d.Tools.Length; i++)
         {
-            if (!Meta.ToolUnlocked(_d, _p, i) && !_d.Tools[i].Reward && !_d.Tools[i].Secret) _entries.Add((TrainingKind.Tool, i));
+            if (!Meta.ToolUnlocked(_d, _p, i) && _d.Tools[i].Shop) _entries.Add((TrainingKind.Tool, i));
         }
         for (var i = 0; i < _d.Brigade.Length; i++)
         {
@@ -95,8 +95,8 @@ public sealed class TrainingTab : PhonePage
     private int Cost((TrainingKind K, int I) e) => e.K switch
     {
         TrainingKind.Upgrade => Meta.UpgradeCost(_d, _p, e.I),
-        TrainingKind.Class => _d.ClassCost,
-        TrainingKind.Tool => _d.Tools[e.I].Cost,
+        TrainingKind.Class => Meta.ClassCost(_d, _p), // v0.21.52: każdy kolejny drożej
+        TrainingKind.Tool => Meta.ToolCost(_d, _p),
         TrainingKind.Helper => _d.Brigade[e.I].Cost,
         _ => _d.HardCost,
     };
@@ -112,8 +112,8 @@ public sealed class TrainingTab : PhonePage
 
     private string Desc((TrainingKind K, int I) e)
     {
-        if (e.K == TrainingKind.Upgrade) return _d.Upgrades[e.I].Desc;
-        if (e.K == TrainingKind.Class) return "Nowy zawód do wyboru: " + _d.Classes[e.I].AbilityName;
+        if (e.K == TrainingKind.Upgrade) return UpgradeDesc(e.I);
+        if (e.K == TrainingKind.Class) return "Nowy zawód do wyboru: " + _d.Classes[e.I].AbilityName + " (każdy kolejny drożej)";
         if (e.K == TrainingKind.Tool)
         {
             var w = _d.Weapons[_d.Tools[e.I].Weapon];
@@ -121,6 +121,19 @@ public sealed class TrainingTab : PhonePage
         }
         if (e.K == TrainingKind.Helper) return $"{_d.Brigade[e.I].Desc} (wezwanie {_d.Brigade[e.I].Price} zł)";
         return "Najwyższa trudność";
+    }
+
+    /// <summary>
+    /// v0.21.52: Szkolenie z poziomami – co da kolejny poziom („Poziom III: +1 HP na start”), ile już daje i opis;
+    /// na maksimum – razem.
+    /// </summary>
+    private string UpgradeDesc(int i)
+    {
+        var u = _d.Upgrades[i];
+        var lv = _p.Levels[i];
+        if (lv >= u.Levels) return "Razem: " + Meta.UpgradeSummary(_d, i, lv);
+        var next = $"Poziom {UiText.Roman(lv)}: {RunMods.UpgradeLabel(u.Steps[lv].Effect, u.Steps[lv].Value)}";
+        return lv > 0 ? $"{next} (teraz: {Meta.UpgradeSummary(_d, i, lv)})" : $"{next} – {u.Desc}";
     }
 
     /// <summary>Kup zaznaczoną pozycję (także z testu dymnego).</summary>

@@ -160,7 +160,9 @@ public sealed class EstateTab : PhonePage
         }
         if (dc.End.Y + 6 + PhonePainter.RowH + 8 > p.Bottom) return; // wąski telefon: bez wiersza statystyk
         var c2 = p.Card(dc.End.Y + 6, 1);
-        p.Text(p.TextX(c2), p.RowY(c2, 0), $"Najlepszy wynik: {_p.Best}  Budowy: {_p.Runs}  Wygrane: {_p.Wins}", Ink.Dim, TextAlign.Left, c2.Size.X - 18);
+        var ti = Titles.Selected(_d, _p); // v0.21.52: wybrany tytuł (Odznaki > Tytuły)
+        if (ti >= 0) p.Text(p.TextX(c2), p.RowY(c2, 0), $"„{Titles.Name(_d, ti)}”  Rekord: {_p.Best}  Wygrane: {_p.Wins}", Ink.Brand, TextAlign.Left, c2.Size.X - 18);
+        else p.Text(p.TextX(c2), p.RowY(c2, 0), $"Najlepszy wynik: {_p.Best}  Budowy: {_p.Runs}  Wygrane: {_p.Wins}", Ink.Dim, TextAlign.Left, c2.Size.X - 18);
     }
 
     private void DrawList(PhonePainter p)
