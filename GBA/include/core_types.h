@@ -112,6 +112,7 @@ namespace core
         boon_effect effect;
         int8_t value;
         int8_t cls;            // premia zawodu (-1 = dla każdego)
+        bool mastery = false;  // v0.21.52 cz. b: premia mistrzostwa zawodu (w ofercie od poziomu mistrzostwa z nagrodą "boon")
     };
 
     struct boon_rarity_def
@@ -418,7 +419,8 @@ namespace core
     };
 
     // Fabuła odkrywana z budowami (#35): wątek SMS-ów odblokowany kamieniem milowym, archiwum w telefonie profilu.
-    enum class story_trigger : uint8_t { runs, wins, boss, elite, secret, event, synergy, daily, weekly, act0 };
+    enum class story_trigger : uint8_t { runs, wins, boss, elite, secret, event, synergy, daily, weekly, act0,
+                                         inspector };   // v0.21.52 cz. b: poziom inspektora (value = poziom)
 
     struct story_thread
     {
@@ -430,12 +432,14 @@ namespace core
         int8_t msgs_count;
     };
 
-    // Ozdoba Osiedla: pojawia się po tylu wygranych.
+    // Ozdoba Osiedla: pojawia się po tylu wygranych albo (v0.21.52 cz. b) na poziomie inspektora.
     struct decor_def
     {
         const char* name;
-        int8_t wins;
+        int8_t wins;           // 0 = nie z wygranych
+        int8_t inspector;      // poziom inspektora (0 = z wygranych)
     };
+
 
     // Wydarzenie na placu: losowy SMS na starcie etapu (nie pierwszego i nie z bossem) z modyfikatorem etapu.
     enum class event_effect : uint8_t { fewer_pickups, cash, inspection, rain, thermos };
@@ -521,6 +525,39 @@ namespace core
     {
         perk_effect effect;
         int8_t value;
+    };
+
+    // ------------------------------------------------------------------ v0.21.52 cz. b: poziom inspektora (#44), mistrzostwo
+    // zawodu (#45), stopnie inwestora (#48) - nagroda za każdy poziom z listy w danych.
+    enum class progress_reward : uint8_t { respect, title, helmet, story, decor, keepsake_slot, power, weapon, boon };
+
+    struct progress_level
+    {
+        int16_t xp;            // dośw. potrzebne na ten poziom (od poprzedniego); stopnie inwestora: stawka
+        progress_reward reward;
+        int8_t index;          // wygląd (helmet), wątek fabuły (story), ozdoba Osiedla (decor); -1 = brak
+        int16_t value;         // Respekt
+        const char* title;     // tytuł (title)
+    };
+
+    // Mistrzostwo zawodu: wariant mocy (poziom z nagrodą "power"), broń mistrza (cecha + złoty błysk przy krycie,
+    // "weapon"), premia mistrzostwa w ofercie po etapie ("boon"); kask mistrza - wygląd z listy poziomów ("helmet").
+    struct mastery_class_def
+    {
+        const char* power_name;
+        const char* power_desc;
+        int8_t power;          // + do siły mocy (jak premie zawodu z efektem power), może być ujemne
+        int8_t cooldown;       // + tury odnowienia mocy (ujemne = szybciej)
+        const char* weapon_name;
+        perk weapon_perk;      // mała cecha broni mistrza (na całą budowę)
+        int8_t boon;           // premia mistrzostwa (data::boons)
+    };
+
+    struct progress_title      // tytuł spoza odznak i zleceń: z poziomu inspektora albo stopnia inwestora
+    {
+        const char* name;
+        int8_t source;         // 0 = poziom inspektora, 1 = stopień inwestora (najwyższa stawka)
+        int8_t level;          // poziom / stawka
     };
 
     struct badge_def           // odznaka (motywacja do kolejnych budów)

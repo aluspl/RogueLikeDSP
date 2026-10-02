@@ -513,50 +513,62 @@ inline constexpr core::boon_rarity_def boon_rarities[] = {   // premie: rzadkoś
 };
 inline constexpr const char* boon_tags[] = { "Woda", "Prąd", "Beton", "BHP", "Szczęście", "Kawa", "Brygada", "Materiały", "Iskra" };   // znaczniki premii
 inline constexpr core::boon_def boons[] = {   // premie po etapie: 1 z 3 (rzadkość, znaczniki, skutek, zawód)
-    { "Hartowana kielnia", "+1 obrażeń", 1, 4, core::boon_effect::dmg, 1, -1 },
-    { "Beton B30", "+1 OBR", 1, 4, core::boon_effect::def, 1, -1 },
-    { "Płyta warstwowa", "+4 max HP", 0, 8, core::boon_effect::max_hp, 4, -1 },
-    { "Zbrojona rękawica", "+1 obrażeń", 1, 128, core::boon_effect::dmg, 1, -1 },
-    { "Młot mistrza", "+10% obrażeń", 2, 4, core::boon_effect::dmg_pct, 10, -1 },
-    { "Szelki asekuracyjne", "Unik +4%", 0, 8, core::boon_effect::dodge, 4, -1 },
-    { "Apteczka na placu", "+4 HP na start etapu", 0, 40, core::boon_effect::regen_stage, 4, -1 },
-    { "Kask z latarką", "Widzenie +1", 0, 8, core::boon_effect::sight, 1, -1 },
-    { "Instrukcja BHP", "Stany krócej o 1 t.", 1, 8, core::boon_effect::status_res, 1, -1 },
-    { "Anioł stróż", "+8 max HP", 2, 8, core::boon_effect::max_hp, 8, -1 },
-    { "Podwójne espresso", "Kawa leczy +3 HP", 0, 32, core::boon_effect::coffee, 3, -1 },
-    { "Termos z bufetu", "Termos +1 miejsce", 0, 32, core::boon_effect::thermos, 1, -1 },
-    { "Druga zmiana", "Moc -2 t. odnowienia", 1, 32, core::boon_effect::cooldown, 2, -1 },
-    { "Drożdżówka", "+1 HP za usunięty problem", 2, 32, core::boon_effect::kill_heal, 1, -1 },
-    { "Koniczyna", "+1 SZCZ", 0, 16, core::boon_effect::luck, 1, -1 },
-    { "Szczęśliwa moneta", "Kryt +4%", 0, 16, core::boon_effect::crit, 4, -1 },
-    { "Złota podkowa", "+2 SZCZ", 2, 16, core::boon_effect::luck, 2, -1 },
-    { "Wąż ogrodowy", "Ciosy moczą problem", 0, 1, core::boon_effect::wet_hits, 3, -1 },
-    { "Suchy lód", "Ciosy zmrażają problem", 1, 1, core::boon_effect::frost_hits, 1, -1 },
-    { "Hydrofor", "+6% obrażeń", 1, 3, core::boon_effect::dmg_pct, 6, -1 },
-    { "Przedłużacz", "Ciosy z prądem", 0, 2, core::boon_effect::electric, 1, -1 },
-    { "Transformator", "+2 obrażeń", 2, 258, core::boon_effect::dmg, 2, -1 },
-    { "Krzesiwo", "Ciosy krzeszą iskry", 0, 256, core::boon_effect::spark, 1, -1 },
-    { "Tarcza tnąca", "Kryt +6%", 1, 256, core::boon_effect::crit, 6, -1 },
-    { "Numer do ekipy", "Brygada -25% ceny", 0, 64, core::boon_effect::brigade_pct, 25, -1 },
-    { "Premia od inwestora", "+40 zł od razu", 0, 64, core::boon_effect::cash, 40, -1 },
-    { "Brygadzista", "Kryt +6%", 1, 80, core::boon_effect::crit, 6, -1 },
-    { "Paleta materiałów", "+2 każdego materiału", 0, 128, core::boon_effect::mats, 2, -1 },
-    { "Karta hurtowni", "Hurtownia -25% ceny", 0, 128, core::boon_effect::shop_pct, 25, -1 },
-    { "Skład na placu", "Materiały +60% częściej", 1, 128, core::boon_effect::mats_pct, 60, -1 },
-    { "Twarda odprawa", "Odprawa ogłusza +1 t.", 1, 8, core::boon_effect::power, 1, 0 },
-    { "Harmonogram", "Moc -3 t. odnowienia", 0, 32, core::boon_effect::cooldown, 3, 0 },
-    { "Gruba ścianka", "Ścianka stoi +3 t.", 0, 4, core::boon_effect::power, 3, 1 },
-    { "Pełny magazynek", "Seria: zasięg +1", 1, 128, core::boon_effect::power, 1, 2 },
-    { "Mocny łańcuch", "Łańcuch: +1 cel", 1, 2, core::boon_effect::power, 1, 3 },
-    { "Gumowe rękawice", "+2 OBR", 0, 10, core::boon_effect::def, 2, 3 },
-    { "Mocny strumień", "Zawór leczy +4 HP", 0, 1, core::boon_effect::power, 4, 4 },
-    { "Szybka wirówka", "Wirówka +2 obrażeń", 1, 256, core::boon_effect::power, 2, 5 },
-    { "Długa rynna", "Rynna: +2 pola", 0, 1, core::boon_effect::power, 2, 6 },
-    { "Gęsty tynk", "Narzut ogłusza +1 t.", 1, 4, core::boon_effect::power, 1, 7 },
-    { "Ciężka łyżka", "Taran +2 obrażeń", 1, 4, core::boon_effect::power, 2, 8 },
-    { "Długi spaw", "Spaw: +2 pola", 0, 256, core::boon_effect::power, 2, 9 },
-    { "Dokładny pomiar", "Tyczenie: ciosy +2", 1, 16, core::boon_effect::power, 2, 10 },
-    { "Pełna skrzynka", "Moc innego fachu +1", 1, 128, core::boon_effect::power, 1, 11 },
+    { "Hartowana kielnia", "+1 obrażeń", 1, 4, core::boon_effect::dmg, 1, -1, false },
+    { "Beton B30", "+1 OBR", 1, 4, core::boon_effect::def, 1, -1, false },
+    { "Płyta warstwowa", "+4 max HP", 0, 8, core::boon_effect::max_hp, 4, -1, false },
+    { "Zbrojona rękawica", "+1 obrażeń", 1, 128, core::boon_effect::dmg, 1, -1, false },
+    { "Młot mistrza", "+10% obrażeń", 2, 4, core::boon_effect::dmg_pct, 10, -1, false },
+    { "Szelki asekuracyjne", "Unik +4%", 0, 8, core::boon_effect::dodge, 4, -1, false },
+    { "Apteczka na placu", "+4 HP na start etapu", 0, 40, core::boon_effect::regen_stage, 4, -1, false },
+    { "Kask z latarką", "Widzenie +1", 0, 8, core::boon_effect::sight, 1, -1, false },
+    { "Instrukcja BHP", "Stany krócej o 1 t.", 1, 8, core::boon_effect::status_res, 1, -1, false },
+    { "Anioł stróż", "+8 max HP", 2, 8, core::boon_effect::max_hp, 8, -1, false },
+    { "Podwójne espresso", "Kawa leczy +3 HP", 0, 32, core::boon_effect::coffee, 3, -1, false },
+    { "Termos z bufetu", "Termos +1 miejsce", 0, 32, core::boon_effect::thermos, 1, -1, false },
+    { "Druga zmiana", "Moc -2 t. odnowienia", 1, 32, core::boon_effect::cooldown, 2, -1, false },
+    { "Drożdżówka", "+1 HP za usunięty problem", 2, 32, core::boon_effect::kill_heal, 1, -1, false },
+    { "Koniczyna", "+1 SZCZ", 0, 16, core::boon_effect::luck, 1, -1, false },
+    { "Szczęśliwa moneta", "Kryt +4%", 0, 16, core::boon_effect::crit, 4, -1, false },
+    { "Złota podkowa", "+2 SZCZ", 2, 16, core::boon_effect::luck, 2, -1, false },
+    { "Wąż ogrodowy", "Ciosy moczą problem", 0, 1, core::boon_effect::wet_hits, 3, -1, false },
+    { "Suchy lód", "Ciosy zmrażają problem", 1, 1, core::boon_effect::frost_hits, 1, -1, false },
+    { "Hydrofor", "+6% obrażeń", 1, 3, core::boon_effect::dmg_pct, 6, -1, false },
+    { "Przedłużacz", "Ciosy z prądem", 0, 2, core::boon_effect::electric, 1, -1, false },
+    { "Transformator", "+2 obrażeń", 2, 258, core::boon_effect::dmg, 2, -1, false },
+    { "Krzesiwo", "Ciosy krzeszą iskry", 0, 256, core::boon_effect::spark, 1, -1, false },
+    { "Tarcza tnąca", "Kryt +6%", 1, 256, core::boon_effect::crit, 6, -1, false },
+    { "Numer do ekipy", "Brygada -25% ceny", 0, 64, core::boon_effect::brigade_pct, 25, -1, false },
+    { "Premia od inwestora", "+40 zł od razu", 0, 64, core::boon_effect::cash, 40, -1, false },
+    { "Brygadzista", "Kryt +6%", 1, 80, core::boon_effect::crit, 6, -1, false },
+    { "Paleta materiałów", "+2 każdego materiału", 0, 128, core::boon_effect::mats, 2, -1, false },
+    { "Karta hurtowni", "Hurtownia -25% ceny", 0, 128, core::boon_effect::shop_pct, 25, -1, false },
+    { "Skład na placu", "Materiały +60% częściej", 1, 128, core::boon_effect::mats_pct, 60, -1, false },
+    { "Twarda odprawa", "Odprawa ogłusza +1 t.", 1, 8, core::boon_effect::power, 1, 0, false },
+    { "Harmonogram", "Moc -3 t. odnowienia", 0, 32, core::boon_effect::cooldown, 3, 0, false },
+    { "Gruba ścianka", "Ścianka stoi +3 t.", 0, 4, core::boon_effect::power, 3, 1, false },
+    { "Pełny magazynek", "Seria: zasięg +1", 1, 128, core::boon_effect::power, 1, 2, false },
+    { "Mocny łańcuch", "Łańcuch: +1 cel", 1, 2, core::boon_effect::power, 1, 3, false },
+    { "Gumowe rękawice", "+2 OBR", 0, 10, core::boon_effect::def, 2, 3, false },
+    { "Mocny strumień", "Zawór leczy +4 HP", 0, 1, core::boon_effect::power, 4, 4, false },
+    { "Szybka wirówka", "Wirówka +2 obrażeń", 1, 256, core::boon_effect::power, 2, 5, false },
+    { "Długa rynna", "Rynna: +2 pola", 0, 1, core::boon_effect::power, 2, 6, false },
+    { "Gęsty tynk", "Narzut ogłusza +1 t.", 1, 4, core::boon_effect::power, 1, 7, false },
+    { "Ciężka łyżka", "Taran +2 obrażeń", 1, 4, core::boon_effect::power, 2, 8, false },
+    { "Długi spaw", "Spaw: +2 pola", 0, 256, core::boon_effect::power, 2, 9, false },
+    { "Dokładny pomiar", "Tyczenie: ciosy +2", 1, 16, core::boon_effect::power, 2, 10, false },
+    { "Pełna skrzynka", "Moc innego fachu +1", 1, 128, core::boon_effect::power, 1, 11, false },
+    { "Autorytet", "+8% obrażeń", 1, 8, core::boon_effect::dmg_pct, 8, 0, true },
+    { "Mur oporowy", "+2 OBR", 1, 4, core::boon_effect::def, 2, 1, true },
+    { "Gwoździe hartowane", "Kryt +8%", 1, 128, core::boon_effect::crit, 8, 2, true },
+    { "Wysokie napięcie", "Łańcuch: +2 cele", 2, 2, core::boon_effect::power, 2, 3, true },
+    { "Szybki spływ", "+6 HP na start etapu", 1, 33, core::boon_effect::regen_stage, 6, 4, true },
+    { "Fuga epoksydowa", "Unik +6%", 1, 8, core::boon_effect::dodge, 6, 5, true },
+    { "Lina asekuracyjna", "+8 max HP", 1, 8, core::boon_effect::max_hp, 8, 6, true },
+    { "Tynk mistrza", "Narzut ogłusza +1 t.", 2, 4, core::boon_effect::power, 1, 7, true },
+    { "Gąsienice", "+2 OBR", 1, 4, core::boon_effect::def, 2, 8, true },
+    { "Maska spawalnicza", "Stany krócej o 2 t.", 1, 264, core::boon_effect::status_res, 2, 9, true },
+    { "Teodolit", "Widzenie +2", 1, 16, core::boon_effect::sight, 2, 10, true },
+    { "Komplet kluczy", "+1 obrażeń", 1, 128, core::boon_effect::dmg, 1, 11, true },
 };
 inline constexpr core::synergy_def synergies[] = {   // synergie: 2+ premie z tym samym znacznikiem
     { "Przepięcie", "Ciosy z prądem, porażenie dalej", 3, core::synergy_effect::conduct, 1 },
@@ -568,7 +580,7 @@ inline constexpr core::synergy_def synergies[] = {   // synergie: 2+ premie z ty
     { "Magazyn", "Materiały 2x częściej", 128, core::synergy_effect::stock, 100 },
     { "Iskrzenie", "Wybuch pyłu +3 i szerzej", 256, core::synergy_effect::sparks, 3 },
 };
-inline constexpr int boons_count = 44;
+inline constexpr int boons_count = 56;
 inline constexpr int boon_tags_count = 9;
 inline constexpr int synergies_count = 8;
 inline constexpr int boon_reroll_cost = 25;
@@ -697,8 +709,15 @@ inline constexpr core::story_thread story_arc[] = {   // fabuła odkrywana z bud
     { "Dziesiąta budowa", "Rozegraj 10 budów", core::story_trigger::runs, 10, { { "Anna Nowak", { "10 budów! Marek robi", "z Twoich notatek plan", "w aplikacji dla innych." } }, { "", { "", "", "" } } }, 1 },
     { "Nasze osiedle", "Wygraj 5 budów", core::story_trigger::wins, 5, { { "Inwestorka Ewa", { "5 domów, jedno osiedle.", "Chcę tu plac zabaw.", "Budżet? Znajdzie się." } }, { "Anna Nowak", { "Plac zabaw! Dzieci już", "rysują plan. Na kartce,", "ale z harmonogramem." } } }, 2 },
     { "Dom za domem", "Wygraj 10 budów", core::story_trigger::wins, 10, { { "Kierownik Marek", { "10 odbiorów. Plan", "pokonał chaos. Dzięki", "- bez Ciebie ani rusz." } }, { "Anna Nowak", { "Ulica ma nazwę: Planowa.", "Tabliczkę wieszamy", "w sobotę. Przyjdź!" } } }, 2 },
+    { "Pierwsza kontrola", "Poziom inspektora 3", core::story_trigger::inspector, 3, { { "Inspektor Kowal", { "Dzień dobry, inspektor", "Kowal. Będę zaglądał", "na Pana budowy." } }, { "Kierownik Marek", { "Spokojnie, mamy", "wszystko w PlanBudowlany.", "Nawet kawę." } } }, 2 },
+    { "Dziennik budowy", "Poziom inspektora 7", core::story_trigger::inspector, 7, { { "Inspektor Kowal", { "Dziennik budowy", "prowadzony starannie.", "Rzadko to widuję." } }, { "", { "", "", "" } } }, 1 },
+    { "Kask na głowie", "Poziom inspektora 9", core::story_trigger::inspector, 9, { { "Inspektor Kowal", { "Widziałem kask na głowie,", "nie na łopacie. Plus", "w protokole." } }, { "Sąsiad Zenek", { "A ja widziałem", "inspektora w moim", "ogródku. Też plus?" } } }, 2 },
+    { "Protokół bez uwag", "Poziom inspektora 15", core::story_trigger::inspector, 15, { { "Inspektor Kowal", { "Protokół bez uwag.", "Pierwszy w tym roku.", "Proszę nie zapeszać." } }, { "", { "", "", "" } } }, 1 },
+    { "Polecenie", "Poziom inspektora 20", core::story_trigger::inspector, 20, { { "Inspektor Kowal", { "Poleciłem Pana firmę", "koledze z nadzoru.", "Niech się uczy." } }, { "Anna Nowak", { "Inspektor nas poleca?", "Marek, zapisz to", "złotymi literami." } } }, 2 },
+    { "Szkolenie", "Poziom inspektora 25", core::story_trigger::inspector, 25, { { "Inspektor Kowal", { "Prowadzę szkolenie dla", "nowych inspektorów.", "Pokażę Pana budowy." } }, { "", { "", "", "" } } }, 1 },
+    { "Emerytura", "Poziom inspektora 30", core::story_trigger::inspector, 30, { { "Inspektor Kowal", { "Idę niedługo na", "emeryturę. Następca", "zna Pana z opowieści." } }, { "Kierownik Marek", { "Bez niego to już nie", "będzie to samo. Kawa", "dla niego zawsze była." } } }, 2 },
 };
-inline constexpr int story_arc_count = 19;
+inline constexpr int story_arc_count = 26;
 
 inline constexpr core::secret_def secrets[] = {   // sekretne zlecenia: "???" z podpowiedzią, nagroda po wykonaniu
     { "Bez kofeiny też się da", "Wygraj bez picia kawy", core::secret_kind::no_coffee_win, 0, core::secret_reward::cls, 9, "Nowy zawód: Spawacz", { "Kierownik Marek", { "Wygrana bez kawy!", "Nowy zawód: Spawacz -", "Spaw: iskry i dym." } } },
@@ -718,23 +737,140 @@ inline constexpr core::cosmetic_def cosmetics[] = {   // wygląd z sekretnych zl
     { "Zielony kask", "Kask bohatera na zielono", 10921 },
     { "Złoty kask", "Kask bohatera ze złota", 5886 },
     { "Biały kask", "Kask bohatera na biało", 31710 },
+    { "Czerwony kask", "Kask bohatera na czerwono", 6362 },
+    { "Fioletowy kask", "Kask bohatera na fioletowo", 32047 },
+    { "Turkusowy kask", "Kask bohatera na turkusowo", 24293 },
+    { "Różowy kask", "Kask bohatera na różowo", 21949 },
+    { "Srebrny kask", "Kask bohatera ze srebra", 26391 },
+    { "Brązowy kask", "Kask bohatera na brązowo", 5423 },
+    { "Miedziany kask", "Kask bohatera z miedzi", 6615 },
+    { "Granatowy kask", "Kask bohatera na granatowo", 15523 },
+    { "Kask mistrza", "Złoty kask mistrza zawodu", 863 },
 };
 inline constexpr int secrets_count = 8;
-inline constexpr int cosmetics_count = 7;
+inline constexpr int cosmetics_count = 16;
 inline constexpr uint64_t secret_paper_mask = 1232655613952ull;   // problemy papierowe (Akt 0 bez obrażeń)
 inline constexpr int secret_helper_boss = 8;   // boss pokonany ciosem brygady (Szef tylko dzwoni)
 inline constexpr int cosmetic_gold = 0;   // złoty błysk broni przy krycie
 inline constexpr int cosmetic_stripes = 1;   // kask w paski (wybór zawodu)
 
 inline constexpr core::decor_def estate_decor[] = {   // ozdoby Osiedla (klatki w houses.bmp za pustą działką)
-    { "Lipa", 1 },
-    { "Ławka Zenka", 3 },
-    { "Latarnia", 4 },
-    { "Plac zabaw", 5 },
-    { "Tablica PlanBudowlany", 8 },
-    { "Fontanna", 10 },
+    { "Lipa", 1, 0 },
+    { "Ławka Zenka", 3, 0 },
+    { "Latarnia", 4, 0 },
+    { "Plac zabaw", 5, 0 },
+    { "Tablica PlanBudowlany", 8, 0 },
+    { "Fontanna", 10, 0 },
+    { "Nowa betoniarka", 0, 5 },
+    { "Rusztowanie", 0, 12 },
+    { "Paleta cegieł", 0, 17 },
+    { "Żuraw", 0, 22 },
+    { "Piaskownica", 0, 27 },
+    { "Altana", 0, 32 },
 };
-inline constexpr int estate_decor_count = 6;
+inline constexpr int estate_decor_count = 12;
+
+inline constexpr core::progress_level inspector_levels[] = {   // poziom inspektora: dośw. na poziom i nagroda
+    { 114, core::progress_reward::respect, -1, 10, "" },
+    { 128, core::progress_reward::title, -1, 0, "Praktykant" },
+    { 142, core::progress_reward::story, 19, 0, "" },
+    { 156, core::progress_reward::helmet, 7, 0, "" },
+    { 170, core::progress_reward::decor, 6, 0, "" },
+    { 184, core::progress_reward::respect, -1, 15, "" },
+    { 198, core::progress_reward::story, 20, 0, "" },
+    { 212, core::progress_reward::title, -1, 0, "Stażysta" },
+    { 226, core::progress_reward::story, 21, 0, "" },
+    { 240, core::progress_reward::keepsake_slot, -1, 0, "" },
+    { 254, core::progress_reward::respect, -1, 20, "" },
+    { 268, core::progress_reward::decor, 7, 0, "" },
+    { 282, core::progress_reward::helmet, 8, 0, "" },
+    { 296, core::progress_reward::title, -1, 0, "Rzeczoznawca" },
+    { 310, core::progress_reward::story, 22, 0, "" },
+    { 324, core::progress_reward::respect, -1, 20, "" },
+    { 338, core::progress_reward::decor, 8, 0, "" },
+    { 352, core::progress_reward::helmet, 9, 0, "" },
+    { 366, core::progress_reward::title, -1, 0, "Inspektor" },
+    { 380, core::progress_reward::story, 23, 0, "" },
+    { 394, core::progress_reward::respect, -1, 25, "" },
+    { 408, core::progress_reward::decor, 9, 0, "" },
+    { 422, core::progress_reward::helmet, 10, 0, "" },
+    { 436, core::progress_reward::title, -1, 0, "Kierownik robót" },
+    { 450, core::progress_reward::story, 24, 0, "" },
+    { 464, core::progress_reward::respect, -1, 25, "" },
+    { 478, core::progress_reward::decor, 10, 0, "" },
+    { 492, core::progress_reward::helmet, 11, 0, "" },
+    { 506, core::progress_reward::title, -1, 0, "Nadzór budowlany" },
+    { 520, core::progress_reward::story, 25, 0, "" },
+    { 534, core::progress_reward::respect, -1, 30, "" },
+    { 548, core::progress_reward::decor, 11, 0, "" },
+    { 562, core::progress_reward::helmet, 12, 0, "" },
+    { 576, core::progress_reward::respect, -1, 40, "" },
+    { 590, core::progress_reward::title, -1, 0, "Główny inspektor" },
+};
+inline constexpr int inspector_levels_count = 35;
+inline constexpr int inspector_xp_run = 8, inspector_xp_stage = 6, inspector_xp_boss = 10;
+inline constexpr int inspector_xp_elite = 3, inspector_xp_storeroom = 4, inspector_xp_win = 25;
+inline constexpr int inspector_diff_pct[] = { 80, 100, 125 };
+inline constexpr int inspector_migrate_run = 20, inspector_migrate_win = 60;
+inline constexpr int inspector_migrate_respect_pct = 50;
+
+inline constexpr core::progress_level mastery_levels[] = {   // mistrzostwo zawodu 1-10: dośw. na poziom i nagroda
+    { 80, core::progress_reward::respect, -1, 5, "" },
+    { 120, core::progress_reward::respect, -1, 5, "" },
+    { 160, core::progress_reward::power, -1, 0, "" },
+    { 200, core::progress_reward::respect, -1, 5, "" },
+    { 260, core::progress_reward::weapon, -1, 0, "" },
+    { 320, core::progress_reward::respect, -1, 10, "" },
+    { 400, core::progress_reward::boon, -1, 0, "" },
+    { 480, core::progress_reward::respect, -1, 10, "" },
+    { 560, core::progress_reward::respect, -1, 10, "" },
+    { 640, core::progress_reward::helmet, 15, 0, "" },
+};
+inline constexpr core::mastery_class_def mastery_classes[] = {   // wariant mocy, broń mistrza (cecha), premia mistrzostwa
+    { "Długa odprawa", "Ogłusza +1 t., odn. +2 t.", 1, 2, "Dziennik mistrza", { core::perk_effect::crit, 3 }, 44 },
+    { "Mur na zakładkę", "Stoi +3 t., odn. +1 t.", 3, 1, "Kielnia mistrza", { core::perk_effect::crit, 3 }, 45 },
+    { "Seria z dystansu", "Zasięg +1, odn. +2 t.", 1, 2, "Gwoździarka mistrza", { core::perk_effect::crit, 2 }, 46 },
+    { "Długi łańcuch", "+1 cel, odn. +2 t.", 1, 2, "Próbnik mistrza", { core::perk_effect::crit, 4 }, 47 },
+    { "Szybki zawór", "Leczy -2 HP, odn. -4 t.", -2, -4, "Klucz mistrza", { core::perk_effect::crit, 3 }, 48 },
+    { "Tarcza diamentowa", "+2 obrażeń, odn. +2 t.", 2, 2, "Szlifierka mistrza", { core::perk_effect::crit, 2 }, 49 },
+    { "Rynna z kalenicy", "+2 pola, odn. +1 t.", 2, 1, "Dachówka mistrza", { core::perk_effect::crit, 3 }, 50 },
+    { "Gruby narzut", "Ogłusza +1 t., odn. +2 t.", 1, 2, "Agregat mistrza", { core::perk_effect::crit, 3 }, 51 },
+    { "Lekki taran", "-1 obrażeń, odn. -4 t.", -1, -4, "Łyżka mistrza", { core::perk_effect::crit, 3 }, 52 },
+    { "Długi łuk", "+2 pola, odn. +1 t.", 2, 1, "Spawarka mistrza", { core::perk_effect::crit, 3 }, 53 },
+    { "Szybkie tyczenie", "Ciosy -1, odn. -4 t.", -1, -4, "Tyczka mistrza", { core::perk_effect::crit, 2 }, 54 },
+    { "Skrzynka mistrza", "Moc fachu +1, odn. +1 t.", 1, 1, "Młotek mistrza", { core::perk_effect::crit, 3 }, 55 },
+};
+inline constexpr int mastery_levels_count = 10;
+inline constexpr int mastery_migrate_win = 120, mastery_migrate_class_win = 60;
+
+inline constexpr core::progress_level stake_ranks[] = {   // stopnie inwestora: nagroda za nowy najwyższy próg stawki (xp = stawka)
+    { 1, core::progress_reward::respect, -1, 15, "" },
+    { 2, core::progress_reward::title, -1, 0, "Ryzykant" },
+    { 3, core::progress_reward::helmet, 13, 0, "" },
+    { 4, core::progress_reward::respect, -1, 20, "" },
+    { 5, core::progress_reward::title, -1, 0, "Negocjator" },
+    { 6, core::progress_reward::respect, -1, 25, "" },
+    { 7, core::progress_reward::helmet, 14, 0, "" },
+    { 8, core::progress_reward::title, -1, 0, "Pupil inwestora" },
+    { 9, core::progress_reward::respect, -1, 30, "" },
+    { 10, core::progress_reward::title, -1, 0, "Budowa marzeń" },
+};
+inline constexpr int stake_ranks_count = 10;
+
+inline constexpr core::progress_title progress_titles[] = {   // tytuły z poziomu inspektora (0) i stopni inwestora (1)
+    { "Praktykant", 0, 2 },
+    { "Stażysta", 0, 8 },
+    { "Rzeczoznawca", 0, 14 },
+    { "Inspektor", 0, 19 },
+    { "Kierownik robót", 0, 24 },
+    { "Nadzór budowlany", 0, 29 },
+    { "Główny inspektor", 0, 35 },
+    { "Ryzykant", 1, 2 },
+    { "Negocjator", 1, 5 },
+    { "Pupil inwestora", 1, 8 },
+    { "Budowa marzeń", 1, 10 },
+};
+inline constexpr int progress_titles_count = 11;
 
 inline constexpr const char* version = "v0.21.52";   // numer wersji (ekran tytułowy, changelog)
 
@@ -773,6 +909,17 @@ inline constexpr const char* meta_help[] = {   // Jak grać: podsumowanie budowy
     "Fabuła: SMS-y w Osiedlu (A).",
 };
 inline constexpr int meta_help_count = 6;
+
+inline constexpr const char* progress_help[] = {   // Jak grać: poziom inspektora i mistrzostwo zawodu
+    "Każda budowa (też przegrana)",
+    "daje dośw. inspektora: etapy,",
+    "bossowie, elity, magazyny.",
+    "Poziom: SMS, ozdoba, kask,",
+    "tytuł, Respekt, 2. pamiątka.",
+    "Mistrzostwo zawodu 1-10: moc,",
+    "broń mistrza, premia, kask.",
+};
+inline constexpr int progress_help_count = 7;
 
 inline constexpr const char* secrets_help[] = {   // Jak grać: sekretne zlecenia
     "Sekretne zlecenia: telefon",

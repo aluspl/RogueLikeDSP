@@ -13,7 +13,8 @@ namespace core
     constexpr int max_respect = 19;       // 16 w respect_ranks + 3 w respect_ranks_hi (v12)
     static_assert(data::classes_count <= max_classes && data::respect_count <= max_respect && data::rewards_count <= 255);
 
-    constexpr char profile_magic[8] = "PBRL013";
+    constexpr char profile_magic[8] = "PBRL014";
+    constexpr char profile_magic_v13[8] = "PBRL013";
     constexpr char profile_magic_v12[8] = "PBRL012";
     constexpr char profile_magic_v11[8] = "PBRL011";
     constexpr char profile_magic_v10[8] = "PBRL010";
@@ -37,7 +38,8 @@ namespace core
     constexpr int profile_v10_size = 160; // v11 = v10 + wyzwania tygodnia (#34) i fabuła odkrywana z budowami (#35)
     constexpr int profile_v11_size = 188; // v12 = v11 + sekretne zlecenia (#39), wygląd, Respekt 16-18
     constexpr int profile_v12_size = 196; // v13 = v12 + tytuł i kolor kasku (v0.21.52), poziomy Szkoleń od nowa
-    static_assert(data::secrets_count <= 16 && data::cosmetics_count <= 8);
+    constexpr int profile_v13_size = 200; // v14 = v13 + poziom inspektora, mistrzostwo zawodów, druga pamiątka (v0.21.52 cz. b)
+    static_assert(data::secrets_count <= 16 && data::cosmetics_count <= 255);   // wygląd: przełączniki tylko 0-7 (p.cosmetic), kolory kasku w p.helmet
     constexpr int weekly_slots = 3;
     static_assert(data::weekly_history <= weekly_slots && data::story_arc_count <= 32);
     constexpr int daily_slots = 5;
@@ -122,6 +124,13 @@ namespace core
         uint8_t title;                 // wybrany tytuł + 1 (0 = bez tytułu): odznaki 0..badges_count-1, potem zlecenia
         uint8_t helmet;                // wybrany kolor kasku: wygląd + 1 (0 = kask zawodu)
         uint8_t reserved13[2];         // wyrównanie do 200 B (profil bez dziur: zapis SRAM bajt po bajcie)
+        // --- v14 (v0.21.52 cz. b): poziom inspektora (#44), mistrzostwo zawodów (#45), druga pamiątka (nagroda inspektora)
+        uint32_t inspector_xp;         // dośw. inspektora łącznie (poziom z progów data::inspector_levels)
+        uint16_t mastery_xp[max_classes];   // dośw. mistrzostwa każdego zawodu (poziom 1-10 z data::mastery_levels)
+        uint16_t power_alt;            // bity: wariant mocy włączony (zawód; działa od poziomu mistrzostwa z nagrodą "power")
+        uint16_t run_progress;         // ile dośw. inspektora z bieżącej budowy już przeniesiono (znak wodny jak run_kills)
+        uint8_t keepsake2;             // druga pamiątka + 1 (0 = bez; slot z poziomu inspektora)
+        uint8_t reserved14[7];         // wyrównanie do 240 B (zapis budowy od 256)
     };
     static_assert(offsetof(profile, badges) == profile_v2_size);
     static_assert(offsetof(profile, kills_total) == profile_v3_size);
@@ -132,7 +141,8 @@ namespace core
     static_assert(offsetof(profile, catalog_hi) == profile_v8_size && offsetof(profile, tutorial) == profile_v9_size);
     static_assert(offsetof(profile, weekly_week) == profile_v10_size && offsetof(profile, weekly_score) == 168);
     static_assert(offsetof(profile, secrets) == profile_v11_size && offsetof(profile, respect_ranks_hi) == 193);
-    static_assert(offsetof(profile, title) == profile_v12_size && sizeof(profile) == 200);
+    static_assert(offsetof(profile, title) == profile_v12_size && offsetof(profile, inspector_xp) == profile_v13_size);
+    static_assert(offsetof(profile, power_alt) == 228 && offsetof(profile, keepsake2) == 232 && sizeof(profile) == 240);
 
     // Katalog usterek: rodzaje 0-15 w catalog, 16-47 w catalog_hi.
     inline bool catalog_has(const profile& p, int d) { return d < 16 ? (p.catalog >> d) & 1 : (p.catalog_hi >> (d - 16)) & 1; }
@@ -190,6 +200,62 @@ namespace core
     inline int open_classes_won(const profile& p) { int n = 0; for(int c = 0; c < data::open_classes_count; ++c) n += class_won(p, c); return n; }
     inline int best_stake(const profile& p, int c) { return c < 8 ? p.best_stake[c] : p.best_stake_hi[c - 8]; }
     inline void set_best_stake(profile& p, int c, int v) { (c < 8 ? p.best_stake[c] : p.best_stake_hi[c - 8]) = uint8_t(v); }
+
+    // ------------------------------------------------------------------ v0.21.52 cz. b: poziom inspektora (#44), mistrzostwo
+    // zawodu (#45), stopnie inwestora (#48). Poziom = ile kolejnych progów (dośw. na poziom z listy) mieści się w dośw.
+    inline int progress_level_of(const progress_level* lv, int n, int xp)
+    {
+        int l = 0, need = 0;
+        while(l < n && xp >= need + lv[l].xp) need += lv[l++].xp;
+        return l;
+    }
+    inline int progress_floor(const progress_level* lv, int level) { int t = 0; for(int l = 0; l < level; ++l) t += lv[l].xp; return t; }
+    inline int inspector_xp_int(const profile& p) { return p.inspector_xp > 1000000000u ? 1000000000 : int(p.inspector_xp); }   // uszkodzony zapis: nie ujemne
+    inline int inspector_level(const profile& p) { return progress_level_of(data::inspector_levels, data::inspector_levels_count, inspector_xp_int(p)); }
+    inline int mastery_xp(const profile& p, int c) { return c >= 0 && c < max_classes ? p.mastery_xp[c] : 0; }
+    inline int mastery_level(const profile& p, int c) { return progress_level_of(data::mastery_levels, data::mastery_levels_count, mastery_xp(p, c)); }
+    // Pasek do kolejnego poziomu: dośw. w poziomie (cur) i potrzebne (need; 0 = maksimum).
+    inline void inspector_bar(const profile& p, int& cur, int& need)
+    {
+        const int l = inspector_level(p);
+        need = l < data::inspector_levels_count ? data::inspector_levels[l].xp : 0;
+        cur = need ? inspector_xp_int(p) - progress_floor(data::inspector_levels, l) : 0;
+    }
+    inline void mastery_bar(const profile& p, int c, int& cur, int& need)
+    {
+        const int l = mastery_level(p, c);
+        need = l < data::mastery_levels_count ? data::mastery_levels[l].xp : 0;
+        cur = need ? mastery_xp(p, c) - progress_floor(data::mastery_levels, l) : 0;
+    }
+    // Poziom mistrzostwa, od którego działa nagroda r (99 = żaden).
+    inline int mastery_reward_level(progress_reward r)
+    {
+        for(int l = 0; l < data::mastery_levels_count; ++l) if(data::mastery_levels[l].reward == r) return l + 1;
+        return 99;
+    }
+    inline bool mastery_has(const profile& p, int c, progress_reward r) { return mastery_level(p, c) >= mastery_reward_level(r); }
+    // Wariant mocy: odblokowany na poziomie "power", włączany na wyborze zawodu (SELECT: Wygląd / Godot: wiersz Moc).
+    inline bool power_variant_on(const profile& p, int c) { return mastery_has(p, c, progress_reward::power) && ((p.power_alt >> c) & 1); }
+    inline void toggle_power_variant(profile& p, int c) { if(mastery_has(p, c, progress_reward::power)) p.power_alt = uint16_t(p.power_alt ^ (1u << c)); }
+    // Bity mistrzostwa do budowy zawodem c (run_mods::mastery).
+    inline int mastery_bits(const profile& p, int c)
+    {
+        int b = 0;
+        if(power_variant_on(p, c)) b |= mastery_bit_power;
+        if(mastery_has(p, c, progress_reward::weapon)) b |= mastery_bit_weapon;
+        if(mastery_has(p, c, progress_reward::boon)) b |= mastery_bit_boon;
+        return b;
+    }
+    // Stopnie inwestora: najwyższa stawka wygranej budowy (dowolnym zawodem) i ile progów z data::stake_ranks osiągnięto.
+    inline int max_stake(const profile& p) { int m = 0; for(int c = 0; c < data::classes_count; ++c) m = imax(m, best_stake(p, c)); return m; }
+    inline int stake_rank(const profile& p) { int n = 0; while(n < data::stake_ranks_count && max_stake(p) >= data::stake_ranks[n].xp) ++n; return n; }
+    // Poziom inspektora, od którego działa nagroda r (np. slot drugiej pamiątki; 99 = żaden).
+    inline int inspector_reward_level(progress_reward r)
+    {
+        for(int l = 0; l < data::inspector_levels_count; ++l) if(data::inspector_levels[l].reward == r) return l + 1;
+        return 99;
+    }
+    inline bool keepsake_slot2(const profile& p) { return inspector_level(p) >= inspector_reward_level(progress_reward::keepsake_slot); }
 
     // Bez wybranej pamiątki: pierwsza odblokowana (nowy profil zaczyna z Termosem babci).
     inline void default_keepsake(profile& p)
@@ -253,16 +319,25 @@ namespace core
     inline void migrate_v10(profile& p);
     inline void migrate_v11(profile& p);
     inline void migrate_v12(profile& p);
+    inline void migrate_v14(profile& p);
     inline int next_unlock(const profile& p, int& kind, int& index);
 
     inline bool profile_fix(profile& p)
     {
         if(std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0) return clamp_levels(p);
+        if(std::memcmp(p.magic, profile_magic_v13, sizeof p.magic) == 0)   // v13 -> v14: inspektor i mistrzostwo z dotychczasowych statystyk
+        {
+            std::memset(reinterpret_cast<char*>(&p) + profile_v13_size, 0, sizeof p - profile_v13_size);
+            std::memcpy(p.magic, profile_magic, sizeof p.magic);
+            migrate_v14(p);
+            return true;
+        }
         if(std::memcmp(p.magic, profile_magic_v12, sizeof p.magic) == 0)   // v12 -> v13: zwrot za Szkolenia, tytuł i kask od zera
         {
             std::memset(reinterpret_cast<char*>(&p) + profile_v12_size, 0, sizeof p - profile_v12_size);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             migrate_v13(p);
+            migrate_v14(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v11, sizeof p.magic) == 0)   // v11 -> v12: sekretne zlecenia z tego, co już widać w profilu
@@ -271,6 +346,7 @@ namespace core
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             migrate_v13(p);
             migrate_v12(p);
+            migrate_v14(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v10, sizeof p.magic) == 0)   // v10 -> v11: wyzwania tygodnia i fabuła od zera
@@ -280,6 +356,7 @@ namespace core
             migrate_v13(p);
             migrate_v11(p);
             migrate_v12(p);
+            migrate_v14(p);
             return true;
         }
         bool v9 = std::memcmp(p.magic, profile_magic_v9, sizeof p.magic) == 0;
@@ -292,6 +369,7 @@ namespace core
             migrate_v10(p);
             migrate_v11(p);
             migrate_v12(p);
+            migrate_v14(p);
             return true;
         }
         // v7/v6/v5/v4/v3/v2 -> v9: stare pola zostają, nowe od zera; bez wybranej pamiątki - pierwsza odblokowana
@@ -311,6 +389,7 @@ namespace core
             migrate_v10(p);
             migrate_v11(p);
             migrate_v12(p);
+            migrate_v14(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v1, sizeof p.magic) == 0)
@@ -322,6 +401,7 @@ namespace core
             migrate_v10(p);
             migrate_v11(p);
             migrate_v12(p);
+            migrate_v14(p);
             return true;
         }
         profile_reset(p);
@@ -405,14 +485,35 @@ namespace core
         if(secret_owned(p, secret_reward::cosmetic, k)) return true;
         for(int i = 0; i < data::badges_count; ++i) if(data::badges[i].cosmetic == k && (p.badges & (1u << i))) return true;
         for(int i = 0; i < data::contracts_count; ++i) if(data::contracts[i].cosmetic == k && (p.contracts & (1u << i))) return true;
+        // v0.21.52 cz. b: poziom inspektora, stopnie inwestora, kask mistrza (dowolny zawód na poziomie z nagrodą "helmet")
+        for(int l = 0; l < data::inspector_levels_count; ++l)
+            if(data::inspector_levels[l].reward == progress_reward::helmet && data::inspector_levels[l].index == k) return inspector_level(p) > l;
+        for(int l = 0; l < data::stake_ranks_count; ++l)
+            if(data::stake_ranks[l].reward == progress_reward::helmet && data::stake_ranks[l].index == k) return stake_rank(p) > l;
+        for(int l = 0; l < data::mastery_levels_count; ++l)
+            if(data::mastery_levels[l].reward == progress_reward::helmet && data::mastery_levels[l].index == k)
+            {
+                for(int c = 0; c < data::classes_count; ++c) if(mastery_level(p, c) > l) return true;
+                return false;
+            }
         return false;
     }
     inline bool cosmetic_helmet(int k) { return k >= 0 && k < data::cosmetics_count && data::cosmetics[k].helmet >= 0; }
+    // Kask mistrza zawodu (nagroda mistrzostwa): działa tylko zawodem z tym poziomem.
+    inline bool mastery_helmet(int k)
+    {
+        for(int l = 0; l < data::mastery_levels_count; ++l)
+            if(data::mastery_levels[l].reward == progress_reward::helmet && data::mastery_levels[l].index == k) return true;
+        return false;
+    }
     // Kolor kasku na budowie: wybrany i odblokowany wygląd (-1 = kask zawodu). Kask w paski ma pierwszeństwo.
-    inline int helmet_cosmetic(const profile& p)
+    // cls >= 0: kask mistrza tylko zawodem, który ma ten poziom mistrzostwa (inny zawód - kask zawodu).
+    inline int helmet_cosmetic(const profile& p, int cls = -1)
     {
         const int k = int(p.helmet) - 1;
-        return cosmetic_helmet(k) && cosmetic_unlocked(p, k) ? k : -1;
+        if(! cosmetic_helmet(k) || ! cosmetic_unlocked(p, k)) return -1;
+        if(cls >= 0 && mastery_helmet(k) && ! mastery_has(p, cls, progress_reward::helmet)) return -1;
+        return k;
     }
     // Wybór koloru kasku (wybór zawodu, Wygląd): kolejny odblokowany albo kask zawodu.
     inline void cycle_helmet(profile& p, int dir)
@@ -430,12 +531,30 @@ namespace core
 
     // ------------------------------------------------------------------ tytuły (v0.21.52, #43): z odznak i zleceń
     // Tytuł t: 0..badges_count-1 = odznaki, dalej zlecenia. Wybór w profilu, widać go w profilu i na końcu budowy.
-    constexpr int titles_count = data::badges_count + data::contracts_count;
+    // v0.21.52 cz. b: dalej tytuły z poziomu inspektora i stopni inwestora (data::progress_titles).
+    constexpr int titles_count = data::badges_count + data::contracts_count + data::progress_titles_count;
+    constexpr int progress_titles_from = data::badges_count + data::contracts_count;
     static_assert(titles_count < 255);
-    inline const char* title_name(int t) { return t < data::badges_count ? data::badges[t].title : data::contracts[t - data::badges_count].title; }
+    inline const char* title_name(int t)
+    {
+        if(t >= progress_titles_from) return data::progress_titles[t - progress_titles_from].name;
+        return t < data::badges_count ? data::badges[t].title : data::contracts[t - data::badges_count].title;
+    }
     inline bool title_owned(const profile& p, int t)
     {
+        if(t >= progress_titles_from)
+        {
+            const progress_title& pt = data::progress_titles[t - progress_titles_from];
+            return pt.source == 0 ? inspector_level(p) >= pt.level : max_stake(p) >= pt.level;
+        }
         return t < data::badges_count ? (p.badges >> t) & 1 : (p.contracts >> (t - data::badges_count)) & 1;
+    }
+    // Tytuł z nagrody poziomu inspektora (level 1..) albo stopnia inwestora (stawka) - indeks t (-1 = brak).
+    inline int progress_title_index(int source, int level)
+    {
+        for(int i = 0; i < data::progress_titles_count; ++i)
+            if(data::progress_titles[i].source == source && data::progress_titles[i].level == level) return progress_titles_from + i;
+        return -1;
     }
     inline int titles_owned(const profile& p) { int n = 0; for(int t = 0; t < titles_count; ++t) n += title_owned(p, t); return n; }
     // Wybrany tytuł (-1 = bez tytułu albo już nie należy do gracza).
@@ -610,14 +729,36 @@ namespace core
         p.keepsake = uint8_t(k);
     }
 
+    // v0.21.52 cz. b: druga pamiątka (slot z poziomu inspektora) - inna niż pierwsza, działa na randze I; -1 = brak.
+    inline perk keepsake2_perk(int k) { return { data::keepsakes[k].effect, data::keepsakes[k].values[0] }; }
+    inline int selected_keepsake2(const profile& p)
+    {
+        const int k = int(p.keepsake2) - 1;
+        return keepsake_slot2(p) && k >= 0 && k < data::keepsakes_count && keepsake_unlocked(p, k) && k != selected_keepsake(p) ? k : -1;
+    }
+    inline void cycle_keepsake2(profile& p, int dir)
+    {
+        if(! keepsake_slot2(p)) return;
+        int n = data::keepsakes_count + 1, k = p.keepsake2;
+        for(int i = 0; i < n; ++i)
+        {
+            k = (k + dir + n) % n;
+            if(k == 0 || (keepsake_unlocked(p, k - 1) && k - 1 != selected_keepsake(p))) break;
+        }
+        p.keepsake2 = uint8_t(k);
+    }
+
     // Start budowy: licznik budów i budów z wybraną pamiątką (mods() wołać wcześniej - ranga z budów przed tą),
     // nowa budowa nie ma jeszcze nic przeniesionego do liczników zleceń.
     inline void start_run(profile& p)
     {
         ++p.runs;
         p.run_kills = 0; p.run_powers = 0; p.run_brand = 0; p.run_clean = 0; p.run_respect = 0;
+        p.run_progress = 0;   // v0.21.52 cz. b: dośw. inspektora z nowej budowy - nic jeszcze nie przeniesiono
         int k = selected_keepsake(p);
         if(k >= 0 && p.keepsake_runs[k] < 255) ++p.keepsake_runs[k];
+        int k2 = selected_keepsake2(p);
+        if(k2 >= 0 && p.keepsake_runs[k2] < 255) ++p.keepsake_runs[k2];
     }
 
     // ------------------------------------------------------------------ Respekt (telefon profilu, strona Respekt)
@@ -751,8 +892,17 @@ namespace core
             if(p.badges & (1u << i)) add_perk(m, data::badges[i].bonus);
         int k = selected_keepsake(p);   // pamiątka zabrana na budowę
         if(k >= 0) add_perk(m, keepsake_perk(p, k));
+        int k2 = selected_keepsake2(p);   // v0.21.52 cz. b: druga pamiątka (poziom inspektora) - zawsze na randze I
+        if(k2 >= 0) add_perk(m, keepsake2_perk(k2));
         m.investor = investor_mask(p);   // tryb inwestora: modyfikatory i premia doświadczenia
         m.xp_pct += investor_xp(m.investor);
+        return m;
+    }
+    // Premie na budowę zawodem cls: mods() + mistrzostwo zawodu (wariant mocy, broń mistrza, premia w ofercie).
+    inline run_mods mods(const profile& p, int cls)
+    {
+        run_mods m = mods(p);
+        m.mastery = mastery_bits(p, cls);
         return m;
     }
 
@@ -783,6 +933,8 @@ namespace core
         {
             int k = selected_keepsake(p);
             if(k >= 0) add_perk(m, keepsake_perk(p, k));
+            int k2 = selected_keepsake2(p);
+            if(k2 >= 0) add_perk(m, keepsake2_perk(k2));
         }
         return m;
     }
@@ -903,6 +1055,20 @@ namespace core
         return got;
     }
 
+    // ------------------------------------------------------------------ v0.21.52 cz. b: nagrody za poziomy (#44, #45, #48)
+    // Respekt przychodzi w chwili osiągnięcia poziomu (raz - poziom tylko rośnie); tytuły, kolory kasku, wątki SMS, ozdoby,
+    // slot pamiątki, wariant mocy, broń mistrza i premia mistrzostwa działają od poziomu (liczone z dośw.).
+    inline void grant_level(profile& p, const progress_level& l)
+    {
+        if(l.reward == progress_reward::respect) { p.respect = add_sat16(p.respect, l.value); p.respect_total = add_sat16(p.respect_total, l.value); }
+    }
+    inline int grant_stake_ranks(profile& p, int before)
+    {
+        const int now = stake_rank(p);
+        for(int l = before; l < now; ++l) grant_level(p, data::stake_ranks[l]);
+        return now - before;
+    }
+
     // Przenosi do profilu trwałe osiągnięcia budowy (katalog, narzędzia, wygrane zawody, liczniki zleceń).
     // Można wołać wielokrotnie.
     inline void record_run(profile& p, game& g)
@@ -912,7 +1078,12 @@ namespace core
         p.tools_found = uint8_t(p.tools_found | g.tools_found);
         if(g.st == status::won) set_class_won(p, g.cls);
         int stake = investor_stake(g.bonus.investor);   // rekord stawki zawodu (wygrana w trybie inwestora)
-        if(g.st == status::won && stake > best_stake(p, g.cls)) set_best_stake(p, g.cls, stake);
+        if(g.st == status::won && stake > best_stake(p, g.cls))
+        {
+            const int before = stake_rank(p);
+            set_best_stake(p, g.cls, stake);
+            grant_stake_ranks(p, before);   // v0.21.52 cz. b (#48): stopnie inwestora - Respekt za nowe progi
+        }
     }
 
     // Sprawdza odznaki po ważnym momencie (koniec etapu, koniec budowy). Nowe odznaki dają doświadczenie.
@@ -942,6 +1113,66 @@ namespace core
                 got |= 1 << i;
             }
         return got;
+    }
+
+    // v0.21.52 cz. b: dośw. inspektora z budowy (łącznie od startu, z budowami NG+): budowa, ukończone etapy, bossowie,
+    // elity, magazyny, wygrane; x procent trudności. Dośw. mistrzostwa zawodu = to samo.
+    inline int run_progress_xp(const game& g)
+    {
+        int stages = 0, bosses = 0;
+        auto count = [&](int to) { for(int s = g.first_stage; s < to; ++s) { ++stages; bosses += data::stages[s].boss >= 0; } };
+        for(int t = 0; t < g.tier; ++t) count(data::stages_count);   // budowy ukończone przed "Kolejną budową"
+        const bool won = g.st == status::won;
+        count(won ? data::stages_count : (g.st == status::stage_clear ? g.stage + 1 : g.stage));
+        const int wins = g.tier + (won ? 1 : 0);
+        const int xp = data::inspector_xp_run + stages * data::inspector_xp_stage + bosses * data::inspector_xp_boss
+                     + g.elites_killed * data::inspector_xp_elite + g.secrets_found * data::inspector_xp_storeroom + wins * data::inspector_xp_win;
+        return xp * data::inspector_diff_pct[g.diff] / 100;
+    }
+
+    struct progress_gain
+    {
+        int gained = 0;                        // dośw. inspektora i mistrzostwa z tej części budowy
+        int cls = -1;
+        int insp_before = 0, insp_after = 0;   // poziom inspektora przed / po
+        int mastery_before = 0, mastery_after = 0;
+        int respect = 0;                       // Respekt z nowych poziomów
+    };
+    // Poziomy, nagrody (Respekt, wariant mocy włącza się sam) - wspólne dla budowy i migracji.
+    inline void add_inspector_xp(profile& p, int d, progress_gain& r)
+    {
+        r.insp_before = inspector_level(p);
+        p.inspector_xp = uint32_t(imin(1000000000, inspector_xp_int(p) + imax(0, d)));
+        r.insp_after = inspector_level(p);
+        for(int l = r.insp_before; l < r.insp_after; ++l) grant_level(p, data::inspector_levels[l]);
+    }
+    inline void add_mastery_xp(profile& p, int cls, int d, progress_gain& r)
+    {
+        if(cls < 0 || cls >= data::classes_count) return;
+        r.cls = cls;
+        r.mastery_before = mastery_level(p, cls);
+        p.mastery_xp[cls] = add_sat16(p.mastery_xp[cls], d);
+        r.mastery_after = mastery_level(p, cls);
+        for(int l = r.mastery_before; l < r.mastery_after; ++l)
+        {
+            grant_level(p, data::mastery_levels[l]);
+            if(data::mastery_levels[l].reward == progress_reward::power) p.power_alt = uint16_t(p.power_alt | (1u << cls));
+        }
+    }
+    // Przenosi nowe dośw. inspektora i mistrzostwa z budowy (bez podwójnego liczenia - znak wodny run_progress, jak NG+).
+    // Wołać na końcu budowy (śmierć, wygrana, porzucenie), przed story_check (wątki inspektora).
+    inline progress_gain bank_progress(profile& p, const game& g)
+    {
+        progress_gain r;
+        const int total = run_progress_xp(g);
+        const int d = imax(0, total - int(p.run_progress));
+        p.run_progress = uint16_t(imin(65535, imax(int(p.run_progress), total)));
+        const int r0 = p.respect_total;
+        r.gained = d;
+        add_inspector_xp(p, d, r);
+        add_mastery_xp(p, g.cls, d, r);
+        r.respect = p.respect_total - r0;
+        return r;
     }
 
     // Przenosi nowe doświadczenie z budowy do profilu. Zwraca, ile dodano.
@@ -1177,6 +1408,7 @@ namespace core
             case story_trigger::daily:   return p.daily_runs > 0;
             case story_trigger::weekly:  return p.weekly_runs > 0;
             case story_trigger::act0:    return act0_unlocked(p);
+            case story_trigger::inspector: return inspector_level(p) >= t.value;   // v0.21.52 cz. b
             default:                     return false;
         }
     }
@@ -1236,11 +1468,57 @@ namespace core
         check_secrets(p, nullptr);
     }
 
+    // Nagroda poziomu słowami (banery, listy w profilu): "Respekt +10", "Tytuł: Praktykant", "SMS: Pierwsza kontrola"...
+    // cls - zawód (mistrzostwo: wariant mocy, broń mistrza, premia).
+    inline message& progress_reward_label(message& m, const progress_level& l, int cls)
+    {
+        const mastery_class_def& mc = data::mastery_classes[cls >= 0 && cls < data::classes_count ? cls : 0];
+        switch(l.reward)
+        {
+            case progress_reward::respect:       return m.add("Respekt +").add(l.value);
+            case progress_reward::title:         return m.add("Tytuł: ").add(l.title);
+            case progress_reward::helmet:        return m.add(data::cosmetics[l.index].name);
+            case progress_reward::story:         return m.add("SMS: ").add(data::story_arc[l.index].name);
+            case progress_reward::decor:         return m.add("Ozdoba: ").add(data::estate_decor[l.index].name);
+            case progress_reward::keepsake_slot: return m.add("Druga pamiątka");
+            case progress_reward::power:         return m.add("Moc: ").add(mc.power_name);
+            case progress_reward::weapon:        return m.add(mc.weapon_name);
+            case progress_reward::boon:          return m.add("Premia: ").add(data::boons[mc.boon].name);
+            default:                             return m;
+        }
+    }
+
+    // v13 -> v14 (v0.21.52 cz. b): dośw. inspektora i mistrzostwa z dotychczasowych statystyk (budowy, wygrane, Respekt;
+    // mistrzostwo - wygrane zawodem z domów na Osiedlu i zawody z wygraną); Respekt za osiągnięte poziomy, wątki SMS.
+    inline void migrate_v14(profile& p)
+    {
+        p.inspector_xp = 0; p.power_alt = 0; p.run_progress = 0; p.keepsake2 = 0;
+        for(auto& m : p.mastery_xp) m = 0;
+        for(auto& r : p.reserved14) r = 0;
+        const int insp = imin(10000, imax(0, p.runs)) * data::inspector_migrate_run + imin(10000, imax(0, p.wins)) * data::inspector_migrate_win
+                       + int(p.respect_total) * data::inspector_migrate_respect_pct / 100;
+        progress_gain r;
+        add_inspector_xp(p, insp, r);
+        for(int c = 0; c < data::classes_count; ++c)
+        {
+            int houses = 0;
+            for(int i = 0; i < p.houses_count; ++i) houses += (p.houses[i] & 15) == c;
+            add_mastery_xp(p, c, houses * data::mastery_migrate_win + (class_won(p, c) ? data::mastery_migrate_class_win : 0), r);
+        }
+        story_check(p, nullptr);   // wątki od inspektora za osiągnięty poziom
+    }
+
     // Osiedle rośnie z wygranymi: ile ozdób już stoi (data::estate_decor po progach wygranych).
+    // v0.21.52 cz. b: ozdoba z wygranych albo z poziomu inspektora - każda ma swoje miejsce (k).
+    inline bool decor_unlocked(const profile& p, int k)
+    {
+        const decor_def& dd = data::estate_decor[k];
+        return dd.inspector > 0 ? inspector_level(p) >= dd.inspector : p.wins >= dd.wins;
+    }
     inline int estate_decor(const profile& p)
     {
         int n = 0;
-        while(n < data::estate_decor_count && p.wins >= data::estate_decor[n].wins) ++n;
+        for(int k = 0; k < data::estate_decor_count; ++k) n += decor_unlocked(p, k);
         return n;
     }
 

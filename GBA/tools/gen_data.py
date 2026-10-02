@@ -450,12 +450,16 @@ L.append("inline constexpr core::boon_def boons[] = {   // premie po etapie: 1 z
 for x in bo["list"]:
     assert x["effect"] in BEFF and len(x["name"]) <= 20 and len(x["desc"]) <= 26 and -128 < x["value"] < 128, x
     assert x["effect"] != "power" or "class" in x, x   # wzmocnienie mocy tylko w premiach zawodów
+    assert not x.get("mastery") or "class" in x, x   # v0.21.52 cz. b: premia mistrzostwa zawodu (poziom 7) - tylko zawodu
     L.append(f'    {{ {s(x["name"])}, {s(x["desc"])}, {RAR[x["rarity"]]}, {tagmask(x["tags"])}, core::boon_effect::{x["effect"]}, '
-             f'{x["value"]}, {cid2[x["class"]] if "class" in x else -1} }},')
+             f'{x["value"]}, {cid2[x["class"]] if "class" in x else -1}, {"true" if x.get("mastery") else "false"} }},')
 L.append("};")
 for c in range(len(d["classes"])):   # każdy zawód ma 1-2 własne premie
-    n = sum(1 for x in bo["list"] if cid2.get(x.get("class"), -1) == c)
+    n = sum(1 for x in bo["list"] if cid2.get(x.get("class"), -1) == c and not x.get("mastery"))
     assert 1 <= n <= 2, (d["classes"][c]["id"], n)
+    assert sum(1 for x in bo["list"] if cid2.get(x.get("class"), -1) == c and x.get("mastery")) == 1, d["classes"][c]["id"]
+first_mastery = min(i for i, x in enumerate(bo["list"]) if x.get("mastery"))   # premie mistrzostwa na końcu listy (te same oferty bez nich)
+assert all(x.get("mastery") for x in bo["list"][first_mastery:]), "premie mistrzostwa na końcu listy"
 for r in bo["rarities"]:
     assert any(x["rarity"] == r["id"] and "class" not in x for x in bo["list"]), r
 SEFF = ["conduct", "armor", "espresso", "safety", "luck", "brigade", "stock", "sparks"]
@@ -591,7 +595,7 @@ L += ["};", f"inline constexpr int weekly_count = {len(wk['list'])};",
 import datetime
 assert datetime.date(*wk["epoch"]).weekday() == 0, "epoka tygodni: poniedziałek"
 arc = d["story"]["arc"]
-STRG = ["runs", "wins", "boss", "elite", "secret", "event", "synergy", "daily", "weekly", "act0"]
+STRG = ["runs", "wins", "boss", "elite", "secret", "event", "synergy", "daily", "weekly", "act0", "inspector"]   # v0.21.52 cz. b: poziom inspektora
 assert 1 <= len(arc) <= 32   # bity w profilu (uint32)
 L.append("inline constexpr core::story_thread story_arc[] = {   // fabuła odkrywana z budowami: wątki SMS-ów (archiwum Wiadomości)")
 for x in arc:
@@ -609,7 +613,8 @@ cos = sec["cosmetics"]
 coid = {x["id"]: i for i, x in enumerate(cos)}
 rsid = {x["id"]: i for i, x in enumerate(rs["upgrades"])}
 tid2 = {t["weapon"]: i for i, t in enumerate(m["tools"])}
-assert 1 <= len(sec["list"]) <= 16 and 1 <= len(cos) <= 8   # profil: bitmaska uint16, wygląd: bity uint8
+assert 1 <= len(sec["list"]) <= 16 and 1 <= len(cos) <= 24   # profil: bitmaska uint16; v0.21.52 cz. b: kolory kasku ponad 8 (wybór w p.helmet)
+assert all("helmet" in x for x in cos[8:]), "przełączniki wyglądu (bity p.cosmetic, uint8) tylko wśród pierwszych 8"
 L.append("inline constexpr core::secret_def secrets[] = {   // sekretne zlecenia: \"???\" z podpowiedzią, nagroda po wykonaniu")
 srew = set()
 for x in sec["list"]:
@@ -631,6 +636,9 @@ for i, c in enumerate(d["classes"]):   # każdy zawód / narzędzie z sekretu ma
 for i, t in enumerate(m["tools"]):
     assert not t.get("secret") or ("tool", i) in srew, t
 from_meta = {x["cosmetic"] for x in d["badges"] + d["contracts"] if "cosmetic" in x}   # v0.21.52: kolory kasku z odznak i zleceń
+from_meta |= {x["id"] for x in d["inspector"]["levels"] + d["investor"]["ranks"] + d["mastery"]["levels"] if x["reward"] == "helmet"}   # cz. b
+assert len(from_meta) == sum(1 for x in d["badges"] + d["contracts"] if "cosmetic" in x) + sum(
+    1 for x in d["inspector"]["levels"] + d["investor"]["ranks"] + d["mastery"]["levels"] if x["reward"] == "helmet"), "kolor kasku z jednego źródła"
 for i in range(len(cos)): assert (("cosmetic", i) in srew) != (cos[i]["id"] in from_meta), cos[i]   # jedno źródło
 for i in range(len(cos)): assert ("helmet" in cos[i]) == (cos[i]["id"] in from_meta), cos[i]
 assert all(p_ in eid for p_ in sec["paper"])
@@ -647,9 +655,63 @@ L += [f"inline constexpr int secrets_count = {len(sec['list'])};", f"inline cons
       f"inline constexpr int cosmetic_gold = {coid.get('zlota_kielnia', -1)};   // złoty błysk broni przy krycie",
       f"inline constexpr int cosmetic_stripes = {coid.get('kask_paski', -1)};   // kask w paski (wybór zawodu)", ""]
 es = d["estate"]["decor"]
-assert 1 <= len(es) <= 8 and all(es[i]["wins"] < es[i + 1]["wins"] for i in range(len(es) - 1))
+ew = [x for x in es if "wins" in x]
+assert 1 <= len(es) <= 12 and all(ew[i]["wins"] < ew[i + 1]["wins"] for i in range(len(ew) - 1))   # 12 miejsc na Osiedlu
+assert all(("wins" in x) != ("inspector" in x) and len(x["name"]) <= 22 for x in es), es   # v0.21.52 cz. b: albo z poziomu inspektora
 L.append("inline constexpr core::decor_def estate_decor[] = {   // ozdoby Osiedla (klatki w houses.bmp za pustą działką)")
-L += [f'    {{ {s(x["name"])}, {x["wins"]} }},' for x in es] + ["};", f"inline constexpr int estate_decor_count = {len(es)};", ""]
+L += [f'    {{ {s(x["name"])}, {x.get("wins", 0)}, {x.get("inspector", 0)} }},' for x in es] + ["};", f"inline constexpr int estate_decor_count = {len(es)};", ""]
+# ------------------------------------------------------------------ v0.21.52 cz. b: poziom inspektora (#44), mistrzostwo zawodu (#45),
+# stopnie inwestora (#48) - listy nagród za kolejne poziomy (xp = dośw. na poziom; stopnie: xp = stawka)
+dcid = {x["id"]: i for i, x in enumerate(es)}
+acid = {x["id"]: i for i, x in enumerate(arc)}
+PREW = ["respect", "title", "helmet", "story", "decor", "keepsake_slot", "power", "weapon", "boon"]
+def plevel(x, allowed):
+    k = x["reward"]; assert k in allowed, x
+    idx = coid[x["id"]] if k == "helmet" else (acid[x["id"]] if k == "story" else (dcid[x["id"]] if k == "decor" else -1))
+    if k == "helmet": assert "helmet" in cos[idx], x
+    if k == "title": assert 1 <= len(x["title"]) <= 16, x
+    assert 0 <= x.get("value", 0) <= 100 and (k != "respect" or x["value"] > 0), x
+    return f'{{ {x["xp"]}, core::progress_reward::{k}, {idx}, {x.get("value", 0)}, {s(x.get("title", ""))} }}'
+ins = d["inspector"]; ix = ins["xp"]
+assert 20 <= len(ins["levels"]) <= 40 and all(0 < x["xp"] < 2000 for x in ins["levels"])
+assert all(ins["levels"][i]["xp"] <= ins["levels"][i + 1]["xp"] for i in range(len(ins["levels"]) - 1)), "progi rosną"
+assert sum(1 for x in ins["levels"] if x["reward"] == "keepsake_slot") == 1 and len(ins["diffPct"]) == len(d["difficulties"])
+for x in arc:   # wątek inspektora: poziom z nagrodą "story" w liście
+    if x["trigger"] == "inspector": assert any(l_["reward"] == "story" and l_["id"] == x["id"] and i_ + 1 == x["value"] for i_, l_ in enumerate(ins["levels"])), x
+for x in es:
+    if "inspector" in x: assert any(l_["reward"] == "decor" and l_["id"] == x["id"] and i_ + 1 == x["inspector"] for i_, l_ in enumerate(ins["levels"])), x
+L.append("inline constexpr core::progress_level inspector_levels[] = {   // poziom inspektora: dośw. na poziom i nagroda")
+L += [f"    {plevel(x, PREW[:6])}," for x in ins["levels"]] + ["};"]
+L += [f"inline constexpr int inspector_levels_count = {len(ins['levels'])};",
+      f"inline constexpr int inspector_xp_run = {ix['run']}, inspector_xp_stage = {ix['stage']}, inspector_xp_boss = {ix['boss']};",
+      f"inline constexpr int inspector_xp_elite = {ix['elite']}, inspector_xp_storeroom = {ix['storeroom']}, inspector_xp_win = {ix['win']};",
+      f"inline constexpr int inspector_diff_pct[] = {{ {', '.join(map(str, ins['diffPct']))} }};",
+      f"inline constexpr int inspector_migrate_run = {ins['migrate']['run']}, inspector_migrate_win = {ins['migrate']['win']};",
+      f"inline constexpr int inspector_migrate_respect_pct = {ins['migrate']['respectPct']};", ""]
+ma = d["mastery"]
+assert len(ma["levels"]) == 10 and [x["reward"] for x in ma["levels"]].count("power") == 1 and len(ma["classes"]) == len(d["classes"])
+for k_ in ("weapon", "boon", "helmet"): assert [x["reward"] for x in ma["levels"]].count(k_) == 1, k_
+L.append("inline constexpr core::progress_level mastery_levels[] = {   // mistrzostwo zawodu 1-10: dośw. na poziom i nagroda")
+L += [f"    {plevel(x, ['respect', 'power', 'weapon', 'boon', 'helmet'])}," for x in ma["levels"]] + ["};"]
+bid2 = {x["id"]: i for i, x in enumerate(bo["list"])}
+L.append("inline constexpr core::mastery_class_def mastery_classes[] = {   // wariant mocy, broń mistrza (cecha), premia mistrzostwa")
+for i, x in enumerate(ma["classes"]):
+    assert cid[x["class"]] == i, x
+    pw, wp = x["power"], x["weapon"]
+    assert len(pw["name"]) <= 18 and len(pw["desc"]) <= 26 and -4 <= pw["power"] <= 4 and -6 <= pw["cooldown"] <= 6 and (pw["power"], pw["cooldown"]) != (0, 0), x
+    assert len(wp["name"]) <= 20 and wp["perk"]["effect"] == "crit" and 0 < wp["perk"]["value"] <= 5, x
+    b_ = bo["list"][bid2[x["boon"]]]; assert b_.get("mastery") and cid2[b_["class"]] == i, x
+    L.append(f'    {{ {s(pw["name"])}, {s(pw["desc"])}, {pw["power"]}, {pw["cooldown"]}, {s(wp["name"])}, {perk(wp["perk"])}, {bid2[x["boon"]]} }},')
+L += ["};", f"inline constexpr int mastery_levels_count = {len(ma['levels'])};",
+      f"inline constexpr int mastery_migrate_win = {ma['migrate']['win']}, mastery_migrate_class_win = {ma['migrate']['classWin']};", ""]
+rk = d["investor"]["ranks"]
+assert [x["stake"] for x in rk] == list(range(1, len(rk) + 1)) and len(rk) == sum(x["stake"] for x in d["investor"]["list"]), "stopień na każdą stawkę"
+L.append("inline constexpr core::progress_level stake_ranks[] = {   // stopnie inwestora: nagroda za nowy najwyższy próg stawki (xp = stawka)")
+L += [f"    {plevel(dict(x, xp=x['stake']), ['respect', 'title', 'helmet'])}," for x in rk] + ["};", f"inline constexpr int stake_ranks_count = {len(rk)};", ""]
+pt = [(0, i + 1, x["title"]) for i, x in enumerate(ins["levels"]) if x["reward"] == "title"] + [(1, x["stake"], x["title"]) for x in rk if x["reward"] == "title"]
+assert len({t[2] for t in pt} | {x["title"] for x in d["badges"] + d["contracts"]}) == len(pt) + len(d["badges"]) + len(d["contracts"]), "tytuły bez powtórzeń"
+L.append("inline constexpr core::progress_title progress_titles[] = {   // tytuły z poziomu inspektora (0) i stopni inwestora (1)")
+L += [f"    {{ {s(t[2])}, {t[0]}, {t[1]} }}," for t in pt] + ["};", f"inline constexpr int progress_titles_count = {len(pt)};", ""]
 
 L += [f"inline constexpr const char* version = {s(d['version'])};   // numer wersji (ekran tytułowy, changelog)", ""]
 dh = d["damageHelp"]   # v0.21.50: Jak grać, strona Obrażenia (GBA i Godot)
@@ -664,6 +726,10 @@ mh = d["metaHelp"]   # v0.21.50 cz. 4: Jak grać - podsumowanie, wyzwanie tygodn
 assert len(mh) == 6 and all(len(x) <= 31 for x in mh), mh
 L += ["inline constexpr const char* meta_help[] = {   // Jak grać: podsumowanie budowy, wyzwanie tygodnia, fabuła"]
 L += [f"    {s(t)}," for t in mh] + ["};", f"inline constexpr int meta_help_count = {len(mh)};", ""]
+ph_ = d["progressHelp"]   # v0.21.52 cz. b: Jak grać - poziom inspektora, mistrzostwo zawodu, stopnie inwestora
+assert len(ph_) == 7 and all(len(x) <= 31 for x in ph_), ph_
+L += ["inline constexpr const char* progress_help[] = {   // Jak grać: poziom inspektora i mistrzostwo zawodu"]
+L += [f"    {s(t)}," for t in ph_] + ["};", f"inline constexpr int progress_help_count = {len(ph_)};", ""]
 sh = d["secretsHelp"]   # v0.21.51 cz. 2: Jak grać - sekretne zlecenia (GBA strona 15, Godot)
 assert len(sh) == 7 and all(len(x) <= 31 for x in sh), sh
 L += ["inline constexpr const char* secrets_help[] = {   // Jak grać: sekretne zlecenia"]

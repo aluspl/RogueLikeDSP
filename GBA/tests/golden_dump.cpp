@@ -278,7 +278,8 @@ static void snapshot(const game& g, int step)
     w(","); wi(g.elite_chance()); w(","); wi(g.shop_closed()); w(","); wi(recap_tip_index(g)); w("]");
     w(","); key("part5"); w("["); wi(g.coffee_drunk); w(","); wi(g.shock_combos); w(","); wi(g.paper_hits); w(","); wi(g.secret_flags);
     w(","); wi(g.helper_ctx); w(","); wi(g.borrow_cls); w(","); wi(g.mark_target); w(","); wi(g.mark_turns); w(","); wi(g.power_cls());
-    w(","); wi(g.build_days()); w(","); wi(g.bonus.start_coffee); w(","); wi(g.ability_cooldown()); w("]");
+    w(","); wi(g.build_days()); w(","); wi(g.bonus.start_coffee); w(","); wi(g.ability_cooldown());
+    w(","); wi(g.bonus.mastery); w(","); wi(g.master_crit()); w(","); wi(g.boon_power()); w(","); wi(run_progress_xp(g)); w("]");   // v0.21.52 cz. b
     w(","); key("killsByType"); w("["); for(int i = 0; i < max_enemy_types; ++i) { if(i) w(","); wi(g.kills_by_type[i]); } w("]");
     w(","); key("rooms"); w("[");
     for(int i = 0; i < g.lv.rooms_count; ++i) { if(i) w(","); const room& r = g.lv.rooms[i]; w("["); wi(r.x); w(","); wi(r.y); w(","); wi(r.w); w(","); wi(r.h); w("]"); }
@@ -353,6 +354,10 @@ static void profile_json(const profile& p)
     w(","); key("secrets"); w("["); wi(p.secrets); w(","); wi(p.secrets_new); w(","); wi(p.cosmetic); w(","); wi(secrets_done_count(p)); w("]");
     w(","); key("looks"); w("["); wi(p.title); w(","); wi(p.helmet); w(","); wi(titles_owned(p)); w(","); wi(helmets_unlocked(p));   // v0.21.52
     w(","); wi(class_cost(p)); w(","); wi(tool_cost(p)); w(","); wi(shop_spent(p)); w("]");
+    w(","); key("progress"); w("["); wi(long(p.inspector_xp)); w(","); wi(inspector_level(p)); w(","); wi(p.power_alt);   // v0.21.52 cz. b
+    w(","); wi(p.run_progress); w(","); wi(p.keepsake2); w(","); wi(max_stake(p)); w(","); wi(stake_rank(p)); w(","); wi(estate_decor(p));
+    for(int c = 0; c < max_classes; ++c) { w(","); wi(p.mastery_xp[c]); w(","); wi(mastery_level(p, c)); w(","); wi(mastery_bits(p, c)); }
+    w(","); wi(keepsake_slot2(p)); w(","); wi(selected_keepsake2(p)); w("]");
     w(","); key("sram"); hex_bytes(reinterpret_cast<const char*>(&p), sizeof p);   // profil bajt po bajcie jak w SRAM
     w("}");
 }
@@ -364,7 +369,8 @@ static void profile_json(const profile& p)
 // respect: rangi Respektu (0 = brak, 1 = wszystkie maksymalne); rewards: odebrane nagrody za odbiór (narzędzia, buty, pas, zawody)
 struct scenario { int cls; uint32_t seed; int diff; bool full_mods; bool smart; bool shop; bool ngplus; int steps;
                   int badges = 0; int contracts = 0; int keepsake = 0; int keepsake_runs = 0; int investor = 0; int paths = 0; int daily = 0;
-                  int respect = 0; int rewards = 0; int weekly = 0; int secrets = 0; };
+                  int respect = 0; int rewards = 0; int weekly = 0; int secrets = 0;
+                  int mastery = 0; int insp = 0; int keepsake2 = 0; };   // v0.21.52 cz. b: poziom mistrzostwa zawodu, dośw. inspektora, druga pamiątka
 
 int main(int argc, char** argv)
 {
@@ -414,6 +420,12 @@ int main(int argc, char** argv)
     sc.push_back({ 10, 3902u, 0, true, true, true, false, 5000, 0, 0, 0, 0, 0, 0, 0, 1, all_rewards, 0, all_secrets });
     sc.push_back({ 11, 3903u, 1, false, true, true, true, 6000, all_badges, all_contracts, 2, 3, 0, 1, 0, 1, all_rewards, 0, all_secrets });
     sc.push_back({ 1, 3904u, 1, true, false, false, false, 4000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, all_secrets });
+    // v0.21.52 cz. b: mistrzostwo zawodu (wariant mocy, broń mistrza, premia mistrzostwa w ofercie) bot "smart" z mocą;
+    // druga pamiątka (poziom inspektora), wariant szybszy (Hydraulik, Operator, Geodeta), Majster z pożyczoną mocą
+    for(int c : { 0, 1, 4, 8, 10, 11 })
+        sc.push_back({ c, 5200u + uint32_t(c) * 31u, 1, c % 2 == 0, true, true, true, 6000, 0x01, 0, 1, 3, 0, 1, 0, 1, all_rewards, 0, 0,
+                       10, 5000, 2 });
+    sc.push_back({ 5, 5299u, 0, false, false, false, false, 4000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0 });   // poziom 5: bez premii
 
     for(size_t si = 0; si < sc.size(); ++si)
     {
@@ -431,7 +443,9 @@ int main(int argc, char** argv)
         p.secrets = uint16_t(s.secrets);   // przed Respektem: Zaprawiony w boju tylko po sekrecie
         if(s.respect) for(int i = 0; i < data::respect_count; ++i) if(respect_unlocked(p, i)) set_respect_rank(p, i, data::respect[i].ranks);
         p.rewards = uint8_t(s.rewards);
-        run_mods m = mods(p);   // przed start_run: ranga pamiątki z budów przed tą
+        p.inspector_xp = uint32_t(s.insp); p.keepsake2 = uint8_t(s.keepsake2);
+        if(s.mastery) { p.mastery_xp[s.cls] = uint16_t(progress_floor(data::mastery_levels, s.mastery)); if(s.mastery >= 3) p.power_alt = uint16_t(1 << s.cls); }
+        run_mods m = mods(p, s.cls);   // przed start_run: ranga pamiątki z budów przed tą; v0.21.52 cz. b: mistrzostwo zawodu
         static game g;
         if(s.weekly > 0) start_weekly(g, s.weekly);
         else if(s.daily > 0) start_daily(g, s.daily);
@@ -446,6 +460,7 @@ int main(int argc, char** argv)
         w(","); key("paths"); wi(s.paths); w(","); key("daily"); wi(s.daily);
         w(","); key("respect"); wi(s.respect); w(","); key("rewards"); wi(s.rewards); w(","); key("weekly"); wi(s.weekly);
         w(","); key("secrets"); wi(s.secrets);
+        w(","); key("mastery"); wi(s.mastery); w(","); key("insp"); wi(s.insp); w(","); key("keepsake2"); wi(s.keepsake2);
         w(","); key("snapshots"); w("[");
         snapshot(g, 0);
         std::vector<uint32_t> digests;
@@ -472,6 +487,7 @@ int main(int argc, char** argv)
             {
                 if(g.score > p.best) p.best = g.score;
                 record_win(p); add_house(p, g); check_badges(p, g); check_contracts(p); check_secrets(p, &g); bank_xp(p, g);
+                bank_progress(p, g);   // v0.21.52 cz. b: inspektor i mistrzostwo (NG+ - dalej znak wodny)
                 did_ng = true;
                 g.new_game_plus();
                 w(","); snapshot(g, step);
@@ -490,6 +506,7 @@ int main(int argc, char** argv)
         check_badges(p, g); check_contracts(p); check_secrets(p, &g); bank_xp(p, g);
         if(g.daily) record_daily(p, g.daily_day, g.score, g.st == status::won);
         if(g.weekly_week) record_weekly(p, g.weekly_week, g.score, g.st == status::won);
+        bank_progress(p, g);   // v0.21.52 cz. b: poziom inspektora i mistrzostwo zawodu (przed fabułą: wątki inspektora)
         story_check(p, &g);   // v0.21.50 cz. 4: fabuła - wątki za kamienie milowe
         w("]"); w(","); key("endStep"); wi(step);
         w(","); key("final"); snapshot(g, step);

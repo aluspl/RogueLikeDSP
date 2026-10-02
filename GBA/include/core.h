@@ -194,8 +194,12 @@ namespace core
         int rerolls = 0;             // v0.21.50: Respekt Druga oferta - darmowe losowanie premii po etapie
         int weekly = -1;             // v0.21.50 cz. 4: wyzwanie tygodnia (data::weekly), -1 = zwykła budowa
         int start_coffee = 0;        // v0.21.51 cz. 2: Respekt Zaprawiony w boju - kawy w termosie na start
-        int reserved = 0;            // wyrównanie do 8 bajtów (game bez dziur: memcmp i suma kontrolna zapisu)
+        int mastery = 0;             // v0.21.52 cz. b: mistrzostwo zawodu (bity mastery_bit): wariant mocy, broń mistrza, premia
+                                     // (dawne wyrównanie - stary zapis budowy ma tu 0 = bez mistrzostwa)
     };
+
+    // v0.21.52 cz. b: mistrzostwo zawodu w budowie (run_mods::mastery) - ustawia profil (meta.h: mastery_bits).
+    enum mastery_bit : int { mastery_bit_power = 1, mastery_bit_weapon = 2, mastery_bit_boon = 4 };
 
     // Tryb inwestora: stawka i premia doświadczenia za zestaw modyfikatorów.
     inline int investor_stake(int mask)
@@ -493,7 +497,7 @@ namespace core
         b.enemy_def = imax(0, enemy_def);
         b.luck = c.luck + m.luck;
         b.crit_bonus = m.crit;
-        b.crit_weapon = w.crit;
+        b.crit_weapon = w.crit + ((m.mastery & mastery_bit_weapon) ? data::mastery_classes[cls].weapon_perk.value : 0);   // broń mistrza
         b.finish();
         return b;
     }
@@ -1111,7 +1115,7 @@ namespace core
         int crit_pct() const
         {
             return data::crit_base_pct + data::crit_per_luck_pct * luck() + trait_bonus(trait_effect::crit) + bonus.crit + boon_sum(boon_effect::crit)
-                   + tool_trait_value(tool_trait_effect::crit) + weapon().crit;
+                   + tool_trait_value(tool_trait_effect::crit) + weapon().crit + master_crit();
         }
         int sight_radius() const   // pył (akt III)
         {
@@ -1182,7 +1186,13 @@ namespace core
                     for(int t = 0; t < data::boon_tags_count; ++t) if((data::synergies[s].tags >> t) & 1) v += data::synergies[s].value * tag_count(t);
             return v;
         }
-        int boon_power() const { return boon_sum(boon_effect::power); }   // premia zawodu: wzmocnienie mocy (opis w danych)
+        int boon_power() const { return boon_sum(boon_effect::power) + mastery_power(); }   // premia zawodu: wzmocnienie mocy (opis w danych)
+        // v0.21.52 cz. b: wariant mocy z mistrzostwa zawodu (siła i tury odnowienia z danych; Majster - moc pożyczona)
+        int mastery_power() const { return (bonus.mastery & mastery_bit_power) ? data::mastery_classes[cls].power : 0; }
+        int mastery_cooldown() const { return (bonus.mastery & mastery_bit_power) ? data::mastery_classes[cls].cooldown : 0; }
+        bool master_weapon() const { return bonus.mastery & mastery_bit_weapon; }   // broń mistrza: złoty błysk przy krycie (warstwa GBA / Godot)
+        // Broń mistrza: kryt +% tylko z bronią zawodu (podniesione narzędzie jej nie ma).
+        int master_crit() const { return master_weapon() && weapon_override < 0 ? data::mastery_classes[cls].weapon_perk.value : 0; }
 
         bool has_boon_offer() const { return boon_offer[0] >= 0; }
         // Losowania oferty: 1 płatne na budowę + darmowe z Respektu (Druga oferta, zużywane najpierw).
@@ -1192,6 +1202,7 @@ namespace core
         bool boon_available(int b) const
         {
             if(has_boon(b) || (data::boons[b].cls >= 0 && data::boons[b].cls != cls)) return false;
+            if(data::boons[b].mastery && ! (bonus.mastery & mastery_bit_boon)) return false;   // v0.21.52 cz. b: premia mistrzostwa zawodu
             for(int k = 0; k < 3; ++k) if(boon_offer[k] == b) return false;
             return true;
         }
@@ -2143,7 +2154,7 @@ namespace core
             b.wmin = w.min_damage; b.wmax = w.max_damage;
             b.range_base = w.range; b.range = range_of(w);
             b.scales = w.scales_with;
-            b.crit_weapon = w.crit;
+            b.crit_weapon = w.crit + (b.weapon == cdef().weapon ? master_crit() : 0);   // v0.21.52 cz. b: broń mistrza
             const trait_effect st_tr = stat_trait(w.scales_with);
             int luck_t = 0;
             for(int i = 0; i < data::gear_slots_count; ++i)
@@ -2512,7 +2523,7 @@ namespace core
         int ability_cooldown() const
         {
             return imax(3, imax(4, pdef().ability_cooldown - 2 * (ability_rank() - 1)) - trait_bonus(trait_effect::cooldown) - bonus.cooldown
-                           - boon_sum(boon_effect::cooldown))
+                           - boon_sum(boon_effect::cooldown) + mastery_cooldown())   // v0.21.52 cz. b: wariant mocy
                    + (weather_is(weather_effect::heat) ? wdef().value : 0);   // upał: moc odnawia się dłużej
         }
 
