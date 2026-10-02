@@ -27,7 +27,7 @@ public sealed class MonkeyTest
     private static readonly Key[] Keys =
     [
         Key.Up, Key.Down, Key.Left, Key.Right, Key.Up, Key.Down, Key.Left, Key.Right, Key.Space, Key.Space, Key.Enter, Key.Enter,
-        Key.Z, Key.Escape, Key.Tab, Key.R, Key.M, Key.Q, Key.E, Key.I, Key.K, Key.P, Key.Space, Key.Z, Key.Z, Key.Z, Key.Enter,
+        Key.Z, Key.Escape, Key.Tab, Key.R, Key.M, Key.Q, Key.E, Key.I, Key.K, Key.P, Key.Space, Key.Z, Key.Enter,
     ];
 
     private readonly App _app;
@@ -147,6 +147,12 @@ public sealed class MonkeyTest
         // świeże okno ignoruje wejście 0,4 s (ScreenFlow.InputLocked): człowiek i tak nie stuka szybciej – czekamy,
         // ale czasem (10%) małpa wali w ekran także w czasie blokady
         for (var i = 0; i < 400 && flow.InputLocked && _rng.Randf() >= 0.1f; i++) await DebugRunner.Frames(Root, 1);
+        // Ustawienia (Z / Esc na tytule i mapie) zjadały ~45% akcji na klawiaturze: częściej z nich wychodzimy
+        if (flow.Current == flow.Settings && _rng.Randf() < 0.35f)
+        {
+            await Press(_rng.Randf() < 0.5f ? Key.Escape : Key.Z, 1, false);
+            return;
+        }
         var inGame = flow.Current == flow.Game && _app.Session.Game.St == GameStatus.Playing;
         // wagi: klawisz, stuknięcie w cel, stuknięcie gdziekolwiek, przesunięcie, przytrzymanie, trzymany A/B, krok bota, skrót etapu, prawy klik
         float[] w = Layout.Touch

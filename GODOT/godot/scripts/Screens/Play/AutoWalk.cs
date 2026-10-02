@@ -74,8 +74,8 @@ public sealed class AutoWalk
         }
         var next = _path[_i++];
         var acted = g.PlayerMove(next.X - hero.X, next.Y - hero.Y);
-        _app.AfterAction(acted);
-        if (!acted || _i >= _path.Count) Stop();
+        _app.AfterAction(acted); // może zatrzymać marsz (nowy ekran, porzucenie, koniec etapu) - wtedy _path == null
+        if (!acted || _path is null || _i >= _path.Count) Stop();
     }
 
     private bool ShouldStop(CoreGame g)
