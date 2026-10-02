@@ -78,6 +78,15 @@
 #include "font_widths.h"
 #ifdef PB_SCENARIO
 #include "debug_scenarios.h"   // tylko buildy testowe playtestera
+#ifndef PB_DEBUG_STATS
+#define PB_DEBUG_STATS
+#endif
+#endif
+#ifdef PB_DEBUG_STATS
+#include "bn_log.h"            // buildy testowe: liczniki sprite'ów w logu mGBA (tools/playtest/monkey.sh)
+#include "bn_sprites.h"
+#include "bn_sprite_tiles.h"
+extern "C" { extern char __iwram_overlay_end[]; extern char __sp_usr[]; }   // granice stosu (skrypt linkera Butano)
 #endif
 
 namespace
@@ -217,10 +226,47 @@ namespace
         bn::sprite_palettes::set_fade(bn::color(0, 0, 0), intensity);
     }
 
+#ifdef PB_DEBUG_STATS
+    // Buildy testowe: nowy rekord zajętych pozycji kafli sprite'ów (limit w Butano liczy też wolne kawałki pamięci),
+    // sprite'ów albo stosu idzie do logu mGBA - playtester (monkey) zbiera maksima. Stos: wolna część IWRAM pod stosem
+    // jest na starcie wypełniona wzorem, zużycie = ile od góry wzór został nadpisany.
+    constexpr uint32_t debug_stack_paint = 0x5AC3A55Au;
+    uint32_t* debug_stack_bottom() { return reinterpret_cast<uint32_t*>(__iwram_overlay_end); }
+    uint32_t* debug_stack_top() { return reinterpret_cast<uint32_t*>(__sp_usr); }
+    [[gnu::noinline]] void debug_paint_stack()
+    {
+        uintptr_t end = reinterpret_cast<uintptr_t>(__builtin_frame_address(0)) - 256;
+        for(uint32_t* p = debug_stack_bottom(); reinterpret_cast<uintptr_t>(p) < end; ++p) *p = debug_stack_paint;
+    }
+    int debug_stack_used()
+    {
+        uint32_t* p = debug_stack_bottom();
+        while(p < debug_stack_top() && *p == debug_stack_paint) ++p;
+        return (debug_stack_top() - p) * 4;
+    }
+    int debug_max_items = 0, debug_max_sprites = 0, debug_max_stack = 0, debug_frames = 0;
+    void debug_stats()
+    {
+        if((++debug_frames & 127) == 0) BN_LOG("PBHB");   // puls: gra dalej rysuje klatki (playtester odróżnia zawieszenie)
+        int items = bn::sprite_tiles::used_items_count(), sprites = bn::sprites::used_items_count(), stack = debug_stack_used();
+        if(items > debug_max_items || sprites > debug_max_sprites || stack > debug_max_stack)
+        {
+            debug_max_items = bn::max(items, debug_max_items); debug_max_sprites = bn::max(sprites, debug_max_sprites);
+            debug_max_stack = bn::max(stack, debug_max_stack);
+            BN_LOG("PBSTAT items ", items, " sprites ", sprites, " stack ", stack, " of ",
+                   (debug_stack_top() - debug_stack_bottom()) * 4, " tiles ", bn::sprite_tiles::used_tiles_count());
+        }
+    }
+#else
+    void debug_stats() {}
+    void debug_paint_stack() {}
+#endif
+
     // Zamiast bn::core::update(): prowadzi rozjaśnianie po zmianie sceny.
     void next_frame()
     {
         if(fade_in_left > 0) set_fade(--fade_in_left);
+        debug_stats();
         bn::core::update();
     }
 
@@ -283,7 +329,7 @@ namespace
     // Ściemnia ekran i przechodzi do sceny s (rozjaśnienie robi frame() w nowej scenie).
     scene leave(scene s)
     {
-        for(int i = fade_in_left + 1; i <= fade_frames; ++i) { set_fade(i); bn::core::update(); }
+        for(int i = fade_in_left + 1; i <= fade_frames; ++i) { set_fade(i); debug_stats(); bn::core::update(); }
         fade_in_left = fade_frames;
         return s;
     }
@@ -1415,10 +1461,11 @@ namespace
                 }
                 else
                 {
+                    // jedno przerysowanie na klatkę (stare kafle tekstu zwalniają się dopiero w następnej)
                     if(bn::keypad::up_pressed()) { sel = (sel + actions_count - 1) % actions_count; redraw(); }
-                    if(bn::keypad::down_pressed()) { sel = (sel + 1) % actions_count; redraw(); }
-                    if(bn::keypad::b_pressed()) { sheet = false; redraw(); }
-                    if(bn::keypad::a_pressed())
+                    else if(bn::keypad::down_pressed()) { sel = (sel + 1) % actions_count; redraw(); }
+                    else if(bn::keypad::b_pressed()) { sheet = false; redraw(); }
+                    else if(bn::keypad::a_pressed())
                     {
                         if(sel == 0) return finish(pause_result::resume);
                         if(sel == 2) return finish(pause_result::save_exit);
@@ -1447,7 +1494,7 @@ namespace
                     const int n = boons_items(*a.g, items);
                     int v = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
                     if(v && n > 0) { psel = (psel + v + n) % n; redraw(); bn::sound_items::sfx_menu.play(); }
-                    if(bn::keypad::b_pressed()) { boons = false; redraw(); bn::sound_items::sfx_menu.play(); next_frame(); continue; }
+                    if(! v && bn::keypad::b_pressed()) { boons = false; redraw(); bn::sound_items::sfx_menu.play(); next_frame(); continue; }
                 }
                 else if(brigade && a.phone_tab == 3)   // Brygada: góra/dół wybór, A wezwij, B wróć do Sprzętu
                 {
@@ -1460,7 +1507,7 @@ namespace
                         if(ok) { a.pending_helper = bsel; return finish(pause_result::resume); }   // wezwanie / naprawa po powrocie do gry
                         bn::sound_items::sfx_hurt.play();
                     }
-                    if(bn::keypad::b_pressed()) { brigade = false; redraw(); bn::sound_items::sfx_menu.play(); next_frame(); continue; }
+                    if(! v && bn::keypad::b_pressed()) { brigade = false; redraw(); bn::sound_items::sfx_menu.play(); next_frame(); continue; }
                 }
                 else if(a.phone_tab == 3 && bn::keypad::down_pressed()) { brigade = true; bsel = 0; redraw(); bn::sound_items::sfx_menu.play(); }
                 else if(a.phone_tab == 3 && bn::keypad::up_pressed()) { boons = true; psel = 0; redraw(); bn::sound_items::sfx_menu.play(); }
@@ -1478,8 +1525,9 @@ namespace
                     next_frame();
                     continue;
                 }
+                if(d) { next_frame(); continue; }   // po zmianie zakładki - jedno przerysowanie na klatkę
                 if(bn::keypad::start_pressed()) { sheet = true; sel = 0; redraw(); }
-                if(bn::keypad::b_pressed() || bn::keypad::select_pressed()) return finish(pause_result::resume);
+                else if(bn::keypad::b_pressed() || bn::keypad::select_pressed()) return finish(pause_result::resume);
             }
             next_frame();
         }
@@ -1847,7 +1895,8 @@ namespace
         const core::class_def& c = data::classes[cls];
         const core::weapon_def& w = g ? g->weapon() : data::weapons[c.weapon];
         const core::stat stats[3] = { core::stat::str, core::stat::agi, core::stat::intel };
-        dmg_rows dr;
+        bn::unique_ptr<dmg_rows> dr_heap(new dmg_rows());   // ~1,3 KB: na stercie (stos w grze jest już głęboki)
+        dmg_rows& dr = *dr_heap;
         breakdown_rows(a, dr, hero_breakdown(a, g, cls, m), g);
         const int dmg_pages = (dr.n + 5) / 6, pages = dmg_pages + 2;
         int page = start_page < pages ? start_page : 0;
@@ -2242,7 +2291,11 @@ namespace
         secret_sprite.set_z_order(5);
         secret_sprite.set_visible(false);
 
-        text_sprites hud, log;
+        // v0.21.51: duże obiekty sceny na stercie (EWRAM) - stos w IWRAM ma ~12 KB, a run_game zajmował go prawie całego
+        // (telefon -> statystyki albo porównanie sprzętu z paczki/skrzyni przepełniały stos i psuły pamięć Butano)
+        bn::unique_ptr<text_sprites> hud_heap(new text_sprites()), log_heap(new text_sprites());
+        text_sprites& hud = *hud_heap;
+        text_sprites& log = *log_heap;
         bn::sprite_ptr hp_left = bn::sprite_items::hp_bar.create_sprite(-82, -72, 0);
         bn::sprite_ptr hp_right = bn::sprite_items::hp_bar.create_sprite(-50, -72, 96);
         hp_left.set_bg_priority(0); hp_right.set_bg_priority(0);
@@ -2254,7 +2307,8 @@ namespace
         power_icon.set_bg_priority(0);
         power_icon.set_z_order(-100);
         bn::sprite_palette_ptr power_palette = power_icon.palette();
-        text_sprites power_text;
+        bn::unique_ptr<text_sprites> power_text_heap(new text_sprites());
+        text_sprites& power_text = *power_text_heap;
         int shown_cd = -1;
         // Aktywne stany w tym samym rzędzie (lewa strona): ikona + liczba tur do końca.
         bn::vector<bn::sprite_ptr, 4> status_icons;
@@ -2266,13 +2320,15 @@ namespace
             s.set_visible(false);
             status_icons.push_back(s);
         }
-        text_sprites status_text;
+        bn::unique_ptr<text_sprites> status_text_heap(new text_sprites());
+        text_sprites& status_text = *status_text_heap;
         int shown_status = -1, status_count = 0;
         // Termos w HUD: ikona + liczba kaw (np. 2/3).
         bn::sprite_ptr thermos_icon = bn::sprite_items::menu_icons.create_sprite(50, -52, 1);
         thermos_icon.set_bg_priority(0);
         thermos_icon.set_z_order(-100);
-        text_sprites thermos_text;
+        bn::unique_ptr<text_sprites> thermos_text_heap(new text_sprites());
+        text_sprites& thermos_text = *thermos_text_heap;
         int shown_thermos = -1;
         // Pogoda dnia w HUD: ikona między stanami a termosem (menu_icons 6-10).
         constexpr int frame_weather = 6;
@@ -2285,7 +2341,8 @@ namespace
         act_icon.set_bg_priority(0);
         act_icon.set_z_order(-100);
         act_icon.set_visible(act_mech > 0);
-        text_sprites act_text;
+        bn::unique_ptr<text_sprites> act_text_heap(new text_sprites());
+        text_sprites& act_text = *act_text_heap;
         int shown_gust = -1;
         // Materiały w HUD (cement, stal, drewno): małe ikony z liczbą, widoczne, gdy coś masz (menu_icons 11-13).
         constexpr int frame_material = 11, mat_x0 = -46, mat_dx = 22;
@@ -2298,7 +2355,8 @@ namespace
             sp.set_visible(false);
             mat_icons.push_back(sp);
         }
-        text_sprites mat_text;
+        bn::unique_ptr<text_sprites> mat_text_heap(new text_sprites());
+        text_sprites& mat_text = *mat_text_heap;
         int shown_mats = -1;
         auto hide_status_hud = [&]() {
             for(auto& s : mat_icons) s.set_visible(false);
@@ -2312,11 +2370,14 @@ namespace
         a.text.set_bg_priority(0);
         a.text.set_z_order(-100);
         int fx_timer = 0, hurt_timer = 0, hold = 0;
-        bn::vector<floater, core::max_hits> floaters;
+        bn::unique_ptr<bn::vector<floater, core::max_hits>> floaters_heap(new bn::vector<floater, core::max_hits>());
+        bn::vector<floater, core::max_hits>& floaters = *floaters_heap;
         int shake_timer = 0, target_timer = 0;
         bn::fixed_point cam_base;
-        push_banner banner;
-        particle_pool fx_particles(cam);
+        bn::unique_ptr<push_banner> banner_heap(new push_banner());
+        push_banner& banner = *banner_heap;
+        bn::unique_ptr<particle_pool> fx_particles_heap(new particle_pool(cam));
+        particle_pool& fx_particles = *fx_particles_heap;
 
         // Półprzezroczyste ciemne paski pod HUD (u góry) i dziennikiem (u dołu, tylko gdy są komunikaty).
         // GBA ma 4 warstwy tła: mapa, baner, paski - telefon (2 warstwy) wymaga chwilowego zwolnienia pasków.
@@ -2418,7 +2479,8 @@ namespace
         int flash_timer = 0;
         bn::color flash_color;
         int levelup_pending = 0;   // awans w tej turze: napis nad bohaterem i błysk (obsługa w pętli, gdzie są efekty)
-        text_sprites levelup_text;
+        bn::unique_ptr<text_sprites> levelup_text_heap(new text_sprites());
+        text_sprites& levelup_text = *levelup_text_heap;
         int levelup_timer = 0;
         auto detect_events = [&]() {   // powiadomienia push o ważnych zdarzeniach
             int active_pickups = 0;
@@ -4132,7 +4194,7 @@ namespace
             leave(scene::end);
         }
         // Co dała ta budowa (motywacja do kolejnej próby): rekord, najbliższe zlecenie, najbliższe do kupienia w Szkoleniach.
-        bn::vector<core::message, 5> motiv;
+        bn::vector<core::message, 6> motiv;   // v0.21.51: 6 - rekord, zlecenie, Respekt, nagroda, Szkolenia i stawka inwestora
         {
             core::message m;
             if(record && prev_best > 0) m.add("Nowy rekord: ").add(g.score).add("!");
@@ -4180,7 +4242,7 @@ namespace
         const char* keys = ngplus ? "A: kolejna  START: koniec" : "START: nowa budowa";
         text_sprites rot;   // wiersz na zmianę: motywacja i klawisze
         int rot_i = -1;
-        if(stake > 0)   // tryb inwestora: stawka w wierszu na zmianę (w rogu zasłaniała kod QR)
+        if(stake > 0 && ! motiv.full())   // tryb inwestora: stawka w wierszu na zmianę (w rogu zasłaniała kod QR)
         {
             core::message sm; sm.add("Stawka ").add(stake).add(stake_record ? " - rekord!" : "");
             motiv.push_back(sm);
@@ -4880,7 +4942,9 @@ namespace
                 draw_card(); draw_keep(); map.reload_cells_ref();   // pamiątka zmienia statystyki
                 bn::sound_items::sfx_menu.play();
             }
-            int cdir = bn::keypad::right_pressed() ? 1 : (bn::keypad::left_pressed() ? -1 : 0);
+            // v0.21.51: jedno przerysowanie karty na klatkę - L/R + lewo/prawo (albo + START) naraz rysowały tekst
+            // dwa razy, a stare kafle zwalniają się dopiero w następnej klatce: brak VRAM na sprite'y (monkey test)
+            int cdir = kdir ? 0 : (bn::keypad::right_pressed() ? 1 : (bn::keypad::left_pressed() ? -1 : 0));
             if(cdir)
             {
                 sel = (sel + cdir + count) % count;
@@ -4890,7 +4954,7 @@ namespace
                 pop = 4;
                 bn::sound_items::sfx_menu.play();
             }
-            if(bn::keypad::start_pressed())   // opis statystyk wybranego zawodu (co daje każda i wzory)
+            if(! kdir && ! cdir && bn::keypad::start_pressed())   // opis statystyk wybranego zawodu (co daje każda i wzory)
             {
                 open_stats();
                 next_frame();
@@ -5529,8 +5593,10 @@ namespace
 
 int main()
 {
+    debug_paint_stack();   // buildy testowe: pomiar zużycia stosu
     bn::core::init();
-    app a;
+    bn::unique_ptr<app> app_heap(new app());   // v0.21.51: na stercie, nie na stosie (stos IWRAM ~12 KB)
+    app& a = *app_heap;
     a.save = load_save();
 #ifdef PB_SCENARIO
     debug_scenario::unlock_all(a.save);
@@ -5543,6 +5609,9 @@ int main()
     scene s = scene::title;
     while(true)
     {
+#ifdef PB_DEBUG_STATS
+        BN_LOG("PBSCENE ", int(s));
+#endif
         switch(s)
         {
             case scene::title:        s = run_title(a); break;

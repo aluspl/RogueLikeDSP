@@ -48,6 +48,10 @@ ROMTITLE    	:=  PB ROGUE
 ROMCODE     	:=  2PBP
 USERFLAGS   	:=  
 USERCXXFLAGS	:=  
+# v0.21.51: 256 pozycji kafli sprite'ów zamiast 128 (Butano liczy w nich też wolne kawałki pamięci i kafle do zwolnienia,
+# więc przy pełnym HUD, banerach i tekście 128 się kończyło: "No more sprite tiles items available"). override -
+# działa też z USERFLAGS z linii poleceń (scenariusze, monkey); po zmianie potrzebny czysty build.
+override USERFLAGS += -DBN_CFG_SPRITE_TILES_MAX_ITEMS=256
 USERASFLAGS 	:=  
 USERLDFLAGS 	:=  
 USERLIBDIRS 	:=  

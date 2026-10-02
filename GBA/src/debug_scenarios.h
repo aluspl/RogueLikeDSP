@@ -106,6 +106,9 @@
 //       z magazynem dzięki Poziomicy)
 //  67 - wygrana z sekretami: ostatni etap z bossem, 1 HP (+2 za awans), bez kawy, szybkie etapy; L+R+SELECT = odbiór, banery 3 sekretów
 //       (Bez kofeiny, Na styk, Szybka ekipa), na tytule dymki "Nowość"
+//  68 - crash magazynu (v0.21.51): jak 55 (ściana w prawo, klucz w kieszeni), ale pełny HUD - 5 zajętych slotów sprzętu,
+//       8 premii, stany (zatrucie, poślizg, mokry), materiały, 5 ogłuszonych elit za bohaterem; D-pad w prawo = otwarcie,
+//       3x w prawo = skrzynia: sprzęt do zajętego slotu = okno porównania (dawniej przepełniało stos)
 #include "core.h"
 #include "meta.h"
 
@@ -868,6 +871,28 @@ namespace debug_scenario
                 place_at(g, data::enemy_kornik, -2, 0, 90);
                 if(g.enemies_count > 0) g.enemies[g.enemies_count - 1].hp = g.enemies[g.enemies_count - 1].max_hp = 80;
                 g.bonus.crit = 100;   // każdy cios kryt (pokaz złotego błysku)
+                break;
+            }
+            case 68:   // crash magazynu: skrzynia przy pełnym HUD, sprzęt ze skrzyni do zajętego slotu (okno porównania)
+            {
+                secret_stage(g, 0);
+                g.keys = 1;
+                for(int s = 0; s < data::gear_slots_count; ++s) g.equip(s, 0, 0);
+                for(const char* n : { "Beton B30", "Hartowana kielnia", "Wąż ogrodowy", "Przedłużacz", "Podwójne espresso",
+                                      "Termos z bufetu", "Złota podkowa", "Szczęśliwa moneta" })
+                    give_boon(g, n);
+                g.apply_status(core::status_effect::poison, 9);
+                g.apply_status(core::status_effect::slip, 9);
+                g.apply_status(core::status_effect::wet, 9);
+                for(int m = 0; m < data::materials_count; ++m) g.mats[m] = 4;
+                const int defs[5] = { data::enemy_przeciek, data::enemy_kornik, data::enemy_plesn, data::enemy_zwarcie, data::enemy_woda };
+                const int8_t pos[5][2] = { { -2, -1 }, { -2, 1 }, { -3, 0 }, { -1, -2 }, { -1, 2 } };
+                for(int t = 0; t < 5 && t < data::elites_count; ++t)
+                {
+                    const int before = g.enemies_count;
+                    place_at(g, defs[t], pos[t][0], pos[t][1], 120);
+                    if(g.enemies_count > before) g.make_elite(g.enemies_count - 1, t);
+                }
                 break;
             }
             case 67:   // wygrana: 2 HP, bez kawy, szybkie etapy
