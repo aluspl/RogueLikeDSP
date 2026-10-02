@@ -109,6 +109,12 @@
 //  68 - crash magazynu (v0.21.51): jak 55 (ściana w prawo, klucz w kieszeni), ale pełny HUD - 5 zajętych slotów sprzętu,
 //       8 premii, stany (zatrucie, poślizg, mokry), materiały, 5 ogłuszonych elit za bohaterem; D-pad w prawo = otwarcie,
 //       3x w prawo = skrzynia: sprzęt do zajętego slotu = okno porównania (dawniej przepełniało stos)
+//  v0.21.52 cz. a: tempo postępu (#41-#43, #52)
+//  69 - profil w trakcie postępu: 140 dośw., Kondycja 2/4, BHP 1/4, jeden zawód i dwa narzędzia kupione (kolejne drożej),
+//       odznaki Przed terminem, Twardziel, Seryjny i zlecenie Mocarz (tytuły, dwa kolory kasku), wybrany tytuł Seryjny
+//       pogromca i niebieski kask; tytuł -> SELECT = Koszty (Szkolenia z poziomami), -> = Odznaki, A x4 = Tytuły
+//       (SELECT wybiera); wybór zawodu: niebieski kask, SELECT = Wygląd (A = kolejny kolor); w budowie 1 HP i obok
+//       przebudzony problem: B = czekaj -> koniec budowy, strona 4/4 podsumowania "Postęp" z paskami
 #include "core.h"
 #include "meta.h"
 
@@ -226,6 +232,23 @@ namespace debug_scenario
         }
         if(scenario >= 63 && scenario <= 66) all_secrets(p);
         if(scenario == 67) { p.wins = 4; p.rewards = 4; p.runs = 6; }
+        if(scenario == 69)
+        {
+            p.xp = 140; p.best = 3100; p.runs = 5; p.wins = 2; p.rewards = 2;
+            for(int i = 0; i < data::upgrades_count; ++i)
+            {
+                if(data::upgrades[i].effect == core::upgrade_effect::hp) p.levels[i] = 2;
+                if(data::upgrades[i].effect == core::upgrade_effect::taken_pct) p.levels[i] = 1;
+            }
+            for(int c = 0; c < data::classes_count; ++c) if(core::class_for_sale(c)) { p.classes = uint8_t(p.classes | (1 << c)); break; }
+            p.tools = 0;
+            for(int i = 0, n = 0; i < data::tools_count && n < 2; ++i) if(data::tools[i].shop) { p.tools = uint8_t(p.tools | (1 << i)); ++n; }
+            p.badges = uint16_t((1 << data::badge_przed_terminem) | (1 << data::badge_twardziel) | (1 << data::badge_seryjny));
+            for(int i = 0; i < data::contracts_count; ++i) if(data::contracts[i].kind == core::contract_kind::powers) p.contracts = uint8_t(1 << i);
+            p.title = uint8_t(data::badge_seryjny + 1);
+            p.helmet = uint8_t(data::badges[data::badge_przed_terminem].cosmetic + 1);
+            p.kills_total = 90; p.class_wins = 3;
+        }
         if(scenario == 36) { p.catalog = 0xFFFF; p.catalog_hi = 0xFFFFFFFFu; }
         if(scenario == 37 || scenario == 38) { p.rewards = uint8_t(data::rewards_count); p.wins = 8; }   // Akt 0 odebrany
         if(scenario == 39) { p.tutorial = 0; p.wins = 1; p.rewards = 1; p.investor = 0; core::set_flag(p, core::prologue_seen); }
@@ -905,6 +928,7 @@ namespace debug_scenario
                 break;
             }
             case 21:
+            case 69:   // v0.21.52: porażka - koniec budowy ze stroną Postęp
             {
                 g.hero.hp = 1;
                 g.score = 900;
