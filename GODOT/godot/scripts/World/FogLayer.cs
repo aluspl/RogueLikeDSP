@@ -6,35 +6,97 @@ using CoreGame = LifeLike.Core.Game;
 namespace LifeLike.Game.World;
 
 /// <summary>
-/// Mgła wojny z miękkim światłem (odpowiednik 4 palet światła etapu na GBA: pełne przy bohaterze, 80%, 60% na skraju
-/// pola widzenia, przyciemnione pola zapamiętane). Tekstura ma Sub x Sub tekseli na pole mapy i jest rysowana
-/// z filtrowaniem liniowym, więc granice światła są płynne, a zmiany jasności przechodzą łagodnie przy ruchu.
-/// v0.21.51: pola znane przy nieznanych gasną w ciemność na szerokości ~pół pola (odległość od najbliższego
-/// nieznanego pola, także po skosie) - zamiast twardych schodków na granicy odkrytej części etapu.
+/// Mgła wojny ze światłem jak 4 palety światła etapu na GBA (pełne przy bohaterze, słabsze na skraju pola widzenia,
+/// przyciemnione pola zapamiętane, ciemność nieznanych). v0.21.51 cz. 2: wygląd pikselowy zamiast rozmycia – mała
+/// tekstura danych (piksel = pole mapy: R jasność, G pole znane) czytana bez filtrowania, a shader liczy kolor
+/// w rozdzielczości piksela grafiki (1/16 pola = piksel GBA): skraj odkrytej części gaśnie w ciemność w 3 stopniach
+/// (75% / 50% / 25% kraty Bayera, po 2 piksele grafiki – razem pół pola, także po skosie), a światło między polami
+/// przechodzi progami co 0,145 z tym samym ditheringiem (pola zapamiętane trafiają w próg – jednolite) – bez gaussowskiej mgiełki i bez schodków na całe pole.
 /// </summary>
 public partial class FogLayer : Node2D
 {
-    /// <summary>Teksele na pole mapy (rozdzielczość miękkiej krawędzi).</summary>
-    private const int Sub = 4;
-
-    /// <summary>Szerokość zanikania w ciemność przy nieznanym polu (w polach mapy).</summary>
-    private const float EdgeFade = 0.55f;
-
-    private const int TW = Level.W * Sub, TH = Level.H * Sub;
+    private const string ShaderCode = @"
+shader_type canvas_item;
+render_mode unshaded;
+uniform sampler2D cells : filter_nearest, repeat_disable;
+uniform vec2 size;
+uniform vec4 fog_col : source_color;
+uniform vec4 dark_col : source_color;
+uniform float art = 16.0;   // pikseli grafiki na pole
+uniform float step_a = 0.145; // próg jasności (0,58 pól zapamiętanych = 4 progi: bez kraty)
+const float BAYER[16] = float[16](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
+float bayer(vec2 p) {
+    ivec2 i = ivec2(mod(p, 4.0));
+    return (BAYER[i.x + i.y * 4] + 0.5) / 16.0;
+}
+vec2 cell(ivec2 c) {
+    if (c.x < 0 || c.y < 0 || c.x >= int(size.x) || c.y >= int(size.y)) return vec2(1.0, 0.0);
+    return texelFetch(cells, c, 0).rg;
+}
+void fragment() {
+    vec2 ap = floor(UV * size * art);      // piksel grafiki
+    vec2 pc = (ap + 0.5) / art;            // jego środek w polach
+    ivec2 c = ivec2(floor(pc));
+    vec2 f = fract(pc);
+    float th = bayer(ap);
+    if (cell(c).g < 0.5) {
+        COLOR = dark_col;
+    } else {
+        float best = 9.0;
+        for (int oy = -1; oy <= 1; oy++) {
+            for (int ox = -1; ox <= 1; ox++) {
+                if ((ox == 0 && oy == 0) || cell(c + ivec2(ox, oy)).g > 0.5) continue;
+                float dx = ox < 0 ? f.x : (ox > 0 ? 1.0 - f.x : 0.0);
+                float dy = oy < 0 ? f.y : (oy > 0 ? 1.0 - f.y : 0.0);
+                best = min(best, length(vec2(dx, dy)));
+            }
+        }
+        float d = best * art;              // odległość od nieznanego w pikselach grafiki
+        float cov = d < 2.0 ? 0.75 : (d < 4.0 ? 0.5 : (d < 6.0 ? 0.25 : 0.0));
+        if (d < 0.75) cov = 1.0;
+        if (th < cov) {
+            COLOR = dark_col;
+        } else {
+            vec2 q = pc - 0.5;
+            ivec2 b = ivec2(floor(q));
+            vec2 t = fract(q);
+            float sum = 0.0, wsum = 0.0;
+            for (int k = 0; k < 4; k++) {
+                ivec2 o = ivec2(k & 1, k >> 1);
+                vec2 v = cell(b + o);
+                if (v.g < 0.5) continue;
+                float w = (o.x == 1 ? t.x : 1.0 - t.x) * (o.y == 1 ? t.y : 1.0 - t.y) + 0.0001;
+                sum += v.r * w;
+                wsum += w;
+            }
+            float l = wsum > 0.0 ? sum / wsum : 1.0;
+            float a = clamp(floor(l / step_a + th) * step_a, 0.0, 1.0);
+            COLOR = vec4(fog_col.rgb, a);
+        }
+    }
+}";
 
     private CoreGame _g;
     private ImageTexture _tex;
-    private readonly byte[] _px = new byte[TW * TH * 4];
+    private ShaderMaterial _mat;
+    private readonly byte[] _px = new byte[Level.W * Level.H * 4];
     private readonly float[] _cur = new float[Level.W * Level.H];
     private readonly float[] _dst = new float[Level.W * Level.H];
     private readonly bool[] _known = new bool[Level.W * Level.H];
-    private readonly float[] _edge = new float[TW * TH];   // 0 = daleko od nieznanego, 1 = na granicy
     private bool _dirty = true;
 
     public override void _Ready()
     {
-        TextureFilter = TextureFilterEnum.Linear;
-        _tex = ImageTexture.CreateFromImage(Image.CreateFromData(TW, TH, false, Image.Format.Rgba8, _px));
+        TextureFilter = TextureFilterEnum.Nearest;
+        _tex = ImageTexture.CreateFromImage(Image.CreateFromData(Level.W, Level.H, false, Image.Format.Rgba8, _px));
+        _mat = new ShaderMaterial { Shader = new Shader { Code = ShaderCode } };
+        _mat.SetShaderParameter("cells", _tex);
+        _mat.SetShaderParameter("size", new Vector2(Level.W, Level.H));
+        _mat.SetShaderParameter("fog_col", Pal.Fog);
+        _mat.SetShaderParameter("dark_col", Pal.Void);
+        _mat.SetShaderParameter("art", Assets.Cell / 2f);
+        Material = _mat;
+        AddChild(new Outside());
     }
 
     public void Bind(CoreGame g) => _g = g;
@@ -49,6 +111,7 @@ public partial class FogLayer : Node2D
             for (var x = 0; x < Level.W; x++)
             {
                 var i = y * Level.W + x;
+                if (_known[i] != _g.Explored(x, y)) _dirty = true;
                 _known[i] = _g.Explored(x, y);
                 float a;
                 if (!_known[i]) a = 1f;
@@ -63,50 +126,7 @@ public partial class FogLayer : Node2D
                 if (snap) _cur[i] = a;
             }
         }
-        BuildEdges();
         _dirty = true;
-    }
-
-    private bool Known(int x, int y) => x >= 0 && y >= 0 && x < Level.W && y < Level.H && _known[y * Level.W + x];
-
-    /// <summary>Zanikanie przy nieznanych polach: dla każdego teksela pola znanego odległość do najbliższego nieznanego
-    /// sąsiada (prostokąt pola, 8 kierunków; poza mapą = nieznane).</summary>
-    private void BuildEdges()
-    {
-        for (var cy = 0; cy < Level.H; cy++)
-        {
-            for (var cx = 0; cx < Level.W; cx++)
-            {
-                var known = _known[cy * Level.W + cx];
-                for (var sy = 0; sy < Sub; sy++)
-                {
-                    for (var sx = 0; sx < Sub; sx++)
-                    {
-                        var ti = (cy * Sub + sy) * TW + cx * Sub + sx;
-                        if (!known)
-                        {
-                            _edge[ti] = 1f;
-                            continue;
-                        }
-                        // pozycja środka teksela wewnątrz pola (0..1)
-                        float fx = (sx + 0.5f) / Sub, fy = (sy + 0.5f) / Sub;
-                        var best = 9f;
-                        for (var oy = -1; oy <= 1; oy++)
-                        {
-                            for (var ox = -1; ox <= 1; ox++)
-                            {
-                                if ((ox == 0 && oy == 0) || Known(cx + ox, cy + oy)) continue;
-                                var ddx = ox < 0 ? fx : ox > 0 ? 1 - fx : 0f;
-                                var ddy = oy < 0 ? fy : oy > 0 ? 1 - fy : 0f;
-                                best = Mathf.Min(best, Mathf.Sqrt(ddx * ddx + ddy * ddy));
-                            }
-                        }
-                        var t = Mathf.Clamp(1f - best / EdgeFade, 0f, 1f);
-                        _edge[ti] = t * t * (3 - 2 * t); // smoothstep
-                    }
-                }
-            }
-        }
     }
 
     public override void _Process(double delta)
@@ -122,37 +142,34 @@ public partial class FogLayer : Node2D
         }
         if (!_dirty) return;
         _dirty = false;
-        Color fog = Pal.Fog, dark = Pal.Void;
-        for (var ty = 0; ty < TH; ty++)
+        for (var i = 0; i < _cur.Length; i++)
         {
-            var row = ty / Sub * Level.W;
-            for (var tx = 0; tx < TW; tx++)
-            {
-                var ti = ty * TW + tx;
-                var e = _edge[ti];
-                var a = Mathf.Max(_cur[row + tx / Sub], e);
-                // nieznane pola i skraj odkrytej części: kolor tła; pola znane: fiolet mgły (jak mieszanie z BRAND_NAVY na GBA)
-                var c = fog.Lerp(dark, Mathf.Max(e, a >= 0.99f ? 1f : 0f));
-                var p = ti * 4;
-                _px[p] = (byte)(c.R * 255);
-                _px[p + 1] = (byte)(c.G * 255);
-                _px[p + 2] = (byte)(c.B * 255);
-                _px[p + 3] = (byte)(a * 255);
-            }
+            var p = i * 4;
+            _px[p] = (byte)Mathf.RoundToInt(Mathf.Clamp(_cur[i], 0f, 1f) * 255);
+            _px[p + 1] = (byte)(_known[i] ? 255 : 0);
+            _px[p + 2] = 0;
+            _px[p + 3] = 255;
         }
-        _tex.Update(Image.CreateFromData(TW, TH, false, Image.Format.Rgba8, _px));
+        _tex.Update(Image.CreateFromData(Level.W, Level.H, false, Image.Format.Rgba8, _px));
         QueueRedraw();
     }
 
     public override void _Draw()
     {
         if (_tex is null) return;
-        const int c = Assets.Cell;
-        DrawTextureRect(_tex, new Rect2(0, 0, Level.W * c, Level.H * c), false);
-        // poza mapą: jednolite tło
-        DrawRect(new Rect2(-2000, -2000, 4000 + Level.W * c, 2000), Pal.Void);
-        DrawRect(new Rect2(-2000, Level.H * c, 4000 + Level.W * c, 2000), Pal.Void);
-        DrawRect(new Rect2(-2000, 0, 2000, Level.H * c), Pal.Void);
-        DrawRect(new Rect2(Level.W * c, 0, 2000, Level.H * c), Pal.Void);
+        DrawTextureRect(_tex, new Rect2(0, 0, Level.W * Assets.Cell, Level.H * Assets.Cell), false);
+    }
+
+    /// <summary>Poza mapą: jednolite tło (osobny węzeł – bez shadera mgły).</summary>
+    private sealed partial class Outside : Node2D
+    {
+        public override void _Draw()
+        {
+            const int c = Assets.Cell;
+            DrawRect(new Rect2(-2000, -2000, 4000 + Level.W * c, 2000), Pal.Void);
+            DrawRect(new Rect2(-2000, Level.H * c, 4000 + Level.W * c, 2000), Pal.Void);
+            DrawRect(new Rect2(-2000, 0, 2000, Level.H * c), Pal.Void);
+            DrawRect(new Rect2(Level.W * c, 0, 2000, Level.H * c), Pal.Void);
+        }
     }
 }
