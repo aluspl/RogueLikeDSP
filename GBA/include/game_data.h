@@ -109,14 +109,14 @@ inline constexpr core::difficulty_def difficulties[] = {
     { "Trudny", 145, 0, 150 },
 };
 
-inline constexpr core::upgrade_def upgrades[] = {
-    { "Kondycja", "+2 HP na start", core::upgrade_effect::hp, 2, 2, { 10, 20, 0, 0 }, 35, 0 },
-    { "Szkolenie BHP", "-2% otrzymanych obrażeń", core::upgrade_effect::taken_pct, 2, 1, { 15, 0, 0, 0 }, 30, 15 },
-    { "Kurs fachowy", "+2% obrażeń", core::upgrade_effect::dmg_pct, 2, 1, { 20, 0, 0, 0 }, 40, 20 },
-    { "Lepszy termos", "Kawa leczy +1 HP", core::upgrade_effect::coffee, 1, 1, { 10, 0, 0, 0 }, 20, 10 },
-    { "Dostawy", "+1 znajdźka na etap", core::upgrade_effect::pickups, 1, 1, { 15, 0, 0, 0 }, 30, 0 },
-    { "Kurs BHP II", "+1 szczęścia", core::upgrade_effect::luck, 1, 1, { 20, 0, 0, 0 }, 40, 0 },
-    { "Warsztaty", "+1 do statystyki broni", core::upgrade_effect::craft, 1, 1, { 20, 0, 0, 0 }, 40, 0 },
+inline constexpr core::upgrade_def upgrades[] = {   // Szkolenia: poziomy (przyrost + koszt), stare koszty do zwrotu
+    { "Kondycja", "Więcej HP na start", core::upgrade_effect::hp, 4, { { core::upgrade_effect::hp, 1 }, { core::upgrade_effect::hp, 1 }, { core::upgrade_effect::hp, 1 }, { core::upgrade_effect::hp, 1 }, {} }, { 25, 50, 90, 150, 0 }, { 10, 20, 0, 0 }, 2, 35 },
+    { "Szkolenie BHP", "Mniej otrzymanych obrażeń", core::upgrade_effect::taken_pct, 4, { { core::upgrade_effect::taken_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::taken_pct, 1 }, { core::upgrade_effect::cash, 5 }, {} }, { 30, 60, 110, 180, 0 }, { 15, 0, 0, 0 }, 1, 30 },
+    { "Kurs fachowy", "Więcej zadawanych obrażeń", core::upgrade_effect::dmg_pct, 4, { { core::upgrade_effect::dmg_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::dmg_pct, 1 }, { core::upgrade_effect::crit, 1 }, {} }, { 35, 70, 125, 200, 0 }, { 20, 0, 0, 0 }, 1, 40 },
+    { "Lepszy termos", "Kawa leczy więcej, większy termos", core::upgrade_effect::coffee, 4, { { core::upgrade_effect::thermos, 1 }, { core::upgrade_effect::coffee, 1 }, { core::upgrade_effect::thermos, 1 }, { core::upgrade_effect::thermos, 1 }, {} }, { 25, 50, 90, 150, 0 }, { 10, 0, 0, 0 }, 1, 20 },
+    { "Dostawy", "Więcej znajdziek i materiałów", core::upgrade_effect::pickups, 4, { { core::upgrade_effect::mats_pct, 5 }, { core::upgrade_effect::pickups, 1 }, { core::upgrade_effect::cash, 5 }, { core::upgrade_effect::mats_pct, 5 }, {} }, { 25, 50, 90, 150, 0 }, { 15, 0, 0, 0 }, 1, 30 },
+    { "Kurs BHP II", "Szczęście, kryt i unik", core::upgrade_effect::luck, 4, { { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::luck, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, {} }, { 30, 60, 110, 180, 0 }, { 20, 0, 0, 0 }, 1, 40 },
+    { "Warsztaty", "Lepsza broń i sprzęt", core::upgrade_effect::craft, 4, { { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::craft, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, {} }, { 35, 70, 125, 200, 0 }, { 20, 0, 0, 0 }, 1, 40 },
 };
 
 inline constexpr core::story_msg story_stages[] = {
@@ -235,15 +235,15 @@ inline constexpr int enemy_kabel = 39;
 inline constexpr int enemy_decyzja = 40;
 
 inline constexpr core::badge_def badges[] = {   // perk = uprawnienie: trwała premia na każdą budowę
-    { "Bez usterek", "Etap bez żadnych obrażeń", 20, { core::perk_effect::hp, 2 } },
-    { "Przed terminem", "Termin pokonany w 150 tur", 30, { core::perk_effect::cooldown, 1 } },
-    { "Seryjny", "8 problemów na jednym etapie", 15, { core::perk_effect::dmg, 1 } },
-    { "Zawodowiec", "Poziom postaci 5", 20, { core::perk_effect::crit, 5 } },
-    { "Twardziel", "Wygrana na Trudnym", 40, { core::perk_effect::def, 1 } },
-    { "Pełny zespół", "Wygrana każdym zawodem", 60, { core::perk_effect::cash, 20 } },
-    { "Kolekcjoner", "Znajdź wszystkie narzędzia", 30, { core::perk_effect::tool_pct, 10 } },
-    { "Katalog usterek", "Pokonaj każdy problem", 30, { core::perk_effect::luck, 1 } },
-    { "Osiedle", "Zbuduj 5 domów", 50, { core::perk_effect::xp_pct, 10 } },
+    { "Bez usterek", "Etap bez żadnych obrażeń", 5, { core::perk_effect::hp, 2 }, "Bez skazy", -1 },
+    { "Przed terminem", "Termin pokonany w 150 tur", 10, { core::perk_effect::cooldown, 1 }, "Terminowy", 2 },
+    { "Seryjny", "8 problemów na jednym etapie", 5, { core::perk_effect::dmg, 1 }, "Seryjny pogromca", -1 },
+    { "Zawodowiec", "Poziom postaci 5", 5, { core::perk_effect::crit, 5 }, "Stary wyga", -1 },
+    { "Twardziel", "Wygrana na Trudnym", 15, { core::perk_effect::def, 1 }, "Twarda sztuka", 3 },
+    { "Pełny zespół", "Wygrana każdym zawodem", 15, { core::perk_effect::cash, 20 }, "Wszechstronny", -1 },
+    { "Kolekcjoner", "Znajdź wszystkie narzędzia", 10, { core::perk_effect::tool_pct, 10 }, "Narzędziowiec", -1 },
+    { "Katalog usterek", "Pokonaj każdy problem", 10, { core::perk_effect::luck, 1 }, "Encyklopedia", 4 },
+    { "Osiedle", "Zbuduj 5 domów", 10, { core::perk_effect::xp_pct, 10 }, "Deweloper", 5 },
 };
 
 inline constexpr int badges_count = 9;
@@ -269,12 +269,12 @@ inline constexpr int keepsakes_count = 5;
 inline constexpr int keepsake_rank_runs[] = { 3, 8 };
 
 inline constexpr core::contract_def contracts[] = {   // zlecenia: długofalowe cele z licznikami w profilu
-    { "Trzy fachy", "Wygraj 3 różnymi zawodami", core::contract_kind::class_wins, 3, 40, -1 },
-    { "Czysta robota", "Boss aktu bez obrażeń w walce", core::contract_kind::clean_boss, 1, 30, 3 },
-    { "Markowy styl", "Zbierz 5 markowych przedmiotów", core::contract_kind::brand, 5, 30, 2 },
-    { "Mocarz", "Użyj mocy zawodu 100 razy", core::contract_kind::powers, 100, 40, 4 },
-    { "Pogromca usterek", "Usuń 200 problemów", core::contract_kind::kills, 200, 60, -1 },
-    { "Stały klient", "Wygraj 5 budów", core::contract_kind::wins, 5, 50, -1 },
+    { "Trzy fachy", "Wygraj 3 różnymi zawodami", core::contract_kind::class_wins, 3, 10, -1, "Fachowiec", -1 },
+    { "Czysta robota", "Boss aktu bez obrażeń w walce", core::contract_kind::clean_boss, 1, 10, 3, "Perfekcjonista", -1 },
+    { "Markowy styl", "Zbierz 5 markowych przedmiotów", core::contract_kind::brand, 5, 10, 2, "Elegant", -1 },
+    { "Mocarz", "Użyj mocy zawodu 100 razy", core::contract_kind::powers, 100, 10, 4, "Siłacz", -1 },
+    { "Pogromca usterek", "Usuń 200 problemów", core::contract_kind::kills, 200, 15, -1, "Pogromca usterek", -1 },
+    { "Stały klient", "Wygraj 5 budów", core::contract_kind::wins, 5, 15, -1, "Stały bywalec", 6 },
 };
 inline constexpr int contracts_count = 6;
 
@@ -301,8 +301,8 @@ inline constexpr bool weather_no_bad_stack = true;
 inline constexpr core::helper_def brigade[] = {   // brygada: najemni fachowcy (raz na etap)
     { "Geodeta", "Mapa etapu i schody", core::helper_effect::reveal, 0, 0, 0, 8, 0, -1 },
     { "BHP-owiec", "Bez stanów, obrona +2", core::helper_effect::safety, 2, 8, 0, 10, 0, -1 },
-    { "Pompa do betonu", "Beton wokół: -6 HP", core::helper_effect::pump, 6, 0, 2, 15, 30, -1 },
-    { "Elektryk-kolega", "Pomaga 10 tur, cios -3", core::helper_effect::ally, 3, 10, 1, 15, 35, 3 },
+    { "Pompa do betonu", "Beton wokół: -6 HP", core::helper_effect::pump, 6, 0, 2, 15, 50, -1 },
+    { "Elektryk-kolega", "Pomaga 10 tur, cios -3", core::helper_effect::ally, 3, 10, 1, 15, 60, 3 },
 };
 inline constexpr int brigade_count = 4;
 inline constexpr int start_helpers_mask = 3;
@@ -352,21 +352,23 @@ inline constexpr int schedule_turns_per_day = 3;
 inline constexpr const char* schedule_url = "planbudowlany.online";
 
 inline constexpr core::tool_def tools[] = {
-    { 6, 0, false, false },
-    { 7, 20, false, false },
-    { 8, 30, false, false },
-    { 9, 40, false, false },
-    { 10, 25, false, false },
-    { 11, 35, false, false },
-    { 15, 0, true, false },
-    { 16, 0, true, false },
-    { 20, 0, false, true },
-    { 21, 0, false, true },
+    { 6, false, false, false },
+    { 7, true, false, false },
+    { 8, true, false, false },
+    { 9, true, false, false },
+    { 10, true, false, false },
+    { 11, true, false, false },
+    { 15, false, true, false },
+    { 16, false, true, false },
+    { 20, false, false, true },
+    { 21, false, false, true },
 };
 
 inline constexpr int tools_count = 10;
 inline constexpr int secret_tools_mask = 768;   // z sekretnych zleceń
 inline constexpr int start_tools_mask = 1;
+inline constexpr int tool_costs[] = { 60, 80, 100, 125, 150 };   // v0.21.52: cena kolejnego kupionego narzędzia
+inline constexpr int tool_costs_count = 5;
 inline constexpr int drop_chance_pct = 25;
 inline constexpr int drop_weights[] = { 40, 5, 5, 15, 35 };
 
@@ -429,8 +431,9 @@ inline constexpr int start_classes_mask = 19;
 inline constexpr int reward_classes_mask = 448;
 inline constexpr int secret_classes_mask = 3584;   // z sekretnych zleceń
 inline constexpr int open_classes_count = 9;   // zawody bez sekretów (budowa dnia, balans, Pełny zespół)
-inline constexpr int class_cost = 25;
-inline constexpr int hard_cost = 40;
+inline constexpr int class_costs[] = { 60, 100, 150 };   // v0.21.52: cena kolejnego kupionego zawodu
+inline constexpr int class_costs_count = 3;
+inline constexpr int hard_cost = 100;
 
 inline constexpr int level_thresholds[] = { 10, 25, 45, 70 };
 inline constexpr int max_hero_level = 5;
@@ -708,11 +711,16 @@ inline constexpr core::secret_def secrets[] = {   // sekretne zlecenia: "???" z 
     { "Szybka ekipa", "Wygraj w 150 dni (bez Aktu 0)", core::secret_kind::fast_win, 150, core::secret_reward::respect, 16, "Respekt: Zaprawiony", { "Kierownik Marek", { "Dom w rekordowym czasie!", "Respekt: Zaprawiony", "w boju - kawa na start." } } },
 };
 inline constexpr core::cosmetic_def cosmetics[] = {   // wygląd z sekretnych zleceń (tylko oprawa)
-    { "Złota kielnia", "Złoty błysk broni przy krycie" },
-    { "Kask w paski", "Kask w biało-czerwone pasy" },
+    { "Złota kielnia", "Złoty błysk broni przy krycie", -1 },
+    { "Kask w paski", "Kask w biało-czerwone pasy", -1 },
+    { "Niebieski kask", "Kask bohatera na niebiesko", 27111 },
+    { "Czarny kask", "Kask bohatera na czarno", 7366 },
+    { "Zielony kask", "Kask bohatera na zielono", 10921 },
+    { "Złoty kask", "Kask bohatera ze złota", 5886 },
+    { "Biały kask", "Kask bohatera na biało", 31710 },
 };
 inline constexpr int secrets_count = 8;
-inline constexpr int cosmetics_count = 2;
+inline constexpr int cosmetics_count = 7;
 inline constexpr uint64_t secret_paper_mask = 1232655613952ull;   // problemy papierowe (Akt 0 bez obrażeń)
 inline constexpr int secret_helper_boss = 8;   // boss pokonany ciosem brygady (Szef tylko dzwoni)
 inline constexpr int cosmetic_gold = 0;   // złoty błysk broni przy krycie
@@ -728,7 +736,7 @@ inline constexpr core::decor_def estate_decor[] = {   // ozdoby Osiedla (klatki 
 };
 inline constexpr int estate_decor_count = 6;
 
-inline constexpr const char* version = "v0.21.51";   // numer wersji (ekran tytułowy, changelog)
+inline constexpr const char* version = "v0.21.52";   // numer wersji (ekran tytułowy, changelog)
 
 inline constexpr const char* damage_help[] = {   // Jak grać: obrażenia broni w prostych słowach (rozpiska #26)
     "Cios = rzut broni + premie:",

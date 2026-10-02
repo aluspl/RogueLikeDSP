@@ -13,7 +13,8 @@ namespace core
     constexpr int max_respect = 19;       // 16 w respect_ranks + 3 w respect_ranks_hi (v12)
     static_assert(data::classes_count <= max_classes && data::respect_count <= max_respect && data::rewards_count <= 255);
 
-    constexpr char profile_magic[8] = "PBRL012";
+    constexpr char profile_magic[8] = "PBRL013";
+    constexpr char profile_magic_v12[8] = "PBRL012";
     constexpr char profile_magic_v11[8] = "PBRL011";
     constexpr char profile_magic_v10[8] = "PBRL010";
     constexpr char profile_magic_v9[8] = "PBRL009";
@@ -35,6 +36,7 @@ namespace core
     constexpr int profile_v9_size = 156;  // v10 = v9 + samouczek menu (#25): obejrzane dymki
     constexpr int profile_v10_size = 160; // v11 = v10 + wyzwania tygodnia (#34) i fabuła odkrywana z budowami (#35)
     constexpr int profile_v11_size = 188; // v12 = v11 + sekretne zlecenia (#39), wygląd, Respekt 16-18
+    constexpr int profile_v12_size = 196; // v13 = v12 + tytuł i kolor kasku (v0.21.52), poziomy Szkoleń od nowa
     static_assert(data::secrets_count <= 16 && data::cosmetics_count <= 8);
     constexpr int weekly_slots = 3;
     static_assert(data::weekly_history <= weekly_slots && data::story_arc_count <= 32);
@@ -116,6 +118,10 @@ namespace core
         uint16_t secrets_new;          // wykonane, dymek na tytule jeszcze nie pokazany
         uint8_t cosmetic;              // wybrany wygląd (bity data::cosmetics; tylko odblokowane działają)
         uint8_t respect_ranks_hi[3];   // kupione rangi Respektu 16-18 (dalszy ciąg respect_ranks)
+        // --- v13 (v0.21.52): tytuł z odznaki / zlecenia i kolor kasku (wygląd z odznak i zleceń); Szkolenia z poziomami
+        uint8_t title;                 // wybrany tytuł + 1 (0 = bez tytułu): odznaki 0..badges_count-1, potem zlecenia
+        uint8_t helmet;                // wybrany kolor kasku: wygląd + 1 (0 = kask zawodu)
+        uint8_t reserved13[2];         // wyrównanie do 200 B (profil bez dziur: zapis SRAM bajt po bajcie)
     };
     static_assert(offsetof(profile, badges) == profile_v2_size);
     static_assert(offsetof(profile, kills_total) == profile_v3_size);
@@ -125,7 +131,8 @@ namespace core
     static_assert(offsetof(profile, respect) == profile_v7_size && offsetof(profile, respect_ranks) == 132);
     static_assert(offsetof(profile, catalog_hi) == profile_v8_size && offsetof(profile, tutorial) == profile_v9_size);
     static_assert(offsetof(profile, weekly_week) == profile_v10_size && offsetof(profile, weekly_score) == 168);
-    static_assert(offsetof(profile, secrets) == profile_v11_size && offsetof(profile, respect_ranks_hi) == 193 && sizeof(profile) == 196);
+    static_assert(offsetof(profile, secrets) == profile_v11_size && offsetof(profile, respect_ranks_hi) == 193);
+    static_assert(offsetof(profile, title) == profile_v12_size && sizeof(profile) == 200);
 
     // Katalog usterek: rodzaje 0-15 w catalog, 16-47 w catalog_hi.
     inline bool catalog_has(const profile& p, int d) { return d < 16 ? (p.catalog >> d) & 1 : (p.catalog_hi >> (d - 16)) & 1; }
@@ -216,17 +223,31 @@ namespace core
     }
 
     // Naprawia wczytany profil. Zwraca true, jeśli trzeba go zapisać (migracja albo pusta pamięć).
-    // v0.21.49 (profil sprzed v8): ulepszenia ze zmienionym działaniem (BHP, Kurs fachowy) wracają jako doświadczenie,
-    // nagrody za odbiór za dotychczasowe wygrane.
+    // v0.21.49 (profil sprzed v8): nagrody za odbiór za dotychczasowe wygrane (zwrot za zmienione Szkolenia BHP i Kurs
+    // fachowy robi teraz migrate_v13 - ta sama kwota: stary koszt poziomu).
     inline void migrate_v8(profile& p)
     {
-        for(int i = 0; i < data::upgrades_count; ++i)
-            if(data::upgrades[i].reset_refund > 0 && p.levels[i] > 0)
-            {
-                p.xp += data::upgrades[i].reset_refund * p.levels[i];
-                p.levels[i] = 0;
-            }
         p.rewards = uint8_t(imin(imax(0, p.wins), rewards_available()));
+    }
+
+    // v12 -> v13 (v0.21.52): Szkolenia mają 4 poziomy z mniejszymi krokami i wyższą ceną - kupione poziomy wracają jako
+    // doświadczenie po starej cenie (poziom ponad stare maksimum: refund), poziomy od zera. Zawody, narzędzia, Trudny
+    // i brygada zostają. Tytuł i kolor kasku - bez wyboru.
+    inline int legacy_refund(const profile& p, int i)
+    {
+        const upgrade_def& u = data::upgrades[i];
+        int t = 0;
+        for(int l = 0; l < p.levels[i]; ++l) t += l < u.legacy_levels ? u.legacy_costs[l] : u.refund;
+        return t;
+    }
+    inline void migrate_v13(profile& p)
+    {
+        for(int i = 0; i < max_upgrades; ++i)
+        {
+            if(i < data::upgrades_count) p.xp += legacy_refund(p, i);
+            p.levels[i] = 0;
+        }
+        p.title = 0; p.helmet = 0; p.reserved13[0] = p.reserved13[1] = 0;
     }
 
     inline void migrate_v10(profile& p);
@@ -237,11 +258,18 @@ namespace core
     inline bool profile_fix(profile& p)
     {
         if(std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0) return clamp_levels(p);
+        if(std::memcmp(p.magic, profile_magic_v12, sizeof p.magic) == 0)   // v12 -> v13: zwrot za Szkolenia, tytuł i kask od zera
+        {
+            std::memset(reinterpret_cast<char*>(&p) + profile_v12_size, 0, sizeof p - profile_v12_size);
+            std::memcpy(p.magic, profile_magic, sizeof p.magic);
+            migrate_v13(p);
+            return true;
+        }
         if(std::memcmp(p.magic, profile_magic_v11, sizeof p.magic) == 0)   // v11 -> v12: sekretne zlecenia z tego, co już widać w profilu
         {
             std::memset(reinterpret_cast<char*>(&p) + profile_v11_size, 0, sizeof p - profile_v11_size);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
-            clamp_levels(p);
+            migrate_v13(p);
             migrate_v12(p);
             return true;
         }
@@ -249,7 +277,7 @@ namespace core
         {
             std::memset(reinterpret_cast<char*>(&p) + profile_v10_size, 0, sizeof p - profile_v10_size);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
-            clamp_levels(p);
+            migrate_v13(p);
             migrate_v11(p);
             migrate_v12(p);
             return true;
@@ -260,7 +288,7 @@ namespace core
             int keep = v9 ? profile_v9_size : profile_v8_size;
             std::memset(reinterpret_cast<char*>(&p) + keep, 0, sizeof p - keep);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
-            clamp_levels(p);
+            migrate_v13(p);
             migrate_v10(p);
             migrate_v11(p);
             migrate_v12(p);
@@ -278,7 +306,7 @@ namespace core
             std::memset(reinterpret_cast<char*>(&p) + keep, 0, sizeof p - keep);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             default_keepsake(p);
-            clamp_levels(p);
+            migrate_v13(p);
             migrate_v8(p);
             migrate_v10(p);
             migrate_v11(p);
@@ -370,10 +398,67 @@ namespace core
         for(int i = 0; i < data::secrets_count; ++i) if(data::secrets[i].reward == k && data::secrets[i].index == index) return i;
         return -1;
     }
-    inline bool cosmetic_unlocked(const profile& p, int k) { return k >= 0 && secret_owned(p, secret_reward::cosmetic, k); }
+    // Wygląd: z sekretnego zlecenia albo (v0.21.52) z odznaki / zlecenia - kolory kasku.
+    inline bool cosmetic_unlocked(const profile& p, int k)
+    {
+        if(k < 0) return false;
+        if(secret_owned(p, secret_reward::cosmetic, k)) return true;
+        for(int i = 0; i < data::badges_count; ++i) if(data::badges[i].cosmetic == k && (p.badges & (1u << i))) return true;
+        for(int i = 0; i < data::contracts_count; ++i) if(data::contracts[i].cosmetic == k && (p.contracts & (1u << i))) return true;
+        return false;
+    }
+    inline bool cosmetic_helmet(int k) { return k >= 0 && k < data::cosmetics_count && data::cosmetics[k].helmet >= 0; }
+    // Kolor kasku na budowie: wybrany i odblokowany wygląd (-1 = kask zawodu). Kask w paski ma pierwszeństwo.
+    inline int helmet_cosmetic(const profile& p)
+    {
+        const int k = int(p.helmet) - 1;
+        return cosmetic_helmet(k) && cosmetic_unlocked(p, k) ? k : -1;
+    }
+    // Wybór koloru kasku (wybór zawodu, Wygląd): kolejny odblokowany albo kask zawodu.
+    inline void cycle_helmet(profile& p, int dir)
+    {
+        const int n = data::cosmetics_count + 1;
+        int k = p.helmet;
+        for(int i = 0; i < n; ++i)
+        {
+            k = (k + dir + n) % n;
+            if(k == 0 || (cosmetic_helmet(k - 1) && cosmetic_unlocked(p, k - 1))) break;
+        }
+        p.helmet = uint8_t(k);
+    }
+    inline int helmets_unlocked(const profile& p) { int n = 0; for(int k = 0; k < data::cosmetics_count; ++k) n += cosmetic_helmet(k) && cosmetic_unlocked(p, k); return n; }
+
+    // ------------------------------------------------------------------ tytuły (v0.21.52, #43): z odznak i zleceń
+    // Tytuł t: 0..badges_count-1 = odznaki, dalej zlecenia. Wybór w profilu, widać go w profilu i na końcu budowy.
+    constexpr int titles_count = data::badges_count + data::contracts_count;
+    static_assert(titles_count < 255);
+    inline const char* title_name(int t) { return t < data::badges_count ? data::badges[t].title : data::contracts[t - data::badges_count].title; }
+    inline bool title_owned(const profile& p, int t)
+    {
+        return t < data::badges_count ? (p.badges >> t) & 1 : (p.contracts >> (t - data::badges_count)) & 1;
+    }
+    inline int titles_owned(const profile& p) { int n = 0; for(int t = 0; t < titles_count; ++t) n += title_owned(p, t); return n; }
+    // Wybrany tytuł (-1 = bez tytułu albo już nie należy do gracza).
+    inline int selected_title(const profile& p)
+    {
+        const int t = int(p.title) - 1;
+        return t >= 0 && t < titles_count && title_owned(p, t) ? t : -1;
+    }
+    inline void cycle_title(profile& p, int dir)
+    {
+        const int n = titles_count + 1;
+        int t = p.title;
+        for(int i = 0; i < n; ++i)
+        {
+            t = (t + dir + n) % n;
+            if(t == 0 || title_owned(p, t - 1)) break;
+        }
+        p.title = uint8_t(t);
+    }
     // Wygląd na budowie: wybrany i odblokowany (kask w paski - wybór zawodu; złota kielnia - zawsze po odblokowaniu).
-    inline bool cosmetic_on(const profile& p, int k) { return cosmetic_unlocked(p, k) && (k == data::cosmetic_gold || ((p.cosmetic >> k) & 1)); }
-    inline void toggle_cosmetic(profile& p, int k) { if(cosmetic_unlocked(p, k)) p.cosmetic = uint8_t(p.cosmetic ^ (1u << k)); }
+    // Kolory kasku (v0.21.52) nie są przełącznikami - wybór w p.helmet (helmet_cosmetic).
+    inline bool cosmetic_on(const profile& p, int k) { return ! cosmetic_helmet(k) && cosmetic_unlocked(p, k) && (k == data::cosmetic_gold || ((p.cosmetic >> k) & 1)); }
+    inline void toggle_cosmetic(profile& p, int k) { if(! cosmetic_helmet(k) && cosmetic_unlocked(p, k)) p.cosmetic = uint8_t(p.cosmetic ^ (1u << k)); }
 
     // Zawód: startowy / kupiony w Szkoleniach (bitmaska), z nagrody za odbiór albo z sekretnego zlecenia.
     inline bool class_secret(int c) { return (data::secret_classes_mask >> c) & 1; }
@@ -405,6 +490,25 @@ namespace core
         return p.levels[i] < u.levels ? u.costs[p.levels[i]] : -1;
     }
 
+    // v0.21.52: zawody i narzędzia drożeją z każdym zakupem - cena kolejnego z listy (ostatnia, gdy kupiono więcej).
+    inline bool class_for_sale(int c) { return ! (data::start_classes_mask & (1 << c)) && ! class_reward(c); }
+    inline int classes_bought(const profile& p)
+    {
+        int n = 0;
+        for(int c = 0; c < data::classes_count; ++c) n += class_for_sale(c) && (p.classes & (1u << c));
+        return n;
+    }
+    inline int class_price(int bought) { return data::class_costs[imin(bought, data::class_costs_count - 1)]; }
+    inline int class_cost(const profile& p) { return class_price(classes_bought(p)); }
+    inline int tools_bought(const profile& p)
+    {
+        int n = 0;
+        for(int i = 0; i < data::tools_count; ++i) n += data::tools[i].shop && ((p.tools >> i) & 1);
+        return n;
+    }
+    inline int tool_price(int bought) { return data::tool_costs[imin(bought, data::tool_costs_count - 1)]; }
+    inline int tool_cost(const profile& p) { return tool_price(tools_bought(p)); }
+
     inline bool buy_upgrade(profile& p, int i)
     {
         int c = upgrade_cost(p, i);
@@ -415,8 +519,9 @@ namespace core
 
     inline bool buy_class(profile& p, int c)
     {
-        if(class_reward(c) || class_unlocked(p, c) || p.xp < data::class_cost) return false;
-        p.xp -= data::class_cost; p.classes = uint8_t(p.classes | (1u << c));
+        const int cost = class_cost(p);
+        if(class_reward(c) || class_unlocked(p, c) || p.xp < cost) return false;
+        p.xp -= cost; p.classes = uint8_t(p.classes | (1u << c));
         return true;
     }
 
@@ -441,8 +546,9 @@ namespace core
 
     inline bool buy_tool(profile& p, int i)
     {
-        if(data::tools[i].reward || data::tools[i].secret || tool_unlocked(p, i) || p.xp < data::tools[i].cost) return false;
-        p.xp -= data::tools[i].cost; p.tools = uint8_t(p.tools | (1u << i));
+        const int cost = tool_cost(p);
+        if(! data::tools[i].shop || tool_unlocked(p, i) || p.xp < cost) return false;
+        p.xp -= cost; p.tools = uint8_t(p.tools | (1u << i));
         return true;
     }
 
@@ -553,28 +659,90 @@ namespace core
     inline int investor_mask(const profile& p) { return investor_unlocked(p) ? p.investor & ((1 << data::investor_count) - 1) : 0; }
     inline void toggle_investor(profile& p, int i) { p.investor = uint8_t(p.investor ^ (1u << i)); }
 
+    // Premia jednego poziomu Szkolenia (v0.21.52: poziomy mogą mieć różne działanie).
+    inline void add_upgrade(run_mods& m, upgrade_effect e, int v)
+    {
+        switch(e)
+        {
+            case upgrade_effect::hp:        m.hp += v; break;
+            case upgrade_effect::def:       m.def += v; break;
+            case upgrade_effect::dmg:       m.dmg += v; break;
+            case upgrade_effect::coffee:    m.coffee += v; break;
+            case upgrade_effect::pickups:   m.pickups += v; break;
+            case upgrade_effect::luck:      m.luck += v; break;
+            case upgrade_effect::craft:     m.craft += v; break;
+            case upgrade_effect::dmg_pct:   m.dmg_pct += v; break;
+            case upgrade_effect::taken_pct: m.taken_pct += v; break;
+            case upgrade_effect::crit:      m.crit += v; break;
+            case upgrade_effect::dodge:     m.dodge += v; break;
+            case upgrade_effect::thermos:   m.thermos += v; break;
+            case upgrade_effect::mats_pct:  m.mats_pct += v; break;
+            case upgrade_effect::gear_pct:  m.gear_pct += v; break;
+            case upgrade_effect::cash:      m.cash += v; break;
+            default: break;
+        }
+    }
+    // Suma kupionych poziomów Szkolenia i (premie wszystkich poziomów 1..levels).
+    inline void add_upgrade_levels(run_mods& m, int i, int levels)
+    {
+        const upgrade_def& u = data::upgrades[i];
+        for(int l = 0; l < levels && l < u.levels; ++l) add_upgrade(m, u.steps[l].effect, u.steps[l].value);
+    }
+    // Łączna wartość działania e z poziomów 1..levels Szkolenia i (opis w sklepie).
+    inline int upgrade_total(int i, int levels, upgrade_effect e)
+    {
+        const upgrade_def& u = data::upgrades[i];
+        int t = 0;
+        for(int l = 0; l < levels && l < u.levels; ++l) if(u.steps[l].effect == e) t += u.steps[l].value;
+        return t;
+    }
+
+    // Skutek poziomu Szkolenia, np. "+1 HP", "Kryt +1%" (sklep Szkolenia, rada końca budowy).
+    inline message& upgrade_label(message& m, upgrade_effect e, int v)
+    {
+        switch(e)
+        {
+            case upgrade_effect::hp:        return m.add("+").add(v).add(" HP na start");
+            case upgrade_effect::def:       return m.add("+").add(v).add(" OBR");
+            case upgrade_effect::dmg:       return m.add("+").add(v).add(" obrażeń");
+            case upgrade_effect::coffee:    return m.add("Kawa leczy +").add(v).add(" HP");
+            case upgrade_effect::pickups:   return m.add("+").add(v).add(v == 1 ? " znajdźka" : " znajdźki");
+            case upgrade_effect::luck:      return m.add("+").add(v).add(" szczęścia");
+            case upgrade_effect::craft:     return m.add("+").add(v).add(" stat. broni");
+            case upgrade_effect::dmg_pct:   return m.add("+").add(v).add("% obrażeń");
+            case upgrade_effect::taken_pct: return m.add("-").add(v).add("% otrzym. obr.");
+            case upgrade_effect::crit:      return m.add("Kryt +").add(v).add("%");
+            case upgrade_effect::dodge:     return m.add("Unik +").add(v).add("%");
+            case upgrade_effect::thermos:   return m.add("Termos +").add(v).add(v == 1 ? " miejsce" : " miejsca");
+            case upgrade_effect::mats_pct:  return m.add("Materiały +").add(v).add("%");
+            case upgrade_effect::gear_pct:  return m.add("Sprzęt +").add(v);
+            case upgrade_effect::cash:      return m.add("Budżet +").add(v).add(" zł");
+            default:                        return m;
+        }
+    }
+    // Razem z poziomów 1..levels Szkolenia i, działania w kolejności poziomów ("+2 HP na start"; "Kryt +1%, +1 szczęścia").
+    inline message& upgrade_summary(message& m, int i, int levels)
+    {
+        const upgrade_def& u = data::upgrades[i];
+        bool any = false;
+        for(int l = 0; l < levels && l < u.levels; ++l)
+        {
+            bool seen = false;
+            for(int k = 0; k < l; ++k) seen |= u.steps[k].effect == u.steps[l].effect;
+            if(seen) continue;
+            if(any) m.add(", ");
+            upgrade_label(m, u.steps[l].effect, upgrade_total(i, levels, u.steps[l].effect));
+            any = true;
+        }
+        return m;
+    }
+
     inline run_mods mods(const profile& p)
     {
         run_mods m;
         m.tools = tools_mask(p);
         m.helpers = helpers_mask(p);
-        for(int i = 0; i < data::upgrades_count; ++i)
-        {
-            int v = data::upgrades[i].value * p.levels[i];
-            switch(data::upgrades[i].effect)
-            {
-                case upgrade_effect::hp:      m.hp += v; break;
-                case upgrade_effect::def:     m.def += v; break;
-                case upgrade_effect::dmg:     m.dmg += v; break;
-                case upgrade_effect::coffee:  m.coffee += v; break;
-                case upgrade_effect::pickups: m.pickups += v; break;
-                case upgrade_effect::luck:    m.luck += v; break;
-                case upgrade_effect::craft:   m.craft += v; break;
-                case upgrade_effect::dmg_pct: m.dmg_pct += v; break;
-                case upgrade_effect::taken_pct: m.taken_pct += v; break;
-                default: break;
-            }
-        }
+        for(int i = 0; i < data::upgrades_count; ++i) add_upgrade_levels(m, i, p.levels[i]);
         for(int i = 0; i < data::respect_count; ++i)   // Respekt: kupione rangi
             if(respect_rank(p, i) > 0) add_respect(m, data::respect[i].effect, respect_value(p, i));
         m.gear_slots = gear_slots_mask(p);   // nagrody za odbiór: buty, pas
@@ -596,18 +764,10 @@ namespace core
         if(src == 0)
             for(int i = 0; i < data::upgrades_count; ++i)
             {
-                int v = data::upgrades[i].value * p.levels[i];
-                switch(data::upgrades[i].effect)
-                {
-                    case upgrade_effect::hp:        m.hp += v; break;
-                    case upgrade_effect::def:       m.def += v; break;
-                    case upgrade_effect::dmg:       m.dmg += v; break;
-                    case upgrade_effect::luck:      m.luck += v; break;
-                    case upgrade_effect::craft:     m.craft += v; break;
-                    case upgrade_effect::dmg_pct:   m.dmg_pct += v; break;
-                    case upgrade_effect::taken_pct: m.taken_pct += v; break;
-                    default: break;
-                }
+                run_mods u;
+                add_upgrade_levels(u, i, p.levels[i]);   // premie bojowe (bez kawy, termosu, znajdziek, materiałów, sprzętu, zł)
+                m.hp += u.hp; m.def += u.def; m.dmg += u.dmg; m.luck += u.luck; m.craft += u.craft;
+                m.dmg_pct += u.dmg_pct; m.taken_pct += u.taken_pct; m.crit += u.crit; m.dodge += u.dodge;
             }
         else if(src == 1)
         {
@@ -632,13 +792,14 @@ namespace core
     }
 
     // Ekran "Koszty": ile kosztuje cały sklep i ile już wydano (pasek budżetu).
+    // v0.21.52: zawody i narzędzia liczone po cenach rosnących (kolejność zakupu nie zmienia sumy).
     inline int shop_total_cost()
     {
-        int t = data::hard_cost;
+        int t = data::hard_cost, nc = 0, nt = 0;
         for(int i = 0; i < data::upgrades_count; ++i)
             for(int l = 0; l < data::upgrades[i].levels; ++l) t += data::upgrades[i].costs[l];
-        for(int i = 0; i < data::classes_count; ++i) if(! (data::start_classes_mask & (1 << i)) && ! class_reward(i)) t += data::class_cost;
-        for(int i = 0; i < data::tools_count; ++i) t += data::tools[i].cost;
+        for(int i = 0; i < data::classes_count; ++i) if(class_for_sale(i)) t += class_price(nc++);
+        for(int i = 0; i < data::tools_count; ++i) if(data::tools[i].shop) t += tool_price(nt++);
         for(int i = 0; i < data::brigade_count; ++i) t += data::brigade[i].cost;
         return t;
     }
@@ -648,9 +809,8 @@ namespace core
         int t = p.hard ? data::hard_cost : 0;
         for(int i = 0; i < data::upgrades_count; ++i)
             for(int l = 0; l < p.levels[i]; ++l) t += data::upgrades[i].costs[l];
-        for(int i = 0; i < data::classes_count; ++i)
-            if(class_unlocked(p, i) && ! (data::start_classes_mask & (1 << i)) && ! class_reward(i)) t += data::class_cost;
-        for(int i = 0; i < data::tools_count; ++i) if(tool_unlocked(p, i)) t += data::tools[i].cost;
+        for(int k = 0, n = classes_bought(p); k < n; ++k) t += class_price(k);
+        for(int k = 0, n = tools_bought(p); k < n; ++k) t += tool_price(k);
         for(int i = 0; i < data::brigade_count; ++i) if(helper_unlocked(p, i)) t += data::brigade[i].cost;
         return t;
     }
@@ -1161,8 +1321,8 @@ namespace core
         int best = -1;
         auto take = [&](int k, int i, int c) { if(c >= 0 && (best < 0 || c < best)) { best = c; kind = k; index = i; } };
         for(int i = 0; i < data::upgrades_count; ++i) take(0, i, upgrade_cost(p, i));
-        for(int i = 0; i < data::classes_count; ++i) if(! class_unlocked(p, i) && ! class_reward(i)) take(1, i, data::class_cost);
-        for(int i = 0; i < data::tools_count; ++i) if(! tool_unlocked(p, i) && ! data::tools[i].reward && ! data::tools[i].secret) take(2, i, data::tools[i].cost);
+        for(int i = 0; i < data::classes_count; ++i) if(! class_unlocked(p, i) && ! class_reward(i)) take(1, i, class_cost(p));
+        for(int i = 0; i < data::tools_count; ++i) if(! tool_unlocked(p, i) && data::tools[i].shop) take(2, i, tool_cost(p));
         for(int i = 0; i < data::brigade_count; ++i) if(! helper_unlocked(p, i)) take(3, i, data::brigade[i].cost);
         if(! p.hard) take(4, 0, data::hard_cost);
         return best;

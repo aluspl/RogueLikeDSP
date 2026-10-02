@@ -121,6 +121,9 @@ static void full_respect(profile& p, bool secret = true)
     for(int i = 0; i < data::respect_count; ++i) if(secret || data::respect[i].secret < 0) set_respect_rank(p, i, data::respect[i].ranks);
 }
 
+// Zwrot po starej cenie za `levels` poziomów Szkolenia i (migracja v13).
+static int legacy_refund_of(int i, int levels) { profile p; profile_reset(p); p.levels[i] = uint8_t(levels); return legacy_refund(p, i); }
+
 static int g_dummy_crit(int cls) { game g; g.new_run(cls, 1); return g.crit_pct(); }
 
 int main()
@@ -253,7 +256,7 @@ int main()
         CHECK(buy_class(p, 2) && class_unlocked(p, 2) && !buy_class(p, 2));
         CHECK(buy_hard(p) && difficulty_unlocked(p, 2) && !buy_hard(p));
         run_mods m = mods(p);
-        CHECK(m.hp == data::upgrades[0].value * data::upgrades[0].levels && m.def == 0);
+        CHECK(m.hp == upgrade_total(0, data::upgrades[0].levels, upgrade_effect::hp) && m.hp > 0 && m.def == 0);
         CHECK(shop_spent(p) == 1000 - p.xp);                       // wszystko, co zeszło z konta, to wydatki
         profile e; profile_reset(e); CHECK(shop_spent(e) == 0);
         p.xp = 100000;
@@ -363,7 +366,7 @@ int main()
         CHECK(&g.weapon() == &data::weapons[lom]);
         profile p; profile_reset(p);
         CHECK(tool_unlocked(p, 0) && !tool_unlocked(p, 3) && !buy_tool(p, 3));
-        p.xp = 100; CHECK(buy_tool(p, 3) && tool_unlocked(p, 3) && !buy_tool(p, 3) && p.xp == 100 - data::tools[3].cost);
+        p.xp = 100; CHECK(buy_tool(p, 3) && tool_unlocked(p, 3) && !buy_tool(p, 3) && p.xp == 100 - data::tool_costs[0]);
         CHECK(mods(p).tools == (data::start_tools_mask | (1 << 3)));
         // wszystkie narzędzia odblokowane -> każde może wypaść
         run_mods m; m.tools = (1 << data::tools_count) - 1;
@@ -473,7 +476,8 @@ int main()
         std::memcpy(v2.magic, "PBRL002", 8); v2.xp = 77; v2.levels[0] = 2; v2.classes = 0x3F; v2.hard = 1; v2.flags = 1; v2.tools = 2; v2.best = 900;
         std::memset(reinterpret_cast<char*>(&v2) + 36, 0xEE, sizeof v2 - 36);   // śmieci za starym końcem struktury
         CHECK(profile_fix(v2));
-        CHECK(std::strcmp(v2.magic, profile_magic) == 0 && v2.xp == 77 && v2.levels[0] == 2 && v2.classes == 0x3F);
+        const int r2 = data::upgrades[0].legacy_costs[0] + data::upgrades[0].legacy_costs[1];   // v13: Szkolenia wracają jako doświadczenie
+        CHECK(std::strcmp(v2.magic, profile_magic) == 0 && v2.xp == 77 + r2 && v2.levels[0] == 0 && v2.classes == 0x3F);
         CHECK(v2.hard == 1 && v2.flags == 1 && v2.tools == 2 && v2.best == 900);
         CHECK(v2.badges == 0 && v2.catalog == 0 && v2.houses_count == 0 && v2.class_wins == 0 && v2.tools_found == 0);
     }
@@ -860,13 +864,14 @@ int main()
             if(data::upgrades[i].effect == upgrade_effect::craft) i_craft = i;
         }
         CHECK(i_luck >= 0 && i_craft >= 0 && data::upgrades[i_luck].levels >= 1 && data::upgrades[i_craft].levels >= 1);
-        p.levels[i_luck] = 1; p.levels[i_craft] = 1;
+        p.levels[i_luck] = uint8_t(data::upgrades[i_luck].levels); p.levels[i_craft] = uint8_t(data::upgrades[i_craft].levels);
         run_mods pm = mods(p);
-        CHECK(pm.luck == data::upgrades[i_luck].value && pm.craft == data::upgrades[i_craft].value);
+        CHECK(pm.luck == upgrade_total(i_luck, 9, upgrade_effect::luck) && pm.luck >= 1);
+        CHECK(pm.craft == upgrade_total(i_craft, 9, upgrade_effect::craft) && pm.craft >= 1);
         // co najmniej 2 narzędzia skalowane INT do odblokowania
         int int_tools = 0;
         for(int i = 0; i < data::tools_count; ++i)
-            if(data::weapons[data::tools[i].weapon].scales_with == stat::intel && data::tools[i].cost > 0) ++int_tools;
+            if(data::weapons[data::tools[i].weapon].scales_with == stat::intel && data::tools[i].shop) ++int_tools;
         CHECK(int_tools >= 3);
     }
     // 30. uprawnienia: każda zdobyta odznaka daje trwałą premię (mods), premie działają w budowie
@@ -950,7 +955,7 @@ int main()
         v3.class_wins = 0x05; v3.tools_found = 0x0B; v3.houses_count = 3; v3.houses[0] = 0x21; v3.houses[2] = 0x35;
         std::memset(reinterpret_cast<char*>(&v3) + profile_v3_size, 0xCD, sizeof v3 - profile_v3_size);   // śmieci
         CHECK(profile_fix(v3) && std::strcmp(v3.magic, profile_magic) == 0);
-        CHECK(v3.best == 1234 && v3.runs == 9 && v3.wins == 4 && v3.xp == 321 && v3.levels[0] == 2 && v3.classes == 0x1F);
+        CHECK(v3.best == 1234 && v3.runs == 9 && v3.wins == 4 && v3.xp == 321 + legacy_refund_of(0, 2) && v3.levels[0] == 0 && v3.classes == 0x1F);
         CHECK(v3.hard == 1 && v3.flags == 3 && v3.tools == 5 && v3.badges == 0x0123 && v3.catalog == 0x07FF);
         CHECK(v3.class_wins == 0x05 && v3.tools_found == 0x0B && v3.houses_count == 3 && v3.houses[0] == 0x21 && v3.houses[2] == 0x35);
         CHECK(v3.kills_total == 0 && v3.powers_total == 0 && v3.brand_total == 0 && v3.clean_bosses == 0);
@@ -1599,18 +1604,17 @@ int main()
         for(int c = 0; c < data::classes_count; ++c) CHECK(best_stake(w, c) == c + 1);
         game wg; wg.new_run(data::classes_count - 1, 3); wg.st = status::won;
         profile w2; profile_reset(w2); record_run(w2, wg); CHECK(class_won(w2, data::classes_count - 1) && w2.class_wins == 0);
-        // v7 -> v8: stare pola zostają, nagrody za dotychczasowe wygrane, zmienione Szkolenia wracają jako doświadczenie
+        // v7 -> v8: stare pola zostają, nagrody za dotychczasowe wygrane, Szkolenia wracają jako doświadczenie (v13: stara cena)
         profile v7; profile_reset(v7); std::memcpy(v7.magic, "PBRL007", 8);
         v7.wins = 3; v7.xp = 11; v7.best = 777; v7.daily_score[4] = 55;
         int refund = 0;
-        for(int i = 0; i < data::upgrades_count; ++i)
-            if(data::upgrades[i].reset_refund > 0) { v7.levels[i] = 1; refund += data::upgrades[i].reset_refund; }
+        for(int i = 0; i < data::upgrades_count; ++i) { v7.levels[i] = 1; refund += data::upgrades[i].legacy_costs[0]; }
         CHECK(refund > 0);
         std::memset(reinterpret_cast<char*>(&v7) + profile_v7_size, 0xEE, sizeof v7 - profile_v7_size);
         CHECK(profile_fix(v7) && std::strcmp(v7.magic, profile_magic) == 0);
         CHECK(v7.best == 777 && v7.wins == 3 && v7.daily_score[4] == 55 && v7.rewards == imin(3, avail) && v7.xp == 11 + refund);
         CHECK(v7.respect == 0 && v7.respect_total == 0 && v7.class_wins_hi == 0 && v7.respect_ranks[0] == 0 && v7.best_stake_hi[0] == 0);
-        for(int i = 0; i < data::upgrades_count; ++i) if(data::upgrades[i].reset_refund > 0) CHECK(v7.levels[i] == 0);
+        for(int i = 0; i < data::upgrades_count; ++i) CHECK(v7.levels[i] == 0);
         CHECK(! profile_fix(v7));
         profile v1; std::memset(&v1, 0, sizeof v1); std::memcpy(v1.magic, "PBRL001", 8); v1.wins = 99;
         CHECK(profile_fix(v1) && v1.wins == 99 && v1.rewards == avail);
@@ -1908,7 +1912,7 @@ int main()
         CHECK(!tutorial_pending(v, 0) && !tutorial_pending(v, 1) && pending_unlock(v, 0, cls) == unlock_act0 && pending_unlock(v, 1, cls) == -1);
         profile nv; profile_reset(nv); std::memcpy(nv.magic, "PBRL009", 8);
         CHECK(profile_fix(nv) && tutorial_pending(nv, 0) && nv.rewards == 0 && nv.tutorial == 0);
-        CHECK(sizeof(profile) == 196 && std::strcmp(profile_magic, "PBRL012") == 0);
+        CHECK(sizeof(profile) == 200 && std::strcmp(profile_magic, "PBRL013") == 0);
     }
     // 46. v0.21.50: rozpiska obrażeń broni (#26) - zakres z rozpiski = to, co naprawdę zadaje walka (wiele rzutów z seedem)
     {
@@ -2844,6 +2848,129 @@ int main()
         }
     }
 
+    // 53. v0.21.52 cz. a: tempo postępu - Szkolenia z poziomami, ceny rosnące z zakupem, tytuły i kolory kasku, profil v13
+    {
+        // Szkolenia: 4-5 poziomów, cena rośnie, główne działanie wśród poziomów, opis poziomu i sumy
+        for(int i = 0; i < data::upgrades_count; ++i)
+        {
+            const upgrade_def& u = data::upgrades[i];
+            CHECK(u.levels >= 4 && u.levels <= 5);
+            for(int l = 1; l < u.levels; ++l) CHECK(u.costs[l] > u.costs[l - 1]);
+            CHECK(upgrade_total(i, u.levels, u.effect) > 0);
+            for(int l = 0; l < u.levels; ++l) { message m; upgrade_label(m, u.steps[l].effect, u.steps[l].value); CHECK(m.n > 3 && m.n < 30); }
+            message all; upgrade_summary(all, i, u.levels); CHECK(all.n > 3 && all.n < log_len - 1);   // bez obcięcia
+            message none; upgrade_summary(none, i, 0); CHECK(none.n == 0);
+        }
+        // pełne Szkolenia: co najmniej to, co dawały stare (v0.21.51: +4 HP, -2%, +2%, kawa +1, +1 znajdźka, +1 SZCZ, +1 stat. broni)
+        {
+            profile f; profile_reset(f);
+            for(int i = 0; i < data::upgrades_count; ++i) f.levels[i] = uint8_t(data::upgrades[i].levels);
+            run_mods m = mods(f);
+            CHECK(m.hp >= 4 && m.taken_pct >= 2 && m.dmg_pct >= 2 && m.coffee >= 1 && m.pickups >= 1 && m.luck >= 1 && m.craft >= 1);
+            CHECK(m.hp <= 6 && m.taken_pct <= 5 && m.dmg_pct <= 5 && m.luck <= 1 && m.craft <= 1 && m.pickups <= 1);   // bez dużego wzrostu mocy
+            // rozpiska obrażeń: część Szkoleń = premie bojowe z mods()
+            run_mods s0 = mods_part(f, 0);
+            CHECK(s0.hp == m.hp && s0.dmg_pct == m.dmg_pct && s0.taken_pct == m.taken_pct && s0.crit == m.crit && s0.dodge == m.dodge && s0.luck == m.luck);
+        }
+        // zawody i narzędzia drożeją z każdym zakupem; Trudny 100
+        {
+            profile p; profile_reset(p); p.xp = 100000;
+            int prev = 0, bought = 0;
+            for(int c = 0; c < data::classes_count; ++c)
+            {
+                if(! class_for_sale(c)) { CHECK(! buy_class(p, c) || class_unlocked(p, c)); continue; }
+                const int price = class_cost(p), xp0 = p.xp;
+                CHECK(price == data::class_costs[imin(bought, data::class_costs_count - 1)] && price > prev);
+                CHECK(buy_class(p, c) && p.xp == xp0 - price && classes_bought(p) == ++bought);
+                prev = price;
+            }
+            CHECK(bought == data::class_costs_count && class_cost(p) == data::class_costs[data::class_costs_count - 1]);
+            prev = 0; bought = 0;
+            for(int i = 0; i < data::tools_count; ++i)
+            {
+                if(! data::tools[i].shop) { CHECK(! buy_tool(p, i)); continue; }
+                const int price = tool_cost(p), xp0 = p.xp;
+                CHECK(price == data::tool_costs[bought] && price > prev && buy_tool(p, i) && p.xp == xp0 - price && tools_bought(p) == ++bought);
+                prev = price;
+            }
+            CHECK(bought == data::tool_costs_count && data::hard_cost == 100);
+            for(int i = 0; i < data::upgrades_count; ++i) while(buy_upgrade(p, i)) {}
+            for(int i = 0; i < data::brigade_count; ++i) buy_helper(p, i);
+            buy_hard(p);
+            CHECK(shop_spent(p) == shop_total_cost() && p.xp == 100000 - shop_total_cost());
+            int kind = -1, idx = -1; CHECK(next_unlock(p, kind, idx) < 0);
+            // najbliższy cel bierze cenę rosnącą
+            profile q; profile_reset(q); q.xp = 100000;
+            for(int c = 0; c < data::classes_count; ++c) if(class_for_sale(c)) { buy_class(q, c); break; }
+            for(int i = 0; i < data::upgrades_count; ++i) while(buy_upgrade(q, i)) {}
+            for(int i = 0; i < data::tools_count; ++i) buy_tool(q, i);
+            for(int i = 0; i < data::brigade_count; ++i) buy_helper(q, i);
+            buy_hard(q);
+            CHECK(next_unlock(q, kind, idx) == data::class_costs[1] && kind == 1);
+        }
+        // odznaki i zlecenia: mało doświadczenia, w zamian tytuł (i czasem kolor kasku)
+        int helmets_from = 0;
+        for(int i = 0; i < data::badges_count; ++i) { CHECK(data::badges[i].xp <= 15 && data::badges[i].title[0] != 0); helmets_from += data::badges[i].cosmetic >= 0; }
+        for(int i = 0; i < data::contracts_count; ++i) { CHECK(data::contracts[i].xp <= 15 && data::contracts[i].title[0] != 0); helmets_from += data::contracts[i].cosmetic >= 0; }
+        int helmets = 0; for(int k = 0; k < data::cosmetics_count; ++k) helmets += cosmetic_helmet(k);
+        CHECK(helmets >= 3 && helmets_from == helmets && ! cosmetic_helmet(data::cosmetic_stripes) && ! cosmetic_helmet(data::cosmetic_gold));
+        // tytuły: tylko zdobyte, wybór w kółko z "bez tytułu"
+        {
+            profile p; profile_reset(p);
+            CHECK(selected_title(p) == -1 && titles_owned(p) == 0);
+            cycle_title(p, 1); CHECK(p.title == 0);   // nic do wyboru
+            p.badges = uint16_t(1 << data::badge_seryjny); p.contracts = 1 << 1;
+            cycle_title(p, 1); CHECK(selected_title(p) == data::badge_seryjny && std::strcmp(title_name(selected_title(p)), data::badges[data::badge_seryjny].title) == 0);
+            cycle_title(p, 1); CHECK(selected_title(p) == data::badges_count + 1 && std::strcmp(title_name(selected_title(p)), data::contracts[1].title) == 0);
+            cycle_title(p, 1); CHECK(p.title == 0 && selected_title(p) == -1);
+            cycle_title(p, -1); CHECK(selected_title(p) == data::badges_count + 1);
+            p.contracts = 0; CHECK(selected_title(p) == -1);   // utracony (np. inny profil) - bez tytułu
+            CHECK(titles_owned(p) == 1);
+        }
+        // kolory kasku: z odznaki / zlecenia, wybór w kółko, kask w paski osobno
+        {
+            int bi = -1, k = -1;
+            for(int i = 0; i < data::badges_count; ++i) if(data::badges[i].cosmetic >= 0) { bi = i; k = data::badges[i].cosmetic; break; }
+            CHECK(bi >= 0 && cosmetic_helmet(k));
+            profile p; profile_reset(p);
+            CHECK(! cosmetic_unlocked(p, k) && helmet_cosmetic(p) == -1 && helmets_unlocked(p) == 0);
+            cycle_helmet(p, 1); CHECK(p.helmet == 0);
+            p.helmet = uint8_t(k + 1); CHECK(helmet_cosmetic(p) == -1);   // zablokowany nie działa
+            p.helmet = 0; p.badges = uint16_t(1 << bi);
+            CHECK(cosmetic_unlocked(p, k) && helmets_unlocked(p) == 1);
+            cycle_helmet(p, 1); CHECK(helmet_cosmetic(p) == k);
+            cycle_helmet(p, 1); CHECK(helmet_cosmetic(p) == -1 && p.helmet == 0);
+            int ci = -1; for(int i = 0; i < data::contracts_count; ++i) if(data::contracts[i].cosmetic >= 0) ci = i;
+            CHECK(ci >= 0); p.contracts = uint8_t(1 << ci); CHECK(cosmetic_unlocked(p, data::contracts[ci].cosmetic) && helmets_unlocked(p) == 2);
+            toggle_cosmetic(p, k); CHECK(! cosmetic_on(p, k) || k == data::cosmetic_gold);   // kolor kasku to nie przełącznik
+        }
+        // profil v12 -> v13: Szkolenia wracają po starej cenie (poziomy od zera), reszta zostaje; tytuł i kask od zera
+        {
+            profile v; profile_reset(v);
+            v.xp = 33; v.best = 4444; v.wins = 7; v.classes = 0x3F; v.tools = 0x0E; v.hard = 1; v.brigade = 3; v.secrets = 0x15;
+            v.respect = 77; v.respect_ranks_hi[0] = 1;
+            int want = 33;
+            for(int i = 0; i < data::upgrades_count; ++i) { v.levels[i] = uint8_t(data::upgrades[i].legacy_levels); for(int l = 0; l < data::upgrades[i].legacy_levels; ++l) want += data::upgrades[i].legacy_costs[l]; }
+            std::memcpy(v.magic, profile_magic_v12, sizeof v.magic);
+            std::memset(reinterpret_cast<char*>(&v) + profile_v12_size, 0xAB, sizeof v - profile_v12_size);
+            CHECK(profile_fix(v) && std::strcmp(v.magic, profile_magic) == 0);
+            CHECK(v.xp == want && want > 33 && v.best == 4444 && v.wins == 7 && v.classes == 0x3F && v.tools == 0x0E && v.hard == 1);
+            CHECK(v.brigade == 3 && v.secrets == 0x15 && v.respect == 77 && v.respect_ranks_hi[0] == 1 && v.title == 0 && v.helmet == 0);
+            for(int i = 0; i < max_upgrades; ++i) CHECK(v.levels[i] == 0);
+            CHECK(! profile_fix(v) && v.xp == want);   // raz
+            // stary profil z poziomem ponad stare maksimum: zwrot `refund` za nadmiar
+            profile o; profile_reset(o); o.levels[0] = uint8_t(data::upgrades[0].legacy_levels + 1); o.xp = 0;
+            std::memcpy(o.magic, profile_magic_v12, sizeof o.magic);
+            int w0 = data::upgrades[0].refund; for(int l = 0; l < data::upgrades[0].legacy_levels; ++l) w0 += data::upgrades[0].legacy_costs[l];
+            CHECK(profile_fix(o) && o.xp == w0 && o.levels[0] == 0);
+            // starsze profile też dostają zwrot (v11 przez tę samą migrację)
+            profile e; profile_reset(e); e.levels[1] = 1; e.xp = 5; std::memcpy(e.magic, profile_magic_v11, sizeof e.magic);
+            CHECK(profile_fix(e) && e.xp == 5 + data::upgrades[1].legacy_costs[0] && e.levels[1] == 0);
+            // bieżący profil: nowe pola przeżywają zapis
+            profile n; profile_reset(n); n.title = 3; n.helmet = 2; CHECK(! profile_fix(n) && n.title == 3 && n.helmet == 2);
+        }
+    }
+
     if(std::getenv("PB_NO_BALANCE")) { std::printf(fails ? "\n%d FAIL\n" : "\nOK (bez balansu)\n", fails); return fails != 0; }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
@@ -2928,6 +3055,67 @@ int main()
         CHECK(w4 >= 60 && w4 <= 70);   // v0.21.49 cz. 3: dłuższa budowa z Aktem 0
         CHECK(wx < w0 && dr0 > 0);     // kawa ma znaczenie
         (void)dr1; (void)dr2; (void)dr3; (void)dr4; (void)k1; (void)k2; (void)k3; (void)k4;
+    }
+    // v0.21.52 cz. a: tempo postępu (#41-#43) - doświadczenie z budowy bez meta (wygrane / przegrane) i ile budów do
+    // wykupienia wszystkiego w Szkoleniach: kariera od pustego profilu, bot na Normalnym kolejno odblokowanymi zawodami,
+    // odznaki, zlecenia i sekrety jak w grze, po każdej budowie kupuje najtańsze, na co go stać (tabela w CHANGELOG)
+    {
+        long xw = 0, xl = 0; int nw = 0, nl = 0;
+        for(int c = 0; c < data::open_classes_count; ++c)
+            for(int k = 0; k < 100; ++k)
+            {
+                game g; g.new_run(c, 1000 + k * 7919);
+                for(int step = 0; step < 4000; ++step)
+                {
+                    if(g.st == status::stage_clear) { bot_next(g); continue; }
+                    if(g.st != status::playing) break;
+                    bot_step(g);
+                }
+                if(g.st == status::won) { xw += g.xp(); ++nw; } else { xl += g.xp(); ++nl; }
+            }
+        const int careers = 40;
+        int total = 0, lo = 1000, hi = 0; long gained = 0, runs_all = 0, wins_all = 0;
+        for(int t = 0; t < careers; ++t)
+        {
+            profile p; profile_reset(p);
+            int runs = 0, done = -1;
+            while(runs < 200 && done < 0)
+            {
+                int list[max_classes], n = 0;
+                for(int c = 0; c < data::classes_count; ++c) if(class_unlocked(p, c)) list[n++] = c;
+                const run_mods m = mods(p);
+                start_run(p);
+                const int x0 = p.xp;
+                game g; g.new_run(list[(runs * 7 + t) % n], 5000 + uint32_t(t) * 100000u + uint32_t(runs) * 7919u, data::default_difficulty, m);
+                for(int step = 0; step < 4000; ++step)
+                {
+                    if(g.st == status::stage_clear) { check_badges(p, g); bank_xp(p, g); bot_next(g); continue; }
+                    if(g.st != status::playing) break;
+                    bot_step(g);
+                }
+                check_badges(p, g); bank_xp(p, g); check_contracts(p); check_secrets(p, &g);
+                if(g.st == status::won) { record_win(p); add_house(p, g); ++wins_all; }
+                ++runs; gained += p.xp - x0;
+                for(;;)
+                {
+                    int kind = -1, idx = -1;
+                    const int c = next_unlock(p, kind, idx);
+                    if(c < 0 || p.xp < c) break;
+                    if(kind == 0) buy_upgrade(p, idx); else if(kind == 1) buy_class(p, idx); else if(kind == 2) buy_tool(p, idx);
+                    else if(kind == 3) buy_helper(p, idx); else buy_hard(p);
+                }
+                int kind = -1, idx = -1;
+                if(next_unlock(p, kind, idx) < 0) done = runs;
+            }
+            CHECK(done > 0);
+            total += done; lo = imin(lo, done); hi = imax(hi, done); runs_all += runs;
+        }
+        const int avg = total / careers;
+        std::printf("Tempo postępu: dośw. z budowy bez meta %ld (wygrana %ld, porażka %ld); Szkolenia razem %d dośw.;\n"
+                    "  wszystko wykupione po %d budowach (min %d, maks %d; kariera: %ld dośw./budowę, wygrane %ld%%)\n",
+                    (xw + xl) / (nw + nl), xw / imax(1, nw), xl / imax(1, nl), shop_total_cost(), avg, lo, hi,
+                    gained / runs_all, wins_all * 100 / runs_all);
+        CHECK(avg >= 20 && avg <= 30);   // cel #41: pełne odblokowanie ~20-30 budów
     }
     std::printf(fails ? "\n%d FAIL\n" : "\nOK - wszystkie testy przeszły\n", fails);
     return fails != 0;

@@ -253,18 +253,26 @@ namespace core
     };
 
     // craft: +statystyka broni zawodu; dmg_pct / taken_pct: +% zadawanych / -% otrzymanych obrażeń
-    enum class upgrade_effect : uint8_t { hp, def, dmg, coffee, pickups, luck, craft, dmg_pct, taken_pct };
+    enum class upgrade_effect : uint8_t { hp, def, dmg, coffee, pickups, luck, craft, dmg_pct, taken_pct,
+                                          crit, dodge, thermos, mats_pct, gear_pct, cash };   // v0.21.52: poziomy z różnym działaniem
+
+    struct upgrade_step        // v0.21.52: jeden poziom Szkolenia - przyrost premii
+    {
+        upgrade_effect effect = upgrade_effect::hp;
+        int8_t value = 0;
+    };
 
     struct upgrade_def         // ulepszenie ze sklepu "Szkolenia" (meta-progresja)
     {
         const char* name;
         const char* desc;
-        upgrade_effect effect;
-        int8_t value;          // premia za każdy poziom
+        upgrade_effect effect;     // główne działanie (opis, wyszukiwanie w testach)
         int8_t levels;
-        int16_t costs[4];      // koszt kolejnych poziomów w doświadczeniu
-        int16_t refund = 0;    // zwrot (dośw.) za poziom ponad maksimum (profil sprzed zmiany liczby poziomów)
-        int16_t reset_refund = 0;   // v0.21.49: ulepszenie zmienione - profil sprzed v8 dostaje zwrot za poziom, poziom od zera
+        upgrade_step steps[5];     // v0.21.52: przyrost na kolejnych poziomach (mniejsze kroki, rosnąca cena)
+        int16_t costs[5];          // koszt kolejnych poziomów w doświadczeniu
+        int16_t legacy_costs[4];   // koszty poziomów sprzed v0.21.52 (profil v12 i starsze: zwrot przy migracji)
+        int8_t legacy_levels;
+        int16_t refund = 0;        // zwrot (dośw.) za poziom ponad maksimum (profil sprzed zmiany liczby poziomów)
     };
 
     // Respekt: stała waluta za ukończone etapy, wydawana na stałe ulepszenia procentowe z rangami (telefon profilu).
@@ -521,6 +529,8 @@ namespace core
         const char* desc;
         int16_t xp;            // nagroda przy pierwszym zdobyciu
         perk bonus;            // uprawnienie: premia na każdą kolejną budowę (jak w Hades)
+        const char* title;     // v0.21.52: tytuł do wyboru w profilu
+        int8_t cosmetic;       // v0.21.52: odblokowany wygląd (data::cosmetics, -1 = brak)
     };
 
     // Pamiątka (jak keepsake w Hades): zabierana na budowę, premia rośnie z rangą (I/II/III).
@@ -545,12 +555,14 @@ namespace core
         int16_t target;
         int16_t xp;            // nagroda w doświadczeniu
         int8_t keepsake;       // odblokowana pamiątka (-1 = brak)
+        const char* title;     // v0.21.52: tytuł do wyboru w profilu
+        int8_t cosmetic;       // v0.21.52: odblokowany wygląd (data::cosmetics, -1 = brak)
     };
 
     struct tool_def            // narzędzie do znalezienia (drop), odblokowywane w sklepie
     {
         int8_t weapon;         // indeks w data::weapons
-        int16_t cost;          // 0 = dostępne od początku
+        bool shop = false;     // v0.21.52: na sprzedaż w Szkoleniach (cena z data::tool_costs); bez flag = od początku
         bool reward = false;   // odblokowuje nagroda za odbiór (nie Szkolenia)
         bool secret = false;   // v0.21.51 cz. 2: odblokowuje sekretne zlecenie
     };
@@ -573,10 +585,11 @@ namespace core
         story_msg news;        // dymek "Nowość" na tytule
     };
 
-    struct cosmetic_def        // wygląd z sekretnego zlecenia (tylko oprawa)
+    struct cosmetic_def        // wygląd z sekretnego zlecenia, odznaki albo zlecenia (tylko oprawa)
     {
         const char* name;
         const char* desc;
+        int16_t helmet = -1;   // v0.21.52: kolor kasku (RGB555), -1 = nie kask
     };
 
     struct difficulty_def      // poziom trudności wybierany na starcie

@@ -351,6 +351,8 @@ static void profile_json(const profile& p)
     for(int i = 0; i < weekly_slots; ++i) { w(","); wi(p.weekly_week[i]); w(","); wi(p.weekly_score[i]); } w("]");
     w(","); key("story"); w("["); wi(long(p.story)); w(","); wi(long(p.story_new)); w(","); wi(estate_decor(p)); w("]");
     w(","); key("secrets"); w("["); wi(p.secrets); w(","); wi(p.secrets_new); w(","); wi(p.cosmetic); w(","); wi(secrets_done_count(p)); w("]");
+    w(","); key("looks"); w("["); wi(p.title); w(","); wi(p.helmet); w(","); wi(titles_owned(p)); w(","); wi(helmets_unlocked(p));   // v0.21.52
+    w(","); wi(class_cost(p)); w(","); wi(tool_cost(p)); w(","); wi(shop_spent(p)); w("]");
     w(","); key("sram"); hex_bytes(reinterpret_cast<const char*>(&p), sizeof p);   // profil bajt po bajcie jak w SRAM
     w("}");
 }

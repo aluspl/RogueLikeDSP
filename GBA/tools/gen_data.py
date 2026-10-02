@@ -71,13 +71,21 @@ for df in d["difficulties"]:
 L.append("};\n")
 m = d["meta"]
 cid = {c["id"]: i for i, c in enumerate(d["classes"])}
-EFF = {"hp", "def", "dmg", "coffee", "pickups", "luck", "craft", "dmg_pct", "taken_pct"}
-L.append("inline constexpr core::upgrade_def upgrades[] = {")
+EFF = {"hp", "def", "dmg", "coffee", "pickups", "luck", "craft", "dmg_pct", "taken_pct",
+       "crit", "dodge", "thermos", "mats_pct", "gear_pct", "cash"}   # v0.21.52: poziomy Szkoleń z różnym działaniem
+L.append("inline constexpr core::upgrade_def upgrades[] = {   // Szkolenia: poziomy (przyrost + koszt), stare koszty do zwrotu")
 for u in m["upgrades"]:
-    assert u["effect"] in EFF and 1 <= len(u["costs"]) <= 4, u
-    costs = u["costs"] + [0] * (4 - len(u["costs"]))
-    L.append(f'    {{ {s(u["name"])}, {s(u["desc"])}, core::upgrade_effect::{u["effect"]}, {u["value"]}, '
-             f'{len(u["costs"])}, {{ {", ".join(map(str, costs))} }}, {u.get("refund", 0)}, {u.get("resetRefund", 0)} }},')
+    st_ = u["steps"]
+    assert u["effect"] in EFF and 1 <= len(st_) <= 5 and all(x["effect"] in EFF for x in st_), u
+    assert any(x["effect"] == u["effect"] for x in st_), u   # główne działanie jest wśród poziomów
+    assert all(0 < x["value"] < 100 and 0 < x["cost"] < 1000 for x in st_), u
+    assert all(st_[i]["cost"] < st_[i + 1]["cost"] for i in range(len(st_) - 1)), u   # cena rośnie z poziomem
+    assert 1 <= len(u["legacyCosts"]) <= 4 and len(u["name"]) <= 15, u
+    steps = [f'{{ core::upgrade_effect::{x["effect"]}, {x["value"]} }}' for x in st_] + ["{}"] * (5 - len(st_))
+    costs = [x["cost"] for x in st_] + [0] * (5 - len(st_))
+    legacy = u["legacyCosts"] + [0] * (4 - len(u["legacyCosts"]))
+    L.append(f'    {{ {s(u["name"])}, {s(u["desc"])}, core::upgrade_effect::{u["effect"]}, {len(st_)}, {{ {", ".join(steps)} }}, '
+             f'{{ {", ".join(map(str, costs))} }}, {{ {", ".join(map(str, legacy))} }}, {len(u["legacyCosts"])}, {u.get("refund", 0)} }},')
 L.append("};\n")
 def story(m):
     lines = m["text"].split("|")
@@ -163,8 +171,12 @@ def perk(pk):
     assert pk["effect"] in PERKS and -128 <= pk["value"] <= 127, pk
     return f'{{ core::perk_effect::{pk["effect"]}, {pk["value"]} }}'
 L.append("inline constexpr core::badge_def badges[] = {   // perk = uprawnienie: trwała premia na każdą budowę")
+coid0 = {x["id"]: i for i, x in enumerate(d["secrets"]["cosmetics"])}   # v0.21.52: wygląd także z odznak i zleceń
+def title_cos(x):
+    assert 1 <= len(x["title"]) <= 16 and 0 <= x["xp"] <= 50, x   # tytuł w profilu (GBA: wiersz telefonu)
+    return f'{s(x["title"])}, {coid0[x["cosmetic"]] if "cosmetic" in x else -1}'
 for b in d["badges"]:
-    L.append(f'    {{ {s(b["name"])}, {s(b["desc"])}, {b["xp"]}, {perk(b["perk"])} }},')
+    L.append(f'    {{ {s(b["name"])}, {s(b["desc"])}, {b["xp"]}, {perk(b["perk"])}, {title_cos(b)} }},')
 L.append("};\n")
 bid = {b["id"]: i for i, b in enumerate(d["badges"])}
 L += [f"inline constexpr int badges_count = {len(d['badges'])};",
@@ -188,7 +200,7 @@ L.append("inline constexpr core::contract_def contracts[] = {   // zlecenia: dł
 for c in d["contracts"]:
     assert c["kind"] in KINDS and len(c["name"]) <= 16 and len(c["desc"]) <= 30 and 0 < c["target"] < 30000, c
     L.append(f'    {{ {s(c["name"])}, {s(c["desc"])}, core::contract_kind::{c["kind"]}, {c["target"]}, {c["xp"]}, '
-             f'{kid[c["keepsake"]] if "keepsake" in c else -1} }},')
+             f'{kid[c["keepsake"]] if "keepsake" in c else -1}, {title_cos(c)} }},')
 L.append("};")
 L += [f"inline constexpr int contracts_count = {len(d['contracts'])};", ""]
 se = d["siteEvents"]
@@ -285,16 +297,19 @@ L += [f"inline constexpr int schedule_min_days = {sc['minDays']};   // harmonogr
       f"inline constexpr const char* schedule_url = {s(sc['url'])};", ""]
 L.append("inline constexpr core::tool_def tools[] = {")
 for t in m["tools"]:
-    assert not t.get("reward") or t["cost"] == 0, t   # narzędzie z nagrody nie jest na sprzedaż
-    assert not (t.get("reward") and t.get("secret")) and (not t.get("secret") or t["cost"] == 0), t   # sekretne: z sekretnego zlecenia
-    L.append(f'    {{ {wid[t["weapon"]]}, {t["cost"]}, {"true" if t.get("reward") else "false"}, {"true" if t.get("secret") else "false"} }},')
+    assert "cost" not in t and sum(bool(t.get(k)) for k in ("shop", "reward", "secret")) <= 1, t   # v0.21.52: cena z meta.toolCosts
+    L.append(f'    {{ {wid[t["weapon"]]}, {"true" if t.get("shop") else "false"}, {"true" if t.get("reward") else "false"}, {"true" if t.get("secret") else "false"} }},')
 L.append("};\n")
 dr = d["drops"]
-start_tools = sum(1 << i for i, t in enumerate(m["tools"]) if t["cost"] == 0 and not t.get("reward") and not t.get("secret"))
+start_tools = sum(1 << i for i, t in enumerate(m["tools"]) if not t.get("shop") and not t.get("reward") and not t.get("secret"))
+shop_tools = sum(1 for t in m["tools"] if t.get("shop"))
+assert len(m["toolCosts"]) == shop_tools and all(0 < c < 1000 for c in m["toolCosts"]) and m["toolCosts"] == sorted(m["toolCosts"]), m["toolCosts"]
 assert len(m["tools"]) <= 12 and all(i < 8 for i, t in enumerate(m["tools"]) if not t.get("secret")), "narzędzia: bitmaska uint8 w profilu"
 L += [f"inline constexpr int tools_count = {len(m['tools'])};",
       f"inline constexpr int secret_tools_mask = {sum(1 << i for i, t in enumerate(m['tools']) if t.get('secret'))};   // z sekretnych zleceń",
       f"inline constexpr int start_tools_mask = {start_tools};",
+      f"inline constexpr int tool_costs[] = {{ {', '.join(map(str, m['toolCosts']))} }};   // v0.21.52: cena kolejnego kupionego narzędzia",
+      f"inline constexpr int tool_costs_count = {len(m['toolCosts'])};",
       f"inline constexpr int drop_chance_pct = {dr['chancePct']};",
       f"inline constexpr int drop_weights[] = {{ {dr['weights']['coffee']}, {dr['weights']['helmet']}, {dr['weights']['plan']}, {dr['weights']['tool']}, {dr['weights']['gear']} }};", ""]
 lk = d["luck"]
@@ -348,7 +363,8 @@ L += [f"inline constexpr int upgrades_count = {len(m['upgrades'])};",
       f"inline constexpr int reward_classes_mask = {sum(1 << i for i, c in enumerate(d['classes']) if c.get('reward'))};",
       f"inline constexpr int secret_classes_mask = {sum(1 << i for i, c in enumerate(d['classes']) if c.get('secret'))};   // z sekretnych zleceń",
       f"inline constexpr int open_classes_count = {open_classes};   // zawody bez sekretów (budowa dnia, balans, Pełny zespół)",
-      f"inline constexpr int class_cost = {m['classCost']};",
+      f"inline constexpr int class_costs[] = {{ {', '.join(map(str, m['classCosts']))} }};   // v0.21.52: cena kolejnego kupionego zawodu",
+      f"inline constexpr int class_costs_count = {len(m['classCosts'])};",
       f"inline constexpr int hard_cost = {m['hardCost']};", ""]
 hl = d["heroLevels"]
 L += [f"inline constexpr int level_thresholds[] = {{ {', '.join(map(str, hl['thresholds']))} }};",
@@ -614,12 +630,15 @@ for i, c in enumerate(d["classes"]):   # każdy zawód / narzędzie z sekretu ma
     assert not c.get("secret") or ("class", i) in srew, c["id"]
 for i, t in enumerate(m["tools"]):
     assert not t.get("secret") or ("tool", i) in srew, t
-for i in range(len(cos)): assert ("cosmetic", i) in srew, cos[i]
+from_meta = {x["cosmetic"] for x in d["badges"] + d["contracts"] if "cosmetic" in x}   # v0.21.52: kolory kasku z odznak i zleceń
+for i in range(len(cos)): assert (("cosmetic", i) in srew) != (cos[i]["id"] in from_meta), cos[i]   # jedno źródło
+for i in range(len(cos)): assert ("helmet" in cos[i]) == (cos[i]["id"] in from_meta), cos[i]
 assert all(p_ in eid for p_ in sec["paper"])
 L.append("inline constexpr core::cosmetic_def cosmetics[] = {   // wygląd z sekretnych zleceń (tylko oprawa)")
+def rgb555(c): assert len(c) == 3 and all(0 <= v <= 255 for v in c), c; return (c[0] >> 3) | ((c[1] >> 3) << 5) | ((c[2] >> 3) << 10)
 for x in cos:
     assert len(x["name"]) <= 16 and len(x["desc"]) <= 30, x
-    L.append(f'    {{ {s(x["name"])}, {s(x["desc"])} }},')
+    L.append(f'    {{ {s(x["name"])}, {s(x["desc"])}, {rgb555(x["helmet"]) if "helmet" in x else -1} }},')
 L.append("};")
 hb = [eid[x["enemy"]] for x in sec["list"] if x["kind"] == "helper_boss"]
 L += [f"inline constexpr int secrets_count = {len(sec['list'])};", f"inline constexpr int cosmetics_count = {len(cos)};",
