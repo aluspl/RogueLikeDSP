@@ -83,6 +83,17 @@ Kierownik na placu 32%.
   aktu I może leżeć gdzie indziej).
 - Test złoty (Godot) z migawki v0.21.51.
 
+
+### Godot (cz. 2: sekretne zlecenia, mgła, test małpy)
+- **Sekretne zlecenia (#39) na ekranie:** profil > Odznaki – strona Sekrety („???” z podpowiedzią, po wykonaniu warunek
+  i nagroda z ikoną), sprawdzanie po etapie / porzuceniu / końcu budowy, baner „Sekretne zlecenie!” (złota ramka, kolejka
+  8 banerów), dymek Nowość; Spawacz, Geodeta, Majster na wyborze zawodu (moc Majstra w HUD), kask w paski (Tryb inwestora),
+  złoty błysk przy krycie, Poziomica mistrza na podglądzie mapy, Respekt Zaprawiony w boju zablokowany; klatki 127–159.
+- **Mgła pikselowa:** skraj odkrytej części gaśnie w 3 stopniach kraty Bayera w pikselach grafiki zamiast rozmycia.
+- **Test małpy** `--monkey SEED KROKI`: losowe klawisze i dotyk przez prawdziwe wejście, wykrywa wyjątki, błędy logu
+  i zawieszenia; 50 seedów x 3000 akcji (klawiatura + mysz) bez błędów. Znalezione: profil pokazowy z Warsztatami 2/1
+  (wyjątek w Kosztach), brak sprawdzania sekretów w sesji, sekretne narzędzia w Szkoleniach, ikona nagrody Pistoletu.
+
 ## v0.21.50 – 2026-09-29
 ### Najważniejsze
 Regrywalność – 10 nowości w jednym wydaniu (GBA i Godot, wspólny rdzeń i test złoty):
