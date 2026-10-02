@@ -58,6 +58,26 @@ Rzadsze błoto ledwie rusza bota (omija je i tak): wyniki w granicach szumu.
 Wyzwania tygodnia: Glazurnik bez kawy 10%, Elity x2 30%, Mokry tydzień 36%, Bez Hurtowni 17%, Szklany kask 29%,
 Kierownik na placu 32%.
 
+### Poprawki
+- **Crash przy otwieraniu skrzyni w magazynie** („No more sprite tiles items available” na Miyoo): dwie przyczyny.
+  1. **Przepełniony stos.** Stos GBA (IWRAM, ~12 KB) był w samej grze zajęty w 97% (scena gry 7,8 KB, od kolejki
+     8 banerów jeszcze więcej). Okno porównania sprzętu ze skrzyni/paczki przy zajętym slocie albo telefon → Start →
+     A (statystyki) przepełniały go i nadpisywały dane w IWRAM (tablice nazw, stan dźwięku) – zawieszenie albo błąd.
+     Duże obiekty sceny (napisy HUD, baner z kolejką, cząsteczki, liczby obrażeń, rozpiska obrażeń) są teraz na
+     stercie: szczyt stosu ~8 KB.
+  2. **Limit pozycji kafli sprite'ów.** Butano liczy w limicie 128 także wolne kawałki VRAM i kafle do zwolnienia –
+     przy pełnym HUD (stany, premie, elity, materiały) skrzynia z banerami dochodziła do 132. Limit 256.
+  Scenariusz 68: skrzynia przy pełnym HUD i zajętych slotach sprzętu.
+- **Znalezione przez monkey test** (nowy bot losowych klawiszy, `tools/playtest/monkey.sh`):
+  - wybór zawodu: L/R razem z lewo/prawo (albo START) w tej samej klatce – brak VRAM na sprite'y (błąd Butano);
+  - telefon: zmiana zakładki + START, góra/dół + B – podwójne przerysowanie w jednej klatce (to samo ryzyko);
+  - ekran końcowy w trybie inwestora: stawka jako 6. wiersz motywacji – „Vector is full”;
+  - ciężka walka (wiele trafień, kryty, awans, banery, cząsteczki) dochodziła do 128 sprite'ów – liczby obrażeń,
+    napis awansu i cząsteczki pojawiają się tylko przy zapasie sprite'ów i VRAM.
+- Monkey test: losowe klawisze (d-pad, A, B, START, SELECT, L, R, przytrzymania, pary, L+R+SELECT) od pustego
+  profilu i ze scenariuszy, wykrywa ekran błędu, zawieszenie i zastygły obraz; buildy testowe raportują zapas
+  sprite'ów, kafli i stosu. Opis w README.
+
 ### Zmiany
 - Zapis budowy i profil bez zmian (PBRUN13, profil v11) – przerwana budowa z v0.21.50 wznowi się (błoto na etapie
   aktu I może leżeć gdzie indziej).

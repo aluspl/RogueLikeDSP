@@ -82,10 +82,10 @@
 #define PB_DEBUG_STATS
 #endif
 #endif
-#ifdef PB_DEBUG_STATS
-#include "bn_log.h"            // buildy testowe: liczniki sprite'ów w logu mGBA (tools/playtest/monkey.sh)
 #include "bn_sprites.h"
 #include "bn_sprite_tiles.h"
+#ifdef PB_DEBUG_STATS
+#include "bn_log.h"            // buildy testowe: liczniki sprite'ów w logu mGBA (tools/playtest/monkey.sh)
 extern "C" { extern char __iwram_overlay_end[]; extern char __sp_usr[]; }   // granice stosu (skrypt linkera Butano)
 #endif
 
@@ -261,6 +261,14 @@ namespace
     void debug_stats() {}
     void debug_paint_stack() {}
 #endif
+
+    // v0.21.51: ozdobniki (liczby obrażeń, napis awansu, cząsteczki) tylko przy zapasie sprite'ów (128), pozycji
+    // kafli i VRAM - w ciężkiej walce z banerami brakowało miejsca na tekst, który musi się pojawić (monkey test).
+    bool sprites_to_spare()
+    {
+        return bn::sprites::available_items_count() >= 24 && bn::sprite_tiles::available_items_count() >= 32
+            && bn::sprite_tiles::available_tiles_count() >= 96;
+    }
 
     // Zamiast bn::core::update(): prowadzi rozjaśnianie po zmianie sceny.
     void next_frame()
@@ -2189,7 +2197,7 @@ namespace
 
         void spawn(bn::fixed x, bn::fixed y, bn::fixed vx, bn::fixed vy, bn::fixed gravity, int life, int frame, int frames = 1)
         {
-            if(list.full()) return;
+            if(list.full() || ! sprites_to_spare()) return;
             bn::optional<bn::sprite_ptr> sp = bn::sprite_items::particles.create_sprite_optional(x, y, frame);
             if(! sp) return;
             sp->set_camera(cam);
@@ -3117,6 +3125,7 @@ namespace
             a.text.set_center_alignment();
             for(int i = 0; i < g.hits_count; ++i)
             {
+                if(! sprites_to_spare()) break;   // bez liczb, gdy brak zapasu sprite'ów
                 if(floaters.full()) floaters.erase(floaters.begin());
                 floaters.push_back(floater());
                 floater& f = floaters.back();
@@ -3336,7 +3345,7 @@ namespace
             bn::fixed_point h = world(g.hero.x, g.hero.y);
             a.text.set_center_alignment();
             a.text.set_palette_item(bn::sprite_palette_items::font_map_loot);
-            a.text.generate(h.x(), h.y() - 26, m.s, levelup_text);
+            if(sprites_to_spare()) a.text.generate(h.x(), h.y() - 26, m.s, levelup_text);   // baner awansu i tak jest
             a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
             for(bn::sprite_ptr& sp : levelup_text) { sp.set_camera(cam); sp.set_z_order(-80); }
             levelup_timer = 90;
