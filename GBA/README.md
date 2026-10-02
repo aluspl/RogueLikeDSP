@@ -328,11 +328,26 @@ samouczek menu (39), dymki nowości (40), nagroda Akt 0 (41), rozpiska obrażeń
 rzadkie, legendarne (43–45), lista premii w telefonie (46), elity (47), mokry + prąd (48), pył + iskra (49),
 zamróz + uderzenie (50), mokry bohater + prąd (51), wydarzenia z wyborem (52), Hurtownia z ulepszeniem i cechą (53),
 zamiana ulepszonego narzędzia (54), pęknięta ściana z kluczem i skrzynia (55), drzwi magazynu (56), podsumowanie po
-porażce (57), podsumowanie po wygranej (58), wyzwanie tygodnia (59), Wiadomości i Osiedle z ozdobami (60)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
+porażce (57), podsumowanie po wygranej (58), wyzwanie tygodnia (59), Wiadomości i Osiedle z ozdobami (60), sekretne zlecenia (61–67), skrzynia magazynu przy pełnym HUD (68)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
 ```bash
 make TARGET=scn1 BUILD=build_scn1 USERFLAGS="-DPB_SCENARIO=1" BUTANO_PATH=...
 ROM=scn1.gba tools/playtest/run.sh skrypt.txt /tmp/zrzuty --fresh
 ```
+
+Monkey test (losowe klawisze, v0.21.51): bot przechodzi całą grę na ślepo – d-pad, A, B, START, SELECT, L, R,
+przytrzymania (karta wroga, mapa), losowe pary i czasem L+R+SELECT – i szuka ekranu błędu Butano (CRASH), zawieszenia
+(gra przestaje dawać puls – HANG) i obrazu, który stoi 40 s mimo klawiszy (SOFTLOCK). Buildy testowe (`PB_SCENARIO`
+albo `PB_DEBUG_STATS`) wypisują do logu mGBA rekordy zajętych pozycji kafli sprite'ów (limit 256), sprite'ów (128)
+i stosu (~12 KB IWRAM), więc podsumowanie pokazuje też zapas. `STACKTRACE=1` dokłada ślad stosu do błędu.
+```bash
+make STACKTRACE=1 TARGET=monkey BUILD=build_monkey USERFLAGS="-DPB_DEBUG_STATS" BUTANO_PATH=...   # zwykła gra
+make STACKTRACE=1 TARGET=scn55 BUILD=build_scn55 USERFLAGS="-DPB_SCENARIO=55" BUTANO_PATH=...    # scenariusze
+tools/playtest/monkey.sh -n 40 -f 20000 -j 8 -o /tmp/monkey main 1 12 43 52 55 57 61 66 67
+python3 tools/playtest/monkey_replay.py /tmp/monkey/scn55/s17/inputs.log 9000 9400 10 > powtorka.txt   # zrzuty przed błędem
+```
+Każdy przebieg zaczyna od pustego zapisu (scenariusze ustawiają swój profil); to samo ziarno + ROM + liczba klatek
+daje dokładnie ten sam przebieg. Wynik: `summary.txt` (OK / CRASH / HANG / SOFTLOCK, maksima), przy błędzie
+`crash.png`, `ring_*.png` (ostatnie ~30 s) i `inputs.log`.
 
 ## Uruchomienie na Miyoo
 Skopiuj `PlanBudowlanyRogue.gba` do `Roms/GBA/` (OnionOS) lub folderu GBA w MinUI. Działa na rdzeniach
