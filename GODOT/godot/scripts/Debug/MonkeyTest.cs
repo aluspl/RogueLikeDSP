@@ -161,8 +161,14 @@ public sealed class MonkeyTest
         switch (Pick(w))
         {
             case 0:
-                await Press(Keys[_rng.RandiRange(0, Keys.Length - 1)], _rng.RandiRange(1, 3), false);
+            {
+                var k = Keys[_rng.RandiRange(0, Keys.Length - 1)];
+                // Z / Esc na tytule i mapie otwierają Ustawienia – zwykle zamiast nich inny klawisz (mniej czasu w Ustawieniach)
+                if (k is Key.Z or Key.Escape && (flow.Current == flow.Title || flow.Current == flow.Game) && _rng.Randf() < 0.75f)
+                    k = _rng.Randf() < 0.5f ? Key.Space : Key.Enter;
+                await Press(k, _rng.RandiRange(1, 3), false);
                 break;
+            }
             case 1:
                 await Tap(TargetPoint());
                 break;
@@ -223,7 +229,7 @@ public sealed class MonkeyTest
     {
         _targets.Clear();
         Collect(Root);
-        if (_app.Nodes.Settings.IsVisibleInTree()) _targets.Add(Hud.SettingsButton.Rect);
+        if (_app.Nodes.Settings.IsVisibleInTree() && _rng.Randf() < 0.15f) _targets.Add(Hud.SettingsButton.Rect); // klucz rzadziej (Ustawienia)
         var screen = new Rect2(Vector2.Zero, Size);
         _targets.RemoveAll(r => r.Size.X < 2 || r.Size.Y < 2 || !screen.Intersects(r));
         if (_targets.Count == 0) return RandomPoint();
