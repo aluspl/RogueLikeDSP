@@ -283,13 +283,15 @@ Zadania telefonu. Teksty i wartości: `siteEvents` w `data/game.json`.
 - Poziomy postaci w trakcie budowy: awans za doświadczenie daje +HP, na 3. poziomie +obrona, na 5. +obrażenia.
 - Po wygranej: „Kolejna budowa” (NG+) – ten sam zawód i premie, mocniejsi wrogowie.
 - Doświadczenie za wrogów, etapy i bossa wydajesz w sklepie „Szkolenia” (po budowie i z tytułu):
-  ulepszenia statystyk (m.in. Szkolenie BHP: -2% otrzymanych obrażeń, Kurs fachowy: +2% obrażeń, Kurs BHP II:
-  +1 szczęścia, Warsztaty: +1 do statystyki broni zawodu), więcej znajdziek,
-  nowe zawody, narzędzia, poziom Trudny.
+  7 Szkoleń po 4 poziomy (v0.21.52: mniejsze kroki z danych – HP, % obrażeń, kryt, termos, materiały, jakość sprzętu,
+  budżet; ceny 25–200), nowe zawody (60/100/150 – każdy kolejny drożej), narzędzia (60–150), brygada, poziom Trudny (100).
+  Wykupienie wszystkiego to ~20–30 budów (bot: 23).
+- Odznaki i zlecenia dają mało doświadczenia, za to tytuł (profil > Odznaki > Tytuły, SELECT wybiera) i czasem kolor
+  kasku (wybór zawodu > SELECT: Wygląd). Koniec budowy: strona „Postęp” z paskiem do najbliższego Szkolenia.
 - Profil (rekord, doświadczenie, zakupy, odznaki, liczniki zleceń, pamiątki, brygada, tryb inwestora) zapisuje się
-  w SRAM (format v11, 188 bajtów, z Respektem, nagrodami za odbiór, Katalogiem dla 48 rodzajów problemów, samouczkiem menu,
-wynikami tygodni i wątkami fabuły); starsze zapisy (v1-v10)
-  są przenoszone bez utraty danych.
+  w SRAM (format v13, 200 bajtów, z Respektem, nagrodami za odbiór, Katalogiem dla 48 rodzajów problemów, samouczkiem menu,
+  wynikami tygodni, wątkami fabuły, sekretami, tytułem i kolorem kasku); starsze zapisy (v1-v12) są przenoszone bez utraty
+  danych (v0.21.52: poziomy Szkoleń wracają jako doświadczenie po starej cenie).
 - Liczniki zleceń trafiają do profilu na końcu etapu; profil pamięta, ile z bieżącej budowy już przeniesiono, więc
   wznowienie budowy po wyłączeniu konsoli nie liczy etapu drugi raz.
 - Harmonogram między etapami pokazuje radę kierownika (sterowanie i mechaniki; lista `tips` w `data/game.json`).
@@ -328,7 +330,8 @@ samouczek menu (39), dymki nowości (40), nagroda Akt 0 (41), rozpiska obrażeń
 rzadkie, legendarne (43–45), lista premii w telefonie (46), elity (47), mokry + prąd (48), pył + iskra (49),
 zamróz + uderzenie (50), mokry bohater + prąd (51), wydarzenia z wyborem (52), Hurtownia z ulepszeniem i cechą (53),
 zamiana ulepszonego narzędzia (54), pęknięta ściana z kluczem i skrzynia (55), drzwi magazynu (56), podsumowanie po
-porażce (57), podsumowanie po wygranej (58), wyzwanie tygodnia (59), Wiadomości i Osiedle z ozdobami (60), sekretne zlecenia (61–67), skrzynia magazynu przy pełnym HUD (68)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
+porażce (57), podsumowanie po wygranej (58), wyzwanie tygodnia (59), Wiadomości i Osiedle z ozdobami (60), sekretne zlecenia (61–67), skrzynia magazynu przy pełnym HUD (68), tempo postępu – Szkolenia z poziomami, Tytuły, kolor
+kasku, strona Postęp (69)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
 ```bash
 make TARGET=scn1 BUILD=build_scn1 USERFLAGS="-DPB_SCENARIO=1" BUTANO_PATH=...
 ROM=scn1.gba tools/playtest/run.sh skrypt.txt /tmp/zrzuty --fresh
@@ -361,7 +364,7 @@ tools/make_assets.py  proceduralne grafiki: font PL 8x16, sprite'y, kafelki+pale
 assets_src/pb_logo.svg  znak PlanBudowlany
 include/core.h        logika gry (czyste C++, bez Butano) - testowalna na PC; rozpiska obrażeń broni (dmg_breakdown);
                       wydarzenia z wyborem, ulepszanie narzędzia, magazyn (v0.21.50 cz. 3)
-include/meta.h        profil SRAM (v11), wyzwanie tygodnia, fabuła (Wiadomości, ozdoby Osiedla), rada i cel podsumowania, samouczek menu, Respekt, nagrody za odbiór, codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
+include/meta.h        profil SRAM (v13), Szkolenia z poziomami i ceny rosnące, tytuły i kolory kasku, wyzwanie tygodnia, fabuła (Wiadomości, ozdoby Osiedla), rada i cel podsumowania, samouczek menu, Respekt, nagrody za odbiór, codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
 src/main.cpp          warstwa GBA: sceny, mapa, kamera, HUD, SRAM
 ```
 Grafiki są placeholderami generowanymi kodem: podmień pliki w `graphics/` pixel-artem z Aseprite

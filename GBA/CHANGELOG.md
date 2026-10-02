@@ -2,6 +2,91 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
+## v0.21.52 – w przygotowaniu (cz. a: tempo postępu)
+### Najważniejsze
+Po jednej budowie dało się kupić prawie wszystko – teraz postęp ma więcej stanów pośrednich (GBA i Godot, wspólny rdzeń):
+1. **Szkolenia z poziomami (#41)** – każde po 4 poziomy, mniejsze kroki, rosnąca cena; pełne Szkolenia dają tyle,
+   co wcześniej (plus drobne dodatki), ale wykupienie wszystkiego to ~20–30 budów.
+2. **Droższe odblokowania (#42)** – zawody i narzędzia drożeją z każdym zakupem, Trudny za 100.
+3. **Odznaki i zlecenia (#43)** – mało doświadczenia, w zamian **tytuły** (do wyboru w profilu) i **kolory kasku**.
+4. **Paski postępu na końcu budowy (#52)** – najbliższe Szkolenie; mistrzostwo zawodu i poziom inspektora w cz. b.
+
+### Nowe
+- **Szkolenia (sekcja `meta.upgrades`, pole `steps`):** poziom = działanie + przyrost + koszt (z danych, różne działania
+  w jednym Szkoleniu: HP, % obrażeń, kryt, termos, materiały, jakość sprzętu, budżet). W Kosztach wiersz „Kondycja 2/4”,
+  opis „Poziom III: +1 HP na start”, na maksimum „Razem: …” (Godot: też „teraz”).
+
+  | Szkolenie | I | II | III | IV | Ceny | Razem (v0.21.51) |
+  |---|---|---|---|---|---|---|
+  | Kondycja | +1 HP | +1 HP | +1 HP | +1 HP | 25/50/90/150 | +4 HP (+4 HP) |
+  | Szkolenie BHP | -1% otrzym. | Sprzęt +1 | -1% otrzym. | Budżet +5 zł | 30/60/110/180 | -2% (-2%) |
+  | Kurs fachowy | +1% obrażeń | Sprzęt +1 | +1% obrażeń | Kryt +1% | 35/70/125/200 | +2% (+2%) |
+  | Lepszy termos | Termos +1 | Kawa +1 HP | Termos +1 | Termos +1 | 25/50/90/150 | kawa +1 HP (+1 HP) |
+  | Dostawy | Materiały +5% | +1 znajdźka | Budżet +5 zł | Materiały +5% | 25/50/90/150 | +1 znajdźka (+1) |
+  | Kurs BHP II | Sprzęt +1 | +1 szczęścia | Sprzęt +1 | Sprzęt +1 | 30/60/110/180 | +1 SZCZ (+1) |
+  | Warsztaty | Sprzęt +1 | +1 stat. broni | Sprzęt +1 | Sprzęt +1 | 35/70/125/200 | +1 stat. broni (+1) |
+
+  „Sprzęt +1” = +1 do rzutu na jakość paczek sprzętu (jak Respekt Dobre źródła).
+- **Ceny rosnące z każdym zakupem:** zawody 60 / 100 / 150 dośw. (`meta.classCosts`), narzędzia 60 / 80 / 100 / 125 / 150
+  (`meta.toolCosts`, narzędzie na sprzedaż: `shop`), Trudny 100 (było 40), brygada: Pompa 50, Elektryk-kolega 60. Cena
+  widoczna w Kosztach, na wyborze zawodu i w Zespole. Cały sklep: 3600 dośw. (było 460).
+- **Odznaki i zlecenia:** odznaki 5–15 dośw. (razem 85, było 295), zlecenia 10–15 (razem 70, było 250). Każda daje
+  **tytuł** (pole `title`, np. Bez skazy, Terminowy, Seryjny pogromca, Twarda sztuka, Deweloper, Siłacz, Stały bywalec),
+  a pięć – **kolor kasku** (`cosmetic`: niebieski – Przed terminem, czarny – Twardziel, zielony – Katalog usterek,
+  złoty – Osiedle, biały – Stały klient). Pamiątki ze zleceń bez zmian.
+- **Tytuły:** profil > Odznaki, strona 5 **Tytuły** (A przełącza strony; GBA: SELECT wybiera, Godot: Tab / „Wybierz” albo
+  drugie stuknięcie). Wybrany tytuł: GBA – w wierszu na zmianę na planszy końcowej, Godot – na Osiedlu i w podsumowaniu.
+  Banery odznak i zleceń pokazują tytuł.
+- **Kolor kasku:** wybór zawodu > SELECT (Godot: Tab) – strona Wygląd za modyfikatorami trybu inwestora (przed pierwszą
+  wygraną – sam Wygląd), A zmienia na kolejny odblokowany. Kask w paski ma pierwszeństwo. GBA: klatki 160–183 z kaskiem
+  w indeksie 10 palety i osobna paleta bohatera; Godot: te klatki z eksportu i shader podmieniający kolor (mapa, wybór
+  zawodu, prolog).
+- **Koniec budowy – paski postępu (#52):** GBA – strona 4/4 podsumowania „Postęp” (najbliższe Szkolenie z paskiem
+  dośw./koszt albo „Stać Cię!”, Mistrzostwo i Poziom inspektora – „wkrótce”); Godot – karta POSTĘP w podsumowaniu.
+- Scenariusz 69 (GBA) i sceny zrzutów `titles`, `looks`, `recap-progress` (Godot).
+
+### Balans
+Pełne Szkolenia mają tę samą moc co wcześniej plus drobne dodatki (sprzęt, budżet, termos, materiały, kryt +1%).
+
+| Wygrane bota (300 przebiegów na zawód) | v0.21.51 | v0.21.52 |
+|---|---|---|
+| Łatwy | 54% | 54% |
+| Normalny | 32% | 32% |
+| Trudny | 10% | 10% |
+| Normalny, pełne Szkolenia | 54% | 57% |
+| Normalny, pełne Szkolenia + pełny Respekt | 69% | 72% |
+| Normalny, pełne Szkolenia (i Respekt) + wszystkie modyfikatory | 10% | 13% |
+| Normalny bez picia kawy (bez meta / pełne Szkolenia) | 23% / 39% | 23% / 38% |
+| Normalny, pełne Szkolenia + pełny Respekt + Akt 0 (wszystkie nagrody) | 67% | 68% |
+
+### Tempo postępu
+Bot: kariera od pustego profilu na Normalnym (kolejne odblokowane zawody, odznaki, zlecenia i sekrety jak w grze, po
+każdej budowie kupuje najtańsze), 40 karier.
+
+| | v0.21.51 | v0.21.52 |
+|---|---|---|
+| Doświadczenie z budowy bez meta (średnio / wygrana / porażka) | 115 / 165 / 91 | 115 / 165 / 91 |
+| Doświadczenie z odznak i zleceń (wszystkie) | 545 | 155 |
+| Koszt całego sklepu | 460 | 3600 |
+| Doświadczenie na budowę w karierze (z odznakami, rosnące z meta) | – | 160 |
+| Budowy do wykupienia wszystkiego | 3–4 | 23 (20–27) |
+
+### Zmiany
+- **Profil v13** (200 B): wybrany tytuł i kolor kasku. Migracja v12 (i starszych): kupione poziomy Szkoleń wracają jako
+  doświadczenie po starej cenie (`legacyCosts`; poziom ponad stare maksimum – `refund`), poziomy od zera; zawody,
+  narzędzia, Trudny i brygada zostają. Zapis budowy bez zmian (PBRUN14) – przerwana budowa się wznowi.
+- Test złoty (Godot) z migawki v0.21.52 (55 przebiegów, + tytuł, kask i ceny w profilu).
+- Monkey test GBA: 20 seedów zwykłej gry + scenariusze 57, 58, 69 (po 5) x 20000 klatek – bez błędów (szczyt kafli
+  sprite'ów 134/256, sprite'ów 103/128, stosu ~8,1 KB).
+
+### Godot
+- Port rdzenia (UpgradeStep, ceny, Titles, kolory kasku, MigrateV13), te same ekrany: Koszty z poziomami, Tytuły,
+  Wygląd z próbką koloru kasku, karta POSTĘP, banery z tytułem; test dymny tytułów.
+- Test małpy: Ustawienia ~10% akcji zamiast ~38% (klucz rzadziej w celach stuknięć, Z / Esc na tytule i mapie zwykle
+  zamienione, w Ustawieniach częściej wyjście). Seria pion + dotyk (50 seedów x 3000 akcji) znalazła dwa błędy –
+  poprawione: marsz po dotknięciu (AutoWalk: NullReferenceException, gdy akcja zmieniła ekran) i podgląd problemów pod B
+  (wybór spoza nowej listy). Po poprawkach: pion + dotyk 28 seedów, klawiatura + mysz 40 seedów x 3000 – bez błędów.
+
 ## v0.21.51 – 2026-09-29
 ### Najważniejsze
 Poprawki po graniu na iPhonie (pion) – czytelniejsza mapa i sterowanie „nie do pomylenia” (GBA i Godot):
