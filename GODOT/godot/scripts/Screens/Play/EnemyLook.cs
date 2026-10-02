@@ -24,7 +24,7 @@ public sealed class EnemyLook
     public bool Active { get; private set; }
 
     /// <summary>Oglądany wróg albo -1.</summary>
-    public int Target => Active && _listed && _list.Count > 0 ? _list[_sel] : -1;
+    public int Target => Active && _listed && _sel >= 0 && _sel < _list.Count ? _list[_sel] : -1;
 
     public int Count => _list.Count;
 
@@ -51,6 +51,7 @@ public sealed class EnemyLook
         var g = _app.Session.Game;
         _listed = true;
         _list.Clear();
+        _sel = 0; // nowa lista (stary wybór mógł wskazywać poza nią - test małpy, seed 35)
         for (var d = 1; d <= g.SightRadius() + 1; d++)
         {
             for (var i = 0; i < g.EnemiesCount; i++)
