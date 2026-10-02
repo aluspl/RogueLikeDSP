@@ -4,7 +4,7 @@ Wersja Godot gry z demo GBA (`../GBA`): roguelike budowlany, w którym etapy bud
 a wrogami są *problemy budowy*. Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KONCEPCJA.md)
 (telefon z aplikacją PlanBudowlany jako interfejs, oprawa 2.5D – kolejne kamienie milowe).
 
-**Stan: zgodny z GBA v0.21.51 (rdzeń i test złoty; wcześniej v0.21.50 cz. 4), v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
+**Stan: zgodny z GBA v0.21.51 cz. 2 (rdzeń, test złoty i ekrany sekretnych zleceń; wcześniej v0.21.50 cz. 4), v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
 z pieczątkami i Decyzją odmowną, samouczek menu, profil v10; wcześniej 10 etapów, 20 nowych problemów
 z zachowaniami, mechaniki aktów, opis statystyk; Respekt za etapy i sklep Respektu,
 nagrody za odbiór – Młot udarowy, Pistolet do kotew, buty, pas, zawody Dekarz, Tynkarz, Operator koparki – nowy balans
@@ -14,7 +14,7 @@ oprawa (grafika, font, dźwięk, telefon, wybór zawodu) jak w GBA.
 Nowe w v0.21.51 (poprawki po graniu na iPhonie): **autokafle muru (#36)** – eksport generuje dla palety każdego etapu
 wierzch masy muru, lico i 6 nakładek (krawędź wierzchu góra / lewa / prawa, końce lica, róg wewnętrzny), `MapLayer`
 dobiera je wg sąsiadów (mur z murem poniżej = ciemny wierzch bez pasów, z podłogą poniżej = lico z wzorem), `FogLayer`
-ma 4 teksele na pole i miękko wygasza skraj odkrytej części w ciemność (bez schodków); **błoto (#37)** co 14. pole
+wygasza skraj odkrytej części w ciemność (bez schodków; od cz. 2 pikselowo – patrz niżej); **błoto (#37)** co 14. pole
 (dane) jako płaska mokra plama z połyskiem (`fx/mud.png`, 3 warianty); HUD w wąskim pionie: „Etap 2/10, Normalny”
 i pełna nazwa etapu w drugim rzędzie; **spójne sterowanie (#38)**: `PageAction` ma rolę (główny / powrót / zwykły),
 `PhoneView` rysuje główny przycisk zawsze po prawej, powrót po lewej (jeden przycisk – prawa połowa), `InputCmd.IsConfirm`
@@ -22,6 +22,27 @@ i pełna nazwa etapu w drugim rzędzie; **spójne sterowanie (#38)**: `PageActio
 wjazdu telefonu – Main połyka wciśnięcia i dotknięcia), zamiana ulepszonego narzędzia przez zaznaczenie (domyślnie
 „Zostaję”); Jak grać – wiersz „Okna”. Test dymny: A / Enter / stuknięcie w kartę tuż po otwarciu premii nic nie robi,
 po blokadzie pierwsze stuknięcie tylko zaznacza; A przy zamianie narzędzia bez zaznaczenia zostawia ulepszenie.
+
+Nowe w v0.21.51 cz. 2 (sekretne zlecenia #39, warstwa Godota): eksport klatek 127–159 z GBA (Spawacz, Geodeta, Majster
+z chodem i oddechem, sylwetki, kask w paski dla 12 zawodów; `Assets.AnimB` / `HasWalk` / `Silhouette` / `HeroFrame`),
+ikony mocy, narzędzi i wyglądu. Profil > Odznaki – czwarta strona **Sekrety** (Spacja / przycisk zmienia stronę): koperta
+z „???” i podpowiedzią, po wykonaniu warunek i nagroda z ikoną (zawód – mały portret). Sesja sprawdza sekrety po etapie,
+po porzuceniu i na końcu budowy (`Secrets.Check`), baner „Sekretne zlecenie!” ze złotą ramką (kolejka 8 banerów: nagroda,
+sekrety, odznaki, zlecenia, fabuła), notatka na planszy końcowej, na tytule dymek „Nowość” z treścią sekretu. Wybór
+zawodu i Zespół: nowe zawody (zablokowane – sylwetka, „Sekret” i podpowiedź), moce Spaw (iskry linią, dym) i Tyczenie
+(znak geodety nad oznaczonym problemem), Majster – moc innego fachu na etap: ikona w HUD, na pasku dotyku i w menu akcji,
+baner „R: …”, efekt pożyczonej mocy. Wygląd: **Kask w paski** – wiersz w Trybie inwestora (bohater, portrety, prolog),
+**Złota kielnia** – złote iskry i poświata z broni przy krycie. **Poziomica mistrza**: na podglądzie mapy magazyn widać
+pod mgłą (złota ramka, krąg, ikona; kadr obejmuje magazyn). Koszty > Respekt: „Zaprawiony w boju” jako „???” z pastylką
+Sekret do wykonania zlecenia; sekretne narzędzia nie są do kupienia w Szkoleniach. Jak grać – strona 8 Sekrety
+(`secretsHelp` z game.json). **Mgła pikselowa:** zamiast rozmytej tekstury 4x4 na pole – mała tekstura danych (pole =
+piksel: jasność, znane) bez filtrowania i shader w rozdzielczości piksela grafiki: skraj odkrytej części gaśnie w 3 stopniach
+kraty Bayera (75/50/25%, po 2 piksele grafiki), światło przechodzi progami co 0,145 z ditheringiem (pola zapamiętane
+jednolite). Sceny zrzutów: `sekrety`, `sekrety-locked`, `sekret-banner`, `sekret-news`, `class-spawacz`, `class-geodeta`,
+`class-majster`, `class-sekret-locked`, `power-spaw`, `power-tyczenie`, `power-majster`, `stripes`, `stripes-investor`,
+`gold-crit`, `poziomica-map`, `respect-sekret`, `help-secrets`; test dymny (`Debug/SmokeSecrets`): strona Sekrety,
+wygrana bez kawy – sekret, baner, notatka i dymek Nowość, start każdym nowym zawodem z mocą, kask w paski z Trybu
+inwestora, złoty błysk, Poziomica w dropach i na podglądzie, Respekt zablokowany do sekretu. **Test małpy** – niżej.
 
 Nowe w v0.21.50 (rozpiska obrażeń broni #26, jak w BG3): rdzeń `DmgBreakdown` / `Game.WeaponBreakdown` / `EnemyHit`
 / `DamageHelp` (port 1:1 z `core.h`, testy: zakres = walka na tysiącach rzutów), warstwa `Gfx/DamageRows` (te same
@@ -246,6 +267,18 @@ nad paskiem domowym, mapa ~9 pól na szerokość, telefon jako aplikacja na cał
 - Test dymny bez okna (bot gra kilka etapów przez warstwę Godota, wybiera drugą ścieżkę, łata drogę deskami, gra
   budowę dnia i przechodzi harmonogram domu po wygranej; kod 0 = OK):
   `godot-mono --headless --path GODOT/godot -- --smoke`
+- **Test małpy** (v0.21.51 cz. 2): `godot-mono --headless --path GODOT/godot -- --monkey SEED KROKI [--touch --portrait]`
+  – bot przez prawdziwe wejście (klawisze przez `Input.ParseInputEvent`, mysz / dotyk przez `Viewport.PushInput`, więc
+  działa `GestureTracker`, przyciski ekranowe i blokada wejścia) wykonuje KROKI losowych akcji: klawisze z mapy sterowania,
+  stuknięcia (40% w przyciski, wiersze list i zakładki z widoków `ITapTargets`, reszta gdziekolwiek), przesunięcia (też
+  z palcem trzymanym dalej), przytrzymania, trzymane A/B ze strzałkami, prawy klik; na mapie krok bota i rzadko skrót
+  etapu (jak L+R+SELECT), żeby dojść do premii, wydarzeń, Hurtowni, podsumowania i końca budowy. Połowa seedów zaczyna
+  od pustego profilu (samouczek), połowa od bogatego (wszystkie sekrety, wygląd, inwestor). Czeka na koniec blokady wejścia
+  jak człowiek (10% akcji wpada w blokadę). Błąd = wyjątek albo błąd w logu Godota (`MonkeyLogger`), błąd rysowania
+  (`DrawErrors`) albo zawieszenie (ten sam ekran, strona telefonu, samouczek i stan budowy przez 400 akcji i ≥ 6 s); wtedy
+  „MONKEY FAIL” ze śladem 40 ostatnich akcji i kod 1, inaczej „MONKEY OK” z liczbą odwiedzin ekranów. Linki do przeglądarki
+  w testach tylko się liczą (`ExternalLinks`). Wiele seedów równolegle, np.
+  `for s in $(seq 1 50); do godot-mono --headless --path GODOT/godot -- --monkey $s 3000 > /tmp/m_$s.log & done`.
 - Podgląd wersji na telefon na komputerze: `godot-mono --path GODOT/godot -- --touch --portrait` (okno 430x932 jak
   iPhone w punktach, z symulowaną wyspą i paskiem domowym; `--touch` samo = dotyk myszą w poziomie,
   `--size 860x1864` = inny rozmiar okna). Działa też ze zrzutami (`--touch --portrait --screenshot ...`).
@@ -264,7 +297,8 @@ nad paskiem domowym, mapa ~9 pól na szerokość, telefon jako aplikacja na cał
   `stats-phone` (opis statystyk), `catalog-tags` (Katalog z zachowaniami), `help-acts`, `help-stats` (strony Jak grać),
   `tutorial-title`, `tutorial-class`, `tutorial-stats` (samouczek menu), `tutorial-unlock`, `tutorial-act0` (dymki
   nowości), `help-tutorial`, `act0-card`, `act0-stamps`, `act0-stairs-open`, `act0-boss-phase` (Akt 0), `dmg-class`, `dmg-stats`, `dmg-gear`,
-  `dmg-phone`, `dmg-crit`, `dmg-offer`, `dmg-tool`, `dmg-enemy`, `help-dmg` (rozpiska obrażeń broni).
+  `dmg-phone`, `dmg-crit`, `dmg-offer`, `dmg-tool`, `dmg-enemy`, `help-dmg` (rozpiska obrażeń broni); sekretne zlecenia
+  (v0.21.51 cz. 2) – lista `SecretStaging.Names` (opis wyżej).
   Sceny ustawiają stan ręcznie (profil pokazowy, skrót zaliczenia etapu jak L+R+SELECT na GBA); zrzuty i test dymny
   działają bez dźwięku.
 
@@ -382,7 +416,7 @@ prezentacja tylko ją pokazuje i reaguje na zdarzenia.
 Main.cs            korzeń sceny: dane + profil -> App; wejście (klawiatura/pad/mysz/wirtualny kontroler) do ekranu bieżącego
 App.cs             kompozycja: GameSession, SceneNodes, ScreenFlow, obserwatorzy zdarzeń; Refresh / AfterAction / StartRun
 SceneNodes.cs      drzewo węzłów: WorldView, HudLayer (1), plansze (2), telefon z tłem (3), banery (4)
-LaunchOptions.cs   argumenty --seed / --smoke / --screenshot --scene / --touch / --portrait / --size
+LaunchOptions.cs   argumenty --seed / --smoke / --screenshot --scene / --monkey SEED KROKI / --touch / --portrait / --size
 Input/             GameAction (A, B, L, R, START, SELECT, strzałki...), InputCmd (zdarzenie jako akcje, wciśnięte
                    i puszczone), GameInput (mapa klawiszy i pada, Translate, Press/Release dla przycisków
                    ekranowych, IsHeld), ButtonNames (A/B/START... w tekstach z game.json -> klawisze)
@@ -398,7 +432,8 @@ Screens/           Screen (Enter / Exit / HandleInput / Process + deklaracja war
 World/             WorldView (sprite'y, synchronizacja), WorldFx (trafienia, moce, awans, konfetti), WorldCamera,
                    warstwy: MapLayer, OverlayLayer, FogLayer, FxLayer, MarksLayer, ActorSprite
 Touch/             GestureTracker (dotyk -> gesty: Down, Drag, Swipe, SwipeRepeat, LongPress, Tap, Up), Gesture,
-                   TouchControls (warstwa: ActionBar - pasek akcji, VirtualStick - gałka), BarButton, TouchIcon
+                   TouchControls (warstwa: ActionBar - pasek akcji, VirtualStick - gałka), BarButton, TouchIcon,
+                   ITapTargets (prostokąty przycisków dla testu małpy)
 Settings/          GameSettings (user://settings.cfg, Changed), ControlScheme, Haptics (wibracje przy dźwiękach)
 Hud/               SettingsButton (klucz ustawień), HudLayer (HudTop, HudLog, EnemyCard, ScreenTint), PushBanners + PushBanner (rysowanie, trafienie
                    kliknięciem), BannerFeed (treść i zakładka telefonu z SessionEvents)
@@ -410,7 +445,8 @@ Gfx/               Pal (tokeny kolorów PlanBudowlany i GBA), Ink, Layout (rozmi
 Audio/             Sfx (dźwięki i muzyka), SoundCues (dźwięki zdarzeń sesji)
 Guide/             Coach (samouczek menu i dymki nowości: kroki, flagi w profilu), CoachView (przyciemnienie, podświetlenie,
                    dymek Kierownika Marka), CoachHit
-Debug/             DebugRunner (--smoke / --screenshot), SmokeTest, ScreenshotRunner, DebugScenes, DemoStaging, DemoProfile
+Debug/             DebugRunner (--smoke / --screenshot / --monkey), SmokeTest (+ SmokeSecrets), ScreenshotRunner, DebugScenes,
+                   DemoStaging, RecapStaging, SecretStaging, DemoProfile, MonkeyTest + MonkeyLogger (test małpy)
 ```
 
 Przepływ: `Main` tłumaczy zdarzenie na `InputCmd` -> `ScreenFlow.Current.HandleInput` -> ekran woła akcję rdzenia
