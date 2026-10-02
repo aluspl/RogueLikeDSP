@@ -119,6 +119,7 @@ SPR_PAL = [(255, 0, 255), (26, 26, 26), (240, 240, 240), (240, 192, 144), BRAND_
            (58, 123, 213), (245, 211, 61), (214, 60, 60), (76, 175, 80), (46, 107, 48), (139, 90, 43),
            (138, 138, 138), (200, 200, 200), (90, 208, 230), (142, 91, 208)]
 K, WH, SK, OR, NV, BL, YE, RD, GR, DG, BR, GY, LG, CY, PU = range(1, 16)
+CODES_D = DG   # indeks D w pixel_art (kolor kasku do podmiany, v0.21.52)
 
 def sprite(draw_fn):
     im = Image.new("P", (16, 16), 0)
@@ -224,6 +225,12 @@ def make_actors():
     secret = [pa.worker_frame(i, 0) for i in range(9, 12)]
     frames += secret + [pa.worker_frame(i, 1) for i in range(9, 12)] + [silhouette(f) for f in secret]
     frames += [pa.worker_frame(c, k, stripes=True) for c in range(12) for k in range(2)]
+    # v0.21.52: 160-183 kask do pokolorowania (kolory kasku z odznak i zleceń): kask w indeksie D (ciemna zieleń - poza
+    # kaskiem żaden fachowiec jej nie ma), gra podmienia ten kolor w osobnej palecie bohatera; zawód * 2 + klatka A/B
+    assert len(frames) == 160
+    for c in range(12):   # D tylko na kasku (w klatce z kaskiem w paski D nie występuje, więc reszta postaci jej nie używa)
+        assert CODES_D not in [v for y, v in enumerate(pa.worker_frame(c, 0, stripes=True)) if not 16 <= y < 64], c
+    frames += [pa.worker_frame(c, k, helmet_mask=True) for c in range(12) for k in range(2)]
     px = [p for fr in frames for p in fr]
     write_bmp(os.path.join(G, "actors.bmp"), px, 16, 16 * len(frames), SPR_PAL, 4)
     write_json("actors", {"type": "sprite", "height": 16})

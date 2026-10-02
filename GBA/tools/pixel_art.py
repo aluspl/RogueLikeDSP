@@ -96,9 +96,12 @@ WORKERS = [("W", "O", "log"), ("O", "B", "trowel"), ("Y", "T", "nailgun"),
            ("g", "N", "torch"), ("P", "O", "pole"), ("T", "Y", "hammer")]   # v0.21.51 cz. 2: Spawacz, Geodeta, Majster
 
 
-def worker_frame(index, frame, stripes=False):
+HELMET_MASK = "D"   # v0.21.52: kolor kasku z odznaki / zlecenia - kask w indeksie palety D, gra podmienia ten kolor w palecie bohatera
+
+
+def worker_frame(index, frame, stripes=False, helmet_mask=False):
     helmet, vest, tool = WORKERS[index]
-    px = worker(helmet, vest, frame)
+    px = worker(HELMET_MASK if helmet_mask else helmet, vest, frame)
     if stripes:   # v0.21.51 cz. 2: kask w paski (wygląd z sekretnego zlecenia) - biało-czerwone pasy na kasku
         for y in range(1, 4):
             for x in range(16):
