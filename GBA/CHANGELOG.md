@@ -2,7 +2,7 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
-## v0.21.52 – w przygotowaniu (cz. a: tempo postępu, cz. b: inspektor, mistrzostwo, stopnie inwestora)
+## v0.21.52 – w przygotowaniu (cz. a: tempo postępu, cz. b: inspektor, mistrzostwo, stopnie inwestora, cz. c: drzewko Szkoleń, kolekcje, zadania dnia, seria dni)
 ### Najważniejsze
 Po jednej budowie dało się kupić prawie wszystko – teraz postęp ma więcej stanów pośrednich (GBA i Godot, wspólny rdzeń):
 1. **Szkolenia z poziomami (#41)** – każde po 4 poziomy, mniejsze kroki, rosnąca cena; pełne Szkolenia dają tyle,
@@ -14,6 +14,13 @@ Po jednej budowie dało się kupić prawie wszystko – teraz postęp ma więcej
    nagroda co poziom (Respekt, tytuł, kolor kasku, SMS, ozdoba Osiedla, druga pamiątka).
 6. **Mistrzostwo zawodu 1–10 (#45, cz. b)** – wariant mocy, broń mistrza, premia mistrzostwa, kask mistrza.
 7. **Stopnie inwestora (#48, cz. b)** – nagroda za każdy nowy najwyższy próg stawki.
+8. **Drzewko Szkoleń (#46, cz. c)** – gałęzie Fach, BHP, Logistyka: Szkolenia to pień, w każdej gałęzi dwa węzły z wyborem
+   1 z 2 (np. Precyzja albo Siła rozpędu, Twardziel albo Apteczka, Hurtownik albo Magazynier), zmiana za drobną opłatę.
+9. **Kolekcje (#49, cz. c)** – liczniki pokonanych problemów, komplety aktów (każdy problem x10), karty bossów i album
+   Osiedla; komplet = stała premia, tytuł albo kolor kasku.
+10. **Zadania dnia i tygodnia (#50, cz. c)** – 3 + 2 zadania z daty (np. „Pokonaj 2 elity”, „Wygraj bez Hurtowni”) za
+    Respekt, za liczbę wykonanych – kask i tytuł.
+11. **Seria dni (#51, cz. c)** – budowa dnia w kolejne dni: 3 dni pamiątka, 7 kolor kasku, 14 tytuł.
 
 ### Nowe
 - **Szkolenia (sekcja `meta.upgrades`, pole `steps`):** poziom = działanie + przyrost + koszt (z danych, różne działania
@@ -169,6 +176,112 @@ Bot: kariera od pustego profilu (40 karier x 300 budów, jak tabela tempa wyżej
   z wariantem mocy, drugą pamiątką i kolejnym stopniem, karta POSTĘP z trzema paskami, złote banery nowych poziomów
   (wątki fabuły zbiorczo, gdy więcej niż 2), Odznaki > Inspektor, „Mistrz N” w Zespole, ozdoby z inspektora na Osiedlu,
   Jak grać str. 9; sceny zrzutów `inspector`, `help-progress`; test dymny (9 stron Jak grać, Tytuły -> Inspektor).
+- Test małpy: klawiatura + mysz 20 seedów i pion + dotyk 20 seedów x 3000 akcji – bez błędów.
+
+### Cz. c – drzewko Szkoleń, kolekcje, zadania dnia i tygodnia, seria dni
+- **Drzewko Szkoleń (#46, `meta.tree`)** – 7 Szkoleń to pień trzech gałęzi; w gałęzi dwa węzły otwierane po N poziomach
+  pnia gałęzi, w węźle wybór 1 z 2 (pierwszy wybór 60 / 120 dośw., zmiana na drugą opcję 20 dośw. – pozostaje wybrana
+  jedna). Węzły w danych (`nodes`: gałąź, głębokość, koszt, 2 opcje: nazwa, krótka nazwa na GBA, działanie, wartość):
+
+  | Gałąź (pień) | Węzeł I | Węzeł II |
+  |---|---|---|
+  | Fach (Kurs fachowy, Warsztaty) | pień 3, 60: **Precyzja** kryt +1% / **Siła rozpędu** pierwszy cios w nietknięty problem +1 | pień 6, 120: **Rzemieślnik** +2% obrażeń / **Szybka ręka** moc -1 t. |
+  | BHP (Szkolenie BHP, Kurs BHP II, Kondycja) | pień 4, 60: **Twardziel** -2% otrzymanych / **Apteczka** kawa +1 HP | pień 9, 120: **Refleks** unik +1% / **Zapas sił** +1 HP |
+  | Logistyka (Lepszy termos, Dostawy) | pień 3, 60: **Hurtownik** Hurtownia -10% / **Magazynier** materiały +10% | pień 6, 120: **Księgowa** +15 zł / **Brygadzista** brygada -15% |
+
+  Ta sama moc co wcześniej: z pnia zeszły kawa (Lepszy termos II), kryt (Kurs fachowy IV), +1 stat. broni (Warsztaty II)
+  i 1 HP (Kondycja III) – w ich miejscu „Sprzęt +1”; wróciły jako opcje węzłów (stat. broni był w długiej budowie
+  z Aktem 0 za mocny – zamiast niego Rzemieślnik +2% obrażeń). Lepszy termos: termos +3; Warsztaty: same „Sprzęt +1”.
+  Siła rozpędu: premia w bitach 8-11 `run_mods::mastery` (zapis budowy bez zmiany rozmiaru). GBA: Koszty > SELECT:
+  **Drzewko** (3 kolumny, wybrana opcja zielona, zaznaczona fioletowa, zamknięta szara, pastylka: koszt / zmiana / pień N;
+  strzałki po węzłach, L/R zakładki, A wybiera); Godot: Koszty > Tab: Drzewko (kolumny z pniem i paskiem, opis z pniem
+  gałęzi; strzałki / stuknięcie, Spacja / drugie stuknięcie wybiera).
+- **Kolekcje (#49, `collections`)** – profil liczy pokonanych każdego rodzaju (do 255; znak wodny `kill_mark` jak liczniki
+  zleceń – wznowienie budowy, NG+ i bank na końcu etapu bez podwójnego liczenia). Komplety:
+
+  | Komplet | Warunek | Nagroda |
+  |---|---|---|
+  | Stan surowy | każdy problem aktu I x10 (13 rodzajów) | +10 zł na start (stała premia) |
+  | Pod dachem | każdy problem aktu II x10 | tytuł Łowca usterek |
+  | Wykończenie | każdy problem aktu III x10 | ceglasty kask |
+  | Papierologia | każdy problem Aktu 0 x10 | tytuł Urzędnik |
+  | Karty bossów | każdy z 5 bossów pokonany | +5% doświadczenia (stała premia) |
+  | Album Osiedla | wszystkie 12 ozdób | tytuł Architekt |
+
+  Telefon profilu > Katalog (licznik „x12” zamiast „ZAMKNIĘTA”) > A (Godot: Spacja): **Kolekcje** (postęp, nagroda;
+  Godot: najbliższy brakujący problem), **Bossowie** (karta z portretem i licznikiem), **Album** (ozdoba: stoi / skąd).
+  Baner „Komplet: …” raz (bity `collections` w profilu), na końcu etapu albo budowy.
+- **Zadania dnia i tygodnia (#50, `tasks`)** – 3 zadania z puli dnia (10) i 2 z puli tygodnia (6), wybór z seeda numeru
+  dnia / tygodnia (te same dla wszystkich; GBA: data budowy dnia, Godot: data z systemu). Postęp z każdej budowy (też
+  budowy dnia i tygodnia; znak wodny `task_mark`, bank na końcu etapu, budowy i przy porzuceniu), nowy dzień / tydzień –
+  od zera. Wykonane: Respekt od razu (dnia 4–5, tygodnia 12–20); za 5 / 15 / 40 wykonanych: Respekt +15, limonkowy kask,
+  tytuł Pracowity. Liczniki: problemy, elity, bossowie, etapy, wezwania brygady, moce, kawy, kombinacje, magazyny,
+  SMS-y, wygrana, wygrana bez zakupów w Hurtowni (nowe liczniki budowy w miejscu wyrównania stanu – rozmiar bez zmian).
+  Odznaki > **Zadania** (A na GBA; postęp, „Gotowe”, nagroda i seria dni w opisie), tytuł „Zadania 1/3”, w budowie
+  telefon > Koszty – najbliższe zadanie z postępem na żywo; banery „Zadanie dnia +5 Respektu” (kilka – zbiorczo)
+  i „Zadania: 5 wykonanych”.
+- **Seria dni (#51, `daily.streak`)** – budowa dnia w kolejne dni: liczy się tylko dzień zaraz po ostatnim (GBA: data
+  wpisana ręcznie – ten sam dzień albo wstecz nic nie zmienia, przerwa = od nowa). Za najdłuższą serię: 3 dni – pamiątka
+  **Kalendarz majstra** (kawa +1/2/3 HP), 7 – oranżowy kask, 14 – tytuł Niezawodny. Tytuł: „Seria N dni”, opis w Zadaniach.
+- **Kask ojca** – -5/8/10% otrzymanych obrażeń (ranga I/II/III) zamiast +1/2/3 OBR (jako jedyna pamiątka na pełnym meta
+  dawał +12 pkt wygranych, teraz +4 – porównywalnie z innymi).
+- Tytuły z kolekcji, serii dni i zadań (Tytuły: skąd tytuł), pamiątka z serii (Pamiątki: „Seria 3 dni budowy dnia”).
+  Jak grać: GBA str. 17 „Cele”, Godot str. 10 (sekcja `goalsHelp`). Scenariusz 71 (GBA), sceny zrzutów Godota (niżej).
+
+### Balans cz. c
+Bot: 300 przebiegów na zawód (9 zwykłych), Normalny.
+
+| Wygrane bota | v0.21.52 cz. b | cz. c |
+|---|---|---|
+| Łatwy / Normalny / Trudny (bez meta) | 54% / 32% / 10% | 54% / 32% / 10% |
+| Pełne Szkolenia (cz. c: pień + najlepsze wybory drzewka; sam pień) | 57% | 58% (pień 50%) |
+| + pełny Respekt | 72% | 73% |
+| + wszystkie modyfikatory trybu inwestora | 13% | 12% |
+| Pełne meta z Aktem 0 | 68% | 67% |
+| + mistrzostwo 10 i maks. inspektor | 70% | 70% |
+
+Opcje drzewka osobno (sam pień 50,5%; Szybka ręka, Hurtownik, Księgowa, Brygadzista – bez wpływu na bota, który nie
+używa mocy i nie kupuje w Hurtowni): Precyzja 50,3%, Siła rozpędu 52,2%, Rzemieślnik 52,1%, Twardziel 52,3%, Apteczka
+53,7%, Refleks 50,1%, Zapas sił 51,0%, Magazynier 50,7%. „Najlepsze wybory” w tabeli = Siła rozpędu, Rzemieślnik,
+Apteczka, Zapas sił, Magazynier, Księgowa.
+
+| Pamiątka jako jedyna (pełne meta + mistrzostwo i inspektor, 100 przebiegów na zawód) | ranga I | ranga III |
+|---|---|---|
+| bez pamiątki | 72% | |
+| Termos babci | 72% | 72% |
+| Kask ojca (cz. b: +1 / +3 OBR – ok. 84–87%) | 76% | 80% |
+| Szczęśliwa kielnia | 79% | 85% |
+| Stara poziomica | 72% | 72% |
+| Notes kierownika | 72% | 72% |
+| Kalendarz majstra (nowa) | 74% | 77% |
+
+Poziomica i Notes nie działają na bota (widzenie, moc). Szczęśliwa kielnia (+2 szczęścia) jest teraz najmocniejsza.
+
+### Tempo cz. c
+Kariera bota jak wyżej (kupuje też węzły drzewka, opcje na przemian): cały sklep 4140 dośw. (było 3600), wszystko
+wykupione po **25 budowach** (22–31; było 23), dośw. na budowę w karierze 188; inspektor maks. po 90 budowach (81–103).
+
+### Zmiany cz. c
+- **Profil v15** (384 B): wybór w drzewku (@240, 2 bity na węzeł), liczniki kolekcji i znak wodny (@242, @290, po 48 B),
+  zadania (dzień, tydzień, postęp i znak wodny 5 zadań, wykonane, łącznie), seria (dni, ostatni dzień, rekord), ogłoszone
+  komplety, 24 B zapasu. Migracja v14 (i starszych): drzewko puste, kolekcje – rodzaje z Katalogu jako 1 pokonany, seria
+  z wyników ostatnich dni budowy dnia (kolejne dni do najnowszego), komplety już osiągnięte bez banera.
+- **Zapis budowy GBA od bajtu 512** (było 256 – profil nie mieści się przed 256). Przy migracji profilu warstwa GBA najpierw
+  przenosi przerwaną budowę spod 256 pod 512, dopiero potem zapisuje profil (wyłączenie konsoli w trakcie: zostaje stary
+  profil i stara budowa). Zapis PBRUN15: nowe liczniki zadań w miejscu wyrównania – rozmiar stanu bez zmian, więc PBRUN14
+  się wczytuje (liczniki od zera) – przerwana budowa z cz. b się wznowi.
+- Test złoty: 66 przebiegów (+ drzewko z Siłą rozpędu i wyborami, zadania z bankiem na końcu etapu, seria dni z budowy dnia).
+- Monkey test GBA: 20 seedów zwykłej gry + scenariusz 71 (10 seedów) x 20000 klatek – bez błędów (szczyt kafli sprite'ów
+  131/256, sprite'ów 112/128, stosu ~8,2 KB).
+
+### Godot cz. c
+- Port rdzenia (`SkillTree`, `CollectionBook`, `DailyTasks`, `DayStreak`, `Goals.MigrateV15`, `Game.HelpersCalled` /
+  `ShopBuys`, `RunMods.FirstHitBonus`), `GoalsTests`; `dotnet test` 254/254, build 0 ostrzeżeń. Zapis budowy z cz. b
+  (o 2 bajty krótszy) wczytuje się z zerami w nowych licznikach.
+- Te same ekrany: Koszty > Drzewko, Katalog > Kolekcje / Bossowie / Album, Odznaki > Zadania, tytuł z zadaniami i serią,
+  telefon w budowie > Koszty – zadanie dnia, złote banery celów (koniec etapu i plansza końcowa), Jak grać str. 10;
+  sceny zrzutów `title-goals`, `tree`, `tree-locked`, `collections`, `bosses`, `album`, `tasks`, `phone-goals`,
+  `goals-end`, `help-goals`; test dymny (drzewko: zamknięty węzeł, wybór, zmiana za opłatą; cele; 10 stron Jak grać).
 - Test małpy: klawiatura + mysz 20 seedów i pion + dotyk 20 seedów x 3000 akcji – bez błędów.
 
 ## v0.21.51 – 2026-09-29

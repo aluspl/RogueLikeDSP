@@ -17,7 +17,7 @@ własne, np. Woda gruntowa, Krzywy mur, Przeciekająca papa, Zapowietrzenie, Pop
 | A | krótko: atak w najbliższy cel; przytrzymaj: podgląd zasięgu i celownik (strzałki zmieniają cel), puść: atak |
 | B | krótko: czekaj turę (co 4 tury +1 HP); przytrzymaj: podgląd widocznych wrogów (nazwa, HP, obrażenia, opis; strzałki zmieniają wroga) |
 | START | w grze: menu akcji wokół bohatera – góra Atak, prawo Moc, dół Termos, lewo Czekaj (strzałka wybiera, A albo ta sama strzałka wykonuje, A bez kierunku = Brygada, START/B zamyka); poza grą: dalej |
-| SELECT | w grze: telefon z aplikacją PlanBudowlany (Zadania, Usterki, Start, Sprzęt, Koszty; L/R – zakładki, START – menu: jak grać, zapisz i wyjdź, porzuć budowę; Sprzęt: A – rozpiska obrażeń broni, góra – Premie z tej budowy, dół – Brygada i naprawy); na tytule: telefon profilu (Odznaki/Zlecenia/Pamiątki – przełączane A, Katalog, Osiedle, Zespół, Koszty = Szkolenia / Respekt / Nagrody – przełączane SELECT) |
+| SELECT | w grze: telefon z aplikacją PlanBudowlany (Zadania, Usterki, Start, Sprzęt, Koszty; L/R – zakładki, START – menu: jak grać, zapisz i wyjdź, porzuć budowę; Sprzęt: A – rozpiska obrażeń broni, góra – Premie z tej budowy, dół – Brygada i naprawy); na tytule: telefon profilu (Odznaki/Zlecenia/Pamiątki/Sekrety/Tytuły/Inspektor/Zadania – przełączane A, Katalog/Kolekcje/Bossowie/Album – A, Osiedle, Zespół, Koszty = Szkolenia / Drzewko / Respekt / Nagrody – przełączane SELECT; w Drzewku strzałki po węzłach, L/R zakładki) |
 | lewo/prawo (wybór zawodu) | zmiana zawodu na pasku portretów (odblokowane najpierw; zablokowany można obejrzeć, A go nie wybierze) |
 | L/R (wybór zawodu) | pamiątka zabierana na budowę (albo „bez pamiątki”) |
 | SELECT (wybór zawodu) | po pierwszej wygranej: tryb inwestora (modyfikatory, A włącza/wyłącza) |
@@ -93,9 +93,10 @@ Później po jednym dymku „Nowość”: pierwszy Respekt, codzienna budowa, tr
 Na wyborze zawodu START otwiera opis statystyk (wartość i co daje), A zmienia stronę na wzory; w telefonie zakładka
 Start → A pokazuje, skąd są premie. Wzory: obrażenia = rzut broni + statystyka broni / 2 + premie - obrona wroga / 2
 (SIŁ/ZRĘ/INT: +1 obrażeń co 2 pkt, tylko statystyka broni); OBR: -1 otrzymanych obrażeń co 2 pkt; SZCZ: kryt 5% +3%/pkt,
-unik 2%/pkt (maks. 20%), łupy +2% szansy/pkt i lepsza jakość. „Jak grać” ma 14 stron (2 – okna i wybory, 6 – akty i problemy, 7 – statystyki,
+unik 2%/pkt (maks. 20%), łupy +2% szansy/pkt i lepsza jakość. „Jak grać” ma 17 stron (2 – okna i wybory, 6 – akty i problemy, 7 – statystyki,
 8 – obrażenia, 9–10 – kombinacje stanów, 11 – premie i elity, 12 – wydarzenia i ulepszenia, 13 – magazyn, 14 – po budowie:
-podsumowanie, wyzwanie tygodnia, fabuła).
+podsumowanie, wyzwanie tygodnia, fabuła, 15 – sekrety, 16 – inspektor i mistrzostwo, 17 – cele: drzewko, kolekcje,
+zadania dnia, seria dni).
 
 ## Rozpiska obrażeń broni (jak w BG3)
 Zakres ciosu od-do, kryt i skąd się biorą – te same wzory co walka (`dmg_breakdown`, `weapon_breakdown`,
@@ -216,8 +217,10 @@ Teksty są w `data/game.json` (`story`).
   (200 problemów), Stały klient (5 wygranych). Nagroda: doświadczenie i/lub pamiątka, baner przy ukończeniu.
   Telefon profilu: zakładka Odznaki, strona Zlecenia (A); w trakcie budowy zakładka Koszty pokazuje najbliższe zlecenie.
 - **Pamiątki** (jak keepsakes, `keepsakes`): jedna zabierana na budowę, wybór L/R na ekranie zawodu. Termos babci
-  (termos +1 miejsce, od początku – nowy profil zabiera go domyślnie), Kask ojca (+1 obrony, odznaka Bez usterek), Szczęśliwa kielnia (+2 szczęścia),
-  Stara poziomica (widzenie +1), Notes kierownika (moc -1 t.) – trzy ostatnie za zlecenia. Ranga II po 3, III po 8
+  (termos +1 miejsce, od początku – nowy profil zabiera go domyślnie), Kask ojca (-5/8/10% otrzymanych obrażeń – v0.21.52 cz. c,
+  wcześniej +1/2/3 OBR; odznaka Bez usterek), Szczęśliwa kielnia (+2 szczęścia),
+  Stara poziomica (widzenie +1), Notes kierownika (moc -1 t.) – trzy za zlecenia; Kalendarz majstra (kawa +1/2/3 HP) za serię
+  3 dni budowy dnia. Ranga II po 3, III po 8
   budowach z pamiątką (`rankRuns`, wartości `values`). Strona Pamiątki w telefonie profilu.
 - **Respekt** (sekcja `respect`) – stała waluta za każdy ukończony etap (2, boss w środku aktu 4, boss aktu 6, odbiór
   10; mnożnik jak wynik), od razu w profilu (porażka go nie zabiera). Wydawany w telefonie profilu: Koszty → SELECT =
@@ -229,7 +232,18 @@ Teksty są w `data/game.json` (`story`).
 - **Katalog usterek** - pokonane rodzaje problemów (41) z opisami i zachowaniami („Cechy: …”).
 - **Osiedle** - dom za każdą wygraną budowę, wielkość zależy od wyniku; z wygranymi rosną ozdoby (ławka, latarnia, plac
   zabaw…), A = Wiadomości (fabuła).
-- SELECT na tytule: telefon profilu (Odznaki/Zlecenia/Pamiątki, Katalog, Osiedle, Zespół, Koszty).
+- **Kolekcje** (v0.21.52 cz. c, sekcja `collections`): profil liczy pokonane problemy każdego rodzaju (do 255, ze znakiem
+  wodnym jak liczniki zleceń). Komplety: Stan surowy / Pod dachem / Wykończenie / Papierologia – każdy problem aktu x10,
+  Karty bossów – każdy boss raz, Album Osiedla – wszystkie ozdoby. Nagroda: stała premia (+10 zł na start, +5% dośw.), tytuł
+  (Łowca usterek, Urzędnik, Architekt) albo kolor kasku (ceglasty). Telefon profilu > Katalog (licznik „x12”) > A: Kolekcje,
+  Bossowie (karty z portretem), Album; baner „Komplet: …” na końcu etapu albo budowy.
+- **Zadania dnia i tygodnia** (sekcja `tasks`): 3 zadania dnia i 2 tygodnia z seeda numeru dnia / tygodnia (GBA: data
+  ustawiona dla budowy dnia), np. „Pokonaj 2 elity”, „Wezwij brygadę 2 razy”, „Wygraj bez Hurtowni”; postęp z każdej budowy
+  (znak wodny), wykonane = Respekt od razu (dnia 4–5, tygodnia 12–20); za 5 / 15 / 40 wykonanych: Respekt, limonkowy kask,
+  tytuł Pracowity. Odznaki > Zadania, tytuł („Zadania 1/3”), w budowie telefon > Koszty (najbliższe zadanie na żywo).
+- **Seria dni** (`daily.streak`): budowa dnia w kolejne dni; liczy się tylko dzień zaraz po ostatnim (data wstecz albo ten
+  sam dzień nic nie zmienia, przerwa = od nowa). Za 3 / 7 / 14 dni: Kalendarz majstra, oranżowy kask, tytuł Niezawodny.
+- SELECT na tytule: telefon profilu (Odznaki/Zlecenia/Pamiątki/…/Zadania, Katalog/Kolekcje, Osiedle, Zespół, Koszty).
 
 ## Pogoda dnia
 Każdy etap losuje pogodę (sekcja `weather` w `data/game.json`: waga, lista etapów, skutek): Słonecznie – bez skutku,
@@ -263,7 +277,8 @@ pod Brygadą; zużywają turę): Załataj (drewno – mur z desek w poprzek drog
 poślizgu).
 
 ## Codzienna budowa
-R na tytule. GBA nie ma zegara – datę ustawiasz sam (profil ją pamięta). Z daty: numer „Budowy dnia”, seed, zawód
+R na tytule. GBA nie ma zegara – datę ustawiasz sam (profil ją pamięta); ta sama data wyznacza zadania dnia i tygodnia,
+a seria dni rośnie tylko, gdy zagrasz budowę dnia z datą o dzień późniejszą niż poprzednia. Z daty: numer „Budowy dnia”, seed, zawód
 i modyfikatory dnia (dla wszystkich takie same, bez Szkoleń i pamiątek). Profil pamięta najlepszy wynik 5 ostatnich dni.
 Sekcja `daily`.
 
@@ -285,7 +300,13 @@ Zadania telefonu. Teksty i wartości: `siteEvents` w `data/game.json`.
 - Doświadczenie za wrogów, etapy i bossa wydajesz w sklepie „Szkolenia” (po budowie i z tytułu):
   7 Szkoleń po 4 poziomy (v0.21.52: mniejsze kroki z danych – HP, % obrażeń, kryt, termos, materiały, jakość sprzętu,
   budżet; ceny 25–200), nowe zawody (60/100/150 – każdy kolejny drożej), narzędzia (60–150), brygada, poziom Trudny (100).
-  Wykupienie wszystkiego to ~20–30 budów (bot: 23).
+  Wykupienie wszystkiego to ~20–30 budów (bot: 25).
+- **Drzewko Szkoleń** (v0.21.52 cz. c, `meta.tree`): 3 gałęzie – Fach (Kurs fachowy, Warsztaty), BHP (Szkolenie BHP,
+  Kurs BHP II, Kondycja), Logistyka (Lepszy termos, Dostawy); Szkolenia to pień, a w gałęzi dwa węzły z wyborem 1 z 2,
+  otwierane po N poziomach pnia: Fach – Precyzja (kryt +1%) / Siła rozpędu (pierwszy cios w nietknięty problem +1),
+  Rzemieślnik (+2% obrażeń) / Szybka ręka (moc -1 t.); BHP – Twardziel (-2% otrzymanych) / Apteczka (kawa +1 HP), Refleks
+  (unik +1%) / Zapas sił (+1 HP); Logistyka – Hurtownik (Hurtownia -10%) / Magazynier (materiały +10%), Księgowa (+15 zł)
+  / Brygadzista (brygada -15%). Wybór 60 / 120 dośw., zmiana 20 dośw. Koszty > SELECT: Drzewko.
 - Odznaki i zlecenia dają mało doświadczenia, za to tytuł (profil > Odznaki > Tytuły, SELECT wybiera) i czasem kolor
   kasku (wybór zawodu > SELECT: Wygląd). Koniec budowy: strona „Postęp” z paskami Szkolenia, mistrzostwa i inspektora.
 - **Poziom inspektora** (v0.21.52 cz. b, konto gracza): każda budowa – też przegrana – daje dośw. inspektora (budowa,
@@ -301,10 +322,12 @@ Zadania telefonu. Teksty i wartości: `siteEvents` w `data/game.json`.
 - **Stopnie inwestora**: każdy nowy najwyższy próg stawki wygranej budowy (1–10) daje nagrodę (Respekt, tytuł, kolor
   kasku); następna nagroda na stronie trybu inwestora.
 - Profil (rekord, doświadczenie, zakupy, odznaki, liczniki zleceń, pamiątki, brygada, tryb inwestora) zapisuje się
-  w SRAM (format v14, 240 bajtów, z Respektem, nagrodami za odbiór, Katalogiem dla 48 rodzajów problemów, samouczkiem menu,
-  wynikami tygodni, wątkami fabuły, sekretami, tytułem i kolorem kasku, dośw. inspektora i mistrzostwa, drugą pamiątką);
-  starsze zapisy (v1-v13) są przenoszone bez utraty danych (v0.21.52: poziomy Szkoleń wracają jako doświadczenie po starej
-  cenie; inspektor i mistrzostwo szacowane z budów, wygranych, Respektu i domów na Osiedlu).
+  w SRAM (format v15, 384 bajty, z Respektem, nagrodami za odbiór, Katalogiem dla 48 rodzajów problemów, samouczkiem menu,
+  wynikami tygodni, wątkami fabuły, sekretami, tytułem i kolorem kasku, dośw. inspektora i mistrzostwa, drugą pamiątką,
+  drzewkiem, licznikami kolekcji, zadaniami dnia i serią dni); starsze zapisy (v1-v14) są przenoszone bez utraty danych
+  (v0.21.52: poziomy Szkoleń wracają jako doświadczenie po starej cenie; inspektor i mistrzostwo szacowane z budów,
+  wygranych, Respektu i domów na Osiedlu; cz. c: kolekcje z Katalogu, seria z wyników ostatnich dni). Zapis budowy jest
+  od bajtu 512 (wcześniej 256 – przy migracji profilu przerwana budowa przenosi się przed zapisem nowego profilu).
 - Liczniki zleceń trafiają do profilu na końcu etapu; profil pamięta, ile z bieżącej budowy już przeniesiono, więc
   wznowienie budowy po wyłączeniu konsoli nie liczy etapu drugi raz.
 - Harmonogram między etapami pokazuje radę kierownika (sterowanie i mechaniki; lista `tips` w `data/game.json`).
@@ -344,7 +367,7 @@ rzadkie, legendarne (43–45), lista premii w telefonie (46), elity (47), mokry 
 zamróz + uderzenie (50), mokry bohater + prąd (51), wydarzenia z wyborem (52), Hurtownia z ulepszeniem i cechą (53),
 zamiana ulepszonego narzędzia (54), pęknięta ściana z kluczem i skrzynia (55), drzwi magazynu (56), podsumowanie po
 porażce (57), podsumowanie po wygranej (58), wyzwanie tygodnia (59), Wiadomości i Osiedle z ozdobami (60), sekretne zlecenia (61–67), skrzynia magazynu przy pełnym HUD (68), tempo postępu – Szkolenia z poziomami, Tytuły, kolor
-kasku, strona Postęp (69), poziom inspektora i mistrzostwo zawodu (70)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
+kasku, strona Postęp (69), poziom inspektora i mistrzostwo zawodu (70), drzewko, kolekcje, zadania dnia i seria dni (71)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
 ```bash
 make TARGET=scn1 BUILD=build_scn1 USERFLAGS="-DPB_SCENARIO=1" BUTANO_PATH=...
 ROM=scn1.gba tools/playtest/run.sh skrypt.txt /tmp/zrzuty --fresh
@@ -377,7 +400,7 @@ tools/make_assets.py  proceduralne grafiki: font PL 8x16, sprite'y, kafelki+pale
 assets_src/pb_logo.svg  znak PlanBudowlany
 include/core.h        logika gry (czyste C++, bez Butano) - testowalna na PC; rozpiska obrażeń broni (dmg_breakdown);
                       wydarzenia z wyborem, ulepszanie narzędzia, magazyn (v0.21.50 cz. 3)
-include/meta.h        profil SRAM (v14), poziom inspektora, mistrzostwo zawodu, stopnie inwestora, Szkolenia z poziomami i ceny rosnące, tytuły i kolory kasku, wyzwanie tygodnia, fabuła (Wiadomości, ozdoby Osiedla), rada i cel podsumowania, samouczek menu, Respekt, nagrody za odbiór, codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
+include/meta.h        profil SRAM (v15), drzewko Szkoleń, kolekcje, zadania dnia i tygodnia, seria dni, poziom inspektora, mistrzostwo zawodu, stopnie inwestora, Szkolenia z poziomami i ceny rosnące, tytuły i kolory kasku, wyzwanie tygodnia, fabuła (Wiadomości, ozdoby Osiedla), rada i cel podsumowania, samouczek menu, Respekt, nagrody za odbiór, codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
 src/main.cpp          warstwa GBA: sceny, mapa, kamera, HUD, SRAM
 ```
 Grafiki są placeholderami generowanymi kodem: podmień pliki w `graphics/` pixel-artem z Aseprite

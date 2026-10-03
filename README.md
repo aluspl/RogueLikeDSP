@@ -16,6 +16,9 @@ a za pękniętą ścianą albo drzwiami bywa ukryty magazyn ze skrzynią – klu
 podsumowanie mówi, co Cię zatrzymało, pokazuje oś czasu etapów i najbliższy cel; co tydzień czeka wyzwanie tygodnia
 z własnymi zasadami (np. „Tylko Glazurnik, bez kawy”, „Mokry tydzień”) i osobnym wynikiem, a z kolejnymi budowami
 odkrywasz historię w SMS-ach od Anny, Marka i sąsiadów, a Osiedle rośnie (ławka, latarnia, plac zabaw…).
+Postęp ma wiele celów: Szkolenia z poziomami tworzą drzewko z wyborem węzłów (Fach, BHP, Logistyka), każda budowa podnosi
+poziom inspektora (nagroda co poziom) i mistrzostwo zawodu, Katalog zbiera kolekcje (problemy aktów, karty bossów, album
+Osiedla), a codziennie czekają 3 zadania dnia i 2 tygodnia, a seria dni z budową dnia daje pamiątkę, kask i tytuł.
 Sterowanie w oknach jest wszędzie takie samo: A / „Wybierz” (zawsze po prawej) zatwierdza, B / „Wróć” (po lewej)
 wraca, strzałka albo pierwsze dotknięcie tylko zaznacza, a świeżo otwarte okno przez chwilę ignoruje przyciski.
 
