@@ -164,7 +164,7 @@ public class GoalsTests
         }
         Assert.True(CollectionBook.Complete(D, p, 0) && CollectionBook.Check(D, p) == 1 && CollectionBook.Check(D, p) == 0);
         Assert.NotEqual("", CollectionBook.RewardLabel(D, 0));
-        Assert.True(CollectionBook.BossesCount(D) == 5 && CollectionBook.BossAt(D, 5) == -1 && CollectionBook.EnemyBoss(D, CollectionBook.BossAt(D, 4)));
+        Assert.True(CollectionBook.BossesCount(D) == 9 && CollectionBook.BossAt(D, 9) == -1 && CollectionBook.EnemyBoss(D, CollectionBook.BossAt(D, 8))); // cz. d: + 4 bossów kariery
     }
 
     [Fact]
@@ -274,7 +274,7 @@ public class GoalsTests
         big.CombosRun = 255;
         big.SecretsFound = 255;
         big.St = GameStatus.Won;
-        big.Stage = D.Stages.Length - 1;
+        big.Stage = D.StagesCount - 1;
         Array.Fill(big.StageEventLog, (byte)1);
         for (var e = 0; e < D.Enemies.Length; ++e)
         {
@@ -390,7 +390,7 @@ public class GoalsTests
         g.ShopBuys = 2;
         var save = RunSave.Make(g);
         Assert.True(save.Valid(D));
-        var old = save.Data[..^RunSave.V14Tail];
+        var old = save.Data[..^(RunSave.V14Tail + RunSave.V15Tail)];
         var s14 = new RunSave { Magic = save.Magic, Size = (uint)old.Length, Data = old, Checksum = RunSave.Fnv1a(old) };
         Assert.True(s14.Valid(D));
         var back = s14.Load(D);

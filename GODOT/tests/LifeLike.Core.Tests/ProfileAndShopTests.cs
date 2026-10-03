@@ -185,7 +185,7 @@ public class ProfileAndShopTests
         var g = TestData.Run(3, 5, D.Difficulties.Length - 1);
         g.St = GameStatus.Won;
         g.Score = 2500;
-        g.Stage = D.Stages.Length - 1;
+        g.Stage = D.StagesCount - 1;
         g.StageStartTurn = g.Turns - 100;
         g.StageDamage = 1;
         Assert.True(Meta.AddHouse(p, g) && p.HousesCount == 1 && (p.Houses[0] & 15) == 3 && (p.Houses[0] >> 4) == 2);

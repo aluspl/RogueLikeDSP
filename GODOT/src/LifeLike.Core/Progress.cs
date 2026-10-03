@@ -128,12 +128,12 @@ public static class Progress
             for (var s = g.FirstStage; s < to; ++s)
             {
                 ++stages;
-                if (d.Stages[s].Boss >= 0) ++bosses;
+                if (g.SDef(s).Boss >= 0) ++bosses;
             }
         }
-        for (var t = 0; t < g.Tier; ++t) Count(d.Stages.Length); // budowy ukończone przed „Kolejną budową”
+        for (var t = 0; t < g.Tier; ++t) Count(g.RouteCount()); // budowy ukończone przed „Kolejną budową”
         var won = g.St == GameStatus.Won;
-        Count(won ? d.Stages.Length : (g.St == GameStatus.StageClear ? g.Stage + 1 : g.Stage));
+        Count(won ? g.RouteCount() : (g.St == GameStatus.StageClear ? g.Stage + 1 : g.Stage));
         var wins = g.Tier + (won ? 1 : 0);
         var xp = d.InspectorXpRun + stages * d.InspectorXpStage + bosses * d.InspectorXpBoss + g.ElitesKilled * d.InspectorXpElite
                  + g.SecretsFound * d.InspectorXpStoreroom + wins * d.InspectorXpWin;

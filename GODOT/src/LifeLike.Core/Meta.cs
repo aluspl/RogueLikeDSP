@@ -116,6 +116,11 @@ public static class Meta
         dst.StreakDay = copy.StreakDay;
         dst.StreakBest = copy.StreakBest;
         dst.Collections = copy.Collections;
+        dst.Contract = copy.Contract;
+        dst.CareerSeen = copy.CareerSeen;
+        dst.CareerDone = copy.CareerDone;
+        dst.CareerWins = copy.CareerWins;
+        dst.CareerBest = copy.CareerBest;
     }
 
     // ------------------------------------------------------------------ katalog usterek (rodzaje 0-15 w Catalog, 16-47 w CatalogHi)
@@ -259,11 +264,21 @@ public static class Meta
 
     /// <summary>
     /// Naprawia wczytany profil. Zwraca true, jeśli trzeba go zapisać (migracja albo pusta pamięć).
-    /// v0.21.52 cz. c: każda ścieżka migracji kończy się Goals.MigrateV15 (drzewko, kolekcje, zadania, seria dni).
+    /// v0.21.52 cz. c: każda ścieżka migracji kończy się Goals.MigrateV15 (drzewko, kolekcje, zadania, seria dni);
+    /// cz. d: potem Career.MigrateV16 (mapa kariery).
     /// </summary>
     public static bool ProfileFix(GameData d, Profile p)
     {
         if (p.MagicIs(Profile.MagicCurrent)) return ClampLevels(d, p);
+        if (p.MagicIs(Profile.MagicV15)) // v15 -> v16: Dom jednorodzinny z dotychczasowych wygranych
+        {
+            var b15 = p.ToBytes();
+            Array.Clear(b15, Profile.V15Size, b15.Length - Profile.V15Size);
+            CopyInto(Profile.FromBytes(b15), p);
+            p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
+            Career.MigrateV16(d, p);
+            return true;
+        }
         if (p.MagicIs(Profile.MagicV14)) // v14 -> v15: kolekcje z Katalogu, seria z wyników dni
         {
             var b14 = p.ToBytes();
@@ -271,6 +286,7 @@ public static class Meta
             CopyInto(Profile.FromBytes(b14), p);
             p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
             Goals.MigrateV15(d, p);
+            Career.MigrateV16(d, p);
             return true;
         }
         if (p.MagicIs(Profile.MagicV13)) // v13 -> v14: inspektor i mistrzostwo z dotychczasowych statystyk
@@ -281,6 +297,7 @@ public static class Meta
             p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
             Progress.MigrateV14(d, p);
             Goals.MigrateV15(d, p);
+            Career.MigrateV16(d, p);
             return true;
         }
         if (p.MagicIs(Profile.MagicV12)) // v12 -> v13: zwrot za Szkolenia, tytuł i kask od zera
@@ -292,6 +309,7 @@ public static class Meta
             MigrateV13(d, p);
             Progress.MigrateV14(d, p);
             Goals.MigrateV15(d, p);
+            Career.MigrateV16(d, p);
             return true;
         }
         if (p.MagicIs(Profile.MagicV11)) // v11 -> v12: sekretne zlecenia z tego, co już widać w profilu
@@ -304,6 +322,7 @@ public static class Meta
             Secrets.MigrateV12(d, p);
             Progress.MigrateV14(d, p);
             Goals.MigrateV15(d, p);
+            Career.MigrateV16(d, p);
             return true;
         }
         if (p.MagicIs(Profile.MagicV10)) // v10 -> v11: wyzwania tygodnia i fabuła od zera
@@ -317,6 +336,7 @@ public static class Meta
             Secrets.MigrateV12(d, p);
             Progress.MigrateV14(d, p);
             Goals.MigrateV15(d, p);
+            Career.MigrateV16(d, p);
             return true;
         }
         var v9 = p.MagicIs(Profile.MagicV9);
@@ -333,6 +353,7 @@ public static class Meta
             Secrets.MigrateV12(d, p);
             Progress.MigrateV14(d, p);
             Goals.MigrateV15(d, p);
+            Career.MigrateV16(d, p);
             return true;
         }
         // v7/v6/v5/v4/v3/v2 -> v9: stare pola zostają, nowe od zera (jak memset od profile_v7_size / v6 / ...);
@@ -356,6 +377,7 @@ public static class Meta
             Secrets.MigrateV12(d, p);
             Progress.MigrateV14(d, p);
             Goals.MigrateV15(d, p);
+            Career.MigrateV16(d, p);
             return true;
         }
         if (p.MagicIs(Profile.MagicV1))
@@ -371,6 +393,7 @@ public static class Meta
             Secrets.MigrateV12(d, p);
             Progress.MigrateV14(d, p);
             Goals.MigrateV15(d, p);
+            Career.MigrateV16(d, p);
             return true;
         }
         ProfileReset(d, p);
@@ -1056,6 +1079,7 @@ public static class Meta
     {
         BankCounters(p, g);
         CollectionBook.Bank(d, p, g); // v0.21.52 cz. c: liczniki kolekcji (znak wodny KillMark)
+        Career.Record(p, g); // v0.21.52 cz. d: najlepszy etap kontraktu
         for (var e = 0; e < d.Enemies.Length; ++e)
         {
             if (g.KillsByType[e] != 0) CatalogAdd(p, e);

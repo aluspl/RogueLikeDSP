@@ -150,16 +150,16 @@ public sealed partial class Game
     public int StageNumber() => Stage - FirstStage + 1;
 
     /// <summary>Liczba etapów tej budowy (bez Aktu 0, gdy nieodblokowany).</summary>
-    public int StagesInRun() => D.Stages.Length - FirstStage;
+    public int StagesInRun() => RouteCount() - FirstStage;
 
     /// <summary>Numer aktu bieżącego etapu dla gracza ("0", "I", "II", "III").</summary>
-    public string ActNumeral() => D.Acts[D.Stages[Stage].Act].Numeral;
+    public string ActNumeral() => D.Acts[SDef().Act].Numeral;
 
     /// <summary>
     /// Etap we wzorach (błoto, kałuże, porywy, oferta ścieżek) liczony od Fundamentów: Akt 0 nie zmienia wzorów etapów
     /// budowy (Akt 0 ma ujemne numery).
     /// </summary>
-    public int PatternStage() => Stage - D.PreludeStages;
+    public int PatternStage() => Stage - PreludeCount();
 
     public Game(GameData data)
     {
@@ -235,7 +235,7 @@ public sealed partial class Game
 
     public bool WeatherIs(WeatherEffect e) => D.Weather[Weather].Effect == e;
 
-    private bool WeatherAllowed(int i, int s, bool badOnly) => (D.Weather[i].StagesMask & (1 << s)) != 0 && (!badOnly || D.Weather[i].Bad);
+    private bool WeatherAllowed(int i, int s, bool badOnly) => ((D.Weather[i].StagesMask >> StageId(s)) & 1) != 0 && (!badOnly || D.Weather[i].Bad);
 
     /// <summary>Pogoda dnia: losowanie wagami spośród dozwolonych na etapie s (badOnly: tylko niekorzystne, jeśli są).</summary>
     public int RollWeather(int s, bool badOnly = false)
@@ -273,7 +273,7 @@ public sealed partial class Game
     public int StatusTurns(StatusEffect s) => HeroStatus[(int)s];
 
     /// <summary>Wiadomość fabularna na wejściu etapu (przy NG+ pierwszy etap ma własną).</summary>
-    public StoryMsg StageStory => Tier > 0 && Stage == FirstStage ? D.StoryNgPlus : D.StoryStages[Stage];
+    public StoryMsg StageStory => Tier > 0 && Stage == FirstStage ? D.StoryNgPlus : D.StoryStages[StageId(Stage)];
 
     public bool Visible(int x, int y) => Level.In(x, y) && Fov[y * Level.W + x] == Sight.InView;
     public bool Explored(int x, int y) => Level.In(x, y) && Fov[y * Level.W + x] != Sight.Unknown;
@@ -499,10 +499,10 @@ public sealed partial class Game
 
     // ------------------------------------------------------------------ trudność, doświadczenie, poziomy
     /// <summary>Trudność = etap x poziom x NG+. Mnożniki w procentach, premie sumowane.</summary>
-    public int EnemyHpPct() => D.Stages[Stage].HpPct * DDef.HpPct / 100 * (100 + Tier * D.NgHpPctPerTier) / 100
+    public int EnemyHpPct() => SDef().HpPct * DDef.HpPct / 100 * (100 + Tier * D.NgHpPctPerTier) / 100
                                * (100 + InvestorValue(InvestorEffect.EnemyHp)) / 100;
 
-    public int EnemyDmgBonus() => D.Stages[Stage].DmgBonus + DDef.DmgBonus + Tier * D.NgDmgBonusPerTier + InvestorValue(InvestorEffect.EnemyDmg);
+    public int EnemyDmgBonus() => SDef().DmgBonus + DDef.DmgBonus + Tier * D.NgDmgBonusPerTier + InvestorValue(InvestorEffect.EnemyDmg);
 
     public int ScorePct() => DDef.ScorePct * (100 + Tier * D.NgScorePctPerTier) / 100;
 
@@ -534,9 +534,13 @@ public sealed partial class Game
 
     public void NewRun(int classIndex, uint seed, int difficulty) => NewRun(classIndex, seed, difficulty, RunMods.Default(D));
 
-    public void NewRun(int classIndex, uint seed, int difficulty, RunMods mods)
+    public void NewRun(int classIndex, uint seed, int difficulty, RunMods mods) => NewRun(classIndex, seed, difficulty, mods, 0);
+
+    /// <summary>v0.21.52 cz. d: budowa w kontrakcie mapy kariery (spoza danych – Dom jednorodzinny).</summary>
+    public void NewRun(int classIndex, uint seed, int difficulty, RunMods mods, int contract)
     {
         CopyFrom(new Game(D));
+        Contract = (sbyte)(contract >= 0 && contract < D.Career.Length ? contract : 0);
         Cls = classIndex;
         Diff = difficulty;
         Bonus = mods;
@@ -547,7 +551,7 @@ public sealed partial class Game
         Hero.MaxHp = Hero.Hp = (short)(CDef.MaxHealth + mods.Hp);
         Hero.Alive = true;
         Cash = mods.Cash;
-        FirstStage = (sbyte)(mods.Act0 != 0 ? 0 : D.PreludeStages); // bez nagrody Akt 0 budowa zaczyna się od Fundamentów
+        FirstStage = (sbyte)(mods.Act0 != 0 ? 0 : PreludeCount()); // bez nagrody Akt 0 budowa zaczyna się od Fundamentów
         StartStage(FirstStage);
         Thermos = Math.Min(ThermosCap(), mods.StartCoffee); // Respekt: Zaprawiony w boju
     }
@@ -581,6 +585,19 @@ public sealed partial class Game
 
     public void StartStage(int s, int path = -1)
     {
+        // v0.21.52 cz. d (#47): bliźniak - druga połowa ma tę samą pogodę i wydarzenie na placu co pierwsza, a problemy
+        // niedokończone w pierwszej połowie przechodzą przez wspólną ścianę (do CareerTwinCarryMax)
+        var twin = s == Stage + 1 && SDef(s).Twin;
+        sbyte twinWeather = Weather, twinEvent = StageEvent;
+        var carry = 0;
+        if (twin)
+        {
+            for (var i = 0; i < EnemiesCount; ++i)
+            {
+                if (Enemies[i].Alive && i != Boss) ++carry;
+            }
+        }
+        TwinCarry = (byte)Math.Min(carry, D.CareerTwinCarryMax);
         Stage = s;
         St = GameStatus.Playing;
         StagePath = (sbyte)path;
@@ -622,7 +639,7 @@ public sealed partial class Game
         if (s == 0) PaperHits = 0; // Akt 0 od nowa (NG+): ciosy od papierów liczone od pierwszego etapu
         RollBorrow(); // Majster: moc innego fachu na ten etap
         Array.Fill(Fov, Sight.Unknown);
-        var sd = D.Stages[Stage];
+        var sd = SDef();
         var first = Lv.Rooms[0];
         var last = Lv.Rooms[Lv.RoomsCount - 1];
         Hero.X = (sbyte)first.Cx;
@@ -637,7 +654,7 @@ public sealed partial class Game
         }
 
         EnemiesCount = 0;
-        var count = Math.Max(1, sd.EnemyCount + (pd?.Enemies ?? 0)); // ścieżka: więcej / mniej problemów
+        var count = Math.Max(1, sd.EnemyCount + (pd?.Enemies ?? 0) + TwinCarry); // ścieżka: więcej / mniej problemów
         for (var i = 0; i < count && EnemiesCount < MaxEnemies; ++i)
         {
             var roomI = 1 + R.Range(0, Lv.RoomsCount - 2 > 0 ? Lv.RoomsCount - 2 : 0);
@@ -669,18 +686,23 @@ public sealed partial class Game
             Pickups[PickupsCount++] = new Pickup(x, y, i == 0 ? PickupType.Coffee : (PickupType)R.Range(0, 2), true);
         }
         Push(Msg("Etap ").Add(StageNumber()).Add(": ").Add(sd.Name));
+        if (TwinCarry > 0) Push(Msg("Wspólna ściana: +").Add(TwinCarry).Add(" z 1. połowy").As(LogKind.Bad));
         if (pd != null) // ścieżka z harmonogramu: budżet i materiały od razu
         {
             Push(Msg("Ścieżka: ").Add(pd.Name));
             if (pd.Cash != 0) Cash = Math.Max(0, Cash + Income(pd.Cash));
             for (var k = 0; k < pd.Materials; ++k) AddMaterial(R.Range(0, D.Materials.Length - 1));
         }
-        Weather = (sbyte)RollWeather(s, pd != null && pd.BadWeather); // pogoda dnia
+        Weather = twin ? twinWeather : (sbyte)RollWeather(s, pd != null && pd.BadWeather); // pogoda dnia (bliźniak: ta sama)
         if (WeeklyHas(WeeklyRule.Weather)) Weather = (sbyte)WeeklyValue(WeeklyRule.Weather); // wyzwanie: Mokry tydzień
         if (WDef.Effect != WeatherEffect.None)
             Push(Msg("Pogoda: ").Add(WDef.Name).Add(" (").Add(WDef.Short).Add(")").As(WDef.Bad ? LogKind.Bad : LogKind.Good));
         StageEvent = -1; // wydarzenie na placu: nie na pierwszym etapie i nie u bossa
-        if (s > FirstStage && sd.Boss < 0 && !(pd != null && pd.NoEvent) && R.Range(1, 100) <= D.SiteEventChancePct)
+        if (twin)
+        {
+            if (twinEvent >= 0) ApplyEvent(twinEvent); // bliźniak: to samo wydarzenie na obu połówkach
+        }
+        else if (s > FirstStage && sd.Boss < 0 && !(pd != null && pd.NoEvent) && R.Range(1, 100) <= D.SiteEventChancePct)
         {
             var e = R.Range(0, D.SiteEvents.Length - 1);
             // niekorzystna pogoda i niekorzystne wydarzenie naraz to za dużo: wydarzenie przepada

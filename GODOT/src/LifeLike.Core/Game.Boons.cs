@@ -277,7 +277,7 @@ public sealed partial class Game
 
     public int EliteChance()
     {
-        var c = D.EliteActPct.Length == 0 ? 0 : Math.Max(0, D.EliteActPct[D.Stages[Stage].Act] + D.EliteDiffPct[Diff] + Tier * D.EliteTierPct);
+        var c = D.EliteActPct.Length == 0 ? 0 : Math.Max(0, D.EliteActPct[SDef().Act] + D.EliteDiffPct[Diff] + Tier * D.EliteTierPct);
         return WeeklyHas(WeeklyRule.ElitePct) ? c * WeeklyValue(WeeklyRule.ElitePct) / 100 : c; // wyzwanie: Elity x2
     }
 

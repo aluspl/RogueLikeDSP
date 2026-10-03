@@ -12,7 +12,7 @@ public class PathsMaterialsDailyTests
     public void PathOfferIsDeterministicAndApplied()
     {
         var g = TestData.Run(1, 777);
-        for (var st = 0; st < D.Stages.Length - 1; ++st)
+        for (var st = 0; st < D.StagesCount - 1; ++st)
         {
             g.Stage = st;
             Assert.NotEqual(g.PathOffer(0), g.PathOffer(1));
@@ -233,9 +233,9 @@ public class PathsMaterialsDailyTests
             g.DebugSkip();
         }
         Assert.Equal(GameStatus.Won, g.St);
-        for (var s = f + 1; s < D.Stages.Length; ++s) Assert.True(g.StageDays[s] >= 2 + s);
+        for (var s = f + 1; s < D.StagesCount; ++s) Assert.True(g.StageDays[s] >= 2 + s);
         var total = 0;
-        for (var s = f; s < D.Stages.Length; ++s)
+        for (var s = f; s < D.StagesCount; ++s)
         {
             Assert.True(HouseSchedule.Days(g, s) >= D.ScheduleMinDays);
             total += HouseSchedule.Days(g, s);

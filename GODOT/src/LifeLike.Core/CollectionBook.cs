@@ -29,7 +29,7 @@ public static class CollectionBook
         int have = 0, need = 0;
         for (var e = 0; e < d.Enemies.Length; ++e)
         {
-            var inSet = cd.Kind == CollectionKind.Bosses ? EnemyBoss(d, e) : ((cd.Enemies >> e) & 1) != 0;
+            var inSet = ((cd.Enemies >> e) & 1) != 0; // v0.21.52 cz. d: bossowie też z maski (Dom / kariera)
             if (!inSet) continue;
             ++need;
             if (p.KillCount[e] >= cd.Count) ++have;

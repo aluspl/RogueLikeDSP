@@ -127,11 +127,11 @@ public sealed partial class Game
     public List<RecapLine> RecapTimeline()
     {
         var out_ = new List<RecapLine>();
-        for (var s = FirstStage; s <= Stage && s < D.Stages.Length; ++s)
+        for (var s = FirstStage; s <= Stage && s < RouteCount(); ++s)
         {
             var deadHere = RecapCurrent(s) && St == GameStatus.Dead;
             var l = new RecapLine { Ink = deadHere ? LogKind.Bad : LogKind.Info };
-            l.Text.Add(s - FirstStage + 1).Add(". ").Add(D.Stages[s].Name);
+            l.Text.Add(s - FirstStage + 1).Add(". ").Add(SDef(s).Name);
             l.Tail.Add(RecapDays(s)).Add(" d., ").Add(RecapKills(s)).Add(" usun.");
             out_.Add(l);
             if (StageEventLog[s] != 255)

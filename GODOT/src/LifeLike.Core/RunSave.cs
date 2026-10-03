@@ -36,9 +36,12 @@ public sealed class RunSave
 
     /// <summary>v0.21.52 cz. c: stan sprzed liczników zadań (2 bajty krócej, na końcu) – wczytuje się z zerami.</summary>
     public const int V14Tail = 2;
+    /// <summary>v0.21.52 cz. d: stan sprzed mapy kariery (kontrakt i bliźniak – 2 bajty na końcu) – Dom jednorodzinny.</summary>
+    public const int V15Tail = 2;
 
     public bool Valid(GameData d) =>
-        Magic.AsSpan().SequenceEqual(Profile.MagicBytes(RunMagic)) && (Size == GameSize(d) || Size == GameSize(d) - V14Tail)
+        Magic.AsSpan().SequenceEqual(Profile.MagicBytes(RunMagic))
+        && (Size == GameSize(d) || Size == GameSize(d) - V15Tail || Size == GameSize(d) - V15Tail - V14Tail)
         && Data.Length == Size && Checksum == Fnv1a(Data);
 
     public void Clear() => Magic = new byte[8];
@@ -47,7 +50,7 @@ public sealed class RunSave
     {
         var g = new Game(d);
         var size = GameSize(d);
-        if (Data.Length < size) // v0.21.52 cz. c: starszy stan bez liczników zadań na końcu
+        if (Data.Length < size) // v0.21.52 cz. c / d: starszy stan bez liczników zadań i kontraktu na końcu
         {
             var padded = new byte[size];
             Data.CopyTo(padded, 0);

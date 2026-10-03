@@ -350,7 +350,7 @@ public class PerksContractsEventsTests
         p.RespectRanksHi[2] = 3;
         var b = p.ToBytes();
         Assert.Equal(384, b.Length);
-        Assert.Equal("PBRL015\0"u8.ToArray(), b[..8]);
+        Assert.Equal("PBRL016\0"u8.ToArray(), b[..8]);
         Assert.Equal(new byte[] { 0x02, 0x01, 0x04, 0x03, 2, 1, 0, 3 }, b[188..196]);
         Assert.Equal(new byte[] { 0x0B, 0x0A, 0x0D, 0x0C }, b[156..160]);
         Assert.Equal(new byte[] { 0x02, 0x01 }, b[160..162]);
@@ -429,11 +429,11 @@ public class PerksContractsEventsTests
     [Fact]
     public void SiteEventsFrequencyAndEffects()
     {
-        var counts = new int[D.Stages.Length];
+        var counts = new int[D.StagesCount];
         for (var k = 0; k < 200; ++k)
         {
             var g0 = TestData.Run(k % D.Classes.Length, (uint)(500 + k * 31));
-            for (var st = TestData.F0; st < D.Stages.Length; ++st)
+            for (var st = TestData.F0; st < D.StagesCount; ++st)
             {
                 if (st > TestData.F0) g0.NextStage();
                 if (g0.StageEvent >= 0) ++counts[st];
@@ -441,7 +441,7 @@ public class PerksContractsEventsTests
             }
         }
         Assert.Equal(0, counts[TestData.F0]);
-        for (var st = TestData.F0; st < D.Stages.Length; ++st)
+        for (var st = TestData.F0; st < D.StagesCount; ++st)
         {
             if (D.Stages[st].Boss >= 0) Assert.Equal(0, counts[st]);
             else if (st > TestData.F0) Assert.True(counts[st] > 200 * D.SiteEventChancePct / 300 && // zła pogoda zabiera złe wydarzenia

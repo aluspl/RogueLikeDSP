@@ -31,6 +31,7 @@ public static class Titles
                 1 => Progress.MaxStake(d, p) >= pt.Level,
                 2 => CollectionBook.Complete(d, p, pt.Level - 1), // v0.21.52 cz. c: kolekcje, seria dni, zadania
                 3 => p.StreakBest >= pt.Level,
+                5 => ((p.CareerDone >> pt.Level) & 1) != 0, // v0.21.52 cz. d: kontrakt mapy kariery wygrany
                 _ => p.TasksTotal >= pt.Level,
             };
         }

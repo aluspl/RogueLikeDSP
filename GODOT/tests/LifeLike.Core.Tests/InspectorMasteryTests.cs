@@ -65,7 +65,7 @@ public class InspectorMasteryTests
         w.NewRun(0, 5, 0, Meta.Mods(D, q, 0));
         Meta.StartRun(D, q);
         w.St = GameStatus.Won;
-        w.Stage = D.Stages.Length - 1;
+        w.Stage = D.StagesCount - 1;
         var all = Progress.RunProgressXp(D, w);
         Assert.Equal(all, Progress.Bank(D, q, w).Gained);
         w.Tier = 1;

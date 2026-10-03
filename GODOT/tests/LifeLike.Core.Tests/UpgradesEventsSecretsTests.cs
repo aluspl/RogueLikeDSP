@@ -21,7 +21,7 @@ public class UpgradesEventsSecretsTests
             var a = TestData.Run(cls, seed * 131u);
             var b = TestData.Run(cls, seed * 131u);
             var seen = 0;
-            for (var st = a.FirstStage; st < D.Stages.Length; ++st)
+            for (var st = a.FirstStage; st < D.StagesCount; ++st)
             {
                 if (st != a.FirstStage)
                 {
@@ -223,7 +223,7 @@ public class UpgradesEventsSecretsTests
         var kinds = new int[2];
         for (uint seed = 1; seed <= 80; ++seed)
         {
-            for (var st = F0; st < D.Stages.Length; ++st)
+            for (var st = F0; st < D.StagesCount; ++st)
             {
                 var g = TestData.Run((int)(seed % (uint)D.Classes.Length), seed * 7u + 3u);
                 g.StartStage(st);

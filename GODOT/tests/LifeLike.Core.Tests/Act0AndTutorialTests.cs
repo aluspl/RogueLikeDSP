@@ -29,13 +29,13 @@ public class Act0AndTutorialTests
         for (var k = 0; k <= ai; ++k) Assert.Equal(k, Meta.RecordWin(D, p));
         Assert.True(Meta.Act0Unlocked(D, p) && Meta.Mods(D, p).Act0 == 1);
         var n = TestData.Run(1, 11);
-        Assert.True(n.FirstStage == F0 && n.Stage == F0 && n.StageNumber() == 1 && n.StagesInRun() == D.Stages.Length - F0);
+        Assert.True(n.FirstStage == F0 && n.Stage == F0 && n.StageNumber() == 1 && n.StagesInRun() == D.StagesCount - F0);
         var dly = new Game(D);
         Daily.Start(dly, 42);
         Assert.Equal(F0, dly.FirstStage); // budowa dnia bez Aktu 0
         var g = new Game(D);
         g.NewRun(1, 11, D.DefaultDifficulty, Meta.Mods(D, p));
-        Assert.True(g.FirstStage == 0 && g.Stage == 0 && g.StageNumber() == 1 && g.StagesInRun() == D.Stages.Length);
+        Assert.True(g.FirstStage == 0 && g.Stage == 0 && g.StageNumber() == 1 && g.StagesInRun() == D.StagesCount);
         Assert.True(D.Acts[D.Stages[0].Act].Prelude && g.ActIs(ActMechanic.Stamps) && g.ActNumeral() == "0");
         Assert.Equal("I", D.Acts[D.Stages[F0].Act].Numeral);
     }

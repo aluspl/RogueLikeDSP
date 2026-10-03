@@ -11,8 +11,8 @@ public class GameDataTests
         Assert.Equal(12, D.Classes.Length); // v0.21.51 cz. 2: + 3 zawody z sekretnych zleceń
         Assert.Equal(9, D.OpenClassesCount);
         Assert.Equal(22, D.Weapons.Length);
-        Assert.Equal(41, D.Enemies.Length);
-        Assert.Equal(12, D.Stages.Length);
+        Assert.Equal(47, D.Enemies.Length); // v0.21.52 cz. d: + 2 problemy i 4 bossów kontraktów mapy kariery
+        Assert.Equal(12, D.StagesCount);
         Assert.Equal(1, D.StartToolsMask);
         Assert.Equal(19, D.StartClassesMask);
         Assert.Equal(32, D.DmgLevelsMask);
@@ -32,7 +32,7 @@ public class GameDataTests
         Assert.True(D.Acts[0].MechValue == 14 && // v0.21.51: błoto rzadziej (co 14. pole)
              D.Acts[1].MechValue == 6 && D.Acts[2].MechValue == 2);
         Assert.True(D.BehaviorRangedReach == 3 && D.BehaviorPushCooldown == 3 && D.BehaviorBlastDelay == 2 && D.BehaviorNames[3] == "wybucha");
-        Assert.Equal(0x1FF, D.Weather[D.Weather.Length - 1].StagesMask); // deszcz: Akt 0 i etapy 1-7
+        Assert.Equal(0x1FFUL, D.Weather[D.Weather.Length - 1].StagesMask & 0xFFF); // deszcz: Akt 0 i etapy 1-7 (Dom; v0.21.52 cz. d: dalej etapy kontraktów)
         Assert.True(D.Enemies[11].Shape == SlamShape.Cross && D.Enemies[11].Summon == 4 && D.Enemies[11].SummonMax == 2);
         Assert.True(D.Enemies[11].GearStun == 2 && D.Enemies[11].RewardCash == 60 && D.Enemies[11].RewardTitle == "Protokół bez uwag");
         Assert.True(D.Enemies[9].Shape == SlamShape.Square && D.Enemies[9].Summon == -1 && D.Enemies[9].SlamName == "");

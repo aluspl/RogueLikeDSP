@@ -115,15 +115,15 @@ public sealed partial class Game
         var got = StageRespect();
         Respect += got;
         Push(Msg("Respekt +").Add(got).As(LogKind.Loot));
-        if (Stage < D.Stages.Length - 1) RollBoons(); // premia 1 z 3 przed harmonogramem (nie po odbiorze)
+        if (!LastStage()) RollBoons(); // premia 1 z 3 przed harmonogramem (nie po odbiorze)
     }
 
     /// <summary>Respekt za bieżący etap: zwykły, boss w środku aktu, boss aktu, ostatni; mnożnik jak wynik (trudność, NG+).</summary>
     public int StageRespect()
     {
-        var sd = D.Stages[Stage];
-        var b = Stage == D.Stages.Length - 1 ? D.RespectFinal
-            : (sd.Boss < 0 ? D.RespectStage : (D.Stages[Stage + 1].Act == sd.Act ? D.RespectBoss : D.RespectActBoss));
+        var sd = SDef();
+        var b = LastStage() ? D.RespectFinal
+            : (sd.Boss < 0 ? D.RespectStage : (SDef(Stage + 1).Act == sd.Act ? D.RespectBoss : D.RespectActBoss));
         return Math.Max(1, b * ScorePct() / 100);
     }
 }

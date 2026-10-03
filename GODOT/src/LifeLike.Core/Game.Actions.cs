@@ -172,7 +172,7 @@ public sealed partial class Game
             {
                 StageFlags[Stage] |= RecapFlag.Boss;
                 if (StageDamage == BossWakeDamage && CleanBosses < 255) ++CleanBosses; // zlecenie Czysta robota
-                if (Stage == D.PreludeStages - 1 && FirstStage == 0 && PaperHits == 0) SecretFlags |= SecretPaperCleanFlag; // Akt 0 bez papierów
+                if (Stage == PreludeCount() - 1 && FirstStage == 0 && PaperHits == 0) SecretFlags |= SecretPaperCleanFlag; // Akt 0 bez papierów
                 Score += (500 + 100 * Math.Max(0, PatternStage() + 1)) * ScorePct() / 100;
                 GainXp(D.XpBoss);
                 SlamTimer = 0;
@@ -182,24 +182,24 @@ public sealed partial class Game
                     Push(Msg(ed.RewardTitle).Add("! +").Add(Income(ed.RewardCash)).Add(" zł").As(LogKind.Good));
                 }
                 FinishStage();
-                if (Stage == D.Stages.Length - 1)
+                if (LastStage())
                 {
                     St = GameStatus.Won;
                     Push(Msg("Odbiór techniczny zaliczony!").As(LogKind.Good));
                 }
-                else if (D.Stages[Stage + 1].Act == D.Stages[Stage].Act) // boss w środku aktu: dalej bez Hurtowni
+                else if (SDef(Stage + 1).Act == SDef().Act) // boss w środku aktu: dalej bez Hurtowni
                 {
                     St = GameStatus.StageClear;
-                    Push(Msg("Etap zakończony: ").Add(D.Stages[Stage].Name).As(LogKind.Good));
+                    Push(Msg("Etap zakończony: ").Add(SDef().Name).As(LogKind.Good));
                 }
                 else // boss aktu: premia za akt, potem Hurtownia
                 {
-                    var act = D.Stages[Stage].Act;
+                    var act = SDef().Act;
                     var ad = D.Acts[act];
                     var stagesInAct = 0;
-                    for (var i = 0; i < D.Stages.Length; ++i)
+                    for (var i = 0; i < RouteCount(); ++i)
                     {
-                        if (D.Stages[i].Act == act) stagesInAct++;
+                        if (SDef(i).Act == act) stagesInAct++;
                     }
                     ActBonus = Income(ad.BonusPerStage * stagesInAct + ad.BonusPerKill * ActKills);
                     Cash += ActBonus;
@@ -796,7 +796,7 @@ public sealed partial class Game
             FinishStage();
             Score += 100 * ScorePct() / 100;
             GainXp(D.XpPerStage);
-            Push(Msg("Etap zakończony: ").Add(D.Stages[Stage].Name).As(LogKind.Good));
+            Push(Msg("Etap zakończony: ").Add(SDef().Name).As(LogKind.Good));
             if (EventActive(EventEffect.Inspection) && StageDamage == 0) // Inspekcja nadzoru: etap bez obrażeń
             {
                 GainXp(D.SiteEvents[StageEvent].Value);

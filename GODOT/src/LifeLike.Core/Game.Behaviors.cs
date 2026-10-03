@@ -13,14 +13,14 @@ public sealed partial class Game
     public static string DirName(int d) => DirNames[d & 3];
 
     // ------------------------------------------------------------------ mechanika aktu: błoto, porywy, pył
-    public ActDef ADef => D.Acts[D.Stages[Stage].Act];
+    public ActDef ADef => D.Acts[SDef().Act];
 
     public bool ActIs(ActMechanic m) => ADef.Mechanic == m;
 
     /// <summary>Błoto (akt I): stały wzór na podłodze zależny od etapu; wejście kosztuje dodatkową turę. Kładka też na błoto.</summary>
     public bool Mud(int x, int y)
     {
-        if (!ActIs(ActMechanic.Mud) || Lv.At(x, y) != Tile.Floor || (x * 5 + y * 11 + PatternStage() * 3) % ADef.MechValue != 0) return false;
+        if (!ActIs(ActMechanic.Mud) || Lv.At(x, y) != Tile.Floor || (x * 5 + y * 11 + PatternStage() * 3) % MechValue() != 0) return false;
         for (var i = 0; i < Bridges; ++i)
         {
             if (Cheb(x, y, BridgeX[i], BridgeY[i]) <= BridgeReach()) return false;
@@ -32,7 +32,7 @@ public sealed partial class Game
     public int GustIn()
     {
         if (!ActIs(ActMechanic.Gust)) return 0;
-        int v = ADef.MechValue, t = Turns - StageStartTurn;
+        int v = MechValue(), t = Turns - StageStartTurn;
         return v - t % v;
     }
 
@@ -40,12 +40,12 @@ public sealed partial class Game
     public int GustDir()
     {
         var t = Turns - StageStartTurn + GustIn();
-        return (t / Math.Max(1, ADef.MechValue) + PatternStage()) & 3;
+        return (t / Math.Max(1, MechValue()) + PatternStage()) & 3;
     }
 
     public void GustTick()
     {
-        int v = ADef.MechValue, t = Turns - StageStartTurn;
+        int v = MechValue(), t = Turns - StageStartTurn;
         if (t <= 0) return;
         if (t % v == v - 1)
         {
@@ -68,10 +68,10 @@ public sealed partial class Game
         }
     }
 
-    public int DustSight() => ActIs(ActMechanic.Dust) ? ADef.MechValue : 0;
+    public int DustSight() => ActIs(ActMechanic.Dust) ? MechValue() : 0;
 
     /// <summary>Pieczątki (Akt 0): ile dokumentów otwiera schody na tym etapie (0 = bez pieczątek, np. etap z bossem).</summary>
-    public int DocsNeeded() => ActIs(ActMechanic.Stamps) && D.Stages[Stage].Boss < 0 ? ADef.MechValue : 0;
+    public int DocsNeeded() => ActIs(ActMechanic.Stamps) && SDef().Boss < 0 ? MechValue() : 0;
 
     public int DocsCount()
     {

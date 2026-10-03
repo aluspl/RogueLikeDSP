@@ -85,7 +85,7 @@ public class SecretsTests
         g.Weather = 0;
         g.Hero.X = 7;
         g.Hero.Y = 7;
-        g.Stage = D.Stages.Length - 1;
+        g.Stage = D.StagesCount - 1;
         g.UpdateFov();
         g.Spawn(D.SecretHelperBoss, 8, 7);
         g.Boss = 0;

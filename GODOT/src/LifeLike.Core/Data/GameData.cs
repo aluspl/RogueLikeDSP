@@ -187,6 +187,16 @@ public sealed class GameData
     public ProgressLevel[] StreakRewards { get; private init; } = [];
     /// <summary>Jak grać: drzewko, kolekcje, zadania, seria dni.</summary>
     public string[] GoalsHelpLines { get; private init; } = [];
+    /// <summary>v0.21.52 cz. d: Jak grać – mapa kariery (7 linii, GBA str. 18).</summary>
+    public string[] CareerHelpLines { get; private init; } = [];
+    /// <summary>v0.21.52 cz. d (#47): kontrakty mapy kariery (0 = Dom jednorodzinny, etapy w Stages od First).</summary>
+    public CareerDef[] Career { get; private init; } = [];
+    /// <summary>Bliźniak: ile problemów z pierwszej połowy przechodzi na drugą.</summary>
+    public int CareerTwinCarryMax { get; private init; }
+    /// <summary>Etapy Domu jednorodzinnego (kontrakt 0) – Stages ma też etapy kolejnych kontraktów (jak data::stages_count).</summary>
+    public int StagesCount { get; private init; }
+    /// <summary>Palety etapów (tiles/stage_N.png).</summary>
+    public int StageLooksCount { get; private init; }
     public int DefaultDifficulty { get; private init; }
     public int NgHpPctPerTier { get; private init; }
     public int NgDmgBonusPerTier { get; private init; }
@@ -394,14 +404,25 @@ public sealed class GameData
                 $"wróg {e.Id}: złe wezwania");
         }
 
-        var stages = d.GetProperty("stages").EnumerateArray().Select(st =>
+        // v0.21.52 cz. d (#47): mapa kariery - Stages = etapy Domu jednorodzinnego (kontrakt 0), potem etapy kolejnych kontraktów
+        // (career.list[].stages); kontrakt = pierwszy etap + liczba (jak gen_data.py).
+        var careerJson = d.TryGetProperty("career", out var carj) ? carj.GetProperty("list").EnumerateArray().ToArray() : [];
+        var domJson = d.GetProperty("stages").EnumerateArray().ToArray();
+        var stagesJson = domJson.Concat(careerJson.Skip(1).SelectMany(c => c.GetProperty("stages").EnumerateArray())).ToArray();
+        var actsJson = d.GetProperty("acts").EnumerateArray().ToArray();
+        var preludeN = domJson.Count(st => Bool(actsJson[Int(st, "act")], "prelude"));
+        var stages = stagesJson.Select((st, i) =>
         {
             var pool = st.GetProperty("enemies").EnumerateArray().Select(x => Lookup(eid, x.GetString() ?? "", "wróg")).ToArray();
             Require(pool.Length is >= 1 and <= 4, "etap: 1-4 rodzaje wrogów");
             var boss = st.TryGetProperty("boss", out var b) ? Lookup(eid, b.GetString() ?? "", "boss") : -1;
-            return new StageDef(Str(st, "name"), pool, Int(st, "count"), boss, Int(st, "hpPct", 100), Int(st, "dmgBonus", 0), Int(st, "act"),
-                Int(st, "cost", 0));
+            var act = Int(st, "act");
+            var look = i < domJson.Length ? i : Int(st, "look");
+            var tiles = st.TryGetProperty("tiles", out var tj) ? tj.GetInt32() : (i < preludeN ? 3 + i : act);
+            return new StageDef(Str(st, "name"), pool, Int(st, "count"), boss, Int(st, "hpPct", 100), Int(st, "dmgBonus", 0), act,
+                Int(st, "cost", 0), look, tiles, Bool(st, "twin"));
         }).ToArray();
+        Require(stages.Length <= 64, "etapy: maks. 64 (maska pogody)");
         var paths = d.TryGetProperty("paths", out var pj)
             ? pj.GetProperty("list").EnumerateArray().Select(x => new PathDef(Str(x, "id"), Str(x, "name"), Str(x, "short"), Str(x, "desc"),
                 Int(x, "enemies", 0), Int(x, "pickups", 0), Int(x, "cash", 0), Int(x, "materials", 0),
@@ -441,21 +462,23 @@ public sealed class GameData
         Require(tools.Length <= 12 && tools.Select((t, i) => t.Secret || i < 8).All(x => x), "narzędzia: bitmaska uint8 w profilu (sekretne za nią)");
 
         var story = d.GetProperty("story");
-        var storyStages = story.GetProperty("stages").EnumerateArray().Select(Story).ToArray();
+        var storyStages = story.GetProperty("stages").EnumerateArray().Select(Story)
+            .Concat(stagesJson.Skip(domJson.Length).Select(st => Story(st.GetProperty("story")))).ToArray();
         Require(storyStages.Length == stages.Length, "fabuła: tyle wiadomości, ile etapów");
 
         var acts = d.GetProperty("acts").EnumerateArray().Select(a => a.TryGetProperty("mechanic", out var mc)
             ? new ActDef(Str(a, "name"), Int(a, "bonusPerStage"), Int(a, "bonusPerKill"), ParseEnum<ActMechanic>(Str(mc, "effect")), Int(mc, "value", 0),
                 Str(mc, "name", ""), Str(mc, "short", ""), Str(mc, "info", ""), Str(a, "numeral", ""), Bool(a, "prelude"))
             : new ActDef(Str(a, "name"), Int(a, "bonusPerStage"), Int(a, "bonusPerKill"), Numeral: Str(a, "numeral", ""), Prelude: Bool(a, "prelude"))).ToArray();
+        var domStages = stages.Take(domJson.Length).ToArray();
         for (var ai = 0; ai < acts.Length; ai++)
         {
-            var last = Array.FindLastIndex(stages, s => s.Act == ai);
-            Require(last >= 0 && stages[last].Boss >= 0, $"akt {ai} bez bossa");
+            var last = Array.FindLastIndex(domStages, s => s.Act == ai);
+            Require(last >= 0 && domStages[last].Boss >= 0, $"akt {ai} bez bossa");
         }
         // Akt wstępny (Akt 0): jego etapy na początku listy, za nimi etapy budowy.
-        var preludeStages = stages.Count(st => acts[st.Act].Prelude);
-        for (var i = 0; i < stages.Length; i++) Require(acts[stages[i].Act].Prelude == i < preludeStages, "Akt 0: etapy na początku listy");
+        var preludeStages = domStages.Count(st => acts[st.Act].Prelude);
+        for (var i = 0; i < domStages.Length; i++) Require(acts[domStages[i].Act].Prelude == i < preludeStages, "Akt 0: etapy na początku listy");
         var documents = d.TryGetProperty("documents", out var docj) ? docj.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : [];
         Require(documents.Length <= 4, "pieczątki: maks. 4 dokumenty");
         foreach (var a in acts) Require(a.Mechanic != ActMechanic.Stamps || a.MechValue == documents.Length, "pieczątki: tyle dokumentów, ile w mechanice");
@@ -510,7 +533,17 @@ public sealed class GameData
                 Str(e, "info"), Story(e), ParseEvent(Str(e, "effect")), Int(e, "value"), e.GetProperty("good").GetBoolean())).ToArray();
         }
 
-        var allStages = (1 << stages.Length) - 1;
+        var allStages = stages.Length >= 64 ? ulong.MaxValue : (1UL << stages.Length) - 1;
+        // etapy kontraktów: pogoda jak na etapie Domu, który przypominają ("like"; bez - każda)
+        ulong WeatherMask(JsonElement w)
+        {
+            if (!w.TryGetProperty("stages", out var ws)) return allStages;
+            var allowed = ws.EnumerateArray().Select(x => x.GetInt32()).ToArray();
+            var m = allowed.Aggregate(0UL, (acc, x) => acc | 1UL << x);
+            for (var i = domJson.Length; i < stagesJson.Length; i++)
+                if (!stagesJson[i].TryGetProperty("like", out var lk) || allowed.Contains(lk.GetInt32())) m |= 1UL << i;
+            return m;
+        }
         WeatherDef[] weather = [new WeatherDef("slonce", "Słonecznie", "Pogodnie", "", WeatherEffect.None, 0, 1, false, allStages)];
         var weatherNoBadStack = false;
         if (d.TryGetProperty("weather", out var wj))
@@ -518,7 +551,7 @@ public sealed class GameData
             weatherNoBadStack = wj.TryGetProperty("noBadStack", out var nb) && nb.GetBoolean();
             weather = wj.GetProperty("list").EnumerateArray().Select(w => new WeatherDef(Str(w, "id"), Str(w, "name"), Str(w, "short"),
                 Str(w, "info"), ParseEnum<WeatherEffect>(Str(w, "effect")), Int(w, "value"), Int(w, "weight"), w.GetProperty("bad").GetBoolean(),
-                w.TryGetProperty("stages", out var ws) ? ws.EnumerateArray().Aggregate(0, (m, x) => m | 1 << x.GetInt32()) : allStages)).ToArray();
+                WeatherMask(w))).ToArray();
             Require(weather.Length >= 1 && weather[0].Effect == WeatherEffect.None, "pogoda: pierwsza bez skutku");
             foreach (var w in weather)
             {
@@ -526,7 +559,7 @@ public sealed class GameData
             }
             for (var si = 0; si < stages.Length; si++)
             {
-                var bit = 1 << si;
+                var bit = 1UL << si;
                 Require(weather.Any(w => (w.StagesMask & bit) != 0), $"etap {si}: brak pogody do wylosowania");
             }
         }
@@ -1000,11 +1033,18 @@ public sealed class GameData
                 if (kind == CollectionKind.Kills)
                 {
                     var act = Int(x, "act");
-                    foreach (var st in stages)
+                    foreach (var st in domStages)   // v0.21.52 cz. d: komplety aktów - problemy Domu jednorodzinnego
                     {
                         if (st.Act != act) continue;
                         foreach (var e in st.Pool) mask |= 1ul << e;
                     }
+                }
+                else if (kind == CollectionKind.Bosses)   // v0.21.52 cz. d: bossowie Domu albo ("career") nowych kontraktów
+                {
+                    var bosses = Bool(x, "career")
+                        ? careerJson.Skip(1).Select(c => Lookup(eid, Str(c, "boss"), "boss kontraktu"))
+                        : domStages.Where(st => st.Boss >= 0).Select(st => st.Boss);
+                    foreach (var bi in bosses) mask |= 1ul << bi;
                 }
                 var rw = x.GetProperty("reward");
                 var bonus = rw.TryGetProperty("perk", out var rpk) ? new Perk(ParsePerk(Str(rpk, "effect")), Int(rpk, "value")) : new Perk(PerkEffect.Hp, 0);
@@ -1027,12 +1067,40 @@ public sealed class GameData
         var streakRewards = d.TryGetProperty("daily", out var dsj) && dsj.TryGetProperty("streak", out var srj)
             ? srj.EnumerateArray().Select(x => Goal(x, Int(x, "days"))).ToArray()
             : [];
+        // v0.21.52 cz. d (#47): kontrakty mapy kariery (bez sekcji - sam Dom jednorodzinny)
+        var career = new List<CareerDef>();
+        var careerFirst = 0;
+        for (var i = 0; i < Math.Max(1, careerJson.Length); i++)
+        {
+            if (careerJson.Length == 0)
+            {
+                career.Add(new CareerDef("dom", "Dom jednorodzinny", "Dom", "", 0, domJson.Length, preludeStages, CareerUnlock.None, 0, 0, false, -1, 0, "", -1));
+                break;
+            }
+            var c = careerJson[i];
+            var n = i == 0 ? domJson.Length : c.GetProperty("stages").GetArrayLength();
+            var u = c.GetProperty("unlock");
+            var rw = c.TryGetProperty("reward", out var crw) ? crw : default;
+            var hasRw = rw.ValueKind == JsonValueKind.Object;
+            var helmet = hasRw && rw.TryGetProperty("helmet", out var chj) ? Lookup(coid, chj.GetString() ?? "", "kask kontraktu") : -1;
+            var def = new CareerDef(Str(c, "id"), Str(c, "name"), Str(c, "short"), Str(c, "desc"), careerFirst, n, i == 0 ? preludeStages : 0,
+                ParseEnum<CareerUnlock>(Str(u, "kind")), Int(u, "value"), Int(c, "gust", 0), Bool(c, "twins"),
+                c.TryGetProperty("boss", out var cbj) ? Lookup(eid, cbj.GetString() ?? "", "boss kontraktu") : -1,
+                hasRw ? Int(rw, "respect", 0) : 0, hasRw ? Str(rw, "title", "") : "", helmet);
+            Require(def.Count is >= 1 and <= Game.MaxStages && (i == 0) == (def.Unlock == CareerUnlock.None), $"kontrakt {def.Id}: etapy / odblokowanie");
+            career.Add(def);
+            careerFirst += n;
+        }
+        Require(careerFirst == stages.Length && career.Count <= 6, "kontrakty: etapy wszystkich kontraktów, maks. 6");
+        var twinCarryMax = d.TryGetProperty("career", out var ctm) ? Int(ctm, "twinCarryMax", 0) : 0;
+
         var progressTitles = inspLevels.Select((l, i) => (l, i)).Where(x => x.l.Reward == ProgressReward.Title)
             .Select(x => new ProgressTitle(x.l.Title, 0, x.i + 1))
             .Concat(stakeRanks.Where(x => x.Reward == ProgressReward.Title).Select(x => new ProgressTitle(x.Title, 1, x.Xp)))
             .Concat(collections.Select((c, i) => (c, i)).Where(x => x.c.Reward.Reward == ProgressReward.Title).Select(x => new ProgressTitle(x.c.Reward.Title, 2, x.i + 1)))
             .Concat(streakRewards.Where(x => x.Reward == ProgressReward.Title).Select(x => new ProgressTitle(x.Title, 3, x.Xp)))
-            .Concat(taskRewards.Where(x => x.Reward == ProgressReward.Title).Select(x => new ProgressTitle(x.Title, 4, x.Xp))).ToArray();
+            .Concat(taskRewards.Where(x => x.Reward == ProgressReward.Title).Select(x => new ProgressTitle(x.Title, 4, x.Xp)))
+            .Concat(career.Select((c, i) => (c, i)).Where(x => x.c.Title != "").Select(x => new ProgressTitle(x.c.Title, 5, x.i))).ToArray();
 
         return new GameData
         {
@@ -1073,6 +1141,11 @@ public sealed class GameData
             TaskRewards = taskRewards,
             StreakRewards = streakRewards,
             GoalsHelpLines = d.TryGetProperty("goalsHelp", out var ghj) ? ghj.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : [],
+            CareerHelpLines = d.TryGetProperty("careerHelp", out var chl) ? chl.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : [],
+            Career = career.ToArray(),
+            CareerTwinCarryMax = twinCarryMax,
+            StagesCount = domJson.Length,
+            StageLooksCount = stages.Max(x => x.Look) + 1,
             BoonRarities = boonRarities,
             BoonTags = boonTagNames,
             Boons = boons,

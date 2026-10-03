@@ -80,7 +80,8 @@ public class ProgressionPaceTests
         Assert.All(D.Contracts, c => Assert.True(c.Xp <= 15 && c.Title.Length > 0));
         var helmets = Enumerable.Range(0, D.Cosmetics.Length).Count(k => Secrets.CosmeticHelmet(D, k));
         var fromProgress = D.InspectorLevels.Concat(D.StakeRanks).Concat(D.MasteryLevels).Concat(D.TaskRewards).Concat(D.StreakRewards)
-            .Concat(D.Collections.Select(c => c.Reward)).Count(l => l.Reward == ProgressReward.Helmet); // cz. b, cz. c
+            .Concat(D.Collections.Select(c => c.Reward)).Count(l => l.Reward == ProgressReward.Helmet)
+            + D.Career.Count(c => c.Helmet >= 0); // cz. b, cz. c, cz. d (mapa kariery)
         Assert.True(helmets >= 3 && helmets == D.Badges.Count(b => b.Cosmetic >= 0) + D.Contracts.Count(c => c.Cosmetic >= 0) + fromProgress);
         Assert.False(Secrets.CosmeticHelmet(D, D.CosmeticGold));
 

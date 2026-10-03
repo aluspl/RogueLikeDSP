@@ -12,14 +12,14 @@ public static class HouseSchedule
     public static int TotalDays(Game g)
     {
         var t = 0;
-        for (var s = g.FirstStage; s < g.D.Stages.Length; ++s) t += Days(g, s);
+        for (var s = g.FirstStage; s < g.RouteCount(); ++s) t += Days(g, s);
         return t;
     }
 
     public static int TotalCost(Game g)
     {
         var t = 0;
-        for (var s = g.FirstStage; s < g.D.Stages.Length; ++s) t += g.D.Stages[s].Cost;
+        for (var s = g.FirstStage; s < g.RouteCount(); ++s) t += g.SDef(s).Cost;
         return t;
     }
 

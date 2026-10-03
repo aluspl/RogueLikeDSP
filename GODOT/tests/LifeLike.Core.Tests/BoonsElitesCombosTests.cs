@@ -203,7 +203,7 @@ public class BoonsElitesCombosTests
         Assert.True(easy.EliteChance() < hard.EliteChance());
         var l = TestData.Run(0, 9);
         var c1 = l.EliteChance();
-        l.StartStage(D.Stages.Length - 2);
+        l.StartStage(D.StagesCount - 2);
         Assert.True(l.EliteChance() > c1);
         int elites = 0, all = 0;
         for (uint seed = 1; seed <= 300; ++seed)

@@ -88,6 +88,7 @@ public static class GoldenSnapshot
             g.PowerCls(), g.BuildDays(), g.Bonus.StartCoffee, g.AbilityCooldown(),
             g.Bonus.Mastery, g.MasterCrit(), g.BoonPower(), Progress.RunProgressXp(TestData.D, g), // v0.21.52 cz. b
             g.HelpersCalled, g.ShopBuys, g.Bonus.FirstHitBonus, DailyTasks.StagesDone(TestData.D, g)])); // cz. c
+        K("career", Arr([g.Contract, g.TwinCarry, g.StageId(g.Stage), g.RouteCount(), g.MechValue(), Career.StagesDone(g)])); // v0.21.52 cz. d
         K("killsByType", Arr(g.KillsByType.Select(x => (int)x)));
         K("rooms", "[" + string.Join(",", g.Lv.Rooms.Take(g.Lv.RoomsCount).Select(r => Arr([r.X, r.Y, r.W, r.H]))) + "]");
         var map = new List<string>();

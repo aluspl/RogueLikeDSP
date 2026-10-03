@@ -239,6 +239,9 @@ public sealed partial class Game
         // v0.21.52 cz. c: zadania dnia (na końcu – zapis bez nich wczytuje się z zerami, RunSave.Load)
         w.Write(HelpersCalled);
         w.Write(ShopBuys);
+        // v0.21.52 cz. d: mapa kariery (na końcu – zapis bez nich wczytuje się z zerami = Dom jednorodzinny)
+        w.Write(Contract);
+        w.Write(TwinCarry);
     }
 
     private static void WriteHit(BinaryWriter w, in RecapHit h)
@@ -424,5 +427,8 @@ public sealed partial class Game
         MarkTurns = r.ReadSByte();
         HelpersCalled = r.ReadByte();
         ShopBuys = r.ReadByte();
+        Contract = r.ReadSByte();
+        TwinCarry = r.ReadByte();
+        if (Contract < 0 || Contract >= D.Career.Length) Contract = 0;
     }
 }

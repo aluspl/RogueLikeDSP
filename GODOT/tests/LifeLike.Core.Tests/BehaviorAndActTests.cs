@@ -36,7 +36,7 @@ public class BehaviorAndActTests
     [Fact]
     public void StagesPoolsAndActsHaveNewContent()
     {
-        Assert.True(D.Stages.Length == 12 && D.Enemies.Length <= Game.MaxEnemyTypes);
+        Assert.True(D.StagesCount == 12 && D.Enemies.Length <= Game.MaxEnemyTypes);
         foreach (var st in D.Stages)
         {
             var tagged = st.Pool.Count(p => D.Enemies[p].Tags != 0);

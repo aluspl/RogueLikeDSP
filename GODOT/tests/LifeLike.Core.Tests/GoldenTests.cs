@@ -35,6 +35,7 @@ public class GoldenTests
         int respect = Opt("respect"), rewards = Opt("rewards"), weekly = Opt("weekly"), secrets = Opt("secrets");
         int mastery = Opt("mastery"), insp = Opt("insp"), keepsake2 = Opt("keepsake2"); // v0.21.52 cz. b
         var tree = Opt("tree"); // v0.21.52 cz. c: wybory w drzewku (1 + bity opcji)
+        var contract = Opt("contract"); // v0.21.52 cz. d: kontrakt mapy kariery
         int goldenDay = Daily.Number(d, 2026, 10, 3), goldenWeek = Weekly.Number(d, 2026, 10, 3); // zadania dnia i tygodnia
         var snaps = j.GetProperty("snapshots").EnumerateArray().ToList();
         var digests = j.GetProperty("digests").EnumerateArray().Select(x => x.GetString()).ToList();
@@ -82,7 +83,7 @@ public class GoldenTests
         var g = new Game(d);
         if (weekly > 0) Weekly.Start(g, weekly); // v0.21.50 cz. 4: wyzwanie tygodnia – zawód, seed i zasady z tygodnia
         else if (daily > 0) Daily.Start(g, daily); // codzienna budowa: zawód i seed z dnia, bez Szkoleń
-        else g.NewRun(cls, seed, diff, m);
+        else g.NewRun(cls, seed, diff, m, contract);
         Meta.StartRun(d, p);
 
         var snapIndex = 0;
@@ -134,6 +135,7 @@ public class GoldenTests
             {
                 if (g.Score > p.Best) p.Best = g.Score;
                 Meta.RecordWin(d, p);
+                Career.Win(d, p, g);
                 Meta.AddHouse(p, g);
                 Meta.CheckBadges(d, p, g);
                 Meta.CheckContracts(d, p);
@@ -155,6 +157,7 @@ public class GoldenTests
         if (g.St == GameStatus.Won)
         {
             Meta.RecordWin(d, p);
+            Career.Win(d, p, g);
             Meta.AddHouse(p, g);
         }
         Meta.CheckBadges(d, p, g);

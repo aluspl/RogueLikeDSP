@@ -26,7 +26,7 @@ public class RespectAndRewardsTests
             g.NextStage();
             var want = g.StageRespect();
             var sd = D.Stages[g.Stage];
-            if (g.Stage == D.Stages.Length - 1) Assert.Equal(D.RespectFinal, want);
+            if (g.Stage == D.StagesCount - 1) Assert.Equal(D.RespectFinal, want);
             else if (sd.Boss >= 0) Assert.Equal(D.Stages[g.Stage + 1].Act == sd.Act ? D.RespectBoss : D.RespectActBoss, want);
             else Assert.Equal(D.RespectStage, want);
             g.Hero.Hp = g.Hero.MaxHp = 999;

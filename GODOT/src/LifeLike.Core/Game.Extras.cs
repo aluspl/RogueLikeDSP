@@ -70,7 +70,7 @@ public sealed partial class Game
     /// <summary>0–1 pole wydarzenia na etapie (nie pierwszym budowy i nie z bossem); wydarzenie bez powtórek w budowie.</summary>
     public void PlaceEvent()
     {
-        if (D.ChoiceEvents.Length == 0 || D.Stages[Stage].Boss >= 0 || Stage == FirstStage || Lv.RoomsCount < 2 || PickupsCount >= MaxPickups) return;
+        if (D.ChoiceEvents.Length == 0 || SDef().Boss >= 0 || Stage == FirstStage || Lv.RoomsCount < 2 || PickupsCount >= MaxPickups) return;
         var er = SideRng(101);
         if (er.Range(1, 100) > D.ChoiceEventChancePct) return;
         var n = 0;
@@ -336,7 +336,7 @@ public sealed partial class Game
     /// </summary>
     public void PlaceSecret()
     {
-        if (D.SecretKinds.Length == 0 || D.Stages[Stage].Boss >= 0 || Lv.RoomsCount < 2) return;
+        if (D.SecretKinds.Length == 0 || SDef().Boss >= 0 || Lv.RoomsCount < 2) return;
         var sr = SideRng(202);
         if (sr.Range(1, 100) > D.SecretChancePct) return;
         for (var a = 0; a < 80 && SecretX < 0; ++a)
@@ -387,7 +387,7 @@ public sealed partial class Game
         if (SecretX < 0) return;
         int cx = SecretRx + 1, cy = SecretRy + 1;
         if (PickupsCount < MaxPickups) Pickups[PickupsCount++] = new Pickup(cx, cy, PickupType.Chest, true);
-        var sd = D.Stages[Stage];
+        var sd = SDef();
         if (sr.Range(1, 100) <= D.SecretGuardPct && EnemiesCount < MaxEnemies) // strażnik: elita, śpi w kącie
         {
             var gx = SecretRx + 2 * sr.Range(0, 1);

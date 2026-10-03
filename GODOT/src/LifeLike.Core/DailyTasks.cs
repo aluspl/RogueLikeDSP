@@ -49,7 +49,7 @@ public static class DailyTasks
     /// <summary>Etapy ukończone w budowie (z budowami NG+) – jak RunProgressXp.</summary>
     public static int StagesDone(GameData d, Game g)
     {
-        var per = d.Stages.Length - g.FirstStage;
+        var per = g.RouteCount() - g.FirstStage;
         var won = g.St == GameStatus.Won;
         return g.Tier * per + (won ? per : (g.St == GameStatus.StageClear ? g.Stage + 1 : g.Stage) - g.FirstStage);
     }

@@ -37,6 +37,10 @@ public sealed class Profile
     public const int V13Size = 200;
     /// <summary>v15 = v14 + drzewko Szkoleń, kolekcje, zadania dnia, seria dni (v0.21.52 cz. c) od tego offsetu.</summary>
     public const int V14Size = 240;
+    /// <summary>v16 = v15 + mapa kariery (v0.21.52 cz. d): kontrakty, wygrane, najlepszy etap.</summary>
+    public const int V15Size = 360;
+    /// <summary>Kontrakty mapy kariery (GameData.Career).</summary>
+    public const int MaxContracts = 6;
     public const int Size = 384;
     /// <summary>Rodzaje problemów (liczniki kolekcji, jak core::max_enemy_types).</summary>
     public const int MaxEnemyTypes = 48;
@@ -52,7 +56,8 @@ public sealed class Profile
     public const int MaxKeepsakes = 8;
     public const int DailySlots = 5;
     /// <summary>Bieżący format (v15, v0.21.52 cz. c).</summary>
-    public const string MagicCurrent = "PBRL015";
+    public const string MagicCurrent = "PBRL016";
+    public const string MagicV15 = "PBRL015";
     public const string MagicV14 = "PBRL014";
     public const string MagicV13 = "PBRL013";
     public const string MagicV12 = "PBRL012";
@@ -215,6 +220,17 @@ public sealed class Profile
     public byte StreakBest;
     /// <summary>Bity: ogłoszone komplety kolekcji (baner raz).</summary>
     public byte Collections;
+    // --- v16 (v0.21.52 cz. d): mapa kariery (#47)
+    /// <summary>Wybrany kontrakt (GameData.Career).</summary>
+    public byte Contract;
+    /// <summary>Bity: odblokowanie kontraktu już ogłoszone (baner raz).</summary>
+    public byte CareerSeen;
+    /// <summary>Bity: kontrakt wygrany (nagroda za pierwszą wygraną wydana).</summary>
+    public byte CareerDone;
+    /// <summary>Wygrane w każdym kontrakcie (do 255).</summary>
+    public byte[] CareerWins = new byte[MaxContracts];
+    /// <summary>Najwięcej ukończonych etapów kontraktu w jednej budowie (bez Aktu 0).</summary>
+    public byte[] CareerBest = new byte[MaxContracts];
 
     public static byte[] MagicBytes(string s)
     {
@@ -314,6 +330,11 @@ public sealed class Profile
         BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(356), StreakDay);
         b[358] = StreakBest;
         b[359] = Collections;
+        b[360] = Contract;
+        b[361] = CareerSeen;
+        b[362] = CareerDone;
+        CareerWins.CopyTo(b, 364);
+        CareerBest.CopyTo(b, 370);
         return b;
     }
 
@@ -396,6 +417,11 @@ public sealed class Profile
             StreakDay = BinaryPrimitives.ReadUInt16LittleEndian(b[356..]),
             StreakBest = b[358],
             Collections = b[359],
+            Contract = b[360],
+            CareerSeen = b[361],
+            CareerDone = b[362],
+            CareerWins = b.Slice(364, MaxContracts).ToArray(),
+            CareerBest = b.Slice(370, MaxContracts).ToArray(),
         };
         for (var i = 0; i < MaxClasses; i++) p.MasteryXp[i] = BinaryPrimitives.ReadUInt16LittleEndian(b[(204 + i * 2)..]);
         for (var i = 0; i < WeeklySlots; i++)

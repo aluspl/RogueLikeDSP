@@ -10,26 +10,26 @@ public class WeatherTests
     [Fact]
     public void WeatherRollsFromStageListWithoutBadStack()
     {
-        var seen = new int[D.Stages.Length, D.Weather.Length];
+        var seen = new int[D.StagesCount, D.Weather.Length];
         var badStack = 0;
         for (var k = 0; k < 120; ++k)
         {
             var g = TestData.Run(k % D.Classes.Length, (uint)(900 + k * 17));
-            for (var st = TestData.F0; st < D.Stages.Length; ++st)
+            for (var st = TestData.F0; st < D.StagesCount; ++st)
             {
                 if (st > TestData.F0) g.NextStage();
                 Assert.InRange(g.Weather, 0, D.Weather.Length - 1);
-                Assert.True((D.Weather[g.Weather].StagesMask & (1 << st)) != 0);
+                Assert.True((D.Weather[g.Weather].StagesMask & (1UL << st)) != 0);
                 seen[st, g.Weather]++;
                 if (g.StageEvent >= 0 && g.WDef.Bad && !D.SiteEvents[g.StageEvent].Good) badStack++;
             }
         }
         if (D.WeatherNoBadStack) Assert.Equal(0, badStack);
-        for (var st = 0; st < D.Stages.Length; ++st)
+        for (var st = 0; st < D.StagesCount; ++st)
         {
             for (var w = 0; w < D.Weather.Length; ++w)
             {
-                if ((D.Weather[w].StagesMask & (1 << st)) == 0) Assert.Equal(0, seen[st, w]);
+                if ((D.Weather[w].StagesMask & (1UL << st)) == 0) Assert.Equal(0, seen[st, w]);
             }
         }
         foreach (var e in new[] { WeatherEffect.None, WeatherEffect.Heat, WeatherEffect.Frost, WeatherEffect.Wind, WeatherEffect.Rain })

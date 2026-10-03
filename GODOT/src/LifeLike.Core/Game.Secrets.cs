@@ -35,7 +35,7 @@ public sealed partial class Game
     public int BuildDays()
     {
         var t = 0;
-        for (var s = Math.Max(FirstStage, D.PreludeStages); s < D.Stages.Length; ++s) t += D.ScheduleMinDays + StageDays[s] / D.ScheduleTurnsPerDay;
+        for (var s = Math.Max(FirstStage, PreludeCount()); s < RouteCount(); ++s) t += D.ScheduleMinDays + StageDays[s] / D.ScheduleTurnsPerDay;
         return t;
     }
 
@@ -76,7 +76,7 @@ public sealed partial class Game
     /// <summary>Cios w bohatera od problemu papierowego w Akcie 0 (sekretne zlecenie Papierologia? Nie tym razem).</summary>
     private void NotePaperHit(int src)
     {
-        if (Stage < D.PreludeStages && src >= 0 && ((D.SecretPaperMask >> src) & 1) != 0 && PaperHits < 255) ++PaperHits;
+        if (Stage < PreludeCount() && src >= 0 && ((D.SecretPaperMask >> src) & 1) != 0 && PaperHits < 255) ++PaperHits;
     }
 
     // Moce nowych zawodów (PlayerAbility).

@@ -43,6 +43,10 @@ public static class Secrets
         {
             if (d.Contracts[i].Cosmetic == k && (p.Contracts & (1u << i)) != 0) return true;
         }
+        for (var c = 0; c < d.Career.Length; ++c) // v0.21.52 cz. d: kontrakt mapy kariery wygrany
+        {
+            if (d.Career[c].Helmet == k && ((p.CareerDone >> c) & 1) != 0) return true;
+        }
         // v0.21.52 cz. b: poziom inspektora, stopnie inwestora, kask mistrza (dowolny zawód na poziomie z nagrodą „helmet”)
         for (var l = 0; l < d.InspectorLevels.Length; ++l)
         {
@@ -110,7 +114,8 @@ public static class Secrets
     public static bool Condition(GameData d, Profile p, Game g, int i)
     {
         var sd = d.Secrets[i];
-        var won = g != null && g.St == GameStatus.Won;
+        // v0.21.52 cz. d: wygrana liczy się w pełnym budynku (co najmniej 10 etapów - nie w krótkim Domku letniskowym)
+        var won = g != null && g.St == GameStatus.Won && g.RouteCount() - g.PreludeCount() >= 10;
         return sd.Kind switch
         {
             SecretKind.NoCoffeeWin => won && g.CoffeeDrunk == 0,

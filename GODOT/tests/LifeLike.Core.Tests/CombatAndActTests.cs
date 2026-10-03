@@ -106,7 +106,7 @@ public class CombatAndActTests
         Assert.Equal(c0 + g.ActBonus + D.Enemies[g.Enemies[g.Boss].DefId].Score / D.CashPerScore, g.Cash);
         g.NextStage();
         Assert.True(!g.ActCleared && D.Stages[g.Stage].Act == 1);
-        while (g.Stage < D.Stages.Length - 1)
+        while (g.Stage < D.StagesCount - 1)
         {
             g.DebugSkip();
             g.NextStage();
@@ -212,7 +212,7 @@ public class CombatAndActTests
         var ii = D.EnemyIndex("inspekcja");
         var st = Array.FindIndex(D.Stages, s => s.Boss == ii);
         var id = D.Enemies[ii];
-        Assert.True(st + 1 < D.Stages.Length && D.Stages[st + 1].Act == D.Stages[st].Act);
+        Assert.True(st + 1 < D.StagesCount && D.Stages[st + 1].Act == D.Stages[st].Act);
         var g = TestData.Run(1, 31);
         for (var k = TestData.F0; k < st; ++k)
         {
