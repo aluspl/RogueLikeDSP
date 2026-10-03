@@ -784,7 +784,7 @@ namespace
 
     void page_help(app& a)
     {
-        constexpr int pages_count = 18;
+        constexpr int pages_count = 19;
         core::message cmb[3];   // kombinacje stanów (#29): "Mokry + prąd! Porażenie"
         for(int k = 0; k < 3 && k < data::combos_count; ++k) cmb[k].add(data::combos[k].short_name).add(" ").add(data::combos[k].name);
         core::message luck1, luck2;   // wzory z danych (sekcja luck)
@@ -828,13 +828,15 @@ namespace
             { data::goals_help[0], data::goals_help[1], data::goals_help[2], data::goals_help[3], data::goals_help[4],
               data::goals_help[5], data::goals_help[6] },   // v0.21.52 cz. c: drzewko, kolekcje, zadania, seria dni
             { data::career_help[0], data::career_help[1], data::career_help[2], data::career_help[3], data::career_help[4],
-              data::career_help[5], data::career_help[6] } };   // v0.21.52 cz. d: mapa kariery
+              data::career_help[5], data::career_help[6] },   // v0.21.52 cz. d: mapa kariery
+            { data::filters_help[0], data::filters_help[1], data::filters_help[2], data::filters_help[3], data::filters_help[4],
+              data::filters_help[5], data::filters_help[6] } };   // v0.21.53: filtry ekranu
         for(int pg = 0; pg < pages_count; ++pg)
         {
             page_sprites t;
             a.text.set_center_alignment();
-            static const char* const names[10] = { "Kombinacje", "Skąd stany", "Premie i elity", "Wydarzenia", "Magazyn", "Po budowie",
-                                                   "Sekrety", "Inspektor", "Cele", "Kariera" };   // strony 9-18 (v0.21.50, 15: v0.21.51 cz. 2, 16-18: v0.21.52)
+            static const char* const names[11] = { "Kombinacje", "Skąd stany", "Premie i elity", "Wydarzenia", "Magazyn", "Po budowie",
+                                                   "Sekrety", "Inspektor", "Cele", "Kariera", "Filtry ekranu" };   // strony 9-19 (v0.21.50, 15: v0.21.51 cz. 2, 16-18: v0.21.52, 19: v0.21.53)
             core::message title; title.add(pg >= 8 ? names[pg - 8] : (pg == 1 ? "Okna i wybory" : "Jak grać")).add(" (").add(pg + 1).add("/").add(pages_count).add(")");
             a.text.generate(0, -70, title.s, t);
             a.text.set_left_alignment();
