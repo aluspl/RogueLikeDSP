@@ -121,6 +121,12 @@
 //       kask i tytuł Praktykant; tytuł: pasek inspektora, telefon -> Odznaki x5 = Inspektor, Osiedle: Nowa betoniarka;
 //       wybór zawodu: Mistrz 6 z paskiem, SELECT = Wygląd (wariant mocy, następny stopień inwestora); w budowie 1 HP
 //       i obok przebudzony problem: B = czekaj -> banery Inspektor 10 i Mistrzostwo 7, strona Postęp z trzema paskami
+//  v0.21.52 cz. c: drzewko Szkoleń (#46), kolekcje (#49), zadania dnia i tygodnia (#50), seria dni (#51)
+//  71 - profil po 25 budowach: pień gałęzi Fach i część BHP, w drzewku wybrana Siła rozpędu, 220 dośw.; kolekcja Stan surowy
+//       bez jednego problemu (9/10), 3 karty bossów, seria 2 dni (data budowy dnia 3.10.2026), zadania: jedno wykonane,
+//       drugie w połowie; tytuł: "Zadania 1/3  Seria 2", telefon -> Koszty SELECT = Drzewko, Katalog A = Kolekcje /
+//       Bossowie / Album, Odznaki A x6 = Zadania; w budowie 1 HP, obok przebudzony problem: B = czekaj -> koniec budowy,
+//       banery: zadanie dnia, komplet Stan surowy
 #include "core.h"
 #include "meta.h"
 
@@ -268,6 +274,37 @@ namespace debug_scenario
                 if(data::inspector_levels[l].reward == core::progress_reward::helmet) { p.helmet = uint8_t(data::inspector_levels[l].index + 1); break; }
             p.title = uint8_t(core::progress_title_index(0, 2) + 1);   // Praktykant (poziom 2)
             p.houses_count = 4; for(int i = 0; i < 4; ++i) p.houses[i] = uint8_t(1 | (i % 3) << 4);
+            core::story_check(p, nullptr);
+        }
+        if(scenario == 71)
+        {
+            p.xp = 220; p.best = 5100; p.runs = 25; p.wins = 7; p.rewards = 7; p.respect = 40; p.respect_total = 210;
+            for(int i = 0; i < data::upgrades_count; ++i) p.levels[i] = 0;
+            for(int i = 0; i < data::upgrades_count; ++i)
+            {
+                const int b = core::tree_branch_of(i);
+                if(b == 0) p.levels[i] = uint8_t(data::upgrades[i].levels);   // pień gałęzi Fach
+                else if(b == 1) p.levels[i] = 2;                             // BHP w połowie
+                else if(i % 2) p.levels[i] = 1;
+            }
+            p.tree = uint16_t(2 << 0);   // Fach I: Siła rozpędu
+            p.inspector_xp = uint32_t(core::progress_floor(data::inspector_levels, 12) + 40);
+            for(int d = 0; d < data::enemies_count; ++d)
+            {
+                if((data::collections[0].enemies >> d) & 1) { p.kill_count[d] = uint8_t(data::collections[0].count); core::catalog_add(p, d); }
+                else if(d % 3 == 0 && ! core::enemy_boss(d)) { p.kill_count[d] = uint8_t(d % 7); if(p.kill_count[d]) core::catalog_add(p, d); }
+            }
+            p.kill_count[data::enemy_woda] = uint8_t(data::collections[0].count - 1);   // komplet bez jednego
+            for(int k = 0; k < 3; ++k) { const int d = core::boss_at(k); if(d >= 0) { p.kill_count[d] = uint8_t(2 + k); core::catalog_add(p, d); } }
+            core::set_daily_date(p, 2026, 10, 3);
+            const int day = core::daily_number(2026, 10, 3);
+            core::record_daily(p, day - 2, 2100, false);
+            core::record_daily(p, day - 1, 3300, true);   // seria 2 dni
+            core::tasks_roll(p, day, core::weekly_number(2026, 10, 3));
+            p.task_progress[0] = uint8_t(core::task_of(p, 0).target - 1);   // zadanie dnia: brakuje jednego
+            p.task_progress[1] = uint8_t(core::task_of(p, 1).target); p.task_done = 2; p.tasks_total = 4;   // jedno wykonane
+            p.task_progress[3] = uint8_t(core::task_of(p, 3).target / 2);
+            p.houses_count = 7; for(int i = 0; i < 7; ++i) p.houses[i] = uint8_t((i % 6) | (i % 3) << 4);
             core::story_check(p, nullptr);
         }
         if(scenario == 36) { p.catalog = 0xFFFF; p.catalog_hi = 0xFFFFFFFFu; }
@@ -946,6 +983,17 @@ namespace debug_scenario
                 g.stage_start_turn = g.turns;
                 g.hero.hp = 1;   // awans za bossa: +2 HP = 3 (Na styk: 1-3 HP)
                 g.enemies_count = g.boss + 1;
+                break;
+            }
+            case 71:   // v0.21.52 cz. c: porażka - zadanie dnia wykonane (licznik z budowy), komplet Stan surowy (Woda gruntowa)
+            {
+                g.hero.hp = 1;
+                g.score = 900;
+                g.enemies_count = 0;
+                g.kills_by_type[data::enemy_woda] = 1; g.kills = 60; g.elites_killed = 3; g.helpers_called = 3; g.powers_used = 9;
+                g.coffee_drunk = 5; g.combos_run = 4; g.secrets_found = 1; g.stage_event_log[0] = 4; g.stage_event_log[1] = 4;
+                g.kills_by_type[data::enemy_betoniarka] = 2;
+                place_enemy(g, data::enemy_budzet, 1, 1, true, 0);
                 break;
             }
             case 21:
