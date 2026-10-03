@@ -4587,7 +4587,7 @@ namespace
         for(int c = 1; c < data::career_count; ++c)
             if((career_new >> c) & 1) banner.push("Nowy kontrakt!", data::career[c].name);
         for(int f = 0; f < data::screen_filters_count; ++f)   // v0.21.53: filtr ekranu odblokowany (wybór zawodu > SELECT)
-            if((filters_new >> f) & 1) banner.push("Nowy filtr ekranu!", data::screen_filters[f].name);
+            if((filters_new >> f) & 1) banner.push(data::filter_ui_banner, data::screen_filters[f].name);
         for(int f = 0; ; ++f)
         {
             banner.update(a);
@@ -5302,7 +5302,7 @@ namespace
             put(keep_t, 8, keep_row2, fit(a, e.s, 128).c_str(), bn::sprite_palette_items::font_map_good);
             core::message sm;   // tryb inwestora: stawka (SELECT - modyfikatory); v0.21.53: inaczej SELECT - wygląd i filtr ekranu
             if(inv) sm.add("SELECT: stawka ").add(core::investor_stake(core::investor_mask(a.save)));
-            else sm.add("SELECT: wygląd");
+            else sm.add(data::filter_ui_gba_select);
             put(keep_t, 232, keep_row2, sm.s, bn::sprite_palette_items::font_map_loot, 1);
         };
 
@@ -5502,7 +5502,7 @@ namespace
                 if(i == filter_row)   // v0.21.53: filtr ekranu (A = następny odblokowany)
                 {
                     const int f = core::selected_filter(a.save);
-                    core::message fm; fm.add("Ekran: ").add(data::screen_filters[f].name);
+                    core::message fm; fm.add(data::filter_ui_look_desc).add(data::screen_filters[f].name);
                     stripe(c, r, is_sel ? phone_tile::stripe_brand : (f > 0 ? phone_tile::stripe_done : phone_tile::stripe_todo));
                     phone_text(a, t, list_x, row_py(r), fit(a, fm.s, pill_room(data::screen_filters[f].short_name)).c_str(), is_sel ? ink::brand : ink::dark);
                     phone_pill(a, c, t, pill_end, row_ty(r), data::screen_filters[f].short_name, f > 0 ? pill::done : pill::gray);
@@ -5564,7 +5564,7 @@ namespace
             for(int f = 0; f < data::screen_filters_count && locked < 0; ++f) if(! core::filter_unlocked(a.save, f)) locked = f;
             if(sel == filter_row && locked >= 0)
             {
-                core::message lm; lm.add("???: ").add(data::screen_filters[locked].hint);
+                core::message lm; lm.add(data::filter_ui_locked).add(": ").add(data::screen_filters[locked].hint);
                 phone_text(a, t, list_x, row_py(5), fit(a, lm.s, 150).c_str(), ink::dim);
             }
             else if(inv)

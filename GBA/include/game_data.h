@@ -1105,6 +1105,47 @@ inline constexpr core::screen_filter_def screen_filters[] = {   // filtry ekranu
 };
 inline constexpr int screen_filters_count = 9;
 
+inline constexpr const char* filter_ui_title = "Filtr ekranu";
+inline constexpr const char* filter_ui_section = "FILTR EKRANU";
+inline constexpr const char* filter_ui_section_right = "dostępność: zawsze";
+inline constexpr const char* filter_ui_picked = "Wybrany";
+inline constexpr const char* filter_ui_access = "Dostępność";
+inline constexpr const char* filter_ui_locked = "???";
+inline constexpr const char* filter_ui_strength = "Siła efektu";
+inline constexpr const char* filter_ui_phone = "Filtr na telefonie";
+inline constexpr const char* filter_ui_motion = "Ograniczony ruch";
+inline constexpr const char* filter_ui_on = "Wł.";
+inline constexpr const char* filter_ui_off = "Wył.";
+inline constexpr const char* filter_ui_strength_desc = "Siła filtra:";
+inline constexpr const char* filter_ui_strength_desc2 = "Mniej = łagodniejszy efekt";
+inline constexpr const char* filter_ui_phone_desc = "Filtr także na telefonie i banerach";
+inline constexpr const char* filter_ui_phone_desc2 = "Wył.: tylko plac, HUD i plansze";
+inline constexpr const char* filter_ui_motion_desc = "Bez falowania, drgań i migania";
+inline constexpr const char* filter_ui_motion_desc2 = "Kwas: sama tęcza, bez fal";
+inline constexpr const char* filter_ui_locked_desc2 = "Odblokujesz postępem w grze";
+inline constexpr const char* filter_ui_motion_warn = "Uwaga: migająca barwa i fale!";
+inline constexpr const char* filter_ui_motion_on = "Ograniczony ruch: bez fal";
+inline constexpr const char* filter_ui_banner = "Nowy filtr ekranu!";
+inline constexpr const char* filter_ui_banner_where = "Ustawienia > Filtr ekranu";
+inline constexpr const char* filter_ui_look_row = "Filtr ekranu: ";
+inline constexpr const char* filter_ui_look_desc = "Ekran: ";
+inline constexpr const char* filter_ui_count = "filtrów";
+inline constexpr const char* filter_ui_gba_select = "SELECT: wygląd";
+inline constexpr const char* filter_ui_always = "Zawsze";
+inline constexpr const char* filter_ui_always_access = "Zawsze (dla daltonistów)";
+inline constexpr const char* filter_ui_or = " albo ";
+inline constexpr const char* filter_ui_inspector = "Inspektor ";
+inline constexpr const char* filter_ui_collection = "Kolekcja: ";
+inline constexpr const char* filter_ui_career = "Wygrana: ";
+inline constexpr const char* filter_ui_secret = "Sekret: ";
+inline constexpr const char* filter_ui_wins = " wygranych";
+inline constexpr const char* filter_ui_hint = "Strzałki: wybór i wartość  Spacja: wybierz  Esc: wróć";
+inline constexpr const char* filter_ui_back = "Wróć";
+inline constexpr const char* filter_ui_choose = "Wybierz";
+inline constexpr const char* filter_ui_change = "Zmień";
+inline constexpr const char* filter_ui_help_section = "FILTRY EKRANU";
+inline constexpr const char* filter_ui_help_where = "GDZIE";
+
 inline constexpr const char* filters_help[] = {   // Jak grać: filtry ekranu i tryby dla daltonistów
     "Filtry ekranu: wybór zawodu >",
     "SELECT: Wygląd (Godot: klucz).",

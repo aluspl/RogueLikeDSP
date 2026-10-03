@@ -2074,20 +2074,20 @@ namespace core
     inline message& filter_unlock_label(message& m, int f)
     {
         const screen_filter_def& d = data::screen_filters[f];
-        if(d.kind == filter_kind::access) return m.add("Zawsze (dla daltonistów)");
-        if(d.kind == filter_kind::classic) return m.add("Zawsze");
+        if(d.kind == filter_kind::access) return m.add(data::filter_ui_always_access);   // teksty z danych (screenFilters.ui)
+        if(d.kind == filter_kind::classic) return m.add(data::filter_ui_always);
         for(int i = 0; i < 2; ++i)
         {
             const filter_cond& c = d.unlock[i];
             if(c.kind == filter_unlock::none) break;
-            if(i > 0) m.add(" albo ");
+            if(i > 0) m.add(data::filter_ui_or);
             switch(c.kind)
             {
-                case filter_unlock::inspector:  m.add("Inspektor ").add(c.value); break;
-                case filter_unlock::collection: m.add("Kolekcja: ").add(data::collections[c.value].name); break;
-                case filter_unlock::career:     m.add("Wygrana: ").add(data::career[c.value].short_name); break;
-                case filter_unlock::secret:     m.add("Sekret: ").add(data::secrets[c.value].hint); break;
-                default:                        m.add(c.value).add(" wygranych"); break;
+                case filter_unlock::inspector:  m.add(data::filter_ui_inspector).add(c.value); break;
+                case filter_unlock::collection: m.add(data::filter_ui_collection).add(data::collections[c.value].name); break;
+                case filter_unlock::career:     m.add(data::filter_ui_career).add(data::career[c.value].short_name); break;
+                case filter_unlock::secret:     m.add(data::filter_ui_secret).add(data::secrets[c.value].hint); break;
+                default:                        m.add(c.value).add(data::filter_ui_wins); break;
             }
         }
         return m;

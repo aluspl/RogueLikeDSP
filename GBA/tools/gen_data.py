@@ -889,6 +889,11 @@ for x in sf:
     L.append(f'    {{ {s(x["name"])}, {s(x["short"])}, {s(x["desc"])}, {s(x.get("hint", ""))}, core::filter_kind::{x["kind"]}, '
              f'{"true" if x.get("cues") else "false"}, {"true" if x.get("motion") else "false"}, {{ {", ".join(conds)} }}, {s(x["id"])} }},')
 L += ["};", f"inline constexpr int screen_filters_count = {len(sf)};", ""]
+import re as _re
+sfu = d["screenFilters"].get("ui", {})   # teksty interfejsu filtrów (do tłumaczenia; GBA używa części)
+for k_, v_ in sfu.items():
+    L.append(f"inline constexpr const char* filter_ui_{_re.sub(r'([A-Z])', lambda m_: '_' + m_.group(1).lower(), k_)} = {s(v_)};")
+L.append("")
 fh_ = d["filtersHelp"]   # v0.21.53: Jak grać - filtry ekranu
 assert len(fh_) == 7 and all(len(x) <= 31 for x in fh_), fh_
 L += ["inline constexpr const char* filters_help[] = {   // Jak grać: filtry ekranu i tryby dla daltonistów"]
