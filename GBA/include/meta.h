@@ -13,7 +13,8 @@ namespace core
     constexpr int max_respect = 19;       // 16 w respect_ranks + 3 w respect_ranks_hi (v12)
     static_assert(data::classes_count <= max_classes && data::respect_count <= max_respect && data::rewards_count <= 255);
 
-    constexpr char profile_magic[8] = "PBRL014";
+    constexpr char profile_magic[8] = "PBRL015";
+    constexpr char profile_magic_v14[8] = "PBRL014";
     constexpr char profile_magic_v13[8] = "PBRL013";
     constexpr char profile_magic_v12[8] = "PBRL012";
     constexpr char profile_magic_v11[8] = "PBRL011";
@@ -39,6 +40,10 @@ namespace core
     constexpr int profile_v11_size = 188; // v12 = v11 + sekretne zlecenia (#39), wygląd, Respekt 16-18
     constexpr int profile_v12_size = 196; // v13 = v12 + tytuł i kolor kasku (v0.21.52), poziomy Szkoleń od nowa
     constexpr int profile_v13_size = 200; // v14 = v13 + poziom inspektora, mistrzostwo zawodów, druga pamiątka (v0.21.52 cz. b)
+    constexpr int profile_v14_size = 240; // v15 = v14 + drzewko Szkoleń, kolekcje, zadania dnia, seria dni (v0.21.52 cz. c)
+    constexpr int task_slots = 5;         // v0.21.52 cz. c: 3 zadania dnia + 2 tygodnia
+    constexpr int daily_task_slots = 3;
+    static_assert(data::tree_nodes_count <= 8 && data::collections_count <= 8 && data::upgrades_count <= 8);
     static_assert(data::secrets_count <= 16 && data::cosmetics_count <= 255);   // wygląd: przełączniki tylko 0-7 (p.cosmetic), kolory kasku w p.helmet
     constexpr int weekly_slots = 3;
     static_assert(data::weekly_history <= weekly_slots && data::story_arc_count <= 32);
@@ -130,7 +135,22 @@ namespace core
         uint16_t power_alt;            // bity: wariant mocy włączony (zawód; działa od poziomu mistrzostwa z nagrodą "power")
         uint16_t run_progress;         // ile dośw. inspektora z bieżącej budowy już przeniesiono (znak wodny jak run_kills)
         uint8_t keepsake2;             // druga pamiątka + 1 (0 = bez; slot z poziomu inspektora)
-        uint8_t reserved14[7];         // wyrównanie do 240 B (zapis budowy od 256)
+        uint8_t reserved14[7];         // wyrównanie do 240 B
+        // --- v15 (v0.21.52 cz. c): drzewko Szkoleń (#46), kolekcje (#49), zadania dnia i tygodnia (#50), seria dni (#51)
+        uint16_t tree;                 // wybór w węzłach drzewka: 2 bity na węzeł (0 brak, 1 = opcja A, 2 = opcja B)
+        uint8_t kill_count[max_enemy_types];   // kolekcje: pokonane każdego rodzaju (do 255)
+        uint8_t kill_mark[max_enemy_types];    // ile z bieżącej budowy już doliczono (znak wodny jak run_kills)
+        uint16_t task_day;             // dzień zadań dnia (daily_number), 0 = jeszcze żadnych
+        uint16_t task_week;            // tydzień zadań tygodnia (weekly_number)
+        uint8_t task_progress[task_slots];   // postęp: 3 zadania dnia, 2 tygodnia
+        uint8_t task_mark[task_slots];       // ile z bieżącej budowy już doliczono (znak wodny)
+        uint8_t task_done;             // bity: zadanie wykonane (Respekt wydany)
+        uint8_t streak;                // seria dni budowy dnia (kolejne dni)
+        uint16_t tasks_total;          // wykonane zadania łącznie (nagrody za liczbę)
+        uint16_t streak_day;           // ostatni dzień serii (numer budowy dnia)
+        uint8_t streak_best;           // najdłuższa seria (nagrody za 3 / 7 / 14 dni)
+        uint8_t collections;           // bity: ogłoszone komplety kolekcji (baner raz)
+        uint8_t reserved15[24];        // wyrównanie do 384 B (zapis budowy od 512)
     };
     static_assert(offsetof(profile, badges) == profile_v2_size);
     static_assert(offsetof(profile, kills_total) == profile_v3_size);
@@ -142,7 +162,11 @@ namespace core
     static_assert(offsetof(profile, weekly_week) == profile_v10_size && offsetof(profile, weekly_score) == 168);
     static_assert(offsetof(profile, secrets) == profile_v11_size && offsetof(profile, respect_ranks_hi) == 193);
     static_assert(offsetof(profile, title) == profile_v12_size && offsetof(profile, inspector_xp) == profile_v13_size);
-    static_assert(offsetof(profile, power_alt) == 228 && offsetof(profile, keepsake2) == 232 && sizeof(profile) == 240);
+    static_assert(offsetof(profile, power_alt) == 228 && offsetof(profile, keepsake2) == 232 && offsetof(profile, tree) == profile_v14_size);
+    static_assert(offsetof(profile, kill_count) == 242 && offsetof(profile, kill_mark) == 290 && offsetof(profile, task_day) == 338);
+    static_assert(offsetof(profile, task_progress) == 342 && offsetof(profile, task_mark) == 347 && offsetof(profile, task_done) == 352);
+    static_assert(offsetof(profile, tasks_total) == 354 && offsetof(profile, streak_day) == 356 && offsetof(profile, collections) == 359);
+    static_assert(sizeof(profile) == 384);
 
     // Katalog usterek: rodzaje 0-15 w catalog, 16-47 w catalog_hi.
     inline bool catalog_has(const profile& p, int d) { return d < 16 ? (p.catalog >> d) & 1 : (p.catalog_hi >> (d - 16)) & 1; }
@@ -320,16 +344,26 @@ namespace core
     inline void migrate_v11(profile& p);
     inline void migrate_v12(profile& p);
     inline void migrate_v14(profile& p);
+    inline void migrate_v15(profile& p);
     inline int next_unlock(const profile& p, int& kind, int& index);
 
+    // v0.21.52 cz. c: każda ścieżka migracji kończy się migrate_v15 (drzewko, kolekcje, zadania, seria dni).
     inline bool profile_fix(profile& p)
     {
         if(std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0) return clamp_levels(p);
+        if(std::memcmp(p.magic, profile_magic_v14, sizeof p.magic) == 0)   // v14 -> v15: kolekcje z Katalogu, seria z wyników dni
+        {
+            std::memset(reinterpret_cast<char*>(&p) + profile_v14_size, 0, sizeof p - profile_v14_size);
+            std::memcpy(p.magic, profile_magic, sizeof p.magic);
+            migrate_v15(p);
+            return true;
+        }
         if(std::memcmp(p.magic, profile_magic_v13, sizeof p.magic) == 0)   // v13 -> v14: inspektor i mistrzostwo z dotychczasowych statystyk
         {
             std::memset(reinterpret_cast<char*>(&p) + profile_v13_size, 0, sizeof p - profile_v13_size);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             migrate_v14(p);
+            migrate_v15(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v12, sizeof p.magic) == 0)   // v12 -> v13: zwrot za Szkolenia, tytuł i kask od zera
@@ -338,6 +372,7 @@ namespace core
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             migrate_v13(p);
             migrate_v14(p);
+            migrate_v15(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v11, sizeof p.magic) == 0)   // v11 -> v12: sekretne zlecenia z tego, co już widać w profilu
@@ -347,6 +382,7 @@ namespace core
             migrate_v13(p);
             migrate_v12(p);
             migrate_v14(p);
+            migrate_v15(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v10, sizeof p.magic) == 0)   // v10 -> v11: wyzwania tygodnia i fabuła od zera
@@ -357,6 +393,7 @@ namespace core
             migrate_v11(p);
             migrate_v12(p);
             migrate_v14(p);
+            migrate_v15(p);
             return true;
         }
         bool v9 = std::memcmp(p.magic, profile_magic_v9, sizeof p.magic) == 0;
@@ -370,6 +407,7 @@ namespace core
             migrate_v11(p);
             migrate_v12(p);
             migrate_v14(p);
+            migrate_v15(p);
             return true;
         }
         // v7/v6/v5/v4/v3/v2 -> v9: stare pola zostają, nowe od zera; bez wybranej pamiątki - pierwsza odblokowana
@@ -390,6 +428,7 @@ namespace core
             migrate_v11(p);
             migrate_v12(p);
             migrate_v14(p);
+            migrate_v15(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v1, sizeof p.magic) == 0)
@@ -402,6 +441,7 @@ namespace core
             migrate_v11(p);
             migrate_v12(p);
             migrate_v14(p);
+            migrate_v15(p);
             return true;
         }
         profile_reset(p);
@@ -478,11 +518,24 @@ namespace core
         for(int i = 0; i < data::secrets_count; ++i) if(data::secrets[i].reward == k && data::secrets[i].index == index) return i;
         return -1;
     }
+    inline bool collection_complete(const profile& p, int i);   // v0.21.52 cz. c (niżej)
+    // Nagroda z listy progress_level za osiągnięty próg (zadania łącznie, seria dni): wygląd k / tytuł / pamiątka.
+    inline bool goal_helmet(const progress_level* lv, int n, int have, int k)
+    {
+        for(int l = 0; l < n; ++l) if(lv[l].reward == progress_reward::helmet && lv[l].index == k && have >= lv[l].xp) return true;
+        return false;
+    }
+
     // Wygląd: z sekretnego zlecenia albo (v0.21.52) z odznaki / zlecenia - kolory kasku.
     inline bool cosmetic_unlocked(const profile& p, int k)
     {
         if(k < 0) return false;
         if(secret_owned(p, secret_reward::cosmetic, k)) return true;
+        // v0.21.52 cz. c: kolekcje, zadania łącznie, seria dni
+        for(int i = 0; i < data::collections_count; ++i)
+            if(data::collections[i].reward.reward == progress_reward::helmet && data::collections[i].reward.index == k && collection_complete(p, i)) return true;
+        if(goal_helmet(data::task_rewards, data::task_rewards_count, p.tasks_total, k)) return true;
+        if(goal_helmet(data::streak_rewards, data::streak_rewards_count, p.streak_best, k)) return true;
         for(int i = 0; i < data::badges_count; ++i) if(data::badges[i].cosmetic == k && (p.badges & (1u << i))) return true;
         for(int i = 0; i < data::contracts_count; ++i) if(data::contracts[i].cosmetic == k && (p.contracts & (1u << i))) return true;
         // v0.21.52 cz. b: poziom inspektora, stopnie inwestora, kask mistrza (dowolny zawód na poziomie z nagrodą "helmet")
@@ -545,7 +598,14 @@ namespace core
         if(t >= progress_titles_from)
         {
             const progress_title& pt = data::progress_titles[t - progress_titles_from];
-            return pt.source == 0 ? inspector_level(p) >= pt.level : max_stake(p) >= pt.level;
+            switch(pt.source)
+            {
+                case 0:  return inspector_level(p) >= pt.level;
+                case 1:  return max_stake(p) >= pt.level;
+                case 2:  return collection_complete(p, pt.level - 1);   // v0.21.52 cz. c: kolekcje, seria dni, zadania
+                case 3:  return p.streak_best >= pt.level;
+                default: return p.tasks_total >= pt.level;
+            }
         }
         return t < data::badges_count ? (p.badges >> t) & 1 : (p.contracts >> (t - data::badges_count)) & 1;
     }
@@ -636,6 +696,51 @@ namespace core
         return true;
     }
 
+    // ------------------------------------------------------------------ v0.21.52 cz. c (#46): drzewko Szkoleń
+    // Gałęzie Fach / BHP / Logistyka: pień = Szkolenia (poziomy kupowane jak dotąd), węzeł otwiera się po depth poziomach
+    // pnia gałęzi; w węźle wybór 1 z 2 opcji za dośw. (cost), zmiana wyboru za data::tree_respec_cost.
+    inline void add_upgrade(run_mods& m, upgrade_effect e, int v);
+    inline int tree_branch_levels(const profile& p, int b)
+    {
+        int n = 0;
+        for(int i = 0; i < data::upgrades_count; ++i) if((data::tree_branches[b].upgrades >> i) & 1) n += p.levels[i];
+        return n;
+    }
+    inline int tree_branch_max(int b)
+    {
+        int n = 0;
+        for(int i = 0; i < data::upgrades_count; ++i) if((data::tree_branches[b].upgrades >> i) & 1) n += data::upgrades[i].levels;
+        return n;
+    }
+    inline int tree_branch_of(int upgrade) { for(int b = 0; b < data::tree_branches_count; ++b) if((data::tree_branches[b].upgrades >> upgrade) & 1) return b; return 0; }
+    // Wybrana opcja węzła n: 0 = brak, 1 = A, 2 = B.
+    inline int tree_pick(const profile& p, int n) { const int v = (p.tree >> (2 * n)) & 3; return v <= 2 ? v : 0; }
+    inline bool tree_open(const profile& p, int n) { const tree_node& tn = data::tree_nodes[n]; return tree_branch_levels(p, tn.branch) >= tn.depth; }
+    // Koszt wybrania opcji o (0/1) węzła n: pierwszy wybór - cost, zmiana - opłata; -1 = już wybrana.
+    inline int tree_cost(const profile& p, int n, int o)
+    {
+        const int pk = tree_pick(p, n);
+        if(pk == o + 1) return -1;
+        return pk == 0 ? data::tree_nodes[n].cost : data::tree_respec_cost;
+    }
+    inline bool tree_choose(profile& p, int n, int o)
+    {
+        const int c = tree_cost(p, n, o);
+        if(n < 0 || n >= data::tree_nodes_count || o < 0 || o > 1 || c < 0 || ! tree_open(p, n) || p.xp < c) return false;
+        p.xp -= c;
+        p.tree = uint16_t((p.tree & ~(3u << (2 * n))) | (unsigned(o + 1) << (2 * n)));
+        return true;
+    }
+    inline int tree_picked(const profile& p) { int k = 0; for(int n = 0; n < data::tree_nodes_count; ++n) k += tree_pick(p, n) > 0; return k; }
+    inline void add_tree(run_mods& m, const profile& p)
+    {
+        for(int n = 0; n < data::tree_nodes_count; ++n)
+        {
+            const int pk = tree_pick(p, n);
+            if(pk > 0) add_upgrade(m, data::tree_nodes[n].options[pk - 1].effect, data::tree_nodes[n].options[pk - 1].value);
+        }
+    }
+
     inline bool buy_class(profile& p, int c)
     {
         const int cost = class_cost(p);
@@ -694,6 +799,7 @@ namespace core
     {
         const keepsake_def& kd = data::keepsakes[k];
         if(kd.start || (kd.badge >= 0 && (p.badges & (1u << kd.badge)))) return true;
+        if(kd.streak > 0 && p.streak_best >= kd.streak) return true;   // v0.21.52 cz. c: seria dni budowy dnia
         for(int i = 0; i < data::contracts_count; ++i)
             if(data::contracts[i].keepsake == k && (p.contracts & (1u << i))) return true;
         return false;
@@ -755,6 +861,8 @@ namespace core
         ++p.runs;
         p.run_kills = 0; p.run_powers = 0; p.run_brand = 0; p.run_clean = 0; p.run_respect = 0;
         p.run_progress = 0;   // v0.21.52 cz. b: dośw. inspektora z nowej budowy - nic jeszcze nie przeniesiono
+        for(auto& k : p.kill_mark) k = 0;   // v0.21.52 cz. c: kolekcje i zadania - znak wodny nowej budowy
+        for(auto& k : p.task_mark) k = 0;
         int k = selected_keepsake(p);
         if(k >= 0 && p.keepsake_runs[k] < 255) ++p.keepsake_runs[k];
         int k2 = selected_keepsake2(p);
@@ -820,6 +928,10 @@ namespace core
             case upgrade_effect::mats_pct:  m.mats_pct += v; break;
             case upgrade_effect::gear_pct:  m.gear_pct += v; break;
             case upgrade_effect::cash:      m.cash += v; break;
+            case upgrade_effect::shop_pct:    m.shop_pct += v; break;      // v0.21.52 cz. c: węzły drzewka
+            case upgrade_effect::brigade_pct: m.brigade_pct += v; break;
+            case upgrade_effect::cooldown:    m.cooldown += v; break;
+            case upgrade_effect::first_hit:   m.mastery += imin(15, v) << first_hit_shift; break;   // Siła rozpędu (jeden węzeł)
             default: break;
         }
     }
@@ -858,6 +970,10 @@ namespace core
             case upgrade_effect::mats_pct:  return m.add("Materiały +").add(v).add("%");
             case upgrade_effect::gear_pct:  return m.add("Sprzęt +").add(v);
             case upgrade_effect::cash:      return m.add("Budżet +").add(v).add(" zł");
+            case upgrade_effect::shop_pct:    return m.add("Hurtownia -").add(v).add("%");
+            case upgrade_effect::brigade_pct: return m.add("Brygada -").add(v).add("%");
+            case upgrade_effect::cooldown:    return m.add("Moc -").add(v).add(" t.");
+            case upgrade_effect::first_hit:   return m.add("Pierwszy cios +").add(v);
             default:                        return m;
         }
     }
@@ -884,6 +1000,9 @@ namespace core
         m.tools = tools_mask(p);
         m.helpers = helpers_mask(p);
         for(int i = 0; i < data::upgrades_count; ++i) add_upgrade_levels(m, i, p.levels[i]);
+        add_tree(m, p);   // v0.21.52 cz. c: wybrane węzły drzewka Szkoleń
+        for(int i = 0; i < data::collections_count; ++i)   // v0.21.52 cz. c: komplety kolekcji ze stałą premią
+            if(data::collections[i].reward.reward == progress_reward::perk && collection_complete(p, i)) add_perk(m, data::collections[i].bonus);
         for(int i = 0; i < data::respect_count; ++i)   // Respekt: kupione rangi
             if(respect_rank(p, i) > 0) add_respect(m, data::respect[i].effect, respect_value(p, i));
         m.gear_slots = gear_slots_mask(p);   // nagrody za odbiór: buty, pas
@@ -902,7 +1021,7 @@ namespace core
     inline run_mods mods(const profile& p, int cls)
     {
         run_mods m = mods(p);
-        m.mastery = mastery_bits(p, cls);
+        m.mastery |= mastery_bits(p, cls);   // v0.21.52 cz. c: bity 8-11 - Siła rozpędu z drzewka
         return m;
     }
 
@@ -912,10 +1031,11 @@ namespace core
     {
         run_mods m;
         if(src == 0)
-            for(int i = 0; i < data::upgrades_count; ++i)
+            for(int i = 0; i <= data::upgrades_count; ++i)
             {
                 run_mods u;
-                add_upgrade_levels(u, i, p.levels[i]);   // premie bojowe (bez kawy, termosu, znajdziek, materiałów, sprzętu, zł)
+                if(i < data::upgrades_count) add_upgrade_levels(u, i, p.levels[i]);   // premie bojowe (bez kawy, termosu, znajdziek, materiałów, sprzętu, zł)
+                else add_tree(u, p);   // v0.21.52 cz. c: węzły drzewka (Szkolenia)
                 m.hp += u.hp; m.def += u.def; m.dmg += u.dmg; m.luck += u.luck; m.craft += u.craft;
                 m.dmg_pct += u.dmg_pct; m.taken_pct += u.taken_pct; m.crit += u.crit; m.dodge += u.dodge;
             }
@@ -953,6 +1073,7 @@ namespace core
         for(int i = 0; i < data::classes_count; ++i) if(class_for_sale(i)) t += class_price(nc++);
         for(int i = 0; i < data::tools_count; ++i) if(data::tools[i].shop) t += tool_price(nt++);
         for(int i = 0; i < data::brigade_count; ++i) t += data::brigade[i].cost;
+        for(int n = 0; n < data::tree_nodes_count; ++n) t += data::tree_nodes[n].cost;   // v0.21.52 cz. c: węzły drzewka
         return t;
     }
 
@@ -964,6 +1085,7 @@ namespace core
         for(int k = 0, n = classes_bought(p); k < n; ++k) t += class_price(k);
         for(int k = 0, n = tools_bought(p); k < n; ++k) t += tool_price(k);
         for(int i = 0; i < data::brigade_count; ++i) if(helper_unlocked(p, i)) t += data::brigade[i].cost;
+        for(int n = 0; n < data::tree_nodes_count; ++n) if(tree_pick(p, n) > 0) t += data::tree_nodes[n].cost;   // bez opłat za zmianę
         return t;
     }
 
@@ -1069,11 +1191,14 @@ namespace core
         return now - before;
     }
 
+    inline void bank_collections(profile& p, const game& g);   // v0.21.52 cz. c (niżej)
+
     // Przenosi do profilu trwałe osiągnięcia budowy (katalog, narzędzia, wygrane zawody, liczniki zleceń).
     // Można wołać wielokrotnie.
     inline void record_run(profile& p, game& g)
     {
         bank_counters(p, g);
+        bank_collections(p, g);   // v0.21.52 cz. c: liczniki kolekcji (znak wodny kill_mark)
         for(int d = 0; d < data::enemies_count; ++d) if(g.kills_by_type[d]) catalog_add(p, d);
         p.tools_found = uint8_t(p.tools_found | g.tools_found);
         if(g.st == status::won) set_class_won(p, g.cls);
@@ -1286,10 +1411,13 @@ namespace core
         return false;
     }
 
+    inline int streak_record(profile& p, int day);   // v0.21.52 cz. c (niżej)
     // Wynik codziennej budowy: najlepszy dnia zostaje; nowy dzień zastępuje najstarszy. Zwraca true = nowy rekord dnia.
+    // v0.21.52 cz. c: liczy też serię dni (streak_record).
     inline bool record_daily(profile& p, int day, int score, bool won)
     {
         if(p.daily_runs < 255) ++p.daily_runs;
+        streak_record(p, day);
         int slot = -1, oldest = 0;
         for(int i = 0; i < data::daily_history; ++i)
         {
@@ -1484,6 +1612,7 @@ namespace core
             case progress_reward::power:         return m.add("Moc: ").add(mc.power_name);
             case progress_reward::weapon:        return m.add(mc.weapon_name);
             case progress_reward::boon:          return m.add("Premia: ").add(data::boons[mc.boon].name);
+            case progress_reward::keepsake:      return m.add("Pamiątka: ").add(data::keepsakes[l.index].name);   // v0.21.52 cz. c
             default:                             return m;
         }
     }
@@ -1520,6 +1649,231 @@ namespace core
         int n = 0;
         for(int k = 0; k < data::estate_decor_count; ++k) n += decor_unlocked(p, k);
         return n;
+    }
+
+    // ------------------------------------------------------------------ v0.21.52 cz. c (#49): kolekcje
+    // Liczniki pokonanych problemów każdego rodzaju (profil, do 255; znak wodny kill_mark jak run_kills); komplet:
+    // każdy problem aktu x count, każdy boss (karty bossów) albo wszystkie ozdoby Osiedla (album).
+    inline void bank_collections(profile& p, const game& g)
+    {
+        for(int d = 0; d < data::enemies_count; ++d)
+        {
+            const int v = g.kills_by_type[d], add = v - p.kill_mark[d];
+            if(add > 0) p.kill_count[d] = add_sat8(p.kill_count[d], add);
+            p.kill_mark[d] = uint8_t(imax(p.kill_mark[d], v));
+        }
+    }
+    inline bool enemy_boss(int d) { return data::enemies[d].slam; }
+    // Postęp kompletu: have / need (rodzaje problemów z licznikiem >= count, bossowie, ozdoby).
+    inline void collection_progress(const profile& p, int i, int& have, int& need)
+    {
+        const collection_def& cd = data::collections[i];
+        have = need = 0;
+        if(cd.kind == collection_kind::decor) { have = estate_decor(p); need = data::estate_decor_count; return; }
+        for(int d = 0; d < data::enemies_count; ++d)
+        {
+            const bool in = cd.kind == collection_kind::bosses ? enemy_boss(d) : ((cd.enemies >> d) & 1) != 0;
+            if(! in) continue;
+            ++need;
+            have += p.kill_count[d] >= cd.count;
+        }
+    }
+    inline bool collection_complete(const profile& p, int i) { int h = 0, n = 0; collection_progress(p, i, h, n); return n > 0 && h >= n; }
+    inline int collections_done(const profile& p) { int k = 0; for(int i = 0; i < data::collections_count; ++i) k += collection_complete(p, i); return k; }
+    // Komplety ukończone, a jeszcze nieogłoszone (baner na końcu budowy): zaznacza je i zwraca bity.
+    inline int check_collections(profile& p)
+    {
+        int got = 0;
+        for(int i = 0; i < data::collections_count; ++i)
+            if(collection_complete(p, i) && ! ((p.collections >> i) & 1)) got |= 1 << i;
+        p.collections = uint8_t(p.collections | got);
+        return got;
+    }
+    inline int bosses_count() { int n = 0; for(int d = 0; d < data::enemies_count; ++d) n += enemy_boss(d); return n; }
+    // Boss nr k (karty bossów, kolejność z listy problemów) - indeks w data::enemies.
+    inline int boss_at(int k) { for(int d = 0; d < data::enemies_count; ++d) if(enemy_boss(d) && k-- == 0) return d; return -1; }
+    // Nagroda kompletu słowami: "+10 zł na start", "Tytuł: Urzędnik", "Ceglasty kask".
+    inline message& collection_reward_label(message& m, int i)
+    {
+        const collection_def& cd = data::collections[i];
+        if(cd.reward.reward == progress_reward::perk) return perk_label(m, cd.bonus);
+        return progress_reward_label(m, cd.reward, -1);
+    }
+
+    // ------------------------------------------------------------------ v0.21.52 cz. c (#50): zadania dnia i tygodnia
+    // 3 zadania dnia (z puli data::daily_tasks) i 2 tygodnia (data::weekly_tasks) z seeda numeru dnia / tygodnia - te same
+    // dla wszystkich. Dzień: Godot - data z systemu, GBA - data ustawiona dla budowy dnia. Postęp z każdej budowy (też dnia
+    // i tygodnia), w profilu ze znakiem wodnym task_mark; wykonane = Respekt od razu, wykonane łącznie - nagrody za liczbę.
+    inline void pick_tasks(uint32_t seed, int pool, int n, int* out)
+    {
+        uint32_t h = seed;
+        for(int k = 0; k < n; ++k)
+        {
+            h = h * 1664525u + 1013904223u;
+            int i = int((h >> 16) % uint32_t(pool));
+            for(int guard = 0; guard < pool; ++guard)
+            {
+                bool used = false;
+                for(int j = 0; j < k; ++j) used |= out[j] == i;
+                if(! used) break;
+                i = (i + 1) % pool;
+            }
+            out[k] = i;
+        }
+    }
+    // Zadanie w slocie s (0-2 dnia, 3-4 tygodnia) dla dnia / tygodnia z profilu.
+    inline const task_def& task_at(int day, int week, int s)
+    {
+        int ids[daily_task_slots];
+        if(s < daily_task_slots)
+        {
+            pick_tasks(daily_seed(day) ^ 0x7A5Bu, data::daily_tasks_count, daily_task_slots, ids);
+            return data::daily_tasks[ids[s]];
+        }
+        pick_tasks(weekly_seed(week) ^ 0x7A5Bu, data::weekly_tasks_count, task_slots - daily_task_slots, ids);
+        return data::weekly_tasks[ids[s - daily_task_slots]];
+    }
+    inline const task_def& task_of(const profile& p, int s) { return task_at(p.task_day, p.task_week, s); }
+    // Etapy ukończone w budowie (z budowami NG+), bossowie pokonani, wygrane - jak run_progress_xp.
+    inline int run_stages_done(const game& g)
+    {
+        const int per = data::stages_count - g.first_stage;
+        const bool won = g.st == status::won;
+        return g.tier * per + (won ? per : (g.st == status::stage_clear ? g.stage + 1 : g.stage) - g.first_stage);
+    }
+    inline int task_metric(const game& g, task_kind k)
+    {
+        const bool won = g.st == status::won;
+        switch(k)
+        {
+            case task_kind::kills:       return g.kills;
+            case task_kind::elites:      return g.elites_killed;
+            case task_kind::bosses:      { int n = 0; for(int d = 0; d < data::enemies_count; ++d) if(enemy_boss(d)) n += g.kills_by_type[d]; return n; }
+            case task_kind::stages:      return run_stages_done(g);
+            case task_kind::brigade:     return g.helpers_called;
+            case task_kind::powers:      return g.powers_used;
+            case task_kind::coffee:      return g.coffee_drunk;
+            case task_kind::combos:      return g.combos_run;
+            case task_kind::storerooms:  return g.secrets_found;
+            case task_kind::events:      { int n = 0; for(int s = 0; s < max_stages; ++s) n += g.stage_event_log[s] != 255; return n; }
+            case task_kind::win:         return g.tier + (won ? 1 : 0);
+            case task_kind::win_no_shop: return g.shop_buys == 0 ? g.tier + (won ? 1 : 0) : 0;
+            default:                     return 0;
+        }
+    }
+    // Nowy dzień / tydzień: zadania od zera (postęp, znak wodny, wykonane). Zwraca true, jeśli coś zmieniono.
+    inline bool tasks_roll(profile& p, int day, int week)
+    {
+        bool changed = false;
+        if(day > 0 && p.task_day != day)
+        {
+            p.task_day = uint16_t(day);
+            for(int s = 0; s < daily_task_slots; ++s) { p.task_progress[s] = 0; p.task_mark[s] = 0; p.task_done = uint8_t(p.task_done & ~(1u << s)); }
+            changed = true;
+        }
+        if(week > 0 && p.task_week != week)
+        {
+            p.task_week = uint16_t(week);
+            for(int s = daily_task_slots; s < task_slots; ++s) { p.task_progress[s] = 0; p.task_mark[s] = 0; p.task_done = uint8_t(p.task_done & ~(1u << s)); }
+            changed = true;
+        }
+        return changed;
+    }
+    inline bool task_done(const profile& p, int s) { return (p.task_done >> s) & 1; }
+    // Postęp w trakcie budowy: profil + licznik budowy jeszcze nieprzeniesiony (do celu).
+    inline int task_progress_live(const profile& p, const game* g, int s)
+    {
+        const task_def& td = task_of(p, s);
+        int v = p.task_progress[s];
+        if(g && ! task_done(p, s)) v += imax(0, task_metric(*g, td.kind) - p.task_mark[s]);
+        return imin(v, td.target);
+    }
+    // Przenosi postęp zadań z budowy (koniec etapu, koniec budowy); wykonane dają Respekt. Zwraca bity wykonanych teraz.
+    inline int bank_tasks(profile& p, const game& g, int day, int week)
+    {
+        tasks_roll(p, day, week);
+        int got = 0;
+        for(int s = 0; s < task_slots; ++s)
+        {
+            const task_def& td = task_of(p, s);
+            const int v = imin(255, task_metric(g, td.kind)), add = v - p.task_mark[s];
+            p.task_mark[s] = uint8_t(imax(p.task_mark[s], v));
+            if(task_done(p, s) || add <= 0) continue;
+            p.task_progress[s] = uint8_t(imin(255, p.task_progress[s] + add));
+            if(p.task_progress[s] >= td.target)
+            {
+                p.task_done = uint8_t(p.task_done | (1u << s));
+                p.respect = add_sat16(p.respect, td.respect); p.respect_total = add_sat16(p.respect_total, td.respect);
+                const int before = p.tasks_total;
+                p.tasks_total = add_sat16(p.tasks_total, 1);
+                for(int l = 0; l < data::task_rewards_count; ++l)   // nagroda za liczbę zadań: Respekt raz
+                    if(before < data::task_rewards[l].xp && p.tasks_total >= data::task_rewards[l].xp) grant_level(p, data::task_rewards[l]);
+                got |= 1 << s;
+            }
+        }
+        return got;
+    }
+    // Najbliższe wykonania zadanie (największy % postępu na żywo, przy remisie wcześniejszy slot); -1 = wszystkie wykonane.
+    inline int next_task(const profile& p, const game* g)
+    {
+        int best = -1, best_pct = -1;
+        for(int s = 0; s < task_slots; ++s)
+        {
+            if(task_done(p, s)) continue;
+            const int pct = task_progress_live(p, g, s) * 100 / imax(1, task_of(p, s).target);
+            if(pct > best_pct) { best_pct = pct; best = s; }
+        }
+        return best;
+    }
+    inline int tasks_done_today(const profile& p) { int n = 0; for(int s = 0; s < daily_task_slots; ++s) n += task_done(p, s); return n; }
+    inline int tasks_done_week(const profile& p) { int n = 0; for(int s = daily_task_slots; s < task_slots; ++s) n += task_done(p, s); return n; }
+    // Kolejna nagroda za zadania łącznie (-1 = wszystkie).
+    inline int next_task_reward(const profile& p) { for(int l = 0; l < data::task_rewards_count; ++l) if(p.tasks_total < data::task_rewards[l].xp) return l; return -1; }
+
+    // ------------------------------------------------------------------ v0.21.52 cz. c (#51): seria dni budowy dnia
+    // Dzień budowy dnia (numer) zaraz po ostatnim = seria +1; dalszy = od nowa (1); ten sam albo wcześniejszy - bez zmian
+    // (GBA: data wpisana ręcznie - liczy się tylko kolejny dzień). Nagrody za najdłuższą serię (pamiątka, kask, tytuł).
+    // Zwraca bity nagród osiągniętych teraz.
+    inline int streak_record(profile& p, int day)
+    {
+        if(day <= 0) return 0;
+        if(p.streak_day != 0 && day <= p.streak_day) return 0;
+        p.streak = p.streak_day != 0 && day == p.streak_day + 1 ? uint8_t(imin(255, p.streak + 1)) : uint8_t(1);
+        p.streak_day = uint16_t(day);
+        const int before = p.streak_best;
+        p.streak_best = uint8_t(imax(p.streak_best, p.streak));
+        int got = 0;
+        for(int l = 0; l < data::streak_rewards_count; ++l)
+            if(before < data::streak_rewards[l].xp && p.streak_best >= data::streak_rewards[l].xp) got |= 1 << l;
+        return got;
+    }
+    // Seria widoczna dnia today: przerwana (dzień przerwy) = 0.
+    inline int streak_now(const profile& p, int today) { return p.streak_day != 0 && today <= p.streak_day + 1 ? p.streak : 0; }
+    inline int next_streak_reward(const profile& p) { for(int l = 0; l < data::streak_rewards_count; ++l) if(p.streak_best < data::streak_rewards[l].xp) return l; return -1; }
+
+    // v14 -> v15 (v0.21.52 cz. c): drzewko bez wyborów, kolekcje - rodzaje z Katalogu jako 1 pokonany, zadania od zera,
+    // seria dni z wyników ostatnich dni budowy dnia (kolejne dni do najnowszego).
+    inline void migrate_v15(profile& p)
+    {
+        p.tree = 0;
+        for(int d = 0; d < max_enemy_types; ++d) { p.kill_count[d] = d < data::enemies_count && catalog_has(p, d) ? 1 : 0; p.kill_mark[d] = 0; }
+        p.task_day = p.task_week = 0;
+        for(int s = 0; s < task_slots; ++s) { p.task_progress[s] = 0; p.task_mark[s] = 0; }
+        p.task_done = 0; p.tasks_total = 0; p.collections = 0;
+        for(auto& r : p.reserved15) r = 0;
+        int last = 0;
+        for(int i = 0; i < daily_slots; ++i) last = imax(last, p.daily_day[i]);
+        int n = 0;
+        if(last > 0)
+            for(n = 1; n < daily_slots; ++n)
+            {
+                bool has = false;
+                for(int i = 0; i < daily_slots; ++i) has |= p.daily_day[i] == last - n;
+                if(! has || last - n <= 0) break;
+            }
+        p.streak = uint8_t(n); p.streak_best = uint8_t(n); p.streak_day = uint16_t(last);
+        p.collections = uint8_t(0);
+        for(int i = 0; i < data::collections_count; ++i) if(collection_complete(p, i)) p.collections = uint8_t(p.collections | (1u << i));   // bez banera za stare
     }
 
     // ------------------------------------------------------------------ podsumowanie budowy (#33): rada i najbliższy cel
@@ -1575,6 +1929,7 @@ namespace core
         else if(kind == 1) name.add(data::classes[idx].name);
         else if(kind == 2) name.add(data::weapons[data::tools[idx].weapon].name);
         else if(kind == 3) name.add(data::brigade[idx].name);
+        else if(kind == 5) name.add("Drzewko: ").add(data::tree_branches[data::tree_nodes[idx].branch].name);
         else name.add(data::difficulties[data::difficulties_count - 1].name);
         return true;
     }
@@ -1593,7 +1948,8 @@ namespace core
     }
 
     // ------------------------------------------------------------------ po budowie: co najbliżej do kupienia (motywacja)
-    // Najtańsze niekupione w Szkoleniach: kind 0 ulepszenie, 1 zawód, 2 narzędzie, 3 brygada, 4 poziom Trudny; -1 = wszystko.
+    // Najtańsze niekupione w Szkoleniach: kind 0 ulepszenie, 1 zawód, 2 narzędzie, 3 brygada, 4 poziom Trudny, 5 węzeł
+    // drzewka (otwarty, bez wyboru; v0.21.52 cz. c); -1 = wszystko.
     inline int next_unlock(const profile& p, int& kind, int& index)
     {
         int best = -1;
@@ -1603,6 +1959,8 @@ namespace core
         for(int i = 0; i < data::tools_count; ++i) if(! tool_unlocked(p, i) && data::tools[i].shop) take(2, i, tool_cost(p));
         for(int i = 0; i < data::brigade_count; ++i) if(! helper_unlocked(p, i)) take(3, i, data::brigade[i].cost);
         if(! p.hard) take(4, 0, data::hard_cost);
+        for(int n = 0; n < data::tree_nodes_count; ++n)   // v0.21.52 cz. c: otwarty, niewybrany węzeł drzewka (kind 5)
+            if(tree_pick(p, n) == 0 && tree_open(p, n)) take(5, n, data::tree_nodes[n].cost);
         return best;
     }
 
@@ -1610,9 +1968,15 @@ namespace core
     // Cały stan gry (game jest trywialnie kopiowalny) za profilem w SRAM. Rozmiar i suma kontrolna
     // odrzucają zapisy uszkodzone i z innej wersji gry.
     static_assert(std::is_trivially_copyable_v<game>);
-    constexpr char run_magic[8] = "PBRUN14";   // 14: sekretne zlecenia (liczniki budowy), nowe zawody; 13: podsumowanie budowy (ciosy, oś czasu), wyzwanie tygodnia; 12: wydarzenia z wyborem, ulepszenie narzędzia, magazyn; 11: premie po etapie, elity, kombinacje stanów; 10: Akt 0; 09: 10 etapów, zachowania
-    constexpr int run_save_offset = 256;
+    // v0.21.52 cz. c: PBRUN15 - liczniki zadań (wezwania brygady, zakupy) w miejscu wyrównania; rozmiar stanu bez zmian, więc
+    // zapis PBRUN14 też się wczytuje (z zerami w nowych polach). Profil v15 (384 B) nie mieści się przed 256 - zapis budowy
+    // od 512; przy migracji profilu warstwa GBA przenosi przerwaną budowę spod 256 (run_save_offset_v14).
+    constexpr char run_magic[8] = "PBRUN15";
+    constexpr char run_magic_v14[8] = "PBRUN14";   // 14: sekretne zlecenia (liczniki budowy), nowe zawody; 13: podsumowanie budowy (ciosy, oś czasu), wyzwanie tygodnia; 12: wydarzenia z wyborem, ulepszenie narzędzia, magazyn; 11: premie po etapie, elity, kombinacje stanów; 10: Akt 0; 09: 10 etapów, zachowania
+    constexpr int run_save_offset = 512;
+    constexpr int run_save_offset_v14 = 256;   // profil v14 i starsze (240 B)
     static_assert(sizeof(profile) <= run_save_offset);
+    static_assert(sizeof(game) == 3248);   // v0.21.52 cz. c: liczniki zadań w wyrównaniu - stary zapis budowy pasuje
 
     struct run_save
     {
@@ -1638,9 +2002,19 @@ namespace core
         s.checksum = run_checksum(s.g);
     }
 
+    // Ważny zapis (bieżący albo PBRUN14 - ten sam układ stanu). Po wczytaniu PBRUN14 wołać run_save_upgrade.
     inline bool run_save_valid(const run_save& s)
     {
-        return std::memcmp(s.magic, run_magic, sizeof s.magic) == 0 && s.size == sizeof(game) && s.checksum == run_checksum(s.g);
+        const bool magic = std::memcmp(s.magic, run_magic, sizeof s.magic) == 0 || std::memcmp(s.magic, run_magic_v14, sizeof s.magic) == 0;
+        return magic && s.size == sizeof(game) && s.checksum == run_checksum(s.g);
+    }
+    // PBRUN14 -> PBRUN15: pola w dawnym wyrównaniu (liczniki zadań) od zera.
+    inline void run_save_upgrade(run_save& s)
+    {
+        if(std::memcmp(s.magic, run_magic_v14, sizeof s.magic) != 0) return;
+        s.g.helpers_called = 0; s.g.shop_buys = 0;
+        std::memcpy(s.magic, run_magic, sizeof s.magic);
+        s.checksum = run_checksum(s.g);
     }
 
     inline void run_save_clear(run_save& s) { std::memset(s.magic, 0, sizeof s.magic); }

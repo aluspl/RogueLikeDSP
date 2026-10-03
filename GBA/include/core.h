@@ -200,6 +200,10 @@ namespace core
 
     // v0.21.52 cz. b: mistrzostwo zawodu w budowie (run_mods::mastery) - ustawia profil (meta.h: mastery_bits).
     enum mastery_bit : int { mastery_bit_power = 1, mastery_bit_weapon = 2, mastery_bit_boon = 4 };
+    // v0.21.52 cz. c: węzeł drzewka Siła rozpędu - +obrażeń pierwszego ciosu w nietknięty problem; wartość w bitach 8-11
+    // run_mods::mastery (bez zmiany rozmiaru run_mods i zapisu budowy).
+    constexpr int first_hit_shift = 8;
+    inline int first_hit_bonus(const run_mods& m) { return (m.mastery >> first_hit_shift) & 15; }
 
     // Tryb inwestora: stawka i premia doświadczenia za zestaw modyfikatorów.
     inline int investor_stake(int mask)
@@ -295,6 +299,7 @@ namespace core
             case perk_effect::cash:     m.cash += p.value; break;
             case perk_effect::crit:     m.crit += p.value; break;
             case perk_effect::coffee:   m.coffee += p.value; break;
+            case perk_effect::taken_pct: m.taken_pct += p.value; break;   // v0.21.52 cz. c: Kask ojca
             default: break;
         }
     }
@@ -317,6 +322,7 @@ namespace core
             case perk_effect::cash:     return m.add("+").add(v).add(" zł na start");
             case perk_effect::crit:     return m.add("Kryt +").add(v).add("%");
             case perk_effect::coffee:   return m.add("Kawa +").add(v).add(" HP");
+            case perk_effect::taken_pct: return m.add("-").add(v).add("% otrzym. obr.");
             default:                    return m;
         }
     }
@@ -786,6 +792,10 @@ namespace core
         // v0.21.49 (część 3): Akt 0 - pierwszy etap budowy (0 z Aktem 0, inaczej za nim), zebrane dokumenty (pieczątki)
         int8_t first_stage = 0;
         uint8_t docs = 0;            // bitmaska zebranych dokumentów (data::documents)
+        // v0.21.52 cz. c: zadania dnia (#50) - wezwania brygady i zakupy w Hurtowni w budowie (w miejscu wyrównania przed
+        // boons - rozmiar stanu bez zmian; zapis PBRUN14 wczytuje się z zerami tutaj)
+        uint8_t helpers_called = 0;
+        uint8_t shop_buys = 0;
         // v0.21.50 cz. 2: premie po etapie (#27), kombinacje stanów (#29)
         uint64_t boons = 0;          // wybrane premie (bity data::boons)
         int8_t boon_offer[3] = { -1, -1, -1 };   // oferta po etapie (1 z 3), -1 = brak
@@ -2237,6 +2247,7 @@ namespace core
             int dmg = r.range(imin(w.max_damage, w.min_damage + tool_trait_value(tool_trait_effect::steady)), w.max_damage)
                     + hero_stat(w.scales_with) / 2 + dmg_bonus + gear_bonus(gear_stat::dmg) + boon_sum(boon_effect::dmg) + upgrade_dmg() + event_dmg
                     + mark_bonus(ei)   // Tyczenie (Geodeta)
+                    + (enemies[ei].hp >= enemies[ei].max_hp ? first_hit_bonus(bonus) : 0)   // v0.21.52 cz. c: Siła rozpędu
                     - imax(0, enemy_defense(ei) - tool_trait_value(tool_trait_effect::pierce)) / 2;
             if(dmg < 1) dmg = 1;
             dmg += pct_part(dmg, bonus.dmg_pct + boon_sum(boon_effect::dmg_pct), dmg_carry);   // Kurs fachowy, Respekt, premie: +%
@@ -2840,6 +2851,7 @@ namespace core
             if(shocked_turn()) return true;
             cash -= helper_price(h);
             helper_called = int8_t(h);
+            if(helpers_called < 255) ++helpers_called;   // v0.21.52 cz. c: zadania dnia
             push(message().add("Brygada: ").add(hd.name).as(good));
             switch(hd.effect)
             {
@@ -2934,6 +2946,7 @@ namespace core
         {
             const shop_item_def& it = data::hurtownia[i];
             if(! hurtownia_can(i)) return false;
+            if(shop_buys < 255) ++shop_buys;   // v0.21.52 cz. c: zadanie "Wygraj bez Hurtowni"
             if(it.effect == shop_effect::upgrade)   // ulepszenie narzędzia (#31): zł i materiał, potem +1 poziom
             {
                 const tool_level_def& t = data::tool_levels[weapon_lvl];

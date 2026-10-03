@@ -1464,7 +1464,7 @@
             "cost": 50
           },
           {
-            "effect": "hp",
+            "effect": "gear_pct",
             "value": 1,
             "cost": 90
           },
@@ -1534,7 +1534,7 @@
             "cost": 125
           },
           {
-            "effect": "crit",
+            "effect": "gear_pct",
             "value": 1,
             "cost": 200
           }
@@ -1547,8 +1547,8 @@
       {
         "id": "termos",
         "name": "Lepszy termos",
-        "desc": "Kawa leczy więcej, większy termos",
-        "effect": "coffee",
+        "desc": "Większy termos na kawę",
+        "effect": "thermos",
         "steps": [
           {
             "effect": "thermos",
@@ -1556,7 +1556,7 @@
             "cost": 25
           },
           {
-            "effect": "coffee",
+            "effect": "gear_pct",
             "value": 1,
             "cost": 50
           },
@@ -1644,7 +1644,7 @@
         "id": "warsztaty",
         "name": "Warsztaty",
         "desc": "Lepsza broń i sprzęt",
-        "effect": "craft",
+        "effect": "gear_pct",
         "steps": [
           {
             "effect": "gear_pct",
@@ -1652,7 +1652,7 @@
             "cost": 35
           },
           {
-            "effect": "craft",
+            "effect": "gear_pct",
             "value": 1,
             "cost": 70
           },
@@ -1713,7 +1713,156 @@
         "weapon": "poziomica_m",
         "secret": true
       }
-    ]
+    ],
+    "tree": {
+      "respecCost": 20,
+      "branches": [
+        {
+          "id": "fach",
+          "name": "Fach",
+          "upgrades": [
+            "fach",
+            "warsztaty"
+          ]
+        },
+        {
+          "id": "bhp",
+          "name": "BHP",
+          "upgrades": [
+            "bhp",
+            "bhp2",
+            "kondycja"
+          ]
+        },
+        {
+          "id": "logistyka",
+          "name": "Logistyka",
+          "upgrades": [
+            "termos",
+            "dostawy"
+          ]
+        }
+      ],
+      "nodes": [
+        {
+          "branch": "fach",
+          "depth": 3,
+          "cost": 60,
+          "options": [
+            {
+              "name": "Precyzja",
+              "desc": "Celne ciosy",
+              "effect": "crit",
+              "value": 1
+            },
+            {
+              "name": "Siła rozpędu",
+              "short": "Rozpęd",
+              "desc": "Cios w nietknięty problem",
+              "effect": "first_hit",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "branch": "fach",
+          "depth": 6,
+          "cost": 120,
+          "options": [
+            {
+              "name": "Rzemieślnik",
+              "desc": "Mocniejsze ciosy",
+              "effect": "dmg_pct",
+              "value": 2
+            },
+            {
+              "name": "Szybka ręka",
+              "short": "Wprawa",
+              "desc": "Moc szybciej gotowa",
+              "effect": "cooldown",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "branch": "bhp",
+          "depth": 4,
+          "cost": 60,
+          "options": [
+            {
+              "name": "Twardziel",
+              "desc": "Ciosy mniej bolą",
+              "effect": "taken_pct",
+              "value": 2
+            },
+            {
+              "name": "Apteczka",
+              "desc": "Kawa leczy więcej",
+              "effect": "coffee",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "branch": "bhp",
+          "depth": 9,
+          "cost": 120,
+          "options": [
+            {
+              "name": "Refleks",
+              "desc": "Częściej unikasz",
+              "effect": "dodge",
+              "value": 1
+            },
+            {
+              "name": "Zapas sił",
+              "desc": "Więcej HP na start",
+              "effect": "hp",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "branch": "logistyka",
+          "depth": 3,
+          "cost": 60,
+          "options": [
+            {
+              "name": "Hurtownik",
+              "desc": "Hurtownia taniej",
+              "effect": "shop_pct",
+              "value": 10
+            },
+            {
+              "name": "Magazynier",
+              "desc": "Więcej materiałów",
+              "effect": "mats_pct",
+              "value": 10
+            }
+          ]
+        },
+        {
+          "branch": "logistyka",
+          "depth": 6,
+          "cost": 120,
+          "options": [
+            {
+              "name": "Księgowa",
+              "desc": "Budżet na start",
+              "effect": "cash",
+              "value": 15
+            },
+            {
+              "name": "Brygadzista",
+              "short": "Brygada",
+              "desc": "Brygada taniej",
+              "effect": "brigade_pct",
+              "value": 15
+            }
+          ]
+        }
+      ]
+    }
   },
   "heroLevels": {
     "thresholds": [
@@ -2763,12 +2912,12 @@
       {
         "id": "kask",
         "name": "Kask ojca",
-        "desc": "Pamięta niejedną budowę",
-        "effect": "def",
+        "desc": "Mniej boli: mniej obrażeń",
+        "effect": "taken_pct",
         "values": [
-          1,
-          2,
-          3
+          5,
+          8,
+          10
         ],
         "badge": "bez_usterek"
       },
@@ -2804,6 +2953,18 @@
           2,
           3
         ]
+      },
+      {
+        "id": "kalendarz",
+        "name": "Kalendarz majstra",
+        "desc": "Każdy dzień budowy się liczy",
+        "effect": "coffee",
+        "values": [
+          1,
+          2,
+          3
+        ],
+        "streak": 3
       }
     ]
   },
@@ -3220,7 +3381,24 @@
     ],
     "difficulty": "normalny",
     "investorMods": 2,
-    "history": 5
+    "history": 5,
+    "streak": [
+      {
+        "days": 3,
+        "reward": "keepsake",
+        "id": "kalendarz"
+      },
+      {
+        "days": 7,
+        "reward": "helmet",
+        "id": "kask_pomaranczowy"
+      },
+      {
+        "days": 14,
+        "reward": "title",
+        "title": "Niezawodny"
+      }
+    ]
   },
   "schedule": {
     "minDays": 4,
@@ -5642,6 +5820,36 @@
           214,
           0
         ]
+      },
+      {
+        "id": "kask_ceglasty",
+        "name": "Ceglasty kask",
+        "desc": "Kask bohatera w kolorze cegły",
+        "helmet": [
+          178,
+          80,
+          52
+        ]
+      },
+      {
+        "id": "kask_pomaranczowy",
+        "name": "Oranżowy kask",
+        "desc": "Kask bohatera na oranżowo",
+        "helmet": [
+          255,
+          140,
+          0
+        ]
+      },
+      {
+        "id": "kask_limonkowy",
+        "name": "Limonkowy kask",
+        "desc": "Kask bohatera na limonkowo",
+        "helmet": [
+          160,
+          210,
+          40
+        ]
       }
     ]
   },
@@ -6119,5 +6327,229 @@
     "tytuł, Respekt, 2. pamiątka.",
     "Mistrzostwo zawodu 1-10: moc,",
     "broń mistrza, premia, kask."
+  ],
+  "collections": {
+    "sets": [
+      {
+        "id": "akt1",
+        "name": "Stan surowy",
+        "desc": "Problemy aktu I",
+        "kind": "act",
+        "act": 0,
+        "count": 10,
+        "reward": {
+          "reward": "perk",
+          "perk": {
+            "effect": "cash",
+            "value": 10
+          }
+        }
+      },
+      {
+        "id": "akt2",
+        "name": "Pod dachem",
+        "desc": "Problemy aktu II",
+        "kind": "act",
+        "act": 1,
+        "count": 10,
+        "reward": {
+          "reward": "title",
+          "title": "Łowca usterek"
+        }
+      },
+      {
+        "id": "akt3",
+        "name": "Wykończenie",
+        "desc": "Problemy aktu III",
+        "kind": "act",
+        "act": 2,
+        "count": 10,
+        "reward": {
+          "reward": "helmet",
+          "id": "kask_ceglasty"
+        }
+      },
+      {
+        "id": "akt0",
+        "name": "Papierologia",
+        "desc": "Problemy Aktu 0",
+        "kind": "act",
+        "act": 3,
+        "count": 10,
+        "reward": {
+          "reward": "title",
+          "title": "Urzędnik"
+        }
+      },
+      {
+        "id": "bossowie",
+        "name": "Karty bossów",
+        "desc": "Każdy boss pokonany",
+        "kind": "bosses",
+        "count": 1,
+        "reward": {
+          "reward": "perk",
+          "perk": {
+            "effect": "xp_pct",
+            "value": 5
+          }
+        }
+      },
+      {
+        "id": "album",
+        "name": "Album Osiedla",
+        "desc": "Wszystkie ozdoby Osiedla",
+        "kind": "decor",
+        "count": 1,
+        "reward": {
+          "reward": "title",
+          "title": "Architekt"
+        }
+      }
+    ]
+  },
+  "tasks": {
+    "daily": [
+      {
+        "id": "d_elity",
+        "name": "Pokonaj 2 elity",
+        "kind": "elites",
+        "target": 2,
+        "respect": 5
+      },
+      {
+        "id": "d_brygada",
+        "name": "Wezwij brygadę 2 razy",
+        "kind": "brigade",
+        "target": 2,
+        "respect": 5
+      },
+      {
+        "id": "d_etapy",
+        "name": "Ukończ 6 etapów",
+        "kind": "stages",
+        "target": 6,
+        "respect": 4
+      },
+      {
+        "id": "d_problemy",
+        "name": "Usuń 40 problemów",
+        "kind": "kills",
+        "target": 40,
+        "respect": 4
+      },
+      {
+        "id": "d_kawa",
+        "name": "Wypij 4 kawy",
+        "kind": "coffee",
+        "target": 4,
+        "respect": 4
+      },
+      {
+        "id": "d_moc",
+        "name": "Użyj mocy 8 razy",
+        "kind": "powers",
+        "target": 8,
+        "respect": 4
+      },
+      {
+        "id": "d_kombinacje",
+        "name": "Wywołaj 3 kombinacje",
+        "kind": "combos",
+        "target": 3,
+        "respect": 5
+      },
+      {
+        "id": "d_sms",
+        "name": "Odpowiedz na 2 SMS-y",
+        "kind": "events",
+        "target": 2,
+        "respect": 5
+      },
+      {
+        "id": "d_magazyn",
+        "name": "Otwórz magazyn",
+        "kind": "storerooms",
+        "target": 1,
+        "respect": 5
+      },
+      {
+        "id": "d_boss",
+        "name": "Pokonaj 2 bossów",
+        "kind": "bosses",
+        "target": 2,
+        "respect": 5
+      }
+    ],
+    "weekly": [
+      {
+        "id": "w_wygrana",
+        "name": "Wygraj budowę",
+        "kind": "win",
+        "target": 1,
+        "respect": 15
+      },
+      {
+        "id": "w_bez_hurtowni",
+        "name": "Wygraj bez Hurtowni",
+        "kind": "win_no_shop",
+        "target": 1,
+        "respect": 20
+      },
+      {
+        "id": "w_elity",
+        "name": "Pokonaj 12 elit",
+        "kind": "elites",
+        "target": 12,
+        "respect": 15
+      },
+      {
+        "id": "w_brygada",
+        "name": "Wezwij brygadę 8 razy",
+        "kind": "brigade",
+        "target": 8,
+        "respect": 12
+      },
+      {
+        "id": "w_problemy",
+        "name": "Usuń 250 problemów",
+        "kind": "kills",
+        "target": 250,
+        "respect": 15
+      },
+      {
+        "id": "w_bossowie",
+        "name": "Pokonaj 8 bossów",
+        "kind": "bosses",
+        "target": 8,
+        "respect": 15
+      }
+    ],
+    "rewards": [
+      {
+        "count": 5,
+        "reward": "respect",
+        "value": 15
+      },
+      {
+        "count": 15,
+        "reward": "helmet",
+        "id": "kask_limonkowy"
+      },
+      {
+        "count": 40,
+        "reward": "title",
+        "title": "Pracowity"
+      }
+    ]
+  },
+  "goalsHelp": [
+    "Drzewko Szkoleń: Fach, BHP,",
+    "Logistyka - wybór 1 z 2 węzłów",
+    "(zmiana za dośw.). Kolekcje:",
+    "liczniki, karty bossów, album.",
+    "Zadania dnia (3) i tygodnia (2)",
+    "za Respekt. Seria dni budowy",
+    "dnia: 3, 7, 14 dni - nagrody."
   ]
 }

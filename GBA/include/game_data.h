@@ -110,13 +110,13 @@ inline constexpr core::difficulty_def difficulties[] = {
 };
 
 inline constexpr core::upgrade_def upgrades[] = {   // Szkolenia: poziomy (przyrost + koszt), stare koszty do zwrotu
-    { "Kondycja", "Więcej HP na start", core::upgrade_effect::hp, 4, { { core::upgrade_effect::hp, 1 }, { core::upgrade_effect::hp, 1 }, { core::upgrade_effect::hp, 1 }, { core::upgrade_effect::hp, 1 }, {} }, { 25, 50, 90, 150, 0 }, { 10, 20, 0, 0 }, 2, 35 },
+    { "Kondycja", "Więcej HP na start", core::upgrade_effect::hp, 4, { { core::upgrade_effect::hp, 1 }, { core::upgrade_effect::hp, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::hp, 1 }, {} }, { 25, 50, 90, 150, 0 }, { 10, 20, 0, 0 }, 2, 35 },
     { "Szkolenie BHP", "Mniej otrzymanych obrażeń", core::upgrade_effect::taken_pct, 4, { { core::upgrade_effect::taken_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::taken_pct, 1 }, { core::upgrade_effect::cash, 5 }, {} }, { 30, 60, 110, 180, 0 }, { 15, 0, 0, 0 }, 1, 30 },
-    { "Kurs fachowy", "Więcej zadawanych obrażeń", core::upgrade_effect::dmg_pct, 4, { { core::upgrade_effect::dmg_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::dmg_pct, 1 }, { core::upgrade_effect::crit, 1 }, {} }, { 35, 70, 125, 200, 0 }, { 20, 0, 0, 0 }, 1, 40 },
-    { "Lepszy termos", "Kawa leczy więcej, większy termos", core::upgrade_effect::coffee, 4, { { core::upgrade_effect::thermos, 1 }, { core::upgrade_effect::coffee, 1 }, { core::upgrade_effect::thermos, 1 }, { core::upgrade_effect::thermos, 1 }, {} }, { 25, 50, 90, 150, 0 }, { 10, 0, 0, 0 }, 1, 20 },
+    { "Kurs fachowy", "Więcej zadawanych obrażeń", core::upgrade_effect::dmg_pct, 4, { { core::upgrade_effect::dmg_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::dmg_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, {} }, { 35, 70, 125, 200, 0 }, { 20, 0, 0, 0 }, 1, 40 },
+    { "Lepszy termos", "Większy termos na kawę", core::upgrade_effect::thermos, 4, { { core::upgrade_effect::thermos, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::thermos, 1 }, { core::upgrade_effect::thermos, 1 }, {} }, { 25, 50, 90, 150, 0 }, { 10, 0, 0, 0 }, 1, 20 },
     { "Dostawy", "Więcej znajdziek i materiałów", core::upgrade_effect::pickups, 4, { { core::upgrade_effect::mats_pct, 5 }, { core::upgrade_effect::pickups, 1 }, { core::upgrade_effect::cash, 5 }, { core::upgrade_effect::mats_pct, 5 }, {} }, { 25, 50, 90, 150, 0 }, { 15, 0, 0, 0 }, 1, 30 },
     { "Kurs BHP II", "Szczęście, kryt i unik", core::upgrade_effect::luck, 4, { { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::luck, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, {} }, { 30, 60, 110, 180, 0 }, { 20, 0, 0, 0 }, 1, 40 },
-    { "Warsztaty", "Lepsza broń i sprzęt", core::upgrade_effect::craft, 4, { { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::craft, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, {} }, { 35, 70, 125, 200, 0 }, { 20, 0, 0, 0 }, 1, 40 },
+    { "Warsztaty", "Lepsza broń i sprzęt", core::upgrade_effect::gear_pct, 4, { { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, {} }, { 35, 70, 125, 200, 0 }, { 20, 0, 0, 0 }, 1, 40 },
 };
 
 inline constexpr core::story_msg story_stages[] = {
@@ -259,13 +259,14 @@ inline constexpr int badge_katalog = 7;
 inline constexpr int badge_osiedle = 8;
 
 inline constexpr core::keepsake_def keepsakes[] = {   // pamiątki: wybierane na start budowy, ranga rośnie z budowami
-    { "Termos babci", "Stary, ale trzyma ciepło", core::perk_effect::thermos, { 1, 2, 3 }, -1, true },
-    { "Kask ojca", "Pamięta niejedną budowę", core::perk_effect::def, { 1, 2, 3 }, 0, false },
-    { "Szczęśliwa kielnia", "Nigdy nie zawiodła", core::perk_effect::luck, { 2, 3, 4 }, -1, false },
-    { "Stara poziomica", "Wszystko widać jak na dłoni", core::perk_effect::sight, { 1, 2, 3 }, -1, false },
-    { "Notes kierownika", "Wszystko zapisane, nic nie ginie", core::perk_effect::cooldown, { 1, 2, 3 }, -1, false },
+    { "Termos babci", "Stary, ale trzyma ciepło", core::perk_effect::thermos, { 1, 2, 3 }, -1, true, 0 },
+    { "Kask ojca", "Mniej boli: mniej obrażeń", core::perk_effect::taken_pct, { 5, 8, 10 }, 0, false, 0 },
+    { "Szczęśliwa kielnia", "Nigdy nie zawiodła", core::perk_effect::luck, { 2, 3, 4 }, -1, false, 0 },
+    { "Stara poziomica", "Wszystko widać jak na dłoni", core::perk_effect::sight, { 1, 2, 3 }, -1, false, 0 },
+    { "Notes kierownika", "Wszystko zapisane, nic nie ginie", core::perk_effect::cooldown, { 1, 2, 3 }, -1, false, 0 },
+    { "Kalendarz majstra", "Każdy dzień budowy się liczy", core::perk_effect::coffee, { 1, 2, 3 }, -1, false, 3 },
 };
-inline constexpr int keepsakes_count = 5;
+inline constexpr int keepsakes_count = 6;
 inline constexpr int keepsake_rank_runs[] = { 3, 8 };
 
 inline constexpr core::contract_def contracts[] = {   // zlecenia: długofalowe cele z licznikami w profilu
@@ -746,9 +747,12 @@ inline constexpr core::cosmetic_def cosmetics[] = {   // wygląd z sekretnych zl
     { "Miedziany kask", "Kask bohatera z miedzi", 6615 },
     { "Granatowy kask", "Kask bohatera na granatowo", 15523 },
     { "Kask mistrza", "Złoty kask mistrza zawodu", 863 },
+    { "Ceglasty kask", "Kask bohatera w kolorze cegły", 6486 },
+    { "Oranżowy kask", "Kask bohatera na oranżowo", 575 },
+    { "Limonkowy kask", "Kask bohatera na limonkowo", 5972 },
 };
 inline constexpr int secrets_count = 8;
-inline constexpr int cosmetics_count = 16;
+inline constexpr int cosmetics_count = 19;
 inline constexpr uint64_t secret_paper_mask = 1232655613952ull;   // problemy papierowe (Akt 0 bez obrażeń)
 inline constexpr int secret_helper_boss = 8;   // boss pokonany ciosem brygady (Szef tylko dzwoni)
 inline constexpr int cosmetic_gold = 0;   // złoty błysk broni przy krycie
@@ -857,7 +861,69 @@ inline constexpr core::progress_level stake_ranks[] = {   // stopnie inwestora: 
 };
 inline constexpr int stake_ranks_count = 10;
 
-inline constexpr core::progress_title progress_titles[] = {   // tytuły z poziomu inspektora (0) i stopni inwestora (1)
+inline constexpr core::tree_branch tree_branches[] = {   // gałęzie drzewka: pień = Szkolenia (bity data::upgrades)
+    { "Fach", 68 },
+    { "BHP", 35 },
+    { "Logistyka", 24 },
+};
+inline constexpr core::tree_node tree_nodes[] = {   // węzły: głębokość (poziomy pnia gałęzi), koszt, 1 z 2 opcji
+    { 0, 3, 60, { { "Precyzja", "Precyzja", "Celne ciosy", core::upgrade_effect::crit, 1 }, { "Siła rozpędu", "Rozpęd", "Cios w nietknięty problem", core::upgrade_effect::first_hit, 1 } } },
+    { 0, 6, 120, { { "Rzemieślnik", "Rzemieślnik", "Mocniejsze ciosy", core::upgrade_effect::dmg_pct, 2 }, { "Szybka ręka", "Wprawa", "Moc szybciej gotowa", core::upgrade_effect::cooldown, 1 } } },
+    { 1, 4, 60, { { "Twardziel", "Twardziel", "Ciosy mniej bolą", core::upgrade_effect::taken_pct, 2 }, { "Apteczka", "Apteczka", "Kawa leczy więcej", core::upgrade_effect::coffee, 1 } } },
+    { 1, 9, 120, { { "Refleks", "Refleks", "Częściej unikasz", core::upgrade_effect::dodge, 1 }, { "Zapas sił", "Zapas sił", "Więcej HP na start", core::upgrade_effect::hp, 1 } } },
+    { 2, 3, 60, { { "Hurtownik", "Hurtownik", "Hurtownia taniej", core::upgrade_effect::shop_pct, 10 }, { "Magazynier", "Magazynier", "Więcej materiałów", core::upgrade_effect::mats_pct, 10 } } },
+    { 2, 6, 120, { { "Księgowa", "Księgowa", "Budżet na start", core::upgrade_effect::cash, 15 }, { "Brygadzista", "Brygada", "Brygada taniej", core::upgrade_effect::brigade_pct, 15 } } },
+};
+inline constexpr int tree_branches_count = 3;
+inline constexpr int tree_nodes_count = 6;
+inline constexpr int tree_respec_cost = 20;
+
+inline constexpr core::collection_def collections[] = {   // kolekcje: komplet -> stała premia, tytuł albo kolor kasku
+    { "Stan surowy", "Problemy aktu I", core::collection_kind::kills, 1044665ull, 10, { 0, core::progress_reward::perk, -1, 0, "" }, { core::perk_effect::cash, 10 } },
+    { "Pod dachem", "Problemy aktu II", core::collection_kind::kills, 66060408ull, 10, { 0, core::progress_reward::title, -1, 0, "Łowca usterek" }, { core::perk_effect::hp, 0 } },
+    { "Wykończenie", "Problemy aktu III", core::collection_kind::kills, 4227858567ull, 10, { 0, core::progress_reward::helmet, 16, 0, "" }, { core::perk_effect::hp, 0 } },
+    { "Papierologia", "Problemy Aktu 0", core::collection_kind::kills, 1095216660480ull, 10, { 0, core::progress_reward::title, -1, 0, "Urzędnik" }, { core::perk_effect::hp, 0 } },
+    { "Karty bossów", "Każdy boss pokonany", core::collection_kind::bosses, 0ull, 1, { 0, core::progress_reward::perk, -1, 0, "" }, { core::perk_effect::xp_pct, 5 } },
+    { "Album Osiedla", "Wszystkie ozdoby Osiedla", core::collection_kind::decor, 0ull, 1, { 0, core::progress_reward::title, -1, 0, "Architekt" }, { core::perk_effect::hp, 0 } },
+};
+inline constexpr int collections_count = 6;
+
+inline constexpr core::task_def daily_tasks[] = {   // zadania: licznik z budów dnia / tygodnia, nagroda w Respekcie
+    { "Pokonaj 2 elity", core::task_kind::elites, 2, 5 },
+    { "Wezwij brygadę 2 razy", core::task_kind::brigade, 2, 5 },
+    { "Ukończ 6 etapów", core::task_kind::stages, 6, 4 },
+    { "Usuń 40 problemów", core::task_kind::kills, 40, 4 },
+    { "Wypij 4 kawy", core::task_kind::coffee, 4, 4 },
+    { "Użyj mocy 8 razy", core::task_kind::powers, 8, 4 },
+    { "Wywołaj 3 kombinacje", core::task_kind::combos, 3, 5 },
+    { "Odpowiedz na 2 SMS-y", core::task_kind::events, 2, 5 },
+    { "Otwórz magazyn", core::task_kind::storerooms, 1, 5 },
+    { "Pokonaj 2 bossów", core::task_kind::bosses, 2, 5 },
+};
+inline constexpr int daily_tasks_count = 10;
+inline constexpr core::task_def weekly_tasks[] = {   // zadania: licznik z budów dnia / tygodnia, nagroda w Respekcie
+    { "Wygraj budowę", core::task_kind::win, 1, 15 },
+    { "Wygraj bez Hurtowni", core::task_kind::win_no_shop, 1, 20 },
+    { "Pokonaj 12 elit", core::task_kind::elites, 12, 15 },
+    { "Wezwij brygadę 8 razy", core::task_kind::brigade, 8, 12 },
+    { "Usuń 250 problemów", core::task_kind::kills, 250, 15 },
+    { "Pokonaj 8 bossów", core::task_kind::bosses, 8, 15 },
+};
+inline constexpr int weekly_tasks_count = 6;
+inline constexpr core::progress_level task_rewards[] = {   // nagrody za wykonane zadania łącznie (xp = liczba zadań)
+    { 5, core::progress_reward::respect, -1, 15, "" },
+    { 15, core::progress_reward::helmet, 18, 0, "" },
+    { 40, core::progress_reward::title, -1, 0, "Pracowity" },
+};
+inline constexpr int task_rewards_count = 3;
+inline constexpr core::progress_level streak_rewards[] = {   // seria dni budowy dnia (xp = dni)
+    { 3, core::progress_reward::keepsake, 5, 0, "" },
+    { 7, core::progress_reward::helmet, 17, 0, "" },
+    { 14, core::progress_reward::title, -1, 0, "Niezawodny" },
+};
+inline constexpr int streak_rewards_count = 3;
+
+inline constexpr core::progress_title progress_titles[] = {   // tytuły: inspektor (0), stopnie inwestora (1), kolekcje (2), seria dni (3), zadania (4)
     { "Praktykant", 0, 2 },
     { "Stażysta", 0, 8 },
     { "Rzeczoznawca", 0, 14 },
@@ -869,8 +935,13 @@ inline constexpr core::progress_title progress_titles[] = {   // tytuły z pozio
     { "Negocjator", 1, 5 },
     { "Pupil inwestora", 1, 8 },
     { "Budowa marzeń", 1, 10 },
+    { "Łowca usterek", 2, 2 },
+    { "Urzędnik", 2, 4 },
+    { "Architekt", 2, 6 },
+    { "Niezawodny", 3, 14 },
+    { "Pracowity", 4, 40 },
 };
-inline constexpr int progress_titles_count = 11;
+inline constexpr int progress_titles_count = 16;
 
 inline constexpr const char* version = "v0.21.52";   // numer wersji (ekran tytułowy, changelog)
 
@@ -909,6 +980,17 @@ inline constexpr const char* meta_help[] = {   // Jak grać: podsumowanie budowy
     "Fabuła: SMS-y w Osiedlu (A).",
 };
 inline constexpr int meta_help_count = 6;
+
+inline constexpr const char* goals_help[] = {   // Jak grać: drzewko Szkoleń, kolekcje, zadania dnia, seria dni
+    "Drzewko Szkoleń: Fach, BHP,",
+    "Logistyka - wybór 1 z 2 węzłów",
+    "(zmiana za dośw.). Kolekcje:",
+    "liczniki, karty bossów, album.",
+    "Zadania dnia (3) i tygodnia (2)",
+    "za Respekt. Seria dni budowy",
+    "dnia: 3, 7, 14 dni - nagrody.",
+};
+inline constexpr int goals_help_count = 7;
 
 inline constexpr const char* progress_help[] = {   // Jak grać: poziom inspektora i mistrzostwo zawodu
     "Każda budowa (też przegrana)",

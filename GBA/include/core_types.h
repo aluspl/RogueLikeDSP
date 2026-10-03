@@ -255,12 +255,37 @@ namespace core
 
     // craft: +statystyka broni zawodu; dmg_pct / taken_pct: +% zadawanych / -% otrzymanych obrażeń
     enum class upgrade_effect : uint8_t { hp, def, dmg, coffee, pickups, luck, craft, dmg_pct, taken_pct,
-                                          crit, dodge, thermos, mats_pct, gear_pct, cash };   // v0.21.52: poziomy z różnym działaniem
+                                          crit, dodge, thermos, mats_pct, gear_pct, cash,   // v0.21.52: poziomy z różnym działaniem
+                                          shop_pct, brigade_pct, cooldown, first_hit };     // v0.21.52 cz. c: węzły drzewka Szkoleń
 
     struct upgrade_step        // v0.21.52: jeden poziom Szkolenia - przyrost premii
     {
         upgrade_effect effect = upgrade_effect::hp;
         int8_t value = 0;
+    };
+
+    // v0.21.52 cz. c (#46): drzewko Szkoleń - 3 gałęzie (Szkolenia jako pień), w węźle wybór 1 z 2 opcji.
+    struct tree_option
+    {
+        const char* name;
+        const char* short_name;   // krótka nazwa (GBA: kolumna drzewka 9 kafli)
+        const char* desc;
+        upgrade_effect effect;
+        int8_t value;
+    };
+
+    struct tree_node
+    {
+        int8_t branch;         // data::tree_branches
+        int8_t depth;          // ile poziomów Szkoleń gałęzi (pień) otwiera węzeł
+        int16_t cost;          // dośw. za pierwszy wybór (zmiana: data::tree_respec_cost)
+        tree_option options[2];
+    };
+
+    struct tree_branch
+    {
+        const char* name;
+        uint8_t upgrades;      // bity data::upgrades - pień gałęzi
     };
 
     struct upgrade_def         // ulepszenie ze sklepu "Szkolenia" (meta-progresja)
@@ -519,7 +544,8 @@ namespace core
     };
 
     // Trwała premia na budowę: uprawnienie z odznaki, pamiątka (run_mods).
-    enum class perk_effect : uint8_t { hp, def, dmg, luck, cooldown, sight, thermos, tool_pct, xp_pct, cash, crit, coffee };
+    enum class perk_effect : uint8_t { hp, def, dmg, luck, cooldown, sight, thermos, tool_pct, xp_pct, cash, crit, coffee,
+                                       taken_pct };   // v0.21.52 cz. c: Kask ojca - mniej otrzymanych obrażeń (zamiast +1 OBR)
 
     struct perk
     {
@@ -529,7 +555,8 @@ namespace core
 
     // ------------------------------------------------------------------ v0.21.52 cz. b: poziom inspektora (#44), mistrzostwo
     // zawodu (#45), stopnie inwestora (#48) - nagroda za każdy poziom z listy w danych.
-    enum class progress_reward : uint8_t { respect, title, helmet, story, decor, keepsake_slot, power, weapon, boon };
+    enum class progress_reward : uint8_t { respect, title, helmet, story, decor, keepsake_slot, power, weapon, boon,
+                                           keepsake, perk };   // v0.21.52 cz. c: seria dni (pamiątka), kolekcje (stała premia)
 
     struct progress_level
     {
@@ -556,8 +583,9 @@ namespace core
     struct progress_title      // tytuł spoza odznak i zleceń: z poziomu inspektora albo stopnia inwestora
     {
         const char* name;
-        int8_t source;         // 0 = poziom inspektora, 1 = stopień inwestora (najwyższa stawka)
-        int8_t level;          // poziom / stawka
+        int8_t source;         // 0 = poziom inspektora, 1 = stopień inwestora (najwyższa stawka); v0.21.52 cz. c:
+                               // 2 = kolekcja (level = komplet + 1), 3 = seria dni (dni), 4 = zadania (wykonane łącznie)
+        int8_t level;          // poziom / stawka / komplet / dni / zadania
     };
 
     struct badge_def           // odznaka (motywacja do kolejnych budów)
@@ -579,6 +607,34 @@ namespace core
         int8_t values[3];      // premia na rangę I, II, III
         int8_t badge;          // odblokowuje odznaka (-1 = nie)
         bool start;            // dostępna od początku
+        int8_t streak = 0;     // v0.21.52 cz. c: odblokowuje seria dni budowy dnia (dni, 0 = nie)
+    };
+
+    // ------------------------------------------------------------------ v0.21.52 cz. c
+    // Kolekcje (#49): komplet = każdy problem z listy pokonany count razy (akty), każdy boss (karty bossów) albo wszystkie
+    // ozdoby Osiedla (album); nagroda: stała premia (perk), tytuł albo kolor kasku.
+    enum class collection_kind : uint8_t { kills, bosses, decor };
+
+    struct collection_def
+    {
+        const char* name;
+        const char* desc;
+        collection_kind kind;
+        uint64_t enemies;      // bity data::enemies (kills)
+        int8_t count;          // ile razy każdy
+        progress_level reward; // perk, title, helmet
+        perk bonus;            // stała premia (reward = perk)
+    };
+
+    // Zadania dnia i tygodnia (#50): licznik z budowy (też kilku budów tego dnia / tygodnia), nagroda w Respekcie.
+    enum class task_kind : uint8_t { kills, elites, bosses, stages, brigade, powers, coffee, combos, storerooms, events, win, win_no_shop };
+
+    struct task_def
+    {
+        const char* name;
+        task_kind kind;
+        int16_t target;
+        int8_t respect;
     };
 
     // Zlecenie (jak lista przepowiedni): cel z licznikiem w profilu, nagroda przy ukończeniu.

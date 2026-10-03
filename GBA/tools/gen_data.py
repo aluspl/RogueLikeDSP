@@ -73,6 +73,7 @@ m = d["meta"]
 cid = {c["id"]: i for i, c in enumerate(d["classes"])}
 EFF = {"hp", "def", "dmg", "coffee", "pickups", "luck", "craft", "dmg_pct", "taken_pct",
        "crit", "dodge", "thermos", "mats_pct", "gear_pct", "cash"}   # v0.21.52: poziomy Szkoleń z różnym działaniem
+TREE_EFF = EFF | {"shop_pct", "brigade_pct", "cooldown", "first_hit"}   # v0.21.52 cz. c: węzły drzewka Szkoleń
 L.append("inline constexpr core::upgrade_def upgrades[] = {   // Szkolenia: poziomy (przyrost + koszt), stare koszty do zwrotu")
 for u in m["upgrades"]:
     st_ = u["steps"]
@@ -166,7 +167,8 @@ L += [f"inline constexpr int acts_count = {len(acts)};",
       f"inline constexpr int slam_cross_delay = {sl['crossDelay']};",
       f"inline constexpr int cash_per_score = {d['cash']['perScore']};"]
 L += [f"inline constexpr int enemy_{e['id']} = {i};" for i, e in enumerate(d["enemies"])] + [""]
-PERKS = {"hp", "def", "dmg", "luck", "cooldown", "sight", "thermos", "tool_pct", "xp_pct", "cash", "crit", "coffee"}
+PERKS = {"hp", "def", "dmg", "luck", "cooldown", "sight", "thermos", "tool_pct", "xp_pct", "cash", "crit", "coffee",
+         "taken_pct"}   # v0.21.52 cz. c: Kask ojca - mniej otrzymanych obrażeń
 def perk(pk):
     assert pk["effect"] in PERKS and -128 <= pk["value"] <= 127, pk
     return f'{{ core::perk_effect::{pk["effect"]}, {pk["value"]} }}'
@@ -190,9 +192,10 @@ L.append("inline constexpr core::keepsake_def keepsakes[] = {   // pamiątki: wy
 for k in ks["list"]:
     assert k["effect"] in PERKS and len(k["values"]) == 3 and len(k["name"]) <= 20 and len(k["desc"]) <= 34, k
     unlocked_by = [c["id"] for c in d["contracts"] if c.get("keepsake") == k["id"]]
-    assert k.get("start") or "badge" in k or unlocked_by, f"pamiątka {k['id']} bez sposobu odblokowania"
+    assert k.get("start") or "badge" in k or unlocked_by or k.get("streak"), f"pamiątka {k['id']} bez sposobu odblokowania"
+    assert 0 <= k.get("streak", 0) <= 60, k   # v0.21.52 cz. c: seria dni budowy dnia
     L.append(f'    {{ {s(k["name"])}, {s(k["desc"])}, core::perk_effect::{k["effect"]}, {{ {", ".join(map(str, k["values"]))} }}, '
-             f'{bid[k["badge"]] if "badge" in k else -1}, {"true" if k.get("start") else "false"} }},')
+             f'{bid[k["badge"]] if "badge" in k else -1}, {"true" if k.get("start") else "false"}, {k.get("streak", 0)} }},')
 L.append("};")
 L += [f"inline constexpr int keepsakes_count = {len(ks['list'])};",
       f"inline constexpr int keepsake_rank_runs[] = {{ {ks['rankRuns'][0]}, {ks['rankRuns'][1]} }};", ""]
@@ -636,9 +639,11 @@ for i, c in enumerate(d["classes"]):   # każdy zawód / narzędzie z sekretu ma
 for i, t in enumerate(m["tools"]):
     assert not t.get("secret") or ("tool", i) in srew, t
 from_meta = {x["cosmetic"] for x in d["badges"] + d["contracts"] if "cosmetic" in x}   # v0.21.52: kolory kasku z odznak i zleceń
-from_meta |= {x["id"] for x in d["inspector"]["levels"] + d["investor"]["ranks"] + d["mastery"]["levels"] if x["reward"] == "helmet"}   # cz. b
+GOALS = d["inspector"]["levels"] + d["investor"]["ranks"] + d["mastery"]["levels"] + d["tasks"]["rewards"] + d["daily"]["streak"] \
+    + [x["reward"] for x in d["collections"]["sets"]]   # cz. c: zadania, seria dni, kolekcje
+from_meta |= {x["id"] for x in GOALS if x["reward"] == "helmet"}   # cz. b
 assert len(from_meta) == sum(1 for x in d["badges"] + d["contracts"] if "cosmetic" in x) + sum(
-    1 for x in d["inspector"]["levels"] + d["investor"]["ranks"] + d["mastery"]["levels"] if x["reward"] == "helmet"), "kolor kasku z jednego źródła"
+    1 for x in GOALS if x["reward"] == "helmet"), "kolor kasku z jednego źródła"
 for i in range(len(cos)): assert (("cosmetic", i) in srew) != (cos[i]["id"] in from_meta), cos[i]   # jedno źródło
 for i in range(len(cos)): assert ("helmet" in cos[i]) == (cos[i]["id"] in from_meta), cos[i]
 assert all(p_ in eid for p_ in sec["paper"])
@@ -710,7 +715,78 @@ L.append("inline constexpr core::progress_level stake_ranks[] = {   // stopnie i
 L += [f"    {plevel(dict(x, xp=x['stake']), ['respect', 'title', 'helmet'])}," for x in rk] + ["};", f"inline constexpr int stake_ranks_count = {len(rk)};", ""]
 pt = [(0, i + 1, x["title"]) for i, x in enumerate(ins["levels"]) if x["reward"] == "title"] + [(1, x["stake"], x["title"]) for x in rk if x["reward"] == "title"]
 assert len({t[2] for t in pt} | {x["title"] for x in d["badges"] + d["contracts"]}) == len(pt) + len(d["badges"]) + len(d["contracts"]), "tytuły bez powtórzeń"
-L.append("inline constexpr core::progress_title progress_titles[] = {   // tytuły z poziomu inspektora (0) i stopni inwestora (1)")
+# ------------------------------------------------------------------ v0.21.52 cz. c: drzewko Szkoleń (#46), kolekcje (#49),
+# zadania dnia i tygodnia (#50), seria dni (#51)
+tr = m["tree"]; upid = {u["id"]: i for i, u in enumerate(m["upgrades"])}
+brid = {b["id"]: i for i, b in enumerate(tr["branches"])}
+assert len(tr["branches"]) == 3 and sorted(sum((b["upgrades"] for b in tr["branches"]), [])) == sorted(upid), "każde Szkolenie w jednej gałęzi"
+assert 1 <= len(tr["nodes"]) <= 8 and 0 < tr["respecCost"] < 200   # profil: 2 bity na węzeł (uint16)
+L.append("inline constexpr core::tree_branch tree_branches[] = {   // gałęzie drzewka: pień = Szkolenia (bity data::upgrades)")
+L += [f'    {{ {s(b["name"])}, {sum(1 << upid[u] for u in b["upgrades"])} }},' for b in tr["branches"]] + ["};"]
+L.append("inline constexpr core::tree_node tree_nodes[] = {   // węzły: głębokość (poziomy pnia gałęzi), koszt, 1 z 2 opcji")
+for x in tr["nodes"]:
+    b = tr["branches"][brid[x["branch"]]]
+    assert 0 < x["depth"] <= 4 * len(b["upgrades"]) and 0 < x["cost"] < 1000 and len(x["options"]) == 2, x
+    for o in x["options"]: assert o["effect"] in TREE_EFF and 0 < o["value"] <= 30 and len(o["name"]) <= 16 and len(o.get("short", o["name"])) <= 11 and len(o["desc"]) <= 26, o
+    assert x["options"][0]["effect"] != x["options"][1]["effect"], x
+    if any(o["effect"] == "first_hit" for o in x["options"]): assert all(o["value"] <= 15 for o in x["options"] if o["effect"] == "first_hit")
+    op = ", ".join(f'{{ {s(o["name"])}, {s(o.get("short", o["name"]))}, {s(o["desc"])}, core::upgrade_effect::{o["effect"]}, {o["value"]} }}' for o in x["options"])
+    L.append(f'    {{ {brid[x["branch"]]}, {x["depth"]}, {x["cost"]}, {{ {op} }} }},')
+for i in range(len(tr["nodes"]) - 1):   # w gałęzi kolejne węzły głębiej
+    a_, b_ = tr["nodes"][i], tr["nodes"][i + 1]
+    assert a_["branch"] != b_["branch"] or a_["depth"] < b_["depth"], (a_, b_)
+L += ["};", f"inline constexpr int tree_branches_count = {len(tr['branches'])};", f"inline constexpr int tree_nodes_count = {len(tr['nodes'])};",
+      f"inline constexpr int tree_respec_cost = {tr['respecCost']};", ""]
+kpid = {k["id"]: i for i, k in enumerate(ks["list"])}
+def goal(x, allowed, xp):
+    k = x["reward"]; assert k in allowed, x
+    idx = coid[x["id"]] if k == "helmet" else (kpid[x["id"]] if k == "keepsake" else -1)
+    if k == "helmet": assert "helmet" in cos[idx], x
+    if k == "title": assert 1 <= len(x["title"]) <= 16, x
+    assert 0 <= x.get("value", 0) <= 100 and (k != "respect" or x["value"] > 0), x
+    return f'{{ {xp}, core::progress_reward::{k}, {idx}, {x.get("value", 0)}, {s(x.get("title", ""))} }}'
+co = d["collections"]["sets"]
+assert 1 <= len(co) <= 8   # profil: bity ogłoszonych kompletów (uint8)
+L.append("inline constexpr core::collection_def collections[] = {   // kolekcje: komplet -> stała premia, tytuł albo kolor kasku")
+for x in co:
+    assert x["kind"] in {"act", "bosses", "decor"} and len(x["name"]) <= 16 and len(x["desc"]) <= 26 and 1 <= x["count"] <= 50, x
+    if x["kind"] == "act":
+        assert 0 <= x["act"] < len(d["acts"]), x
+        mask = 0
+        for st in d["stages"]:
+            if st["act"] == x["act"]:
+                for e in st["enemies"]: mask |= 1 << eid[e]
+        kind = "kills"
+    else: mask = 0; kind = x["kind"]
+    assert kind != "kills" or mask, x
+    rw_ = x["reward"]
+    pk = perk(rw_["perk"]) if rw_["reward"] == "perk" else "{ core::perk_effect::hp, 0 }"
+    L.append(f'    {{ {s(x["name"])}, {s(x["desc"])}, core::collection_kind::{kind}, {mask}ull, {x["count"]}, '
+             f'{goal(rw_, ["perk", "title", "helmet"], 0)}, {pk} }},')
+L += ["};", f"inline constexpr int collections_count = {len(co)};", ""]
+tk = d["tasks"]
+TKIND = ["kills", "elites", "bosses", "stages", "brigade", "powers", "coffee", "combos", "storerooms", "events", "win", "win_no_shop"]
+assert 3 <= len(tk["daily"]) <= 32 and 2 <= len(tk["weekly"]) <= 32
+for lst, nm in ((tk["daily"], "daily_tasks"), (tk["weekly"], "weekly_tasks")):
+    L.append(f"inline constexpr core::task_def {nm}[] = {{   // zadania: licznik z budów dnia / tygodnia, nagroda w Respekcie")
+    for x in lst:
+        assert x["kind"] in TKIND and 1 <= x["target"] <= 255 and 0 < x["respect"] <= 50 and len(x["name"]) <= 22, x   # postęp: uint8
+        L.append(f'    {{ {s(x["name"])}, core::task_kind::{x["kind"]}, {x["target"]}, {x["respect"]} }},')
+    L += ["};", f"inline constexpr int {nm}_count = {len(lst)};"]
+trw = tk["rewards"]; srw = d["daily"]["streak"]
+assert all(trw[i]["count"] < trw[i + 1]["count"] for i in range(len(trw) - 1)) and all(srw[i]["days"] < srw[i + 1]["days"] for i in range(len(srw) - 1))
+for x in srw:
+    if x["reward"] == "keepsake": assert ks["list"][kpid[x["id"]]].get("streak") == x["days"], x
+for k_ in ks["list"]:
+    if k_.get("streak"): assert any(x["reward"] == "keepsake" and x["id"] == k_["id"] for x in srw), k_
+L.append("inline constexpr core::progress_level task_rewards[] = {   // nagrody za wykonane zadania łącznie (xp = liczba zadań)")
+L += [f"    {goal(x, ['respect', 'title', 'helmet'], x['count'])}," for x in trw] + ["};", f"inline constexpr int task_rewards_count = {len(trw)};"]
+L.append("inline constexpr core::progress_level streak_rewards[] = {   // seria dni budowy dnia (xp = dni)")
+L += [f"    {goal(x, ['keepsake', 'title', 'helmet'], x['days'])}," for x in srw] + ["};", f"inline constexpr int streak_rewards_count = {len(srw)};", ""]
+pt += [(2, i + 1, x["reward"]["title"]) for i, x in enumerate(co) if x["reward"]["reward"] == "title"]
+pt += [(3, x["days"], x["title"]) for x in srw if x["reward"] == "title"] + [(4, x["count"], x["title"]) for x in trw if x["reward"] == "title"]
+assert len({t[2] for t in pt} | {x["title"] for x in d["badges"] + d["contracts"]}) == len(pt) + len(d["badges"]) + len(d["contracts"]), "tytuły bez powtórzeń"
+L.append("inline constexpr core::progress_title progress_titles[] = {   // tytuły: inspektor (0), stopnie inwestora (1), kolekcje (2), seria dni (3), zadania (4)")
 L += [f"    {{ {s(t[2])}, {t[0]}, {t[1]} }}," for t in pt] + ["};", f"inline constexpr int progress_titles_count = {len(pt)};", ""]
 
 L += [f"inline constexpr const char* version = {s(d['version'])};   // numer wersji (ekran tytułowy, changelog)", ""]
@@ -726,6 +802,10 @@ mh = d["metaHelp"]   # v0.21.50 cz. 4: Jak grać - podsumowanie, wyzwanie tygodn
 assert len(mh) == 6 and all(len(x) <= 31 for x in mh), mh
 L += ["inline constexpr const char* meta_help[] = {   // Jak grać: podsumowanie budowy, wyzwanie tygodnia, fabuła"]
 L += [f"    {s(t)}," for t in mh] + ["};", f"inline constexpr int meta_help_count = {len(mh)};", ""]
+gh_ = d["goalsHelp"]   # v0.21.52 cz. c: Jak grać - drzewko, kolekcje, zadania, seria dni
+assert len(gh_) == 7 and all(len(x) <= 31 for x in gh_), gh_
+L += ["inline constexpr const char* goals_help[] = {   // Jak grać: drzewko Szkoleń, kolekcje, zadania dnia, seria dni"]
+L += [f"    {s(t)}," for t in gh_] + ["};", f"inline constexpr int goals_help_count = {len(gh_)};", ""]
 ph_ = d["progressHelp"]   # v0.21.52 cz. b: Jak grać - poziom inspektora, mistrzostwo zawodu, stopnie inwestora
 assert len(ph_) == 7 and all(len(x) <= 31 for x in ph_), ph_
 L += ["inline constexpr const char* progress_help[] = {   // Jak grać: poziom inspektora i mistrzostwo zawodu"]
