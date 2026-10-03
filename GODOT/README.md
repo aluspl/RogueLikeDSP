@@ -4,12 +4,26 @@ Wersja Godot gry z demo GBA (`../GBA`): roguelike budowlany, w którym etapy bud
 a wrogami są *problemy budowy*. Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KONCEPCJA.md)
 (telefon z aplikacją PlanBudowlany jako interfejs, oprawa 2.5D – kolejne kamienie milowe).
 
-**Stan: zgodny z GBA v0.21.52 cz. d (mapa kariery: rdzeń, test złoty i ekrany), cz. c (drzewko Szkoleń, kolekcje, zadania dnia i tygodnia, seria dni), cz. b (inspektor, mistrzostwo, stopnie inwestora), cz. a (tempo postępu), wcześniej v0.21.51 cz. 2 (sekretne zlecenia), v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
+**Stan: zgodny z GBA v0.21.53 (filtry ekranu i tryby dla daltonistów), v0.21.52 cz. d (mapa kariery: rdzeń, test złoty i ekrany), cz. c (drzewko Szkoleń, kolekcje, zadania dnia i tygodnia, seria dni), cz. b (inspektor, mistrzostwo, stopnie inwestora), cz. a (tempo postępu), wcześniej v0.21.51 cz. 2 (sekretne zlecenia), v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
 z pieczątkami i Decyzją odmowną, samouczek menu, profil v10; wcześniej 10 etapów, 20 nowych problemów
 z zachowaniami, mechaniki aktów, opis statystyk; Respekt za etapy i sklep Respektu,
 nagrody za odbiór – Młot udarowy, Pistolet do kotew, buty, pas, zawody Dekarz, Tynkarz, Operator koparki – nowy balans
 Szkoleń, profil v8; wcześniej wybór ścieżki, materiały, codzienna budowa, pogoda, brygada, tryb inwestora);
 oprawa (grafika, font, dźwięk, telefon, wybór zawodu) jak w GBA.
+
+Nowe w v0.21.53 (#53, #54): **filtry ekranu** – rdzeń `ScreenFilters` (`ScreenFilterDef` z sekcji `screenFilters`: rodzaj
+klasyczny / zabawowy / dla daltonistów, `Cues`, `Motion`, warunki `FilterCond` – inspektor, kolekcja, kontrakt, sekret, wygrane;
+`Unlocked`, `Next`, `Announce` – baner raz, `UnlockLabel`, `MigrateV17`), profil v17 (`PBRL017`: `Filter` – tylko dla zgodności
+z GBA, `FiltersSeen`), teksty interfejsu z danych (`GameData.FilterText`, `screenFilters.ui`). Warstwa Godota: `Gfx/ScreenFilter`
+(CanvasLayer z prostokątem na cały ekran i shaderem `shaders/screen_filter.gdshader` czytającym obraz pod spodem: Noir,
+Retro LCD, Neon nocy, Kwas, daltonizacja Protanopia / Deuteranopia / Tritanopia, Wysoki kontrast; klasyczny = węzeł ukryty;
+warstwa 2 nad planszami albo 6 nad telefonem), ustawienia w `settings.cfg` (`filter`, `filter_strength`, `filter_phone`,
+`reduce_motion`), Ustawienia > **Filtr ekranu** (`FiltersPage`: „???” z podpowiedzią, Dostępność, siła, telefon, ograniczony
+ruch), wiersz w Wyglądzie (wybór zawodu > Tab – zawsze dostępny), przewijane ustawienia przy braku miejsca, wzory przy
+`Cues` (paski na polach ciosu i wybuchu – `OverlayLayer`, litery rzadkości – `BoonLook`), banery „Nowy filtr ekranu!”, Jak
+grać str. 12. `--filter ID` wymusza filtr (zrzuty). Sceny zrzutów (`Debug/FilterStaging`): `filter-map`, `filter-boon`,
+`filters`, `filters-locked`, `filters-looks`, `filter-banner`, `help-filters`. Testy: `ScreenFiltersTests`, test dymny (każdy
+filtr nad i pod telefonem), test małpy z losowym filtrem.
 
 Nowe w v0.21.52 cz. d (#47): **mapa kariery** – kontrakty `GameData.Career` (`CareerDef`: pierwszy etap w `Stages`, liczba,
 Akt 0, odblokowanie `CareerUnlock` – wygrane / poziom inspektora, porywy, bliźniak, boss, nagroda) z własnymi etapami
@@ -306,7 +320,8 @@ Na iOS/Androidzie (albo z `--touch` na komputerze) gra jest pionowa i sterowana 
 | Telefon | ikony zakładek, przesunięcie w bok = zakładka, w górę/dół = lista, przyciski na dole strony, krzyżyk zamyka |
 
 Ustawienia (klucz 🔧 w prawym górnym rogu, poza czasem gry): muzyka, dźwięki, wibracje, sterowanie (gesty + pasek
-albo gałka + pasek), pasek akcji dla prawej / lewej ręki, tekst normalny / duży, Jak grać, w trakcie budowy
+albo gałka + pasek), pasek akcji dla prawej / lewej ręki, tekst normalny / duży, filtr ekranu (v0.21.53: lista filtrów,
+siła, filtr na telefonie, ograniczony ruch), Jak grać, w trakcie budowy
 Zapisz i wyjdź (na tytule „Kontynuuj budowę”) i Porzuć budowę, wersja i link planbudowlany.online. Zapis w
 `user://settings.cfg` (osobno od profilu `user://profile.sav`); budowa w toku w `user://run.sav` (start etapu,
 Zapisz i wyjdź, uśpienie aplikacji).
@@ -460,6 +475,7 @@ tools/                      export_godot_assets.py – grafiki, font i dźwięki
 godot/                      projekt Godota (UI 640x360 przy 1280x720, dowolne proporcje okna)
 godot/assets/               wynik eksportu z GBA (PNG, font, WAV, MP3) + pliki .import
 godot/scripts/              prezentacja (C#, katalog = przestrzeń nazw LifeLike.Game.*) - patrz „Architektura”
+godot/shaders/              screen_filter.gdshader – filtry ekranu i tryby dla daltonistów (v0.21.53)
 godot/data/                 kopia GBA/data/game.json robiona przy buildzie (poza gitem)
 ```
 
@@ -490,14 +506,14 @@ World/             WorldView (sprite'y, synchronizacja), WorldFx (trafienia, moc
 Touch/             GestureTracker (dotyk -> gesty: Down, Drag, Swipe, SwipeRepeat, LongPress, Tap, Up), Gesture,
                    TouchControls (warstwa: ActionBar - pasek akcji, VirtualStick - gałka), BarButton, TouchIcon,
                    ITapTargets (prostokąty przycisków dla testu małpy)
-Settings/          GameSettings (user://settings.cfg, Changed), ControlScheme, Haptics (wibracje przy dźwiękach)
+Settings/          GameSettings (user://settings.cfg, Changed; filtr ekranu, siła, telefon, ograniczony ruch), ControlScheme, Haptics (wibracje przy dźwiękach)
 Hud/               SettingsButton (klucz ustawień), HudLayer (HudTop, HudLog, EnemyCard, ScreenTint), PushBanners + PushBanner (rysowanie, trafienie
                    kliknięciem), BannerFeed (treść i zakładka telefonu z SessionEvents)
 Phone/             PhoneView (telefon), PhonePage, PhonePainter, PhoneTabs, Backdrop; Tabs/ (w grze), ProfileTabs/,
                    Pages/ (wiadomość, harmonogram z radą, Hurtownia, paczka, Jak grać)
 Gfx/               Pal (tokeny kolorów PlanBudowlany i GBA), Ink, Layout (rozmiar UI, skale HUD i mapy, bezpieczny
                    obszar - jedyne miejsce), ScaledLayer (warstwa z własną skalą), Assets, PixelFont (skala
-                   ułamkowa), Ui, UiText, DrawHook, DrawErrors
+                   ułamkowa), Ui, UiText, DrawHook, DrawErrors, ScreenFilter (filtr ekranu, v0.21.53)
 Audio/             Sfx (dźwięki i muzyka), SoundCues (dźwięki zdarzeń sesji)
 Guide/             Coach (samouczek menu i dymki nowości: kroki, flagi w profilu), CoachView (przyciemnienie, podświetlenie,
                    dymek Kierownika Marka), CoachHit
