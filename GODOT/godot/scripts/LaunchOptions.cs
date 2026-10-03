@@ -9,7 +9,8 @@ namespace LifeLike.Game;
 /// jak iPhone 14 Pro Max w punktach, z symulowaną wyspą i paskiem domowym), --size SZERxWYS (rozmiar okna),
 /// --monkey SEED KROKI (test małpy: losowe klawisze i dotknięcia przez prawdziwe wejście, Debug/MonkeyTest),
 /// --filter ID (filtr ekranu bez względu na odblokowanie, v0.21.53), --lang pl|en (język, v0.21.53 cz. 2; testy bez
-/// --lang: polski).
+/// --lang: polski), v0.21.54: --view flat|34 (widok mapy), --lights on|off (efekty świetlne), --bench SEKUNDY (ze zrzutem:
+/// pomiar czasu klatki sceny przed zapisem zrzutu).
 /// </summary>
 public sealed class LaunchOptions
 {
@@ -30,6 +31,12 @@ public sealed class LaunchOptions
     public string Filter { get; private init; } = "";
     /// <summary>v0.21.53 cz. 2 (#40): --lang pl|en – język gry (pusty = ustawienia albo język systemu).</summary>
     public string Lang { get; private init; } = "";
+    /// <summary>v0.21.54: --view flat|34 – widok mapy (pusty = ustawienia; testy bez --view: płaski).</summary>
+    public string View { get; private init; } = "";
+    /// <summary>v0.21.54: --lights on|off – efekty świetlne (pusty = ustawienia; testy: włączone).</summary>
+    public string Lights { get; private init; } = "";
+    /// <summary>v0.21.54: --bench SEKUNDY – pomiar czasu klatki w scenie zrzutu (0 = bez pomiaru).</summary>
+    public float Bench { get; private init; }
 
     public bool Monkey => MonkeySeed != 0;
 
@@ -73,6 +80,9 @@ public sealed class LaunchOptions
             MonkeySteps = msteps,
             Filter = Arg("--filter") ?? "",
             Lang = Arg("--lang") is "en" or "pl" ? Arg("--lang") : "",
+            View = Arg("--view") is "flat" or "34" ? Arg("--view") : "",
+            Lights = Arg("--lights") is "on" or "off" ? Arg("--lights") : "",
+            Bench = float.TryParse(Arg("--bench"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var b) ? b : 0f,
         };
     }
 }

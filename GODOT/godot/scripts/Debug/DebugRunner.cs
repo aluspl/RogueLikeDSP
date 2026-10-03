@@ -25,7 +25,7 @@ public static class DebugRunner
         }
         if (opts.Screenshot)
         {
-            new ScreenshotRunner(app).Run(opts.ScreenshotPath, opts.Scene);
+            new ScreenshotRunner(app).Run(opts.ScreenshotPath, opts.Scene, opts.Bench);
             return true;
         }
         return false;

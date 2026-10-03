@@ -21,7 +21,7 @@ public sealed class DebugScenes
         "schedule-path", "materials", "repairs", "hurtownia-mats", "daily", "house", "levelup", "death",
         "respect", "rewards", "classselect-locked", "class-dekarz", "class-tynkarz", "class-operator", "gear5", "respect-banner",
         "second-chance", "behaviors", "act-mud", "act-gust", "act-dust", "stats-class", "stats-tip", "stats-phone", "catalog-tags",
-        "help-acts", "help-stats",
+        "help-acts", "help-stats", "help-view",
         "tutorial-title", "tutorial-class", "tutorial-stats", "tutorial-unlock", "tutorial-act0", "help-tutorial",
         "act0-card", "act0-stamps", "act0-stairs-open", "act0-boss-phase",
         "dmg-class", "dmg-stats", "dmg-gear", "dmg-phone", "dmg-crit", "dmg-offer", "dmg-tool", "dmg-enemy", "help-dmg",
@@ -184,9 +184,10 @@ public sealed class DebugScenes
             case "help-extras":
             case "help-meta":
             case "help-progress": // v0.21.52 cz. b: strona 9 – inspektor i mistrzostwo
+            case "help-view": // v0.21.54: strona 13 – widok mapy i efekty świetlne
                 Flow.Help.Open(true, true);
                 if (_app.Nodes.Phone.Current is Phone.Pages.HelpPage hp)
-                    hp.Page = scene == "help" ? 0 : scene == "help-acts" ? 1 : scene == "help-stats" ? 2 : scene == "help-dmg" ? 3 : scene == "help-combos" ? 4 : scene == "help-extras" ? 5 : scene == "help-progress" ? 8 : 6;
+                    hp.Page = scene == "help-view" ? Phone.Pages.HelpPage.ViewPage : scene == "help" ? 0 : scene == "help-acts" ? 1 : scene == "help-stats" ? 2 : scene == "help-dmg" ? 3 : scene == "help-combos" ? 4 : scene == "help-extras" ? 5 : scene == "help-progress" ? 8 : 6;
                 _app.Nodes.Phone.QueueRedraw();
                 return;
             case "dmg-class": // rozpiska obrażeń broni (#26): dymek nad narzędziem na karcie zawodu

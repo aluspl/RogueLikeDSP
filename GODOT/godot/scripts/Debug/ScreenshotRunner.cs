@@ -11,7 +11,7 @@ public sealed class ScreenshotRunner
 
     public ScreenshotRunner(App app) => _app = app;
 
-    public async void Run(string path, string scene)
+    public async void Run(string path, string scene, float bench = 0f)
     {
         var s = _app.Session;
         s.Persist = false;
@@ -33,10 +33,38 @@ public sealed class ScreenshotRunner
         if (scene != "prologue") s.Profile.SetFlag(Profile.FlagPrologueSeen | Profile.FlagHelpSeen); // prolog tylko w swojej scenie
         await new DebugScenes(_app).Setup(scene);
         await DebugRunner.Frames(root, 50);
+        if (bench > 0f) await Bench(root, scene, bench);
         var img = root.GetViewport().GetTexture().GetImage();
         if (img.GetWidth() < 1000) img.Resize(img.GetWidth() * 2, img.GetHeight() * 2, Image.Interpolation.Nearest);
         img.SavePng(path);
         GD.Print($"Zrzut ekranu ({scene}): {path}");
         root.GetTree().Quit();
+    }
+
+    /// <summary>v0.21.54 (--bench): średni czas klatki, procesu i renderowania (CPU / GPU) sceny przez podany czas.</summary>
+    private static async System.Threading.Tasks.Task Bench(Node root, string scene, float seconds)
+    {
+        var vp = root.GetViewport().GetViewportRid();
+        RenderingServer.ViewportSetMeasureRenderTime(vp, true);
+        double frame = 0, proc = 0, cpu = 0, gpu = 0, worst = 0;
+        var n = 0;
+        var start = Time.GetTicksUsec();
+        var last = start;
+        while ((Time.GetTicksUsec() - start) / 1e6 < seconds)
+        {
+            await root.ToSignal(root.GetTree(), SceneTree.SignalName.ProcessFrame);
+            var now = Time.GetTicksUsec();
+            var dt = (now - last) / 1000.0;
+            last = now;
+            if (n++ == 0) continue;
+            frame += dt;
+            worst = Math.Max(worst, dt);
+            proc += Performance.GetMonitor(Performance.Monitor.TimeProcess) * 1000.0;
+            cpu += RenderingServer.ViewportGetMeasuredRenderTimeCpu(vp) + RenderingServer.GetFrameSetupTimeCpu();
+            gpu += RenderingServer.ViewportGetMeasuredRenderTimeGpu(vp);
+        }
+        var k = Math.Max(1, n - 1);
+        GD.Print($"BENCH {scene} view={(Settings.GameSettings.ThreeQuarter ? "34" : "flat")} lights={(Settings.GameSettings.Lights ? "on" : "off")}: " +
+                 $"{k} klatek, klatka {frame / k:0.00} ms (max {worst:0.0}), proces {proc / k:0.00} ms, render CPU {cpu / k:0.00} ms, GPU {gpu / k:0.00} ms");
     }
 }
