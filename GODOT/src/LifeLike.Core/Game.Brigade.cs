@@ -78,6 +78,7 @@ public sealed partial class Game
         if (ShockedTurn()) return true;
         Cash -= HelperPrice(h);
         HelperCalled = (sbyte)h;
+        if (HelpersCalled < 255) ++HelpersCalled; // v0.21.52 cz. c: zadania dnia
         Push(Msg("Brygada: ").Add(hd.Name).As(LogKind.Good));
         switch (hd.Effect)
         {

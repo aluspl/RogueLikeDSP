@@ -34,14 +34,26 @@ public sealed class RunSave
         return new RunSave { Magic = Profile.MagicBytes(RunMagic), Size = (uint)data.Length, Data = data, Checksum = Fnv1a(data) };
     }
 
+    /// <summary>v0.21.52 cz. c: stan sprzed liczników zadań (2 bajty krócej, na końcu) – wczytuje się z zerami.</summary>
+    public const int V14Tail = 2;
+
     public bool Valid(GameData d) =>
-        Magic.AsSpan().SequenceEqual(Profile.MagicBytes(RunMagic)) && Size == GameSize(d) && Data.Length == Size && Checksum == Fnv1a(Data);
+        Magic.AsSpan().SequenceEqual(Profile.MagicBytes(RunMagic)) && (Size == GameSize(d) || Size == GameSize(d) - V14Tail)
+        && Data.Length == Size && Checksum == Fnv1a(Data);
 
     public void Clear() => Magic = new byte[8];
 
     public Game Load(GameData d)
     {
         var g = new Game(d);
+        var size = GameSize(d);
+        if (Data.Length < size) // v0.21.52 cz. c: starszy stan bez liczników zadań na końcu
+        {
+            var padded = new byte[size];
+            Data.CopyTo(padded, 0);
+            g.FromBytes(padded);
+            return g;
+        }
         g.FromBytes(Data);
         return g;
     }

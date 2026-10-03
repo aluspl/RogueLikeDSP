@@ -115,9 +115,9 @@ public class InspectorMasteryTests
         Meta.CycleKeepsake2(D, p, 1);
         var one = Profile.FromBytes(p.ToBytes());
         one.Keepsake2 = 0;
-        Assert.Equal(Meta.Mods(D, one).Def + D.Keepsakes[1].Values[0], Meta.Mods(D, p).Def);
+        Assert.Equal(Meta.Mods(D, one).TakenPct + D.Keepsakes[1].Values[0], Meta.Mods(D, p).TakenPct); // cz. c: Kask ojca – mniej obrażeń
         p.KeepsakeRuns[1] = 50; // ranga III – druga pamiątka i tak na randze I
-        Assert.Equal(Meta.Mods(D, one).Def + D.Keepsakes[1].Values[0], Meta.Mods(D, p).Def);
+        Assert.Equal(Meta.Mods(D, one).TakenPct + D.Keepsakes[1].Values[0], Meta.Mods(D, p).TakenPct);
         p.KeepsakeRuns[1] = 0;
         var kr = p.KeepsakeRuns[1];
         Meta.StartRun(D, p);

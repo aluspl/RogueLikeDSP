@@ -5,8 +5,8 @@ namespace LifeLike.Core;
 
 /// <summary>
 /// Profil gracza (odpowiednik core::profile z meta.h): rekord, doświadczenie, zakupy, odznaki, Osiedle.
-/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v14: 240 bajtów, little-endian, bajt 55 to wyrównanie),
-/// więc migracje v1–v13 działają tak samo.
+/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v15: 384 bajty, little-endian, bajt 55 to wyrównanie),
+/// więc migracje v1–v14 działają tak samo.
 /// </summary>
 public sealed class Profile
 {
@@ -35,7 +35,14 @@ public sealed class Profile
     public const int V12Size = 196;
     /// <summary>v14 = v13 + poziom inspektora, mistrzostwo zawodów, druga pamiątka (v0.21.52 cz. b) od tego offsetu.</summary>
     public const int V13Size = 200;
-    public const int Size = 240;
+    /// <summary>v15 = v14 + drzewko Szkoleń, kolekcje, zadania dnia, seria dni (v0.21.52 cz. c) od tego offsetu.</summary>
+    public const int V14Size = 240;
+    public const int Size = 384;
+    /// <summary>Rodzaje problemów (liczniki kolekcji, jak core::max_enemy_types).</summary>
+    public const int MaxEnemyTypes = 48;
+    /// <summary>3 zadania dnia + 2 tygodnia.</summary>
+    public const int TaskSlots = 5;
+    public const int DailyTaskSlots = 3;
     public const int WeeklySlots = 3;
     public const int MaxRespect = 16;
     /// <summary>Rangi Respektu 16-18 (v12, dalszy ciąg RespectRanks).</summary>
@@ -44,8 +51,9 @@ public sealed class Profile
     public const int MaxClasses = 12;
     public const int MaxKeepsakes = 8;
     public const int DailySlots = 5;
-    /// <summary>Bieżący format (v14, v0.21.52 cz. b).</summary>
-    public const string MagicCurrent = "PBRL014";
+    /// <summary>Bieżący format (v15, v0.21.52 cz. c).</summary>
+    public const string MagicCurrent = "PBRL015";
+    public const string MagicV14 = "PBRL014";
     public const string MagicV13 = "PBRL013";
     public const string MagicV12 = "PBRL012";
     public const string MagicV11 = "PBRL011";
@@ -180,6 +188,33 @@ public sealed class Profile
     public ushort RunProgress;
     /// <summary>Druga pamiątka + 1 (0 = bez; slot z poziomu inspektora).</summary>
     public byte Keepsake2;
+    // --- v15 (v0.21.52 cz. c): drzewko Szkoleń, kolekcje, zadania dnia i tygodnia, seria dni
+    /// <summary>Wybór w węzłach drzewka: 2 bity na węzeł (0 brak, 1 = opcja A, 2 = opcja B).</summary>
+    public ushort Tree;
+    /// <summary>Kolekcje: pokonane każdego rodzaju problemu (do 255).</summary>
+    public byte[] KillCount = new byte[MaxEnemyTypes];
+    /// <summary>Ile z bieżącej budowy już doliczono do KillCount (znak wodny jak RunKills).</summary>
+    public byte[] KillMark = new byte[MaxEnemyTypes];
+    /// <summary>Dzień zadań dnia (numer budowy dnia), 0 = jeszcze żadnych.</summary>
+    public ushort TaskDay;
+    /// <summary>Tydzień zadań tygodnia (numer wyzwania tygodnia).</summary>
+    public ushort TaskWeek;
+    /// <summary>Postęp zadań: 3 dnia, 2 tygodnia.</summary>
+    public byte[] TaskProgress = new byte[TaskSlots];
+    /// <summary>Ile z bieżącej budowy już doliczono (znak wodny).</summary>
+    public byte[] TaskMark = new byte[TaskSlots];
+    /// <summary>Bity: zadanie wykonane (Respekt wydany).</summary>
+    public byte TaskDone;
+    /// <summary>Seria dni budowy dnia (kolejne dni).</summary>
+    public byte Streak;
+    /// <summary>Wykonane zadania łącznie (nagrody za liczbę).</summary>
+    public ushort TasksTotal;
+    /// <summary>Ostatni dzień serii (numer budowy dnia).</summary>
+    public ushort StreakDay;
+    /// <summary>Najdłuższa seria (nagrody za 3 / 7 / 14 dni).</summary>
+    public byte StreakBest;
+    /// <summary>Bity: ogłoszone komplety kolekcji (baner raz).</summary>
+    public byte Collections;
 
     public static byte[] MagicBytes(string s)
     {
@@ -266,6 +301,19 @@ public sealed class Profile
         BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(228), PowerAlt);
         BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(230), RunProgress);
         b[232] = Keepsake2;
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(240), Tree);
+        KillCount.CopyTo(b, 242);
+        KillMark.CopyTo(b, 290);
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(338), TaskDay);
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(340), TaskWeek);
+        TaskProgress.CopyTo(b, 342);
+        TaskMark.CopyTo(b, 347);
+        b[352] = TaskDone;
+        b[353] = Streak;
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(354), TasksTotal);
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(356), StreakDay);
+        b[358] = StreakBest;
+        b[359] = Collections;
         return b;
     }
 
@@ -335,6 +383,19 @@ public sealed class Profile
             PowerAlt = BinaryPrimitives.ReadUInt16LittleEndian(b[228..]),
             RunProgress = BinaryPrimitives.ReadUInt16LittleEndian(b[230..]),
             Keepsake2 = b[232],
+            Tree = BinaryPrimitives.ReadUInt16LittleEndian(b[240..]),
+            KillCount = b.Slice(242, MaxEnemyTypes).ToArray(),
+            KillMark = b.Slice(290, MaxEnemyTypes).ToArray(),
+            TaskDay = BinaryPrimitives.ReadUInt16LittleEndian(b[338..]),
+            TaskWeek = BinaryPrimitives.ReadUInt16LittleEndian(b[340..]),
+            TaskProgress = b.Slice(342, TaskSlots).ToArray(),
+            TaskMark = b.Slice(347, TaskSlots).ToArray(),
+            TaskDone = b[352],
+            Streak = b[353],
+            TasksTotal = BinaryPrimitives.ReadUInt16LittleEndian(b[354..]),
+            StreakDay = BinaryPrimitives.ReadUInt16LittleEndian(b[356..]),
+            StreakBest = b[358],
+            Collections = b[359],
         };
         for (var i = 0; i < MaxClasses; i++) p.MasteryXp[i] = BinaryPrimitives.ReadUInt16LittleEndian(b[(204 + i * 2)..]);
         for (var i = 0; i < WeeklySlots; i++)

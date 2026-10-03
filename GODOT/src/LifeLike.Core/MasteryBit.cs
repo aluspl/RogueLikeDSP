@@ -11,4 +11,6 @@ public static class MasteryBit
     public const int Weapon = 2;
     /// <summary>Premia mistrzostwa w ofercie po etapie.</summary>
     public const int Boon = 4;
+    /// <summary>v0.21.52 cz. c: wartość Siły rozpędu (drzewko) w bitach 8-11 RunMods.Mastery.</summary>
+    public const int FirstHitShift = 8;
 }

@@ -93,13 +93,13 @@ public class GameDataTests
         Assert.Equal(TraitEffect.Intel, D.GearTraits[7].Effect);
         Assert.Equal(7, D.Upgrades.Length);
         Assert.Equal(UpgradeEffect.Luck, D.Upgrades[5].Effect);
-        Assert.Equal(UpgradeEffect.Craft, D.Upgrades[6].Effect);
+        Assert.Equal(UpgradeEffect.GearPct, D.Upgrades[6].Effect); // v0.21.52 cz. c: Warsztaty – stat. broni w węźle Rzemieślnik
         Assert.Equal(10, D.Tools.Length); // v0.21.51 cz. 2: + Młot Zenka, Poziomica mistrza (sekretne)
         Assert.Equal(0b11_0000_0000, D.SecretToolsMask);
         Assert.Equal(new Perk(PerkEffect.Hp, 2), D.Badges[D.BadgeBezUsterek].Bonus);
         Assert.Equal(new Perk(PerkEffect.ToolPct, 10), D.Badges[D.BadgeKolekcjoner].Bonus);
         Assert.Equal(new Perk(PerkEffect.XpPct, 10), D.Badges[D.BadgeOsiedle].Bonus);
-        Assert.Equal(5, D.Keepsakes.Length);
+        Assert.Equal(6, D.Keepsakes.Length); // v0.21.52 cz. c: + Kalendarz majstra (seria dni)
         Assert.Equal(new[] { 3, 8 }, D.KeepsakeRankRuns);
         Assert.True(D.Keepsakes[0].Start && D.Keepsakes[0].Effect == PerkEffect.Thermos && D.Keepsakes[0].Badge == -1);
         Assert.Equal(0, D.Keepsakes[1].Badge);

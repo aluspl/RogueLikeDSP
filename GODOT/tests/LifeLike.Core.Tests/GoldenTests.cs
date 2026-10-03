@@ -34,6 +34,8 @@ public class GoldenTests
         int paths = Opt("paths"), daily = Opt("daily");
         int respect = Opt("respect"), rewards = Opt("rewards"), weekly = Opt("weekly"), secrets = Opt("secrets");
         int mastery = Opt("mastery"), insp = Opt("insp"), keepsake2 = Opt("keepsake2"); // v0.21.52 cz. b
+        var tree = Opt("tree"); // v0.21.52 cz. c: wybory w drzewku (1 + bity opcji)
+        int goldenDay = Daily.Number(d, 2026, 10, 3), goldenWeek = Weekly.Number(d, 2026, 10, 3); // zadania dnia i tygodnia
         var snaps = j.GetProperty("snapshots").EnumerateArray().ToList();
         var digests = j.GetProperty("digests").EnumerateArray().Select(x => x.GetString()).ToList();
 
@@ -69,6 +71,13 @@ public class GoldenTests
             p.MasteryXp[cls] = (ushort)Progress.Floor(d.MasteryLevels, mastery);
             if (mastery >= 3) p.PowerAlt = (ushort)(1 << cls);
         }
+        if (tree != 0)
+        {
+            p.Xp = 100000;
+            for (var n = 0; n < d.TreeNodes.Length; ++n) SkillTree.Choose(d, p, n, ((tree - 1) >> n) & 1);
+            p.Xp = 0;
+        }
+        if (daily == Daily.Number(d, 2026, 10, 2)) Daily.Record(d, p, Daily.Number(d, 2026, 10, 1), 10, false); // seria: poprzedni dzień
         var m = Meta.Mods(d, p, cls); // przed StartRun: ranga pamiątki z budów przed tą; v0.21.52 cz. b: mistrzostwo zawodu
         var g = new Game(d);
         if (weekly > 0) Weekly.Start(g, weekly); // v0.21.50 cz. 4: wyzwanie tygodnia – zawód, seed i zasady z tygodnia
@@ -108,6 +117,7 @@ public class GoldenTests
                 Meta.CheckContracts(d, p);
                 Secrets.Check(d, p, g);
                 Meta.BankXp(p, g);
+                DailyTasks.Bank(d, p, g, goldenDay, goldenWeek); // v0.21.52 cz. c: zadania na końcu etapu (znak wodny)
                 if (g.ActCleared && shop && !g.ShopClosed) Bot.Shop(g);
                 g.BotUpgrade(); // v0.21.50 cz. 3: jak bot balansu – ulepszenie narzędzia, jeśli stać
                 if (paths != 0) g.ChoosePath(g.Stage & 1);
@@ -154,6 +164,8 @@ public class GoldenTests
         if (g.Daily) Daily.Record(d, p, g.DailyDay, g.Score, g.St == GameStatus.Won);
         if (g.WeeklyWeek != 0) Weekly.Record(d, p, g.WeeklyWeek, g.Score, g.St == GameStatus.Won);
         Progress.Bank(d, p, g); // v0.21.52 cz. b: poziom inspektora i mistrzostwo (przed fabułą: wątki inspektora)
+        DailyTasks.Bank(d, p, g, goldenDay, goldenWeek); // v0.21.52 cz. c: zadania dnia i tygodnia, kolekcje
+        CollectionBook.Check(d, p);
         Story.Check(d, p, g); // v0.21.50 cz. 4: fabuła – wątki za kamienie milowe
 
         Assert.Equal(snaps.Count, snapIndex);

@@ -16,6 +16,7 @@ public sealed partial class Game
         var dmg = R.Range(Math.Min(w.MaxDamage, w.MinDamage + ToolTraitValue(ToolTraitEffect.Steady)), w.MaxDamage)
                   + HeroStat(w.ScalesWith) / 2 + DmgBonus + GearBonus(GearStat.Dmg) + BoonSum(BoonEffect.Dmg) + UpgradeDmg() + EventDmg
                   + MarkBonus(ei) // Tyczenie (Geodeta)
+                  + (Enemies[ei].Hp >= Enemies[ei].MaxHp ? Bonus.FirstHitBonus : 0) // v0.21.52 cz. c: Siła rozpędu
                   - Math.Max(0, EnemyDefense(ei) - ToolTraitValue(ToolTraitEffect.Pierce)) / 2;
         if (dmg < 1) dmg = 1;
         dmg += Pct.Part(dmg, Bonus.DmgPct + BoonSum(BoonEffect.DmgPct), ref DmgCarry); // Kurs fachowy, Respekt, premie: +%

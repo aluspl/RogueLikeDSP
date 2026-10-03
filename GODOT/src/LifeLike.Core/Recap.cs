@@ -65,6 +65,7 @@ public static class Recap
             1 => d.Classes[idx].Name,
             2 => d.Weapons[d.Tools[idx].Weapon].Name,
             3 => d.Brigade[idx].Name,
+            5 => $"Drzewko: {d.TreeBranches[d.TreeNodes[idx].Branch].Name}",
             _ => d.Difficulties[^1].Name,
         };
         return true;

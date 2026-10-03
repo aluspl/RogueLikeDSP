@@ -62,8 +62,14 @@ public struct RunMods
     public int WeeklyPlus1;
     /// <summary>v0.21.51 cz. 2: Respekt Zaprawiony w boju – kawy w termosie na start.</summary>
     public int StartCoffee;
-    /// <summary>v0.21.52 cz. b: mistrzostwo zawodu (bity MasteryBit): wariant mocy, broń mistrza, premia mistrzostwa w ofercie.</summary>
+    /// <summary>
+    /// v0.21.52 cz. b: mistrzostwo zawodu (bity MasteryBit): wariant mocy, broń mistrza, premia mistrzostwa w ofercie;
+    /// cz. c: bity 8-11 – Siła rozpędu z drzewka (FirstHitBonus).
+    /// </summary>
     public int Mastery;
+
+    /// <summary>v0.21.52 cz. c: +obrażeń pierwszego ciosu w nietknięty problem (węzeł drzewka Siła rozpędu).</summary>
+    public readonly int FirstHitBonus => (Mastery >> MasteryBit.FirstHitShift) & 15;
 
     /// <summary>Wyzwanie tygodnia (GameData.Weekly), -1 = zwykła budowa (jak run_mods::weekly na GBA).</summary>
     public int Weekly
@@ -119,6 +125,10 @@ public struct RunMods
             case UpgradeEffect.MatsPct: MatsPct += v; break;
             case UpgradeEffect.GearPct: GearPct += v; break;
             case UpgradeEffect.Cash: Cash += v; break;
+            case UpgradeEffect.ShopPct: ShopPct += v; break; // v0.21.52 cz. c: węzły drzewka
+            case UpgradeEffect.BrigadePct: BrigadePct += v; break;
+            case UpgradeEffect.Cooldown: Cooldown += v; break;
+            case UpgradeEffect.FirstHit: Mastery += Math.Min(15, v) << MasteryBit.FirstHitShift; break; // Siła rozpędu (jeden węzeł)
         }
     }
 
@@ -146,6 +156,10 @@ public struct RunMods
         UpgradeEffect.MatsPct => m.Add("Materiały +").Add(v).Add("%"),
         UpgradeEffect.GearPct => m.Add("Sprzęt +").Add(v),
         UpgradeEffect.Cash => m.Add("Budżet +").Add(v).Add(" zł"),
+        UpgradeEffect.ShopPct => m.Add("Hurtownia -").Add(v).Add("%"),
+        UpgradeEffect.BrigadePct => m.Add("Brygada -").Add(v).Add("%"),
+        UpgradeEffect.Cooldown => m.Add("Moc -").Add(v).Add(" t."),
+        UpgradeEffect.FirstHit => m.Add("Pierwszy cios +").Add(v),
         _ => m,
     };
 
@@ -193,6 +207,7 @@ public struct RunMods
             case PerkEffect.Cash: Cash += p.Value; break;
             case PerkEffect.Crit: Crit += p.Value; break;
             case PerkEffect.Coffee: Coffee += p.Value; break;
+            case PerkEffect.TakenPct: TakenPct += p.Value; break; // v0.21.52 cz. c: Kask ojca
         }
     }
 
@@ -214,6 +229,7 @@ public struct RunMods
             PerkEffect.Cash => m.Add("+").Add(v).Add(" zł na start"),
             PerkEffect.Crit => m.Add("Kryt +").Add(v).Add("%"),
             PerkEffect.Coffee => m.Add("Kawa +").Add(v).Add(" HP"),
+            PerkEffect.TakenPct => m.Add("-").Add(v).Add("% otrzym. obr."),
             _ => m,
         };
     }

@@ -125,6 +125,7 @@ public static class Daily
     public static bool Record(GameData d, Profile p, int day, int score, bool won)
     {
         if (p.DailyRuns < 255) ++p.DailyRuns;
+        DayStreak.Record(d, p, day); // v0.21.52 cz. c: seria dni
         int slot = -1, oldest = 0;
         for (var i = 0; i < d.DailyHistory; ++i)
         {

@@ -72,6 +72,7 @@ public class ProfileAndShopTests
         for (var i = 0; i < D.Tools.Length; ++i) Meta.BuyTool(D, p, i);
         for (var i = 0; i < D.Brigade.Length; ++i) Meta.BuyHelper(D, p, i);
         Meta.BuyHard(D, p);
+        for (var n = 0; n < D.TreeNodes.Length; ++n) Assert.True(SkillTree.Choose(D, p, n, 0)); // v0.21.52 cz. c: drzewko
         Assert.Equal(Meta.ShopTotalCost(D), Meta.ShopSpent(D, p));
     }
 

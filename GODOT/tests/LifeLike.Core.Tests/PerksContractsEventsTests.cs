@@ -50,12 +50,10 @@ public class PerksContractsEventsTests
         var p = Meta.NewProfile(D);
         int iLuck = Array.FindIndex(D.Upgrades, u => u.Effect == UpgradeEffect.Luck);
         int iCraft = Array.FindIndex(D.Upgrades, u => u.Effect == UpgradeEffect.Craft);
-        Assert.True(iLuck >= 0 && iCraft >= 0 && D.Upgrades[iLuck].Levels >= 1 && D.Upgrades[iCraft].Levels >= 1);
-        p.Levels[iLuck] = (byte)D.Upgrades[iLuck].Levels;
-        p.Levels[iCraft] = (byte)D.Upgrades[iCraft].Levels;
+        Assert.True(iLuck >= 0 && iCraft < 0 && D.Upgrades[iLuck].Levels >= 1); // v0.21.52 cz. c: stat. broni w węźle drzewka
+        for (var i = 0; i < D.Upgrades.Length; ++i) p.Levels[i] = (byte)D.Upgrades[i].Levels;
         var pm = Meta.Mods(D, p);
-        Assert.True(pm.Luck == Meta.UpgradeTotal(D, iLuck, 9, UpgradeEffect.Luck) && pm.Luck >= 1);
-        Assert.True(pm.Craft == Meta.UpgradeTotal(D, iCraft, 9, UpgradeEffect.Craft) && pm.Craft >= 1);
+        Assert.True(pm.Luck == Meta.UpgradeTotal(D, iLuck, 9, UpgradeEffect.Luck) && pm.Luck >= 1 && pm.Craft == 0); // cz. c: bez stat. broni
         // co najmniej 3 narzędzia skalowane INT do odblokowania
         var intTools = D.Tools.Count(t => D.Weapons[t.Weapon].ScalesWith == Stat.Intel && t.Shop);
         Assert.True(intTools >= 3);
@@ -351,8 +349,8 @@ public class PerksContractsEventsTests
         p.RespectRanksHi[0] = 1;
         p.RespectRanksHi[2] = 3;
         var b = p.ToBytes();
-        Assert.Equal(240, b.Length);
-        Assert.Equal("PBRL014\0"u8.ToArray(), b[..8]);
+        Assert.Equal(384, b.Length);
+        Assert.Equal("PBRL015\0"u8.ToArray(), b[..8]);
         Assert.Equal(new byte[] { 0x02, 0x01, 0x04, 0x03, 2, 1, 0, 3 }, b[188..196]);
         Assert.Equal(new byte[] { 0x0B, 0x0A, 0x0D, 0x0C }, b[156..160]);
         Assert.Equal(new byte[] { 0x02, 0x01 }, b[160..162]);

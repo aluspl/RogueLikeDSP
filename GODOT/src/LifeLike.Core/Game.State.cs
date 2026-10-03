@@ -236,6 +236,9 @@ public sealed partial class Game
         w.Write(BorrowCls);
         w.Write(MarkTarget);
         w.Write(MarkTurns);
+        // v0.21.52 cz. c: zadania dnia (na końcu – zapis bez nich wczytuje się z zerami, RunSave.Load)
+        w.Write(HelpersCalled);
+        w.Write(ShopBuys);
     }
 
     private static void WriteHit(BinaryWriter w, in RecapHit h)
@@ -419,5 +422,7 @@ public sealed partial class Game
         BorrowCls = r.ReadSByte();
         MarkTarget = r.ReadSByte();
         MarkTurns = r.ReadSByte();
+        HelpersCalled = r.ReadByte();
+        ShopBuys = r.ReadByte();
     }
 }

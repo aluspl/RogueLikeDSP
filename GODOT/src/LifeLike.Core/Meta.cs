@@ -103,6 +103,19 @@ public static class Meta
         dst.PowerAlt = copy.PowerAlt;
         dst.RunProgress = copy.RunProgress;
         dst.Keepsake2 = copy.Keepsake2;
+        dst.Tree = copy.Tree;
+        dst.KillCount = copy.KillCount;
+        dst.KillMark = copy.KillMark;
+        dst.TaskDay = copy.TaskDay;
+        dst.TaskWeek = copy.TaskWeek;
+        dst.TaskProgress = copy.TaskProgress;
+        dst.TaskMark = copy.TaskMark;
+        dst.TaskDone = copy.TaskDone;
+        dst.Streak = copy.Streak;
+        dst.TasksTotal = copy.TasksTotal;
+        dst.StreakDay = copy.StreakDay;
+        dst.StreakBest = copy.StreakBest;
+        dst.Collections = copy.Collections;
     }
 
     // ------------------------------------------------------------------ katalog usterek (rodzaje 0-15 w Catalog, 16-47 w CatalogHi)
@@ -244,10 +257,22 @@ public static class Meta
         return changed;
     }
 
-    /// <summary>Naprawia wczytany profil. Zwraca true, jeśli trzeba go zapisać (migracja albo pusta pamięć).</summary>
+    /// <summary>
+    /// Naprawia wczytany profil. Zwraca true, jeśli trzeba go zapisać (migracja albo pusta pamięć).
+    /// v0.21.52 cz. c: każda ścieżka migracji kończy się Goals.MigrateV15 (drzewko, kolekcje, zadania, seria dni).
+    /// </summary>
     public static bool ProfileFix(GameData d, Profile p)
     {
         if (p.MagicIs(Profile.MagicCurrent)) return ClampLevels(d, p);
+        if (p.MagicIs(Profile.MagicV14)) // v14 -> v15: kolekcje z Katalogu, seria z wyników dni
+        {
+            var b14 = p.ToBytes();
+            Array.Clear(b14, Profile.V14Size, b14.Length - Profile.V14Size);
+            CopyInto(Profile.FromBytes(b14), p);
+            p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
+            Goals.MigrateV15(d, p);
+            return true;
+        }
         if (p.MagicIs(Profile.MagicV13)) // v13 -> v14: inspektor i mistrzostwo z dotychczasowych statystyk
         {
             var b13 = p.ToBytes();
@@ -255,6 +280,7 @@ public static class Meta
             CopyInto(Profile.FromBytes(b13), p);
             p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
             Progress.MigrateV14(d, p);
+            Goals.MigrateV15(d, p);
             return true;
         }
         if (p.MagicIs(Profile.MagicV12)) // v12 -> v13: zwrot za Szkolenia, tytuł i kask od zera
@@ -265,6 +291,7 @@ public static class Meta
             p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
             MigrateV13(d, p);
             Progress.MigrateV14(d, p);
+            Goals.MigrateV15(d, p);
             return true;
         }
         if (p.MagicIs(Profile.MagicV11)) // v11 -> v12: sekretne zlecenia z tego, co już widać w profilu
@@ -276,6 +303,7 @@ public static class Meta
             MigrateV13(d, p);
             Secrets.MigrateV12(d, p);
             Progress.MigrateV14(d, p);
+            Goals.MigrateV15(d, p);
             return true;
         }
         if (p.MagicIs(Profile.MagicV10)) // v10 -> v11: wyzwania tygodnia i fabuła od zera
@@ -288,6 +316,7 @@ public static class Meta
             Story.MigrateV11(d, p);
             Secrets.MigrateV12(d, p);
             Progress.MigrateV14(d, p);
+            Goals.MigrateV15(d, p);
             return true;
         }
         var v9 = p.MagicIs(Profile.MagicV9);
@@ -303,6 +332,7 @@ public static class Meta
             Story.MigrateV11(d, p);
             Secrets.MigrateV12(d, p);
             Progress.MigrateV14(d, p);
+            Goals.MigrateV15(d, p);
             return true;
         }
         // v7/v6/v5/v4/v3/v2 -> v9: stare pola zostają, nowe od zera (jak memset od profile_v7_size / v6 / ...);
@@ -325,6 +355,7 @@ public static class Meta
             Story.MigrateV11(d, p);
             Secrets.MigrateV12(d, p);
             Progress.MigrateV14(d, p);
+            Goals.MigrateV15(d, p);
             return true;
         }
         if (p.MagicIs(Profile.MagicV1))
@@ -339,6 +370,7 @@ public static class Meta
             Story.MigrateV11(d, p);
             Secrets.MigrateV12(d, p);
             Progress.MigrateV14(d, p);
+            Goals.MigrateV15(d, p);
             return true;
         }
         ProfileReset(d, p);
@@ -657,6 +689,11 @@ public static class Meta
         m.Tools = ToolsMask(d, p);
         m.Helpers = HelpersMask(d, p);
         for (var i = 0; i < d.Upgrades.Length; ++i) m.AddUpgradeLevels(d.Upgrades[i], p.Levels[i]);
+        SkillTree.Add(d, ref m, p); // v0.21.52 cz. c: wybrane węzły drzewka Szkoleń
+        for (var i = 0; i < d.Collections.Length; ++i) // v0.21.52 cz. c: komplety kolekcji ze stałą premią
+        {
+            if (d.Collections[i].Reward.Reward == ProgressReward.Perk && CollectionBook.Complete(d, p, i)) m.AddPerk(d.Collections[i].Bonus);
+        }
         for (var i = 0; i < d.Respect.Length; ++i) // Respekt: kupione rangi
         {
             if (RespectRank(d, p, i) > 0) m.AddRespect(d.Respect[i].Effect, RespectValue(d, p, i));
@@ -680,7 +717,7 @@ public static class Meta
     public static RunMods Mods(GameData d, Profile p, int cls)
     {
         var m = Mods(d, p);
-        m.Mastery = Progress.MasteryBits(d, p, cls);
+        m.Mastery |= Progress.MasteryBits(d, p, cls); // v0.21.52 cz. c: bity 8-11 – Siła rozpędu z drzewka
         return m;
     }
 
@@ -693,10 +730,11 @@ public static class Meta
         var m = RunMods.Default(d);
         if (src == 0)
         {
-            for (var i = 0; i < d.Upgrades.Length; ++i) // premie bojowe (bez kawy, termosu, znajdziek, materiałów, sprzętu, zł)
+            for (var i = 0; i <= d.Upgrades.Length; ++i) // premie bojowe (bez kawy, termosu, znajdziek, materiałów, sprzętu, zł)
             {
                 var u = RunMods.Default(d);
-                u.AddUpgradeLevels(d.Upgrades[i], p.Levels[i]);
+                if (i < d.Upgrades.Length) u.AddUpgradeLevels(d.Upgrades[i], p.Levels[i]);
+                else SkillTree.Add(d, ref u, p); // v0.21.52 cz. c: węzły drzewka (Szkolenia)
                 m.Hp += u.Hp;
                 m.Def += u.Def;
                 m.Dmg += u.Dmg;
@@ -759,6 +797,7 @@ public static class Meta
             if (tool.Shop) t += ToolPrice(d, nt++);
         }
         foreach (var h in d.Brigade) t += h.Cost;
+        foreach (var n in d.TreeNodes) t += n.Cost; // v0.21.52 cz. c: węzły drzewka
         return t;
     }
 
@@ -775,6 +814,10 @@ public static class Meta
         for (var i = 0; i < d.Brigade.Length; ++i)
         {
             if (HelperUnlocked(d, p, i)) t += d.Brigade[i].Cost;
+        }
+        for (var n = 0; n < d.TreeNodes.Length; ++n)
+        {
+            if (SkillTree.Pick(p, n) > 0) t += d.TreeNodes[n].Cost; // bez opłat za zmianę
         }
         return t;
     }
@@ -801,6 +844,7 @@ public static class Meta
     {
         var kd = d.Keepsakes[k];
         if (kd.Start || (kd.Badge >= 0 && (p.Badges & (1u << kd.Badge)) != 0)) return true;
+        if (kd.Streak > 0 && p.StreakBest >= kd.Streak) return true; // v0.21.52 cz. c: seria dni budowy dnia
         for (var i = 0; i < d.Contracts.Length; ++i)
         {
             if (d.Contracts[i].Keepsake == k && (p.Contracts & (1u << i)) != 0) return true;
@@ -867,6 +911,8 @@ public static class Meta
         p.RunClean = 0;
         p.RunRespect = 0;
         p.RunProgress = 0; // v0.21.52 cz. b: dośw. inspektora z nowej budowy – nic jeszcze nie przeniesiono
+        Array.Clear(p.KillMark); // v0.21.52 cz. c: kolekcje i zadania – znak wodny nowej budowy
+        Array.Clear(p.TaskMark);
         var k = SelectedKeepsake(d, p);
         if (k >= 0 && p.KeepsakeRuns[k] < 255) ++p.KeepsakeRuns[k];
         var k2 = SelectedKeepsake2(d, p);
@@ -875,7 +921,7 @@ public static class Meta
 
     /// <summary>
     /// Po budowie: najtańsze niekupione w Szkoleniach (motywacja). Kind: 0 ulepszenie, 1 zawód, 2 narzędzie, 3 brygada,
-    /// 4 poziom Trudny. Zwraca koszt albo -1, gdy wszystko kupione.
+    /// 4 poziom Trudny, 5 węzeł drzewka (otwarty, bez wyboru; v0.21.52 cz. c). Zwraca koszt albo -1, gdy wszystko kupione.
     /// </summary>
     public static int NextUnlock(GameData d, Profile p, out int kind, out int index)
     {
@@ -903,6 +949,10 @@ public static class Meta
             if (!HelperUnlocked(d, p, i)) Take(3, i, d.Brigade[i].Cost);
         }
         if (p.Hard == 0) Take(4, 0, d.HardCost);
+        for (var n = 0; n < d.TreeNodes.Length; ++n)
+        {
+            if (SkillTree.Pick(p, n) == 0 && SkillTree.Open(d, p, n)) Take(5, n, d.TreeNodes[n].Cost);
+        }
         kind = k0;
         index = i0;
         return best;
@@ -911,7 +961,7 @@ public static class Meta
     // ------------------------------------------------------------------ zlecenia
     internal static ushort AddSat16(ushort a, int delta) => (ushort)Math.Min(65535, a + Math.Max(0, delta));
 
-    private static byte AddSat8(byte a, int delta) => (byte)Math.Min(255, a + Math.Max(0, delta));
+    internal static byte AddSat8(byte a, int delta) => (byte)Math.Min(255, a + Math.Max(0, delta));
 
     /// <summary>
     /// Przenosi do profilu nowe wartości liczników zleceń z budowy (bez podwójnego liczenia): dolicza tylko nadwyżkę
@@ -1005,6 +1055,7 @@ public static class Meta
     public static void RecordRun(GameData d, Profile p, Game g)
     {
         BankCounters(p, g);
+        CollectionBook.Bank(d, p, g); // v0.21.52 cz. c: liczniki kolekcji (znak wodny KillMark)
         for (var e = 0; e < d.Enemies.Length; ++e)
         {
             if (g.KillsByType[e] != 0) CatalogAdd(p, e);

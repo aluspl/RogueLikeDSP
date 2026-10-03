@@ -263,6 +263,8 @@ public class PathsMaterialsDailyTests
         for (var i = 0; i < D.Tools.Length; ++i) Meta.BuyTool(D, p, i);
         for (var i = 0; i < D.Brigade.Length; ++i) Meta.BuyHelper(D, p, i);
         Meta.BuyHard(D, p);
+        Assert.True(Meta.NextUnlock(D, p, out var k5, out _) == D.TreeNodes[0].Cost && k5 == 5); // v0.21.52 cz. c: węzły drzewka
+        for (var n = 0; n < D.TreeNodes.Length; ++n) Assert.True(SkillTree.Choose(D, p, n, n & 1));
         Assert.Equal(-1, Meta.NextUnlock(D, p, out _, out _));
     }
 }

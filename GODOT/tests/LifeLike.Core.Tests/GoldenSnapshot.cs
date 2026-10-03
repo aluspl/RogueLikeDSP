@@ -86,7 +86,8 @@ public static class GoldenSnapshot
         K("part4", Arr(p4));
         K("part5", Arr([g.CoffeeDrunk, g.ShockCombos, g.PaperHits, g.SecretFlags, g.HelperCtx, g.BorrowCls, g.MarkTarget, g.MarkTurns,
             g.PowerCls(), g.BuildDays(), g.Bonus.StartCoffee, g.AbilityCooldown(),
-            g.Bonus.Mastery, g.MasterCrit(), g.BoonPower(), Progress.RunProgressXp(TestData.D, g)])); // v0.21.52 cz. b
+            g.Bonus.Mastery, g.MasterCrit(), g.BoonPower(), Progress.RunProgressXp(TestData.D, g), // v0.21.52 cz. b
+            g.HelpersCalled, g.ShopBuys, g.Bonus.FirstHitBonus, DailyTasks.StagesDone(TestData.D, g)])); // cz. c
         K("killsByType", Arr(g.KillsByType.Select(x => (int)x)));
         K("rooms", "[" + string.Join(",", g.Lv.Rooms.Take(g.Lv.RoomsCount).Select(r => Arr([r.X, r.Y, r.W, r.H]))) + "]");
         var map = new List<string>();
@@ -129,7 +130,28 @@ public static class GoldenSnapshot
         $"\"secrets\":{Arr([p.Secrets, p.SecretsNew, p.Cosmetic, Secrets.DoneCount(TestData.D, p)])}," +
         $"\"looks\":{Arr([p.Title, p.Helmet, Titles.OwnedCount(TestData.D, p), Secrets.HelmetsUnlocked(TestData.D, p), Meta.ClassCost(TestData.D, p), Meta.ToolCost(TestData.D, p), Meta.ShopSpent(TestData.D, p)])}," +
         $"\"progress\":{Arr(ProgressList(p))}," +
+        $"\"goals\":{Arr(GoalsList(p))}," +
         $"\"sram\":\"{Convert.ToHexString(p.ToBytes()).ToLowerInvariant()}\"}}";
+
+    /// <summary>v0.21.52 cz. c: drzewko, kolekcje, zadania, seria dni (jak golden_dump.cpp: "goals").</summary>
+    private static int[] GoalsList(Profile p)
+    {
+        var d = TestData.D;
+        var l = new List<int>
+        {
+            p.Tree, SkillTree.Picked(d, p), CollectionBook.Done(d, p), p.Collections, p.TaskDay, p.TaskWeek, p.TaskDone, p.TasksTotal,
+            DailyTasks.DoneToday(p),
+        };
+        for (var s = 0; s < DailyTasks.Slots; ++s)
+        {
+            l.Add(p.TaskProgress[s]);
+            l.Add(p.TaskMark[s]);
+        }
+        l.AddRange([p.Streak, p.StreakBest, p.StreakDay, DailyTasks.NextReward(d, p), DayStreak.NextReward(d, p)]);
+        l.AddRange([Titles.OwnedCount(d, p), Secrets.HelmetsUnlocked(d, p), Meta.ShopSpent(d, p)]);
+        for (var e = 0; e < d.Enemies.Length; ++e) l.Add(p.KillCount[e]);
+        return l.ToArray();
+    }
 
     /// <summary>v0.21.52 cz. b: poziom inspektora, mistrzostwo zawodów, stopnie inwestora (jak golden_dump.cpp: "progress").</summary>
     private static int[] ProgressList(Profile p)

@@ -198,6 +198,7 @@ public static class Progress
             ProgressReward.Power => $"Moc: {mc.PowerName}",
             ProgressReward.Weapon => mc.WeaponName,
             ProgressReward.Boon => $"Premia: {d.Boons[mc.Boon].Name}",
+            ProgressReward.Keepsake => $"Pamiątka: {d.Keepsakes[l.Index].Name}", // v0.21.52 cz. c
             _ => "",
         };
     }

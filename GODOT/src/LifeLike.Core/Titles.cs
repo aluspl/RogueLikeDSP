@@ -25,7 +25,14 @@ public static class Titles
         if (t >= ProgressFrom(d))
         {
             var pt = d.ProgressTitles[t - ProgressFrom(d)];
-            return pt.Source == 0 ? Progress.InspectorLevel(d, p) >= pt.Level : Progress.MaxStake(d, p) >= pt.Level;
+            return pt.Source switch
+            {
+                0 => Progress.InspectorLevel(d, p) >= pt.Level,
+                1 => Progress.MaxStake(d, p) >= pt.Level,
+                2 => CollectionBook.Complete(d, p, pt.Level - 1), // v0.21.52 cz. c: kolekcje, seria dni, zadania
+                3 => p.StreakBest >= pt.Level,
+                _ => p.TasksTotal >= pt.Level,
+            };
         }
         return t < d.Badges.Length ? ((p.Badges >> t) & 1) != 0 : ((p.Contracts >> (t - d.Badges.Length)) & 1) != 0;
     }

@@ -324,6 +324,7 @@ public sealed partial class Game
     {
         var it = D.Hurtownia[i];
         if (!HurtowniaCan(i)) return false;
+        if (ShopBuys < 255) ++ShopBuys; // v0.21.52 cz. c: zadanie „Wygraj bez Hurtowni”
         if (it.Effect == ShopEffect.Upgrade) // ulepszenie narzędzia (#31): zł i materiał, potem +1 poziom
         {
             var t = D.ToolLevels[WeaponLvl];

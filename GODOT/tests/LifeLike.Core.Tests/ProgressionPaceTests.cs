@@ -23,9 +23,9 @@ public class ProgressionPaceTests
             Assert.Equal(0, Meta.UpgradeSummary(D, new Message(), i, 0).N);
         }
         var f = Meta.NewProfile(D);
-        for (var i = 0; i < D.Upgrades.Length; ++i) f.Levels[i] = (byte)D.Upgrades[i].Levels;
+        TestData.FullTree(f); // v0.21.52 cz. c: pień + wybory w węzłach (kawa i stat. broni w węzłach Apteczka i Rzemieślnik)
         var m = Meta.Mods(D, f);
-        Assert.True(m.Hp >= 4 && m.TakenPct >= 2 && m.DmgPct >= 2 && m.Coffee >= 1 && m.Pickups >= 1 && m.Luck >= 1 && m.Craft >= 1);
+        Assert.True(m.Hp >= 4 && m.TakenPct >= 2 && m.DmgPct >= 2 && m.Coffee >= 1 && m.Pickups >= 1 && m.Luck >= 1 && m.Craft == 0);
         Assert.True(m.Hp <= 6 && m.TakenPct <= 5 && m.DmgPct <= 5 && m.Luck <= 1 && m.Craft <= 1 && m.Pickups <= 1);
         var s0 = Meta.ModsPart(D, f, 0);
         Assert.True(s0.Hp == m.Hp && s0.DmgPct == m.DmgPct && s0.TakenPct == m.TakenPct && s0.Crit == m.Crit && s0.Dodge == m.Dodge && s0.Luck == m.Luck);
@@ -68,6 +68,7 @@ public class ProgressionPaceTests
         }
         for (var i = 0; i < D.Brigade.Length; ++i) Meta.BuyHelper(D, p, i);
         Meta.BuyHard(D, p);
+        for (var n = 0; n < D.TreeNodes.Length; ++n) Assert.True(SkillTree.Choose(D, p, n, 1)); // v0.21.52 cz. c: drzewko
         Assert.True(Meta.ShopSpent(D, p) == Meta.ShopTotalCost(D) && p.Xp == 100000 - Meta.ShopTotalCost(D));
         Assert.True(Meta.NextUnlock(D, p, out _, out _) < 0);
     }
@@ -78,7 +79,8 @@ public class ProgressionPaceTests
         Assert.All(D.Badges, b => Assert.True(b.Xp <= 15 && b.Title.Length > 0));
         Assert.All(D.Contracts, c => Assert.True(c.Xp <= 15 && c.Title.Length > 0));
         var helmets = Enumerable.Range(0, D.Cosmetics.Length).Count(k => Secrets.CosmeticHelmet(D, k));
-        var fromProgress = D.InspectorLevels.Concat(D.StakeRanks).Concat(D.MasteryLevels).Count(l => l.Reward == ProgressReward.Helmet); // cz. b
+        var fromProgress = D.InspectorLevels.Concat(D.StakeRanks).Concat(D.MasteryLevels).Concat(D.TaskRewards).Concat(D.StreakRewards)
+            .Concat(D.Collections.Select(c => c.Reward)).Count(l => l.Reward == ProgressReward.Helmet); // cz. b, cz. c
         Assert.True(helmets >= 3 && helmets == D.Badges.Count(b => b.Cosmetic >= 0) + D.Contracts.Count(c => c.Cosmetic >= 0) + fromProgress);
         Assert.False(Secrets.CosmeticHelmet(D, D.CosmeticGold));
 

@@ -10,6 +10,19 @@ public static class TestData
 
     public static GameData D => Lazy.Value;
 
+    /// <summary>v0.21.52 cz. c: najlepsze dla bota opcje węzłów drzewka (core_tests.cpp: tree_best_pick) – „pełne Szkolenia”.</summary>
+    public static readonly int[] TreeBestPick = [1, 0, 1, 1, 1, 0];
+
+    /// <summary>Pełne Szkolenia: wszystkie poziomy pnia i najlepsze wybory w węzłach drzewka.</summary>
+    public static void FullTree(Profile p)
+    {
+        for (var i = 0; i < D.Upgrades.Length; ++i) p.Levels[i] = (byte)D.Upgrades[i].Levels;
+        var xp = p.Xp;
+        p.Xp = 100000;
+        for (var n = 0; n < D.TreeNodes.Length; ++n) SkillTree.Choose(D, p, n, TreeBestPick[n]);
+        p.Xp = xp;
+    }
+
     /// <summary>Bez nagrody Akt 0 budowa zaczyna się od etapu F0 (Fundamenty).</summary>
     public static int F0 => D.PreludeStages;
 

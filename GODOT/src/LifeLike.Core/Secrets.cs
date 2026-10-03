@@ -29,6 +29,12 @@ public static class Secrets
     {
         if (k < 0) return false;
         if (Owned(d, p, SecretReward.Cosmetic, k)) return true;
+        // v0.21.52 cz. c: kolekcje, zadania łącznie, seria dni
+        for (var i = 0; i < d.Collections.Length; ++i)
+        {
+            if (d.Collections[i].Reward.Reward == ProgressReward.Helmet && d.Collections[i].Reward.Index == k && CollectionBook.Complete(d, p, i)) return true;
+        }
+        if (Goals.Helmet(d.TaskRewards, p.TasksTotal, k) || Goals.Helmet(d.StreakRewards, p.StreakBest, k)) return true;
         for (var i = 0; i < d.Badges.Length; ++i)
         {
             if (d.Badges[i].Cosmetic == k && (p.Badges & (1u << i)) != 0) return true;

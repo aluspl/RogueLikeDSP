@@ -168,6 +168,25 @@ public sealed class GameData
     public ProgressTitle[] ProgressTitles { get; private init; } = [];
     /// <summary>Jak grać: poziom inspektora i mistrzostwo zawodu.</summary>
     public string[] ProgressHelpLines { get; private init; } = [];
+
+    // v0.21.52 cz. c: drzewko Szkoleń, kolekcje, zadania dnia i tygodnia, seria dni
+    /// <summary>Gałęzie drzewka (meta.tree.branches): pień = Szkolenia (maska bitów Upgrades).</summary>
+    public TreeBranch[] TreeBranches { get; private init; } = [];
+    /// <summary>Węzły drzewka: głębokość pnia gałęzi, koszt, 1 z 2 opcji.</summary>
+    public TreeNode[] TreeNodes { get; private init; } = [];
+    /// <summary>Dośw. za zmianę wyboru w węźle.</summary>
+    public int TreeRespecCost { get; private init; }
+    /// <summary>Komplety kolekcji (sekcja "collections").</summary>
+    public CollectionDef[] Collections { get; private init; } = [];
+    /// <summary>Pule zadań dnia i tygodnia (sekcja "tasks").</summary>
+    public TaskDef[] DailyTasks { get; private init; } = [];
+    public TaskDef[] WeeklyTasks { get; private init; } = [];
+    /// <summary>Nagrody za wykonane zadania łącznie (Xp = liczba zadań).</summary>
+    public ProgressLevel[] TaskRewards { get; private init; } = [];
+    /// <summary>Nagrody za serię dni budowy dnia (Xp = dni; daily.streak).</summary>
+    public ProgressLevel[] StreakRewards { get; private init; } = [];
+    /// <summary>Jak grać: drzewko, kolekcje, zadania, seria dni.</summary>
+    public string[] GoalsHelpLines { get; private init; } = [];
     public int DefaultDifficulty { get; private init; }
     public int NgHpPctPerTier { get; private init; }
     public int NgDmgBonusPerTier { get; private init; }
@@ -471,12 +490,13 @@ public sealed class GameData
         var keepsakes = keepsakesJson.Select(k => new KeepsakeDef(Str(k, "id"), Str(k, "name"), Str(k, "desc"), ParsePerk(Str(k, "effect")),
             k.GetProperty("values").EnumerateArray().Select(v => v.GetInt32()).ToArray(),
             k.TryGetProperty("badge", out var kb) ? Lookup(bid, kb.GetString() ?? "", "odznaka") : -1,
-            k.TryGetProperty("start", out var kst) && kst.GetBoolean())).ToArray();
+            k.TryGetProperty("start", out var kst) && kst.GetBoolean(), Int(k, "streak", 0))).ToArray();
         for (var k = 0; k < keepsakes.Length; k++)
         {
             Require(keepsakes[k].Values.Length == 3, $"pamiątka {keepsakes[k].Id}: 3 rangi");
             var kk = k;
-            Require(keepsakes[k].Start || keepsakes[k].Badge >= 0 || contracts.Any(c => c.Keepsake == kk), $"pamiątka {keepsakes[k].Id} bez sposobu odblokowania");
+            Require(keepsakes[k].Start || keepsakes[k].Badge >= 0 || keepsakes[k].Streak > 0 || contracts.Any(c => c.Keepsake == kk),
+                $"pamiątka {keepsakes[k].Id} bez sposobu odblokowania");
         }
         Require(contracts.Length <= 8 && keepsakes.Length <= 8, "maks. 8 zleceń i 8 pamiątek");
         var rankRuns = ksj.ValueKind == JsonValueKind.Object ? ksj.GetProperty("rankRuns").EnumerateArray().Select(x => x.GetInt32()).ToArray() : new[] { 3, 8 };
@@ -935,9 +955,84 @@ public sealed class GameData
         {
             stakeRanks = rkj.EnumerateArray().Select(x => Level(x, Int(x, "stake"))).ToArray();
         }
+        // v0.21.52 cz. c: drzewko Szkoleń, kolekcje, zadania, seria dni
+        TreeBranch[] treeBranches = [];
+        TreeNode[] treeNodes = [];
+        var treeRespec = 0;
+        if (meta.TryGetProperty("tree", out var trj))
+        {
+            var upIds = upgrades.Select((u, i) => (u.Id, i)).ToDictionary(x => x.Id, x => x.i);
+            treeBranches = trj.GetProperty("branches").EnumerateArray().Select(b => new TreeBranch(Str(b, "id"), Str(b, "name"),
+                b.GetProperty("upgrades").EnumerateArray().Aggregate(0, (m, u) => m | 1 << Lookup(upIds, u.GetString() ?? "", "Szkolenie gałęzi")))).ToArray();
+            var brIds = treeBranches.Select((b, i) => (b.Id, i)).ToDictionary(x => x.Id, x => x.i);
+            treeNodes = trj.GetProperty("nodes").EnumerateArray().Select(x => new TreeNode(Lookup(brIds, Str(x, "branch"), "gałąź"), Int(x, "depth"),
+                Int(x, "cost"), x.GetProperty("options").EnumerateArray().Select(o => new TreeOption(Str(o, "name"), Str(o, "short", Str(o, "name")), Str(o, "desc"),
+                    ParseUpgrade(Str(o, "effect")), Int(o, "value"))).ToArray())).ToArray();
+            treeRespec = Int(trj, "respecCost");
+            Require(treeBranches.Length == 3 && treeNodes.Length is >= 1 and <= 8 && treeNodes.All(n => n.Options.Length == 2), "drzewko: 3 gałęzie, 1-8 węzłów po 2 opcje");
+        }
+        var kpIds = keepsakesJson.Select((k, i) => (Str(k, "id"), i)).ToDictionary(x => x.Item1, x => x.i);
+        ProgressLevel Goal(JsonElement x, int xp)
+        {
+            var reward = ParseSnake<ProgressReward>(Str(x, "reward"));
+            var id = Str(x, "id", "");
+            var index = reward switch
+            {
+                ProgressReward.Helmet => Lookup(coid, id, "kolor kasku"),
+                ProgressReward.Keepsake => kpIds.TryGetValue(id, out var ki) ? ki : -1, // dane bez pamiątek: nagroda bez działania
+                _ => -1,
+            };
+            return new ProgressLevel(xp, reward, index, Int(x, "value", 0), Str(x, "title", ""));
+        }
+        CollectionDef[] collections = [];
+        if (d.TryGetProperty("collections", out var colj))
+        {
+            collections = colj.GetProperty("sets").EnumerateArray().Select(x =>
+            {
+                var kind = Str(x, "kind") switch
+                {
+                    "act" => CollectionKind.Kills,
+                    "bosses" => CollectionKind.Bosses,
+                    "decor" => CollectionKind.Decor,
+                    var s => throw new GameDataException($"nieznany rodzaj kolekcji: {s}"),
+                };
+                var mask = 0ul;
+                if (kind == CollectionKind.Kills)
+                {
+                    var act = Int(x, "act");
+                    foreach (var st in stages)
+                    {
+                        if (st.Act != act) continue;
+                        foreach (var e in st.Pool) mask |= 1ul << e;
+                    }
+                }
+                var rw = x.GetProperty("reward");
+                var bonus = rw.TryGetProperty("perk", out var rpk) ? new Perk(ParsePerk(Str(rpk, "effect")), Int(rpk, "value")) : new Perk(PerkEffect.Hp, 0);
+                return new CollectionDef(Str(x, "id"), Str(x, "name"), Str(x, "desc"), kind, mask, Int(x, "count"), Goal(rw, 0), bonus);
+            }).ToArray();
+            Require(collections.Length <= 8, "kolekcje: maks. 8 kompletów");
+        }
+        TaskDef[] dailyTasks = [], weeklyTasks = [];
+        ProgressLevel[] taskRewards = [];
+        if (d.TryGetProperty("tasks", out var tkj))
+        {
+            TaskDef[] Pool(string key) => tkj.GetProperty(key).EnumerateArray().Select(x => new TaskDef(Str(x, "id"), Str(x, "name"),
+                ParseSnake<TaskKind>(Str(x, "kind")), Int(x, "target"), Int(x, "respect"))).ToArray();
+            dailyTasks = Pool("daily");
+            weeklyTasks = Pool("weekly");
+            taskRewards = tkj.GetProperty("rewards").EnumerateArray().Select(x => Goal(x, Int(x, "count"))).ToArray();
+            Require(dailyTasks.Length >= 3 && weeklyTasks.Length >= 2 && dailyTasks.Concat(weeklyTasks).All(x => x.Target is >= 1 and <= 255),
+                "zadania: min. 3 dnia i 2 tygodnia, cel 1-255");
+        }
+        var streakRewards = d.TryGetProperty("daily", out var dsj) && dsj.TryGetProperty("streak", out var srj)
+            ? srj.EnumerateArray().Select(x => Goal(x, Int(x, "days"))).ToArray()
+            : [];
         var progressTitles = inspLevels.Select((l, i) => (l, i)).Where(x => x.l.Reward == ProgressReward.Title)
             .Select(x => new ProgressTitle(x.l.Title, 0, x.i + 1))
-            .Concat(stakeRanks.Where(x => x.Reward == ProgressReward.Title).Select(x => new ProgressTitle(x.Title, 1, x.Xp))).ToArray();
+            .Concat(stakeRanks.Where(x => x.Reward == ProgressReward.Title).Select(x => new ProgressTitle(x.Title, 1, x.Xp)))
+            .Concat(collections.Select((c, i) => (c, i)).Where(x => x.c.Reward.Reward == ProgressReward.Title).Select(x => new ProgressTitle(x.c.Reward.Title, 2, x.i + 1)))
+            .Concat(streakRewards.Where(x => x.Reward == ProgressReward.Title).Select(x => new ProgressTitle(x.Title, 3, x.Xp)))
+            .Concat(taskRewards.Where(x => x.Reward == ProgressReward.Title).Select(x => new ProgressTitle(x.Title, 4, x.Xp))).ToArray();
 
         return new GameData
         {
@@ -969,6 +1064,15 @@ public sealed class GameData
             StakeRanks = stakeRanks,
             ProgressTitles = progressTitles,
             ProgressHelpLines = d.TryGetProperty("progressHelp", out var phj) ? phj.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : [],
+            TreeBranches = treeBranches,
+            TreeNodes = treeNodes,
+            TreeRespecCost = treeRespec,
+            Collections = collections,
+            DailyTasks = dailyTasks,
+            WeeklyTasks = weeklyTasks,
+            TaskRewards = taskRewards,
+            StreakRewards = streakRewards,
+            GoalsHelpLines = d.TryGetProperty("goalsHelp", out var ghj) ? ghj.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : [],
             BoonRarities = boonRarities,
             BoonTags = boonTagNames,
             Boons = boons,
@@ -1243,6 +1347,7 @@ public sealed class GameData
         "cash" => PerkEffect.Cash,
         "crit" => PerkEffect.Crit,
         "coffee" => PerkEffect.Coffee,
+        "taken_pct" => PerkEffect.TakenPct,
         _ => PerkEffect.Unknown, // nowsza wersja danych: premia bez działania
     };
 
@@ -1295,6 +1400,10 @@ public sealed class GameData
         "mats_pct" => UpgradeEffect.MatsPct,
         "gear_pct" => UpgradeEffect.GearPct,
         "cash" => UpgradeEffect.Cash,
+        "shop_pct" => UpgradeEffect.ShopPct,
+        "brigade_pct" => UpgradeEffect.BrigadePct,
+        "cooldown" => UpgradeEffect.Cooldown,
+        "first_hit" => UpgradeEffect.FirstHit,
         _ => UpgradeEffect.Unknown, // nowsza wersja danych: ulepszenie bez działania
     };
 

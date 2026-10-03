@@ -185,7 +185,7 @@ public class Act0AndTutorialTests
         var nv = Meta.NewProfile(D);
         nv.Magic = Profile.MagicBytes(Profile.MagicV9);
         Assert.True(Meta.ProfileFix(D, nv) && Meta.TutorialPending(nv, 0) && nv.Rewards == 0 && nv.Tutorial == 0);
-        Assert.Equal(240, v.ToBytes().Length);
+        Assert.Equal(Profile.Size, v.ToBytes().Length);
     }
 
     [Fact]
