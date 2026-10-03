@@ -1033,6 +1033,9 @@ uig_pl, uig_en = d.get("uiGodot", {}), en.get("uiGodot", {})
 missing += ["uiGodot." + k for k in uig_pl if k not in uig_en]
 assert not set(uig_en) - set(uig_pl), f"en.json uiGodot: klucze bez polskiego tekstu {sorted(set(uig_en) - set(uig_pl))[:10]}"
 assert not set(uig_pl) & set(ui_pl), f"klucz w ui i uiGodot: {sorted(set(uig_pl) & set(ui_pl))[:10]}"
+for sec_, pl_, en_ in (("ui", ui_pl, ui_en), ("uiGodot", uig_pl, uig_en)):   # te same {0}, {1}... w obu językach
+    for k_, v_ in pl_.items():
+        if k_ in en_: assert sorted(re.findall(r"\{\d+[^}]*\}", v_)) == sorted(re.findall(r"\{\d+[^}]*\}", en_[k_])), f"{sec_}.{k_}: inne {{N}}: {v_} / {en_[k_]}"
 missing = sorted(set(missing))
 if missing and not LENIENT:
     print(f"BRAK TŁUMACZENIA ({len(missing)}):"); [print("  ", m_) for m_ in missing[:40]]; sys.exit(1)
@@ -1072,7 +1075,36 @@ for f_ in ("src/main.cpp", "include/core.h", "include/meta.h"):
             if lit in CODE_OK: continue
             if set(lit) & PL_LETTERS or {w.lower() for w in WORD.findall(lit)} & pl_vocab:
                 hard.append(f"{f_}:{n_}: \"{lit}\"")
-assert not hard, "polski napis w kodzie (przenieś do game.json ui, w kodzie UI(klucz)):\n  " + "\n  ".join(hard[:20])
+# Godot (C#): to samo w skryptach gry i rdzeniu (bez testów Debug/, komunikatów walidacji danych i logów); słownik polskich
+# słów także z uiGodot i danych gry.
+pl_vocab_cs = pl_vocab | {w.lower() for v in list(uig_pl.values()) + list(EN.keys()) for w in WORD.findall(v)}
+pl_vocab_cs -= {w.lower() for v in list(uig_en.values()) for w in WORD.findall(v)} | en_words
+CS_TECH = ("Require(", "GameDataException(", "GD.Print", "GD.PushError", "GD.PushWarning", "Lookup(")
+def _ids(o):   # identyfikatory z danych ("id") - w kodzie to nie tekst dla gracza
+    if isinstance(o, dict):
+        for k_, v_ in o.items():
+            if k_ == "id" and isinstance(v_, str): yield v_
+            else: yield from _ids(v_)
+    elif isinstance(o, list):
+        for v_ in o: yield from _ids(v_)
+DATA_IDS = set(_ids(d))
+import glob as _glob
+GODOT_ = os.path.join(os.path.dirname(ROOT), "GODOT")
+for f_ in sorted(_glob.glob(os.path.join(GODOT_, "godot", "scripts", "**", "*.cs"), recursive=True)
+                 + _glob.glob(os.path.join(GODOT_, "src", "LifeLike.Core", "**", "*.cs"), recursive=True)):
+    if "/Debug/" in f_ or "/obj/" in f_ or "/bin/" in f_ or f_.endswith("GameData.cs"): continue
+    for n_, line in enumerate(open(f_, encoding="utf-8"), 1):
+        code_ = re.sub(r"//.*", "", line) if '"' not in line.split("//")[0][-1:] else line
+        code_ = line.split(" // ")[0]
+        if code_.lstrip().startswith(("//", "///", "*")): continue
+        tech = any(k_ in code_ for k_ in CS_TECH[:6])
+        code_ = re.sub(r'(Loc\.[TF]|FilterText|GetProperty|TryGetProperty|Dict)\((?:[^,()]*, )?"\w+"', "", code_)
+        for lit in re.findall(r'"((?:[^"\\]|\\.)*)"', code_):
+            if tech or lit in DATA_IDS or lit.startswith("res://"): continue
+            lw = {w.lower() for w in WORD.findall(re.sub(r"\{[^}]*\}", " ", lit))}
+            if set(lit) & PL_LETTERS or lw & pl_vocab_cs:
+                hard.append(f"{os.path.relpath(f_, os.path.dirname(ROOT))}:{n_}: \"{lit}\"")
+assert not hard, f"polski napis w kodzie ({len(hard)}; GBA: game.json ui i UI(klucz), Godot: uiGodot i Loc.T / Loc.F):\n  " + "\n  ".join(hard[:60])
 
 # ------------------------------------------------------------------ v0.21.53 (#40): czy angielski tekst się mieści
 # Szerokość w pikselach fontu GBA (include/font_widths.h). Pole danych: każda linia angielska nie szersza niż
