@@ -1,6 +1,8 @@
-# Wydanie z CI (`.github/workflows/release.yml`)
+# Wydanie z CI (do przeniesienia na Bitrise)
 
-Tag `v0.21.N` (albo ręcznie: Actions → release → Run workflow) buduje ROM GBA i tworzy GitHub Release,
+Workflow GitHub Actions został usunięty – budowanie i wysyłkę do sklepów przejmie Bitrise. Poniższa lista sekretów
+i kroków (te same skrypty co lokalnie: `GODOT/tools/testflight_upload.sh`, `GODOT/tools/android_release.sh --upload`)
+posłuży do konfiguracji Bitrise.
 wysyła build iOS do TestFlight i AAB do Google Play (ścieżka internal). Te same skrypty co lokalnie:
 `GODOT/tools/testflight_upload.sh`, `GODOT/tools/android_release.sh --upload`.
 
