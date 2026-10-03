@@ -30,7 +30,7 @@ public sealed class DebugScenes
         "event-map", "event-sms", "event-choices", "event-result", "event-boon", "upgrade-shop", "upgrade-trait", "upgrade-gear",
         "tool-swap", "secret-crack", "secret-card", "secret-open", "secret-door", "secret-map", "tasks-extras", "help-extras",
         "recap-endmsg", "recap-death", "recap-death-scroll", "recap-win", "recap-end", "weekly", "weekly-card", "weekly-run",
-        "recap-progress", "titles", "looks",
+        "recap-progress", "titles", "looks", "inspector", "help-progress",
         "story-archive", "story-thread", "estate-grow", "help-meta",
         .. SecretStaging.Names,
     ];
@@ -53,7 +53,7 @@ public sealed class DebugScenes
     public static bool UsesDemoProfile(string scene) =>
         scene is "title" or "classselect" or "profile" or "catalog" or "estate" or "team" or "training" or "card" or "perks" or "investor"
             or "daily" or "death" or "respect" or "rewards" or "classselect-locked" or "stats-class" or "stats-tip" or "catalog-tags"
-            or "tutorial-unlock" or "tutorial-act0" or "dmg-class" or "dmg-stats" or "titles" or "looks" or "recap-progress" || SecretStaging.UsesDemoProfile(scene);
+            or "tutorial-unlock" or "tutorial-act0" or "dmg-class" or "dmg-stats" or "titles" or "looks" or "recap-progress" or "recap-end" or "inspector" || SecretStaging.UsesDemoProfile(scene);
 
     /// <summary>Sceny samouczka menu: profil bez obejrzanych dymków (inne sceny - samouczek już obejrzany).</summary>
     public static bool UsesTutorial(string scene) => scene.StartsWith("tutorial");
@@ -157,9 +157,10 @@ public sealed class DebugScenes
             case "help-combos":
             case "help-extras":
             case "help-meta":
+            case "help-progress": // v0.21.52 cz. b: strona 9 – inspektor i mistrzostwo
                 Flow.Help.Open(true, true);
                 if (_app.Nodes.Phone.Current is Phone.Pages.HelpPage hp)
-                    hp.Page = scene == "help" ? 0 : scene == "help-acts" ? 1 : scene == "help-stats" ? 2 : scene == "help-dmg" ? 3 : scene == "help-combos" ? 4 : scene == "help-extras" ? 5 : 6;
+                    hp.Page = scene == "help" ? 0 : scene == "help-acts" ? 1 : scene == "help-stats" ? 2 : scene == "help-dmg" ? 3 : scene == "help-combos" ? 4 : scene == "help-extras" ? 5 : scene == "help-progress" ? 8 : 6;
                 _app.Nodes.Phone.QueueRedraw();
                 return;
             case "dmg-class": // rozpiska obrażeń broni (#26): dymek nad narzędziem na karcie zawodu
@@ -217,6 +218,11 @@ public sealed class DebugScenes
                     tb.Page = Phone.ProfileTabs.BadgesTab.TitlesPage;
                     tb.Select(Math.Max(0, Titles.Selected(s.Data, s.Profile)));
                 }
+                _app.Nodes.Phone.QueueRedraw();
+                return;
+            case "inspector": // v0.21.52 cz. b: Odznaki > Inspektor (poziomy z nagrodami, od bieżącego)
+                Flow.Profile.Open(0, true);
+                if (_app.Nodes.Phone.Current is Phone.ProfileTabs.BadgesTab ib) ib.Page = Phone.ProfileTabs.BadgesTab.InspectorPage;
                 _app.Nodes.Phone.QueueRedraw();
                 return;
             case "looks": // v0.21.52: Wygląd – kolor kasku (wiersz za modyfikatorami inwestora)

@@ -48,6 +48,14 @@ public static class DemoProfile
         p.RespectRanks[0] = 1;
         p.RespectRanks[5] = 2;
         p.RespectRanks[8] = 3;
+        // v0.21.52 cz. b: inspektor tuż przed poziomem 10 (druga pamiątka), Kierownik tuż przed mistrzostwem 7 (podsumowanie),
+        // Murarz mistrz 6 z wariantem mocy (wybór zawodu), rekord stawki 2 (stopnie inwestora)
+        p.InspectorXp = (uint)(Progress.Floor(d.InspectorLevels, 10) - 5);
+        p.MasteryXp[0] = (ushort)(Progress.Floor(d.MasteryLevels, 7) - 5);
+        p.MasteryXp[1] = (ushort)(Progress.Floor(d.MasteryLevels, 6) + 120);
+        p.MasteryXp[2] = 50;
+        p.PowerAlt = 0x3;
+        p.BestStake[1] = 2;
         return p;
     }
 }

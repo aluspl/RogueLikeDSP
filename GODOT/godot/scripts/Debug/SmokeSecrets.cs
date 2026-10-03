@@ -82,8 +82,10 @@ public sealed class SmokeSecrets
         Flow.Profile.HandleInput(InputCmd.Of(GameAction.Select));
         if (tp.Title != 0) throw new Exception("tytuły: drugi Tab nie zdejmuje tytułu");
         tp.Badges = badges0;
+        Flow.Profile.HandleInput(InputCmd.Of(GameAction.A)); // v0.21.52 cz. b: Tytuły -> Inspektor -> Odznaki
+        if (bt.Page != Phone.ProfileTabs.BadgesTab.InspectorPage) throw new Exception("inspektor: A na stronie Tytuły nie przechodzi do Inspektora");
         Flow.Profile.HandleInput(InputCmd.Of(GameAction.A));
-        if (bt.Page != 0) throw new Exception("sekrety: A na stronie Tytuły nie wraca do Odznak");
+        if (bt.Page != 0) throw new Exception("sekrety: A na stronie Inspektor nie wraca do Odznak");
         for (var c = 0; c < d.Classes.Length; c++)
         {
             if (Meta.ClassSecret(d, c) && Meta.ClassUnlocked(d, p, c)) throw new Exception($"sekrety: {d.Classes[c].Name} odblokowany od startu");
