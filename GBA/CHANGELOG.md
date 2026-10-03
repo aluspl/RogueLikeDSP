@@ -15,7 +15,7 @@ Po jednej budowie dało się kupić prawie wszystko – teraz postęp ma więcej
 6. **Mistrzostwo zawodu 1–10 (#45, cz. b)** – wariant mocy, broń mistrza, premia mistrzostwa, kask mistrza.
 7. **Stopnie inwestora (#48, cz. b)** – nagroda za każdy nowy najwyższy próg stawki.
 8. **Drzewko Szkoleń (#46, cz. c)** – gałęzie Fach, BHP, Logistyka: Szkolenia to pień, w każdej gałęzi dwa węzły z wyborem
-   1 z 2 (np. Precyzja albo Siła rozpędu, Twardziel albo Apteczka, Hurtownik albo Magazynier), zmiana za drobną opłatę.
+   1 z 2 (np. Precyzja albo Siła rozpędu, Hartowany albo Apteczka, Hurtownik albo Magazynier), zmiana za drobną opłatę.
 9. **Kolekcje (#49, cz. c)** – liczniki pokonanych problemów, komplety aktów (każdy problem x10), karty bossów i album
    Osiedla; komplet = stała premia, tytuł albo kolor kasku.
 10. **Zadania dnia i tygodnia (#50, cz. c)** – 3 + 2 zadania z daty (np. „Pokonaj 2 elity”, „Wygraj bez Hurtowni”) za
@@ -186,7 +186,7 @@ Bot: kariera od pustego profilu (40 karier x 300 budów, jak tabela tempa wyżej
   | Gałąź (pień) | Węzeł I | Węzeł II |
   |---|---|---|
   | Fach (Kurs fachowy, Warsztaty) | pień 3, 60: **Precyzja** kryt +1% / **Siła rozpędu** pierwszy cios w nietknięty problem +1 | pień 6, 120: **Rzemieślnik** +2% obrażeń / **Szybka ręka** moc -1 t. |
-  | BHP (Szkolenie BHP, Kurs BHP II, Kondycja) | pień 4, 60: **Twardziel** -2% otrzymanych / **Apteczka** kawa +1 HP | pień 9, 120: **Refleks** unik +1% / **Zapas sił** +1 HP |
+  | BHP (Szkolenie BHP, Kurs BHP II, Kondycja) | pień 4, 60: **Hartowany** -2% otrzymanych / **Apteczka** kawa +1 HP | pień 9, 120: **Refleks** unik +1% / **Zapas sił** +1 HP |
   | Logistyka (Lepszy termos, Dostawy) | pień 3, 60: **Hurtownik** Hurtownia -10% / **Magazynier** materiały +10% | pień 6, 120: **Księgowa** +15 zł / **Brygadzista** brygada -15% |
 
   Ta sama moc co wcześniej: z pnia zeszły kawa (Lepszy termos II), kryt (Kurs fachowy IV), +1 stat. broni (Warsztaty II)
@@ -241,7 +241,7 @@ Bot: 300 przebiegów na zawód (9 zwykłych), Normalny.
 | + mistrzostwo 10 i maks. inspektor | 70% | 70% |
 
 Opcje drzewka osobno (sam pień 50,5%; Szybka ręka, Hurtownik, Księgowa, Brygadzista – bez wpływu na bota, który nie
-używa mocy i nie kupuje w Hurtowni): Precyzja 50,3%, Siła rozpędu 52,2%, Rzemieślnik 52,1%, Twardziel 52,3%, Apteczka
+używa mocy i nie kupuje w Hurtowni): Precyzja 50,3%, Siła rozpędu 52,2%, Rzemieślnik 52,1%, Hartowany 52,3%, Apteczka
 53,7%, Refleks 50,1%, Zapas sił 51,0%, Magazynier 50,7%. „Najlepsze wybory” w tabeli = Siła rozpędu, Rzemieślnik,
 Apteczka, Zapas sił, Magazynier, Księgowa.
 

@@ -1790,7 +1790,7 @@
           "cost": 60,
           "options": [
             {
-              "name": "Twardziel",
+              "name": "Hartowany",
               "desc": "Ciosy mniej bolą",
               "effect": "taken_pct",
               "value": 2

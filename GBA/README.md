@@ -304,7 +304,7 @@ Zadania telefonu. Teksty i wartości: `siteEvents` w `data/game.json`.
 - **Drzewko Szkoleń** (v0.21.52 cz. c, `meta.tree`): 3 gałęzie – Fach (Kurs fachowy, Warsztaty), BHP (Szkolenie BHP,
   Kurs BHP II, Kondycja), Logistyka (Lepszy termos, Dostawy); Szkolenia to pień, a w gałęzi dwa węzły z wyborem 1 z 2,
   otwierane po N poziomach pnia: Fach – Precyzja (kryt +1%) / Siła rozpędu (pierwszy cios w nietknięty problem +1),
-  Rzemieślnik (+2% obrażeń) / Szybka ręka (moc -1 t.); BHP – Twardziel (-2% otrzymanych) / Apteczka (kawa +1 HP), Refleks
+  Rzemieślnik (+2% obrażeń) / Szybka ręka (moc -1 t.); BHP – Hartowany (-2% otrzymanych) / Apteczka (kawa +1 HP), Refleks
   (unik +1%) / Zapas sił (+1 HP); Logistyka – Hurtownik (Hurtownia -10%) / Magazynier (materiały +10%), Księgowa (+15 zł)
   / Brygadzista (brygada -15%). Wybór 60 / 120 dośw., zmiana 20 dośw. Koszty > SELECT: Drzewko.
 - Odznaki i zlecenia dają mało doświadczenia, za to tytuł (profil > Odznaki > Tytuły, SELECT wybiera) i czasem kolor

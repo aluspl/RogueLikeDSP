@@ -869,7 +869,7 @@ inline constexpr core::tree_branch tree_branches[] = {   // gałęzie drzewka: p
 inline constexpr core::tree_node tree_nodes[] = {   // węzły: głębokość (poziomy pnia gałęzi), koszt, 1 z 2 opcji
     { 0, 3, 60, { { "Precyzja", "Precyzja", "Celne ciosy", core::upgrade_effect::crit, 1 }, { "Siła rozpędu", "Rozpęd", "Cios w nietknięty problem", core::upgrade_effect::first_hit, 1 } } },
     { 0, 6, 120, { { "Rzemieślnik", "Rzemieślnik", "Mocniejsze ciosy", core::upgrade_effect::dmg_pct, 2 }, { "Szybka ręka", "Wprawa", "Moc szybciej gotowa", core::upgrade_effect::cooldown, 1 } } },
-    { 1, 4, 60, { { "Twardziel", "Twardziel", "Ciosy mniej bolą", core::upgrade_effect::taken_pct, 2 }, { "Apteczka", "Apteczka", "Kawa leczy więcej", core::upgrade_effect::coffee, 1 } } },
+    { 1, 4, 60, { { "Hartowany", "Hartowany", "Ciosy mniej bolą", core::upgrade_effect::taken_pct, 2 }, { "Apteczka", "Apteczka", "Kawa leczy więcej", core::upgrade_effect::coffee, 1 } } },
     { 1, 9, 120, { { "Refleks", "Refleks", "Częściej unikasz", core::upgrade_effect::dodge, 1 }, { "Zapas sił", "Zapas sił", "Więcej HP na start", core::upgrade_effect::hp, 1 } } },
     { 2, 3, 60, { { "Hurtownik", "Hurtownik", "Hurtownia taniej", core::upgrade_effect::shop_pct, 10 }, { "Magazynier", "Magazynier", "Więcej materiałów", core::upgrade_effect::mats_pct, 10 } } },
     { 2, 6, 120, { { "Księgowa", "Księgowa", "Budżet na start", core::upgrade_effect::cash, 15 }, { "Brygadzista", "Brygada", "Brygada taniej", core::upgrade_effect::brigade_pct, 15 } } },
