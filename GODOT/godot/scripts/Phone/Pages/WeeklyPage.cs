@@ -29,10 +29,10 @@ public sealed class WeeklyPage : PhonePage
     /// <summary>Komunikat pod listą (np. po wysłaniu wyniku).</summary>
     public string Note { get; set; } = "";
 
-    public override string Title => "Wyzwanie tygodnia";
+    public override string Title => Loc.T("wyzwanie_tygodnia");
     public override string Sub => Range(Week);
-    public override string Hint => "Spacja: start  Tab: wyślij  Esc: wróć";
-    public override PageAction[] Actions => [new("Start", GameAction.A), new("Wyślij wynik", GameAction.Select), new("Wróć", GameAction.Cancel)];
+    public override string Hint => Loc.T("spacja_start_tab_wyslij_esc");
+    public override PageAction[] Actions => [new(Loc.T("start"), GameAction.A), new(Loc.T("wyslij_wynik"), GameAction.Select), new(Loc.T("wroc"), GameAction.Cancel)];
     public override bool Closable => true;
 
     private string Range(int week)
@@ -46,7 +46,7 @@ public sealed class WeeklyPage : PhonePage
     {
         var wd = _d.Weekly[Weekly.Index(_d, Week)];
         var cls = _d.Classes[Weekly.ClassOf(_d, Week)];
-        var y = p.Section(p.Top, $"TYDZIEŃ NR {Week}");
+        var y = p.Section(p.Top, Loc.F("tydzien_nr_2", Week));
         var card = p.Card(y, 4);
         var tx = p.TextX(card);
         var right = card.End.X - 6;
@@ -59,25 +59,25 @@ public sealed class WeeklyPage : PhonePage
         }
         p.Icon(Assets.Actors, cls.Frame, Assets.Actor, new Vector2(right - Assets.Actor, card.Position.Y + 4 + PhonePainter.RowH + (2 * PhonePainter.RowH - Assets.Actor) / 2));
         p.Divider(card, 3);
-        p.Text(tx, p.RowY(card, 3), $"Zawód: {cls.Name}, {_d.Difficulties[_d.WeeklyDifficulty].Name}, bez Szkoleń", Ink.Dim, TextAlign.Left, right - tx);
+        p.Text(tx, p.RowY(card, 3), Loc.F("zawod_bez_szkolen", cls.Name, _d.Difficulties[_d.WeeklyDifficulty].Name), Ink.Dim, TextAlign.Left, right - tx);
 
         var best = Weekly.Best(_d, _p, Week);
-        y = p.Section(card.End.Y + 6, "WYNIKI", _p.WeeklyRuns > 0 ? $"wyzwania: {_p.WeeklyRuns}" : "");
+        y = p.Section(card.End.Y + 6, Loc.T("wyniki"), _p.WeeklyRuns > 0 ? Loc.F("wyzwania", _p.WeeklyRuns) : "");
         var weeks = Enumerable.Range(0, _d.WeeklyHistory).Where(i => _p.WeeklyWeek[i] > 0 && _p.WeeklyWeek[i] != Week).OrderByDescending(i => _p.WeeklyWeek[i]).ToArray();
         var notes = Note.Length > 0 ? p.F.Wrap(Note, (int)(right - tx)) : new System.Collections.Generic.List<string>();
         if (notes.Count > 2) notes = notes.GetRange(0, 2);
         var rc = p.Card(y, 1 + weeks.Length);
         p.Stripe(rc, 0, best >= 0 ? Pal.Done : Pal.Todo);
-        var bw = p.Pill(right, p.RowY(rc, 0), best >= 0 ? $"{best} pkt" : "brak", best >= 0 ? PillKind.Done : PillKind.Gray);
-        p.Text(tx, p.RowY(rc, 0), Weekly.Won(_d, _p, Week) ? "Ten tydzień: odbiór zaliczony!" : "Ten tydzień: najlepszy wynik", Ink.Dark, TextAlign.Left, right - bw - 4 - tx);
+        var bw = p.Pill(right, p.RowY(rc, 0), best >= 0 ? Loc.F("pkt_3", best) : Loc.T("brak_2"), best >= 0 ? PillKind.Done : PillKind.Gray);
+        p.Text(tx, p.RowY(rc, 0), Weekly.Won(_d, _p, Week) ? Loc.T("ten_tydzien_odbior_zaliczony") : Loc.T("ten_tydzien_najlepszy_wynik"), Ink.Dark, TextAlign.Left, right - bw - 4 - tx);
         for (var k = 0; k < weeks.Length; k++)
         {
             var i = weeks[k];
             p.Divider(rc, 1 + k);
             var won = ((_p.WeeklyWon >> i) & 1) != 0;
-            var pw = p.Pill(right, p.RowY(rc, 1 + k), $"{_p.WeeklyScore[i]} pkt", won ? PillKind.Group : PillKind.Gray);
+            var pw = p.Pill(right, p.RowY(rc, 1 + k), Loc.F("pkt_3", _p.WeeklyScore[i]), won ? PillKind.Group : PillKind.Gray);
             var name = _d.Weekly[Weekly.Index(_d, _p.WeeklyWeek[i])].Short;
-            p.Text(tx, p.RowY(rc, 1 + k), $"Tydz. {_p.WeeklyWeek[i]}: {name}", Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
+            p.Text(tx, p.RowY(rc, 1 + k), Loc.F("tydz_2", _p.WeeklyWeek[i], name), Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
         }
         if (notes.Count == 0) return;
         var nc = p.Card(rc.End.Y + 6, notes.Count);

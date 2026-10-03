@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using System.Collections.Generic;
 using Godot;
 using LifeLike.Game.Audio;
@@ -138,7 +139,7 @@ public partial class PushBanners : Control
             if (b.Gold) DrawRect(new Rect2(x + 1, y + 6, 2, H - 12), new Color(Pal.EliteGold, fade)); // złoty pasek sekretu
             if (b.Icon >= 0) Assets.DrawFrame(this, Assets.UiMenu, b.Icon, Assets.Icon, new Vector2(x + 8, y + 10), 1, new Color(1, 1, 1, fade));
             else Assets.DrawFrame(this, Assets.PhoneIcons, 5, Assets.Icon, new Vector2(x + 8, y + 10), 1, new Color(1, 1, 1, fade));
-            var stamp = b.Tab >= 0 && !Compact ? "otwórz >" : "teraz";
+            var stamp = b.Tab >= 0 && !Compact ? Loc.T("otworz") : Loc.T("teraz_2");
             if (!Compact) f.Draw(this, new Vector2(x + W - 8, y + 2), stamp, (b.Tab >= 0 ? Ink.Brand : Ink.Dim).WithAlpha(fade), TextAlign.Right);
             f.Draw(this, new Vector2(x + 30, y + 2), f.Fit(b.Title, W - 30 - (Compact ? 6 : 14 + f.Measure(stamp))), Ink.Dark.WithAlpha(fade));
             f.Draw(this, new Vector2(x + 30, y + 17), f.Fit(b.Body, W - 38), Ink.Dim.WithAlpha(fade));

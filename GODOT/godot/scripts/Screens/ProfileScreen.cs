@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using LifeLike.Game.Input;
 using LifeLike.Game.Phone;
 using LifeLike.Game.Phone.ProfileTabs;
@@ -7,7 +8,7 @@ namespace LifeLike.Game.Screens;
 /// <summary>Telefon profilu na tle tytułu (run_shop na GBA): Odznaki/Zlecenia/Pamiątki, Katalog, Osiedle, Zespół, Koszty = Szkolenia.</summary>
 public sealed class ProfileScreen : Screen
 {
-    private static readonly string[] TabLabels = ["Odznaki", "Katalog", "Osiedle", "Zespół", "Koszty"];
+    private static string[] TabLabels => [Loc.T("odznaki_2"), Loc.T("katalog"), Loc.T("osiedle"), Loc.T("zespol"), Loc.T("koszty")];
     private int _tab;
 
     public ProfileScreen(App app) : base(app)

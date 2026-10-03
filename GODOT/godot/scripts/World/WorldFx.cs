@@ -130,11 +130,11 @@ public sealed class WorldFx
         switch (h.Kind)
         {
             case HitKind.Dodge:
-                f.Text = "Unik!";
+                f.Text = Loc.T("unik_7");
                 f.Ink = Ink.MapGood;
                 break;
             case HitKind.Crit:
-                f.Text = $"KRYT! -{h.Amount}";
+                f.Text = Loc.F("kryt_12", h.Amount);
                 f.Ink = Ink.MapLoot;
                 f.Life = 1f;
                 _w.Flash(Pal.CritTint, 0.3f);
@@ -163,7 +163,7 @@ public sealed class WorldFx
         }
         for (var k = 0; k < 10; k++) // gwiazdki unoszą się z ziemi wokół bohatera
             Fx.Spawn(h + new Vector2(Fx.Rand(-22, 22), Fx.Rand(0, 14)), new Vector2(Fx.Rand(-0.2f, 0.2f), Fx.Rand(-1.6f, -0.8f)), 0, 60 + Fx.RandInt(30), Assets.PStar);
-        Fx.AddFloater(new Floater { Pos = h + new Vector2(0, -40), Text = $"AWANS! Poziom {level}", Ink = Ink.MapLoot, Life = 1.6f, Scale = 2 });
+        Fx.AddFloater(new Floater { Pos = h + new Vector2(0, -40), Text = Loc.F("awans_poziom_4", level), Ink = Ink.MapLoot, Life = 1.6f, Scale = 2 });
         Fx.AddFloater(new Floater { Pos = h + new Vector2(0, -12), Text = LevelGains(g, level, abilityUp), Ink = Ink.MapGood, Life = 1.6f });
         Hero.Flash(Pal.LevelFlash);
         _w.Flash(Pal.LevelGlow, 0.3f);
@@ -172,10 +172,10 @@ public sealed class WorldFx
     /// <summary>Co dał awans: „+2 max HP, +1 obrona, ranga mocy II”.</summary>
     public static string LevelGains(CoreGame g, int level, bool abilityUp)
     {
-        var s = $"+{g.D.HpPerLevel} max HP";
-        if ((g.D.DefLevelsMask & (1 << level)) != 0) s += ", +1 obrona";
-        if ((g.D.DmgLevelsMask & (1 << level)) != 0) s += ", +1 obrażenia";
-        if (abilityUp) s += $", ranga mocy {UiText.Roman(g.AbilityRank() - 1)}";
+        var s = Loc.F("max_hp_3", g.D.HpPerLevel);
+        if ((g.D.DefLevelsMask & (1 << level)) != 0) s += Loc.T("n1_obrona");
+        if ((g.D.DmgLevelsMask & (1 << level)) != 0) s += Loc.T("n1_obrazenia");
+        if (abilityUp) s += Loc.F("ranga_mocy", UiText.Roman(g.AbilityRank() - 1));
         return s;
     }
 

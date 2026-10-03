@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using LifeLike.Game.Audio;
 using LifeLike.Game.Gfx;
 using LifeLike.Game.Input;
@@ -101,12 +102,12 @@ public sealed class ActionMenu
         var sel = N.World.MenuSel;
         var label = sel switch
         {
-            0 => $"Atak: najbliższy cel (z{g.WeaponRange()})",
-            1 => $"Moc: {UiText.AbilityLabel(g)}" + (g.AbilityCd > 0 ? $" - za {g.AbilityCd} t." : ""),
-            2 => $"Termos {g.Thermos}/{g.ThermosCap()}: kawa +{g.CoffeeHeal()} HP (zużywa turę)",
-            3 => "Czekaj turę",
-            _ => "Akcje: wybierz strzałką (góra Atak, prawo Moc, dół Termos, lewo Czekaj)",
+            0 => Loc.F("atak_najblizszy_cel_z_2", g.WeaponRange()),
+            1 => Loc.F("moc_7", UiText.AbilityLabel(g)) + (g.AbilityCd > 0 ? $" - za {g.AbilityCd} t." : ""),
+            2 => Loc.F("termos_kawa_hp_zuzywa_ture", g.Thermos, g.ThermosCap(), g.CoffeeHeal()),
+            3 => Loc.T("czekaj_ture"),
+            _ => Loc.T("akcje_wybierz_strzalka_gora"),
         };
-        N.Hud.ShowHint(label, sel < 0 ? "Spacja: Brygada   Enter/Z: zamknij" : "Ta sama strzałka lub Spacja: wykonaj   Enter/Z: zamknij");
+        N.Hud.ShowHint(label, sel < 0 ? Loc.T("spacja_brygada_enter_z_zamknij") : Loc.T("ta_sama_strzalka_lub_spacja"));
     }
 }

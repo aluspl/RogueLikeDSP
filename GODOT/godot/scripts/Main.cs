@@ -34,6 +34,8 @@ public partial class Main : Node2D
         var opts = LaunchOptions.Parse(OS.GetCmdlineUserArgs(), Seed);
         if (!opts.Harness) GameSettings.Load();
         if (opts.Filter.Length > 0) ScreenFilter.Force = opts.Filter;
+        // v0.21.53 cz. 2 (#40): język - z --lang, w testach polski, w grze z ustawień (domyślnie język systemu)
+        Loc.English = (opts.Lang.Length > 0 ? opts.Lang : opts.Harness ? "pl" : GameSettings.Language) == "en";
         Layout.Touch = OS.HasFeature("mobile") || opts.Touch;
         if (opts.Portrait) Layout.SimulatedInsets = new Vector2(59, 34); // wyspa i pasek domowy iPhone'a 14 Pro Max (pt)
         if (opts.WindowSize != Vector2I.Zero && !OS.HasFeature("mobile"))

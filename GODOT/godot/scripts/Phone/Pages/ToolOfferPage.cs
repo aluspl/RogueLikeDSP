@@ -20,7 +20,7 @@ public sealed class ToolOfferPage : PhonePage
 
     public ToolOfferPage(CoreGame g) => _g = g;
 
-    public override string Title => "Nowe narzędzie";
+    public override string Title => Loc.T("nowe_narzedzie");
     public override string Sub => _g.ToolOffer >= 0 ? _g.D.Weapons[_g.D.Tools[_g.ToolOffer].Weapon].Name : "";
     /// <summary>Zaznaczony wybór: 0 = zostaję przy ulepszonym (domyślnie), 1 = zamieniam.</summary>
     public int Sel { get; set; }
@@ -28,8 +28,8 @@ public sealed class ToolOfferPage : PhonePage
     /// <summary>Zatwierdzenie: true = zamiana (ToolOfferScreen.Decide).</summary>
     public Action<bool> Decided;
 
-    public override string Hint => "Strzałki: wybór  Spacja/Enter: wybierz  Z/Esc: zostaję";
-    public override PageAction[] Actions => [new("Wybierz", GameAction.A), new("Zostaję", GameAction.B)];
+    public override string Hint => Loc.T("strzalki_wybor_spacja_enter");
+    public override PageAction[] Actions => [new(Loc.T("wybierz"), GameAction.A), new(Loc.T("zostaje_2"), GameAction.B)];
 
     public override void Enter() => Sel = 0;
 
@@ -58,7 +58,7 @@ public sealed class ToolOfferPage : PhonePage
         var w = d.Tools[_g.ToolOffer].Weapon;
         var now = _g.WeaponBreakdown();
         var next = _g.WeaponBreakdown(-1, w);
-        var y = p.Section(p.Top, "TERAZ");
+        var y = p.Section(p.Top, Loc.T("teraz_5"));
         var c0 = p.Card(y, 2);
         var tx = p.TextX(c0);
         var right = c0.End.X - 6;
@@ -66,17 +66,17 @@ public sealed class ToolOfferPage : PhonePage
         p.Text(tx, p.RowY(c0, 0), $"{_g.WeaponTitle()} {now.Min}-{now.Max}", Ink.Dark, TextAlign.Left, right - tx);
         p.Divider(c0, 1);
         p.Text(tx, p.RowY(c0, 1), DamageHelp.Text(d, now, DmgText.Upgrade), Ink.Dim, TextAlign.Left, right - tx);
-        y = p.Section(c0.End.Y + 4, "NOWE");
+        y = p.Section(c0.End.Y + 4, Loc.T("nowe_4"));
         var c1 = p.Card(y, 2);
         p.Stripe(c1, 0, Pal.Prog);
-        p.Text(tx, p.RowY(c1, 0), $"{d.Weapons[w].Name} {next.Min}-{next.Max}, zasięg {d.Weapons[w].Range}", Ink.Dark, TextAlign.Left, right - tx);
+        p.Text(tx, p.RowY(c1, 0), Loc.F("zasieg_3", d.Weapons[w].Name, next.Min, next.Max, d.Weapons[w].Range), Ink.Dark, TextAlign.Left, right - tx);
         p.Divider(c1, 1);
-        var cmp = "Cios: " + DamageHelp.CompareLine(new Message(), now, next).Text;
+        var cmp = Loc.T("cios_2") + DamageHelp.CompareLine(new Message(), now, next).Text;
         if (p.F.Measure(cmp) > right - tx) cmp = DamageHelp.CompareLine(new Message(), now, next, true).Text;
         p.Text(tx, p.RowY(c1, 1), cmp, next.Avg10 > now.Avg10 ? Ink.Done : Ink.Late, TextAlign.Left, right - tx);
-        y = p.Section(c1.End.Y + 4, "WYBIERZ");
+        y = p.Section(c1.End.Y + 4, Loc.T("wybierz_3"));
         var c2 = p.Card(y, 2);
-        string[] rows = [$"Zostaję: {_g.WeaponTitle()}", $"Zamieniam: {d.Weapons[w].Name} (+{_g.WeaponLvl} przepadnie!)"];
+        string[] rows = [Loc.F("zostaje_3", _g.WeaponTitle()), Loc.F("zamieniam_przepadnie", d.Weapons[w].Name, _g.WeaponLvl)];
         for (var k = 0; k < 2; k++)
         {
             if (k > 0) p.Divider(c2, k);

@@ -179,7 +179,7 @@ public sealed class GameSession
         BankGoals(); // cz. c: zadania, kolekcje
         Save();
         ClearRun();
-        Note = $"Budowa porzucona: +{LastGained} dośw." + (progress.Length > 0 ? " " + progress : "");
+        Note = Loc.F("budowa_porzucona_dosw", LastGained) + (progress.Length > 0 ? " " + progress : "");
     }
 
     /// <summary>Nowa budowa wybranym zawodem i trudnością (jak wybór zawodu -> gra na GBA).</summary>

@@ -16,11 +16,15 @@
   -->
   <PropertyGroup>
     <SharedGameJson>$(MSBuildProjectDirectory)/../../GBA/data/game.json</SharedGameJson>
+    <!-- v0.21.53 cz. 2 (#40): angielska warstwa tekstów -> res://data/lang_en.json (filtr eksportu data/*.json) -->
+    <SharedLangEn>$(MSBuildProjectDirectory)/../../GBA/data/lang/en.json</SharedLangEn>
   </PropertyGroup>
   <Target Name="CopySharedGameData" BeforeTargets="BeforeBuild">
     <Error Condition="!Exists('$(SharedGameJson)') And !Exists('$(MSBuildProjectDirectory)/data/game.json')"
            Text="Brak $(SharedGameJson) – gra potrzebuje wspólnych danych z katalogu GBA." />
     <Copy Condition="Exists('$(SharedGameJson)')" SourceFiles="$(SharedGameJson)"
           DestinationFolder="$(MSBuildProjectDirectory)/data" SkipUnchangedFiles="true" />
+    <Copy Condition="Exists('$(SharedLangEn)')" SourceFiles="$(SharedLangEn)"
+          DestinationFiles="$(MSBuildProjectDirectory)/data/lang_en.json" SkipUnchangedFiles="true" />
   </Target>
 </Project>

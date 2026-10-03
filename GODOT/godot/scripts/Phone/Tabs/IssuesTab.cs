@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using System.Collections.Generic;
 using Godot;
 using LifeLike.Game.Gfx;
@@ -16,8 +17,8 @@ public sealed class IssuesTab : PhonePage
 
     public IssuesTab(CoreGame g) => _g = g;
 
-    public override string Title => "Usterki";
-    public override string Sub => $"Otwarte: {Rows(out _).FindAll(r => r.Open).Count}";
+    public override string Title => Loc.T("usterki");
+    public override string Sub => Loc.F("otwarte_2", Rows(out _).FindAll(r => r.Open).Count);
 
     private List<(int Def, bool Open)> Rows(out int total)
     {
@@ -58,7 +59,7 @@ public sealed class IssuesTab : PhonePage
             p.C.DrawStyleBox(Ui.Box(open ? Pal.LateBg : Pal.DoneBg, 5), photo);
             p.Icon(Assets.Actors, ed.Frame, Assets.Actor, photo.Position);
             var x = photo.End.X + 6;
-            var pw = p.Pill(card.End.X - 6, y, open ? "OTWARTA" : "ZAMKNIĘTA", open ? PillKind.Late : PillKind.Done);
+            var pw = p.Pill(card.End.X - 6, y, open ? Loc.T("otwarta") : Loc.T("zamknieta"), open ? PillKind.Late : PillKind.Done);
             var kills = _g.KillsByType[def] > 0 ? $" x{_g.KillsByType[def]}" : "";
             var boss = _g.SDef().Boss == def ? " (boss)" : "";
             p.Text(x, y, $"#{r + 1} {ed.Name}{kills}{boss}", Ink.Dark, TextAlign.Left, card.End.X - 10 - pw - x);

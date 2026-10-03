@@ -32,15 +32,15 @@ public sealed class EventPage : PhonePage
     /// <summary>Dalej (A / Enter / dotknięcie wybranej odpowiedzi) – ekran przechodzi do kolejnej fazy.</summary>
     public System.Action Next { get; set; }
 
-    public override string Title => Phase switch { 0 => "Wiadomości", 1 => "Odpowiedź", _ => "Wynik" };
+    public override string Title => Phase switch { 0 => Loc.T("wiadomosci_2"), 1 => Loc.T("odpowiedz_3"), _ => Loc.T("wynik_4") };
     public override string Sub => _ev.Name;
-    public override string Hint => Phase switch { 0 => "Enter: odpowiedz", 1 => "Strzałki: wybór  Enter: wybieram", _ => "Enter: dalej" };
+    public override string Hint => Phase switch { 0 => Loc.T("enter_odpowiedz"), 1 => Loc.T("strzalki_wybor_enter_wybieram"), _ => Loc.T("enter_dalej") };
 
     public override PageAction[] Actions => Phase switch
     {
-        0 => [new("Odpowiedz", GameAction.A)],
-        1 => [new("Wybieram", GameAction.A)],
-        _ => [new("Dalej", GameAction.A)],
+        0 => [new(Loc.T("odpowiedz_4"), GameAction.A)],
+        1 => [new(Loc.T("wybieram"), GameAction.A)],
+        _ => [new(Loc.T("dalej"), GameAction.A)],
     };
 
     public override bool TapRow(int index)
@@ -86,20 +86,20 @@ public sealed class EventPage : PhonePage
         p.Hit(card, 0);
         p.Icon(Assets.PhoneIcons, 5, Assets.Icon, new Vector2(card.Position.X + 6, card.Position.Y + 5));
         p.Text(card.Position.X + 26, card.Position.Y + 3, m.From, Ink.Dark, TextAlign.Left, card.Size.X - 80);
-        p.Pill(card.End.X - 6, card.Position.Y + 3, "teraz", PillKind.Gray);
+        p.Pill(card.End.X - 6, card.Position.Y + 3, Loc.T("teraz_2"), PillKind.Gray);
         var bubble = new Rect2(card.Position.X + 8, card.Position.Y + 24, card.Size.X - 16, lines.Count * 16 + 6);
         p.C.DrawStyleBox(Ui.Box(Pal.Group, 8), bubble);
         for (var i = 0; i < lines.Count; i++) p.F.Draw(p.C, new Vector2(bubble.Position.X + 8, bubble.Position.Y + 2 + i * 16), lines[i], Ink.Dark);
         var ic = p.Card(card.End.Y + 6, 2);
         p.Stripe(ic, 0, Pal.Brand);
-        p.Text(p.TextX(ic), p.RowY(ic, 0), "Wybierz odpowiedź", Ink.Brand, TextAlign.Left, ic.End.X - 6 - p.TextX(ic));
+        p.Text(p.TextX(ic), p.RowY(ic, 0), Loc.T("wybierz_odpowiedz"), Ink.Brand, TextAlign.Left, ic.End.X - 6 - p.TextX(ic));
         p.Divider(ic, 1);
-        p.Text(p.TextX(ic), p.RowY(ic, 1), $"{_ev.Choices.Length} odpowiedzi, skutek od razu", Ink.Dim, TextAlign.Left, ic.End.X - 6 - p.TextX(ic));
+        p.Text(p.TextX(ic), p.RowY(ic, 1), Loc.F("odpowiedzi_skutek_od_razu", _ev.Choices.Length), Ink.Dim, TextAlign.Left, ic.End.X - 6 - p.TextX(ic));
     }
 
     private void DrawChoices(PhonePainter p)
     {
-        var y = p.Section(p.Top, "ODPOWIEDZI", _ev.Name);
+        var y = p.Section(p.Top, Loc.T("odpowiedzi"), _ev.Name);
         for (var k = 0; k < _ev.Choices.Length; k++)
         {
             var c = _ev.Choices[k];
@@ -132,21 +132,21 @@ public sealed class EventPage : PhonePage
         p.Hit(card, 0);
         var tx = p.TextX(card);
         var right = card.End.X - 6;
-        p.Text(tx, p.RowY(card, 0), "Odpowiedź: " + c.Label, Ink.Dark, TextAlign.Left, right - tx);
+        p.Text(tx, p.RowY(card, 0), Loc.T("odpowiedz") + c.Label, Ink.Dark, TextAlign.Left, right - tx);
         p.Divider(card, 1);
         p.Stripe(card, 1, Pal.Done);
         p.Text(tx, p.RowY(card, 1), c.Result, Ink.Done, TextAlign.Left, right - tx);
         if (c.Outs.Length == 0)
         {
             p.Divider(card, 2);
-            p.Text(tx, p.RowY(card, 2), "Bez skutków", Ink.Dim);
+            p.Text(tx, p.RowY(card, 2), Loc.T("bez_skutkow_2"), Ink.Dim);
         }
         for (var i = 0; i < c.Outs.Length; i++)
         {
             var o = c.Outs[i] with { Chance = 100 }; // szansa już rozstrzygnięta
             var done = ((_g.ChoiceDone >> i) & 1) != 0;
             var bad = o.Effect is ChoiceEffect.Spawn or ChoiceEffect.Status || o.Value < 0;
-            var label = (done ? "" : "Nie tym razem: ") + ChoiceText.OutLabel(_g.D, o);
+            var label = (done ? "" : Loc.T("nie_tym_razem")) + ChoiceText.OutLabel(_g.D, o);
             p.Divider(card, 2 + i);
             p.Stripe(card, 2 + i, !done ? Pal.Todo : bad ? Pal.Late : Pal.Done);
             p.Text(tx, p.RowY(card, 2 + i), label, !done ? Ink.Dim : bad ? Ink.Late : Ink.Dark, TextAlign.Left, right - tx);

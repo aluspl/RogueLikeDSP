@@ -33,10 +33,10 @@ public sealed class EstateTab : PhonePage
 
     public int Sel => _list.Sel;
 
-    public override string Title => Mode == 0 ? "Osiedle" : Mode == 1 ? "Wiadomości" : _d.StoryArc[_list.Sel].Name;
-    public override string Sub => Mode == 0 ? $"Domy: {_p.HousesCount}/{Profile.MaxHouses}" : $"{Story.Count(_d, _p)}/{_d.StoryArc.Length}";
-    public override string Hint => Mode == 0 ? "Spacja: Wiadomości  Q/E: zakładki  Esc: wróć" : Mode == 1 ? "Spacja: czytaj  Esc: Osiedle" : "Esc: lista";
-    public override PageAction[] Actions => Mode == 0 ? [new("Wiadomości", GameAction.A)] : Mode == 1 ? [new("Czytaj", GameAction.A), new("Osiedle", GameAction.B)] : [new("Lista", GameAction.B)];
+    public override string Title => Mode == 0 ? Loc.T("osiedle") : Mode == 1 ? Loc.T("wiadomosci_2") : _d.StoryArc[_list.Sel].Name;
+    public override string Sub => Mode == 0 ? Loc.F("domy_2", _p.HousesCount, Profile.MaxHouses) : $"{Story.Count(_d, _p)}/{_d.StoryArc.Length}";
+    public override string Hint => Mode == 0 ? Loc.T("spacja_wiadomosci_q_e_zakladki") : Mode == 1 ? Loc.T("spacja_czytaj_esc_osiedle") : Loc.T("esc_lista");
+    public override PageAction[] Actions => Mode == 0 ? [new(Loc.T("wiadomosci_2"), GameAction.A)] : Mode == 1 ? [new(Loc.T("czytaj"), GameAction.A), new(Loc.T("osiedle"), GameAction.B)] : [new(Loc.T("lista"), GameAction.B)];
 
     /// <summary>Otwarcie archiwum (test dymny, zrzuty): pierwszy nieprzeczytany wątek zaznaczony.</summary>
     public void OpenMessages()
@@ -126,7 +126,7 @@ public sealed class EstateTab : PhonePage
 
     private void DrawEstate(PhonePainter p)
     {
-        var y = p.Section(p.Top, "TWOJE UKOŃCZONE BUDOWY");
+        var y = p.Section(p.Top, Loc.T("twoje_ukonczone_budowy"));
         const int cols = 4, rows = 3, cellW = 48, cellH = 40;
         var card = p.CardH(y, rows * cellH + 8);
         var x0 = card.Position.X + (card.Size.X - cols * cellW) / 2;
@@ -143,14 +143,14 @@ public sealed class EstateTab : PhonePage
         var tx = p.TextX(mc);
         var unread = Story.UnreadCount(_d, _p);
         p.Stripe(mc, 0, unread > 0 ? Pal.Brand : Pal.Todo);
-        var pw = p.Pill(mc.End.X - 6, p.RowY(mc, 0), unread > 0 ? $"{unread} nowe" : "czytaj", unread > 0 ? PillKind.Brand : PillKind.Gray);
-        p.Text(tx, p.RowY(mc, 0), $"Wiadomości {Story.Count(_d, _p)}/{_d.StoryArc.Length}", Ink.Dark, TextAlign.Left, mc.End.X - 10 - pw - tx);
+        var pw = p.Pill(mc.End.X - 6, p.RowY(mc, 0), unread > 0 ? Loc.F("nowe_5", unread) : Loc.T("czytaj_pill"), unread > 0 ? PillKind.Brand : PillKind.Gray);
+        p.Text(tx, p.RowY(mc, 0), Loc.F("wiadomosci_4", Story.Count(_d, _p), _d.StoryArc.Length), Ink.Dark, TextAlign.Left, mc.End.X - 10 - pw - tx);
         p.HitRow(mc, 0, 1000);
         // ozdoby rosną z wygranymi i (v0.21.52 cz. b) z poziomem inspektora – każda na swoim miejscu
         var next = Array.FindIndex(_d.EstateDecor, x => x.Wins > 0 && _p.Wins < x.Wins);
         var nextI = Array.FindIndex(_d.EstateDecor, x => x.Inspector > 0 && Progress.InspectorLevel(_d, _p) < x.Inspector);
-        var nextText = next >= 0 ? $"kolejna: {_d.EstateDecor[next].Wins} wygr." : nextI >= 0 ? $"kolejna: inspektor {_d.EstateDecor[nextI].Inspector}" : "komplet!";
-        y = p.Section(mc.End.Y + 6, "OSIEDLE ROŚNIE", nextText);
+        var nextText = next >= 0 ? Loc.F("kolejna_wygr", _d.EstateDecor[next].Wins) : nextI >= 0 ? Loc.F("kolejna_inspektor", _d.EstateDecor[nextI].Inspector) : Loc.T("komplet_3");
+        y = p.Section(mc.End.Y + 6, Loc.T("osiedle_rosnie"), nextText);
         var dc = p.CardH(y, 40);
         var step = Math.Min(40f, (dc.Size.X - 12) / Math.Max(1, _d.EstateDecor.Length));
         var x1 = dc.Position.X + (dc.Size.X - step * _d.EstateDecor.Length) / 2;
@@ -164,13 +164,13 @@ public sealed class EstateTab : PhonePage
         if (dc.End.Y + 6 + PhonePainter.RowH + 8 > p.Bottom) return; // wąski telefon: bez wiersza statystyk
         var c2 = p.Card(dc.End.Y + 6, 1);
         var ti = Titles.Selected(_d, _p); // v0.21.52: wybrany tytuł (Odznaki > Tytuły)
-        if (ti >= 0) p.Text(p.TextX(c2), p.RowY(c2, 0), $"„{Titles.Name(_d, ti)}”  Rekord: {_p.Best}  Wygrane: {_p.Wins}", Ink.Brand, TextAlign.Left, c2.Size.X - 18);
-        else p.Text(p.TextX(c2), p.RowY(c2, 0), $"Najlepszy wynik: {_p.Best}  Budowy: {_p.Runs}  Wygrane: {_p.Wins}", Ink.Dim, TextAlign.Left, c2.Size.X - 18);
+        if (ti >= 0) p.Text(p.TextX(c2), p.RowY(c2, 0), Loc.F("rekord_wygrane", Titles.Name(_d, ti), _p.Best, _p.Wins), Ink.Brand, TextAlign.Left, c2.Size.X - 18);
+        else p.Text(p.TextX(c2), p.RowY(c2, 0), Loc.F("najlepszy_wynik_budowy_wygrane", _p.Best, _p.Runs, _p.Wins), Ink.Dim, TextAlign.Left, c2.Size.X - 18);
     }
 
     private void DrawList(PhonePainter p)
     {
-        var y = p.Section(p.Top, "FABUŁA Z KOLEJNYCH BUDÓW", $"nowe: {Story.UnreadCount(_d, _p)}");
+        var y = p.Section(p.Top, Loc.T("fabula_z_kolejnych_budow"), Loc.F("nowe_6", Story.UnreadCount(_d, _p)));
         _window = Math.Max(4, (int)((p.Bottom - y - 8 - 2 * PhonePainter.RowH - 14) / PhonePainter.RowH));
         _list.Clamp(_d.StoryArc.Length, _window);
         var n = Math.Min(_window, _d.StoryArc.Length - _list.Top);
@@ -188,20 +188,20 @@ public sealed class EstateTab : PhonePage
             {
                 var nw = Story.Unread(_p, i);
                 p.Stripe(card, r, nw ? Pal.Brand : Pal.Done);
-                var pw = p.Pill(right, p.RowY(card, r), nw ? "Nowa" : t.Messages[0].From.Split(' ')[0], nw ? PillKind.Brand : PillKind.Gray);
+                var pw = p.Pill(right, p.RowY(card, r), nw ? Loc.T("nowa") : t.Messages[0].From.Split(' ')[0], nw ? PillKind.Brand : PillKind.Gray);
                 p.Text(tx, p.RowY(card, r), t.Name, i == _list.Sel ? Ink.Brand : Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
             }
             else
             {
-                var pw = p.Pill(right, p.RowY(card, r), "Zablok.", PillKind.Gray);
+                var pw = p.Pill(right, p.RowY(card, r), Loc.T("zablok"), PillKind.Gray);
                 p.Text(tx, p.RowY(card, r), "???", Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
             }
         }
         var sel = _d.StoryArc[_list.Sel];
         var dc = p.Card(card.End.Y + 6, 2);
         var unl = Story.Unlocked(_p, _list.Sel);
-        p.Text(p.TextX(dc), p.RowY(dc, 0), unl ? $"{sel.Messages.Length} SMS: {string.Join(", ", Array.ConvertAll(sel.Messages, m => m.From))}" : "Jak odblokować:", Ink.Dim, TextAlign.Left, dc.Size.X - 18);
-        p.Text(p.TextX(dc), p.RowY(dc, 1), unl ? "Spacja / dotknięcie: czytaj" : sel.Hint, unl ? Ink.Dim : Ink.Brand, TextAlign.Left, dc.Size.X - 18);
+        p.Text(p.TextX(dc), p.RowY(dc, 0), unl ? $"{sel.Messages.Length} SMS: {string.Join(", ", Array.ConvertAll(sel.Messages, m => m.From))}" : Loc.T("jak_odblokowac"), Ink.Dim, TextAlign.Left, dc.Size.X - 18);
+        p.Text(p.TextX(dc), p.RowY(dc, 1), unl ? Loc.T("spacja_dotkniecie_czytaj") : sel.Hint, unl ? Ink.Dim : Ink.Brand, TextAlign.Left, dc.Size.X - 18);
     }
 
     private void DrawThread(PhonePainter p)

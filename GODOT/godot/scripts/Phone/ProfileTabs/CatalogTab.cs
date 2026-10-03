@@ -15,7 +15,7 @@ namespace LifeLike.Game.Phone.ProfileTabs;
 public sealed class CatalogTab : PhonePage
 {
     private const int Window = 8;
-    private static readonly string[] Pages = ["Katalog", "Kolekcje", "Bossowie", "Album"];
+    private static string[] Pages => [Loc.T("katalog"), Loc.T("kolekcje"), Loc.T("bossowie"), Loc.T("album")];
     public const int CollectionsPage = 1;
     public const int BossesPage = 2;
     public const int AlbumPage = 3;
@@ -40,7 +40,7 @@ public sealed class CatalogTab : PhonePage
         _ => $"{Meta.CatalogCount(_d, _p)}/{_d.Enemies.Length}",
     };
 
-    public override string Hint => $"Spacja: {Pages[(_page + 1) % Pages.Length]}  Q/E: zakładki  Esc: wróć";
+    public override string Hint => Loc.F("spacja_q_e_zakladki_esc_wroc", Pages[(_page + 1) % Pages.Length]);
 
     public override PageAction[] Actions => [new(Pages[(_page + 1) % Pages.Length] + " >", GameAction.A)];
 
@@ -150,7 +150,7 @@ public sealed class CatalogTab : PhonePage
             {
                 var (have, need) = CollectionBook.Progress(_d, _p, i);
                 var done = CollectionBook.Complete(_d, _p, i);
-                var pw = p.Pill(right, y, done ? "Komplet" : $"{have}/{need}", done ? PillKind.Done : have > 0 ? PillKind.Prog : PillKind.Gray);
+                var pw = p.Pill(right, y, done ? Loc.T("komplet_2") : $"{have}/{need}", done ? PillKind.Done : have > 0 ? PillKind.Prog : PillKind.Gray);
                 p.Text(tx, y, _d.Collections[i].Name, sel ? Ink.Brand : done ? Ink.Done : Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
                 return;
             }
@@ -158,7 +158,7 @@ public sealed class CatalogTab : PhonePage
             {
                 var e = CollectionBook.BossAt(_d, i);
                 var count = _p.KillCount[e];
-                var pw = p.Pill(right, y, count > 0 ? $"x{count}" : "Brak", count > 0 ? PillKind.Done : PillKind.Gray);
+                var pw = p.Pill(right, y, count > 0 ? $"x{count}" : Loc.T("brak_5"), count > 0 ? PillKind.Done : PillKind.Gray);
                 var ic = new Godot.Rect2(tx - 2, y + (PhonePainter.RowH - 16) / 2f, 16, 16);
                 p.C.DrawTextureRectRegion(Assets.Actors, ic, Assets.Frame(_d.Enemies[e].Frame, Assets.Actor),
                     count > 0 ? Godot.Colors.White : new Godot.Color(0, 0, 0, 0.8f));
@@ -169,7 +169,7 @@ public sealed class CatalogTab : PhonePage
             {
                 var dd = _d.EstateDecor[i];
                 var own = Story.DecorUnlocked(_d, _p, i);
-                var pill = own ? "Stoi" : dd.Inspector > 0 ? $"Inspektor {dd.Inspector}" : $"{dd.Wins} wygr.";
+                var pill = own ? Loc.T("stoi") : dd.Inspector > 0 ? Loc.F("inspektor_3", dd.Inspector) : Loc.F("wygr_4", dd.Wins);
                 var pw = p.Pill(right, y, pill, own ? PillKind.Done : PillKind.Gray);
                 p.Text(tx, y, dd.Name, sel ? Ink.Brand : own ? Ink.Dark : Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
                 return;
@@ -177,7 +177,7 @@ public sealed class CatalogTab : PhonePage
             default:
             {
                 var known = Known(i);
-                var pw = p.Pill(right, y, known ? $"x{_p.KillCount[i]}" : "NIEZNANA", known ? PillKind.Done : PillKind.Gray);
+                var pw = p.Pill(right, y, known ? $"x{_p.KillCount[i]}" : Loc.T("nieznana"), known ? PillKind.Done : PillKind.Gray);
                 p.Text(tx, y, $"#{i + 1} {(known ? _d.Enemies[i].Name : "???")}", sel ? Ink.Brand : known ? Ink.Dark : Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
                 return;
             }
@@ -194,17 +194,17 @@ public sealed class CatalogTab : PhonePage
         p.C.DrawStyleBox(Ui.Box(known ? Pal.DoneBg : Pal.Group, 5), photo);
         p.IconTinted(Assets.Actors, _d.Enemies[s].Frame, Assets.Actor, photo.Position, 1, known ? Godot.Colors.White : new Godot.Color(0, 0, 0, 0.8f));
         var x = photo.End.X + 8;
-        var lines = p.F.Wrap(known ? _d.Enemies[s].Desc : boss ? "Pokonaj, żeby zdobyć kartę" : "Pokonaj, żeby poznać", (int)(right - x));
-        p.Text(x, dc.Position.Y + 4, known ? _d.Enemies[s].Name + (boss ? $" – pokonany {_p.KillCount[s]}x" : "") : "???", Ink.Dark, TextAlign.Left, right - x);
+        var lines = p.F.Wrap(known ? _d.Enemies[s].Desc : boss ? Loc.T("pokonaj_zeby_zdobyc_karte") : Loc.T("pokonaj_zeby_poznac"), (int)(right - x));
+        p.Text(x, dc.Position.Y + 4, known ? _d.Enemies[s].Name + (boss ? Loc.F("pokonany_x", _p.KillCount[s]) : "") : "???", Ink.Dark, TextAlign.Left, right - x);
         if (lines.Count > 0) p.Text(x, dc.Position.Y + 22, lines[0], Ink.Dim, TextAlign.Left, right - x);
         if (boss)
         {
             var ci = System.Array.FindIndex(_d.Collections, c => c.Kind == CollectionKind.Bosses);
-            if (ci >= 0) p.Text(x, dc.Position.Y + 40, "Komplet kart: " + CollectionBook.RewardLabel(_d, ci), Ink.Brand, TextAlign.Left, right - x);
+            if (ci >= 0) p.Text(x, dc.Position.Y + 40, Loc.T("komplet_kart") + CollectionBook.RewardLabel(_d, ci), Ink.Brand, TextAlign.Left, right - x);
             return;
         }
         var tags = UiText.Behaviors(_d, s);
-        if (known && tags.Length > 0) p.Text(x, dc.Position.Y + 40, "Cechy: " + tags, Ink.Late, TextAlign.Left, right - x);
+        if (known && tags.Length > 0) p.Text(x, dc.Position.Y + 40, Loc.T("cechy") + tags, Ink.Late, TextAlign.Left, right - x);
     }
 
     /// <summary>Kolekcja: co liczyć (problemy aktu x10, bossowie, ozdoby), najbliższy brakujący i nagroda.</summary>
@@ -216,7 +216,7 @@ public sealed class CatalogTab : PhonePage
         var i = _list.Sel;
         var cd = _d.Collections[i];
         var (have, need) = CollectionBook.Progress(_d, _p, i);
-        var what = cd.Kind == CollectionKind.Kills ? $"{cd.Desc}: każdy x{cd.Count} ({have}/{need})" : $"{cd.Desc} ({have}/{need})";
+        var what = cd.Kind == CollectionKind.Kills ? Loc.F("kazdy_x", cd.Desc, cd.Count, have, need) : $"{cd.Desc} ({have}/{need})";
         if (cd.Kind == CollectionKind.Kills && have < need)
         {
             int best = -1, bestCount = -1;
@@ -229,7 +229,7 @@ public sealed class CatalogTab : PhonePage
             if (best >= 0) what += $", np. {(Known(best) ? _d.Enemies[best].Name : "???")} {bestCount}/{cd.Count}";
         }
         p.Text(tx, p.RowY(dc, 0), what, Ink.Dim, TextAlign.Left, right - tx);
-        p.Text(tx, p.RowY(dc, 1), "Nagroda: " + CollectionBook.RewardLabel(_d, i), CollectionBook.Complete(_d, _p, i) ? Ink.Done : Ink.Brand, TextAlign.Left, right - tx);
+        p.Text(tx, p.RowY(dc, 1), Loc.T("nagroda") + CollectionBook.RewardLabel(_d, i), CollectionBook.Complete(_d, _p, i) ? Ink.Done : Ink.Brand, TextAlign.Left, right - tx);
     }
 
     /// <summary>Album Osiedla: skąd ozdoba i nagroda za komplet.</summary>
@@ -239,8 +239,8 @@ public sealed class CatalogTab : PhonePage
         var right = card.End.X - 6;
         var dc = p.Card(card.End.Y + 6, 2);
         var dd = _d.EstateDecor[_list.Sel];
-        p.Text(tx, p.RowY(dc, 0), dd.Inspector > 0 ? $"{dd.Name}: poziom inspektora {dd.Inspector}" : $"{dd.Name}: {dd.Wins}. wygrana budowa", Ink.Dim, TextAlign.Left, right - tx);
+        p.Text(tx, p.RowY(dc, 0), dd.Inspector > 0 ? Loc.F("poziom_inspektora_2", dd.Name, dd.Inspector) : Loc.F("wygrana_budowa", dd.Name, dd.Wins), Ink.Dim, TextAlign.Left, right - tx);
         var ci = System.Array.FindIndex(_d.Collections, c => c.Kind == CollectionKind.Decor);
-        if (ci >= 0) p.Text(tx, p.RowY(dc, 1), "Komplet albumu: " + CollectionBook.RewardLabel(_d, ci), CollectionBook.Complete(_d, _p, ci) ? Ink.Done : Ink.Brand, TextAlign.Left, right - tx);
+        if (ci >= 0) p.Text(tx, p.RowY(dc, 1), Loc.T("komplet_albumu") + CollectionBook.RewardLabel(_d, ci), CollectionBook.Complete(_d, _p, ci) ? Ink.Done : Ink.Brand, TextAlign.Left, right - tx);
     }
 }

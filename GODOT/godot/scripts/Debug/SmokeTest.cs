@@ -994,7 +994,7 @@ public sealed class SmokeTest
             p.Wins = 0;
             Flow.ClassSelect.Open();
             Flow.ClassSelect.HandleInput(InputCmd.Of(GameAction.Select));
-            if (Flow.Current != Flow.Investor || Flow.Investor.Page.Title != "Wygląd") // v0.21.53: przed wygraną sam Wygląd (filtr ekranu)
+            if (Flow.Current != Flow.Investor || Flow.Investor.Page.Title != Loc.T("wyglad")) // v0.21.53: przed wygraną sam Wygląd (filtr ekranu)
                 throw new Exception("Wygląd z filtrem ekranu niedostępny przed pierwszą wygraną");
             var filter = GameSettings.Filter;
             Flow.Investor.Page.SelectFilterRow();
@@ -1097,7 +1097,7 @@ public sealed class SmokeTest
         g.Hero.Hp = g.Hero.MaxHp = 300;
         var before = g.EnemiesCount;
         staging.BehaviorShowcase();
-        foreach (var m in g.Log) if (m.Text.Contains("z dystansu")) _shots++;   // strzał Mostka termicznego w pokazie
+        foreach (var m in g.Log) if (m.Text.Contains(Loc.T("z_dystansu").Trim(' ', ':', '-'))) _shots++;   // strzał Mostka termicznego w pokazie
         _splits = g.EnemiesCount > 3 ? 1 : 0;
         _blasts = g.BlastTimer > 0 || g.DangerCell(g.Hero.X, g.Hero.Y) ? 1 : 0;
         for (var k = 0; k < 4 && g.St == GameStatus.Playing; k++)
@@ -1137,7 +1137,7 @@ public sealed class SmokeTest
         new DebugScenes(_app).AdvanceMessages();
         var g = s.Game;
         var st = new DemoStaging(_app);
-        st.EventTiles("Stal przed czasem");
+        st.EventTiles("stal");
         _app.AfterAction(g.PlayerMove(1, 0));
         if (Flow.Current != Flow.Event || Flow.Event.Page.Phase != 0) throw new Exception("wydarzenie: pole nie otwiera SMS-a");
         Flow.Event.HandleInput(InputCmd.Of(GameAction.A));

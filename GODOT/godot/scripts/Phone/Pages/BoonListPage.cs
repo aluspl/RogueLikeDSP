@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using System;
 using System.Collections.Generic;
 using LifeLike.Game.Audio;
@@ -26,11 +27,11 @@ public sealed class BoonListPage : PhonePage
     /// <summary>0 = premie, 1 = synergie.</summary>
     public int Mode { get; set; }
 
-    public override string Title => Mode == 0 ? "Premie" : "Synergie";
-    public override string Sub => Mode == 0 ? $"{_g.BoonsOwned()} z etapów" : $"aktywne: {Count(_g.SynergyMask())}";
-    public override string Hint => "L/P: premie / synergie  Esc: wróć";
+    public override string Title => Mode == 0 ? Loc.T("premie_3") : Loc.T("synergie");
+    public override string Sub => Mode == 0 ? Loc.F("z_etapow", _g.BoonsOwned()) : Loc.F("aktywne", Count(_g.SynergyMask()));
+    public override string Hint => Loc.T("l_p_premie_synergie_esc_wroc");
     public override bool Closable => true;
-    public override PageAction[] Actions => [new(Mode == 0 ? "Synergie" : "Premie", GameAction.Right)];
+    public override PageAction[] Actions => [new(Mode == 0 ? Loc.T("synergie") : Loc.T("premie_3"), GameAction.Right)];
 
     private List<int> Owned()
     {
@@ -91,13 +92,13 @@ public sealed class BoonListPage : PhonePage
     {
         var d = _g.D;
         var owned = Owned();
-        var y = p.Section(p.Top, "PREMIE Z ETAPÓW", "1 z 3 po etapie");
+        var y = p.Section(p.Top, Loc.T("premie_z_etapow"), Loc.T("n1_z_3_po_etapie"));
         _window = Fit(p, y, 3);
         if (owned.Count == 0)
         {
             var c = p.Card(y, 2);
-            p.Text(p.TextX(c), p.RowY(c, 0), "Brak premii - pierwsza po etapie 1", Ink.Dim);
-            p.Text(p.TextX(c), p.RowY(c, 1), "3 do wyboru: zwykła, rzadka, legendarna", Ink.Dim);
+            p.Text(p.TextX(c), p.RowY(c, 0), Loc.T("brak_premii_pierwsza_po_etapie"), Ink.Dim);
+            p.Text(p.TextX(c), p.RowY(c, 1), Loc.T("n3_do_wyboru_zwykla_rzadka"), Ink.Dim);
             return;
         }
         _list.Clamp(owned.Count, Window);
@@ -126,15 +127,15 @@ public sealed class BoonListPage : PhonePage
         p.Text(dtx, p.RowY(dc, 0), b.Name, Ink.Dark, TextAlign.Left, dr - pw - 6 - dtx);
         p.Text(dtx, p.RowY(dc, 1), b.Desc, BoonLook.RarityInk(b.Rarity), TextAlign.Left, dr - dtx);
         p.Divider(dc, 2);
-        var tags = string.Join(", ", BoonLook.Tags(d, b.Tags)) + (b.Cls >= 0 ? $" (tylko {d.Classes[b.Cls].Name})" : "");
-        p.Text(dtx, p.RowY(dc, 2), "Znaczniki: " + tags, Ink.Dim, TextAlign.Left, dr - dtx);
+        var tags = string.Join(", ", BoonLook.Tags(d, b.Tags)) + (b.Cls >= 0 ? Loc.F("tylko", d.Classes[b.Cls].Name) : "");
+        p.Text(dtx, p.RowY(dc, 2), Loc.T("znaczniki") + tags, Ink.Dim, TextAlign.Left, dr - dtx);
     }
 
     private void DrawSynergies(PhonePainter p)
     {
         var d = _g.D;
         var n = d.Synergies.Length;
-        var y = p.Section(p.Top, "SYNERGIE", $"{d.SynergyAt}+ premie z jednym znacznikiem");
+        var y = p.Section(p.Top, Loc.T("synergie_3"), Loc.F("premie_z_jednym_znacznikiem", d.SynergyAt));
         _window = Fit(p, y, 2);
         _list.Clamp(n, Window);
         var rows = Math.Min(Window, n - _list.Top);
@@ -157,7 +158,7 @@ public sealed class BoonListPage : PhonePage
             {
                 if (((sd.Tags >> t) & 1) != 0) progress.Add($"{d.BoonTags[t]} {_g.TagCount(t)}");
             }
-            var pw = p.Pill(right, ry, on ? "Aktywna" : string.Join("+", progress), on ? PillKind.Done : PillKind.Gray);
+            var pw = p.Pill(right, ry, on ? Loc.T("aktywna") : string.Join("+", progress), on ? PillKind.Done : PillKind.Gray);
             p.Text(tx, ry, sd.Name, on ? Ink.Done : sel ? Ink.Brand : Ink.Dark, TextAlign.Left, right - pw - 6 - tx);
         }
         var sel2 = d.Synergies[Math.Clamp(_list.Sel, 0, n - 1)];
@@ -165,6 +166,6 @@ public sealed class BoonListPage : PhonePage
         var dtx = p.TextX(dc);
         p.Text(dtx, p.RowY(dc, 0), sel2.Desc, Ink.Dark, TextAlign.Left, dc.End.X - 6 - dtx);
         var need = string.Join(" + ", BoonLook.Tags(d, sel2.Tags));
-        p.Text(dtx, p.RowY(dc, 1), "Znaczniki: " + need, Ink.Dim, TextAlign.Left, dc.End.X - 6 - dtx);
+        p.Text(dtx, p.RowY(dc, 1), Loc.T("znaczniki") + need, Ink.Dim, TextAlign.Left, dc.End.X - 6 - dtx);
     }
 }

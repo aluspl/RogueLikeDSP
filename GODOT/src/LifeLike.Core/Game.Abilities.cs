@@ -102,11 +102,11 @@ public sealed partial class Game
                         ok = true;
                     }
                 }
-                if (ok) Push(Msg(c.AbilityName).Add(": problemy wstrzymane"));
+                if (ok) Push(Msg(c.AbilityName).Add(Loc.T("problemy_wstrzymane")));
                 break;
             case AbilityEffect.Wall: // Ścianka: mur w poprzek drogi najbliższego wroga (nigdy wokół bohatera)
                 ok = WallTowardEnemy(rank >= 3 ? 2 : 1, 4 + 2 * rank + BoonPower());
-                if (ok) Push(Msg(c.AbilityName).Add(" postawiona!"));
+                if (ok) Push(Msg(c.AbilityName).Add(Loc.T("postawiona")));
                 break;
             case AbilityEffect.Volley: // Seria: wszyscy widoczni w zasięgu (+1 obrażeń od II, +1 zasięgu na III)
             {
@@ -175,7 +175,7 @@ public sealed partial class Game
                     Hero.Hp = (short)(Hero.Hp + h);
                     ok = true;
                 }
-                if (ok) Push(Msg(c.AbilityName).Add(": strumień! +").Add(Math.Max(0, h)).Add(" HP"));
+                if (ok) Push(Msg(c.AbilityName).Add(Loc.T("strumien")).Add(Math.Max(0, h)).Add(" HP"));
                 break;
             }
             case AbilityEffect.Spin: // Wirówka: wszyscy obok (zasięg 2 na III), od II ogłusza na 1 turę
@@ -217,7 +217,7 @@ public sealed partial class Game
                     }
                 }
                 if (rank >= 2) --DmgBonus;
-                if (ok) Push(Msg(c.AbilityName).Add(": dachówki w linii!"));
+                if (ok) Push(Msg(c.AbilityName).Add(Loc.T("dachowki_w_linii")));
                 break;
             }
             case AbilityEffect.Splash: // Narzut (Tynkarz): tynk na obszar wokół celu w zasięgu (3x3, 5x5 na III), od II ogłusza
@@ -263,7 +263,7 @@ public sealed partial class Game
                     }
                     if (SecretClosed() && SecretIs(nx, ny) && SecretDef.Breakable)
                     {
-                        OpenSecret("Taran kruszy ścianę!");
+                        OpenSecret(Loc.T("taran_kruszy_sciane"));
                         ok = true;
                         break;
                     }
@@ -285,7 +285,7 @@ public sealed partial class Game
         }
         if (!ok)
         {
-            Push(Msg(c.AbilityName).Add(": nie teraz"));
+            Push(Msg(c.AbilityName).Add(Loc.T("nie_teraz")));
             return false;
         }
         if (PowersUsed < 65535) ++PowersUsed;
@@ -381,7 +381,7 @@ public sealed partial class Game
         }
         if (it.Material >= 0) Mats[it.Material] = (byte)(Mats[it.Material] - it.MatCost);
         else Cash -= HurtowniaPrice(i);
-        Push(Msg("Hurtownia: ").Add(it.Name).As(LogKind.Loot));
+        Push(Msg(Loc.T("hurtownia_2")).Add(it.Name).As(LogKind.Loot));
         return true;
     }
 }

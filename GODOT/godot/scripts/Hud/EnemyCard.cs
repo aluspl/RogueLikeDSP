@@ -65,8 +65,8 @@ public partial class EnemyCard : Control
         DrawRect(new Rect2(0, top - 1, w, 1), new Color(Pal.Brand, 0.7f));
         if (_enemy < 0)
         {
-            f.Draw(this, new Vector2(8, top + 12), "Nikogo w polu widzenia", Ink.MapDim);
-            f.Draw(this, new Vector2(w - 6, Size.Y - 18), ButtonNames.Pick("Puść Z: wróć", "Puść: wróć"), Ink.MapDim, TextAlign.Right);
+            f.Draw(this, new Vector2(8, top + 12), Loc.T("nikogo_w_polu_widzenia"), Ink.MapDim);
+            f.Draw(this, new Vector2(w - 6, Size.Y - 18), ButtonNames.Pick(Loc.T("pusc_z_wroc"), Loc.T("pusc_wroc")), Ink.MapDim, TextAlign.Right);
             return;
         }
         var e = _g.Enemies[_enemy];
@@ -85,25 +85,25 @@ public partial class EnemyCard : Control
         var fill = e.MaxHp > 0 ? Mathf.Clamp(e.Hp / (float)e.MaxHp, 0f, 1f) : 0f;
         DrawRect(new Rect2(bar.Position, new Vector2(Mathf.Max(1, Mathf.Round(bar.Size.X * fill)), bar.Size.Y)), Pal.HpMain[Pal.HpColor(e.Hp, e.MaxHp)]);
         var def = _g.EnemyDefense(_enemy);
-        var stats = $"HP {e.Hp}/{e.MaxHp}" + (def > 0 ? $"   OBR {def}" : "");
+        var stats = $"HP {e.Hp}/{e.MaxHp}" + (def > 0 ? Loc.F("obr_6", def) : "");
         f.Draw(this, new Vector2(bar.End.X + 8, top + 2), f.Fit(stats, (int)(w - bar.End.X - 14)), Ink.Map);
         // „Zadasz” z obroną elity (Tarcza) – ActorBreakdown
         var b = _g.ActorBreakdown(_enemy);
-        var vs = DamageHelp.VersusLine(new Message(), b, _g.EnemyHit(_enemy)).Text + $", unik {_g.DodgePct()}%";
+        var vs = DamageHelp.VersusLine(new Message(), b, _g.EnemyHit(_enemy)).Text + Loc.F("unik_9", _g.DodgePct());
         if (f.Measure(vs) > w - x - 8) vs = DamageHelp.VersusLine(new Message(), b, _g.EnemyHit(_enemy)).Text;
         f.Draw(this, new Vector2(x, top + 20), f.Fit(vs, (int)(w - x - 8)), Ink.Map);
         // trzeci wiersz na zmianę: opis, cechy, elita, stany (kombinacje)
         var lines = new System.Collections.Generic.List<(string Text, Ink Ink)> { (ed.Desc, Ink.MapDim) };
-        if (_enemy == _g.KeyHolder) lines.Insert(0, ("Ma klucz do magazynu!", Ink.MapLoot));
+        if (_enemy == _g.KeyHolder) lines.Insert(0, (Loc.T("ma_klucz_do_magazynu"), Ink.MapLoot));
         var tags = UiText.Behaviors(_g.D, e.DefId);
-        if (tags.Length > 0) lines.Add(("Cechy: " + tags, Ink.MapBad));
+        if (tags.Length > 0) lines.Add((Loc.T("cechy") + tags, Ink.MapBad));
         if (elite) lines.Add((BoonLook.Elite(_g, _enemy), Ink.MapLoot));
         var states = BoonLook.States(_g, _enemy);
-        if (states.Length > 0) lines.Add(("Stan: " + states, Ink.MapWet));
+        if (states.Length > 0) lines.Add((Loc.T("stan") + states, Ink.MapWet));
         var line = lines[(int)(_clock / 2f) % lines.Count];
         f.Draw(this, new Vector2(x, top + 38), f.Fit(line.Text, (int)(w - x - 8)), line.Ink);
-        var back = ButtonNames.Pick("Puść Z: wróć", "Puść: wróć");
-        var hint = _count > 1 ? $"{_index + 1}/{_count}  {ButtonNames.Pick("Strzałki: następny", "Przesuń: następny")}   {back}" : back;
+        var back = ButtonNames.Pick(Loc.T("pusc_z_wroc"), Loc.T("pusc_wroc"));
+        var hint = _count > 1 ? $"{_index + 1}/{_count}  {ButtonNames.Pick(Loc.T("strzalki_nastepny"), Loc.T("przesun_nastepny"))}   {back}" : back;
         f.Draw(this, new Vector2(w - 6, top + 56), hint, Ink.MapDim, TextAlign.Right);
     }
 }

@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using System.Collections.Generic;
 using Godot;
 using LifeLike.Game.Gfx;
@@ -80,7 +81,7 @@ public partial class EndView : Control, Touch.ITapTargets
         DrawTextureRect(Assets.Tex("ui/end.png"), new Rect2(Mathf.Round((w - 240 * es) / 2), top, 240 * es, 104 * es), false);
         var y = top + 104 * es + 2;
         DrawRect(new Rect2(0, y, w, 2), Pal.Accent);
-        var title = Won ? "ODBIÓR ZALICZONY!" : "BUDOWA WSTRZYMANA";
+        var title = Won ? Loc.T("odbior_zaliczony_2") : Loc.T("budowa_wstrzymana_3");
         var ts = f.Measure(title, 2) <= w - 16 ? 2f : 1.5f;
         f.Draw(this, new Vector2(w / 2, y + 10), title, Won ? Ink.EndWin : Ink.EndLose, TextAlign.Center, ts);
         y += 14 + PixelFont.LineHeight * ts + 8;
@@ -108,14 +109,14 @@ public partial class EndView : Control, Touch.ITapTargets
             if (CanContinue)
             {
                 _next = new Rect2(16, by - bh - 10, w - 32, bh);
-                DrawButton(_next, "Kolejna budowa (NG+)", true);
+                DrawButton(_next, Loc.T("kolejna_budowa_ng"), true);
             }
             _menu = new Rect2(16, by, w - 32, bh);
-            DrawButton(_menu, "Menu", !CanContinue);
+            DrawButton(_menu, Loc.T("menu"), !CanContinue);
         }
         else
         {
-            var hint = CanContinue ? "Spacja: kolejna budowa (NG+)   Enter: menu" : "Enter: menu";
+            var hint = CanContinue ? Loc.T("spacja_kolejna_budowa_ng_enter") : Loc.T("enter_menu");
             if (((int)(_clock * 1.5f) & 1) == 0) f.Draw(this, new Vector2(w / 2, h - 20), hint, Ink.OnBrand, TextAlign.Center);
         }
         foreach (var c in _confetti)

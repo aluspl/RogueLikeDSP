@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using Godot;
 using LifeLike.Game.Input;
 using CoreGame = LifeLike.Core.Game;
@@ -108,13 +109,13 @@ public sealed class Aiming
         var g = _app.Session.Game;
         if (_count == 0)
         {
-            N.Hud.ShowHint($"Celowanie: brak celu w zasięgu (z{g.WeaponRange()})", ButtonNames.Pick("Puść Spację: wróć", "Puść Atak: wróć"));
+            N.Hud.ShowHint(Loc.F("celowanie_brak_celu_w_zasiegu", g.WeaponRange()), ButtonNames.Pick(Loc.T("pusc_spacje_wroc"), Loc.T("pusc_atak_wroc")));
             return;
         }
         var e = g.Enemies[Target];
         var name = g.D.Enemies[e.DefId].Name;
-        N.Hud.ShowHint($"Cel {_sel + 1}/{_count}: {name}, HP {e.Hp}/{e.MaxHp}",
-            ButtonNames.Pick("Strzałki: zmiana celu   Puść Spację: atak", "Przesuń palec: cel   Puść Atak: atak"));
+        N.Hud.ShowHint(Loc.F("cel_hp", _sel + 1, _count, name, e.Hp, e.MaxHp),
+            ButtonNames.Pick(Loc.T("strzalki_zmiana_celu_pusc"), Loc.T("przesun_palec_cel_pusc_atak")));
     }
 
     /// <summary>Puszczenie A: atak wybranego celu (bez celu - miga zasięg jak range_flash na GBA).</summary>

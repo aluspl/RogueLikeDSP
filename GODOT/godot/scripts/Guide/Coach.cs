@@ -177,7 +177,7 @@ public sealed class Coach
         V.Single = _mode == 2;
         V.Link = _mode == 1 && s.Link.Length > 0;
         V.Last = _mode == 1 && _k == _steps.Count - 1;
-        V.Pill = _mode == 1 ? $"{_k + 1}/{_steps.Count}" : _cls >= 0 && !secret ? D.Classes[_cls].Name : "Nowość";
+        V.Pill = _mode == 1 ? $"{_k + 1}/{_steps.Count}" : _cls >= 0 && !secret ? D.Classes[_cls].Name : Loc.T("nowosc");
         V.PillBrand = _mode == 2;
         Sfx.Play("notify", 0.6f);
         Update();

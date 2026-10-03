@@ -23,9 +23,9 @@ public sealed class PrologueMessageScreen : Screen
 
     public override void Enter(bool instant)
     {
-        var page = new MessagePage("Budowa", "Enter: na plac");
+        var page = new MessagePage(Loc.T("budowa"), Loc.T("enter_na_plac"));
         page.Add(S.Data.StoryPrologue);
-        page.Info("Twój pierwszy plac budowy", Ink.Dim);
+        page.Info(Loc.T("twoj_pierwszy_plac_budowy"), Ink.Dim);
         page.Info(S.Game.CDef.Name, Ink.Brand);
         N.Phone.OpenSingle(page, 2, instant);
         Sfx.Play("notify", 0.7f);

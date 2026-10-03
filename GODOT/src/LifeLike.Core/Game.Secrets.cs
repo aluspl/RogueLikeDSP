@@ -100,7 +100,7 @@ public sealed partial class Game
             if (Enemies[ei].Alive) Enemies[ei].Flags = (byte)(Enemies[ei].Flags | ActorFlag.Dusty); // dym spawalniczy
         }
         HitCtx = 0;
-        if (ok) Push(Msg(c.AbilityName).Add(": iskry i dym!"));
+        if (ok) Push(Msg(c.AbilityName).Add(Loc.T("iskry_i_dym")));
         return ok;
     }
 

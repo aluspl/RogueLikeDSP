@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using System.Collections.Generic;
 using Godot;
 using LifeLike.Core.Data;
@@ -17,10 +18,10 @@ public sealed class MessagePage : PhonePage
     private readonly List<(string Text, Ink Ink)> _info = new();
     private readonly string _hint;
 
-    public MessagePage(string sub, string hint = "Enter: dalej")
+    public MessagePage(string sub, string hint = null)
     {
         _sub = sub;
-        _hint = hint;
+        _hint = hint ?? Loc.T("enter_dalej");
     }
 
     public MessagePage Add(StoryMsg m)
@@ -35,7 +36,7 @@ public sealed class MessagePage : PhonePage
         return this;
     }
 
-    public override string Title => "Wiadomości";
+    public override string Title => Loc.T("wiadomosci_2");
     public override string Sub => _sub;
     public override string Hint => _hint;
 
@@ -44,7 +45,7 @@ public sealed class MessagePage : PhonePage
     {
         get
         {
-            var label = _hint.Contains(':') ? _hint[(_hint.IndexOf(':') + 1)..].Trim() : "Dalej";
+            var label = _hint.Contains(':') ? _hint[(_hint.IndexOf(':') + 1)..].Trim() : Loc.T("dalej");
             if (label.Length > 0) label = char.ToUpperInvariant(label[0]) + label[1..];
             return [new(label, GameAction.Start)];
         }
@@ -60,7 +61,7 @@ public sealed class MessagePage : PhonePage
             var card = p.CardH(y, 26 + lines.Count * 16 + 8);
             p.Icon(Assets.PhoneIcons, 5, Assets.Icon, new Vector2(card.Position.X + 6, card.Position.Y + 5));
             p.Text(card.Position.X + 26, card.Position.Y + 3, m.From, Ink.Dark, TextAlign.Left, card.Size.X - 80);
-            p.Pill(card.End.X - 6, card.Position.Y + 3, "teraz", PillKind.Gray);
+            p.Pill(card.End.X - 6, card.Position.Y + 3, Loc.T("teraz_2"), PillKind.Gray);
             var bubble = new Rect2(card.Position.X + 8, card.Position.Y + 24, card.Size.X - 16, lines.Count * 16 + 6);
             p.C.DrawStyleBox(Ui.Box(Pal.Group, 8), bubble);
             for (var i = 0; i < lines.Count; i++) p.F.Draw(p.C, new Vector2(bubble.Position.X + 8, bubble.Position.Y + 2 + i * 16), lines[i], Ink.Dark);

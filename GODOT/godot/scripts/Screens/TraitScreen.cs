@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using LifeLike.Game.Audio;
 using LifeLike.Game.Input;
 using LifeLike.Game.Phone;
@@ -50,7 +51,7 @@ public sealed class TraitScreen : Screen
         {
             Sfx.Play("level", 0.8f);
             var td = S.Data.ToolTraits[g.WeaponTrait];
-            N.Banners.Push("Cecha: " + td.Name, td.Desc, PhoneTabs.Gear);
+            N.Banners.Push(Loc.T("cecha_2") + td.Name, td.Desc, PhoneTabs.Gear);
         }
         App.Refresh();
         if (_back is HurtowniaScreen h) h.Open();

@@ -25,10 +25,10 @@ public sealed class BrigadePage : PhonePage
         _call = call;
     }
 
-    public override string Title => _g.D.Repairs.Length > 0 ? "Brygada i naprawy" : "Brygada";
-    public override string Sub => $"Budżet: {_g.Cash} zł";
-    public override string Hint => IsRepair ? "Spacja: napraw (tura)  Esc: wróć" : "Spacja: wezwij (tura)  Esc: wróć";
-    public override PageAction[] Actions => [new(IsRepair ? "Napraw" : "Wezwij", GameAction.A), new("Wróć", GameAction.Cancel)];
+    public override string Title => _g.D.Repairs.Length > 0 ? Loc.T("brygada_i_naprawy") : Loc.T("brygada_3");
+    public override string Sub => Loc.F("budzet_zl", _g.Cash);
+    public override string Hint => IsRepair ? Loc.T("spacja_napraw_tura_esc_wroc") : Loc.T("spacja_wezwij_tura_esc_wroc");
+    public override PageAction[] Actions => [new(IsRepair ? Loc.T("napraw") : Loc.T("wezwij"), GameAction.A), new(Loc.T("wroc"), GameAction.Cancel)];
 
     private int Count => _g.D.Brigade.Length + _g.D.Repairs.Length;
 
@@ -73,26 +73,26 @@ public sealed class BrigadePage : PhonePage
             var rd = d.Repairs[k];
             return _g.RepairBlocked(k) switch
             {
-                RepairBlock.Ok => ("Gotowe do naprawy (zużywa turę)", Ink.Brand),
-                RepairBlock.Material => ($"Brak materiału: {d.Materials[rd.Material].Name} ({_g.Mats[rd.Material]}/{rd.Cost})", Ink.Late),
-                RepairBlock.NoTarget => ("Brak problemu w polu widzenia", Ink.Late),
-                RepairBlock.NoRoom => ("Nie ma gdzie postawić desek", Ink.Late),
-                RepairBlock.NoPuddle => ("Brak kałuż obok (deszcz)", Ink.Late),
+                RepairBlock.Ok => (Loc.T("gotowe_do_naprawy_zuzywa_ture"), Ink.Brand),
+                RepairBlock.Material => (Loc.F("brak_materialu", d.Materials[rd.Material].Name, _g.Mats[rd.Material], rd.Cost), Ink.Late),
+                RepairBlock.NoTarget => (Loc.T("brak_problemu_w_polu_widzenia_2"), Ink.Late),
+                RepairBlock.NoRoom => (Loc.T("nie_ma_gdzie_postawic_desek"), Ink.Late),
+                RepairBlock.NoPuddle => (Loc.T("brak_kaluz_obok_deszcz"), Ink.Late),
                 _ => ("", Ink.Dim),
             };
         }
         if (_g.HelperCalled >= 0)
         {
             var t = _g.GuardTurns > 0 ? $" ({_g.GuardTurns} t.)" : _g.AllyTurns > 0 ? $" ({_g.AllyTurns} t.)" : "";
-            return ($"Na tym etapie: {d.Brigade[_g.HelperCalled].Name}{t}", Ink.Done);
+            return (Loc.F("na_tym_etapie_2", d.Brigade[_g.HelperCalled].Name, t), Ink.Done);
         }
         return _g.HelperBlocked(_list.Sel) switch
         {
-            HelperBlock.Ok => ("Gotowy do wezwania (zużywa turę)", Ink.Brand),
-            HelperBlock.Locked => ("Odblokuj w Szkoleniach (Koszty w profilu)", Ink.Dim),
-            HelperBlock.Cash => ("Za mały budżet", Ink.Late),
-            HelperBlock.NoTarget => ($"Nikogo w zasięgu {d.Brigade[_list.Sel].Reach}", Ink.Late),
-            HelperBlock.NoRoom => ("Brak miejsca obok", Ink.Late),
+            HelperBlock.Ok => (Loc.T("gotowy_do_wezwania_zuzywa_ture"), Ink.Brand),
+            HelperBlock.Locked => (Loc.T("odblokuj_w_szkoleniach_koszty"), Ink.Dim),
+            HelperBlock.Cash => (Loc.T("za_maly_budzet"), Ink.Late),
+            HelperBlock.NoTarget => (Loc.F("nikogo_w_zasiegu_3", d.Brigade[_list.Sel].Reach), Ink.Late),
+            HelperBlock.NoRoom => (Loc.T("brak_miejsca_obok_2"), Ink.Late),
             _ => ("", Ink.Dim),
         };
     }
@@ -102,7 +102,7 @@ public sealed class BrigadePage : PhonePage
         var d = _g.D;
         var n = d.Brigade.Length;
         _list.Clamp(Count, Count);
-        var y = p.Section(p.Top, "FACHOWCY", "raz na etap");
+        var y = p.Section(p.Top, Loc.T("fachowcy"), Loc.T("raz_na_etap"));
         var card = p.Card(y, n);
         var tx = p.TextX(card);
         var right = card.End.X - 6;
@@ -116,7 +116,7 @@ public sealed class BrigadePage : PhonePage
             if (sel) p.Selected(card, i);
             else if (i > 0) p.Divider(card, i);
             p.HitRow(card, i, i);
-            var pill = here ? "Na placu" : unl ? $"{_g.HelperPrice(i)} zł" : "Zablok.";
+            var pill = here ? Loc.T("na_placu") : unl ? Loc.F("zl_5", _g.HelperPrice(i)) : Loc.T("zablok");
             var kind = here ? PillKind.Done : unl && _g.Cash >= _g.HelperPrice(i) ? PillKind.Group : PillKind.Gray;
             var pw = p.Pill(right, ry, pill, kind);
             p.Text(tx, ry, h.Name, sel ? Ink.Brand : unl ? Ink.Dark : Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
@@ -124,7 +124,7 @@ public sealed class BrigadePage : PhonePage
         var bottom = card.End.Y;
         if (d.Repairs.Length > 0)
         {
-            var ry0 = p.Section(bottom + 4, "NAPRAWY", "za materiały");
+            var ry0 = p.Section(bottom + 4, Loc.T("naprawy_2"), Loc.T("za_materialy"));
             var rc = p.Card(ry0, d.Repairs.Length);
             for (var k = 0; k < d.Repairs.Length; k++)
             {

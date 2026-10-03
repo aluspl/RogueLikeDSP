@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using Godot;
 using LifeLike.Game.Audio;
 using LifeLike.Game.Gfx;
@@ -21,9 +22,9 @@ public sealed class TraitPage : PhonePage
     public System.Action Picked { get; set; }
 
     public override string Title => _g.WeaponTitle();
-    public override string Sub => "Wybierz cechę";
-    public override string Hint => "Strzałki: wybór  Enter: biorę";
-    public override PageAction[] Actions => [new("Biorę", GameAction.A)];
+    public override string Sub => Loc.T("wybierz_ceche");
+    public override string Hint => Loc.T("strzalki_wybor_enter_biore");
+    public override PageAction[] Actions => [new(Loc.T("biore"), GameAction.A)];
 
     public override bool TapRow(int index)
     {
@@ -45,7 +46,7 @@ public sealed class TraitPage : PhonePage
 
     public override void Draw(PhonePainter p)
     {
-        var y = p.Section(p.Top, "CECHA OD +" + _g.D.ToolTraitAt, $"ulepszenie +{_g.WeaponLvl}");
+        var y = p.Section(p.Top, Loc.T("cecha_od") + _g.D.ToolTraitAt, Loc.F("ulepszenie_4", _g.WeaponLvl));
         for (var k = 0; k < _g.D.ToolTraits.Length; k++)
         {
             var td = _g.D.ToolTraits[k];

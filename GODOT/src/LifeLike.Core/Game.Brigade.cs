@@ -61,16 +61,16 @@ public sealed partial class Game
             case HelperBlock.Ok:
                 break;
             case HelperBlock.Used:
-                Push(Msg("Brygada już była na tym etapie"));
+                Push(Msg(Loc.T("brygada_juz_byla_na_tym_etapie")));
                 return false;
             case HelperBlock.Cash:
-                Push(Msg("Brygada: za mały budżet (").Add(HelperPrice(h)).Add(" zł)"));
+                Push(Msg(Loc.T("brygada_za_maly_budzet")).Add(HelperPrice(h)).Add(Loc.T("zl_3")));
                 return false;
             case HelperBlock.NoTarget:
-                Push(Msg(hd.Name).Add(": nikogo w zasięgu"));
+                Push(Msg(hd.Name).Add(Loc.T("nikogo_w_zasiegu")));
                 return false;
             case HelperBlock.NoRoom:
-                Push(Msg(hd.Name).Add(": brak miejsca obok"));
+                Push(Msg(hd.Name).Add(Loc.T("brak_miejsca_obok")));
                 return false;
             default:
                 return false;
@@ -79,7 +79,7 @@ public sealed partial class Game
         Cash -= HelperPrice(h);
         HelperCalled = (sbyte)h;
         if (HelpersCalled < 255) ++HelpersCalled; // v0.21.52 cz. c: zadania dnia
-        Push(Msg("Brygada: ").Add(hd.Name).As(LogKind.Good));
+        Push(Msg(Loc.T("brygada_2")).Add(hd.Name).As(LogKind.Good));
         switch (hd.Effect)
         {
             case HelperEffect.Reveal: // podłoga, schody i mury przy nich
@@ -129,7 +129,7 @@ public sealed partial class Game
         if (--AllyTurns == 0)
         {
             AllyX = AllyY = -1;
-            Push(Msg(hd.Name).Add(": koniec pomocy"));
+            Push(Msg(hd.Name).Add(Loc.T("koniec_pomocy")));
         }
     }
 }

@@ -395,17 +395,17 @@ public sealed class DemoStaging
         _app.AfterAction(g.PlayerMove(1, 0));
     }
 
-    /// <summary>v0.21.50 cz. 3: pola wydarzeń w prawo od bohatera (po nazwie z game.json), pusto wokół.</summary>
-    public void EventTiles(params string[] names)
+    /// <summary>v0.21.50 cz. 3: pola wydarzeń w prawo od bohatera (po identyfikatorze z game.json), pusto wokół.</summary>
+    public void EventTiles(params string[] ids)
     {
         var g = G;
-        ClearAround(-1, -1, names.Length + 1, 1);
+        ClearAround(-1, -1, ids.Length + 1, 1);
         g.EnemiesCount = 0;
         g.PickupsCount = 0;
         g.KeyHolder = -1;
-        for (var k = 0; k < names.Length; k++)
+        for (var k = 0; k < ids.Length; k++)
         {
-            var e = Array.FindIndex(g.D.ChoiceEvents, x => x.Name == names[k]);
+            var e = Array.FindIndex(g.D.ChoiceEvents, x => x.Id == ids[k]); // v0.21.53 cz. 2: po identyfikatorze (nazwy zależą od języka)
             if (e >= 0) g.Pickups[g.PickupsCount++] = new Pickup(g.Hero.X + 1 + k, g.Hero.Y, PickupType.EventTile, true, e);
         }
         g.UpdateFov();

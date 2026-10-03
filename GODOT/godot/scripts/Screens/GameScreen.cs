@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using LifeLike.Game.Input;
 using LifeLike.Game.Screens.Play;
 using LifeLike.Game.Touch;
@@ -51,7 +52,7 @@ public sealed class GameScreen : Screen
     public void ToggleOverview()
     {
         N.World.ToggleOverview();
-        if (N.World.OverviewOn) N.Hud.ShowHint("Podgląd mapy etapu", ButtonNames.Pick("Dowolny klawisz: wróć", "Puść albo dotknij: wróć"));
+        if (N.World.OverviewOn) N.Hud.ShowHint(Loc.T("podglad_mapy_etapu"), ButtonNames.Pick(Loc.T("dowolny_klawisz_wroc"), Loc.T("pusc_albo_dotknij_wroc")));
         else N.Hud.ShowHint(null);
     }
 

@@ -308,7 +308,7 @@ public sealed partial class Game
         if (bd.GearStun > 0 && FullGear())
         {
             Enemies[Boss].Stun = (sbyte)Math.Max(Enemies[Boss].Stun, bd.GearStun);
-            Push(Msg("Wszystko zgodnie z BHP!").As(LogKind.Good));
+            Push(Msg(Loc.T("wszystko_zgodnie_z_bhp")).As(LogKind.Good));
         }
     }
 
@@ -401,17 +401,17 @@ public sealed partial class Game
         if (s == StatusEffect.Paper)
         {
             AbilityCd = Math.Min(AbilityCooldown() + D.PaperDelay, AbilityCd + D.PaperDelay);
-            Push(Msg(sd.Name).Add(": moc +").Add(D.PaperDelay).Add(" t.").As(LogKind.Bad));
+            Push(Msg(sd.Name).Add(Loc.T("moc_3")).Add(D.PaperDelay).Add(" t.").As(LogKind.Bad));
             return;
         }
         if (s == StatusEffect.Poison && TraitBonus(TraitEffect.PoisonRes) > 0)
         {
-            Push(Msg("Odporność: bez zatrucia").As(LogKind.Good));
+            Push(Msg(Loc.T("odpornosc_bez_zatrucia")).As(LogKind.Good));
             return;
         }
         if ((s == StatusEffect.Poison || s == StatusEffect.Shock) && SynergyOn(SynergyEffect.Safety)) // synergia Pełne BHP
         {
-            Push(Msg("Pełne BHP: bez stanu").As(LogKind.Good));
+            Push(Msg(Loc.T("pelne_bhp_bez_stanu")).As(LogKind.Good));
             return;
         }
         if (s != StatusEffect.Wet && BoonSum(BoonEffect.StatusRes) > 0) // Instrukcja BHP: stany krócej
@@ -419,13 +419,13 @@ public sealed partial class Game
             t -= BoonSum(BoonEffect.StatusRes);
             if (t <= 0)
             {
-                Push(Msg("Instrukcja BHP: bez stanu").As(LogKind.Good));
+                Push(Msg(Loc.T("instrukcja_bhp_bez_stanu")).As(LogKind.Good));
                 return;
             }
         }
         if (s == StatusEffect.Slip && TraitBonus(TraitEffect.SlipRes) > 0)
         {
-            Push(Msg("Odporność: bez poślizgu").As(LogKind.Good));
+            Push(Msg(Loc.T("odpornosc_bez_poslizgu")).As(LogKind.Good));
             return;
         }
         HeroStatus[(int)s] = (sbyte)Math.Max(HeroStatus[(int)s], t);
@@ -437,7 +437,7 @@ public sealed partial class Game
     {
         if (HeroStatus[(int)StatusEffect.Shock] <= 0) return false;
         --HeroStatus[(int)StatusEffect.Shock];
-        Push(Msg("Porażenie: tura stracona").As(LogKind.Bad));
+        Push(Msg(Loc.T("porazenie_tura_stracona")).As(LogKind.Bad));
         EndTurn();
         return true;
     }
@@ -526,7 +526,7 @@ public sealed partial class Game
         Hero.Hp = (short)(Hero.Hp + D.HpPerLevel);
         if ((D.DmgLevelsMask & (1 << HeroLevel)) != 0) ++DmgBonus;
         if ((D.DefLevelsMask & (1 << HeroLevel)) != 0) ++DefBonus;
-        Push(Msg("Awans! Poziom ").Add(HeroLevel).As(LogKind.Good));
+        Push(Msg(Loc.T("awans_poziom")).Add(HeroLevel).As(LogKind.Good));
     }
 
     // ------------------------------------------------------------------ budowa i etapy
@@ -685,18 +685,18 @@ public sealed partial class Game
             RandomFreeCellInRoom(rm, out var x, out var y);
             Pickups[PickupsCount++] = new Pickup(x, y, i == 0 ? PickupType.Coffee : (PickupType)R.Range(0, 2), true);
         }
-        Push(Msg("Etap ").Add(StageNumber()).Add(": ").Add(sd.Name));
-        if (TwinCarry > 0) Push(Msg("Wspólna ściana: +").Add(TwinCarry).Add(" z 1. połowy").As(LogKind.Bad));
+        Push(Msg(Loc.T("etap")).Add(StageNumber()).Add(": ").Add(sd.Name));
+        if (TwinCarry > 0) Push(Msg(Loc.T("wspolna_sciana")).Add(TwinCarry).Add(Loc.T("z_1_polowy")).As(LogKind.Bad));
         if (pd != null) // ścieżka z harmonogramu: budżet i materiały od razu
         {
-            Push(Msg("Ścieżka: ").Add(pd.Name));
+            Push(Msg(Loc.T("sciezka")).Add(pd.Name));
             if (pd.Cash != 0) Cash = Math.Max(0, Cash + Income(pd.Cash));
             for (var k = 0; k < pd.Materials; ++k) AddMaterial(R.Range(0, D.Materials.Length - 1));
         }
         Weather = twin ? twinWeather : (sbyte)RollWeather(s, pd != null && pd.BadWeather); // pogoda dnia (bliźniak: ta sama)
         if (WeeklyHas(WeeklyRule.Weather)) Weather = (sbyte)WeeklyValue(WeeklyRule.Weather); // wyzwanie: Mokry tydzień
         if (WDef.Effect != WeatherEffect.None)
-            Push(Msg("Pogoda: ").Add(WDef.Name).Add(" (").Add(WDef.Short).Add(")").As(WDef.Bad ? LogKind.Bad : LogKind.Good));
+            Push(Msg(Loc.T("pogoda")).Add(WDef.Name).Add(" (").Add(WDef.Short).Add(")").As(WDef.Bad ? LogKind.Bad : LogKind.Good));
         StageEvent = -1; // wydarzenie na placu: nie na pierwszym etapie i nie u bossa
         if (twin)
         {
@@ -744,7 +744,7 @@ public sealed partial class Game
             }
             Pickups[PickupsCount++] = new Pickup(x, y, PickupType.Document, true, k);
         }
-        Push(Msg("Pieczątki: zbierz ").Add(n).Add(" dokumenty").As(LogKind.Bad));
+        Push(Msg(Loc.T("pieczatki_zbierz")).Add(n).Add(Loc.T("dokumenty")).As(LogKind.Bad));
     }
 
     public void Spawn(int defId, int x, int y)
@@ -797,7 +797,7 @@ public sealed partial class Game
         for (var i = 0; i < Enemies.Length; i++) Enemies[i] = new Actor();
         Hero.Hp = Hero.MaxHp;
         StartStage(FirstStage);
-        Push(Msg("Kolejna budowa! Poziom ").Add(Tier + 1));
+        Push(Msg(Loc.T("kolejna_budowa_poziom")).Add(Tier + 1));
         return true;
     }
 

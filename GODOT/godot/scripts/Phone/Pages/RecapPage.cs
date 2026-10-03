@@ -32,10 +32,10 @@ public sealed class RecapPage : PhonePage
     public int Top => _top;
     public int Count => _rows.Count;
 
-    public override string Title => "Podsumowanie";
+    public override string Title => Loc.T("podsumowanie");
     public override string Sub => _rows.Count > _window ? $"{Math.Min(_rows.Count, _top + _window)}/{_rows.Count}" : "";
-    public override string Hint => "Góra/dół: przewiń  Enter: dalej";
-    public override PageAction[] Actions => [new("Wyżej", GameAction.Up), new("Niżej", GameAction.Down), new("Dalej", GameAction.Start)];
+    public override string Hint => Loc.T("gora_dol_przewin_enter_dalej");
+    public override PageAction[] Actions => [new(Loc.T("wyzej"), GameAction.Up), new(Loc.T("nizej"), GameAction.Down), new(Loc.T("dalej"), GameAction.Start)];
 
     private static Ink InkOf(LogKind k) => k switch
     {
@@ -57,13 +57,13 @@ public sealed class RecapPage : PhonePage
         void Row(string t, string tail, Ink ink, Color stripe) => rows.Add(new RecapRow(t, tail, ink, stripe));
 
         var where = g.RecapWhere(new Message()).Text;
-        if (won) Row("Odbiór zaliczony!", $"{HouseSchedule.TotalDays(g)} dni", Ink.Done, Pal.Done);
+        if (won) Row(Loc.T("odbior_zaliczony"), Loc.F("dni_4", HouseSchedule.TotalDays(g)), Ink.Done, Pal.Done);
         else Row(g.RecapKiller(new Message()).Text, "", Ink.Late, Pal.Late);
         Row(g.SDef().Name, where, Ink.Dark, won ? Pal.Done : Pal.Late);
-        Row($"Usunięte {g.Kills}, elity {g.ElitesKilled}, kombinacje {g.CombosRun}", "", Ink.Dim, none);
+        Row(Loc.F("usuniete_elity_kombinacje", g.Kills, g.ElitesKilled, g.CombosRun), "", Ink.Dim, none);
         if (!won)
         {
-            Head("OSTATNIE CIOSY");
+            Head(Loc.T("ostatnie_ciosy_2"));
             for (var i = 0; i < CoreGame.RecapHitsN; i++)
             {
                 var h = g.LastHits[i];
@@ -71,59 +71,59 @@ public sealed class RecapPage : PhonePage
                 Row(g.RecapHitText(h), "", i == 0 ? Ink.Late : Ink.Dark, i == 0 ? Pal.Late : none);
             }
         }
-        Head("NAJMOCNIEJSZE CIOSY");
-        if (g.WorstHit.Amount > 0) Row("W Ciebie: " + g.RecapHitText(g.WorstHit), "", Ink.Dark, none);
-        if (g.BestHit > 0) Row($"Twój: {g.BestHit}{(g.BestHitCrit ? " (kryt)" : "")} w {d.Enemies[g.BestHitDef].Name}", "", Ink.Brand, none);
+        Head(Loc.T("najmocniejsze_ciosy"));
+        if (g.WorstHit.Amount > 0) Row(Loc.T("w_ciebie") + g.RecapHitText(g.WorstHit), "", Ink.Dark, none);
+        if (g.BestHit > 0) Row(Loc.F("twoj_w", g.BestHit, (g.BestHitCrit ? Loc.T("kryt_13") : ""), d.Enemies[g.BestHitDef].Name), "", Ink.Brand, none);
 
-        Head("OŚ CZASU");
+        Head(Loc.T("os_czasu_2"));
         foreach (var l in g.RecapTimeline())
         {
             var head = !l.Text.Text.StartsWith(' ');
             rows.Add(new RecapRow(l.Text.Text.TrimStart(), l.Tail.Text, InkOf(l.Ink), head ? (l.Ink == LogKind.Bad ? Pal.Late : Pal.Done) : none));
         }
 
-        Head("NAGRODY Z BUDOWY");
-        Row($"Doświadczenie +{s.LastGained}", $"masz {p.Xp}", Ink.Dark, none);
-        Row($"Respekt +{g.Respect}", $"masz {p.Respect}", Ink.Brand, none);
+        Head(Loc.T("nagrody_z_budowy"));
+        Row(Loc.F("doswiadczenie", s.LastGained), Loc.F("masz_4", p.Xp), Ink.Dark, none);
+        Row(Loc.F("respekt_5", g.Respect), Loc.F("masz_4", p.Respect), Ink.Brand, none);
         var ci = Meta.NextContract(d, p, g);
         if (ci >= 0)
         {
             var c = d.Contracts[ci];
-            Row($"Zlecenie {c.Name}", $"{Math.Min(c.Target, Meta.ContractProgress(d, p, ci))}/{c.Target}", Ink.Dark, Pal.Prog);
+            Row(Loc.F("zlecenie_3", c.Name), $"{Math.Min(c.Target, Meta.ContractProgress(d, p, ci))}/{c.Target}", Ink.Dark, Pal.Prog);
         }
-        if (g.Daily) Row(s.DailyRecord ? "Rekord dnia!" : $"Budowa dnia nr {g.DailyDay}", "", s.DailyRecord ? Ink.Done : Ink.Dim, none);
-        if (g.WeeklyWeek != 0) Row(s.WeeklyRecord ? "Rekord tygodnia!" : $"Wyzwanie: {d.Weekly[g.Bonus.Weekly].Name}", "", s.WeeklyRecord ? Ink.Done : Ink.Dim, none);
+        if (g.Daily) Row(s.DailyRecord ? Loc.T("rekord_dnia_3") : Loc.F("budowa_dnia_nr_2", g.DailyDay), "", s.DailyRecord ? Ink.Done : Ink.Dim, none);
+        if (g.WeeklyWeek != 0) Row(s.WeeklyRecord ? Loc.T("rekord_tygodnia_3") : Loc.F("wyzwanie", d.Weekly[g.Bonus.Weekly].Name), "", s.WeeklyRecord ? Ink.Done : Ink.Dim, none);
         var ti = Titles.Selected(d, p);
-        if (ti >= 0) Row("Tytuł: " + Titles.Name(d, ti), "", Ink.Brand, none);
+        if (ti >= 0) Row(Loc.T("tytul") + Titles.Name(d, ti), "", Ink.Brand, none);
 
         // v0.21.52 (#52): paski postępu – najbliższe Szkolenie za doświadczenie, mistrzostwo zawodu i poziom inspektora
-        Head("POSTĘP");
+        Head(Loc.T("postep_2"));
         void Bar(float v, Color c) => rows.Add(new RecapRow("", "", Ink.Dim, none, false, Math.Clamp(v, 0f, 1f), c));
         var cost = Meta.NextUnlock(d, p, out var kind, out var idx);
         if (cost < 0)
         {
-            Row("Szkolenia: wszystko kupione", "MAX", Ink.Done, Pal.Done);
+            Row(Loc.T("szkolenia_wszystko_kupione"), "MAX", Ink.Done, Pal.Done);
             Bar(1f, Pal.Done);
         }
         else
         {
             var ready = p.Xp >= cost;
-            Row(UnlockName(d, p, kind, idx), ready ? "Stać Cię!" : $"{p.Xp}/{cost}", Ink.Dark, ready ? Pal.Done : Pal.Brand);
+            Row(UnlockName(d, p, kind, idx), ready ? Loc.T("stac_cie") : $"{p.Xp}/{cost}", Ink.Dark, ready ? Pal.Done : Pal.Brand);
             Bar(ready ? 1f : p.Xp / (float)cost, ready ? Pal.Done : Pal.Brand);
         }
         var pg = s.LastProgress;
         void Level(string label, int level, int cur, int need, bool up)
         {
             var full = up || need == 0;
-            Row($"{label} {level}", up ? $"Poziom {level}!" : (need == 0 ? "MAX" : $"+{pg.Gained}  {cur}/{need}"), Ink.Dark, full ? Pal.Done : Pal.Brand);
+            Row($"{label} {level}", up ? Loc.F("poziom_3", level) : (need == 0 ? "MAX" : $"+{pg.Gained}  {cur}/{need}"), Ink.Dark, full ? Pal.Done : Pal.Brand);
             Bar(need == 0 ? 1f : cur / (float)need, full ? Pal.Done : Pal.Brand);
         }
         Progress.MasteryBar(d, p, g.Cls, out var mc, out var mn);
-        Level("Mistrzostwo: " + d.Classes[g.Cls].Name, Progress.MasteryLevel(d, p, g.Cls), mc, mn, pg.MasteryAfter > pg.MasteryBefore);
+        Level(Loc.T("mistrzostwo") + d.Classes[g.Cls].Name, Progress.MasteryLevel(d, p, g.Cls), mc, mn, pg.MasteryAfter > pg.MasteryBefore);
         Progress.InspectorBar(d, p, out var ic, out var inn);
-        Level("Inspektor", Progress.InspectorLevel(d, p), ic, inn, pg.InspAfter > pg.InspBefore);
+        Level(Loc.T("inspektor_2"), Progress.InspectorLevel(d, p), ic, inn, pg.InspAfter > pg.InspBefore);
 
-        Head("NAJBLIŻSZY CEL");
+        Head(Loc.T("najblizszy_cel"));
         if (Recap.Goal(d, p, out var lead, out var name)) Row($"{lead} {name}", "", Ink.Brand, Pal.Brand);
         var tip = d.RecapTips[Recap.TipIndex(d, g)];
         Row(tip.Lines[0], "", Ink.Prog, Pal.Prog);
@@ -135,11 +135,11 @@ public sealed class RecapPage : PhonePage
     private static string UnlockName(GameData d, Profile p, int kind, int i) => kind switch
     {
         0 => $"{d.Upgrades[i].Name} {UiText.Roman(p.Levels[i])}",
-        1 => "Zawód: " + d.Classes[i].Name,
+        1 => Loc.T("zawod_3") + d.Classes[i].Name,
         2 => d.Weapons[d.Tools[i].Weapon].Name,
-        3 => "Brygada: " + d.Brigade[i].Name,
-        5 => "Drzewko: " + d.TreeBranches[d.TreeNodes[i].Branch].Name, // v0.21.52 cz. c
-        _ => "Trudność: " + d.Difficulties[^1].Name,
+        3 => Loc.T("brygada_2") + d.Brigade[i].Name,
+        5 => Loc.T("drzewko") + d.TreeBranches[d.TreeNodes[i].Branch].Name, // v0.21.52 cz. c
+        _ => Loc.T("trudnosc") + d.Difficulties[^1].Name,
     };
 
     /// <summary>Przewiń do nagłówka sekcji (sceny zrzutów: „POSTĘP”).</summary>

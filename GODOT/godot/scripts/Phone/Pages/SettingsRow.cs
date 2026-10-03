@@ -10,6 +10,7 @@ public enum SettingsRow
     Hand,
     Text,
     Filter,
+    Language,   // v0.21.53 cz. 2 (#40)
     Help,
     SaveExit,
     Abandon,

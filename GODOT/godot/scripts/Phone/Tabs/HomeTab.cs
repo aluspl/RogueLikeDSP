@@ -24,7 +24,7 @@ public sealed class HomeTab : PhonePage
     }
 
     /// <summary>Opis statystyk i skąd są premie (Spacja / „Opis”).</summary>
-    public override PageAction[] Actions => _stats is null ? [] : [new("Opis statystyk", GameAction.A)];
+    public override PageAction[] Actions => _stats is null ? [] : [new(Loc.T("opis_statystyk"), GameAction.A)];
 
     public override bool Input(InputCmd e)
     {
@@ -33,22 +33,22 @@ public sealed class HomeTab : PhonePage
         return true;
     }
 
-    public override string Title => "Start";
-    public override string Sub => $"{_g.DDef.Name}{(_g.Tier > 0 ? $" NG+{_g.Tier}" : "")}, {_g.Cash} zł";
+    public override string Title => Loc.T("start");
+    public override string Sub => Loc.F("zl_6", _g.DDef.Name, (_g.Tier > 0 ? $" NG+{_g.Tier}" : ""), _g.Cash);
 
     public override void Draw(PhonePainter p)
     {
         var g = _g;
         var d = g.D;
-        var y = p.Section(p.Top, g.CDef.Name.ToUpperInvariant(), $"Dzień {g.Turns}");
+        var y = p.Section(p.Top, g.CDef.Name.ToUpperInvariant(), Loc.F("dzien_2", g.Turns));
         var card = p.Card(y, 7);
         var tx = p.TextX(card);
         var right = card.End.X - 6;
 
         var r = p.RowY(card, 0);
         p.Stripe(card, 0, Pal.Prog);
-        var pw = p.Pill(right, r, "W trakcie", PillKind.Prog);
-        p.Text(tx, r, $"Etap {g.StageNumber()}: {g.SDef().Name}", Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
+        var pw = p.Pill(right, r, Loc.T("w_trakcie"), PillKind.Prog);
+        p.Text(tx, r, Loc.F("etap_3", g.StageNumber(), g.SDef().Name), Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
 
         r = p.RowY(card, 1);
         p.Divider(card, 1);
@@ -58,7 +58,7 @@ public sealed class HomeTab : PhonePage
 
         r = p.RowY(card, 2);
         p.Divider(card, 2);
-        p.Text(tx, r, $"Poziom {g.HeroLevel}", Ink.Dark);
+        p.Text(tx, r, Loc.F("poziom_5", g.HeroLevel), Ink.Dark);
         var prev = g.HeroLevel >= 2 ? d.LevelThresholds[g.HeroLevel - 2] : 0;
         if (g.XpToNext() < 0) p.Bar(tx + 80, r, right - tx - 80, 1, 1, Pal.Brand);
         else p.Bar(tx + 80, r, right - tx - 80, g.RunXp - prev, d.LevelThresholds[g.HeroLevel - 1] - prev, Pal.Brand);
@@ -66,8 +66,8 @@ public sealed class HomeTab : PhonePage
         r = p.RowY(card, 3);
         p.Divider(card, 3);
         var ready = g.AbilityCd == 0;
-        pw = p.Pill(right, r, ready ? "Gotowa" : $"za {g.AbilityCd}", ready ? PillKind.Done : PillKind.Gray);
-        p.Text(tx, r, "Moc: " + UiText.AbilityLabel(g), Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
+        pw = p.Pill(right, r, ready ? Loc.T("gotowa") : $"za {g.AbilityCd}", ready ? PillKind.Done : PillKind.Gray);
+        p.Text(tx, r, Loc.T("moc_4") + UiText.AbilityLabel(g), Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
 
         r = p.RowY(card, 4);
         p.Divider(card, 4);
@@ -76,7 +76,7 @@ public sealed class HomeTab : PhonePage
 
         r = p.RowY(card, 5);
         p.Divider(card, 5);
-        pw = _stats is null ? 0 : p.Pill(right, r, ButtonNames.Localize("A: opis"), PillKind.Group);
+        pw = _stats is null ? 0 : p.Pill(right, r, ButtonNames.Localize(Loc.T("a_opis")), PillKind.Group);
         p.Text(tx, r, UiText.HeroStatsLine(g), Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
 
         r = p.RowY(card, 6);
@@ -88,8 +88,8 @@ public sealed class HomeTab : PhonePage
         var c2 = p.Card(y, 2);
         tx = p.TextX(c2);
         r = p.RowY(c2, 0);
-        p.Text(tx, r, $"Wynik {g.Score}", Ink.Dark);
-        p.Text(right, r, $"Usunięte: {g.Kills}", Ink.Dim, TextAlign.Right);
+        p.Text(tx, r, Loc.F("wynik_5", g.Score), Ink.Dark);
+        p.Text(right, r, Loc.F("usuniete_2", g.Kills), Ink.Dim, TextAlign.Right);
         r = p.RowY(c2, 1);
         p.Divider(c2, 1);
         var ci = Meta.NextContract(d, _p, g);
@@ -98,11 +98,11 @@ public sealed class HomeTab : PhonePage
             var c = d.Contracts[ci];
             p.Stripe(c2, 1, Pal.Brand);
             pw = p.Pill(right, r, $"{Math.Min(c.Target, Meta.ContractProgressLive(d, _p, g, ci))}/{c.Target}", PillKind.Prog);
-            p.Text(tx, r, "Zlecenie: " + c.Name, Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
+            p.Text(tx, r, Loc.T("zlecenie") + c.Name, Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
         }
         else
         {
-            p.Text(tx, r, "Wszystkie zlecenia wykonane", Ink.Done);
+            p.Text(tx, r, Loc.T("wszystkie_zlecenia_wykonane"), Ink.Done);
         }
     }
 }

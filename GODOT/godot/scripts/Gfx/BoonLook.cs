@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using System.Collections.Generic;
 using Godot;
 using LifeLike.Core.Data;
@@ -56,9 +57,9 @@ public static class BoonLook
     public static string States(CoreGame g, int ei)
     {
         var l = new List<string>();
-        if (g.EnemyWet(ei)) l.Add("mokry");
-        if (g.EnemyDusty(ei)) l.Add("zapylony");
-        if (g.EnemyFrozen(ei)) l.Add("zmrożony");
+        if (g.EnemyWet(ei)) l.Add(Loc.T("mokry"));
+        if (g.EnemyDusty(ei)) l.Add(Loc.T("zapylony"));
+        if (g.EnemyFrozen(ei)) l.Add(Loc.T("zmrozony"));
         return string.Join(", ", l);
     }
 
@@ -69,7 +70,7 @@ public static class BoonLook
     public static string Elite(CoreGame g, int ei)
     {
         var e = g.Enemies[ei];
-        return e.Elite < 0 ? "" : $"Elita: {g.D.Elites[e.Elite].Name} ({g.D.Elites[e.Elite].Info})";
+        return e.Elite < 0 ? "" : Loc.F("elita_4", g.D.Elites[e.Elite].Name, g.D.Elites[e.Elite].Info);
     }
 
     /// <summary>Ikona stanu (kropla, pył, płatek śniegu) w punkcie c, rozmiar ~8 px.</summary>

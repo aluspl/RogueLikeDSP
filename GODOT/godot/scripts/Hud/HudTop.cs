@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using Godot;
 using LifeLike.Core.Data;
 using LifeLike.Game.Gfx;
@@ -66,7 +67,7 @@ public partial class HudTop : Control
         if (!blinkOff) DrawHpBar(new Rect2(26, 6, HpBarW, 8), g.Hero.Hp, g.Hero.MaxHp);
         var x = 32f + HpBarW;
         x += f.Draw(this, new Vector2(x, 2), $"{g.Hero.Hp}/{g.Hero.MaxHp}", low ? Ink.MapBad : Ink.Map) + 10;
-        x += f.Draw(this, new Vector2(x, 2), $"Poz. {g.HeroLevel}", Ink.MapLoot) + 5;
+        x += f.Draw(this, new Vector2(x, 2), Loc.F("poz_2", g.HeroLevel), Ink.MapLoot) + 5;
         var prev = g.HeroLevel >= 2 ? g.D.LevelThresholds[g.HeroLevel - 2] : 0;
         var fill = g.XpToNext() < 0 ? 1f : (g.RunXp - prev) / (float)Mathf.Max(1, g.D.LevelThresholds[g.HeroLevel - 1] - prev);
         var xr = new Rect2(x, 8, XpBarW, 4);
@@ -79,7 +80,7 @@ public partial class HudTop : Control
         var ng = g.Tier > 0 ? $" +{g.Tier}" : "";
         // v0.21.51: gdy „Etap 2/10: nazwa” nie mieści się w 1. rzędzie (wąski pion na telefonie), 1. rząd = „Etap 2/10,
         // Normalny”, a pełna nazwa etapu idzie do 2. rzędu po prawej (mierzona po ikonach - bez ucinania „Izolacja fu..”)
-        var stageNo = $"Etap {g.StageNumber()}/{g.StagesInRun()}";
+        var stageNo = Loc.F("etap_2", g.StageNumber(), g.StagesInRun());
         var right = $"{stageNo}: {sd.Name}";
         var re = w - 6 - Mathf.Ceil((SettingsButton.Side + 4) / Layout.HudScale); // miejsce na klucz ustawień
         var room1 = (int)(re - xr.End.X - 12);
@@ -162,8 +163,8 @@ public partial class HudTop : Control
         if (g.SlamTimer > 0)
         {
             var pulse = ((int)(_clock * 6) & 1) == 1;
-            var warn = $"UWAGA: cios za {g.SlamTimer}!";
-            if (f.Measure(warn) + 4 > nameRoom) warn = $"Cios za {g.SlamTimer}!";
+            var warn = Loc.F("uwaga_cios_za", g.SlamTimer);
+            if (f.Measure(warn) + 4 > nameRoom) warn = Loc.F("cios_za", g.SlamTimer);
             f.Draw(this, new Vector2(x + 4, 19), warn, pulse ? Ink.MapBad : Ink.MapLoot);
         }
         else if (g.CurrentEvent is { } ev && f.Measure(ev.Short) + 14 <= nameRoom)

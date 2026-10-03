@@ -8,7 +8,7 @@ namespace LifeLike.Core;
 /// </summary>
 public static class DamageHelp
 {
-    private static readonly string[] SourceNames = ["Szkolenia", "Respekt", "odznaki", "pamiątka"];
+    private static string[] SourceNames => [Loc.T("szkolenia"), Loc.T("respekt"), Loc.T("odznaki"), Loc.T("pamiatka")];
 
     public static int PctFloor(int v, int pct) => pct <= 0 || v <= 0 ? 0 : v * pct / 100;
 
@@ -17,7 +17,7 @@ public static class DamageHelp
     /// <summary>Źródło premii profilu: 0 Szkolenia, 1 Respekt, 2 odznaki, 3 pamiątka.</summary>
     public static string SourceName(int s) => SourceNames[s];
 
-    public static string StatName(Stat s) => s == Stat.Str ? "SIŁ" : (s == Stat.Agi ? "ZRĘ" : "INT");
+    public static string StatName(Stat s) => s == Stat.Str ? Loc.T("sil") : (s == Stat.Agi ? Loc.T("zre") : "INT");
 
     /// <summary>Premia do obrażeń z awansów do poziomu level (DmgLevelsMask).</summary>
     public static int LevelDmg(GameData d, int level)
@@ -65,10 +65,10 @@ public static class DamageHelp
     {
         switch (gd.Stat)
         {
-            case GearStat.Def: return m.Add("+").Add(gd.Value).Add(" OBR");
-            case GearStat.Dmg: return m.Add("+").Add(gd.Value).Add(" obrażeń");
-            case GearStat.Dodge: return m.Add("unik +").Add(gd.Value).Add("%");
-            case GearStat.Thermos: return m.Add("termos +").Add(gd.Value);
+            case GearStat.Def: return m.Add("+").Add(gd.Value).Add(Loc.T("obr_2"));
+            case GearStat.Dmg: return m.Add("+").Add(gd.Value).Add(Loc.T("obrazen_2"));
+            case GearStat.Dodge: return m.Add(Loc.T("unik_3")).Add(gd.Value).Add("%");
+            case GearStat.Thermos: return m.Add(Loc.T("termos_2")).Add(gd.Value);
             default: return m.Add("+").Add(gd.Value).Add(" HP");
         }
     }
@@ -83,25 +83,25 @@ public static class DamageHelp
             case DmgText.Weapon:
                 m.Add(d.Weapons[b.Weapon].Name);
                 if (b.UpgLevel != 0) m.Add("+").Add(b.UpgLevel); // ulepszone narzędzie: „Kielnia+2”
-                m.Add(" ").Add(b.WMin).Add("-").Add(b.WMax).Add(", zasięg ").Add(b.Range);
-                if (b.Range < b.RangeBase) m.Add(" (wiatr)");
+                m.Add(" ").Add(b.WMin).Add("-").Add(b.WMax).Add(Loc.T("zasieg")).Add(b.Range);
+                if (b.Range < b.RangeBase) m.Add(Loc.T("wiatr"));
                 return true;
             case DmgText.Stat:
-                m.Add(StatName(b.Scales)).Add(" ").Add(b.StatValue).Add(": +").Add(b.StatDmg).Add(" (+1 co 2 pkt)");
+                m.Add(StatName(b.Scales)).Add(" ").Add(b.StatValue).Add(": +").Add(b.StatDmg).Add(Loc.T("n1_co_2_pkt"));
                 return true;
             case DmgText.StatParts:
-                m.Add(StatName(b.Scales)).Add(" ").Add(b.StatValue).Add(" = zawód ").Add(b.StatClass);
-                if (b.StatCraft != 0) m.Add(" + Warsztaty ").Add(b.StatCraft);
-                if (b.StatTrait != 0) m.Add(" + sprzęt ").Add(b.StatTrait);
+                m.Add(StatName(b.Scales)).Add(" ").Add(b.StatValue).Add(Loc.T("zawod")).Add(b.StatClass);
+                if (b.StatCraft != 0) m.Add(Loc.T("warsztaty")).Add(b.StatCraft);
+                if (b.StatTrait != 0) m.Add(Loc.T("sprzet")).Add(b.StatTrait);
                 return b.StatCraft != 0 || b.StatTrait != 0;
             case DmgText.Profile:
             {
                 if (b.FlatMods == 0)
                 {
-                    m.Add("Premie stałe: brak");
+                    m.Add(Loc.T("premie_stale_brak"));
                     return false;
                 }
-                m.Add("Premie stałe +").Add(b.FlatMods);
+                m.Add(Loc.T("premie_stale")).Add(b.FlatMods);
                 if (!b.Split) return true;
                 var first = true;
                 for (var s = 0; s < DmgBreakdown.Sources; ++s)
@@ -116,29 +116,29 @@ public static class DamageHelp
             {
                 if (b.FlatLevel == 0 && b.FlatFound == 0 && b.FlatEvent == 0)
                 {
-                    m.Add("Z budowy: brak");
+                    m.Add(Loc.T("z_budowy_brak"));
                     return false;
                 }
                 var sum = b.FlatLevel + b.FlatFound + b.FlatEvent;
-                m.Add("Z budowy ").Add(sum >= 0 ? "+" : "").Add(sum).Add(":");
+                m.Add(Loc.T("z_budowy")).Add(sum >= 0 ? "+" : "").Add(sum).Add(":");
                 var first = true;
                 if (b.FlatLevel != 0)
                 {
-                    m.Add(" poziom +").Add(b.FlatLevel);
+                    m.Add(Loc.T("poziom")).Add(b.FlatLevel);
                     first = false;
                 }
                 if (b.FlatFound != 0)
                 {
-                    m.Add(first ? "" : ",").Add(" projekt ").Add(b.FlatFound > 0 ? "+" : "").Add(b.FlatFound);
+                    m.Add(first ? "" : ",").Add(Loc.T("projekt")).Add(b.FlatFound > 0 ? "+" : "").Add(b.FlatFound);
                     first = false;
                 }
-                if (b.FlatEvent != 0) m.Add(first ? "" : ",").Add(" wydarzenie ").Add(b.FlatEvent > 0 ? "+" : "").Add(b.FlatEvent);
+                if (b.FlatEvent != 0) m.Add(first ? "" : ",").Add(Loc.T("wydarzenie")).Add(b.FlatEvent > 0 ? "+" : "").Add(b.FlatEvent);
                 return true;
             }
             case DmgText.Gear:
                 if (b.GearItem < 0 || b.FlatGear == 0)
                 {
-                    m.Add("Sprzęt: bez premii");
+                    m.Add(Loc.T("sprzet_bez_premii"));
                     return false;
                 }
                 m.Add(d.Gear[b.GearItem].Name).Add(": +").Add(b.FlatGear);
@@ -147,13 +147,13 @@ public static class DamageHelp
             {
                 if (b.Pct <= 0)
                 {
-                    m.Add("Procent: brak");
+                    m.Add(Loc.T("procent_brak"));
                     return false;
                 }
                 m.Add("+").Add(b.Pct).Add("%");
                 if (!b.Split)
                 {
-                    m.Add(" (Szkolenia, Respekt)");
+                    m.Add(Loc.T("szkolenia_respekt"));
                     return true;
                 }
                 var first = true;
@@ -168,53 +168,53 @@ public static class DamageHelp
             case DmgText.Enemy:
                 if (!b.VsEnemy)
                 {
-                    m.Add("OBR problemu: -1 co 2 pkt");
+                    m.Add(Loc.T("obr_problemu_1_co_2_pkt"));
                     return false;
                 }
-                m.Add("OBR problemu ").Add(b.EnemyDef);
-                if (b.EnemyElite != 0) m.Add("+").Add(b.EnemyElite).Add(" (elita)");
-                if (b.Pierce != 0) m.Add(" -").Add(b.Pierce).Add(" (przebicie)");
+                m.Add(Loc.T("obr_problemu")).Add(b.EnemyDef);
+                if (b.EnemyElite != 0) m.Add("+").Add(b.EnemyElite).Add(Loc.T("elita"));
+                if (b.Pierce != 0) m.Add(" -").Add(b.Pierce).Add(Loc.T("przebicie"));
                 m.Add(": -").Add(b.DefCut);
                 return b.DefCut > 0;
             case DmgText.Total:
-                AddRange(m.Add("Cios "), b.Min, b.Max).Add(", średnio ");
+                AddRange(m.Add(Loc.T("cios")), b.Min, b.Max).Add(Loc.T("srednio"));
                 AddTenths(m, b.Avg10);
                 return true;
             case DmgText.Crit:
-                m.Add("Kryt x").Add(b.CritMult).Add(": ");
-                AddRange(m, b.CritMin, b.CritMax).Add(", szansa ").Add(b.CritChance()).Add("%");
+                m.Add(Loc.T("kryt_x")).Add(b.CritMult).Add(": ");
+                AddRange(m, b.CritMin, b.CritMax).Add(Loc.T("szansa")).Add(b.CritChance()).Add("%");
                 return true;
             case DmgText.CritParts:
-                m.Add("Kryt ").Add(b.CritChance()).Add("% = ").Add(b.CritBase).Add("% + SZCZ ").Add(b.Luck).Add(" x ")
+                m.Add(Loc.T("kryt_3")).Add(b.CritChance()).Add("% = ").Add(b.CritBase).Add(Loc.T("szcz_2")).Add(b.Luck).Add(" x ")
                     .Add(d.CritPerLuckPct).Add("%");
                 return true;
             case DmgText.CritExtra:
             {
                 if (b.CritTrait == 0 && b.CritBonus == 0 && b.CritUpg == 0 && b.CritWeapon == 0)
                 {
-                    m.Add("Kryt: bez premii");
+                    m.Add(Loc.T("kryt_bez_premii"));
                     return false;
                 }
                 m.Add("+");
                 var first = true;
                 if (b.CritWeapon != 0)
                 {
-                    m.Add(" broń ").Add(b.CritWeapon).Add("%");
+                    m.Add(Loc.T("bron")).Add(b.CritWeapon).Add("%");
                     first = false;
                 }
                 if (b.CritTrait != 0)
                 {
-                    m.Add(" cecha ").Add(b.CritTrait).Add("%");
+                    m.Add(Loc.T("cecha")).Add(b.CritTrait).Add("%");
                     first = false;
                 }
                 if (b.CritUpg != 0)
                 {
-                    m.Add(first ? " " : ", ").Add("ostrze ").Add(b.CritUpg).Add("%");
+                    m.Add(first ? " " : ", ").Add(Loc.T("ostrze")).Add(b.CritUpg).Add("%");
                     first = false;
                 }
                 if (!b.Split)
                 {
-                    if (b.CritBonus != 0) m.Add(first ? " " : ", ").Add("premie ").Add(b.CritBonus).Add("%");
+                    if (b.CritBonus != 0) m.Add(first ? " " : ", ").Add(Loc.T("premie_2")).Add(b.CritBonus).Add("%");
                     return true;
                 }
                 for (var s = 0; s < DmgBreakdown.Sources; ++s)
@@ -228,19 +228,19 @@ public static class DamageHelp
             case DmgText.Power:
                 if (b.Power == 0)
                 {
-                    m.Add("Moc: bez premii do ciosu");
+                    m.Add(Loc.T("moc_bez_premii_do_ciosu"));
                     return false;
                 }
-                m.Add("Moc (").Add(RankNumeral(b.PowerRank)).Add("): +").Add(b.Power).Add(" do ciosu");
+                m.Add(Loc.T("moc_2")).Add(RankNumeral(b.PowerRank)).Add("): +").Add(b.Power).Add(Loc.T("do_ciosu"));
                 return true;
             case DmgText.Boon: // v0.21.50: premie wybrane po etapach (#27)
             {
                 if (b.FlatBoon == 0 && b.PctBoon == 0 && b.CritBoon == 0)
                 {
-                    m.Add("Premie etapów: brak");
+                    m.Add(Loc.T("premie_etapow_brak"));
                     return false;
                 }
-                m.Add("Premie etapów:");
+                m.Add(Loc.T("premie_etapow"));
                 var first = true;
                 if (b.FlatBoon != 0)
                 {
@@ -252,16 +252,16 @@ public static class DamageHelp
                     m.Add(first ? " +" : ", +").Add(b.PctBoon).Add("%");
                     first = false;
                 }
-                if (b.CritBoon != 0) m.Add(first ? " kryt +" : ", kryt +").Add(b.CritBoon).Add("%");
+                if (b.CritBoon != 0) m.Add(first ? Loc.T("kryt_4") : Loc.T("kryt_5")).Add(b.CritBoon).Add("%");
                 return true;
             }
             case DmgText.Upgrade: // v0.21.50 cz. 3: ulepszenie narzędzia (#31)
                 if (b.UpgLevel == 0)
                 {
-                    m.Add("Ulepszenie: brak");
+                    m.Add(Loc.T("ulepszenie_brak"));
                     return false;
                 }
-                m.Add("Ulepszenie +").Add(b.UpgLevel).Add(": +").Add(b.FlatUpgrade).Add(" obr.");
+                m.Add(Loc.T(Loc.T("ulepszenie_2"))).Add(b.UpgLevel).Add(": +").Add(b.FlatUpgrade).Add(Loc.T("obr_3"));
                 if (b.UpgTrait >= 0) m.Add(", ").Add(d.ToolTraits[b.UpgTrait].Name).Add(" ").Add(d.ToolTraits[b.UpgTrait].Short);
                 return true;
             default:
@@ -280,27 +280,27 @@ public static class DamageHelp
     /// <summary>Porównanie przy zmianie broni / sprzętu: „teraz 4-7 -&gt; 5-9 (średnio +1,5)” (shortAvg: „śr.”).</summary>
     public static Message CompareLine(Message m, DmgBreakdown now, DmgBreakdown next, bool shortAvg = false)
     {
-        AddRange(m.Add("teraz "), now.Min, now.Max).Add(" -> ");
-        AddRange(m, next.Min, next.Max).Add(shortAvg ? " (śr. " : " (średnio ");
+        AddRange(m.Add(Loc.T("teraz")), now.Min, now.Max).Add(" -> ");
+        AddRange(m, next.Min, next.Max).Add(shortAvg ? Loc.T("sr") : Loc.T("srednio_2"));
         return AddTenths(m, next.Avg10 - now.Avg10, true).Add(")");
     }
 
     /// <summary>„kryt 8-14 (11%) -&gt; 10-18 (16%)”.</summary>
     public static Message CompareCrit(Message m, DmgBreakdown now, DmgBreakdown next)
     {
-        AddRange(m.Add("kryt "), now.CritMin, now.CritMax).Add(" (").Add(now.CritChance()).Add("%) -> ");
+        AddRange(m.Add(Loc.T("kryt_2")), now.CritMin, now.CritMax).Add(" (").Add(now.CritChance()).Add("%) -> ");
         return AddRange(m, next.CritMin, next.CritMax).Add(" (").Add(next.CritChance()).Add("%)");
     }
 
     /// <summary>„Zadasz 2-5 (kryt 4-10)” – część karty problemu.</summary>
     public static Message VersusHero(Message m, DmgBreakdown b)
     {
-        AddRange(m.Add("Zadasz "), b.Min, b.Max).Add(" (kryt ");
+        AddRange(m.Add(Loc.T("zadasz")), b.Min, b.Max).Add(Loc.T("kryt_6"));
         return AddRange(m, b.CritMin, b.CritMax).Add(")");
     }
 
     /// <summary>„on Tobie 1-3” – część karty problemu.</summary>
-    public static Message VersusEnemy(Message m, HitRange h) => AddRange(m.Add("on Tobie "), h.Min, h.Max);
+    public static Message VersusEnemy(Message m, HitRange h) => AddRange(m.Add(Loc.T("on_tobie")), h.Min, h.Max);
 
     /// <summary>Karta problemu: „Zadasz 2-5 (kryt 4-10), on Tobie 1-3”.</summary>
     public static Message VersusLine(Message m, DmgBreakdown b, HitRange h)

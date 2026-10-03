@@ -72,13 +72,13 @@ public sealed partial class Game
         {
             SecondUsed = true;
             Hero.Hp = 1;
-            Push(Msg("Druga szansa! Zostaje 1 HP").As(LogKind.Good));
+            Push(Msg(Loc.T("druga_szansa_zostaje_1_hp")).As(LogKind.Good));
             return;
         }
         Hero.Hp = 0;
         Hero.Alive = false;
         St = GameStatus.Dead;
-        Push(Msg("Budowa wstrzymana...").As(LogKind.Bad));
+        Push(Msg(Loc.T("budowa_wstrzymana_2")).As(LogKind.Bad));
     }
 
     /// <summary>
@@ -124,7 +124,7 @@ public sealed partial class Game
             e.Hp = 0;
             e.Flags = (byte)(e.Flags | ActorFlag.Returned | ActorFlag.Reviving);
             e.Timer = (sbyte)D.BehaviorReturnTurns;
-            Push(Msg(ed.Name).Add(" - wróci za ").Add(D.BehaviorReturnTurns).Add(" t.!").As(LogKind.Bad));
+            Push(Msg(ed.Name).Add(Loc.T("wroci_za")).Add(D.BehaviorReturnTurns).Add(" t.!").As(LogKind.Bad));
             return;
         }
         if (e.Hp <= 0)
@@ -151,7 +151,7 @@ public sealed partial class Game
             }
             MaybeDrop(e.X, e.Y);
             if (ei == KeyHolder) DropKey(e.X, e.Y); // klucz do magazynu (#32)
-            Push(Msg(ed.Name).Add(" - usunięto!").As(LogKind.Good));
+            Push(Msg(ed.Name).Add(Loc.T("usunieto")).As(LogKind.Good));
             var kh = BoonSum(BoonEffect.KillHeal); // Drożdżówka: HP za usunięty problem
             if (kh > 0 && Hero.Alive && Hero.Hp < Hero.MaxHp) Hero.Hp = (short)Math.Min(Hero.MaxHp, Hero.Hp + kh);
             if ((ed.Tags & Behavior.Explodes) != 0 || EliteIs(e, EliteEffect.Explode)) ArmBlast(e.X, e.Y, ed);
@@ -179,18 +179,18 @@ public sealed partial class Game
                 if (ed.RewardCash > 0) // nagroda bossa (Inspekcja: Protokół bez uwag)
                 {
                     Cash += Income(ed.RewardCash);
-                    Push(Msg(ed.RewardTitle).Add("! +").Add(Income(ed.RewardCash)).Add(" zł").As(LogKind.Good));
+                    Push(Msg(ed.RewardTitle).Add("! +").Add(Income(ed.RewardCash)).Add(Loc.T("zl")).As(LogKind.Good));
                 }
                 FinishStage();
                 if (LastStage())
                 {
                     St = GameStatus.Won;
-                    Push(Msg("Odbiór techniczny zaliczony!").As(LogKind.Good));
+                    Push(Msg(Loc.T("odbior_techniczny_zaliczony")).As(LogKind.Good));
                 }
                 else if (SDef(Stage + 1).Act == SDef().Act) // boss w środku aktu: dalej bez Hurtowni
                 {
                     St = GameStatus.StageClear;
-                    Push(Msg("Etap zakończony: ").Add(SDef().Name).As(LogKind.Good));
+                    Push(Msg(Loc.T("etap_zakonczony")).Add(SDef().Name).As(LogKind.Good));
                 }
                 else // boss aktu: premia za akt, potem Hurtownia
                 {
@@ -206,13 +206,13 @@ public sealed partial class Game
                     ActKills = 0;
                     ActCleared = true;
                     St = GameStatus.StageClear;
-                    Push(Msg("Akt zaliczony! Premia ").Add(ActBonus).Add(" zł").As(LogKind.Good));
+                    Push(Msg(Loc.T("akt_zaliczony_premia")).Add(ActBonus).Add(Loc.T("zl")).As(LogKind.Good));
                 }
             }
         }
         else
         {
-            Push(Msg(crit ? "KRYT! " : "").Add(src).Add(": -").Add(dmg).Add(" (").Add(ed.Name).Add(")").As(crit ? LogKind.Loot : LogKind.Info));
+            Push(Msg(crit ? Loc.T("kryt_7") : "").Add(src).Add(": -").Add(dmg).Add(" (").Add(ed.Name).Add(")").As(crit ? LogKind.Loot : LogKind.Info));
             if (EliteIs(e, EliteEffect.Summon) && (e.Flags & ActorFlag.Called) == 0 && e.Hp * 100 <= e.MaxHp * D.Elites[e.Elite].Value) EliteCall(ei);
         }
     }
@@ -258,7 +258,7 @@ public sealed partial class Game
             if (Mud(Hero.X, Hero.Y) && !Puddle(Hero.X, Hero.Y)) // akt I: błoto – grzęźniesz, tura przepada
             {
                 stuck = true;
-                Push(Msg("Błoto! Grzęźniesz - tura stracona").As(LogKind.Bad));
+                Push(Msg(Loc.T("bloto_grzezniesz_tura_stracona")).As(LogKind.Bad));
             }
         }
         else
@@ -320,7 +320,7 @@ public sealed partial class Game
         var t = NearestTarget();
         if (t < 0)
         {
-            Push(Msg("Brak celu w zasięgu ").Add(WeaponRange()));
+            Push(Msg(Loc.T("brak_celu_w_zasiegu")).Add(WeaponRange()));
             return false;
         }
         HeroAttack(t);
@@ -345,12 +345,12 @@ public sealed partial class Game
         var h = Math.Min(CoffeeHeal(), Hero.MaxHp - Hero.Hp);
         Hero.Hp = (short)(Hero.Hp + h);
         if (CoffeeDrunk < 255) ++CoffeeDrunk;
-        Push(Msg("Kawa z termosu: +").Add(h).Add(" HP").As(LogKind.Good));
+        Push(Msg(Loc.T("kawa_z_termosu")).Add(h).Add(" HP").As(LogKind.Good));
         var es = SynergyValue(SynergyEffect.Espresso); // synergia Espresso: kawa ładuje moc
         if (es > 0 && AbilityCd > 0)
         {
             AbilityCd = Math.Max(0, AbilityCd - es);
-            Push(Msg("Espresso: moc -").Add(es).Add(" t.").As(LogKind.Good));
+            Push(Msg(Loc.T("espresso_moc")).Add(es).Add(" t.").As(LogKind.Good));
         }
     }
 
@@ -360,17 +360,17 @@ public sealed partial class Game
         if (St != GameStatus.Playing) return false;
         if (WeeklyHas(WeeklyRule.NoCoffee))
         {
-            Push(Msg("Tydzień bez kawy!").As(LogKind.Bad));
+            Push(Msg(Loc.T("tydzien_bez_kawy")).As(LogKind.Bad));
             return false;
         }
         if (Thermos <= 0)
         {
-            Push(Msg("Termos pusty"));
+            Push(Msg(Loc.T("termos_pusty")));
             return false;
         }
         if (Hero.Hp >= Hero.MaxHp)
         {
-            Push(Msg("HP pełne - kawa poczeka"));
+            Push(Msg(Loc.T("hp_pelne_kawa_poczeka")));
             return false;
         }
         if (ShockedTurn()) return true;
@@ -454,7 +454,7 @@ public sealed partial class Game
         Thermos = Math.Min(Thermos, ThermosCap()); // słabszy pas: kawy ponad miejsca przepadają
         if (rarity == 2 && BrandFound < 255) ++BrandFound; // zlecenie Markowy styl
         UpdateFov(); // cecha Widzenie zmienia pole widzenia
-        Push(Msg("Sprzęt: ").Add(nw.Name).Add(" +").Add(nw.Value).As(LogKind.Loot));
+        Push(Msg(Loc.T("sprzet_3")).Add(nw.Name).Add(" +").Add(nw.Value).As(LogKind.Loot));
     }
 
     public bool HasOffer => OfferSlot >= 0;
@@ -476,7 +476,7 @@ public sealed partial class Game
         var xp = D.GearDeclineXp + OfferRarity;
         OfferSlot = -1;
         GainXp(xp);
-        Push(Msg("Zostawiasz stary sprzęt: +").Add(xp).Add(" dośw.").As(LogKind.Loot));
+        Push(Msg(Loc.T("zostawiasz_stary_sprzet")).Add(xp).Add(Loc.T("dosw")).As(LogKind.Loot));
     }
 
     public void Collect()
@@ -492,7 +492,7 @@ public sealed partial class Game
                 {
                     ToolOffer = (sbyte)p.Arg;
                     ToolOfferPickup = (sbyte)i;
-                    Push(Msg("Narzędzie: ").Add(D.Weapons[D.Tools[p.Arg].Weapon].Name).Add(" - zamienić?").As(LogKind.Loot));
+                    Push(Msg(Loc.T("narzedzie_2")).Add(D.Weapons[D.Tools[p.Arg].Weapon].Name).Add(Loc.T("zamienic")).As(LogKind.Loot));
                 }
                 continue;
             }
@@ -506,7 +506,7 @@ public sealed partial class Game
             if (p.Type == PickupType.StoreKey)
             {
                 ++Keys;
-                Push(Msg("Klucz do magazynu!").As(LogKind.Loot));
+                Push(Msg(Loc.T("klucz_do_magazynu")).As(LogKind.Loot));
                 continue;
             }
             if (p.Type == PickupType.Chest)
@@ -517,14 +517,14 @@ public sealed partial class Game
             if (p.Type == PickupType.Coffee && WeeklyHas(WeeklyRule.NoCoffee)) // wyzwanie: bez kawy – kawa na wynos (zł)
             {
                 Cash += Income(D.WeeklyCoffeeCash);
-                Push(Msg("Bez kawy: na wynos +").Add(Income(D.WeeklyCoffeeCash)).Add(" zł").As(LogKind.Loot));
+                Push(Msg(Loc.T("bez_kawy_na_wynos")).Add(Income(D.WeeklyCoffeeCash)).Add(Loc.T("zl")).As(LogKind.Loot));
             }
             else if (p.Type == PickupType.Coffee)
             {
                 if (Thermos < ThermosCap()) // kawa do termosu; pełny termos – pije od razu
                 {
                     ++Thermos;
-                    Push(Msg("Kawa do termosu (").Add(Thermos).Add("/").Add(ThermosCap()).Add(")").As(LogKind.Good));
+                    Push(Msg(Loc.T("kawa_do_termosu")).Add(Thermos).Add("/").Add(ThermosCap()).Add(")").As(LogKind.Good));
                 }
                 else
                 {
@@ -534,18 +534,18 @@ public sealed partial class Game
             else if (p.Type == PickupType.Helmet)
             {
                 ++DefBonus;
-                Push(Msg("Nowy kask: obrona +1").As(LogKind.Loot));
+                Push(Msg(Loc.T("nowy_kask_obrona_1")).As(LogKind.Loot));
             }
             else if (p.Type == PickupType.Plan)
             {
                 ++DmgBonus;
-                Push(Msg("Projekt wykonawczy: obrażenia +1").As(LogKind.Loot));
+                Push(Msg(Loc.T("projekt_wykonawczy_obrazenia_1")).As(LogKind.Loot));
             }
             else if (p.Type == PickupType.Document) // pieczątki: komplet otwiera schody
             {
                 Docs = (byte)(Docs | (1 << p.Arg));
-                Push(Msg("Dokument: ").Add(D.Documents[p.Arg]).Add(" (").Add(DocsCount()).Add("/").Add(DocsNeeded()).Add(")").As(LogKind.Loot));
-                if (!StairsLocked()) Push(Msg("Komplet pieczątek! Schody otwarte").As(LogKind.Good));
+                Push(Msg(Loc.T("dokument")).Add(D.Documents[p.Arg]).Add(" (").Add(DocsCount()).Add("/").Add(DocsNeeded()).Add(")").As(LogKind.Loot));
+                if (!StairsLocked()) Push(Msg(Loc.T("komplet_pieczatek_schody")).As(LogKind.Good));
             }
             else if (p.Type == PickupType.GearBox)
             {
@@ -560,7 +560,7 @@ public sealed partial class Game
                     OfferSlot = (sbyte)slot;
                     OfferRarity = (sbyte)(p.Arg % 3);
                     OfferTrait = (sbyte)p.Trait;
-                    Push(Msg("Paczka: ").Add(D.Gear[p.Arg].Name).As(LogKind.Loot));
+                    Push(Msg(Loc.T("paczka")).Add(D.Gear[p.Arg].Name).As(LogKind.Loot));
                 }
             }
             else
@@ -589,7 +589,7 @@ public sealed partial class Game
             m.Awake = true;
             m.Stun = 0;
             ++SummonsUsed;
-            Push(Msg("Wezwanie: ").Add(D.Enemies[m.DefId].Name).As(LogKind.Bad));
+            Push(Msg(Loc.T("wezwanie")).Add(D.Enemies[m.DefId].Name).As(LogKind.Bad));
             return true;
         }
         return false;
@@ -622,7 +622,7 @@ public sealed partial class Game
                 SlamTimer = cross ? D.SlamCrossDelay : D.SlamDelay;
                 SlamX = Hero.X;
                 SlamY = Hero.Y;
-                Push(Msg(ed.SlamName.Length > 0 ? ed.SlamName : "Cios bossa").Add(" za ").Add(SlamTimer).Add(" tury!").As(LogKind.Bad));
+                Push(Msg(ed.SlamName.Length > 0 ? ed.SlamName : Loc.T("cios_bossa")).Add(" za ").Add(SlamTimer).Add(Loc.T("tury")).As(LogKind.Bad));
                 return;
             }
         }
@@ -679,7 +679,7 @@ public sealed partial class Game
                 AddHit(Hero.X, Hero.Y, 1, true);
             }
         }
-        if (AbilityCd > 0 && --AbilityCd == 0) Push(Msg("Moc gotowa: ").Add(PDef.AbilityName).As(LogKind.Good));
+        if (AbilityCd > 0 && --AbilityCd == 0) Push(Msg(Loc.T("moc_gotowa_2")).Add(PDef.AbilityName).As(LogKind.Good));
         if (MarkTurns > 0 && --MarkTurns == 0) MarkTarget = -1; // Tyczenie mija
         ref var wet = ref HeroStatus[(int)StatusEffect.Wet];
         if (wet > 0) --wet; // mokry schnie
@@ -716,12 +716,12 @@ public sealed partial class Game
                 HeroHit = true;
                 LogHit(Enemies[Boss].DefId, Enemies[Boss].Elite, RecapKind.Slam, dmg);
                 AddHit(Hero.X, Hero.Y, dmg, true);
-                Push(Msg(bd.SlamName.Length > 0 ? bd.SlamName : "Uderzenie").Add(": -").Add(dmg).Add(" HP").As(LogKind.Bad));
+                Push(Msg(bd.SlamName.Length > 0 ? bd.SlamName : Loc.T("uderzenie")).Add(": -").Add(dmg).Add(" HP").As(LogKind.Bad));
                 if (Hero.Hp <= 0) HeroDown();
             }
             else
             {
-                Push(Msg("Unik! Cios poszedł obok").As(LogKind.Good));
+                Push(Msg(Loc.T("unik_cios_poszedl_obok")).As(LogKind.Good));
             }
             SlamX = SlamY = -1;
         }
@@ -740,17 +740,17 @@ public sealed partial class Game
                 if (dusty)
                 {
                     ComboEvents = (byte)(ComboEvents | (8 << (int)ComboEffect.DustBlast));
-                    Push(Msg(D.Combos[(int)ComboEffect.DustBlast].Short).Add(" Wybuch: -").Add(dmg).Add(" HP").As(LogKind.Bad));
+                    Push(Msg(D.Combos[(int)ComboEffect.DustBlast].Short).Add(Loc.T("wybuch_2")).Add(dmg).Add(" HP").As(LogKind.Bad));
                 }
                 else
                 {
-                    Push(Msg("Wybuch: -").Add(dmg).Add(" HP").As(LogKind.Bad));
+                    Push(Msg(Loc.T("wybuch_3")).Add(dmg).Add(" HP").As(LogKind.Bad));
                 }
                 if (Hero.Hp <= 0) HeroDown();
             }
             else
             {
-                Push(Msg("Wybuch obok - uff!").As(LogKind.Good));
+                Push(Msg(Loc.T("wybuch_obok_uff")).As(LogKind.Good));
             }
             BlastSecret(BlastX, BlastY, D.BehaviorBlastRadius); // wybuch kruszy pękniętą ścianę magazynu
             BlastX = BlastY = -1;
@@ -769,7 +769,7 @@ public sealed partial class Game
             e.Awake = true;
             e.Hp = (short)Math.Max(1, e.MaxHp * D.BehaviorReturnHpPct / 100);
             e.Flags = (byte)(e.Flags & ~ActorFlag.Reviving);
-            Push(Msg(D.Enemies[e.DefId].Name).Add(" wraca!").As(LogKind.Bad));
+            Push(Msg(D.Enemies[e.DefId].Name).Add(Loc.T("wraca")).As(LogKind.Bad));
         }
         if (St == GameStatus.Playing)
         {
@@ -780,7 +780,7 @@ public sealed partial class Game
         }
         if (St == GameStatus.Playing && Hero.X == StairsX && Hero.Y == StairsY && StairsLocked())
         {
-            Push(Msg("Schody zamknięte: dokumenty ").Add(DocsCount()).Add("/").Add(DocsNeeded()).As(LogKind.Bad));
+            Push(Msg(Loc.T("schody_zamkniete_dokumenty")).Add(DocsCount()).Add("/").Add(DocsNeeded()).As(LogKind.Bad));
         }
         else if (St == GameStatus.Playing && Hero.X == StairsX && Hero.Y == StairsY)
         {
@@ -796,11 +796,11 @@ public sealed partial class Game
             FinishStage();
             Score += 100 * ScorePct() / 100;
             GainXp(D.XpPerStage);
-            Push(Msg("Etap zakończony: ").Add(SDef().Name).As(LogKind.Good));
+            Push(Msg(Loc.T("etap_zakonczony")).Add(SDef().Name).As(LogKind.Good));
             if (EventActive(EventEffect.Inspection) && StageDamage == 0) // Inspekcja nadzoru: etap bez obrażeń
             {
                 GainXp(D.SiteEvents[StageEvent].Value);
-                Push(Msg("Inspekcja: +").Add(D.SiteEvents[StageEvent].Value).Add(" dośw.").As(LogKind.Good));
+                Push(Msg(Loc.T("inspekcja")).Add(D.SiteEvents[StageEvent].Value).Add(Loc.T("dosw")).As(LogKind.Good));
             }
         }
     }

@@ -39,6 +39,7 @@ public sealed class SettingsPage : PhonePage
         _p = p;
         _rows.AddRange([SettingsRow.Music, SettingsRow.Sound, SettingsRow.Vibration, SettingsRow.Controls, SettingsRow.Hand, SettingsRow.Text]);
         if (d is not null) _rows.Add(SettingsRow.Filter); // v0.21.53: filtr ekranu
+        _rows.Add(SettingsRow.Language); // v0.21.53 cz. 2 (#40): Polski / English
         _rows.Add(SettingsRow.Help);
         if (inRun) _rows.AddRange([SettingsRow.SaveExit, SettingsRow.Abandon]);
         _rows.Add(SettingsRow.Link);
@@ -47,9 +48,9 @@ public sealed class SettingsPage : PhonePage
     /// <summary>Jak grać, Zapisz i wyjdź, Porzuć budowę - wykonuje ekran ustawień.</summary>
     public Action<SettingsRow> OnAction;
 
-    public override string Title => "Ustawienia";
+    public override string Title => Loc.T("ustawienia");
     public override string Sub => _version;
-    public override string Hint => "Strzałki: wybór i wartość  Spacja: wykonaj  Esc: wróć";
+    public override string Hint => Loc.T("strzalki_wybor_i_wartosc");
     public override bool Closable => true;
 
     public SettingsRow Selected => _rows[_sel];
@@ -106,6 +107,7 @@ public sealed class SettingsPage : PhonePage
             case SettingsRow.Controls:
             case SettingsRow.Hand:
             case SettingsRow.Text:
+            case SettingsRow.Language:
                 Toggle(row);
                 return;
             case SettingsRow.Filter: // lewo/prawo: kolejny odblokowany filtr
@@ -137,6 +139,10 @@ public sealed class SettingsPage : PhonePage
                 break;
             case SettingsRow.Text:
                 GameSettings.LargeText = !GameSettings.LargeText;
+                break;
+            case SettingsRow.Language: // teksty interfejsu od razu, dane gry (nazwy, opisy) po powrocie na tytuł
+                Loc.English = !Loc.English;
+                GameSettings.Language = Loc.Code;
                 break;
         }
         GameSettings.Save();
@@ -187,11 +193,11 @@ public sealed class SettingsPage : PhonePage
             DrawRows(p, p.Card(p.Top, shown), _top, shown);
             return;
         }
-        var y = p.Section(p.Top, "DŹWIĘK");
+        var y = p.Section(p.Top, Loc.T("dzwiek"));
         y = Group(p, y, 0, 3) + 4;
-        y = p.Section(y, "STEROWANIE");
+        y = p.Section(y, Loc.T("sterowanie_2"));
         y = Group(p, y, 3, 3) + 4;
-        y = p.Section(y, "GRA");
+        y = p.Section(y, Loc.T("gra"));
         var n = _rows.Count - 7;
         y = Group(p, y, 6, n) + 4;
         Group(p, y, _rows.Count - 1, 1);
@@ -226,7 +232,7 @@ public sealed class SettingsPage : PhonePage
                     var minus = p.Pill(minusR, ry, "-", PillKind.Group);
                     p.Hit(new Rect2(right - plus - 10, ry - 4, plus + 16, PhonePainter.RowH + 8), Plus + i);
                     p.Hit(new Rect2(minusR - minus - 6, ry - 4, minus + 14, PhonePainter.RowH + 8), Minus + i);
-                    p.Text(tx, ry, row == SettingsRow.Music ? "Muzyka" : "Dźwięki", ink, TextAlign.Left, minusR - minus - 6 - tx);
+                    p.Text(tx, ry, row == SettingsRow.Music ? Loc.T("muzyka") : Loc.T("dzwieki"), ink, TextAlign.Left, minusR - minus - 6 - tx);
                     break;
                 }
                 case SettingsRow.Link:
@@ -250,15 +256,16 @@ public sealed class SettingsPage : PhonePage
 
     private (string Label, string Value, PillKind Kind) Describe(SettingsRow row) => row switch
     {
-        SettingsRow.Vibration => ("Wibracje", GameSettings.Vibration ? "Wł." : "Wył.", GameSettings.Vibration ? PillKind.Done : PillKind.Gray),
-        SettingsRow.Controls => ("Sterowanie", GameSettings.Controls == ControlScheme.Swipe ? "Gesty + pasek" : "Gałka + pasek", PillKind.Group),
-        SettingsRow.Hand => ("Pasek akcji", GameSettings.LeftHanded ? "Lewa ręka" : "Prawa ręka", PillKind.Group),
-        SettingsRow.Text => ("Tekst", GameSettings.LargeText ? "Duży" : "Normalny", GameSettings.LargeText ? PillKind.Brand : PillKind.Group),
+        SettingsRow.Vibration => (Loc.T("wibracje"), GameSettings.Vibration ? Loc.T("wl_4") : Loc.T("wyl"), GameSettings.Vibration ? PillKind.Done : PillKind.Gray),
+        SettingsRow.Controls => (Loc.T("sterowanie"), GameSettings.Controls == ControlScheme.Swipe ? Loc.T("gesty_pasek") : Loc.T("galka_pasek"), PillKind.Group),
+        SettingsRow.Hand => (Loc.T("pasek_akcji"), GameSettings.LeftHanded ? Loc.T("lewa_reka") : Loc.T("prawa_reka"), PillKind.Group),
+        SettingsRow.Text => (Loc.T("tekst"), GameSettings.LargeText ? Loc.T("duzy") : Loc.T("normalny"), GameSettings.LargeText ? PillKind.Brand : PillKind.Group),
         SettingsRow.Filter => (_d.FilterText("title"), _d.ScreenFilters[ScreenFilter.Resolve(_d, _p)].Short,
             ScreenFilter.Resolve(_d, _p) > 0 ? PillKind.Done : PillKind.Gray),
-        SettingsRow.Help => ("Jak grać", "", PillKind.Gray),
-        SettingsRow.SaveExit => ("Zapisz i wyjdź", "", PillKind.Gray),
-        SettingsRow.Abandon => (_confirm ? "Na pewno porzucić? Jeszcze raz" : "Porzuć budowę", _confirm ? "Tak" : "", PillKind.Late),
+        SettingsRow.Language => (Loc.T("jezyk_language"), Loc.English ? "English" : "Polski", PillKind.Group),
+        SettingsRow.Help => (Loc.T("jak_grac"), "", PillKind.Gray),
+        SettingsRow.SaveExit => (Loc.T("zapisz_i_wyjdz"), "", PillKind.Gray),
+        SettingsRow.Abandon => (_confirm ? Loc.T("na_pewno_porzucic_jeszcze_raz") : Loc.T("porzuc_budowe"), _confirm ? Loc.T("tak") : "", PillKind.Late),
         _ => ("", "", PillKind.Gray),
     };
 }

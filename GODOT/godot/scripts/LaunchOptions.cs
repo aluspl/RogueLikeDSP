@@ -8,7 +8,8 @@ namespace LifeLike.Game;
 /// na telefon na komputerze: --touch (sterowanie dotykiem: pasek akcji, gesty myszą), --portrait (okno pionowe
 /// jak iPhone 14 Pro Max w punktach, z symulowaną wyspą i paskiem domowym), --size SZERxWYS (rozmiar okna),
 /// --monkey SEED KROKI (test małpy: losowe klawisze i dotknięcia przez prawdziwe wejście, Debug/MonkeyTest),
-/// --filter ID (filtr ekranu bez względu na odblokowanie, v0.21.53).
+/// --filter ID (filtr ekranu bez względu na odblokowanie, v0.21.53), --lang pl|en (język, v0.21.53 cz. 2; testy bez
+/// --lang: polski).
 /// </summary>
 public sealed class LaunchOptions
 {
@@ -27,6 +28,8 @@ public sealed class LaunchOptions
     public int MonkeySteps { get; private init; }
     /// <summary>v0.21.53: --filter ID – filtr ekranu bez względu na odblokowanie (zrzuty, test).</summary>
     public string Filter { get; private init; } = "";
+    /// <summary>v0.21.53 cz. 2 (#40): --lang pl|en – język gry (pusty = ustawienia albo język systemu).</summary>
+    public string Lang { get; private init; } = "";
 
     public bool Monkey => MonkeySeed != 0;
 
@@ -69,6 +72,7 @@ public sealed class LaunchOptions
             MonkeySeed = mseed,
             MonkeySteps = msteps,
             Filter = Arg("--filter") ?? "",
+            Lang = Arg("--lang") is "en" or "pl" ? Arg("--lang") : "",
         };
     }
 }

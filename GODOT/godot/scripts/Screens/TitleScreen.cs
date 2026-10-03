@@ -4,6 +4,8 @@ using LifeLike.Game.Audio;
 using LifeLike.Game.Input;
 using LifeLike.Game.Phone.Pages;
 using LifeLike.Game.Screens.Views;
+using LifeLike.Game.Session;
+using LifeLike.Game.Settings;
 
 namespace LifeLike.Game.Screens;
 
@@ -26,13 +28,18 @@ public sealed class TitleScreen : Screen
     public override bool ShowsSettings => true;
 
     private string[] Items => _hasRun
-        ? ["Kontynuuj budowę", "Nowa budowa", "Codzienna budowa", "Wyzwanie tygodnia", "Profil: odznaki, zlecenia", "Szkolenia (Koszty)", "Jak grać"]
-        : ["Nowa budowa", "Codzienna budowa", "Wyzwanie tygodnia", "Profil: odznaki, zlecenia", "Szkolenia (Koszty)", "Jak grać"];
+        ? [Loc.T("kontynuuj_budowe"), Loc.T("nowa_budowa"), Loc.T("codzienna_budowa"), Loc.T("wyzwanie_tygodnia"), Loc.T("profil_odznaki_zlecenia"), Loc.T("szkolenia_koszty"), Loc.T("jak_grac")]
+        : [Loc.T("nowa_budowa"), Loc.T("codzienna_budowa"), Loc.T("wyzwanie_tygodnia"), Loc.T("profil_odznaki_zlecenia"), Loc.T("szkolenia_koszty"), Loc.T("jak_grac")];
 
     public void Open() => Flow.Go(this);
 
     public override void Enter(bool instant)
     {
+        if (GameSettings.Persist && GodotDataSource.DataEnglish != Loc.English) // v0.21.53 cz. 2 (#40): dane w nowym języku
+        {
+            ((SceneTree)Engine.GetMainLoop()).CallDeferred(SceneTree.MethodName.ReloadCurrentScene);
+            return;
+        }
         _hasRun = S.HasRun;
         _sel = 0;
         Populate();
@@ -51,11 +58,11 @@ public sealed class TitleScreen : Screen
         if (id == "options") return Hud.SettingsButton.Rect;
         var label = id switch
         {
-            "phone" => "Profil",
-            "training" or "respect" => "Szkolenia",
-            "daily" => "Codzienna",
-            "help" => "Jak grać",
-            _ => "Nowa budowa",
+            "phone" => Loc.T("profil"),
+            "training" or "respect" => Loc.T("szkolenia"),
+            "daily" => Loc.T("codzienna"),
+            "help" => Loc.T("jak_grac"),
+            _ => Loc.T("nowa_budowa"),
         };
         var items = Items;
         for (var i = 0; i < items.Length; i++)
@@ -75,7 +82,7 @@ public sealed class TitleScreen : Screen
         v.Xp = S.Profile.Xp;
         v.Sel = _sel;
         v.Note = S.Note;
-        v.Info = $"Budowy: {S.Profile.Runs}   Doświadczenie: {S.Profile.Xp}" + ButtonNames.Pick("   P: profil   K: Szkolenia", "");
+        v.Info = Loc.F("budowy_doswiadczenie", S.Profile.Runs, S.Profile.Xp) + ButtonNames.Pick(Loc.T("p_profil_k_szkolenia"), "");
         var p = S.Profile; // v0.21.52 cz. b (#44): poziom inspektora z paskiem (od pierwszej budowy)
         Progress.InspectorBar(S.Data, p, out var cur, out var need);
         v.InspLevel = p.Runs > 0 || p.InspectorXp > 0 ? Progress.InspectorLevel(S.Data, p) : -1;
@@ -83,8 +90,8 @@ public sealed class TitleScreen : Screen
         v.InspMax = need == 0;
         if (S.RollTasks()) S.Save(); // v0.21.52 cz. c: zadania dnia (data z systemu) i seria dni pod rekordem
         var streak = DayStreak.Now(p, S.TodayNumber);
-        v.Goals = p.Runs > 0 ? $"Zadania {DailyTasks.DoneToday(p)}/{DailyTasks.DailySlots}" : "";
-        v.Streak = p.Runs > 0 && streak > 0 ? $"Seria {streak} {(streak == 1 ? "dzień" : "dni")}" : "";
+        v.Goals = p.Runs > 0 ? Loc.F("zadania_4", DailyTasks.DoneToday(p), DailyTasks.DailySlots) : "";
+        v.Streak = p.Runs > 0 && streak > 0 ? Loc.F("seria_2", streak, (streak == 1 ? Loc.T("dzien_3") : Loc.T("dni_5"))) : "";
     }
 
     public override bool HandleInput(InputCmd e)
@@ -150,7 +157,7 @@ public sealed class TitleScreen : Screen
                 else
                 {
                     _hasRun = false;
-                    S.Note = "Zapis budowy nie pasuje do tej wersji gry";
+                    S.Note = Loc.T("zapis_budowy_nie_pasuje_do_tej");
                     Populate();
                 }
                 break;

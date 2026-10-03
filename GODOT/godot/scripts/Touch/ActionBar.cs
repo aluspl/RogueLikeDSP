@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using System;
 using Godot;
 using LifeLike.Game.Gfx;
@@ -109,7 +110,7 @@ public partial class ActionBar : Control, ITapTargets
         {
             case BarButton.Attack:
                 Assets.DrawFrame(this, Assets.MenuIcons, 0, 32, icon);
-                label = "Atak";
+                label = Loc.T("atak");
                 break;
             case BarButton.Ability:
                 if (g.AbilityCd == 0)
@@ -118,26 +119,26 @@ public partial class ActionBar : Control, ITapTargets
                     var pulse = 0.5f + 0.5f * Mathf.Sin(_clock * 6f);
                     DrawStyleBox(Ui.Box(new Color(Pal.Accent, 0.15f + 0.25f * pulse), 8), new Rect2(icon - new Vector2(3, 2), new Vector2(38, 36)));
                     Assets.DrawFrame(this, Assets.AbilityIcons, g.PowerCls(), 32, icon + new Vector2(0, bob));
-                    label = "Moc";
+                    label = Loc.T("moc_6");
                 }
                 else
                 {
                     Assets.DrawFrame(this, Assets.UiAbilityGray, g.PowerCls(), Assets.Icon, icon, 2, new Color(1, 1, 1, 0.6f));
                     f.Draw(this, icon + new Vector2(16, 6), g.AbilityCd.ToString(), Ink.Map, TextAlign.Center, 1.5f);
-                    label = $"Moc {g.AbilityCd}";
+                    label = Loc.F("moc_8", g.AbilityCd);
                 }
                 break;
             case BarButton.Thermos:
                 Assets.DrawFrame(this, Assets.MenuIcons, 1, 32, icon, 1, dim);
-                label = $"Termos {g.Thermos}";
+                label = Loc.F("termos_5", g.Thermos);
                 break;
             case BarButton.Wait:
                 Assets.DrawFrame(this, Assets.MenuIcons, 2, 32, icon);
-                label = "Czekaj";
+                label = Loc.T("czekaj");
                 break;
             default:
                 Assets.DrawFrame(this, Assets.TouchIcons, TouchIcon.Phone, Assets.Icon, icon, 2);
-                label = "Telefon";
+                label = Loc.T("telefon");
                 break;
         }
         var ink = on ? Ink.White : enabled ? Ink.Map : Ink.MapDim;

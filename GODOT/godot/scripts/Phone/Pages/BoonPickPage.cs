@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using System.Collections.Generic;
 using LifeLike.Game.Audio;
 using LifeLike.Game.Gfx;
@@ -25,17 +26,17 @@ public sealed class BoonPickPage : PhonePage
     /// <summary>Wybór zatwierdzony (A / Enter / drugie dotknięcie) – ekran bierze premię.</summary>
     public System.Action Picked { get; set; }
 
-    public override string Title => _g.St == LifeLike.Core.GameStatus.Playing ? "Premia: projekt" : "Premia za etap";
-    public override string Sub => _g.St == LifeLike.Core.GameStatus.Playing ? "Znaleziony projekt" : $"Etap {_g.StageNumber()} zaliczony";
-    public override string Hint => "Strzałki: wybór  Enter: biorę" + (_g.RerollsLeft() > 0 ? "  R: losuj" : "");
+    public override string Title => _g.St == LifeLike.Core.GameStatus.Playing ? Loc.T("premia_projekt_2") : Loc.T("premia_za_etap_2");
+    public override string Sub => _g.St == LifeLike.Core.GameStatus.Playing ? Loc.T("znaleziony_projekt") : Loc.F("etap_zaliczony_2", _g.StageNumber());
+    public override string Hint => Loc.T("strzalki_wybor_enter_biore") + (_g.RerollsLeft() > 0 ? Loc.T("r_losuj") : "");
     public override PageAction[] Actions =>
-        _g.RerollsLeft() > 0 ? [new("Biorę", GameAction.A), new("Losuj", GameAction.R)] : [new("Biorę", GameAction.A)];
+        _g.RerollsLeft() > 0 ? [new(Loc.T("biore"), GameAction.A), new(Loc.T("losuj"), GameAction.R)] : [new(Loc.T("biore"), GameAction.A)];
 
     public string RerollLabel()
     {
-        if (_g.RerollsLeft() <= 0) return "Losowanie zużyte";
+        if (_g.RerollsLeft() <= 0) return Loc.T("losowanie_zuzyte");
         var price = _g.RerollPrice();
-        return price == 0 ? "Losuj ponownie: za darmo" : $"Losuj ponownie: {price} zł";
+        return price == 0 ? Loc.T("losuj_ponownie_za_darmo") : Loc.F("losuj_ponownie_zl", price);
     }
 
     public override bool TapRow(int index)
@@ -60,12 +61,12 @@ public sealed class BoonPickPage : PhonePage
         if (_g.RerollBoons())
         {
             Sfx.Play("buy");
-            _note = "Nowa oferta!";
+            _note = Loc.T("nowa_oferta");
             Sel = 0;
         }
         else
         {
-            _note = _g.RerollsLeft() <= 0 ? "Losowanie już zużyte" : $"Za mały budżet ({_g.RerollPrice()} zł)";
+            _note = _g.RerollsLeft() <= 0 ? Loc.T("losowanie_juz_zuzyte") : Loc.F("za_maly_budzet_zl", _g.RerollPrice());
             Sfx.Play("menu");
         }
         Redraw();
@@ -95,7 +96,7 @@ public sealed class BoonPickPage : PhonePage
         var rowH = PhonePainter.RowH;
         var tx0 = p.Left + 12;
         var width = (int)(p.Right - 6 - tx0);
-        var y = p.Section(p.Top, "WYBIERZ 1 Z 3", $"premie: {_g.BoonsOwned()}");
+        var y = p.Section(p.Top, Loc.T("wybierz_1_z_3"), Loc.F("premie_7", _g.BoonsOwned()));
         // wysokość kart: nazwa, skutek (1-2 linie), znaczniki
         var free = p.Bottom - y - (rowH + 8) - 6 * 3;
         var gap = 5f;
@@ -127,12 +128,12 @@ public sealed class BoonPickPage : PhonePage
             var syn = BoonLook.NewSynergy(_g, b);
             if (syn >= 0)
             {
-                var st = "Synergia: " + d.Synergies[syn].Name;
-                if (p.F.Measure(st) > (right - tx) * 0.6f) st = "Synergia!";
+                var st = Loc.T(Loc.T("synergia_2")) + d.Synergies[syn].Name;
+                if (p.F.Measure(st) > (right - tx) * 0.6f) st = Loc.T("synergia_5");
                 xr -= p.Pill(xr, ty, st, PillKind.Done) + 4;
             }
             var tags = BoonLook.Tags(d, bd.Tags);
-            var tagText = string.Join(", ", tags) + (bd.Cls >= 0 ? ", zawód" : "");
+            var tagText = string.Join(", ", tags) + (bd.Cls >= 0 ? Loc.T("zawod_4") : "");
             p.Text(tx, ty, p.F.Fit(tagText, (int)(xr - tx)), Ink.Dim);
             y = card.End.Y + gap;
         }
@@ -143,7 +144,7 @@ public sealed class BoonPickPage : PhonePage
         var rx = p.TextX(rc);
         var rright = rc.End.X - 6;
         var label = _note.Length > 0 ? _note : RerollLabel();
-        var info = $"masz {_g.Cash} zł";
+        var info = Loc.F("masz_zl", _g.Cash);
         var iw = p.Text(rright, p.RowY(rc, 0), info, Ink.Dim, TextAlign.Right);
         p.Text(rx, p.RowY(rc, 0), label, _note.Length > 0 ? Ink.Brand : can ? Ink.Prog : Ink.Dim, TextAlign.Left, rright - iw - 6 - rx);
     }

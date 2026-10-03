@@ -159,7 +159,7 @@ public sealed class ClassSelectScreen : Screen
         S.ClassId = view.Selected;
         if (!Meta.ClassUnlocked(S.Data, S.Profile, S.ClassId))
         {
-            view.Note = $"Ten zawód odblokujesz w Szkoleniach{ButtonNames.Pick(" (K)", "")} za {Meta.ClassCost(d, S.Profile)} dośw.";
+            view.Note = Loc.F("ten_zawod_odblokujesz_w", ButtonNames.Pick(" (K)", ""), Meta.ClassCost(d, S.Profile));
             Sfx.Play("hurt", 0.5f);
             return;
         }

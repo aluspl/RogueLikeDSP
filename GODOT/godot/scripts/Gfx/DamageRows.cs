@@ -56,11 +56,11 @@ public static class DamageRows
         }
         if (g is null) return rows;
         var def = g.HeroDefense();
-        var ds = $"OBR {def}: -{def / 2} z ciosu problemu" + (g.Bonus.TakenPct > 0 ? $", -{g.Bonus.TakenPct}%" : "");
+        var ds = Loc.F("obr_z_ciosu_problemu", def, def / 2) + (g.Bonus.TakenPct > 0 ? $", -{g.Bonus.TakenPct}%" : "");
         rows.Add(new DamageRow(ds, Ink.Dark, Colors.Transparent, DmgText.Enemy, true));
-        var us = $"Unik {g.DodgePct()}% (SZCZ {g.Luck()} x {d.DodgePerLuckPct}%";
-        if (g.GearBonus(GearStat.Dodge) > 0) us += $", buty +{g.GearBonus(GearStat.Dodge)}%";
-        if (g.Bonus.Dodge > 0) us += $", premie +{g.Bonus.Dodge}%";
+        var us = Loc.F("unik_szcz_x", g.DodgePct(), g.Luck(), d.DodgePerLuckPct);
+        if (g.GearBonus(GearStat.Dodge) > 0) us += Loc.F("buty_2", g.GearBonus(GearStat.Dodge));
+        if (g.Bonus.Dodge > 0) us += Loc.F("premie_5", g.Bonus.Dodge);
         rows.Add(new DamageRow(us + ")", Ink.Dim, Colors.Transparent, DmgText.Enemy, true));
         return rows;
     }

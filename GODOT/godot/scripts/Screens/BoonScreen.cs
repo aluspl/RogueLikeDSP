@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using LifeLike.Game.Audio;
 using LifeLike.Game.Input;
 using LifeLike.Game.Phone;
@@ -57,13 +58,13 @@ public sealed class BoonScreen : Screen
         if (!g.PickBoon(Page?.Sel ?? 0)) return;
         Sfx.Play("buy");
         var bd = S.Data.Boons[b];
-        N.Banners.Push("Premia: " + bd.Name, bd.Desc, PhoneTabs.Gear);
+        N.Banners.Push(Loc.T("premia") + bd.Name, bd.Desc, PhoneTabs.Gear);
         var now = g.SynergyMask();
         for (var s = 0; s < S.Data.Synergies.Length; s++)
         {
             if (((now >> s) & 1) == 0 || ((before >> s) & 1) != 0) continue;
-            N.Banners.Push("Synergia: " + S.Data.Synergies[s].Name, S.Data.Synergies[s].Desc, PhoneTabs.Gear);
-            var line = $"Synergia {S.Data.Synergies[s].Name}: {S.Data.Synergies[s].Desc}"; // pełny opis na harmonogramie
+            N.Banners.Push(Loc.T(Loc.T("synergia_2")) + S.Data.Synergies[s].Name, S.Data.Synergies[s].Desc, PhoneTabs.Gear);
+            var line = Loc.F("synergia_6", S.Data.Synergies[s].Name, S.Data.Synergies[s].Desc); // pełny opis na harmonogramie
             S.Note = S.Note.Length > 0 ? line + " " + S.Note : line;
             Sfx.Play("level", 0.8f);
         }

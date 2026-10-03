@@ -349,9 +349,22 @@ public sealed class GameData
 
     public static GameData LoadFile(string path) => Parse(File.ReadAllText(path, System.Text.Encoding.UTF8));
 
-    public static GameData Parse(string json)
+    /// <summary>v0.21.53 cz. 2 (#40): game.json + en.json; english - dane po angielsku (LangOverlay), teksty interfejsu
+    /// (Loc) z obu plików. Bez en.json - sam polski.</summary>
+    public static GameData Parse(string json, string enJson = null, bool english = false)
     {
-        using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+        var opts = new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true };
+        using (var raw = JsonDocument.Parse(json, opts))
+        {
+            if (enJson is null) Loc.Load(raw.RootElement, null);
+            else
+            {
+                using var en = JsonDocument.Parse(enJson, opts);
+                Loc.Load(raw.RootElement, en.RootElement);
+            }
+        }
+        if (english && enJson is not null) json = LangOverlay.Apply(json, enJson);
+        using var doc = JsonDocument.Parse(json, opts);
         return FromJson(doc.RootElement);
     }
 

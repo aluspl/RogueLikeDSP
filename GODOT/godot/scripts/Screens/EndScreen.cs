@@ -24,11 +24,11 @@ public sealed class EndScreen : Screen
         var v = N.EndView;
         v.Won = won;
         v.CanContinue = won && !g.Daily && g.WeeklyWeek == 0; // budowa dnia / tygodnia: bez NG+
-        v.Line1 = $"Wynik {g.Score}   Dni {g.Turns}   Etap {g.StageNumber()}/{g.StagesInRun()}   Dośw. +{S.LastGained}";
-        var record = g.Score > S.PrevBest ? "Nowy rekord!" : $"Rekord {S.Profile.Best}";
-        var daily = g.Daily ? (S.DailyRecord ? "   Rekord dnia!" : $"   Budowa dnia nr {g.DailyDay}") : "";
-        if (g.WeeklyWeek != 0) daily = S.WeeklyRecord ? "   Rekord tygodnia!" : $"   Tydzień nr {g.WeeklyWeek}";
-        v.Line2 = $"{record}   Doświadczenie w profilu {S.Profile.Xp}   Respekt +{g.Respect} (masz {S.Profile.Respect})" + (won ? "   Dom na Osiedlu!" : "") + daily;
+        v.Line1 = Loc.F("wynik_dni_etap_dosw", g.Score, g.Turns, g.StageNumber(), g.StagesInRun(), S.LastGained);
+        var record = g.Score > S.PrevBest ? Loc.T("nowy_rekord_2") : Loc.F("rekord_4", S.Profile.Best);
+        var daily = g.Daily ? (S.DailyRecord ? Loc.T("rekord_dnia_4") : Loc.F("budowa_dnia_nr_3", g.DailyDay)) : "";
+        if (g.WeeklyWeek != 0) daily = S.WeeklyRecord ? Loc.T("rekord_tygodnia_5") : Loc.F("tydzien_nr_3", g.WeeklyWeek);
+        v.Line2 = Loc.F("doswiadczenie_w_profilu", record, S.Profile.Xp, g.Respect, S.Profile.Respect) + (won ? Loc.T("dom_na_osiedlu_2") : "") + daily;
         v.Note = S.Note;
         N.Banners.Clear();
         foreach (var (title, body) in ProgressBanners.Of(S.Data, S.LastProgress, S.LastStakeBefore, S.LastStakeAfter))
@@ -39,14 +39,14 @@ public sealed class EndScreen : Screen
         for (var i = 0; i < S.Data.StoryArc.Length; i++) stories += (int)((S.LastStory >> i) & 1);
         for (var i = 0; i < S.Data.StoryArc.Length && stories <= 2; i++)
         {
-            if (((S.LastStory >> i) & 1) != 0) N.Banners.Push("Nowa wiadomość", S.Data.StoryArc[i].Name);
+            if (((S.LastStory >> i) & 1) != 0) N.Banners.Push(Loc.T("nowa_wiadomosc"), S.Data.StoryArc[i].Name);
         }
-        if (stories > 2) N.Banners.Push($"Nowe wiadomości: {stories}", "Profil > Osiedle > Wiadomości");
+        if (stories > 2) N.Banners.Push(Loc.F("nowe_wiadomosci", stories), Loc.T("profil_osiedle_wiadomosci_2"));
         if (S.LastCareerFirst) // v0.21.52 cz. d (#47): kontrakt wygrany pierwszy raz, nowe kontrakty na mapie kariery
-            N.Banners.Push(new PushBanner { Title = $"Wygrany kontrakt: {g.KDef.Name}", Body = Career.RewardLabel(S.Data, g.Contract), Gold = true });
+            N.Banners.Push(new PushBanner { Title = Loc.F("wygrany_kontrakt", g.KDef.Name), Body = Career.RewardLabel(S.Data, g.Contract), Gold = true });
         for (var k = 1; k < S.Data.Career.Length; k++)
         {
-            if (((S.LastCareerNew >> k) & 1) != 0) N.Banners.Push(new PushBanner { Title = "Nowy kontrakt!", Body = $"{S.Data.Career[k].Name} – mapa kariery", Gold = true });
+            if (((S.LastCareerNew >> k) & 1) != 0) N.Banners.Push(new PushBanner { Title = Loc.T("nowy_kontrakt"), Body = Loc.F("mapa_kariery_3", S.Data.Career[k].Name), Gold = true });
         }
         App.Banners.FilterUnlocks(S.LastFilterNew); // v0.21.53: nowe filtry ekranu
     }

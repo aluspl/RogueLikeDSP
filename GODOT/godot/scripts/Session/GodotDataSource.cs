@@ -14,6 +14,8 @@ namespace LifeLike.Game.Session;
 public static class GodotDataSource
 {
     public const string GameJson = "res://data/game.json";
+    /// <summary>v0.21.53 cz. 2 (#40): angielska warstwa tekstów (kopia GBA/data/lang/en.json).</summary>
+    public const string LangEnJson = "res://data/lang_en.json";
     public const string ProfilePath = "user://profile.sav";
     public const string RunPath = "user://run.sav";
 
@@ -21,8 +23,21 @@ public static class GodotDataSource
     {
         if (!FileAccess.FileExists(GameJson))
             throw new GameDataException($"brak {GameJson} – zbuduj projekt (dotnet build), żeby skopiować GBA/data/game.json");
-        return GameData.Parse(FileAccess.GetFileAsString(GameJson));
+        var json = FileAccess.GetFileAsString(GameJson);
+        var en = FileAccess.FileExists(LangEnJson) ? FileAccess.GetFileAsString(LangEnJson) : null;
+        var d = GameData.Parse(json, en, Loc.English);
+        DataEnglish = Loc.English;
+        _text = Loc.English && en is not null ? LangOverlay.Apply(json, en) : json;   // rady i strony Jak grać w tym samym języku
+        return d;
     }
+
+    private static string _text;
+
+    /// <summary>v0.21.53 cz. 2 (#40): język, w którym wczytano dane (zmiana w ustawieniach - przeładowanie na tytule).</summary>
+    public static bool DataEnglish { get; private set; }
+
+    /// <summary>game.json w bieżącym języku (po LoadGameData; wcześniej - plik).</summary>
+    private static string Text => _text ??= FileAccess.FileExists(GameJson) ? FileAccess.GetFileAsString(GameJson) : null;
 
     /// <summary>
     /// Rady kierownika (game.json „tips”, ekran harmonogramu na GBA). GameData z rdzenia ich nie czyta
@@ -30,8 +45,8 @@ public static class GodotDataSource
     /// </summary>
     public static string[] LoadTips()
     {
-        if (!FileAccess.FileExists(GameJson)) return [];
-        using var doc = JsonDocument.Parse(FileAccess.GetFileAsString(GameJson));
+        if (Text is null) return [];
+        using var doc = JsonDocument.Parse(Text);
         if (!doc.RootElement.TryGetProperty("tips", out var tips) || tips.ValueKind != JsonValueKind.Array) return [];
         return tips.EnumerateArray().Select(t => t.GetString() ?? "").Where(t => t.Length > 0).ToArray();
     }
@@ -39,8 +54,8 @@ public static class GodotDataSource
     /// <summary>Tablica napisów z game.json (np. "secretsHelp" – strona Jak grać); brak = pusta.</summary>
     public static string[] LoadStrings(string key)
     {
-        if (!FileAccess.FileExists(GameJson)) return [];
-        using var doc = JsonDocument.Parse(FileAccess.GetFileAsString(GameJson));
+        if (Text is null) return [];
+        using var doc = JsonDocument.Parse(Text);
         if (!doc.RootElement.TryGetProperty(key, out var arr) || arr.ValueKind != JsonValueKind.Array) return [];
         return arr.EnumerateArray().Select(t => t.GetString() ?? "").Where(t => t.Length > 0).ToArray();
     }

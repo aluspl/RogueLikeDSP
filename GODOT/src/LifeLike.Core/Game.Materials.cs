@@ -61,16 +61,16 @@ public sealed partial class Game
         {
             case RepairBlock.Ok: break;
             case RepairBlock.Material:
-                Push(Msg(rd.Name).Add(": brak - ").Add(D.Materials[rd.Material].Name));
+                Push(Msg(rd.Name).Add(Loc.T(Loc.T("brak_2"))).Add(D.Materials[rd.Material].Name));
                 return false;
             case RepairBlock.NoTarget:
-                Push(Msg(rd.Name).Add(": brak problemu w polu widzenia"));
+                Push(Msg(rd.Name).Add(Loc.T("brak_problemu_w_polu_widzenia")));
                 return false;
             case RepairBlock.NoRoom:
-                Push(Msg(rd.Name).Add(": nie ma gdzie"));
+                Push(Msg(rd.Name).Add(Loc.T("nie_ma_gdzie")));
                 return false;
             case RepairBlock.NoPuddle:
-                Push(Msg(rd.Name).Add(": brak kałuż obok"));
+                Push(Msg(rd.Name).Add(Loc.T("brak_kaluz_obok")));
                 return false;
             default: return false;
         }
@@ -114,7 +114,7 @@ public sealed partial class Game
         StageKillLog[Stage] = (byte)Math.Min(255, StageKills);
         var got = StageRespect();
         Respect += got;
-        Push(Msg("Respekt +").Add(got).As(LogKind.Loot));
+        Push(Msg(Loc.T("respekt_2")).Add(got).As(LogKind.Loot));
         if (!LastStage()) RollBoons(); // premia 1 z 3 przed harmonogramem (nie po odbiorze)
     }
 

@@ -8,7 +8,7 @@ public sealed partial class Game
     /// <summary>Kierunki porywu: 0 prawo, 1 dół, 2 lewo, 3 góra.</summary>
     public static readonly int[,] GustVec = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } };
 
-    private static readonly string[] DirNames = ["w prawo", "w dół", "w lewo", "w górę"];
+    private static string[] DirNames => [Loc.T("w_prawo"), Loc.T("w_dol"), Loc.T("w_lewo"), Loc.T("w_gore")];
 
     public static string DirName(int d) => DirNames[d & 3];
 
@@ -49,7 +49,7 @@ public sealed partial class Game
         if (t <= 0) return;
         if (t % v == v - 1)
         {
-            Push(Msg("Poryw wiatru za 1 t. ").Add(DirName(GustDir())).As(LogKind.Bad));
+            Push(Msg(Loc.T("poryw_wiatru_za_1_t")).Add(DirName(GustDir())).As(LogKind.Bad));
             return;
         }
         if (t % v != 0) return;
@@ -60,11 +60,11 @@ public sealed partial class Game
             Hero.Y = (sbyte)ny;
             Collect();
             UpdateFov();
-            Push(Msg("Poryw! Spycha cię ").Add(DirName(d)).As(LogKind.Bad));
+            Push(Msg(Loc.T("poryw_spycha_cie")).Add(DirName(d)).As(LogKind.Bad));
         }
         else
         {
-            Push(Msg("Poryw - trzymasz się muru").As(LogKind.Good));
+            Push(Msg(Loc.T("poryw_trzymasz_sie_muru")).As(LogKind.Good));
         }
     }
 
@@ -100,7 +100,7 @@ public sealed partial class Game
         if (DodgePct() > 0 && R.Range(1, 100) <= DodgePct()) // szczęście: unik
         {
             AddHit(Hero.X, Hero.Y, 0, true, HitKind.Dodge);
-            Push(Msg("Unik! ").Add(ed.Name).Add(" chybia").As(LogKind.Good));
+            Push(Msg(Loc.T("unik_4")).Add(ed.Name).Add(Loc.T("chybia")).As(LogKind.Good));
             return;
         }
         var wasWet = HeroWet();
@@ -110,7 +110,7 @@ public sealed partial class Game
         HeroHit = true;
         LogHit(e.DefId, e.Elite, ranged ? RecapKind.Ranged : RecapKind.Melee, dmg);
         AddHit(Hero.X, Hero.Y, dmg, true);
-        Push(Msg(ed.Name).Add(ranged ? " z dystansu: -" : ": -").Add(dmg).Add(" HP").As(LogKind.Bad));
+        Push(Msg(ed.Name).Add(ranged ? Loc.T("z_dystansu") : ": -").Add(dmg).Add(" HP").As(LogKind.Bad));
         if (ed.OnHit != StatusEffect.None && Hero.Hp > 0 && R.Range(1, 100) <= ed.StatusChance)
             ApplyStatus(ed.OnHit, ed.StatusTurns);
         if (ed.Elem == Element.Water && Hero.Hp > 0) SoakHero(); // woda moczy
@@ -137,7 +137,7 @@ public sealed partial class Game
                 Hero.Y = (sbyte)ny;
                 Collect();
                 UpdateFov();
-                Push(Msg(ed.Name).Add(" odpycha cię!").As(LogKind.Bad));
+                Push(Msg(ed.Name).Add(Loc.T("odpycha_cie")).As(LogKind.Bad));
             }
         }
         if (Hero.Hp <= 0) HeroDown();
@@ -193,7 +193,7 @@ public sealed partial class Game
         if (bx < 0) return false;
         e.X = (sbyte)bx;
         e.Y = (sbyte)by;
-        if (Visible(bx, by)) Push(Msg(D.Enemies[e.DefId].Name).Add(" ucieka"));
+        if (Visible(bx, by)) Push(Msg(D.Enemies[e.DefId].Name).Add(Loc.T("ucieka")));
         return true;
     }
 
@@ -214,7 +214,7 @@ public sealed partial class Game
         var h = Math.Min(D.BehaviorHealValue, lack);
         t.Hp = (short)(t.Hp + h);
         if (Visible(e.X, e.Y) || Visible(t.X, t.Y))
-            Push(Msg(D.Enemies[e.DefId].Name).Add(" łata: ").Add(D.Enemies[t.DefId].Name).Add(" +").Add(h).As(LogKind.Bad));
+            Push(Msg(D.Enemies[e.DefId].Name).Add(Loc.T("lata")).Add(D.Enemies[t.DefId].Name).Add(" +").Add(h).As(LogKind.Bad));
         return true;
     }
 
@@ -226,7 +226,7 @@ public sealed partial class Game
         ++e.Grow;
         e.MaxHp = (short)(e.MaxHp + D.BehaviorGrowHp);
         e.Hp = (short)(e.Hp + D.BehaviorGrowHp);
-        if (Visible(e.X, e.Y)) Push(Msg(D.Enemies[e.DefId].Name).Add(" rośnie!").As(LogKind.Bad));
+        if (Visible(e.X, e.Y)) Push(Msg(D.Enemies[e.DefId].Name).Add(Loc.T("rosnie")).As(LogKind.Bad));
     }
 
     /// <summary>Wybuch po usunięciu: czerwone pola wokół, spada po BehaviorBlastDelay turach (tura na zejście).</summary>
@@ -237,7 +237,7 @@ public sealed partial class Game
         BlastTimer = (sbyte)D.BehaviorBlastDelay;
         BlastDmg = (sbyte)(D.BehaviorBlastDamage + EnemyDmgBonus());
         BlastSrc = (sbyte)Array.IndexOf(D.Enemies, ed); // podsumowanie: źródło wybuchu
-        Push(Msg(ed.Name).Add(": wybuch za ").Add(D.BehaviorBlastDelay - 1).Add(" t.! Odejdź").As(LogKind.Bad));
+        Push(Msg(ed.Name).Add(Loc.T("wybuch_za")).Add(D.BehaviorBlastDelay - 1).Add(Loc.T("t_odejdz")).As(LogKind.Bad));
     }
 
     /// <summary>Miejsce na nowy problem (podział): wolny slot na końcu albo po usuniętym (nie boss, nie wezwani, nie czekający).</summary>
@@ -281,6 +281,6 @@ public sealed partial class Game
             c.Flags = ActorFlag.Child;
             ++made;
         }
-        if (made > 0) Push(Msg(D.Enemies[p.DefId].Name).Add(" dzieli się!").As(LogKind.Bad));
+        if (made > 0) Push(Msg(D.Enemies[p.DefId].Name).Add(Loc.T("dzieli_sie")).As(LogKind.Bad));
     }
 }

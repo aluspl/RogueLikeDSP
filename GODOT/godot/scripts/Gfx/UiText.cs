@@ -23,9 +23,9 @@ public static class UiText
 
     public static string Roman(int i) => i switch { 0 => "I", 1 => "II", 2 => "III", 3 => "IV", 4 => "V", _ => (i + 1).ToString() };
 
-    private static readonly (Stat S, string Name)[] StatNames = [(Stat.Str, "SIŁ"), (Stat.Agi, "ZRĘ"), (Stat.Intel, "INT")];
+    private static (Stat S, string Name)[] StatNames => [(Stat.Str, Loc.T("sil")), (Stat.Agi, Loc.T("zre")), (Stat.Intel, "INT")];
 
-    public static string StatShort(Stat s) => s == Stat.Str ? "SIŁ" : s == Stat.Agi ? "ZRĘ" : "INT";
+    public static string StatShort(Stat s) => s == Stat.Str ? Loc.T("sil") : s == Stat.Agi ? Loc.T("zre") : "INT";
 
     /// <summary>Statystyka z premią, np. „SIŁ 5+2” (baza zawodu + Warsztaty/cechy sprzętu), bez premii „SIŁ 5”.</summary>
     public static string StatText(string name, int baseValue, int bonus) => bonus > 0 ? $"{name} {baseValue}+{bonus}" : $"{name} {baseValue}";
@@ -35,7 +35,7 @@ public static class UiText
         string.Join(" ", StatNames.Select(x => StatText(x.Name, RunMods.ClassBaseStat(g.D, g.Cls, x.S), g.StatBonus(x.S))));
 
     /// <summary>Wiersz statystyk jak hero_stats_line na GBA: SIŁ, ZRĘ, INT, SZCZ z premiami.</summary>
-    public static string HeroStatsLine(CoreGame g) => Stats(g) + " " + StatText("SZCZ", g.CDef.Luck, g.Luck() - g.CDef.Luck);
+    public static string HeroStatsLine(CoreGame g) => Stats(g) + " " + StatText(Loc.T("szcz"), g.CDef.Luck, g.Luck() - g.CDef.Luck);
 
     /// <summary>Statystyki zawodu z premią z profilu (Warsztaty na statystykę broni).</summary>
     public static string ClassStat(GameData d, int cls, in RunMods m, Stat s) =>
@@ -55,22 +55,22 @@ public static class UiText
     {
         var active = HudStatuses.Append(StatusEffect.Wet).Where(s => g.StatusTurns(s) > 0).ToList();
         any = active.Count > 0;
-        if (active.Count == 0) return "Stany: brak";
+        if (active.Count == 0) return Loc.T("stany_brak");
         if (active.Count == 1)
         {
             var sd = g.D.Statuses[(int)active[0]];
-            return $"Stany: {sd.Name} {g.StatusTurns(active[0])} t. ({sd.Effect})";
+            return Loc.F("stany_t", sd.Name, g.StatusTurns(active[0]), sd.Effect);
         }
-        return "Stany: " + string.Join(", ", active.Select(s => $"{g.D.Statuses[(int)s].Short} {g.StatusTurns(s)}")) + " t.";
+        return Loc.T("stany") + string.Join(", ", active.Select(s => $"{g.D.Statuses[(int)s].Short} {g.StatusTurns(s)}")) + " t.";
     }
 
     public static string GearStatName(GearStat s) => s switch
     {
-        GearStat.Def => "Obrona",
-        GearStat.Dmg => "Obrażenia",
-        GearStat.Dodge => "Unik %",
-        GearStat.Thermos => "Termos",
-        _ => "Max HP",
+        GearStat.Def => Loc.T("obrona"),
+        GearStat.Dmg => Loc.T("obrazenia"),
+        GearStat.Dodge => Loc.T("unik_5"),
+        GearStat.Thermos => Loc.T("termos_3"),
+        _ => Loc.T("max_hp_2"),
     };
 
     /// <summary>Założony sprzęt z cechami, np. „Kask budowlany [Kryt+5%]”.</summary>
@@ -81,7 +81,7 @@ public static class UiText
         {
             if (g.Equipped[s] >= 0) parts.Add($"{g.D.Gear[s * 3 + g.Equipped[s]].Name} [{g.D.GearTraits[g.EquippedTrait[s]].Short}]");
         }
-        return parts.Count == 0 ? "brak" : string.Join(", ", parts);
+        return parts.Count == 0 ? Loc.T("brak_2") : string.Join(", ", parts);
     }
 
     /// <summary>Uprawnienia ze zdobytych odznak (premie na każdą budowę).</summary>

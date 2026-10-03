@@ -19,9 +19,9 @@ public sealed class TeamTab : PhonePage
         _p = p;
     }
 
-    public override string Title => "Zespół";
-    public override string Sub => $"Wygrane {Meta.ClassesWon(_d, _p)}/{_d.Classes.Length}";
-    public override string Hint => "Q/E: zakładki  Esc: wróć";
+    public override string Title => Loc.T("zespol");
+    public override string Sub => Loc.F("wygrane_3", Meta.ClassesWon(_d, _p), _d.Classes.Length);
+    public override string Hint => Loc.T("q_e_zakladki_esc_wroc");
 
     public override bool Input(InputCmd e)
     {
@@ -46,7 +46,7 @@ public sealed class TeamTab : PhonePage
             var won = Meta.ClassWon(_p, i);
             var unl = Meta.ClassUnlocked(_d, _p, i);
             var ml = Progress.MasteryLevel(_d, _p, i); // v0.21.52 cz. b (#45): poziom mistrzostwa zawodu
-            var pill = !unl ? "Zablok." : ml > 0 ? $"Mistrz {ml}" : won ? "Wygrana" : "Dostępny";
+            var pill = !unl ? Loc.T("zablok") : ml > 0 ? Loc.F("mistrz_3", ml) : won ? Loc.T("wygrana_2") : Loc.T("dostepny");
             var pw = p.Pill(right, y, pill, !unl ? PillKind.Gray : won || ml >= _d.MasteryLevels.Length ? PillKind.Done : PillKind.Group);
             p.Text(tx, y, _d.Classes[i].Name, sel ? Ink.Brand : unl ? Ink.Dark : Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
         }
@@ -58,7 +58,7 @@ public sealed class TeamTab : PhonePage
         p.C.DrawStyleBox(Ui.Box(Pal.Group, 5), photo);
         p.Icon(Assets.Actors, unlocked ? Assets.HeroFrame(_d, _p, s) : Assets.Silhouette(s), Assets.Actor, photo.Position);
         var x = photo.End.X + 8;
-        p.Text(x, dc.Position.Y + 4, "Moc: " + c.AbilityName, Ink.Dark, TextAlign.Left, right - x);
+        p.Text(x, dc.Position.Y + 4, Loc.T("moc_4") + c.AbilityName, Ink.Dark, TextAlign.Left, right - x);
         var lines = p.F.Wrap(c.AbilityDesc, (int)(right - x));
         if (lines.Count > 0) p.Text(x, dc.Position.Y + 22, lines[0], Ink.Dim, TextAlign.Left, right - x);
         var bottom = unlocked ? c.Desc : LockedHint(s);
@@ -66,7 +66,7 @@ public sealed class TeamTab : PhonePage
         {
             var ml = Progress.MasteryLevel(_d, _p, s);
             Progress.MasteryBar(_d, _p, s, out var cur, out var need);
-            bottom = need > 0 ? $"Mistrz {ml}: {cur}/{need}, dalej {Progress.RewardLabel(_d, _d.MasteryLevels[ml], s)}" : $"Mistrz {ml}: wszystko";
+            bottom = need > 0 ? Loc.F("mistrz_dalej", ml, cur, need, Progress.RewardLabel(_d, _d.MasteryLevels[ml], s)) : Loc.F("mistrz_wszystko", ml);
         }
         p.Text(dc.Position.X + 8, dc.Position.Y + 44, bottom, unlocked ? Ink.Dim : Ink.Brand, TextAlign.Left, right - dc.Position.X - 8);
     }
@@ -77,11 +77,11 @@ public sealed class TeamTab : PhonePage
         if (Meta.ClassSecret(_d, cls)) // v0.21.51 cz. 2: zawód z sekretnego zlecenia
         {
             var si = Secrets.Of(_d, SecretReward.Cls, cls);
-            return "Sekret: " + (si >= 0 ? _d.Secrets[si].Hint : "???");
+            return Loc.T("sekret_3") + (si >= 0 ? _d.Secrets[si].Hint : "???");
         }
-        if (!Meta.ClassReward(_d, cls)) return $"Odblokujesz w Kosztach: {Meta.ClassCost(_d, _p)} dośw.";
+        if (!Meta.ClassReward(_d, cls)) return Loc.F("odblokujesz_w_kosztach_dosw", Meta.ClassCost(_d, _p));
         for (var i = 0; i < _d.Rewards.Length; i++)
-            if (_d.Rewards[i].Kind == RewardKind.Cls && _d.Rewards[i].Index == cls) return $"Nagroda za {Meta.RewardWin(_d, _p, i)}. wygraną";
-        return "Nagroda za odbiór";
+            if (_d.Rewards[i].Kind == RewardKind.Cls && _d.Rewards[i].Index == cls) return Loc.F("nagroda_za_wygrana", Meta.RewardWin(_d, _p, i));
+        return Loc.T("nagroda_za_odbior");
     }
 }

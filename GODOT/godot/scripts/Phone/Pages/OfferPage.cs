@@ -18,10 +18,10 @@ public sealed class OfferPage : PhonePage
 
     public OfferPage(CoreGame g) => _g = g;
 
-    public override string Title => "Paczka sprzętu";
+    public override string Title => Loc.T("paczka_sprzetu");
     public override string Sub => _g.OfferSlot >= 0 ? _g.D.GearSlots[_g.OfferSlot] : "";
-    public override string Hint => $"Spacja/Enter: zakładam  Z/Esc: zostawiam (+{_g.D.GearDeclineXp + _g.OfferRarity})";
-    public override PageAction[] Actions => [new("Zakładam", GameAction.A), new($"Zostawiam +{_g.D.GearDeclineXp + _g.OfferRarity}", GameAction.B)];
+    public override string Hint => Loc.F("spacja_enter_zakladam_z_esc", _g.D.GearDeclineXp + _g.OfferRarity);
+    public override PageAction[] Actions => [new(Loc.T("zakladam"), GameAction.A), new(Loc.F("zostawiam", _g.D.GearDeclineXp + _g.OfferRarity), GameAction.B)];
 
     public override void Draw(PhonePainter p)
     {
@@ -29,14 +29,14 @@ public sealed class OfferPage : PhonePage
         var d = g.D;
         var slot = g.OfferSlot;
         if (slot < 0) return;
-        var y = p.Section(p.Top, "TERAZ");
+        var y = p.Section(p.Top, Loc.T("teraz_5"));
         y = Item(p, y, g.Equipped[slot], g.EquippedTrait[slot], false) + 4;
-        y = p.Section(y, "NOWY", g.OfferIsBetter ? "lepszy!" : "");
+        y = p.Section(y, Loc.T("nowy_2"), g.OfferIsBetter ? Loc.T("lepszy") : "");
         y = Item(p, y, g.OfferRarity, g.OfferTrait, true) + 6;
         var cmp = Compare(p, (int)(p.Width - 24));
         var c = p.Card(y, 2 + cmp.Count);
-        var verdict = g.OfferIsBetter ? "Nowy jest lepszej jakości."
-                    : g.OfferRarity == g.Equipped[slot] ? "Ta sama jakość - inna cecha." : "Nowy jest gorszej jakości.";
+        var verdict = g.OfferIsBetter ? Loc.T("nowy_jest_lepszej_jakosci")
+                    : g.OfferRarity == g.Equipped[slot] ? Loc.T("ta_sama_jakosc_inna_cecha") : Loc.T("nowy_jest_gorszej_jakosci");
         p.Stripe(c, 0, g.OfferIsBetter ? Pal.Done : Pal.Todo);
         p.Text(p.TextX(c), p.RowY(c, 0), verdict, g.OfferIsBetter ? Ink.Done : Ink.Dark, TextAlign.Left, c.End.X - 6 - p.TextX(c));
         for (var i = 0; i < cmp.Count; i++)
@@ -45,7 +45,7 @@ public sealed class OfferPage : PhonePage
             p.Text(p.TextX(c), p.RowY(c, 1 + i), cmp[i], Ink.Brand, TextAlign.Left, c.End.X - 6 - p.TextX(c));
         }
         p.Divider(c, 1 + cmp.Count);
-        p.Text(p.TextX(c), p.RowY(c, 1 + cmp.Count), "Cecha: " + d.GearTraits[g.OfferTrait].Name, Ink.Dim, TextAlign.Left, c.End.X - 6 - p.TextX(c));
+        p.Text(p.TextX(c), p.RowY(c, 1 + cmp.Count), Loc.T("cecha_2") + d.GearTraits[g.OfferTrait].Name, Ink.Dim, TextAlign.Left, c.End.X - 6 - p.TextX(c));
     }
 
     /// <summary>Co się zmieni po założeniu: cios (średnio), kryt, obrona - tylko to, co się zmienia (jak na GBA).</summary>
@@ -58,7 +58,7 @@ public sealed class OfferPage : PhonePage
         var list = new List<string>();
         if (now.Min != next.Min || now.Max != next.Max || now.Avg10 != next.Avg10)
         {
-            var line = "Cios: " + DamageHelp.CompareLine(new Message(), now, next).Text;
+            var line = Loc.T("cios_2") + DamageHelp.CompareLine(new Message(), now, next).Text;
             list.Add(p.F.Measure(line) <= width ? line : DamageHelp.CompareLine(new Message(), now, next, true).Text);
         }
         if (now.CritChance() != next.CritChance() || now.CritMax != next.CritMax) list.Add(DamageHelp.CompareCrit(new Message(), now, next).Text);
@@ -67,7 +67,7 @@ public sealed class OfferPage : PhonePage
         if (old.Stat == LifeLike.Core.Data.GearStat.Def && gnew.Value != old.Value)
         {
             int d0 = g.HeroDefense(), d1 = d0 - old.Value + gnew.Value;
-            list.Add($"OBR {d0} -> {d1}: z ciosu -{d0 / 2} -> -{d1 / 2}");
+            list.Add(Loc.F("obr_z_ciosu", d0, d1, d0 / 2, d1 / 2));
         }
         return list;
     }
@@ -78,7 +78,7 @@ public sealed class OfferPage : PhonePage
         var card = p.CardH(y, 2 * PhonePainter.RowH + 8);
         if (rarity < 0)
         {
-            p.Text(p.TextX(card), p.RowY(card, 0), "brak", Ink.Dim);
+            p.Text(p.TextX(card), p.RowY(card, 0), Loc.T("brak_2"), Ink.Dim);
             return card.End.Y;
         }
         var gd = d.Gear[_g.OfferSlot * 3 + rarity];

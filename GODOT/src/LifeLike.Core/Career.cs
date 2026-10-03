@@ -84,7 +84,7 @@ public static class Career
     {
         var k = d.Career[c];
         var parts = new List<string>();
-        if (k.Respect > 0) parts.Add($"Respekt +{k.Respect}");
+        if (k.Respect > 0) parts.Add(Loc.F("respekt_5", k.Respect));
         if (k.Title != "") parts.Add(k.Title);
         if (k.Helmet >= 0) parts.Add(d.Cosmetics[k.Helmet].Name);
         return string.Join(", ", parts);
@@ -98,9 +98,9 @@ public static class Career
         {
             var v = k.UnlockValue;
             var few = v % 10 is >= 2 and <= 4 && (v % 100 < 10 || v % 100 >= 20);
-            return v + (v == 1 ? " wygrana" : few ? " wygrane" : " wygranych");
+            return v + (v == 1 ? Loc.T("wygrana") : few ? Loc.T("wygrane") : Loc.T("wygranych"));
         }
-        return k.Unlock == CareerUnlock.Inspector ? $"Inspektor {k.UnlockValue}" : "";
+        return k.Unlock == CareerUnlock.Inspector ? Loc.F("inspektor_3", k.UnlockValue) : "";
     }
 
     /// <summary>

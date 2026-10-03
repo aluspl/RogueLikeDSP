@@ -11,29 +11,29 @@ namespace LifeLike.Game.Phone.Pages;
 /// strona 4 - obrażenia broni (rozpiska #26, teksty damageHelp z game.json jak na GBA) (A: dalej).</summary>
 public sealed class HelpPage : PhonePage
 {
-    private static readonly (string Key, string What)[] Controls =
+    private static (string Key, string What)[] Controls =>
     [
-        ("Strzałki", "ruch i atak wręcz (też WSAD)"),
-        ("A", "atak (trzymaj: celuj)"),
-        ("B", "czekaj (trzymaj: podgląd)"),
-        ("R", "moc zawodu"),
-        ("L", "mapa etapu"),
-        ("START", "menu akcji (termos)"),
-        ("SELECT", "telefon"),
+        (Loc.T("strzalki"), Loc.T("ruch_i_atak_wrecz_tez_wsad")),
+        ("A", Loc.T("atak_trzymaj_celuj")),
+        ("B", Loc.T("czekaj_trzymaj_podglad")),
+        ("R", Loc.T("moc_zawodu")),
+        ("L", Loc.T("mapa_etapu")),
+        ("START", Loc.T("menu_akcji_termos")),
+        ("SELECT", Loc.T("telefon_2")),
     ];
 
-    private static readonly (string Key, string What)[] TouchControls =
+    private static (string Key, string What)[] TouchControls =>
     [
-        ("Przesuń palec", "krok (trzymaj: dalej)"),
-        ("Dotknij pola", "idź tam krok po kroku"),
-        ("Dotknij problemu", "atak albo podejdź"),
-        ("Przytrzymaj go", "karta problemu"),
-        ("Atak", "najbliższy (trzymaj: celuj)"),
-        ("Moc", "moc zawodu"),
-        ("Termos", "kawa leczy (tura)"),
-        ("Czekaj", "tura (trzymaj: podgląd)"),
-        ("Telefon", "aplikacja (trzymaj: mapa)"),
-        ("Okna", "dotknij = zaznacz; Wybierz: prawo, Wróć: lewo"),   // v0.21.51: ten sam układ w każdym oknie
+        (Loc.T("przesun_palec"), Loc.T("krok_trzymaj_dalej")),
+        (Loc.T("dotknij_pola"), Loc.T("idz_tam_krok_po_kroku")),
+        (Loc.T("dotknij_problemu"), Loc.T("atak_albo_podejdz")),
+        (Loc.T("przytrzymaj_go"), Loc.T("karta_problemu")),
+        (Loc.T("atak"), Loc.T("najblizszy_trzymaj_celuj")),
+        (Loc.T("moc_6"), Loc.T("moc_zawodu")),
+        (Loc.T("termos_3"), Loc.T("kawa_leczy_tura")),
+        (Loc.T("czekaj"), Loc.T("tura_trzymaj_podglad")),
+        (Loc.T("telefon"), Loc.T("aplikacja_trzymaj_mapa")),
+        (Loc.T("okna"), Loc.T("dotknij_zaznacz_wybierz_prawo")),   // v0.21.51: ten sam układ w każdym oknie
     ];
 
     private const int Pages = 12; // v0.21.52 cz. b: strona 9 – inspektor i mistrzostwo; cz. c: strona 10 – drzewko, kolekcje, zadania, seria; cz. d: 11 – mapa kariery; v0.21.53: 12 – filtry ekranu
@@ -43,20 +43,20 @@ public sealed class HelpPage : PhonePage
 
 
     /// <summary>v0.21.52 cz. c: gdzie drzewko, kolekcje, zadania dnia i seria dni.</summary>
-    private static readonly string[] GoalsWhereLines =
+    private static string[] GoalsWhereLines =>
     [
-        "Profil > Koszty > Tab: Drzewko",
-        "Profil > Katalog > Spacja: Kolekcje",
-        "Profil > Odznaki > Zadania",
-        "Seria: budowa dnia w kolejne dni",
+        Loc.T("profil_koszty_tab_drzewko"),
+        Loc.T("profil_katalog_spacja_kolekcje"),
+        Loc.T("profil_odznaki_zadania"),
+        Loc.T("seria_budowa_dnia_w_kolejne"),
     ];
     /// <summary>v0.21.52 cz. d: gdzie mapa kariery i co dają kontrakty.</summary>
-    private static readonly string[] CareerWhereLines =
+    private static string[] CareerWhereLines =>
     [
-        "Tytuł > Nowa budowa: Mapa kariery",
-        "Wybór zawodu > Esc: wróć do mapy",
-        "Profil > Odznaki > Tytuły: tytuły kontraktów",
-        "Budowa dnia i tygodnia: zawsze Dom",
+        Loc.T("tytul_nowa_budowa_mapa_kariery"),
+        Loc.T("wybor_zawodu_esc_wroc_do_mapy"),
+        Loc.T("profil_odznaki_tytuly_tytuly"),
+        Loc.T("budowa_dnia_i_tygodnia_zawsze"),
     ];
     private readonly GameData _d;
     private int _page;
@@ -78,12 +78,12 @@ public sealed class HelpPage : PhonePage
     /// <summary>Z menu tytułu: przycisk „Samouczek jeszcze raz” (SELECT / Tab) - dymki menu od nowa.</summary>
     public bool FromTitle { get; }
 
-    public override string Title => "Jak grać";
+    public override string Title => Loc.T("jak_grac");
     public override string Sub => $"{_page + 1}/{Pages}";
-    public override string Hint => ButtonNames.Localize(FromTitle ? "A: dalej  SELECT: samouczek menu" : "A: dalej");
+    public override string Hint => ButtonNames.Localize(FromTitle ? Loc.T("a_dalej_select_samouczek_menu") : Loc.T("a_dalej"));
     public override PageAction[] Actions => FromTitle
-        ? [new("Samouczek jeszcze raz", GameAction.Select), new("Dalej", GameAction.A)]
-        : [new("Dalej", GameAction.A)];
+        ? [new(Loc.T("samouczek_jeszcze_raz"), GameAction.Select), new(Loc.T("dalej"), GameAction.A)]
+        : [new(Loc.T("dalej"), GameAction.A)];
 
     /// <summary>A / Start: kolejna strona (akty i problemy, statystyki); na ostatniej - wyjście (HelpScreen).</summary>
     public override bool Input(InputCmd e)
@@ -97,22 +97,22 @@ public sealed class HelpPage : PhonePage
     {
         if (_page == 1)
         {
-            DrawList(p, "AKTY: MECHANIKI", ActLines, "PROBLEMY: ZACHOWANIA", BehaviorLines);
+            DrawList(p, Loc.T("akty_mechaniki"), ActLines, Loc.T("problemy_zachowania"), BehaviorLines);
             return;
         }
         if (_page == 2)
         {
-            DrawList(p, "STATYSTYKI", StatLines(_d), "GDZIE OPIS", WhereLines);
+            DrawList(p, Loc.T("statystyki_3"), StatLines(_d), Loc.T("gdzie_opis"), WhereLines);
             return;
         }
         if (_page == 3)
         {
-            DrawList(p, "OBRAŻENIA", _d.DamageHelpLines, "GDZIE ROZPISKA", DamageWhereLines);
+            DrawList(p, Loc.T("obrazenia_3"), _d.DamageHelpLines, Loc.T("gdzie_rozpiska"), DamageWhereLines);
             return;
         }
         if (_page == 4)
         {
-            DrawList(p, "KOMBINACJE STANÓW", ComboLines(_d), "SKĄD STANY, PREMIE, ELITY", ComboWhereLines(_d));
+            DrawList(p, Loc.T("kombinacje_stanow"), ComboLines(_d), Loc.T("skad_stany_premie_elity"), ComboWhereLines(_d));
             return;
         }
         if (_page == FiltersPage) // v0.21.53: filtry ekranu i tryby dla daltonistów
@@ -134,10 +134,10 @@ public sealed class HelpPage : PhonePage
         {
             var cwidth = (int)(p.Right - 6 - p.Left - 12);
             var clines = p.F.Wrap(string.Join(" ", _d.CareerHelpLines), cwidth);
-            var cc = p.Card(p.Section(p.Top, "MAPA KARIERY"), clines.Count);
+            var cc = p.Card(p.Section(p.Top, Loc.T("mapa_kariery_2")), clines.Count);
             var cx = p.TextX(cc);
             for (var i = 0; i < clines.Count; i++) p.Text(cx, p.RowY(cc, i), clines[i], Ink.Dark, TextAlign.Left, cc.End.X - 6 - cx);
-            var cc2 = p.Card(p.Section(cc.End.Y + 6, "GDZIE"), CareerWhereLines.Length);
+            var cc2 = p.Card(p.Section(cc.End.Y + 6, Loc.T("gdzie")), CareerWhereLines.Length);
             for (var i = 0; i < CareerWhereLines.Length; i++)
             {
                 if (i > 0) p.Divider(cc2, i);
@@ -149,10 +149,10 @@ public sealed class HelpPage : PhonePage
         {
             var gwidth = (int)(p.Right - 6 - p.Left - 12);
             var glines = p.F.Wrap(string.Join(" ", _d.GoalsHelpLines), gwidth);
-            var gc = p.Card(p.Section(p.Top, "DRZEWKO, KOLEKCJE, ZADANIA"), glines.Count);
+            var gc = p.Card(p.Section(p.Top, Loc.T("drzewko_kolekcje_zadania")), glines.Count);
             var gx = p.TextX(gc);
             for (var i = 0; i < glines.Count; i++) p.Text(gx, p.RowY(gc, i), glines[i], Ink.Dark, TextAlign.Left, gc.End.X - 6 - gx);
-            var gc2 = p.Card(p.Section(gc.End.Y + 6, "GDZIE"), GoalsWhereLines.Length);
+            var gc2 = p.Card(p.Section(gc.End.Y + 6, Loc.T("gdzie")), GoalsWhereLines.Length);
             for (var i = 0; i < GoalsWhereLines.Length; i++)
             {
                 if (i > 0) p.Divider(gc2, i);
@@ -164,10 +164,10 @@ public sealed class HelpPage : PhonePage
         {
             var pwidth = (int)(p.Right - 6 - p.Left - 12);
             var plines = p.F.Wrap(string.Join(" ", _d.ProgressHelpLines), pwidth);
-            var pc = p.Card(p.Section(p.Top, "INSPEKTOR I MISTRZOSTWO"), plines.Count);
+            var pc = p.Card(p.Section(p.Top, Loc.T("inspektor_i_mistrzostwo")), plines.Count);
             var px = p.TextX(pc);
             for (var i = 0; i < plines.Count; i++) p.Text(px, p.RowY(pc, i), plines[i], Ink.Dark, TextAlign.Left, pc.End.X - 6 - px);
-            var pc2 = p.Card(p.Section(pc.End.Y + 6, "GDZIE"), ProgressWhereLines.Length);
+            var pc2 = p.Card(p.Section(pc.End.Y + 6, Loc.T("gdzie")), ProgressWhereLines.Length);
             for (var i = 0; i < ProgressWhereLines.Length; i++)
             {
                 if (i > 0) p.Divider(pc2, i);
@@ -179,10 +179,10 @@ public sealed class HelpPage : PhonePage
         {
             var width = (int)(p.Right - 6 - p.Left - 12);
             var lines = p.F.Wrap(ButtonNames.Localize(string.Join(" ", SecretsHelp)), width);
-            var sc = p.Card(p.Section(p.Top, "SEKRETNE ZLECENIA"), lines.Count);
+            var sc = p.Card(p.Section(p.Top, Loc.T("sekretne_zlecenia")), lines.Count);
             var sx = p.TextX(sc);
             for (var i = 0; i < lines.Count; i++) p.Text(sx, p.RowY(sc, i), lines[i], Ink.Dark, TextAlign.Left, sc.End.X - 6 - sx);
-            var y2 = p.Section(sc.End.Y + 6, "GDZIE");
+            var y2 = p.Section(sc.End.Y + 6, Loc.T("gdzie"));
             var c2 = p.Card(y2, SecretWhereLines.Length);
             for (var i = 0; i < SecretWhereLines.Length; i++)
             {
@@ -193,7 +193,7 @@ public sealed class HelpPage : PhonePage
         }
         if (_page == 6)
         {
-            DrawList(p, "PO BUDOWIE, TYDZIEŃ, FABUŁA", _d.MetaHelpLines, "GDZIE", MetaWhereLines);
+            DrawList(p, Loc.T("po_budowie_tydzien_fabula"), _d.MetaHelpLines, Loc.T("gdzie"), MetaWhereLines);
             return;
         }
         if (_page == 5)
@@ -201,8 +201,8 @@ public sealed class HelpPage : PhonePage
             // krótkie linie z GBA złączone i zawinięte na szerokość telefonu; jedna karta, żeby zmieścić się w poziomie
             var width = (int)(p.Right - 6 - p.Left - 12);
             var a = p.F.Wrap(ExtrasText(_d, 0), width);
-            var b = p.F.Wrap("Magazyn: " + ExtrasText(_d, 6), width);
-            var ec = p.Card(p.Section(p.Top, "WYDARZENIA, ULEPSZENIA, MAGAZYN"), a.Count + b.Count);
+            var b = p.F.Wrap(Loc.T("magazyn_3") + ExtrasText(_d, 6), width);
+            var ec = p.Card(p.Section(p.Top, Loc.T("wydarzenia_ulepszenia_magazyn")), a.Count + b.Count);
             var ex = p.TextX(ec);
             for (var i = 0; i < a.Count; i++) p.Text(ex, p.RowY(ec, i), a[i], Ink.Dark, TextAlign.Left, ec.End.X - 6 - ex);
             p.Divider(ec, a.Count);
@@ -213,24 +213,24 @@ public sealed class HelpPage : PhonePage
         {
             var top = p.Card(p.Top, 1 + ShortNews.Length);
             p.Stripe(top, 0, Pal.Brand);
-            p.Text(p.TextX(top), p.RowY(top, 0), "3 akty z bossami, z nagrody Akt 0", Ink.Dark, TextAlign.Left, top.End.X - 6 - p.TextX(top));
+            p.Text(p.TextX(top), p.RowY(top, 0), Loc.T("n3_akty_z_bossami_z_nagrody_akt"), Ink.Dark, TextAlign.Left, top.End.X - 6 - p.TextX(top));
             for (var i = 0; i < ShortNews.Length; i++)
             {
                 p.Divider(top, i + 1);
                 p.Text(p.TextX(top), p.RowY(top, i + 1), ShortNews[i], Ink.Dark, TextAlign.Left, top.End.X - 6 - p.TextX(top));
             }
-            DrawControls(p, p.Section(top.End.Y + 6, "STEROWANIE"));
+            DrawControls(p, p.Section(top.End.Y + 6, Loc.T("sterowanie_2")));
             return;
         }
         var intro = p.Card(p.Top, 2);
         p.Stripe(intro, 0, Pal.Brand);
         p.Stripe(intro, 1, Pal.Brand);
-        p.Text(p.TextX(intro), p.RowY(intro, 0), "10 etapów w 3 aktach (+ Akt 0 z nagrody),", Ink.Dark);
-        p.Text(p.TextX(intro), p.RowY(intro, 1), "każdy kończy boss. Schody = dalej.", Ink.Dark);
-        var card = DrawControls(p, p.Section(intro.End.Y + 6, "STEROWANIE"));
+        p.Text(p.TextX(intro), p.RowY(intro, 0), Loc.T("n10_etapow_w_3_aktach_akt_0_z"), Ink.Dark);
+        p.Text(p.TextX(intro), p.RowY(intro, 1), Loc.T("kazdy_konczy_boss_schody_dalej"), Ink.Dark);
+        var card = DrawControls(p, p.Section(intro.End.Y + 6, Loc.T("sterowanie_2")));
         var tx = p.TextX(card);
         var right = card.End.X - 6;
-        var y = p.Section(card.End.Y + 6, "NA PLACU");
+        var y = p.Section(card.End.Y + 6, Loc.T("na_placu_2"));
         var news = p.Card(y, News.Length);
         for (var i = 0; i < News.Length; i++)
         {
@@ -276,8 +276,8 @@ public sealed class HelpPage : PhonePage
     {
         var l = new System.Collections.Generic.List<string>(d.ComboSources);
         if (!PhoneView.Full) return l.ToArray(); // telefon w poziomie: bez miejsca na premie i elity (krótko na stronie 1)
-        l.Add("Po etapie: premia 1 z 3 (2+ znaczniki = synergia)");
-        l.Add("Złota ramka: elita, lepsza nagroda");
+        l.Add(Loc.T("po_etapie_premia_1_z_3_2"));
+        l.Add(Loc.T("zlota_ramka_elita_lepsza"));
         return l.ToArray();
     }
 
@@ -291,53 +291,65 @@ public sealed class HelpPage : PhonePage
 
     private static string[] _secretsHelp;
     /// <summary>Tekst secretsHelp z game.json (wspólny z GBA), wczytany raz.</summary>
-    private static string[] SecretsHelp => _secretsHelp ??= Session.GodotDataSource.LoadStrings("secretsHelp");
+    private static bool _secretsHelpEn;
+    private static string[] SecretsHelp // v0.21.53 cz. 2: w bieżącym języku danych
+    {
+        get
+        {
+            if (_secretsHelp is null || _secretsHelpEn != Session.GodotDataSource.DataEnglish)
+            {
+                _secretsHelp = Session.GodotDataSource.LoadStrings("secretsHelp");
+                _secretsHelpEn = Session.GodotDataSource.DataEnglish;
+            }
+            return _secretsHelp;
+        }
+    }
 
-    private static readonly string[] SecretWhereLines =
+    private static string[] SecretWhereLines =>
     [
-        "Profil > Odznaki > Sekrety",
-        "Nowe zawody: wybór zawodu",
-        "Kask w paski: Tryb inwestora",
+        Loc.T("profil_odznaki_sekrety"),
+        Loc.T("nowe_zawody_wybor_zawodu"),
+        Loc.T("kask_w_paski_tryb_inwestora"),
     ];
 
-    private static readonly string[] ProgressWhereLines =
+    private static string[] ProgressWhereLines =>
     [
-        "Tytuł: pasek inspektora",
-        "Profil > Odznaki > Inspektor",
-        "Wybór zawodu: Mistrz N, Wygląd",
-        "Tryb inwestora: kolejny stopień",
+        Loc.T("tytul_pasek_inspektora"),
+        Loc.T("profil_odznaki_inspektor"),
+        Loc.T("wybor_zawodu_mistrz_n_wyglad"),
+        Loc.T("tryb_inwestora_kolejny_stopien"),
     ];
 
-    private static readonly string[] MetaWhereLines =
+    private static string[] MetaWhereLines =>
     [
-        "Podsumowanie: po końcu budowy",
-        "Tytuł: Wyzwanie tygodnia",
-        "Profil > Osiedle: Wiadomości",
+        Loc.T("podsumowanie_po_koncu_budowy"),
+        Loc.T("tytul_wyzwanie_tygodnia"),
+        Loc.T("profil_osiedle_wiadomosci"),
     ];
 
-    private static readonly string[] ActLines =
+    private static string[] ActLines =>
     [
-        "0: pieczątki - 3 dokumenty = schody",
-        "I: błoto - wejście = tura",
-        "II: porywy wiatru spychają",
-        "III: pył - widzisz mniej",
-        "Kładka działa też na błoto",
+        Loc.T("n0_pieczatki_3_dokumenty_schody"),
+        Loc.T("i_bloto_wejscie_tura"),
+        Loc.T("ii_porywy_wiatru_spychaja"),
+        Loc.T("iii_pyl_widzisz_mniej"),
+        Loc.T("kladka_dziala_tez_na_bloto"),
     ];
 
-    private static readonly string[] BehaviorLines =
+    private static string[] BehaviorLines =>
     [
-        "Strzelają z 2-3 pól, dzielą się",
-        "Łatają sąsiadów, rosną z czasem",
-        "Wybuch: zejdź z czerwonych pól!",
-        "Uciekają albo stoją jak mur",
-        "Odpychają, wracają raz",
+        Loc.T("strzelaja_z_2_3_pol_dziela_sie"),
+        Loc.T("lataja_sasiadow_rosna_z_czasem"),
+        Loc.T("wybuch_zejdz_z_czerwonych_pol"),
+        Loc.T("uciekaja_albo_stoja_jak_mur"),
+        Loc.T("odpychaja_wracaja_raz"),
     ];
 
     /// <summary>Wzory statystyk z danych (StatHelp jak stat_rule w core.h).</summary>
     private static string[] StatLines(GameData d) =>
     [
-        "SIŁ/ZRĘ/INT: +1 obr. co 2 pkt",
-        "(liczy się tylko statystyka broni)",
+        Loc.T("sil_zre_int_1_obr_co_2_pkt"),
+        Loc.T("liczy_sie_tylko_statystyka"),
         StatHelp.Rule(d, new Message(), StatKind.Def).Text,
         StatHelp.Rule(d, new Message(), StatKind.Luck).Text,
         StatHelp.Rule(d, new Message(), StatKind.Luck, 1).Text,
@@ -346,12 +358,12 @@ public sealed class HelpPage : PhonePage
     ];
 
     private static string[] WhereLines => Layout.Touch
-        ? ["Wybór zawodu: dotknij statystyki", "Telefon > Start > Opis statystyk"]
-        : ["Wybór zawodu: I albo mysz", "Telefon > Start > Spacja"];
+        ? [Loc.T("wybor_zawodu_dotknij"), Loc.T("telefon_start_opis_statystyk")]
+        : [Loc.T("wybor_zawodu_i_albo_mysz"), Loc.T("telefon_start_spacja")];
 
     private static string[] DamageWhereLines => Layout.Touch
-        ? ["Wybór zawodu: dotknij narzędzia", "Telefon > Sprzęt > dotknij narzędzia", "Przytrzymaj problem: obrażenia w obie strony"]
-        : ["Wybór zawodu: mysz na narzędziu, I", "Telefon > Sprzęt > I", "Trzymaj Z: obrażenia w obie strony"];
+        ? [Loc.T("wybor_zawodu_dotknij_narzedzia"), Loc.T("telefon_sprzet_dotknij"), Loc.T("przytrzymaj_problem_obrazenia")]
+        : [Loc.T("wybor_zawodu_mysz_na_narzedziu"), Loc.T("telefon_sprzet_i"), Loc.T("trzymaj_z_obrazenia_w_obie")];
 
     private static Godot.Rect2 DrawControls(PhonePainter p, float y)
     {
@@ -371,28 +383,28 @@ public sealed class HelpPage : PhonePage
     }
 
     /// <summary>Nowości w wąskim telefonie (poziomo): krótko.</summary>
-    private static readonly string[] ShortNews =
-        ["Okna: A bierze, B wraca (wszędzie)", "Respekt i nagrody: profil > Koszty", "Codzienna budowa: menu tytułu", "Pogoda, brygada: telefon > Sprzęt"];
+    private static string[] ShortNews =>
+        [Loc.T("okna_a_bierze_b_wraca_wszedzie"), Loc.T("respekt_i_nagrody_profil"), Loc.T("codzienna_budowa_menu_tytulu"), Loc.T("pogoda_brygada_telefon_sprzet")];
 
     /// <summary>Pogoda, brygada i tryb inwestora (v0.21.47), ścieżki, materiały i codzienna budowa (v0.21.48), Respekt i nagrody (v0.21.49).</summary>
     private static string[] News => Layout.Touch
         ?
         [
-            "Po etapie: premia 1 z 3, potem ścieżka etapu", "Złota ramka: elita (cecha, lepsza nagroda)", "Materiały z problemów: Hurtownia i naprawy (Brygada)",
-            "Załataj (drewno): deski przed problemem", "Kładka (stal): kałuże bez poślizgu", "Codzienna budowa: menu tytułu, jedna na dzień",
-            "Pogoda dnia: ikona w HUD, skutek w Zadaniach", "Brygada: Telefon > Sprzęt > Brygada (raz na etap)",
-            "Po wygranej: Tryb inwestora na wyborze zawodu",
-            "Respekt za każdy etap zostaje po porażce: profil > Koszty > Respekt",
-            "Każda wygrana: nagroda za odbiór (sprzęt, narzędzia, zawody)",
+            Loc.T("po_etapie_premia_1_z_3_potem"), Loc.T("zlota_ramka_elita_cecha_lepsza"), Loc.T("materialy_z_problemow_2"),
+            Loc.T("zalataj_drewno_deski_przed"), Loc.T("kladka_stal_kaluze_bez"), Loc.T("codzienna_budowa_menu_tytulu_2"),
+            Loc.T("pogoda_dnia_ikona_w_hud_skutek"), Loc.T("brygada_telefon_sprzet_brygada"),
+            Loc.T("po_wygranej_tryb_inwestora_na"),
+            Loc.T("respekt_za_kazdy_etap_zostaje"),
+            Loc.T("kazda_wygrana_nagroda_za"),
         ]
         :
         [
-            "Okna: strzałki zaznaczają, A (Spacja/Enter) bierze, B (Z/Esc) wraca", "Po etapie: premia 1 z 3, potem ścieżka etapu",
-            "Złota ramka: elita (cecha, lepsza nagroda)", "Materiały z problemów: Hurtownia i naprawy (Brygada)",
-            "Załataj (drewno): deski przed problemem", "Kładka (stal): kałuże bez poślizgu", "Codzienna budowa: menu tytułu, jedna na dzień",
-            "Pogoda dnia: ikona w HUD, skutek w Zadaniach", "Brygada: Enter, Spacja (albo telefon > Sprzęt)",
-            "Po wygranej: Tab na wyborze zawodu = tryb inwestora",
-            "Respekt za każdy etap zostaje po porażce: profil (P) > Koszty > Tab",
-            "Każda wygrana: nagroda za odbiór (sprzęt, narzędzia, zawody)",
+            Loc.T("okna_strzalki_zaznaczaja_a"), Loc.T("po_etapie_premia_1_z_3_potem"),
+            Loc.T("zlota_ramka_elita_cecha_lepsza"), Loc.T("materialy_z_problemow_2"),
+            Loc.T("zalataj_drewno_deski_przed"), Loc.T("kladka_stal_kaluze_bez"), Loc.T("codzienna_budowa_menu_tytulu_2"),
+            Loc.T("pogoda_dnia_ikona_w_hud_skutek"), Loc.T("brygada_enter_spacja_albo"),
+            Loc.T("po_wygranej_tab_na_wyborze"),
+            Loc.T("respekt_za_kazdy_etap_zostaje_2"),
+            Loc.T("kazda_wygrana_nagroda_za"),
         ];
 }

@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using System.Collections.Generic;
 using Godot;
 using LifeLike.Game.Gfx;
@@ -157,16 +158,16 @@ public partial class CoachView : Control, Touch.ITapTargets
         var bx = x;
         if (!Single)
         {
-            Button(new Rect2(bx, y, bw, btnH), "Pomiń" + ButtonNames.Pick(" (Esc)", ""), false, CoachHit.Skip);
+            Button(new Rect2(bx, y, bw, btnH), Loc.T("pomin") + ButtonNames.Pick(" (Esc)", ""), false, CoachHit.Skip);
             bx += bw + gap;
         }
         else bw = (card.Size.X - 20 - gap * (n - 2)) / (n - 1);
         if (Link)
         {
-            Button(new Rect2(bx, y, bw, btnH), "Statystyki" + ButtonNames.Pick(" (I)", ""), false, CoachHit.Link);
+            Button(new Rect2(bx, y, bw, btnH), Loc.T("statystyki") + ButtonNames.Pick(" (I)", ""), false, CoachHit.Link);
             bx += bw + gap;
         }
-        Button(new Rect2(bx, y, card.End.X - 10 - bx, btnH), (Last ? "Gotowe" : "Dalej") + ButtonNames.Pick(" (Spacja)", ""), true, CoachHit.Next);
+        Button(new Rect2(bx, y, card.End.X - 10 - bx, btnH), (Last ? Loc.T("gotowe") : Loc.T("dalej")) + ButtonNames.Pick(Loc.T("spacja_2"), ""), true, CoachHit.Next);
     }
 
     /// <summary>Clamp odporny na mały ekran (min > max: min).</summary>

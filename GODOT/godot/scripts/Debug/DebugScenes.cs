@@ -373,7 +373,7 @@ public sealed class DebugScenes
             case "event-result":
             case "event-boon":
             case "tasks-extras":
-                _stage.EventTiles(scene == "event-boon" ? "Znaleziony projekt" : "Tańszy dostawca", "Stara ostrzałka");
+                _stage.EventTiles(scene == "event-boon" ? "projekt" : "dostawca", "ostrzalka");
                 if (scene == "event-map") break;
                 _app.AfterAction(g.PlayerMove(1, 0));
                 if (scene == "event-sms") break;
@@ -411,7 +411,7 @@ public sealed class DebugScenes
                 g.WeaponLvl = 2;
                 g.WeaponTrait = 0;
                 g.Pickups[g.PickupsCount++] = new Pickup(g.Hero.X + 1, g.Hero.Y, PickupType.Tool, true,
-                    Array.FindIndex(g.D.Tools, t => g.D.Weapons[t.Weapon].Name == "Młot udarowy"));
+                    Array.FindIndex(g.D.Tools, t => g.D.Weapons[t.Weapon].Id == "udarowy"));
                 _app.AfterAction(g.PlayerMove(1, 0));
                 break;
             case "secret-crack":
@@ -573,7 +573,7 @@ public sealed class DebugScenes
                 DamageStage(g);
                 _app.Session.ResetWatch();   // bez banerów awansu i sprzętu z przygotowania sceny
                 _app.Refresh();
-                g.Pickups[0] = new Pickup(g.Hero.X, g.Hero.Y, PickupType.Tool, true, Array.FindIndex(g.D.Tools, t => g.D.Weapons[t.Weapon].Name == "Młot udarowy"), 0);
+                g.Pickups[0] = new Pickup(g.Hero.X, g.Hero.Y, PickupType.Tool, true, Array.FindIndex(g.D.Tools, t => g.D.Weapons[t.Weapon].Id == "udarowy"), 0);
                 g.Collect();
                 _app.AfterAction(true);
                 break;

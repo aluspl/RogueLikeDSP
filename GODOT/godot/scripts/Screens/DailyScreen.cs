@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using LifeLike.Game.Audio;
 using LifeLike.Game.Input;
 using LifeLike.Game.Phone.Pages;
@@ -52,7 +53,7 @@ public sealed class DailyScreen : Screen
     public void Submit()
     {
         var best = LifeLike.Core.Daily.Best(S.Data, S.Profile, Page.Day);
-        Page.Note = best < 0 ? "Najpierw rozegraj budowę dnia" : S.Leaderboard.Submit(Page.Day, best);
+        Page.Note = best < 0 ? Loc.T("najpierw_rozegraj_budowe_dnia") : S.Leaderboard.Submit(Page.Day, best);
         Sfx.Play(best < 0 ? "hurt" : "notify");
         N.Phone.QueueRedraw();
     }

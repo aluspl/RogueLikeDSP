@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using LifeLike.Game.Input;
 using LifeLike.Game.Phone.Pages;
 
@@ -99,7 +100,7 @@ public sealed class SettingsScreen : Screen
                 break;
             case SettingsRow.SaveExit:
                 S.SaveRun();
-                S.Note = "Budowa zapisana - Kontynuuj budowę na tytule";
+                S.Note = Loc.T("budowa_zapisana_kontynuuj");
                 Flow.Title.Open();
                 break;
             case SettingsRow.Abandon:

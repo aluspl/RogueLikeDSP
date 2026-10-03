@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using LifeLike.Game.Audio;
 using LifeLike.Game.Input;
 using LifeLike.Game.Phone.Pages;
@@ -53,7 +54,7 @@ public sealed class WeeklyScreen : Screen
     public void Submit()
     {
         var best = LifeLike.Core.Weekly.Best(S.Data, S.Profile, Page.Week);
-        Page.Note = best < 0 ? "Najpierw rozegraj wyzwanie tygodnia" : S.Leaderboard.SubmitWeekly(Page.Week, best);
+        Page.Note = best < 0 ? Loc.T("najpierw_rozegraj_wyzwanie") : S.Leaderboard.SubmitWeekly(Page.Week, best);
         Sfx.Play(best < 0 ? "hurt" : "notify");
         N.Phone.QueueRedraw();
     }

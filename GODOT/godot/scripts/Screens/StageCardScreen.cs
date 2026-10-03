@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using LifeLike.Core.Data;
 using LifeLike.Game.Audio;
 using LifeLike.Game.Gfx;
@@ -23,20 +24,20 @@ public sealed class StageCardScreen : Screen
         var g = S.Game;
         var d = S.Data;
         var sd = g.SDef();
-        var where = (g.Contract > 0 ? $"{g.KDef.Short}, " : "") + $"Akt {g.ActNumeral()}, {g.StageNumber()}/{g.StagesInRun()}"; // v0.21.52 cz. d: kontrakt
-        var page = new MessagePage(where, "Enter: do roboty");
+        var where = (g.Contract > 0 ? $"{g.KDef.Short}, " : "") + Loc.F("akt_5", g.ActNumeral(), g.StageNumber(), g.StagesInRun()); // v0.21.52 cz. d: kontrakt
+        var page = new MessagePage(where, Loc.T("enter_do_roboty"));
         page.Add(g.StageStory);
         var ev = g.CurrentEvent;
         if (ev is not null && g.Turns == g.StageStartTurn) page.Add(ev.Msg);
-        if (sd.Boss >= 0) page.Info($"Uwaga: {d.Enemies[sd.Boss].Name}!", Ink.Late);
-        else page.Info($"{sd.Name}: problemy {g.EnemyHpPct()}%", Ink.Dim);
+        if (sd.Boss >= 0) page.Info(Loc.F("uwaga_3", d.Enemies[sd.Boss].Name), Ink.Late);
+        else page.Info(Loc.F("problemy_2", sd.Name, g.EnemyHpPct()), Ink.Dim);
         if (ev is not null) page.Info($"{ev.Name}: {ev.Info}", ev.Good ? Ink.Done : Ink.Late);
-        if (g.StagePath >= 0 && g.StagePath < d.Paths.Length) page.Info($"Ścieżka: {d.Paths[g.StagePath].Name}", Ink.Brand);
+        if (g.StagePath >= 0 && g.StagePath < d.Paths.Length) page.Info(Loc.F("sciezka_2", d.Paths[g.StagePath].Name), Ink.Brand);
         var wd = g.WDef; // pogoda dnia (skutek w zakładce Zadania) i trudność w jednym wierszu
         var weather = wd.Effect == WeatherEffect.None ? wd.Name : $"{wd.Name} ({wd.Short})";
-        page.Info($"Pogoda: {weather}, {g.DDef.Name}" + (g.Tier > 0 ? $" NG+{g.Tier}" : ""), wd.Bad ? Ink.Late : Ink.Dim);
-        page.Info($"Akt {g.ActNumeral()}: {g.ADef.MechName} ({(g.KDef.Gust > 0 && g.ADef.Mechanic == ActMechanic.Gust ? $"poryw co {g.MechValue()} tur" : g.ADef.MechInfo)})", Ink.Late); // mechanika aktu
-        if (g.TwinCarry > 0) page.Info($"Wspólna ściana: +{g.TwinCarry} problemy z 1. połowy", Ink.Late); // v0.21.52 cz. d: bliźniak
+        page.Info(Loc.F("pogoda_3", weather, g.DDef.Name) + (g.Tier > 0 ? $" NG+{g.Tier}" : ""), wd.Bad ? Ink.Late : Ink.Dim);
+        page.Info(Loc.F("akt_6", g.ActNumeral(), g.ADef.MechName, (g.KDef.Gust > 0 && g.ADef.Mechanic == ActMechanic.Gust ? Loc.F("poryw_co_tur", g.MechValue()) : g.ADef.MechInfo)), Ink.Late); // mechanika aktu
+        if (g.TwinCarry > 0) page.Info(Loc.F("wspolna_sciana_problemy_z_1", g.TwinCarry), Ink.Late); // v0.21.52 cz. d: bliźniak
         N.Phone.OpenSingle(page, 2, instant);
         Sfx.Play("notify", 0.7f);
     }

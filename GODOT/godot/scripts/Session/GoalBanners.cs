@@ -22,19 +22,19 @@ public static class GoalBanners
             resp += DailyTasks.Of(d, p, s).Respect;
             last = s;
         }
-        if (n == 1) list.Add(($"{(last < DailyTasks.DailySlots ? "Zadanie dnia" : "Zadanie tygodnia")} +{resp} Respektu", DailyTasks.Of(d, p, last).Name));
-        else if (n > 1) list.Add(($"Zadania: {n} wykonane", $"Respekt +{resp}"));
+        if (n == 1) list.Add((Loc.F("respektu_2", (last < DailyTasks.DailySlots ? Loc.T("zadanie_dnia_2") : Loc.T("zadanie_tygodnia")), resp), DailyTasks.Of(d, p, last).Name));
+        else if (n > 1) list.Add((Loc.F("zadania_wykonane", n), Loc.F("respekt_5", resp)));
         foreach (var l in d.TaskRewards)
         {
-            if (tasksBefore < l.Xp && p.TasksTotal >= l.Xp) list.Add(($"Zadania: {l.Xp} wykonanych", Progress.RewardLabel(d, l, -1)));
+            if (tasksBefore < l.Xp && p.TasksTotal >= l.Xp) list.Add((Loc.F("zadania_wykonanych", l.Xp), Progress.RewardLabel(d, l, -1)));
         }
         for (var i = 0; i < d.Collections.Length; ++i)
         {
-            if (((collections >> i) & 1) != 0) list.Add(("Komplet: " + d.Collections[i].Name, CollectionBook.RewardLabel(d, i)));
+            if (((collections >> i) & 1) != 0) list.Add((Loc.T("komplet") + d.Collections[i].Name, CollectionBook.RewardLabel(d, i)));
         }
         foreach (var l in d.StreakRewards)
         {
-            if (streakBefore < l.Xp && streakAfter >= l.Xp) list.Add(($"Seria dni: {l.Xp}!", Progress.RewardLabel(d, l, -1)));
+            if (streakBefore < l.Xp && streakAfter >= l.Xp) list.Add((Loc.F("seria_dni_2", l.Xp), Progress.RewardLabel(d, l, -1)));
         }
         return list;
     }

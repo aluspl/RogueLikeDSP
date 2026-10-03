@@ -1,3 +1,4 @@
+using LifeLike.Core;
 namespace LifeLike.Game.Session;
 
 /// <summary>
@@ -6,7 +7,7 @@ namespace LifeLike.Game.Session;
 /// </summary>
 public sealed class LocalLeaderboard : ILeaderboard
 {
-    public string Name => "Na tym urządzeniu";
+    public string Name => Loc.T("na_tym_urzadzeniu");
 
     /// <summary>Ostatnio „wysłany” wynik (dzień, wynik) – do testu dymnego.</summary>
     public (int Day, int Score) Last { get; private set; }
@@ -14,7 +15,7 @@ public sealed class LocalLeaderboard : ILeaderboard
     public string Submit(int day, int score)
     {
         Last = (day, score);
-        return $"Wynik {score} zapisany lokalnie. Tabela Game Center wkrótce.";
+        return Loc.F("wynik_zapisany_lokalnie_tabela", score);
     }
 
     /// <summary>Ostatnio „wysłany” wynik tygodnia (tabela, wynik) – do testu dymnego.</summary>
@@ -26,6 +27,6 @@ public sealed class LocalLeaderboard : ILeaderboard
     public string SubmitWeekly(int week, int score)
     {
         LastWeekly = (WeeklyBoardId(week), score);
-        return $"Wynik tygodnia {score} zapisany lokalnie ({WeeklyBoardId(week)}).";
+        return Loc.F("wynik_tygodnia_zapisany", score, WeeklyBoardId(week));
     }
 }

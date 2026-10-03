@@ -27,7 +27,7 @@ public sealed class TrainingTab : PhonePage
     private readonly ListState _list = new();
     private readonly List<(TrainingKind K, int I)> _entries = new();
     private string _note = "";
-    private static readonly string[] Pages = ["Szkolenia", "Drzewko", "Respekt", "Nagrody"];
+    private static string[] Pages => [Loc.T("szkolenia"), Loc.T("drzewko_2"), Loc.T("respekt"), Loc.T("nagrody")];
     public const int TreePage = 1;
     public const int RespectPage = 2;
     public const int RewardsPage = 3;
@@ -43,13 +43,13 @@ public sealed class TrainingTab : PhonePage
     }
 
     public override string Title => Pages[_page];
-    public override string Sub => _page == RewardsPage ? $"Wygrane {_p.Wins}" : _page == TreePage ? $"{_p.Xp} dośw." : "Koszty";
-    public override string Hint => _page == RewardsPage ? $"Tab: {Pages[0]}  Q/E: zakładki  Esc: wróć"
-                                   : _page == TreePage ? $"Strzałki: węzeł  Spacja: wybierz  Tab: {Pages[_page + 1]}"
-                                   : $"Spacja: kup  Tab: {Pages[_page + 1]}  Q/E: zakładki";
+    public override string Sub => _page == RewardsPage ? Loc.F("wygrane_4", _p.Wins) : _page == TreePage ? Loc.F("dosw_5", _p.Xp) : Loc.T("koszty");
+    public override string Hint => _page == RewardsPage ? Loc.F("tab_q_e_zakladki_esc_wroc", Pages[0])
+                                   : _page == TreePage ? Loc.F("strzalki_wezel_spacja_wybierz", Pages[_page + 1])
+                                   : Loc.F("spacja_kup_tab_q_e_zakladki", Pages[_page + 1]);
     public override PageAction[] Actions => _page == RewardsPage ? [new(Pages[0] + " >", GameAction.Select)]
-                                            : _page == TreePage ? [new("Wybierz", GameAction.A), new(Pages[_page + 1] + " >", GameAction.Select)]
-                                            : [new("Kup", GameAction.A), new(Pages[_page + 1] + " >", GameAction.Select)];
+                                            : _page == TreePage ? [new(Loc.T("wybierz"), GameAction.A), new(Pages[_page + 1] + " >", GameAction.Select)]
+                                            : [new(Loc.T("kup"), GameAction.A), new(Pages[_page + 1] + " >", GameAction.Select)];
 
     public override bool TapRow(int index)
     {
@@ -125,23 +125,23 @@ public sealed class TrainingTab : PhonePage
     private string Name((TrainingKind K, int I) e) => e.K switch
     {
         TrainingKind.Upgrade => $"{_d.Upgrades[e.I].Name} {_p.Levels[e.I]}/{_d.Upgrades[e.I].Levels}",
-        TrainingKind.Class => "Zawód: " + _d.Classes[e.I].Name,
+        TrainingKind.Class => Loc.T("zawod_3") + _d.Classes[e.I].Name,
         TrainingKind.Tool => _d.Weapons[_d.Tools[e.I].Weapon].Name,
-        TrainingKind.Helper => "Brygada: " + _d.Brigade[e.I].Name,
-        _ => "Trudność: " + _d.Difficulties[^1].Name,
+        TrainingKind.Helper => Loc.T("brygada_2") + _d.Brigade[e.I].Name,
+        _ => Loc.T("trudnosc") + _d.Difficulties[^1].Name,
     };
 
     private string Desc((TrainingKind K, int I) e)
     {
         if (e.K == TrainingKind.Upgrade) return UpgradeDesc(e.I);
-        if (e.K == TrainingKind.Class) return "Nowy zawód do wyboru: " + _d.Classes[e.I].AbilityName + " (każdy kolejny drożej)";
+        if (e.K == TrainingKind.Class) return Loc.T("nowy_zawod_do_wyboru") + _d.Classes[e.I].AbilityName + Loc.T("kazdy_kolejny_drozej");
         if (e.K == TrainingKind.Tool)
         {
             var w = _d.Weapons[_d.Tools[e.I].Weapon];
-            return $"Narzędzie {w.MinDamage}-{w.MaxDamage} z{w.Range}, {UiText.StatShort(w.ScalesWith)}";
+            return Loc.F("narzedzie_z", w.MinDamage, w.MaxDamage, w.Range, UiText.StatShort(w.ScalesWith));
         }
-        if (e.K == TrainingKind.Helper) return $"{_d.Brigade[e.I].Desc} (wezwanie {_d.Brigade[e.I].Price} zł)";
-        return "Najwyższa trudność";
+        if (e.K == TrainingKind.Helper) return Loc.F("wezwanie_zl", _d.Brigade[e.I].Desc, _d.Brigade[e.I].Price);
+        return Loc.T("najwyzsza_trudnosc");
     }
 
     /// <summary>
@@ -152,9 +152,9 @@ public sealed class TrainingTab : PhonePage
     {
         var u = _d.Upgrades[i];
         var lv = _p.Levels[i];
-        if (lv >= u.Levels) return "Razem: " + Meta.UpgradeSummary(_d, i, lv);
-        var next = $"Poziom {UiText.Roman(lv)}: {RunMods.UpgradeLabel(u.Steps[lv].Effect, u.Steps[lv].Value)}";
-        return lv > 0 ? $"{next} (teraz: {Meta.UpgradeSummary(_d, i, lv)})" : $"{next} – {u.Desc}";
+        if (lv >= u.Levels) return Loc.T("razem") + Meta.UpgradeSummary(_d, i, lv);
+        var next = Loc.F("poziom_4", UiText.Roman(lv), RunMods.UpgradeLabel(u.Steps[lv].Effect, u.Steps[lv].Value));
+        return lv > 0 ? Loc.F("teraz_4", next, Meta.UpgradeSummary(_d, i, lv)) : $"{next} – {u.Desc}";
     }
 
     /// <summary>Drzewko: zaznacz węzeł (gałąź, wiersz 0-3: węzeł I A/B, węzeł II A/B) – test dymny, sceny zrzutów.</summary>
@@ -185,11 +185,11 @@ public sealed class TrainingTab : PhonePage
         if (SkillTree.Choose(_d, _p, n, o))
         {
             Sfx.Play("buy");
-            _note = "Wybrane!";
+            _note = Loc.T("wybrane");
             _saved?.Invoke();
             return true;
         }
-        _note = !SkillTree.Open(_d, _p, n) ? "Najpierw Szkolenia tej gałęzi" : SkillTree.Cost(_d, _p, n, o) < 0 ? "Już wybrane" : "Za mało doświadczenia";
+        _note = !SkillTree.Open(_d, _p, n) ? Loc.T("najpierw_szkolenia_tej_galezi") : SkillTree.Cost(_d, _p, n, o) < 0 ? Loc.T("juz_wybrane") : Loc.T("za_malo_doswiadczenia");
         return false;
     }
 
@@ -211,14 +211,14 @@ public sealed class TrainingTab : PhonePage
         if (ok)
         {
             Sfx.Play("buy");
-            _note = "Kupione!";
+            _note = Loc.T("kupione");
             Rebuild();
             _list.Clamp(_entries.Count, Window);
             _saved?.Invoke();
         }
         else
         {
-            _note = e.K == TrainingKind.Upgrade && Meta.UpgradeCost(_d, _p, e.I) < 0 ? "Maksymalny poziom" : "Za mało doświadczenia";
+            _note = e.K == TrainingKind.Upgrade && Meta.UpgradeCost(_d, _p, e.I) < 0 ? Loc.T("maksymalny_poziom") : Loc.T("za_malo_doswiadczenia");
         }
         return ok;
     }
@@ -231,12 +231,12 @@ public sealed class TrainingTab : PhonePage
         if (Meta.BuyRespect(_d, _p, i))
         {
             Sfx.Play("buy");
-            _note = "Kupione!";
+            _note = Loc.T("kupione");
             _saved?.Invoke();
             return true;
         }
-        _note = !Meta.RespectUnlocked(_d, _p, i) ? "Najpierw sekretne zlecenie"
-              : Meta.RespectCost(_d, _p, i) < 0 ? "Maksymalna ranga" : "Za mało Respektu - kończ etapy";
+        _note = !Meta.RespectUnlocked(_d, _p, i) ? Loc.T("najpierw_sekretne_zlecenie")
+              : Meta.RespectCost(_d, _p, i) < 0 ? Loc.T("maksymalna_ranga") : Loc.T("za_malo_respektu_koncz_etapy");
         return false;
     }
 
@@ -291,8 +291,8 @@ public sealed class TrainingTab : PhonePage
         var c0 = p.Card(p.Top, 1);
         var tx = p.TextX(c0);
         var right = c0.End.X - 6;
-        p.Text(tx, p.RowY(c0, 0), "Pozostało", Ink.Dim);
-        p.Text(right, p.RowY(c0, 0), $"{_p.Xp} dośw.", Ink.Done, TextAlign.Right);
+        p.Text(tx, p.RowY(c0, 0), Loc.T("pozostalo"), Ink.Dim);
+        p.Text(right, p.RowY(c0, 0), Loc.F("dosw_5", _p.Xp), Ink.Done, TextAlign.Right);
 
         _list.Clamp(_entries.Count, Window);
         var rows = Math.Min(Window, _entries.Count - _list.Top);
@@ -311,12 +311,12 @@ public sealed class TrainingTab : PhonePage
             p.Text(tx, y, Name(e), sel ? Ink.Brand : Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
         }
         var dc = p.Card(card.End.Y + 6, 2);
-        var desc = _entries.Count > 0 ? Desc(_entries[_list.Sel]) : "Wszystko kupione!";
+        var desc = _entries.Count > 0 ? Desc(_entries[_list.Sel]) : Loc.T("wszystko_kupione");
         var lines = p.F.Wrap(desc, (int)(right - tx));
         p.Text(tx, p.RowY(dc, 0), lines.Count > 0 ? lines[0] : "", Ink.Dim);
-        if (_note.Length > 0) p.Text(tx, p.RowY(dc, 1), _note, _note == "Kupione!" ? Ink.Done : Ink.Late);
+        if (_note.Length > 0) p.Text(tx, p.RowY(dc, 1), _note, _note == Loc.T("kupione") ? Ink.Done : Ink.Late);
         else if (lines.Count > 1) p.Text(tx, p.RowY(dc, 1), lines[1], Ink.Dim);
-        else p.Text(tx, p.RowY(dc, 1), $"Wydano {Meta.ShopSpent(_d, _p)}/{Meta.ShopTotalCost(_d)}", Ink.Brand);
+        else p.Text(tx, p.RowY(dc, 1), Loc.F("wydano", Meta.ShopSpent(_d, _p), Meta.ShopTotalCost(_d)), Ink.Brand);
     }
 
     /// <summary>
@@ -344,7 +344,7 @@ public sealed class TrainingTab : PhonePage
             p.Bold(cx, y, _d.TreeBranches[b].Name, b == _tcol ? Ink.Brand : Ink.Dark, TextAlign.Center);
             y += rowH;
             int lv = SkillTree.BranchLevels(_d, _p, b), max = SkillTree.BranchMax(_d, b);
-            p.Text(cx, y, $"Pień {lv}/{max}", lv >= max ? Ink.Done : Ink.Dim, TextAlign.Center);
+            p.Text(cx, y, Loc.F("pien_2", lv, max), lv >= max ? Ink.Done : Ink.Dim, TextAlign.Center);
             p.Bar(x + 8, y + rowH - 3, colW - 16, lv, max, lv >= max ? Pal.Done : Pal.Brand, 3);
             y += rowH + 2;
             for (var tier = 0; tier < 2; ++tier)
@@ -355,7 +355,7 @@ public sealed class TrainingTab : PhonePage
                 var open = SkillTree.Open(_d, _p, n);
                 var pick = SkillTree.Pick(_p, n);
                 y += 2;
-                p.Text(cx, y, open ? $"Węzeł {UiText.Roman(tier)}" : $"od pnia {node.Depth}", open ? Ink.Dim : Ink.Late, TextAlign.Center, colW - 6);
+                p.Text(cx, y, open ? Loc.F("wezel", UiText.Roman(tier)) : Loc.F("od_pnia", node.Depth), open ? Ink.Dim : Ink.Late, TextAlign.Center, colW - 6);
                 y += rowH;
                 for (var o = 0; o < 2; ++o)
                 {
@@ -385,15 +385,15 @@ public sealed class TrainingTab : PhonePage
         var cost = SkillTree.Cost(_d, _p, sn, so);
         var spick = SkillTree.Pick(_p, sn);
         var sopen = SkillTree.Open(_d, _p, sn);
-        var pill = !sopen ? $"Pień {_d.TreeNodes[sn].Depth}" : cost < 0 ? "Masz" : spick > 0 ? $"Zmiana {cost}" : cost.ToString();
+        var pill = !sopen ? Loc.F("pien_3", _d.TreeNodes[sn].Depth) : cost < 0 ? Loc.T("masz_3") : spick > 0 ? Loc.F("zmiana_2", cost) : cost.ToString();
         var pw = p.Pill(right, p.RowY(dc, 0), pill, !sopen ? PillKind.Gray : cost < 0 ? PillKind.Done : cost <= _p.Xp ? PillKind.Group : PillKind.Gray);
         p.Text(tx, p.RowY(dc, 0), $"{sop.Name}: {RunMods.UpgradeLabel(sop.Effect, sop.Value)}", Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
-        var info = _note.Length > 0 ? _note : $"{sop.Desc}. {(spick > 0 && cost >= 0 ? $"Zmiana wyboru: {_d.TreeRespecCost} dośw." : "Drugą opcję zmienisz za opłatą.")}";
-        p.Text(tx, p.RowY(dc, 1), info, _note.Length > 0 ? (_note == "Wybrane!" ? Ink.Done : Ink.Late) : Ink.Dim, TextAlign.Left, right - tx);
+        var info = _note.Length > 0 ? _note : $"{sop.Desc}. {(spick > 0 && cost >= 0 ? Loc.F("zmiana_wyboru_dosw", _d.TreeRespecCost) : Loc.T("druga_opcje_zmienisz_za_oplata"))}";
+        p.Text(tx, p.RowY(dc, 1), info, _note.Length > 0 ? (_note == Loc.T("wybrane") ? Ink.Done : Ink.Late) : Ink.Dim, TextAlign.Left, right - tx);
         var trunk = string.Join(", ", Enumerable.Range(0, _d.Upgrades.Length).Where(i => ((_d.TreeBranches[_tcol].Upgrades >> i) & 1) != 0)
             .Select(i => $"{_d.Upgrades[i].Name} {_p.Levels[i]}/{_d.Upgrades[i].Levels}"));
         p.Divider(dc, 2);
-        p.Text(tx, p.RowY(dc, 2), "Pień: " + trunk, Ink.Brand, TextAlign.Left, right - tx);
+        p.Text(tx, p.RowY(dc, 2), Loc.T("pien_4") + trunk, Ink.Brand, TextAlign.Left, right - tx);
     }
 
     private void DrawRespect(PhonePainter p)
@@ -401,8 +401,8 @@ public sealed class TrainingTab : PhonePage
         var c0 = p.Card(p.Top, 1);
         var tx = p.TextX(c0);
         var right = c0.End.X - 6;
-        p.Text(tx, p.RowY(c0, 0), "Masz", Ink.Dim);
-        p.Text(right, p.RowY(c0, 0), $"{_p.Respect} Respektu", Ink.Done, TextAlign.Right);
+        p.Text(tx, p.RowY(c0, 0), Loc.T("masz_3"), Ink.Dim);
+        p.Text(right, p.RowY(c0, 0), Loc.F("respektu_3", _p.Respect), Ink.Done, TextAlign.Right);
         var n = _d.Respect.Length;
         _list.Clamp(n, Window);
         var rows = Math.Min(Window, n - _list.Top);
@@ -419,7 +419,7 @@ public sealed class TrainingTab : PhonePage
             var rd = _d.Respect[i];
             if (!Meta.RespectUnlocked(_d, _p, i)) // v0.21.51 cz. 2: ranga z sekretnego zlecenia (Zaprawiony w boju)
             {
-                var lw = p.Pill(right, y, "Sekret", PillKind.Gray);
+                var lw = p.Pill(right, y, Loc.T("sekret_2"), PillKind.Gray);
                 p.Icon(Assets.UiMenu, Assets.MenuSecret, Assets.Icon, new Vector2(tx - 2, y + (PhonePainter.RowH - 16) / 2f));
                 p.Text(tx + 18, y, "???", sel ? Ink.Brand : Ink.Dim, TextAlign.Left, right - lw - 4 - tx - 18);
                 continue;
@@ -433,15 +433,15 @@ public sealed class TrainingTab : PhonePage
         var rank = Meta.RespectRank(_d, _p, s);
         if (!Meta.RespectUnlocked(_d, _p, s))
         {
-            p.Text(tx, p.RowY(dc, 0), "Sekret: " + _d.Secrets[def.Secret].Hint, Ink.Dim, TextAlign.Left, right - tx);
-            p.Text(tx, p.RowY(dc, 1), _note.Length > 0 ? _note : "Odblokujesz sekretnym zleceniem", _note.Length > 0 ? Ink.Late : Ink.Brand, TextAlign.Left, right - tx);
+            p.Text(tx, p.RowY(dc, 0), Loc.T("sekret_3") + _d.Secrets[def.Secret].Hint, Ink.Dim, TextAlign.Left, right - tx);
+            p.Text(tx, p.RowY(dc, 1), _note.Length > 0 ? _note : Loc.T("odblokujesz_sekretnym"), _note.Length > 0 ? Ink.Late : Ink.Brand, TextAlign.Left, right - tx);
             return;
         }
-        var now = rank > 0 ? RunMods.RespectLabel(def.Effect, Meta.RespectValue(_d, _p, s)) : def.Desc + ": brak";
+        var now = rank > 0 ? RunMods.RespectLabel(def.Effect, Meta.RespectValue(_d, _p, s)) : def.Desc + Loc.T("brak_3");
         p.Text(tx, p.RowY(dc, 0), now, Ink.Dark, TextAlign.Left, right - tx);
-        if (_note.Length > 0) p.Text(tx, p.RowY(dc, 1), _note, _note == "Kupione!" ? Ink.Done : Ink.Late, TextAlign.Left, right - tx);
-        else if (rank < def.Ranks) p.Text(tx, p.RowY(dc, 1), "Dalej: " + RunMods.RespectLabel(def.Effect, def.Values[rank]), Ink.Brand, TextAlign.Left, right - tx);
-        else p.Text(tx, p.RowY(dc, 1), $"Wydano {Meta.RespectSpent(_d, _p)}/{Meta.RespectTotalCost(_d)}", Ink.Dim);
+        if (_note.Length > 0) p.Text(tx, p.RowY(dc, 1), _note, _note == Loc.T("kupione") ? Ink.Done : Ink.Late, TextAlign.Left, right - tx);
+        else if (rank < def.Ranks) p.Text(tx, p.RowY(dc, 1), Loc.T("dalej_4") + RunMods.RespectLabel(def.Effect, def.Values[rank]), Ink.Brand, TextAlign.Left, right - tx);
+        else p.Text(tx, p.RowY(dc, 1), Loc.F("wydano", Meta.RespectSpent(_d, _p), Meta.RespectTotalCost(_d)), Ink.Dim);
     }
 
     private void DrawRewards(PhonePainter p)
@@ -450,7 +450,7 @@ public sealed class TrainingTab : PhonePage
         var c0 = p.Card(p.Top, 1);
         var tx = p.TextX(c0);
         var right = c0.End.X - 6;
-        var head = next < Meta.RewardsAvailable(_d) ? "Za wygraną: " + _d.Rewards[next].Name : "Wszystko odebrane - więcej wkrótce";
+        var head = next < Meta.RewardsAvailable(_d) ? Loc.T("za_wygrana") + _d.Rewards[next].Name : Loc.T("wszystko_odebrane_wiecej");
         p.Text(tx, p.RowY(c0, 0), head, Ink.Brand, TextAlign.Left, right - tx);
         var n = _d.Rewards.Length;
         _list.Clamp(n, Window);
@@ -466,7 +466,7 @@ public sealed class TrainingTab : PhonePage
             else if (r > 0) p.Divider(card, r);
             p.HitRow(card, r, i);
             var got = Meta.RewardOwned(_p, i);
-            var pill = got ? "Odebrana" : rw.Kind == RewardKind.Soon ? "Wkrótce" : i == next ? "Następna" : $"{Meta.RewardWin(_d, _p, i)}. wygr.";
+            var pill = got ? Loc.T("odebrana") : rw.Kind == RewardKind.Soon ? Loc.T("wkrotce_2") : i == next ? Loc.T("nastepna") : Loc.F("wygr_3", Meta.RewardWin(_d, _p, i));
             var pw = p.Pill(right, y, pill, got ? PillKind.Done : i == next ? PillKind.Prog : PillKind.Gray);
             var icon = new Rect2(tx, y + (PhonePainter.RowH - 16) / 2f, 16, 16);
             if (rw.Kind == RewardKind.Cls)

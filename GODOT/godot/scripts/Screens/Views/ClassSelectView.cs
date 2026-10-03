@@ -154,7 +154,7 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         DrawRect(new Rect2(0, head, w, 2), Pal.Accent);
         Ui.WarningStripe(this, new Rect2(0, h - 8, w, 8), _clock * 10f);
 
-        f.Draw(this, new Vector2(w / 2, top + (portrait ? 10 : 3)), "Wybierz zawód", Ink.OnBrand, TextAlign.Center, 1, true);
+        f.Draw(this, new Vector2(w / 2, top + (portrait ? 10 : 3)), Loc.T("wybierz_zawod"), Ink.OnBrand, TextAlign.Center, 1, true);
 
         // karuzela portretów
         var baseY = top + (portrait ? 96 : 70);
@@ -203,8 +203,8 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
             var by = h - Mathf.Max(Layout.SafeBottom, 8) - bh - 6;
             DrawPortraitCard(new Rect2(12 + _cardShift, head + 10, w - 24, by - head - 20));
             var bw = (w - 36) / 3;
-            Button(new Rect2(12, by, bw, bh), "Wróć", false, ClassSelectHit.Back);
-            Button(new Rect2(24 + bw, by, w - 36 - bw, bh), Meta.ClassUnlocked(_d, _p, Selected) ? "Start budowy" : "Zablokowany", true, ClassSelectHit.Start);
+            Button(new Rect2(12, by, bw, bh), Loc.T("wroc"), false, ClassSelectHit.Back);
+            Button(new Rect2(24 + bw, by, w - 36 - bw, bh), Meta.ClassUnlocked(_d, _p, Selected) ? Loc.T("start_budowy") : Loc.T("zablokowany"), true, ClassSelectHit.Start);
             _coach["go"] = new Rect2(24 + bw, by, w - 36 - bw, bh);
             DrawStatTip();
             return;
@@ -213,14 +213,14 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         DrawStatTip();
         if (Layout.Touch)
         {
-            Button(new Rect2(40, h - 30, 120, 24), "Wróć", false, ClassSelectHit.Back);
-            Button(new Rect2(w - 160, h - 30, 120, 24), "Start budowy", true, ClassSelectHit.Start);
+            Button(new Rect2(40, h - 30, 120, 24), Loc.T("wroc"), false, ClassSelectHit.Back);
+            Button(new Rect2(w - 160, h - 30, 120, 24), Loc.T("start_budowy"), true, ClassSelectHit.Start);
             _coach["go"] = new Rect2(w - 160, h - 30, 120, 24);
         }
         else
         {
             _coach["go"] = new Rect2(40, h - 30, w - 80, 22);
-            f.Draw(this, new Vector2(w / 2, h - 26), "Strzałki: zawód / trudność   Q/E: pamiątka   I: statystyki   Enter: start   Esc: wróć", Ink.MapDim, TextAlign.Center);
+            f.Draw(this, new Vector2(w / 2, h - 26), Loc.T("strzalki_zawod_trudnosc_q_e"), Ink.MapDim, TextAlign.Center);
         }
     }
 
@@ -258,7 +258,7 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         Assets.DrawFrame(this, Assets.AbilityIcons, cls, 32, new Vector2(x + 2, y + 4));
         var variant = unl && Progress.PowerVariantOn(_d, _p, cls); // v0.21.52 cz. b: wariant mocy z mistrzostwa
         var mcd = _d.MasteryClasses[cls];
-        f.Draw(this, new Vector2(x + 44, y), f.Fit($"Moc: {(variant ? mcd.PowerName : c.AbilityName)}", cw - 44), Ink.Brand);
+        f.Draw(this, new Vector2(x + 44, y), f.Fit(Loc.F("moc_7", (variant ? mcd.PowerName : c.AbilityName)), cw - 44), Ink.Brand);
         var ad = f.Wrap(variant ? mcd.PowerDesc : c.AbilityDesc, cw - 44);
         for (var k = 0; k < ad.Count && k < 2; k++) f.Draw(this, new Vector2(x + 44, y + 17 + k * 16), ad[k], Ink.Dim);
         y += Mathf.Max(44, 17 + Mathf.Min(ad.Count, 2) * 16 + 4);
@@ -276,20 +276,20 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         DrawRect(new Rect2(x, y, cw, 1), Pal.Border);
         y += 4;
         var diff = _d.Difficulties[Difficulty];
-        var diffLock = Meta.DifficultyUnlocked(_d, _p, Difficulty) ? "" : " (zablok.)";
+        var diffLock = Meta.DifficultyUnlocked(_d, _p, Difficulty) ? "" : Loc.T("zablok_3");
         var rowH = Layout.TouchTarget;
         var dr = new Rect2(x - 4, y, cw + 8, rowH);
         DrawStyleBox(Ui.Box(Pal.Group, 8), dr.Grow(-2));
-        f.Draw(this, new Vector2(x + 6, Mathf.Round(dr.GetCenter().Y - 8)), "Trudność", Ink.Dim);
+        f.Draw(this, new Vector2(x + 6, Mathf.Round(dr.GetCenter().Y - 8)), Loc.T("trudnosc_2"), Ink.Dim);
         f.Draw(this, new Vector2(x + cw - 6, Mathf.Round(dr.GetCenter().Y - 8)), $"< {diff.Name}{diffLock} >", diffLock.Length > 0 ? Ink.Late : Ink.Brand, TextAlign.Right);
         _hits.Add((dr, ClassSelectHit.Difficulty, 0));
         _coach["difficulty"] = dr;
         y += rowH + 4;
         var k2 = Meta.SelectedKeepsake(_d, _p);
-        var keep = k2 < 0 ? "bez pamiątki" : $"{_d.Keepsakes[k2].Name} {UiText.Roman(Meta.KeepsakeRank(_d, _p, k2) - 1)}";
+        var keep = k2 < 0 ? Loc.T("bez_pamiatki") : $"{_d.Keepsakes[k2].Name} {UiText.Roman(Meta.KeepsakeRank(_d, _p, k2) - 1)}";
         var kr = new Rect2(x - 4, y, cw + 8, rowH);
         DrawStyleBox(Ui.Box(Pal.Group, 8), kr.Grow(-2));
-        f.Draw(this, new Vector2(x + 6, Mathf.Round(kr.GetCenter().Y - 8)), "Pamiątka", Ink.Dim);
+        f.Draw(this, new Vector2(x + 6, Mathf.Round(kr.GetCenter().Y - 8)), Loc.T("pamiatka_3"), Ink.Dim);
         f.Draw(this, new Vector2(x + cw - 6, Mathf.Round(kr.GetCenter().Y - 8)), f.Fit($"< {keep} >", cw - 90), k2 < 0 ? Ink.Dim : Ink.Done, TextAlign.Right);
         _hits.Add((kr, ClassSelectHit.Keepsake, 0));
         _coach["keepsake"] = kr;
@@ -298,7 +298,7 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         {
             var ir = new Rect2(x - 4, y, cw + 8, rowH);
             DrawStyleBox(Ui.Box(Pal.Group, 8), ir.Grow(-2));
-            f.Draw(this, new Vector2(x + 6, Mathf.Round(ir.GetCenter().Y - 8)), Meta.InvestorUnlocked(_p) ? "Tryb inwestora" : "Wygląd", Ink.Dim);
+            f.Draw(this, new Vector2(x + 6, Mathf.Round(ir.GetCenter().Y - 8)), Meta.InvestorUnlocked(_p) ? Loc.T("tryb_inwestora") : Loc.T("wyglad"), Ink.Dim);
             f.Draw(this, new Vector2(x + cw - 6, Mathf.Round(ir.GetCenter().Y - 8)), InvestorLabel(), Ink.Brand, TextAlign.Right);
             _hits.Add((ir, ClassSelectHit.Investor, 0));
             _coach["investor"] = ir;
@@ -308,7 +308,7 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         var perkText = k2 >= 0 ? RunMods.PerkLabel(Meta.KeepsakePerk(_d, _p, k2)) : "";
         var perks = UiText.Perks(_d, _p);
         var bottom = Note.Length > 0 ? Note : !unl ? LockedText(cls, false)
-                   : (perkText.Length > 0 ? $"Pamiątka: {perkText}. " : "") + "Uprawnienia: " + (perks.Length > 0 ? perks : "brak - zdobywaj odznaki");
+                   : (perkText.Length > 0 ? Loc.F("pamiatka_4", perkText) : "") + Loc.T("uprawnienia") + (perks.Length > 0 ? perks : Loc.T("brak_zdobywaj_odznaki"));
         foreach (var line in f.Wrap(bottom, cw))
         {
             if (y > r.End.Y - 18) break;
@@ -326,7 +326,7 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         var f = PixelFont.I;
         var lv = Progress.MasteryLevel(_d, _p, cls);
         Progress.MasteryBar(_d, _p, cls, out var cur, out var need);
-        var label = need == 0 ? $"Mistrz {lv} MAX" : $"Mistrz {lv}";
+        var label = need == 0 ? Loc.F("mistrz_max", lv) : Loc.F("mistrz_3", lv);
         var bw = Mathf.Max(72, f.Measure(label));
         f.Draw(this, topRight, label, need == 0 ? Ink.Done : Ink.Prog, TextAlign.Right);
         var bar = new Rect2(topRight.X - bw, topRight.Y + PixelFont.LineHeight + 2, bw, 5);
@@ -341,9 +341,9 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         {
             var hk = Secrets.HelmetCosmetic(_d, _p, Selected);
             if (hk >= 0) return _d.Cosmetics[hk].Name;
-            return Secrets.HelmetsUnlocked(_d, _p) > 0 ? "kask zawodu" : "filtr " + _d.ScreenFilters[ScreenFilter.Resolve(_d, _p)].Name; // v0.21.53
+            return Secrets.HelmetsUnlocked(_d, _p) > 0 ? Loc.T("kask_zawodu") : Loc.T("filtr") + _d.ScreenFilters[ScreenFilter.Resolve(_d, _p)].Name; // v0.21.53
         }
-        return $"stawka {Investor.Stake(_d, Meta.InvestorMask(_d, _p))}, rekord {Meta.BestStake(_p, Selected)}";
+        return Loc.F("stawka_rekord", Investor.Stake(_d, Meta.InvestorMask(_d, _p)), Meta.BestStake(_p, Selected));
     }
 
     /// <summary>Paski statystyk (bazowa w kolorze marki, premia Szkoleń na zielono); zwraca dół.</summary>
@@ -353,11 +353,11 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         (string Label, int Base, int Bonus, int Max)[] stats =
         [
             ("HP", c.MaxHealth, m.Hp, _d.Classes.Max(k2 => k2.MaxHealth) + m.Hp),
-            ("SIŁ", c.Strength, RunMods.StatBonus(_d, m, cls, Stat.Str), 10),
-            ("ZRĘ", c.Agility, RunMods.StatBonus(_d, m, cls, Stat.Agi), 10),
+            (Loc.T("sil"), c.Strength, RunMods.StatBonus(_d, m, cls, Stat.Str), 10),
+            (Loc.T("zre"), c.Agility, RunMods.StatBonus(_d, m, cls, Stat.Agi), 10),
             ("INT", c.Intelligence, RunMods.StatBonus(_d, m, cls, Stat.Intel), 10),
-            ("OBR", c.Defense, m.Def, 6),
-            ("SZCZ", c.Luck, m.Luck, 8),
+            (Loc.T("obr"), c.Defense, m.Def, 6),
+            (Loc.T("szcz"), c.Luck, m.Luck, 8),
         ];
         var bw = width - 90;
         InfoButton(new Vector2(sx + width - 18, sy - 1));
@@ -407,7 +407,7 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         Assets.DrawFrame(this, Assets.AbilityIcons, cls, 32, new Vector2(x + 2, y + 6));
         var lvariant = unl && Progress.PowerVariantOn(_d, _p, cls); // v0.21.52 cz. b: wariant mocy z mistrzostwa
         var lmc = _d.MasteryClasses[cls];
-        f.Draw(this, new Vector2(x + 44, y), f.Fit($"Moc (R): {(lvariant ? lmc.PowerName : c.AbilityName)}", colW - 44, ts), Ink.Brand, TextAlign.Left, ts);
+        f.Draw(this, new Vector2(x + 44, y), f.Fit(Loc.F("moc_r", (lvariant ? lmc.PowerName : c.AbilityName)), colW - 44, ts), Ink.Brand, TextAlign.Left, ts);
         f.Draw(this, new Vector2(x + 44, y + 22), f.Fit(lvariant ? lmc.PowerDesc : c.AbilityDesc, colW - 44, ts), Ink.Dim, TextAlign.Left, ts);
         y += 48;
 
@@ -424,26 +424,26 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         DrawRect(new Rect2(x, y, r.Size.X - 28, 1), Pal.Border);
         y += 6;
         var diff = _d.Difficulties[Difficulty];
-        var diffLock = Meta.DifficultyUnlocked(_d, _p, Difficulty) ? "" : " (zablok.)";
-        f.Draw(this, new Vector2(x, y), "Trudność:", Ink.Dim);
+        var diffLock = Meta.DifficultyUnlocked(_d, _p, Difficulty) ? "" : Loc.T("zablok_3");
+        f.Draw(this, new Vector2(x, y), Loc.T("trudnosc_3"), Ink.Dim);
         _coach["difficulty"] = new Rect2(x - 4, y - 1, r.Size.X / 2 - 16, 19);
         f.Draw(this, new Vector2(x + 64, y), $"< {diff.Name}{diffLock} >", diffLock.Length > 0 ? Ink.Late : Ink.Dark);
         if (InvestorPage.Available(_d, _p, Selected)) // tryb inwestora (Tab) w tym samym wierszu (v0.21.52: albo sam wygląd)
         {
             var ix = r.Position.X + r.Size.X / 2 + 10;
-            f.Draw(this, new Vector2(ix, y), Meta.InvestorUnlocked(_p) ? "Inwestor:" : "Wygląd:", Ink.Dim);
+            f.Draw(this, new Vector2(ix, y), Meta.InvestorUnlocked(_p) ? Loc.T("inwestor") : Loc.T("wyglad_4"), Ink.Dim);
             _coach["investor"] = new Rect2(ix - 4, y - 1, r.End.X - ix - 6, 19);
             f.Draw(this, new Vector2(ix + 62, y), f.Fit($"{InvestorLabel()} (Tab)", (int)(r.End.X - ix - 76)), Ink.Brand);
         }
         var k = Meta.SelectedKeepsake(_d, _p);
-        var keep = k < 0 ? "bez pamiątki" : $"{_d.Keepsakes[k].Name} {UiText.Roman(Meta.KeepsakeRank(_d, _p, k) - 1)}: {RunMods.PerkLabel(Meta.KeepsakePerk(_d, _p, k))}";
+        var keep = k < 0 ? Loc.T("bez_pamiatki") : $"{_d.Keepsakes[k].Name} {UiText.Roman(Meta.KeepsakeRank(_d, _p, k) - 1)}: {RunMods.PerkLabel(Meta.KeepsakePerk(_d, _p, k))}";
         y += 18;
-        f.Draw(this, new Vector2(x, y), "Pamiątka:", Ink.Dim);
+        f.Draw(this, new Vector2(x, y), Loc.T("pamiatka_5"), Ink.Dim);
         _coach["keepsake"] = new Rect2(x - 4, y - 1, r.Size.X - 20, 19);
         f.Draw(this, new Vector2(x + 64, y), f.Fit(keep, (int)r.Size.X - 92), k < 0 ? Ink.Dim : Ink.Done);
         y += 18;
         var perks = UiText.Perks(_d, _p);
-        var bottom = Note.Length > 0 ? Note : !unl ? LockedText(cls, true) : "Uprawnienia: " + (perks.Length > 0 ? perks : "brak - zdobywaj odznaki");
+        var bottom = Note.Length > 0 ? Note : !unl ? LockedText(cls, true) : Loc.T("uprawnienia") + (perks.Length > 0 ? perks : Loc.T("brak_zdobywaj_odznaki"));
         f.Draw(this, new Vector2(x, y), f.Fit(bottom, (int)r.Size.X - 28), Note.Length > 0 || !unl ? Ink.Late : Ink.Dim);
 
         // statystyki jako paski (prawa kolumna)
@@ -452,11 +452,11 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         (string Label, int Base, int Bonus, int Max)[] stats =
         [
             ("HP", c.MaxHealth, m.Hp, _d.Classes.Max(k2 => k2.MaxHealth) + m.Hp),
-            ("SIŁ", c.Strength, RunMods.StatBonus(_d, m, cls, Stat.Str), 10),
-            ("ZRĘ", c.Agility, RunMods.StatBonus(_d, m, cls, Stat.Agi), 10),
+            (Loc.T("sil"), c.Strength, RunMods.StatBonus(_d, m, cls, Stat.Str), 10),
+            (Loc.T("zre"), c.Agility, RunMods.StatBonus(_d, m, cls, Stat.Agi), 10),
             ("INT", c.Intelligence, RunMods.StatBonus(_d, m, cls, Stat.Intel), 10),
-            ("OBR", c.Defense, m.Def, 6),
-            ("SZCZ", c.Luck, m.Luck, 8),
+            (Loc.T("obr"), c.Defense, m.Def, 6),
+            (Loc.T("szcz"), c.Luck, m.Luck, 8),
         ];
         var bw = r.Size.X / 2 - 110;
         InfoButton(new Vector2(r.End.X - 30, r.Position.Y + 8));
@@ -494,8 +494,8 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         var name = $"{(master ? _d.MasteryClasses[cls].WeaponName : _d.Weapons[b.Weapon].Name)} {b.Min}-{b.Max}";
         string[] variants =
         [
-            $"{name}, kryt {b.CritMin}-{b.CritMax} ({b.CritChance()}%), zasięg {b.Range}",
-            $"{name}, kryt {b.CritMin}-{b.CritMax} ({b.CritChance()}%)",
+            Loc.F("kryt_zasieg", name, b.CritMin, b.CritMax, b.CritChance(), b.Range),
+            Loc.F("kryt_11", name, b.CritMin, b.CritMax, b.CritChance()),
             $"{name}, kr {b.CritMin}-{b.CritMax} {b.CritChance()}%",
         ];
         var text = "";
@@ -601,7 +601,7 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         return -1;
     }
 
-    private string LockedShort(int cls) => Meta.ClassSecret(_d, cls) ? "Sekret" : Meta.ClassReward(_d, cls) ? $"{RewardWinOf(cls)}. wygr." : $"{Meta.ClassCost(_d, _p)} dośw.";
+    private string LockedShort(int cls) => Meta.ClassSecret(_d, cls) ? Loc.T("sekret_2") : Meta.ClassReward(_d, cls) ? Loc.F("wygr_3", RewardWinOf(cls)) : Loc.F("dosw_5", Meta.ClassCost(_d, _p));
 
     /// <summary>Podpowiedź sekretnego zlecenia, które odblokowuje zawód (v0.21.51 cz. 2).</summary>
     private string SecretHint(int cls)
@@ -611,8 +611,8 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
     }
 
     private string LockedText(int cls, bool keys) => Meta.ClassSecret(_d, cls)
-        ? $"Sekretne zlecenie (telefon, Odznaki > Sekrety): {SecretHint(cls)}"
+        ? Loc.F("sekretne_zlecenie_telefon_2", SecretHint(cls))
         : Meta.ClassReward(_d, cls)
-        ? $"Nagroda za odbiór budowy: za {RewardWinOf(cls)}. wygraną, masz {_p.Wins}"
-        : $"Zablokowany: {Meta.ClassCost(_d, _p)} dośw. w Szkoleniach" + (keys ? " (K)" : "");
+        ? Loc.F("nagroda_za_odbior_budowy_za", RewardWinOf(cls), _p.Wins)
+        : Loc.F("zablokowany_dosw_w_szkoleniach", Meta.ClassCost(_d, _p)) + (keys ? " (K)" : "");
 }

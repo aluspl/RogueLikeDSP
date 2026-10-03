@@ -79,7 +79,7 @@ public sealed partial class Game
     /// <summary>Źródło ciosu z przedrostkiem elity („Zbrojony Przeciek”).</summary>
     public static Message RecapSrc(GameData d, Message m, in RecapHit h)
     {
-        if (h.Src < 0) return m.Add("Wybuch");
+        if (h.Src < 0) return m.Add(Loc.T("wybuch"));
         var ed = d.Enemies[h.Src];
         if (h.Elite >= 0) m.Add(d.Elites[h.Elite].Prefix[ed.Gender]).Add(" ");
         return m.Add(ed.Name);
@@ -106,13 +106,13 @@ public sealed partial class Game
     public Message RecapKiller(Message m)
     {
         var h = LastHits[0];
-        if (h.Src < 0 && h.Amount == 0) return m.Add("Budowa wstrzymana");
-        m.Add(D.RecapVerbs[h.Src >= 0 ? D.Enemies[h.Src].Gender : 0]).Add(" Cię: ");
+        if (h.Src < 0 && h.Amount == 0) return m.Add(Loc.T("budowa_wstrzymana"));
+        m.Add(D.RecapVerbs[h.Src >= 0 ? D.Enemies[h.Src].Gender : 0]).Add(Loc.T("cie"));
         return RecapSrc(D, m, h);
     }
 
     /// <summary>„3/10, Akt I” (etap budowy i akt).</summary>
-    public Message RecapWhere(Message m) => m.Add(StageNumber()).Add("/").Add(StagesInRun()).Add(", Akt ").Add(ActNumeral());
+    public Message RecapWhere(Message m) => m.Add(StageNumber()).Add("/").Add(StagesInRun()).Add(Loc.T("akt")).Add(ActNumeral());
 
     /// <summary>Etap w toku (porażka albo porzucenie) – dni i usunięte do teraz.</summary>
     public bool RecapCurrent(int s) => s == Stage && (St == GameStatus.Dead || St == GameStatus.Playing);
@@ -121,7 +121,7 @@ public sealed partial class Game
 
     public int RecapKills(int s) => RecapCurrent(s) ? StageKills : StageKillLog[s];
 
-    private static readonly string[] FlagNames = ["magazyn", "ulepszenie", "elita", "boss pokonany", "kombinacje", "synergia", "premia z SMS"];
+    private static string[] FlagNames => [Loc.T("magazyn"), Loc.T("ulepszenie_2"), Loc.T("elita_2"), Loc.T("boss_pokonany"), Loc.T("kombinacje"), Loc.T("synergia_2"), Loc.T("premia_z_sms")];
 
     /// <summary>Oś czasu: etap (numer, nazwa; dni i usunięte po prawej), pod nim SMS, co się działo, premia; koniec budowy.</summary>
     public List<RecapLine> RecapTimeline()
@@ -132,7 +132,7 @@ public sealed partial class Game
             var deadHere = RecapCurrent(s) && St == GameStatus.Dead;
             var l = new RecapLine { Ink = deadHere ? LogKind.Bad : LogKind.Info };
             l.Text.Add(s - FirstStage + 1).Add(". ").Add(SDef(s).Name);
-            l.Tail.Add(RecapDays(s)).Add(" d., ").Add(RecapKills(s)).Add(" usun.");
+            l.Tail.Add(RecapDays(s)).Add(" d., ").Add(RecapKills(s)).Add(Loc.T("usun"));
             out_.Add(l);
             if (StageEventLog[s] != 255)
             {
@@ -158,13 +158,13 @@ public sealed partial class Game
             if (StageBoon[s] >= 0)
             {
                 var bl = new RecapLine { Ink = LogKind.Loot };
-                bl.Text.Add("  Premia: ").Add(D.Boons[StageBoon[s]].Name);
+                bl.Text.Add(Loc.T("premia_2")).Add(D.Boons[StageBoon[s]].Name);
                 out_.Add(bl);
             }
             if (deadHere)
             {
                 var dl = new RecapLine { Ink = LogKind.Bad };
-                dl.Text.Add("  Tu stanęła budowa");
+                dl.Text.Add(Loc.T("tu_stanela_budowa"));
                 out_.Add(dl);
             }
         }

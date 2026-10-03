@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using System;
 using LifeLike.Game.Audio;
 using LifeLike.Game.Gfx;
@@ -20,10 +21,10 @@ public sealed class HurtowniaPage : PhonePage
 
     public HurtowniaPage(CoreGame g) => _g = g;
 
-    public override string Title => "Hurtownia";
-    public override string Sub => $"Budżet: {_g.Cash} zł";
-    public override string Hint => "Spacja/Enter: kup zaznaczone  Z/Esc: dalej";
-    public override PageAction[] Actions => [new("Kup", GameAction.A), new("Dalej", GameAction.B, PageRole.Back)];
+    public override string Title => Loc.T("hurtownia_3");
+    public override string Sub => Loc.F("budzet_zl", _g.Cash);
+    public override string Hint => Loc.T("spacja_enter_kup_zaznaczone_z");
+    public override PageAction[] Actions => [new(Loc.T("kup"), GameAction.A), new(Loc.T("dalej"), GameAction.B, PageRole.Back)];
 
     public override bool TapRow(int index)
     {
@@ -49,16 +50,16 @@ public sealed class HurtowniaPage : PhonePage
         if (_g.HurtowniaBuy(_list.Sel))
         {
             Sfx.Play("buy");
-            _note = upgrade ? $"Ulepszone: {_g.WeaponTitle()}" : "Kupione! Enter: dalej";
+            _note = upgrade ? Loc.F("ulepszone", _g.WeaponTitle()) : Loc.T("kupione_enter_dalej");
             Bought?.Invoke();
         }
         else if (upgrade)
         {
-            _note = _g.WeaponLvl >= _g.D.ToolUpgradeMax ? "Maksymalne ulepszenie" : "Za mało zł albo stali";
+            _note = _g.WeaponLvl >= _g.D.ToolUpgradeMax ? Loc.T("maksymalne_ulepszenie") : Loc.T("za_malo_zl_albo_stali");
         }
         else
         {
-            _note = it.Material >= 0 ? $"Za mało: {_g.D.Materials[it.Material].Name}" : "Za mały budżet";
+            _note = it.Material >= 0 ? Loc.F("za_malo", _g.D.Materials[it.Material].Name) : Loc.T("za_maly_budzet");
         }
     }
 
@@ -68,12 +69,12 @@ public sealed class HurtowniaPage : PhonePage
         var it = _g.D.Hurtownia[i];
         if (it.Effect == LifeLike.Core.Data.ShopEffect.Upgrade)
         {
-            if (_g.WeaponLvl >= _g.D.ToolUpgradeMax) return ($"{_g.WeaponTitle()}: maksymalne ulepszenie", Ink.Brand);
+            if (_g.WeaponLvl >= _g.D.ToolUpgradeMax) return (Loc.F("maksymalne_ulepszenie_2", _g.WeaponTitle()), Ink.Brand);
             var cost = LifeLike.Core.ChoiceText.ToolLevelLabel(_g.D, new LifeLike.Core.Message(), _g.WeaponLvl, _g.UpgradePrice()).Text;
-            var trait = _g.WeaponLvl + 1 == _g.D.ToolTraitAt ? ", wybór cechy" : "";
+            var trait = _g.WeaponLvl + 1 == _g.D.ToolTraitAt ? Loc.T("wybor_cechy") : "";
             return ($"{_g.WeaponTitle()} -> +{_g.WeaponLvl + 1}: {cost}{trait}. {it.Desc}", Ink.Brand);
         }
-        if (it.Effect == LifeLike.Core.Data.ShopEffect.Tool && _g.WeaponLvl > 0) return ($"Uwaga: {_g.WeaponTitle()} przepadnie! {it.Desc}", Ink.Late);
+        if (it.Effect == LifeLike.Core.Data.ShopEffect.Tool && _g.WeaponLvl > 0) return (Loc.F("uwaga_przepadnie", _g.WeaponTitle(), it.Desc), Ink.Late);
         return (it.Desc, Ink.Dim);
     }
 
@@ -101,7 +102,7 @@ public sealed class HurtowniaPage : PhonePage
         var c0 = p.Card(p.Top, 1);
         var tx = p.TextX(c0);
         var right = c0.End.X - 6;
-        var bonus = $"Premia za akt {_g.ActNumeral()}: +{_g.ActBonus} zł";
+        var bonus = Loc.F("premia_za_akt_zl", _g.ActNumeral(), _g.ActBonus);
         p.Stripe(c0, 0, _note.Length > 0 ? Pal.Brand : Pal.Done);
         p.Text(tx, p.RowY(c0, 0), _note.Length > 0 ? _note : bonus, _note.Length > 0 ? Ink.Brand : Ink.Done, TextAlign.Left, right - tx);
         var n = d.Hurtownia.Length;
@@ -117,9 +118,9 @@ public sealed class HurtowniaPage : PhonePage
             if (sel) p.Selected(card, r);
             else if (r > 0) p.Divider(card, r);
             p.HitRow(card, r, i);
-            var price = it.Effect == LifeLike.Core.Data.ShopEffect.Upgrade && _g.WeaponLvl >= d.ToolUpgradeMax ? "maks."
-                      : it.Effect == LifeLike.Core.Data.ShopEffect.Upgrade ? $"{_g.HurtowniaPrice(i)} zł + {d.ToolLevels[_g.WeaponLvl].Count}x {d.Materials[d.ToolLevels[_g.WeaponLvl].Material].Short}"
-                      : it.Material >= 0 ? $"{it.MatCost}x {d.Materials[it.Material].Short}" : $"{_g.HurtowniaPrice(i)} zł";
+            var price = it.Effect == LifeLike.Core.Data.ShopEffect.Upgrade && _g.WeaponLvl >= d.ToolUpgradeMax ? Loc.T("maks")
+                      : it.Effect == LifeLike.Core.Data.ShopEffect.Upgrade ? Loc.F("zl_x", _g.HurtowniaPrice(i), d.ToolLevels[_g.WeaponLvl].Count, d.Materials[d.ToolLevels[_g.WeaponLvl].Material].Short)
+                      : it.Material >= 0 ? $"{it.MatCost}x {d.Materials[it.Material].Short}" : Loc.F("zl_5", _g.HurtowniaPrice(i));
             var pw = p.Pill(right, y, price, _g.HurtowniaCan(i) ? PillKind.Group : PillKind.Gray);
             var nx = tx;
             if (it.Material >= 0)

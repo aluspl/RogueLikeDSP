@@ -16,15 +16,15 @@ public static class ProgressBanners
         for (var l = pg.InspBefore; l < pg.InspAfter; ++l)
         {
             if (l >= pg.InspBefore + 2 && l + 1 < pg.InspAfter) continue;
-            list.Add(($"Inspektor: poziom {l + 1}", l >= pg.InspBefore + 2 ? "Nagrody: Profil > Odznaki" : Progress.RewardLabel(d, d.InspectorLevels[l], pg.Cls)));
+            list.Add((Loc.F("inspektor_poziom_2", l + 1), l >= pg.InspBefore + 2 ? Loc.T("nagrody_profil_odznaki_2") : Progress.RewardLabel(d, d.InspectorLevels[l], pg.Cls)));
         }
         if (pg.Cls >= 0 && pg.MasteryAfter > pg.MasteryBefore) // tylko ostatni poziom (nagrody w profilu)
         {
             var l = pg.MasteryAfter - 1;
-            list.Add(($"Mistrzostwo: poziom {l + 1}", Progress.RewardLabel(d, d.MasteryLevels[l], pg.Cls)));
+            list.Add((Loc.F("mistrzostwo_poziom_2", l + 1), Progress.RewardLabel(d, d.MasteryLevels[l], pg.Cls)));
         }
         for (var l = System.Math.Max(stakeBefore, stakeAfter - 2); l < stakeAfter; ++l) // najwyżej dwa ostatnie stopnie
-            list.Add(($"Stopień inwestora {d.StakeRanks[l].Xp}", Progress.RewardLabel(d, d.StakeRanks[l], pg.Cls)));
+            list.Add((Loc.F("stopien_inwestora_2", d.StakeRanks[l].Xp), Progress.RewardLabel(d, d.StakeRanks[l], pg.Cls)));
         return list;
     }
 }

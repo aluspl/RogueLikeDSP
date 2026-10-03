@@ -22,10 +22,10 @@ public sealed class HouseSchedulePage : PhonePage
         _endDay = Daily.DaysFromCivil(end.Y, end.M, end.D);
     }
 
-    public override string Title => "Harmonogram domu";
+    public override string Title => Loc.T("harmonogram_domu");
     public override string Sub => $"{_g.StagesInRun()}/{_g.StagesInRun()}";
-    public override string Hint => "Tab: planbudowlany.online  Spacja/Enter: dalej";
-    public override PageAction[] Actions => [new("Dalej", GameAction.Start), new("Zaplanuj swoją budowę", GameAction.Select)];
+    public override string Hint => Loc.T("tab_planbudowlany_online");
+    public override PageAction[] Actions => [new(Loc.T("dalej"), GameAction.Start), new(Loc.T("zaplanuj_swoja_budowe"), GameAction.Select)];
 
     /// <summary>Dotknięcie linku (indeks 0) = to samo co SELECT (v0.21.51: A / Enter zawsze = dalej).</summary>
     public override bool TapRow(int index)
@@ -58,11 +58,11 @@ public sealed class HouseSchedulePage : PhonePage
         var tx = head.Position.X + photo + 14;
         var right = head.End.X - 6;
         var (ey, em, ed) = Daily.CivilFromDays(_endDay);
-        p.Bold(tx, head.Position.Y + 4, "Dom rodziny Nowaków", Ink.Dark);
-        p.Text(tx, head.Position.Y + 20, $"Odbiór {ed:00}.{em:00}.{ey}", Ink.Dim, TextAlign.Left, right - tx);
-        p.Text(tx, head.Position.Y + 36, $"{HouseSchedule.TotalDays(_g)} dni, {HouseSchedule.TotalCost(_g)} tys. zł", Ink.Done, TextAlign.Left, right - tx);
+        p.Bold(tx, head.Position.Y + 4, Loc.T("dom_rodziny_nowakow"), Ink.Dark);
+        p.Text(tx, head.Position.Y + 20, Loc.F("odbior_4", ed, em, ey), Ink.Dim, TextAlign.Left, right - tx);
+        p.Text(tx, head.Position.Y + 36, Loc.F("dni_tys_zl", HouseSchedule.TotalDays(_g), HouseSchedule.TotalCost(_g)), Ink.Done, TextAlign.Left, right - tx);
 
-        var y = p.Section(head.End.Y + 6, "ETAPY", "wszystkie gotowe");
+        var y = p.Section(head.End.Y + 6, Loc.T("etapy_3"), Loc.T("wszystkie_gotowe"));
         var link = 2 * PhonePainter.RowH + 8 + 6;
         var room = (int)((p.Bottom - y - link - 8) / PhonePainter.RowH);
         var rows = Mathf.Clamp(room, 3, n);
@@ -76,8 +76,8 @@ public sealed class HouseSchedulePage : PhonePage
             var ry = p.RowY(card, r);
             if (r > 0) p.Divider(card, r);
             p.Stripe(card, r, Pal.Done);
-            var pw = p.Pill(cr, ry, $"{_g.SDef(s).Cost} tys.", PillKind.Done);
-            var dw = p.Text(cr - pw - 6, ry, $"{HouseSchedule.Days(_g, s)} dni", Ink.Dim, TextAlign.Right);
+            var pw = p.Pill(cr, ry, Loc.F("tys_2", _g.SDef(s).Cost), PillKind.Done);
+            var dw = p.Text(cr - pw - 6, ry, Loc.F("dni_4", HouseSchedule.Days(_g, s)), Ink.Dim, TextAlign.Right);
             p.Text(cx, ry, $"{Date(HouseSchedule.StartDay(_g, s, _endDay))} {_g.SDef(s).Name}", Ink.Dark, TextAlign.Left, cr - pw - dw - 12 - cx);
         }
         var lc = p.Card(card.End.Y + 6, 2);
@@ -85,7 +85,7 @@ public sealed class HouseSchedulePage : PhonePage
         p.HitRow(lc, 1, 0);
         p.Stripe(lc, 0, Pal.Brand);
         p.Stripe(lc, 1, Pal.Brand);
-        p.Text(cx, p.RowY(lc, 0), "Zaplanuj swoją budowę", Ink.Brand, TextAlign.Left, lc.End.X - 6 - cx);
+        p.Text(cx, p.RowY(lc, 0), Loc.T("zaplanuj_swoja_budowe"), Ink.Brand, TextAlign.Left, lc.End.X - 6 - cx);
         p.Text(cx, p.RowY(lc, 1), d.ScheduleUrl, Ink.Dim, TextAlign.Left, lc.End.X - 6 - cx);
     }
 }

@@ -18,7 +18,7 @@ public sealed class StatsPage : PhonePage
     /// <summary>Strona rozpiski obrażeń (Sprzęt: I / dotknięcie narzędzia).</summary>
     public const int DamagePage = 1;
     private const int Pages = 4;
-    private static readonly string[] Titles = ["Statystyki", "Obrażenia broni", "Kryt i obrona", "Jak działają"];
+    private static string[] Titles => [Loc.T("statystyki"), Loc.T("obrazenia_broni"), Loc.T("kryt_i_obrona"), Loc.T("jak_dzialaja")];
 
     private readonly GameData _d;
     private readonly int _cls;
@@ -41,8 +41,8 @@ public sealed class StatsPage : PhonePage
     public int Page => _page;
     public override string Title => Titles[_page];
     public override string Sub => $"{_d.Classes[_cls].Name} {_page + 1}/{Pages}";
-    public override string Hint => ButtonNames.Localize("A: dalej  B: wróć");
-    public override PageAction[] Actions => [new(_page == Pages - 1 ? "Wartości" : "Dalej", GameAction.A), new("Wróć", GameAction.B)];
+    public override string Hint => ButtonNames.Localize(Loc.T("a_dalej_b_wroc"));
+    public override PageAction[] Actions => [new(_page == Pages - 1 ? Loc.T("wartosci") : Loc.T("dalej"), GameAction.A), new(Loc.T("wroc"), GameAction.B)];
     public override bool Closable => true;
 
     public override bool Input(InputCmd e)
@@ -65,7 +65,7 @@ public sealed class StatsPage : PhonePage
             return;
         }
         var lines = _page == 3 ? Rules() : _g is null ? ClassValues() : RunSources();
-        var y = p.Section(p.Top, _page == 3 ? "WZORY" : _g is null ? "CO DAJĄ" : "SKĄD PREMIE", "A: dalej");
+        var y = p.Section(p.Top, _page == 3 ? Loc.T("wzory") : _g is null ? Loc.T("co_daja") : Loc.T("skad_premie"), Loc.T("a_dalej"));
         var card = p.Card(y, lines.Count);
         var tx = p.TextX(card);
         var right = card.End.X - 6;
@@ -76,18 +76,18 @@ public sealed class StatsPage : PhonePage
             if (stripe) p.Stripe(card, i, Pal.Brand);
             p.Text(tx, p.RowY(card, i), text, ink, TextAlign.Left, right - tx);
         }
-        y = p.Section(card.End.Y + 6, "CIOS");
+        y = p.Section(card.End.Y + 6, Loc.T("cios_3"));
         var c2 = p.Card(y, 2);
-        p.Text(p.TextX(c2), p.RowY(c2, 0), "rzut broni + stat./2 + premie", Ink.Dark, TextAlign.Left, right - p.TextX(c2));
+        p.Text(p.TextX(c2), p.RowY(c2, 0), Loc.T("rzut_broni_stat_2_premie"), Ink.Dark, TextAlign.Left, right - p.TextX(c2));
         p.Divider(c2, 1);
-        p.Text(p.TextX(c2), p.RowY(c2, 1), "- obrona problemu/2 (min. 1), kryt x2", Ink.Dim, TextAlign.Left, right - p.TextX(c2));
+        p.Text(p.TextX(c2), p.RowY(c2, 1), Loc.T("obrona_problemu_2_min_1_kryt"), Ink.Dim, TextAlign.Left, right - p.TextX(c2));
     }
 
     /// <summary>Rozpiska: strona 2 - cios (od-do i skąd), strona 3 - kryt, obrona i unik; długie wiersze zawinięte.</summary>
     private void DrawDamage(PhonePainter p)
     {
         var hit = _page == 1;
-        var y = p.Section(p.Top, hit ? "CIOS OD-DO" : "KRYT I OBRONA", hit ? "jak w walce" : "");
+        var y = p.Section(p.Top, hit ? Loc.T("cios_od_do") : Loc.T("kryt_i_obrona_2"), hit ? Loc.T("jak_w_walce") : "");
         var width = (int)(p.Width - 24);
         var lines = new List<(string Text, Ink Ink, Color Stripe)>();
         foreach (var r in _rows)
@@ -108,7 +108,7 @@ public sealed class StatsPage : PhonePage
         if (!hit) return;
         var help = _d.DamageHelpLines;
         if (help.Length == 0 || card.End.Y + 6 + (help.Length + 1) * PhonePainter.RowH > p.Bottom) return;
-        y = p.Section(card.End.Y + 6, "W SKRÓCIE");
+        y = p.Section(card.End.Y + 6, Loc.T("w_skrocie"));
         var c2 = p.Card(y, help.Length);
         for (var i = 0; i < help.Length; i++) p.Text(p.TextX(c2), p.RowY(c2, i), help[i], Ink.Dim, TextAlign.Left, right - p.TextX(c2));
     }
@@ -147,34 +147,34 @@ public sealed class StatsPage : PhonePage
         var ws = g.HeroStat(w.ScalesWith);
         var list = new List<(string, Ink, bool)>
         {
-            ($"Broń: {UiText.StatShort(w.ScalesWith)} {ws} = +{ws / 2} obrażeń", Ink.Brand, true),
+            (Loc.F("bron_obrazen", UiText.StatShort(w.ScalesWith), ws, ws / 2), Ink.Brand, true),
         };
-        var src = $"zawód {RunMods.ClassBaseStat(_d, _cls, w.ScalesWith)}";
+        var src = Loc.F("zawod_5", RunMods.ClassBaseStat(_d, _cls, w.ScalesWith));
         var craft = RunMods.StatBonus(_d, g.Bonus, _cls, w.ScalesWith);
-        if (craft > 0) src += $", Warsztaty +{craft}";
+        if (craft > 0) src += Loc.F("warsztaty_3", craft);
         var trait = g.TraitBonus(RunMods.StatTrait(w.ScalesWith));
-        if (trait > 0) src += $", sprzęt +{trait}";
+        if (trait > 0) src += Loc.F("sprzet_7", trait);
         list.Add((src, Ink.Dim, false));
-        var dmg = $"Obrażenia +{g.DmgBonus}";
-        if (g.GearBonus(GearStat.Dmg) > 0) dmg += $", rękawice +{g.GearBonus(GearStat.Dmg)}";
+        var dmg = Loc.F("obrazenia_4", g.DmgBonus);
+        if (g.GearBonus(GearStat.Dmg) > 0) dmg += Loc.F("rekawice_2", g.GearBonus(GearStat.Dmg));
         if (g.Bonus.DmgPct > 0) dmg += $", +{g.Bonus.DmgPct}%";
         list.Add((dmg, Ink.Dark, false));
         var def = g.HeroDefense();
-        var ds = $"OBR {def} = zawód {c.Defense}";
-        if (g.DefBonus > 0) ds += $", premie +{g.DefBonus}";
-        if (g.GearBonus(GearStat.Def) > 0) ds += $", kask +{g.GearBonus(GearStat.Def)}";
-        ds += $": -{def / 2} obrażeń";
+        var ds = Loc.F("obr_zawod", def, c.Defense);
+        if (g.DefBonus > 0) ds += Loc.F("premie_6", g.DefBonus);
+        if (g.GearBonus(GearStat.Def) > 0) ds += Loc.F("kask_3", g.GearBonus(GearStat.Def));
+        ds += Loc.F("obrazen_3", def / 2);
         if (g.Bonus.TakenPct > 0) ds += $", -{g.Bonus.TakenPct}%";
         list.Add((ds, Ink.Dark, false));
-        list.Add(($"SZCZ {g.Luck()}: kryt {g.CritPct()}%, unik {g.DodgePct()}%, łupy +{_d.DropPerLuckPct * g.Luck()}%", Ink.Dark, false));
+        list.Add((Loc.F("szcz_kryt_unik_lupy", g.Luck(), g.CritPct(), g.DodgePct(), _d.DropPerLuckPct * g.Luck()), Ink.Dark, false));
         var lvl = _d.HpPerLevel * (g.HeroLevel - 1);
         var gear = g.GearBonus(GearStat.Hp);
-        var hp = $"HP {g.Hero.MaxHp} = zawód {c.MaxHealth}";
-        if (g.Bonus.Hp > 0) hp += $", Szkolenia +{g.Bonus.Hp}";
-        if (lvl > 0) hp += $", poziomy +{lvl}";
-        if (gear > 0) hp += $", kamizelka +{gear}";
+        var hp = Loc.F("hp_zawod", g.Hero.MaxHp, c.MaxHealth);
+        if (g.Bonus.Hp > 0) hp += Loc.F("szkolenia_2", g.Bonus.Hp);
+        if (lvl > 0) hp += Loc.F("poziomy_2", lvl);
+        if (gear > 0) hp += Loc.F("kamizelka_2", gear);
         var rest = g.Hero.MaxHp - c.MaxHealth - g.Bonus.Hp - lvl - gear;
-        if (rest > 0) hp += $", inne +{rest}";
+        if (rest > 0) hp += Loc.F("inne_2", rest);
         list.Add((hp, Ink.Dark, false));
         return list;
     }
@@ -190,7 +190,7 @@ public sealed class StatsPage : PhonePage
             var m = StatHelp.Rule(_d, new Message(), rows[i].Kind, rows[i].Part);
             list.Add((m.Text, i == 0 ? Ink.Brand : i is 3 or 4 ? Ink.Dim : Ink.Dark, i == 0));
         }
-        list.Add(("Inne statystyki nie dają obrażeń tej broni", Ink.Dim, false));
+        list.Add((Loc.T("inne_statystyki_nie_daja"), Ink.Dim, false));
         return list;
     }
 }

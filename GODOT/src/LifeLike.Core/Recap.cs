@@ -48,7 +48,7 @@ public static class Recap
         }
         if (best >= 0)
         {
-            lead = p.Respect >= bc ? "Stać Cię (Respekt):" : $"Jeszcze {bc - p.Respect} Respektu do:";
+            lead = p.Respect >= bc ? Loc.T("stac_cie_respekt") : Loc.F("jeszcze_respektu_do", bc - p.Respect);
             name = $"{d.Respect[best].Name} {Roman(Meta.RespectRank(d, p, best) + 1)}";
             return true;
         }
@@ -58,14 +58,14 @@ public static class Recap
             lead = name = "";
             return false;
         }
-        lead = p.Xp >= cost ? "Stać Cię (Szkolenia):" : $"Jeszcze {cost - p.Xp} dośw. do:";
+        lead = p.Xp >= cost ? Loc.T("stac_cie_szkolenia") : Loc.F("jeszcze_dosw_do", cost - p.Xp);
         name = kind switch
         {
             0 => $"{d.Upgrades[idx].Name} {Roman(p.Levels[idx] + 1)}",
             1 => d.Classes[idx].Name,
             2 => d.Weapons[d.Tools[idx].Weapon].Name,
             3 => d.Brigade[idx].Name,
-            5 => $"Drzewko: {d.TreeBranches[d.TreeNodes[idx].Branch].Name}",
+            5 => Loc.F("drzewko_3", d.TreeBranches[d.TreeNodes[idx].Branch].Name),
             _ => d.Difficulties[^1].Name,
         };
         return true;

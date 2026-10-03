@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using System.Collections.Generic;
 using Godot;
 using LifeLike.Game.Gfx;
@@ -103,7 +104,7 @@ public partial class TitleView : Control, Touch.ITapTargets
         {
             var ix = safe.Position.X + 6;
             var iy = top + PixelFont.LineHeight + 2;
-            var label = $"Inspektor {InspLevel}" + (InspMax ? " MAX" : "");
+            var label = Loc.F("inspektor_3", InspLevel) + (InspMax ? " MAX" : "");
             f.Draw(this, new Vector2(ix, iy), label, Ink.OnBrand);
             var bar = new Rect2(ix, iy + PixelFont.LineHeight + 2, Mathf.Max(64, f.Measure(label)), 7);
             DrawRect(bar.Grow(1), Pal.HpEdge);
@@ -111,7 +112,7 @@ public partial class TitleView : Control, Touch.ITapTargets
             DrawRect(new Rect2(bar.Position, new Vector2(Mathf.Round(bar.Size.X * Mathf.Clamp(InspFill, 0f, 1f)), bar.Size.Y)), Pal.HpMain[1]);
         }
         var recordX = safe.End.X - Hud.SettingsButton.Side - 10;
-        if (Best > 0) f.Draw(this, new Vector2(recordX, top), $"Rekord: {Best}", Ink.OnBrand, TextAlign.Right);
+        if (Best > 0) f.Draw(this, new Vector2(recordX, top), Loc.F("rekord_5", Best), Ink.OnBrand, TextAlign.Right);
         if (Goals.Length > 0) f.Draw(this, new Vector2(recordX, top + PixelFont.LineHeight + 2), Goals, Ink.OnBrand, TextAlign.Right);
         if (Streak.Length > 0) f.Draw(this, new Vector2(recordX, top + 2 * (PixelFont.LineHeight + 2)), Streak, Ink.OnBrand, TextAlign.Right);
 

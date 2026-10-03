@@ -116,9 +116,9 @@ public sealed class SmokeSecrets
         var noCoffee = Array.FindIndex(d.Secrets, x => x.Kind == SecretKind.NoCoffeeWin);
         if (!Secrets.Done(p, noCoffee) || (s.LastSecrets & (1 << noCoffee)) == 0) throw new Exception("sekrety: wygrana bez kawy nie dała sekretnego zlecenia");
         if ((p.SecretsNew & (1 << noCoffee)) == 0) throw new Exception("sekrety: brak dymka Nowość do pokazania");
-        Banners = _app.Nodes.Banners.All.Count(b => b.Title == "Sekretne zlecenie!");
+        Banners = _app.Nodes.Banners.All.Count(b => b.Title == Loc.T("sekretne_zlecenie"));
         if (Banners == 0) throw new Exception("sekrety: brak banera Sekretne zlecenie!");
-        if (!s.Note.Contains("Sekretne zlecenie")) throw new Exception("sekrety: brak notatki na planszy końcowej");
+        if (!s.Note.Contains(Loc.T("sekretne_zlecenie").TrimEnd('!'))) throw new Exception("sekrety: brak notatki na planszy końcowej");
         Done = Secrets.DoneCount(d, p);
         await DebugRunner.Frames(_app.Root, 3);
     }
@@ -134,7 +134,7 @@ public sealed class SmokeSecrets
             if (coach.CurrentId == "secret")
             {
                 shown++;
-                if (_app.Nodes.Coach.Pill != "Nowość") throw new Exception($"sekrety: pastylka dymka {_app.Nodes.Coach.Pill}");
+                if (_app.Nodes.Coach.Pill != Loc.T("nowosc")) throw new Exception($"sekrety: pastylka dymka {_app.Nodes.Coach.Pill}");
             }
             Flow.Title.HandleInput(InputCmd.Of(GameAction.A));
             await DebugRunner.Frames(_app.Root, 1);

@@ -27,12 +27,12 @@ public sealed class GearTab : PhonePage
         _boons = boons;
     }
 
-    public override string Title => "Sprzęt";
-    public override string Sub => _brigade is null ? "Na budowie" : "Spacja: Brygada";
+    public override string Title => Loc.T("sprzet_5");
+    public override string Sub => _brigade is null ? Loc.T("na_budowie") : Loc.T("spacja_brygada");
     public override PageAction[] Actions =>
-        _brigade is null ? [] : _breakdown is null ? [new("Brygada", GameAction.A)]
-        : _boons is null ? [new("Obrażenia", GameAction.Info), new("Brygada", GameAction.A)]
-        : [new("Obrażenia", GameAction.Info), new("Premie", GameAction.R), new("Brygada", GameAction.A)];
+        _brigade is null ? [] : _breakdown is null ? [new(Loc.T("brygada_3"), GameAction.A)]
+        : _boons is null ? [new(Loc.T("obrazenia"), GameAction.Info), new(Loc.T("brygada_3"), GameAction.A)]
+        : [new(Loc.T("obrazenia"), GameAction.Info), new(Loc.T("premie_3"), GameAction.R), new(Loc.T("brygada_3"), GameAction.A)];
 
     public override bool Input(InputCmd e)
     {
@@ -63,7 +63,7 @@ public sealed class GearTab : PhonePage
     {
         var g = _g;
         var d = g.D;
-        var y = p.Section(p.Top, "NARZĘDZIE", _breakdown is null ? "" : ButtonNames.Pick("I: rozpiska", "dotknij: rozpiska"));
+        var y = p.Section(p.Top, Loc.T("narzedzie_4"), _breakdown is null ? "" : ButtonNames.Pick(Loc.T("i_rozpiska"), Loc.T("dotknij_rozpiska")));
         var c0 = p.Card(y, 2);
         var tx = p.TextX(c0);
         var right = c0.End.X - 6;
@@ -74,7 +74,7 @@ public sealed class GearTab : PhonePage
         p.Text(tx, p.RowY(c0, 0), $"{g.WeaponTitle()} {b.Min}-{b.Max}", Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
         p.Divider(c0, 1);
         var avg = DamageHelp.AddTenths(new Message(), b.Avg10).Text;
-        p.Text(tx, p.RowY(c0, 1), $"kryt {b.CritMin}-{b.CritMax} ({b.CritChance()}%), średnio {avg}", Ink.Prog, TextAlign.Left, right - tx);
+        p.Text(tx, p.RowY(c0, 1), Loc.F("kryt_srednio", b.CritMin, b.CritMax, b.CritChance(), avg), Ink.Prog, TextAlign.Left, right - tx);
         p.HitRow(c0, 0, WeaponRow);
         p.HitRow(c0, 1, WeaponRow);
 
@@ -84,7 +84,7 @@ public sealed class GearTab : PhonePage
         {
             if (((g.Bonus.GearSlots >> i) & 1) != 0 || g.Equipped[i] >= 0) slots.Add(i);
         }
-        y = p.Section(c0.End.Y + 4, "SPRZĘT", $"{CountEquipped()}/{slots.Count}");
+        y = p.Section(c0.End.Y + 4, Loc.T("sprzet_8"), $"{CountEquipped()}/{slots.Count}");
         var c1 = p.Card(y, slots.Count);
         for (var k = 0; k < slots.Count; k++)
         {
@@ -95,7 +95,7 @@ public sealed class GearTab : PhonePage
             p.Stripe(c1, k, rar < 0 ? Pal.Todo : rar == 2 ? Pal.Prog : rar == 1 ? Pal.Brand : Pal.Done);
             if (rar < 0)
             {
-                p.Text(tx, r, $"{d.GearSlots[i]}: brak", Ink.Dim);
+                p.Text(tx, r, Loc.F("brak_6", d.GearSlots[i]), Ink.Dim);
                 continue;
             }
             var gd = d.Gear[i * 3 + rar];
@@ -108,14 +108,14 @@ public sealed class GearTab : PhonePage
             p.Text(nx, r, eff, Ink.Brand);
         }
 
-        var boonsRight = _boons is null ? "" : ButtonNames.Pick($"R: premie {g.BoonsOwned()}", $"premie: {g.BoonsOwned()}");
-        y = p.Section(c1.End.Y + 4, "PREMIE I MATERIAŁY", boonsRight);
+        var boonsRight = _boons is null ? "" : ButtonNames.Pick(Loc.F("r_premie", g.BoonsOwned()), Loc.F("premie_7", g.BoonsOwned()));
+        y = p.Section(c1.End.Y + 4, Loc.T("premie_i_materialy"), boonsRight);
         var c2 = p.Card(y, d.Materials.Length > 0 ? 4 : 3);
-        p.Text(tx, p.RowY(c2, 0), $"Obrona +{g.GearBonus(GearStat.Def)}  Obraż. +{g.GearBonus(GearStat.Dmg)}  HP +{g.GearBonus(GearStat.Hp)}", Ink.Dim, TextAlign.Left, right - tx);
+        p.Text(tx, p.RowY(c2, 0), Loc.F("obrona_obraz_hp", g.GearBonus(GearStat.Def), g.GearBonus(GearStat.Dmg), g.GearBonus(GearStat.Hp)), Ink.Dim, TextAlign.Left, right - tx);
         p.Divider(c2, 1);
-        p.Text(tx, p.RowY(c2, 1), $"Kryt {g.CritPct()}%  Unik {g.DodgePct()}%  Wzrok {g.SightRadius()}", Ink.Dim, TextAlign.Left, right - tx);
+        p.Text(tx, p.RowY(c2, 1), Loc.F("kryt_unik_wzrok", g.CritPct(), g.DodgePct(), g.SightRadius()), Ink.Dim, TextAlign.Left, right - tx);
         p.Divider(c2, 2);
-        p.Text(tx, p.RowY(c2, 2), $"Szczęście {g.Luck()}  Termos {g.Thermos}/{g.ThermosCap()}", Ink.Dim, TextAlign.Left, right - tx);
+        p.Text(tx, p.RowY(c2, 2), Loc.F("szczescie_termos", g.Luck(), g.Thermos, g.ThermosCap()), Ink.Dim, TextAlign.Left, right - tx);
         if (d.Materials.Length == 0) return;
         p.Divider(c2, 3); // materiały: Hurtownia i naprawy (Brygada)
         var mx = tx;

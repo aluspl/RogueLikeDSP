@@ -40,10 +40,10 @@ public sealed class InvestorPage : PhonePage
 
     private int Inv => Meta.InvestorUnlocked(_p) ? _d.Investor.Length : 0;
 
-    public override string Title => Inv > 0 ? "Tryb inwestora" : "Wygląd";
-    public override string Sub => Inv > 0 ? $"Stawka {Investor.Stake(_d, Meta.InvestorMask(_d, _p))}" : "kask i ekran";
-    public override string Hint => "Spacja: wł./wył. / zmień  Esc: wróć";
-    public override PageAction[] Actions => [new(_list.Sel == HelmetRow || _list.Sel == Keep2Row || _list.Sel == FilterRow ? "Zmień" : "Wł. / wył.", GameAction.A), new("Gotowe", GameAction.Cancel)];
+    public override string Title => Inv > 0 ? Loc.T("tryb_inwestora") : Loc.T("wyglad");
+    public override string Sub => Inv > 0 ? Loc.F("stawka_2", Investor.Stake(_d, Meta.InvestorMask(_d, _p))) : Loc.T("kask_i_ekran");
+    public override string Hint => Loc.T("spacja_wl_wyl_zmien_esc_wroc");
+    public override PageAction[] Actions => [new(_list.Sel == HelmetRow || _list.Sel == Keep2Row || _list.Sel == FilterRow ? Loc.T("zmien") : Loc.T("wl_wyl"), GameAction.A), new(Loc.T("gotowe"), GameAction.Cancel)];
     public override bool Closable => true;
 
     public int Sel
@@ -127,7 +127,7 @@ public sealed class InvestorPage : PhonePage
     {
         var n = Inv;
         var mask = Meta.InvestorMask(_d, _p);
-        var y = p.Section(p.Top, n > 0 ? "MODYFIKATORY" : "WYGLĄD", n > 0 ? "za doświadczenie" : "tylko oprawa");
+        var y = p.Section(p.Top, n > 0 ? Loc.T("modyfikatory") : Loc.T("wyglad_2"), n > 0 ? Loc.T("za_doswiadczenie") : Loc.T("tylko_oprawa"));
         _window = Math.Max(3, (int)((p.Bottom - y - 8 - 6 - (3 * PhonePainter.RowH + 8)) / PhonePainter.RowH));
         _list.Clamp(Rows, _window);
         var shown = Math.Min(Rows, _window);
@@ -160,9 +160,9 @@ public sealed class InvestorPage : PhonePage
                 else if (k > 0) p.Divider(card, k);
                 if (won && !vsel) p.Stripe(card, k, Pal.Done);
                 p.HitRow(card, k, i);
-                var vpw = p.Pill(right, vy, power ? (won ? "Wariant" : "Zwykła") : (won ? "Ranga I" : "Wybierz"), won ? PillKind.Done : PillKind.Gray);
-                var vlabel = power ? "Moc: " + (won ? _d.MasteryClasses[_cls].PowerName : _d.Classes[_cls].AbilityName)
-                                   : "Pamiątka 2: " + (k2 >= 0 ? _d.Keepsakes[k2].Name : "brak");
+                var vpw = p.Pill(right, vy, power ? (won ? Loc.T("wariant") : Loc.T("zwykla")) : (won ? Loc.T("ranga_i") : Loc.T("wybierz")), won ? PillKind.Done : PillKind.Gray);
+                var vlabel = power ? Loc.T("moc_4") + (won ? _d.MasteryClasses[_cls].PowerName : _d.Classes[_cls].AbilityName)
+                                   : Loc.T("pamiatka_2_2") + (k2 >= 0 ? _d.Keepsakes[k2].Name : Loc.T("brak_2"));
                 p.Text(tx, vy, vlabel, vsel ? Ink.Brand : won ? Ink.Dark : Ink.Dim, TextAlign.Left, right - vpw - 4 - tx);
                 continue;
             }
@@ -176,9 +176,9 @@ public sealed class InvestorPage : PhonePage
                 if (ssel) p.Selected(card, k);
                 else if (k > 0) p.Divider(card, k);
                 p.HitRow(card, k, i);
-                var spw = p.Pill(right, sy, stripes ? (son ? "WŁ" : "Wygląd") : "Wygląd", son ? PillKind.Done : PillKind.Gray);
+                var spw = p.Pill(right, sy, stripes ? (son ? Loc.T("wl") : Loc.T("wyglad")) : Loc.T("wyglad"), son ? PillKind.Done : PillKind.Gray);
                 p.Icon(Assets.UiMenu, Assets.MenuStripes, Assets.Icon, new Vector2(tx - 2, sy + (PhonePainter.RowH - 16) / 2f));
-                var label = stripes ? _d.Cosmetics[_d.CosmeticStripes].Name : "Kask: " + (hk >= 0 ? _d.Cosmetics[hk].Name : "zawodu");
+                var label = stripes ? _d.Cosmetics[_d.CosmeticStripes].Name : Loc.T("kask_2") + (hk >= 0 ? _d.Cosmetics[hk].Name : Loc.T("zawodu"));
                 p.Text(tx + 18, sy, label, ssel ? Ink.Brand : son ? Ink.Dark : Ink.Dim, TextAlign.Left, right - spw - 4 - tx - 18);
                 if (!stripes && hk >= 0) // próbka koloru kasku
                 {
@@ -195,17 +195,17 @@ public sealed class InvestorPage : PhonePage
             else if (k > 0) p.Divider(card, k);
             if (on && !sel) p.Stripe(card, k, Pal.Done);
             p.HitRow(card, k, i);
-            var pw = p.Pill(right, ry, on ? $"WŁ +{m.Stake}" : $"+{m.Stake}", on ? PillKind.Done : PillKind.Gray);
+            var pw = p.Pill(right, ry, on ? Loc.F("wl_3", m.Stake) : $"+{m.Stake}", on ? PillKind.Done : PillKind.Gray);
             p.Text(tx, ry, m.Name, sel ? Ink.Brand : on ? Ink.Dark : Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
         }
         var dc = p.Card(card.End.Y + 6, 3);
         string desc;
-        if (_list.Sel == StripesRow) desc = "Wygląd: " + _d.Cosmetics[_d.CosmeticStripes].Desc;
-        else if (_list.Sel == PowerRow) desc = $"Wariant mocy: {_d.MasteryClasses[_cls].PowerDesc} (mistrzostwo zawodu)";
+        if (_list.Sel == StripesRow) desc = Loc.T("wyglad_3") + _d.Cosmetics[_d.CosmeticStripes].Desc;
+        else if (_list.Sel == PowerRow) desc = Loc.F("wariant_mocy_mistrzostwo", _d.MasteryClasses[_cls].PowerDesc);
         else if (_list.Sel == Keep2Row)
         {
             var k2 = Meta.SelectedKeepsake2(_d, _p);
-            desc = k2 >= 0 ? "Druga pamiątka: " + RunMods.PerkLabel(Meta.Keepsake2Perk(_d, k2)) : "Druga pamiątka (ranga I), inna niż pierwsza";
+            desc = k2 >= 0 ? Loc.T("druga_pamiatka_2") + RunMods.PerkLabel(Meta.Keepsake2Perk(_d, k2)) : Loc.T("druga_pamiatka_ranga_i_inna_2");
         }
         else if (_list.Sel == FilterRow)
         {
@@ -215,22 +215,22 @@ public sealed class InvestorPage : PhonePage
         else if (_list.Sel == HelmetRow)
         {
             var hk = Secrets.HelmetCosmetic(_d, _p, _cls);
-            desc = (hk >= 0 ? "Wygląd: " + _d.Cosmetics[hk].Desc : "Kolor kasku zawodu") + $" (kolorów: {Secrets.HelmetsUnlocked(_d, _p)})";
+            desc = (hk >= 0 ? Loc.T("wyglad_3") + _d.Cosmetics[hk].Desc : Loc.T("kolor_kasku_zawodu")) + Loc.F("kolorow_2", Secrets.HelmetsUnlocked(_d, _p));
         }
-        else desc = n > 0 ? $"{_d.Investor[_list.Sel].Desc}, dośw. +{_d.Investor[_list.Sel].XpPct}%" : "";
+        else desc = n > 0 ? Loc.F("dosw_4", _d.Investor[_list.Sel].Desc, _d.Investor[_list.Sel].XpPct) : "";
         p.Text(tx, p.RowY(dc, 0), desc, Ink.Dim, TextAlign.Left, right - tx);
         p.Divider(dc, 1);
         if (n == 0)
         {
-            p.Text(tx, p.RowY(dc, 1), "Kolory kasku: odznaki i zlecenia", Ink.Dark, TextAlign.Left, right - tx);
+            p.Text(tx, p.RowY(dc, 1), Loc.T("kolory_kasku_odznaki_i"), Ink.Dark, TextAlign.Left, right - tx);
             p.Divider(dc, 2);
-            p.Text(tx, p.RowY(dc, 2), "Tryb inwestora: po pierwszej wygranej", Ink.Dim, TextAlign.Left, right - tx);
+            p.Text(tx, p.RowY(dc, 2), Loc.T("tryb_inwestora_po_pierwszej"), Ink.Dim, TextAlign.Left, right - tx);
             return;
         }
-        p.Text(tx, p.RowY(dc, 1), $"Stawka {Investor.Stake(_d, mask)}, dośw. +{Investor.Xp(_d, mask)}%, rekord {Meta.BestStake(_p, _cls)}", Ink.Dark, TextAlign.Left, right - tx);
+        p.Text(tx, p.RowY(dc, 1), Loc.F("stawka_dosw_rekord", Investor.Stake(_d, mask), Investor.Xp(_d, mask), Meta.BestStake(_p, _cls)), Ink.Dark, TextAlign.Left, right - tx);
         p.Divider(dc, 2); // v0.21.52 cz. b (#48): nagroda za kolejny stopień inwestora (najwyższa stawka wygranej budowy)
         var rk = Progress.StakeRank(_d, _p);
-        var next = rk < _d.StakeRanks.Length ? $"Stawka {_d.StakeRanks[rk].Xp}: {Progress.RewardLabel(_d, _d.StakeRanks[rk], _cls)}" : "Stopnie inwestora: wszystkie";
+        var next = rk < _d.StakeRanks.Length ? Loc.F("stawka_3", _d.StakeRanks[rk].Xp, Progress.RewardLabel(_d, _d.StakeRanks[rk], _cls)) : Loc.T("stopnie_inwestora_wszystkie");
         var npw = p.Pill(right, p.RowY(dc, 2), rk < _d.StakeRanks.Length ? $"{rk}/{_d.StakeRanks.Length}" : "MAX", rk < _d.StakeRanks.Length ? PillKind.Prog : PillKind.Done);
         p.Stripe(dc, 2, Pal.Prog);
         p.Text(tx, p.RowY(dc, 2), next, Ink.Prog, TextAlign.Left, right - npw - 4 - tx);

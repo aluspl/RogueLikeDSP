@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using System.Text.RegularExpressions;
 using Godot;
 using LifeLike.Game.Gfx;
@@ -21,15 +22,15 @@ public static class ButtonNames
         ("L", GameAction.L), ("R", GameAction.R),
     ];
 
-    private static readonly (string Gba, string Touch)[] TouchPhrases =
+    private static (string Gba, string Touch)[] TouchPhrases =>
     [
-        ("menu START", "przycisk Termos"), ("Telefon (SELECT)", "Telefon"), ("Moc pod R", "Moc"),
-        ("Paczka: A zakładam, B zostawiam", "Paczka: Zakładam albo Zostawiam"), ("A: dalej", "Dalej"),
+        (Loc.T("menu_start"), Loc.T("przycisk_termos")), (Loc.T("telefon_select"), Loc.T("telefon")), (Loc.T("moc_pod_r"), Loc.T("moc_6")),
+        (Loc.T("paczka_a_zakladam_b_zostawiam"), Loc.T("paczka_zakladam_albo_zostawiam")), (Loc.T("a_dalej"), Loc.T("dalej")),
     ];
 
-    private static readonly (string Gba, string Touch)[] TouchTokens =
+    private static (string Gba, string Touch)[] TouchTokens =>
     [
-        ("SELECT", "Telefon"), ("START", "Termos"), ("A", "Atak"), ("B", "Czekaj"), ("L", "Telefon"), ("R", "Moc"),
+        ("SELECT", Loc.T("telefon")), ("START", Loc.T("termos_3")), ("A", Loc.T("atak")), ("B", Loc.T("czekaj")), ("L", Loc.T("telefon")), ("R", Loc.T("moc_6")),
     ];
 
     /// <summary>Tekst dla bieżącego sterowania: klawisze albo dotyk (np. podpowiedzi ekranów pisane w kodzie).</summary>
@@ -42,10 +43,10 @@ public static class ButtonNames
         if (string.IsNullOrEmpty(text)) return text ?? "";
         if (Layout.Touch) return ForTouch(text);
         if (UseGbaNames) return text;
-        text = text.Replace("Przytrzymaj L:", "L:"); // podgląd mapy w Godocie to przełącznik, nie przytrzymanie
+        text = text.Replace(Loc.T("przytrzymaj_l"), "L:"); // podgląd mapy w Godocie to przełącznik, nie przytrzymanie
         foreach (var (gba, action) in Tokens)
             text = Regex.Replace(text, $@"(?<![\p{{L}}\d]){gba}(?![\p{{L}}\d])", KeyName(action));
-        return text.Replace("Przytrzymaj Spacja", "Przytrzymaj Spację");
+        return text.Replace(Loc.T("przytrzymaj_spacja"), Loc.T("przytrzymaj_spacje"));
     }
 
     private static string ForTouch(string text)
@@ -67,9 +68,9 @@ public static class ButtonNames
             var code = k.PhysicalKeycode != Key.None ? k.PhysicalKeycode : k.Keycode; // nazwa wg układu QWERTY
             return code switch
             {
-                Key.Space => "Spacja",
-                Key.Escape => "Esc",
-                Key.Enter => "Enter",
+                Key.Space => Loc.T("spacja"),
+                Key.Escape => Loc.T("esc"),
+                Key.Enter => Loc.T("enter"),
                 _ => OS.GetKeycodeString(code),
             };
         }

@@ -189,16 +189,16 @@ public static class Progress
         var mc = d.MasteryClasses[cls >= 0 && cls < d.Classes.Length ? cls : 0];
         return l.Reward switch
         {
-            ProgressReward.Respect => $"Respekt +{l.Value}",
-            ProgressReward.Title => $"Tytuł: {l.Title}",
+            ProgressReward.Respect => Loc.F("respekt_5", l.Value),
+            ProgressReward.Title => Loc.F("tytul_7", l.Title),
             ProgressReward.Helmet => d.Cosmetics[l.Index].Name,
             ProgressReward.Story => $"SMS: {d.StoryArc[l.Index].Name}",
-            ProgressReward.Decor => $"Ozdoba: {d.EstateDecor[l.Index].Name}",
-            ProgressReward.KeepsakeSlot => "Druga pamiątka",
-            ProgressReward.Power => $"Moc: {mc.PowerName}",
+            ProgressReward.Decor => Loc.F("ozdoba_2", d.EstateDecor[l.Index].Name),
+            ProgressReward.KeepsakeSlot => Loc.T("druga_pamiatka"),
+            ProgressReward.Power => Loc.F("moc_7", mc.PowerName),
             ProgressReward.Weapon => mc.WeaponName,
-            ProgressReward.Boon => $"Premia: {d.Boons[mc.Boon].Name}",
-            ProgressReward.Keepsake => $"Pamiątka: {d.Keepsakes[l.Index].Name}", // v0.21.52 cz. c
+            ProgressReward.Boon => Loc.F("premia_4", d.Boons[mc.Boon].Name),
+            ProgressReward.Keepsake => Loc.F("pamiatka_7", d.Keepsakes[l.Index].Name), // v0.21.52 cz. c
             _ => "",
         };
     }

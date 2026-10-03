@@ -1,3 +1,4 @@
+using LifeLike.Core;
 using System;
 using System.Collections.Generic;
 using LifeLike.Game.Gfx;
@@ -51,13 +52,13 @@ public sealed class SchedulePage : PhonePage
         return true;
     }
 
-    public override string Title => "Harmonogram";
-    public override string Sub => _g.ActCleared ? $"Akt {_g.ActNumeral()} zaliczony!" : "Etap zaliczony";
-    public override string Hint => (HasChoice ? "Strzałki: ścieżka  " : "") + (_g.ActCleared && !_g.ShopClosed ? "Enter: do Hurtowni" : HasChoice ? "Enter: dalej" : $"Enter: dalej{Break}");
-    public override PageAction[] Actions => [new(_g.ActCleared && !_g.ShopClosed ? "Do Hurtowni" : HasChoice ? $"Dalej: {_g.D.Paths[_g.PathOffer(Sel)].Short}" : $"Dalej{Break}", GameAction.Start)];
+    public override string Title => Loc.T("harmonogram");
+    public override string Sub => _g.ActCleared ? Loc.F("akt_zaliczony", _g.ActNumeral()) : Loc.T("etap_zaliczony");
+    public override string Hint => (HasChoice ? Loc.T("strzalki_sciezka") : "") + (_g.ActCleared && !_g.ShopClosed ? Loc.T("enter_do_hurtowni") : HasChoice ? Loc.T("enter_dalej") : Loc.F("enter_dalej_2", Break));
+    public override PageAction[] Actions => [new(_g.ActCleared && !_g.ShopClosed ? Loc.T("do_hurtowni") : HasChoice ? Loc.F("dalej_2", _g.D.Paths[_g.PathOffer(Sel)].Short) : Loc.F("dalej_3", Break), GameAction.Start)];
 
     /// <summary>Przerwa na kawę między etapami (tryb inwestora: bez przerwy).</summary>
-    private string Break => _g.InvestorHas(LifeLike.Core.Data.InvestorEffect.NoBreak) ? " (bez przerwy)" : " (kawa +5 HP)";
+    private string Break => _g.InvestorHas(LifeLike.Core.Data.InvestorEffect.NoBreak) ? Loc.T("bez_przerwy_2") : Loc.T("kawa_5_hp_2");
 
     public override void Draw(PhonePainter p)
     {
@@ -84,7 +85,7 @@ public sealed class SchedulePage : PhonePage
         var card = Stages(p, rows, top);
         var c2 = Summary(p, card.End.Y + Gap, summaryRows, notes);
         if (tipRows == 0) return;
-        var y = p.Section(c2.End.Y + Gap, "RADA KIEROWNIKA");
+        var y = p.Section(c2.End.Y + Gap, Loc.T("rada_kierownika"));
         var c3 = p.Card(y, tipRows);
         for (var k = 0; k < tipRows; k++)
         {
@@ -112,7 +113,7 @@ public sealed class SchedulePage : PhonePage
             var next = i == _g.Stage + 1;
             if (next) p.Selected(card, r);
             p.Stripe(card, r, done ? Pal.Done : next ? Pal.Brand : Pal.Todo);
-            var pw = p.Pill(right, y, done ? "Gotowe" : next ? "Następny" : "Do zrob.", done ? PillKind.Done : next ? PillKind.Brand : PillKind.Gray);
+            var pw = p.Pill(right, y, done ? Loc.T("gotowe") : next ? Loc.T("nastepny") : Loc.T("do_zrob"), done ? PillKind.Done : next ? PillKind.Brand : PillKind.Gray);
             p.Text(tx, y, $"{i - f0 + 1}. {_g.SDef(i).Name}", done ? Ink.Dim : next ? Ink.Brand : Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
         }
         return card;
@@ -126,7 +127,7 @@ public sealed class SchedulePage : PhonePage
     {
         var d = _g.D;
         var next = _g.SDef(_g.Stage + 1);
-        var y = p.Section(top, "WYBIERZ ŚCIEŻKĘ", $"{_g.StageNumber() + 1}. {next.Name}");
+        var y = p.Section(top, Loc.T("wybierz_sciezke"), $"{_g.StageNumber() + 1}. {next.Name}");
         var rowH = PhonePainter.RowH;
         var tx0 = p.Left + 38 + 12;
         var descW = (int)(p.Right - 6 - tx0);
@@ -172,13 +173,13 @@ public sealed class SchedulePage : PhonePage
         var tx = p.TextX(c2);
         var right = c2.End.X - 6;
         var r = 0;
-        p.Text(tx, p.RowY(c2, r), $"Wynik {_g.Score}  Dni {_g.Turns}  Dośw. {_g.Xp}", Ink.Dark, TextAlign.Left, right - tx);
+        p.Text(tx, p.RowY(c2, r), Loc.F("wynik_dni_dosw", _g.Score, _g.Turns, _g.Xp), Ink.Dark, TextAlign.Left, right - tx);
         if (_g.ActCleared)
         {
             r++;
             p.Divider(c2, r);
             p.Stripe(c2, r, Pal.Done);
-            p.Text(tx, p.RowY(c2, r), $"Premia za akt: +{_g.ActBonus} zł", Ink.Done);
+            p.Text(tx, p.RowY(c2, r), Loc.F("premia_za_akt_zl_2", _g.ActBonus), Ink.Done);
         }
         for (var k = 0; k < notes.Count && k < 2; k++)
         {

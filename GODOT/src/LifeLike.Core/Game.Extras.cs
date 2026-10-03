@@ -111,7 +111,7 @@ public sealed partial class Game
         StageChoicePick = (sbyte)k;
         PendingEvent = -1;
         ChoiceDone = 0;
-        Push(Msg("Odpowiedź: ").Add(c.Label));
+        Push(Msg(Loc.T("odpowiedz")).Add(c.Label));
         for (var i = 0; i < c.Outs.Length; ++i)
         {
             var o = c.Outs[i];
@@ -130,11 +130,11 @@ public sealed partial class Game
         {
             case ChoiceEffect.Cash:
                 Cash = Math.Max(0, Cash + (v > 0 ? Income(v) : v));
-                Push(Msg(v > 0 ? "Budżet +" : "Budżet ").Add(v > 0 ? Income(v) : v).Add(" zł").As(v > 0 ? LogKind.Good : LogKind.Bad));
+                Push(Msg(v > 0 ? Loc.T("budzet") : Loc.T("budzet_2")).Add(v > 0 ? Income(v) : v).Add(Loc.T("zl")).As(v > 0 ? LogKind.Good : LogKind.Bad));
                 break;
             case ChoiceEffect.Xp:
                 GainXp(v);
-                Push(Msg("+").Add(v).Add(" dośw.").As(LogKind.Good));
+                Push(Msg("+").Add(v).Add(Loc.T("dosw")).As(LogKind.Good));
                 break;
             case ChoiceEffect.Hp:
                 Hero.Hp = (short)(v > 0 ? Math.Min(Hero.MaxHp, Hero.Hp + v) : Math.Max(1, Hero.Hp + v));
@@ -161,11 +161,11 @@ public sealed partial class Game
             }
             case ChoiceEffect.Respect:
                 Respect += v;
-                Push(Msg("Respekt +").Add(v).As(LogKind.Loot));
+                Push(Msg(Loc.T("respekt_2")).Add(v).As(LogKind.Loot));
                 break;
             case ChoiceEffect.Coffee:
                 Thermos = Math.Min(ThermosCap(), Thermos + v);
-                Push(Msg("Kawa do termosu (").Add(Thermos).Add("/").Add(ThermosCap()).Add(")").As(LogKind.Good));
+                Push(Msg(Loc.T("kawa_do_termosu")).Add(Thermos).Add("/").Add(ThermosCap()).Add(")").As(LogKind.Good));
                 break;
             case ChoiceEffect.Spawn:
                 for (var k = 0; k < v; ++k)
@@ -185,7 +185,7 @@ public sealed partial class Game
                     a.Awake = true;
                     a.Stun = 1;
                     if (DustSight() > 0) a.Flags = (byte)(a.Flags | ActorFlag.Dusty);
-                    Push(Msg(D.Enemies[o.Arg].Name).Add(" wyłazi!").As(LogKind.Bad));
+                    Push(Msg(D.Enemies[o.Arg].Name).Add(Loc.T("wylazi")).As(LogKind.Bad));
                 }
                 break;
             case ChoiceEffect.Status: ApplyStatus((StatusEffect)o.Arg, v); break;
@@ -194,7 +194,7 @@ public sealed partial class Game
                 break;
             case ChoiceEffect.Power:
                 AbilityCd = 0;
-                Push(Msg("Moc gotowa: ").Add(PDef.AbilityName).As(LogKind.Good));
+                Push(Msg(Loc.T("moc_gotowa_2")).Add(PDef.AbilityName).As(LogKind.Good));
                 break;
         }
     }
@@ -262,7 +262,7 @@ public sealed partial class Game
         ++WeaponLvl;
         StageFlags[Stage] |= RecapFlag.Upgrade;
         if (WeaponLvl >= D.ToolTraitAt && WeaponTrait < 0) TraitPending = true;
-        Push(Msg("Ulepszenie: ").Add(Weapon.Name).Add("+").Add(WeaponLvl).As(LogKind.Loot));
+        Push(Msg(Loc.T("ulepszenie_3")).Add(Weapon.Name).Add("+").Add(WeaponLvl).As(LogKind.Loot));
     }
 
     public bool ChooseTrait(int t)
@@ -270,7 +270,7 @@ public sealed partial class Game
         if (!TraitPending || t < 0 || t >= D.ToolTraits.Length) return false;
         TraitPending = false;
         WeaponTrait = (sbyte)t;
-        Push(Msg("Cecha narzędzia: ").Add(D.ToolTraits[t].Name).As(LogKind.Loot));
+        Push(Msg(Loc.T("cecha_narzedzia")).Add(D.ToolTraits[t].Name).As(LogKind.Loot));
         return true;
     }
 
@@ -315,7 +315,7 @@ public sealed partial class Game
     {
         if (!HasToolOffer) return;
         ToolOffer = ToolOfferPickup = -1;
-        Push(Msg("Zostajesz przy ulepszonym narzędziu"));
+        Push(Msg(Loc.T("zostajesz_przy_ulepszonym")));
     }
 
     public void TakeTool(int t)
@@ -323,7 +323,7 @@ public sealed partial class Game
         ResetUpgrade();
         WeaponOverride = D.Tools[t].Weapon;
         ToolsFound = (byte)(ToolsFound | (1u << t));
-        Push(Msg("Narzędzie: ").Add(Weapon.Name).Add(" ").Add(Weapon.MinDamage).Add("-").Add(Weapon.MaxDamage).As(LogKind.Loot));
+        Push(Msg(Loc.T("narzedzie_2")).Add(Weapon.Name).Add(" ").Add(Weapon.MinDamage).Add("-").Add(Weapon.MaxDamage).As(LogKind.Loot));
     }
 
     /// <summary>Bot bierze nowe narzędzie, gdy średni cios (bez problemu) jest wyższy niż ulepszonym obecnym.</summary>
@@ -444,7 +444,7 @@ public sealed partial class Game
         Lv[SecretX, SecretY] = Tile.Floor;
         if (SecretsFound < 255) ++SecretsFound;
         StageFlags[Stage] |= RecapFlag.Secret;
-        Push(Msg(how).Add(" Magazyn otwarty!").As(LogKind.Good));
+        Push(Msg(how).Add(Loc.T("magazyn_otwarty")).As(LogKind.Good));
         UpdateFov();
     }
 
@@ -454,12 +454,12 @@ public sealed partial class Game
         if (Keys > 0)
         {
             --Keys;
-            OpenSecret("Klucz pasuje!");
+            OpenSecret(Loc.T("klucz_pasuje"));
             return true;
         }
         if (SecretDef.Breakable && HasPassive(ClassPassive.Push))
         {
-            OpenSecret("Łyżka kruszy ścianę!");
+            OpenSecret(Loc.T("lyzka_kruszy_sciane"));
             return true;
         }
         Push(Msg(SecretDef.Name).Add(": ").Add(SecretDef.Info));
@@ -469,7 +469,7 @@ public sealed partial class Game
     /// <summary>Wybuch w promieniu rad od (x, y) kruszy pękniętą ścianę.</summary>
     public void BlastSecret(int x, int y, int rad)
     {
-        if (SecretClosed() && SecretDef.Breakable && Cheb(x, y, SecretX, SecretY) <= rad) OpenSecret("Wybuch kruszy ścianę!");
+        if (SecretClosed() && SecretDef.Breakable && Cheb(x, y, SecretX, SecretY) <= rad) OpenSecret(Loc.T("wybuch_kruszy_sciane"));
     }
 
     /// <summary>Klucz z problemu: na polu usunięcia (albo obok), bez miejsca na znajdźkę – od razu do kieszeni.</summary>
@@ -480,11 +480,11 @@ public sealed partial class Game
         if ((PickupAt(x, y) && !FreeAround(x, y, Hero.X, Hero.Y, out kx, out ky)) || PickupsCount >= MaxPickups)
         {
             ++Keys;
-            Push(Msg("Klucz do magazynu!").As(LogKind.Loot));
+            Push(Msg(Loc.T("klucz_do_magazynu")).As(LogKind.Loot));
             return;
         }
         Pickups[PickupsCount++] = new Pickup(kx, ky, PickupType.StoreKey, true);
-        Push(Msg("Wypadł klucz do magazynu!").As(LogKind.Loot));
+        Push(Msg(Loc.T("wypadl_klucz_do_magazynu")).As(LogKind.Loot));
     }
 
     public void OpenChest()
@@ -492,7 +492,7 @@ public sealed partial class Game
         Respect += D.ChestRespect;
         Cash += Income(D.ChestCash);
         for (var m = 0; m < D.Materials.Length; ++m) AddMaterial(m, D.ChestMats);
-        Push(Msg("Skrzynia! Respekt +").Add(D.ChestRespect).Add(", +").Add(Income(D.ChestCash)).Add(" zł").As(LogKind.Loot));
+        Push(Msg(Loc.T("skrzynia_respekt")).Add(D.ChestRespect).Add(", +").Add(Income(D.ChestCash)).Add(Loc.T("zl")).As(LogKind.Loot));
         TakeGear(RandomSlot(), D.ChestGearMin, R.Range(0, D.GearTraitsCount - 1));
     }
 
@@ -577,7 +577,7 @@ public sealed partial class Game
             OfferSlot = (sbyte)slot;
             OfferRarity = (sbyte)rarity;
             OfferTrait = (sbyte)trait;
-            Push(Msg("Paczka: ").Add(D.Gear[slot * 3 + rarity].Name).As(LogKind.Loot));
+            Push(Msg(Loc.T("paczka")).Add(D.Gear[slot * 3 + rarity].Name).As(LogKind.Loot));
         }
     }
 }

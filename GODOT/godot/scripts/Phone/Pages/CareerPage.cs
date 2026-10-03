@@ -27,10 +27,10 @@ public sealed class CareerPage : PhonePage
         _list.Sel = Career.Selected(d, p);
     }
 
-    public override string Title => "Mapa kariery";
-    public override string Sub => $"Wygrane {Career.WonCount(_d, _p)}/{_d.Career.Length}";
-    public override string Hint => "Spacja: wybierz  Esc: wróć";
-    public override PageAction[] Actions => [new("Wybierz", GameAction.A), new("Wróć", GameAction.Cancel)];
+    public override string Title => Loc.T("mapa_kariery");
+    public override string Sub => Loc.F("wygrane_3", Career.WonCount(_d, _p), _d.Career.Length);
+    public override string Hint => Loc.T("spacja_wybierz_esc_wroc");
+    public override PageAction[] Actions => [new(Loc.T("wybierz"), GameAction.A), new(Loc.T("wroc"), GameAction.Cancel)];
     public override bool Closable => true;
 
     public int Sel
@@ -66,15 +66,15 @@ public sealed class CareerPage : PhonePage
     {
         var kd = _d.Career[k];
         if (!Career.Unlocked(_d, _p, k)) return Career.UnlockLabel(_d, k);
-        if (_p.CareerWins[k] > 0) return $"Wygrane {_p.CareerWins[k]}";
-        return $"Etapy {_p.CareerBest[k]}/{kd.Count - kd.Prelude}";
+        if (_p.CareerWins[k] > 0) return Loc.F("wygrane_4", _p.CareerWins[k]);
+        return Loc.F("etapy_2", _p.CareerBest[k], kd.Count - kd.Prelude);
     }
 
     public override void Draw(PhonePainter p)
     {
         var n = _d.Career.Length;
         _list.Clamp(n, n);
-        var y = p.Section(p.Top, "KONTRAKTY", "budynki z własnymi etapami");
+        var y = p.Section(p.Top, Loc.T("kontrakty"), Loc.T("budynki_z_wlasnymi_etapami"));
         var card = p.Card(y, n);
         var tx = p.TextX(card);
         var right = card.End.X - 6;
@@ -99,24 +99,24 @@ public sealed class CareerPage : PhonePage
         var dc = p.Card(card.End.Y + 6, 3);
         p.Text(tx, p.RowY(dc, 0), s.Desc, Ink.Dark, TextAlign.Left, right - tx);
         p.Divider(dc, 1);
-        var bossLine = s.Boss >= 0 ? $"{s.Count - s.Prelude} etapów, boss: {_d.Enemies[s.Boss].Name}" : $"{s.Count - s.Prelude} etapów (+ Akt 0), też budowa dnia";
+        var bossLine = s.Boss >= 0 ? Loc.F("etapow_boss", s.Count - s.Prelude, _d.Enemies[s.Boss].Name) : Loc.F("etapow_akt_0_tez_budowa_dnia", s.Count - s.Prelude);
         p.Text(tx, p.RowY(dc, 1), bossLine, Ink.Dim, TextAlign.Left, right - tx);
         p.Divider(dc, 2);
         string reward;
         Ink ink;
         if (!Career.Unlocked(_d, _p, _list.Sel))
         {
-            reward = $"Odblokujesz: {Career.UnlockLabel(_d, _list.Sel)}";
+            reward = Loc.F("odblokujesz", Career.UnlockLabel(_d, _list.Sel));
             ink = Ink.Late;
         }
         else if (s.Boss >= 0 && !Career.Won(_p, _list.Sel))
         {
-            reward = $"Nagroda: {Career.RewardLabel(_d, _list.Sel)}";
+            reward = Loc.F("nagroda_2", Career.RewardLabel(_d, _list.Sel));
             ink = Ink.Brand;
         }
         else
         {
-            reward = _p.CareerWins[_list.Sel] > 0 ? $"Wygrany {_p.CareerWins[_list.Sel]} raz(y)" : "Jeszcze bez wygranej";
+            reward = _p.CareerWins[_list.Sel] > 0 ? Loc.F("wygrany_raz_y", _p.CareerWins[_list.Sel]) : Loc.T("jeszcze_bez_wygranej");
             ink = Ink.Done;
         }
         p.Text(tx, p.RowY(dc, 2), reward, ink, TextAlign.Left, right - tx);

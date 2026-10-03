@@ -216,12 +216,12 @@ public sealed partial class Game
             case BoonEffect.Thermos: Thermos = Math.Min(ThermosCap(), Thermos + 1); break;
             case BoonEffect.Sight: UpdateFov(); break;
         }
-        Push(Msg("Premia: ").Add(bd.Name).As(LogKind.Loot));
+        Push(Msg(Loc.T("premia")).Add(bd.Name).As(LogKind.Loot));
         var now = SynergyMask();
         for (var s = 0; s < D.Synergies.Length; ++s)
         {
             if (((now >> s) & 1) == 0 || ((before >> s) & 1) != 0) continue;
-            Push(Msg("Synergia: ").Add(D.Synergies[s].Name).Add("!").As(LogKind.Good));
+            Push(Msg(Loc.T(Loc.T("synergia_2"))).Add(D.Synergies[s].Name).Add("!").As(LogKind.Good));
             StageFlags[Stage] |= RecapFlag.Synergy;
         }
         return true;
@@ -233,7 +233,7 @@ public sealed partial class Game
         Cash -= RerollPrice();
         ++BoonRerolls;
         RollBoons(BoonSalt);
-        Push(Msg("Nowa oferta premii"));
+        Push(Msg(Loc.T("nowa_oferta_premii")));
         return true;
     }
 
@@ -392,7 +392,7 @@ public sealed partial class Game
         c.Awake = true;
         c.Stun = 1;
         c.Flags = ActorFlag.Child;
-        Push(Msg(D.Enemies[c.DefId].Name).Add(": wzywa pomoc!").As(LogKind.Bad));
+        Push(Msg(D.Enemies[c.DefId].Name).Add(Loc.T("wzywa_pomoc")).As(LogKind.Bad));
     }
 
     /// <summary>Nagroda za elitę: pewny drop (paczka sprzętu co najmniej solidna), materiały, Respekt.</summary>
@@ -402,7 +402,7 @@ public sealed partial class Game
         Respect += D.EliteRespect;
         AddMaterial(R.Range(0, D.Materials.Length - 1), D.EliteMats);
         if (PickupsCount < MaxPickups && !PickupAt(ex, ey)) DropAt(ex, ey, D.EliteGearMin);
-        Push(Msg("Elita usunięta! Respekt +").Add(D.EliteRespect).As(LogKind.Loot));
+        Push(Msg(Loc.T("elita_usunieta_respekt")).Add(D.EliteRespect).As(LogKind.Loot));
     }
 
     /// <summary>Krok problemu prosto w stronę bohatera (najpierw oś z większą odległością).</summary>
