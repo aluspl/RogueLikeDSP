@@ -2,10 +2,19 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
-## v0.21.53 – w przygotowaniu (filtry ekranu, tryby dla daltonistów)
+## v0.21.53 – w przygotowaniu (filtry ekranu, tryby dla daltonistów, język angielski)
+### In English
+PlanBudowlany RogueLike now speaks English (GBA and Godot). Every enemy, boss, boon, event, text-message story,
+tutorial bubble, How to Play page, phone tab, recap and tip has a natural English version – the Unmissable Deadline,
+the Broken Concrete Mixer, Red Tape, the Builders' Merchant, Respect and Training are waiting. Pick the language on the
+first boot of the GBA game (Polski / English; later: profile phone > Team > SELECT) or in the Godot settings (wrench >
+Język / Language; default follows your system language). This release also adds screen filters – Noir, Retro LCD,
+Night Neon and Acid to unlock – and colour-blind modes (Protanopia, Deuteranopia, Tritanopia, High Contrast) available
+from the start, with patterns and letters so colour is never the only cue.
+
 ### Najważniejsze
-Filtry ekranu – cztery do odblokowania postępem i cztery tryby dla daltonistów dostępne od pierwszego uruchomienia
-(GBA i Godot, wspólne dane i rdzeń):
+Filtry ekranu – cztery do odblokowania postępem i cztery tryby dla daltonistów dostępne od pierwszego uruchomienia –
+oraz cała gra po angielsku (GBA i Godot, wspólne dane i rdzeń):
 1. **Filtry zabawowe (#53)** – **Noir** (czerń i biel, kontrast, ziarno, winieta; czerwień zagrożeń zostaje przygaszona,
    nie szara), **Retro LCD** (4 odcienie zieleni, dithering i kratka pikseli), **Neon nocy** (róż i błękit, przesunięcie
    kanałów, linie, poświata, drgnięcia taśmy), **Kwas** (tęcza w czasie, fale, rozlana barwa – z ostrzeżeniem o ruchu).
@@ -14,6 +23,12 @@ Filtry ekranu – cztery do odblokowania postępem i cztery tryby dla daltonist�
    Przy tych trybach (i w Noir / Retro LCD) kolor nie jest jedyną wskazówką: pola ciosu i wybuchu w paski, litery
    rzadkości premii Z / R / L.
 3. Zablokowany filtr widać jako „???” z podpowiedzią, po odblokowaniu – baner „Nowy filtr ekranu!”.
+4. **Język angielski (#40)** – cała gra po polsku albo po angielsku (GBA i Godot, wspólne dane): wrogowie i bossowie,
+   premie, wydarzenia, wątki SMS, samouczek, Jak grać, telefon, podsumowanie, rady, tytuły, sekrety, filtry. Tłumaczenie
+   pisane, nie dosłowne (Nieprzekraczalny Termin → The Unmissable Deadline, Papierologia → Red Tape, Hurtownia →
+   Builders' Merchant); imiona (Anna, Marek, Zenek, Ewa, Kowal, Lis) bez zmian. Wybór języka: GBA – przy pierwszym
+   uruchomieniu (Polski / English), potem telefon profilu > Zespół > SELECT (od razu); Godot – Ustawienia (klucz) >
+   Język / Language, domyślnie z języka systemu (polski – Polski, inny – English).
 
 ### Nowe
 - **Odblokowanie (sekcja `screenFilters` w `game.json`, dowolny z warunków):**
@@ -58,6 +73,34 @@ dE (CIELAB) między wskazówkami po symulacji, klasyczny -> tryb:
 
 Najsłabsza wskazówka bez filtra – czerwone pole ciosu przy protanopii (9,2) – staje się wyraźna; pozostałe zostają
 rozróżnialne (dE ≥ 20), a rzadkość ma dodatkowo literę. Test rdzenia (GBA) sprawdza to samo na parach kolorów gry.
+
+### Język angielski (#40)
+- **Dane:** polski zostaje bazą w `game.json`, angielska warstwa w `GBA/data/lang/en.json`: `fields` (które pola są
+  tekstem dla gracza; „?” – odwołanie po nazwie, np. slot sprzętu w nagrodzie), `data` (polski tekst → angielski; ten sam
+  tekst tłumaczy się raz – 1356 tekstów), `context` (wyjątek dla pola: skrót kontraktu Bliźniak → Semi), `ui` (799
+  tekstów interfejsu GBA – wcześniej na sztywno w `main.cpp`, `core.h`, `meta.h`, teraz `game.json` „ui” i w kodzie
+  `UI(klucz)`), `uiGodot` (661 tekstów skryptów Godota i rdzenia C#, w kodzie `Loc.T` / `Loc.F` z {0}, {1}),
+  `fit` (własne limity szerokości).
+- **GBA:** teksty z danych są typu `core::ltext` (wersja polska i angielska, wybór przy każdym użyciu – zmiana języka
+  działa od razu, także w telefonie). `gen_data.py` buduje tablice dwa razy – z polskich i z angielskich danych – z tymi
+  samymi asercjami (długości, linie dymków, tytuły bez powtórzeń) i scala wynik. Tytuł i plansza końcowa mają angielskie
+  hasło (`title_en`, `end_en`). Profil v17: język w bajcie 378 (0 = jeszcze nie wybrano – ekran wyboru przy starcie,
+  1 polski, 2 angielski; migracja v16 → v17 zeruje). ROM 779 KB (było 672 KB).
+- **Godot:** `Loc` (teksty interfejsu) i `LangOverlay` (dane po angielsku przy wczytaniu, 1:1 z `gen_data.py`); kopia
+  `en.json` przy buildzie do `res://data/lang_en.json`. Zmiana języka w ustawieniach: interfejs od razu, nazwy i opisy
+  z danych – po powrocie na tytuł (przeładowanie). `--lang pl|en` do zrzutów i testów. Tytuł z hasłem po angielsku.
+- **Sprawdzenia (`gen_data.py --check`):** każdy tekst ma tłumaczenie i nie ma zbędnych wpisów; font GBA (ASCII + polskie
+  litery) dla obu języków; szerokość w pikselach fontu GBA – linia angielska nie szersza niż najszersza polska w tym polu
+  (tekst interfejsu: do 25% / 16 px zapasu, wyjątki w `fit` – dymki SMS do 190 px, podpowiedzi przewijane); te same {0}, {1}
+  w obu językach; brak polskich napisów na sztywno w `main.cpp`, `core.h`, `meta.h` i skryptach Godota (słownik polskich
+  słów z tekstów gry, bez identyfikatorów danych, logów i walidacji). Za szerokie po angielsku skrócone (np. Jack of
+  Trades → Odd Jobs, Safety Training → Safety Basics, Something dropped! → Loot dropped!).
+- **Testy:** core_tests i test złoty bez zmian (polski domyślny), `LanguageTests` (kompletność danych i interfejsu, te same
+  {0}, dane po angielsku z tymi samymi liczbami i odwołaniami, tekst interfejsu w obu językach), test dymny Godota
+  po polsku i po angielsku (`--lang en`). Monkey test po angielsku: GBA 10 seedów zwykłej gry x 20000 klatek (szczyt kafli
+  122/256, sprite'ów 102/128, stosu ~7,6 KB), Godot 10 klawiatura + mysz i 10 pion + dotyk x 3000 akcji – bez błędów.
+  Scenariusze testowe GBA z `-DPB_LANG=2` (wyszukiwanie po polskich nazwach niezależnie od języka).
+- Karta sklepu (EN): bez zdania „gra jest na razie po polsku”.
 
 ### Zmiany
 - **Profil v17** (PBRL017, 384 B bez zmian): wybrany filtr (bajt 363) i ogłoszone filtry (376–377) w dawnym wyrównaniu

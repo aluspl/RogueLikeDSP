@@ -60,6 +60,14 @@ zablokowanego zawodu – gdzie go odblokować (Koszty w telefonie profilu) i ile
 Powiadomienia push jak w aplikacji: awans, nowe narzędzie, drop, moc gotowa, zaliczony etap, pojawienie się bossa („Przypisano Ci usterkę”).
 Mgła wojny: widzisz na 7 pól (ściany zasłaniają), odkryte pola zostają przyciemnione, wrogowie poza polem widzenia są ukryci.
 
+## Język: polski i angielski (#40, v0.21.53)
+Przy pierwszym uruchomieniu ekran **Język / Language** (góra/dół, A); później telefon profilu > **Zespół** > **SELECT**
+(„SEL: English” / „SEL: Polski”) – zmiana od razu. Zapis w profilu (bajt 378). Jak grać, samouczek, SMS-y, nazwy i opisy –
+wszystko w wybranym języku; tytuł i plansza końcowa mają angielskie hasło. Teksty z danych to `core::ltext` (polski
+i angielski), teksty interfejsu w `game.json` „ui” (w kodzie `UI(klucz)`), angielskie w `data/lang/en.json`.
+`tools/gen_data.py --check` sprawdza kompletność tłumaczenia, font, szerokość tekstów w pikselach i polskie napisy na
+sztywno w kodzie. Buildy testowe: `-DPB_LANG=2` – angielski bez pytania (scenariusze domyślnie po polsku).
+
 ## Filtry ekranu (v0.21.53)
 Wybór zawodu > SELECT > **Wygląd**, wiersz **Ekran** (A – kolejny odblokowany; zapis w profilu). Dla daltonistów od
 pierwszego uruchomienia: **Protanopia, Deuteranopia, Tritanopia** (daltonizacja) i **Wysoki kontrast**. Do odblokowania

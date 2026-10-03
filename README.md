@@ -25,6 +25,9 @@ wiatr) i Kamienica do remontu (grzyb, stare instalacje, Pęknięty strop); pierw
 Filtry ekranu (v0.21.53): tryby dla daltonistów – Protanopia, Deuteranopia, Tritanopia i Wysoki kontrast – działają od
 pierwszego uruchomienia (czerwone pola ciosu w paski, litery rzadkości), a postępem odblokowujesz Noir, Retro LCD, Neon
 nocy i Kwas.
+Gra jest po polsku i po angielsku (v0.21.53, *English*: the Unmissable Deadline, the Broken Concrete Mixer, Red Tape…):
+GBA pyta o język przy pierwszym uruchomieniu (zmiana: telefon profilu > Zespół > SELECT), Godot bierze go z języka
+systemu (zmiana: Ustawienia > Język / Language). Teksty: polskie w `GBA/data/game.json`, angielskie w `GBA/data/lang/en.json`.
 Sterowanie w oknach jest wszędzie takie samo: A / „Wybierz” (zawsze po prawej) zatwierdza, B / „Wróć” (po lewej)
 wraca, strzałka albo pierwsze dotknięcie tylko zaznacza, a świeżo otwarte okno przez chwilę ignoruje przyciski.
 

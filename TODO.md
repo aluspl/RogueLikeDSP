@@ -168,6 +168,15 @@ obrażeń zamiast +OBR; balans: Szkolenia z najlepszymi wyborami drzewka 58% (sa
 Akt 0 67%, mistrzostwo i inspektor 70%; wszystko wykupione po ~25 budowach. Nie wydane – dalej cz. d (#47 mapa kariery:
 nowe budynki z własnymi etapami, problemami i bossami), potem jedno wydanie v0.21.52.
 
+### Gdzie skończyliśmy (2026-10-03, v0.21.53 cz. 2)
+
+v0.21.53 cz. 2 (#40 język angielski) w GBA i Godocie: polski w `game.json` (dane, „ui” – 799 tekstów interfejsu GBA,
+„uiGodot” – 661 Godota), angielski w `GBA/data/lang/en.json` (1356 tekstów danych, tłumaczenie pisane, nie dosłowne);
+GBA – `core::ltext`, `UI(klucz)`, wybór języka przy pierwszym uruchomieniu i w Zespole (SELECT), profil v17 bajt 378;
+Godot – `Loc`, `LangOverlay`, Ustawienia > Język / Language. `gen_data.py --check`: kompletność, font, szerokość px,
+polskie napisy na sztywno (GBA i C#). Monkey po angielsku bez błędów. Dalej: wydanie v0.21.53 (GitHub Release + Drive,
+karta SD, iPhone; karta sklepu bez „English is coming soon”).
+
 ### Gdzie skończyliśmy (2026-10-03, v0.21.53)
 
 v0.21.53 (#53 filtry ekranu, #54 tryby dla daltonistów) w GBA i Godocie: sekcja `screenFilters` (warunki odblokowania
@@ -204,7 +213,7 @@ cały jego changelog jest w sekcji v0.21.52. Dalej: wydanie v0.21.52 (GitHub Rel
 | 52 | v0.21.52 – koniec budowy z paskami postępu (Szkolenie, mistrzostwo, inspektor) | ✅ (karta POSTĘP: trzy paski, „Poziom N!”) | ✅ (strona 4/4 Postęp) |
 | 53 | v0.21.53 – filtry ekranu do odblokowania: Noir (inspektor 5), Retro LCD (kolekcja Stan surowy), Neon nocy (Kamienica albo sekret Szybka ekipa), Kwas (inspektor 20 albo sekret Mokra robota), „???” z podpowiedzią, baner | ✅ (shader: ziarno, winieta, dithering, kratka, linie, przesunięcie kanałów, fale; Ustawienia > Filtr ekranu z siłą, filtrem na telefonie i ograniczonym ruchem; Wygląd na wyborze zawodu) | ✅ (efekt palet Butano – same kolory, bez efektów zależnych od piksela; Kwas: obrót barwy; Wygląd > Ekran; profil v17) |
 | 54 | v0.21.53 – tryby dla daltonistów: Protanopia, Deuteranopia, Tritanopia (daltonizacja), Wysoki kontrast – zawsze dostępne; wzory zamiast samego koloru | ✅ (paski na polach ciosu i wybuchu, litery rzadkości Z/R/L; sprawdzone symulacją wady na zrzutach) | ✅ (ta sama macierz daltonizacji; pola ciosu zawsze z wzorem, rzadkość słowem) |
-| 40 | Obsługa wielu języków (PL/EN): wszystkie teksty w `game.json` jako słowniki `pl`/`en` (fabuła, opisy, samouczek, Jak grać), wybór języka w opcjach (Godot: klucz / domyślnie z języka systemu; GBA: opcja w telefonie profilu, zapis w profilu), font z pełnym zestawem znaków (GBA: kontrola `gen_data.py --check` dla obu języków; teksty EN krótsze/dłuższe – dopasowanie `fit()`), nazwy wrogów i przedmiotów po angielsku, sklepy (App Store / Play) z opisem EN | ⬜ | ⬜ |
+| 40 | Obsługa wielu języków (PL/EN): wszystkie teksty w `game.json` jako słowniki `pl`/`en` (fabuła, opisy, samouczek, Jak grać), wybór języka w opcjach (Godot: klucz / domyślnie z języka systemu; GBA: opcja w telefonie profilu, zapis w profilu), font z pełnym zestawem znaków (GBA: kontrola `gen_data.py --check` dla obu języków; teksty EN krótsze/dłuższe – dopasowanie `fit()`), nazwy wrogów i przedmiotów po angielsku, sklepy (App Store / Play) z opisem EN | ✅ (v0.21.53 cz. 2: `Loc` + `LangOverlay`, Ustawienia > Język / Language, domyślnie język systemu; `en.json`: 1356 tekstów danych, 661 interfejsu) | ✅ (wybór przy 1. uruchomieniu, Zespół > SELECT, profil bajt 378; 799 tekstów interfejsu, `gen_data.py --check`: kompletność, font, szerokość px, napisy na sztywno) |
 
 ## Zgodność funkcji
 
