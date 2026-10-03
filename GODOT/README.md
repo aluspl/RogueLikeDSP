@@ -4,12 +4,28 @@ Wersja Godot gry z demo GBA (`../GBA`): roguelike budowlany, w którym etapy bud
 a wrogami są *problemy budowy*. Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KONCEPCJA.md)
 (telefon z aplikacją PlanBudowlany jako interfejs, oprawa 2.5D – kolejne kamienie milowe).
 
-**Stan: zgodny z GBA v0.21.52 cz. b (inspektor, mistrzostwo, stopnie inwestora: rdzeń, test złoty i ekrany), cz. a (tempo postępu), wcześniej v0.21.51 cz. 2 (sekretne zlecenia), v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
+**Stan: zgodny z GBA v0.21.52 cz. c (drzewko Szkoleń, kolekcje, zadania dnia i tygodnia, seria dni: rdzeń, test złoty i ekrany), cz. b (inspektor, mistrzostwo, stopnie inwestora), cz. a (tempo postępu), wcześniej v0.21.51 cz. 2 (sekretne zlecenia), v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
 z pieczątkami i Decyzją odmowną, samouczek menu, profil v10; wcześniej 10 etapów, 20 nowych problemów
 z zachowaniami, mechaniki aktów, opis statystyk; Respekt za etapy i sklep Respektu,
 nagrody za odbiór – Młot udarowy, Pistolet do kotew, buty, pas, zawody Dekarz, Tynkarz, Operator koparki – nowy balans
 Szkoleń, profil v8; wcześniej wybór ścieżki, materiały, codzienna budowa, pogoda, brygada, tryb inwestora);
 oprawa (grafika, font, dźwięk, telefon, wybór zawodu) jak w GBA.
+
+Nowe w v0.21.52 cz. c (#46, #49, #50, #51): **drzewko Szkoleń** (`SkillTree`: gałęzie `TreeBranch` z pniem = Szkolenia,
+węzły `TreeNode` z opcjami `TreeOption`, `Choose` – pierwszy wybór za koszt, zmiana za `TreeRespecCost`; Siła rozpędu –
+`RunMods.FirstHitBonus` w bitach 8-11 `Mastery`, `Game.HeroAttack` dolicza ją w nietknięty problem); **kolekcje**
+(`CollectionBook`: `Profile.KillCount` ze znakiem wodnym `KillMark` w `Meta.RecordRun`, komplety aktów / bossów / albumu,
+`Check` – baner raz, premia w `Meta.Mods`, tytuły i kask); **zadania dnia i tygodnia** (`DailyTasks`: 3 + 2 z seeda
+numeru dnia / tygodnia – data z systemu `GameSession.TodayNumber`, `Metric` z liczników budowy, w tym nowych
+`Game.HelpersCalled` i `ShopBuys`, `Bank` ze znakiem wodnym `TaskMark`, Respekt, nagrody `TaskRewards`); **seria dni**
+(`DayStreak.Record` w `Daily.Record`, nagrody `StreakRewards`, pamiątka `KeepsakeDef.Streak`); Kask ojca –
+`PerkEffect.TakenPct`. Ekrany: Koszty > Tab: **Drzewko** (kolumny gałęzi, strzałki / stuknięcia, Spacja wybiera),
+Katalog > Spacja: **Kolekcje / Bossowie / Album**, Odznaki > **Zadania** (seria dni w opisie), tytuł („Zadania 1/3”,
+„Seria N dni”), telefon w budowie > Koszty (zadanie dnia na żywo), złote banery (`Session/GoalBanners`: koniec etapu
+– zdarzenie `SessionEvents.Goals` – i plansza końcowa), Jak grać str. 10. Profil v15 (384 B, `Goals.MigrateV15`);
+zapis budowy bez dwóch nowych liczników (krótszy o 2 bajty) wczytuje się z zerami (`RunSave.V14Tail`). Testy:
+`GoalsTests`, test złoty 66 przebiegów (drzewko, zadania, seria dni). Sceny zrzutów (`Debug/GoalsStaging`): `title-goals`,
+`tree`, `tree-locked`, `collections`, `bosses`, `album`, `tasks`, `phone-goals`, `goals-end`, `help-goals`.
 
 Nowe w v0.21.52 cz. b (#44, #45, #48, #52): **poziom inspektora** (`Progress`: progi z danych, `InspectorBar`, `Bank`
 ze znakiem wodnym `Profile.RunProgress` – NG+ i porzucenie bez podwójnego liczenia, Respekt raz za poziom, nagrody od
