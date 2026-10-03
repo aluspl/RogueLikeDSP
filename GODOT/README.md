@@ -4,12 +4,26 @@ Wersja Godot gry z demo GBA (`../GBA`): roguelike budowlany, w którym etapy bud
 a wrogami są *problemy budowy*. Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KONCEPCJA.md)
 (telefon z aplikacją PlanBudowlany jako interfejs, oprawa 2.5D – kolejne kamienie milowe).
 
-**Stan: zgodny z GBA v0.21.52 cz. a (tempo postępu: rdzeń, test złoty i ekrany), wcześniej v0.21.51 cz. 2 (sekretne zlecenia), v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
+**Stan: zgodny z GBA v0.21.52 cz. b (inspektor, mistrzostwo, stopnie inwestora: rdzeń, test złoty i ekrany), cz. a (tempo postępu), wcześniej v0.21.51 cz. 2 (sekretne zlecenia), v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
 z pieczątkami i Decyzją odmowną, samouczek menu, profil v10; wcześniej 10 etapów, 20 nowych problemów
 z zachowaniami, mechaniki aktów, opis statystyk; Respekt za etapy i sklep Respektu,
 nagrody za odbiór – Młot udarowy, Pistolet do kotew, buty, pas, zawody Dekarz, Tynkarz, Operator koparki – nowy balans
 Szkoleń, profil v8; wcześniej wybór ścieżki, materiały, codzienna budowa, pogoda, brygada, tryb inwestora);
 oprawa (grafika, font, dźwięk, telefon, wybór zawodu) jak w GBA.
+
+Nowe w v0.21.52 cz. b (#44, #45, #48, #52): **poziom inspektora** (`Progress`: progi z danych, `InspectorBar`, `Bank`
+ze znakiem wodnym `Profile.RunProgress` – NG+ i porzucenie bez podwójnego liczenia, Respekt raz za poziom, nagrody od
+poziomu: tytuły `Titles` z `GameData.ProgressTitles`, kolory kasku, wątki SMS `StoryTrigger.Inspector`, ozdoby Osiedla
+`DecorDef.Inspector`, druga pamiątka `Meta.SelectedKeepsake2` na randze I); **mistrzostwo zawodu** (`MasteryBit`,
+`Game.Mastery`: wariant mocy – siła przez `BoonPower`, tury w `AbilityCooldown`; broń mistrza – kryt tylko z bronią zawodu,
+złoty błysk; premia mistrzostwa `BoonDef.Mastery` w ofercie; kask mistrza `Secrets.HelmetCosmetic(…, cls)`);
+**stopnie inwestora** (`Progress.StakeRank`, Respekt w `Meta.RecordRun`). Ekrany: pasek inspektora na tytule, „Mistrz N”
+z paskiem na karcie zawodu (wariant mocy i broń mistrza w nazwach), strona Wygląd / Tryb inwestora z wierszami Moc
+i Pamiątka 2 oraz nagrodą za kolejny stopień, karta POSTĘP z paskami mistrzostwa i inspektora, złote banery nowych
+poziomów (`Session/ProgressBanners`), Odznaki > Inspektor, „Mistrz N” w Zespole, ozdoby z inspektora na Osiedlu, Jak grać
+str. 9. Profil v14 (240 B, `Progress.MigrateV14`). Testy: `InspectorMasteryTests`, test złoty 62 przebiegi (mistrzostwo
+i druga pamiątka). Sceny zrzutów: `inspector`, `help-progress` (profil pokazowy z inspektorem i mistrzostwem: `classselect`,
+`looks`, `recap-progress`, `recap-end`).
 
 Nowe w v0.21.52 cz. a (tempo postępu #41–#43, #52): Szkolenia po 4 poziomy z danych (`UpgradeDef.Steps`: działanie,
 przyrost, koszt; `RunMods.AddUpgrade`, `UpgradeLabel`, `Meta.UpgradeSummary`) – Koszty: „Kondycja 2/4”, opis „Poziom III:
