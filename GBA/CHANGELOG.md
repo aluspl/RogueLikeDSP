@@ -2,6 +2,76 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
+## v0.21.53 – w przygotowaniu (filtry ekranu, tryby dla daltonistów)
+### Najważniejsze
+Filtry ekranu – cztery do odblokowania postępem i cztery tryby dla daltonistów dostępne od pierwszego uruchomienia
+(GBA i Godot, wspólne dane i rdzeń):
+1. **Filtry zabawowe (#53)** – **Noir** (czerń i biel, kontrast, ziarno, winieta; czerwień zagrożeń zostaje przygaszona,
+   nie szara), **Retro LCD** (4 odcienie zieleni, dithering i kratka pikseli), **Neon nocy** (róż i błękit, przesunięcie
+   kanałów, linie, poświata, drgnięcia taśmy), **Kwas** (tęcza w czasie, fale, rozlana barwa – z ostrzeżeniem o ruchu).
+2. **Tryby dla daltonistów (#54)** – **Protanopia, Deuteranopia, Tritanopia** (daltonizacja: to, czego oko nie rozróżni,
+   przenoszone na widoczne kanały – nie sama symulacja) i **Wysoki kontrast**; zawsze dostępne, nigdy za postępem.
+   Przy tych trybach (i w Noir / Retro LCD) kolor nie jest jedyną wskazówką: pola ciosu i wybuchu w paski, litery
+   rzadkości premii Z / R / L.
+3. Zablokowany filtr widać jako „???” z podpowiedzią, po odblokowaniu – baner „Nowy filtr ekranu!”.
+
+### Nowe
+- **Odblokowanie (sekcja `screenFilters` w `game.json`, dowolny z warunków):**
+
+  | Filtr | Warunek |
+  |---|---|
+  | Noir | poziom inspektora 5 |
+  | Retro LCD | kolekcja Stan surowy (komplet problemów aktu I) |
+  | Neon nocy | wygrana Kamienica albo sekret Szybka ekipa |
+  | Kwas | poziom inspektora 20 albo sekret Mokra robota |
+  | Protanopia, Deuteranopia, Tritanopia, Wysoki kontrast | zawsze |
+
+  Warunki z danych (`unlock`: `inspector`, `collection`, `career`, `secret`, `wins`), teksty interfejsu w `screenFilters.ui`
+  (pod tłumaczenie).
+- **GBA:** wybór zawodu > SELECT – strona Wygląd zawsze dostępna (podpowiedź „SELECT: wygląd”), wiersz **Ekran** (A – kolejny
+  odblokowany filtr, opis, „???” z podpowiedzią zablokowanego). Efekt własny palet Butano: każdy kolor tła i sprite'ów
+  po ściemnianiu przechodzi przez `include/screen_filter.h` (pamięć podręczna 1024 kolorów), Kwas – wbudowany obrót barwy
+  co 4 klatki. Jak grać str. 19 „Filtry ekranu”. Scenariusz 76 (każde uruchomienie z zapisem – kolejny filtr; plac
+  z polami wybuchu, elitami i stanami).
+- **Godot:** shader `shaders/screen_filter.gdshader` (jeden przebieg na teksturze ekranu, kilka próbek na piksel; klasyczny =
+  bez kopii ekranu). Ustawienia (klucz) > **Filtr ekranu**: lista z „???”, pastylka Dostępność, **siła efektu** (-/+),
+  **filtr na telefonie** (wył. – sam plac, HUD i plansze) i **ograniczony ruch** (bez fal, drgnięć i animowanego ziarna).
+  Wiersz filtra także w Wyglądzie na wyborze zawodu (Tab). Jak grać str. 12. Ustawienia w `settings.cfg`.
+- Baner „Nowy filtr ekranu!” na końcu budowy (Godot także na tytule po aktualizacji – filtry odblokowane wcześniej).
+
+### GBA – co inaczej niż w Godocie
+Paleta nie wie, gdzie jest piksel, więc na GBA nie ma ziarna, winiety, ditheringu, kratki, linii, przesunięcia kanałów ani
+fal – filtry to samo przekształcenie kolorów (Retro LCD: 4 odcienie bez ditheringu, Kwas: sam obrót barwy, bez opcji
+ograniczonego ruchu – ostrzeżenie w opisie). Daltonizacja i Wysoki kontrast działają jak w Godocie (ta sama macierz).
+Pola ciosu i wybuchu na GBA zawsze mają wzór (czerwona ramka z ukośnymi kreskami); rzadkość premii jest opisana słowem.
+
+### Sprawdzenie trybów dla daltonistów
+Zrzut tej samej sceny w każdym trybie, potem symulacja wady innym modelem (Viénot, LMS) niż ten w filtrze (Machado 2009);
+dE (CIELAB) między wskazówkami po symulacji, klasyczny -> tryb:
+
+| Para | Protanopia | Deuteranopia | Tritanopia |
+|---|---|---|---|
+| Pole ciosu / podłoga | 9,2 -> 40,9 | 23,9 -> 43,7 | 25,1 -> 53,0 |
+| Pasek HP / tor | 99 -> 110 | 104 -> 110 | 114 -> 76 |
+| Elita (złoto) / podłoga | 74 -> 83 | 77 -> 84 | 68 -> 83 |
+| Rzadkość: zwykła / rzadka / legendarna | 57 / 139 / 83 -> 51 / 134 / 85 | 62 / 150 / 90 -> 60 / 146 / 87 | 56 / 167 / 113 -> 75 / 70 / 20 |
+
+Najsłabsza wskazówka bez filtra – czerwone pole ciosu przy protanopii (9,2) – staje się wyraźna; pozostałe zostają
+rozróżnialne (dE ≥ 20), a rzadkość ma dodatkowo literę. Test rdzenia (GBA) sprawdza to samo na parach kolorów gry.
+
+### Zmiany
+- **Profil v17** (PBRL017, 384 B bez zmian): wybrany filtr (bajt 363) i ogłoszone filtry (376–377) w dawnym wyrównaniu
+  v16. Migracja: filtr klasyczny, filtry odblokowane wcześniej czekają na baner. Zapis budowy bez zmian (PBRUN16).
+  Godot trzyma wybór filtra w ustawieniach urządzenia, pole w profilu tylko dla zgodności zapisu.
+- Test złoty z migawki v0.21.53 (74 przebiegi; zmieniła się tylko wersja profilu w zapisie).
+- Testy: core_tests 54 (odblokowanie, wybór tylko odblokowanych, baner raz, migracja v16 -> v17) i 55 (tryb każdego
+  filtra, Retro 4 odcienie, Noir, pary mylonych kolorów w symulacji wady), `ScreenFiltersTests`; test dymny Godota –
+  każdy filtr nad i pod telefonem, lista w ustawieniach, Wygląd przed pierwszą wygraną.
+- Monkey test GBA: 20 seedów zwykłej gry + scenariusz 76 (5) x 20000 klatek – bez błędów (szczyt kafli sprite'ów
+  129/256, sprite'ów 105/128, stosu ~7,5 KB). Godot: 20 seedów klawiatura + mysz i 20 pion + dotyk x 3000 akcji,
+  z losowym filtrem, filtrem na telefonie i ograniczonym ruchem – bez błędów.
+- Balans bez zmian (filtry to sama oprawa).
+
 ## v0.21.52 – w przygotowaniu (razem z niewydanym osobno v0.21.51; cz. a: tempo postępu, cz. b: inspektor, mistrzostwo, stopnie inwestora, cz. c: drzewko Szkoleń, kolekcje, zadania dnia, seria dni, cz. d: mapa kariery)
 ### Najważniejsze
 Jedno duże wydanie: poprawki po graniu na iPhonie (dawne v0.21.51), sekretne zlecenia i nowy, dłuższy postęp z wieloma

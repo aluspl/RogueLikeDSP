@@ -22,7 +22,7 @@ i Kamienica – każdy z własnymi etapami, wyglądem i bossem.
 | SELECT | w grze: telefon z aplikacją PlanBudowlany (Zadania, Usterki, Start, Sprzęt, Koszty; L/R – zakładki, START – menu: jak grać, zapisz i wyjdź, porzuć budowę; Sprzęt: A – rozpiska obrażeń broni, góra – Premie z tej budowy, dół – Brygada i naprawy); na tytule: telefon profilu (Odznaki/Zlecenia/Pamiątki/Sekrety/Tytuły/Inspektor/Zadania – przełączane A, Katalog/Kolekcje/Bossowie/Album – A, Osiedle, Zespół, Koszty = Szkolenia / Drzewko / Respekt / Nagrody – przełączane SELECT; w Drzewku strzałki po węzłach, L/R zakładki) |
 | lewo/prawo (wybór zawodu) | zmiana zawodu na pasku portretów (odblokowane najpierw; zablokowany można obejrzeć, A go nie wybierze) |
 | L/R (wybór zawodu) | pamiątka zabierana na budowę (albo „bez pamiątki”) |
-| SELECT (wybór zawodu) | po pierwszej wygranej: tryb inwestora (modyfikatory, A włącza/wyłącza) |
+| SELECT (wybór zawodu) | Wygląd: filtr ekranu (zawsze, także tryby dla daltonistów), kolor kasku; po pierwszej wygranej tryb inwestora (modyfikatory, A włącza/wyłącza) |
 | B (tytuł) | ekran „Jak grać” |
 | R (tytuł) | codzienna budowa (data strzałkami, A – start, SELECT – wyzwanie tygodnia) |
 | L (tytuł) | wyzwanie tygodnia (tydzień z daty budowy dnia, góra/dół – inny tydzień, A – start, SELECT – budowa dnia) |
@@ -60,6 +60,14 @@ zablokowanego zawodu – gdzie go odblokować (Koszty w telefonie profilu) i ile
 Powiadomienia push jak w aplikacji: awans, nowe narzędzie, drop, moc gotowa, zaliczony etap, pojawienie się bossa („Przypisano Ci usterkę”).
 Mgła wojny: widzisz na 7 pól (ściany zasłaniają), odkryte pola zostają przyciemnione, wrogowie poza polem widzenia są ukryci.
 
+## Filtry ekranu (v0.21.53)
+Wybór zawodu > SELECT > **Wygląd**, wiersz **Ekran** (A – kolejny odblokowany; zapis w profilu). Dla daltonistów od
+pierwszego uruchomienia: **Protanopia, Deuteranopia, Tritanopia** (daltonizacja) i **Wysoki kontrast**. Do odblokowania
+(„???” z podpowiedzią, baner „Nowy filtr ekranu!”): **Noir** (inspektor 5), **Retro LCD** (kolekcja Stan surowy), **Neon
+nocy** (wygrana Kamienica albo sekret Szybka ekipa), **Kwas** (inspektor 20 albo sekret Mokra robota; migająca barwa).
+Na GBA filtr to przekształcenie kolorów palet (`include/screen_filter.h`, efekt własny palet Butano) – bez ziarna,
+ditheringu, linii i fal z wersji Godot. Pola ciosu i wybuchu zawsze mają wzór (ramka z ukośnymi kreskami).
+
 ## Problemy etapów i ich zachowania
 Każdy etap ma w puli 2 własne problemy (i 2 znane wcześniej). Zachowania są w danych (`behaviors` wroga, parametry
 `behaviorParams`, nazwy `behaviorNames`) i łączą się dowolnie: strzela z dystansu (2–3 pola w linii prosto albo po
@@ -95,10 +103,10 @@ Później po jednym dymku „Nowość”: pierwszy Respekt, codzienna budowa, tr
 Na wyborze zawodu START otwiera opis statystyk (wartość i co daje), A zmienia stronę na wzory; w telefonie zakładka
 Start → A pokazuje, skąd są premie. Wzory: obrażenia = rzut broni + statystyka broni / 2 + premie - obrona wroga / 2
 (SIŁ/ZRĘ/INT: +1 obrażeń co 2 pkt, tylko statystyka broni); OBR: -1 otrzymanych obrażeń co 2 pkt; SZCZ: kryt 5% +3%/pkt,
-unik 2%/pkt (maks. 20%), łupy +2% szansy/pkt i lepsza jakość. „Jak grać” ma 18 stron (2 – okna i wybory, 6 – akty i problemy, 7 – statystyki,
+unik 2%/pkt (maks. 20%), łupy +2% szansy/pkt i lepsza jakość. „Jak grać” ma 19 stron (2 – okna i wybory, 6 – akty i problemy, 7 – statystyki,
 8 – obrażenia, 9–10 – kombinacje stanów, 11 – premie i elity, 12 – wydarzenia i ulepszenia, 13 – magazyn, 14 – po budowie:
 podsumowanie, wyzwanie tygodnia, fabuła, 15 – sekrety, 16 – inspektor i mistrzostwo, 17 – cele: drzewko, kolekcje,
-zadania dnia, seria dni, 18 – mapa kariery).
+zadania dnia, seria dni, 18 – mapa kariery, 19 – filtry ekranu).
 
 ## Mapa kariery (#47, v0.21.52)
 Po pierwszej budowie tytuł > A / START otwiera **Mapę kariery** (sekcja `career` w `data/game.json`): kontrakty
@@ -343,11 +351,11 @@ Zadania telefonu. Teksty i wartości: `siteEvents` w `data/game.json`.
 - **Stopnie inwestora**: każdy nowy najwyższy próg stawki wygranej budowy (1–10) daje nagrodę (Respekt, tytuł, kolor
   kasku); następna nagroda na stronie trybu inwestora.
 - Profil (rekord, doświadczenie, zakupy, odznaki, liczniki zleceń, pamiątki, brygada, tryb inwestora) zapisuje się
-  w SRAM (format v16, 384 bajty, z Respektem, nagrodami za odbiór, Katalogiem dla 48 rodzajów problemów, samouczkiem menu,
+  w SRAM (format v17, 384 bajty, z Respektem, nagrodami za odbiór, Katalogiem dla 48 rodzajów problemów, samouczkiem menu,
   wynikami tygodni, wątkami fabuły, sekretami, tytułem i kolorem kasku, dośw. inspektora i mistrzostwa, drugą pamiątką,
-  drzewkiem, licznikami kolekcji, zadaniami dnia i serią dni, mapą kariery); starsze zapisy (v1-v15) są przenoszone bez utraty danych
+  drzewkiem, licznikami kolekcji, zadaniami dnia i serią dni, mapą kariery, filtrem ekranu); starsze zapisy (v1-v16) są przenoszone bez utraty danych
   (v0.21.52: poziomy Szkoleń wracają jako doświadczenie po starej cenie; inspektor i mistrzostwo szacowane z budów,
-  wygranych, Respektu i domów na Osiedlu; cz. c: kolekcje z Katalogu, seria z wyników ostatnich dni; cz. d: Dom jednorodzinny wygrany z dotychczasowych wygranych). Zapis budowy jest
+  wygranych, Respektu i domów na Osiedlu; cz. c: kolekcje z Katalogu, seria z wyników ostatnich dni; cz. d: Dom jednorodzinny wygrany z dotychczasowych wygranych; v0.21.53: filtr klasyczny). Zapis budowy jest
   od bajtu 512 (wcześniej 256 – przy migracji profilu przerwana budowa przenosi się przed zapisem nowego profilu).
 - Liczniki zleceń trafiają do profilu na końcu etapu; profil pamięta, ile z bieżącej budowy już przeniesiono, więc
   wznowienie budowy po wyłączeniu konsoli nie liczy etapu drugi raz.
@@ -388,7 +396,7 @@ rzadkie, legendarne (43–45), lista premii w telefonie (46), elity (47), mokry 
 zamróz + uderzenie (50), mokry bohater + prąd (51), wydarzenia z wyborem (52), Hurtownia z ulepszeniem i cechą (53),
 zamiana ulepszonego narzędzia (54), pęknięta ściana z kluczem i skrzynia (55), drzwi magazynu (56), podsumowanie po
 porażce (57), podsumowanie po wygranej (58), wyzwanie tygodnia (59), Wiadomości i Osiedle z ozdobami (60), sekretne zlecenia (61–67), skrzynia magazynu przy pełnym HUD (68), tempo postępu – Szkolenia z poziomami, Tytuły, kolor
-kasku, strona Postęp (69), poziom inspektora i mistrzostwo zawodu (70), drzewko, kolekcje, zadania dnia i seria dni (71), mapa kariery i kontrakty – Domek, Bliźniak, Poddasze, Kamienica (72–75)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
+kasku, strona Postęp (69), poziom inspektora i mistrzostwo zawodu (70), drzewko, kolekcje, zadania dnia i seria dni (71), mapa kariery i kontrakty – Domek, Bliźniak, Poddasze, Kamienica (72–75), filtry ekranu (76 – każde uruchomienie z zachowanym zapisem to kolejny filtr)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
 ```bash
 make TARGET=scn1 BUILD=build_scn1 USERFLAGS="-DPB_SCENARIO=1" BUTANO_PATH=...
 ROM=scn1.gba tools/playtest/run.sh skrypt.txt /tmp/zrzuty --fresh
@@ -421,7 +429,8 @@ tools/make_assets.py  proceduralne grafiki: font PL 8x16, sprite'y, kafelki+pale
 assets_src/pb_logo.svg  znak PlanBudowlany
 include/core.h        logika gry (czyste C++, bez Butano) - testowalna na PC; rozpiska obrażeń broni (dmg_breakdown);
                       wydarzenia z wyborem, ulepszanie narzędzia, magazyn (v0.21.50 cz. 3)
-include/meta.h        profil SRAM (v16), mapa kariery, drzewko Szkoleń, kolekcje, zadania dnia i tygodnia, seria dni, poziom inspektora, mistrzostwo zawodu, stopnie inwestora, Szkolenia z poziomami i ceny rosnące, tytuły i kolory kasku, wyzwanie tygodnia, fabuła (Wiadomości, ozdoby Osiedla), rada i cel podsumowania, samouczek menu, Respekt, nagrody za odbiór, codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
+include/screen_filter.h  filtry ekranu: kolor palety po filtrze (Noir, Retro LCD, Neon nocy, daltonizacja, Wysoki kontrast)
+include/meta.h        profil SRAM (v17), filtry ekranu, mapa kariery, drzewko Szkoleń, kolekcje, zadania dnia i tygodnia, seria dni, poziom inspektora, mistrzostwo zawodu, stopnie inwestora, Szkolenia z poziomami i ceny rosnące, tytuły i kolory kasku, wyzwanie tygodnia, fabuła (Wiadomości, ozdoby Osiedla), rada i cel podsumowania, samouczek menu, Respekt, nagrody za odbiór, codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
 src/main.cpp          warstwa GBA: sceny, mapa, kamera, HUD, SRAM
 ```
 Grafiki są placeholderami generowanymi kodem: podmień pliki w `graphics/` pixel-artem z Aseprite

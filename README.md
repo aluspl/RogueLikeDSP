@@ -22,6 +22,9 @@ Osiedla), a codziennie czekają 3 zadania dnia i 2 tygodnia, a seria dni z budow
 Po wygranych otwiera się mapa kariery: kolejne budynki z własnymi etapami, wyglądem i bossem – Domek letniskowy z drewna
 (krótki), Bliźniak (to, co zostawisz w lewej połowie, przejdzie przez wspólną ścianę na prawą), Dom z poddaszem (silniejszy
 wiatr) i Kamienica do remontu (grzyb, stare instalacje, Pęknięty strop); pierwsza wygrana każdego daje Respekt, tytuł i kask.
+Filtry ekranu (v0.21.53): tryby dla daltonistów – Protanopia, Deuteranopia, Tritanopia i Wysoki kontrast – działają od
+pierwszego uruchomienia (czerwone pola ciosu w paski, litery rzadkości), a postępem odblokowujesz Noir, Retro LCD, Neon
+nocy i Kwas.
 Sterowanie w oknach jest wszędzie takie samo: A / „Wybierz” (zawsze po prawej) zatwierdza, B / „Wróć” (po lewej)
 wraca, strzałka albo pierwsze dotknięcie tylko zaznacza, a świeżo otwarte okno przez chwilę ignoruje przyciski.
 

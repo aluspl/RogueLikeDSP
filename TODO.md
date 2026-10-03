@@ -168,6 +168,14 @@ obrażeń zamiast +OBR; balans: Szkolenia z najlepszymi wyborami drzewka 58% (sa
 Akt 0 67%, mistrzostwo i inspektor 70%; wszystko wykupione po ~25 budowach. Nie wydane – dalej cz. d (#47 mapa kariery:
 nowe budynki z własnymi etapami, problemami i bossami), potem jedno wydanie v0.21.52.
 
+### Gdzie skończyliśmy (2026-10-03, v0.21.53)
+
+v0.21.53 (#53 filtry ekranu, #54 tryby dla daltonistów) w GBA i Godocie: sekcja `screenFilters` (warunki odblokowania
+i teksty interfejsu w danych), profil v17 (filtr i ogłoszone filtry w wyrównaniu v16), Godot – shader na teksturze ekranu
+z ustawieniami (siła, filtr na telefonie, ograniczony ruch), GBA – efekt własny palet (`screen_filter.h`), scenariusz 76.
+Tryby dla daltonistów sprawdzone symulacją wady na zrzutach (pole ciosu przy protanopii dE 9 -> 41). Dalej w tym samym
+wydaniu: obsługa języków PL/EN (#40) – osobno.
+
 ### Gdzie skończyliśmy (2026-10-03, cz. d)
 
 v0.21.52 cz. d (#47 mapa kariery) w GBA i Godocie: 4 nowe kontrakty – Domek letniskowy (6 etapów, drewno, boss Zawilgocony
@@ -194,6 +202,8 @@ cały jego changelog jest w sekcji v0.21.52. Dalej: wydanie v0.21.52 (GitHub Rel
 | 50 | v0.21.52 – zadania dnia i tygodnia (np. 3 elity, 2× brygada) za Respekt/kosmetykę | ✅ (cz. c: 3 + 2 z seeda daty systemu, Respekt, nagrody za 5 / 15 / 40 wykonanych) | ✅ (z daty z codziennej budowy) |
 | 51 | v0.21.52 – seria dni codziennej budowy (3 dni pamiątka, 7 dni kolor kasku) | ✅ (cz. c: 3 – Kalendarz majstra, 7 – kask, 14 – tytuł) | ✅ (tylko kolejny dzień wpisanej daty) |
 | 52 | v0.21.52 – koniec budowy z paskami postępu (Szkolenie, mistrzostwo, inspektor) | ✅ (karta POSTĘP: trzy paski, „Poziom N!”) | ✅ (strona 4/4 Postęp) |
+| 53 | v0.21.53 – filtry ekranu do odblokowania: Noir (inspektor 5), Retro LCD (kolekcja Stan surowy), Neon nocy (Kamienica albo sekret Szybka ekipa), Kwas (inspektor 20 albo sekret Mokra robota), „???” z podpowiedzią, baner | ✅ (shader: ziarno, winieta, dithering, kratka, linie, przesunięcie kanałów, fale; Ustawienia > Filtr ekranu z siłą, filtrem na telefonie i ograniczonym ruchem; Wygląd na wyborze zawodu) | ✅ (efekt palet Butano – same kolory, bez efektów zależnych od piksela; Kwas: obrót barwy; Wygląd > Ekran; profil v17) |
+| 54 | v0.21.53 – tryby dla daltonistów: Protanopia, Deuteranopia, Tritanopia (daltonizacja), Wysoki kontrast – zawsze dostępne; wzory zamiast samego koloru | ✅ (paski na polach ciosu i wybuchu, litery rzadkości Z/R/L; sprawdzone symulacją wady na zrzutach) | ✅ (ta sama macierz daltonizacji; pola ciosu zawsze z wzorem, rzadkość słowem) |
 | 40 | Obsługa wielu języków (PL/EN): wszystkie teksty w `game.json` jako słowniki `pl`/`en` (fabuła, opisy, samouczek, Jak grać), wybór języka w opcjach (Godot: klucz / domyślnie z języka systemu; GBA: opcja w telefonie profilu, zapis w profilu), font z pełnym zestawem znaków (GBA: kontrola `gen_data.py --check` dla obu języków; teksty EN krótsze/dłuższe – dopasowanie `fit()`), nazwy wrogów i przedmiotów po angielsku, sklepy (App Store / Play) z opisem EN | ⬜ | ⬜ |
 
 ## Zgodność funkcji
