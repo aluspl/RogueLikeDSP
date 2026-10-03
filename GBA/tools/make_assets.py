@@ -213,7 +213,7 @@ def make_actors():
     ids = [e["id"] for e in data["enemies"] if e["frame"] >= 61]
     assert ids[:n] == pa.STAGE_ENEMY_ORDER, "kolejność rysunków = kolejność wrogów w game.json"
     m = len(pa.PRELUDE_ENEMY_ORDER)   # v0.21.49 cz. 3: Akt 0 - 101-109 problemy i boss, 110-118 druga klatka, 119-121 dokumenty
-    assert len(frames) == 101 and ids[n:] == pa.PRELUDE_ENEMY_ORDER, "Akt 0: kolejność rysunków = kolejność w game.json"
+    assert len(frames) == 101 and ids[n:n + m] == pa.PRELUDE_ENEMY_ORDER, "Akt 0: kolejność rysunków = kolejność w game.json"
     assert [e["frame"] for e in data["enemies"] if e["id"] in pa.PRELUDE_ENEMY_ORDER] == list(range(101, 101 + m))
     frames += [pa.prelude_enemy_frame(i, 0) for i in range(m)] + [pa.prelude_enemy_frame(i, 1) for i in range(m)]
     frames += [pa.document_frame(i) for i in range(len(pa.DOCUMENTS))]
@@ -231,6 +231,11 @@ def make_actors():
     for c in range(12):   # D tylko na kasku (w klatce z kaskiem w paski D nie występuje, więc reszta postaci jej nie używa)
         assert CODES_D not in [v for y, v in enumerate(pa.worker_frame(c, 0, stripes=True)) if not 16 <= y < 64], c
     frames += [pa.worker_frame(c, k, helmet_mask=True) for c in range(12) for k in range(2)]
+    # v0.21.52 cz. d (#47): 184-195 problemy i bossowie kontraktów mapy kariery, para klatek A/B (druga = frame | 1)
+    assert len(frames) == 184
+    car = [e for e in data["enemies"] if e["frame"] >= 184]
+    assert [e["id"] for e in car] == pa.CAREER_ENEMY_ORDER and [e["frame"] for e in car] == list(range(184, 184 + 2 * len(car), 2))
+    for i in range(len(car)): frames += [pa.career_enemy_frame(i, 0), pa.career_enemy_frame(i, 1)]
     px = [p for fr in frames for p in fr]
     write_bmp(os.path.join(G, "actors.bmp"), px, 16, 16 * len(frames), SPR_PAL, 4)
     write_json("actors", {"type": "sprite", "height": 16})
@@ -293,6 +298,17 @@ STAGE_COLORS = [
     [(160, 160, 160), (135, 135, 135), (90, 111, 143), (200, 120, 60), (56, 70, 96)],    # Instalacje
     [(200, 196, 184), (176, 170, 156), (226, 218, 196), (246, 240, 224), (150, 140, 120)],  # Tynki i wylewki
     [(224, 214, 192), (190, 178, 150), (111, 168, 160), (160, 210, 200), (70, 118, 110)],   # Wykończenie
+    # v0.21.52 cz. d (#47): wyglądy etapów kontraktów mapy kariery ("look" w game.json)
+    [(196, 156, 100), (160, 120, 72), (150, 96, 52), (200, 150, 96), (84, 52, 28)],       # 12 Domek letniskowy I: pokład, bale
+    [(176, 140, 96), (140, 104, 64), (110, 120, 96), (160, 170, 140), (60, 66, 50)],      # 13 Domek letniskowy II: gont z mchem
+    [(110, 104, 100), (90, 86, 82), (196, 96, 64), (232, 170, 130), (110, 48, 30)],       # 14 Bliźniak I: beton, cegła
+    [(156, 124, 92), (128, 98, 70), (70, 74, 86), (130, 136, 150), (36, 38, 46)],         # 15 Bliźniak II: grafitowy dach
+    [(210, 206, 198), (184, 180, 170), (150, 190, 180), (200, 230, 220), (90, 124, 116)], # 16 Bliźniak III: miętowe wnętrza
+    [(200, 170, 110), (170, 138, 84), (130, 90, 56), (180, 136, 92), (70, 46, 26)],       # 17 Poddasze: OSB, krokwie
+    [(190, 184, 170), (164, 158, 144), (226, 196, 90), (246, 226, 150), (150, 120, 50)],  # 18 Poddasze: wełna
+    [(92, 88, 84), (74, 70, 66), (128, 118, 104), (166, 156, 140), (60, 54, 48)],         # 19 Kamienica: piwnice z kamienia
+    [(150, 110, 76), (120, 86, 58), (150, 64, 48), (196, 120, 96), (80, 30, 24)],         # 20 Kamienica: stara cegła
+    [(176, 124, 72), (140, 96, 52), (232, 220, 190), (250, 244, 226), (170, 150, 120)],   # 21 Kamienica: parkiet, sztukateria
 ]
 
 def tile(fn):
@@ -328,6 +344,14 @@ def t_floor(t):
         for (x, y) in [(1, 1), (4, 3), (6, 6), (2, 5), (5, 0)]:
             t[y][x] = 2
         t[3][6] = 5
+    elif a == 5:   # v0.21.52 cz. d: drewno (domek letniskowy) - szerokie deski pokładu z sękiem
+        for y in range(8):
+            t[y][3] = 2; t[y][7] = 2
+        t[2][1] = t[5][5] = 2; t[6][1] = 14
+    elif a == 6:   # kamienica: parkiet w jodełkę
+        for i in range(4):
+            t[i][i] = 2; t[i][i + 4] = 2; t[i + 4][3 - i] = 2; t[i + 4][7 - i] = 2
+        t[1][6] = 14
     else:          # płytki: fuga co 8 px, odblask w rogu
         for i in range(8):
             t[7][i] = 2; t[i][7] = 2
@@ -362,6 +386,15 @@ def t_wall(t):
         for x in range(8):
             t[3][x] = 12; t[4][x] = 13; t[5][x] = 12
         t[3][7] = t[4][7] = t[5][7] = 5
+    elif a == 5:   # v0.21.52 cz. d: bale (domek letniskowy) - poziome okrągłe bale z cieniem i słojem
+        for x in range(8):
+            t[0][x] = 4; t[3][x] = 5; t[4][x] = 4; t[7][x] = 5
+        t[1][2] = t[5][6] = 5
+    elif a == 6:   # kamienica: stara cegła / kamień w dużych blokach z gzymsem
+        for x in range(8):
+            t[0][x] = 4; t[1][x] = 5; t[5][x] = 5
+        t[2][3] = t[3][3] = t[4][3] = 5; t[6][7] = t[7][7] = 5
+        t[3][6] = 4
     else:          # gładki tynk z drobnymi plamkami
         for (x, y) in [(1, 1), (5, 3), (2, 5), (6, 6)]:
             t[y][x] = 4
@@ -441,7 +474,7 @@ ACT_TILES = len(TILES)
 
 def make_tiles():
     px_tiles = [tile(t_empty)]
-    for a in range(5):   # kafle każdego aktu (3-4: Akt 0 - biuro, wykop)
+    for a in range(7):   # kafle każdego aktu (3-4: Akt 0 - biuro, wykop; v0.21.52 cz. d: 5 drewno, 6 kamienica)
         ACT[0] = a
         px_tiles += [tile(f) for f in TILES]
     ACT[0] = 0

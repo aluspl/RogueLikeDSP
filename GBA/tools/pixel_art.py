@@ -889,6 +889,122 @@ def reticle_frame():
     return parse(rows)
 
 
+# v0.21.52 cz. d (#47): mapa kariery - nowe problemy i bossowie kontraktów (klatki 184-195: para A/B na problem, kolejność
+# jak w game.json). Zawsze przedmioty i usterki budynku, nigdy ludzie.
+CAREER_ENEMIES = {
+"grzyb": [   # grzyb domowy na spróchniałej belce: brązowy kapelusz w plamki, blady trzon z oczami
+"................",
+"................",
+"....KKKKKKKK....",
+"..KKTTOTTTOTKK..",
+".KTOTTTTTOTTTTK.",
+".KTTTTOTTTTTOTK.",
+"KTTTTTTTTTTTTTTK",
+"KKKKKKKKKKKKKKKK",
+"....KWWWWWWK....",
+"....KWKWWKWK....",
+"....KWWWWWWK....",
+"....KWWKKWWK....",
+"..KKKWWWWWWKKK..",
+".KTTTKKKKKKTTTK.",
+".KTgTTTTTgTTTTK.",
+"..KKKKKKKKKKKK.."],
+"stara_instalacja": [   # stare gniazdko z aluminiowymi kablami i iskrami
+"...Y.......Y....",
+"..Y..KKKKK...Y..",
+"....KgggggK.....",
+"...KglllllgK....",
+"...KglKlKlgK....",
+"...KglllllgK....",
+"...KgKKlKKgK....",
+"...KglllllgK....",
+"....KgggggK.....",
+".....KlKlK......",
+".....KlKlK..Y...",
+"....KllKllK.....",
+"...Kl.K.K.lK....",
+"..Kl..Y...lK....",
+"..K........K....",
+"................"],
+"strych": [   # boss: zawilgocony strych - trójkąt dachu z zieloną pleśnią, kapiąca woda, gniewne okienka-oczy
+".......KK.......",
+"......KTTK......",
+".....KTGTTK.....",
+"....KTTTTGTK....",
+"...KTGTTTTTTK...",
+"..KTTTTTTGTTTK..",
+".KTTWWKTTKWWTTK.",
+"KTGTWKKTTKKWTTGK",
+"KKKKKKKKKKKKKKKK",
+"..KggggggggggK..",
+"..KgGggKKggGgK..",
+"..KggggggggggK..",
+"..KKKKKKKKKKKK..",
+"....C.....C.....",
+"......C......C..",
+"...C......C....."],
+"dylatacja": [   # boss: pęknięta dylatacja - dwie ceglane połówki rozsadzone rysą, oczy po obu stronach
+"KKKKKKK..KKKKKKK",
+"KRRKRRK.KRRKRRRK",
+"KKKKKKKK.KKKKKKK",
+"KRKRRKRK.KRRKRRK",
+"KKKKKKK.KKKKKKKK",
+"KRWWKRK.KRWWKRRK",
+"KRWKKRKK.KWKKRRK",
+"KKKKKKK..KKKKKKK",
+"KRRKRRK.KRRKRRRK",
+"KKKKKKKK.KKKKKKK",
+"KRKRRKRK..KRKRRK",
+"KKKKKKK.KKKKKKKK",
+"KRRKRRRK.KRRKRRK",
+"KRRRRRRK.KRRRRRK",
+"KKKKKKKK.KKKKKKK",
+"................"],
+"polac": [   # boss: zerwana połać - płat dachówek porwany wiatrem (niebieskie smugi)
+"................",
+"..B.....KKKK....",
+".B....KKRRRRK...",
+"..B.KKRRKRRRRK..",
+"...KRRRRRRKRRRK.",
+"..KRRKRRRRRRRRK.",
+".KRRRRRRKRRRRK..",
+".KRWKRRRRWKRK...",
+".KRKKRRRRKKRK...",
+"..KRRRRRRRRK....",
+"...KRRKKRRK..B..",
+"....KRRRRK..B...",
+".....KKKK....B..",
+"..B.........B...",
+".B....gKg.......",
+"..B....K........"],
+"strop": [   # boss: pęknięty strop - zabytkowa płyta ze sztukaterią, rysa i sypiący się tynk
+"KKKKKKKKKKKKKKKK",
+"KWWWYWWWWWYWWWWK",
+"KWlWWWWKWWWWWlWK",
+"KWWWWWWKKWWWWWWK",
+"KlWWWWWWKWWWWWlK",
+"KWWWKKWWKWKKWWWK",
+"KWWWKWWKWWWKWWWK",
+"KlWWWWWKWWWWWWlK",
+"KWWWWWKWWWWWWWWK",
+"KWWRRWKWWWRRWWWK",
+"KWWWWKWWWWWWWWWK",
+"KKKKKKK.KKKKKKKK",
+"......K.........",
+"...l.....l......",
+".....l.......l..",
+"..l.....l......."],
+}
+CAREER_ENEMY_ORDER = list(CAREER_ENEMIES)
+
+
+def career_enemy_frame(index, frame):
+    px = parse(CAREER_ENEMIES[CAREER_ENEMY_ORDER[index]])
+    if frame == 1:
+        px = [0] * 16 + px[:16 * 15]
+    return px
+
+
 # ------------------------------------------------------------------ bossowie (klatki 46-47, druga klatka 48-49; Inspekcja 50-51)
 BOSSES = {
     "betoniarka": [
