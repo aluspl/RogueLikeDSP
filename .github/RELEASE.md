@@ -3,8 +3,6 @@
 Workflow GitHub Actions został usunięty – budowanie i wysyłkę do sklepów przejmie Bitrise. Poniższa lista sekretów
 i kroków (te same skrypty co lokalnie: `GODOT/tools/testflight_upload.sh`, `GODOT/tools/android_release.sh --upload`)
 posłuży do konfiguracji Bitrise.
-wysyła build iOS do TestFlight i AAB do Google Play (ścieżka internal). Te same skrypty co lokalnie:
-`GODOT/tools/testflight_upload.sh`, `GODOT/tools/android_release.sh --upload`.
 
 ## Sekrety (Settings → Secrets and variables → Actions)
 
