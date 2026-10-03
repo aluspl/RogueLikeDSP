@@ -5,7 +5,7 @@ namespace LifeLike.Core;
 
 /// <summary>
 /// Profil gracza (odpowiednik core::profile z meta.h): rekord, doświadczenie, zakupy, odznaki, Osiedle.
-/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v15: 384 bajty, little-endian, bajt 55 to wyrównanie),
+/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v17: 384 bajty, little-endian, bajt 55 to wyrównanie),
 /// więc migracje v1–v14 działają tak samo.
 /// </summary>
 public sealed class Profile
@@ -55,8 +55,11 @@ public sealed class Profile
     public const int MaxClasses = 12;
     public const int MaxKeepsakes = 8;
     public const int DailySlots = 5;
-    /// <summary>Bieżący format (v15, v0.21.52 cz. c).</summary>
-    public const string MagicCurrent = "PBRL016";
+    /// <summary>v17 (v0.21.53) = v16 + filtr ekranu (bajt 363) i ogłoszone filtry (376) w dawnym wyrównaniu – rozmiar bez zmian.</summary>
+    public const int V16Size = 384;
+    /// <summary>Bieżący format (v17, v0.21.53).</summary>
+    public const string MagicCurrent = "PBRL017";
+    public const string MagicV16 = "PBRL016";
     public const string MagicV15 = "PBRL015";
     public const string MagicV14 = "PBRL014";
     public const string MagicV13 = "PBRL013";
@@ -231,6 +234,12 @@ public sealed class Profile
     public byte[] CareerWins = new byte[MaxContracts];
     /// <summary>Najwięcej ukończonych etapów kontraktu w jednej budowie (bez Aktu 0).</summary>
     public byte[] CareerBest = new byte[MaxContracts];
+    // --- v17 (v0.21.53): filtry ekranu (#53, #54)
+    /// <summary>Wybrany filtr ekranu (GameData.ScreenFilters; zablokowany = klasyczny). Godot trzyma wybór w ustawieniach
+    /// urządzenia (settings.cfg) – pole dla zgodności zapisu z GBA.</summary>
+    public byte Filter;
+    /// <summary>Bity: odblokowanie filtra już ogłoszone (baner raz).</summary>
+    public ushort FiltersSeen;
 
     public static byte[] MagicBytes(string s)
     {
@@ -335,6 +344,8 @@ public sealed class Profile
         b[362] = CareerDone;
         CareerWins.CopyTo(b, 364);
         CareerBest.CopyTo(b, 370);
+        b[363] = Filter;
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(376), FiltersSeen);
         return b;
     }
 
@@ -422,6 +433,8 @@ public sealed class Profile
             CareerDone = b[362],
             CareerWins = b.Slice(364, MaxContracts).ToArray(),
             CareerBest = b.Slice(370, MaxContracts).ToArray(),
+            Filter = b[363],
+            FiltersSeen = BinaryPrimitives.ReadUInt16LittleEndian(b[376..]),
         };
         for (var i = 0; i < MaxClasses; i++) p.MasteryXp[i] = BinaryPrimitives.ReadUInt16LittleEndian(b[(204 + i * 2)..]);
         for (var i = 0; i < WeeklySlots; i++)

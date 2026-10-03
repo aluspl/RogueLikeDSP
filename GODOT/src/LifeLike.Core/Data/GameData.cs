@@ -191,6 +191,10 @@ public sealed class GameData
     public string[] CareerHelpLines { get; private init; } = [];
     /// <summary>v0.21.52 cz. d (#47): kontrakty mapy kariery (0 = Dom jednorodzinny, etapy w Stages od First).</summary>
     public CareerDef[] Career { get; private init; } = [];
+    /// <summary>v0.21.53 (#53, #54): filtry ekranu (0 = klasyczny; zabawowe do odblokowania, dla daltonistów zawsze).</summary>
+    public ScreenFilterDef[] ScreenFilters { get; private init; } = [new("klasyczny", "Klasyczny", "Klasyk", "", "", FilterKind.Classic, false, false, [])];
+    /// <summary>v0.21.53: Jak grać – filtry ekranu (7 linii, GBA str. 19).</summary>
+    public string[] FiltersHelpLines { get; private init; } = [];
     /// <summary>Bliźniak: ile problemów z pierwszej połowy przechodzi na drugą.</summary>
     public int CareerTwinCarryMax { get; private init; }
     /// <summary>Etapy Domu jednorodzinnego (kontrakt 0) – Stages ma też etapy kolejnych kontraktów (jak data::stages_count).</summary>
@@ -1093,6 +1097,37 @@ public sealed class GameData
         }
         Require(careerFirst == stages.Length && career.Count <= 6, "kontrakty: etapy wszystkich kontraktów, maks. 6");
         var twinCarryMax = d.TryGetProperty("career", out var ctm) ? Int(ctm, "twinCarryMax", 0) : 0;
+        // v0.21.53 (#53, #54): filtry ekranu (bez sekcji - sam klasyczny)
+        ScreenFilterDef[] screenFilters = [new("klasyczny", "Klasyczny", "Klasyk", "", "", FilterKind.Classic, false, false, [])];
+        if (d.TryGetProperty("screenFilters", out var sfj))
+        {
+            var colIds = collections.Select((c, i) => (c.Id, i)).ToDictionary(x => x.Id, x => x.i);
+            var carIds = career.Select((c, i) => (c.Id, i)).ToDictionary(x => x.Id, x => x.i);
+            var secIds = secrets.Select((c, i) => (c.Id, i)).ToDictionary(x => x.Id, x => x.i);
+            screenFilters = sfj.GetProperty("list").EnumerateArray().Select(x =>
+            {
+                var kind = ParseEnum<FilterKind>(Str(x, "kind"));
+                var conds = x.TryGetProperty("unlock", out var uj)
+                    ? uj.EnumerateArray().Select(u =>
+                    {
+                        var k = ParseEnum<FilterUnlock>(Str(u, "kind"));
+                        var v = k switch
+                        {
+                            FilterUnlock.Collection => Lookup(colIds, Str(u, "id"), "kolekcja filtra"),
+                            FilterUnlock.Career => Lookup(carIds, Str(u, "id"), "kontrakt filtra"),
+                            FilterUnlock.Secret => Lookup(secIds, Str(u, "id"), "sekret filtra"),
+                            _ => Int(u, "value"),
+                        };
+                        return new FilterCond(k, v);
+                    }).ToArray()
+                    : [];
+                Require((kind == FilterKind.Fun) == (conds.Length > 0) && conds.Length <= 2, $"filtr {Str(x, "id")}: warunki tylko dla zabawowych (1-2)");
+                return new ScreenFilterDef(Str(x, "id"), Str(x, "name"), Str(x, "short"), Str(x, "desc"), Str(x, "hint", ""), kind,
+                    Bool(x, "cues"), Bool(x, "motion"), conds);
+            }).ToArray();
+            Require(screenFilters.Length is >= 2 and <= 16 && screenFilters[0].Kind == FilterKind.Classic
+                && screenFilters.Count(f => f.Kind == FilterKind.Classic) == 1, "filtry ekranu: 2-16, pierwszy klasyczny");
+        }
 
         var progressTitles = inspLevels.Select((l, i) => (l, i)).Where(x => x.l.Reward == ProgressReward.Title)
             .Select(x => new ProgressTitle(x.l.Title, 0, x.i + 1))
@@ -1144,6 +1179,8 @@ public sealed class GameData
             CareerHelpLines = d.TryGetProperty("careerHelp", out var chl) ? chl.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : [],
             Career = career.ToArray(),
             CareerTwinCarryMax = twinCarryMax,
+            ScreenFilters = screenFilters,
+            FiltersHelpLines = d.TryGetProperty("filtersHelp", out var fhl) ? fhl.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : [],
             StagesCount = domJson.Length,
             StageLooksCount = stages.Max(x => x.Look) + 1,
             BoonRarities = boonRarities,
