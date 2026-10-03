@@ -251,23 +251,23 @@ namespace core
     {
         switch(e)
         {
-            case respect_effect::dmg_pct:       return m.add("+").add(v).add("% obrażeń");
-            case respect_effect::taken_pct:     return m.add("-").add(v).add("% otrzymanych obrażeń");
-            case respect_effect::gear_pct:      return m.add("+").add(v).add(" do jakości sprzętu");
-            case respect_effect::crit:          return m.add("Kryt +").add(v).add("%");
-            case respect_effect::dodge:         return m.add("Unik +").add(v).add("%");
-            case respect_effect::coffee_pct:    return m.add("Kawa leczy +").add(v).add("%");
-            case respect_effect::thermos:       return m.add("Termos +").add(v).add(v == 1 ? " miejsce" : " miejsca");
-            case respect_effect::cooldown:      return m.add("Moc -").add(v).add(" t. odnowienia");
-            case respect_effect::cash:          return m.add("+").add(v).add(" zł na start");
-            case respect_effect::xp_pct:        return m.add("+").add(v).add("% doświadczenia");
-            case respect_effect::brigade_pct:   return m.add("Brygada -").add(v).add("% ceny");
-            case respect_effect::sight:         return m.add("Widzenie +").add(v);
-            case respect_effect::shop_pct:      return m.add("Hurtownia -").add(v).add("% ceny");
-            case respect_effect::mats_pct:      return m.add("Materiały +").add(v).add("% częściej");
-            case respect_effect::second_chance: return m.add("Raz na budowę: 1 HP zamiast końca");
-            case respect_effect::reroll:        return m.add("Premie: +").add(v).add(" darmowe losowanie");
-            case respect_effect::veteran:       return m.add("Na start: ").add(v).add(v == 1 ? " kawa" : " kawy").add(" w termosie");
+            case respect_effect::dmg_pct:       return m.add("+").add(v).add(UI(obrazen));
+            case respect_effect::taken_pct:     return m.add("-").add(v).add(UI(otrzymanych_obrazen));
+            case respect_effect::gear_pct:      return m.add("+").add(v).add(UI(do_jakosci_sprzetu));
+            case respect_effect::crit:          return m.add(UI(kryt)).add(v).add("%");
+            case respect_effect::dodge:         return m.add(UI(unik)).add(v).add("%");
+            case respect_effect::coffee_pct:    return m.add(UI(kawa_leczy)).add(v).add("%");
+            case respect_effect::thermos:       return m.add(UI(termos)).add(v).add(v == 1 ? UI(miejsce) : UI(miejsca));
+            case respect_effect::cooldown:      return m.add(UI(moc)).add(v).add(UI(t_odnowienia));
+            case respect_effect::cash:          return m.add("+").add(v).add(UI(zl_na_start));
+            case respect_effect::xp_pct:        return m.add("+").add(v).add(UI(doswiadczenia));
+            case respect_effect::brigade_pct:   return m.add(UI(brygada)).add(v).add(UI(ceny));
+            case respect_effect::sight:         return m.add(UI(widzenie)).add(v);
+            case respect_effect::shop_pct:      return m.add(UI(hurtownia)).add(v).add(UI(ceny));
+            case respect_effect::mats_pct:      return m.add(UI(materialy)).add(v).add(UI(czesciej));
+            case respect_effect::second_chance: return m.add(UI(raz_na_budowe_1_hp_zamiast));
+            case respect_effect::reroll:        return m.add(UI(premie)).add(v).add(UI(darmowe_losowanie));
+            case respect_effect::veteran:       return m.add(UI(na_start)).add(v).add(v == 1 ? UI(kawa) : UI(kawy)).add(UI(w_termosie));
             default:                            return m;
         }
     }
@@ -311,19 +311,19 @@ namespace core
         int v = p.value;
         switch(p.effect)
         {
-            case perk_effect::hp:       return m.add("+").add(v).add(" max HP");
-            case perk_effect::def:      return m.add("+").add(v).add(" obrony");
-            case perk_effect::dmg:      return m.add("+").add(v).add(" obrażeń");
-            case perk_effect::luck:     return m.add("+").add(v).add(" szczęścia");
-            case perk_effect::cooldown: return m.add("Moc -").add(v).add(" t. odnowienia");
-            case perk_effect::sight:    return m.add("Widzenie +").add(v);
-            case perk_effect::thermos:  return m.add("Termos +").add(v).add(v == 1 ? " miejsce" : " miejsca");
-            case perk_effect::tool_pct: return m.add("+").add(v).add("% szans na narzędzie");
-            case perk_effect::xp_pct:   return m.add("+").add(v).add("% doświadczenia");
-            case perk_effect::cash:     return m.add("+").add(v).add(" zł na start");
-            case perk_effect::crit:     return m.add("Kryt +").add(v).add("%");
-            case perk_effect::coffee:   return m.add("Kawa +").add(v).add(" HP");
-            case perk_effect::taken_pct: return m.add("-").add(v).add("% otrzym. obr.");
+            case perk_effect::hp:       return m.add("+").add(v).add(UI(max_hp));
+            case perk_effect::def:      return m.add("+").add(v).add(UI(obrony));
+            case perk_effect::dmg:      return m.add("+").add(v).add(UI(obrazen_2));
+            case perk_effect::luck:     return m.add("+").add(v).add(UI(szczescia));
+            case perk_effect::cooldown: return m.add(UI(moc)).add(v).add(UI(t_odnowienia));
+            case perk_effect::sight:    return m.add(UI(widzenie)).add(v);
+            case perk_effect::thermos:  return m.add(UI(termos)).add(v).add(v == 1 ? UI(miejsce) : UI(miejsca));
+            case perk_effect::tool_pct: return m.add("+").add(v).add(UI(szans_na_narzedzie));
+            case perk_effect::xp_pct:   return m.add("+").add(v).add(UI(doswiadczenia));
+            case perk_effect::cash:     return m.add("+").add(v).add(UI(zl_na_start));
+            case perk_effect::crit:     return m.add(UI(kryt)).add(v).add("%");
+            case perk_effect::coffee:   return m.add(UI(kawa_2)).add(v).add(" HP");
+            case perk_effect::taken_pct: return m.add("-").add(v).add(UI(otrzym_obr));
             default:                    return m;
         }
     }
@@ -334,7 +334,7 @@ namespace core
     constexpr int stat_kinds = 6;
     inline const char* stat_kind_name(stat_kind k)
     {
-        static const char* n[stat_kinds] = { "HP", "SIŁ", "ZRĘ", "INT", "OBR", "SZCZ" };
+        const char* const n[stat_kinds] = { "HP", UI(sil), UI(zre), UI(int_), UI(obr), UI(szcz) };
         return n[int(k)];
     }
     inline int luck_crit_pct(int luck) { return data::crit_base_pct + data::crit_per_luck_pct * luck; }
@@ -343,14 +343,14 @@ namespace core
     {
         switch(k)
         {
-            case stat_kind::hp:   return m.add("zdrowie (0 = koniec)");
+            case stat_kind::hp:   return m.add(UI(zdrowie_0_koniec));
             case stat_kind::str:
             case stat_kind::agi:
             case stat_kind::intel:
-                if(weapon_stat) return m.add("+").add(v / 2).add(" obrażeń broni");
-                return m.add("nie dla tej broni");
-            case stat_kind::def:  return m.add("-").add(v / 2).add(" obrażeń od problemów");
-            case stat_kind::luck: return m.add("kryt ").add(luck_crit_pct(v)).add("%, unik ").add(luck_dodge_pct(v)).add("%");
+                if(weapon_stat) return m.add("+").add(v / 2).add(UI(obrazen_broni));
+                return m.add(UI(nie_dla_tej_broni));
+            case stat_kind::def:  return m.add("-").add(v / 2).add(UI(obrazen_od_problemow));
+            case stat_kind::luck: return m.add(UI(kryt_2)).add(luck_crit_pct(v)).add(UI(unik_2)).add(luck_dodge_pct(v)).add("%");
             default:              return m;
         }
     }
@@ -359,15 +359,15 @@ namespace core
     {
         switch(k)
         {
-            case stat_kind::hp:   return m.add("HP: zdrowie, leczy kawa");
-            case stat_kind::str:  return m.add("SIŁ: +1 obr. co 2 pkt (broń SIŁ)");
-            case stat_kind::agi:  return m.add("ZRĘ: +1 obr. co 2 pkt (broń ZRĘ)");
-            case stat_kind::intel:return m.add("INT: +1 obr. co 2 pkt (broń INT)");
-            case stat_kind::def:  return m.add("OBR: -1 obrażeń co 2 pkt");
+            case stat_kind::hp:   return m.add(UI(hp_zdrowie_leczy_kawa));
+            case stat_kind::str:  return m.add(UI(sil_1_obr_co_2_pkt_bron_sil));
+            case stat_kind::agi:  return m.add(UI(zre_1_obr_co_2_pkt_bron_zre));
+            case stat_kind::intel:return m.add(UI(int_1_obr_co_2_pkt_bron_int));
+            case stat_kind::def:  return m.add(UI(obr_1_obrazen_co_2_pkt));
             case stat_kind::luck:
-                if(part == 1) return m.add("unik +").add(data::dodge_per_luck_pct).add("%/pkt (maks. ").add(data::dodge_max_pct).add("%)");
-                if(part == 2) return m.add("łupy: +").add(data::drop_per_luck_pct).add("% szansy/pkt");
-                return m.add("SZCZ: kryt ").add(data::crit_base_pct).add("% +").add(data::crit_per_luck_pct).add("%/pkt");
+                if(part == 1) return m.add(UI(unik_3)).add(data::dodge_per_luck_pct).add(UI(pkt_maks)).add(data::dodge_max_pct).add("%)");
+                if(part == 2) return m.add(UI(lupy)).add(data::drop_per_luck_pct).add(UI(szansy_pkt));
+                return m.add(UI(szcz_kryt)).add(data::crit_base_pct).add("% +").add(data::crit_per_luck_pct).add(UI(pkt));
             default:              return m;
         }
     }
@@ -404,10 +404,10 @@ namespace core
     constexpr int mods_sources = 4;
     inline const char* mods_source_name(int s)
     {
-        static const char* n[mods_sources] = { "Szkolenia", "Respekt", "odznaki", "pamiątka" };
+        const char* const n[mods_sources] = { UI(szkolenia), UI(respekt), UI(odznaki), UI(pamiatka) };
         return n[s];
     }
-    inline const char* stat_name(stat s) { return s == stat::str ? "SIŁ" : (s == stat::agi ? "ZRĘ" : "INT"); }
+    inline const char* stat_name(stat s) { return s == stat::str ? UI(sil) : (s == stat::agi ? UI(zre) : UI(int_)); }
     // Premia do obrażeń z awansów do poziomu level (data::dmg_levels_mask).
     inline int level_dmg(int level)
     {
@@ -539,10 +539,10 @@ namespace core
     {
         switch(gd.stat)
         {
-            case gear_stat::def:     return m.add("+").add(gd.value).add(" OBR");
-            case gear_stat::dmg:     return m.add("+").add(gd.value).add(" obrażeń");
-            case gear_stat::dodge:   return m.add("unik +").add(gd.value).add("%");
-            case gear_stat::thermos: return m.add("termos +").add(gd.value);
+            case gear_stat::def:     return m.add("+").add(gd.value).add(UI(obr_2));
+            case gear_stat::dmg:     return m.add("+").add(gd.value).add(UI(obrazen_2));
+            case gear_stat::dodge:   return m.add(UI(unik_3)).add(gd.value).add("%");
+            case gear_stat::thermos: return m.add(UI(termos_2)).add(gd.value);
             default:                 return m.add("+").add(gd.value).add(" HP");
         }
     }
@@ -555,21 +555,21 @@ namespace core
             case dmg_text::weapon:
                 m.add(data::weapons[b.weapon].name);
                 if(b.upg_level) m.add("+").add(b.upg_level);   // ulepszone narzędzie: "Kielnia+2"
-                m.add(" ").add(b.wmin).add("-").add(b.wmax).add(", zasięg ").add(b.range);
-                if(b.range < b.range_base) m.add(" (wiatr)");
+                m.add(" ").add(b.wmin).add("-").add(b.wmax).add(UI(zasieg)).add(b.range);
+                if(b.range < b.range_base) m.add(UI(wiatr));
                 return true;
             case dmg_text::stat:
-                m.add(stat_name(b.scales)).add(" ").add(b.stat_value).add(": +").add(b.stat_dmg).add(" (+1 co 2 pkt)");
+                m.add(stat_name(b.scales)).add(" ").add(b.stat_value).add(": +").add(b.stat_dmg).add(UI(n1_co_2_pkt));
                 return true;
             case dmg_text::stat_parts:
-                m.add(stat_name(b.scales)).add(" ").add(b.stat_value).add(" = zawód ").add(b.stat_class);
-                if(b.stat_craft) m.add(" + Warsztaty ").add(b.stat_craft);
-                if(b.stat_trait) m.add(" + sprzęt ").add(b.stat_trait);
+                m.add(stat_name(b.scales)).add(" ").add(b.stat_value).add(UI(zawod)).add(b.stat_class);
+                if(b.stat_craft) m.add(UI(warsztaty)).add(b.stat_craft);
+                if(b.stat_trait) m.add(UI(sprzet)).add(b.stat_trait);
                 return b.stat_craft || b.stat_trait;
             case dmg_text::profile:
             {
-                if(! b.flat_mods) { m.add("Premie stałe: brak"); return false; }
-                m.add("Premie stałe +").add(b.flat_mods);
+                if(! b.flat_mods) { m.add(UI(premie_stale_brak)); return false; }
+                m.add(UI(premie_stale)).add(b.flat_mods);
                 if(! b.split) return true;
                 bool first = true;
                 for(int s = 0; s < mods_sources; ++s)
@@ -578,81 +578,81 @@ namespace core
             }
             case dmg_text::run:
             {
-                if(! b.flat_level && ! b.flat_found && ! b.flat_event) { m.add("Z budowy: brak"); return false; }
+                if(! b.flat_level && ! b.flat_found && ! b.flat_event) { m.add(UI(z_budowy_brak)); return false; }
                 const int sum = b.flat_level + b.flat_found + b.flat_event;
-                m.add("Z budowy ").add(sum >= 0 ? "+" : "").add(sum).add(":");
+                m.add(UI(z_budowy)).add(sum >= 0 ? "+" : "").add(sum).add(":");
                 bool first = true;
-                if(b.flat_level) { m.add(" poziom +").add(b.flat_level); first = false; }
-                if(b.flat_found) { m.add(first ? "" : ",").add(" projekt ").add(b.flat_found > 0 ? "+" : "").add(b.flat_found); first = false; }
-                if(b.flat_event) m.add(first ? "" : ",").add(" wydarzenie ").add(b.flat_event > 0 ? "+" : "").add(b.flat_event);
+                if(b.flat_level) { m.add(UI(poziom)).add(b.flat_level); first = false; }
+                if(b.flat_found) { m.add(first ? "" : ",").add(UI(projekt)).add(b.flat_found > 0 ? "+" : "").add(b.flat_found); first = false; }
+                if(b.flat_event) m.add(first ? "" : ",").add(UI(wydarzenie)).add(b.flat_event > 0 ? "+" : "").add(b.flat_event);
                 return true;
             }
             case dmg_text::gear:
-                if(b.gear_item < 0 || ! b.flat_gear) { m.add("Sprzęt: bez premii"); return false; }
+                if(b.gear_item < 0 || ! b.flat_gear) { m.add(UI(sprzet_bez_premii)); return false; }
                 m.add(data::gear[b.gear_item].name).add(": +").add(b.flat_gear);
                 return true;
             case dmg_text::pct:
             {
-                if(b.pct <= 0) { m.add("Procent: brak"); return false; }
+                if(b.pct <= 0) { m.add(UI(procent_brak)); return false; }
                 m.add("+").add(b.pct).add("%");
-                if(! b.split) { m.add(" (Szkolenia, Respekt)"); return true; }
+                if(! b.split) { m.add(UI(szkolenia_respekt)); return true; }
                 bool first = true;
                 for(int s = 0; s < mods_sources; ++s)
                     if(b.src_pct[s]) { m.add(first ? ": " : ", ").add(mods_source_name(s)).add(" +").add(b.src_pct[s]).add("%"); first = false; }
                 return true;
             }
             case dmg_text::enemy:
-                if(! b.vs_enemy) { m.add("OBR problemu: -1 co 2 pkt"); return false; }
-                m.add("OBR problemu ").add(b.enemy_def);
-                if(b.enemy_elite) m.add("+").add(b.enemy_elite).add(" (elita)");
-                if(b.pierce) m.add(" -").add(b.pierce).add(" (przebicie)");
+                if(! b.vs_enemy) { m.add(UI(obr_problemu_1_co_2_pkt)); return false; }
+                m.add(UI(obr_problemu)).add(b.enemy_def);
+                if(b.enemy_elite) m.add("+").add(b.enemy_elite).add(UI(elita));
+                if(b.pierce) m.add(" -").add(b.pierce).add(UI(przebicie));
                 m.add(": -").add(b.def_cut);
                 return b.def_cut > 0;
             case dmg_text::total:
-                add_range(m.add("Cios "), b.min, b.max).add(", średnio ");
+                add_range(m.add(UI(cios)), b.min, b.max).add(UI(srednio));
                 add_tenths(m, b.avg10);
                 return true;
             case dmg_text::crit:
-                m.add("Kryt x").add(b.crit_mult).add(": ");
-                add_range(m, b.crit_min, b.crit_max).add(", szansa ").add(b.crit_chance()).add("%");
+                m.add(UI(kryt_x)).add(b.crit_mult).add(": ");
+                add_range(m, b.crit_min, b.crit_max).add(UI(szansa)).add(b.crit_chance()).add("%");
                 return true;
             case dmg_text::crit_parts:
-                m.add("Kryt ").add(b.crit_chance()).add("% = ").add(b.crit_base).add("% + SZCZ ").add(b.luck).add(" x ")
+                m.add(UI(kryt_3)).add(b.crit_chance()).add("% = ").add(b.crit_base).add(UI(szcz_2)).add(b.luck).add(" x ")
                  .add(data::crit_per_luck_pct).add("%");
                 return true;
             case dmg_text::crit_extra:
             {
-                if(! b.crit_trait && ! b.crit_bonus && ! b.crit_upg && ! b.crit_weapon) { m.add("Kryt: bez premii"); return false; }
+                if(! b.crit_trait && ! b.crit_bonus && ! b.crit_upg && ! b.crit_weapon) { m.add(UI(kryt_bez_premii)); return false; }
                 m.add("+");
                 bool first = true;
-                if(b.crit_weapon) { m.add(" broń ").add(b.crit_weapon).add("%"); first = false; }
-                if(b.crit_trait) { m.add(" cecha ").add(b.crit_trait).add("%"); first = false; }
-                if(b.crit_upg) { m.add(first ? " " : ", ").add("ostrze ").add(b.crit_upg).add("%"); first = false; }
-                if(! b.split) { if(b.crit_bonus) m.add(first ? " " : ", ").add("premie ").add(b.crit_bonus).add("%"); return true; }
+                if(b.crit_weapon) { m.add(UI(bron)).add(b.crit_weapon).add("%"); first = false; }
+                if(b.crit_trait) { m.add(UI(cecha)).add(b.crit_trait).add("%"); first = false; }
+                if(b.crit_upg) { m.add(first ? " " : ", ").add(UI(ostrze)).add(b.crit_upg).add("%"); first = false; }
+                if(! b.split) { if(b.crit_bonus) m.add(first ? " " : ", ").add(UI(premie_2)).add(b.crit_bonus).add("%"); return true; }
                 for(int s = 0; s < mods_sources; ++s)
                     if(b.src_crit[s]) { m.add(first ? " " : ", ").add(mods_source_name(s)).add(" ").add(b.src_crit[s]).add("%"); first = false; }
                 return true;
             }
             case dmg_text::power:
             {
-                if(! b.power) { m.add("Moc: bez premii do ciosu"); return false; }
-                m.add("Moc (").add(rank_numeral(b.power_rank)).add("): +").add(b.power).add(" do ciosu");
+                if(! b.power) { m.add(UI(moc_bez_premii_do_ciosu)); return false; }
+                m.add(UI(moc_2)).add(rank_numeral(b.power_rank)).add("): +").add(b.power).add(UI(do_ciosu));
                 return true;
             }
             case dmg_text::boon:   // v0.21.50: premie wybrane po etapach (#27)
             {
-                if(! b.flat_boon && ! b.pct_boon && ! b.crit_boon) { m.add("Premie etapów: brak"); return false; }
-                m.add("Premie etapów:");
+                if(! b.flat_boon && ! b.pct_boon && ! b.crit_boon) { m.add(UI(premie_etapow_brak)); return false; }
+                m.add(UI(premie_etapow));
                 bool first = true;
                 if(b.flat_boon) { m.add(" +").add(b.flat_boon); first = false; }
                 if(b.pct_boon) { m.add(first ? " +" : ", +").add(b.pct_boon).add("%"); first = false; }
-                if(b.crit_boon) m.add(first ? " kryt +" : ", kryt +").add(b.crit_boon).add("%");
+                if(b.crit_boon) m.add(first ? UI(kryt_4) : UI(kryt_5)).add(b.crit_boon).add("%");
                 return true;
             }
             case dmg_text::upgrade:   // v0.21.50 cz. 3: ulepszenie narzędzia (#31)
             {
-                if(! b.upg_level) { m.add("Ulepszenie: brak"); return false; }
-                m.add("Ulepszenie +").add(b.upg_level).add(": +").add(b.flat_upgrade).add(" obr.");
+                if(! b.upg_level) { m.add(UI(ulepszenie_brak)); return false; }
+                m.add(UI(ulepszenie)).add(b.upg_level).add(": +").add(b.flat_upgrade).add(UI(obr_3));
                 if(b.upg_trait >= 0) m.add(", ").add(data::tool_traits[b.upg_trait].name).add(" ").add(data::tool_traits[b.upg_trait].short_name);
                 return true;
             }
@@ -663,23 +663,23 @@ namespace core
     // Porównanie przy zmianie broni / sprzętu: "teraz 4-7 -> 5-9 (średnio +1,5)" (short: "śr.").
     inline message& compare_line(message& m, const dmg_breakdown& now, const dmg_breakdown& next, bool short_avg = false)
     {
-        add_range(m.add("teraz "), now.min, now.max).add(" -> ");
-        add_range(m, next.min, next.max).add(short_avg ? " (śr. " : " (średnio ");
+        add_range(m.add(UI(teraz)), now.min, now.max).add(" -> ");
+        add_range(m, next.min, next.max).add(short_avg ? UI(sr) : UI(srednio_2));
         return add_tenths(m, next.avg10 - now.avg10, true).add(")");
     }
     // "kryt 8-14 (11%) -> 10-18 (16%)"
     inline message& compare_crit(message& m, const dmg_breakdown& now, const dmg_breakdown& next)
     {
-        add_range(m.add("kryt "), now.crit_min, now.crit_max).add(" (").add(now.crit_chance()).add("%) -> ");
+        add_range(m.add(UI(kryt_2)), now.crit_min, now.crit_max).add(" (").add(now.crit_chance()).add("%) -> ");
         return add_range(m, next.crit_min, next.crit_max).add(" (").add(next.crit_chance()).add("%)");
     }
     // Karta problemu: "Zadasz 2-5 (kryt 4-10), on Tobie 1-3" (na wąskim ekranie osobno: versus_hero, versus_enemy).
     inline message& versus_hero(message& m, const dmg_breakdown& b)
     {
-        add_range(m.add("Zadasz "), b.min, b.max).add(" (kryt ");
+        add_range(m.add(UI(zadasz)), b.min, b.max).add(UI(kryt_6));
         return add_range(m, b.crit_min, b.crit_max).add(")");
     }
-    inline message& versus_enemy(message& m, const hit_range& h) { return add_range(m.add("on Tobie "), h.min, h.max); }
+    inline message& versus_enemy(message& m, const hit_range& h) { return add_range(m.add(UI(on_tobie)), h.min, h.max); }
     inline message& versus_line(message& m, const dmg_breakdown& b, const hit_range& h)
     {
         versus_hero(m, b).add(", ");
@@ -694,33 +694,33 @@ namespace core
         if(o.chance < 100) m.add(o.chance).add("%: ");
         switch(o.effect)
         {
-            case choice_effect::cash:      return m.add(v > 0 ? "+" : "").add(v).add(" zł");
-            case choice_effect::xp:        return m.add("+").add(v).add(" dośw.");
+            case choice_effect::cash:      return m.add(v > 0 ? "+" : "").add(v).add(UI(zl));
+            case choice_effect::xp:        return m.add("+").add(v).add(UI(dosw));
             case choice_effect::hp:        return m.add(v > 0 ? "+" : "").add(v).add(" HP");
-            case choice_effect::max_hp:    return m.add(v > 0 ? "+" : "").add(v).add(" max HP");
+            case choice_effect::max_hp:    return m.add(v > 0 ? "+" : "").add(v).add(UI(max_hp));
             case choice_effect::mats:
                 if(o.arg >= 0) return m.add(data::materials[o.arg].name).add(v > 0 ? " +" : " ").add(v);
-                return m.add("materiały ").add(v > 0 ? "+" : "").add(v);
-            case choice_effect::stage_dmg: return m.add("ciosy ").add(v > 0 ? "+" : "").add(v).add(" na etap");
-            case choice_effect::stage_def: return m.add("OBR ").add(v > 0 ? "+" : "").add(v).add(" na etap");
-            case choice_effect::boon:      return m.add("premia 1 z 3");
+                return m.add(UI(materialy_2)).add(v > 0 ? "+" : "").add(v);
+            case choice_effect::stage_dmg: return m.add(UI(ciosy)).add(v > 0 ? "+" : "").add(v).add(UI(na_etap));
+            case choice_effect::stage_def: return m.add(UI(obr_4)).add(v > 0 ? "+" : "").add(v).add(UI(na_etap));
+            case choice_effect::boon:      return m.add(UI(premia_1_z_3));
             case choice_effect::gear:
-                m.add(o.arg >= 0 ? data::gear_slots[o.arg] : "sprzęt");
+                m.add(o.arg >= 0 ? data::gear_slots[o.arg] : UI(sprzet_2));
                 if(v > 0) m.add(" (").add(data::gear_rarities[v]).add(")");
                 return m;
-            case choice_effect::respect:   return m.add("Respekt +").add(v);
-            case choice_effect::coffee:    return m.add("kawa +").add(v);
-            case choice_effect::spawn:     return m.add(v).add("x ").add(data::enemies[o.arg].name).add(" obok");
+            case choice_effect::respect:   return m.add(UI(respekt_2)).add(v);
+            case choice_effect::coffee:    return m.add(UI(kawa_3)).add(v);
+            case choice_effect::spawn:     return m.add(v).add("x ").add(data::enemies[o.arg].name).add(UI(obok));
             case choice_effect::status:    return m.add(data::statuses[o.arg].name).add(" ").add(v).add(" t.");
-            case choice_effect::upgrade:   return m.add("narzędzie +").add(v);
-            case choice_effect::power:     return m.add("moc gotowa");
+            case choice_effect::upgrade:   return m.add(UI(narzedzie)).add(v);
+            case choice_effect::power:     return m.add(UI(moc_gotowa));
             default:                       return m;
         }
     }
     // Wszystkie skutki odpowiedzi po przecinku ("bez skutków", gdy brak).
     inline message& choice_label(message& m, const event_choice& c)
     {
-        if(c.outs == 0) return m.add("bez skutków");
+        if(c.outs == 0) return m.add(UI(bez_skutkow));
         for(int i = 0; i < c.outs; ++i) { if(i) m.add(", "); choice_out_label(m, c.out[i]); }
         return m;
     }
@@ -728,7 +728,7 @@ namespace core
     inline message& tool_level_label(message& m, int level, int cash)
     {
         const tool_level_def& t = data::tool_levels[level];
-        return m.add(cash).add(" zł + ").add(t.count).add(" ").add(data::materials[t.material].short_name);
+        return m.add(cash).add(UI(zl_2)).add(t.count).add(" ").add(data::materials[t.material].short_name);
     }
 
     static_assert(data::enemies_count <= max_enemy_types);
@@ -898,21 +898,21 @@ namespace core
             return (t / imax(1, mech_value()) + pattern_stage()) & 3;
         }
         static constexpr int8_t gust_vec[4][2] = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } };
-        static const char* dir_name(int d) { static const char* n[4] = { "w prawo", "w dół", "w lewo", "w górę" }; return n[d & 3]; }
+        static const char* dir_name(int d) { const char* const n[4] = { UI(w_prawo), UI(w_dol), UI(w_lewo), UI(w_gore) }; return n[d & 3]; }
         void gust_tick()
         {
             int v = mech_value(), t = turns - stage_start_turn;
             if(t <= 0) return;
-            if(t % v == v - 1) { push(message().add("Poryw wiatru za 1 t. ").add(dir_name(gust_dir())).as(bad)); return; }
+            if(t % v == v - 1) { push(message().add(UI(poryw_wiatru_za_1_t)).add(dir_name(gust_dir())).as(bad)); return; }
             if(t % v != 0) return;
             int d = (t / v + pattern_stage()) & 3, nx = hero.x + gust_vec[d][0], ny = hero.y + gust_vec[d][1];
             if(lv.passable(nx, ny) && ! occupied(nx, ny))
             {
                 hero.x = int8_t(nx); hero.y = int8_t(ny);
                 collect(); update_fov();
-                push(message().add("Poryw! Spycha cię ").add(dir_name(d)).as(bad));
+                push(message().add(UI(poryw_spycha_cie)).add(dir_name(d)).as(bad));
             }
-            else push(message().add("Poryw - trzymasz się muru").as(good));
+            else push(message().add(UI(poryw_trzymasz_sie_muru)).as(good));
         }
         int dust_sight() const { return act_is(act_mechanic::dust) ? mech_value() : 0; }
         // Pieczątki (Akt 0): na etapie ze schodami leżą dokumenty; dopóki nie zbierzesz wszystkich, schody są zamknięte.
@@ -1003,7 +1003,7 @@ namespace core
                 case event_effect::thermos:       thermos = thermos_cap(); break;
                 default: break;   // inspekcja: premia na koniec etapu; ulewa: poślizg przy ciosach
             }
-            push(message().add("SMS: ").add(ev.name).as(ev.good ? good : bad));
+            push(message().add(UI(sms)).add(ev.name).as(ev.good ? good : bad));
         }
         int cash = 0;                // budżet budowy (zł) - za usunięte problemy i premie aktów, wydawany w Hurtowni
         int act_kills = 0;           // problemy usunięte w bieżącym akcie (premia)
@@ -1026,27 +1026,27 @@ namespace core
             if(s == status_effect::paper)
             {
                 ability_cd = imin(ability_cooldown() + data::paper_delay, ability_cd + data::paper_delay);
-                push(message().add(sd.name).add(": moc +").add(data::paper_delay).add(" t.").as(bad));
+                push(message().add(sd.name).add(UI(moc_3)).add(data::paper_delay).add(" t.").as(bad));
                 return;
             }
             if(s == status_effect::poison && trait_bonus(trait_effect::poison_res) > 0)
             {
-                push(message().add("Odporność: bez zatrucia").as(good));
+                push(message().add(UI(odpornosc_bez_zatrucia)).as(good));
                 return;
             }
             if((s == status_effect::poison || s == status_effect::shock) && synergy_on(synergy_effect::safety))   // synergia Pełne BHP
             {
-                push(message().add("Pełne BHP: bez stanu").as(good));
+                push(message().add(UI(pelne_bhp_bez_stanu)).as(good));
                 return;
             }
             if(s != status_effect::wet && boon_sum(boon_effect::status_res) > 0)   // Instrukcja BHP: stany krócej
             {
                 t -= boon_sum(boon_effect::status_res);
-                if(t <= 0) { push(message().add("Instrukcja BHP: bez stanu").as(good)); return; }
+                if(t <= 0) { push(message().add(UI(instrukcja_bhp_bez_stanu)).as(good)); return; }
             }
             if(s == status_effect::slip && trait_bonus(trait_effect::slip_res) > 0)
             {
-                push(message().add("Odporność: bez poślizgu").as(good));
+                push(message().add(UI(odpornosc_bez_poslizgu)).as(good));
                 return;
             }
             hero_status[int(s)] = int8_t(imax(hero_status[int(s)], t));
@@ -1058,7 +1058,7 @@ namespace core
         {
             if(hero_status[int(status_effect::shock)] <= 0) return false;
             --hero_status[int(status_effect::shock)];
-            push(message().add("Porażenie: tura stracona").as(bad));
+            push(message().add(UI(porazenie_tura_stracona)).as(bad));
             end_turn();
             return true;
         }
@@ -1088,7 +1088,7 @@ namespace core
             if(bd.gear_stun > 0 && full_gear())
             {
                 enemies[boss].stun = int8_t(imax(enemies[boss].stun, bd.gear_stun));
-                push(message().add("Wszystko zgodnie z BHP!").as(good));
+                push(message().add(UI(wszystko_zgodnie_z_bhp)).as(good));
             }
         }
         run_mods bonus;
@@ -1289,12 +1289,12 @@ namespace core
                 case boon_effect::sight:   update_fov(); break;
                 default: break;
             }
-            push(message().add("Premia: ").add(bd.name).as(loot));
+            push(message().add(UI(premia)).add(bd.name).as(loot));
             const uint16_t now = synergy_mask();
             for(int s = 0; s < data::synergies_count; ++s)
                 if(((now >> s) & 1) && ! ((before >> s) & 1))
                 {
-                    push(message().add("Synergia: ").add(data::synergies[s].name).add("!").as(good));
+                    push(message().add(UI(synergia)).add(data::synergies[s].name).add("!").as(good));
                     stage_flags[stage] = uint8_t(stage_flags[stage] | recap_synergy);
                 }
             return true;
@@ -1305,7 +1305,7 @@ namespace core
             cash -= reroll_price();
             ++boon_rerolls;
             roll_boons(boon_salt);
-            push(message().add("Nowa oferta premii"));
+            push(message().add(UI(nowa_oferta_premii)));
             return true;
         }
         void skip_boons() { for(auto& o : boon_offer) o = -1; }
@@ -1379,7 +1379,7 @@ namespace core
         // Źródło ciosu z przedrostkiem elity ("Zbrojony Przeciek").
         static message& recap_src(message& m, const recap_hit& h)
         {
-            if(h.src < 0) return m.add("Wybuch");
+            if(h.src < 0) return m.add(UI(wybuch));
             const enemy_def& ed = data::enemies[h.src];
             if(h.elite >= 0) m.add(data::elites[h.elite].prefix[ed.gender]).add(" ");
             return m.add(ed.name);
@@ -1401,14 +1401,14 @@ namespace core
         message& recap_killer(message& m) const
         {
             const recap_hit& h = last_hits[0];
-            if(h.src < 0 && h.amount == 0) return m.add("Budowa wstrzymana");
-            m.add(data::recap_verbs[h.src >= 0 ? data::enemies[h.src].gender : 0]).add(" Cię: ");
+            if(h.src < 0 && h.amount == 0) return m.add(UI(budowa_wstrzymana));
+            m.add(data::recap_verbs[h.src >= 0 ? data::enemies[h.src].gender : 0]).add(UI(cie));
             return recap_src(m, h);
         }
         // "3/10, Akt I" (etap budowy i akt)
         message& recap_where(message& m) const
         {
-            return m.add(stage_number()).add("/").add(stages_in_run()).add(", Akt ").add(act_numeral());
+            return m.add(stage_number()).add("/").add(stages_in_run()).add(UI(akt)).add(act_numeral());
         }
         // Dni etapu jak w harmonogramie domu (min. + tury / tury na dzień); etap w toku - do teraz.
         bool recap_current(int s) const { return s == stage && (st == status::dead || st == status::playing); }
@@ -1422,18 +1422,18 @@ namespace core
         {
             int n = 0;
             auto add = [&](const recap_line& l) { if(n < max) out[n++] = l; };
-            static const char* flag_names[7] = { "magazyn", "ulepszenie", "elita", "boss pokonany", "kombinacje", "synergia", "premia z SMS" };
+            const char* const flag_names[7] = { UI(magazyn), UI(ulepszenie_2), UI(elita_2), UI(boss_pokonany), UI(kombinacje), UI(synergia_2), UI(premia_z_sms) };
             for(int s = first_stage; s <= stage && s < route_count(); ++s)
             {
                 const bool dead_here = recap_current(s) && st == status::dead;
                 recap_line l;
                 l.text.add(s - first_stage + 1).add(". ").add(sdef(s).name);
-                l.tail.add(recap_days(s)).add(" d., ").add(recap_kills(s)).add(" usun.");
+                l.tail.add(recap_days(s)).add(" d., ").add(recap_kills(s)).add(UI(usun));
                 l.ink = uint8_t(dead_here ? bad : info);
                 add(l);
                 if(stage_event_log[s] != 255)
                 {
-                    recap_line e; e.text.add("  SMS: ").add(data::choice_events[stage_event_log[s] / 4].name); e.ink = good; add(e);
+                    recap_line e; e.text.add(UI(sms_2)).add(data::choice_events[stage_event_log[s] / 4].name); e.ink = good; add(e);
                 }
                 recap_line f; int items = 0;
                 for(int b = 0; b < 7; ++b)
@@ -1443,8 +1443,8 @@ namespace core
                     f.text.add(items ? ", " : "  + ").add(flag_names[b]); f.ink = good; ++items;
                 }
                 if(items) add(f);
-                if(stage_boon[s] >= 0) { recap_line b; b.text.add("  Premia: ").add(data::boons[stage_boon[s]].name); b.ink = loot; add(b); }
-                if(dead_here) { recap_line d; d.text.add("  Tu stanęła budowa"); d.ink = bad; add(d); }
+                if(stage_boon[s] >= 0) { recap_line b; b.text.add(UI(premia_2)).add(data::boons[stage_boon[s]].name); b.ink = loot; add(b); }
+                if(dead_here) { recap_line d; d.text.add(UI(tu_stanela_budowa)); d.ink = bad; add(d); }
             }
             return n;
         }
@@ -1555,7 +1555,7 @@ namespace core
             rng er = side_rng(111 + uint32_t(k));
             stage_event_log[stage] = uint8_t(pending_event * 4 + k);   // podsumowanie: wydarzenie i odpowiedź
             stage_choice = pending_event; stage_choice_pick = int8_t(k); pending_event = -1; choice_done = 0;
-            push(message().add("Odpowiedź: ").add(c.label));
+            push(message().add(UI(odpowiedz)).add(c.label));
             for(int i = 0; i < c.outs; ++i)
             {
                 const choice_out& o = c.out[i];
@@ -1573,9 +1573,9 @@ namespace core
             {
                 case choice_effect::cash:
                     cash = imax(0, cash + (v > 0 ? income(v) : v));
-                    push(message().add(v > 0 ? "Budżet +" : "Budżet ").add(v > 0 ? income(v) : v).add(" zł").as(v > 0 ? good : bad));
+                    push(message().add(v > 0 ? UI(budzet) : UI(budzet_2)).add(v > 0 ? income(v) : v).add(UI(zl)).as(v > 0 ? good : bad));
                     break;
-                case choice_effect::xp: gain_xp(v); push(message().add("+").add(v).add(" dośw.").as(good)); break;
+                case choice_effect::xp: gain_xp(v); push(message().add("+").add(v).add(UI(dosw)).as(good)); break;
                 case choice_effect::hp:
                     hero.hp = int16_t(v > 0 ? imin(hero.max_hp, hero.hp + v) : imax(1, hero.hp + v));
                     push(message().add(v > 0 ? "+" : "").add(v).add(" HP").as(v > 0 ? good : bad));
@@ -1595,8 +1595,8 @@ namespace core
                     take_gear(slot, imax(v, 0), r.range(0, data::gear_traits_count - 1));
                     break;
                 }
-                case choice_effect::respect: respect += v; push(message().add("Respekt +").add(v).as(loot)); break;
-                case choice_effect::coffee: thermos = imin(thermos_cap(), thermos + v); push(message().add("Kawa do termosu (").add(thermos).add("/").add(thermos_cap()).add(")").as(good)); break;
+                case choice_effect::respect: respect += v; push(message().add(UI(respekt_2)).add(v).as(loot)); break;
+                case choice_effect::coffee: thermos = imin(thermos_cap(), thermos + v); push(message().add(UI(kawa_do_termosu)).add(thermos).add("/").add(thermos_cap()).add(")").as(good)); break;
                 case choice_effect::spawn:
                     for(int k = 0; k < v; ++k)
                     {
@@ -1608,14 +1608,14 @@ namespace core
                         a.hp = a.max_hp = int16_t(imax(1, data::enemies[o.arg].max_health * enemy_hp_pct() / 100));
                         a.alive = true; a.awake = true; a.stun = 1;
                         if(dust_sight() > 0) a.flags = uint8_t(a.flags | actor_dusty);
-                        push(message().add(data::enemies[o.arg].name).add(" wyłazi!").as(bad));
+                        push(message().add(data::enemies[o.arg].name).add(UI(wylazi)).as(bad));
                     }
                     break;
                 case choice_effect::status: apply_status(status_effect(o.arg), v); break;
                 case choice_effect::upgrade: for(int k = 0; k < v && can_upgrade_weapon(); ++k) upgrade_weapon(); break;
                 case choice_effect::power:
                     ability_cd = 0;
-                    push(message().add("Moc gotowa: ").add(pdef().ability_name).as(good));
+                    push(message().add(UI(moc_gotowa_2)).add(pdef().ability_name).as(good));
                     break;
                 default: break;
             }
@@ -1678,14 +1678,14 @@ namespace core
             ++weapon_lvl;
             stage_flags[stage] = uint8_t(stage_flags[stage] | recap_upgrade);
             if(weapon_lvl >= data::tool_trait_at && weapon_trait < 0) trait_pending = true;
-            push(message().add("Ulepszenie: ").add(weapon().name).add("+").add(weapon_lvl).as(loot));
+            push(message().add(UI(ulepszenie_3)).add(weapon().name).add("+").add(weapon_lvl).as(loot));
         }
         bool choose_trait(int t)
         {
             if(! trait_pending || t < 0 || t >= data::tool_traits_count) return false;
             trait_pending = false;
             weapon_trait = int8_t(t);
-            push(message().add("Cecha narzędzia: ").add(data::tool_traits[t].name).as(loot));
+            push(message().add(UI(cecha_narzedzia)).add(data::tool_traits[t].name).as(loot));
             return true;
         }
         int bot_trait_choice() const { return 0; }   // bot: zawsze pierwsza cecha (Przebicie)
@@ -1716,14 +1716,14 @@ namespace core
         {
             if(! has_tool_offer()) return;
             tool_offer = tool_offer_pickup = -1;
-            push(message().add("Zostajesz przy ulepszonym narzędziu"));
+            push(message().add(UI(zostajesz_przy_ulepszonym)));
         }
         void take_tool(int t)
         {
             reset_upgrade();
             weapon_override = data::tools[t].weapon;
             tools_found = uint8_t(tools_found | (1u << t));
-            push(message().add("Narzędzie: ").add(weapon().name).add(" ").add(weapon().min_damage).add("-").add(weapon().max_damage).as(loot));
+            push(message().add(UI(narzedzie_2)).add(weapon().name).add(" ").add(weapon().min_damage).add("-").add(weapon().max_damage).as(loot));
         }
         // Bot bierze nowe narzędzie, gdy średni cios (bez problemu) jest wyższy niż ulepszonym obecnym.
         bool bot_tool_accept() const
@@ -1798,21 +1798,21 @@ namespace core
             lv.t[secret_y][secret_x] = tile::floor;
             if(secrets_found < 255) ++secrets_found;
             stage_flags[stage] = uint8_t(stage_flags[stage] | recap_secret);
-            push(message().add(how).add(" Magazyn otwarty!").as(good));
+            push(message().add(how).add(UI(magazyn_otwarty)).as(good));
             update_fov();
         }
         // Wejście w ścianę magazynu: klucz, łyżka Operatora koparki (pęknięta ściana); inaczej podpowiedź, bez tury.
         bool try_open_secret()
         {
-            if(keys > 0) { --keys; open_secret("Klucz pasuje!"); return true; }
-            if(secret_def().breakable && has_passive(class_passive::push)) { open_secret("Łyżka kruszy ścianę!"); return true; }
+            if(keys > 0) { --keys; open_secret(UI(klucz_pasuje)); return true; }
+            if(secret_def().breakable && has_passive(class_passive::push)) { open_secret(UI(lyzka_kruszy_sciane)); return true; }
             push(message().add(secret_def().name).add(": ").add(secret_def().info));
             return false;
         }
         // Wybuch w promieniu rad od (x, y) kruszy pękniętą ścianę.
         void blast_secret(int x, int y, int rad)
         {
-            if(secret_closed() && secret_def().breakable && cheb(x, y, secret_x, secret_y) <= rad) open_secret("Wybuch kruszy ścianę!");
+            if(secret_closed() && secret_def().breakable && cheb(x, y, secret_x, secret_y) <= rad) open_secret(UI(wybuch_kruszy_sciane));
         }
         // Klucz z problemu: na polu usunięcia (albo obok), bez miejsca na znajdźkę - od razu do kieszeni.
         void drop_key(int x, int y)
@@ -1822,18 +1822,18 @@ namespace core
             if((pickup_at(x, y) && ! free_around(x, y, hero.x, hero.y, kx, ky)) || pickups_count >= max_pickups)
             {
                 ++keys;
-                push(message().add("Klucz do magazynu!").as(loot));
+                push(message().add(UI(klucz_do_magazynu)).as(loot));
                 return;
             }
             pickups[pickups_count++] = { int8_t(kx), int8_t(ky), uint8_t(store_key), true };
-            push(message().add("Wypadł klucz do magazynu!").as(loot));
+            push(message().add(UI(wypadl_klucz_do_magazynu)).as(loot));
         }
         void open_chest()
         {
             respect += data::chest_respect;
             cash += income(data::chest_cash);
             for(int m = 0; m < data::materials_count; ++m) add_material(m, data::chest_mats);
-            push(message().add("Skrzynia! Respekt +").add(data::chest_respect).add(", +").add(income(data::chest_cash)).add(" zł").as(loot));
+            push(message().add(UI(skrzynia_respekt)).add(data::chest_respect).add(", +").add(income(data::chest_cash)).add(UI(zl)).as(loot));
             take_gear(random_slot(), data::chest_gear_min, r.range(0, data::gear_traits_count - 1));
         }
         // Cel bota zamiast schodów: klucz, pole przed magazynem (gdy da się otworzyć), skrzynia, wydarzenie.
@@ -1868,7 +1868,7 @@ namespace core
             else if(! has_offer())
             {
                 offer_slot = int8_t(slot); offer_rarity = int8_t(rarity); offer_trait = int8_t(trait);
-                push(message().add("Paczka: ").add(data::gear[slot * 3 + rarity].name).as(loot));
+                push(message().add(UI(paczka)).add(data::gear[slot * 3 + rarity].name).as(loot));
             }
         }
 
@@ -1980,7 +1980,7 @@ namespace core
             hero.hp = int16_t(hero.hp + data::hp_per_level);
             if(data::dmg_levels_mask & (1 << hero_level)) ++dmg_bonus;
             if(data::def_levels_mask & (1 << hero_level)) ++def_bonus;
-            push(message().add("Awans! Poziom ").add(hero_level).as(good));
+            push(message().add(UI(awans_poziom)).add(hero_level).as(good));
         }
 
         int log_serial = 0;          // rośnie przy każdym komunikacie (warstwa GBA pokazuje świeże)
@@ -2111,18 +2111,18 @@ namespace core
                 int x, y; random_free_cell_in_room(rm, x, y);
                 pickups[pickups_count++] = { int8_t(x), int8_t(y), uint8_t(i == 0 ? coffee : r.range(0, 2)), true };
             }
-            push(message().add("Etap ").add(stage_number()).add(": ").add(sd.name));
-            if(twin_carry > 0) push(message().add("Wspólna ściana: +").add(int(twin_carry)).add(" z 1. połowy").as(bad));
+            push(message().add(UI(etap)).add(stage_number()).add(": ").add(sd.name));
+            if(twin_carry > 0) push(message().add(UI(wspolna_sciana)).add(int(twin_carry)).add(UI(z_1_polowy)).as(bad));
             if(pd)   // ścieżka z harmonogramu: budżet i materiały od razu
             {
-                push(message().add("Ścieżka: ").add(pd->name));
+                push(message().add(UI(sciezka)).add(pd->name));
                 if(pd->cash != 0) cash = imax(0, cash + income(pd->cash));
                 for(int k = 0; k < pd->materials; ++k) add_material(r.range(0, data::materials_count - 1));
             }
             weather = twin ? twin_weather : int8_t(roll_weather(s, pd && pd->bad_weather));   // pogoda dnia (bliźniak: ta sama)
             if(weekly_has(weekly_rule::weather)) weather = int8_t(weekly_value(weekly_rule::weather));   // wyzwanie: Mokry tydzień
             if(wdef().effect != weather_effect::none)
-                push(message().add("Pogoda: ").add(wdef().name).add(" (").add(wdef().short_name).add(")").as(wdef().bad ? bad : good));
+                push(message().add(UI(pogoda)).add(wdef().name).add(" (").add(wdef().short_name).add(")").as(wdef().bad ? bad : good));
             stage_event = -1;   // wydarzenie na placu: nie na pierwszym etapie i nie u bossa
             if(twin) { if(twin_event >= 0) apply_event(twin_event); }   // bliźniak: to samo wydarzenie na obu połówkach
             else if(s > first_stage && sd.boss < 0 && ! (pd && pd->no_event) && r.range(1, 100) <= data::site_event_chance_pct)
@@ -2162,7 +2162,7 @@ namespace core
                 }
                 pickups[pickups_count++] = { int8_t(x), int8_t(y), uint8_t(document), true, uint8_t(k) };
             }
-            push(message().add("Pieczątki: zbierz ").add(n).add(" dokumenty").as(bad));
+            push(message().add(UI(pieczatki_zbierz)).add(n).add(UI(dokumenty)).as(bad));
         }
 
         void spawn(int def_id, int x, int y)
@@ -2330,11 +2330,11 @@ namespace core
             {
                 second_used = true;
                 hero.hp = 1;
-                push(message().add("Druga szansa! Zostaje 1 HP").as(good));
+                push(message().add(UI(druga_szansa_zostaje_1_hp)).as(good));
                 return;
             }
             hero.hp = 0; hero.alive = false; st = status::dead;
-            push(message().add("Budowa wstrzymana...").as(bad));
+            push(message().add(UI(budowa_wstrzymana_2)).as(bad));
         }
 
         // Obrażenia dla problemu (broń bohatera albo brygada; src = nazwa w dzienniku): trafienie, usunięcie, nagrody,
@@ -2356,7 +2356,7 @@ namespace core
                 e.alive = false; e.hp = 0;
                 e.flags = uint8_t(e.flags | actor_returned | actor_reviving);
                 e.timer = int8_t(data::behavior_return_turns);
-                push(message().add(ed.name).add(" - wróci za ").add(data::behavior_return_turns).add(" t.!").as(bad));
+                push(message().add(ed.name).add(UI(wroci_za)).add(data::behavior_return_turns).add(" t.!").as(bad));
                 return;
             }
             if(e.hp <= 0)
@@ -2375,7 +2375,7 @@ namespace core
                 }
                 maybe_drop(e.x, e.y);
                 if(ei == key_holder) drop_key(e.x, e.y);   // klucz do magazynu (#32)
-                push(message().add(ed.name).add(" - usunięto!").as(good));
+                push(message().add(ed.name).add(UI(usunieto)).as(good));
                 const int kh = boon_sum(boon_effect::kill_heal);   // Drożdżówka: HP za usunięty problem
                 if(kh > 0 && hero.alive && hero.hp < hero.max_hp) hero.hp = int16_t(imin(hero.max_hp, hero.hp + kh));
                 if((ed.tags & tag_explodes) || elite_is(e, elite_effect::explode)) arm_blast(e.x, e.y, ed);
@@ -2397,18 +2397,18 @@ namespace core
                     if(ed.reward_cash > 0)   // nagroda bossa (Inspekcja: Protokół bez uwag)
                     {
                         cash += income(ed.reward_cash);
-                        push(message().add(ed.reward_title).add("! +").add(income(ed.reward_cash)).add(" zł").as(good));
+                        push(message().add(ed.reward_title).add("! +").add(income(ed.reward_cash)).add(UI(zl)).as(good));
                     }
                     finish_stage();
                     if(last_stage())
                     {
                         st = status::won;
-                        push(message().add("Odbiór techniczny zaliczony!").as(good));
+                        push(message().add(UI(odbior_techniczny_zaliczony)).as(good));
                     }
                     else if(sdef(stage + 1).act == sdef().act)   // boss w środku aktu: dalej bez Hurtowni
                     {
                         st = status::stage_clear;
-                        push(message().add("Etap zakończony: ").add(sdef().name).as(good));
+                        push(message().add(UI(etap_zakonczony)).add(sdef().name).as(good));
                     }
                     else   // boss aktu: premia za akt, potem Hurtownia
                     {
@@ -2420,13 +2420,13 @@ namespace core
                         act_kills = 0;
                         act_cleared = true;
                         st = status::stage_clear;
-                        push(message().add("Akt zaliczony! Premia ").add(act_bonus).add(" zł").as(good));
+                        push(message().add(UI(akt_zaliczony_premia)).add(act_bonus).add(UI(zl)).as(good));
                     }
                 }
             }
             else
             {
-                push(message().add(crit ? "KRYT! " : "").add(src).add(": -").add(dmg).add(" (").add(ed.name).add(")").as(crit ? loot : info));
+                push(message().add(crit ? UI(kryt_7) : "").add(src).add(": -").add(dmg).add(" (").add(ed.name).add(")").as(crit ? loot : info));
                 if(elite_is(e, elite_effect::summon) && ! (e.flags & actor_called) && e.hp * 100 <= e.max_hp * data::elites[e.elite].value)
                     elite_call(ei);
             }
@@ -2446,7 +2446,7 @@ namespace core
             c.x = int8_t(x); c.y = int8_t(y); c.def_id = enemies[ei].def_id;
             c.hp = c.max_hp = int16_t(imax(1, data::enemies[c.def_id].max_health * enemy_hp_pct() / 100 / 2));
             c.alive = true; c.awake = true; c.stun = 1; c.flags = actor_child;
-            push(message().add(data::enemies[c.def_id].name).add(": wzywa pomoc!").as(bad));
+            push(message().add(data::enemies[c.def_id].name).add(UI(wzywa_pomoc)).as(bad));
         }
 
         // Nagroda za elitę: pewny drop (paczka sprzętu co najmniej solidna), materiały, Respekt.
@@ -2456,7 +2456,7 @@ namespace core
             respect += data::elite_respect;
             add_material(r.range(0, data::materials_count - 1), data::elite_mats);
             if(pickups_count < max_pickups && ! pickup_at(e.x, e.y)) drop_at(e.x, e.y, data::elite_gear_min);
-            push(message().add("Elita usunięta! Respekt +").add(data::elite_respect).as(loot));
+            push(message().add(UI(elita_usunieta_respekt)).add(data::elite_respect).as(loot));
         }
 
         // Druga faza bossa (Decyzja odmowna: Odwołanie): raz, gdy HP spadnie do phase_pct% (także ciosem, który by go
@@ -2498,7 +2498,7 @@ namespace core
                 if(mud(hero.x, hero.y) && ! puddle(hero.x, hero.y))   // akt I: błoto - grzęźniesz, tura przepada
                 {
                     stuck = true;
-                    push(message().add("Błoto! Grzęźniesz - tura stracona").as(bad));
+                    push(message().add(UI(bloto_grzezniesz_tura_stracona)).as(bad));
                 }
             }
             else return false;
@@ -2549,7 +2549,7 @@ namespace core
             if(st != status::playing) return false;
             if(shocked_turn()) return true;
             int t = nearest_target();
-            if(t < 0) { push(message().add("Brak celu w zasięgu ").add(weapon_range())); return false; }
+            if(t < 0) { push(message().add(UI(brak_celu_w_zasiegu)).add(weapon_range())); return false; }
             hero_attack(t);
             end_turn();
             return true;
@@ -2638,11 +2638,11 @@ namespace core
                     for(int i = 0; i < enemies_count; ++i)
                         if(enemies[i].alive && visible(enemies[i].x, enemies[i].y))
                         { enemies[i].stun = int8_t(1 + rank + boon_power()); enemies[i].awake = true; ok = true; }
-                    if(ok) push(message().add(c.ability_name).add(": problemy wstrzymane"));
+                    if(ok) push(message().add(c.ability_name).add(UI(problemy_wstrzymane)));
                     break;
                 case ability_effect::wall:   // Ścianka: mur w poprzek drogi najbliższego wroga (nigdy wokół bohatera)
                     ok = wall_toward_enemy(rank >= 3 ? 2 : 1, 4 + 2 * rank + boon_power());
-                    if(ok) push(message().add(c.ability_name).add(" postawiona!"));
+                    if(ok) push(message().add(c.ability_name).add(UI(postawiona)));
                     break;
                 case ability_effect::volley:   // Seria: wszyscy widoczni w zasięgu (+1 obrażeń od II, +1 zasięgu na III)
                 {
@@ -2696,7 +2696,7 @@ namespace core
                     }
                     int h = imin(4 + 2 * rank + boon_power(), hero.max_hp - hero.hp);
                     if(h > 0) { hero.hp = int16_t(hero.hp + h); ok = true; }
-                    if(ok) push(message().add(c.ability_name).add(": strumień! +").add(imax(0, h)).add(" HP"));
+                    if(ok) push(message().add(c.ability_name).add(UI(strumien)).add(imax(0, h)).add(" HP"));
                     break;
                 }
                 case ability_effect::spin:   // Wirówka: wszyscy obok (zasięg 2 na III), od II ogłusza na 1 turę
@@ -2732,7 +2732,7 @@ namespace core
                         if(ei >= 0 && ! (done & (1u << ei))) { hero_attack(ei); done |= 1u << ei; ok = true; }
                     }
                     if(rank >= 2) --dmg_bonus;
-                    if(ok) push(message().add(c.ability_name).add(": dachówki w linii!"));
+                    if(ok) push(message().add(c.ability_name).add(UI(dachowki_w_linii)));
                     break;
                 }
                 case ability_effect::splash:   // Narzut (Tynkarz): tynk na obszar wokół celu w zasięgu (3x3, 5x5 na III), od II ogłusza
@@ -2773,7 +2773,7 @@ namespace core
                             ok = true;
                             break;
                         }
-                        if(secret_closed() && secret_is(nx, ny) && secret_def().breakable) { open_secret("Taran kruszy ścianę!"); ok = true; break; }
+                        if(secret_closed() && secret_is(nx, ny) && secret_def().breakable) { open_secret(UI(taran_kruszy_sciane)); ok = true; break; }
                         if(! lv.passable(nx, ny) || occupied(nx, ny)) break;
                         hero.x = int8_t(nx); hero.y = int8_t(ny); moved = ok = true;
                     }
@@ -2800,7 +2800,7 @@ namespace core
                         }
                     }
                     hit_ctx = 0;
-                    if(ok) push(message().add(c.ability_name).add(": iskry i dym!"));
+                    if(ok) push(message().add(c.ability_name).add(UI(iskry_i_dym)));
                     break;
                 }
                 case ability_effect::mark:   // Tyczenie (Geodeta): najbliższy widoczny problem oznaczony na kilka tur, ogłuszony na turę
@@ -2815,7 +2815,7 @@ namespace core
                 }
                 default: break;
             }
-            if(! ok) { push(message().add(c.ability_name).add(": nie teraz")); return false; }
+            if(! ok) { push(message().add(c.ability_name).add(UI(nie_teraz))); return false; }
             if(powers_used < 65535) ++powers_used;
             end_turn();
             ability_cd = ability_cooldown();
@@ -2874,17 +2874,17 @@ namespace core
             switch(helper_blocked(h))
             {
                 case helper_ok: break;
-                case helper_used: push(message().add("Brygada już była na tym etapie")); return false;
-                case helper_cash: push(message().add("Brygada: za mały budżet (").add(helper_price(h)).add(" zł)")); return false;
-                case helper_no_target: push(message().add(hd.name).add(": nikogo w zasięgu")); return false;
-                case helper_no_room: push(message().add(hd.name).add(": brak miejsca obok")); return false;
+                case helper_used: push(message().add(UI(brygada_juz_byla_na_tym_etapie))); return false;
+                case helper_cash: push(message().add(UI(brygada_za_maly_budzet)).add(helper_price(h)).add(UI(zl_3))); return false;
+                case helper_no_target: push(message().add(hd.name).add(UI(nikogo_w_zasiegu))); return false;
+                case helper_no_room: push(message().add(hd.name).add(UI(brak_miejsca_obok))); return false;
                 default: return false;
             }
             if(shocked_turn()) return true;
             cash -= helper_price(h);
             helper_called = int8_t(h);
             if(helpers_called < 255) ++helpers_called;   // v0.21.52 cz. c: zadania dnia
-            push(message().add("Brygada: ").add(hd.name).as(good));
+            push(message().add(UI(brygada_2)).add(hd.name).as(good));
             switch(hd.effect)
             {
                 case helper_effect::reveal:   // podłoga, schody i mury przy nich
@@ -2945,7 +2945,7 @@ namespace core
             if(--ally_turns == 0)
             {
                 ally_x = ally_y = -1;
-                push(message().add(hd.name).add(": koniec pomocy"));
+                push(message().add(hd.name).add(UI(koniec_pomocy)));
             }
         }
 
@@ -3013,7 +3013,7 @@ namespace core
             }
             if(it.material >= 0) mats[it.material] = uint8_t(mats[it.material] - it.mat_cost);
             else cash -= hurtownia_price(i);
-            push(message().add("Hurtownia: ").add(it.name).as(loot));
+            push(message().add(UI(hurtownia_2)).add(it.name).as(loot));
             return true;
         }
 
@@ -3057,10 +3057,10 @@ namespace core
             switch(repair_blocked(k))
             {
                 case repair_ok: break;
-                case repair_material: push(message().add(rd.name).add(": brak - ").add(data::materials[rd.material].name)); return false;
-                case repair_no_target: push(message().add(rd.name).add(": brak problemu w polu widzenia")); return false;
-                case repair_no_room: push(message().add(rd.name).add(": nie ma gdzie")); return false;
-                case repair_no_puddle: push(message().add(rd.name).add(": brak kałuż obok")); return false;
+                case repair_material: push(message().add(rd.name).add(UI(brak)).add(data::materials[rd.material].name)); return false;
+                case repair_no_target: push(message().add(rd.name).add(UI(brak_problemu_w_polu_widzenia))); return false;
+                case repair_no_room: push(message().add(rd.name).add(UI(nie_ma_gdzie))); return false;
+                case repair_no_puddle: push(message().add(rd.name).add(UI(brak_kaluz_obok))); return false;
                 default: return false;
             }
             if(shocked_turn()) return true;
@@ -3095,7 +3095,7 @@ namespace core
             stage_kill_log[stage] = uint8_t(imin(255, stage_kills));
             int got = stage_respect();
             respect += got;
-            push(message().add("Respekt +").add(got).as(loot));
+            push(message().add(UI(respekt_2)).add(got).as(loot));
             if(! last_stage()) roll_boons();   // premia 1 z 3 przed harmonogramem (nie po odbiorze)
         }
 
@@ -3118,12 +3118,12 @@ namespace core
             int h = imin(coffee_heal(), hero.max_hp - hero.hp);
             hero.hp = int16_t(hero.hp + h);
             if(coffee_drunk < 255) ++coffee_drunk;
-            push(message().add("Kawa z termosu: +").add(h).add(" HP").as(good));
+            push(message().add(UI(kawa_z_termosu)).add(h).add(" HP").as(good));
             const int es = synergy_value(synergy_effect::espresso);   // synergia Espresso: kawa ładuje moc
             if(es > 0 && ability_cd > 0)
             {
                 ability_cd = imax(0, ability_cd - es);
-                push(message().add("Espresso: moc -").add(es).add(" t.").as(good));
+                push(message().add(UI(espresso_moc)).add(es).add(" t.").as(good));
             }
         }
 
@@ -3131,9 +3131,9 @@ namespace core
         bool player_drink()
         {
             if(st != status::playing) return false;
-            if(weekly_has(weekly_rule::no_coffee)) { push(message().add("Tydzień bez kawy!").as(bad)); return false; }
-            if(thermos <= 0) { push(message().add("Termos pusty")); return false; }
-            if(hero.hp >= hero.max_hp) { push(message().add("HP pełne - kawa poczeka")); return false; }
+            if(weekly_has(weekly_rule::no_coffee)) { push(message().add(UI(tydzien_bez_kawy)).as(bad)); return false; }
+            if(thermos <= 0) { push(message().add(UI(termos_pusty))); return false; }
+            if(hero.hp >= hero.max_hp) { push(message().add(UI(hp_pelne_kawa_poczeka))); return false; }
             if(shocked_turn()) return true;
             --thermos;
             drink_coffee();
@@ -3199,7 +3199,7 @@ namespace core
             thermos = imin(thermos, thermos_cap());   // słabszy pas: kawy ponad miejsca przepadają
             if(rarity == 2 && brand_found < 255) ++brand_found;   // zlecenie Markowy styl
             update_fov();   // cecha Widzenie zmienia pole widzenia
-            push(message().add("Sprzęt: ").add(nw.name).add(" +").add(nw.value).as(loot));
+            push(message().add(UI(sprzet_3)).add(nw.name).add(" +").add(nw.value).as(loot));
         }
 
         bool has_offer() const { return offer_slot >= 0; }
@@ -3219,7 +3219,7 @@ namespace core
             int xp = data::gear_decline_xp + offer_rarity;
             offer_slot = -1;
             gain_xp(xp);
-            push(message().add("Zostawiasz stary sprzęt: +").add(xp).add(" dośw.").as(loot));
+            push(message().add(UI(zostawiasz_stary_sprzet)).add(xp).add(UI(dosw)).as(loot));
         }
 
         void collect()
@@ -3234,7 +3234,7 @@ namespace core
                     if(! has_tool_offer())
                     {
                         tool_offer = int8_t(p.arg); tool_offer_pickup = int8_t(i);
-                        push(message().add("Narzędzie: ").add(data::weapons[data::tools[p.arg].weapon].name).add(" - zamienić?").as(loot));
+                        push(message().add(UI(narzedzie_2)).add(data::weapons[data::tools[p.arg].weapon].name).add(UI(zamienic)).as(loot));
                     }
                     continue;
                 }
@@ -3242,32 +3242,32 @@ namespace core
                 if(p.type == event_tile)   // wydarzenie z wyborem (#30): SMS czeka na odpowiedź
                 {
                     pending_event = int8_t(p.arg);
-                    push(message().add("SMS: ").add(pending_def().name).as(loot));
+                    push(message().add(UI(sms)).add(pending_def().name).as(loot));
                     continue;
                 }
-                if(p.type == store_key) { ++keys; push(message().add("Klucz do magazynu!").as(loot)); continue; }
+                if(p.type == store_key) { ++keys; push(message().add(UI(klucz_do_magazynu)).as(loot)); continue; }
                 if(p.type == chest) { open_chest(); continue; }
                 if(p.type == coffee && weekly_has(weekly_rule::no_coffee))   // wyzwanie: bez kawy - kawa na wynos (zł)
                 {
                     cash += income(data::weekly_coffee_cash);
-                    push(message().add("Bez kawy: na wynos +").add(income(data::weekly_coffee_cash)).add(" zł").as(loot));
+                    push(message().add(UI(bez_kawy_na_wynos)).add(income(data::weekly_coffee_cash)).add(UI(zl)).as(loot));
                 }
                 else if(p.type == coffee)
                 {
                     if(thermos < thermos_cap())   // kawa do termosu; pełny termos - pije od razu
                     {
                         ++thermos;
-                        push(message().add("Kawa do termosu (").add(thermos).add("/").add(thermos_cap()).add(")").as(good));
+                        push(message().add(UI(kawa_do_termosu)).add(thermos).add("/").add(thermos_cap()).add(")").as(good));
                     }
                     else drink_coffee();
                 }
-                else if(p.type == helmet) { ++def_bonus; push(message().add("Nowy kask: obrona +1").as(loot)); }
-                else if(p.type == plan) { ++dmg_bonus; push(message().add("Projekt wykonawczy: obrażenia +1").as(loot)); }
+                else if(p.type == helmet) { ++def_bonus; push(message().add(UI(nowy_kask_obrona_1)).as(loot)); }
+                else if(p.type == plan) { ++dmg_bonus; push(message().add(UI(projekt_wykonawczy_obrazenia_1)).as(loot)); }
                 else if(p.type == document)   // pieczątki: komplet otwiera schody
                 {
                     docs = uint8_t(docs | (1u << p.arg));
-                    push(message().add("Dokument: ").add(data::documents[p.arg]).add(" (").add(docs_count()).add("/").add(docs_needed()).add(")").as(loot));
-                    if(! stairs_locked()) push(message().add("Komplet pieczątek! Schody otwarte").as(good));
+                    push(message().add(UI(dokument)).add(data::documents[p.arg]).add(" (").add(docs_count()).add("/").add(docs_needed()).add(")").as(loot));
+                    if(! stairs_locked()) push(message().add(UI(komplet_pieczatek_schody)).as(good));
                 }
                 else if(p.type == gear_box)
                 {
@@ -3277,7 +3277,7 @@ namespace core
                     else
                     {
                         offer_slot = int8_t(slot); offer_rarity = int8_t(p.arg % 3); offer_trait = int8_t(p.trait);
-                        push(message().add("Paczka: ").add(data::gear[p.arg].name).as(loot));
+                        push(message().add(UI(paczka)).add(data::gear[p.arg].name).as(loot));
                     }
                 }
                 else take_tool(p.arg);
@@ -3297,7 +3297,7 @@ namespace core
                 actor& m = enemies[slot];
                 m.x = int8_t(x); m.y = int8_t(y); m.hp = m.max_hp; m.alive = true; m.awake = true; m.stun = 0;
                 ++summons_used;
-                push(message().add("Wezwanie: ").add(data::enemies[m.def_id].name).as(bad));
+                push(message().add(UI(wezwanie)).add(data::enemies[m.def_id].name).as(bad));
                 return true;
             }
             return false;
@@ -3322,7 +3322,7 @@ namespace core
                     slam_counter = 0;
                     slam_timer = cross ? data::slam_cross_delay : data::slam_delay;
                     slam_x = hero.x; slam_y = hero.y;
-                    push(message().add(ed.slam_name[0] ? ed.slam_name : "Cios bossa").add(" za ").add(slam_timer).add(" tury!").as(bad));
+                    push(message().add(ed.slam_name[0] ? ed.slam_name : UI(cios_bossa)).add(UI(za)).add(slam_timer).add(UI(tury)).as(bad));
                     return;
                 }
             }
@@ -3371,7 +3371,7 @@ namespace core
             if(dodge_pct() > 0 && r.range(1, 100) <= dodge_pct())   // szczęście: unik
             {
                 add_hit(hero.x, hero.y, 0, true, hit_dodge);
-                push(message().add("Unik! ").add(ed.name).add(" chybia").as(good));
+                push(message().add(UI(unik_4)).add(ed.name).add(UI(chybia)).as(good));
                 return;
             }
             const bool was_wet = hero_wet();
@@ -3381,7 +3381,7 @@ namespace core
             hero_hit = true;
             log_hit(e.def_id, e.elite, ranged ? recap_kind::ranged : recap_kind::melee, dmg);
             add_hit(hero.x, hero.y, dmg, true);
-            push(message().add(ed.name).add(ranged ? " z dystansu: -" : ": -").add(dmg).add(" HP").as(bad));
+            push(message().add(ed.name).add(ranged ? UI(z_dystansu) : ": -").add(dmg).add(" HP").as(bad));
             if(ed.on_hit != status_effect::none && hero.hp > 0 && r.range(1, 100) <= ed.status_chance)
                 apply_status(ed.on_hit, ed.status_turns);
             if(ed.elem == element::water && hero.hp > 0) soak_hero();   // woda moczy
@@ -3406,7 +3406,7 @@ namespace core
                 {
                     hero.x = int8_t(nx); hero.y = int8_t(ny);
                     collect(); update_fov();
-                    push(message().add(ed.name).add(" odpycha cię!").as(bad));
+                    push(message().add(ed.name).add(UI(odpycha_cie)).as(bad));
                 }
             }
             if(hero.hp <= 0) hero_down();
@@ -3453,7 +3453,7 @@ namespace core
             }
             if(bx < 0) return false;
             e.x = int8_t(bx); e.y = int8_t(by);
-            if(visible(bx, by)) push(message().add(data::enemies[e.def_id].name).add(" ucieka"));
+            if(visible(bx, by)) push(message().add(data::enemies[e.def_id].name).add(UI(ucieka)));
             return true;
         }
 
@@ -3473,7 +3473,7 @@ namespace core
             int h = imin(data::behavior_heal_value, lack);
             o.hp = int16_t(o.hp + h);
             if(visible(e.x, e.y) || visible(o.x, o.y))
-                push(message().add(data::enemies[e.def_id].name).add(" łata: ").add(data::enemies[o.def_id].name).add(" +").add(h).as(bad));
+                push(message().add(data::enemies[e.def_id].name).add(UI(lata)).add(data::enemies[o.def_id].name).add(" +").add(h).as(bad));
             return true;
         }
 
@@ -3485,7 +3485,7 @@ namespace core
             ++e.grow;
             e.max_hp = int16_t(e.max_hp + data::behavior_grow_hp);
             e.hp = int16_t(e.hp + data::behavior_grow_hp);
-            if(visible(e.x, e.y)) push(message().add(data::enemies[e.def_id].name).add(" rośnie!").as(bad));
+            if(visible(e.x, e.y)) push(message().add(data::enemies[e.def_id].name).add(UI(rosnie)).as(bad));
         }
 
         // Wybuch po usunięciu: czerwone pola wokół, spada po data::behavior_blast_delay turach (tura na zejście).
@@ -3495,7 +3495,7 @@ namespace core
             blast_timer = int8_t(data::behavior_blast_delay);
             blast_dmg = int8_t(data::behavior_blast_damage + enemy_dmg_bonus());
             blast_src = int8_t(&ed - data::enemies);   // podsumowanie: źródło wybuchu
-            push(message().add(ed.name).add(": wybuch za ").add(data::behavior_blast_delay - 1).add(" t.! Odejdź").as(bad));
+            push(message().add(ed.name).add(UI(wybuch_za)).add(data::behavior_blast_delay - 1).add(UI(t_odejdz)).as(bad));
         }
 
         // Miejsce na nowy problem (podział): wolny slot na końcu albo po usuniętym (nie boss, nie wezwani, nie czekający).
@@ -3527,7 +3527,7 @@ namespace core
                 c.alive = true; c.awake = true; c.stun = 1; c.flags = actor_child;
                 ++made;
             }
-            if(made) push(message().add(data::enemies[p.def_id].name).add(" dzieli się!").as(bad));
+            if(made) push(message().add(data::enemies[p.def_id].name).add(UI(dzieli_sie)).as(bad));
         }
 
         void end_turn()
@@ -3539,7 +3539,7 @@ namespace core
                 --poison;
                 if(hero.hp > 1) { hero.hp = int16_t(hero.hp - 1); stage_damage += 1; add_hit(hero.x, hero.y, 1, true); }
             }
-            if(ability_cd > 0 && --ability_cd == 0) push(message().add("Moc gotowa: ").add(pdef().ability_name).as(good));
+            if(ability_cd > 0 && --ability_cd == 0) push(message().add(UI(moc_gotowa_2)).add(pdef().ability_name).as(good));
             if(mark_turns > 0 && --mark_turns == 0) mark_target = -1;   // Tyczenie mija
             int8_t& wet = hero_status[int(status_effect::wet)];
             if(wet > 0) --wet;   // mokry schnie
@@ -3567,10 +3567,10 @@ namespace core
                     log_hit(enemies[boss].def_id, enemies[boss].elite, recap_kind::slam, dmg);
                     hero_hit = true;
                     add_hit(hero.x, hero.y, dmg, true);
-                    push(message().add(bd.slam_name[0] ? bd.slam_name : "Uderzenie").add(": -").add(dmg).add(" HP").as(bad));
+                    push(message().add(bd.slam_name[0] ? bd.slam_name : UI(uderzenie)).add(": -").add(dmg).add(" HP").as(bad));
                     if(hero.hp <= 0) hero_down();
                 }
-                else push(message().add("Unik! Cios poszedł obok").as(good));
+                else push(message().add(UI(unik_cios_poszedl_obok)).as(good));
                 slam_x = slam_y = -1;
             }
             if(blast_timer > 0 && --blast_timer == 0 && st == status::playing)   // wybuch po usuniętym problemie
@@ -3588,12 +3588,12 @@ namespace core
                     if(dusty)
                     {
                         combo_events = uint8_t(combo_events | (8u << int(combo_effect::dust_blast)));
-                        push(message().add(data::combos[int(combo_effect::dust_blast)].short_name).add(" Wybuch: -").add(dmg).add(" HP").as(bad));
+                        push(message().add(data::combos[int(combo_effect::dust_blast)].short_name).add(UI(wybuch_2)).add(dmg).add(" HP").as(bad));
                     }
-                    else push(message().add("Wybuch: -").add(dmg).add(" HP").as(bad));
+                    else push(message().add(UI(wybuch_3)).add(dmg).add(" HP").as(bad));
                     if(hero.hp <= 0) hero_down();
                 }
-                else push(message().add("Wybuch obok - uff!").as(good));
+                else push(message().add(UI(wybuch_obok_uff)).as(good));
                 blast_secret(blast_x, blast_y, data::behavior_blast_radius);   // wybuch kruszy pękniętą ścianę magazynu
                 blast_x = blast_y = -1;
             }
@@ -3606,13 +3606,13 @@ namespace core
                 e.alive = true; e.awake = true;
                 e.hp = int16_t(imax(1, e.max_hp * data::behavior_return_hp_pct / 100));
                 e.flags = uint8_t(e.flags & ~actor_reviving);
-                push(message().add(data::enemies[e.def_id].name).add(" wraca!").as(bad));
+                push(message().add(data::enemies[e.def_id].name).add(UI(wraca)).as(bad));
             }
             if(st == status::playing)
                 for(int i = 0; i < enemies_count && st == status::playing; ++i)
                     if(enemies[i].alive) enemy_act(i);
             if(st == status::playing && hero.x == stairs_x && hero.y == stairs_y && stairs_locked())
-                push(message().add("Schody zamknięte: dokumenty ").add(docs_count()).add("/").add(docs_needed()).as(bad));
+                push(message().add(UI(schody_zamkniete_dokumenty)).add(docs_count()).add("/").add(docs_needed()).as(bad));
             else if(st == status::playing && hero.x == stairs_x && hero.y == stairs_y) clear_stage();
         }
 
@@ -3624,11 +3624,11 @@ namespace core
                 finish_stage();
                 score += 100 * score_pct() / 100;
                 gain_xp(data::xp_per_stage);
-                push(message().add("Etap zakończony: ").add(sdef().name).as(good));
+                push(message().add(UI(etap_zakonczony)).add(sdef().name).as(good));
                 if(event_active(event_effect::inspection) && stage_damage == 0)   // Inspekcja nadzoru: etap bez obrażeń
                 {
                     gain_xp(data::site_events[stage_event].value);
-                    push(message().add("Inspekcja: +").add(data::site_events[stage_event].value).add(" dośw.").as(good));
+                    push(message().add(UI(inspekcja)).add(data::site_events[stage_event].value).add(UI(dosw)).as(good));
                 }
             }
         }
@@ -3668,7 +3668,7 @@ namespace core
             for(auto& e : enemies) e = actor();
             hero.hp = hero.max_hp;
             start_stage(first_stage);
-            push(message().add("Kolejna budowa! Poziom ").add(tier + 1));
+            push(message().add(UI(kolejna_budowa_poziom)).add(tier + 1));
             return true;
         }
     };

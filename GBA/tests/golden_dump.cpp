@@ -557,9 +557,9 @@ int main(int argc, char** argv)
                     g.st == status::won ? "WYGRANA" : (g.st == status::dead ? "porażka" : "w toku"), g.stage + 1, g.tier, g.turns, g.score, step);
     }
     std::printf("wydarzenia na placu (etapy):");
-    for(int i = 0; i < data::site_events_count; ++i) std::printf(" %s=%d", data::site_events[i].name, event_hits[i]);
+    for(int i = 0; i < data::site_events_count; ++i) std::printf(" %s=%d", data::site_events[i].name.c_str(), event_hits[i]);
     std::printf("\nbrygada (wezwania):");
-    for(int i = 0; i < data::brigade_count; ++i) std::printf(" %s=%d", data::brigade[i].name, helper_hits[i]);
+    for(int i = 0; i < data::brigade_count; ++i) std::printf(" %s=%d", data::brigade[i].name.c_str(), helper_hits[i]);
     std::printf("\n");
     return 0;
 }

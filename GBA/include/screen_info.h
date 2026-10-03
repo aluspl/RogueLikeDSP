@@ -4,5 +4,7 @@
 namespace screen_info
 {
     constexpr int title_bg_index = 62;
+    constexpr int title_en_bg_index = 62;
     constexpr int end_bg_index = 62;
+    constexpr int end_en_bg_index = 62;
 }

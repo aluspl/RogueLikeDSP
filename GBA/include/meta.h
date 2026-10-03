@@ -166,7 +166,8 @@ namespace core
         uint8_t career_best[max_contracts];   // najwięcej ukończonych etapów kontraktu w jednej budowie (bez Aktu 0)
         // --- v17 (v0.21.53): filtry ekranu (#53, #54)
         uint16_t filters_seen;         // bity: odblokowanie filtra już ogłoszone (baner raz)
-        uint8_t reserved17[6];         // wyrównanie do 384 B (zapis budowy od 512)
+        uint8_t language;              // v17 cz. 2 (#40): 0 = jeszcze nie wybrano (pytanie przy starcie), 1 = polski, 2 = angielski
+        uint8_t reserved17[5];         // wyrównanie do 384 B (zapis budowy od 512)
     };
     static_assert(offsetof(profile, badges) == profile_v2_size);
     static_assert(offsetof(profile, kills_total) == profile_v3_size);
@@ -183,7 +184,7 @@ namespace core
     static_assert(offsetof(profile, task_progress) == 342 && offsetof(profile, task_mark) == 347 && offsetof(profile, task_done) == 352);
     static_assert(offsetof(profile, tasks_total) == 354 && offsetof(profile, streak_day) == 356 && offsetof(profile, collections) == 359);
     static_assert(offsetof(profile, contract) == profile_v15_size && offsetof(profile, career_wins) == 364 && offsetof(profile, career_best) == 370);
-    static_assert(offsetof(profile, filter) == 363 && offsetof(profile, filters_seen) == 376);
+    static_assert(offsetof(profile, filter) == 363 && offsetof(profile, filters_seen) == 376 && offsetof(profile, language) == 378);
     static_assert(sizeof(profile) == 384);
 
     // Katalog usterek: rodzaje 0-15 w catalog, 16-47 w catalog_hi.
@@ -1008,25 +1009,25 @@ namespace core
     {
         switch(e)
         {
-            case upgrade_effect::hp:        return m.add("+").add(v).add(" HP na start");
-            case upgrade_effect::def:       return m.add("+").add(v).add(" OBR");
-            case upgrade_effect::dmg:       return m.add("+").add(v).add(" obrażeń");
-            case upgrade_effect::coffee:    return m.add("Kawa leczy +").add(v).add(" HP");
-            case upgrade_effect::pickups:   return m.add("+").add(v).add(v == 1 ? " znajdźka" : " znajdźki");
-            case upgrade_effect::luck:      return m.add("+").add(v).add(" szczęścia");
-            case upgrade_effect::craft:     return m.add("+").add(v).add(" stat. broni");
-            case upgrade_effect::dmg_pct:   return m.add("+").add(v).add("% obrażeń");
-            case upgrade_effect::taken_pct: return m.add("-").add(v).add("% otrzym. obr.");
-            case upgrade_effect::crit:      return m.add("Kryt +").add(v).add("%");
-            case upgrade_effect::dodge:     return m.add("Unik +").add(v).add("%");
-            case upgrade_effect::thermos:   return m.add("Termos +").add(v).add(v == 1 ? " miejsce" : " miejsca");
-            case upgrade_effect::mats_pct:  return m.add("Materiały +").add(v).add("%");
-            case upgrade_effect::gear_pct:  return m.add("Sprzęt +").add(v);
-            case upgrade_effect::cash:      return m.add("Budżet +").add(v).add(" zł");
-            case upgrade_effect::shop_pct:    return m.add("Hurtownia -").add(v).add("%");
-            case upgrade_effect::brigade_pct: return m.add("Brygada -").add(v).add("%");
-            case upgrade_effect::cooldown:    return m.add("Moc -").add(v).add(" t.");
-            case upgrade_effect::first_hit:   return m.add("Pierwszy cios +").add(v);
+            case upgrade_effect::hp:        return m.add("+").add(v).add(UI(hp_na_start));
+            case upgrade_effect::def:       return m.add("+").add(v).add(UI(obr_2));
+            case upgrade_effect::dmg:       return m.add("+").add(v).add(UI(obrazen_2));
+            case upgrade_effect::coffee:    return m.add(UI(kawa_leczy)).add(v).add(" HP");
+            case upgrade_effect::pickups:   return m.add("+").add(v).add(v == 1 ? UI(znajdzka) : UI(znajdzki));
+            case upgrade_effect::luck:      return m.add("+").add(v).add(UI(szczescia));
+            case upgrade_effect::craft:     return m.add("+").add(v).add(UI(stat_broni));
+            case upgrade_effect::dmg_pct:   return m.add("+").add(v).add(UI(obrazen));
+            case upgrade_effect::taken_pct: return m.add("-").add(v).add(UI(otrzym_obr));
+            case upgrade_effect::crit:      return m.add(UI(kryt)).add(v).add("%");
+            case upgrade_effect::dodge:     return m.add(UI(unik)).add(v).add("%");
+            case upgrade_effect::thermos:   return m.add(UI(termos)).add(v).add(v == 1 ? UI(miejsce) : UI(miejsca));
+            case upgrade_effect::mats_pct:  return m.add(UI(materialy)).add(v).add("%");
+            case upgrade_effect::gear_pct:  return m.add(UI(sprzet_4)).add(v);
+            case upgrade_effect::cash:      return m.add(UI(budzet)).add(v).add(UI(zl));
+            case upgrade_effect::shop_pct:    return m.add(UI(hurtownia)).add(v).add("%");
+            case upgrade_effect::brigade_pct: return m.add(UI(brygada)).add(v).add("%");
+            case upgrade_effect::cooldown:    return m.add(UI(moc)).add(v).add(" t.");
+            case upgrade_effect::first_hit:   return m.add(UI(pierwszy_cios)).add(v);
             default:                        return m;
         }
     }
@@ -1659,16 +1660,16 @@ namespace core
         const mastery_class_def& mc = data::mastery_classes[cls >= 0 && cls < data::classes_count ? cls : 0];
         switch(l.reward)
         {
-            case progress_reward::respect:       return m.add("Respekt +").add(l.value);
-            case progress_reward::title:         return m.add("Tytuł: ").add(l.title);
+            case progress_reward::respect:       return m.add(UI(respekt_2)).add(l.value);
+            case progress_reward::title:         return m.add(UI(tytul)).add(l.title);
             case progress_reward::helmet:        return m.add(data::cosmetics[l.index].name);
-            case progress_reward::story:         return m.add("SMS: ").add(data::story_arc[l.index].name);
-            case progress_reward::decor:         return m.add("Ozdoba: ").add(data::estate_decor[l.index].name);
-            case progress_reward::keepsake_slot: return m.add("Druga pamiątka");
-            case progress_reward::power:         return m.add("Moc: ").add(mc.power_name);
+            case progress_reward::story:         return m.add(UI(sms)).add(data::story_arc[l.index].name);
+            case progress_reward::decor:         return m.add(UI(ozdoba)).add(data::estate_decor[l.index].name);
+            case progress_reward::keepsake_slot: return m.add(UI(druga_pamiatka));
+            case progress_reward::power:         return m.add(UI(moc_4)).add(mc.power_name);
             case progress_reward::weapon:        return m.add(mc.weapon_name);
-            case progress_reward::boon:          return m.add("Premia: ").add(data::boons[mc.boon].name);
-            case progress_reward::keepsake:      return m.add("Pamiątka: ").add(data::keepsakes[l.index].name);   // v0.21.52 cz. c
+            case progress_reward::boon:          return m.add(UI(premia)).add(data::boons[mc.boon].name);
+            case progress_reward::keepsake:      return m.add(UI(pamiatka_2)).add(data::keepsakes[l.index].name);   // v0.21.52 cz. c
             default:                             return m;
         }
     }
@@ -1992,7 +1993,7 @@ namespace core
     {
         const career_def& k = data::career[c];
         bool any = false;
-        if(k.respect > 0) { m.add("Respekt +").add(k.respect); any = true; }
+        if(k.respect > 0) { m.add(UI(respekt_2)).add(k.respect); any = true; }
         if(k.title[0]) { m.add(any ? ", " : "").add(k.title); any = true; }
         if(k.helmet >= 0) m.add(any ? ", " : "").add(data::cosmetics[k.helmet].name);
         return m;
@@ -2004,9 +2005,9 @@ namespace core
         if(k.unlock == career_unlock::wins)
         {
             const int v = k.unlock_value;
-            return m.add(v).add(v == 1 ? " wygrana" : (v % 10 >= 2 && v % 10 <= 4 && (v % 100 < 10 || v % 100 >= 20) ? " wygrane" : " wygranych"));
+            return m.add(v).add(v == 1 ? UI(wygrana) : (v % 10 >= 2 && v % 10 <= 4 && (v % 100 < 10 || v % 100 >= 20) ? UI(wygrane) : UI(wygranych)));
         }
-        if(k.unlock == career_unlock::inspector) return m.add("Inspektor ").add(k.unlock_value);
+        if(k.unlock == career_unlock::inspector) return m.add(UI(inspektor)).add(k.unlock_value);
         return m;
     }
     // v15 -> v16: Dom jednorodzinny z dotychczasowych wygranych (wygrany, gdy była wygrana; najlepszy etap - cała budowa).
@@ -2092,11 +2093,16 @@ namespace core
         }
         return m;
     }
+    // v0.21.53 cz. 2 (#40): język gry z profilu (0 = jeszcze nie wybrano - do czasu wyboru polski).
+    inline void apply_language(const profile& p) { language = p.language == 2 ? 1 : 0; }
+    inline void set_language(profile& p, int lang) { p.language = uint8_t(lang == 1 ? 2 : 1); apply_language(p); }
+
     // v16 -> v17: filtr klasyczny; odblokowane już filtry czekają na baner jak nowe.
     inline void migrate_v17(profile& p)
     {
         p.filter = 0;
         p.filters_seen = 0;
+        p.language = 0;   // v0.21.53 cz. 2 (#40): język do wyboru przy pierwszym starcie
         for(auto& r : p.reserved17) r = 0;
     }
 
@@ -2139,21 +2145,21 @@ namespace core
         }
         if(best >= 0)
         {
-            if(p.respect >= bc) lead.add("Stać Cię (Respekt):");
-            else lead.add("Jeszcze ").add(bc - int(p.respect)).add(" Respektu do:");
+            if(p.respect >= bc) lead.add(UI(stac_cie_respekt));
+            else lead.add(UI(jeszcze)).add(bc - int(p.respect)).add(UI(respektu_do));
             name.add(data::respect[best].name).add(" ").add(roman_numeral(respect_rank(p, best) + 1));
             return true;
         }
         int kind = -1, idx = -1;
         const int cost = next_unlock(p, kind, idx);
         if(cost < 0) return false;
-        if(p.xp >= cost) lead.add("Stać Cię (Szkolenia):");
-        else lead.add("Jeszcze ").add(cost - p.xp).add(" dośw. do:");
+        if(p.xp >= cost) lead.add(UI(stac_cie_szkolenia));
+        else lead.add(UI(jeszcze)).add(cost - p.xp).add(UI(dosw_do));
         if(kind == 0) name.add(data::upgrades[idx].name).add(" ").add(roman_numeral(p.levels[idx] + 1));
         else if(kind == 1) name.add(data::classes[idx].name);
         else if(kind == 2) name.add(data::weapons[data::tools[idx].weapon].name);
         else if(kind == 3) name.add(data::brigade[idx].name);
-        else if(kind == 5) name.add("Drzewko: ").add(data::tree_branches[data::tree_nodes[idx].branch].name);
+        else if(kind == 5) name.add(UI(drzewko)).add(data::tree_branches[data::tree_nodes[idx].branch].name);
         else name.add(data::difficulties[data::difficulties_count - 1].name);
         return true;
     }

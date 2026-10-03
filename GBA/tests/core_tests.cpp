@@ -2668,7 +2668,7 @@ int main()
                         }
                         wins += g.st == status::won; ++runs; drinks += bot_drinks;
                     }
-                std::printf("  %-28s %3d%% (kawa %.2f/budowę)\n", data::weekly[wi].name, wins * 100 / runs, double(drinks) / runs);
+                std::printf("  %-28s %3d%% (kawa %.2f/budowę)\n", data::weekly[wi].name.c_str(), wins * 100 / runs, double(drinks) / runs);
                 CHECK(wins * 100 / runs >= 5);   // do przejścia (cel: 5-40%)
             }
         }
@@ -3591,7 +3591,7 @@ int main()
             std::memset(reinterpret_cast<char*>(&p) + profile_v15_size, 0xCD, sizeof p - profile_v15_size);
             CHECK(profile_fix(p) && std::strcmp(p.magic, profile_magic) == 0 && p.wins == 4 && p.best == 99 && p.streak_best == 3);
             CHECK(p.contract == 0 && p.career_seen == 0 && p.career_done == 1 && p.career_wins[0] == 4 && p.career_wins[1] == 0);
-            CHECK(p.career_best[0] == data::stages_count - data::prelude_stages && p.career_best[5] == 0 && p.reserved17[5] == 0 && p.filter == 0 && p.filters_seen == 0);
+            CHECK(p.career_best[0] == data::stages_count - data::prelude_stages && p.career_best[5] == 0 && p.reserved17[4] == 0 && p.language == 0 && p.filter == 0 && p.filters_seen == 0);
             CHECK(career_announce(p) == 2 + 4 && ! profile_fix(p));   // odblokowane przy migracji - baner jak nowe
             profile z; profile_reset(z); std::memcpy(z.magic, profile_magic_v15, sizeof z.magic);
             CHECK(profile_fix(z) && z.career_done == 0 && z.career_wins[0] == 0);
@@ -3658,9 +3658,9 @@ int main()
         {
             profile v; profile_reset(v); std::memcpy(v.magic, profile_magic_v16, sizeof v.magic);
             v.wins = 7; v.best = 321; v.career_done = 1; v.inspector_xp = uint32_t(progress_floor(data::inspector_levels, 6));
-            v.filter = 0xAB; v.filters_seen = 0x1234; v.reserved17[2] = 0x77;   // śmieci w dawnym wyrównaniu v16
+            v.filter = 0xAB; v.filters_seen = 0x1234; v.language = 0x55; v.reserved17[2] = 0x77;   // śmieci w dawnym wyrównaniu v16
             CHECK(profile_fix(v) && std::strcmp(v.magic, profile_magic) == 0 && v.wins == 7 && v.best == 321 && v.career_done == 1);
-            CHECK(v.filter == 0 && v.filters_seen == 0 && v.reserved17[2] == 0 && selected_filter(v) == 0);
+            CHECK(v.filter == 0 && v.filters_seen == 0 && v.language == 0 && v.reserved17[2] == 0 && selected_filter(v) == 0);
             CHECK(filter_announce(v) == (1 << noir) && ! profile_fix(v));
             profile o; profile_reset(o); o.wins = 2; std::memcpy(o.magic, profile_magic_v15, sizeof o.magic);
             std::memset(reinterpret_cast<char*>(&o) + profile_v15_size, 0xEE, sizeof o - profile_v15_size);
@@ -3743,7 +3743,7 @@ int main()
         }
         class_rate[df][c] = wins * 100 / runs;
         if(c < data::open_classes_count) diff_wins[df] += wins;   // średnie: zawody bez sekretów (porównywalne z v0.21.51 cz. 1)
-        std::printf("%-18s %-9s %6d %6.1f %6ld %8ld\n", data::classes[c].name, data::difficulties[df].name, wins*100/runs, double(stages)/runs, turns/runs, score/runs);
+        std::printf("%-18s %-9s %6d %6.1f %6ld %8ld\n", data::classes[c].name.c_str(), data::difficulties[df].name.c_str(), wins*100/runs, double(stages)/runs, turns/runs, score/runs);
     }
     for(int df=1;df<data::difficulties_count;++df) CHECK(diff_wins[df-1] > diff_wins[df]);   // trudniej = mniej wygranych
     {
@@ -3753,7 +3753,7 @@ int main()
         std::printf("Zawody z sekretów (Normalny):");
         for(int c = data::open_classes_count; c < data::classes_count; ++c)
         {
-            std::printf(" %s %d%%", data::classes[c].name, class_rate[nd][c]);
+            std::printf(" %s %d%%", data::classes[c].name.c_str(), class_rate[nd][c]);
             CHECK(class_rate[nd][c] >= lo && class_rate[nd][c] <= hi);   // inne, nie mocniejsze: w rozrzucie zwykłych zawodów
         }
         std::printf(" (zwykłe %d-%d%%)\n", lo, hi);
@@ -3840,7 +3840,7 @@ int main()
             for(int k = 1; k < data::career_count; ++k)
             {
                 const int a = rate_k(k, none), b = rate_k(k, fullr);
-                std::printf(" %s %d/%d%%", data::career[k].short_name, a, b);
+                std::printf(" %s %d/%d%%", data::career[k].short_name.c_str(), a, b);
                 CHECK(a >= 20 && a <= (data::career[k].count < 10 ? 50 : 42) && b >= 55 && b <= 82);
             }
             std::printf("\n");
@@ -3874,7 +3874,7 @@ int main()
             {
                 const perk p1{ data::keepsakes[k].effect, data::keepsakes[k].values[0] }, p3{ data::keepsakes[k].effect, data::keepsakes[k].values[2] };
                 const int r1 = rate100(base, &p1), r3 = rate100(base, &p3);
-                std::printf(" %s %d/%d%%", data::keepsakes[k].name, r1, r3);
+                std::printf(" %s %d/%d%%", data::keepsakes[k].name.c_str(), r1, r3);
                 if(k == 1) kask = r1; else other_hi = imax(other_hi, r1);
             }
             std::printf("\n");

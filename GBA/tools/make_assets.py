@@ -663,7 +663,7 @@ def centered(d, y, text, font, fill):
     w = d.textlength(text, font=font)
     d.text(((240 - w) / 2, y), text, font=font, fill=fill)
 
-def make_title():
+def make_title(name="title", tagline="Zbuduj dom. Przetrwaj budowę."):   # v0.21.53 cz. 2 (#40): title_en
     im = Image.new("RGB", (240, 160), BRAND_VIOLET)
     d = ImageDraw.Draw(im)
     # "plac budowy": pas ostrzegawczy u dołu
@@ -675,10 +675,10 @@ def make_title():
     im.paste(logo, (80, -6), logo)
     centered(d, 66, "PlanBudowlany", ImageFont.truetype(FONT_SANS_B, 22), (250, 250, 250))
     centered(d, 91, "ROGUELIKE", ImageFont.truetype(FONT_SANS_B, 14), BRAND_ORANGE)
-    centered(d, 109, "Zbuduj dom. Przetrwaj budowę.", ImageFont.truetype(FONT_SANS, 10), (225, 220, 255))
-    screen_bg("title", im)
+    centered(d, 109, tagline, ImageFont.truetype(FONT_SANS, 10), (225, 220, 255))
+    screen_bg(name, im)
 
-def make_end():
+def make_end(name="end", lines=("Zaplanuj prawdziwą", "budowę:")):   # v0.21.53 cz. 2 (#40): end_en
     im = Image.new("RGB", (240, 160), BRAND_VIOLET)
     d = ImageDraw.Draw(im)
     qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=3, border=2)
@@ -689,11 +689,11 @@ def make_end():
     logo = logo_image(40)
     im.paste(logo, (6, 4), logo)
     f = ImageFont.truetype(FONT_SANS_B, 11)
-    d.text((6, 48), "Zaplanuj prawdziwą", font=f, fill=(250, 250, 250))
-    d.text((6, 62), "budowę:", font=f, fill=(250, 250, 250))
+    d.text((6, 48), lines[0], font=f, fill=(250, 250, 250))
+    d.text((6, 62), lines[1], font=f, fill=(250, 250, 250))
     d.text((6, 80), URL, font=ImageFont.truetype(FONT_SANS_B, 10), fill=(255, 255, 255))
     d.rectangle([0, 104, 240, 105], fill=BRAND_ORANGE)
-    screen_bg("end", im)
+    screen_bg(name, im)
     return qr.version, q.size
 
 # Elita (#28): paleta postaci ze złotym obrysem i ciepłym, złotawym odcieniem (sprite problemu zmienia tylko paletę).
@@ -735,7 +735,9 @@ if __name__ == "__main__":
     print("phone tiles:", make_phone())
     make_tiles()
     make_title()
+    make_title("title_en", "Build a house. Survive the build.")
     print("QR version/size:", make_end())
+    make_end("end_en", ("Plan a real", "build:"))
     h = ["// WYGENEROWANE przez tools/make_assets.py - indeksy koloru tła ekranów (gradient HDMA).", "#pragma once", "",
          "namespace screen_info", "{"]
     h += [f"    constexpr int {n}_bg_index = {i};" for n, i in SCREEN_BG_INDEX.items()]
