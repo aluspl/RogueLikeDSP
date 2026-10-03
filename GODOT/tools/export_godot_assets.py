@@ -22,7 +22,9 @@ Co powstaje:
   ui/title.png, ui/end.png   logo z napisem (tytuł) i plansza z kodem QR (koniec), tło przezroczyste
   tiles/stage_N.png          kafle 32x32 etapu N (12 etapów): 4 warianty podłogi, 2 podłogi z cieniem muru,
                              wierzch muru, lico muru, schody, 6 nakładek autokafli muru (krawędzie wierzchu, końce
-                             lica, róg) - rysowane w paletach etapów z GBA, bogatsze niż 8x8 z GBA
+                             lica, róg) - rysowane w paletach etapów z GBA, bogatsze niż 8x8 z GBA;
+                             v0.21.54: tiles/stage_N_wall.png - wysokie lico muru (1,5 pola) w widoku płaskim i 3/4,
+                             tiles/stage_N_34.png - te same kafle ściśnięte do 32x24 (wiersz widoku 3/4)
   fx/shadow.png, fx/danger.png, fx/range.png   cień pod postacią, pole zapowiedzianego ciosu, ramka zasięgu
   fx/mud.png                 błoto aktu I: 3 warianty płaskiej mokrej plamy z połyskiem (pasek 32x96)
   font/glyphs.png, font/glyphs_edge.png, font/font.json
@@ -778,7 +780,80 @@ def make_stage_tiles(i):
     for k, c in enumerate(cells):
         sheet.paste(c.im, (k * 32, 0))
     save(sheet, "tiles/stage_%d.png" % i)
+    save(make_tall_walls(wall, col), "tiles/stage_%d_wall.png" % i)   # v0.21.54 (#62): wysokie lico muru
+    save(squash_rows(sheet, ROW_34), "tiles/stage_%d_34.png" % i)      # v0.21.54 (#63): kafle widoku 3/4
     return col
+
+
+# ------------------------------------------------------------------ v0.21.54: wyższe ściany (#62) i widok 3/4 (#63)
+# Mur to bryła o wysokości 1,5 pola: wierzch (kafel 6 z nakładkami 9-14) rysowany 1,5 pola wyżej niż podstawa, a pod
+# nim wysokie lico. stage_N_wall.png (192x48): kolumny 0-2 lico widoku płaskiego (48 px: lico, jasny lewy koniec,
+# ciemny prawy koniec), 3-5 to samo dla widoku 3/4 (36 px, wyrównane do góry). Światło z lewej góry: najjaśniejsze
+# załamanie wierzch / lico u góry, lico ciemnieje ku podłodze, u dołu cień styku. Wzór materiału wyrównany do dołu
+# (podstawa lica jak dawne lico w polu muru). stage_N_34.png: wszystkie kafle etapu ściśnięte do 32x24 (wiersz widoku
+# 3/4) przez pominięcie co czwartego wiersza pikseli - bez rozmycia, ostre piksele.
+WALL_FACE_FLAT = 48   # lico w widoku płaskim (pole 32 px) - 1,5 pola
+ROW_34 = 24           # wysokość wiersza mapy w widoku 3/4
+WALL_FACE_34 = 36     # lico w widoku 3/4 - 1,5 wiersza
+
+
+def make_tall_face(wall, col, h):
+    edge = mix(col["light"], (255, 255, 255), 0.25)
+    im = Image.new("RGBA", (32, h), TRANSPARENT)
+    px = im.load()
+    for y in range(h):
+        f = (y - 2) / float(h - 3)
+        for x in range(32):
+            v = wall.get(x, (y + 32 - h % 32) % 32)
+            if y == 0:
+                v = edge
+            elif y == 1:
+                v = mix(col["light"], col["wall"], 0.45)
+            elif y >= h - 1:
+                v = shade(col["shadow"], 0.7)
+            elif y >= h - 3:
+                v = mix(v, col["shadow"], 0.55 if y == h - 2 else 0.35)
+            elif f < 0.5:
+                v = mix(v, col["light"], 0.12 * (1 - 2 * f))
+            else:
+                v = mix(v, col["shadow"], (f - 0.5) * 0.6)
+            px[x, y] = tuple(v) + (255,)
+    return im
+
+
+def make_tall_ends(col, h):
+    lt = mix(col["light"], (255, 255, 255), 0.3)
+    dk = shade(col["shadow"], 0.6)
+    left = Image.new("RGBA", (32, h), TRANSPARENT)
+    right = Image.new("RGBA", (32, h), TRANSPARENT)
+    pl, pr = left.load(), right.load()
+    for y in range(1, h):
+        pl[0, y] = lt + (170,)
+        pl[1, y] = lt + (70,)
+        pr[31, y] = dk + (230,)
+        pr[30, y] = dk + (140,)
+        pr[29, y] = dk + (60,)
+    return left, right
+
+
+def make_tall_walls(wall, col):
+    sheet = Image.new("RGBA", (32 * 6, WALL_FACE_FLAT), TRANSPARENT)
+    for k, h in enumerate((WALL_FACE_FLAT, WALL_FACE_34)):
+        left, right = make_tall_ends(col, h)
+        for j, im in enumerate((make_tall_face(wall, col, h), left, right)):
+            sheet.paste(im, ((k * 3 + j) * 32, 0))
+    return sheet
+
+
+def squash_rows(sheet, rows):
+    """Pasek kafli 32x32 -> 32 x rows: wiersz y bierze wiersz źródła (y + 0,5) * 32 / rows (bez filtrowania)."""
+    out = Image.new("RGBA", (sheet.width, rows), TRANSPARENT)
+    src, dst = sheet.load(), out.load()
+    for y in range(rows):
+        sy = int((y + 0.5) * 32 / rows)
+        for x in range(sheet.width):
+            dst[x, y] = src[x, sy]
+    return out
 
 
 def make_fx(danger):
