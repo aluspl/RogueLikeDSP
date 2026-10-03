@@ -4,12 +4,25 @@ Wersja Godot gry z demo GBA (`../GBA`): roguelike budowlany, w którym etapy bud
 a wrogami są *problemy budowy*. Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KONCEPCJA.md)
 (telefon z aplikacją PlanBudowlany jako interfejs, oprawa 2.5D – kolejne kamienie milowe).
 
-**Stan: zgodny z GBA v0.21.52 cz. c (drzewko Szkoleń, kolekcje, zadania dnia i tygodnia, seria dni: rdzeń, test złoty i ekrany), cz. b (inspektor, mistrzostwo, stopnie inwestora), cz. a (tempo postępu), wcześniej v0.21.51 cz. 2 (sekretne zlecenia), v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
+**Stan: zgodny z GBA v0.21.52 cz. d (mapa kariery: rdzeń, test złoty i ekrany), cz. c (drzewko Szkoleń, kolekcje, zadania dnia i tygodnia, seria dni), cz. b (inspektor, mistrzostwo, stopnie inwestora), cz. a (tempo postępu), wcześniej v0.21.51 cz. 2 (sekretne zlecenia), v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
 z pieczątkami i Decyzją odmowną, samouczek menu, profil v10; wcześniej 10 etapów, 20 nowych problemów
 z zachowaniami, mechaniki aktów, opis statystyk; Respekt za etapy i sklep Respektu,
 nagrody za odbiór – Młot udarowy, Pistolet do kotew, buty, pas, zawody Dekarz, Tynkarz, Operator koparki – nowy balans
 Szkoleń, profil v8; wcześniej wybór ścieżki, materiały, codzienna budowa, pogoda, brygada, tryb inwestora);
 oprawa (grafika, font, dźwięk, telefon, wybór zawodu) jak w GBA.
+
+Nowe w v0.21.52 cz. d (#47): **mapa kariery** – kontrakty `GameData.Career` (`CareerDef`: pierwszy etap w `Stages`, liczba,
+Akt 0, odblokowanie `CareerUnlock` – wygrane / poziom inspektora, porywy, bliźniak, boss, nagroda) z własnymi etapami
+(`StageDef.Look` – paleta `tiles/stage_N.png` 0–21, `Tiles`, `Twin`; `GameData.StagesCount` = Dom jednorodzinny), `Game.Contract`
+i `Game.Career` (`SDef`, `RouteCount`, `PreludeCount`, `StageId`, `MechValue` – Dom z poddaszem: porywy co 4 tury), bliźniak w
+`StartStage` (`TwinCarry`: pogoda, wydarzenie i do 3 niedokończonych problemów z pierwszej połowy), `Career` (odblokowanie,
+wybór, ogłoszenie, najlepszy etap, pierwsza wygrana: Respekt, tytuł – źródło 5, kask; `MigrateV16`), profil v16 (`PBRL016`),
+zapis budowy z kontraktem na końcu (`RunSave.V15Tail` – stary zapis wczytuje się jako Dom). Ekrany: **Mapa kariery**
+(`CareerScreen` / `CareerPage`: po pierwszej budowie Nowa budowa na tytule; Spacja / drugie stuknięcie wybiera, Esc z wyboru
+zawodu wraca do mapy), karta etapu z nazwą kontraktu, banery Wspólna ściana, Wygrany kontrakt i Nowy kontrakt, Jak grać
+str. 11; eksport klatek 184–195 i kafli wyglądów 12–21 (nowe rodzaje: parkiet, bale, kamień, sztukateria). Testy:
+`CareerTests`, test złoty 74 przebiegi (każdy kontrakt). Sceny zrzutów (`Debug/CareerStaging`): `career`, `career-locked`,
+`career-letnisko`, `career-blizniak`, `career-poddasze`, `career-kamienica`, `career-end`, `help-career`.
 
 Nowe w v0.21.52 cz. c (#46, #49, #50, #51): **drzewko Szkoleń** (`SkillTree`: gałęzie `TreeBranch` z pniem = Szkolenia,
 węzły `TreeNode` z opcjami `TreeOption`, `Choose` – pierwszy wybór za koszt, zmiana za `TreeRespecCost`; Siła rozpędu –
@@ -54,7 +67,7 @@ z paskami (najbliższe Szkolenie – dośw./koszt albo „Stać Cię!”; mistrz
 test dymny wyboru tytułu. Test małpy spędza mniej czasu w Ustawieniach; seria pion + dotyk znalazła i poprawiono błąd
 marszu po dotknięciu (`AutoWalk`).
 
-Nowe w v0.21.51 (poprawki po graniu na iPhonie): **autokafle muru (#36)** – eksport generuje dla palety każdego etapu
+Nowe w v0.21.51 (poprawki po graniu na iPhonie; wydane razem z v0.21.52): **autokafle muru (#36)** – eksport generuje dla palety każdego etapu
 wierzch masy muru, lico i 6 nakładek (krawędź wierzchu góra / lewa / prawa, końce lica, róg wewnętrzny), `MapLayer`
 dobiera je wg sąsiadów (mur z murem poniżej = ciemny wierzch bez pasów, z podłogą poniżej = lico z wzorem), `FogLayer`
 wygasza skraj odkrytej części w ciemność (bez schodków; od cz. 2 pikselowo – patrz niżej); **błoto (#37)** co 14. pole
@@ -66,7 +79,7 @@ wjazdu telefonu – Main połyka wciśnięcia i dotknięcia), zamiana ulepszoneg
 „Zostaję”); Jak grać – wiersz „Okna”. Test dymny: A / Enter / stuknięcie w kartę tuż po otwarciu premii nic nie robi,
 po blokadzie pierwsze stuknięcie tylko zaznacza; A przy zamianie narzędzia bez zaznaczenia zostawia ulepszenie.
 
-Nowe w v0.21.51 cz. 2 (sekretne zlecenia #39, warstwa Godota): eksport klatek 127–159 z GBA (Spawacz, Geodeta, Majster
+Nowe w v0.21.51 cz. 2 (sekretne zlecenia #39, warstwa Godota; wydane razem z v0.21.52): eksport klatek 127–159 z GBA (Spawacz, Geodeta, Majster
 z chodem i oddechem, sylwetki, kask w paski dla 12 zawodów; `Assets.AnimB` / `HasWalk` / `Silhouette` / `HeroFrame`),
 ikony mocy, narzędzi i wyglądu. Profil > Odznaki – czwarta strona **Sekrety** (Spacja / przycisk zmienia stronę): koperta
 z „???” i podpowiedzią, po wykonaniu warunek i nagroda z ikoną (zawód – mały portret). Sesja sprawdza sekrety po etapie,
@@ -417,7 +430,7 @@ z cechami, dziennik bajt po bajcie, wydarzenie na placu, liczniki zleceń, staty
 (pola i cały zapis bajt po bajcie jak w SRAM).
 `GoldenTests` odtwarza to samo w C# i porównuje pole po polu.
 
-Odtworzenie plików (z tej samej wersji nagłówków GBA co `golden/game.json`; obecnie migawka v0.21.51 (wcześniej v0.21.49 cz. 2) – 10 etapów,
+Odtworzenie plików (z tej samej wersji nagłówków GBA co `golden/game.json`; obecnie migawka v0.21.52 cz. d (wcześniej v0.21.51, v0.21.49 cz. 2) – 10 etapów,
 zachowania problemów, mechaniki aktów, bot omija błoto i czerwone pola wybuchu – 37 przebiegów (w tym nowe zawody, pełny Respekt, nagrody za odbiór, Druga szansa) – bot „smart”
 wzywa też brygadę, dwa przebiegi z trybem inwestora,
 np. `git show d02ba811:GBA/...` rozpakowane do osobnego katalogu `<gba_v43>`):
