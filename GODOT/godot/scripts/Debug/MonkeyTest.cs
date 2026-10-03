@@ -77,6 +77,11 @@ public sealed class MonkeyTest
             s.Profile.Rewards = (byte)d.Rewards.Length;
         }
         s.Profile.SetFlag(Profile.FlagPrologueSeen | Profile.FlagHelpSeen);
+        // v0.21.53: losowy filtr ekranu (zablokowany działa jak klasyczny), filtr na telefonie i ograniczony ruch
+        Settings.GameSettings.Filter = s.Data.ScreenFilters[_rng.RandiRange(0, s.Data.ScreenFilters.Length - 1)].Id;
+        Settings.GameSettings.FilterPhone = _rng.Randf() < 0.7f;
+        Settings.GameSettings.ReduceMotion = _rng.Randf() < 0.3f;
+        Settings.GameSettings.Save();
         _app.Flow.Title.Open();
         var fail = "";
         var step = 0;

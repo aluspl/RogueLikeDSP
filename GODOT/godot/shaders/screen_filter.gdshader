@@ -4,7 +4,7 @@
 // 2 Retro LCD (4 odcienie zieleni z ditheringiem Bayera i kratką pikseli UI),
 // 3 Neon nocy (róż i błękit, przesunięcie kanałów, linie, poświata jasnych miejsc, rzadkie drgnięcie taśmy),
 // 4 Kwas (obrót barwy w czasie i po ekranie, falowanie, rozlana barwa),
-// 5-7 daltonizacja (Protanopia, Deuteranopia, Tritanopia: błąd symulacji LMS przeniesiony na widoczne kanały),
+// 5-7 daltonizacja (Protanopia, Deuteranopia, Tritanopia: błąd symulacji wady przeniesiony na widoczne kanały),
 // 8 Wysoki kontrast (nasycenie, krzywa kontrastu, ciemniejsze tło).
 // motion = false (ograniczony ruch): bez falowania, drgnięć i animacji ziarna / barwy.
 shader_type canvas_item;
@@ -28,20 +28,19 @@ vec3 hue_rot(vec3 c, float a) {
 	return c * ca + cross(k, c) * sin(a) + k * dot(k, c) * (1.0 - ca);
 }
 
+// Daltonizacja: symulacja wady macierzą Machado 2009 (pełna wada), błąd e = c - S c przeniesiony na widoczne kanały
+// (jak GBA/include/screen_filter.h): protanopia – do niebieskiego, deuteranopia – do zieleni i niebieskiego (x1.4),
+// tritanopia – na oś czerwień-zieleń; potem lekki kontrast.
 vec3 daltonize(vec3 c, int m) {
-	vec3 lms = vec3(17.8824 * c.r + 43.5161 * c.g + 4.11935 * c.b,
-					3.45565 * c.r + 27.1554 * c.g + 3.86714 * c.b,
-					0.0299566 * c.r + 0.184309 * c.g + 1.46709 * c.b);
-	vec3 s = lms;
-	if (m == 5) s.x = 2.02344 * lms.y - 2.52581 * lms.z;
-	else if (m == 6) s.y = 0.494207 * lms.x + 1.24827 * lms.z;
-	else s.z = -0.395913 * lms.x + 0.801109 * lms.y;
-	vec3 sim = vec3(0.0809444479 * s.x - 0.130504409 * s.y + 0.116721066 * s.z,
-					-0.0102485335 * s.x + 0.0540193266 * s.y - 0.113614708 * s.z,
-					-0.000365296938 * s.x - 0.00412161469 * s.y + 0.693511405 * s.z);
-	vec3 e = c - sim;
-	vec3 corr = m == 7 ? vec3(e.r + 0.7 * e.b, e.g + 0.7 * e.b, 0.0) : vec3(0.0, 0.7 * e.r + e.g, 0.7 * e.r + e.b);
-	vec3 o = clamp(c + corr * 1.4, 0.0, 1.0);
+	vec3 s;
+	if (m == 5) s = vec3(dot(vec3(0.152286, 1.052583, -0.204868), c), dot(vec3(0.114503, 0.786281, 0.099216), c), dot(vec3(-0.003882, -0.048116, 1.051998), c));
+	else if (m == 6) s = vec3(dot(vec3(0.367322, 0.860646, -0.227968), c), dot(vec3(0.280085, 0.672501, 0.047413), c), dot(vec3(-0.011820, 0.042940, 0.968881), c));
+	else s = vec3(dot(vec3(1.255528, -0.076749, -0.178779), c), dot(vec3(-0.078411, 0.930809, 0.147602), c), dot(vec3(0.004733, 0.691367, 0.303900), c));
+	vec3 e = c - s;
+	vec3 corr = m == 5 ? vec3(e.r, e.g, 0.7 * e.r + 0.7 * e.g)
+			  : m == 6 ? 1.4 * vec3(0.0, 0.7 * e.r + e.g, 0.7 * e.r + e.b)
+			  : vec3(0.5 * e.b, -0.5 * e.b, 0.0);
+	vec3 o = clamp(c + corr, 0.0, 1.0);
 	return clamp((o - 0.5) * 1.08 + 0.5, 0.0, 1.0);
 }
 

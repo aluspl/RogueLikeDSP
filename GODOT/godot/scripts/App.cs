@@ -23,6 +23,7 @@ public sealed class App
         Nodes = new SceneNodes(root, sound, d.Version);
         Nodes.World.Bind(Session.Game);
         Nodes.World.ProfileSource = () => Session.Profile;
+        Gfx.ScreenFilter.Changed += () => Nodes.Phone.QueueRedraw(); // wzory (litery rzadkości) zależą od filtra
         Nodes.Filter.Source = () => (Session.Data, Session.Profile);
         Nodes.Touch.Bind(Session.Game);
         Banners = new BannerFeed(Session, Nodes.Banners);

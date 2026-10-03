@@ -22,7 +22,17 @@ public partial class ScreenFilter : CanvasLayer
     private ShaderMaterial _mat;
 
     /// <summary>Dane i profil (odblokowanie); bez nich – zawsze klasyczny.</summary>
-    public Func<(GameData Data, Profile Profile)> Source { get; set; }
+    public Func<(GameData Data, Profile Profile)> Source
+    {
+        get => _source;
+        set
+        {
+            _source = value;
+            if (_mat is not null) Apply();
+        }
+    }
+
+    private Func<(GameData Data, Profile Profile)> _source;
 
     /// <summary>Aktywny filtr (indeks w GameData.ScreenFilters, 0 = klasyczny).</summary>
     public int Active { get; private set; }
