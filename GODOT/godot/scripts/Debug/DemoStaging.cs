@@ -231,6 +231,42 @@ public sealed class DemoStaging
     }
 
     /// <summary>
+    /// v0.21.53: jedna scena do porównania filtrów ekranu – czerwone pola wybuchu obok bohatera, dwie elity (złota ramka),
+    /// zwykły problem, stany nad problemami (mokry, zapylony, zmrożony), bohater ranny, zatruty i mokry (HUD).
+    /// </summary>
+    public void FilterShowcase()
+    {
+        var g = G;
+        ClearAround(-3, -3, 3, 3);
+        g.EnemiesCount = 0;
+        g.PickupsCount = 0;
+        int Trait(LifeLike.Core.Data.EliteEffect e) => Array.FindIndex(g.D.Elites, t => t.Effect == e);
+        Place("przeciek", 2, 0, 0, 30);
+        if (g.EnemiesCount > 0)
+        {
+            g.MakeElite(g.EnemiesCount - 1, Trait(LifeLike.Core.Data.EliteEffect.Shield));
+            g.Enemies[g.EnemiesCount - 1].Wet = 3;
+        }
+        Place("plesn", -2, 2, 0, 30);
+        if (g.EnemiesCount > 1)
+        {
+            g.MakeElite(g.EnemiesCount - 1, Trait(LifeLike.Core.Data.EliteEffect.Regen));
+            g.Enemies[g.EnemiesCount - 1].Flags = (byte)(g.Enemies[g.EnemiesCount - 1].Flags | LifeLike.Core.ActorFlag.Dusty);
+        }
+        Place("kornik", 2, -2, 0, 30);
+        if (g.EnemiesCount > 2) g.Enemies[g.EnemiesCount - 1].Flags = (byte)(g.Enemies[g.EnemiesCount - 1].Flags | LifeLike.Core.ActorFlag.Frozen);
+        g.BlastX = (sbyte)(g.Hero.X - 1);
+        g.BlastY = (sbyte)(g.Hero.Y - 2);
+        g.BlastTimer = 2;
+        g.Hero.Hp = (short)Math.Max(1, g.Hero.MaxHp / 3);
+        g.ApplyStatus(LifeLike.Core.Data.StatusEffect.Poison, 3);
+        g.SoakHero();
+        g.UpdateFov();
+        _app.Nodes.World.Sync();
+        _app.Refresh();
+    }
+
+    /// <summary>
     /// Pokaz kombinacji stanów: 0 mokry + prąd (Elektryk, Przeciek i mokry Kornik obok), 1 pył + iskra (Glazurnik,
     /// zapyleni obok), 2 zamróz + uderzenie (zmrożony obok); jeden cios bohatera i efekt na mapie.
     /// </summary>

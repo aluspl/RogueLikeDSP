@@ -35,7 +35,19 @@ public sealed class HelpPage : PhonePage
         ("Okna", "dotknij = zaznacz; Wybierz: prawo, Wróć: lewo"),   // v0.21.51: ten sam układ w każdym oknie
     ];
 
-    private const int Pages = 11; // v0.21.52 cz. b: strona 9 – inspektor i mistrzostwo; cz. c: strona 10 – drzewko, kolekcje, zadania, seria; cz. d: 11 – mapa kariery
+    private const int Pages = 12; // v0.21.52 cz. b: strona 9 – inspektor i mistrzostwo; cz. c: strona 10 – drzewko, kolekcje, zadania, seria; cz. d: 11 – mapa kariery; v0.21.53: 12 – filtry ekranu
+
+    /// <summary>v0.21.53: strona filtrów ekranu (indeks od 0).</summary>
+    public const int FiltersPage = 11;
+
+    /// <summary>v0.21.53: gdzie filtry ekranu i co robią wzory.</summary>
+    private static readonly string[] FiltersWhereLines =
+    [
+        "Ustawienia (klucz) > Filtr ekranu",
+        "Wybór zawodu > Tab: Wygląd",
+        "Siła efektu, telefon, ograniczony ruch",
+        "Wzory: paski na polach ciosu, litery Z/R/L",
+    ];
 
     /// <summary>v0.21.52 cz. c: gdzie drzewko, kolekcje, zadania dnia i seria dni.</summary>
     private static readonly string[] GoalsWhereLines =
@@ -108,6 +120,21 @@ public sealed class HelpPage : PhonePage
         if (_page == 4)
         {
             DrawList(p, "KOMBINACJE STANÓW", ComboLines(_d), "SKĄD STANY, PREMIE, ELITY", ComboWhereLines(_d));
+            return;
+        }
+        if (_page == FiltersPage) // v0.21.53: filtry ekranu i tryby dla daltonistów
+        {
+            var fwidth = (int)(p.Right - 6 - p.Left - 12);
+            var flines = p.F.Wrap(string.Join(" ", _d.FiltersHelpLines).Replace("Filtry ekranu: wybór zawodu > SELECT: Wygląd (Godot: klucz). ", ""), fwidth);
+            var fc = p.Card(p.Section(p.Top, "FILTRY EKRANU"), flines.Count);
+            var fx = p.TextX(fc);
+            for (var i = 0; i < flines.Count; i++) p.Text(fx, p.RowY(fc, i), flines[i], Ink.Dark, TextAlign.Left, fc.End.X - 6 - fx);
+            var fc2 = p.Card(p.Section(fc.End.Y + 6, "GDZIE"), FiltersWhereLines.Length);
+            for (var i = 0; i < FiltersWhereLines.Length; i++)
+            {
+                if (i > 0) p.Divider(fc2, i);
+                p.Text(fx, p.RowY(fc2, i), FiltersWhereLines[i], Ink.Dim, TextAlign.Left, fc2.End.X - 6 - fx);
+            }
             return;
         }
         if (_page == 10) // v0.21.52 cz. d (#47): mapa kariery

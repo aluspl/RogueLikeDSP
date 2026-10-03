@@ -35,6 +35,7 @@ public sealed class DebugScenes
         .. SecretStaging.Names,
         .. GoalsStaging.Names,
         .. CareerStaging.Names,
+        .. FilterStaging.Names,
     ];
 
     private readonly App _app;
@@ -43,6 +44,7 @@ public sealed class DebugScenes
     private readonly SecretStaging _secrets;
     private readonly GoalsStaging _goals;
     private readonly CareerStaging _career;
+    private readonly FilterStaging _filters;
 
     public DebugScenes(App app)
     {
@@ -52,6 +54,7 @@ public sealed class DebugScenes
         _secrets = new SecretStaging(app);
         _goals = new GoalsStaging(app);
         _career = new CareerStaging(app);
+        _filters = new FilterStaging(app);
     }
 
     private ScreenFlow Flow => _app.Flow;
@@ -68,6 +71,12 @@ public sealed class DebugScenes
     public async Task Setup(string scene)
     {
         var s = _app.Session;
+        if (scene == "filter-boon") scene = "boon-pick"; // v0.21.53: oferta premii w filtrze (litery rzadkości)
+        if (FilterStaging.Handles(scene)) // v0.21.53: filtry ekranu
+        {
+            await _filters.Setup(scene);
+            return;
+        }
         if (RecapStaging.Handles(scene)) // v0.21.50 cz. 4: podsumowanie, wyzwanie tygodnia, fabuła
         {
             await _recap.Setup(scene);

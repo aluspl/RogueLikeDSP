@@ -9,6 +9,7 @@ public enum SettingsRow
     Controls,
     Hand,
     Text,
+    Filter,
     Help,
     SaveExit,
     Abandon,

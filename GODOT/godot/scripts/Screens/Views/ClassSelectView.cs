@@ -340,7 +340,8 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         if (!Meta.InvestorUnlocked(_p)) // v0.21.52: przed pierwszą wygraną – sam wygląd (kolor kasku)
         {
             var hk = Secrets.HelmetCosmetic(_d, _p, Selected);
-            return hk >= 0 ? _d.Cosmetics[hk].Name : "kask zawodu";
+            if (hk >= 0) return _d.Cosmetics[hk].Name;
+            return Secrets.HelmetsUnlocked(_d, _p) > 0 ? "kask zawodu" : "filtr " + _d.ScreenFilters[ScreenFilter.Resolve(_d, _p)].Name; // v0.21.53
         }
         return $"stawka {Investor.Stake(_d, Meta.InvestorMask(_d, _p))}, rekord {Meta.BestStake(_p, Selected)}";
     }

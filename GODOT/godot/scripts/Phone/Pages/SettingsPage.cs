@@ -4,6 +4,8 @@ using Godot;
 using LifeLike.Game.Audio;
 using LifeLike.Game.Gfx;
 using LifeLike.Game.Input;
+using LifeLike.Core;
+using LifeLike.Core.Data;
 using LifeLike.Game.Settings;
 
 namespace LifeLike.Game.Phone.Pages;
@@ -11,7 +13,8 @@ namespace LifeLike.Game.Phone.Pages;
 /// <summary>
 /// Ustawienia w stylu aplikacji PlanBudowlany (klucz w rogu ekranu, Esc): głośność muzyki i dźwięków, wibracje,
 /// sterowanie dotykiem (gesty + pasek / gałka), ręka paska akcji, wielkość tekstu, Jak grać, w trakcie budowy
-/// Zapisz i wyjdź oraz Porzuć budowę (z potwierdzeniem), wersja gry i link planbudowlany.online.
+/// Zapisz i wyjdź oraz Porzuć budowę (z potwierdzeniem), wersja gry i link planbudowlany.online. v0.21.53: Filtr ekranu
+/// (lewo/prawo – kolejny odblokowany, Spacja – lista filtrów); gdy wiersze się nie mieszczą – jedna przewijana lista.
 /// Strzałki: wiersz i wartość, Spacja: wykonaj; dotyk: wiersz albo przyciski -/+. Otwarcie nie zużywa tury.
 /// </summary>
 public sealed class SettingsPage : PhonePage
@@ -21,15 +24,22 @@ public sealed class SettingsPage : PhonePage
 
     private readonly bool _inRun;
     private readonly string _version;
+    private readonly GameData _d;
+    private readonly Profile _p;
+    private int _top;
     private readonly List<SettingsRow> _rows = new();
     private int _sel;
     private bool _confirm;
 
-    public SettingsPage(bool inRun, string version)
+    public SettingsPage(bool inRun, string version, GameData d = null, Profile p = null)
     {
         _inRun = inRun;
         _version = version;
-        _rows.AddRange([SettingsRow.Music, SettingsRow.Sound, SettingsRow.Vibration, SettingsRow.Controls, SettingsRow.Hand, SettingsRow.Text, SettingsRow.Help]);
+        _d = d;
+        _p = p;
+        _rows.AddRange([SettingsRow.Music, SettingsRow.Sound, SettingsRow.Vibration, SettingsRow.Controls, SettingsRow.Hand, SettingsRow.Text]);
+        if (d is not null) _rows.Add(SettingsRow.Filter); // v0.21.53: filtr ekranu
+        _rows.Add(SettingsRow.Help);
         if (inRun) _rows.AddRange([SettingsRow.SaveExit, SettingsRow.Abandon]);
         _rows.Add(SettingsRow.Link);
     }
@@ -43,6 +53,9 @@ public sealed class SettingsPage : PhonePage
     public override bool Closable => true;
 
     public SettingsRow Selected => _rows[_sel];
+
+    /// <summary>Zaznacza wiersz (powrót z listy filtrów).</summary>
+    public void SelectRow(SettingsRow row) => _sel = Math.Max(0, _rows.IndexOf(row));
 
     public override bool Input(InputCmd e)
     {
@@ -95,6 +108,11 @@ public sealed class SettingsPage : PhonePage
             case SettingsRow.Text:
                 Toggle(row);
                 return;
+            case SettingsRow.Filter: // lewo/prawo: kolejny odblokowany filtr
+                ScreenFilter.Select(_d, ScreenFilters.Next(_d, _p, ScreenFilter.Resolve(_d, _p), d));
+                Sfx.Play("menu");
+                Redraw();
+                return;
             default:
                 return;
         }
@@ -144,6 +162,7 @@ public sealed class SettingsPage : PhonePage
                 Redraw();
                 return;
             case SettingsRow.Help:
+            case SettingsRow.Filter:
             case SettingsRow.SaveExit:
             case SettingsRow.Abandon:
                 _confirm = false;
@@ -157,6 +176,17 @@ public sealed class SettingsPage : PhonePage
 
     public override void Draw(PhonePainter p)
     {
+        var rh = PhonePainter.RowH;
+        if (3 * rh + _rows.Count * rh + 4 * 8 + 3 * 4 > p.Bottom - p.Top) // za mało miejsca (poziomo w budowie): jedna przewijana lista
+        {
+            var window = Math.Max(3, (int)((p.Bottom - p.Top - 8) / rh));
+            if (_sel < _top) _top = _sel;
+            if (_sel >= _top + window) _top = _sel - window + 1;
+            _top = Math.Clamp(_top, 0, Math.Max(0, _rows.Count - window));
+            var shown = Math.Min(window, _rows.Count);
+            DrawRows(p, p.Card(p.Top, shown), _top, shown);
+            return;
+        }
         var y = p.Section(p.Top, "DŹWIĘK");
         y = Group(p, y, 0, 3) + 4;
         y = p.Section(y, "STEROWANIE");
@@ -167,9 +197,10 @@ public sealed class SettingsPage : PhonePage
         Group(p, y, _rows.Count - 1, 1);
     }
 
-    private float Group(PhonePainter p, float y, int from, int count)
+    private float Group(PhonePainter p, float y, int from, int count) => DrawRows(p, p.Card(y, count), from, count);
+
+    private float DrawRows(PhonePainter p, Rect2 card, int from, int count)
     {
-        var card = p.Card(y, count);
         var tx = p.TextX(card);
         var right = card.End.X - 6;
         for (var k = 0; k < count; k++)
@@ -223,6 +254,8 @@ public sealed class SettingsPage : PhonePage
         SettingsRow.Controls => ("Sterowanie", GameSettings.Controls == ControlScheme.Swipe ? "Gesty + pasek" : "Gałka + pasek", PillKind.Group),
         SettingsRow.Hand => ("Pasek akcji", GameSettings.LeftHanded ? "Lewa ręka" : "Prawa ręka", PillKind.Group),
         SettingsRow.Text => ("Tekst", GameSettings.LargeText ? "Duży" : "Normalny", GameSettings.LargeText ? PillKind.Brand : PillKind.Group),
+        SettingsRow.Filter => ("Filtr ekranu", _d.ScreenFilters[ScreenFilter.Resolve(_d, _p)].Short,
+            ScreenFilter.Resolve(_d, _p) > 0 ? PillKind.Done : PillKind.Gray),
         SettingsRow.Help => ("Jak grać", "", PillKind.Gray),
         SettingsRow.SaveExit => ("Zapisz i wyjdź", "", PillKind.Gray),
         SettingsRow.Abandon => (_confirm ? "Na pewno porzucić? Jeszcze raz" : "Porzuć budowę", _confirm ? "Tak" : "", PillKind.Late),

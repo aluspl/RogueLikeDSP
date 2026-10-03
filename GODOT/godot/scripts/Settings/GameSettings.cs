@@ -5,7 +5,7 @@ namespace LifeLike.Game.Settings;
 
 /// <summary>
 /// Ustawienia gry (klucz w rogu ekranu): głośność muzyki i dźwięków, wibracje, sterowanie dotykiem, ręka paska
-/// akcji, wielkość tekstu. Zapis w user://settings.cfg (ConfigFile) - osobno od profilu gracza (profile.sav).
+/// akcji, wielkość tekstu, filtr ekranu (v0.21.53: siła, telefon, ograniczony ruch). Zapis w user://settings.cfg (ConfigFile) - osobno od profilu gracza (profile.sav).
 /// Test dymny i zrzuty nie czytają ani nie zapisują pliku (Persist = false).
 /// </summary>
 public static class GameSettings
@@ -23,6 +23,15 @@ public static class GameSettings
     public static bool LeftHanded { get; set; }
     /// <summary>Duży tekst: większa skala całkowita interfejsu, gdy ekran na to pozwala.</summary>
     public static bool LargeText { get; set; }
+    /// <summary>v0.21.53: filtr ekranu (id z GameData.ScreenFilters; zablokowany w profilu = klasyczny).</summary>
+    public static string Filter { get; set; } = "klasyczny";
+    /// <summary>Siła filtra: 1..FilterSteps (10 = pełny efekt).</summary>
+    public static int FilterStrength { get; set; } = FilterSteps;
+    /// <summary>Filtr także na telefonie, banerach i dymkach (wył. = tylko mapa, HUD i plansze).</summary>
+    public static bool FilterPhone { get; set; } = true;
+    /// <summary>Ograniczony ruch: bez falowania, drgnięć taśmy i animowanego ziarna / barwy.</summary>
+    public static bool ReduceMotion { get; set; }
+    public const int FilterSteps = 10;
     public static bool Persist { get; set; }
 
     /// <summary>Po każdej zmianie (głośność muzyki, skala, pasek akcji).</summary>
@@ -42,6 +51,10 @@ public static class GameSettings
         Controls = (int)cfg.GetValue(Section, "controls", (int)Controls) == 1 ? ControlScheme.Joystick : ControlScheme.Swipe;
         LeftHanded = (bool)cfg.GetValue(Section, "left_handed", LeftHanded);
         LargeText = (bool)cfg.GetValue(Section, "large_text", LargeText);
+        Filter = (string)cfg.GetValue(Section, "filter", Filter);
+        FilterStrength = Mathf.Clamp((int)cfg.GetValue(Section, "filter_strength", FilterStrength), 1, FilterSteps);
+        FilterPhone = (bool)cfg.GetValue(Section, "filter_phone", FilterPhone);
+        ReduceMotion = (bool)cfg.GetValue(Section, "reduce_motion", ReduceMotion);
     }
 
     /// <summary>Zapis (gdy Persist) i powiadomienie obserwatorów.</summary>
@@ -56,6 +69,10 @@ public static class GameSettings
             cfg.SetValue(Section, "controls", (int)Controls);
             cfg.SetValue(Section, "left_handed", LeftHanded);
             cfg.SetValue(Section, "large_text", LargeText);
+            cfg.SetValue(Section, "filter", Filter);
+            cfg.SetValue(Section, "filter_strength", FilterStrength);
+            cfg.SetValue(Section, "filter_phone", FilterPhone);
+            cfg.SetValue(Section, "reduce_motion", ReduceMotion);
             cfg.Save(Path);
         }
         Changed?.Invoke();

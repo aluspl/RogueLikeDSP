@@ -37,6 +37,10 @@ public sealed class TitleScreen : Screen
         _sel = 0;
         Populate();
         App.Coach.Begin(this, 0, CoachHole, () => { });   // samouczek menu przy pierwszym uruchomieniu, potem dymki nowości
+        var filters = ScreenFilters.Announce(S.Data, S.Profile); // v0.21.53: filtry odblokowane przed aktualizacją (profil v16)
+        if (filters == 0) return;
+        App.Banners.FilterUnlocks(filters);
+        S.Save();
     }
 
     public override void Process(double delta) => App.Coach.Update();

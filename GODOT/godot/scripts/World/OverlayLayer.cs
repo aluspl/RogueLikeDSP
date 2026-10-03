@@ -8,7 +8,8 @@ namespace LifeLike.Game.World;
 /// <summary>
 /// Nakładki na podłogę pod postaciami: pulsujące pola zapowiedzianego ciosu bossa (czerwona ramka z kreskami),
 /// ramki pól w zasięgu broni (mignięcie, gdy atak nie ma celu), poświata schodów (pulsowanie palety na GBA)
-/// kałuże w deszczu (wejście = poślizg), błoto w akcie I (wejście = tura) i pola wybuchu problemu.
+/// kałuże w deszczu (wejście = poślizg), błoto w akcie I (wejście = tura) i pola wybuchu problemu. v0.21.53: przy filtrach
+/// z wzorami (ScreenFilter.Cues) pola ciosu i wybuchu dostają ukośne paski i jasną ramkę.
 /// </summary>
 public partial class OverlayLayer : Node2D
 {
@@ -54,6 +55,20 @@ public partial class OverlayLayer : Node2D
         DrawTextureRectRegion(Assets.Mud, r, src, new Color(1, 1, 1, _g.Visible(x, y) ? 1f : 0.5f));
     }
 
+    /// <summary>v0.21.53: ukośne paski (ciemne z jasnym brzegiem) na polu ciosu – czytelne bez rozróżniania czerwieni.</summary>
+    private void DrawHatch(Rect2 r)
+    {
+        var c = r.Size.X;
+        for (var k = 6f; k < 2 * c; k += 8f)
+        {
+            var a = r.Position + new Vector2(Mathf.Min(k, c), Mathf.Max(0, k - c));
+            var b = r.Position + new Vector2(Mathf.Max(0, k - c), Mathf.Min(k, c));
+            DrawLine(a, b, new Color(0.05f, 0.02f, 0.05f, 0.7f), 2.5f);
+            DrawLine(a + new Vector2(1.5f, 1.5f), b + new Vector2(1.5f, 1.5f), new Color(1f, 0.95f, 0.6f, 0.55f), 1f);
+        }
+        DrawRect(r.Grow(-1.5f), new Color(1f, 0.95f, 0.6f, 0.8f), false, 2f);
+    }
+
     public override void _Draw()
     {
         if (_g is null) return;
@@ -77,7 +92,10 @@ public partial class OverlayLayer : Node2D
                     DrawTextureRectRegion(Assets.Actors, new Rect2(r.Position + new Vector2(2, 2 - 2 * pulse), new Vector2(28, 28)), Assets.Frame(Assets.FrameLock, Assets.Actor));
                 }
                 if (t != Tile.Wall && _g.DangerCell(x, y))
+                {
                     DrawTextureRect(Assets.Danger, r, false, new Color(1, 1, 1, 0.55f + 0.45f * pulse));
+                    if (ScreenFilter.Cues) DrawHatch(r); // v0.21.53: wzór zamiast samego koloru (filtry dla daltonistów)
+                }
                 if ((_range > 0 || RangeHeld) && t != Tile.Wall && _g.Visible(x, y) && !(x == _g.Hero.X && y == _g.Hero.Y)
                     && CoreGame.Cheb(_g.Hero.X, _g.Hero.Y, x, y) <= _g.WeaponRange())
                     DrawTextureRect(Assets.Range, r, false, new Color(1, 1, 1, RangeHeld ? 0.75f + 0.25f * pulse : Mathf.Min(1f, _range * 4f)));

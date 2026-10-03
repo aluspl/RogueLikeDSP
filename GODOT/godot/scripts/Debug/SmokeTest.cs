@@ -38,6 +38,7 @@ public sealed class SmokeTest
     private bool _inputLock;
     private string _goals = "";
     private string _career = "";
+    private int _filters;
 
     public SmokeTest(App app) => _app = app;
 
@@ -79,6 +80,7 @@ public sealed class SmokeTest
             await ExerciseRespectAndRewards();
             await ExerciseGoals();
             await ExerciseCareer();
+            await ExerciseFilters();
             var secrets = new SmokeSecrets(_app);
             await secrets.Run();
             _secrets = $"{secrets.Done} wykonane, banery {secrets.Banners}, zawody {secrets.Classes}";
@@ -94,7 +96,7 @@ public sealed class SmokeTest
             if (DrawErrors.Count > 0) throw new Exception($"błędy rysowania: {DrawErrors.Count}, ostatni: {DrawErrors.Last}");
             GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {s.Data.Version}, zawody {s.Data.Classes.Length}, etap {stage + 1}, " +
                      $"dzień {g.Turns}, HP {g.Hero.Hp}/{g.Hero.MaxHp}, wynik {g.Score}, budżet {g.Cash}, kroki {_steps}, " +
-                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, tydzień {(_weekly ? "tak" : "nie")}, podsumowanie {_recapRows} wierszy, fabuła {_story} wątków, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, rozpiska obrażeń {(_damage ? "tak" : "nie")}, samouczek {_tutorial} dymków + nowości {_unlocks}, Akt 0 {(_act0 ? "tak" : "nie")} (dokumenty {_docs}, druga faza {_phases}), premie {_boons} (lista {_boonList}, synergie {g.SynergyMask()}, blokada wejścia {(_inputLock ? "tak" : "nie")}), wydarzenia {_events} (ekran {(_extras ? "tak" : "nie")}), Jak grać {(_help ? "tak" : "nie")}, cele {_goals}, kariera {_career}, sekrety {_secrets}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
+                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, tydzień {(_weekly ? "tak" : "nie")}, podsumowanie {_recapRows} wierszy, fabuła {_story} wątków, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, rozpiska obrażeń {(_damage ? "tak" : "nie")}, samouczek {_tutorial} dymków + nowości {_unlocks}, Akt 0 {(_act0 ? "tak" : "nie")} (dokumenty {_docs}, druga faza {_phases}), premie {_boons} (lista {_boonList}, synergie {g.SynergyMask()}, blokada wejścia {(_inputLock ? "tak" : "nie")}), wydarzenia {_events} (ekran {(_extras ? "tak" : "nie")}), Jak grać {(_help ? "tak" : "nie")}, cele {_goals}, kariera {_career}, filtry {_filters}, sekrety {_secrets}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
                      $"ekran {Flow.Current.GetType().Name}");
             _app.Root.GetTree().Quit(ok ? 0 : 1);
         }
@@ -308,7 +310,7 @@ public sealed class SmokeTest
                 if (Flow.Current != Flow.PrologueMessage) throw new Exception("prolog nie przeszedł do SMS-a");
                 Flow.PrologueMessage.HandleInput(InputCmd.Of(GameAction.Start));
                 if (Flow.Current != Flow.Help) throw new Exception("po prologu brak ekranu Jak grać");
-                for (var k = 0; k < 11 && Flow.Current == Flow.Help; k++) Flow.Help.HandleInput(InputCmd.Of(GameAction.A)); // 11 stron Jak grać (v0.21.52 cz. d)
+                for (var k = 0; k < 12 && Flow.Current == Flow.Help; k++) Flow.Help.HandleInput(InputCmd.Of(GameAction.A)); // 12 stron Jak grać (v0.21.53: filtry ekranu)
                 if (Flow.Current == Flow.Help) throw new Exception("Jak grać: A nie przechodzi dalej");
                 if (!_app.Session.Profile.HasFlag(Profile.FlagPrologueSeen)) throw new Exception("prolog nie zapisał się w profilu");
                 _prologue = true;
@@ -889,6 +891,75 @@ public sealed class SmokeTest
     /// v0.21.52 cz. c: drzewko – pień gałęzi do pierwszego węzła, wybór opcji A (Spacja), zmiana na B za opłatę;
     /// zamknięty węzeł się nie wybiera.
     /// </summary>
+    /// <summary>
+    /// v0.21.53: filtry ekranu – nowy profil ma klasyczny i tryby dla daltonistów (zablokowany w liście nic nie robi),
+    /// lista w Ustawieniach (Esc wraca do ustawień), potem z pełnym postępem każdy filtr po kolei na mapie: aktywny,
+    /// wzory tylko w trybach z „cues”, warstwa pod / nad telefonem, ograniczony ruch.
+    /// </summary>
+    private async Task ExerciseFilters()
+    {
+        var s = _app.Session;
+        var d = s.Data;
+        var saved = s.Profile;
+        var filter = GameSettings.Filter;
+        try
+        {
+            s.Profile = Meta.NewProfile(d);
+            s.Profile.Tutorial = 0x3F;
+            Flow.Settings.Open(Flow.Title);
+            await DebugRunner.Frames(_app.Root, 2);
+            Flow.Settings.Page.SelectRow(Phone.Pages.SettingsRow.Filter);
+            Flow.Settings.HandleInput(InputCmd.Of(GameAction.A));
+            if (Flow.Settings.Filters is not { } fp) throw new Exception("filtry: Ustawienia > Filtr ekranu nie otwiera listy");
+            var noir = Array.FindIndex(d.ScreenFilters, f => f.Id == "noir");
+            fp.Sel = noir;
+            Flow.Settings.HandleInput(InputCmd.Of(GameAction.A));
+            if (_app.Nodes.Filter.Active != 0) throw new Exception("filtry: zablokowany Noir dał się wybrać");
+            var prot = Array.FindIndex(d.ScreenFilters, f => f.Id == "protanopia");
+            fp.Sel = prot;
+            Flow.Settings.HandleInput(InputCmd.Of(GameAction.A));
+            _app.Nodes.Filter.Apply();
+            if (_app.Nodes.Filter.Active != prot || !ScreenFilter.Cues) throw new Exception("filtry: Protanopia nie działa od pierwszego uruchomienia");
+            Flow.Settings.HandleInput(InputCmd.Of(GameAction.Cancel));
+            if (Flow.Settings.Filters is not null || Flow.Current != Flow.Settings) throw new Exception("filtry: Esc nie wraca do ustawień");
+            Flow.Settings.HandleInput(InputCmd.Of(GameAction.Cancel));
+            FilterStaging.Prepare(s, true);
+            if (ScreenFilters.UnlockedCount(d, s.Profile) != d.ScreenFilters.Length) throw new Exception("filtry: pełny postęp nie odblokował wszystkich");
+            s.ClassId = 1;
+            _app.StartRun();
+            Flow.StageCard.Advance();
+            new DemoStaging(_app).FilterShowcase();
+            foreach (var phone in new[] { true, false })
+            {
+                GameSettings.FilterPhone = phone;
+                GameSettings.ReduceMotion = !phone;
+                for (var f = 0; f < d.ScreenFilters.Length; f++)
+                {
+                    ScreenFilter.Select(d, f);
+                    await DebugRunner.Frames(_app.Root, 2);
+                    var fl = _app.Nodes.Filter;
+                    if (fl.Active != f || ScreenFilter.Cues != d.ScreenFilters[f].Cues) throw new Exception($"filtry: {d.ScreenFilters[f].Name} nie jest aktywny");
+                    if (fl.Layer != (phone ? ScreenFilter.TopLayer : ScreenFilter.UnderPhoneLayer)) throw new Exception("filtry: zła warstwa (telefon)");
+                    if (f > 0 && ScreenFilter.ModeOf(d.ScreenFilters[f].Id) == 0) throw new Exception($"filtry: {d.ScreenFilters[f].Id} bez trybu shadera");
+                    _filters++;
+                }
+            }
+            if (DrawErrors.Count > 0) throw new Exception($"filtry: błędy rysowania {DrawErrors.Last}");
+            s.AbandonRun();
+        }
+        finally
+        {
+            s.Profile = saved;
+            GameSettings.Filter = filter;
+            GameSettings.FilterPhone = true;
+            GameSettings.ReduceMotion = false;
+            GameSettings.Save();
+            _app.Nodes.Filter.Apply();
+        }
+        Flow.Title.Open();
+        await DebugRunner.Frames(_app.Root, 2);
+    }
+
     private async Task SmokeTree(TrainingTab tt)
     {
         var d = _app.Session.Data;
@@ -923,7 +994,17 @@ public sealed class SmokeTest
             p.Wins = 0;
             Flow.ClassSelect.Open();
             Flow.ClassSelect.HandleInput(InputCmd.Of(GameAction.Select));
-            if (Flow.Current != Flow.ClassSelect) throw new Exception("tryb inwestora dostępny przed pierwszą wygraną");
+            if (Flow.Current != Flow.Investor || Flow.Investor.Page.Title != "Wygląd") // v0.21.53: przed wygraną sam Wygląd (filtr ekranu)
+                throw new Exception("Wygląd z filtrem ekranu niedostępny przed pierwszą wygraną");
+            var filter = GameSettings.Filter;
+            Flow.Investor.Page.SelectFilterRow();
+            Flow.Investor.HandleInput(InputCmd.Of(GameAction.A));
+            if (s.Data.ScreenFilters[ScreenFilter.Resolve(s.Data, p)].Kind != LifeLike.Core.Data.FilterKind.Access)
+                throw new Exception("Wygląd: filtr ekranu nie przełączył się na tryb dla daltonistów");
+            GameSettings.Filter = filter;
+            GameSettings.Save();
+            Flow.Investor.HandleInput(InputCmd.Of(GameAction.Cancel));
+            if (Flow.Current != Flow.ClassSelect) throw new Exception("Esc z Wyglądu nie wraca do wyboru zawodu");
             p.Wins = 1;
             p.Investor = 0;
             Flow.ClassSelect.HandleInput(InputCmd.Of(GameAction.Select));
@@ -1172,12 +1253,12 @@ public sealed class SmokeTest
         if (Flow.Current != Flow.ClassSelect) throw new Exception("statystyki: B nie wraca na wybór zawodu");
         _stats = true;
         Flow.Help.Open(true, true);
-        for (var k = 0; k < 11; k++) // 10 stron: v0.21.50 cz. 4 - po budowie, tydzień, fabuła; v0.21.51 cz. 2 - sekrety; v0.21.52 cz. b - inspektor, cz. c - cele, cz. d - kariera
+        for (var k = 0; k < 12; k++) // 12 stron: v0.21.50 cz. 4 - po budowie, tydzień, fabuła; v0.21.51 cz. 2 - sekrety; v0.21.52 cz. b - inspektor, cz. c - cele, cz. d - kariera; v0.21.53 - filtry
         {
             await DebugRunner.Frames(_app.Root, 1);
             Flow.Help.HandleInput(InputCmd.Of(GameAction.A));
         }
-        if (Flow.Current != Flow.Title) throw new Exception("Jak grać: po 11 stronach brak powrotu na tytuł");
+        if (Flow.Current != Flow.Title) throw new Exception("Jak grać: po 12 stronach brak powrotu na tytuł");
         _help = true;
     }
 

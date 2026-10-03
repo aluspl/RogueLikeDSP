@@ -48,6 +48,7 @@ public sealed class EndScreen : Screen
         {
             if (((S.LastCareerNew >> k) & 1) != 0) N.Banners.Push(new PushBanner { Title = "Nowy kontrakt!", Body = $"{S.Data.Career[k].Name} – mapa kariery", Gold = true });
         }
+        App.Banners.FilterUnlocks(S.LastFilterNew); // v0.21.53: nowe filtry ekranu
     }
 
     public override bool HandleInput(InputCmd e)

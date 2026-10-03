@@ -88,6 +88,8 @@ public sealed class GameSession
 
     /// <summary>v0.21.52 cz. d: kontrakty odblokowane na koniec ostatniej budowy (bity GameData.Career).</summary>
     public int LastCareerNew { get; set; }
+    /// <summary>v0.21.53: filtry ekranu odblokowane w tej budowie (bity, baner raz).</summary>
+    public int LastFilterNew { get; set; }
 
     /// <summary>Wątki fabuły odblokowane na koniec ostatniej budowy (bity GameData.StoryArc).</summary>
     public uint LastStory { get; set; }
@@ -294,6 +296,7 @@ public sealed class GameSession
             (LastTasks, LastCollections, LastTasksBefore) = BankGoals(); // cz. c: zadania dnia / tygodnia, kolekcje
             LastStory = Story.Check(Data, Profile, g); // fabuła (#35): nowe wątki SMS za kamienie milowe (też od inspektora)
             LastCareerNew = Career.Announce(Data, Profile); // v0.21.52 cz. d: nowe kontrakty na mapie kariery
+            LastFilterNew = ScreenFilters.Announce(Data, Profile); // v0.21.53: nowe filtry ekranu
             Save();
             ClearRun();
             return TurnOutcome.RunEnded;

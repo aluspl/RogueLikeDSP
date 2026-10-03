@@ -7,7 +7,8 @@ namespace LifeLike.Game;
 /// Argumenty z linii poleceń (po „--”): --seed N, --smoke, --screenshot PLIK --scene NAZWA, oraz podgląd wersji
 /// na telefon na komputerze: --touch (sterowanie dotykiem: pasek akcji, gesty myszą), --portrait (okno pionowe
 /// jak iPhone 14 Pro Max w punktach, z symulowaną wyspą i paskiem domowym), --size SZERxWYS (rozmiar okna),
-/// --monkey SEED KROKI (test małpy: losowe klawisze i dotknięcia przez prawdziwe wejście, Debug/MonkeyTest).
+/// --monkey SEED KROKI (test małpy: losowe klawisze i dotknięcia przez prawdziwe wejście, Debug/MonkeyTest),
+/// --filter ID (filtr ekranu bez względu na odblokowanie, v0.21.53).
 /// </summary>
 public sealed class LaunchOptions
 {
@@ -24,6 +25,8 @@ public sealed class LaunchOptions
     /// <summary>Test małpy: seed generatora akcji (0 = brak testu) i liczba akcji.</summary>
     public uint MonkeySeed { get; private init; }
     public int MonkeySteps { get; private init; }
+    /// <summary>v0.21.53: --filter ID – filtr ekranu bez względu na odblokowanie (zrzuty, test).</summary>
+    public string Filter { get; private init; } = "";
 
     public bool Monkey => MonkeySeed != 0;
 
@@ -65,6 +68,7 @@ public sealed class LaunchOptions
             WindowSize = size,
             MonkeySeed = mseed,
             MonkeySteps = msteps,
+            Filter = Arg("--filter") ?? "",
         };
     }
 }
