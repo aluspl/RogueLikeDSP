@@ -9335,6 +9335,7 @@
     "modyfikatory": "MODYFIKATORY",
     "wyzwania": "wyzwania: {0}",
     "gra": "GRA",
-    "jezyk_language": "Język / Language"
+    "jezyk_language": "Język / Language",
+    "kr_linia": "{0}, kr {1}-{2} {3}%"
   }
 }

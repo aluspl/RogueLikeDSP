@@ -330,7 +330,7 @@ inline constexpr core::badge_def badges[] = {   // perk = uprawnienie: trwała p
     { { "Twardziel", "Tough Nut" }, { "Wygrana na Trudnym", "Win on Hard" }, 15, { core::perk_effect::def, 1 }, { "Twarda sztuka", "Hard as Nails" }, 3 },
     { { "Pełny zespół", "Full Crew" }, { "Wygrana każdym zawodem", "Win with every trade" }, 15, { core::perk_effect::cash, 20 }, { "Wszechstronny", "All-Rounder" }, -1 },
     { { "Kolekcjoner", "Collector" }, { "Znajdź wszystkie narzędzia", "Find all the tools" }, 10, { core::perk_effect::tool_pct, 10 }, { "Narzędziowiec", "Tool Hoarder" }, -1 },
-    { { "Katalog usterek", "Snag Catalogue" }, { "Pokonaj każdy problem", "Beat every problem" }, 10, { core::perk_effect::luck, 1 }, { "Encyklopedia", "Encyclopedia" }, 4 },
+    { { "Katalog usterek", "Snag Catalog" }, { "Pokonaj każdy problem", "Beat every problem" }, 10, { core::perk_effect::luck, 1 }, { "Encyklopedia", "Encyclopedia" }, 4 },
     { { "Osiedle", "Estate" }, { "Zbuduj 5 domów", "Build 5 houses" }, 10, { core::perk_effect::xp_pct, 10 }, { "Deweloper", "Developer" }, 5 },
 };
 
@@ -571,7 +571,7 @@ inline constexpr int rewards_count = 8;
 
 inline constexpr core::tutorial_step tutorial_steps[] = {   // samouczek menu: tytuł (0) i wybór zawodu (1)
     { "new", { "Nowa budowa", "New Build" }, { { "Kierownik Marek", "Manager Marek" }, { { "Tu zaczynasz budowę domu", "Start building the Nowak" }, { "Nowaków: zawód, trudność", "house here: trade, then" }, { "i na plac. Powodzenia!", "difficulty. Good luck!" } } }, { "START / A", "START / A" }, 0, false, false },
-    { "phone", { "Profil w telefonie", "Phone Profile" }, { { "Kierownik Marek", "Manager Marek" }, { { "Twój telefon: odznaki,", "Your phone: badges," }, { "zlecenia, pamiątki,", "jobs, keepsakes, Snag" }, { "Katalog usterek, Osiedle.", "Catalogue, the Estate." } } }, { "SELECT", "SELECT" }, 0, false, false },
+    { "phone", { "Profil w telefonie", "Phone Profile" }, { { "Kierownik Marek", "Manager Marek" }, { { "Twój telefon: odznaki,", "Your phone: badges," }, { "zlecenia, pamiątki,", "jobs, keepsakes, Snag" }, { "Katalog usterek, Osiedle.", "Catalog, the Estate." } } }, { "SELECT", "SELECT" }, 0, false, false },
     { "training", { "Szkolenia", "Training" }, { { "Kierownik Marek", "Manager Marek" }, { { "Za doświadczenie z budów", "XP from your builds buys" }, { "kupisz Szkolenia: HP,", "Training: HP, new" }, { "nowe zawody, narzędzia.", "trades, tools." } } }, { "SELECT, Koszty", "SELECT, Costs" }, 0, false, false },
     { "respect", { "Respekt", "Respect" }, { { "Kierownik Marek", "Manager Marek" }, { { "Respekt dostajesz za", "You earn Respect for" }, { "każdy etap i zostaje po", "every stage and keep it" }, { "porażce. Stałe premie!", "after a loss. For good!" } } }, { "SELECT, Koszty", "SELECT, Costs" }, 0, false, false },
     { "daily", { "Codzienna budowa", "Daily Build" }, { { "Kierownik Marek", "Manager Marek" }, { { "Budowa dnia: ten sam", "Daily build: the same" }, { "plac i zawód dla", "site and trade for" }, { "wszystkich. Pobij wynik!", "everyone. Beat the score!" } } }, { "R", "R" }, 0, false, false },
@@ -937,7 +937,7 @@ inline constexpr core::progress_level mastery_levels[] = {   // mistrzostwo zawo
 };
 inline constexpr core::mastery_class_def mastery_classes[] = {   // wariant mocy, broń mistrza (cecha), premia mistrzostwa
     { { "Długa odprawa", "Long Briefing" }, { "Ogłusza +1 t., odn. +2 t.", "Stun +1t, cd +2t" }, 1, 2, { "Dziennik mistrza", "Master's Diary" }, { core::perk_effect::crit, 3 }, 44 },
-    { { "Mur na zakładkę", "Overlapping Wall" }, { "Stoi +3 t., odn. +1 t.", "Stands +3t, cd +1t" }, 3, 1, { "Kielnia mistrza", "Master's Trowel" }, { core::perk_effect::crit, 3 }, 45 },
+    { { "Mur na zakładkę", "Lapped Wall" }, { "Stoi +3 t., odn. +1 t.", "Stands +3t, cd +1t" }, 3, 1, { "Kielnia mistrza", "Master's Trowel" }, { core::perk_effect::crit, 3 }, 45 },
     { { "Seria z dystansu", "Long-Range Volley" }, { "Zasięg +1, odn. +2 t.", "Range +1, cd +2t" }, 1, 2, { "Gwoździarka mistrza", "Master's Nail Gun" }, { core::perk_effect::crit, 2 }, 46 },
     { { "Długi łańcuch", "Long Chain" }, { "+1 cel, odn. +2 t.", "+1 target, cd +2t" }, 1, 2, { "Próbnik mistrza", "Master's Tester" }, { core::perk_effect::crit, 4 }, 47 },
     { { "Szybki zawór", "Quick Valve" }, { "Leczy -2 HP, odn. -4 t.", "Heals -2 HP, cd -4t" }, -2, -4, { "Klucz mistrza", "Master's Wrench" }, { core::perk_effect::crit, 3 }, 48 },
@@ -2752,7 +2752,7 @@ inline constexpr core::ltext ui_texts[] = {
     { "A: zmień", "A: change" },
     { "A: wł/wył", "A: on/off" },
     { "Odznaki", "Badges" },
-    { "Katalog", "Catalogue" },
+    { "Katalog", "Catalog" },
     { "Osiedle", "Estate" },
     { "Zespół", "Team" },
     { "Zlecenia", "Jobs" },
@@ -2816,7 +2816,7 @@ inline constexpr core::ltext ui_texts[] = {
     { "Tryb inwestora: stawka ", "Investor mode: stake " },
     { "Dośw. inspektora z budów", "Inspector XP from builds" },
     { "Wygraj z taką stawką", "Win with this stake" },
-    { "Katalog > Kolekcje", "Catalogue > Collections" },
+    { "Katalog > Kolekcje", "Catalog > Collections" },
     { "Budowa dnia w kolejne dni", "Daily build on next days" },
     { "Odznaki > Zadania", "Badges > Tasks" },
     { "Też: ", "Also: " },
