@@ -1,0 +1,18 @@
+{
+  "pl-PL": {
+    "title": "Plan Budowlany: Roguelike",
+    "subtitle": "Zbuduj dom. Przetrwaj budowę.",
+    "short": "Roguelike o budowie domu: walcz z przeciekami, pleśnią i terminem.",
+    "promo": "Nowe: mapa kariery, poziom inspektora, mistrzostwo zawodów i sekretne zlecenia.",
+    "keywords": "roguelike,dom,budowa,pixel art,turowa,rpg,lochy,remont,strategia,offline",
+    "full": "Budujesz dom etap po etapie – od fundamentów po odbiór. Przeciwnikami nie są potwory, tylko problemy budowy: przecieki, zwarcia, pleśń, papierologia i bossowie jak Zepsuta Betoniarka czy Nieprzekraczalny Termin.\n\nTurowa gra roguelike w pixel arcie:\n- 12 zawodów z mocami (Murarz, Elektryk, Hydraulik, Dekarz…) i mistrzostwem\n- po każdym etapie wybierasz 1 z 3 premii, które tworzą synergie\n- kombinacje stanów: mokry + prąd = porażenie, pył + iskra = wybuch\n- elity, ukryte magazyny, wydarzenia z wyborem, ulepszanie narzędzi\n- mapa kariery: dom jednorodzinny, domek letniskowy, bliźniak, dom z poddaszem, kamienica\n- porażka nie jest końcem: Respekt, Szkolenia i poziom inspektora zostają\n- codzienna budowa, wyzwania tygodnia, sekretne zlecenia i historia w SMS-ach\n\nMenu gry to smartfon bohatera z aplikacją do planowania budowy. Sterowanie jedną ręką, w pionie, bez reklam i bez zakupów w aplikacji. Działa offline.\n\nPlan budowy prawdziwego domu: planbudowlany.online"
+  },
+  "en-US": {
+    "title": "Plan Budowlany: Roguelike",
+    "subtitle": "Build it. Survive the site.",
+    "short": "A roguelike about building a house: fight leaks, mould and the deadline.",
+    "promo": "New: career map, inspector level, trade mastery and secret contracts.",
+    "keywords": "roguelike,house,building,construction,pixel art,turn-based,rpg,dungeon,offline",
+    "full": "Build a house stage by stage – from foundations to final inspection. Your enemies aren't monsters but construction problems: leaks, short circuits, mould, paperwork and bosses like the Broken Concrete Mixer and the Unmissable Deadline.\n\nA turn-based pixel-art roguelike:\n- 12 trades with powers (bricklayer, electrician, plumber, roofer…) and mastery\n- pick 1 of 3 boons after every stage and build synergies\n- status combos: wet + electricity = shock, dust + spark = explosion\n- elites, hidden storerooms, choice events, tool upgrades\n- career map: family house, summer cabin, semi-detached, attic house, tenement\n- losing isn't the end: Respect, trainings and inspector level carry over\n- daily build, weekly challenges, secret contracts and a story told in text messages\n\nThe game menu is the hero's smartphone with a construction-planning app. One-handed portrait controls, no ads, no in-app purchases, plays offline. (The game is currently in Polish; English is coming soon.)\n\nPlan a real house: planbudowlany.online"
+  }
+}
