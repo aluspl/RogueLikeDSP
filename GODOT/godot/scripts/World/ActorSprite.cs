@@ -126,14 +126,20 @@ public partial class ActorSprite : Node2D
             alpha = 1f - t;
             scale = 1f - t * 0.4f;
         }
-        if (HasShadow) DrawTextureRect(Assets.Shadow, new Rect2(DrawOffset + new Vector2(-12, 9), new Vector2(24, 8)), false, new Color(1, 1, 1, alpha));
+        var at = DrawOffset + new Vector2(0, Proj.SpriteLift); // v0.21.54: w widoku 3/4 stopy w dolnej części wiersza
+        if (HasShadow)
+        {
+            if (Proj.ThreeQuarter) // v0.21.54: cień rzucany w prawo w dół (światło z lewej góry) i ciemniejszy pod stopami
+                DrawTextureRect(Assets.Shadow, new Rect2(at + new Vector2(-8, 9), new Vector2(30, 9)), false, new Color(1, 1, 1, 0.6f * alpha));
+            DrawTextureRect(Assets.Shadow, new Rect2(at + new Vector2(-12, 9), new Vector2(24, 8)), false, new Color(1, 1, 1, alpha));
+        }
         if (Elite && _dying < 0f) // elita: złota poświata pod stopami (pulsuje)
         {
             var pulse = 0.55f + 0.25f * Mathf.Sin(_clock * 4f);
-            DrawArc(DrawOffset + new Vector2(0, 13), 13f, 0, Mathf.Tau, 24, new Color(Pal.EliteGold, pulse), 2f);
+            DrawArc(at + new Vector2(0, 13), 13f, 0, Mathf.Tau, 24, new Color(Pal.EliteGold, pulse), 2f);
         }
         if (_blink > 0 && ((int)(_blink * 16) & 1) == 1) return;
-        var off = DrawOffset + _bump + new Vector2(0, bobY);
+        var off = at + _bump + new Vector2(0, bobY);
         DrawSetTransform(off + new Vector2(0, (1 - scale) * s / 2), 0, new Vector2(Flip ? -scale : scale, scale));
         var dst = new Rect2(-s / 2, -s / 2 - 2, s, s);
         var (tex, white, src) = Source(frame);

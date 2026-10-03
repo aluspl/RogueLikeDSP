@@ -6,7 +6,8 @@ namespace LifeLike.Game.Settings;
 
 /// <summary>
 /// Ustawienia gry (klucz w rogu ekranu): głośność muzyki i dźwięków, wibracje, sterowanie dotykiem, ręka paska
-/// akcji, wielkość tekstu, filtr ekranu (v0.21.53: siła, telefon, ograniczony ruch), język (v0.21.53 cz. 2). Zapis w user://settings.cfg (ConfigFile) - osobno od profilu gracza (profile.sav).
+/// akcji, wielkość tekstu, filtr ekranu (v0.21.53: siła, telefon, ograniczony ruch), język (v0.21.53 cz. 2), widok mapy
+/// i efekty świetlne (v0.21.54). Zapis w user://settings.cfg (ConfigFile) - osobno od profilu gracza (profile.sav).
 /// Test dymny i zrzuty nie czytają ani nie zapisują pliku (Persist = false).
 /// </summary>
 public static class GameSettings
@@ -34,6 +35,10 @@ public static class GameSettings
     public static bool ReduceMotion { get; set; }
     /// <summary>v0.21.53 cz. 2 (#40): język gry ("pl" / "en"); domyślnie z języka systemu (polski - polski, inny - angielski).</summary>
     public static string Language { get; set; } = SystemLanguage();
+    /// <summary>v0.21.54 (#63): widok mapy 3/4 (lekko z góry, wiersze 24 px) zamiast płaskiego; tylko rysowanie i trafianie w pola.</summary>
+    public static bool ThreeQuarter { get; set; }
+    /// <summary>v0.21.54 (#65): efekty świetlne – latarka czołowa, odblaski kałuż, błyski iskier i wybuchów (wył. = taniej na telefonie).</summary>
+    public static bool Lights { get; set; } = true;
     public const int FilterSteps = 10;
     public static bool Persist { get; set; }
 
@@ -59,6 +64,8 @@ public static class GameSettings
         FilterPhone = (bool)cfg.GetValue(Section, "filter_phone", FilterPhone);
         ReduceMotion = (bool)cfg.GetValue(Section, "reduce_motion", ReduceMotion);
         Language = (string)cfg.GetValue(Section, "language", Language) == "en" ? "en" : "pl";
+        ThreeQuarter = (bool)cfg.GetValue(Section, "view_34", ThreeQuarter);
+        Lights = (bool)cfg.GetValue(Section, "lights", Lights);
     }
 
     /// <summary>Język systemu: "pl" dla polskiego, "en" dla każdego innego.</summary>
@@ -81,6 +88,8 @@ public static class GameSettings
             cfg.SetValue(Section, "filter_phone", FilterPhone);
             cfg.SetValue(Section, "reduce_motion", ReduceMotion);
             cfg.SetValue(Section, "language", Language);
+            cfg.SetValue(Section, "view_34", ThreeQuarter);
+            cfg.SetValue(Section, "lights", Lights);
             cfg.Save(Path);
         }
         Changed?.Invoke();

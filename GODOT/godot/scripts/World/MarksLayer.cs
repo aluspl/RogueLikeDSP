@@ -40,7 +40,7 @@ public partial class MarksLayer : Node2D
         if (!g.HasSecret || !g.Weapon.Reveal || g.SecretOpen || g.Explored(g.SecretX, g.SecretY)) return;
         const int c = Assets.Cell;
         var pulse = 0.5f + 0.5f * Mathf.Sin(_clock * 5f);
-        var r = new Rect2(g.SecretX * c, g.SecretY * c, c, c);
+        var r = new Rect2(g.SecretX * c, (g.SecretY + 1) * Proj.RowH - c, c, c); // v0.21.54: u dołu lica muru
         DrawRect(r.Grow(2), new Color(0.05f, 0.04f, 0.1f, 0.75f));
         DrawTextureRectRegion(Assets.Actors, r, Assets.Frame(g.SecretDef.Breakable ? Assets.FrameCrack : Assets.FrameDoor, Assets.Actor));
         DrawRect(r.Grow(2), new Color(Pal.EliteGold, 0.55f + 0.45f * pulse), false, 4f);

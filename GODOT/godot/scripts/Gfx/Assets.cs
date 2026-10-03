@@ -102,6 +102,14 @@ public static class Assets
 
     public static Texture2D StageTiles(int stage) => Tex($"tiles/stage_{Mathf.Max(0, stage)}.png");
 
+    /// <summary>v0.21.54 (#63): te same kafle ściśnięte do 32x24 (wiersz widoku 3/4).</summary>
+    public static Texture2D StageTiles34(int stage) => Tex($"tiles/stage_{Mathf.Max(0, stage)}_34.png");
+
+    /// <summary>v0.21.54 (#62): wysokie lico muru – kolumny WallFace / WallFaceLeft / WallFaceRight (+ WallSheet34 w widoku 3/4).</summary>
+    public static Texture2D StageWalls(int stage) => Tex($"tiles/stage_{Mathf.Max(0, stage)}_wall.png");
+
+    public const int WallFace = 0, WallFaceLeft = 1, WallFaceRight = 2, WallSheet34 = 3;
+
     public const int AnimWalkFrames = 4, AnimBreath = 4;
 
     /// <summary>Region klatki animacji (chód 0..3, oddech 4) postaci o klatce bazowej row.</summary>

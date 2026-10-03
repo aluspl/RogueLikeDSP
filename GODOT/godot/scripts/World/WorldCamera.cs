@@ -34,11 +34,15 @@ public partial class WorldCamera : Camera2D
     private void SetLimits(bool free)
     {
         const int far = 100000;
+        var rh = Proj.RowH; // v0.21.54: wiersze widoku (płaski 32 px, 3/4 24 px)
         LimitLeft = free ? -far : -Cell;
-        LimitTop = free ? -far : -Cell * 3;
+        LimitTop = free ? -far : -rh * 3;
         LimitRight = free ? far : Level.W * Cell + Cell;
-        LimitBottom = free ? far : Level.H * Cell + Cell * 2;
+        LimitBottom = free ? far : Level.H * rh + rh * 2;
     }
+
+    /// <summary>v0.21.54: po zmianie widoku mapy – granice wg nowej wysokości wiersza.</summary>
+    public void Reproject() => SetLimits(Overview);
 
     private void ApplyZoom()
     {
@@ -74,7 +78,7 @@ public partial class WorldCamera : Camera2D
         }
         var r = ExploredBounds(g);
         if (g.HasSecret && g.Weapon.Reveal && !g.SecretOpen) // Poziomica mistrza: magazyn też w kadrze
-            r = r.Merge(new Rect2((g.SecretX - 1) * Cell, (g.SecretY - 2) * Cell, 3 * Cell, 3 * Cell));
+            r = r.Merge(new Rect2((g.SecretX - 1) * Cell, (g.SecretY - 2) * Proj.RowH, 3 * Cell, 3 * Proj.RowH));
         var room = Layout.UiSize - new Vector2(24, TopUsed + BottomUsed + 16);
         var z = Mathf.Min(room.X / r.Size.X, room.Y / r.Size.Y);
         Zoom = Vector2.One * Mathf.Clamp(z, 0.2f, Layout.WorldZoom);
@@ -97,8 +101,9 @@ public partial class WorldCamera : Camera2D
                 y1 = Mathf.Max(y1, y);
             }
         }
-        if (x1 < 0) return new Rect2(0, 0, Level.W * Cell, Level.H * Cell);
-        return new Rect2((x0 - 1) * Cell, (y0 - 1) * Cell, (x1 - x0 + 3) * Cell, (y1 - y0 + 3) * Cell);
+        var rh = Proj.RowH;
+        if (x1 < 0) return new Rect2(0, 0, Level.W * Cell, Level.H * rh);
+        return new Rect2((x0 - 1) * Cell, (y0 - 1) * rh - Proj.WallH, (x1 - x0 + 3) * Cell, (y1 - y0 + 3) * rh + Proj.WallH);
     }
 
     /// <summary>Co klatkę: za bohaterem (poza podglądem) i wstrząs.</summary>

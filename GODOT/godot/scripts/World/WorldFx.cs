@@ -97,16 +97,19 @@ public sealed class WorldFx
                 case ComboEffect.ShockArea:
                     Fx.Burst(pos, 10, Assets.PBolt, 1, 2.2f, 20);
                     _w.Flash(Pal.FlashChain, 0.3f);
+                    _w.Light.Flash(pos, new Color(0.6f, 0.8f, 1f), Assets.Cell * 2.6f, 0.45f); // v0.21.54: błysk światła
                     break;
                 case ComboEffect.DustBlast:
                     Fx.Burst(pos, 14, Assets.PDust, 3, 2.6f, 26);
                     Fx.Burst(pos, 8, Assets.PSpark, 2, 2.2f, 18);
                     _w.Flash(new Color(1f, 0.6f, 0.2f), 0.35f);
+                    _w.Light.Flash(pos, new Color(1f, 0.6f, 0.25f), Assets.Cell * 3f, 0.55f);
                     _w.Camera.Shake(0.2f);
                     break;
                 default:
                     Fx.Burst(pos, 8, Assets.PBrick, 1, 2f, 22);
                     _w.Flash(Pal.FrostCyan, 0.25f);
+                    _w.Light.Flash(pos, Pal.FrostCyan, Assets.Cell * 2f, 0.4f);
                     break;
             }
         }

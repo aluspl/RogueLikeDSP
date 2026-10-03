@@ -12,6 +12,9 @@ namespace LifeLike.Game.World;
 /// Widok etapu: kafle (MapLayer), nakładki (OverlayLayer), postacie (ActorSprite), mgła ze światłem (FogLayer),
 /// cząsteczki i liczby (FxLayer), znaczniki i menu akcji (MarksLayer), kamera (WorldCamera), efekty (WorldFx).
 /// Jedyne miejsce, które zna rzutowanie siatka -> ekran (przejście na 2.5D = podmiana tej klasy).
+/// v0.21.54: rzutowanie przez Proj (widok płaski albo 3/4 z ustawień), mury jako bryły 1,5 pola w warstwie postaci
+/// (WallLayer, sortowanie po Y), światło dynamiczne (LightLayer) i tło z paralaksą (SkyBackdrop). W widoku 3/4 dotknięcie
+/// postaci (sprite wyższy niż wiersz) trafia w jej pole; w płaskim trafianie w pola jak dotąd.
 /// </summary>
 public partial class WorldView : Node2D
 {
@@ -19,7 +22,10 @@ public partial class WorldView : Node2D
     public static readonly Vector2I[] MenuDirs = [new(0, -1), new(1, 0), new(0, 1), new(-1, 0)];
 
     private CoreGame _g;
+    private readonly SkyBackdrop _backdrop = new();
     private readonly MapLayer _map = new();
+    private readonly WallLayer _walls = new();
+    private readonly LightLayer _light = new();
     private readonly OverlayLayer _overlay = new();
     private readonly Node2D _actors = new();
     private readonly FogLayer _fog = new();
@@ -40,6 +46,7 @@ public partial class WorldView : Node2D
     private int _prevBlastX = -1, _prevBlastY = -1;
     private int _prevGustTurn = -1;
     private float _dustClock;
+    private bool _threeQuarter;
 
     public WorldView() => Effects = new WorldFx(this);
 
@@ -56,6 +63,9 @@ public partial class WorldView : Node2D
                              || (ProfileSource() is { } p && _g.D.CosmeticGold >= 0 && Secrets.CosmeticOn(_g.D, p, _g.D.CosmeticGold));
     public ActorSprite HeroSprite => _hero;
     public FxLayer Fx => _fx;
+    /// <summary>v0.21.54: światło dynamiczne (błyski wybuchów i kombinacji).</summary>
+    public LightLayer Light => _light;
+    public WallLayer Walls => _walls;
     public WorldCamera Camera => _camera;
     public WorldFx Effects { get; }
     public bool OverviewOn => _camera.Overview;
@@ -70,14 +80,20 @@ public partial class WorldView : Node2D
     public override void _Ready()
     {
         _actors.YSortEnabled = true;
+        _threeQuarter = Proj.ThreeQuarter;
+        AddChild(_backdrop);
         AddChild(_map);
         AddChild(_overlay);
         AddChild(_actors);
+        AddChild(_light);
         AddChild(_fog);
         AddChild(_fx);
         AddChild(_marks);
         AddChild(_camera);
         _marks.Bind(this);
+        _light.Bind(this);
+        _backdrop.Bind(this);
+        _walls.Attach(_actors);
         _hero = new ActorSprite { AnimPeriod = 0.4f, Breathes = true };
         _actors.AddChild(_hero);
         _ally = new ActorSprite { AnimPeriod = 0.4f, Breathes = true, AnimPhase = 0.2f, Visible = false };
@@ -90,11 +106,34 @@ public partial class WorldView : Node2D
         _map.Bind(g);
         _overlay.Bind(g);
         _fog.Bind(g);
+        _walls.Bind(g);
     }
 
-    public Vector2 GridToScreen(int x, int y) => new(x * Cell + Cell / 2, y * Cell + Cell / 2);
+    public Vector2 GridToScreen(int x, int y) => Proj.Center(x, y);
 
-    public Vector2I ScreenToGrid(Vector2 world) => new(Mathf.FloorToInt(world.X / Cell), Mathf.FloorToInt(world.Y / Cell));
+    /// <summary>Punkt świata -> pole mapy. Płaski: pole pod punktem (jak dotąd). 3/4: najpierw widoczny problem albo
+    /// bohater, którego sprite jest pod palcem (najbliższy kamerze), potem pole podłogi pod punktem.</summary>
+    public Vector2I ScreenToGrid(Vector2 world)
+    {
+        if (!Proj.ThreeQuarter || _g is null) return Proj.Floor(world);
+        var best = -1;
+        for (var i = 0; i < _enemies.Count && i < _g.EnemiesCount; i++)
+        {
+            var s = _enemies[i];
+            if (!s.Visible || s.Dying || !_g.Enemies[i].Alive || !SpriteHit(s, world)) continue;
+            if (best < 0 || _g.Enemies[i].Y > _g.Enemies[best].Y) best = i;
+        }
+        if (best >= 0) return new Vector2I(_g.Enemies[best].X, _g.Enemies[best].Y);
+        if (_hero is not null && SpriteHit(_hero, world)) return new Vector2I(_g.Hero.X, _g.Hero.Y);
+        return Proj.Floor(world);
+    }
+
+    /// <summary>Punkt w sylwetce postaci (bez paska HP i ikon nad głową).</summary>
+    private static bool SpriteHit(ActorSprite s, Vector2 p)
+    {
+        var d = p - s.Position - new Vector2(0, Proj.SpriteLift);
+        return d.X >= -14 && d.X < 14 && d.Y >= -18 && d.Y < 14;
+    }
 
     /// <summary>Punkt ekranu w pikselach UI (dotyk) -> pole mapy (przez kamerę).</summary>
     public Vector2I UiToGrid(Vector2 ui) => ScreenToGrid(GetCanvasTransform().AffineInverse() * ui);
@@ -128,6 +167,8 @@ public partial class WorldView : Node2D
         _enemyAlive.Clear();
         _pickupActive.Clear();
         _fx.Clear();
+        _light.Clear();
+        _walls.ResetFade();
         _prevAwake = 0;
         AddEnemySprites();
         _prevBlast = _g.BlastTimer;
@@ -208,6 +249,7 @@ public partial class WorldView : Node2D
         }
         _turns = _g.Turns;
         _map.QueueRedraw();
+        _walls.Redraw();
         SyncHero(snap);
         SyncAlly(snap);
         for (var i = 0; i < _g.EnemiesCount; i++) SyncEnemy(i, snap);
@@ -219,6 +261,11 @@ public partial class WorldView : Node2D
         _prevBlastY = _g.BlastY;
         Effects.TakeHits();
         _fog.Sync(snap);
+        if (snap) // nowy etap: przezroczystość murów od razu
+        {
+            MarkSeeThrough();
+            _walls.Update(10f);
+        }
     }
 
     private void SyncHero(bool snap)
@@ -310,6 +357,7 @@ public partial class WorldView : Node2D
             var b = GridToScreen(_prevBlastX, _prevBlastY);
             _fx.Burst(b, 12, Assets.PSpark, 2, 2.6f, 22);
             _fx.Burst(b, 8, Assets.PDust, 3, 1.8f, 26);
+            _light.Flash(b, new Color(1f, 0.6f, 0.25f), Cell * 3.2f, 0.6f);
             Flash(new Color(1f, 0.55f, 0.15f), 0.35f);
             _camera.Shake(0.25f);
         }
@@ -328,9 +376,61 @@ public partial class WorldView : Node2D
         }
     }
 
+    /// <summary>v0.21.54: widok zmieniony w ustawieniach – sprite'y na nowe pozycje bez animacji, mury i mgła od nowa.</summary>
+    private void Reproject()
+    {
+        _threeQuarter = Proj.ThreeQuarter;
+        if (_g is null) return;
+        _hero.MoveTo(GridToScreen(_g.Hero.X, _g.Hero.Y), true);
+        if (_g.AllyTurns > 0) _ally.MoveTo(GridToScreen(_g.AllyX, _g.AllyY), true);
+        for (var i = 0; i < _enemies.Count && i < _g.EnemiesCount; i++) _enemies[i].MoveTo(GridToScreen(_g.Enemies[i].X, _g.Enemies[i].Y), true);
+        for (var i = 0; i < _pickups.Count && i < _g.PickupsCount; i++) _pickups[i].MoveTo(GridToScreen(_g.Pickups[i].X, _g.Pickups[i].Y) - new Vector2(0, 2), true);
+        _fx.Clear();
+        _light.Clear();
+        _camera.Reproject();
+        _camera.SnapTo(_hero.Position);
+        _walls.Relayout();
+        _map.QueueRedraw();
+        _fog.Reproject();
+    }
+
+    /// <summary>Pola, których mur nie może całkiem zasłonić: widoczna podłoga, a mocniej postacie, znajdźki, pola ciosu, schody,
+    /// kałuże i błoto.</summary>
+    private void MarkSeeThrough()
+    {
+        _walls.ClearMarks();
+        void Sprite(ActorSprite s, bool actor)
+        {
+            if (!s.Visible) return;
+            var c = Proj.Floor(s.Position);
+            _walls.Mark(c.X, c.Y, actor);
+        }
+        Sprite(_hero, true);
+        _walls.Mark(_g.Hero.X, _g.Hero.Y, true);
+        Sprite(_ally, true);
+        foreach (var e in _enemies) Sprite(e, true);
+        foreach (var p in _pickups) Sprite(p, false);
+        for (var y = 0; y < Level.H - 1; y++)
+        {
+            for (var x = 0; x < Level.W; x++)
+            {
+                if (_g.Lv[x, y + 1] != Tile.Wall || !_g.Explored(x, y) || _g.Lv[x, y] == Tile.Wall) continue;
+                if (_g.Lv[x, y] == Tile.Stairs || _g.DangerCell(x, y) || (_g.Visible(x, y) && (_g.Puddle(x, y) || _g.Mud(x, y))))
+                    _walls.Mark(x, y, false);
+                else if (_g.Visible(x, y)) _walls.Mark(x, y, false, WallLayer.SeeFloor);
+            }
+        }
+    }
+
     public override void _Process(double delta)
     {
         if (_hero is null) return;
+        if (_threeQuarter != Proj.ThreeQuarter) Reproject();
+        if (_g is not null)
+        {
+            MarkSeeThrough();
+            _walls.Update((float)delta);
+        }
         _camera.Follow(_hero.Position, delta);
         if (_g is not null && _g.ActIs(ActMechanic.Dust)) // akt III: pył wisi w powietrzu
         {

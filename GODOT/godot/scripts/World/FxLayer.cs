@@ -19,6 +19,9 @@ public partial class FxLayer : Node2D
 
     public int ParticleCount => _particles.Count;
 
+    /// <summary>v0.21.54: cząsteczki do poświaty iskier (LightLayer).</summary>
+    public IReadOnlyList<Particle> Particles => _particles;
+
     public float Rand(float lo, float hi) => _rnd.RandfRange(lo, hi);
 
     public int RandInt(int n) => _rnd.RandiRange(0, n - 1);
