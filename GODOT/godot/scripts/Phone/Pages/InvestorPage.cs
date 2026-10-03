@@ -167,7 +167,7 @@ public sealed class InvestorPage : PhonePage
             var pw = p.Pill(right, ry, on ? $"WŁ +{m.Stake}" : $"+{m.Stake}", on ? PillKind.Done : PillKind.Gray);
             p.Text(tx, ry, m.Name, sel ? Ink.Brand : on ? Ink.Dark : Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
         }
-        var dc = p.Card(card.End.Y + 6, n > 0 ? 4 : 3);
+        var dc = p.Card(card.End.Y + 6, 3);
         string desc;
         if (_list.Sel == StripesRow) desc = "Wygląd: " + _d.Cosmetics[_d.CosmeticStripes].Desc;
         else if (_list.Sel == PowerRow) desc = $"Wariant mocy: {_d.MasteryClasses[_cls].PowerDesc} (mistrzostwo zawodu)";
@@ -191,14 +191,12 @@ public sealed class InvestorPage : PhonePage
             p.Text(tx, p.RowY(dc, 2), "Tryb inwestora: po pierwszej wygranej", Ink.Dim, TextAlign.Left, right - tx);
             return;
         }
-        p.Text(tx, p.RowY(dc, 1), $"Stawka {Investor.Stake(_d, mask)}, doświadczenie +{Investor.Xp(_d, mask)}%", Ink.Dark, TextAlign.Left, right - tx);
-        p.Divider(dc, 2);
-        p.Text(tx, p.RowY(dc, 2), $"Rekord: {_d.Classes[_cls].Name} - stawka {Meta.BestStake(_p, _cls)}", Ink.Done, TextAlign.Left, right - tx);
-        p.Divider(dc, 3); // v0.21.52 cz. b (#48): nagroda za kolejny stopień inwestora (najwyższa stawka wygranej budowy)
+        p.Text(tx, p.RowY(dc, 1), $"Stawka {Investor.Stake(_d, mask)}, dośw. +{Investor.Xp(_d, mask)}%, rekord {Meta.BestStake(_p, _cls)}", Ink.Dark, TextAlign.Left, right - tx);
+        p.Divider(dc, 2); // v0.21.52 cz. b (#48): nagroda za kolejny stopień inwestora (najwyższa stawka wygranej budowy)
         var rk = Progress.StakeRank(_d, _p);
         var next = rk < _d.StakeRanks.Length ? $"Stawka {_d.StakeRanks[rk].Xp}: {Progress.RewardLabel(_d, _d.StakeRanks[rk], _cls)}" : "Stopnie inwestora: wszystkie";
-        var npw = p.Pill(right, p.RowY(dc, 3), rk < _d.StakeRanks.Length ? $"{rk}/{_d.StakeRanks.Length}" : "MAX", rk < _d.StakeRanks.Length ? PillKind.Prog : PillKind.Done);
-        p.Stripe(dc, 3, Pal.Prog);
-        p.Text(tx, p.RowY(dc, 3), next, Ink.Prog, TextAlign.Left, right - npw - 4 - tx);
+        var npw = p.Pill(right, p.RowY(dc, 2), rk < _d.StakeRanks.Length ? $"{rk}/{_d.StakeRanks.Length}" : "MAX", rk < _d.StakeRanks.Length ? PillKind.Prog : PillKind.Done);
+        p.Stripe(dc, 2, Pal.Prog);
+        p.Text(tx, p.RowY(dc, 2), next, Ink.Prog, TextAlign.Left, right - npw - 4 - tx);
     }
 }

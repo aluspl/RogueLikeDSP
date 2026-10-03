@@ -395,7 +395,7 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         // nazwa w 2x + opis (tekst karty w 1.5x - czytelny na dużym ekranie)
         const float ts = 1.5f;
         f.Draw(this, new Vector2(x, y), c.Name, Ink.Dark, TextAlign.Left, 2);
-        if (unl) MasteryBadge(new Vector2(r.End.X - 14, y + 2), cls);
+        if (unl) MasteryBadge(new Vector2(r.Position.X + r.Size.X / 2 - 12, y + 2), cls); // lewa kolumna (prawy róg: przycisk opisu)
         y += 32;
         var colW = (int)(r.Size.X / 2 - 24);
         f.Draw(this, new Vector2(x, y), f.Fit(c.Desc, colW, ts), Ink.Dim, TextAlign.Left, ts);
