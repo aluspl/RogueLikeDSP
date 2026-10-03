@@ -86,21 +86,65 @@ inline constexpr core::enemy_def enemies[] = {
     { "Brak ciśnienia", "Stoi i dopompowuje innych", 12, 1, 2, 2, 4, 13, 107, false, core::status_effect::none, 0, 0, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 68, 0, 0, 0, "", core::element::none, 0 },
     { "Kolizja z kablem", "Koparka trafiła w kabel. Iskry!", 7, 1, 3, 0, 7, 13, 108, false, core::status_effect::shock, 12, 1, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 8, 0, 0, 0, "", core::element::power, 1 },
     { "Decyzja odmowna", "Stos pism z pieczątką ODMOWA", 34, 3, 5, 2, 12, 140, 109, true, core::status_effect::paper, 25, 0, core::slam_shape::square, "Stempel ODMOWA", 33, 6, 3, 0, 40, "Pozwolenie wydane", -1, 0, 50, 30, 1, "Odwołanie", core::element::none, 1 },
+    { "Grzyb domowy", "Zjada stare belki", 11, 1, 3, 1, 5, 15, 184, false, core::status_effect::poison, 20, 3, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 2, 4, 0, 0, 0, "", core::element::none, 0 },
+    { "Stara instalacja", "Aluminium pod tynkiem", 9, 2, 3, 0, 7, 15, 186, false, core::status_effect::shock, 15, 1, core::slam_shape::square, "", -1, 0, 0, 0, 0, "", 1, 1, 0, 0, 0, "", core::element::power, 1 },
+    { "Zawilgocony strych", "Boss: kapie i pleśnieje", 26, 2, 4, 1, 11, 130, 188, true, core::status_effect::poison, 25, 2, core::slam_shape::square, "Kapanie z dachu", 2, 6, 2, 0, 30, "Suchy strych", -1, 0, 0, 0, 0, "", core::element::water, 0 },
+    { "Pęknięta dylatacja", "Boss: rozsadza obie połówki", 36, 3, 5, 2, 12, 170, 190, true, core::status_effect::none, 0, 0, core::slam_shape::cross, "Rozwarcie", 28, 6, 2, 0, 50, "Szczelna dylatacja", -1, 0, 50, 25, 1, "Druga połowa", core::element::none, 1 },
+    { "Zerwana połać", "Boss: wiatr zrywa dach", 34, 3, 5, 2, 12, 170, 192, true, core::status_effect::slip, 30, 2, core::slam_shape::square, "Podmuch", 25, 6, 2, 0, 50, "Połać na miejscu", -1, 0, 0, 0, 0, "", core::element::none, 1 },
+    { "Pęknięty strop", "Boss: sypie się zabytek", 44, 4, 6, 3, 12, 220, 194, true, core::status_effect::none, 0, 0, core::slam_shape::cross, "Osypisko tynku", 41, 6, 2, 2, 60, "Strop podparty", -1, 0, 50, 20, 1, "Podpory", core::element::none, 0 },
 };
 
-inline constexpr core::stage_def stages[] = {
-    { "Pozwolenie", { 32, 34, 35, 36 }, 4, 6, -1, 130, 2, 3, 15 },
-    { "Przyłącza", { 37, 38, 39, 33 }, 4, 6, 40, 134, 1, 3, 28 },
-    { "Fundamenty", { 12, 13, 0, 3 }, 4, 5, -1, 107, 0, 0, 48 },
-    { "Izolacja fundamentów", { 14, 15, 12, 0 }, 4, 5, -1, 117, 0, 0, 22 },
-    { "Mury parteru", { 16, 17, 4, 5 }, 4, 6, -1, 126, 0, 0, 62 },
-    { "Strop", { 18, 19, 5, 7 }, 4, 6, 9, 138, 1, 0, 36 },
-    { "Dach", { 20, 21, 6, 3 }, 4, 8, -1, 150, 2, 1, 55 },
-    { "Ściany działowe", { 22, 23, 4, 5 }, 4, 7, -1, 159, 3, 1, 30 },
-    { "Okna i drzwi", { 24, 25, 6, 5 }, 4, 8, 10, 169, 4, 1, 41 },
-    { "Instalacje", { 26, 27, 1, 0 }, 4, 8, 11, 181, 5, 2, 46 },
-    { "Tynki i wylewki", { 28, 29, 2, 0 }, 4, 9, -1, 194, 5, 2, 38 },
-    { "Wykończenie i odbiór", { 30, 31, 2, 7 }, 4, 7, 8, 207, 5, 2, 72 },
+inline constexpr core::stage_def stages[] = {   // Dom jednorodzinny, potem etapy kolejnych kontraktów (career)
+    { "Pozwolenie", { 32, 34, 35, 36 }, 4, 6, -1, 130, 2, 3, 15, 0, 3, false },
+    { "Przyłącza", { 37, 38, 39, 33 }, 4, 6, 40, 134, 1, 3, 28, 1, 4, false },
+    { "Fundamenty", { 12, 13, 0, 3 }, 4, 5, -1, 107, 0, 0, 48, 2, 0, false },
+    { "Izolacja fundamentów", { 14, 15, 12, 0 }, 4, 5, -1, 117, 0, 0, 22, 3, 0, false },
+    { "Mury parteru", { 16, 17, 4, 5 }, 4, 6, -1, 126, 0, 0, 62, 4, 0, false },
+    { "Strop", { 18, 19, 5, 7 }, 4, 6, 9, 138, 1, 0, 36, 5, 0, false },
+    { "Dach", { 20, 21, 6, 3 }, 4, 8, -1, 150, 2, 1, 55, 6, 1, false },
+    { "Ściany działowe", { 22, 23, 4, 5 }, 4, 7, -1, 159, 3, 1, 30, 7, 1, false },
+    { "Okna i drzwi", { 24, 25, 6, 5 }, 4, 8, 10, 169, 4, 1, 41, 8, 1, false },
+    { "Instalacje", { 26, 27, 1, 0 }, 4, 8, 11, 181, 5, 2, 46, 9, 2, false },
+    { "Tynki i wylewki", { 28, 29, 2, 0 }, 4, 9, -1, 194, 5, 2, 38, 10, 2, false },
+    { "Wykończenie i odbiór", { 30, 31, 2, 7 }, 4, 7, 8, 207, 5, 2, 72, 11, 2, false },
+    { "Fundament punktowy", { 12, 13, 14, 0 }, 4, 4, -1, 146, 2, 0, 6, 12, 5, false },
+    { "Szkielet z bali", { 3, 23, 5, 16 }, 4, 5, -1, 158, 2, 0, 12, 12, 5, false },
+    { "Taras i schodki", { 3, 12, 22, 5 }, 4, 4, 9, 168, 2, 0, 8, 12, 5, false },
+    { "Dach z gontu", { 20, 21, 6, 3 }, 4, 5, -1, 181, 3, 1, 10, 13, 5, false },
+    { "Ganek i okiennice", { 24, 25, 3, 2 }, 4, 6, -1, 193, 3, 1, 9, 13, 5, false },
+    { "Strych", { 2, 29, 3, 25 }, 4, 5, 43, 203, 4, 1, 7, 13, 5, false },
+    { "Fundamenty (lewa)", { 12, 13, 0, 3 }, 4, 5, -1, 125, 0, 0, 22, 14, 0, false },
+    { "Fundamenty (prawa)", { 12, 13, 0, 3 }, 4, 5, -1, 128, 0, 0, 22, 14, 0, true },
+    { "Ściana wspólna", { 16, 17, 5, 19 }, 4, 6, 9, 145, 1, 0, 30, 14, 0, false },
+    { "Dach (lewa)", { 20, 21, 6, 3 }, 4, 6, -1, 170, 2, 1, 26, 15, 1, false },
+    { "Dach (prawa)", { 20, 21, 6, 3 }, 4, 6, -1, 175, 2, 1, 26, 15, 1, true },
+    { "Okna (lewa)", { 24, 25, 6, 5 }, 4, 7, -1, 185, 3, 1, 20, 15, 1, false },
+    { "Okna (prawa)", { 24, 25, 6, 5 }, 4, 6, 10, 193, 3, 1, 20, 15, 1, true },
+    { "Instalacje (lewa)", { 26, 27, 1, 0 }, 4, 7, -1, 208, 5, 2, 22, 16, 2, false },
+    { "Instalacje (prawa)", { 26, 27, 1, 0 }, 4, 7, -1, 216, 5, 2, 22, 16, 2, true },
+    { "Odbiór obu połówek", { 28, 30, 29, 31 }, 4, 6, 44, 231, 6, 2, 40, 16, 2, false },
+    { "Fundamenty", { 12, 13, 0, 3 }, 4, 5, -1, 117, 0, 0, 48, 2, 0, false },
+    { "Izolacja fundamentów", { 14, 15, 12, 0 }, 4, 5, -1, 127, 0, 0, 22, 3, 0, false },
+    { "Mury parteru", { 16, 17, 4, 5 }, 4, 6, -1, 137, 0, 0, 62, 4, 0, false },
+    { "Strop", { 18, 19, 5, 7 }, 4, 6, 9, 150, 1, 0, 36, 5, 0, false },
+    { "Ścianki kolankowe", { 16, 22, 25, 5 }, 4, 7, -1, 166, 2, 1, 28, 17, 1, false },
+    { "Więźba dachowa", { 3, 23, 25, 21 }, 4, 7, -1, 173, 2, 1, 44, 17, 1, false },
+    { "Dach", { 20, 21, 6, 3 }, 4, 8, -1, 180, 3, 1, 55, 6, 1, false },
+    { "Okna dachowe", { 24, 25, 6, 20 }, 4, 7, 45, 189, 4, 1, 34, 17, 1, false },
+    { "Ocieplenie poddasza", { 17, 29, 2, 15 }, 4, 8, -1, 196, 5, 2, 30, 18, 2, false },
+    { "Instalacje", { 26, 27, 1, 0 }, 4, 8, 11, 205, 6, 2, 46, 18, 2, false },
+    { "Wykończenie poddasza", { 28, 30, 2, 31 }, 4, 8, -1, 218, 6, 2, 38, 18, 2, false },
+    { "Odbiór", { 30, 31, 2, 7 }, 4, 7, 8, 235, 6, 2, 72, 11, 2, false },
+    { "Osuszanie piwnic", { 12, 29, 41, 0 }, 4, 5, -1, 99, 0, 0, 30, 19, 6, false },
+    { "Stare fundamenty", { 13, 14, 41, 37 }, 4, 6, -1, 106, 1, 0, 36, 19, 6, false },
+    { "Stropy drewniane", { 3, 41, 18, 2 }, 4, 6, 40, 115, 1, 0, 42, 19, 6, false },
+    { "Więźba i dach", { 20, 21, 3, 6 }, 4, 7, -1, 126, 2, 1, 40, 20, 1, false },
+    { "Kominy i elewacja", { 28, 30, 25, 29 }, 4, 7, -1, 132, 3, 1, 34, 20, 1, false },
+    { "Balkony", { 24, 25, 28, 6 }, 4, 7, 10, 141, 3, 1, 28, 20, 1, false },
+    { "Stare instalacje", { 42, 1, 27, 38 }, 4, 8, -1, 152, 4, 2, 44, 21, 6, false },
+    { "Tynki i sztukateria", { 28, 29, 41, 30 }, 4, 8, -1, 160, 4, 2, 38, 21, 6, false },
+    { "Klatka schodowa", { 31, 42, 30, 3 }, 4, 8, -1, 170, 5, 2, 30, 21, 6, false },
+    { "Odbiór konserwatora", { 41, 28, 31, 42 }, 4, 6, 46, 180, 5, 2, 60, 21, 6, false },
 };
 
 inline constexpr core::difficulty_def difficulties[] = {
@@ -119,7 +163,7 @@ inline constexpr core::upgrade_def upgrades[] = {   // Szkolenia: poziomy (przyr
     { "Warsztaty", "Lepsza broń i sprzęt", core::upgrade_effect::gear_pct, 4, { { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, {} }, { 35, 70, 125, 200, 0 }, { 20, 0, 0, 0 }, 1, 40 },
 };
 
-inline constexpr core::story_msg story_stages[] = {
+inline constexpr core::story_msg story_stages[] = {   // SMS na starcie etapu (indeks jak data::stages)
     { "Anna Nowak", { "Najpierw papiery! Mapa,", "warunki zabudowy,", "pozwolenie. Bez tego nic." } },
     { "Kierownik Marek", { "Pozwolenie prawie jest.", "Teraz przyłącza: woda,", "prąd, kanaliza. Uważaj!" } },
     { "Anna Nowak", { "Działka nasza! Liczę na", "mocne fundamenty. Uważaj", "na wodę i błoto w dole." } },
@@ -132,6 +176,44 @@ inline constexpr core::story_msg story_stages[] = {
     { "Kierownik Marek", { "Inspekcja Pracy w drodze!", "Kask, szelki, barierki -", "papiery też sprawdzą." } },
     { "Kierownik Marek", { "Tynki schną tydzień.", "Pleśń tylko na to czeka.", "Wietrz i nie odpuszczaj." } },
     { "Anna Nowak", { "Już widzę nasz salon.", "Tylko ten Termin... Dasz", "radę, mamy harmonogram!" } },
+    { "Anna Nowak", { "Domek nad jeziorem! Mały,", "z drewna, na słupkach.", "Wody tu nie brakuje..." } },
+    { "Kierownik Marek", { "Bale przyjechały. Kornik", "też, w gratisie. Trzymaj", "wymiar co do centymetra." } },
+    { "Kierownik Marek", { "Schodki na betonie.", "Betoniarka znów stęka.", "Uważaj na nią!" } },
+    { "Anna Nowak", { "Gont jak u babci na wsi!", "Tylko niech nie cieknie,", "bo tu leje co weekend." } },
+    { "Anna Nowak", { "Okiennice na zielono,", "ganek na kawę. Byle", "bez przeciągów." } },
+    { "Kierownik Marek", { "Strych pachnie wilgocią.", "Coś tam kapie i rośnie.", "Weź latarkę i termos." } },
+    { "Kierownik Marek", { "Bliźniak: dwie rodziny,", "jedna ściana. Zaczynamy", "od lewej połowy." } },
+    { "Kierownik Marek", { "Prawa połowa. Co zostało", "po lewej, przejdzie przez", "wspólną ścianę!" } },
+    { "Anna Nowak", { "Ściana wspólna musi", "tłumić sąsiada. I stać.", "Betoniarka już jedzie." } },
+    { "Kierownik Marek", { "Dach nad lewą połową.", "Pogoda na obie ta sama,", "nie licz na zmianę." } },
+    { "Anna Nowak", { "Sąsiedzi pytają, czemu", "ich połowa później.", "Bo kolejka, mówię." } },
+    { "Kierownik Marek", { "Okna po lewej. Przeciąg", "hula po obu stronach,", "ściana go nie zatrzyma." } },
+    { "Anna Nowak", { "Prognoza: nawałnica nad", "obiema połówkami naraz.", "Zamknij okna, szybko!" } },
+    { "Kierownik Marek", { "Dwa liczniki, dwa piece,", "jedna ściana z rurami.", "Nie pomyl połówek." } },
+    { "Kierownik Marek", { "Prawa strona. Zwarcie", "z lewej czeka w ścianie,", "jak go tam zostawiłeś." } },
+    { "Inspektor Kowal", { "Odbieram obie połówki.", "Dylatacja pękła? To", "nie przejdzie. Napraw." } },
+    { "Anna Nowak", { "Dom z poddaszem! Wyższy", "i z oknami w dachu. Na", "górze wieje mocniej." } },
+    { "Kierownik Marek", { "Folia, papa, drenaż.", "Najpierw sucho na dole,", "potem marzymy o górze." } },
+    { "Kierownik Marek", { "Mury parteru. Poddasze", "będzie ciężkie, więc", "trzymaj pion!" } },
+    { "Kierownik Marek", { "Strop pod poddasze.", "Grubszy niż zwykle, beton", "leje się dwa dni." } },
+    { "Kierownik Marek", { "Ścianki kolankowe. Tu", "zaczyna się wiatr: co", "4 tury poryw!" } },
+    { "Anna Nowak", { "Więźba stoi jak szkielet", "wieloryba. Kornik już", "obwąchuje krokwie." } },
+    { "Anna Nowak", { "Dachówka na wysokości.", "Trzymaj się mocno, wiatr", "nie śpi!" } },
+    { "Kierownik Marek", { "Okna dachowe. Silny", "wiatr zrywa połać! Łap", "blachę i trzymaj." } },
+    { "Kierownik Marek", { "Wełna między krokwie,", "folia bez dziur. Mostek", "termiczny lubi strychy." } },
+    { "Kierownik Marek", { "Inspekcja Pracy w drodze!", "Na poddaszu barierki,", "szelki i porządek." } },
+    { "Anna Nowak", { "Skosy, okna w dachu,", "pokój dla dzieci. Chcę", "to widzieć przed zimą!" } },
+    { "Anna Nowak", { "Ostatnia prosta. Termin", "wisi nad nami jak", "chmura nad kalenicą." } },
+    { "Konserwator Lis", { "Kamienica z 1904 roku.", "Remont pod nadzorem.", "Najpierw mokre piwnice." } },
+    { "Kierownik Marek", { "Fundament z kamienia", "polnego. Stare rury", "pękają, grzyb rośnie." } },
+    { "Konserwator Lis", { "Belki stropu do wymiany?", "Bez mojej zgody ani", "jednej! Złóż wniosek." } },
+    { "Kierownik Marek", { "Dach kamienicy: stara", "dachówka, nowa więźba.", "Na górze wieje!" } },
+    { "Konserwator Lis", { "Elewacja z ornamentem.", "Każdy odprysk zgłaszać.", "Pył też mnie interesuje." } },
+    { "Anna Nowak", { "Balkon z kutą barierką!", "Prognoza: nawałnica.", "Zdążysz przed burzą?" } },
+    { "Kierownik Marek", { "Aluminium w tynku, rury", "z ołowiu. Wszystko do", "wymiany. Uważaj na prąd!" } },
+    { "Konserwator Lis", { "Sztukateria to zabytek.", "Delikatnie z tynkiem,", "grzyb pod spodem też." } },
+    { "Anna Nowak", { "Klatka z lastryko i", "drewnianą poręczą. Ma", "być jak sto lat temu." } },
+    { "Konserwator Lis", { "Strop nad klatką pęka!", "Bez podparcia nie ma", "odbioru. Działaj." } },
 };
 inline constexpr core::story_msg story_win = { "Anna Nowak", { "Mamy klucze! Plan", "pokonał chaos budowy.", "Dziękujemy za wszystko!" } };
 inline constexpr core::story_msg story_lose = { "Kierownik Marek", { "Budowa stoi. Spokojnie -", "z lepszym planem pójdzie.", "Wracamy na plac?" } };
@@ -233,6 +315,12 @@ inline constexpr int enemy_rura = 37;
 inline constexpr int enemy_cisnienie = 38;
 inline constexpr int enemy_kabel = 39;
 inline constexpr int enemy_decyzja = 40;
+inline constexpr int enemy_grzyb = 41;
+inline constexpr int enemy_stara_instalacja = 42;
+inline constexpr int enemy_strych = 43;
+inline constexpr int enemy_dylatacja = 44;
+inline constexpr int enemy_polac = 45;
+inline constexpr int enemy_strop = 46;
 
 inline constexpr core::badge_def badges[] = {   // perk = uprawnienie: trwała premia na każdą budowę
     { "Bez usterek", "Etap bez żadnych obrażeń", 5, { core::perk_effect::hp, 2 }, "Bez skazy", -1 },
@@ -247,7 +335,7 @@ inline constexpr core::badge_def badges[] = {   // perk = uprawnienie: trwała p
 };
 
 inline constexpr int badges_count = 9;
-inline constexpr int enemies_count = 41;
+inline constexpr int enemies_count = 47;
 inline constexpr int badge_bez_usterek = 0;
 inline constexpr int badge_przed_terminem = 1;
 inline constexpr int badge_seryjny = 2;
@@ -290,11 +378,11 @@ inline constexpr int site_events_count = 5;
 inline constexpr int site_event_chance_pct = 45;
 
 inline constexpr core::weather_def weather[] = {   // pogoda dnia: losowana na starcie etapu
-    { "Słonecznie", "Pogodnie", "Bez wpływu na etap", core::weather_effect::none, 0, 40, false, 4095 },
-    { "Upał", "Moc +1 t.", "Moc odnawia się 1 turę dłużej", core::weather_effect::heat, 1, 16, true, 4095 },
-    { "Mróz", "Wolniejsi", "Problemy stoją co 3. turę", core::weather_effect::frost, 3, 14, false, 511 },
-    { "Wiatr", "Zasięg -1", "Broń z dystansu: zasięg -1", core::weather_effect::wind, 1, 14, true, 496 },
-    { "Deszcz", "Kałuże", "Wejście w kałużę = poślizg", core::weather_effect::rain, 9, 16, true, 511 },
+    { "Słonecznie", "Pogodnie", "Bez wpływu na etap", core::weather_effect::none, 0, 40, false, 1125899906842623ull },
+    { "Upał", "Moc +1 t.", "Moc odnawia się 1 turę dłużej", core::weather_effect::heat, 1, 16, true, 1125899906842623ull },
+    { "Mróz", "Wolniejsi", "Problemy stoją co 3. turę", core::weather_effect::frost, 3, 14, false, 69337717142015ull },
+    { "Wiatr", "Zasięg -1", "Broń z dystansu: zasięg -1", core::weather_effect::wind, 1, 14, true, 66038376161776ull },
+    { "Deszcz", "Kałuże", "Wejście w kałużę = poślizg", core::weather_effect::rain, 9, 16, true, 69337717142015ull },
 };
 inline constexpr int weather_count = 5;
 inline constexpr bool weather_no_bad_stack = true;
@@ -717,8 +805,12 @@ inline constexpr core::story_thread story_arc[] = {   // fabuła odkrywana z bud
     { "Polecenie", "Poziom inspektora 20", core::story_trigger::inspector, 20, { { "Inspektor Kowal", { "Poleciłem Pana firmę", "koledze z nadzoru.", "Niech się uczy." } }, { "Anna Nowak", { "Inspektor nas poleca?", "Marek, zapisz to", "złotymi literami." } } }, 2 },
     { "Szkolenie", "Poziom inspektora 25", core::story_trigger::inspector, 25, { { "Inspektor Kowal", { "Prowadzę szkolenie dla", "nowych inspektorów.", "Pokażę Pana budowy." } }, { "", { "", "", "" } } }, 1 },
     { "Emerytura", "Poziom inspektora 30", core::story_trigger::inspector, 30, { { "Inspektor Kowal", { "Idę niedługo na", "emeryturę. Następca", "zna Pana z opowieści." } }, { "Kierownik Marek", { "Bez niego to już nie", "będzie to samo. Kawa", "dla niego zawsze była." } } }, 2 },
+    { "Letnisko", "Wygraj Domek letniskowy", core::story_trigger::boss, 43, { { "Anna Nowak", { "Domek nad jeziorem stoi!", "Teściowa już pakuje", "walizki. Dzięki, szefie." } }, { "", { "", "", "" } } }, 1 },
+    { "Sąsiedzi", "Wygraj Bliźniak", core::story_trigger::boss, 44, { { "Kierownik Marek", { "Obie połówki odebrane.", "Sąsiedzi kłócą się tylko", "o płot. To nie my!" } }, { "", { "", "", "" } } }, 1 },
+    { "Pokój pod dachem", "Pokonaj Zerwaną połać", core::story_trigger::boss, 45, { { "Anna Nowak", { "Pokój na poddaszu", "z oknem w dachu. Dzieci", "już tam śpią!" } }, { "", { "", "", "" } } }, 1 },
+    { "Zabytek", "Wygraj Kamienicę", core::story_trigger::boss, 46, { { "Konserwator Lis", { "Odbiór bez uwag. Strop", "trzyma, sztukateria cała.", "Pierwszy raz to piszę." } }, { "Kierownik Marek", { "Konserwator pochwalił?", "Szefie, to jak śnieg", "w lipcu. Pijemy kawę!" } } }, 2 },
 };
-inline constexpr int story_arc_count = 26;
+inline constexpr int story_arc_count = 30;
 
 inline constexpr core::secret_def secrets[] = {   // sekretne zlecenia: "???" z podpowiedzią, nagroda po wykonaniu
     { "Bez kofeiny też się da", "Wygraj bez picia kawy", core::secret_kind::no_coffee_win, 0, core::secret_reward::cls, 9, "Nowy zawód: Spawacz", { "Kierownik Marek", { "Wygrana bez kawy!", "Nowy zawód: Spawacz -", "Spaw: iskry i dym." } } },
@@ -750,13 +842,26 @@ inline constexpr core::cosmetic_def cosmetics[] = {   // wygląd z sekretnych zl
     { "Ceglasty kask", "Kask bohatera w kolorze cegły", 6486 },
     { "Oranżowy kask", "Kask bohatera na oranżowo", 575 },
     { "Limonkowy kask", "Kask bohatera na limonkowo", 5972 },
+    { "Sosnowy kask", "Kask w kolorze sosny", 10840 },
+    { "Grafitowy kask", "Kask bohatera na grafitowo", 10536 },
+    { "Kremowy kask", "Kask jak sztukateria", 25501 },
 };
 inline constexpr int secrets_count = 8;
-inline constexpr int cosmetics_count = 19;
+inline constexpr int cosmetics_count = 22;
 inline constexpr uint64_t secret_paper_mask = 1232655613952ull;   // problemy papierowe (Akt 0 bez obrażeń)
 inline constexpr int secret_helper_boss = 8;   // boss pokonany ciosem brygady (Szef tylko dzwoni)
 inline constexpr int cosmetic_gold = 0;   // złoty błysk broni przy krycie
 inline constexpr int cosmetic_stripes = 1;   // kask w paski (wybór zawodu)
+
+inline constexpr core::career_def career[] = {   // kontrakty mapy kariery (0 = Dom jednorodzinny, domyślny)
+    { "Dom jednorodzinny", "Dom", "Dom Nowaków od papierów", 0, 12, 2, core::career_unlock::none, 0, 0, false, -1, 0, "", -1 },
+    { "Domek letniskowy", "Letniskowy", "Krótko, z drewna, nad wodą", 12, 6, 0, core::career_unlock::wins, 1, 0, false, 43, 20, "Letnik", 19 },
+    { "Bliźniak", "Bliźniak", "Dwie połówki, jedna ściana", 18, 10, 0, core::career_unlock::wins, 3, 0, true, 44, 30, "Dobry sąsiad", -1 },
+    { "Dom z poddaszem", "Poddasze", "Wyżej i mocniej wieje", 28, 12, 0, core::career_unlock::inspector, 8, 4, false, 45, 30, "Pod samym dachem", 20 },
+    { "Kamienica", "Kamienica", "Remont zabytku z 1904 r.", 40, 10, 0, core::career_unlock::inspector, 12, 0, false, 46, 40, "Konserwator", 21 },
+};
+inline constexpr int career_count = 5;
+inline constexpr int career_twin_carry_max = 3;   // bliźniak: ile problemów z pierwszej połowy przechodzi
 
 inline constexpr core::decor_def estate_decor[] = {   // ozdoby Osiedla (klatki w houses.bmp za pustą działką)
     { "Lipa", 1, 0 },
@@ -883,10 +988,11 @@ inline constexpr core::collection_def collections[] = {   // kolekcje: komplet -
     { "Pod dachem", "Problemy aktu II", core::collection_kind::kills, 66060408ull, 10, { 0, core::progress_reward::title, -1, 0, "Łowca usterek" }, { core::perk_effect::hp, 0 } },
     { "Wykończenie", "Problemy aktu III", core::collection_kind::kills, 4227858567ull, 10, { 0, core::progress_reward::helmet, 16, 0, "" }, { core::perk_effect::hp, 0 } },
     { "Papierologia", "Problemy Aktu 0", core::collection_kind::kills, 1095216660480ull, 10, { 0, core::progress_reward::title, -1, 0, "Urzędnik" }, { core::perk_effect::hp, 0 } },
-    { "Karty bossów", "Każdy boss pokonany", core::collection_kind::bosses, 0ull, 1, { 0, core::progress_reward::perk, -1, 0, "" }, { core::perk_effect::xp_pct, 5 } },
+    { "Karty bossów", "Każdy boss pokonany", core::collection_kind::bosses, 1099511631616ull, 1, { 0, core::progress_reward::perk, -1, 0, "" }, { core::perk_effect::xp_pct, 5 } },
     { "Album Osiedla", "Wszystkie ozdoby Osiedla", core::collection_kind::decor, 0ull, 1, { 0, core::progress_reward::title, -1, 0, "Architekt" }, { core::perk_effect::hp, 0 } },
+    { "Bossowie kariery", "Bossowie nowych kontraktów", core::collection_kind::bosses, 131941395333120ull, 1, { 0, core::progress_reward::title, -1, 0, "Budowniczy" }, { core::perk_effect::hp, 0 } },
 };
-inline constexpr int collections_count = 6;
+inline constexpr int collections_count = 7;
 
 inline constexpr core::task_def daily_tasks[] = {   // zadania: licznik z budów dnia / tygodnia, nagroda w Respekcie
     { "Pokonaj 2 elity", core::task_kind::elites, 2, 5 },
@@ -938,10 +1044,15 @@ inline constexpr core::progress_title progress_titles[] = {   // tytuły: inspek
     { "Łowca usterek", 2, 2 },
     { "Urzędnik", 2, 4 },
     { "Architekt", 2, 6 },
+    { "Budowniczy", 2, 7 },
     { "Niezawodny", 3, 14 },
     { "Pracowity", 4, 40 },
+    { "Letnik", 5, 1 },
+    { "Dobry sąsiad", 5, 2 },
+    { "Pod samym dachem", 5, 3 },
+    { "Konserwator", 5, 4 },
 };
-inline constexpr int progress_titles_count = 16;
+inline constexpr int progress_titles_count = 21;
 
 inline constexpr const char* version = "v0.21.52";   // numer wersji (ekran tytułowy, changelog)
 
@@ -980,6 +1091,17 @@ inline constexpr const char* meta_help[] = {   // Jak grać: podsumowanie budowy
     "Fabuła: SMS-y w Osiedlu (A).",
 };
 inline constexpr int meta_help_count = 6;
+
+inline constexpr const char* career_help[] = {   // Jak grać: mapa kariery (kontrakty, odblokowanie, nagrody)
+    "Tytuł, A: mapa kariery - inne",
+    "budynki z własnymi etapami,",
+    "problemami i bossem. Domek",
+    "(1 wygrana), Bliźniak (3),",
+    "Poddasze, Kamienica: inspektor.",
+    "1. wygrana: Respekt, tytuł,",
+    "kask. Bliźniak: wspólna ściana.",
+};
+inline constexpr int career_help_count = 7;
 
 inline constexpr const char* goals_help[] = {   // Jak grać: drzewko Szkoleń, kolekcje, zadania dnia, seria dni
     "Drzewko Szkoleń: Fach, BHP,",
@@ -1038,7 +1160,10 @@ inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonog
 inline constexpr int tips_count = 19;
 
 inline constexpr int classes_count = 12;
-inline constexpr int stages_count = 12;
+inline constexpr int stages_count = 12;   // etapy Domu jednorodzinnego (kontrakt 0)
+inline constexpr int all_stages_count = 50;   // v0.21.52 cz. d: z etapami kolejnych kontraktów
+inline constexpr int stage_looks_count = 22;   // palety etapów (stage_palettes_N)
+inline constexpr int tile_sets_count = 7;
 inline constexpr int difficulties_count = 3;
 inline constexpr int default_difficulty = 1;
 inline constexpr int ng_hp_pct_per_tier = 20;

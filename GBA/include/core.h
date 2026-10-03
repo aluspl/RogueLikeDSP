@@ -19,7 +19,8 @@ namespace core
     constexpr int max_hits = 8;         // zdarzenia trafień w jednej turze (dla efektów)
     constexpr int max_walls = 5;        // tymczasowe mury (Ścianka III ma 5 pól)
     constexpr int max_enemy_types = 48;  // rodzaje problemów (katalog: 16 + 32 bity w profilu)
-    constexpr int max_stages = 12;      // v0.21.49: 10 etapów + 2 Aktu 0 (podsumowanie: 12 wartości w tablicach game)
+    constexpr int max_stages = 12;      // v0.21.49: 10 etapów + 2 Aktu 0 (podsumowanie: 12 wartości w tablicach game);
+                                        // v0.21.52 cz. d: tyle etapów ma najdłuższy kontrakt mapy kariery
     constexpr int max_gear_slots = 6;
     constexpr int recap_hits_n = 3;     // v0.21.50 cz. 4: ostatnie ciosy w bohatera (podsumowanie budowy)
     // Oś czasu podsumowania (#33): co się działo na etapie (bity w game::stage_flags).
@@ -731,7 +732,13 @@ namespace core
     }
 
     static_assert(data::enemies_count <= max_enemy_types);
-    static_assert(data::materials_count <= 4 && data::stages_count <= max_stages);
+    static_assert(data::materials_count <= 4 && data::stages_count <= max_stages && data::all_stages_count <= 64);
+    constexpr bool career_routes_fit()   // v0.21.52 cz. d: każdy kontrakt mieści się w tablicach etapów stanu budowy
+    {
+        for(int i = 0; i < data::career_count; ++i) if(data::career[i].count > max_stages) return false;
+        return data::career_count <= 6;   // profil: wyniki 6 kontraktów
+    }
+    static_assert(career_routes_fit());
 
     // Kładka: zasięg (pola) z danych naprawy "bridge".
     constexpr int bridge_reach()
@@ -751,7 +758,7 @@ namespace core
         pickup pickups[max_pickups];
         int pickups_count = 0;
         int cls = 0;
-        int stage = 0;               // 0..stages_count-1
+        int stage = 0;               // 0..route_count()-1 (etap kontraktu; v0.21.52 cz. d)
         int diff = data::default_difficulty;   // indeks w data::difficulties
         int tier = 0;                // NG+: ile razy budowa została już ukończona
         int def_bonus = 0, dmg_bonus = 0;
@@ -788,6 +795,10 @@ namespace core
         bool second_used = false;    // Druga szansa zużyta
         // v0.21.49 (część 2): wybuch po usunięciu problemu (czerwone pola), strzały z dystansu (efekty warstwy GBA)
         int8_t blast_x = -1, blast_y = -1, blast_timer = 0, blast_dmg = 0;
+        // v0.21.52 cz. d (#47): kontrakt mapy kariery (data::career) i problemy przeniesione z pierwszej połowy bliźniaka
+        // (w miejscu wyrównania przed shot_events - rozmiar stanu bez zmian; stary zapis budowy ma tu 0 = Dom jednorodzinny)
+        int8_t contract = 0;
+        uint8_t twin_carry = 0;
         uint32_t shot_events = 0;    // bitmaska: którzy wrogowie strzelili w tej turze (warstwa GBA czyta i zeruje)
         // v0.21.49 (część 3): Akt 0 - pierwszy etap budowy (0 z Aktem 0, inaczej za nim), zebrane dokumenty (pieczątki)
         int8_t first_stage = 0;
@@ -846,20 +857,31 @@ namespace core
         // Numer etapu dla gracza (1..) i liczba etapów tej budowy (bez Aktu 0, gdy nieodblokowany).
         enum secret_flag : uint8_t { secret_helper_boss = 1, secret_paper_clean = 2 };
 
+        // v0.21.52 cz. d (#47): kontrakt budowy - etapy stage = 0..route_count()-1 to kolejne etapy kontraktu w data::stages
+        // (Dom jednorodzinny: te same indeksy co wcześniej).
+        const career_def& kdef() const { return data::career[contract]; }
+        int route_count() const { return kdef().count; }       // etapy kontraktu (z Aktem 0)
+        int prelude_count() const { return kdef().prelude; }   // etapy Aktu 0 na początku (tylko Dom)
+        int stage_id(int s) const { return kdef().first + s; }  // indeks w data::stages
+        const stage_def& sdef(int s) const { return data::stages[stage_id(s)]; }
+        const stage_def& sdef() const { return sdef(stage); }
+        bool last_stage() const { return stage == route_count() - 1; }
         int stage_number() const { return stage - first_stage + 1; }
-        int stages_in_run() const { return data::stages_count - first_stage; }
-        const char* act_numeral() const { return data::acts[data::stages[stage].act].numeral; }
+        int stages_in_run() const { return route_count() - first_stage; }
+        const char* act_numeral() const { return data::acts[sdef().act].numeral; }
         // Etap we wzorach (błoto, kałuże, porywy, oferta ścieżek) liczony od Fundamentów: Akt 0 nie zmienia wzorów
         // etapów budowy (Akt 0 ma ujemne numery).
-        int pattern_stage() const { return stage - data::prelude_stages; }
+        int pattern_stage() const { return stage - prelude_count(); }
 
         // ------------------------------------------------------------------ mechanika aktu: błoto, porywy, pył
-        const act_def& adef() const { return data::acts[data::stages[stage].act]; }
+        const act_def& adef() const { return data::acts[sdef().act]; }
+        // Wartość mechaniki aktu; kontrakt może mieć silniejsze porywy (Dom z poddaszem: co 4 tury).
+        int mech_value() const { return adef().mechanic == act_mechanic::gust && kdef().gust > 0 ? kdef().gust : adef().mech_value; }
         bool act_is(act_mechanic m) const { return adef().mechanic == m; }
         // Błoto (akt I): stały wzór na podłodze zależny od etapu; wejście kosztuje dodatkową turę. Kładka też na błoto.
         bool mud(int x, int y) const
         {
-            if(! act_is(act_mechanic::mud) || lv.at(x, y) != tile::floor || (x * 5 + y * 11 + pattern_stage() * 3) % adef().mech_value != 0) return false;
+            if(! act_is(act_mechanic::mud) || lv.at(x, y) != tile::floor || (x * 5 + y * 11 + pattern_stage() * 3) % mech_value() != 0) return false;
             for(int i = 0; i < bridges; ++i) if(cheb(x, y, bridge_x[i], bridge_y[i]) <= bridge_reach()) return false;
             return true;
         }
@@ -867,19 +889,19 @@ namespace core
         int gust_in() const   // tury do kolejnego porywu (0 = brak porywów w tym akcie)
         {
             if(! act_is(act_mechanic::gust)) return 0;
-            int v = adef().mech_value, t = turns - stage_start_turn;
+            int v = mech_value(), t = turns - stage_start_turn;
             return v - t % v;
         }
         int gust_dir() const   // kierunek kolejnego porywu: 0 prawo, 1 dół, 2 lewo, 3 góra
         {
             int t = turns - stage_start_turn + gust_in();
-            return (t / imax(1, adef().mech_value) + pattern_stage()) & 3;
+            return (t / imax(1, mech_value()) + pattern_stage()) & 3;
         }
         static constexpr int8_t gust_vec[4][2] = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } };
         static const char* dir_name(int d) { static const char* n[4] = { "w prawo", "w dół", "w lewo", "w górę" }; return n[d & 3]; }
         void gust_tick()
         {
-            int v = adef().mech_value, t = turns - stage_start_turn;
+            int v = mech_value(), t = turns - stage_start_turn;
             if(t <= 0) return;
             if(t % v == v - 1) { push(message().add("Poryw wiatru za 1 t. ").add(dir_name(gust_dir())).as(bad)); return; }
             if(t % v != 0) return;
@@ -892,9 +914,9 @@ namespace core
             }
             else push(message().add("Poryw - trzymasz się muru").as(good));
         }
-        int dust_sight() const { return act_is(act_mechanic::dust) ? adef().mech_value : 0; }
+        int dust_sight() const { return act_is(act_mechanic::dust) ? mech_value() : 0; }
         // Pieczątki (Akt 0): na etapie ze schodami leżą dokumenty; dopóki nie zbierzesz wszystkich, schody są zamknięte.
-        int docs_needed() const { return act_is(act_mechanic::stamps) && data::stages[stage].boss < 0 ? adef().mech_value : 0; }
+        int docs_needed() const { return act_is(act_mechanic::stamps) && sdef().boss < 0 ? mech_value() : 0; }
         int docs_count() const { int n = 0; for(int i = 0; i < data::documents_count; ++i) n += (docs >> i) & 1; return n; }
         bool stairs_locked() const { return docs_count() < docs_needed(); }
 
@@ -944,7 +966,7 @@ namespace core
         // Pogoda dnia: losowanie wagami spośród dozwolonych na etapie s (bad_only: tylko niekorzystne, jeśli są).
         bool weather_allowed(int i, int s, bool bad_only) const
         {
-            return (data::weather[i].stages & (1u << s)) && (! bad_only || data::weather[i].bad);
+            return ((data::weather[i].stages >> stage_id(s)) & 1) && (! bad_only || data::weather[i].bad);
         }
         int roll_weather(int s, bool bad_only = false)
         {
@@ -1100,7 +1122,7 @@ namespace core
         int build_days() const
         {
             int t = 0;
-            for(int s = imax(first_stage, data::prelude_stages); s < data::stages_count; ++s)
+            for(int s = imax(first_stage, prelude_count()); s < route_count(); ++s)
                 t += data::schedule_min_days + stage_days[s] / data::schedule_turns_per_day;
             return t;
         }
@@ -1314,7 +1336,7 @@ namespace core
         bool elite_is(const actor& e, elite_effect x) const { return e.elite >= 0 && data::elites[e.elite].effect == x; }
         int elite_chance() const
         {
-            const int c = imax(0, data::elite_act_pct[data::stages[stage].act] + data::elite_diff_pct[diff] + tier * data::elite_tier_pct);
+            const int c = imax(0, data::elite_act_pct[sdef().act] + data::elite_diff_pct[diff] + tier * data::elite_tier_pct);
             return weekly_has(weekly_rule::elite_pct) ? c * weekly_value(weekly_rule::elite_pct) / 100 : c;   // wyzwanie: Elity x2
         }
         void make_elite(int i, int trait)
@@ -1343,7 +1365,7 @@ namespace core
             recap_hit& h = last_hits[0];
             h.src = int8_t(src); h.elite = int8_t(elite); h.kind = uint8_t(k); h.stage = int8_t(stage); h.amount = int16_t(imin(32767, amount));
             if(h.amount > worst_hit.amount) worst_hit = h;
-            if(stage < data::prelude_stages && src >= 0 && ((data::secret_paper_mask >> src) & 1) && paper_hits < 255) ++paper_hits;
+            if(stage < prelude_count() && src >= 0 && ((data::secret_paper_mask >> src) & 1) && paper_hits < 255) ++paper_hits;
         }
         void note_combo()
         {
@@ -1401,11 +1423,11 @@ namespace core
             int n = 0;
             auto add = [&](const recap_line& l) { if(n < max) out[n++] = l; };
             static const char* flag_names[7] = { "magazyn", "ulepszenie", "elita", "boss pokonany", "kombinacje", "synergia", "premia z SMS" };
-            for(int s = first_stage; s <= stage && s < data::stages_count; ++s)
+            for(int s = first_stage; s <= stage && s < route_count(); ++s)
             {
                 const bool dead_here = recap_current(s) && st == status::dead;
                 recap_line l;
-                l.text.add(s - first_stage + 1).add(". ").add(data::stages[s].name);
+                l.text.add(s - first_stage + 1).add(". ").add(sdef(s).name);
                 l.tail.add(recap_days(s)).add(" d., ").add(recap_kills(s)).add(" usun.");
                 l.ink = uint8_t(dead_here ? bad : info);
                 add(l);
@@ -1508,7 +1530,7 @@ namespace core
         // 0-1 pole wydarzenia na etapie (nie pierwszym budowy i nie z bossem); wydarzenie bez powtórek w budowie.
         void place_event()
         {
-            if(data::stages[stage].boss >= 0 || stage == first_stage || lv.rooms_count < 2 || pickups_count >= max_pickups) return;
+            if(sdef().boss >= 0 || stage == first_stage || lv.rooms_count < 2 || pickups_count >= max_pickups) return;
             rng er = side_rng(101);
             if(er.range(1, 100) > data::choice_event_chance_pct) return;
             int n = 0;
@@ -1715,7 +1737,7 @@ namespace core
         // w środku śpi elita-strażnik; na środku skrzynia.
         void place_secret()
         {
-            if(data::stages[stage].boss >= 0 || lv.rooms_count < 2) return;
+            if(sdef().boss >= 0 || lv.rooms_count < 2) return;
             rng sr = side_rng(202);
             if(sr.range(1, 100) > data::secret_chance_pct) return;
             for(int a = 0; a < 80 && secret_x < 0; ++a)
@@ -1740,7 +1762,7 @@ namespace core
             if(secret_x < 0) return;
             const int cx = secret_rx + 1, cy = secret_ry + 1;
             if(pickups_count < max_pickups) pickups[pickups_count++] = { int8_t(cx), int8_t(cy), uint8_t(chest), true };
-            const stage_def& sd = data::stages[stage];
+            const stage_def& sd = sdef();
             if(sr.range(1, 100) <= data::secret_guard_pct && enemies_count < max_enemies)   // strażnik: elita, śpi w kącie
             {
                 const int gx = secret_rx + 2 * (sr.range(0, 1)), gy = secret_ry + 2 * (sr.range(0, 1));
@@ -1881,7 +1903,7 @@ namespace core
         const difficulty_def& ddef() const { return data::difficulties[diff]; }
 
         // Wiadomość fabularna na wejściu etapu (przy NG+ pierwszy etap ma własną).
-        const story_msg& stage_story() const { return tier > 0 && stage == first_stage ? data::story_ngplus : data::story_stages[stage]; }
+        const story_msg& stage_story() const { return tier > 0 && stage == first_stage ? data::story_ngplus : data::story_stages[stage_id(stage)]; }
 
         bool visible(int x, int y) const { return lv.in(x, y) && fov[y][x] == in_view; }
         bool explored(int x, int y) const { return lv.in(x, y) && fov[y][x] != unknown; }
@@ -1931,12 +1953,12 @@ namespace core
         // Trudność = etap x poziom x NG+. Mnożniki w procentach, premie sumowane.
         int enemy_hp_pct() const
         {
-            return data::stages[stage].hp_pct * ddef().hp_pct / 100 * (100 + tier * data::ng_hp_pct_per_tier) / 100
+            return sdef().hp_pct * ddef().hp_pct / 100 * (100 + tier * data::ng_hp_pct_per_tier) / 100
                    * (100 + investor_value(investor_effect::enemy_hp)) / 100;
         }
         int enemy_dmg_bonus() const
         {
-            return data::stages[stage].dmg_bonus + ddef().dmg_bonus + tier * data::ng_dmg_bonus_per_tier + investor_value(investor_effect::enemy_dmg);
+            return sdef().dmg_bonus + ddef().dmg_bonus + tier * data::ng_dmg_bonus_per_tier + investor_value(investor_effect::enemy_dmg);
         }
         int score_pct() const { return ddef().score_pct * (100 + tier * data::ng_score_pct_per_tier) / 100; }
         int xp() const { return xp_pct / 100; }
@@ -1977,9 +1999,10 @@ namespace core
         }
 
         void new_run(int class_index, uint32_t seed, int difficulty = data::default_difficulty,
-                     const run_mods& mods = run_mods())
+                     const run_mods& mods = run_mods(), int contract_index = 0)
         {
             *this = game();
+            contract = int8_t(contract_index >= 0 && contract_index < data::career_count ? contract_index : 0);
             cls = class_index;
             diff = difficulty;
             bonus = mods;
@@ -1990,7 +2013,7 @@ namespace core
             hero.max_hp = hero.hp = int16_t(cdef().max_health + mods.hp);
             hero.alive = true;
             cash = mods.cash;
-            first_stage = int8_t(mods.act0 ? 0 : data::prelude_stages);   // bez nagrody Akt 0 budowa zaczyna się od Fundamentów
+            first_stage = int8_t(mods.act0 ? 0 : prelude_count());   // bez nagrody Akt 0 budowa zaczyna się od Fundamentów
             start_stage(first_stage);
             thermos = imin(thermos_cap(), mods.start_coffee);   // Respekt: Zaprawiony w boju
         }
@@ -2016,6 +2039,13 @@ namespace core
 
         void start_stage(int s, int path = -1)
         {
+            // v0.21.52 cz. d (#47): bliźniak - druga połowa ma tę samą pogodę i wydarzenie na placu co pierwsza, a problemy
+            // niedokończone w pierwszej połowie przechodzą przez wspólną ścianę (do career_twin_carry_max)
+            const bool twin = s == stage + 1 && sdef(s).twin;
+            const int8_t twin_weather = weather, twin_event = stage_event;
+            int carry = 0;
+            if(twin) for(int i = 0; i < enemies_count; ++i) carry += enemies[i].alive && i != boss;
+            twin_carry = uint8_t(imin(carry, data::career_twin_carry_max));
             stage = s;
             st = status::playing;
             stage_path = int8_t(path);
@@ -2042,7 +2072,7 @@ namespace core
                 borrow_cls = int8_t(k);
             }
             for(auto& row : fov) for(auto& c : row) c = unknown;
-            const stage_def& sd = data::stages[stage];
+            const stage_def& sd = sdef();
             const room& first = lv.rooms[0];
             const room& last = lv.rooms[lv.rooms_count - 1];
             hero.x = int8_t(first.cx()); hero.y = int8_t(first.cy());
@@ -2050,7 +2080,7 @@ namespace core
             if(sd.boss < 0) { stairs_x = last.cx(); stairs_y = last.cy(); lv.t[stairs_y][stairs_x] = tile::stairs; }
 
             enemies_count = 0;
-            const int count = imax(1, sd.enemy_count + (pd ? pd->enemies : 0));   // ścieżka: więcej / mniej problemów
+            const int count = imax(1, sd.enemy_count + (pd ? pd->enemies : 0) + twin_carry);   // ścieżka: więcej / mniej problemów
             for(int i = 0; i < count && enemies_count < max_enemies; ++i)
             {
                 int room_i = 1 + r.range(0, lv.rooms_count - 2 > 0 ? lv.rooms_count - 2 : 0);
@@ -2082,18 +2112,20 @@ namespace core
                 pickups[pickups_count++] = { int8_t(x), int8_t(y), uint8_t(i == 0 ? coffee : r.range(0, 2)), true };
             }
             push(message().add("Etap ").add(stage_number()).add(": ").add(sd.name));
+            if(twin_carry > 0) push(message().add("Wspólna ściana: +").add(int(twin_carry)).add(" z 1. połowy").as(bad));
             if(pd)   // ścieżka z harmonogramu: budżet i materiały od razu
             {
                 push(message().add("Ścieżka: ").add(pd->name));
                 if(pd->cash != 0) cash = imax(0, cash + income(pd->cash));
                 for(int k = 0; k < pd->materials; ++k) add_material(r.range(0, data::materials_count - 1));
             }
-            weather = int8_t(roll_weather(s, pd && pd->bad_weather));   // pogoda dnia
+            weather = twin ? twin_weather : int8_t(roll_weather(s, pd && pd->bad_weather));   // pogoda dnia (bliźniak: ta sama)
             if(weekly_has(weekly_rule::weather)) weather = int8_t(weekly_value(weekly_rule::weather));   // wyzwanie: Mokry tydzień
             if(wdef().effect != weather_effect::none)
                 push(message().add("Pogoda: ").add(wdef().name).add(" (").add(wdef().short_name).add(")").as(wdef().bad ? bad : good));
             stage_event = -1;   // wydarzenie na placu: nie na pierwszym etapie i nie u bossa
-            if(s > first_stage && sd.boss < 0 && ! (pd && pd->no_event) && r.range(1, 100) <= data::site_event_chance_pct)
+            if(twin) { if(twin_event >= 0) apply_event(twin_event); }   // bliźniak: to samo wydarzenie na obu połówkach
+            else if(s > first_stage && sd.boss < 0 && ! (pd && pd->no_event) && r.range(1, 100) <= data::site_event_chance_pct)
             {
                 int e = r.range(0, data::site_events_count - 1);
                 // niekorzystna pogoda i niekorzystne wydarzenie naraz to za dużo: wydarzenie przepada
@@ -2357,7 +2389,7 @@ namespace core
                 {
                     stage_flags[stage] = uint8_t(stage_flags[stage] | recap_boss);
                     if(stage_damage == boss_wake_damage && clean_bosses < 255) ++clean_bosses;   // zlecenie Czysta robota
-                    if(stage == data::prelude_stages - 1 && first_stage == 0 && paper_hits == 0)   // Akt 0 bez ciosu od papierów
+                    if(stage == prelude_count() - 1 && first_stage == 0 && paper_hits == 0)   // Akt 0 bez ciosu od papierów
                         secret_flags = uint8_t(secret_flags | secret_paper_clean);
                     score += (500 + 100 * imax(0, pattern_stage() + 1)) * score_pct() / 100;
                     gain_xp(data::xp_boss);
@@ -2368,21 +2400,21 @@ namespace core
                         push(message().add(ed.reward_title).add("! +").add(income(ed.reward_cash)).add(" zł").as(good));
                     }
                     finish_stage();
-                    if(stage == data::stages_count - 1)
+                    if(last_stage())
                     {
                         st = status::won;
                         push(message().add("Odbiór techniczny zaliczony!").as(good));
                     }
-                    else if(data::stages[stage + 1].act == data::stages[stage].act)   // boss w środku aktu: dalej bez Hurtowni
+                    else if(sdef(stage + 1).act == sdef().act)   // boss w środku aktu: dalej bez Hurtowni
                     {
                         st = status::stage_clear;
-                        push(message().add("Etap zakończony: ").add(data::stages[stage].name).as(good));
+                        push(message().add("Etap zakończony: ").add(sdef().name).as(good));
                     }
                     else   // boss aktu: premia za akt, potem Hurtownia
                     {
-                        const act_def& ad = data::acts[data::stages[stage].act];
+                        const act_def& ad = adef();
                         int stages_in_act = 0;
-                        for(int i = 0; i < data::stages_count; ++i) stages_in_act += data::stages[i].act == data::stages[stage].act;
+                        for(int i = 0; i < route_count(); ++i) stages_in_act += sdef(i).act == sdef().act;
                         act_bonus = income(ad.bonus_per_stage * stages_in_act + ad.bonus_per_kill * act_kills);
                         cash += act_bonus;
                         act_kills = 0;
@@ -3064,15 +3096,15 @@ namespace core
             int got = stage_respect();
             respect += got;
             push(message().add("Respekt +").add(got).as(loot));
-            if(stage < data::stages_count - 1) roll_boons();   // premia 1 z 3 przed harmonogramem (nie po odbiorze)
+            if(! last_stage()) roll_boons();   // premia 1 z 3 przed harmonogramem (nie po odbiorze)
         }
 
         // Respekt za bieżący etap: zwykły, boss w środku aktu, boss aktu, ostatni; mnożnik jak wynik (trudność, NG+).
         int stage_respect() const
         {
-            const stage_def& sd = data::stages[stage];
-            int base = stage == data::stages_count - 1 ? data::respect_final
-                     : (sd.boss < 0 ? data::respect_stage : (data::stages[stage + 1].act == sd.act ? data::respect_boss : data::respect_act_boss));
+            const stage_def& sd = sdef();
+            int base = last_stage() ? data::respect_final
+                     : (sd.boss < 0 ? data::respect_stage : (sdef(stage + 1).act == sd.act ? data::respect_boss : data::respect_act_boss));
             return imax(1, base * score_pct() / 100);
         }
 
@@ -3592,7 +3624,7 @@ namespace core
                 finish_stage();
                 score += 100 * score_pct() / 100;
                 gain_xp(data::xp_per_stage);
-                push(message().add("Etap zakończony: ").add(data::stages[stage].name).as(good));
+                push(message().add("Etap zakończony: ").add(sdef().name).as(good));
                 if(event_active(event_effect::inspection) && stage_damage == 0)   // Inspekcja nadzoru: etap bez obrażeń
                 {
                     gain_xp(data::site_events[stage_event].value);

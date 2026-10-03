@@ -281,6 +281,8 @@ static void snapshot(const game& g, int step)
     w(","); wi(g.build_days()); w(","); wi(g.bonus.start_coffee); w(","); wi(g.ability_cooldown());
     w(","); wi(g.bonus.mastery); w(","); wi(g.master_crit()); w(","); wi(g.boon_power()); w(","); wi(run_progress_xp(g));   // v0.21.52 cz. b
     w(","); wi(g.helpers_called); w(","); wi(g.shop_buys); w(","); wi(first_hit_bonus(g.bonus)); w(","); wi(run_stages_done(g)); w("]");   // cz. c
+    w(","); key("career"); w("["); wi(g.contract); w(","); wi(g.twin_carry); w(","); wi(g.stage_id(g.stage)); w(",");   // v0.21.52 cz. d
+    wi(g.route_count()); w(","); wi(g.mech_value()); w(","); wi(career_stages_done(g)); w("]");
     w(","); key("killsByType"); w("["); for(int i = 0; i < max_enemy_types; ++i) { if(i) w(","); wi(g.kills_by_type[i]); } w("]");
     w(","); key("rooms"); w("[");
     for(int i = 0; i < g.lv.rooms_count; ++i) { if(i) w(","); const room& r = g.lv.rooms[i]; w("["); wi(r.x); w(","); wi(r.y); w(","); wi(r.w); w(","); wi(r.h); w("]"); }
@@ -379,7 +381,8 @@ struct scenario { int cls; uint32_t seed; int diff; bool full_mods; bool smart; 
                   int badges = 0; int contracts = 0; int keepsake = 0; int keepsake_runs = 0; int investor = 0; int paths = 0; int daily = 0;
                   int respect = 0; int rewards = 0; int weekly = 0; int secrets = 0;
                   int mastery = 0; int insp = 0; int keepsake2 = 0;     // v0.21.52 cz. b: poziom mistrzostwa zawodu, dośw. inspektora, druga pamiątka
-                  int tree = 0; };   // v0.21.52 cz. c: wybory w drzewku Szkoleń (1 + bity opcji węzłów; 0 = bez)
+                  int tree = 0;
+                  int contract = 0; };   // v0.21.52 cz. d: kontrakt mapy kariery   // v0.21.52 cz. c: wybory w drzewku Szkoleń (1 + bity opcji węzłów; 0 = bez)
 
 // v0.21.52 cz. c: zadania dnia i tygodnia - stały dzień i tydzień złotych przebiegów
 static const int golden_day = daily_number(2026, 10, 3), golden_week = weekly_number(2026, 10, 3);
@@ -444,6 +447,14 @@ int main(int argc, char** argv)
     sc.push_back({ 3, 5302u, 1, true, false, true, false, 5000, 0, 0, 2, 3, 0, 0, 0, 1, all_rewards, 0, 0, 0, 0, 0, 1 + 0x22 });
     sc.push_back({ 6, 5303u, 0, true, true, true, true, 6000, 0x01, 0, 2, 9, 0, 1, 0, 1, all_rewards, 0, 0, 0, 0, 0, 1 + 0x3F });
     sc.push_back({ 0, 0u, 1, false, true, true, false, 5000, 0, 0, 0, 0, 0, 0, daily_number(2026, 10, 2) });   // seria: dzień 1
+    // v0.21.52 cz. d: mapa kariery - każdy kontrakt botem z testów i "smart" (bliźniak: pogoda, wydarzenie, problemy z 1. połowy;
+    // poddasze: porywy co 4 tury; NG+ w kontrakcie; nowi bossowie i problemy)
+    for(int k = 1; k < data::career_count; ++k)
+    {
+        sc.push_back({ k, 4700u + uint32_t(k), 1, false, false, false, false, 4000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, k });
+        sc.push_back({ 8 - k, 4710u + uint32_t(k), k % 3, true, true, true, k == 1, 6000, 0x01, 0, 1, 3, 0, 1, 0, 1, all_rewards, 0, 0,
+                       0, 0, 0, 1 + 0x1D, k });
+    }
 
     for(size_t si = 0; si < sc.size(); ++si)
     {
@@ -469,7 +480,7 @@ int main(int argc, char** argv)
         static game g;
         if(s.weekly > 0) start_weekly(g, s.weekly);
         else if(s.daily > 0) start_daily(g, s.daily);
-        else g.new_run(s.cls, s.seed, s.diff, m);
+        else g.new_run(s.cls, s.seed, s.diff, m, s.contract);
         start_run(p);
         out.clear();
         w("{"); key("cls"); wi(s.cls); w(","); key("seed"); wi(s.seed); w(","); key("diff"); wi(s.diff);
@@ -481,7 +492,7 @@ int main(int argc, char** argv)
         w(","); key("respect"); wi(s.respect); w(","); key("rewards"); wi(s.rewards); w(","); key("weekly"); wi(s.weekly);
         w(","); key("secrets"); wi(s.secrets);
         w(","); key("mastery"); wi(s.mastery); w(","); key("insp"); wi(s.insp); w(","); key("keepsake2"); wi(s.keepsake2);
-        w(","); key("tree"); wi(s.tree);
+        w(","); key("tree"); wi(s.tree); w(","); key("contract"); wi(s.contract);
         w(","); key("snapshots"); w("[");
         snapshot(g, 0);
         std::vector<uint32_t> digests;
@@ -508,7 +519,7 @@ int main(int argc, char** argv)
             if(g.st == status::won && s.ngplus && ! did_ng)
             {
                 if(g.score > p.best) p.best = g.score;
-                record_win(p); add_house(p, g); check_badges(p, g); check_contracts(p); check_secrets(p, &g); bank_xp(p, g);
+                record_win(p); career_win(p, g); add_house(p, g); check_badges(p, g); check_contracts(p); check_secrets(p, &g); bank_xp(p, g);
                 bank_progress(p, g);   // v0.21.52 cz. b: inspektor i mistrzostwo (NG+ - dalej znak wodny)
                 did_ng = true;
                 g.new_game_plus();
@@ -524,7 +535,7 @@ int main(int argc, char** argv)
             digests.push_back(digest(g)); g.hits_count = 0; g.combo_events = 0;   // warstwa GBA zeruje trafienia po każdej turze
         }
         if(g.score > p.best) p.best = g.score;
-        if(g.st == status::won) { record_win(p); add_house(p, g); }
+        if(g.st == status::won) { record_win(p); career_win(p, g); add_house(p, g); }
         check_badges(p, g); check_contracts(p); check_secrets(p, &g); bank_xp(p, g);
         if(g.daily) record_daily(p, g.daily_day, g.score, g.st == status::won);
         if(g.weekly_week) record_weekly(p, g.weekly_week, g.score, g.st == status::won);

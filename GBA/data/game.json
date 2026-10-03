@@ -1218,6 +1218,172 @@
         "title": "Pozwolenie wydane"
       },
       "gender": "f"
+    },
+    {
+      "id": "grzyb",
+      "name": "Grzyb domowy",
+      "desc": "Zjada stare belki",
+      "maxHealth": 11,
+      "minDamage": 1,
+      "maxDamage": 3,
+      "defense": 1,
+      "sight": 5,
+      "score": 15,
+      "frame": 184,
+      "slam": false,
+      "onHit": {
+        "status": "poison",
+        "chancePct": 20,
+        "turns": 3
+      },
+      "material": "drewno",
+      "behaviors": [
+        "heals"
+      ]
+    },
+    {
+      "id": "stara_instalacja",
+      "name": "Stara instalacja",
+      "desc": "Aluminium pod tynkiem",
+      "maxHealth": 9,
+      "minDamage": 2,
+      "maxDamage": 3,
+      "defense": 0,
+      "sight": 7,
+      "score": 15,
+      "frame": 186,
+      "slam": false,
+      "onHit": {
+        "status": "shock",
+        "chancePct": 15,
+        "turns": 1
+      },
+      "material": "stal",
+      "behaviors": [
+        "ranged"
+      ],
+      "element": "prad",
+      "gender": "f"
+    },
+    {
+      "id": "strych",
+      "name": "Zawilgocony strych",
+      "desc": "Boss: kapie i pleśnieje",
+      "maxHealth": 26,
+      "minDamage": 2,
+      "maxDamage": 4,
+      "defense": 1,
+      "sight": 11,
+      "score": 130,
+      "frame": 188,
+      "slam": true,
+      "slamName": "Kapanie z dachu",
+      "onHit": {
+        "status": "poison",
+        "chancePct": 25,
+        "turns": 2
+      },
+      "summon": {
+        "enemy": "plesn",
+        "every": 6,
+        "max": 2
+      },
+      "reward": {
+        "cash": 30,
+        "title": "Suchy strych"
+      },
+      "element": "woda"
+    },
+    {
+      "id": "dylatacja",
+      "name": "Pęknięta dylatacja",
+      "desc": "Boss: rozsadza obie połówki",
+      "maxHealth": 36,
+      "minDamage": 3,
+      "maxDamage": 5,
+      "defense": 2,
+      "sight": 12,
+      "score": 170,
+      "frame": 190,
+      "slam": true,
+      "slamShape": "cross",
+      "slamName": "Rozwarcie",
+      "summon": {
+        "enemy": "rysa",
+        "every": 6,
+        "max": 2
+      },
+      "phase": {
+        "atPct": 50,
+        "healPct": 25,
+        "name": "Druga połowa",
+        "summon": 1
+      },
+      "reward": {
+        "cash": 50,
+        "title": "Szczelna dylatacja"
+      },
+      "gender": "f"
+    },
+    {
+      "id": "polac",
+      "name": "Zerwana połać",
+      "desc": "Boss: wiatr zrywa dach",
+      "maxHealth": 34,
+      "minDamage": 3,
+      "maxDamage": 5,
+      "defense": 2,
+      "sight": 12,
+      "score": 170,
+      "frame": 192,
+      "slam": true,
+      "slamName": "Podmuch",
+      "onHit": {
+        "status": "slip",
+        "chancePct": 30,
+        "turns": 2
+      },
+      "summon": {
+        "enemy": "przeciag",
+        "every": 6,
+        "max": 2
+      },
+      "reward": {
+        "cash": 50,
+        "title": "Połać na miejscu"
+      },
+      "gender": "f"
+    },
+    {
+      "id": "strop",
+      "name": "Pęknięty strop",
+      "desc": "Boss: sypie się zabytek",
+      "maxHealth": 44,
+      "minDamage": 4,
+      "maxDamage": 6,
+      "defense": 3,
+      "sight": 12,
+      "score": 220,
+      "frame": 194,
+      "slam": true,
+      "slamShape": "cross",
+      "slamName": "Osypisko tynku",
+      "summon": {
+        "enemy": "grzyb",
+        "every": 6,
+        "max": 2
+      },
+      "phase": {
+        "atPct": 50,
+        "healPct": 20,
+        "name": "Podpory",
+        "summon": 1
+      },
+      "gearStun": 2,
+      "reward": {
+        "cash": 60,
+        "title": "Strop podparty"
+      }
     }
   ],
   "stages": [
@@ -2459,6 +2625,62 @@
           {
             "from": "Kierownik Marek",
             "text": "Bez niego to już nie|będzie to samo. Kawa|dla niego zawsze była."
+          }
+        ]
+      },
+      {
+        "id": "letnisko",
+        "name": "Letnisko",
+        "hint": "Wygraj Domek letniskowy",
+        "trigger": "boss",
+        "value": "strych",
+        "messages": [
+          {
+            "from": "Anna Nowak",
+            "text": "Domek nad jeziorem stoi!|Teściowa już pakuje|walizki. Dzięki, szefie."
+          }
+        ]
+      },
+      {
+        "id": "sasiedzi",
+        "name": "Sąsiedzi",
+        "hint": "Wygraj Bliźniak",
+        "trigger": "boss",
+        "value": "dylatacja",
+        "messages": [
+          {
+            "from": "Kierownik Marek",
+            "text": "Obie połówki odebrane.|Sąsiedzi kłócą się tylko|o płot. To nie my!"
+          }
+        ]
+      },
+      {
+        "id": "poddasze",
+        "name": "Pokój pod dachem",
+        "hint": "Pokonaj Zerwaną połać",
+        "trigger": "boss",
+        "value": "polac",
+        "messages": [
+          {
+            "from": "Anna Nowak",
+            "text": "Pokój na poddaszu|z oknem w dachu. Dzieci|już tam śpią!"
+          }
+        ]
+      },
+      {
+        "id": "kamienica",
+        "name": "Zabytek",
+        "hint": "Wygraj Kamienicę",
+        "trigger": "boss",
+        "value": "strop",
+        "messages": [
+          {
+            "from": "Konserwator Lis",
+            "text": "Odbiór bez uwag. Strop|trzyma, sztukateria cała.|Pierwszy raz to piszę."
+          },
+          {
+            "from": "Kierownik Marek",
+            "text": "Konserwator pochwalił?|Szefie, to jak śnieg|w lipcu. Pijemy kawę!"
           }
         ]
       }
@@ -5850,6 +6072,36 @@
           210,
           40
         ]
+      },
+      {
+        "id": "kask_sosnowy",
+        "name": "Sosnowy kask",
+        "desc": "Kask w kolorze sosny",
+        "helmet": [
+          196,
+          150,
+          86
+        ]
+      },
+      {
+        "id": "kask_grafitowy",
+        "name": "Grafitowy kask",
+        "desc": "Kask bohatera na grafitowo",
+        "helmet": [
+          70,
+          74,
+          82
+        ]
+      },
+      {
+        "id": "kask_kremowy",
+        "name": "Kremowy kask",
+        "desc": "Kask jak sztukateria",
+        "helmet": [
+          236,
+          224,
+          196
+        ]
       }
     ]
   },
@@ -6405,6 +6657,18 @@
           "reward": "title",
           "title": "Architekt"
         }
+      },
+      {
+        "id": "kariera",
+        "name": "Bossowie kariery",
+        "desc": "Bossowie nowych kontraktów",
+        "kind": "bosses",
+        "career": true,
+        "count": 1,
+        "reward": {
+          "reward": "title",
+          "title": "Budowniczy"
+        }
       }
     ]
   },
@@ -6551,5 +6815,891 @@
     "Zadania dnia (3) i tygodnia (2)",
     "za Respekt. Seria dni budowy",
     "dnia: 3, 7, 14 dni - nagrody."
+  ],
+  "career": {
+    "twinCarryMax": 3,
+    "list": [
+      {
+        "id": "dom",
+        "name": "Dom jednorodzinny",
+        "short": "Dom",
+        "desc": "Dom Nowaków od papierów",
+        "unlock": {
+          "kind": "none",
+          "value": 0
+        }
+      },
+      {
+        "id": "letnisko",
+        "name": "Domek letniskowy",
+        "short": "Letniskowy",
+        "desc": "Krótko, z drewna, nad wodą",
+        "unlock": {
+          "kind": "wins",
+          "value": 1
+        },
+        "boss": "strych",
+        "reward": {
+          "respect": 20,
+          "title": "Letnik",
+          "helmet": "kask_sosnowy"
+        },
+        "stages": [
+          {
+            "name": "Fundament punktowy",
+            "enemies": [
+              "woda",
+              "kamien",
+              "osuwisko",
+              "przeciek"
+            ],
+            "count": 4,
+            "hpPct": 146,
+            "dmgBonus": 2,
+            "act": 0,
+            "cost": 6,
+            "look": 12,
+            "story": {
+              "from": "Anna Nowak",
+              "text": "Domek nad jeziorem! Mały,|z drewna, na słupkach.|Wody tu nie brakuje..."
+            },
+            "tiles": 5,
+            "like": 2
+          },
+          {
+            "name": "Szkielet z bali",
+            "enemies": [
+              "kornik",
+              "wymiarowka",
+              "dostawa",
+              "krzywy_mur"
+            ],
+            "count": 5,
+            "hpPct": 158,
+            "dmgBonus": 2,
+            "act": 0,
+            "cost": 12,
+            "look": 12,
+            "story": {
+              "from": "Kierownik Marek",
+              "text": "Bale przyjechały. Kornik|też, w gratisie. Trzymaj|wymiar co do centymetra."
+            },
+            "tiles": 5,
+            "like": 4
+          },
+          {
+            "name": "Taras i schodki",
+            "enemies": [
+              "kornik",
+              "woda",
+              "pustak",
+              "dostawa"
+            ],
+            "count": 4,
+            "hpPct": 168,
+            "dmgBonus": 2,
+            "act": 0,
+            "cost": 8,
+            "look": 12,
+            "story": {
+              "from": "Kierownik Marek",
+              "text": "Schodki na betonie.|Betoniarka znów stęka.|Uważaj na nią!"
+            },
+            "boss": "betoniarka",
+            "tiles": 5,
+            "like": 5
+          },
+          {
+            "name": "Dach z gontu",
+            "enemies": [
+              "papa",
+              "rynna",
+              "ulewa",
+              "kornik"
+            ],
+            "count": 5,
+            "hpPct": 181,
+            "dmgBonus": 3,
+            "act": 1,
+            "cost": 10,
+            "look": 13,
+            "story": {
+              "from": "Anna Nowak",
+              "text": "Gont jak u babci na wsi!|Tylko niech nie cieknie,|bo tu leje co weekend."
+            },
+            "tiles": 5,
+            "like": 6
+          },
+          {
+            "name": "Ganek i okiennice",
+            "enemies": [
+              "ramka",
+              "przeciag",
+              "kornik",
+              "plesn"
+            ],
+            "count": 6,
+            "hpPct": 193,
+            "dmgBonus": 3,
+            "act": 1,
+            "cost": 9,
+            "look": 13,
+            "story": {
+              "from": "Anna Nowak",
+              "text": "Okiennice na zielono,|ganek na kawę. Byle|bez przeciągów."
+            },
+            "tiles": 5,
+            "like": 8
+          },
+          {
+            "name": "Strych",
+            "enemies": [
+              "plesn",
+              "wilgoc",
+              "kornik",
+              "przeciag"
+            ],
+            "count": 5,
+            "hpPct": 203,
+            "dmgBonus": 4,
+            "act": 1,
+            "cost": 7,
+            "look": 13,
+            "story": {
+              "from": "Kierownik Marek",
+              "text": "Strych pachnie wilgocią.|Coś tam kapie i rośnie.|Weź latarkę i termos."
+            },
+            "boss": "strych",
+            "tiles": 5,
+            "like": 8
+          }
+        ]
+      },
+      {
+        "id": "blizniak",
+        "name": "Bliźniak",
+        "short": "Bliźniak",
+        "desc": "Dwie połówki, jedna ściana",
+        "unlock": {
+          "kind": "wins",
+          "value": 3
+        },
+        "boss": "dylatacja",
+        "twins": true,
+        "reward": {
+          "respect": 30,
+          "title": "Dobry sąsiad"
+        },
+        "stages": [
+          {
+            "name": "Fundamenty (lewa)",
+            "enemies": [
+              "woda",
+              "kamien",
+              "przeciek",
+              "kornik"
+            ],
+            "count": 5,
+            "hpPct": 125,
+            "dmgBonus": 0,
+            "act": 0,
+            "cost": 22,
+            "look": 14,
+            "story": {
+              "from": "Kierownik Marek",
+              "text": "Bliźniak: dwie rodziny,|jedna ściana. Zaczynamy|od lewej połowy."
+            },
+            "like": 2
+          },
+          {
+            "name": "Fundamenty (prawa)",
+            "enemies": [
+              "woda",
+              "kamien",
+              "przeciek",
+              "kornik"
+            ],
+            "count": 5,
+            "hpPct": 128,
+            "dmgBonus": 0,
+            "act": 0,
+            "cost": 22,
+            "look": 14,
+            "story": {
+              "from": "Kierownik Marek",
+              "text": "Prawa połowa. Co zostało|po lewej, przejdzie przez|wspólną ścianę!"
+            },
+            "like": 2,
+            "twin": true
+          },
+          {
+            "name": "Ściana wspólna",
+            "enemies": [
+              "krzywy_mur",
+              "mostek",
+              "dostawa",
+              "zbrojenie"
+            ],
+            "count": 6,
+            "hpPct": 145,
+            "dmgBonus": 1,
+            "act": 0,
+            "cost": 30,
+            "look": 14,
+            "story": {
+              "from": "Anna Nowak",
+              "text": "Ściana wspólna musi|tłumić sąsiada. I stać.|Betoniarka już jedzie."
+            },
+            "boss": "betoniarka",
+            "like": 5
+          },
+          {
+            "name": "Dach (lewa)",
+            "enemies": [
+              "papa",
+              "rynna",
+              "ulewa",
+              "kornik"
+            ],
+            "count": 6,
+            "hpPct": 170,
+            "dmgBonus": 2,
+            "act": 1,
+            "cost": 26,
+            "look": 15,
+            "story": {
+              "from": "Kierownik Marek",
+              "text": "Dach nad lewą połową.|Pogoda na obie ta sama,|nie licz na zmianę."
+            },
+            "like": 6
+          },
+          {
+            "name": "Dach (prawa)",
+            "enemies": [
+              "papa",
+              "rynna",
+              "ulewa",
+              "kornik"
+            ],
+            "count": 6,
+            "hpPct": 175,
+            "dmgBonus": 2,
+            "act": 1,
+            "cost": 26,
+            "look": 15,
+            "story": {
+              "from": "Anna Nowak",
+              "text": "Sąsiedzi pytają, czemu|ich połowa później.|Bo kolejka, mówię."
+            },
+            "like": 6,
+            "twin": true
+          },
+          {
+            "name": "Okna (lewa)",
+            "enemies": [
+              "ramka",
+              "przeciag",
+              "ulewa",
+              "dostawa"
+            ],
+            "count": 7,
+            "hpPct": 185,
+            "dmgBonus": 3,
+            "act": 1,
+            "cost": 20,
+            "look": 15,
+            "story": {
+              "from": "Kierownik Marek",
+              "text": "Okna po lewej. Przeciąg|hula po obu stronach,|ściana go nie zatrzyma."
+            },
+            "like": 8
+          },
+          {
+            "name": "Okna (prawa)",
+            "enemies": [
+              "ramka",
+              "przeciag",
+              "ulewa",
+              "dostawa"
+            ],
+            "count": 6,
+            "hpPct": 193,
+            "dmgBonus": 3,
+            "act": 1,
+            "cost": 20,
+            "look": 15,
+            "story": {
+              "from": "Anna Nowak",
+              "text": "Prognoza: nawałnica nad|obiema połówkami naraz.|Zamknij okna, szybko!"
+            },
+            "boss": "nawalnica",
+            "like": 8,
+            "twin": true
+          },
+          {
+            "name": "Instalacje (lewa)",
+            "enemies": [
+              "zapowietrzenie",
+              "uziemienie",
+              "zwarcie",
+              "przeciek"
+            ],
+            "count": 7,
+            "hpPct": 208,
+            "dmgBonus": 5,
+            "act": 2,
+            "cost": 22,
+            "look": 16,
+            "story": {
+              "from": "Kierownik Marek",
+              "text": "Dwa liczniki, dwa piece,|jedna ściana z rurami.|Nie pomyl połówek."
+            },
+            "like": 9
+          },
+          {
+            "name": "Instalacje (prawa)",
+            "enemies": [
+              "zapowietrzenie",
+              "uziemienie",
+              "zwarcie",
+              "przeciek"
+            ],
+            "count": 7,
+            "hpPct": 216,
+            "dmgBonus": 5,
+            "act": 2,
+            "cost": 22,
+            "look": 16,
+            "story": {
+              "from": "Kierownik Marek",
+              "text": "Prawa strona. Zwarcie|z lewej czeka w ścianie,|jak go tam zostawiłeś."
+            },
+            "like": 9,
+            "twin": true
+          },
+          {
+            "name": "Odbiór obu połówek",
+            "enemies": [
+              "rysa",
+              "odpryski",
+              "wilgoc",
+              "poprawki"
+            ],
+            "count": 6,
+            "hpPct": 231,
+            "dmgBonus": 6,
+            "act": 2,
+            "cost": 40,
+            "look": 16,
+            "story": {
+              "from": "Inspektor Kowal",
+              "text": "Odbieram obie połówki.|Dylatacja pękła? To|nie przejdzie. Napraw."
+            },
+            "boss": "dylatacja",
+            "like": 11
+          }
+        ]
+      },
+      {
+        "id": "poddasze",
+        "name": "Dom z poddaszem",
+        "short": "Poddasze",
+        "desc": "Wyżej i mocniej wieje",
+        "unlock": {
+          "kind": "inspector",
+          "value": 8
+        },
+        "boss": "polac",
+        "gust": 4,
+        "reward": {
+          "respect": 30,
+          "title": "Pod samym dachem",
+          "helmet": "kask_grafitowy"
+        },
+        "stages": [
+          {
+            "name": "Fundamenty",
+            "enemies": [
+              "woda",
+              "kamien",
+              "przeciek",
+              "kornik"
+            ],
+            "count": 5,
+            "hpPct": 117,
+            "dmgBonus": 0,
+            "act": 0,
+            "cost": 48,
+            "look": 2,
+            "story": {
+              "from": "Anna Nowak",
+              "text": "Dom z poddaszem! Wyższy|i z oknami w dachu. Na|górze wieje mocniej."
+            },
+            "like": 2
+          },
+          {
+            "name": "Izolacja fundamentów",
+            "enemies": [
+              "osuwisko",
+              "folia",
+              "woda",
+              "przeciek"
+            ],
+            "count": 5,
+            "hpPct": 127,
+            "dmgBonus": 0,
+            "act": 0,
+            "cost": 22,
+            "look": 3,
+            "story": {
+              "from": "Kierownik Marek",
+              "text": "Folia, papa, drenaż.|Najpierw sucho na dole,|potem marzymy o górze."
+            },
+            "like": 3
+          },
+          {
+            "name": "Mury parteru",
+            "enemies": [
+              "krzywy_mur",
+              "mostek",
+              "papierologia",
+              "dostawa"
+            ],
+            "count": 6,
+            "hpPct": 137,
+            "dmgBonus": 0,
+            "act": 0,
+            "cost": 62,
+            "look": 4,
+            "story": {
+              "from": "Kierownik Marek",
+              "text": "Mury parteru. Poddasze|będzie ciężkie, więc|trzymaj pion!"
+            },
+            "like": 4
+          },
+          {
+            "name": "Strop",
+            "enemies": [
+              "ugiecie",
+              "zbrojenie",
+              "dostawa",
+              "budzet"
+            ],
+            "count": 6,
+            "hpPct": 150,
+            "dmgBonus": 1,
+            "act": 0,
+            "cost": 36,
+            "look": 5,
+            "story": {
+              "from": "Kierownik Marek",
+              "text": "Strop pod poddasze.|Grubszy niż zwykle, beton|leje się dwa dni."
+            },
+            "boss": "betoniarka",
+            "like": 5
+          },
+          {
+            "name": "Ścianki kolankowe",
+            "enemies": [
+              "krzywy_mur",
+              "pustak",
+              "przeciag",
+              "dostawa"
+            ],
+            "count": 7,
+            "hpPct": 166,
+            "dmgBonus": 2,
+            "act": 1,
+            "cost": 28,
+            "look": 17,
+            "story": {
+              "from": "Kierownik Marek",
+              "text": "Ścianki kolankowe. Tu|zaczyna się wiatr: co|4 tury poryw!"
+            },
+            "like": 6
+          },
+          {
+            "name": "Więźba dachowa",
+            "enemies": [
+              "kornik",
+              "wymiarowka",
+              "przeciag",
+              "rynna"
+            ],
+            "count": 7,
+            "hpPct": 173,
+            "dmgBonus": 2,
+            "act": 1,
+            "cost": 44,
+            "look": 17,
+            "story": {
+              "from": "Anna Nowak",
+              "text": "Więźba stoi jak szkielet|wieloryba. Kornik już|obwąchuje krokwie."
+            },
+            "like": 6
+          },
+          {
+            "name": "Dach",
+            "enemies": [
+              "papa",
+              "rynna",
+              "ulewa",
+              "kornik"
+            ],
+            "count": 8,
+            "hpPct": 180,
+            "dmgBonus": 3,
+            "act": 1,
+            "cost": 55,
+            "look": 6,
+            "story": {
+              "from": "Anna Nowak",
+              "text": "Dachówka na wysokości.|Trzymaj się mocno, wiatr|nie śpi!"
+            },
+            "like": 6
+          },
+          {
+            "name": "Okna dachowe",
+            "enemies": [
+              "ramka",
+              "przeciag",
+              "ulewa",
+              "papa"
+            ],
+            "count": 7,
+            "hpPct": 189,
+            "dmgBonus": 4,
+            "act": 1,
+            "cost": 34,
+            "look": 17,
+            "story": {
+              "from": "Kierownik Marek",
+              "text": "Okna dachowe. Silny|wiatr zrywa połać! Łap|blachę i trzymaj."
+            },
+            "boss": "polac",
+            "like": 8
+          },
+          {
+            "name": "Ocieplenie poddasza",
+            "enemies": [
+              "mostek",
+              "wilgoc",
+              "plesn",
+              "folia"
+            ],
+            "count": 8,
+            "hpPct": 196,
+            "dmgBonus": 5,
+            "act": 2,
+            "cost": 30,
+            "look": 18,
+            "story": {
+              "from": "Kierownik Marek",
+              "text": "Wełna między krokwie,|folia bez dziur. Mostek|termiczny lubi strychy."
+            },
+            "like": 10
+          },
+          {
+            "name": "Instalacje",
+            "enemies": [
+              "zapowietrzenie",
+              "uziemienie",
+              "zwarcie",
+              "przeciek"
+            ],
+            "count": 8,
+            "hpPct": 205,
+            "dmgBonus": 6,
+            "act": 2,
+            "cost": 46,
+            "look": 18,
+            "story": {
+              "from": "Kierownik Marek",
+              "text": "Inspekcja Pracy w drodze!|Na poddaszu barierki,|szelki i porządek."
+            },
+            "boss": "inspekcja",
+            "like": 9
+          },
+          {
+            "name": "Wykończenie poddasza",
+            "enemies": [
+              "rysa",
+              "odpryski",
+              "plesn",
+              "poprawki"
+            ],
+            "count": 8,
+            "hpPct": 218,
+            "dmgBonus": 6,
+            "act": 2,
+            "cost": 38,
+            "look": 18,
+            "story": {
+              "from": "Anna Nowak",
+              "text": "Skosy, okna w dachu,|pokój dla dzieci. Chcę|to widzieć przed zimą!"
+            },
+            "like": 10
+          },
+          {
+            "name": "Odbiór",
+            "enemies": [
+              "odpryski",
+              "poprawki",
+              "plesn",
+              "budzet"
+            ],
+            "count": 7,
+            "hpPct": 235,
+            "dmgBonus": 6,
+            "act": 2,
+            "cost": 72,
+            "look": 11,
+            "story": {
+              "from": "Anna Nowak",
+              "text": "Ostatnia prosta. Termin|wisi nad nami jak|chmura nad kalenicą."
+            },
+            "boss": "termin",
+            "like": 11
+          }
+        ]
+      },
+      {
+        "id": "kamienica",
+        "name": "Kamienica",
+        "short": "Kamienica",
+        "desc": "Remont zabytku z 1904 r.",
+        "unlock": {
+          "kind": "inspector",
+          "value": 12
+        },
+        "boss": "strop",
+        "reward": {
+          "respect": 40,
+          "title": "Konserwator",
+          "helmet": "kask_kremowy"
+        },
+        "stages": [
+          {
+            "name": "Osuszanie piwnic",
+            "enemies": [
+              "woda",
+              "wilgoc",
+              "grzyb",
+              "przeciek"
+            ],
+            "count": 5,
+            "hpPct": 99,
+            "dmgBonus": 0,
+            "act": 0,
+            "cost": 30,
+            "look": 19,
+            "story": {
+              "from": "Konserwator Lis",
+              "text": "Kamienica z 1904 roku.|Remont pod nadzorem.|Najpierw mokre piwnice."
+            },
+            "tiles": 6,
+            "like": 2
+          },
+          {
+            "name": "Stare fundamenty",
+            "enemies": [
+              "kamien",
+              "osuwisko",
+              "grzyb",
+              "rura"
+            ],
+            "count": 6,
+            "hpPct": 106,
+            "dmgBonus": 1,
+            "act": 0,
+            "cost": 36,
+            "look": 19,
+            "story": {
+              "from": "Kierownik Marek",
+              "text": "Fundament z kamienia|polnego. Stare rury|pękają, grzyb rośnie."
+            },
+            "tiles": 6,
+            "like": 3
+          },
+          {
+            "name": "Stropy drewniane",
+            "enemies": [
+              "kornik",
+              "grzyb",
+              "ugiecie",
+              "plesn"
+            ],
+            "count": 6,
+            "hpPct": 115,
+            "dmgBonus": 1,
+            "act": 0,
+            "cost": 42,
+            "look": 19,
+            "story": {
+              "from": "Konserwator Lis",
+              "text": "Belki stropu do wymiany?|Bez mojej zgody ani|jednej! Złóż wniosek."
+            },
+            "boss": "decyzja",
+            "tiles": 6,
+            "like": 5
+          },
+          {
+            "name": "Więźba i dach",
+            "enemies": [
+              "papa",
+              "rynna",
+              "kornik",
+              "ulewa"
+            ],
+            "count": 7,
+            "hpPct": 126,
+            "dmgBonus": 2,
+            "act": 1,
+            "cost": 40,
+            "look": 20,
+            "story": {
+              "from": "Kierownik Marek",
+              "text": "Dach kamienicy: stara|dachówka, nowa więźba.|Na górze wieje!"
+            },
+            "like": 6
+          },
+          {
+            "name": "Kominy i elewacja",
+            "enemies": [
+              "rysa",
+              "odpryski",
+              "przeciag",
+              "wilgoc"
+            ],
+            "count": 7,
+            "hpPct": 132,
+            "dmgBonus": 3,
+            "act": 1,
+            "cost": 34,
+            "look": 20,
+            "story": {
+              "from": "Konserwator Lis",
+              "text": "Elewacja z ornamentem.|Każdy odprysk zgłaszać.|Pył też mnie interesuje."
+            },
+            "like": 7
+          },
+          {
+            "name": "Balkony",
+            "enemies": [
+              "ramka",
+              "przeciag",
+              "rysa",
+              "ulewa"
+            ],
+            "count": 7,
+            "hpPct": 141,
+            "dmgBonus": 3,
+            "act": 1,
+            "cost": 28,
+            "look": 20,
+            "story": {
+              "from": "Anna Nowak",
+              "text": "Balkon z kutą barierką!|Prognoza: nawałnica.|Zdążysz przed burzą?"
+            },
+            "boss": "nawalnica",
+            "like": 8
+          },
+          {
+            "name": "Stare instalacje",
+            "enemies": [
+              "stara_instalacja",
+              "zwarcie",
+              "uziemienie",
+              "cisnienie"
+            ],
+            "count": 8,
+            "hpPct": 152,
+            "dmgBonus": 4,
+            "act": 2,
+            "cost": 44,
+            "look": 21,
+            "story": {
+              "from": "Kierownik Marek",
+              "text": "Aluminium w tynku, rury|z ołowiu. Wszystko do|wymiany. Uważaj na prąd!"
+            },
+            "tiles": 6,
+            "like": 9
+          },
+          {
+            "name": "Tynki i sztukateria",
+            "enemies": [
+              "rysa",
+              "wilgoc",
+              "grzyb",
+              "odpryski"
+            ],
+            "count": 8,
+            "hpPct": 160,
+            "dmgBonus": 4,
+            "act": 2,
+            "cost": 38,
+            "look": 21,
+            "story": {
+              "from": "Konserwator Lis",
+              "text": "Sztukateria to zabytek.|Delikatnie z tynkiem,|grzyb pod spodem też."
+            },
+            "tiles": 6,
+            "like": 10
+          },
+          {
+            "name": "Klatka schodowa",
+            "enemies": [
+              "poprawki",
+              "stara_instalacja",
+              "odpryski",
+              "kornik"
+            ],
+            "count": 8,
+            "hpPct": 170,
+            "dmgBonus": 5,
+            "act": 2,
+            "cost": 30,
+            "look": 21,
+            "story": {
+              "from": "Anna Nowak",
+              "text": "Klatka z lastryko i|drewnianą poręczą. Ma|być jak sto lat temu."
+            },
+            "tiles": 6,
+            "like": 10
+          },
+          {
+            "name": "Odbiór konserwatora",
+            "enemies": [
+              "grzyb",
+              "rysa",
+              "poprawki",
+              "stara_instalacja"
+            ],
+            "count": 6,
+            "hpPct": 180,
+            "dmgBonus": 5,
+            "act": 2,
+            "cost": 60,
+            "look": 21,
+            "story": {
+              "from": "Konserwator Lis",
+              "text": "Strop nad klatką pęka!|Bez podparcia nie ma|odbioru. Działaj."
+            },
+            "boss": "strop",
+            "tiles": 6,
+            "like": 11
+          }
+        ]
+      }
+    ]
+  },
+  "careerHelp": [
+    "Tytuł, A: mapa kariery - inne",
+    "budynki z własnymi etapami,",
+    "problemami i bossem. Domek",
+    "(1 wygrana), Bliźniak (3),",
+    "Poddasze, Kamienica: inspektor.",
+    "1. wygrana: Respekt, tytuł,",
+    "kask. Bliźniak: wspólna ściana."
   ]
 }

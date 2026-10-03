@@ -58,12 +58,31 @@ for e in d["enemies"]:
              f'{ph.get("atPct", 0)}, {ph.get("healPct", 0)}, {ph.get("summon", 0)}, {s(ph.get("name", ""))}, '
              f'core::element::{ELEM[e.get("element", "none")]}, {GEN[e.get("gender", "m")]} }},')
 L.append("};\n")
-L.append("inline constexpr core::stage_def stages[] = {")
-for st in d["stages"]:
+# v0.21.52 cz. d (#47): mapa kariery - kontrakt 0 (Dom jednorodzinny) = etapy "stages", kolejne kontrakty mają własne
+# etapy (career.list[].stages); w data::stages wszystkie po kolei (Dom pierwszy), kontrakt = pierwszy etap + liczba.
+# Etap: wygląd (paleta etapu, "look"), zestaw kafli ("tiles": domyślnie akt, Akt 0 - 3 + etap), druga połowa bliźniaka ("twin").
+car = d["career"]["list"]
+assert 2 <= len(car) <= 6 and "stages" not in car[0] and all("stages" in c for c in car[1:])   # profil: 6 kontraktów
+dom_n = len(d["stages"])
+all_st = list(d["stages"]) + [x for c in car[1:] for x in c["stages"]]
+assert len(all_st) <= 64   # pogoda: bitmaska uint64 etapów
+pre_n = sum(1 for st in d["stages"] if d["acts"][st["act"]].get("prelude"))
+def st_tiles(i, st):
+    if "tiles" in st: return st["tiles"]
+    return 3 + i if i < pre_n else st["act"]
+TILE_SETS = 7   # 0-2 akty, 3-4 Akt 0 (biuro, wykop), 5 drewno (domek letniskowy), 6 kamienica
+looks_n = max(dom_n, 1 + max(st.get("look", 0) for st in all_st))
+L.append("inline constexpr core::stage_def stages[] = {   // Dom jednorodzinny, potem etapy kolejnych kontraktów (career)")
+for i, st in enumerate(all_st):
     pool = [eid[x] for x in st["enemies"]] + [-1] * (4 - len(st["enemies"]))
     boss = eid[st["boss"]] if "boss" in st else -1
+    look = i if i < dom_n else st["look"]
+    assert (i < dom_n) == ("look" not in st) and 0 <= look < looks_n and 0 <= st_tiles(i, st) < TILE_SETS, st
+    assert 1 <= len(st["name"]) <= 20 and len(st["enemies"]) <= 4 and (i >= dom_n or not st.get("twin")), st
+    if boss >= 0: assert d["enemies"][boss].get("slam"), st
     L.append(f'    {{ {s(st["name"])}, {{ {", ".join(map(str, pool))} }}, {len(st["enemies"])}, {st["count"]}, {boss}, '
-             f'{st.get("hpPct", 100)}, {st.get("dmgBonus", 0)}, {st["act"]}, {st.get("cost", 0)} }},')
+             f'{st.get("hpPct", 100)}, {st.get("dmgBonus", 0)}, {st["act"]}, {st.get("cost", 0)}, {look}, {st_tiles(i, st)}, '
+             f'{"true" if st.get("twin") else "false"} }},')
 L.append("};\n")
 L.append("inline constexpr core::difficulty_def difficulties[] = {")
 for df in d["difficulties"]:
@@ -95,21 +114,32 @@ def story(m):
     return f'{{ {s(m["from"])}, {{ {", ".join(s(l) for l in lines)} }} }}'
 st = d["story"]
 assert len(st["stages"]) == len(d["stages"])
-L.append("inline constexpr core::story_msg story_stages[] = {")
-L += [f"    {story(m)}," for m in st["stages"]]
+L.append("inline constexpr core::story_msg story_stages[] = {   // SMS na starcie etapu (indeks jak data::stages)")
+L += [f"    {story(m)}," for m in st["stages"] + [x["story"] for c in car[1:] for x in c["stages"]]]
 L.append("};")
 L += [f"inline constexpr core::story_msg story_{k} = {story(st[k])};" for k in ("win", "lose", "ngplus", "prologue")]
 L.append("inline constexpr const char* prologue_captions[] = { " + ", ".join(s(c) for c in st["prologueCaptions"]) + " };")
 L.append("")
 acts = d["acts"]
 path_more = max(0, max(x["enemies"] for x in d["paths"]["list"]))   # ścieżka może dodać problemy
-for st in d["stages"]:   # boss z wezwaniami: etap + boss + wezwani mieszczą się w core::max_enemies (12)
-    assert st["count"] + path_more <= 12, st   # core::max_enemies 16: miejsce na dwa podziały (zachowanie "splits")
+twin_max = d["career"]["twinCarryMax"]
+assert 0 <= twin_max <= 3
+for st in all_st:   # boss z wezwaniami: etap + boss + wezwani mieszczą się w core::max_enemies (12)
+    more = path_more + (twin_max if st.get("twin") else 0)   # bliźniak: problemy z pierwszej połowy przechodzą
+    assert st["count"] + more <= 12, st   # core::max_enemies 16: miejsce na dwa podziały (zachowanie "splits")
     if "boss" in st:
-        assert st["count"] + path_more + 1 + d["enemies"][eid[st["boss"]]].get("summon", {}).get("max", 0) <= 12, st
-for ai in range(len(acts)):   # każdy akt kończy się etapem z bossem
-    last = max(i for i, st in enumerate(d["stages"]) if st["act"] == ai)
-    assert "boss" in d["stages"][last], f"akt {ai} bez bossa"
+        assert st["count"] + more + 1 + d["enemies"][eid[st["boss"]]].get("summon", {}).get("max", 0) <= 12, st
+routes = [d["stages"]] + [c["stages"] for c in car[1:]]
+for rt in routes:   # w każdym kontrakcie akty po kolei, każdy kończy się etapem z bossem, ostatni etap z bossem
+    assert len(rt) <= 12   # core::max_stages: tablice podsumowania w stanie budowy
+    seen = []
+    for st in rt:
+        if not seen or seen[-1] != st["act"]: assert st["act"] not in seen, rt; seen.append(st["act"])
+    for ai in seen:
+        last = max(i for i, st in enumerate(rt) if st["act"] == ai)
+        assert "boss" in rt[last], f"akt {ai} bez bossa"
+    assert all(not acts[st["act"]].get("prelude") for st in rt) or rt is d["stages"]   # Akt 0 tylko w Domu
+    assert not rt[0].get("twin") and all(not x.get("twin") or not rt[i].get("twin") for i, x in enumerate(rt[1:]))   # bliźniak po pierwszej połowie
 # Akt wstępny (Akt 0, "prelude"): jego etapy są na początku listy, bez nagrody za odbiór budowa zaczyna się za nimi.
 prelude_stages = sum(1 for st in d["stages"] if acts[st["act"]].get("prelude"))
 assert all(acts[st["act"]].get("prelude") for st in d["stages"][:prelude_stages]) and prelude_stages < len(d["stages"])
@@ -217,19 +247,24 @@ L.append("};")
 L += [f"inline constexpr int site_events_count = {len(se['list'])};",
       f"inline constexpr int site_event_chance_pct = {se['chancePct']};", ""]
 wt = d["weather"]
-all_stages = (1 << len(d["stages"])) - 1
+all_stages = (1 << len(all_st)) - 1
 assert wt["list"][0]["effect"] == "none" and len(d["stages"]) <= 12   # pierwsza = bez skutku (domyślna)
+def wmask(w):   # etapy kontraktów: pogoda jak na etapie Domu, który przypominają ("like"; bez - każda)
+    if "stages" not in w: return all_stages
+    m_ = sum(1 << i for i in w["stages"])
+    for i, st in enumerate(all_st[dom_n:]):
+        if "like" not in st or st["like"] in w["stages"]: m_ |= 1 << (dom_n + i)
+    return m_
 L.append("inline constexpr core::weather_def weather[] = {   // pogoda dnia: losowana na starcie etapu")
 for w in wt["list"]:
     assert w["effect"] in {"none", "heat", "frost", "wind", "rain"} and len(w["short"]) <= 10, w
     assert len(w["name"]) <= 12 and len(w["info"]) <= 30 and 0 < w["weight"] < 128 and 0 <= w["value"] < 128, w
     assert w["effect"] not in ("frost", "rain") or w["value"] >= 2, w
-    mask = sum(1 << i for i in w["stages"]) if "stages" in w else all_stages
     L.append(f'    {{ {s(w["name"])}, {s(w["short"])}, {s(w["info"])}, core::weather_effect::{w["effect"]}, {w["value"]}, '
-             f'{w["weight"]}, {"true" if w["bad"] else "false"}, {mask} }},')
+             f'{w["weight"]}, {"true" if w["bad"] else "false"}, {wmask(w)}ull }},')
 L.append("};")
-for si in range(len(d["stages"])):   # każdy etap ma jakąś pogodę do wylosowania
-    assert any(("stages" not in w) or si in w["stages"] for w in wt["list"]), si
+for si in range(len(all_st)):   # każdy etap ma jakąś pogodę do wylosowania
+    assert any((wmask(w) >> si) & 1 for w in wt["list"]), si
 L += [f"inline constexpr int weather_count = {len(wt['list'])};",
       f"inline constexpr bool weather_no_bad_stack = {'true' if wt.get('noBadStack') else 'false'};", ""]
 bg = d["brigade"]["list"]
@@ -640,7 +675,8 @@ for i, t in enumerate(m["tools"]):
     assert not t.get("secret") or ("tool", i) in srew, t
 from_meta = {x["cosmetic"] for x in d["badges"] + d["contracts"] if "cosmetic" in x}   # v0.21.52: kolory kasku z odznak i zleceń
 GOALS = d["inspector"]["levels"] + d["investor"]["ranks"] + d["mastery"]["levels"] + d["tasks"]["rewards"] + d["daily"]["streak"] \
-    + [x["reward"] for x in d["collections"]["sets"]]   # cz. c: zadania, seria dni, kolekcje
+    + [x["reward"] for x in d["collections"]["sets"]] \
+    + [{"reward": "helmet", "id": c["reward"]["helmet"]} for c in car if "helmet" in c.get("reward", {})]   # cz. c: zadania, seria dni, kolekcje; cz. d: kariera
 from_meta |= {x["id"] for x in GOALS if x["reward"] == "helmet"}   # cz. b
 assert len(from_meta) == sum(1 for x in d["badges"] + d["contracts"] if "cosmetic" in x) + sum(
     1 for x in GOALS if x["reward"] == "helmet"), "kolor kasku z jednego źródła"
@@ -659,6 +695,29 @@ L += [f"inline constexpr int secrets_count = {len(sec['list'])};", f"inline cons
       f"inline constexpr int secret_helper_boss = {hb[0] if hb else -1};   // boss pokonany ciosem brygady (Szef tylko dzwoni)",
       f"inline constexpr int cosmetic_gold = {coid.get('zlota_kielnia', -1)};   // złoty błysk broni przy krycie",
       f"inline constexpr int cosmetic_stripes = {coid.get('kask_paski', -1)};   // kask w paski (wybór zawodu)", ""]
+# v0.21.52 cz. d (#47): mapa kariery - kontrakty (pierwszy etap w data::stages, liczba, Akt 0, warunek odblokowania,
+# nagroda za pierwszą wygraną: Respekt, tytuł, kolor kasku; porywy aktu II co N tur, bliźniak)
+UNL = ["none", "wins", "inspector"]
+L.append("inline constexpr core::career_def career[] = {   // kontrakty mapy kariery (0 = Dom jednorodzinny, domyślny)")
+first = 0
+for i, c in enumerate(car):
+    n = dom_n if i == 0 else len(c["stages"])
+    u, rw_ = c["unlock"], c.get("reward", {})
+    assert u["kind"] in UNL and (i == 0) == (u["kind"] == "none") and 0 <= u["value"] <= 35, c
+    assert len(c["name"]) <= 18 and len(c["short"]) <= 10 and len(c["desc"]) <= 26, c
+    assert 0 <= c.get("gust", 0) <= 9 and (c.get("gust", 0) == 0 or c["gust"] >= 3) and 0 <= rw_.get("respect", 0) <= 100, c
+    assert (i == 0) == ("boss" not in c) and (i == 0 or any(x.get("boss") == c["boss"] for x in c["stages"])), c   # nowy boss kontraktu
+    assert bool(c.get("twins")) == any(x.get("twin") for x in c.get("stages", [])), c
+    if "title" in rw_: assert 1 <= len(rw_["title"]) <= 16, c
+    hel = coid[rw_["helmet"]] if "helmet" in rw_ else -1
+    if hel >= 0: assert "helmet" in cos[hel], c
+    L.append(f'    {{ {s(c["name"])}, {s(c["short"])}, {s(c["desc"])}, {first}, {n}, {pre_n if i == 0 else 0}, '
+             f'core::career_unlock::{u["kind"]}, {u["value"]}, {c.get("gust", 0)}, {"true" if c.get("twins") else "false"}, '
+             f'{eid[c["boss"]] if "boss" in c else -1}, {rw_.get("respect", 0)}, {s(rw_.get("title", ""))}, {hel} }},')
+    first += n
+assert first == len(all_st)
+L += ["};", f"inline constexpr int career_count = {len(car)};",
+      f"inline constexpr int career_twin_carry_max = {twin_max};   // bliźniak: ile problemów z pierwszej połowy przechodzi", ""]
 es = d["estate"]["decor"]
 ew = [x for x in es if "wins" in x]
 assert 1 <= len(es) <= 12 and all(ew[i]["wins"] < ew[i + 1]["wins"] for i in range(len(ew) - 1))   # 12 miejsc na Osiedlu
@@ -757,6 +816,10 @@ for x in co:
             if st["act"] == x["act"]:
                 for e in st["enemies"]: mask |= 1 << eid[e]
         kind = "kills"
+    elif x["kind"] == "bosses":   # v0.21.52 cz. d: Karty bossów - bossowie Domu; "career" - bossowie nowych kontraktów
+        bs = {eid[st["boss"]] for st in d["stages"] if "boss" in st}
+        if x.get("career"): bs = {eid[c["boss"]] for c in car[1:]}
+        mask = sum(1 << b for b in bs); kind = "bosses"
     else: mask = 0; kind = x["kind"]
     assert kind != "kills" or mask, x
     rw_ = x["reward"]
@@ -785,6 +848,7 @@ L.append("inline constexpr core::progress_level streak_rewards[] = {   // seria 
 L += [f"    {goal(x, ['keepsake', 'title', 'helmet'], x['days'])}," for x in srw] + ["};", f"inline constexpr int streak_rewards_count = {len(srw)};", ""]
 pt += [(2, i + 1, x["reward"]["title"]) for i, x in enumerate(co) if x["reward"]["reward"] == "title"]
 pt += [(3, x["days"], x["title"]) for x in srw if x["reward"] == "title"] + [(4, x["count"], x["title"]) for x in trw if x["reward"] == "title"]
+pt += [(5, i, c["reward"]["title"]) for i, c in enumerate(car) if "title" in c.get("reward", {})]   # cz. d: kontrakt wygrany
 assert len({t[2] for t in pt} | {x["title"] for x in d["badges"] + d["contracts"]}) == len(pt) + len(d["badges"]) + len(d["contracts"]), "tytuły bez powtórzeń"
 L.append("inline constexpr core::progress_title progress_titles[] = {   // tytuły: inspektor (0), stopnie inwestora (1), kolekcje (2), seria dni (3), zadania (4)")
 L += [f"    {{ {s(t[2])}, {t[0]}, {t[1]} }}," for t in pt] + ["};", f"inline constexpr int progress_titles_count = {len(pt)};", ""]
@@ -802,6 +866,10 @@ mh = d["metaHelp"]   # v0.21.50 cz. 4: Jak grać - podsumowanie, wyzwanie tygodn
 assert len(mh) == 6 and all(len(x) <= 31 for x in mh), mh
 L += ["inline constexpr const char* meta_help[] = {   // Jak grać: podsumowanie budowy, wyzwanie tygodnia, fabuła"]
 L += [f"    {s(t)}," for t in mh] + ["};", f"inline constexpr int meta_help_count = {len(mh)};", ""]
+ch_ = d["careerHelp"]   # v0.21.52 cz. d: Jak grać - mapa kariery
+assert len(ch_) == 7 and all(len(x) <= 31 for x in ch_), ch_
+L += ["inline constexpr const char* career_help[] = {   // Jak grać: mapa kariery (kontrakty, odblokowanie, nagrody)"]
+L += [f"    {s(t)}," for t in ch_] + ["};", f"inline constexpr int career_help_count = {len(ch_)};", ""]
 gh_ = d["goalsHelp"]   # v0.21.52 cz. c: Jak grać - drzewko, kolekcje, zadania, seria dni
 assert len(gh_) == 7 and all(len(x) <= 31 for x in gh_), gh_
 L += ["inline constexpr const char* goals_help[] = {   // Jak grać: drzewko Szkoleń, kolekcje, zadania dnia, seria dni"]
@@ -817,7 +885,10 @@ L += [f"    {s(t)}," for t in sh] + ["};", f"inline constexpr int secrets_help_c
 L += ["inline constexpr const char* tips[] = {   // rady kierownika na ekranie harmonogramu między etapami"]
 L += [f"    {s(t)}," for t in d["tips"]] + ["};", f"inline constexpr int tips_count = {len(d['tips'])};", ""]
 L += [f"inline constexpr int classes_count = {len(d['classes'])};",
-      f"inline constexpr int stages_count = {len(d['stages'])};",
+      f"inline constexpr int stages_count = {len(d['stages'])};   // etapy Domu jednorodzinnego (kontrakt 0)",
+      f"inline constexpr int all_stages_count = {len(all_st)};   // v0.21.52 cz. d: z etapami kolejnych kontraktów",
+      f"inline constexpr int stage_looks_count = {looks_n};   // palety etapów (stage_palettes_N)",
+      f"inline constexpr int tile_sets_count = {TILE_SETS};",
       f"inline constexpr int difficulties_count = {len(d['difficulties'])};",
       f"inline constexpr int default_difficulty = {d['defaultDifficulty']};",
       f"inline constexpr int ng_hp_pct_per_tier = {d['newGamePlus']['hpPctPerTier']};",

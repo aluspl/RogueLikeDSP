@@ -72,7 +72,7 @@ namespace core
         int8_t defense;
         int8_t sight;
         int16_t score;
-        int8_t frame;
+        int16_t frame;         // v0.21.52 cz. d: problemy kontraktów od 184 (int16 - tylko dane, nie stan budowy)
         bool slam;             // boss: zapowiada uderzenie w obszar (czerwone pola)
         status_effect on_hit;  // stan nakładany przy trafieniu bohatera
         int8_t status_chance;  // szansa w %
@@ -186,6 +186,30 @@ namespace core
         int8_t dmg_bonus;      // premia do obrażeń wrogów w etapie
         int8_t act;            // akt budowy (każdy kończy się bossem)
         int16_t cost;          // koszt etapu w tys. zł (harmonogram domu po wygranej)
+        int8_t look = 0;       // v0.21.52 cz. d: paleta etapu (stage_palettes_N / tiles/stage_N.png)
+        int8_t tiles = 0;      // zestaw kafli: 0-2 akty, 3-4 Akt 0 (biuro, wykop), 5 drewno, 6 kamienica
+        bool twin = false;     // druga połowa bliźniaka: pogoda, wydarzenie i niedokończone problemy z pierwszej
+    };
+
+    // v0.21.52 cz. d (#47): mapa kariery - kontrakt (budynek) z własną listą etapów w data::stages.
+    enum class career_unlock : uint8_t { none, wins, inspector };
+
+    struct career_def
+    {
+        const char* name;
+        const char* short_name;
+        const char* desc;
+        int8_t first;          // pierwszy etap kontraktu w data::stages
+        int8_t count;          // liczba etapów (z Aktem 0)
+        int8_t prelude;        // etapy Aktu 0 na początku (tylko Dom jednorodzinny)
+        career_unlock unlock;
+        int8_t unlock_value;   // wygrane / poziom inspektora
+        int8_t gust;           // porywy aktu II co tyle tur (0 = jak w akcie)
+        bool twins;            // bliźniak: druga połowa dziedziczy pogodę, wydarzenie i problemy z pierwszej
+        int8_t boss;           // boss kontraktu (ostatni etap; -1 = Dom)
+        int16_t respect;       // nagroda za pierwszą wygraną: Respekt, tytuł, kolor kasku (data::cosmetics, -1 = brak)
+        const char* title;
+        int8_t helmet;
     };
 
     // Mechanika aktu (v0.21.49): akt I błoto (wejście kosztuje turę), akt II porywy wiatru (spychają o pole),
@@ -492,7 +516,7 @@ namespace core
         int8_t value;             // upał: +tury mocy; mróz: co ile tur problemy stoją; wiatr: -zasięg; deszcz: 1 kałuża na tyle pól
         int8_t weight;            // waga losowania
         bool bad;                 // niekorzystna (z niekorzystnym wydarzeniem na placu się nie łączy)
-        uint16_t stages;          // bitmaska etapów, na których może wypaść
+        uint64_t stages;          // bitmaska etapów, na których może wypaść (v0.21.52 cz. d: z etapami kontraktów)
     };
 
     // Brygada: najemny fachowiec wzywany raz na etap z telefonu (płatny budżetem budowy).
@@ -584,7 +608,8 @@ namespace core
     {
         const char* name;
         int8_t source;         // 0 = poziom inspektora, 1 = stopień inwestora (najwyższa stawka); v0.21.52 cz. c:
-                               // 2 = kolekcja (level = komplet + 1), 3 = seria dni (dni), 4 = zadania (wykonane łącznie)
+                               // 2 = kolekcja (level = komplet + 1), 3 = seria dni (dni), 4 = zadania (wykonane łącznie);
+                               // v0.21.52 cz. d: 5 = kontrakt wygrany (level = kontrakt)
         int8_t level;          // poziom / stawka / komplet / dni / zadania
     };
 

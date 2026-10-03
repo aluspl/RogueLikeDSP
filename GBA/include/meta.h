@@ -13,7 +13,8 @@ namespace core
     constexpr int max_respect = 19;       // 16 w respect_ranks + 3 w respect_ranks_hi (v12)
     static_assert(data::classes_count <= max_classes && data::respect_count <= max_respect && data::rewards_count <= 255);
 
-    constexpr char profile_magic[8] = "PBRL015";
+    constexpr char profile_magic[8] = "PBRL016";
+    constexpr char profile_magic_v15[8] = "PBRL015";
     constexpr char profile_magic_v14[8] = "PBRL014";
     constexpr char profile_magic_v13[8] = "PBRL013";
     constexpr char profile_magic_v12[8] = "PBRL012";
@@ -41,6 +42,9 @@ namespace core
     constexpr int profile_v12_size = 196; // v13 = v12 + tytuł i kolor kasku (v0.21.52), poziomy Szkoleń od nowa
     constexpr int profile_v13_size = 200; // v14 = v13 + poziom inspektora, mistrzostwo zawodów, druga pamiątka (v0.21.52 cz. b)
     constexpr int profile_v14_size = 240; // v15 = v14 + drzewko Szkoleń, kolekcje, zadania dnia, seria dni (v0.21.52 cz. c)
+    constexpr int profile_v15_size = 360; // v16 = v15 + mapa kariery (v0.21.52 cz. d): kontrakty, wygrane, najlepszy etap
+    constexpr int max_contracts = 6;      // kontrakty mapy kariery (data::career)
+    static_assert(data::career_count <= max_contracts);
     constexpr int task_slots = 5;         // v0.21.52 cz. c: 3 zadania dnia + 2 tygodnia
     constexpr int daily_task_slots = 3;
     static_assert(data::tree_nodes_count <= 8 && data::collections_count <= 8 && data::upgrades_count <= 8);
@@ -150,7 +154,14 @@ namespace core
         uint16_t streak_day;           // ostatni dzień serii (numer budowy dnia)
         uint8_t streak_best;           // najdłuższa seria (nagrody za 3 / 7 / 14 dni)
         uint8_t collections;           // bity: ogłoszone komplety kolekcji (baner raz)
-        uint8_t reserved15[24];        // wyrównanie do 384 B (zapis budowy od 512)
+        // --- v16 (v0.21.52 cz. d): mapa kariery (#47)
+        uint8_t contract;              // wybrany kontrakt (data::career)
+        uint8_t career_seen;           // bity: odblokowanie kontraktu już ogłoszone (baner raz)
+        uint8_t career_done;           // bity: kontrakt wygrany (nagroda za pierwszą wygraną wydana)
+        uint8_t reserved16a;
+        uint8_t career_wins[max_contracts];   // wygrane w każdym kontrakcie (do 255)
+        uint8_t career_best[max_contracts];   // najwięcej ukończonych etapów kontraktu w jednej budowie (bez Aktu 0)
+        uint8_t reserved16[8];         // wyrównanie do 384 B (zapis budowy od 512)
     };
     static_assert(offsetof(profile, badges) == profile_v2_size);
     static_assert(offsetof(profile, kills_total) == profile_v3_size);
@@ -166,6 +177,7 @@ namespace core
     static_assert(offsetof(profile, kill_count) == 242 && offsetof(profile, kill_mark) == 290 && offsetof(profile, task_day) == 338);
     static_assert(offsetof(profile, task_progress) == 342 && offsetof(profile, task_mark) == 347 && offsetof(profile, task_done) == 352);
     static_assert(offsetof(profile, tasks_total) == 354 && offsetof(profile, streak_day) == 356 && offsetof(profile, collections) == 359);
+    static_assert(offsetof(profile, contract) == profile_v15_size && offsetof(profile, career_wins) == 364 && offsetof(profile, career_best) == 370);
     static_assert(sizeof(profile) == 384);
 
     // Katalog usterek: rodzaje 0-15 w catalog, 16-47 w catalog_hi.
@@ -345,17 +357,27 @@ namespace core
     inline void migrate_v12(profile& p);
     inline void migrate_v14(profile& p);
     inline void migrate_v15(profile& p);
+    inline void migrate_v16(profile& p);
     inline int next_unlock(const profile& p, int& kind, int& index);
 
-    // v0.21.52 cz. c: każda ścieżka migracji kończy się migrate_v15 (drzewko, kolekcje, zadania, seria dni).
+    // v0.21.52 cz. c: każda ścieżka migracji kończy się migrate_v15 (drzewko, kolekcje, zadania, seria dni);
+    // cz. d: potem migrate_v16 (mapa kariery).
     inline bool profile_fix(profile& p)
     {
         if(std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0) return clamp_levels(p);
+        if(std::memcmp(p.magic, profile_magic_v15, sizeof p.magic) == 0)   // v15 -> v16: Dom jednorodzinny z dotychczasowych wygranych
+        {
+            std::memset(reinterpret_cast<char*>(&p) + profile_v15_size, 0, sizeof p - profile_v15_size);
+            std::memcpy(p.magic, profile_magic, sizeof p.magic);
+            migrate_v16(p);
+            return true;
+        }
         if(std::memcmp(p.magic, profile_magic_v14, sizeof p.magic) == 0)   // v14 -> v15: kolekcje z Katalogu, seria z wyników dni
         {
             std::memset(reinterpret_cast<char*>(&p) + profile_v14_size, 0, sizeof p - profile_v14_size);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             migrate_v15(p);
+            migrate_v16(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v13, sizeof p.magic) == 0)   // v13 -> v14: inspektor i mistrzostwo z dotychczasowych statystyk
@@ -364,6 +386,7 @@ namespace core
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             migrate_v14(p);
             migrate_v15(p);
+            migrate_v16(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v12, sizeof p.magic) == 0)   // v12 -> v13: zwrot za Szkolenia, tytuł i kask od zera
@@ -373,6 +396,7 @@ namespace core
             migrate_v13(p);
             migrate_v14(p);
             migrate_v15(p);
+            migrate_v16(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v11, sizeof p.magic) == 0)   // v11 -> v12: sekretne zlecenia z tego, co już widać w profilu
@@ -383,6 +407,7 @@ namespace core
             migrate_v12(p);
             migrate_v14(p);
             migrate_v15(p);
+            migrate_v16(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v10, sizeof p.magic) == 0)   // v10 -> v11: wyzwania tygodnia i fabuła od zera
@@ -394,6 +419,7 @@ namespace core
             migrate_v12(p);
             migrate_v14(p);
             migrate_v15(p);
+            migrate_v16(p);
             return true;
         }
         bool v9 = std::memcmp(p.magic, profile_magic_v9, sizeof p.magic) == 0;
@@ -408,6 +434,7 @@ namespace core
             migrate_v12(p);
             migrate_v14(p);
             migrate_v15(p);
+            migrate_v16(p);
             return true;
         }
         // v7/v6/v5/v4/v3/v2 -> v9: stare pola zostają, nowe od zera; bez wybranej pamiątki - pierwsza odblokowana
@@ -429,6 +456,7 @@ namespace core
             migrate_v12(p);
             migrate_v14(p);
             migrate_v15(p);
+            migrate_v16(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v1, sizeof p.magic) == 0)
@@ -442,6 +470,7 @@ namespace core
             migrate_v12(p);
             migrate_v14(p);
             migrate_v15(p);
+            migrate_v16(p);
             return true;
         }
         profile_reset(p);
@@ -538,6 +567,7 @@ namespace core
         if(goal_helmet(data::streak_rewards, data::streak_rewards_count, p.streak_best, k)) return true;
         for(int i = 0; i < data::badges_count; ++i) if(data::badges[i].cosmetic == k && (p.badges & (1u << i))) return true;
         for(int i = 0; i < data::contracts_count; ++i) if(data::contracts[i].cosmetic == k && (p.contracts & (1u << i))) return true;
+        for(int c = 0; c < data::career_count; ++c) if(data::career[c].helmet == k && ((p.career_done >> c) & 1)) return true;   // cz. d
         // v0.21.52 cz. b: poziom inspektora, stopnie inwestora, kask mistrza (dowolny zawód na poziomie z nagrodą "helmet")
         for(int l = 0; l < data::inspector_levels_count; ++l)
             if(data::inspector_levels[l].reward == progress_reward::helmet && data::inspector_levels[l].index == k) return inspector_level(p) > l;
@@ -604,6 +634,7 @@ namespace core
                 case 1:  return max_stake(p) >= pt.level;
                 case 2:  return collection_complete(p, pt.level - 1);   // v0.21.52 cz. c: kolekcje, seria dni, zadania
                 case 3:  return p.streak_best >= pt.level;
+                case 5:  return (p.career_done >> pt.level) & 1;   // v0.21.52 cz. d: kontrakt mapy kariery wygrany
                 default: return p.tasks_total >= pt.level;
             }
         }
@@ -1192,6 +1223,7 @@ namespace core
     }
 
     inline void bank_collections(profile& p, const game& g);   // v0.21.52 cz. c (niżej)
+    inline void career_record(profile& p, const game& g);      // v0.21.52 cz. d (niżej)
 
     // Przenosi do profilu trwałe osiągnięcia budowy (katalog, narzędzia, wygrane zawody, liczniki zleceń).
     // Można wołać wielokrotnie.
@@ -1199,6 +1231,7 @@ namespace core
     {
         bank_counters(p, g);
         bank_collections(p, g);   // v0.21.52 cz. c: liczniki kolekcji (znak wodny kill_mark)
+        career_record(p, g);      // v0.21.52 cz. d: najlepszy etap kontraktu
         for(int d = 0; d < data::enemies_count; ++d) if(g.kills_by_type[d]) catalog_add(p, d);
         p.tools_found = uint8_t(p.tools_found | g.tools_found);
         if(g.st == status::won) set_class_won(p, g.cls);
@@ -1245,10 +1278,10 @@ namespace core
     inline int run_progress_xp(const game& g)
     {
         int stages = 0, bosses = 0;
-        auto count = [&](int to) { for(int s = g.first_stage; s < to; ++s) { ++stages; bosses += data::stages[s].boss >= 0; } };
-        for(int t = 0; t < g.tier; ++t) count(data::stages_count);   // budowy ukończone przed "Kolejną budową"
+        auto count = [&](int to) { for(int s = g.first_stage; s < to; ++s) { ++stages; bosses += g.sdef(s).boss >= 0; } };
+        for(int t = 0; t < g.tier; ++t) count(g.route_count());   // budowy ukończone przed "Kolejną budową"
         const bool won = g.st == status::won;
-        count(won ? data::stages_count : (g.st == status::stage_clear ? g.stage + 1 : g.stage));
+        count(won ? g.route_count() : (g.st == status::stage_clear ? g.stage + 1 : g.stage));
         const int wins = g.tier + (won ? 1 : 0);
         const int xp = data::inspector_xp_run + stages * data::inspector_xp_stage + bosses * data::inspector_xp_boss
                      + g.elites_killed * data::inspector_xp_elite + g.secrets_found * data::inspector_xp_storeroom + wins * data::inspector_xp_win;
@@ -1563,7 +1596,8 @@ namespace core
     inline bool secret_condition(const profile& p, const game* g, int i)
     {
         const secret_def& sd = data::secrets[i];
-        const bool won = g && g->st == status::won;
+        // v0.21.52 cz. d: wygrana liczy się w pełnym budynku (co najmniej 10 etapów - nie w krótkim Domku letniskowym)
+        const bool won = g && g->st == status::won && g->route_count() - g->prelude_count() >= 10;
         switch(sd.kind)
         {
             case secret_kind::no_coffee_win: return won && g->coffee_drunk == 0;
@@ -1672,7 +1706,7 @@ namespace core
         if(cd.kind == collection_kind::decor) { have = estate_decor(p); need = data::estate_decor_count; return; }
         for(int d = 0; d < data::enemies_count; ++d)
         {
-            const bool in = cd.kind == collection_kind::bosses ? enemy_boss(d) : ((cd.enemies >> d) & 1) != 0;
+            const bool in = ((cd.enemies >> d) & 1) != 0;   // v0.21.52 cz. d: bossowie też z maski (Dom / kariera)
             if(! in) continue;
             ++need;
             have += p.kill_count[d] >= cd.count;
@@ -1737,7 +1771,7 @@ namespace core
     // Etapy ukończone w budowie (z budowami NG+), bossowie pokonani, wygrane - jak run_progress_xp.
     inline int run_stages_done(const game& g)
     {
-        const int per = data::stages_count - g.first_stage;
+        const int per = g.route_count() - g.first_stage;
         const bool won = g.st == status::won;
         return g.tier * per + (won ? per : (g.st == status::stage_clear ? g.stage + 1 : g.stage) - g.first_stage);
     }
@@ -1860,7 +1894,6 @@ namespace core
         p.task_day = p.task_week = 0;
         for(int s = 0; s < task_slots; ++s) { p.task_progress[s] = 0; p.task_mark[s] = 0; }
         p.task_done = 0; p.tasks_total = 0; p.collections = 0;
-        for(auto& r : p.reserved15) r = 0;
         int last = 0;
         for(int i = 0; i < daily_slots; ++i) last = imax(last, p.daily_day[i]);
         int n = 0;
@@ -1874,6 +1907,99 @@ namespace core
         p.streak = uint8_t(n); p.streak_best = uint8_t(n); p.streak_day = uint16_t(last);
         p.collections = uint8_t(0);
         for(int i = 0; i < data::collections_count; ++i) if(collection_complete(p, i)) p.collections = uint8_t(p.collections | (1u << i));   // bez banera za stare
+    }
+
+    // ------------------------------------------------------------------ v0.21.52 cz. d (#47): mapa kariery
+    // Kontrakty: Dom jednorodzinny zawsze, kolejne po wygranych albo na poziomie inspektora; wybór przed wyborem zawodu
+    // (budowa dnia i tygodnia - zawsze Dom). Pierwsza wygrana kontraktu: Respekt (raz), tytuł i kolor kasku (od wygranej).
+    inline bool career_unlocked(const profile& p, int c)
+    {
+        if(c < 0 || c >= data::career_count) return false;
+        const career_def& k = data::career[c];
+        switch(k.unlock)
+        {
+            case career_unlock::wins:      return p.wins >= k.unlock_value;
+            case career_unlock::inspector: return inspector_level(p) >= k.unlock_value;
+            default:                       return true;
+        }
+    }
+    inline bool career_won(const profile& p, int c) { return c >= 0 && c < max_contracts && ((p.career_done >> c) & 1); }
+    inline int careers_unlocked(const profile& p) { int n = 0; for(int c = 0; c < data::career_count; ++c) n += career_unlocked(p, c); return n; }
+    inline int careers_won(const profile& p) { int n = 0; for(int c = 0; c < data::career_count; ++c) n += career_won(p, c); return n; }
+    // Wybrany kontrakt (zablokowany albo spoza danych - Dom jednorodzinny).
+    inline int selected_career(const profile& p) { return career_unlocked(p, p.contract) ? p.contract : 0; }
+    // Odblokowane, a jeszcze nieogłoszone kontrakty (baner "Nowy kontrakt" raz) - zwraca bity i zapamiętuje je.
+    inline int career_announce(profile& p)
+    {
+        int got = 0;
+        for(int c = 1; c < data::career_count; ++c)
+            if(career_unlocked(p, c) && ! ((p.career_seen >> c) & 1)) got |= 1 << c;
+        p.career_seen = uint8_t(p.career_seen | got);
+        return got;
+    }
+    // Ukończone etapy kontraktu w tej budowie (bez Aktu 0; NG+ - do końca budynku).
+    inline int career_stages_done(const game& g)
+    {
+        if(g.tier > 0 || g.st == status::won) return g.route_count() - g.prelude_count();
+        const int to = g.st == status::stage_clear ? g.stage + 1 : g.stage;
+        return imax(0, to - imax(int(g.first_stage), g.prelude_count()));
+    }
+    // Koniec etapu / budowy: najlepszy wynik kontraktu (można wołać wielokrotnie).
+    inline void career_record(profile& p, const game& g)
+    {
+        const int c = g.contract;
+        if(c < 0 || c >= max_contracts) return;
+        p.career_best[c] = uint8_t(imax(p.career_best[c], imin(255, career_stages_done(g))));
+    }
+    // Wygrana budowa w kontrakcie (raz na wygraną, obok record_win). Zwraca true przy pierwszej wygranej kontraktu
+    // (Respekt z nagrody już w profilu; tytuł i kask - od teraz).
+    inline bool career_win(profile& p, const game& g)
+    {
+        const int c = g.contract;
+        if(c < 0 || c >= data::career_count) return false;
+        career_record(p, g);
+        p.career_wins[c] = add_sat8(p.career_wins[c], 1);
+        if(career_won(p, c)) return false;
+        p.career_done = uint8_t(p.career_done | (1u << c));
+        const int r = data::career[c].respect;
+        if(r > 0) { p.respect = add_sat16(p.respect, r); p.respect_total = add_sat16(p.respect_total, r); }
+        return true;
+    }
+    // Nagroda za pierwszą wygraną słowami: "Respekt +20, tytuł Letnik, Sosnowy kask".
+    inline message& career_reward_label(message& m, int c)
+    {
+        const career_def& k = data::career[c];
+        bool any = false;
+        if(k.respect > 0) { m.add("Respekt +").add(k.respect); any = true; }
+        if(k.title[0]) { m.add(any ? ", " : "").add(k.title); any = true; }
+        if(k.helmet >= 0) m.add(any ? ", " : "").add(data::cosmetics[k.helmet].name);
+        return m;
+    }
+    // Warunek odblokowania słowami: "1 wygrana", "3 wygrane", "Inspektor 8".
+    inline message& career_unlock_label(message& m, int c)
+    {
+        const career_def& k = data::career[c];
+        if(k.unlock == career_unlock::wins)
+        {
+            const int v = k.unlock_value;
+            return m.add(v).add(v == 1 ? " wygrana" : (v % 10 >= 2 && v % 10 <= 4 && (v % 100 < 10 || v % 100 >= 20) ? " wygrane" : " wygranych"));
+        }
+        if(k.unlock == career_unlock::inspector) return m.add("Inspektor ").add(k.unlock_value);
+        return m;
+    }
+    // v15 -> v16: Dom jednorodzinny z dotychczasowych wygranych (wygrany, gdy była wygrana; najlepszy etap - cała budowa).
+    // Kontrakty już odblokowane czekają na baner jak nowe.
+    inline void migrate_v16(profile& p)
+    {
+        p.contract = 0; p.career_seen = 0; p.career_done = 0; p.reserved16a = 0;
+        for(int c = 0; c < max_contracts; ++c) { p.career_wins[c] = 0; p.career_best[c] = 0; }
+        for(auto& r : p.reserved16) r = 0;
+        if(p.wins > 0)
+        {
+            p.career_wins[0] = uint8_t(imin(255, p.wins));
+            p.career_best[0] = uint8_t(data::career[0].count - data::career[0].prelude);
+            p.career_done = 1;
+        }
     }
 
     // ------------------------------------------------------------------ podsumowanie budowy (#33): rada i najbliższy cel
@@ -1937,8 +2063,8 @@ namespace core
     // ------------------------------------------------------------------ harmonogram domu po wygranej
     // Dni etapu z liczby tur (min + tury / turnsPerDay) i data końca etapu, licząc wstecz od daty odbioru.
     inline int schedule_days(const game& g, int s) { return data::schedule_min_days + g.stage_days[s] / data::schedule_turns_per_day; }
-    inline int schedule_total_days(const game& g) { int t = 0; for(int s = g.first_stage; s < data::stages_count; ++s) t += schedule_days(g, s); return t; }
-    inline int schedule_total_cost(const game& g) { int t = 0; for(int s = g.first_stage; s < data::stages_count; ++s) t += data::stages[s].cost; return t; }
+    inline int schedule_total_days(const game& g) { int t = 0; for(int s = g.first_stage; s < g.route_count(); ++s) t += schedule_days(g, s); return t; }
+    inline int schedule_total_cost(const game& g) { int t = 0; for(int s = g.first_stage; s < g.route_count(); ++s) t += g.sdef(s).cost; return t; }
     // Dzień (days_from_civil) rozpoczęcia etapu s, gdy odbiór był w dniu end_day.
     inline int schedule_start_day(const game& g, int s, int end_day)
     {
@@ -1971,7 +2097,8 @@ namespace core
     // v0.21.52 cz. c: PBRUN15 - liczniki zadań (wezwania brygady, zakupy) w miejscu wyrównania; rozmiar stanu bez zmian, więc
     // zapis PBRUN14 też się wczytuje (z zerami w nowych polach). Profil v15 (384 B) nie mieści się przed 256 - zapis budowy
     // od 512; przy migracji profilu warstwa GBA przenosi przerwaną budowę spod 256 (run_save_offset_v14).
-    constexpr char run_magic[8] = "PBRUN15";
+    constexpr char run_magic[8] = "PBRUN16";
+    constexpr char run_magic_v15[8] = "PBRUN15";   // 16 (v0.21.52 cz. d): kontrakt mapy kariery i problemy z 1. połowy bliźniaka w wyrównaniu; 15: liczniki zadań
     constexpr char run_magic_v14[8] = "PBRUN14";   // 14: sekretne zlecenia (liczniki budowy), nowe zawody; 13: podsumowanie budowy (ciosy, oś czasu), wyzwanie tygodnia; 12: wydarzenia z wyborem, ulepszenie narzędzia, magazyn; 11: premie po etapie, elity, kombinacje stanów; 10: Akt 0; 09: 10 etapów, zachowania
     constexpr int run_save_offset = 512;
     constexpr int run_save_offset_v14 = 256;   // profil v14 i starsze (240 B)
@@ -2002,17 +2129,20 @@ namespace core
         s.checksum = run_checksum(s.g);
     }
 
-    // Ważny zapis (bieżący albo PBRUN14 - ten sam układ stanu). Po wczytaniu PBRUN14 wołać run_save_upgrade.
+    // Ważny zapis (bieżący albo PBRUN14 / PBRUN15 - ten sam układ stanu). Po wczytaniu starszego wołać run_save_upgrade.
     inline bool run_save_valid(const run_save& s)
     {
-        const bool magic = std::memcmp(s.magic, run_magic, sizeof s.magic) == 0 || std::memcmp(s.magic, run_magic_v14, sizeof s.magic) == 0;
+        const bool magic = std::memcmp(s.magic, run_magic, sizeof s.magic) == 0 || std::memcmp(s.magic, run_magic_v15, sizeof s.magic) == 0
+                        || std::memcmp(s.magic, run_magic_v14, sizeof s.magic) == 0;
         return magic && s.size == sizeof(game) && s.checksum == run_checksum(s.g);
     }
-    // PBRUN14 -> PBRUN15: pola w dawnym wyrównaniu (liczniki zadań) od zera.
+    // PBRUN14 -> PBRUN16: pola w dawnym wyrównaniu (liczniki zadań; v0.21.52 cz. d: kontrakt i bliźniak) od zera.
     inline void run_save_upgrade(run_save& s)
     {
-        if(std::memcmp(s.magic, run_magic_v14, sizeof s.magic) != 0) return;
-        s.g.helpers_called = 0; s.g.shop_buys = 0;
+        const bool v14 = std::memcmp(s.magic, run_magic_v14, sizeof s.magic) == 0;
+        if(! v14 && std::memcmp(s.magic, run_magic_v15, sizeof s.magic) != 0) return;
+        if(v14) { s.g.helpers_called = 0; s.g.shop_buys = 0; }
+        s.g.contract = 0; s.g.twin_carry = 0;   // przerwana budowa sprzed mapy kariery: Dom jednorodzinny
         std::memcpy(s.magic, run_magic, sizeof s.magic);
         s.checksum = run_checksum(s.g);
     }

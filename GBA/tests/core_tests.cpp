@@ -1839,7 +1839,7 @@ int main()
             CHECK(profile_fix(p) && std::strcmp(p.magic, profile_magic) == 0 && p.catalog_hi == 0 && p.best == 4321 && p.respect == 77 && p.catalog == 0x0F0F);
             catalog_add(p, 20); catalog_add(p, 31);
             CHECK(catalog_has(p, 20) && catalog_has(p, 31) && !catalog_has(p, 21) && catalog_count(p) == 8 + 2);
-            CHECK(std::strcmp(run_magic, "PBRUN15") == 0);
+            CHECK(std::strcmp(run_magic, "PBRUN16") == 0);
         }
     }
     // 41. v0.21.49 cz. 3: Akt 0 (Papierologia) - nagroda za odbiór, pieczątki zamykają schody, druga faza bossa;
@@ -1934,7 +1934,7 @@ int main()
         CHECK(!tutorial_pending(v, 0) && !tutorial_pending(v, 1) && pending_unlock(v, 0, cls) == unlock_act0 && pending_unlock(v, 1, cls) == -1);
         profile nv; profile_reset(nv); std::memcpy(nv.magic, "PBRL009", 8);
         CHECK(profile_fix(nv) && tutorial_pending(nv, 0) && nv.rewards == 0 && nv.tutorial == 0);
-        CHECK(sizeof(profile) == 384 && std::strcmp(profile_magic, "PBRL015") == 0);
+        CHECK(sizeof(profile) == 384 && std::strcmp(profile_magic, "PBRL016") == 0);
     }
     // 46. v0.21.50: rozpiska obrażeń broni (#26) - zakres z rozpiski = to, co naprawdę zadaje walka (wiele rzutów z seedem)
     {
@@ -2278,7 +2278,7 @@ int main()
         {
             game g; g.new_run(3, 42); clear_stage(g); g.pick_boon(1);
             run_save* sv = new run_save(); run_save_make(*sv, g);
-            CHECK(run_save_valid(*sv) && sv->g.boons == g.boons && std::memcmp(sv->magic, "PBRUN15", 7) == 0);
+            CHECK(run_save_valid(*sv) && sv->g.boons == g.boons && std::memcmp(sv->magic, "PBRUN16", 7) == 0);
             delete sv;
         }
     }
@@ -2867,7 +2867,7 @@ int main()
         {
             game g; g.new_run(majster, 9); g.coffee_drunk = 2; g.shock_combos = 7; g.secret_flags = 3;
             run_save* sv = new run_save(); run_save_make(*sv, g);
-            CHECK(run_save_valid(*sv) && sv->g.shock_combos == 7 && sv->g.borrow_cls == g.borrow_cls && std::memcmp(sv->magic, "PBRUN15", 7) == 0);
+            CHECK(run_save_valid(*sv) && sv->g.shock_combos == 7 && sv->g.borrow_cls == g.borrow_cls && std::memcmp(sv->magic, "PBRUN16", 7) == 0);
             delete sv;
         }
     }
@@ -2946,6 +2946,7 @@ int main()
         for(int l = 0; l < data::task_rewards_count; ++l) helmets_from += data::task_rewards[l].reward == progress_reward::helmet;   // cz. c
         for(int l = 0; l < data::streak_rewards_count; ++l) helmets_from += data::streak_rewards[l].reward == progress_reward::helmet;
         for(int i = 0; i < data::collections_count; ++i) helmets_from += data::collections[i].reward.reward == progress_reward::helmet;
+        for(int c = 0; c < data::career_count; ++c) helmets_from += data::career[c].helmet >= 0;   // cz. d: mapa kariery
         int helmets = 0; for(int k = 0; k < data::cosmetics_count; ++k) helmets += cosmetic_helmet(k);
         CHECK(helmets >= 3 && helmets_from == helmets && ! cosmetic_helmet(data::cosmetic_stripes) && ! cosmetic_helmet(data::cosmetic_gold));
         // tytuły: tylko zdobyte, wybór w kółko z "bez tytułu"
@@ -3337,7 +3338,7 @@ int main()
                 if(cd.reward.reward == progress_reward::title && cd.kind != collection_kind::decor) CHECK(titles_owned(q) == t0 + 1);
                 if(cd.reward.reward == progress_reward::helmet) CHECK(helmets_unlocked(q) == h0 + 1 && cosmetic_unlocked(q, cd.reward.index));
             }
-            CHECK(bosses_count() == 5 && boss_at(0) >= 0 && enemy_boss(boss_at(4)) && boss_at(5) == -1);
+            CHECK(bosses_count() == 9 && boss_at(0) >= 0 && enemy_boss(boss_at(8)) && boss_at(9) == -1);   // cz. d: + 4 bossów kariery
         }
         // zadania: te same dla dnia, 3 różne dnia i 2 różne tygodnia; postęp ze znakiem wodnym; wykonane = Respekt raz
         {
@@ -3447,13 +3448,13 @@ int main()
             std::memset(reinterpret_cast<char*>(&p) + profile_v14_size, 0xCD, sizeof p - profile_v14_size);   // stary zapis budowy pod 256
             CHECK(profile_fix(p) && std::strcmp(p.magic, profile_magic) == 0 && p.best == 321 && p.xp == 55 && p.inspector_xp == 777 && p.keepsake2 == 2);
             CHECK(p.tree == 0 && p.kill_count[data::enemy_woda] == 1 && p.kill_count[data::enemy_termin] == 1 && p.kill_count[data::enemy_kamien] == 0);
-            CHECK(p.kill_mark[0] == 0 && p.task_day == 0 && p.task_done == 0 && p.tasks_total == 0 && p.reserved15[0] == 0);
+            CHECK(p.kill_mark[0] == 0 && p.task_day == 0 && p.task_done == 0 && p.tasks_total == 0 && p.contract == 0);
             CHECK(p.streak == 3 && p.streak_day == 202 && p.streak_best == 3);   // 200, 201, 202 (198 osobno)
             CHECK(p.collections == 0 && ! profile_fix(p));
             // starszy profil: przez wszystkie migracje do v15
             profile o; profile_reset(o); o.runs = 3; std::memcpy(o.magic, profile_magic_v13, sizeof o.magic);
             std::memset(reinterpret_cast<char*>(&o) + profile_v13_size, 0xEE, sizeof o - profile_v13_size);
-            CHECK(profile_fix(o) && std::strcmp(o.magic, profile_magic) == 0 && o.tree == 0 && o.streak == 0 && o.kill_mark[5] == 0 && o.reserved15[3] == 0);
+            CHECK(profile_fix(o) && std::strcmp(o.magic, profile_magic) == 0 && o.tree == 0 && o.streak == 0 && o.kill_mark[5] == 0 && o.reserved16a == 0);
             profile n; profile_reset(n); n.tree = 0x24; n.tasks_total = 9; n.streak_best = 5; CHECK(! profile_fix(n) && n.tree == 0x24 && n.tasks_total == 9);
             // komplet już osiągnięty przy migracji: bez banera
             profile c; profile_reset(c); c.wins = 100; c.inspector_xp = 1000000; std::memcpy(c.magic, profile_magic_v14, sizeof c.magic);
@@ -3466,6 +3467,142 @@ int main()
             run_save_upgrade(s);
             CHECK(run_save_valid(s) && std::memcmp(s.magic, run_magic, sizeof s.magic) == 0 && s.g.helpers_called == 0 && s.g.shop_buys == 0 && s.g.cls == 3);
             CHECK(run_save_offset >= int(sizeof(profile)) && run_save_offset_v14 == 256);
+        }
+    }
+
+    // 53. v0.21.52 cz. d (#47): mapa kariery - kontrakty, trasy etapów, bliźniak, porywy, profil v16, nagrody
+    {
+        CHECK(data::career_count == 5 && data::career[0].first == 0 && data::career[0].count == data::stages_count && data::career[0].prelude == data::prelude_stages);
+        int first = 0;
+        for(int c = 0; c < data::career_count; ++c)
+        {
+            const career_def& k = data::career[c];
+            CHECK(k.first == first && k.count >= 6 && k.count <= max_stages); first += k.count;
+            CHECK(data::stages[k.first + k.count - 1].boss >= 0);   // ostatni etap z bossem
+            if(c > 0)
+            {
+                bool has = false; for(int s = 0; s < k.count; ++s) has |= data::stages[k.first + s].boss == k.boss;
+                CHECK(has && k.prelude == 0 && data::enemies[k.boss].slam);
+            }
+            // przejście całego kontraktu skrótem: etapy po kolei, Hurtownia przy zmianie aktu, wygrana na ostatnim
+            game g; g.new_run(1, 77 + uint32_t(c), 0, run_mods(), c);
+            CHECK(g.contract == c && g.route_count() == k.count && g.stage == k.prelude && &g.sdef() == &data::stages[k.first + k.prelude]);
+            int shops = 0, acts_changes = 0;
+            for(int s = k.prelude; s < k.count - 1; ++s) acts_changes += data::stages[k.first + s].act != data::stages[k.first + s + 1].act;
+            for(int guard = 0; guard < 200 && g.st != status::won; ++guard)
+            {
+                if(g.st == status::stage_clear) { shops += g.act_cleared; g.next_stage(); continue; }
+                CHECK(g.st == status::playing);
+                if(g.st != status::playing) break;
+                CHECK(g.wdef().stages >> g.stage_id(g.stage) & 1);   // pogoda dozwolona na etapie kontraktu
+                g.hero.hp = g.hero.max_hp;
+                g.debug_skip();
+            }
+            CHECK(g.st == status::won && g.last_stage() && shops == acts_changes);
+            CHECK(career_stages_done(g) == k.count - k.prelude);
+        }
+        CHECK(first == data::all_stages_count);
+        { game g; g.new_run(1, 5, 1, run_mods(), 99); CHECK(g.contract == 0); }   // spoza danych: Dom
+        { game a; a.new_run(2, 5); game b; b.new_run(2, 5, data::default_difficulty, run_mods(), 0);   // Dom bez zmian
+          CHECK(a.hero.x == b.hero.x && a.enemies_count == b.enemies_count && a.weather == b.weather); }
+        // porywy: Dom z poddaszem co 4 tury, Dom co 6 (akt II)
+        for(int c = 0; c < data::career_count; ++c)
+        {
+            game g; g.new_run(1, 9, 1, run_mods(), c);
+            int s = 0; while(data::acts[g.sdef(s).act].mechanic != act_mechanic::gust) ++s;
+            g.start_stage(s);
+            const int want = data::career[c].gust > 0 ? data::career[c].gust : data::acts[g.sdef(s).act].mech_value;
+            CHECK(g.mech_value() == want && g.gust_in() == want);
+        }
+        // bliźniak: druga połowa - ta sama pogoda, to samo wydarzenie, niedokończone problemy przechodzą (do maks.)
+        {
+            int tw = -1; for(int c = 0; c < data::career_count; ++c) if(data::career[c].twins) tw = c;
+            CHECK(tw >= 0);
+            int twin_s = -1; for(int s = 1; s < data::career[tw].count; ++s) if(data::stages[data::career[tw].first + s].twin) { twin_s = s; break; }
+            CHECK(twin_s > 0);
+            int carried = 0, same_weather = 0;
+            for(uint32_t seed = 1; seed <= 30; ++seed)
+            {
+                game g; g.new_run(1, seed, 1, run_mods(), tw);
+                g.start_stage(twin_s - 1);
+                const int w = g.weather, ev = g.stage_event, base = g.sdef(twin_s).enemy_count;
+                int alive = 0; for(int i = 0; i < g.enemies_count; ++i) alive += g.enemies[i].alive && i != g.boss;
+                g.start_stage(twin_s);
+                same_weather += g.weather == w && g.stage_event == ev;
+                CHECK(g.twin_carry == imin(alive, data::career_twin_carry_max));
+                int now = 0; for(int i = 0; i < g.enemies_count; ++i) now += g.enemies[i].alive && i != g.boss;
+                CHECK(now >= base + g.twin_carry && now <= base + g.twin_carry + 1);   // + strażnik magazynu
+                carried += g.twin_carry;
+                // pierwsza połowa wyczyszczona: nic nie przechodzi
+                game h; h.new_run(1, seed, 1, run_mods(), tw); h.start_stage(twin_s - 1);
+                for(int i = 0; i < h.enemies_count; ++i) h.enemies[i].alive = false;
+                h.start_stage(twin_s); CHECK(h.twin_carry == 0);
+            }
+            CHECK(same_weather == 30 && carried > 0);
+        }
+        // profil: odblokowanie (wygrane / inspektor), wybór, baner raz, pierwsza wygrana - Respekt raz, tytuł, kask
+        {
+            profile p; profile_reset(p);
+            CHECK(career_unlocked(p, 0) && careers_unlocked(p) == 1 && selected_career(p) == 0 && career_announce(p) == 0);
+            p.contract = 2; CHECK(selected_career(p) == 0);
+            p.wins = 1; CHECK(career_unlocked(p, 1) && ! career_unlocked(p, 2) && career_announce(p) == 2 && career_announce(p) == 0);
+            p.wins = 3; CHECK(career_unlocked(p, 2) && selected_career(p) == 2 && career_announce(p) == 4);
+            for(int c = 1; c < data::career_count; ++c)
+                if(data::career[c].unlock == career_unlock::inspector)
+                {
+                    CHECK(! career_unlocked(p, c));
+                    profile q = p; while(inspector_level(q) < data::career[c].unlock_value) q.inspector_xp += 50;
+                    CHECK(career_unlocked(q, c));
+                }
+            const int t0 = titles_owned(p), h0 = helmets_unlocked(p), r0 = p.respect;
+            game g; g.new_run(1, 3, 1, run_mods(), 1); g.st = status::won; g.stage = g.route_count() - 1;
+            CHECK(career_win(p, g) && career_won(p, 1) && p.career_wins[1] == 1 && p.career_best[1] == data::career[1].count);
+            CHECK(p.respect == r0 + data::career[1].respect && titles_owned(p) == t0 + 1 && helmets_unlocked(p) == h0 + (data::career[1].helmet >= 0));
+            CHECK(! career_win(p, g) && p.respect == r0 + data::career[1].respect && p.career_wins[1] == 2);
+            core::message m; career_reward_label(m, 1); CHECK(m.n > 10);
+            core::message u; career_unlock_label(u, 2); CHECK(std::strcmp(u.s, "3 wygrane") == 0);
+            // najlepszy etap: porażka na 3. etapie
+            game d; d.new_run(1, 3, 1, run_mods(), 3); d.start_stage(2); d.st = status::dead;
+            record_run(p, d); CHECK(p.career_best[3] == 2);
+            // sekrety: wygrana w krótkim domku letniskowym nie liczy się do "wygraj bez kawy"
+            profile s; profile_reset(s);
+            game w; w.new_run(1, 4, 1, run_mods(), 1); w.st = status::won;
+            CHECK(check_secrets(s, &w) == 0);
+            // fabuła: wątek po bossie kontraktu
+            profile f; profile_reset(f); catalog_add(f, data::career[1].boss);
+            CHECK(story_check(f, nullptr) != 0);
+        }
+        // kolekcje: Karty bossów - bossowie Domu; Bossowie kariery - nowi bossowie
+        {
+            int dom = -1, kar = -1;
+            for(int i = 0; i < data::collections_count; ++i)
+                if(data::collections[i].kind == collection_kind::bosses) { if(dom < 0) dom = i; else kar = i; }
+            CHECK(dom >= 0 && kar >= 0);
+            profile p; profile_reset(p);
+            for(int c = 1; c < data::career_count; ++c) p.kill_count[data::career[c].boss] = 1;
+            CHECK(collection_complete(p, kar) && ! collection_complete(p, dom));
+            int h = 0, n = 0; collection_progress(p, dom, h, n); CHECK(n == 5 && h == 0);
+        }
+        // profil v16: migracja v15 (Dom z dotychczasowych wygranych), zapis budowy PBRUN15 -> Dom
+        {
+            profile p; profile_reset(p); p.wins = 4; p.best = 99; p.streak_best = 3;
+            std::memcpy(p.magic, profile_magic_v15, sizeof p.magic);
+            std::memset(reinterpret_cast<char*>(&p) + profile_v15_size, 0xCD, sizeof p - profile_v15_size);
+            CHECK(profile_fix(p) && std::strcmp(p.magic, profile_magic) == 0 && p.wins == 4 && p.best == 99 && p.streak_best == 3);
+            CHECK(p.contract == 0 && p.career_seen == 0 && p.career_done == 1 && p.career_wins[0] == 4 && p.career_wins[1] == 0);
+            CHECK(p.career_best[0] == data::stages_count - data::prelude_stages && p.career_best[5] == 0 && p.reserved16[7] == 0);
+            CHECK(career_announce(p) == 2 + 4 && ! profile_fix(p));   // odblokowane przy migracji - baner jak nowe
+            profile z; profile_reset(z); std::memcpy(z.magic, profile_magic_v15, sizeof z.magic);
+            CHECK(profile_fix(z) && z.career_done == 0 && z.career_wins[0] == 0);
+            profile o; profile_reset(o); o.wins = 2; std::memcpy(o.magic, profile_magic_v14, sizeof o.magic);
+            std::memset(reinterpret_cast<char*>(&o) + profile_v14_size, 0xEE, sizeof o - profile_v14_size);
+            CHECK(profile_fix(o) && o.career_wins[0] == 2 && o.career_done == 1 && o.contract == 0);
+            static run_save s; static game g; g.new_run(3, 99, 1, run_mods(), 2);
+            run_save_make(s, g); CHECK(run_save_valid(s) && s.g.contract == 2);
+            g.contract = 3; g.twin_carry = 9;   // stary zapis: śmieci w wyrównaniu
+            run_save_make(s, g); std::memcpy(s.magic, run_magic_v15, sizeof s.magic); s.checksum = run_checksum(s.g);
+            CHECK(run_save_valid(s)); run_save_upgrade(s);
+            CHECK(run_save_valid(s) && std::memcmp(s.magic, run_magic, sizeof s.magic) == 0 && s.g.contract == 0 && s.g.twin_carry == 0);
         }
     }
 
@@ -3565,6 +3702,34 @@ int main()
                     "  + wszystkie modyfikatory %d%%, pełne meta z Aktem 0 %d%%,\n"
                     "  + mistrzostwo 10 i maks. inspektor %d%%; z odznaką Bez usterek %d%%, + 2. pamiątka Kask ojca (I) %d%%\n",
                     w0, wt, w1, w2, w3, w4, w5, w6, w7);
+        // v0.21.52 cz. d (#47): mapa kariery - każdy kontrakt do przejścia bez meta (25-40%, krótki domek łatwiejszy) i z pełnym
+        // meta z Aktem 0 (60-75%); 150 przebiegów na zawód
+        {
+            auto rate_k = [](int contract, const profile& pr) {
+                int wins = 0;
+                for(int c = 0; c < data::open_classes_count; ++c)
+                    for(int k = 0; k < 150; ++k)
+                    {
+                        game g; g.new_run(c, 1000 + k * 7919, data::default_difficulty, mods(pr), contract);
+                        for(int step = 0; step < 4000; ++step)
+                        {
+                            if(g.st == status::stage_clear) { bot_next(g); continue; }
+                            if(g.st != status::playing) break;
+                            bot_step(g);
+                        }
+                        wins += g.st == status::won;
+                    }
+                return wins * 100 / (150 * data::open_classes_count);
+            };
+            std::printf("Mapa kariery (Normalny, bez meta / pełne meta z Aktem 0):");
+            for(int k = 1; k < data::career_count; ++k)
+            {
+                const int a = rate_k(k, none), b = rate_k(k, fullr);
+                std::printf(" %s %d/%d%%", data::career[k].short_name, a, b);
+                CHECK(a >= 20 && a <= (data::career[k].count < 10 ? 50 : 42) && b >= 55 && b <= 82);
+            }
+            std::printf("\n");
+        }
         // v0.21.52 cz. c: pamiątki - każda jako jedyna (ranga I i III) na pełnym meta z mistrzostwem i inspektorem (bez drugiej;
         // 100 przebiegów na zawód); Kask ojca (było +1 OBR: 84% jako pierwsza) porównywalny z innymi
         {
