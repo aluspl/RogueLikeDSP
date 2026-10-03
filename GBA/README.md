@@ -5,8 +5,10 @@ przeniesionym z LifeLike (folder `../GODOT`): generator map z seedem, tury, walk
 
 Zbuduj dom w 10 etapach: **Fundamenty → Izolacja fundamentów → Mury parteru → Strop → Dach → Ściany działowe → Okna
 i drzwi → Instalacje → Tynki i wylewki → Wykończenie i odbiór** (po 8. wygranej przed nimi **Akt 0 „Papierologia”**:
-Pozwolenie, Przyłącza). Pokonaj „problemy budowy” (41 rodzajów – każdy etap ma
+Pozwolenie, Przyłącza). Pokonaj „problemy budowy” (47 rodzajów – każdy etap ma
 własne, np. Woda gruntowa, Krzywy mur, Przeciekająca papa, Zapowietrzenie, Poprawki na odbiorze) i bossów (Decyzja odmowna, Zepsuta Betoniarka, Nawałnica, Inspekcja Pracy, **Nieprzekraczalny Termin**). Na końcu ekran z kodem QR do planbudowlany.online.
+Po wygranych czekają kolejne budynki na **mapie kariery** (v0.21.52): Domek letniskowy, Bliźniak, Dom z poddaszem
+i Kamienica – każdy z własnymi etapami, wyglądem i bossem.
 
 ![ekran tytułowy](docs/preview_title.png) ![ekran końcowy z QR](docs/preview_end.png)
 
@@ -93,10 +95,29 @@ Później po jednym dymku „Nowość”: pierwszy Respekt, codzienna budowa, tr
 Na wyborze zawodu START otwiera opis statystyk (wartość i co daje), A zmienia stronę na wzory; w telefonie zakładka
 Start → A pokazuje, skąd są premie. Wzory: obrażenia = rzut broni + statystyka broni / 2 + premie - obrona wroga / 2
 (SIŁ/ZRĘ/INT: +1 obrażeń co 2 pkt, tylko statystyka broni); OBR: -1 otrzymanych obrażeń co 2 pkt; SZCZ: kryt 5% +3%/pkt,
-unik 2%/pkt (maks. 20%), łupy +2% szansy/pkt i lepsza jakość. „Jak grać” ma 17 stron (2 – okna i wybory, 6 – akty i problemy, 7 – statystyki,
+unik 2%/pkt (maks. 20%), łupy +2% szansy/pkt i lepsza jakość. „Jak grać” ma 18 stron (2 – okna i wybory, 6 – akty i problemy, 7 – statystyki,
 8 – obrażenia, 9–10 – kombinacje stanów, 11 – premie i elity, 12 – wydarzenia i ulepszenia, 13 – magazyn, 14 – po budowie:
 podsumowanie, wyzwanie tygodnia, fabuła, 15 – sekrety, 16 – inspektor i mistrzostwo, 17 – cele: drzewko, kolekcje,
-zadania dnia, seria dni).
+zadania dnia, seria dni, 18 – mapa kariery).
+
+## Mapa kariery (#47, v0.21.52)
+Po pierwszej budowie tytuł > A / START otwiera **Mapę kariery** (sekcja `career` w `data/game.json`): kontrakty
+z ikoną bossa (zablokowane – kłódka i warunek), pastylka „Wygrane N” / „Etapy N/M” (najlepszy wynik) / warunek,
+w ostatnim wierszu na zmianę opis i nagroda. Góra/dół wybiera, A – wybór zawodu (B z wyboru zawodu wraca do mapy),
+B – tytuł. Budowa dnia i tygodnia zawsze na Domu jednorodzinnym.
+
+| Kontrakt | Odblokowanie | Etapy | Akty | Nowy boss | Mechanika | Nagroda za 1. wygraną |
+|---|---|---|---|---|---|---|
+| Dom jednorodzinny | od początku | 10 (+2 Aktu 0) | 0, I, II, III | – | jak dotąd | – |
+| Domek letniskowy | 1 wygrana | 6 | I, II | Zawilgocony strych | drewno (własne kafle), lżejsze problemy | Respekt 20, tytuł Letnik, Sosnowy kask |
+| Bliźniak | 3 wygrane | 10 | I, II, III | Pęknięta dylatacja | **wspólna ściana**: druga połowa ma pogodę i wydarzenie pierwszej, do 3 niedokończonych problemów przechodzi | Respekt 30, tytuł Dobry sąsiad |
+| Dom z poddaszem | inspektor 8 | 12 | I, II, III | Zerwana połać | **porywy co 4 tury** (poddasze), ścianki kolankowe, więźba | Respekt 30, tytuł Pod samym dachem, Grafitowy kask |
+| Kamienica | inspektor 12 | 10 | I, II, III | Pęknięty strop | remont zabytku: Grzyb domowy, Stara instalacja, Decyzja odmowna (konserwator), kafle kamienicy | Respekt 40, tytuł Konserwator, Kremowy kask |
+
+Etap kontraktu w danych: jak etap Domu + `look` (paleta, 22 wyglądy – `stage_palettes_N`), `tiles` (zestaw kafli: 5 drewno,
+6 kamienica), `twin` (druga połowa bliźniaka), `like` (pogoda jak na etapie Domu), `story` (SMS na start). Nowi bossowie dają
+wątki SMS (Wiadomości) i kolekcję „Bossowie kariery” (tytuł Budowniczy); „Karty bossów” to bossowie Domu. Wygrane
+z sekretnych zleceń liczą się tylko w pełnym budynku (co najmniej 10 etapów).
 
 ## Rozpiska obrażeń broni (jak w BG3)
 Zakres ciosu od-do, kryt i skąd się biorą – te same wzory co walka (`dmg_breakdown`, `weapon_breakdown`,
@@ -322,11 +343,11 @@ Zadania telefonu. Teksty i wartości: `siteEvents` w `data/game.json`.
 - **Stopnie inwestora**: każdy nowy najwyższy próg stawki wygranej budowy (1–10) daje nagrodę (Respekt, tytuł, kolor
   kasku); następna nagroda na stronie trybu inwestora.
 - Profil (rekord, doświadczenie, zakupy, odznaki, liczniki zleceń, pamiątki, brygada, tryb inwestora) zapisuje się
-  w SRAM (format v15, 384 bajty, z Respektem, nagrodami za odbiór, Katalogiem dla 48 rodzajów problemów, samouczkiem menu,
+  w SRAM (format v16, 384 bajty, z Respektem, nagrodami za odbiór, Katalogiem dla 48 rodzajów problemów, samouczkiem menu,
   wynikami tygodni, wątkami fabuły, sekretami, tytułem i kolorem kasku, dośw. inspektora i mistrzostwa, drugą pamiątką,
-  drzewkiem, licznikami kolekcji, zadaniami dnia i serią dni); starsze zapisy (v1-v14) są przenoszone bez utraty danych
+  drzewkiem, licznikami kolekcji, zadaniami dnia i serią dni, mapą kariery); starsze zapisy (v1-v15) są przenoszone bez utraty danych
   (v0.21.52: poziomy Szkoleń wracają jako doświadczenie po starej cenie; inspektor i mistrzostwo szacowane z budów,
-  wygranych, Respektu i domów na Osiedlu; cz. c: kolekcje z Katalogu, seria z wyników ostatnich dni). Zapis budowy jest
+  wygranych, Respektu i domów na Osiedlu; cz. c: kolekcje z Katalogu, seria z wyników ostatnich dni; cz. d: Dom jednorodzinny wygrany z dotychczasowych wygranych). Zapis budowy jest
   od bajtu 512 (wcześniej 256 – przy migracji profilu przerwana budowa przenosi się przed zapisem nowego profilu).
 - Liczniki zleceń trafiają do profilu na końcu etapu; profil pamięta, ile z bieżącej budowy już przeniesiono, więc
   wznowienie budowy po wyłączeniu konsoli nie liczy etapu drugi raz.
@@ -367,7 +388,7 @@ rzadkie, legendarne (43–45), lista premii w telefonie (46), elity (47), mokry 
 zamróz + uderzenie (50), mokry bohater + prąd (51), wydarzenia z wyborem (52), Hurtownia z ulepszeniem i cechą (53),
 zamiana ulepszonego narzędzia (54), pęknięta ściana z kluczem i skrzynia (55), drzwi magazynu (56), podsumowanie po
 porażce (57), podsumowanie po wygranej (58), wyzwanie tygodnia (59), Wiadomości i Osiedle z ozdobami (60), sekretne zlecenia (61–67), skrzynia magazynu przy pełnym HUD (68), tempo postępu – Szkolenia z poziomami, Tytuły, kolor
-kasku, strona Postęp (69), poziom inspektora i mistrzostwo zawodu (70), drzewko, kolekcje, zadania dnia i seria dni (71)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
+kasku, strona Postęp (69), poziom inspektora i mistrzostwo zawodu (70), drzewko, kolekcje, zadania dnia i seria dni (71), mapa kariery i kontrakty – Domek, Bliźniak, Poddasze, Kamienica (72–75)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
 ```bash
 make TARGET=scn1 BUILD=build_scn1 USERFLAGS="-DPB_SCENARIO=1" BUTANO_PATH=...
 ROM=scn1.gba tools/playtest/run.sh skrypt.txt /tmp/zrzuty --fresh
@@ -400,7 +421,7 @@ tools/make_assets.py  proceduralne grafiki: font PL 8x16, sprite'y, kafelki+pale
 assets_src/pb_logo.svg  znak PlanBudowlany
 include/core.h        logika gry (czyste C++, bez Butano) - testowalna na PC; rozpiska obrażeń broni (dmg_breakdown);
                       wydarzenia z wyborem, ulepszanie narzędzia, magazyn (v0.21.50 cz. 3)
-include/meta.h        profil SRAM (v15), drzewko Szkoleń, kolekcje, zadania dnia i tygodnia, seria dni, poziom inspektora, mistrzostwo zawodu, stopnie inwestora, Szkolenia z poziomami i ceny rosnące, tytuły i kolory kasku, wyzwanie tygodnia, fabuła (Wiadomości, ozdoby Osiedla), rada i cel podsumowania, samouczek menu, Respekt, nagrody za odbiór, codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
+include/meta.h        profil SRAM (v16), mapa kariery, drzewko Szkoleń, kolekcje, zadania dnia i tygodnia, seria dni, poziom inspektora, mistrzostwo zawodu, stopnie inwestora, Szkolenia z poziomami i ceny rosnące, tytuły i kolory kasku, wyzwanie tygodnia, fabuła (Wiadomości, ozdoby Osiedla), rada i cel podsumowania, samouczek menu, Respekt, nagrody za odbiór, codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
 src/main.cpp          warstwa GBA: sceny, mapa, kamera, HUD, SRAM
 ```
 Grafiki są placeholderami generowanymi kodem: podmień pliki w `graphics/` pixel-artem z Aseprite

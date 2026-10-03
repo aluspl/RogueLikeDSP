@@ -2,25 +2,29 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
-## v0.21.52 – w przygotowaniu (cz. a: tempo postępu, cz. b: inspektor, mistrzostwo, stopnie inwestora, cz. c: drzewko Szkoleń, kolekcje, zadania dnia, seria dni)
+## v0.21.52 – w przygotowaniu (razem z niewydanym osobno v0.21.51; cz. a: tempo postępu, cz. b: inspektor, mistrzostwo, stopnie inwestora, cz. c: drzewko Szkoleń, kolekcje, zadania dnia, seria dni, cz. d: mapa kariery)
 ### Najważniejsze
-Po jednej budowie dało się kupić prawie wszystko – teraz postęp ma więcej stanów pośrednich (GBA i Godot, wspólny rdzeń):
-1. **Szkolenia z poziomami (#41)** – każde po 4 poziomy, mniejsze kroki, rosnąca cena; pełne Szkolenia dają tyle,
-   co wcześniej (plus drobne dodatki), ale wykupienie wszystkiego to ~20–30 budów.
-2. **Droższe odblokowania (#42)** – zawody i narzędzia drożeją z każdym zakupem, Trudny za 100.
-3. **Odznaki i zlecenia (#43)** – mało doświadczenia, w zamian **tytuły** (do wyboru w profilu) i **kolory kasku**.
-4. **Paski postępu na końcu budowy (#52)** – najbliższe Szkolenie, mistrzostwo zawodu i poziom inspektora.
-5. **Poziom inspektora (#44, cz. b)** – konto gracza: każda budowa (też przegrana) daje dośw. inspektora, 35 poziomów,
-   nagroda co poziom (Respekt, tytuł, kolor kasku, SMS, ozdoba Osiedla, druga pamiątka).
-6. **Mistrzostwo zawodu 1–10 (#45, cz. b)** – wariant mocy, broń mistrza, premia mistrzostwa, kask mistrza.
-7. **Stopnie inwestora (#48, cz. b)** – nagroda za każdy nowy najwyższy próg stawki.
-8. **Drzewko Szkoleń (#46, cz. c)** – gałęzie Fach, BHP, Logistyka: Szkolenia to pień, w każdej gałęzi dwa węzły z wyborem
-   1 z 2 (np. Precyzja albo Siła rozpędu, Hartowany albo Apteczka, Hurtownik albo Magazynier), zmiana za drobną opłatę.
-9. **Kolekcje (#49, cz. c)** – liczniki pokonanych problemów, komplety aktów (każdy problem x10), karty bossów i album
-   Osiedla; komplet = stała premia, tytuł albo kolor kasku.
-10. **Zadania dnia i tygodnia (#50, cz. c)** – 3 + 2 zadania z daty (np. „Pokonaj 2 elity”, „Wygraj bez Hurtowni”) za
-    Respekt, za liczbę wykonanych – kask i tytuł.
-11. **Seria dni (#51, cz. c)** – budowa dnia w kolejne dni: 3 dni pamiątka, 7 kolor kasku, 14 tytuł.
+Jedno duże wydanie: poprawki po graniu na iPhonie (dawne v0.21.51), sekretne zlecenia i nowy, dłuższy postęp z wieloma
+celami, a na koniec mapa kariery z nowymi budynkami (GBA i Godot, wspólny rdzeń):
+1. **Mur i błoto (#36, #37)** – autokafle ścian (mur wygląda jak mur, miękkie przejście w ciemność), błoto dwa razy
+   rzadziej jako płaska mokra plama.
+2. **Spójne sterowanie (#38)** – A / „Wybierz” zawsze po prawej, B / „Wróć” po lewej, chwila blokady po otwarciu okna,
+   nieodwracalne wybory przez zaznaczenie; HUD z pełną nazwą etapu w pionie.
+3. **Sekretne zlecenia (#39)** – 8 ukrytych celów („???” z podpowiedzią), za nie zawody Spawacz, Geodeta, Majster,
+   Młot Zenka, Poziomica mistrza, Złota kielnia, kask w paski i ranga Respektu.
+4. **Stabilność** – poprawiony crash przy skrzyni w magazynie (stos i limit kafli sprite'ów), błędy znalezione przez
+   nowe testy małpy (GBA: losowe klawisze, Godot: klawiatura, mysz i dotyk) – każda część przechodzi je bez błędów.
+5. **Tempo postępu (#41–#43, #52)** – Szkolenia po 4 poziomy, rosnące ceny zawodów i narzędzi, odznaki i zlecenia dają
+   tytuły i kolory kasku; koniec budowy z paskami postępu. Wykupienie wszystkiego to ~25 budów (było 3–4).
+6. **Poziom inspektora (#44), mistrzostwo zawodu (#45), stopnie inwestora (#48)** – nagroda co poziom (Respekt, tytuły,
+   kaski, SMS-y, ozdoby Osiedla, druga pamiątka), wariant mocy, broń mistrza, premia mistrzostwa, kask mistrza.
+7. **Drzewko Szkoleń (#46), kolekcje (#49), zadania dnia i tygodnia (#50), seria dni (#51)** – wybór węzłów w gałęziach
+   Fach / BHP / Logistyka (np. Precyzja albo Siła rozpędu, Hartowany albo Apteczka), komplety problemów i karty bossów,
+   3 + 2 zadania z daty za Respekt, nagrody za kolejne dni budowy dnia.
+8. **Mapa kariery (#47, cz. d)** – po wygranych kolejne budynki z własnymi etapami, wyglądem i bossem: **Domek
+   letniskowy** (krótki, z drewna), **Bliźniak** (wspólna ściana: co zostawisz w lewej połowie, przejdzie na prawą),
+   **Dom z poddaszem** (silniejszy wiatr) i **Kamienica** (remont zabytku); pierwsza wygrana każdego – Respekt, tytuł
+   i kolor kasku.
 
 ### Nowe
 - **Szkolenia (sekcja `meta.upgrades`, pole `steps`):** poziom = działanie + przyrost + koszt (z danych, różne działania
@@ -284,17 +288,82 @@ wykupione po **25 budowach** (22–31; było 23), dośw. na budowę w karierze 1
   `goals-end`, `help-goals`; test dymny (drzewko: zamknięty węzeł, wybór, zmiana za opłatą; cele; 10 stron Jak grać).
 - Test małpy: klawiatura + mysz 20 seedów i pion + dotyk 20 seedów x 3000 akcji – bez błędów.
 
-## v0.21.51 – 2026-09-29
-### Najważniejsze
-Poprawki po graniu na iPhonie (pion) – czytelniejsza mapa i sterowanie „nie do pomylenia” (GBA i Godot):
-1. **Autokafle ścian (#36)** – mur wygląda jak mur, a nie rząd klocków z jasnym paskiem na każdym polu.
-2. **Błoto (#37)** – dwa razy rzadziej i jako płaska mokra plama, nie ciemna dziura.
-3. **Spójne sterowanie i blokada wejścia (#38)** – A / „Wybierz” zawsze po prawej, B / „Wróć” po lewej, chwila
-   blokady po otwarciu okna, nieodwracalne wybory przez zaznaczenie.
-4. **Sekretne zlecenia (#39, cz. 2)** – 8 ukrytych celów profilu („???” z podpowiedzią), za nie 3 ukryte zawody
-   (Spawacz, Geodeta, Majster), 2 bronie, 2 wyglądy i ranga Respektu.
+### Cz. d – mapa kariery (#47)
+- **Kontrakty** (sekcja `career` w `data/game.json`): budynek z własną listą etapów (etap jak w Domu + `look` – paleta,
+  `tiles` – zestaw kafli, `twin` – druga połowa bliźniaka, `like` – pogoda jak na etapie Domu, `story` – SMS na start),
+  warunkiem odblokowania i nagrodą za pierwszą wygraną. W rdzeniu etap budowy to etap kontraktu (`sdef`, `route_count`,
+  `prelude_count`, `stage_id`); Dom jednorodzinny bez zmian (te same indeksy, test złoty starych przebiegów bez różnic).
 
-### Nowe
+  | Kontrakt | Odblokowanie | Etapy (akty) | Nowy boss | Co inaczej | Nagroda za 1. wygraną |
+  |---|---|---|---|---|---|
+  | Dom jednorodzinny | od początku | 10 + 2 Aktu 0 (0, I–III) | – | – | – |
+  | Domek letniskowy | 1 wygrana | 6 (I, II) | **Zawilgocony strych** (pleśń, kapanie, wzywa Pleśń) | drewno: kafle pokładu i bali, paleta sosny; lżejsze problemy, Betoniarka przy tarasie | Respekt 20, tytuł Letnik, Sosnowy kask |
+  | Bliźniak | 3 wygrane | 10 (I–III) | **Pęknięta dylatacja** (krzyż „Rozwarcie”, druga faza „Druga połowa”, wzywa Rysy) | pary etapów lewa / prawa: **wspólna ściana** – prawa połowa ma pogodę i wydarzenie na placu lewej, a do 3 niedokończonych problemów przechodzi (baner „Wspólna ściana”) | Respekt 30, tytuł Dobry sąsiad |
+  | Dom z poddaszem | inspektor 8 | 12 (I–III) | **Zerwana połać** („Podmuch”, poślizg, wzywa Przeciąg) | ścianki kolankowe, więźba, okna dachowe, ocieplenie; **porywy co 4 tury** (zamiast 6); Inspekcja i Termin | Respekt 30, tytuł Pod samym dachem, Grafitowy kask |
+  | Kamienica | inspektor 12 | 10 (I–III) | **Pęknięty strop** (krzyż „Osypisko tynku”, faza „Podpory”, wzywa Grzyb) | remont zabytku: nowe problemy **Grzyb domowy** (leczy innych, zatrucie) i **Stara instalacja** (prąd z dystansu), Decyzja odmowna konserwatora; kafle kamienicy (parkiet w jodełkę, stary mur z gzymsem) | Respekt 40, tytuł Konserwator, Kremowy kask |
+
+- **Mapa kariery** (GBA: po pierwszej budowie tytuł > A / START; Godot: Nowa budowa): kontrakty z ikoną bossa
+  (zablokowane – kłódka / sylwetka i warunek), pastylka „Wygrane N” / „Etapy N/M” (najlepszy wynik) / „3 wygrane” /
+  „Inspektor 8”, opis, liczba etapów, boss i nagroda. A / Spacja wybiera i przechodzi do wyboru zawodu, B z wyboru
+  zawodu wraca do mapy. Budowa dnia i tygodnia zawsze na Domu jednorodzinnym. Karta etapu z nazwą kontraktu („Bliźniak,
+  Akt II, 5/10”), baner „Wspólna ściana: +N z 1. połowy”, porywy „co 4 tury”; na końcu budowy złote banery „Wygrany
+  kontrakt” z nagrodą i „Nowy kontrakt!”.
+- 6 nowych rodzajów problemów (47/48 w Katalogu): 2 problemy i 4 bossów, pixel art klatki 184–195 (Godot: z chodem
+  i oddechem); 10 nowych palet etapów (22 wyglądy), zestawy kafli 5 (drewno) i 6 (kamienica); Godot: kafle 32 px
+  z nowymi rodzajami (parkiet, bale, kamień, sztukateria).
+- **Fabuła:** 4 wątki SMS po pokonaniu bossa kontraktu (Letnisko, Sąsiedzi, Pokój pod dachem, Zabytek; 30/32).
+- **Kolekcje:** nowy komplet „Bossowie kariery” (4 nowi bossowie – tytuł Budowniczy); „Karty bossów” to bossowie Domu
+  (jak dotąd 5). Kolory kasku: 22. Tytuły z kontraktów w Odznaki > Tytuły.
+- Sekretne zlecenia z wygraną (bez kawy, na styk, szybka ekipa) liczą się tylko w pełnym budynku (co najmniej 10 etapów –
+  nie w krótkim Domku letniskowym).
+- Jak grać: GBA str. 18 „Kariera”, Godot str. 11 (sekcja `careerHelp`). Scenariusze GBA 72–75, sceny zrzutów Godota
+  (`career`, `career-locked`, `career-letnisko`, `career-blizniak`, `career-poddasze`, `career-kamienica`, `career-end`,
+  `help-career`).
+- Węzeł drzewka Szkoleń „Twardziel” nazywa się teraz **„Hartowany”** (nie myli się z odznaką Twardziel).
+
+### Balans cz. d
+Bot: 300 przebiegów na zawód (9 zwykłych), Normalny; „pełne meta” = pełne Szkolenia z najlepszymi wyborami drzewka,
+pełny Respekt i wszystkie nagrody za odbiór (Dom: z Aktem 0).
+
+| Kontrakt | Etapy | Bez meta | Pełne meta | + mistrzostwo 10 i maks. inspektor |
+|---|---|---|---|---|
+| Dom jednorodzinny | 10 (+2) | 33% | 68% | 71% |
+| Domek letniskowy (krótki – łatwiejszy) | 6 | 35% | 75% | 77% |
+| Bliźniak | 10 | 28% | 68% | 70% |
+| Dom z poddaszem | 12 | 27% | 67% | 70% |
+| Kamienica | 10 | 26% | 70% | 71% |
+
+Dom bez zmian (Łatwy 54%, Normalny 32%, Trudny 10%, Szkolenia 58%, + Respekt 73%, modyfikatory 12%, Akt 0 67%,
+mistrzostwo i inspektor 70%). Kontrakty strojone mnożnikiem HP i premią obrażeń etapów (+1 obrażeń problemów to
+~20 pkt wygranych); w teście `core_tests` asercje 20–42% (Domek do 50%) bez meta i 55–82% z pełnym meta.
+
+### Zmiany cz. d
+- **Profil v16** (384 B): wybrany kontrakt (@360), ogłoszone odblokowania (@361), wygrane kontrakty (@362), wygrane
+  w każdym kontrakcie (@364, 6 B), najlepszy etap (@370, 6 B), 8 B zapasu. Migracja v15 (i starszych): Dom jednorodzinny
+  wygrany, jeśli były wygrane (liczba wygranych, najlepszy etap – cała budowa); już odblokowane kontrakty dostają baner
+  jak nowe.
+- **Zapis budowy PBRUN16:** kontrakt i problemy z 1. połowy bliźniaka w miejscu wyrównania stanu (rozmiar bez zmian) –
+  PBRUN14 / PBRUN15 wczytują się jako Dom jednorodzinny. Godot: dwa bajty na końcu stanu (`RunSave.V15Tail`), stary zapis
+  się wczytuje.
+- Tablice etapów stanu budowy dalej po 12 (najdłuższy kontrakt ma 12 etapów); `data::stages` ma 50 etapów (Dom pierwszy),
+  maska pogody 64-bitowa; klatka problemu w danych `int16`.
+- Test złoty: 74 przebiegi (+ każdy kontrakt botem z testów i „smart”, NG+ w Domku). `core_tests`: trasy kontraktów
+  (skrót przez cały budynek, Hurtownia przy zmianie aktu), bliźniak, porywy, odblokowanie, nagroda raz, kolekcje bossów,
+  migracja v15 → v16, PBRUN15 → 16, balans kontraktów.
+- Monkey test GBA: 20 seedów zwykłej gry + scenariusze 72–75 (po 5) x 20000 klatek – bez błędów (szczyt kafli sprite'ów
+  134/256, sprite'ów 106/128, stosu ~8,2 KB).
+
+### Godot cz. d
+- Port rdzenia (`CareerDef`, `CareerUnlock`, `GameData.Career` / `StagesCount`, `Game.Career`, `Career`, profil v16,
+  `MigrateV16`), `CareerTests`; `dotnet test` 268/268, build 0 ostrzeżeń.
+- Ekrany: Mapa kariery (`CareerScreen`, `CareerPage`), karta etapu, banery, Jak grać str. 11; kafle wg wyglądu etapu
+  (`MapLayer`), eksport klatek i kafli kontraktów; test dymny mapy kariery (zablokowany kontrakt, wybór, powrót z wyboru
+  zawodu, budowa w kontrakcie, nagroda raz).
+- Test małpy: klawiatura + mysz 20 seedów i pion + dotyk 20 seedów x 3000 akcji – bez błędów (mapa kariery w 19 z 20 przebiegów).
+
+### Dawne v0.21.51 (nie wydane osobno – w tym wydaniu): poprawki po graniu na iPhonie, sekretne zlecenia
+
+#### Nowe
 - **Autokafle ścian (#36):** widok 3/4 ze światłem z lewej góry. Pole muru z murem poniżej to ciemny **wierzch masy
   muru** (bez pasów i fug), pole z podłogą poniżej to **lico** – krawędź wierzchu u góry i wzór materiału (bloczki,
   papa, cegła, deski, płytki) z cieniem przy podłodze. Godot: kafle generowane w eksporcie dla palety każdego etapu
@@ -325,7 +394,7 @@ Poprawki po graniu na iPhonie (pion) – czytelniejsza mapa i sterowanie „nie 
   Normalny”, a pełna nazwa etapu w drugim rzędzie po prawej (mierzona po ikonach; pastylka wydarzenia tylko, gdy
   starczy miejsca, ostrzeżenie bossa skraca się do „Cios za N!”).
 
-### Nowe – cz. 2: sekretne zlecenia (#39)
+#### Nowe – cz. 2: sekretne zlecenia (#39)
 - **8 sekretnych zleceń** (sekcja `secrets` w `data/game.json`): w profilu (Odznaki > A na GBA, Spacja w Godocie) strona
   **Sekrety** – niewykonane jako „???” z podpowiedzią, wykonane z warunkiem i nagrodą (ikona / portret). Sprawdzane po
   etapie, po porzuceniu i na końcu budowy; baner „Sekretne zlecenie!” w złotej ramce (kolejka końca budowy do 8 banerów:
@@ -361,7 +430,7 @@ Poprawki po graniu na iPhonie (pion) – czytelniejsza mapa i sterowanie „nie 
   strona Sekrety, nowe zawody, moc Majstra, kask w paski, Poziomica na mapie, 1 HP + awans).
 - Balans nowych zawodów (bot, Normalny, bez meta): Spawacz 35%, Geodeta 36%, Majster 23%.
 
-### Balans
+#### Balans
 Rzadsze błoto ledwie rusza bota (omija je i tak): wyniki w granicach szumu.
 
 | Wygrane bota (300 przebiegów na zawód) | v0.21.50 | v0.21.51 |
@@ -378,7 +447,7 @@ Rzadsze błoto ledwie rusza bota (omija je i tak): wyniki w granicach szumu.
 Wyzwania tygodnia: Glazurnik bez kawy 10%, Elity x2 30%, Mokry tydzień 36%, Bez Hurtowni 17%, Szklany kask 29%,
 Kierownik na placu 32%.
 
-### Poprawki
+#### Poprawki
 - **Crash przy otwieraniu skrzyni w magazynie** („No more sprite tiles items available” na Miyoo): dwie przyczyny.
   1. **Przepełniony stos.** Stos GBA (IWRAM, ~12 KB) był w samej grze zajęty w 97% (scena gry 7,8 KB, od kolejki
      8 banerów jeszcze więcej). Okno porównania sprzętu ze skrzyni/paczki przy zajętym slocie albo telefon → Start →
@@ -398,12 +467,12 @@ Kierownik na placu 32%.
   profilu i ze scenariuszy, wykrywa ekran błędu, zawieszenie i zastygły obraz; buildy testowe raportują zapas
   sprite'ów, kafli i stosu. Opis w README.
 
-### Zmiany
+#### Zmiany
 - Cz. 1 nie zmieniała zapisów; cz. 2: profil v12 z migracją, zapis budowy PBRUN14 (patrz wyżej).
 - Test złoty (Godot) z migawki v0.21.51 cz. 2 (55 przebiegów).
 
 
-### Godot (cz. 2: sekretne zlecenia, mgła, test małpy)
+#### Godot (cz. 2: sekretne zlecenia, mgła, test małpy)
 - **Sekretne zlecenia (#39) na ekranie:** profil > Odznaki – strona Sekrety („???” z podpowiedzią, po wykonaniu warunek
   i nagroda z ikoną), sprawdzanie po etapie / porzuceniu / końcu budowy, baner „Sekretne zlecenie!” (złota ramka, kolejka
   8 banerów), dymek Nowość; Spawacz, Geodeta, Majster na wyborze zawodu (moc Majstra w HUD), kask w paski (Tryb inwestora),

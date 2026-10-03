@@ -1,6 +1,8 @@
 # TODO – PlanBudowlany RogueLike
 
-Stan na 2026-09-29: GBA v0.21.50 wydane, **v0.21.51 cz. 1 gotowe** (autokafle ścian #36, rzadsze błoto jako mokra plama #37,
+Stan na 2026-10-03: GBA v0.21.50 wydane, **v0.21.52 gotowe do wydania** (jedno wydanie razem z niewydanym osobno v0.21.51:
+poprawki po graniu na iPhonie, sekretne zlecenia; v0.21.52 cz. a–d: tempo postępu, inspektor i mistrzostwo, drzewko,
+kolekcje, zadania i seria dni, mapa kariery #47). Historia: **v0.21.51 cz. 1 gotowe** (autokafle ścian #36, rzadsze błoto jako mokra plama #37,
 spójne sterowanie i blokada wejścia #38 – GBA i Godot, HUD z pełną nazwą etapu w pionie; balans bez zmian: Łatwy 54%,
 Normalny 32%, Trudny 10%), cz. 2 – sekretne zlecenia #39: GBA i Godot gotowe (patrz „Gdzie skończyliśmy”); wcześniej v0.21.50 (cz. 1: rozpiska obrażeń broni #26; cz. 2: premie po etapie #27, elity #28,
 kombinacje stanów #29; cz. 3: wydarzenia z wyborem #30, ulepszanie narzędzia #31, ukryte pomieszczenia #32; cz. 4: podsumowanie
@@ -112,7 +114,7 @@ dlatego premie bojowe są małe – cel „pełne Szkolenia + pełny Respekt 65�
 | 34 | Wyzwania tygodnia (seed + zasady, osobne wyniki) – v0.21.50 cz. 4: 6 zasad z danych, wyniki 3 tygodni w profilu v11, Godot: zaślepka tabeli tygodnia (`ILeaderboard.WeeklyBoardId`) | 4 | ✅ | ✅ (tydzień z daty budowy dnia) |
 | 35 | Fabuła odkrywana z kolejnymi budowami (SMS-y, Osiedle) – v0.21.50 cz. 4: 19 wątków za kamienie milowe, Wiadomości w Osiedlu, 6 ozdób Osiedla | 4 | ✅ | ✅ |
 
-## v0.21.51 – poprawki po graniu na iPhonie
+## v0.21.51 – poprawki po graniu na iPhonie (nie wydane osobno – część wydania v0.21.52)
 
 | # | Pomysł | Część | GODOT (MOBILE) | GBA |
 |---|---|---|---|---|
@@ -166,6 +168,16 @@ obrażeń zamiast +OBR; balans: Szkolenia z najlepszymi wyborami drzewka 58% (sa
 Akt 0 67%, mistrzostwo i inspektor 70%; wszystko wykupione po ~25 budowach. Nie wydane – dalej cz. d (#47 mapa kariery:
 nowe budynki z własnymi etapami, problemami i bossami), potem jedno wydanie v0.21.52.
 
+### Gdzie skończyliśmy (2026-10-03, cz. d)
+
+v0.21.52 cz. d (#47 mapa kariery) w GBA i Godocie: 4 nowe kontrakty – Domek letniskowy (6 etapów, drewno, boss Zawilgocony
+strych; 1 wygrana), Bliźniak (10, wspólna ściana – pogoda, wydarzenie i do 3 problemów z 1. połowy na 2.; boss Pęknięta
+dylatacja; 3 wygrane), Dom z poddaszem (12, porywy co 4 tury; boss Zerwana połać; inspektor 8), Kamienica (10, Grzyb domowy,
+Stara instalacja; boss Pęknięty strop; inspektor 12); nagroda za pierwszą wygraną (Respekt, tytuł, kask), wątki SMS, kolekcja
+Bossowie kariery; profil v16, zapis budowy PBRUN16. Balans (bot, Normalny bez meta / pełne meta): Dom 33/68%, Domek 35/75%,
+Bliźniak 28/68%, Poddasze 27/67%, Kamienica 26/70%. Węzeł drzewka Twardziel → Hartowany. v0.21.51 nie wychodzi osobno –
+cały jego changelog jest w sekcji v0.21.52. Dalej: wydanie v0.21.52 (GitHub Release + Drive, karta SD, iPhone).
+
 ## Następne wydania
 
 | # | Pomysł | GODOT (MOBILE) | GBA |
@@ -176,7 +188,7 @@ nowe budynki z własnymi etapami, problemami i bossami), potem jedno wydanie v0.
 | 44 | v0.21.52 – poziom inspektora (konto gracza, pasek dośw., nagroda co poziom: SMS, dekoracja Osiedla, kolor kasku, slot pamiątki) | ✅ (cz. b: 35 poziomów, bot: maks. po ~88 budowach, profil v14) | ✅ |
 | 45 | v0.21.52 – mistrzostwo zawodu 1–10 (alternatywna moc, wariant broni, unikalna premia, złoty kask zawodu) | ✅ (cz. b: wariant mocy 3, broń mistrza 5, premia 7, kask 10; bot: 10 po ~22 budowach zawodem) | ✅ |
 | 46 | v0.21.52 – drzewko Szkoleń: gałęzie Fach / BHP / Logistyka z wyborem węzłów | ✅ (cz. c: pień = Szkolenia, 6 węzłów 1 z 2, zmiana za 20 dośw.; strona Drzewko w Kosztach) | ✅ (Koszty > SELECT: Drzewko) |
-| 47 | v0.21.52 – mapa kariery: kolejne zlecenia (domek letniskowy, bliźniak, dom z poddaszem, kamienica) z innymi etapami/wrogami/bossami | ⬜ | ⬜ |
+| 47 | v0.21.52 – mapa kariery: kolejne zlecenia (domek letniskowy, bliźniak, dom z poddaszem, kamienica) z innymi etapami/wrogami/bossami | ✅ (cz. d: CareerScreen, 4 kontrakty z etapami, wyglądem i bossem, bliźniak – wspólna ściana, poddasze – porywy co 4 tury; profil v16) | ✅ (tytuł > A: Mapa kariery; scenariusze 72–75) |
 | 48 | v0.21.52 – stopnie inwestora z nagrodą za każdy nowy poziom (kosmetyka, tytuły) | ✅ (cz. b: stawki 1–10: Respekt, tytuły, kaski) | ✅ |
 | 49 | v0.21.52 – kolekcje: liczniki katalogu, karty bossów, album Osiedla; komplet = drobna premia | ✅ (cz. c: 6 kompletów – akty x10, karty bossów, album; premia / tytuł / kask) | ✅ (Katalog > A: Kolekcje, Bossowie, Album) |
 | 50 | v0.21.52 – zadania dnia i tygodnia (np. 3 elity, 2× brygada) za Respekt/kosmetykę | ✅ (cz. c: 3 + 2 z seeda daty systemu, Respekt, nagrody za 5 / 15 / 40 wykonanych) | ✅ (z daty z codziennej budowy) |
