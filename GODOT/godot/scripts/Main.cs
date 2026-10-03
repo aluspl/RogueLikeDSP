@@ -21,21 +21,21 @@ namespace LifeLike.Game;
 /// </summary>
 public partial class Main : Node2D
 {
-	[Export] public uint Seed { get; set; } // 0 = losowy
+    [Export] public uint Seed { get; set; } // 0 = losowy
 
-	private App _app;
-	private readonly GestureTracker _gestures = new();
-	private bool _wrenchDown;
+    private App _app;
+    private readonly GestureTracker _gestures = new();
+    private bool _wrenchDown;
 
-	public override void _Ready()
-	{
-		GameInput.Register();
-		RenderingServer.SetDefaultClearColor(Pal.Void);
-		var opts = LaunchOptions.Parse(OS.GetCmdlineUserArgs(), Seed);
-		if (!opts.Harness) GameSettings.Load();
-		if (opts.Filter.Length > 0) ScreenFilter.Force = opts.Filter;
-		Layout.Touch = OS.HasFeature("mobile") || opts.Touch;
-		if (opts.Portrait) Layout.SimulatedInsets = new Vector2(59, 34); // wyspa i pasek domowy iPhone'a 14 Pro Max (pt)
+    public override void _Ready()
+    {
+        GameInput.Register();
+        RenderingServer.SetDefaultClearColor(Pal.Void);
+        var opts = LaunchOptions.Parse(OS.GetCmdlineUserArgs(), Seed);
+        if (!opts.Harness) GameSettings.Load();
+        if (opts.Filter.Length > 0) ScreenFilter.Force = opts.Filter;
+        Layout.Touch = OS.HasFeature("mobile") || opts.Touch;
+        if (opts.Portrait) Layout.SimulatedInsets = new Vector2(59, 34); // wyspa i pasek domowy iPhone'a 14 Pro Max (pt)
         if (opts.WindowSize != Vector2I.Zero && !OS.HasFeature("mobile"))
         {
             DisplayServer.WindowSetSize(opts.WindowSize);
