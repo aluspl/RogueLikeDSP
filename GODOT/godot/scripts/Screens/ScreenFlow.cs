@@ -44,6 +44,7 @@ public sealed class ScreenFlow
         Event = new EventScreen(app);
         Trait = new TraitScreen(app);
         ToolOffer = new ToolOfferScreen(app);
+        Career = new CareerScreen(app);
     }
 
     public Screen Current { get; private set; }
@@ -90,6 +91,8 @@ public sealed class ScreenFlow
     public EventScreen Event { get; }
     public TraitScreen Trait { get; }
     public ToolOfferScreen ToolOffer { get; }
+    /// <summary>v0.21.52 cz. d (#47): mapa kariery przed wyborem zawodu.</summary>
+    public CareerScreen Career { get; }
 
     /// <summary>Przejście na ekran; instant = bez animacji (telefon od razu na miejscu, tło od razu rozmyte).</summary>
     public void Go(Screen next, bool instant = false)

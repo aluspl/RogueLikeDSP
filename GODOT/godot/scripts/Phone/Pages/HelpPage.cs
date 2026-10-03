@@ -35,7 +35,7 @@ public sealed class HelpPage : PhonePage
         ("Okna", "dotknij = zaznacz; Wybierz: prawo, Wróć: lewo"),   // v0.21.51: ten sam układ w każdym oknie
     ];
 
-    private const int Pages = 10; // v0.21.52 cz. b: strona 9 – inspektor i mistrzostwo; cz. c: strona 10 – drzewko, kolekcje, zadania, seria
+    private const int Pages = 11; // v0.21.52 cz. b: strona 9 – inspektor i mistrzostwo; cz. c: strona 10 – drzewko, kolekcje, zadania, seria; cz. d: 11 – mapa kariery
 
     /// <summary>v0.21.52 cz. c: gdzie drzewko, kolekcje, zadania dnia i seria dni.</summary>
     private static readonly string[] GoalsWhereLines =
@@ -44,6 +44,14 @@ public sealed class HelpPage : PhonePage
         "Profil > Katalog > Spacja: Kolekcje",
         "Profil > Odznaki > Zadania",
         "Seria: budowa dnia w kolejne dni",
+    ];
+    /// <summary>v0.21.52 cz. d: gdzie mapa kariery i co dają kontrakty.</summary>
+    private static readonly string[] CareerWhereLines =
+    [
+        "Tytuł > Nowa budowa: Mapa kariery",
+        "Wybór zawodu > Esc: wróć do mapy",
+        "Profil > Odznaki > Tytuły: tytuły kontraktów",
+        "Budowa dnia i tygodnia: zawsze Dom",
     ];
     private readonly GameData _d;
     private int _page;
@@ -100,6 +108,21 @@ public sealed class HelpPage : PhonePage
         if (_page == 4)
         {
             DrawList(p, "KOMBINACJE STANÓW", ComboLines(_d), "SKĄD STANY, PREMIE, ELITY", ComboWhereLines(_d));
+            return;
+        }
+        if (_page == 10) // v0.21.52 cz. d (#47): mapa kariery
+        {
+            var cwidth = (int)(p.Right - 6 - p.Left - 12);
+            var clines = p.F.Wrap(string.Join(" ", _d.CareerHelpLines), cwidth);
+            var cc = p.Card(p.Section(p.Top, "MAPA KARIERY"), clines.Count);
+            var cx = p.TextX(cc);
+            for (var i = 0; i < clines.Count; i++) p.Text(cx, p.RowY(cc, i), clines[i], Ink.Dark, TextAlign.Left, cc.End.X - 6 - cx);
+            var cc2 = p.Card(p.Section(cc.End.Y + 6, "GDZIE"), CareerWhereLines.Length);
+            for (var i = 0; i < CareerWhereLines.Length; i++)
+            {
+                if (i > 0) p.Divider(cc2, i);
+                p.Text(cx, p.RowY(cc2, i), ButtonNames.Localize(CareerWhereLines[i]), Ink.Dim, TextAlign.Left, cc2.End.X - 6 - cx);
+            }
             return;
         }
         if (_page == 9) // v0.21.52 cz. c: drzewko Szkoleń, kolekcje, zadania dnia i tygodnia, seria dni

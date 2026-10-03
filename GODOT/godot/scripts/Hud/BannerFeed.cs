@@ -108,8 +108,10 @@ public sealed class BannerFeed
         var g = _s.Game;
         var d = _s.Data;
         var act = g.SDef().Act;
+        if (g.TwinCarry > 0) _banners.Push("Wspólna ściana", $"+{g.TwinCarry} problemy z 1. połowy, ta sama pogoda", PhoneTabs.Tasks); // v0.21.52 cz. d
         if (g.ADef.Mechanic == ActMechanic.None || (g.Stage > g.FirstStage && g.SDef(g.Stage - 1).Act == act)) return;
-        _banners.Push($"Akt {g.ActNumeral()}: {g.ADef.MechShort}", g.ADef.MechInfo, PhoneTabs.Tasks);
+        var info = g.KDef.Gust > 0 && g.ADef.Mechanic == ActMechanic.Gust ? $"Poryw co {g.MechValue()} tur – na poddaszu mocniej" : g.ADef.MechInfo;
+        _banners.Push($"Akt {g.ActNumeral()}: {g.ADef.MechShort}", info, PhoneTabs.Tasks);
     }
 
     /// <summary>Podpowiedź na start budowy: moc pod R i zabrana pamiątka z rangą (jak na GBA).</summary>

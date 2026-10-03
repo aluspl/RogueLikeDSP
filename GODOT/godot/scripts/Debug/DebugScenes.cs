@@ -34,6 +34,7 @@ public sealed class DebugScenes
         "story-archive", "story-thread", "estate-grow", "help-meta",
         .. SecretStaging.Names,
         .. GoalsStaging.Names,
+        .. CareerStaging.Names,
     ];
 
     private readonly App _app;
@@ -41,6 +42,7 @@ public sealed class DebugScenes
     private readonly RecapStaging _recap;
     private readonly SecretStaging _secrets;
     private readonly GoalsStaging _goals;
+    private readonly CareerStaging _career;
 
     public DebugScenes(App app)
     {
@@ -49,6 +51,7 @@ public sealed class DebugScenes
         _recap = new RecapStaging(app);
         _secrets = new SecretStaging(app);
         _goals = new GoalsStaging(app);
+        _career = new CareerStaging(app);
     }
 
     private ScreenFlow Flow => _app.Flow;
@@ -57,7 +60,7 @@ public sealed class DebugScenes
         scene is "title" or "classselect" or "profile" or "catalog" or "estate" or "team" or "training" or "card" or "perks" or "investor"
             or "daily" or "death" or "respect" or "rewards" or "classselect-locked" or "stats-class" or "stats-tip" or "catalog-tags"
             or "tutorial-unlock" or "tutorial-act0" or "dmg-class" or "dmg-stats" or "titles" or "looks" or "recap-progress" or "recap-end" or "inspector"
-            || SecretStaging.UsesDemoProfile(scene) || GoalsStaging.Handles(scene);
+            || SecretStaging.UsesDemoProfile(scene) || GoalsStaging.Handles(scene) || CareerStaging.Handles(scene);
 
     /// <summary>Sceny samouczka menu: profil bez obejrzanych dymków (inne sceny - samouczek już obejrzany).</summary>
     public static bool UsesTutorial(string scene) => scene.StartsWith("tutorial");
@@ -73,6 +76,11 @@ public sealed class DebugScenes
         if (SecretStaging.Handles(scene)) // v0.21.51 cz. 2: sekretne zlecenia
         {
             await _secrets.Setup(scene);
+            return;
+        }
+        if (CareerStaging.Handles(scene)) // v0.21.52 cz. d: mapa kariery
+        {
+            await _career.Setup(scene);
             return;
         }
         if (GoalsStaging.Handles(scene)) // v0.21.52 cz. c: drzewko, kolekcje, zadania, seria dni

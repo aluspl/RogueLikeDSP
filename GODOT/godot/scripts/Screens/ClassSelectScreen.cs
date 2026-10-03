@@ -79,7 +79,7 @@ public sealed class ClassSelectScreen : Screen
         }
         if (e.Is(GameAction.B | GameAction.Cancel))
         {
-            Flow.Title.Open();
+            Back();
             return true;
         }
         if (!e.Is(GameAction.A | GameAction.Start)) return false;
@@ -105,7 +105,7 @@ public sealed class ClassSelectScreen : Screen
                 CycleKeepsake(1);
                 return true;
             case ClassSelectHit.Back:
-                Flow.Title.Open();
+                Back();
                 return true;
             case ClassSelectHit.Investor:
                 S.ClassId = view.Selected;
@@ -143,6 +143,13 @@ public sealed class ClassSelectScreen : Screen
         Meta.CycleKeepsake(S.Data, S.Profile, d);
         S.Save();
         Sfx.Play("menu");
+    }
+
+    /// <summary>Wstecz: mapa kariery (po pierwszej budowie, v0.21.52 cz. d) albo tytuł.</summary>
+    private void Back()
+    {
+        if (Flow.Career.Available) Flow.Career.Open();
+        else Flow.Title.Open();
     }
 
     private void Start()

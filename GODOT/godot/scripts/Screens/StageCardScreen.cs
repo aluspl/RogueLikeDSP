@@ -23,7 +23,8 @@ public sealed class StageCardScreen : Screen
         var g = S.Game;
         var d = S.Data;
         var sd = g.SDef();
-        var page = new MessagePage($"Akt {g.ActNumeral()}, {g.StageNumber()}/{g.StagesInRun()}", "Enter: do roboty");
+        var where = (g.Contract > 0 ? $"{g.KDef.Short}, " : "") + $"Akt {g.ActNumeral()}, {g.StageNumber()}/{g.StagesInRun()}"; // v0.21.52 cz. d: kontrakt
+        var page = new MessagePage(where, "Enter: do roboty");
         page.Add(g.StageStory);
         var ev = g.CurrentEvent;
         if (ev is not null && g.Turns == g.StageStartTurn) page.Add(ev.Msg);
@@ -34,7 +35,8 @@ public sealed class StageCardScreen : Screen
         var wd = g.WDef; // pogoda dnia (skutek w zakładce Zadania) i trudność w jednym wierszu
         var weather = wd.Effect == WeatherEffect.None ? wd.Name : $"{wd.Name} ({wd.Short})";
         page.Info($"Pogoda: {weather}, {g.DDef.Name}" + (g.Tier > 0 ? $" NG+{g.Tier}" : ""), wd.Bad ? Ink.Late : Ink.Dim);
-        page.Info($"Akt {g.ActNumeral()}: {g.ADef.MechName} ({g.ADef.MechInfo})", Ink.Late); // mechanika aktu
+        page.Info($"Akt {g.ActNumeral()}: {g.ADef.MechName} ({(g.KDef.Gust > 0 && g.ADef.Mechanic == ActMechanic.Gust ? $"poryw co {g.MechValue()} tur" : g.ADef.MechInfo)})", Ink.Late); // mechanika aktu
+        if (g.TwinCarry > 0) page.Info($"Wspólna ściana: +{g.TwinCarry} problemy z 1. połowy", Ink.Late); // v0.21.52 cz. d: bliźniak
         N.Phone.OpenSingle(page, 2, instant);
         Sfx.Play("notify", 0.7f);
     }

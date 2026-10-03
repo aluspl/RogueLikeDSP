@@ -42,6 +42,12 @@ public sealed class EndScreen : Screen
             if (((S.LastStory >> i) & 1) != 0) N.Banners.Push("Nowa wiadomość", S.Data.StoryArc[i].Name);
         }
         if (stories > 2) N.Banners.Push($"Nowe wiadomości: {stories}", "Profil > Osiedle > Wiadomości");
+        if (S.LastCareerFirst) // v0.21.52 cz. d (#47): kontrakt wygrany pierwszy raz, nowe kontrakty na mapie kariery
+            N.Banners.Push(new PushBanner { Title = $"Wygrany kontrakt: {g.KDef.Name}", Body = Career.RewardLabel(S.Data, g.Contract), Gold = true });
+        for (var k = 1; k < S.Data.Career.Length; k++)
+        {
+            if (((S.LastCareerNew >> k) & 1) != 0) N.Banners.Push(new PushBanner { Title = "Nowy kontrakt!", Body = $"{S.Data.Career[k].Name} – mapa kariery", Gold = true });
+        }
     }
 
     public override bool HandleInput(InputCmd e)

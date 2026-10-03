@@ -151,7 +151,8 @@ public sealed class TitleScreen : Screen
                 }
                 break;
             case 0:
-                Flow.ClassSelect.Open();
+                if (Flow.Career.Available) Flow.Career.Open(); // v0.21.52 cz. d: mapa kariery po pierwszej budowie
+                else Flow.ClassSelect.Open();
                 break;
             case 1:
                 Flow.Daily.Open();

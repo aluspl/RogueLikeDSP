@@ -83,6 +83,12 @@ public sealed class GameSession
     /// <summary>Wyzwanie tygodnia pobiło najlepszy wynik tygodnia (Weekly.Record).</summary>
     public bool WeeklyRecord { get; private set; }
 
+    /// <summary>v0.21.52 cz. d: ostatnia budowa to pierwsza wygrana kontraktu (baner z nagrodą).</summary>
+    public bool LastCareerFirst { get; private set; }
+
+    /// <summary>v0.21.52 cz. d: kontrakty odblokowane na koniec ostatniej budowy (bity GameData.Career).</summary>
+    public int LastCareerNew { get; set; }
+
     /// <summary>Wątki fabuły odblokowane na koniec ostatniej budowy (bity GameData.StoryArc).</summary>
     public uint LastStory { get; set; }
 
@@ -178,7 +184,7 @@ public sealed class GameSession
     public void StartRun()
     {
         var seed = Seed != 0 ? Seed : GD.Randi() | 1u;
-        Game.NewRun(ClassId, seed, Difficulty, Meta.Mods(Data, Profile, ClassId)); // Mods przed StartRun: ranga pamiątki; cz. b: mistrzostwo
+        Game.NewRun(ClassId, seed, Difficulty, Meta.Mods(Data, Profile, ClassId), Career.Selected(Data, Profile)); // Mods przed StartRun: ranga pamiątki; cz. b: mistrzostwo; cz. d: kontrakt
         Meta.StartRun(Data, Profile);
         Save();
         SaveRun();
@@ -274,6 +280,7 @@ public sealed class GameSession
             DailyRecord = g.Daily && Daily.Record(Data, Profile, g.DailyDay, g.Score, won);
             LastStreakAfter = Profile.StreakBest;
             LastReward = won ? Meta.RecordWin(Data, Profile) : -1;   // nagroda za odbiór: każda wygrana odblokowuje kolejną
+            LastCareerFirst = won && Career.Win(Data, Profile, g); // v0.21.52 cz. d: pierwsza wygrana kontraktu
             if (won) Meta.AddHouse(Profile, g);
             LastStakeBefore = Progress.StakeRank(Data, Profile); // v0.21.52 cz. b: stopnie inwestora przed rekordem stawki
             Events.RaiseRunEnded(won);
@@ -286,6 +293,7 @@ public sealed class GameSession
             LastStakeAfter = Progress.StakeRank(Data, Profile);
             (LastTasks, LastCollections, LastTasksBefore) = BankGoals(); // cz. c: zadania dnia / tygodnia, kolekcje
             LastStory = Story.Check(Data, Profile, g); // fabuła (#35): nowe wątki SMS za kamienie milowe (też od inspektora)
+            LastCareerNew = Career.Announce(Data, Profile); // v0.21.52 cz. d: nowe kontrakty na mapie kariery
             Save();
             ClearRun();
             return TurnOutcome.RunEnded;
