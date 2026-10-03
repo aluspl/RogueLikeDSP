@@ -69,16 +69,16 @@ public sealed class HouseSchedulePage : PhonePage
         var card = p.Card(y, rows);
         var cx = p.TextX(card);
         var cr = card.End.X - 6;
-        var first = d.Stages.Length - rows; // mało miejsca: ostatnie etapy (odbiór)
+        var first = _g.RouteCount() - rows; // mało miejsca: ostatnie etapy (odbiór)
         for (var r = 0; r < rows; r++)
         {
             var s = first + r;
             var ry = p.RowY(card, r);
             if (r > 0) p.Divider(card, r);
             p.Stripe(card, r, Pal.Done);
-            var pw = p.Pill(cr, ry, $"{d.Stages[s].Cost} tys.", PillKind.Done);
+            var pw = p.Pill(cr, ry, $"{_g.SDef(s).Cost} tys.", PillKind.Done);
             var dw = p.Text(cr - pw - 6, ry, $"{HouseSchedule.Days(_g, s)} dni", Ink.Dim, TextAlign.Right);
-            p.Text(cx, ry, $"{Date(HouseSchedule.StartDay(_g, s, _endDay))} {d.Stages[s].Name}", Ink.Dark, TextAlign.Left, cr - pw - dw - 12 - cx);
+            p.Text(cx, ry, $"{Date(HouseSchedule.StartDay(_g, s, _endDay))} {_g.SDef(s).Name}", Ink.Dark, TextAlign.Left, cr - pw - dw - 12 - cx);
         }
         var lc = p.Card(card.End.Y + 6, 2);
         p.HitRow(lc, 0, 0);

@@ -719,7 +719,7 @@ public sealed class DebugScenes
         var d = _app.Session.Data;
         for (var guard = 0; guard < 40; guard++)
         {
-            if (scene == "boss" && d.Stages[g.Stage].Boss >= 0 && Flow.Current == Flow.Game)
+            if (scene == "boss" && g.SDef().Boss >= 0 && Flow.Current == Flow.Game)
             {
                 _stage.Boss();
                 return;

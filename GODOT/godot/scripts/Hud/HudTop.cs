@@ -75,7 +75,7 @@ public partial class HudTop : Control
         DrawRect(new Rect2(xr.Position, new Vector2(Mathf.Round(xr.Size.X * Mathf.Clamp(fill, 0, 1)), 4)), Pal.Brand);
 
         // etap i poziom trudności (prawa strona, jak „Etap 1/8 N” na GBA)
-        var sd = g.D.Stages[g.Stage];
+        var sd = g.SDef();
         var ng = g.Tier > 0 ? $" +{g.Tier}" : "";
         // v0.21.51: gdy „Etap 2/10: nazwa” nie mieści się w 1. rzędzie (wąski pion na telefonie), 1. rząd = „Etap 2/10,
         // Normalny”, a pełna nazwa etapu idzie do 2. rzędu po prawej (mierzona po ikonach - bez ucinania „Izolacja fu..”)

@@ -22,7 +22,7 @@ public sealed class IssuesTab : PhonePage
     private List<(int Def, bool Open)> Rows(out int total)
     {
         var d = _g.D;
-        var sd = d.Stages[_g.Stage];
+        var sd = _g.SDef();
         var list = new List<(int, bool)>();
         total = 0;
         for (var t = 0; t < d.Enemies.Length; t++)
@@ -60,7 +60,7 @@ public sealed class IssuesTab : PhonePage
             var x = photo.End.X + 6;
             var pw = p.Pill(card.End.X - 6, y, open ? "OTWARTA" : "ZAMKNIĘTA", open ? PillKind.Late : PillKind.Done);
             var kills = _g.KillsByType[def] > 0 ? $" x{_g.KillsByType[def]}" : "";
-            var boss = d.Stages[_g.Stage].Boss == def ? " (boss)" : "";
+            var boss = _g.SDef().Boss == def ? " (boss)" : "";
             p.Text(x, y, $"#{r + 1} {ed.Name}{kills}{boss}", Ink.Dark, TextAlign.Left, card.End.X - 10 - pw - x);
             p.Text(x, y + 16, ed.Desc, Ink.Dim, TextAlign.Left, card.End.X - 8 - x);
         }

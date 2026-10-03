@@ -31,7 +31,7 @@ public sealed class SchedulePage : PhonePage
     public int Sel { get; set; }
 
     /// <summary>Czy jest wybór ścieżki (kolejny etap istnieje, dane mają ścieżki).</summary>
-    public bool HasChoice => _g.D.Paths.Length >= 2 && _g.Stage + 1 < _g.D.Stages.Length;
+    public bool HasChoice => _g.D.Paths.Length >= 2 && _g.Stage + 1 < _g.RouteCount();
 
     public override bool TapRow(int index)
     {
@@ -98,7 +98,7 @@ public sealed class SchedulePage : PhonePage
     {
         var d = _g.D;
         var f0 = _g.FirstStage;   // bez Aktu 0: od Fundamentów
-        var n = d.Stages.Length;
+        var n = _g.RouteCount();
         var first = Math.Clamp(_g.Stage - (rows > 3 ? 1 : 0), f0, n - rows);
         var card = p.Card(top, rows);
         var tx = p.TextX(card);
@@ -113,7 +113,7 @@ public sealed class SchedulePage : PhonePage
             if (next) p.Selected(card, r);
             p.Stripe(card, r, done ? Pal.Done : next ? Pal.Brand : Pal.Todo);
             var pw = p.Pill(right, y, done ? "Gotowe" : next ? "Następny" : "Do zrob.", done ? PillKind.Done : next ? PillKind.Brand : PillKind.Gray);
-            p.Text(tx, y, $"{i - f0 + 1}. {d.Stages[i].Name}", done ? Ink.Dim : next ? Ink.Brand : Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
+            p.Text(tx, y, $"{i - f0 + 1}. {_g.SDef(i).Name}", done ? Ink.Dim : next ? Ink.Brand : Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
         }
         return card;
     }
@@ -125,7 +125,7 @@ public sealed class SchedulePage : PhonePage
     private float Paths(PhonePainter p, float top)
     {
         var d = _g.D;
-        var next = d.Stages[_g.Stage + 1];
+        var next = _g.SDef(_g.Stage + 1);
         var y = p.Section(top, "WYBIERZ ŚCIEŻKĘ", $"{_g.StageNumber() + 1}. {next.Name}");
         var rowH = PhonePainter.RowH;
         var tx0 = p.Left + 38 + 12;

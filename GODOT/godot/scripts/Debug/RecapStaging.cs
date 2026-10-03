@@ -111,7 +111,7 @@ public sealed class RecapStaging
         Flow.StageCard.Advance();
         var g = s.Game;
         var won = scene == "recap-win";
-        FillTimeline(g, won ? d.Stages.Length - 1 : d.PreludeStages + 4);
+        FillTimeline(g, won ? g.RouteCount() - 1 : d.PreludeStages + 4);
         s.ResetWatch();
         if (won)
         {

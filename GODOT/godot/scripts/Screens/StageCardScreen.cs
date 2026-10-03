@@ -22,7 +22,7 @@ public sealed class StageCardScreen : Screen
     {
         var g = S.Game;
         var d = S.Data;
-        var sd = d.Stages[g.Stage];
+        var sd = g.SDef();
         var page = new MessagePage($"Akt {g.ActNumeral()}, {g.StageNumber()}/{g.StagesInRun()}", "Enter: do roboty");
         page.Add(g.StageStory);
         var ev = g.CurrentEvent;

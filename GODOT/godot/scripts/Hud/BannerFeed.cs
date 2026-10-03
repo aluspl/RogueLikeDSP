@@ -79,7 +79,7 @@ public sealed class BannerFeed
     private void OnStageCleared()
     {
         _banners.Clear();
-        _banners.Push("Etap zaliczony", _s.Data.Stages[_s.Game.Stage].Name, PhoneTabs.Tasks);
+        _banners.Push("Etap zaliczony", _s.Game.SDef().Name, PhoneTabs.Tasks);
     }
 
     /// <summary>Sekretne zlecenia, nowe odznaki i zlecenia (push_achievements na GBA).</summary>
@@ -107,8 +107,8 @@ public sealed class BannerFeed
     {
         var g = _s.Game;
         var d = _s.Data;
-        var act = d.Stages[g.Stage].Act;
-        if (g.ADef.Mechanic == ActMechanic.None || (g.Stage > g.FirstStage && d.Stages[g.Stage - 1].Act == act)) return;
+        var act = g.SDef().Act;
+        if (g.ADef.Mechanic == ActMechanic.None || (g.Stage > g.FirstStage && g.SDef(g.Stage - 1).Act == act)) return;
         _banners.Push($"Akt {g.ActNumeral()}: {g.ADef.MechShort}", g.ADef.MechInfo, PhoneTabs.Tasks);
     }
 

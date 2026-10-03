@@ -53,6 +53,8 @@ public static class Assets
     public const int FrameSecretClass = 127, SecretClasses = 3, FrameSecretSilhouette = 133, FrameStripes = 136;
     /// <summary>v0.21.52: kask do pokolorowania (160 + zawód * 2 + klatka A/B) – kolor kasku z odznak i zleceń (HelmetTint).</summary>
     public const int FrameHelmet = 160;
+    /// <summary>v0.21.52 cz. d (#47): problemy i bossowie kontraktów mapy kariery 184-195 (para klatek A/B).</summary>
+    public const int FrameCareerEnemy = 184, CareerEnemies = 6;
     // menu_icons.png 30-34: sekretne zlecenie (koperta z „?”), Młot Zenka, Poziomica mistrza, Złota kielnia, Kask w paski
     public const int MenuSecret = 30, MenuZenka = 31, MenuLevel = 32, MenuGold = 33, MenuStripes = 34;
 
@@ -110,7 +112,8 @@ public static class Assets
         frame is >= 0 and < 15 or 46 or 47 or 50 or 52 or 53 or 54 || (frame >= FrameStageEnemy && frame < FrameStageEnemy + StageEnemies)
         || (frame >= FramePreludeEnemy && frame < FramePreludeEnemy + PreludeEnemies)
         || (frame >= FrameSecretClass && frame < FrameSecretClass + SecretClasses)
-        || (frame >= FrameStripes && frame < FrameHelmet + 24 && (frame & 1) == 0);
+        || (frame >= FrameStripes && frame < FrameHelmet + 24 && (frame & 1) == 0)
+        || (frame >= FrameCareerEnemy && frame < FrameCareerEnemy + 2 * CareerEnemies && (frame & 1) == 0);
 
     /// <summary>Ikona mechaniki aktu w menu_icons (błoto, porywy, pył; pieczątki Aktu 0).</summary>
     public static int ActIcon(ActMechanic m) => m == ActMechanic.Stamps ? MenuStamps : MenuAct + Mathf.Max(0, (int)m - 1);
@@ -120,7 +123,7 @@ public static class Assets
 
     /// <summary>Druga klatka animacji (anim_b z main.cpp): zawody i wrogowie 0..14 -> +27, bossowie 46-47 -> 48-49, 50 -> 51,
     /// zawody z nagród 52-54 -> 55-57, problemy etapów 61-80 -> 81-100, Akt 0 101-109 -> 110-118,
-    /// zawody z sekretów 127-129 -> 130-132, kask w paski 136+2k -> 137+2k.</summary>
+    /// zawody z sekretów 127-129 -> 130-132, kask w paski 136+2k -> 137+2k (też kontrakty mapy kariery 184+2k -> 185+2k).</summary>
     public static int AnimB(int frame)
     {
         if (frame >= FrameStripes) return frame | 1;

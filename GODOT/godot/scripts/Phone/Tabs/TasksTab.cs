@@ -22,7 +22,7 @@ public sealed class TasksTab : PhonePage
         var d = _g.D;
         var y = p.Section(p.Top, "HARMONOGRAM", $"Akt {_g.ActNumeral()}");
         var f0 = _g.FirstStage;   // bez Aktu 0: od Fundamentów
-        var n = d.Stages.Length - f0;
+        var n = _g.RouteCount() - f0;
         var rows = PhoneView.Full ? n : Math.Min(n, 5);   // wąski telefon (poziomo): okno etapów wokół bieżącego
         var first = f0 + Math.Max(0, Math.Min(_g.Stage - f0 - 1, n - rows));
         var card = p.Card(y, rows);
@@ -36,7 +36,7 @@ public sealed class TasksTab : PhonePage
             p.Stripe(card, r, done ? Pal.Done : cur ? Pal.Prog : Pal.Todo);
             var pill = done ? "Gotowe" : cur ? "W trakcie" : "Do zrob.";
             var pw = p.Pill(card.End.X - 6, ry, pill, done ? PillKind.Done : cur ? PillKind.Prog : PillKind.Gray);
-            p.Text(p.TextX(card), ry, $"{i - f0 + 1}. {d.Stages[i].Name}", done ? Ink.Dim : Ink.Dark, TextAlign.Left, card.End.X - 12 - pw - p.TextX(card));
+            p.Text(p.TextX(card), ry, $"{i - f0 + 1}. {_g.SDef(i).Name}", done ? Ink.Dim : Ink.Dark, TextAlign.Left, card.End.X - 12 - pw - p.TextX(card));
         }
         y = card.End.Y + 4;
         y = p.Section(y, "PLAC BUDOWY");

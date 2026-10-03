@@ -161,12 +161,14 @@ PRELUDE_ENEMY_FRAME, PRELUDE_ENEMIES = 101, 9   # v0.21.49 cz. 3: Akt 0 - proble
 SECRET_CLASS_FRAME, SECRET_CLASSES, STRIPES_FRAME, STRIPES_CLASSES = 127, 3, 136, 12
 # v0.21.52: 160-183 kask do pokolorowania (kolor kasku z odznak i zleceń; gra podmienia kolor kasku shaderem)
 HELMET_FRAME = 160
+CAREER_ENEMY_FRAME, CAREER_ENEMIES = 184, 6   # v0.21.52 cz. d: problemy i bossowie kontraktów mapy kariery (para A/B)
 CHARACTER_FRAMES = (list(range(0, 15)) + [46, 47, 50, 52, 53, 54]
                     + list(range(STAGE_ENEMY_FRAME, STAGE_ENEMY_FRAME + STAGE_ENEMIES))
                     + list(range(PRELUDE_ENEMY_FRAME, PRELUDE_ENEMY_FRAME + PRELUDE_ENEMIES))
                     + list(range(SECRET_CLASS_FRAME, SECRET_CLASS_FRAME + SECRET_CLASSES))
                     + [STRIPES_FRAME + 2 * c for c in range(STRIPES_CLASSES)]   # jak anim_b w main.cpp
-                    + [HELMET_FRAME + 2 * c for c in range(STRIPES_CLASSES)])
+                    + [HELMET_FRAME + 2 * c for c in range(STRIPES_CLASSES)]
+                    + [CAREER_ENEMY_FRAME + 2 * k for k in range(CAREER_ENEMIES)])
 
 
 def anim_b(f):
@@ -419,9 +421,12 @@ class Canvas:
 # rodzaje podłóg i murów etapów (kolejność jak etapy w GBA/data/game.json); podłoga jak akt na GBA:
 # Akt 0 biuro (wykładzina, regał z segregatorami) i wykop (ziemia, ściana z rurą), akt I ziemia (strop: płyta),
 # akt II deski, akt III płytki
-FLOOR_KIND = ["carpet", "dirt", "dirt", "dirt", "dirt", "slab", "planks", "planks", "planks", "tiles", "tiles", "tiles"]
+FLOOR_KIND = ["carpet", "dirt", "dirt", "dirt", "dirt", "slab", "planks", "planks", "planks", "tiles", "tiles", "tiles",
+              # v0.21.52 cz. d (#47): wyglądy etapów kontraktów mapy kariery 12-21 (palety z GBA, pole "look" w game.json)
+              "planks", "planks", "slab", "planks", "tiles", "planks", "screed", "dirt", "planks", "parquet"]
 WALL_KIND = ["binders", "trench", "formwork", "membrane", "blocks", "concrete", "rooftile", "brick", "plaster", "pipes",
-             "plaster", "tiles"]
+             "plaster", "tiles",
+             "logs", "rooftile", "brick", "rooftile", "plaster", "formwork", "membrane", "stone", "brick", "stucco"]
 
 
 def draw_floor(c, col, kind, rnd):
@@ -466,6 +471,15 @@ def draw_floor(c, col, kind, rnd):
                 gx, gy = rnd.randrange(32), y0 + 2 + rnd.randrange(4)
                 c.hline(gx, gx + 3, gy, dt)
             c.set((seam + 2) % 32, y0 + 3, shade(dt, 0.6))
+    elif kind == "parquet":   # v0.21.52 cz. d: kamienica - parkiet w jodełkę (klepki 4x12 na przemian)
+        for k in range(0, 32, 8):
+            for y in range(32):
+                x = (k + (y % 8) * (1 if (y // 8 + k // 8) % 2 == 0 else -1)) % 32
+                c.set(x, y, shade(dt, 0.85))
+        for y in range(0, 32, 8):
+            c.hline(0, 31, y, mix(fl, (255, 255, 255), 0.1))
+        for _ in range(10):
+            c.set(rnd.randrange(32), rnd.randrange(32), dt)
     elif kind == "tiles":   # płytki 16x16 z fugą
         grout = shade(dt, 0.9)
         for k in (0, 16):
@@ -587,6 +601,35 @@ def draw_wall(c, col, kind, rnd):
             c.rect(x, y, x + 5, y + 3, mix(wl, (230, 200, 60), 0.35))
         for _ in range(24):
             c.set(rnd.randrange(32), rnd.randrange(32), shade(wl, 0.85 if rnd.random() < 0.5 else 1.15))
+    elif kind == "logs":   # v0.21.52 cz. d: domek letniskowy - poziome bale z cieniem między nimi i słojami na czołach
+        for band in range(4):
+            y0 = band * 8
+            c.hline(0, 31, y0, mix(wl, lt, 0.5))
+            c.hline(0, 31, y0 + 1, mix(wl, lt, 0.25))
+            c.hline(0, 31, y0 + 6, shade(wl, 0.75))
+            c.hline(0, 31, y0 + 7, sh)
+            for _ in range(2):
+                gx = rnd.randrange(28)
+                c.hline(gx, gx + 4, y0 + 3 + rnd.randrange(2), shade(wl, 0.85))
+    elif kind == "stone":   # kamienica: piwnice z kamienia polnego w zaprawie
+        mortar = mix(lt, wl, 0.4)
+        c.rect(0, 0, 31, 31, mortar)
+        for (x0, y0, x1, y1) in ((1, 1, 13, 9), (15, 1, 30, 7), (1, 11, 9, 20), (11, 9, 22, 19), (24, 9, 30, 21),
+                                 (1, 22, 15, 30), (17, 21, 30, 30)):
+            c.rect(x0, y0, x1, y1, shade(wl, 0.9 + rnd.random() * 0.2))
+            c.hline(x0, x1, y0, mix(wl, lt, 0.4))
+            c.hline(x0, x1, y1, shade(wl, 0.7))
+    elif kind == "stucco":   # kamienica: gładki tynk z gzymsem i ornamentem (sztukateria)
+        c.rect(0, 0, 31, 5, mix(wl, lt, 0.5))
+        c.hline(0, 31, 6, sh)
+        c.hline(0, 31, 4, lt)
+        for x in range(2, 32, 6):
+            c.rect(x, 1, x + 2, 3, shade(wl, 0.8))
+        for (x, y) in ((6, 16), (22, 16)):
+            c.rect(x - 2, y - 2, x + 2, y + 2, mix(wl, lt, 0.6))
+            c.set(x, y, shade(wl, 0.75))
+        for _ in range(6):
+            c.set(rnd.randrange(32), 8 + rnd.randrange(24), shade(wl, 0.94))
     elif kind == "tiles":   # glazura 8x8
         grout = mix(lt, (255, 255, 255), 0.3)
         for k in range(0, 32, 8):
@@ -854,7 +897,8 @@ def main():
     export_screen("end", 104, "ui/end.png")
     report["font_glyphs"] = export_font()
     danger = None
-    stages = len(json.load(open(os.path.join(GBA, "data", "game.json"), encoding="utf-8"))["stages"])
+    stages = len(FLOOR_KIND)   # v0.21.52 cz. d: wyglądy etapów (Dom 0-11 i kontrakty mapy kariery 12-21)
+    assert len(WALL_KIND) == stages and os.path.exists(os.path.join(GFX, "stage_palettes_%d.bmp" % (stages - 1)))
     for i in range(stages):
         col = make_stage_tiles(i)
         danger = danger or col["danger"]

@@ -27,7 +27,7 @@ public partial class MapLayer : Node2D
     public override void _Draw()
     {
         if (_g is null) return;
-        var tiles = Assets.StageTiles(_g.Stage);
+        var tiles = Assets.StageTiles(_g.SDef().Look);   // v0.21.52 cz. d: wygląd etapu (kontrakty mapy kariery)
         var bricks = Assets.StageTiles(1);
         for (var y = 0; y < Level.H; y++)
         {

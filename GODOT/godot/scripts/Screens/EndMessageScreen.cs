@@ -69,7 +69,7 @@ public sealed class EndMessageScreen : Screen
     public override bool HandleInput(InputCmd e)
     {
         if (!e.Is(GameAction.A | GameAction.Start)) return false;
-        if (S.Game.St == GameStatus.Won && S.Data.Stages.Length > 0) Flow.HouseSchedule.Open();
+        if (S.Game.St == GameStatus.Won && S.Game.RouteCount() > 0) Flow.HouseSchedule.Open();
         else Flow.Recap.Open(); // podsumowanie budowy (#33)
         return true;
     }

@@ -59,7 +59,7 @@ public sealed class RecapPage : PhonePage
         var where = g.RecapWhere(new Message()).Text;
         if (won) Row("Odbiór zaliczony!", $"{HouseSchedule.TotalDays(g)} dni", Ink.Done, Pal.Done);
         else Row(g.RecapKiller(new Message()).Text, "", Ink.Late, Pal.Late);
-        Row(d.Stages[g.Stage].Name, where, Ink.Dark, won ? Pal.Done : Pal.Late);
+        Row(g.SDef().Name, where, Ink.Dark, won ? Pal.Done : Pal.Late);
         Row($"Usunięte {g.Kills}, elity {g.ElitesKilled}, kombinacje {g.CombosRun}", "", Ink.Dim, none);
         if (!won)
         {
