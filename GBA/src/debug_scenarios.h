@@ -115,6 +115,12 @@
 //       pogromca i niebieski kask; tytuł -> SELECT = Koszty (Szkolenia z poziomami), -> = Odznaki, A x4 = Tytuły
 //       (SELECT wybiera); wybór zawodu: niebieski kask, SELECT = Wygląd (A = kolejny kolor); w budowie 1 HP i obok
 //       przebudzony problem: B = czekaj -> koniec budowy, strona 4/4 podsumowania "Postęp" z paskami
+//  v0.21.52 cz. b: poziom inspektora (#44), mistrzostwo zawodu (#45), stopnie inwestora (#48), paski końca budowy (#52)
+//  70 - profil po 20 budowach: inspektor 5 dośw. przed poziomem 10 (druga pamiątka), Murarz 5 dośw. przed mistrzostwem 7
+//       (wariant mocy włączony, broń mistrza), rekord stawki 2 (stopnie 1-2), odznaka Bez usterek (Kask ojca), czerwony
+//       kask i tytuł Praktykant; tytuł: pasek inspektora, telefon -> Odznaki x5 = Inspektor, Osiedle: Nowa betoniarka;
+//       wybór zawodu: Mistrz 6 z paskiem, SELECT = Wygląd (wariant mocy, następny stopień inwestora); w budowie 1 HP
+//       i obok przebudzony problem: B = czekaj -> banery Inspektor 10 i Mistrzostwo 7, strona Postęp z trzema paskami
 #include "core.h"
 #include "meta.h"
 
@@ -248,6 +254,21 @@ namespace debug_scenario
             p.title = uint8_t(data::badge_seryjny + 1);
             p.helmet = uint8_t(data::badges[data::badge_przed_terminem].cosmetic + 1);
             p.kills_total = 90; p.class_wins = 3;
+        }
+        if(scenario == 70)
+        {
+            p.xp = 60; p.best = 4200; p.runs = 20; p.wins = 6; p.rewards = 6; p.respect = 35; p.respect_total = 180;
+            p.inspector_xp = uint32_t(core::progress_floor(data::inspector_levels, 10) - 5);
+            p.mastery_xp[1] = uint16_t(core::progress_floor(data::mastery_levels, 7) - 5);   // Murarz
+            p.mastery_xp[0] = uint16_t(core::progress_floor(data::mastery_levels, 2) + 30); p.mastery_xp[2] = 50;
+            p.power_alt = uint16_t(1 << 1);
+            p.best_stake[1] = 2;
+            p.badges = uint16_t(1 << data::badge_bez_usterek);
+            for(int l = 0; l < data::inspector_levels_count; ++l)
+                if(data::inspector_levels[l].reward == core::progress_reward::helmet) { p.helmet = uint8_t(data::inspector_levels[l].index + 1); break; }
+            p.title = uint8_t(core::progress_title_index(0, 2) + 1);   // Praktykant (poziom 2)
+            p.houses_count = 4; for(int i = 0; i < 4; ++i) p.houses[i] = uint8_t(1 | (i % 3) << 4);
+            core::story_check(p, nullptr);
         }
         if(scenario == 36) { p.catalog = 0xFFFF; p.catalog_hi = 0xFFFFFFFFu; }
         if(scenario == 37 || scenario == 38) { p.rewards = uint8_t(data::rewards_count); p.wins = 8; }   // Akt 0 odebrany
@@ -929,6 +950,7 @@ namespace debug_scenario
             }
             case 21:
             case 69:   // v0.21.52: porażka - koniec budowy ze stroną Postęp
+            case 70:   // v0.21.52 cz. b: porażka - nowe poziomy inspektora i mistrzostwa, paski na stronie Postęp
             {
                 g.hero.hp = 1;
                 g.score = 900;
