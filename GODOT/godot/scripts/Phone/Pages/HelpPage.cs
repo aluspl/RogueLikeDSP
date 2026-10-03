@@ -36,7 +36,12 @@ public sealed class HelpPage : PhonePage
         (Loc.T("okna"), Loc.T("dotknij_zaznacz_wybierz_prawo")),   // v0.21.51: ten sam układ w każdym oknie
     ];
 
-    private const int Pages = 12; // v0.21.52 cz. b: strona 9 – inspektor i mistrzostwo; cz. c: strona 10 – drzewko, kolekcje, zadania, seria; cz. d: 11 – mapa kariery; v0.21.53: 12 – filtry ekranu
+    private const int Pages = 13; // v0.21.52 cz. b: strona 9 – inspektor i mistrzostwo; cz. c: strona 10 – drzewko, kolekcje, zadania, seria; cz. d: 11 – mapa kariery; v0.21.53: 12 – filtry ekranu; v0.21.54: 13 – widok i światło
+
+    /// <summary>v0.21.54: strona „Widok i światło” (indeks od 0).</summary>
+    public const int ViewPage = 12;
+
+    private static string[] ViewWhereLines => [Loc.T("ustawienia_widok_mapy"), Loc.T("ustawienia_efekty_swietlne")];
 
     /// <summary>v0.21.53: strona filtrów ekranu (indeks od 0).</summary>
     public const int FiltersPage = 11;
@@ -113,6 +118,22 @@ public sealed class HelpPage : PhonePage
         if (_page == 4)
         {
             DrawList(p, Loc.T("kombinacje_stanow"), ComboLines(_d), Loc.T("skad_stany_premie_elity"), ComboWhereLines(_d));
+            return;
+        }
+        if (_page == ViewPage) // v0.21.54: widok mapy (płaski / 3/4) i efekty świetlne
+        {
+            var vwidth = (int)(p.Right - 6 - p.Left - 12);
+            var vlines = p.F.Wrap(Loc.T("pomoc_widok_mapy") + " " + Loc.T("pomoc_efekty_swietlne"), vwidth);
+            var vc = p.Card(p.Section(p.Top, Loc.T("widok_i_swiatlo")), vlines.Count);
+            var vx = p.TextX(vc);
+            for (var i = 0; i < vlines.Count; i++) p.Text(vx, p.RowY(vc, i), vlines[i], Ink.Dark, TextAlign.Left, vc.End.X - 6 - vx);
+            if (!PhoneView.Full) return; // telefon w poziomie: bez karty „gdzie” (wiersze ustawień mówią to same)
+            var vc2 = p.Card(p.Section(vc.End.Y + 6, Loc.T("gdzie")), ViewWhereLines.Length);
+            for (var i = 0; i < ViewWhereLines.Length; i++)
+            {
+                if (i > 0) p.Divider(vc2, i);
+                p.Text(vx, p.RowY(vc2, i), ViewWhereLines[i], Ink.Dim, TextAlign.Left, vc2.End.X - 6 - vx);
+            }
             return;
         }
         if (_page == FiltersPage) // v0.21.53: filtry ekranu i tryby dla daltonistów

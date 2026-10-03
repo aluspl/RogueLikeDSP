@@ -15,6 +15,7 @@ namespace LifeLike.Game.Phone.Pages;
 /// sterowanie dotykiem (gesty + pasek / gałka), ręka paska akcji, wielkość tekstu, Jak grać, w trakcie budowy
 /// Zapisz i wyjdź oraz Porzuć budowę (z potwierdzeniem), wersja gry i link planbudowlany.online. v0.21.53: Filtr ekranu
 /// (lewo/prawo – kolejny odblokowany, Spacja – lista filtrów); gdy wiersze się nie mieszczą – jedna przewijana lista.
+/// v0.21.54: Widok mapy (Płaski / 3/4) i Efekty świetlne (wł. / wył.) – zmiana od razu widoczna na mapie.
 /// Strzałki: wiersz i wartość, Spacja: wykonaj; dotyk: wiersz albo przyciski -/+. Otwarcie nie zużywa tury.
 /// </summary>
 public sealed class SettingsPage : PhonePage
@@ -39,6 +40,7 @@ public sealed class SettingsPage : PhonePage
         _p = p;
         _rows.AddRange([SettingsRow.Music, SettingsRow.Sound, SettingsRow.Vibration, SettingsRow.Controls, SettingsRow.Hand, SettingsRow.Text]);
         if (d is not null) _rows.Add(SettingsRow.Filter); // v0.21.53: filtr ekranu
+        _rows.AddRange([SettingsRow.View, SettingsRow.Lights]); // v0.21.54: widok mapy i efekty świetlne
         _rows.Add(SettingsRow.Language); // v0.21.53 cz. 2 (#40): Polski / English
         _rows.Add(SettingsRow.Help);
         if (inRun) _rows.AddRange([SettingsRow.SaveExit, SettingsRow.Abandon]);
@@ -108,6 +110,8 @@ public sealed class SettingsPage : PhonePage
             case SettingsRow.Hand:
             case SettingsRow.Text:
             case SettingsRow.Language:
+            case SettingsRow.View:
+            case SettingsRow.Lights:
                 Toggle(row);
                 return;
             case SettingsRow.Filter: // lewo/prawo: kolejny odblokowany filtr
@@ -139,6 +143,12 @@ public sealed class SettingsPage : PhonePage
                 break;
             case SettingsRow.Text:
                 GameSettings.LargeText = !GameSettings.LargeText;
+                break;
+            case SettingsRow.View: // v0.21.54: mapa przerysowuje się od razu (WorldView.Reproject)
+                GameSettings.ThreeQuarter = !GameSettings.ThreeQuarter;
+                break;
+            case SettingsRow.Lights:
+                GameSettings.Lights = !GameSettings.Lights;
                 break;
             case SettingsRow.Language: // teksty interfejsu od razu, dane gry (nazwy, opisy) po powrocie na tytuł
                 Loc.English = !Loc.English;
@@ -263,6 +273,8 @@ public sealed class SettingsPage : PhonePage
         SettingsRow.Filter => (_d.FilterText("title"), _d.ScreenFilters[ScreenFilter.Resolve(_d, _p)].Short,
             ScreenFilter.Resolve(_d, _p) > 0 ? PillKind.Done : PillKind.Gray),
         SettingsRow.Language => (Loc.T("jezyk_language"), Loc.English ? "English" : "Polski", PillKind.Group),
+        SettingsRow.View => (Loc.T("widok_mapy"), GameSettings.ThreeQuarter ? Loc.T("widok_3_4") : Loc.T("widok_plaski"), GameSettings.ThreeQuarter ? PillKind.Brand : PillKind.Group),
+        SettingsRow.Lights => (Loc.T("efekty_swietlne"), GameSettings.Lights ? Loc.T("wl_4") : Loc.T("wyl"), GameSettings.Lights ? PillKind.Done : PillKind.Gray),
         SettingsRow.Help => (Loc.T("jak_grac"), "", PillKind.Gray),
         SettingsRow.SaveExit => (Loc.T("zapisz_i_wyjdz"), "", PillKind.Gray),
         SettingsRow.Abandon => (_confirm ? Loc.T("na_pewno_porzucic_jeszcze_raz") : Loc.T("porzuc_budowe"), _confirm ? Loc.T("tak") : "", PillKind.Late),

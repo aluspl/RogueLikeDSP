@@ -9336,6 +9336,15 @@
     "wyzwania": "wyzwania: {0}",
     "gra": "GRA",
     "jezyk_language": "Język / Language",
-    "kr_linia": "{0}, kr {1}-{2} {3}%"
+    "kr_linia": "{0}, kr {1}-{2} {3}%",
+    "widok_mapy": "Widok mapy",
+    "widok_plaski": "Płaski",
+    "widok_3_4": "3/4",
+    "efekty_swietlne": "Efekty świetlne",
+    "widok_i_swiatlo": "WIDOK I ŚWIATŁO",
+    "ustawienia_widok_mapy": "Ustawienia (klucz) > Widok mapy",
+    "ustawienia_efekty_swietlne": "Ustawienia (klucz) > Efekty świetlne",
+    "pomoc_widok_mapy": "Widok mapy: Płaski albo 3/4 (lekko z boku, cienie postaci). Ściany mają 1,5 pola; mur przed postacią, polem ciosu albo widoczną podłogą prześwituje. Stuknięcia i ruch po siatce jak zawsze.",
+    "pomoc_efekty_swietlne": "Efekty świetlne: latarka na kasku, odblaski kałuż, błyski iskier. Tylko wygląd; wyłącz, by oszczędzać baterię."
   }
 }
