@@ -82,10 +82,12 @@ public sealed class SmokeSecrets
         Flow.Profile.HandleInput(InputCmd.Of(GameAction.Select));
         if (tp.Title != 0) throw new Exception("tytuły: drugi Tab nie zdejmuje tytułu");
         tp.Badges = badges0;
-        Flow.Profile.HandleInput(InputCmd.Of(GameAction.A)); // v0.21.52 cz. b: Tytuły -> Inspektor -> Odznaki
+        Flow.Profile.HandleInput(InputCmd.Of(GameAction.A)); // v0.21.52 cz. b: Tytuły -> Inspektor -> (cz. c) Zadania -> Odznaki
         if (bt.Page != Phone.ProfileTabs.BadgesTab.InspectorPage) throw new Exception("inspektor: A na stronie Tytuły nie przechodzi do Inspektora");
         Flow.Profile.HandleInput(InputCmd.Of(GameAction.A));
-        if (bt.Page != 0) throw new Exception("sekrety: A na stronie Inspektor nie wraca do Odznak");
+        if (bt.Page != Phone.ProfileTabs.BadgesTab.TasksPage) throw new Exception("zadania: A na stronie Inspektor nie przechodzi do Zadań");
+        Flow.Profile.HandleInput(InputCmd.Of(GameAction.A));
+        if (bt.Page != 0) throw new Exception("sekrety: A na stronie Zadania nie wraca do Odznak");
         for (var c = 0; c < d.Classes.Length; c++)
         {
             if (Meta.ClassSecret(d, c) && Meta.ClassUnlocked(d, p, c)) throw new Exception($"sekrety: {d.Classes[c].Name} odblokowany od startu");
@@ -223,7 +225,7 @@ public sealed class SmokeSecrets
         Flow.Profile.Open(4, true);
         await DebugRunner.Frames(_app.Root, 1);
         if (_app.Nodes.Phone.Current is not TrainingTab tt) throw new Exception("sekrety: brak zakładki Koszty");
-        tt.Page = 1;
+        tt.Page = TrainingTab.RespectPage;
         tt.Select(ri);
         if (tt.BuyRespect() || Meta.RespectRank(d, p, ri) != 0) throw new Exception("sekrety: ranga Respektu kupiona przed sekretem");
         SecretStaging.Grant(d, p, d.Secrets[d.Respect[ri].Secret].Id);

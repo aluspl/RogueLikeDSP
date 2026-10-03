@@ -33,12 +33,14 @@ public sealed class DebugScenes
         "recap-progress", "titles", "looks", "inspector", "help-progress",
         "story-archive", "story-thread", "estate-grow", "help-meta",
         .. SecretStaging.Names,
+        .. GoalsStaging.Names,
     ];
 
     private readonly App _app;
     private readonly DemoStaging _stage;
     private readonly RecapStaging _recap;
     private readonly SecretStaging _secrets;
+    private readonly GoalsStaging _goals;
 
     public DebugScenes(App app)
     {
@@ -46,6 +48,7 @@ public sealed class DebugScenes
         _stage = new DemoStaging(app);
         _recap = new RecapStaging(app);
         _secrets = new SecretStaging(app);
+        _goals = new GoalsStaging(app);
     }
 
     private ScreenFlow Flow => _app.Flow;
@@ -53,7 +56,8 @@ public sealed class DebugScenes
     public static bool UsesDemoProfile(string scene) =>
         scene is "title" or "classselect" or "profile" or "catalog" or "estate" or "team" or "training" or "card" or "perks" or "investor"
             or "daily" or "death" or "respect" or "rewards" or "classselect-locked" or "stats-class" or "stats-tip" or "catalog-tags"
-            or "tutorial-unlock" or "tutorial-act0" or "dmg-class" or "dmg-stats" or "titles" or "looks" or "recap-progress" or "recap-end" or "inspector" || SecretStaging.UsesDemoProfile(scene);
+            or "tutorial-unlock" or "tutorial-act0" or "dmg-class" or "dmg-stats" or "titles" or "looks" or "recap-progress" or "recap-end" or "inspector"
+            || SecretStaging.UsesDemoProfile(scene) || GoalsStaging.Handles(scene);
 
     /// <summary>Sceny samouczka menu: profil bez obejrzanych dymków (inne sceny - samouczek już obejrzany).</summary>
     public static bool UsesTutorial(string scene) => scene.StartsWith("tutorial");
@@ -69,6 +73,11 @@ public sealed class DebugScenes
         if (SecretStaging.Handles(scene)) // v0.21.51 cz. 2: sekretne zlecenia
         {
             await _secrets.Setup(scene);
+            return;
+        }
+        if (GoalsStaging.Handles(scene)) // v0.21.52 cz. c: drzewko, kolekcje, zadania, seria dni
+        {
+            await _goals.Setup(scene);
             return;
         }
         switch (scene)
@@ -135,7 +144,7 @@ public sealed class DebugScenes
                 Flow.Profile.Open(4, true);
                 if (_app.Nodes.Phone.Current is Phone.ProfileTabs.TrainingTab tt)
                 {
-                    tt.Page = scene == "respect" ? 1 : 2;
+                    tt.Page = scene == "respect" ? Phone.ProfileTabs.TrainingTab.RespectPage : Phone.ProfileTabs.TrainingTab.RewardsPage;
                     tt.Select(scene == "respect" ? 5 : 3);
                 }
                 _app.Nodes.Phone.QueueRedraw();

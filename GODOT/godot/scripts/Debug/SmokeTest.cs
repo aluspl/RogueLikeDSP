@@ -36,6 +36,7 @@ public sealed class SmokeTest
     private bool _act0;
     private int _boons, _boonList;
     private bool _inputLock;
+    private string _goals = "";
 
     public SmokeTest(App app) => _app = app;
 
@@ -75,6 +76,7 @@ public sealed class SmokeTest
             await ExerciseDaily();
             await ExerciseWeeklyAndStory();
             await ExerciseRespectAndRewards();
+            await ExerciseGoals();
             var secrets = new SmokeSecrets(_app);
             await secrets.Run();
             _secrets = $"{secrets.Done} wykonane, banery {secrets.Banners}, zawody {secrets.Classes}";
@@ -90,7 +92,7 @@ public sealed class SmokeTest
             if (DrawErrors.Count > 0) throw new Exception($"błędy rysowania: {DrawErrors.Count}, ostatni: {DrawErrors.Last}");
             GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {s.Data.Version}, zawody {s.Data.Classes.Length}, etap {stage + 1}, " +
                      $"dzień {g.Turns}, HP {g.Hero.Hp}/{g.Hero.MaxHp}, wynik {g.Score}, budżet {g.Cash}, kroki {_steps}, " +
-                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, tydzień {(_weekly ? "tak" : "nie")}, podsumowanie {_recapRows} wierszy, fabuła {_story} wątków, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, rozpiska obrażeń {(_damage ? "tak" : "nie")}, samouczek {_tutorial} dymków + nowości {_unlocks}, Akt 0 {(_act0 ? "tak" : "nie")} (dokumenty {_docs}, druga faza {_phases}), premie {_boons} (lista {_boonList}, synergie {g.SynergyMask()}, blokada wejścia {(_inputLock ? "tak" : "nie")}), wydarzenia {_events} (ekran {(_extras ? "tak" : "nie")}), Jak grać {(_help ? "tak" : "nie")}, sekrety {_secrets}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
+                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, tydzień {(_weekly ? "tak" : "nie")}, podsumowanie {_recapRows} wierszy, fabuła {_story} wątków, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, rozpiska obrażeń {(_damage ? "tak" : "nie")}, samouczek {_tutorial} dymków + nowości {_unlocks}, Akt 0 {(_act0 ? "tak" : "nie")} (dokumenty {_docs}, druga faza {_phases}), premie {_boons} (lista {_boonList}, synergie {g.SynergyMask()}, blokada wejścia {(_inputLock ? "tak" : "nie")}), wydarzenia {_events} (ekran {(_extras ? "tak" : "nie")}), Jak grać {(_help ? "tak" : "nie")}, cele {_goals}, sekrety {_secrets}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
                      $"ekran {Flow.Current.GetType().Name}");
             _app.Root.GetTree().Quit(ok ? 0 : 1);
         }
@@ -304,7 +306,7 @@ public sealed class SmokeTest
                 if (Flow.Current != Flow.PrologueMessage) throw new Exception("prolog nie przeszedł do SMS-a");
                 Flow.PrologueMessage.HandleInput(InputCmd.Of(GameAction.Start));
                 if (Flow.Current != Flow.Help) throw new Exception("po prologu brak ekranu Jak grać");
-                for (var k = 0; k < 9 && Flow.Current == Flow.Help; k++) Flow.Help.HandleInput(InputCmd.Of(GameAction.A)); // 9 stron Jak grać (v0.21.52 cz. b)
+                for (var k = 0; k < 10 && Flow.Current == Flow.Help; k++) Flow.Help.HandleInput(InputCmd.Of(GameAction.A)); // 10 stron Jak grać (v0.21.52 cz. c)
                 if (Flow.Current == Flow.Help) throw new Exception("Jak grać: A nie przechodzi dalej");
                 if (!_app.Session.Profile.HasFlag(Profile.FlagPrologueSeen)) throw new Exception("prolog nie zapisał się w profilu");
                 _prologue = true;
@@ -729,7 +731,10 @@ public sealed class SmokeTest
         await DebugRunner.Frames(_app.Root, 2);
         if (_app.Nodes.Phone.Current is not TrainingTab tt) throw new Exception("brak zakładki Koszty");
         Flow.Profile.HandleInput(InputCmd.Of(GameAction.Select));
-        if (tt.Page != 1) throw new Exception("Tab w Kosztach nie otwiera strony Respekt");
+        if (tt.Page != TrainingTab.TreePage) throw new Exception("Tab w Kosztach nie otwiera strony Drzewko");
+        await SmokeTree(tt); // v0.21.52 cz. c: drzewko Szkoleń – wybór, zmiana za opłatą
+        Flow.Profile.HandleInput(InputCmd.Of(GameAction.Select));
+        if (tt.Page != TrainingTab.RespectPage) throw new Exception("Tab w Kosztach nie otwiera strony Respekt");
         p.Respect = (ushort)Math.Max((int)p.Respect, 500);
         var rank = Meta.RespectRank(d, p, 0);
         Flow.Profile.HandleInput(InputCmd.Of(GameAction.A));
@@ -737,7 +742,7 @@ public sealed class SmokeTest
         if (_respectBought != rank + 1) throw new Exception("zakup rangi Respektu nie zadziałał");
         Flow.Profile.HandleInput(InputCmd.Of(GameAction.Select));
         await DebugRunner.Frames(_app.Root, 2);
-        if (tt.Page != 2) throw new Exception("Tab nie otwiera strony Nagrody");
+        if (tt.Page != TrainingTab.RewardsPage) throw new Exception("Tab nie otwiera strony Nagrody");
         Flow.Profile.HandleInput(InputCmd.Of(GameAction.Select));
         Flow.Title.Open();
 
@@ -784,6 +789,72 @@ public sealed class SmokeTest
             _newClasses++;
         }
         Flow.Title.Open();
+        await DebugRunner.Frames(_app.Root, 2);
+    }
+
+    /// <summary>
+    /// v0.21.52 cz. c: zadania dnia z budów (dzień z systemu – tu stały), kolekcje z liczników, strony Katalogu (Kolekcje,
+    /// Bossowie, Album) i Odznaki > Zadania; seria dni z budowy dnia.
+    /// </summary>
+    private async Task ExerciseGoals()
+    {
+        var s = _app.Session;
+        var d = s.Data;
+        var p = s.Profile;
+        s.FixedToday = Tuple.Create(2026, 10, 3);
+        if (s.RollTasks() && p.TaskDay != s.TodayNumber) throw new Exception("zadania: nowy dzień się nie ustawił");
+        var killed = Enumerable.Range(0, d.Enemies.Length).Sum(e => (int)p.KillCount[e]);
+        if (killed == 0) throw new Exception("kolekcje: brak liczników po budowach");
+        Flow.Profile.Open(1, true);
+        await DebugRunner.Frames(_app.Root, 1);
+        if (_app.Nodes.Phone.Current is not CatalogTab ct) throw new Exception("brak zakładki Katalog");
+        for (var k = 1; k <= 3; ++k)
+        {
+            Flow.Profile.HandleInput(InputCmd.Of(GameAction.A));
+            await DebugRunner.Frames(_app.Root, 1);
+            if (ct.Page != k) throw new Exception($"Katalog: Spacja nie otwiera strony {k}");
+        }
+        Flow.Profile.HandleInput(InputCmd.Of(GameAction.A));
+        Flow.Profile.Open(0, true);
+        await DebugRunner.Frames(_app.Root, 1);
+        if (_app.Nodes.Phone.Current is not BadgesTab bt) throw new Exception("brak zakładki Odznaki");
+        bt.Page = BadgesTab.TasksPage;
+        for (var k = 0; k < 5; ++k) Flow.Profile.HandleInput(InputCmd.Of(GameAction.Down));
+        await DebugRunner.Frames(_app.Root, 2);
+        Flow.Title.Open();
+        var before = p.StreakBest;
+        Daily.Record(d, p, s.TodayNumber - 1, 100, false);
+        Daily.Record(d, p, s.TodayNumber, 100, false);
+        if (p.Streak < 2 || p.StreakBest < System.Math.Max(2, (int)before)) throw new Exception("seria dni: dwa kolejne dni nie dały serii 2");
+        _goals = $"zadania {DailyTasks.DoneToday(p)}/{DailyTasks.DailySlots}, pokonane {killed}, komplety {CollectionBook.Done(d, p)}, seria {p.Streak}";
+        s.FixedToday = null;
+    }
+
+    /// <summary>
+    /// v0.21.52 cz. c: drzewko – pień gałęzi do pierwszego węzła, wybór opcji A (Spacja), zmiana na B za opłatę;
+    /// zamknięty węzeł się nie wybiera.
+    /// </summary>
+    private async Task SmokeTree(TrainingTab tt)
+    {
+        var d = _app.Session.Data;
+        var p = _app.Session.Profile;
+        p.Xp = Math.Max(p.Xp, 2000);
+        var n0 = d.TreeNodes[0];
+        tt.SelectNode(n0.Branch, 2); // węzeł II – jeszcze zamknięty
+        Flow.Profile.HandleInput(InputCmd.Of(GameAction.A));
+        if (SkillTree.Pick(p, 1) != 0) throw new Exception("drzewko: zamknięty węzeł się wybrał");
+        for (var i = 0; i < d.Upgrades.Length && SkillTree.BranchLevels(d, p, n0.Branch) < n0.Depth; ++i)
+        {
+            if (SkillTree.BranchOf(d, i) != n0.Branch) continue;
+            while (SkillTree.BranchLevels(d, p, n0.Branch) < n0.Depth && Meta.BuyUpgrade(d, p, i)) { }
+        }
+        tt.SelectNode(n0.Branch, 0);
+        Flow.Profile.HandleInput(InputCmd.Of(GameAction.A));
+        if (SkillTree.Pick(p, 0) != 1) throw new Exception("drzewko: Spacja nie wybrała opcji A");
+        Flow.Profile.HandleInput(InputCmd.Of(GameAction.Down));
+        var xp = p.Xp;
+        Flow.Profile.HandleInput(InputCmd.Of(GameAction.A));
+        if (SkillTree.Pick(p, 0) != 2 || p.Xp != xp - d.TreeRespecCost) throw new Exception("drzewko: zmiana na opcję B bez opłaty");
         await DebugRunner.Frames(_app.Root, 2);
     }
 
@@ -1046,12 +1117,12 @@ public sealed class SmokeTest
         if (Flow.Current != Flow.ClassSelect) throw new Exception("statystyki: B nie wraca na wybór zawodu");
         _stats = true;
         Flow.Help.Open(true, true);
-        for (var k = 0; k < 9; k++) // 9 stron: v0.21.50 cz. 4 - po budowie, tydzień, fabuła; v0.21.51 cz. 2 - sekrety; v0.21.52 cz. b - inspektor
+        for (var k = 0; k < 10; k++) // 10 stron: v0.21.50 cz. 4 - po budowie, tydzień, fabuła; v0.21.51 cz. 2 - sekrety; v0.21.52 cz. b - inspektor, cz. c - cele
         {
             await DebugRunner.Frames(_app.Root, 1);
             Flow.Help.HandleInput(InputCmd.Of(GameAction.A));
         }
-        if (Flow.Current != Flow.Title) throw new Exception("Jak grać: po 9 stronach brak powrotu na tytuł");
+        if (Flow.Current != Flow.Title) throw new Exception("Jak grać: po 10 stronach brak powrotu na tytuł");
         _help = true;
     }
 

@@ -111,7 +111,7 @@ public sealed class SecretStaging
                 Flow.Profile.Open(4, true);
                 if (_app.Nodes.Phone.Current is Phone.ProfileTabs.TrainingTab tt)
                 {
-                    tt.Page = 1;
+                    tt.Page = Phone.ProfileTabs.TrainingTab.RespectPage;
                     tt.Select(Array.FindIndex(d.Respect, r => r.Secret >= 0));
                 }
                 _app.Nodes.Phone.QueueRedraw();
