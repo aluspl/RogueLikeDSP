@@ -30,9 +30,10 @@ public sealed class ProfileScreen : Screen
         Flow.Title.Populate();
         var d = S.Data;
         var p = S.Profile;
+        if (S.RollTasks()) S.Save(); // v0.21.52 cz. c: zadania nowego dnia / tygodnia
         PhonePage[] tabs =
         [
-            new BadgesTab(d, p) { Saved = S.Save },
+            new BadgesTab(d, p) { Saved = S.Save, Today = S.TodayNumber },
             new CatalogTab(d, p),
             new EstateTab(d, p, S.Save),
             new TeamTab(d, p),

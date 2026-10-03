@@ -93,6 +93,27 @@ public sealed class GameSession
     public int LastStakeBefore { get; private set; }
     public int LastStakeAfter { get; private set; }
 
+    /// <summary>
+    /// v0.21.52 cz. c: zadania dnia / tygodnia wykonane na końcu budowy (bity), komplety kolekcji (bity), wykonane zadania
+    /// łącznie przed budową i najdłuższa seria dni przed / po (banery na planszy końcowej).
+    /// </summary>
+    public int LastTasks { get; private set; }
+    public int LastCollections { get; private set; }
+    public int LastTasksBefore { get; private set; }
+    public int LastStreakBefore { get; private set; }
+    public int LastStreakAfter { get; private set; }
+
+    /// <summary>v0.21.52 cz. c: zadania nowego dnia / tygodnia (data z systemu); true = zmieniono (zapisz profil).</summary>
+    public bool RollTasks() => DailyTasks.Roll(Profile, TodayNumber, TodayWeek);
+
+    /// <summary>Postęp zadań z budowy (koniec etapu / budowy, porzucenie) i komplety kolekcji – jak bank_tasks + check_collections na GBA.</summary>
+    private (int Tasks, int Collections, int TasksBefore) BankGoals()
+    {
+        var before = Profile.TasksTotal;
+        var tasks = DailyTasks.Bank(Data, Profile, Game, TodayNumber, TodayWeek);
+        return (tasks, CollectionBook.Check(Data, Profile), before);
+    }
+
     /// <summary>Rady kierownika z game.json (ekran harmonogramu).</summary>
     public string[] Tips { get; set; } = [];
 
@@ -147,6 +168,7 @@ public sealed class GameSession
         var progress = CheckProgress();
         LastGained = Meta.BankXp(Profile, Game);
         LastProgress = Progress.Bank(Data, Profile, Game); // v0.21.52 cz. b: inspektor i mistrzostwo
+        BankGoals(); // cz. c: zadania, kolekcje
         Save();
         ClearRun();
         Note = $"Budowa porzucona: +{LastGained} dośw." + (progress.Length > 0 ? " " + progress : "");
@@ -236,6 +258,8 @@ public sealed class GameSession
             Events.RaiseStageCleared();
             Note = CheckProgress();
             Events.RaiseRespectGained(g.StageRespect(), Profile.Respect);
+            var (tasks, coll, before) = BankGoals(); // v0.21.52 cz. c: zadania dnia / tygodnia i kolekcje – na bieżąco
+            Events.RaiseGoals(tasks, coll, before);
             if (g.Score > Profile.Best) Profile.Best = g.Score;
             Meta.BankXp(Profile, g);
             Save();
@@ -246,7 +270,9 @@ public sealed class GameSession
             var won = g.St == GameStatus.Won;
             PrevBest = Profile.Best;
             if (g.Score > Profile.Best) Profile.Best = g.Score;
+            LastStreakBefore = Profile.StreakBest; // v0.21.52 cz. c: seria dni – nagrody za nowy rekord serii
             DailyRecord = g.Daily && Daily.Record(Data, Profile, g.DailyDay, g.Score, won);
+            LastStreakAfter = Profile.StreakBest;
             LastReward = won ? Meta.RecordWin(Data, Profile) : -1;   // nagroda za odbiór: każda wygrana odblokowuje kolejną
             if (won) Meta.AddHouse(Profile, g);
             LastStakeBefore = Progress.StakeRank(Data, Profile); // v0.21.52 cz. b: stopnie inwestora przed rekordem stawki
@@ -258,6 +284,7 @@ public sealed class GameSession
             WeeklyRecord = g.WeeklyWeek != 0 && Weekly.Record(Data, Profile, g.WeeklyWeek, g.Score, won); // wyzwanie tygodnia (#34)
             LastProgress = Progress.Bank(Data, Profile, g); // v0.21.52 cz. b: poziom inspektora i mistrzostwo (przed fabułą)
             LastStakeAfter = Progress.StakeRank(Data, Profile);
+            (LastTasks, LastCollections, LastTasksBefore) = BankGoals(); // cz. c: zadania dnia / tygodnia, kolekcje
             LastStory = Story.Check(Data, Profile, g); // fabuła (#35): nowe wątki SMS za kamienie milowe (też od inspektora)
             Save();
             ClearRun();

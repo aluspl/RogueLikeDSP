@@ -33,6 +33,8 @@ public sealed class EndScreen : Screen
         N.Banners.Clear();
         foreach (var (title, body) in ProgressBanners.Of(S.Data, S.LastProgress, S.LastStakeBefore, S.LastStakeAfter))
             N.Banners.Push(new PushBanner { Title = title, Body = body, Gold = true }); // v0.21.52 cz. b: nowe poziomy
+        foreach (var (title, body) in GoalBanners.Of(S.Data, S.Profile, S.LastTasks, S.LastCollections, S.LastTasksBefore, S.LastStreakBefore, S.LastStreakAfter))
+            N.Banners.Push(new PushBanner { Title = title, Body = body, Gold = true }); // cz. c: zadania, kolekcje, seria dni
         var stories = 0; // fabuła (#35): nowe wątki w Wiadomościach (Profil > Osiedle); więcej niż 2 – jeden zbiorczy baner
         for (var i = 0; i < S.Data.StoryArc.Length; i++) stories += (int)((S.LastStory >> i) & 1);
         for (var i = 0; i < S.Data.StoryArc.Length && stories <= 2; i++)

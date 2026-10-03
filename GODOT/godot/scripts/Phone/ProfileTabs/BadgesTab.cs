@@ -15,14 +15,17 @@ namespace LifeLike.Game.Phone.ProfileTabs;
 /// Tytuły (v0.21.52, #43): tytuły z odznak i zleceń – Tab / „Wybierz” (SELECT na GBA) albo drugie stuknięcie wybiera
 /// tytuł widoczny w profilu i na końcu budowy. v0.21.52 cz. b: tytuły z poziomu inspektora i stopni inwestora; strona
 /// Inspektor (#44) – poziomy z nagrodami (Masz / postęp bieżącego / Poz. N), opis: dośw. do kolejnego poziomu.
+/// v0.21.52 cz. c: strona Zadania – 3 zadania dnia i 2 tygodnia (data z systemu) z postępem, nagroda, wykonane łącznie
+/// i seria dni budowy dnia z kolejną nagrodą.
 /// </summary>
 public sealed class BadgesTab : PhonePage
 {
     private const int Window = 7;
-    private static readonly string[] Pages = ["Odznaki", "Zlecenia", "Pamiątki", "Sekrety", "Tytuły", "Inspektor"];
+    private static readonly string[] Pages = ["Odznaki", "Zlecenia", "Pamiątki", "Sekrety", "Tytuły", "Inspektor", "Zadania"];
     public const int SecretsPage = 3;
     public const int TitlesPage = 4;
     public const int InspectorPage = 5;
+    public const int TasksPage = 6;
     private readonly GameData _d;
     private readonly Profile _p;
     private readonly ListState _list = new();
@@ -42,6 +45,7 @@ public sealed class BadgesTab : PhonePage
         get
         {
             var total = Count;
+            if (_page == TasksPage) return $"Dnia {DailyTasks.DoneToday(_p)}/{DailyTasks.DailySlots}";
             var n = _page == InspectorPage ? Progress.InspectorLevel(_d, _p)
                   : _page == TitlesPage ? Titles.OwnedCount(_d, _p)
                   : _page == SecretsPage ? Secrets.DoneCount(_d, _p)
@@ -99,7 +103,10 @@ public sealed class BadgesTab : PhonePage
     /// <summary>Zapis profilu po wyborze tytułu (ustawia ekran profilu).</summary>
     public System.Action Saved { get; set; }
 
-    private int Count => _page == InspectorPage ? _d.InspectorLevels.Length : _page == TitlesPage ? Titles.Count(_d) : _page == SecretsPage ? _d.Secrets.Length : _page == 2 ? _d.Keepsakes.Length : _page == 1 ? _d.Contracts.Length : _d.Badges.Length;
+    /// <summary>Dzisiejszy dzień budowy dnia (seria dni) – ustawia ekran profilu (data z systemu).</summary>
+    public int Today { get; set; }
+
+    private int Count => _page == TasksPage ? DailyTasks.Slots : _page == InspectorPage ? _d.InspectorLevels.Length : _page == TitlesPage ? Titles.Count(_d) : _page == SecretsPage ? _d.Secrets.Length : _page == 2 ? _d.Keepsakes.Length : _page == 1 ? _d.Contracts.Length : _d.Badges.Length;
 
     public override bool Input(InputCmd e)
     {
@@ -142,6 +149,15 @@ public sealed class BadgesTab : PhonePage
             string name, pill;
             PillKind kind;
             bool on;
+            if (_page == TasksPage) // v0.21.52 cz. c: zadanie dnia / tygodnia z postępem
+            {
+                var td = DailyTasks.Of(_d, _p, i);
+                var done = DailyTasks.Done(_p, i);
+                var prog = DailyTasks.ProgressLive(_d, _p, null, i);
+                var tpw = p.Pill(right, y, done ? "Gotowe" : $"{prog}/{td.Target}", done ? PillKind.Done : prog > 0 ? PillKind.Prog : PillKind.Gray);
+                p.Text(tx, y, (i >= DailyTasks.DailySlots ? "Tydzień: " : "") + td.Name, sel ? Ink.Brand : done ? Ink.Done : Ink.Dark, TextAlign.Left, right - tpw - 4 - tx);
+                continue;
+            }
             if (_page == InspectorPage) // v0.21.52 cz. b: poziom i nagroda
             {
                 var lv = Progress.InspectorLevel(_d, _p);
@@ -213,9 +229,31 @@ public sealed class BadgesTab : PhonePage
         p.Text(tx, p.RowY(dc, 2), extra, ink, TextAlign.Left, right - tx);
     }
 
+    /// <summary>Krótka nagroda za próg (zadania łącznie, seria dni): „Respekt +15”, nazwa kasku / pamiątki, „tytuł X”.</summary>
+    private string GoalLabel(ProgressLevel l) => l.Reward switch
+    {
+        ProgressReward.Respect => $"Respekt +{l.Value}",
+        ProgressReward.Title => $"tytuł {l.Title}",
+        ProgressReward.Helmet => _d.Cosmetics[l.Index].Name,
+        ProgressReward.Keepsake => _d.Keepsakes[l.Index].Name,
+        _ => "",
+    };
+
     /// <summary>Opis zaznaczonej pozycji: (opis, wiersz premii / nagrody / rangi, jego kolor).</summary>
     private (string, string, Ink) Describe(int i)
     {
+        if (_page == TasksPage)
+        {
+            var td = DailyTasks.Of(_d, _p, i);
+            var nr = DailyTasks.NextReward(_d, _p);
+            var head = $"{(i < DailyTasks.DailySlots ? "Zadanie dnia" : "Zadanie tygodnia")}: +{td.Respect} Respektu. Wykonane łącznie: {_p.TasksTotal}"
+                       + (nr >= 0 ? $", za {_d.TaskRewards[nr].Xp}: {GoalLabel(_d.TaskRewards[nr])}." : ".");
+            var ns = DayStreak.NextReward(_d, _p);
+            var streak = DayStreak.Now(_p, Today);
+            var extra = ns >= 0 ? $"Seria {streak}/{_d.StreakRewards[ns].Xp} dni budowy dnia: {GoalLabel(_d.StreakRewards[ns])}"
+                                : $"Seria {streak} dni budowy dnia (rekord {_p.StreakBest})";
+            return (head, extra, Ink.Brand);
+        }
         if (_page == InspectorPage)
         {
             var lv = Progress.InspectorLevel(_d, _p);
@@ -228,7 +266,14 @@ public sealed class BadgesTab : PhonePage
         {
             var pt = _d.ProgressTitles[i - Titles.ProgressFrom(_d)];
             var psel = Titles.Selected(_d, _p);
-            var src = pt.Source == 0 ? $"Poziom inspektora {pt.Level} (dośw. z każdej budowy)." : $"Stopień inwestora: wygraj ze stawką {pt.Level}.";
+            var src = pt.Source switch
+            {
+                0 => $"Poziom inspektora {pt.Level} (dośw. z każdej budowy).",
+                1 => $"Stopień inwestora: wygraj ze stawką {pt.Level}.",
+                2 => $"Kolekcja „{_d.Collections[pt.Level - 1].Name}” w komplecie (Katalog > Kolekcje).", // v0.21.52 cz. c
+                3 => $"Seria {pt.Level} dni budowy dnia.",
+                _ => $"{pt.Level} wykonanych zadań dnia i tygodnia.",
+            };
             var pextra = psel >= 0 ? "Twój tytuł: " + Titles.Name(_d, psel) : Titles.Owned(_d, _p, i) ? "Wybierz: Tab / „Wybierz”" : "Bez tytułu";
             return (src, pextra, psel >= 0 ? Ink.Done : Ink.Brand);
         }
@@ -259,6 +304,7 @@ public sealed class BadgesTab : PhonePage
             string how;
             if (!unl)
                 how = kd.Badge >= 0 ? "Odznaka: " + _d.Badges[kd.Badge].Name
+                    : kd.Streak > 0 ? $"Seria {kd.Streak} dni budowy dnia"
                     : "Zlecenie: " + (_d.Contracts.FirstOrDefault(c => c.Keepsake == i)?.Name ?? "?");
             else if (rank < 3) how = $"Ranga {UiText.Roman(rank)} po {_d.KeepsakeRankRuns[rank - 1]} bud. (ma {_p.KeepsakeRuns[i]})";
             else how = "Ranga maksymalna";

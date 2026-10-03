@@ -61,7 +61,20 @@ public sealed class CostsTab : PhonePage
             p.Text(tx, r, "Wszystkie zlecenia wykonane", Ink.Done);
         }
 
-        y = p.Section(c1.End.Y + 4, "SZKOLENIA");
+        y = p.Section(c1.End.Y + 4, "ZADANIE DNIA"); // v0.21.52 cz. c: najbliższe zadanie dnia / tygodnia, postęp na żywo
+        var ct = p.Card(y, 1);
+        var ts = DailyTasks.Next(d, _p, _g);
+        r = p.RowY(ct, 0);
+        if (ts >= 0)
+        {
+            var td = DailyTasks.Of(d, _p, ts);
+            p.Stripe(ct, 0, Pal.Brand);
+            var tw = p.Pill(right, r, $"{DailyTasks.ProgressLive(d, _p, _g, ts)}/{td.Target}", PillKind.Prog);
+            p.Text(tx, r, (ts < DailyTasks.DailySlots ? "" : "Tydzień: ") + td.Name, Ink.Dark, TextAlign.Left, right - tw - 4 - tx);
+        }
+        else p.Text(tx, r, "Zadania na dziś wykonane", Ink.Done);
+
+        y = p.Section(ct.End.Y + 4, "SZKOLENIA");
         var c2 = p.Card(y, 1);
         p.Text(p.TextX(c2), p.RowY(c2, 0), "Kupisz po budowie (profil: Koszty, Tab: Respekt)", Ink.Dim, TextAlign.Left, right - p.TextX(c2));
     }

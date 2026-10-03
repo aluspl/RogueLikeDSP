@@ -27,6 +27,9 @@ public partial class TitleView : Control, Touch.ITapTargets
     public int InspLevel { get; set; } = -1;
     public float InspFill { get; set; }
     public bool InspMax { get; set; }
+    /// <summary>v0.21.52 cz. c: zadania dnia („Zadania 1/3”) i seria dni pod rekordem ("" = ukryte).</summary>
+    public string Goals { get; set; } = "";
+    public string Streak { get; set; } = "";
 
     private float _clock;
     private readonly List<Rect2> _items = new();
@@ -109,6 +112,8 @@ public partial class TitleView : Control, Touch.ITapTargets
         }
         var recordX = safe.End.X - Hud.SettingsButton.Side - 10;
         if (Best > 0) f.Draw(this, new Vector2(recordX, top), $"Rekord: {Best}", Ink.OnBrand, TextAlign.Right);
+        if (Goals.Length > 0) f.Draw(this, new Vector2(recordX, top + PixelFont.LineHeight + 2), Goals, Ink.OnBrand, TextAlign.Right);
+        if (Streak.Length > 0) f.Draw(this, new Vector2(recordX, top + 2 * (PixelFont.LineHeight + 2)), Streak, Ink.OnBrand, TextAlign.Right);
 
         // menu: przyciski (pionowo szerokie i wysokie jak cele dotyku), poziomo jak na GBA
         _items.Clear();

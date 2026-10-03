@@ -29,6 +29,11 @@ public sealed class BannerFeed
         ev.BossSpotted += def => _banners.Push("Przypisano Ci usterkę", _s.Data.Enemies[def].Name, PhoneTabs.Issues);
         ev.StageCleared += OnStageCleared;
         ev.Achievements += OnAchievements;
+        ev.Goals += (tasks, coll, before) => // v0.21.52 cz. c: zadania dnia / tygodnia, komplety kolekcji
+        {
+            foreach (var (title, body) in GoalBanners.Of(_s.Data, _s.Profile, tasks, coll, before))
+                _banners.Push(new PushBanner { Title = title, Body = body, Gold = true });
+        };
         ev.RespectGained += (gained, total) => _banners.Push($"Respekt +{gained}", $"Razem: {total} (Koszty)", PhoneTabs.Costs);
         ev.RewardUnlocked += i => _banners.Push("Nagroda: " + _s.Data.Rewards[i].Name, _s.Data.Rewards[i].Desc, PhoneTabs.Start);
         ev.SecondChance += () => _banners.Push("Druga szansa!", "Zostaje 1 HP - uważaj", PhoneTabs.Start);

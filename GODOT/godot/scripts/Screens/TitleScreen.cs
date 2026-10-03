@@ -77,6 +77,10 @@ public sealed class TitleScreen : Screen
         v.InspLevel = p.Runs > 0 || p.InspectorXp > 0 ? Progress.InspectorLevel(S.Data, p) : -1;
         v.InspFill = need > 0 ? cur / (float)need : 1f;
         v.InspMax = need == 0;
+        if (S.RollTasks()) S.Save(); // v0.21.52 cz. c: zadania dnia (data z systemu) i seria dni pod rekordem
+        var streak = DayStreak.Now(p, S.TodayNumber);
+        v.Goals = p.Runs > 0 ? $"Zadania {DailyTasks.DoneToday(p)}/{DailyTasks.DailySlots}" : "";
+        v.Streak = p.Runs > 0 && streak > 0 ? $"Seria {streak} {(streak == 1 ? "dzień" : "dni")}" : "";
     }
 
     public override bool HandleInput(InputCmd e)

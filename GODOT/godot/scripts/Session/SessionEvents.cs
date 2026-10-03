@@ -30,6 +30,8 @@ public sealed class SessionEvents
     public event Action<bool> RunEnded;
     /// <summary>Nowe odznaki i wykonane zlecenia (maski bitowe).</summary>
     public event Action<int, int, int> Achievements;
+    /// <summary>v0.21.52 cz. c: koniec etapu – zadania wykonane teraz (bity), komplety kolekcji (bity), zadania łącznie przed.</summary>
+    public event Action<int, int, int> Goals;
     /// <summary>Respekt za ukończony etap (zdobyty, razem w profilu) - już w profilu.</summary>
     public event Action<int, int> RespectGained;
     /// <summary>Wygrana odblokowała nagrodę za odbiór (indeks w GameData.Rewards).</summary>
@@ -52,6 +54,7 @@ public sealed class SessionEvents
     public void RaiseStageCleared() => StageCleared?.Invoke();
     public void RaiseRunEnded(bool won) => RunEnded?.Invoke(won);
     public void RaiseAchievements(int badges, int contracts, int secrets = 0) => Achievements?.Invoke(badges, contracts, secrets);
+    public void RaiseGoals(int tasks, int collections, int tasksBefore) => Goals?.Invoke(tasks, collections, tasksBefore);
     public void RaiseRespectGained(int gained, int total) => RespectGained?.Invoke(gained, total);
     public void RaiseRewardUnlocked(int index) => RewardUnlocked?.Invoke(index);
     public void RaiseSecondChance() => SecondChance?.Invoke();

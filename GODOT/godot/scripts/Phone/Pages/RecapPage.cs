@@ -138,6 +138,7 @@ public sealed class RecapPage : PhonePage
         1 => "Zawód: " + d.Classes[i].Name,
         2 => d.Weapons[d.Tools[i].Weapon].Name,
         3 => "Brygada: " + d.Brigade[i].Name,
+        5 => "Drzewko: " + d.TreeBranches[d.TreeNodes[i].Branch].Name, // v0.21.52 cz. c
         _ => "Trudność: " + d.Difficulties[^1].Name,
     };
 

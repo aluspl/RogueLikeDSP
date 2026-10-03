@@ -35,7 +35,16 @@ public sealed class HelpPage : PhonePage
         ("Okna", "dotknij = zaznacz; Wybierz: prawo, Wróć: lewo"),   // v0.21.51: ten sam układ w każdym oknie
     ];
 
-    private const int Pages = 9; // v0.21.52 cz. b: strona 9 – poziom inspektora i mistrzostwo zawodu
+    private const int Pages = 10; // v0.21.52 cz. b: strona 9 – inspektor i mistrzostwo; cz. c: strona 10 – drzewko, kolekcje, zadania, seria
+
+    /// <summary>v0.21.52 cz. c: gdzie drzewko, kolekcje, zadania dnia i seria dni.</summary>
+    private static readonly string[] GoalsWhereLines =
+    [
+        "Profil > Koszty > Tab: Drzewko",
+        "Profil > Katalog > Spacja: Kolekcje",
+        "Profil > Odznaki > Zadania",
+        "Seria: budowa dnia w kolejne dni",
+    ];
     private readonly GameData _d;
     private int _page;
 
@@ -91,6 +100,21 @@ public sealed class HelpPage : PhonePage
         if (_page == 4)
         {
             DrawList(p, "KOMBINACJE STANÓW", ComboLines(_d), "SKĄD STANY, PREMIE, ELITY", ComboWhereLines(_d));
+            return;
+        }
+        if (_page == 9) // v0.21.52 cz. c: drzewko Szkoleń, kolekcje, zadania dnia i tygodnia, seria dni
+        {
+            var gwidth = (int)(p.Right - 6 - p.Left - 12);
+            var glines = p.F.Wrap(string.Join(" ", _d.GoalsHelpLines), gwidth);
+            var gc = p.Card(p.Section(p.Top, "DRZEWKO, KOLEKCJE, ZADANIA"), glines.Count);
+            var gx = p.TextX(gc);
+            for (var i = 0; i < glines.Count; i++) p.Text(gx, p.RowY(gc, i), glines[i], Ink.Dark, TextAlign.Left, gc.End.X - 6 - gx);
+            var gc2 = p.Card(p.Section(gc.End.Y + 6, "GDZIE"), GoalsWhereLines.Length);
+            for (var i = 0; i < GoalsWhereLines.Length; i++)
+            {
+                if (i > 0) p.Divider(gc2, i);
+                p.Text(gx, p.RowY(gc2, i), ButtonNames.Localize(GoalsWhereLines[i]), Ink.Dim, TextAlign.Left, gc2.End.X - 6 - gx);
+            }
             return;
         }
         if (_page == 8) // v0.21.52 cz. b: poziom inspektora (#44), mistrzostwo zawodu (#45), stopnie inwestora (#48)

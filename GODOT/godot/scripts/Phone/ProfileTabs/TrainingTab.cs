@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using Godot;
@@ -12,8 +13,9 @@ namespace LifeLike.Game.Phone.ProfileTabs;
 /// <summary>
 /// Koszty (zakładka 4 profilu na GBA) ze stronami przełączanymi Tab (SELECT na GBA) albo przyciskiem strony na dotyku:
 /// Szkolenia - „Pozostało” doświadczenia, lista ulepszeń, zablokowanych zawodów, narzędzi, fachowców brygady
-/// i najwyższej trudności; Respekt - stałe premie z rangami za Respekt z ukończonych etapów; Nagrody - nagrody za odbiór
-/// (każda wygrana odblokowuje kolejną). Spacja/Enter kupuje (jak A na GBA).
+/// i najwyższej trudności; Drzewko (v0.21.52 cz. c) - 3 gałęzie (Fach, BHP, Logistyka): pień = Szkolenia gałęzi,
+/// w węzłach wybór 1 z 2 (strzałki, Spacja / stuknięcie wybiera, zmiana za opłatą); Respekt - stałe premie z rangami za
+/// Respekt z ukończonych etapów; Nagrody - nagrody za odbiór (każda wygrana odblokowuje kolejną). Spacja/Enter kupuje.
 /// </summary>
 public sealed class TrainingTab : PhonePage
 {
@@ -25,8 +27,12 @@ public sealed class TrainingTab : PhonePage
     private readonly ListState _list = new();
     private readonly List<(TrainingKind K, int I)> _entries = new();
     private string _note = "";
-    private static readonly string[] Pages = ["Szkolenia", "Respekt", "Nagrody"];
+    private static readonly string[] Pages = ["Szkolenia", "Drzewko", "Respekt", "Nagrody"];
+    public const int TreePage = 1;
+    public const int RespectPage = 2;
+    public const int RewardsPage = 3;
     private int _page;
+    private int _tcol, _trow; // drzewko: gałąź i wiersz (węzeł I / II, opcja A / B)
 
     public TrainingTab(GameData d, Profile p, Action saved)
     {
@@ -37,24 +43,39 @@ public sealed class TrainingTab : PhonePage
     }
 
     public override string Title => Pages[_page];
-    public override string Sub => _page == 2 ? $"Wygrane {_p.Wins}" : "Koszty";
-    public override string Hint => _page == 2 ? $"Tab: {Pages[0]}  Q/E: zakładki  Esc: wróć"
+    public override string Sub => _page == RewardsPage ? $"Wygrane {_p.Wins}" : _page == TreePage ? $"{_p.Xp} dośw." : "Koszty";
+    public override string Hint => _page == RewardsPage ? $"Tab: {Pages[0]}  Q/E: zakładki  Esc: wróć"
+                                   : _page == TreePage ? $"Strzałki: węzeł  Spacja: wybierz  Tab: {Pages[_page + 1]}"
                                    : $"Spacja: kup  Tab: {Pages[_page + 1]}  Q/E: zakładki";
-    public override PageAction[] Actions => _page == 2 ? [new(Pages[0] + " >", GameAction.Select)]
+    public override PageAction[] Actions => _page == RewardsPage ? [new(Pages[0] + " >", GameAction.Select)]
+                                            : _page == TreePage ? [new("Wybierz", GameAction.A), new(Pages[_page + 1] + " >", GameAction.Select)]
                                             : [new("Kup", GameAction.A), new(Pages[_page + 1] + " >", GameAction.Select)];
 
     public override bool TapRow(int index)
     {
-        if (index == _list.Sel && _page < 2) Buy();
+        if (_page == TreePage) // drzewko: stuknięcie zaznacza węzeł, drugie wybiera
+        {
+            int col = index / 4, row = index % 4;
+            if (col == _tcol && row == _trow) Choose();
+            else
+            {
+                _tcol = col;
+                _trow = row;
+                _note = "";
+            }
+            return true;
+        }
+        if (index == _list.Sel && _page < TreePage) Buy();
+        else if (index == _list.Sel && _page == RespectPage) BuyRespect();
         else _note = "";
         _list.Sel = index;
         return true;
     }
 
     /// <summary>Liczba wierszy bieżącej strony.</summary>
-    public int Count => _page == 2 ? _d.Rewards.Length : _page == 1 ? _d.Respect.Length : _entries.Count;
+    public int Count => _page == RewardsPage ? _d.Rewards.Length : _page == RespectPage ? _d.Respect.Length : _page == TreePage ? 0 : _entries.Count;
 
-    /// <summary>Strona: 0 Szkolenia, 1 Respekt, 2 Nagrody (test dymny, sceny zrzutów).</summary>
+    /// <summary>Strona: 0 Szkolenia, 1 Drzewko, 2 Respekt, 3 Nagrody (test dymny, sceny zrzutów).</summary>
     public int Page
     {
         get => _page;
@@ -136,11 +157,48 @@ public sealed class TrainingTab : PhonePage
         return lv > 0 ? $"{next} (teraz: {Meta.UpgradeSummary(_d, i, lv)})" : $"{next} – {u.Desc}";
     }
 
+    /// <summary>Drzewko: zaznacz węzeł (gałąź, wiersz 0-3: węzeł I A/B, węzeł II A/B) – test dymny, sceny zrzutów.</summary>
+    public void SelectNode(int col, int row)
+    {
+        _tcol = Math.Clamp(col, 0, _d.TreeBranches.Length - 1);
+        _trow = Math.Clamp(row, 0, 3);
+        _note = "";
+    }
+
+    /// <summary>Węzeł drzewka w gałęzi b na poziomie tier (0 = I, 1 = II); -1 = brak.</summary>
+    private int NodeOf(int b, int tier)
+    {
+        var k = 0;
+        for (var n = 0; n < _d.TreeNodes.Length; ++n)
+        {
+            if (_d.TreeNodes[n].Branch == b && k++ == tier) return n;
+        }
+        return -1;
+    }
+
+    /// <summary>Drzewko: wybierz zaznaczoną opcję (pierwszy wybór albo zmiana za opłatą).</summary>
+    public bool Choose()
+    {
+        var n = NodeOf(_tcol, _trow / 2);
+        if (n < 0) return false;
+        var o = _trow % 2;
+        if (SkillTree.Choose(_d, _p, n, o))
+        {
+            Sfx.Play("buy");
+            _note = "Wybrane!";
+            _saved?.Invoke();
+            return true;
+        }
+        _note = !SkillTree.Open(_d, _p, n) ? "Najpierw Szkolenia tej gałęzi" : SkillTree.Cost(_d, _p, n, o) < 0 ? "Już wybrane" : "Za mało doświadczenia";
+        return false;
+    }
+
     /// <summary>Kup zaznaczoną pozycję (także z testu dymnego).</summary>
     public bool Buy()
     {
-        if (_page == 1) return BuyRespect();
-        if (_page == 2 || _entries.Count == 0) return false;
+        if (_page == TreePage) return Choose();
+        if (_page == RespectPage) return BuyRespect();
+        if (_page == RewardsPage || _entries.Count == 0) return false;
         var e = _entries[_list.Sel];
         var ok = e.K switch
         {
@@ -185,19 +243,27 @@ public sealed class TrainingTab : PhonePage
     public override bool Input(InputCmd e)
     {
         var v = e.VDir;
+        if (_page == TreePage && (v != 0 || e.HDir != 0)) // drzewko: strzałki po węzłach (Q/E dalej zmieniają zakładki)
+        {
+            _trow = (_trow + v + 4) % 4;
+            _tcol = (_tcol + e.HDir + _d.TreeBranches.Length) % _d.TreeBranches.Length;
+            _note = "";
+            Sfx.Play("menu");
+            return true;
+        }
         if (v != 0)
         {
             _list.Move(v, Count, Window);
             _note = "";
             return true;
         }
-        if (e.Is(GameAction.Select))   // Szkolenia -> Respekt -> Nagrody
+        if (e.Is(GameAction.Select))   // Szkolenia -> Drzewko -> Respekt -> Nagrody
         {
             Page = _page + 1;
             Sfx.Play("menu");
             return true;
         }
-        if (e.Is(GameAction.A | GameAction.Start) && _page < 2)
+        if (e.Is(GameAction.A | GameAction.Start) && _page < RewardsPage)
         {
             Buy();
             return true;
@@ -207,12 +273,17 @@ public sealed class TrainingTab : PhonePage
 
     public override void Draw(PhonePainter p)
     {
-        if (_page == 1)
+        if (_page == TreePage)
+        {
+            DrawTree(p);
+            return;
+        }
+        if (_page == RespectPage)
         {
             DrawRespect(p);
             return;
         }
-        if (_page == 2)
+        if (_page == RewardsPage)
         {
             DrawRewards(p);
             return;
@@ -246,6 +317,83 @@ public sealed class TrainingTab : PhonePage
         if (_note.Length > 0) p.Text(tx, p.RowY(dc, 1), _note, _note == "Kupione!" ? Ink.Done : Ink.Late);
         else if (lines.Count > 1) p.Text(tx, p.RowY(dc, 1), lines[1], Ink.Dim);
         else p.Text(tx, p.RowY(dc, 1), $"Wydano {Meta.ShopSpent(_d, _p)}/{Meta.ShopTotalCost(_d)}", Ink.Brand);
+    }
+
+    /// <summary>
+    /// v0.21.52 cz. c: drzewko – 3 kolumny (gałęzie): nazwa i pień (Szkolenia gałęzi z poziomami), potem dwa węzły
+    /// z opcjami A / B (wybrana – zielona, zaznaczona – fioletowa ramka, zamknięta – szara z progiem pnia); na dole opis
+    /// zaznaczonej opcji, koszt albo opłata za zmianę.
+    /// </summary>
+    private void DrawTree(PhonePainter p)
+    {
+        var nb = _d.TreeBranches.Length;
+        var rowH = PhonePainter.RowH;
+        var head = p.CardH(p.Top, 2 * rowH + 8);
+        var gap = 4f;
+        var colW = (head.Size.X - gap * (nb - 1)) / nb;
+        var nodeRows = 6; // etykieta węzła + 2 opcje, x2
+        var colH = nodeRows * rowH + 14;
+        var top = p.Top;
+        for (var b = 0; b < nb; ++b)
+        {
+            var x = head.Position.X + b * (colW + gap);
+            var col = new Rect2(x, top, colW, colH + 2 * rowH);
+            p.C.DrawStyleBox(Ui.Box(Pal.Card, 6, b == _tcol ? Pal.Brand : Pal.Border), col);
+            var cx = x + colW / 2;
+            var y = top + 4;
+            p.Bold(cx, y, _d.TreeBranches[b].Name, b == _tcol ? Ink.Brand : Ink.Dark, TextAlign.Center);
+            y += rowH;
+            int lv = SkillTree.BranchLevels(_d, _p, b), max = SkillTree.BranchMax(_d, b);
+            p.Text(cx, y, $"Pień {lv}/{max}", lv >= max ? Ink.Done : Ink.Dim, TextAlign.Center);
+            p.Bar(x + 8, y + rowH - 3, colW - 16, lv, max, lv >= max ? Pal.Done : Pal.Brand, 3);
+            y += rowH + 2;
+            for (var tier = 0; tier < 2; ++tier)
+            {
+                var n = NodeOf(b, tier);
+                if (n < 0) continue;
+                var node = _d.TreeNodes[n];
+                var open = SkillTree.Open(_d, _p, n);
+                var pick = SkillTree.Pick(_p, n);
+                y += 2;
+                p.Text(cx, y, open ? $"Węzeł {UiText.Roman(tier)}" : $"od pnia {node.Depth}", open ? Ink.Dim : Ink.Late, TextAlign.Center, colW - 6);
+                y += rowH;
+                for (var o = 0; o < 2; ++o)
+                {
+                    var r = tier * 2 + o;
+                    var cell = new Rect2(x + 4, y, colW - 8, rowH);
+                    var picked = pick == o + 1;
+                    var cur = b == _tcol && r == _trow;
+                    if (picked || cur)
+                        p.C.DrawStyleBox(Ui.Box(picked ? Pal.DoneBg : Pal.Group, 5, cur ? Pal.Brand : Colors.Transparent), cell);
+                    p.Hit(cell, b * 4 + r);
+                    var ink = picked ? Ink.Done : cur ? Ink.Brand : open ? Ink.Dark : Ink.Dim;
+                    var opt = node.Options[o];
+                    var name = p.F.Measure(opt.Name) <= colW - 12 ? opt.Name : opt.Short;
+                    p.Text(cx, y + PhonePainter.TextDy, name, ink, TextAlign.Center, colW - 12);
+                    y += rowH;
+                }
+            }
+        }
+        // opis zaznaczonej opcji i pień gałęzi (Szkolenia z poziomami)
+        var dc = p.Card(top + colH + 2 * rowH + 6, 3);
+        var tx = p.TextX(dc);
+        var right = dc.End.X - 6;
+        var sn = NodeOf(_tcol, _trow / 2);
+        if (sn < 0) return;
+        var so = _trow % 2;
+        var sop = _d.TreeNodes[sn].Options[so];
+        var cost = SkillTree.Cost(_d, _p, sn, so);
+        var spick = SkillTree.Pick(_p, sn);
+        var sopen = SkillTree.Open(_d, _p, sn);
+        var pill = !sopen ? $"Pień {_d.TreeNodes[sn].Depth}" : cost < 0 ? "Masz" : spick > 0 ? $"Zmiana {cost}" : cost.ToString();
+        var pw = p.Pill(right, p.RowY(dc, 0), pill, !sopen ? PillKind.Gray : cost < 0 ? PillKind.Done : cost <= _p.Xp ? PillKind.Group : PillKind.Gray);
+        p.Text(tx, p.RowY(dc, 0), $"{sop.Name}: {RunMods.UpgradeLabel(sop.Effect, sop.Value)}", Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
+        var info = _note.Length > 0 ? _note : $"{sop.Desc}. {(spick > 0 && cost >= 0 ? $"Zmiana wyboru: {_d.TreeRespecCost} dośw." : "Drugą opcję zmienisz za opłatą.")}";
+        p.Text(tx, p.RowY(dc, 1), info, _note.Length > 0 ? (_note == "Wybrane!" ? Ink.Done : Ink.Late) : Ink.Dim, TextAlign.Left, right - tx);
+        var trunk = string.Join(", ", Enumerable.Range(0, _d.Upgrades.Length).Where(i => ((_d.TreeBranches[_tcol].Upgrades >> i) & 1) != 0)
+            .Select(i => $"{_d.Upgrades[i].Name} {_p.Levels[i]}/{_d.Upgrades[i].Levels}"));
+        p.Divider(dc, 2);
+        p.Text(tx, p.RowY(dc, 2), "Pień: " + trunk, Ink.Brand, TextAlign.Left, right - tx);
     }
 
     private void DrawRespect(PhonePainter p)

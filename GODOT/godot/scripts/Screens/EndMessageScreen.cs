@@ -60,6 +60,7 @@ public sealed class EndMessageScreen : Screen
             1 => $"zawód {d.Classes[idx].Name}",
             2 => d.Weapons[d.Tools[idx].Weapon].Name,
             3 => $"brygada: {d.Brigade[idx].Name}",
+            5 => $"węzeł drzewka {d.TreeBranches[d.TreeNodes[idx].Branch].Name}", // v0.21.52 cz. c
             _ => $"poziom {d.Difficulties[d.Difficulties.Length - 1].Name}",
         };
         page.Info(p.Xp >= cost ? $"Stać Cię: {name} ({cost} dośw.)" : $"Najbliżej: {name}, brakuje {cost - p.Xp} dośw.", p.Xp >= cost ? Ink.Done : Ink.Brand);
