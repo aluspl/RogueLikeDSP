@@ -756,6 +756,37 @@ DECOR = [
         "......CCCC......", ".......ll.......", "....C..ll..C....", "...CC..ll..CC...", "..KKKKKKKKKKKK..",
         "..KlCCCCCCCClK..", "..KlCCWCCCWClK..", "..KllllllllllK..", "..KKKKKKKKKKKK..", "................",
         "..GGGGGGGGGGGG.."],
+    # v0.21.52 cz. b (#44): ozdoby z poziomu inspektora
+    [   # Nowa betoniarka: pomarańczowy bęben na stojaku
+        "................", "......KKKK......", ".....KgggK......", "....KOOOOOK.....", "...KOWOOOOOK....",
+        "...KKKKKKKKKK...", "...KOOOOOOOOK...", "...KKKKKKKKKK...", "....KOOOOOOK....", ".....KKKKKK.....",
+        "......KggK......", ".....KgKKgK.....", "....KgK..KgK....", "...KKK....KKK...", "...KlK....KlK...",
+        "..GGGGGGGGGGGG.."],
+    [   # Rusztowanie: stalowe rury i deski
+        "................", "..KK.KK.KK.KK...", "..Kl.Kl.Kl.Kl...", "..KTTTTTTTTTTK..", "..KlKlKlKlKlKl..",
+        "..Kl.Kl.Kl.Kl...", "..KlKlKlKlKlKl..", "..KTTTTTTTTTTK..", "..Kl.Kl.Kl.Kl...", "..KlKlKlKlKlKl..",
+        "..Kl.Kl.Kl.Kl...", "..KTTTTTTTTTTK..", "..Kl.Kl.Kl.Kl...", "..Kl.Kl.Kl.Kl...", "..KK.KK.KK.KK...",
+        "..GGGGGGGGGGGG.."],
+    [   # Paleta cegieł
+        "................", "................", "................", "................", "...KKKKKKKKKK...",
+        "...KRROKRROKK...", "...KKKKKKKKKK...", "...KROKRRKROK...", "...KKKKKKKKKK...", "...KRROKRROKK...",
+        "...KKKKKKKKKK...", "..KTTTTTTTTTTK..", "..KTKTTKTTKTTK..", "..KTTTTTTTTTTK..", "..KKKKKKKKKKKK..",
+        "..GGGGGGGGGGGG.."],
+    [   # Żuraw: żółty maszt, wysięgnik i hak
+        ".KKKKKKKKKKKKKK.", ".KYYYYYYYYYYYYK.", ".KYKYKKYKKYKKYK.", ".KKKYYKKKKKK.K..", "...KYYK......K..",
+        "...KYYK......K..", "...KYKK.....KlK.", "...KYYK.....KKK.", "...KKYK.........", "...KYYK.........",
+        "...KYKK.........", "...KYYK.........", "...KKYK.........", "..KKKKKK........", "..KggggK........",
+        "..GGGGGGGGGGGG.."],
+    [   # Piaskownica: drewniana rama, piasek, wiaderko
+        "................", "................", "................", "................", "................",
+        "................", "................", "..........KK....", ".........KRRK...", ".........KRRK...",
+        "..KKKKKKKKKKKKK.", "..KTYYYYYYYYYTK.", "..KTYYYYOYYYYTK.", "..KTTTTTTTTTTTK.", "..KKKKKKKKKKKKK.",
+        "..GGGGGGGGGGGG.."],
+    [   # Altana: daszek, słupki i ławka
+        "................", ".......KK.......", "......KRRK......", ".....KRRRRK.....", "....KRRRRRRK....",
+        "...KRRRRRRRRK...", "..KKKKKKKKKKKK..", "...KTK....KTK...", "...KTK....KTK...", "...KTK....KTK...",
+        "...KTKKKKKKTK...", "...KTTTTTTTTK...", "...KTKKKKKKTK...", "...KTK....KTK...", "...KKK....KKK...",
+        "..GGGGGGGGGGGG.."],
 ]
 
 

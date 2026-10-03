@@ -309,11 +309,12 @@ namespace
     // v0.21.52: kolor kasku z odznaki / zlecenia - klatki 160-183 mają kask w indeksie 10 palety, który podmienia
     // paleta bohatera (hero_palette). Kask w paski ma pierwszeństwo.
     constexpr int frame_helmet = 160, helmet_color_index = 10;
-    int hero_helmet(const app& a) { return core::cosmetic_on(a.save, data::cosmetic_stripes) ? -1 : core::helmet_cosmetic(a.save); }
+    // v0.21.52 cz. b: kask mistrza tylko zawodem z poziomem mistrzostwa (cls).
+    int hero_helmet(const app& a, int cls) { return core::cosmetic_on(a.save, data::cosmetic_stripes) ? -1 : core::helmet_cosmetic(a.save, cls); }
     int hero_base(const app& a, int cls)
     {
         if(core::cosmetic_on(a.save, data::cosmetic_stripes)) return frame_stripes + cls * 2;
-        return hero_helmet(a) >= 0 ? frame_helmet + cls * 2 : data::classes[cls].frame;
+        return hero_helmet(a, cls) >= 0 ? frame_helmet + cls * 2 : data::classes[cls].frame;
     }
     // Paleta postaci z kolorem kasku k (kolory muszą żyć, dopóki paleta jest używana - tablica statyczna).
     bn::sprite_palette_item helmet_palette(int k)
@@ -325,9 +326,9 @@ namespace
         colors[helmet_color_index] = bn::color(c & 31, (c >> 5) & 31, (c >> 10) & 31);
         return bn::sprite_palette_item(colors, bn::bpp_mode::BPP_4);
     }
-    void style_hero(const app& a, bn::sprite_ptr& s)
+    void style_hero(const app& a, bn::sprite_ptr& s, int cls)
     {
-        const int k = hero_helmet(a);
+        const int k = hero_helmet(a, cls);
         if(k >= 0) s.set_palette(helmet_palette(k));
         else s.set_palette(bn::sprite_items::actors.palette_item());
     }
@@ -497,6 +498,20 @@ namespace
         text_sprites version_text;   // numer wersji w lewym górnym rogu
         a.text.set_left_alignment();
         a.text.generate(-116, -72, data::version, version_text);
+        // v0.21.52 cz. b (#44): poziom inspektora z paskiem do kolejnego (pod wersją; od pierwszej budowy)
+        text_sprites insp_text;
+        bn::optional<bn::sprite_ptr> insp_bar[2];
+        if(a.save.runs > 0 || a.save.inspector_xp > 0)
+        {
+            int cur = 0, need = 0;
+            core::inspector_bar(a.save, cur, need);
+            core::message im; im.add("Inspektor ").add(core::inspector_level(a.save));
+            if(! need) im.add(" MAX");
+            a.text.generate(-116, -56, im.s, insp_text);
+            const int fill = need ? core::imin(62, cur * 62 / need) : 62;
+            insp_bar[0] = bn::sprite_items::hp_bar.create_sprite(-100, -42, 32 + core::imin(fill, 31));   // kolor 1: żółty
+            insp_bar[1] = bn::sprite_items::hp_bar.create_sprite(-68, -42, 96 + 32 + core::imax(0, fill - 31));
+        }
         a.text.set_center_alignment();
         text_sprites shop_hint;
         a.text.generate(0, 66, "SELECT: telefon  B: pomoc", shop_hint);
@@ -646,7 +661,7 @@ namespace
 
     void page_help(app& a)
     {
-        constexpr int pages_count = 15;
+        constexpr int pages_count = 16;
         core::message cmb[3];   // kombinacje stanów (#29): "Mokry + prąd! Porażenie"
         for(int k = 0; k < 3 && k < data::combos_count; ++k) cmb[k].add(data::combos[k].short_name).add(" ").add(data::combos[k].name);
         core::message luck1, luck2;   // wzory z danych (sekcja luck)
@@ -684,13 +699,15 @@ namespace
             { data::meta_help[0], data::meta_help[1], data::meta_help[2], data::meta_help[3], data::meta_help[4],
               data::meta_help[5], "Tytuł: L = wyzwanie tygodnia." },
             { data::secrets_help[0], data::secrets_help[1], data::secrets_help[2], data::secrets_help[3], data::secrets_help[4],
-              data::secrets_help[5], data::secrets_help[6] } };   // v0.21.51 cz. 2: sekretne zlecenia
+              data::secrets_help[5], data::secrets_help[6] },   // v0.21.51 cz. 2: sekretne zlecenia
+            { data::progress_help[0], data::progress_help[1], data::progress_help[2], data::progress_help[3], data::progress_help[4],
+              data::progress_help[5], data::progress_help[6] } };   // v0.21.52 cz. b: poziom inspektora, mistrzostwo
         for(int pg = 0; pg < pages_count; ++pg)
         {
             page_sprites t;
             a.text.set_center_alignment();
-            static const char* const names[7] = { "Kombinacje", "Skąd stany", "Premie i elity", "Wydarzenia", "Magazyn", "Po budowie",
-                                                  "Sekrety" };   // strony 9-15 (v0.21.50, 15: v0.21.51 cz. 2)
+            static const char* const names[8] = { "Kombinacje", "Skąd stany", "Premie i elity", "Wydarzenia", "Magazyn", "Po budowie",
+                                                  "Sekrety", "Inspektor" };   // strony 9-16 (v0.21.50, 15: v0.21.51 cz. 2, 16: v0.21.52 cz. b)
             core::message title; title.add(pg >= 8 ? names[pg - 8] : (pg == 1 ? "Okna i wybory" : "Jak grać")).add(" (").add(pg + 1).add("/").add(pages_count).add(")");
             a.text.generate(0, -70, title.s, t);
             a.text.set_left_alignment();
@@ -2197,6 +2214,35 @@ namespace
             }
     }
 
+    // v0.21.52 cz. b: banery nowych poziomów - inspektor (#44), mistrzostwo zawodu (#45), stopnie inwestora (#48) - z nagrodą.
+    // Kilka poziomów naraz (migracja, długa budowa): dwa pierwsze z nagrodą, potem jeden zbiorczy.
+    void push_progress(push_banner& banner, const core::progress_gain& pg, int stake0, int stake1)
+    {
+        for(int l = pg.insp_before; l < pg.insp_after; ++l)
+        {
+            core::message t; t.add("Inspektor: poziom ").add(l + 1);
+            core::message b;
+            if(l >= pg.insp_before + 2 && l + 1 < pg.insp_after) continue;
+            if(l >= pg.insp_before + 2) b.add("Nagrody: profil, Odznaki");
+            else core::progress_reward_label(b, data::inspector_levels[l], pg.cls);
+            banner.push(t.s, b.s);
+        }
+        for(int l = pg.mastery_before; l < pg.mastery_after && pg.cls >= 0; ++l)
+        {
+            if(l + 1 < pg.mastery_after) continue;   // tylko ostatni poziom (nagrody w profilu)
+            core::message t; t.add("Mistrzostwo: poziom ").add(l + 1);
+            core::message b; core::progress_reward_label(b, data::mastery_levels[l], pg.cls);
+            banner.push(t.s, b.s);
+        }
+        for(int l = stake0; l < stake1; ++l)
+        {
+            if(l + 1 < stake1 && l + 2 < stake1) continue;   // najwyżej dwa ostatnie stopnie
+            core::message t; t.add("Stopień inwestora ").add(data::stake_ranks[l].xp);
+            core::message b; core::progress_reward_label(b, data::stake_ranks[l], pg.cls);
+            banner.push(t.s, b.s);
+        }
+    }
+
     // Cząsteczki (pył, iskry, konfetti, gwiazdki). Mała pula; bez wolnych sprite'ów efekt jest pomijany.
     struct particle
     {
@@ -2286,9 +2332,9 @@ namespace
         bg.set_camera(cam);
 
         const int hero_frame0 = hero_base(a, g.cls);   // v0.21.51 cz. 2: kask w paski
-        const bool gold_glint = core::cosmetic_on(a.save, data::cosmetic_gold);   // Złota kielnia
+        const bool gold_glint = core::cosmetic_on(a.save, data::cosmetic_gold) || g.master_weapon();   // Złota kielnia, broń mistrza (v0.21.52 cz. b)
         bn::sprite_ptr hero = bn::sprite_items::actors.create_sprite(0, 0, hero_frame0);
-        style_hero(a, hero);   // v0.21.52: kolor kasku
+        style_hero(a, hero, g.cls);   // v0.21.52: kolor kasku
         hero.set_camera(cam);
         bn::vector<bn::sprite_ptr, core::max_enemies> enemies;
         bn::vector<bool, core::max_enemies> enemy_gold;   // sprite ma złotą paletę elity
@@ -3457,6 +3503,7 @@ namespace
                         core::check_contracts(a.save);
                         core::check_secrets(a.save, &g);
                         core::bank_xp(a.save, g);
+                        core::bank_progress(a.save, g);   // v0.21.52 cz. b: inspektor i mistrzostwo
                         bn::sram::write(a.save);
                         clear_run(a);
                         return leave(scene::shop);
@@ -3619,6 +3666,7 @@ namespace
                     core::check_contracts(a.save);
                     core::check_secrets(a.save, &g);
                     core::bank_xp(a.save, g);
+                    core::bank_progress(a.save, g);   // v0.21.52 cz. b: inspektor i mistrzostwo
                     bn::sram::write(a.save);
                     clear_run(a);
                     return leave(scene::shop);
@@ -4064,7 +4112,7 @@ namespace
     // 3 - nagrody z budowy, zlecenie, najbliższy cel i rada. A / prawo - dalej, B / lewo - wstecz, START - pomiń.
     ink recap_ink(uint8_t k) { return k == core::bad ? ink::late : (k == core::good ? ink::done : (k == core::loot ? ink::brand : ink::dark)); }
 
-    void recap_pages(app& a, int gained)
+    void recap_pages(app& a, int gained, const core::progress_gain& pg)
     {
         core::game& g = *a.g;
         const bool won = g.st == core::status::won;
@@ -4162,13 +4210,24 @@ namespace
                 phone_text(a, t, list_x, row_py(0), fit(a, nm.s, pill_room(pm.s)).c_str(), ink::dark);
                 phone_pill(a, c, t, pill_end, row_ty(0), pm.s, ready ? pill::done : pill::prog);
                 c.bar(2, row_ty(1), 26, ready ? phone_tile::bar_done_0 : phone_tile::bar_brand_0, cost < 0 ? 1 : int(a.save.xp), cost < 0 ? 1 : cost);
-                core::message mm; mm.add("Mistrzostwo: ").add(data::classes[g.cls].name);
-                phone_text(a, t, list_x, row_py(2), fit(a, mm.s, pill_room("wkrótce")).c_str(), ink::dim);
-                phone_pill(a, c, t, pill_end, row_ty(2), "wkrótce", pill::gray);
-                c.bar(2, row_ty(3), 26, phone_tile::bar_brand_0, 0, 1);
-                phone_text(a, t, list_x, row_py(4), "Poziom inspektora", ink::dim);
-                phone_pill(a, c, t, pill_end, row_ty(4), "wkrótce", pill::gray);
-                c.bar(2, row_ty(5), 26, phone_tile::bar_brand_0, 0, 1);
+                // v0.21.52 cz. b (#45, #44): mistrzostwo zawodu i poziom inspektora - dośw. z tej budowy, nowy poziom
+                auto progress_row = [&](int r, const char* label, int level, int max_level, int cur, int need, bool up) {
+                    core::message lm; lm.add(label).add(level);
+                    core::message gm;
+                    if(up) gm.add("Poziom ").add(level).add("!");
+                    else if(! need) gm.add("MAX");
+                    else gm.add("+").add(pg.gained);
+                    phone_text(a, t, list_x, row_py(r), fit(a, lm.s, pill_room(gm.s)).c_str(), ink::dark);
+                    phone_pill(a, c, t, pill_end, row_ty(r), gm.s, up || ! need ? pill::done : pill::prog);
+                    c.bar(2, row_ty(r + 1), 26, up || ! need ? phone_tile::bar_done_0 : phone_tile::bar_brand_0, need ? cur : 1, need ? need : 1);
+                    (void)max_level;
+                };
+                int mc = 0, mn = 0, ic = 0, in = 0;
+                core::mastery_bar(a.save, g.cls, mc, mn);
+                core::inspector_bar(a.save, ic, in);
+                core::message ml; ml.add("Mistrz: ").add(data::classes[g.cls].name).add(" ");
+                progress_row(2, ml.s, core::mastery_level(a.save, g.cls), data::mastery_levels_count, mc, mn, pg.mastery_after > pg.mastery_before);
+                progress_row(4, "Inspektor ", core::inspector_level(a.save), data::inspector_levels_count, ic, in, pg.insp_after > pg.insp_before);
             }
             else
             {
@@ -4231,12 +4290,15 @@ namespace
         if(won) core::add_house(a.save, g);
         int stake = core::investor_stake(g.bonus.investor);
         bool stake_record = won && stake > 0 && stake > core::best_stake(a.save, g.cls);
+        const int stake_rank0 = core::stake_rank(a.save);   // v0.21.52 cz. b (#48): stopnie inwestora przed tą budową
         int badges_got = core::check_badges(a.save, g);   // katalog, narzędzia, Osiedle, liczniki zleceń, rekord stawki
         int contracts_got = core::check_contracts(a.save);
         int secrets_got = core::check_secrets(a.save, &g);   // v0.21.51 cz. 2: sekretne zlecenia (wygrana bez kawy, na styk...)
         int gained = core::bank_xp(a.save, g);
         bool weekly_record = g.weekly_week && core::record_weekly(a.save, g.weekly_week, g.score, won);   // wyzwanie tygodnia (#34)
-        uint32_t story_got = core::story_check(a.save, &g);   // fabuła (#35): nowe wątki SMS za kamienie milowe
+        const core::progress_gain pg = core::bank_progress(a.save, g);   // v0.21.52 cz. b: poziom inspektora i mistrzostwo zawodu
+        const int stake_rank1 = core::stake_rank(a.save);
+        uint32_t story_got = core::story_check(a.save, &g);   // fabuła (#35): nowe wątki SMS za kamienie milowe (też od inspektora)
         bn::sram::write(a.save);
         clear_run(a);
         play_song(song::none);
@@ -4253,7 +4315,7 @@ namespace
             phone_message(a, won ? data::story_win : data::story_lose, won ? "Odbiór" : "Budowa", i1.s, ink::dark, fit(a, i2.s, 150).c_str());
             leave(scene::end);
             if(won) { house_page(a); leave(scene::end); }   // harmonogram domu w stylu aplikacji PlanBudowlany
-            recap_pages(a, gained);   // podsumowanie budowy (#33)
+            recap_pages(a, gained, pg);   // podsumowanie budowy (#33), cz. b: paski mistrzostwa i inspektora
             leave(scene::end);
         }
         // Co dała ta budowa (motywacja do kolejnej próby): rekord, najbliższe zlecenie, najbliższe do kupienia w Szkoleniach.
@@ -4320,6 +4382,7 @@ namespace
             banner.push(rt.s, data::rewards[reward].desc);
         }
         push_achievements(banner, badges_got, contracts_got, secrets_got);
+        push_progress(banner, pg, stake_rank0, stake_rank1);   // v0.21.52 cz. b: poziom inspektora, mistrzostwo, stopnie inwestora
         for(int i = 0; i < data::story_arc_count; ++i)   // fabuła: nowy wątek w Wiadomościach (telefon profilu, Osiedle)
             if((story_got >> i) & 1) banner.push("Nowa wiadomość", data::story_arc[i].name);
         for(int f = 0; ; ++f)
@@ -4369,7 +4432,7 @@ namespace
             bn::sprite_ptr truck = bn::sprite_items::truck.create_sprite(world(-2, 9).x(), world(0, 9).y());
             truck.set_camera(cam);
             bn::sprite_ptr hero = bn::sprite_items::actors.create_sprite(world(7, 10), hero_base(a, g.cls));
-            style_hero(a, hero);
+            style_hero(a, hero, g.cls);
             hero.set_camera(cam);
             hero.set_visible(false);
             struct prop { int8_t def, x, y; };
@@ -4829,12 +4892,18 @@ namespace
                     locks[li++].set_visible(shown && s != sel);
                 }
             }
+            if(core::class_unlocked(a.save, order[sel]) && core::mastery_xp(a.save, order[sel]) > 0)   // v0.21.52 cz. b: pasek mistrzostwa
+            {
+                int cur = 0, need = 0;
+                core::mastery_bar(a.save, order[sel], cur, need);
+                canvas->bar((sel - first) * 5, 4, 5, need ? phone_tile::bar_brand_0 : phone_tile::bar_done_0, need ? cur : 1, need ? need : 1);
+            }
             if(first > 0) canvas->set(0, 2, phone_tile::line_h);                          // za paskiem są jeszcze zawody
             if(first + slots_visible < count) canvas->set(29, 2, phone_tile::line_h);
             const int c = order[sel];
             bool unl = core::class_unlocked(a.save, c);
             big.set_tiles(bn::sprite_items::actors.tiles_item(), unl ? hero_base(a, c) : silhouette_frame(c));
-            style_hero(a, big);
+            style_hero(a, big, c);
             big.set_position(slot_cx(sel - first) - 120, big_cy - 80 + oy);   // też przed pętlą (samouczek), inaczej środek ekranu pod kartą
             big_lock.set_position(slot_cx(sel - first) - 120 + 12, big_cy - 80 + oy + 8);
             big_lock.set_visible(! unl);
@@ -4857,17 +4926,28 @@ namespace
             const core::class_def& c = data::classes[ci];
             const core::weapon_def& w = data::weapons[c.weapon];
             bool locked = ! core::class_unlocked(a.save, ci);
-            put(card_t, 16, row1, c.name, ink_palette(ink::dark));
+            const int name_w = put(card_t, 16, row1, c.name, ink_palette(ink::dark));
             draw_diff(locked);
-            // moc: ikona, nazwa (fiolet) i jednolinijkowy opis
+            const int ml = core::mastery_level(a.save, ci);   // v0.21.52 cz. b (#45): poziom mistrzostwa obok nazwy
+            if(! locked && ml > 0)
+            {
+                core::message mm; mm.add("Mistrz ").add(ml);
+                core::message ms; ms.add("M").add(ml);
+                const int room = (arrows.visible() ? arrows.x().right_shift_integer() + 120 - 8 : 216) - (16 + name_w + 6);
+                put(card_t, 16 + name_w + 6, row1, a.text.width(mm.s) <= room ? mm.s : ms.s, ink_palette(ml >= data::mastery_levels_count ? ink::done : ink::prog));
+            }
+            // moc: ikona, nazwa (fiolet) i jednolinijkowy opis; wariant mocy z mistrzostwa (v0.21.52 cz. b)
             ability.set_tiles(bn::sprite_items::ability_icons.tiles_item(), ci);
             ability.set_position(18 - 120, row2 + 8 - 80);
-            int x = 29 + put(card_t, 29, row2, c.ability_name, ink_palette(ink::brand));
-            put(card_t, x + 4, row2, fit(a, c.ability_desc, 229 - x - 4).c_str(), ink_palette(ink::dim));
+            const bool variant = ! locked && core::power_variant_on(a.save, ci);
+            const core::mastery_class_def& mcd = data::mastery_classes[ci];
+            int x = 29 + put(card_t, 29, row2, variant ? mcd.power_name : c.ability_name, ink_palette(ink::brand));
+            put(card_t, x + 4, row2, fit(a, variant ? mcd.power_desc : c.ability_desc, 229 - x - 4).c_str(), ink_palette(ink::dim));
             // broń: nazwa i zakres ciosu z premiami profilu, kryt (rozpiska #26), zasięg, statystyka skalowania (fiolet);
             // co się nie mieści, skraca się ("zasięg" -> "z.", "kryt" -> "kr", bez zasięgu)
-            const core::dmg_breakdown bd = core::class_breakdown(ci, core::mods(a.save));
-            core::message wn; wn.add(w.name).add(" "); core::add_range(wn, bd.min, bd.max);
+            const core::dmg_breakdown bd = core::class_breakdown(ci, core::mods(a.save, ci));   // v0.21.52 cz. b: broń mistrza
+            const bool master_w = ! locked && core::mastery_has(a.save, ci, core::progress_reward::weapon);   // broń mistrza
+            core::message wn; wn.add(master_w ? mcd.weapon_name : w.name).add(" "); core::add_range(wn, bd.min, bd.max);
             core::message tag; tag.add("(").add(stat_short(w.scales_with)).add(")");
             core::message ex[4];
             core::add_range(ex[0].add(", kryt "), bd.crit_min, bd.crit_max).add(" (").add(bd.crit_chance()).add("%), zasięg ").add(w.range);
@@ -4880,7 +4960,7 @@ namespace
             x += put(card_t, x, row3, fit(a, ex[e].s, room).c_str(), ink_palette(ink::dim));
             put(card_t, x + 4, row3, tag.s, ink_palette(ink::brand));
             // statystyki efektywne: zawód + Szkolenia, uprawnienia, pamiątka - "baza+premia"
-            const core::run_mods m = core::mods(a.save);
+            const core::run_mods m = core::mods(a.save, ci);
             struct cell { const char* label; int base, bonus; bool weapon; };
             const cell cells[6] = {
                 { "HP", c.max_health, m.hp, false },
@@ -4971,7 +5051,7 @@ namespace
                 phone_screen ph(2);
                 ph.icon.set_visible(false);
                 page_sprites st;
-                stats_page(a, ph, st, nullptr, order[sel], core::mods(a.save));
+                stats_page(a, ph, st, nullptr, order[sel], core::mods(a.save, order[sel]));
             }
             a.text.set_bg_priority(1);
             bg.set_visible(true); big.set_visible(true); ability.set_visible(true); info.set_visible(true);
@@ -5034,7 +5114,7 @@ namespace
                 {
                     a.text.set_palette_item(default_ink);
                     a.text.set_bg_priority(default_prio);
-                    a.g->new_run(a.chosen_class, a.seed_counter * 2654435761u + 12345u, a.chosen_diff, core::mods(a.save));
+                    a.g->new_run(a.chosen_class, a.seed_counter * 2654435761u + 12345u, a.chosen_diff, core::mods(a.save, a.chosen_class));
 #ifdef PB_SCENARIO
                     debug_scenario::apply(*a.g, PB_SCENARIO);
 #endif
@@ -5055,7 +5135,8 @@ namespace
                 wait_release();
                 return leave(scene::title);
             }
-            if(bn::keypad::select_pressed() && (core::investor_unlocked(a.save) || core::helmets_unlocked(a.save) > 0))   // tryb inwestora, wygląd
+            if(bn::keypad::select_pressed() && (core::investor_unlocked(a.save) || core::helmets_unlocked(a.save) > 0   // tryb inwestora, wygląd
+               || core::keepsake_slot2(a.save) || core::mastery_has(a.save, a.chosen_class, core::progress_reward::power)))   // cz. b
             {
                 a.text.set_palette_item(default_ink);
                 a.text.set_bg_priority(default_prio);
@@ -5090,17 +5171,26 @@ namespace
         int sel = 0, top = 0;
         // Za modyfikatorami wiersze wyglądu: "Kask w paski" (v0.21.51 cz. 2, sekret Na styk) i kolor kasku (v0.21.52,
         // odznaki i zlecenia). Bez trybu inwestora (przed pierwszą wygraną) - tylko wygląd.
+        // v0.21.52 cz. b: wariant mocy wybranego zawodu (mistrzostwo 3) i druga pamiątka (poziom inspektora); pod listą
+        // trybu inwestora - nagroda za kolejny stopień (najwyższa stawka wygranej).
+        const int cls = a.chosen_class;
         const int inv = core::investor_unlocked(a.save) ? data::investor_count : 0;
         const bool stripes = core::cosmetic_unlocked(a.save, data::cosmetic_stripes);
         const bool helmets = core::helmets_unlocked(a.save) > 0;
-        const int stripes_row = stripes ? inv : -1, helmet_row = helmets ? inv + (stripes ? 1 : 0) : -1;
-        const int rows = inv + (stripes ? 1 : 0) + (helmets ? 1 : 0);
+        const bool power = core::mastery_has(a.save, cls, core::progress_reward::power);
+        const bool keep2 = core::keepsake_slot2(a.save);
+        int rows = inv;
+        const int stripes_row = stripes ? rows++ : -1;
+        const int helmet_row = helmets ? rows++ : -1;
+        const int power_row = power ? rows++ : -1;
+        const int keep2_row = keep2 ? rows++ : -1;
+        const int window = inv ? 3 : 4;   // tryb inwestora: wiersz 3 - nagroda za kolejny stopień
         auto redraw = [&]() {
             int mask = core::investor_mask(a.save);
             core::message sub; sub.add("Stawka ").add(core::investor_stake(mask));
             phone_header(a, ph, t, inv ? "Tryb inwestora" : "Wygląd", inv ? sub.s : "");
             phone_canvas& c = *ph.canvas;
-            for(int r = 0; r < 4 && top + r < rows; ++r)
+            for(int r = 0; r < window && top + r < rows; ++r)
             {
                 int i = top + r;
                 const bool is_sel = i == sel;
@@ -5115,11 +5205,29 @@ namespace
                 }
                 if(i == helmet_row)   // v0.21.52: kolor kasku (A = następny odblokowany)
                 {
-                    const int k = core::helmet_cosmetic(a.save);
+                    const int k = core::helmet_cosmetic(a.save, cls);
                     core::message hm; hm.add("Kask: ").add(k >= 0 ? data::cosmetics[k].name : "zawodu");
                     stripe(c, r, is_sel ? phone_tile::stripe_brand : (k >= 0 ? phone_tile::stripe_done : phone_tile::stripe_todo));
                     phone_text(a, t, list_x, row_py(r), fit(a, hm.s, pill_room("Wygląd")).c_str(), is_sel ? ink::brand : ink::dark);
                     phone_pill(a, c, t, pill_end, row_ty(r), "Wygląd", k >= 0 ? pill::done : pill::gray);
+                    continue;
+                }
+                if(i == power_row)   // v0.21.52 cz. b: wariant mocy (mistrzostwo zawodu)
+                {
+                    const bool on = core::power_variant_on(a.save, cls);
+                    core::message pm; pm.add("Moc: ").add(on ? data::mastery_classes[cls].power_name : data::classes[cls].ability_name);
+                    stripe(c, r, is_sel ? phone_tile::stripe_brand : (on ? phone_tile::stripe_done : phone_tile::stripe_todo));
+                    phone_text(a, t, list_x, row_py(r), fit(a, pm.s, pill_room("Wariant")).c_str(), is_sel ? ink::brand : ink::dark);
+                    phone_pill(a, c, t, pill_end, row_ty(r), on ? "Wariant" : "Zwykła", on ? pill::done : pill::gray);
+                    continue;
+                }
+                if(i == keep2_row)   // v0.21.52 cz. b: druga pamiątka (A = następna odblokowana)
+                {
+                    const int k = core::selected_keepsake2(a.save);
+                    core::message km; km.add("Pamiątka 2: ").add(k >= 0 ? data::keepsakes[k].name : "brak");
+                    stripe(c, r, is_sel ? phone_tile::stripe_brand : (k >= 0 ? phone_tile::stripe_done : phone_tile::stripe_todo));
+                    phone_text(a, t, list_x, row_py(r), fit(a, km.s, pill_room("Ranga I")).c_str(), is_sel ? ink::brand : ink::dark);
+                    phone_pill(a, c, t, pill_end, row_ty(r), k >= 0 ? "Ranga I" : "Wybierz", k >= 0 ? pill::done : pill::gray);
                     continue;
                 }
                 const core::investor_def& d = data::investor[i];
@@ -5129,21 +5237,43 @@ namespace
                 phone_text(a, t, list_x, row_py(r), fit(a, d.name, pill_room(pm.s)).c_str(), is_sel ? ink::brand : (on ? ink::dark : ink::dim));
                 phone_pill(a, c, t, pill_end, row_ty(r), pm.s, on ? pill::done : pill::gray);
             }
+            if(inv)   // v0.21.52 cz. b (#48): nagroda za kolejny stopień inwestora (najwyższa stawka wygranej budowy)
+            {
+                const int rk = core::stake_rank(a.save);
+                core::message nm, pm;
+                if(rk < data::stake_ranks_count)
+                {
+                    const core::progress_level& sr = data::stake_ranks[rk];
+                    core::progress_reward_label(nm.add("Stawka ").add(sr.xp).add(": "), sr, cls);
+                    pm.add(rk).add("/").add(data::stake_ranks_count);
+                }
+                else { nm.add("Stopnie inwestora: wszystkie"); pm.add("MAX"); }
+                stripe(c, 3, phone_tile::stripe_prog);
+                phone_text(a, t, list_x, row_py(3), fit(a, nm.s, pill_room(pm.s)).c_str(), ink::prog);
+                phone_pill(a, c, t, pill_end, row_ty(3), pm.s, rk < data::stake_ranks_count ? pill::prog : pill::done);
+            }
             core::message dm;
             if(sel == stripes_row) dm.add(data::cosmetics[data::cosmetic_stripes].desc).add(" (tylko wygląd)");
             else if(sel == helmet_row)
             {
-                const int k = core::helmet_cosmetic(a.save);
+                const int k = core::helmet_cosmetic(a.save, cls);
                 dm.add(k >= 0 ? data::cosmetics[k].desc : "Kolor kasku zawodu").add(" (kolorów: ").add(core::helmets_unlocked(a.save)).add(")");
             }
-            else dm.add(data::investor[sel].desc).add(", +").add(data::investor[sel].xp_pct).add("%");
+            else if(sel == power_row) dm.add(data::mastery_classes[cls].power_desc).add(" (wariant)");
+            else if(sel == keep2_row)
+            {
+                const int k = core::selected_keepsake2(a.save);
+                if(k >= 0) core::perk_label(dm.add("Druga: "), core::keepsake2_perk(k));
+                else dm.add("Druga pamiątka (ranga I), inna niż L/R");
+            }
+            else if(sel >= 0 && sel < inv) dm.add(data::investor[sel].desc).add(", +").add(data::investor[sel].xp_pct).add("%");
             phone_text(a, t, list_x, row_py(4), fit(a, dm.s, phone_text_w).c_str(), ink::dim);
             if(inv)
             {
-                core::message xm; xm.add("Dośw. +").add(core::investor_xp(mask)).add("%  rekord ").add(core::best_stake(a.save, a.chosen_class));
+                core::message xm; xm.add("Dośw. +").add(core::investor_xp(mask)).add("%  rekord ").add(core::best_stake(a.save, cls));
                 phone_text(a, t, list_x, row_py(5), fit(a, xm.s, 150).c_str(), ink::dark);
             }
-            phone_text(a, t, 226, row_py(5), sel == helmet_row ? "A: zmień" : "A: wł/wył", ink::brand, 1);
+            phone_text(a, t, 226, row_py(5), sel == helmet_row || sel == keep2_row ? "A: zmień" : "A: wł/wył", ink::brand, 1);
             ph.commit();
         };
         redraw();
@@ -5156,13 +5286,15 @@ namespace
             {
                 sel = (sel + dir + n) % n;
                 if(sel < top) top = sel;
-                if(sel >= top + 4) top = sel - 3;
+                if(sel >= top + window) top = sel - window + 1;
                 redraw(); bn::sound_items::sfx_menu.play();
             }
             if(bn::keypad::a_pressed() && n > 0)
             {
                 if(sel == stripes_row) core::toggle_cosmetic(a.save, data::cosmetic_stripes);
                 else if(sel == helmet_row) core::cycle_helmet(a.save, 1);
+                else if(sel == power_row) core::toggle_power_variant(a.save, cls);
+                else if(sel == keep2_row) core::cycle_keepsake2(a.save, 1);
                 else core::toggle_investor(a.save, sel);
                 redraw(); bn::sound_items::sfx_buy.play();
             }
@@ -5183,7 +5315,7 @@ namespace
         phone_screen ph(tab);
         bn::sprite_palette_item default_ink = a.text.palette_item();
         page_sprites t;
-        bn::vector<bn::sprite_ptr, core::max_houses + 8> houses;   // domy i ozdoby Osiedla
+        bn::vector<bn::sprite_ptr, core::max_houses + data::estate_decor_count> houses;   // domy i ozdoby Osiedla (v0.21.52 cz. b: 12 ozdób)
         int arch = 0, asel = 0, atop = 0, amsg = 0;   // Osiedle: 0 domy, 1 Wiadomości (archiwum fabuły #35), 2 wątek
         const char* profile_tabs[] = { "Odznaki", "Katalog", "Osiedle", "Zespół", "Koszty" };
 
@@ -5211,8 +5343,8 @@ namespace
         int sel = 0, top = 0;
         const char* note = nullptr;
         // Zakładka Odznaki ma strony przełączane A: Odznaki / Zlecenia.
-        const char* badge_pages[] = { "Odznaki", "Zlecenia", "Pamiątki", "Sekrety", "Tytuły" };   // v0.21.52: tytuły
-        constexpr int badge_pages_count = 5;
+        const char* badge_pages[] = { "Odznaki", "Zlecenia", "Pamiątki", "Sekrety", "Tytuły", "Inspektor" };   // v0.21.52: tytuły, cz. b: inspektor
+        constexpr int badge_pages_count = 6;
         int page = 0;
         // Zakładka Koszty ma strony przełączane SELECT: Szkolenia (doświadczenie) / Respekt / Nagrody za odbiór.
         const char* cost_pages[] = { "Szkolenia", "Respekt", "Nagrody" };
@@ -5221,7 +5353,7 @@ namespace
         auto list_size = [&]() {
             switch(tab)
             {
-                case 0: return page == 4 ? core::titles_count : (page == 3 ? data::secrets_count : (page == 2 ? data::keepsakes_count : (page == 1 ? data::contracts_count : data::badges_count)));
+                case 0: return page == 5 ? data::inspector_levels_count : page == 4 ? core::titles_count : (page == 3 ? data::secrets_count : (page == 2 ? data::keepsakes_count : (page == 1 ? data::contracts_count : data::badges_count)));
                 case 1: return data::enemies_count;
                 case 3: return data::classes_count;
                 case 4: return kpage == 2 ? data::rewards_count : (kpage == 1 ? data::respect_count : entries.size());
@@ -5235,7 +5367,19 @@ namespace
             phone_canvas& c = *ph.canvas;
             if(is_sel) stripe(c, r, phone_tile::stripe_brand);
             ink name_ink = is_sel ? ink::brand : ink::dark;
-            if(tab == 0 && page == 4)   // v0.21.52: tytuł z odznaki / zlecenia - do wyboru (SELECT), wybrany na końcu budowy
+            if(tab == 0 && page == 5)   // v0.21.52 cz. b (#44): poziomy inspektora - nagroda za każdy poziom
+            {
+                const int lv = core::inspector_level(a.save);
+                const bool got = i < lv;
+                core::message m; m.add(i + 1).add(". "); core::progress_reward_label(m, data::inspector_levels[i], a.chosen_class);
+                core::message pm;
+                if(got) pm.add("Masz");
+                else if(i == lv) { int cur = 0, need = 0; core::inspector_bar(a.save, cur, need); pm.add(cur).add("/").add(need); }
+                else pm.add("Poz. ").add(i + 1);
+                phone_text(a, t, list_x, row_py(r), fit(a, m.s, pill_room(pm.s)).c_str(), got || is_sel ? name_ink : ink::dim);
+                phone_pill(a, c, t, pill_end, row_ty(r), pm.s, got ? pill::done : (i == lv ? pill::prog : pill::gray));
+            }
+            else if(tab == 0 && page == 4)   // v0.21.52: tytuł z odznaki / zlecenia - do wyboru (SELECT), wybrany na końcu budowy
             {
                 const bool own = core::title_owned(a.save, i), chosen = core::selected_title(a.save) == i;
                 const char* pill_s = chosen ? "Wybrany" : (own ? "Masz" : "Zablok.");
@@ -5290,9 +5434,11 @@ namespace
             else
             {
                 bool won = core::class_won(a.save, i), unl = core::class_unlocked(a.save, i);
+                const int ml = core::mastery_level(a.save, i);   // v0.21.52 cz. b (#45): poziom mistrzostwa zawodu
+                core::message mm; mm.add("Mistrz ").add(ml);
                 phone_text(a, t, list_x, row_py(r), clip(data::classes[i].name, 16).c_str(), unl || is_sel ? name_ink : ink::dim);
-                phone_pill(a, c, t, pill_end, row_ty(r), won ? "Wygrana" : (unl ? "Dostępny" : "Zablok."),
-                           won ? pill::done : (unl ? pill::group : pill::gray));
+                phone_pill(a, c, t, pill_end, row_ty(r), ! unl ? "Zablok." : (ml > 0 ? mm.s : (won ? "Wygrana" : "Dostępny")),
+                           ! unl ? pill::gray : (ml >= data::mastery_levels_count || won ? pill::done : pill::group));
             }
         };
 
@@ -5304,8 +5450,9 @@ namespace
             else if(tab == 4) sub.add("A: kup  SELECT: ").add(cost_pages[(kpage + 1) % cost_pages_count]);
             else if(tab == 0)
             {
-                int n = 0, total = page == 4 ? core::titles_count : (page == 3 ? data::secrets_count : (page == 2 ? data::keepsakes_count : (page == 1 ? data::contracts_count : data::badges_count)));
-                for(int i = 0; i < total; ++i)
+                int n = 0, total = page == 5 ? data::inspector_levels_count : page == 4 ? core::titles_count : (page == 3 ? data::secrets_count : (page == 2 ? data::keepsakes_count : (page == 1 ? data::contracts_count : data::badges_count)));
+                if(page == 5) n = core::inspector_level(a.save);
+                else for(int i = 0; i < total; ++i)
                     n += page == 4 ? core::title_owned(a.save, i) : page == 3 ? core::secret_done(a.save, i)
                        : (page == 2 ? core::keepsake_unlocked(a.save, i) : ((page == 1 ? a.save.contracts : a.save.badges) >> i) & 1);
                 sub.add(n).add("/").add(total).add("  A: ").add(badge_pages[(page + 1) % badge_pages_count]);
@@ -5361,9 +5508,11 @@ namespace
                 core::message pm; if(unread) pm.add(unread).add(" nowe"); else pm.add("A");
                 phone_text(a, t, list_x, row_py(0), wm.s, ink::dim);
                 phone_pill(a, c, t, pill_end, row_ty(0), pm.s, unread ? pill::brand : pill::gray);
-                for(int k = 0; k < core::estate_decor(a.save); ++k)   // ozdoby w przerwach między domami
+                for(int k = 0; k < data::estate_decor_count; ++k)   // ozdoby w przerwach między domami (v0.21.52 cz. b: 11-12 na brzegach)
                 {
-                    bn::sprite_ptr ds = bn::sprite_items::houses.create_sprite(48 + (k % 5) * 36 - 120, 64 + (k / 5) * 28 - 80, house_empty + 1 + k);
+                    if(! core::decor_unlocked(a.save, k)) continue;
+                    const int dx = k < 10 ? 48 + (k % 5) * 36 : (k == 10 ? 12 : 228), dy = k < 10 ? 64 + (k / 5) * 28 : (k == 10 ? 64 : 92);
+                    bn::sprite_ptr ds = bn::sprite_items::houses.create_sprite(dx - 120, dy - 80, house_empty + 1 + k);
                     ds.set_bg_priority(1);
                     houses.push_back(ds);
                 }
@@ -5511,6 +5660,28 @@ namespace
             // listy: Odznaki (4 wiersze + opis + uprawnienie), Katalog, Zespół (5 wierszy + opis zaznaczonego)
             for(int r = 0; r < list_window() && top + r < list_size(); ++r) draw_list_row(r, top + r, top + r == sel);
             const char* desc = "";
+            if(tab == 0 && page == 5)   // poziom inspektora: dośw. do kolejnego, skąd dośw.
+            {
+                int cur = 0, need = 0; core::inspector_bar(a.save, cur, need);
+                core::message w; w.add("Inspektor ").add(core::inspector_level(a.save));
+                if(need) w.add(": ").add(cur).add("/").add(need).add(" dośw."); else w.add(": MAX");
+                phone_text(a, t, list_x, row_py(4), fit(a, w.s, phone_text_w).c_str(), ink::dark);
+                phone_text(a, t, list_x, row_py(5), "Dośw. z każdej budowy, też porażki", ink::dim);
+                ph.commit();
+                return;
+            }
+            if(tab == 0 && page == 4 && sel >= core::progress_titles_from)   // tytuł z poziomu inspektora / stopnia inwestora
+            {
+                const core::progress_title& pt = data::progress_titles[sel - core::progress_titles_from];
+                core::message w; w.add(pt.source == 0 ? "Inspektor: poziom " : "Tryb inwestora: stawka ").add(pt.level);
+                phone_text(a, t, list_x, row_py(4), fit(a, w.s, phone_text_w).c_str(), ink::dim);
+                const bool own = core::title_owned(a.save, sel);
+                phone_text(a, t, list_x, row_py(5), own ? "Masz" : (pt.source == 0 ? "Dośw. inspektora z budów" : "Wygraj z taką stawką"),
+                           own ? ink::done : ink::dim);
+                if(own) phone_text(a, t, 226, row_py(5), "SELECT", ink::brand, 1);
+                ph.commit();
+                return;
+            }
             if(tab == 0 && page == 4)   // tytuł: skąd i co jeszcze daje (kolor kasku)
             {
                 const bool from_badge = sel < data::badges_count;
@@ -5666,6 +5837,11 @@ namespace
             {
                 page = (page + 1) % badge_pages_count;
                 sel = top = 0;
+                if(page == 5)   // v0.21.52 cz. b: Inspektor - od bieżącego poziomu
+                {
+                    sel = core::imin(core::inspector_level(a.save), data::inspector_levels_count - 1);
+                    top = core::imax(0, core::imin(sel - 1, data::inspector_levels_count - list_window()));
+                }
                 redraw();
                 bn::sound_items::sfx_menu.play();
             }
@@ -5741,6 +5917,10 @@ int main()
 #ifdef PB_DEBUG_STATS
         BN_LOG("PBSCENE ", int(s));
 #endif
+        // v0.21.52 cz. b: klatka między scenami (ekran wygaszony) - kafle sprite'ów poprzedniej sceny zwalniają się, zanim
+        // nowa narysuje swoje (monkey test: tytuł z paskiem inspektora + pierwsza karta wyboru zawodu = brak VRAM)
+        debug_stats();
+        bn::core::update();
         switch(s)
         {
             case scene::title:        s = run_title(a); break;
