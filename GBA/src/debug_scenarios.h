@@ -127,6 +127,13 @@
 //       drugie w połowie; tytuł: "Zadania 1/3  Seria 2", telefon -> Koszty SELECT = Drzewko, Katalog A = Kolekcje /
 //       Bossowie / Album, Odznaki A x6 = Zadania; w budowie 1 HP, obok przebudzony problem: B = czekaj -> koniec budowy,
 //       banery: zadanie dnia, komplet Stan surowy
+//  v0.21.52 cz. d: mapa kariery (#47) - profil po 30 budowach (12 wygranych, inspektor 13: wszystkie kontrakty odblokowane,
+//       Dom, Domek letniskowy i Bliźniak wygrane, Kamienica jeszcze nieogłoszona); tytuł A = mapa kariery z wybranym kontraktem,
+//       A = wybór zawodu, A = budowa:
+//  72 - Domek letniskowy: etap Strych, boss Zawilgocony strych obok (kafle drewna, paleta sosny)
+//  73 - Bliźniak: druga połowa (Dach, prawa) - 3 problemy z pierwszej połowy, ta sama pogoda (baner Wspólna ściana)
+//  74 - Dom z poddaszem: Okna dachowe, boss Zerwana połać obok, porywy co 4 tury
+//  75 - Kamienica: Odbiór konserwatora, boss Pęknięty strop obok (kafle kamienicy, parkiet i sztukateria)
 #include "core.h"
 #include "meta.h"
 
@@ -305,6 +312,17 @@ namespace debug_scenario
             p.task_progress[1] = uint8_t(core::task_of(p, 1).target); p.task_done = 2; p.tasks_total = 4;   // jedno wykonane
             p.task_progress[3] = uint8_t(core::task_of(p, 3).target / 2);
             p.houses_count = 7; for(int i = 0; i < 7; ++i) p.houses[i] = uint8_t((i % 6) | (i % 3) << 4);
+            core::story_check(p, nullptr);
+        }
+        if(scenario >= 72 && scenario <= 75)   // v0.21.52 cz. d: mapa kariery
+        {
+            p.xp = 300; p.best = 6400; p.runs = 30; p.wins = 12; p.rewards = 7; p.respect = 60; p.respect_total = 320;
+            p.inspector_xp = uint32_t(core::progress_floor(data::inspector_levels, 13) + 10);
+            p.career_done = 0x07; p.career_seen = 0x0F;   // Kamienica: baner "Nowy kontrakt" na końcu budowy
+            p.career_wins[0] = 9; p.career_wins[1] = 2; p.career_wins[2] = 1;
+            p.career_best[0] = 10; p.career_best[1] = 6; p.career_best[2] = 10; p.career_best[3] = 7; p.career_best[4] = 0;
+            p.contract = uint8_t(scenario - 71);
+            p.houses_count = 6; for(int i = 0; i < 6; ++i) p.houses[i] = uint8_t((i % 6) | (i % 3) << 4);
             core::story_check(p, nullptr);
         }
         if(scenario == 36) { p.catalog = 0xFFFF; p.catalog_hi = 0xFFFFFFFFu; }
@@ -994,6 +1012,27 @@ namespace debug_scenario
                 g.coffee_drunk = 5; g.combos_run = 4; g.secrets_found = 1; g.stage_event_log[0] = 4; g.stage_event_log[1] = 4;
                 g.kills_by_type[data::enemy_betoniarka] = 2;
                 place_enemy(g, data::enemy_budzet, 1, 1, true, 0);
+                break;
+            }
+            case 72:   // v0.21.52 cz. d: etap z bossem kontraktu, boss obok bohatera (przebudzony)
+            case 74:
+            case 75:
+            {
+                int bs = g.first_stage;
+                while(bs < g.route_count() - 1 && g.sdef(bs).boss != g.kdef().boss) ++bs;
+                g.start_stage(bs);
+                int x, y;
+                if(g.boss >= 0 && free_cell(g, 3, 4, x, y)) { g.enemies[g.boss].x = int8_t(x); g.enemies[g.boss].y = int8_t(y); g.enemies[g.boss].awake = true; }
+                break;
+            }
+            case 73:   // bliźniak: druga połowa z problemami z pierwszej (3 zostawione), ta sama pogoda
+            {
+                int ts = 1;
+                while(ts < g.route_count() - 1 && ! g.sdef(ts).twin) ++ts;
+                ts += 2;   // druga para (Dach)
+                while(ts < g.route_count() - 1 && ! g.sdef(ts).twin) ++ts;
+                g.start_stage(ts - 1);
+                g.start_stage(ts);
                 break;
             }
             case 21:
