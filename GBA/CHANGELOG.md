@@ -2,14 +2,18 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
-## v0.21.52 – w przygotowaniu (cz. a: tempo postępu)
+## v0.21.52 – w przygotowaniu (cz. a: tempo postępu, cz. b: inspektor, mistrzostwo, stopnie inwestora)
 ### Najważniejsze
 Po jednej budowie dało się kupić prawie wszystko – teraz postęp ma więcej stanów pośrednich (GBA i Godot, wspólny rdzeń):
 1. **Szkolenia z poziomami (#41)** – każde po 4 poziomy, mniejsze kroki, rosnąca cena; pełne Szkolenia dają tyle,
    co wcześniej (plus drobne dodatki), ale wykupienie wszystkiego to ~20–30 budów.
 2. **Droższe odblokowania (#42)** – zawody i narzędzia drożeją z każdym zakupem, Trudny za 100.
 3. **Odznaki i zlecenia (#43)** – mało doświadczenia, w zamian **tytuły** (do wyboru w profilu) i **kolory kasku**.
-4. **Paski postępu na końcu budowy (#52)** – najbliższe Szkolenie; mistrzostwo zawodu i poziom inspektora w cz. b.
+4. **Paski postępu na końcu budowy (#52)** – najbliższe Szkolenie, mistrzostwo zawodu i poziom inspektora.
+5. **Poziom inspektora (#44, cz. b)** – konto gracza: każda budowa (też przegrana) daje dośw. inspektora, 35 poziomów,
+   nagroda co poziom (Respekt, tytuł, kolor kasku, SMS, ozdoba Osiedla, druga pamiątka).
+6. **Mistrzostwo zawodu 1–10 (#45, cz. b)** – wariant mocy, broń mistrza, premia mistrzostwa, kask mistrza.
+7. **Stopnie inwestora (#48, cz. b)** – nagroda za każdy nowy najwyższy próg stawki.
 
 ### Nowe
 - **Szkolenia (sekcja `meta.upgrades`, pole `steps`):** poziom = działanie + przyrost + koszt (z danych, różne działania
@@ -86,6 +90,86 @@ każdej budowie kupuje najtańsze), 40 karier.
   zamienione, w Ustawieniach częściej wyjście). Seria pion + dotyk (50 seedów x 3000 akcji) znalazła dwa błędy –
   poprawione: marsz po dotknięciu (AutoWalk: NullReferenceException, gdy akcja zmieniła ekran) i podgląd problemów pod B
   (wybór spoza nowej listy). Po poprawkach: pion + dotyk 28 seedów, klawiatura + mysz 40 seedów x 3000 – bez błędów.
+
+### Cz. b – poziom inspektora, mistrzostwo zawodu, stopnie inwestora
+- **Poziom inspektora (#44)** – sekcja `inspector`: dośw. z budowy = 8 za budowę + 6 za ukończony etap + 10 za bossa
+  + 3 za elitę + 4 za magazyn + 25 za wygraną, x 80 / 100 / 125% (Łatwy / Normalny / Trudny); liczone na końcu budowy
+  (śmierć, wygrana, porzucenie) ze znakiem wodnym w profilu – „Kolejna budowa” (NG+) dolicza tylko nowe etapy.
+  35 poziomów, próg 100 + 14 x poziom (114…590, razem 12 320). Nagroda co poziom z listy w danych:
+
+  | Nagroda | Poziomy |
+  |---|---|
+  | Respekt (10–40) | 1, 6, 11, 16, 21, 26, 31, 34 |
+  | Tytuł (Praktykant, Stażysta, Rzeczoznawca, Inspektor, Kierownik robót, Nadzór budowlany, Główny inspektor) | 2, 8, 14, 19, 24, 29, 35 |
+  | Wątek SMS od Inspektora Kowala (7 nowych, Wiadomości 26) | 3, 7, 9, 15, 20, 25, 30 |
+  | Kolor kasku (czerwony, fioletowy, turkusowy, różowy, srebrny, brązowy) | 4, 13, 18, 23, 28, 33 |
+  | Ozdoba Osiedla (Nowa betoniarka, Rusztowanie, Paleta cegieł, Żuraw, Piaskownica, Altana – pixel art) | 5, 12, 17, 22, 27, 32 |
+  | Druga pamiątka (inna niż pierwsza, zawsze na randze I) | 10 |
+
+  Respekt przychodzi raz, w chwili osiągnięcia poziomu; reszta działa od poziomu. GBA: pasek pod wersją na tytule, profil >
+  Odznaki > strona **Inspektor** (lista 35 poziomów: Masz / postęp / Poz. N), banery „Inspektor: poziom N” z nagrodą;
+  Godot: to samo (złote banery na planszy końcowej).
+- **Mistrzostwo zawodu 1–10 (#45)** – sekcja `mastery`: dośw. mistrzostwa = dośw. inspektora z budowy tym zawodem; progi
+  80/120/160/200/260/320/400/480/560/640 (razem 3220). Poziomy 1, 2, 4, 6, 8, 9 – Respekt (5–10), 3 – **wariant mocy**
+  (dane: + siła mocy i tury odnowienia, np. Długa odprawa +1 t. ogłuszenia / +2 t. odnowienia, Mur na zakładkę +3 t.
+  muru, Szybki zawór -2 HP / -4 t., Lekki taran, Szybkie tyczenie; włącza się sam, wybór zawodu > SELECT: Wygląd – wł. /
+  wył.), 5 – **broń mistrza** (Kielnia mistrza itd.: kryt +2–4% tylko z bronią zawodu, złoty błysk przy krycie, nazwa
+  na karcie i w rozpisce), 7 – **premia mistrzostwa** w ofercie po etapie (12 nowych premii zawodów, np. Mur oporowy +2 OBR,
+  Wysokie napięcie +2 cele Łańcucha; na końcu listy – oferty bez mistrzostwa bez zmian), 10 – **kask mistrza** (złoty,
+  tylko tym zawodem). Wybór zawodu: „Mistrz N” obok nazwy i pasek pod portretem; Zespół: „Mistrz N”.
+- **Stopnie inwestora (#48)** – `investor.ranks`: każda nowa najwyższa stawka wygranej budowy (dowolny zawód, 1–10) daje
+  nagrodę: Respekt 15/20/25/30 (stawki 1, 4, 6, 9), tytuły Ryzykant / Negocjator / Pupil inwestora / Budowa marzeń
+  (2, 5, 8, 10), kask miedziany i granatowy (3, 7). Strona trybu inwestora pokazuje nagrodę za kolejny stopień.
+- **Koniec budowy (#52)**: strona Postęp (GBA 4/4, Godot karta POSTĘP) – trzy paski: Szkolenie, mistrzostwo zawodu,
+  inspektor („+dośw.” albo „Poziom N!”).
+- Kolory kasku: 16 wyglądów (było 7; przełączniki tylko wśród pierwszych 8, kolory w `p.helmet`). Tytuły: 26 (było 15).
+  Jak grać: GBA str. 16, Godot str. 9. Scenariusz 70 (GBA), sceny `inspector`, `help-progress` (Godot).
+
+### Balans cz. b
+Mistrzostwo i inspektor to drobne premie (bot nie używa mocy – wariant mocy bez wpływu).
+
+| Wygrane bota (Normalny, 300 przebiegów na zawód) | |
+|---|---|
+| pełne Szkolenia + Respekt + Akt 0 (jak wyżej) | 68% |
+| + mistrzostwo 10 każdym zawodem i maks. inspektor | 70% |
+| ... + odznaka Bez usterek (sama: 72%) i 2. pamiątka Kask ojca (I) | 86% |
+| ... z Kaskiem ojca jako pierwszą pamiątką (bez drugiej) | 84% |
+
+Druga pamiątka nie daje więcej niż wybór najlepszej jako pierwszej (Kask ojca: +1 OBR jest dla bota bardzo mocny); cele
+Łatwy 54%, Normalny 32%, Trudny 10%, Szkolenia 57%, + Respekt 72%, modyfikatory 13%, Akt 0 68% – bez zmian.
+
+### Tempo cz. b
+Bot: kariera od pustego profilu (40 karier x 300 budów, jak tabela tempa wyżej).
+
+| | |
+|---|---|
+| Dośw. inspektora na budowę (średnio) | 143 |
+| Maksymalny poziom inspektora (35) | po 88 budowach (79–98) |
+| Poziom inspektora po wykupieniu Szkoleń (~23 budowy) | 13 |
+| Mistrzostwo 3 / 5 / 7 / 10 (budowy tym zawodem) | 3 / 6 / 11 / 22 |
+
+### Zmiany cz. b
+- **Profil v14** (240 B, zapis budowy dalej od 256): dośw. inspektora (uint32 @200), mistrzostwo 12 zawodów (uint16 @204),
+  włączone warianty mocy (@228), znak wodny postępu budowy (@230), druga pamiątka (@232), 7 B zapasu. Migracja v13
+  (i starszych): inspektor = 20 x budowy + 60 x wygrane + 50% Respektu łącznie, mistrzostwo = 120 x dom zawodu na
+  Osiedlu + 60 za wygraną zawodem; Respekt za osiągnięte poziomy, wątki SMS inspektora od razu.
+- Zapis budowy GBA bez zmian (pole mistrzostwa w miejscu wyrównania `run_mods` – stara przerwana budowa się wznowi);
+  Godot: nowy rozmiar stanu, stara przerwana budowa przepada.
+- GBA: klatka między scenami (ekran wygaszony) – kafle sprite'ów poprzedniej sceny zwalniają się przed rysowaniem nowej
+  (monkey test: tytuł z paskiem inspektora i pierwsza karta wyboru zawodu = brak VRAM).
+- Monkey test GBA: 20 seedów zwykłej gry + scenariusze 58, 69, 70 (po 6) x 20000 klatek – bez błędów (szczyt kafli
+  sprite'ów 129/256, sprite'ów 105/128, stosu ~8,1 KB).
+- Test złoty: 62 przebiegi (+ mistrzostwo z bota „smart” – Odprawa, Ścianka, Zawór, Taran, Tyczenie, Złota rączka –
+  i druga pamiątka).
+
+### Godot cz. b
+- Port rdzenia (`Progress`, `ProgressGain`, `MasteryBit`, `Game.Mastery`, profil v14 `MigrateV14`), `InspectorMasteryTests`;
+  `dotnet test` 238/238, build 0 ostrzeżeń.
+- Te same ekrany: pasek inspektora na tytule, „Mistrz N” z paskiem na karcie zawodu, strona Wygląd / Tryb inwestora
+  z wariantem mocy, drugą pamiątką i kolejnym stopniem, karta POSTĘP z trzema paskami, złote banery nowych poziomów
+  (wątki fabuły zbiorczo, gdy więcej niż 2), Odznaki > Inspektor, „Mistrz N” w Zespole, ozdoby z inspektora na Osiedlu,
+  Jak grać str. 9; sceny zrzutów `inspector`, `help-progress`; test dymny (9 stron Jak grać, Tytuły -> Inspektor).
+- Test małpy: klawiatura + mysz 20 seedów i pion + dotyk 20 seedów x 3000 akcji – bez błędów.
 
 ## v0.21.51 – 2026-09-29
 ### Najważniejsze

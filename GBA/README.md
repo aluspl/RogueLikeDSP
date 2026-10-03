@@ -287,11 +287,24 @@ Zadania telefonu. Teksty i wartości: `siteEvents` w `data/game.json`.
   budżet; ceny 25–200), nowe zawody (60/100/150 – każdy kolejny drożej), narzędzia (60–150), brygada, poziom Trudny (100).
   Wykupienie wszystkiego to ~20–30 budów (bot: 23).
 - Odznaki i zlecenia dają mało doświadczenia, za to tytuł (profil > Odznaki > Tytuły, SELECT wybiera) i czasem kolor
-  kasku (wybór zawodu > SELECT: Wygląd). Koniec budowy: strona „Postęp” z paskiem do najbliższego Szkolenia.
+  kasku (wybór zawodu > SELECT: Wygląd). Koniec budowy: strona „Postęp” z paskami Szkolenia, mistrzostwa i inspektora.
+- **Poziom inspektora** (v0.21.52 cz. b, konto gracza): każda budowa – też przegrana – daje dośw. inspektora (budowa,
+  ukończone etapy, bossowie, elity, magazyny, wygrana; x trudność). 35 poziomów z rosnącymi progami, nagroda co poziom
+  (lista w danych: Respekt, tytuł, kolor kasku, wątek SMS od Inspektora Kowala, ozdoba Osiedla, slot drugiej pamiątki
+  na poziomie 10). Pasek na tytule, lista poziomów: profil > Odznaki > Inspektor (A przełącza strony). Bot: maksimum po
+  ~88 budowach.
+- **Mistrzostwo zawodu 1–10**: dośw. mistrzostwa = dośw. inspektora z budowy tym zawodem. Poziom 3: wariant mocy (dane:
+  siła i tury odnowienia, np. Mur na zakładkę, Szybki zawór; wybór zawodu > SELECT: Wygląd włącza / wyłącza), 5: broń
+  mistrza (kryt +2–4% z bronią zawodu, złoty błysk), 7: premia mistrzostwa w ofercie po etapie, 10: kask mistrza
+  (złoty, tylko tym zawodem); pozostałe poziomy – Respekt. Wybór zawodu: „Mistrz N” i pasek pod portretem. Bot:
+  mistrzostwo 10 po ~22 budowach zawodem.
+- **Stopnie inwestora**: każdy nowy najwyższy próg stawki wygranej budowy (1–10) daje nagrodę (Respekt, tytuł, kolor
+  kasku); następna nagroda na stronie trybu inwestora.
 - Profil (rekord, doświadczenie, zakupy, odznaki, liczniki zleceń, pamiątki, brygada, tryb inwestora) zapisuje się
-  w SRAM (format v13, 200 bajtów, z Respektem, nagrodami za odbiór, Katalogiem dla 48 rodzajów problemów, samouczkiem menu,
-  wynikami tygodni, wątkami fabuły, sekretami, tytułem i kolorem kasku); starsze zapisy (v1-v12) są przenoszone bez utraty
-  danych (v0.21.52: poziomy Szkoleń wracają jako doświadczenie po starej cenie).
+  w SRAM (format v14, 240 bajtów, z Respektem, nagrodami za odbiór, Katalogiem dla 48 rodzajów problemów, samouczkiem menu,
+  wynikami tygodni, wątkami fabuły, sekretami, tytułem i kolorem kasku, dośw. inspektora i mistrzostwa, drugą pamiątką);
+  starsze zapisy (v1-v13) są przenoszone bez utraty danych (v0.21.52: poziomy Szkoleń wracają jako doświadczenie po starej
+  cenie; inspektor i mistrzostwo szacowane z budów, wygranych, Respektu i domów na Osiedlu).
 - Liczniki zleceń trafiają do profilu na końcu etapu; profil pamięta, ile z bieżącej budowy już przeniesiono, więc
   wznowienie budowy po wyłączeniu konsoli nie liczy etapu drugi raz.
 - Harmonogram między etapami pokazuje radę kierownika (sterowanie i mechaniki; lista `tips` w `data/game.json`).
@@ -331,7 +344,7 @@ rzadkie, legendarne (43–45), lista premii w telefonie (46), elity (47), mokry 
 zamróz + uderzenie (50), mokry bohater + prąd (51), wydarzenia z wyborem (52), Hurtownia z ulepszeniem i cechą (53),
 zamiana ulepszonego narzędzia (54), pęknięta ściana z kluczem i skrzynia (55), drzwi magazynu (56), podsumowanie po
 porażce (57), podsumowanie po wygranej (58), wyzwanie tygodnia (59), Wiadomości i Osiedle z ozdobami (60), sekretne zlecenia (61–67), skrzynia magazynu przy pełnym HUD (68), tempo postępu – Szkolenia z poziomami, Tytuły, kolor
-kasku, strona Postęp (69)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
+kasku, strona Postęp (69), poziom inspektora i mistrzostwo zawodu (70)): build z `-DPB_SCENARIO=N` (opis w `src/debug_scenarios.h`), np.
 ```bash
 make TARGET=scn1 BUILD=build_scn1 USERFLAGS="-DPB_SCENARIO=1" BUTANO_PATH=...
 ROM=scn1.gba tools/playtest/run.sh skrypt.txt /tmp/zrzuty --fresh
@@ -364,7 +377,7 @@ tools/make_assets.py  proceduralne grafiki: font PL 8x16, sprite'y, kafelki+pale
 assets_src/pb_logo.svg  znak PlanBudowlany
 include/core.h        logika gry (czyste C++, bez Butano) - testowalna na PC; rozpiska obrażeń broni (dmg_breakdown);
                       wydarzenia z wyborem, ulepszanie narzędzia, magazyn (v0.21.50 cz. 3)
-include/meta.h        profil SRAM (v13), Szkolenia z poziomami i ceny rosnące, tytuły i kolory kasku, wyzwanie tygodnia, fabuła (Wiadomości, ozdoby Osiedla), rada i cel podsumowania, samouczek menu, Respekt, nagrody za odbiór, codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
+include/meta.h        profil SRAM (v14), poziom inspektora, mistrzostwo zawodu, stopnie inwestora, Szkolenia z poziomami i ceny rosnące, tytuły i kolory kasku, wyzwanie tygodnia, fabuła (Wiadomości, ozdoby Osiedla), rada i cel podsumowania, samouczek menu, Respekt, nagrody za odbiór, codzienna budowa, harmonogram domu, Szkolenia, odznaki i uprawnienia, zlecenia, pamiątki, brygada, tryb inwestora
 src/main.cpp          warstwa GBA: sceny, mapa, kamera, HUD, SRAM
 ```
 Grafiki są placeholderami generowanymi kodem: podmień pliki w `graphics/` pixel-artem z Aseprite

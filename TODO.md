@@ -151,6 +151,13 @@ v0.21.51 dokończone (CHANGELOG cz. 2, seria małpy pion + dotyk – poprawka Au
 modyfikatory 13%, Akt 0 68%; wszystko wykupione po ~23 budowach. Nie wydane – jedno wydanie po cz. b
 (#44 inspektor, #45 mistrzostwo, #48 stopnie inwestora; potem #46, #47, #49–#51).
 
+### Gdzie skończyliśmy (2026-10-03)
+
+v0.21.52 cz. b (#44 inspektor, #45 mistrzostwo, #48 stopnie inwestora, #52 paski) w GBA i Godocie: profil v14 (240 B),
+balans bez zmian celów (mistrzostwo + inspektor 70%), tempo: inspektor maks. po ~88 budowach, mistrzostwo 10 po ~22
+budowach zawodem. Nie wydane – dalej cz. c (#46 drzewko Szkoleń, #49 kolekcje, #50 zadania dnia/tygodnia, #51 seria dni;
+#47 mapa kariery), potem jedno wydanie v0.21.52.
+
 ## Następne wydania
 
 | # | Pomysł | GODOT (MOBILE) | GBA |
@@ -158,15 +165,15 @@ modyfikatory 13%, Akt 0 68%; wszystko wykupione po ~23 budowach. Nie wydane – 
 | 41 | v0.21.52 – Szkolenia z 4–5 poziomami (mniejsze przyrosty, rosnąca cena), pełne odblokowanie ~20–30 budów; zwrot dośw. za stare poziomy | ✅ (cz. a: 4 poziomy, 25–200, bot: 23 budowy, profil v13 ze zwrotem) | ✅ |
 | 42 | v0.21.52 – zawody, narzędzia, trudność drożeją z każdym zakupem (np. 40/80/120/160) | ✅ (zawody 60/100/150, narzędzia 60–150, Trudny 100) | ✅ |
 | 43 | v0.21.52 – odznaki i zlecenia: mniej dośw., więcej unikalnych nagród (tytuły, pamiątki, kosmetyka) | ✅ (5–15 dośw., 15 tytułów, 5 kolorów kasku) | ✅ |
-| 44 | v0.21.52 – poziom inspektora (konto gracza, pasek dośw., nagroda co poziom: SMS, dekoracja Osiedla, kolor kasku, slot pamiątki) | ⬜ | ⬜ |
-| 45 | v0.21.52 – mistrzostwo zawodu 1–10 (alternatywna moc, wariant broni, unikalna premia, złoty kask zawodu) | ⬜ | ⬜ |
+| 44 | v0.21.52 – poziom inspektora (konto gracza, pasek dośw., nagroda co poziom: SMS, dekoracja Osiedla, kolor kasku, slot pamiątki) | ✅ (cz. b: 35 poziomów, bot: maks. po ~88 budowach, profil v14) | ✅ |
+| 45 | v0.21.52 – mistrzostwo zawodu 1–10 (alternatywna moc, wariant broni, unikalna premia, złoty kask zawodu) | ✅ (cz. b: wariant mocy 3, broń mistrza 5, premia 7, kask 10; bot: 10 po ~22 budowach zawodem) | ✅ |
 | 46 | v0.21.52 – drzewko Szkoleń: gałęzie Fach / BHP / Logistyka z wyborem węzłów | ⬜ | ⬜ |
 | 47 | v0.21.52 – mapa kariery: kolejne zlecenia (domek letniskowy, bliźniak, dom z poddaszem, kamienica) z innymi etapami/wrogami/bossami | ⬜ | ⬜ |
-| 48 | v0.21.52 – stopnie inwestora z nagrodą za każdy nowy poziom (kosmetyka, tytuły) | ⬜ | ⬜ |
+| 48 | v0.21.52 – stopnie inwestora z nagrodą za każdy nowy poziom (kosmetyka, tytuły) | ✅ (cz. b: stawki 1–10: Respekt, tytuły, kaski) | ✅ |
 | 49 | v0.21.52 – kolekcje: liczniki katalogu, karty bossów, album Osiedla; komplet = drobna premia | ⬜ | ⬜ |
 | 50 | v0.21.52 – zadania dnia i tygodnia (np. 3 elity, 2× brygada) za Respekt/kosmetykę | ⬜ | ⬜ (z daty z codziennej budowy) |
 | 51 | v0.21.52 – seria dni codziennej budowy (3 dni pamiątka, 7 dni kolor kasku) | ⬜ | ⬜ |
-| 52 | v0.21.52 – koniec budowy z paskami postępu (Szkolenie, mistrzostwo, inspektor) | ✅ częściowo (karta POSTĘP: pasek Szkolenia; mistrzostwo i inspektor „wkrótce” – cz. b) | ✅ częściowo (strona 4/4 Postęp) |
+| 52 | v0.21.52 – koniec budowy z paskami postępu (Szkolenie, mistrzostwo, inspektor) | ✅ (karta POSTĘP: trzy paski, „Poziom N!”) | ✅ (strona 4/4 Postęp) |
 | 40 | Obsługa wielu języków (PL/EN): wszystkie teksty w `game.json` jako słowniki `pl`/`en` (fabuła, opisy, samouczek, Jak grać), wybór języka w opcjach (Godot: klucz / domyślnie z języka systemu; GBA: opcja w telefonie profilu, zapis w profilu), font z pełnym zestawem znaków (GBA: kontrola `gen_data.py --check` dla obu języków; teksty EN krótsze/dłuższe – dopasowanie `fit()`), nazwy wrogów i przedmiotów po angielsku, sklepy (App Store / Play) z opisem EN | ⬜ | ⬜ |
 
 ## Zgodność funkcji
