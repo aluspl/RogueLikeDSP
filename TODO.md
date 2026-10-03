@@ -215,6 +215,33 @@ cały jego changelog jest w sekcji v0.21.52. Dalej: wydanie v0.21.52 (GitHub Rel
 | 54 | v0.21.53 – tryby dla daltonistów: Protanopia, Deuteranopia, Tritanopia (daltonizacja), Wysoki kontrast – zawsze dostępne; wzory zamiast samego koloru | ✅ (paski na polach ciosu i wybuchu, litery rzadkości Z/R/L; sprawdzone symulacją wady na zrzutach) | ✅ (ta sama macierz daltonizacji; pola ciosu zawsze z wzorem, rzadkość słowem) |
 | 40 | Obsługa wielu języków (PL/EN): wszystkie teksty w `game.json` jako słowniki `pl`/`en` (fabuła, opisy, samouczek, Jak grać), wybór języka w opcjach (Godot: klucz / domyślnie z języka systemu; GBA: opcja w telefonie profilu, zapis w profilu), font z pełnym zestawem znaków (GBA: kontrola `gen_data.py --check` dla obu języków; teksty EN krótsze/dłuższe – dopasowanie `fit()`), nazwy wrogów i przedmiotów po angielsku, sklepy (App Store / Play) z opisem EN | ✅ (v0.21.53 cz. 2: `Loc` + `LangOverlay`, Ustawienia > Język / Language, domyślnie język systemu; `en.json`: 1356 tekstów danych, 661 interfejsu) | ✅ (wybór przy 1. uruchomieniu, Zespół > SELECT, profil bajt 378; 799 tekstów interfejsu, `gen_data.py --check`: kompletność, font, szerokość px, napisy na sztywno) |
 
+## Pomysły: gra + aplikacja PlanBudowlany i głębia grafiki (2026-10-03, do decyzji)
+
+Zasada nadrzędna: **nic z poniższego nie daje przewagi w walce** – tylko kosmetyka, wygoda, fabuła i statystyki.
+Balans (bot: Normalny 25–35% itd.) zostaje nietknięty, a gracze bez konta PB nie tracą nic z rozgrywki.
+
+### A. Konto PlanBudowlany w grze (Godot / mobile)
+| # | Pomysł | Uwagi |
+|---|---|---|
+| 55 | Opcjonalne logowanie kontem PlanBudowlany (OAuth / login jak w aplikacji mobilnej, endpointy z dev-api `/scalar`) | tylko Godot; gra działa w pełni bez logowania; token w pęku kluczy telefonu |
+| 56 | Kosmetyka dla posiadaczy konta: „Kask PlanBudowlany” (fioletowo-pomarańczowy), tytuł „Inwestor” | po samym zalogowaniu |
+| 57 | Kosmetyka dla płatnej subskrypcji: złoty kask PB, filtr ekranu „Plan” (fioletowa siatka techniczna), ozdoba Osiedla „Biuro PB”, tytuł „Inwestor Premium” | sprawdzane przez API subskrypcji; tylko wygląd |
+| 58 | Synchronizacja profilu gry przez konto PB (zamiast/obok iCloud i Google Play Games) | zapis profilu jako blob przy koncie; konflikt = nowszy postęp |
+| 59 | Most fabularny: po wygranej „Twój dom z gry” jako przykładowy harmonogram do otwarcia w aplikacji PB (link głęboki do szablonu) | marketing bez nachalności |
+| 60 | Odwrotnie: w aplikacji PB małe „osiągnięcie” za ukończenie etapu budowy → odblokowuje w grze ozdobę Osiedla (np. „Prawdziwy fundament”) | tylko kosmetyka; wymaga zmian w API i aplikacji (sesja PB) |
+| 61 | Statystyki „Budowa w grze vs prawdziwa” na profilu (dni, koszty) – zabawne porównanie | tylko wyświetlanie |
+
+### B. Głębia grafiki w Godot (GBA bez zmian)
+| # | Pomysł | Uwagi do balansu |
+|---|---|---|
+| 62 | Wyższe ściany: lico ściany na 1,5–2 pola wysokości, zasłanianie postaci za ścianą półprzezroczystością | logika siatki i pola widzenia bez zmian – tylko rysowanie |
+| 63 | Widok 3/4 (lekko z góry, jak w Hades / Into the Breach): przesunięte w pionie wiersze, cienie rzucane, warstwy (podłoga, przedmioty, postaci, wierzch ścian) | sterowanie i stuknięcia nadal po siatce; test „małpy” w obu widokach |
+| 64 | Opcja izometryczna (romby) jako tryb eksperymentalny w ustawieniach | duży koszt grafiki – najpierw prototyp jednego aktu |
+| 65 | Światło dynamiczne: latarka czołowa, kałuże odbijające światło, iskry przy kombinacjach | pole widzenia liczone jak dziś; światło tylko wizualnie |
+| 66 | Paralaksa tła poza mapą (rusztowania, dźwig, niebo zależne od pogody) | tylko tło |
+
+Kolejność proponowana: #62 → #63 (prototyp na jednym akcie, porównanie zrzutów) → #65; #55–#57 po uzgodnieniu API z sesją PB.
+
 ## Zgodność funkcji
 
 | Funkcja | GODOT (MOBILE) | GBA |
