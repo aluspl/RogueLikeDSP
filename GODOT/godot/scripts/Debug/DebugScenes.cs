@@ -685,7 +685,7 @@ public sealed class DebugScenes
     {
         var g = _app.Session.Game;
         var d = g.D;
-        int Idx(string n) => Array.FindIndex(d.Boons, b => b.Name == n);
+        int Idx(string id) => Array.FindIndex(d.Boons, b => b.Id == id); // v0.21.53 cz. 2: po identyfikatorze (nazwy zależą od języka)
         void Give(string n)
         {
             g.BoonOffer[0] = (sbyte)Idx(n);
@@ -694,21 +694,21 @@ public sealed class DebugScenes
         _app.Nodes.Banners.Clear();
         if (scene is "boon-phone" or "boon-synergies")
         {
-            foreach (var n in new[] { "Beton B30", "Hartowana kielnia", "Wąż ogrodowy", "Przedłużacz", "Koniczyna", "Młot mistrza", "Podwójne espresso" }) Give(n);
+            foreach (var n in new[] { "beton_b30", "kielnia_hart", "waz", "przedluzacz", "koniczyna", "mlot_mistrza", "espresso" }) Give(n);
             _app.Session.ResetWatch();
             _app.Refresh();
             Flow.BoonList.Open(scene == "boon-synergies" ? 1 : 0, true);
             return;
         }
-        Give("Wąż ogrodowy");
+        Give("waz");
         g.DebugSkip();
         _app.Session.ResetWatch();
         _app.AfterAction(true);
         await DebugRunner.Frames(_app.Root, 1);
         if (Flow.Current != Flow.Boons) return;
-        g.BoonOffer[0] = (sbyte)Idx("Przedłużacz");   // zwykła: włączy Przepięcie (woda + prąd)
-        g.BoonOffer[1] = (sbyte)Idx("Instrukcja BHP"); // rzadka
-        g.BoonOffer[2] = (sbyte)Idx("Młot mistrza");   // legendarna
+        g.BoonOffer[0] = (sbyte)Idx("przedluzacz");   // zwykła: włączy Przepięcie (woda + prąd)
+        g.BoonOffer[1] = (sbyte)Idx("instrukcja"); // rzadka
+        g.BoonOffer[2] = (sbyte)Idx("mlot_mistrza");   // legendarna
         _app.Nodes.Banners.Clear();
         if (scene == "boon-synergy")
         {

@@ -221,7 +221,7 @@ public sealed partial class Game
         for (var s = 0; s < D.Synergies.Length; ++s)
         {
             if (((now >> s) & 1) == 0 || ((before >> s) & 1) != 0) continue;
-            Push(Msg(Loc.T(Loc.T("synergia_2"))).Add(D.Synergies[s].Name).Add("!").As(LogKind.Good));
+            Push(Msg(Loc.T("synergia")).Add(D.Synergies[s].Name).Add("!").As(LogKind.Good));
             StageFlags[Stage] |= RecapFlag.Synergy;
         }
         return true;

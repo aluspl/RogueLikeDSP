@@ -261,7 +261,7 @@ public static class DamageHelp
                     m.Add(Loc.T("ulepszenie_brak"));
                     return false;
                 }
-                m.Add(Loc.T(Loc.T("ulepszenie_2"))).Add(b.UpgLevel).Add(": +").Add(b.FlatUpgrade).Add(Loc.T("obr_3"));
+                m.Add(Loc.T("ulepszenie")).Add(b.UpgLevel).Add(": +").Add(b.FlatUpgrade).Add(Loc.T("obr_3"));
                 if (b.UpgTrait >= 0) m.Add(", ").Add(d.ToolTraits[b.UpgTrait].Name).Add(" ").Add(d.ToolTraits[b.UpgTrait].Short);
                 return true;
             default:

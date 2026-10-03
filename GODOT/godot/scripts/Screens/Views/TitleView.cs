@@ -90,7 +90,7 @@ public partial class TitleView : Control, Touch.ITapTargets
         var portrait = h > w;
         var safe = Layout.SafeArea;
         Ui.VioletGradient(this, new Rect2(0, 0, w, h));
-        var logo = Assets.Tex("ui/title.png");
+        var logo = Assets.Tex(Loc.English ? "ui/title_en.png" : "ui/title.png"); // v0.21.53 cz. 2: hasło po angielsku
         var bob = Mathf.Round(Mathf.Sin(_clock * 1.6f) * 2f);
         var ls = portrait ? Mathf.Min(2f, Mathf.Floor((w - 16) / logo.GetWidth() * 2) / 2) : h >= 440 ? 2f : 1.5f;
         var lsz = logo.GetSize() * ls;

@@ -78,7 +78,7 @@ public partial class EndView : Control, Touch.ITapTargets
         Ui.VioletGradient(this, new Rect2(0, 0, w, h));
         var es = portrait ? Mathf.Min(2f, Mathf.Floor((w - 16) / 240f * 2) / 2) : 2f;
         var top = portrait ? Layout.SafeTop + 24 : 0;
-        DrawTextureRect(Assets.Tex("ui/end.png"), new Rect2(Mathf.Round((w - 240 * es) / 2), top, 240 * es, 104 * es), false);
+        DrawTextureRect(Assets.Tex(Loc.English ? "ui/end_en.png" : "ui/end.png"), new Rect2(Mathf.Round((w - 240 * es) / 2), top, 240 * es, 104 * es), false);
         var y = top + 104 * es + 2;
         DrawRect(new Rect2(0, y, w, 2), Pal.Accent);
         var title = Won ? Loc.T("odbior_zaliczony_2") : Loc.T("budowa_wstrzymana_3");

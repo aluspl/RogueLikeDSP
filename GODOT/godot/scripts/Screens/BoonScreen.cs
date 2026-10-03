@@ -63,7 +63,7 @@ public sealed class BoonScreen : Screen
         for (var s = 0; s < S.Data.Synergies.Length; s++)
         {
             if (((now >> s) & 1) == 0 || ((before >> s) & 1) != 0) continue;
-            N.Banners.Push(Loc.T(Loc.T("synergia_2")) + S.Data.Synergies[s].Name, S.Data.Synergies[s].Desc, PhoneTabs.Gear);
+            N.Banners.Push(Loc.T("synergia") + S.Data.Synergies[s].Name, S.Data.Synergies[s].Desc, PhoneTabs.Gear);
             var line = Loc.F("synergia_6", S.Data.Synergies[s].Name, S.Data.Synergies[s].Desc); // pełny opis na harmonogramie
             S.Note = S.Note.Length > 0 ? line + " " + S.Note : line;
             Sfx.Play("level", 0.8f);

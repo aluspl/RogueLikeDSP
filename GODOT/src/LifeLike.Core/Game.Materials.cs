@@ -61,7 +61,7 @@ public sealed partial class Game
         {
             case RepairBlock.Ok: break;
             case RepairBlock.Material:
-                Push(Msg(rd.Name).Add(Loc.T(Loc.T("brak_2"))).Add(D.Materials[rd.Material].Name));
+                Push(Msg(rd.Name).Add(Loc.T("brak")).Add(D.Materials[rd.Material].Name));
                 return false;
             case RepairBlock.NoTarget:
                 Push(Msg(rd.Name).Add(Loc.T("brak_problemu_w_polu_widzenia")));

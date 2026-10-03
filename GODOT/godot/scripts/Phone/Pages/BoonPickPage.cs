@@ -128,7 +128,7 @@ public sealed class BoonPickPage : PhonePage
             var syn = BoonLook.NewSynergy(_g, b);
             if (syn >= 0)
             {
-                var st = Loc.T(Loc.T("synergia_2")) + d.Synergies[syn].Name;
+                var st = Loc.T("synergia") + d.Synergies[syn].Name;
                 if (p.F.Measure(st) > (right - tx) * 0.6f) st = Loc.T("synergia_5");
                 xr -= p.Pill(xr, ty, st, PillKind.Done) + 4;
             }

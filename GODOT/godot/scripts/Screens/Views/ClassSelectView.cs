@@ -496,7 +496,7 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         [
             Loc.F("kryt_zasieg", name, b.CritMin, b.CritMax, b.CritChance(), b.Range),
             Loc.F("kryt_11", name, b.CritMin, b.CritMax, b.CritChance()),
-            $"{name}, kr {b.CritMin}-{b.CritMax} {b.CritChance()}%",
+            Loc.F("kr_linia", name, b.CritMin, b.CritMax, b.CritChance()),
         ];
         var text = "";
         foreach (var v in variants)
