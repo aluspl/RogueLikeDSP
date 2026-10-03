@@ -286,7 +286,20 @@ namespace
     {
         core::profile p;
         bn::sram::read(p);
-        if(core::profile_fix(p)) bn::sram::write(p);   // pusta pamięć albo migracja z v1
+        const bool older = std::memcmp(p.magic, core::profile_magic, sizeof p.magic) != 0;
+        if(core::profile_fix(p))   // pusta pamięć albo migracja z v1
+        {
+            // v0.21.52 cz. c: profil v15 (384 B) nachodzi na stary zapis budowy pod 256 - najpierw przenieś przerwaną budowę
+            // pod nowy adres (512), dopiero potem zapisz profil (wyłączenie konsoli w trakcie: stary profil i budowa zostają)
+            if(older)
+            {
+                bn::unique_ptr<core::run_save> s(new core::run_save());
+                bn::sram::read_offset(*s, core::run_save_offset_v14);
+                if(core::run_save_valid(*s)) bn::sram::write_offset(*s, core::run_save_offset);
+                else { const struct { char magic[8]; } none = {}; bn::sram::write_offset(none, core::run_save_offset); }   // bez śmieci pod nowym adresem
+            }
+            bn::sram::write(p);
+        }
         return p;
     }
 
@@ -333,6 +346,30 @@ namespace
         else s.set_palette(bn::sprite_items::actors.palette_item());
     }
 
+    // v0.21.52 cz. c (#50, #51): dzień i tydzień zadań - GBA nie ma zegara: data ustawiona dla budowy dnia (R na tytule)
+    void goal_dates(const app& a, int& day, int& week)
+    {
+        int y, m, d;
+        core::daily_date(a.save, y, m, d);
+        day = core::daily_number(y, m, d);
+        week = core::weekly_number(y, m, d);
+    }
+    bool roll_tasks(app& a) { int day, week; goal_dates(a, day, week); return core::tasks_roll(a.save, day, week); }
+    // Krótka nagroda za próg (zadania łącznie, seria dni): "+15 Resp.", "Limonkowy kask", "tytuł Pracowity", nazwa pamiątki.
+    core::message& goal_label(core::message& m, const core::progress_level& l)
+    {
+        switch(l.reward)
+        {
+            case core::progress_reward::respect:  return m.add("+").add(int(l.value)).add(" Resp.");
+            case core::progress_reward::title:    return m.add("tytuł ").add(l.title);
+            case core::progress_reward::helmet:   return m.add(data::cosmetics[l.index].name);
+            case core::progress_reward::keepsake: return m.add(data::keepsakes[l.index].name);
+            default:                              return m;
+        }
+    }
+    // Postęp zadań z budowy (koniec etapu / budowy, porzucenie) - bity wykonanych teraz.
+    int bank_tasks(app& a, const core::game& g) { int day, week; goal_dates(a, day, week); return core::bank_tasks(a.save, g, day, week); }
+
     // ------------------------------------------------------------------ zapis budowy w trakcie (SRAM za profilem)
     struct run_marker { char magic[8]; };
 
@@ -349,6 +386,7 @@ namespace
         bn::unique_ptr<core::run_save> s(new core::run_save());
         bn::sram::read_offset(*s, core::run_save_offset);
         if(! core::run_save_valid(*s)) return false;
+        core::run_save_upgrade(*s);   // v0.21.52 cz. c: PBRUN14 - liczniki zadań od zera
         bn::memory::copy(s->g, 1, *a.g);
         return true;
     }
@@ -512,6 +550,18 @@ namespace
             insp_bar[0] = bn::sprite_items::hp_bar.create_sprite(-100, -42, 32 + core::imin(fill, 31));   // kolor 1: żółty
             insp_bar[1] = bn::sprite_items::hp_bar.create_sprite(-68, -42, 96 + 32 + core::imax(0, fill - 31));
         }
+        // v0.21.52 cz. c (#50, #51): zadania dnia i seria dni (pod rekordem; od pierwszej budowy)
+        text_sprites goals_text;
+        if(a.save.runs > 0)
+        {
+            if(roll_tasks(a)) bn::sram::write(a.save);
+            int day, week; goal_dates(a, day, week);
+            core::message gm; gm.add("Zadania ").add(core::tasks_done_today(a.save)).add("/").add(core::daily_task_slots);
+            a.text.set_right_alignment();
+            a.text.generate(116, -56, gm.s, goals_text);
+            const int st = core::streak_now(a.save, day);
+            if(st > 0) { core::message sm; sm.add("Seria ").add(st).add(st == 1 ? " dzień" : " dni"); a.text.generate(116, -40, sm.s, goals_text); }
+        }
         a.text.set_center_alignment();
         text_sprites shop_hint;
         a.text.generate(0, 66, "SELECT: telefon  B: pomoc", shop_hint);
@@ -661,7 +711,7 @@ namespace
 
     void page_help(app& a)
     {
-        constexpr int pages_count = 16;
+        constexpr int pages_count = 17;
         core::message cmb[3];   // kombinacje stanów (#29): "Mokry + prąd! Porażenie"
         for(int k = 0; k < 3 && k < data::combos_count; ++k) cmb[k].add(data::combos[k].short_name).add(" ").add(data::combos[k].name);
         core::message luck1, luck2;   // wzory z danych (sekcja luck)
@@ -701,13 +751,15 @@ namespace
             { data::secrets_help[0], data::secrets_help[1], data::secrets_help[2], data::secrets_help[3], data::secrets_help[4],
               data::secrets_help[5], data::secrets_help[6] },   // v0.21.51 cz. 2: sekretne zlecenia
             { data::progress_help[0], data::progress_help[1], data::progress_help[2], data::progress_help[3], data::progress_help[4],
-              data::progress_help[5], data::progress_help[6] } };   // v0.21.52 cz. b: poziom inspektora, mistrzostwo
+              data::progress_help[5], data::progress_help[6] },   // v0.21.52 cz. b: poziom inspektora, mistrzostwo
+            { data::goals_help[0], data::goals_help[1], data::goals_help[2], data::goals_help[3], data::goals_help[4],
+              data::goals_help[5], data::goals_help[6] } };   // v0.21.52 cz. c: drzewko, kolekcje, zadania, seria dni
         for(int pg = 0; pg < pages_count; ++pg)
         {
             page_sprites t;
             a.text.set_center_alignment();
-            static const char* const names[8] = { "Kombinacje", "Skąd stany", "Premie i elity", "Wydarzenia", "Magazyn", "Po budowie",
-                                                  "Sekrety", "Inspektor" };   // strony 9-16 (v0.21.50, 15: v0.21.51 cz. 2, 16: v0.21.52 cz. b)
+            static const char* const names[9] = { "Kombinacje", "Skąd stany", "Premie i elity", "Wydarzenia", "Magazyn", "Po budowie",
+                                                  "Sekrety", "Inspektor", "Cele" };   // strony 9-17 (v0.21.50, 15: v0.21.51 cz. 2, 16-17: v0.21.52)
             core::message title; title.add(pg >= 8 ? names[pg - 8] : (pg == 1 ? "Okna i wybory" : "Jak grać")).add(" (").add(pg + 1).add("/").add(pages_count).add(")");
             a.text.generate(0, -70, title.s, t);
             a.text.set_left_alignment();
@@ -1425,17 +1477,23 @@ namespace
         phone_header(a, ph, t, tab_names[4], "Szkolenia");
         phone_canvas& c = *ph.canvas;
         int total = core::shop_total_cost(), spent = core::shop_spent(a.save);
-        phone_text(a, t, list_x, row_py(0), "WYDANE NA SZKOLENIA", ink::dim);
-        core::message sp; sp.add(spent).add(" z ").add(total).add(" dośw.");
-        phone_text(a, t, list_x, row_py(1), sp.s, ink::dark);
-        c.bar(2, row_ty(2), 26, phone_tile::bar_brand_0, spent, total);
-        phone_text(a, t, list_x, row_py(3), "Do wydania po budowie", ink::dim);
-        core::message rest; rest.add(int(a.save.xp)).add(" dośw.");
-        phone_text(a, t, 226, row_py(3), rest.s, ink::done, 1);
-        core::message run; run.add("Z tej budowy: +").add(g.xp() - g.xp_banked).add(" dośw.");
-        phone_text(a, t, list_x, row_py(4), run.s, ink::dim);
+        core::message sp; sp.add("Wydane: ").add(spent).add(" z ").add(total).add(" dośw.");
+        phone_text(a, t, list_x, row_py(0), sp.s, ink::dim);
+        c.bar(2, row_ty(1), 26, phone_tile::bar_brand_0, spent, total);
+        core::message rest; rest.add("Do wydania ").add(int(a.save.xp)).add(", z budowy +").add(g.xp() - g.xp_banked);
+        phone_text(a, t, list_x, row_py(2), fit(a, rest.s, phone_text_w).c_str(), ink::dark);
         core::message rs; rs.add("Respekt ").add(int(a.save.respect));   // Respekt za etapy jest już w profilu
-        phone_text(a, t, 226, row_py(4), rs.s, ink::brand, 1);
+        phone_text(a, t, list_x, row_py(3), rs.s, ink::brand);
+        const int ts = core::next_task(a.save, &g);   // v0.21.52 cz. c (#50): najbliższe zadanie dnia / tygodnia, postęp na żywo
+        if(ts >= 0)
+        {
+            const core::task_def& td = core::task_of(a.save, ts);
+            core::message tm; tm.add(ts < core::daily_task_slots ? "Dnia: " : "Tydz.: ").add(td.name);
+            core::message pm; pm.add(core::task_progress_live(a.save, &g, ts)).add("/").add(td.target);
+            phone_text(a, t, list_x, row_py(4), fit(a, tm.s, pill_room(pm.s)).c_str(), ink::dark);
+            phone_pill(a, c, t, pill_end, row_ty(4), pm.s, pill::prog);
+        }
+        else phone_text(a, t, list_x, row_py(4), "Zadania na dziś wykonane", ink::done);
         int ci = core::next_contract(a.save, g);   // najbliższe zlecenie z postępem na żywo
         if(ci >= 0)
         {
@@ -2214,6 +2272,47 @@ namespace
             }
     }
 
+    // v0.21.52 cz. c: banery zadań dnia / tygodnia (#50; kilka naraz - jeden zbiorczy), kompletów kolekcji (#49) i nagród
+    // za serię dni (#51; streak0 / streak1 - najdłuższa seria przed i po budowie).
+    void push_goals(push_banner& banner, const core::profile& p, int tasks_got, int coll_got, int tasks0, int streak0 = 0, int streak1 = 0)
+    {
+        int n = 0, resp = 0, last = -1;
+        for(int s = 0; s < core::task_slots; ++s)
+            if((tasks_got >> s) & 1) { ++n; resp += core::task_of(p, s).respect; last = s; }
+        if(n == 1)
+        {
+            core::message t; t.add(last < core::daily_task_slots ? "Zadanie dnia +" : "Zadanie tyg. +").add(resp).add(" Resp.");
+            banner.push(t.s, core::task_of(p, last).name);
+        }
+        else if(n > 1)
+        {
+            core::message t; t.add("Zadania: ").add(n).add(" wykonane");
+            core::message b; b.add("Respekt +").add(resp);
+            banner.push(t.s, b.s);
+        }
+        for(int l = 0; l < data::task_rewards_count; ++l)   // nagroda za liczbę wykonanych zadań
+            if(tasks0 < data::task_rewards[l].xp && p.tasks_total >= data::task_rewards[l].xp)
+            {
+                core::message t; t.add("Zadania: ").add(int(data::task_rewards[l].xp)).add(" wykonanych");
+                core::message b; core::progress_reward_label(b, data::task_rewards[l], -1);
+                banner.push(t.s, b.s);
+            }
+        for(int i = 0; i < data::collections_count; ++i)
+            if((coll_got >> i) & 1)
+            {
+                core::message t; t.add("Komplet: ").add(data::collections[i].name);
+                core::message b; core::collection_reward_label(b, i);
+                banner.push(t.s, b.s);
+            }
+        for(int l = 0; l < data::streak_rewards_count; ++l)
+            if(streak0 < data::streak_rewards[l].xp && streak1 >= data::streak_rewards[l].xp)
+            {
+                core::message t; t.add("Seria dni: ").add(int(data::streak_rewards[l].xp)).add("!");
+                core::message b; core::progress_reward_label(b, data::streak_rewards[l], -1);
+                banner.push(t.s, b.s);
+            }
+    }
+
     // v0.21.52 cz. b: banery nowych poziomów - inspektor (#44), mistrzostwo zawodu (#45), stopnie inwestora (#48) - z nagrodą.
     // Kilka poziomów naraz (migracja, długa budowa): dwa pierwsze z nagrodą, potem jeden zbiorczy.
     void push_progress(push_banner& banner, const core::progress_gain& pg, int stake0, int stake1)
@@ -2631,10 +2730,14 @@ namespace
                 int got = core::check_badges(a.save, g);   // też Respekt za etap - od razu w profilu
                 int done = core::check_contracts(a.save);
                 int secrets = core::check_secrets(a.save, &g);   // v0.21.51 cz. 2: np. 5 magazynów, 20x mokry + prąd
+                const int tasks0 = a.save.tasks_total;
+                const int tasks = bank_tasks(a, g);   // v0.21.52 cz. c: zadania dnia / tygodnia i kolekcje - na bieżąco
+                const int coll = core::check_collections(a.save);
                 core::message rt; rt.add("Respekt +").add(g.stage_respect());
                 core::message rb; rb.add("Razem: ").add(int(a.save.respect)).add(" (Koszty)");
                 banner.push(rt.s, rb.s);
                 push_achievements(banner, got, done, secrets);
+                push_goals(banner, a.save, tasks, coll, tasks0);
                 bn::sram::write(a.save);   // liczniki zleceń przeniesione do profilu
             }
             if(g.docs != prev_docs)   // Akt 0: dokument zebrany, komplet otwiera schody
@@ -3504,6 +3607,7 @@ namespace
                         core::check_secrets(a.save, &g);
                         core::bank_xp(a.save, g);
                         core::bank_progress(a.save, g);   // v0.21.52 cz. b: inspektor i mistrzostwo
+                        bank_tasks(a, g); core::check_collections(a.save);   // cz. c: zadania, kolekcje
                         bn::sram::write(a.save);
                         clear_run(a);
                         return leave(scene::shop);
@@ -3667,6 +3771,7 @@ namespace
                     core::check_secrets(a.save, &g);
                     core::bank_xp(a.save, g);
                     core::bank_progress(a.save, g);   // v0.21.52 cz. b: inspektor i mistrzostwo
+                    bank_tasks(a, g); core::check_collections(a.save);   // cz. c: zadania, kolekcje
                     bn::sram::write(a.save);
                     clear_run(a);
                     return leave(scene::shop);
@@ -4202,6 +4307,7 @@ namespace
                     else if(kind == 1) nm.add(data::classes[idx].name);
                     else if(kind == 2) nm.add(data::weapons[data::tools[idx].weapon].name);
                     else if(kind == 3) nm.add(data::brigade[idx].name);
+                    else if(kind == 5) nm.add("Drzewko: ").add(data::tree_branches[data::tree_nodes[idx].branch].name);   // v0.21.52 cz. c
                     else nm.add("Trudność: ").add(data::difficulties[data::difficulties_count - 1].name);
                     if(a.save.xp >= cost) pm.add("Stać Cię!");
                     else pm.add(int(a.save.xp)).add("/").add(cost);
@@ -4285,6 +4391,7 @@ namespace
         int prev_best = a.save.best;
         bool record = g.score > prev_best;
         if(g.score > a.save.best) a.save.best = g.score;
+        const int streak0 = a.save.streak_best;   // v0.21.52 cz. c (#51): seria dni - nagrody za nowy rekord serii
         bool daily_record = g.daily && core::record_daily(a.save, g.daily_day, g.score, won);   // codzienna budowa: wynik dnia
         int reward = won ? core::record_win(a.save) : -1;   // nagroda za odbiór: każda wygrana odblokowuje kolejną
         if(won) core::add_house(a.save, g);
@@ -4298,6 +4405,9 @@ namespace
         bool weekly_record = g.weekly_week && core::record_weekly(a.save, g.weekly_week, g.score, won);   // wyzwanie tygodnia (#34)
         const core::progress_gain pg = core::bank_progress(a.save, g);   // v0.21.52 cz. b: poziom inspektora i mistrzostwo zawodu
         const int stake_rank1 = core::stake_rank(a.save);
+        const int tasks0 = a.save.tasks_total;
+        const int tasks_got = bank_tasks(a, g);   // v0.21.52 cz. c: zadania dnia / tygodnia (#50), kolekcje (#49)
+        const int coll_got = core::check_collections(a.save);
         uint32_t story_got = core::story_check(a.save, &g);   // fabuła (#35): nowe wątki SMS za kamienie milowe (też od inspektora)
         bn::sram::write(a.save);
         clear_run(a);
@@ -4348,7 +4458,8 @@ namespace
             {
                 core::message um;
                 const char* name = kind == 0 ? data::upgrades[idx].name : (kind == 1 ? data::classes[idx].name
-                                 : (kind == 2 ? data::weapons[data::tools[idx].weapon].name : (kind == 3 ? data::brigade[idx].name : "Trudny")));
+                                 : (kind == 2 ? data::weapons[data::tools[idx].weapon].name : (kind == 3 ? data::brigade[idx].name
+                                 : (kind == 5 ? "węzeł drzewka" : "Trudny"))));   // v0.21.52 cz. c: drzewko
                 if(a.save.xp >= cost) um.add("Stać Cię: ").add(name).add(" (").add(cost).add(")");
                 else um.add(name).add(": brakuje ").add(cost - int(a.save.xp)).add(" dośw.");
                 motiv.push_back(um);
@@ -4383,6 +4494,7 @@ namespace
         }
         push_achievements(banner, badges_got, contracts_got, secrets_got);
         push_progress(banner, pg, stake_rank0, stake_rank1);   // v0.21.52 cz. b: poziom inspektora, mistrzostwo, stopnie inwestora
+        push_goals(banner, a.save, tasks_got, coll_got, tasks0, streak0, a.save.streak_best);   // cz. c: zadania, kolekcje, seria dni
         for(int i = 0; i < data::story_arc_count; ++i)   // fabuła: nowy wątek w Wiadomościach (telefon profilu, Osiedle)
             if((story_got >> i) & 1) banner.push("Nowa wiadomość", data::story_arc[i].name);
         for(int f = 0; ; ++f)
@@ -5343,20 +5455,26 @@ namespace
         int sel = 0, top = 0;
         const char* note = nullptr;
         // Zakładka Odznaki ma strony przełączane A: Odznaki / Zlecenia.
-        const char* badge_pages[] = { "Odznaki", "Zlecenia", "Pamiątki", "Sekrety", "Tytuły", "Inspektor" };   // v0.21.52: tytuły, cz. b: inspektor
-        constexpr int badge_pages_count = 6;
+        const char* badge_pages[] = { "Odznaki", "Zlecenia", "Pamiątki", "Sekrety", "Tytuły", "Inspektor", "Zadania" };   // v0.21.52: tytuły, cz. b: inspektor, cz. c: zadania
+        constexpr int badge_pages_count = 7;
+        // v0.21.52 cz. c (#49): Katalog ma strony przełączane A: Katalog / Kolekcje / Bossowie (karty bossów) / Album Osiedla
+        const char* catalog_pages[] = { "Katalog", "Kolekcje", "Bossowie", "Album" };
+        constexpr int catalog_pages_count = 4;
+        int cpage = 0;
+        int tcol = 0, trow = 0;   // v0.21.52 cz. c (#46): drzewko - gałąź (kolumna) i wiersz (węzeł I / II, opcja A / B)
+        if(roll_tasks(a)) bn::sram::write(a.save);   // zadania nowego dnia / tygodnia (data budowy dnia)
         int page = 0;
         // Zakładka Koszty ma strony przełączane SELECT: Szkolenia (doświadczenie) / Respekt / Nagrody za odbiór.
-        const char* cost_pages[] = { "Szkolenia", "Respekt", "Nagrody" };
-        constexpr int cost_pages_count = 3;
+        const char* cost_pages[] = { "Szkolenia", "Drzewko", "Respekt", "Nagrody" };   // v0.21.52 cz. c: drzewko Szkoleń
+        constexpr int cost_pages_count = 4;
         int kpage = 0;
         auto list_size = [&]() {
             switch(tab)
             {
-                case 0: return page == 5 ? data::inspector_levels_count : page == 4 ? core::titles_count : (page == 3 ? data::secrets_count : (page == 2 ? data::keepsakes_count : (page == 1 ? data::contracts_count : data::badges_count)));
-                case 1: return data::enemies_count;
+                case 0: return page == 6 ? core::task_slots : page == 5 ? data::inspector_levels_count : page == 4 ? core::titles_count : (page == 3 ? data::secrets_count : (page == 2 ? data::keepsakes_count : (page == 1 ? data::contracts_count : data::badges_count)));
+                case 1: return cpage == 3 ? data::estate_decor_count : cpage == 2 ? core::bosses_count() : cpage == 1 ? data::collections_count : data::enemies_count;
                 case 3: return data::classes_count;
-                case 4: return kpage == 2 ? data::rewards_count : (kpage == 1 ? data::respect_count : entries.size());
+                case 4: return kpage == 3 ? data::rewards_count : (kpage == 2 ? data::respect_count : (kpage == 1 ? 0 : entries.size()));
                 default: return 0;
             }
         };
@@ -5367,7 +5485,17 @@ namespace
             phone_canvas& c = *ph.canvas;
             if(is_sel) stripe(c, r, phone_tile::stripe_brand);
             ink name_ink = is_sel ? ink::brand : ink::dark;
-            if(tab == 0 && page == 5)   // v0.21.52 cz. b (#44): poziomy inspektora - nagroda za każdy poziom
+            if(tab == 0 && page == 6)   // v0.21.52 cz. c (#50): zadania dnia (3) i tygodnia (2) z postępem
+            {
+                const core::task_def& td = core::task_of(a.save, i);
+                const bool done = core::task_done(a.save, i);
+                core::message m; if(i >= core::daily_task_slots) m.add("Tydz.: "); m.add(td.name);
+                core::message pm; pm.add(core::task_progress_live(a.save, nullptr, i)).add("/").add(td.target);
+                const char* pill_s = done ? "Gotowe" : pm.s;
+                phone_text(a, t, list_x, row_py(r), fit(a, m.s, pill_room(pill_s)).c_str(), done ? ink::done : name_ink);
+                phone_pill(a, c, t, pill_end, row_ty(r), pill_s, done ? pill::done : (a.save.task_progress[i] > 0 ? pill::prog : pill::gray));
+            }
+            else if(tab == 0 && page == 5)   // v0.21.52 cz. b (#44): poziomy inspektora - nagroda za każdy poziom
             {
                 const int lv = core::inspector_level(a.save);
                 const bool got = i < lv;
@@ -5424,12 +5552,45 @@ namespace
                 phone_text(a, t, list_x, row_py(r), fit(a, data::badges[i].name, pill_room(pill_s)).c_str(), got || is_sel ? name_ink : ink::dim);
                 phone_pill(a, c, t, pill_end, row_ty(r), pill_s, got ? pill::done : pill::gray);
             }
+            else if(tab == 1 && cpage == 1)   // v0.21.52 cz. c (#49): komplety kolekcji z postępem
+            {
+                int have = 0, need = 0; core::collection_progress(a.save, i, have, need);
+                const bool done = core::collection_complete(a.save, i);
+                core::message pm; pm.add(have).add("/").add(need);
+                const char* pill_s = done ? "Komplet" : pm.s;
+                phone_text(a, t, list_x, row_py(r), fit(a, data::collections[i].name, pill_room(pill_s)).c_str(), done ? ink::done : name_ink);
+                phone_pill(a, c, t, pill_end, row_ty(r), pill_s, done ? pill::done : (have > 0 ? pill::prog : pill::gray));
+            }
+            else if(tab == 1 && cpage == 2)   // karty bossów: portret, ile razy pokonany
+            {
+                const int d = core::boss_at(i), n = a.save.kill_count[d];
+                core::message pm; pm.add("x").add(n);
+                phone_text(a, t, list_x + 18, row_py(r), fit(a, n > 0 ? data::enemies[d].name : "???", pill_room(pm.s) - 18).c_str(), n > 0 || is_sel ? name_ink : ink::dim);
+                phone_pill(a, c, t, pill_end, row_ty(r), n > 0 ? pm.s : "Brak", n > 0 ? pill::done : pill::gray);
+                if(n > 0)   // portret tylko zdobytej karty
+                {
+                    bn::optional<bn::sprite_ptr> ic = bn::sprite_items::actors.create_sprite_optional(list_x + 8 - 120, row_py(r) + 8 - 80, data::enemies[d].frame);
+                    if(ic) { ic->set_bg_priority(1); houses.push_back(bn::move(*ic)); }
+                }
+            }
+            else if(tab == 1 && cpage == 3)   // album Osiedla: ozdoby - stoi / skąd
+            {
+                const core::decor_def& dd = data::estate_decor[i];
+                const bool own = core::decor_unlocked(a.save, i);
+                core::message pm;
+                if(own) pm.add("Stoi");
+                else if(dd.inspector > 0) pm.add("Insp. ").add(int(dd.inspector));
+                else pm.add(int(dd.wins)).add(" wygr.");
+                phone_text(a, t, list_x, row_py(r), fit(a, dd.name, pill_room(pm.s)).c_str(), own || is_sel ? name_ink : ink::dim);
+                phone_pill(a, c, t, pill_end, row_ty(r), pm.s, own ? pill::done : pill::gray);
+            }
             else if(tab == 1)
             {
                 bool known = core::catalog_has(a.save, i);
                 core::message m; m.add("#").add(i + 1).add(" ").add(known ? clip(data::enemies[i].name, 14).c_str() : "???");
+                core::message km; km.add("x").add(int(a.save.kill_count[i]));   // v0.21.52 cz. c: licznik kolekcji
                 phone_text(a, t, list_x, row_py(r), m.s, known || is_sel ? name_ink : ink::dim);
-                phone_pill(a, c, t, pill_end, row_ty(r), known ? "ZAMKNIĘTA" : "NIEZNANA", known ? pill::done : pill::gray);
+                phone_pill(a, c, t, pill_end, row_ty(r), known ? km.s : "NIEZNANA", known ? pill::done : pill::gray);
             }
             else
             {
@@ -5446,22 +5607,32 @@ namespace
             houses.clear();
             phone_canvas& c = *ph.canvas;
             core::message sub;
-            if(tab == 4 && kpage == 2) sub.add("Wygrane ").add(int(a.save.wins)).add("  SELECT");
+            if(tab == 4 && kpage == 3) sub.add("Wygrane ").add(int(a.save.wins)).add("  SELECT");
+            else if(tab == 4 && kpage == 1)   // drzewko: pień zaznaczonej gałęzi i dośw.
+                sub.add("Pień ").add(core::tree_branch_levels(a.save, tcol)).add("/").add(core::tree_branch_max(tcol)).add("  ").add(int(a.save.xp)).add(" dośw.");
             else if(tab == 4) sub.add("A: kup  SELECT: ").add(cost_pages[(kpage + 1) % cost_pages_count]);
             else if(tab == 0)
             {
-                int n = 0, total = page == 5 ? data::inspector_levels_count : page == 4 ? core::titles_count : (page == 3 ? data::secrets_count : (page == 2 ? data::keepsakes_count : (page == 1 ? data::contracts_count : data::badges_count)));
-                if(page == 5) n = core::inspector_level(a.save);
+                int n = 0, total = page == 6 ? core::daily_task_slots : page == 5 ? data::inspector_levels_count : page == 4 ? core::titles_count : (page == 3 ? data::secrets_count : (page == 2 ? data::keepsakes_count : (page == 1 ? data::contracts_count : data::badges_count)));
+                if(page == 6) n = core::tasks_done_today(a.save);
+                else if(page == 5) n = core::inspector_level(a.save);
                 else for(int i = 0; i < total; ++i)
                     n += page == 4 ? core::title_owned(a.save, i) : page == 3 ? core::secret_done(a.save, i)
                        : (page == 2 ? core::keepsake_unlocked(a.save, i) : ((page == 1 ? a.save.contracts : a.save.badges) >> i) & 1);
                 sub.add(n).add("/").add(total).add("  A: ").add(badge_pages[(page + 1) % badge_pages_count]);
             }
-            else if(tab == 1) sub.add(core::catalog_count(a.save)).add("/").add(data::enemies_count);
+            else if(tab == 1)
+            {
+                if(cpage == 1) sub.add(core::collections_done(a.save)).add("/").add(data::collections_count);
+                else if(cpage == 2) { int n = 0; for(int k = 0; k < core::bosses_count(); ++k) n += a.save.kill_count[core::boss_at(k)] > 0; sub.add(n).add("/").add(core::bosses_count()); }
+                else if(cpage == 3) sub.add(core::estate_decor(a.save)).add("/").add(data::estate_decor_count);
+                else sub.add(core::catalog_count(a.save)).add("/").add(data::enemies_count);
+                sub.add("  A: ").add(catalog_pages[(cpage + 1) % catalog_pages_count]);
+            }
             else if(tab == 2) sub.add("Domy: ").add(int(a.save.houses_count)).add("/").add(core::max_houses);
             else { int n = core::classes_won(a.save);
                    sub.add("Wygrane ").add(n).add("/").add(data::classes_count); }
-            phone_header(a, ph, t, tab == 0 ? badge_pages[page] : (tab == 4 ? cost_pages[kpage] : profile_tabs[tab]), sub.s);
+            phone_header(a, ph, t, tab == 0 ? badge_pages[page] : (tab == 4 ? cost_pages[kpage] : (tab == 1 ? catalog_pages[cpage] : profile_tabs[tab])), sub.s);
 
             if(tab == 2 && arch == 1)   // Wiadomości: wątki fabuły (odblokowane kamieniami milowymi), zablokowane z podpowiedzią
             {
@@ -5529,7 +5700,49 @@ namespace
                 ph.commit();
                 return;
             }
-            if(tab == 4 && kpage == 1)   // Respekt: stałe premie z rangami za Respekt z ukończonych etapów
+            if(tab == 4 && kpage == 1)   // v0.21.52 cz. c (#46): drzewko Szkoleń - 3 gałęzie, w węźle 1 z 2 opcji
+            {
+                auto node_of = [](int b, int tier) { int k = 0; for(int n = 0; n < data::tree_nodes_count; ++n) if(data::tree_nodes[n].branch == b && k++ == tier) return n; return -1; };
+                for(int b = 0; b < data::tree_branches_count; ++b)
+                {
+                    const int tx = 1 + b * 9 + (b > 0), cx = tx * 8 + 36;   // kolumna 9 kafli
+                    phone_text(a, t, cx, row_py(0), data::tree_branches[b].name, b == tcol ? ink::brand : ink::dim, 0);
+                    for(int tier = 0; tier < 2; ++tier)
+                    {
+                        const int n = node_of(b, tier);
+                        if(n < 0) continue;
+                        const bool open = core::tree_open(a.save, n);
+                        for(int o = 0; o < 2; ++o)
+                        {
+                            const int r = 1 + tier * 2 + o;
+                            const bool picked = core::tree_pick(a.save, n) == o + 1, cur = b == tcol && r - 1 == trow;
+                            if(picked || cur) c.rounded(tx, row_ty(r), 9, 2, picked && cur ? phone_tile::fill_prog_bg : (picked ? phone_tile::fill_done_bg : phone_tile::fill_group),
+                                                        picked && cur ? phone_tile::corner_prog_bg : (picked ? phone_tile::corner_done_bg : phone_tile::corner_group));
+                            ink k = picked ? ink::done : (cur ? ink::brand : (open ? ink::dark : ink::dim));
+                            phone_text(a, t, cx, row_py(r), fit(a, data::tree_nodes[n].options[o].short_name, 70).c_str(), k, 0);
+                        }
+                    }
+                }
+                const int n = node_of(tcol, trow / 2), o = trow % 2;
+                core::message dm, pm;   // opis opcji + pastylka: koszt / zmiana / masz / próg pnia
+                pill pk_pill = pill::gray;
+                if(note) dm.add(note);
+                else if(n >= 0)
+                {
+                    const core::tree_option& op = data::tree_nodes[n].options[o];
+                    dm.add(op.name).add(": ");
+                    core::upgrade_label(dm, op.effect, op.value);
+                    const int pk = core::tree_pick(a.save, n), cost = core::tree_cost(a.save, n, o);
+                    if(! core::tree_open(a.save, n)) pm.add("Pień ").add(int(data::tree_nodes[n].depth));
+                    else if(pk == o + 1) { pm.add("Masz"); pk_pill = pill::done; }
+                    else { pm.add(pk ? "Zmiana " : "").add(cost); pk_pill = cost <= a.save.xp ? pill::group : pill::gray; }
+                }
+                phone_text(a, t, list_x, row_py(5), fit(a, dm.s, pm.n ? pill_room(pm.s) : phone_text_w).c_str(), note ? ink::brand : ink::dim);
+                if(pm.n) phone_pill(a, c, t, pill_end, row_ty(5), pm.s, pk_pill);
+                ph.commit();
+                return;
+            }
+            if(tab == 4 && kpage == 2)   // Respekt: stałe premie z rangami za Respekt z ukończonych etapów
             {
                 phone_text(a, t, list_x, row_py(0), "Masz", ink::dim);
                 core::message rv; rv.add(int(a.save.respect)).add(" Respektu");
@@ -5565,7 +5778,7 @@ namespace
                 ph.commit();
                 return;
             }
-            if(tab == 4 && kpage == 2)   // Nagrody za odbiór: każda wygrana odblokowuje kolejną
+            if(tab == 4 && kpage == 3)   // Nagrody za odbiór: każda wygrana odblokowuje kolejną
             {
                 int nr = a.save.rewards;
                 core::message nm;
@@ -5660,6 +5873,57 @@ namespace
             // listy: Odznaki (4 wiersze + opis + uprawnienie), Katalog, Zespół (5 wierszy + opis zaznaczonego)
             for(int r = 0; r < list_window() && top + r < list_size(); ++r) draw_list_row(r, top + r, top + r == sel);
             const char* desc = "";
+            if(tab == 0 && page == 6)   // v0.21.52 cz. c: zadanie - nagroda; seria dni budowy dnia (#51)
+            {
+                const core::task_def& td = core::task_of(a.save, sel);
+                core::message w; w.add("+").add(int(td.respect)).add(" Respektu");
+                const int nr = core::next_task_reward(a.save);
+                if(nr >= 0) { w.add(", zadań ").add(int(a.save.tasks_total)).add("/").add(int(data::task_rewards[nr].xp)).add(": "); goal_label(w, data::task_rewards[nr]); }
+                phone_text(a, t, list_x, row_py(4), fit(a, w.s, phone_text_w).c_str(), ink::dim);
+                int day, week; goal_dates(a, day, week);
+                core::message sm; sm.add("Seria ").add(core::streak_now(a.save, day));
+                const int ns = core::next_streak_reward(a.save);
+                if(ns >= 0) { sm.add("/").add(int(data::streak_rewards[ns].xp)).add(" dni: "); goal_label(sm, data::streak_rewards[ns]); }
+                else sm.add(" dni (rekord ").add(int(a.save.streak_best)).add(")");
+                phone_text(a, t, list_x, row_py(5), fit(a, sm.s, phone_text_w).c_str(), ink::brand);
+                ph.commit();
+                return;
+            }
+            if(tab == 1 && cpage == 1)   // kolekcja: co liczyć i nagroda
+            {
+                const core::collection_def& cd = data::collections[sel];
+                core::message w; w.add(cd.desc);
+                if(cd.kind != core::collection_kind::decor) w.add(" x").add(int(cd.count));
+                phone_text(a, t, list_x, row_py(4), fit(a, w.s, phone_text_w).c_str(), ink::dim);
+                core::message n; n.add("Nagroda: "); core::collection_reward_label(n, sel);
+                phone_text(a, t, list_x, row_py(5), fit(a, n.s, phone_text_w).c_str(), core::collection_complete(a.save, sel) ? ink::done : ink::dim);
+                ph.commit();
+                return;
+            }
+            if(tab == 1 && cpage == 2)   // karta bossa: opis (po pokonaniu)
+            {
+                const int d = core::boss_at(sel);
+                const bool known = a.save.kill_count[d] > 0;
+                phone_text(a, t, list_x, row_py(4), fit(a, known ? data::enemies[d].desc : "Pokonaj, żeby zdobyć kartę", phone_text_w).c_str(), ink::dim);
+                core::message n; n.add("Komplet: ");
+                for(int i = 0; i < data::collections_count; ++i) if(data::collections[i].kind == core::collection_kind::bosses) core::collection_reward_label(n, i);
+                phone_text(a, t, list_x, row_py(5), fit(a, n.s, phone_text_w).c_str(), ink::brand);
+                ph.commit();
+                return;
+            }
+            if(tab == 1 && cpage == 3)   // album: skąd ozdoba
+            {
+                const core::decor_def& dd = data::estate_decor[sel];
+                core::message w;
+                if(dd.inspector > 0) w.add("Poziom inspektora ").add(int(dd.inspector));
+                else w.add("Wygrane budowy: ").add(int(dd.wins));
+                phone_text(a, t, list_x, row_py(4), fit(a, w.s, phone_text_w).c_str(), ink::dim);
+                core::message n; n.add("Komplet: ");
+                for(int i = 0; i < data::collections_count; ++i) if(data::collections[i].kind == core::collection_kind::decor) core::collection_reward_label(n, i);
+                phone_text(a, t, list_x, row_py(5), fit(a, n.s, phone_text_w).c_str(), ink::brand);
+                ph.commit();
+                return;
+            }
             if(tab == 0 && page == 5)   // poziom inspektora: dośw. do kolejnego, skąd dośw.
             {
                 int cur = 0, need = 0; core::inspector_bar(a.save, cur, need);
@@ -5673,11 +5937,16 @@ namespace
             if(tab == 0 && page == 4 && sel >= core::progress_titles_from)   // tytuł z poziomu inspektora / stopnia inwestora
             {
                 const core::progress_title& pt = data::progress_titles[sel - core::progress_titles_from];
-                core::message w; w.add(pt.source == 0 ? "Inspektor: poziom " : "Tryb inwestora: stawka ").add(pt.level);
+                core::message w;   // v0.21.52 cz. c: też kolekcje, seria dni, zadania
+                if(pt.source == 2) w.add("Kolekcja: ").add(data::collections[pt.level - 1].name);
+                else if(pt.source == 3) w.add("Seria dni budowy dnia: ").add(int(pt.level));
+                else if(pt.source == 4) w.add("Wykonane zadania: ").add(int(pt.level));
+                else w.add(pt.source == 0 ? "Inspektor: poziom " : "Tryb inwestora: stawka ").add(pt.level);
                 phone_text(a, t, list_x, row_py(4), fit(a, w.s, phone_text_w).c_str(), ink::dim);
                 const bool own = core::title_owned(a.save, sel);
-                phone_text(a, t, list_x, row_py(5), own ? "Masz" : (pt.source == 0 ? "Dośw. inspektora z budów" : "Wygraj z taką stawką"),
-                           own ? ink::done : ink::dim);
+                const char* how = pt.source == 0 ? "Dośw. inspektora z budów" : pt.source == 1 ? "Wygraj z taką stawką"
+                                : pt.source == 2 ? "Katalog > Kolekcje" : pt.source == 3 ? "Budowa dnia w kolejne dni" : "Odznaki > Zadania";
+                phone_text(a, t, list_x, row_py(5), own ? "Masz" : how, own ? ink::done : ink::dim);
                 if(own) phone_text(a, t, 226, row_py(5), "SELECT", ink::brand, 1);
                 ph.commit();
                 return;
@@ -5721,6 +5990,7 @@ namespace
                 if(! unl)
                 {
                     if(kd.badge >= 0) u.add("Odznaka: ").add(data::badges[kd.badge].name);
+                    else if(kd.streak > 0) u.add("Seria ").add(int(kd.streak)).add(" dni budowy dnia");   // v0.21.52 cz. c
                     else for(int i = 0; i < data::contracts_count; ++i)
                         if(data::contracts[i].keepsake == sel) { u.add("Zlecenie: ").add(data::contracts[i].name); break; }
                 }
@@ -5806,18 +6076,46 @@ namespace
                 wait_release();
                 continue;
             }
-            int d = (bn::keypad::r_pressed() || bn::keypad::right_pressed()) ? 1
-                  : ((bn::keypad::l_pressed() || bn::keypad::left_pressed()) ? -1 : 0);
+            const bool tree_page = tab == 4 && kpage == 1;   // v0.21.52 cz. c: drzewko - strzałki po węzłach, L/R zakładki
+            if(tree_page)
+            {
+                const int dx = bn::keypad::right_pressed() ? 1 : (bn::keypad::left_pressed() ? -1 : 0);
+                const int dy = bn::keypad::down_pressed() ? 1 : (bn::keypad::up_pressed() ? -1 : 0);
+                if(dx || dy)
+                {
+                    tcol = (tcol + dx + data::tree_branches_count) % data::tree_branches_count;
+                    trow = (trow + dy + 4) % 4;
+                    note = nullptr;
+                    redraw();
+                    bn::sound_items::sfx_menu.play();
+                }
+                if(bn::keypad::a_pressed())
+                {
+                    int n = -1, k = 0;
+                    for(int i = 0; i < data::tree_nodes_count; ++i) if(data::tree_nodes[i].branch == tcol && k++ == trow / 2) n = i;
+                    if(n >= 0 && core::tree_choose(a.save, n, trow % 2))
+                    {
+                        bn::sound_items::sfx_buy.play();
+                        bn::sram::write(a.save);
+                        note = "Wybrane!";
+                    }
+                    else if(n >= 0) note = ! core::tree_open(a.save, n) ? "Najpierw Szkolenia tej gałęzi"
+                                  : (core::tree_cost(a.save, n, trow % 2) < 0 ? "Już wybrane" : "Za mało doświadczenia");
+                    redraw();
+                }
+            }
+            int d = (bn::keypad::r_pressed() || (! tree_page && bn::keypad::right_pressed())) ? 1
+                  : ((bn::keypad::l_pressed() || (! tree_page && bn::keypad::left_pressed())) ? -1 : 0);
             if(d)
             {
                 tab = (tab + d + tabs_count) % tabs_count;
-                sel = top = 0; note = nullptr;
+                sel = top = 0; note = nullptr; cpage = 0;
                 ph.set_tab(tab);
                 redraw();
                 bn::sound_items::sfx_menu.play();
             }
             int n = list_size(), window = list_window();
-            int dir = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+            int dir = tree_page ? 0 : (bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0));
             if(dir && n > 0)
             {
                 sel = (sel + dir + n) % n;
@@ -5832,6 +6130,13 @@ namespace
                 bn::sram::write(a.save);
                 redraw();
                 bn::sound_items::sfx_buy.play();
+            }
+            if(tab == 1 && bn::keypad::a_pressed())   // v0.21.52 cz. c: Katalog -> Kolekcje -> Bossowie -> Album
+            {
+                cpage = (cpage + 1) % catalog_pages_count;
+                sel = top = 0;
+                redraw();
+                bn::sound_items::sfx_menu.play();
             }
             if(tab == 0 && bn::keypad::a_pressed())   // Odznaki <-> Zlecenia
             {
@@ -5852,7 +6157,7 @@ namespace
                 redraw();
                 bn::sound_items::sfx_menu.play();
             }
-            else if(tab == 4 && kpage == 1 && bn::keypad::a_pressed())
+            else if(tab == 4 && kpage == 2 && bn::keypad::a_pressed())
             {
                 if(core::buy_respect(a.save, sel))
                 {
