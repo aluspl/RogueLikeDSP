@@ -384,7 +384,7 @@ namespace debug_scenario
     {
         for(int i = 0; i < data::tools_count; ++i)
         {
-            const char* a = data::weapons[data::tools[i].weapon].name;
+            const char* a = data::weapons[data::tools[i].weapon].name.s[0];   // polska nazwa (język bez znaczenia)
             const char* b = weapon_name;
             while(*a && *a == *b) { ++a; ++b; }
             if(*a == *b) return i;
@@ -446,7 +446,7 @@ namespace debug_scenario
     {
         for(int b = 0; b < data::boons_count; ++b)
         {
-            const char* x = data::boons[b].name;
+            const char* x = data::boons[b].name.s[0];   // polska nazwa
             const char* y = name;
             while(*x && *x == *y) { ++x; ++y; }
             if(*x == *y) return b;
@@ -495,7 +495,7 @@ namespace debug_scenario
     {
         for(int e = 0; e < data::choice_events_count; ++e)
         {
-            const char* x = data::choice_events[e].name; const char* y = name;
+            const char* x = data::choice_events[e].name.s[0]; const char* y = name;   // polska nazwa
             while(*x && *x == *y) { ++x; ++y; }
             if(*x == *y && g.pickups_count < core::max_pickups)
                 g.pickups[g.pickups_count++] = { int8_t(g.hero.x + dx), g.hero.y, core::event_tile, true, uint8_t(e) };
