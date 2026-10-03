@@ -254,7 +254,7 @@ public sealed class SettingsPage : PhonePage
         SettingsRow.Controls => ("Sterowanie", GameSettings.Controls == ControlScheme.Swipe ? "Gesty + pasek" : "Gałka + pasek", PillKind.Group),
         SettingsRow.Hand => ("Pasek akcji", GameSettings.LeftHanded ? "Lewa ręka" : "Prawa ręka", PillKind.Group),
         SettingsRow.Text => ("Tekst", GameSettings.LargeText ? "Duży" : "Normalny", GameSettings.LargeText ? PillKind.Brand : PillKind.Group),
-        SettingsRow.Filter => ("Filtr ekranu", _d.ScreenFilters[ScreenFilter.Resolve(_d, _p)].Short,
+        SettingsRow.Filter => (_d.FilterText("title"), _d.ScreenFilters[ScreenFilter.Resolve(_d, _p)].Short,
             ScreenFilter.Resolve(_d, _p) > 0 ? PillKind.Done : PillKind.Gray),
         SettingsRow.Help => ("Jak grać", "", PillKind.Gray),
         SettingsRow.SaveExit => ("Zapisz i wyjdź", "", PillKind.Gray),

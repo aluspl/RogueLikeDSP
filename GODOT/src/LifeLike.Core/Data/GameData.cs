@@ -193,6 +193,16 @@ public sealed class GameData
     public CareerDef[] Career { get; private init; } = [];
     /// <summary>v0.21.53 (#53, #54): filtry ekranu (0 = klasyczny; zabawowe do odblokowania, dla daltonistów zawsze).</summary>
     public ScreenFilterDef[] ScreenFilters { get; private init; } = [new("klasyczny", "Klasyczny", "Klasyk", "", "", FilterKind.Classic, false, false, [])];
+    /// <summary>v0.21.53: teksty interfejsu filtrów (screenFilters.ui – do tłumaczenia); brak klucza = sam klucz.</summary>
+    public IReadOnlyDictionary<string, string> FilterUi { get; private init; } = new Dictionary<string, string>();
+    /// <summary>v0.21.53: Jak grać (Godot) – gdzie filtry i wzory (screenFilters.where).</summary>
+    public string[] FilterWhereLines { get; private init; } = [];
+    /// <summary>v0.21.53: litery rzadkości premii przy wzorach (zwykła, rzadka, legendarna).</summary>
+    public string[] RarityLetters { get; private init; } = ["Z", "R", "L"];
+
+    /// <summary>Tekst interfejsu filtrów o kluczu key.</summary>
+    public string FilterText(string key) => FilterUi.TryGetValue(key, out var v) ? v : key;
+
     /// <summary>v0.21.53: Jak grać – filtry ekranu (7 linii, GBA str. 19).</summary>
     public string[] FiltersHelpLines { get; private init; } = [];
     /// <summary>Bliźniak: ile problemów z pierwszej połowy przechodzi na drugą.</summary>
@@ -1180,6 +1190,13 @@ public sealed class GameData
             Career = career.ToArray(),
             CareerTwinCarryMax = twinCarryMax,
             ScreenFilters = screenFilters,
+            FilterUi = d.TryGetProperty("screenFilters", out var sfu) && sfu.TryGetProperty("ui", out var sfuj)
+                ? sfuj.EnumerateObject().ToDictionary(x => x.Name, x => x.Value.GetString() ?? "")
+                : new Dictionary<string, string>(),
+            FilterWhereLines = d.TryGetProperty("screenFilters", out var sfw) && sfw.TryGetProperty("where", out var sfwj)
+                ? sfwj.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : [],
+            RarityLetters = d.TryGetProperty("screenFilters", out var sfr) && sfr.TryGetProperty("rarityLetters", out var sfrj)
+                ? sfrj.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : ["Z", "R", "L"],
             FiltersHelpLines = d.TryGetProperty("filtersHelp", out var fhl) ? fhl.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : [],
             StagesCount = domJson.Length,
             StageLooksCount = stages.Max(x => x.Look) + 1,

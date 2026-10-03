@@ -115,7 +115,7 @@ public sealed class BoonListPage : PhonePage
             else if (r > 0) p.Divider(card, r);
             p.Stripe(card, r, BoonLook.RarityColor(bd.Rarity));
             p.HitRow(card, r, i);
-            var nw = p.Text(tx, ry, p.F.Fit(BoonLook.CueName(bd.Name, bd.Rarity), (int)((right - tx) * 0.55f)), sel ? Ink.Brand : Ink.Dark);
+            var nw = p.Text(tx, ry, p.F.Fit(BoonLook.CueName(d, bd.Name, bd.Rarity), (int)((right - tx) * 0.55f)), sel ? Ink.Brand : Ink.Dark);
             p.Text(tx + nw + 6, ry, bd.Desc, BoonLook.RarityInk(bd.Rarity), TextAlign.Left, right - tx - nw - 6);
         }
         var b = d.Boons[owned[Math.Clamp(_list.Sel, 0, owned.Count - 1)]];

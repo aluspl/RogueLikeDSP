@@ -67,15 +67,15 @@ public static class ScreenFilters
     public static string UnlockLabel(GameData d, int f)
     {
         var def = d.ScreenFilters[f];
-        if (def.Kind == FilterKind.Access) return "Zawsze (dla daltonistów)";
-        if (def.Kind == FilterKind.Classic) return "Zawsze";
-        return string.Join(" albo ", def.Unlock.Select(c => c.Kind switch
+        if (def.Kind == FilterKind.Access) return d.FilterText("alwaysAccess");
+        if (def.Kind == FilterKind.Classic) return d.FilterText("always");
+        return string.Join(d.FilterText("or"), def.Unlock.Select(c => c.Kind switch
         {
-            FilterUnlock.Inspector => $"Inspektor {c.Value}",
-            FilterUnlock.Collection => "Kolekcja: " + d.Collections[c.Value].Name,
-            FilterUnlock.Career => "Wygrana: " + d.Career[c.Value].Short,
-            FilterUnlock.Secret => "Sekret: " + d.Secrets[c.Value].Hint,
-            _ => $"{c.Value} wygranych",
+            FilterUnlock.Inspector => d.FilterText("inspector") + c.Value,
+            FilterUnlock.Collection => d.FilterText("collection") + d.Collections[c.Value].Name,
+            FilterUnlock.Career => d.FilterText("career") + d.Career[c.Value].Short,
+            FilterUnlock.Secret => d.FilterText("secret") + d.Secrets[c.Value].Hint,
+            _ => c.Value + d.FilterText("wins"),
         }));
     }
 

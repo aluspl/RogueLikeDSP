@@ -1,3 +1,4 @@
+using System.Linq;
 using LifeLike.Core;
 using LifeLike.Core.Data;
 using LifeLike.Game.Gfx;
@@ -40,14 +41,6 @@ public sealed class HelpPage : PhonePage
     /// <summary>v0.21.53: strona filtrów ekranu (indeks od 0).</summary>
     public const int FiltersPage = 11;
 
-    /// <summary>v0.21.53: gdzie filtry ekranu i co robią wzory.</summary>
-    private static readonly string[] FiltersWhereLines =
-    [
-        "Ustawienia (klucz) > Filtr ekranu",
-        "Wybór zawodu > Tab: Wygląd",
-        "Siła efektu, telefon, ograniczony ruch",
-        "Wzory: paski na polach ciosu, litery Z/R/L",
-    ];
 
     /// <summary>v0.21.52 cz. c: gdzie drzewko, kolekcje, zadania dnia i seria dni.</summary>
     private static readonly string[] GoalsWhereLines =
@@ -125,15 +118,15 @@ public sealed class HelpPage : PhonePage
         if (_page == FiltersPage) // v0.21.53: filtry ekranu i tryby dla daltonistów
         {
             var fwidth = (int)(p.Right - 6 - p.Left - 12);
-            var flines = p.F.Wrap(string.Join(" ", _d.FiltersHelpLines).Replace("Filtry ekranu: wybór zawodu > SELECT: Wygląd (Godot: klucz). ", ""), fwidth);
-            var fc = p.Card(p.Section(p.Top, "FILTRY EKRANU"), flines.Count);
+            var flines = p.F.Wrap(string.Join(" ", _d.FiltersHelpLines.Skip(2)), fwidth); // dwie pierwsze linie: gdzie na GBA
+            var fc = p.Card(p.Section(p.Top, _d.FilterText("helpSection")), flines.Count);
             var fx = p.TextX(fc);
             for (var i = 0; i < flines.Count; i++) p.Text(fx, p.RowY(fc, i), flines[i], Ink.Dark, TextAlign.Left, fc.End.X - 6 - fx);
-            var fc2 = p.Card(p.Section(fc.End.Y + 6, "GDZIE"), FiltersWhereLines.Length);
-            for (var i = 0; i < FiltersWhereLines.Length; i++)
+            var fc2 = p.Card(p.Section(fc.End.Y + 6, _d.FilterText("helpWhere")), _d.FilterWhereLines.Length);
+            for (var i = 0; i < _d.FilterWhereLines.Length; i++)
             {
                 if (i > 0) p.Divider(fc2, i);
-                p.Text(fx, p.RowY(fc2, i), FiltersWhereLines[i], Ink.Dim, TextAlign.Left, fc2.End.X - 6 - fx);
+                p.Text(fx, p.RowY(fc2, i), _d.FilterWhereLines[i], Ink.Dim, TextAlign.Left, fc2.End.X - 6 - fx);
             }
             return;
         }

@@ -19,15 +19,15 @@ public static class BoonLook
     public static PillKind RarityPill(int r) => r >= 2 ? PillKind.Prog : r == 1 ? PillKind.Group : PillKind.Gray;
 
     public static string RarityName(GameData d, int r) => r >= 0 && r < d.BoonRarities.Length
-        ? (ScreenFilter.Cues ? RarityLetter(r) + " " : "") + d.BoonRarities[r].Name
+        ? (ScreenFilter.Cues ? RarityLetter(d, r) + " " : "") + d.BoonRarities[r].Name
         : "";
 
     /// <summary>v0.21.53: litera rzadkości (Z zwykła, R rzadka, L legendarna) – wzór zamiast samego koloru przy filtrach
     /// dla daltonistów (ScreenFilter.Cues).</summary>
-    public static string RarityLetter(int r) => r >= 2 ? "L" : r == 1 ? "R" : "Z";
+    public static string RarityLetter(GameData d, int r) => d.RarityLetters.Length > 0 ? d.RarityLetters[System.Math.Clamp(r, 0, d.RarityLetters.Length - 1)] : "";
 
     /// <summary>Nazwa premii z literą rzadkości na początku, gdy filtr wymaga wzorów.</summary>
-    public static string CueName(string name, int r) => ScreenFilter.Cues ? $"[{RarityLetter(r)}] {name}" : name;
+    public static string CueName(GameData d, string name, int r) => ScreenFilter.Cues ? $"[{RarityLetter(d, r)}] {name}" : name;
 
     /// <summary>Nazwy znaczników z maski, np. „Beton, BHP”.</summary>
     public static List<string> Tags(GameData d, int mask)

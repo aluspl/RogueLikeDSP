@@ -53,7 +53,7 @@ public sealed class BannerFeed
         for (var f = 0; f < _s.Data.ScreenFilters.Length; f++)
         {
             if (((bits >> f) & 1) != 0)
-                _banners.Push(new PushBanner { Title = "Nowy filtr ekranu!", Body = $"{_s.Data.ScreenFilters[f].Name} – Ustawienia > Filtr ekranu", Gold = true });
+                _banners.Push(new PushBanner { Title = _s.Data.FilterText("banner"), Body = $"{_s.Data.ScreenFilters[f].Name} – {_s.Data.FilterText("bannerWhere")}", Gold = true });
         }
     }
 

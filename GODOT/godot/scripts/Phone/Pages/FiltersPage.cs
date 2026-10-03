@@ -43,10 +43,10 @@ public sealed class FiltersPage : PhonePage
         set => _list.Sel = Math.Clamp(value, 0, Rows - 1);
     }
 
-    public override string Title => "Filtr ekranu";
+    public override string Title => _d.FilterText("title");
     public override string Sub => $"{ScreenFilters.UnlockedCount(_d, _p)}/{Count}";
-    public override string Hint => "Strzałki: wybór i wartość  Spacja: wybierz  Esc: wróć";
-    public override PageAction[] Actions => [new("Wróć", GameAction.Cancel), new(_list.Sel < Count ? "Wybierz" : "Zmień", GameAction.A)];
+    public override string Hint => _d.FilterText("hint");
+    public override PageAction[] Actions => [new(_d.FilterText("back"), GameAction.Cancel), new(_d.FilterText(_list.Sel < Count ? "choose" : "change"), GameAction.A)];
     public override bool Closable => true;
 
     public override bool Input(InputCmd e)
@@ -127,7 +127,7 @@ public sealed class FiltersPage : PhonePage
 
     public override void Draw(PhonePainter p)
     {
-        var y = p.Section(p.Top, "FILTR EKRANU", "dostępność: zawsze");
+        var y = p.Section(p.Top, _d.FilterText("section"), _d.FilterText("sectionRight"));
         var descH = 2 * PhonePainter.RowH + 8;
         _window = Math.Max(4, (int)((p.Bottom - y - 8 - 6 - descH) / PhonePainter.RowH));
         _list.Clamp(Rows, _window);
@@ -150,12 +150,12 @@ public sealed class FiltersPage : PhonePage
                 var open = ScreenFilters.Unlocked(_d, _p, i);
                 var on = i == active;
                 if (on && !sel) p.Stripe(card, k, Pal.Done);
-                var (pill, kind) = on ? ("Wybrany", PillKind.Done)
-                    : !open ? ("???", PillKind.Gray)
-                    : f.Kind == FilterKind.Access ? ("Dostępność", PillKind.Group)
+                var (pill, kind) = on ? (_d.FilterText("picked"), PillKind.Done)
+                    : !open ? (_d.FilterText("locked"), PillKind.Gray)
+                    : f.Kind == FilterKind.Access ? (_d.FilterText("access"), PillKind.Group)
                     : ("", PillKind.Gray);
                 var pw = pill.Length > 0 ? p.Pill(right, ry, pill, kind) : 0;
-                var name = open ? f.Name : "???";
+                var name = open ? f.Name : _d.FilterText("locked");
                 p.Text(tx, ry, name, sel ? Ink.Brand : open ? Ink.Dark : Ink.Dim, TextAlign.Left, right - pw - 6 - tx);
                 continue;
             }
@@ -169,13 +169,13 @@ public sealed class FiltersPage : PhonePage
                 var minus = p.Pill(minusR, ry, "-", PillKind.Group);
                 p.Hit(new Rect2(right - plus - 10, ry - 4, plus + 16, PhonePainter.RowH + 8), Plus + i);
                 p.Hit(new Rect2(minusR - minus - 6, ry - 4, minus + 14, PhonePainter.RowH + 8), Minus + i);
-                p.Text(tx, ry, "Siła efektu", sel ? Ink.Brand : Ink.Dark, TextAlign.Left, minusR - minus - 6 - tx);
+                p.Text(tx, ry, _d.FilterText("strength"), sel ? Ink.Brand : Ink.Dark, TextAlign.Left, minusR - minus - 6 - tx);
                 continue;
             }
             var phone = i == PhoneRow;
             var val = phone ? GameSettings.FilterPhone : GameSettings.ReduceMotion;
-            var vpw = p.Pill(right, ry, val ? "Wł." : "Wył.", val ? PillKind.Done : PillKind.Gray);
-            p.Text(tx, ry, phone ? "Filtr na telefonie" : "Ograniczony ruch", sel ? Ink.Brand : Ink.Dark, TextAlign.Left, right - vpw - 6 - tx);
+            var vpw = p.Pill(right, ry, _d.FilterText(val ? "on" : "off"), val ? PillKind.Done : PillKind.Gray);
+            p.Text(tx, ry, _d.FilterText(phone ? "phone" : "motion"), sel ? Ink.Brand : Ink.Dark, TextAlign.Left, right - vpw - 6 - tx);
         }
         var dc = p.Card(card.End.Y + 6, 2);
         var (l1, l2, warn) = Describe(_list.Sel);
@@ -188,12 +188,12 @@ public sealed class FiltersPage : PhonePage
     /// <summary>Dwie linie opisu zaznaczonego wiersza; warn = ostrzeżenie (ruch).</summary>
     private (string, string, bool) Describe(int row)
     {
-        if (row == StrengthRow) return ($"Siła filtra: {GameSettings.FilterStrength * 10}%", "Mniej = łagodniejszy efekt", false);
-        if (row == PhoneRow) return ("Filtr także na telefonie i banerach", "Wył.: tylko plac, HUD i plansze", false);
-        if (row == MotionRow) return ("Bez falowania, drgań i migania", "Kwas: sama tęcza, bez fal", false);
+        if (row == StrengthRow) return ($"{_d.FilterText("strengthDesc")} {GameSettings.FilterStrength * 10}%", _d.FilterText("strengthDesc2"), false);
+        if (row == PhoneRow) return (_d.FilterText("phoneDesc"), _d.FilterText("phoneDesc2"), false);
+        if (row == MotionRow) return (_d.FilterText("motionDesc"), _d.FilterText("motionDesc2"), false);
         var f = _d.ScreenFilters[row];
-        if (!ScreenFilters.Unlocked(_d, _p, row)) return ("??? " + f.Hint, "Odblokujesz postępem w grze", false);
-        if (f.Motion) return (f.Desc, GameSettings.ReduceMotion ? "Ograniczony ruch: bez fal" : "Uwaga: migająca barwa i fale!", !GameSettings.ReduceMotion);
+        if (!ScreenFilters.Unlocked(_d, _p, row)) return (_d.FilterText("locked") + " " + f.Hint, _d.FilterText("lockedDesc2"), false);
+        if (f.Motion) return (f.Desc, _d.FilterText(GameSettings.ReduceMotion ? "motionOn" : "motionWarn"), !GameSettings.ReduceMotion);
         return (f.Desc, ScreenFilters.UnlockLabel(_d, row), false);
     }
 }

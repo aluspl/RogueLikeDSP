@@ -146,7 +146,7 @@ public sealed class InvestorPage : PhonePage
                 else if (k > 0) p.Divider(card, k);
                 p.HitRow(card, k, i);
                 var fpw = p.Pill(right, fy, fd.Short, Filter > 0 ? PillKind.Done : PillKind.Gray);
-                p.Text(tx, fy, "Filtr ekranu: " + fd.Name, fsel ? Ink.Brand : Filter > 0 ? Ink.Dark : Ink.Dim, TextAlign.Left, right - fpw - 4 - tx);
+                p.Text(tx, fy, _d.FilterText("lookRow") + fd.Name, fsel ? Ink.Brand : Filter > 0 ? Ink.Dark : Ink.Dim, TextAlign.Left, right - fpw - 4 - tx);
                 continue;
             }
             if (i == PowerRow || i == Keep2Row) // v0.21.52 cz. b: wariant mocy / druga pamiątka
@@ -210,7 +210,7 @@ public sealed class InvestorPage : PhonePage
         else if (_list.Sel == FilterRow)
         {
             var fd = _d.ScreenFilters[Filter];
-            desc = $"Ekran: {fd.Desc} (filtrów: {ScreenFilters.UnlockedCount(_d, _p)}/{_d.ScreenFilters.Length})";
+            desc = $"{_d.FilterText("lookDesc")}{fd.Desc} ({_d.FilterText("count")}: {ScreenFilters.UnlockedCount(_d, _p)}/{_d.ScreenFilters.Length})";
         }
         else if (_list.Sel == HelmetRow)
         {
