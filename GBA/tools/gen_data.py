@@ -866,6 +866,33 @@ mh = d["metaHelp"]   # v0.21.50 cz. 4: Jak grać - podsumowanie, wyzwanie tygodn
 assert len(mh) == 6 and all(len(x) <= 31 for x in mh), mh
 L += ["inline constexpr const char* meta_help[] = {   // Jak grać: podsumowanie budowy, wyzwanie tygodnia, fabuła"]
 L += [f"    {s(t)}," for t in mh] + ["};", f"inline constexpr int meta_help_count = {len(mh)};", ""]
+# v0.21.53 (#53, #54): filtry ekranu - klasyczny, zabawowe z odblokowaniem (dowolny z warunków), dla daltonistów zawsze
+sf = d["screenFilters"]["list"]
+FKIND = ["classic", "fun", "access"]
+colid = {x["id"]: i for i, x in enumerate(d["collections"]["sets"])}
+carid = {c["id"]: i for i, c in enumerate(car)}
+secid = {x["id"]: i for i, x in enumerate(sec["list"])}
+assert 2 <= len(sf) <= 16 and sf[0]["kind"] == "classic" and sum(x["kind"] == "classic" for x in sf) == 1, sf   # profil: bity uint16
+def fcond(u):
+    k = u["kind"]
+    if k in ("inspector", "wins"): v = u["value"]; assert 1 <= v <= (len(d["inspector"]["levels"]) if k == "inspector" else 200), u
+    elif k == "collection": v = colid[u["id"]]
+    elif k == "career": v = carid[u["id"]]; assert v > 0, u
+    else: assert k == "secret", u; v = secid[u["id"]]
+    return f"{{ core::filter_unlock::{k}, {v} }}"
+L.append("inline constexpr core::screen_filter_def screen_filters[] = {   // filtry ekranu (0 = klasyczny; dla daltonistów zawsze)")
+for x in sf:
+    assert x["kind"] in FKIND and len(x["name"]) <= 16 and len(x["short"]) <= 8 and len(x["desc"]) <= 30 and len(x.get("hint", "")) <= 28, x
+    un = x.get("unlock", [])
+    assert (x["kind"] == "fun") == (len(un) > 0) and len(un) <= 2 and (x["kind"] != "fun" or x.get("hint")), x
+    conds = [fcond(u) for u in un] + ["{}"] * (2 - len(un))
+    L.append(f'    {{ {s(x["name"])}, {s(x["short"])}, {s(x["desc"])}, {s(x.get("hint", ""))}, core::filter_kind::{x["kind"]}, '
+             f'{"true" if x.get("cues") else "false"}, {"true" if x.get("motion") else "false"}, {{ {", ".join(conds)} }} }},')
+L += ["};", f"inline constexpr int screen_filters_count = {len(sf)};", ""]
+fh_ = d["filtersHelp"]   # v0.21.53: Jak grać - filtry ekranu
+assert len(fh_) == 7 and all(len(x) <= 31 for x in fh_), fh_
+L += ["inline constexpr const char* filters_help[] = {   // Jak grać: filtry ekranu i tryby dla daltonistów"]
+L += [f"    {s(t)}," for t in fh_] + ["};", f"inline constexpr int filters_help_count = {len(fh_)};", ""]
 ch_ = d["careerHelp"]   # v0.21.52 cz. d: Jak grać - mapa kariery
 assert len(ch_) == 7 and all(len(x) <= 31 for x in ch_), ch_
 L += ["inline constexpr const char* career_help[] = {   // Jak grać: mapa kariery (kontrakty, odblokowanie, nagrody)"]

@@ -3023,7 +3023,7 @@
       "effect": "thermos"
     }
   ],
-  "version": "v0.21.52",
+  "version": "v0.21.53",
   "damageHelp": [
     "Cios = rzut broni + premie:",
     "SIŁ/ZRĘ/INT broni +1 co 2 pkt,",
@@ -7701,5 +7701,124 @@
     "Poddasze, Kamienica: inspektor.",
     "1. wygrana: Respekt, tytuł,",
     "kask. Bliźniak: wspólna ściana."
+  ],
+  "screenFilters": {
+    "list": [
+      {
+        "id": "klasyczny",
+        "name": "Klasyczny",
+        "short": "Klasyk",
+        "desc": "Bez efektu - jak zawsze",
+        "kind": "classic"
+      },
+      {
+        "id": "noir",
+        "name": "Noir",
+        "short": "Noir",
+        "desc": "Czerń i biel, ziarno, winieta",
+        "kind": "fun",
+        "cues": true,
+        "hint": "Inspektor lubi stare filmy",
+        "unlock": [
+          {
+            "kind": "inspector",
+            "value": 5
+          }
+        ]
+      },
+      {
+        "id": "retro",
+        "name": "Retro LCD",
+        "short": "Retro",
+        "desc": "4 odcienie zieleni, kratka",
+        "kind": "fun",
+        "cues": true,
+        "hint": "Zbierz cały stan surowy",
+        "unlock": [
+          {
+            "kind": "collection",
+            "id": "akt1"
+          }
+        ]
+      },
+      {
+        "id": "neon",
+        "name": "Neon nocy",
+        "short": "Neon",
+        "desc": "Róż i błękit, linie, poświata",
+        "kind": "fun",
+        "hint": "Nocna zmiana w kamienicy",
+        "unlock": [
+          {
+            "kind": "career",
+            "id": "kamienica"
+          },
+          {
+            "kind": "secret",
+            "id": "szybka_ekipa"
+          }
+        ]
+      },
+      {
+        "id": "kwas",
+        "name": "Kwas",
+        "short": "Kwas",
+        "desc": "Tęcza i fale - uwaga: ruch!",
+        "kind": "fun",
+        "motion": true,
+        "hint": "Za dużo porażeń prądem?",
+        "unlock": [
+          {
+            "kind": "inspector",
+            "value": 20
+          },
+          {
+            "kind": "secret",
+            "id": "mokra_robota"
+          }
+        ]
+      },
+      {
+        "id": "protanopia",
+        "name": "Protanopia",
+        "short": "Prot.",
+        "desc": "Słabsze widzenie czerwieni",
+        "kind": "access",
+        "cues": true
+      },
+      {
+        "id": "deuteranopia",
+        "name": "Deuteranopia",
+        "short": "Deut.",
+        "desc": "Słabsze widzenie zieleni",
+        "kind": "access",
+        "cues": true
+      },
+      {
+        "id": "tritanopia",
+        "name": "Tritanopia",
+        "short": "Trit.",
+        "desc": "Słabsze widzenie niebieskiego",
+        "kind": "access",
+        "cues": true
+      },
+      {
+        "id": "kontrast",
+        "name": "Wysoki kontrast",
+        "short": "Kontr.",
+        "desc": "Mocne kolory i ciemne tło",
+        "kind": "access",
+        "cues": true
+      }
+    ]
+  },
+  "filtersHelp": [
+    "Filtry ekranu: wybór zawodu >",
+    "SELECT: Wygląd (Godot: klucz).",
+    "Dla daltonistów od początku:",
+    "Prot., Deut., Trit., Kontrast -",
+    "czerwone pola w paski, litery.",
+    "Noir, Retro LCD, Neon, Kwas:",
+    "odblokuj postępem (\"???\")."
   ]
 }

@@ -710,7 +710,31 @@ namespace core
         int16_t helmet = -1;   // v0.21.52: kolor kasku (RGB555), -1 = nie kask
     };
 
-    struct difficulty_def      // poziom trudności wybierany na starcie
+    // v0.21.53: filtry ekranu (#53, #54) - klasyczny, zabawowe do odblokowania (Noir, Retro LCD, Neon nocy, Kwas) i dla
+    // daltonistów (zawsze dostępne). Odblokowanie: dowolny z warunków (poziom inspektora, komplet kolekcji, wygrany
+    // kontrakt kariery, sekretne zlecenie, liczba wygranych).
+    enum class filter_kind : uint8_t { classic, fun, access };
+    enum class filter_unlock : uint8_t { none, inspector, collection, career, secret, wins };
+
+    struct filter_cond
+    {
+        filter_unlock kind = filter_unlock::none;
+        int16_t value = 0;     // poziom / wygrane albo indeks (data::collections, data::career, data::secrets)
+    };
+
+    struct screen_filter_def
+    {
+        const char* name;
+        const char* short_name;
+        const char* desc;
+        const char* hint;      // podpowiedź przy "???" (zablokowany)
+        filter_kind kind;
+        bool cues;             // wzory zamiast samego koloru (paski na czerwonych polach, litery rzadkości)
+        bool motion;           // ruchomy efekt (ostrzeżenie, ograniczony ruch)
+        filter_cond unlock[2];
+    };
+
+    struct difficulty_def     // poziom trudności wybierany na starcie
     {
         const char* name;
         int16_t hp_pct;        // mnożnik HP wrogów

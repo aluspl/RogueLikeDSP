@@ -1934,7 +1934,7 @@ int main()
         CHECK(!tutorial_pending(v, 0) && !tutorial_pending(v, 1) && pending_unlock(v, 0, cls) == unlock_act0 && pending_unlock(v, 1, cls) == -1);
         profile nv; profile_reset(nv); std::memcpy(nv.magic, "PBRL009", 8);
         CHECK(profile_fix(nv) && tutorial_pending(nv, 0) && nv.rewards == 0 && nv.tutorial == 0);
-        CHECK(sizeof(profile) == 384 && std::strcmp(profile_magic, "PBRL016") == 0);
+        CHECK(sizeof(profile) == 384 && std::strcmp(profile_magic, "PBRL017") == 0);
     }
     // 46. v0.21.50: rozpiska obrażeń broni (#26) - zakres z rozpiski = to, co naprawdę zadaje walka (wiele rzutów z seedem)
     {
@@ -3454,7 +3454,7 @@ int main()
             // starszy profil: przez wszystkie migracje do v15
             profile o; profile_reset(o); o.runs = 3; std::memcpy(o.magic, profile_magic_v13, sizeof o.magic);
             std::memset(reinterpret_cast<char*>(&o) + profile_v13_size, 0xEE, sizeof o - profile_v13_size);
-            CHECK(profile_fix(o) && std::strcmp(o.magic, profile_magic) == 0 && o.tree == 0 && o.streak == 0 && o.kill_mark[5] == 0 && o.reserved16a == 0);
+            CHECK(profile_fix(o) && std::strcmp(o.magic, profile_magic) == 0 && o.tree == 0 && o.streak == 0 && o.kill_mark[5] == 0 && o.filter == 0);
             profile n; profile_reset(n); n.tree = 0x24; n.tasks_total = 9; n.streak_best = 5; CHECK(! profile_fix(n) && n.tree == 0x24 && n.tasks_total == 9);
             // komplet już osiągnięty przy migracji: bez banera
             profile c; profile_reset(c); c.wins = 100; c.inspector_xp = 1000000; std::memcpy(c.magic, profile_magic_v14, sizeof c.magic);
@@ -3590,7 +3590,7 @@ int main()
             std::memset(reinterpret_cast<char*>(&p) + profile_v15_size, 0xCD, sizeof p - profile_v15_size);
             CHECK(profile_fix(p) && std::strcmp(p.magic, profile_magic) == 0 && p.wins == 4 && p.best == 99 && p.streak_best == 3);
             CHECK(p.contract == 0 && p.career_seen == 0 && p.career_done == 1 && p.career_wins[0] == 4 && p.career_wins[1] == 0);
-            CHECK(p.career_best[0] == data::stages_count - data::prelude_stages && p.career_best[5] == 0 && p.reserved16[7] == 0);
+            CHECK(p.career_best[0] == data::stages_count - data::prelude_stages && p.career_best[5] == 0 && p.reserved17[5] == 0 && p.filter == 0 && p.filters_seen == 0);
             CHECK(career_announce(p) == 2 + 4 && ! profile_fix(p));   // odblokowane przy migracji - baner jak nowe
             profile z; profile_reset(z); std::memcpy(z.magic, profile_magic_v15, sizeof z.magic);
             CHECK(profile_fix(z) && z.career_done == 0 && z.career_wins[0] == 0);
@@ -3603,6 +3603,68 @@ int main()
             run_save_make(s, g); std::memcpy(s.magic, run_magic_v15, sizeof s.magic); s.checksum = run_checksum(s.g);
             CHECK(run_save_valid(s)); run_save_upgrade(s);
             CHECK(run_save_valid(s) && std::memcmp(s.magic, run_magic, sizeof s.magic) == 0 && s.g.contract == 0 && s.g.twin_carry == 0);
+        }
+    }
+    // 54. v0.21.53 (#53, #54): filtry ekranu - klasyczny i dla daltonistów zawsze, zabawowe z warunków z danych, profil v17
+    {
+        auto fid = [](const char* n) { for(int f = 0; f < data::screen_filters_count; ++f) if(std::strcmp(data::screen_filters[f].name, n) == 0) return f; return -1; };
+        const int noir = fid("Noir"), retro = fid("Retro LCD"), neon = fid("Neon nocy"), kwas = fid("Kwas");
+        const int prot = fid("Protanopia"), deut = fid("Deuteranopia"), trit = fid("Tritanopia"), kontr = fid("Wysoki kontrast");
+        CHECK(noir > 0 && retro > 0 && neon > 0 && kwas > 0 && prot > 0 && deut > 0 && trit > 0 && kontr > 0);
+        CHECK(data::screen_filters[0].kind == filter_kind::classic && data::screen_filters[kwas].motion && ! data::screen_filters[noir].motion);
+        CHECK(data::screen_filters[prot].cues && data::screen_filters[deut].cues && data::screen_filters[trit].cues && data::screen_filters[kontr].cues);
+        profile p; profile_reset(p);
+        // nowy profil: klasyczny i 4 tryby dla daltonistów, zabawowe zablokowane (z podpowiedzią)
+        CHECK(filter_unlocked(p, 0) && filter_unlocked(p, prot) && filter_unlocked(p, deut) && filter_unlocked(p, trit) && filter_unlocked(p, kontr));
+        CHECK(! filter_unlocked(p, noir) && ! filter_unlocked(p, retro) && ! filter_unlocked(p, neon) && ! filter_unlocked(p, kwas));
+        CHECK(filters_unlocked(p) == 5 && ! filter_unlocked(p, -1) && ! filter_unlocked(p, data::screen_filters_count));
+        for(int f = 0; f < data::screen_filters_count; ++f)
+            CHECK(data::screen_filters[f].kind != filter_kind::fun || data::screen_filters[f].hint[0] != 0);
+        CHECK(filter_announce(p) == 0 && selected_filter(p) == 0);
+        // zablokowany wybrany (np. ze starego zapisu) = klasyczny; przełączanie tylko po odblokowanych
+        p.filter = uint8_t(noir); CHECK(selected_filter(p) == 0);
+        p.filter = 0; cycle_filter(p, 1); CHECK(p.filter == prot);
+        cycle_filter(p, -1); CHECK(p.filter == 0);
+        cycle_filter(p, -1); CHECK(p.filter == kontr);
+        // Noir: poziom inspektora 5
+        p.inspector_xp = uint32_t(progress_floor(data::inspector_levels, 5) - 1); CHECK(inspector_level(p) == 4 && ! filter_unlocked(p, noir));
+        p.inspector_xp = uint32_t(progress_floor(data::inspector_levels, 5)); CHECK(inspector_level(p) == 5 && filter_unlocked(p, noir));
+        CHECK(filter_announce(p) == (1 << noir) && filter_announce(p) == 0);
+        p.filter = 0; cycle_filter(p, 1); CHECK(p.filter == noir);
+        // Retro LCD: komplet kolekcji Stan surowy
+        CHECK(! filter_unlocked(p, retro));
+        const collection_def& c0 = data::collections[data::screen_filters[retro].unlock[0].value];
+        for(int e = 0; e < data::enemies_count; ++e) if((c0.enemies >> e) & 1) p.kill_count[e] = uint8_t(c0.count);
+        CHECK(filter_unlocked(p, retro) && filter_announce(p) == (1 << retro));
+        // Neon nocy: wygrana Kamienica albo sekret Szybka ekipa (każdy z warunków osobno)
+        {
+            profile a; profile_reset(a); CHECK(! filter_unlocked(a, neon));
+            a.career_done = uint8_t(1u << data::screen_filters[neon].unlock[0].value); CHECK(filter_unlocked(a, neon));
+            profile b; profile_reset(b); b.secrets = uint16_t(1u << data::screen_filters[neon].unlock[1].value); CHECK(filter_unlocked(b, neon));
+            b.secrets = uint16_t(~(1u << data::screen_filters[neon].unlock[1].value)); CHECK(! filter_unlocked(b, neon));
+        }
+        // Kwas: inspektor 20 albo dziwny sekret (Mokra robota)
+        {
+            profile a; profile_reset(a); a.inspector_xp = uint32_t(progress_floor(data::inspector_levels, 20));
+            CHECK(filter_unlocked(a, kwas) && filter_unlocked(a, noir) && ! filter_unlocked(a, neon));
+            profile b; profile_reset(b); b.secrets = uint16_t(1u << data::screen_filters[kwas].unlock[1].value);
+            CHECK(filter_unlocked(b, kwas) && ! filter_unlocked(b, noir));
+            message m; filter_unlock_label(m, kwas); CHECK(std::strstr(m.s, "Inspektor 20 albo Sekret: ") == m.s);
+            message m2; filter_unlock_label(m2, retro); CHECK(std::strcmp(m2.s, "Kolekcja: Stan surowy") == 0);
+            message m3; filter_unlock_label(m3, prot); CHECK(std::strstr(m3.s, "Zawsze") == m3.s);
+        }
+        // profil v17: migracja v16 (filtr klasyczny, filtry odblokowane wcześniej - baner jak nowe), starsze ścieżki też
+        {
+            profile v; profile_reset(v); std::memcpy(v.magic, profile_magic_v16, sizeof v.magic);
+            v.wins = 7; v.best = 321; v.career_done = 1; v.inspector_xp = uint32_t(progress_floor(data::inspector_levels, 6));
+            v.filter = 0xAB; v.filters_seen = 0x1234; v.reserved17[2] = 0x77;   // śmieci w dawnym wyrównaniu v16
+            CHECK(profile_fix(v) && std::strcmp(v.magic, profile_magic) == 0 && v.wins == 7 && v.best == 321 && v.career_done == 1);
+            CHECK(v.filter == 0 && v.filters_seen == 0 && v.reserved17[2] == 0 && selected_filter(v) == 0);
+            CHECK(filter_announce(v) == (1 << noir) && ! profile_fix(v));
+            profile o; profile_reset(o); o.wins = 2; std::memcpy(o.magic, profile_magic_v15, sizeof o.magic);
+            std::memset(reinterpret_cast<char*>(&o) + profile_v15_size, 0xEE, sizeof o - profile_v15_size);
+            CHECK(profile_fix(o) && o.filter == 0 && o.filters_seen == 0 && o.career_wins[0] == 2 && std::strcmp(o.magic, profile_magic) == 0);
+            profile n; profile_reset(n); n.filter = uint8_t(trit); CHECK(! profile_fix(n) && selected_filter(n) == trit);
         }
     }
 

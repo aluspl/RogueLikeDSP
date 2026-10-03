@@ -13,7 +13,8 @@ namespace core
     constexpr int max_respect = 19;       // 16 w respect_ranks + 3 w respect_ranks_hi (v12)
     static_assert(data::classes_count <= max_classes && data::respect_count <= max_respect && data::rewards_count <= 255);
 
-    constexpr char profile_magic[8] = "PBRL016";
+    constexpr char profile_magic[8] = "PBRL017";
+    constexpr char profile_magic_v16[8] = "PBRL016";
     constexpr char profile_magic_v15[8] = "PBRL015";
     constexpr char profile_magic_v14[8] = "PBRL014";
     constexpr char profile_magic_v13[8] = "PBRL013";
@@ -43,6 +44,8 @@ namespace core
     constexpr int profile_v13_size = 200; // v14 = v13 + poziom inspektora, mistrzostwo zawodów, druga pamiątka (v0.21.52 cz. b)
     constexpr int profile_v14_size = 240; // v15 = v14 + drzewko Szkoleń, kolekcje, zadania dnia, seria dni (v0.21.52 cz. c)
     constexpr int profile_v15_size = 360; // v16 = v15 + mapa kariery (v0.21.52 cz. d): kontrakty, wygrane, najlepszy etap
+    // v17 (v0.21.53) = v16 + filtr ekranu i ogłoszone filtry - w dawnym wyrównaniu v16 (rozmiar bez zmian, 384 B)
+    static_assert(data::screen_filters_count <= 16);   // ogłoszone filtry: bity uint16
     constexpr int max_contracts = 6;      // kontrakty mapy kariery (data::career)
     static_assert(data::career_count <= max_contracts);
     constexpr int task_slots = 5;         // v0.21.52 cz. c: 3 zadania dnia + 2 tygodnia
@@ -158,10 +161,12 @@ namespace core
         uint8_t contract;              // wybrany kontrakt (data::career)
         uint8_t career_seen;           // bity: odblokowanie kontraktu już ogłoszone (baner raz)
         uint8_t career_done;           // bity: kontrakt wygrany (nagroda za pierwszą wygraną wydana)
-        uint8_t reserved16a;
+        uint8_t filter;                // v17 (v0.21.53): wybrany filtr ekranu (data::screen_filters; zablokowany = klasyczny)
         uint8_t career_wins[max_contracts];   // wygrane w każdym kontrakcie (do 255)
         uint8_t career_best[max_contracts];   // najwięcej ukończonych etapów kontraktu w jednej budowie (bez Aktu 0)
-        uint8_t reserved16[8];         // wyrównanie do 384 B (zapis budowy od 512)
+        // --- v17 (v0.21.53): filtry ekranu (#53, #54)
+        uint16_t filters_seen;         // bity: odblokowanie filtra już ogłoszone (baner raz)
+        uint8_t reserved17[6];         // wyrównanie do 384 B (zapis budowy od 512)
     };
     static_assert(offsetof(profile, badges) == profile_v2_size);
     static_assert(offsetof(profile, kills_total) == profile_v3_size);
@@ -178,6 +183,7 @@ namespace core
     static_assert(offsetof(profile, task_progress) == 342 && offsetof(profile, task_mark) == 347 && offsetof(profile, task_done) == 352);
     static_assert(offsetof(profile, tasks_total) == 354 && offsetof(profile, streak_day) == 356 && offsetof(profile, collections) == 359);
     static_assert(offsetof(profile, contract) == profile_v15_size && offsetof(profile, career_wins) == 364 && offsetof(profile, career_best) == 370);
+    static_assert(offsetof(profile, filter) == 363 && offsetof(profile, filters_seen) == 376);
     static_assert(sizeof(profile) == 384);
 
     // Katalog usterek: rodzaje 0-15 w catalog, 16-47 w catalog_hi.
@@ -358,18 +364,26 @@ namespace core
     inline void migrate_v14(profile& p);
     inline void migrate_v15(profile& p);
     inline void migrate_v16(profile& p);
+    inline void migrate_v17(profile& p);
     inline int next_unlock(const profile& p, int& kind, int& index);
 
     // v0.21.52 cz. c: każda ścieżka migracji kończy się migrate_v15 (drzewko, kolekcje, zadania, seria dni);
-    // cz. d: potem migrate_v16 (mapa kariery).
+    // cz. d: potem migrate_v16 (mapa kariery); v0.21.53: migrate_v17 (filtry ekranu).
     inline bool profile_fix(profile& p)
     {
         if(std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0) return clamp_levels(p);
+        if(std::memcmp(p.magic, profile_magic_v16, sizeof p.magic) == 0)   // v16 -> v17: filtr ekranu klasyczny, filtry do ogłoszenia
+        {
+            std::memcpy(p.magic, profile_magic, sizeof p.magic);
+            migrate_v17(p);
+            return true;
+        }
         if(std::memcmp(p.magic, profile_magic_v15, sizeof p.magic) == 0)   // v15 -> v16: Dom jednorodzinny z dotychczasowych wygranych
         {
             std::memset(reinterpret_cast<char*>(&p) + profile_v15_size, 0, sizeof p - profile_v15_size);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             migrate_v16(p);
+            migrate_v17(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v14, sizeof p.magic) == 0)   // v14 -> v15: kolekcje z Katalogu, seria z wyników dni
@@ -378,6 +392,7 @@ namespace core
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             migrate_v15(p);
             migrate_v16(p);
+            migrate_v17(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v13, sizeof p.magic) == 0)   // v13 -> v14: inspektor i mistrzostwo z dotychczasowych statystyk
@@ -387,6 +402,7 @@ namespace core
             migrate_v14(p);
             migrate_v15(p);
             migrate_v16(p);
+            migrate_v17(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v12, sizeof p.magic) == 0)   // v12 -> v13: zwrot za Szkolenia, tytuł i kask od zera
@@ -397,6 +413,7 @@ namespace core
             migrate_v14(p);
             migrate_v15(p);
             migrate_v16(p);
+            migrate_v17(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v11, sizeof p.magic) == 0)   // v11 -> v12: sekretne zlecenia z tego, co już widać w profilu
@@ -408,6 +425,7 @@ namespace core
             migrate_v14(p);
             migrate_v15(p);
             migrate_v16(p);
+            migrate_v17(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v10, sizeof p.magic) == 0)   // v10 -> v11: wyzwania tygodnia i fabuła od zera
@@ -420,6 +438,7 @@ namespace core
             migrate_v14(p);
             migrate_v15(p);
             migrate_v16(p);
+            migrate_v17(p);
             return true;
         }
         bool v9 = std::memcmp(p.magic, profile_magic_v9, sizeof p.magic) == 0;
@@ -435,6 +454,7 @@ namespace core
             migrate_v14(p);
             migrate_v15(p);
             migrate_v16(p);
+            migrate_v17(p);
             return true;
         }
         // v7/v6/v5/v4/v3/v2 -> v9: stare pola zostają, nowe od zera; bez wybranej pamiątki - pierwsza odblokowana
@@ -457,6 +477,7 @@ namespace core
             migrate_v14(p);
             migrate_v15(p);
             migrate_v16(p);
+            migrate_v17(p);
             return true;
         }
         if(std::memcmp(p.magic, profile_magic_v1, sizeof p.magic) == 0)
@@ -471,6 +492,7 @@ namespace core
             migrate_v14(p);
             migrate_v15(p);
             migrate_v16(p);
+            migrate_v17(p);
             return true;
         }
         profile_reset(p);
@@ -1991,15 +2013,91 @@ namespace core
     // Kontrakty już odblokowane czekają na baner jak nowe.
     inline void migrate_v16(profile& p)
     {
-        p.contract = 0; p.career_seen = 0; p.career_done = 0; p.reserved16a = 0;
+        p.contract = 0; p.career_seen = 0; p.career_done = 0;
         for(int c = 0; c < max_contracts; ++c) { p.career_wins[c] = 0; p.career_best[c] = 0; }
-        for(auto& r : p.reserved16) r = 0;
         if(p.wins > 0)
         {
             p.career_wins[0] = uint8_t(imin(255, p.wins));
             p.career_best[0] = uint8_t(data::career[0].count - data::career[0].prelude);
             p.career_done = 1;
         }
+    }
+
+    // ------------------------------------------------------------------ v0.21.53 (#53, #54): filtry ekranu
+    // Klasyczny i tryby dla daltonistów (Protanopia, Deuteranopia, Tritanopia, Wysoki kontrast) - zawsze; zabawowe
+    // (Noir, Retro LCD, Neon nocy, Kwas) - gdy spełniony dowolny z warunków z danych. Zablokowany: "???" z podpowiedzią.
+    inline bool filter_cond_met(const profile& p, const filter_cond& c)
+    {
+        switch(c.kind)
+        {
+            case filter_unlock::inspector:  return inspector_level(p) >= c.value;
+            case filter_unlock::collection: return collection_complete(p, c.value);
+            case filter_unlock::career:     return career_won(p, c.value);
+            case filter_unlock::secret:     return c.value >= 0 && c.value < data::secrets_count && secret_done(p, c.value);
+            case filter_unlock::wins:       return p.wins >= c.value;
+            default:                        return false;
+        }
+    }
+    inline bool filter_unlocked(const profile& p, int f)
+    {
+        if(f < 0 || f >= data::screen_filters_count) return false;
+        const screen_filter_def& d = data::screen_filters[f];
+        if(d.kind != filter_kind::fun) return true;
+        for(const filter_cond& c : d.unlock) if(filter_cond_met(p, c)) return true;
+        return false;
+    }
+    inline int filters_unlocked(const profile& p) { int n = 0; for(int f = 0; f < data::screen_filters_count; ++f) n += filter_unlocked(p, f); return n; }
+    // Wybrany filtr (zablokowany albo spoza danych - klasyczny).
+    inline int selected_filter(const profile& p) { return filter_unlocked(p, p.filter) ? p.filter : 0; }
+    // Wybór (Wygląd, Ustawienia): kolejny odblokowany filtr w kierunku dir.
+    inline void cycle_filter(profile& p, int dir)
+    {
+        int f = selected_filter(p);
+        for(int i = 0; i < data::screen_filters_count; ++i)
+        {
+            f = (f + (dir < 0 ? -1 : 1) + data::screen_filters_count) % data::screen_filters_count;
+            if(filter_unlocked(p, f)) break;
+        }
+        p.filter = uint8_t(f);
+    }
+    // Odblokowane, a jeszcze nieogłoszone filtry zabawowe (baner "Nowy filtr ekranu" raz) - zwraca bity i zapamiętuje je.
+    inline int filter_announce(profile& p)
+    {
+        int got = 0;
+        for(int f = 0; f < data::screen_filters_count; ++f)
+            if(data::screen_filters[f].kind == filter_kind::fun && filter_unlocked(p, f) && ! ((p.filters_seen >> f) & 1)) got |= 1 << f;
+        p.filters_seen = uint16_t(p.filters_seen | got);
+        return got;
+    }
+    // Warunek odblokowania słowami (po odblokowaniu): "Inspektor 5", "Kolekcja: Stan surowy", "Wygrana: Kamienica",
+    // "Sekret: Szybka ekipa", "10 wygranych"; dwa warunki - "... albo ...".
+    inline message& filter_unlock_label(message& m, int f)
+    {
+        const screen_filter_def& d = data::screen_filters[f];
+        if(d.kind == filter_kind::access) return m.add("Zawsze (dla daltonistów)");
+        if(d.kind == filter_kind::classic) return m.add("Zawsze");
+        for(int i = 0; i < 2; ++i)
+        {
+            const filter_cond& c = d.unlock[i];
+            if(c.kind == filter_unlock::none) break;
+            if(i > 0) m.add(" albo ");
+            switch(c.kind)
+            {
+                case filter_unlock::inspector:  m.add("Inspektor ").add(c.value); break;
+                case filter_unlock::collection: m.add("Kolekcja: ").add(data::collections[c.value].name); break;
+                case filter_unlock::career:     m.add("Wygrana: ").add(data::career[c.value].short_name); break;
+                case filter_unlock::secret:     m.add("Sekret: ").add(data::secrets[c.value].hint); break;
+                default:                        m.add(c.value).add(" wygranych"); break;
+            }
+        }
+        return m;
+    }
+    // v16 -> v17: filtr klasyczny; odblokowane już filtry czekają na baner jak nowe.
+    inline void migrate_v17(profile& p)
+    {
+        p.filter = 0;
+        p.filters_seen = 0;
+        for(auto& r : p.reserved17) r = 0;
     }
 
     // ------------------------------------------------------------------ podsumowanie budowy (#33): rada i najbliższy cel
