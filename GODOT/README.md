@@ -4,12 +4,20 @@ Wersja Godot gry z demo GBA (`../GBA`): roguelike budowlany, w którym etapy bud
 a wrogami są *problemy budowy*. Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KONCEPCJA.md)
 (telefon z aplikacją PlanBudowlany jako interfejs, oprawa 2.5D – kolejne kamienie milowe).
 
-**Stan: zgodny z GBA v0.21.53 (filtry ekranu i tryby dla daltonistów), v0.21.52 cz. d (mapa kariery: rdzeń, test złoty i ekrany), cz. c (drzewko Szkoleń, kolekcje, zadania dnia i tygodnia, seria dni), cz. b (inspektor, mistrzostwo, stopnie inwestora), cz. a (tempo postępu), wcześniej v0.21.51 cz. 2 (sekretne zlecenia), v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
+**Stan: zgodny z GBA v0.21.53 (filtry ekranu, tryby dla daltonistów, język angielski), v0.21.52 cz. d (mapa kariery: rdzeń, test złoty i ekrany), cz. c (drzewko Szkoleń, kolekcje, zadania dnia i tygodnia, seria dni), cz. b (inspektor, mistrzostwo, stopnie inwestora), cz. a (tempo postępu), wcześniej v0.21.51 cz. 2 (sekretne zlecenia), v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
 z pieczątkami i Decyzją odmowną, samouczek menu, profil v10; wcześniej 10 etapów, 20 nowych problemów
 z zachowaniami, mechaniki aktów, opis statystyk; Respekt za etapy i sklep Respektu,
 nagrody za odbiór – Młot udarowy, Pistolet do kotew, buty, pas, zawody Dekarz, Tynkarz, Operator koparki – nowy balans
 Szkoleń, profil v8; wcześniej wybór ścieżki, materiały, codzienna budowa, pogoda, brygada, tryb inwestora);
 oprawa (grafika, font, dźwięk, telefon, wybór zawodu) jak w GBA.
+
+Nowe w v0.21.53 cz. 2 (#40): **język angielski** – `Loc` (teksty interfejsu z `game.json` „ui” i „uiGodot” oraz
+`GBA/data/lang/en.json`; w kodzie `Loc.T("klucz")` / `Loc.F("klucz", ...)` zamiast napisów na sztywno), `LangOverlay`
+(dane gry po angielsku przy wczytaniu, 1:1 z `gen_data.py`), `GameData.Parse(json, enJson, english)`. Ustawienia (klucz) >
+**Język / Language** (domyślnie z języka systemu: polski – Polski, inny – English; `language` w `settings.cfg`): interfejs
+zmienia się od razu, dane gry po powrocie na tytuł (przeładowanie sceny). `--lang pl|en` (zrzuty, test dymny i małpy;
+bez flagi testy po polsku). Kopia `en.json` przy buildzie do `res://data/lang_en.json`, tytuł z angielskim hasłem
+(`ui/title_en.png`, `ui/end_en.png`). Testy: `LanguageTests`, test dymny w obu językach.
 
 Nowe w v0.21.53 (#53, #54): **filtry ekranu** – rdzeń `ScreenFilters` (`ScreenFilterDef` z sekcji `screenFilters`: rodzaj
 klasyczny / zabawowy / dla daltonistów, `Cues`, `Motion`, warunki `FilterCond` – inspektor, kolekcja, kontrakt, sekret, wygrane;
@@ -427,7 +435,7 @@ maski startowych zawodów/narzędzi i poziomów), a nieznane pola ignoruje.
 
 - **Gra w Godot:** target MSBuild `CopySharedGameData` w `godot/LifeLike.Game.csproj` kopiuje przy każdym buildzie
   `GBA/data/game.json` do `godot/data/game.json` (plik w `.gitignore`), a gra czyta `res://data/game.json`.
-  Przy eksporcie dodaj filtr zasobów `data/*.json`.
+  Przy eksporcie dodaj filtr zasobów `data/*.json`. Od v0.21.53 tak samo `GBA/data/lang/en.json` → `godot/data/lang_en.json`.
 - **Testy:** używają zamrożonej kopii `tests/LifeLike.Core.Tests/golden/game.json` (z migawki GBA, z której zrobiono
   złote przebiegi), więc nie zmieniają się razem z bieżącymi pracami nad GBA. Osobny test sprawdza tylko,
   czy aktualny `GBA/data/game.json` da się wczytać.
