@@ -42,10 +42,11 @@ public static class HelmetTint
         return m;
     }
 
-    /// <summary>Ustawia (albo zdejmuje) materiał koloru kasku na węźle, który rysuje bohatera profilu p.</summary>
-    public static void Apply(CanvasItem node, GameData d, Profile p)
+    /// <summary>Ustawia (albo zdejmuje) materiał koloru kasku na węźle, który rysuje bohatera profilu p (cls: zawód –
+    /// kask mistrza tylko z poziomem mistrzostwa; -1 = dowolny, klatki portretów i tak wybiera Assets.HeroFrame).</summary>
+    public static void Apply(CanvasItem node, GameData d, Profile p, int cls = -1)
     {
-        var k = Assets.HeroHelmet(d, p);
+        var k = Assets.HeroHelmet(d, p, cls);
         if (k < 0)
         {
             if (node.Material != null) node.Material = null;

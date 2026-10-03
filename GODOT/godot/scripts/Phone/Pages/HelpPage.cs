@@ -35,7 +35,7 @@ public sealed class HelpPage : PhonePage
         ("Okna", "dotknij = zaznacz; Wybierz: prawo, Wróć: lewo"),   // v0.21.51: ten sam układ w każdym oknie
     ];
 
-    private const int Pages = 8;
+    private const int Pages = 9; // v0.21.52 cz. b: strona 9 – poziom inspektora i mistrzostwo zawodu
     private readonly GameData _d;
     private int _page;
 
@@ -91,6 +91,21 @@ public sealed class HelpPage : PhonePage
         if (_page == 4)
         {
             DrawList(p, "KOMBINACJE STANÓW", ComboLines(_d), "SKĄD STANY, PREMIE, ELITY", ComboWhereLines(_d));
+            return;
+        }
+        if (_page == 8) // v0.21.52 cz. b: poziom inspektora (#44), mistrzostwo zawodu (#45), stopnie inwestora (#48)
+        {
+            var pwidth = (int)(p.Right - 6 - p.Left - 12);
+            var plines = p.F.Wrap(string.Join(" ", _d.ProgressHelpLines), pwidth);
+            var pc = p.Card(p.Section(p.Top, "INSPEKTOR I MISTRZOSTWO"), plines.Count);
+            var px = p.TextX(pc);
+            for (var i = 0; i < plines.Count; i++) p.Text(px, p.RowY(pc, i), plines[i], Ink.Dark, TextAlign.Left, pc.End.X - 6 - px);
+            var pc2 = p.Card(p.Section(pc.End.Y + 6, "GDZIE"), ProgressWhereLines.Length);
+            for (var i = 0; i < ProgressWhereLines.Length; i++)
+            {
+                if (i > 0) p.Divider(pc2, i);
+                p.Text(px, p.RowY(pc2, i), ProgressWhereLines[i], Ink.Dim, TextAlign.Left, pc2.End.X - 6 - px);
+            }
             return;
         }
         if (_page == 7)
@@ -216,6 +231,14 @@ public sealed class HelpPage : PhonePage
         "Profil > Odznaki > Sekrety",
         "Nowe zawody: wybór zawodu",
         "Kask w paski: Tryb inwestora",
+    ];
+
+    private static readonly string[] ProgressWhereLines =
+    [
+        "Tytuł: pasek inspektora",
+        "Profil > Odznaki > Inspektor",
+        "Wybór zawodu: Mistrz N, Wygląd",
+        "Tryb inwestora: kolejny stopień",
     ];
 
     private static readonly string[] MetaWhereLines =

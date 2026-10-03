@@ -145,12 +145,13 @@ public static class Assets
     public static int HeroFrame(GameData d, Profile p, int cls)
     {
         if (p != null && d.CosmeticStripes >= 0 && Secrets.CosmeticOn(d, p, d.CosmeticStripes)) return FrameStripes + cls * 2;
-        return HeroHelmet(d, p) >= 0 ? FrameHelmet + cls * 2 : d.Classes[cls].Frame;
+        return HeroHelmet(d, p, cls) >= 0 ? FrameHelmet + cls * 2 : d.Classes[cls].Frame;
     }
 
-    /// <summary>Kolor kasku bohatera (wygląd z odznaki / zlecenia; -1 = kask zawodu albo kask w paski).</summary>
-    public static int HeroHelmet(GameData d, Profile p) =>
-        p == null || (d.CosmeticStripes >= 0 && Secrets.CosmeticOn(d, p, d.CosmeticStripes)) ? -1 : Secrets.HelmetCosmetic(d, p);
+    /// <summary>Kolor kasku bohatera (wygląd z odznaki / zlecenia; -1 = kask zawodu albo kask w paski); cls &gt;= 0: kask
+    /// mistrza (v0.21.52 cz. b) tylko zawodem z poziomem mistrzostwa.</summary>
+    public static int HeroHelmet(GameData d, Profile p, int cls = -1) =>
+        p == null || (d.CosmeticStripes >= 0 && Secrets.CosmeticOn(d, p, d.CosmeticStripes)) ? -1 : Secrets.HelmetCosmetic(d, p, cls);
 
     /// <summary>Ikona nagrody sekretnego zlecenia w menu_icons (secret_icon z main.cpp; zawód – osobno portretem).</summary>
     public static int SecretIcon(GameData d, SecretDef sd) => sd.Reward switch

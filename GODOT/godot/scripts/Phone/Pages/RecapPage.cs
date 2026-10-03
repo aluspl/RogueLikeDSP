@@ -15,7 +15,7 @@ namespace LifeLike.Game.Phone.Pages;
 /// Podsumowanie budowy (#33) – jedna przewijana strona w telefonie (na GBA 3 strony): co zatrzymało budowę (albo
 /// odbiór), ostatnie ciosy, najmocniejsze ciosy, oś czasu etapów (dni, usunięte, SMS, magazyn, premie), nagrody z budowy
 /// (doświadczenie, Respekt, zlecenie, rekord dnia / tygodnia), v0.21.52: karta „Postęp” z paskami (najbliższe Szkolenie,
-/// mistrzostwo zawodu i poziom inspektora – te dwa w cz. b), najbliższy cel i rada. Góra/dół albo dotknięcie górnej /
+/// mistrzostwo zawodu i poziom inspektora z dośw. z tej budowy i nowym poziomem), najbliższy cel i rada. Góra/dół albo dotknięcie górnej /
 /// dolnej połowy przewija, Enter – dalej.
 /// </summary>
 public sealed class RecapPage : PhonePage
@@ -96,7 +96,7 @@ public sealed class RecapPage : PhonePage
         var ti = Titles.Selected(d, p);
         if (ti >= 0) Row("Tytuł: " + Titles.Name(d, ti), "", Ink.Brand, none);
 
-        // v0.21.52 (#52): paski postępu – najbliższe Szkolenie za doświadczenie; mistrzostwo i inspektor w cz. b
+        // v0.21.52 (#52): paski postępu – najbliższe Szkolenie za doświadczenie, mistrzostwo zawodu i poziom inspektora
         Head("POSTĘP");
         void Bar(float v, Color c) => rows.Add(new RecapRow("", "", Ink.Dim, none, false, Math.Clamp(v, 0f, 1f), c));
         var cost = Meta.NextUnlock(d, p, out var kind, out var idx);
@@ -111,10 +111,17 @@ public sealed class RecapPage : PhonePage
             Row(UnlockName(d, p, kind, idx), ready ? "Stać Cię!" : $"{p.Xp}/{cost}", Ink.Dark, ready ? Pal.Done : Pal.Brand);
             Bar(ready ? 1f : p.Xp / (float)cost, ready ? Pal.Done : Pal.Brand);
         }
-        Row("Mistrzostwo: " + d.Classes[g.Cls].Name, "wkrótce", Ink.Dim, none);
-        Bar(0f, Pal.Brand);
-        Row("Poziom inspektora", "wkrótce", Ink.Dim, none);
-        Bar(0f, Pal.Brand);
+        var pg = s.LastProgress;
+        void Level(string label, int level, int cur, int need, bool up)
+        {
+            var full = up || need == 0;
+            Row($"{label} {level}", up ? $"Poziom {level}!" : (need == 0 ? "MAX" : $"+{pg.Gained}  {cur}/{need}"), Ink.Dark, full ? Pal.Done : Pal.Brand);
+            Bar(need == 0 ? 1f : cur / (float)need, full ? Pal.Done : Pal.Brand);
+        }
+        Progress.MasteryBar(d, p, g.Cls, out var mc, out var mn);
+        Level("Mistrzostwo: " + d.Classes[g.Cls].Name, Progress.MasteryLevel(d, p, g.Cls), mc, mn, pg.MasteryAfter > pg.MasteryBefore);
+        Progress.InspectorBar(d, p, out var ic, out var inn);
+        Level("Inspektor", Progress.InspectorLevel(d, p), ic, inn, pg.InspAfter > pg.InspBefore);
 
         Head("NAJBLIŻSZY CEL");
         if (Recap.Goal(d, p, out var lead, out var name)) Row($"{lead} {name}", "", Ink.Brand, Pal.Brand);

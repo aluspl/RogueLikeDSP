@@ -31,7 +31,7 @@ public sealed class PrologueScreen : Screen
         _t = 0;
         _dustTick = -1;
         View.Stage.Setup(S.Data, Gfx.Assets.HeroFrame(S.Data, S.Profile, S.Game.Cls));
-        Gfx.HelmetTint.Apply(View.Stage, S.Data, S.Profile); // v0.21.52: kolor kasku
+        Gfx.HelmetTint.Apply(View.Stage, S.Data, S.Profile, S.ClassId); // v0.21.52: kolor kasku
         View.Caption = "";
         Apply();
     }

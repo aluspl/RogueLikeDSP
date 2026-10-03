@@ -45,7 +45,9 @@ public sealed class TeamTab : PhonePage
             else if (i > 0) p.Divider(card, i);
             var won = Meta.ClassWon(_p, i);
             var unl = Meta.ClassUnlocked(_d, _p, i);
-            var pw = p.Pill(right, y, won ? "Wygrana" : unl ? "Dostępny" : "Zablok.", won ? PillKind.Done : unl ? PillKind.Group : PillKind.Gray);
+            var ml = Progress.MasteryLevel(_d, _p, i); // v0.21.52 cz. b (#45): poziom mistrzostwa zawodu
+            var pill = !unl ? "Zablok." : ml > 0 ? $"Mistrz {ml}" : won ? "Wygrana" : "Dostępny";
+            var pw = p.Pill(right, y, pill, !unl ? PillKind.Gray : won || ml >= _d.MasteryLevels.Length ? PillKind.Done : PillKind.Group);
             p.Text(tx, y, _d.Classes[i].Name, sel ? Ink.Brand : unl ? Ink.Dark : Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
         }
         var s = _list.Sel;
@@ -59,7 +61,14 @@ public sealed class TeamTab : PhonePage
         p.Text(x, dc.Position.Y + 4, "Moc: " + c.AbilityName, Ink.Dark, TextAlign.Left, right - x);
         var lines = p.F.Wrap(c.AbilityDesc, (int)(right - x));
         if (lines.Count > 0) p.Text(x, dc.Position.Y + 22, lines[0], Ink.Dim, TextAlign.Left, right - x);
-        p.Text(dc.Position.X + 8, dc.Position.Y + 44, unlocked ? c.Desc : LockedHint(s), unlocked ? Ink.Dim : Ink.Brand, TextAlign.Left, right - dc.Position.X - 8);
+        var bottom = unlocked ? c.Desc : LockedHint(s);
+        if (unlocked && Progress.MasteryXp(_p, s) > 0) // mistrzostwo: dośw. do kolejnego poziomu i jego nagroda
+        {
+            var ml = Progress.MasteryLevel(_d, _p, s);
+            Progress.MasteryBar(_d, _p, s, out var cur, out var need);
+            bottom = need > 0 ? $"Mistrz {ml}: {cur}/{need}, dalej {Progress.RewardLabel(_d, _d.MasteryLevels[ml], s)}" : $"Mistrz {ml}: wszystko";
+        }
+        p.Text(dc.Position.X + 8, dc.Position.Y + 44, bottom, unlocked ? Ink.Dim : Ink.Brand, TextAlign.Left, right - dc.Position.X - 8);
     }
 
     // Zablokowany zawód: z nagrody za odbiór (za którą wygraną) albo do kupienia w Szkoleniach.

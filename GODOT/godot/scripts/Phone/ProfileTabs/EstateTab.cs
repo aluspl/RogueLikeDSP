@@ -146,8 +146,11 @@ public sealed class EstateTab : PhonePage
         var pw = p.Pill(mc.End.X - 6, p.RowY(mc, 0), unread > 0 ? $"{unread} nowe" : "czytaj", unread > 0 ? PillKind.Brand : PillKind.Gray);
         p.Text(tx, p.RowY(mc, 0), $"Wiadomości {Story.Count(_d, _p)}/{_d.StoryArc.Length}", Ink.Dark, TextAlign.Left, mc.End.X - 10 - pw - tx);
         p.HitRow(mc, 0, 1000);
-        var decor = Story.EstateDecor(_d, _p); // ozdoby rosną z wygranymi
-        y = p.Section(mc.End.Y + 6, "OSIEDLE ROŚNIE", decor < _d.EstateDecor.Length ? $"kolejna: {_d.EstateDecor[decor].Wins} wygr." : "komplet!");
+        // ozdoby rosną z wygranymi i (v0.21.52 cz. b) z poziomem inspektora – każda na swoim miejscu
+        var next = Array.FindIndex(_d.EstateDecor, x => x.Wins > 0 && _p.Wins < x.Wins);
+        var nextI = Array.FindIndex(_d.EstateDecor, x => x.Inspector > 0 && Progress.InspectorLevel(_d, _p) < x.Inspector);
+        var nextText = next >= 0 ? $"kolejna: {_d.EstateDecor[next].Wins} wygr." : nextI >= 0 ? $"kolejna: inspektor {_d.EstateDecor[nextI].Inspector}" : "komplet!";
+        y = p.Section(mc.End.Y + 6, "OSIEDLE ROŚNIE", nextText);
         var dc = p.CardH(y, 40);
         var step = Math.Min(40f, (dc.Size.X - 12) / Math.Max(1, _d.EstateDecor.Length));
         var x1 = dc.Position.X + (dc.Size.X - step * _d.EstateDecor.Length) / 2;
@@ -155,7 +158,7 @@ public sealed class EstateTab : PhonePage
         {
             var pos = new Vector2(x1 + k * step + (step - 32) / 2, dc.Position.Y + 4);
             var f = Assets.HouseEmpty(_d.Classes.Length) + 1 + k;
-            if (k < decor) p.Icon(Assets.Houses, f, Assets.Actor, pos);
+            if (Story.DecorUnlocked(_d, _p, k)) p.Icon(Assets.Houses, f, Assets.Actor, pos);
             else p.IconTinted(Assets.Houses, f, Assets.Actor, pos, 1, new Color(0.2f, 0.2f, 0.25f, 0.25f));
         }
         if (dc.End.Y + 6 + PhonePainter.RowH + 8 > p.Bottom) return; // wąski telefon: bez wiersza statystyk

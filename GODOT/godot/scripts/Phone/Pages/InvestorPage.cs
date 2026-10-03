@@ -14,7 +14,8 @@ namespace LifeLike.Game.Phone.Pages;
 /// Spacja / dotknięcie zaznaczonego włącza i wyłącza (zapis profilu od razu), Esc wraca do wyboru zawodu.
 /// v0.21.51 cz. 2: za modyfikatorami wiersz wyglądu „Kask w paski” (po sekretnym zleceniu Na styk; tylko wygląd);
 /// v0.21.52: wiersz koloru kasku (odznaki i zlecenia) – stuknięcie / Spacja zmienia na kolejny; przed pierwszą wygraną
-/// strona „Wygląd” bez modyfikatorów.
+/// strona „Wygląd” bez modyfikatorów. v0.21.52 cz. b: wiersz wariantu mocy (mistrzostwo zawodu 3, wł./wył.) i drugiej
+/// pamiątki (poziom inspektora, ranga I); w podsumowaniu nagroda za kolejny stopień inwestora (#48).
 /// </summary>
 public sealed class InvestorPage : PhonePage
 {
@@ -32,15 +33,17 @@ public sealed class InvestorPage : PhonePage
         _saved = saved;
     }
 
-    /// <summary>Strona dostępna: tryb inwestora (po pierwszej wygranej) albo (v0.21.52) odblokowany kolor kasku.</summary>
-    public static bool Available(GameData d, Profile p) => Meta.InvestorUnlocked(p) || Secrets.HelmetsUnlocked(d, p) > 0;
+    /// <summary>Strona dostępna: tryb inwestora (po pierwszej wygranej) albo (v0.21.52) odblokowany kolor kasku, wariant mocy
+    /// zawodu cls albo druga pamiątka.</summary>
+    public static bool Available(GameData d, Profile p, int cls) => Meta.InvestorUnlocked(p) || Secrets.HelmetsUnlocked(d, p) > 0
+        || Progress.KeepsakeSlot2(d, p) || Progress.MasteryHas(d, p, cls, ProgressReward.Power);
 
     private int Inv => Meta.InvestorUnlocked(_p) ? _d.Investor.Length : 0;
 
     public override string Title => Inv > 0 ? "Tryb inwestora" : "Wygląd";
     public override string Sub => Inv > 0 ? $"Stawka {Investor.Stake(_d, Meta.InvestorMask(_d, _p))}" : "kask";
     public override string Hint => "Spacja: wł./wył. / zmień  Esc: wróć";
-    public override PageAction[] Actions => [new(_list.Sel == HelmetRow ? "Zmień" : "Wł. / wył.", GameAction.A), new("Gotowe", GameAction.Cancel)];
+    public override PageAction[] Actions => [new(_list.Sel == HelmetRow || _list.Sel == Keep2Row ? "Zmień" : "Wł. / wył.", GameAction.A), new("Gotowe", GameAction.Cancel)];
     public override bool Closable => true;
 
     public int Sel
@@ -59,13 +62,24 @@ public sealed class InvestorPage : PhonePage
 
     private int HelmetRow => Helmets ? Inv + (Stripes ? 1 : 0) : -1;
 
-    private int Rows => Inv + (Stripes ? 1 : 0) + (Helmets ? 1 : 0);
+    /// <summary>v0.21.52 cz. b: wariant mocy (mistrzostwo zawodu) i druga pamiątka (poziom inspektora).</summary>
+    private bool Power => Progress.MasteryHas(_d, _p, _cls, ProgressReward.Power);
+
+    private bool Keep2 => Progress.KeepsakeSlot2(_d, _p);
+
+    private int PowerRow => Power ? Inv + (Stripes ? 1 : 0) + (Helmets ? 1 : 0) : -1;
+
+    private int Keep2Row => Keep2 ? Inv + (Stripes ? 1 : 0) + (Helmets ? 1 : 0) + (Power ? 1 : 0) : -1;
+
+    private int Rows => Inv + (Stripes ? 1 : 0) + (Helmets ? 1 : 0) + (Power ? 1 : 0) + (Keep2 ? 1 : 0);
 
     public void Toggle()
     {
         if (Rows == 0) return;
         if (_list.Sel == StripesRow) Secrets.ToggleCosmetic(_d, _p, _d.CosmeticStripes);
         else if (_list.Sel == HelmetRow) Secrets.CycleHelmet(_d, _p, 1);
+        else if (_list.Sel == PowerRow) Progress.TogglePowerVariant(_d, _p, _cls);
+        else if (_list.Sel == Keep2Row) Meta.CycleKeepsake2(_d, _p, 1);
         else Meta.ToggleInvestor(_p, _list.Sel);
         _saved?.Invoke();
         Sfx.Play("buy");
@@ -104,10 +118,27 @@ public sealed class InvestorPage : PhonePage
         var right = card.End.X - 6;
         for (var i = 0; i < Rows; i++)
         {
+            if (i == PowerRow || i == Keep2Row) // v0.21.52 cz. b: wariant mocy / druga pamiątka
+            {
+                var power = i == PowerRow;
+                var k2 = Meta.SelectedKeepsake2(_d, _p);
+                var won = power ? Progress.PowerVariantOn(_d, _p, _cls) : k2 >= 0;
+                var vsel = i == _list.Sel;
+                var vy = p.RowY(card, i);
+                if (vsel) p.Selected(card, i);
+                else if (i > 0) p.Divider(card, i);
+                if (won && !vsel) p.Stripe(card, i, Pal.Done);
+                p.HitRow(card, i, i);
+                var vpw = p.Pill(right, vy, power ? (won ? "Wariant" : "Zwykła") : (won ? "Ranga I" : "Wybierz"), won ? PillKind.Done : PillKind.Gray);
+                var vlabel = power ? "Moc: " + (won ? _d.MasteryClasses[_cls].PowerName : _d.Classes[_cls].AbilityName)
+                                   : "Pamiątka 2: " + (k2 >= 0 ? _d.Keepsakes[k2].Name : "brak");
+                p.Text(tx, vy, vlabel, vsel ? Ink.Brand : won ? Ink.Dark : Ink.Dim, TextAlign.Left, right - vpw - 4 - tx);
+                continue;
+            }
             if (i == StripesRow || i == HelmetRow) // wygląd: kask w paski / kolor kasku
             {
                 var stripes = i == StripesRow;
-                var hk = Secrets.HelmetCosmetic(_d, _p);
+                var hk = Secrets.HelmetCosmetic(_d, _p, _cls);
                 var son = stripes ? Secrets.CosmeticOn(_d, _p, _d.CosmeticStripes) : hk >= 0;
                 var ssel = i == _list.Sel;
                 var sy = p.RowY(card, i);
@@ -136,12 +167,18 @@ public sealed class InvestorPage : PhonePage
             var pw = p.Pill(right, ry, on ? $"WŁ +{m.Stake}" : $"+{m.Stake}", on ? PillKind.Done : PillKind.Gray);
             p.Text(tx, ry, m.Name, sel ? Ink.Brand : on ? Ink.Dark : Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
         }
-        var dc = p.Card(card.End.Y + 6, 3);
+        var dc = p.Card(card.End.Y + 6, n > 0 ? 4 : 3);
         string desc;
         if (_list.Sel == StripesRow) desc = "Wygląd: " + _d.Cosmetics[_d.CosmeticStripes].Desc;
+        else if (_list.Sel == PowerRow) desc = $"Wariant mocy: {_d.MasteryClasses[_cls].PowerDesc} (mistrzostwo zawodu)";
+        else if (_list.Sel == Keep2Row)
+        {
+            var k2 = Meta.SelectedKeepsake2(_d, _p);
+            desc = k2 >= 0 ? "Druga pamiątka: " + RunMods.PerkLabel(Meta.Keepsake2Perk(_d, k2)) : "Druga pamiątka (ranga I), inna niż pierwsza";
+        }
         else if (_list.Sel == HelmetRow)
         {
-            var hk = Secrets.HelmetCosmetic(_d, _p);
+            var hk = Secrets.HelmetCosmetic(_d, _p, _cls);
             desc = (hk >= 0 ? "Wygląd: " + _d.Cosmetics[hk].Desc : "Kolor kasku zawodu") + $" (kolorów: {Secrets.HelmetsUnlocked(_d, _p)})";
         }
         else desc = n > 0 ? $"{_d.Investor[_list.Sel].Desc}, dośw. +{_d.Investor[_list.Sel].XpPct}%" : "";
@@ -157,5 +194,11 @@ public sealed class InvestorPage : PhonePage
         p.Text(tx, p.RowY(dc, 1), $"Stawka {Investor.Stake(_d, mask)}, doświadczenie +{Investor.Xp(_d, mask)}%", Ink.Dark, TextAlign.Left, right - tx);
         p.Divider(dc, 2);
         p.Text(tx, p.RowY(dc, 2), $"Rekord: {_d.Classes[_cls].Name} - stawka {Meta.BestStake(_p, _cls)}", Ink.Done, TextAlign.Left, right - tx);
+        p.Divider(dc, 3); // v0.21.52 cz. b (#48): nagroda za kolejny stopień inwestora (najwyższa stawka wygranej budowy)
+        var rk = Progress.StakeRank(_d, _p);
+        var next = rk < _d.StakeRanks.Length ? $"Stawka {_d.StakeRanks[rk].Xp}: {Progress.RewardLabel(_d, _d.StakeRanks[rk], _cls)}" : "Stopnie inwestora: wszystkie";
+        var npw = p.Pill(right, p.RowY(dc, 3), rk < _d.StakeRanks.Length ? $"{rk}/{_d.StakeRanks.Length}" : "MAX", rk < _d.StakeRanks.Length ? PillKind.Prog : PillKind.Done);
+        p.Stripe(dc, 3, Pal.Prog);
+        p.Text(tx, p.RowY(dc, 3), next, Ink.Prog, TextAlign.Left, right - npw - 4 - tx);
     }
 }

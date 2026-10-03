@@ -239,13 +239,14 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         var cls = Selected;
         var c = _d.Classes[cls];
         var unl = Meta.ClassUnlocked(_d, _p, cls);
-        var m = Meta.Mods(_d, _p);
+        var m = Meta.Mods(_d, _p, cls); // v0.21.52 cz. b: mistrzostwo zawodu (broń mistrza)
         DrawStyleBox(Ui.Box(new Color(0, 0, 0, 0.35f), 10), new Rect2(r.Position + new Vector2(0, 3), r.Size));
         DrawStyleBox(Ui.Box(Pal.Card, 10), r);
         var x = r.Position.X + 12;
         var cw = (int)r.Size.X - 24;
         var y = r.Position.Y + 8;
-        f.Draw(this, new Vector2(x, y), f.Fit(c.Name, cw, 2), Ink.Dark, TextAlign.Left, 2);
+        f.Draw(this, new Vector2(x, y), f.Fit(c.Name, cw - (unl ? 84 : 0), 2), Ink.Dark, TextAlign.Left, 2);
+        if (unl) MasteryBadge(new Vector2(x + cw, y + 2), cls);
         y += 34;
         foreach (var line in f.Wrap(c.Desc, cw))
         {
@@ -255,8 +256,10 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         y += 6;
         DrawStyleBox(Ui.Box(Pal.Group, 6), new Rect2(x, y + 2, 36, 36));
         Assets.DrawFrame(this, Assets.AbilityIcons, cls, 32, new Vector2(x + 2, y + 4));
-        f.Draw(this, new Vector2(x + 44, y), f.Fit($"Moc: {c.AbilityName}", cw - 44), Ink.Brand);
-        var ad = f.Wrap(c.AbilityDesc, cw - 44);
+        var variant = unl && Progress.PowerVariantOn(_d, _p, cls); // v0.21.52 cz. b: wariant mocy z mistrzostwa
+        var mcd = _d.MasteryClasses[cls];
+        f.Draw(this, new Vector2(x + 44, y), f.Fit($"Moc: {(variant ? mcd.PowerName : c.AbilityName)}", cw - 44), Ink.Brand);
+        var ad = f.Wrap(variant ? mcd.PowerDesc : c.AbilityDesc, cw - 44);
         for (var k = 0; k < ad.Count && k < 2; k++) f.Draw(this, new Vector2(x + 44, y + 17 + k * 16), ad[k], Ink.Dim);
         y += Mathf.Max(44, 17 + Mathf.Min(ad.Count, 2) * 16 + 4);
         var wpn = _d.Weapons[c.Weapon];
@@ -291,7 +294,7 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         _hits.Add((kr, ClassSelectHit.Keepsake, 0));
         _coach["keepsake"] = kr;
         y += rowH + 4;
-        if (InvestorPage.Available(_d, _p)) // tryb inwestora: stawka, dotknięcie = modyfikatory (v0.21.52: albo sam wygląd)
+        if (InvestorPage.Available(_d, _p, Selected)) // tryb inwestora: stawka, dotknięcie = modyfikatory (v0.21.52: albo sam wygląd)
         {
             var ir = new Rect2(x - 4, y, cw + 8, rowH);
             DrawStyleBox(Ui.Box(Pal.Group, 8), ir.Grow(-2));
@@ -314,12 +317,29 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         }
     }
 
+    /// <summary>
+    /// v0.21.52 cz. b (#45): „Mistrz N” z paskiem do kolejnego poziomu, prawy górny róg karty (topRight); bez dośw. – nic.
+    /// </summary>
+    private void MasteryBadge(Vector2 topRight, int cls)
+    {
+        if (Progress.MasteryXp(_p, cls) <= 0) return;
+        var f = PixelFont.I;
+        var lv = Progress.MasteryLevel(_d, _p, cls);
+        Progress.MasteryBar(_d, _p, cls, out var cur, out var need);
+        var label = need == 0 ? $"Mistrz {lv} MAX" : $"Mistrz {lv}";
+        var bw = Mathf.Max(72, f.Measure(label));
+        f.Draw(this, topRight, label, need == 0 ? Ink.Done : Ink.Prog, TextAlign.Right);
+        var bar = new Rect2(topRight.X - bw, topRight.Y + PixelFont.LineHeight + 2, bw, 5);
+        DrawRect(bar, Pal.Border);
+        DrawRect(new Rect2(bar.Position, new Vector2(Mathf.Round(bw * (need == 0 ? 1f : cur / (float)need)), 5)), need == 0 ? Pal.Done : Pal.Prog);
+    }
+
     /// <summary>Stawka włączonych modyfikatorów i rekord zawodu, np. „stawka 5, rekord 3”.</summary>
     private string InvestorLabel()
     {
         if (!Meta.InvestorUnlocked(_p)) // v0.21.52: przed pierwszą wygraną – sam wygląd (kolor kasku)
         {
-            var hk = Secrets.HelmetCosmetic(_d, _p);
+            var hk = Secrets.HelmetCosmetic(_d, _p, Selected);
             return hk >= 0 ? _d.Cosmetics[hk].Name : "kask zawodu";
         }
         return $"stawka {Investor.Stake(_d, Meta.InvestorMask(_d, _p))}, rekord {Meta.BestStake(_p, Selected)}";
@@ -366,7 +386,7 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         var cls = Selected;
         var c = _d.Classes[cls];
         var unl = Meta.ClassUnlocked(_d, _p, cls);
-        var m = Meta.Mods(_d, _p);
+        var m = Meta.Mods(_d, _p, cls); // v0.21.52 cz. b: mistrzostwo zawodu (broń mistrza)
         DrawStyleBox(Ui.Box(new Color(0, 0, 0, 0.35f), 10), new Rect2(r.Position + new Vector2(0, 3), r.Size));
         DrawStyleBox(Ui.Box(Pal.Card, 10), r);
         var x = r.Position.X + 14;
@@ -375,6 +395,7 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         // nazwa w 2x + opis (tekst karty w 1.5x - czytelny na dużym ekranie)
         const float ts = 1.5f;
         f.Draw(this, new Vector2(x, y), c.Name, Ink.Dark, TextAlign.Left, 2);
+        if (unl) MasteryBadge(new Vector2(r.End.X - 14, y + 2), cls);
         y += 32;
         var colW = (int)(r.Size.X / 2 - 24);
         f.Draw(this, new Vector2(x, y), f.Fit(c.Desc, colW, ts), Ink.Dim, TextAlign.Left, ts);
@@ -383,8 +404,10 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         // moc z ikoną
         DrawStyleBox(Ui.Box(Pal.Group, 6), new Rect2(x, y + 4, 36, 36));
         Assets.DrawFrame(this, Assets.AbilityIcons, cls, 32, new Vector2(x + 2, y + 6));
-        f.Draw(this, new Vector2(x + 44, y), f.Fit($"Moc (R): {c.AbilityName}", colW - 44, ts), Ink.Brand, TextAlign.Left, ts);
-        f.Draw(this, new Vector2(x + 44, y + 22), f.Fit(c.AbilityDesc, colW - 44, ts), Ink.Dim, TextAlign.Left, ts);
+        var lvariant = unl && Progress.PowerVariantOn(_d, _p, cls); // v0.21.52 cz. b: wariant mocy z mistrzostwa
+        var lmc = _d.MasteryClasses[cls];
+        f.Draw(this, new Vector2(x + 44, y), f.Fit($"Moc (R): {(lvariant ? lmc.PowerName : c.AbilityName)}", colW - 44, ts), Ink.Brand, TextAlign.Left, ts);
+        f.Draw(this, new Vector2(x + 44, y + 22), f.Fit(lvariant ? lmc.PowerDesc : c.AbilityDesc, colW - 44, ts), Ink.Dim, TextAlign.Left, ts);
         y += 48;
 
         // narzędzie ze statystyką
@@ -404,7 +427,7 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         f.Draw(this, new Vector2(x, y), "Trudność:", Ink.Dim);
         _coach["difficulty"] = new Rect2(x - 4, y - 1, r.Size.X / 2 - 16, 19);
         f.Draw(this, new Vector2(x + 64, y), $"< {diff.Name}{diffLock} >", diffLock.Length > 0 ? Ink.Late : Ink.Dark);
-        if (InvestorPage.Available(_d, _p)) // tryb inwestora (Tab) w tym samym wierszu (v0.21.52: albo sam wygląd)
+        if (InvestorPage.Available(_d, _p, Selected)) // tryb inwestora (Tab) w tym samym wierszu (v0.21.52: albo sam wygląd)
         {
             var ix = r.Position.X + r.Size.X / 2 + 10;
             f.Draw(this, new Vector2(ix, y), Meta.InvestorUnlocked(_p) ? "Inwestor:" : "Wygląd:", Ink.Dim);
@@ -466,7 +489,8 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
     {
         var f = PixelFont.I;
         var b = DamageRows.ForHero(_d, _p, null, cls, m);
-        var name = $"{_d.Weapons[b.Weapon].Name} {b.Min}-{b.Max}";
+        var master = Meta.ClassUnlocked(_d, _p, cls) && Progress.MasteryHas(_d, _p, cls, ProgressReward.Weapon); // broń mistrza
+        var name = $"{(master ? _d.MasteryClasses[cls].WeaponName : _d.Weapons[b.Weapon].Name)} {b.Min}-{b.Max}";
         string[] variants =
         [
             $"{name}, kryt {b.CritMin}-{b.CritMax} ({b.CritChance()}%), zasięg {b.Range}",
@@ -504,7 +528,7 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
     {
         var f = PixelFont.I;
         var cls = Selected;
-        var rows = DamageRows.Build(_d, DamageRows.ForHero(_d, _p, null, cls, Meta.Mods(_d, _p)), null);
+        var rows = DamageRows.Build(_d, DamageRows.ForHero(_d, _p, null, cls, Meta.Mods(_d, _p, cls)), null);
         var maxW = (int)Size.X - 36;
         var lines = new List<(string Text, Ink Ink)>();
         foreach (var r in rows)
@@ -545,7 +569,7 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         var f = PixelFont.I;
         var cls = Selected;
         var c = _d.Classes[cls];
-        var m = Meta.Mods(_d, _p);
+        var m = Meta.Mods(_d, _p, cls); // v0.21.52 cz. b: mistrzostwo zawodu (broń mistrza)
         var ws = _d.Weapons[c.Weapon].ScalesWith;
         StatKind[] kinds = [StatKind.Hp, StatKind.Str, StatKind.Agi, StatKind.Intel, StatKind.Def, StatKind.Luck];
         int[] values =

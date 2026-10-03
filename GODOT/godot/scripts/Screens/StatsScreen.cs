@@ -48,7 +48,7 @@ public sealed class StatsScreen : Screen
     public override void Enter(bool instant)
     {
         var page = _inRun ? new StatsPage(S.Data, _cls, S.Game.Bonus, S.Game, S.Profile, _page)
-                          : new StatsPage(S.Data, _cls, Meta.Mods(S.Data, S.Profile), null, S.Profile, _page);
+                          : new StatsPage(S.Data, _cls, Meta.Mods(S.Data, S.Profile, _cls), null, S.Profile, _page);
         N.Phone.OpenSingle(page, _inRun ? _back : PhoneTabs.Start, instant);
     }
 

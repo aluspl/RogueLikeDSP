@@ -60,7 +60,7 @@ public sealed class ClassSelectScreen : Screen
             Flow.Profile.Open(4);
             return true;
         }
-        if (e.Is(GameAction.Select) && InvestorPage.Available(S.Data, S.Profile))
+        if (e.Is(GameAction.Select) && InvestorPage.Available(S.Data, S.Profile, N.ClassSelectView.Selected))
         {
             S.ClassId = view.Selected;
             Flow.Investor.Open();

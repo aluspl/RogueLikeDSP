@@ -23,6 +23,10 @@ public partial class TitleView : Control, Touch.ITapTargets
     public int Sel { get; set; }
     public string Note { get; set; } = "";
     public string Info { get; set; } = "";
+    /// <summary>v0.21.52 cz. b (#44): poziom inspektora (-1 = ukryty: przed pierwszą budową) i pasek do kolejnego 0..1.</summary>
+    public int InspLevel { get; set; } = -1;
+    public float InspFill { get; set; }
+    public bool InspMax { get; set; }
 
     private float _clock;
     private readonly List<Rect2> _items = new();
@@ -92,6 +96,17 @@ public partial class TitleView : Control, Touch.ITapTargets
 
         var top = safe.Position.Y + 4;
         f.Draw(this, new Vector2(safe.Position.X + 6, top), Version, Ink.OnBrand);
+        if (InspLevel >= 0) // poziom inspektora pod wersją: napis i pasek (żółty jak na GBA)
+        {
+            var ix = safe.Position.X + 6;
+            var iy = top + PixelFont.LineHeight + 2;
+            var label = $"Inspektor {InspLevel}" + (InspMax ? " MAX" : "");
+            f.Draw(this, new Vector2(ix, iy), label, Ink.OnBrand);
+            var bar = new Rect2(ix, iy + PixelFont.LineHeight + 2, Mathf.Max(64, f.Measure(label)), 7);
+            DrawRect(bar.Grow(1), Pal.HpEdge);
+            DrawRect(bar, Pal.HpBack);
+            DrawRect(new Rect2(bar.Position, new Vector2(Mathf.Round(bar.Size.X * Mathf.Clamp(InspFill, 0f, 1f)), bar.Size.Y)), Pal.HpMain[1]);
+        }
         var recordX = safe.End.X - Hud.SettingsButton.Side - 10;
         if (Best > 0) f.Draw(this, new Vector2(recordX, top), $"Rekord: {Best}", Ink.OnBrand, TextAlign.Right);
 

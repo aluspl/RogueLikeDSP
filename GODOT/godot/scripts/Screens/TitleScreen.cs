@@ -1,4 +1,5 @@
 using Godot;
+using LifeLike.Core;
 using LifeLike.Game.Audio;
 using LifeLike.Game.Input;
 using LifeLike.Game.Phone.Pages;
@@ -71,6 +72,11 @@ public sealed class TitleScreen : Screen
         v.Sel = _sel;
         v.Note = S.Note;
         v.Info = $"Budowy: {S.Profile.Runs}   Doświadczenie: {S.Profile.Xp}" + ButtonNames.Pick("   P: profil   K: Szkolenia", "");
+        var p = S.Profile; // v0.21.52 cz. b (#44): poziom inspektora z paskiem (od pierwszej budowy)
+        Progress.InspectorBar(S.Data, p, out var cur, out var need);
+        v.InspLevel = p.Runs > 0 || p.InspectorXp > 0 ? Progress.InspectorLevel(S.Data, p) : -1;
+        v.InspFill = need > 0 ? cur / (float)need : 1f;
+        v.InspMax = need == 0;
     }
 
     public override bool HandleInput(InputCmd e)

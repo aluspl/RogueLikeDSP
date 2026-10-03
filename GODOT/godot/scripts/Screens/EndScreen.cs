@@ -1,5 +1,7 @@
 using LifeLike.Core;
+using LifeLike.Game.Hud;
 using LifeLike.Game.Input;
+using LifeLike.Game.Session;
 
 namespace LifeLike.Game.Screens;
 
@@ -29,10 +31,15 @@ public sealed class EndScreen : Screen
         v.Line2 = $"{record}   Doświadczenie w profilu {S.Profile.Xp}   Respekt +{g.Respect} (masz {S.Profile.Respect})" + (won ? "   Dom na Osiedlu!" : "") + daily;
         v.Note = S.Note;
         N.Banners.Clear();
-        for (var i = 0; i < S.Data.StoryArc.Length; i++) // fabuła (#35): nowy wątek w Wiadomościach (Profil > Osiedle)
+        foreach (var (title, body) in ProgressBanners.Of(S.Data, S.LastProgress, S.LastStakeBefore, S.LastStakeAfter))
+            N.Banners.Push(new PushBanner { Title = title, Body = body, Gold = true }); // v0.21.52 cz. b: nowe poziomy
+        var stories = 0; // fabuła (#35): nowe wątki w Wiadomościach (Profil > Osiedle); więcej niż 2 – jeden zbiorczy baner
+        for (var i = 0; i < S.Data.StoryArc.Length; i++) stories += (int)((S.LastStory >> i) & 1);
+        for (var i = 0; i < S.Data.StoryArc.Length && stories <= 2; i++)
         {
             if (((S.LastStory >> i) & 1) != 0) N.Banners.Push("Nowa wiadomość", S.Data.StoryArc[i].Name);
         }
+        if (stories > 2) N.Banners.Push($"Nowe wiadomości: {stories}", "Profil > Osiedle > Wiadomości");
     }
 
     public override bool HandleInput(InputCmd e)

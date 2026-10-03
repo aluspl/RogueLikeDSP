@@ -52,7 +52,8 @@ public partial class WorldView : Node2D
     /// <summary>Profil gracza (wygląd z sekretnych zleceń: kask w paski, złota kielnia); null = bez wyglądu.</summary>
     public Func<Profile> ProfileSource { get; set; } = () => null;
     /// <summary>Złota kielnia włączona – złoty błysk broni przy krycie.</summary>
-    public bool GoldGlint => ProfileSource() is { } p && _g.D.CosmeticGold >= 0 && Secrets.CosmeticOn(_g.D, p, _g.D.CosmeticGold);
+    public bool GoldGlint => _g.MasterWeapon() // v0.21.52 cz. b: broń mistrza
+                             || (ProfileSource() is { } p && _g.D.CosmeticGold >= 0 && Secrets.CosmeticOn(_g.D, p, _g.D.CosmeticGold));
     public ActorSprite HeroSprite => _hero;
     public FxLayer Fx => _fx;
     public WorldCamera Camera => _camera;
@@ -223,7 +224,7 @@ public partial class WorldView : Node2D
     private void SyncHero(bool snap)
     {
         _hero.BaseFrame = Assets.HeroFrame(_g.D, ProfileSource(), _g.Cls); // kask w paski z sekretu; w miejscu oddycha (bez klatki B), w kroku - chód z actors_anim
-        HelmetTint.Apply(_hero, _g.D, ProfileSource()); // v0.21.52: kolor kasku
+        HelmetTint.Apply(_hero, _g.D, ProfileSource(), _g.Cls); // v0.21.52: kolor kasku (cz. b: kask mistrza tylko mistrzem)
         var heroDst = GridToScreen(_g.Hero.X, _g.Hero.Y);
         if (!snap && heroDst != _hero.Position && _hero.Position.DistanceTo(heroDst) <= Cell * 2) // pył spod butów
         {

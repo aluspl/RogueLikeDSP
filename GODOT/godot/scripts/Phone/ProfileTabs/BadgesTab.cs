@@ -13,14 +13,16 @@ namespace LifeLike.Game.Phone.ProfileTabs;
 /// (Zdobyta / +XP, Wykonane / postęp, Ranga / Zablok., Wykonane / ???) i opis zaznaczonej pozycji z premią lub nagrodą.
 /// Sekrety (#39, v0.21.51 cz. 2): na liście podpowiedź z ikoną koperty, warunek i nagroda (z ikoną) dopiero po wykonaniu.
 /// Tytuły (v0.21.52, #43): tytuły z odznak i zleceń – Tab / „Wybierz” (SELECT na GBA) albo drugie stuknięcie wybiera
-/// tytuł widoczny w profilu i na końcu budowy.
+/// tytuł widoczny w profilu i na końcu budowy. v0.21.52 cz. b: tytuły z poziomu inspektora i stopni inwestora; strona
+/// Inspektor (#44) – poziomy z nagrodami (Masz / postęp bieżącego / Poz. N), opis: dośw. do kolejnego poziomu.
 /// </summary>
 public sealed class BadgesTab : PhonePage
 {
     private const int Window = 7;
-    private static readonly string[] Pages = ["Odznaki", "Zlecenia", "Pamiątki", "Sekrety", "Tytuły"];
+    private static readonly string[] Pages = ["Odznaki", "Zlecenia", "Pamiątki", "Sekrety", "Tytuły", "Inspektor"];
     public const int SecretsPage = 3;
     public const int TitlesPage = 4;
+    public const int InspectorPage = 5;
     private readonly GameData _d;
     private readonly Profile _p;
     private readonly ListState _list = new();
@@ -40,7 +42,8 @@ public sealed class BadgesTab : PhonePage
         get
         {
             var total = Count;
-            var n = _page == TitlesPage ? Titles.OwnedCount(_d, _p)
+            var n = _page == InspectorPage ? Progress.InspectorLevel(_d, _p)
+                  : _page == TitlesPage ? Titles.OwnedCount(_d, _p)
                   : _page == SecretsPage ? Secrets.DoneCount(_d, _p)
                   : _page == 2 ? Enumerable.Range(0, total).Count(k => Meta.KeepsakeUnlocked(_d, _p, k))
                   : UiText.BitCount(_page == 1 ? _p.Contracts : _p.Badges);
@@ -49,11 +52,11 @@ public sealed class BadgesTab : PhonePage
     }
 
     public override string Hint => _page == TitlesPage
-        ? $"Tab: wybierz tytuł  Spacja: {Pages[0]}  Q/E: zakładki"
+        ? $"Tab: wybierz tytuł  Spacja: {Pages[(_page + 1) % Pages.Length]}  Q/E: zakładki"
         : $"Spacja: {Pages[(_page + 1) % Pages.Length]}  Q/E: zakładki";
 
     public override PageAction[] Actions => _page == TitlesPage
-        ? [new("Wybierz", GameAction.Select), new(Pages[0] + " >", GameAction.A)]
+        ? [new("Wybierz", GameAction.Select), new(Pages[(_page + 1) % Pages.Length] + " >", GameAction.A)]
         : [new(Pages[(_page + 1) % Pages.Length] + " >", GameAction.A)];
 
     /// <summary>Bieżąca strona (0 Odznaki, 1 Zlecenia, 2 Pamiątki, 3 Sekrety) – test dymny i zrzuty.</summary>
@@ -64,6 +67,7 @@ public sealed class BadgesTab : PhonePage
         {
             _page = System.Math.Clamp(value, 0, Pages.Length - 1);
             _list.Reset();
+            if (_page == InspectorPage) Select(System.Math.Min(Progress.InspectorLevel(_d, _p), Count - 1)); // od bieżącego poziomu
         }
     }
 
@@ -95,7 +99,7 @@ public sealed class BadgesTab : PhonePage
     /// <summary>Zapis profilu po wyborze tytułu (ustawia ekran profilu).</summary>
     public System.Action Saved { get; set; }
 
-    private int Count => _page == TitlesPage ? Titles.Count(_d) : _page == SecretsPage ? _d.Secrets.Length : _page == 2 ? _d.Keepsakes.Length : _page == 1 ? _d.Contracts.Length : _d.Badges.Length;
+    private int Count => _page == InspectorPage ? _d.InspectorLevels.Length : _page == TitlesPage ? Titles.Count(_d) : _page == SecretsPage ? _d.Secrets.Length : _page == 2 ? _d.Keepsakes.Length : _page == 1 ? _d.Contracts.Length : _d.Badges.Length;
 
     public override bool Input(InputCmd e)
     {
@@ -112,8 +116,7 @@ public sealed class BadgesTab : PhonePage
         }
         if (e.Is(GameAction.A))
         {
-            _page = (_page + 1) % Pages.Length;
-            _list.Reset();
+            Page = (_page + 1) % Pages.Length;
             Sfx.Play("menu");
             return true;
         }
@@ -139,6 +142,15 @@ public sealed class BadgesTab : PhonePage
             string name, pill;
             PillKind kind;
             bool on;
+            if (_page == InspectorPage) // v0.21.52 cz. b: poziom i nagroda
+            {
+                var lv = Progress.InspectorLevel(_d, _p);
+                on = i < lv;
+                Progress.InspectorBar(_d, _p, out var cur, out var need);
+                var ipw = p.Pill(right, y, on ? "Masz" : i == lv ? $"{cur}/{need}" : $"Poz. {i + 1}", on ? PillKind.Done : i == lv ? PillKind.Prog : PillKind.Gray);
+                p.Text(tx, y, $"{i + 1}. {Progress.RewardLabel(_d, _d.InspectorLevels[i], -1)}", sel ? Ink.Brand : on ? Ink.Dark : Ink.Dim, TextAlign.Left, right - ipw - 4 - tx);
+                continue;
+            }
             if (_page == TitlesPage)
             {
                 on = Titles.Owned(_d, _p, i);
@@ -204,6 +216,22 @@ public sealed class BadgesTab : PhonePage
     /// <summary>Opis zaznaczonej pozycji: (opis, wiersz premii / nagrody / rangi, jego kolor).</summary>
     private (string, string, Ink) Describe(int i)
     {
+        if (_page == InspectorPage)
+        {
+            var lv = Progress.InspectorLevel(_d, _p);
+            Progress.InspectorBar(_d, _p, out var cur, out var need);
+            var head = need > 0 ? $"Inspektor {lv}: {cur}/{need} dośw. do poziomu {lv + 1}." : $"Inspektor {lv}: wszystkie poziomy!";
+            return (head + " Dośw. z każdej budowy, też porażki: etapy, bossowie, elity, magazyny, wygrana.",
+                    $"Poziom {i + 1}: {Progress.RewardLabel(_d, _d.InspectorLevels[i], -1)}", i < lv ? Ink.Done : Ink.Brand);
+        }
+        if (_page == TitlesPage && i >= Titles.ProgressFrom(_d)) // v0.21.52 cz. b: tytuł z inspektora / stopnia inwestora
+        {
+            var pt = _d.ProgressTitles[i - Titles.ProgressFrom(_d)];
+            var psel = Titles.Selected(_d, _p);
+            var src = pt.Source == 0 ? $"Poziom inspektora {pt.Level} (dośw. z każdej budowy)." : $"Stopień inwestora: wygraj ze stawką {pt.Level}.";
+            var pextra = psel >= 0 ? "Twój tytuł: " + Titles.Name(_d, psel) : Titles.Owned(_d, _p, i) ? "Wybierz: Tab / „Wybierz”" : "Bez tytułu";
+            return (src, pextra, psel >= 0 ? Ink.Done : Ink.Brand);
+        }
         if (_page == TitlesPage)
         {
             var fromBadge = i < _d.Badges.Length;

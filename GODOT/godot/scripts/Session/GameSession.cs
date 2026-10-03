@@ -86,6 +86,13 @@ public sealed class GameSession
     /// <summary>Wątki fabuły odblokowane na koniec ostatniej budowy (bity GameData.StoryArc).</summary>
     public uint LastStory { get; set; }
 
+    /// <summary>v0.21.52 cz. b: poziom inspektora i mistrzostwo z ostatniej budowy (paski i banery końca budowy).</summary>
+    public ProgressGain LastProgress { get; private set; } = new();
+
+    /// <summary>v0.21.52 cz. b (#48): stopnie inwestora przed i po ostatniej budowie (banery nowych stopni).</summary>
+    public int LastStakeBefore { get; private set; }
+    public int LastStakeAfter { get; private set; }
+
     /// <summary>Rady kierownika z game.json (ekran harmonogramu).</summary>
     public string[] Tips { get; set; } = [];
 
@@ -139,6 +146,7 @@ public sealed class GameSession
         if (Game.Score > Profile.Best) Profile.Best = Game.Score;
         var progress = CheckProgress();
         LastGained = Meta.BankXp(Profile, Game);
+        LastProgress = Progress.Bank(Data, Profile, Game); // v0.21.52 cz. b: inspektor i mistrzostwo
         Save();
         ClearRun();
         Note = $"Budowa porzucona: +{LastGained} dośw." + (progress.Length > 0 ? " " + progress : "");
@@ -148,7 +156,7 @@ public sealed class GameSession
     public void StartRun()
     {
         var seed = Seed != 0 ? Seed : GD.Randi() | 1u;
-        Game.NewRun(ClassId, seed, Difficulty, Meta.Mods(Data, Profile)); // Mods przed StartRun: ranga pamiątki z budów przed tą
+        Game.NewRun(ClassId, seed, Difficulty, Meta.Mods(Data, Profile, ClassId)); // Mods przed StartRun: ranga pamiątki; cz. b: mistrzostwo
         Meta.StartRun(Data, Profile);
         Save();
         SaveRun();
@@ -241,13 +249,16 @@ public sealed class GameSession
             DailyRecord = g.Daily && Daily.Record(Data, Profile, g.DailyDay, g.Score, won);
             LastReward = won ? Meta.RecordWin(Data, Profile) : -1;   // nagroda za odbiór: każda wygrana odblokowuje kolejną
             if (won) Meta.AddHouse(Profile, g);
+            LastStakeBefore = Progress.StakeRank(Data, Profile); // v0.21.52 cz. b: stopnie inwestora przed rekordem stawki
             Events.RaiseRunEnded(won);
             if (LastReward >= 0) Events.RaiseRewardUnlocked(LastReward);
             Note = CheckProgress();
             if (won) Events.RaiseRespectGained(g.StageRespect(), Profile.Respect);
             LastGained = Meta.BankXp(Profile, g);
             WeeklyRecord = g.WeeklyWeek != 0 && Weekly.Record(Data, Profile, g.WeeklyWeek, g.Score, won); // wyzwanie tygodnia (#34)
-            LastStory = Story.Check(Data, Profile, g); // fabuła (#35): nowe wątki SMS za kamienie milowe
+            LastProgress = Progress.Bank(Data, Profile, g); // v0.21.52 cz. b: poziom inspektora i mistrzostwo (przed fabułą)
+            LastStakeAfter = Progress.StakeRank(Data, Profile);
+            LastStory = Story.Check(Data, Profile, g); // fabuła (#35): nowe wątki SMS za kamienie milowe (też od inspektora)
             Save();
             ClearRun();
             return TurnOutcome.RunEnded;
