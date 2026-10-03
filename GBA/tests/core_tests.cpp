@@ -6,6 +6,7 @@
 #include <cstring>
 #include "core.h"
 #include "meta.h"
+#include "screen_filter.h"
 using namespace core;
 static int fails = 0;
 static constexpr int F0 = data::prelude_stages;   // bez nagrody Akt 0 budowa zaczyna się od etapu F0 (Fundamenty)
@@ -3668,6 +3669,58 @@ int main()
         }
     }
 
+    // 55. v0.21.53: filtry ekranu na GBA (kolor palety): każdy filtr z danych ma tryb, klasyczny bez zmian, Retro LCD -
+    // 4 odcienie, tryby dla daltonistów rozsuwają pary mylonych kolorów gry w symulacji wady (Machado 2009, pełna wada)
+    {
+        for(int f = 0; f < data::screen_filters_count; ++f)
+            CHECK((filter_mode_of(data::screen_filters[f].id) == filter_mode::none) == (f == 0));
+        bool same = true; int retro_n = 0; bool seen[32768] = {};
+        for(int c = 0; c < 32768; ++c)
+        {
+            same = same && filter_color(filter_mode::none, uint16_t(c)) == c && filter_color(filter_mode::kwas, uint16_t(c)) == c;
+            const uint16_t o = filter_color(filter_mode::retro, uint16_t(c));
+            if(! seen[o]) { seen[o] = true; ++retro_n; }
+        }
+        CHECK(same && retro_n == 4);
+        CHECK(filter_color(filter_mode::noir, 0) == 0 && filter_color(filter_mode::protan, 0x7FFF) == 0x7FFF);
+        // Noir: zagrożenie (czerwień) zostaje czerwonawe, zieleń szara
+        { const uint16_t o = filter_color(filter_mode::noir, uint16_t(29 | 6 << 5 | 6 << 10)); CHECK((o & 31) > ((o >> 5) & 31) + 6); }
+        { const uint16_t o = filter_color(filter_mode::noir, uint16_t(9 | 22 << 5 | 10 << 10)); CHECK((o & 31) == ((o >> 5) & 31)); }
+        static constexpr double sim[3][3][3] = {
+            { { 0.152286, 1.052583, -0.204868 }, { 0.114503, 0.786281, 0.099216 }, { -0.003882, -0.048116, 1.051998 } },
+            { { 0.367322, 0.860646, -0.227968 }, { 0.280085, 0.672501, 0.047413 }, { -0.011820, 0.042940, 0.968881 } },
+            { { 1.255528, -0.076749, -0.178779 }, { -0.078411, 0.930809, 0.147602 }, { 0.004733, 0.691367, 0.303900 } } };
+        auto chan = [](uint16_t c, int k) { return ((c >> (5 * k)) & 31) / 31.0; };
+        auto dist = [&](int m, uint16_t a, uint16_t b) {
+            double d2 = 0;
+            for(int i = 0; i < 3; ++i)
+            {
+                double x = 0, y = 0;
+                for(int k = 0; k < 3; ++k) { x += sim[m][i][k] * chan(a, k); y += sim[m][i][k] * chan(b, k); }
+                x = x < 0 ? 0 : (x > 1 ? 1 : x); y = y < 0 ? 0 : (y > 1 ? 1 : y);
+                d2 += (x - y) * (x - y);
+            }
+            return d2;
+        };
+        auto rgb = [](int r, int g, int b) { return uint16_t((r >> 3) | (g >> 3) << 5 | (b >> 3) << 10); };
+        // pary z gry: pole ciosu (czerwień) / podłoga aktu I, HP (czerwony / zielony pasek), elita (złoto) / zwykły,
+        // rzadkość rzadka (niebieska) / legendarna (złota), mokry (niebieski) / zatruty (zielony)
+        const uint16_t pairs[][2] = { { rgb(235, 50, 50), rgb(120, 96, 64) }, { rgb(214, 48, 49), rgb(76, 175, 80) },
+            { rgb(240, 190, 40), rgb(120, 160, 90) }, { rgb(58, 123, 213), rgb(240, 190, 40) }, { rgb(64, 128, 230), rgb(90, 200, 90) },
+            { rgb(235, 50, 50), rgb(90, 200, 90) } };
+        for(int m = 0; m < 3; ++m)
+        {
+            double before = 0, after = 0, worst_gain = 99, min_after = 99;
+            for(auto& pr : pairs)
+            {
+                const filter_mode fm = filter_mode(int(filter_mode::protan) + m);
+                const double b0 = dist(m, pr[0], pr[1]), a0 = dist(m, filter_color(fm, pr[0]), filter_color(fm, pr[1]));
+                before += b0; after += a0; min_after = a0 < min_after ? a0 : min_after; worst_gain = a0 / (b0 + 1e-9) < worst_gain ? a0 / (b0 + 1e-9) : worst_gain;
+            }
+            std::printf("Filtr dla daltonistów %d: odległość par w symulacji wady %.3f -> %.3f (najgorsza para x%.2f, najbliższa %.3f)\n", m, before, after, worst_gain, min_after);
+            CHECK(after > before * 1.15 && min_after > 0.04);   // każda para dalej wyraźnie różna
+        }
+    }
     if(std::getenv("PB_NO_BALANCE")) { std::printf(fails ? "\n%d FAIL\n" : "\nOK (bez balansu)\n", fails); return fails != 0; }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");

@@ -134,6 +134,9 @@
 //  73 - Bliźniak: druga połowa (Dach, prawa) - 3 problemy z pierwszej połowy, ta sama pogoda (baner Wspólna ściana)
 //  74 - Dom z poddaszem: Okna dachowe, boss Zerwana połać obok, porywy co 4 tury
 //  75 - Kamienica: Odbiór konserwatora, boss Pęknięty strop obok (kafle kamienicy, parkiet i sztukateria)
+//  76 - v0.21.53 filtry ekranu: wszystkie odblokowane, każde uruchomienie z zapisem (bez --fresh) = kolejny filtr
+//       (pierwsze: Noir, ...; Wygląd na wyborze zawodu, SELECT); plac: czerwone pola wybuchu, dwie elity, problemy
+//       mokry / zapylony / zmrożony, bohater ranny, zatruty i mokry
 #include "core.h"
 #include "meta.h"
 
@@ -324,6 +327,16 @@ namespace debug_scenario
             p.contract = uint8_t(scenario - 71);
             p.houses_count = 6; for(int i = 0; i < 6; ++i) p.houses[i] = uint8_t((i % 6) | (i % 3) << 4);
             core::story_check(p, nullptr);
+        }
+        if(scenario == 76)   // v0.21.53: filtry ekranu - wszystkie odblokowane, kolejny przy każdym uruchomieniu
+        {
+            p.inspector_xp = uint32_t(core::progress_floor(data::inspector_levels, 20));
+            p.career_done = uint8_t((1u << data::career_count) - 1);
+            for(int c = 0; c < data::collections_count; ++c)
+                for(int e = 0; e < data::enemies_count; ++e)
+                    if((data::collections[c].enemies >> e) & 1) p.kill_count[e] = uint8_t(data::collections[c].count);
+            p.filters_seen = 0xFFFF;
+            core::cycle_filter(p, 1);
         }
         if(scenario == 36) { p.catalog = 0xFFFF; p.catalog_hi = 0xFFFFFFFFu; }
         if(scenario == 37 || scenario == 38) { p.rewards = uint8_t(data::rewards_count); p.wins = 8; }   // Akt 0 odebrany
@@ -1023,6 +1036,24 @@ namespace debug_scenario
                 g.start_stage(bs);
                 int x, y;
                 if(g.boss >= 0 && free_cell(g, 3, 4, x, y)) { g.enemies[g.boss].x = int8_t(x); g.enemies[g.boss].y = int8_t(y); g.enemies[g.boss].awake = true; }
+                break;
+            }
+            case 76:   // v0.21.53: filtry ekranu - zagrożenia, elity i stany w jednym kadrze
+            {
+                clear_area(g, -3, -3, 3, 3);
+                g.enemies_count = 0;
+                place_at(g, data::enemy_przeciek, 2, 0, 90);
+                g.make_elite(g.enemies_count - 1, 0);
+                g.enemies[g.enemies_count - 1].wet = 9;
+                place_at(g, data::enemy_plesn, -2, 2, 90);
+                g.make_elite(g.enemies_count - 1, data::elites_count > 1 ? 1 : 0);
+                g.enemies[g.enemies_count - 1].flags = uint8_t(g.enemies[g.enemies_count - 1].flags | core::actor_dusty);
+                place_at(g, data::enemy_kornik, 2, -2, 90);
+                g.enemies[g.enemies_count - 1].flags = uint8_t(g.enemies[g.enemies_count - 1].flags | core::actor_frozen);
+                g.blast_x = int8_t(g.hero.x - 1); g.blast_y = int8_t(g.hero.y - 2); g.blast_timer = 9;
+                g.hero.hp = int16_t(g.hero.max_hp / 3);
+                g.apply_status(core::status_effect::poison, 9);
+                g.soak_hero();
                 break;
             }
             case 73:   // bliźniak: druga połowa z problemami z pierwszej (3 zostawione), ta sama pogoda

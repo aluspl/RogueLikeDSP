@@ -887,7 +887,7 @@ for x in sf:
     assert (x["kind"] == "fun") == (len(un) > 0) and len(un) <= 2 and (x["kind"] != "fun" or x.get("hint")), x
     conds = [fcond(u) for u in un] + ["{}"] * (2 - len(un))
     L.append(f'    {{ {s(x["name"])}, {s(x["short"])}, {s(x["desc"])}, {s(x.get("hint", ""))}, core::filter_kind::{x["kind"]}, '
-             f'{"true" if x.get("cues") else "false"}, {"true" if x.get("motion") else "false"}, {{ {", ".join(conds)} }} }},')
+             f'{"true" if x.get("cues") else "false"}, {"true" if x.get("motion") else "false"}, {{ {", ".join(conds)} }}, {s(x["id"])} }},')
 L += ["};", f"inline constexpr int screen_filters_count = {len(sf)};", ""]
 fh_ = d["filtersHelp"]   # v0.21.53: Jak grać - filtry ekranu
 assert len(fh_) == 7 and all(len(x) <= 31 for x in fh_), fh_

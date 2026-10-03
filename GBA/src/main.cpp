@@ -58,6 +58,8 @@
 #include "bn_sprite_palette_items_font_map_loot.h"
 #include "bn_blending.h"
 #include "bn_sprite_palettes.h"
+#include "bn_span.h"
+#include "screen_filter.h"
 #include "bn_regular_bg_items_title.h"
 #include "bn_regular_bg_items_end.h"
 #include "bn_regular_bg_tiles_items_tiles.h"
@@ -240,6 +242,42 @@ namespace
         bn::sprite_palettes::set_fade(bn::color(0, 0, 0), intensity);
     }
 
+    // ------------------------------------------------------------------ v0.21.53: filtry ekranu (efekt własny palet Butano)
+    // Każdy kolor tła i sprite'ów po ściemnianiu przechodzi przez core::filter_color (screen_filter.h); wynik w pamięci
+    // podręcznej (1024 wpisy na stercie EWRAM: ważny | kolor wejścia | wynik), więc przeliczenie palet kosztuje mało.
+    // Kwas: wbudowany obrót barwy, zmieniany co 4 klatki w next_frame.
+    core::filter_mode filter_now = core::filter_mode::none;
+    uint32_t* filter_cache = nullptr;
+    int filter_clock = 0;
+
+    void filter_effect(bn::span<bn::color> colors)
+    {
+        for(bn::color& c : colors)
+        {
+            const uint32_t in = uint32_t(c.data()) & 0x7FFFu;
+            uint32_t& e = filter_cache[(in ^ (in >> 10)) & 1023];
+            if((e >> 15) != (0x8000u | in)) e = (0x8000u | in) << 15 | core::filter_color(filter_now, uint16_t(in));
+            c = bn::color(int(e & 0x7FFFu));
+        }
+    }
+
+    void apply_filter(const core::profile& p)
+    {
+        const core::filter_mode m = core::filter_mode_of(data::screen_filters[core::selected_filter(p)].id);
+        if(m == filter_now) return;
+        filter_now = m;
+        if(! filter_cache) filter_cache = new uint32_t[1024];
+        for(int i = 0; i < 1024; ++i) filter_cache[i] = 0;
+        const bool custom = m != core::filter_mode::none && m != core::filter_mode::kwas;
+        bn::bg_palettes::set_custom_effect(custom ? filter_effect : nullptr);
+        bn::sprite_palettes::set_custom_effect(custom ? filter_effect : nullptr);
+        if(m != core::filter_mode::kwas)
+        {
+            bn::bg_palettes::set_hue_shift_intensity(0);
+            bn::sprite_palettes::set_hue_shift_intensity(0);
+        }
+    }
+
 #ifdef PB_DEBUG_STATS
     // Buildy testowe: nowy rekord zajętych pozycji kafli sprite'ów (limit w Butano liczy też wolne kawałki pamięci),
     // sprite'ów albo stosu idzie do logu mGBA - playtester (monkey) zbiera maksima. Stos: wolna część IWRAM pod stosem
@@ -288,6 +326,12 @@ namespace
     void next_frame()
     {
         if(fade_in_left > 0) set_fade(--fade_in_left);
+        if(filter_now == core::filter_mode::kwas && (++filter_clock & 3) == 0)   // v0.21.53: Kwas - tęcza w czasie
+        {
+            const bn::fixed h = bn::fixed((filter_clock >> 2) & 255) / 256;
+            bn::bg_palettes::set_hue_shift_intensity(h);
+            bn::sprite_palettes::set_hue_shift_intensity(h);
+        }
         debug_stats();
         bn::core::update();
     }
@@ -4443,6 +4487,7 @@ namespace
         const int coll_got = core::check_collections(a.save);
         uint32_t story_got = core::story_check(a.save, &g);   // fabuła (#35): nowe wątki SMS za kamienie milowe (też od inspektora)
         const int career_new = core::career_announce(a.save);   // v0.21.52 cz. d: nowe kontrakty na mapie kariery
+        const int filters_new = core::filter_announce(a.save);   // v0.21.53: nowe filtry ekranu
         bn::sram::write(a.save);
         clear_run(a);
         play_song(song::none);
@@ -4539,6 +4584,8 @@ namespace
         }
         for(int c = 1; c < data::career_count; ++c)
             if((career_new >> c) & 1) banner.push("Nowy kontrakt!", data::career[c].name);
+        for(int f = 0; f < data::screen_filters_count; ++f)   // v0.21.53: filtr ekranu odblokowany (wybór zawodu > SELECT)
+            if((filters_new >> f) & 1) banner.push("Nowy filtr ekranu!", data::screen_filters[f].name);
         for(int f = 0; ; ++f)
         {
             banner.update(a);
@@ -5250,12 +5297,11 @@ namespace
             put(keep_t, x, keep_row, fit(a, n.s, 232 - x).c_str(), bn::sprite_palette_items::font_map_loot);
             core::message e; core::perk_label(e, core::keepsake_perk(a.save, k));
             bool inv = core::investor_unlocked(a.save);
-            put(keep_t, 8, keep_row2, fit(a, e.s, inv ? 128 : 224).c_str(), bn::sprite_palette_items::font_map_good);
-            if(inv)   // tryb inwestora: stawka (SELECT - modyfikatory)
-            {
-                core::message sm; sm.add("SELECT: stawka ").add(core::investor_stake(core::investor_mask(a.save)));
-                put(keep_t, 232, keep_row2, sm.s, bn::sprite_palette_items::font_map_loot, 1);
-            }
+            put(keep_t, 8, keep_row2, fit(a, e.s, 128).c_str(), bn::sprite_palette_items::font_map_good);
+            core::message sm;   // tryb inwestora: stawka (SELECT - modyfikatory); v0.21.53: inaczej SELECT - wygląd i filtr ekranu
+            if(inv) sm.add("SELECT: stawka ").add(core::investor_stake(core::investor_mask(a.save)));
+            else sm.add("SELECT: wygląd");
+            put(keep_t, 232, keep_row2, sm.s, bn::sprite_palette_items::font_map_loot, 1);
         };
 
         auto redraw_all = [&]() {
@@ -5365,8 +5411,7 @@ namespace
                 wait_release();
                 return leave(career_map(a) ? scene::career : scene::title);   // v0.21.52 cz. d: wróć do mapy kariery
             }
-            if(bn::keypad::select_pressed() && (core::investor_unlocked(a.save) || core::helmets_unlocked(a.save) > 0   // tryb inwestora, wygląd
-               || core::keepsake_slot2(a.save) || core::mastery_has(a.save, a.chosen_class, core::progress_reward::power)))   // cz. b
+            if(bn::keypad::select_pressed())   // tryb inwestora, wygląd (v0.21.53: zawsze - filtr ekranu, tryby dla daltonistów)
             {
                 a.text.set_palette_item(default_ink);
                 a.text.set_bg_priority(default_prio);
@@ -5414,6 +5459,7 @@ namespace
         const int helmet_row = helmets ? rows++ : -1;
         const int power_row = power ? rows++ : -1;
         const int keep2_row = keep2 ? rows++ : -1;
+        const int filter_row = rows++;   // v0.21.53: filtr ekranu (zawsze; tryby dla daltonistów od pierwszego uruchomienia)
         const int window = inv ? 3 : 4;   // tryb inwestora: wiersz 3 - nagroda za kolejny stopień
         auto redraw = [&]() {
             int mask = core::investor_mask(a.save);
@@ -5449,6 +5495,15 @@ namespace
                     stripe(c, r, is_sel ? phone_tile::stripe_brand : (on ? phone_tile::stripe_done : phone_tile::stripe_todo));
                     phone_text(a, t, list_x, row_py(r), fit(a, pm.s, pill_room("Wariant")).c_str(), is_sel ? ink::brand : ink::dark);
                     phone_pill(a, c, t, pill_end, row_ty(r), on ? "Wariant" : "Zwykła", on ? pill::done : pill::gray);
+                    continue;
+                }
+                if(i == filter_row)   // v0.21.53: filtr ekranu (A = następny odblokowany)
+                {
+                    const int f = core::selected_filter(a.save);
+                    core::message fm; fm.add("Ekran: ").add(data::screen_filters[f].name);
+                    stripe(c, r, is_sel ? phone_tile::stripe_brand : (f > 0 ? phone_tile::stripe_done : phone_tile::stripe_todo));
+                    phone_text(a, t, list_x, row_py(r), fit(a, fm.s, pill_room(data::screen_filters[f].short_name)).c_str(), is_sel ? ink::brand : ink::dark);
+                    phone_pill(a, c, t, pill_end, row_ty(r), data::screen_filters[f].short_name, f > 0 ? pill::done : pill::gray);
                     continue;
                 }
                 if(i == keep2_row)   // v0.21.52 cz. b: druga pamiątka (A = następna odblokowana)
@@ -5496,14 +5551,26 @@ namespace
                 if(k >= 0) core::perk_label(dm.add("Druga: "), core::keepsake2_perk(k));
                 else dm.add("Druga pamiątka (ranga I), inna niż L/R");
             }
+            else if(sel == filter_row)
+            {
+                const int f = core::selected_filter(a.save);
+                dm.add(data::screen_filters[f].desc).add(" (").add(core::filters_unlocked(a.save)).add("/").add(data::screen_filters_count).add(")");
+            }
             else if(sel >= 0 && sel < inv) dm.add(data::investor[sel].desc).add(", +").add(data::investor[sel].xp_pct).add("%");
             phone_text(a, t, list_x, row_py(4), fit(a, dm.s, phone_text_w).c_str(), ink::dim);
-            if(inv)
+            int locked = -1;   // v0.21.53: zablokowany filtr - "???" z podpowiedzią
+            for(int f = 0; f < data::screen_filters_count && locked < 0; ++f) if(! core::filter_unlocked(a.save, f)) locked = f;
+            if(sel == filter_row && locked >= 0)
+            {
+                core::message lm; lm.add("???: ").add(data::screen_filters[locked].hint);
+                phone_text(a, t, list_x, row_py(5), fit(a, lm.s, 150).c_str(), ink::dim);
+            }
+            else if(inv)
             {
                 core::message xm; xm.add("Dośw. +").add(core::investor_xp(mask)).add("%  rekord ").add(core::best_stake(a.save, cls));
                 phone_text(a, t, list_x, row_py(5), fit(a, xm.s, 150).c_str(), ink::dark);
             }
-            phone_text(a, t, 226, row_py(5), sel == helmet_row || sel == keep2_row ? "A: zmień" : "A: wł/wył", ink::brand, 1);
+            phone_text(a, t, 226, row_py(5), sel == helmet_row || sel == keep2_row || sel == filter_row ? "A: zmień" : "A: wł/wył", ink::brand, 1);
             ph.commit();
         };
         redraw();
@@ -5525,6 +5592,7 @@ namespace
                 else if(sel == helmet_row) core::cycle_helmet(a.save, 1);
                 else if(sel == power_row) core::toggle_power_variant(a.save, cls);
                 else if(sel == keep2_row) core::cycle_keepsake2(a.save, 1);
+                else if(sel == filter_row) { core::cycle_filter(a.save, 1); apply_filter(a.save); }
                 else core::toggle_investor(a.save, sel);
                 redraw(); bn::sound_items::sfx_buy.play();
             }
@@ -6326,6 +6394,7 @@ int main()
     bn::unique_ptr<app> app_heap(new app());   // v0.21.51: na stercie, nie na stosie (stos IWRAM ~12 KB)
     app& a = *app_heap;
     a.save = load_save();
+    apply_filter(a.save);   // v0.21.53: filtr ekranu z profilu
 #ifdef PB_SCENARIO
     debug_scenario::unlock_all(a.save);
     debug_scenario::setup_profile(a.save, PB_SCENARIO);
@@ -6337,6 +6406,7 @@ int main()
     scene s = scene::title;
     while(true)
     {
+        apply_filter(a.save);   // v0.21.53: filtr ekranu (profil scenariusza, wybór w Wyglądzie)
 #ifdef PB_DEBUG_STATS
         BN_LOG("PBSCENE ", int(s));
 #endif

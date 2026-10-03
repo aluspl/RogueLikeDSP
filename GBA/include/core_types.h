@@ -732,6 +732,7 @@ namespace core
         bool cues;             // wzory zamiast samego koloru (paski na czerwonych polach, litery rzadkości)
         bool motion;           // ruchomy efekt (ostrzeżenie, ograniczony ruch)
         filter_cond unlock[2];
+        const char* id;        // identyfikator z danych (tryb efektu: screen_filter.h, filter_mode_of)
     };
 
     struct difficulty_def     // poziom trudności wybierany na starcie

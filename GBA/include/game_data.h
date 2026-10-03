@@ -1093,15 +1093,15 @@ inline constexpr const char* meta_help[] = {   // Jak grać: podsumowanie budowy
 inline constexpr int meta_help_count = 6;
 
 inline constexpr core::screen_filter_def screen_filters[] = {   // filtry ekranu (0 = klasyczny; dla daltonistów zawsze)
-    { "Klasyczny", "Klasyk", "Bez efektu - jak zawsze", "", core::filter_kind::classic, false, false, { {}, {} } },
-    { "Noir", "Noir", "Czerń i biel, ziarno, winieta", "Inspektor lubi stare filmy", core::filter_kind::fun, true, false, { { core::filter_unlock::inspector, 5 }, {} } },
-    { "Retro LCD", "Retro", "4 odcienie zieleni, kratka", "Zbierz cały stan surowy", core::filter_kind::fun, true, false, { { core::filter_unlock::collection, 0 }, {} } },
-    { "Neon nocy", "Neon", "Róż i błękit, linie, poświata", "Nocna zmiana w kamienicy", core::filter_kind::fun, false, false, { { core::filter_unlock::career, 4 }, { core::filter_unlock::secret, 7 } } },
-    { "Kwas", "Kwas", "Tęcza i fale - uwaga: ruch!", "Za dużo porażeń prądem?", core::filter_kind::fun, false, true, { { core::filter_unlock::inspector, 20 }, { core::filter_unlock::secret, 5 } } },
-    { "Protanopia", "Prot.", "Słabsze widzenie czerwieni", "", core::filter_kind::access, true, false, { {}, {} } },
-    { "Deuteranopia", "Deut.", "Słabsze widzenie zieleni", "", core::filter_kind::access, true, false, { {}, {} } },
-    { "Tritanopia", "Trit.", "Słabsze widzenie niebieskiego", "", core::filter_kind::access, true, false, { {}, {} } },
-    { "Wysoki kontrast", "Kontr.", "Mocne kolory i ciemne tło", "", core::filter_kind::access, true, false, { {}, {} } },
+    { "Klasyczny", "Klasyk", "Bez efektu - jak zawsze", "", core::filter_kind::classic, false, false, { {}, {} }, "klasyczny" },
+    { "Noir", "Noir", "Czerń i biel, ziarno, winieta", "Inspektor lubi stare filmy", core::filter_kind::fun, true, false, { { core::filter_unlock::inspector, 5 }, {} }, "noir" },
+    { "Retro LCD", "Retro", "4 odcienie zieleni, kratka", "Zbierz cały stan surowy", core::filter_kind::fun, true, false, { { core::filter_unlock::collection, 0 }, {} }, "retro" },
+    { "Neon nocy", "Neon", "Róż i błękit, linie, poświata", "Nocna zmiana w kamienicy", core::filter_kind::fun, false, false, { { core::filter_unlock::career, 4 }, { core::filter_unlock::secret, 7 } }, "neon" },
+    { "Kwas", "Kwas", "Tęcza i fale - uwaga: ruch!", "Za dużo porażeń prądem?", core::filter_kind::fun, false, true, { { core::filter_unlock::inspector, 20 }, { core::filter_unlock::secret, 5 } }, "kwas" },
+    { "Protanopia", "Prot.", "Słabsze widzenie czerwieni", "", core::filter_kind::access, true, false, { {}, {} }, "protanopia" },
+    { "Deuteranopia", "Deut.", "Słabsze widzenie zieleni", "", core::filter_kind::access, true, false, { {}, {} }, "deuteranopia" },
+    { "Tritanopia", "Trit.", "Słabsze widzenie niebieskiego", "", core::filter_kind::access, true, false, { {}, {} }, "tritanopia" },
+    { "Wysoki kontrast", "Kontr.", "Mocne kolory i ciemne tło", "", core::filter_kind::access, true, false, { {}, {} }, "kontrast" },
 };
 inline constexpr int screen_filters_count = 9;
 
