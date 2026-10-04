@@ -1,16 +1,9 @@
 # TODO – PlanBudowlany RogueLike
 
-Stan na 2026-10-03: GBA v0.21.50 wydane, **v0.21.52 gotowe do wydania** (jedno wydanie razem z niewydanym osobno v0.21.51:
-poprawki po graniu na iPhonie, sekretne zlecenia; v0.21.52 cz. a–d: tempo postępu, inspektor i mistrzostwo, drzewko,
-kolekcje, zadania i seria dni, mapa kariery #47). Historia: **v0.21.51 cz. 1 gotowe** (autokafle ścian #36, rzadsze błoto jako mokra plama #37,
-spójne sterowanie i blokada wejścia #38 – GBA i Godot, HUD z pełną nazwą etapu w pionie; balans bez zmian: Łatwy 54%,
-Normalny 32%, Trudny 10%), cz. 2 – sekretne zlecenia #39: GBA i Godot gotowe (patrz „Gdzie skończyliśmy”); wcześniej v0.21.50 (cz. 1: rozpiska obrażeń broni #26; cz. 2: premie po etapie #27, elity #28,
-kombinacje stanów #29; cz. 3: wydarzenia z wyborem #30, ulepszanie narzędzia #31, ukryte pomieszczenia #32; cz. 4: podsumowanie
-budowy #33, wyzwania tygodnia #34, fabuła odkrywana z budowami #35 – GBA i Godot; balans: Łatwy 53%, Normalny 32%, Trudny 10%,
-Szkolenia 54%, + Respekt 70%, z Aktem 0 66%, wszystkie modyfikatory 9%; wyzwania tygodnia 11–35%),
-wcześniej v0.21.49 (Respekt, nagrody za odbiór, nowe zawody, balans
-Szkoleń; cz. 2: 10 etapów, wrogowie etapów z zachowaniami, mechaniki aktów, opis statystyk; cz. 3: Akt 0 „Papierologia”,
-samouczek menu), Godot – logika zgodna z v0.21.49, oprawa z GBA, wersja mobilna na iPhonie. Opis projektów: [`README.md`](README.md).
+Stan na 2026-10-04: **v0.21.54 wydane – ostatnia wersja serii 0.21** (GitHub, Drive, TestFlight, Google Play).
+Kolejne iteracje to seria **0.22** (otwarta wersja: v0.22.0). Zasada: pomysły i poprawki trafiają do otwartej wersji,
+po skończonym pakiecie changelog i pytanie „wydajemy?”; pełny zestaw testów (skill `rogue-test`) raz przed wydaniem.
+Historia zmian: [`GBA/CHANGELOG.md`](GBA/CHANGELOG.md). Opis projektów: [`README.md`](README.md).
 
 Legenda: ✅ zrobione · 🔄 w toku · ⬜ do zrobienia · — nie dotyczy
 
