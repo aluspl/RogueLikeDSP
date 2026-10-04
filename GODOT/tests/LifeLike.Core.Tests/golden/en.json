@@ -3031,6 +3031,15 @@
   "wyzwania": "challenges: {0}",
   "gra": "GAME",
   "jezyk_language": "Język / Language",
-  "kr_linia": "{0}, cr {1}-{2} {3}%"
+  "kr_linia": "{0}, cr {1}-{2} {3}%",
+  "widok_mapy": "Map view",
+  "widok_plaski": "Flat",
+  "widok_3_4": "3/4",
+  "efekty_swietlne": "Light effects",
+  "widok_i_swiatlo": "VIEW AND LIGHT",
+  "ustawienia_widok_mapy": "Settings (wrench) > Map view",
+  "ustawienia_efekty_swietlne": "Settings (wrench) > Light effects",
+  "pomoc_widok_mapy": "Map view: Flat or 3/4 (slightly from the side, character shadows). Walls are 1.5 tiles tall; a wall in front of a character, a slam tile or visible floor turns see-through. Taps and moves use the grid as always.",
+  "pomoc_efekty_swietlne": "Light effects: helmet lamp, puddle glints, spark flashes. Looks only; turn off to save battery."
  }
 }
