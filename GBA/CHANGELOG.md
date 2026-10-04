@@ -2,6 +2,53 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
+## v0.21.54 – w przygotowaniu (głębia grafiki w Godot: wyższe ściany, widok 3/4, światło, paralaksa tła)
+### In English
+The Godot version gets depth. Walls are now 1.5 tiles tall solid blocks drawn in order with the characters, so a
+wall in front of you really hides what is behind it – and turns see-through whenever it covers the hero, an enemy,
+a pickup, a slam tile or floor you can see, so nothing is ever hidden without a cue. A new **Map view** setting switches
+between **Flat** and **3/4** (a slightly-from-the-side view with lower rows and cast shadows, in the spirit of Hades or
+Into the Breach); taps and swipes still hit the same grid cells. **Light effects** add a helmet lamp with a gentle
+flicker, glints in puddles and flashes of sparks, combos and explosions (turn them off to save battery; reduced motion
+stops the flicker). Behind the map a quiet parallax backdrop – sky by weather and act, half-built blocks, a tower crane
+and scaffolding – shows through the darkness. Looks only: grid, field of view, input and balance are unchanged.
+GBA graphics are unchanged.
+
+### Najważniejsze
+Głębia grafiki w wersji Godot (#62, #63, #65, #66) – tylko wygląd: siatka, pole widzenia, mapowanie stuknięć na pola,
+cele dotyku i balans bez zmian; GBA bez zmian.
+1. **Wyższe ściany (#62)** – mur to bryła 1,5 pola: wierzch 1,5 pola nad podstawą, pod nim wysokie lico (nowe kafle
+   `stage_N_wall.png` z eksportera – wzór materiału każdego etapu, światło z lewej góry, jasne załamanie wierzch / lico,
+   cień styku z podłogą, jasny lewy i ciemny prawy koniec lica). Wiersze murów są sortowane po Y razem z postaciami:
+   postać za murem jest zasłonięta, przed murem – nie. Czytelność: mur, który zasłania widoczną podłogę, robi się
+   półprzezroczysty (np. południowa ściana pokoju), a jeszcze bardziej przed bohaterem, pomocnikiem, problemem,
+   znajdźką, polem ciosu, schodami, kałużą i błotem (także postać zasłonięta do połowy dwa wiersze dalej). Pęknięcie
+   i drzwi magazynu są na licu muru.
+2. **Widok 3/4 (#63)** – Ustawienia (klucz) > **Widok mapy: Płaski / 3/4**. W 3/4 wiersz ma 24 px zamiast 32 (podłoga
+   lekko z góry, kafle `stage_N_34.png` ściśnięte bez rozmycia), mur 1,5 wiersza, postacie z cieniem rzucanym w prawo
+   w dół, cień muru na podłodze po prawej. Warstwy: tło, podłoga, nakładki (kałuże, błoto, pola ciosu, zasięg), postacie
+   i mury (sortowane), światło, mgła, cząsteczki i liczby, znaczniki i menu. Dotknięcie postaci (sprite wyższy niż
+   wiersz) trafia w jej pole; kamera i podgląd mapy liczą wiersze widoku. Działa we wszystkich aktach i kontraktach
+   kariery (te same autokafle); domyślnie Płaski.
+3. **Światło dynamiczne (#65)** – Ustawienia > **Efekty świetlne: wł. / wył.**: latarka na kasku (miękkie koło światła
+   w stopniach jak mgła, lekko w stronę patrzenia, subtelne migotanie – bez niego przy „ograniczonym ruchu”), odblaski
+   latarki w kałużach blisko bohatera, poświata iskier i piorunów, błyski przy kombinacjach stanów i wybuchu. Pole
+   widzenia liczone jak dotąd.
+4. **Paralaksa tła (#66)** – za mapą: niebo wg pogody dnia (deszcz, upał ze słońcem, mróz, wiatr) albo aktu, sylwetki
+   budynków w budowie, żuraw wieżowy i rusztowania; warstwy przesuwają się o 4–22% ruchu kamery. Widać je przygaszone
+   przez ciemność nieznanych pól i poza mapą – subtelnie, bez odciągania uwagi.
+
+### Nowe
+- **Godot:** `World/Proj` (rzutowanie siatka -> piksele dla obu widoków), `World/WallLayer` (wiersze murów w warstwie
+  postaci, przezroczystość), `World/LightLayer` (warstwa addytywna), `World/SkyBackdrop`; mgła (`FogLayer`) zna bryły
+  murów (kanał „mur” w teksturze danych), więc wierzch i lico biorą światło i krawędź ciemności od swojego pola.
+- Ustawienia w `settings.cfg` (`view_34`, `lights`); Jak grać str. 13 „Widok i światło”.
+- Linia poleceń: `--view flat|34`, `--lights on|off`, `--bench SEKUNDY` (zrzut z pomiarem czasu klatki), scena `help-view`;
+  test dymny sprawdza oba widoki, światło wł./wył. i każdy filtr ekranu (trafianie w pola, prześwitujący mur, stan gry
+  bez zmian).
+- Filtry ekranu, wzory dla daltonistów (paski na polach ciosu, litery rzadkości) i oba języki działają z nowym
+  rysowaniem.
+
 ## v0.21.53 – w przygotowaniu (filtry ekranu, tryby dla daltonistów, język angielski)
 ### In English
 PlanBudowlany RogueLike now speaks English (GBA and Godot). Every enemy, boss, boon, event, text-message story,

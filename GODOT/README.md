@@ -4,12 +4,29 @@ Wersja Godot gry z demo GBA (`../GBA`): roguelike budowlany, w którym etapy bud
 a wrogami są *problemy budowy*. Kierunek rozwoju: [`docs/KONCEPCJA.md`](docs/KONCEPCJA.md)
 (telefon z aplikacją PlanBudowlany jako interfejs, oprawa 2.5D – kolejne kamienie milowe).
 
-**Stan: zgodny z GBA v0.21.53 (filtry ekranu, tryby dla daltonistów, język angielski), v0.21.52 cz. d (mapa kariery: rdzeń, test złoty i ekrany), cz. c (drzewko Szkoleń, kolekcje, zadania dnia i tygodnia, seria dni), cz. b (inspektor, mistrzostwo, stopnie inwestora), cz. a (tempo postępu), wcześniej v0.21.51 cz. 2 (sekretne zlecenia), v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
+**Stan: zgodny z GBA v0.21.54 (głębia grafiki tylko w Godot: wyższe ściany, widok 3/4, światło, paralaksa tła), v0.21.53 (filtry ekranu, tryby dla daltonistów, język angielski), v0.21.52 cz. d (mapa kariery: rdzeń, test złoty i ekrany), cz. c (drzewko Szkoleń, kolekcje, zadania dnia i tygodnia, seria dni), cz. b (inspektor, mistrzostwo, stopnie inwestora), cz. a (tempo postępu), wcześniej v0.21.51 cz. 2 (sekretne zlecenia), v0.21.49 cz. 3** (logika, dane i test złoty z migawki GBA v0.21.49 cz. 3: Akt 0 „Papierologia”
 z pieczątkami i Decyzją odmowną, samouczek menu, profil v10; wcześniej 10 etapów, 20 nowych problemów
 z zachowaniami, mechaniki aktów, opis statystyk; Respekt za etapy i sklep Respektu,
 nagrody za odbiór – Młot udarowy, Pistolet do kotew, buty, pas, zawody Dekarz, Tynkarz, Operator koparki – nowy balans
 Szkoleń, profil v8; wcześniej wybór ścieżki, materiały, codzienna budowa, pogoda, brygada, tryb inwestora);
 oprawa (grafika, font, dźwięk, telefon, wybór zawodu) jak w GBA.
+
+Nowe w v0.21.54 (#62, #63, #65, #66): **głębia grafiki** – tylko wygląd (siatka, pole widzenia, stuknięcia w pola i balans
+bez zmian). `World/Proj` rzutuje siatkę na piksele dla dwóch widoków: **Płaski** (pole 32x32, domyślny) i **3/4** (wiersz
+24 px, kafle `tiles/stage_N_34.png`, postacie 4 px wyżej z cieniem rzucanym, cień muru na podłodze). W obu mur to bryła
+1,5 pola (`World/WallLayer`: wiersze murów jako węzły w warstwie postaci z sortowaniem po Y, wierzch 48 / 36 px nad
+podstawą, wysokie lico z `tiles/stage_N_wall.png`); mur przed widoczną podłogą prześwituje (0,55), przed postacią,
+znajdźką, polem ciosu, schodami, kałużą i błotem – mocniej (0,38). `FogLayer` dostał kanał „odkryty mur” – piksele bryły
+biorą światło i krawędź ciemności od swojego pola; ciemność nieznanych pól (80%) i poza mapą (50%) przepuszcza tło.
+`World/LightLayer` (addytywna, pod mgłą): latarka czołowa z migotaniem (bez przy ograniczonym ruchu), odblaski kałuż,
+poświata iskier i piorunów z `FxLayer`, błyski wybuchu i kombinacji (`Light.Flash`). `World/SkyBackdrop`: niebo wg pogody
+/ aktu, budynki, żuraw, rusztowania (paralaksa 4–22% ruchu kamery). W 3/4 `WorldView.ScreenToGrid` najpierw sprawdza
+sylwetki widocznych problemów i bohatera (sprite wyższy niż wiersz), w płaskim liczy jak dotąd. Ustawienia: **Widok mapy**
+(Płaski / 3/4) i **Efekty świetlne** (wł. / wył.) w `settings.cfg` (`view_34`, `lights`), Jak grać str. 13. Linia poleceń:
+`--view flat|34`, `--lights on|off`, `--bench SEKUNDY` (przy `--screenshot`: średni czas klatki, procesu i renderowania;
+z `--disable-vsync` przed `--`); scena `help-view`; test dymny `ExerciseDepth`. Pomiar (MacBook, pion 430x932, 5 s, sceny `boss` i `weather-rain`):
+płaski / 3/4, światło wył. / wł. – wszystkie warianty mediana 8,3 ms, p95 8,7–9,5 ms (limit 120 Hz ekranu, bez różnicy
+między wariantami); na telefonie jeszcze nie mierzone.
 
 Nowe w v0.21.53 cz. 2 (#40): **język angielski** – `Loc` (teksty interfejsu z `game.json` „ui” i „uiGodot” oraz
 `GBA/data/lang/en.json`; w kodzie `Loc.T("klucz")` / `Loc.F("klucz", ...)` zamiast napisów na sztywno), `LangOverlay`
@@ -329,7 +346,7 @@ Na iOS/Androidzie (albo z `--touch` na komputerze) gra jest pionowa i sterowana 
 
 Ustawienia (klucz 🔧 w prawym górnym rogu, poza czasem gry): muzyka, dźwięki, wibracje, sterowanie (gesty + pasek
 albo gałka + pasek), pasek akcji dla prawej / lewej ręki, tekst normalny / duży, filtr ekranu (v0.21.53: lista filtrów,
-siła, filtr na telefonie, ograniczony ruch), Jak grać, w trakcie budowy
+siła, filtr na telefonie, ograniczony ruch), widok mapy Płaski / 3/4 i efekty świetlne (v0.21.54), Jak grać, w trakcie budowy
 Zapisz i wyjdź (na tytule „Kontynuuj budowę”) i Porzuć budowę, wersja i link planbudowlany.online. Zapis w
 `user://settings.cfg` (osobno od profilu `user://profile.sav`); budowa w toku w `user://run.sav` (start etapu,
 Zapisz i wyjdź, uśpienie aplikacji).
@@ -422,7 +439,8 @@ czyta – `GBA/graphics/*.bmp`, `GBA/include/font_widths.h` i `GBA/audio/*` i za
 z 16x16, kolejność klatek jak `actors.bmp`; białe sylwetki do błysku; cząsteczki 16x16; domy Osiedla; ikony menu
 i mocy), `ui/` (ikony telefonu aktywne i nieaktywne, ikony HUD 16x16 i szare do ładowania mocy, plansze tytułu
 i końca z przezroczystym tłem), `tiles/stage_N.png` (12 etapów, w tym Akt 0 - biuro z segregatorami i wykop z rurą, podłoga wg aktu: 4 warianty podłogi, podłoga z cieniem muru, mur,
-lico muru, schody – rysowane w 32x32 w paletach etapów z GBA, bogatsze niż kafle 8x8), `fx/` (cień, pole ciosu i wybuchu, błoto,
+lico muru, schody – rysowane w 32x32 w paletach etapów z GBA, bogatsze niż kafle 8x8; v0.21.54: `tiles/stage_N_wall.png` –
+wysokie lico muru 48 px (płaski) i 36 px (3/4) z końcami, `tiles/stage_N_34.png` – kafle ściśnięte do 32x24), `fx/` (cień, pole ciosu i wybuchu, błoto,
 ramka zasięgu), `font/` (font 8x16 z polskimi znakami: litery i cień osobno + `font.json` z szerokościami;
 rysuje go `scripts/Gfx/PixelFont.cs`), `audio/` (SFX `.wav` 1:1, muzyka `.mod` wyrenderowana do `.mp3`).
 Wynik jest deterministyczny – po zmianie grafik GBA wystarczy uruchomić skrypt ponownie i zaimportować projekt.
@@ -510,7 +528,8 @@ Screens/           Screen (Enter / Exit / HandleInput / Process + deklaracja war
                    EnemyLook, PlayCommands, TouchPlay - gesty na mapie, AutoWalk + PathFinder -
                    marsz po dotknięciu pola); Settings (ustawienia nad bieżącym ekranem); Views/ (TitleView, ClassSelectView, EndView, PrologueView, PrologueStage)
 World/             WorldView (sprite'y, synchronizacja), WorldFx (trafienia, moce, awans, konfetti), WorldCamera,
-                   warstwy: MapLayer, OverlayLayer, FogLayer, FxLayer, MarksLayer, ActorSprite
+                   warstwy: SkyBackdrop, MapLayer, OverlayLayer, WallLayer (w warstwie postaci), LightLayer, FogLayer,
+                   FxLayer, MarksLayer, ActorSprite; Proj – rzutowanie widoku płaskiego i 3/4 (v0.21.54)
 Touch/             GestureTracker (dotyk -> gesty: Down, Drag, Swipe, SwipeRepeat, LongPress, Tap, Up), Gesture,
                    TouchControls (warstwa: ActionBar - pasek akcji, VirtualStick - gałka), BarButton, TouchIcon,
                    ITapTargets (prostokąty przycisków dla testu małpy)

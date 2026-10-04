@@ -234,13 +234,14 @@ Balans (bot: Normalny 25–35% itd.) zostaje nietknięty, a gracze bez konta PB 
 ### B. Głębia grafiki w Godot (GBA bez zmian)
 | # | Pomysł | Uwagi do balansu |
 |---|---|---|
-| 62 | Wyższe ściany: lico ściany na 1,5–2 pola wysokości, zasłanianie postaci za ścianą półprzezroczystością | logika siatki i pola widzenia bez zmian – tylko rysowanie |
-| 63 | Widok 3/4 (lekko z góry, jak w Hades / Into the Breach): przesunięte w pionie wiersze, cienie rzucane, warstwy (podłoga, przedmioty, postaci, wierzch ścian) | sterowanie i stuknięcia nadal po siatce; test „małpy” w obu widokach |
+| 62 | ✅ v0.21.54 Wyższe ściany: lico ściany na 1,5–2 pola wysokości, zasłanianie postaci za ścianą półprzezroczystością | logika siatki i pola widzenia bez zmian – tylko rysowanie; mur 1,5 pola w obu widokach, prześwituje przed widoczną podłogą i mocniej przed postaciami / polami ciosu |
+| 63 | ✅ prototyp v0.21.54 Widok 3/4 (lekko z góry, jak w Hades / Into the Breach): przesunięte w pionie wiersze, cienie rzucane, warstwy (podłoga, przedmioty, postaci, wierzch ścian) | sterowanie i stuknięcia nadal po siatce; test „małpy” w obu widokach; Ustawienia > Widok mapy (domyślnie Płaski), wszystkie akty i kontrakty; dalej: osobne kafle 3/4 rysowane ręcznie zamiast ściśniętych |
 | 64 | Opcja izometryczna (romby) jako tryb eksperymentalny w ustawieniach | duży koszt grafiki – najpierw prototyp jednego aktu |
-| 65 | Światło dynamiczne: latarka czołowa, kałuże odbijające światło, iskry przy kombinacjach | pole widzenia liczone jak dziś; światło tylko wizualnie |
-| 66 | Paralaksa tła poza mapą (rusztowania, dźwig, niebo zależne od pogody) | tylko tło |
+| 65 | ✅ v0.21.54 Światło dynamiczne: latarka czołowa, kałuże odbijające światło, iskry przy kombinacjach | pole widzenia liczone jak dziś; światło tylko wizualnie; Ustawienia > Efekty świetlne |
+| 66 | ✅ v0.21.54 Paralaksa tła poza mapą (rusztowania, dźwig, niebo zależne od pogody) | tylko tło; widać przez ciemność nieznanych pól |
 
 Kolejność proponowana: #62 → #63 (prototyp na jednym akcie, porównanie zrzutów) → #65; #55–#57 po uzgodnieniu API z sesją PB.
+Stan v0.21.54: #62, #65, #66 zrobione, #63 jako prototyp w ustawieniach (wszystkie akty), #64 (izometria) – otwarte.
 
 ## Zgodność funkcji
 
@@ -253,7 +254,7 @@ Kolejność proponowana: #62 → #63 (prototyp na jednym akcie, porównanie zrzu
 | Wybór zawodu z paskiem portretów, zablokowane na końcu | ✅ | ✅ |
 | Celowanie (przytrzymanie A) i karta wroga (przytrzymanie B) | ✅ klawiatura i dotyk | ✅ |
 | Prolog przy pierwszej budowie | ✅ | ✅ |
-| Grafika | ✅ bogatsza (kafle 32 px, 4 klatki chodu, światło) | ✅ |
+| Grafika | ✅ bogatsza (kafle 32 px, 4 klatki chodu, światło; v0.21.54: wysokie ściany, widok 3/4, latarka, paralaksa tła) | ✅ |
 | Dźwięk i muzyka | ✅ | ✅ |
 
 ## Porządki
