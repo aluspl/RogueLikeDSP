@@ -243,6 +243,10 @@ Stan v0.21.54: #62, #65, #66 zrobione, #63 jako prototyp w ustawieniach (wszystk
 | 67 | Schody na mapie: zamiast żółtej skrzynki w ramce – czytelne schody w dół (stopnie z głębią, ciemny otwór, delikatna poświata / strzałka „Wyjście”), dopasowane do wyższych ścian i widoku 3/4, zamknięte (Akt 0) z kłódką | 🔄 | ⬜ (sprawdzić czytelność) |
 | 68 | Dziennik nad mapą: w pionie teksty dziennika giną pod ścianami (półprzezroczyste, słabo czytelne) – pasek tła / cień pod tekstem | 🔄 | — |
 | 69 | HUD w pionie: ucięte „Normal..” przy długiej nazwie etapu – skrót trudności (N/Ł/T) albo ikona | 🔄 | — |
+| 70 | Drzewko Szkoleń – przebudowa widoku: zamiast 3 ciasnych kolumn z czerwonym „od pnia N” – lista gałęzi (karta na gałąź) z paskiem pnia, węzły jako karty ze stanem (zablokowany / do wyboru 1 z 2 / wybrany), ceną i opisem; jasne „wybierz jedno z dwóch” | ⬜ | ⬜ (GBA: ten sam porządek na stronach) |
+| 71 | Harmonogram domu po wygranej: uporządkować (dubel „Zaplanuj swoją budowę” w karcie i przycisku, pusta przestrzeń, krótsze wiersze) | ⬜ | ⬜ |
+| 72 | Po wygranej zamiast „Kolejna budowa (NG+)” – ekran „Co dalej”: od razu zakupy Szkoleń/Respektu (co Cię stać), najbliższe odblokowania, nowy kontrakt kariery, wyższa stawka inwestora, zadania dnia; NG+ jako opcja dodatkowa | ⬜ | ⬜ |
+| 73 | Trudność wg gracza: wygrana „bez żadnych problemów” – przegląd balansu Normalnego (czy bot ≈ człowiek), podpowiedź „Spróbuj Trudnego / trybu inwestora” po wygranej, ewentualnie twardszy Normalny | ⬜ | ⬜ |
 
 ## Zgodność funkcji
 
