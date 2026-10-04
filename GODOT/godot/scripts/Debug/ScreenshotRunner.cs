@@ -41,30 +41,27 @@ public sealed class ScreenshotRunner
         root.GetTree().Quit();
     }
 
-    /// <summary>v0.21.54 (--bench): średni czas klatki, procesu i renderowania (CPU / GPU) sceny przez podany czas.</summary>
+    /// <summary>v0.21.54 (--bench): czas klatki sceny przez podany czas – mediana, 95. centyl, średnia i najdłuższa
+    /// (z --disable-vsync przed „--” bez limitu 60 kl./s).</summary>
     private static async System.Threading.Tasks.Task Bench(Node root, string scene, float seconds)
     {
-        var vp = root.GetViewport().GetViewportRid();
-        RenderingServer.ViewportSetMeasureRenderTime(vp, true);
-        double frame = 0, proc = 0, cpu = 0, gpu = 0, worst = 0;
-        var n = 0;
+        var times = new System.Collections.Generic.List<double>();
         var start = Time.GetTicksUsec();
         var last = start;
         while ((Time.GetTicksUsec() - start) / 1e6 < seconds)
         {
             await root.ToSignal(root.GetTree(), SceneTree.SignalName.ProcessFrame);
             var now = Time.GetTicksUsec();
-            var dt = (now - last) / 1000.0;
+            times.Add((now - last) / 1000.0);
             last = now;
-            if (n++ == 0) continue;
-            frame += dt;
-            worst = Math.Max(worst, dt);
-            proc += Performance.GetMonitor(Performance.Monitor.TimeProcess) * 1000.0;
-            cpu += RenderingServer.ViewportGetMeasuredRenderTimeCpu(vp) + RenderingServer.GetFrameSetupTimeCpu();
-            gpu += RenderingServer.ViewportGetMeasuredRenderTimeGpu(vp);
         }
-        var k = Math.Max(1, n - 1);
+        if (times.Count > 1) times.RemoveAt(0);
+        times.Sort();
+        double P(double q) => times[Math.Min(times.Count - 1, (int)(q * times.Count))];
+        var avg = 0.0;
+        foreach (var t in times) avg += t;
+        avg /= Math.Max(1, times.Count);
         GD.Print($"BENCH {scene} view={(Settings.GameSettings.ThreeQuarter ? "34" : "flat")} lights={(Settings.GameSettings.Lights ? "on" : "off")}: " +
-                 $"{k} klatek, klatka {frame / k:0.00} ms (max {worst:0.0}), proces {proc / k:0.00} ms, render CPU {cpu / k:0.00} ms, GPU {gpu / k:0.00} ms");
+                 $"{times.Count} klatek, mediana {P(0.5):0.00} ms, p95 {P(0.95):0.00} ms, średnio {avg:0.00} ms, max {times[^1]:0.0} ms");
     }
 }

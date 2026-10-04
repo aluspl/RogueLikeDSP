@@ -82,12 +82,12 @@ public partial class SkyBackdrop : Node2D
             DrawCircle(sun, 24, new Color(1f, 0.75f, 0.42f, 0.45f));
         }
         if (key is 1 or 3 or 4) Clouds(cam, view, top, bottom);
-        var far = bottom.Lerp(top, 0.55f).Darkened(0.25f);
-        Skyline(cam, view, horizon, far);
-        var mid = bottom.Darkened(0.55f);
-        Crane(cam, view, horizon, mid);
-        Scaffolding(cam, view, horizon, bottom.Darkened(0.42f), bottom.Lightened(0.08f));
-        Box(tl.X, horizon, size.X, tl.Y + size.Y - horizon, bottom.Darkened(0.65f)); // ziemia pod horyzontem
+        var glow = bottom.Lightened(0.12f); // jaśniejsze pasmo nad horyzontem – na nim czytelne sylwetki
+        Box(tl.X, horizon - 90, size.X, 90, new Color(glow, 0.5f));
+        Skyline(cam, view, horizon, bottom.Lerp(top, 0.5f).Darkened(0.35f));
+        Crane(cam, view, horizon, top.Darkened(0.55f));
+        Scaffolding(cam, view, horizon, top.Darkened(0.6f), bottom.Lightened(0.15f));
+        Box(tl.X, horizon, size.X, tl.Y + size.Y - horizon, top.Darkened(0.7f)); // ziemia pod horyzontem
     }
 
     private void Clouds(Vector2 cam, Vector2 view, Color top, Color bottom)

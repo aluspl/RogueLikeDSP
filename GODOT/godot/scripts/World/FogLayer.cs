@@ -173,7 +173,7 @@ void fragment() {
     }
 
     /// <summary>v0.21.54: ciemność nieznanych pól i poza mapą przepuszcza trochę tła (SkyBackdrop – paralaksa).</summary>
-    private const float VoidAlpha = 0.84f, OutsideAlpha = 0.62f;
+    private const float VoidAlpha = 0.8f, OutsideAlpha = 0.5f;
 
     public override void _Draw()
     {
