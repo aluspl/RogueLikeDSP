@@ -395,6 +395,37 @@ public sealed class DemoStaging
         _app.AfterAction(g.PlayerMove(1, 0));
     }
 
+    /// <summary>
+    /// v0.22.0 (#67-#69): etap aktu I (Mury parteru), schody w przejściu poziomego muru dwa wiersze nad bohaterem (mur po
+    /// obu stronach, pusto za nim), obok problem z dużym HP - dwa ciosy wypełniają dziennik nad mapą.
+    /// </summary>
+    public void StairsShowcase(int stage)
+    {
+        var g = G;
+        g.StartStage(stage);
+        g.EnemiesCount = 0;
+        g.PickupsCount = 0;
+        ClearAround(-4, -5, 4, 2);
+        int hx = g.Hero.X, hy = g.Hero.Y;
+        for (var x = hx - 4; x <= hx + 4; x++)
+        {
+            if (x >= 1 && x < Level.W - 1 && hy - 2 >= 1) g.Lv[x, hy - 2] = Tile.Wall;
+        }
+        g.Lv[g.StairsX, g.StairsY] = Tile.Floor;
+        g.StairsX = hx + 1;
+        g.StairsY = hy - 2;
+        g.Lv[g.StairsX, g.StairsY] = Tile.Stairs;
+        Place("przeciek", -1, 0, 0, 40);
+        if (g.EnemiesCount > 0) g.Enemies[0].Hp = g.Enemies[0].MaxHp = 400;
+        g.UpdateFov();
+        _app.Nodes.World.Sync();
+        for (var k = 0; k < 3; k++)
+        {
+            g.Hero.Hp = g.Hero.MaxHp;
+            _app.AfterAction(g.PlayerMove(-1, 0));
+        }
+    }
+
     /// <summary>v0.21.50 cz. 3: pola wydarzeń w prawo od bohatera (po identyfikatorze z game.json), pusto wokół.</summary>
     public void EventTiles(params string[] ids)
     {

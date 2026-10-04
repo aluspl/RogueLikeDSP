@@ -1054,7 +1054,7 @@ inline constexpr core::progress_title progress_titles[] = {   // tytuły: inspek
 };
 inline constexpr int progress_titles_count = 21;
 
-inline constexpr const char* version = "v0.21.54";   // numer wersji (ekran tytułowy, changelog)
+inline constexpr const char* version = "v0.22.0";   // numer wersji (ekran tytułowy, changelog)
 
 inline constexpr core::ltext damage_help[] = {   // Jak grać: obrażenia broni w prostych słowach (rozpiska #26)
     { "Cios = rzut broni + premie:", "Hit = weapon roll + bonuses:" },

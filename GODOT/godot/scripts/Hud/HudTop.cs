@@ -85,7 +85,14 @@ public partial class HudTop : Control
         var re = w - 6 - Mathf.Ceil((SettingsButton.Side + 4) / Layout.HudScale); // miejsce na klucz ustawień
         var room1 = (int)(re - xr.End.X - 12);
         var nameBelow = f.Measure(right) > room1;
-        if (nameBelow) f.Draw(this, new Vector2(re, 2), f.Fit($"{stageNo}, {g.DDef.Name}{ng}", room1), Ink.Map, TextAlign.Right);
+        if (nameBelow) // v0.22.0 (#69): gdy „Etap 3/10, Normalny” się nie mieści – skrót trudności (N/Ł/T, EN: N/E/H) zamiast „Normal..”
+        {
+            var full = $"{stageNo}, {g.DDef.Name}{ng}";
+            var tag = $"{stageNo} {DifficultyTag(g.DDef.Name)}{ng}";
+            var bare = $"{g.StageNumber()}/{g.StagesInRun()} {DifficultyTag(g.DDef.Name)}{ng}";   // najwęższy: „3/10 N”
+            var row1 = f.Measure(full) <= room1 ? full : f.Measure(tag) <= room1 ? tag : f.Fit(bare, room1);
+            f.Draw(this, new Vector2(re, 2), row1, Ink.Map, TextAlign.Right);
+        }
         else
         {
             f.Draw(this, new Vector2(re, 2), right, Ink.Map, TextAlign.Right);
@@ -175,6 +182,9 @@ public partial class HudTop : Control
             f.Draw(this, new Vector2(r.Position.X + pill / 2, 19), ev.Short, Ink.White, TextAlign.Center);
         }
     }
+
+    /// <summary>v0.22.0 (#69): skrót poziomu trudności – pierwsza litera nazwy z danych (Łatwy → Ł, Normal → N, Hard → H).</summary>
+    public static string DifficultyTag(string name) => string.IsNullOrEmpty(name) ? "" : char.ToUpperInvariant(name[0]).ToString();
 
     /// <summary>Pasek HP jak hp_bar.bmp (obrys, tło, połysk w 1. wierszu, cień w ostatnim), kolor wg progu.</summary>
     private void DrawHpBar(Rect2 r, int hp, int max)

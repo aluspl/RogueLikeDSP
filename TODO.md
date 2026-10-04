@@ -248,6 +248,8 @@ Stan v0.21.54: #62, #65, #66 zrobione, #63 jako prototyp w ustawieniach (wszystk
 | 72 | Po wygranej zamiast „Kolejna budowa (NG+)” – ekran „Co dalej”: od razu zakupy Szkoleń/Respektu (co Cię stać), najbliższe odblokowania, nowy kontrakt kariery, wyższa stawka inwestora, zadania dnia; NG+ jako opcja dodatkowa | ⬜ | ⬜ |
 | 73 | Trudność wg gracza: wygrana „bez żadnych problemów” – przegląd balansu Normalnego (czy bot ≈ człowiek), podpowiedź „Spróbuj Trudnego / trybu inwestora” po wygranej, ewentualnie twardszy Normalny | ⬜ | ⬜ |
 
+> Stan #67–#69 (2026-10-04, praca wstrzymana na prośbę): WIP w commicie – wersja v0.22.0 w danych, początek nowych kafli schodów w eksporcie i zmiany w HUD/dzienniku Godota; nie sprawdzone zrzutami ani testami, do dokończenia.
+
 ## Zgodność funkcji
 
 | Funkcja | GODOT (MOBILE) | GBA |

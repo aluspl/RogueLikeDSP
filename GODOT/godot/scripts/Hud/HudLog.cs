@@ -94,11 +94,16 @@ public partial class HudLog : Control
             var a = _timer < Fade ? _timer / Fade : 1f;
             var n = _lines.Count;
             var top = h - 4 - n * 16;
-            Strip(top - 2, h - top + 2, a);
+            // v0.22.0 (#68): pas pod dziennikiem prawie nieprzezroczysty (mury pod spodem nie przebijają), u góry
+            // miękkie przyciemnienie mapy; starsze linie przyciemnione kolorem, nie przezroczystością - zawsze z cieniem
+            Strip(top - 2, h - top + 2, a, LogBacking);
+            for (var k = 1; k <= 3; k++) DrawRect(new Rect2(0, top - 3 - 3 * k, Size.X, 3), new Color(Pal.Text, (0.36f - 0.1f * k) * a));
             for (var i = 0; i < n; i++)
             {
                 var age = n - 1 - i; // starsze linie bledsze
-                var ink = _lines[i].Ink.WithAlpha(a * (age == 0 ? 1f : age == 1 ? 0.78f : 0.55f));
+                var dim = age == 0 ? 0f : age == 1 ? 0.25f : 0.42f;
+                var src = _lines[i].Ink;
+                var ink = new Ink(src.Fill.Lerp(Pal.Text, dim), src.Edge.A > 0.01f ? src.Edge : new Color(0, 0, 0, 0.9f)).WithAlpha(a);
                 f.Draw(this, new Vector2(8, top + i * 16), f.Fit(_lines[i].Text, (int)w - 16), ink);
             }
             return;
@@ -107,9 +112,12 @@ public partial class HudLog : Control
         f.Draw(this, new Vector2(w - 6, h - 18), Loc.T("tab_telefon_enter_akcje_r_moc"), Ink.MapDim.WithAlpha(0.7f), TextAlign.Right);
     }
 
-    private void Strip(float y, float height, float alpha)
+    /// <summary>v0.22.0 (#68): nieprzezroczystość pasa pod komunikatami dziennika.</summary>
+    public const float LogBacking = 0.9f;
+
+    private void Strip(float y, float height, float alpha, float backing = 0.62f)
     {
-        DrawRect(new Rect2(0, y, Size.X, height), new Color(Pal.Text, 0.62f * alpha));
+        DrawRect(new Rect2(0, y, Size.X, height), new Color(Pal.Text, backing * alpha));
         DrawRect(new Rect2(0, y - 1, Size.X, 1), new Color(Pal.Brand, 0.55f * alpha));
     }
 }

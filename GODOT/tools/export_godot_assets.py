@@ -760,20 +760,7 @@ def make_stage_tiles(i):
     draw_wall(wall, col, WALL_KIND[i], rnd)
     cells.append(make_wall_top(wall, col))     # 6: wierzch muru (masa muru, pole z murem poniżej) - bez pasów
     cells.append(make_wall_face(wall, col))    # 7: lico muru nad podłogą - krawędź wierzchu, wzór materiału, cień u dołu
-    st = Canvas(col["wall"])   # schody w dół: boczne ściany, stopnie coraz ciemniejsze, u dołu otwór
-    for k in range(5):
-        y0 = 2 + k * 6
-        c0 = mix(col["stairs"], col["stairs2"], k / 4.0)
-        c0 = mix(c0, (12, 12, 20), k * 0.14)
-        st.rect(4, y0, 27, y0 + 5, c0)
-        st.hline(4, 27, y0, mix(c0, (255, 255, 255), 0.35))
-        st.hline(4, 27, y0 + 5, shade(c0, 0.55))
-    st.rect(0, 0, 3, 31, col["wall"])
-    st.rect(28, 0, 31, 31, col["wall"])
-    st.vline(3, 0, 31, col["shadow"])
-    st.vline(28, 0, 31, col["light"])
-    st.rect(0, 0, 31, 1, col["light"])
-    st.rect(4, 30, 27, 31, (12, 12, 20))
+    st = make_stairs(cells[0], col)            # 8: schody w dół (v0.22.0, #67)
     cells.append(st)
     cells += make_wall_edges(col)              # 9-14: nakładki autokafli muru (krawędzie wierzchu, końce lica)
     sheet = Image.new("RGBA", (32 * len(cells), 32), TRANSPARENT)
@@ -783,6 +770,58 @@ def make_stage_tiles(i):
     save(make_tall_walls(wall, col), "tiles/stage_%d_wall.png" % i)   # v0.21.54 (#62): wysokie lico muru
     save(squash_rows(sheet, ROW_34), "tiles/stage_%d_34.png" % i)      # v0.21.54 (#63): kafle widoku 3/4
     return col
+
+
+# ------------------------------------------------------------------ v0.22.0 (#67): schody w dół
+# Otwór w podłodze etapu (bez ramki w kolorze muru - pole nie wygląda jak skrzynka w przejściu między murami). Patrzymy z
+# południa jak na mury: najbliższy stopień u dołu pola jest na poziomie podłogi i najjaśniejszy, kolejne (w górę pola)
+# schodzą głębiej - ciemnieją i zwężają się między ciemnymi ścianami szybu, u góry czarny otwór. Stopnie w kolorze
+# podłogi etapu (beton, deski, płytki), krawędzie stopni żółte jak taśma antypoślizgowa na budowie (kolor schodów z
+# palety GBA), więc czytelne w każdym akcie. Światło z lewej góry: prawa ściana szybu jaśniejsza od lewej.
+STAIRS_STEPS = 5
+
+
+def make_stairs(floor, col):
+    st = Canvas(col["floor"])
+    st.im.paste(floor.im, (0, 0))
+    st.px = st.im.load()
+    void = (10, 9, 16)
+    x0, x1, y0, y1 = 3, 28, 3, 29              # otwór
+    rim_dark = shade(col["floor"], 0.45)
+    rim_lit = mix(col["floor"], (255, 255, 255), 0.45)
+    tread0 = mix(col["floor"], col["light"], 0.35)
+    nose = mix(col["stairs"], (255, 255, 255), 0.15)
+    wall_l = mix(shade(col["wall"], 0.35), void, 0.3)
+    wall_r = mix(shade(col["wall"], 0.6), void, 0.15)
+    st.rect(x0, y0, x1, y1, void)
+    step_h = (y1 - y0 - 3) // STAIRS_STEPS      # 4 górne wiersze: czarna głębia
+    for k in range(STAIRS_STEPS):               # k = 0: najbliższy stopień (u dołu), wyżej - głębiej
+        yb = y1 - k * step_h
+        yt = yb - step_h + 1
+        inset = k                               # szyb zwęża się w głąb
+        depth = k / float(STAIRS_STEPS)
+        t = mix(tread0, void, depth * 0.85)
+        n = mix(nose, void, depth * 0.75)
+        lx, rx = x0 + 1 + inset, x1 - 1 - inset
+        st.rect(lx, yt, rx, yb, t)
+        st.hline(lx, rx, yt, n)                                  # żółta krawędź stopnia
+        if (yt + 1) <= yb:
+            st.hline(lx, rx, yt + 1, mix(n, t, 0.55))
+        st.hline(lx, rx, yb, mix(t, void, 0.45))                 # cień pod krawędzią następnego stopnia
+        for y in range(yt, yb + 1):                              # ściany szybu po bokach stopnia
+            st.rect(x0, y, lx - 1, y, mix(wall_l, void, depth * 0.6))
+            st.rect(rx + 1, y, x1, y, mix(wall_r, void, depth * 0.6))
+    for y in range(y0, y0 + 4):                                  # głębia u góry: czarna z miękkim przejściem
+        for x in range(x0, x1 + 1):
+            if y == y0 + 3 and (x + y) % 2 == 0:
+                continue
+            st.set(x, y, void)
+    st.hline(x0 - 1, x1 + 1, y0 - 1, rim_dark)                  # krawędź otworu: daleka w cieniu,
+    st.vline(x0 - 1, y0 - 1, y1 + 1, rim_dark)                  # lewa w cieniu,
+    st.vline(x1 + 1, y0 - 1, y1 + 1, mix(rim_dark, rim_lit, 0.5))
+    st.hline(x0 - 1, x1 + 1, y1 + 1, rim_lit)                   # bliska oświetlona (próg)
+    st.hline(x0, x1, y1 + 2, mix(col["floor"], rim_lit, 0.4))
+    return st
 
 
 # ------------------------------------------------------------------ v0.21.54: wyższe ściany (#62) i widok 3/4 (#63)

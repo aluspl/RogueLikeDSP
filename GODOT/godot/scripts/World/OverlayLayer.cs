@@ -72,6 +72,47 @@ public partial class OverlayLayer : Node2D
         DrawRect(r.Grow(-1.5f), new Color(1f, 0.95f, 0.6f, 0.8f), false, 2f);
     }
 
+    /// <summary>
+    /// v0.22.0 (#67): schody w dół – delikatna ciepła poświata u progu i dwie strzałki w dół, które co chwilę spływają
+    /// w głąb otworu (zamiast świecącego prostokąta na całe pole, który robił z schodów skrzynkę).
+    /// </summary>
+    private void DrawStairsCue(Rect2 r)
+    {
+        var sy = r.Size.Y / Proj.W;
+        var lip = r.Position + new Vector2(r.Size.X / 2, r.Size.Y - 3 * sy);
+        var breathe = 0.5f + 0.5f * Mathf.Sin(_clock * 3f);
+        DrawRect(new Rect2(r.Position.X + 4, lip.Y - 4 * sy, r.Size.X - 8, 4 * sy), new Color(Pal.StairsGlow, 0.10f + 0.10f * breathe));
+        var phase = _clock * 0.9f % 1f;   // strzałki spływają w dół i gasną
+        for (var k = 0; k < 2; k++)
+        {
+            var p = (phase + k * 0.5f) % 1f;
+            var c = new Vector2(r.Position.X + r.Size.X / 2, r.Position.Y + (7 + 14 * p) * sy);
+            var a = Mathf.Sin(p * Mathf.Pi) * 0.9f;
+            var hw = 6f - 2f * p;
+            var hh = (4f - 1f * p) * sy;
+            DrawPolyline([c + new Vector2(-hw, -hh), c, c + new Vector2(hw, -hh)], new Color(0.05f, 0.04f, 0.08f, a * 0.8f), 4f);
+            DrawPolyline([c + new Vector2(-hw, -hh), c, c + new Vector2(hw, -hh)], new Color(Pal.StairsGlow, a), 2f);
+        }
+    }
+
+    /// <summary>v0.22.0 (#67): schody zamknięte (Akt 0) – taśma ostrzegawcza w poprzek otworu i kłódka nad nią.</summary>
+    private void DrawStairsLock(Rect2 r, float pulse)
+    {
+        var sy = r.Size.Y / Proj.W;
+        DrawRect(new Rect2(r.Position + new Vector2(3, 3 * sy), new Vector2(r.Size.X - 6, r.Size.Y - 6 * sy)), new Color(0.05f, 0.04f, 0.1f, 0.35f));
+        var band = new Rect2(r.Position.X + 1, r.Position.Y + 17 * sy, r.Size.X - 2, 7 * sy);
+        DrawRect(band.Grow(1), new Color(0.06f, 0.05f, 0.08f, 0.9f));
+        DrawRect(band, new Color(1f, 0.82f, 0.18f));
+        for (var sx = -band.Size.Y; sx < band.Size.X; sx += 8f)   // czarne ukośne pasy taśmy
+        {
+            var x0 = band.Position.X + Mathf.Max(0, sx);
+            var x1 = band.Position.X + Mathf.Min(band.Size.X, sx + band.Size.Y);
+            if (x1 - x0 < 1) continue;
+            DrawLine(new Vector2(x0, band.End.Y - (x0 - band.Position.X - sx)), new Vector2(x1, band.End.Y - (x1 - band.Position.X - sx)), new Color(0.08f, 0.07f, 0.1f), 3f);
+        }
+        DrawTextureRectRegion(Assets.Actors, new Rect2(r.Position + new Vector2(6, -6 * sy - 2 * pulse), new Vector2(20, 20)), Assets.Frame(Assets.FrameLock, Assets.Actor));
+    }
+
     public override void _Draw()
     {
         if (_g is null) return;
@@ -86,13 +127,8 @@ public partial class OverlayLayer : Node2D
                 if (_g.Puddle(x, y)) DrawPuddle(r, pulse, _g.Visible(x, y));
                 else if (_g.Mud(x, y)) DrawMud(r, x, y);
                 var locked = t == Tile.Stairs && _g.StairsLocked();   // pieczątki (Akt 0): schody zamknięte do kompletu dokumentów
-                if (t == Tile.Stairs && _g.Visible(x, y) && !locked)
-                    DrawRect(r.Grow(-3), new Color(Pal.StairsGlow, 0.12f + 0.16f * pulse));
-                if (locked && !(x == _g.Hero.X && y == _g.Hero.Y))
-                {
-                    DrawRect(r.Grow(-3), new Color(0.05f, 0.04f, 0.1f, 0.45f));
-                    DrawTextureRectRegion(Assets.Actors, new Rect2(r.Position + new Vector2(2, 2 - 2 * pulse), new Vector2(28, 28)), Assets.Frame(Assets.FrameLock, Assets.Actor));
-                }
+                if (t == Tile.Stairs && _g.Visible(x, y) && !locked && !(x == _g.Hero.X && y == _g.Hero.Y)) DrawStairsCue(r);
+                if (locked && !(x == _g.Hero.X && y == _g.Hero.Y)) DrawStairsLock(r, pulse);
                 if (t != Tile.Wall && _g.DangerCell(x, y))
                 {
                     DrawTextureRect(Assets.Danger, r, false, new Color(1, 1, 1, 0.55f + 0.45f * pulse));

@@ -20,7 +20,7 @@ public sealed class DebugScenes
         "brigade", "ally", "investor",
         "schedule-path", "materials", "repairs", "hurtownia-mats", "daily", "house", "levelup", "death",
         "respect", "rewards", "classselect-locked", "class-dekarz", "class-tynkarz", "class-operator", "gear5", "respect-banner",
-        "second-chance", "behaviors", "act-mud", "act-gust", "act-dust", "stats-class", "stats-tip", "stats-phone", "catalog-tags",
+        "second-chance", "behaviors", "act-mud", "act-gust", "act-dust", "stairs", "stats-class", "stats-tip", "stats-phone", "catalog-tags",
         "help-acts", "help-stats", "help-view",
         "tutorial-title", "tutorial-class", "tutorial-stats", "tutorial-unlock", "tutorial-act0", "help-tutorial",
         "act0-card", "act0-stamps", "act0-stairs-open", "act0-boss-phase",
@@ -313,10 +313,11 @@ public sealed class DebugScenes
             await DebugRunner.Frames(_app.Root, 6);
             return;
         }
-        if (scene is "behaviors" or "act-mud" or "act-gust" or "act-dust" or "stats-phone")
+        if (scene is "behaviors" or "act-mud" or "act-gust" or "act-dust" or "stairs" or "stats-phone")
         {
             _app.Nodes.Banners.Clear();
             if (scene == "behaviors") _stage.BehaviorShowcase();
+            else if (scene == "stairs") _stage.StairsShowcase(s.Data.PreludeStages + 2); // v0.22.0 (#67-#69): schody w przejściu muru, dziennik, HUD
             else if (scene == "stats-phone")
             {
                 g.Equip(1, 2, Array.FindIndex(s.Data.GearTraits, t => t.Effect == TraitEffect.Str));
