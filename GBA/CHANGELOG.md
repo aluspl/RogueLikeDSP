@@ -2,7 +2,11 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
-## v0.21.54 – w przygotowaniu (głębia grafiki w Godot: wyższe ściany, widok 3/4, światło, paralaksa tła)
+## v0.21.54 – 2026-10-04 (ostatnia wersja serii 0.21)
+Ostatnia spójna wersja serii 0.21: zamyka wszystko od pierwszego wydania v0.21.37 (GBA + Godot, iOS i Android).
+Kolejne iteracje rozwijamy jako **0.22**.
+
+### Nowe (Godot): głębia grafiki – wyższe ściany, widok 3/4 (prototyp), światło, paralaksa tła
 ### In English
 The Godot version gets depth. Walls are now 1.5 tiles tall solid blocks drawn in order with the characters, so a
 wall in front of you really hides what is behind it – and turns see-through whenever it covers the hero, an enemy,
