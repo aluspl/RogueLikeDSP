@@ -268,6 +268,6 @@ Stan v0.21.54: #62, #65, #66 zrobione, #63 jako prototyp w ustawieniach (wszystk
 
 - [ ] Stare tagi `v0.2137`–`v0.2140` (błędna numeracja) – usunąć tylko po decyzji właściciela
 - [ ] PR #1 `godot-migration` → `master` – merge robi właściciel
-- [ ] Archiwum Unity 2017 (`Assets/`, `ProjectSettings/`…) – zostawić czy przenieść do osobnego folderu/brancha
+- [x] Archiwum Unity 2017 usunięte z repo (2026-10-04, zostaje w historii gita)
 
 Historia zmian: [`GBA/CHANGELOG.md`](GBA/CHANGELOG.md), postęp Godota: [`GODOT/docs/KONCEPCJA.md`](GODOT/docs/KONCEPCJA.md) (sekcja 8).
