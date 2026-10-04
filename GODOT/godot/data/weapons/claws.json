@@ -1,8 +1,0 @@
-{
-  "id": "claws",
-  "name": "Pazury",
-  "minDamage": 1,
-  "maxDamage": 2,
-  "range": 1,
-  "scalesWith": "strength"
-}

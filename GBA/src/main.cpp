@@ -5,6 +5,9 @@
 #include "bn_sram.h"
 #include "bn_string.h"
 #include "bn_vector.h"
+#include "bn_array.h"
+#include "bn_color.h"
+#include "bn_sprite_palette_item.h"
 #include "bn_unique_ptr.h"
 #include "bn_bg_tiles.h"
 #include "bn_bg_palettes.h"
@@ -28,6 +31,8 @@
 #include "bn_sprite_items_truck.h"
 #include "bn_sprite_items_houses.h"
 #include "bn_sprite_items_ability_icons.h"
+#include "bn_sprite_items_menu_icons.h"
+#include "bn_sprite_items_actors_elite.h"
 #include "bn_random.h"
 #include "bn_music.h"
 #include "bn_music_items.h"
@@ -53,8 +58,12 @@
 #include "bn_sprite_palette_items_font_map_loot.h"
 #include "bn_blending.h"
 #include "bn_sprite_palettes.h"
+#include "bn_span.h"
+#include "screen_filter.h"
 #include "bn_regular_bg_items_title.h"
 #include "bn_regular_bg_items_end.h"
+#include "bn_regular_bg_items_title_en.h"   // v0.21.53 cz. 2 (#40): napisy po angielsku
+#include "bn_regular_bg_items_end_en.h"
 #include "bn_regular_bg_tiles_items_tiles.h"
 #include "bn_bg_palette_items_stage_palettes_0.h"
 #include "bn_bg_palette_items_stage_palettes_1.h"
@@ -64,6 +73,20 @@
 #include "bn_bg_palette_items_stage_palettes_5.h"
 #include "bn_bg_palette_items_stage_palettes_6.h"
 #include "bn_bg_palette_items_stage_palettes_7.h"
+#include "bn_bg_palette_items_stage_palettes_8.h"
+#include "bn_bg_palette_items_stage_palettes_9.h"
+#include "bn_bg_palette_items_stage_palettes_10.h"
+#include "bn_bg_palette_items_stage_palettes_11.h"
+#include "bn_bg_palette_items_stage_palettes_12.h"
+#include "bn_bg_palette_items_stage_palettes_13.h"
+#include "bn_bg_palette_items_stage_palettes_14.h"
+#include "bn_bg_palette_items_stage_palettes_15.h"
+#include "bn_bg_palette_items_stage_palettes_16.h"
+#include "bn_bg_palette_items_stage_palettes_17.h"
+#include "bn_bg_palette_items_stage_palettes_18.h"
+#include "bn_bg_palette_items_stage_palettes_19.h"
+#include "bn_bg_palette_items_stage_palettes_20.h"
+#include "bn_bg_palette_items_stage_palettes_21.h"
 
 #include "core.h"
 #include "meta.h"
@@ -72,6 +95,15 @@
 #include "font_widths.h"
 #ifdef PB_SCENARIO
 #include "debug_scenarios.h"   // tylko buildy testowe playtestera
+#ifndef PB_DEBUG_STATS
+#define PB_DEBUG_STATS
+#endif
+#endif
+#include "bn_sprites.h"
+#include "bn_sprite_tiles.h"
+#ifdef PB_DEBUG_STATS
+#include "bn_log.h"            // buildy testowe: liczniki sprite'ów w logu mGBA (tools/playtest/monkey.sh)
+extern "C" { extern char __iwram_overlay_end[]; extern char __sp_usr[]; }   // granice stosu (skrypt linkera Butano)
 #endif
 
 namespace
@@ -87,16 +119,104 @@ namespace
     using text_sprites = bn::vector<bn::sprite_ptr, 48>;
     using page_sprites = bn::vector<bn::sprite_ptr, 80>;   // pełnoekranowe strony menu
 
-    enum class scene { title, class_select, game, schedule, end, shop, help, hurtownia, prologue };
+    enum class scene { title, class_select, game, schedule, end, shop, help, hurtownia, prologue, investor, daily, weekly,
+                       career, language };   // v0.21.53 cz. 2 (#40): wybór języka przy pierwszym uruchomieniu   // v0.21.52 cz. d (#47): mapa kariery przed wyborem zawodu
 
     constexpr int frame_coffee = 15;
     constexpr int frame_fx = 18;
     constexpr int frame_lock = 19;
-    constexpr int frame_silhouette = 20;   // + indeks zawodu
+    constexpr int frame_silhouette = 20;   // + indeks zawodu (0-5); zawody z nagród: frame_silhouette_ext + (indeks - 6)
+    constexpr int frame_silhouette_ext = 58;
     constexpr int frame_toolbox = 26;
     constexpr int frame_anim_b = 27;     // + klatka zawodu/wroga (0..14) = druga klatka animacji
 
-    int anim_b(int frame) { return frame < 15 ? frame + frame_anim_b : frame + 2; }   // bossowie aktów: 46-47 -> 48-49
+    // druga klatka: zawody/wrogowie 0-14 -> +27, bossowie aktów 46-47 -> 48-49, Inspekcja 50 -> 51, zawody z nagród 52-54 -> 55-57,
+    // problemy etapów 61-80 -> 81-100, Akt 0: problemy i Decyzja odmowna 101-109 -> 110-118
+    constexpr int frame_stage_enemy = 61, stage_enemies = 20;
+    constexpr int frame_prelude_enemy = 101, prelude_enemies = 9;
+    constexpr int frame_document = 119;   // dokumenty Aktu 0 (podpis, mapa, uzgodnienie)
+    // v0.21.50 cz. 3: pole wydarzenia, klucz do magazynu, skrzynia, pęknięcie muru (nakładka), drzwi magazynu
+    constexpr int frame_event = 122, frame_key = 123, frame_chest = 124, frame_crack = 125, frame_door = 126;
+    // v0.21.51 cz. 2: zawody z sekretnych zleceń 127-129 (druga klatka 130-132, sylwetki 133-135), kask w paski 136-159
+    // (zawód * 2 + klatka animacji)
+    constexpr int frame_secret_class = 127, frame_secret_silhouette = 133, frame_stripes = 136;
+    int anim_b(int frame)
+    {
+        if(frame >= frame_stripes) return frame | 1;   // kask w paski 136-159 i kask do pokolorowania 160-183
+        if(frame >= frame_secret_class) return frame + 3;
+        if(frame >= frame_prelude_enemy) return frame + prelude_enemies;
+        if(frame >= frame_stage_enemy) return frame + stage_enemies;
+        return frame < 15 ? frame + frame_anim_b : (frame < 48 ? frame + 2 : (frame < 52 ? frame + 1 : frame + 3));
+    }
+    int silhouette_frame(int cls)
+    {
+        return cls < 6 ? frame_silhouette + cls : (cls < 9 ? frame_silhouette_ext + cls - 6 : frame_secret_silhouette + cls - 9);
+    }
+    // Osiedle: dom = wielkość * liczba zawodów + zawód; pusta działka na końcu arkusza
+    int house_frame(uint8_t h) { return (h >> 4) * data::classes_count + (h & 15); }
+    constexpr int house_empty = 4 * data::classes_count;
+    // menu_icons: nagrody za odbiór (narzędzia 15-16, buty 17, pas 18), Respekt 19, mechaniki aktów 20-22, statystyki 23
+    constexpr int icon_respect = 19;
+    constexpr int icon_act = 20;   // + mechanika aktu - 1 (błoto, porywy, pył)
+    constexpr int icon_stats = 23;
+    constexpr int icon_stamps = 24;   // mechanika Aktu 0: pieczątki
+    constexpr int icon_boon = 25;     // v0.21.50: premia po etapie (paczka z kokardą)
+    constexpr int icon_combo = 26;    // v0.21.50: kombinacja stanów (kropla + piorun)
+    constexpr int icon_event = 27;    // v0.21.50 cz. 3: wydarzenie z wyborem (SMS z "!")
+    constexpr int icon_upgrade = 28;  // ulepszenie narzędzia (klucz płaski i plus)
+    constexpr int icon_key = 29;      // klucz do magazynu
+    // v0.21.51 cz. 2: sekretne zlecenie, Młot Zenka, Poziomica mistrza, Złota kielnia, Kask w paski
+    constexpr int icon_secret = 30, icon_zenka = 31, icon_level = 32, icon_gold = 33, icon_stripes = 34;
+    // Ikona nagrody sekretnego zlecenia (menu_icons; zawód - osobno portretem).
+    int secret_icon(const core::secret_def& sd)
+    {
+        switch(sd.reward)
+        {
+            case core::secret_reward::tool:     return data::weapons[data::tools[sd.index].weapon].knockback ? icon_zenka : icon_level;
+            case core::secret_reward::cosmetic: return sd.index == data::cosmetic_gold ? icon_gold : icon_stripes;
+            case core::secret_reward::respect:  return icon_respect;
+            default:                            return icon_secret;
+        }
+    }
+    int act_icon_frame(core::act_mechanic m) { return m == core::act_mechanic::stamps ? icon_stamps : icon_act + core::imax(0, int(m) - 1); }
+    // Zachowania problemu, np. "strzela z dystansu, ucieka" (karta wroga, Katalog usterek).
+    // Stany problemu dla kombinacji (#29), np. "mokry, zapylony" (karta problemu); pusty = brak.
+    core::message enemy_states_line(const core::game& g, int ei)
+    {
+        core::message m;
+        if(g.enemy_wet(ei)) m.add(UI(mokry));
+        if(g.enemy_dusty(ei)) m.add(m.n ? ", " : "").add(UI(zapylony));
+        if(g.enemy_frozen(ei)) m.add(m.n ? ", " : "").add(UI(zmrozony));
+        return m;
+    }
+    // Znaczniki premii, np. "Beton, BHP".
+    core::message boon_tags_line(const core::boon_def& bd)
+    {
+        core::message m;
+        for(int t = 0; t < data::boon_tags_count; ++t) if((bd.tags >> t) & 1) m.add(m.n ? ", " : "").add(data::boon_tags[t]);
+        return m;
+    }
+    // Sprite problemu: elita ma złotą paletę (złoty obrys, ciepły odcień).
+    void style_enemy(bn::sprite_ptr& s, const core::actor& e)
+    {
+        if(e.elite >= 0) s.set_palette(bn::sprite_items::actors_elite.palette_item());
+        else s.set_palette(bn::sprite_items::actors.palette_item());
+    }
+    core::message behaviors_line(int def)
+    {
+        core::message m;
+        const int tags = data::enemies[def].tags;
+        for(int b = 0; b < core::behaviors_count; ++b)
+            if(tags & (1 << b)) m.add(m.n ? ", " : "").add(data::behavior_names[b]);
+        return m;
+    }
+    int reward_icon(const core::reward_def& r)
+    {
+        if(r.kind == core::reward_kind::tool) return data::weapons[data::tools[r.index].weapon].elem == core::element::spark ? 16 : 15;   // Pistolet do kotew
+        if(r.kind == core::reward_kind::gear) return data::gear[r.index * 3].stat == core::gear_stat::thermos ? 18 : 17;
+        if(r.kind == core::reward_kind::act) return icon_stamps;
+        return 14;
+    }
 
     const char* roman(int n) { static const char* r[] = { "I", "II", "III", "IV", "V" }; return r[n < 5 ? n : 4]; }
 
@@ -106,6 +226,10 @@ namespace
     {
         if(p.type == core::tool) return frame_toolbox;
         if(p.type == core::gear_box) return frame_gear + p.arg % 3;
+        if(p.type == core::document) return frame_document + p.arg;
+        if(p.type == core::event_tile) return frame_event;
+        if(p.type == core::store_key) return frame_key;
+        if(p.type == core::chest) return frame_chest;
         return frame_coffee + p.type;
     }
 
@@ -120,10 +244,97 @@ namespace
         bn::sprite_palettes::set_fade(bn::color(0, 0, 0), intensity);
     }
 
+    // ------------------------------------------------------------------ v0.21.53: filtry ekranu (efekt własny palet Butano)
+    // Każdy kolor tła i sprite'ów po ściemnianiu przechodzi przez core::filter_color (screen_filter.h); wynik w pamięci
+    // podręcznej (1024 wpisy na stercie EWRAM: ważny | kolor wejścia | wynik), więc przeliczenie palet kosztuje mało.
+    // Kwas: wbudowany obrót barwy, zmieniany co 4 klatki w next_frame.
+    core::filter_mode filter_now = core::filter_mode::none;
+    uint32_t* filter_cache = nullptr;
+    int filter_clock = 0;
+
+    void filter_effect(bn::span<bn::color> colors)
+    {
+        for(bn::color& c : colors)
+        {
+            const uint32_t in = uint32_t(c.data()) & 0x7FFFu;
+            uint32_t& e = filter_cache[(in ^ (in >> 10)) & 1023];
+            if((e >> 15) != (0x8000u | in)) e = (0x8000u | in) << 15 | core::filter_color(filter_now, uint16_t(in));
+            c = bn::color(int(e & 0x7FFFu));
+        }
+    }
+
+    void apply_filter(const core::profile& p)
+    {
+        const core::filter_mode m = core::filter_mode_of(data::screen_filters[core::selected_filter(p)].id);
+        if(m == filter_now) return;
+        filter_now = m;
+        if(! filter_cache) filter_cache = new uint32_t[1024];
+        for(int i = 0; i < 1024; ++i) filter_cache[i] = 0;
+        const bool custom = m != core::filter_mode::none && m != core::filter_mode::kwas;
+        bn::bg_palettes::set_custom_effect(custom ? filter_effect : nullptr);
+        bn::sprite_palettes::set_custom_effect(custom ? filter_effect : nullptr);
+        if(m != core::filter_mode::kwas)
+        {
+            bn::bg_palettes::set_hue_shift_intensity(0);
+            bn::sprite_palettes::set_hue_shift_intensity(0);
+        }
+    }
+
+#ifdef PB_DEBUG_STATS
+    // Buildy testowe: nowy rekord zajętych pozycji kafli sprite'ów (limit w Butano liczy też wolne kawałki pamięci),
+    // sprite'ów albo stosu idzie do logu mGBA - playtester (monkey) zbiera maksima. Stos: wolna część IWRAM pod stosem
+    // jest na starcie wypełniona wzorem, zużycie = ile od góry wzór został nadpisany.
+    constexpr uint32_t debug_stack_paint = 0x5AC3A55Au;
+    uint32_t* debug_stack_bottom() { return reinterpret_cast<uint32_t*>(__iwram_overlay_end); }
+    uint32_t* debug_stack_top() { return reinterpret_cast<uint32_t*>(__sp_usr); }
+    [[gnu::noinline]] void debug_paint_stack()
+    {
+        uintptr_t end = reinterpret_cast<uintptr_t>(__builtin_frame_address(0)) - 256;
+        for(uint32_t* p = debug_stack_bottom(); reinterpret_cast<uintptr_t>(p) < end; ++p) *p = debug_stack_paint;
+    }
+    int debug_stack_used()
+    {
+        uint32_t* p = debug_stack_bottom();
+        while(p < debug_stack_top() && *p == debug_stack_paint) ++p;
+        return (debug_stack_top() - p) * 4;
+    }
+    int debug_max_items = 0, debug_max_sprites = 0, debug_max_stack = 0, debug_frames = 0;
+    void debug_stats()
+    {
+        if((++debug_frames & 127) == 0) BN_LOG("PBHB");   // puls: gra dalej rysuje klatki (playtester odróżnia zawieszenie)
+        int items = bn::sprite_tiles::used_items_count(), sprites = bn::sprites::used_items_count(), stack = debug_stack_used();
+        if(items > debug_max_items || sprites > debug_max_sprites || stack > debug_max_stack)
+        {
+            debug_max_items = bn::max(items, debug_max_items); debug_max_sprites = bn::max(sprites, debug_max_sprites);
+            debug_max_stack = bn::max(stack, debug_max_stack);
+            BN_LOG("PBSTAT items ", items, " sprites ", sprites, " stack ", stack, " of ",
+                   (debug_stack_top() - debug_stack_bottom()) * 4, " tiles ", bn::sprite_tiles::used_tiles_count());
+        }
+    }
+#else
+    void debug_stats() {}
+    void debug_paint_stack() {}
+#endif
+
+    // v0.21.51: ozdobniki (liczby obrażeń, napis awansu, cząsteczki) tylko przy zapasie sprite'ów (128), pozycji
+    // kafli i VRAM - w ciężkiej walce z banerami brakowało miejsca na tekst, który musi się pojawić (monkey test).
+    bool sprites_to_spare()
+    {
+        return bn::sprites::available_items_count() >= 24 && bn::sprite_tiles::available_items_count() >= 32
+            && bn::sprite_tiles::available_tiles_count() >= 96;
+    }
+
     // Zamiast bn::core::update(): prowadzi rozjaśnianie po zmianie sceny.
     void next_frame()
     {
         if(fade_in_left > 0) set_fade(--fade_in_left);
+        if(filter_now == core::filter_mode::kwas && (++filter_clock & 3) == 0)   // v0.21.53: Kwas - tęcza w czasie
+        {
+            const bn::fixed h = bn::fixed((filter_clock >> 2) & 255) / 256;
+            bn::bg_palettes::set_hue_shift_intensity(h);
+            bn::sprite_palettes::set_hue_shift_intensity(h);
+        }
+        debug_stats();
         bn::core::update();
     }
 
@@ -132,7 +343,20 @@ namespace
     {
         core::profile p;
         bn::sram::read(p);
-        if(core::profile_fix(p)) bn::sram::write(p);   // pusta pamięć albo migracja z v1
+        const bool older = std::memcmp(p.magic, core::profile_magic, sizeof p.magic) != 0;
+        if(core::profile_fix(p))   // pusta pamięć albo migracja z v1
+        {
+            // v0.21.52 cz. c: profil v15 (384 B) nachodzi na stary zapis budowy pod 256 - najpierw przenieś przerwaną budowę
+            // pod nowy adres (512), dopiero potem zapisz profil (wyłączenie konsoli w trakcie: stary profil i budowa zostają)
+            if(older)
+            {
+                bn::unique_ptr<core::run_save> s(new core::run_save());
+                bn::sram::read_offset(*s, core::run_save_offset_v14);
+                if(core::run_save_valid(*s)) bn::sram::write_offset(*s, core::run_save_offset);
+                else { const struct { char magic[8]; } none = {}; bn::sram::write_offset(none, core::run_save_offset); }   // bez śmieci pod nowym adresem
+            }
+            bn::sram::write(p);
+        }
         return p;
     }
 
@@ -148,7 +372,60 @@ namespace
         scene after_help = scene::title;   // dokąd wrócić z ekranu "Jak grać"
         bool has_run = false;              // w SRAM jest przerwana budowa
         int phone_tab = 2;                 // ostatnio otwarta zakładka telefonu (Start)
+        int pending_helper = -1;           // brygada: fachowiec wybrany w telefonie (wzywany po powrocie do gry)
     };
+
+    // Klatka bohatera: zawód albo (wygląd z sekretnego zlecenia) ten sam zawód w kasku w paski.
+    // v0.21.52: kolor kasku z odznaki / zlecenia - klatki 160-183 mają kask w indeksie 10 palety, który podmienia
+    // paleta bohatera (hero_palette). Kask w paski ma pierwszeństwo.
+    constexpr int frame_helmet = 160, helmet_color_index = 10;
+    // v0.21.52 cz. b: kask mistrza tylko zawodem z poziomem mistrzostwa (cls).
+    int hero_helmet(const app& a, int cls) { return core::cosmetic_on(a.save, data::cosmetic_stripes) ? -1 : core::helmet_cosmetic(a.save, cls); }
+    int hero_base(const app& a, int cls)
+    {
+        if(core::cosmetic_on(a.save, data::cosmetic_stripes)) return frame_stripes + cls * 2;
+        return hero_helmet(a, cls) >= 0 ? frame_helmet + cls * 2 : data::classes[cls].frame;
+    }
+    // Paleta postaci z kolorem kasku k (kolory muszą żyć, dopóki paleta jest używana - tablica statyczna).
+    bn::sprite_palette_item helmet_palette(int k)
+    {
+        static bn::array<bn::color, 16> colors;
+        const bn::span<const bn::color> src = bn::sprite_items::actors.palette_item().colors_ref();
+        for(int i = 0; i < 16; ++i) colors[i] = src[i];
+        const int c = data::cosmetics[k].helmet;
+        colors[helmet_color_index] = bn::color(c & 31, (c >> 5) & 31, (c >> 10) & 31);
+        return bn::sprite_palette_item(colors, bn::bpp_mode::BPP_4);
+    }
+    void style_hero(const app& a, bn::sprite_ptr& s, int cls)
+    {
+        const int k = hero_helmet(a, cls);
+        if(k >= 0) s.set_palette(helmet_palette(k));
+        else s.set_palette(bn::sprite_items::actors.palette_item());
+    }
+
+    // v0.21.52 cz. c (#50, #51): dzień i tydzień zadań - GBA nie ma zegara: data ustawiona dla budowy dnia (R na tytule)
+    void goal_dates(const app& a, int& day, int& week)
+    {
+        int y, m, d;
+        core::daily_date(a.save, y, m, d);
+        day = core::daily_number(y, m, d);
+        week = core::weekly_number(y, m, d);
+    }
+    bool roll_tasks(app& a) { int day, week; goal_dates(a, day, week); return core::tasks_roll(a.save, day, week); }
+    // Krótka nagroda za próg (zadania łącznie, seria dni): "+15 Resp.", "Limonkowy kask", "tytuł Pracowity", nazwa pamiątki.
+    core::message& goal_label(core::message& m, const core::progress_level& l)
+    {
+        switch(l.reward)
+        {
+            case core::progress_reward::respect:  return m.add("+").add(int(l.value)).add(UI(resp));
+            case core::progress_reward::title:    return m.add(UI(tytul_2)).add(l.title);
+            case core::progress_reward::helmet:   return m.add(data::cosmetics[l.index].name);
+            case core::progress_reward::keepsake: return m.add(data::keepsakes[l.index].name);
+            default:                              return m;
+        }
+    }
+    // Postęp zadań z budowy (koniec etapu / budowy, porzucenie) - bity wykonanych teraz.
+    int bank_tasks(app& a, const core::game& g) { int day, week; goal_dates(a, day, week); return core::bank_tasks(a.save, g, day, week); }
 
     // ------------------------------------------------------------------ zapis budowy w trakcie (SRAM za profilem)
     struct run_marker { char magic[8]; };
@@ -166,6 +443,7 @@ namespace
         bn::unique_ptr<core::run_save> s(new core::run_save());
         bn::sram::read_offset(*s, core::run_save_offset);
         if(! core::run_save_valid(*s)) return false;
+        core::run_save_upgrade(*s);   // v0.21.52 cz. c: PBRUN14 - liczniki zadań od zera
         bn::memory::copy(s->g, 1, *a.g);
         return true;
     }
@@ -179,7 +457,7 @@ namespace
     // Ściemnia ekran i przechodzi do sceny s (rozjaśnienie robi frame() w nowej scenie).
     scene leave(scene s)
     {
-        for(int i = fade_in_left + 1; i <= fade_frames; ++i) { set_fade(i); bn::core::update(); }
+        for(int i = fade_in_left + 1; i <= fade_frames; ++i) { set_fade(i); debug_stats(); bn::core::update(); }
         fade_in_left = fade_frames;
         return s;
     }
@@ -197,17 +475,63 @@ namespace
         return out;
     }
 
+    constexpr int phone_text_w = 210;   // szerokość wiersza tekstu w telefonie (px)
+
+    // obcina tekst do szerokości w pikselach (font o zmiennej szerokości); ucięty kończy się kropką
+    template<class App>
+    bn::string<96> fit(App& a, const char* s, int max_px)
+    {
+        bn::string<96> out = clip(s, 95);
+        if(a.text.width(out) <= max_px) return out;
+        int dot = a.text.width(".");
+        while(! out.empty() && (a.text.width(out) + dot > max_px || out.back() == ' ' || out.back() == ','))
+        {
+            while(! out.empty() && (uint8_t(out.back()) & 0xC0) == 0x80) out.pop_back();   // bajty kontynuacji UTF-8
+            if(! out.empty()) out.pop_back();
+        }
+        out.push_back('.');
+        return out;
+    }
+
     void wait_release()
     {
         next_frame();
     }
 
+    // v0.21.51: blokada wejścia po otwarciu okna / przejścia (premia, Hurtownia, SMS z wyborem, harmonogram, paczka,
+    // zamiana narzędzia, karta etapu, podsumowanie) - przez ~20 klatek (1/3 s) przyciski nie działają; wciśnięcia
+    // w tym czasie przepadają, więc A liczy się dopiero wciśnięte na nowo (puszczone i wciśnięte po otwarciu).
+    constexpr int modal_guard_frames = 20;
+    void modal_guard()
+    {
+        for(int i = 0; i < modal_guard_frames; ++i) next_frame();
+    }
+
     // Nazwa mocy z rangą, np. "Ścianka II".
     core::message ability_label(const core::game& g)
     {
-        core::message m; m.add(g.cdef().ability_name);
+        core::message m; m.add(g.pdef().ability_name);   // Majster: moc pożyczona na etap
         int r = g.ability_rank();
         if(r > 1) m.add(r == 2 ? " II" : " III");
+        return m;
+    }
+
+    // Statystyki: skrót nazwy i zapis "baza+premia" (np. "SIŁ 5+1").
+    const char* stat_short(core::stat s) { return s == core::stat::str ? UI(sil) : (s == core::stat::agi ? UI(zre) : UI(int_)); }
+
+    void add_stat(core::message& m, const char* label, int base, int bonus)
+    {
+        m.add(label).add(" ").add(base);
+        if(bonus > 0) m.add("+").add(bonus);
+    }
+
+    // Wiersz statystyk efektywnych bohatera w trakcie budowy: SIŁ, ZRĘ, INT, szczęście.
+    core::message hero_stats_line(const core::game& g)
+    {
+        core::message m;
+        const core::stat all[3] = { core::stat::str, core::stat::agi, core::stat::intel };
+        for(core::stat st : all) { add_stat(m, stat_short(st), core::class_base_stat(g.cls, st), g.stat_bonus(st)); m.add(" "); }
+        add_stat(m, UI(szcz), g.cdef().luck, g.luck() - g.cdef().luck);
         return m;
     }
 
@@ -247,18 +571,80 @@ namespace
         return bn::color((r1 + (r2 - r1) * t / max) >> 3, (g1 + (g2 - g1) * t / max) >> 3, (b1 + (b2 - b1) * t / max) >> 3);
     }
 
+    void title_tutorial(app& a);   // samouczek menu na tytule (niżej, przy telefonie)
+    bool career_map(const app& a);  // v0.21.52 cz. d: mapa kariery po pierwszej budowie (niżej)
+
+    // v0.21.52 cz. d (#47): paleta etapu wg wyglądu ("look": Dom 0-11, kontrakty mapy kariery 12-21).
+    const bn::bg_palette_item& stage_palette(int look)
+    {
+        static const bn::bg_palette_item* pals[] = {
+            &bn::bg_palette_items::stage_palettes_0, &bn::bg_palette_items::stage_palettes_1, &bn::bg_palette_items::stage_palettes_2,
+            &bn::bg_palette_items::stage_palettes_3, &bn::bg_palette_items::stage_palettes_4, &bn::bg_palette_items::stage_palettes_5,
+            &bn::bg_palette_items::stage_palettes_6, &bn::bg_palette_items::stage_palettes_7, &bn::bg_palette_items::stage_palettes_8,
+            &bn::bg_palette_items::stage_palettes_9, &bn::bg_palette_items::stage_palettes_10, &bn::bg_palette_items::stage_palettes_11,
+            &bn::bg_palette_items::stage_palettes_12, &bn::bg_palette_items::stage_palettes_13, &bn::bg_palette_items::stage_palettes_14,
+            &bn::bg_palette_items::stage_palettes_15, &bn::bg_palette_items::stage_palettes_16, &bn::bg_palette_items::stage_palettes_17,
+            &bn::bg_palette_items::stage_palettes_18, &bn::bg_palette_items::stage_palettes_19, &bn::bg_palette_items::stage_palettes_20,
+            &bn::bg_palette_items::stage_palettes_21 };
+        static_assert(data::stage_looks_count == int(sizeof(pals) / sizeof(pals[0])));
+        return *pals[look];
+    }
+
     // ------------------------------------------------------------------ ekran tytułowy
+    // v0.21.53 cz. 2 (#40): pierwsze uruchomienie - wybór języka (Polski / English), zapis w profilu. Później: profil >
+    // Zespół > SELECT.
+    scene run_language(app& a)
+    {
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        text_sprites head, opts;
+        int sel = core::language;
+        auto draw = [&]() {
+            head.clear(); opts.clear();
+            a.text.set_center_alignment();
+            a.text.generate(0, -48, UI(language_pick), head);
+            a.text.generate(0, 56, UI(language_hint), head);
+            for(int i = 0; i < 2; ++i)
+            {
+                a.text.set_palette_item(i == sel ? bn::sprite_palette_items::font_brand : default_ink);
+                core::message m; if(i == sel) m.add("> "); m.add(i == 0 ? UI(lang_pl) : UI(lang_en)); if(i == sel) m.add(" <");
+                a.text.generate(0, -8 + i * 20, m.s, opts);
+            }
+            a.text.set_palette_item(default_ink);
+        };
+        draw();
+        while(true)
+        {
+            if(bn::keypad::up_pressed() || bn::keypad::down_pressed())
+            {
+                sel ^= 1; core::language = uint8_t(sel);   // podgląd: podpowiedź już w wybranym języku
+                draw(); bn::sound_items::sfx_menu.play();
+            }
+            if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
+            {
+                core::set_language(a.save, sel);
+                bn::sram::write(a.save);
+                bn::sound_items::sfx_buy.play();
+                wait_release();
+                head.clear(); opts.clear();
+                return leave(scene::title);
+            }
+            next_frame();
+        }
+    }
+
     scene run_title(app& a)
     {
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
-        bn::regular_bg_ptr bg = bn::regular_bg_items::title.create_bg(8, 48);   // lewy górny róg obrazu = róg ekranu
-        bn::bg_palette_color_hbe_ptr gradient = make_gradient(bg, screen_info::title_bg_index);
+        bn::regular_bg_ptr bg = (core::language ? bn::regular_bg_items::title_en : bn::regular_bg_items::title).create_bg(8, 48);   // lewy górny róg obrazu = róg ekranu
+        bn::bg_palette_color_hbe_ptr gradient = make_gradient(bg, core::language ? screen_info::title_en_bg_index : screen_info::title_bg_index);
         play_song(song::title);
+        title_tutorial(a);   // pierwsze uruchomienie: dymki po kolei; potem dymki nowości (Respekt, budowa dnia, Akt 0)
         text_sprites prompt, record;
         a.text.set_center_alignment();
         if(a.save.best > 0)
         {
-            core::message m; m.add("Rekord: ").add(int(a.save.best));
+            core::message m; m.add(UI(rekord)).add(int(a.save.best));
             a.text.set_right_alignment();
             a.text.generate(116, -72, m.s, record);
             a.text.set_center_alignment();
@@ -266,14 +652,45 @@ namespace
         text_sprites version_text;   // numer wersji w lewym górnym rogu
         a.text.set_left_alignment();
         a.text.generate(-116, -72, data::version, version_text);
+        // v0.21.52 cz. b (#44): poziom inspektora z paskiem do kolejnego (pod wersją; od pierwszej budowy)
+        text_sprites insp_text;
+        bn::optional<bn::sprite_ptr> insp_bar[2];
+        if(a.save.runs > 0 || a.save.inspector_xp > 0)
+        {
+            int cur = 0, need = 0;
+            core::inspector_bar(a.save, cur, need);
+            core::message im; im.add(UI(inspektor)).add(core::inspector_level(a.save));
+            if(! need) im.add(UI(max));
+            a.text.generate(-116, -56, im.s, insp_text);
+            const int fill = need ? core::imin(62, cur * 62 / need) : 62;
+            insp_bar[0] = bn::sprite_items::hp_bar.create_sprite(-100, -42, 32 + core::imin(fill, 31));   // kolor 1: żółty
+            insp_bar[1] = bn::sprite_items::hp_bar.create_sprite(-68, -42, 96 + 32 + core::imax(0, fill - 31));
+        }
+        // v0.21.52 cz. c (#50, #51): zadania dnia i seria dni (pod rekordem; od pierwszej budowy)
+        text_sprites goals_text;
+        if(a.save.runs > 0)
+        {
+            if(roll_tasks(a)) bn::sram::write(a.save);
+            int day, week; goal_dates(a, day, week);
+            core::message gm; gm.add(UI(zadania)).add(core::tasks_done_today(a.save)).add("/").add(core::daily_task_slots);
+            a.text.set_right_alignment();
+            a.text.generate(116, -56, gm.s, goals_text);
+            const int st = core::streak_now(a.save, day);
+            if(st > 0) { core::message sm; sm.add(UI(seria)).add(st).add(st == 1 ? UI(dzien) : UI(dni)); a.text.generate(116, -40, sm.s, goals_text); }
+        }
         a.text.set_center_alignment();
         text_sprites shop_hint;
-        a.text.generate(0, 66, "SELECT: telefon  B: pomoc", shop_hint);
+        a.text.generate(0, 66, UI(select_telefon_b_pomoc), shop_hint);
         int frame = 0;
         while(true)
         {
             ++a.seed_counter;
-            if((frame++ % 60) == 0) { prompt.clear(); a.text.generate(0, 50, a.has_run ? "START: dalej  A: nowa" : "Naciśnij START", prompt); }
+            if((frame++ % 60) == 0) { prompt.clear(); a.text.generate(0, 50, a.has_run ? UI(start_dalej_a_nowa) : UI(nacisnij_start), prompt); }
+            if(frame % 150 == 0 || frame % 150 == 75)   // podpowiedź na dole na zmianę: telefon i pomoc / budowa dnia
+            {
+                shop_hint.clear();
+                a.text.generate(0, 66, frame % 150 == 0 ? UI(select_telefon_b_pomoc) : UI(r_budowa_dnia_l_tydzien), shop_hint);
+            }
             if((frame % 60) == 40) prompt.clear();
             if(a.has_run && bn::keypad::start_pressed())   // kontynuuj przerwaną budowę
             {
@@ -281,79 +698,11 @@ namespace
                 if(load_run(a)) return leave(scene::game);
                 a.has_run = false;
             }
-            else if(bn::keypad::start_pressed() || bn::keypad::a_pressed()) { wait_release(); return leave(scene::class_select); }
+            else if(bn::keypad::start_pressed() || bn::keypad::a_pressed()) { wait_release(); return leave(career_map(a) ? scene::career : scene::class_select); }
             if(bn::keypad::select_pressed()) { wait_release(); return leave(scene::shop); }
             if(bn::keypad::b_pressed()) { a.after_help = scene::title; wait_release(); return leave(scene::help); }
-            next_frame();
-        }
-    }
-
-    // ------------------------------------------------------------------ wybór zawodu
-    scene run_class_select(app& a)
-    {
-        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
-        text_sprites header, lines, diff_line;
-        a.text.set_center_alignment();
-        a.text.generate(0, -72, "Wybierz fach", header);
-        bn::sprite_ptr hero = bn::sprite_items::actors.create_sprite(0, -30, 0);
-        hero.set_double_size_mode(bn::sprite_double_size_mode::ENABLED);
-        hero.set_scale(2);
-        bn::sprite_ptr lock = bn::sprite_items::actors.create_sprite(20, -20, frame_lock);
-        lock.set_z_order(-1);
-
-        auto redraw = [&]() {
-            lines.clear();
-            const core::class_def& c = data::classes[a.chosen_class];
-            const core::weapon_def& w = data::weapons[c.weapon];
-            bool locked = ! core::class_unlocked(a.save, a.chosen_class);
-            hero.set_tiles(bn::sprite_items::actors.tiles_item(), locked ? frame_silhouette + a.chosen_class : c.frame);
-            lock.set_visible(locked);
-            core::message n; n.add("< ").add(c.name).add(" >");
-            a.text.generate(0, 4, n.s, lines);
-            core::message ld; ld.add("Zablokowany: ").add(data::class_cost).add(" dośw.");
-            core::message ab; ab.add("Moc R: ").add(c.ability_name);
-            a.text.generate(0, 20, locked ? ld.s : ab.s, lines);
-            core::message s; s.add("HP ").add(c.max_health).add(" SIŁ ").add(c.strength).add(" ZRĘ ").add(c.agility);
-            a.text.generate(0, 38, s.s, lines);
-            core::message s2; s2.add("INT ").add(c.intelligence).add(" OBR ").add(c.defense);
-            a.text.generate(0, 54, s2.s, lines);
-            core::message wl; wl.add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range);
-            a.text.generate(0, 72, clip(wl.s, 29), lines);
-        };
-        auto redraw_diff = [&]() {
-            diff_line.clear();
-            a.text.set_center_alignment();
-            core::message m; m.add("Trudność (góra/dół): ").add(data::difficulties[a.chosen_diff].name);
-            a.text.generate(0, -56, m.s, diff_line);
-        };
-        redraw();
-        redraw_diff();
-
-        while(true)
-        {
-            int ddir = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
-            if(ddir)
-            {
-                do a.chosen_diff = (a.chosen_diff + ddir + data::difficulties_count) % data::difficulties_count;
-                while(! core::difficulty_unlocked(a.save, a.chosen_diff));
-                redraw_diff();
-            }
-            if(bn::keypad::left_pressed()) { a.chosen_class = (a.chosen_class + data::classes_count - 1) % data::classes_count; redraw(); bn::sound_items::sfx_menu.play(); }
-            if(bn::keypad::right_pressed()) { a.chosen_class = (a.chosen_class + 1) % data::classes_count; redraw(); bn::sound_items::sfx_menu.play(); }
-            if((bn::keypad::a_pressed() || bn::keypad::start_pressed()) && core::class_unlocked(a.save, a.chosen_class))
-            {
-                a.g->new_run(a.chosen_class, a.seed_counter * 2654435761u + 12345u, a.chosen_diff, core::mods(a.save));
-#ifdef PB_SCENARIO
-                debug_scenario::apply(*a.g, PB_SCENARIO);
-#endif
-                ++a.save.runs;
-                bn::sram::write(a.save);
-                wait_release();
-                if(! core::has_flag(a.save, core::prologue_seen)) return leave(scene::prologue);
-                if(! core::has_flag(a.save, core::help_seen)) { a.after_help = scene::game; return leave(scene::help); }
-                return leave(scene::game);
-            }
-            if(bn::keypad::b_pressed()) { wait_release(); return leave(scene::title); }
+            if(bn::keypad::r_pressed()) { wait_release(); return leave(scene::daily); }
+            if(bn::keypad::l_pressed()) { wait_release(); return leave(scene::weekly); }   // wyzwanie tygodnia (#34)
             next_frame();
         }
     }
@@ -391,6 +740,12 @@ namespace
         }
 
         // Kafel pola z uwzględnieniem mgły wojny: 0 = nieznane (czarne).
+        // Kafle aktu (12 na zestaw): akt I 1-12, akt II 13-24, akt III 25-36 (ziemia i bloczki / deski i cegła / płytki
+        // i tynk); Akt 0: 37-48 biuro z segregatorami (Pozwolenie), 49-60 wykop z rurami (Przyłącza).
+        // v0.21.52 cz. d: zestaw kafli z danych etapu (5: drewno - domek letniskowy, 6: kamienica).
+        static int tile_set(const core::game& g) { return g.sdef().tiles; }
+        static int act_tile(const core::game& g, int t) { return t == 0 ? 0 : t + tiles_per_set * tile_set(g); }
+        static constexpr int tiles_per_set = 12;   // tools/make_assets.py: TILES
         static int tile_of(const core::game& g, int x, int y, int& palette)
         {
             palette = light_level(g, x, y);
@@ -399,6 +754,12 @@ namespace
             if(k == core::tile::floor) return g.lv.at(x, y - 1) == core::tile::wall ? 5 : 1;   // cień muru u góry
             if(k == core::tile::stairs) return 4;
             return g.lv.at(x, y + 1) != core::tile::wall ? 3 : 2;   // lico muru nad podłogą / mur
+        }
+        void quad(const core::game& g, int x, int y, int t, int pal)   // pole z ćwiartki odbijanej na 4 strony
+        {
+            t = act_tile(g, t);
+            set(x * 2, y * 2, t, pal); set(x * 2 + 1, y * 2, t, pal, true);
+            set(x * 2, y * 2 + 1, t, pal, false, true); set(x * 2 + 1, y * 2 + 1, t, pal, true, true);
         }
 
         // Czy na polu stoi coś, co rzuca cień (bohater, widoczny wróg, znajdźka)?
@@ -419,25 +780,26 @@ namespace
                 for(int x = 0; x < core::map_w; ++x)
                 {
                     int pal, t = tile_of(g, x, y, pal);
-                    if((t == 1 || t == 5) && g.slam_cell(x, y))   // zapowiedziany cios bossa
-                    {
-                        set(x * 2, y * 2, 8, pal); set(x * 2 + 1, y * 2, 8, pal, true);
-                        set(x * 2, y * 2 + 1, 8, pal, false, true); set(x * 2 + 1, y * 2 + 1, 8, pal, true, true);
+                    bool flat = t == 1 || t == 5;
+                    if(flat && g.danger_cell(x, y)) { quad(g, x, y, 8, pal); continue; }                  // cios bossa / wybuch
+                    if(flat && highlight && highlight[y][x]) { quad(g, x, y, 7, pal); continue; }         // ramka pola w zasięgu
+                    if(flat && g.puddle(x, y)) { quad(g, x, y, 9, pal); continue; }                       // deszcz: kałuża
+                    if(flat && g.mud(x, y)) { quad(g, x, y, 10, pal); continue; }                         // akt I: błoto
+                    if(t == 2 || t == 3)   // v0.21.51 autokafle muru: lico (podłoga poniżej) = krawędź u góry + wzór
+                    {                      // z cieniem u dołu; mur z murem poniżej = ciemny wierzch masy muru
+                        int top = act_tile(g, t == 3 ? 3 : 11), low = act_tile(g, t == 3 ? 12 : 11);
+                        set(x * 2, y * 2, top, pal); set(x * 2 + 1, y * 2, top, pal);
+                        set(x * 2, y * 2 + 1, low, pal); set(x * 2 + 1, y * 2 + 1, low, pal);
                         continue;
                     }
-                    if((t == 1 || t == 5) && highlight && highlight[y][x])   // ramka pola w zasięgu
-                    {
-                        set(x * 2, y * 2, 7, pal); set(x * 2 + 1, y * 2, 7, pal, true);
-                        set(x * 2, y * 2 + 1, 7, pal, false, true); set(x * 2 + 1, y * 2 + 1, 7, pal, true, true);
-                        continue;
-                    }
-                    bool top_shadow = t == 5;
-                    int base = top_shadow ? 1 : t;
+                    t = act_tile(g, t);
+                    bool top_shadow = t == act_tile(g, 5);
+                    int base = top_shadow ? act_tile(g, 1) : t;
                     set(x * 2, y * 2, t, pal); set(x * 2 + 1, y * 2, t, pal);
-                    if((t == 1 || t == 5) && g.visible(x, y) && casts_shadow(g, x, y))
+                    if(flat && g.visible(x, y) && casts_shadow(g, x, y))
                     {
-                        set(x * 2, y * 2 + 1, 6, pal);
-                        set(x * 2 + 1, y * 2 + 1, 6, pal, true);
+                        set(x * 2, y * 2 + 1, act_tile(g, 6), pal);
+                        set(x * 2 + 1, y * 2 + 1, act_tile(g, 6), pal, true);
                     }
                     else { set(x * 2, y * 2 + 1, base, pal); set(x * 2 + 1, y * 2 + 1, base, pal); }
                 }
@@ -448,7 +810,7 @@ namespace
         {
             bn::memory::clear(cells);
             for(int y = 0; y < core::map_h; ++y)
-                for(int x = 0; x < core::map_w; ++x) { int pal, t = tile_of(g, x, y, pal); set(x, y, t, pal); }
+                for(int x = 0; x < core::map_w; ++x) { int pal, t = tile_of(g, x, y, pal); set(x, y, act_tile(g, t), pal); }
         }
     };
 
@@ -466,17 +828,67 @@ namespace
 
     void page_help(app& a)
     {
-        page_sprites t;
-        a.text.set_center_alignment();
-        a.text.generate(0, -70, "Jak grać", t);
-        a.text.set_left_alignment();
-        const char* lines[] = { "8 etapów w 3 aktach, każdy", "kończy boss. Schody = dalej.", "D-pad: ruch i atak wręcz",
-                                "A: atak (trzymaj: celuj)", "B: czekaj (trzymaj: podgląd)", "R: moc zawodu  L: mapa",
-                                "SELECT: telefon" };
-        for(int i = 0; i < 7; ++i) a.text.generate(-108, -48 + i * 16, lines[i], t);
-        a.text.set_center_alignment();
-        a.text.generate(0, 72, "A: dalej", t);
-        wait_page_close();
+        constexpr int pages_count = 19;
+        core::message cmb[3];   // kombinacje stanów (#29): "Mokry + prąd! Porażenie"
+        for(int k = 0; k < 3 && k < data::combos_count; ++k) cmb[k].add(data::combos[k].short_name).add(" ").add(data::combos[k].name);
+        core::message luck1, luck2;   // wzory z danych (sekcja luck)
+        luck1.add(UI(szcz_kryt)).add(data::crit_base_pct).add("%+").add(data::crit_per_luck_pct).add(UI(pkt_unik));
+        luck2.add(data::dodge_per_luck_pct).add(UI(pkt_maks)).add(data::dodge_max_pct).add(UI(lupy_2)).add(data::drop_per_luck_pct).add("%.");
+        const char* pages[pages_count][7] = {
+            { UI(n3_akty_10_etapow_po_nagrodzie), UI(akt_0_boss_konczy_akt), UI(d_pad_ruch_i_atak_wrecz),
+              UI(a_atak_trzymaj_celuj), UI(b_czekaj_trzymaj_podglad), UI(r_moc_zawodu_l_mapa),
+              UI(start_akcje_select_telefon) },
+            { UI(w_kazdym_oknie_tak_samo), UI(a_wybierz_dalej), UI(b_wroc_zostaw), UI(gora_dol_tylko_zaznacza),
+              UI(a_zatwierdza_premia_zakup), UI(sms_zamiana_narzedzia), UI(po_otwarciu_chwila_blokady) },   // v0.21.51
+            { UI(pogoda_dnia_ikona_w_hud), UI(skutek_w_telefonie_zadania), UI(brygada_raz_na_etap_za_zl),
+              UI(telefon_sprzet_dol_albo), UI(start_i_a_po_wygranej), UI(select_na_wyborze_zawodu), UI(tryb_inwestora_stawka) },
+            { UI(miedzy_etapami_wybierz), UI(sciezke_lewo_prawo_a), UI(materialy_z_problemow), UI(hurtownia_i_naprawy_sprzet), UI(dol_zalataj_kladka),
+              UI(tytul_r_budowa_dnia_ustaw), UI(date_dla_wszystkich_ta_sama) },
+            { UI(respekt_za_kazdy_etap_boss), UI(wiecej_zostaje_po_porazce), UI(telefon_profilu_koszty), UI(select_respekt_stale),
+              UI(premie_z_rangami_kazda_wygrana), UI(to_nagroda_za_odbior_sprzet), UI(narzedzia_nowe_zawody) },
+            { UI(mechanika_aktu_0_pieczatki), UI(n3_dokumenty_otwieraja_schody), UI(i_bloto_wejscie_tura_ii), UI(porywy_spychaja_iii_pyl),
+              UI(problemy_strzelaja_dziela_sie), UI(wybuchaja_czerwone_pola), UI(odejdz_rosna_i_wracaja) },
+            { UI(sil_zre_int_1_obr_co_2_pkt), UI(tylko_statystyka_broni), UI(obr_1_obrazen_co_2_pkt_2), luck1.s, luck2.s,
+              UI(wybor_zawodu_start_opis), UI(telefon_start_a_premie) },
+            { data::damage_help[0], data::damage_help[1], data::damage_help[2], data::damage_help[3], data::damage_help[4],
+              data::damage_help[5], UI(telefon_sprzet_a_rozpiska) },
+            { cmb[0].s, data::combos[0].info, cmb[1].s, data::combos[1].info, cmb[2].s, data::combos[2].info,
+              UI(ikona_nad_problemem_jego_stan) },
+            { data::combo_sources[0], data::combo_sources[1], data::combo_sources[2], data::combo_sources[3],
+              UI(na_tobie_tez_ikona_w_hud), data::combos[0].hero, data::combos[1].hero },
+            { UI(po_etapie_premia_1_z_3), UI(zwykla_rzadka_legendarna), UI(n2_z_tym_samym_znacznikiem),
+              UI(synergia_select_losuj_raz), UI(telefon_sprzet_gora_premie), UI(zlota_ramka_elita_z_cecha),
+              UI(wiecej_hp_lepsza_nagroda) },
+            { data::extras_help[0], data::extras_help[1], data::extras_help[2], data::extras_help[3], data::extras_help[4],
+              data::extras_help[5], UI(karta_problemu_b_ma_klucz) },
+            { data::extras_help[6], data::extras_help[7], data::extras_help[8], data::extras_help[9], data::extras_help[10],
+              data::extras_help[11], UI(l_mapa_pokazuje_magazyn) },
+            { data::meta_help[0], data::meta_help[1], data::meta_help[2], data::meta_help[3], data::meta_help[4],
+              data::meta_help[5], UI(tytul_l_wyzwanie_tygodnia) },
+            { data::secrets_help[0], data::secrets_help[1], data::secrets_help[2], data::secrets_help[3], data::secrets_help[4],
+              data::secrets_help[5], data::secrets_help[6] },   // v0.21.51 cz. 2: sekretne zlecenia
+            { data::progress_help[0], data::progress_help[1], data::progress_help[2], data::progress_help[3], data::progress_help[4],
+              data::progress_help[5], data::progress_help[6] },   // v0.21.52 cz. b: poziom inspektora, mistrzostwo
+            { data::goals_help[0], data::goals_help[1], data::goals_help[2], data::goals_help[3], data::goals_help[4],
+              data::goals_help[5], data::goals_help[6] },   // v0.21.52 cz. c: drzewko, kolekcje, zadania, seria dni
+            { data::career_help[0], data::career_help[1], data::career_help[2], data::career_help[3], data::career_help[4],
+              data::career_help[5], data::career_help[6] },   // v0.21.52 cz. d: mapa kariery
+            { data::filters_help[0], data::filters_help[1], data::filters_help[2], data::filters_help[3], data::filters_help[4],
+              data::filters_help[5], data::filters_help[6] } };   // v0.21.53: filtry ekranu
+        for(int pg = 0; pg < pages_count; ++pg)
+        {
+            page_sprites t;
+            a.text.set_center_alignment();
+            const char* const names[11] = { UI(kombinacje_2), UI(skad_stany), UI(premie_i_elity), UI(wydarzenia), UI(magazyn_2), UI(po_budowie),
+                                                   UI(sekrety), UI(inspektor_2), UI(cele), UI(kariera), UI(filtry_ekranu) };   // strony 9-19 (v0.21.50, 15: v0.21.51 cz. 2, 16-18: v0.21.52, 19: v0.21.53)
+            core::message title; title.add(pg >= 8 ? names[pg - 8] : (pg == 1 ? UI(okna_i_wybory) : UI(jak_grac))).add(" (").add(pg + 1).add("/").add(pages_count).add(")");
+            a.text.generate(0, -70, title.s, t);
+            a.text.set_left_alignment();
+            for(int i = 0; i < 7; ++i) a.text.generate(-108, -48 + i * 16, fit(a, pages[pg][i], 224).c_str(), t);
+            a.text.set_center_alignment();
+            a.text.generate(0, 72, UI(a_dalej), t);
+            wait_page_close();
+        }
     }
 
     scene run_help(app& a)
@@ -484,6 +896,22 @@ namespace
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         page_help(a);
         if(! core::has_flag(a.save, core::help_seen)) { core::set_flag(a.save, core::help_seen); bn::sram::write(a.save); }
+        if(a.after_help == scene::title)   // z tytułu: samouczek menu jeszcze raz (#25)
+        {
+            page_sprites t;
+            a.text.set_center_alignment();
+            a.text.generate(0, -70, UI(samouczek_menu), t);
+            a.text.set_left_alignment();
+            const char* lines[] = { UI(dymki_kierownika_marka), UI(pokazuja_po_kolei_co_jest), UI(na_tytule_i_na_wyborze), UI(zawodu_klawisz_i_opis) };
+            for(int i = 0; i < 4; ++i) a.text.generate(-108, -48 + i * 16, lines[i], t);
+            a.text.set_center_alignment();
+            a.text.generate(0, 40, UI(a_pokaz_samouczek_jeszcze_raz), t);
+            a.text.generate(0, 72, UI(b_wroc), t);
+            wait_release();
+            while(! bn::keypad::a_pressed() && ! bn::keypad::b_pressed() && ! bn::keypad::select_pressed()) next_frame();
+            if(bn::keypad::a_pressed()) { core::tutorial_reset(a.save); bn::sram::write(a.save); }
+            wait_release();
+        }
         return leave(a.after_help);
     }
 
@@ -632,10 +1060,17 @@ namespace
     constexpr int row_py(int r) { return 32 + r * 16; }
     constexpr int list_x = 14;   // początek tekstu za paskiem statusu
     constexpr int pill_end = 28; // prawa krawędź pastylek (kafel)
+    int utf8_len(const char* s);
+    // miejsce (px) na tekst od list_x do pastylki z napisem s przy prawej krawędzi
+    int pill_room(const char* s) { return (pill_end - utf8_len(s) - 1) * 8 - list_x - 4; }
 
     void stripe(phone_canvas& c, int r, int tile) { c.set(1, row_ty(r), tile); c.set(1, row_ty(r) + 1, tile); }
+    // Rzadkość premii (#27): zwykła szara, rzadka fioletowa, legendarna złota.
+    ink rarity_ink(int r) { return r == 2 ? ink::prog : (r == 1 ? ink::brand : ink::dark); }
+    pill rarity_pill(int r) { return r == 2 ? pill::prog : (r == 1 ? pill::group : pill::gray); }
+    int rarity_stripe(int r) { return r == 2 ? phone_tile::stripe_prog : (r == 1 ? phone_tile::stripe_brand : phone_tile::stripe_todo); }
 
-    constexpr const char* tab_names[] = { "Zadania", "Usterki", "Start", "Sprzęt", "Koszty" };
+    inline const char* tab_name(int i) { const char* const n[] = { UI(zadania_2), UI(usterki), UI(start), UI(sprzet_5), UI(koszty) }; return n[i]; }
     constexpr int tabs_count = 5;
 
     void phone_header(app& a, phone_screen& ph, page_sprites& t, const char* title, const char* sub)
@@ -647,33 +1082,234 @@ namespace
         ph.canvas->rounded(1, 4, 28, 12, phone_tile::fill_card, phone_tile::corner_card);
     }
 
+    // ------------------------------------------------------------------ samouczek menu (#25)
+    // Dymek Kierownika Marka jak powiadomienie PlanBudowlany nad przyciemnionym ekranem: półprzezroczysta ciemna
+    // warstwa z "dziurą" nad omawianym elementem (reszta przygaszona) i karta z tekstem z data::tutorial_steps
+    // (te same teksty co w Godocie). A - dalej, B - pomiń resztę, START przy kroku o statystykach - otwiera ich opis.
+    struct coach_hole { int8_t tx, ty, tw, th; bool top; };   // podświetlony prostokąt (kafle 8x8); dymek u góry / na dole
+    bool same(const char* x, const char* y) { while(*x && *x == *y) { ++x; ++y; } return *x == *y; }   // bez strcmp (Butano bez libc)
+
+    struct coach
+    {
+        bn::unique_ptr<phone_canvas> dim, card;
+        bn::regular_bg_ptr dim_bg, card_bg;
+        bn::regular_bg_map_ptr dim_map, card_map;
+        bn::sprite_ptr avatar;
+        page_sprites t;
+
+        coach() :
+            dim(new phone_canvas()), card(new phone_canvas()),
+            dim_bg(make_canvas_bg(*dim)), card_bg(make_canvas_bg(*card)),
+            dim_map(dim_bg.map()), card_map(card_bg.map()),
+            avatar(bn::sprite_items::actors.create_sprite(0, 0, data::classes[0].frame))   // Kierownik Marek
+        {
+            dim_bg.set_priority(0); dim_bg.set_z_order(10); dim_bg.set_blending_enabled(true);
+            card_bg.set_priority(0); card_bg.set_z_order(-10);
+            avatar.set_bg_priority(0); avatar.set_z_order(-120);
+            bn::blending::set_transparency_alpha(bn::fixed(0.66));
+        }
+
+        void text(app& a, int px, int py, const char* s, ink i, int align = -1)
+        {
+            a.text.set_palette_item(ink_palette(i));
+            a.text.set_bg_priority(0);
+            a.text.set_z_order(-120);
+            if(align < 0) a.text.set_left_alignment();
+            else if(align > 0) a.text.set_right_alignment();
+            else a.text.set_center_alignment();
+            a.text.generate(px - 120, py - 72, s, t);
+        }
+
+        int pill(app& a, int tx_end, int ty, const char* s, bool brand)   // pastylka na karcie (szerokość z tekstu); zwraca pierwszy kafel
+        {
+            int tw = (a.text.width(s) + 15) / 8 + 1, tx = tx_end - tw;
+            card->rounded(tx, ty, tw, 2, brand ? phone_tile::fill_brand : phone_tile::fill_group, brand ? phone_tile::corner_brand : phone_tile::corner_group);
+            text(a, tx * 8 + tw * 4, ty * 8, s, brand ? ink::white : ink::brand, 0);
+            return tx;
+        }
+
+        // Karta: awatar i tytuł, pastylka (np. "2/6" albo "Nowość"), 3 linie dymka, klawisz na GBA i A / B.
+        void show(app& a, const core::tutorial_step& s, const char* counter, const coach_hole& h, bool link)
+        {
+            dim->clear(); card->clear(); t.clear();
+            for(int y = 0; y < 20; ++y)
+                for(int x = 0; x < 30; ++x)
+                    if(! (x >= h.tx && x < h.tx + h.tw && y >= h.ty && y < h.ty + h.th)) dim->set(x, y, phone_tile::fill_dark);
+            const int ty = h.top ? 0 : 9, py = ty * 8;
+            card->rounded(1, ty, 28, 11, phone_tile::fill_card, phone_tile::corner_card);
+            card->rounded(2, ty + 3, 26, 6, phone_tile::fill_group, phone_tile::corner_group);   // dymek wiadomości
+            avatar.set_position(20 - 120, py + 16 - 80);
+            text(a, 32, py + 8, s.title, ink::brand);
+            pill(a, 28, ty + 1, counter, false);
+            for(int i = 0; i < 3; ++i) text(a, 22, py + 26 + i * 15, s.msg.lines[i], ink::dark);
+            int key_end = 0;   // prawy brzeg pastylki klawisza (px)
+            if(s.gba[0]) key_end = 8 * (2 + (a.text.width(s.gba.c_str()) + 15) / 8 + 1);
+            if(s.gba[0]) pill(a, key_end / 8, ty + 9, s.gba, true);   // klawisz na GBA
+            const char* hint = link ? UI(start_opis_a_dalej) : UI(a_dalej_b_pomin);
+            if(226 - a.text.width(hint) < key_end + 6) hint = UI(a_dalej);   // długi klawisz: skrócona podpowiedź, bez nachodzenia
+            text(a, 226, py + 72, hint, ink::dim, 1);
+            dim_map.reload_cells_ref();
+            card_map.reload_cells_ref();
+        }
+    };
+
+    // Kroki samouczka ekranu (0 tytuł, 1 wybór zawodu): hole_of(id) - co podświetlić, on_link() - START przy kroku
+    // o statystykach (opis statystyk; dymek na chwilę znika, bo telefon potrzebuje dwóch warstw tła).
+    template<class HoleFn, class LinkFn>
+    void run_tutorial(app& a, int screen, HoleFn hole_of, LinkFn on_link)
+    {
+        const bn::sprite_palette_item ink0 = a.text.palette_item();
+        const int prio0 = a.text.bg_priority(), z0 = a.text.z_order();
+        int ids[data::tutorial_steps_count], n = 0;
+        for(int i = 0; i < data::tutorial_steps_count; ++i)
+            if(data::tutorial_steps[i].screen == screen && core::tutorial_step_shown(a.save, i, false)) ids[n++] = i;
+        bn::optional<coach> c;
+        for(int k = 0; k < n; ++k)
+        {
+            const core::tutorial_step& s = data::tutorial_steps[ids[k]];
+            const bool link = same(s.id, "stats");
+            core::message cnt; cnt.add(k + 1).add("/").add(n);
+            if(! c) c.emplace();
+            c->show(a, s, cnt.s, hole_of(s.id), link);
+            bn::sound_items::sfx_notify.play(bn::fixed(0.6));
+            wait_release();
+            int res = 0;   // 1 dalej, 2 pomiń
+            while(! res)
+            {
+                if(bn::keypad::a_pressed()) res = 1;
+                else if(bn::keypad::b_pressed()) res = 2;
+                else if(link && bn::keypad::start_pressed())
+                {
+                    c.reset();
+                    a.text.set_palette_item(ink0); a.text.set_bg_priority(prio0); a.text.set_z_order(z0);
+                    on_link();
+                    c.emplace();
+                    c->show(a, s, cnt.s, hole_of(s.id), link);
+                }
+                next_frame();
+            }
+            bn::sound_items::sfx_menu.play();
+            if(res == 2) break;
+        }
+        c.reset();
+        a.text.set_palette_item(ink0); a.text.set_bg_priority(prio0); a.text.set_z_order(z0);
+        core::tutorial_done(a.save, screen);
+        bn::sram::write(a.save);
+        wait_release();
+    }
+
+    // Dymki przy pierwszym odblokowaniu (Respekt, codzienna budowa, tryb inwestora, Akt 0, nowy zawód) - po jednym.
+    template<class HoleFn>
+    void run_unlocks(app& a, int screen, HoleFn hole_of)
+    {
+        const bn::sprite_palette_item ink0 = a.text.palette_item();
+        const int prio0 = a.text.bg_priority(), z0 = a.text.z_order();
+        int cls = -1;
+        for(int u = core::pending_unlock(a.save, screen, cls); u >= 0; u = core::pending_unlock(a.save, screen, cls))
+        {
+            core::tutorial_step s = data::tutorial_unlocks[u];
+            const bool secret = u == core::unlock_secret;
+            if(secret) s.msg = data::secrets[cls].news;   // v0.21.51 cz. 2: co wykonano i jaka nagroda
+            {
+                coach c;
+                c.show(a, s, cls >= 0 && ! secret ? clip(data::classes[cls].name, 12).c_str() : UI(nowosc), hole_of(s.id), false);
+                bn::sound_items::sfx_notify.play(bn::fixed(0.7));
+                wait_release();
+                while(! bn::keypad::a_pressed() && ! bn::keypad::b_pressed() && ! bn::keypad::start_pressed()) next_frame();
+            }
+            core::mark_unlock(a.save, u, cls);
+            bn::sram::write(a.save);
+            a.text.set_palette_item(ink0); a.text.set_bg_priority(prio0); a.text.set_z_order(z0);
+            wait_release();
+        }
+    }
+
+    void title_tutorial(app& a)
+    {
+        auto hole = [](const char*) { return coach_hole{ 0, 0, 0, 0, false }; };   // tytuł: klawisz na karcie, logo przygaszone
+        if(core::tutorial_pending(a.save, 0)) run_tutorial(a, 0, hole, [] {});
+        run_unlocks(a, 0, hole);
+    }
+
     void tab_tasks(app& a, phone_screen& ph, page_sprites& t)   // Zadania = harmonogram budowy
     {
         const core::game& g = *a.g;
-        core::message sub; sub.add("Etap ").add(g.stage + 1).add("/").add(data::stages_count);
-        phone_header(a, ph, t, tab_names[0], sub.s);
+        core::message sub; sub.add(UI(etap)).add(g.stage_number()).add("/").add(g.stages_in_run());
+        if(g.stage_path >= 0) sub.add(", ").add(data::paths[g.stage_path].short_name);   // wybrana ścieżka
+        else sub.add(", ").add(g.score).add(UI(pkt_2));
+        phone_header(a, ph, t, tab_name(0), sub.s);
         phone_canvas& c = *ph.canvas;
-        int first = core::imax(0, core::imin(g.stage - 2, data::stages_count - 5));   // okno 5 etapów wokół bieżącego
-        for(int r = 0; r < 5 && first + r < data::stages_count; ++r)
+        int first = core::imax(int(g.first_stage), core::imin(g.stage, g.route_count() - 2));   // okno 2 etapów: bieżący i kolejny
+        for(int r = 0; r < 2 && first + r < g.route_count(); ++r)
         {
             int i = first + r;
             bool done = i < g.stage || (i == g.stage && g.st == core::status::won);
             bool cur = i == g.stage && ! done;
             stripe(c, r, done ? phone_tile::stripe_done : (cur ? phone_tile::stripe_prog : phone_tile::stripe_todo));
-            core::message m; m.add(i + 1).add(". ").add(data::stages[i].name);
-            phone_text(a, t, list_x, row_py(r), clip(m.s, 15).c_str(), done ? ink::dim : ink::dark);
-            phone_pill(a, c, t, pill_end, row_ty(r), done ? "Gotowe" : (cur ? "W trakcie" : "Do zrob."),
-                       done ? pill::done : (cur ? pill::prog : pill::gray));
+            core::message m; m.add(i - g.first_stage + 1).add(". ").add(g.sdef(i).name);
+            const char* state = done ? UI(gotowe) : (cur ? UI(w_trakcie) : UI(do_zrob));
+            phone_text(a, t, list_x, row_py(r), fit(a, m.s, pill_room(state)).c_str(), done ? ink::dim : ink::dark);
+            phone_pill(a, c, t, pill_end, row_ty(r), state, done ? pill::done : (cur ? pill::prog : pill::gray));
         }
-        phone_text(a, t, list_x, row_py(5), "Postęp", ink::dim);
-        c.bar(9, row_ty(5), 18, phone_tile::bar_brand_0, g.stage, data::stages_count);
+        {   // mechanika aktu (błoto, porywy, pył)
+            const core::act_def& ad = g.adef();
+            stripe(c, 2, phone_tile::stripe_late);
+            core::message am;
+            if(g.gust_in() > 0) am.add(UI(poryw_za)).add(g.gust_in()).add(" t. ").add(core::game::dir_name(g.gust_dir()));
+            else if(g.docs_needed() > 0)   // pieczątki: dokumenty otwierają schody
+                am.add(g.stairs_locked() ? UI(dokumenty_2) : UI(schody_otwarte)).add(g.docs_count()).add("/").add(g.docs_needed());
+            else am.add(ad.mech_name);
+            phone_text(a, t, list_x, row_py(2), fit(a, am.s, pill_room(ad.mech_short)).c_str(), ink::dark);
+            phone_pill(a, c, t, pill_end, row_ty(2), ad.mech_short, pill::late);
+        }
+        {   // v0.21.50 cz. 3: wydarzenie z wyborem (i odpowiedź) albo magazyn na etapie
+            core::message em;
+            const char* pl = nullptr;
+            pill pk = pill::gray;
+            if(g.stage_choice >= 0)
+            {
+                const core::choice_event_def& ev = data::choice_events[g.stage_choice];
+                em.add(ev.name).add(": ").add(ev.choices[g.stage_choice_pick].label);
+                pl = UI(sms_3); pk = pill::brand;
+            }
+            else if(g.has_secret() && (g.explored(g.secret_x, g.secret_y) || g.keys > 0))
+            {
+                em.add(g.secret_open ? UI(magazyn_otwarty_2) : g.secret_def().name);
+                if(! g.secret_open) em.add(g.keys > 0 ? UI(masz_klucz) : (g.secret_def().breakable ? UI(klucz_lub_wybuch) : UI(potrzebny_klucz)));
+                pl = g.secret_open ? UI(otwarty) : UI(magazyn_2); pk = g.secret_open ? pill::done : pill::prog;
+            }
+            else if(g.keys > 0) { em.add(UI(klucz_do_magazynu_2)).add(int(g.keys)); pl = UI(klucz); pk = pill::prog; }
+            else if(g.bonus.weekly >= 0) { em.add(data::weekly[g.bonus.weekly].name); pl = UI(tydzien); pk = pill::late; }   // wyzwanie tygodnia (#34)
+            if(pl)
+            {
+                stripe(c, 3, pk == pill::done ? phone_tile::stripe_done : phone_tile::stripe_brand);
+                phone_text(a, t, list_x, row_py(3), fit(a, em.s, pill_room(pl)).c_str(), ink::dark);
+                phone_pill(a, c, t, pill_end, row_ty(3), pl, pk);
+            }
+            else phone_text(a, t, list_x, row_py(3), UI(bez_wydarzen_i_magazynu), ink::dim);
+        }
+        if(g.stage_event >= 0)   // wydarzenie na placu na tym etapie
+        {
+            const core::site_event_def& ev = data::site_events[g.stage_event];
+            stripe(c, 4, ev.good ? phone_tile::stripe_done : phone_tile::stripe_late);
+            int room = ((pill_end - utf8_len(ev.short_name) - 1) * 8 - list_x) / 7;   // znaki przed pastylką
+            phone_text(a, t, list_x, row_py(4), clip(ev.name, room).c_str(), ink::dark);
+            phone_pill(a, c, t, pill_end, row_ty(4), ev.short_name, ev.good ? pill::done : pill::late);
+        }
+        else phone_text(a, t, list_x, row_py(4), UI(plac_bez_niespodzianek), ink::dim);
+        const core::weather_def& wd = g.wdef();   // pogoda dnia
+        bool calm = wd.effect == core::weather_effect::none;
+        stripe(c, 5, wd.bad ? phone_tile::stripe_late : (calm ? phone_tile::stripe_todo : phone_tile::stripe_done));
+        core::message wm; wm.add(UI(pogoda)).add(wd.name);
+        phone_text(a, t, list_x, row_py(5), fit(a, wm.s, pill_room(wd.short_name)).c_str(), ink::dark);
+        phone_pill(a, c, t, pill_end, row_ty(5), wd.short_name, wd.bad ? pill::late : (calm ? pill::gray : pill::done));
     }
 
     void tab_issues(app& a, phone_screen& ph, page_sprites& t)   // Usterki = problemy budowy
     {
         const core::game& g = *a.g;
         constexpr int types = int(sizeof(data::enemies) / sizeof(data::enemies[0]));
-        const core::stage_def& sd = data::stages[g.stage];
+        const core::stage_def& sd = g.sdef();
         int open = 0, rows = 0;
         struct row { int8_t def; bool open; };
         bn::vector<row, 6> list;
@@ -687,8 +1323,8 @@ namespace
             list.push_back({ int8_t(d), alive > 0 });
             open += alive > 0;
         }
-        core::message sub; sub.add("Otwarte: ").add(open);
-        phone_header(a, ph, t, tab_names[1], sub.s);
+        core::message sub; sub.add(UI(otwarte)).add(open);
+        phone_header(a, ph, t, tab_name(1), sub.s);
         phone_canvas& c = *ph.canvas;
         for(const row& rw : list)
         {
@@ -696,21 +1332,47 @@ namespace
             core::message m; m.add("#").add(rows + 1).add(" ").add(clip(data::enemies[rw.def].name, 9).c_str());
             if(g.kills_by_type[rw.def] > 0) m.add(" x").add(g.kills_by_type[rw.def]);
             phone_text(a, t, list_x, row_py(rows), m.s, ink::dark);
-            phone_pill(a, c, t, pill_end, row_ty(rows), rw.open ? "OTWARTA" : "ZAMKNIĘTA", rw.open ? pill::late : pill::done);
+            phone_pill(a, c, t, pill_end, row_ty(rows), rw.open ? UI(otwarta) : UI(zamknieta), rw.open ? pill::late : pill::done);
             ++rows;
         }
+    }
+
+    constexpr core::status_effect hud_statuses[4] = { core::status_effect::poison, core::status_effect::shock, core::status_effect::slip,
+                                                      core::status_effect::wet };   // ikona = particle_pool::status_icon + indeks
+
+    // Aktywne stany z turami do końca: jeden - pełna nazwa i skutek, kilka - skróty.
+    core::message status_line(const core::game& g)
+    {
+        core::message m; m.add(UI(stany));
+        int n = 0;
+        for(core::status_effect s : hud_statuses) n += g.status_turns(s) > 0;
+        if(n == 0) return m.add(UI(brak_2));
+        m.as(core::bad);
+        bool first = true;
+        for(core::status_effect s : hud_statuses)
+        {
+            int t = g.status_turns(s);
+            if(t <= 0) continue;
+            const core::status_def& sd = data::statuses[int(s)];
+            if(n == 1) return m.add(sd.name).add(" ").add(t).add(" t. (").add(sd.effect).add(")");
+            if(! first) m.add(", ");
+            m.add(sd.short_name).add(" ").add(t);
+            first = false;
+        }
+        return m.add(" t.");
     }
 
     void tab_home(app& a, phone_screen& ph, page_sprites& t)   // Start = pulpit postaci
     {
         const core::game& g = *a.g;
         core::message sub; sub.add(g.ddef().name);
-        if(g.tier > 0) sub.add(" NG+").add(g.tier);
-        phone_header(a, ph, t, tab_names[2], sub.s);
+        if(g.tier > 0) sub.add(UI(ng)).add(g.tier);
+        sub.add(", ").add(g.cash).add(UI(zl));
+        phone_header(a, ph, t, tab_name(2), sub.s);
         phone_canvas& c = *ph.canvas;
-        core::message r0; r0.add("Etap ").add(g.stage + 1).add(": ").add(data::stages[g.stage].name);
-        phone_text(a, t, list_x, row_py(0), clip(r0.s, 15).c_str(), ink::dark);
-        phone_pill(a, c, t, pill_end, row_ty(0), "W trakcie", pill::prog);
+        core::message r0; r0.add(UI(etap)).add(g.stage_number()).add(": ").add(g.sdef().name);
+        phone_text(a, t, list_x, row_py(0), fit(a, r0.s, pill_room(UI(w_trakcie))).c_str(), ink::dark);
+        phone_pill(a, c, t, pill_end, row_ty(0), UI(w_trakcie), pill::prog);
         stripe(c, 0, phone_tile::stripe_prog);
 
         core::message hp; hp.add("HP ").add(g.hero.hp).add("/").add(g.hero.max_hp);
@@ -719,66 +1381,250 @@ namespace
                      : (g.hero.hp * 4 > g.hero.max_hp ? phone_tile::bar_brand_0 : phone_tile::bar_late_0);
         c.bar(14, row_ty(1), 13, bar_tile, g.hero.hp, g.hero.max_hp);
 
-        core::message lv; lv.add("Poziom ").add(g.hero_level);
+        core::message lv; lv.add(UI(poziom_2)).add(g.hero_level);
         phone_text(a, t, list_x, row_py(2), lv.s, ink::dark);
         int prev = g.hero_level >= 2 ? data::level_thresholds[g.hero_level - 2] : 0;
         if(g.xp_to_next() < 0) c.bar(14, row_ty(2), 13, phone_tile::bar_brand_0, 1, 1);
         else c.bar(14, row_ty(2), 13, phone_tile::bar_brand_0, g.run_xp - prev, data::level_thresholds[g.hero_level - 1] - prev);
 
-        core::message mc; mc.add("Moc: ").add(ability_label(g).s);
+        core::message mc; mc.add(UI(moc_4)).add(ability_label(g).s);
         phone_text(a, t, list_x, row_py(3), mc.s, ink::dark);
-        core::message cd; cd.add("za ").add(g.ability_cd);
-        phone_pill(a, c, t, pill_end, row_ty(3), g.ability_cd == 0 ? "Gotowa" : cd.s, g.ability_cd == 0 ? pill::done : pill::gray);
+        core::message cd; cd.add(UI(za_2)).add(g.ability_cd);
+        phone_pill(a, c, t, pill_end, row_ty(3), g.ability_cd == 0 ? UI(gotowa) : cd.s, g.ability_cd == 0 ? pill::done : pill::gray);
 
-        const core::weapon_def& w = g.weapon();
-        core::message wl; wl.add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range);
-        wl.add(" +").add(g.dmg_bonus);
-        phone_text(a, t, list_x, row_py(4), clip(wl.s, 26).c_str(), ink::dim);
-        core::message sc; sc.add("Wynik ").add(g.score).add("  Budżet ").add(g.cash).add(" zł");
-        phone_text(a, t, list_x, row_py(5), sc.s, ink::dim);
+        core::message sl = status_line(g);
+        phone_text(a, t, list_x, row_py(4), fit(a, sl.s, phone_text_w).c_str(), sl.kind == core::bad ? ink::late : ink::dim);
+        core::message sc = hero_stats_line(g);   // statystyki efektywne (baza+premie); A - opis i skąd premie
+        phone_text(a, t, list_x, row_py(5), fit(a, sc.s, pill_room(UI(a_opis))).c_str(), ink::dim);
+        phone_pill(a, c, t, pill_end, row_ty(5), UI(a_opis), pill::group);
     }
 
-    void tab_gear(app& a, phone_screen& ph, page_sprites& t)   // Sprzęt: narzędzie + kask, rękawice, kamizelka
+    void mats_line(core::message& m, const core::game& g);
+
+    // Sprzęt: narzędzie z zakresem ciosu i krytem (rozpiska #26 pod A) + kask, rękawice, kamizelka (+ buty i pas z nagród
+    // za odbiór) - każdy przedmiot z tym, co daje (np. "+2 OBR"), cecha na pastylce; materiały, gdy jest miejsce
+    // (przy 5 slotach tylko w HUD). Dół: Brygada i naprawy.
+    void tab_gear(app& a, phone_screen& ph, page_sprites& t)
     {
         const core::game& g = *a.g;
-        phone_header(a, ph, t, tab_names[3], "Na budowie");
+        int slots[core::max_gear_slots], n = 0;
+        for(int i = 0; i < data::gear_slots_count; ++i) if(((g.bonus.gear_slots >> i) & 1) || g.equipped[i] >= 0) slots[n++] = i;
+        phone_header(a, ph, t, tab_name(3), UI(a_obr_gora_prem_dol_bryg));
         phone_canvas& c = *ph.canvas;
-        core::message w; w.add(g.weapon().name).add(" ").add(g.weapon().min_damage).add("-").add(g.weapon().max_damage);
+        const core::dmg_breakdown b = g.weapon_breakdown();
+        core::message w; g.weapon_title(w).add(" ");   // ulepszone: "Kielnia+2"
+        core::add_range(w, b.min, b.max).add(UI(kryt_8));
+        core::add_range(w, b.crit_min, b.crit_max).add(" (").add(b.crit_chance()).add("%)");
         stripe(c, 0, phone_tile::stripe_brand);
-        phone_text(a, t, list_x, row_py(0), clip(w.s, 26).c_str(), ink::dark);
-        for(int i = 0; i < data::gear_slots_count; ++i)
+        phone_text(a, t, list_x, row_py(0), fit(a, w.s, phone_text_w).c_str(), ink::dark);
+        for(int k = 0; k < n; ++k)
         {
-            int r = g.equipped[i];
-            core::message m;
-            if(r >= 0) m.add(data::gear[i * 3 + r].name);
-            else m.add(data::gear_slots[i]).add(": brak");
-            stripe(c, 1 + i, r < 0 ? phone_tile::stripe_todo : (r == 2 ? phone_tile::stripe_prog : (r == 1 ? phone_tile::stripe_brand : phone_tile::stripe_done)));
-            phone_text(a, t, list_x, row_py(1 + i), clip(m.s, 17).c_str(), r >= 0 ? ink::dark : ink::dim);
-            if(r >= 0) phone_pill(a, c, t, pill_end, row_ty(1 + i), data::gear_rarities[r], r == 2 ? pill::prog : (r == 1 ? pill::group : pill::gray));
+            int i = slots[k], r = g.equipped[i];
+            stripe(c, 1 + k, r < 0 ? phone_tile::stripe_todo : (r == 2 ? phone_tile::stripe_prog : (r == 1 ? phone_tile::stripe_brand : phone_tile::stripe_done)));
+            if(r < 0)
+            {
+                core::message m; m.add(data::gear_slots[i]).add(UI(brak_3));
+                phone_text(a, t, list_x, row_py(1 + k), m.s, ink::dim);
+                continue;
+            }
+            const core::gear_def& gd = data::gear[i * 3 + r];
+            const char* trait = data::gear_traits[g.equipped_trait[i]].short_name;
+            core::message eff; core::gear_label(eff, gd);   // co daje: "+2 obrażeń", "+1 OBR", "+8 HP"...
+            int room = pill_room(trait), ew = a.text.width(eff.s);
+            // pełna nazwa, a gdy się nie mieści obok skutku - nazwa slotu ("Rękawice +2 obrażeń"; jakość = kolor paska)
+            bn::string<96> name = a.text.width(gd.name.c_str()) <= room - ew - 6 ? bn::string<96>(gd.name) : fit(a, data::gear_slots[i], room - ew - 6);
+            phone_text(a, t, list_x, row_py(1 + k), name.c_str(), ink::dark);
+            phone_text(a, t, list_x + a.text.width(name) + 6, row_py(1 + k), eff.s, ink::brand);
+            // pastylka = cecha przedmiotu, kolor = jakość
+            phone_pill(a, c, t, pill_end, row_ty(1 + k), trait, r == 2 ? pill::prog : (r == 1 ? pill::group : pill::gray));
         }
-        core::message s1; s1.add("Obrona +").add(g.gear_bonus(core::gear_stat::def)).add("  Obraż. +").add(g.gear_bonus(core::gear_stat::dmg));
-        phone_text(a, t, list_x, row_py(4), s1.s, ink::dim);
-        core::message s2; s2.add("Kamizelka: +").add(g.gear_bonus(core::gear_stat::hp)).add(" HP");
-        phone_text(a, t, list_x, row_py(5), s2.s, ink::dim);
+        if(n <= 4)
+        {
+            core::message s1; s1.add(UI(materialy_3));   // cement, stal, drewno (Hurtownia, naprawy pod dół)
+            for(int m = 0; m < data::materials_count; ++m) s1.add(m ? ", " : "").add(data::materials[m].short_name).add(" ").add(g.mats[m]);
+            phone_text(a, t, list_x, row_py(n + 1), fit(a, s1.s, phone_text_w).c_str(), ink::dim);
+        }
+    }
+
+    // Materiały skrótem, np. "C2 S1 D3" (pierwsza litera nazwy + liczba).
+    void mats_line(core::message& m, const core::game& g)
+    {
+        for(int i = 0; i < data::materials_count; ++i)
+        {
+            char c[2] = { data::materials[i].name[0], 0 };
+            m.add(i ? " " : "").add(c).add(g.mats[i]);
+        }
+    }
+
+    // Brygada i naprawy (zakładka Sprzęt, strona pod A): najemni fachowcy raz na etap za budżet budowy, potem naprawy pola
+    // za materiał (Załataj, Kładka). Lista przewijana: 4 wiersze; sel >= brigade_count = naprawa.
+    constexpr int brigade_rows = data::brigade_count + data::repairs_count;
+
+    void tab_brigade(app& a, phone_screen& ph, page_sprites& t, int sel)
+    {
+        const core::game& g = *a.g;
+        core::message sub; sub.add(g.cash).add(UI(zl_4));
+        mats_line(sub, g);
+        phone_header(a, ph, t, sel < data::brigade_count ? UI(brygada_3) : UI(naprawy), sub.s);
+        phone_canvas& c = *ph.canvas;
+        int top = core::imax(0, core::imin(sel - 1, brigade_rows - 4));
+        for(int r = 0; r < 4 && top + r < brigade_rows; ++r)
+        {
+            int i = top + r;
+            bool is_sel = i == sel;
+            if(is_sel) stripe(c, r, phone_tile::stripe_brand);
+            if(i < data::brigade_count)
+            {
+                const core::helper_def& hd = data::brigade[i];
+                bool unl = (g.bonus.helpers >> i) & 1, here = g.helper_called == i;
+                core::message pr; pr.add(g.helper_price(i)).add(UI(zl));
+                const char* pill_s = here ? UI(na_placu) : (unl ? pr.s : UI(zablok));
+                phone_text(a, t, list_x, row_py(r), fit(a, hd.name, pill_room(pill_s)).c_str(), is_sel ? ink::brand : (unl ? ink::dark : ink::dim));
+                phone_pill(a, c, t, pill_end, row_ty(r), pill_s, here ? pill::done : (unl && g.cash >= g.helper_price(i) ? pill::group : pill::gray));
+            }
+            else
+            {
+                const core::repair_def& rd = data::repairs[i - data::brigade_count];
+                core::message pr; pr.add(rd.cost).add(" ").add(data::materials[rd.material].short_name);
+                phone_text(a, t, list_x, row_py(r), fit(a, rd.name, pill_room(pr.s)).c_str(), is_sel ? ink::brand : ink::dark);
+                phone_pill(a, c, t, pill_end, row_ty(r), pr.s, g.mats[rd.material] >= rd.cost ? pill::prog : pill::gray);
+            }
+        }
+        core::message st;
+        ink si = ink::dim;
+        if(sel >= data::brigade_count)
+        {
+            int k = sel - data::brigade_count;
+            const core::repair_def& rd = data::repairs[k];
+            phone_text(a, t, list_x, row_py(4), fit(a, rd.info, phone_text_w).c_str(), ink::dim);
+            switch(g.repair_blocked(k))
+            {
+                case core::game::repair_ok: st.add(UI(a_napraw_tura_b_wroc)); si = ink::brand; break;
+                case core::game::repair_material: st.add(UI(brak_4)).add(data::materials[rd.material].name).add(UI(problemy_paczki)); si = ink::late; break;
+                case core::game::repair_no_target: st.add(UI(brak_problemu_w_polu_widzenia_2)); si = ink::late; break;
+                case core::game::repair_no_room: st.add(UI(nie_ma_gdzie_postawic)); si = ink::late; break;
+                case core::game::repair_no_puddle: st.add(UI(brak_kaluz_obok_2)); si = ink::late; break;
+                default: st.add(UI(b_wroc)); break;
+            }
+            phone_text(a, t, list_x, row_py(5), fit(a, st.s, phone_text_w).c_str(), si);
+            return;
+        }
+        phone_text(a, t, list_x, row_py(4), fit(a, data::brigade[sel].desc, phone_text_w).c_str(), ink::dim);
+        if(g.helper_called >= 0)
+        {
+            st.add(UI(na_tym_etapie)).add(data::brigade[g.helper_called].name);
+            if(g.guard_turns > 0) st.add(" (").add(g.guard_turns).add(" t.)");
+            if(g.ally_turns > 0) st.add(" (").add(g.ally_turns).add(" t.)");
+            si = ink::done;
+        }
+        else switch(g.helper_blocked(sel))
+        {
+            case core::game::helper_ok: st.add(UI(a_wezwij_tura_b_wroc)); si = ink::brand; break;
+            case core::game::helper_locked: st.add(UI(odblokuj_w_szkoleniach)); break;
+            case core::game::helper_cash: st.add(UI(za_maly_budzet)); si = ink::late; break;
+            case core::game::helper_no_target: st.add(UI(nikogo_w_zasiegu_2)).add(data::brigade[sel].reach); si = ink::late; break;
+            case core::game::helper_no_room: st.add(UI(brak_miejsca_obok_2)); si = ink::late; break;
+            default: st.add(UI(b_wroc)); break;
+        }
+        phone_text(a, t, list_x, row_py(5), fit(a, st.s, phone_text_w).c_str(), si);
+    }
+
+    // Premie z tej budowy (#27, zakładka Sprzęt, strona pod górą): wybrane premie (kolor = rzadkość) i aktywne synergie.
+    // Lista 4 wiersze (góra/dół), pod nią opis zaznaczonej i znaczniki; B - wróć.
+    int boons_items(const core::game& g, int* out)
+    {
+        int n = 0;
+        for(int b = 0; b < data::boons_count; ++b) if(g.has_boon(b)) out[n++] = b;
+        for(int k = 0; k < data::synergies_count; ++k) if(g.synergy_active(k)) out[n++] = 100 + k;
+        return n;
+    }
+
+    void tab_boons(app& a, phone_screen& ph, page_sprites& t, int sel)
+    {
+        const core::game& g = *a.g;
+        int items[64];
+        const int n = boons_items(g, items);
+        core::message sub; sub.add(g.boons_owned()).add(UI(premii_b_wroc));
+        phone_header(a, ph, t, UI(premie_3), sub.s);
+        phone_canvas& c = *ph.canvas;
+        if(n == 0)
+        {
+            phone_text(a, t, list_x, row_py(0), UI(brak_premii), ink::dim);
+            phone_text(a, t, list_x, row_py(1), UI(po_kazdym_etapie_1_z_3), ink::dim);
+            phone_text(a, t, list_x, row_py(2), UI(n2_z_tym_samym_znacznikiem_2), ink::dim);
+            phone_text(a, t, list_x, row_py(3), UI(synergia_dodatkowy_skutek), ink::dim);
+            return;
+        }
+        int top = core::imax(0, core::imin(sel - 1, n - 4));
+        for(int r = 0; r < 4 && top + r < n; ++r)
+        {
+            const int it = items[top + r];
+            const bool on = top + r == sel;
+            if(it >= 100)
+            {
+                const core::synergy_def& sd = data::synergies[it - 100];
+                stripe(c, r, phone_tile::stripe_done);
+                phone_text(a, t, list_x, row_py(r), fit(a, sd.name, pill_room(UI(synergia_3))).c_str(), on ? ink::brand : ink::done);
+                phone_pill(a, c, t, pill_end, row_ty(r), UI(synergia_3), pill::done);
+                continue;
+            }
+            const core::boon_def& bd = data::boons[it];
+            stripe(c, r, on ? phone_tile::stripe_late : rarity_stripe(bd.rarity));
+            const char* rn = data::boon_rarities[bd.rarity].name;
+            phone_text(a, t, list_x, row_py(r), fit(a, bd.name, pill_room(rn)).c_str(), on ? ink::brand : rarity_ink(bd.rarity));
+            phone_pill(a, c, t, pill_end, row_ty(r), rn, rarity_pill(bd.rarity));
+        }
+        const int it = items[sel];
+        if(it >= 100)
+        {
+            phone_text(a, t, list_x, row_py(4), fit(a, data::synergies[it - 100].desc, phone_text_w).c_str(), ink::dark);
+            core::message tg; tg.add(UI(znaczniki));
+            const uint16_t tags = data::synergies[it - 100].tags;
+            bool first = true;
+            for(int k = 0; k < data::boon_tags_count; ++k) if((tags >> k) & 1) { tg.add(first ? "" : " + ").add(data::boon_tags[k]); first = false; }
+            phone_text(a, t, list_x, row_py(5), fit(a, tg.s, phone_text_w).c_str(), ink::dim);
+        }
+        else
+        {
+            phone_text(a, t, list_x, row_py(4), fit(a, data::boons[it].desc, phone_text_w).c_str(), ink::dark);
+            core::message tg; tg.add(UI(znaczniki)).add(boon_tags_line(data::boons[it]).s);
+            phone_text(a, t, list_x, row_py(5), fit(a, tg.s, phone_text_w).c_str(), ink::dim);
+        }
     }
 
     void tab_costs(app& a, phone_screen& ph, page_sprites& t)   // Koszty = Szkolenia (podgląd w trakcie budowy)
     {
         const core::game& g = *a.g;
-        phone_header(a, ph, t, tab_names[4], "Szkolenia");
+        phone_header(a, ph, t, tab_name(4), UI(szkolenia));
         phone_canvas& c = *ph.canvas;
         int total = core::shop_total_cost(), spent = core::shop_spent(a.save);
-        phone_text(a, t, list_x, row_py(0), "CAŁKOWITY KOSZT", ink::dim);
-        core::message sp; sp.add(spent).add(" dośw.");
-        phone_text(a, t, list_x, row_py(1), sp.s, ink::dark);
-        c.bar(2, row_ty(2), 26, phone_tile::bar_brand_0, spent, total);
-        core::message bud; bud.add("Budżet ").add(total);
-        phone_text(a, t, list_x, row_py(3), bud.s, ink::dim);
-        core::message rest; rest.add("Pozostało ").add(int(a.save.xp));
-        phone_text(a, t, 226, row_py(3), rest.s, ink::done, 1);
-        core::message run; run.add("Z tej budowy: +").add(g.xp() - g.xp_banked);
-        phone_text(a, t, list_x, row_py(4), run.s, ink::dim);
-        phone_text(a, t, list_x, row_py(5), "Kupisz po budowie", ink::dim);
+        core::message sp; sp.add(UI(wydane)).add(spent).add(" z ").add(total).add(UI(dosw));
+        phone_text(a, t, list_x, row_py(0), sp.s, ink::dim);
+        c.bar(2, row_ty(1), 26, phone_tile::bar_brand_0, spent, total);
+        core::message rest; rest.add(UI(do_wydania)).add(int(a.save.xp)).add(UI(z_budowy_2)).add(g.xp() - g.xp_banked);
+        phone_text(a, t, list_x, row_py(2), fit(a, rest.s, phone_text_w).c_str(), ink::dark);
+        core::message rs; rs.add(UI(respekt_3)).add(int(a.save.respect));   // Respekt za etapy jest już w profilu
+        phone_text(a, t, list_x, row_py(3), rs.s, ink::brand);
+        const int ts = core::next_task(a.save, &g);   // v0.21.52 cz. c (#50): najbliższe zadanie dnia / tygodnia, postęp na żywo
+        if(ts >= 0)
+        {
+            const core::task_def& td = core::task_of(a.save, ts);
+            core::message tm; tm.add(ts < core::daily_task_slots ? UI(dnia) : UI(tydz)).add(td.name);
+            core::message pm; pm.add(core::task_progress_live(a.save, &g, ts)).add("/").add(td.target);
+            phone_text(a, t, list_x, row_py(4), fit(a, tm.s, pill_room(pm.s)).c_str(), ink::dark);
+            phone_pill(a, c, t, pill_end, row_ty(4), pm.s, pill::prog);
+        }
+        else phone_text(a, t, list_x, row_py(4), UI(zadania_na_dzis_wykonane), ink::done);
+        int ci = core::next_contract(a.save, g);   // najbliższe zlecenie z postępem na żywo
+        if(ci >= 0)
+        {
+            const core::contract_def& cd = data::contracts[ci];
+            core::message cm; cm.add(UI(zlecenie)).add(cd.name);
+            core::message pm; pm.add(core::imin(cd.target, core::contract_progress_live(a.save, g, ci))).add("/").add(cd.target);
+            phone_text(a, t, list_x, row_py(5), fit(a, cm.s, pill_room(pm.s)).c_str(), ink::dim);
+            phone_pill(a, c, t, pill_end, row_ty(5), pm.s, pill::prog);
+        }
+        else phone_text(a, t, list_x, row_py(5), UI(kupisz_po_budowie), ink::dim);
     }
 
     void draw_tab(app& a, phone_screen& ph, page_sprites& t, int tab)
@@ -795,27 +1641,32 @@ namespace
         ph.commit();
     }
 
+    void stats_page(app& a, phone_screen& ph, page_sprites& t, const core::game* g, int cls, const core::run_mods& m, int start_page = 0);
+
     enum class pause_result { resume, quit, save_exit };
 
     // Telefon pod SELECT. L/R lub strzałki: zakładki; START: menu akcji; B/SELECT: powrót do gry.
-    pause_result run_phone(app& a)
+    pause_result run_phone(app& a, bool brigade_page = false)
     {
         phone_screen ph(a.phone_tab);
         page_sprites t;
         bn::sprite_palette_item default_ink = a.text.palette_item();
-        const char* actions[] = { "Wróć do gry", "Jak grać", "Zapisz i wyjdź", "Porzuć budowę" };
+        const char* actions[] = { UI(wroc_do_gry), UI(jak_grac), UI(zapisz_i_wyjdz), UI(porzuc_budowe) };
         constexpr int actions_count = 4;
-        bool sheet = false, confirm = false;
-        int sel = 0;
+        bool sheet = false, confirm = false, brigade = brigade_page;   // brigade: strona Brygada w zakładce Zespół (A)
+        bool boons = false;   // strona Premie w zakładce Sprzęt (góra)
+        int sel = 0, bsel = 0, psel = 0;
         auto redraw = [&]() {
+            if(! sheet && boons && a.phone_tab == 3) { tab_boons(a, ph, t, psel); ph.set_tab(3); ph.commit(); return; }
+            if(! sheet && brigade && a.phone_tab == 3) { tab_brigade(a, ph, t, bsel); ph.set_tab(3); ph.commit(); return; }
             if(! sheet) { draw_tab(a, ph, t, a.phone_tab); return; }
-            phone_header(a, ph, t, "Menu", "START");
+            phone_header(a, ph, t, UI(menu), "START");
             for(int i = 0; i < actions_count; ++i)
             {
                 if(i == sel) stripe(*ph.canvas, i, phone_tile::stripe_brand);
                 phone_text(a, t, list_x, row_py(i), actions[i], i == sel ? ink::brand : ink::dark);
             }
-            phone_text(a, t, list_x, row_py(5), confirm ? "Na pewno? A: tak  B: nie" : "A: wybierz  B: wróć",
+            phone_text(a, t, list_x, row_py(5), confirm ? UI(na_pewno_a_tak_b_nie) : UI(a_wybierz_b_wroc),
                        confirm ? ink::late : ink::dim);
             ph.commit();
         };
@@ -838,10 +1689,11 @@ namespace
                 }
                 else
                 {
+                    // jedno przerysowanie na klatkę (stare kafle tekstu zwalniają się dopiero w następnej)
                     if(bn::keypad::up_pressed()) { sel = (sel + actions_count - 1) % actions_count; redraw(); }
-                    if(bn::keypad::down_pressed()) { sel = (sel + 1) % actions_count; redraw(); }
-                    if(bn::keypad::b_pressed()) { sheet = false; redraw(); }
-                    if(bn::keypad::a_pressed())
+                    else if(bn::keypad::down_pressed()) { sel = (sel + 1) % actions_count; redraw(); }
+                    else if(bn::keypad::b_pressed()) { sheet = false; redraw(); }
+                    else if(bn::keypad::a_pressed())
                     {
                         if(sel == 0) return finish(pause_result::resume);
                         if(sel == 2) return finish(pause_result::save_exit);
@@ -863,12 +1715,530 @@ namespace
             {
                 int d = (bn::keypad::r_pressed() || bn::keypad::right_pressed()) ? 1
                       : ((bn::keypad::l_pressed() || bn::keypad::left_pressed()) ? -1 : 0);
-                if(d) { a.phone_tab = (a.phone_tab + d + tabs_count) % tabs_count; redraw(); bn::sound_items::sfx_menu.play(); }
+                if(d) { a.phone_tab = (a.phone_tab + d + tabs_count) % tabs_count; brigade = false; boons = false; redraw(); bn::sound_items::sfx_menu.play(); }
+                else if(boons && a.phone_tab == 3)   // Premie: góra/dół przewija, B wraca do Sprzętu
+                {
+                    int items[64];
+                    const int n = boons_items(*a.g, items);
+                    int v = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+                    if(v && n > 0) { psel = (psel + v + n) % n; redraw(); bn::sound_items::sfx_menu.play(); }
+                    if(! v && bn::keypad::b_pressed()) { boons = false; redraw(); bn::sound_items::sfx_menu.play(); next_frame(); continue; }
+                }
+                else if(brigade && a.phone_tab == 3)   // Brygada: góra/dół wybór, A wezwij, B wróć do Sprzętu
+                {
+                    int v = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+                    if(v) { bsel = (bsel + v + brigade_rows) % brigade_rows; redraw(); bn::sound_items::sfx_menu.play(); }
+                    if(bn::keypad::a_pressed())
+                    {
+                        bool ok = bsel < data::brigade_count ? a.g->helper_blocked(bsel) == core::game::helper_ok
+                                                             : a.g->repair_blocked(bsel - data::brigade_count) == core::game::repair_ok;
+                        if(ok) { a.pending_helper = bsel; return finish(pause_result::resume); }   // wezwanie / naprawa po powrocie do gry
+                        bn::sound_items::sfx_hurt.play();
+                    }
+                    if(! v && bn::keypad::b_pressed()) { brigade = false; redraw(); bn::sound_items::sfx_menu.play(); next_frame(); continue; }
+                }
+                else if(a.phone_tab == 3 && bn::keypad::down_pressed()) { brigade = true; bsel = 0; redraw(); bn::sound_items::sfx_menu.play(); }
+                else if(a.phone_tab == 3 && bn::keypad::up_pressed()) { boons = true; psel = 0; redraw(); bn::sound_items::sfx_menu.play(); }
+                else if(a.phone_tab == 3 && bn::keypad::a_pressed())   // Sprzęt: A = rozpiska obrażeń broni (#26)
+                {
+                    stats_page(a, ph, t, a.g, a.g->cls, a.g->bonus, 1);
+                    redraw();
+                    next_frame();
+                    continue;
+                }
+                else if(a.phone_tab == 2 && bn::keypad::a_pressed())   // Start: A = statystyki i skąd są premie
+                {
+                    stats_page(a, ph, t, a.g, a.g->cls, a.g->bonus);
+                    redraw();
+                    next_frame();
+                    continue;
+                }
+                if(d) { next_frame(); continue; }   // po zmianie zakładki - jedno przerysowanie na klatkę
                 if(bn::keypad::start_pressed()) { sheet = true; sel = 0; redraw(); }
-                if(bn::keypad::b_pressed() || bn::keypad::select_pressed()) return finish(pause_result::resume);
+                else if(bn::keypad::b_pressed() || bn::keypad::select_pressed()) return finish(pause_result::resume);
             }
             next_frame();
         }
+    }
+
+    const char* gear_stat_name(core::gear_stat s)
+    {
+        switch(s)
+        {
+            case core::gear_stat::def:     return UI(obrona);
+            case core::gear_stat::dmg:     return UI(obrazenia);
+            case core::gear_stat::dodge:   return UI(unik_5);
+            case core::gear_stat::thermos: return UI(termos_3);
+            default:                       return UI(max_hp_2);
+        }
+    }
+
+    // ------------------------------------------------------------------ v0.21.50 cz. 3: wydarzenia, ulepszenie narzędzia
+    // Cecha ulepszonego narzędzia (+2): 3 karty (nazwa, skrót, opis), góra/dół, A - wybór. Rysuje na podanym telefonie
+    // (Hurtownia albo osobne okno po wydarzeniu).
+    void trait_loop(app& a, phone_screen& ph, page_sprites& t)
+    {
+        core::game& g = *a.g;
+        int sel = 0;
+        auto redraw = [&]() {
+            core::message title; title.add("   ").add(g.weapon().name).add("+").add(g.weapon_lvl);
+            phone_header(a, ph, t, title.s, UI(wybierz_ceche));
+            phone_canvas& c = *ph.canvas;
+            for(int k = 0; k < data::tool_traits_count && k < 3; ++k)
+            {
+                const core::tool_trait_def& td = data::tool_traits[k];
+                const bool on = k == sel;
+                if(on) c.rounded(1, row_ty(2 * k), 28, 4, phone_tile::fill_group, phone_tile::corner_group);
+                stripe(c, 2 * k, on ? phone_tile::stripe_brand : phone_tile::stripe_todo);
+                stripe(c, 2 * k + 1, on ? phone_tile::stripe_brand : phone_tile::stripe_todo);
+                phone_text(a, t, list_x, row_py(2 * k), fit(a, td.name, pill_room(td.short_name)).c_str(), on ? ink::brand : ink::dark);
+                phone_pill(a, c, t, pill_end, row_ty(2 * k), td.short_name, on ? pill::prog : pill::gray);
+                phone_text(a, t, list_x, row_py(2 * k + 1), fit(a, td.desc, phone_text_w).c_str(), on ? ink::dark : ink::dim);
+            }
+            ph.commit();
+        };
+        redraw();
+        bn::sound_items::sfx_notify.play(bn::fixed(0.7));
+        modal_guard();
+        while(g.trait_pending)
+        {
+            int d = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+            if(d) { sel = (sel + d + data::tool_traits_count) % data::tool_traits_count; redraw(); bn::sound_items::sfx_menu.play(); }
+            if(bn::keypad::a_pressed() && g.choose_trait(sel)) bn::sound_items::sfx_level.play();
+            next_frame();
+        }
+        wait_release();
+    }
+    void trait_dialog(app& a)
+    {
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
+        phone_screen ph(3);
+        ph.icon.set_visible(false);
+        bn::sprite_ptr icon = bn::sprite_items::menu_icons.create_sprite(-100, -59, icon_upgrade);
+        icon.set_bg_priority(1);
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        page_sprites t;
+        trait_loop(a, ph, t);
+        t.clear();
+        a.text.set_palette_item(default_ink);
+    }
+
+    // Wydarzenie z wyborem (#30): SMS (nadawca, 3 linie), potem odpowiedzi (2-3, skutki pod spodem), na końcu wynik
+    // (co zaszło, a co "nie tym razem"). A - dalej / wybór, góra/dół - odpowiedź.
+    void event_dialog(app& a)
+    {
+        core::game& g = *a.g;
+        if(g.pending_event < 0) return;
+        const core::choice_event_def& ev = data::choice_events[g.pending_event];
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
+        phone_screen ph(2);
+        ph.icon.set_visible(false);
+        bn::sprite_ptr icon = bn::sprite_items::menu_icons.create_sprite(-100, -59, icon_event);
+        icon.set_bg_priority(1);
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        page_sprites t;
+        int page = 0, sel = 0;
+        auto redraw = [&]() {
+            phone_canvas& c = *ph.canvas;
+            if(page == 0)   // SMS
+            {
+                phone_header(a, ph, t, UI(wiadomosci), ev.name);
+                phone_text(a, t, list_x, row_py(0), ev.msg.from, ink::dark);
+                phone_pill(a, c, t, pill_end, row_ty(0), UI(teraz_2), pill::gray);
+                c.rounded(2, row_ty(1), 26, 6, phone_tile::fill_group, phone_tile::corner_group);
+                for(int i = 0; i < 3; ++i) phone_text(a, t, 22, row_py(1 + i), ev.msg.lines[i], ink::dark);
+                phone_text(a, t, list_x, row_py(4), UI(wydarzenie_wybierz_odpowiedz), ink::brand);
+                phone_text(a, t, 226, row_py(5), UI(a_odpowiedz), ink::brand, 1);
+            }
+            else if(page == 1)   // odpowiedzi
+            {
+                phone_header(a, ph, t, UI(odpowiedz_2), UI(gora_dol_a_wybierz));
+                for(int k = 0; k < ev.choices_count; ++k)
+                {
+                    const core::event_choice& ch = ev.choices[k];
+                    const bool on = k == sel;
+                    if(on) c.rounded(1, row_ty(2 * k), 28, 4, phone_tile::fill_group, phone_tile::corner_group);
+                    stripe(c, 2 * k, on ? phone_tile::stripe_brand : phone_tile::stripe_todo);
+                    stripe(c, 2 * k + 1, on ? phone_tile::stripe_brand : phone_tile::stripe_todo);
+                    phone_text(a, t, list_x, row_py(2 * k), ch.label, on ? ink::brand : ink::dark);
+                    core::message m; core::choice_label(m, ch);
+                    phone_text(a, t, list_x, row_py(2 * k + 1), fit(a, m.s, phone_text_w).c_str(), on ? ink::dark : ink::dim);
+                }
+                if(ev.choices_count < 3) phone_text(a, t, list_x, row_py(5), ev.name, ink::dim);
+            }
+            else   // wynik
+            {
+                const core::event_choice& ch = ev.choices[g.stage_choice_pick];
+                phone_header(a, ph, t, UI(wynik), ev.name);
+                core::message m0; m0.add(UI(odpowiedz)).add(ch.label);
+                phone_text(a, t, list_x, row_py(0), fit(a, m0.s, phone_text_w).c_str(), ink::dark);
+                stripe(c, 1, phone_tile::stripe_done);
+                phone_text(a, t, list_x, row_py(1), fit(a, ch.result, phone_text_w).c_str(), ink::done);
+                if(ch.outs == 0) phone_text(a, t, list_x, row_py(2), UI(bez_skutkow_2), ink::dim);
+                for(int i = 0; i < ch.outs && i < 3; ++i)
+                {
+                    const bool done = (g.choice_done >> i) & 1;
+                    core::message m;
+                    if(! done) m.add(UI(nie_tym_razem));
+                    core::choice_out o = ch.out[i];
+                    o.chance = 100;   // szansa już rozstrzygnięta
+                    core::choice_out_label(m, o);
+                    const bool bad = o.effect == core::choice_effect::spawn || o.effect == core::choice_effect::status || o.value < 0;
+                    stripe(c, 2 + i, ! done ? phone_tile::stripe_todo : (bad ? phone_tile::stripe_late : phone_tile::stripe_done));
+                    phone_text(a, t, list_x, row_py(2 + i), fit(a, m.s, phone_text_w).c_str(), ! done ? ink::dim : (bad ? ink::late : ink::dark));
+                }
+                phone_text(a, t, 226, row_py(5), UI(a_dalej), ink::brand, 1);
+            }
+            ph.commit();
+        };
+        redraw();
+        bn::sound_items::sfx_notify.play(bn::fixed(0.7));
+        modal_guard();
+        while(true)
+        {
+            if(page == 1)
+            {
+                int d = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+                if(d) { sel = (sel + d + ev.choices_count) % ev.choices_count; redraw(); bn::sound_items::sfx_menu.play(); }
+            }
+            if(bn::keypad::a_pressed() || (page != 1 && bn::keypad::start_pressed()))
+            {
+                if(page == 1) { g.choose_event(sel); bn::sound_items::sfx_buy.play(); }
+                if(page == 2) break;
+                ++page;
+                redraw();
+                modal_guard();   // nowa strona (odpowiedzi / wynik): bez przypadkowego wyboru z rozpędu
+            }
+            next_frame();
+        }
+        t.clear();
+        a.text.set_palette_item(default_ink);
+        wait_release();
+    }
+
+    // Narzędzie na polu przy ulepszonym (#31): porównanie, ostrzeżenie o utracie ulepszenia. A - zamieniam, B - zostaję.
+    void tool_offer_dialog(app& a)
+    {
+        core::game& g = *a.g;
+        if(! g.has_tool_offer()) return;
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
+        phone_screen ph(3);
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        page_sprites t;
+        const int w = data::tools[g.tool_offer].weapon;
+        phone_header(a, ph, t, UI(nowe_narzedzie), data::weapons[w].name);
+        phone_canvas& c = *ph.canvas;
+        const core::dmg_breakdown now = g.weapon_breakdown(), next = g.weapon_breakdown(-1, w);
+        core::message m0; m0.add(UI(teraz_3)); g.weapon_title(m0);
+        core::add_range(m0.add(" "), now.min, now.max);
+        stripe(c, 0, phone_tile::stripe_brand);
+        phone_text(a, t, list_x, row_py(0), fit(a, m0.s, phone_text_w).c_str(), ink::dark);
+        core::message m1; m1.add(UI(nowe)).add(data::weapons[w].name).add(" ");
+        core::add_range(m1, next.min, next.max).add(UI(zasieg)).add(data::weapons[w].range);
+        stripe(c, 1, phone_tile::stripe_prog);
+        phone_text(a, t, list_x, row_py(1), fit(a, m1.s, phone_text_w).c_str(), ink::dark);
+        core::message m2; core::compare_line(m2, now, next);
+        if(a.text.width(m2.s) > phone_text_w) { m2 = core::message(); core::compare_line(m2, now, next, true); }
+        phone_text(a, t, list_x, row_py(2), fit(a, m2.s, phone_text_w).c_str(), next.avg10 > now.avg10 ? ink::done : ink::late);
+        core::message m3; m3.add(UI(uwaga)).add(g.weapon_lvl);
+        if(g.weapon_trait >= 0) m3.add(" i ").add(data::tool_traits[g.weapon_trait].short_name).add(UI(przepadna));
+        else m3.add(UI(przepadnie));
+        stripe(c, 3, phone_tile::stripe_late);
+        phone_text(a, t, list_x, row_py(3), fit(a, m3.s, phone_text_w).c_str(), ink::late);
+        ph.commit();
+        // v0.21.51: wybór zaznaczeniem - na start „Zostaję”, góra/dół zaznacza, A zatwierdza, B zostaję
+        int sel = 0;
+        page_sprites rows;
+        auto draw_rows = [&]() {
+            rows.clear();
+            for(int k = 0; k < 2; ++k)
+            {
+                const bool on = k == sel;
+                c.rounded(1, row_ty(4 + k), 28, 2, on ? phone_tile::fill_group : phone_tile::fill_card, on ? phone_tile::corner_group : phone_tile::corner_card);
+                stripe(c, 4 + k, on ? phone_tile::stripe_brand : (k == 1 ? phone_tile::stripe_late : phone_tile::stripe_todo));
+                core::message r; r.add(on ? "> " : "  ");
+                if(k == 0) { r.add(UI(zostaje)); g.weapon_title(r); }
+                else r.add(UI(zamieniam_na)).add(data::weapons[w].name);
+                phone_text(a, rows, list_x, row_py(4 + k), fit(a, r.s, phone_text_w).c_str(), on ? ink::brand : (k == 1 ? ink::late : ink::dark));
+            }
+            ph.commit();
+        };
+        draw_rows();
+        bn::sound_items::sfx_notify.play(bn::fixed(0.7));
+        modal_guard();
+        while(g.has_tool_offer())
+        {
+            if(bn::keypad::up_pressed() || bn::keypad::down_pressed()) { sel = 1 - sel; draw_rows(); bn::sound_items::sfx_menu.play(); }
+            else if(bn::keypad::a_pressed() && sel == 1) { g.accept_tool(); bn::sound_items::sfx_buy.play(); }
+            else if(bn::keypad::a_pressed() || bn::keypad::b_pressed()) { g.decline_tool(); bn::sound_items::sfx_menu.play(); }
+            next_frame();
+        }
+        rows.clear();
+        t.clear();
+        a.text.set_palette_item(default_ink);
+        wait_release();
+    }
+
+    // Paczka sprzętu przy zajętym slocie: porównanie obecny / nowy z cechami. A: zakładam, B: zostawiam.
+    void gear_offer_dialog(app& a)
+    {
+        core::game& g = *a.g;
+        phone_screen ph(3);
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        page_sprites t;
+        const int slot = g.offer_slot;
+        phone_header(a, ph, t, UI(paczka_sprzetu), data::gear_slots[slot]);
+        phone_canvas& c = *ph.canvas;
+        auto item_rows = [&](int row, int rarity, int trait, bool is_new) {
+            const core::gear_def& gd = data::gear[slot * 3 + rarity];
+            stripe(c, row, is_new ? phone_tile::stripe_prog : phone_tile::stripe_todo);
+            stripe(c, row + 1, is_new ? phone_tile::stripe_prog : phone_tile::stripe_todo);
+            phone_text(a, t, list_x, row_py(row), clip(gd.name, 17).c_str(), ink::dark);
+            phone_pill(a, c, t, pill_end, row_ty(row), data::gear_rarities[rarity],
+                       rarity == 2 ? pill::prog : (rarity == 1 ? pill::group : pill::gray));
+            core::message m; m.add(is_new ? UI(nowy) : UI(teraz_3)).add(gear_stat_name(gd.stat)).add(" +").add(gd.value)
+                                .add(", ").add(data::gear_traits[trait].short_name);
+            phone_text(a, t, list_x, row_py(row + 1), fit(a, m.s, phone_text_w).c_str(), is_new ? ink::brand : ink::dim);
+        };
+        item_rows(0, g.equipped[slot], g.equipped_trait[slot], false);
+        item_rows(2, g.offer_rarity, g.offer_trait, true);
+        // wiersz 4: porównanie (rozpiska #26) - cios, kryt, obrona; kilka zmian na zmianę co ~1,5 s, bez zmian - cecha
+        const core::dmg_breakdown now = g.weapon_breakdown(), next = g.weapon_breakdown(-1, -1, slot, g.offer_rarity, g.offer_trait);
+        core::message cmp[3]; int cmp_n = 0;
+        if(now.min != next.min || now.max != next.max || now.avg10 != next.avg10) { core::compare_line(cmp[cmp_n], now, next); if(a.text.width(cmp[cmp_n].s) > phone_text_w) { cmp[cmp_n] = core::message(); core::compare_line(cmp[cmp_n], now, next, true); } ++cmp_n; }
+        if(now.crit_chance() != next.crit_chance() || now.crit_max != next.crit_max) core::compare_crit(cmp[cmp_n++], now, next);
+        const core::gear_def& gold = data::gear[slot * 3 + g.equipped[slot]], &gnew = data::gear[slot * 3 + g.offer_rarity];
+        if(gold.stat == core::gear_stat::def && gnew.value != gold.value)
+        {
+            int d0 = g.hero_defense(), d1 = d0 - gold.value + gnew.value;
+            cmp[cmp_n++].add(UI(obr_4)).add(d0).add(" -> ").add(d1).add(UI(z_ciosu)).add(d0 / 2).add(" -> -").add(d1 / 2);
+        }
+        const bool neutral = cmp_n == 0;   // bez wpływu na walkę: jak dawniej cecha nowego przedmiotu
+        if(neutral) cmp[cmp_n++].add(UI(cecha_2)).add(data::gear_traits[g.offer_trait].name);
+        page_sprites t4;
+        auto draw_cmp = [&](int i) {
+            t4.clear();
+            phone_text(a, t4, list_x, row_py(4), fit(a, cmp[i].s, phone_text_w).c_str(), neutral ? ink::dim : ink::brand);
+        };
+        draw_cmp(0);
+        core::message km; km.add(UI(a_zakladam_b_zostawiam)).add(data::gear_decline_xp + g.offer_rarity).add(")");
+        phone_text(a, t, list_x, row_py(5), km.s, g.offer_is_better() ? ink::done : ink::dark);
+        ph.commit();
+        bn::sound_items::sfx_notify.play(bn::fixed(0.7));
+        modal_guard();
+        int clock = 0;
+        while(g.has_offer())
+        {
+            if(bn::keypad::a_pressed()) { g.accept_offer(); bn::sound_items::sfx_buy.play(); }
+            else if(bn::keypad::b_pressed()) { g.decline_offer(); bn::sound_items::sfx_menu.play(); }
+            else if(cmp_n > 1 && ++clock % 90 == 0) draw_cmp((clock / 90) % cmp_n);
+            next_frame();
+        }
+        t4.clear();
+        t.clear();
+        a.text.set_palette_item(default_ink);
+        wait_release();
+    }
+
+    // Rozpiska obrażeń broni (#26) jako lista wierszy telefonu: broń, statystyka, premie (tylko te, które coś dają),
+    // cios, kryt z częściami, moc, obrona i unik (w trakcie budowy). Zwraca liczbę wierszy.
+    struct dmg_rows { core::message line[20]; ink k[20]; int stripe[20]; int n = 0; };
+
+    // Wiersz rozpiski; dłuższy niż telefon dzieli się po ostatnim ", " / ": " / " + ", które się mieści - reszta
+    // w kolejnym wierszu z wcięciem.
+    void push_row(app& a, dmg_rows& out, const core::message& l, ink k, int stripe_tile)
+    {
+        if(out.n >= 20) return;
+        int cut = -1;
+        if(a.text.width(l.s) > phone_text_w)
+            for(int p = 1; p + 2 < l.n; ++p)
+                if(l.s[p] == ' ' && (l.s[p - 1] == ',' || l.s[p - 1] == ':' || (l.s[p + 1] == '+' && l.s[p + 2] == ' ')))
+                {
+                    bn::string<96> pre(l.s, p);
+                    if(a.text.width(pre) <= phone_text_w) cut = p;
+                }
+        if(cut < 0 || out.n >= 19) { out.line[out.n] = l; out.k[out.n] = k; out.stripe[out.n++] = stripe_tile; return; }
+        core::message first; first.kind = l.kind;
+        bn::string<96> pre(l.s, cut);
+        first.add(pre.c_str());
+        out.line[out.n] = first; out.k[out.n] = k; out.stripe[out.n++] = stripe_tile;
+        core::message rest; rest.add("   ").add(l.s + cut + 1);
+        out.line[out.n] = rest; out.k[out.n] = k; out.stripe[out.n++] = -1;
+    }
+
+    // Rozpiska obrażeń broni (#26) jako lista wierszy telefonu: broń, statystyka, premie (tylko te, które coś dają),
+    // cios, kryt z częściami, moc, obrona i unik (w trakcie budowy).
+    void breakdown_rows(app& a, dmg_rows& out, const core::dmg_breakdown& b, const core::game* g)
+    {
+        using core::dmg_text;
+        const dmg_text order[] = { dmg_text::weapon, dmg_text::stat, dmg_text::stat_parts, dmg_text::profile, dmg_text::run,
+                                   dmg_text::gear, dmg_text::upgrade, dmg_text::pct, dmg_text::boon, dmg_text::enemy, dmg_text::total, dmg_text::power, dmg_text::crit,
+                                   dmg_text::crit_parts, dmg_text::crit_extra };
+        for(dmg_text k : order)
+        {
+            core::message l;
+            bool shown = core::dmg_line(l, b, k);
+            bool always = k == dmg_text::weapon || k == dmg_text::stat || k == dmg_text::total || k == dmg_text::crit
+                       || k == dmg_text::crit_parts;
+            if(! shown && ! always) continue;
+            ink i = k == dmg_text::weapon ? ink::brand : (k == dmg_text::total ? ink::done
+                  : (k == dmg_text::crit ? ink::prog : (k == dmg_text::stat || k == dmg_text::profile || k == dmg_text::run
+                                                        || k == dmg_text::gear || k == dmg_text::pct || k == dmg_text::boon
+                                                        || k == dmg_text::upgrade ? ink::dark : ink::dim)));
+            int st = k == dmg_text::weapon ? phone_tile::stripe_brand : (k == dmg_text::total ? phone_tile::stripe_done
+                   : (k == dmg_text::crit ? phone_tile::stripe_prog : -1));
+            push_row(a, out, l, i, st);
+        }
+        if(g)   // obrona i unik: co zmniejsza ciosy problemów
+        {
+            const core::game& G = *g;
+            core::message d; d.add(UI(obr_4)).add(G.hero_defense()).add(": -").add(G.hero_defense() / 2).add(UI(z_ciosu_problemu));
+            if(G.bonus.taken_pct) d.add(", -").add(G.bonus.taken_pct).add("%");
+            push_row(a, out, d, ink::dark, -1);
+            core::message u; u.add(UI(unik_6)).add(G.dodge_pct()).add(UI(szcz_3)).add(G.luck()).add(" x ").add(data::dodge_per_luck_pct).add("%");
+            if(G.gear_bonus(core::gear_stat::dodge)) u.add(UI(buty)).add(G.gear_bonus(core::gear_stat::dodge)).add("%");
+            const int pd = G.bonus.dodge + G.boon_sum(core::boon_effect::dodge);
+            if(pd) u.add(UI(premie_4)).add(pd).add("%");
+            u.add(")");
+            push_row(a, out, u, ink::dim, -1);
+        }
+    }
+
+    // Rozpiska obrażeń: z bieżącej budowy (g) albo dla zawodu przed budową; źródła premii z profilu, gdy się zgadzają.
+    core::dmg_breakdown hero_breakdown(app& a, const core::game* g, int cls, const core::run_mods& m)
+    {
+        core::dmg_breakdown b = g ? g->weapon_breakdown() : core::class_breakdown(cls, m);
+        core::run_mods parts[core::mods_sources];
+        core::mods_parts(a.save, parts);
+        b.set_sources(parts);
+        return b;
+    }
+
+    // Opis statystyk (#19): strona 1 - wartości i co dają (na wyborze zawodu) albo skąd są premie (w trakcie budowy),
+    // strony 2+ - rozpiska obrażeń broni (#26, jak w BG3), ostatnia - wzory w prostych słowach.
+    // A / prawo / dół: następna strona, lewo / góra: poprzednia, B / START / SELECT: wróć. start_page 1 = obrażenia.
+    void stats_page(app& a, phone_screen& ph, page_sprites& t, const core::game* g, int cls, const core::run_mods& m, int start_page)
+    {
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        const core::class_def& c = data::classes[cls];
+        const core::weapon_def& w = g ? g->weapon() : data::weapons[c.weapon];
+        const core::stat stats[3] = { core::stat::str, core::stat::agi, core::stat::intel };
+        bn::unique_ptr<dmg_rows> dr_heap(new dmg_rows());   // ~1,3 KB: na stercie (stos w grze jest już głęboki)
+        dmg_rows& dr = *dr_heap;
+        breakdown_rows(a, dr, hero_breakdown(a, g, cls, m), g);
+        const int dmg_pages = (dr.n + 5) / 6, pages = dmg_pages + 2;
+        int page = start_page < pages ? start_page : 0;
+        auto redraw = [&]() {
+            core::message sub;
+            if(page == 0) sub.add(c.name);
+            else if(page == pages - 1) sub.add(UI(a_strona_b_wroc));
+            else sub.add(page).add("/").add(dmg_pages).add(UI(a_dalej_2));
+            phone_header(a, ph, t, page == 0 ? UI(statystyki) : (page == pages - 1 ? UI(jak_dzialaja) : UI(obrazenia_broni)), sub.s);
+            phone_canvas& cv = *ph.canvas;
+            if(page > 0 && page < pages - 1)
+            {
+                for(int r = 0; r < 6; ++r)
+                {
+                    int i = (page - 1) * 6 + r;
+                    if(i >= dr.n) break;
+                    if(dr.stripe[i] >= 0) stripe(cv, r, dr.stripe[i]);
+                    phone_text(a, t, list_x, row_py(r), fit(a, dr.line[i].s, phone_text_w).c_str(), dr.k[i]);
+                }
+                ph.commit();
+                return;
+            }
+            for(int r = 0; r < 6; ++r)
+            {
+                core::message l;
+                ink k = ink::dark;
+                if(page == pages - 1)   // wzory: statystyka broni, obrona, szczęście (3 wiersze), HP
+                {
+                    const core::stat_kind ws = w.scales_with == core::stat::str ? core::stat_kind::str
+                                             : (w.scales_with == core::stat::agi ? core::stat_kind::agi : core::stat_kind::intel);
+                    const core::stat_kind rk[6] = { ws, core::stat_kind::def, core::stat_kind::luck, core::stat_kind::luck, core::stat_kind::luck,
+                                                    core::stat_kind::hp };
+                    core::stat_rule(l, rk[r], r >= 2 && r <= 4 ? r - 2 : 0);
+                    k = r == 0 ? ink::brand : (r == 3 || r == 4 ? ink::dim : ink::dark);
+                    if(r == 0) stripe(cv, r, phone_tile::stripe_brand);
+                }
+                else if(! g)   // wybór zawodu: wartość (baza + premie z profilu) i co daje
+                {
+                    const core::stat_kind kinds[6] = { core::stat_kind::hp, core::stat_kind::str, core::stat_kind::agi, core::stat_kind::intel,
+                                                       core::stat_kind::def, core::stat_kind::luck };
+                    int base = r == 0 ? c.max_health : (r <= 3 ? core::class_base_stat(cls, stats[r - 1]) : (r == 4 ? c.defense : c.luck));
+                    int bonus = r == 0 ? m.hp : (r <= 3 ? core::mods_stat_bonus(m, cls, stats[r - 1]) : (r == 4 ? m.def : m.luck));
+                    bool wstat = r >= 1 && r <= 3 && stats[r - 1] == w.scales_with;
+                    l.add(core::stat_kind_name(kinds[r])).add(" ").add(base + bonus).add(": ");
+                    core::stat_effect(l, kinds[r], base + bonus, wstat);
+                    k = wstat ? ink::brand : (r >= 1 && r <= 3 ? ink::dim : ink::dark);
+                    if(wstat) stripe(cv, r, phone_tile::stripe_brand);
+                }
+                else   // w trakcie budowy: skąd są premie
+                {
+                    const core::game& G = *g;
+                    int ws = G.hero_stat(w.scales_with), wb = core::class_base_stat(cls, w.scales_with);
+                    switch(r)
+                    {
+                        case 0:
+                            l.add(UI(bron_2)).add(stat_short(w.scales_with)).add(" ").add(ws).add(" = +").add(ws / 2).add(UI(obrazen_2));
+                            k = ink::brand; stripe(cv, r, phone_tile::stripe_brand);
+                            break;
+                        case 1:
+                            l.add(UI(zawod_2)).add(wb);
+                            if(core::mods_stat_bonus(G.bonus, cls, w.scales_with)) l.add(UI(warsztaty_2)).add(core::mods_stat_bonus(G.bonus, cls, w.scales_with));
+                            if(G.trait_bonus(core::stat_trait(w.scales_with))) l.add(UI(sprzet_6)).add(G.trait_bonus(core::stat_trait(w.scales_with)));
+                            k = ink::dim;
+                            break;
+                        case 2:
+                            l.add(UI(obrazenia_2)).add(G.dmg_bonus);
+                            if(G.gear_bonus(core::gear_stat::dmg)) l.add(UI(rekawice)).add(G.gear_bonus(core::gear_stat::dmg));
+                            if(G.bonus.dmg_pct) l.add(", +").add(G.bonus.dmg_pct).add("%");
+                            break;
+                        case 3:
+                        {
+                            int def = G.hero_defense();
+                            l.add(UI(obr_4)).add(def).add(UI(zawod)).add(c.defense);
+                            if(G.def_bonus) l.add(UI(premie_4)).add(G.def_bonus);
+                            if(G.gear_bonus(core::gear_stat::def)) l.add(UI(kask)).add(G.gear_bonus(core::gear_stat::def));
+                            l.add(": -").add(def / 2);
+                            if(G.bonus.taken_pct) l.add(", -").add(G.bonus.taken_pct).add("%");
+                            break;
+                        }
+                        case 4:
+                            l.add(UI(szcz_4)).add(G.luck()).add(UI(kryt_9)).add(G.crit_pct()).add(UI(unik_2)).add(G.dodge_pct()).add(UI(lupy_3))
+                             .add(data::drop_per_luck_pct * G.luck()).add("%");
+                            break;
+                        default:
+                        {
+                            int lvl = data::hp_per_level * (G.hero_level - 1), gear = G.gear_bonus(core::gear_stat::hp);
+                            l.add("HP ").add(G.hero.max_hp).add(UI(zawod)).add(c.max_health);
+                            if(G.bonus.hp) l.add(UI(szkol)).add(G.bonus.hp);
+                            if(lvl) l.add(UI(poziomy)).add(lvl);
+                            if(gear) l.add(UI(kamizelka)).add(gear);
+                            int rest = G.hero.max_hp - c.max_health - G.bonus.hp - lvl - gear;
+                            if(rest > 0) l.add(UI(inne)).add(rest);
+                            break;
+                        }
+                    }
+                }
+                phone_text(a, t, list_x, row_py(r), fit(a, l.s, phone_text_w).c_str(), k);
+            }
+            ph.commit();
+        };
+        redraw();
+        bn::sound_items::sfx_menu.play();
+        wait_release();
+        while(true)
+        {
+            int d = (bn::keypad::a_pressed() || bn::keypad::right_pressed() || bn::keypad::down_pressed()) ? 1
+                  : ((bn::keypad::left_pressed() || bn::keypad::up_pressed()) ? -1 : 0);
+            if(d) { page = (page + d + pages) % pages; redraw(); bn::sound_items::sfx_menu.play(); }
+            if(bn::keypad::b_pressed() || bn::keypad::start_pressed() || bn::keypad::select_pressed()) break;
+            next_frame();
+        }
+        t.clear();
+        a.text.set_palette_item(default_ink);
+        wait_release();
     }
 
     // Wiadomość w telefonie (fabuła): nadawca, dymek z 3 liniami, 2 wiersze informacji. A/START: dalej.
@@ -879,18 +2249,18 @@ namespace
         ph.icon.set_visible(false);
         bn::sprite_palette_item default_ink = a.text.palette_item();
         page_sprites t;
-        phone_header(a, ph, t, "Wiadomości", sub);
+        phone_header(a, ph, t, UI(wiadomosci_2), sub);
         phone_canvas& c = *ph.canvas;
         phone_text(a, t, list_x, row_py(0), m.from, ink::dark);
-        phone_pill(a, c, t, pill_end, row_ty(0), "teraz", pill::gray);
+        phone_pill(a, c, t, pill_end, row_ty(0), UI(teraz_2), pill::gray);
         c.rounded(2, row_ty(1), 26, 6, phone_tile::fill_group, phone_tile::corner_group);   // dymek wiadomości
         for(int i = 0; i < 3; ++i) phone_text(a, t, 22, row_py(1 + i), m.lines[i], ink::dark);
         phone_text(a, t, list_x, row_py(4), info1, info1_ink);
         phone_text(a, t, list_x, row_py(5), info2, ink::dim);
-        phone_text(a, t, 226, row_py(5), "A: dalej", ink::brand, 1);
+        phone_text(a, t, 226, row_py(5), UI(a_dalej), ink::brand, 1);
         ph.commit();
         bn::sound_items::sfx_notify.play(bn::fixed(0.7));
-        wait_release();
+        modal_guard();
         for(int i = 0; i < 600 && ! bn::keypad::a_pressed() && ! bn::keypad::start_pressed(); ++i) next_frame();
         t.clear();
         a.text.set_palette_item(default_ink);
@@ -900,14 +2270,30 @@ namespace
     void stage_card(app& a)
     {
         const core::game& g = *a.g;
-        core::message sub; sub.add("Akt ").add(roman(data::stages[g.stage].act)).add(", ").add(g.stage + 1).add("/").add(data::stages_count);
-        bool boss = data::stages[g.stage].boss >= 0;
+        core::message sub;
+        if(g.contract > 0) sub.add(g.kdef().short_name).add(", ");   // v0.21.52 cz. d: kontrakt mapy kariery
+        sub.add(UI(akt_2)).add(g.act_numeral()).add(", ").add(g.stage_number()).add("/").add(g.stages_in_run());
+        bool boss = g.sdef().boss >= 0;
         core::message i1;
-        if(boss) i1.add("Uwaga: ").add(clip(data::enemies[data::stages[g.stage].boss].name, 18).c_str()).add("!");
-        else i1.add(clip(data::stages[g.stage].name, 12).c_str()).add(": problemy ").add(g.enemy_hp_pct()).add("%");
-        core::message i2; i2.add(g.ddef().name);
-        if(g.tier > 0) i2.add(" NG+").add(g.tier);
-        phone_message(a, g.stage_story(), sub.s, i1.s, boss ? ink::late : ink::dim, i2.s);
+        if(boss) i1.add(UI(uwaga_2)).add(clip(data::enemies[g.sdef().boss].name, 18).c_str()).add("!");
+        else i1.add(clip(g.sdef().name, 12).c_str()).add(UI(problemy)).add(g.enemy_hp_pct()).add("%");
+        auto card_line = [&](bool prefix) {   // pogoda dnia i mechanika aktu, wybrana ścieżka, NG+
+            core::message m;
+            if(prefix) m.add(UI(pogoda));
+            m.add(g.wdef().name).add(", ").add(g.adef().mech_short);
+            if(g.stage_path >= 0) m.add(", ").add(data::paths[g.stage_path].short_name);
+            if(g.tier > 0) m.add(UI(ng_2)).add(g.tier);
+            return m;
+        };
+        core::message i2 = card_line(true);
+        if(a.text.width(i2.s) > 150) i2 = card_line(false);   // za długo (np. Pieczątki): bez "Pogoda:"
+        phone_message(a, g.stage_story(), sub.s, i1.s, boss ? ink::late : ink::dim, fit(a, i2.s, 150).c_str());
+        if(g.stage_event >= 0 && g.turns == g.stage_start_turn)   // wydarzenie na placu: drugi SMS (nie po wznowieniu w trakcie)
+        {
+            const core::site_event_def& ev = data::site_events[g.stage_event];
+            leave(scene::game);
+            phone_message(a, ev.msg, UI(plac_budowy), ev.info, ev.good ? ink::done : ink::late, ev.name);
+        }
         leave(scene::game);   // ściemnij telefon, gra się rozjaśni
     }
 
@@ -922,7 +2308,7 @@ namespace
         bn::sprite_ptr icon;
         bn::vector<bn::sprite_ptr, 24> text;
         bn::vector<bn::fixed, 24> text_y;
-        bn::vector<notice, 4> queue;
+        bn::vector<notice, 8> queue;   // v0.21.51 cz. 2: koniec budowy - nagroda, sekrety, odznaki, zlecenia, fabuła
         int timer = 0;   // 0 = brak banera
 
         push_banner() :
@@ -981,7 +2367,103 @@ namespace
         }
 
         void hide() { timer = 0; queue.clear(); bg.set_visible(false); icon.set_visible(false); text.clear(); }
+
+        bool busy() const { return timer > 0 || ! queue.empty(); }
     };
+
+    // Banery: nowe odznaki (bitmaska z check_badges) i ukończone zlecenia (z check_contracts).
+    void push_achievements(push_banner& banner, int badges_got, int contracts_got, int secrets_got = 0)
+    {
+        for(int i = 0; i < data::secrets_count; ++i)   // v0.21.51 cz. 2: sekretne zlecenie wykonane
+            if(secrets_got & (1 << i)) banner.push(UI(sekretne_zlecenie), data::secrets[i].reward_text);
+        for(int i = 0; i < data::badges_count; ++i)
+            if(badges_got & (1 << i))
+            {
+                core::message t; t.add(UI(odznaka)).add(data::badges[i].name);
+                core::message b; b.add(UI(tytul)).add(data::badges[i].title);   // v0.21.52: tytuł zamiast dużej nagrody
+                banner.push(t.s, b.s);
+            }
+        for(int i = 0; i < data::contracts_count; ++i)
+            if(contracts_got & (1 << i))
+            {
+                const core::contract_def& c = data::contracts[i];
+                core::message t; t.add(UI(zlecenie)).add(c.name);
+                core::message b;
+                if(c.keepsake >= 0) b.add(data::keepsakes[c.keepsake].name).add(UI(tytul_3));   // pamiątka odblokowana
+                else b.add(UI(tytul)).add(c.title);
+                banner.push(t.s, b.s);
+            }
+    }
+
+    // v0.21.52 cz. c: banery zadań dnia / tygodnia (#50; kilka naraz - jeden zbiorczy), kompletów kolekcji (#49) i nagród
+    // za serię dni (#51; streak0 / streak1 - najdłuższa seria przed i po budowie).
+    void push_goals(push_banner& banner, const core::profile& p, int tasks_got, int coll_got, int tasks0, int streak0 = 0, int streak1 = 0)
+    {
+        int n = 0, resp = 0, last = -1;
+        for(int s = 0; s < core::task_slots; ++s)
+            if((tasks_got >> s) & 1) { ++n; resp += core::task_of(p, s).respect; last = s; }
+        if(n == 1)
+        {
+            core::message t; t.add(last < core::daily_task_slots ? UI(zadanie_dnia) : UI(zadanie_tyg)).add(resp).add(UI(resp));
+            banner.push(t.s, core::task_of(p, last).name);
+        }
+        else if(n > 1)
+        {
+            core::message t; t.add(UI(zadania_3)).add(n).add(UI(wykonane));
+            core::message b; b.add(UI(respekt_2)).add(resp);
+            banner.push(t.s, b.s);
+        }
+        for(int l = 0; l < data::task_rewards_count; ++l)   // nagroda za liczbę wykonanych zadań
+            if(tasks0 < data::task_rewards[l].xp && p.tasks_total >= data::task_rewards[l].xp)
+            {
+                core::message t; t.add(UI(zadania_3)).add(int(data::task_rewards[l].xp)).add(UI(wykonanych));
+                core::message b; core::progress_reward_label(b, data::task_rewards[l], -1);
+                banner.push(t.s, b.s);
+            }
+        for(int i = 0; i < data::collections_count; ++i)
+            if((coll_got >> i) & 1)
+            {
+                core::message t; t.add(UI(komplet)).add(data::collections[i].name);
+                core::message b; core::collection_reward_label(b, i);
+                banner.push(t.s, b.s);
+            }
+        for(int l = 0; l < data::streak_rewards_count; ++l)
+            if(streak0 < data::streak_rewards[l].xp && streak1 >= data::streak_rewards[l].xp)
+            {
+                core::message t; t.add(UI(seria_dni)).add(int(data::streak_rewards[l].xp)).add("!");
+                core::message b; core::progress_reward_label(b, data::streak_rewards[l], -1);
+                banner.push(t.s, b.s);
+            }
+    }
+
+    // v0.21.52 cz. b: banery nowych poziomów - inspektor (#44), mistrzostwo zawodu (#45), stopnie inwestora (#48) - z nagrodą.
+    // Kilka poziomów naraz (migracja, długa budowa): dwa pierwsze z nagrodą, potem jeden zbiorczy.
+    void push_progress(push_banner& banner, const core::progress_gain& pg, int stake0, int stake1)
+    {
+        for(int l = pg.insp_before; l < pg.insp_after; ++l)
+        {
+            core::message t; t.add(UI(inspektor_poziom)).add(l + 1);
+            core::message b;
+            if(l >= pg.insp_before + 2 && l + 1 < pg.insp_after) continue;
+            if(l >= pg.insp_before + 2) b.add(UI(nagrody_profil_odznaki));
+            else core::progress_reward_label(b, data::inspector_levels[l], pg.cls);
+            banner.push(t.s, b.s);
+        }
+        for(int l = pg.mastery_before; l < pg.mastery_after && pg.cls >= 0; ++l)
+        {
+            if(l + 1 < pg.mastery_after) continue;   // tylko ostatni poziom (nagrody w profilu)
+            core::message t; t.add(UI(mistrzostwo_poziom)).add(l + 1);
+            core::message b; core::progress_reward_label(b, data::mastery_levels[l], pg.cls);
+            banner.push(t.s, b.s);
+        }
+        for(int l = stake0; l < stake1; ++l)
+        {
+            if(l + 1 < stake1 && l + 2 < stake1) continue;   // najwyżej dwa ostatnie stopnie
+            core::message t; t.add(UI(stopien_inwestora)).add(data::stake_ranks[l].xp);
+            core::message b; core::progress_reward_label(b, data::stake_ranks[l], pg.cls);
+            banner.push(t.s, b.s);
+        }
+    }
 
     // Cząsteczki (pył, iskry, konfetti, gwiazdki). Mała pula; bez wolnych sprite'ów efekt jest pomijany.
     struct particle
@@ -994,7 +2476,9 @@ namespace
     struct particle_pool
     {
         enum : int { dust = 0, spark = 3, confetti = 5, star = 9, ring = 10, brick = 12, nail = 13, bolt = 14,
-                     drop = 16, plus = 17, zzz = 18, alert = 19, marker = 20, status_icon = 21 };
+                     drop = 16, plus = 17, zzz = 18, alert = 19, marker = 20, status_icon = 21,
+                     state_wet = 24, state_dusty = 25, state_frozen = 26,       // 21-24: stany bohatera (24 = mokry)
+                     map_secret = 27, map_chest = 28 };                          // v0.21.50 cz. 3: podgląd mapy - magazyn, skrzynia
         bn::vector<particle, 24> list;
         bn::random rnd;
         bn::camera_ptr cam;
@@ -1005,7 +2489,7 @@ namespace
 
         void spawn(bn::fixed x, bn::fixed y, bn::fixed vx, bn::fixed vy, bn::fixed gravity, int life, int frame, int frames = 1)
         {
-            if(list.full()) return;
+            if(list.full() || ! sprites_to_spare()) return;
             bn::optional<bn::sprite_ptr> sp = bn::sprite_items::particles.create_sprite_optional(x, y, frame);
             if(! sp) return;
             sp->set_camera(cam);
@@ -1042,6 +2526,8 @@ namespace
         int timer = 0;
     };
 
+    void boon_pick(app& a, bool mid_stage = false);   // premia 1 z 3 (niżej); mid_stage - z wydarzenia (#30)
+
     scene run_game(app& a)
     {
         core::game& g = *a.g;
@@ -1054,25 +2540,26 @@ namespace
         bn::bg_tiles::set_allow_offset(false);
         bn::unique_ptr<bg_map> map(new bg_map());
         map->build(g);
-        const bn::bg_palette_item* stage_pals[] = { &bn::bg_palette_items::stage_palettes_0, &bn::bg_palette_items::stage_palettes_1,
-                                                    &bn::bg_palette_items::stage_palettes_2, &bn::bg_palette_items::stage_palettes_3,
-                                                    &bn::bg_palette_items::stage_palettes_4, &bn::bg_palette_items::stage_palettes_5,
-                                                    &bn::bg_palette_items::stage_palettes_6, &bn::bg_palette_items::stage_palettes_7 };
-        static_assert(data::stages_count <= 8);
-        bn::regular_bg_item item(bn::regular_bg_tiles_items::tiles, *stage_pals[g.stage], map->map_item);
+        bn::regular_bg_item item(bn::regular_bg_tiles_items::tiles, stage_palette(g.sdef().look), map->map_item);
         bn::regular_bg_ptr bg = item.create_bg(0, 0);
         bn::regular_bg_map_ptr bg_map_ptr = bg.map();
         bn::bg_tiles::set_allow_offset(true);
         bg.set_camera(cam);
 
-        bn::sprite_ptr hero = bn::sprite_items::actors.create_sprite(0, 0, data::classes[g.cls].frame);
+        const int hero_frame0 = hero_base(a, g.cls);   // v0.21.51 cz. 2: kask w paski
+        const bool gold_glint = core::cosmetic_on(a.save, data::cosmetic_gold) || g.master_weapon();   // Złota kielnia, broń mistrza (v0.21.52 cz. b)
+        bn::sprite_ptr hero = bn::sprite_items::actors.create_sprite(0, 0, hero_frame0);
+        style_hero(a, hero, g.cls);   // v0.21.52: kolor kasku
         hero.set_camera(cam);
         bn::vector<bn::sprite_ptr, core::max_enemies> enemies;
+        bn::vector<bool, core::max_enemies> enemy_gold;   // sprite ma złotą paletę elity
         for(int i = 0; i < g.enemies_count; ++i)
         {
             bn::sprite_ptr s = bn::sprite_items::actors.create_sprite(0, 0, data::enemies[g.enemies[i].def_id].frame);
             s.set_camera(cam);
+            style_enemy(s, g.enemies[i]);
             enemies.push_back(s);
+            enemy_gold.push_back(g.enemies[i].elite >= 0);
         }
         bn::vector<bn::sprite_ptr, core::max_pickups> pickups;
         auto sync_pickups = [&]() {   // dropy pojawiają się w trakcie etapu
@@ -1086,28 +2573,105 @@ namespace
         };
         sync_pickups();
         bn::vector<bn::sprite_ptr, core::max_enemies> fx;
+        // Pieczątki (Akt 0): kłódka na schodach, dopóki brakuje dokumentów.
+        bn::sprite_ptr stairs_lock = bn::sprite_items::actors.create_sprite(world(core::imax(0, g.stairs_x), core::imax(0, g.stairs_y)), frame_lock);
+        stairs_lock.set_camera(cam);
+        stairs_lock.set_z_order(5);
+        stairs_lock.set_visible(false);
+        // Magazyn (#32): pęknięcie albo drzwi na polu muru, dopóki zamknięty i odkryty.
+        bn::sprite_ptr secret_sprite = bn::sprite_items::actors.create_sprite(world(core::imax(0, g.secret_x), core::imax(0, g.secret_y)),
+                                                                              g.secret_def().breakable ? frame_crack : frame_door);
+        secret_sprite.set_camera(cam);
+        secret_sprite.set_z_order(5);
+        secret_sprite.set_visible(false);
 
-        text_sprites hud, log;
+        // v0.21.51: duże obiekty sceny na stercie (EWRAM) - stos w IWRAM ma ~12 KB, a run_game zajmował go prawie całego
+        // (telefon -> statystyki albo porównanie sprzętu z paczki/skrzyni przepełniały stos i psuły pamięć Butano)
+        bn::unique_ptr<text_sprites> hud_heap(new text_sprites()), log_heap(new text_sprites());
+        text_sprites& hud = *hud_heap;
+        text_sprites& log = *log_heap;
         bn::sprite_ptr hp_left = bn::sprite_items::hp_bar.create_sprite(-82, -72, 0);
         bn::sprite_ptr hp_right = bn::sprite_items::hp_bar.create_sprite(-50, -72, 96);
         hp_left.set_bg_priority(0); hp_right.set_bg_priority(0);
         hp_left.set_z_order(-100); hp_right.set_z_order(-100);
         int blink = 0;
         // Ikona mocy (R) pod HUD: szara z odliczaniem, gdy się ładuje; pulsuje, gdy gotowa.
-        bn::sprite_ptr power_icon = bn::sprite_items::ability_icons.create_sprite(106, -52, g.cls);
+        bn::sprite_ptr power_icon = bn::sprite_items::ability_icons.create_sprite(106, -52, g.power_cls());   // Majster: moc etapu
+        int shown_power = g.power_cls();
         power_icon.set_bg_priority(0);
         power_icon.set_z_order(-100);
         bn::sprite_palette_ptr power_palette = power_icon.palette();
-        text_sprites power_text;
+        bn::unique_ptr<text_sprites> power_text_heap(new text_sprites());
+        text_sprites& power_text = *power_text_heap;
         int shown_cd = -1;
+        // Aktywne stany w tym samym rzędzie (lewa strona): ikona + liczba tur do końca.
+        bn::vector<bn::sprite_ptr, 4> status_icons;
+        for(int k = 0; k < 4; ++k)
+        {
+            bn::sprite_ptr s = bn::sprite_items::particles.create_sprite(-112 + k * 22, -52, particle_pool::status_icon + k);
+            s.set_bg_priority(0);
+            s.set_z_order(-100);
+            s.set_visible(false);
+            status_icons.push_back(s);
+        }
+        bn::unique_ptr<text_sprites> status_text_heap(new text_sprites());
+        text_sprites& status_text = *status_text_heap;
+        int shown_status = -1, status_count = 0;
+        // Termos w HUD: ikona + liczba kaw (np. 2/3).
+        bn::sprite_ptr thermos_icon = bn::sprite_items::menu_icons.create_sprite(50, -52, 1);
+        thermos_icon.set_bg_priority(0);
+        thermos_icon.set_z_order(-100);
+        bn::unique_ptr<text_sprites> thermos_text_heap(new text_sprites());
+        text_sprites& thermos_text = *thermos_text_heap;
+        int shown_thermos = -1;
+        // Pogoda dnia w HUD: ikona między stanami a termosem (menu_icons 6-10).
+        constexpr int frame_weather = 6;
+        bn::sprite_ptr weather_icon = bn::sprite_items::menu_icons.create_sprite(28, -52, frame_weather + int(g.wdef().effect));
+        weather_icon.set_bg_priority(0);
+        weather_icon.set_z_order(-100);
+        // Mechanika aktu w HUD pod ikoną mocy (menu_icons 20-22: błoto, porywy, pył); przy porywach tury do kolejnego.
+        const int act_mech = int(g.adef().mechanic);
+        bn::sprite_ptr act_icon = bn::sprite_items::menu_icons.create_sprite(106, -33, act_icon_frame(g.adef().mechanic));
+        act_icon.set_bg_priority(0);
+        act_icon.set_z_order(-100);
+        act_icon.set_visible(act_mech > 0);
+        bn::unique_ptr<text_sprites> act_text_heap(new text_sprites());
+        text_sprites& act_text = *act_text_heap;
+        int shown_gust = -1;
+        // Materiały w HUD (cement, stal, drewno): małe ikony z liczbą, widoczne, gdy coś masz (menu_icons 11-13).
+        constexpr int frame_material = 11, mat_x0 = -46, mat_dx = 22;
+        bn::vector<bn::sprite_ptr, 3> mat_icons;
+        for(int m = 0; m < data::materials_count; ++m)
+        {
+            bn::sprite_ptr sp = bn::sprite_items::menu_icons.create_sprite(mat_x0 + m * mat_dx, -52, frame_material + m);
+            sp.set_bg_priority(0);
+            sp.set_z_order(-100);
+            sp.set_visible(false);
+            mat_icons.push_back(sp);
+        }
+        bn::unique_ptr<text_sprites> mat_text_heap(new text_sprites());
+        text_sprites& mat_text = *mat_text_heap;
+        int shown_mats = -1;
+        auto hide_status_hud = [&]() {
+            for(auto& s : mat_icons) s.set_visible(false);
+            mat_text.clear(); shown_mats = -1;
+            for(auto& s : status_icons) s.set_visible(false);
+            status_text.clear(); shown_status = -1;
+            thermos_icon.set_visible(false); thermos_text.clear(); shown_thermos = -1;
+            weather_icon.set_visible(false);
+            act_icon.set_visible(false); act_text.clear(); shown_gust = -1;
+        };
         a.text.set_bg_priority(0);
         a.text.set_z_order(-100);
         int fx_timer = 0, hurt_timer = 0, hold = 0;
-        bn::vector<floater, core::max_hits> floaters;
+        bn::unique_ptr<bn::vector<floater, core::max_hits>> floaters_heap(new bn::vector<floater, core::max_hits>());
+        bn::vector<floater, core::max_hits>& floaters = *floaters_heap;
         int shake_timer = 0, target_timer = 0;
         bn::fixed_point cam_base;
-        push_banner banner;
-        particle_pool fx_particles(cam);
+        bn::unique_ptr<push_banner> banner_heap(new push_banner());
+        push_banner& banner = *banner_heap;
+        bn::unique_ptr<particle_pool> fx_particles_heap(new particle_pool(cam));
+        particle_pool& fx_particles = *fx_particles_heap;
 
         // Półprzezroczyste ciemne paski pod HUD (u góry) i dziennikiem (u dołu, tylko gdy są komunikaty).
         // GBA ma 4 warstwy tła: mapa, baner, paski - telefon (2 warstwy) wymaga chwilowego zwolnienia pasków.
@@ -1162,7 +2726,7 @@ namespace
             {
                 for(int y = 0; y < core::map_h; ++y)
                     for(int x = 0; x < core::map_w; ++x)
-                        range_cells[y][x] = g.visible(x, y) && core::cheb(g.hero.x, g.hero.y, x, y) <= g.weapon().range
+                        range_cells[y][x] = g.visible(x, y) && core::cheb(g.hero.x, g.hero.y, x, y) <= g.weapon_range()
                                             && ! (x == g.hero.x && y == g.hero.y);
                 map->highlight = range_cells;
             }
@@ -1173,15 +2737,51 @@ namespace
         int prev_level = g.hero_level, prev_weapon = g.weapon_override, prev_pickups = g.pickups_count;
         int prev_cd = g.ability_cd;
         int prev_active = 0;
-        int8_t prev_equipped[4];
-        for(int i = 0; i < 4; ++i) prev_equipped[i] = g.equipped[i];
+        int8_t prev_equipped[core::max_gear_slots];
+        for(int i = 0; i < core::max_gear_slots; ++i) prev_equipped[i] = g.equipped[i];
         for(int i = 0; i < g.pickups_count; ++i) prev_active += g.pickups[i].active;
         bool boss_seen = false;
-        if(g.stage == 0 && g.tier == 0)   // podpowiedź na start budowy: moc pod R
+        bool boss_engaged = g.boss_wake_damage >= 0;   // Inspekcja: baner "zgodnie z BHP" przy pełnym sprzęcie
+        if(g.stage == g.first_stage && g.tier == 0 && g.turns == 0)   // podpowiedź na start budowy: moc pod R, zabrana pamiątka
         {
-            core::message t; t.add("R: ").add(g.cdef().ability_name);
-            banner.push(t.s, g.cdef().ability_desc);
+            core::message t; t.add("R: ").add(g.pdef().ability_name);
+            banner.push(t.s, g.pdef().ability_desc);
+            int k = core::selected_keepsake(a.save);
+            if(k >= 0)
+            {
+                // ranga liczona z budów przed tą (start_run już policzył bieżącą)
+                int runs = a.save.keepsake_runs[k] - 1;
+                int rank = 1 + (runs >= data::keepsake_rank_runs[0]) + (runs >= data::keepsake_rank_runs[1]);
+                core::message kt; kt.add(data::keepsakes[k].name).add(" ").add(roman(rank - 1));   // pamiątka z rangą
+                core::message kb; core::perk_label(kb, { data::keepsakes[k].effect, data::keepsakes[k].values[rank - 1] });
+                banner.push(kt.s, kb.s);
+            }
         }
+        if(g.turns == g.stage_start_turn && (g.stage == g.first_stage || g.sdef(g.stage - 1).act != g.sdef().act)
+           && g.adef().mechanic != core::act_mechanic::none)   // nowy akt: jego mechanika (błoto, porywy, pył, pieczątki)
+        {
+            core::message t; t.add(UI(akt_2)).add(g.act_numeral()).add(": ").add(g.adef().mech_short);
+            core::message mi; mi.add(UI(poryw_co)).add(g.mech_value()).add(UI(tur));   // v0.21.52 cz. d: Dom z poddaszem - silniej
+            banner.push(t.s, g.kdef().gust > 0 && g.act_is(core::act_mechanic::gust) ? mi.s : g.adef().mech_info);
+        }
+        if(g.turns == g.stage_start_turn && g.twin_carry > 0)   // v0.21.52 cz. d: bliźniak - problemy z pierwszej połowy
+        {
+            core::message tm; tm.add("+").add(int(g.twin_carry)).add(UI(z_1_polowy));
+            banner.push(UI(wspolna_sciana_2), tm.s);
+        }
+        bool second_seen = g.second_used;   // Druga szansa: baner raz
+        int prev_keys = g.keys, prev_wlvl = g.weapon_lvl;   // v0.21.50 cz. 3: klucz, ulepszenie narzędzia
+        bool prev_secret = g.secret_open;
+        int prev_chests = 0;
+        for(int i = 0; i < g.pickups_count; ++i) prev_chests += g.pickups[i].active && g.pickups[i].type == core::chest;
+        int prev_docs = g.docs;             // pieczątki: nowy dokument = baner
+        bool phase_seen = g.boss >= 0 && (g.enemies[g.boss].flags & core::actor_phase);   // druga faza bossa: baner raz
+        int flash_timer = 0;
+        bn::color flash_color;
+        int levelup_pending = 0;   // awans w tej turze: napis nad bohaterem i błysk (obsługa w pętli, gdzie są efekty)
+        bn::unique_ptr<text_sprites> levelup_text_heap(new text_sprites());
+        text_sprites& levelup_text = *levelup_text_heap;
+        int levelup_timer = 0;
         auto detect_events = [&]() {   // powiadomienia push o ważnych zdarzeniach
             int active_pickups = 0;
             for(int i = 0; i < g.pickups_count; ++i) active_pickups += g.pickups[i].active;
@@ -1191,61 +2791,137 @@ namespace
             {
                 bn::sound_items::sfx_level.play();
                 int old_rank = 1 + (prev_level >= 3) + (prev_level >= 5);
-                if(g.ability_rank() > old_rank)
-                {
-                    core::message t; t.add("Moc: ").add(ability_label(g).s);
-                    banner.push(t.s, "Silniejsza, szybciej gotowa");
-                }
                 for(int k = 0; k < 8; ++k)   // gwiazdki awansu dookoła bohatera
                 {
                     static constexpr int8_t dir[8][2] = { { 2, 0 }, { 1, 1 }, { 0, 2 }, { -1, 1 }, { -2, 0 }, { -1, -1 }, { 0, -2 }, { 1, -1 } };
                     fx_particles.spawn(world(g.hero.x, g.hero.y).x(), world(g.hero.x, g.hero.y).y(), bn::fixed(dir[k][0]) / 2, bn::fixed(dir[k][1]) / 2, 0, 28, particle_pool::star);
                 }
-                core::message t; t.add("Awans! Poziom ").add(g.hero_level);
-                core::message b; b.add("+").add(data::hp_per_level).add(" HP");
-                if(data::def_levels_mask & (1 << g.hero_level)) b.add(", +1 obrona");
-                if(data::dmg_levels_mask & (1 << g.hero_level)) b.add(", +1 obrażenia");
+                core::message t; t.add(UI(awans_poziom)).add(g.hero_level);
+                core::message b; b.add("+").add(data::hp_per_level).add(UI(max_hp));
+                if(data::def_levels_mask & (1 << g.hero_level)) b.add(UI(n1_obrona));
+                if(data::dmg_levels_mask & (1 << g.hero_level)) b.add(UI(n1_obrazenia));
+                if(g.ability_rank() > old_rank) b.add(UI(moc_5)).add(roman(g.ability_rank() - 1));
+                banner.push(t.s, b.s);
+                levelup_pending = g.hero_level;
+            }
+            if(g.weapon_override != prev_weapon && g.weapon_override >= 0)   // porównanie ciosu (rozpiska #26)
+            {
+                const core::dmg_breakdown was = g.weapon_breakdown(-1, prev_weapon >= 0 ? prev_weapon : g.cdef().weapon), now = g.weapon_breakdown();
+                core::message t; t.add(UI(nowe)).add(g.weapon().name);
+                core::message b; core::add_range(b, was.min, was.max).add(" -> ");
+                core::add_range(b, now.min, now.max).add(UI(sr));
+                core::add_tenths(b, now.avg10 - was.avg10, true).add(")");
                 banner.push(t.s, b.s);
             }
-            if(g.weapon_override != prev_weapon && g.weapon_override >= 0)
-            {
-                const core::weapon_def& w = g.weapon();
-                core::message b; b.add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage);
-                banner.push("Nowe narzędzie", clip(b.s, 24).c_str());
-            }
-            if(g.pickups_count > prev_pickups) banner.push("Coś wypadło!", "Sprawdź miejsce usterki");
+            if(g.pickups_count > prev_pickups) banner.push(UI(cos_wypadlo), UI(sprawdz_miejsce_usterki));
             for(int i = 0; i < data::gear_slots_count; ++i)
                 if(g.equipped[i] != prev_equipped[i] && g.equipped[i] >= 0)
                 {
                     const core::gear_def& gd = data::gear[i * 3 + g.equipped[i]];
-                    core::message t; t.add("Sprzęt: ").add(data::gear_rarities[g.equipped[i]]);
+                    core::message t; t.add(UI(sprzet_3)).add(data::gear_rarities[g.equipped[i]]);
                     core::message b; b.add(gd.name).add(" +").add(gd.value);
                     banner.push(t.s, b.s);
                     prev_equipped[i] = g.equipped[i];
                 }
-            if(prev_cd > 0 && g.ability_cd == 0) banner.push("Moc gotowa", g.cdef().ability_name);
+            if(prev_cd > 0 && g.ability_cd == 0) banner.push(UI(moc_gotowa_3), g.pdef().ability_name);
             if(! boss_seen && g.boss >= 0 && g.enemies[g.boss].alive && g.visible(g.enemies[g.boss].x, g.enemies[g.boss].y))
             {
                 boss_seen = true;
-                banner.push("Przypisano Ci usterkę", data::enemies[g.enemies[g.boss].def_id].name);
+                banner.push(UI(przypisano_ci_usterke), data::enemies[g.enemies[g.boss].def_id].name);
+            }
+            if(! boss_engaged && g.boss_wake_damage >= 0)
+            {
+                boss_engaged = true;
+                const core::enemy_def& bd = data::enemies[g.enemies[g.boss].def_id];
+                if(bd.gear_stun > 0 && g.full_gear()) banner.push(UI(wszystko_zgodnie_z_bhp), UI(kontrola_wstrzymana));
             }
             if(g.st == core::status::stage_clear)   // ważniejsze niż kolejka: od razu, zanim zmieni się scena
             {
                 bn::sound_items::sfx_stage.play();
                 banner.hide();
-                banner.push("Etap zaliczony", clip(data::stages[g.stage].name, 24).c_str());
+                banner.push(UI(etap_zaliczony), clip(g.sdef().name, 24).c_str());
+                if(g.boss >= 0 && ! g.enemies[g.boss].alive && data::enemies[g.enemies[g.boss].def_id].reward_cash > 0)
+                {
+                    const core::enemy_def& bd = data::enemies[g.enemies[g.boss].def_id];   // nagroda bossa, np. Protokół bez uwag
+                    core::message b; b.add(UI(premia_3)).add(bd.reward_cash).add(UI(zl));
+                    banner.push(bd.reward_title, b.s);
+                }
             }
-            if(g.st == core::status::stage_clear || g.st == core::status::won)   // odznaki
+            if(g.st == core::status::stage_clear || g.st == core::status::won)   // odznaki i zlecenia
             {
-                int got = core::check_badges(a.save, g);
-                for(int i = 0; i < data::badges_count; ++i)
-                    if(got & (1 << i))
+                int got = core::check_badges(a.save, g);   // też Respekt za etap - od razu w profilu
+                int done = core::check_contracts(a.save);
+                int secrets = core::check_secrets(a.save, &g);   // v0.21.51 cz. 2: np. 5 magazynów, 20x mokry + prąd
+                const int tasks0 = a.save.tasks_total;
+                const int tasks = bank_tasks(a, g);   // v0.21.52 cz. c: zadania dnia / tygodnia i kolekcje - na bieżąco
+                const int coll = core::check_collections(a.save);
+                core::message rt; rt.add(UI(respekt_2)).add(g.stage_respect());
+                core::message rb; rb.add(UI(razem)).add(int(a.save.respect)).add(UI(koszty_2));
+                banner.push(rt.s, rb.s);
+                push_achievements(banner, got, done, secrets);
+                push_goals(banner, a.save, tasks, coll, tasks0);
+                bn::sram::write(a.save);   // liczniki zleceń przeniesione do profilu
+            }
+            if(g.docs != prev_docs)   // Akt 0: dokument zebrany, komplet otwiera schody
+            {
+                for(int i = 0; i < data::documents_count; ++i)
+                    if(((g.docs >> i) & 1) && ! ((prev_docs >> i) & 1))
                     {
-                        core::message t; t.add("Odznaka: ").add(data::badges[i].name);
-                        core::message b; b.add("+").add(data::badges[i].xp).add(" dośw.");
+                        core::message t; t.add(UI(dokument)).add(data::documents[i]);
+                        core::message b; b.add(UI(pieczatki)).add(g.docs_count()).add("/").add(g.docs_needed());
+                        if(! g.stairs_locked()) b = core::message(), b.add(UI(komplet_schody_otwarte));
                         banner.push(t.s, b.s);
                     }
-                if(got) bn::sram::write(a.save);
+                prev_docs = g.docs;
+            }
+            if(! phase_seen && g.boss >= 0 && (g.enemies[g.boss].flags & core::actor_phase) && g.enemies[g.boss].alive)   // druga faza
+            {
+                phase_seen = true;
+                const core::enemy_def& bd = data::enemies[g.enemies[g.boss].def_id];
+                core::message t; t.add(UI(druga_faza)).add(bd.phase_name).add("!");
+                core::message b; b.add(bd.name).add(" +").add(g.enemies[g.boss].max_hp * bd.phase_heal / 100).add(" HP");
+                banner.push(t.s, b.s);
+                flash_color = bn::color(31, 8, 6);
+                flash_timer = 10;
+                shake_timer = 8;
+            }
+            if(g.keys > prev_keys) banner.push(UI(klucz_do_magazynu), g.has_secret() ? g.secret_def().name : UI(szukaj_magazynu));
+            prev_keys = g.keys;
+            if(g.secret_open && ! prev_secret)   // magazyn otwarty: pył i baner
+            {
+                banner.push(UI(magazyn_otwarty_3), UI(w_srodku_skrzynia));
+                bn::fixed_point w = world(g.secret_x, g.secret_y);
+                for(int k = 0; k < 6; ++k) fx_particles.spawn(w.x(), w.y(), fx_particles.rand(-20, 20), fx_particles.rand(-20, 4), bn::fixed(0.06), 22, particle_pool::dust, 3);
+                flash_color = bn::color(31, 24, 10); flash_timer = 8; shake_timer = 4;
+                bn::sound_items::sfx_ability.play();
+            }
+            prev_secret = g.secret_open;
+            {
+                int chests = 0;
+                for(int i = 0; i < g.pickups_count; ++i) chests += g.pickups[i].active && g.pickups[i].type == core::chest;
+                if(chests < prev_chests)
+                {
+                    core::message b; b.add(UI(respekt_2)).add(data::chest_respect).add(", +").add(g.income(data::chest_cash)).add(UI(zl));
+                    banner.push(UI(skrzynia), b.s);
+                    bn::fixed_point h = world(g.hero.x, g.hero.y);
+                    for(int k = 0; k < 6; ++k) fx_particles.spawn(h.x() + fx_particles.rand(-96, 96), h.y(), 0, fx_particles.rand(-24, -8), 0, 40, particle_pool::star);
+                }
+                prev_chests = chests;
+            }
+            if(g.weapon_lvl > prev_wlvl)
+            {
+                core::message t; t.add(UI(ulepszenie_3)); g.weapon_title(t);
+                core::message b; b.add("+").add(g.upgrade_dmg()).add(UI(obrazen_2));
+                if(g.weapon_trait >= 0) b.add(", ").add(data::tool_traits[g.weapon_trait].name);
+                banner.push(t.s, b.s);
+            }
+            prev_wlvl = g.weapon_lvl;
+            if(g.second_used && ! second_seen)   // Druga szansa z Respektu
+            {
+                second_seen = true;
+                banner.push(UI(druga_szansa), UI(zostaje_1_hp_uwazaj));
+                flash_color = bn::color(31, 27, 10);
+                flash_timer = 10;
             }
             prev_level = g.hero_level; prev_weapon = g.weapon_override; prev_pickups = g.pickups_count; prev_cd = g.ability_cd;
         };
@@ -1271,7 +2947,40 @@ namespace
                 mini_bars[i]->set_visible(true);
             }
         };
-        auto hide_mini_bars = [&]() { for(auto& mb : mini_bars) if(mb) mb->set_visible(false); };
+        // Stany problemów dla kombinacji (#29): mała ikona obok (mokry, zapylony, zmrożony - na zmianę), elita: złota paleta.
+        bn::vector<bn::optional<bn::sprite_ptr>, core::max_enemies> state_icons(g.enemies_count);
+        auto state_frame = [&](int i, int clock) {
+            int st[3], n = 0;
+            if(g.enemy_wet(i)) st[n++] = particle_pool::state_wet;
+            if(g.enemy_dusty(i)) st[n++] = particle_pool::state_dusty;
+            if(g.enemy_frozen(i)) st[n++] = particle_pool::state_frozen;
+            return n ? st[(clock / 40) % n] : -1;
+        };
+        auto update_state_icons = [&]() {
+            for(int i = 0; i < g.enemies_count; ++i)
+            {
+                const core::actor& e = g.enemies[i];
+                if(i < enemies.size() && enemy_gold[i] != (e.elite >= 0))
+                {
+                    style_enemy(enemies[i], e);
+                    enemy_gold[i] = e.elite >= 0;
+                }
+                int f = e.alive && g.visible(e.x, e.y) ? state_frame(i, 0) : -1;
+                if(f < 0) { if(state_icons[i]) state_icons[i]->set_visible(false); continue; }
+                if(! state_icons[i])
+                {
+                    state_icons[i] = bn::sprite_items::particles.create_sprite_optional(0, 0, f);
+                    if(! state_icons[i]) continue;   // brak wolnych sprite'ów - bez ikony
+                    state_icons[i]->set_camera(cam);
+                    state_icons[i]->set_z_order(-20);
+                }
+                state_icons[i]->set_visible(true);
+            }
+        };
+        auto hide_mini_bars = [&]() {
+            for(auto& mb : mini_bars) if(mb) mb->set_visible(false);
+            for(auto& si : state_icons) if(si) si->set_visible(false);
+        };
         uint32_t prev_awake = 0;
 
         // Animacja: płynny ruch między polami (4 px/klatkę) i 2 klatki "oddechu"/kroku.
@@ -1279,7 +2988,11 @@ namespace
         bn::vector<bn::fixed_point, core::max_enemies> enemy_cur, enemy_dst;
         for(int i = 0; i < g.enemies_count; ++i) { enemy_cur.push_back(world(g.enemies[i].x, g.enemies[i].y)); enemy_dst.push_back(enemy_cur.back()); }
         int anim_clock = 0, hero_shown = -1;
-        bn::vector<int8_t, core::max_enemies> enemy_shown(g.enemies_count, -1);
+        // Pomocnik z brygady: sprite fachowca obok bohatera (tylko, gdy pomaga).
+        bn::optional<bn::sprite_ptr> ally_sprite;
+        bn::fixed_point ally_cur, ally_dst;
+        bool ally_hidden = false;
+        bn::vector<int16_t, core::max_enemies> enemy_shown(g.enemies_count, -1);   // v0.21.52 cz. d: klatki problemów od 184
         bool snap_next = true;
         auto approach = [](bn::fixed_point& c, const bn::fixed_point& d) {
             bn::fixed dx = d.x() - c.x(), dy = d.y() - c.y();
@@ -1314,9 +3027,8 @@ namespace
             hero.set_position(hero_cur);
             bool phase = (anim_clock / 24) & 1;
             {
-                int active[3], n = 0;
-                const core::status_effect order[3] = { core::status_effect::poison, core::status_effect::shock, core::status_effect::slip };
-                for(int k = 0; k < 3; ++k) if(g.status_turns(order[k]) > 0) active[n++] = k;
+                int active[4], n = 0;
+                for(int k = 0; k < 4; ++k) if(g.status_turns(hud_statuses[k]) > 0) active[n++] = k;
                 status_sprite.set_visible(n > 0);
                 if(n > 0)
                 {
@@ -1324,19 +3036,45 @@ namespace
                     status_sprite.set_position(hero_cur.x() + 7, hero_cur.y() - 12);
                 }
             }
-            int hf = data::classes[g.cls].frame + ((phase || hero_moving) ? frame_anim_b : 0);
+            int hf = (phase || hero_moving) ? anim_b(hero_frame0) : hero_frame0;
             if(hf != hero_shown) { hero.set_tiles(bn::sprite_items::actors.tiles_item(), hf); hero_shown = hf; }
-            for(int i = 0; i < g.enemies_count; ++i)
+            if(g.act_is(core::act_mechanic::dust) && anim_clock % 18 == 0 && ! ally_hidden)   // akt III: pył wisi w powietrzu
+                fx_particles.spawn(hero_cur.x() + fx_particles.rand(-1600, 1600), hero_cur.y() + fx_particles.rand(-1100, 1100),
+                                   fx_particles.rand(-4, 4), fx_particles.rand(-3, 1), 0, 60, particle_pool::dust + 1, 2);
+            for(int i = 0; i < g.enemies_count && i < enemies.size(); ++i)
             {
                 approach(enemy_cur[i], enemy_dst[i]);
                 enemies[i].set_position(enemy_cur[i]);
                 if(mini_bars[i]) mini_bars[i]->set_position(enemy_cur[i].x(), enemy_cur[i].y() - 11);
+                if(state_icons[i] && state_icons[i]->visible())
+                {
+                    state_icons[i]->set_position(enemy_cur[i].x() + 7, enemy_cur[i].y() - 6);
+                    int f = state_frame(i, anim_clock + i * 13);
+                    if(f >= 0) state_icons[i]->set_tiles(bn::sprite_items::particles.tiles_item(), f);
+                }
                 if(i == marked)
                     target_marker.set_position(enemy_cur[i].x(), enemy_cur[i].y() - 19 - (((anim_clock / 10) & 1) ? 1 : 0));
                 int base = data::enemies[g.enemies[i].def_id].frame;
                 int ef = ((anim_clock / 20 + i) & 1) ? anim_b(base) : base;
-                if(ef != enemy_shown[i]) { enemies[i].set_tiles(bn::sprite_items::actors.tiles_item(), ef); enemy_shown[i] = int8_t(ef); }
+                if(ef != enemy_shown[i]) { enemies[i].set_tiles(bn::sprite_items::actors.tiles_item(), ef); enemy_shown[i] = int16_t(ef); }
             }
+            if(g.ally_turns > 0 && ! ally_hidden)   // pomocnik z brygady
+            {
+                int base = data::brigade[g.helper_called].frame;
+                if(! ally_sprite)
+                {
+                    ally_sprite = bn::sprite_items::actors.create_sprite_optional(ally_dst, base);
+                    if(ally_sprite) { ally_sprite->set_camera(cam); ally_cur = ally_dst; }
+                }
+                if(ally_sprite)
+                {
+                    bool moving = ally_cur != ally_dst;
+                    approach(ally_cur, ally_dst);
+                    ally_sprite->set_position(ally_cur);
+                    ally_sprite->set_tiles(bn::sprite_items::actors.tiles_item(), (phase || moving) ? anim_b(base) : base);
+                }
+            }
+            else if(ally_sprite) ally_sprite.reset();
             for(int i = 0; i < pickups.size(); ++i)   // znajdźki lekko podskakują
                 pickups[i].set_y(world(g.pickups[i].x, g.pickups[i].y).y() - (((anim_clock / 16 + i) & 1) ? 1 : 0));
             cam_base = bn::fixed_point(clampf(hero_cur.x(), 136), clampf(hero_cur.y(), 176));
@@ -1344,12 +3082,10 @@ namespace
         };
 
         // Efekty cząsteczkowe mocy zawodów + błysk ekranu w kolorze mocy.
-        int flash_timer = 0;
-        bn::color flash_color;
         auto ability_fx = [&]() {
             bn::fixed_point h = world(g.hero.x, g.hero.y);
             static constexpr int8_t dir[8][2] = { { 2, 0 }, { 1, 1 }, { 0, 2 }, { -1, 1 }, { -2, 0 }, { -1, -1 }, { 0, -2 }, { 1, -1 } };
-            switch(g.cdef().ability)
+            switch(g.pdef().ability)
             {
                 case core::ability_effect::stun:   // kręgi megafonu + "z" nad ogłuszonymi
                     flash_color = bn::color(20, 16, 31);
@@ -1409,11 +3145,194 @@ namespace
                                            bn::fixed(-dir[k][1]) * bn::fixed(0.8), bn::fixed(dir[k][0]) * bn::fixed(0.8), 0, 16,
                                            particle_pool::spark, 2);
                     break;
+                case core::ability_effect::line:   // Rynna: dachówki lecą linią do trafionych
+                    flash_color = bn::color(31, 14, 8);
+                    for(int i = 0; i < g.hits_count; ++i)
+                    {
+                        if(g.hits[i].on_hero) continue;
+                        bn::fixed_point t = world(g.hits[i].x, g.hits[i].y);
+                        for(int k = 0; k < 2; ++k)
+                            fx_particles.spawn(h.x(), h.y() - 4 * k, (t.x() - h.x()) / 12, (t.y() - h.y()) / 12, 0, 12, particle_pool::brick);
+                    }
+                    break;
+                case core::ability_effect::splash:   // Narzut: tynk chlapie na obszar wokół celu
+                    flash_color = bn::color(30, 30, 28);
+                    for(int i = 0; i < g.hits_count; ++i)
+                    {
+                        if(g.hits[i].on_hero) continue;
+                        bn::fixed_point t = world(g.hits[i].x, g.hits[i].y);
+                        for(int k = 0; k < 4; ++k)
+                            fx_particles.spawn(t.x(), t.y(), bn::fixed(dir[k * 2][0]) * bn::fixed(0.6), bn::fixed(dir[k * 2][1]) * bn::fixed(0.6),
+                                               0, 18, particle_pool::dust, 3);
+                    }
+                    break;
+                case core::ability_effect::ram:   // Taran: kurz spod gąsienic i gwiazdki przy uderzeniu
+                    flash_color = bn::color(31, 24, 4);
+                    for(int k = 0; k < 6; ++k)
+                        fx_particles.spawn(h.x() + fx_particles.rand(-96, 96), h.y() + 6, fx_particles.rand(-8, 8), bn::fixed(-0.3), 0, 20, particle_pool::dust, 3);
+                    for(int i = 0; i < g.hits_count; ++i)
+                        if(! g.hits[i].on_hero)
+                        {
+                            bn::fixed_point t = world(g.hits[i].x, g.hits[i].y);
+                            for(int k = 0; k < 3; ++k) fx_particles.spawn(t.x(), t.y() - 8, fx_particles.rand(-16, 16), bn::fixed(-0.6), bn::fixed(0.05), 24, particle_pool::star);
+                        }
+                    break;
+                case core::ability_effect::weld:   // Spaw: niebieski błysk, iskry linią do trafionych i dym na nich
+                    flash_color = bn::color(14, 24, 31);
+                    for(int i = 0; i < g.hits_count; ++i)
+                    {
+                        if(g.hits[i].on_hero) continue;
+                        bn::fixed_point t = world(g.hits[i].x, g.hits[i].y);
+                        for(int k = 0; k < 3; ++k)
+                            fx_particles.spawn(h.x(), h.y(), (t.x() - h.x()) / (8 + 2 * k), (t.y() - h.y()) / (8 + 2 * k), 0, 12, particle_pool::spark, 2);
+                        fx_particles.spawn(t.x(), t.y() - 6, bn::fixed(0.1), bn::fixed(-0.3), 0, 30, particle_pool::dust + 1, 2);
+                    }
+                    break;
+                case core::ability_effect::mark:   // Tyczenie: znacznik nad oznaczonym problemem
+                    flash_color = bn::color(24, 16, 31);
+                    if(g.mark_target >= 0)
+                    {
+                        bn::fixed_point t = world(g.enemies[g.mark_target].x, g.enemies[g.mark_target].y);
+                        fx_particles.spawn(t.x(), t.y() - 12, 0, bn::fixed(-0.2), 0, 40, particle_pool::marker);
+                        for(int k = 0; k < 4; ++k)
+                            fx_particles.spawn(t.x(), t.y(), bn::fixed(dir[k * 2][0]) * bn::fixed(0.5), bn::fixed(dir[k * 2][1]) * bn::fixed(0.5), 0, 16, particle_pool::star);
+                    }
+                    break;
+                default: break;
             }
             flash_timer = 6;
         };
 
+        // Brygada: baner i efekty wezwania fachowca.
+        auto brigade_fx = [&](int h) {
+            const core::helper_def& hd = data::brigade[h];
+            banner.push(hd.name, hd.desc);   // fachowiec na placu (nazwa i skutek, 23 znaki)
+            bn::sound_items::sfx_ability.play();
+            bn::fixed_point p = world(g.hero.x, g.hero.y);
+            static constexpr int8_t dir[8][2] = { { 2, 0 }, { 1, 1 }, { 0, 2 }, { -1, 1 }, { -2, 0 }, { -1, -1 }, { 0, -2 }, { 1, -1 } };
+            switch(hd.effect)
+            {
+                case core::helper_effect::reveal: flash_color = bn::color(16, 24, 31); break;
+                case core::helper_effect::pump:   // beton rozlewa się wokół bohatera
+                    flash_color = bn::color(24, 24, 22);
+                    for(int k = 0; k < 8; ++k)
+                        fx_particles.spawn(p.x(), p.y() + 4, bn::fixed(dir[k][0]) * bn::fixed(0.8), bn::fixed(dir[k][1]) * bn::fixed(0.8), 0, 24,
+                                           particle_pool::dust, 3);
+                    break;
+                case core::helper_effect::safety:
+                    flash_color = bn::color(8, 30, 16);
+                    for(int k = 0; k < 6; ++k)
+                        fx_particles.spawn(p.x() + fx_particles.rand(-128, 128), p.y() + 4, 0, fx_particles.rand(-20, -8), 0, 26, particle_pool::plus);
+                    break;
+                default:
+                    flash_color = bn::color(12, 28, 31);
+                    if(g.ally_turns > 0)
+                    {
+                        bn::fixed_point q = world(g.ally_x, g.ally_y);
+                        for(int k = -1; k <= 1; k += 2) fx_particles.spawn(q.x() + k * 4, q.y() + 6, bn::fixed(k) / 3, bn::fixed(-0.3), 0, 16, particle_pool::dust, 3);
+                    }
+                    break;
+            }
+            flash_timer = 6;
+        };
+
+        // Wybrane w telefonie: fachowiec z brygady albo naprawa za materiał (h >= brigade_count). Zużywa turę.
+        auto do_pending = [&](int h) {
+            if(h < data::brigade_count)
+            {
+                if(! g.call_helper(h)) return false;
+                brigade_fx(h);
+                return true;
+            }
+            int k = h - data::brigade_count;
+            int walls0 = g.walls_count;
+            if(! g.player_repair(k)) return false;
+            const core::repair_def& rd = data::repairs[k];
+            banner.push(rd.name, rd.desc);
+            bn::sound_items::sfx_ability.play();
+            flash_color = bn::color(31, 22, 10);
+            flash_timer = 6;
+            for(int i = walls0; i < g.walls_count; ++i)   // deski wyskakują z ziemi
+            {
+                bn::fixed_point w = world(g.walls[i].x, g.walls[i].y);
+                fx_particles.spawn(w.x(), w.y() + 4, fx_particles.rand(-8, 8), bn::fixed(-1.4), bn::fixed(0.15), 20, particle_pool::brick);
+            }
+            if(rd.effect == core::repair_effect::bridge)   // kładka: pył wokół bohatera
+            {
+                bn::fixed_point p = world(g.hero.x, g.hero.y);
+                for(int kk = 0; kk < 6; ++kk)
+                    fx_particles.spawn(p.x() + fx_particles.rand(-128, 128), p.y() + 6, 0, fx_particles.rand(-12, -4), 0, 20, particle_pool::dust, 3);
+            }
+            return true;
+        };
+
+        // Nowe problemy w trakcie etapu (podział): sprite'y, pozycje i paski dla dodatkowych miejsc.
+        uint32_t prev_alive = 0;
+        for(int i = 0; i < g.enemies_count; ++i) if(g.enemies[i].alive) prev_alive |= 1u << i;
+        int prev_blast = g.blast_timer, prev_blast_x = g.blast_x, prev_blast_y = g.blast_y, prev_turns = g.turns;
+        auto sync_enemies = [&]() {
+            while(enemies.size() < g.enemies_count)
+            {
+                int i = enemies.size();
+                bn::sprite_ptr sp = bn::sprite_items::actors.create_sprite(world(g.enemies[i].x, g.enemies[i].y), data::enemies[g.enemies[i].def_id].frame);
+                sp.set_camera(cam);
+                style_enemy(sp, g.enemies[i]);
+                enemies.push_back(sp);
+                enemy_gold.push_back(g.enemies[i].elite >= 0);
+                state_icons.push_back(bn::optional<bn::sprite_ptr>());
+                enemy_cur.push_back(world(g.enemies[i].x, g.enemies[i].y)); enemy_dst.push_back(enemy_cur.back());
+                enemy_shown.push_back(-1);
+                mini_bars.push_back(bn::optional<bn::sprite_ptr>());
+            }
+        };
+        // Efekty zachowań i mechanik: strzały z dystansu, wybuch, poryw wiatru, nowe problemy z podziału / powrotu.
+        auto behavior_fx = [&]() {
+            bn::fixed_point h = world(g.hero.x, g.hero.y);
+            for(int i = 0; i < g.enemies_count; ++i)
+            {
+                const core::actor& e = g.enemies[i];
+                if(g.shot_events & (1u << i))   // strzał: iskry lecą od strzelca do bohatera
+                {
+                    bn::fixed_point p = world(e.x, e.y);
+                    for(int k = 1; k <= 3; ++k)
+                        fx_particles.spawn(p.x() + (h.x() - p.x()) * k / 4, p.y() + (h.y() - p.y()) * k / 4, (h.x() - p.x()) / 24, (h.y() - p.y()) / 24,
+                                           0, 10 + k * 3, particle_pool::spark, 2);
+                }
+                bool alive_now = e.alive, was = prev_alive & (1u << i);
+                if(alive_now && ! was)   // podział albo powrót: pojawia się z kurzem, bez przesuwania z dawnego miejsca
+                {
+                    enemy_cur[i] = enemy_dst[i];
+                    bn::fixed_point p = world(e.x, e.y);
+                    if(g.visible(e.x, e.y)) for(int k = -1; k <= 1; k += 2) fx_particles.spawn(p.x() + k * 4, p.y() + 6, bn::fixed(k) / 3, bn::fixed(-0.3), 0, 18, particle_pool::dust, 3);
+                }
+                if(alive_now) prev_alive |= 1u << i; else prev_alive &= ~(1u << i);
+            }
+            g.shot_events = 0;
+            if(prev_blast > 0 && g.blast_timer == 0 && prev_blast_x >= 0)   // wybuch spadł
+            {
+                bn::fixed_point b = world(prev_blast_x, prev_blast_y);
+                fx_particles.burst(b, 8, particle_pool::spark, 2, 40, 20);
+                for(int k = 0; k < 4; ++k) fx_particles.spawn(b.x(), b.y(), fx_particles.rand(-24, 24), fx_particles.rand(-24, 8), 0, 22, particle_pool::dust, 3);
+                flash_color = bn::color(31, 16, 4); flash_timer = 8; shake_timer = 6;
+                bn::sound_items::sfx_hurt.play();
+            }
+            prev_blast = g.blast_timer; prev_blast_x = g.blast_x; prev_blast_y = g.blast_y;
+            if(g.turns != prev_turns && g.act_is(core::act_mechanic::gust))   // poryw wiatru: pył w stronę porywu
+            {
+                int v = g.adef().mech_value, t = g.turns - g.stage_start_turn;
+                if(t > 0 && t % v == 0)
+                {
+                    int d = (t / v + g.pattern_stage()) & 3;
+                    for(int k = 0; k < 6; ++k)
+                        fx_particles.spawn(h.x() - core::game::gust_vec[d][0] * 40 + fx_particles.rand(-64, 64), h.y() - core::game::gust_vec[d][1] * 40 + fx_particles.rand(-64, 64),
+                                           bn::fixed(core::game::gust_vec[d][0]) * 3, bn::fixed(core::game::gust_vec[d][1]) * 3, 0, 24, particle_pool::dust, 3);
+                    bn::sound_items::sfx_menu.play();
+                }
+            }
+            prev_turns = g.turns;
+        };
         auto refresh = [&]() {
+            sync_enemies();
             map->build(g);
             bg_map_ptr.reload_cells_ref();
             bn::fixed_point old_dst = hero_dst;
@@ -1427,15 +3346,20 @@ namespace
                 enemies[i].set_visible(g.enemies[i].alive && g.visible(g.enemies[i].x, g.enemies[i].y));
                 enemy_dst[i] = world(g.enemies[i].x, g.enemies[i].y);
             }
+            if(g.ally_turns > 0) ally_dst = world(g.ally_x, g.ally_y);
+            behavior_fx();
             if(snap_next)
             {
                 hero_cur = hero_dst;
+                ally_cur = ally_dst;
                 for(int i = 0; i < g.enemies_count; ++i) enemy_cur[i] = enemy_dst[i];
                 snap_next = false;
             }
             sync_pickups();
             for(int i = 0; i < g.pickups_count; ++i)
                 pickups[i].set_visible(g.pickups[i].active && g.explored(g.pickups[i].x, g.pickups[i].y));
+            stairs_lock.set_visible(g.stairs_locked() && g.explored(g.stairs_x, g.stairs_y) && ! (g.hero.x == g.stairs_x && g.hero.y == g.stairs_y));
+            secret_sprite.set_visible(g.secret_closed() && g.explored(g.secret_x, g.secret_y));
             animate();
 
             hud.clear();
@@ -1449,7 +3373,7 @@ namespace
             core::message num; num.add(g.hero.hp).add("/").add(g.hero.max_hp);
             a.text.generate(-30, -72, num.s, hud);
             a.text.set_right_alignment();
-            core::message st; st.add("Etap ").add(g.stage + 1).add("/").add(data::stages_count).add(" ");
+            core::message st; st.add(UI(etap)).add(g.stage_number()).add("/").add(g.stages_in_run()).add(" ");
             st.add(clip(g.ddef().name, 1).c_str());
             if(g.tier > 0) st.add("+").add(g.tier);
             a.text.generate(116, -72, st.s, hud);
@@ -1471,7 +3395,7 @@ namespace
                         case core::loot: a.text.set_palette_item(bn::sprite_palette_items::font_map_loot); break;
                         default:         a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item()); break;
                     }
-                    core::message line; line.add(clip(m.s, 30).c_str());
+                    core::message line; line.add(fit(a, m.s, m.repeat > 1 ? 208 : 232).c_str());
                     if(m.repeat > 1) line.add(" x").add(m.repeat);
                     a.text.generate(-116, 56 + k * 16, line.s, log);
                 }
@@ -1497,12 +3421,25 @@ namespace
             a.text.set_center_alignment();
             for(int i = 0; i < g.hits_count; ++i)
             {
+                if(! sprites_to_spare()) break;   // bez liczb, gdy brak zapasu sprite'ów
                 if(floaters.full()) floaters.erase(floaters.begin());
                 floaters.push_back(floater());
                 floater& f = floaters.back();
-                core::message m; m.add("-").add(g.hits[i].amount);
+                const core::hit& h = g.hits[i];
+                core::message m;
+                if(h.kind == core::hit_dodge) m.add(UI(unik_7));
+                else if(h.kind == core::hit_crit) m.add(UI(kryt_10)).add(h.amount);
+                else m.add("-").add(h.amount);
                 bn::fixed_point p = world(g.hits[i].x, g.hits[i].y);
-                a.text.set_palette_item(g.hits[i].on_hero ? bn::sprite_palette_items::font_map_bad : bn::sprite_items::font_8x16.palette_item());
+                a.text.set_palette_item(h.kind == core::hit_dodge ? bn::sprite_palette_items::font_map_good
+                                      : h.kind == core::hit_crit ? bn::sprite_palette_items::font_map_loot
+                                      : h.on_hero ? bn::sprite_palette_items::font_map_bad : bn::sprite_items::font_8x16.palette_item());
+                if(h.kind == core::hit_crit) { flash_color = bn::color(31, 27, 8); flash_timer = 5; }   // krótki żółty błysk
+                if(h.kind == core::hit_crit && ! h.on_hero && gold_glint)   // Złota kielnia: złote iskry z broni bohatera
+                {
+                    bn::fixed_point hp = world(g.hero.x, g.hero.y);
+                    fx_particles.burst(bn::fixed_point(hp.x() + 5, hp.y() - 2), 6, particle_pool::star, 1, 20, 22);
+                }
                 a.text.generate(p.x(), p.y() - 12, m.s, f.sprites);
                 a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
                 for(bn::sprite_ptr& sp : f.sprites) { sp.set_camera(cam); sp.set_z_order(-60); }
@@ -1513,7 +3450,25 @@ namespace
                     (g.hits[i].on_hero ? bn::sound_items::sfx_hurt : bn::sound_items::sfx_hit).play();
             }
             g.hits_count = 0;
+            if(g.combo_events)   // kombinacja stanów (#29): baner z zapowiedzią i błysk w kolorze kombinacji
+            {
+                for(int k = 0; k < data::combos_count; ++k)
+                {
+                    const core::combo_def& cd = data::combos[k];
+                    if(g.combo_events & (1u << k))
+                    {
+                        core::message b; b.add(cd.name).add(" +").add(cd.value).add(cd.effect == core::combo_effect::crack ? "%" : "");
+                        if(cd.radius > 0) b.add(UI(obok));
+                        banner.push(cd.short_name, b.s);
+                    }
+                    if(g.combo_events & (8u << k)) { core::message b; b.add(cd.name).add(": -").add(cd.hero_value).add(" HP"); banner.push(cd.short_name, b.s); }
+                }
+                flash_color = (g.combo_events & 0x09) ? bn::color(12, 24, 31) : ((g.combo_events & 0x12) ? bn::color(31, 18, 6) : bn::color(24, 30, 31));
+                flash_timer = 8;
+                g.combo_events = 0;
+            }
             update_mini_bars();
+            update_state_icons();
             {
                 int8_t tt[core::max_enemies];
                 marked = g.targets_in_range(tt, core::max_enemies) > 0 ? tt[0] : -1;
@@ -1540,11 +3495,28 @@ namespace
             bg_map_ptr.reload_cells_ref();
             for(auto& s : enemies) s.set_visible(false);
             for(auto& s : pickups) s.set_visible(false);
-            fx.clear(); log.clear(); floaters.clear(); fx_particles.list.clear();
+            stairs_lock.set_visible(false);
+            secret_sprite.set_visible(false);
+            fx.clear(); log.clear(); floaters.clear(); fx_particles.list.clear(); levelup_text.clear(); levelup_timer = 0;
             hide_mini_bars(); target_marker.set_visible(false); status_sprite.set_visible(false);
-            power_icon.set_visible(false); power_text.clear(); shown_cd = -1;
+            power_icon.set_visible(false); power_text.clear(); shown_cd = -1; hide_status_hud();
+            ally_hidden = true; ally_sprite.reset();
             a.text.set_left_alignment();
-            a.text.generate(-116, 72, "Podgląd mapy (puść L)", log);
+            a.text.generate(-116, 72, UI(podglad_mapy_pusc_l), log);
+            // magazyn (#32): znacznik ściany / drzwi, gdy odkryte, i skrzynia (odkryta, jeszcze nieotwarta)
+            bn::vector<bn::sprite_ptr, 2> marks;
+            auto mark = [&](int x, int y, int frame) {
+                if(bn::optional<bn::sprite_ptr> sp = bn::sprite_items::particles.create_sprite_optional(x * 8 + 4 - 256, y * 8 + 4 - 256, frame))
+                {
+                    sp->set_camera(cam); sp->set_z_order(-50);
+                    marks.push_back(bn::move(*sp));
+                }
+            };
+            if(g.has_secret() && (g.explored(g.secret_x, g.secret_y) || g.weapon().reveal))   // Poziomica mistrza: magazyn widać zawsze
+                mark(g.secret_x, g.secret_y, particle_pool::map_secret);
+            for(int i = 0; i < g.pickups_count && ! marks.full(); ++i)
+                if(g.pickups[i].active && g.pickups[i].type == core::chest && g.explored(g.pickups[i].x, g.pickups[i].y))
+                    mark(g.pickups[i].x, g.pickups[i].y, particle_pool::map_chest);
             bn::fixed_point hp(g.hero.x * 8 + 4 - 256, g.hero.y * 8 + 4 - 256);
             hero.set_position(hp);
             hero.set_scale(bn::fixed(0.5));
@@ -1555,15 +3527,149 @@ namespace
                 hero.set_visible((++t & 16) == 0);
                 next_frame();
             }
+            marks.clear();
             hero.remove_affine_mat();
             hero.set_visible(true);
+            ally_hidden = false;
             snap_next = true;
             refresh();
             hold = 0;
         };
 
+        // Pełnoekranowe okno (telefon, porównanie sprzętu): chowa mapę i HUD, zwalnia warstwę pasków.
+        auto suspend_view = [&]() {
+            bg.set_visible(false);
+            hero.set_visible(false);
+            for(auto& sp : enemies) sp.set_visible(false);
+            for(auto& sp : pickups) sp.set_visible(false);
+            stairs_lock.set_visible(false);
+            secret_sprite.set_visible(false);
+            fx.clear(); hud.clear(); log.clear(); floaters.clear(); levelup_text.clear(); levelup_timer = 0;
+            hp_left.set_visible(false); hp_right.set_visible(false);
+            hide_mini_bars(); target_marker.set_visible(false); status_sprite.set_visible(false);
+            for(auto& mb : mini_bars) mb.reset();      // zwalnia kafle sprite'ów (telefon i Jak grać potrzebują ich na tekst)
+            for(auto& si : state_icons) si.reset();
+            const int shared = hero_frame0;   // ukryte postaci i znajdźki na klatce bohatera: jedne kafle zamiast wielu
+            for(int i = 0; i < enemies.size(); ++i) { enemies[i].set_tiles(bn::sprite_items::actors.tiles_item(), shared); enemy_shown[i] = -1; }
+            for(auto& sp : pickups) sp.set_tiles(bn::sprite_items::actors.tiles_item(), shared);
+            power_icon.set_visible(false); power_text.clear(); shown_cd = -1; hide_status_hud();
+            ally_hidden = true; ally_sprite.reset();
+            release_strips();
+            banner.hide();
+            fx_particles.list.clear();
+        };
+        // Menu akcji pod START: ikony wokół bohatera - góra Atak, prawo Moc, dół Termos, lewo Czekaj.
+        // Strzałka wybiera (druga raz tą samą strzałką albo A - wykonuje), START/B zamyka.
+        bool menu_open = false;
+        int menu_sel = -1;
+        bn::vector<bn::sprite_ptr, 5> menu_sprites;
+        static constexpr int8_t menu_dir[4][2] = { { 0, -1 }, { 1, 0 }, { 0, 1 }, { -1, 0 } };
+        auto menu_label = [&]() {
+            log.clear();
+            a.text.set_left_alignment();
+            a.text.set_palette_item(bn::sprite_palette_items::font_map_loot);
+            core::message m;
+            switch(menu_sel)
+            {
+                case 0: m.add(UI(atak_najblizszy_cel_z)).add(g.weapon_range()).add(")"); break;
+                case 1:
+                    m.add(UI(moc_4)).add(ability_label(g).s);
+                    if(g.ability_cd > 0) m.add(UI(za_3)).add(g.ability_cd).add(" t.");
+                    break;
+                case 2: m.add(UI(termos_4)).add(g.thermos).add("/").add(g.thermos_cap()).add(UI(kawa_4)).add(g.coffee_heal()).add(" HP"); break;
+                case 3: m.add(UI(czekaj_ture)); break;
+                default: m.add(UI(akcje_strzalka_a_brygada)); break;
+            }
+            a.text.generate(-116, 56, fit(a, m.s, 232).c_str(), log);
+            a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
+            a.text.generate(-116, 72, menu_sel < 0 ? UI(start_b_zamknij) : UI(a_wykonaj_start_b_zamknij), log);
+            draw_strips(true);
+            log_timer = 0;
+            if(menu_sprites.size() == 5)
+            {
+                menu_sprites[4].set_visible(menu_sel >= 0);
+                if(menu_sel >= 0) menu_sprites[4].set_position(menu_sprites[menu_sel].position());
+            }
+        };
+        auto open_menu = [&]() {
+            menu_open = true; menu_sel = -1;
+            menu_sprites.clear();
+            bn::fixed_point h = world(g.hero.x, g.hero.y);
+            for(int k = 0; k < 4; ++k)
+            {
+                bn::fixed_point p(h.x() + menu_dir[k][0] * 22, h.y() + menu_dir[k][1] * 22);
+                bn::optional<bn::sprite_ptr> sp = k == 1 ? bn::sprite_items::ability_icons.create_sprite_optional(p, g.power_cls())
+                    : bn::sprite_items::menu_icons.create_sprite_optional(p, k == 0 ? 0 : (k == 2 ? 1 : 2));
+                if(! sp) { menu_sprites.clear(); break; }
+                sp->set_camera(cam); sp->set_z_order(-70);
+                menu_sprites.push_back(bn::move(*sp));
+            }
+            if(menu_sprites.size() == 4)
+                if(bn::optional<bn::sprite_ptr> ring = bn::sprite_items::menu_icons.create_sprite_optional(0, 0, 3))
+                {
+                    ring->set_camera(cam); ring->set_z_order(-71); ring->set_visible(false);
+                    menu_sprites.push_back(bn::move(*ring));
+                }
+            target_marker.set_visible(false);
+            menu_label();
+        };
+        auto close_menu = [&]() {
+            menu_open = false;
+            menu_sprites.clear();
+            log.clear(); draw_strips(false); log_seen = g.log_serial;
+        };
+
+        auto resume_view = [&]() {
+            ally_hidden = false;
+            for(int i = 0; i < pickups.size(); ++i) pickups[i].set_tiles(bn::sprite_items::actors.tiles_item(), pickup_frame(g.pickups[i]));
+            bg.set_visible(true);
+            hero.set_visible(true);
+            hp_left.set_visible(true); hp_right.set_visible(true);
+            create_strips();
+            draw_strips(strips_bottom);
+            snap_next = true;
+            refresh();
+            hold = 0;
+        };
+
+        // Awans: duży napis "AWANS! Poziom N" wyskakuje nad bohaterem (~1.5 s), złoty błysk, pierścień i unoszące się gwiazdki.
+        auto levelup_fx = [&]() {
+            if(! levelup_pending) return;
+            core::message m; m.add(UI(awans_poziom_2)).add(levelup_pending);
+            levelup_pending = 0;
+            levelup_text.clear();
+            bn::fixed_point h = world(g.hero.x, g.hero.y);
+            a.text.set_center_alignment();
+            a.text.set_palette_item(bn::sprite_palette_items::font_map_loot);
+            if(sprites_to_spare()) a.text.generate(h.x(), h.y() - 26, m.s, levelup_text);   // baner awansu i tak jest
+            a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
+            for(bn::sprite_ptr& sp : levelup_text) { sp.set_camera(cam); sp.set_z_order(-80); }
+            levelup_timer = 90;
+            flash_color = bn::color(31, 27, 10);
+            flash_timer = 10;
+            static constexpr int8_t dir[8][2] = { { 2, 0 }, { 1, 1 }, { 0, 2 }, { -1, 1 }, { -2, 0 }, { -1, -1 }, { 0, -2 }, { 1, -1 } };
+            for(int k = 0; k < 8; ++k)   // pierścień iskier + gwiazdki unoszące się w górę
+                fx_particles.spawn(h.x(), h.y(), bn::fixed(dir[k][0]) * bn::fixed(0.9), bn::fixed(dir[k][1]) * bn::fixed(0.9), 0, 20, particle_pool::ring, 2);
+            for(int k = 0; k < 6; ++k)
+                fx_particles.spawn(h.x() + fx_particles.rand(-160, 160), h.y() + 6, 0, fx_particles.rand(-24, -10), 0, 44, particle_pool::star);
+        };
+        auto levelup_update = [&]() {
+            if(levelup_timer <= 0) return;
+            --levelup_timer;
+            int age = 90 - levelup_timer;
+            for(bn::sprite_ptr& sp : levelup_text)
+            {
+                if(age < 8) sp.set_y(sp.y() - 2);                 // wyskok
+                else if((age & 3) == 0) sp.set_y(sp.y() - 1);     // powolne unoszenie
+                sp.set_visible(levelup_timer > 20 || (levelup_timer & 2));   // miganie przed zniknięciem
+            }
+            if(levelup_timer == 0) levelup_text.clear();
+        };
+
         while(true)
         {
+            levelup_fx();
+            levelup_update();
             if(bn::keypad::l_held() && ! bn::keypad::r_held()) { overview(); continue; }
             bool acted = false;
             int dx = 0, dy = 0;
@@ -1594,13 +3700,85 @@ namespace
                 continue;
             }
             if(range_flash > 0 && --range_flash == 0) show_range(false);
+            if(menu_open)
+            {
+                int pick = -1;
+                for(int k = 0; k < 4; ++k)
+                {
+                    bool pr = k == 0 ? bn::keypad::up_pressed() : (k == 1 ? bn::keypad::right_pressed()
+                            : (k == 2 ? bn::keypad::down_pressed() : bn::keypad::left_pressed()));
+                    if(! pr) continue;
+                    if(menu_sel == k) pick = k;
+                    else { menu_sel = k; menu_label(); bn::sound_items::sfx_menu.play(); }
+                }
+                if(bn::keypad::a_pressed() && menu_sel >= 0) pick = menu_sel;
+                else if(bn::keypad::a_pressed())   // A bez kierunku: Brygada w telefonie
+                {
+                    close_menu();
+                    suspend_view();
+                    int tab = a.phone_tab;
+                    a.phone_tab = 3;
+                    pause_result pr = run_phone(a, true);
+                    a.phone_tab = tab;
+                    if(pr == pause_result::save_exit) { save_run(a); return leave(scene::title); }
+                    if(pr == pause_result::quit)
+                    {
+                        if(g.score > a.save.best) a.save.best = g.score;
+                        core::check_badges(a.save, g);
+                        core::check_contracts(a.save);
+                        core::check_secrets(a.save, &g);
+                        core::bank_xp(a.save, g);
+                        core::bank_progress(a.save, g);   // v0.21.52 cz. b: inspektor i mistrzostwo
+                        bank_tasks(a, g); core::check_collections(a.save);   // cz. c: zadania, kolekcje
+                        bn::sram::write(a.save);
+                        clear_run(a);
+                        return leave(scene::shop);
+                    }
+                    resume_view();
+                    if(pr == pause_result::resume && a.pending_helper >= 0)
+                    {
+                        int h = a.pending_helper;
+                        a.pending_helper = -1;
+                        if(do_pending(h)) refresh();
+                    }
+                    continue;
+                }
+                if(pick < 0 && (bn::keypad::start_pressed() || bn::keypad::b_pressed())) { close_menu(); wait_release(); refresh(); }
+                else if(pick >= 0)
+                {
+                    close_menu();
+                    switch(pick)
+                    {
+                        case 0:
+                            acted = g.player_attack_nearest();
+                            if(! acted) { show_range(true); range_flash = 20; }
+                            break;
+                        case 1:
+                            acted = g.player_ability();
+                            if(acted) { bn::sound_items::sfx_ability.play(); ability_fx(); }
+                            break;
+                        case 2:
+                            acted = g.player_drink();
+                            if(acted) bn::sound_items::sfx_pickup.play();
+                            break;
+                        default:
+                            acted = g.player_wait();
+                            break;
+                    }
+                    refresh();
+                    wait_release();
+                }
+                animate(); fx_particles.update(); banner.update(a);
+                next_frame();
+                continue;
+            }
             if(looking)   // B: krótko = czekaj turę; przytrzymaj = podgląd wrogów (bez zużycia tury)
             {
                 ++look_frames;
                 if(look_frames == 10)
                 {
                     look_count = 0;
-                    for(int d = 1; d <= core::fov_radius + 1; ++d)
+                    for(int d = 1; d <= g.sight_radius() + 1; ++d)
                         for(int i = 0; i < g.enemies_count; ++i)
                             if(g.enemies[i].alive && g.visible(g.enemies[i].x, g.enemies[i].y)
                                && core::cheb(g.hero.x, g.hero.y, g.enemies[i].x, g.enemies[i].y) == d)
@@ -1613,18 +3791,44 @@ namespace
                     const core::actor& e = g.enemies[look_list[look_sel]];
                     reticle.set_position(world(e.x, e.y));
                     reticle.set_visible(true);
-                    if(look_shown != look_list[look_sel])   // karta wroga w miejscu dziennika
+                    int look_key = look_list[look_sel] + 32 * ((look_frames / 100) % 12);   // druga linia na zmianę: obrażenia / opis / zachowania
+                    if(look_shown != look_key)   // karta wroga w miejscu dziennika
                     {
-                        look_shown = look_list[look_sel];
+                        look_shown = look_key;
                         const core::enemy_def& ed = data::enemies[e.def_id];
                         log.clear();
                         a.text.set_left_alignment();
                         a.text.set_palette_item(bn::sprite_palette_items::font_map_loot);
-                        core::message l1; l1.add(ed.name).add("  HP ").add(e.hp).add("/").add(e.max_hp);
-                        l1.add("  obr. ").add(ed.min_damage + g.enemy_dmg_bonus()).add("-").add(ed.max_damage + g.enemy_dmg_bonus());
-                        a.text.generate(-116, 56, clip(l1.s, 34).c_str(), log);
+                        const int ei = look_list[look_sel];
+                        core::message l1; g.enemy_name(l1, ei);   // elita: przedrostek ("Zbrojony Przeciek")
+                        l1.add("  HP ").add(e.hp).add("/").add(e.max_hp);
+                        if(g.enemy_defense(ei)) l1.add(UI(obr_5)).add(g.enemy_defense(ei));
+                        a.text.generate(-116, 56, fit(a, l1.s, 232).c_str(), log);
                         a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
-                        a.text.generate(-116, 72, ed.desc, log);
+                        // druga linia na zmianę: obrażenia w obie strony (rozpiska #26, obrona elity), elita, stany, opis, zachowania
+                        core::message bl = behaviors_line(e.def_id), sl = enemy_states_line(g, ei);
+                        const core::dmg_breakdown vb = g.actor_breakdown(ei);
+                        const core::hit_range vh = g.enemy_hit(ei);
+                        core::message vs; core::versus_line(vs, vb, vh);
+                        const bool split = a.text.width(vs.s) > 232;   // za długie: "Zadasz..." i "on Tobie..." osobno
+                        int list[7], phases = 0;                       // 0 obrażenia, 1 on Tobie, 2 opis, 3 cechy, 4 elita, 5 stany, 6 klucz
+                        list[phases++] = 0;
+                        if(split) list[phases++] = 1;
+                        if(ei == g.key_holder) list[phases++] = 6;
+                        if(e.elite >= 0) list[phases++] = 4;
+                        if(sl.n > 0) list[phases++] = 5;
+                        list[phases++] = 2;
+                        if(bl.n > 0) list[phases++] = 3;
+                        const int phase = list[(look_key >> 5) % phases];
+                        core::message l2;
+                        if(phase == 0) { if(split) core::versus_hero(l2, vb); else l2 = vs; }
+                        else if(phase == 1) { core::add_range(l2.add(UI(on_tobie_2)), vh.min, vh.max).add(UI(unik_8)).add(g.dodge_pct()).add("%"); }
+                        else if(phase == 3) l2.add(UI(cechy)).add(bl.s);
+                        else if(phase == 4) l2.add(UI(elita_3)).add(data::elites[e.elite].name).add(" - ").add(data::elites[e.elite].info);
+                        else if(phase == 5) l2.add(UI(stan)).add(sl.s);
+                        else if(phase == 6) l2.add(UI(ma_klucz_do_magazynu));
+                        else l2.add(ed.desc);
+                        a.text.generate(-116, 72, fit(a, l2.s, 232).c_str(), log);
                         draw_strips(true);
                         log_timer = 0;
                     }
@@ -1634,7 +3838,7 @@ namespace
                     look_shown = -2;
                     log.clear();
                     a.text.set_left_alignment();
-                    a.text.generate(-116, 72, "Nikogo w polu widzenia", log);
+                    a.text.generate(-116, 72, UI(nikogo_w_polu_widzenia), log);
                     draw_strips(true);
                 }
                 if(! bn::keypad::b_held())
@@ -1659,6 +3863,7 @@ namespace
                 else if(bn::keypad::up_held()) dy = -1;
                 else if(bn::keypad::down_held()) dy = 1;
                 if(dx || dy) acted = g.player_move(dx, dy);
+                if(! acted && g.log_serial != log_seen) refresh();   // bez tury, ale z komunikatem (np. zamknięty magazyn)
             }
             else if(bn::keypad::a_pressed() && ! aiming)
             {
@@ -1666,6 +3871,7 @@ namespace
                 aim_count = g.targets_in_range(aim_targets, core::max_enemies);
             }
             else if(bn::keypad::b_pressed() && ! looking) { looking = true; look_frames = 0; look_sel = 0; }
+            else if(bn::keypad::start_pressed()) { open_menu(); next_frame(); continue; }
             else if(bn::keypad::r_pressed() && ! bn::keypad::l_held())
             {
                 acted = g.player_ability();
@@ -1676,40 +3882,51 @@ namespace
             if(bn::keypad::select_pressed() && bn::keypad::l_held() && bn::keypad::r_held()) { g.debug_skip(); snap_next = true; refresh(); }
             else if(bn::keypad::select_pressed())
             {
-                bg.set_visible(false);
-                hero.set_visible(false);
-                for(auto& s : enemies) s.set_visible(false);
-                for(auto& s : pickups) s.set_visible(false);
-                fx.clear(); hud.clear(); log.clear(); floaters.clear();
-                hp_left.set_visible(false); hp_right.set_visible(false);
-                hide_mini_bars(); target_marker.set_visible(false); status_sprite.set_visible(false);
-                power_icon.set_visible(false); power_text.clear(); shown_cd = -1;
-                release_strips();
-                banner.hide();
-                fx_particles.list.clear();
+                suspend_view();
                 pause_result pr = run_phone(a);
                 if(pr == pause_result::save_exit) { save_run(a); return leave(scene::title); }
                 if(pr == pause_result::quit)
                 {
                     if(g.score > a.save.best) a.save.best = g.score;
+                    core::check_badges(a.save, g);   // liczniki zleceń z przerwanej budowy też się liczą
+                    core::check_contracts(a.save);
+                    core::check_secrets(a.save, &g);
                     core::bank_xp(a.save, g);
+                    core::bank_progress(a.save, g);   // v0.21.52 cz. b: inspektor i mistrzostwo
+                    bank_tasks(a, g); core::check_collections(a.save);   // cz. c: zadania, kolekcje
                     bn::sram::write(a.save);
                     clear_run(a);
                     return leave(scene::shop);
                 }
-                bg.set_visible(true);
-                hero.set_visible(true);
-                hp_left.set_visible(true); hp_right.set_visible(true);
-                create_strips();
-                draw_strips(strips_bottom);
-                snap_next = true;
-                refresh();
-                hold = 0;
+                resume_view();
+                if(a.pending_helper >= 0)   // brygada wybrana w telefonie: wezwanie zużywa turę
+                {
+                    int h = a.pending_helper;
+                    a.pending_helper = -1;
+                    if(do_pending(h)) refresh();
+                }
                 continue;
             }
 
             if(acted) refresh();
-
+            // v0.21.50 cz. 3: wydarzenie z wyborem, premia z wydarzenia, cecha narzędzia, narzędzie przy ulepszonym
+            if(g.st == core::status::playing && (g.pending_event >= 0 || g.has_boon_offer() || g.trait_pending || g.has_tool_offer()))
+            {
+                suspend_view();
+                if(g.pending_event >= 0) event_dialog(a);
+                if(g.has_boon_offer()) boon_pick(a, true);
+                if(g.trait_pending) trait_dialog(a);
+                if(g.has_tool_offer()) tool_offer_dialog(a);
+                resume_view();
+                continue;
+            }
+            if(g.has_offer())   // paczka sprzętu: okno porównania (jak telefon - zwalnia paski)
+            {
+                suspend_view();
+                gear_offer_dialog(a);
+                resume_view();
+                continue;
+            }
             animate();
             fx_particles.update();
             if(log_timer > 0 && --log_timer == 0) { log.clear(); draw_strips(false); }   // komunikaty znikają
@@ -1750,22 +3967,112 @@ namespace
                 else a.text.generate(96, -52, "R", power_text);
                 power_palette.set_grayscale_intensity(shown_cd > 0 ? bn::fixed(1) : bn::fixed(0));
             }
+            {
+                int key = 0;
+                for(int k = 0; k < 4; ++k) key = key * 64 + core::imax(0, g.status_turns(hud_statuses[k]));
+                if(key != shown_status)
+                {
+                    shown_status = key;
+                    status_text.clear();
+                    status_count = 0;
+                    a.text.set_palette_item(bn::sprite_palette_items::font_map_bad);
+                    a.text.set_bg_priority(0);
+                    a.text.set_left_alignment();
+                    for(int k = 0; k < 4; ++k)
+                    {
+                        int turns_left = g.status_turns(hud_statuses[k]);
+                        if(turns_left <= 0) continue;
+                        int x = -112 + status_count * 22;
+                        status_icons[status_count].set_tiles(bn::sprite_items::particles.tiles_item(), particle_pool::status_icon + k);
+                        status_icons[status_count].set_x(x);
+                        core::message m; m.add(turns_left);
+                        a.text.generate(x + 5, -52, m.s, status_text);
+                        ++status_count;
+                    }
+                    a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
+                }
+                for(int k = 0; k < 4; ++k) status_icons[k].set_visible(! banner_on && k < status_count);
+                for(bn::sprite_ptr& sp : status_text) sp.set_visible(! banner_on);
+                if(g.thermos != shown_thermos)
+                {
+                    shown_thermos = g.thermos;
+                    thermos_text.clear();
+                    a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
+                    a.text.set_bg_priority(0);
+                    a.text.set_left_alignment();
+                    core::message m; m.add(g.thermos).add("/").add(g.thermos_cap());
+                    a.text.generate(59, -52, m.s, thermos_text);
+                }
+                int mkey = g.mats[0] * 10000 + g.mats[1] * 100 + g.mats[2];
+                if(mkey != shown_mats)   // materiały: liczby obok ikon
+                {
+                    shown_mats = mkey;
+                    mat_text.clear();
+                    a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
+                    a.text.set_bg_priority(0);
+                    a.text.set_left_alignment();
+                    for(int m = 0; m < data::materials_count; ++m)
+                    {
+                        core::message mm; mm.add(g.mats[m]);
+                        a.text.generate(mat_x0 + m * mat_dx + 2, -52, mm.s, mat_text);
+                    }
+                }
+                bool any_mat = mkey > 0 && status_count <= 2;   // trzy stany zajmują cały rząd
+                for(auto& sp : mat_icons) sp.set_visible(! banner_on && any_mat);
+                for(bn::sprite_ptr& sp : mat_text) sp.set_visible(! banner_on && any_mat);
+                thermos_icon.set_visible(! banner_on);
+                weather_icon.set_visible(! banner_on);
+                act_icon.set_visible(! banner_on && act_mech > 0);
+                int gin = g.gust_in();
+                int akey = g.docs_needed() > 0 ? 100 + g.docs_count() : gin;   // pieczątki: dokumenty zebrane / potrzebne
+                if(akey != shown_gust)   // porywy: tury do kolejnego (ostatnia tura - na czerwono)
+                {
+                    shown_gust = akey;
+                    act_text.clear();
+                    if(g.docs_needed() > 0)
+                    {
+                        a.text.set_palette_item(g.stairs_locked() ? bn::sprite_items::font_8x16.palette_item() : bn::sprite_palette_items::font_map_good);
+                        a.text.set_bg_priority(0);
+                        a.text.set_right_alignment();
+                        core::message m; m.add(g.docs_count()).add("/").add(g.docs_needed());
+                        a.text.generate(96, -33, m.s, act_text);
+                        a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
+                    }
+                    else if(gin > 0)
+                    {
+                        a.text.set_palette_item(gin == 1 ? bn::sprite_palette_items::font_map_bad : bn::sprite_items::font_8x16.palette_item());
+                        a.text.set_bg_priority(0);
+                        a.text.set_right_alignment();
+                        core::message m; m.add(gin);
+                        a.text.generate(96, -33, m.s, act_text);
+                        a.text.set_palette_item(bn::sprite_items::font_8x16.palette_item());
+                    }
+                }
+                for(bn::sprite_ptr& sp : act_text) sp.set_visible(! banner_on);
+                for(bn::sprite_ptr& sp : thermos_text) sp.set_visible(! banner_on);
+            }
             bool ready = g.ability_cd == 0;
+            if(g.power_cls() != shown_power)   // Majster: nowa moc na etapie
+            {
+                shown_power = g.power_cls();
+                power_icon.set_tiles(bn::sprite_items::ability_icons.tiles_item(), shown_power);
+            }
             power_icon.set_visible(! banner_on);
             power_icon.set_y(ready && ((blink / 8) & 1) ? -53 : -52);   // gotowa moc "podskakuje"
             for(bn::sprite_ptr& sp : power_text) sp.set_visible(! banner_on && (! ready || ((blink / 16) & 1)));
             hp_left.set_visible(! banner_on && (! low_hp || (blink & 16)));
             hp_right.set_visible(! banner_on && (! low_hp || (blink & 16)));
 
-            if(g.st == core::status::stage_clear)
+            if(g.st == core::status::stage_clear)   // czeka też na banery odznak i zleceń (A pomija)
             {
-                for(int i = 0; i < 70; ++i) { banner.update(a); animate(); fx_particles.update(); next_frame(); }
+                for(int i = 0; i < 70 || (banner.busy() && i < 420 && ! bn::keypad::a_pressed()); ++i)
+                { banner.update(a); animate(); fx_particles.update(); next_frame(); }
                 return leave(scene::schedule);
             }
             if(g.st == core::status::dead || g.st == core::status::won)
             {
                 hero.set_visible(true);
-                for(int i = 0; i < 90; ++i)
+                for(int i = 0; i < 90 || (banner.busy() && i < 480 && ! bn::keypad::a_pressed()); ++i)   // też banery odznak
                 {
                     if(g.st == core::status::won && (i % 6) == 0)   // konfetti na odbiór budowy
                         for(int k = 0; k < 2; ++k)
@@ -1780,38 +4087,422 @@ namespace
         }
     }
 
-    // ------------------------------------------------------------------ harmonogram między etapami
+    // Kolejny etap (po harmonogramie albo Hurtowni).
+    void advance_stage(app& a)
+    {
+        a.g->next_stage();
+#ifdef PB_SCENARIO
+        debug_scenario::after_next_stage(*a.g, PB_SCENARIO);
+#endif
+    }
+
+    // ------------------------------------------------------------------ premia po etapie (#27): 1 z 3
+    // Trzy karty (rzadkość kolorem: zwykła szara, rzadka fioletowa, legendarna złota), opis i znaczniki; "Synergia!",
+    // gdy wybór włączy synergię. Góra/dół - wybór, A - bierzesz, SELECT - losuj jeszcze raz (raz płatne, Druga oferta
+    // za darmo). Po wyborze nowa synergia: potwierdzenie z opisem (A - dalej). Bez pomijania.
+
+    void boon_pick(app& a, bool mid_stage)
+    {
+        core::game& g = *a.g;
+        if(! g.has_boon_offer()) return;
+#ifdef PB_SCENARIO
+        debug_scenario::before_boon_pick(g, PB_SCENARIO);
+#endif
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
+        phone_screen ph(3);
+        ph.icon.set_visible(false);
+        bn::sprite_ptr boon_icon = bn::sprite_items::menu_icons.create_sprite(-100, -59, icon_boon);
+        boon_icon.set_bg_priority(1);
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        page_sprites t;
+        int sel = 0, synergy = -1, picked = -1;
+        auto redraw = [&]() {
+            if(synergy >= 0)   // nowa synergia: potwierdzenie
+            {
+                phone_header(a, ph, t, UI(synergia_4), UI(a_dalej));
+                phone_canvas& c = *ph.canvas;
+                const core::synergy_def& sd = data::synergies[synergy];
+                stripe(c, 0, phone_tile::stripe_done);
+                core::message m0; m0.add(UI(synergia)).add(sd.name);
+                phone_text(a, t, list_x, row_py(0), m0.s, ink::done);
+                phone_text(a, t, list_x, row_py(1), fit(a, sd.desc, phone_text_w).c_str(), ink::dark);
+                core::message tg; tg.add(UI(znaczniki));
+                for(int k = 0; k < data::boon_tags_count; ++k) if((sd.tags >> k) & 1) tg.add(tg.n > 11 ? ", " : "").add(data::boon_tags[k]);
+                phone_text(a, t, list_x, row_py(2), fit(a, tg.s, phone_text_w).c_str(), ink::dim);
+                const core::boon_def& bd = data::boons[picked];
+                stripe(c, 4, rarity_stripe(bd.rarity));
+                core::message m4; m4.add(UI(premia)).add(bd.name);
+                phone_text(a, t, list_x, row_py(4), fit(a, m4.s, phone_text_w).c_str(), rarity_ink(bd.rarity));
+                phone_text(a, t, list_x, row_py(5), fit(a, bd.desc, phone_text_w).c_str(), ink::dim);
+                ph.commit();
+                return;
+            }
+            core::message sub;
+            if(g.can_reroll()) { sub.add(UI(sel_losuj)); if(g.reroll_price() > 0) sub.add(g.reroll_price()).add(UI(zl)); else sub.add(UI(za_darmo)); }
+            else sub.add(UI(a_wybierz));
+            phone_header(a, ph, t, mid_stage ? UI(premia_projekt) : UI(premia_za_etap), sub.s);
+            phone_canvas& c = *ph.canvas;
+            const uint16_t now = g.synergy_mask();
+            for(int k = 0; k < 3; ++k)
+            {
+                const int b = g.boon_offer[k];
+                if(b < 0) continue;
+                const core::boon_def& bd = data::boons[b];
+                const bool on = k == sel;
+                const int r0 = 2 * k;
+                if(on) c.rounded(1, row_ty(r0), 28, 4, phone_tile::fill_group, phone_tile::corner_group);
+                stripe(c, r0, rarity_stripe(bd.rarity)); stripe(c, r0 + 1, rarity_stripe(bd.rarity));
+                const char* rn = data::boon_rarities[bd.rarity].name;
+                phone_text(a, t, list_x, row_py(r0), fit(a, bd.name, pill_room(rn)).c_str(), rarity_ink(bd.rarity));
+                phone_pill(a, c, t, pill_end, row_ty(r0), rn, rarity_pill(bd.rarity));
+                const bool syn = core::game::synergy_mask_in(g.boons | (uint64_t(1) << b)) != now;
+                core::message d; d.add(bd.desc);
+                core::message tg = boon_tags_line(bd);
+                const int room = syn ? pill_room(UI(synergia_5)) : phone_text_w;
+                if(a.text.width(d.s) + a.text.width(tg.s) + 10 <= room) d.add("  ").add(tg.s);
+                phone_text(a, t, list_x, row_py(r0 + 1), fit(a, d.s, room).c_str(), on ? ink::dark : ink::dim);
+                if(syn) phone_pill(a, c, t, pill_end, row_ty(r0 + 1), UI(synergia_5), pill::done);
+            }
+            ph.commit();
+        };
+        redraw();
+        modal_guard();
+        while(true)
+        {
+            if(synergy >= 0)
+            {
+                if(bn::keypad::a_pressed() || bn::keypad::start_pressed() || bn::keypad::b_pressed()) break;
+                next_frame();
+                continue;
+            }
+            int d = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+            if(d) { sel = (sel + d + 3) % 3; redraw(); bn::sound_items::sfx_menu.play(); }
+            if(bn::keypad::select_pressed())
+            {
+                if(g.reroll_boons()) { bn::sound_items::sfx_buy.play(); sel = 0; redraw(); }
+                else bn::sound_items::sfx_hurt.play();
+            }
+            if(bn::keypad::a_pressed() && g.boon_offer[sel] >= 0)
+            {
+                const uint16_t before = g.synergy_mask();
+                picked = g.boon_offer[sel];
+                g.pick_boon(sel);
+                bn::sound_items::sfx_level.play();
+                const uint16_t now = g.synergy_mask();
+                for(int k = 0; k < data::synergies_count && synergy < 0; ++k)
+                    if(((now >> k) & 1) && ! ((before >> k) & 1)) synergy = k;
+                if(synergy < 0) break;
+                wait_release();
+                redraw();
+            }
+            next_frame();
+        }
+        t.clear();
+        a.text.set_palette_item(default_ink);
+        wait_release();
+        if(! mid_stage) leave(scene::schedule);   // ściemnij przed harmonogramem
+    }
+
+    // ------------------------------------------------------------------ harmonogram między etapami: wybór ścieżki
+    // Telefon z aplikacją: zaliczony etap, kolejny etap i dwa warianty do wyboru (rozgałęzienie jak mapa w Slay the
+    // Spire, kolejność etapów stała). Lewo/prawo - wariant, A/START - dalej (Hurtownia na końcu aktu).
     scene run_schedule(app& a)
     {
         core::game& g = *a.g;
+        boon_pick(a);   // najpierw premia 1 z 3 (#27), potem ścieżka i Hurtownia
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
-        text_sprites t;
-        a.text.set_center_alignment();
-        a.text.generate(0, -68, "Harmonogram budowy", t);
-        a.text.set_left_alignment();
-        int first = core::imax(0, core::imin(g.stage - 1, data::stages_count - 5));   // okno 5 etapów
-        for(int r = 0; r < 5 && first + r < data::stages_count; ++r)
-        {
-            int i = first + r;
-            core::message m;
-            m.add(i <= g.stage ? "[x] " : (i == g.stage + 1 ? "[>] " : "[ ] ")).add(i + 1).add(". ").add(data::stages[i].name);
-            a.text.generate(-104, -44 + r * 16, clip(m.s, 27), t);
-        }
-        a.text.set_center_alignment();
-        core::message s; s.add("Wynik: ").add(g.score).add("  Dni: ").add(g.turns);
-        a.text.generate(0, 44, s.s, t);
-        a.text.generate(0, 62, "Kawa: +5 HP   A: dalej", t);
+        phone_screen ph(0);
+        ph.icon.set_visible(false);
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        page_sprites t;
+        const int next = g.stage + 1;
+        int sel = g.next_path;
+        auto redraw = [&]() {
+            phone_header(a, ph, t, UI(harmonogram), UI(wybor_a_dalej));
+            phone_canvas& c = *ph.canvas;
+            // zaliczony etap i kolejny (węzeł)
+            stripe(c, 0, phone_tile::stripe_done);
+            core::message m0; m0.add(g.stage_number()).add(". ").add(g.sdef().name);
+            phone_text(a, t, list_x, row_py(0), fit(a, m0.s, pill_room(UI(gotowe))).c_str(), ink::dim);
+            phone_pill(a, c, t, pill_end, row_ty(0), UI(gotowe), pill::done);
+            stripe(c, 1, phone_tile::stripe_prog);
+            core::message m1; m1.add(g.stage_number() + 1).add(". ").add(g.sdef(next).name);
+            const char* rest = g.investor_has(core::investor_effect::no_break) ? UI(bez_przerwy) : UI(kawa_5_hp);
+            phone_text(a, t, list_x, row_py(1), fit(a, m1.s, pill_room(rest)).c_str(), ink::dark);
+            phone_pill(a, c, t, pill_end, row_ty(1), rest, pill::gray);
+            // rozgałęzienie: pień z węzła etapu, poprzeczka, dwa narożniki w dół do kart wariantów
+            c.set(15, 8, phone_tile::line_tee_up);
+            for(int x = 8; x < 22; ++x) if(x != 15) c.set(x, 8, phone_tile::line_h);
+            c.set(7, 8, phone_tile::line_corner); c.set(22, 8, phone_tile::line_corner, true);
+            for(int k = 0; k < 2; ++k)
+            {
+                const core::path_def& pd = data::paths[g.path_offer(k)];
+                int tx = k == 0 ? 1 : 16;
+                bool on = k == sel;
+                c.rounded(tx, 9, 13, 3, on ? phone_tile::fill_brand : phone_tile::fill_group, on ? phone_tile::corner_brand : phone_tile::corner_group);
+                phone_text(a, t, tx * 8 + 52, 9 * 8 + 4, fit(a, pd.name, 98).c_str(), on ? ink::white : ink::brand, 0);
+            }
+            const core::path_def& ps = data::paths[g.path_offer(sel)];
+            phone_text(a, t, list_x, 97, fit(a, ps.desc, phone_text_w).c_str(), ink::dark);
+            // rada kierownika (data::tips) - kolejna z każdym etapem, bez losowania (nie rusza RNG gry)
+            phone_text(a, t, list_x, 112, fit(a, data::tips[(g.stage + g.tier * 3) % data::tips_count], phone_text_w).c_str(), ink::dim);
+            ph.commit();
+        };
+        redraw();
+        modal_guard();
         while(true)
         {
+            int d = bn::keypad::left_pressed() ? -1 : (bn::keypad::right_pressed() ? 1 : 0);
+            if(d) { sel = (sel + d + 2) % 2; g.choose_path(sel); redraw(); bn::sound_items::sfx_menu.play(); }
             if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
             {
+                g.choose_path(sel);
+                t.clear();
+                a.text.set_palette_item(default_ink);
                 wait_release();
-                if(g.act_cleared) return leave(scene::hurtownia);   // koniec aktu: zakupy przed kolejnym
-                g.next_stage();
+                if(g.act_cleared && ! g.shop_closed()) return leave(scene::hurtownia);   // koniec aktu: zakupy (tryb inwestora: zamknięta)
+                advance_stage(a);
                 return leave(scene::game);
             }
             next_frame();
         }
+    }
+
+    // ------------------------------------------------------------------ po wygranej: harmonogram domu w stylu aplikacji
+    // Zdjęcie domu (Osiedle), etapy z datą rozpoczęcia, kosztem i znacznikiem "gotowe", razem dni i koszt, na dole
+    // zaproszenie do planbudowlany.online (kod QR na kolejnym ekranie). Góra/dół przewija, A - dalej.
+    void house_page(app& a)
+    {
+        const core::game& g = *a.g;
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
+        phone_screen ph(0);
+        ph.icon.set_visible(false);
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        page_sprites t;
+        int size = core::imin(3, g.score / 1000);
+        bn::sprite_ptr house = bn::sprite_items::houses.create_sprite(list_x + 8 - 120, row_py(0) + 8 - 80, size * data::classes_count + g.cls);
+        house.set_bg_priority(1);
+        int y, m, d;
+        core::daily_date(a.save, y, m, d);   // dzień odbioru: data z ekranu budowy dnia (GBA bez zegara)
+        const int end_day = core::days_from_civil(y, m, d);
+        int top = g.first_stage;   // bez Aktu 0: od Fundamentów
+        auto date = [](core::message& msg, int day) {
+            int yy, mm, dd; core::civil_from_days(day, yy, mm, dd);
+            msg.add(dd < 10 ? "0" : "").add(dd).add(".").add(mm < 10 ? "0" : "").add(mm);
+        };
+        auto redraw = [&]() {
+            core::message sub; sub.add(core::schedule_total_days(g)).add(UI(dni_2)).add(core::schedule_total_cost(g)).add(UI(tys_zl));
+            phone_header(a, ph, t, UI(twoj_dom), sub.s);
+            phone_canvas& c = *ph.canvas;
+            core::message r0; r0.add(UI(odbior));
+            date(r0, end_day);
+            r0.add(".").add(y);
+            phone_text(a, t, list_x + 20, row_py(0), fit(a, r0.s, pill_room(UI(gotowe)) - 20).c_str(), ink::dark);
+            phone_pill(a, c, t, pill_end, row_ty(0), UI(gotowe), pill::done);
+            for(int r = 0; r < 4 && top + r < g.route_count(); ++r)
+            {
+                int i = top + r;
+                stripe(c, r + 1, phone_tile::stripe_done);
+                core::message sm; date(sm, core::schedule_start_day(g, i, end_day));
+                sm.add(" ").add(g.sdef(i).name);
+                core::message cm; cm.add(g.sdef(i).cost).add(UI(tys));
+                core::message dm; dm.add(core::schedule_days(g, i)).add(UI(dni));
+                phone_text(a, t, list_x, row_py(r + 1), fit(a, sm.s, pill_room(cm.s) - a.text.width(dm.s) - 6).c_str(), ink::dark);
+                phone_text(a, t, (pill_end - utf8_len(cm.s) - 1) * 8 - 4, row_py(r + 1), dm.s, ink::dim, 1);
+                phone_pill(a, c, t, pill_end, row_ty(r + 1), cm.s, pill::done);
+            }
+            phone_text(a, t, list_x, row_py(5), UI(twoja_budowa), ink::dim);
+            phone_text(a, t, 226, row_py(5), data::schedule_url, ink::brand, 1);
+            ph.commit();
+        };
+        redraw();
+        bn::sound_items::sfx_notify.play(bn::fixed(0.7));
+        modal_guard();
+        for(int f = 0; ! bn::keypad::a_pressed() && ! bn::keypad::start_pressed(); ++f)
+        {
+            int v = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+            if(f > 0 && f % 150 == 0 && ! v) v = top + 4 < g.route_count() ? 1 : g.first_stage - top;   // sama przewija listę etapów
+            if(v)
+            {
+                top = core::imax(int(g.first_stage), core::imin(g.route_count() - 4, top + v));
+                redraw();
+            }
+            next_frame();
+        }
+        t.clear();
+        a.text.set_palette_item(default_ink);
+        wait_release();
+    }
+
+    // ------------------------------------------------------------------ podsumowanie budowy (#33): 3 strony w telefonie
+    // 1 - co zatrzymało budowę (albo odbiór), ostatnie ciosy, najmocniejszy cios; 2 - oś czasu etapów (góra/dół);
+    // 3 - nagrody z budowy, zlecenie, najbliższy cel i rada. A / prawo - dalej, B / lewo - wstecz, START - pomiń.
+    ink recap_ink(uint8_t k) { return k == core::bad ? ink::late : (k == core::good ? ink::done : (k == core::loot ? ink::brand : ink::dark)); }
+
+    void recap_pages(app& a, int gained, const core::progress_gain& pg)
+    {
+        core::game& g = *a.g;
+        const bool won = g.st == core::status::won;
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
+        phone_screen ph(2);
+        ph.icon.set_visible(false);
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        page_sprites t;
+        static core::recap_line lines[64];
+        const int n_lines = g.recap_timeline(lines, 64);
+        int page = 0, top = 0;
+        auto draw = [&]() {
+            phone_canvas& c = *ph.canvas;
+            core::message sub; sub.add(page + 1).add("/4").add(page == 1 ? UI(v_a_dalej) : UI(a_dalej_2));
+            static const char* titles[4] = { UI(podsumowanie), UI(os_czasu), UI(nagrody_i_cele), UI(postep) };   // v0.21.52: paski postępu
+            phone_header(a, ph, t, titles[page], sub.s);
+            if(page == 0)
+            {
+                core::message w; g.recap_where(w);
+                if(won)
+                {
+                    stripe(c, 0, phone_tile::stripe_done);
+                    phone_text(a, t, list_x, row_py(0), UI(odbior_zaliczony), ink::done);
+                    core::message dd; dd.add(core::schedule_total_days(g)).add(UI(dni));
+                    phone_pill(a, c, t, pill_end, row_ty(0), dd.s, pill::done);
+                }
+                else
+                {
+                    stripe(c, 0, phone_tile::stripe_late);
+                    core::message k; g.recap_killer(k);
+                    phone_text(a, t, list_x, row_py(0), fit(a, k.s, phone_text_w).c_str(), ink::late);
+                }
+                phone_text(a, t, list_x, row_py(1), fit(a, g.sdef().name, pill_room(w.s)).c_str(), ink::dark);
+                phone_pill(a, c, t, pill_end, row_ty(1), w.s, won ? pill::done : pill::late);
+                int r = 2;
+                if(won)
+                {
+                    core::message tot; tot.add(UI(usuniete)).add(g.kills).add(UI(elity)).add(int(g.elites_killed)).add(UI(kombinacje_3)).add(int(g.combos_run));
+                    phone_text(a, t, list_x, row_py(r++), fit(a, tot.s, phone_text_w).c_str(), ink::dark);
+                    if(g.worst_hit.amount > 0)
+                    {
+                        phone_text(a, t, list_x, row_py(r++), UI(najmocniej_oberwales), ink::dim);
+                        core::message wh; core::game::recap_hit_line(wh, g.worst_hit);
+                        phone_text(a, t, list_x, row_py(r++), fit(a, wh.s, phone_text_w).c_str(), ink::dark);
+                    }
+                }
+                else
+                {
+                    phone_text(a, t, list_x, row_py(r++), UI(ostatnie_ciosy), ink::dim);
+                    for(int i = 0; i < core::recap_hits_n && r < 5; ++i)
+                    {
+                        const core::recap_hit& h = g.last_hits[i];
+                        if(h.amount <= 0) break;
+                        if(i == 0) stripe(c, r, phone_tile::stripe_late);
+                        core::message hm; core::game::recap_hit_line(hm, h);
+                        phone_text(a, t, list_x, row_py(r++), fit(a, hm.s, phone_text_w).c_str(), i == 0 ? ink::late : ink::dark);
+                    }
+                }
+                if(g.best_hit > 0)
+                {
+                    core::message bh; bh.add(UI(twoj_cios)).add(int(g.best_hit)).add(g.best_hit_crit ? UI(kryt_w) : " w ").add(data::enemies[g.best_hit_def].name);
+                    phone_text(a, t, list_x, row_py(5), fit(a, bh.s, phone_text_w).c_str(), ink::brand);
+                }
+            }
+            else if(page == 1)
+            {
+                for(int r = 0; r < 6 && top + r < n_lines; ++r)
+                {
+                    const core::recap_line& l = lines[top + r];
+                    const bool head = l.text.s[0] != ' ';
+                    if(head) stripe(c, r, l.ink == core::bad ? phone_tile::stripe_late : phone_tile::stripe_done);
+                    const int room = l.tail.n ? pill_room(l.tail.s) : phone_text_w;
+                    phone_text(a, t, list_x, row_py(r), fit(a, l.text.s, room).c_str(), recap_ink(l.ink));
+                    if(l.tail.n) phone_pill(a, c, t, pill_end, row_ty(r), l.tail.s, pill::gray);
+                }
+            }
+            else if(page == 3)   // v0.21.52 (#52): paski postępu - Szkolenie, mistrzostwo zawodu i inspektor (cz. b)
+            {
+                int kind = -1, idx = -1;
+                const int cost = core::next_unlock(a.save, kind, idx);
+                core::message nm, pm;
+                if(cost < 0) { nm.add(UI(szkolenia_wszystko_kupione)); pm.add(UI(max_2)); }
+                else
+                {
+                    nm.add(kind == 0 ? "" : (kind == 1 ? UI(zawod_3) : (kind == 3 ? UI(brygada_2) : "")));
+                    if(kind == 0) nm.add(data::upgrades[idx].name).add(" ").add(roman(a.save.levels[idx]));
+                    else if(kind == 1) nm.add(data::classes[idx].name);
+                    else if(kind == 2) nm.add(data::weapons[data::tools[idx].weapon].name);
+                    else if(kind == 3) nm.add(data::brigade[idx].name);
+                    else if(kind == 5) nm.add(UI(drzewko)).add(data::tree_branches[data::tree_nodes[idx].branch].name);   // v0.21.52 cz. c
+                    else nm.add(UI(trudnosc)).add(data::difficulties[data::difficulties_count - 1].name);
+                    if(a.save.xp >= cost) pm.add(UI(stac_cie));
+                    else pm.add(int(a.save.xp)).add("/").add(cost);
+                }
+                const bool ready = cost < 0 || a.save.xp >= cost;
+                phone_text(a, t, list_x, row_py(0), fit(a, nm.s, pill_room(pm.s)).c_str(), ink::dark);
+                phone_pill(a, c, t, pill_end, row_ty(0), pm.s, ready ? pill::done : pill::prog);
+                c.bar(2, row_ty(1), 26, ready ? phone_tile::bar_done_0 : phone_tile::bar_brand_0, cost < 0 ? 1 : int(a.save.xp), cost < 0 ? 1 : cost);
+                // v0.21.52 cz. b (#45, #44): mistrzostwo zawodu i poziom inspektora - dośw. z tej budowy, nowy poziom
+                auto progress_row = [&](int r, const char* label, int level, int max_level, int cur, int need, bool up) {
+                    core::message lm; lm.add(label).add(level);
+                    core::message gm;
+                    if(up) gm.add(UI(poziom_2)).add(level).add("!");
+                    else if(! need) gm.add(UI(max_2));
+                    else gm.add("+").add(pg.gained);
+                    phone_text(a, t, list_x, row_py(r), fit(a, lm.s, pill_room(gm.s)).c_str(), ink::dark);
+                    phone_pill(a, c, t, pill_end, row_ty(r), gm.s, up || ! need ? pill::done : pill::prog);
+                    c.bar(2, row_ty(r + 1), 26, up || ! need ? phone_tile::bar_done_0 : phone_tile::bar_brand_0, need ? cur : 1, need ? need : 1);
+                    (void)max_level;
+                };
+                int mc = 0, mn = 0, ic = 0, in = 0;
+                core::mastery_bar(a.save, g.cls, mc, mn);
+                core::inspector_bar(a.save, ic, in);
+                core::message ml; ml.add(UI(mistrz)).add(data::classes[g.cls].name).add(" ");
+                progress_row(2, ml.s, core::mastery_level(a.save, g.cls), data::mastery_levels_count, mc, mn, pg.mastery_after > pg.mastery_before);
+                progress_row(4, UI(inspektor), core::inspector_level(a.save), data::inspector_levels_count, ic, in, pg.insp_after > pg.insp_before);
+            }
+            else
+            {
+                core::message xm; xm.add(UI(dosw_2)).add(gained).add(UI(respekt_4)).add(g.respect);
+                core::message rm; rm.add(UI(masz)).add(int(a.save.respect));
+                phone_text(a, t, list_x, row_py(0), fit(a, xm.s, pill_room(rm.s)).c_str(), ink::dark);
+                phone_pill(a, c, t, pill_end, row_ty(0), rm.s, pill::brand);
+                int ci = core::next_contract(a.save, g);
+                if(ci >= 0)
+                {
+                    core::message cm; cm.add(UI(zlecenie_2)).add(data::contracts[ci].name);
+                    core::message pm; pm.add(core::imin(data::contracts[ci].target, core::contract_progress(a.save, ci))).add("/").add(data::contracts[ci].target);
+                    phone_text(a, t, list_x, row_py(1), fit(a, cm.s, pill_room(pm.s)).c_str(), ink::dark);
+                    phone_pill(a, c, t, pill_end, row_ty(1), pm.s, pill::prog);
+                }
+                core::message lead, name;
+                if(core::recap_goal(a.save, lead, name))
+                {
+                    phone_text(a, t, list_x, row_py(2), fit(a, lead.s, phone_text_w).c_str(), ink::dim);
+                    stripe(c, 3, phone_tile::stripe_brand);
+                    phone_text(a, t, list_x, row_py(3), fit(a, name.s, phone_text_w).c_str(), ink::brand);
+                }
+                const core::recap_tip_def& tip = data::recap_tips[core::recap_tip_index(g)];
+                stripe(c, 4, phone_tile::stripe_prog); stripe(c, 5, phone_tile::stripe_prog);
+                phone_text(a, t, list_x, row_py(4), fit(a, tip.lines[0], phone_text_w).c_str(), ink::prog);
+                phone_text(a, t, list_x, row_py(5), fit(a, tip.lines[1], phone_text_w).c_str(), ink::prog);
+            }
+            ph.commit();
+        };
+        draw();
+        modal_guard();
+        while(true)
+        {
+            if(bn::keypad::start_pressed()) break;
+            if(bn::keypad::a_pressed() || bn::keypad::right_pressed())
+            {
+                if(page == 3) break;
+                ++page; draw(); bn::sound_items::sfx_menu.play();
+            }
+            else if((bn::keypad::b_pressed() || bn::keypad::left_pressed()) && page > 0) { --page; draw(); bn::sound_items::sfx_menu.play(); }
+            else if(page == 1 && bn::keypad::down_pressed() && top + 6 < n_lines) { ++top; draw(); }
+            else if(page == 1 && bn::keypad::up_pressed() && top > 0) { --top; draw(); }
+            next_frame();
+        }
+        t.clear();
+        a.text.set_palette_item(default_ink);
+        wait_release();
     }
 
     // ------------------------------------------------------------------ ekran końcowy z QR
@@ -1819,35 +4510,144 @@ namespace
     {
         core::game& g = *a.g;
         bool won = g.st == core::status::won;
+        int prev_best = a.save.best;
+        bool record = g.score > prev_best;
         if(g.score > a.save.best) a.save.best = g.score;
-        if(won) ++a.save.wins;
+        const int streak0 = a.save.streak_best;   // v0.21.52 cz. c (#51): seria dni - nagrody za nowy rekord serii
+        bool daily_record = g.daily && core::record_daily(a.save, g.daily_day, g.score, won);   // codzienna budowa: wynik dnia
+        int reward = won ? core::record_win(a.save) : -1;   // nagroda za odbiór: każda wygrana odblokowuje kolejną
+        const bool career_first = won && core::career_win(a.save, g);   // v0.21.52 cz. d: pierwsza wygrana kontraktu
         if(won) core::add_house(a.save, g);
-        core::check_badges(a.save, g);   // katalog, narzędzia, Osiedle (bez banera - to już ekran końcowy)
+        int stake = core::investor_stake(g.bonus.investor);
+        bool stake_record = won && stake > 0 && stake > core::best_stake(a.save, g.cls);
+        const int stake_rank0 = core::stake_rank(a.save);   // v0.21.52 cz. b (#48): stopnie inwestora przed tą budową
+        int badges_got = core::check_badges(a.save, g);   // katalog, narzędzia, Osiedle, liczniki zleceń, rekord stawki
+        int contracts_got = core::check_contracts(a.save);
+        int secrets_got = core::check_secrets(a.save, &g);   // v0.21.51 cz. 2: sekretne zlecenia (wygrana bez kawy, na styk...)
         int gained = core::bank_xp(a.save, g);
+        bool weekly_record = g.weekly_week && core::record_weekly(a.save, g.weekly_week, g.score, won);   // wyzwanie tygodnia (#34)
+        const core::progress_gain pg = core::bank_progress(a.save, g);   // v0.21.52 cz. b: poziom inspektora i mistrzostwo zawodu
+        const int stake_rank1 = core::stake_rank(a.save);
+        const int tasks0 = a.save.tasks_total;
+        const int tasks_got = bank_tasks(a, g);   // v0.21.52 cz. c: zadania dnia / tygodnia (#50), kolekcje (#49)
+        const int coll_got = core::check_collections(a.save);
+        uint32_t story_got = core::story_check(a.save, &g);   // fabuła (#35): nowe wątki SMS za kamienie milowe (też od inspektora)
+        const int career_new = core::career_announce(a.save);   // v0.21.52 cz. d: nowe kontrakty na mapie kariery
+        const int filters_new = core::filter_announce(a.save);   // v0.21.53: nowe filtry ekranu
         bn::sram::write(a.save);
         clear_run(a);
         play_song(song::none);
         (won ? bn::sound_items::sfx_level : bn::sound_items::sfx_hurt).play();
         {
-            core::message i1; i1.add("Wynik ").add(g.score).add("  Dośw. +").add(gained);
-            phone_message(a, won ? data::story_win : data::story_lose, won ? "Odbiór" : "Budowa", i1.s, ink::dark,
-                          won ? "Dom na Osiedlu!" : "Dośw. zostaje");
+            core::message i1; i1.add(UI(wynik_2)).add(g.score).add(UI(dosw_3)).add(gained);
+            core::message i2;
+            if(g.daily) i2.add(UI(budowa_dnia)).add(daily_record ? UI(rekord_dnia) : UI(zapisana));
+            else if(g.weekly_week) i2.add(UI(tydzien_2)).add(weekly_record ? UI(rekord_tygodnia) : UI(zapisany));
+            else if(reward >= 0) i2.add(UI(nagroda)).add(data::rewards[reward].name).add("!");
+            else if(stake > 0) i2.add(UI(stawka)).add(stake).add(stake_record ? UI(rekord_2) : "").add(won ? UI(dom) : "");
+            else if(record && prev_best > 0) i2.add(UI(nowy_rekord_bylo)).add(prev_best).add(")");
+            else i2.add(won ? UI(dom_na_osiedlu) : UI(dosw_zostaje));
+            phone_message(a, won ? data::story_win : data::story_lose, won ? UI(odbior_2) : UI(budowa), i1.s, ink::dark, fit(a, i2.s, 150).c_str());
             leave(scene::end);
+            if(won) { house_page(a); leave(scene::end); }   // harmonogram domu w stylu aplikacji PlanBudowlany
+            recap_pages(a, gained, pg);   // podsumowanie budowy (#33), cz. b: paski mistrzostwa i inspektora
+            leave(scene::end);
+        }
+        // Co dała ta budowa (motywacja do kolejnej próby): rekord, najbliższe zlecenie, najbliższe do kupienia w Szkoleniach.
+        bn::vector<core::message, 7> motiv;   // v0.21.52: 7 - rekord, zlecenie, Respekt, nagroda, Szkolenia, tytuł i stawka inwestora
+        {
+            core::message m;
+            if(record && prev_best > 0) m.add(UI(nowy_rekord)).add(g.score).add("!");
+            else m.add(UI(rekord)).add(int(a.save.best));
+            if(daily_record) { m = core::message(); m.add(UI(rekord_dnia_2)).add(g.score).add("!"); }
+            if(weekly_record) { m = core::message(); m.add(UI(rekord_tygodnia_2)).add(g.score).add("!"); }
+            motiv.push_back(m);
+            int ci = core::next_contract(a.save, g);
+            if(ci >= 0)
+            {
+                core::message cm; cm.add(UI(zlecenie_2)).add(data::contracts[ci].name).add(": ")
+                                    .add(core::imin(data::contracts[ci].target, core::contract_progress(a.save, ci))).add("/").add(data::contracts[ci].target);
+                motiv.push_back(cm);
+            }
+            core::message rm; rm.add(UI(respekt_z_budowy)).add(g.respect).add(UI(masz_2)).add(int(a.save.respect));
+            motiv.push_back(rm);
+            int nr = a.save.rewards;   // kolejna nagroda za odbiór
+            if(nr < data::rewards_count)
+            {
+                core::message nm; nm.add(UI(za_kolejny_odbior)).add(data::rewards[nr].name);
+                if(data::rewards[nr].kind == core::reward_kind::soon) nm = core::message(), nm.add(data::rewards[nr].name).add(UI(wkrotce));
+                motiv.push_back(nm);
+            }
+            int kind = -1, idx = -1, cost = core::next_unlock(a.save, kind, idx);
+            if(cost >= 0)
+            {
+                core::message um;
+                const char* name = kind == 0 ? data::upgrades[idx].name : (kind == 1 ? data::classes[idx].name
+                                 : (kind == 2 ? data::weapons[data::tools[idx].weapon].name : (kind == 3 ? data::brigade[idx].name
+                                 : (kind == 5 ? UI(wezel_drzewka) : UI(trudny)))));   // v0.21.52 cz. c: drzewko
+                if(a.save.xp >= cost) um.add(UI(stac_cie_2)).add(name).add(" (").add(cost).add(")");
+                else um.add(name).add(UI(brakuje)).add(cost - int(a.save.xp)).add(UI(dosw));
+                motiv.push_back(um);
+            }
+            const int ti = core::selected_title(a.save);   // v0.21.52: wybrany tytuł (Odznaki > Tytuły)
+            if(ti >= 0) { core::message tm; tm.add(UI(tytul)).add(core::title_name(ti)); motiv.push_back(tm); }
         }
 
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
-        bn::regular_bg_ptr bg = bn::regular_bg_items::end.create_bg(8, 48);
-        bn::bg_palette_color_hbe_ptr gradient = make_gradient(bg, screen_info::end_bg_index);
+        bn::regular_bg_ptr bg = (core::language ? bn::regular_bg_items::end_en : bn::regular_bg_items::end).create_bg(8, 48);
+        bn::bg_palette_color_hbe_ptr gradient = make_gradient(bg, core::language ? screen_info::end_en_bg_index : screen_info::end_bg_index);
         text_sprites t;
         a.text.set_center_alignment();
-        a.text.generate(0, 34, won ? "ODBIÓR ZALICZONY!" : "BUDOWA WSTRZYMANA", t);
-        core::message s; s.add("Wynik ").add(g.score).add("  Dośw. +").add(gained);
-        a.text.generate(0, 52, s.s, t);
-        a.text.generate(0, 70, won ? "A: kolejna  START: koniec" : "START: nowa budowa", t);
-        while(true)
+        a.text.generate(0, 30, won ? UI(odbior_zaliczony_2) : UI(budowa_wstrzymana_3), t);
+        core::message s; s.add(UI(wynik_2)).add(g.score).add(UI(dosw_3)).add(gained);
+        a.text.generate(0, 46, s.s, t);
+        const bool ngplus = won && ! g.daily && ! g.weekly_week;   // budowa dnia / tygodnia: bez kolejnej budowy (NG+)
+        const char* keys = ngplus ? UI(a_kolejna_start_koniec) : UI(start_nowa_budowa);
+        text_sprites rot;   // wiersz na zmianę: motywacja i klawisze
+        int rot_i = -1;
+        if(stake > 0 && ! motiv.full())   // tryb inwestora: stawka w wierszu na zmianę (w rogu zasłaniała kod QR)
         {
-            if(won && bn::keypad::a_pressed()) { g.new_game_plus(); wait_release(); return leave(scene::game); }
-            if(bn::keypad::start_pressed() || (! won && bn::keypad::a_pressed())) { wait_release(); return leave(scene::shop); }
+            core::message sm; sm.add(UI(stawka)).add(stake).add(stake_record ? UI(rekord_2) : "");
+            motiv.push_back(sm);
+        }
+        push_banner banner;   // odznaki i zlecenia zdobyte na koniec budowy (np. Stały klient)
+        if(reward >= 0)
+        {
+            core::message rt; rt.add(UI(nagroda)).add(data::rewards[reward].name);
+            if(utf8_len(rt.s) > 23) rt = core::message(), rt.add(data::rewards[reward].name).add("!");   // Akt 0: Papierologia
+            banner.push(rt.s, data::rewards[reward].desc);
+        }
+        push_achievements(banner, badges_got, contracts_got, secrets_got);
+        push_progress(banner, pg, stake_rank0, stake_rank1);   // v0.21.52 cz. b: poziom inspektora, mistrzostwo, stopnie inwestora
+        push_goals(banner, a.save, tasks_got, coll_got, tasks0, streak0, a.save.streak_best);   // cz. c: zadania, kolekcje, seria dni
+        for(int i = 0; i < data::story_arc_count; ++i)   // fabuła: nowy wątek w Wiadomościach (telefon profilu, Osiedle)
+            if((story_got >> i) & 1) banner.push(UI(nowa_wiadomosc), data::story_arc[i].name);
+        if(career_first)   // v0.21.52 cz. d (#47): kontrakt wygrany pierwszy raz - nagroda; nowe kontrakty na mapie kariery
+        {
+            core::message ct; ct.add(UI(wygrany)).add(g.kdef().short_name);
+            core::message cr; core::career_reward_label(cr, g.contract);
+            banner.push(ct.s, cr.s);
+        }
+        for(int c = 1; c < data::career_count; ++c)
+            if((career_new >> c) & 1) banner.push(UI(nowy_kontrakt), data::career[c].name);
+        for(int f = 0; f < data::screen_filters_count; ++f)   // v0.21.53: filtr ekranu odblokowany (wybór zawodu > SELECT)
+            if((filters_new >> f) & 1) banner.push(data::filter_ui_banner, data::screen_filters[f].name);
+        for(int f = 0; ; ++f)
+        {
+            banner.update(a);
+            int ri = (f / 120) % (motiv.size() + 1);
+            if(ri != rot_i)
+            {
+                rot_i = ri;
+                rot.clear();
+                a.text.set_center_alignment();
+                bn::sprite_palette_item ink0 = a.text.palette_item();
+                if(ri < motiv.size()) a.text.set_palette_item(bn::sprite_palette_items::font_map_loot);
+                a.text.generate(0, 62, ri < motiv.size() ? fit(a, motiv[ri].s, 232).c_str() : keys, rot);
+                a.text.set_palette_item(ink0);
+            }
+            if(ngplus && bn::keypad::a_pressed()) { g.new_game_plus(); wait_release(); return leave(scene::game); }
+            if(bn::keypad::start_pressed() || (! ngplus && bn::keypad::a_pressed())) { wait_release(); return leave(scene::shop); }
             next_frame();
         }
     }
@@ -1871,14 +4671,15 @@ namespace
                     else if((y == 3 || y == 14) && x >= 4) t = y == 3 ? 3 : 2;
                     for(int dy = 0; dy < 2; ++dy) for(int dx = 0; dx < 2; ++dx) map->set(x * 2 + dx, y * 2 + dy, t, 0);
                 }
-            bn::regular_bg_item item(bn::regular_bg_tiles_items::tiles, bn::bg_palette_items::stage_palettes_0, map->map_item);
+            bn::regular_bg_item item(bn::regular_bg_tiles_items::tiles, bn::bg_palette_items::stage_palettes_2, map->map_item);   // Fundamenty
             bn::regular_bg_ptr bg = item.create_bg(0, 0);
             bn::bg_tiles::set_allow_offset(true);
             bg.set_camera(cam);
 
             bn::sprite_ptr truck = bn::sprite_items::truck.create_sprite(world(-2, 9).x(), world(0, 9).y());
             truck.set_camera(cam);
-            bn::sprite_ptr hero = bn::sprite_items::actors.create_sprite(world(7, 10), data::classes[g.cls].frame);
+            bn::sprite_ptr hero = bn::sprite_items::actors.create_sprite(world(7, 10), hero_base(a, g.cls));
+            style_hero(a, hero, g.cls);
             hero.set_camera(cam);
             hero.set_visible(false);
             struct prop { int8_t def, x, y; };
@@ -1943,7 +4744,7 @@ namespace
         }
         core::set_flag(a.save, core::prologue_seen);
         bn::sram::write(a.save);
-        phone_message(a, data::story_prologue, "Budowa", "Twój pierwszy plac budowy", ink::dim, data::classes[g.cls].name);
+        phone_message(a, data::story_prologue, UI(budowa), UI(twoj_pierwszy_plac_budowy), ink::dim, data::classes[g.cls].name);
         if(! core::has_flag(a.save, core::help_seen)) { a.after_help = scene::game; return leave(scene::help); }
         return leave(scene::game);
     }
@@ -1959,10 +4760,11 @@ namespace
         const char* note = nullptr;
         bn::sound_items::sfx_notify.play(bn::fixed(0.7));
         auto redraw = [&]() {
-            core::message sub; sub.add("Budżet: ").add(g.cash).add(" zł");
-            phone_header(a, ph, t, "Hurtownia", sub.s);
+            core::message sub; sub.add(g.cash).add(UI(zl_4));
+            mats_line(sub, g);
+            phone_header(a, ph, t, UI(hurtownia_3), sub.s);
             phone_canvas& c = *ph.canvas;
-            core::message b; b.add("Premia za akt ").add(roman(data::stages[g.stage].act)).add(": +").add(g.act_bonus).add(" zł");
+            core::message b; b.add(UI(premia_za_akt)).add(g.act_numeral()).add(": +").add(g.act_bonus).add(UI(zl));
             phone_text(a, t, list_x, row_py(0), note ? note : b.s, note ? ink::brand : ink::done);
             for(int r = 0; r < 4 && top + r < data::hurtownia_count; ++r)   // 4 wiersze, przewijane
             {
@@ -1970,14 +4772,32 @@ namespace
                 bool is_sel = top + r == sel;
                 if(is_sel) stripe(c, r + 1, phone_tile::stripe_brand);
                 phone_text(a, t, list_x, row_py(r + 1), clip(it.name, 16).c_str(), is_sel ? ink::brand : ink::dark);
-                core::message pr; pr.add(it.price).add(" zł");
-                phone_pill(a, c, t, pill_end, row_ty(r + 1), pr.s, g.cash >= it.price ? pill::group : pill::gray);
+                core::message pr;   // cena w zł albo w materiale (np. "4 Stal"); ulepszenie: zł (stal w opisie), "maks."
+                if(it.effect == core::shop_effect::upgrade && g.weapon_lvl >= data::tool_upgrade_max) pr.add(UI(maks));
+                else if(it.material >= 0) pr.add(it.mat_cost).add(" ").add(data::materials[it.material].short_name);
+                else pr.add(g.hurtownia_price(top + r)).add(UI(zl));
+                phone_pill(a, c, t, pill_end, row_ty(r + 1), pr.s, g.hurtownia_can(top + r) ? (it.material >= 0 ? pill::prog : pill::group) : pill::gray);
             }
-            phone_text(a, t, list_x, row_py(5), clip(data::hurtownia[sel].desc, 26).c_str(), ink::dim);
+            core::message dm; ink dk = ink::dim;   // opis; ulepszenie: poziom i koszt, nowe narzędzie: ostrzeżenie (#31)
+            const core::shop_item_def& si = data::hurtownia[sel];
+            if(si.effect == core::shop_effect::upgrade)
+            {
+                g.weapon_title(dm);
+                if(g.weapon_lvl >= data::tool_upgrade_max) dm.add(UI(maks_ulepszenie));
+                else { dm.add(" -> +").add(g.weapon_lvl + 1).add(": "); core::tool_level_label(dm, g.weapon_lvl, g.upgrade_price()); }
+                dk = ink::brand;
+            }
+            else if(si.effect == core::shop_effect::tool && g.weapon_lvl > 0)
+            {
+                dm.add(UI(uwaga_2)); g.weapon_title(dm).add(UI(przepadnie));
+                dk = ink::late;
+            }
+            else dm.add(si.desc);
+            phone_text(a, t, list_x, row_py(5), fit(a, dm.s, phone_text_w).c_str(), dk);
             ph.commit();
         };
         redraw();
-        wait_release();
+        modal_guard();
         while(true)
         {
             int n = data::hurtownia_count;
@@ -1991,8 +4811,15 @@ namespace
             }
             if(bn::keypad::a_pressed())
             {
-                if(g.hurtownia_buy(sel)) { bn::sound_items::sfx_buy.play(); note = "Kupione! START: dalej"; }
-                else note = "Za mały budżet";
+                const bool up = data::hurtownia[sel].effect == core::shop_effect::upgrade;
+                if(g.hurtownia_buy(sel))
+                {
+                    bn::sound_items::sfx_buy.play();
+                    note = up ? UI(ulepszone_start_dalej) : UI(kupione_start_dalej);
+                    if(g.trait_pending) trait_loop(a, ph, t);   // +2: wybór cechy narzędzia
+                }
+                else if(up) note = g.weapon_lvl >= data::tool_upgrade_max ? UI(maksymalne_ulepszenie) : UI(za_malo_zl_albo_stali);
+                else note = data::hurtownia[sel].material >= 0 ? UI(za_malo_materialu) : UI(za_maly_budzet);
                 redraw();
             }
             if(bn::keypad::b_pressed() || bn::keypad::start_pressed())
@@ -2000,79 +4827,1012 @@ namespace
                 t.clear();
                 a.text.set_palette_item(default_ink);
                 wait_release();
-                g.next_stage();
+                advance_stage(a);
                 return leave(scene::game);
             }
             next_frame();
         }
     }
 
+    // ------------------------------------------------------------------ codzienna budowa (R na tytule)
+    // GBA nie ma zegara: gracz ustawia datę (pamiętana w profilu). Seed, zawód i modyfikatory dnia z daty - dla
+    // wszystkich takie same; najlepsze wyniki ostatnich dni w profilu. Lewo/prawo - pole daty, góra/dół - zmiana, A - start.
+    // ------------------------------------------------------------------ v0.21.52 cz. d (#47): mapa kariery
+    // Po pierwszej budowie: tytuł > A / START - kontrakty (Dom jednorodzinny i kolejne budynki odblokowane wygranymi
+    // i poziomem inspektora), najlepszy wynik i wygrane; A wybiera kontrakt i przechodzi do wyboru zawodu, B - tytuł.
+    bool career_map(const app& a) { return a.save.runs > 0; }
+
+    scene run_career(app& a)
+    {
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
+        phone_screen ph(0);
+        ph.icon.set_visible(false);
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        page_sprites t;
+        bn::vector<bn::sprite_ptr, 6> icons;
+        int sel = core::selected_career(a.save), clock = 0, detail = 0;
+        auto redraw = [&]() {
+            icons.clear();
+            core::message sub; sub.add(core::careers_won(a.save)).add("/").add(data::career_count).add(UI(wygr_a_wybierz));
+            phone_header(a, ph, t, UI(mapa_kariery), sub.s);
+            phone_canvas& c = *ph.canvas;
+            for(int k = 0; k < data::career_count && k < 5; ++k)
+            {
+                const core::career_def& kd = data::career[k];
+                const bool unl = core::career_unlocked(a.save, k), won = core::career_won(a.save, k), is_sel = k == sel;
+                stripe(c, k, is_sel ? phone_tile::stripe_brand : (won ? phone_tile::stripe_done : (unl ? phone_tile::stripe_prog : phone_tile::stripe_todo)));
+                const int boss = kd.boss >= 0 ? kd.boss : data::enemy_termin;   // ikona: boss kontraktu (Dom - Termin)
+                bn::sprite_ptr ic = bn::sprite_items::actors.create_sprite(list_x + 8 - 120, row_py(k) + 8 - 80, unl ? data::enemies[boss].frame : frame_lock);
+                ic.set_bg_priority(1);
+                icons.push_back(bn::move(ic));
+                core::message pm;
+                if(! unl) core::career_unlock_label(pm, k);
+                else if(a.save.career_wins[k] > 0) pm.add(UI(wygrane_2)).add(int(a.save.career_wins[k]));
+                else pm.add(UI(etapy)).add(int(a.save.career_best[k])).add("/").add(kd.count - kd.prelude);
+                phone_text(a, t, list_x + 20, row_py(k), fit(a, kd.name, pill_room(pm.s) - 20).c_str(), is_sel ? ink::brand : (unl ? ink::dark : ink::dim));
+                phone_pill(a, c, t, pill_end, row_ty(k), pm.s, ! unl ? pill::gray : (won ? pill::done : pill::prog));
+            }
+            const core::career_def& kd = data::career[sel];   // ostatni wiersz: opis albo nagroda (na zmianę)
+            core::message dm;
+            if(detail == 0) dm.add(kd.count - kd.prelude).add(UI(etapow)).add(kd.desc);
+            else if(kd.boss >= 0 && ! core::career_won(a.save, sel)) { dm.add(UI(nagroda)); core::career_reward_label(dm, sel); }
+            else if(kd.boss >= 0) dm.add(UI(boss)).add(data::enemies[kd.boss].name);
+            else dm.add(UI(budowa_dnia_i_tygodnia_dom));
+            phone_text(a, t, list_x, row_py(5), fit(a, dm.s, phone_text_w).c_str(), ink::dim);
+            ph.commit();
+        };
+        redraw();
+        wait_release();
+        while(true)
+        {
+            if(++clock % 150 == 0) { detail ^= 1; redraw(); }
+            int v = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+            if(v) { sel = (sel + v + data::career_count) % data::career_count; detail = 0; clock = 0; redraw(); bn::sound_items::sfx_menu.play(); }
+            if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
+            {
+                if(core::career_unlocked(a.save, sel))
+                {
+                    a.save.contract = uint8_t(sel);
+                    bn::sram::write(a.save);
+                    t.clear(); icons.clear();
+                    a.text.set_palette_item(default_ink);
+                    wait_release();
+                    return leave(scene::class_select);
+                }
+                bn::sound_items::sfx_hurt.play();   // zablokowany kontrakt
+            }
+            if(bn::keypad::b_pressed())
+            {
+                t.clear(); icons.clear();
+                a.text.set_palette_item(default_ink);
+                wait_release();
+                return leave(scene::title);
+            }
+            next_frame();
+        }
+    }
+
+    scene run_daily(app& a)
+    {
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
+        phone_screen ph(0);
+        ph.icon.set_visible(false);
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        page_sprites t;
+        bn::sprite_ptr cal = bn::sprite_items::menu_icons.create_sprite(14 + 8 - 120, row_py(0) + 8 - 80, 14);   // kalendarz
+        cal.set_bg_priority(1);
+        int y, m, d;
+        core::daily_date(a.save, y, m, d);
+        int field = 0;   // 0 dzień, 1 miesiąc, 2 rok
+        auto redraw = [&]() {
+            int day = core::daily_number(y, m, d);
+            uint32_t seed = core::daily_seed(day);
+            core::message sub; sub.add(UI(nr)).add(day).add(UI(a_start));
+            phone_header(a, ph, t, UI(budowa_dnia_2), sub.s);
+            phone_canvas& c = *ph.canvas;
+            phone_text(a, t, list_x + 18, row_py(0), UI(data), ink::dim);
+            core::message dd, mm, yy; dd.add(d < 10 ? "0" : "").add(d); mm.add(m < 10 ? "0" : "").add(m); yy.add(y);
+            phone_pill(a, c, t, 14, row_ty(0), dd.s, field == 0 ? pill::brand : pill::group);
+            phone_pill(a, c, t, 18, row_ty(0), mm.s, field == 1 ? pill::brand : pill::group);
+            phone_pill(a, c, t, 24, row_ty(0), yy.s, field == 2 ? pill::brand : pill::group);
+            phone_text(a, t, 226, row_py(0), "<>^v", ink::dim, 1);
+            core::message cl; cl.add(UI(zawod_dnia)).add(data::classes[core::daily_class(seed)].name);
+            phone_text(a, t, list_x, row_py(1), fit(a, cl.s, phone_text_w).c_str(), ink::dark);
+            int mask = core::daily_investor(seed), row = 2;   // modyfikatory dnia: po jednym w wierszu (2-3)
+            for(int i = 0; i < data::investor_count && row < 4; ++i)
+                if((mask >> i) & 1)
+                {
+                    stripe(c, row, phone_tile::stripe_late);
+                    core::message mo; mo.add(UI(dzis)).add(data::investor[i].name);
+                    phone_text(a, t, list_x, row_py(row++), fit(a, mo.s, phone_text_w).c_str(), ink::late);
+                }
+            if(row == 2) phone_text(a, t, list_x, row_py(row++), UI(dzis_bez_utrudnien), ink::dim);
+            int best = core::daily_best(a.save, day);
+            core::message bm;
+            if(best >= 0) bm.add(UI(twoj_wynik_dnia)).add(best);
+            else bm.add(UI(dzis_jeszcze_bez_wyniku));
+            bool won_day = best >= 0 && core::daily_won(a.save, day);
+            phone_text(a, t, list_x, row_py(4), fit(a, bm.s, won_day ? pill_room(UI(wygrana_2)) : phone_text_w).c_str(), ink::dark);
+            if(won_day) phone_pill(a, c, t, pill_end, row_ty(4), UI(wygrana_2), pill::done);
+            core::message hist; hist.add(UI(ostatnio));   // inne dni z profilu, od najnowszego
+            int shown = 0, last = 1 << 20;
+            for(int k = 0; k < data::daily_history; ++k)
+            {
+                int pick = -1;
+                for(int i = 0; i < data::daily_history; ++i)
+                    if(a.save.daily_day[i] > 0 && a.save.daily_day[i] != day && a.save.daily_day[i] < last && (pick < 0 || a.save.daily_day[i] > a.save.daily_day[pick])) pick = i;
+                if(pick < 0) break;
+                last = a.save.daily_day[pick];
+                int py, pm, pd; core::civil_from_days(core::days_from_civil(data::daily_epoch[0], data::daily_epoch[1], data::daily_epoch[2]) + last - 1, py, pm, pd);
+                hist.add(shown ? ", " : "").add(pd).add(".").add(pm < 10 ? "0" : "").add(pm).add(" ").add(int(a.save.daily_score[pick]));
+                ++shown;
+            }
+            if(! shown) hist = core::message().add(UI(select_wyzwanie_tygodnia));
+            phone_text(a, t, list_x, row_py(5), fit(a, hist.s, phone_text_w).c_str(), ink::dim);
+            ph.commit();
+        };
+        redraw();
+        wait_release();
+        auto finish = [&]() {
+            core::set_daily_date(a.save, y, m, d);
+            bn::sram::write(a.save);
+            t.clear();
+            a.text.set_palette_item(default_ink);
+            wait_release();
+        };
+        while(true)
+        {
+            int h = bn::keypad::left_pressed() ? -1 : (bn::keypad::right_pressed() ? 1 : 0);
+            if(h) { field = (field + h + 3) % 3; redraw(); bn::sound_items::sfx_menu.play(); }
+            int v = bn::keypad::up_pressed() ? 1 : (bn::keypad::down_pressed() ? -1 : 0);
+            if(v)
+            {
+                if(field == 0) d = (d - 1 + v + core::days_in_month(y, m)) % core::days_in_month(y, m) + 1;
+                else if(field == 1) m = (m - 1 + v + 12) % 12 + 1;
+                else y = core::imax(data::daily_epoch[0], core::imin(2099, y + v));
+                d = core::imin(d, core::days_in_month(y, m));
+                redraw(); bn::sound_items::sfx_menu.play();
+            }
+            if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
+            {
+                finish();
+                core::start_daily(*a.g, core::daily_number(y, m, d));
+                core::start_run(a.save);
+                bn::sram::write(a.save);
+                return leave(scene::game);
+            }
+            if(bn::keypad::b_pressed()) { finish(); return leave(scene::title); }
+            if(bn::keypad::select_pressed()) { finish(); return leave(scene::weekly); }   // wyzwanie tygodnia z tej samej daty
+            next_frame();
+        }
+    }
+
+    // ------------------------------------------------------------------ wyzwanie tygodnia (#34, L na tytule)
+    // Tydzień z daty budowy dnia (GBA bez zegara; góra/dół = tydzień dalej / wcześniej). Seed z numeru tygodnia, zasady
+    // z listy po kolei, osobne wyniki ostatnich tygodni w profilu. A - start, SELECT - budowa dnia, B - tytuł.
+    scene run_weekly(app& a)
+    {
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
+        phone_screen ph(0);
+        ph.icon.set_visible(false);
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        page_sprites t;
+        bn::sprite_ptr cal = bn::sprite_items::menu_icons.create_sprite(14 + 8 - 120, row_py(0) + 8 - 80, 14);   // kalendarz
+        cal.set_bg_priority(1);
+        int y, m, d;
+        core::daily_date(a.save, y, m, d);
+        int week = core::weekly_number(y, m, d);
+        auto redraw = [&]() {
+            const int wi = core::weekly_index(week);
+            const core::weekly_def& wd = data::weekly[wi];
+            core::message title; title.add(UI(tydzien_nr)).add(week);
+            phone_header(a, ph, t, title.s, UI(a_start_2));
+            phone_canvas& c = *ph.canvas;
+            int fy, fm, fd, ly, lm, ld;
+            core::civil_from_days(core::weekly_first_day(week), fy, fm, fd);
+            core::civil_from_days(core::weekly_first_day(week) + 6, ly, lm, ld);
+            core::message dm; dm.add(fd).add(".").add(fm < 10 ? "0" : "").add(fm).add(" - ").add(ld).add(".").add(lm < 10 ? "0" : "").add(lm).add(".").add(ly);
+            phone_text(a, t, list_x + 18, row_py(0), dm.s, ink::dark);
+            phone_text(a, t, 226, row_py(0), "^v", ink::dim, 1);
+            stripe(c, 1, phone_tile::stripe_late);
+            phone_text(a, t, list_x, row_py(1), fit(a, wd.name, phone_text_w).c_str(), ink::late);
+            phone_text(a, t, list_x, row_py(2), fit(a, wd.desc[0], phone_text_w).c_str(), ink::dark);
+            phone_text(a, t, list_x, row_py(3), fit(a, wd.desc[1], phone_text_w).c_str(), ink::dark);
+            core::message cl; cl.add(UI(zawod_3)).add(data::classes[core::weekly_class(week)].name);
+            int best = core::weekly_best(a.save, week);
+            core::message bm;
+            if(best >= 0) bm.add(UI(wynik_3)).add(best);
+            else bm.add(UI(bez_wyniku));
+            phone_text(a, t, list_x, row_py(4), fit(a, cl.s, 120).c_str(), ink::dim);
+            const bool won_week = best >= 0 && core::weekly_won(a.save, week);
+            phone_pill(a, c, t, pill_end, row_ty(4), bm.s, won_week ? pill::done : (best >= 0 ? pill::prog : pill::gray));
+            core::message hist; hist.add(UI(ostatnio));   // inne tygodnie z profilu
+            int shown = 0;
+            for(int i = 0; i < data::weekly_history; ++i)
+                if(a.save.weekly_week[i] > 0 && a.save.weekly_week[i] != week)
+                {
+                    hist.add(shown ? ", " : "").add("t.").add(int(a.save.weekly_week[i])).add(" ").add(int(a.save.weekly_score[i]));
+                    ++shown;
+                }
+            if(! shown) hist = core::message().add(UI(select_budowa_dnia));
+            phone_text(a, t, list_x, row_py(5), fit(a, hist.s, phone_text_w).c_str(), ink::dim);
+            ph.commit();
+        };
+        redraw();
+        wait_release();
+        auto finish = [&]() {
+            if(core::weekly_number(y, m, d) != week) core::civil_from_days(core::weekly_first_day(week), y, m, d);   // inny tydzień: jego poniedziałek
+            core::set_daily_date(a.save, y, m, d);   // data wspólna z budową dnia
+            bn::sram::write(a.save);
+            t.clear();
+            a.text.set_palette_item(default_ink);
+            wait_release();
+        };
+        while(true)
+        {
+            int v = bn::keypad::up_pressed() ? 1 : (bn::keypad::down_pressed() ? -1 : 0);
+            if(v && week + v >= 1 && core::weekly_first_day(week + v) <= core::days_from_civil(2099, 12, 25))
+            {
+                week += v;
+                redraw(); bn::sound_items::sfx_menu.play();
+            }
+            if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
+            {
+                finish();
+                core::start_weekly(*a.g, week);
+                core::start_run(a.save);
+                bn::sram::write(a.save);
+                return leave(scene::game);
+            }
+            if(bn::keypad::b_pressed()) { finish(); return leave(scene::title); }
+            if(bn::keypad::select_pressed()) { finish(); return leave(scene::daily); }
+            next_frame();
+        }
+    }
+
     // ------------------------------------------------------------------ telefon profilu (z tytułu i po budowie)
     // Te same ikony zakładek, inne treści: Odznaki, Katalog usterek, Osiedle, Zespół, Koszty (sklep Szkolenia).
+    // ------------------------------------------------------------------ wybór zawodu
+    // U góry pasek portretów (odblokowane zawody najpierw, potem zablokowane jako sylwetki z kłódką),
+    // pod nim karta wybranego zawodu (moc, broń, statystyki, trudność), na dole pamiątka.
+    // Strzałki lewo/prawo przechodzą po wszystkich; zablokowany można obejrzeć, ale nie wystartować.
+    namespace class_ui
+    {
+        constexpr int oy = 2;                       // cała warstwa kafli przesunięta 2 px w dół
+        constexpr int card_ty = 5, card_th = 11;    // karta: kafle 1..28 x 5..15 (y 42..130)
+        constexpr int row1 = 50, row2 = 66, row3 = 82, row4 = 98, row5 = 113;   // wiersze tekstu karty (px)
+        constexpr int keep_row = 130, keep_row2 = 144;                          // pod kartą
+        constexpr int slot_w = 40;                  // 6 portretów po 40 px = cały ekran (więcej zawodów: pasek się przewija)
+        constexpr int slots_visible = 6;
+        constexpr int small_cy = 22, big_cy = 18;   // środki portretów (px)
+        constexpr int frame_small_lock = 4, frame_arrows = 5;   // klatki menu_icons
+        constexpr int slide_px = 12, slide_step = 3;
+
+        int slot_cx(int s) { return s * slot_w + slot_w / 2; }
+    }
+
+    scene run_class_select(app& a)
+    {
+        using namespace class_ui;
+        bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
+        const bn::sprite_palette_item default_ink = a.text.palette_item();
+        const int default_prio = a.text.bg_priority();
+        a.text.set_bg_priority(1);   // nad kartą (warstwa kafli ma priorytet 2)
+
+        // kolejność na pasku: odblokowane (jak w danych), potem zablokowane
+        int order[data::classes_count], count = 0;
+        for(int pass = 0; pass < 2; ++pass)
+            for(int i = 0; i < data::classes_count; ++i)
+                if(core::class_unlocked(a.save, i) == (pass == 0)) order[count++] = i;
+        auto slot_of = [&](int cls) { for(int s = 0; s < count; ++s) if(order[s] == cls) return s; return 0; };
+        if(! core::class_unlocked(a.save, a.chosen_class)) a.chosen_class = order[0];   // startowe zawody zawsze są
+        int sel = slot_of(a.chosen_class);
+        int first = core::imax(0, core::imin(sel - 2, count - slots_visible));   // pierwszy widoczny portret na pasku
+
+        bn::unique_ptr<phone_canvas> canvas(new phone_canvas());
+        bn::regular_bg_ptr bg = make_canvas_bg(*canvas);
+        bg.set_y(bg.y() + oy);
+        bg.set_priority(2);
+        bn::regular_bg_map_ptr map = bg.map();
+
+        // portrety: mały na każdym miejscu, duży (x2) na wybranym
+        bn::vector<bn::sprite_ptr, data::classes_count> small, locks;
+        for(int s = 0; s < count; ++s)
+        {
+            int c = order[s];
+            bool unl = core::class_unlocked(a.save, c);
+            bn::sprite_ptr p = bn::sprite_items::actors.create_sprite(slot_cx(s) - 120, small_cy - 80 + oy,
+                                                                       unl ? data::classes[c].frame : silhouette_frame(c));
+            p.set_bg_priority(1);
+            small.push_back(bn::move(p));
+            if(! unl)
+            {
+                bn::sprite_ptr l = bn::sprite_items::menu_icons.create_sprite(slot_cx(s) - 120 + 6, small_cy - 80 + oy + 5, frame_small_lock);
+                l.set_bg_priority(1);
+                l.set_z_order(-1);
+                locks.push_back(bn::move(l));
+            }
+        }
+        bn::sprite_ptr big = bn::sprite_items::actors.create_sprite(0, 0, 0);
+        big.set_double_size_mode(bn::sprite_double_size_mode::ENABLED);
+        big.set_bg_priority(1);
+        big.set_z_order(-2);
+        big.set_scale(2);
+        bn::sprite_ptr big_lock = bn::sprite_items::menu_icons.create_sprite(0, 0, frame_small_lock);
+        big_lock.set_bg_priority(1);
+        big_lock.set_z_order(-3);
+        bn::sprite_ptr ability = bn::sprite_items::ability_icons.create_sprite(18 - 120, row2 + 8 - 80, 0);
+        ability.set_bg_priority(1);
+        bn::sprite_ptr arrows = bn::sprite_items::menu_icons.create_sprite(0, 0, frame_arrows);
+        arrows.set_bg_priority(1);
+        bn::sprite_ptr info = bn::sprite_items::menu_icons.create_sprite(220 - 120, row3 + 8 - 80 + oy, icon_stats);   // START: opis statystyk
+        info.set_bg_priority(1);
+
+        page_sprites card_t;          // tekst karty (przesuwa się przy zmianie zawodu)
+        text_sprites pill_t, keep_t;  // napisy na pastylce (kafle stoją) i pod kartą
+
+        // tekst w px ekranu (lewy górny róg linii 16 px); zwraca szerokość
+        auto put = [&](auto& t, int px, int py, const char* s, const bn::sprite_palette_item& pal, int align = -1) {
+            a.text.set_palette_item(pal);
+            if(align < 0) a.text.set_left_alignment();
+            else if(align > 0) a.text.set_right_alignment();
+            else a.text.set_center_alignment();
+            a.text.generate(px - 120, py - 72, s, t);
+            return a.text.width(s);
+        };
+        auto pill_at = [&](int tx_end, int ty, const char* s, pill p) {   // jak phone_pill, z przesunięciem oy
+            int tw = utf8_len(s) + 1, tx = tx_end - tw;
+            int fill = phone_tile::fill_gray, corner = phone_tile::corner_gray;
+            ink i = ink::dim;
+            if(p == pill::done) { fill = phone_tile::fill_done_bg; corner = phone_tile::corner_done_bg; i = ink::done; }
+            else if(p == pill::late) { fill = phone_tile::fill_late_bg; corner = phone_tile::corner_late_bg; i = ink::late; }
+            else if(p == pill::group) { fill = phone_tile::fill_group; corner = phone_tile::corner_group; i = ink::brand; }
+            canvas->rounded(tx, ty, tw, 2, fill, corner);
+            put(pill_t, tx * 8 + tw * 4, ty * 8 + oy, s, ink_palette(i), 0);
+            return tx;
+        };
+
+        int clock = 0, pop = 0, slide = 0, shake = 0;
+
+        auto draw_strip = [&]() {
+            if(sel < first) first = sel;
+            if(sel >= first + slots_visible) first = sel - slots_visible + 1;
+            for(int ty = 0; ty < card_ty; ++ty) for(int tx = 0; tx < 30; ++tx) canvas->set(tx, ty, phone_tile::empty);
+            int li = 0;
+            for(int s = 0; s < count; ++s)
+            {
+                bool unl = core::class_unlocked(a.save, order[s]), shown = s >= first && s < first + slots_visible;
+                int v = s - first;
+                if(shown && s == sel) canvas->rounded(v * 5, 0, 5, 4, phone_tile::fill_brand, phone_tile::corner_brand);
+                else if(shown) canvas->rounded(v * 5 + 1, 1, 3, 3, unl ? phone_tile::fill_group : phone_tile::fill_gray,
+                                               unl ? phone_tile::corner_group : phone_tile::corner_gray);
+                small[s].set_position(slot_cx(v) - 120, small_cy - 80 + oy);
+                small[s].set_visible(shown && s != sel);
+                if(! unl)
+                {
+                    locks[li].set_position(slot_cx(v) - 120 + 6, small_cy - 80 + oy + 5);
+                    locks[li++].set_visible(shown && s != sel);
+                }
+            }
+            if(core::class_unlocked(a.save, order[sel]) && core::mastery_xp(a.save, order[sel]) > 0)   // v0.21.52 cz. b: pasek mistrzostwa
+            {
+                int cur = 0, need = 0;
+                core::mastery_bar(a.save, order[sel], cur, need);
+                canvas->bar((sel - first) * 5, 4, 5, need ? phone_tile::bar_brand_0 : phone_tile::bar_done_0, need ? cur : 1, need ? need : 1);
+            }
+            if(first > 0) canvas->set(0, 2, phone_tile::line_h);                          // za paskiem są jeszcze zawody
+            if(first + slots_visible < count) canvas->set(29, 2, phone_tile::line_h);
+            const int c = order[sel];
+            bool unl = core::class_unlocked(a.save, c);
+            big.set_tiles(bn::sprite_items::actors.tiles_item(), unl ? hero_base(a, c) : silhouette_frame(c));
+            style_hero(a, big, c);
+            big.set_position(slot_cx(sel - first) - 120, big_cy - 80 + oy);   // też przed pętlą (samouczek), inaczej środek ekranu pod kartą
+            big_lock.set_position(slot_cx(sel - first) - 120 + 12, big_cy - 80 + oy + 8);
+            big_lock.set_visible(! unl);
+        };
+
+        auto draw_diff = [&](bool locked) {   // pastylka trudności w pierwszym wierszu karty (albo "Zablokowany")
+            for(int tx = 14; tx < 28; ++tx) { canvas->set(tx, 6, phone_tile::fill_card); canvas->set(tx, 7, phone_tile::fill_card); }
+            pill_t.clear();
+            if(locked) { pill_at(28, 6, UI(zablokowany), pill::late); arrows.set_visible(false); return; }
+            int d = a.chosen_diff;
+            pill p = d == 0 ? pill::done : (d == data::difficulties_count - 1 ? pill::late : pill::group);
+            int tx = pill_at(28, 6, data::difficulties[d].name, p);
+            arrows.set_position(tx * 8 - 8 - 120, row1 + 8 - 80);
+            arrows.set_visible(true);
+        };
+
+        auto draw_card = [&]() {
+            card_t.clear();
+            const int ci = order[sel];
+            const core::class_def& c = data::classes[ci];
+            const core::weapon_def& w = data::weapons[c.weapon];
+            bool locked = ! core::class_unlocked(a.save, ci);
+            const int name_w = put(card_t, 16, row1, c.name, ink_palette(ink::dark));
+            draw_diff(locked);
+            const int ml = core::mastery_level(a.save, ci);   // v0.21.52 cz. b (#45): poziom mistrzostwa obok nazwy
+            if(! locked && ml > 0)
+            {
+                core::message mm; mm.add(UI(mistrz_2)).add(ml);
+                core::message ms; ms.add("M").add(ml);
+                const int room = (arrows.visible() ? arrows.x().right_shift_integer() + 120 - 8 : 216) - (16 + name_w + 6);
+                put(card_t, 16 + name_w + 6, row1, a.text.width(mm.s) <= room ? mm.s : ms.s, ink_palette(ml >= data::mastery_levels_count ? ink::done : ink::prog));
+            }
+            // moc: ikona, nazwa (fiolet) i jednolinijkowy opis; wariant mocy z mistrzostwa (v0.21.52 cz. b)
+            ability.set_tiles(bn::sprite_items::ability_icons.tiles_item(), ci);
+            ability.set_position(18 - 120, row2 + 8 - 80);
+            const bool variant = ! locked && core::power_variant_on(a.save, ci);
+            const core::mastery_class_def& mcd = data::mastery_classes[ci];
+            int x = 29 + put(card_t, 29, row2, variant ? mcd.power_name : c.ability_name, ink_palette(ink::brand));
+            put(card_t, x + 4, row2, fit(a, variant ? mcd.power_desc : c.ability_desc, 229 - x - 4).c_str(), ink_palette(ink::dim));
+            // broń: nazwa i zakres ciosu z premiami profilu, kryt (rozpiska #26), zasięg, statystyka skalowania (fiolet);
+            // co się nie mieści, skraca się ("zasięg" -> "z.", "kryt" -> "kr", bez zasięgu)
+            const core::dmg_breakdown bd = core::class_breakdown(ci, core::mods(a.save, ci));   // v0.21.52 cz. b: broń mistrza
+            const bool master_w = ! locked && core::mastery_has(a.save, ci, core::progress_reward::weapon);   // broń mistrza
+            core::message wn; wn.add(master_w ? mcd.weapon_name : w.name).add(" "); core::add_range(wn, bd.min, bd.max);
+            core::message tag; tag.add("(").add(stat_short(w.scales_with)).add(")");
+            core::message ex[4];
+            core::add_range(ex[0].add(UI(kryt_8)), bd.crit_min, bd.crit_max).add(" (").add(bd.crit_chance()).add(UI(zasieg_2)).add(w.range);
+            core::add_range(ex[1].add(UI(kryt_8)), bd.crit_min, bd.crit_max).add(" (").add(bd.crit_chance()).add("%), z. ").add(w.range);
+            core::add_range(ex[2].add(UI(kr)), bd.crit_min, bd.crit_max).add(" ").add(bd.crit_chance()).add("%, z. ").add(w.range);
+            core::add_range(ex[3].add(UI(kr)), bd.crit_min, bd.crit_max).add(" ").add(bd.crit_chance()).add("%");
+            int room = 212 - 16 - a.text.width(wn.s) - 4 - a.text.width(tag.s), e = 0;   // do przycisku "i" (opis statystyk)
+            while(e < 3 && a.text.width(ex[e].s) > room) ++e;
+            x = 16 + put(card_t, 16, row3, wn.s, ink_palette(ink::dark));
+            x += put(card_t, x, row3, fit(a, ex[e].s, room).c_str(), ink_palette(ink::dim));
+            put(card_t, x + 4, row3, tag.s, ink_palette(ink::brand));
+            // statystyki efektywne: zawód + Szkolenia, uprawnienia, pamiątka - "baza+premia"
+            const core::run_mods m = core::mods(a.save, ci);
+            struct cell { const char* label; int base, bonus; bool weapon; };
+            const cell cells[6] = {
+                { "HP", c.max_health, m.hp, false },
+                { UI(sil), c.strength, core::mods_stat_bonus(m, ci, core::stat::str), w.scales_with == core::stat::str },
+                { UI(zre), c.agility, core::mods_stat_bonus(m, ci, core::stat::agi), w.scales_with == core::stat::agi },
+                { UI(int_), c.intelligence, core::mods_stat_bonus(m, ci, core::stat::intel), w.scales_with == core::stat::intel },
+                { UI(obr), c.defense, m.def, false },
+                { UI(szcz), c.luck, m.luck, false } };
+            for(int i = 0; i < 6; ++i)
+            {
+                const cell& ce = cells[i];
+                int cx = 16 + (i % 3) * 72, cy = i < 3 ? row4 : row5;
+                cx += put(card_t, cx, cy, ce.label, ink_palette(ce.weapon ? ink::brand : ink::dim)) + 4;
+                core::message v; v.add(ce.base);
+                cx += put(card_t, cx, cy, v.s, ink_palette(ink::dark));
+                if(ce.bonus > 0) { core::message b; b.add("+").add(ce.bonus); put(card_t, cx, cy, b.s, ink_palette(ink::done)); }
+            }
+        };
+
+        auto draw_keep = [&]() {   // pod kartą: pamiątka (L/R) albo jak odblokować zawód
+            keep_t.clear();
+            const int ci = order[sel];
+            if(! core::class_unlocked(a.save, ci) && core::class_secret(ci))   // v0.21.51 cz. 2: zawód z sekretnego zlecenia
+            {
+                const int si = core::secret_of(core::secret_reward::cls, ci);
+                put(keep_t, 8, keep_row, UI(sekretne_zlecenie_telefon), bn::sprite_items::font_8x16.palette_item());
+                core::message m; m.add("\"").add(si >= 0 ? data::secrets[si].hint : "???").add("\"");
+                put(keep_t, 8, keep_row2, fit(a, m.s, 224).c_str(), bn::sprite_palette_items::font_map_loot);
+                return;
+            }
+            if(! core::class_unlocked(a.save, ci) && core::class_reward(ci))   // zawód z nagrody za odbiór
+            {
+                int ri = 0;
+                while(ri < data::rewards_count && ! (data::rewards[ri].kind == core::reward_kind::cls && data::rewards[ri].index == ci)) ++ri;
+                put(keep_t, 8, keep_row, UI(nagroda_za_odbior_budowy), bn::sprite_items::font_8x16.palette_item());
+                core::message m; m.add(UI(za_4)).add(core::reward_win(a.save, ri)).add(UI(wygrana_masz)).add(int(a.save.wins));
+                put(keep_t, 8, keep_row2, m.s, bn::sprite_palette_items::font_map_loot);
+                return;
+            }
+            if(! core::class_unlocked(a.save, ci))
+            {
+                put(keep_t, 8, keep_row, UI(odblokuj_w_kosztach_telefon), bn::sprite_items::font_8x16.palette_item());
+                const int cost = core::class_cost(a.save);   // v0.21.52: każdy kolejny zawód drożej
+                core::message m; m.add(UI(koszt)).add(cost).add(UI(dosw_masz)).add(int(a.save.xp));
+                put(keep_t, 8, keep_row2, m.s, a.save.xp >= cost ? bn::sprite_palette_items::font_map_good
+                                                                              : bn::sprite_palette_items::font_map_loot);
+                return;
+            }
+            int x = 8 + put(keep_t, 8, keep_row, UI(pamiatka_l_r), bn::sprite_items::font_8x16.palette_item());
+            int k = core::selected_keepsake(a.save);
+            if(k < 0)
+            {
+                put(keep_t, x, keep_row, UI(brak_2), bn::sprite_palette_items::font_map_loot);
+                put(keep_t, 8, keep_row2, UI(wiecej_pamiatek_w_zleceniach), bn::sprite_palette_items::font_map_good);
+                return;
+            }
+            core::message n; n.add(data::keepsakes[k].name).add(" ").add(roman(core::keepsake_rank(a.save, k) - 1));
+            put(keep_t, x, keep_row, fit(a, n.s, 232 - x).c_str(), bn::sprite_palette_items::font_map_loot);
+            core::message e; core::perk_label(e, core::keepsake_perk(a.save, k));
+            bool inv = core::investor_unlocked(a.save);
+            put(keep_t, 8, keep_row2, fit(a, e.s, 128).c_str(), bn::sprite_palette_items::font_map_good);
+            core::message sm;   // tryb inwestora: stawka (SELECT - modyfikatory); v0.21.53: inaczej SELECT - wygląd i filtr ekranu
+            if(inv) sm.add(UI(select_stawka)).add(core::investor_stake(core::investor_mask(a.save)));
+            else sm.add(data::filter_ui_gba_select);
+            put(keep_t, 232, keep_row2, sm.s, bn::sprite_palette_items::font_map_loot, 1);
+        };
+
+        auto redraw_all = [&]() {
+            canvas->clear();
+            canvas->rounded(1, card_ty, 28, card_th, phone_tile::fill_card, phone_tile::corner_card);
+            draw_strip();
+            draw_card();
+            draw_keep();
+            map.reload_cells_ref();
+        };
+        auto move_card = [&](int dx) {
+            for(bn::sprite_ptr& s : card_t) s.set_x(s.x() + dx);
+            ability.set_x(ability.x() + dx);
+        };
+        auto open_stats = [&]() {   // opis statystyk wybranego zawodu (co daje każda i wzory)
+            card_t.clear(); pill_t.clear(); keep_t.clear();
+            bg.set_visible(false);
+            for(bn::sprite_ptr& sp : small) sp.set_visible(false);
+            for(bn::sprite_ptr& sp : locks) sp.set_visible(false);
+            big.set_visible(false); big_lock.set_visible(false); ability.set_visible(false); arrows.set_visible(false); info.set_visible(false);
+            {
+                phone_screen ph(2);
+                ph.icon.set_visible(false);
+                page_sprites st;
+                stats_page(a, ph, st, nullptr, order[sel], core::mods(a.save, order[sel]));
+            }
+            a.text.set_bg_priority(1);
+            bg.set_visible(true); big.set_visible(true); ability.set_visible(true); info.set_visible(true);
+            redraw_all();
+        };
+        redraw_all();
+        {   // samouczek menu: pierwsze wejście - dymki po kolei; potem nowości (tryb inwestora, nowy zawód z nagrody)
+            auto hole = [](const char* id) {
+                auto is = [&](const char* k) { return same(id, k); };
+                if(is("difficulty")) return coach_hole{ 13, 5, 16, 4, false };
+                if(is("keepsake")) return coach_hole{ 0, 16, 30, 4, true };
+                if(is("stats")) return coach_hole{ 1, 10, 28, 6, true };
+                if(is("investor")) return coach_hole{ 14, 17, 16, 3, true };
+                return coach_hole{ 0, 0, 30, 5, false };   // zawód, na plac, nowy zawód: pasek portretów
+            };
+            if(core::tutorial_pending(a.save, 1)) run_tutorial(a, 1, hole, open_stats);
+            run_unlocks(a, 1, hole);
+            a.text.set_bg_priority(1);
+        }
+
+        while(true)
+        {
+            ++clock;
+            int ddir = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+            if(ddir)
+            {
+                do a.chosen_diff = (a.chosen_diff + ddir + data::difficulties_count) % data::difficulties_count;
+                while(! core::difficulty_unlocked(a.save, a.chosen_diff));
+                if(core::class_unlocked(a.save, order[sel])) { draw_diff(false); map.reload_cells_ref(); }
+                bn::sound_items::sfx_menu.play();
+            }
+            int kdir = bn::keypad::r_pressed() ? 1 : (bn::keypad::l_pressed() ? -1 : 0);
+            if(kdir)
+            {
+                core::cycle_keepsake(a.save, kdir);
+                draw_card(); draw_keep(); map.reload_cells_ref();   // pamiątka zmienia statystyki
+                bn::sound_items::sfx_menu.play();
+            }
+            // v0.21.51: jedno przerysowanie karty na klatkę - L/R + lewo/prawo (albo + START) naraz rysowały tekst
+            // dwa razy, a stare kafle zwalniają się dopiero w następnej klatce: brak VRAM na sprite'y (monkey test)
+            int cdir = kdir ? 0 : (bn::keypad::right_pressed() ? 1 : (bn::keypad::left_pressed() ? -1 : 0));
+            if(cdir)
+            {
+                sel = (sel + cdir + count) % count;
+                a.chosen_class = order[sel];
+                redraw_all();
+                slide = cdir * slide_px; move_card(slide);   // karta wjeżdża z kierunku ruchu
+                pop = 4;
+                bn::sound_items::sfx_menu.play();
+            }
+            if(! kdir && ! cdir && bn::keypad::start_pressed())   // opis statystyk wybranego zawodu (co daje każda i wzory)
+            {
+                open_stats();
+                next_frame();
+                continue;
+            }
+            if(bn::keypad::a_pressed())
+            {
+                if(core::class_unlocked(a.save, a.chosen_class))
+                {
+                    a.text.set_palette_item(default_ink);
+                    a.text.set_bg_priority(default_prio);
+                    a.g->new_run(a.chosen_class, a.seed_counter * 2654435761u + 12345u, a.chosen_diff, core::mods(a.save, a.chosen_class),
+                                 core::selected_career(a.save));   // v0.21.52 cz. d: kontrakt z mapy kariery
+#ifdef PB_SCENARIO
+                    debug_scenario::apply(*a.g, PB_SCENARIO);
+#endif
+                    core::start_run(a.save);   // licznik budów i budów z pamiątką (ranga)
+                    bn::sram::write(a.save);
+                    wait_release();
+                    if(! core::has_flag(a.save, core::prologue_seen)) return leave(scene::prologue);
+                    if(! core::has_flag(a.save, core::help_seen)) { a.after_help = scene::game; return leave(scene::help); }
+                    return leave(scene::game);
+                }
+                shake = 12;   // zablokowany: portret kręci głową
+                bn::sound_items::sfx_hurt.play();
+            }
+            if(bn::keypad::b_pressed())
+            {
+                a.text.set_palette_item(default_ink);
+                a.text.set_bg_priority(default_prio);
+                wait_release();
+                return leave(career_map(a) ? scene::career : scene::title);   // v0.21.52 cz. d: wróć do mapy kariery
+            }
+            if(bn::keypad::select_pressed())   // tryb inwestora, wygląd (v0.21.53: zawsze - filtr ekranu, tryby dla daltonistów)
+            {
+                a.text.set_palette_item(default_ink);
+                a.text.set_bg_priority(default_prio);
+                wait_release();
+                return leave(scene::investor);
+            }
+
+            // animacje: wjazd karty, "wyskok" i kołysanie wybranego portretu, przebieranie nogami
+            if(slide) { int st = slide > 0 ? -core::imin(slide_step, slide) : core::imin(slide_step, -slide); move_card(st); slide += st; }
+            const int c = order[sel];
+            bool unl = core::class_unlocked(a.save, c);
+            big.set_scale(bn::fixed(2) - bn::fixed(pop) / 8);
+            if(pop) --pop;
+            int bob = unl ? pulse(clock / 12, 1) : 0;
+            int sx = shake ? ((shake & 2) ? 2 : -2) : 0;
+            if(shake) --shake;
+            big.set_position(slot_cx(sel - first) - 120 + sx, big_cy - 80 + oy - bob);
+            if(unl && clock % 24 == 0)
+                big.set_tiles(bn::sprite_items::actors.tiles_item(), (clock / 24) % 2 ? anim_b(hero_base(a, c)) : hero_base(a, c));
+            next_frame();
+        }
+    }
+
+    // ------------------------------------------------------------------ tryb inwestora (SELECT na wyborze zawodu)
+    // Modyfikatory trudności po pierwszej wygranej: A włącza/wyłącza, każdy daje % doświadczenia i punkty stawki.
+    scene run_investor(app& a)
+    {
+        phone_screen ph(4);
+        ph.icon.set_visible(false);
+        bn::sprite_palette_item default_ink = a.text.palette_item();
+        page_sprites t;
+        int sel = 0, top = 0;
+        // Za modyfikatorami wiersze wyglądu: "Kask w paski" (v0.21.51 cz. 2, sekret Na styk) i kolor kasku (v0.21.52,
+        // odznaki i zlecenia). Bez trybu inwestora (przed pierwszą wygraną) - tylko wygląd.
+        // v0.21.52 cz. b: wariant mocy wybranego zawodu (mistrzostwo 3) i druga pamiątka (poziom inspektora); pod listą
+        // trybu inwestora - nagroda za kolejny stopień (najwyższa stawka wygranej).
+        const int cls = a.chosen_class;
+        const int inv = core::investor_unlocked(a.save) ? data::investor_count : 0;
+        const bool stripes = core::cosmetic_unlocked(a.save, data::cosmetic_stripes);
+        const bool helmets = core::helmets_unlocked(a.save) > 0;
+        const bool power = core::mastery_has(a.save, cls, core::progress_reward::power);
+        const bool keep2 = core::keepsake_slot2(a.save);
+        int rows = inv;
+        const int stripes_row = stripes ? rows++ : -1;
+        const int helmet_row = helmets ? rows++ : -1;
+        const int power_row = power ? rows++ : -1;
+        const int keep2_row = keep2 ? rows++ : -1;
+        const int filter_row = rows++;   // v0.21.53: filtr ekranu (zawsze; tryby dla daltonistów od pierwszego uruchomienia)
+        const int window = inv ? 3 : 4;   // tryb inwestora: wiersz 3 - nagroda za kolejny stopień
+        auto redraw = [&]() {
+            int mask = core::investor_mask(a.save);
+            core::message sub; sub.add(UI(stawka)).add(core::investor_stake(mask));
+            phone_header(a, ph, t, inv ? UI(tryb_inwestora) : UI(wyglad), inv ? sub.s : "");
+            phone_canvas& c = *ph.canvas;
+            for(int r = 0; r < window && top + r < rows; ++r)
+            {
+                int i = top + r;
+                const bool is_sel = i == sel;
+                if(i == stripes_row)   // wygląd: kask w paski
+                {
+                    const bool on = core::cosmetic_on(a.save, data::cosmetic_stripes);
+                    stripe(c, r, is_sel ? phone_tile::stripe_brand : (on ? phone_tile::stripe_done : phone_tile::stripe_todo));
+                    phone_text(a, t, list_x, row_py(r), fit(a, data::cosmetics[data::cosmetic_stripes].name, pill_room(UI(wyglad))).c_str(),
+                               is_sel ? ink::brand : (on ? ink::dark : ink::dim));
+                    phone_pill(a, c, t, pill_end, row_ty(r), on ? UI(wl) : UI(wyglad), on ? pill::done : pill::gray);
+                    continue;
+                }
+                if(i == helmet_row)   // v0.21.52: kolor kasku (A = następny odblokowany)
+                {
+                    const int k = core::helmet_cosmetic(a.save, cls);
+                    core::message hm; hm.add(UI(kask_2)).add(k >= 0 ? data::cosmetics[k].name : UI(zawodu));
+                    stripe(c, r, is_sel ? phone_tile::stripe_brand : (k >= 0 ? phone_tile::stripe_done : phone_tile::stripe_todo));
+                    phone_text(a, t, list_x, row_py(r), fit(a, hm.s, pill_room(UI(wyglad))).c_str(), is_sel ? ink::brand : ink::dark);
+                    phone_pill(a, c, t, pill_end, row_ty(r), UI(wyglad), k >= 0 ? pill::done : pill::gray);
+                    continue;
+                }
+                if(i == power_row)   // v0.21.52 cz. b: wariant mocy (mistrzostwo zawodu)
+                {
+                    const bool on = core::power_variant_on(a.save, cls);
+                    core::message pm; pm.add(UI(moc_4)).add(on ? data::mastery_classes[cls].power_name : data::classes[cls].ability_name);
+                    stripe(c, r, is_sel ? phone_tile::stripe_brand : (on ? phone_tile::stripe_done : phone_tile::stripe_todo));
+                    phone_text(a, t, list_x, row_py(r), fit(a, pm.s, pill_room(UI(wariant))).c_str(), is_sel ? ink::brand : ink::dark);
+                    phone_pill(a, c, t, pill_end, row_ty(r), on ? UI(wariant) : UI(zwykla), on ? pill::done : pill::gray);
+                    continue;
+                }
+                if(i == filter_row)   // v0.21.53: filtr ekranu (A = następny odblokowany)
+                {
+                    const int f = core::selected_filter(a.save);
+                    core::message fm; fm.add(data::filter_ui_look_desc).add(data::screen_filters[f].name);
+                    stripe(c, r, is_sel ? phone_tile::stripe_brand : (f > 0 ? phone_tile::stripe_done : phone_tile::stripe_todo));
+                    phone_text(a, t, list_x, row_py(r), fit(a, fm.s, pill_room(data::screen_filters[f].short_name)).c_str(), is_sel ? ink::brand : ink::dark);
+                    phone_pill(a, c, t, pill_end, row_ty(r), data::screen_filters[f].short_name, f > 0 ? pill::done : pill::gray);
+                    continue;
+                }
+                if(i == keep2_row)   // v0.21.52 cz. b: druga pamiątka (A = następna odblokowana)
+                {
+                    const int k = core::selected_keepsake2(a.save);
+                    core::message km; km.add(UI(pamiatka_2_2)).add(k >= 0 ? data::keepsakes[k].name : UI(brak_2));
+                    stripe(c, r, is_sel ? phone_tile::stripe_brand : (k >= 0 ? phone_tile::stripe_done : phone_tile::stripe_todo));
+                    phone_text(a, t, list_x, row_py(r), fit(a, km.s, pill_room(UI(ranga_i))).c_str(), is_sel ? ink::brand : ink::dark);
+                    phone_pill(a, c, t, pill_end, row_ty(r), k >= 0 ? UI(ranga_i) : UI(wybierz), k >= 0 ? pill::done : pill::gray);
+                    continue;
+                }
+                const core::investor_def& d = data::investor[i];
+                bool on = (mask >> i) & 1;
+                stripe(c, r, is_sel ? phone_tile::stripe_brand : (on ? phone_tile::stripe_done : phone_tile::stripe_todo));
+                core::message pm; pm.add(on ? UI(wl_2) : "+").add(d.stake);
+                phone_text(a, t, list_x, row_py(r), fit(a, d.name, pill_room(pm.s)).c_str(), is_sel ? ink::brand : (on ? ink::dark : ink::dim));
+                phone_pill(a, c, t, pill_end, row_ty(r), pm.s, on ? pill::done : pill::gray);
+            }
+            if(inv)   // v0.21.52 cz. b (#48): nagroda za kolejny stopień inwestora (najwyższa stawka wygranej budowy)
+            {
+                const int rk = core::stake_rank(a.save);
+                core::message nm, pm;
+                if(rk < data::stake_ranks_count)
+                {
+                    const core::progress_level& sr = data::stake_ranks[rk];
+                    core::progress_reward_label(nm.add(UI(stawka)).add(sr.xp).add(": "), sr, cls);
+                    pm.add(rk).add("/").add(data::stake_ranks_count);
+                }
+                else { nm.add(UI(stopnie_inwestora_wszystkie)); pm.add(UI(max_2)); }
+                stripe(c, 3, phone_tile::stripe_prog);
+                phone_text(a, t, list_x, row_py(3), fit(a, nm.s, pill_room(pm.s)).c_str(), ink::prog);
+                phone_pill(a, c, t, pill_end, row_ty(3), pm.s, rk < data::stake_ranks_count ? pill::prog : pill::done);
+            }
+            core::message dm;
+            if(sel == stripes_row) dm.add(data::cosmetics[data::cosmetic_stripes].desc).add(UI(tylko_wyglad));
+            else if(sel == helmet_row)
+            {
+                const int k = core::helmet_cosmetic(a.save, cls);
+                dm.add(k >= 0 ? data::cosmetics[k].desc : UI(kolor_kasku_zawodu)).add(UI(kolorow)).add(core::helmets_unlocked(a.save)).add(")");
+            }
+            else if(sel == power_row) dm.add(data::mastery_classes[cls].power_desc).add(UI(wariant_2));
+            else if(sel == keep2_row)
+            {
+                const int k = core::selected_keepsake2(a.save);
+                if(k >= 0) core::perk_label(dm.add(UI(druga)), core::keepsake2_perk(k));
+                else dm.add(UI(druga_pamiatka_ranga_i_inna));
+            }
+            else if(sel == filter_row)
+            {
+                const int f = core::selected_filter(a.save);
+                dm.add(data::screen_filters[f].desc).add(" (").add(core::filters_unlocked(a.save)).add("/").add(data::screen_filters_count).add(")");
+            }
+            else if(sel >= 0 && sel < inv) dm.add(data::investor[sel].desc).add(", +").add(data::investor[sel].xp_pct).add("%");
+            phone_text(a, t, list_x, row_py(4), fit(a, dm.s, phone_text_w).c_str(), ink::dim);
+            int locked = -1;   // v0.21.53: zablokowany filtr - "???" z podpowiedzią
+            for(int f = 0; f < data::screen_filters_count && locked < 0; ++f) if(! core::filter_unlocked(a.save, f)) locked = f;
+            if(sel == filter_row && locked >= 0)
+            {
+                core::message lm; lm.add(data::filter_ui_locked).add(": ").add(data::screen_filters[locked].hint);
+                phone_text(a, t, list_x, row_py(5), fit(a, lm.s, 150).c_str(), ink::dim);
+            }
+            else if(inv)
+            {
+                core::message xm; xm.add(UI(dosw_2)).add(core::investor_xp(mask)).add(UI(rekord_3)).add(core::best_stake(a.save, cls));
+                phone_text(a, t, list_x, row_py(5), fit(a, xm.s, 150).c_str(), ink::dark);
+            }
+            phone_text(a, t, 226, row_py(5), sel == helmet_row || sel == keep2_row || sel == filter_row ? UI(a_zmien) : UI(a_wl_wyl), ink::brand, 1);
+            ph.commit();
+        };
+        redraw();
+        wait_release();
+        while(true)
+        {
+            int n = rows;
+            int dir = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+            if(dir && n > 0)
+            {
+                sel = (sel + dir + n) % n;
+                if(sel < top) top = sel;
+                if(sel >= top + window) top = sel - window + 1;
+                redraw(); bn::sound_items::sfx_menu.play();
+            }
+            if(bn::keypad::a_pressed() && n > 0)
+            {
+                if(sel == stripes_row) core::toggle_cosmetic(a.save, data::cosmetic_stripes);
+                else if(sel == helmet_row) core::cycle_helmet(a.save, 1);
+                else if(sel == power_row) core::toggle_power_variant(a.save, cls);
+                else if(sel == keep2_row) core::cycle_keepsake2(a.save, 1);
+                else if(sel == filter_row) { core::cycle_filter(a.save, 1); apply_filter(a.save); }
+                else core::toggle_investor(a.save, sel);
+                redraw(); bn::sound_items::sfx_buy.play();
+            }
+            if(bn::keypad::b_pressed() || bn::keypad::start_pressed() || bn::keypad::select_pressed())
+            {
+                bn::sram::write(a.save);
+                t.clear();
+                a.text.set_palette_item(default_ink);
+                wait_release();
+                return leave(scene::class_select);
+            }
+            next_frame();
+        }
+    }
+
     scene run_shop(app& a, int tab = 4)
     {
         phone_screen ph(tab);
         bn::sprite_palette_item default_ink = a.text.palette_item();
         page_sprites t;
-        bn::vector<bn::sprite_ptr, core::max_houses> houses;
-        const char* profile_tabs[] = { "Odznaki", "Katalog", "Osiedle", "Zespół", "Koszty" };
+        bn::vector<bn::sprite_ptr, core::max_houses + data::estate_decor_count> houses;   // domy i ozdoby Osiedla (v0.21.52 cz. b: 12 ozdób)
+        int arch = 0, asel = 0, atop = 0, amsg = 0;   // Osiedle: 0 domy, 1 Wiadomości (archiwum fabuły #35), 2 wątek
+        // v0.21.53 cz. 2 (#40): nazwy stron liczone przy każdym rysowaniu (zmiana języka w Zespole działa od razu)
+        auto profile_tabs = [](int i) { const char* const n[] = { UI(odznaki_2), UI(katalog), UI(osiedle), UI(zespol), UI(koszty) }; return n[i]; };
 
         // --- sklep (zakładka Koszty)
-        enum kind : uint8_t { upgrade, cls, hard, tool };
+        enum kind : uint8_t { upgrade, cls, hard, tool, helper };
         struct entry { kind k; int8_t i; };
-        bn::vector<entry, core::max_upgrades + 8 + 8 + 1> entries;
+        bn::vector<entry, core::max_upgrades + 8 + 8 + 8 + 1> entries;
         auto rebuild = [&]() {
             entries.clear();
             for(int i = 0; i < data::upgrades_count; ++i) entries.push_back({ upgrade, int8_t(i) });
-            for(int i = 0; i < data::classes_count; ++i)
-                if(! core::class_unlocked(a.save, i)) entries.push_back({ cls, int8_t(i) });
+            for(int i = 0; i < data::classes_count; ++i)   // zawody i narzędzia z nagród za odbiór nie są na sprzedaż
+                if(! core::class_unlocked(a.save, i) && ! core::class_reward(i)) entries.push_back({ cls, int8_t(i) });
             for(int i = 0; i < data::tools_count; ++i)
-                if(! core::tool_unlocked(a.save, i)) entries.push_back({ tool, int8_t(i) });
+                if(! core::tool_unlocked(a.save, i) && data::tools[i].shop) entries.push_back({ tool, int8_t(i) });
+            for(int i = 0; i < data::brigade_count; ++i)
+                if(! core::helper_unlocked(a.save, i)) entries.push_back({ helper, int8_t(i) });
             if(! core::difficulty_unlocked(a.save, data::difficulties_count - 1)) entries.push_back({ hard, 0 });
         };
         rebuild();
         auto cost_of = [&](const entry& e) {
             return e.k == upgrade ? core::upgrade_cost(a.save, e.i)
-                 : e.k == cls ? data::class_cost : (e.k == tool ? data::tools[e.i].cost : data::hard_cost);
+                 : e.k == cls ? core::class_cost(a.save) : (e.k == tool ? core::tool_cost(a.save) : (e.k == helper ? data::brigade[e.i].cost : data::hard_cost));
         };
 
         int sel = 0, top = 0;
         const char* note = nullptr;
+        // Zakładka Odznaki ma strony przełączane A: Odznaki / Zlecenia.
+        auto badge_pages = [](int i) { const char* const n[] = { UI(odznaki_2), UI(zlecenia), UI(pamiatki), UI(sekrety), UI(tytuly), UI(inspektor_2), UI(zadania_2) }; return n[i]; };   // v0.21.52: tytuły, cz. b: inspektor, cz. c: zadania
+        constexpr int badge_pages_count = 7;
+        // v0.21.52 cz. c (#49): Katalog ma strony przełączane A: Katalog / Kolekcje / Bossowie (karty bossów) / Album Osiedla
+        auto catalog_pages = [](int i) { const char* const n[] = { UI(katalog), UI(kolekcje), UI(bossowie), UI(album) }; return n[i]; };
+        constexpr int catalog_pages_count = 4;
+        int cpage = 0;
+        int tcol = 0, trow = 0;   // v0.21.52 cz. c (#46): drzewko - gałąź (kolumna) i wiersz (węzeł I / II, opcja A / B)
+        if(roll_tasks(a)) bn::sram::write(a.save);   // zadania nowego dnia / tygodnia (data budowy dnia)
+        int page = 0;
+        // Zakładka Koszty ma strony przełączane SELECT: Szkolenia (doświadczenie) / Respekt / Nagrody za odbiór.
+        auto cost_pages = [](int i) { const char* const n[] = { UI(szkolenia), UI(drzewko_2), UI(respekt), UI(nagrody) }; return n[i]; };   // v0.21.52 cz. c: drzewko Szkoleń
+        constexpr int cost_pages_count = 4;
+        int kpage = 0;
         auto list_size = [&]() {
             switch(tab)
             {
-                case 0: return data::badges_count;
-                case 1: return data::enemies_count;
+                case 0: return page == 6 ? core::task_slots : page == 5 ? data::inspector_levels_count : page == 4 ? core::titles_count : (page == 3 ? data::secrets_count : (page == 2 ? data::keepsakes_count : (page == 1 ? data::contracts_count : data::badges_count)));
+                case 1: return cpage == 3 ? data::estate_decor_count : cpage == 2 ? core::bosses_count() : cpage == 1 ? data::collections_count : data::enemies_count;
                 case 3: return data::classes_count;
-                case 4: return entries.size();
+                case 4: return kpage == 3 ? data::rewards_count : (kpage == 2 ? data::respect_count : (kpage == 1 ? 0 : entries.size()));
                 default: return 0;
             }
         };
+
+        auto list_window = [&]() { return tab == 4 || tab == 0 || tab == 1 ? 4 : 5; };   // widoczne wiersze listy
 
         auto draw_list_row = [&](int r, int i, bool is_sel) {   // zakładki 0, 1, 3
             phone_canvas& c = *ph.canvas;
             if(is_sel) stripe(c, r, phone_tile::stripe_brand);
             ink name_ink = is_sel ? ink::brand : ink::dark;
-            if(tab == 0)
+            if(tab == 0 && page == 6)   // v0.21.52 cz. c (#50): zadania dnia (3) i tygodnia (2) z postępem
+            {
+                const core::task_def& td = core::task_of(a.save, i);
+                const bool done = core::task_done(a.save, i);
+                core::message m; if(i >= core::daily_task_slots) m.add(UI(tydz)); m.add(td.name);
+                core::message pm; pm.add(core::task_progress_live(a.save, nullptr, i)).add("/").add(td.target);
+                const char* pill_s = done ? UI(gotowe) : pm.s;
+                phone_text(a, t, list_x, row_py(r), fit(a, m.s, pill_room(pill_s)).c_str(), done ? ink::done : name_ink);
+                phone_pill(a, c, t, pill_end, row_ty(r), pill_s, done ? pill::done : (a.save.task_progress[i] > 0 ? pill::prog : pill::gray));
+            }
+            else if(tab == 0 && page == 5)   // v0.21.52 cz. b (#44): poziomy inspektora - nagroda za każdy poziom
+            {
+                const int lv = core::inspector_level(a.save);
+                const bool got = i < lv;
+                core::message m; m.add(i + 1).add(". "); core::progress_reward_label(m, data::inspector_levels[i], a.chosen_class);
+                core::message pm;
+                if(got) pm.add(UI(masz_3));
+                else if(i == lv) { int cur = 0, need = 0; core::inspector_bar(a.save, cur, need); pm.add(cur).add("/").add(need); }
+                else pm.add(UI(poz)).add(i + 1);
+                phone_text(a, t, list_x, row_py(r), fit(a, m.s, pill_room(pm.s)).c_str(), got || is_sel ? name_ink : ink::dim);
+                phone_pill(a, c, t, pill_end, row_ty(r), pm.s, got ? pill::done : (i == lv ? pill::prog : pill::gray));
+            }
+            else if(tab == 0 && page == 4)   // v0.21.52: tytuł z odznaki / zlecenia - do wyboru (SELECT), wybrany na końcu budowy
+            {
+                const bool own = core::title_owned(a.save, i), chosen = core::selected_title(a.save) == i;
+                const char* pill_s = chosen ? UI(wybrany) : (own ? UI(masz_3) : UI(zablok));
+                phone_text(a, t, list_x, row_py(r), fit(a, core::title_name(i), pill_room(pill_s)).c_str(), own || is_sel ? name_ink : ink::dim);
+                phone_pill(a, c, t, pill_end, row_ty(r), pill_s, chosen ? pill::prog : (own ? pill::done : pill::gray));
+            }
+            else if(tab == 0 && page == 3)   // sekretne zlecenie: podpowiedź i "???" do wykonania, potem "Wykonane" z ikoną nagrody
+            {
+                const core::secret_def& sd = data::secrets[i];
+                const bool done = core::secret_done(a.save, i);
+                core::message h; h.add(sd.hint);
+                const char* pill_s = done ? UI(wykonane_2) : "???";
+                phone_text(a, t, list_x + 18, row_py(r), fit(a, h.s, pill_room(pill_s) - 18).c_str(), done || is_sel ? name_ink : ink::dim);
+                phone_pill(a, c, t, pill_end, row_ty(r), pill_s, done ? pill::done : pill::gray);
+                bn::optional<bn::sprite_ptr> ic;
+                const int ix = list_x + 8 - 120, iy = row_py(r) + 8 - 80;
+                if(done && sd.reward == core::secret_reward::cls) ic = bn::sprite_items::actors.create_sprite_optional(ix, iy, data::classes[sd.index].frame);
+                else ic = bn::sprite_items::menu_icons.create_sprite_optional(ix, iy, done ? secret_icon(sd) : icon_secret);
+                if(ic) { ic->set_bg_priority(1); houses.push_back(bn::move(*ic)); }
+            }
+            else if(tab == 0 && page == 2)   // pamiątka: nazwa + ranga
+            {
+                bool unl = core::keepsake_unlocked(a.save, i);
+                phone_text(a, t, list_x, row_py(r), clip(data::keepsakes[i].name, 18).c_str(), unl || is_sel ? name_ink : ink::dim);
+                core::message rk; rk.add(UI(ranga)).add(roman(core::keepsake_rank(a.save, i) - 1));
+                bool chosen = core::selected_keepsake(a.save) == i;
+                phone_pill(a, c, t, pill_end, row_ty(r), unl ? rk.s : UI(zablok), ! unl ? pill::gray : (chosen ? pill::prog : pill::group));
+            }
+            else if(tab == 0 && page == 1)   // zlecenie: nazwa + postęp licznika
+            {
+                bool done = core::contract_done(a.save, i);
+                int pr = core::imin(core::contract_progress(a.save, i), data::contracts[i].target);
+                phone_text(a, t, list_x, row_py(r), clip(data::contracts[i].name, 16).c_str(), done || is_sel ? name_ink : ink::dark);
+                core::message pm; pm.add(pr).add("/").add(data::contracts[i].target);
+                phone_pill(a, c, t, pill_end, row_ty(r), done ? UI(wykonane_2) : pm.s, done ? pill::done : (pr > 0 ? pill::prog : pill::gray));
+            }
+            else if(tab == 0)
             {
                 bool got = a.save.badges & (1u << i);
-                phone_text(a, t, list_x, row_py(r), clip(data::badges[i].name, 16).c_str(), got || is_sel ? name_ink : ink::dim);
-                core::message xp; xp.add("+").add(data::badges[i].xp);
-                phone_pill(a, c, t, pill_end, row_ty(r), got ? "Zdobyta" : xp.s, got ? pill::done : pill::gray);
+                core::message xp; xp.add("+").add(data::badges[i].xp).add(UI(dosw));   // nagroda za zdobycie
+                const char* pill_s = got ? UI(zdobyta) : xp.s;
+                phone_text(a, t, list_x, row_py(r), fit(a, data::badges[i].name, pill_room(pill_s)).c_str(), got || is_sel ? name_ink : ink::dim);
+                phone_pill(a, c, t, pill_end, row_ty(r), pill_s, got ? pill::done : pill::gray);
+            }
+            else if(tab == 1 && cpage == 1)   // v0.21.52 cz. c (#49): komplety kolekcji z postępem
+            {
+                int have = 0, need = 0; core::collection_progress(a.save, i, have, need);
+                const bool done = core::collection_complete(a.save, i);
+                core::message pm; pm.add(have).add("/").add(need);
+                const char* pill_s = done ? UI(komplet_2) : pm.s;
+                phone_text(a, t, list_x, row_py(r), fit(a, data::collections[i].name, pill_room(pill_s)).c_str(), done ? ink::done : name_ink);
+                phone_pill(a, c, t, pill_end, row_ty(r), pill_s, done ? pill::done : (have > 0 ? pill::prog : pill::gray));
+            }
+            else if(tab == 1 && cpage == 2)   // karty bossów: portret, ile razy pokonany
+            {
+                const int d = core::boss_at(i), n = a.save.kill_count[d];
+                core::message pm; pm.add("x").add(n);
+                phone_text(a, t, list_x + 18, row_py(r), fit(a, n > 0 ? data::enemies[d].name : "???", pill_room(pm.s) - 18).c_str(), n > 0 || is_sel ? name_ink : ink::dim);
+                phone_pill(a, c, t, pill_end, row_ty(r), n > 0 ? pm.s : UI(brak_5), n > 0 ? pill::done : pill::gray);
+                if(n > 0)   // portret tylko zdobytej karty
+                {
+                    bn::optional<bn::sprite_ptr> ic = bn::sprite_items::actors.create_sprite_optional(list_x + 8 - 120, row_py(r) + 8 - 80, data::enemies[d].frame);
+                    if(ic) { ic->set_bg_priority(1); houses.push_back(bn::move(*ic)); }
+                }
+            }
+            else if(tab == 1 && cpage == 3)   // album Osiedla: ozdoby - stoi / skąd
+            {
+                const core::decor_def& dd = data::estate_decor[i];
+                const bool own = core::decor_unlocked(a.save, i);
+                core::message pm;
+                if(own) pm.add(UI(stoi));
+                else if(dd.inspector > 0) pm.add(UI(insp)).add(int(dd.inspector));
+                else pm.add(int(dd.wins)).add(UI(wygr));
+                phone_text(a, t, list_x, row_py(r), fit(a, dd.name, pill_room(pm.s)).c_str(), own || is_sel ? name_ink : ink::dim);
+                phone_pill(a, c, t, pill_end, row_ty(r), pm.s, own ? pill::done : pill::gray);
             }
             else if(tab == 1)
             {
-                bool known = a.save.catalog & (1u << i);
+                bool known = core::catalog_has(a.save, i);
                 core::message m; m.add("#").add(i + 1).add(" ").add(known ? clip(data::enemies[i].name, 14).c_str() : "???");
+                core::message km; km.add("x").add(int(a.save.kill_count[i]));   // v0.21.52 cz. c: licznik kolekcji
                 phone_text(a, t, list_x, row_py(r), m.s, known || is_sel ? name_ink : ink::dim);
-                phone_pill(a, c, t, pill_end, row_ty(r), known ? "ZAMKNIĘTA" : "NIEZNANA", known ? pill::done : pill::gray);
+                phone_pill(a, c, t, pill_end, row_ty(r), known ? km.s : UI(nieznana), known ? pill::done : pill::gray);
             }
             else
             {
-                bool won = a.save.class_wins & (1u << i), unl = core::class_unlocked(a.save, i);
+                bool won = core::class_won(a.save, i), unl = core::class_unlocked(a.save, i);
+                const int ml = core::mastery_level(a.save, i);   // v0.21.52 cz. b (#45): poziom mistrzostwa zawodu
+                core::message mm; mm.add(UI(mistrz_2)).add(ml);
                 phone_text(a, t, list_x, row_py(r), clip(data::classes[i].name, 16).c_str(), unl || is_sel ? name_ink : ink::dim);
-                phone_pill(a, c, t, pill_end, row_ty(r), won ? "Wygrana" : (unl ? "Dostępny" : "Zablok."),
-                           won ? pill::done : (unl ? pill::group : pill::gray));
+                phone_pill(a, c, t, pill_end, row_ty(r), ! unl ? UI(zablok) : (ml > 0 ? mm.s : (won ? UI(wygrana_2) : UI(dostepny))),
+                           ! unl ? pill::gray : (ml >= data::mastery_levels_count || won ? pill::done : pill::group));
             }
         };
 
@@ -2080,73 +5840,429 @@ namespace
             houses.clear();
             phone_canvas& c = *ph.canvas;
             core::message sub;
-            if(tab == 4) sub.add("A: kup  B: wyjdź");
-            else if(tab == 0) { int n = 0; for(int i = 0; i < data::badges_count; ++i) n += (a.save.badges >> i) & 1;
-                                sub.add(n).add("/").add(data::badges_count); }
-            else if(tab == 1) { int n = 0; for(int i = 0; i < data::enemies_count; ++i) n += (a.save.catalog >> i) & 1;
-                                sub.add(n).add("/").add(data::enemies_count); }
-            else if(tab == 2) sub.add("Domy: ").add(int(a.save.houses_count)).add("/").add(core::max_houses);
-            else { int n = 0; for(int i = 0; i < data::classes_count; ++i) n += (a.save.class_wins >> i) & 1;
-                   sub.add("Wygrane ").add(n).add("/").add(data::classes_count); }
-            phone_header(a, ph, t, profile_tabs[tab], sub.s);
-
-            if(tab == 2)   // Osiedle: domy z wygranych budów, 6 x 2 działki
+            if(tab == 4 && kpage == 3) sub.add(UI(wygrane_2)).add(int(a.save.wins)).add("  SELECT");
+            else if(tab == 4 && kpage == 1)   // drzewko: pień zaznaczonej gałęzi i dośw.
+                sub.add(UI(pien)).add(core::tree_branch_levels(a.save, tcol)).add("/").add(core::tree_branch_max(tcol)).add("  ").add(int(a.save.xp)).add(UI(dosw));
+            else if(tab == 4) sub.add(UI(a_kup_select)).add(cost_pages((kpage + 1) % cost_pages_count));
+            else if(tab == 0)
             {
-                phone_text(a, t, list_x, row_py(0), "Twoje ukończone budowy", ink::dim);
+                int n = 0, total = page == 6 ? core::daily_task_slots : page == 5 ? data::inspector_levels_count : page == 4 ? core::titles_count : (page == 3 ? data::secrets_count : (page == 2 ? data::keepsakes_count : (page == 1 ? data::contracts_count : data::badges_count)));
+                if(page == 6) n = core::tasks_done_today(a.save);
+                else if(page == 5) n = core::inspector_level(a.save);
+                else for(int i = 0; i < total; ++i)
+                    n += page == 4 ? core::title_owned(a.save, i) : page == 3 ? core::secret_done(a.save, i)
+                       : (page == 2 ? core::keepsake_unlocked(a.save, i) : ((page == 1 ? a.save.contracts : a.save.badges) >> i) & 1);
+                sub.add(n).add("/").add(total).add("  A: ").add(badge_pages((page + 1) % badge_pages_count));
+            }
+            else if(tab == 1)
+            {
+                if(cpage == 1) sub.add(core::collections_done(a.save)).add("/").add(data::collections_count);
+                else if(cpage == 2) { int n = 0; for(int k = 0; k < core::bosses_count(); ++k) n += a.save.kill_count[core::boss_at(k)] > 0; sub.add(n).add("/").add(core::bosses_count()); }
+                else if(cpage == 3) sub.add(core::estate_decor(a.save)).add("/").add(data::estate_decor_count);
+                else sub.add(core::catalog_count(a.save)).add("/").add(data::enemies_count);
+                sub.add("  A: ").add(catalog_pages((cpage + 1) % catalog_pages_count));
+            }
+            else if(tab == 2) sub.add(UI(domy)).add(int(a.save.houses_count)).add("/").add(core::max_houses);
+            else { int n = core::classes_won(a.save);   // v0.21.53 cz. 2 (#40): SELECT - język (nazwa drugiego języka)
+                   sub.add(UI(wygrane_2)).add(n).add("/").add(data::classes_count).add(UI(sel_language)); }
+            phone_header(a, ph, t, tab == 0 ? badge_pages(page) : (tab == 4 ? cost_pages(kpage) : (tab == 1 ? catalog_pages(cpage) : profile_tabs(tab))), sub.s);
+
+            if(tab == 2 && arch == 1)   // Wiadomości: wątki fabuły (odblokowane kamieniami milowymi), zablokowane z podpowiedzią
+            {
+                core::message sb; sb.add(core::story_count(a.save)).add("/").add(data::story_arc_count).add(UI(a_czytaj));
+                phone_header(a, ph, t, UI(wiadomosci_2), sb.s);
+                for(int r = 0; r < 6 && atop + r < data::story_arc_count; ++r)
+                {
+                    const int i = atop + r;
+                    const bool unl = core::story_unlocked(a.save, i), is_sel = i == asel;
+                    if(is_sel) stripe(c, r, phone_tile::stripe_brand);
+                    if(unl)
+                    {
+                        const bool nw = core::story_unread(a.save, i);
+                        phone_text(a, t, list_x, row_py(r), fit(a, data::story_arc[i].name, pill_room(nw ? UI(nowa) : UI(sms_3))).c_str(), is_sel ? ink::brand : ink::dark);
+                        phone_pill(a, c, t, pill_end, row_ty(r), nw ? UI(nowa) : UI(sms_3), nw ? pill::brand : pill::gray);
+                    }
+                    else
+                    {
+                        phone_text(a, t, list_x, row_py(r), fit(a, is_sel ? data::story_arc[i].hint : "???", pill_room(UI(zablok))).c_str(), ink::dim);
+                        phone_pill(a, c, t, pill_end, row_ty(r), UI(zablok), pill::gray);
+                    }
+                }
+                ph.commit();
+                return;
+            }
+            if(tab == 2 && arch == 2)   // wątek: SMS po SMS-ie (A dalej)
+            {
+                const core::story_thread& th = data::story_arc[asel];
+                const core::story_msg& m = th.msgs[amsg];
+                core::message sb; sb.add(amsg + 1).add("/").add(th.msgs_count).add(UI(b_wroc_2));
+                phone_header(a, ph, t, fit(a, th.name, 120).c_str(), sb.s);
+                phone_text(a, t, list_x, row_py(0), m.from, ink::dark);
+                phone_pill(a, c, t, pill_end, row_ty(0), UI(sms_3), pill::gray);
+                c.rounded(2, row_ty(1), 26, 6, phone_tile::fill_group, phone_tile::corner_group);   // dymek wiadomości
+                for(int i = 0; i < 3; ++i) phone_text(a, t, 22, row_py(1 + i), m.lines[i], ink::dark);
+                phone_text(a, t, 226, row_py(5), amsg + 1 < th.msgs_count ? UI(a_dalej) : UI(a_lista), ink::brand, 1);
+                ph.commit();
+                return;
+            }
+            if(tab == 2)   // Osiedle: domy z wygranych budów, 6 x 2 działki, między nimi ozdoby (rosną z wygranymi)
+            {
+                core::message wm; wm.add(UI(wiadomosci_3)).add(core::story_count(a.save)).add("/").add(data::story_arc_count);
+                const int unread = core::story_unread_count(a.save);
+                core::message pm; if(unread) pm.add(unread).add(UI(nowe_2)); else pm.add("A");
+                phone_text(a, t, list_x, row_py(0), wm.s, ink::dim);
+                phone_pill(a, c, t, pill_end, row_ty(0), pm.s, unread ? pill::brand : pill::gray);
+                for(int k = 0; k < data::estate_decor_count; ++k)   // ozdoby w przerwach między domami (v0.21.52 cz. b: 11-12 na brzegach)
+                {
+                    if(! core::decor_unlocked(a.save, k)) continue;
+                    const int dx = k < 10 ? 48 + (k % 5) * 36 : (k == 10 ? 12 : 228), dy = k < 10 ? 64 + (k / 5) * 28 : (k == 10 ? 64 : 92);
+                    bn::sprite_ptr ds = bn::sprite_items::houses.create_sprite(dx - 120, dy - 80, house_empty + 1 + k);
+                    ds.set_bg_priority(1);
+                    houses.push_back(ds);
+                }
                 for(int i = 0; i < core::max_houses; ++i)
                 {
-                    int frame = 24;
-                    if(i < a.save.houses_count) frame = (a.save.houses[i] >> 4) * 6 + (a.save.houses[i] & 15);
+                    int frame = house_empty;
+                    if(i < a.save.houses_count) frame = house_frame(a.save.houses[i]);
                     bn::sprite_ptr hs = bn::sprite_items::houses.create_sprite(30 + (i % 6) * 36 - 120, 64 + (i / 6) * 28 - 80, frame);
                     hs.set_bg_priority(1);
                     houses.push_back(hs);
                 }
-                core::message best; best.add("Najlepszy wynik: ").add(int(a.save.best));
+                core::message best; best.add(UI(najlepszy_wynik)).add(int(a.save.best));
                 phone_text(a, t, list_x, row_py(5), best.s, ink::dim);
+                ph.commit();
+                return;
+            }
+            if(tab == 4 && kpage == 1)   // v0.21.52 cz. c (#46): drzewko Szkoleń - 3 gałęzie, w węźle 1 z 2 opcji
+            {
+                auto node_of = [](int b, int tier) { int k = 0; for(int n = 0; n < data::tree_nodes_count; ++n) if(data::tree_nodes[n].branch == b && k++ == tier) return n; return -1; };
+                for(int b = 0; b < data::tree_branches_count; ++b)
+                {
+                    const int tx = 1 + b * 9 + (b > 0), cx = tx * 8 + 36;   // kolumna 9 kafli
+                    phone_text(a, t, cx, row_py(0), data::tree_branches[b].name, b == tcol ? ink::brand : ink::dim, 0);
+                    for(int tier = 0; tier < 2; ++tier)
+                    {
+                        const int n = node_of(b, tier);
+                        if(n < 0) continue;
+                        const bool open = core::tree_open(a.save, n);
+                        for(int o = 0; o < 2; ++o)
+                        {
+                            const int r = 1 + tier * 2 + o;
+                            const bool picked = core::tree_pick(a.save, n) == o + 1, cur = b == tcol && r - 1 == trow;
+                            if(picked || cur) c.rounded(tx, row_ty(r), 9, 2, picked && cur ? phone_tile::fill_prog_bg : (picked ? phone_tile::fill_done_bg : phone_tile::fill_group),
+                                                        picked && cur ? phone_tile::corner_prog_bg : (picked ? phone_tile::corner_done_bg : phone_tile::corner_group));
+                            ink k = picked ? ink::done : (cur ? ink::brand : (open ? ink::dark : ink::dim));
+                            phone_text(a, t, cx, row_py(r), fit(a, data::tree_nodes[n].options[o].short_name, 70).c_str(), k, 0);
+                        }
+                    }
+                }
+                const int n = node_of(tcol, trow / 2), o = trow % 2;
+                core::message dm, pm;   // opis opcji + pastylka: koszt / zmiana / masz / próg pnia
+                pill pk_pill = pill::gray;
+                if(note) dm.add(note);
+                else if(n >= 0)
+                {
+                    const core::tree_option& op = data::tree_nodes[n].options[o];
+                    dm.add(op.name).add(": ");
+                    core::upgrade_label(dm, op.effect, op.value);
+                    const int pk = core::tree_pick(a.save, n), cost = core::tree_cost(a.save, n, o);
+                    if(! core::tree_open(a.save, n)) pm.add(UI(pien)).add(int(data::tree_nodes[n].depth));
+                    else if(pk == o + 1) { pm.add(UI(masz_3)); pk_pill = pill::done; }
+                    else { pm.add(pk ? UI(zmiana) : "").add(cost); pk_pill = cost <= a.save.xp ? pill::group : pill::gray; }
+                }
+                phone_text(a, t, list_x, row_py(5), fit(a, dm.s, pm.n ? pill_room(pm.s) : phone_text_w).c_str(), note ? ink::brand : ink::dim);
+                if(pm.n) phone_pill(a, c, t, pill_end, row_ty(5), pm.s, pk_pill);
+                ph.commit();
+                return;
+            }
+            if(tab == 4 && kpage == 2)   // Respekt: stałe premie z rangami za Respekt z ukończonych etapów
+            {
+                phone_text(a, t, list_x, row_py(0), UI(masz_3), ink::dim);
+                core::message rv; rv.add(int(a.save.respect)).add(UI(respektu));
+                phone_text(a, t, 226, row_py(0), rv.s, ink::done, 1);
+                const core::respect_def& rd = data::respect[sel];
+                int rank = core::respect_rank(a.save, sel);
+                core::message dm;
+                if(note) dm.add(note);
+                else if(! core::respect_unlocked(a.save, sel))   // v0.21.51 cz. 2: ranga z sekretnego zlecenia
+                    dm.add(UI(sekret)).add(data::secrets[rd.secret].hint).add("\"");
+                else
+                {
+                    if(rank > 0) core::respect_label(dm, rd.effect, core::respect_value(a.save, sel));
+                    else dm.add(rd.desc).add(UI(brak_3));
+                    if(rank < rd.ranks) { dm.add(rank > 0 ? " > " : UI(ranga_i_2)); core::respect_label(dm, rd.effect, rd.values[rank]); }
+                }
+                phone_text(a, t, list_x, row_py(1), fit(a, dm.s, phone_text_w).c_str(), note ? ink::brand : ink::dim);
+                for(int r = 0; r < 4 && top + r < data::respect_count; ++r)
+                {
+                    int i = top + r;
+                    bool is_sel = i == sel;
+                    const bool unl = core::respect_unlocked(a.save, i);
+                    core::message m;
+                    if(unl) m.add(data::respect[i].name).add(" ").add(core::respect_rank(a.save, i)).add("/").add(data::respect[i].ranks);
+                    else m.add("???");
+                    if(is_sel) stripe(c, r + 2, phone_tile::stripe_brand);
+                    int cost = core::respect_cost(a.save, i);
+                    core::message cm; cm.add(cost);
+                    const char* pill_s = ! unl ? UI(sekret_2) : (cost < 0 ? UI(max_2) : cm.s);
+                    phone_text(a, t, list_x, row_py(r + 2), fit(a, m.s, pill_room(pill_s)).c_str(), is_sel ? ink::brand : ink::dark);
+                    phone_pill(a, c, t, pill_end, row_ty(r + 2), pill_s, ! unl ? pill::gray : (cost < 0 ? pill::done : (cost <= a.save.respect ? pill::group : pill::gray)));
+                }
+                ph.commit();
+                return;
+            }
+            if(tab == 4 && kpage == 3)   // Nagrody za odbiór: każda wygrana odblokowuje kolejną
+            {
+                int nr = a.save.rewards;
+                core::message nm;
+                if(nr < core::rewards_available()) nm.add(UI(za_wygrana)).add(data::rewards[nr].name);
+                else nm.add(UI(wszystko_odebrane_wiecej));
+                phone_text(a, t, list_x, row_py(0), fit(a, nm.s, phone_text_w).c_str(), ink::brand);
+                for(int r = 0; r < 4 && top + r < data::rewards_count; ++r)
+                {
+                    int i = top + r;
+                    const core::reward_def& rw = data::rewards[i];
+                    bool is_sel = i == sel, got = core::reward_owned(a.save, i), soon = rw.kind == core::reward_kind::soon;
+                    if(is_sel) stripe(c, r + 1, phone_tile::stripe_brand);
+                    core::message pm;
+                    if(got) pm.add(UI(odebrana));
+                    else if(soon) pm.add(UI(wkrotce_2));
+                    else if(i == nr) pm.add(UI(nastepna));
+                    else pm.add(core::reward_win(a.save, i)).add(UI(wygr_2));
+                    phone_text(a, t, list_x + 18, row_py(r + 1), fit(a, rw.name, pill_room(pm.s) - 18).c_str(),
+                               is_sel ? ink::brand : (got ? ink::dark : ink::dim));
+                    phone_pill(a, c, t, pill_end, row_ty(r + 1), pm.s, got ? pill::done : (i == nr ? pill::prog : pill::gray));
+                    // ikona nagrody: portret zawodu (sylwetka, gdy zablokowany) albo ikona narzędzia / sprzętu
+                    bn::optional<bn::sprite_ptr> ic;
+                    int iy = row_py(r + 1) + 8 - 80, ix = list_x + 8 - 120;
+                    if(rw.kind == core::reward_kind::cls)
+                        ic = bn::sprite_items::actors.create_sprite_optional(ix, iy, got ? data::classes[rw.index].frame : silhouette_frame(rw.index));
+                    else ic = bn::sprite_items::menu_icons.create_sprite_optional(ix, iy, reward_icon(rw));
+                    if(ic) { ic->set_bg_priority(1); houses.push_back(bn::move(*ic)); }
+                }
+                const core::reward_def& rs = data::rewards[sel];
+                core::message dm; dm.add(rs.desc);
+                if(rs.kind == core::reward_kind::tool)
+                {
+                    const core::weapon_def& w = data::weapons[data::tools[rs.index].weapon];
+                    dm = core::message(); dm.add(w.name).add(" ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range)
+                                           .add(", ").add(stat_short(w.scales_with));
+                }
+                else if(rs.kind == core::reward_kind::gear)
+                {
+                    const core::gear_def& gd = data::gear[rs.index * 3 + 2];
+                    dm = core::message(); dm.add(data::gear_slots[rs.index]).add(": ").add(gear_stat_name(gd.stat)).add(UI(do_)).add(gd.value);
+                }
+                else if(rs.kind == core::reward_kind::cls) { dm = core::message(); dm.add(data::classes[rs.index].ability_name).add(": ").add(data::classes[rs.index].ability_desc); }
+                phone_text(a, t, list_x, row_py(5), fit(a, dm.s, phone_text_w).c_str(), ink::dim);
                 ph.commit();
                 return;
             }
             if(tab == 4)   // Koszty = sklep Szkolenia
             {
-                phone_text(a, t, list_x, row_py(0), "Pozostało", ink::dim);
-                core::message xp; xp.add(int(a.save.xp)).add(" dośw.");
+                phone_text(a, t, list_x, row_py(0), UI(pozostalo), ink::dim);
+                core::message xp; xp.add(int(a.save.xp)).add(UI(dosw));
                 phone_text(a, t, 226, row_py(0), xp.s, ink::done, 1);
                 const entry& se = entries[sel];
                 core::message tool_desc;
                 if(se.k == tool)
                 {
                     const core::weapon_def& w = data::weapons[data::tools[se.i].weapon];
-                    tool_desc.add("Narzędzie ").add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range);
+                    tool_desc.add(UI(narzedzie_3)).add(w.min_damage).add("-").add(w.max_damage).add(" z").add(w.range)
+                             .add(", ").add(stat_short(w.scales_with));
                 }
-                const char* desc = note ? note : (se.k == upgrade ? data::upgrades[se.i].desc
-                                 : (se.k == cls ? "Nowy zawód do wyboru" : (se.k == tool ? tool_desc.s : "Najwyższa trudność")));
-                phone_text(a, t, list_x, row_py(1), clip(desc, 26).c_str(), ink::dim);
+                core::message up_desc;   // v0.21.52: Szkolenie - co da kolejny poziom, na maksimum razem
+                if(se.k == upgrade)
+                {
+                    const core::upgrade_def& u = data::upgrades[se.i];
+                    const int lv = a.save.levels[se.i];
+                    if(lv < u.levels) core::upgrade_label(up_desc.add(UI(poziom_2)).add(roman(lv)).add(": "), u.steps[lv].effect, u.steps[lv].value);
+                    else core::upgrade_summary(up_desc.add(UI(razem)), se.i, lv);
+                }
+                const char* desc = note ? note : (se.k == upgrade ? up_desc.s
+                                 : (se.k == cls ? UI(nowy_zawod_kazdy_kolejny) : (se.k == tool ? tool_desc.s
+                                 : (se.k == helper ? data::brigade[se.i].desc : UI(najwyzsza_trudnosc)))));
+                phone_text(a, t, list_x, row_py(1), fit(a, desc, phone_text_w).c_str(), ink::dim);
                 for(int r = 0; r < 4 && top + r < entries.size(); ++r)
                 {
                     const entry& e = entries[top + r];
                     bool is_sel = top + r == sel;
                     core::message m;
                     if(e.k == upgrade) m.add(data::upgrades[e.i].name).add(" ").add(a.save.levels[e.i]).add("/").add(data::upgrades[e.i].levels);
-                    else if(e.k == cls) m.add("Zawód: ").add(data::classes[e.i].name);
+                    else if(e.k == cls) m.add(UI(zawod_3)).add(data::classes[e.i].name);
                     else if(e.k == tool) m.add(data::weapons[data::tools[e.i].weapon].name);
-                    else m.add("Trudność: ").add(data::difficulties[data::difficulties_count - 1].name);
+                    else if(e.k == helper) m.add(UI(brygada_2)).add(data::brigade[e.i].name);
+                    else m.add(UI(trudnosc)).add(data::difficulties[data::difficulties_count - 1].name);
                     if(is_sel) stripe(c, r + 2, phone_tile::stripe_brand);
                     phone_text(a, t, list_x, row_py(r + 2), clip(m.s, 17).c_str(), is_sel ? ink::brand : ink::dark);
                     int cost = cost_of(e);
                     core::message cm; cm.add(cost);
-                    phone_pill(a, c, t, pill_end, row_ty(r + 2), cost < 0 ? "MAX" : cm.s,
+                    phone_pill(a, c, t, pill_end, row_ty(r + 2), cost < 0 ? UI(max_2) : cm.s,
                                cost < 0 ? pill::done : (cost <= a.save.xp ? pill::group : pill::gray));
                 }
                 ph.commit();
                 return;
             }
-            // listy: Odznaki, Katalog, Zespół - 5 wierszy + opis zaznaczonego
-            for(int r = 0; r < 5 && top + r < list_size(); ++r) draw_list_row(r, top + r, top + r == sel);
+            // listy: Odznaki (4 wiersze + opis + uprawnienie), Katalog, Zespół (5 wierszy + opis zaznaczonego)
+            for(int r = 0; r < list_window() && top + r < list_size(); ++r) draw_list_row(r, top + r, top + r == sel);
             const char* desc = "";
-            if(tab == 0) desc = data::badges[sel].desc;
-            else if(tab == 1) desc = (a.save.catalog & (1u << sel)) ? data::enemies[sel].desc : "Pokonaj, żeby poznać";
+            if(tab == 0 && page == 6)   // v0.21.52 cz. c: zadanie - nagroda; seria dni budowy dnia (#51)
+            {
+                const core::task_def& td = core::task_of(a.save, sel);
+                core::message w; w.add("+").add(int(td.respect)).add(UI(respektu));
+                const int nr = core::next_task_reward(a.save);
+                if(nr >= 0) { w.add(UI(zadan)).add(int(a.save.tasks_total)).add("/").add(int(data::task_rewards[nr].xp)).add(": "); goal_label(w, data::task_rewards[nr]); }
+                phone_text(a, t, list_x, row_py(4), fit(a, w.s, phone_text_w).c_str(), ink::dim);
+                int day, week; goal_dates(a, day, week);
+                core::message sm; sm.add(UI(seria)).add(core::streak_now(a.save, day));
+                const int ns = core::next_streak_reward(a.save);
+                if(ns >= 0) { sm.add("/").add(int(data::streak_rewards[ns].xp)).add(UI(dni_3)); goal_label(sm, data::streak_rewards[ns]); }
+                else sm.add(UI(dni_rekord)).add(int(a.save.streak_best)).add(")");
+                phone_text(a, t, list_x, row_py(5), fit(a, sm.s, phone_text_w).c_str(), ink::brand);
+                ph.commit();
+                return;
+            }
+            if(tab == 1 && cpage == 1)   // kolekcja: co liczyć i nagroda
+            {
+                const core::collection_def& cd = data::collections[sel];
+                core::message w; w.add(cd.desc);
+                if(cd.kind != core::collection_kind::decor) w.add(" x").add(int(cd.count));
+                phone_text(a, t, list_x, row_py(4), fit(a, w.s, phone_text_w).c_str(), ink::dim);
+                core::message n; n.add(UI(nagroda)); core::collection_reward_label(n, sel);
+                phone_text(a, t, list_x, row_py(5), fit(a, n.s, phone_text_w).c_str(), core::collection_complete(a.save, sel) ? ink::done : ink::dim);
+                ph.commit();
+                return;
+            }
+            if(tab == 1 && cpage == 2)   // karta bossa: opis (po pokonaniu)
+            {
+                const int d = core::boss_at(sel);
+                const bool known = a.save.kill_count[d] > 0;
+                phone_text(a, t, list_x, row_py(4), fit(a, known ? data::enemies[d].desc : UI(pokonaj_zeby_zdobyc_karte), phone_text_w).c_str(), ink::dim);
+                core::message n; n.add(UI(komplet));
+                for(int i = 0; i < data::collections_count; ++i) if(data::collections[i].kind == core::collection_kind::bosses) core::collection_reward_label(n, i);
+                phone_text(a, t, list_x, row_py(5), fit(a, n.s, phone_text_w).c_str(), ink::brand);
+                ph.commit();
+                return;
+            }
+            if(tab == 1 && cpage == 3)   // album: skąd ozdoba
+            {
+                const core::decor_def& dd = data::estate_decor[sel];
+                core::message w;
+                if(dd.inspector > 0) w.add(UI(poziom_inspektora)).add(int(dd.inspector));
+                else w.add(UI(wygrane_budowy)).add(int(dd.wins));
+                phone_text(a, t, list_x, row_py(4), fit(a, w.s, phone_text_w).c_str(), ink::dim);
+                core::message n; n.add(UI(komplet));
+                for(int i = 0; i < data::collections_count; ++i) if(data::collections[i].kind == core::collection_kind::decor) core::collection_reward_label(n, i);
+                phone_text(a, t, list_x, row_py(5), fit(a, n.s, phone_text_w).c_str(), ink::brand);
+                ph.commit();
+                return;
+            }
+            if(tab == 0 && page == 5)   // poziom inspektora: dośw. do kolejnego, skąd dośw.
+            {
+                int cur = 0, need = 0; core::inspector_bar(a.save, cur, need);
+                core::message w; w.add(UI(inspektor)).add(core::inspector_level(a.save));
+                if(need) w.add(": ").add(cur).add("/").add(need).add(UI(dosw)); else w.add(UI(max_3));
+                phone_text(a, t, list_x, row_py(4), fit(a, w.s, phone_text_w).c_str(), ink::dark);
+                phone_text(a, t, list_x, row_py(5), UI(dosw_z_kazdej_budowy_tez), ink::dim);
+                ph.commit();
+                return;
+            }
+            if(tab == 0 && page == 4 && sel >= core::progress_titles_from)   // tytuł z poziomu inspektora / stopnia inwestora
+            {
+                const core::progress_title& pt = data::progress_titles[sel - core::progress_titles_from];
+                core::message w;   // v0.21.52 cz. c: też kolekcje, seria dni, zadania
+                if(pt.source == 2) w.add(UI(kolekcja)).add(data::collections[pt.level - 1].name);
+                else if(pt.source == 3) w.add(UI(seria_dni_budowy_dnia)).add(int(pt.level));
+                else if(pt.source == 4) w.add(UI(wykonane_zadania)).add(int(pt.level));
+                else w.add(pt.source == 0 ? UI(inspektor_poziom) : UI(tryb_inwestora_stawka_2)).add(pt.level);
+                phone_text(a, t, list_x, row_py(4), fit(a, w.s, phone_text_w).c_str(), ink::dim);
+                const bool own = core::title_owned(a.save, sel);
+                const char* how = pt.source == 0 ? UI(dosw_inspektora_z_budow) : pt.source == 1 ? UI(wygraj_z_taka_stawka)
+                                : pt.source == 2 ? UI(katalog_kolekcje) : pt.source == 3 ? UI(budowa_dnia_w_kolejne_dni) : UI(odznaki_zadania);
+                phone_text(a, t, list_x, row_py(5), own ? UI(masz_3) : how, own ? ink::done : ink::dim);
+                if(own) phone_text(a, t, 226, row_py(5), "SELECT", ink::brand, 1);
+                ph.commit();
+                return;
+            }
+            if(tab == 0 && page == 4)   // tytuł: skąd i co jeszcze daje (kolor kasku)
+            {
+                const bool from_badge = sel < data::badges_count;
+                const int si = from_badge ? sel : sel - data::badges_count;
+                core::message w; w.add(from_badge ? UI(odznaka) : UI(zlecenie)).add(from_badge ? data::badges[si].name : data::contracts[si].name);
+                phone_text(a, t, list_x, row_py(4), fit(a, w.s, phone_text_w).c_str(), ink::dim);
+                const int ck = from_badge ? data::badges[si].cosmetic : data::contracts[si].cosmetic;
+                core::message n;
+                if(ck >= 0) n.add(UI(tez)).add(data::cosmetics[ck].name);
+                else n.add(from_badge ? data::badges[si].desc : data::contracts[si].desc);
+                const bool own = core::title_owned(a.save, sel);
+                phone_text(a, t, list_x, row_py(5), fit(a, n.s, own ? 130 : phone_text_w).c_str(), own ? ink::done : ink::dim);
+                if(own) phone_text(a, t, 226, row_py(5), "SELECT", ink::brand, 1);
+                ph.commit();
+                return;
+            }
+            if(tab == 0 && page == 3)   // sekret: warunek i nagroda dopiero po wykonaniu
+            {
+                const core::secret_def& sd = data::secrets[sel];
+                const bool done = core::secret_done(a.save, sel);
+                core::message w; w.add(UI(warunek)).add(done ? sd.desc : UI(podpowiedz_wyzej));
+                phone_text(a, t, list_x, row_py(4), fit(a, w.s, phone_text_w).c_str(), done ? ink::dark : ink::dim);
+                core::message n; n.add(UI(nagroda)).add(done ? sd.reward_text : "???");
+                phone_text(a, t, list_x, row_py(5), fit(a, n.s, phone_text_w).c_str(), done ? ink::done : ink::dim);
+                ph.commit();
+                return;
+            }
+            if(tab == 0 && page == 2)
+            {
+                const core::keepsake_def& kd = data::keepsakes[sel];
+                bool unl = core::keepsake_unlocked(a.save, sel);
+                core::message e; core::perk_label(e, core::keepsake_perk(a.save, sel));
+                int runs = a.save.keepsake_runs[sel], rank = core::keepsake_rank(a.save, sel);
+                if(unl) e.add(UI(budowy)).add(runs);
+                phone_text(a, t, list_x, row_py(4), fit(a, unl ? e.s : kd.desc, phone_text_w).c_str(), unl ? ink::dark : ink::dim);
+                core::message u;
+                if(! unl)
+                {
+                    if(kd.badge >= 0) u.add(UI(odznaka)).add(data::badges[kd.badge].name);
+                    else if(kd.streak > 0) u.add(UI(seria)).add(int(kd.streak)).add(UI(dni_budowy_dnia));   // v0.21.52 cz. c
+                    else for(int i = 0; i < data::contracts_count; ++i)
+                        if(data::contracts[i].keepsake == sel) { u.add(UI(zlecenie)).add(data::contracts[i].name); break; }
+                }
+                else if(rank < 3) u.add(UI(ranga)).add(roman(rank)).add(UI(po)).add(data::keepsake_rank_runs[rank - 1]).add(UI(bud));
+                else u.add(kd.desc);
+                phone_text(a, t, list_x, row_py(5), fit(a, u.s, phone_text_w).c_str(), unl ? ink::dim : ink::brand);
+                ph.commit();
+                return;
+            }
+            if(tab == 0 && page == 1)
+            {
+                const core::contract_def& cd = data::contracts[sel];
+                phone_text(a, t, list_x, row_py(4), fit(a, cd.desc, phone_text_w).c_str(), ink::dim);
+                core::message rm; rm.add("+").add(cd.xp).add(UI(dosw_tytul));   // v0.21.52: tytuł (Tytuły), pamiątka, kask
+                if(cd.keepsake >= 0) rm.add(", ").add(data::keepsakes[cd.keepsake].name);
+                else if(cd.cosmetic >= 0) rm.add(", ").add(data::cosmetics[cd.cosmetic].name);
+                phone_text(a, t, list_x, row_py(5), fit(a, rm.s, phone_text_w).c_str(), core::contract_done(a.save, sel) ? ink::done : ink::dim);
+                ph.commit();
+                return;
+            }
+            if(tab == 0)
+            {
+                bool got = a.save.badges & (1u << sel);
+                phone_text(a, t, list_x, row_py(4), fit(a, data::badges[sel].desc, phone_text_w).c_str(), ink::dim);
+                core::message pm; pm.add(UI(premia));
+                core::perk_label(pm, data::badges[sel].bonus);
+                phone_text(a, t, list_x, row_py(5), fit(a, pm.s, phone_text_w).c_str(), got ? ink::done : ink::dim);
+                ph.commit();
+                return;
+            }
+            else if(tab == 1)   // Katalog: zachowania i opis (po pokonaniu)
+            {
+                bool known = core::catalog_has(a.save, sel);
+                core::message bl = behaviors_line(sel);
+                if(known && bl.n > 0) { core::message m; m.add(UI(cechy)).add(bl.s); phone_text(a, t, list_x, row_py(4), fit(a, m.s, phone_text_w).c_str(), ink::late); }
+                desc = known ? data::enemies[sel].desc : UI(pokonaj_zeby_poznac);
+            }
             else desc = data::classes[sel].ability_desc;
-            phone_text(a, t, list_x, row_py(5), clip(desc, 26).c_str(), ink::dim);
+            phone_text(a, t, list_x, row_py(5), fit(a, desc, phone_text_w).c_str(), ink::dim);
             ph.commit();
         };
         ph.set_tab(tab);
@@ -2154,18 +6270,85 @@ namespace
 
         while(true)
         {
-            int d = (bn::keypad::r_pressed() || bn::keypad::right_pressed()) ? 1
-                  : ((bn::keypad::l_pressed() || bn::keypad::left_pressed()) ? -1 : 0);
+            if(tab == 2 && arch > 0)   // Wiadomości (fabuła #35)
+            {
+                if(arch == 1)
+                {
+                    int dir = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+                    if(dir)
+                    {
+                        asel = (asel + dir + data::story_arc_count) % data::story_arc_count;
+                        if(asel < atop) atop = asel;
+                        if(asel >= atop + 6) atop = asel - 5;
+                        redraw();
+                    }
+                    if(bn::keypad::a_pressed() && core::story_unlocked(a.save, asel))
+                    {
+                        arch = 2; amsg = 0;
+                        if(core::story_unread(a.save, asel)) { core::story_mark_read(a.save, asel); bn::sram::write(a.save); }
+                        bn::sound_items::sfx_notify.play(bn::fixed(0.6));
+                        redraw();
+                    }
+                    else if(bn::keypad::b_pressed()) { arch = 0; redraw(); bn::sound_items::sfx_menu.play(); }
+                }
+                else if(bn::keypad::a_pressed())
+                {
+                    if(amsg + 1 < data::story_arc[asel].msgs_count) ++amsg; else arch = 1;
+                    redraw(); bn::sound_items::sfx_menu.play();
+                }
+                else if(bn::keypad::b_pressed()) { arch = 1; redraw(); bn::sound_items::sfx_menu.play(); }
+                next_frame();
+                continue;
+            }
+            if(tab == 2 && bn::keypad::a_pressed())   // Osiedle -> Wiadomości
+            {
+                arch = 1;
+                for(int i = 0; i < data::story_arc_count; ++i) if(core::story_unread(a.save, i)) { asel = i; break; }
+                atop = core::imax(0, core::imin(asel, data::story_arc_count - 6));
+                redraw(); bn::sound_items::sfx_menu.play();
+                wait_release();
+                continue;
+            }
+            const bool tree_page = tab == 4 && kpage == 1;   // v0.21.52 cz. c: drzewko - strzałki po węzłach, L/R zakładki
+            if(tree_page)
+            {
+                const int dx = bn::keypad::right_pressed() ? 1 : (bn::keypad::left_pressed() ? -1 : 0);
+                const int dy = bn::keypad::down_pressed() ? 1 : (bn::keypad::up_pressed() ? -1 : 0);
+                if(dx || dy)
+                {
+                    tcol = (tcol + dx + data::tree_branches_count) % data::tree_branches_count;
+                    trow = (trow + dy + 4) % 4;
+                    note = nullptr;
+                    redraw();
+                    bn::sound_items::sfx_menu.play();
+                }
+                if(bn::keypad::a_pressed())
+                {
+                    int n = -1, k = 0;
+                    for(int i = 0; i < data::tree_nodes_count; ++i) if(data::tree_nodes[i].branch == tcol && k++ == trow / 2) n = i;
+                    if(n >= 0 && core::tree_choose(a.save, n, trow % 2))
+                    {
+                        bn::sound_items::sfx_buy.play();
+                        bn::sram::write(a.save);
+                        note = UI(wybrane);
+                    }
+                    else if(n >= 0) note = ! core::tree_open(a.save, n) ? UI(najpierw_szkolenia_tej_galezi)
+                                  : (core::tree_cost(a.save, n, trow % 2) < 0 ? UI(juz_wybrane) : UI(za_malo_doswiadczenia));
+                    redraw();
+                }
+            }
+            int d = (bn::keypad::r_pressed() || (! tree_page && bn::keypad::right_pressed())) ? 1
+                  : ((bn::keypad::l_pressed() || (! tree_page && bn::keypad::left_pressed())) ? -1 : 0);
             if(d)
             {
                 tab = (tab + d + tabs_count) % tabs_count;
-                sel = top = 0; note = nullptr;
+                sel = top = 0; note = nullptr; cpage = 0;
                 ph.set_tab(tab);
                 redraw();
                 bn::sound_items::sfx_menu.play();
             }
-            int n = list_size(), window = tab == 4 ? 4 : 5;
-            int dir = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+            int n = list_size(), window = list_window();
+            int dir = tree_page ? 0 : (bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0));
             if(dir && n > 0)
             {
                 sel = (sel + dir + n) % n;
@@ -2174,22 +6357,74 @@ namespace
                 note = nullptr;
                 redraw();
             }
-            if(tab == 4 && bn::keypad::a_pressed())
+            if(tab == 3 && bn::keypad::select_pressed())   // v0.21.53 cz. 2 (#40): Zespół - SELECT zmienia język (od razu)
+            {
+                core::set_language(a.save, core::language == 0 ? 1 : 0);
+                bn::sram::write(a.save);
+                redraw(); bn::sound_items::sfx_menu.play();
+            }
+            if(tab == 0 && page == 4 && bn::keypad::select_pressed() && core::title_owned(a.save, sel))   // v0.21.52: wybór tytułu
+            {
+                a.save.title = uint8_t(core::selected_title(a.save) == sel ? 0 : sel + 1);
+                bn::sram::write(a.save);
+                redraw();
+                bn::sound_items::sfx_buy.play();
+            }
+            if(tab == 1 && bn::keypad::a_pressed())   // v0.21.52 cz. c: Katalog -> Kolekcje -> Bossowie -> Album
+            {
+                cpage = (cpage + 1) % catalog_pages_count;
+                sel = top = 0;
+                redraw();
+                bn::sound_items::sfx_menu.play();
+            }
+            if(tab == 0 && bn::keypad::a_pressed())   // Odznaki <-> Zlecenia
+            {
+                page = (page + 1) % badge_pages_count;
+                sel = top = 0;
+                if(page == 5)   // v0.21.52 cz. b: Inspektor - od bieżącego poziomu
+                {
+                    sel = core::imin(core::inspector_level(a.save), data::inspector_levels_count - 1);
+                    top = core::imax(0, core::imin(sel - 1, data::inspector_levels_count - list_window()));
+                }
+                redraw();
+                bn::sound_items::sfx_menu.play();
+            }
+            if(tab == 4 && bn::keypad::select_pressed())   // Szkolenia -> Respekt -> Nagrody
+            {
+                kpage = (kpage + 1) % cost_pages_count;
+                sel = top = 0; note = nullptr;
+                redraw();
+                bn::sound_items::sfx_menu.play();
+            }
+            else if(tab == 4 && kpage == 2 && bn::keypad::a_pressed())
+            {
+                if(core::buy_respect(a.save, sel))
+                {
+                    bn::sound_items::sfx_buy.play();
+                    bn::sram::write(a.save);
+                    note = UI(kupione);
+                }
+                else note = ! core::respect_unlocked(a.save, sel) ? UI(najpierw_sekretne_zlecenie)
+                          : (core::respect_cost(a.save, sel) < 0 ? UI(maksymalna_ranga) : UI(za_malo_respektu_koncz_etapy));
+                redraw();
+            }
+            else if(tab == 4 && kpage == 0 && bn::keypad::a_pressed())
             {
                 const entry e = entries[sel];
                 bool ok = e.k == upgrade ? core::buy_upgrade(a.save, e.i)
                         : e.k == cls ? core::buy_class(a.save, e.i)
-                        : e.k == tool ? core::buy_tool(a.save, e.i) : core::buy_hard(a.save);
+                        : e.k == tool ? core::buy_tool(a.save, e.i)
+                        : e.k == helper ? core::buy_helper(a.save, e.i) : core::buy_hard(a.save);
                 if(ok)
                 {
                     bn::sound_items::sfx_buy.play();
                     bn::sram::write(a.save);
-                    note = "Kupione!";
+                    note = UI(kupione);
                     rebuild();
                     if(sel >= entries.size()) sel = entries.size() - 1;
                     if(top > sel) top = sel;
                 }
-                else note = (e.k == upgrade && core::upgrade_cost(a.save, e.i) < 0) ? "Maksymalny poziom" : "Za mało doświadczenia";
+                else note = (e.k == upgrade && core::upgrade_cost(a.save, e.i) < 0) ? UI(maksymalny_poziom) : UI(za_malo_doswiadczenia);
                 redraw();
             }
             if(bn::keypad::b_pressed() || bn::keypad::start_pressed())
@@ -2207,19 +6442,38 @@ namespace
 
 int main()
 {
+    debug_paint_stack();   // buildy testowe: pomiar zużycia stosu
     bn::core::init();
-    app a;
+    bn::unique_ptr<app> app_heap(new app());   // v0.21.51: na stercie, nie na stosie (stos IWRAM ~12 KB)
+    app& a = *app_heap;
     a.save = load_save();
+    apply_filter(a.save);   // v0.21.53: filtr ekranu z profilu
 #ifdef PB_SCENARIO
     debug_scenario::unlock_all(a.save);
+    debug_scenario::setup_profile(a.save, PB_SCENARIO);
+#ifndef PB_LANG
+#define PB_LANG 1
 #endif
+#endif
+#ifdef PB_LANG
+    if(a.save.language == 0) a.save.language = PB_LANG;   // buildy testowe: język bez pytania (1 = polski, 2 = angielski)
+#endif
+    core::apply_language(a.save);   // v0.21.53 cz. 2 (#40)
     bn::unique_ptr<core::game> game(new core::game());
     a.g = game.get();
     a.has_run = load_run(a);   // tylko sprawdzenie; start i tak idzie przez tytuł
 
-    scene s = scene::title;
+    scene s = a.save.language == 0 ? scene::language : scene::title;
     while(true)
     {
+        apply_filter(a.save);   // v0.21.53: filtr ekranu (profil scenariusza, wybór w Wyglądzie)
+#ifdef PB_DEBUG_STATS
+        BN_LOG("PBSCENE ", int(s));
+#endif
+        // v0.21.52 cz. b: klatka między scenami (ekran wygaszony) - kafle sprite'ów poprzedniej sceny zwalniają się, zanim
+        // nowa narysuje swoje (monkey test: tytuł z paskiem inspektora + pierwsza karta wyboru zawodu = brak VRAM)
+        debug_stats();
+        bn::core::update();
         switch(s)
         {
             case scene::title:        s = run_title(a); break;
@@ -2231,6 +6485,12 @@ int main()
             case scene::help:         s = run_help(a); break;
             case scene::hurtownia:    s = run_hurtownia(a); break;
             case scene::prologue:     s = run_prologue(a); break;
+            case scene::investor:     s = run_investor(a); break;
+            case scene::daily:        s = run_daily(a); break;
+            case scene::weekly:       s = run_weekly(a); break;
+            case scene::career:       s = run_career(a); break;
+            case scene::language:     s = run_language(a); break;
+            default: break;
         }
     }
 }

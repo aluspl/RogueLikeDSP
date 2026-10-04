@@ -119,6 +119,7 @@ SPR_PAL = [(255, 0, 255), (26, 26, 26), (240, 240, 240), (240, 192, 144), BRAND_
            (58, 123, 213), (245, 211, 61), (214, 60, 60), (76, 175, 80), (46, 107, 48), (139, 90, 43),
            (138, 138, 138), (200, 200, 200), (90, 208, 230), (142, 91, 208)]
 K, WH, SK, OR, NV, BL, YE, RD, GR, DG, BR, GY, LG, CY, PU = range(1, 16)
+CODES_D = DG   # indeks D w pixel_art (kolor kasku do podmiany, v0.21.52)
 
 def sprite(draw_fn):
     im = Image.new("P", (16, 16), 0)
@@ -183,7 +184,11 @@ def p_toolbox(d):   # skrzynka z narzędziem (drop)
 UI_SPR = [ui_lock]
 
 # klatki: 0-5 zawody, 6-14 wrogowie, 15-17 znajdźki, 18 efekt trafienia, 19 kłódka, 20-25 sylwetki zawodów,
-# 26 skrzynka z narzędziem, 27-41 druga klatka animacji zawodów i wrogów, 42-44 paczki sprzętu (pixel-art: tools/pixel_art.py)
+# 26 skrzynka z narzędziem, 27-41 druga klatka animacji zawodów i wrogów, 42-44 paczki sprzętu (pixel-art: tools/pixel_art.py),
+# 45 celownik, 46-51 bossowie; v0.21.49: 52-54 zawody z nagród (Dekarz, Tynkarz, Operator koparki), 55-57 ich druga klatka,
+# 58-60 ich sylwetki; 61-80 problemy etapów (pixel_art.STAGE_ENEMIES), 81-100 ich druga klatka;
+# Akt 0: 101-109 problemy i boss Decyzja odmowna (pixel_art.PRELUDE_ENEMIES), 110-118 druga klatka, 119-121 dokumenty;
+# v0.21.50 cz. 3: 122 pole wydarzenia, 123 klucz, 124 skrzynia, 125 pęknięcie muru, 126 drzwi magazynu (pixel_art.PART3)
 def make_actors():
     import pixel_art as pa
     workers = [pa.worker_frame(i, 0) for i in range(6)]
@@ -197,7 +202,40 @@ def make_actors():
     gf = pa.gear_frames()
     frames += [gf[i * 256:(i + 1) * 256] for i in range(3)]   # 42-44 paczki sprzętu wg jakości
     frames += [pa.reticle_frame()]                             # 45 celownik
-    frames += pa.boss_frames()                                 # 46-47 bossowie aktów, 48-49 ich druga klatka
+    frames += pa.boss_frames()                                 # 46-47 bossowie aktów, 48-49 ich druga klatka, 50-51 Inspekcja
+    extra = [pa.worker_frame(i, 0) for i in range(6, 9)]   # 52-54 zawody z nagród za odbiór
+    frames += extra + [pa.worker_frame(i, 1) for i in range(6, 9)]   # 55-57 ich druga klatka
+    frames += [silhouette(f) for f in extra]                               # 58-60 ich sylwetki
+    n = len(pa.STAGE_ENEMY_ORDER)
+    assert len(frames) == 61
+    frames += [pa.stage_enemy_frame(i, 0) for i in range(n)] + [pa.stage_enemy_frame(i, 1) for i in range(n)]   # 61.. problemy etapów
+    data = json.load(open(os.path.join(ROOT, "data", "game.json"), encoding="utf-8"))
+    ids = [e["id"] for e in data["enemies"] if e["frame"] >= 61]
+    assert ids[:n] == pa.STAGE_ENEMY_ORDER, "kolejność rysunków = kolejność wrogów w game.json"
+    m = len(pa.PRELUDE_ENEMY_ORDER)   # v0.21.49 cz. 3: Akt 0 - 101-109 problemy i boss, 110-118 druga klatka, 119-121 dokumenty
+    assert len(frames) == 101 and ids[n:n + m] == pa.PRELUDE_ENEMY_ORDER, "Akt 0: kolejność rysunków = kolejność w game.json"
+    assert [e["frame"] for e in data["enemies"] if e["id"] in pa.PRELUDE_ENEMY_ORDER] == list(range(101, 101 + m))
+    frames += [pa.prelude_enemy_frame(i, 0) for i in range(m)] + [pa.prelude_enemy_frame(i, 1) for i in range(m)]
+    frames += [pa.document_frame(i) for i in range(len(pa.DOCUMENTS))]
+    assert len(frames) == 122   # v0.21.50 cz. 3: 122 wydarzenie, 123 klucz, 124 skrzynia, 125 pęknięcie muru, 126 drzwi magazynu
+    frames += [pa.part3_frame(n) for n in pa.PART3_ORDER]
+    # v0.21.51 cz. 2: 127-129 zawody z sekretnych zleceń (Spawacz, Geodeta, Majster), 130-132 ich druga klatka,
+    # 133-135 ich sylwetki; 136-159 kask w paski (wygląd): zawód * 2 + klatka animacji (A, B) dla wszystkich 12 zawodów
+    assert len(frames) == 127 and len(pa.WORKERS) == 12
+    secret = [pa.worker_frame(i, 0) for i in range(9, 12)]
+    frames += secret + [pa.worker_frame(i, 1) for i in range(9, 12)] + [silhouette(f) for f in secret]
+    frames += [pa.worker_frame(c, k, stripes=True) for c in range(12) for k in range(2)]
+    # v0.21.52: 160-183 kask do pokolorowania (kolory kasku z odznak i zleceń): kask w indeksie D (ciemna zieleń - poza
+    # kaskiem żaden fachowiec jej nie ma), gra podmienia ten kolor w osobnej palecie bohatera; zawód * 2 + klatka A/B
+    assert len(frames) == 160
+    for c in range(12):   # D tylko na kasku (w klatce z kaskiem w paski D nie występuje, więc reszta postaci jej nie używa)
+        assert CODES_D not in [v for y, v in enumerate(pa.worker_frame(c, 0, stripes=True)) if not 16 <= y < 64], c
+    frames += [pa.worker_frame(c, k, helmet_mask=True) for c in range(12) for k in range(2)]
+    # v0.21.52 cz. d (#47): 184-195 problemy i bossowie kontraktów mapy kariery, para klatek A/B (druga = frame | 1)
+    assert len(frames) == 184
+    car = [e for e in data["enemies"] if e["frame"] >= 184]
+    assert [e["id"] for e in car] == pa.CAREER_ENEMY_ORDER and [e["frame"] for e in car] == list(range(184, 184 + 2 * len(car), 2))
+    for i in range(len(car)): frames += [pa.career_enemy_frame(i, 0), pa.career_enemy_frame(i, 1)]
     px = [p for fr in frames for p in fr]
     write_bmp(os.path.join(G, "actors.bmp"), px, 16, 16 * len(frames), SPR_PAL, 4)
     write_json("actors", {"type": "sprite", "height": 16})
@@ -248,14 +286,29 @@ def make_hp_bar():
 # indeksy: 0 tło, 1 podłoga, 2 detal podłogi, 3 ściana, 4 jasny detal ściany, 5 cień ściany, 6/7 schody
 STAGE_COLORS = [
     # (podłoga, detal, ściana, jasny, cień) - kolejność jak etapy w data/game.json
+    [(214, 208, 190), (190, 182, 160), (70, 96, 150), (236, 232, 220), (40, 52, 90)],     # Pozwolenie (biuro: segregatory)
+    [(112, 86, 58), (88, 66, 44), (98, 72, 48), (150, 120, 86), (60, 42, 28)],            # Przyłącza (wykop z rurami)
     [(96, 70, 44), (80, 58, 36), (150, 138, 118), (180, 170, 150), (100, 92, 80)],        # Fundamenty
+    [(104, 80, 52), (84, 62, 40), (72, 70, 80), (116, 112, 124), (40, 38, 46)],           # Izolacja fundamentów (papa, folia)
     [(118, 118, 118), (100, 100, 100), (178, 82, 59), (222, 200, 170), (120, 50, 36)],   # Mury parteru
     [(128, 128, 124), (108, 108, 104), (150, 150, 146), (190, 190, 186), (90, 90, 88)],  # Strop (beton)
     [(169, 116, 59), (130, 86, 40), (122, 46, 46), (170, 80, 70), (80, 28, 28)],         # Dach
+    [(146, 140, 130), (124, 118, 110), (214, 208, 196), (238, 234, 224), (150, 144, 132)], # Ściany działowe (silikaty)
     [(150, 104, 62), (122, 82, 46), (210, 210, 200), (240, 240, 232), (120, 140, 170)],  # Okna i drzwi
     [(160, 160, 160), (135, 135, 135), (90, 111, 143), (200, 120, 60), (56, 70, 96)],    # Instalacje
     [(200, 196, 184), (176, 170, 156), (226, 218, 196), (246, 240, 224), (150, 140, 120)],  # Tynki i wylewki
     [(224, 214, 192), (190, 178, 150), (111, 168, 160), (160, 210, 200), (70, 118, 110)],   # Wykończenie
+    # v0.21.52 cz. d (#47): wyglądy etapów kontraktów mapy kariery ("look" w game.json)
+    [(196, 156, 100), (160, 120, 72), (150, 96, 52), (200, 150, 96), (84, 52, 28)],       # 12 Domek letniskowy I: pokład, bale
+    [(176, 140, 96), (140, 104, 64), (110, 120, 96), (160, 170, 140), (60, 66, 50)],      # 13 Domek letniskowy II: gont z mchem
+    [(110, 104, 100), (90, 86, 82), (196, 96, 64), (232, 170, 130), (110, 48, 30)],       # 14 Bliźniak I: beton, cegła
+    [(156, 124, 92), (128, 98, 70), (70, 74, 86), (130, 136, 150), (36, 38, 46)],         # 15 Bliźniak II: grafitowy dach
+    [(210, 206, 198), (184, 180, 170), (150, 190, 180), (200, 230, 220), (90, 124, 116)], # 16 Bliźniak III: miętowe wnętrza
+    [(200, 170, 110), (170, 138, 84), (130, 90, 56), (180, 136, 92), (70, 46, 26)],       # 17 Poddasze: OSB, krokwie
+    [(190, 184, 170), (164, 158, 144), (226, 196, 90), (246, 226, 150), (150, 120, 50)],  # 18 Poddasze: wełna
+    [(92, 88, 84), (74, 70, 66), (128, 118, 104), (166, 156, 140), (60, 54, 48)],         # 19 Kamienica: piwnice z kamienia
+    [(150, 110, 76), (120, 86, 58), (150, 64, 48), (196, 120, 96), (80, 30, 24)],         # 20 Kamienica: stara cegła
+    [(176, 124, 72), (140, 96, 52), (232, 220, 190), (250, 244, 226), (170, 150, 120)],   # 21 Kamienica: parkiet, sztukateria
 ]
 
 def tile(fn):
@@ -264,21 +317,88 @@ def tile(fn):
     return [c for row in t for c in row]
 
 def t_empty(t): pass
+
+# v0.21.49: każdy akt ma własne kafle - akt I ziemia i bloczki betonowe, akt II deski i cegła, akt III płytki i tynk;
+# zestawy 3-4: Akt 0 - biuro z segregatorami (Pozwolenie) i wykop z rurami (Przyłącza).
+ACT = [0]   # zestaw kafli generowany w tej chwili (make_tiles ustawia)
+
 def t_floor(t):
+    a = ACT[0]
     for y in range(8):
         for x in range(8):
             t[y][x] = 1
-    for (x, y) in [(1, 2), (5, 5), (6, 1), (2, 6)]:
-        t[y][x] = 2
-def t_wall(t):   # mur z fugami (wzór cegieł przez 2 kafle w pionie się powtarza)
+    if a == 0:     # ziemia z kamykami
+        for (x, y) in [(1, 2), (5, 5), (6, 1), (2, 6)]:
+            t[y][x] = 2
+    elif a == 1:   # deski: poziome szczeliny, przesunięte łączenia
+        for x in range(8):
+            t[3][x] = 2; t[7][x] = 2
+        t[0][5] = t[1][5] = t[2][5] = 2
+        t[4][1] = t[5][1] = t[6][1] = 2
+    elif a == 3:   # biuro: jasna wykładzina w kratkę i porozrzucane kartki (biały róg)
+        for i in range(8):
+            t[7][i] = 2; t[i][7] = 2
+        t[2][2] = t[2][3] = t[3][2] = t[3][3] = t[4][2] = 4
+        t[2][4] = 4
+    elif a == 4:   # wykop: ubita ziemia z tłuczniem
+        for (x, y) in [(1, 1), (4, 3), (6, 6), (2, 5), (5, 0)]:
+            t[y][x] = 2
+        t[3][6] = 5
+    elif a == 5:   # v0.21.52 cz. d: drewno (domek letniskowy) - szerokie deski pokładu z sękiem
+        for y in range(8):
+            t[y][3] = 2; t[y][7] = 2
+        t[2][1] = t[5][5] = 2; t[6][1] = 14
+    elif a == 6:   # kamienica: parkiet w jodełkę
+        for i in range(4):
+            t[i][i] = 2; t[i][i + 4] = 2; t[i + 4][3 - i] = 2; t[i + 4][7 - i] = 2
+        t[1][6] = 14
+    else:          # płytki: fuga co 8 px, odblask w rogu
+        for i in range(8):
+            t[7][i] = 2; t[i][7] = 2
+        t[1][1] = t[1][2] = t[2][1] = 14
+def t_wall(t):
+    a = ACT[0]
     for y in range(8):
         for x in range(8):
             t[y][x] = 3
-    for x in range(8):
-        t[3][x] = 5; t[7][x] = 5
-    t[0][3] = t[1][3] = t[2][3] = 5
-    t[4][7] = t[5][7] = t[6][7] = 5
-    t[0][0] = t[4][4] = 4
+    if a == 0:     # bloczki betonowe: duże, pojedyncza spoina
+        for x in range(8):
+            t[7][x] = 5
+        for y in range(7):
+            t[y][7] = 5
+        t[1][1] = t[2][4] = t[5][2] = 4
+    elif a == 1:   # mur z fugami (wzór cegieł przez 2 kafle w pionie się powtarza)
+        for x in range(8):
+            t[3][x] = 5; t[7][x] = 5
+        t[0][3] = t[1][3] = t[2][3] = 5
+        t[4][7] = t[5][7] = t[6][7] = 5
+        t[0][0] = t[4][4] = 4
+    elif a == 3:   # regał z segregatorami: grzbiety 3 px (niebieski 3 / czerwony 12), jasne etykiety, żółte kółka, półka
+        for y in range(8):
+            for x in range(8):
+                t[y][x] = 5 if x in (3, 7) or y == 7 else (3 if x < 3 else 12)
+        for x in (1, 5):
+            t[1][x] = t[2][x] = 4
+            t[5][x] = 13
+    elif a == 4:   # ściana wykopu: ziemia z przekrojem rury (kolory 12-13)
+        for (x, y) in [(1, 1), (5, 0), (6, 6), (2, 6)]:
+            t[y][x] = 4
+        for x in range(8):
+            t[3][x] = 12; t[4][x] = 13; t[5][x] = 12
+        t[3][7] = t[4][7] = t[5][7] = 5
+    elif a == 5:   # v0.21.52 cz. d: bale (domek letniskowy) - poziome okrągłe bale z cieniem i słojem
+        for x in range(8):
+            t[0][x] = 4; t[3][x] = 5; t[4][x] = 4; t[7][x] = 5
+        t[1][2] = t[5][6] = 5
+    elif a == 6:   # kamienica: stara cegła / kamień w dużych blokach z gzymsem
+        for x in range(8):
+            t[0][x] = 4; t[1][x] = 5; t[5][x] = 5
+        t[2][3] = t[3][3] = t[4][3] = 5; t[6][7] = t[7][7] = 5
+        t[3][6] = 4
+    else:          # gładki tynk z drobnymi plamkami
+        for (x, y) in [(1, 1), (5, 3), (2, 5), (6, 6)]:
+            t[y][x] = 4
+        t[4][6] = 5
 def t_walltop(t):  # ściana z podłogą poniżej: jasna krawędź u góry
     t_wall(t)
     for x in range(8):
@@ -308,18 +428,56 @@ def t_floor_range(t):   # pole w zasięgu broni: narożnik ramki (4 ćwiartki pr
     for x, y in ((0, 0), (1, 0), (2, 0), (0, 1), (0, 2), (1, 1)):
         t[y][x] = 6
 
-def t_floor_danger(t):   # zapowiedziany cios bossa: czerwona ramka i ukośne kreski (ćwiartka pola)
+def t_floor_danger(t):   # zapowiedziany cios bossa / wybuch: czerwona ramka i ukośne kreski (ćwiartka pola)
     t_floor(t)
     for i in range(8):
         t[0][i] = 9; t[i][0] = 9
         if i >= 2: t[i][i] = 9
 
-# indeksy: 0 pusty, 1 podłoga, 2 mur, 3 lico muru, 4 schody, 5 podłoga z cieniem muru, 6 cień postaci (ćwiartka),
-# 7 podłoga w zasięgu broni (ćwiartka ramki), 8 pole zapowiedzianego ciosu bossa (ćwiartka)
-TILES = [t_empty, t_floor, t_wall, t_walltop, t_stairs, t_floor_wall_shadow, t_actor_shadow, t_floor_range, t_floor_danger]
+def t_puddle(t):   # kałuża (deszcz): lewa górna ćwiartka elipsy wody (reszta przez odbicia), kolory 10-11
+    t_floor(t)
+    for y in range(8):
+        for x in range(8):
+            dx, dy = (x + 0.5 - 8) / 6.6, (y + 0.5 - 8.6) / 5.0
+            if dx * dx + dy * dy <= 1.0: t[y][x] = 10
+    for x in range(4, 8):   # odbłysk na wodzie
+        if t[5][x] == 10: t[5][x] = 11
+
+def t_mud(t):   # błoto (akt I, v0.21.51): płaska mokra plama (ćwiartka, reszta przez odbicia) - jaśniejszy brąz
+    t_floor(t)     # (kolor 12) z nierównym brzegiem i połyskiem (13), mniejsza niż pole - nie wygląda jak dziura
+    for y in range(8):
+        for x in range(8):
+            dx, dy = (x + 0.5 - 8) / 5.6, (y + 0.5 - 8.2) / 4.6
+            wob = 0.18 if (x + 2 * y) % 5 == 0 else 0.0   # nieregularny brzeg
+            if dx * dx + dy * dy <= 1.0 - wob: t[y][x] = 12
+    for x, y in ((5, 5), (6, 5), (6, 6)):   # połysk mokrej powierzchni
+        if t[y][x] == 12: t[y][x] = 13
+
+def t_wall_cap(t):   # v0.21.51: wierzch masy muru (mur z murem poniżej) - ciemny, bez pasów i fug
+    for y in range(8):
+        for x in range(8):
+            t[y][x] = 5
+    t[2][1] = t[5][5] = 3
+
+def t_wall_face_low(t):   # v0.21.51: dolna połowa lica muru (nad podłogą) - wzór bez jasnej krawędzi, cień u dołu
+    t_wall(t)
+    for x in range(8):
+        t[7][x] = 5
+
+# indeksy w akcie (+12 za każdy zestaw: akt II 13-24, akt III 25-36): 0 pusty, 1 podłoga, 2 mur, 3 lico muru, 4 schody,
+# 5 podłoga z cieniem muru, 6 cień postaci (ćwiartka), 7 podłoga w zasięgu broni (ćwiartka ramki), 8 pole zapowiedzianego
+# ciosu bossa / wybuchu (ćwiartka), 9 kałuża (ćwiartka), 10 błoto (ćwiartka); v0.21.51 autokafle muru: 11 wierzch
+# masy muru (mur z murem poniżej), 12 dolna połowa lica (górna = 3 z jasną krawędzią) - razem 12 kafli na zestaw
+TILES = [t_floor, t_wall, t_walltop, t_stairs, t_floor_wall_shadow, t_actor_shadow, t_floor_range, t_floor_danger,
+         t_puddle, t_mud, t_wall_cap, t_wall_face_low]
+ACT_TILES = len(TILES)
 
 def make_tiles():
-    px_tiles = [tile(f) for f in TILES]
+    px_tiles = [tile(t_empty)]
+    for a in range(7):   # kafle każdego aktu (3-4: Akt 0 - biuro, wykop; v0.21.52 cz. d: 5 drewno, 6 kamienica)
+        ACT[0] = a
+        px_tiles += [tile(f) for f in TILES]
+    ACT[0] = 0
     w = 8 * len(px_tiles)
     px = []
     for y in range(8):
@@ -341,7 +499,15 @@ def make_tiles():
                 stairs = [tuple(int(v * f) for v in (245, 211, 61)), tuple(int(v * f) for v in (180, 120, 20))]
             shadow = tuple(int(v * 0.45) for v in cols[0])   # cień na podłodze
             danger = tuple(int(v * (0.6 if level == 3 else (1.0, 0.85, 0.7)[level])) for v in (235, 50, 50))
-            pal += [(12, 12, 20)] + cols + stairs + [shadow, danger] + [(0, 0, 0)] * 6
+            lf = 0.55 if level == 3 else (1.0, 0.85, 0.7)[level]
+            water = [tuple(int(v * lf) for v in (64, 112, 176)), tuple(int(v * lf) for v in (150, 196, 236))]   # kałuża
+            mud = [tuple(int(v * lf) for v in (132, 98, 62)), tuple(int(v * lf) for v in (236, 216, 180))]  # błoto (akt I): mokra plama, połysk
+            if si == 0:   # Akt 0, biuro: kolory 12-13 = grzbiety segregatorów (czerwony, żółty)
+                mud = [tuple(int(v * lf) for v in (190, 60, 56)), tuple(int(v * lf) for v in (222, 180, 64))]
+            elif si == 1:   # Akt 0, wykop: kolory 12-13 = rura (szara, jasny odblask)
+                mud = [tuple(int(v * lf) for v in (92, 104, 120)), tuple(int(v * lf) for v in (170, 184, 200))]
+            gloss = tuple(min(255, int(v * 1.12 + 12)) for v in cols[0])                                  # odblask płytek
+            pal += [(12, 12, 20)] + cols + stairs + [shadow, danger] + water + mud + [gloss, (0, 0, 0)]
         write_bmp(os.path.join(G, f"stage_palettes_{si}.bmp"), [0] * 64, 8, 8, pal, 8)
         write_json(f"stage_palettes_{si}", {"type": "bg_palette", "bpp_mode": "bpp_4", "colors_count": 64})
 
@@ -435,6 +601,13 @@ def make_phone():
         add("corner_" + n, corner)
     for n, c in {"todo": P_TODO, "prog": P_PROG, "done": P_DONE, "brand": P_BRAND, "late": P_LATE}.items():
         add("stripe_" + n, [c if x < 2 else P_CARD for y in range(8) for x in range(8)])
+    # linie rozgałęzień harmonogramu (wybór ścieżki): pozioma, pionowa, trójnik w górę, narożnik w dół (w prawo; lewy = odbicie)
+    L = lambda f: [P_BRAND if f(x, y) else P_CARD for y in range(8) for x in range(8)]
+    add("line_h", L(lambda x, y: 3 <= y <= 4))
+    add("line_v", L(lambda x, y: 3 <= x <= 4))
+    add("line_tee_up", L(lambda x, y: 3 <= y <= 4 or (3 <= x <= 4 and y <= 4)))
+    add("line_corner", L(lambda x, y: (3 <= y <= 4 and x >= 3) or (3 <= x <= 4 and y >= 3)))
+    add("node", L(lambda x, y: (x - 3.5) ** 2 + (y - 3.5) ** 2 <= 9))
     for n, c in {"brand": P_BRAND, "done": P_DONE, "late": P_LATE}.items():
         for k in range(9):   # pasek postępu: k z 8 pikseli wypełnione, wiersze 6-7 (środek 16-pikselowego wiersza listy)
             add(f"bar_{n}_{k}", [(c if x < k else P_GROUP) if 6 <= y <= 7 else P_CARD for y in range(8) for x in range(8)])
@@ -490,7 +663,7 @@ def centered(d, y, text, font, fill):
     w = d.textlength(text, font=font)
     d.text(((240 - w) / 2, y), text, font=font, fill=fill)
 
-def make_title():
+def make_title(name="title", tagline="Zbuduj dom. Przetrwaj budowę."):   # v0.21.53 cz. 2 (#40): title_en
     im = Image.new("RGB", (240, 160), BRAND_VIOLET)
     d = ImageDraw.Draw(im)
     # "plac budowy": pas ostrzegawczy u dołu
@@ -502,10 +675,10 @@ def make_title():
     im.paste(logo, (80, -6), logo)
     centered(d, 66, "PlanBudowlany", ImageFont.truetype(FONT_SANS_B, 22), (250, 250, 250))
     centered(d, 91, "ROGUELIKE", ImageFont.truetype(FONT_SANS_B, 14), BRAND_ORANGE)
-    centered(d, 109, "Zbuduj dom. Przetrwaj budowę.", ImageFont.truetype(FONT_SANS, 10), (225, 220, 255))
-    screen_bg("title", im)
+    centered(d, 109, tagline, ImageFont.truetype(FONT_SANS, 10), (225, 220, 255))
+    screen_bg(name, im)
 
-def make_end():
+def make_end(name="end", lines=("Zaplanuj prawdziwą", "budowę:")):   # v0.21.53 cz. 2 (#40): end_en
     im = Image.new("RGB", (240, 160), BRAND_VIOLET)
     d = ImageDraw.Draw(im)
     qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=3, border=2)
@@ -516,12 +689,24 @@ def make_end():
     logo = logo_image(40)
     im.paste(logo, (6, 4), logo)
     f = ImageFont.truetype(FONT_SANS_B, 11)
-    d.text((6, 48), "Zaplanuj prawdziwą", font=f, fill=(250, 250, 250))
-    d.text((6, 62), "budowę:", font=f, fill=(250, 250, 250))
+    d.text((6, 48), lines[0], font=f, fill=(250, 250, 250))
+    d.text((6, 62), lines[1], font=f, fill=(250, 250, 250))
     d.text((6, 80), URL, font=ImageFont.truetype(FONT_SANS_B, 10), fill=(255, 255, 255))
     d.rectangle([0, 104, 240, 105], fill=BRAND_ORANGE)
-    screen_bg("end", im)
+    screen_bg(name, im)
     return qr.version, q.size
+
+# Elita (#28): paleta postaci ze złotym obrysem i ciepłym, złotawym odcieniem (sprite problemu zmienia tylko paletę).
+ELITE_GOLD = (255, 196, 40)
+def elite_palette():
+    pal = [SPR_PAL[0], (255, 204, 40)]   # obrys (K) złoty = "złota ramka"
+    for c in SPR_PAL[2:]:
+        pal.append(tuple(int(c[i] * 0.5 + ELITE_GOLD[i] * 0.5) for i in range(3)))
+    return pal
+
+def make_elite_palette():
+    write_bmp(os.path.join(G, "actors_elite.bmp"), [0] * 256, 16, 16, elite_palette(), 4)
+    write_json("actors_elite", {"type": "sprite", "height": 16})
 
 if __name__ == "__main__":
     os.makedirs(G, exist_ok=True)
@@ -533,12 +718,16 @@ if __name__ == "__main__":
     import pixel_art as pa
     write_bmp(os.path.join(G, "particles.bmp"), pa.particle_frames(), 8, 8 * len(pa.PARTICLES), SPR_PAL, 4)
     write_json("particles", {"type": "sprite", "height": 8})
-    write_bmp(os.path.join(G, "houses.bmp"), pa.house_frames(), 16, 16 * 25, SPR_PAL, 4)
+    write_bmp(os.path.join(G, "houses.bmp"), pa.house_frames(), 16, 16 * (4 * len(pa.WORKERS) + 1 + len(pa.DECOR)), SPR_PAL, 4)
     write_json("houses", {"type": "sprite", "height": 16})
     # osobna paleta (inaczej Butano współdzieli ją z postaciami i szarość ikony objęłaby bohatera)
     icon_pal = list(SPR_PAL); icon_pal[SK] = (0, 0, 0)   # kolor skóry nieużywany w ikonach
     write_bmp(os.path.join(G, "ability_icons.bmp"), pa.ability_icon_frames(), 16, 16 * len(pa.ABILITY_ICONS), icon_pal, 4)
     write_json("ability_icons", {"type": "sprite", "height": 16})
+    # menu akcji pod START (atak, termos, czekaj, ramka wyboru), kłódka i strzałki wyboru zawodu; też ikona termosu w HUD
+    write_bmp(os.path.join(G, "menu_icons.bmp"), pa.menu_icon_frames(), 16, 16 * len(pa.MENU_ICONS), SPR_PAL, 4)
+    write_json("menu_icons", {"type": "sprite", "height": 16})
+    make_elite_palette()
     # prolog: pickup (32x16, 2 klatki kół)
     tf = pa.truck_frames()
     write_bmp(os.path.join(G, "truck.bmp"), tf, 32, 32, SPR_PAL, 4)
@@ -546,7 +735,9 @@ if __name__ == "__main__":
     print("phone tiles:", make_phone())
     make_tiles()
     make_title()
+    make_title("title_en", "Build a house. Survive the build.")
     print("QR version/size:", make_end())
+    make_end("end_en", ("Plan a real", "build:"))
     h = ["// WYGENEROWANE przez tools/make_assets.py - indeksy koloru tła ekranów (gradient HDMA).", "#pragma once", "",
          "namespace screen_info", "{"]
     h += [f"    constexpr int {n}_bg_index = {i};" for n, i in SCREEN_BG_INDEX.items()]

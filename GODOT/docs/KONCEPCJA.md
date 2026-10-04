@@ -123,3 +123,83 @@ Szkic ekranu (1280×720): telefon w pionie na środku, mapa etapu w tle rozmyta 
 | Rzut? | 2.5D (siatka turowa, kamera 3/4, dynamiczne światło). |
 | Czas a telefon? | Gra turowa; akcje w telefonie są poza czasem i nie zużywają tury. |
 | Dane? | Statystyki, zawody, przedmioty itp. wspólne z GBA (jeden JSON); grafika i UI osobno. |
+
+## 8. Postęp
+
+### Kamień milowy 1 – rdzeń (zrobione, 2026-09-25)
+
+- `LifeLike.Core` zastąpił stary fantasy-rdzeń (mag/wojownik/szczur, `DungeonGenerator`). Logika z `GBA/include/core.h`
+  i `meta.h` przeniesiona 1:1: generator xorshift32, shadowcasting, walka, AI, moce z rangami, stany, sprzęt,
+  narzędzia, dropy, akty z bossami (zapowiadane uderzenie), Hurtownia, poziomy postaci, NG+, dziennik, celowanie,
+  profil (Szkolenia, odblokowania, odznaki, katalog, Osiedle, bankowanie XP, migracje zapisu) i zapis budowy.
+- Dane: gra czyta wspólny `GBA/data/game.json` (kopiowany przy buildzie do `godot/data/`), parser ignoruje nieznane pola.
+- Testy: przypadki z `GBA/tests/core_tests.cpp` jako xUnit (z balansem na botach) + **test złoty**:
+  `GBA/tests/golden_dump.cpp` zapisuje 15 przebiegów bota, C# odtwarza je krok po kroku (skrót stanu po każdym
+  kroku, pełne zrzuty na etapach) – ten sam seed daje identyczną grę.
+- Godot: grywalna wersja 2D (prostokąty i litery, mgła wojny, HUD tekstowy, ekrany tekstowe: tytuł, Szkolenia,
+  harmonogram, Hurtownia, podgląd, koniec gry z NG+), sterowanie klawiatura/pad/mysz jak na GBA,
+  test dymny `--smoke` (bot gra 3 etapy w headless Godot).
+- Różnice względem GBA: zapis budowy to serializacja pól (nie `memcpy` struktury), celowanie pod A wybiera najbliższy
+  cel (bez przełączania strzałkami), brak telefonu, dźwięku, prologu i animacji – to kolejne kamienie milowe.
+
+### Kamień milowy 2 + część 4 – telefon i oprawa pikselowa (zrobione, 2026-09-25)
+
+- Grafika, font i dźwięk z GBA: `GODOT/tools/export_godot_assets.py` (deterministyczny, czyta tylko `GBA/`) zapisuje
+  do `godot/assets/` postacie i wrogów 32x32 (Scale2x), bogatsze kafle 32x32 dla 8 etapów w paletach z GBA,
+  cząsteczki, ikony, plansze tytułu/końca, pikselowy font z polskimi znakami i dźwięki (muzyka `.mod` -> `.mp3`).
+- Obraz 640x360 skalowany 2x (ostre piksele, więcej pól na ekranie niż na GBA): mapa z kafli, cienie, płynny ruch,
+  szturchnięcie przy ataku, błysk trafienia, mgła z miękkim światłem (tekstura mgły z filtrowaniem liniowym),
+  pola ciosu bossa, znacznik celu, „!”, mini paski HP, liczby KRYT!/Unik!, cząsteczki mocy, wstrząs i błyski ekranu.
+- HUD 1:1 z GBA (pasek HP, poziom, etap, stany z turami, termos, ikona mocy z odliczaniem, gasnący dziennik).
+- Telefon pionowo na środku (tło rozmyte i przyciemnione, wysuwa się z dołu, `Tab`/SELECT): zakładki w grze
+  Zadania, Usterki (portrety problemów), Start, Sprzęt, Koszty; profil na tytule: Odznaki/Zlecenia/Pamiątki, Katalog,
+  Osiedle, Zespół, Koszty = Szkolenia; wiadomości SMS, paczka sprzętu, harmonogram, Hurtownia. Powiadomienia push
+  (stos banerów z dźwiękiem; przy otwartym telefonie w kolumnie obok).
+- Ekrany: tytuł (logo, wersja z game.json), wybór zawodu jak GBA v0.21.45 (karuzela portretów, odblokowane najpierw,
+  karta z paskami statystyk), koniec z kodem QR i konfetti. Zrzuty `--screenshot --scene` (26 scen), test dymny
+  otwiera wszystkie zakładki i ekrany i kończy się błędem, gdy któryś się nie rysuje.
+- Jeszcze nie (stan po kamieniu 2): 2.5D i dynamiczne światło (kamień 4); resztę zrobił kolejny krok (niżej).
+
+### Architektura i parytet z GBA (zrobione, 2026-09-25)
+
+- Warstwa Godota podzielona na klasy (katalog = przestrzeń nazw): `Main` to cienki korzeń, `App` składa sesję,
+  węzły i ekrany; `Screens/` – maszyna stanów `ScreenFlow` i ekrany (`Screen`: Enter / Exit / HandleInput / Process,
+  deklaracja warstw i muzyki), `Session/GameSession` z `SessionEvents` (awans, drop, moc gotowa, boss, etap, koniec
+  budowy, odznaki) – banery, dźwięki i efekty mapy tylko obserwują; `Input/` – akcje jak przyciski GBA (`GameAction`,
+  `InputCmd`), wstrzykiwanie z przycisków ekranowych; `Debug/` – zrzuty i test dymny poza kodem produkcyjnym;
+  kolory w `Pal`/`Ink`, skale i rozmiar ekranu tylko w `Layout`. Zachowanie bez zmian (ten sam wynik testu
+  dymnego, zrzuty 26 scen różnią się tylko fazą animacji).
+- Ekran: stretch `canvas_items` + `expand` (dowolne proporcje bez pasów), mapa ~9 pól w pionie jak na GBA
+  (2.5 px okna na piksel grafiki), bohater w środku pola między paskami HUD, HUD w 1.5x, podgląd mapy dopasowany do
+  odkrytej części; menu tytułu i karta zawodu w większym foncie (skala ułamkowa fontu).
+- Celowanie pod trzymanym A (zasięg + celownik z GBA, strzałki zmieniają cel, puszczenie atakuje) i podgląd pod
+  trzymanym B (karta wroga: nazwa, HP, obrażenia z premią, opis; krótkie B = czekaj) – jak na GBA.
+- Prolog przy pierwszej budowie (`story.prologue`, `prologueCaptions`, pickup z GBA, flaga `prologue_seen`) i ekran
+  „Jak grać” (`help_seen`, też z menu tytułu).
+- Rada kierownika na harmonogramie (`tips`, kolejna z każdym etapem; przyciski GBA w tekście zamieniane na klawisze
+  z mapy wejścia – dane w game.json bez zmian).
+- Powiadomienia push w prawym górnym rogu pod HUD (nie zasłaniają „UWAGA: cios za…”), kliknięcie / dotknięcie
+  otwiera powiązaną zakładkę telefonu.
+- Eksporter: 4 klatki chodu i klatka oddechu dla zawodów, problemów i bossów (`actors_anim.png`), pickup z prologu.
+- Dalej: układ pionowy z przyciskami ekranowymi (telefon), 2.5D i światło (kamień 4) – układ pionowy zrobiony (niżej).
+
+### Wersja na telefon: pion, dotyk jedną ręką, ustawienia, iOS (zrobione, 2026-09-25)
+
+- Na iOS/Androidzie gra działa pionowo (komputer bez zmian, 1280x720 poziomo). `Layout` wybiera bazę 360x640
+  pionowo (iPhone 14 Pro Max: UI 430x932, piksel UI = punkt iOS, skala 3) i 640x360 poziomo, skala całkowita
+  z opcją „duży tekst”, bezpieczny obszar z `DisplayServer.GetDisplaySafeArea()`: HUD pod wyspą, pasek akcji
+  nad paskiem domowym, mapa ~9 pól na szerokość, telefon PlanBudowlany jako aplikacja na cały ekran.
+- Sterowanie jedną ręką zamiast A/B: pasek akcji w strefie kciuka z ikonami menu akcji z GBA (Atak – trzymanie:
+  celownik pod palcem; Moc – szara z odliczaniem / pulsująca; Termos z liczbą kaw; Czekaj – trzymanie: karta
+  problemu; Telefon – trzymanie: mapa etapu), przesunięcie palcem = krok (trzymanie – kolejne kroki), dotknięcie
+  pola = marsz krok po kroku (staje przy nowym problemie, obrażeniach, problemie obok), dotknięcie problemu = atak
+  albo podejście, przytrzymanie = karta; opcjonalnie gałka i pasek dla lewej ręki; wibracje przy trafieniu,
+  obrażeniach i powiadomieniu. W telefonie: przyciski stron zamiast podpowiedzi klawiszy, dotyk wierszy,
+  przesunięcie w bok = zakładka. Teksty z GBA (rady kierownika) mówią o przyciskach paska („Przytrzymaj Atak”).
+- Ustawienia pod kluczem w rogu (tytuł i mapa, Esc): głośności, wibracje, sterowanie, ręka, tekst, Jak grać,
+  Zapisz i wyjdź / Porzuć budowę (zapis budowy jak `run_save` na GBA, „Kontynuuj budowę” na tytule), wersja
+  i link planbudowlany.online (także na tytule). `user://settings.cfg` osobno od profilu.
+- Eksport iOS (projekt Xcode) i Android w `export_presets.cfg`, ikona aplikacji z eksportera,
+  `tools/ios_deploy.sh` – build, podpis i instalacja na iPhonie jednym poleceniem.
+- Dalej: 2.5D i światło (kamień 4), zrzut ekranu z urządzenia w automatycznych testach.
+

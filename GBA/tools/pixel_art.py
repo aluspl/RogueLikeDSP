@@ -67,16 +67,50 @@ TOOLS = {
     "wrench":  [(12, 11, "g"), (13, 10, "g"), (14, 9, "g"), (14, 8, "g"), (15, 8, "g"), (15, 7, "K")],    # klucz
     "grinder": [(12, 9, "l"), (13, 9, "l"), (14, 8, "g"), (15, 8, "g"), (14, 10, "g"), (15, 10, "g"),
                 (15, 9, "Y")],                                                                             # szlifierka
+    "tile":    [(12, 7, "K"), (13, 7, "K"), (14, 7, "K"), (15, 7, "K"), (12, 8, "R"), (13, 8, "O"), (14, 8, "R"),
+                (15, 8, "K"), (12, 9, "R"), (13, 9, "R"), (14, 9, "O"), (15, 9, "K"), (13, 10, "K"), (14, 10, "K")],  # dachówka
+    "hawk":    [(11, 8, "W"), (12, 7, "W"), (13, 7, "W"), (14, 7, "W"), (12, 8, "W"), (13, 8, "W"), (14, 8, "W"),
+                (15, 8, "K"), (11, 9, "g"), (12, 9, "g"), (13, 9, "g"), (14, 9, "g"), (15, 9, "K"), (13, 10, "T"),
+                (13, 11, "T")],                                                                            # paca z tynkiem
+    "bucket":  [(12, 7, "K"), (13, 7, "Y"), (14, 7, "Y"), (15, 7, "K"), (12, 8, "Y"), (13, 8, "Y"), (14, 8, "Y"),
+                (15, 8, "K"), (12, 9, "Y"), (13, 9, "Y"), (14, 9, "Y"), (15, 9, "K"), (12, 10, "l"), (13, 10, "K"),
+                (14, 10, "l"), (15, 10, "K")],                                                             # łyżka koparki z zębami
+    # v0.21.51 cz. 2: zawody z sekretnych zleceń
+    "torch":   [(12, 10, "K"), (13, 10, "g"), (13, 9, "g"), (14, 8, "g"), (15, 7, "C"), (15, 6, "W"), (14, 5, "Y"),
+                (13, 6, "Y")],                                                                             # uchwyt spawalniczy, płomień, iskry
+    "pole":    [(13, 2, "K"), (13, 3, "R"), (13, 4, "W"), (13, 5, "R"), (13, 6, "W"), (13, 7, "R"), (13, 8, "W"),
+                (13, 9, "R"), (13, 10, "W"), (13, 11, "R"), (13, 12, "K")],                                # łata geodezyjna w pasy
+    "hammer":  [(12, 7, "K"), (13, 7, "l"), (14, 7, "l"), (15, 7, "K"), (12, 8, "K"), (13, 8, "g"), (14, 8, "g"),
+                (15, 8, "K"), (13, 9, "T"), (13, 10, "T"), (13, 11, "T")],                                 # młotek ciesielski
+}
+
+# Twarz fachowca inna niż wspólna (przyłbica spawacza): wiersz -> 16 znaków ("." = bez zmian).
+FACES = {
+    "torch": {5: "....KNNNNNNK....", 6: "....KNCNNCNK....", 7: "....KNNNNNNK...."},
 }
 
 # (kask, kamizelka, narzędzie) w kolejności zawodów z data/game.json
 WORKERS = [("W", "O", "log"), ("O", "B", "trowel"), ("Y", "T", "nailgun"),
-           ("B", "N", "tester"), ("R", "B", "wrench"), ("G", "g", "grinder")]
+           ("B", "N", "tester"), ("R", "B", "wrench"), ("G", "g", "grinder"),
+           ("C", "R", "tile"), ("l", "P", "hawk"), ("D", "O", "bucket"),     # v0.21.49: Dekarz, Tynkarz, Operator koparki
+           ("g", "N", "torch"), ("P", "O", "pole"), ("T", "Y", "hammer")]   # v0.21.51 cz. 2: Spawacz, Geodeta, Majster
 
 
-def worker_frame(index, frame):
+HELMET_MASK = "D"   # v0.21.52: kolor kasku z odznaki / zlecenia - kask w indeksie palety D, gra podmienia ten kolor w palecie bohatera
+
+
+def worker_frame(index, frame, stripes=False, helmet_mask=False):
     helmet, vest, tool = WORKERS[index]
-    px = worker(helmet, vest, frame)
+    px = worker(HELMET_MASK if helmet_mask else helmet, vest, frame)
+    if stripes:   # v0.21.51 cz. 2: kask w paski (wygląd z sekretnego zlecenia) - biało-czerwone pasy na kasku
+        for y in range(1, 4):
+            for x in range(16):
+                if WORKER_TOP[y][x] in "HW":
+                    px[y * 16 + x] = CODES["W" if x % 2 == 0 else "R"]
+    for y, row in FACES.get(tool, {}).items():
+        for x, ch in enumerate(row):
+            if ch != ".":
+                px[y * 16 + x] = CODES[ch]
     for x, y, ch in TOOLS[tool]:
         px[y * 16 + x] = CODES[ch]
     return px
@@ -249,6 +283,167 @@ def enemy_frame(index, frame):
     return px
 
 
+# ------------------------------------------------------------------ v0.21.49: problemy etapów (klatki 61-80, druga 81-100)
+# Kolejność jak nowe wrogi w data/game.json (od "woda"); klatka B = oddech jak u pozostałych.
+STAGE_ENEMIES = {
+"woda": [
+"................","................","......KKKK......",".....KCCCCK.....","....KCWCCCCK....","....KCCCCCCK....",
+"...KCCKCCKCCK...","...KCCKCCKCCK...","...KCCCCCCCCK...","..KCCCBBBBCCCK..",".KCCBCCCCCCBCCK.",".KBCCCCCCCCCCBK.",
+"KTTKBBBBBBBBKTTK","KTTTKKKKKKKKTTTK",".KTTTTTTTTTTTTK.","..KKKKKKKKKKKK.."],
+"kamien": [
+"................","................","................",".....KKKKKK.....","...KKlllgggKK...","..KllllggggggK..",
+"..KlWllgggggggK.",".KlllKKgggKKggK.",".KlllgggggggggK.",".KllggggKKKgggK.",".KgggggggggggDK.",".KggggggggggDDK.",
+"..KgggDgggggDK..","...KKKKKKKKKK...","..TTTTTTTTTTTT..","................"],
+"osuwisko": [
+"................","................","........KK......",".......KTTK.....","......KTTTTK....",".....KTWKTTTK...",
+"....KTTKKTWKTK..","...KTTTTTTKKTTK.","..KTTgTTTTTTTTK.",".KTTTTTKKKTTgTTK","KTTTgTTTTTTTTTTK","KKKKKKKKKKKKKKKK",
+"l.l...l...l.....","..l.l...l...l...","................","................"],
+"folia": [
+"................","..KKKKKKKKKKKK..","..KNNNNNNNNNNK..","..KNWKNNNNWKNK..","..KNKKNNNNKKNK..","..KNNNN..NNNNK..",
+"..KNNN....NNNK..","..KNNNN..NNNNK..","..KNYYYNNNNNNK..","..KNYYYNNNNNNK..","..KNNNNNNNKKNK..","..KNNNNNNNK.KK..",
+"..KNNNNNNNNNNK..","...KNNKNNNKNNK..","....KK.KKK.KK...","................"],
+"krzywy_mur": [
+"................","....KKKKKKKK....","....KRRKORRK....","...KKKKKKKKKK...","...KORRKRRORK...","..KKKKKKKKKKK...",
+"..KRWKRRWKRRK...","..KRKKRRKKRRK...",".KKKKKKKKKKKK...",".KORRKRRORRKK...",".KKKKKKKKKKKK...","KRRORKRRRKRRK...",
+"KKKKKKKKKKKKK...","TTTTTTTTTTTTTT..","................","................"],
+"mostek": [
+"................","...R....R.......","....R..R..R.....","...R....R.......","..KKKKKKKKKKKK..","..KBBBBBBBBBBK..",
+"..KBWKBBBBWKBK..","..KBKKBBBBKKBK..","..KCCCCCCCCCCK..","..KCCCKKKKCCCK..","..KCCCCCCCCCCK..","..KBBBBBBBBBBK..",
+"..KKKKKKKKKKKK..","...W...W...W....","....W...W...W...","................"],
+"ugiecie": [
+"................","................","KKK..........KKK","KllKK......KKllK","KlllllKKKKKllllK",".KllllllllllllK.",
+".KlllWKllWKlllK.","..KllKKllKKllK..","..KllllllllllK..","...KlllKKlllK...","...KllKllKllK...","....KKllllKK....",
+"......KKKK......","......g..g......","................","................"],
+"zbrojenie": [
+"................","....K......K....","...KOK....KOK...","...KOK....KOK...","..KKKKKK.KKKKK..","..KlllllKKlllK..",
+"..KlWKllKlWKlK..","..KlKKlKllKKlK..","..KllllKlllllK..","..KlllKllllllK..","..KllllKllKKlK..","..KlllllKlllK...",
+"..KKKKKK.KKKKK..","................","................","................"],
+"papa": [
+"................","..KKKKKKKKKKKK..",".KNNNNNNNNNNNNK.",".KNgNNNNNNNNgNK.",".KNWKNNNNNWKNNK.",".KNKKNNNNNKKNNK.",
+".KNNNNNKKNNNNNK.","..KKKKKKKKKKKK..","...KC....KC.....","...KC.....KC....","....C..C...C....","..C...KCK.......",
+".....KCCCK..C...","......KKK.......","................","................"],
+"rynna": [
+"................","......G..D......","....DGGDGGDG....","KKKKGDGGDGDGKKKK","KlllKGDKKDGKlllK","KlllllllllllllgK",
+"KgWKllllllWKllgK",".KKKllllllKKlgK.","..KgllllllllgK..","...KKKKKKKKKK...","....C....C......","....C..C.C..C...",
+"...CCC.C...CCC..","....C...........","................","................"],
+"pustak": [
+"................","................","..KKKKKKKKKKKK..","..KOOOOOKOOOOK..","..KOKKOKOKKOOK..","..KOKKOOKKKOOK..",
+"..KOOOOKOOOOOK..","..KRWKRRKRWKRK..","..KRKKRKRRKKRK..","..KRRRRRKRRRRK..","..KRRKKRRKRRRK..","..KRRRRKRRRRRK..",
+"..KKKKKKKKKKKK..","...Y..Y...Y.....","....Y....Y......","................"],
+"wymiarowka": [
+"................","................","...KKKKKKK......","..KYYYYYYYK.....","..KYWKYWKYK.....","..KYKKYKKYK.....",
+"..KYYYYYYYKKKKKK","..KYYKKKYYYYKYYK","..KYYYYYYYKKKKKK","..KgggggggK.....","...KKKKKKK......","....K...K.......",
+"................","................","................","................"],
+"ramka": [
+"..KKKKKKKKKKKK..","..KWWWWWWWWWWK..","..KWCCCCKCCCWK..","..KWCWKCKCWKWK..","..KWCKKCKCKKWK..","..KWCCCCKCCCWK..",
+"..KWKKKKKKKKWK..","..KWCCCCKCCCWK..","..KWCCKKKKCCWK..","..KWCCCCKCCCWK..","..KWWWWWWWWWWK..","..KKKKKKKKKKKK..",
+"l..............l",".l............l.","................","................"],
+"przeciag": [
+"................","......KKKKK.....","....KKlllllKK...","...KllWWlllllK..","..KllWKlllWKlK..","..KlllKKllKKlK..",
+"..KllllllllllK..","...KlllKKKllK...","....KllllllK....",".....KlllllK....","....KlllKKK.....","...KllK.........",
+"..KlK...........","..KK............","................","................"],
+"zapowietrzenie": [
+"................","................","......KKKK......","....KKWWCCKK....","...KWWCCCCCCK...","...KWCWKCWKCK...",
+"...KCCKKCKKCK...","...KCCCCCCCCK...","...KCCCKKCCCK...","....KKCCCCKK....","KKKKKKKKKKKKKKKK","gggggggggggggggg",
+"llllllllllllllll","KKKKKKKKKKKKKKKK","................","................"],
+"uziemienie": [
+"................","..Y.........Y...","...Y..KKKK.Y....","....KKggggKK....","...KggggggggK...","...KgWKggWKgK...",
+"...KgKKggKKgK...","...KggggggggK...","...KggKKKKggK...","...KgKOKKOKgK...","...KggggggggK...","....KKKKKKKK....",
+"......KYK.......",".....KYK........","....KYK.........","....KK.........."],
+"rysa": [
+"................","..KKKKKKKKKKKK..","..KlWWWWKWWWWK..","..KWWWWKWWWWlK..","..KWKWWWKWWKWK..","..KWWWWKWWWWWK..",
+"..KWWWWWKWWWWK..","..KWWKKWWKKWWK..","..KWWWKKKKWWWK..","..KlWWWWKWWWWK..","..KWWWWKWWWWlK..","..KKKKKKKKKKKK..",
+"................","................","................","................"],
+"wilgoc": [
+"................","................",".....KKKKKK.....","...KKBBBBBBKK...","..KBBNBBBBNBBK..","..KBBBBBBBBBBK..",
+".KBBWKBBBBWKBBK.",".KBBKKBBBBKKBBK.",".KBBBBBGBBBBBBK.",".KBNBBBBBBBBNBK.","..KBBBKKKKBBBK..","..KBBBBBBBBBBK..",
+"...KBKBBBKBKK...","....K.KBK.K.....",".......C........","................"],
+"odpryski": [
+"................",".l.........W....","...W....l.......","....KKKKKKKK..l.","....KCCCCCCK....","...KCWKCCWKCK...",
+"...KCKKCCKKCK...","...KCCCCCCCCK...","...KCCKKKKCCK...","...KCCCCCCCK....","....KCCCCCK.....",".....KKKKK..W...",
+"..W.............","........l.......","................","................"],
+"poprawki": [
+"................","...KKKKKKKKK....","...KYYYYYYYKK...","...KYRYYYRYYK...","...KYYRYRYYYK...","...KYYYRYYYYK...",
+"...KYYRYRYYYK...","...KYRYYYRYYK...","...KYYYYYYYYK...","...KYWKYYWKYK...","...KYKKYYKKYK...","...KYYYYYYYYK...",
+"...KYYKKKKYYK...","...KKKKKKKKKK...","................","................"],
+}
+STAGE_ENEMY_ORDER = list(STAGE_ENEMIES)
+
+# v0.21.49 (część 3): Akt 0 „Papierologia” - problemy papierowe i sieciowe (klatki 101-109, druga klatka 110-118).
+# Zawsze przedmioty (kartki, pieczątki, rury), nigdy ludzie. Ostatni: boss Decyzja odmowna (stos pism z pieczątką).
+PRELUDE_ENEMIES = {
+"podpis": [   # kartka z pustym miejscem na podpis (czerwony krzyżyk), ucieka na cienkich nóżkach
+"................","....KKKKKKKK....","....KWWWWWWKK...","....KWggggWWKK..","....KWWWWWWWWK..","....KWKWWKWWWK..",
+"....KWKWWKWWWK..","....KWWWWWWWWK..","....KWRWRWWWWK..","....KWWRWWWWWK..","....KWRWRggggK..","....KWWWWWWWWK..",
+"....KKKKKKKKKK..",".....K.K..K.K...","....KK.K..KK.K..","................"],
+"wniosek": [   # teczka z wnioskiem i znakiem zapytania - raz znika, potem wraca
+"................","................","..KKKKK.........",".KYYYYYKKKKKKK..",".KYYYYYYYYYYYYK.",".KTTTTTTTTTTTTK.",
+".KYYYYYKKKYYYYK.",".KYKKYKYYYKYYYK.",".KYKKYYYYKYYYYK.",".KYYYYYYKYYYYYK.",".KYYYYYYYYYYYYK.",".KYYYKKYYKYYYYK.",
+".KYYYYKKYYYYYYK.",".KTTTTTTTTTTTTK.","..KKKKKKKKKKKK..","................"],
+"termin_odw": [   # kartka z kalendarza z datą w czerwonym kółku i tykającym zegarkiem
+"................","...K..K..K..K...","..KKKKKKKKKKKK..","..KRRRRRRRRRRK..","..KKKKKKKKKKKK..","..KWWWWWWWWWWK..",
+"..KWKWWWWWKWWK..","..KWKWWWWWKWWK..","..KWWWRRRWWWWK..","..KWWRWKWRWWWK..","..KWWRWKKRWWWK..","..KWWRWWWRWWWK..",
+"..KWWWRRRWWWWK..","..KWWWWWWWWWWK..","..KKKKKKKKKKKK..","................"],
+"niezgodnosc": [   # plan (niebieski rysunek) przekreślony na czerwono, rzuca uwagami z daleka
+"................","................",".KKKKKKKKKKKKKK.",".KBBBBBBBBBBBRK.",".KBWWWWWWWWBRBK.",".KBWBBBBBBWRBBK.",
+".KBWBKBBKRBBBBK.",".KBWBKBBRBWBBBK.",".KBWBBBRBBWBBBK.",".KBWBBRBBBWBBBK.",".KBWWRWWWWWBBBK.",".KBBRBBBBBBBBBK.",
+".KBRBBBBBBBBBBK.",".KKKKKKKKKKKKKK.","................","................"],
+"pieczatka": [   # pieczątka: drewniany uchwyt, gumowa stopka z czerwonym tuszem, groźne oczy
+"................","......KKKK......",".....KTTTTK.....",".....KTOTTK.....","......KTTK......","......KTTK......",
+"....KKKKKKKK....","...KTTTTTTTTK...","...KTKKTTKKTK...","...KTTKTTKTTK...","...KTTTTTTTTK...","..KKKKKKKKKKKK..",
+"..KRRRRRRRRRRK..","..KRRWRRRRWRRK..","...KKKKKKKKKK...","................"],
+"rura": [   # pęknięta rura z tryskającą wodą
+"................","........C.......","......C.C.C.....","........C.......","..KKKKKK.KKKKK..",".KllllllKlllllK.",
+"KlWWllllgKlllllK","KlllKllllKllKlgK","KlllKllllKllKlgK","KgggggggggKggggK",".KKKKKKKKKKKKKK.","....K......K....",
+"...KgK....KgK...","...KKK....KKK...","......C.........","....C...C......."],
+"cisnienie": [   # manometr ze wskazówką na zerze - stoi i dopompowuje innych
+"................","......KKKK......",".....KllllK.....","....KKKKKKKK....","..KKWWWWWWWWKK..",".KWWRWWWWWWBWWK.",
+".KWWWWWWWWWWWWK.","KWWWKWWWWKWWWWK.","KWWWKWWWWKWWWWK.","KWRKKWWWWWWWBWK.","KWKKWWWWWWWWWWK.",".KWWWWWKKWWWWK..",
+".KWWWWWWWWWWWK..","..KKWWWWWWWKK...","....KKKKKKK.....","......KgK......."],
+"kabel": [   # zwój kabla z iskrami - koparka w niego trafiła
+"...Y......Y.....","....Y....Y......","..Y..KKKKK...Y..","....KOOOOOK.....","...KOKKKKKOK....","..KOKOOOOOKOK...",
+"..KOKOKKKOKOK...","..KOKOKWKOKOK.Y.","..KOKOKKKOKOK...","..KOKOOOOOKOKKKK","..KOKKKKKKKOOOOK","...KOOOOOOOKKKKK",
+"....KKKKKKKK..Y.","..Y.KWK.KWK.....","....KKK.KKK..Y..","................"],
+"decyzja": [   # boss: stos pism z wielką czerwoną pieczątką ODMOWA i gniewnymi oczami
+".KKKKKKKKKKKKK..",".KWWWWWWWWWWWWK.","KKKKKKKKKKKKKWK.","KWWWWWWWWWWWKWK.","KWKKWWWWWKKWKWK.","KWWKKWWWKKWWKKK.",
+"KWWKKWWWKKWWK...","KWWWWWWWWWWWK...","KRRRRRRRRRRRRK..","KRWRWRWWRWRWRK..","KRWRWRWRRWRWRK..","KRRRRRRRRRRRRK..",
+"KWWWWKKKKWWWWK..","KWggggggggggWK..","KWWWWWWWWWWWWK..","KKKKKKKKKKKKKK.."],
+}
+PRELUDE_ENEMY_ORDER = list(PRELUDE_ENEMIES)
+
+
+def prelude_enemy_frame(index, frame):
+    px = parse(PRELUDE_ENEMIES[PRELUDE_ENEMY_ORDER[index]])
+    if frame == 1:
+        px = [0] * 16 + px[:16 * 15]
+    return px
+
+
+# Dokumenty Aktu 0 (pieczątki, klatki 119-121): podpis, mapa, uzgodnienie - złota poświata, bez oczu (to znajdźki).
+DOCUMENTS = [
+    ["................",".Y..........Y...","....KKKKKKKK....","....KWWWWWWKK...","....KWggggWWWK..","....KWWWWWWWWK..",
+     "....KWggggggWK..","....KWWWWWWWWK..","....KWWWWWBWWK..","....KWWBWBWBWK..","....KWBWBWWWBK..","....KWggggggWK..",
+     "....KWWWWWWWWK..","....KKKKKKKKKK..","..Y..........Y..","................"],   # podpis (niebieski zawijas)
+    ["................","..Y.........Y...","..KKKKKKKKKKKK..","..KGGGBBBGGGGK..","..KGGBBGGGGYGK..","..KGBBGGGGGGGK..",
+     "..KKKKKKKKKKKK..","..KGGGGGBBGGGK..","..KGRRGGBBBGGK..","..KGRRGGGBBGGK..","..KKKKKKKKKKKK..","..KGGGGGGGBBGK..",
+     "..KGGGGGGGGBBK..","..KKKKKKKKKKKK..",".Y..........Y...","................"],   # mapa (zgięta w harmonijkę)
+    ["................",".Y...........Y..","...KKKKKKKKKK...","...KWWWWWWWWKK..","...KWggggggWWK..","...KWWWWWWWWWK..",
+     "...KWgggggWWWK..","...KWWWWRRRWWK..","...KWWWRWWWRWK..","...KWWWRWRWRWK..","...KWWWRWWWRWK..","...KWWWWRRRWWK..",
+     "...KWWWWWWWWWK..","...KKKKKKKKKKK..","..Y.........Y...","................"],   # uzgodnienie (czerwona pieczęć)
+]
+
+
+def document_frame(i):
+    return parse(DOCUMENTS[i])
+
+
+def stage_enemy_frame(index, frame):
+    px = parse(STAGE_ENEMIES[STAGE_ENEMY_ORDER[index]])
+    if frame == 1:
+        px = [0] * 16 + px[:16 * 15]
+    return px
+
+
 # ------------------------------------------------------------------ znajdźki
 PICKUPS = {
     "coffee": [
@@ -326,6 +521,102 @@ def pickup_frame(name):
     return parse(PICKUPS[name])
 
 
+# v0.21.50 cz. 3 (klatki 122-126): pole wydarzenia (telefon z dymkiem "!"), klucz do magazynu, skrzynia, pęknięcie muru
+# (nakładka na kafel muru, przezroczysta), drzwi magazynu z kłódką.
+PART3 = {
+    "event": [
+        ".......KKKKKKK..",
+        "......KYYYKYYYK.",
+        "......KYYYKYYYK.",
+        "......KYYYKYYYK.",
+        "......KYYYYYYYK.",
+        "......KYYYKYYYK.",
+        ".......KKKYKKK..",
+        "..KKKKKK..K.....",
+        "..KNNNNK........",
+        "..KCWWCK........",
+        "..KCCCCK........",
+        "..KCWWCK........",
+        "..KCCCCK........",
+        "..KCWCCK........",
+        "..KNNNNK........",
+        "..KKKKKK........"],
+    "key": [
+        "................",
+        "................",
+        "................",
+        "................",
+        "..KKKK..........",
+        ".KYYYYK.........",
+        "KYYKKYYKKKKKKKK.",
+        "KYK..KYYYYYYYYYK",
+        "KYYKKYYKKKKYKYK.",
+        ".KYYYYK....KYK..",
+        "..KKKK......K...",
+        "................",
+        "................",
+        "................",
+        "................",
+        "................"],
+    "chest": [
+        "................",
+        "................",
+        "...KKKKKKKKKK...",
+        "..KTTTTTTTTTTK..",
+        "..KTOTTTTTTOTK..",
+        "..KTTTTTTTTTTK..",
+        "..KKKKKYYKKKKK..",
+        "..KYYYYKKYYYYK..",
+        "..KTTTTKYKTTTK..",
+        "..KTOTTTKTTOTK..",
+        "..KTTTTTTTTTTK..",
+        "..KTTTTTTTTTTK..",
+        "..KKKKKKKKKKKK..",
+        "...KK......KK...",
+        "................",
+        "................"],
+    "crack": [
+        "................",
+        ".......K........",
+        "......Kl........",
+        "......KK........",
+        ".......Kl..K....",
+        "........K.Kl....",
+        "........KK......",
+        ".......K.Kl.....",
+        "......Kl..K.....",
+        ".....K.....K....",
+        "....KKl.....K...",
+        "...K.........K..",
+        "..K..g...g......",
+        "................",
+        "....g.g...g.g...",
+        "................"],
+    "door": [
+        "KKKKKKKKKKKKKKKK",
+        "KggggggggggggggK",
+        "KgKKKKKKKKKKKKgK",
+        "KgKTTTTTTTTTTKgK",
+        "KgKTOTTTTTTOTKgK",
+        "KgKTTTTTTTTTTKgK",
+        "KgKKKKKKKKKKKKgK",
+        "KgKTTTTKKTTTTKgK",
+        "KgKTTTKgKKTTTKgK",
+        "KgKTTKYYYYKTTKgK",
+        "KgKTTKYKKYKTTKgK",
+        "KgKTTKYYYYKTTKgK",
+        "KgKTOTKKKKTTOKgK",
+        "KgKTTTTTTTTTTKgK",
+        "KgKKKKKKKKKKKKgK",
+        "KKKKKKKKKKKKKKKK"],
+}
+PART3_ORDER = ["event", "key", "chest", "crack", "door"]
+
+
+def part3_frame(name):
+    return parse(PART3[name])
+
+
 # ------------------------------------------------------------------ cząsteczki 8x8
 # klatki: 0-2 pył (duży -> mały), 3-4 iskra, 5-8 konfetti (4 kolory), 9 gwiazdka awansu
 PARTICLES = [
@@ -362,6 +653,13 @@ PARTICLES = [
     [".KKKK...", "KGGDGK..", "KGDGGK..", "KGGGDK..", ".KGGK...", "..KK....", "........", "........"],
     ["...KYK..", "..KYK...", ".KYYYK..", "..KYK...", ".KYK....", ".KK.....", "........", "........"],
     ["........", ".C...C..", "C.C.C.C.", "...C...C", "........", "CCCCCCC.", "........", "........"],
+    # 24 stan Mokry (bohater i problemy): niebieska kropla; 25 zapylony (szara chmurka); 26 zmrożony (płatek)
+    ["...K....", "..KBK...", ".KBBBK..", "KBBWBBK.", "KBBBWBK.", ".KBBBK..", "..KKK...", "........"],
+    ["........", "..KKK...", ".KglgK..", "KgllggK.", "KggglgK.", ".KKKKK..", "l..l..l.", "........"],
+    ["...C....", ".C.C.C..", "..CWC...", "CCWWWCC.", "..CWC...", ".C.C.C..", "...C....", "........"],
+    # 27-28 (v0.21.50 cz. 3) podgląd mapy: magazyn (pęknięta ściana / drzwi), skrzynia
+    ["YYYYYYY.", "Y..K..Y.", "Y.K...Y.", "Y..KK.Y.", "Y...K.Y.", "Y..K..Y.", "YYYYYYY.", "........"],
+    ["........", ".KKKKK..", "KTTTTTK.", "KYYKYYK.", "KTTYTTK.", "KTTTTTK.", ".KKKKK..", "........"],
 ]
 
 
@@ -374,7 +672,7 @@ def particle_frames():
 
 
 # ------------------------------------------------------------------ Osiedle: domy 16x16
-# klatka = wielkość * 6 + zawód (dach w kolorze kasku zawodu), 24 = pusta działka
+# klatka = wielkość * liczba zawodów + zawód (dach w kolorze kasku zawodu), potem pusta działka
 HOUSE_SMALL = [
     "................",
     "................",
@@ -426,8 +724,75 @@ def house_frame(cls, size):
     return px
 
 
-def house_frames():
-    return [p for size in range(4) for cls in range(6) for p in house_frame(cls, size)] + parse(EMPTY_PLOT)
+# v0.21.50 cz. 4 (#35): ozdoby Osiedla - rosną z wygranymi (data/game.json: estate.decor), klatki za pustą działką
+DECOR = [
+    [   # Lipa
+        "................", "......GGGG......", "....GGGDGGGG....", "...GGDGGGGDGG...", "..GGGGGGDGGGGG..",
+        "..GDGGGGGGGDGG..", "..GGGGDGGGGGGG..", "...GGGGGGDGGG...", "....GGDGGGGG....", "......GTTG......",
+        ".......TT.......", ".......TT.......", ".......TT.......", "......TTTT......", "................",
+        "..GGGGGGGGGGGG.."],
+    [   # Ławka Zenka
+        "................", "................", "................", "................", "................",
+        "................", "................", "................", "..KKKKKKKKKKKK..", "..KTTTTTTTTTTK..",
+        "..KKKKKKKKKKKK..", "..KTTTTTTTTTTK..", "..KKKKKKKKKKKK..", "...KgK....KgK...", "...KgK....KgK...",
+        "..GGGGGGGGGGGG.."],
+    [   # Latarnia
+        "................", "......KKKK......", ".....KYYYYK.....", ".....KYWWYK.....", ".....KYYYYK.....",
+        "......KKKK......", ".......gg.......", ".......gg.......", ".......gg.......", ".......gg.......",
+        ".......gg.......", ".......gg.......", ".......gg.......", "......gggg......", "................",
+        "..GGGGGGGGGGGG.."],
+    [   # Plac zabaw: huśtawka
+        "................", "..KKKKKKKKKKKK..", "..KRRRRRRRRRRK..", "..KKKKKKKKKKKK..", "..KBK.K..K.KBK..",
+        "..KBK.K..K.KBK..", "..KBK.K..K.KBK..", "..KBK.K..K.KBK..", "..KBKKOOOOKKBK..", "..KBK......KBK..",
+        "..KBK......KBK..", "..KBK......KBK..", "..KBK......KBK..", "..KBK......KBK..", "..KKK......KKK..",
+        "..GGGGGGGGGGGG.."],
+    [   # Tablica PlanBudowlany ("PB")
+        "................", "................", ".KKKKKKKKKKKKKK.", ".KOOOOOOOOOOOOK.",
+        ".KOOWWOOWWOOOOK.", ".KOOWOWOWOWOOOK.", ".KOOWWOOWWOOOOK.", ".KOOWOOOWOWOOOK.", ".KOOWOOOWWOOOOK.",
+        ".KOOOOOOOOOOOOK.", ".KKKKKKKKKKKKKK.", "......KgK.......", "......KgK.......", "......KgK.......", "......KgK.......",
+        "..GGGGGGGGGGGG.."],
+    [   # Fontanna
+        "................", "................", ".......CC.......", "......C..C......", ".....C.CC.C.....",
+        "......CCCC......", ".......ll.......", "....C..ll..C....", "...CC..ll..CC...", "..KKKKKKKKKKKK..",
+        "..KlCCCCCCCClK..", "..KlCCWCCCWClK..", "..KllllllllllK..", "..KKKKKKKKKKKK..", "................",
+        "..GGGGGGGGGGGG.."],
+    # v0.21.52 cz. b (#44): ozdoby z poziomu inspektora
+    [   # Nowa betoniarka: pomarańczowy bęben na stojaku
+        "................", "......KKKK......", ".....KgggK......", "....KOOOOOK.....", "...KOWOOOOOK....",
+        "...KKKKKKKKKK...", "...KOOOOOOOOK...", "...KKKKKKKKKK...", "....KOOOOOOK....", ".....KKKKKK.....",
+        "......KggK......", ".....KgKKgK.....", "....KgK..KgK....", "...KKK....KKK...", "...KlK....KlK...",
+        "..GGGGGGGGGGGG.."],
+    [   # Rusztowanie: stalowe rury i deski
+        "................", "..KK.KK.KK.KK...", "..Kl.Kl.Kl.Kl...", "..KTTTTTTTTTTK..", "..KlKlKlKlKlKl..",
+        "..Kl.Kl.Kl.Kl...", "..KlKlKlKlKlKl..", "..KTTTTTTTTTTK..", "..Kl.Kl.Kl.Kl...", "..KlKlKlKlKlKl..",
+        "..Kl.Kl.Kl.Kl...", "..KTTTTTTTTTTK..", "..Kl.Kl.Kl.Kl...", "..Kl.Kl.Kl.Kl...", "..KK.KK.KK.KK...",
+        "..GGGGGGGGGGGG.."],
+    [   # Paleta cegieł
+        "................", "................", "................", "................", "...KKKKKKKKKK...",
+        "...KRROKRROKK...", "...KKKKKKKKKK...", "...KROKRRKROK...", "...KKKKKKKKKK...", "...KRROKRROKK...",
+        "...KKKKKKKKKK...", "..KTTTTTTTTTTK..", "..KTKTTKTTKTTK..", "..KTTTTTTTTTTK..", "..KKKKKKKKKKKK..",
+        "..GGGGGGGGGGGG.."],
+    [   # Żuraw: żółty maszt, wysięgnik i hak
+        ".KKKKKKKKKKKKKK.", ".KYYYYYYYYYYYYK.", ".KYKYKKYKKYKKYK.", ".KKKYYKKKKKK.K..", "...KYYK......K..",
+        "...KYYK......K..", "...KYKK.....KlK.", "...KYYK.....KKK.", "...KKYK.........", "...KYYK.........",
+        "...KYKK.........", "...KYYK.........", "...KKYK.........", "..KKKKKK........", "..KggggK........",
+        "..GGGGGGGGGGGG.."],
+    [   # Piaskownica: drewniana rama, piasek, wiaderko
+        "................", "................", "................", "................", "................",
+        "................", "................", "..........KK....", ".........KRRK...", ".........KRRK...",
+        "..KKKKKKKKKKKKK.", "..KTYYYYYYYYYTK.", "..KTYYYYOYYYYTK.", "..KTTTTTTTTTTTK.", "..KKKKKKKKKKKKK.",
+        "..GGGGGGGGGGGG.."],
+    [   # Altana: daszek, słupki i ławka
+        "................", ".......KK.......", "......KRRK......", ".....KRRRRK.....", "....KRRRRRRK....",
+        "...KRRRRRRRRK...", "..KKKKKKKKKKKK..", "...KTK....KTK...", "...KTK....KTK...", "...KTK....KTK...",
+        "...KTKKKKKKTK...", "...KTTTTTTTTK...", "...KTKKKKKKTK...", "...KTK....KTK...", "...KKK....KKK...",
+        "..GGGGGGGGGGGG.."],
+]
+
+
+def house_frames():   # klatka = wielkość * liczba zawodów + zawód; potem pusta działka i ozdoby Osiedla
+    return ([p for size in range(4) for cls in range(len(WORKERS)) for p in house_frame(cls, size)] + parse(EMPTY_PLOT)
+            + [p for rows in DECOR for p in parse(rows)])
 
 
 # ------------------------------------------------------------------ ikony mocy do HUD (kolejność zawodów)
@@ -456,6 +821,31 @@ ABILITY_ICONS = [
         "................", "......K..K......", "....KKllllKK....", "...KllllllllK...", "..KlllggggllK...",
         ".KllgglllgglK...", ".KllglKKKlglK...", ".KllglKWKlglK...", ".KllglKKKlglK...", ".KllgglllgglK...",
         "..KlllggggllK...", "...KllllllllK...", "....KKllllKK....", "......K..K......", "................", "................"],
+    [   # Rynna: dachówki lecą w linii
+        "................", "...........KKKK.", "..........KROROK", "..........KRRRRK", "...........KKKK.",
+        "......KKKK......", ".....KROROK.....", ".....KRRRRK.....", "......KKKK......", "..KKKK..........",
+        ".KROROK.........", ".KRRRRK.........", "..KKKK..........", "................", "l.l.l.l.........", "................"],
+    [   # Narzut: kielnia i chlapnięcie tynku
+        "..W......W......", "....W..W....W...", ".W..KKKKK..W....", "...KWWWWWK......", "..KWWWWWWWK..W..",
+        "W.KWWlWWWWK.....", "..KWWWWWlWK.W...", "...KWWWWWK......", "....KKKKK..W....", "..W...KgK.......",
+        "......KgK...W...", ".....KgggK......", "....KggggK......", "....KKKKKK......", ".......KTK......", ".......KKK......"],
+    [   # Taran: łyżka koparki z ramieniem, pęd z lewej
+        "................", "................", ".....KKKK.......", "....KgggK.......", ".....KKgK.......",
+        "......KgKKKKK...", "l.l..KYYYYYYYK..", ".....KYYYYYYYYK.", "llll.KYYYYYYYYK.", ".....KYYYYYYYKlK",
+        "l.l..KKYYYYYKlK.", "......KKKKKKlK..", "................", "................", "................", "................"],
+    # v0.21.51 cz. 2: zawody z sekretnych zleceń
+    [   # Spaw: uchwyt spawalniczy z niebieskim płomieniem i iskrami
+        "................", "..........Y..Y..", "...........Y....", "........Y.KWK.Y.", "..........KCK...",
+        ".......Y..KCK...", ".........KgK.Y..", "........KgK.....", ".......KgK......", "......KggK......",
+        ".....KggK.......", "....KNNK........", "...KNNK.........", "..KNNK..........", "..KKK...........", "................"],
+    [   # Tyczenie: łata w pasy i celownik
+        "................", ".......K........", "......KRK.......", "......KWK...K...", "......KRK...K...",
+        "......KWK.KKKKK.", "......KRK...K...", "......KWK...K...", "......KRK.......", "......KWK.......",
+        "......KRK.......", ".....KKKKK......", "....KT...TK.....", "...KT.....TK....", "..KK.......KK...", "................"],
+    [   # Złota rączka: złota skrzynka z narzędziami
+        "................", "................", "......KKKK......", ".....KK..KK.....", "...KKKKKKKKKK...",
+        "..KgKlK.KKYYK...", "..KgKlK.KYYYK...", "..KKKKKKKKKKKK..", "..KYYYYYYYYYYK..", "..KYYYYKKYYYYK..",
+        "..KOOOOKKOOOOK..", "..KYYYYYYYYYYK..", "..KOOOOOOOOOOK..", "..KKKKKKKKKKKK..", "................", "................"],
 ]
 
 
@@ -499,7 +889,123 @@ def reticle_frame():
     return parse(rows)
 
 
-# ------------------------------------------------------------------ bossowie aktów (klatki 46-47, druga klatka 48-49)
+# v0.21.52 cz. d (#47): mapa kariery - nowe problemy i bossowie kontraktów (klatki 184-195: para A/B na problem, kolejność
+# jak w game.json). Zawsze przedmioty i usterki budynku, nigdy ludzie.
+CAREER_ENEMIES = {
+"grzyb": [   # grzyb domowy na spróchniałej belce: brązowy kapelusz w plamki, blady trzon z oczami
+"................",
+"................",
+"....KKKKKKKK....",
+"..KKTTOTTTOTKK..",
+".KTOTTTTTOTTTTK.",
+".KTTTTOTTTTTOTK.",
+"KTTTTTTTTTTTTTTK",
+"KKKKKKKKKKKKKKKK",
+"....KWWWWWWK....",
+"....KWKWWKWK....",
+"....KWWWWWWK....",
+"....KWWKKWWK....",
+"..KKKWWWWWWKKK..",
+".KTTTKKKKKKTTTK.",
+".KTgTTTTTgTTTTK.",
+"..KKKKKKKKKKKK.."],
+"stara_instalacja": [   # stare gniazdko z aluminiowymi kablami i iskrami
+"...Y.......Y....",
+"..Y..KKKKK...Y..",
+"....KgggggK.....",
+"...KglllllgK....",
+"...KglKlKlgK....",
+"...KglllllgK....",
+"...KgKKlKKgK....",
+"...KglllllgK....",
+"....KgggggK.....",
+".....KlKlK......",
+".....KlKlK..Y...",
+"....KllKllK.....",
+"...Kl.K.K.lK....",
+"..Kl..Y...lK....",
+"..K........K....",
+"................"],
+"strych": [   # boss: zawilgocony strych - trójkąt dachu z zieloną pleśnią, kapiąca woda, gniewne okienka-oczy
+".......KK.......",
+"......KTTK......",
+".....KTGTTK.....",
+"....KTTTTGTK....",
+"...KTGTTTTTTK...",
+"..KTTTTTTGTTTK..",
+".KTTWWKTTKWWTTK.",
+"KTGTWKKTTKKWTTGK",
+"KKKKKKKKKKKKKKKK",
+"..KggggggggggK..",
+"..KgGggKKggGgK..",
+"..KggggggggggK..",
+"..KKKKKKKKKKKK..",
+"....C.....C.....",
+"......C......C..",
+"...C......C....."],
+"dylatacja": [   # boss: pęknięta dylatacja - dwie ceglane połówki rozsadzone rysą, oczy po obu stronach
+"KKKKKKK..KKKKKKK",
+"KRRKRRK.KRRKRRRK",
+"KKKKKKKK.KKKKKKK",
+"KRKRRKRK.KRRKRRK",
+"KKKKKKK.KKKKKKKK",
+"KRWWKRK.KRWWKRRK",
+"KRWKKRKK.KWKKRRK",
+"KKKKKKK..KKKKKKK",
+"KRRKRRK.KRRKRRRK",
+"KKKKKKKK.KKKKKKK",
+"KRKRRKRK..KRKRRK",
+"KKKKKKK.KKKKKKKK",
+"KRRKRRRK.KRRKRRK",
+"KRRRRRRK.KRRRRRK",
+"KKKKKKKK.KKKKKKK",
+"................"],
+"polac": [   # boss: zerwana połać - płat dachówek porwany wiatrem (niebieskie smugi)
+"................",
+"..B.....KKKK....",
+".B....KKRRRRK...",
+"..B.KKRRKRRRRK..",
+"...KRRRRRRKRRRK.",
+"..KRRKRRRRRRRRK.",
+".KRRRRRRKRRRRK..",
+".KRWKRRRRWKRK...",
+".KRKKRRRRKKRK...",
+"..KRRRRRRRRK....",
+"...KRRKKRRK..B..",
+"....KRRRRK..B...",
+".....KKKK....B..",
+"..B.........B...",
+".B....gKg.......",
+"..B....K........"],
+"strop": [   # boss: pęknięty strop - zabytkowa płyta ze sztukaterią, rysa i sypiący się tynk
+"KKKKKKKKKKKKKKKK",
+"KWWWYWWWWWYWWWWK",
+"KWlWWWWKWWWWWlWK",
+"KWWWWWWKKWWWWWWK",
+"KlWWWWWWKWWWWWlK",
+"KWWWKKWWKWKKWWWK",
+"KWWWKWWKWWWKWWWK",
+"KlWWWWWKWWWWWWlK",
+"KWWWWWKWWWWWWWWK",
+"KWWRRWKWWWRRWWWK",
+"KWWWWKWWWWWWWWWK",
+"KKKKKKK.KKKKKKKK",
+"......K.........",
+"...l.....l......",
+".....l.......l..",
+"..l.....l......."],
+}
+CAREER_ENEMY_ORDER = list(CAREER_ENEMIES)
+
+
+def career_enemy_frame(index, frame):
+    px = parse(CAREER_ENEMIES[CAREER_ENEMY_ORDER[index]])
+    if frame == 1:
+        px = [0] * 16 + px[:16 * 15]
+    return px
+
+
+# ------------------------------------------------------------------ bossowie (klatki 46-47, druga klatka 48-49; Inspekcja 50-51)
 BOSSES = {
     "betoniarka": [
         "................",
@@ -535,6 +1041,24 @@ BOSSES = {
         "...KYK.....B....",
         "...KK...........",
         "................"],
+    # Inspekcja Pracy: podkładka z protokołem (surowe brwi), odlatująca kartka i pieczątka z czerwonym tuszem
+    "inspekcja": [
+        ".....KKKK..KKKK.",
+        "....KgllgK.KWWWK",
+        ".KKKKKKKKKKKWggK",
+        ".KTTTTTTTTTKWWWK",
+        ".KTWWWWWWWTKKKK.",
+        ".KTWKKWKKWTK....",
+        ".KTWWKWKWWTK....",
+        ".KTWWKWKWWTK.KK.",
+        ".KTWWWWWWWTKKTTK",
+        ".KTWgggggWTK.KTK",
+        ".KTWWWWWWWTK.KTK",
+        ".KTWWWRRWWTKKKKK",
+        ".KTWWRWWRWTKRRRK",
+        ".KTWWWRRWWTKKKKK",
+        ".KTTTTTTTTTK....",
+        ".KKKKKKKKKKK...."],
 }
 
 
@@ -544,6 +1068,8 @@ def boss_frames():
         out.append(parse(BOSSES[name]))
     for name in ("betoniarka", "nawalnica"):   # druga klatka: "oddech" 1 px w dół
         px = parse(BOSSES[name]); out.append([0] * 16 + px[:16 * 15])
+    px = parse(BOSSES["inspekcja"])            # 50-51: Inspekcja Pracy (klatka A, B)
+    out += [px, [0] * 16 + px[:16 * 15]]
     return out
 
 
@@ -574,3 +1100,161 @@ def truck_frames():
     b = [CODES[ch] for r in b_rows for ch in r]
     assert len(a) == len(b) == 32 * 16
     return a + b
+
+
+# ------------------------------------------------------------------ menu akcji pod START (16x16): atak, termos, czekaj, ramka wyboru;
+# 4-5: mała kłódka i strzałki góra/dół (wybór zawodu); 6-10: pogoda dnia (Słonecznie, Upał, Mróz, Wiatr, Deszcz);
+# 11-13: materiały w HUD (cement, stal, drewno - małe, w lewej części klatki, cyfra obok); 14: kalendarz (budowa dnia);
+# 15-18: nagrody za odbiór (Młot udarowy, Pistolet do kotew, Buty robocze, Pas narzędziowy); 19: Respekt
+MENU_ICONS = [
+    [   # Atak: młotek
+        "................", "................", "....KKKKKKK.....", "...KgllllllK....", "...KggggggKK....",
+        "....KKKTKKK.....", "......KTK.......", "......KTK.......", "......KTK.......", "......KTK.......",
+        "......KTK.......", "......KTK.......", ".....KTTTK......", ".....KKKKK......", "................", "................"],
+    [   # Termos: stalowy termos z pomarańczową nakrętką
+        "................", "......KKKK......", ".....KOOOOK.....", ".....KKKKKK.....", "....KllllllK....",
+        "....KlWllggK....", "....KlWllggK....", "....KOOOOOOK....", "....KlWllggK....", "....KlWllggK....",
+        "....KlWllggK....", "....KlllgggK....", "....KllllggK....", ".....KKKKKK.....", "................", "................"],
+    [   # Czekaj: klepsydra
+        "................", "...KKKKKKKKKK...", "...KTTTTTTTTK...", "....KYYYYYYK....", ".....KYYYYK.....",
+        "......KYYK......", ".......KK.......", "......K..K......", ".....K..Y.K.....", "....K..YYY.K....",
+        "...KYYYYYYYYK...", "...KTTTTTTTTK...", "...KKKKKKKKKK...", "................", "................", "................"],
+    [   # ramka zaznaczenia
+        "WWWW........WWWW", "WYY..........YYW", "WY............YW", "W..............W", "................",
+        "................", "................", "................", "................", "................",
+        "................", "................", "W..............W", "WY............YW", "WYY..........YYW", "WWWW........WWWW"],
+    [   # mała kłódka w prawym dolnym rogu (zablokowany zawód na liście portretów)
+        "................", "................", "................", "................", "................",
+        "..........KKKK..", ".........KgKKgK.", ".........Kg..gK.", "........KKKKKKKK", "........KYYYYYYK",
+        "........KYYKKYYK", "........KYYKKYYK", "........KYYYYYYK", "........KTTTTTTK", "........KKKKKKKK", "................"],
+    [   # strzałki góra/dół (zmiana trudności)
+        "................", "................", ".......KK.......", "......KPPK......", ".....KPPPPK.....",
+        "....KPPPPPPK....", "....KKKPPKKK....", "......KPPK......", "......KPPK......", "....KKKPPKKK....",
+        "....KPPPPPPK....", ".....KPPPPK.....", "......KPPK......", ".......KK.......", "................", "................"],
+    [   # pogoda: Słonecznie (słońce)
+        ".......Y........", "..Y....Y....Y...", "...Y.......Y....", "................", ".....KKKKKK.....",
+        "....KYYYYYYK....", "...KYYWWYYYYK...", "YY.KYWYYYYYYK.YY", "...KYYYYYYYYK...", "...KYYYYYYYOK...",
+        "....KYYYYYOK....", ".....KKKKKK.....", "................", "...Y.......Y....", "..Y....Y....Y...", ".......Y........"],
+    [   # pogoda: Upał (termometr i fale gorąca)
+        "......KKK.......", ".....KWWWK..O...", ".....KWlWK.O....", ".....KWlWK..O...", ".....KWRWK...O..",
+        ".....KWRWK..O...", ".....KWRWK.O....", ".....KWRWK..O...", ".....KWRWK......", "....KWRRRWK.....",
+        "...KWRRRRRWK....", "...KRRWRRRRK....", "...KRRRRRRRK....", "....KRRRRRK.....", ".....KKKKK......", "................"],
+    [   # pogoda: Mróz (płatek śniegu)
+        "................", ".......C........", "....C..C..C.....", ".....C.W.C......", "......CWC.......",
+        "..C...CWC...C...", "...C..CWC..C....", ".CCWWWWWWWWWCC..", "...C..CWC..C....", "..C...CWC...C...",
+        "......CWC.......", ".....C.W.C......", "....C..C..C.....", ".......C........", "................", "................"],
+    [   # pogoda: Wiatr (smugi powietrza)
+        "................", "..........KKK...", ".........KWWWK..", "..KKKKKKKK..WK..", ".KWWWWWWWWWWWK..",
+        "..KKKKKKKKKKK...", "................", "...KKKKKKKKKK...", "..KllllllllllK..", "...KKKKKKKKK.lK.",
+        "............KlK.", "...........KK...", ".KKKKKK.........", "KWWWWWWK........", ".KKKKKK.........", "................"],
+    [   # pogoda: Deszcz (chmura i krople)
+        "................", "......KKKK......", "....KKllllKK....", "...KllWWllllK...", ".KKlWlllllllKK..",
+        "KllllllllllllgK.", "KlllllllllllggK.", ".KggggggggggggK.", "..KKKKKKKKKKKK..", "...B...B...B....",
+        "..BB..BB..BB....", "..B...B...B.....", ".B...B...B......", "................", "..B...B...B.....", ".B...B...B......"],
+    [   # materiał: cement (worek)
+        "................", "................", "................", "..KKKKKKK.......", ".KllWlllgK......",
+        ".KlllllggK......", ".KlKKKKlgK......", ".KlKTTKlgK......", ".KlKKKKlgK......", ".KlllllggK......",
+        ".KgggggggK......", "..KKKKKKK.......", "................", "................", "................", "................"],
+    [   # materiał: stal (pręty zbrojeniowe)
+        "................", "................", "................", ".......KK.......", ".....KKCK.......",
+        "...KKClKK.......", ".KKClKKCK.......", "KClKKClKK.......", "KKKClKKK........", ".KClKKK.........",
+        "KClKK...........", "KKK.............", "................", "................", "................", "................"],
+    [   # materiał: drewno (deski)
+        "................", "................", "................", "KKKKKKKKKK......", "KOTTOTTTTK......",
+        "KKKKKKKKKK......", ".KKKKKKKKKK.....", ".KTTOTTTOTK.....", ".KKKKKKKKKK.....", "KKKKKKKKKK......",
+        "KTOTTTTOTK......", "KKKKKKKKKK......", "................", "................", "................", "................"],
+    [   # kalendarz (codzienna budowa)
+        "................", "...K......K.....", "..KKKKKKKKKKK...", "..KRRRRRRRRRK...", "..KRRRRRRRRRK...",
+        "..KKKKKKKKKKK...", "..KWWWWWWWWWK...", "..KWKWKWKWWWK...", "..KWWWWWWWWWK...", "..KWKWKWPPWWK...",
+        "..KWWWWWPPWWK...", "..KWKWKWWWWWK...", "..KWWWWWWWWWK...", "..KKKKKKKKKKK...", "................", "................"],
+    # 15-18: nagrody za odbiór (Młot udarowy, Pistolet do kotew, Buty robocze, Pas narzędziowy), 19: Respekt (medal)
+    [   # Młot udarowy: żółta obudowa, czarny uchwyt, grot
+        "................", "................", "....KKKKKKK.....", "...KYYYYYYYKKKK.", "...KYYWYYYYKllK.",
+        "...KYYYYYYYKKKKK", "...KKKKKYYYK.KlK", ".......KYYYK..KK", "......KKKKKK....", "......KKKKK.....",
+        ".....KKKKK......", ".....KKKK.......", "....KKKK........", "................", "................", "................"],
+    [   # Pistolet do kotew: pomarańczowy korpus, szara lufa, kotwa
+        "................", "................", "................", "..KKKKKKKKKKK...", ".KOOOOOOOOOOKKK.",
+        ".KOOWOOOOOOOKlK.", ".KOOOOOOOOOOKgK.", ".KKKKKOOOKKKKKKK", ".....KOOOK...KgK", ".....KOOOK....K.",
+        "....KOOOOK......", "....KOOOK.......", "....KKKKK.......", "................", "................", "................"],
+    [   # Buty robocze: brązowe z pomarańczowym noskiem
+        "................", "................", "....KKKKK.......", "....KTTTK.......", "....KTTTK.......",
+        "....KTlTK.......", "....KTTTK.......", "....KTTTKKKKK...", "...KTTTTTTTOOK..", "...KTTTTTTOOOOK.",
+        "...KKKKKKKKKKKK.", "...KggggggggggK.", "....KKKKKKKKKK..", "................", "................", "................"],
+    [   # Pas narzędziowy: pas z kieszeniami i młotkiem
+        "................", "................", "................", "KKKKKKKKKKKKKKKK", "TTTTTTYYTTTTTTTT",
+        "KKKKKKKKKKKKKKKK", "..KTTTK..KTTTK..", "..KTOTK..KTTTK.g", "..KTTTK..KTlTKgg", "..KTTTK..KTTTK.T",
+        "...KKK....KKK..T", "...............T", "................", "................", "................", "................"],
+    [   # Respekt: medal z gwiazdą
+        "....KKK..KKK....", "....KRRK.KBK....", ".....KRRKBK.....", "......KKKK......", ".....KKYYKK.....",
+        "....KYYWYYYK....", "...KYYYYYYYYK...", "...KYYYWYYYYK...", "...KYWWWWWYYK...", "...KYYWWWYYYK...",
+        "...KYYWYWYYYK...", "...KYYYYYYYOK...", "....KYYYYYOK....", ".....KKKKKK.....", "................", "................"],
+    # 20-22: mechaniki aktów (błoto, porywy wiatru, pył), 23: statystyki (pomoc "i")
+    [   # błoto: płaska brązowa kałuża z bąblami
+        "................", "................", "................", "......KK....K...", ".....KOOK..KOK..",
+        "......KK....K...", "..KKKKKKKKKKKK..", ".KTTTTTTTTTTTTK.", "KTTOTTTTTTTOTTTK", "KTTTTTTTTTTTTTTK",
+        ".KTTTOTTTTTTTTK.", "..KKKKKKKKKKKK..", "................", "................", "................", "................"],
+    [   # porywy: zawijasy wiatru
+        "................", "................", "........KKK.....", ".......KlllK....", "KKKKKKKKK.lK....",
+        "lllllllllKlK....", "KKKKKKKKKKK.....", "................", "KKKKKKKKKKKKK...", "llllllllllllK...",
+        "KKKKKKKKKK.lK...", ".........KlK....", "........KlK.....", ".........K......", "................", "................"],
+    [   # pył: szara chmura z drobinkami
+        "................", "................", "..l....l........", "......KKKK...l..", "..l.KKggggKK....",
+        "...KggllggggK...", "..KgglllgggggK..", ".KggggggggglgK..", ".KgglggggggggK..", "..KgggggglggK..l",
+        "...KKggggggK....", "....l.KKKK..l...", "..l.......l.....", "......l.........", "................", "................"],
+    [   # statystyki: fioletowe kółko z "i"
+        "................", "....KKKKKKK.....", "...KPPPPPPPK....", "..KPPPPWPPPPK...", "..KPPPPPPPPPK...",
+        "..KPPPWWPPPPK...", "..KPPPPWPPPPK...", "..KPPPPWPPPPK...", "..KPPPPWPPPPK...", "..KPPPWWWPPPK...",
+        "...KPPPPPPPK....", "....KKKKKKK.....", "................", "................", "................", "................"],
+    # 24: mechanika Aktu 0 - pieczątki (pieczątka z czerwonym odciskiem)
+    [   # pieczątka
+        "................", ".....KKKK.......", "....KTTTTK......", "....KTOTTK......", ".....KTTK.......",
+        ".....KTTK.......", "...KKKKKKKK.....", "...KTTTTTTK.....", "..KKKKKKKKKK....", "..KRRRRRRRRK....",
+        "..KKKKKKKKKK....", "..........RR....", ".........R..R...", "........R.RR.R..", ".........R..R...", "..........RR...."],
+    # 25: premia po etapie (paczka z kokardą i gwiazdką), 26: kombinacja stanów (kropla + piorun)
+    [   # premia
+        "................", "....KK....KK....", "...KYYK..KYYK...", "....KYYKKYYK....", ".....KKYYKK.....",
+        "..KKKKKYYKKKKK..", "..KPPPPYYPPPPK..", "..KKKKKYYKKKKK..", "...KPPPYYPPPK...", "...KPPPYYPPPK...",
+        "...KPWPYYPPPK...", "...KPPPYYPPPK...", "...KPPPYYPPPK...", "...KKKKKKKKKK...", "................", "................"],
+    [   # kombinacja: kropla wody i piorun
+        "................", "...K........KK..", "..KBK......KYK..", ".KBBBK....KYK...", "KBBWBBK..KYYK...",
+        "KBBBWBK.KYYYKK..", "KBBBBBK.KKYYYK..", ".KBBBK....KYK...", "..KKK....KYK....", "........KYK.....",
+        "........KK......", "................", "................", "................", "................", "................"],
+    # 27-29 (v0.21.50 cz. 3): wydarzenie z wyborem (SMS z "!"), ulepszenie narzędzia (klucz i plus), klucz do magazynu
+    [   # wydarzenie: telefon z dymkiem "!"
+        ".......KKKKKKK..", "......KYYYKYYYK.", "......KYYYKYYYK.", "......KYYYKYYYK.", "......KYYYYYYYK.",
+        "......KYYYKYYYK.", "..KKKKKKKKYKK...", "..KNNNNNK.......", "..KCWWWCK.......", "..KCCCCCK.......",
+        "..KCWWCCK.......", "..KCCCCCK.......", "..KCWWWCK.......", "..KNNNNNK.......", "..KKKKKKK.......", "................"],
+    [   # ulepszenie: klucz płaski i zielony plus
+        "................", "...........KKK..", "...........KGK..", ".KK......KKKGKKK", "KllK.....KGGGGGK",
+        "KlKlK....KKKGKKK", ".KlllK.....KGK..", "..KlllK....KKK..", "...KlllK........", "....KlllK.......",
+        ".....KlllK......", "......KlllKK....", ".......KllllK...", "........KlKlK...", ".........KKlK...", "..........KK...."],
+    [   # klucz do magazynu
+        "................", "................", "................", "..KKKK..........", ".KYYYYK.........",
+        "KYYKKYYK........", "KYK..KYKKKKKKKK.", "KYK..KYYYYYYYYYK", "KYYKKYYKKKKYKYK.", ".KYYYYK....KYK..",
+        "..KKKK......K...", "................", "................", "................", "................", "................"],
+    # 30-34 (v0.21.51 cz. 2): sekretne zlecenie (koperta z "?"), Młot Zenka, Poziomica mistrza, Złota kielnia, Kask w paski
+    [   # sekret: zapieczętowana koperta z "?"
+        "................", "................", ".KKKKKKKKKKKKKK.", ".KNPPPPPPPPPPNK.", ".KPNPPPPPPPPNPK.",
+        ".KPPNPWWWWPNPPK.", ".KPPPNPPPWNPPPK.", ".KPPPPNWWNPPPPK.", ".KPPPPPWNPPPPPK.", ".KPPPPPPPPPPPPK.",
+        ".KPPPPPWPPPPPPK.", ".KKKKKKKKKKKKKK.", "................", "................", "................", "................"],
+    [   # Młot Zenka: ciężki młot z pędem
+        "................", "..KKKKKKK.......", ".KllllllgK......", ".KllllllgK..l...", ".KggggggggK.....",
+        "..KKKTKKKK..ll..", ".....KTK........", ".....KTK...l....", ".....KTK........", ".....KTK........",
+        ".....KTK........", ".....KTK........", ".....KTK........", ".....KRK........", ".....KKK........", "................"],
+    [   # Poziomica mistrza: złota poziomica z pęcherzykiem
+        "................", "................", "................", "................", "KKKKKKKKKKKKKKKK",
+        "KYYYYYYYYYYYYYYK", "KYOYYKKKKKYYOYYK", "KYOYYKCWCKYYOYYK", "KYYYYKKKKKYYYYYK", "KOOOOOOOOOOOOOOK",
+        "KKKKKKKKKKKKKKKK", "................", "......W.........", ".....WYW........", "......W.........", "................"],
+    [   # Złota kielnia: trójkątne złote ostrze z błyskiem, trzonek w lewo w dół
+        "................", "..........W.....", ".........WYW....", "....KK....W.....", "....KYKK........",
+        "....KYYYKK......", "....KYWYYYKK....", "....KYYWYYYYKK..", "....KYYYYYYYYYK.", "....KYYYYYYYKK..",
+        "....KYYYYYKK....", "....KYYYKK......", "...KTKKK........", "..KTK...........", ".KTK............", ".KK............."],
+    [   # Kask w paski: biało-czerwony kask
+        "................", "................", "................", ".....KKKKKK.....", "....KRWRWRWK....",
+        "...KRWRWRWRWK...", "...KRWRWRWRWK...", "..KRWRWRWRWRWK..", "..KRWRWRWRWRWK..", ".KKKKKKKKKKKKKK.",
+        ".KWWWWWWWWWWWWK.", ".KKKKKKKKKKKKKK.", "................", "................", "................", "................"],
+]
+
+
+def menu_icon_frames():
+    return [p for rows in MENU_ICONS for p in parse(rows)]

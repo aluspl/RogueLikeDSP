@@ -1,0 +1,109 @@
+using Godot;
+using LifeLike.Core;
+using LifeLike.Game.Gfx;
+using LifeLike.Game.Input;
+using CoreGame = LifeLike.Core.Game;
+
+namespace LifeLike.Game.Hud;
+
+/// <summary>
+/// Karta wroga pod trzymanym B (podgląd na GBA, w miejscu dziennika): portret, nazwa, HP z paskiem, obrona,
+/// obrażenia w obie strony (rozpiska #26: „Zadasz 2-5 (kryt 4-10), on Tobie 1-3” po OBR i procentach, unik),
+/// opis na zmianę z zachowaniami („Cechy: ...”); „Nikogo w polu widzenia”, gdy lista jest pusta.
+/// </summary>
+public partial class EnemyCard : Control
+{
+    private const int CardH = 76;
+    private CoreGame _g;
+    private int _enemy = -1, _index, _count;
+    private float _clock;
+
+    public override void _Process(double delta)
+    {
+        if (!Visible) return;
+        var before = (int)(_clock / 2f);
+        _clock += (float)delta;
+        if ((int)(_clock / 2f) != before) QueueRedraw(); // opis / zachowania na zmianę co 2 s
+    }
+
+    public override void _Ready()
+    {
+        MouseFilter = MouseFilterEnum.Ignore;
+        SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        Visible = false;
+    }
+
+    public void Show(CoreGame g, int enemy, int index, int count)
+    {
+        _g = g;
+        _enemy = enemy;
+        _index = index;
+        _count = count;
+        Visible = true;
+        QueueRedraw();
+    }
+
+    public override void _Draw()
+    {
+        try
+        {
+            DrawContent();
+        }
+        catch (System.Exception ex)
+        {
+            DrawErrors.Record("EnemyCard", ex);
+        }
+    }
+
+    private void DrawContent()
+    {
+        if (_g is null) return;
+        var f = PixelFont.I;
+        var w = Size.X;
+        var top = Size.Y - CardH;
+        DrawRect(new Rect2(0, top, w, CardH), new Color(Pal.Text, 0.78f));
+        DrawRect(new Rect2(0, top - 1, w, 1), new Color(Pal.Brand, 0.7f));
+        if (_enemy < 0)
+        {
+            f.Draw(this, new Vector2(8, top + 12), Loc.T("nikogo_w_polu_widzenia"), Ink.MapDim);
+            f.Draw(this, new Vector2(w - 6, Size.Y - 18), ButtonNames.Pick(Loc.T("pusc_z_wroc"), Loc.T("pusc_wroc")), Ink.MapDim, TextAlign.Right);
+            return;
+        }
+        var e = _g.Enemies[_enemy];
+        var ed = _g.D.Enemies[e.DefId];
+        var elite = e.Elite >= 0;
+        var photo = new Rect2(6, top + 5, 36, 36);
+        DrawStyleBox(Ui.Box(new Color(elite ? Pal.EliteGold : Pal.Late, 0.35f), 5), photo);
+        if (elite) DrawRect(photo.Grow(1), Pal.EliteGold, false, 2); // elita: złota ramka portretu
+        Assets.DrawFrame(this, Assets.Actors, ed.Frame, Assets.Actor, photo.Position + new Vector2(2, 2));
+        var x = photo.End.X + 8;
+        var name = _g.EnemyName(_enemy); // elita: „Zbrojony Przeciek”
+        var nx = x + f.Draw(this, new Vector2(x, top + 2), f.Fit(name, (int)(w * 0.45f)), elite ? Ink.MapLoot : Ink.Map) + 8;
+        var bar = new Rect2(nx, top + 8, 48, 6);
+        DrawRect(bar.Grow(1), Pal.HpEdge);
+        DrawRect(bar, Pal.HpBack);
+        var fill = e.MaxHp > 0 ? Mathf.Clamp(e.Hp / (float)e.MaxHp, 0f, 1f) : 0f;
+        DrawRect(new Rect2(bar.Position, new Vector2(Mathf.Max(1, Mathf.Round(bar.Size.X * fill)), bar.Size.Y)), Pal.HpMain[Pal.HpColor(e.Hp, e.MaxHp)]);
+        var def = _g.EnemyDefense(_enemy);
+        var stats = $"HP {e.Hp}/{e.MaxHp}" + (def > 0 ? Loc.F("obr_6", def) : "");
+        f.Draw(this, new Vector2(bar.End.X + 8, top + 2), f.Fit(stats, (int)(w - bar.End.X - 14)), Ink.Map);
+        // „Zadasz” z obroną elity (Tarcza) – ActorBreakdown
+        var b = _g.ActorBreakdown(_enemy);
+        var vs = DamageHelp.VersusLine(new Message(), b, _g.EnemyHit(_enemy)).Text + Loc.F("unik_9", _g.DodgePct());
+        if (f.Measure(vs) > w - x - 8) vs = DamageHelp.VersusLine(new Message(), b, _g.EnemyHit(_enemy)).Text;
+        f.Draw(this, new Vector2(x, top + 20), f.Fit(vs, (int)(w - x - 8)), Ink.Map);
+        // trzeci wiersz na zmianę: opis, cechy, elita, stany (kombinacje)
+        var lines = new System.Collections.Generic.List<(string Text, Ink Ink)> { (ed.Desc, Ink.MapDim) };
+        if (_enemy == _g.KeyHolder) lines.Insert(0, (Loc.T("ma_klucz_do_magazynu"), Ink.MapLoot));
+        var tags = UiText.Behaviors(_g.D, e.DefId);
+        if (tags.Length > 0) lines.Add((Loc.T("cechy") + tags, Ink.MapBad));
+        if (elite) lines.Add((BoonLook.Elite(_g, _enemy), Ink.MapLoot));
+        var states = BoonLook.States(_g, _enemy);
+        if (states.Length > 0) lines.Add((Loc.T("stan") + states, Ink.MapWet));
+        var line = lines[(int)(_clock / 2f) % lines.Count];
+        f.Draw(this, new Vector2(x, top + 38), f.Fit(line.Text, (int)(w - x - 8)), line.Ink);
+        var back = ButtonNames.Pick(Loc.T("pusc_z_wroc"), Loc.T("pusc_wroc"));
+        var hint = _count > 1 ? $"{_index + 1}/{_count}  {ButtonNames.Pick(Loc.T("strzalki_nastepny"), Loc.T("przesun_nastepny"))}   {back}" : back;
+        f.Draw(this, new Vector2(w - 6, top + 56), hint, Ink.MapDim, TextAlign.Right);
+    }
+}

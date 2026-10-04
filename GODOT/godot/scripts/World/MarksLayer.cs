@@ -1,0 +1,135 @@
+using Godot;
+using LifeLike.Core.Data;
+using LifeLike.Game.Gfx;
+
+namespace LifeLike.Game.World;
+
+/// <summary>
+/// Znaczniki nad mapą (nad mgłą): strzałka nad celem krótkiego A, ikona stanu nad bohaterem (zatrucie / porażenie /
+/// poślizg na zmianę), „z” nad ogłuszonymi i menu akcji wokół bohatera (Atak ↑, Moc →, Termos ↓, Czekaj ←).
+/// </summary>
+public partial class MarksLayer : Node2D
+{
+    private WorldView _w;
+    private float _clock;
+
+    public void Bind(WorldView w) => _w = w;
+
+    public override void _Process(double delta)
+    {
+        _clock += (float)delta;
+        QueueRedraw();
+    }
+
+    public override void _Draw()
+    {
+        try
+        {
+            DrawContent();
+        }
+        catch (System.Exception ex)
+        {
+            DrawErrors.Record("MarksLayer", ex);
+        }
+    }
+
+    /// <summary>Poziomica mistrza (sekretne zlecenie): na podglądzie mapy magazyn widać zawsze, także pod mgłą –
+    /// drzwi albo pęknięcie w złotej, pulsującej ramce z ikoną poziomicy.</summary>
+    private void LevelReveal(LifeLike.Core.Game g)
+    {
+        if (!g.HasSecret || !g.Weapon.Reveal || g.SecretOpen || g.Explored(g.SecretX, g.SecretY)) return;
+        const int c = Assets.Cell;
+        var pulse = 0.5f + 0.5f * Mathf.Sin(_clock * 5f);
+        var r = new Rect2(g.SecretX * c, (g.SecretY + 1) * Proj.RowH - c, c, c); // v0.21.54: u dołu lica muru
+        DrawRect(r.Grow(2), new Color(0.05f, 0.04f, 0.1f, 0.75f));
+        DrawTextureRectRegion(Assets.Actors, r, Assets.Frame(g.SecretDef.Breakable ? Assets.FrameCrack : Assets.FrameDoor, Assets.Actor));
+        DrawRect(r.Grow(2), new Color(Pal.EliteGold, 0.55f + 0.45f * pulse), false, 4f);
+        DrawArc(r.GetCenter(), c * (1.4f + 0.3f * pulse), 0, Mathf.Tau, 24, new Color(Pal.EliteGold, 0.5f), 4f); // widać przy oddaleniu
+        Assets.DrawFrame(this, Assets.UiMenu, Assets.MenuLevel, Assets.Icon, r.Position + new Vector2(c / 2f - 16, -40 - 4 * pulse), 2);
+    }
+
+    private void DrawContent()
+    {
+        var g = _w?.Game;
+        if (g is null || !_w.HeroSprite.Visible) return;
+        const int p = Assets.Particle;
+        var ptex = Assets.Particles;
+        var hero = _w.HeroSprite.Position;
+        if (_w.OverviewOn) LevelReveal(g);
+
+        for (var i = 0; i < g.EnemiesCount; i++)
+        {
+            var sp = _w.EnemySprite(i);
+            if (sp is null || !sp.Visible || sp.Dying || !g.Enemies[i].Alive) continue;
+            if (i == g.MarkTarget && g.MarkTurns > 0) // Tyczenie: znak geodety nad oznaczonym problemem
+                Assets.DrawFrame(this, ptex, Assets.PMarker, p, sp.Position + new Vector2(-8, -46 - ((int)(_clock * 4) & 1)));
+            if (g.Enemies[i].Stun > 0)
+            {
+                var zy = ((int)(_clock * 3 + i) & 1) == 1 ? -2 : 0;
+                Assets.DrawFrame(this, ptex, Assets.PZzz, p, sp.Position + new Vector2(6, -34 + zy));
+            }
+        }
+
+        var marked = _w.Marked;
+        if (marked >= 0 && _w.MenuSel < -1)
+        {
+            var sp = _w.EnemySprite(marked);
+            if (sp is not null && sp.Visible && !sp.Dying)
+            {
+                var by = ((int)(_clock * 6) & 1) == 1 ? 2 : 0;
+                Assets.DrawFrame(this, ptex, Assets.PMarker, p, sp.Position + new Vector2(-p / 2, -46 - by));
+            }
+        }
+
+        var reticle = _w.EnemySprite(_w.Reticle);
+        if (reticle is not null && reticle.Visible && !reticle.Dying)
+        {
+            var pulse = ((int)(_clock * 4) & 1) == 1 ? 1f : 0f;
+            var size = Assets.Actor + 2 * pulse;
+            DrawTextureRectRegion(Assets.Actors, new Rect2(reticle.Position - new Vector2(size / 2, size / 2 + 2), new Vector2(size, size)),
+                                  Assets.Frame(Assets.FrameReticle, Assets.Actor));
+        }
+
+        // ikona stanu nad bohaterem (co 40 klatek następny aktywny stan)
+        StatusEffect[] order = [StatusEffect.Poison, StatusEffect.Shock, StatusEffect.Slip];
+        var active = new System.Collections.Generic.List<int>();
+        for (var k = 0; k < 3; k++)
+        {
+            if (g.StatusTurns(order[k]) > 0) active.Add(k);
+        }
+        if (active.Count > 0 && _w.MenuSel < -1)
+        {
+            var k = active[(int)(_clock / 0.66f) % active.Count];
+            Assets.DrawFrame(this, ptex, Assets.PStatus + k, p, hero + new Vector2(6, -34));
+        }
+
+        if (_w.MenuSel >= -1) DrawMenu(g, hero);
+    }
+
+    private void DrawMenu(LifeLike.Core.Game g, Vector2 hero)
+    {
+        const int s = 32;
+        for (var k = 0; k < 4; k++)
+        {
+            var c = hero + new Vector2(WorldView.MenuDirs[k].X, WorldView.MenuDirs[k].Y) * 44;
+            var sel = k == _w.MenuSel;
+            DrawCircle(c, 19, new Color(Pal.Navy, 0.82f));
+            DrawArc(c, 19, 0, Mathf.Tau, 24, sel ? Pal.Prog : new Color(1, 1, 1, 0.35f), sel ? 2f : 1f);
+            var tl = c - new Vector2(s / 2, s / 2);
+            if (k == 1)
+            {
+                var ready = g.AbilityCd == 0;
+                Assets.DrawFrame(this, Assets.AbilityIcons, g.PowerCls(), s, tl, 1, ready ? Colors.White : Pal.Grayed);
+            }
+            else
+            {
+                Assets.DrawFrame(this, Assets.MenuIcons, k == 0 ? 0 : k == 2 ? 1 : 2, s, tl);
+            }
+            if (sel)
+            {
+                var pulse = ((int)(_clock * 5) & 1) == 1 ? 1 : 0;
+                Assets.DrawFrame(this, Assets.MenuIcons, 3, s, tl - new Vector2(pulse, pulse), 1);
+            }
+        }
+    }
+}

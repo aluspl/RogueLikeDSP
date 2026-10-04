@@ -1,183 +1,142 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using Godot;
-using LifeLike.Core.Actions;
-using LifeLike.Core.AI;
+using LifeLike.Core;
 using LifeLike.Core.Data;
-using LifeLike.Core.Entities;
-using LifeLike.Core.Generation;
-using LifeLike.Core.Grid;
-using LifeLike.Core.Turns;
+using LifeLike.Game.Debug;
+using LifeLike.Game.Gfx;
+using LifeLike.Game.Input;
+using LifeLike.Game.Session;
+using LifeLike.Game.Settings;
+using LifeLike.Game.Touch;
 
 namespace LifeLike.Game;
 
 /// <summary>
-/// Kompozycja gry: dane JSON -> generator lochu -> aktorzy -> TurnManager -> widok.
-/// Cała logika siedzi w LifeLike.Core; tu jest tylko klej z silnikiem (input, render, HUD).
+/// Korzeń sceny (scenes/Main.tscn): wczytuje dane (game.json wspólny z GBA) i profil, składa App (sesja, węzły,
+/// ekrany) i przekazuje ekranowi bieżącemu wejście (jako akcje gry) i czas. Cała logika gry siedzi
+/// w LifeLike.Core (port 1:1 z GBA), przejścia ekranów w Screens/, zrzuty i test dymny w Debug/.
+/// Przy sterowaniu dotykiem (telefon albo --touch) dotyk / lewy przycisk idzie przez GestureTracker jako gesty;
+/// klucz ustawień w rogu obsługuje Main przed ekranem. Gdy system usypia aplikację w trakcie budowy - zapis budowy.
+/// Blokada wejścia (ScreenFlow.InputLocked, v0.21.51): świeżo otwarte okno ignoruje wciśnięcia i dotknięcia.
 /// </summary>
 public partial class Main : Node2D
 {
-    [Export] public int MapWidth { get; set; } = 60;
-    [Export] public int MapHeight { get; set; } = 40;
-    [Export] public int EnemyCount { get; set; } = 10;
-    [Export] public int Seed { get; set; } // 0 = losowy
+    [Export] public uint Seed { get; set; } // 0 = losowy
 
-    private GameDatabase _db = null!;
-    private readonly SystemRandom _rng = new();
-    private readonly List<string> _log = new();
-    private string[] _playableClasses = [];
-    private int _classIndex;
-
-    private Dungeon _dungeon = null!;
-    private TurnManager _turns = null!;
-    private PlayerController _player = new();
-    private Actor _hero = null!;
-    private readonly List<Actor> _enemies = new();
-
-    private WorldView _view = null!;
-    private Hud _hud = null!;
-    private Camera2D _camera = null!;
+    private App _app;
+    private readonly GestureTracker _gestures = new();
+    private bool _wrenchDown;
 
     public override void _Ready()
     {
         GameInput.Register();
+        RenderingServer.SetDefaultClearColor(Pal.Void);
+        var opts = LaunchOptions.Parse(OS.GetCmdlineUserArgs(), Seed);
+        if (!opts.Harness) GameSettings.Load();
+        if (opts.Filter.Length > 0) ScreenFilter.Force = opts.Filter;
+        if (opts.View.Length > 0) GameSettings.ThreeQuarter = opts.View == "34"; // v0.21.54: widok mapy i światło z linii poleceń
+        if (opts.Lights.Length > 0) GameSettings.Lights = opts.Lights == "on";
+        // v0.21.53 cz. 2 (#40): język - z --lang, w testach polski, w grze z ustawień (domyślnie język systemu)
+        Loc.English = (opts.Lang.Length > 0 ? opts.Lang : opts.Harness ? "pl" : GameSettings.Language) == "en";
+        Layout.Touch = OS.HasFeature("mobile") || opts.Touch;
+        if (opts.Portrait) Layout.SimulatedInsets = new Vector2(59, 34); // wyspa i pasek domowy iPhone'a 14 Pro Max (pt)
+        if (opts.WindowSize != Vector2I.Zero && !OS.HasFeature("mobile"))
+        {
+            DisplayServer.WindowSetSize(opts.WindowSize);
+            GetTree().Root.Size = opts.WindowSize;
+        }
+        Layout.Track(GetTree().Root);
+        GameData d;
         try
         {
-            // Najpierw dane gry, potem opcjonalne mody z user://mods (nadpisują po id).
-            _db = GameDatabase.Load(new GodotDataSource("res://data"), new GodotDataSource("user://mods"));
+            d = GodotDataSource.LoadGameData();
         }
-        catch (DataLoadException ex)
+        catch (Exception ex)
         {
-            GD.PushError(ex.Message);
+            GD.PushError($"Dane gry: {ex.Message}");
             GetTree().Quit(1);
             return;
         }
-
-        _playableClasses = _db.Classes.Keys.Where(id => id != "rat").OrderBy(id => id).ToArray();
-        _view = new WorldView();
-        _hud = new Hud();
-        _camera = new Camera2D { Zoom = new Vector2(1.5f, 1.5f), PositionSmoothingEnabled = true };
-        AddChild(_view);
-        AddChild(_hud);
-        AddChild(_camera);
-        NewGame();
-
-        if (OS.GetCmdlineUserArgs().Contains("--smoke")) RunSmokeTest();
-    }
-
-    /// <summary>
-    /// Test dymny dla CI: godot --headless -- --smoke. Rozgrywa kilkadziesiąt tur losowo i wychodzi z kodem 0/1.
-    /// </summary>
-    private void RunSmokeTest()
-    {
-        var dirs = new[] { GridPos.Up, GridPos.Down, GridPos.Left, GridPos.Right };
-        var rnd = new Random(1);
-        for (var i = 0; i < 200 && !_hero.IsDead; i++)
-        {
-            _player.Submit(Step(dirs[rnd.Next(4)]));
-            _turns.Advance();
-        }
-        Refresh();
-        GD.Print($"SMOKE OK: klasy={_db.Classes.Count} bronie={_db.Weapons.Count} runda={_turns.Round} " +
-                 $"hp={_hero.Health} wrogowie={_enemies.Count(e => !e.IsDead)}/{_enemies.Count}");
-        GetTree().Quit(0);
-    }
-
-    private void NewGame()
-    {
-        _log.Clear();
-        _enemies.Clear();
-        var seed = Seed != 0 ? Seed : (int)GD.Randi();
-        _dungeon = DungeonGenerator.Generate(MapWidth, MapHeight, seed);
-        var cls = _db.Classes[_playableClasses[_classIndex]];
-
-        _hero = Actor.FromClass(cls, _db);
-        _dungeon.Map.Place(_hero, _dungeon.PlayerStart);
-        _player = new PlayerController();
-        _turns = new TurnManager(_dungeon.Map);
-        _turns.Add(_hero, _player);
-        _hero.Died += _ => Log("Zginąłeś. [R] / Start — nowa gra.");
-
-        var ratClass = _db.Classes["rat"];
-        foreach (var room in _dungeon.Rooms.Skip(1).Take(EnemyCount))
-        {
-            var rat = Actor.FromClass(ratClass, _db);
-            if (!_dungeon.Map.IsWalkable(room.Center)) continue;
-            _dungeon.Map.Place(rat, room.Center);
-            _turns.Add(rat, new ChaseAI(_hero, sightRange: 6, _rng));
-            rat.Died += a => Log($"{a.Name} ginie.");
-            _enemies.Add(rat);
-        }
-
-        _turns.CommandExecuted += OnCommandExecuted;
-        _view.Bind(_dungeon.Map, _hero, _enemies);
-        Log($"Seed {seed}. Grasz jako: {cls.Name} ({_hero.Weapon?.Name}). [Tab] zmiana klasy.");
-        Refresh();
-    }
-
-    private void OnCommandExecuted(Actor actor, IGameCommand cmd, CommandResult result)
-    {
-        if (cmd is AttackCommand a && result == CommandResult.Success)
-            Log($"{a.Attacker.Name} atakuje {a.Target.Name} ({a.Target.Health}/{a.Target.Stats.MaxHealth} HP)");
+        var profile = opts.Harness ? Meta.NewProfile(d) : GodotDataSource.LoadProfile(d);
+        _app = new App(this, d, profile, !opts.Harness, !opts.Harness, opts.Seed);
+        GameInput.Injected += OnInjected;
+        _gestures.Emit = OnGesture;
+        if (DebugRunner.TryStart(_app, opts)) return;
+        _app.Flow.Title.Open();
     }
 
     public override void _UnhandledInput(InputEvent e)
     {
-        if (e.IsEcho()) return; // gra turowa: jeden krok na wciśnięcie
-
-        if (e.IsActionPressed(GameInput.Restart)) { NewGame(); return; }
-        if (e.IsActionPressed(GameInput.NextClass))
+        if (Layout.Touch && _app is not null && _gestures.Feed(e))
         {
-            _classIndex = (_classIndex + 1) % _playableClasses.Length;
-            NewGame();
+            GetViewport().SetInputAsHandled();
             return;
         }
-        if (_hero.IsDead) return;
-
-        IGameCommand? cmd = null;
-        if (e.IsActionPressed(GameInput.Up)) cmd = Step(GridPos.Up);
-        else if (e.IsActionPressed(GameInput.Down)) cmd = Step(GridPos.Down);
-        else if (e.IsActionPressed(GameInput.Left)) cmd = Step(GridPos.Left);
-        else if (e.IsActionPressed(GameInput.Right)) cmd = Step(GridPos.Right);
-        else if (e.IsActionPressed(GameInput.Wait)) cmd = new WaitCommand(_hero);
-        else if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
-            cmd = MouseCommand(_view.ScreenToGrid(GetGlobalMousePosition()));
-
-        if (cmd is null) return;
-        GetViewport().SetInputAsHandled();
-        _player.Submit(cmd);
-        _turns.Advance();
-        Refresh();
+        if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left } mb && WrenchHit(mb.Position))
+        {
+            OpenSettings();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+        if (Dispatch(GameInput.Translate(e))) GetViewport().SetInputAsHandled();
     }
 
-    private IGameCommand Step(GridPos dir) => CommandFactory.MoveOrAttack(_hero, dir, _dungeon.Map, _rng);
-
-    /// <summary>Mysz: klik na wroga w zasięgu broni = atak, klik gdzie indziej = krok w tę stronę.</summary>
-    private IGameCommand? MouseCommand(GridPos target)
+    /// <summary>Gest dotyku: klucz ustawień (cały gest od dotknięcia do puszczenia), potem ekran bieżący.</summary>
+    private void OnGesture(Gesture g)
     {
-        if (_dungeon.Map.ActorAt(target) is { } other && other != _hero
-            && _hero.Position.ChebyshevDistance(target) <= (_hero.Weapon?.Range ?? 1))
-            return new AttackCommand(_hero, other, _rng);
-
-        var dx = target.X - _hero.Position.X;
-        var dy = target.Y - _hero.Position.Y;
-        if (dx == 0 && dy == 0) return new WaitCommand(_hero);
-        return Step(Math.Abs(dx) >= Math.Abs(dy) ? new GridPos(Math.Sign(dx), 0) : new GridPos(0, Math.Sign(dy)));
+        if (_app?.Flow.Current is null) return;
+        if (g.Kind == GestureKind.Down) _wrenchDown = WrenchHit(g.Pos);
+        if (_wrenchDown)
+        {
+            if (g.Kind == GestureKind.Tap && WrenchHit(g.Pos)) OpenSettings();
+            if (g.Kind == GestureKind.Up) _wrenchDown = false;
+            return;
+        }
+        if (_app.Flow.InputLocked && g.Kind is GestureKind.Tap or GestureKind.Swipe or GestureKind.SwipeRepeat or GestureKind.LongPress) return;
+        _app.Flow.Current.HandleGesture(g);
     }
 
-    private void Log(string line)
+    /// <summary>Gest jak z ekranu dotykowego (test dymny: blokada wejścia, stuknięcia w karty).</summary>
+    public void InjectGesture(Gesture g) => OnGesture(g);
+
+    private bool WrenchHit(Vector2 p) => _app is not null && _app.Flow.Current is { ShowsSettings: true } && !_app.Nodes.Coach.Visible && _app.Nodes.Settings.Hit(p);
+
+    private void OpenSettings()
     {
-        _log.Add(line);
-        if (_log.Count > 10) _log.RemoveAt(0); // jak w oryginale: max 10 linii
+        var cur = _app.Flow.Current;
+        if (cur == _app.Flow.Game) _app.Flow.Game.Touch.Reset();
+        _app.Flow.Settings.Open(cur);
     }
 
-    private void Refresh()
+    public override void _Notification(int what)
     {
-        _camera.Position = _view.GridToScreen(_hero.Position);
-        _view.QueueRedraw();
-        var alive = _enemies.Count(e => !e.IsDead);
-        _hud.Show(_hero, _turns.Round, alive, _log);
-        if (alive == 0 && !_hero.IsDead) _hud.Banner("Loch oczyszczony! [R] nowa gra");
+        if (what is not ((int)NotificationApplicationPaused or (int)NotificationWMCloseRequest or (int)NotificationApplicationFocusOut)) return;
+        if (_app?.Flow.Current is { InRun: true }) _app.Session.SaveRun();
+    }
+
+    /// <summary>Akcja gracza (klawiatura, pad, mysz albo wirtualny kontroler) do ekranu bieżącego.</summary>
+    private bool Dispatch(InputCmd cmd)
+    {
+        if (_app?.Flow.Current is null) return false;
+        if (_app.Flow.InputLocked && (cmd.Pressed != GameAction.None || cmd.IsClick)) return true; // świeże okno: połknij
+        return _app.Flow.Current.HandleInput(cmd);
+    }
+
+    private void OnInjected(InputCmd cmd) => Dispatch(cmd);
+
+    public override void _Process(double delta)
+    {
+        _gestures.Process(delta);
+        _app?.Flow.Current?.Process(delta);
+    }
+
+    public override void _ExitTree()
+    {
+        GameInput.Injected -= OnInjected;
+        Assets.ClearCache();
+        Ui.ClearCache();
+        PixelFont.Release();
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
     }
 }

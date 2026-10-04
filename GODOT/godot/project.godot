@@ -1,18 +1,31 @@
 ; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
 config_version=5
 
 [application]
 
-config/name="LifeLike"
-config/description="RogueLikeDSP (2017) — odświeżenie w Godot 4 + C#"
+config/name="PlanBudowlany RogueLike (LifeLike)"
+config/description="Roguelike budowlany – port gry z GBA na Godot 4 + C#"
 run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
+config/icon="res://icon.png"
 
 [display]
 
-window/size/viewport_width=1280
-window/size/viewport_height=720
+window/size/viewport_width=640
+window/size/viewport_height=360
+window/size/window_width_override=1280
+window/size/window_height_override=720
 window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/stretch/scale_mode="integer"
+window/handheld/orientation=1
 
 [dotnet]
 
@@ -21,3 +34,6 @@ project/assembly_name="LifeLike.Game"
 [rendering]
 
 textures/canvas_textures/default_texture_filter=0
+2d/snap/snap_2d_transforms_to_pixel=true
+2d/snap/snap_2d_vertices_to_pixel=true
+textures/vram_compression/import_etc2_astc=true

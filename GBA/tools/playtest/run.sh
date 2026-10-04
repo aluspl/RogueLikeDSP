@@ -10,11 +10,13 @@ out="$2"; mkdir -p "$out"; out="$(cd "$out" && pwd)"
 [[ "${3:-}" == "--fresh" ]] && rm -f "$out/rom.sav"
 cp "${ROM:-$gba/PlanBudowlanyRogue.gba}" "$out/rom.gba"   # ROM=... - inny plik (np. build scenariusza)
 docker image inspect pb-playtest >/dev/null 2>&1 || docker build -q -t pb-playtest "$here" >/dev/null
+code=0
 docker run --rm -i -v "$here:/src:ro" -v "$out:/out" pb-playtest sh -c \
-  'gcc -O2 -o /tmp/playtest /src/playtest.c -lmgba && /tmp/playtest /out/rom.gba /out' < "$script"
+  'gcc -O2 -o /tmp/playtest /src/playtest.c -lmgba && /tmp/playtest /out/rom.gba /out' < "$script" || code=$?
 python3 - "$out" <<'PY'
 import sys, glob, os
 from PIL import Image
 for p in glob.glob(os.path.join(sys.argv[1], "*.ppm")):
     im = Image.open(p); im.resize((im.width * 2, im.height * 2), Image.NEAREST).save(p[:-4] + ".png"); os.remove(p)
 PY
+exit $code   # 3 = ekran błędu Butano, 4 = obraz stoi, 5 = gra bez pulsu (komenda monkey)
