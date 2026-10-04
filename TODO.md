@@ -236,6 +236,14 @@ Balans (bot: Normalny 25–35% itd.) zostaje nietknięty, a gracze bez konta PB 
 Kolejność proponowana: #62 → #63 (prototyp na jednym akcie, porównanie zrzutów) → #65; #55–#57 po uzgodnieniu API z sesją PB.
 Stan v0.21.54: #62, #65, #66 zrobione, #63 jako prototyp w ustawieniach (wszystkie akty), #64 (izometria) – otwarte.
 
+## v0.22.0 (otwarta wersja)
+
+| # | Zadanie | GODOT (MOBILE) | GBA |
+|---|---|---|---|
+| 67 | Schody na mapie: zamiast żółtej skrzynki w ramce – czytelne schody w dół (stopnie z głębią, ciemny otwór, delikatna poświata / strzałka „Wyjście”), dopasowane do wyższych ścian i widoku 3/4, zamknięte (Akt 0) z kłódką | 🔄 | ⬜ (sprawdzić czytelność) |
+| 68 | Dziennik nad mapą: w pionie teksty dziennika giną pod ścianami (półprzezroczyste, słabo czytelne) – pasek tła / cień pod tekstem | 🔄 | — |
+| 69 | HUD w pionie: ucięte „Normal..” przy długiej nazwie etapu – skrót trudności (N/Ł/T) albo ikona | 🔄 | — |
+
 ## Zgodność funkcji
 
 | Funkcja | GODOT (MOBILE) | GBA |
