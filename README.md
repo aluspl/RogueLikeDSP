@@ -39,7 +39,6 @@ Projekt zaczął się w 2017 roku jako LifeLike (Unity, konkurs DSP2017), a w 20
 |---|---|---|
 | [`GBA/`](GBA/README.md) | PlanBudowlany RogueLike na konsole GBA i emulatory (Butano, C++20) | grywalne, wydania ROM co wersję |
 | [`GODOT/`](GODOT/README.md) | ta sama gra w Godot 4.7 + C#: logika 1:1 z GBA, bogatsza oprawa, telefon jako interfejs, wersja mobilna (iOS/Android) | w rozwoju |
-| `Assets/`, `ProjectSettings/`, … | oryginalny LifeLike w Unity 2017 (archiwum) | nierozwijany |
 
 Wspólne dane gry (zawody, przedmioty, wrogowie, etapy, odznaki, teksty) są w jednym pliku
 [`GBA/data/game.json`](GBA/data/game.json) – GBA generuje z niego nagłówek C++, Godot czyta go bezpośrednio.
@@ -83,14 +82,7 @@ Plan dalszych prac: [`TODO.md`](TODO.md).
 Opis projektu na [Szymon Motyka](http://szymonmotyka.pl) i [DSP2017](http://szymonmotyka.pl/tag/dsp).
 Kontakt: [Facebook](https://facebook.com/szymonmotykapl), twitter @AlusPL.
 
-Wersje WebGL:
-1. [Version 1](https://aluspl.github.io/RogueLikeDSP/Versions/)
-2. [Version 2 – światła](https://aluspl.github.io/RogueLikeDSP/Versions/light)
-3. [Version 3 – GUI, kreator postaci, przeciwnicy](https://aluspl.github.io/RogueLikeDSP/Versions/GUIAndCharacterCreator)
-4. [Version 4 – walka](https://aluspl.github.io/RogueLikeDSP/Versions/fight)
-5. [Version 5 – przeciwnicy nie stoją w miejscu](https://aluspl.github.io/RogueLikeDSP/Versions/version5contrattack)
-6. [Version 6 – śmierć](https://aluspl.github.io/RogueLikeDSP/Versions/version6)
-7. [Version 7 – ataki specjalne](https://aluspl.github.io/RogueLikeDSP/Versions/version7)
-8. [Version 8 – ekwipunek](https://aluspl.github.io/RogueLikeDSP/Versions/version8)
+Pliki projektu Unity (Assets/, ProjectSettings/…) i wersje WebGL zostały usunięte z repozytorium w 2026 r.;
+ostatni stan jest w historii gita (np. commit sprzed `GBA/` i `GODOT/` na branchu master).
 
 Sterowanie (Unity): Tab – przełączanie przeciwników, F – światło, Spacja – atak, I – okno postaci, O – ekwipunek.
