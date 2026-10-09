@@ -357,7 +357,7 @@ nad paskiem domowym, mapa ~9 pól na szerokość, telefon jako aplikacja na cał
 
 ## Wymagania i uruchomienie
 
-- Godot 4.7 w wersji .NET (np. `brew install --cask godot-mono`), .NET 8 SDK (lub nowszy z runtime 8).
+- Godot 4.7 w wersji .NET (np. `brew install --cask godot-mono`), .NET 10 SDK.
 - W Godot: *Import* → `GODOT/godot/project.godot`, uruchom scenę `scenes/Main.tscn`.
 - Z terminala: `godot-mono --path GODOT/godot` (opcjonalnie `-- --seed 1234`).
 - Test dymny bez okna (bot gra kilka etapów przez warstwę Godota, wybiera drugą ścieżkę, łata drogę deskami, gra
