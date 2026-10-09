@@ -264,3 +264,6 @@ Stan v0.21.54: #62, #65, #66 zrobione, #63 jako prototyp w ustawieniach (wszystk
 - [x] Archiwum Unity 2017 usunięte z repo (2026-10-04, zostaje w historii gita)
 
 Historia zmian: [`GBA/CHANGELOG.md`](GBA/CHANGELOG.md), postęp Godota: [`GODOT/docs/KONCEPCJA.md`](GODOT/docs/KONCEPCJA.md) (sekcja 8).
+
+## Missing gaps
+- GBA: brak natywnego środowiska buildu na hoście Hermesa. Build działa w kontenerze (podman, devkitpro/devkitarm + butano w `../butano`), ale testy C++ (`GBA/tests/core_tests.cpp`) nie były uruchamiane poza Macem.
