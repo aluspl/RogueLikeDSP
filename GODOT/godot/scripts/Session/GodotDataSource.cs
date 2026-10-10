@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Text.Json;
 using Godot;
@@ -62,9 +63,19 @@ public static class GodotDataSource
 
     public static Profile LoadProfile(GameData d)
     {
-        var p = FileAccess.FileExists(ProfilePath)
-            ? Profile.FromBytes(FileAccess.GetFileAsBytes(ProfilePath))
-            : Profile.FromBytes(new byte[Profile.Size]);
+        Profile p;
+        try
+        {
+            p = FileAccess.FileExists(ProfilePath)
+                ? Profile.FromBytes(FileAccess.GetFileAsBytes(ProfilePath))
+                : Profile.FromBytes(new byte[Profile.Size]);
+        }
+        catch (Exception ex)
+        {
+            // Uszkodzony profil nie może blokować startu gry: zaczynamy od nowego (plik nadpiszemy przy zapisie).
+            GD.PushWarning($"Profil {ProfilePath} nie do odczytu, start od nowego profilu: {ex.Message}");
+            p = Profile.FromBytes(new byte[Profile.Size]);
+        }
         if (Meta.ProfileFix(d, p)) SaveProfile(p);
         return p;
     }
@@ -78,26 +89,51 @@ public static class GodotDataSource
         {
             return RunSave.FromBytes(raw);
         }
-        catch (System.IO.EndOfStreamException)
+        catch (Exception ex) when (ex is System.IO.IOException or ArgumentException or IndexOutOfRangeException)
         {
+            // Uszkodzony zapis przerwanej budowy: traktujemy jak brak zapisu, nie wywalamy gry.
+            GD.PushWarning($"Zapis przerwanej budowy {RunPath} uszkodzony: {ex.Message}");
             return null;
         }
     }
 
-    public static void SaveRun(RunSave s)
-    {
-        using var f = FileAccess.Open(RunPath, FileAccess.ModeFlags.Write);
-        f?.StoreBuffer(s.ToBytes());
-    }
+    public static bool SaveRun(RunSave s) => WriteAtomic(RunPath, s.ToBytes());
 
     public static void DeleteRun()
     {
         if (FileAccess.FileExists(RunPath)) DirAccess.RemoveAbsolute(ProjectSettings.GlobalizePath(RunPath));
     }
 
-    public static void SaveProfile(Profile p)
+    public static bool SaveProfile(Profile p) => WriteAtomic(ProfilePath, p.ToBytes());
+
+    /// <summary>
+    /// Zapis przez plik tymczasowy + przeniesienie: przerwanie w trakcie nie zostawia uszkodzonego pliku
+    /// zapisu. Zwraca false i loguje błąd, gdy zapis się nie udał (gracz zachowuje poprzedni plik).
+    /// </summary>
+    private static bool WriteAtomic(string path, byte[] data)
     {
-        using var f = FileAccess.Open(ProfilePath, FileAccess.ModeFlags.Write);
-        f?.StoreBuffer(p.ToBytes());
+        var tmp = path + ".tmp";
+        using (var f = FileAccess.Open(tmp, FileAccess.ModeFlags.Write))
+        {
+            if (f is null)
+            {
+                GD.PushError($"Zapis {path}: nie można otworzyć pliku tymczasowego (błąd {FileAccess.GetOpenError()})");
+                return false;
+            }
+            f.StoreBuffer(data);
+            var err = f.GetError();
+            if (err != Error.Ok)
+            {
+                GD.PushError($"Zapis {path}: błąd zapisu {err}");
+                return false;
+            }
+        }
+        var rename = DirAccess.RenameAbsolute(ProjectSettings.GlobalizePath(tmp), ProjectSettings.GlobalizePath(path));
+        if (rename != Error.Ok)
+        {
+            GD.PushError($"Zapis {path}: nie można podmienić pliku ({rename})");
+            return false;
+        }
+        return true;
     }
 }

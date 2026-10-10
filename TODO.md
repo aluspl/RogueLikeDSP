@@ -267,3 +267,9 @@ Historia zmian: [`GBA/CHANGELOG.md`](GBA/CHANGELOG.md), postęp Godota: [`GODOT/
 
 ## Missing gaps
 - GBA: brak natywnego środowiska buildu na hoście Hermesa. Build działa w kontenerze (podman, devkitpro/devkitarm + butano w `../butano`), ale testy C++ (`GBA/tests/core_tests.cpp`) nie były uruchamiane poza Macem.
+
+## Następne (2026-10-09)
+- ⬜ UX: przepływ po wygranej i przegranej – pokazać, że zdobyte doświadczenie można wydać; przy starcie nowej gry, jeśli doświadczenie > 0, komunikat z przejściem do widoku ulepszeń (GBA i Godot); ogólny przegląd UX
+- ⬜ Xcode Cloud: pipeline automatycznie wysyła build iOS na TestFlight
+- ⬜ Godot w prywatnym repo w organizacji LifeLike-Szymon-Motyka (po wejściu integracji); GBA zostaje open source
+- ⬜ Wspólne źródło konfiguracji dla GBA i Godot (dziś `GBA/data/game.json` kopiowany do Godota przy buildzie; po podziale repo potrzebny inny mechanizm, np. submodule, paczka albo osobny pakiet danych)
