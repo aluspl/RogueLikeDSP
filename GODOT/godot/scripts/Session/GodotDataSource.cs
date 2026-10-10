@@ -113,27 +113,39 @@ public static class GodotDataSource
     private static bool WriteAtomic(string path, byte[] data)
     {
         var tmp = path + ".tmp";
+        var ok = false;
         using (var f = FileAccess.Open(tmp, FileAccess.ModeFlags.Write))
         {
             if (f is null)
             {
                 GD.PushError($"Zapis {path}: nie można otworzyć pliku tymczasowego (błąd {FileAccess.GetOpenError()})");
-                return false;
             }
-            f.StoreBuffer(data);
-            var err = f.GetError();
-            if (err != Error.Ok)
+            else
             {
-                GD.PushError($"Zapis {path}: błąd zapisu {err}");
-                return false;
+                f.StoreBuffer(data);
+                var err = f.GetError();
+                if (err == Error.Ok) ok = true;
+                else GD.PushError($"Zapis {path}: błąd zapisu {err}");
             }
+        }
+        // Plik tymczasowy zamknięty dopiero tutaj, więc można go bezpiecznie usunąć po błędzie.
+        if (!ok)
+        {
+            DeleteQuietly(tmp);
+            return false;
         }
         var rename = DirAccess.RenameAbsolute(ProjectSettings.GlobalizePath(tmp), ProjectSettings.GlobalizePath(path));
         if (rename != Error.Ok)
         {
             GD.PushError($"Zapis {path}: nie można podmienić pliku ({rename})");
+            DeleteQuietly(tmp);
             return false;
         }
         return true;
+    }
+
+    private static void DeleteQuietly(string path)
+    {
+        if (FileAccess.FileExists(path)) DirAccess.RemoveAbsolute(ProjectSettings.GlobalizePath(path));
     }
 }
