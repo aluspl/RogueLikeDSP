@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>PlanBudowlany – review UX (flow po flow)</title>
+<style>
+  @page { size: A4 landscape; margin: 10mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "DejaVu Sans", Arial, sans-serif; color: #1d1d1f; font-size: 10.5pt; line-height: 1.38; margin: 0; background: #fff; }
+  h1 { font-size: 22pt; margin: 0; }
+  h2 { font-size: 16pt; margin: 0 0 4pt; color: #15172b; }
+  .cover { padding: 30px 10px; }
+  .sub { color: #666; }
+  .board { page-break-before: always; }
+  .meta { display: inline-block; font-size: 9pt; background: #15172b; color: #f3e9c6; padding: 2pt 7pt; border-radius: 3pt; margin-right: 4pt; }
+  .row { display: flex; gap: 12pt; }
+  .col-shot { width: 46%; }
+  .col-notes { flex: 1; }
+  .shot { width: 100%; border: 2px solid #15172b; border-radius: 6pt; position: relative; }
+  .pin { display: inline-block; width: 16pt; height: 16pt; border-radius: 50%; background: #c0392b; color: #fff; text-align: center; font-size: 9pt; line-height: 16pt; font-weight: bold; margin-right: 4pt; }
+  .pin.y { background: #e0a526; color: #15172b; }
+  .pin.b { background: #2e86c1; }
+  .note { margin: 4pt 0; }
+  .concept { margin-top: 10pt; border: 2px dashed #2e7d32; border-radius: 6pt; padding: 10pt; background: #f4fbf4; page-break-inside: avoid; }
+  .concept h3 { margin: 0 0 6pt; font-size: 12pt; color: #2e7d32; }
+  .wire { border: 2px solid #15172b; border-radius: 6pt; background: #fff; padding: 8pt; font-size: 9.5pt; }
+  .wire .blk { border: 1.5px solid #888; border-radius: 4pt; padding: 3pt 6pt; margin: 3pt 0; background: #f7f7f7; }
+  .wire .blk.primary { background: #e0a526; color: #15172b; font-weight: bold; border-color: #15172b; text-align: center; }
+  .wire .blk.ghost { color: #777; border-style: dashed; }
+  .wire .cols { display: flex; gap: 6pt; }
+  .wire .cols > div { flex: 1; }
+  .why { font-size: 9.5pt; color: #333; margin-top: 6pt; }
+  .prio { font-size: 8.5pt; font-weight: bold; padding: 1pt 5pt; border-radius: 3pt; color: #fff; }
+  .p1 { background: #c0392b; } .p2 { background: #e0a526; color: #15172b; } .p3 { background: #2e86c1; }
+  .flowrow { display: flex; align-items: center; gap: 6pt; flex-wrap: wrap; font-size: 10pt; }
+  .flowrow .st { border: 2px solid #15172b; border-radius: 5pt; padding: 4pt 8pt; background: #faf6ea; }
+  .flowrow .st.new { background: #e8f4e8; border-color: #2e7d32; }
+  .flowrow .ar { color: #666; }
+  table { border-collapse: collapse; width: 100%; font-size: 9.5pt; }
+  th, td { border: 1px solid #ccc; padding: 3pt 5pt; text-align: left; vertical-align: top; }
+  th { background: #f2f2f2; }
+  .foot { font-size: 8.5pt; color: #777; margin-top: 8pt; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>PlanBudowlany – review UX, flow po flow</h1>
+  <div class="sub">v0.21.54 · Godot 4.7.2 · 50 zrzutów ekranów z gry (headless + Xvfb) · koncepcje w stylu boardów Figmy</div>
+  <p style="margin-top:14pt"><b>Zakres:</b> tytuł i menu główne, wybór zawodu, gra (HUD), telefon (zadania, wiadomości), podsumowanie budowy, ustawienia, codzienna budowa, Hurtownia/ulepszenia.</p>
+  <h2 style="margin-top:14pt">Mapa flow (obecnie)</h2>
+  <div class="flowrow">
+    <div class="st">Tytuł</div><span class="ar">→</span>
+    <div class="st">Nowa budowa</div><span class="ar">→</span>
+    <div class="st">Mapa kariery*</div><span class="ar">→</span>
+    <div class="st">Wybór zawodu</div><span class="ar">→</span>
+    <div class="st">Gra (etapy)</div><span class="ar">→</span>
+    <div class="st">Podsumowanie</div><span class="ar">→</span>
+    <div class="st">Tytuł</div>
+  </div>
+  <div class="flowrow" style="margin-top:8pt">
+    <div class="st">Tytuł</div><span class="ar">→</span>
+    <div class="st">Codzienna / Wyzwanie</div><span class="ar">→</span>
+    <div class="st">Wynik lokalny</div><span class="ar">→</span>
+    <div class="st">Game Center (wkrótce)</div>
+  </div>
+  <div class="flowrow" style="margin-top:8pt">
+    <div class="st">Tytuł</div><span class="ar">→</span>
+    <div class="st">Profil / Odznaki / Zlecenia (telefon)</div><span class="ar">→</span>
+    <div class="st">Szkolenia / Koszty / Hurtownia</div>
+  </div>
+  <div class="flowrow" style="margin-top:8pt">
+    <div class="st">Gra</div><span class="ar">→</span>
+    <div class="st">Telefon (Tab): Zadania · Usterki · Start · Sprzęt · Koszty</div><span class="ar">→</span>
+    <div class="st">Ustawienia (klucz): Zapisz i wyjdź / Porzuć</div>
+  </div>
+  <p class="foot">* mapa kariery: pokazywana po pierwszej budowie (warunek w kodzie: Career.Available). Zielone wyróżnienie na mapie flow = proponowany nowy krok (patrz board 0 i board 6).</p>
+
+  <h2 style="margin-top:14pt">Priorytety</h2>
+  <table>
+    <tr><th>#</th><th>Problem</th><th>Gdzie</th><th>Priorytet</th></tr>
+    <tr><td>1</td><td>Doświadczenie nie ma akcji (brak „Wydaj”) po budowie i na tytule</td><td>Tytuł, Podsumowanie, Hurtownia</td><td><span class="prio p1">P1</span></td></tr>
+    <tr><td>2</td><td>Nakładanie się: toast „Nowy filtr” na tytule i w Codziennej; podpowiedź „Enter: do roboty” na liście wiadomości</td><td>Tytuł, Codzienna, Wiadomości</td><td><span class="prio p1">P1</span></td></tr>
+    <tr><td>3</td><td>Obcięte teksty (zawody, nazwy problemów, opisy w Hurtowni, stopki)</td><td>Wybór zawodu, Wiadomości, Hurtownia, Ustawienia</td><td><span class="prio p2">P2</span></td></tr>
+    <tr><td>4</td><td>Skróty klawiszowe zamiast przycisków (stopki, „P: profil K: Szkolenia”)</td><td>Tytuł, każdy ekran</td><td><span class="prio p2">P2</span></td></tr>
+    <tr><td>5</td><td>Niejasne liczby i etykiety (SZCZ 0+3, „Inspektor 9”, „Zdobyta/+5”)</td><td>Wybór zawodu, Tytuł, Telefon</td><td><span class="prio p2">P2</span></td></tr>
+    <tr><td>6</td><td>Kolory bez legendy (wiadomości, zadania, statusy)</td><td>Telefon, Wiadomości</td><td><span class="prio p3">P3</span></td></tr>
+    <tr><td>7</td><td>Ustawienia bez grupowania; „Porzuć budowę” obok „Zapisz i wyjdź” bez potwierdzenia w widoku</td><td>Ustawienia</td><td><span class="prio p2">P2</span></td></tr>
+    <tr><td>8</td><td>Codzienna: dwa różne komunikaty o wyniku („zapisany lokalnie” vs „tabela wkrótce”), brak dużego CTA</td><td>Codzienna budowa</td><td><span class="prio p3">P3</span></td></tr>
+  </table>
+</div>
+
+<!-- BOARD 1 -->
+<div class="board">
+  <h2>Board 1 · Tytuł i menu główne</h2>
+  <div><span class="meta">Flow: start</span><span class="meta">Ekrany: title, tutorial-title, titles, looks, inspector</span></div>
+  <div class="row" style="margin-top:6pt">
+    <div class="col-shot"><img class="shot" src="title.png" alt="tytuł"></div>
+    <div class="col-notes">
+      <div class="note"><span class="pin">1</span>Toast „Nowy filtr ekranu!” zasłania <b>Rekord</b> i <b>Zadania 0/3</b>. <span class="prio p1">P1</span></div>
+      <div class="note"><span class="pin">2</span>„Inspektor 9” w lewym górnym rogu – bez wyjaśnienia dla nowego gracza.</div>
+      <div class="note"><span class="pin">3</span>Pasek dolny: „P: profil K: Szkolenia” – skróty zamiast przycisków.</div>
+      <div class="note"><span class="pin">4</span>Sześć pozycji o równej wadze: „Szkolenia (Koszty)” i „Profil: odznaki, zlecenia” to dwa różne światy w jednej liście.</div>
+      <div class="note"><span class="pin">5</span>„Doświadczenie: 160” w pasku dolnym, bez akcji. <span class="prio p1">P1</span></div>
+      <div class="note"><span class="pin">6</span>Ikona klucza (ustawienia) w prawym górnym rogu – nie wiadomo, co robi, dopóki się nie kliknie.</div>
+      <div class="note"><span class="pin">7</span>„planbudowlany.online” – link w rogu, konkuruje z menu o uwagę.</div>
+    </div>
+  </div>
+  <div class="concept">
+    <h3>Koncept: menu pogrupowane + karta postępów</h3>
+    <div class="row">
+      <div style="flex:1">
+        <div class="wire">
+          <div style="text-align:center; font-weight:bold; font-size:12pt;">PLANBUDOWLANY</div>
+          <div class="cols">
+            <div>
+              <div class="blk primary">▶ Kontynuuj budowę</div>
+              <div class="blk primary">Nowa budowa</div>
+              <div style="font-size:8.5pt; color:#555; margin:2px 0">DZIENNIE</div>
+              <div class="blk">Codzienna budowa</div>
+              <div class="blk">Wyzwanie tygodnia</div>
+              <div style="font-size:8.5pt; color:#555; margin:2px 0">POSTĘP</div>
+              <div class="blk">Telefon kierownika</div>
+              <div class="blk">Szkolenia i Hurtownia</div>
+              <div class="blk ghost">Jak grać · Ustawienia (ikona)</div>
+            </div>
+            <div>
+              <div class="blk" style="background:#fff">
+                <b>Twoje postępy</b><br>
+                Doświadczenie <b>160</b><br>
+                Budowy 14 · Rekord 5 etapów<br>
+                <div class="blk primary" style="margin-top:4px">Wydaj doświadczenie</div>
+              </div>
+              <div class="blk ghost">Podpowiedź: „Wydaj XP w Hurtowni – ulepszenia na następną budowę”</div>
+              <div class="blk ghost">Stopka: ↑↓ wybór · A zatwierdź · Y ustawienia</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1" class="why">
+        <b>Dlaczego:</b><br>
+        • Gracz widzi XP i od razu wie, że można je wydać (P1).<br>
+        • Grupy rozdzielają „grę” od „postępu” – mniej pozycji naraz.<br>
+        • Toast przeniesiony pod kartę, nie na rekord.<br>
+        • Skróty klawiszowe zastąpione podpowiedziami przy kontrolerze/dotyku.<br>
+        <b>Do sprawdzenia:</b> czy „Inspektor” przenieść do profilu (tak jak w planie UX).
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOARD 2 -->
+<div class="board">
+  <h2>Board 2 · Wybór zawodu (start budowy)</h2>
+  <div><span class="meta">Flow: Nowa budowa → (mapa kariery) → wybór zawodu → gra</span><span class="meta">Ekrany: classselect, classselect-locked, stats-class</span></div>
+  <div class="row" style="margin-top:6pt">
+    <div class="col-shot"><img class="shot" src="classselect.png" alt="wybór zawodu"></div>
+    <div class="col-notes">
+      <div class="note"><span class="pin">1</span>Nazwy zawodów ucinane: „Kierow…”, „Hydrau…”, „Moc (R): Mur na zakł…”. <span class="prio p2">P2</span></div>
+      <div class="note"><span class="pin">2</span>Zablokowane sloty: „5. wygr.”, „7. wygr.”, „Sekret” – bez informacji co zrobić, dopóki nie najedzie się kursorem.</div>
+      <div class="note"><span class="pin">3</span>Paski HP/SIŁ/ZRĘ/INT/OBR/SZCZ: liczby „0+3”, „34+4” bez legendy (baza + bonus?). <span class="prio p2">P2</span></div>
+      <div class="note"><span class="pin">4</span>Stopka z sześcioma skrótami w jednej linii – nieczytelna.</div>
+      <div class="note"><span class="pin">5</span>Trudność „< Normalny >” i pamiątka są niżej niż ważne info o mocy zawodu.</div>
+      <div class="note"><span class="pin">6</span>Ikona „i” (statystyki) mała, w rogu – łatwo przeoczyć.</div>
+    </div>
+  </div>
+  <div class="concept">
+    <h3>Koncept: karta zawodu z opisem efektu, zablokowane z warunkiem</h3>
+    <div class="row">
+      <div style="flex:1" class="wire">
+        <div class="cols">
+          <div style="flex:0.8">
+            <div class="blk" style="text-align:center">[portret]</div>
+            <div class="blk ghost" style="font-size:8.5pt">Zablokowane: „Odblokuj: wygraj 5 budów”</div>
+          </div>
+          <div style="flex:1.4">
+            <div><b>Murarz</b> · Mistrz 6 · Trudność: Normalny</div>
+            <div class="blk"><b>Moc (R): Mur na zakłócenie</b><br>Stoi +3 tury, odn. +1 tura</div>
+            <div class="blk"><b>Statystyki po ludzku:</b><br>HP 34 (+4 z kasku)<br>Siła 5 – obrażenia wręcz<br>Szczęście +3 – szansa na lepszy sprzęt</div>
+            <div class="blk primary">Start budowy</div>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1" class="why">
+        <b>Dlaczego:</b><br>
+        • Liczby z opisem zamiast „0+3”: gracz wie, co kupuje (P2).<br>
+        • Skrócone nazwy + pełna nazwa w karcie (bez ucinania).<br>
+        • Blokada z warunkiem zamiast znaku zapytania.<br>
+        • Stopka: 2–3 najważniejsze skróty; reszta w „?”.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOARD 3 -->
+<div class="board">
+  <h2>Board 3 · Gra – HUD i plansza</h2>
+  <div><span class="meta">Flow: Start etapu → gra → menu (Tab / ikona klucza)</span><span class="meta">Ekrany: game, combat, map, aim</span></div>
+  <div class="row" style="margin-top:6pt">
+    <div class="col-shot"><img class="shot" src="game.png" alt="gra"></div>
+    <div class="col-notes">
+      <div class="note"><span class="pin">1</span>HUD górny: HP, „Poz. 1” z pustym paskiem, etap i tryb – trzy różne typy informacji w jednym pasku.</div>
+      <div class="note"><span class="pin">2</span>Ikony bez etykiet: apteczka „0/4”, deszcz, błoto, głośnik – nie wiadomo, co to znaczy bez najechania.</div>
+      <div class="note"><span class="pin">3</span>Stopka: „Tab: telefon Enter: akcje R: moc M: mapa” – czterech skrótów nie da się użyć na dotyku.</div>
+      <div class="note"><span class="pin">4</span>Pogoda (deszcz) nakłada się na plansze – obniża kontrast przy wrogach.</div>
+      <div class="note"><span class="pin">5</span>Brak wskazania celu / najbliższego wroga – trzeba czytać mapę.</div>
+    </div>
+  </div>
+  <div class="concept">
+    <h3>Koncept: HUD z legendą i pasek akcji zamiast stopki</h3>
+    <div class="row">
+      <div style="flex:1" class="wire">
+        <div class="cols">
+          <div><b>HP</b> ▮▮▮▮▮▮▮▮▮▯ 30/30<br><b>Poziom 1</b> ▯▯▯▯▯ (0/50 XP)</div>
+          <div style="text-align:right">Etap 1/10 · Fundamenty<br>Normalny</div>
+        </div>
+        <div class="cols" style="margin-top:4px">
+          <div class="blk">Apteczka <b>0/4</b></div>
+          <div class="blk">Pogoda: deszcz</div>
+          <div class="blk">Błoto w wykopie</div>
+        </div>
+        <div class="blk" style="margin-top:6px">[plansza z rozjaśnionym celem]</div>
+        <div class="cols" style="margin-top:6px">
+          <div class="blk primary">Atak</div><div class="blk primary">Moc</div><div class="blk">Telefon</div><div class="blk">Czekaj</div>
+        </div>
+      </div>
+      <div style="flex:1" class="why">
+        <b>Dlaczego:</b><br>
+        • Jeden pasek HP/poziom, osobne ikony z etykietami (P2).<br>
+        • Pasek akcji na dole (zgodny z „Pasek akcji: Prawa ręka” w ustawieniach).<br>
+        • Pogoda z obniżonym kryciem tam, gdzie jest plansza, nie na HUD.<br>
+        • Skróty tylko na klawiaturze, na dotyku – ikony.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOARD 4 -->
+<div class="board">
+  <h2>Board 4 · Telefon: Zadania (i reszta zakładek)</h2>
+  <div><span class="meta">Flow: gra → Tab → telefon → zakładki Zadania · Usterki · Start · Sprzęt · Koszty</span><span class="meta">Ekrany: phone-tasks, phone-issues, phone-start, phone-gear, phone-costs, profile</span></div>
+  <div class="row" style="margin-top:6pt">
+    <div class="col-shot"><img class="shot" src="phone-tasks.png" alt="telefon zadania"></div>
+    <div class="col-notes">
+      <div class="note"><span class="pin">1</span>Dobra struktura: harmonogram + plac budowy. Mocna strona.</div>
+      <div class="note"><span class="pin">2</span>Nie ma „co teraz”: wszystkie etapy wyglądają podobnie. Brakuje pozycji „Następny krok”.</div>
+      <div class="note"><span class="pin">3</span>„Pęknięta ściana, klucz…” ucięte; kolor paska (fiolet) bez legendy.</div>
+      <div class="note"><span class="pin">4</span>Pigułki statusu („Kałuże”, „Błoto”, „Magazyn”) – kolor czerwony sugeruje zagrożenie, ale nie ma jak sprawdzić skutku.</div>
+      <div class="note"><span class="pin">5</span>Dolne zakładki: ikony z podpisami obcinanymi („Zadania”, „Sprzęt”, „Koszty” ledwo się mieszczą).</div>
+    </div>
+  </div>
+  <div class="concept">
+    <h3>Koncept: „Następny krok” na górze + legenda pigułek</h3>
+    <div class="row">
+      <div style="flex:1" class="wire">
+        <div class="blk primary">Następny krok: Fundamenty – zalej beton, potem izolacja</div>
+        <div class="blk">Harmonogram ▸ 1 w trakcie · 2 · 3 · 4 · 5</div>
+        <div class="blk">Plac budowy: <span style="color:#c0392b">● zagrożenie</span> <span style="color:#e0a526">● uwaga</span> <span style="color:#2e86c1">● informacja</span></div>
+        <div class="blk">Pogoda: Deszcz <span style="background:#fde2e2;">Kałuże −2 pola</span></div>
+        <div class="blk ghost">Zakładki: Zadania · Usterki · Start · Sprzęt · Koszty</div>
+      </div>
+      <div style="flex:1" class="why">
+        <b>Dlaczego:</b><br>
+        • Jedna pozycja „co teraz” zamiast czytania całej listy (P2).<br>
+        • Legenda kolorów raz, na górze planu.<br>
+        • Pigułka z efektem („−2 pola”), nie tylko etykietą.<br>
+        • Zakładki z dłuższymi podpisami w pełnej szerokości – bez ucinania.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOARD 5 -->
+<div class="board">
+  <h2>Board 5 · Telefon: Wiadomości (karta etapu i wydarzenia)</h2>
+  <div><span class="meta">Flow: start etapu → wiadomość od Marka/Anny → wybór w karcie wydarzenia</span><span class="meta">Ekrany: card, event-map, event-sms, event-choices, event-result</span></div>
+  <div class="row" style="margin-top:6pt">
+    <div class="col-shot"><img class="shot" src="card.png" alt="wiadomości"></div>
+    <div class="col-notes">
+      <div class="note"><span class="pin">1</span>Podpowiedź „Enter: do roboty” nachodzi na ostatni wpis listy. <span class="prio p1">P1</span></div>
+      <div class="note"><span class="pin">2</span>Wpisy listy ucinane („Izolacja fundamentów: problemy 1l…”, „Premia od inwestora: Budżet budo…”).</div>
+      <div class="note"><span class="pin">3</span>Cztery kolory (szary, zielony, fiolet, czerwony) bez legendy – nie wiadomo, co jest premią, a co zagrożeniem.</div>
+      <div class="note"><span class="pin">4</span>Brak „co dalej”: wiadomości są ładne, ale nie mówią, czy jest wybór do podjęcia.</div>
+      <div class="note"><span class="pin">5</span>Nagłówek „Akt I, 2/10” – poprawny, ale mało widoczny.</div>
+    </div>
+  </div>
+  <div class="concept">
+    <h3>Koncept: karta „Następny etap” z CTA i legendą</h3>
+    <div class="row">
+      <div style="flex:1" class="wire">
+        <div class="blk primary">Następny etap: Izolacja fundamentów (Akt I, 2/10)</div>
+        <div class="blk">Kierownik Marek: „Fundament stoi. Teraz folia i izolacja…”</div>
+        <div class="blk">Anna Nowak: „Dobrze idzie! Przelewam premię…”</div>
+        <div class="blk ghost">Legenda: <span style="color:#0b6b4f">■ premia</span> <span style="color:#c0392b">■ zagrożenie</span> <span style="color:#6a5acd">■ ścieżka</span> <span style="color:#777">■ info</span></div>
+        <div class="blk primary">Zacznij etap</div>
+      </div>
+      <div style="flex:1" class="why">
+        <b>Dlaczego:</b><br>
+        • CTA „Zacznij etap” zamiast podpowiedzi tekstowej (P1).<br>
+        • Legenda kolorów raz, czytelna (P3).<br>
+        • Wpisy listy w pełnej szerokości, bez ucinania.<br>
+        • Wiadomości zostają – to jest ta mocna strona gry.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOARD 6 -->
+<div class="board">
+  <h2>Board 6 · Podsumowanie budowy i wydawanie XP (nowy flow)</h2>
+  <div><span class="meta">Flow: koniec budowy → Podsumowanie → Wydaj doświadczenie → Hurtownia → Nowa budowa</span><span class="meta">Ekrany: recap-win, recap-death, upgrade-shop, hurtownia</span></div>
+  <div class="row" style="margin-top:6pt">
+    <div class="col-shot"><img class="shot" src="recap-win.png" alt="podsumowanie"></div>
+    <div class="col-notes">
+      <div class="note"><span class="pin">1</span>Brak „Zdobyte doświadczenie: +N” w widocznym miejscu – tylko w osi czasu. <span class="prio p1">P1</span></div>
+      <div class="note"><span class="pin">2</span>„Podsumowanie 10/48” – nie wiadomo, co liczba oznacza (etapy? punkty?).</div>
+      <div class="note"><span class="pin">3</span>„Wykończenie i odbi…” ucięte; „95 dni” bez kontekstu.</div>
+      <div class="note"><span class="pin">4</span>Brak głównego przycisku: wszystko to lista do przewijania.</div>
+      <div class="note"><span class="pin">5</span>Przegrana (recap-death) ma ten sam układ – brak XP i wyjaśnienia, czemu przegrana też daje doświadczenie.</div>
+    </div>
+  </div>
+  <div class="concept">
+    <h3>Koncept: wynik na górze, jeden CTA, detale niżej</h3>
+    <div class="row">
+      <div style="flex:1" class="wire">
+        <div style="text-align:center; font-weight:bold;">BUDOWA ZAKOŃCZONA · WYGRANA</div>
+        <div class="blk" style="text-align:center; font-size:14pt;">Zdobyte doświadczenie <b>+160</b></div>
+        <div class="cols">
+          <div class="blk">Etapy 10/10</div><div class="blk">Odbiór: 95 dni</div><div class="blk">Odznaki: 2 nowe</div>
+        </div>
+        <div class="blk primary">Wydaj doświadczenie</div>
+        <div class="blk ghost">Szczegóły budowy (osi czasu, ciosy) ▾</div>
+        <div class="blk ghost">Zakończ</div>
+      </div>
+      <div style="flex:1" class="why">
+        <b>Dlaczego:</b><br>
+        • Liczba XP i jeden CTA na górze (P1).<br>
+        • Szczegóły w rozwijanej sekcji – nie zabierają uwagi.<br>
+        • Przegrana: ten sam układ, nagłówek „Budowa przerwana”, XP też zapisane.<br>
+        • Hurtownia otwiera się z tego ekranu z wyraźnym „Wydaj” i wskaźnikiem „stać mnie”.
+      </div>
+    </div>
+  </div>
+  <div class="flowrow" style="margin-top:8pt">
+    <div class="st new">Podsumowanie (+N XP)</div><span class="ar">→</span>
+    <div class="st new">Wydaj doświadczenie</div><span class="ar">→</span>
+    <div class="st new">Hurtownia: ulepszenia</div><span class="ar">→</span>
+    <div class="st">Nowa budowa (modal, jeśli zostało XP)</div><span class="ar">→</span>
+    <div class="st">Gra</div>
+  </div>
+</div>
+
+<!-- BOARD 7 -->
+<div class="board">
+  <h2>Board 7 · Ustawienia i wyjście z gry</h2>
+  <div><span class="meta">Flow: gra → klucz (ustawienia) → Zapisz i wyjdź / Porzuć budowę</span><span class="meta">Ekrany: settings, settings-title, help, help-tutorial</span></div>
+  <div class="row" style="margin-top:6pt">
+    <div class="col-shot"><img class="shot" src="settings.png" alt="ustawienia"></div>
+    <div class="col-notes">
+      <div class="note"><span class="pin">1</span>Lista 14 pozycji bez grupowania – dźwięk, sterowanie, wyświetlanie, język i gra są wymieszane.</div>
+      <div class="note"><span class="pin">2</span>Przełączniki w trzech stylach: „Wł.” (zielony), „Klasyk” (szary), „Płaski” (fiolet) – niespójne.</div>
+      <div class="note"><span class="pin">3</span>„Filtr ekranu: Klasyk” – niejasne, co to robi.</div>
+      <div class="note"><span class="pin">4</span>„Porzuć budowę” (czerwone) jest na końcu listy obok „Zapisz i wyjdź” – bez widocznego potwierdzenia na tym ekranie. <span class="prio p2">P2</span></div>
+      <div class="note"><span class="pin">5</span>Stopka „Spacja: w…” ucięta.</div>
+    </div>
+  </div>
+  <div class="concept">
+    <h3>Koncept: grupy + potwierdzenie przy destrukcji</h3>
+    <div class="row">
+      <div style="flex:1" class="wire">
+        <div class="blk"><b>Dźwięk</b>: Muzyka ▬▬▬▬ · Dźwięki ▬▬▬▬ · Wibracje ✓</div>
+        <div class="blk"><b>Sterowanie</b>: Gesty + pasek · Pasek akcji: prawa ręka · Tekst: normalny</div>
+        <div class="blk"><b>Wyświetlanie</b>: Filtr ekranu · Widok mapy · Efekty świetlne</div>
+        <div class="blk"><b>Język</b>: Polski</div>
+        <div class="blk"><b>Gra</b>: Jak grać · Zapisz i wyjdź</div>
+        <div class="blk" style="border-color:#c0392b;color:#c0392b">Porzuć budowę ⚠ (potwierdzenie: „Stracisz postęp tej budowy”)</div>
+      </div>
+      <div style="flex:1" class="why">
+        <b>Dlaczego:</b><br>
+        • Grupy zamiast jednej długiej listy.<br>
+        • Jeden styl przełącznika (P2).<br>
+        • Destrukcyjna akcja z potwierdzeniem i wyraźnym kolorem (P2).<br>
+        • Opis przy „Filtr ekranu” w jednym zdaniu.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOARD 8 -->
+<div class="board">
+  <h2>Board 8 · Codzienna budowa i wynik</h2>
+  <div><span class="meta">Flow: tytuł → Codzienna budowa → Start → wynik → (Wyślij) → tabela</span><span class="meta">Ekrany: daily, weekly, weekly-card, weekly-run</span></div>
+  <div class="row" style="margin-top:6pt">
+    <div class="col-shot"><img class="shot" src="daily.png" alt="codzienna"></div>
+    <div class="col-notes">
+      <div class="note"><span class="pin">1</span>Toast „Nowy filtr ekranu!” nachodzi na ekran (jak na tytule). <span class="prio p1">P1</span></div>
+      <div class="note"><span class="pin">2</span>Dwa różne komunikaty o wyniku: „Wynik 3410 zapisany lokalnie” i „Tabela Game Center wkrótce” – niejasne, co się dzieje.</div>
+      <div class="note"><span class="pin">3</span>Brak dużego przycisku „Zagraj dzienną budowę”. Start jest tylko w stopce („Spacja: start”).</div>
+      <div class="note"><span class="pin">4</span>„Tab: wyślij” – akcja ukryta w skrócie klawiszowym, a na dotyku nieosiągalna.</div>
+      <div class="note"><span class="pin">5</span>Wyniki z dni: „Nr 267 (24.09)” – brak opisu, czy to lepsze czy gorsze od dzisiejszego.</div>
+    </div>
+  </div>
+  <div class="concept">
+    <h3>Koncept: jeden CTA i jasny status wyniku</h3>
+    <div class="row">
+      <div style="flex:1" class="wire">
+        <div class="blk">Budowa dnia nr 268 · 25.09.2026 · Cieśla-dekarz</div>
+        <div class="blk primary">Zagraj dzienną budowę</div>
+        <div class="blk">Dziś: najlepszy wynik <b>3410 pkt</b> <span style="color:#0b6b4f">● zapisany na urządzeniu</span></div>
+        <div class="blk ghost">Tabela online: wkrótce (Game Center / Google Play)</div>
+        <div class="blk">Ostatnie dni: 267 – 1870 · 266 – 5320</div>
+      </div>
+      <div style="flex:1" class="why">
+        <b>Dlaczego:</b><br>
+        • Główny przycisk zamiast skrótu (P1).<br>
+        • Jeden komunikat o statusie wyniku.<br>
+        • Toast przeniesiony tak samo jak na tytule.<br>
+        • Dotyk: „Wyślij” jako przycisk, nie tylko klawisz.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOARD 9 -->
+<div class="board">
+  <h2>Board 9 · Hurtownia / Ulepszenia i flow XP</h2>
+  <div><span class="meta">Flow: Tytuł / Koszty → Hurtownia → zakup → powrót</span><span class="meta">Ekrany: upgrade-shop, hurtownia, hurtownia-mats, upgrade-trait, upgrade-gear, tool-swap</span></div>
+  <div class="row" style="margin-top:6pt">
+    <div class="col-shot"><img class="shot" src="upgrade-shop.png" alt="hurtownia"></div>
+    <div class="col-notes">
+      <div class="note"><span class="pin">1</span>Budżet „200 zł” – nie wiadomo, czy to koszt zakupu, czy saldo budowy. <span class="prio p1">P1</span></div>
+      <div class="note"><span class="pin">2</span>Opisy ucinane: „Ulepsz narzędzie…”, „(maks.” – nie widać efektu.</div>
+      <div class="note"><span class="pin">3</span>Brak wskaźnika „stać mnie” (cena szara/zielona) – trzeba sprawdzać każdą pozycję.</div>
+      <div class="note"><span class="pin">4</span>Duża pusta przestrzeń pod listą; przycisk „Wróć” daleko od ostatniej pozycji.</div>
+      <div class="note"><span class="pin">5</span>Stopka „Z/Es…” ucięta.</div>
+    </div>
+  </div>
+  <div class="concept">
+    <h3>Koncept: saldo XP, wskaźnik „stać mnie”, efekt w jednej linii</h3>
+    <div class="row">
+      <div style="flex:1" class="wire">
+        <div class="cols"><div><b>Doświadczenie: 160</b></div><div style="text-align:right">Budżet budowy: 200 zł</div></div>
+        <div class="blk">✓ Szlifierka +1 → +2 · efekt: +1 obrażeń · <b>60 zł + 4 stal</b></div>
+        <div class="blk ghost">✗ Kask solidny · efekt: +2 obrony · 120 zł (brak stali)</div>
+        <div class="blk ghost">✗ Narzędzie: Młot · efekt: zastępuje broń · 90 zł</div>
+        <div class="blk primary">Kup ulepszenie</div>
+        <div class="blk ghost">Wróć do budowy / Tytuł</div>
+      </div>
+      <div style="flex:1" class="why">
+        <b>Dlaczego:</b><br>
+        • Saldo XP i budżetu w osobnych polach – jasne, co na co idzie (P1).<br>
+        • Dostępne pozycje wyraźnie zaznaczone, niedostępne z powodem.<br>
+        • Efekt w jednej linii, nie w obciętym tekście.<br>
+        • CTA zawsze widoczny.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOARD 0: podsumowanie -->
+<div class="board">
+  <h2>Board 0 · Podsumowanie i kolejność wdrożenia</h2>
+  <table>
+    <tr><th>Krok</th><th>Co</th><th>Ekran/flow</th><th>Efekt dla gracza</th><th>Priorytet</th></tr>
+    <tr><td>1</td><td>Podsumowanie z „+N XP” i „Wydaj doświadczenie”</td><td>recap-win/death → upgrade-shop</td><td>Wie, po co zbiera XP</td><td><span class="prio p1">P1</span></td></tr>
+    <tr><td>2</td><td>Modal na starcie nowej gry przy XP &gt; 0</td><td>title → Nowa budowa</td><td>Nie przegapi wydania XP</td><td><span class="prio p1">P1</span></td></tr>
+    <tr><td>3</td><td>Tytuł: pogrupowane menu + karta postępów</td><td>title</td><td>Mniej pozycji, widać XP i CTA</td><td><span class="prio p1">P1</span></td></tr>
+    <tr><td>4</td><td>Toast przeniesiony poza rekord/zadania (tytuł, codzienna)</td><td>title, daily</td><td>Brak zasłaniania treści</td><td><span class="prio p1">P1</span></td></tr>
+    <tr><td>5</td><td>Skrócone etykiety i obcięcia (zawody, wiadomości, Hurtownia, stopki)</td><td>classselect, card, upgrade-shop</td><td>Pełne nazwy i opisy</td><td><span class="prio p2">P2</span></td></tr>
+    <tr><td>6</td><td>Legenda kolorów (telefon, wiadomości)</td><td>phone, card</td><td>Rozumie premie i zagrożenia</td><td><span class="prio p3">P3</span></td></tr>
+    <tr><td>7</td><td>Ustawienia pogrupowane + potwierdzenie „Porzuć”</td><td>settings</td><td>Bezpieczniej przy wyjściu</td><td><span class="prio p2">P2</span></td></tr>
+    <tr><td>8</td><td>Codzienna: CTA i jeden komunikat o wyniku</td><td>daily</td><td>Jasny start i status</td><td><span class="prio p3">P3</span></td></tr>
+  </table>
+  <p style="margin-top:10pt"><b>Zakres i ograniczenia przeglądu:</b> oceny są oparte na zrzutach 1280×720 i na kodzie (ścieżki flow z TitleScreen i DebugScenes). Nie grałem pełnych przebiegów ani nie testowałem z graczami. Koncepty to wireframe'y, nie gotowe makiety. Pozostałe 40 zrzutów (np. boss, perks, aim, Akt 0, ekrany wydarzeń) nie zostały tu opisane osobno.</p>
+</div>
+
+</body>
+</html>
