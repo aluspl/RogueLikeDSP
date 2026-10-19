@@ -117,24 +117,37 @@ def _in_tri(x, y, pts):
     return not (neg and pos)
 
 
-# ---------- paleta (zgodna z tonacją gry: złoto, brąz, stal, granat) ----------
-BLACK = (14, 14, 22, 255)
-STEEL = (154, 160, 166, 255)
-STEEL_HI = (214, 218, 222, 255)
-STEEL_DK = (92, 98, 106, 255)
-WOOD = (122, 85, 48, 255)
-WOOD_DK = (74, 50, 28, 255)
-AMBER = (224, 165, 38, 255)
-AMBER_DK = (160, 110, 20, 255)
-BRICK = (150, 90, 58, 255)
-BRICK_DK = (104, 60, 38, 255)
-MORTAR = (196, 186, 166, 255)
-CRACK = (30, 18, 10, 255)
-GREY = (120, 124, 130, 255)
-GREEN = (60, 160, 110, 255)
-RED = (192, 57, 43, 255)
-BLUE = (46, 134, 193, 255)
-CREAM = (243, 233, 198, 255)
+# ---------- paleta gry (tokeny z GODOT/godot/scripts/Gfx/Pal.cs) ----------
+def _hex(h, a=255):
+    return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), a)
+
+BLACK = _hex("0b0b0f")          # Text / obrys
+BRAND = _hex("6b4eff")          # marka
+BRAND_DK = _hex("3a2a99")       # cień marki (OnBrand)
+NAVY = _hex("1b1440")
+ACCENT = _hex("ff7a3d")         # akcent
+PROG = _hex("f59e0b")           # w toku
+DONE = _hex("10b981")           # zrobione
+LATE = _hex("ef4444")           # zagrożenie
+WHITE = _hex("ffffff")          # karta
+BG = _hex("f6f5f8")             # tło appki
+GROUP = _hex("efeaf7")
+GREY = _hex("94a3b8")           # do zrobienia
+STEEL = _hex("94a3b8")
+STEEL_HI = _hex("f6f5f8")
+STEEL_DK = _hex("636366")
+WOOD = _hex("ff7a3d")
+WOOD_DK = _hex("c2410c")
+AMBER = PROG
+AMBER_DK = _hex("b45309")
+BRICK = _hex("94a3b8")
+BRICK_DK = _hex("636366")
+MORTAR = _hex("e5e7eb")
+CRACK = BLACK
+CREAM = WHITE
+RED = LATE
+BLUE = BRAND
+GREEN = DONE
 
 
 # ---------- młot (32x32) ----------
