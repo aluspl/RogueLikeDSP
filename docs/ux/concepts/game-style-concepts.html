@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>PlanBudowlany – koncepty w stylu gry (mobile, pion)</title>
+<style>
+  @page { size: 1400px 2100px; margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #1a1b26; font-family: "DejaVu Sans", Arial, sans-serif; color: #f3e9c6; }
+  .top { padding: 28px 40px 10px; }
+  .top h1 { margin: 0; font-size: 30px; color: #e0a526; }
+  .top p { margin: 6px 0 0; color: #bdb6a0; font-size: 14px; }
+  .sec { padding: 14px 40px 4px; }
+  .sec h2 { font-size: 18px; margin: 0 0 4px; color: #e0a526; border-bottom: 2px solid #e0a526; display: inline-block; padding-bottom: 2px; }
+  .sec .note { font-size: 13px; color: #bdb6a0; margin: 4px 0 10px; }
+  .row { display: flex; gap: 22px; padding: 0 40px 8px; flex-wrap: wrap; align-items: flex-start; }
+  .cap { width: 390px; font-size: 13px; color: #d8d2bd; }
+  .cap b { color: #e0a526; }
+  .cap ul { margin: 6px 0 0; padding-left: 16px; }
+  .cap li { margin-bottom: 3px; }
+  .phone { width: 390px; height: 844px; position: relative; overflow: hidden; border: 6px solid #0c0d18; border-radius: 28px; background: #15172b; box-shadow: 0 6px 18px #0008; }
+  .bgfloor { position: absolute; inset: 0; background-image: url(assets/stage_0.png); background-size: 128px 128px; image-rendering: pixelated; opacity: .55; }
+  .bgtitle { position: absolute; inset: 0; background: linear-gradient(#1b2452, #2a2140 58%, #3b2a1e); }
+  .shade { position: absolute; inset: 0; background: rgba(10,10,20,.55); }
+  .ground { position: absolute; left: 0; right: 0; bottom: 0; height: 110px; background: #4a3420; border-top: 5px solid #7a5530; }
+  .abs { position: absolute; }
+  .logo { width: 300px; image-rendering: pixelated; }
+  .btn { display: block; border: 3px solid #f3e9c6; background: #1b1d33; color: #f3e9c6; padding: 12px 14px; font-size: 17px; font-weight: bold; margin: 8px 20px; border-radius: 6px; text-align: center; box-shadow: 0 4px 0 #000; }
+  .btn.pri { background: #e0a526; color: #15172b; border-color: #fff; }
+  .btn.sec2 { background: #2b2f4f; font-size: 15px; font-weight: normal; }
+  .btn.dis { opacity: .45; }
+  .card { background: #15172bdd; border: 3px solid #e0a526; border-radius: 10px; padding: 12px 14px; margin: 8px 16px; }
+  .card h3 { margin: 0 0 6px; font-size: 15px; color: #e0a526; }
+  .card p { margin: 3px 0; font-size: 13.5px; }
+  .pill { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 10px; margin: 2px 3px 2px 0; background: #2b2f4f; }
+  .pill.red { background: #7b2a2a; } .pill.grn { background: #1f5e46; } .pill.blu { background: #1f4e7a; } .pill.gry { background: #4a4a4a; }
+  .hd { position: absolute; top: 10px; left: 14px; right: 14px; display: flex; justify-content: space-between; font-size: 13px; color: #d8d2bd; }
+  .bar { height: 14px; background: #2b2f4f; border-radius: 7px; overflow: hidden; border: 2px solid #000; }
+  .bar i { display: block; height: 100%; background: #c0392b; }
+  .bar.xp i { background: #e0a526; }
+  .bar.gn i { background: #2e7d32; }
+  .ico { display: inline-block; width: 40px; height: 40px; background-repeat: no-repeat; image-rendering: pixelated; }
+  .phone-ico { width: 40px; height: 40px; background-image: url(assets/generated/phone_icons6_x4.png); background-size: 252px 40px; image-rendering: pixelated; }
+  .tabbar { position: absolute; bottom: 0; left: 0; right: 0; height: 74px; background: #0c0d18; border-top: 3px solid #2b2e4a; display: flex; justify-content: space-around; align-items: center; font-size: 11px; color: #bdb6a0; }
+  .tabbar .on { color: #e0a526; font-weight: bold; }
+  .actionbar { position: absolute; bottom: 14px; left: 14px; right: 14px; display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+  .actionbar div { background: #1b1d33; border: 2px solid #f3e9c6; border-radius: 10px; padding: 8px 0; text-align: center; font-size: 12px; }
+  .actionbar div.pri { background: #e0a526; color: #15172b; }
+  .wall { position: absolute; left: 50%; transform: translateX(-50%); width: 240px; height: 150px; background: #6b4a2b; border: 4px solid #3a2616; background-image: repeating-linear-gradient(0deg, transparent 0 22px, #3a2616 22px 26px), repeating-linear-gradient(90deg, transparent 0 40px, #3a2616 40px 44px); }
+  .crack { position: absolute; background: #1a0f08; height: 3px; transform-origin: left center; }
+  .hammer { position: absolute; width: 14px; height: 120px; background: #7a5530; border: 2px solid #000; }
+  .hammer::before { content: ""; position: absolute; top: -18px; left: -18px; width: 50px; height: 30px; background: #9aa0a6; border: 3px solid #000; }
+  .rubble { position: absolute; width: 10px; height: 10px; background: #6b4a2b; border: 2px solid #1a0f08; }
+  .frame-lbl { position: absolute; top: 10px; right: 10px; background: #000a; font-size: 12px; padding: 2px 6px; border-radius: 4px; color: #e0a526; }
+  .strip { display: flex; gap: 10px; padding: 0 40px; flex-wrap: wrap; }
+  .step { width: 300px; height: 300px; position: relative; overflow: hidden; background: #15172b; border: 4px solid #0c0d18; border-radius: 12px; }
+  .step .lbl { position: absolute; bottom: 6px; left: 8px; font-size: 12px; color: #e0a526; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>PlanBudowlany – koncepty w stylu gry (mobile, pion 390×844)</h1>
+  <p>Kolejność zgodna z flow: tytuł → start → wybór zawodu → gra → etap → młot → wynik → Hurtownia → telefon → ustawienia → codzienna. Grafika: sprite'y i tła z gry (tiles, ikony telefonu, logo tytułu).</p>
+</div>
+
+<!-- 1. TYTUŁ: 3 WARIANTY -->
+<div class="sec"><h2>1 · Tytuł – 3 warianty</h2><div class="note">Wszystkie w pionie. Logo z gry, tło z kafelków etapu. Różnica: układ menu i miejsce XP.</div></div>
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="bgtitle"></div><div class="bgfloor"></div><div class="shade"></div><div class="ground"></div>
+      <div class="abs" style="top:70px; width:100%; text-align:center;"><img class="logo" src="assets/title.png" alt=""></div>
+      <div class="abs" style="top:236px; width:100%;">
+        <div class="btn pri" style="padding:9px 14px; margin:5px 20px;">▶ Nowa budowa</div>
+        <div class="btn" style="padding:9px 14px; margin:5px 20px;">Kontynuuj budowę</div>
+        <div class="btn sec2" style="padding:7px 14px; margin:5px 20px;">Codzienna · Wyzwanie tygodnia</div>
+        <div class="btn sec2" style="padding:7px 14px; margin:5px 20px;">Telefon · Szkolenia · Hurtownia · Jak grać</div>
+      </div>
+      <div class="card abs" style="bottom:86px; left:12px; right:12px; margin:0; padding:10px 12px;">
+        <h3>TWOJE POSTĘPY</h3>
+        <p>Doświadczenie <b>160</b> · Budowy 14 · Rekord 5 etapów</p>
+        <div class="btn pri" style="margin:6px 0 0; padding:8px;">Wydaj doświadczenie</div>
+      </div>
+    </div>
+    <div class="cap"><b>V1 · Pionowe menu + karta postępów</b><ul><li>Najbliżej obecnego układu, łatwa zmiana.</li><li>XP ma swój przycisk na dole, nie tylko w pasku.</li><li>Dla kciuka: przyciski 48 px wysokości.</li></ul></div>
+  </div>
+  <div>
+    <div class="phone">
+      <div class="bgtitle"></div><div class="bgfloor"></div><div class="shade"></div><div class="ground"></div>
+      <div class="abs" style="top:40px; width:100%; text-align:center;"><img class="logo" src="assets/title.png" alt=""></div>
+      <div class="abs" style="top:200px; left:20px; right:20px;">
+        <div class="card">
+          <h3>NASTĘPNA BUDOWA · Akt I</h3>
+          <p style="font-size:20px; font-weight:bold; margin:6px 0;">Dom Nowaków</p>
+          <p>Zawód: <b>Kierownik budowy</b></p>
+          <p>Trudność: Normalny</p>
+          <div class="btn pri" style="margin:10px 0 0;">Start budowy</div>
+          <div class="btn sec2" style="margin:8px 0 0;">Zmień zawód</div>
+        </div>
+      </div>
+      <div class="abs" style="bottom:90px; left:16px; right:16px; display:flex; gap:6px;">
+        <div class="btn sec2" style="flex:1; margin:0; font-size:12px; padding:8px 4px; white-space:nowrap;">XP 160</div>
+        <div class="btn sec2" style="flex:1; margin:0; font-size:12px; padding:8px 4px; white-space:nowrap;">Telefon</div>
+        <div class="btn sec2" style="flex:1; margin:0; font-size:12px; padding:8px 4px; white-space:nowrap;">Ustawienia</div>
+      </div>
+    </div>
+    <div class="cap"><b>V2 · Karta „Następna budowa”</b><ul><li>Jeden główny cel: Start.</li><li>XP w małym pasku na dole, z przyciskiem.</li><li>Najlepsze dla nowego gracza.</li></ul></div>
+  </div>
+  <div>
+    <div class="phone">
+      <div class="bgtitle"></div><div class="bgfloor"></div><div class="shade"></div><div class="ground"></div>
+      <div class="abs" style="top:40px; width:100%; text-align:center;"><img class="logo" src="assets/title.png" alt=""></div>
+      <div class="abs" style="top:220px; left:0; right:0; text-align:center;">
+        <div style="display:inline-block; background:#e0a526; color:#15172b; font-weight:bold; font-size:24px; padding:14px 22px; border:4px solid #15172b; box-shadow:6px 6px 0 #000;">NOWA BUDOWA</div>
+        <div style="margin-top:16px; display:inline-block; background:#f3e9c6; color:#15172b; font-weight:bold; font-size:18px; padding:10px 18px; border:4px solid #15172b;">HURTOWNIA · 160 XP</div>
+        <div style="margin-top:12px; display:inline-block; background:#f3e9c6; color:#15172b; font-weight:bold; font-size:18px; padding:10px 18px; border:4px solid #15172b;">KONTYNUUJ</div>
+        <div style="margin-top:12px; display:inline-block; background:#bbb; color:#15172b; font-weight:bold; font-size:15px; padding:10px 14px; border:4px solid #15172b;">SZKOLENIA · JAK GRAĆ</div>
+      </div>
+      <div class="abs" style="bottom:130px; left:20px; right:20px; color:#bdb6a0; font-size:12px; text-align:center;">Tablica wybrana: strzałki/dotyk</div>
+    </div>
+    <div class="cap"><b>V3 · Plac budowy (tablice)</b><ul><li>Najbardziej klimatyczny, jak na placu.</li><li>Mało tekstu w jednej tablicy – trudniej o obcięcia.</li><li>Ryzyko: mniej jasne, co jest „postępem”.</li></ul></div>
+  </div>
+</div>
+
+<!-- 2. MODAL STARTOWY -->
+<div class="sec"><h2>2 · Start nowej gry przy XP &gt; 0</h2><div class="note">Pojawia się po wybraniu „Nowa budowa”, zanim wejdziesz w wybór zawodu.</div></div>
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="bgtitle"></div><div class="bgfloor"></div><div class="shade"></div><div class="ground"></div>
+      <div class="abs" style="top:120px; left:20px; right:20px;">
+        <div class="card" style="padding:18px;">
+          <h3 style="font-size:18px;">MASZ 160 DOŚWIADCZENIA</h3>
+          <p>Hurtownia ma ulepszenia za to doświadczenie. Wydasz je teraz czy zaczynasz budowę?</p>
+          <div class="btn pri" style="margin:12px 0 4px;">Ulepsz teraz</div>
+          <div class="btn" style="margin:6px 0 4px;">Zacznij budowę</div>
+          <p style="font-size:12px; color:#bdb6a0; text-align:center;">☐ Nie pytaj ponownie</p>
+        </div>
+      </div>
+    </div>
+    <div class="cap"><b>Modal startowy</b><ul><li>Czytelna decyzja: ulepsz albo zaczynaj.</li><li>Checkbox „nie pytaj” – zapisany w profilu.</li></ul></div>
+  </div>
+</div>
+
+<!-- 3. WYBÓR ZAWODU -->
+<div class="sec"><h2>3 · Wybór zawodu (start budowy)</h2><div class="note">Pełne nazwy, statystyki z opisem, blokada z warunkiem zamiast znaku zapytania.</div></div>
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="bgtitle"></div><div class="bgfloor"></div><div class="shade"></div><div class="ground"></div>
+      <div class="hd"><span>‹ Wybór zawodu</span><span>Trudność: Normalny ›</span></div>
+      <div class="abs" style="top:50px; left:16px; right:16px;">
+        <div class="card" style="margin:0 0 8px;">
+          <h3>Kierownik budowy</h3>
+          <p>Efekt: Dziennik budowy (zasięg 2)</p>
+          <p><span class="pill">HP 34 (+4 kask)</span><span class="pill">Siła 5</span><span class="pill">Szczęście +3</span></p>
+        </div>
+        <div class="card" style="margin:0 0 8px;">
+          <h3>Murarz</h3>
+          <p>Kielnia · zasięg 1 · wytrzymały</p>
+        </div>
+        <div class="card" style="margin:0 0 8px; opacity:.55; border-color:#777;">
+          <h3>Cieśla-dekarz</h3>
+          <p>Odblokuj: wygraj 5 budów</p>
+        </div>
+        <div class="card" style="margin:0 0 8px; opacity:.55; border-color:#777;">
+          <h3>Operator koparki</h3>
+          <p>Odblokuj: Akt 0 „Papierologia” (8 wygranych)</p>
+        </div>
+      </div>
+      <div class="actionbar" style="grid-template-columns:1fr 1fr;"><div class="pri">Start budowy</div><div>Opis statystyk</div></div>
+    </div>
+    <div class="cap"><b>Zawody jako karty</b><ul><li>Każda karta: nazwa, efekt, statystyki z opisem.</li><li>Zablokowane z warunkiem, nie ?.</li><li>Dolny pasek: 2 najważniejsze akcje.</li></ul></div>
+  </div>
+</div>
+
+<!-- 4. GRA / HUD -->
+<div class="sec"><h2>4 · Gra – HUD i pasek akcji (kciuk)</h2><div class="note">HUD z etykietami. Stałe przyciski na dole zamiast stopki ze skrótami.</div></div>
+<div class="row">
+  <div>
+    <div class="phone" style="background:#0f1020;">
+      <div class="bgfloor" style="opacity:.8"></div><div class="shade" style="background:rgba(10,10,20,.2)"></div>
+      <div class="abs" style="top:12px; left:12px; right:12px; background:#15172bdd; border:2px solid #e0a526; border-radius:8px; padding:8px 10px;">
+        <div style="display:flex; justify-content:space-between; font-size:13px;"><b>HP 30/30</b><span>Etap 1/10 · Fundamenty</span></div>
+        <div class="bar" style="margin-top:6px;"><i style="width:100%"></i></div>
+        <div style="font-size:12px; margin-top:4px; color:#bdb6a0;">Poziom 1 · XP 0/50</div>
+        <div style="margin-top:4px;"><span class="pill blu">Deszcz: śliskie</span><span class="pill">Apteczka 0/4</span></div>
+      </div>
+      <div class="abs" style="top:190px; left:50%; transform:translateX(-50%); width:280px; height:280px; border:3px dashed #e0a526; border-radius:50%; opacity:.5;"></div>
+      <div class="abs" style="top:240px; left:0; right:0; text-align:center; font-size:12px; color:#f3e9c6;">Zasięg zaznaczony (strzałki/dotyk)</div>
+      <div class="actionbar">
+        <div class="pri">⚔ Atak</div><div>✦ Moc</div><div>☕ Termos</div><div>⏸ Czekaj</div>
+      </div>
+      <div class="abs" style="bottom:4px; left:0; right:0; text-align:center; font-size:11px; color:#bdb6a0;">Telefon: przeciągnij z góry</div>
+    </div>
+    <div class="cap"><b>HUD dla kciuka</b><ul><li>Jeden pasek HP/poziom z etykietami.</li><li>Ikony z podpisami (apteczka, deszcz).</li><li>Pasek akcji zamiast skrótów klawiszowych.</li></ul></div>
+  </div>
+</div>
+
+<!-- 5. KARTA ETAPU / WIADOMOŚCI -->
+<div class="sec"><h2>5 · Karta etapu – „Następny etap”</h2><div class="note">CTA zamiast podpowiedzi, legenda kolorów, pełne wpisy listy.</div></div>
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="bgtitle"></div><div class="bgfloor"></div><div class="shade"></div>
+      <div class="abs" style="top:24px; left:16px; right:16px;">
+        <div class="card" style="margin:0;">
+          <h3>NASTĘPNY ETAP · Akt I · 2/10</h3>
+          <p style="font-size:17px; font-weight:bold;">Izolacja fundamentów</p>
+          <p style="font-size:13px;">Kierownik Marek: „Fundament stoi. Teraz folia i izolacja.”</p>
+        </div>
+        <div class="card" style="margin:8px 0 0;">
+          <h3>Wiadomości</h3>
+          <p><span class="pill grn">Premia</span> Anna Nowak: przelew od inwestora</p>
+          <p><span class="pill red">Zagrożenie</span> Woda gruntowa: 2 wrogowie przy wykopie</p>
+          <p><span class="pill blu">Ścieżka</span> Wybór: płytko czy głęboko</p>
+          <p><span class="pill gry">Info</span> Izolacja zajmuje 3 tury</p>
+        </div>
+      </div>
+      <div class="actionbar" style="grid-template-columns:1fr;"><div class="pri" style="font-size:15px;">Zacznij etap</div></div>
+    </div>
+    <div class="cap"><b>Karta etapu</b><ul><li>Jeden przycisk „Zacznij etap”.</li><li>Legenda: premia, zagrożenie, ścieżka, info.</li><li>Wpisy bez ucinania.</li></ul></div>
+  </div>
+</div>
+
+<!-- 6. MŁOT (JEDNORAZOWY) I PĘKNIĘTA ŚCIANA -->
+<div class="sec"><h2>6 · Młot wyburzeniowy – jednorazowy, do kruszenia murów</h2><div class="note">Zamiast „Pęknięta ściana: klucz, Operator lub wybuch”. „Klucz nastawny” to broń Hydraulika, więc w tym opisie mylił gracza.</div></div>
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="bgtitle"></div><div class="bgfloor"></div><div class="shade"></div>
+      <div class="abs" style="top:24px; left:16px; right:16px;">
+        <div class="card" style="margin:0;">
+          <h3>Zapchany magazyn – ściana do skruszenia</h3>
+          <p>Za tą ścianą: skrzynia (sprzęt, Respekt, zł).</p>
+          <p><span class="pill red">Wymaga: Młot wyburzeniowy</span> <span class="pill">lub wybuch</span></p>
+        </div>
+        <div class="card" style="margin:8px 0 0;">
+          <h3>Młot wyburzeniowy (jednorazowy)</h3>
+          <p>Kruszy jedną ścianę albo pęknięty pustak. Zużywa się po użyciu.</p>
+          <p><span class="pill">Zasięg 1</span><span class="pill">Obrażenia 5–8 (siła)</span></p>
+        </div>
+      </div>
+      <div class="actionbar" style="grid-template-columns:1fr 1fr;"><div class="pri">Użyj młota</div><div>Anuluj</div></div>
+    </div>
+    <div class="cap"><b>Karta młota i ściany</b><ul><li>Młot to osobny, jednorazowy przedmiot z jasnym zużyciem.</li><li>Ściana mówi, czego potrzeba – bez „klucza”.</li><li>Nie miesza się z „Młotem wyburzeniowym” jako bronią (rozdzielić nazwy).</li></ul></div>
+  </div>
+</div>
+
+<!-- ANIMACJA MŁOTA: STORYBOARD -->
+<div class="sec"><h2>6b · Animacja uderzenia młota (storyboard, 4 klatki)</h2><div class="note">Kruszenie ściany: uniesienie, uderzenie z drganiem, pęknięcia, gruz i przejście.</div></div>
+<div class="strip">
+  <div class="step" style="background:#15172b;">
+    <div class="abs" style="left:24px; top:44px; width:192px; height:192px; background:url(assets/generated/wall_sheet_x4.png) 0 0 no-repeat; image-rendering:pixelated;"></div>
+    <div class="abs" style="left:150px; top:20px; width:128px; height:128px; background:url(assets/generated/hammer_x4.png) 0 0 no-repeat; image-rendering:pixelated; transform:rotate(-35deg);"></div>
+    <div class="lbl">1 · Zamach (0,3 s)</div>
+  </div>
+  <div class="step" style="background:#15172b;">
+    <div class="abs" style="left:24px; top:44px; width:192px; height:192px; background:url(assets/generated/wall_sheet_x4.png) -200px 0 no-repeat; image-rendering:pixelated; transform:translate(3px,2px);"></div>
+    <div class="abs" style="left:110px; top:70px; width:128px; height:128px; background:url(assets/generated/hammer_x4.png) 0 0 no-repeat; image-rendering:pixelated; transform:rotate(15deg);"></div>
+    <div class="lbl">2 · Uderzenie + drżenie kamery</div>
+  </div>
+  <div class="step" style="background:#15172b;">
+    <div class="abs" style="left:24px; top:44px; width:192px; height:192px; background:url(assets/generated/wall_sheet_x4.png) -400px 0 no-repeat; image-rendering:pixelated;"></div>
+    <div class="lbl">3 · Pęknięcia rozchodzą się</div>
+  </div>
+  <div class="step" style="background:#15172b;">
+    <div class="abs" style="left:24px; top:44px; width:192px; height:192px; background:url(assets/generated/wall_sheet_x4.png) -600px 0 no-repeat; image-rendering:pixelated;"></div>
+    <div class="lbl">4 · Ściana znika, skrzynia odsłonięta</div>
+  </div>
+</div>
+<div class="row" style="padding-top:10px;">
+  <div class="cap" style="width:100%;">Czas całości ~1,2 s. Dźwięk: <i>sfx_hit</i> przy uderzeniu, <i>sfx_pickup</i> przy skrzyni. Na GBA: 4 klatki sprite'a, bez kamery.</div>
+</div>
+
+<!-- 7. PODSUMOWANIE I WYDAJ XP -->
+<div class="sec"><h2>7 · Podsumowanie budowy – „Wydaj doświadczenie”</h2><div class="note">Wygrana i przegrana w tym samym układzie. Liczba XP na górze, jeden przycisk.</div></div>
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="bgtitle"></div><div class="bgfloor"></div><div class="shade"></div>
+      <div class="abs" style="top:40px; left:16px; right:16px;">
+        <div style="text-align:center; font-size:14px; color:#e0a526; font-weight:bold;">BUDOWA ZAKOŃCZONA · WYGRANA</div>
+        <div class="card" style="text-align:center; margin:10px 0;">
+          <p style="margin:0;">Zdobyte doświadczenie</p>
+          <p style="font-size:38px; font-weight:bold; color:#e0a526; margin:4px 0;">+160</p>
+          <p>Etapy 10/10 · Odbiór 95 dni · 2 odznaki</p>
+        </div>
+        <div class="btn pri" style="margin-top:6px;">Wydaj doświadczenie</div>
+        <div class="btn sec2">Zakończ</div>
+        <div class="btn sec2" style="font-size:13px; font-weight:normal;">Szczegóły budowy ▾</div>
+      </div>
+    </div>
+    <div class="cap"><b>Wynik budowy</b><ul><li>Liczba XP w 38 px, nie w osi czasu.</li><li>Jeden główny CTA.</li><li>Przegrana: „Budowa przerwana”, XP też zapisane.</li></ul></div>
+  </div>
+</div>
+
+<!-- 8. HURTOWNIA -->
+<div class="sec"><h2>8 · Hurtownia – wydawanie XP i budżetu</h2><div class="note">Saldo XP i zł osobno, wskaźnik „stać mnie”, pełny efekt w jednej linii.</div></div>
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="bgtitle"></div><div class="bgfloor"></div><div class="shade"></div>
+      <div class="hd"><span>‹ Hurtownia</span><span>XP 160 · Budżet 200 zł</span></div>
+      <div class="abs" style="top:50px; left:16px; right:16px;">
+        <div class="card" style="margin:0 0 8px; border-color:#2e7d32;">
+          <h3>✓ Szlifierka +1 → +2</h3>
+          <p>Efekt: +1 obrażeń. Koszt: <b>60 zł + 4 stal</b></p>
+          <div class="btn pri" style="margin:6px 0 0; padding:8px;">Kup</div>
+        </div>
+        <div class="card" style="margin:0 0 8px; opacity:.6; border-color:#777;">
+          <h3>✗ Kask solidny</h3>
+          <p>Efekt: +2 obrony · 120 zł · brak stali</p>
+        </div>
+        <div class="card" style="margin:0 0 8px; opacity:.6; border-color:#777;">
+          <h3>✗ Młot wyburzeniowy</h3>
+          <p>Jednorazowy · 90 zł · brak miejsca</p>
+        </div>
+      </div>
+      <div class="actionbar" style="grid-template-columns:1fr 1fr;"><div class="pri">Wróć do budowy</div><div>Tytuł</div></div>
+    </div>
+    <div class="cap"><b>Hurtownia</b><ul><li>Dostępne zielone, niedostępne z powodem.</li><li>Efekt w jednej linii, bez ucinania.</li><li>Wyjście na dole, zawsze widoczne.</li></ul></div>
+  </div>
+</div>
+
+<!-- 9. TELEFON – ZADANIA -->
+<div class="sec"><h2>9 · Telefon kierownika – Zadania z „Następnym krokiem”</h2><div class="note">Ikony telefonu z gry (sprite'y), pierwsza pozycja to co teraz.</div></div>
+<div class="row">
+  <div>
+    <div class="phone" style="background:#0c0d18;">
+      <div class="abs" style="top:10px; left:14px; right:14px; font-size:12px; color:#bdb6a0;">Kierownik Marek · 08:12</div>
+      <div class="abs" style="top:40px; left:14px; right:14px;">
+        <div class="card" style="margin:0 0 8px;">
+          <h3>Następny krok</h3>
+          <p>Fundamenty: zalej beton, potem izolacja</p>
+        </div>
+        <div class="card" style="margin:0 0 8px;">
+          <h3>Plac budowy</h3>
+          <p><span class="pill red">Kałuże −2 pola</span><span class="pill">Błoto</span><span class="pill grn">Magazyn OK</span></p>
+          <p style="font-size:12px; color:#bdb6a0;">Legenda: czerwony = zagrożenie · zielony = OK</p>
+        </div>
+        <div class="card" style="margin:0 0 8px;">
+          <h3>Zadania dnia 0/3</h3>
+          <p>✓ Wygraj etap bez usterek</p>
+          <p>☐ Zbierz 2 kawy</p>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div style="text-align:center;"><div class="phone-ico" style="margin:0 auto; background-position:0 0;"></div>Zadania</div>
+        <div style="text-align:center;"><div class="phone-ico" style="margin:0 auto; background-position:-42px 0;"></div>Usterki</div>
+        <div class="on" style="text-align:center;"><div class="phone-ico" style="margin:0 auto; background-position:-85px 0;"></div>Start</div>
+        <div style="text-align:center;"><div class="phone-ico" style="margin:0 auto; background-position:-128px 0;"></div>Sprzęt</div>
+        <div style="text-align:center;"><div class="phone-ico" style="margin:0 auto; background-position:-170px 0;"></div>Koszty</div>
+      </div>
+    </div>
+    <div class="cap"><b>Telefon – Zadania</b><ul><li>„Następny krok” na górze.</li><li>Legenda kolorów raz, przy placu.</li><li>Zakładki z pełnymi podpisami.</li></ul></div>
+  </div>
+</div>
+
+<!-- 10. USTAWIENIA -->
+<div class="sec"><h2>10 · Ustawienia – grupy i potwierdzenie</h2><div class="note">Grupy, jeden styl przełączników, „Porzuć budowę” z potwierdzeniem.</div></div>
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="bgtitle"></div><div class="bgfloor"></div><div class="shade"></div>
+      <div class="abs" style="top:40px; left:16px; right:16px;">
+        <h3 style="margin:0 0 6px; color:#e0a526; font-size:15px;">DŹWIĘK</h3>
+        <div class="card" style="margin:0 0 8px;"><p>Muzyka ▬▬▬▬▬▬○ · Efekty ▬▬▬▬○ · Wibracje ✓</p></div>
+        <h3 style="margin:0 0 6px; color:#e0a526; font-size:15px;">STEROWANIE</h3>
+        <div class="card" style="margin:0 0 8px;"><p>Pasek akcji: prawa ręka · Wielkość tekstu: normalna</p></div>
+        <h3 style="margin:0 0 6px; color:#e0a526; font-size:15px;">GRA</h3>
+        <div class="card" style="margin:0 0 8px;"><p>Jak grać · Zapisz i wyjdź</p></div>
+        <div class="card" style="margin:0; border-color:#c0392b;">
+          <p style="color:#e88;">Porzuć budowę</p>
+          <p style="font-size:12px;">Potwierdzenie: „Stracisz postęp tej budowy”</p>
+        </div>
+      </div>
+    </div>
+    <div class="cap"><b>Ustawienia</b><ul><li>Grupy zamiast jednej listy.</li><li>Destrukcja tylko z potwierdzeniem.</li></ul></div>
+  </div>
+</div>
+
+<!-- 11. CODZIENNA -->
+<div class="sec"><h2>11 · Codzienna budowa – jeden CTA</h2><div class="note">Duży przycisk startu, jeden komunikat o wyniku, toast poza treścią.</div></div>
+<div class="row">
+  <div>
+    <div class="phone">
+      <div class="bgtitle"></div><div class="bgfloor"></div><div class="shade"></div>
+      <div class="abs" style="top:40px; left:16px; right:16px;">
+        <h3 style="margin:0; color:#e0a526;">BUDOWA DNIA · 268</h3>
+        <p style="font-size:13px;">25.09.2026 · Cieśla-dekarz · seed stały</p>
+        <div class="btn pri" style="margin:14px 0 6px; padding:16px;">Zagraj dzienną budowę</div>
+        <div class="card" style="margin:8px 0;"><p>Dziś: najlepszy wynik <b>3410 pkt</b></p><p><span class="pill grn">zapisany na urządzeniu</span></p></div>
+        <div class="card" style="margin:8px 0;"><p>Tabela online: wkrótce</p></div>
+        <div class="card" style="margin:8px 0;"><p>267 · 1870 pkt</p><p>266 · 5320 pkt</p></div>
+      </div>
+    </div>
+    <div class="cap"><b>Codzienna budowa</b><ul><li>Jeden duży przycisk startu.</li><li>Jeden komunikat o statusie.</li><li>Wyniki z dni z wartością, nie samą liczbą.</li></ul></div>
+  </div>
+</div>
+
+<div class="sec" style="padding-bottom:40px;"><h2>Kolejność wdrożenia (zgodna z flow)</h2>
+  <div class="note">1) Wynik + „Wydaj” (6, 7) · 2) Modal startowy (2) · 3) Tytuł (1) · 4) Hurtownia (8) · 5) Wybór zawodu (3) · 6) Gra/HUD (4) · 7) Karta etapu (5) · 8) Młot i ściana (6, 6b) · 9) Telefon (9) · 10) Ustawienia (10) · 11) Codzienna (11).</div>
+</div>
+
+</body>
+</html>
