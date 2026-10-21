@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>PlanBudowlany – UX i flow doświadczenia</title>
+<style>
+  @page { size: A4; margin: 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "DejaVu Sans", Arial, sans-serif; color: #1d1d1f; font-size: 11pt; line-height: 1.4; margin: 0; }
+  h1 { font-size: 22pt; margin: 0 0 4pt; }
+  h2 { font-size: 15pt; margin: 18pt 0 6pt; border-bottom: 2px solid #e0a526; padding-bottom: 3pt; page-break-after: avoid; }
+  h3 { font-size: 12pt; margin: 12pt 0 4pt; page-break-after: avoid; }
+  .sub { color: #666; margin-bottom: 14pt; }
+  .pb { page-break-before: always; }
+  .card { border: 1px solid #ddd; border-radius: 6pt; padding: 8pt 10pt; margin: 6pt 0; page-break-inside: avoid; }
+  .p1 { border-left: 5pt solid #c0392b; }
+  .p2 { border-left: 5pt solid #e0a526; }
+  .p3 { border-left: 5pt solid #2e86c1; }
+  .tag { display: inline-block; font-size: 9pt; padding: 1pt 5pt; border-radius: 3pt; color: #fff; background: #555; margin-right: 4pt; }
+  .tag.p1 { background: #c0392b; }
+  .tag.p2 { background: #e0a526; }
+  .tag.p3 { background: #2e86c1; }
+  img.shot { width: 100%; border: 1px solid #bbb; border-radius: 4pt; }
+  .grid2 { display: flex; gap: 10pt; }
+  .grid2 > div { flex: 1; }
+  .flow { display: flex; flex-direction: column; align-items: stretch; gap: 0; margin: 8pt 0; }
+  .step { border: 2px solid #1d1d1f; border-radius: 6pt; padding: 7pt 10pt; background: #faf6ea; page-break-inside: avoid; }
+  .step.new { background: #e8f4e8; border-color: #2e7d32; }
+  .step.decide { background: #fff4d6; border-color: #b7791f; }
+  .step small { color: #555; display: block; }
+  .arrow { text-align: center; font-size: 14pt; line-height: 1; color: #555; margin: 1pt 0; }
+  .branch { display: flex; gap: 8pt; }
+  .branch > div { flex: 1; }
+  .legend span { display: inline-block; margin-right: 12pt; font-size: 10pt; }
+  .sw { display: inline-block; width: 12pt; height: 12pt; vertical-align: middle; border: 1px solid #333; margin-right: 4pt; }
+  table { border-collapse: collapse; width: 100%; font-size: 10pt; }
+  th, td { border: 1px solid #ccc; padding: 4pt 6pt; text-align: left; vertical-align: top; }
+  th { background: #f2f2f2; }
+  .mock { border: 2px solid #1d1d1f; border-radius: 8pt; background: #0f1020; color: #f3e9c6; padding: 10pt; font-family: "DejaVu Sans Mono", monospace; font-size: 9pt; page-break-inside: avoid; }
+  .mock .t { color: #e0a526; font-weight: bold; }
+  .mock .b { background: #e0a526; color: #0f1020; padding: 0 4pt; }
+  .mock .dim { color: #888; }
+  .mock .box { border: 1px dashed #e0a526; padding: 4pt 6pt; margin: 4pt 0; }
+  .ok { color: #2e7d32; font-weight: bold; }
+  .foot { margin-top: 16pt; font-size: 9pt; color: #777; }
+</style>
+</head>
+<body>
+
+<h1>PlanBudowlany – UX i flow doświadczenia</h1>
+<div class="sub">Wersja v0.21.54 · Godot 4.7.2 · propozycja do zatwierdzenia · 2026-10-19</div>
+
+<h2>1. Główny problem</h2>
+<div class="card p1">
+  <span class="tag p1">P1</span><b>Doświadczenie zbierane, ale nie wydawane w naturalnym momencie.</b><br>
+  Tytuł pokazuje „Doświadczenie: 160”, ale nie prowadzi do akcji. Po budowie nie ma kroku „wydaj XP”.
+  Gracz dowiaduje się o Hurtowni i Kosztach przypadkiem.
+</div>
+
+<h2>2. Flow – obecny i proponowany</h2>
+<div class="grid2">
+  <div>
+    <h3>Obecnie</h3>
+    <div class="flow">
+      <div class="step">Tytuł</div><div class="arrow">↓</div>
+      <div class="step">Nowa budowa</div><div class="arrow">↓</div>
+      <div class="step">Etapy … koniec budowy</div><div class="arrow">↓</div>
+      <div class="step">Wynik (wygrana / przegrana)</div><div class="arrow">↓</div>
+      <div class="step">Tytuł <small>XP leży w pasku, brak akcji</small></div>
+    </div>
+  </div>
+  <div>
+    <h3>Proponowane</h3>
+    <div class="flow">
+      <div class="step">Tytuł <small>karta postępów: XP, Budowy, Rekord, <b>Wydaj</b></small></div><div class="arrow">↓</div>
+      <div class="step">Nowa budowa <small>jeśli XP &gt; 0: modal (krok 4)</small></div><div class="arrow">↓</div>
+      <div class="step">Etapy … koniec budowy</div><div class="arrow">↓</div>
+      <div class="step new">Wynik budowy <small>wygrana / przegrana · „Zdobyte XP: +N”</small></div><div class="arrow">↓</div>
+      <div class="step new">Wydaj doświadczenie <small>Hurtownia / Koszty (1 przycisk)</small></div><div class="arrow">↓</div>
+      <div class="step">Nowa budowa <small>albo Tytuł</small></div>
+    </div>
+  </div>
+</div>
+
+<h3>Krok 4 – modal na starcie nowej gry (XP &gt; 0)</h3>
+<div class="mock">
+  <div class="t">MASZ 160 DOŚWIADCZENIA DO WYDANIA</div>
+  <div class="dim">Hurtownia czeka na Twoją decyzję. Co wybierasz?</div>
+  <div class="box">[ <span class="b">Ulepsz teraz</span> ]   [ Zacznij budowę ]</div>
+  <div class="dim">☐ Nie pytaj ponownie (flaga w profilu)</div>
+</div>
+
+<div class="pb"></div>
+<h2>3. Ekran wyniku budowy (nowy)</h2>
+<div class="mock">
+  <div class="t">BUDOWA ZAKOŃCZONA – WYGRANA</div>
+  <div>Etapy: 11/11 · Budżet: 40 zł · Czas: 143 kroki</div>
+  <div class="box">ZDOBYTE DOŚWIADCZENIE: <span class="t">+160</span><br>
+    Respekt: +3 · Odznaki: 2 nowe</div>
+  <div class="box">Łączne doświadczenie: <span class="t">160</span></div>
+  <div>[ <span class="b">Wydaj doświadczenie</span> ]   [ Zakończ ]</div>
+</div>
+<p>Przegrana: ten sam ekran, nagłówek „Budowa przerwana”, XP też zapisane. Wyświetlany jest jeden powód przegranej.</p>
+
+<h2>4. Tytuł – karta postępów</h2>
+<div class="mock">
+  <div class="t">PLANBUDOWLANY</div>
+  <div>[ Nowa budowa ]</div>
+  <div>[ Kontynuuj budowę ]  <span class="dim">(gdy jest zapis)</span></div>
+  <div>[ Szkolenia ]  [ Jak grać ] [ Ustawienia ]</div>
+  <div class="box"><span class="t">TWOJE POSTĘPY</span><br>
+    Doświadczenie <b>160</b> · Budowy <b>14</b> · Rekord <b>5 etapów</b><br>
+    <span class="b">Wydaj</span> <span class="dim">(bez zmiany ekranu tytułu)</span></div>
+</div>
+<p>Zmiana względem obecnego: „Inspektor 9” przenosi się do profilu, pasek dolny znika.</p>
+
+<div class="pb"></div>
+<h2>5. Ekrany – co zmienić</h2>
+<h3><span class="tag p2">P2</span>Tytuł (zrzut)</h3>
+<img class="shot" src="title.png" alt="Tytuł">
+<h3><span class="tag p2">P2</span>Wybór zawodu (zrzut) – obcięte etykiety, zablokowane sloty bez podpowiedzi</h3>
+<img class="shot" src="classselect.png" alt="Wybór zawodu">
+
+<div class="pb"></div>
+<h3><span class="tag p3">P3</span>Telefon – zakładki i odznaki (zrzut) – niejasne „Zdobyta” / „+5”</h3>
+<img class="shot" src="profile.png" alt="Telefon">
+<h3><span class="tag p2">P2</span>Hurtownia (zrzut) – urwane opisy, brak wskaźnika „stać mnie”</h3>
+<img class="shot" src="upgrade-shop.png" alt="Hurtownia">
+
+<div class="pb"></div>
+<h3><span class="tag p3">P3</span>Karta etapu z wydarzeniem (zrzut) – brak legendy kolorów</h3>
+<img class="shot" src="card.png" alt="Karta etapu">
+
+<h2>6. Tabela zmian</h2>
+<table>
+<tr><th>#</th><th>Zmiana</th><th>Priorytet</th><th>Dotyczy</th></tr>
+<tr><td>1</td><td>Ekran wyniku z „Wydaj doświadczenie”</td><td>P1</td><td>Godot i GBA</td></tr>
+<tr><td>2</td><td>Modal przy starcie z XP &gt; 0 + flaga w profilu</td><td>P1</td><td>Godot i GBA</td></tr>
+<tr><td>3</td><td>Karta postępów na tytule (zamiast paska dolnego)</td><td>P1</td><td>Godot</td></tr>
+<tr><td>4</td><td>Skrócone etykiety, test na 1280x720 i telefonie</td><td>P2</td><td>Godot</td></tr>
+<tr><td>5</td><td>Wskaźnik „stać mnie” w Hurtowni</td><td>P2</td><td>Godot i GBA</td></tr>
+<tr><td>6</td><td>Podpowiedź blokady zawodu (stały tekst)</td><td>P2</td><td>Godot</td></tr>
+<tr><td>7</td><td>Legenda kolorów w wiadomościach i kartach</td><td>P3</td><td>Godot i GBA</td></tr>
+<tr><td>8</td><td>„Inspektor” przeniesiony do profilu</td><td>P3</td><td>Godot</td></tr>
+</table>
+
+<h2>7. Otwarte pytania</h2>
+<ul>
+  <li>Czy modal przy starcie ma być domyślny, czy tylko po pierwszej przegranej/wygranej?</li>
+  <li>Czy XP wydawane w Hurtowni ma być tym samym zasobem co Respekt, czy osobnym?</li>
+  <li>Wersja GBA: ten sam przepływ czy uproszczony (tylko ekran wyniku)?</li>
+</ul>
+
+<div class="foot">Zrzuty z Godot 4.7.2 (headless + Xvfb). Mockupy ekranów wynikowych i modala są szkicami, nie zrzutami gry.</div>
+</body>
+</html>
