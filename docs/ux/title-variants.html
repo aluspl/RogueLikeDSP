@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>PlanBudowlany – warianty menu głównego</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #222; font-family: "DejaVu Sans", Arial, sans-serif; color: #f3e9c6; }
+  .frame { width: 1280px; height: 720px; position: relative; overflow: hidden; margin: 0 0 24px; background: #15172b; }
+  .label { position: absolute; top: 8px; left: 8px; background: #000a; color: #e0a526; padding: 3px 8px; font-size: 14px; z-index: 9; border-radius: 4px; }
+  .sky { position: absolute; inset: 0; background: linear-gradient(#1b2452, #2a2140 60%, #3b2a1e); }
+  .ground { position: absolute; left: 0; right: 0; bottom: 0; height: 120px; background: #4a3420; border-top: 6px solid #7a5530; }
+  .btn { display: inline-block; border: 3px solid #f3e9c6; background: #1b1d33; padding: 10px 22px; font-size: 22px; margin: 6px 0; min-width: 300px; }
+  .btn.sel { background: #e0a526; color: #15172b; border-color: #fff; }
+  .btn.dim { opacity: .55; }
+  .logo { font-size: 58px; font-weight: bold; color: #e0a526; text-shadow: 3px 3px 0 #000; letter-spacing: 1px; }
+  .logo small { display: block; font-size: 20px; color: #f3e9c6; letter-spacing: 0; text-shadow: none; }
+  .card { background: #1b1d33cc; border: 2px solid #e0a526; border-radius: 8px; padding: 14px 18px; }
+  .hint { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; font-size: 16px; color: #bbb; }
+  .sign { background: #e0a526; color: #15172b; font-weight: bold; padding: 14px 26px; border: 4px solid #15172b; box-shadow: 6px 6px 0 #000; display: inline-block; font-size: 30px; }
+  .post { position: absolute; width: 12px; background: #6b4a2b; }
+  /* telefon */
+  .phone { width: 360px; height: 640px; background: #0c0d18; border: 10px solid #2b2e4a; border-radius: 36px; padding: 26px 14px; position: absolute; left: 780px; top: 40px; }
+  .app { width: 92px; height: 74px; font-size: 11px !important; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; color: #15172b; font-weight: bold; margin: 8px 10px; text-align: center; }
+  .tabs span { display: inline-block; padding: 6px 10px; border-radius: 6px; background: #1b1d33; font-size: 14px; margin: 2px; }
+  .tabs span.on { background: #e0a526; color: #15172b; }
+</style>
+</head>
+<body>
+
+<!-- A: pionowe menu + karta postępów -->
+<div class="frame" id="A">
+  <div class="label">A · Klasyczne pionowe menu + karta postępów</div>
+  <div class="sky"></div><div class="ground"></div>
+  <div style="position:absolute; left:70px; top:90px;">
+    <div class="logo">PLANBUDOWLANY<small>roguelike o budowie domu</small></div>
+    <div style="margin-top:34px;">
+      <div class="btn sel">▶ Nowa budowa</div><br>
+      <div class="btn">Kontynuuj budowę</div><br>
+      <div class="btn">Szkolenia</div><br>
+      <div class="btn">Jak grać</div><br>
+      <div class="btn">Ustawienia</div>
+    </div>
+  </div>
+  <div class="card" style="position:absolute; right:60px; top:110px; width:380px;">
+    <div style="color:#e0a526; font-weight:bold; font-size:18px;">TWOJE POSTĘPY</div>
+    <div style="font-size:18px; margin-top:8px;">Doświadczenie: <b>160</b></div>
+    <div style="font-size:18px;">Budowy: <b>14</b> · Rekord: <b>5 etapów</b></div>
+    <div class="btn" style="min-width:0; font-size:18px; padding:6px 16px; margin-top:12px;">Wydaj doświadczenie</div>
+  </div>
+  <div class="hint">↑↓ wybór · A zatwierdź · SELECT telefon</div>
+</div>
+
+<!-- B: duża karta budowy w centrum -->
+<div class="frame" id="B">
+  <div class="label">B · Duża karta „Następna budowa” w centrum</div>
+  <div class="sky"></div><div class="ground"></div>
+  <div style="position:absolute; top:24px; width:100%; text-align:center;">
+    <div class="logo" style="font-size:44px;">PLANBUDOWLANY</div>
+  </div>
+  <div class="card" style="position:absolute; left:50%; top:140px; transform:translateX(-50%); width:620px; text-align:center; padding:26px;">
+    <div style="color:#e0a526; font-size:16px;">NASTĘPNA BUDOWA · Akt I · Stan surowy</div>
+    <div style="font-size:34px; font-weight:bold; margin:8px 0;">Zacznij budowę domu Nowaków</div>
+    <div style="font-size:17px;">Zawód: <b>Kierownik budowy</b> · Trudność: Normalny</div>
+    <div style="margin-top:16px;"><span class="btn sel" style="min-width:260px;">Start</span> <span class="btn" style="min-width:200px;">Zmień zawód</span></div>
+  </div>
+  <div class="card" style="position:absolute; left:60px; bottom:60px; width:330px; font-size:17px;">
+    <b style="color:#e0a526;">Doświadczenie: 160</b><br>
+    <span class="btn" style="min-width:0; font-size:16px; padding:4px 12px;">Wydaj</span>
+  </div>
+  <div class="card" style="position:absolute; right:60px; bottom:60px; width:330px; font-size:17px;">
+    <div>Kontynuuj · Szkolenia · Jak grać</div>
+  </div>
+  <div class="hint">← → zmiana zawodu · A start · Y menu</div>
+</div>
+
+<!-- C: menu jako telefon -->
+<div class="frame" id="C">
+  <div class="label">C · Menu jako ekran telefonu (aplikacje)</div>
+  <div class="sky"></div><div class="ground"></div>
+  <div style="position:absolute; left:50px; top:110px; width:430px;">
+    <div class="logo" style="font-size:38px;">PLANBUDOWLANY</div>
+    <div style="font-size:19px; margin-top:14px; line-height:1.5;">Telefon kierownika budowy to menu gry.<br>Każda aplikacja otwiera jedną część gry.</div>
+    <div class="btn sel" style="margin-top:22px;">▶ Nowa budowa</div>
+  </div>
+  <div class="phone">
+    <div style="font-size:14px; color:#aaa; text-align:center; margin-bottom:10px;">Kierownik Marek · 08:12</div>
+    <div>
+      <span class="app" style="background:#e0a526;">BUDOWA</span>
+      <span class="app" style="background:#7fb3d5;">WYDAJ XP</span>
+      <span class="app" style="background:#a9dfbf;">PROFIL</span>
+      <span class="app" style="background:#f5b7b1;">ODZNAKI</span>
+      <span class="app" style="background:#d7bde2;">HURTOWNIA</span>
+      <span class="app" style="background:#bbb;">USTAWIENIA</span>
+    </div>
+    <div class="tabs" style="margin-top:14px;"><span class="on">Start</span><span>Zespół</span><span>Koszty</span><span>Jak grać</span></div>
+    <div style="font-size:14px; color:#aaa; margin-top:14px;">Doświadczenie: 160 · Budowy: 14</div>
+  </div>
+  <div class="hint">A otwórz aplikację · B wstecz · SELECT wyjście</div>
+</div>
+
+<!-- D: plac budowy – tablice -->
+<div class="frame" id="D">
+  <div class="label">D · Plac budowy – menu na tablicach</div>
+  <div class="sky"></div>
+  <div class="ground"></div>
+  <div class="post" style="left:120px; top:260px; height:300px;"></div>
+  <div class="post" style="left:700px; top:300px; height:260px;"></div>
+  <div class="post" style="left:1150px; top:260px; height:300px;"></div>
+  <div style="position:absolute; left:50%; top:60px; transform:translateX(-50%); text-align:center;">
+    <div class="logo" style="font-size:50px;">PLANBUDOWLANY</div>
+  </div>
+  <div style="position:absolute; left:50%; top:230px; transform:translateX(-50%); text-align:center;">
+    <div class="sign">NOWA BUDOWA</div><br><br>
+    <div class="sign" style="background:#f3e9c6; font-size:24px;">KONTYNUUJ</div>
+    <div class="sign" style="background:#f3e9c6; font-size:24px;">HURTOWNIA · 160 XP</div>
+    <div class="sign" style="background:#bbb; font-size:22px;">SZKOLENIA · JAK GRAĆ · USTAWIENIA</div>
+  </div>
+  <div class="hint">wybierz tablicę strzałkami · A wejście</div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>PlanBudowlany – warianty menu głównego (infografika)</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; width: 1280px; font-family: "DejaVu Sans", Arial, sans-serif; background: #f6f1e4; color: #1d1d1f; }
+  header { background: #15172b; color: #f3e9c6; padding: 26px 40px 20px; }
+  header h1 { margin: 0; font-size: 34px; color: #e0a526; }
+  header p { margin: 6px 0 0; font-size: 16px; color: #d8d2bd; }
+  .wrap { padding: 22px 40px 10px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .card { background: #fff; border-radius: 10px; border: 2px solid #15172b; overflow: hidden; }
+  .card .hd { padding: 10px 12px; color: #15172b; font-weight: bold; font-size: 17px; }
+  .card .hd small { display: block; font-weight: normal; font-size: 13px; color: #333; margin-top: 2px; }
+  .card .bd { padding: 10px 12px 12px; font-size: 13.5px; line-height: 1.45; }
+  .card ul { margin: 6px 0 0; padding-left: 18px; }
+  .card li { margin-bottom: 3px; }
+  .A .hd { background: #cfe8f7; } .B .hd { background: #f9e3b4; } .C .hd { background: #d9f0dc; } .D .hd { background: #efd5ea; }
+  .score { display: flex; justify-content: space-between; font-size: 13px; border-top: 1px dashed #bbb; padding-top: 8px; margin-top: 10px; }
+  .dots { letter-spacing: 2px; color: #e0a526; font-size: 15px; }
+  .section { margin-top: 20px; background: #fff; border: 2px solid #15172b; border-radius: 10px; padding: 16px 20px; }
+  .section h2 { margin: 0 0 8px; font-size: 20px; color: #15172b; }
+  .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 15px; }
+  .flow .st { border: 2px solid #15172b; border-radius: 6px; padding: 6px 10px; background: #faf6ea; }
+  .flow .st.new { background: #e8f4e8; border-color: #2e7d32; }
+  .flow .ar { font-size: 18px; color: #555; }
+  .rec { background: #15172b; color: #f3e9c6; border-radius: 10px; padding: 16px 20px; margin-top: 20px; }
+  .rec h2 { margin: 0 0 6px; color: #e0a526; font-size: 20px; }
+  .rec p { margin: 4px 0; font-size: 15px; line-height: 1.45; }
+  .foot { padding: 12px 40px 18px; font-size: 12px; color: #777; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { border: 1px solid #ccc; padding: 5px 8px; text-align: center; }
+  th { background: #f2f2f2; }
+  td.l, th.l { text-align: left; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>PlanBudowlany – warianty menu głównego</h1>
+  <p>Cztery propozycje tytułu. Każdy wariant pokazuje „Wydaj doświadczenie” w miejscu, gdzie gracz je zauważy.</p>
+</header>
+
+<div class="wrap">
+  <div class="grid">
+
+    <div class="card A">
+      <div class="hd">A · Klasyczne pionowe menu<small>+ karta postępów z „Wydaj”</small></div>
+      <div class="bd">
+        <b>Jak działa:</b> logo i pionowe menu po lewej, karta „Twoje postępy” po prawej z przyciskiem „Wydaj doświadczenie”.
+        <ul>
+          <li>Najmniejsza zmiana względem obecnego tytułu</li>
+          <li>Naturalnie czytelne dla GBA (ten sam układ)</li>
+          <li>Wydawanie XP widoczne od razu</li>
+        </ul>
+        <div class="score"><span>Czytelność</span><span class="dots">●●●●○</span></div>
+        <div class="score"><span>Koszt wdrożenia</span><span class="dots">●●○○○</span></div>
+        <div class="score"><span>Wyróżnienie XP</span><span class="dots">●●●○○</span></div>
+      </div>
+    </div>
+
+    <div class="card B">
+      <div class="hd">B · Karta „Następna budowa”<small>duży start w centrum</small></div>
+      <div class="bd">
+        <b>Jak działa:</b> główna karta pokazuje następną budowę i przycisk Start. Zmiana zawodu obok. XP w małej karcie na dole.
+        <ul>
+          <li>Najmocniejszy nacisk na „zacznij grę”</li>
+          <li>Dobre dla nowych graczy, którzy nie wiedzą co robić</li>
+          <li>XP mniej widoczne, łatwo je przeoczyć</li>
+        </ul>
+        <div class="score"><span>Czytelność</span><span class="dots">●●●●●</span></div>
+        <div class="score"><span>Koszt wdrożenia</span><span class="dots">●●●○○</span></div>
+        <div class="score"><span>Wyróżnienie XP</span><span class="dots">●●○○○</span></div>
+      </div>
+    </div>
+
+    <div class="card C">
+      <div class="hd">C · Telefon jako menu<small>aplikacje kierownika budowy</small></div>
+      <div class="bd">
+        <b>Jak działa:</b> tytuł to ekran telefonu z aplikacjami: Budowa, Wydaj XP, Profil, Odznaki, Hurtownia, Ustawienia.
+        <ul>
+          <li>Najlepiej pasuje do tematu i do istniejącego telefonu w grze</li>
+          <li>Wydawanie XP jako osobna aplikacja</li>
+          <li>Więcej kroków do pierwszej gry, trzeba się nauczyć aplikacji</li>
+        </ul>
+        <div class="score"><span>Czytelność</span><span class="dots">●●●○○</span></div>
+        <div class="score"><span>Koszt wdrożenia</span><span class="dots">●●●●○</span></div>
+        <div class="score"><span>Wyróżnienie XP</span><span class="dots">●●●●○</span></div>
+      </div>
+    </div>
+
+    <div class="card D">
+      <div class="hd">D · Plac budowy<small>menu na tablicach</small></div>
+      <div class="bd">
+        <b>Jak działa:</b> tablice na placu budowy: Nowa budowa, Kontynuuj, Hurtownia z liczbą XP, Szkolenia i reszta.
+        <ul>
+          <li>Najbardziej klimatyczny, mocno wyróżnia temat</li>
+          <li>Mało miejsca na tekst i liczby</li>
+          <li>Trudniejszy na telefonie w pionie</li>
+        </ul>
+        <div class="score"><span>Czytelność</span><span class="dots">●●○○○</span></div>
+        <div class="score"><span>Koszt wdrożenia</span><span class="dots">●●●●●</span></div>
+        <div class="score"><span>Wyróżnienie XP</span><span class="dots">●●●○○</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section">
+    <h2>Porównanie kryteriów</h2>
+    <table>
+      <tr><th class="l">Kryterium</th><th>A</th><th>B</th><th>C</th><th>D</th></tr>
+      <tr><td class="l">Czytelność dla nowego gracza</td><td>4</td><td>5</td><td>3</td><td>2</td></tr>
+      <tr><td class="l">Wydawanie XP widoczne od razu</td><td>5</td><td>2</td><td>4</td><td>3</td></tr>
+      <tr><td class="l">Klimat tematu budowy</td><td>3</td><td>3</td><td>5</td><td>5</td></tr>
+      <tr><td class="l">Koszt wdrożenia (mniej = lepiej)</td><td>2</td><td>3</td><td>4</td><td>5</td></tr>
+      <tr><td class="l">Zgodność z GBA (ten sam układ)</td><td>5</td><td>3</td><td>2</td><td>1</td></tr>
+    </table>
+    <p style="font-size:12px;color:#555;margin:8px 0 0">Skala 1–5. Oceny są szkicem na podstawie zrzutów, nie testów z graczami.</p>
+  </div>
+
+  <div class="section">
+    <h2>Proponowany flow (dla A lub B)</h2>
+    <div class="flow">
+      <div class="st">Tytuł</div><span class="ar">→</span>
+      <div class="st">Nowa budowa</div><span class="ar">→</span>
+      <div class="st">Etapy</div><span class="ar">→</span>
+      <div class="st new">Wynik budowy<br><small>+N XP</small></div><span class="ar">→</span>
+      <div class="st new">Wydaj doświadczenie</div><span class="ar">→</span>
+      <div class="st">Tytuł / Nowa budowa</div>
+    </div>
+  </div>
+
+  <div class="rec">
+    <h2>Rekomendacja</h2>
+    <p><b>A jako pierwszy krok</b>: najmniejszy koszt, zgodne z GBA, widać „Wydaj” od razu.</p>
+    <p><b>B jako cel</b>, gdy będą testy z nowymi graczami: najmocniejszy start gry.</p>
+    <p>C i D zostawiam na później jako wariant klimatyczny (np. motyw sezonowy albo osobne menu dla Godota).</p>
+  </div>
+</div>
+
+<div class="foot">Zrzuty tytułu z Godot 4.7.2. Warianty A–D są szkicami HTML/CSS, nie grą. Infografika: PlanBudowlany UX, 2026-10-19.</div>
+</body>
+</html>
