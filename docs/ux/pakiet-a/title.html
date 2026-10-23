@@ -1,0 +1,75 @@
+<style>
+  .ph{width:290px;height:610px;border-radius:22px;border:6px solid #1d1b2e;overflow:hidden;font:12px/1.35 ui-monospace,Menlo,monospace;color:#fff;display:flex;flex-direction:column;margin:0 auto;background:linear-gradient(#7a5cff,#4a30c8)}
+  .logo{text-align:center;padding:16px 0 6px;font-weight:bold;font-size:20px}
+  .logo small{display:block;color:#ff8a3d;font-size:13px}
+  .stat{display:flex;justify-content:space-between;padding:6px 10px 0;font-size:10px;opacity:.9}
+  .m{margin:5px 14px;padding:10px;border-radius:10px;background:rgba(255,255,255,.14);text-align:center;font-weight:bold}
+  .m.p{background:#fff;color:#6b4eff}
+  .grp{font-size:10px;opacity:.7;margin:8px 16px 0;text-transform:uppercase}
+  .two{display:flex;gap:6px;margin:5px 14px}.two .m{margin:0;flex:1;font-size:11px}
+  .card{background:#fff;color:#1d1b2e;margin:8px 14px;border-radius:12px;padding:10px}
+  .muted{color:#77738a}
+  .btn{display:block;text-align:center;padding:8px 0;border-radius:10px;background:#6b4eff;color:#fff;font-weight:bold;margin-top:6px}
+  .badge{background:#ff4d4f;color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px}
+  .sms{display:flex;gap:8px;align-items:flex-start}
+  .face{width:28px;height:28px;border-radius:8px;background:#ffd2a6;border:2px solid #1d1b2e;flex:0 0 28px}
+</style>
+
+<h2>Tytuł: jak ma wyglądać menu?</h2>
+<p class="subtitle">Dziś: 6 równych pozycji, „Profil” i „Szkolenia” otwierają ten sam telefon, doświadczenie to sam tekst w stopce. Wszystkie warianty łączą Profil i Szkolenia w jeden „Telefon kierownika” i pokazują doświadczenie z akcją.</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="ph">
+        <div class="stat"><span>Inspektor 9</span><span>Rekord 6200</span></div>
+        <div class="logo">PlanBudowlany<small>ROGUELIKE</small></div>
+        <div class="m p">▶ Nowa budowa</div>
+        <div class="grp">Dziennie</div>
+        <div class="two"><div class="m">Codzienna</div><div class="m">Tydzień</div></div>
+        <div class="grp">Postęp</div>
+        <div class="m">Telefon kierownika</div>
+        <div class="m">Jak grać</div>
+        <div class="card" style="margin-top:auto">
+          <b>Twoje postępy</b><br><span class="muted">Doświadczenie 160 · Budowy 14</span>
+          <span class="btn">Wydaj doświadczenie</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body"><h3>A · Pogrupowane menu + karta postępów</h3><p>Rekomendacja z dokumentów. Mniej pozycji, grupy, na dole karta z XP i przyciskiem. Najbliżej obecnego wyglądu, pasuje też do GBA.</p></div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="ph">
+        <div class="logo" style="padding-top:12px">PlanBudowlany<small>ROGUELIKE</small></div>
+        <div class="card">
+          <span class="muted">NASTĘPNA BUDOWA · AKT I</span><br><b style="font-size:15px">Dom Nowaków</b><br>
+          <span class="muted">Murarz · Normalny</span>
+          <span class="btn">Start budowy</span>
+          <span class="btn" style="background:#f0edff;color:#6b4eff">Zmień zawód</span>
+        </div>
+        <div class="two"><div class="m">Codzienna</div><div class="m">Tydzień</div></div>
+        <div class="two"><div class="m">Telefon <span class="badge">160</span></div><div class="m">Jak grać</div></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>B · Karta „Następna budowa”</h3><p>Jeden wielki start, ostatni zawód i trudność zapamiętane. Najszybciej do gry; doświadczenie jako plakietka na telefonie, łatwiej przeoczyć.</p></div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="ph">
+        <div class="stat"><span>Inspektor 9</span><span>Rekord 6200</span></div>
+        <div class="logo">PlanBudowlany<small>ROGUELIKE</small></div>
+        <div class="card">
+          <div class="sms"><div class="face"></div><div><b>Kierownik Marek</b> <span class="badge">1</span><br>Szefie, w kieszeni 160 dośw. Kupujemy coś przed budową?</div></div>
+          <span class="btn">Otwórz telefon</span>
+        </div>
+        <div class="m p">▶ Nowa budowa</div>
+        <div class="two"><div class="m">Codzienna</div><div class="m">Tydzień</div></div>
+        <div class="m">Jak grać</div>
+      </div>
+    </div>
+    <div class="card-body"><h3>C · Ostatni SMS na tytule</h3><p>Spójne z wybranym „SMS-em między budowami”: na tytule wisi ostatnia wiadomość od Marka (doświadczenie, nowa broń, zlecenie), stuknięcie otwiera telefon.</p></div>
+  </div>
+</div>

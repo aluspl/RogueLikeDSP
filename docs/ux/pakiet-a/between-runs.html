@@ -1,0 +1,70 @@
+<style>
+  .ph{width:290px;height:610px;background:#f6f5f8;border-radius:22px;border:6px solid #1d1b2e;overflow:hidden;font:12px/1.35 ui-monospace,Menlo,monospace;color:#1d1b2e;display:flex;flex-direction:column;margin:0 auto}
+  .hero{background:linear-gradient(#7a5cff,#5a3fe0);color:#fff;padding:14px 10px;text-align:center}
+  .hero .big{font-size:28px;font-weight:bold;color:#ffd166}
+  .card{background:#fff;margin:6px 8px;border-radius:12px;padding:8px}
+  .muted{color:#77738a}
+  .lbl{font-size:10px;color:#77738a;text-transform:uppercase;margin:8px 10px 0}
+  .buy{display:flex;align-items:center;gap:8px;background:#fff;border-radius:10px;margin:4px 8px;padding:6px}
+  .ico{width:26px;height:26px;border-radius:6px;background:#6b4eff;flex:0 0 26px}
+  .pill{margin-left:auto;background:#6b4eff;color:#fff;border-radius:8px;padding:4px 8px;font-weight:bold}
+  .pill.off{background:#e3e0ea;color:#77738a}
+  .bar{height:8px;background:#e3e0ea;border-radius:4px;margin-top:4px}.bar i{display:block;height:8px;border-radius:4px;background:#2bb673}
+  .btns{display:flex;gap:6px;padding:8px;margin-top:auto}
+  .btn{flex:1;text-align:center;padding:10px 0;border-radius:10px;background:#fff;color:#6b4eff;font-weight:bold}
+  .btn.p{background:#6b4eff;color:#fff}
+  .sms{background:#fff;border-radius:12px 12px 12px 2px;margin:6px 8px;padding:8px}
+  .me{background:#6b4eff;color:#fff;border-radius:12px 12px 2px 12px;margin:6px 8px 6px 60px;padding:8px}
+  .qr{display:flex;flex-wrap:wrap;gap:6px;padding:8px}
+  .qr span{border:2px solid #6b4eff;color:#6b4eff;border-radius:16px;padding:6px 10px;font-weight:bold}
+</style>
+
+<h2>Między budowami: jak zachęcić do kolejnej?</h2>
+<p class="subtitle">Po końcu budowy (wygrana albo przegrana). Wszystkie trzy pokazują zdobyte doświadczenie i to, co można za nie kupić. Różnią się liczbą kroków i klimatem.</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="ph">
+        <div class="hero">ODBIÓR ZALICZONY<div class="big">+160 dośw.</div>Etapy 10/10 · 95 dni · 2 odznaki</div>
+        <div class="card">Masz razem <b>320 dośw.</b><br><span class="muted">Stać cię: Kondycja II (90)</span></div>
+        <div class="card muted">Szczegóły budowy ▾</div>
+        <div class="btns" style="flex-direction:column">
+          <div class="btn p">Wydaj doświadczenie</div>
+          <div class="btn">Menu</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body"><h3>A · Wynik + przycisk „Wydaj”</h3><p>Tak jak w obecnym planie: duży wynik, jeden przycisk prowadzi do Szkoleń. Dwa kroki do zakupu, najprostsze do zrobienia.</p></div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="ph">
+        <div class="hero" style="padding:10px">ODBIÓR ZALICZONY<div class="big">+160</div>razem 320 dośw.</div>
+        <div class="lbl">Stać cię teraz</div>
+        <div class="buy"><div class="ico"></div><div><b>Kondycja II</b><br><span class="muted">+2 HP na start</span></div><span class="pill">90</span></div>
+        <div class="buy"><div class="ico" style="background:#c94f2c"></div><div><b>Gwoździarka</b><br><span class="muted">broń z daleka</span></div><span class="pill">150</span></div>
+        <div class="buy"><div class="ico" style="background:#999"></div><div><b>Elektryk</b><br><span class="muted">nowy zawód</span></div><span class="pill off">400</span></div>
+        <div class="lbl">Następne za odbiór</div>
+        <div class="card"><b>Spawarka</b> · nowa broń<div class="bar"><i style="width:60%"></i></div><span class="muted">3/5 wygranych</span></div>
+        <div class="btns"><div class="btn">Wszystkie Szkolenia</div><div class="btn p">Kolejna budowa</div></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>B · „Przerwa na budowie” z zakupami na miejscu</h3><p>Jeden ekran: wynik, 2–3 rzeczy, na które stać, z „Kup” od razu, i pasek do następnej broni. Najmocniej zachęca i przy okazji pokazuje bronie.</p></div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="ph">
+        <div class="hero" style="padding:8px;text-align:left">Kierownik Marek <span style="opacity:.7">· teraz</span></div>
+        <div class="sms">Szefie, odbiór zaliczony! Inwestorka zadowolona, a my mamy <b>160 dośw.</b> w kieszeni.</div>
+        <div class="sms">Za 90 możemy wysłać ekipę na <b>Kondycję II</b>. Do Spawarki brakuje jeszcze 2 odbiorów.</div>
+        <div class="me">Co proponujesz?</div>
+        <div class="sms">Kupujemy i lecimy na kolejną budowę. Beton sam się nie wyleje.</div>
+        <div class="qr" style="margin-top:auto"><span>Kup Kondycję II</span><span>Pokaż Szkolenia</span><span>Kolejna budowa</span></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>C · SMS od Kierownika z szybkimi odpowiedziami</h3><p>Najbardziej w klimacie gry i z miejscem na humor (projekt D). Zakup jednym stuknięciem, ale mniej informacji naraz niż w B.</p></div>
+  </div>
+</div>
