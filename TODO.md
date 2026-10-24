@@ -250,6 +250,31 @@ Stan v0.21.54: #62, #65, #66 zrobione, #63 jako prototyp w ustawieniach (wszystk
 
 > Stan #67–#69 (2026-10-04, praca wstrzymana na prośbę): WIP w commicie – wersja v0.22.0 w danych, początek nowych kafli schodów w eksporcie i zmiany w HUD/dzienniku Godota; nie sprawdzone zrzutami ani testami, do dokończenia.
 
+### Gdzie skończyliśmy (2026-10-24)
+
+Pomysły właściciela z 2026-10-23 podzielone na 5 projektów, kolejność **A → D → C → B → E**. Godot ma priorytet,
+GBA dostaje tylko konieczne minimum (był eksperymentem promocyjnym).
+
+| Projekt | Zakres | Stan |
+|---|---|---|
+| **A – UX i przepływ ekranów (Godot)** | Rozmowa z Kierownikiem Markiem między budowami (zamiast plansz końcowych), tytuł z kartą „Twoje postępy”, wybór zawodu jako siatka kafli, jeden baner naraz, duży ekran (składak, tablet), QR w harmonogramie domu, HUD z podpisami, legenda kolorów. Obejmuje #71, #72 i „UX doświadczenia” z listy 2026-10-09 | 🔄 dokument zatwierdzony, plan gotowy, **czeka na wybór sposobu wykonania** (polecam: w tej sesji, małe commity, jeden przegląd na końcu) |
+| D – humor | Własne postacie (np. sąsiad z działki), bez cudzych marek | ⬜ |
+| C – animacje walki i oprawa | Animacje ataku i trafień; detale map: okna w ścianach, piwnica poniżej, światło z góry w etapach dachowych (pomysł 2026-10-23) | ⬜ |
+| B – zawartość | Więcej kontraktów, ulepszeń, broni z unikalnymi umiejętnościami, pula odblokowań między budowami, jednorazowy przecinak/młot do pękniętych ścian | ⬜ |
+| E – wsparcie z telefonu | „Wezwij pomoc” z telefonu (pokrewne Brygadzie) | ⬜ |
+
+Dokumenty projektu A:
+- dokument projektu: [`docs/superpowers/specs/2026-10-23-ux-pakiet-a-design.md`](docs/superpowers/specs/2026-10-23-ux-pakiet-a-design.md)
+- plan (11 zadań): [`docs/superpowers/plans/2026-10-23-ux-pakiet-a.md`](docs/superpowers/plans/2026-10-23-ux-pakiet-a.md);
+  zastępuje [`2026-10-22-ux-xp-flow.md`](docs/superpowers/plans/2026-10-22-ux-xp-flow.md)
+- makiety i zrzuty z testu przepływu: [`docs/ux/pakiet-a/`](docs/ux/pakiet-a/)
+
+Kolejność zadań planu A: 1 rdzeń „co kupić” + testy → 2 duży ekran → 3 banery → 4 telefon (zakładka „Szkolenia”) →
+5 rozmowa między budowami → 6 harmonogram domu z QR → 7 tytuł → 8 wybór zawodu → 9 podsumowanie → 10 HUD, legenda,
+ustawienia → 11 dokumentacja i pytanie „wydajemy?”.
+
+Wciąż otwarte: #67–#69 (WIP z commita `0d08cc42`, do sprawdzenia zrzutami), #70, #73.
+
 ## Zgodność funkcji
 
 | Funkcja | GODOT (MOBILE) | GBA |
@@ -276,7 +301,7 @@ Historia zmian: [`GBA/CHANGELOG.md`](GBA/CHANGELOG.md), postęp Godota: [`GODOT/
 - GBA: brak natywnego środowiska buildu na hoście Hermesa. Build działa w kontenerze (podman, devkitpro/devkitarm + butano w `../butano`), ale testy C++ (`GBA/tests/core_tests.cpp`) nie były uruchamiane poza Macem.
 
 ## Następne (2026-10-09)
-- ⬜ UX: przepływ po wygranej i przegranej – pokazać, że zdobyte doświadczenie można wydać; przy starcie nowej gry, jeśli doświadczenie > 0, komunikat z przejściem do widoku ulepszeń (GBA i Godot); ogólny przegląd UX
+- 🔄 (w projekcie A, patrz „Gdzie skończyliśmy (2026-10-24)”) UX: przepływ po wygranej i przegranej – pokazać, że zdobyte doświadczenie można wydać; przy starcie nowej gry, jeśli doświadczenie > 0, komunikat z przejściem do widoku ulepszeń (GBA i Godot); ogólny przegląd UX
 - ⬜ Xcode Cloud: pipeline automatycznie wysyła build iOS na TestFlight
 - ⬜ Godot w prywatnym repo w organizacji LifeLike-Szymon-Motyka (po wejściu integracji); GBA zostaje open source
 - ⬜ Wspólne źródło konfiguracji dla GBA i Godot (dziś `GBA/data/game.json` kopiowany do Godota przy buildzie; po podziale repo potrzebny inny mechanizm, np. submodule, paczka albo osobny pakiet danych)
