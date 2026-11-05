@@ -16,14 +16,14 @@ mu się rzadka broń i to widać, a balans botów zostaje w obecnych celach przy
 ## 2. Cele, nie-cele, anty-cele
 
 **Cele**
-- 3 typy ciosu: obuch, cięcie, kłucie; skuteczność zależna od materiału problemu (pole `material` w `enemies`:
+- 3 typy ciosu: obuch, cięcie, kłucie (+ żywioły prąd, iskra, woda i nowy ogień); skuteczność zależna od materiału problemu (pole `material` w `enemies`:
   stal 15, drewno 13, cement 10, bez materiału 9 – głównie bossowie). Żywioły prąd / iskra / woda i kombinacje stanów
   zostają i dokładają się do typu.
 - Każda broń ma 2 tryby: A – zwykły atak, B – inny wzór pól albo efekt, z odnowieniem (jak moc zawodu).
 - Wzory pól (10): pojedynczy, łuk, wokół, krzyż, linia 2, linia 3, strzał N, rzut 3x3, natrysk, pchnięcie
   (+ linia w obie strony i linia w 4 strony dla laserów).
 - Rzadkość broni: Zwykła, Solidna, Markowa, Mistrzowska; widoczna kolorem w ręce postaci, w dropach, Hurtowni, na karcie.
-- Wszystkie 22 obecne bronie dostają typ i tryb B; 15 nowych broni (14 z katalogu + laser krzyżowy).
+- Wszystkie 22 obecne bronie dostają typ i tryb B; 17 nowych broni (14 z katalogu + laser krzyżowy, lutownica, opalarka).
 - Pas budowlańca: rzadki przedmiot, który daje drugie miejsce na broń; zamiana broni kosztuje turę.
 - GBA: pełny system (wspólna logika C++ / C#, test złoty).
 
@@ -49,7 +49,7 @@ mu się rzadka broń i to widać, a balans botów zostaje w obecnych celach przy
    broń; **zamiana między nimi kosztuje turę**.
 3. Siła różnic (±50% jak w katalogu albo łagodniej ±25%) – **ustalić testami balansu botem**.
 4. Rzadkość broni z **dropów** i ze **Szkoleń / Hurtowni**.
-5. **Wszystkie** nowe bronie z katalogu. Poziomica laserowa w trybie B: **linia przód i tył**. Nowa broń **laser
+5. **Wszystkie** nowe bronie z katalogu; **żywioł ogień** dla broni, które grzeją (lutownica i inne). Poziomica laserowa w trybie B: **linia przód i tył**. Nowa broń **laser
    krzyżowy**: tryb B w **4 strony**.
 6. **GBA: pełny system.**
 7. **Stare zapisy i test złoty bez ograniczeń** – w v0.23 stare zapisy (profil GBA w SRAM, zapis budowy) mogą przestać
@@ -71,7 +71,9 @@ mu się rzadka broń i to widać, a balans botów zostaje w obecnych celach przy
   | Cięcie | 75% | 150% | 75% | 100% | 100% |
   | Kłucie | 125% | 100% | 100% | 100% | 100% (−2 OBR) |
 
-  Iskra +50% na stal, prąd +50% na żywioł woda (z kombinacją Porażenie jak dziś). Wartości w `game.json` (sekcja
+  Iskra +50% na stal, prąd +50% na żywioł woda (z kombinacją Porażenie jak dziś). **Nowy żywioł ogień** (bronie,
+  które grzeją: lutownica, opalarka, palnik): +50% na drewno, −50% na żywioł woda, ale osusza (zdejmuje stan Mokry),
+  podpala (nowy stan: obrażenia przez 2 tury; propozycja 2 na turę). Iskra zostaje osobno (pył, stal). Wartości w `game.json` (sekcja
   np. `hitTypes`), nie w kodzie.
 - Rozpiska obrażeń (#26, karta wroga, wybór zawodu) pokazuje typ i mnożnik („Cement: obuch ×1,5”).
 
@@ -108,10 +110,11 @@ mu się rzadka broń i to widać, a balans botów zostaje w obecnych celach przy
 - GBA: limity 128 sprite'ów i 256 kafli sprite'ów – broń w ręce co najmniej u bohatera; u brygady / pomocników tylko
   jeśli mieści się w limitach (decyzja wykonawcy po pomiarze `-DPB_DEBUG_STATS`).
 
-### 4.6 Nowe bronie (15)
+### 4.6 Nowe bronie (17)
 Łopata, Siekiera ciesielska, Piła ręczna, Kilof, Przecinak z młotkiem (3 ładunki, otwiera pęknięte ściany), Nożyce do
 blachy, Pistolet do silikonu, Myjka ciśnieniowa (moczy – kombinacja z prądem), Palnik dekarski, Taker, Młotek gumowy,
-Pilarka tarczowa (Mistrzowska / sekret), Poziomica 2 m, Mieszadło do zaprawy, Laser krzyżowy. Tryby i typy – katalog
+Pilarka tarczowa (Mistrzowska / sekret), Poziomica 2 m, Mieszadło do zaprawy, Laser krzyżowy, Lutownica (ogień,
+kłucie), Opalarka (ogień, natrysk). Palnik dekarski – ogień zamiast iskry. Tryby i typy – katalog
 (sekcja 6 PDF). Nazwy i opisy PL/EN w danych.
 
 ## 4.7 Decyzje projektanta (do sprawdzenia przez właściciela)

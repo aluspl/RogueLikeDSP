@@ -47,7 +47,7 @@ OLD = [
     ("szlifierka", "Cięcie + iskra", ("jeden", "Tarcza"), ("luk", "Iskry: łuk 3 pól, w pyle – Wybuch", "odnowienie 3")),
     ("lom", "Obuch", ("jeden", "Uderzenie"), ("pchniecie", "Podważ: odrzut o 2 pola, otwiera pęknięte ściany", "odnowienie 3")),
     ("wkretarka", "Kłucie", ("linia2", "Linia 2 – wiercenie"), ("jeden", "Wkręt: cel −3 OBR na 3 tury", "odnowienie 3")),
-    ("laser", "Kłucie", ("linia3", "Linia 4 (słabsza), przebija"), ("jeden", "Wyznacz: następny cios w cel ma pewny kryt", "odnowienie 4")),
+    ("laser", "Kłucie", ("linia3", "Linia 4 (słabsza), przebija"), ("linia3", "Przód i tył: linia 4 w obie strony", "odnowienie 4")),
     ("mlot", "Obuch", ("pchniecie", "Ciężki cios z odrzutem 1"), ("wokol", "Wyburzenie: 8 pól, kruszy pęknięte ściany", "odnowienie 5")),
     ("tablet", "Obuch", ("jeden", "Uderzenie"), ("jeden", "Zmiana projektu (zasięg 3): zamiana miejscami z celem", "odnowienie 4")),
     ("miernik", "Kłucie", ("strzal", "Strzał 3 – wiązka"), ("jeden", "Pomiar: odsłania pokój, +10% kryt na 3 tury", "odnowienie 4")),
@@ -71,11 +71,14 @@ NEW = [
     ("Nożyce do blachy", "Cięcie", "drop (Akt II)", "ZRĘ", "1", ("jeden", "Cięcie – stal bez kary"), ("luk", "Rozcięcie: łuk 3 pól", "odnowienie 3")),
     ("Pistolet do silikonu", "Kłucie", "Hurtownia", "ZRĘ", "3", ("strzal", "Strzał 3 – słaby"), ("jeden", "Uszczelnij: cel unieruchomiony 2 tury, przeciek – zatkany", "odnowienie 4")),
     ("Myjka ciśnieniowa", "Obuch + woda", "drop", "ZRĘ", "3", ("linia3", "Strumień: linia 3, moczy (Mokry)"), ("pchniecie", "Odrzut wodą o 2 pola", "odnowienie 3")),
-    ("Palnik dekarski", "Iskra", "Szkolenia (Dekarz)", "INT", "2", ("natrysk", "Płomień: stożek, podpala pył"), ("wokol", "Opalanie: 8 pól po 50%", "odnowienie 5")),
+    ("Palnik dekarski", "Ogień", "Szkolenia (Dekarz)", "INT", "2", ("natrysk", "Płomień: stożek, podpala (2 tury)"), ("wokol", "Opalanie: 8 pól po 50%, osusza", "odnowienie 5")),
     ("Taker", "Kłucie", "drop", "ZRĘ", "2", ("strzal", "Dwa zszywki naraz po 60%"), ("jeden", "Przypnij: cel nie ucieka 3 tury", "odnowienie 3")),
     ("Młotek gumowy", "Obuch", "Hurtownia", "SIŁ", "1", ("jeden", "Klepnięcie: słabe, 50% ogłuszenia"), ("krzyz", "Wyrównanie: krzyż, 30% ogłuszenia", "odnowienie 4")),
     ("Pilarka tarczowa", "Cięcie + iskra", "sekret / Mistrzowska", "ZRĘ", "1", ("luk", "Łuk 3 pól, kryt +10%"), ("wokol", "Obrót: 8 pól, iskry", "odnowienie 5")),
     ("Poziomica 2 m", "Obuch", "drop", "INT", "2", ("linia2", "Płaski cios: linia 2, nie przebija"), ("krzyz", "Sprawdź pion: krzyż, odsłania pokój", "odnowienie 4")),
+    ("Laser krzyżowy", "Kłucie", "Szkolenia (Geodeta)", "INT", "4", ("linia3", "Linia 4 (słabsza), przebija"), ("krzyz", "Krzyż: linie w 4 strony", "odnowienie 4")),
+    ("Lutownica", "Kłucie + ogień", "drop, Hurtownia", "INT", "1", ("jeden", "Grot: podpala (2 tury)"), ("linia2", "Lut: linia 2, osusza i podpala", "odnowienie 3")),
+    ("Opalarka", "Ogień", "drop", "ZRĘ", "2", ("natrysk", "Gorące powietrze: stożek, osusza Mokry"), ("jeden", "Podgrzej: drewno +100% na 1 cios", "odnowienie 3")),
     ("Mieszadło do zaprawy", "Obuch", "Szkolenia (Murarz)", "SIŁ", "1", ("jeden", "Uderzenie"), ("wokol", "Wir: 8 pól, cele odepchnięte o 1", "odnowienie 5")),
 ]
 
@@ -95,7 +98,8 @@ EFF = {"Obuch": ["75%", "100%", "150%", "50%", "100%"],
        "Cięcie": ["75%", "150%", "75%", "100%", "100%"],
        "Kłucie": ["125%", "100%", "100%", "100%", "100% + −2 OBR"],
        "Iskra (żywioł)": ["150%", "100%", "100%", "100%", "100%"],
-       "Prąd (żywioł)": ["100%", "100%", "100%", "150% + Porażenie", "100%"]}
+       "Prąd (żywioł)": ["100%", "100%", "100%", "150% + Porażenie", "100%"],
+       "Ogień (żywioł)": ["100%", "150%", "100%", "50% + osusza", "100% + podpalenie"]}
 RAR = [("Zwykła", "#8a8796", "bazowe obrażenia, wygląd jak dziś"),
        ("Solidna", "#2f8fd6", "+1 obrażeń albo 1 cecha (jak sprzęt Solidny), niebieski połysk w ręce"),
        ("Markowa", "#6b4eff", "+2 obrażeń i cecha, fioletowy połysk, lepszy tryb B (−1 tura odnowienia)"),
@@ -120,7 +124,7 @@ def row(name, typ, src, stats, a, b, new=False):
     base = typ.split()[0].rstrip("/")
     for k in COUNT:
         if k in typ: COUNT[k] += 1
-    col = {"Obuch": "#6b4eff", "Cięcie": "#e0584d", "Kłucie": "#0f8a6a", "Iskra": "#d9a400"}.get(base, "#555")
+    col = {"Obuch": "#6b4eff", "Cięcie": "#e0584d", "Kłucie": "#0f8a6a", "Iskra": "#d9a400", "Ogień": "#e8772e"}.get(base, "#555")
     return f"""<tr class="{'new' if new else ''}">
 <td><b>{esc(name)}</b>{' <span class="tag">nowa</span>' if new else ''}<div class="dim">{esc(src)}</div><div class="dim">{esc(stats)}</div></td>
 <td><span class="type" style="background:{col}">{esc(typ)}</span></td>
@@ -166,7 +170,8 @@ tr.new td:first-child {{ border-left:3px solid #ff7a3d; }}
 <div class="lead">Dziś każda broń różni się głównie liczbami (obrażenia, zasięg, statystyka). Propozycja: <b>3 typy ciosu</b>
 (obuch, cięcie, kłucie) związane z <b>materiałem problemu</b>, który gra już zna (stal {mats['stal']}, drewno {mats['drewno']},
 cement {mats['cement']}, bez materiału {nomat} – głównie bossowie), <b>2 tryby ataku</b> na broń z różnym wzorem pól i
-<b>rzadkość</b> widoczną w rękach postaci. Istniejące żywioły (prąd, iskra, woda) i kombinacje stanów zostają i dokładają się do typu.</div>
+<b>rzadkość</b> widoczną w rękach postaci. Istniejące żywioły (prąd, iskra, woda) i kombinacje stanów zostają i dokładają się do typu;
+nowy żywioł <b>ogień</b> (lutownica, opalarka, palnik) – drewno +50%, osusza Mokry, podpala na 2 tury.</div>
 
 <h2>1. Typy ciosu</h2>
 <div class="types">{types}</div>
