@@ -51,7 +51,9 @@ mu się rzadka broń i to widać, a balans botów zostaje w obecnych celach przy
 4. Rzadkość broni z **dropów** i ze **Szkoleń / Hurtowni**.
 5. **Wszystkie** nowe bronie z katalogu; **żywioł ogień** dla broni, które grzeją (lutownica i inne). Poziomica laserowa w trybie B: **linia przód i tył**. Nowa broń **laser
    krzyżowy**: tryb B w **4 strony**.
-6. **GBA: pełny system.**
+6. **GBA: pełny system, ale niższy priorytet niż Godot.** Jeśli GBA wpadnie w ograniczenia sprzętowe (sprite'y,
+   kafle, stos, SRAM, ROM, wydajność), wykonawca nie tnie systemu po cichu: zatrzymuje się i informuje właściciela,
+   na czym dokładnie (co, ile jest, ile trzeba), a Godot idzie dalej.
 7. **Stare zapisy i test złoty bez ograniczeń** – w v0.23 stare zapisy (profil GBA w SRAM, zapis budowy) mogą przestać
    działać (wyjątek od zasady z CLAUDE.md „nigdy nie łam starych zapisów”); test złoty regenerowany po zmianach logiki.
 
@@ -140,7 +142,8 @@ kłucie), Opalarka (ogień, natrysk). Palnik dekarski – ogień zamiast iskry. 
 ## 5. Ograniczenia
 
 - Wspólna logika: zmiany w `GBA/include/core.h` / `meta.h` i 1:1 w `GODOT/src/LifeLike.Core` (+ kopie `game.json`,
-  `en.json` w `golden/`).
+  `en.json` w `golden/`). Kolejność: najpierw Godot (rdzeń C#, UI, grafika), potem port na GBA; ograniczenia sprzętowe
+  GBA – zgłosić właścicielowi z liczbami (decyzja 6), nie obchodzić po cichu.
 - Zapisy: profil GBA w SRAM (dziś v17, 384 B; maska narzędzi `Tools` to 1 bajt – za mało na 37 broni) → nowa wersja
   profilu; migracja starych zapisów **nie jest wymagana** (decyzja 7) – nowa wersja może zacząć od czystego profilu.
   Zapis budowy (`PBRUN…`) – nowa wersja magic (rzadkość broni, druga broń, odnowienie trybu B), stary zapis budowy
