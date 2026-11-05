@@ -14,6 +14,11 @@ Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 5. **Filtr „Kwas” (#75)** – łagodniejszy: mniejsze i wolniejsze fale, wolniej zmieniająca się tęcza, mniejsze nasycenie.
    Siłę efektu i ograniczony ruch dalej ustawisz w Ustawienia > Filtr ekranu.
 
+### Nowe (Godot): drzewko Szkoleń w nowym układzie (#70)
+U góry przełącznik gałęzi (Fach / BHP / Logistyka) z pniem, pod nim karta wybranej gałęzi: dwa węzły, w każdym dwie
+opcje obok siebie z efektem i ceną; stan węzła wprost – „wybierz 1 z 2”, „Wybrane!”, „od pnia N”. Zamiast trzech ciasnych
+kolumn z ucinanymi nazwami. Klawiatura bez zmian (↑/↓ opcja, ←/→ gałąź, Spacja wybiera).
+
 ## v0.22.0 – 2026-11-05 (pierwsza wersja serii 0.22)
 
 ### Nowe (Godot): projekt A – wygląd i przepływ ekranów

@@ -243,7 +243,7 @@ Stan v0.21.54: #62, #65, #66 zrobione, #63 jako prototyp w ustawieniach (wszystk
 | 67 | Schody na mapie: zamiast żółtej skrzynki w ramce – czytelne schody w dół (stopnie z głębią, ciemny otwór, delikatna poświata / strzałka „Wyjście”), dopasowane do wyższych ścian i widoku 3/4, zamknięte (Akt 0) z kłódką | ✅ (v0.22.0) | ⬜ (sprawdzić czytelność) |
 | 68 | Dziennik nad mapą: w pionie teksty dziennika giną pod ścianami (półprzezroczyste, słabo czytelne) – pasek tła / cień pod tekstem | ✅ (v0.22.0) | — |
 | 69 | HUD w pionie: ucięte „Normal..” przy długiej nazwie etapu – skrót trudności (N/Ł/T) albo ikona | ✅ (v0.22.0) | — |
-| 70 | Drzewko Szkoleń – przebudowa widoku: zamiast 3 ciasnych kolumn z czerwonym „od pnia N” – lista gałęzi (karta na gałąź) z paskiem pnia, węzły jako karty ze stanem (zablokowany / do wyboru 1 z 2 / wybrany), ceną i opisem; jasne „wybierz jedno z dwóch” | ⬜ | ⬜ (GBA: ten sam porządek na stronach) |
+| 70 | Drzewko Szkoleń – przebudowa widoku: zamiast 3 ciasnych kolumn z czerwonym „od pnia N” – lista gałęzi (karta na gałąź) z paskiem pnia, węzły jako karty ze stanem (zablokowany / do wyboru 1 z 2 / wybrany), ceną i opisem; jasne „wybierz jedno z dwóch” | ✅ v0.22.1 | ⬜ (GBA: ten sam porządek na stronach) |
 | 71 | Harmonogram domu po wygranej: uporządkować (dubel „Zaplanuj swoją budowę” w karcie i przycisku, pusta przestrzeń, krótsze wiersze) | ✅ (projekt A: kod QR, bez dubla) | ⬜ |
 | 72 | Po wygranej zamiast „Kolejna budowa (NG+)” – ekran „Co dalej”: od razu zakupy Szkoleń/Respektu (co Cię stać), najbliższe odblokowania, nowy kontrakt kariery, wyższa stawka inwestora, zadania dnia; NG+ jako opcja dodatkowa | 🔄 (projekt A: rozmowa z Markiem – szybki zakup Szkoleń, nagroda za odbiór, kontrakty i stawka w „Do tego:”; Respekt i zadania dnia jeszcze nie) | ⬜ |
 | 73 | Trudność wg gracza: wygrana „bez żadnych problemów” – przegląd balansu Normalnego (czy bot ≈ człowiek), podpowiedź „Spróbuj Trudnego / trybu inwestora” po wygranej, ewentualnie twardszy Normalny | ⬜ | ⬜ |
@@ -255,7 +255,7 @@ Stan v0.21.54: #62, #65, #66 zrobione, #63 jako prototyp w ustawieniach (wszystk
 | # | Zadanie | GODOT (MOBILE) | GBA |
 |---|---|---|---|
 | 74 | Drobiazgi z przeglądu projektu A: banery przy telefonie po obrocie ekranu, HUD 1,5x na rozłożonym składaku w poziomie, oferta drzewka otwiera stronę Drzewko, „Szczegóły” w wyborze zawodu z klawiatury / pada (i nie gasną po powrocie z Inwestora / Statystyk), kolejność opisów w `PhonePainter` | ✅ | — |
-| 70 | Drzewko Szkoleń – nowy widok (karty gałęzi, węzły ze stanem, jasne „1 z 2”) – patrz wiersz #70 wyżej | ⬜ | ⬜ (później) |
+| 70 | Drzewko Szkoleń – nowy widok (karty gałęzi, węzły ze stanem, jasne „1 z 2”) – patrz wiersz #70 wyżej | ✅ (przełącznik gałęzi + karta gałęzi) | ⬜ (później) |
 | 75 | Filtr „Kwas” łagodniejszy domyślnie albo suwak siły w ustawieniach | ✅ (łagodniejszy shader; suwak siły i ograniczony ruch już były w Filtr ekranu) | — |
 | 76 | Porządek w TODO: przejrzeć stare wiersze (np. #21 premie po etapie są już w grze) i oznaczyć zrobione | ✅ (#21, #11, oprawa 3/4, drzewka; reszta otwarta) | — |
 

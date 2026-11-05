@@ -55,6 +55,12 @@ public sealed class TrainingTab : PhonePage
     {
         if (_page == TreePage) // drzewko: stuknięcie zaznacza węzeł, drugie wybiera
         {
+            if (index >= BranchHit) // v0.22.1 (#70): przełącznik gałęzi
+            {
+                _tcol = index - BranchHit;
+                _note = "";
+                return true;
+            }
             int col = index / 4, row = index % 4;
             if (col == _tcol && row == _trow) Choose();
             else
@@ -319,63 +325,91 @@ public sealed class TrainingTab : PhonePage
         else p.Text(tx, p.RowY(dc, 1), Loc.F("wydano", Meta.ShopSpent(_d, _p), Meta.ShopTotalCost(_d)), Ink.Brand);
     }
 
+    private const int BranchHit = 1000;
+
+    /// <summary>Indeks celu stuknięcia przełącznika gałęzi b (test dymny).</summary>
+    public static int BranchTap(int b) => BranchHit + b;
+
+    /// <summary>Wybrana gałąź drzewka (test dymny).</summary>
+    public int Branch => _tcol;
+
     /// <summary>
-    /// v0.21.52 cz. c: drzewko – 3 kolumny (gałęzie): nazwa i pień (Szkolenia gałęzi z poziomami), potem dwa węzły
-    /// z opcjami A / B (wybrana – zielona, zaznaczona – fioletowa ramka, zamknięta – szara z progiem pnia); na dole opis
-    /// zaznaczonej opcji, koszt albo opłata za zmianę.
+    /// v0.22.1 (#70): drzewko – u góry przełącznik gałęzi (nazwa i pień), pod nim karta wybranej gałęzi: dwa węzły, każdy
+    /// z dwiema opcjami obok siebie (nazwa, efekt, cena; wybrana – zielona, zaznaczona – fioletowa ramka, zamknięta –
+    /// szara) i stanem węzła („wybierz 1 z 2”, „wybrane”, „od pnia N”); na dole opis zaznaczonej opcji i pień gałęzi.
     /// </summary>
     private void DrawTree(PhonePainter p)
     {
+        var f = p.F;
         var nb = _d.TreeBranches.Length;
         var rowH = PhonePainter.RowH;
-        var head = p.CardH(p.Top, 2 * rowH + 8);
-        var gap = 4f;
-        var colW = (head.Size.X - gap * (nb - 1)) / nb;
-        var nodeRows = 6; // etykieta węzła + 2 opcje, x2
-        var colH = nodeRows * rowH + 14;
-        var top = p.Top;
+        var full = PhoneView.Full;
+
+        // przełącznik gałęzi
+        var sw = p.CardH(p.Top, rowH + 10);
+        var seg = (sw.Size.X - 8) / nb;
         for (var b = 0; b < nb; ++b)
         {
-            var x = head.Position.X + b * (colW + gap);
-            var col = new Rect2(x, top, colW, colH + 2 * rowH);
-            p.C.DrawStyleBox(Ui.Box(Pal.Card, 6, b == _tcol ? Pal.Brand : Pal.Border), col);
-            var cx = x + colW / 2;
-            var y = top + 4;
-            p.Bold(cx, y, _d.TreeBranches[b].Name, b == _tcol ? Ink.Brand : Ink.Dark, TextAlign.Center);
-            y += rowH;
+            var r = new Rect2(sw.Position.X + 4 + b * seg, sw.Position.Y + 3, seg - 4, rowH + 4);
             int lv = SkillTree.BranchLevels(_d, _p, b), max = SkillTree.BranchMax(_d, b);
-            p.Text(cx, y, Loc.F("pien_2", lv, max), lv >= max ? Ink.Done : Ink.Dim, TextAlign.Center);
-            p.Bar(x + 8, y + rowH - 3, colW - 16, lv, max, lv >= max ? Pal.Done : Pal.Brand, 3);
-            y += rowH + 2;
-            for (var tier = 0; tier < 2; ++tier)
-            {
-                var n = NodeOf(b, tier);
-                if (n < 0) continue;
-                var node = _d.TreeNodes[n];
-                var open = SkillTree.Open(_d, _p, n);
-                var pick = SkillTree.Pick(_p, n);
-                y += 2;
-                p.Text(cx, y, open ? Loc.F("wezel", UiText.Roman(tier)) : Loc.F("od_pnia", node.Depth), open ? Ink.Dim : Ink.Late, TextAlign.Center, colW - 6);
-                y += rowH;
-                for (var o = 0; o < 2; ++o)
-                {
-                    var r = tier * 2 + o;
-                    var cell = new Rect2(x + 4, y, colW - 8, rowH);
-                    var picked = pick == o + 1;
-                    var cur = b == _tcol && r == _trow;
-                    if (picked || cur)
-                        p.C.DrawStyleBox(Ui.Box(picked ? Pal.DoneBg : Pal.Group, 5, cur ? Pal.Brand : Colors.Transparent), cell);
-                    p.Hit(cell, b * 4 + r);
-                    var ink = picked ? Ink.Done : cur ? Ink.Brand : open ? Ink.Dark : Ink.Dim;
-                    var opt = node.Options[o];
-                    var name = p.F.Measure(opt.Name) <= colW - 12 ? opt.Name : opt.Short;
-                    p.Text(cx, y + PhonePainter.TextDy, name, ink, TextAlign.Center, colW - 12);
-                    y += rowH;
-                }
-            }
+            var on = b == _tcol;
+            if (on) p.C.DrawStyleBox(Ui.Box(Pal.Brand, 6), r);
+            var label = $"{_d.TreeBranches[b].Name} {lv}/{max}";
+            if (f.Measure(label) > r.Size.X - 8) label = _d.TreeBranches[b].Name;
+            f.Draw(p.C, new Vector2(r.GetCenter().X, Mathf.Round(r.GetCenter().Y - 9)), f.Fit(label, (int)r.Size.X - 8), on ? Ink.OnBrand : lv >= max ? Ink.Done : Ink.Dark, TextAlign.Center, 1, on);
+            var bar = new Rect2(r.Position.X + 6, r.End.Y - 3, r.Size.X - 12, 2);
+            p.C.DrawRect(bar, on ? new Color(Pal.Card, 0.35f) : Pal.Border);
+            p.C.DrawRect(new Rect2(bar.Position, new Vector2(Mathf.Round(bar.Size.X * (max > 0 ? lv / (float)max : 0)), 2)), on ? Pal.Card : lv >= max ? Pal.Done : Pal.Brand);
+            p.Hit(r, BranchHit + b);
         }
+
+        // karta gałęzi: dwa węzły, opcje obok siebie
+        var cellH = full ? 3 * 16 + 12 : 2 * 16 + 8;
+        var nodeH = rowH + cellH + 8;
+        var top = sw.End.Y + 6;
+        var bc = p.CardH(top, 2 * nodeH + 4);
+        var x0 = bc.Position.X + 6;
+        var cw = (bc.Size.X - 18) / 2;
+        var y = bc.Position.Y + 4;
+        for (var tier = 0; tier < 2; ++tier)
+        {
+            var n = NodeOf(_tcol, tier);
+            if (n < 0) continue;
+            var node = _d.TreeNodes[n];
+            var open = SkillTree.Open(_d, _p, n);
+            var pick = SkillTree.Pick(_p, n);
+            if (tier > 0) p.C.DrawRect(new Rect2(bc.Position.X + 6, y - 4, bc.Size.X - 12, 1), Pal.Border);
+            p.Bold(x0 + 2, y + PhonePainter.TextDy, Loc.F("wezel", UiText.Roman(tier)), open ? Ink.Dark : Ink.Dim);
+            var state = !open ? Loc.F("od_pnia", node.Depth) : pick > 0 ? Loc.T("wybrane") : Loc.T("wybierz_1_z_2");
+            p.Pill(bc.End.X - 8, y, state, !open ? PillKind.Gray : pick > 0 ? PillKind.Done : PillKind.Group);
+            y += rowH;
+            for (var o = 0; o < 2; ++o)
+            {
+                var r = tier * 2 + o;
+                var cell = new Rect2(x0 + o * (cw + 6), y, cw, cellH);
+                var picked = pick == o + 1;
+                var cur = r == _trow;
+                p.C.DrawStyleBox(Ui.Box(picked ? Pal.DoneBg : open ? Pal.Group : Pal.Card, 8, cur ? Pal.Brand : picked ? Pal.Done : Pal.Border), cell);
+                if (cur) p.C.DrawStyleBox(Ui.Box(Colors.Transparent, 8, Pal.Brand), cell.Grow(1));
+                p.Hit(cell, _tcol * 4 + r);
+                var opt = node.Options[o];
+                var ink = picked ? Ink.Done : !open ? Ink.Dim : cur ? Ink.Brand : Ink.Dark;
+                var tw = (int)cell.Size.X - 12;
+                var name = f.Measure(opt.Name, 1, true) <= tw ? opt.Name : opt.Short;
+                f.Draw(p.C, new Vector2(cell.Position.X + 6, cell.Position.Y + 4), f.Fit(name, tw), ink, TextAlign.Left, 1, true);
+                var oc = SkillTree.Cost(_d, _p, n, o);
+                var price = oc < 0 ? Loc.T("masz_3") : oc.ToString();
+                var opw = f.Measure(price) + 4;
+                f.Draw(p.C, new Vector2(cell.Position.X + 6, cell.Position.Y + 20), f.Fit(RunMods.UpgradeLabel(opt.Effect, opt.Value), tw - (int)opw - 4), open ? Ink.Brand : Ink.Dim);
+                f.Draw(p.C, new Vector2(cell.End.X - 6, cell.Position.Y + 20), price, oc < 0 ? Ink.Done : open && oc <= _p.Xp ? Ink.Dark : Ink.Dim, TextAlign.Right);
+                if (full) f.Draw(p.C, new Vector2(cell.Position.X + 6, cell.Position.Y + 36), f.Fit(opt.Desc, tw), Ink.Dim);
+            }
+            y += cellH + 8;
+        }
+        top = bc.End.Y;
+        var colH = 0f;
         // opis zaznaczonej opcji i pień gałęzi (Szkolenia z poziomami)
-        var dc = p.Card(top + colH + 2 * rowH + 6, 3);
+        var dc = p.Card(top + colH + 6, 3);
         var tx = p.TextX(dc);
         var right = dc.End.X - 6;
         var sn = NodeOf(_tcol, _trow / 2);

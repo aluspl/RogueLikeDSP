@@ -638,6 +638,11 @@ public sealed class SmokeTest
             Flow.BetweenRuns.Reply(Phone.Pages.QuickReply.Training);
             if (_app.Nodes.Phone.Current is not Phone.ProfileTabs.TrainingTab tt || tt.Page != Phone.ProfileTabs.TrainingTab.TreePage)
                 throw new Exception("rozmowa: oferta drzewka nie otwiera strony Drzewko");
+            var picksBefore = SkillTree.Picked(s.Data, s.Profile); // v0.22.1 (#70): przełącznik gałęzi zmienia gałąź, niczego nie wybiera
+            tt.TapRow(Phone.ProfileTabs.TrainingTab.BranchTap(2));
+            if (tt.Branch != 2 || SkillTree.Picked(s.Data, s.Profile) != picksBefore) throw new Exception("drzewko: przełącznik gałęzi nie działa");
+            tt.TapRow(Phone.ProfileTabs.TrainingTab.BranchTap(2));
+            if (tt.Branch != 2 || SkillTree.Picked(s.Data, s.Profile) != picksBefore) throw new Exception("drzewko: drugie stuknięcie w gałąź wybrało węzeł");
             Flow.Profile.HandleInput(InputCmd.Of(GameAction.B));
         }
         finally

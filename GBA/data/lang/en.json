@@ -3048,6 +3048,7 @@
   "legenda_info": "info",
   "miedzy_wynik": "Score: {0} pts.",
   "budowa_dnia_nr_najlepszy": "Daily build no. {0}: best {1}",
-  "wyzwanie_tygodnia_najlepszy": "Weekly challenge: best {0}"
+  "wyzwanie_tygodnia_najlepszy": "Weekly challenge: best {0}",
+  "wybierz_1_z_2": "pick 1 of 2"
  }
 }
