@@ -40,8 +40,6 @@ mu się rzadka broń i to widać, a balans botów zostaje w obecnych celach przy
 - Broń domyślna zawodu jest „zła” na jakimś etapie i gracz czuje się zmuszony ją wymienić.
 - Tryb B silniejszy od mocy zawodu albo używany co turę (bez odnowienia).
 - Rzadkość widoczna tylko w tekście (bez koloru w ręce postaci).
-- Złamane stare zapisy (profil GBA w SRAM, zapis budowy) albo test złoty zaktualizowany bez sprawdzenia, że różnice
-  są zamierzone.
 - Cudze marki w nazwach (pas „jak u znanego bohatera” – nazwa własna).
 
 ## 3. Decyzje właściciela (2026-11-05)
@@ -54,6 +52,8 @@ mu się rzadka broń i to widać, a balans botów zostaje w obecnych celach przy
 5. **Wszystkie** nowe bronie z katalogu. Poziomica laserowa w trybie B: **linia przód i tył**. Nowa broń **laser
    krzyżowy**: tryb B w **4 strony**.
 6. **GBA: pełny system.**
+7. **Stare zapisy i test złoty bez ograniczeń** – w v0.23 stare zapisy (profil GBA w SRAM, zapis budowy) mogą przestać
+   działać (wyjątek od zasady z CLAUDE.md „nigdy nie łam starych zapisów”); test złoty regenerowany po zmianach logiki.
 
 ## 4. Projekt (jak, w tym co ustalone)
 
@@ -131,16 +131,18 @@ Pilarka tarczowa (Mistrzowska / sekret), Poziomica 2 m, Mieszadło do zaprawy, L
    bajt rzadkości na broń.
 5. **Szkolenia a rzadkość:** Szkolenia są stałe (jak dziś) – nowe Szkolenie podnosi rzadkość startową broni domyślnej
    (Zwykła → Solidna → Markowa) i odblokowuje bronie do dropów / Hurtowni. Wymaga nowej wersji profilu GBA (szersza
-   maska broni + poziom Szkolenia) – jedna migracja na całość. Hurtownia: zakup tylko na bieżącą budowę.
+   maska broni + poziom Szkolenia), bez migracji starych zapisów (decyzja 7). Hurtownia: zakup tylko na bieżącą budowę.
 6. **Pas budowlańca** zachowuje premię do termosu jak inne pasy (rzadka odmiana tego slotu).
 
 ## 5. Ograniczenia
 
-- Wspólna logika: zmiany w `GBA/include/core.h` / `meta.h` i 1:1 w `GODOT/src/LifeLike.Core`; test złoty
-  (`golden_dump.cpp` → `golden/` + kopie `game.json`, `en.json`) – różnice tylko zamierzone.
+- Wspólna logika: zmiany w `GBA/include/core.h` / `meta.h` i 1:1 w `GODOT/src/LifeLike.Core` (+ kopie `game.json`,
+  `en.json` w `golden/`).
 - Zapisy: profil GBA w SRAM (dziś v17, 384 B; maska narzędzi `Tools` to 1 bajt – za mało na 37 broni) → nowa wersja
-  profilu z migracją, stare zapisy wczytują się. Zapis budowy (`PBRUN…`) – nowa wersja magic (rzadkość broni,
-  druga broń, odnowienie trybu B).
+  profilu; migracja starych zapisów **nie jest wymagana** (decyzja 7) – nowa wersja może zacząć od czystego profilu.
+  Zapis budowy (`PBRUN…`) – nowa wersja magic (rzadkość broni, druga broń, odnowienie trybu B), stary zapis budowy
+  może zostać odrzucony.
+- Test złoty (`golden_dump.cpp` → `golden/`) regenerowany po zmianach; C++ i C# muszą dalej dawać ten sam wynik.
 - Balans (bot, 300 przebiegów / zawód): Łatwy 50–60%, Normalny 25–35%, Trudny 8–15%, pełne Szkolenia 50–60%,
   + Respekt 65–75%, Akt 0 + meta 60–70%, inwestor 5–15%, kontrakty 25–40 / 60–75. Bot musi umieć tryb B i zamianę
   broni (inaczej cele balansu nie znaczą nic).
