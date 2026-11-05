@@ -27,9 +27,13 @@ mu się rzadka broń i to widać, a balans botów zostaje w obecnych celach przy
 - Pas budowlańca: rzadki przedmiot, który daje drugie miejsce na broń; zamiana broni kosztuje turę.
 - GBA: pełny system (wspólna logika C++ / C#, test złoty).
 
+**Inne cele v0.23 (osobne części wersji, własne dokumenty – nie w tym dokumencie)**
+- Nowe zawody, nowi bossowie, zmiany mocy zawodów (moc zostaje osobno od trybu B broni; nowe zawody dostają broń
+  domyślną z tego systemu).
+- Easter egg „Zaplecze”.
+- Humor (własne postacie, np. sąsiad z działki).
+
 **Nie-cele**
-- Nowe zawody, nowe bossy, zmiana mocy zawodów (moc zostaje osobno od trybu B broni).
-- Easter egg „Zaplecze” i humor – osobne projekty v0.23, osobne dokumenty.
 - Konfiguracje chmurowe (Xcode Cloud, CI) i integracje z PlanBudowlany – v0.24, nie w tym repo.
 
 **Anty-cele (porażka, nawet jeśli działa)**

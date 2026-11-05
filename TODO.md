@@ -270,6 +270,9 @@ Decyzje właściciela (2026-11-05) do katalogu broni:
 | 78 | Rzadkość broni (zwykła / rzadka / legendarna) z własnym wyglądem i kolorem, widoczna w rękach postaci na mapie, na karcie i w dropach (projekt B+) | ⬜ | — |
 | 79 | Easter egg „Zaplecze”: tajemnicze drzwi (wyblakła tabliczka, migające światło) na rzadkim etapie → labirynt jednakowych żółtawych pokoi z brzęczącymi świetlówkami, mylące przejścia, cisza; wyjście daje nagrodę (wygląd / sekretne zlecenie / odznaka). Oparte na istniejących ukrytych pomieszczeniach i sekretach; własna nazwa i grafika (bez cudzych motywów z nazwy) | ⬜ | — |
 | 80 | Humor (projekt D): własne postacie, np. sąsiad z działki w SMS-ach i wydarzeniach | ⬜ | ⬜ |
+| 81 | Nowe zawody (broń domyślna z nowego systemu broni, moc, portret) | ⬜ | ⬜ |
+| 82 | Nowi bossowie (problemy budowy, nie ludzie; mechanika i zapowiedź ciosu) | ⬜ | ⬜ |
+| 83 | Zmiany mocy zawodów (przegląd 12 mocy, spójność z trybem B broni) | ⬜ | ⬜ |
 | 73 | Trudność wg gracza (patrz #73 w v0.22.0) – razem z balansem broni | ⬜ | ⬜ |
 
 ## v0.24 (zapowiedź)
