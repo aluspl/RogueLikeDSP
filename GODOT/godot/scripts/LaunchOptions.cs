@@ -10,7 +10,8 @@ namespace LifeLike.Game;
 /// --monkey SEED KROKI (test małpy: losowe klawisze i dotknięcia przez prawdziwe wejście, Debug/MonkeyTest),
 /// --filter ID (filtr ekranu bez względu na odblokowanie, v0.21.53), --lang pl|en (język, v0.21.53 cz. 2; testy bez
 /// --lang: polski), v0.21.54: --view flat|34 (widok mapy), --lights on|off (efekty świetlne), --bench SEKUNDY (ze zrzutem:
-/// pomiar czasu klatki sceny przed zapisem zrzutu).
+/// pomiar czasu klatki sceny przed zapisem zrzutu), v0.23.0: --demo SEKUNDY [--class N] [--stage N] [--step KLATKI]
+/// (bot gra sam – nagrania reklamówki).
 /// </summary>
 public sealed class LaunchOptions
 {
@@ -37,13 +38,18 @@ public sealed class LaunchOptions
     public string Lights { get; private init; } = "";
     /// <summary>v0.21.54: --bench SEKUNDY – pomiar czasu klatki w scenie zrzutu (0 = bez pomiaru).</summary>
     public float Bench { get; private init; }
+    /// <summary>v0.23.0: --demo SEKUNDY – bot gra sam (nagrania reklamówki); --class N, --stage N, --step KLATKI.</summary>
+    public float Demo { get; private init; }
+    public int DemoClass { get; private init; }
+    public int DemoStage { get; private init; }
+    public int DemoStep { get; private init; } = 8;
 
     public bool Monkey => MonkeySeed != 0;
 
     public bool Screenshot => ScreenshotPath.Length > 0;
 
     /// <summary>Tryb testowy (test dymny albo zrzut): profil tylko w pamięci, bez dźwięku.</summary>
-    public bool Harness => Smoke || Screenshot || Monkey;
+    public bool Harness => Smoke || Screenshot || Monkey || Demo > 0f;
 
     public static LaunchOptions Parse(string[] args, uint seed)
     {
@@ -83,6 +89,10 @@ public sealed class LaunchOptions
             View = Arg("--view") is "flat" or "34" ? Arg("--view") : "",
             Lights = Arg("--lights") is "on" or "off" ? Arg("--lights") : "",
             Bench = float.TryParse(Arg("--bench"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var b) ? b : 0f,
+            Demo = float.TryParse(Arg("--demo"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var dm) ? dm : 0f,
+            DemoClass = int.TryParse(Arg("--class"), out var dc) ? dc : 0,
+            DemoStage = int.TryParse(Arg("--stage"), out var ds) ? ds : 0,
+            DemoStep = int.TryParse(Arg("--step"), out var dst) ? dst : 8,
         };
     }
 }
