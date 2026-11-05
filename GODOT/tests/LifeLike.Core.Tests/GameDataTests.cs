@@ -10,7 +10,7 @@ public class GameDataTests
     {
         Assert.Equal(12, D.Classes.Length); // v0.21.51 cz. 2: + 3 zawody z sekretnych zleceń
         Assert.Equal(9, D.OpenClassesCount);
-        Assert.Equal(22, D.Weapons.Length);
+        Assert.Equal(39, D.Weapons.Length); // v0.23.0: 22 dotychczasowych + 17 nowych broni
         Assert.Equal(47, D.Enemies.Length); // v0.21.52 cz. d: + 2 problemy i 4 bossów kontraktów mapy kariery
         Assert.Equal(12, D.StagesCount);
         Assert.Equal(1, D.StartToolsMask);
@@ -83,7 +83,7 @@ public class GameDataTests
         Assert.True(D.CritBasePct == 5 && D.CritPerLuckPct == 3 && D.CritMultiplier == 2 && D.DodgeMaxPct == 20);
         Assert.True(D.ThermosCapacity == 3 && D.CoffeeHeal == 8 && D.BotDrinkBelowPct == 40 && D.GearDeclineXp == 1);
         Assert.Equal(107, D.Stages[2].HpPct);
-        Assert.Equal("v0.22.1", D.Version);
+        Assert.Equal("v0.23.0", D.Version);
     }
 
     [Fact]

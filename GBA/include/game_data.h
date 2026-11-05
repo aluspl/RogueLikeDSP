@@ -487,7 +487,7 @@ inline constexpr core::gear_def gear[] = {   // indeks = slot * 3 + jakość
     { { "Buty z podnoskiem", "Steel-Toe Boots" }, core::gear_stat::dodge, 5 },
     { { "Buty markowe", "Branded Boots" }, core::gear_stat::dodge, 8 },
     { { "Pas narzędziowy", "Tool Belt" }, core::gear_stat::thermos, 1 },
-    { { "Pas z kaburą", "Holster Belt" }, core::gear_stat::thermos, 1 },
+    { { "Pas monterski z kaburą", "Rigger Holster Belt" }, core::gear_stat::thermos, 1 },
     { { "Pas markowy", "Branded Belt" }, core::gear_stat::thermos, 2 },
 };
 inline constexpr core::ltext gear_slots[] = { { "Kask", "Helmet" }, { "Rękawice", "Gloves" }, { "Kamizelka", "Vest" }, { "Buty", "Boots" }, { "Pas", "Belt" } };
@@ -1054,7 +1054,7 @@ inline constexpr core::progress_title progress_titles[] = {   // tytuły: inspek
 };
 inline constexpr int progress_titles_count = 21;
 
-inline constexpr const char* version = "v0.22.1";   // numer wersji (ekran tytułowy, changelog)
+inline constexpr const char* version = "v0.23.0";   // numer wersji (ekran tytułowy, changelog)
 
 inline constexpr core::ltext damage_help[] = {   // Jak grać: obrażenia broni w prostych słowach (rozpiska #26)
     { "Cios = rzut broni + premie:", "Hit = weapon roll + bonuses:" },

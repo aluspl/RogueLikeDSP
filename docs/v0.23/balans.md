@@ -2,7 +2,7 @@
 
 Bot C# (`BalanceBaselineTests.MeasureNormalBaseline`, `BALANCE_OUT=plik dotnet test GODOT/LifeLike.sln --filter MeasureNormalBaseline`),
 300 przebiegów na zawód, poziom Normalny, bez ulepszeń (`RunMods.Default`), ziarna `1000 + k*7919`. Numer etapu = indeks absolutny
-(0-1 Akt 0, 2-4 Akt I, 5-7 Akt II, 8-11 Akt III; wiersz „porażki” to udział % wszystkich przebiegów zawodu).
+(0-1 Akt 0 Papierologia, 2-5 Akt I Stan surowy, 6-8 Akt II Pod dachem, 9-11 Akt III Wykończenie; wiersz „porażki” to udział % wszystkich przebiegów zawodu).
 
 ## v0.22.1 (przed zmianami broni) – stałe dla `WeaponBalanceTests` (Task 7)
 

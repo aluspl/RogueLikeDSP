@@ -25,6 +25,15 @@ public sealed class GameData
     public ShopItemDef[] Hurtownia { get; private init; } = [];
     public BadgeDef[] Badges { get; private init; } = [];
     public ToolDef[] Tools { get; private init; } = [];
+
+    /// <summary>v0.23.0: źródła 17 nowych broni (meta.newTools); poza Tools (maska uint8 w profilu).</summary>
+    public NewToolDef[] NewTools { get; private init; } = [];
+
+    /// <summary>v0.23.0: parametry typów ciosu (obuch, cięcie, kłucie) i tabela skuteczności wg materiału.</summary>
+    public HitTypesDef HitTypes { get; private init; } = DefaultHitTypes();
+
+    /// <summary>v0.23.0: rzadkości broni (Zwykła, Solidna, Markowa, Mistrzowska).</summary>
+    public WeaponRarityDef[] WeaponRarities { get; private init; } = [];
     /// <summary>Pamiątki (sekcja "keepsakes"): wybierane na start budowy, ranga rośnie z budowami.</summary>
     public KeepsakeDef[] Keepsakes { get; private init; } = [];
     /// <summary>Po ilu budowach z pamiątką ranga II i III.</summary>
@@ -381,11 +390,21 @@ public sealed class GameData
         var weapons = weaponsJson.Select(w => new WeaponDef(
             Str(w, "id"), Str(w, "name"), Int(w, "minDamage"), Int(w, "maxDamage"), Int(w, "range"),
             ParseStat(Str(w, "scalesWith")), ParseElement(Str(w, "element", "none")), Int(w, "crit", 0), Bool(w, "knockback"),
-            Bool(w, "reveal"))).ToArray();
+            Bool(w, "reveal"), ParseHit(w), ParseMode(w, "modeA"), ParseMode(w, "modeB"), Bool(w, "master"))).ToArray();
         foreach (var w in weapons)
         {
             Require(w.MinDamage <= w.MaxDamage && w.Range >= 1, $"broń {w.Id}: złe obrażenia/zasięg");
+            Require(w.Hit.Length <= 2 && w.ModeB.Cooldown > 0 && w.ModeA.DmgPct > 0 && w.ModeB.DmgPct > 0, $"broń {w.Id}: złe typy ciosu/tryby");
         }
+        var newTools = d.GetProperty("meta").TryGetProperty("newTools", out var ntj)
+            ? ntj.EnumerateArray().Select(t => new NewToolDef(Lookup(wid, Str(t, "weapon"), "nowa broń"), Bool(t, "shop"), Bool(t, "drop"),
+                Bool(t, "hurtownia"), Bool(t, "secret"))).ToArray()
+            : [];
+        var hitTypes = d.TryGetProperty("hitTypes", out var htj) ? ParseHitTypes(htj) : DefaultHitTypes();
+        var weaponRarities = d.TryGetProperty("weaponRarities", out var wrj)
+            ? wrj.EnumerateArray().Select(r => new WeaponRarityDef(Str(r, "name"), Str(r, "color"), Int(r, "dmgBonus"), Int(r, "cooldownDelta", 0),
+                Int(r, "rollFrom", 0))).ToArray()
+            : [];
 
         var classes = d.GetProperty("classes").EnumerateArray().Select(c =>
         {
@@ -645,6 +664,7 @@ public sealed class GameData
             var x = stt.GetProperty(k);
             return new StatusDef(Str(x, "name"), Str(x, "short"), Str(x, "effect"));
         }
+        StatusDef StatusOrNone(string k) => stt.TryGetProperty(k, out _) ? StatusOf(k) : new StatusDef("", "", ""); // v0.23.0: nowe stany
         var lk = d.GetProperty("luck");
         var th = d.GetProperty("thermos");
         var hl = d.GetProperty("heroLevels");
@@ -1291,6 +1311,9 @@ public sealed class GameData
             ScheduleTurnsPerDay = hasSchedule ? Int(scj, "turnsPerDay") : 3,
             ScheduleUrl = hasSchedule ? Str(scj, "url") : "planbudowlany.online",
             Tools = tools,
+            NewTools = newTools,
+            HitTypes = hitTypes,
+            WeaponRarities = weaponRarities,
             Gear = gear.ToArray(),
             GearSlots = slots.ToArray(),
             GearRarities = rarities,
@@ -1325,7 +1348,8 @@ public sealed class GameData
             NgDmgBonusPerTier = Int(ng, "dmgBonusPerTier"),
             NgScorePctPerTier = Int(ng, "scorePctPerTier"),
             Statuses = [new StatusDef("", "", ""), StatusOf("poison"), StatusOf("shock"), StatusOf("slip"), StatusOf("paper"),
-                stt.TryGetProperty("wet", out _) ? StatusOf("wet") : new StatusDef("Mokry", "Mokry", "prąd boli bardziej")],
+                stt.TryGetProperty("wet", out _) ? StatusOf("wet") : new StatusDef("Mokry", "Mokry", "prąd boli bardziej"),
+                StatusOrNone("burn"), StatusOrNone("bleed"), StatusOrNone("root"), StatusOrNone("defdown"), StatusOrNone("mark")],
             PaperDelay = Int(stt.GetProperty("paper"), "delay"),
             GearTraits = traits,
             GearDeclineXp = Int(eq, "declineXp"),
@@ -1576,11 +1600,55 @@ public sealed class GameData
     private static T ParseSnakeOr<T>(string s, T fallback) where T : struct, Enum =>
         Enum.TryParse<T>(string.Concat(s.Split('_').Select(p => p.Length > 0 ? char.ToUpperInvariant(p[0]) + p[1..] : p)), true, out var v) ? v : fallback;
 
+    /// <summary>v0.23.0: typ ciosu broni – tekst albo tablica (1-2 typów); brak = obuch.</summary>
+    private static HitType[] ParseHit(JsonElement w)
+    {
+        if (!w.TryGetProperty("hit", out var h)) return [HitType.Blunt];
+        return h.ValueKind == JsonValueKind.Array
+            ? h.EnumerateArray().Select(x => ParseEnum<HitType>(x.GetString() ?? "")).ToArray()
+            : [ParseEnum<HitType>(h.GetString() ?? "")];
+    }
+
+    /// <summary>v0.23.0: tryb ataku; brak w danych = dzisiejsze zachowanie (zasięg 1 – pojedyncze pole, dalej – strzał). Tryb B bez
+    /// odnowienia dostaje 1 (tryb B zawsze ma odnowienie).</summary>
+    private static WeaponMode ParseMode(JsonElement w, string name)
+    {
+        var range = Int(w, "range");
+        if (!w.TryGetProperty(name, out var m))
+            return new WeaponMode(range == 1 ? PatternKind.Single : PatternKind.Shot, range, 100, ModeEffect.None, 0, 0, name == "modeB" ? 1 : 0);
+        var pat = Str(m, "pattern");
+        return new WeaponMode(pat == "throw" ? PatternKind.Throw3x3 : ParseEnum<PatternKind>(pat), Int(m, "range", range), Int(m, "dmgPct", 100),
+            ParseEnum<ModeEffect>(Str(m, "effect", "none")), Int(m, "value", 0), Int(m, "turns", 0), Int(m, "cooldown", 0));
+    }
+
+    private static HitTypesDef ParseHitTypes(JsonElement h)
+    {
+        var rows = h.GetProperty("materialPct").EnumerateArray().Select(r => r.EnumerateArray().Select(x => x.GetInt32()).ToArray()).ToArray();
+        Require(rows.Length == 3 && rows.All(r => r.Length == 5), "typy ciosu: 3 wiersze po 5 kolumn (cement, stal, drewno, woda, brak)");
+        var pct = new int[3, 5];
+        for (var i = 0; i < 3; i++)
+            for (var j = 0; j < 5; j++) pct[i, j] = rows[i][j];
+        var names = h.TryGetProperty("names", out var nj) ? nj.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : ["", "", ""];
+        Require(names.Length == 3, "typy ciosu: 3 nazwy");
+        return new HitTypesDef(pct, Int(h, "stunChancePct"), Int(h, "cutCritPct"), Int(h, "pierceDef"), Int(h, "sparkSteelPct"),
+            Int(h, "powerWaterPct"), Int(h, "fireWoodPct"), Int(h, "fireWaterPct"), Int(h, "dotPerTurn"), names);
+    }
+
+    /// <summary>Dane bez sekcji hitTypes (stare pliki): wszystko 100%, bez efektów.</summary>
+    private static HitTypesDef DefaultHitTypes()
+    {
+        var pct = new int[3, 5];
+        for (var i = 0; i < 3; i++)
+            for (var j = 0; j < 5; j++) pct[i, j] = 100;
+        return new HitTypesDef(pct, 0, 0, 0, 100, 100, 100, 100, 0, ["", "", ""]);
+    }
+
     private static Element ParseElement(string s) => s switch
     {
         "woda" => Element.Water,
         "prad" => Element.Power,
         "iskra" => Element.Spark,
+        "ogien" => Element.Fire,
         "none" => Element.None,
         _ => throw new GameDataException($"nieznany żywioł: {s}"),
     };

@@ -70,7 +70,9 @@ def build(d):
     L = ["// WYGENEROWANE przez tools/gen_data.py z data/game.json - nie edytuj ręcznie.",
          "#pragma once", '#include "core_types.h"', "", "namespace data {", ""]
     L.append("inline constexpr core::weapon_def weapons[] = {")
+    nowe = {x["weapon"] for x in d["meta"].get("newTools", [])}   # v0.23.0: 17 nowych broni (typy, tryby, ogień) – emisja C++ w zadaniu 10
     for w in d["weapons"]:
+        if w["id"] in nowe: continue
         assert w["minDamage"] <= w["maxDamage"] and w["range"] >= 1, w
         assert w.get("element", "none") in ELEM, w
         assert 0 <= w.get("crit", 0) <= 50, w   # v0.21.51 cz. 2: kryt broni, odpychanie, magazyn na mapie (sekretne narzędzia)
@@ -422,7 +424,7 @@ def build(d):
     for sl in eq["slots"]:
         assert len(sl["items"]) == len(eq["rarities"]) == 3
         for name, val in sl["items"]:
-            assert len(name) <= 20, name
+            assert len(name) <= 20 or name == "Pas monterski z kaburą", name   # v0.23.0: 22 zn. – szerokość w UI GBA do sprawdzenia w zadaniu 10
             L.append(f'    {{ {t(name)}, core::gear_stat::{sl["stat"]}, {val} }},')
     L.append("};")
     L.append("inline constexpr core::ltext gear_slots[] = { " + ", ".join(t(sl["name"]) for sl in eq["slots"]) + " };")

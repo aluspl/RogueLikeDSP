@@ -245,7 +245,18 @@
       "minDamage": 2,
       "maxDamage": 4,
       "range": 2,
-      "scalesWith": "intelligence"
+      "scalesWith": "intelligence",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "shot"
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "mark",
+        "value": 30,
+        "turns": 3,
+        "cooldown": 4
+      }
     },
     {
       "id": "kielnia",
@@ -253,7 +264,19 @@
       "minDamage": 4,
       "maxDamage": 6,
       "range": 1,
-      "scalesWith": "strength"
+      "scalesWith": "strength",
+      "hit": "cut",
+      "modeA": {
+        "pattern": "arc"
+      },
+      "modeB": {
+        "pattern": "shot",
+        "range": 2,
+        "effect": "stun",
+        "value": 100,
+        "turns": 1,
+        "cooldown": 3
+      }
     },
     {
       "id": "gwozdziarka",
@@ -261,7 +284,16 @@
       "minDamage": 2,
       "maxDamage": 3,
       "range": 3,
-      "scalesWith": "agility"
+      "scalesWith": "agility",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "shot"
+      },
+      "modeB": {
+        "pattern": "line",
+        "dmgPct": 60,
+        "cooldown": 3
+      }
     },
     {
       "id": "probnik",
@@ -270,7 +302,16 @@
       "maxDamage": 5,
       "range": 2,
       "scalesWith": "intelligence",
-      "element": "prad"
+      "element": "prad",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "shot"
+      },
+      "modeB": {
+        "pattern": "cross",
+        "effect": "chain",
+        "cooldown": 4
+      }
     },
     {
       "id": "klucz",
@@ -278,7 +319,17 @@
       "minDamage": 4,
       "maxDamage": 7,
       "range": 1,
-      "scalesWith": "strength"
+      "scalesWith": "strength",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "dry",
+        "turns": 1,
+        "cooldown": 4
+      }
     },
     {
       "id": "szlifierka",
@@ -287,7 +338,15 @@
       "maxDamage": 7,
       "range": 1,
       "scalesWith": "agility",
-      "element": "iskra"
+      "element": "iskra",
+      "hit": "cut",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "arc",
+        "cooldown": 3
+      }
     },
     {
       "id": "lom",
@@ -295,7 +354,17 @@
       "minDamage": 3,
       "maxDamage": 6,
       "range": 1,
-      "scalesWith": "strength"
+      "scalesWith": "strength",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "push",
+        "effect": "push",
+        "value": 2,
+        "cooldown": 3
+      }
     },
     {
       "id": "wkretarka",
@@ -303,7 +372,18 @@
       "minDamage": 2,
       "maxDamage": 5,
       "range": 2,
-      "scalesWith": "agility"
+      "scalesWith": "agility",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "line"
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "defdown",
+        "value": 3,
+        "turns": 3,
+        "cooldown": 3
+      }
     },
     {
       "id": "laser",
@@ -311,7 +391,15 @@
       "minDamage": 2,
       "maxDamage": 4,
       "range": 4,
-      "scalesWith": "intelligence"
+      "scalesWith": "intelligence",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "line"
+      },
+      "modeB": {
+        "pattern": "lineBoth",
+        "cooldown": 4
+      }
     },
     {
       "id": "mlot",
@@ -319,7 +407,18 @@
       "minDamage": 5,
       "maxDamage": 8,
       "range": 1,
-      "scalesWith": "strength"
+      "scalesWith": "strength",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "push",
+        "effect": "push",
+        "value": 1
+      },
+      "modeB": {
+        "pattern": "around",
+        "effect": "openWall",
+        "cooldown": 5
+      }
     },
     {
       "id": "tablet",
@@ -327,7 +426,17 @@
       "minDamage": 3,
       "maxDamage": 5,
       "range": 2,
-      "scalesWith": "intelligence"
+      "scalesWith": "intelligence",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "shot",
+        "range": 3,
+        "effect": "swap",
+        "cooldown": 4
+      }
     },
     {
       "id": "miernik",
@@ -335,7 +444,18 @@
       "minDamage": 2,
       "maxDamage": 5,
       "range": 3,
-      "scalesWith": "intelligence"
+      "scalesWith": "intelligence",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "shot"
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "reveal",
+        "value": 10,
+        "turns": 3,
+        "cooldown": 4
+      }
     },
     {
       "id": "dachowka",
@@ -343,7 +463,17 @@
       "minDamage": 2,
       "maxDamage": 3,
       "range": 3,
-      "scalesWith": "agility"
+      "scalesWith": "agility",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "shot"
+      },
+      "modeB": {
+        "pattern": "throw",
+        "range": 3,
+        "dmgPct": 50,
+        "cooldown": 4
+      }
     },
     {
       "id": "agregat",
@@ -351,7 +481,17 @@
       "minDamage": 2,
       "maxDamage": 4,
       "range": 2,
-      "scalesWith": "strength"
+      "scalesWith": "strength",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "spray"
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "root",
+        "turns": 2,
+        "cooldown": 4
+      }
     },
     {
       "id": "lyzka",
@@ -359,7 +499,18 @@
       "minDamage": 4,
       "maxDamage": 7,
       "range": 1,
-      "scalesWith": "strength"
+      "scalesWith": "strength",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "arc"
+      },
+      "modeB": {
+        "pattern": "shot",
+        "range": 3,
+        "effect": "pull",
+        "value": 2,
+        "cooldown": 3
+      }
     },
     {
       "id": "udarowy",
@@ -367,7 +518,21 @@
       "minDamage": 5,
       "maxDamage": 9,
       "range": 1,
-      "scalesWith": "strength"
+      "scalesWith": "strength",
+      "hit": [
+        "blunt",
+        "pierce"
+      ],
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "line",
+        "effect": "defdown",
+        "value": 99,
+        "turns": 1,
+        "cooldown": 4
+      }
     },
     {
       "id": "kotwy",
@@ -376,7 +541,17 @@
       "maxDamage": 5,
       "range": 3,
       "scalesWith": "agility",
-      "element": "iskra"
+      "element": "iskra",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "shot"
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "root",
+        "turns": 2,
+        "cooldown": 3
+      }
     },
     {
       "id": "spawarka",
@@ -385,7 +560,18 @@
       "maxDamage": 4,
       "range": 2,
       "scalesWith": "agility",
-      "element": "iskra"
+      "element": "iskra",
+      "hit": "cut",
+      "modeA": {
+        "pattern": "line"
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "dot",
+        "value": 2,
+        "turns": 3,
+        "cooldown": 3
+      }
     },
     {
       "id": "tyczka",
@@ -393,7 +579,18 @@
       "minDamage": 2,
       "maxDamage": 4,
       "range": 2,
-      "scalesWith": "intelligence"
+      "scalesWith": "intelligence",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "line"
+      },
+      "modeB": {
+        "pattern": "cross",
+        "effect": "mark",
+        "value": 25,
+        "turns": 3,
+        "cooldown": 4
+      }
     },
     {
       "id": "mlotek",
@@ -401,7 +598,21 @@
       "minDamage": 4,
       "maxDamage": 7,
       "range": 1,
-      "scalesWith": "strength"
+      "scalesWith": "strength",
+      "hit": [
+        "blunt",
+        "cut"
+      ],
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "defdown",
+        "value": 2,
+        "turns": 1,
+        "cooldown": 2
+      }
     },
     {
       "id": "mlot_zenka",
@@ -410,7 +621,20 @@
       "maxDamage": 7,
       "range": 1,
       "scalesWith": "strength",
-      "knockback": true
+      "knockback": true,
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "push",
+        "effect": "push",
+        "value": 1
+      },
+      "modeB": {
+        "pattern": "around",
+        "effect": "push",
+        "value": 1,
+        "cooldown": 5
+      },
+      "master": true
     },
     {
       "id": "poziomica_m",
@@ -420,7 +644,349 @@
       "range": 3,
       "scalesWith": "intelligence",
       "crit": 10,
-      "reveal": true
+      "reveal": true,
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "shot"
+      },
+      "modeB": {
+        "pattern": "lineBoth",
+        "range": 3,
+        "effect": "reveal",
+        "cooldown": 4
+      },
+      "master": true
+    },
+    {
+      "id": "lopata",
+      "name": "Łopata",
+      "minDamage": 3,
+      "maxDamage": 6,
+      "range": 1,
+      "scalesWith": "strength",
+      "hit": [
+        "blunt",
+        "pierce"
+      ],
+      "modeA": {
+        "pattern": "arc",
+        "effect": "stun",
+        "value": 20,
+        "turns": 1
+      },
+      "modeB": {
+        "pattern": "line",
+        "range": 2,
+        "effect": "defdown",
+        "value": 2,
+        "turns": 3,
+        "cooldown": 2
+      }
+    },
+    {
+      "id": "siekiera",
+      "name": "Siekiera ciesielska",
+      "minDamage": 4,
+      "maxDamage": 6,
+      "range": 1,
+      "scalesWith": "strength",
+      "hit": "cut",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "arc",
+        "cooldown": 3
+      }
+    },
+    {
+      "id": "pila",
+      "name": "Piła ręczna",
+      "minDamage": 2,
+      "maxDamage": 5,
+      "range": 1,
+      "scalesWith": "agility",
+      "crit": 10,
+      "hit": "cut",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "dot",
+        "value": 2,
+        "turns": 3,
+        "cooldown": 3
+      }
+    },
+    {
+      "id": "kilof",
+      "name": "Kilof",
+      "minDamage": 4,
+      "maxDamage": 7,
+      "range": 1,
+      "scalesWith": "strength",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "line",
+        "range": 2,
+        "cooldown": 4
+      }
+    },
+    {
+      "id": "przecinak",
+      "name": "Przecinak z młotkiem",
+      "minDamage": 3,
+      "maxDamage": 5,
+      "range": 1,
+      "scalesWith": "strength",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "openWall",
+        "value": 3,
+        "cooldown": 1
+      }
+    },
+    {
+      "id": "nozyce",
+      "name": "Nożyce do blachy",
+      "minDamage": 3,
+      "maxDamage": 5,
+      "range": 1,
+      "scalesWith": "agility",
+      "hit": "cut",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "arc",
+        "cooldown": 3
+      }
+    },
+    {
+      "id": "silikon",
+      "name": "Pistolet do silikonu",
+      "minDamage": 2,
+      "maxDamage": 3,
+      "range": 3,
+      "scalesWith": "agility",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "shot",
+        "dmgPct": 70
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "root",
+        "turns": 2,
+        "cooldown": 4
+      }
+    },
+    {
+      "id": "myjka",
+      "name": "Myjka ciśnieniowa",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 3,
+      "scalesWith": "agility",
+      "element": "woda",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "line"
+      },
+      "modeB": {
+        "pattern": "push",
+        "effect": "push",
+        "value": 2,
+        "cooldown": 3
+      }
+    },
+    {
+      "id": "palnik",
+      "name": "Palnik dekarski",
+      "minDamage": 2,
+      "maxDamage": 5,
+      "range": 2,
+      "scalesWith": "intelligence",
+      "element": "ogien",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "spray",
+        "effect": "dot",
+        "value": 2,
+        "turns": 2
+      },
+      "modeB": {
+        "pattern": "around",
+        "dmgPct": 50,
+        "effect": "dry",
+        "turns": 1,
+        "cooldown": 5
+      }
+    },
+    {
+      "id": "taker",
+      "name": "Taker",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 2,
+      "scalesWith": "agility",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "shot",
+        "dmgPct": 60
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "root",
+        "turns": 3,
+        "cooldown": 3
+      }
+    },
+    {
+      "id": "mlotek_gumowy",
+      "name": "Młotek gumowy",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 1,
+      "scalesWith": "strength",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "single",
+        "effect": "stun",
+        "value": 50,
+        "turns": 1
+      },
+      "modeB": {
+        "pattern": "cross",
+        "effect": "stun",
+        "value": 30,
+        "turns": 1,
+        "cooldown": 4
+      }
+    },
+    {
+      "id": "pilarka",
+      "name": "Pilarka tarczowa",
+      "minDamage": 4,
+      "maxDamage": 7,
+      "range": 1,
+      "scalesWith": "agility",
+      "element": "iskra",
+      "crit": 10,
+      "hit": "cut",
+      "modeA": {
+        "pattern": "arc"
+      },
+      "modeB": {
+        "pattern": "around",
+        "cooldown": 5
+      },
+      "master": true
+    },
+    {
+      "id": "poziomica_2m",
+      "name": "Poziomica 2 m",
+      "minDamage": 3,
+      "maxDamage": 5,
+      "range": 2,
+      "scalesWith": "intelligence",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "shot"
+      },
+      "modeB": {
+        "pattern": "cross",
+        "effect": "reveal",
+        "cooldown": 4
+      }
+    },
+    {
+      "id": "mieszadlo",
+      "name": "Mieszadło do zaprawy",
+      "minDamage": 3,
+      "maxDamage": 6,
+      "range": 1,
+      "scalesWith": "strength",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "around",
+        "effect": "push",
+        "value": 1,
+        "cooldown": 5
+      }
+    },
+    {
+      "id": "laser_krzyzowy",
+      "name": "Laser krzyżowy",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 4,
+      "scalesWith": "intelligence",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "line"
+      },
+      "modeB": {
+        "pattern": "line4",
+        "cooldown": 4
+      }
+    },
+    {
+      "id": "lutownica",
+      "name": "Lutownica",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 1,
+      "scalesWith": "intelligence",
+      "element": "ogien",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "single",
+        "effect": "dot",
+        "value": 2,
+        "turns": 2
+      },
+      "modeB": {
+        "pattern": "line",
+        "range": 2,
+        "effect": "dot",
+        "value": 2,
+        "turns": 3,
+        "cooldown": 3
+      }
+    },
+    {
+      "id": "opalarka",
+      "name": "Opalarka",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 2,
+      "scalesWith": "agility",
+      "element": "ogien",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "spray",
+        "effect": "dry",
+        "turns": 1
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "mark",
+        "value": 100,
+        "turns": 1,
+        "cooldown": 3
+      }
     }
   ],
   "enemies": [
@@ -2028,7 +2594,79 @@
           ]
         }
       ]
-    }
+    },
+    "newTools": [
+      {
+        "weapon": "lopata",
+        "drop": true,
+        "hurtownia": true
+      },
+      {
+        "weapon": "siekiera",
+        "shop": true
+      },
+      {
+        "weapon": "pila",
+        "drop": true
+      },
+      {
+        "weapon": "kilof",
+        "drop": true
+      },
+      {
+        "weapon": "przecinak",
+        "hurtownia": true
+      },
+      {
+        "weapon": "nozyce",
+        "drop": true
+      },
+      {
+        "weapon": "silikon",
+        "hurtownia": true
+      },
+      {
+        "weapon": "myjka",
+        "drop": true
+      },
+      {
+        "weapon": "palnik",
+        "shop": true
+      },
+      {
+        "weapon": "taker",
+        "drop": true
+      },
+      {
+        "weapon": "mlotek_gumowy",
+        "hurtownia": true
+      },
+      {
+        "weapon": "pilarka",
+        "secret": true
+      },
+      {
+        "weapon": "poziomica_2m",
+        "drop": true
+      },
+      {
+        "weapon": "mieszadlo",
+        "shop": true
+      },
+      {
+        "weapon": "laser_krzyzowy",
+        "shop": true
+      },
+      {
+        "weapon": "lutownica",
+        "drop": true,
+        "hurtownia": true
+      },
+      {
+        "weapon": "opalarka",
+        "drop": true
+      }
+    ]
   },
   "heroLevels": {
     "thresholds": [
@@ -2781,7 +3419,7 @@
             1
           ],
           [
-            "Pas z kaburą",
+            "Pas monterski z kaburą",
             1
           ],
           [
@@ -2947,6 +3585,31 @@
       "name": "Mokry",
       "short": "Mokry",
       "effect": "prąd boli bardziej"
+    },
+    "burn": {
+      "name": "Podpalenie",
+      "short": "Podp.",
+      "effect": "-2 HP/turę"
+    },
+    "bleed": {
+      "name": "Krwawienie",
+      "short": "Krwaw.",
+      "effect": "-2 HP/turę"
+    },
+    "root": {
+      "name": "Unieruchomienie",
+      "short": "Unier.",
+      "effect": "stoi w miejscu"
+    },
+    "defdown": {
+      "name": "Odsłonięty",
+      "short": "Odsł.",
+      "effect": "mniejsza OBR"
+    },
+    "mark": {
+      "name": "Oznaczony",
+      "short": "Ozn.",
+      "effect": "więcej obrażeń"
     }
   },
   "cash": {
@@ -3023,7 +3686,7 @@
       "effect": "thermos"
     }
   ],
-  "version": "v0.22.1",
+  "version": "v0.23.0",
   "damageHelp": [
     "Cios = rzut broni + premie:",
     "SIŁ/ZRĘ/INT broni +1 co 2 pkt,",
@@ -9355,5 +10018,73 @@
     "budowa_dnia_nr_najlepszy": "Budowa dnia nr {0}: najlepszy {1}",
     "wyzwanie_tygodnia_najlepszy": "Wyzwanie tygodnia: najlepszy {0}",
     "wybierz_1_z_2": "wybierz 1 z 2"
-  }
+  },
+  "hitTypes": {
+    "names": [
+      "Obuch",
+      "Cięcie",
+      "Kłucie"
+    ],
+    "materialPct": [
+      [
+        150,
+        75,
+        100,
+        50,
+        100
+      ],
+      [
+        75,
+        75,
+        150,
+        100,
+        100
+      ],
+      [
+        100,
+        125,
+        100,
+        100,
+        100
+      ]
+    ],
+    "stunChancePct": 20,
+    "cutCritPct": 10,
+    "pierceDef": 2,
+    "sparkSteelPct": 150,
+    "powerWaterPct": 150,
+    "fireWoodPct": 150,
+    "fireWaterPct": 50,
+    "dotPerTurn": 2
+  },
+  "weaponRarities": [
+    {
+      "name": "Zwykła",
+      "color": "#8a8796",
+      "dmgBonus": 0,
+      "cooldownDelta": 0,
+      "rollFrom": 0
+    },
+    {
+      "name": "Solidna",
+      "color": "#2f8fd6",
+      "dmgBonus": 1,
+      "cooldownDelta": 0,
+      "rollFrom": 70
+    },
+    {
+      "name": "Markowa",
+      "color": "#6b4eff",
+      "dmgBonus": 2,
+      "cooldownDelta": -1,
+      "rollFrom": 94
+    },
+    {
+      "name": "Mistrzowska",
+      "color": "#d9a400",
+      "dmgBonus": 3,
+      "cooldownDelta": -1,
+      "rollFrom": 101
+    }
+  ]
 }
