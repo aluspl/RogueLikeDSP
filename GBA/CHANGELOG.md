@@ -11,6 +11,8 @@ Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 3. **Szkolenia z rozmowy (#74)** – gdy Marek proponuje wybór w drzewku, „Pokaż Szkolenia” otwiera od razu stronę Drzewko.
 4. **Wybór zawodu w pionie (#74)** – „Szczegóły” także klawiszem I (drugi raz: Statystyki), pełna karta zostaje po
    powrocie ze Statystyk i Inwestora; po obrocie do poziomu B od razu wraca.
+5. **Filtr „Kwas” (#75)** – łagodniejszy: mniejsze i wolniejsze fale, wolniej zmieniająca się tęcza, mniejsze nasycenie.
+   Siłę efektu i ograniczony ruch dalej ustawisz w Ustawienia > Filtr ekranu.
 
 ## v0.22.0 – 2026-11-05 (pierwsza wersja serii 0.22)
 

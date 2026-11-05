@@ -256,7 +256,7 @@ Stan v0.21.54: #62, #65, #66 zrobione, #63 jako prototyp w ustawieniach (wszystk
 |---|---|---|---|
 | 74 | Drobiazgi z przeglądu projektu A: banery przy telefonie po obrocie ekranu, HUD 1,5x na rozłożonym składaku w poziomie, oferta drzewka otwiera stronę Drzewko, „Szczegóły” w wyborze zawodu z klawiatury / pada (i nie gasną po powrocie z Inwestora / Statystyk), kolejność opisów w `PhonePainter` | ✅ | — |
 | 70 | Drzewko Szkoleń – nowy widok (karty gałęzi, węzły ze stanem, jasne „1 z 2”) – patrz wiersz #70 wyżej | ⬜ | ⬜ (później) |
-| 75 | Filtr „Kwas” łagodniejszy domyślnie albo suwak siły w ustawieniach | ⬜ | — |
+| 75 | Filtr „Kwas” łagodniejszy domyślnie albo suwak siły w ustawieniach | ✅ (łagodniejszy shader; suwak siły i ograniczony ruch już były w Filtr ekranu) | — |
 | 76 | Porządek w TODO: przejrzeć stare wiersze (np. #21 premie po etapie są już w grze) i oznaczyć zrobione | ⬜ | — |
 
 Bronie (typy obrażeń, zasięgi, rzadkość widoczna w rękach) – osobny pakiet po brainstormingu (projekt B+), raczej v0.22.2.
@@ -282,7 +282,7 @@ GBA dostaje tylko konieczne minimum (był eksperymentem promocyjnym).
 | B – zawartość | Więcej kontraktów, ulepszeń, broni z unikalnymi umiejętnościami, pula odblokowań między budowami, jednorazowy przecinak/młot do pękniętych ścian | ⬜ |
 | B+ – rodzaje broni (pomysł 2026-11-05) | Typy obrażeń i zasięgi: obuch (np. łopata – cios wokół bohatera, szansa na ogłuszenie), cięte (szansa na krytyk), kłute/przebijające (linia przed bohaterem, przebija kilku). Wrogowie z odpornościami/słabościami na typ (np. odporny na obuch). Zawód ma broń domyślną, kolejne odblokowane w Szkoleniach, ale też do znalezienia na budowie. Do przemyślenia: lista obecnych 22 broni i narzędzi → przypisanie typów, propozycje nowych, balans botem | ⬜ (po A, razem z B) |
 | B+ – rzadkość broni (pomysł 2026-11-05) | Warianty broni: zwykła / rzadka / legendarna (itd.) – każdy z własnym wyglądem i kolorem (sprite), widoczny w rękach postaci na mapie (szczególnie przy patrzeniu w dół), na karcie i w dropach; do zaprojektowania razem z typami obrażeń (B+ wyżej): co daje rzadkość (statystyki, cecha, efekt), skąd się bierze (drop, Szkolenia, nagroda), balans botem, czy GBA dostaje prostszą wersję | ⬜ (razem z B+) |
-| C+ – filtr „Kwas” (uwaga właściciela 2026-11-05) | „Fajny, ale chyba zbyt intensywny” – zostaje jako easter egg (odblokowanie: inspektor 20 / sekret); rozważyć słabsze fale domyślnie albo suwak siły filtra w ustawieniach | ⬜ |
+| C+ – filtr „Kwas” (uwaga właściciela 2026-11-05) | „Fajny, ale chyba zbyt intensywny” – zostaje jako easter egg (odblokowanie: inspektor 20 / sekret); rozważyć słabsze fale domyślnie albo suwak siły filtra w ustawieniach | ✅ v0.22.1 (#75) |
 | Promo – filmik reklamowy (pomysł 2026-11-05) | Po pakiecie A (gotowe ekrany): skryptowany przebieg (różne zawody, bronie, filtry ekranu, rozmowa z Markiem) nagrany przez Godot Movie Maker (`--write-movie`) ze scen zrzutów; pion 9:16 i poziom 16:9, do `Promo/v0.22.0/` razem z postem | ⬜ |
 | E – wsparcie z telefonu | „Wezwij pomoc” z telefonu (pokrewne Brygadzie) | ⬜ |
 
