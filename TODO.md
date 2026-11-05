@@ -244,8 +244,8 @@ Stan v0.21.54: #62, #65, #66 zrobione, #63 jako prototyp w ustawieniach (wszystk
 | 68 | Dziennik nad mapą: w pionie teksty dziennika giną pod ścianami (półprzezroczyste, słabo czytelne) – pasek tła / cień pod tekstem | 🔄 | — |
 | 69 | HUD w pionie: ucięte „Normal..” przy długiej nazwie etapu – skrót trudności (N/Ł/T) albo ikona | 🔄 | — |
 | 70 | Drzewko Szkoleń – przebudowa widoku: zamiast 3 ciasnych kolumn z czerwonym „od pnia N” – lista gałęzi (karta na gałąź) z paskiem pnia, węzły jako karty ze stanem (zablokowany / do wyboru 1 z 2 / wybrany), ceną i opisem; jasne „wybierz jedno z dwóch” | ⬜ | ⬜ (GBA: ten sam porządek na stronach) |
-| 71 | Harmonogram domu po wygranej: uporządkować (dubel „Zaplanuj swoją budowę” w karcie i przycisku, pusta przestrzeń, krótsze wiersze) | ⬜ | ⬜ |
-| 72 | Po wygranej zamiast „Kolejna budowa (NG+)” – ekran „Co dalej”: od razu zakupy Szkoleń/Respektu (co Cię stać), najbliższe odblokowania, nowy kontrakt kariery, wyższa stawka inwestora, zadania dnia; NG+ jako opcja dodatkowa | ⬜ | ⬜ |
+| 71 | Harmonogram domu po wygranej: uporządkować (dubel „Zaplanuj swoją budowę” w karcie i przycisku, pusta przestrzeń, krótsze wiersze) | ✅ (projekt A: kod QR, bez dubla) | ⬜ |
+| 72 | Po wygranej zamiast „Kolejna budowa (NG+)” – ekran „Co dalej”: od razu zakupy Szkoleń/Respektu (co Cię stać), najbliższe odblokowania, nowy kontrakt kariery, wyższa stawka inwestora, zadania dnia; NG+ jako opcja dodatkowa | 🔄 (projekt A: rozmowa z Markiem – szybki zakup Szkoleń, nagroda za odbiór, kontrakty i stawka w „Do tego:”; Respekt i zadania dnia jeszcze nie) | ⬜ |
 | 73 | Trudność wg gracza: wygrana „bez żadnych problemów” – przegląd balansu Normalnego (czy bot ≈ człowiek), podpowiedź „Spróbuj Trudnego / trybu inwestora” po wygranej, ewentualnie twardszy Normalny | ⬜ | ⬜ |
 
 > Stan #67–#69 (2026-10-04, praca wstrzymana na prośbę): WIP w commicie – wersja v0.22.0 w danych, początek nowych kafli schodów w eksporcie i zmiany w HUD/dzienniku Godota; nie sprawdzone zrzutami ani testami, do dokończenia.
@@ -257,7 +257,7 @@ GBA dostaje tylko konieczne minimum (był eksperymentem promocyjnym).
 
 | Projekt | Zakres | Stan |
 |---|---|---|
-| **A – UX i przepływ ekranów (Godot)** | Rozmowa z Kierownikiem Markiem między budowami (zamiast plansz końcowych), tytuł z kartą „Twoje postępy”, wybór zawodu jako siatka kafli, jeden baner naraz, duży ekran (składak, tablet), QR w harmonogramie domu, HUD z podpisami, legenda kolorów. Obejmuje #71, #72 i „UX doświadczenia” z listy 2026-10-09 | 🔄 dokument zatwierdzony, plan gotowy, **czeka na wybór sposobu wykonania** (polecam: w tej sesji, małe commity, jeden przegląd na końcu) |
+| **A – UX i przepływ ekranów (Godot)** | Rozmowa z Kierownikiem Markiem między budowami (zamiast plansz końcowych), tytuł z kartą „Twoje postępy”, wybór zawodu jako siatka kafli, jeden baner naraz, duży ekran (składak, tablet), QR w harmonogramie domu, HUD z podpisami, legenda kolorów. Obejmuje #71, #72 i „UX doświadczenia” z listy 2026-10-09 | ✅ 2026-11-05: wszystkie 11 zadań planu (commity na `dev/0.22`, wpis w CHANGELOG v0.22.0); czeka na przegląd i „wydajemy?” |
 | D – humor | Własne postacie (np. sąsiad z działki), bez cudzych marek | ⬜ |
 | C – animacje walki i oprawa | Animacje ataku i trafień; detale map: okna w ścianach, piwnica poniżej, światło z góry w etapach dachowych (pomysł 2026-10-23) | ⬜ |
 | B – zawartość | Więcej kontraktów, ulepszeń, broni z unikalnymi umiejętnościami, pula odblokowań między budowami, jednorazowy przecinak/młot do pękniętych ścian | ⬜ |
@@ -304,7 +304,7 @@ Historia zmian: [`GBA/CHANGELOG.md`](GBA/CHANGELOG.md), postęp Godota: [`GODOT/
 - GBA: brak natywnego środowiska buildu na hoście Hermesa. Build działa w kontenerze (podman, devkitpro/devkitarm + butano w `../butano`), ale testy C++ (`GBA/tests/core_tests.cpp`) nie były uruchamiane poza Macem.
 
 ## Następne (2026-10-09)
-- 🔄 (w projekcie A, patrz „Gdzie skończyliśmy (2026-10-24)”) UX: przepływ po wygranej i przegranej – pokazać, że zdobyte doświadczenie można wydać; przy starcie nowej gry, jeśli doświadczenie > 0, komunikat z przejściem do widoku ulepszeń (GBA i Godot); ogólny przegląd UX
+- ✅ Godot (projekt A, 2026-11-05; GBA bez zmian – decyzja: Godot ma priorytet) UX: przepływ po wygranej i przegranej – pokazać, że zdobyte doświadczenie można wydać; przy starcie nowej gry, jeśli doświadczenie > 0, komunikat z przejściem do widoku ulepszeń (GBA i Godot); ogólny przegląd UX
 - ⬜ Xcode Cloud: pipeline automatycznie wysyła build iOS na TestFlight
 - ⬜ Godot w prywatnym repo w organizacji LifeLike-Szymon-Motyka (po wejściu integracji); GBA zostaje open source
 - ⬜ Wspólne źródło konfiguracji dla GBA i Godot (dziś `GBA/data/game.json` kopiowany do Godota przy buildzie; po podziale repo potrzebny inny mechanizm, np. submodule, paczka albo osobny pakiet danych)

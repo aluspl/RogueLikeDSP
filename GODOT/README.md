@@ -194,7 +194,8 @@ góra/dół albo dotknięcie górnej / dolnej połowy przewija. Tytuł: **Wyzwan
 zasady, zawód, wyniki tygodni, „Wyślij wynik” – `ILeaderboard.WeeklyBoardId` / `SubmitWeekly`, zaślepka bez sieci),
 zasada w telefonie > Zadania, bez NG+. Profil > Osiedle: ozdoby rosną z wygranymi, **Wiadomości** (archiwum wątków,
 „Nowa” do przeczytania, zablokowane z podpowiedzią), baner „Nowa wiadomość” na planszy końcowej; Jak grać – strona 7.
-Sceny zrzutów: `recap-endmsg`, `recap-death`, `recap-death-scroll`, `recap-win`, `recap-end`, `weekly`, `weekly-card`,
+Sceny zrzutów v0.22.0 (UX A): `between-win`, `between-death`, `between-daily`, `between-broke`, `between-tree` (rozmowa
+z Kierownikiem Markiem między budowami). Sceny zrzutów: `recap-endmsg`, `recap-death`, `recap-death-scroll`, `recap-win`, `recap-end`, `weekly`, `weekly-card`,
 `weekly-run`, `story-archive`, `story-thread`, `estate-grow`, `help-meta`; test dymny: wyzwanie tygodnia (start z zasadą,
 porażka, podsumowanie z przewijaniem, bez NG+, tabela tygodnia), podsumowanie po wygranej, Wiadomości (wątek przeczytany).
 
@@ -382,7 +383,7 @@ nad paskiem domowym, mapa ~9 pól na szerokość, telefon jako aplikacja na cał
   Sceny: `title`, `classselect`, `profile`, `catalog`, `estate`, `team`, `training` (telefon profilu), `game`, `combat`
   (KRYT!/Unik!), `offer` (paczka sprzętu), `menu` (menu akcji), `phone-tasks`, `phone-issues`, `phone-start`
   (= `overview`), `phone-gear`, `phone-costs`, `card` (karta etapu z wydarzeniem), `perks` (HUD z premiami i wydarzeniem),
-  `schedule`, `hurtownia`, `boss` (boss z zapowiedzianym ciosem), `endmsg`, `end`, `banners`, `map`, `aim` (trzymane A),
+  `schedule`, `hurtownia`, `boss` (boss z zapowiedzianym ciosem), `endmsg` i `end` (= `between-win`), `banners`, `map`, `aim` (trzymane A),
   `preview` (trzymane B), `prologue`, `schedule-tip` (rada kierownika), `help` (Jak grać), `settings` (ustawienia
   w budowie), `settings-title`, `walk` (marsz po dotknięciu pola), `weather-rain`, `weather-snow`, `weather-wind`,
   `weather-heat` (pogoda dnia: nakładka, kałuże, ikona w HUD), `brigade` (telefon: Brygada), `ally` (pomocnik obok
@@ -524,9 +525,9 @@ Session/           GameSession (budowa + profil: start, budowa dnia, etap, NG+, 
                    StageCleared, RunEnded, Achievements), TurnWatcher (wykrywa zdarzenia tury), GodotDataSource
 Screens/           Screen (Enter / Exit / HandleInput / Process + deklaracja warstw i muzyki), ScreenFlow (maszyna
                    stanów), ekrany: Title, Profile, ClassSelect, Prologue, PrologueMessage, Help, Game, Phone,
-                   StageCard, Schedule (wybór ścieżki), Hurtownia, Offer, EndMessage, HouseSchedule, End, Daily; Play/ (tryby mapy: ActionMenu, Aiming,
+                   StageCard, Schedule (wybór ścieżki), Hurtownia, Offer, HouseSchedule, BetweenRuns (v0.22.0), Daily; Play/ (tryby mapy: ActionMenu, Aiming,
                    EnemyLook, PlayCommands, TouchPlay - gesty na mapie, AutoWalk + PathFinder -
-                   marsz po dotknięciu pola); Settings (ustawienia nad bieżącym ekranem); Views/ (TitleView, ClassSelectView, EndView, PrologueView, PrologueStage)
+                   marsz po dotknięciu pola); Settings (ustawienia nad bieżącym ekranem); Views/ (TitleView, ClassSelectView, PrologueView, PrologueStage)
 World/             WorldView (sprite'y, synchronizacja), WorldFx (trafienia, moce, awans, konfetti), WorldCamera,
                    warstwy: SkyBackdrop, MapLayer, OverlayLayer, WallLayer (w warstwie postaci), LightLayer, FogLayer,
                    FxLayer, MarksLayer, ActorSprite; Proj – rzutowanie widoku płaskiego i 3/4 (v0.21.54)

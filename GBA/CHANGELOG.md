@@ -2,6 +2,45 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
+## v0.22.0 – w przygotowaniu (seria 0.22)
+
+### Nowe (Godot): projekt A – wygląd i przepływ ekranów
+### In English
+The Godot version now leads you from one build to the next. After every build your site manager Marek texts you:
+how it went, how much experience you earned, what you can buy right now (**one tap**), the reward for the next
+handover and quick replies – Next build, Next build (NG+) after a win, Build details, Menu. After a win the house
+schedule comes first, now with a QR code to planbudowlany.online. The title screen is grouped (Daily, Progress) and
+shows a **Your progress** card with a Spend experience button. Trade select is a grid of tiles with full names; the
+card shows the power and the weapon as separate blocks and the stats in words ("Strength 5 · +2 weapon damage").
+Only one notification at a time, placed where it hides nothing; the phone tab bar only where tabs work; the HUD
+labels its icons; colour legends in messages and on the site card; settings are grouped also in landscape. Foldables
+and tablets get the portrait layout with a centred phone. Game rules and balance are unchanged; GBA is unchanged.
+
+### Najważniejsze
+Tylko wersja Godot; logika gry, balans i ceny bez zmian (test złoty bez zmian), GBA bez zmian.
+1. **Między budowami rozmowa z Kierownikiem Markiem** – zamiast SMS-a końca budowy, podsumowania i planszy końcowej:
+   wynik, zdobyte doświadczenie, oferta „Kup: …” jednym stuknięciem (rzeczy bez wyboru; węzeł drzewka → „Pokaż
+   Szkolenia”), po zakupie Marek odpisuje i proponuje następną rzecz; „Do tego:” zbiera to, co pokazywały banery
+   (rekordy, nagroda za odbiór, sekretne zlecenia, odznaki, nowe poziomy, kontrakty, filtry, wątki fabuły); karta
+   „Za kolejny odbiór”; odpowiedzi: Kolejna budowa (prosto do mapy kariery / wyboru zawodu, także po budowie dnia
+   i tygodnia), Kolejna budowa (NG+) po wygranej, Szczegóły budowy (podsumowanie), Menu. Nowy rdzeń `Spend`
+   (szybki zakup, wybór w drzewku, następna nagroda) z testami.
+2. **Harmonogram domu po wygranej** z kodem QR planbudowlany.online (2x, ostre piksele), bez dubla „Zaplanuj swoją
+   budowę” (#71).
+3. **Tytuł** – Nowa budowa, grupa Dziennie (Codzienna | Tydzień), grupa Postęp (Telefon kierownika, Jak grać) i karta
+   „Twoje postępy” (doświadczenie, budowy, „Wydaj doświadczenie” – fioletowy, gdy stać na najbliższy zakup).
+4. **Wybór zawodu** – siatka kafli z pełnymi nazwami (zablokowane: sylwetka, kłódka, warunek), moc i broń jako osobne
+   bloki, statystyki słowami z prawdziwym wzorem, szary przycisk startu z warunkiem („Za 5. wygraną”); w pionie krótka
+   karta + „Szczegóły”, na komputerze siatka i pełna karta obok siebie.
+5. **Podsumowanie budowy** – wynik i doświadczenie na górze, bez „10/48” i „Wyżej/Niżej” (przewijanie palcem).
+6. **Mniej zasłaniania** – najwyżej jedno powiadomienie naraz (na tytule pod statystykami, przy telefonie nad
+   przyciskami), pasek zakładek telefonu tylko przy zakładkach, zakładka „Szkolenia” zamiast „Koszty” w Telefonie
+   kierownika.
+7. **HUD i legenda** – podpisy przy ikonach (Termos, pogoda, mechanika aktu, Moc), gdy się mieszczą; legenda kolorów
+   (premia / zagrożenie / ścieżka) w wiadomościach i na karcie placu; ustawienia w grupach także w poziomie.
+8. **Składak i tablet** – dotykowy ekran prawie kwadratowy dostaje układ pionowy (skala od krótszego boku), telefon
+   wyśrodkowany, najwyżej 480 px UI szerokości.
+
 ## v0.21.54 – 2026-10-04 (ostatnia wersja serii 0.21)
 Ostatnia spójna wersja serii 0.21: zamyka wszystko od pierwszego wydania v0.21.37 (GBA + Godot, iOS i Android).
 Kolejne iteracje rozwijamy jako **0.22**.
