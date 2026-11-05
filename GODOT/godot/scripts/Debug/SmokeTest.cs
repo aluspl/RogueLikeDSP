@@ -541,7 +541,10 @@ public sealed class SmokeTest
             _app.AfterAction(true);
         }
         if (Weekly.Best(s.Data, s.Profile, week) != g.Score || s.Profile.WeeklyRuns == 0) throw new Exception("tydzień: brak wyniku w profilu");
-        if (Flow.Current == Flow.EndMessage) Flow.EndMessage.HandleInput(InputCmd.Of(GameAction.A));
+        // v0.22.0 (UX A): koniec budowy -> rozmowa z Kierownikiem Markiem; „Szczegóły budowy” -> podsumowanie -> z powrotem
+        if (Flow.Current != Flow.BetweenRuns) throw new Exception("tydzień: brak rozmowy między budowami");
+        if (Flow.BetweenRuns.CanContinue || Flow.BetweenRuns.Page.Replies.Contains(Phone.Pages.QuickReply.NextPlus)) throw new Exception("tydzień: NG+ w rozmowie");
+        Flow.BetweenRuns.Reply(Phone.Pages.QuickReply.Details);
         if (Flow.Current != Flow.Recap) throw new Exception("porażka: brak podsumowania budowy");
         var page = Flow.Recap.Page;
         _recapRows = page.Count;
@@ -550,7 +553,9 @@ public sealed class SmokeTest
         await DebugRunner.Frames(_app.Root, 1);
         if (page.Count > 12 && page.Top == 0) throw new Exception("podsumowanie: nie przewija się");
         Flow.Recap.HandleInput(InputCmd.Of(GameAction.Start));
-        if (Flow.Current != Flow.End || _app.Nodes.EndView.CanContinue) throw new Exception("tydzień: plansza końcowa z NG+");
+        if (Flow.Current != Flow.BetweenRuns) throw new Exception("podsumowanie: brak powrotu do rozmowy");
+        Flow.BetweenRuns.HandleInput(InputCmd.Of(GameAction.Start)); // kolejna budowa: zwykła, nie kolejny tydzień
+        if (Flow.Current != Flow.Career && Flow.Current != Flow.ClassSelect) throw new Exception($"tydzień: kolejna budowa prowadzi do {Flow.Current?.GetType().Name}");
         Flow.Weekly.Open(true);
         Flow.Weekly.Submit();
         if (!Flow.Weekly.Page.Note.Contains("pb.weekly.")) throw new Exception("tydzień: brak tabeli tygodnia (zaślepka)");
@@ -600,12 +605,21 @@ public sealed class SmokeTest
             _app.AfterAction(true);
         }
         if (Daily.Best(s.Data, s.Profile, day) != g.Score) throw new Exception("codzienna budowa: brak wyniku dnia w profilu");
-        if (Flow.Current == Flow.EndMessage) Flow.EndMessage.HandleInput(InputCmd.Of(GameAction.A));
-        if (Flow.Current == Flow.Recap) Flow.Recap.HandleInput(InputCmd.Of(GameAction.Start)); // podsumowanie budowy (#33)
-        if (Flow.Current == Flow.End && _app.Nodes.EndView.CanContinue) throw new Exception("codzienna budowa: NG+ nie powinno być");
+        if (Flow.Current != Flow.BetweenRuns) throw new Exception("codzienna budowa: brak rozmowy między budowami");
+        if (Flow.BetweenRuns.Page.Replies.Contains(Phone.Pages.QuickReply.NextPlus)) throw new Exception("codzienna budowa: NG+ nie powinno być");
+        // dwa szybkie zakupy pod rząd: Marek odpisuje, oferta przechodzi na następną rzecz, doświadczenie schodzi o oba koszty
+        s.Profile.Xp = 100000;
+        var c1 = Spend.QuickKind(s.Data, s.Profile, out _, out _);
+        Flow.BetweenRuns.Reply(Phone.Pages.QuickReply.Buy);
+        var c2 = Spend.QuickKind(s.Data, s.Profile, out _, out _);
+        Flow.BetweenRuns.Reply(Phone.Pages.QuickReply.Buy);
+        if (c1 < 0 || c2 < 0 || s.Profile.Xp != 100000 - c1 - c2) throw new Exception($"rozmowa: zakupy {c1}+{c2}, zostało {s.Profile.Xp}");
+        if (Flow.BetweenRuns.Page.Chat.Count(t => t.StartsWith(Loc.F("miedzy_kupione", "").Split(' ')[0])) != 2) throw new Exception("rozmowa: Marek nie odpisał po zakupach");
         await DebugRunner.Frames(_app.Root, 2);
+        Flow.BetweenRuns.HandleInput(InputCmd.Of(GameAction.Start));
+        if (Flow.Current != Flow.Career && Flow.Current != Flow.ClassSelect) throw new Exception("codzienna budowa: kolejna budowa nie prowadzi do zwykłej budowy");
         _daily = true;
-        // wygrana: SMS -> harmonogram domu -> link (bez przeglądarki) -> plansza końcowa
+        // wygrana: harmonogram domu -> link (bez przeglądarki) -> rozmowa z NG+ -> szczegóły -> rozmowa
         s.ClassId = 0;
         _app.StartRun();
         new DebugScenes(_app).AdvanceMessages();
@@ -615,17 +629,17 @@ public sealed class SmokeTest
             _app.AfterAction(true);
             new DebugScenes(_app).AdvanceMessages();
         }
-        if (Flow.Current != Flow.EndMessage) throw new Exception("wygrana: brak SMS-a z odbioru");
-        Flow.EndMessage.HandleInput(InputCmd.Of(GameAction.A));
         if (Flow.Current != Flow.HouseSchedule) throw new Exception("wygrana: brak harmonogramu domu");
         Flow.HouseSchedule.OpenBrowser = false;
         await DebugRunner.Frames(_app.Root, 2);
         Flow.HouseSchedule.HandleInput(InputCmd.Of(GameAction.Select));
         if (Flow.HouseSchedule.LinkOpened != 1) throw new Exception("harmonogram domu: link nie działa");
         Flow.HouseSchedule.HandleInput(InputCmd.Of(GameAction.Start));
+        if (Flow.Current != Flow.BetweenRuns || !Flow.BetweenRuns.Page.Replies.Contains(Phone.Pages.QuickReply.NextPlus)) throw new Exception("po harmonogramie domu brak rozmowy z NG+");
+        Flow.BetweenRuns.Reply(Phone.Pages.QuickReply.Details);
         if (Flow.Current != Flow.Recap || Flow.Recap.Page.Count < 10) throw new Exception("wygrana: brak podsumowania budowy");
         Flow.Recap.HandleInput(InputCmd.Of(GameAction.Start));
-        if (Flow.Current != Flow.End || !_app.Nodes.EndView.CanContinue) throw new Exception("po harmonogramie domu brak planszy końcowej z NG+");
+        if (Flow.Current != Flow.BetweenRuns) throw new Exception("wygrana: podsumowanie nie wraca do rozmowy");
         await DebugRunner.Frames(_app.Root, 2);
         _house = true;
         Flow.Title.Open();
@@ -757,7 +771,7 @@ public sealed class SmokeTest
         s.ClassId = 1;
         _app.StartRun();
         var scenes = new DebugScenes(_app);
-        for (var guard = 0; guard < 60 && Flow.Current != Flow.EndMessage; guard++)
+        for (var guard = 0; guard < 60 && Flow.Current != Flow.HouseSchedule && Flow.Current != Flow.BetweenRuns; guard++)
         {
             scenes.AdvanceMessages();
             if (Flow.Current == Flow.Prologue) Flow.Prologue.HandleInput(InputCmd.Of(GameAction.A));
@@ -767,7 +781,7 @@ public sealed class SmokeTest
             _app.AfterAction(true);
             await DebugRunner.Frames(_app.Root, 1);
         }
-        if (Flow.Current != Flow.EndMessage || s.Game.St != GameStatus.Won) throw new Exception("skrót nie doprowadził do odbioru");
+        if (Flow.Current != Flow.HouseSchedule || s.Game.St != GameStatus.Won) throw new Exception("skrót nie doprowadził do odbioru");
         if (before < Meta.RewardsAvailable(d))
         {
             if (p.Rewards != before + 1 || s.LastReward != before) throw new Exception("wygrana nie odblokowała nagrody za odbiór");

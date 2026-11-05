@@ -76,7 +76,9 @@ public sealed class App
 				else Flow.Schedule.Open();
 				break;
 			case TurnOutcome.RunEnded:
-				Flow.EndMessage.Open();
+				// v0.22.0 (UX A): po wygranej harmonogram domu (z kodem QR), potem rozmowa z Kierownikiem Markiem
+				if (Session.Game.St == GameStatus.Won && Session.Game.RouteCount() > 0) Flow.HouseSchedule.Open();
+				else Flow.BetweenRuns.Open();
 				break;
 			case TurnOutcome.Offer when Flow.Current == Flow.Game:
 				Flow.Offer.Open();

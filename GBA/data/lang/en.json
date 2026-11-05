@@ -3040,6 +3040,21 @@
   "ustawienia_widok_mapy": "Settings (wrench) > Map view",
   "ustawienia_efekty_swietlne": "Settings (wrench) > Light effects",
   "pomoc_widok_mapy": "Map view: Flat or 3/4 (slightly from the side, character shadows). Walls are 1.5 tiles tall; a wall in front of a character, a slam tile or visible floor turns see-through. Taps and moves use the grid as always.",
-  "pomoc_efekty_swietlne": "Light effects: helmet lamp, puddle glints, spark flashes. Looks only; turn off to save battery."
+  "pomoc_efekty_swietlne": "Light effects: helmet lamp, puddle glints, spark flashes. Looks only; turn off to save battery.",
+  "kierownik_marek": "Site manager Marek",
+  "miedzy_wygrana": "Boss, handover passed! The investor is happy.",
+  "miedzy_przegrana": "Boss, the build stopped. But we keep the experience.",
+  "miedzy_dosw": "We got +{0} XP, {1} in total.",
+  "miedzy_kup": "For {1} XP we can get: {0}. Buy it?",
+  "miedzy_drzewko": "A pick is waiting in the Training tree: {0}.",
+  "miedzy_brakuje": "“{0}” still needs {1} more XP.",
+  "miedzy_kupione": "Done! {0} bought.",
+  "do_tego": "Also:",
+  "i_wiecej": "and {0} more in details",
+  "kup_x": "Buy: {0}",
+  "pokaz_szkolenia": "Show Training",
+  "kolejna_budowa": "Next build",
+  "szczegoly_budowy": "Build details",
+  "miedzy_klawisze": "Space: pick  Enter: next"
  }
 }

@@ -36,6 +36,7 @@ public sealed class DebugScenes
         .. GoalsStaging.Names,
         .. CareerStaging.Names,
         .. FilterStaging.Names,
+        .. BetweenStaging.Names,
     ];
 
     private readonly App _app;
@@ -45,6 +46,7 @@ public sealed class DebugScenes
     private readonly GoalsStaging _goals;
     private readonly CareerStaging _career;
     private readonly FilterStaging _filters;
+    private readonly BetweenStaging _between;
 
     public DebugScenes(App app)
     {
@@ -55,6 +57,7 @@ public sealed class DebugScenes
         _goals = new GoalsStaging(app);
         _career = new CareerStaging(app);
         _filters = new FilterStaging(app);
+        _between = new BetweenStaging(app);
     }
 
     private ScreenFlow Flow => _app.Flow;
@@ -63,7 +66,8 @@ public sealed class DebugScenes
         scene is "title" or "classselect" or "profile" or "catalog" or "estate" or "team" or "training" or "card" or "perks" or "investor"
             or "daily" or "death" or "respect" or "rewards" or "classselect-locked" or "stats-class" or "stats-tip" or "catalog-tags"
             or "tutorial-unlock" or "tutorial-act0" or "dmg-class" or "dmg-stats" or "titles" or "looks" or "recap-progress" or "recap-end" or "inspector"
-            || SecretStaging.UsesDemoProfile(scene) || GoalsStaging.Handles(scene) || CareerStaging.Handles(scene);
+            || SecretStaging.UsesDemoProfile(scene) || GoalsStaging.Handles(scene) || CareerStaging.Handles(scene)
+            || BetweenStaging.Handles(scene) || scene is "end" or "endmsg";
 
     /// <summary>Sceny samouczka menu: profil bez obejrzanych dymków (inne sceny - samouczek już obejrzany).</summary>
     public static bool UsesTutorial(string scene) => scene.StartsWith("tutorial");
@@ -71,6 +75,12 @@ public sealed class DebugScenes
     public async Task Setup(string scene)
     {
         var s = _app.Session;
+        if (scene is "end" or "endmsg") scene = "between-win"; // v0.22.0 (UX A): plansza końcowa zastąpiona rozmową
+        if (BetweenStaging.Handles(scene)) // v0.22.0 (UX A): rozmowa z Kierownikiem Markiem między budowami
+        {
+            await _between.Setup(scene);
+            return;
+        }
         if (scene == "filter-boon") scene = "boon-pick"; // v0.21.53: oferta premii w filtrze (litery rzadkości)
         if (FilterStaging.Handles(scene)) // v0.21.53: filtry ekranu
         {
@@ -344,7 +354,7 @@ public sealed class DebugScenes
             await BoonScene(scene);
             return;
         }
-        if (scene is "schedule" or "schedule-tip" or "hurtownia" or "endmsg" or "end" or "boss" or "schedule-path" or "hurtownia-mats" or "house")
+        if (scene is "schedule" or "schedule-tip" or "hurtownia" or "boss" or "schedule-path" or "hurtownia-mats" or "house")
         {
             await SkipStages(scene);
             return;
@@ -755,9 +765,8 @@ public sealed class DebugScenes
                 return;
             }
             if (Flow.Current == Flow.Schedule && scene == "schedule-tip" && g.Stage >= 1) return; // druga rada, notatka z odznakami
-            if (Flow.Current == Flow.EndMessage)
+            if (Flow.Current == Flow.HouseSchedule || Flow.Current == Flow.BetweenRuns)
             {
-                if (scene == "end") Flow.End.Open();
                 if (scene == "house")
                 {
                     _app.Session.FixedToday = Tuple.Create(2026, 9, 25);

@@ -9345,6 +9345,21 @@
     "ustawienia_widok_mapy": "Ustawienia (klucz) > Widok mapy",
     "ustawienia_efekty_swietlne": "Ustawienia (klucz) > Efekty świetlne",
     "pomoc_widok_mapy": "Widok mapy: Płaski albo 3/4 (lekko z boku, cienie postaci). Ściany mają 1,5 pola; mur przed postacią, polem ciosu albo widoczną podłogą prześwituje. Stuknięcia i ruch po siatce jak zawsze.",
-    "pomoc_efekty_swietlne": "Efekty świetlne: latarka na kasku, odblaski kałuż, błyski iskier. Tylko wygląd; wyłącz, by oszczędzać baterię."
+    "pomoc_efekty_swietlne": "Efekty świetlne: latarka na kasku, odblaski kałuż, błyski iskier. Tylko wygląd; wyłącz, by oszczędzać baterię.",
+    "kierownik_marek": "Kierownik Marek",
+    "miedzy_wygrana": "Szefie, odbiór zaliczony! Inwestorka zadowolona.",
+    "miedzy_przegrana": "Szefie, budowa stanęła. Ale doświadczenie zostaje w kieszeni.",
+    "miedzy_dosw": "Mamy +{0} dośw., razem {1}.",
+    "miedzy_kup": "Za {1} dośw. możemy wziąć: {0}. Kupujemy?",
+    "miedzy_drzewko": "W drzewku Szkoleń czeka wybór: {0}.",
+    "miedzy_brakuje": "Do „{0}” brakuje jeszcze {1} dośw.",
+    "miedzy_kupione": "Zrobione! {0} kupione.",
+    "do_tego": "Do tego:",
+    "i_wiecej": "i {0} więcej w szczegółach",
+    "kup_x": "Kup: {0}",
+    "pokaz_szkolenia": "Pokaż Szkolenia",
+    "kolejna_budowa": "Kolejna budowa",
+    "szczegoly_budowy": "Szczegóły budowy",
+    "miedzy_klawisze": "Spacja: wybierz  Enter: dalej"
   }
 }

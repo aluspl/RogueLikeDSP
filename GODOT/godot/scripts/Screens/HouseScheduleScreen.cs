@@ -5,7 +5,7 @@ using LifeLike.Game.Phone.Pages;
 namespace LifeLike.Game.Screens;
 
 /// <summary>
-/// Po wygranej, przed planszą końcową: harmonogram gotowego domu w telefonie (odbiór dziś – data systemu). SELECT (Tab)
+/// Po wygranej, przed rozmową z Kierownikiem Markiem: harmonogram gotowego domu w telefonie (odbiór dziś – data systemu). SELECT (Tab)
 /// / link otwiera planbudowlany.online, A / Enter (i B) – dalej (v0.21.51: A zawsze zatwierdza).
 /// </summary>
 public sealed class HouseScheduleScreen : Screen
@@ -41,7 +41,7 @@ public sealed class HouseScheduleScreen : Screen
             return true;
         }
         if (!e.IsConfirm && !e.IsBack) return false;
-        Flow.Recap.Open(); // podsumowanie budowy (#33)
+        Flow.BetweenRuns.Open(); // v0.22.0 (UX A): rozmowa z Kierownikiem Markiem (podsumowanie: „Szczegóły budowy”)
         return true;
     }
 }
