@@ -250,6 +250,14 @@ Stan v0.21.54: #62, #65, #66 zrobione, #63 jako prototyp w ustawieniach (wszystk
 
 > Stan #67–#69 (2026-10-04, praca wstrzymana na prośbę): WIP w commicie – wersja v0.22.0 w danych, początek nowych kafli schodów w eksporcie i zmiany w HUD/dzienniku Godota; nie sprawdzone zrzutami ani testami, do dokończenia.
 
+### Gdzie skończyliśmy (2026-11-05)
+
+Projekt A (UX Godot) zrobiony: 11 zadań + poprawki po przeglądzie (commity na `dev/0.22`, wpis v0.22.0 w CHANGELOG,
+zrzuty „po” w `docs/ux/pakiet-a/po_*.png`). Czeka na decyzję „wydajemy?” (przed wydaniem pełny `rogue-test`).
+Drobiazgi z przeglądu na później: banery po obrocie ekranu, HUD 1.5x na rozłożonym składaku w poziomie, oferta drzewka
+→ strona Drzewko, „Szczegóły” w wyborze zawodu z klawiatury/pada, kopie `golden/game.json`/`en.json` w testach.
+Dalej wg kolejności: D (humor) → C → B → E.
+
 ### Gdzie skończyliśmy (2026-10-24)
 
 Pomysły właściciela z 2026-10-23 podzielone na 5 projektów, kolejność **A → D → C → B → E**. Godot ma priorytet,
