@@ -4,7 +4,7 @@ namespace LifeLike.Core.Tests;
 
 /// <summary>
 /// v0.23.0: pomiar „przed/po” – bot, 300 przebiegów na zawód na Normalnym; wygrane % na zawód i udział porażek na etap.
-/// Uruchamiany tylko z BALANCE_OUT=ścieżka (zapisuje tabelę markdown), inaczej pomijany.
+/// Na żądanie: z BALANCE_OUT=ścieżka zapisuje tabelę markdown, bez niej jest raportowany jako pominięty.
 /// </summary>
 public class BalanceBaselineTests
 {
@@ -12,12 +12,11 @@ public class BalanceBaselineTests
 
     private static GameData D => TestData.D;
 
-    [Fact]
+    [BalanceFact]
     [Trait("Category", "Balance")]
     public void MeasureNormalBaseline()
     {
-        var path = Environment.GetEnvironmentVariable("BALANCE_OUT");
-        if (string.IsNullOrEmpty(path)) return;
+        var path = Environment.GetEnvironmentVariable("BALANCE_OUT") ?? throw new InvalidOperationException("BALANCE_OUT");
         var nc = D.Classes.Length;
         var wins = new int[nc];
         var deaths = new int[nc, D.Stages.Length];

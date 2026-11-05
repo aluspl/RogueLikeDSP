@@ -387,10 +387,7 @@ public sealed class GameData
         var materialsJson = hasMaterials ? matj.GetProperty("list").EnumerateArray().ToArray() : [];
         var mid = Index(materialsJson);
 
-        var weapons = weaponsJson.Select(w => new WeaponDef(
-            Str(w, "id"), Str(w, "name"), Int(w, "minDamage"), Int(w, "maxDamage"), Int(w, "range"),
-            ParseStat(Str(w, "scalesWith")), ParseElement(Str(w, "element", "none")), Int(w, "crit", 0), Bool(w, "knockback"),
-            Bool(w, "reveal"), ParseHit(w), ParseMode(w, "modeA"), ParseMode(w, "modeB"), Bool(w, "master"))).ToArray();
+        var weapons = weaponsJson.Select(w => ParseWeapon(w)).ToArray();
         foreach (var w in weapons)
         {
             Require(w.MinDamage <= w.MaxDamage && w.Range >= 1, $"broń {w.Id}: złe obrażenia/zasięg");
@@ -1599,6 +1596,17 @@ public sealed class GameData
 
     private static T ParseSnakeOr<T>(string s, T fallback) where T : struct, Enum =>
         Enum.TryParse<T>(string.Concat(s.Split('_').Select(p => p.Length > 0 ? char.ToUpperInvariant(p[0]) + p[1..] : p)), true, out var v) ? v : fallback;
+
+    /// <summary>v0.23.0: broń z JSON. requireModes (domyślnie tak, jak w game.json): tryb B musi być w danych, brak = błąd;
+    /// bez wymagania brakujące tryby dostają wartości domyślne (zasięg 1 = Single, dalej = Shot; B z odnowieniem 1).</summary>
+    public static WeaponDef ParseWeapon(JsonElement w, bool requireModes = true)
+    {
+        if (requireModes) Require(w.TryGetProperty("modeB", out _), $"broń {Str(w, "id")}: brak trybu B");
+        return new WeaponDef(
+            Str(w, "id"), Str(w, "name"), Int(w, "minDamage"), Int(w, "maxDamage"), Int(w, "range"),
+            ParseStat(Str(w, "scalesWith")), ParseElement(Str(w, "element", "none")), Int(w, "crit", 0), Bool(w, "knockback"),
+            Bool(w, "reveal"), ParseHit(w), ParseMode(w, "modeA"), ParseMode(w, "modeB"), Bool(w, "master"));
+    }
 
     /// <summary>v0.23.0: typ ciosu broni – tekst albo tablica (1-2 typów); brak = obuch.</summary>
     private static HitType[] ParseHit(JsonElement w)
