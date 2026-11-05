@@ -12,4 +12,5 @@ public enum ClassSelectHit
     Investor,
     Stat,       // wiersz statystyki (Arg = 0..5: HP, SIŁ, ZRĘ, INT, OBR, SZCZ) - dymek z opisem
     Stats,      // przycisk „i” - strona opisu statystyk
+    Details,    // v0.22.0 (UX A): pion – „Szczegóły” / „Wróć” z pełnej karty
 }

@@ -9367,6 +9367,16 @@
     "wydaj_doswiadczenie": "Wydaj doświadczenie",
     "dziennie": "Dziennie",
     "postep_grupa": "Postęp",
-    "brakuje_dosw": "Brakuje {0} dośw."
+    "brakuje_dosw": "Brakuje {0} dośw.",
+    "stat_hp": "Zdrowie",
+    "stat_str": "Siła",
+    "stat_agi": "Zręczność",
+    "stat_int": "Inteligencja",
+    "stat_def": "Obrona",
+    "stat_luck": "Szczęście",
+    "szczegoly": "Szczegóły",
+    "za_wygrana_nr": "Za {0}. wygraną",
+    "za_dosw_szkolenia": "Szkolenia: {0} dośw.",
+    "sekretne_zlecenie_3": "Sekretne zlecenie"
   }
 }

@@ -3062,6 +3062,16 @@
   "wydaj_doswiadczenie": "Spend experience",
   "dziennie": "Daily",
   "postep_grupa": "Progress",
-  "brakuje_dosw": "{0} XP short"
+  "brakuje_dosw": "{0} XP short",
+  "stat_hp": "Health",
+  "stat_str": "Strength",
+  "stat_agi": "Agility",
+  "stat_int": "Intellect",
+  "stat_def": "Defence",
+  "stat_luck": "Luck",
+  "szczegoly": "Details",
+  "za_wygrana_nr": "At win #{0}",
+  "za_dosw_szkolenia": "Training: {0} XP",
+  "sekretne_zlecenie_3": "Secret job"
  }
 }

@@ -26,6 +26,7 @@ public sealed class ClassSelectScreen : Screen
         v.Setup(S.Data, S.Profile, S.ClassId);
         v.Difficulty = S.Difficulty;
         v.Note = "";
+        v.Details = false;
         App.Coach.Begin(this, 1, v.CoachRect, () => Flow.Stats.OpenClass(N.ClassSelectView.Selected));   // samouczek menu, dymki nowości
     }
 
@@ -79,7 +80,8 @@ public sealed class ClassSelectScreen : Screen
         }
         if (e.Is(GameAction.B | GameAction.Cancel))
         {
-            Back();
+            if (view.Details) view.Details = false; // v0.22.0 (UX A): z pełnej karty do siatki
+            else Back();
             return true;
         }
         if (!e.Is(GameAction.A | GameAction.Start)) return false;
@@ -106,6 +108,11 @@ public sealed class ClassSelectScreen : Screen
                 return true;
             case ClassSelectHit.Back:
                 Back();
+                return true;
+            case ClassSelectHit.Details:
+                view.Details = !view.Details;
+                view.TipStat = -1;
+                Sfx.Play("menu");
                 return true;
             case ClassSelectHit.Investor:
                 S.ClassId = view.Selected;

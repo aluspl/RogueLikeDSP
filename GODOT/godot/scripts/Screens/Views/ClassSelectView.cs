@@ -11,10 +11,10 @@ using LifeLike.Game.Gfx;
 namespace LifeLike.Game.Screens.Views;
 
 /// <summary>
-/// Wybór zawodu (run_class_select na GBA, nowy układ): u góry karuzela portretów wszystkich zawodów - odblokowane
-/// najpierw, zablokowane po nich (kolejność z danych w każdej grupie); wybrany większy, z animacją i ramką w fiolecie
-/// marki, zablokowane jako sylwetki z kłódką i ceną. Pod spodem karta: nazwa, moc z ikoną i opisem, narzędzie ze
-/// statystyką, paski statystyk z premią Szkoleń, trudność (↑/↓) i pamiątka (Q/E), uprawnienia z odznak.
+/// Wybór zawodu (run_class_select na GBA). v0.22.0 (UX A): siatka kafli wszystkich zawodów z pełnymi nazwami –
+/// odblokowane najpierw, zablokowane po nich jako sylwetki z kłódką i warunkiem; wybrany z animacją i ramką w fiolecie
+/// marki. Pion: krótka karta pod siatką, „Szczegóły” = pełna karta; poziom: siatka po lewej, pełna karta po prawej.
+/// Karta: moc i broń jako osobne bloki, statystyki słowami, trudność (↑/↓), pamiątka (Q/E), tryb inwestora.
 /// </summary>
 public partial class ClassSelectView : Control, Touch.ITapTargets
 {
@@ -122,10 +122,6 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         QueueRedraw();
     }
 
-    private float Spacing => Mathf.Min(76, (Size.X - 24) / Mathf.Max(1, _order.Length));
-
-    private float SlotX(float pos) => Size.X / 2 + (pos - (_order.Length - 1) / 2f) * Spacing;
-
     public override void _Draw()
     {
         try
@@ -143,178 +139,238 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         if (_d is null) return;
         _hits.Clear();
         _coach.Clear();
+        for (var k = 0; k < _statRects.Length; k++) _statRects[k] = new Rect2();
         var f = PixelFont.I;
         var w = Size.X;
         var h = Size.Y;
         var portrait = Layout.Portrait; // v0.22.0 (UX A): także duży ekran prawie kwadratowy
         var top = Layout.SafeTop;
-        var head = top + (portrait ? 150 : 112);
+        var bar = top + (portrait ? 34 : 24);
         DrawRect(new Rect2(0, 0, w, h), Pal.ScreenBg);
-        Ui.VioletGradient(this, new Rect2(0, 0, w, head));
-        DrawRect(new Rect2(0, head, w, 2), Pal.Accent);
+        Ui.VioletGradient(this, new Rect2(0, 0, w, bar));
+        DrawRect(new Rect2(0, bar, w, 2), Pal.Accent);
         Ui.WarningStripe(this, new Rect2(0, h - 8, w, 8), _clock * 10f);
+        f.Draw(this, new Vector2(w / 2, top + (portrait ? 9 : 4)), Loc.T("wybierz_zawod"), Ink.OnBrand, TextAlign.Center, 1, true);
+        var unl = Meta.ClassUnlocked(_d, _p, Selected);
+        var startLabel = unl ? Loc.T("start_budowy") : LockCondition(Selected);
 
-        f.Draw(this, new Vector2(w / 2, top + (portrait ? 10 : 3)), Loc.T("wybierz_zawod"), Ink.OnBrand, TextAlign.Center, 1, true);
+        if (portrait)
+        {
+            // v0.22.0 (UX A): pion – siatka kafli (składak: 4 szerokie kolumny), krótka karta, „Szczegóły” = pełna karta
+            var bh = 52f;
+            var by = h - Mathf.Max(Layout.SafeBottom, 8) - bh - 6;
+            if (Details)
+            {
+                DrawPanel(new Rect2(12 + _cardShift, bar + 10, w - 24, by - bar - 20), true);
+                var bw0 = (w - 36) / 3;
+                Button(new Rect2(12, by, bw0, bh), Loc.T("wroc"), false, ClassSelectHit.Details);
+                Button(new Rect2(24 + bw0, by, w - 36 - bw0, bh), startLabel, unl, ClassSelectHit.Start, !unl);
+                _coach["go"] = new Rect2(24 + bw0, by, w - 36 - bw0, bh);
+                DrawStatTip();
+                return;
+            }
+            var cols = Layout.Wide ? 4 : 3;
+            var rows = (_order.Length + cols - 1) / cols;
+            var cardH = ShortCardH(w - 24);
+            var gridTop = bar + 10;
+            var tileH = Mathf.Clamp((by - 12 - cardH - 8 - gridTop) / rows - 6, 52, 104);
+            var gridH = rows * (tileH + 6) - 6;
+            DrawGrid(new Rect2(12, gridTop, w - 24, gridH), cols, tileH);
+            DrawPanel(new Rect2(12 + _cardShift, gridTop + gridH + 10, w - 24, by - 12 - (gridTop + gridH + 10)), false);
+            var bw = (w - 48) / 4;
+            Button(new Rect2(12, by, bw, bh), Loc.T("wroc"), false, ClassSelectHit.Back);
+            Button(new Rect2(24 + bw, by, bw * 1.2f, bh), Loc.T("szczegoly"), false, ClassSelectHit.Details);
+            var sr = new Rect2(36 + bw * 2.2f, by, w - 48 - bw * 2.2f, bh);
+            Button(sr, startLabel, unl, ClassSelectHit.Start, !unl);
+            _coach["go"] = sr;
+            _coach["stats"] = _coach["investor"] = new Rect2(24 + bw, by, bw * 1.2f, bh); // statystyki i inwestor w Szczegółach
+            DrawStatTip();
+            return;
+        }
 
-        // karuzela portretów
-        var baseY = top + (portrait ? 96 : 70);
-        var fx = SlotX(_slide);
-        DrawStyleBox(Ui.Box(new Color(0, 0, 0, 0.25f), 10), new Rect2(fx - 38, baseY - 50, 76, 84));
-        DrawStyleBox(Ui.Box(new Color(Pal.Card, 0.18f), 10, Pal.Card), new Rect2(fx - 38, baseY - 52, 76, 84));
+        // poziom (komputer): siatka 3 kolumny po lewej, pełna karta po prawej
+        var foot = h - 34;
+        var gw = Mathf.Min(320f, w * 0.48f);
+        var rows3 = (_order.Length + 2) / 3;
+        var th = Mathf.Clamp((foot - bar - 14) / rows3 - 4, 44, 96);
+        DrawGrid(new Rect2(10, bar + 8, gw, rows3 * (th + 4) - 4), 3, th);
+        DrawPanel(new Rect2(gw + 20 + _cardShift, bar + 8, w - gw - 30, foot - bar - 14), true);
+        DrawStatTip();
+        if (Layout.Touch)
+        {
+            Button(new Rect2(10, h - 30, 120, 24), Loc.T("wroc"), false, ClassSelectHit.Back);
+            Button(new Rect2(w - 170, h - 30, 160, 24), startLabel, unl, ClassSelectHit.Start, !unl);
+            _coach["go"] = new Rect2(w - 170, h - 30, 160, 24);
+        }
+        else
+        {
+            _coach["go"] = new Rect2(10, h - 30, w - 20, 22);
+            f.Draw(this, new Vector2(w / 2, h - 26), Loc.T("strzalki_zawod_trudnosc_q_e"), Ink.Dim, TextAlign.Center);
+        }
+    }
+
+    /// <summary>v0.22.0 (UX A): pełna karta w pionie (przycisk „Szczegóły”).</summary>
+    public bool Details { get; set; }
+
+    /// <summary>v0.22.0 (UX A): siatka kafli – portret, pełna nazwa (do 2 wierszy), zablokowany: sylwetka, kłódka, warunek.</summary>
+    private void DrawGrid(Rect2 area, int cols, float tileH)
+    {
+        var f = PixelFont.I;
+        var tw = (area.Size.X - (cols - 1) * 6) / cols;
         for (var k = 0; k < _order.Length; k++)
         {
             var cls = _order[k];
             var unl = Meta.ClassUnlocked(_d, _p, cls);
-            var sc = _scale[cls];
             var sel = k == _pos;
-            var x = SlotX(k);
+            var r = new Rect2(area.Position.X + (k % cols) * (tw + 6), area.Position.Y + (k / cols) * (tileH + 6), tw, tileH);
+            DrawStyleBox(Ui.Box(sel ? Pal.Card.Lerp(Pal.Brand, 0.12f) : Pal.Card, 10, sel ? Pal.Brand : Pal.Border), r);
+            if (sel) DrawStyleBox(Ui.Box(Colors.Transparent, 10, Pal.Brand), r.Grow(1));
+            var lines = unl ? NameLines(_d.Classes[cls].Name, (int)tw - 8) : [LockedShort(cls)];
+            if (lines.Count > 1 && tileH < 32 + 32 + 4) lines = [f.Fit(_d.Classes[cls].Name, (int)tw - 8)]; // bardzo niski kafel
+            var textH = lines.Count * 16;
+            var sc = tileH - textH - 8 >= 64 ? 2 : 1;
+            var size = 32 * sc;
             var anim = sel && unl && ((int)(_clock / 0.4f) & 1) == 1;
-            var bob = sel ? Mathf.Round(Mathf.Sin(_clock * 4f) * 1.5f) : 0;
             var hf = Assets.HeroFrame(_d, _p, cls); // kask w paski (wygląd z sekretnego zlecenia)
             var frame = unl ? (anim ? Assets.AnimB(hf) : hf) : Assets.Silhouette(cls);
-            var size = 32 * sc;
-            var feet = baseY + 14;
-            DrawTextureRect(Assets.Shadow, new Rect2(x - 12 * sc / 1.4f, feet - 3, 24 * sc / 1.4f, 7), false);
-            var dst = new Rect2(Mathf.Round(x - size / 2), Mathf.Round(feet - size + 2 * sc + bob), Mathf.Round(size), Mathf.Round(size));
-            DrawTextureRectRegion(Assets.Actors, dst, Assets.Frame(frame, Assets.Actor), unl ? Colors.White : new Color(1, 1, 1, sel ? 1f : 0.75f));
-            if (!unl)
-            {
-                DrawTextureRectRegion(Assets.Actors, new Rect2(Mathf.Round(x + size / 2 - 18), Mathf.Round(feet - 18), 16, 16), Assets.Frame(Assets.FrameLock, Assets.Actor));
-                if (!sel && f.Measure(LockedShort(cls)) <= Spacing - 2)   // wąski pasek (pion, 9 zawodów): bez podpisów, żeby się nie nakładały
-                    f.Draw(this, new Vector2(x, feet + 6), LockedShort(cls), Ink.MapDim, TextAlign.Center);
-            }
-            else if (!sel)
-            {
-                f.Draw(this, new Vector2(x, feet + 6), f.Fit(_d.Classes[cls].Name.Split(' ')[0], (int)Math.Min(70, Spacing - 2)), Ink.MapDim, TextAlign.Center);
-            }
+            var py = r.Position.Y + Mathf.Max(2, (tileH - textH - size - 4) / 2);
+            var dst = new Rect2(Mathf.Round(r.GetCenter().X - size / 2f), Mathf.Round(py), size, size);
+            DrawTextureRectRegion(Assets.Actors, dst, Assets.Frame(frame, Assets.Actor), unl ? Colors.White : new Color(1, 1, 1, 0.8f));
+            if (!unl) DrawTextureRectRegion(Assets.Actors, new Rect2(dst.End.X - 14, dst.End.Y - 16, 16, 16), Assets.Frame(Assets.FrameLock, Assets.Actor));
+            var ty = r.End.Y - 4 - textH;
+            for (var l = 0; l < lines.Count; l++)
+                f.Draw(this, new Vector2(r.GetCenter().X, ty + l * 16), lines[l], unl ? (sel ? Ink.Brand : Ink.Dark) : Ink.Dim, TextAlign.Center, 1, sel && unl);
+            _hits.Add((r, ClassSelectHit.Portrait, k));
         }
-        for (var k = 0; k < _order.Length; k++)
-            _hits.Add((new Rect2(SlotX(k) - Spacing / 2, baseY - 50, Spacing, 84), ClassSelectHit.Portrait, k));
-        _coach["class"] = new Rect2(4, baseY - 54, w - 8, 88);
-        if (!portrait)
-        {
-            f.Draw(this, new Vector2(SlotX(0) - 50, baseY - 10), "<", Ink.OnBrand, TextAlign.Center);
-            f.Draw(this, new Vector2(SlotX(_order.Length - 1) + 50, baseY - 10), ">", Ink.OnBrand, TextAlign.Center);
-        }
-
-        if (portrait)
-        {
-            var bh = 52f;
-            var by = h - Mathf.Max(Layout.SafeBottom, 8) - bh - 6;
-            DrawPortraitCard(new Rect2(12 + _cardShift, head + 10, w - 24, by - head - 20));
-            var bw = (w - 36) / 3;
-            Button(new Rect2(12, by, bw, bh), Loc.T("wroc"), false, ClassSelectHit.Back);
-            Button(new Rect2(24 + bw, by, w - 36 - bw, bh), Meta.ClassUnlocked(_d, _p, Selected) ? Loc.T("start_budowy") : Loc.T("zablokowany"), true, ClassSelectHit.Start);
-            _coach["go"] = new Rect2(24 + bw, by, w - 36 - bw, bh);
-            DrawStatTip();
-            return;
-        }
-        DrawCard(new Rect2(40 + _cardShift, 122, w - 80, 204));
-        DrawStatTip();
-        if (Layout.Touch)
-        {
-            Button(new Rect2(40, h - 30, 120, 24), Loc.T("wroc"), false, ClassSelectHit.Back);
-            Button(new Rect2(w - 160, h - 30, 120, 24), Loc.T("start_budowy"), true, ClassSelectHit.Start);
-            _coach["go"] = new Rect2(w - 160, h - 30, 120, 24);
-        }
-        else
-        {
-            _coach["go"] = new Rect2(40, h - 30, w - 80, 22);
-            f.Draw(this, new Vector2(w / 2, h - 26), Loc.T("strzalki_zawod_trudnosc_q_e"), Ink.MapDim, TextAlign.Center);
-        }
+        _coach["class"] = area.Grow(4);
     }
 
-    private void Button(Rect2 r, string label, bool primary, ClassSelectHit hit)
+    /// <summary>Pełna nazwa zawodu w najwyżej 2 wierszach (podział po spacji albo po łączniku), bez wielokropka, gdy się mieści.</summary>
+    private static List<string> NameLines(string name, int width)
     {
         var f = PixelFont.I;
-        DrawStyleBox(Ui.Box(primary ? Pal.Brand : Pal.Card, 10, primary ? Pal.Accent : Pal.Border), r);
-        f.Draw(this, new Vector2(r.GetCenter().X, Mathf.Round(r.GetCenter().Y - 9)), f.Fit(label, (int)r.Size.X - 8), primary ? Ink.White : Ink.Brand, TextAlign.Center, 1, true);
+        if (f.Measure(name, 1, true) <= width) return [name];
+        var cut = name.LastIndexOf(' ', name.Length - 1);
+        var dash = name.IndexOf('-');
+        var at = cut > 0 ? cut : dash > 0 ? dash + 1 : -1;
+        if (at < 0) return [f.Fit(name, width)];
+        var a = name[..at].TrimEnd();
+        var b = name[at..].TrimStart();
+        return [f.Fit(a, width), f.Fit(b, width)];
+    }
+
+    /// <summary>Warunek odblokowania na szarym przycisku startu: „Za 5. wygraną”, „Szkolenia: 160 dośw.”, „Sekretne zlecenie”.</summary>
+    private string LockCondition(int cls) => Meta.ClassSecret(_d, cls) ? Loc.T("sekretne_zlecenie_3")
+        : Meta.ClassReward(_d, cls) ? Loc.F("za_wygrana_nr", RewardWinOf(cls)) : Loc.F("za_dosw_szkolenia", Meta.ClassCost(_d, _p));
+
+    private void Button(Rect2 r, string label, bool primary, ClassSelectHit hit, bool gray = false)
+    {
+        var f = PixelFont.I;
+        DrawStyleBox(Ui.Box(gray ? Pal.Group : primary ? Pal.Brand : Pal.Card, 10, gray ? Pal.Border : primary ? Pal.Accent : Pal.Border), r);
+        f.Draw(this, new Vector2(r.GetCenter().X, Mathf.Round(r.GetCenter().Y - 9)), f.Fit(label, (int)r.Size.X - 8), gray ? Ink.Dim : primary ? Ink.White : Ink.Brand, TextAlign.Center, 1, true);
         _hits.Add((r, hit, 0));
     }
 
-    /// <summary>Karta zawodu na pionowym ekranie: jedna kolumna, trudność i pamiątka jako wiersze do dotknięcia.</summary>
-    private void DrawPortraitCard(Rect2 r)
+    private static float RowH => Layout.Touch ? Layout.TouchTarget : 20f;
+
+    private static float StatStep => Layout.Touch && Layout.Portrait ? 22f : 15f;
+
+    /// <summary>Poziom (komputer, 360 px wysokości): ciaśniejsza karta, żeby zmieściły się pamiątka i inwestor.</summary>
+    private static bool Tight => !Layout.Portrait;
+
+    /// <summary>Wysokość krótkiej karty (pion): nazwa, opis, moc, broń, trudność, pamiątka, linia notatki.</summary>
+    private static float ShortCardH(float w) => 8 + 34 + 16 + 6 + 44 + 6 + 26 + 6 + 2 * (RowH + 4) + 18 + 6;
+
+    /// <summary>
+    /// v0.22.0 (UX A): karta zawodu – nazwa, opis, moc i broń jako osobne bloki; pełna (full) dokłada statystyki słowami
+    /// („Siła 5 · +2 obrażeń broni”), tryb inwestora i uprawnienia. Trudność i pamiątka jako wiersze do dotknięcia.
+    /// </summary>
+    private void DrawPanel(Rect2 r, bool full)
     {
         var f = PixelFont.I;
         var cls = Selected;
         var c = _d.Classes[cls];
         var unl = Meta.ClassUnlocked(_d, _p, cls);
         var m = Meta.Mods(_d, _p, cls); // v0.21.52 cz. b: mistrzostwo zawodu (broń mistrza)
-        DrawStyleBox(Ui.Box(new Color(0, 0, 0, 0.35f), 10), new Rect2(r.Position + new Vector2(0, 3), r.Size));
-        DrawStyleBox(Ui.Box(Pal.Card, 10), r);
+        DrawStyleBox(Ui.Box(new Color(0, 0, 0, 0.18f), 10), new Rect2(r.Position + new Vector2(0, 3), r.Size));
+        DrawStyleBox(Ui.Box(Pal.Card, 10, Pal.Border), r);
         var x = r.Position.X + 12;
         var cw = (int)r.Size.X - 24;
         var y = r.Position.Y + 8;
-        f.Draw(this, new Vector2(x, y), f.Fit(c.Name, cw - (unl ? 84 : 0), 2), Ink.Dark, TextAlign.Left, 2);
+        var badge = unl && Progress.MasteryXp(_p, cls) > 0 ? 84 : 0;
+        var gap = Tight ? 4 : 6;
+        var ns = !Tight && f.Measure(c.Name, 2) <= cw - badge ? 2f : f.Measure(c.Name, 1.5f) <= cw - badge ? 1.5f : 1f;
+        f.Draw(this, new Vector2(x, y + (Tight ? 0 : (2 - ns) * 8)), c.Name, Ink.Dark, TextAlign.Left, ns);
         if (unl) MasteryBadge(new Vector2(x + cw, y + 2), cls);
-        y += 34;
-        foreach (var line in f.Wrap(c.Desc, cw))
-        {
-            f.Draw(this, new Vector2(x, y), line, Ink.Dim);
-            y += 16;
-        }
-        y += 6;
-        DrawStyleBox(Ui.Box(Pal.Group, 6), new Rect2(x, y + 2, 36, 36));
-        Assets.DrawFrame(this, Assets.AbilityIcons, cls, 32, new Vector2(x + 2, y + 4));
+        y += Tight ? 26 : 34;
+        var desc = f.Wrap(c.Desc, cw);
+        var dl = full && !Tight ? Mathf.Min(desc.Count, 2) : 1;
+        for (var k = 0; k < dl; k++) f.Draw(this, new Vector2(x, y + k * 16), dl == 1 ? f.Fit(c.Desc, cw) : desc[k], Ink.Dim);
+        y += dl * 16 + gap;
+
+        // moc: osobny blok z ikoną
         var variant = unl && Progress.PowerVariantOn(_d, _p, cls); // v0.21.52 cz. b: wariant mocy z mistrzostwa
         var mcd = _d.MasteryClasses[cls];
-        f.Draw(this, new Vector2(x + 44, y), f.Fit(Loc.F("moc_7", (variant ? mcd.PowerName : c.AbilityName)), cw - 44), Ink.Brand);
-        var ad = f.Wrap(variant ? mcd.PowerDesc : c.AbilityDesc, cw - 44);
-        for (var k = 0; k < ad.Count && k < 2; k++) f.Draw(this, new Vector2(x + 44, y + 17 + k * 16), ad[k], Ink.Dim);
-        y += Mathf.Max(44, 17 + Mathf.Min(ad.Count, 2) * 16 + 4);
+        var ad = f.Wrap(variant ? mcd.PowerDesc : c.AbilityDesc, cw - 52);
+        var pl = full && !Tight ? Mathf.Min(ad.Count, 2) : 1;
+        var pr = new Rect2(x - 4, y, cw + 8, Mathf.Max(Tight ? 40 : 44, 22 + pl * 16));
+        DrawStyleBox(Ui.Box(Pal.Group, 8), pr);
+        Assets.DrawFrame(this, Assets.AbilityIcons, cls, 32, new Vector2(x + 2, pr.Position.Y + (pr.Size.Y - 32) / 2));
+        f.Draw(this, new Vector2(x + 42, pr.Position.Y + 4), f.Fit(Loc.F("moc_7", variant ? mcd.PowerName : c.AbilityName), cw - 46), Ink.Brand, TextAlign.Left, 1, true);
+        for (var k = 0; k < pl; k++) f.Draw(this, new Vector2(x + 42, pr.Position.Y + 21 + k * 16), pl == 1 ? f.Fit(variant ? mcd.PowerDesc : c.AbilityDesc, cw - 46) : ad[k], Ink.Dim);
+        y = pr.End.Y + gap;
+
+        // broń: osobny blok ze statystyką, od której zależy (dotknięcie = rozpiska obrażeń)
         var wpn = _d.Weapons[c.Weapon];
         var tag = UiText.StatShort(wpn.ScalesWith);
         var tw = f.Measure(tag) + 10;
-        WeaponRow(new Rect2(x - 4, y - 1, cw + 8, 19), cls, m, cw - tw - 6, 1);
-        DrawStyleBox(Ui.Box(Pal.Group, 7), new Rect2(x + cw - tw, y + 2, tw, 14));
-        f.Draw(this, new Vector2(x + cw - tw / 2f, y), tag, Ink.Brand, TextAlign.Center);
-        y += 24;
-        var statsTop = y;
-        y = DrawStats(x, y, cw, cls, c, m, unl, 18) + 6;
-        _coach["stats"] = new Rect2(x - 4, statsTop - 4, cw + 8, y - statsTop);
+        var wr = new Rect2(x - 4, y, cw + 8, 26);
+        DrawStyleBox(Ui.Box(Pal.Group, 8), wr);
+        WeaponRow(new Rect2(x, y + 1, cw - tw - 4, 24), cls, m, cw - tw - 14, 1);
+        DrawStyleBox(Ui.Box(Pal.Card, 7), new Rect2(x + cw - tw, y + 6, tw, 14));
+        f.Draw(this, new Vector2(x + cw - tw / 2f, y + 4), tag, Ink.Brand, TextAlign.Center);
+        y = wr.End.Y + gap;
 
-        DrawRect(new Rect2(x, y, cw, 1), Pal.Border);
-        y += 4;
+        if (full)
+        {
+            var statsTop = y;
+            y = DrawStatWords(x, y, cw, cls, c, m, unl, StatStep) + gap;
+            _coach["stats"] = new Rect2(x - 4, statsTop - 4, cw + 8, y - statsTop);
+        }
+        var rowH = RowH;
         var diff = _d.Difficulties[Difficulty];
         var diffLock = Meta.DifficultyUnlocked(_d, _p, Difficulty) ? "" : Loc.T("zablok_3");
-        var rowH = Layout.TouchTarget;
-        var dr = new Rect2(x - 4, y, cw + 8, rowH);
-        DrawStyleBox(Ui.Box(Pal.Group, 8), dr.Grow(-2));
-        f.Draw(this, new Vector2(x + 6, Mathf.Round(dr.GetCenter().Y - 8)), Loc.T("trudnosc_2"), Ink.Dim);
-        f.Draw(this, new Vector2(x + cw - 6, Mathf.Round(dr.GetCenter().Y - 8)), $"< {diff.Name}{diffLock} >", diffLock.Length > 0 ? Ink.Late : Ink.Brand, TextAlign.Right);
-        _hits.Add((dr, ClassSelectHit.Difficulty, 0));
-        _coach["difficulty"] = dr;
-        y += rowH + 4;
+        y = ChoiceRow(new Rect2(x - 4, y, cw + 8, rowH), Loc.T("trudnosc_2"), $"< {diff.Name}{diffLock} >", diffLock.Length > 0 ? Ink.Late : Ink.Brand, ClassSelectHit.Difficulty, "difficulty");
         var k2 = Meta.SelectedKeepsake(_d, _p);
         var keep = k2 < 0 ? Loc.T("bez_pamiatki") : $"{_d.Keepsakes[k2].Name} {UiText.Roman(Meta.KeepsakeRank(_d, _p, k2) - 1)}";
-        var kr = new Rect2(x - 4, y, cw + 8, rowH);
-        DrawStyleBox(Ui.Box(Pal.Group, 8), kr.Grow(-2));
-        f.Draw(this, new Vector2(x + 6, Mathf.Round(kr.GetCenter().Y - 8)), Loc.T("pamiatka_3"), Ink.Dim);
-        f.Draw(this, new Vector2(x + cw - 6, Mathf.Round(kr.GetCenter().Y - 8)), f.Fit($"< {keep} >", cw - 90), k2 < 0 ? Ink.Dim : Ink.Done, TextAlign.Right);
-        _hits.Add((kr, ClassSelectHit.Keepsake, 0));
-        _coach["keepsake"] = kr;
-        y += rowH + 4;
-        if (InvestorPage.Available(_d, _p, Selected)) // tryb inwestora: stawka, dotknięcie = modyfikatory (v0.21.52: albo sam wygląd)
-        {
-            var ir = new Rect2(x - 4, y, cw + 8, rowH);
-            DrawStyleBox(Ui.Box(Pal.Group, 8), ir.Grow(-2));
-            f.Draw(this, new Vector2(x + 6, Mathf.Round(ir.GetCenter().Y - 8)), Meta.InvestorUnlocked(_p) ? Loc.T("tryb_inwestora") : Loc.T("wyglad"), Ink.Dim);
-            f.Draw(this, new Vector2(x + cw - 6, Mathf.Round(ir.GetCenter().Y - 8)), InvestorLabel(), Ink.Brand, TextAlign.Right);
-            _hits.Add((ir, ClassSelectHit.Investor, 0));
-            _coach["investor"] = ir;
-            y += rowH + 4;
-        }
-        y += 2;
+        if (y + rowH <= r.End.Y - 4) y = ChoiceRow(new Rect2(x - 4, y, cw + 8, rowH), Loc.T("pamiatka_3"), $"< {keep} >", k2 < 0 ? Ink.Dim : Ink.Done, ClassSelectHit.Keepsake, "keepsake");
+        if (full && InvestorPage.Available(_d, _p, Selected) && y + rowH <= r.End.Y - 4) // tryb inwestora (v0.21.52: albo sam wygląd)
+            y = ChoiceRow(new Rect2(x - 4, y, cw + 8, rowH), Meta.InvestorUnlocked(_p) ? Loc.T("tryb_inwestora") : Loc.T("wyglad"), InvestorLabel(), Ink.Brand, ClassSelectHit.Investor, "investor");
         var perkText = k2 >= 0 ? RunMods.PerkLabel(Meta.KeepsakePerk(_d, _p, k2)) : "";
         var perks = UiText.Perks(_d, _p);
-        var bottom = Note.Length > 0 ? Note : !unl ? LockedText(cls, false)
-                   : (perkText.Length > 0 ? Loc.F("pamiatka_4", perkText) : "") + Loc.T("uprawnienia") + (perks.Length > 0 ? perks : Loc.T("brak_zdobywaj_odznaki"));
+        var bottom = Note.Length > 0 ? Note : !unl ? LockedText(cls, !Layout.Touch)
+                   : !full ? "" : (perkText.Length > 0 ? Loc.F("pamiatka_4", perkText) : "") + Loc.T("uprawnienia") + (perks.Length > 0 ? perks : Loc.T("brak_zdobywaj_odznaki"));
+        y += 2;
         foreach (var line in f.Wrap(bottom, cw))
         {
             if (y > r.End.Y - 18) break;
             f.Draw(this, new Vector2(x, y), line, Note.Length > 0 || !unl ? Ink.Late : Ink.Dim);
             y += 16;
         }
+    }
+
+    /// <summary>Wiersz wyboru (trudność, pamiątka, inwestor): etykieta po lewej, wartość po prawej; zwraca dół.</summary>
+    private float ChoiceRow(Rect2 r, string label, string value, Ink ink, ClassSelectHit hit, string coach)
+    {
+        var f = PixelFont.I;
+        DrawStyleBox(Ui.Box(Pal.Group, 8), r.Grow(-2));
+        var ty = Mathf.Round(r.GetCenter().Y - 8);
+        var lw = f.Measure(label);
+        f.Draw(this, new Vector2(r.Position.X + 10, ty), label, Ink.Dim);
+        f.Draw(this, new Vector2(r.End.X - 10, ty), f.Fit(value, (int)(r.Size.X - lw - 30)), ink, TextAlign.Right);
+        _hits.Add((r, hit, 0));
+        _coach[coach] = r;
+        return r.End.Y + 4;
     }
 
     /// <summary>
@@ -346,138 +402,46 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         return Loc.F("stawka_rekord", Investor.Stake(_d, Meta.InvestorMask(_d, _p)), Meta.BestStake(_p, Selected));
     }
 
-    /// <summary>Paski statystyk (bazowa w kolorze marki, premia Szkoleń na zielono); zwraca dół.</summary>
-    private float DrawStats(float sx, float sy, float width, int cls, ClassDef c, in RunMods m, bool unl, float step)
+    /// <summary>
+    /// v0.22.0 (UX A): statystyki słowami – „Siła 5 · +2 obrażeń broni” (StatHelp.Effect: prawdziwy wzór), premia
+    /// Szkoleń na zielono; cienki pasek jako tło wiersza. Zwraca dół.
+    /// </summary>
+    private float DrawStatWords(float sx, float sy, float width, int cls, ClassDef c, in RunMods m, bool unl, float step)
     {
         var f = PixelFont.I;
-        (string Label, int Base, int Bonus, int Max)[] stats =
+        (string Label, StatKind Kind, int Base, int Bonus, int Max)[] stats =
         [
-            ("HP", c.MaxHealth, m.Hp, _d.Classes.Max(k2 => k2.MaxHealth) + m.Hp),
-            (Loc.T("sil"), c.Strength, RunMods.StatBonus(_d, m, cls, Stat.Str), 10),
-            (Loc.T("zre"), c.Agility, RunMods.StatBonus(_d, m, cls, Stat.Agi), 10),
-            ("INT", c.Intelligence, RunMods.StatBonus(_d, m, cls, Stat.Intel), 10),
-            (Loc.T("obr"), c.Defense, m.Def, 6),
-            (Loc.T("szcz"), c.Luck, m.Luck, 8),
+            (Loc.T("stat_hp"), StatKind.Hp, c.MaxHealth, m.Hp, _d.Classes.Max(k2 => k2.MaxHealth) + m.Hp),
+            (Loc.T("stat_str"), StatKind.Str, c.Strength, RunMods.StatBonus(_d, m, cls, Stat.Str), 10),
+            (Loc.T("stat_agi"), StatKind.Agi, c.Agility, RunMods.StatBonus(_d, m, cls, Stat.Agi), 10),
+            (Loc.T("stat_int"), StatKind.Intel, c.Intelligence, RunMods.StatBonus(_d, m, cls, Stat.Intel), 10),
+            (Loc.T("stat_def"), StatKind.Def, c.Defense, m.Def, 6),
+            (Loc.T("stat_luck"), StatKind.Luck, c.Luck, m.Luck, 8),
         ];
-        var bw = width - 90;
+        var ws = _d.Weapons[c.Weapon].ScalesWith;
+        var lw = 0f;
+        foreach (var st in stats) lw = Mathf.Max(lw, f.Measure(st.Label));
         InfoButton(new Vector2(sx + width - 18, sy - 1));
         for (var i = 0; i < stats.Length; i++)
         {
-            var (label, b, bonus, max) = stats[i];
+            var (label, kind, b, bonus, max) = stats[i];
             max = Math.Max(max, b + bonus);
             var yy = sy + i * step;
-            _statRects[i] = new Rect2(sx, yy, width, step);
+            _statRects[i] = new Rect2(sx - 4, yy, width - 18, step);
             _hits.Add((_statRects[i], ClassSelectHit.Stat, i));
             if (i == ShownTip) DrawStyleBox(Ui.Box(new Color(Pal.Brand, 0.12f), 4), _statRects[i]);
-            f.Draw(this, new Vector2(sx, yy), label, Ink.Dim);
-            var bar = new Rect2(sx + 40, yy + 5, bw, 7);
-            DrawStyleBox(Ui.Box(Pal.Group, 3), bar);
-            var bwBase = Mathf.Round(bw * b / (float)max);
-            var bwAll = Mathf.Round(bw * (b + bonus) / (float)max);
-            if (bwAll > 0) DrawStyleBox(Ui.Box(Pal.Done, 3), new Rect2(bar.Position, new Vector2(Mathf.Max(bwAll, 4), 7)));
-            if (bwBase > 0) DrawStyleBox(Ui.Box(unl ? Pal.Brand : Pal.Todo, 3), new Rect2(bar.Position, new Vector2(Mathf.Max(bwBase, 4), 7)));
-            f.Draw(this, new Vector2(bar.End.X + 6, yy), UiText.StatText("", b, bonus).Trim(), bonus > 0 ? Ink.Done : Ink.Dark);
+            var bar = new Rect2(sx, yy + step - 3, (width - 24) * (b + bonus) / (float)max, 2);
+            DrawRect(bar, new Color(unl ? Pal.Brand : Pal.Todo, 0.25f));
+            var ty = yy + (step - 16) / 2;
+            f.Draw(this, new Vector2(sx, ty), label, Ink.Dim);
+            var val = UiText.StatText("", b, bonus).Trim();
+            f.Draw(this, new Vector2(sx + lw + 8, ty), val, bonus > 0 ? Ink.Done : Ink.Dark, TextAlign.Left, 1, true);
+            var weapon = (kind == StatKind.Str && ws == Stat.Str) || (kind == StatKind.Agi && ws == Stat.Agi) || (kind == StatKind.Intel && ws == Stat.Intel);
+            var ex = sx + lw + 16 + f.Measure(val, 1, true);
+            var eff = StatHelp.Effect(_d, new Message(), kind, b + bonus, weapon).Text;
+            f.Draw(this, new Vector2(ex, ty), f.Fit(eff, (int)(sx + width - 24 - ex)), weapon ? Ink.Brand : Ink.Dim);
         }
         return sy + stats.Length * step;
-    }
-
-    private void DrawCard(Rect2 r)
-    {
-        var f = PixelFont.I;
-        var cls = Selected;
-        var c = _d.Classes[cls];
-        var unl = Meta.ClassUnlocked(_d, _p, cls);
-        var m = Meta.Mods(_d, _p, cls); // v0.21.52 cz. b: mistrzostwo zawodu (broń mistrza)
-        DrawStyleBox(Ui.Box(new Color(0, 0, 0, 0.35f), 10), new Rect2(r.Position + new Vector2(0, 3), r.Size));
-        DrawStyleBox(Ui.Box(Pal.Card, 10), r);
-        var x = r.Position.X + 14;
-        var y = r.Position.Y + 8;
-
-        // nazwa w 2x + opis (tekst karty w 1.5x - czytelny na dużym ekranie)
-        const float ts = 1.5f;
-        f.Draw(this, new Vector2(x, y), c.Name, Ink.Dark, TextAlign.Left, 2);
-        if (unl) MasteryBadge(new Vector2(r.Position.X + r.Size.X / 2 - 12, y + 2), cls); // lewa kolumna (prawy róg: przycisk opisu)
-        y += 32;
-        var colW = (int)(r.Size.X / 2 - 24);
-        f.Draw(this, new Vector2(x, y), f.Fit(c.Desc, colW, ts), Ink.Dim, TextAlign.Left, ts);
-        y += 26;
-
-        // moc z ikoną
-        DrawStyleBox(Ui.Box(Pal.Group, 6), new Rect2(x, y + 4, 36, 36));
-        Assets.DrawFrame(this, Assets.AbilityIcons, cls, 32, new Vector2(x + 2, y + 6));
-        var lvariant = unl && Progress.PowerVariantOn(_d, _p, cls); // v0.21.52 cz. b: wariant mocy z mistrzostwa
-        var lmc = _d.MasteryClasses[cls];
-        f.Draw(this, new Vector2(x + 44, y), f.Fit(Loc.F("moc_r", (lvariant ? lmc.PowerName : c.AbilityName)), colW - 44, ts), Ink.Brand, TextAlign.Left, ts);
-        f.Draw(this, new Vector2(x + 44, y + 22), f.Fit(lvariant ? lmc.PowerDesc : c.AbilityDesc, colW - 44, ts), Ink.Dim, TextAlign.Left, ts);
-        y += 48;
-
-        // narzędzie ze statystyką
-        var wpn = _d.Weapons[c.Weapon];
-        WeaponRow(new Rect2(x - 4, y, colW + 8, 24), cls, m, colW - 40, ts);
-        var tag = UiText.StatShort(wpn.ScalesWith);
-        var tw = f.Measure(tag) + 10;
-        DrawStyleBox(Ui.Box(Pal.Group, 7), new Rect2(x + colW - tw, y + 5, tw, 14));
-        f.Draw(this, new Vector2(x + colW - tw / 2f, y + 3), tag, Ink.Brand, TextAlign.Center);
-
-        // trudność i pamiątka
-        y = r.Position.Y + 140;
-        DrawRect(new Rect2(x, y, r.Size.X - 28, 1), Pal.Border);
-        y += 6;
-        var diff = _d.Difficulties[Difficulty];
-        var diffLock = Meta.DifficultyUnlocked(_d, _p, Difficulty) ? "" : Loc.T("zablok_3");
-        f.Draw(this, new Vector2(x, y), Loc.T("trudnosc_3"), Ink.Dim);
-        _coach["difficulty"] = new Rect2(x - 4, y - 1, r.Size.X / 2 - 16, 19);
-        f.Draw(this, new Vector2(x + 64, y), $"< {diff.Name}{diffLock} >", diffLock.Length > 0 ? Ink.Late : Ink.Dark);
-        if (InvestorPage.Available(_d, _p, Selected)) // tryb inwestora (Tab) w tym samym wierszu (v0.21.52: albo sam wygląd)
-        {
-            var ix = r.Position.X + r.Size.X / 2 + 10;
-            f.Draw(this, new Vector2(ix, y), Meta.InvestorUnlocked(_p) ? Loc.T("inwestor") : Loc.T("wyglad_4"), Ink.Dim);
-            _coach["investor"] = new Rect2(ix - 4, y - 1, r.End.X - ix - 6, 19);
-            f.Draw(this, new Vector2(ix + 62, y), f.Fit($"{InvestorLabel()} (Tab)", (int)(r.End.X - ix - 76)), Ink.Brand);
-        }
-        var k = Meta.SelectedKeepsake(_d, _p);
-        var keep = k < 0 ? Loc.T("bez_pamiatki") : $"{_d.Keepsakes[k].Name} {UiText.Roman(Meta.KeepsakeRank(_d, _p, k) - 1)}: {RunMods.PerkLabel(Meta.KeepsakePerk(_d, _p, k))}";
-        y += 18;
-        f.Draw(this, new Vector2(x, y), Loc.T("pamiatka_5"), Ink.Dim);
-        _coach["keepsake"] = new Rect2(x - 4, y - 1, r.Size.X - 20, 19);
-        f.Draw(this, new Vector2(x + 64, y), f.Fit(keep, (int)r.Size.X - 92), k < 0 ? Ink.Dim : Ink.Done);
-        y += 18;
-        var perks = UiText.Perks(_d, _p);
-        var bottom = Note.Length > 0 ? Note : !unl ? LockedText(cls, true) : Loc.T("uprawnienia") + (perks.Length > 0 ? perks : Loc.T("brak_zdobywaj_odznaki"));
-        f.Draw(this, new Vector2(x, y), f.Fit(bottom, (int)r.Size.X - 28), Note.Length > 0 || !unl ? Ink.Late : Ink.Dim);
-
-        // statystyki jako paski (prawa kolumna)
-        var sx = r.Position.X + r.Size.X / 2 + 10;
-        var sy = r.Position.Y + 36;
-        (string Label, int Base, int Bonus, int Max)[] stats =
-        [
-            ("HP", c.MaxHealth, m.Hp, _d.Classes.Max(k2 => k2.MaxHealth) + m.Hp),
-            (Loc.T("sil"), c.Strength, RunMods.StatBonus(_d, m, cls, Stat.Str), 10),
-            (Loc.T("zre"), c.Agility, RunMods.StatBonus(_d, m, cls, Stat.Agi), 10),
-            ("INT", c.Intelligence, RunMods.StatBonus(_d, m, cls, Stat.Intel), 10),
-            (Loc.T("obr"), c.Defense, m.Def, 6),
-            (Loc.T("szcz"), c.Luck, m.Luck, 8),
-        ];
-        var bw = r.Size.X / 2 - 110;
-        InfoButton(new Vector2(r.End.X - 30, r.Position.Y + 8));
-        _coach["stats"] = new Rect2(sx - 6, r.Position.Y + 6, r.End.X - sx, sy - r.Position.Y + 6 * 17f + 2);   // z przyciskiem „i”
-        for (var i = 0; i < stats.Length; i++)
-        {
-            var (label, b, bonus, max) = stats[i];
-            max = Math.Max(max, b + bonus);
-            var yy = sy + i * 17f;
-            _statRects[i] = new Rect2(sx - 4, yy, r.End.X - sx - 10, 17);
-            _hits.Add((_statRects[i], ClassSelectHit.Stat, i));
-            if (i == ShownTip) DrawStyleBox(Ui.Box(new Color(Pal.Brand, 0.12f), 4), _statRects[i]);
-            f.Draw(this, new Vector2(sx, yy), label, Ink.Dim);
-            var bar = new Rect2(sx + 40, yy + 5, bw, 7);
-            DrawStyleBox(Ui.Box(Pal.Group, 3), bar);
-            var bwBase = Mathf.Round(bw * b / (float)max);
-            var bwAll = Mathf.Round(bw * (b + bonus) / (float)max);
-            if (bwAll > 0) DrawStyleBox(Ui.Box(Pal.Done, 3), new Rect2(bar.Position, new Vector2(Mathf.Max(bwAll, 4), 7)));
-            if (bwBase > 0) DrawStyleBox(Ui.Box(unl ? Pal.Brand : Pal.Todo, 3), new Rect2(bar.Position, new Vector2(Mathf.Max(bwBase, 4), 7)));
-            f.Draw(this, new Vector2(bar.End.X + 6, yy), UiText.StatText("", b, bonus).Trim(), bonus > 0 ? Ink.Done : Ink.Dark);
-        }
     }
 
     private int ShownTip => TipStat >= 0 ? TipStat : _hoverStat;
