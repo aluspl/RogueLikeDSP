@@ -398,23 +398,45 @@ public class WeaponModeTests
         Assert.Equal(2, g.Enemies[cement].DotDmg);
     }
 
-    [Fact]
-    public void KluczStopsWaterHealing()
+    /// <summary>Wilgoć (leczy) z rannym sąsiadem; healer z dala od bohatera. Add() daje MaxHp 5000, więc 3 HP to realnie ranny.</summary>
+    private static (Game g, int healer, int hurt) HealerSetup()
     {
         var g = Arena("klucz");
         var w = Add(g, 8, 7, "wilgoc");
         var other = Add(g, 8, 9, "wilgoc");
-        g.Enemies[other].Hp = 100;
-        g.Enemies[w].Hp = 100; // ranny: Wilgoć leczy sąsiadów
+        g.Enemies[other].Hp = 3;
         g.Enemies[w].Awake = g.Enemies[other].Awake = true;
+        return (g, w, other);
+    }
+
+    private static void FarFromHero(Game g, int w)
+    {
+        g.Enemies[w].Stun = 0;
+        g.Enemies[w].X = 8;
+        g.Enemies[w].Y = 11; // 2 pola od rannego, daleko od bohatera
+    }
+
+    [Fact]
+    public void KluczStopsWaterHealing()
+    {
+        var (g, w, other) = HealerSetup();
         Assert.True(B(g, w));
         Assert.True(g.Enemies[w].NoHeal >= 2);
-        var hp = (int)g.Enemies[other].Hp;
-        g.Enemies[w].Stun = 0;
-        g.Enemies[w].X = 8; g.Enemies[w].Y = 11; // z dala od bohatera, by chciał leczyć
+        FarFromHero(g, w);
         g.EnemyAct(w);
         g.EnemyAct(w);
-        Assert.Equal(hp, g.Enemies[other].Hp);
+        Assert.Equal(3, g.Enemies[other].Hp); // nie wyleczony
         Assert.Equal(0, g.Enemies[w].NoHeal);
+        g.EnemyAct(w); // kontrola: po wygaśnięciu leczy
+        Assert.True(g.Enemies[other].Hp > 3);
+    }
+
+    [Fact]
+    public void WaterHealerHealsWithoutKlucz()
+    {
+        var (g, w, other) = HealerSetup();
+        FarFromHero(g, w);
+        g.EnemyAct(w);
+        Assert.True(g.Enemies[other].Hp > 3);
     }
 }
