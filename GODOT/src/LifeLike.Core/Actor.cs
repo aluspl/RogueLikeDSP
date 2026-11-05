@@ -29,6 +29,8 @@ public struct Actor
     /// <summary>v0.23.0: tury znaku i o ile % większe obrażenia od bohatera.</summary>
     public sbyte MarkTurns;
     public byte MarkPct;
+    /// <summary>v0.23.0: tury bez leczenia (Klucz: zakręcony zawór).</summary>
+    public sbyte NoHeal;
 
     public Actor()
     {

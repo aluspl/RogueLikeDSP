@@ -262,6 +262,7 @@ public class WeaponModeTests
         for (var k = 0; k < 2; ++k)
         {
             g.WeaponBCd = 0;
+            CrackedWall(g, 7, 6); // kolejna ściana – ładunek schodzi tylko za otwartą
             Assert.True(g.PlayerWeaponB(e));
         }
         Assert.Equal(-1, g.WeaponOverride); // ładunki zużyte: wraca broń zawodu
@@ -331,5 +332,89 @@ public class WeaponModeTests
         Assert.Equal(ModeEffect.Dry, D.Weapons[Wi("lutownica")].ModeB.Effect2);
         Assert.Equal(ModeEffect.Ignite, D.Weapons[Wi("szlifierka")].ModeB.Effect2);
         Assert.Equal(ModeEffect.Wet, D.Weapons[Wi("myjka")].ModeA.Effect);
+    }
+
+    [Fact]
+    public void PrzecinakOpensWallWithoutEnemies()
+    {
+        var g = Arena("przecinak");
+        CrackedWall(g, 7, 6);
+        Assert.True(g.CanWeaponBOpenWall());
+        Assert.True(g.PlayerWeaponBWall());
+        Assert.True(g.SecretOpen);
+        Assert.Equal(2, g.WeaponCharges);
+        Assert.Equal(1, g.WeaponBCd);
+    }
+
+    [Fact]
+    public void NoWallNoTargetCostsNothing()
+    {
+        var g = Arena("przecinak");
+        var turns = g.Turns;
+        Assert.False(g.CanWeaponBOpenWall());
+        Assert.False(g.PlayerWeaponBWall());
+        Assert.Equal(turns, g.Turns);
+        Assert.Equal(0, g.WeaponCharges);
+        Assert.Equal(0, g.WeaponBCd);
+    }
+
+    [Fact]
+    public void PrzecinakWithEnemyButNoWallKeepsCharge()
+    {
+        var g = Arena("przecinak");
+        var e = Add(g, 8, 7);
+        Assert.True(g.PlayerWeaponB(e));
+        Assert.Equal(0, g.WeaponCharges);
+        Assert.Equal(Wi("przecinak"), g.WeaponOverride);
+    }
+
+    [Fact]
+    public void LomOpensWallWithoutEnemies()
+    {
+        var g = Arena("lom");
+        CrackedWall(g, 7, 6);
+        Assert.True(g.PlayerWeaponBWall());
+        Assert.True(g.SecretOpen);
+        Assert.Equal(Wi("lom"), g.WeaponOverride);
+    }
+
+    [Fact]
+    public void KluczWithoutWallOrTargetIsNotAWallAction()
+    {
+        var g = Arena("klucz");
+        Assert.False(g.PlayerWeaponBWall());
+    }
+
+    [Fact]
+    public void SpawarkaBurnsSteelHarder()
+    {
+        var g = Arena("spawarka");
+        var steel = Add(g, 8, 7, "dostawa");
+        var cement = Add(g, 7, 8, "kamien");
+        Assert.True(B(g, steel));
+        g.WeaponOverride = Wi("spawarka");
+        Assert.True(B(g, cement));
+        Assert.Equal(3, g.Enemies[steel].DotDmg); // 2 x 150%
+        Assert.Equal(2, g.Enemies[cement].DotDmg);
+    }
+
+    [Fact]
+    public void KluczStopsWaterHealing()
+    {
+        var g = Arena("klucz");
+        var w = Add(g, 8, 7, "wilgoc");
+        var other = Add(g, 8, 9, "wilgoc");
+        g.Enemies[other].Hp = 100;
+        g.Enemies[w].Hp = 100; // ranny: Wilgoć leczy sąsiadów
+        g.Enemies[w].Awake = g.Enemies[other].Awake = true;
+        Assert.True(B(g, w));
+        Assert.True(g.Enemies[w].NoHeal >= 2);
+        var hp = (int)g.Enemies[other].Hp;
+        g.Enemies[w].Stun = 0;
+        g.Enemies[w].X = 8; g.Enemies[w].Y = 11; // z dala od bohatera, by chciał leczyć
+        g.EnemyAct(w);
+        g.EnemyAct(w);
+        Assert.Equal(hp, g.Enemies[other].Hp);
+        Assert.Equal(0, g.Enemies[w].NoHeal);
     }
 }

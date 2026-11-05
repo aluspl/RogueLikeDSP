@@ -572,7 +572,8 @@
         "effect": "dot",
         "value": 2,
         "turns": 3,
-        "cooldown": 3
+        "cooldown": 3,
+        "steelPct": 150
       }
     },
     {

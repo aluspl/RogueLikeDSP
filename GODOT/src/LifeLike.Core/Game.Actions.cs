@@ -628,6 +628,8 @@ public sealed partial class Game
         if (!EnemyStatusTick(i)) return; // v0.23.0: krwawienie / podpalenie, unieruchomienie, osłabienie
         var rooted = e.Root > 0;
         if (rooted) --e.Root;
+        var noHeal = e.NoHeal > 0;
+        if (noHeal) --e.NoHeal;
         if (e.Stun > 0)
         {
             --e.Stun;
@@ -658,7 +660,7 @@ public sealed partial class Game
         if ((tg & Behavior.Grows) != 0) GrowTick(i);
         if (e.Timer > 0) --e.Timer; // odnowienie ucieczki / łatania
         var manh = Math.Abs(e.X - Hero.X) + Math.Abs(e.Y - Hero.Y);
-        if ((tg & Behavior.Heals) != 0 && manh != 1 && e.Timer == 0 && HealNear(i))
+        if ((tg & Behavior.Heals) != 0 && !noHeal && manh != 1 && e.Timer == 0 && HealNear(i))
         {
             e.Timer = (sbyte)D.BehaviorHealEvery;
             return;

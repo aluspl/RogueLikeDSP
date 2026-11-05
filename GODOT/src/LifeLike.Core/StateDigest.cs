@@ -79,6 +79,7 @@ public static class StateDigest
             f.Add(e.DefDownVal);
             f.Add(e.MarkTurns);
             f.Add(e.MarkPct);
+            f.Add(e.NoHeal);
         }
         f.Add(g.PickupsCount);
         for (var i = 0; i < g.PickupsCount; i++)

@@ -103,8 +103,8 @@ public sealed partial class Game
             py[i] = Enemies[hit[i]].Y;
             wasWet[i] = EnemyWet(hit[i]);
             wasDusty[i] = EnemyDusty(hit[i]);
-            ModeEffectBefore(m.Effect, m.Value, m.Turns, hit[i]);
-            ModeEffectBefore(m.Effect2, m.Value2, m.Turns2, hit[i]);
+            ModeEffectBefore(m.Effect, m.Value, m.Turns, hit[i], m.SteelPct);
+            ModeEffectBefore(m.Effect2, m.Value2, m.Turns2, hit[i], m.SteelPct);
         }
         var dealt = 0;
         for (var i = 0; i < hits; ++i)

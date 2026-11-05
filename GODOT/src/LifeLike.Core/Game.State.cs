@@ -55,6 +55,7 @@ public sealed partial class Game
         w.Write(a.DefDownVal);
         w.Write(a.MarkTurns);
         w.Write(a.MarkPct);
+        w.Write(a.NoHeal);
     }
 
     private static Actor ReadActor(BinaryReader r) => new()
@@ -80,6 +81,7 @@ public sealed partial class Game
         DefDownVal = r.ReadSByte(),
         MarkTurns = r.ReadSByte(),
         MarkPct = r.ReadByte(),
+        NoHeal = r.ReadSByte(),
     };
 
     public void Write(BinaryWriter w)

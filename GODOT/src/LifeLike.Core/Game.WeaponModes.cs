@@ -29,8 +29,9 @@ public sealed partial class Game
         var e = Enemies[ei];
         if (!e.Alive || !Visible(e.X, e.Y) || Cheb(Hero.X, Hero.Y, e.X, e.Y) > ModeRange(m) || !InPattern(m, ei)) return false;
         if (ShockedTurn()) return true;
+        var wasClosed = SecretClosed();
         AttackWith(m, ei);
-        SpendCharge(m);
+        if (wasClosed && !SecretClosed()) SpendCharge(m); // ładunek tylko za faktycznie otwartą ścianę
         EndTurn();
         WeaponBCd = Math.Max(1, m.Cooldown + WeaponCdDelta()); // po EndTurn, by pierwsza tura nie zjadła odnowienia
         return true;
@@ -40,6 +41,7 @@ public sealed partial class Game
     private void SpendCharge(WeaponMode m)
     {
         if (m.Effect != ModeEffect.OpenWall || m.Value <= 0 || WeaponOverride < 0) return;
+        // ładunki liczy tylko otwarcie ściany (wołający sprawdza)
         if (WeaponCharges <= 0) WeaponCharges = (sbyte)m.Value;
         if (--WeaponCharges > 0) return;
         WeaponCharges = 0;
@@ -48,7 +50,7 @@ public sealed partial class Game
     }
 
     /// <summary>Efekty przed ciosem (ten sam cios je już czuje): ogłuszenie, unieruchomienie, osłabienie, znak, kryt, krwawienie, osuszenie, mokry.</summary>
-    private void ModeEffectBefore(ModeEffect eff, int val, int turns, int t)
+    private void ModeEffectBefore(ModeEffect eff, int val, int turns, int t, int steelPct)
     {
         ref var e = ref Enemies[t];
         if (!e.Alive) return;
@@ -77,13 +79,19 @@ public sealed partial class Game
                 break;
             case ModeEffect.Dot:
                 e.Dot = (sbyte)Math.Max(1, turns);
-                e.DotDmg = (sbyte)(val > 0 ? val : D.HitTypes.DotPerTurn);
+                var dot = val > 0 ? val : D.HitTypes.DotPerTurn;
+                if (steelPct > 0 && e.DefId >= 0 && D.Enemies[e.DefId].Material >= 0 && D.Materials[D.Enemies[e.DefId].Material].Id == "stal") dot = dot * steelPct / 100;
+                e.DotDmg = (sbyte)Math.Max(1, dot);
                 e.DotKind = (byte)(HitCalc.Has(Weapon, HitType.Cut) && Weapon.Elem != Element.Fire ? 2 : 1); // cięcie krwawi, reszta podpala
                 e.Awake = true;
                 break;
             case ModeEffect.Dry:
                 e.Wet = 0;
-                if (D.Enemies[e.DefId].Elem == Element.Water && t != Boss) e.Stun = (sbyte)Math.Max((int)e.Stun, Math.Max(1, turns)); // zawór: problem wodny traci turę
+                if (D.Enemies[e.DefId].Elem == Element.Water && t != Boss) // zawór: problem wodny traci turę i leczenie
+                {
+                    e.Stun = (sbyte)Math.Max((int)e.Stun, Math.Max(1, turns));
+                    e.NoHeal = (sbyte)Math.Max((int)e.NoHeal, Math.Max(1, turns) + 1); // pierwsza tura to ta stracona
+                }
                 break;
             case ModeEffect.Wet:
                 e.Wet = (sbyte)Math.Max((int)e.Wet, turns > 0 ? turns : D.WetTurns);
@@ -129,11 +137,7 @@ public sealed partial class Game
                 }
                 break;
             case ModeEffect.OpenWall:
-                // Value > 0 (Przecinak): każda zamknięta ściana magazynu; inaczej tylko pęknięta
-                if (SecretClosed() && Cheb(Hero.X, Hero.Y, SecretX, SecretY) <= Math.Max(1, ModeRange(m)) && (val > 0 || SecretDef.Breakable))
-                {
-                    OpenSecret(Weapon.Name);
-                }
+                TryOpenWall(m, val);
                 break;
             case ModeEffect.Chain:
                 ChainShock(hit, px, py, wasWet);
@@ -145,6 +149,44 @@ public sealed partial class Game
                 }
                 break;
         }
+    }
+
+    /// <summary>Czy efekt OpenWall trybu m ma co otworzyć: zamknięta ściana magazynu w zasięgu (Value &gt; 0, Przecinak: każda; inaczej tylko pęknięta).</summary>
+    private bool WallOpenable(WeaponMode m, int val) =>
+        SecretClosed() && Cheb(Hero.X, Hero.Y, SecretX, SecretY) <= Math.Max(1, ModeRange(m)) && (val > 0 || SecretDef.Breakable);
+
+    private bool TryOpenWall(WeaponMode m, int val)
+    {
+        if (!WallOpenable(m, val)) return false;
+        OpenSecret(Weapon.Name);
+        return true;
+    }
+
+    /// <summary>
+    /// Wejście dla UI: tryb B bez celu-problemu – otwiera sąsiednią pękniętą ścianę / magazyn (Przecinak, Łom, Młot wyburzeniowy).
+    /// Zwraca false bez kosztu, gdy tryb B nie ma efektu OpenWall, trwa odnowienie albo nie ma czego otworzyć.
+    /// UI: pokaż akcję, gdy <see cref="CanWeaponBOpenWall"/>; przy problemie w celu nadal działa <see cref="PlayerWeaponB"/>.
+    /// </summary>
+    public bool PlayerWeaponBWall()
+    {
+        if (St != GameStatus.Playing || !CanWeaponBOpenWall()) return false;
+        if (ShockedTurn()) return true;
+        var m = Weapon.ModeB;
+        if (m.Effect == ModeEffect.OpenWall) TryOpenWall(m, m.Value);
+        else TryOpenWall(m, m.Value2);
+        SpendCharge(m);
+        EndTurn();
+        WeaponBCd = Math.Max(1, m.Cooldown + WeaponCdDelta());
+        return true;
+    }
+
+    /// <summary>Tryb B ma OpenWall, jest gotowy i w zasięgu jest ściana do otwarcia.</summary>
+    public bool CanWeaponBOpenWall()
+    {
+        var m = Weapon.ModeB;
+        if (WeaponBCd > 0) return false;
+        if (m.Effect == ModeEffect.OpenWall) return WallOpenable(m, m.Value);
+        return m.Effect2 == ModeEffect.OpenWall && WallOpenable(m, m.Value2);
     }
 
     /// <summary>Łańcuch (Próbnik): prąd przeskakuje z trafionego, niemokrego celu na mokre problemy obok (mokre cele rażą się combo ciosu).</summary>
