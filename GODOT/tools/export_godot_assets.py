@@ -345,6 +345,20 @@ def export_screen(name, crop_h, rel):
     save(out, rel)
 
 
+def export_qr(src, rel):
+    """v0.22.0 (UX A): sam kod QR planbudowlany.online z planszy końcowej (ostatnia kolumna nieprzezroczystych pikseli)."""
+    im = Image.open(os.path.join(OUT, src)).convert("RGBA")
+    w, h = im.size
+    px = im.load()
+    cols = [any(px[x, y][3] > 0 for y in range(h)) for x in range(w)]
+    x1 = max(x for x in range(w) if cols[x]) + 1
+    x0 = x1
+    while x0 > 0 and cols[x0 - 1]:
+        x0 -= 1
+    qr = im.crop((x0, 0, x1, h))
+    save(qr.crop(qr.getbbox()), rel)
+
+
 # ------------------------------------------------------------------ font 8x16 z polskimi znakami
 PL_CHARS = "ąćęłńóśźżĄĆĘŁŃÓŚŹŻ"
 
@@ -1009,6 +1023,7 @@ def main():
     report["app_icon"] = make_app_icon()
     export_screen("title", 128, "ui/title.png")
     export_screen("end", 104, "ui/end.png")
+    export_qr("ui/end.png", "ui/qr.png")
     report["font_glyphs"] = export_font()
     danger = None
     stages = len(FLOOR_KIND)   # v0.21.52 cz. d: wyglądy etapów (Dom 0-11 i kontrakty mapy kariery 12-21)

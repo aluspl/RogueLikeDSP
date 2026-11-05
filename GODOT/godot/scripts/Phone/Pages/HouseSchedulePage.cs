@@ -9,7 +9,7 @@ namespace LifeLike.Game.Phone.Pages;
 /// <summary>
 /// Harmonogram domu po wygranej (v0.21.48) w stylu aplikacji PlanBudowlany: zdjęcie domu (dom z Osiedla), etapy
 /// z datą rozpoczęcia (liczone wstecz od dnia odbioru), dniami trwania, kosztem i statusem Gotowe, suma, na dole
-/// spokojny link „Zaplanuj swoją budowę – planbudowlany.online”. Spacja / dotknięcie linku otwiera stronę.
+/// spokojny link planbudowlany.online (v0.22.0: z kodem QR, przycisk „Zaplanuj swoją budowę” na dole). Spacja / dotknięcie linku otwiera stronę.
 /// </summary>
 public sealed class HouseSchedulePage : PhonePage
 {
@@ -63,7 +63,11 @@ public sealed class HouseSchedulePage : PhonePage
         p.Text(tx, head.Position.Y + 36, Loc.F("dni_tys_zl", HouseSchedule.TotalDays(_g), HouseSchedule.TotalCost(_g)), Ink.Done, TextAlign.Left, right - tx);
 
         var y = p.Section(head.End.Y + 6, Loc.T("etapy_3"), Loc.T("wszystkie_gotowe"));
-        var link = 2 * PhonePainter.RowH + 8 + 6;
+        // v0.22.0 (UX A): pionowy telefon – kod QR planbudowlany.online (2x, ostre piksele); mały telefon – sam adres
+        var qr = Assets.Tex("ui/qr.png");
+        var free = p.Bottom - y - 3 * PhonePainter.RowH - 8 - 6 - 12 - 8; // miejsce pod co najmniej 3 etapami
+        var qrScale = !big ? 0 : free >= qr.GetHeight() * 2 ? 2 : free >= qr.GetHeight() ? 1 : 0;
+        var link = (qrScale > 0 ? qr.GetHeight() * qrScale + 12 : PhonePainter.RowH + 8) + 6;
         var room = (int)((p.Bottom - y - link - 8) / PhonePainter.RowH);
         var rows = Mathf.Clamp(room, 3, n);
         var card = p.Card(y, rows);
@@ -80,12 +84,16 @@ public sealed class HouseSchedulePage : PhonePage
             var dw = p.Text(cr - pw - 6, ry, Loc.F("dni_4", HouseSchedule.Days(_g, s)), Ink.Dim, TextAlign.Right);
             p.Text(cx, ry, $"{Date(HouseSchedule.StartDay(_g, s, _endDay))} {_g.SDef(s).Name}", Ink.Dark, TextAlign.Left, cr - pw - dw - 12 - cx);
         }
-        var lc = p.Card(card.End.Y + 6, 2);
-        p.HitRow(lc, 0, 0);
-        p.HitRow(lc, 1, 0);
-        p.Stripe(lc, 0, Pal.Brand);
-        p.Stripe(lc, 1, Pal.Brand);
-        p.Text(cx, p.RowY(lc, 0), Loc.T("zaplanuj_swoja_budowe"), Ink.Brand, TextAlign.Left, lc.End.X - 6 - cx);
-        p.Text(cx, p.RowY(lc, 1), d.ScheduleUrl, Ink.Dim, TextAlign.Left, lc.End.X - 6 - cx);
+        var lc = p.CardH(card.End.Y + 6, link - 6); // przycisk „Zaplanuj swoją budowę” jest na dole strony – tu bez dubla
+        p.Hit(lc, 0);
+        p.C.DrawRect(new Rect2(lc.Position.X + 4, lc.Position.Y + 6, 3, lc.Size.Y - 12), Pal.Brand);
+        var ux = cx;
+        if (qrScale > 0)
+        {
+            var qs = qr.GetSize() * qrScale;
+            p.C.DrawTextureRect(qr, new Rect2(cx, lc.Position.Y + 6, qs.X, qs.Y), false);
+            ux = cx + qs.X + 10;
+        }
+        p.Text(ux, Mathf.Round(lc.GetCenter().Y - 8), d.ScheduleUrl, Ink.Brand, TextAlign.Left, lc.End.X - 6 - ux);
     }
 }
