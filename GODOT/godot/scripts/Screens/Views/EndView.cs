@@ -74,7 +74,7 @@ public partial class EndView : Control, Touch.ITapTargets
         var f = PixelFont.I;
         var w = Size.X;
         var h = Size.Y;
-        var portrait = h > w;
+        var portrait = Layout.Portrait; // v0.22.0 (UX A): także duży ekran prawie kwadratowy
         Ui.VioletGradient(this, new Rect2(0, 0, w, h));
         var es = portrait ? Mathf.Min(2f, Mathf.Floor((w - 16) / 240f * 2) / 2) : 2f;
         var top = portrait ? Layout.SafeTop + 24 : 0;

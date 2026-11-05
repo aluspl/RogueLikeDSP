@@ -48,9 +48,12 @@ public partial class PhoneView : Control, Touch.ITapTargets
     /// <summary>Pionowy ekran: aplikacja na cały ekran zamiast telefonu na środku.</summary>
     public static bool Full => Layout.Portrait;
 
-    public static Vector2 PhoneSize => Full ? Layout.UiSize : new Vector2(W, H);
+    /// <summary>v0.22.0 (UX A): największa szerokość telefonu na dużym ekranie (składak, tablet) - wyśrodkowany, nie rozciągnięty.</summary>
+    public const float MaxWidth = Layout.WideWidth;
 
-    public static Vector2 Origin => Full ? Vector2.Zero : ((Layout.UiSize - new Vector2(W, H)) / 2).Floor();
+    public static Vector2 PhoneSize => Full ? new Vector2(Mathf.Min(Layout.UiSize.X, MaxWidth), Layout.UiSize.Y) : new Vector2(W, H);
+
+    public static Vector2 Origin => Full ? new Vector2(Mathf.Floor((Layout.UiSize.X - PhoneSize.X) / 2), 0) : ((Layout.UiSize - new Vector2(W, H)) / 2).Floor();
 
     /// <summary>Pozycja schowanego telefonu (pod dolną krawędzią ekranu).</summary>
     private static Vector2 Stowed => new(Origin.X, Layout.UiSize.Y + 20);

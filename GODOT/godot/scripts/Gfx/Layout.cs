@@ -41,7 +41,21 @@ public static class Layout
     public static Rect2 SafeArea { get; private set; } = new(0, 0, BaseWidth, BaseHeight);
 
     /// <summary>Ekran pionowy (telefon): inne układy plansz, telefon na cały ekran, HUD w skali 1.</summary>
-    public static bool Portrait => UiSize.Y > UiSize.X;
+    public static bool Portrait => UiSize.Y > UiSize.X || NearSquare;
+
+    /// <summary>v0.22.0 (UX A): proporcje dłuższego boku do krótszego, poniżej których dotykowy ekran liczy się jak pionowy.</summary>
+    public const float NearSquareRatio = 1.4f;
+
+    /// <summary>v0.22.0 (UX A): krótszy bok UI dużego ekranu (składak, tablet) i maksymalna szerokość telefonu.</summary>
+    public const float WideWidth = 480f;
+
+    /// <summary>v0.22.0 (UX A): dotykowy ekran prawie kwadratowy (składak, tablet) - układ pionowy zamiast drobnego poziomego.</summary>
+    public static bool NearSquare => Touch && IsNearSquare(UiSize.X, UiSize.Y);
+
+    /// <summary>v0.22.0 (UX A): duży ekran w układzie pionowym - szersze plansze, telefon wyśrodkowany.</summary>
+    public static bool Wide => Portrait && UiSize.X >= WideWidth;
+
+    private static bool IsNearSquare(float w, float h) => w > 0 && h > 0 && Mathf.Max(w, h) / Mathf.Min(w, h) < NearSquareRatio;
 
     /// <summary>Sterowanie dotykiem: pasek akcji, gesty, przyciski zamiast podpowiedzi klawiszy.</summary>
     public static bool Touch { get; set; }
@@ -97,6 +111,13 @@ public static class Layout
     /// </summary>
     public static int ScaleFor(Vector2I win, bool large)
     {
+        if (Touch && IsNearSquare(win.X, win.Y)) // v0.22.0 (UX A): składak / tablet - krótszy bok UI około 480
+        {
+            var m = Math.Min(win.X, win.Y);
+            var q = Math.Max(1, (int)Mathf.Floor(m / WideWidth));
+            if (large && m / (q + 1) >= 400) q++;
+            return q;
+        }
         var portrait = win.Y > win.X;
         float bw = portrait ? BaseHeight : BaseWidth, bh = portrait ? BaseWidth : BaseHeight;
         var s = Math.Max(1, (int)Mathf.Floor(Mathf.Min(win.X / bw, win.Y / bh)));

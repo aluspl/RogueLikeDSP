@@ -87,7 +87,7 @@ public partial class TitleView : Control, Touch.ITapTargets
         var f = PixelFont.I;
         var w = Size.X;
         var h = Size.Y;
-        var portrait = h > w;
+        var portrait = Layout.Portrait; // v0.22.0 (UX A): także duży ekran prawie kwadratowy
         var safe = Layout.SafeArea;
         Ui.VioletGradient(this, new Rect2(0, 0, w, h));
         var logo = Assets.Tex(Loc.English ? "ui/title_en.png" : "ui/title.png"); // v0.21.53 cz. 2: hasło po angielsku

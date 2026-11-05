@@ -146,7 +146,7 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         var f = PixelFont.I;
         var w = Size.X;
         var h = Size.Y;
-        var portrait = h > w;
+        var portrait = Layout.Portrait; // v0.22.0 (UX A): także duży ekran prawie kwadratowy
         var top = Layout.SafeTop;
         var head = top + (portrait ? 150 : 112);
         DrawRect(new Rect2(0, 0, w, h), Pal.ScreenBg);
