@@ -19,6 +19,8 @@ public static class EndNotes
         if (g.Score > s.PrevBest) list.Add(Loc.F("nowy_rekord_poprzedni", s.PrevBest));
         if (g.Daily && s.DailyRecord) list.Add(Loc.F("rekord_dnia_budowa_dnia_nr", g.DailyDay));
         if (g.WeeklyWeek != 0 && s.WeeklyRecord) list.Add(Loc.F("rekord_tygodnia_4", d.Weekly[g.Bonus.Weekly].Name));
+        if (g.Daily && !s.DailyRecord) list.Add(Loc.F("budowa_dnia_nr_najlepszy", g.DailyDay, Daily.Best(d, p, g.DailyDay)));
+        if (g.WeeklyWeek != 0 && !s.WeeklyRecord) list.Add(Loc.F("wyzwanie_tygodnia_najlepszy", Weekly.Best(d, p, g.WeeklyWeek)));
         if (s.LastReward >= 0) list.Add(Loc.F("nagroda_3", d.Rewards[s.LastReward].Name, d.Rewards[s.LastReward].Desc));
         foreach (var line in s.Note.Split('\n')) // sekretne zlecenia, odznaki, zlecenia (ProgressNotes)
         {

@@ -31,6 +31,7 @@ public sealed class BetweenRunsPage : PhonePage
         _notes = EndNotes.Of(s);
         var g = s.Game;
         Say(g.St == GameStatus.Won ? Loc.T("miedzy_wygrana") : Loc.T("miedzy_przegrana"));
+        Say(Loc.F("miedzy_wynik", g.Score));
         Say(Loc.F("miedzy_dosw", s.LastGained, s.Profile.Xp));
         if (_notes.Count > 0) _chat.Add(null); // miejsce na „Do tego:” (liczba wierszy zależy od ekranu)
         Offer();

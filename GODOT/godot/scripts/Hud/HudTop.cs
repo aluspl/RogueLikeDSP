@@ -101,7 +101,9 @@ public partial class HudTop : Control
 
         // rząd 2 (v0.22.0, UX A): ikony z krótkimi podpisami („Termos 0/4”, „Deszcz”, „Błoto”, „Moc R”), gdy mieszczą się
         // obok nazwy etapu i wydarzenia; inaczej same ikony jak dotąd
-        var reserve = nameBelow ? Mathf.Min(f.Measure(sd.Name), 160) + 8 : 0;
+        var reserve = (nameBelow ? Mathf.Min(f.Measure(sd.Name), 160) : f.Measure($"{g.DDef.Name}{ng}")) + 8f; // prawa strona rzędu 2
+        if (g.SlamTimer > 0) reserve += f.Measure(Loc.F("cios_za", g.SlamTimer)) + 8;   // zapowiedź ciosu bossa
+        else if (g.CurrentEvent is { } cev) reserve += f.Measure(cev.Short) + 18;       // pastylka wydarzenia na placu
         var labels = Row2(f, false, true) <= re - 6 - reserve;
         x = Row2(f, true, labels);
 

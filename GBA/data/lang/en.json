@@ -3045,6 +3045,9 @@
   "legenda_premia": "bonus",
   "legenda_zagrozenie": "danger",
   "legenda_sciezka": "path",
-  "legenda_info": "info"
+  "legenda_info": "info",
+  "miedzy_wynik": "Score: {0} pts.",
+  "budowa_dnia_nr_najlepszy": "Daily build no. {0}: best {1}",
+  "wyzwanie_tygodnia_najlepszy": "Weekly challenge: best {0}"
  }
 }

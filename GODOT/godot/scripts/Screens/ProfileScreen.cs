@@ -19,12 +19,16 @@ public sealed class ProfileScreen : Screen
     public override bool UsesPhone => true;
     public override string Music => "title";
 
-    public void Open(int tab = 0, bool instant = false)
+    /// <summary>back = ekran, do którego wraca telefon (v0.22.0, UX A: rozmowa między budowami); null = tytuł.</summary>
+    public void Open(int tab = 0, bool instant = false, Screen back = null)
     {
         _tab = tab;
-        S.Note = "";
+        _back = back;
+        if (back is null) S.Note = ""; // notatka końca budowy (sekrety, odznaki) zostaje dla rozmowy
         Flow.Go(this, instant);
     }
+
+    private Screen _back;
 
     public override void Enter(bool instant)
     {
@@ -47,8 +51,13 @@ public sealed class ProfileScreen : Screen
     {
         if (N.Phone.HandleInput(e)) return true;
         if (!e.Is(GameAction.Profile | GameAction.B | GameAction.Cancel | GameAction.Select | GameAction.Shop | GameAction.Start)) return false;
-        S.Note = "";
         N.Phone.Close();
+        if (_back is not null)
+        {
+            Flow.Go(_back);
+            return true;
+        }
+        S.Note = "";
         Flow.Title.Open();
         return true;
     }

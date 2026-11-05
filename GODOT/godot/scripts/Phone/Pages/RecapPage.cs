@@ -34,6 +34,9 @@ public sealed class RecapPage : PhonePage
     public int Top => _top;
     public int Count => _rows.Count;
 
+    /// <summary>Czy podsumowanie ma wiersz o tym tekście (test dymny).</summary>
+    public bool Has(string text) => _rows.Exists(r => r.Text == text);
+
     public override string Title => Loc.T("podsumowanie");
     /// <summary>v0.22.0 (UX A): wynik budowy zamiast licznika pozycji („10/48”).</summary>
     public override string Sub => _won ? Loc.T("wygrana_2") : Loc.T("przegrana_2");
@@ -88,6 +91,12 @@ public sealed class RecapPage : PhonePage
             rows.Add(new RecapRow(l.Text.Text.TrimStart(), l.Tail.Text, InkOf(l.Ink), head ? (l.Ink == LogKind.Bad ? Pal.Late : Pal.Done) : none));
         }
 
+        var notes = EndNotes.Of(s); // v0.22.0 (UX A): pełna lista „Do tego:” z rozmowy między budowami
+        if (notes.Count > 0)
+        {
+            Head(Loc.T("do_tego"));
+            foreach (var n in notes) Row(n, "", Ink.Dark, Pal.Done);
+        }
         Head(Loc.T("nagrody_z_budowy"));
         Row(Loc.F("respekt_5", g.Respect), Loc.F("masz_4", p.Respect), Ink.Brand, none);
         var ci = Meta.NextContract(d, p, g);

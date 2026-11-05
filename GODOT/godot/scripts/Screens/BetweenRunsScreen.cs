@@ -57,7 +57,7 @@ public sealed class BetweenRunsScreen : Screen
                 Page.Bought(name);
                 break;
             case QuickReply.Training:
-                Flow.Profile.Open(4);
+                Flow.Profile.Open(4, false, this); // powrót do rozmowy (NG+ i „Do tego:” zostają)
                 break;
             case QuickReply.Next:
                 S.Note = "";

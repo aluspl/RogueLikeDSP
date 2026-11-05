@@ -9350,6 +9350,9 @@
     "legenda_premia": "premia",
     "legenda_zagrozenie": "zagrożenie",
     "legenda_sciezka": "ścieżka",
-    "legenda_info": "info"
+    "legenda_info": "info",
+    "miedzy_wynik": "Wynik: {0} pkt.",
+    "budowa_dnia_nr_najlepszy": "Budowa dnia nr {0}: najlepszy {1}",
+    "wyzwanie_tygodnia_najlepszy": "Wyzwanie tygodnia: najlepszy {0}"
   }
 }

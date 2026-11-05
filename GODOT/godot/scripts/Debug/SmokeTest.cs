@@ -607,6 +607,12 @@ public sealed class SmokeTest
         if (Daily.Best(s.Data, s.Profile, day) != g.Score) throw new Exception("codzienna budowa: brak wyniku dnia w profilu");
         if (Flow.Current != Flow.BetweenRuns) throw new Exception("codzienna budowa: brak rozmowy między budowami");
         if (Flow.BetweenRuns.Page.Replies.Contains(Phone.Pages.QuickReply.NextPlus)) throw new Exception("codzienna budowa: NG+ nie powinno być");
+        if (!Flow.BetweenRuns.Page.Chat.Contains(Loc.F("miedzy_wynik", g.Score))) throw new Exception("rozmowa: brak wyniku budowy");
+        // Szkolenia z rozmowy wracają do rozmowy (nie do tytułu – NG+ i „Do tego:” zostają)
+        Flow.BetweenRuns.Reply(Phone.Pages.QuickReply.Training);
+        if (Flow.Current != Flow.Profile) throw new Exception("rozmowa: Pokaż Szkolenia nie otwiera telefonu");
+        Flow.Profile.HandleInput(InputCmd.Of(GameAction.B));
+        if (Flow.Current != Flow.BetweenRuns) throw new Exception($"Szkolenia z rozmowy: powrót do {Flow.Current?.GetType().Name}");
         // dwa szybkie zakupy pod rząd: Marek odpisuje, oferta przechodzi na następną rzecz, doświadczenie schodzi o oba koszty
         s.Profile.Xp = 100000;
         var c1 = Spend.QuickKind(s.Data, s.Profile, out _, out _);
@@ -638,6 +644,8 @@ public sealed class SmokeTest
         if (Flow.Current != Flow.BetweenRuns || !Flow.BetweenRuns.Page.Replies.Contains(Phone.Pages.QuickReply.NextPlus)) throw new Exception("po harmonogramie domu brak rozmowy z NG+");
         Flow.BetweenRuns.Reply(Phone.Pages.QuickReply.Details);
         if (Flow.Current != Flow.Recap || Flow.Recap.Page.Count < 10) throw new Exception("wygrana: brak podsumowania budowy");
+        foreach (var note in Session.EndNotes.Of(s)) // „i N więcej w szczegółach” – pełna lista w podsumowaniu
+            if (!Flow.Recap.Page.Has(note)) throw new Exception($"podsumowanie: brak „{note}”");
         Flow.Recap.HandleInput(InputCmd.Of(GameAction.Start));
         if (Flow.Current != Flow.BetweenRuns) throw new Exception("wygrana: podsumowanie nie wraca do rozmowy");
         await DebugRunner.Frames(_app.Root, 2);
