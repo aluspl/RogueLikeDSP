@@ -43,7 +43,7 @@ public sealed class TrainingTab : PhonePage
     }
 
     public override string Title => Pages[_page];
-    public override string Sub => _page == RewardsPage ? Loc.F("wygrane_4", _p.Wins) : _page == TreePage ? Loc.F("dosw_5", _p.Xp) : Loc.T("koszty");
+    public override string Sub => _page == RewardsPage ? Loc.F("wygrane_4", _p.Wins) : Loc.F("dosw_5", _p.Xp); // v0.22.0 (UX A): doświadczenie zamiast dubla „Koszty”
     public override string Hint => _page == RewardsPage ? Loc.F("tab_q_e_zakladki_esc_wroc", Pages[0])
                                    : _page == TreePage ? Loc.F("strzalki_wezel_spacja_wybierz", Pages[_page + 1])
                                    : Loc.F("spacja_kup_tab_q_e_zakladki", Pages[_page + 1]);

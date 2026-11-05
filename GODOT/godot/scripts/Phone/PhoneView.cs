@@ -97,7 +97,7 @@ public partial class PhoneView : Control, Touch.ITapTargets
         Present(instant);
     }
 
-    /// <summary>Pojedyncza strona (wiadomość, paczka, Hurtownia, harmonogram); icon = podświetlona ikona paska (-1 brak).</summary>
+    /// <summary>Pojedyncza strona (wiadomość, paczka, Hurtownia, harmonogram) bez paska zakładek; icon zostaje dla wołających (v0.22.0, UX A: nie rysuje się).</summary>
     public void OpenSingle(PhonePage page, int icon, bool instant = false)
     {
         _single = page;
@@ -278,7 +278,7 @@ public partial class PhoneView : Control, Touch.ITapTargets
             DrawRect(scr, Pal.Bg);
             statusH = Mathf.Max(Layout.SafeTop, 20);
             headerH = FullHeaderH;
-            tabH = FullTabH + Layout.SafeBottom;
+            tabH = (HasTabs ? FullTabH : 4) + Layout.SafeBottom; // v0.22.0 (UX A): pasek zakładek tylko przy zakładkach
         }
         else
         {
@@ -289,7 +289,7 @@ public partial class PhoneView : Control, Touch.ITapTargets
             DrawStyleBox(Ui.Box(Pal.Bg, 15), scr);
             statusH = StatusH;
             headerH = HeaderH;
-            tabH = TabH;
+            tabH = HasTabs ? TabH : 8;
         }
         DrawStatus(scr, statusH, full);
 
@@ -327,7 +327,12 @@ public partial class PhoneView : Control, Touch.ITapTargets
         if (hint.Length > 0) f.Draw(this, new Vector2(scr.Position.X + scr.Size.X / 2, contentBottom), f.Fit(hint, (int)scr.Size.X - 12), Ink.Dim, TextAlign.Center);
         DrawButtons(actions, new Rect2(sx + 8, contentBottom + 4, scr.Size.X - 16, buttonsH - 8));
 
-        // pasek zakładek
+        // pasek zakładek (v0.22.0, UX A: pojedyncza strona go nie ma – ikony nic tam nie robiły)
+        if (!HasTabs)
+        {
+            _tabBar = new Rect2();
+            return;
+        }
         DrawRect(new Rect2(sx, tabTop, scr.Size.X, 1), Pal.Border);
         if (full) DrawRect(new Rect2(sx, tabTop + 1, scr.Size.X, tabH - 1), Pal.Card);
         else
