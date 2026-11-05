@@ -128,6 +128,36 @@ public class HitPatternTests
     }
 
     [Fact]
+    public void StairsDoNotBlockPattern()
+    {
+        var g = Arena(PatternKind.Line, 3);
+        g.Lv[7, 6] = Tile.Stairs;
+        int onStairs = Add(g, 7, 6), behind = Add(g, 7, 5);
+        Assert.True(g.PlayerAttack(onStairs));
+        Assert.True(Hurt(g, onStairs) && Hurt(g, behind));
+        var h = Arena(PatternKind.Line, 3);
+        h.Lv[7, 6] = Tile.Stairs; // pusty schód na drodze, wróg za nim
+        int far = Add(h, 7, 5);
+        Assert.True(h.PlayerAttack(far));
+        Assert.True(Hurt(h, far));
+    }
+
+    [Fact]
+    public void SprayBlockedByWallInFront()
+    {
+        var g = Arena(PatternKind.Spray, 2);
+        int front = Add(g, 7, 6), row = Add(g, 7, 5);
+        Assert.True(g.PlayerAttack(front));
+        Assert.True(Hurt(g, front) && Hurt(g, row));
+        var h = Arena(PatternKind.Spray, 2);
+        int r2 = Add(h, 7, 5), r3 = Add(h, 6, 5);
+        h.Lv[7, 6] = Tile.Wall;
+        h.UpdateFov();
+        h.AttackWith(h.Weapon.ModeA, r2);
+        Assert.False(Hurt(h, r2) || Hurt(h, r3));
+    }
+
+    [Fact]
     public void LegacySingleUnchanged()
     {
         // broń bez trybów w danych: PlayerAttack = HeroAttack(ei) + EndTurn, ten sam rzut przy tym samym seedzie

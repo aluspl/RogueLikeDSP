@@ -70,11 +70,13 @@ public sealed partial class Game
             if (d <= prev) blocked = false; // nowy promień
             prev = d;
             if (ray && blocked) continue;
-            if (Lv.At(xs[i], ys[i]) != Tile.Floor)
+            if (!Lv.Passable(xs[i], ys[i])) // tylko ściana blokuje (schody nie)
             {
                 if (ray) blocked = true;
                 continue;
             }
+            // wzory nieprzebijające ścian (natrysk, łuk, krzyż): dalsze pola za ścianą przed bohaterem nie są trafiane
+            if (!ray && d >= 2 && pat is PatternKind.Spray or PatternKind.Arc or PatternKind.Cross && !Lv.Passable(Hero.X + dx, Hero.Y + dy)) continue;
             var j = EnemyAt(xs[i], ys[i]);
             if (j < 0 || hits >= hit.Length) continue;
             hit[hits++] = j;
