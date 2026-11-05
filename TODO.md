@@ -17,7 +17,7 @@ Legenda: ✅ zrobione · 🔄 w toku · ⬜ do zrobienia · — nie dotyczy
 | Przycisk planbudowlany.online na tytule | ✅ | ✅ (QR na ekranie końcowym) |
 | Instalacja na urządzeniu jedną komendą (`GODOT/tools/ios_deploy.sh`) | ✅ | — |
 | Test ręczny na sprzęcie i poprawki po graniu | 🔄 iPhone (zainstalowane) | ⬜ Miyoo, dźwięk |
-| Android: eksport i instalacja (podpis bez sekretów w repo) | ⬜ | — |
+| Android: eksport i instalacja (podpis bez sekretów w repo) | ✅ (`android_release.sh`, Google Play – testy wewnętrzne) | — |
 | Wydania do pobrania w Releases | ⬜ .ipa / .apk / desktop | ✅ ROM co wersję |
 | Oprawa 2.5D: kamera 3/4, dynamiczne światło (latarka czołowa), pogoda na etapie Dach | ✅ kamera 3/4 i latarka (v0.21.54); ⬜ pogoda na Dachu | — |
 | Mapy tematyczne etapów (szalunki, otwory okienne, krokwie, bruzdy) i elementy otoczenia (rusztowania, betoniarka, palety) | ⬜ | ⬜ (prostsza wersja) |
@@ -249,6 +249,19 @@ Stan v0.21.54: #62, #65, #66 zrobione, #63 jako prototyp w ustawieniach (wszystk
 | 73 | Trudność wg gracza: wygrana „bez żadnych problemów” – przegląd balansu Normalnego (czy bot ≈ człowiek), podpowiedź „Spróbuj Trudnego / trybu inwestora” po wygranej, ewentualnie twardszy Normalny | ⬜ | ⬜ |
 
 > (Zamknięte w v0.22.0, sprawdzone zrzutami 2026-11-05.) Stan #67–#69 (2026-10-04, praca wstrzymana na prośbę): WIP w commicie – wersja v0.22.0 w danych, początek nowych kafli schodów w eksporcie i zmiany w HUD/dzienniku Godota; nie sprawdzone zrzutami ani testami, do dokończenia.
+
+## v0.23 (plan, 2026-11-05)
+
+Pakiet zawartości i rozgrywki (zmienia logikę i balans: test złoty, bot 300 przebiegów/zawód; GBA – prostsza wersja
+albo wcale, Godot ma priorytet). Przed kodem brainstorming i dokument projektu.
+
+| # | Zadanie | GODOT (MOBILE) | GBA |
+|---|---|---|---|
+| 77 | Bronie: typy obrażeń (obuch – wokół / ogłuszenie, cięte – kryt, kłute – linia, przebicie), zasięgi, odporności i słabości wrogów; broń domyślna zawodu, kolejne ze Szkoleń i do znalezienia (projekt B+) | ⬜ | ⬜ |
+| 78 | Rzadkość broni (zwykła / rzadka / legendarna) z własnym wyglądem i kolorem, widoczna w rękach postaci na mapie, na karcie i w dropach (projekt B+) | ⬜ | — |
+| 79 | Easter egg „Zaplecze”: tajemnicze drzwi (wyblakła tabliczka, migające światło) na rzadkim etapie → labirynt jednakowych żółtawych pokoi z brzęczącymi świetlówkami, mylące przejścia, cisza; wyjście daje nagrodę (wygląd / sekretne zlecenie / odznaka). Oparte na istniejących ukrytych pomieszczeniach i sekretach; własna nazwa i grafika (bez cudzych motywów z nazwy) | ⬜ | — |
+| 80 | Humor (projekt D): własne postacie, np. sąsiad z działki w SMS-ach i wydarzeniach | ⬜ | ⬜ |
+| 73 | Trudność wg gracza (patrz #73 w v0.22.0) – razem z balansem broni | ⬜ | ⬜ |
 
 ## v0.22.1 (wydana 2026-11-05)
 
