@@ -1,6 +1,7 @@
 using Godot;
 using LifeLike.Core;
 using LifeLike.Game.Audio;
+using LifeLike.Game.Hud;
 using LifeLike.Game.Input;
 using LifeLike.Game.Phone.Pages;
 using LifeLike.Game.Screens.Views;
@@ -18,6 +19,9 @@ public sealed class TitleScreen : Screen
 {
     private int _sel;
     private bool _hasRun;
+
+    /// <summary>v0.22.0 (UX A): powiadomienia pod statystykami – nie zasłaniają klucza ustawień.</summary>
+    public override BannerSpot BannerSpot => BannerSpot.BelowTitleStats;
 
     public TitleScreen(App app) : base(app)
     {

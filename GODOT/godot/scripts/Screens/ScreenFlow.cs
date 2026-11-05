@@ -111,7 +111,7 @@ public sealed class ScreenFlow
         n.EndView.Visible = (next.Views & ViewSet.End) != 0;
         n.PrologueView.Visible = (next.Views & ViewSet.Prologue) != 0;
         n.Backdrop.SetOn(next.UsesPhone, instant);
-        n.SetBannerMode(next.UsesPhone, next.InRun);
+        n.SetBannerMode(next.BannerSpot, next.UsesPhone, next.InRun);
         if (!next.UsesPhone) n.Phone.Close();
         n.Hud.ShowHint(null);
         Sfx.Music(next.Music);

@@ -64,13 +64,16 @@ public sealed class SceneNodes
 	}
 
 	/// <summary>
-	/// Banery: przy telefonie wąska kolumna obok niego (pionowo: na górze aplikacji), na mapie w prawym górnym rogu
-	/// pod paskiem HUD.
+	/// Banery: przy telefonie wąska kolumna obok niego, na mapie w prawym górnym rogu pod paskiem HUD.
+	/// v0.22.0 (UX A): telefon na cały ekran – od dołu nad przyciskami; tytuł – pod statystykami i kluczem.
 	/// </summary>
-	public void SetBannerMode(bool compact, bool underHud)
+	public void SetBannerMode(BannerSpot spot, bool compact, bool underHud)
 	{
 		Banners.Compact = compact && !PhoneView.Full;
-		Banners.TopInset = Layout.SafeTop + (underHud && !compact ? Mathf.Ceil((HudTop.Height + 1) * Hud.UiScale) + 4 : 6);
+		Banners.Bottom = spot == BannerSpot.Bottom && PhoneView.Full;
+		Banners.BottomEdge = PhoneView.BannerFloor;
+		Banners.TopInset = spot == BannerSpot.BelowTitleStats ? TitleView.StatsBottom + 4
+			: Layout.SafeTop + (underHud && !compact ? Mathf.Ceil((HudTop.Height + 1) * Hud.UiScale) + 4 : 6);
 	}
 
 	public WorldView World { get; }

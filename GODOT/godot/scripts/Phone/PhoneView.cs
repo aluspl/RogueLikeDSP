@@ -55,6 +55,9 @@ public partial class PhoneView : Control, Touch.ITapTargets
 
     public static Vector2 Origin => Full ? new Vector2(Mathf.Floor((Layout.UiSize.X - PhoneSize.X) / 2), 0) : ((Layout.UiSize - new Vector2(W, H)) / 2).Floor();
 
+    /// <summary>v0.22.0 (UX A): dolna krawędź banerów przy telefonie na cały ekran – nad paskiem zakładek i przyciskami strony.</summary>
+    public static float BannerFloor => Layout.UiSize.Y - Layout.SafeBottom - FullTabH - Layout.TouchTarget - 16;
+
     /// <summary>Pozycja schowanego telefonu (pod dolną krawędzią ekranu).</summary>
     private static Vector2 Stowed => new(Origin.X, Layout.UiSize.Y + 20);
 

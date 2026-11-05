@@ -82,6 +82,9 @@ public partial class TitleView : Control, Touch.ITapTargets
         }
     }
 
+    /// <summary>v0.22.0 (UX A): dolna krawędź bloku rekord / zadania / seria i klucza ustawień (prawa góra) – pod nią banery.</summary>
+    public static float StatsBottom => Mathf.Max(Layout.SafeTop + 4 + 3 * (PixelFont.LineHeight + 2), Hud.SettingsButton.Rect.End.Y);
+
     private void DrawContent()
     {
         var f = PixelFont.I;
