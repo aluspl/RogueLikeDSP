@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Godot;
 using LifeLike.Game.Audio;
 using LifeLike.Game.Gfx;
+using LifeLike.Game.Phone;
 
 namespace LifeLike.Game.Hud;
 
@@ -26,14 +27,22 @@ public partial class PushBanners : Control
 
     public bool Busy => _active.Count > 0 || _queue.Count > 0;
 
-    /// <summary>Telefon na ekranie: banery węższe, w kolumnie po lewej stronie telefonu (nie zasłaniają aplikacji).</summary>
-    public bool Compact { get; set; }
+    /// <summary>Ekran z telefonem (ustawia ScreenFlow przy zmianie ekranu).</summary>
+    public bool OnPhone { get; set; }
 
-    /// <summary>v0.22.0 (UX A): banery od dołu (telefon na cały ekran) – dolna krawędź w BottomEdge.</summary>
-    public bool Bottom { get; set; }
+    /// <summary>v0.22.0 (UX A): miejsce banerów wybrane przez ekran.</summary>
+    public BannerSpot Spot { get; set; }
 
-    /// <summary>v0.22.0 (UX A): dolna krawędź banera w trybie Bottom (nad przyciskami strony telefonu).</summary>
-    public float BottomEdge { get; set; }
+    /// <summary>
+    /// Telefon na środku ekranu (poziomo): banery węższe, w kolumnie po lewej stronie telefonu. v0.22.1 (#74): liczone
+    /// na bieżąco z układu – po obrocie ekranu banery od razu przechodzą do właściwego miejsca.
+    /// </summary>
+    public bool Compact => OnPhone && !PhoneView.Full;
+
+    /// <summary>v0.22.0 (UX A): banery od dołu (telefon na cały ekran), nad przyciskami strony.</summary>
+    public bool Bottom => Spot == BannerSpot.Bottom && PhoneView.Full;
+
+    private static float BottomEdge => PhoneView.BannerFloor;
 
     /// <summary>Górna krawędź stosu (pod paskiem HUD, gdy mapa jest widoczna).</summary>
     public float TopInset { get; set; } = Margin;

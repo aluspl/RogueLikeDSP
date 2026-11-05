@@ -254,7 +254,7 @@ Stan v0.21.54: #62, #65, #66 zrobione, #63 jako prototyp w ustawieniach (wszystk
 
 | # | Zadanie | GODOT (MOBILE) | GBA |
 |---|---|---|---|
-| 74 | Drobiazgi z przeglądu projektu A: banery przy telefonie po obrocie ekranu, HUD 1,5x na rozłożonym składaku w poziomie, oferta drzewka otwiera stronę Drzewko, „Szczegóły” w wyborze zawodu z klawiatury / pada (i nie gasną po powrocie z Inwestora / Statystyk), kolejność opisów w `PhonePainter` | ⬜ | — |
+| 74 | Drobiazgi z przeglądu projektu A: banery przy telefonie po obrocie ekranu, HUD 1,5x na rozłożonym składaku w poziomie, oferta drzewka otwiera stronę Drzewko, „Szczegóły” w wyborze zawodu z klawiatury / pada (i nie gasną po powrocie z Inwestora / Statystyk), kolejność opisów w `PhonePainter` | ✅ | — |
 | 70 | Drzewko Szkoleń – nowy widok (karty gałęzi, węzły ze stanem, jasne „1 z 2”) – patrz wiersz #70 wyżej | ⬜ | ⬜ (później) |
 | 75 | Filtr „Kwas” łagodniejszy domyślnie albo suwak siły w ustawieniach | ⬜ | — |
 | 76 | Porządek w TODO: przejrzeć stare wiersze (np. #21 premie po etapie są już w grze) i oznaczyć zrobione | ⬜ | — |

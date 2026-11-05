@@ -72,7 +72,10 @@ public static class Layout
     public static float BottomReserve => SafeBottom + (Touch ? ActionBarHeight : 0);
 
     /// <summary>Skala warstw HUD i banerów (większy tekst na mapie), wielokrotność 1/ContentScale.</summary>
-    public static float HudScale => Snap(Portrait ? 1f : HudTarget);
+    public static float HudScale => Snap(Portrait ? Mathf.Clamp(UiSize.X / PhoneHudWidth, 1f, HudTarget) : HudTarget);
+
+    /// <summary>v0.22.1 (#74): szerokość HUD telefonu w pionie (UI) – szerszy ekran pionowy (składak) dostaje większy HUD.</summary>
+    private const float PhoneHudWidth = 430f;
 
     /// <summary>Powiększenie kamery mapy: ~9 pól na krótszym boku, piksel grafiki = całkowita liczba połówek piksela okna.</summary>
     public static float WorldZoom

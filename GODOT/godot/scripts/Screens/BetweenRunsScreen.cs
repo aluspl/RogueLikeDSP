@@ -57,7 +57,8 @@ public sealed class BetweenRunsScreen : Screen
                 Page.Bought(name);
                 break;
             case QuickReply.Training:
-                Flow.Profile.Open(4, false, this); // powrót do rozmowy (NG+ i „Do tego:” zostają)
+                var tree = Spend.QuickKind(S.Data, S.Profile, out _, out _) < 0 && Spend.TreePick(S.Data, S.Profile) >= 0;
+                Flow.Profile.Open(4, false, this, tree ? Phone.ProfileTabs.TrainingTab.TreePage : 0); // powrót do rozmowy; oferta drzewka – od razu Drzewko
                 break;
             case QuickReply.Next:
                 S.Note = "";

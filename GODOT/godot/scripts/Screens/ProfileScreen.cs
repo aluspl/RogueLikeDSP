@@ -20,15 +20,17 @@ public sealed class ProfileScreen : Screen
     public override string Music => "title";
 
     /// <summary>back = ekran, do którego wraca telefon (v0.22.0, UX A: rozmowa między budowami); null = tytuł.</summary>
-    public void Open(int tab = 0, bool instant = false, Screen back = null)
+    public void Open(int tab = 0, bool instant = false, Screen back = null, int trainingPage = 0)
     {
         _tab = tab;
         _back = back;
+        _trainingPage = trainingPage;
         if (back is null) S.Note = ""; // notatka końca budowy (sekrety, odznaki) zostaje dla rozmowy
         Flow.Go(this, instant);
     }
 
     private Screen _back;
+    private int _trainingPage; // v0.22.1 (#74): strona Szkoleń na start (Drzewko z oferty w rozmowie)
 
     public override void Enter(bool instant)
     {
@@ -42,7 +44,7 @@ public sealed class ProfileScreen : Screen
             new CatalogTab(d, p),
             new EstateTab(d, p, S.Save),
             new TeamTab(d, p),
-            new TrainingTab(d, p, S.Save),
+            new TrainingTab(d, p, S.Save) { Page = _trainingPage },
         ];
         N.Phone.OpenTabs(tabs, TabLabels, _tab, instant);
     }

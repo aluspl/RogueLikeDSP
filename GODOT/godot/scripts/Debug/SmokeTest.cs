@@ -624,6 +624,26 @@ public sealed class SmokeTest
         await DebugRunner.Frames(_app.Root, 2);
         Flow.BetweenRuns.HandleInput(InputCmd.Of(GameAction.Start));
         if (Flow.Current != Flow.Career && Flow.Current != Flow.ClassSelect) throw new Exception("codzienna budowa: kolejna budowa nie prowadzi do zwykłej budowy");
+        // v0.22.1 (#74): oferta węzła drzewka – „Pokaż Szkolenia” otwiera od razu stronę Drzewko (kopia profilu)
+        var keep = s.Profile;
+        s.Profile = Profile.FromBytes(keep.ToBytes());
+        try
+        {
+            s.Profile.Xp = 1000000;
+            while (Spend.QuickBuy(s.Data, s.Profile)) { }
+            s.Profile.Xp = 1000000;
+            var node = Spend.TreePick(s.Data, s.Profile);
+            s.Profile.Xp = node >= 0 ? s.Data.TreeNodes[node].Cost : 0;
+            Flow.BetweenRuns.Open(true);
+            Flow.BetweenRuns.Reply(Phone.Pages.QuickReply.Training);
+            if (_app.Nodes.Phone.Current is not Phone.ProfileTabs.TrainingTab tt || tt.Page != Phone.ProfileTabs.TrainingTab.TreePage)
+                throw new Exception("rozmowa: oferta drzewka nie otwiera strony Drzewko");
+            Flow.Profile.HandleInput(InputCmd.Of(GameAction.B));
+        }
+        finally
+        {
+            s.Profile = keep;
+        }
         _daily = true;
         // wygrana: harmonogram domu -> link (bez przeglądarki) -> rozmowa z NG+ -> szczegóły -> rozmowa
         s.ClassId = 0;
@@ -1157,6 +1177,38 @@ public sealed class SmokeTest
             await DebugRunner.Frames(_app.Root, 2);
             Flow.ClassSelect.Open();
             await DebugRunner.Frames(_app.Root, 2);
+            // v0.22.1 (#74): „Szczegóły” z klawiatury / pada (I), zostają po powrocie ze Statystyk, B zamyka
+            var csv = _app.Nodes.ClassSelectView;
+            Flow.ClassSelect.HandleInput(InputCmd.Of(GameAction.Info));
+            if (!csv.Details) throw new Exception("pion: I nie otwiera Szczegółów zawodu");
+            Flow.ClassSelect.HandleInput(InputCmd.Of(GameAction.Info));
+            if (Flow.Current != Flow.Stats) throw new Exception("pion: I w Szczegółach nie otwiera Statystyk");
+            Flow.Stats.HandleInput(InputCmd.Of(GameAction.B));
+            if (Flow.Current != Flow.ClassSelect || !csv.Details) throw new Exception("pion: po Statystykach Szczegóły zamknięte");
+            Flow.ClassSelect.HandleInput(InputCmd.Of(GameAction.B));
+            if (Flow.Current != Flow.ClassSelect || csv.Details) throw new Exception("pion: B nie zamyka Szczegółów");
+            // v0.22.1 (#74): obrót przy telefonie – banery z dołu (pion) przechodzą w kolumnę obok telefonu (poziom)
+            var bn = _app.Nodes.Banners;
+            Flow.Profile.Open(0, true);
+            await DebugRunner.Frames(_app.Root, 2);
+            if (!bn.Bottom) throw new Exception("pion: banery przy telefonie nie od dołu");
+            root.Size = new Vector2I(1280, 720);
+            Layout.Refresh();
+            await DebugRunner.Frames(_app.Root, 2);
+            if (bn.Bottom || !bn.Compact) throw new Exception("obrót: banery zostały w układzie pionowym");
+            root.Size = new Vector2I(1290, 2796);
+            Layout.Refresh();
+            await DebugRunner.Frames(_app.Root, 2);
+            if (!bn.Bottom) throw new Exception("obrót z powrotem: banery nie od dołu");
+            if (Layout.HudScale > 1f) throw new Exception($"telefon: HUD w skali {Layout.HudScale} zamiast 1");
+            root.Size = new Vector2I(1640, 1460); // v0.22.1 (#74): rozłożony składak w poziomie – większy HUD
+            Layout.Refresh();
+            await DebugRunner.Frames(_app.Root, 2);
+            if (!Layout.Wide || Layout.HudScale <= 1f) throw new Exception($"składak: HUD w skali {Layout.HudScale} (UI {Layout.UiSize})");
+            root.Size = new Vector2I(1290, 2796);
+            Layout.Refresh();
+            await DebugRunner.Frames(_app.Root, 2);
+            Flow.ClassSelect.Open();
             _app.StartRun();
             new DebugScenes(_app).AdvanceMessages();
             while (Flow.Current != Flow.Game && Flow.Current is not null)

@@ -1,4 +1,5 @@
 using LifeLike.Core;
+using LifeLike.Game.Gfx;
 using LifeLike.Game.Audio;
 using LifeLike.Game.Input;
 using LifeLike.Game.Phone.Pages;
@@ -19,6 +20,8 @@ public sealed class ClassSelectScreen : Screen
 
     public void Open() => Flow.Go(this);
 
+    private bool _keepDetails;
+
     public override void Enter(bool instant)
     {
         S.Note = "";
@@ -26,7 +29,8 @@ public sealed class ClassSelectScreen : Screen
         v.Setup(S.Data, S.Profile, S.ClassId);
         v.Difficulty = S.Difficulty;
         v.Note = "";
-        v.Details = false;
+        if (!_keepDetails) v.Details = false; // v0.22.1 (#74): po Statystykach / Inwestorze pełna karta zostaje
+        _keepDetails = false;
         App.Coach.Begin(this, 1, v.CoachRect, () => Flow.Stats.OpenClass(N.ClassSelectView.Selected));   // samouczek menu, dymki nowości
     }
 
@@ -64,12 +68,21 @@ public sealed class ClassSelectScreen : Screen
         if (e.Is(GameAction.Select) && InvestorPage.Available(S.Data, S.Profile, N.ClassSelectView.Selected))
         {
             S.ClassId = view.Selected;
+            _keepDetails = view.Details;
             Flow.Investor.Open();
             return true;
         }
-        if (e.Is(GameAction.Info)) // opis statystyk zawodu (START na GBA)
+        if (e.Is(GameAction.Info)) // opis statystyk zawodu (START na GBA); v0.22.1 (#74): w pionie najpierw Szczegóły
         {
+            if (Layout.Portrait && !view.Details)
+            {
+                view.Details = true;
+                view.TipStat = -1;
+                Sfx.Play("menu");
+                return true;
+            }
             S.ClassId = view.Selected;
+            _keepDetails = view.Details;
             Flow.Stats.OpenClass(view.Selected);
             return true;
         }
@@ -80,8 +93,12 @@ public sealed class ClassSelectScreen : Screen
         }
         if (e.Is(GameAction.B | GameAction.Cancel))
         {
-            if (view.Details) view.Details = false; // v0.22.0 (UX A): z pełnej karty do siatki
-            else Back();
+            if (view.Details && Layout.Portrait) view.Details = false; // v0.22.0 (UX A): z pełnej karty do siatki
+            else
+            {
+                view.Details = false; // v0.22.1 (#74): po obrocie do poziomu B od razu wraca
+                Back();
+            }
             return true;
         }
         if (!e.Is(GameAction.A | GameAction.Start)) return false;
@@ -116,6 +133,7 @@ public sealed class ClassSelectScreen : Screen
                 return true;
             case ClassSelectHit.Investor:
                 S.ClassId = view.Selected;
+                _keepDetails = view.Details;
                 Flow.Investor.Open();
                 return true;
             case ClassSelectHit.Start:
@@ -126,6 +144,7 @@ public sealed class ClassSelectScreen : Screen
                 return true;
             case ClassSelectHit.Stats:
                 S.ClassId = view.Selected;
+                _keepDetails = view.Details;
                 Flow.Stats.OpenClass(view.Selected);
                 return true;
             default:

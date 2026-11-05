@@ -67,9 +67,8 @@ public sealed class SceneNodes
     /// </summary>
     public void SetBannerMode(BannerSpot spot, bool compact, bool underHud)
     {
-        Banners.Compact = compact && !PhoneView.Full;
-        Banners.Bottom = spot == BannerSpot.Bottom && PhoneView.Full;
-        Banners.BottomEdge = PhoneView.BannerFloor;
+        Banners.OnPhone = compact;
+        Banners.Spot = spot;
         Banners.TopInset = spot == BannerSpot.BelowTitleStats ? TitleView.StatsBottom + 4
             : Layout.SafeTop + (underHud && !compact ? Mathf.Ceil((HudTop.Height + 1) * Hud.UiScale) + 4 : 6);
     }

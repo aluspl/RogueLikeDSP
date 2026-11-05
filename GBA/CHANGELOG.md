@@ -2,6 +2,16 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
+## v0.22.1 – w przygotowaniu
+
+### Poprawki (Godot)
+1. **Obrót ekranu przy telefonie (#74)** – powiadomienia od razu przechodzą z dołu ekranu (pion) do kolumny obok
+   telefonu (poziom) i z powrotem.
+2. **Składak (#74)** – na rozłożonym ekranie w poziomie większy HUD i dziennik (jak na dużym ekranie), telefon bez zmian.
+3. **Szkolenia z rozmowy (#74)** – gdy Marek proponuje wybór w drzewku, „Pokaż Szkolenia” otwiera od razu stronę Drzewko.
+4. **Wybór zawodu w pionie (#74)** – „Szczegóły” także klawiszem I (drugi raz: Statystyki), pełna karta zostaje po
+   powrocie ze Statystyk i Inwestora; po obrocie do poziomu B od razu wraca.
+
 ## v0.22.0 – 2026-11-05 (pierwsza wersja serii 0.22)
 
 ### Nowe (Godot): projekt A – wygląd i przepływ ekranów

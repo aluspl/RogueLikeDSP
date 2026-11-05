@@ -117,7 +117,6 @@ public sealed class PhonePainter
         if (fw >= 2) C.DrawStyleBox(Ui.Box(c, 3), new Rect2(r.Position, new Vector2(fw, h)));
     }
 
-    /// <summary>Nagłówek sekcji nad kartą (wersaliki w kolorze textDim).</summary>
     /// <summary>v0.22.0 (UX A): legenda kolorów pasków (kwadrat + słowo), wyśrodkowana w jednym wierszu; zwraca dół.</summary>
     public float Legend(float y, (Color Color, string Label)[] items)
     {
@@ -133,6 +132,7 @@ public sealed class PhonePainter
         return y + RowH;
     }
 
+    /// <summary>Nagłówek sekcji nad kartą (wersaliki w kolorze textDim).</summary>
     public float Section(float y, string title, string right = "")
     {
         var tw = Text(Left + 4, y, title, Ink.Dim);
