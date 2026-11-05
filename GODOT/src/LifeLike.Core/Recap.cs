@@ -59,17 +59,20 @@ public static class Recap
             return false;
         }
         lead = p.Xp >= cost ? Loc.T("stac_cie_szkolenia") : Loc.F("jeszcze_dosw_do", cost - p.Xp);
-        name = kind switch
-        {
-            0 => $"{d.Upgrades[idx].Name} {Roman(p.Levels[idx] + 1)}",
-            1 => d.Classes[idx].Name,
-            2 => d.Weapons[d.Tools[idx].Weapon].Name,
-            3 => d.Brigade[idx].Name,
-            5 => Loc.F("drzewko_3", d.TreeBranches[d.TreeNodes[idx].Branch].Name),
-            _ => d.Difficulties[^1].Name,
-        };
+        name = UnlockName(d, p, kind, idx);
         return true;
     }
+
+    /// <summary>v0.22.0 (UX A): nazwa pozycji z Meta.NextUnlock („Kondycja III”, „Elektryk”, „Drzewko: …”).</summary>
+    public static string UnlockName(GameData d, Profile p, int kind, int idx) => kind switch
+    {
+        0 => $"{d.Upgrades[idx].Name} {Roman(p.Levels[idx] + 1)}",
+        1 => d.Classes[idx].Name,
+        2 => d.Weapons[d.Tools[idx].Weapon].Name,
+        3 => d.Brigade[idx].Name,
+        5 => Loc.F("drzewko_3", d.TreeBranches[d.TreeNodes[idx].Branch].Name),
+        _ => d.Difficulties[^1].Name,
+    };
 
     /// <summary>Rzymska liczba rangi (1-5), jak core::roman_numeral.</summary>
     public static string Roman(int n) => new[] { "", "I", "II", "III", "IV", "V" }[Math.Clamp(n, 0, 5)];

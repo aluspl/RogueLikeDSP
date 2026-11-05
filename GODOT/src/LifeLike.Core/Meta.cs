@@ -963,7 +963,10 @@ public static class Meta
     /// Po budowie: najtańsze niekupione w Szkoleniach (motywacja). Kind: 0 ulepszenie, 1 zawód, 2 narzędzie, 3 brygada,
     /// 4 poziom Trudny, 5 węzeł drzewka (otwarty, bez wyboru; v0.21.52 cz. c). Zwraca koszt albo -1, gdy wszystko kupione.
     /// </summary>
-    public static int NextUnlock(GameData d, Profile p, out int kind, out int index)
+    public static int NextUnlock(GameData d, Profile p, out int kind, out int index) => NextUnlock(d, p, true, out kind, out index);
+
+    /// <summary>v0.22.0 (UX A): jak NextUnlock; tree = false pomija węzły drzewka (szybki zakup bez wyboru opcji).</summary>
+    internal static int NextUnlock(GameData d, Profile p, bool tree, out int kind, out int index)
     {
         int best = -1, k0 = -1, i0 = -1;
         void Take(int k, int i, int c)
@@ -989,7 +992,7 @@ public static class Meta
             if (!HelperUnlocked(d, p, i)) Take(3, i, d.Brigade[i].Cost);
         }
         if (p.Hard == 0) Take(4, 0, d.HardCost);
-        for (var n = 0; n < d.TreeNodes.Length; ++n)
+        for (var n = 0; tree && n < d.TreeNodes.Length; ++n)
         {
             if (SkillTree.Pick(p, n) == 0 && SkillTree.Open(d, p, n)) Take(5, n, d.TreeNodes[n].Cost);
         }

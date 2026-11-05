@@ -108,7 +108,7 @@ public sealed class RecapPage : PhonePage
         else
         {
             var ready = p.Xp >= cost;
-            Row(UnlockName(d, p, kind, idx), ready ? Loc.T("stac_cie") : $"{p.Xp}/{cost}", Ink.Dark, ready ? Pal.Done : Pal.Brand);
+            Row(Recap.UnlockName(d, p, kind, idx), ready ? Loc.T("stac_cie") : $"{p.Xp}/{cost}", Ink.Dark, ready ? Pal.Done : Pal.Brand);
             Bar(ready ? 1f : p.Xp / (float)cost, ready ? Pal.Done : Pal.Brand);
         }
         var pg = s.LastProgress;
@@ -130,17 +130,6 @@ public sealed class RecapPage : PhonePage
         if (tip.Lines[1].Length > 0) Row(tip.Lines[1], "", Ink.Prog, Pal.Prog);
         return rows;
     }
-
-    /// <summary>Nazwa najbliższego zakupu w Szkoleniach (next_unlock): „Kondycja III”, „Zawód: Elektryk”...</summary>
-    private static string UnlockName(GameData d, Profile p, int kind, int i) => kind switch
-    {
-        0 => $"{d.Upgrades[i].Name} {UiText.Roman(p.Levels[i])}",
-        1 => Loc.T("zawod_3") + d.Classes[i].Name,
-        2 => d.Weapons[d.Tools[i].Weapon].Name,
-        3 => Loc.T("brygada_2") + d.Brigade[i].Name,
-        5 => Loc.T("drzewko") + d.TreeBranches[d.TreeNodes[i].Branch].Name, // v0.21.52 cz. c
-        _ => Loc.T("trudnosc") + d.Difficulties[^1].Name,
-    };
 
     /// <summary>Przewiń do nagłówka sekcji (sceny zrzutów: „POSTĘP”).</summary>
     public void ScrollTo(string header)
