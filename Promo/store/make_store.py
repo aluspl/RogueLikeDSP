@@ -8,7 +8,7 @@ caps=[('title','Zbuduj dom','Roguelike, w którym walczysz z problemami budowy')
  ('combo-shock','Mokry + prąd','kombinacje stanów i żywiołów'),
  ('boss','Bossowie aktów','unikaj zapowiedzi ciosu'),
  ('event-choices','Wydarzenia z wyborem','ryzyko albo pewny zysk'),
- ('recap-death','Porażka uczy','podsumowanie i postęp zostaje'),
+ ('between-win','Kierownik Marek pisze','po budowie: kup jednym stuknięciem i dalej'),
  ('act0-stamps','Najpierw papiery','Akt 0: pozwolenie i przyłącza')]
 def make(folder,W_,H_,out):
     import os; os.makedirs(out,exist_ok=True)

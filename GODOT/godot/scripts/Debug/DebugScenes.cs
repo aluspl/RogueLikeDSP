@@ -111,6 +111,7 @@ public sealed class DebugScenes
         {
             case "title":
                 Flow.Title.Open();
+                _app.Nodes.Banners.Clear(); // v0.22.0: czysty tytuł (zrzuty sklepu); baner filtra – scena filter-banner
                 return;
             case "tutorial-title": // pierwsze uruchomienie: trzeci dymek (Szkolenia) nad przyciemnionym tytułem
                 Flow.Title.Open();
