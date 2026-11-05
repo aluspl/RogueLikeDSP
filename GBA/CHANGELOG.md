@@ -2,7 +2,7 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
-## v0.22.0 – w przygotowaniu (seria 0.22)
+## v0.22.0 – 2026-11-05 (pierwsza wersja serii 0.22)
 
 ### Nowe (Godot): projekt A – wygląd i przepływ ekranów
 ### In English
@@ -40,6 +40,11 @@ Tylko wersja Godot; logika gry, balans i ceny bez zmian (test złoty bez zmian),
    (premia / zagrożenie / ścieżka) w wiadomościach i na karcie placu; ustawienia w grupach także w poziomie.
 8. **Składak i tablet** – dotykowy ekran prawie kwadratowy dostaje układ pionowy (skala od krótszego boku), telefon
    wyśrodkowany, najwyżej 480 px UI szerokości.
+9. **Mapa (#67–#69)** – czytelne schody w dół (stopnie, ciemny otwór; zamknięte z kłódką w Akcie 0), dziennik na
+   własnym pasku pod mapą, w pionie HUD skraca trudność zamiast ucinać nazwę etapu.
+10. **Po przeglądzie** – Szkolenia otwarte z rozmowy wracają do rozmowy (NG+ zostaje), Marek podaje wynik budowy
+   (budowa dnia / tygodnia: najlepszy wynik), pełna lista „Do tego:” w podsumowaniu, podpisy HUD ustępują wydarzeniu
+   i zapowiedzi ciosu bossa.
 
 ## v0.21.54 – 2026-10-04 (ostatnia wersja serii 0.21)
 Ostatnia spójna wersja serii 0.21: zamyka wszystko od pierwszego wydania v0.21.37 (GBA + Godot, iOS i Android).
