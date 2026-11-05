@@ -261,6 +261,7 @@ GBA dostaje tylko konieczne minimum (był eksperymentem promocyjnym).
 | D – humor | Własne postacie (np. sąsiad z działki), bez cudzych marek | ⬜ |
 | C – animacje walki i oprawa | Animacje ataku i trafień; detale map: okna w ścianach, piwnica poniżej, światło z góry w etapach dachowych (pomysł 2026-10-23) | ⬜ |
 | B – zawartość | Więcej kontraktów, ulepszeń, broni z unikalnymi umiejętnościami, pula odblokowań między budowami, jednorazowy przecinak/młot do pękniętych ścian | ⬜ |
+| B+ – rodzaje broni (pomysł 2026-11-05) | Typy obrażeń i zasięgi: obuch (np. łopata – cios wokół bohatera, szansa na ogłuszenie), cięte (szansa na krytyk), kłute/przebijające (linia przed bohaterem, przebija kilku). Wrogowie z odpornościami/słabościami na typ (np. odporny na obuch). Zawód ma broń domyślną, kolejne odblokowane w Szkoleniach, ale też do znalezienia na budowie. Do przemyślenia: lista obecnych 22 broni i narzędzi → przypisanie typów, propozycje nowych, balans botem | ⬜ (po A, razem z B) |
 | E – wsparcie z telefonu | „Wezwij pomoc” z telefonu (pokrewne Brygadzie) | ⬜ |
 
 Dokumenty projektu A:
