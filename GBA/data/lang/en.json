@@ -3072,6 +3072,7 @@
   "szczegoly": "Details",
   "za_wygrana_nr": "At win #{0}",
   "za_dosw_szkolenia": "Training: {0} XP",
-  "sekretne_zlecenie_3": "Secret job"
+  "sekretne_zlecenie_3": "Secret job",
+  "przegrana_2": "Lost"
  }
 }

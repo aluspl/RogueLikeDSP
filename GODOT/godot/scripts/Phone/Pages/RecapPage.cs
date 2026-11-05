@@ -15,27 +15,32 @@ namespace LifeLike.Game.Phone.Pages;
 /// Podsumowanie budowy (#33) – jedna przewijana strona w telefonie (na GBA 3 strony): co zatrzymało budowę (albo
 /// odbiór), ostatnie ciosy, najmocniejsze ciosy, oś czasu etapów (dni, usunięte, SMS, magazyn, premie), nagrody z budowy
 /// (doświadczenie, Respekt, zlecenie, rekord dnia / tygodnia), v0.21.52: karta „Postęp” z paskami (najbliższe Szkolenie,
-/// mistrzostwo zawodu i poziom inspektora z dośw. z tej budowy i nowym poziomem), najbliższy cel i rada. Góra/dół albo dotknięcie górnej /
-/// dolnej połowy przewija, Enter – dalej.
+/// mistrzostwo zawodu i poziom inspektora z dośw. z tej budowy i nowym poziomem), najbliższy cel i rada. Góra/dół,
+/// przesunięcie palcem albo dotknięcie górnej / dolnej połowy przewija, Enter – powrót do rozmowy (v0.22.0).
 /// </summary>
 public sealed class RecapPage : PhonePage
 {
     private readonly List<RecapRow> _rows;
+    private readonly bool _won;
     private int _top;
     private int _window = 10;
 
     public RecapPage(GameSession s)
     {
         _rows = Build(s);
+        _won = s.Game.St == GameStatus.Won;
     }
 
     public int Top => _top;
     public int Count => _rows.Count;
 
     public override string Title => Loc.T("podsumowanie");
-    public override string Sub => _rows.Count > _window ? $"{Math.Min(_rows.Count, _top + _window)}/{_rows.Count}" : "";
+    /// <summary>v0.22.0 (UX A): wynik budowy zamiast licznika pozycji („10/48”).</summary>
+    public override string Sub => _won ? Loc.T("wygrana_2") : Loc.T("przegrana_2");
     public override string Hint => Loc.T("gora_dol_przewin_enter_dalej");
-    public override PageAction[] Actions => [new(Loc.T("wyzej"), GameAction.Up), new(Loc.T("nizej"), GameAction.Down), new(Loc.T("dalej"), GameAction.Start)];
+
+    /// <summary>v0.22.0 (UX A): przewijanie palcem (bez przycisków Wyżej/Niżej), tylko powrót do rozmowy.</summary>
+    public override PageAction[] Actions => [new(Loc.T("wroc"), GameAction.Start)];
 
     private static Ink InkOf(LogKind k) => k switch
     {
@@ -59,6 +64,7 @@ public sealed class RecapPage : PhonePage
         var where = g.RecapWhere(new Message()).Text;
         if (won) Row(Loc.T("odbior_zaliczony"), Loc.F("dni_4", HouseSchedule.TotalDays(g)), Ink.Done, Pal.Done);
         else Row(g.RecapKiller(new Message()).Text, "", Ink.Late, Pal.Late);
+        Row(Loc.F("doswiadczenie", s.LastGained), Loc.F("masz_4", p.Xp), Ink.Done, Pal.Done); // v0.22.0 (UX A): od razu pod wynikiem
         Row(g.SDef().Name, where, Ink.Dark, won ? Pal.Done : Pal.Late);
         Row(Loc.F("usuniete_elity_kombinacje", g.Kills, g.ElitesKilled, g.CombosRun), "", Ink.Dim, none);
         if (!won)
@@ -83,7 +89,6 @@ public sealed class RecapPage : PhonePage
         }
 
         Head(Loc.T("nagrody_z_budowy"));
-        Row(Loc.F("doswiadczenie", s.LastGained), Loc.F("masz_4", p.Xp), Ink.Dark, none);
         Row(Loc.F("respekt_5", g.Respect), Loc.F("masz_4", p.Respect), Ink.Brand, none);
         var ci = Meta.NextContract(d, p, g);
         if (ci >= 0)
