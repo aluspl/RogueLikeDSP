@@ -345,7 +345,8 @@
       },
       "modeB": {
         "pattern": "arc",
-        "cooldown": 3
+        "cooldown": 3,
+        "effect2": "ignite"
       }
     },
     {
@@ -363,7 +364,8 @@
         "pattern": "push",
         "effect": "push",
         "value": 2,
-        "cooldown": 3
+        "cooldown": 3,
+        "effect2": "openWall"
       }
     },
     {
@@ -799,7 +801,9 @@
       "element": "woda",
       "hit": "blunt",
       "modeA": {
-        "pattern": "line"
+        "pattern": "line",
+        "effect": "wet",
+        "turns": 3
       },
       "modeB": {
         "pattern": "push",
@@ -963,7 +967,8 @@
         "effect": "dot",
         "value": 2,
         "turns": 3,
-        "cooldown": 3
+        "cooldown": 3,
+        "effect2": "dry"
       }
     },
     {

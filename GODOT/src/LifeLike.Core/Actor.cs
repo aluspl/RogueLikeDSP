@@ -19,6 +19,16 @@ public struct Actor
     public sbyte Elite;
     /// <summary>v0.21.50: tury mokrego (kałuża, Zawór, Wąż ogrodowy); problem wodny jest mokry zawsze.</summary>
     public sbyte Wet;
+    /// <summary>v0.23.0: tury krwawienia / podpalenia (obrażenia DotDmg na początku tury problemu); DotKind: 1 = podpalenie, 2 = krwawienie.</summary>
+    public sbyte Dot, DotDmg;
+    public byte DotKind;
+    /// <summary>v0.23.0: tury unieruchomienia (nie rusza się, uderza sąsiada).</summary>
+    public sbyte Root;
+    /// <summary>v0.23.0: tury osłabienia i o ile spada jego OBR.</summary>
+    public sbyte DefDown, DefDownVal;
+    /// <summary>v0.23.0: tury znaku i o ile % większe obrażenia od bohatera.</summary>
+    public sbyte MarkTurns;
+    public byte MarkPct;
 
     public Actor()
     {

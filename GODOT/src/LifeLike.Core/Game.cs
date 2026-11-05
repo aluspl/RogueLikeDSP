@@ -23,7 +23,7 @@ public sealed partial class Game
     /// <summary>Kask, rękawice, kamizelka + sloty z nagród (buty, pas).</summary>
     public const int MaxGearSlots = 6;
     /// <summary>Stany bohatera (indeks = StatusEffect; v0.21.50: + Mokry).</summary>
-    public const int StatusSlots = 6;
+    public const int StatusSlots = 11; // v0.23.0: + Burn, Bleed, Root, DefDown, Mark (StatusEffect)
 
     public GameData D { get; }
 
@@ -328,7 +328,7 @@ public sealed partial class Game
     /// <summary>Szczęście: kryt (x2), mały unik przed ciosem wroga, częstsze i lepsze dropy.</summary>
     public int Luck() => CDef.Luck + Bonus.Luck + TraitBonus(TraitEffect.Luck) + BoonLuck();
 
-    public int CritPct() => Weapon.Crit + (HitCalc.Has(Weapon, HitType.Cut) ? D.HitTypes.CutCritPct : 0) + D.CritBasePct + D.CritPerLuckPct * Luck() + TraitBonus(TraitEffect.Crit) + Bonus.Crit + BoonSum(BoonEffect.Crit)
+    public int CritPct() => CritBuff + Weapon.Crit + (HitCalc.Has(Weapon, HitType.Cut) ? D.HitTypes.CutCritPct : 0) + D.CritBasePct + D.CritPerLuckPct * Luck() + TraitBonus(TraitEffect.Crit) + Bonus.Crit + BoonSum(BoonEffect.Crit)
                             + ToolTraitValue(ToolTraitEffect.Crit) + MasterCrit();
 
     /// <summary>Pole widzenia; pył (akt III) zmniejsza, najmniej 3.</summary>

@@ -49,6 +49,10 @@ public static class StateDigest
         f.Add(g.SlamY);
         f.Add(g.SlamCounter);
         f.Add(g.WeaponOverride);
+        f.Add(g.WeaponBCd); // v0.23.0: tryb B broni
+        f.Add(g.WeaponCharges);
+        f.Add(g.CritBuff);
+        f.Add(g.CritBuffTurns);
         f.Add(g.WallsCount);
         f.Add(g.EnemiesCount);
         for (var i = 0; i < g.EnemiesCount; i++)
@@ -67,6 +71,14 @@ public static class StateDigest
             f.Add(e.Timer);
             f.Add(e.Elite); // v0.21.50 cz. 2: elity, mokry
             f.Add(e.Wet);
+            f.Add(e.Dot); // v0.23.0: stany trybu B broni
+            f.Add(e.DotDmg);
+            f.Add(e.DotKind);
+            f.Add(e.Root);
+            f.Add(e.DefDown);
+            f.Add(e.DefDownVal);
+            f.Add(e.MarkTurns);
+            f.Add(e.MarkPct);
         }
         f.Add(g.PickupsCount);
         for (var i = 0; i < g.PickupsCount; i++)

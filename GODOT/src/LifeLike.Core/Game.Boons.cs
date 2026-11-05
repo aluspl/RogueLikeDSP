@@ -292,7 +292,7 @@ public sealed partial class Game
     public int EnemyEliteDef(int ei) => EliteIs(Enemies[ei], EliteEffect.Shield) ? D.Elites[Enemies[ei].Elite].Value : 0;
 
     /// <summary>Obrona problemu ei: z danych + Tarcza elity.</summary>
-    public int EnemyDefense(int ei) => D.Enemies[Enemies[ei].DefId].Defense + EnemyEliteDef(ei);
+    public int EnemyDefense(int ei) => Math.Max(0, D.Enemies[Enemies[ei].DefId].Defense + EnemyEliteDef(ei) - (Enemies[ei].DefDown > 0 ? Enemies[ei].DefDownVal : 0));
 
     /// <summary>Nazwa problemu z przedrostkiem elity („Zbrojony Przeciek”, „Uparta Pleśń”).</summary>
     public Message EnemyName(Message m, int ei)

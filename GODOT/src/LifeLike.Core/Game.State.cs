@@ -47,6 +47,14 @@ public sealed partial class Game
         w.Write(a.Timer);
         w.Write(a.Elite);
         w.Write(a.Wet);
+        w.Write(a.Dot);
+        w.Write(a.DotDmg);
+        w.Write(a.DotKind);
+        w.Write(a.Root);
+        w.Write(a.DefDown);
+        w.Write(a.DefDownVal);
+        w.Write(a.MarkTurns);
+        w.Write(a.MarkPct);
     }
 
     private static Actor ReadActor(BinaryReader r) => new()
@@ -64,6 +72,14 @@ public sealed partial class Game
         Timer = r.ReadSByte(),
         Elite = r.ReadSByte(),
         Wet = r.ReadSByte(),
+        Dot = r.ReadSByte(),
+        DotDmg = r.ReadSByte(),
+        DotKind = r.ReadByte(),
+        Root = r.ReadSByte(),
+        DefDown = r.ReadSByte(),
+        DefDownVal = r.ReadSByte(),
+        MarkTurns = r.ReadSByte(),
+        MarkPct = r.ReadByte(),
     };
 
     public void Write(BinaryWriter w)
@@ -159,6 +175,10 @@ public sealed partial class Game
         w.Write(OfferRarity);
         w.Write(OfferTrait);
         w.Write(WeaponOverride);
+        w.Write(WeaponBCd);
+        w.Write(WeaponCharges);
+        w.Write(CritBuff);
+        w.Write(CritBuffTurns);
         w.Write(LogSerial);
         w.Write(SummonCounter);
         w.Write(SummonsUsed);
@@ -350,6 +370,10 @@ public sealed partial class Game
         OfferRarity = r.ReadSByte();
         OfferTrait = r.ReadSByte();
         WeaponOverride = r.ReadInt32();
+        WeaponBCd = r.ReadInt32();
+        WeaponCharges = r.ReadSByte();
+        CritBuff = r.ReadSByte();
+        CritBuffTurns = r.ReadSByte();
         LogSerial = r.ReadInt32();
         SummonCounter = r.ReadInt32();
         SummonsUsed = r.ReadInt32();

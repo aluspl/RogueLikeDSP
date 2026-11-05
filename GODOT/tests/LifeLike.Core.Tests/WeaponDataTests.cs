@@ -48,7 +48,7 @@ public class WeaponDataTests
     [InlineData("przecinak", PatternKind.Single, ModeEffect.None, PatternKind.Single, ModeEffect.OpenWall, 1)]
     [InlineData("nozyce", PatternKind.Single, ModeEffect.None, PatternKind.Arc, ModeEffect.None, 3)]
     [InlineData("silikon", PatternKind.Shot, ModeEffect.None, PatternKind.Single, ModeEffect.Root, 4)]
-    [InlineData("myjka", PatternKind.Line, ModeEffect.None, PatternKind.Push, ModeEffect.Push, 3)]
+    [InlineData("myjka", PatternKind.Line, ModeEffect.Wet, PatternKind.Push, ModeEffect.Push, 3)]
     [InlineData("palnik", PatternKind.Spray, ModeEffect.Dot, PatternKind.Around, ModeEffect.Dry, 5)]
     [InlineData("taker", PatternKind.Shot, ModeEffect.None, PatternKind.Single, ModeEffect.Root, 3)]
     [InlineData("mlotek_gumowy", PatternKind.Single, ModeEffect.Stun, PatternKind.Cross, ModeEffect.Stun, 4)]

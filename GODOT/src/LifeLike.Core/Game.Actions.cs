@@ -21,7 +21,9 @@ public sealed partial class Game
         if (dmg < 1) dmg = 1;
         dmg += Pct.Part(dmg, Bonus.DmgPct + BoonSum(BoonEffect.DmgPct), ref DmgCarry); // Kurs fachowy, Respekt, premie: +%
         dmg = HitCalc.Apply(dmg, HitCalc.Pct(D, w, D.Enemies[Enemies[ei].DefId]) * pct / 100); // v0.23.0: typ ciosu x materiał / żywioł celu x % trybu
-        var crit = R.Range(1, 100) <= CritPct();
+        if (Enemies[ei].MarkTurns > 0) dmg = HitCalc.Apply(dmg, 100 + Enemies[ei].MarkPct); // v0.23.0: znak (Dziennik, Tyczka, Opalarka)
+        var crit = R.Range(1, 100) <= CritPct() || (Enemies[ei].Flags & ActorFlag.CritNext) != 0; // CritNext: pewny kryt, losowanie zostaje
+        Enemies[ei].Flags = (byte)(Enemies[ei].Flags & ~ActorFlag.CritNext);
         if (crit) dmg *= D.CritMultiplier;
         DamageEnemy(ei, dmg, crit, Weapon.Name);
         // kombinacje stanów: stan celu sprzed ciosu + żywioł ciosu
@@ -623,6 +625,9 @@ public sealed partial class Game
         }
         if (i == Boss && BossWakeDamage < 0) BossEngaged();
         if (EliteIs(e, EliteEffect.Regen) && e.Hp < e.MaxHp) e.Hp = (short)Math.Min(e.MaxHp, e.Hp + D.Elites[e.Elite].Value); // elita Uparta
+        if (!EnemyStatusTick(i)) return; // v0.23.0: krwawienie / podpalenie, unieruchomienie, osłabienie
+        var rooted = e.Root > 0;
+        if (rooted) --e.Root;
         if (e.Stun > 0)
         {
             --e.Stun;
@@ -658,7 +663,7 @@ public sealed partial class Game
             e.Timer = (sbyte)D.BehaviorHealEvery;
             return;
         }
-        if ((tg & Behavior.Flees) != 0 && manh == 1 && e.Timer == 0 && FleeStep(i))
+        if ((tg & Behavior.Flees) != 0 && manh == 1 && e.Timer == 0 && !rooted && FleeStep(i))
         {
             e.Timer = (sbyte)D.BehaviorFleeCooldown;
             return;
@@ -674,7 +679,7 @@ public sealed partial class Game
             EnemyStrike(i, true);
             return;
         }
-        if ((tg & Behavior.Stationary) != 0) return;
+        if ((tg & Behavior.Stationary) != 0 || rooted) return; // unieruchomiony nie rusza się, ale uderza sąsiada
         if (WeatherIs(WeatherEffect.Frost) && i != Boss && Turns % WDef.Value == 0) return; // mróz: problemy stoją
         if ((tg & Behavior.Ranged) != 0 && RangedStep(i)) return;
         // elita Szybka: drugi krok, jeśli jeszcze nie stoi obok bohatera
@@ -697,6 +702,12 @@ public sealed partial class Game
         }
         if (AbilityCd > 0 && --AbilityCd == 0) Push(Msg(Loc.T("moc_gotowa_2")).Add(PDef.AbilityName).As(LogKind.Good));
         if (MarkTurns > 0 && --MarkTurns == 0) MarkTarget = -1; // Tyczenie mija
+        if (WeaponBCd > 0) --WeaponBCd; // v0.23.0: odnowienie trybu B broni
+        if (CritBuffTurns > 0 && --CritBuffTurns == 0) CritBuff = 0; // Pomiar (Miernik) mija
+        for (var i = 0; i < EnemiesCount; ++i)
+        {
+            if (Enemies[i].MarkTurns > 0 && --Enemies[i].MarkTurns == 0) Enemies[i].MarkPct = 0; // znak na problemie mija
+        }
         ref var wet = ref HeroStatus[(int)StatusEffect.Wet];
         if (wet > 0) --wet; // mokry schnie
         for (var i = 0; i < EnemiesCount; ++i) // problemy: kałuża moczy, poza nią schną

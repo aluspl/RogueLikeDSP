@@ -285,6 +285,7 @@ public sealed partial class Game
     public void ResetUpgrade()
     {
         WeaponLvl = 0;
+        WeaponCharges = 0;
         WeaponTrait = -1;
         TraitPending = false;
     }

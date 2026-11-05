@@ -1643,7 +1643,8 @@ public sealed class GameData
             return new WeaponMode(range == 1 ? PatternKind.Single : PatternKind.Shot, range, 100, ModeEffect.None, 0, 0, name == "modeB" ? 1 : 0);
         var pat = Str(m, "pattern");
         return new WeaponMode(pat == "throw" ? PatternKind.Throw3x3 : ParseEnum<PatternKind>(pat), Int(m, "range", range), Int(m, "dmgPct", 100),
-            ParseEnum<ModeEffect>(Str(m, "effect", "none")), Int(m, "value", 0), Int(m, "turns", 0), Int(m, "cooldown", 0));
+            ParseEnum<ModeEffect>(Str(m, "effect", "none")), Int(m, "value", 0), Int(m, "turns", 0), Int(m, "cooldown", 0),
+            ParseEnum<ModeEffect>(Str(m, "effect2", "none")), Int(m, "value2", 0), Int(m, "turns2", 0));
     }
 
     private static HitTypesDef ParseHitTypes(JsonElement h)
