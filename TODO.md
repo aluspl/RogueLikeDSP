@@ -19,10 +19,10 @@ Legenda: ✅ zrobione · 🔄 w toku · ⬜ do zrobienia · — nie dotyczy
 | Test ręczny na sprzęcie i poprawki po graniu | 🔄 iPhone (zainstalowane) | ⬜ Miyoo, dźwięk |
 | Android: eksport i instalacja (podpis bez sekretów w repo) | ⬜ | — |
 | Wydania do pobrania w Releases | ⬜ .ipa / .apk / desktop | ✅ ROM co wersję |
-| Oprawa 2.5D: kamera 3/4, dynamiczne światło (latarka czołowa), pogoda na etapie Dach | ⬜ | — |
+| Oprawa 2.5D: kamera 3/4, dynamiczne światło (latarka czołowa), pogoda na etapie Dach | ✅ kamera 3/4 i latarka (v0.21.54); ⬜ pogoda na Dachu | — |
 | Mapy tematyczne etapów (szalunki, otwory okienne, krokwie, bruzdy) i elementy otoczenia (rusztowania, betoniarka, palety) | ⬜ | ⬜ (prostsza wersja) |
 | Zadania etapu jako cele poboczne (odbiór częściowy, dodatkowe doświadczenie) | ⬜ | ⬜ |
-| Drzewka ulepszeń mocy zawodów w zakładce Koszty | ⬜ | ⬜ |
+| Drzewka ulepszeń mocy zawodów w zakładce Koszty | ✅ (drzewko Szkoleń, v0.21.52; nowy widok – #70) | ✅ |
 | Muzyka: pętle bez przerwy | ⬜ (MP3 → OGG) | ✅ |
 | Portret Kierownika na wyborze zawodu lekko przesunięty | — | ⬜ |
 | Czytelniejszy komunikat „Brak celu w zasięgu 1” (`core.h` + port C#) | ⬜ | ⬜ |
@@ -51,7 +51,7 @@ Kolejność: A – rdzeń i GBA (po bossie Inspekcja Pracy), B – Godot i mobil
 | 8 | Widżet / Live Activity z postępem budowy | B (natywne rozszerzenie iOS) | ⬜ | — |
 | 9 | Udostępnianie wyniku (obrazek + link planbudowlany.online) | B | ⬜ | ⬜ (kod QR z wynikiem) |
 | 10 | Game Center / Google Play Games: osiągnięcia z odznak, tabela wyników | B (konfiguracja w App Store Connect) | ⬜ | — |
-| 11 | 2.5D: kamera 3/4, latarka czołowa, cienie ścian | C | ⬜ | — |
+| 11 | 2.5D: kamera 3/4, latarka czołowa, cienie ścian | C | ✅ (v0.21.54: widok 3/4 – prototyp, latarka, wysokie ściany) | — |
 | 12 | Ulewa jako pogoda na etapie Dach (deszcz, kałuże, poślizg) | C | ⬜ | ⬜ (prostszy efekt) |
 | 13 | Po wygranej: harmonogram domu w stylu aplikacji + „Zaplanuj swoją budowę” | A/B | ✅ | ✅ |
 | 14 | Więcej etapów (np. 10–12) i wyraźna różnorodność między aktami – własne kafle/paleta, zestaw problemów, mechanika aktu (np. akt I wykop i błoto, akt II wysokość i wiatr, akt III instalacje i terminy) | A3, v0.21.49: 10 etapów (Izolacja fundamentów, Ściany działowe), kafle aktów, błoto / porywy / pył | ✅ | ✅ |
@@ -61,7 +61,7 @@ Kolejność: A – rdzeń i GBA (po bossie Inspekcja Pracy), B – Godot i mobil
 | 18 | Więcej różnych przedmiotów – nowe jednorazowe (np. apteczka, energetyk, taśma naprawcza, plan awaryjny), nowe elementy sprzętu i cechy, rzadkie przedmioty unikalne | A3 | ⬜ | ⬜ |
 | 19 | Opis statystyk – co robi każda statystyka i jak (wzór w prostych słowach, np. „SIŁ: +1 obrażeń co 2 pkt dla broni SIŁ”), na wyborze zawodu, w telefonie (Start/Sprzęt) i w Jak grać | A3, v0.21.49: wybór zawodu (GBA START, Godot podpowiedzi), telefon Start → skąd premie, Jak grać | ✅ | ✅ |
 | 20 | Akt 0 „Papierologia” przed stanem surowym – etapy Działka i pozwolenie, Przyłącza; problemy papierowe i sieciowe (Brakujący podpis, Zaginiony wniosek, Termin na odwołanie, Niezgodność z planem, Pieczątka nie ta, Pęknięta rura, Brak ciśnienia, Kolizja z kablem) – nigdy urzędnicy; boss „Decyzja odmowna” z drugą fazą Odwołanie; mechanika pieczątki (3 dokumenty otwierają schody) | A3, v0.21.49: nagroda za 8. odbiór, potem każda budowa od Aktu 0 | ✅ | ✅ |
-| 21 | Bonus między etapami – po każdym etapie wybór 1 z 3 premii na bieżącą budowę (np. +2 max HP, moc -1 t., kryt +5%, kawa +2 HP, brygada -5 zł), rzadkość premii (może się połączyć z wyborem ścieżki #3) | A3 | ⬜ | ⬜ |
+| 21 | Bonus między etapami – po każdym etapie wybór 1 z 3 premii na bieżącą budowę (np. +2 max HP, moc -1 t., kryt +5%, kawa +2 HP, brygada -5 zł), rzadkość premii (może się połączyć z wyborem ścieżki #3) | A3 | ✅ (premie 1 z 3 z rzadkością i synergiami) | ✅ |
 | 22 | Respekt – stała waluta za ukończenie każdego etapu (więcej za bossów i akty), zapisana w profilu (nie przepada przy śmierci); wydawana na stałe ulepszenia procentowe z rangami (lista niżej) – v0.21.49: telefon profilu → Koszty → SELECT = Respekt | A3 | ✅ | ✅ |
 | 23 | Odblokowania za kolejne przejścia (jak Slay the Spire): każda wygrana odblokowuje coś nowego – lepsze narzędzie, element sprzętu, nowy zawód (np. Dekarz, Tynkarz, Operator koparki), nowy akt/etap, nowy tryb; lista nagród po kolei widoczna w profilu – v0.21.49: Młot udarowy, Dekarz, Buty robocze, Pistolet do kotew, Tynkarz, Pas narzędziowy, Operator koparki, Akt 0 „Papierologia”; strona Nagrody (Koszty → SELECT → SELECT) | A3 | ✅ | ✅ |
 
@@ -257,7 +257,7 @@ Stan v0.21.54: #62, #65, #66 zrobione, #63 jako prototyp w ustawieniach (wszystk
 | 74 | Drobiazgi z przeglądu projektu A: banery przy telefonie po obrocie ekranu, HUD 1,5x na rozłożonym składaku w poziomie, oferta drzewka otwiera stronę Drzewko, „Szczegóły” w wyborze zawodu z klawiatury / pada (i nie gasną po powrocie z Inwestora / Statystyk), kolejność opisów w `PhonePainter` | ✅ | — |
 | 70 | Drzewko Szkoleń – nowy widok (karty gałęzi, węzły ze stanem, jasne „1 z 2”) – patrz wiersz #70 wyżej | ⬜ | ⬜ (później) |
 | 75 | Filtr „Kwas” łagodniejszy domyślnie albo suwak siły w ustawieniach | ✅ (łagodniejszy shader; suwak siły i ograniczony ruch już były w Filtr ekranu) | — |
-| 76 | Porządek w TODO: przejrzeć stare wiersze (np. #21 premie po etapie są już w grze) i oznaczyć zrobione | ⬜ | — |
+| 76 | Porządek w TODO: przejrzeć stare wiersze (np. #21 premie po etapie są już w grze) i oznaczyć zrobione | ✅ (#21, #11, oprawa 3/4, drzewka; reszta otwarta) | — |
 
 Bronie (typy obrażeń, zasięgi, rzadkość widoczna w rękach) – osobny pakiet po brainstormingu (projekt B+), raczej v0.22.2.
 
