@@ -43,6 +43,8 @@ public sealed class TasksTab : PhonePage
         var hasPath = _g.StagePath >= 0 && _g.StagePath < d.Paths.Length;
         var extra = ExtraRow(out var extraText, out var extraPill, out var extraKind);
         var c2 = p.Card(y, (hasPath ? 4 : 3) + (extra ? 1 : 0));
+        if (c2.End.Y + 4 + PhonePainter.RowH <= p.Bottom) // v0.22.0 (UX A): co znaczą kolory pasków
+            p.Legend(c2.End.Y + 4, [(Pal.Done, Loc.T("legenda_premia")), (Pal.Late, Loc.T("legenda_zagrozenie")), (Pal.Brand, Loc.T("legenda_sciezka"))]);
         var r0 = p.RowY(c2, 0);
         if (_g.CurrentEvent is { } ev)
         {

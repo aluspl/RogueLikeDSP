@@ -99,63 +99,11 @@ public partial class HudTop : Control
             f.Draw(this, new Vector2(re, 19), $"{g.DDef.Name}{ng}", Ink.MapDim, TextAlign.Right);
         }
 
-        // rząd 2: stany (ikona + tury)
-        x = 6f;
-        for (var k = 0; k < 3; k++)
-        {
-            var t = g.StatusTurns(UiText.HudStatuses[k]);
-            if (t <= 0) continue;
-            Assets.DrawFrame(this, Assets.Particles, Assets.PStatus + k, Assets.Particle, new Vector2(x, 20));
-            x += 16;
-            x += f.Draw(this, new Vector2(x, 19), t.ToString(), Ink.MapBad) + 6;
-        }
-        var wet = g.StatusTurns(StatusEffect.Wet); // v0.21.50: mokry (prąd boli bardziej)
-        if (wet > 0)
-        {
-            Assets.DrawFrame(this, Assets.Particles, Assets.PDrop, Assets.Particle, new Vector2(x, 20));
-            x += 16;
-            x += f.Draw(this, new Vector2(x, 19), wet.ToString(), Ink.MapWet) + 6;
-        }
-        if (x > 6) x += 4;
-
-        // termos
-        Assets.DrawFrame(this, Assets.UiMenu, 1, Assets.Icon, new Vector2(x, 20));
-        x += 17;
-        x += f.Draw(this, new Vector2(x, 19), $"{g.Thermos}/{g.ThermosCap()}", g.Thermos > 0 ? Ink.Map : Ink.MapDim) + 8;
-
-        // pogoda dnia (menu_icons 6-10 jak na GBA)
-        Assets.DrawFrame(this, Assets.UiMenu, Assets.MenuWeather + (int)g.WDef.Effect, Assets.Icon, new Vector2(x, 20));
-        x += 20;
-
-        // mechanika aktu (menu_icons 20-22: błoto, porywy, pył; 24: pieczątki Aktu 0); przy porywach tury do kolejnego (ostatnia na czerwono)
-        var mech = (int)g.ADef.Mechanic;
-        if (mech > 0)
-        {
-            Assets.DrawFrame(this, Assets.UiMenu, Assets.ActIcon(g.ADef.Mechanic), Assets.Icon, new Vector2(x, 20));
-            x += 17;
-            var gin = g.GustIn();
-            if (g.DocsNeeded() > 0) x += f.Draw(this, new Vector2(x, 19), $"{g.DocsCount()}/{g.DocsNeeded()}", g.StairsLocked() ? Ink.Map : Ink.MapGood) + 6;   // pieczątki
-            else if (gin > 0) x += f.Draw(this, new Vector2(x, 19), gin.ToString(), gin == 1 ? Ink.MapBad : Ink.Map) + 6;
-            else x += 3;
-        }
-
-        // moc zawodu: ikona szara z odliczaniem albo pulsująca z „R”
-        var ready = g.AbilityCd == 0;
-        var bob = ready && ((int)(_clock * 4) & 1) == 1 ? -1 : 0;
-        Assets.DrawFrame(this, ready ? Assets.UiAbility : Assets.UiAbilityGray, g.PowerCls(), Assets.Icon, new Vector2(x, 20 + bob));
-        x += 18;
-        if (!ready) x += f.Draw(this, new Vector2(x, 19), g.AbilityCd.ToString(), Ink.MapDim) + 8;
-        else if (((int)(_clock * 2) & 1) == 0) x += f.Draw(this, new Vector2(x, 19), "R", Ink.MapGood) + 8;
-        else x += f.Measure("R") + 8;
-
-        // materiały: ikona + liczba (tylko posiadane)
-        for (var m = 0; m < g.D.Materials.Length; m++)
-        {
-            if (g.Mats[m] == 0) continue;
-            MaterialIcon.Draw(this, m, new Vector2(x, 22));
-            x += MaterialIcon.Size + 2;
-            x += f.Draw(this, new Vector2(x, 19), g.Mats[m].ToString(), Ink.Map) + 6;
-        }
+        // rząd 2 (v0.22.0, UX A): ikony z krótkimi podpisami („Termos 0/4”, „Deszcz”, „Błoto”, „Moc R”), gdy mieszczą się
+        // obok nazwy etapu i wydarzenia; inaczej same ikony jak dotąd
+        var reserve = nameBelow ? Mathf.Min(f.Measure(sd.Name), 160) + 8 : 0;
+        var labels = Row2(f, false, true) <= re - 6 - reserve;
+        x = Row2(f, true, labels);
 
         // nazwa etapu w 2. rzędzie (gdy nie zmieściła się w 1.): pierwszeństwo przed pastylką wydarzenia
         var nameRoom = re - x - 6;
@@ -181,6 +129,76 @@ public partial class HudTop : Control
             DrawRect(r, ev.Good ? new Color(Pal.Done, 0.85f) : new Color(Pal.Late, 0.85f));
             f.Draw(this, new Vector2(r.Position.X + pill / 2, 19), ev.Short, Ink.White, TextAlign.Center);
         }
+    }
+
+    /// <summary>Rząd 2 HUD: stany, termos, pogoda, mechanika aktu, moc, materiały; draw = false tylko mierzy. Zwraca prawą krawędź.</summary>
+    private float Row2(PixelFont f, bool draw, bool labels)
+    {
+        var g = _g;
+        var x = 6f;
+        float Text(float tx, string t, Ink ink) => draw ? f.Draw(this, new Vector2(tx, 19), t, ink) : f.Measure(t);
+        void Icon(Texture2D tex, int frame, int size, float ix, float iy)
+        {
+            if (draw) Assets.DrawFrame(this, tex, frame, size, new Vector2(ix, iy));
+        }
+        for (var k = 0; k < 3; k++)
+        {
+            var t = g.StatusTurns(UiText.HudStatuses[k]);
+            if (t <= 0) continue;
+            Icon(Assets.Particles, Assets.PStatus + k, Assets.Particle, x, 20);
+            x += 16;
+            x += Text(x, t.ToString(), Ink.MapBad) + 6;
+        }
+        var wet = g.StatusTurns(StatusEffect.Wet); // v0.21.50: mokry (prąd boli bardziej)
+        if (wet > 0)
+        {
+            Icon(Assets.Particles, Assets.PDrop, Assets.Particle, x, 20);
+            x += 16;
+            x += Text(x, wet.ToString(), Ink.MapWet) + 6;
+        }
+        if (x > 6) x += 4;
+
+        // termos
+        Icon(Assets.UiMenu, 1, Assets.Icon, x, 20);
+        x += 17;
+        x += Text(x, (labels ? Loc.T("hud_termos") + " " : "") + $"{g.Thermos}/{g.ThermosCap()}", g.Thermos > 0 ? Ink.Map : Ink.MapDim) + 8;
+
+        // pogoda dnia (menu_icons 6-10 jak na GBA)
+        Icon(Assets.UiMenu, Assets.MenuWeather + (int)g.WDef.Effect, Assets.Icon, x, 20);
+        x += labels ? 18 + Text(x + 18, g.WDef.Name, g.WDef.Bad ? Ink.MapBad : Ink.MapDim) + 8 : 20;
+
+        // mechanika aktu (menu_icons 20-22: błoto, porywy, pył; 24: pieczątki Aktu 0); przy porywach tury do kolejnego (ostatnia na czerwono)
+        var mech = (int)g.ADef.Mechanic;
+        if (mech > 0)
+        {
+            Icon(Assets.UiMenu, Assets.ActIcon(g.ADef.Mechanic), Assets.Icon, x, 20);
+            x += 17;
+            if (labels) x += Text(x, g.ADef.MechShort, Ink.MapDim) + 4;
+            var gin = g.GustIn();
+            if (g.DocsNeeded() > 0) x += Text(x, $"{g.DocsCount()}/{g.DocsNeeded()}", g.StairsLocked() ? Ink.Map : Ink.MapGood) + 6;   // pieczątki
+            else if (gin > 0) x += Text(x, gin.ToString(), gin == 1 ? Ink.MapBad : Ink.Map) + 6;
+            else x += labels ? 6 : 3;
+        }
+
+        // moc zawodu: ikona szara z odliczaniem albo pulsująca z „R”
+        var ready = g.AbilityCd == 0;
+        var bob = ready && ((int)(_clock * 4) & 1) == 1 ? -1 : 0;
+        Icon(ready ? Assets.UiAbility : Assets.UiAbilityGray, g.PowerCls(), Assets.Icon, x, 20 + bob);
+        x += 18;
+        if (labels) x += Text(x, Loc.T("hud_moc"), ready ? Ink.MapGood : Ink.MapDim) + 4;
+        if (!ready) x += Text(x, g.AbilityCd.ToString(), Ink.MapDim) + 8;
+        else if (((int)(_clock * 2) & 1) == 0) x += Text(x, "R", Ink.MapGood) + 8;
+        else x += f.Measure("R") + 8;
+
+        // materiały: ikona + liczba (tylko posiadane)
+        for (var m = 0; m < g.D.Materials.Length; m++)
+        {
+            if (g.Mats[m] == 0) continue;
+            if (draw) MaterialIcon.Draw(this, m, new Vector2(x, 22));
+            x += MaterialIcon.Size + 2;
+            x += Text(x, g.Mats[m].ToString(), Ink.Map) + 6;
+        }
+        return x;
     }
 
     /// <summary>v0.22.0 (#69): skrót poziomu trudności – pierwsza litera nazwy z danych (Łatwy → Ł, Normal → N, Hard → H).</summary>

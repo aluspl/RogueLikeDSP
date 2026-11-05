@@ -3073,6 +3073,12 @@
   "za_wygrana_nr": "At win #{0}",
   "za_dosw_szkolenia": "Training: {0} XP",
   "sekretne_zlecenie_3": "Secret job",
-  "przegrana_2": "Lost"
+  "przegrana_2": "Lost",
+  "hud_termos": "Flask",
+  "hud_moc": "Power",
+  "legenda_premia": "bonus",
+  "legenda_zagrozenie": "danger",
+  "legenda_sciezka": "path",
+  "legenda_info": "info"
  }
 }

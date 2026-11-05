@@ -118,6 +118,21 @@ public sealed class PhonePainter
     }
 
     /// <summary>Nagłówek sekcji nad kartą (wersaliki w kolorze textDim).</summary>
+    /// <summary>v0.22.0 (UX A): legenda kolorów pasków (kwadrat + słowo), wyśrodkowana w jednym wierszu; zwraca dół.</summary>
+    public float Legend(float y, (Color Color, string Label)[] items)
+    {
+        var total = 0f;
+        foreach (var (_, l) in items) total += 12 + F.Measure(l) + 10;
+        var x = Mathf.Round(Left + (Width - total + 10) / 2);
+        foreach (var (c, l) in items)
+        {
+            C.DrawRect(new Rect2(x, y + RowH / 2f - 4, 8, 8), c);
+            x += 12;
+            x += F.Draw(C, new Vector2(x, y + TextDy), l, Ink.Dim) + 10;
+        }
+        return y + RowH;
+    }
+
     public float Section(float y, string title, string right = "")
     {
         var tw = Text(Left + 4, y, title, Ink.Dim);
