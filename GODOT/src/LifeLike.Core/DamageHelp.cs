@@ -190,7 +190,7 @@ public static class DamageHelp
                 return true;
             case DmgText.CritExtra:
             {
-                if (b.CritTrait == 0 && b.CritBonus == 0 && b.CritUpg == 0 && b.CritWeapon == 0)
+                if (b.CritTrait == 0 && b.CritBonus == 0 && b.CritUpg == 0 && b.CritWeapon == 0 && b.CritCut == 0)
                 {
                     m.Add(Loc.T("kryt_bez_premii"));
                     return false;
@@ -200,6 +200,11 @@ public static class DamageHelp
                 if (b.CritWeapon != 0)
                 {
                     m.Add(Loc.T("bron")).Add(b.CritWeapon).Add("%");
+                    first = false;
+                }
+                if (b.CritCut != 0) // v0.23.0: cięcie
+                {
+                    m.Add(first ? " " : ", ").Add(d.HitTypes.Names[(int)HitType.Cut]).Add(" ").Add(b.CritCut).Add("%");
                     first = false;
                 }
                 if (b.CritTrait != 0)
@@ -263,6 +268,14 @@ public static class DamageHelp
                 }
                 m.Add(Loc.T("ulepszenie")).Add(b.UpgLevel).Add(": +").Add(b.FlatUpgrade).Add(Loc.T("obr_3"));
                 if (b.UpgTrait >= 0) m.Add(", ").Add(d.ToolTraits[b.UpgTrait].Name).Add(" ").Add(d.ToolTraits[b.UpgTrait].Short);
+                return true;
+            case DmgText.HitMult: // v0.23.0: typ ciosu x materiał / żywioł problemu
+                if (!b.VsEnemy || b.HitPct == 100) // bez celu / bez zmiany: tekst jest, ale składnik nic nie daje
+                {
+                    m.Add(Loc.F("mnoznik_ciosu", b.HitMat.Length > 0 ? b.HitMat : "-", d.HitTypes.Names[(int)d.Weapons[b.Weapon].Hit[0]], 100));
+                    return false;
+                }
+                m.Add(Loc.F("mnoznik_ciosu", b.HitMat, b.HitName, b.HitPct));
                 return true;
             default:
                 return false;

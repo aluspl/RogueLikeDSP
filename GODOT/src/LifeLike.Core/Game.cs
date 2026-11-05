@@ -325,7 +325,7 @@ public sealed partial class Game
     /// <summary>Szczęście: kryt (x2), mały unik przed ciosem wroga, częstsze i lepsze dropy.</summary>
     public int Luck() => CDef.Luck + Bonus.Luck + TraitBonus(TraitEffect.Luck) + BoonLuck();
 
-    public int CritPct() => Weapon.Crit + D.CritBasePct + D.CritPerLuckPct * Luck() + TraitBonus(TraitEffect.Crit) + Bonus.Crit + BoonSum(BoonEffect.Crit)
+    public int CritPct() => Weapon.Crit + (HitCalc.Has(Weapon, HitType.Cut) ? D.HitTypes.CutCritPct : 0) + D.CritBasePct + D.CritPerLuckPct * Luck() + TraitBonus(TraitEffect.Crit) + Bonus.Crit + BoonSum(BoonEffect.Crit)
                             + ToolTraitValue(ToolTraitEffect.Crit) + MasterCrit();
 
     /// <summary>Pole widzenia; pył (akt III) zmniejsza, najmniej 3.</summary>

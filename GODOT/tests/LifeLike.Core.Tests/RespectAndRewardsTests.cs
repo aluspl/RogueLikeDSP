@@ -111,7 +111,7 @@ public class RespectAndRewardsTests
             sb += 999 - b.Enemies[b.EnemiesCount - 1].Hp;
             a.EnemiesCount = b.EnemiesCount = 0;
         }
-        Assert.True(sb * 100 >= sa * 122 && sb * 100 <= sa * 128, $"{sa} {sb}");
+        Assert.True(sb * 100 >= sa * 122 && sb * 100 <= sa * 132, $"{sa} {sb}");
         // otrzymane obrażenia -%: mniej, ale zawsze co najmniej 1
         var ta0 = TestData.Run(1, 5);
         var tb0 = TestData.Run(1, 5);

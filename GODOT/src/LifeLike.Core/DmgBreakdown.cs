@@ -45,6 +45,11 @@ public sealed class DmgBreakdown
     public int Pierce, Steady, CritUpg;
     /// <summary>v0.21.51 cz. 2: kryt broni (Poziomica mistrza).</summary>
     public int CritWeapon;
+    /// <summary>v0.23.0: kryt z typu ciosu (cięcie: CutCritPct).</summary>
+    public int CritCut;
+    /// <summary>v0.23.0: mnożnik ciosu w % (typ x materiał / żywioł celu; 100 = bez zmian) i jego opis dla gracza.</summary>
+    public int HitPct = 100;
+    public string HitMat = "", HitName = "";
     /// <summary>Wydarzenie z wyborem (#30): ciosy +N na etap.</summary>
     public int FlatEvent;
     /// <summary>Źródła premii profilu znane (Src*): Szkolenia, Respekt, odznaki, pamiątka.</summary>
@@ -72,14 +77,14 @@ public sealed class DmgBreakdown
         var add = StatDmg + Flat - DefCut;
         BaseMin = Math.Max(1, RollMin + add);
         BaseMax = Math.Max(1, WMax + add);
-        Min = BaseMin + DamageHelp.PctFloor(BaseMin, PctTotal);
-        Max = BaseMax + DamageHelp.PctCeil(BaseMax, PctTotal);
+        Min = HitCalc.Apply(BaseMin + DamageHelp.PctFloor(BaseMin, PctTotal), HitPct);
+        Max = HitCalc.Apply(BaseMax + DamageHelp.PctCeil(BaseMax, PctTotal), HitPct);
         int sum = 0, n = 0;
         for (var r = RollMin; r <= WMax; ++r, ++n) sum += Math.Max(1, r + add) * (100 + Math.Max(0, PctTotal));
-        Avg10 = n > 0 ? LifeLike.Core.Pct.DivRound(sum, 10 * n) : 0;
+        Avg10 = n > 0 ? LifeLike.Core.Pct.DivRound(sum * HitPct, 1000 * n) : 0;
         CritBase = d.CritBasePct;
         CritLuck = d.CritPerLuckPct * Luck;
-        CritPct = CritBase + CritLuck + CritTrait + CritBonus + CritBoon + CritUpg + CritWeapon;
+        CritPct = CritBase + CritLuck + CritTrait + CritBonus + CritBoon + CritUpg + CritWeapon + CritCut;
         CritMult = d.CritMultiplier;
         CritMin = Min * CritMult;
         CritMax = Max * CritMult;
@@ -124,6 +129,8 @@ public sealed class DmgBreakdown
             EnemyDef = Math.Max(0, enemyDef),
             Luck = c.Luck + m.Luck,
             CritBonus = m.Crit,
+            Pierce = HitCalc.Has(w, HitType.Pierce) ? d.HitTypes.PierceDef : 0,
+            CritCut = HitCalc.Has(w, HitType.Cut) ? d.HitTypes.CutCritPct : 0,
             CritWeapon = w.Crit + ((m.Mastery & MasteryBit.Weapon) != 0 ? d.MasteryClasses[cls].WeaponPerk.Value : 0), // broń mistrza
         };
         b.Finish(d);

@@ -17,9 +17,10 @@ public sealed partial class Game
                   + HeroStat(w.ScalesWith) / 2 + DmgBonus + GearBonus(GearStat.Dmg) + BoonSum(BoonEffect.Dmg) + UpgradeDmg() + EventDmg
                   + MarkBonus(ei) // Tyczenie (Geodeta)
                   + (Enemies[ei].Hp >= Enemies[ei].MaxHp ? Bonus.FirstHitBonus : 0) // v0.21.52 cz. c: Siła rozpędu
-                  - Math.Max(0, EnemyDefense(ei) - ToolTraitValue(ToolTraitEffect.Pierce)) / 2;
+                  - Math.Max(0, EnemyDefense(ei) - PierceTotal(w)) / 2;
         if (dmg < 1) dmg = 1;
         dmg += Pct.Part(dmg, Bonus.DmgPct + BoonSum(BoonEffect.DmgPct), ref DmgCarry); // Kurs fachowy, Respekt, premie: +%
+        dmg = HitCalc.Apply(dmg, HitCalc.Pct(D, w, D.Enemies[Enemies[ei].DefId])); // v0.23.0: typ ciosu x materiał / żywioł celu
         var crit = R.Range(1, 100) <= CritPct();
         if (crit) dmg *= D.CritMultiplier;
         DamageEnemy(ei, dmg, crit, Weapon.Name);
@@ -40,6 +41,21 @@ public sealed partial class Game
         {
             Shove(ei, Math.Sign(e.X - Hero.X), Math.Sign(e.Y - Hero.Y), 1);
         }
+        HitTypeEffects(ei, w); // v0.23.0: na końcu, by nie przesuwać losowań krytu i odepchnięcia
+    }
+
+    /// <summary>v0.23.0: kłucie omija PierceDef obrony, razem z cechą Przebicie narzędzia.</summary>
+    public int PierceTotal(WeaponDef w) => ToolTraitValue(ToolTraitEffect.Pierce) + (HitCalc.Has(w, HitType.Pierce) ? D.HitTypes.PierceDef : 0);
+
+    /// <summary>v0.23.0: skutki typu ciosu po trafieniu – obuch ogłusza (szansa StunChancePct, nie bossa), ogień osusza.</summary>
+    public void HitTypeEffects(int ei, WeaponDef w)
+    {
+        if (!Enemies[ei].Alive) return;
+        if (HitCalc.Has(w, HitType.Blunt) && ei != Boss && D.HitTypes.StunChancePct > 0 && R.Range(1, 100) <= D.HitTypes.StunChancePct)
+        {
+            Enemies[ei].Stun = (sbyte)Math.Max((int)Enemies[ei].Stun, 1);
+        }
+        if (w.Elem == Element.Fire) Enemies[ei].Wet = 0;
     }
 
     /// <summary>Odepchnięcie problemu o n pól w kierunku (dx, dy), dopóki pole wolne; zwraca, o ile przesunięto.</summary>

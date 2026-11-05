@@ -167,17 +167,17 @@ public class DamageBreakdownTests
         var g = TestData.Arena(1);
         var b = g.WeaponBreakdown();
         Assert.True(b.WMin == 4 && b.WMax == 6 && b.StatDmg == 2 && b.Min == 6 && b.Max == 8 && b.Avg10 == 70);
-        Assert.True(b.CritMin == 12 && b.CritMax == 16 && b.CritChance() == D.CritBasePct);
+        Assert.True(b.CritMin == 12 && b.CritMax == 16 && b.CritChance() == D.CritBasePct + (HitCalc.Has(g.Weapon, HitType.Cut) ? D.HitTypes.CutCritPct : 0));
         Assert.Equal("Cios 6-8, średnio 7", DamageHelp.Text(D, b, DmgText.Total));
         Assert.Equal("Kielnia 4-6, zasięg 1", DamageHelp.Text(D, b, DmgText.Weapon));
         Assert.Equal("SIŁ 5: +2 (+1 co 2 pkt)", DamageHelp.Text(D, b, DmgText.Stat));
-        Assert.Equal("Kryt x2: 12-16, szansa 5%", DamageHelp.Text(D, b, DmgText.Crit));
+        Assert.Equal($"Kryt x2: 12-16, szansa {b.CritChance()}%", DamageHelp.Text(D, b, DmgText.Crit));
         b.Pct = 10;
         b.Finish(D);
         Assert.True(b.Min == 6 && b.Max == 9 && b.Avg10 == 77);
         var bud = D.EnemyIndex("budzet");
         var v = g.WeaponBreakdown(bud);
-        Assert.Equal(Math.Max(1, 6 - D.Enemies[bud].Defense / 2), v.Min);
+        Assert.Equal(HitCalc.Apply(Math.Max(1, 6 - D.Enemies[bud].Defense / 2), v.HitPct), v.Min); // v0.23.0: x mnożnik ciosu (kielnia: cięcie na stal)
         var gl = g.WeaponBreakdown(-1, -1, 1, 2, 0);
         Assert.Equal("teraz 6-8 -> 9-11 (średnio +3)", DamageHelp.CompareLine(new Message(), g.WeaponBreakdown(), gl).Text);
         Assert.Equal("+3 obrażeń", DamageHelp.GearLabel(D.Gear[5]));

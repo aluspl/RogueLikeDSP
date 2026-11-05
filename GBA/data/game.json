@@ -9339,6 +9339,7 @@
     "lang_en": "English"
   },
   "uiGodot": {
+    "mnoznik_ciosu": "{0}: {1} ×{2}%",
     "elita_4": "Elita: {0} ({1})",
     "obr_z_ciosu_problemu": "OBR {0}: -{1} z ciosu problemu",
     "unik_szcz_x": "Unik {0}% (SZCZ {1} x {2}%",

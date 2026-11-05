@@ -168,7 +168,9 @@ public class SecretsTests
         Assert.Equal(9, zenka.Enemies[0].X);
         var poz = TestData.Run(1, 5);
         var c0 = poz.CritPct();
+        var cut0 = HitCalc.Has(poz.Weapon, HitType.Cut) ? D.HitTypes.CutCritPct : 0;
         poz.TakeTool(ToolOf(false));
-        Assert.True(poz.CritPct() == c0 + poz.Weapon.Crit && poz.Weapon.Reveal && poz.WeaponBreakdown().CritPct == poz.CritPct());
+        var cut1 = HitCalc.Has(poz.Weapon, HitType.Cut) ? D.HitTypes.CutCritPct : 0;
+        Assert.True(poz.CritPct() == c0 - cut0 + cut1 + poz.Weapon.Crit && poz.Weapon.Reveal && poz.WeaponBreakdown().CritPct == poz.CritPct());
     }
 }

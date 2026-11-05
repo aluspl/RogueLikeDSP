@@ -11,7 +11,7 @@ public class LuckTests
         Assert.True(D.Classes[5].Luck > D.Classes[1].Luck); // Glazurnik > Murarz
         for (var c = 0; c < D.Classes.Length; ++c) Assert.True(D.Classes[1].Luck <= D.Classes[c].Luck);
         var gm = TestData.Arena(1);
-        Assert.True(gm.DodgePct() == 0 && gm.CritPct() == D.CritBasePct);
+        Assert.True(gm.DodgePct() == 0 && gm.CritPct() == D.CritBasePct + (HitCalc.Has(gm.Weapon, HitType.Cut) ? D.HitTypes.CutCritPct : 0));
     }
 
     [Fact]

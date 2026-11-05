@@ -30,7 +30,15 @@ public sealed class GameData
     public NewToolDef[] NewTools { get; private init; } = [];
 
     /// <summary>v0.23.0: parametry typów ciosu (obuch, cięcie, kłucie) i tabela skuteczności wg materiału.</summary>
-    public HitTypesDef HitTypes { get; private init; } = DefaultHitTypes();
+    public HitTypesDef HitTypes { get; private set; } = DefaultHitTypes();
+
+    /// <summary>v0.23.0: płytka kopia danych z innymi parametrami typów ciosu (testy: np. pewne ogłuszenie).</summary>
+    public GameData WithHitTypes(HitTypesDef hitTypes)
+    {
+        var c = (GameData)MemberwiseClone();
+        c.HitTypes = hitTypes;
+        return c;
+    }
 
     /// <summary>v0.23.0: rzadkości broni (Zwykła, Solidna, Markowa, Mistrzowska).</summary>
     public WeaponRarityDef[] WeaponRarities { get; private init; } = [];

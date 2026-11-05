@@ -19,6 +19,8 @@ public sealed partial class Game
         b.Range = RangeOf(w);
         b.Scales = w.ScalesWith;
         b.CritWeapon = w.Crit + (b.Weapon == CDef.Weapon ? MasterCrit() : 0); // v0.21.52 cz. b: broń mistrza
+        b.CritCut = HitCalc.Has(w, HitType.Cut) ? D.HitTypes.CutCritPct : 0; // v0.23.0: cięcie
+        b.Pierce = HitCalc.Has(w, HitType.Pierce) ? D.HitTypes.PierceDef : 0; // v0.23.0: kłucie (+ cecha Przebicie niżej)
         var stTr = RunMods.StatTrait(w.ScalesWith);
         var luckT = 0;
         for (var i = 0; i < D.GearSlotsCount; ++i)
@@ -47,6 +49,14 @@ public sealed partial class Game
         b.CritBoon = BoonSum(BoonEffect.Crit);
         b.VsEnemy = enemyDefId >= 0;
         b.EnemyDef = b.VsEnemy ? D.Enemies[enemyDefId].Defense : 0;
+        if (b.VsEnemy) // v0.23.0: mnożnik ciosu wg materiału / żywiołu problemu
+        {
+            var ed = D.Enemies[enemyDefId];
+            var col = HitCalc.Column(D, ed);
+            b.HitPct = HitCalc.Pct(D, w, ed);
+            b.HitMat = col < D.Materials.Length ? D.Materials[col].Name : ed.Name;
+            b.HitName = D.HitTypes.Names[(int)HitCalc.Best(D, w, col)];
+        }
         b.Luck = CDef.Luck + Bonus.Luck + luckT + BoonLuck();
         b.CritBonus = Bonus.Crit;
         b.PowerRank = AbilityRank();
@@ -57,7 +67,7 @@ public sealed partial class Game
             b.UpgLevel = WeaponLvl;
             b.FlatUpgrade = UpgradeDmg();
             b.UpgTrait = WeaponTrait;
-            b.Pierce = ToolTraitValue(ToolTraitEffect.Pierce);
+            b.Pierce += ToolTraitValue(ToolTraitEffect.Pierce);
             b.Steady = ToolTraitValue(ToolTraitEffect.Steady);
             b.CritUpg = ToolTraitValue(ToolTraitEffect.Crit);
         }
