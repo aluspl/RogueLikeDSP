@@ -9360,6 +9360,13 @@
     "pokaz_szkolenia": "Pokaż Szkolenia",
     "kolejna_budowa": "Kolejna budowa",
     "szczegoly_budowy": "Szczegóły budowy",
-    "miedzy_klawisze": "Spacja: wybierz  Enter: dalej"
+    "miedzy_klawisze": "Spacja: wybierz  Enter: dalej",
+    "telefon_kierownika": "Telefon kierownika",
+    "twoje_postepy": "Twoje postępy",
+    "postepy_linia": "Doświadczenie {0} · Budowy {1}",
+    "wydaj_doswiadczenie": "Wydaj doświadczenie",
+    "dziennie": "Dziennie",
+    "postep_grupa": "Postęp",
+    "brakuje_dosw": "Brakuje {0} dośw."
   }
 }

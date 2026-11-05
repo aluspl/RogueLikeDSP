@@ -31,9 +31,45 @@ public sealed class TitleScreen : Screen
     public override string Music => "title";
     public override bool ShowsSettings => true;
 
-    private string[] Items => _hasRun
-        ? [Loc.T("kontynuuj_budowe"), Loc.T("nowa_budowa"), Loc.T("codzienna_budowa"), Loc.T("wyzwanie_tygodnia"), Loc.T("profil_odznaki_zlecenia"), Loc.T("szkolenia_koszty"), Loc.T("jak_grac")]
-        : [Loc.T("nowa_budowa"), Loc.T("codzienna_budowa"), Loc.T("wyzwanie_tygodnia"), Loc.T("profil_odznaki_zlecenia"), Loc.T("szkolenia_koszty"), Loc.T("jak_grac")];
+    /// <summary>v0.22.0 (UX A): pozycje menu (wariant A); Codzienna i Tydzień w jednym wierszu.</summary>
+    private TitleItem[] Items => _hasRun
+        ? [TitleItem.Continue, TitleItem.NewRun, TitleItem.Daily, TitleItem.Weekly, TitleItem.Phone, TitleItem.Help]
+        : [TitleItem.NewRun, TitleItem.Daily, TitleItem.Weekly, TitleItem.Phone, TitleItem.Help];
+
+    private static string Label(TitleItem i) => i switch
+    {
+        TitleItem.Continue => Loc.T("kontynuuj_budowe"),
+        TitleItem.NewRun => Loc.T("nowa_budowa"),
+        TitleItem.Daily => Loc.T("codzienna"),
+        TitleItem.Weekly => Loc.T("tydzien"),
+        TitleItem.Phone => Loc.T("telefon_kierownika"),
+        _ => Loc.T("jak_grac"),
+    };
+
+    /// <summary>Wiersz pozycji: start (Kontynuuj, Nowa budowa), Dziennie (dwie obok siebie), Postęp.</summary>
+    private int Row(int index)
+    {
+        var items = Items;
+        var row = 0;
+        for (var i = 1; i <= index; i++)
+        {
+            if (items[i] != TitleItem.Weekly) row++;
+        }
+        return row;
+    }
+
+    private static string Group(TitleItem i) => i switch
+    {
+        TitleItem.Daily => Loc.T("dziennie"),
+        TitleItem.Phone => Loc.T("postep_grupa"),
+        _ => "",
+    };
+
+    /// <summary>Indeks pozycji (test dymny, samouczek); -1 = brak.</summary>
+    public int IndexOf(TitleItem item) => System.Array.IndexOf(Items, item);
+
+    /// <summary>Zaznaczona pozycja (test dymny).</summary>
+    public TitleItem Selected => Items[_sel];
 
     public void Open() => Flow.Go(this);
 
@@ -60,33 +96,42 @@ public sealed class TitleScreen : Screen
     private Rect2 CoachHole(string id)
     {
         if (id == "options") return Hud.SettingsButton.Rect;
-        var label = id switch
+        var item = id switch
         {
-            "phone" => Loc.T("profil"),
-            "training" or "respect" => Loc.T("szkolenia"),
-            "daily" => Loc.T("codzienna"),
-            "help" => Loc.T("jak_grac"),
-            _ => Loc.T("nowa_budowa"),
+            "phone" or "training" or "respect" => TitleItem.Phone, // Szkolenia i Respekt są w Telefonie kierownika
+            "daily" => TitleItem.Daily,
+            "help" => TitleItem.Help,
+            _ => TitleItem.NewRun,
         };
-        var items = Items;
-        for (var i = 0; i < items.Length; i++)
-        {
-            if (items[i].StartsWith(label)) return N.TitleView.ItemRect(i);
-        }
-        return new Rect2();
+        return N.TitleView.ItemRect(IndexOf(item));
     }
 
     /// <summary>Rekord, liczba budów, doświadczenie, wybór i notatka na planszy tytułu (także pod telefonem profilu).</summary>
     public void Populate()
     {
         var v = N.TitleView;
-        v.Items = Items;
+        var items = Items;
+        v.Items = System.Array.ConvertAll(items, Label);
+        v.ItemRows = new int[items.Length];
+        var groups = new System.Collections.Generic.List<string>();
+        for (var i = 0; i < items.Length; i++)
+        {
+            v.ItemRows[i] = Row(i);
+            if (v.ItemRows[i] == groups.Count) groups.Add(Group(items[i]));
+        }
+        v.RowGroups = groups.ToArray();
         v.Best = S.Profile.Best;
         v.Runs = S.Profile.Runs;
         v.Xp = S.Profile.Xp;
         v.Sel = _sel;
         v.Note = S.Note;
-        v.Info = Loc.F("budowy_doswiadczenie", S.Profile.Runs, S.Profile.Xp) + ButtonNames.Pick(Loc.T("p_profil_k_szkolenia"), "");
+        // v0.22.0 (UX A): karta „Twoje postępy” z przyciskiem do Szkoleń (aktywny, gdy stać na najbliższy zakup)
+        var cost = Meta.NextUnlock(S.Data, S.Profile, out _, out _);
+        v.CardOn = S.Profile.Runs > 0;
+        v.CardLine = Loc.F("postepy_linia", S.Profile.Xp, S.Profile.Runs);
+        v.CardActive = cost >= 0 && S.Profile.Xp >= cost;
+        v.CardButton = v.CardActive || cost < 0 ? Loc.T("wydaj_doswiadczenie") : $"{Loc.T("wydaj_doswiadczenie")} · {Loc.F("brakuje_dosw", cost - S.Profile.Xp)}";
+        v.Info = "";
         var p = S.Profile; // v0.21.52 cz. b (#44): poziom inspektora z paskiem (od pierwszej budowy)
         Progress.InspectorBar(S.Data, p, out var cur, out var need);
         v.InspLevel = p.Runs > 0 || p.InspectorXp > 0 ? Progress.InspectorLevel(S.Data, p) : -1;
@@ -101,11 +146,11 @@ public sealed class TitleScreen : Screen
     public override bool HandleInput(InputCmd e)
     {
         if (App.Coach.HandleInput(e)) return true;
-        var n = Items.Length;
         var v = e.VDir;
-        if (v != 0)
+        var hd = e.HDir;
+        if (v != 0 || hd != 0)
         {
-            _sel = (_sel + v + n) % n;
+            _sel = Move(v, hd);
             S.Note = "";
             Sfx.Play("menu");
             Populate();
@@ -116,6 +161,11 @@ public sealed class TitleScreen : Screen
             if (N.TitleView.LinkAt(e.Pointer))
             {
                 LifeLike.Game.Session.ExternalLinks.Open(SettingsPage.Url);
+                return true;
+            }
+            if (N.TitleView.CardAt(e.Pointer))
+            {
+                Flow.Profile.Open(4); // „Wydaj doświadczenie” – Szkolenia
                 return true;
             }
             var i = N.TitleView.ItemAt(e.Pointer);
@@ -145,13 +195,39 @@ public sealed class TitleScreen : Screen
         return true;
     }
 
+    /// <summary>↑/↓ po wierszach (w wierszu dwóch pozycji ta sama kolumna), ←/→ w wierszu.</summary>
+    private int Move(int v, int h)
+    {
+        var n = Items.Length;
+        var row = Row(_sel);
+        var rows = Row(n - 1) + 1;
+        int First(int r)
+        {
+            for (var i = 0; i < n; i++)
+            {
+                if (Row(i) == r) return i;
+            }
+            return 0;
+        }
+        var col = _sel - First(row);
+        if (v != 0)
+        {
+            var nr = (row + v + rows) % rows;
+            var f = First(nr);
+            var last = f;
+            while (last + 1 < n && Row(last + 1) == nr) last++;
+            return System.Math.Min(f + col, last);
+        }
+        var j = _sel + h;
+        return j >= 0 && j < n && Row(j) == row ? j : _sel;
+    }
+
     private void Choose()
     {
         Sfx.Play("menu");
-        var k = _hasRun ? _sel - 1 : _sel;
-        switch (k)
+        switch (Items[_sel])
         {
-            case -1:
+            case TitleItem.Continue:
                 if (S.ResumeRun())
                 {
                     App.Refresh();
@@ -161,25 +237,23 @@ public sealed class TitleScreen : Screen
                 else
                 {
                     _hasRun = false;
+                    _sel = 0;
                     S.Note = Loc.T("zapis_budowy_nie_pasuje_do_tej");
                     Populate();
                 }
                 break;
-            case 0:
+            case TitleItem.NewRun:
                 if (Flow.Career.Available) Flow.Career.Open(); // v0.21.52 cz. d: mapa kariery po pierwszej budowie
                 else Flow.ClassSelect.Open();
                 break;
-            case 1:
+            case TitleItem.Daily:
                 Flow.Daily.Open();
                 break;
-            case 2:
+            case TitleItem.Weekly:
                 Flow.Weekly.Open();
                 break;
-            case 3:
+            case TitleItem.Phone:
                 Flow.Profile.Open(0);
-                break;
-            case 4:
-                Flow.Profile.Open(4);
                 break;
             default:
                 Flow.Help.Open(true);
