@@ -5,8 +5,8 @@ namespace LifeLike.Core;
 // Akcje gracza, walka, AI problemów budowy i koniec tury (port core::game z core.h).
 public sealed partial class Game
 {
-    /// <summary>Obrażenia = rzut broni + stat/2 + premie - obrona/2, min 1.</summary>
-    public void HeroAttack(int ei)
+    /// <summary>Obrażenia = rzut broni + stat/2 + premie - obrona/2, min 1. pct (v0.23.0) = % obrażeń trybu ataku (100 = bez zmian).</summary>
+    public void HeroAttack(int ei, int pct = 100)
     {
         if (ei == Boss && BossWakeDamage < 0) BossEngaged(); // walka z bossem trwa
         int ex = Enemies[ei].X, ey = Enemies[ei].Y;
@@ -20,7 +20,7 @@ public sealed partial class Game
                   - Math.Max(0, EnemyDefense(ei) - PierceTotal(w)) / 2;
         if (dmg < 1) dmg = 1;
         dmg += Pct.Part(dmg, Bonus.DmgPct + BoonSum(BoonEffect.DmgPct), ref DmgCarry); // Kurs fachowy, Respekt, premie: +%
-        dmg = HitCalc.Apply(dmg, HitCalc.Pct(D, w, D.Enemies[Enemies[ei].DefId])); // v0.23.0: typ ciosu x materiał / żywioł celu
+        dmg = HitCalc.Apply(dmg, HitCalc.Pct(D, w, D.Enemies[Enemies[ei].DefId]) * pct / 100); // v0.23.0: typ ciosu x materiał / żywioł celu x % trybu
         var crit = R.Range(1, 100) <= CritPct();
         if (crit) dmg *= D.CritMultiplier;
         DamageEnemy(ei, dmg, crit, Weapon.Name);
@@ -243,7 +243,7 @@ public sealed partial class Game
         var stuck = false;
         if (ei >= 0)
         {
-            HeroAttack(ei);
+            AttackWith(Weapon.ModeA, ei); // v0.23.0: cios wręcz też trafia całym wzorem trybu A (np. łuk kielni)
         }
         else if (SecretClosed() && SecretIs(nx, ny)) // magazyn (#32)
         {
@@ -293,7 +293,7 @@ public sealed partial class Game
         {
             var e = Enemies[i];
             var d = Cheb(Hero.X, Hero.Y, e.X, e.Y);
-            if (e.Alive && d <= WeaponRange() && d < bd)
+            if (e.Alive && d <= WeaponRange() && d < bd && InPattern(Weapon.ModeA, i))
             {
                 bd = d;
                 best = i;
@@ -311,7 +311,7 @@ public sealed partial class Game
             for (var i = 0; i < EnemiesCount && n < output.Length; ++i)
             {
                 var e = Enemies[i];
-                if (e.Alive && Visible(e.X, e.Y) && Cheb(Hero.X, Hero.Y, e.X, e.Y) == d) output[n++] = (sbyte)i;
+                if (e.Alive && Visible(e.X, e.Y) && Cheb(Hero.X, Hero.Y, e.X, e.Y) == d && InPattern(Weapon.ModeA, i)) output[n++] = (sbyte)i;
             }
         }
         return n;
@@ -323,8 +323,8 @@ public sealed partial class Game
         if (St != GameStatus.Playing || ei < 0 || ei >= EnemiesCount) return false;
         if (ShockedTurn()) return true;
         var e = Enemies[ei];
-        if (!e.Alive || !Visible(e.X, e.Y) || Cheb(Hero.X, Hero.Y, e.X, e.Y) > WeaponRange()) return false;
-        HeroAttack(ei);
+        if (!e.Alive || !Visible(e.X, e.Y) || Cheb(Hero.X, Hero.Y, e.X, e.Y) > WeaponRange() || !InPattern(Weapon.ModeA, ei)) return false;
+        AttackWith(Weapon.ModeA, ei);
         EndTurn();
         return true;
     }
@@ -339,7 +339,7 @@ public sealed partial class Game
             Push(Msg(Loc.T("brak_celu_w_zasiegu")).Add(WeaponRange()));
             return false;
         }
-        HeroAttack(t);
+        AttackWith(Weapon.ModeA, t);
         EndTurn();
         return true;
     }

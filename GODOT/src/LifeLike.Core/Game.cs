@@ -186,9 +186,12 @@ public sealed partial class Game
     public int WeaponRange() => RangeOf(Weapon);
 
     /// <summary>Zasięg danej broni z pogodą (range_of).</summary>
-    public int RangeOf(WeaponDef w)
+    public int RangeOf(WeaponDef w) => WindRange(w.Range);
+
+    /// <summary>Zasięg rg z pogodą (v0.23.0: także zasięg wzoru trybu).</summary>
+    public int WindRange(int rg)
     {
-        var rg = w.Range; // Dekarz: wiatr mu nie przeszkadza
+        // Dekarz: wiatr mu nie przeszkadza
         return WeatherIs(WeatherEffect.Wind) && rg > 1 && !HasPassive(ClassPassive.Windproof) ? Math.Max(1, rg - WDef.Value) : rg;
     }
 

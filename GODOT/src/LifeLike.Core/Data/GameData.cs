@@ -9,7 +9,7 @@ namespace LifeLike.Core.Data;
 /// </summary>
 public sealed class GameData
 {
-    public WeaponDef[] Weapons { get; private init; } = [];
+    public WeaponDef[] Weapons { get; private set; } = [];
     public ClassDef[] Classes { get; private init; } = [];
     public EnemyDef[] Enemies { get; private init; } = [];
     public StageDef[] Stages { get; private init; } = [];
@@ -37,6 +37,15 @@ public sealed class GameData
     {
         var c = (GameData)MemberwiseClone();
         c.HitTypes = hitTypes;
+        return c;
+    }
+
+    /// <summary>v0.23.0: płytka kopia danych z podmienioną bronią (testy wzorów pól).</summary>
+    public GameData WithWeapon(int index, WeaponDef weapon)
+    {
+        var c = (GameData)MemberwiseClone();
+        c.Weapons = (WeaponDef[])Weapons.Clone();
+        c.Weapons[index] = weapon;
         return c;
     }
 
