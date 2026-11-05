@@ -2,7 +2,7 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
-## v0.22.1 – w przygotowaniu
+## v0.22.1 – 2026-11-05
 
 ### Poprawki (Godot)
 1. **Obrót ekranu przy telefonie (#74)** – powiadomienia od razu przechodzą z dołu ekranu (pion) do kolumny obok

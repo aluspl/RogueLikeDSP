@@ -250,7 +250,7 @@ Stan v0.21.54: #62, #65, #66 zrobione, #63 jako prototyp w ustawieniach (wszystk
 
 > (Zamknięte w v0.22.0, sprawdzone zrzutami 2026-11-05.) Stan #67–#69 (2026-10-04, praca wstrzymana na prośbę): WIP w commicie – wersja v0.22.0 w danych, początek nowych kafli schodów w eksporcie i zmiany w HUD/dzienniku Godota; nie sprawdzone zrzutami ani testami, do dokończenia.
 
-## v0.22.1 (następna wersja, plan 2026-11-05)
+## v0.22.1 (wydana 2026-11-05)
 
 | # | Zadanie | GODOT (MOBILE) | GBA |
 |---|---|---|---|

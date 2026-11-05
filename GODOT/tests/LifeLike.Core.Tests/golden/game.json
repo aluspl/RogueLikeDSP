@@ -3023,7 +3023,7 @@
       "effect": "thermos"
     }
   ],
-  "version": "v0.22.0",
+  "version": "v0.22.1",
   "damageHelp": [
     "Cios = rzut broni + premie:",
     "SIŁ/ZRĘ/INT broni +1 co 2 pkt,",
@@ -9353,6 +9353,7 @@
     "legenda_info": "info",
     "miedzy_wynik": "Wynik: {0} pkt.",
     "budowa_dnia_nr_najlepszy": "Budowa dnia nr {0}: najlepszy {1}",
-    "wyzwanie_tygodnia_najlepszy": "Wyzwanie tygodnia: najlepszy {0}"
+    "wyzwanie_tygodnia_najlepszy": "Wyzwanie tygodnia: najlepszy {0}",
+    "wybierz_1_z_2": "wybierz 1 z 2"
   }
 }
