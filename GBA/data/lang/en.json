@@ -855,6 +855,7 @@
   "Nowy sprzęt: unik": "New gear: dodge",
   "Nowy zawód: obszar": "New trade: area",
   "Nowy sprzęt: termos": "New gear: flask",
+  "Start z pasem i kaburą": "Start with holster belt",
   "Nowy zawód: taran": "New trade: ram",
   "Akt 0: Papierologia": "Act 0: Red Tape",
   "Nowy akt przed budową": "New act before building",
@@ -2414,6 +2415,8 @@
   "lang_en": "English"
  },
  "uiGodot": {
+  "zamiana_broni": "Weapon swap: ",
+  "bron_do_kabury": "To holster: ",
   "mnoznik_ciosu": "{0}: {1} ×{2}%",
   "elita_4": "Elite: {0} ({1})",
   "obr_z_ciosu_problemu": "DEF {0}: -{1} from problem hits",

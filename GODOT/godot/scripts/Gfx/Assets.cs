@@ -182,6 +182,7 @@ public static class Assets
     public static int RewardIcon(GameData d, RewardDef r)
     {
         if (r.Kind == RewardKind.Tool) return d.Weapons[d.Tools[r.Index].Weapon].Elem == Element.Spark ? MenuRewardTool2 : MenuRewardTool;   // Pistolet do kotew
+        if (r.Kind == RewardKind.Belt) return MenuBelt;   // v0.23.0: pas z kaburą
         if (r.Kind == RewardKind.Gear) return d.Gear[r.Index * 3].Stat == GearStat.Thermos ? MenuBelt : MenuBoots;
         if (r.Kind == RewardKind.Act) return MenuStamps;
         return MenuCalendar;

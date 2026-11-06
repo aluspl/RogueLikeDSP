@@ -197,6 +197,9 @@ public static class StateDigest
         f.Add(g.ToolOfferPickup);
         f.Add(g.WeaponRarity);
         f.Add(g.ToolOfferRarity);
+        f.Add(g.Weapon2); // v0.23.0: druga broń w kaburze
+        f.Add(g.Weapon2Rarity);
+        f.Add(g.Weapon2Charges);
         f.Add(g.SecretX);
         f.Add(g.SecretY);
         f.Add(g.SecretKind);

@@ -54,6 +54,8 @@ public struct RunMods
     public int SecondChance;
     /// <summary>Sloty sprzętu w dropach (bitmaska; nagrody: buty, pas).</summary>
     public int GearSlots;
+    /// <summary>v0.23.0: nagroda za odbiór „Pas monterski z kaburą” – budowa zaczyna się z założonym pasem (1 = tak).</summary>
+    public int StartBelt;
     /// <summary>v0.21.49: Akt 0 (Papierologia) z nagrody za odbiór – budowa zaczyna się od niego (1 = tak).</summary>
     public int Act0;
     /// <summary>v0.21.50: Respekt Druga oferta – darmowe losowanie premii po etapie.</summary>

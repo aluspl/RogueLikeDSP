@@ -137,7 +137,7 @@ public sealed partial class Game
                      Bonus.Thermos, Bonus.ToolPct, Bonus.XpPct, Bonus.Cash, Bonus.Crit, Bonus.Helpers, Bonus.Investor,
                      Bonus.DmgPct, Bonus.TakenPct, Bonus.GearPct, Bonus.Dodge, Bonus.CoffeePct, Bonus.BrigadePct, Bonus.ShopPct,
                      Bonus.MatsPct, Bonus.SecondChance, Bonus.GearSlots, Bonus.Act0, Bonus.Rerolls, Bonus.Weekly, Bonus.StartCoffee,
-                     Bonus.Mastery, Bonus.WeaponRarity,
+                     Bonus.Mastery, Bonus.WeaponRarity, Bonus.StartBelt,
                  })
             w.Write(v);
         w.Write(Bonus.Tools);
@@ -226,6 +226,9 @@ public sealed partial class Game
         w.Write(ToolOfferPickup);
         w.Write(WeaponRarity); // v0.23.0: rzadkość broni w ręku i zamiany
         w.Write(ToolOfferRarity);
+        w.Write(Weapon2); // v0.23.0: druga broń w kaburze
+        w.Write(Weapon2Rarity);
+        w.Write(Weapon2Charges);
         w.Write(SecretX);
         w.Write(SecretY);
         w.Write(SecretKind);
@@ -338,7 +341,7 @@ public sealed partial class Game
             DmgPct = r.ReadInt32(), TakenPct = r.ReadInt32(), GearPct = r.ReadInt32(), Dodge = r.ReadInt32(), CoffeePct = r.ReadInt32(),
             BrigadePct = r.ReadInt32(), ShopPct = r.ReadInt32(), MatsPct = r.ReadInt32(), SecondChance = r.ReadInt32(),
             GearSlots = r.ReadInt32(), Act0 = r.ReadInt32(), Rerolls = r.ReadInt32(), Weekly = r.ReadInt32(), StartCoffee = r.ReadInt32(),
-            Mastery = r.ReadInt32(), WeaponRarity = r.ReadInt32(),
+            Mastery = r.ReadInt32(), WeaponRarity = r.ReadInt32(), StartBelt = r.ReadInt32(),
         };
         Bonus.Tools = r.ReadUInt64();
         XpPct = r.ReadInt32();
@@ -424,6 +427,9 @@ public sealed partial class Game
         ToolOfferPickup = r.ReadSByte();
         WeaponRarity = r.ReadByte();
         ToolOfferRarity = r.ReadSByte();
+        Weapon2 = r.ReadInt32();
+        Weapon2Rarity = r.ReadByte();
+        Weapon2Charges = r.ReadSByte();
         SecretX = r.ReadSByte();
         SecretY = r.ReadSByte();
         SecretKind = r.ReadSByte();

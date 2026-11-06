@@ -25,7 +25,7 @@ public class Act0AndTutorialTests
         var p = Meta.NewProfile(D);
         Assert.True(!Meta.Act0Unlocked(D, p) && Meta.Mods(D, p).Act0 == 0);
         var ai = ActReward();
-        Assert.True(ai == D.Rewards.Length - 1 && Meta.RewardsAvailable(D) == D.Rewards.Length);
+        Assert.True(ai == D.Rewards.Length - 2 && Meta.RewardsAvailable(D) == D.Rewards.Length); // v0.23.0: za Aktem 0 jest jeszcze nagroda „pas z kaburą”
         for (var k = 0; k <= ai; ++k) Assert.Equal(k, Meta.RecordWin(D, p));
         Assert.True(Meta.Act0Unlocked(D, p) && Meta.Mods(D, p).Act0 == 1);
         var n = TestData.Run(1, 11);

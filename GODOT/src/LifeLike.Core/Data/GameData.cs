@@ -121,6 +121,10 @@ public sealed class GameData
     public int DropChancePct { get; private init; }
     public int GearSolidFrom { get; private init; }
     public int GearBrandFrom { get; private init; }
+    /// <summary>v0.23.0: slot pasa (Pas), -1 bez pasa; przedmiot pasa z kaburą to jakość Game.BeltTier w tym slocie.</summary>
+    public int BeltSlot { get; private init; } = -1;
+    /// <summary>v0.23.0: szansa (%), że paczka / Hurtownia dająca Pas jakości Game.BeltTier naprawdę da pas z kaburą.</summary>
+    public int BeltChancePct { get; private init; }
     public int GearStageBonus { get; private init; }
     public int XpPerKill { get; private init; }
     public int XpPerStage { get; private init; }
@@ -756,6 +760,12 @@ public sealed class GameData
                         Require(idx >= 0, $"nagroda: nieznany slot {id}");
                         name = slots[idx];
                         break;
+                    case "belt":
+                        rk = RewardKind.Belt;
+                        idx = slots.IndexOf(id);
+                        Require(idx >= 0, $"nagroda: nieznany slot pasa {id}");
+                        name = gear[idx * 3 + Game.BeltTier].Name;
+                        break;
                     case "class":
                         rk = RewardKind.Cls;
                         idx = Lookup(cid, id, "zawód nagrody");
@@ -1359,6 +1369,8 @@ public sealed class GameData
             DropChancePct = Int(drops, "chancePct"),
             GearSolidFrom = Int(rr, "solidFrom"),
             GearBrandFrom = Int(rr, "brandFrom"),
+            BeltSlot = eq.TryGetProperty("beltSlot", out var bsj) ? slots.IndexOf(bsj.GetString() ?? "") : -1,
+            BeltChancePct = Int(eq, "beltChancePct", 0),
             GearStageBonus = Int(rr, "stageBonus"),
             XpPerKill = Int(meta, "xpPerKill"),
             XpPerStage = Int(meta, "xpPerStage"),

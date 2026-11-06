@@ -748,6 +748,7 @@ public static class Meta
             if (RespectRank(d, p, i) > 0) m.AddRespect(d.Respect[i].Effect, RespectValue(d, p, i));
         }
         m.GearSlots = GearSlotsMask(d, p); // nagrody za odbiór: buty, pas
+        m.StartBelt = RewardUnlocked(d, p, RewardKind.Belt, d.BeltSlot) ? 1 : 0; // v0.23.0: nagroda za odbiór: pas z kaburą
         m.Act0 = Act0Unlocked(d, p) ? 1 : 0; // nagroda za odbiór: Akt 0 przed budową
         for (var i = 0; i < d.Badges.Length; ++i) // uprawnienia ze zdobytych odznak
         {

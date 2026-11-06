@@ -495,7 +495,7 @@ def build(d):
           f"inline constexpr int respect_boss = {rs['boss']};",
           f"inline constexpr int respect_act_boss = {rs['actBoss']};",
           f"inline constexpr int respect_final = {rs['final']};", ""]
-    rw = d["rewards"]["list"]
+    rw = [x for x in d["rewards"]["list"] if x["kind"] != "belt"]   # v0.23.0: nagroda „pas z kaburą” tylko w Godocie (druga broń nie jest na GBA)
     tid = {t["weapon"]: i for i, t in enumerate(m["tools"])}
     slid = {sl["name"]: i for i, sl in enumerate(eq["slots"])}
     RK = {"tool": "tool", "gear": "gear", "class": "cls", "act": "act", "soon": "soon"}

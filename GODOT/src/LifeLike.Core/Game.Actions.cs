@@ -430,7 +430,9 @@ public sealed partial class Game
         {
             var q = R.Range(1, 100) + Math.Max(0, PatternStage()) * D.GearStageBonus + D.RarityPerLuck * Luck() + Bonus.GearPct;
             var rarity = Math.Max(minRarity, q >= D.GearBrandFrom ? 2 : (q >= D.GearSolidFrom ? 1 : 0));
-            arg = (byte)(RandomSlot() * 3 + rarity);
+            var gslot = RandomSlot();
+            rarity = BeltFilter(gslot, rarity, rarity - 1 >= minRarity ? rarity - 1 : rarity + 1); // v0.23.0: pas z kaburą rzadki
+            arg = (byte)(gslot * 3 + rarity);
             trait = (byte)R.Range(0, D.GearTraitsCount - 1);
         }
         if (type == (int)PickupType.Tool)
@@ -497,6 +499,12 @@ public sealed partial class Game
             ref var p = ref Pickups[i];
             if (!p.Active || p.X != Hero.X || p.Y != Hero.Y) continue;
             if (p.Type == PickupType.GearBox && HasOffer) continue; // najpierw decyzja o poprzedniej paczce
+            if (p.Type == PickupType.Tool && HasBelt() && Weapon2 < 0) // v0.23.0: pas z kaburą – broń do drugiego miejsca, bez pytania
+            {
+                StashTool(p.Arg, p.Trait);
+                p.Active = false;
+                continue;
+            }
             if (p.Type == PickupType.Tool && (WeaponLvl > 0 || WeaponTrait >= 0)) // ulepszone narzędzie: decyzja (ulepszenia przepadną)
             {
                 if (!HasToolOffer)

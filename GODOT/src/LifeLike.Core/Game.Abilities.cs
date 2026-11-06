@@ -357,6 +357,7 @@ public sealed partial class Game
                 var slot = RandomSlot();
                 var rarity = R.Range(1, 2);
                 if (rarity <= Equipped[slot]) rarity = Math.Min(2, Equipped[slot] + 1);
+                rarity = BeltFilter(slot, rarity, 2); // v0.23.0: pas z kaburą rzadki, inaczej Markowy
                 if (rarity > Equipped[slot]) Equip(slot, rarity, R.Range(0, D.GearTraitsCount - 1));
                 else GainXp(3);
                 break;

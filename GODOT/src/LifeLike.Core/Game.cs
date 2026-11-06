@@ -556,6 +556,7 @@ public sealed partial class Game
         Cash = mods.Cash;
         FirstStage = (sbyte)(mods.Act0 != 0 ? 0 : PreludeCount()); // bez nagrody Akt 0 budowa zaczyna się od Fundamentów
         StartStage(FirstStage);
+        if (mods.StartBelt != 0 && D.BeltSlot >= 0) Equip(D.BeltSlot, BeltTier, R.Range(0, D.GearTraitsCount - 1)); // v0.23.0: nagroda za odbiór
         Thermos = Math.Min(ThermosCap(), mods.StartCoffee); // Respekt: Zaprawiony w boju
         WeaponRarity = (byte)StartRarity(D, mods); // v0.23.0: Szkolenie Narzędzia; broń mistrza / unikat = Mistrzowska
     }

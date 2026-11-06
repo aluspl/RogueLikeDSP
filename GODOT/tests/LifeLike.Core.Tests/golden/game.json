@@ -3526,7 +3526,9 @@
         "value": 1
       }
     ],
-    "declineXp": 1
+    "declineXp": 1,
+    "beltSlot": "Pas",
+    "beltChancePct": 15
   },
   "acts": [
     {
@@ -4641,6 +4643,12 @@
         "id": "akt0",
         "name": "Akt 0: Papierologia",
         "desc": "Nowy akt przed budową"
+      },
+      {
+        "kind": "belt",
+        "id": "Pas",
+        "name": "Pas monterski z kaburą",
+        "desc": "Start z pasem i kaburą"
       }
     ]
   },
@@ -9372,6 +9380,8 @@
     "lang_en": "English"
   },
   "uiGodot": {
+    "zamiana_broni": "Zamiana broni: ",
+    "bron_do_kabury": "Do kabury: ",
     "mnoznik_ciosu": "{0}: {1} ×{2}%",
     "elita_4": "Elita: {0} ({1})",
     "obr_z_ciosu_problemu": "OBR {0}: -{1} z ciosu problemu",
