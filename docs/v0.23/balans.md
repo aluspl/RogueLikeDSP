@@ -109,3 +109,69 @@ z ~25 p.p. (v0.22.1) do ~36 p.p. – bot nie podnosi już gorszych broni (na dan
 i +8 p.p. z pełnymi Szkoleniami), a tryb B i typy ciosu dokładają się. Gałki broni (tabela, odnowienia, rzadkość, dropy) i
 poziom trudności przesuwają Normalny i meta prawie równo; zejście meta do celu przy Normalnym ≥ v0.22.1 −5 p.p. na zawód
 wymaga osłabienia samego meta (Szkolenia / Respekt / nagrody) albo nowych celów meta dla bota z bronią.
+
+## v0.23.0 – runda meta (decyzja właściciela: HP +18% zostaje, cele meta „pół na pół”)
+
+Nowe cele meta: pełne Szkolenia 55–65, + Respekt 70–80, Akt 0 + meta 65–75, inwestor 5–15, kontrakty 25–40 / 65–80
+(Łatwy / Normalny / Trudny i reguły broni domyślnej bez zmian).
+
+| Gałka | Przed | Po | Wpływ (pomiar, N = 100 / zawód, pełne Szkolenia) |
+|---|---|---|---|
+| Szkolenie Dostawy, poziom 2 | +1 znajdźka | +5% materiałów (Dostawy: „Więcej materiałów i budżetu”) | −6 p.p. |
+| Szkolenie Kondycja, poziom 4 | +1 HP | szansa na lepszy sprzęt +1 | −1 p.p. (N = 300) |
+| Respekt: Pewna ręka, Gruba skóra, Oko fachowca, Zwinność, Mocna kawa, Rutyna | 2 rangi (1 / 2, kawa 5 / 10) | 1 ranga (1, kawa 5) | + Respekt −4…−5, Akt 0 −6 |
+| Dachówki, tryb B (odnowienie) | 3 | 2 | Dekarz z bronią domyślną −5,0 → −2,4 p.p. (zapas ≥ 1) |
+
+Sprawdzone i odrzucone: drugi i trzeci poziom termosu (bez wpływu), Szczęście z BHP II (−4,5, ale kontrakty spadają do 63%),
+bez Drugiej szansy (usuwa funkcję), bez nagród Pas / Buty (≤ 1 p.p.).
+
+### Wynik końcowy po rundzie meta (300 przebiegów na zawód)
+
+Przebiegi na zawód: 300 (kontrakty 150); średnie celów = zwykłe zawody (bez sekretów), jak core_tests.cpp.
+
+| Cel | Wynik | Zakres |
+|---|---|---|
+| Łatwy | 56,9 | 50–60 |
+| Normalny | 33,6 (wszystkie zawody 33,6) | 25–35 |
+| Trudny | 9,1 | 8–15 |
+| Pełne Szkolenia | 64,6 | 55–65 |
+| + Respekt | 73,3 | 70–80 |
+| Akt 0 + meta | 73,7 | 65–75 |
+| Inwestor (wszystkie modyfikatory) | 11,6 | 5–15 |
+| Kontrakt Letniskowy bez meta / pełne meta | 29,9 / 74,1 | 25–40 / 65–80 |
+| Kontrakt Bliźniak bez meta / pełne meta | 28,4 / 67,8 | 25–40 / 65–80 |
+| Kontrakt Poddasze bez meta / pełne meta | 31,0 / 68,7 | 25–40 / 65–80 |
+| Kontrakt Kamienica bez meta / pełne meta | 30,2 / 71,3 | 25–40 / 65–80 |
+| Tylko broń domyślna, Normalny | 33,5 (wszystkie 33,3) | zawód ≥ v0.22.1 −5 p.p. |
+
+| Zawód | v0.22.1 | Bot (Normalny) | Tylko domyślna | Δ domyślna | Najgorszy etap domyślnej (Δ udziału porażek, p.p.) |
+|---|---|---|---|---|---|
+| Kierownik budowy | 36,7 | 34,6 | 35,6 | -1,1 | 10: 5,0 |
+| Murarz | 16,0 | 23,3 | 23,3 | 7,3 | 11: 4,3 |
+| Cieśla-dekarz | 48,7 | 51,0 | 51,0 | 2,3 | 10: 1,7 |
+| Elektryk | 35,3 | 37,3 | 36,6 | 1,3 | 9: 2,7 |
+| Hydraulik | 14,0 | 17,3 | 17,0 | 3,0 | 11: 2,0 |
+| Glazurnik | 23,3 | 23,0 | 22,6 | -0,7 | 11: 3,0 |
+| Dekarz | 57,0 | 53,6 | 54,6 | -2,4 | 11: 4,3 |
+| Tynkarz | 36,7 | 37,6 | 36,3 | -0,4 | 5: 4,3 |
+| Operator koparki | 23,0 | 24,0 | 24,0 | 1,0 | 9: 5,3 |
+| Spawacz | 35,0 | 36,6 | 36,3 | 1,3 | 11: 6,0 |
+| Geodeta | 36,7 | 40,3 | 39,3 | 2,6 | 8: 3,3 |
+| Majster | 23,0 | 24,0 | 23,0 | 0,0 | 9: 5,3 |
+
+Porażki na etapach (etap: udział % wszystkich przebiegów zawodu), Normalny:
+
+| Zawód | Bot | Tylko domyślna |
+|---|---|---|
+| Kierownik budowy | 5: 10,0, 6: 3,3, 7: 1,6, 8: 18,3, 9: 11,0, 10: 7,0, 11: 14,0 | 5: 7,6, 6: 3,3, 7: 2,0, 8: 19,6, 9: 11,6, 10: 7,0, 11: 13,0 |
+| Murarz | 3: 0,3, 5: 5,3, 6: 3,0, 7: 1,6, 8: 22,3, 9: 19,3, 10: 6,0, 11: 18,6 | 3: 0,3, 5: 5,3, 6: 2,6, 7: 1,6, 8: 22,6, 9: 19,6, 10: 6,0, 11: 18,3 |
+| Cieśla-dekarz | 3: 0,3, 4: 0,3, 5: 6,0, 6: 2,0, 7: 2,6, 8: 10,0, 9: 11,6, 10: 5,3, 11: 10,6 | 3: 0,3, 4: 0,3, 5: 5,6, 6: 2,0, 7: 2,3, 8: 9,6, 9: 12,0, 10: 5,0, 11: 11,6 |
+| Elektryk | 4: 0,3, 5: 11,0, 6: 2,0, 7: 3,3, 8: 14,6, 9: 13,3, 10: 3,3, 11: 14,6 | 4: 0,3, 5: 11,0, 6: 2,0, 7: 3,3, 8: 14,3, 9: 14,0, 10: 3,3, 11: 15,0 |
+| Hydraulik | 5: 6,6, 6: 4,0, 7: 4,0, 8: 26,3, 9: 21,6, 10: 5,0, 11: 15,0 | 5: 7,3, 6: 4,0, 7: 4,0, 8: 26,0, 9: 22,0, 10: 4,6, 11: 15,0 |
+| Glazurnik | 5: 11,6, 6: 5,3, 7: 3,0, 8: 21,6, 9: 16,6, 10: 3,0, 11: 15,6 | 5: 11,3, 6: 5,3, 7: 3,3, 8: 20,6, 9: 17,6, 10: 3,0, 11: 16,0 |
+| Dekarz | 5: 12,6, 6: 1,6, 7: 0,6, 8: 7,6, 9: 11,3, 10: 1,6, 11: 10,6 | 5: 13,3, 6: 1,6, 7: 1,3, 8: 6,6, 9: 11,0, 11: 11,3 |
+| Tynkarz | 5: 13,3, 6: 2,0, 7: 2,3, 8: 18,3, 9: 13,0, 10: 2,6, 11: 10,6 | 5: 14,0, 6: 2,3, 7: 2,6, 8: 19,3, 9: 13,0, 10: 2,3, 11: 10,0 |
+| Operator koparki | 5: 11,0, 6: 3,6, 7: 2,6, 8: 19,6, 9: 23,0, 10: 4,3, 11: 11,6 | 4: 0,3, 5: 11,0, 6: 4,0, 7: 2,6, 8: 18,6, 9: 24,0, 10: 4,0, 11: 11,3 |
+| Spawacz | 3: 0,3, 5: 19,3, 6: 2,3, 7: 2,6, 8: 12,6, 9: 7,6, 10: 4,0, 11: 14,3 | 3: 0,3, 5: 19,0, 6: 2,3, 7: 2,6, 8: 13,0, 9: 8,6, 10: 3,6, 11: 14,0 |
+| Geodeta | 4: 0,3, 5: 9,6, 6: 3,0, 7: 2,6, 8: 19,6, 9: 9,0, 10: 3,0, 11: 12,3 | 4: 0,3, 5: 9,6, 6: 3,3, 7: 2,3, 8: 20,0, 9: 9,0, 10: 3,3, 11: 12,6 |
+| Majster | 4: 0,6, 5: 7,3, 6: 2,0, 7: 2,0, 8: 16,0, 9: 25,6, 10: 1,6, 11: 20,6 | 4: 0,6, 5: 7,3, 6: 2,0, 7: 2,0, 8: 15,6, 9: 26,0, 10: 1,6, 11: 21,6 |

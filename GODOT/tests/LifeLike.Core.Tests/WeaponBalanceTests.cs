@@ -55,9 +55,9 @@ public class WeaponBalanceTests
     public void MetaInTarget()
     {
         var r = Result.Value;
-        Assert.InRange(r.Training, 50.0, 60.0);
-        Assert.InRange(r.Respect, 65.0, 75.0);
-        Assert.InRange(r.Act0, 60.0, 70.0);
+        Assert.InRange(r.Training, 55.0, 65.0); // v0.23.0: cele meta „pół na pół” (decyzja właściciela)
+        Assert.InRange(r.Respect, 70.0, 80.0);
+        Assert.InRange(r.Act0, 65.0, 75.0);
         Assert.InRange(r.Investor, 5.0, 15.0);
     }
 
@@ -68,7 +68,7 @@ public class WeaponBalanceTests
         for (var k = 1; k < D.Career.Length; ++k)
         {
             Assert.InRange(r.ContractNone[k], 25.0, 40.0);
-            Assert.InRange(r.ContractFull[k], 60.0, 75.0);
+            Assert.InRange(r.ContractFull[k], 65.0, 80.0);
         }
     }
 
@@ -233,11 +233,11 @@ public class WeaponBalanceTests
         sb.AppendLine($"| Łatwy | {P(r.Easy.OpenPct)} | 50–60 |");
         sb.AppendLine($"| Normalny | {P(r.Normal.OpenPct)} (wszystkie zawody {P(r.Normal.AllPct)}) | 25–35 |");
         sb.AppendLine($"| Trudny | {P(r.Hard.OpenPct)} | 8–15 |");
-        sb.AppendLine($"| Pełne Szkolenia | {P(r.Training)} | 50–60 |");
-        sb.AppendLine($"| + Respekt | {P(r.Respect)} | 65–75 |");
-        sb.AppendLine($"| Akt 0 + meta | {P(r.Act0)} | 60–70 |");
+        sb.AppendLine($"| Pełne Szkolenia | {P(r.Training)} | 55–65 |");
+        sb.AppendLine($"| + Respekt | {P(r.Respect)} | 70–80 |");
+        sb.AppendLine($"| Akt 0 + meta | {P(r.Act0)} | 65–75 |");
         sb.AppendLine($"| Inwestor (wszystkie modyfikatory) | {P(r.Investor)} | 5–15 |");
-        for (var k = 1; k < D.Career.Length; ++k) sb.AppendLine($"| Kontrakt {D.Career[k].Short} bez meta / pełne meta | {P(r.ContractNone[k])} / {P(r.ContractFull[k])} | 25–40 / 60–75 |");
+        for (var k = 1; k < D.Career.Length; ++k) sb.AppendLine($"| Kontrakt {D.Career[k].Short} bez meta / pełne meta | {P(r.ContractNone[k])} / {P(r.ContractFull[k])} | 25–40 / 65–80 |");
         sb.AppendLine($"| Tylko broń domyślna, Normalny | {P(r.DefaultOnly.OpenPct)} (wszystkie {P(r.DefaultOnly.AllPct)}) | zawód ≥ v0.22.1 −5 p.p. |");
         sb.AppendLine();
         sb.AppendLine("| Zawód | v0.22.1 | Bot (Normalny) | Tylko domyślna | Δ domyślna | Najgorszy etap domyślnej (Δ udziału porażek, p.p.) |");

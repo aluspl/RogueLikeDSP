@@ -481,7 +481,7 @@
         "pattern": "throw",
         "range": 3,
         "dmgPct": 100,
-        "cooldown": 3
+        "cooldown": 2
       }
     },
     {
@@ -2221,7 +2221,7 @@
             "cost": 90
           },
           {
-            "effect": "hp",
+            "effect": "gear_pct",
             "value": 1,
             "cost": 150
           }
@@ -2331,8 +2331,8 @@
       {
         "id": "dostawy",
         "name": "Dostawy",
-        "desc": "Więcej znajdziek i materiałów",
-        "effect": "pickups",
+        "desc": "Więcej materiałów i budżetu",
+        "effect": "mats_pct",
         "steps": [
           {
             "effect": "mats_pct",
@@ -2340,8 +2340,8 @@
             "cost": 25
           },
           {
-            "effect": "pickups",
-            "value": 1,
+            "effect": "mats_pct",
+            "value": 5,
             "cost": 50
           },
           {
@@ -4344,12 +4344,10 @@
         "desc": "Obrażenia",
         "effect": "dmg_pct",
         "values": [
-          1,
-          2
+          1
         ],
         "costs": [
-          15,
-          40
+          15
         ]
       },
       {
@@ -4358,12 +4356,10 @@
         "desc": "Otrzymane obrażenia",
         "effect": "taken_pct",
         "values": [
-          1,
-          2
+          1
         ],
         "costs": [
-          15,
-          40
+          15
         ]
       },
       {
@@ -4392,12 +4388,10 @@
         "desc": "Szansa na kryt",
         "effect": "crit",
         "values": [
-          1,
-          2
+          1
         ],
         "costs": [
-          15,
-          40
+          15
         ]
       },
       {
@@ -4406,12 +4400,10 @@
         "desc": "Unik (łącznie maks. 20%)",
         "effect": "dodge",
         "values": [
-          1,
-          2
+          1
         ],
         "costs": [
-          15,
-          40
+          15
         ]
       },
       {
@@ -4420,12 +4412,10 @@
         "desc": "Kawa leczy więcej",
         "effect": "coffee_pct",
         "values": [
-          5,
-          10
+          5
         ],
         "costs": [
-          10,
-          30
+          10
         ]
       },
       {
@@ -4446,12 +4436,10 @@
         "desc": "Moc odnawia się szybciej",
         "effect": "cooldown",
         "values": [
-          1,
-          2
+          1
         ],
         "costs": [
-          30,
-          60
+          30
         ]
       },
       {

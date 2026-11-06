@@ -25,8 +25,9 @@ public class ProgressionPaceTests
         var f = Meta.NewProfile(D);
         TestData.FullTree(f); // v0.21.52 cz. c: pień + wybory w węzłach (kawa i stat. broni w węzłach Apteczka i Rzemieślnik)
         var m = Meta.Mods(D, f);
-        Assert.True(m.Hp >= 4 && m.TakenPct >= 2 && m.DmgPct >= 2 && m.Coffee >= 1 && m.Pickups >= 1 && m.Luck >= 1 && m.Craft == 0);
-        Assert.True(m.Hp <= 6 && m.TakenPct <= 5 && m.DmgPct <= 5 && m.Luck <= 1 && m.Craft <= 1 && m.Pickups <= 1);
+        // v0.23.0 Task 7 (cele meta „pół na pół”): Dostawy bez +1 znajdźki, Kondycja bez 4. punktu HP
+        Assert.True(m.Hp >= 3 && m.TakenPct >= 2 && m.DmgPct >= 2 && m.Coffee >= 1 && m.Pickups == 0 && m.Luck >= 1 && m.Craft == 0);
+        Assert.True(m.Hp <= 6 && m.TakenPct <= 5 && m.DmgPct <= 5 && m.Luck <= 1 && m.Craft <= 1);
         var s0 = Meta.ModsPart(D, f, 0);
         Assert.True(s0.Hp == m.Hp && s0.DmgPct == m.DmgPct && s0.TakenPct == m.TakenPct && s0.Crit == m.Crit && s0.Dodge == m.Dodge && s0.Luck == m.Luck);
     }

@@ -161,6 +161,7 @@
   "weaponRarities[].name"
  ],
  "fit": {
+  "meta.upgrades[].desc": 176,
   "story.stages[].text": 190,
   "story.arc[].messages[].text": 190,
   "career.list[].stages[].story.text": 190,
@@ -417,7 +418,7 @@
   "Lepszy termos": "Better Flask",
   "Większy termos na kawę": "A bigger coffee flask",
   "Dostawy": "Deliveries",
-  "Więcej znajdziek i materiałów": "More pickups and materials",
+  "Więcej materiałów i budżetu": "More materials and budget",
   "Kurs BHP II": "Safety Course",
   "Szczęście, kryt i unik": "Luck, crits and dodge",
   "Warsztaty": "Workshops",

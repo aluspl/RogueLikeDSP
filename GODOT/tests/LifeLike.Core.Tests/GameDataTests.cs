@@ -146,7 +146,7 @@ public class GameDataTests
     {
         var json = File.ReadAllText(TestData.GoldenPath("game.json"))
             .Replace("\"effect\": \"cooldown\"", "\"effect\": \"nowa_cecha\"")
-            .Replace("\"effect\": \"pickups\"", "\"effect\": \"nowe_szkolenie\"")
+            .Replace("\"effect\": \"start_rarity\"", "\"effect\": \"nowe_szkolenie\"") // v0.23.0: Dostawy już bez znajdziek
             .Replace("\"effect\": \"xp_pct\"", "\"effect\": \"nowe_uprawnienie\"");
         var d = GameData.Parse(json);
         Assert.Equal(TraitEffect.Unknown, d.GearTraits[4].Effect);

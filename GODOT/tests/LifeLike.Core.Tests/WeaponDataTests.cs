@@ -31,7 +31,7 @@ public class WeaponDataTests
     [InlineData("mlot", PatternKind.Push, ModeEffect.Push, PatternKind.Around, ModeEffect.OpenWall, 7)]
     [InlineData("tablet", PatternKind.Single, ModeEffect.None, PatternKind.Shot, ModeEffect.Swap, 6)]
     [InlineData("miernik", PatternKind.Shot, ModeEffect.None, PatternKind.Single, ModeEffect.Reveal, 6)]
-    [InlineData("dachowka", PatternKind.Shot, ModeEffect.None, PatternKind.Throw3x3, ModeEffect.None, 3)]
+    [InlineData("dachowka", PatternKind.Shot, ModeEffect.None, PatternKind.Throw3x3, ModeEffect.None, 2)]
     [InlineData("agregat", PatternKind.Spray, ModeEffect.None, PatternKind.Single, ModeEffect.Root, 6)]
     [InlineData("lyzka", PatternKind.Arc, ModeEffect.None, PatternKind.Shot, ModeEffect.Pull, 5)]
     [InlineData("udarowy", PatternKind.Single, ModeEffect.None, PatternKind.Line, ModeEffect.DefDown, 6)]

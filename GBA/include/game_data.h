@@ -154,11 +154,11 @@ inline constexpr core::difficulty_def difficulties[] = {
 };
 
 inline constexpr core::upgrade_def upgrades[] = {   // Szkolenia: poziomy (przyrost + koszt), stare koszty do zwrotu
-    { { "Kondycja", "Fitness" }, { "Więcej HP na start", "More HP at the start" }, core::upgrade_effect::hp, 4, { { core::upgrade_effect::hp, 1 }, { core::upgrade_effect::hp, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::hp, 1 }, {} }, { 25, 50, 90, 150, 0 }, { 10, 20, 0, 0 }, 2, 35 },
+    { { "Kondycja", "Fitness" }, { "Więcej HP na start", "More HP at the start" }, core::upgrade_effect::hp, 4, { { core::upgrade_effect::hp, 1 }, { core::upgrade_effect::hp, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, {} }, { 25, 50, 90, 150, 0 }, { 10, 20, 0, 0 }, 2, 35 },
     { { "Szkolenie BHP", "Safety Basics" }, { "Mniej otrzymanych obrażeń", "Less damage taken" }, core::upgrade_effect::taken_pct, 4, { { core::upgrade_effect::taken_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::taken_pct, 1 }, { core::upgrade_effect::cash, 5 }, {} }, { 30, 60, 110, 180, 0 }, { 15, 0, 0, 0 }, 1, 30 },
     { { "Kurs fachowy", "Trade Course" }, { "Więcej zadawanych obrażeń", "More damage dealt" }, core::upgrade_effect::dmg_pct, 4, { { core::upgrade_effect::dmg_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::dmg_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, {} }, { 35, 70, 125, 200, 0 }, { 20, 0, 0, 0 }, 1, 40 },
     { { "Lepszy termos", "Better Flask" }, { "Większy termos na kawę", "A bigger coffee flask" }, core::upgrade_effect::thermos, 4, { { core::upgrade_effect::thermos, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::thermos, 1 }, { core::upgrade_effect::thermos, 1 }, {} }, { 25, 50, 90, 150, 0 }, { 10, 0, 0, 0 }, 1, 20 },
-    { { "Dostawy", "Deliveries" }, { "Więcej znajdziek i materiałów", "More pickups and materials" }, core::upgrade_effect::pickups, 4, { { core::upgrade_effect::mats_pct, 5 }, { core::upgrade_effect::pickups, 1 }, { core::upgrade_effect::cash, 5 }, { core::upgrade_effect::mats_pct, 5 }, {} }, { 25, 50, 90, 150, 0 }, { 15, 0, 0, 0 }, 1, 30 },
+    { { "Dostawy", "Deliveries" }, { "Więcej materiałów i budżetu", "More materials and budget" }, core::upgrade_effect::mats_pct, 4, { { core::upgrade_effect::mats_pct, 5 }, { core::upgrade_effect::mats_pct, 5 }, { core::upgrade_effect::cash, 5 }, { core::upgrade_effect::mats_pct, 5 }, {} }, { 25, 50, 90, 150, 0 }, { 15, 0, 0, 0 }, 1, 30 },
     { { "Kurs BHP II", "Safety Course" }, { "Szczęście, kryt i unik", "Luck, crits and dodge" }, core::upgrade_effect::luck, 4, { { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::luck, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, {} }, { 30, 60, 110, 180, 0 }, { 20, 0, 0, 0 }, 1, 40 },
     { { "Warsztaty", "Workshops" }, { "Lepsza broń i sprzęt", "Better tools and gear" }, core::upgrade_effect::gear_pct, 4, { { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, {} }, { 35, 70, 125, 200, 0 }, { 20, 0, 0, 0 }, 1, 40 },
 };
@@ -531,14 +531,14 @@ inline constexpr int dmg_levels_mask = 32;
 inline constexpr int def_levels_mask = 8;
 
 inline constexpr core::respect_def respect[] = {   // Respekt: stałe ulepszenia z rangami
-    { { "Pewna ręka", "Steady Hand" }, { "Obrażenia", "Damage" }, core::respect_effect::dmg_pct, 2, { 1, 2, 0, 0, 0 }, { 15, 40, 0, 0, 0 }, -1 },
-    { { "Gruba skóra", "Thick Skin" }, { "Otrzymane obrażenia", "Damage taken" }, core::respect_effect::taken_pct, 2, { 1, 2, 0, 0, 0 }, { 15, 40, 0, 0, 0 }, -1 },
+    { { "Pewna ręka", "Steady Hand" }, { "Obrażenia", "Damage" }, core::respect_effect::dmg_pct, 1, { 1, 0, 0, 0, 0 }, { 15, 0, 0, 0, 0 }, -1 },
+    { { "Gruba skóra", "Thick Skin" }, { "Otrzymane obrażenia", "Damage taken" }, core::respect_effect::taken_pct, 1, { 1, 0, 0, 0, 0 }, { 15, 0, 0, 0, 0 }, -1 },
     { { "Dobre źródła", "Good Suppliers" }, { "Szansa na lepszy sprzęt", "Chance of better gear" }, core::respect_effect::gear_pct, 5, { 1, 2, 3, 4, 5 }, { 6, 12, 20, 32, 48 }, -1 },
-    { { "Oko fachowca", "Expert Eye" }, { "Szansa na kryt", "Crit chance" }, core::respect_effect::crit, 2, { 1, 2, 0, 0, 0 }, { 15, 40, 0, 0, 0 }, -1 },
-    { { "Zwinność", "Agility" }, { "Unik (łącznie maks. 20%)", "Dodge (max 20% in total)" }, core::respect_effect::dodge, 2, { 1, 2, 0, 0, 0 }, { 15, 40, 0, 0, 0 }, -1 },
-    { { "Mocna kawa", "Strong Coffee" }, { "Kawa leczy więcej", "Coffee heals more" }, core::respect_effect::coffee_pct, 2, { 5, 10, 0, 0, 0 }, { 10, 30, 0, 0, 0 }, -1 },
+    { { "Oko fachowca", "Expert Eye" }, { "Szansa na kryt", "Crit chance" }, core::respect_effect::crit, 1, { 1, 0, 0, 0, 0 }, { 15, 0, 0, 0, 0 }, -1 },
+    { { "Zwinność", "Agility" }, { "Unik (łącznie maks. 20%)", "Dodge (max 20% in total)" }, core::respect_effect::dodge, 1, { 1, 0, 0, 0, 0 }, { 15, 0, 0, 0, 0 }, -1 },
+    { { "Mocna kawa", "Strong Coffee" }, { "Kawa leczy więcej", "Coffee heals more" }, core::respect_effect::coffee_pct, 1, { 5, 0, 0, 0, 0 }, { 10, 0, 0, 0, 0 }, -1 },
     { { "Duży termos", "Big Flask" }, { "Termos: miejsce na kawę", "Flask: room for coffee" }, core::respect_effect::thermos, 1, { 1, 0, 0, 0, 0 }, { 40, 0, 0, 0, 0 }, -1 },
-    { { "Rutyna", "Routine" }, { "Moc odnawia się szybciej", "Power recharges faster" }, core::respect_effect::cooldown, 2, { 1, 2, 0, 0, 0 }, { 30, 60, 0, 0, 0 }, -1 },
+    { { "Rutyna", "Routine" }, { "Moc odnawia się szybciej", "Power recharges faster" }, core::respect_effect::cooldown, 1, { 1, 0, 0, 0, 0 }, { 30, 0, 0, 0, 0 }, -1 },
     { { "Oszczędności", "Savings" }, { "Budżet na start", "Starting budget" }, core::respect_effect::cash, 5, { 10, 20, 30, 40, 50 }, { 5, 10, 16, 25, 36 }, -1 },
     { { "Nauka", "Learning" }, { "Doświadczenie", "Experience" }, core::respect_effect::xp_pct, 5, { 4, 8, 12, 16, 20 }, { 6, 12, 20, 32, 48 }, -1 },
     { { "Znajomości", "Connections" }, { "Brygada taniej", "Cheaper crew" }, core::respect_effect::brigade_pct, 5, { 6, 12, 18, 24, 30 }, { 5, 10, 16, 25, 36 }, -1 },
