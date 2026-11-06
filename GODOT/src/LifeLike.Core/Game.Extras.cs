@@ -308,23 +308,27 @@ public sealed partial class Game
         if (!HasToolOffer) return;
         Pickups[ToolOfferPickup].Active = false;
         int t = ToolOffer, rarity = ToolOfferRarity;
+        var extra = ToolOfferExtra;
         ToolOffer = ToolOfferPickup = -1;
-        TakeTool(t, rarity);
+        ToolOfferExtra = 0;
+        TakeTool(t, rarity, true, extra);
     }
 
     public void DeclineTool()
     {
         if (!HasToolOffer) return;
         ToolOffer = ToolOfferPickup = -1;
+        ToolOfferExtra = 0;
         Push(Msg(Loc.T("zostajesz_przy_ulepszonym")));
     }
 
-    public void TakeTool(int t, int rarity = 0, bool announce = true)
+    public void TakeTool(int t, int rarity = 0, bool announce = true, int extra = 0)
     {
         ResetUpgrade();
         WeaponOverride = D.Tools[t].Weapon;
         WeaponRarity = (byte)ResolveRarity(WeaponOverride, rarity); // v0.23.0: rzadkość z dropu / Hurtowni, unikat zawsze Mistrzowska
         ToolsFound |= 1UL << t;
+        ApplyWeaponExtra(extra); // v0.23.0: upuszczona z kabury broń zachowuje ulepszenia
         if (!announce) return;
         Push(Msg(Loc.T("narzedzie_2")).Add(Weapon.Name).Add(" ").Add(Weapon.MinDamage).Add("-").Add(Weapon.MaxDamage).As(LogKind.Loot));
     }
@@ -571,6 +575,7 @@ public sealed partial class Game
     /// <summary>Sprzęt z wydarzenia / skrzyni: pusty slot – zakłada, zajęty – porównanie (jak paczka).</summary>
     public void TakeGear(int slot, int rarity, int trait)
     {
+        rarity = BeltFilter(slot, rarity, 2); // v0.23.0: skrzynia i wydarzenia też podlegają regule rzadkości pasa
         if (Equipped[slot] < 0)
         {
             Equip(slot, rarity, trait);

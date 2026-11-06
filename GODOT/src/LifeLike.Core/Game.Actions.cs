@@ -455,6 +455,7 @@ public sealed partial class Game
     /// <summary>Zakłada przedmiot w slocie (zastępuje obecny; kamizelka od razu zmienia max HP).</summary>
     public void Equip(int slot, int rarity, int trait)
     {
+        if (slot == D.BeltSlot && Equipped[slot] == BeltTier && rarity != BeltTier) DropHolster(); // v0.23.0: bez pasa broń z kabury wypada
         var nw = D.Gear[slot * 3 + rarity];
         if (nw.Stat == GearStat.Hp)
         {
@@ -501,7 +502,7 @@ public sealed partial class Game
             if (p.Type == PickupType.GearBox && HasOffer) continue; // najpierw decyzja o poprzedniej paczce
             if (p.Type == PickupType.Tool && HasBelt() && Weapon2 < 0) // v0.23.0: pas z kaburą – broń do drugiego miejsca, bez pytania
             {
-                StashTool(p.Arg, p.Trait);
+                StashTool(p.Arg, p.Trait, p.Extra);
                 p.Active = false;
                 continue;
             }
@@ -511,6 +512,7 @@ public sealed partial class Game
                 {
                     ToolOffer = (sbyte)p.Arg;
                     ToolOfferRarity = (sbyte)p.Trait;
+                    ToolOfferExtra = p.Extra;
                     ToolOfferPickup = (sbyte)i;
                     Push(Msg(Loc.T("narzedzie_2")).Add(D.Weapons[D.Tools[p.Arg].Weapon].Name).Add(Loc.T("zamienic")).As(LogKind.Loot));
                 }
@@ -585,7 +587,7 @@ public sealed partial class Game
             }
             else
             {
-                TakeTool(p.Arg, p.Trait);
+                TakeTool(p.Arg, p.Trait, true, p.Extra);
             }
         }
     }

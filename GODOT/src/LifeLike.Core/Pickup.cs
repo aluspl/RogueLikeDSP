@@ -10,6 +10,8 @@ public struct Pickup
     public bool Active;
     public byte Arg;
     public byte Trait;
+    /// <summary>v0.23.0: ulepszenia upuszczonej broni z kabury (Game.PackWeaponExtra): poziom, cecha, ładunki, wybór cechy; 0 = zwykła znajdźka.</summary>
+    public ushort Extra;
 
     public Pickup(int x, int y, PickupType type, bool active, int arg = 0, int trait = 0)
     {

@@ -198,4 +198,91 @@ public class BeltTests
         g.Weapon2Charges = 1;
         Assert.NotEqual(StateDigest.Of(g), StateDigest.Of(h));
     }
+
+    [Fact]
+    public void SwapKeepsUpgrades()
+    {
+        var g = WithBelt();
+        g.WeaponOverride = Wi("przecinak");
+        g.WeaponLvl = 2;
+        g.WeaponTrait = 0;
+        g.Weapon2 = Wi("lom");
+        g.Weapon2Lvl = 1;
+        g.Weapon2Trait = -1;
+        Assert.True(g.PlayerSwapWeapon());
+        Assert.Equal(1, g.WeaponLvl);
+        Assert.Equal(-1, g.WeaponTrait);
+        Assert.Equal(2, g.Weapon2Lvl); // ulepszenia Przecinaka zostały w kaburze
+        Assert.Equal(0, g.Weapon2Trait);
+        Assert.True(g.PlayerSwapWeapon());
+        Assert.Equal(2, g.WeaponLvl);
+        Assert.Equal(0, g.WeaponTrait);
+        Assert.Equal(1, g.Weapon2Lvl);
+        Assert.Equal(-1, g.Weapon2Trait);
+        // oczekujący wybór cechy należy do broni, na której zdobyto poziom
+        g.TraitPending = true;
+        Assert.True(g.PlayerSwapWeapon());
+        Assert.False(g.TraitPending);
+        Assert.True(g.Weapon2TraitPending);
+    }
+
+    [Fact]
+    public void ChestAndEventGearObeyBeltRule()
+    {
+        var g = TestData.Arena(0);
+        int belts = 0, n = 3000;
+        for (var i = 0; i < n; ++i)
+        {
+            g.Equipped[D.BeltSlot] = -1;
+            g.TakeGear(D.BeltSlot, Game.BeltTier, 0); // skrzynia i wydarzenia wołają TakeGear
+            if (g.HasBelt()) ++belts;
+        }
+        Assert.InRange(belts / (double)n, 0.10, 0.20);
+        g.Equipped[D.BeltSlot] = -1;
+        g.TakeGear(D.BeltSlot, 2, 0); // inne jakości bez zmian
+        Assert.Equal(2, g.Equipped[D.BeltSlot]);
+    }
+
+    [Fact]
+    public void LosingBeltDropsHolsterWeapon()
+    {
+        var g = WithBelt();
+        g.Weapon2 = Wi("przecinak");
+        g.Weapon2Rarity = 2;
+        g.Weapon2Charges = 2;
+        g.Weapon2Lvl = 2;
+        g.Weapon2Trait = 0;
+        var before = g.PickupsCount;
+        g.Equip(D.BeltSlot, 0, 0);
+        Assert.False(g.HasBelt());
+        Assert.Equal(-1, g.Weapon2);
+        Assert.Equal(before + 1, g.PickupsCount);
+        var p = g.Pickups[before];
+        Assert.True(p.Active && p.Type == PickupType.Tool);
+        Assert.Equal(Ti("przecinak"), p.Arg);
+        Assert.Equal(2, p.Trait);
+        Assert.Contains(g.Log.TakeLast(3), m => m.Text.Contains("wypada"));
+        // podniesienie przywraca rzadkość, ładunki i ulepszenia
+        g.Hero.X = p.X;
+        g.Hero.Y = p.Y;
+        g.Collect();
+        Assert.Equal(Wi("przecinak"), g.WeaponOverride);
+        Assert.Equal(2, g.WeaponRarity);
+        Assert.Equal(2, g.WeaponCharges);
+        Assert.Equal(2, g.WeaponLvl);
+        Assert.Equal(0, g.WeaponTrait);
+    }
+
+    [Fact]
+    public void DroppedHolsterWeaponSurvivesSave()
+    {
+        var g = WithBelt();
+        g.Weapon2 = Wi("lom");
+        g.Weapon2Lvl = 3;
+        g.Equip(D.BeltSlot, 2, 0);
+        var h = new Game(D);
+        h.CopyFrom(g);
+        Assert.Equal(g.Pickups[0].Extra, h.Pickups[0].Extra);
+        Assert.Equal(StateDigest.Of(g), StateDigest.Of(h));
+    }
 }

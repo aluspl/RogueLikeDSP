@@ -9,6 +9,14 @@ public sealed partial class Game
     /// <summary>Druga broń w kaburze: indeks broni (nie nadpisanie – zawsze prawdziwa broń), -1 = pusta.</summary>
     public int Weapon2 = -1;
 
+    /// <summary>Ulepszenia broni w kaburze (należą do broni, nie do bohatera): poziom, cecha (-1 brak), oczekujący wybór cechy.</summary>
+    public sbyte Weapon2Lvl;
+    public sbyte Weapon2Trait = -1;
+    public bool Weapon2TraitPending;
+
+    /// <summary>Ulepszenia upuszczonej broni oczekujące w ofercie wymiany narzędzia (Pickup.Extra).</summary>
+    public ushort ToolOfferExtra;
+
     /// <summary>Rzadkość broni w kaburze (jak WeaponRarity).</summary>
     public byte Weapon2Rarity;
 
@@ -29,8 +37,8 @@ public sealed partial class Game
     private int HandWeapon() => WeaponOverride >= 0 ? WeaponOverride : CDef.Weapon;
 
     /// <summary>
-    /// Zamiana broni z kabury: wymaga pasa i broni w drugim miejscu; zamienia broń, rzadkość i ładunki, kosztuje turę.
-    /// Ulepszenia (poziom, cecha) i odnowienie trybu B zostają przy bohaterze. Zwraca true = tura zużyta.
+    /// Zamiana broni z kabury: wymaga pasa i broni w drugim miejscu; zamienia broń, rzadkość, ładunki i ulepszenia
+    /// (poziom, cecha, oczekujący wybór cechy), kosztuje turę. Odnowienie trybu B zostaje przy bohaterze. Zwraca true = tura zużyta.
     /// </summary>
     public bool PlayerSwapWeapon()
     {
@@ -39,26 +47,88 @@ public sealed partial class Game
         var hand = HandWeapon();
         var rarity = WeaponRarity;
         var charges = WeaponCharges;
+        var lvl = WeaponLvl;
+        var trait = WeaponTrait;
+        var pending = TraitPending;
         WeaponOverride = Weapon2 == CDef.Weapon ? -1 : Weapon2;
         WeaponRarity = Weapon2Rarity;
         WeaponCharges = Weapon2Charges;
         Weapon2 = hand;
         Weapon2Rarity = rarity;
         Weapon2Charges = charges;
+        // ulepszenia (poziom, cecha, oczekujący wybór cechy) należą do broni i jadą razem z nią; odnowienie trybu B zostaje przy bohaterze
+        WeaponLvl = Weapon2Lvl;
+        WeaponTrait = Weapon2Trait;
+        TraitPending = Weapon2TraitPending;
+        Weapon2Lvl = lvl;
+        Weapon2Trait = trait;
+        Weapon2TraitPending = pending;
         Push(Msg(Loc.T("zamiana_broni")).Add(Weapon.Name).As(LogKind.Loot));
         EndTurn();
         return true;
     }
 
     /// <summary>Znaleziona broń z założonym pasem i pustą kaburą trafia do drugiego miejsca (zamiast pytania o wymianę).</summary>
-    private bool StashTool(int t, int rarity)
+    private bool StashTool(int t, int rarity, int extra = 0)
     {
         if (!HasBelt() || Weapon2 >= 0) return false;
         Weapon2 = D.Tools[t].Weapon;
         Weapon2Rarity = (byte)ResolveRarity(Weapon2, rarity);
         Weapon2Charges = 0;
+        Weapon2Lvl = 0;
+        Weapon2Trait = -1;
+        Weapon2TraitPending = false;
+        if (extra != 0)
+        {
+            Weapon2Lvl = (sbyte)(extra & 15);
+            Weapon2Trait = (sbyte)(((extra >> 4) & 15) - 1);
+            Weapon2Charges = (sbyte)((extra >> 8) & 15);
+            Weapon2TraitPending = ((extra >> 12) & 1) != 0;
+        }
         ToolsFound |= 1UL << t;
         Push(Msg(Loc.T("bron_do_kabury")).Add(D.Weapons[Weapon2].Name).As(LogKind.Loot));
         return true;
+    }
+
+    /// <summary>Ulepszenia broni spakowane do Pickup.Extra: poziom (4 b), cecha+1 (4 b), ładunki (4 b), wybór cechy (1 b).</summary>
+    private static ushort PackWeaponExtra(int lvl, int trait, int charges, bool pending) =>
+        (ushort)((lvl & 15) | (((trait + 1) & 15) << 4) | ((charges & 15) << 8) | (pending ? 1 << 12 : 0));
+
+    /// <summary>Nałożenie spakowanych ulepszeń na broń w ręku (po ResetUpgrade).</summary>
+    private void ApplyWeaponExtra(int extra)
+    {
+        if (extra == 0) return;
+        WeaponLvl = (sbyte)(extra & 15);
+        WeaponTrait = (sbyte)(((extra >> 4) & 15) - 1);
+        WeaponCharges = (sbyte)((extra >> 8) & 15);
+        TraitPending = ((extra >> 12) & 1) != 0;
+    }
+
+    /// <summary>
+    /// Utrata pasa z kaburą (inny przedmiot w slocie Pas): broń z drugiego miejsca wypada jako znajdźka na polu bohatera
+    /// (albo obok), z rzadkością, ładunkami i ulepszeniami; kabura pusta. Gdy broń nie jest narzędziem albo brak miejsca – przepada.
+    /// </summary>
+    private void DropHolster()
+    {
+        if (Weapon2 < 0) return;
+        var w = Weapon2;
+        var t = Array.FindIndex(D.Tools, tl => tl.Weapon == w);
+        int x = Hero.X, y = Hero.Y;
+        var ok = t >= 0 && PickupsCount < MaxPickups && (!PickupAt(x, y) || FreeAround(x, y, Hero.X, Hero.Y, out x, out y));
+        if (ok)
+        {
+            Pickups[PickupsCount++] = new Pickup(x, y, PickupType.Tool, true, t, Weapon2Rarity)
+            {
+                Extra = PackWeaponExtra(Weapon2Lvl, Weapon2Trait, Weapon2Charges, Weapon2TraitPending),
+            };
+        }
+        if (ok) Push(Msg(Loc.T("bron_z_kabury_wypada")).Add(D.Weapons[w].Name).As(LogKind.Loot));
+        else Push(Msg(Loc.T("bron_z_kabury_przepada")).Add(D.Weapons[w].Name).As(LogKind.Loot));
+        Weapon2 = -1;
+        Weapon2Rarity = 0;
+        Weapon2Charges = 0;
+        Weapon2Lvl = 0;
+        Weapon2Trait = -1;
+        Weapon2TraitPending = false;
     }
 }
