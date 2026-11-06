@@ -33,8 +33,9 @@ repro (scenariusze GBA, `monkey_replay.py`, `--monkey SEED`), kroki wydania.
   `gen_data.py --check` pilnuje fontu, kompletności, szerokości i polskich literałów w kodzie.
 - C#: jeden typ na plik, Allman, 4 spacje, bez `Type?`. Otwarty edytor Godota przepisuje `App.cs`/`Main.cs`/
   `SceneNodes.cs` na taby – porównaj `git diff -w --stat` z `git diff --stat`, nie commituj samych tabów.
-- Balans (bot, 300 przebiegów/zawód): Łatwy 50–60%, Normalny 25–35%, Trudny 8–15%, pełne Szkolenia 50–60%,
-  + Respekt 65–75%, Akt 0 + meta 60–70%, inwestor wszystkie modyfikatory 5–15%, kontrakty kariery 25–40 / 60–75.
+- Balans (bot, 300 przebiegów/zawód; od v0.23 bot gra broniami – tryb B, pas): Łatwy 50–60%, Normalny 25–35%,
+  Trudny 8–15%, pełne Szkolenia 55–65%, + Respekt 70–80%, Akt 0 + meta 65–75%, inwestor wszystkie modyfikatory 5–15%,
+  kontrakty kariery 25–40 / 65–80 (cele meta podniesione „pół na pół” – decyzja właściciela 2026-11-06).
   Uwaga: człowiek wygrywa łatwiej niż bot (feedback 2026-10-04) – patrz TODO #73.
 
 ## Pułapki techniczne (nauczone na błędach)
