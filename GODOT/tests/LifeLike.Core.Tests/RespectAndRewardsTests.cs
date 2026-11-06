@@ -89,6 +89,25 @@ public class RespectAndRewardsTests
         Assert.True(Daily.Mods(D, 1).DmgPct == 0 && Daily.Mods(D, 1).SecondChance == 0); // budowa dnia bez Respektu
     }
 
+    /// <summary>v0.23.0 (zad. 7): rangi II usunięte z sześciu wpisów Respektu – ProfileFix zwraca ich koszt raz i przycina rangę.</summary>
+    [Fact]
+    public void RemovedRespectRankIsRefundedOnce()
+    {
+        var p = Meta.NewProfile(D);
+        var i = Array.FindIndex(D.Respect, r => r.Id == "reka");
+        Assert.True(i >= 0 && D.Respect[i].Ranks == 1);
+        Meta.SetRespectRank(p, i, 2);
+        p.Respect = 100;
+        var spent = Meta.RespectSpent(D, p);
+        Assert.True(Meta.ProfileFix(D, p));
+        Assert.Equal(140, p.Respect); // dawny koszt rangi II Pewnej ręki: 40
+        Assert.Equal(1, Meta.RespectSlot(p, i));
+        Assert.Equal(spent, Meta.RespectSpent(D, p));
+        Assert.False(Meta.ProfileFix(D, p));
+        Assert.Equal(140, p.Respect);
+        Assert.Equal(1, Meta.RespectSlot(p, i));
+    }
+
     [Fact]
     public void PercentBonusesAndSecondChance()
     {

@@ -274,6 +274,51 @@ public static class Meta
     /// </summary>
     public static bool ProfileFix(GameData d, Profile p)
     {
+        var migrated = ProfileMigrate(d, p);
+        return ClampRespect(d, p) | migrated; // v0.23.0: rangi Respektu ponad obecną liczbę – zwrot (raz, bo ranga przycięta)
+    }
+
+    /// <summary>
+    /// v0.23.0 (zad. 7, runda meta): koszty rang Respektu usuniętych z danych (game.json z commitu f4ad7098, przed
+    /// „pół na pół”): id → koszty kolejnych rang. Zwrot za rangę r = koszt[r] dla r ≥ obecnej liczby rang.
+    /// </summary>
+    private static readonly Dictionary<string, int[]> RemovedRespectCosts = new()
+    {
+        ["reka"] = [15, 40],
+        ["skora"] = [15, 40],
+        ["oko"] = [15, 40],
+        ["unik"] = [15, 40],
+        ["kawa"] = [10, 30],
+        ["rutyna"] = [30, 60],
+    };
+
+    /// <summary>
+    /// Ranga Respektu zapisana ponad obecne maksimum (dane obcięły rangi): zwraca do p.Respect koszt każdej usuniętej rangi
+    /// (z RemovedRespectCosts, inaczej bez zwrotu) i przycina zapisaną rangę – drugi raz nie zwraca. Zwraca true przy zmianie.
+    /// </summary>
+    public static bool ClampRespect(GameData d, Profile p)
+    {
+        var changed = false;
+        for (var i = 0; i < d.Respect.Length; ++i)
+        {
+            var slot = RespectSlot(p, i);
+            var max = d.Respect[i].Ranks;
+            if (slot <= max) continue;
+            var refund = 0;
+            if (RemovedRespectCosts.TryGetValue(d.Respect[i].Id, out var old))
+            {
+                for (var r = max; r < slot && r < old.Length; ++r) refund += old[r];
+            }
+            p.Respect = (ushort)Math.Min(ushort.MaxValue, p.Respect + refund);
+            SetRespectRank(p, i, max);
+            changed = true;
+        }
+        return changed;
+    }
+
+    /// <summary>Migracje wersji profilu (dawne ciało ProfileFix).</summary>
+    private static bool ProfileMigrate(GameData d, Profile p)
+    {
         if (p.MagicIs(Profile.MagicCurrent)) return ClampLevels(d, p);
         if (p.MagicIs(Profile.MagicV17)) // v17 -> v18: te same indeksy 0..9 w maskach, FromBytes czytał 8-bitowe maski; dane zostają
         {
