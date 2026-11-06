@@ -63,7 +63,8 @@ public class WeaponRarityTests
         Assert.True(g.WeaponMaster());
         Assert.Equal(3, g.WeaponRarity);
         Assert.Equal(D.WeaponRarities[3].DmgBonus, g.WeaponDmgBonus());
-        Assert.Equal(-1, D.WeaponRarities[3].CooldownDelta);
+        Assert.Equal(0, D.WeaponRarities[3].DmgBonus); // Mistrzowska: tylko złoty kolor, efekty jak dziś (spec 4.7.4)
+        Assert.Equal(0, D.WeaponRarities[3].CooldownDelta);
 
         var u = TestData.Run(0, 5); // unikat z sekretu jest Mistrzowski, zwykła podniesiona broń nie
         u.TakeTool(Ti("mlot_zenka"), 1);
@@ -77,6 +78,7 @@ public class WeaponRarityTests
     [Fact]
     public void RarityShortensModeBCooldown()
     {
+        Assert.True(D.WeaponRarities[2].CooldownDelta < 0);
         for (var r = 0; r <= 3; ++r)
         {
             var g = TestData.Arena(0);
@@ -131,19 +133,21 @@ public class WeaponRarityTests
     }
 
     [Fact]
-    public void OldProfileReplaced()
+    public void OldProfileMigrates()
     {
         var old = Meta.NewProfile(D);
         old.Best = 1234;
         old.Xp = 99;
-        var raw = old.ToBytes()[..384];
-        raw[..8].CopyTo(raw, 0);
+        old.Wins = 3;
+        old.Levels[0] = 2;
+        old.Tools = 0x0E;
+        old.ToolsFound = 0x05;
+        var raw = old.ToBytes()[..Profile.V17Size];
         Profile.MagicBytes("PBRL017").CopyTo(raw, 0);
         var p = Profile.FromBytes(raw);
         Assert.True(Meta.ProfileFix(D, p));
         Assert.True(p.MagicIs(Profile.MagicCurrent) && Profile.MagicCurrent == "PBRL018");
-        Assert.Equal(0, p.Best);
-        Assert.Equal(0, p.Xp);
+        Assert.True(p.Best == 1234 && p.Xp == 99 && p.Wins == 3 && p.Levels[0] == 2 && p.Tools == 0x0E && p.ToolsFound == 0x05);
         Assert.Equal(Profile.Size, p.ToBytes().Length);
         var junk = Profile.FromBytes(Enumerable.Repeat((byte)0x7F, 10).ToArray());
         Assert.True(Meta.ProfileFix(D, junk) && junk.MagicIs(Profile.MagicCurrent));

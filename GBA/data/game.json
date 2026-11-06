@@ -10116,8 +10116,8 @@
     {
       "name": "Mistrzowska",
       "color": "#d9a400",
-      "dmgBonus": 3,
-      "cooldownDelta": -1,
+      "dmgBonus": 0,
+      "cooldownDelta": 0,
       "rollFrom": 101
     }
   ]

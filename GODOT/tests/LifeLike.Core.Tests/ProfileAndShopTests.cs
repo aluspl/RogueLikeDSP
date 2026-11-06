@@ -210,11 +210,14 @@ public class ProfileAndShopTests
         var p = Meta.NewProfile(D);
         var g = TestData.Arena(1);
         for (var e = 0; e < D.Enemies.Length; ++e) g.KillsByType[e] = 1;
-        g.ToolsFound = (1UL << D.Tools.Length) - 1;
+        g.ToolsFound = (1UL << Meta.OriginalToolCount) - 1; // v0.23.0: wystarczą dawne 10 (nowe bronie się nie liczą)
         g.HeroLevel = D.MaxHeroLevel;
         var got = Meta.CheckBadges(D, p, g);
         Assert.True((got & (1 << D.BadgeKatalog)) != 0 && (got & (1 << D.BadgeKolekcjoner)) != 0 && (got & (1 << D.BadgeZawodowiec)) != 0);
         Assert.True(p.Catalog == 0xFFFF && Meta.CatalogCount(D, p) == D.Enemies.Length && Meta.CatalogHas(p, D.Enemies.Length - 1));
+        var partial = Meta.NewProfile(D);
+        g.ToolsFound = ((1UL << D.Tools.Length) - 1) & ~(1UL << 3); // wszystkie nowe, ale brak jednego dawnego
+        Assert.True((Meta.CheckBadges(D, partial, g) & (1 << D.BadgeKolekcjoner)) == 0);
         var h = TestData.Arena(1);
         h.Pickups[0] = new Pickup(h.Hero.X, h.Hero.Y, PickupType.Tool, true, 2);
         h.PickupsCount = 1;

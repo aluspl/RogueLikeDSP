@@ -8,6 +8,9 @@ namespace LifeLike.Core;
 /// </summary>
 public static class Meta
 {
+    /// <summary>Dawny zestaw narzędzi sprzed v0.23.0 (pierwsze wpisy GameData.Tools) – liczy się do odznaki Kolekcjoner.</summary>
+    public const int OriginalToolCount = 10;
+
     public static void ProfileReset(GameData d, Profile p)
     {
         var fresh = Profile.FromBytes(new byte[Profile.Size]);
@@ -272,9 +275,10 @@ public static class Meta
     public static bool ProfileFix(GameData d, Profile p)
     {
         if (p.MagicIs(Profile.MagicCurrent)) return ClampLevels(d, p);
-        if (p.MagicIs(Profile.MagicV17)) // v0.23.0 (decyzja 7): indeksy i szerokość masek broni się zmieniły – bez migracji, nowy profil
+        if (p.MagicIs(Profile.MagicV17)) // v17 -> v18: te same indeksy 0..9 w maskach, FromBytes czytał 8-bitowe maski; dane zostają
         {
-            ProfileReset(d, p);
+            p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
+            ClampLevels(d, p);
             return true;
         }
         if (p.MagicIs(Profile.MagicV16)) // v16 -> v17: filtr ekranu klasyczny, filtry do ogłoszenia
@@ -1126,7 +1130,7 @@ public static class Meta
         RecordRun(d, p, g);
         var cleared = g.St == GameStatus.StageClear || g.St == GameStatus.Won;
         var won = g.St == GameStatus.Won;
-        var allTools = (d.Tools.Length >= 64 ? ulong.MaxValue : (1UL << d.Tools.Length) - 1) & ~d.SecretToolsMask; // sekretne narzędzia się nie liczą
+        var allTools = ((1UL << Math.Min(d.Tools.Length, OriginalToolCount)) - 1) & ~d.SecretToolsMask; // v0.23.0: tylko dawne 10 narzędzi, bez sekretnych
         var cond = new bool[16];
         void Set(int idx, bool v)
         {
