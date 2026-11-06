@@ -10,7 +10,7 @@ public class HitCalcTests
     private static int Ei(string id) => Array.FindIndex(D.Enemies, e => e.Id == id);
 
     [Fact]
-    public void BluntCrushesCement() => Assert.Equal(150, HitCalc.Pct(D, D.Weapons[Wi("mlot")], D.Enemies[Ei("kamien")]));
+    public void BluntCrushesCement() => Assert.Equal(125, HitCalc.Pct(D, D.Weapons[Wi("mlot")], D.Enemies[Ei("kamien")]));
 
     [Fact]
     public void CutOnSteel75() => Assert.Equal(75, HitCalc.Pct(D, D.Weapons[Wi("siekiera")], D.Enemies[Ei("dostawa")]));
@@ -18,8 +18,8 @@ public class HitCalcTests
     [Fact]
     public void WaterBeatsMaterial()
     {
-        // Przeciek: cement, ale żywioł woda – kolumna woda (50), nie cement (150)
-        Assert.Equal(50, HitCalc.Pct(D, D.Weapons[Wi("mlot")], D.Enemies[Ei("przeciek")]));
+        // Przeciek: cement, ale żywioł woda – kolumna woda (75), nie cement (125); v0.23.0 Task 7: tabela ±25%
+        Assert.Equal(75, HitCalc.Pct(D, D.Weapons[Wi("mlot")], D.Enemies[Ei("przeciek")]));
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public class HitCalcTests
     {
         var w = D.Weapons[Wi("szlifierka")];
         Assert.True(HitCalc.Has(w, HitType.Cut));
-        Assert.Equal(75 * 150 / 100, HitCalc.Pct(D, w, D.Enemies[Ei("dostawa")]));
+        Assert.Equal(75 * D.HitTypes.SparkSteelPct / 100, HitCalc.Pct(D, w, D.Enemies[Ei("dostawa")]));
     }
 
     [Fact]

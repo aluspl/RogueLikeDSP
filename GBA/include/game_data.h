@@ -148,9 +148,9 @@ inline constexpr core::stage_def stages[] = {   // Dom jednorodzinny, potem etap
 };
 
 inline constexpr core::difficulty_def difficulties[] = {
-    { { "Łatwy", "Easy" }, 100, -1, 50 },
-    { { "Normalny", "Normal" }, 100, 0, 100 },
-    { { "Trudny", "Hard" }, 145, 0, 150 },
+    { { "Łatwy", "Easy" }, 118, -1, 50 },
+    { { "Normalny", "Normal" }, 118, 0, 100 },
+    { { "Trudny", "Hard" }, 165, 0, 150 },
 };
 
 inline constexpr core::upgrade_def upgrades[] = {   // Szkolenia: poziomy (przyrost + koszt), stare koszty do zwrotu

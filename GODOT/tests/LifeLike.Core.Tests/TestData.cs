@@ -105,10 +105,13 @@ public static class TestData
     }
 
     /// <summary>Rozgrywa budowę botem jak w teście balansu GBA (maks. 4000 kroków).</summary>
-    public static Game PlayOut(int cls, uint seed, int diff, RunMods mods)
+    public static Game PlayOut(int cls, uint seed, int diff, RunMods mods) => PlayOut(cls, seed, diff, mods, BotOptions.Default);
+
+    /// <summary>v0.23.0: rozgrywka botem z ustawieniami (np. tylko broń domyślna) i kontraktem kariery (0 = Dom).</summary>
+    public static Game PlayOut(int cls, uint seed, int diff, RunMods mods, BotOptions o, int contract = 0)
     {
         var g = NewGame();
-        g.NewRun(cls, seed, diff, mods);
+        g.NewRun(cls, seed, diff, mods, contract);
         for (var step = 0; step < 4000; ++step)
         {
             if (g.St == GameStatus.StageClear)
@@ -117,7 +120,7 @@ public static class TestData
                 continue;
             }
             if (g.St != GameStatus.Playing) break;
-            Bot.Step(g);
+            Bot.Step(g, o);
         }
         return g;
     }

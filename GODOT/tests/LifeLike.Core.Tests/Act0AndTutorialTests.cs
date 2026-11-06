@@ -111,7 +111,7 @@ public class Act0AndTutorialTests
         for (var k = 0; k < 20; ++k)
         {
             var b = new Game(D);
-            b.NewRun(k % D.Classes.Length, (uint)(300 + k * 13), 0, m);
+            b.NewRun(k % D.OpenClassesCount, (uint)(300 + k * 13), 0, m);
             for (var step = 0; step < 3000 && b.St == GameStatus.Playing && b.Stage < F0; ++step) Bot.Step(b);
             while (b.St == GameStatus.StageClear && b.Stage < F0)
             {
@@ -120,8 +120,8 @@ public class Act0AndTutorialTests
             }
             if (b.Stage >= F0 || (b.St == GameStatus.StageClear && b.Stage == F0 - 1)) ++passed;
         }
-        // v0.23.0: mnożnik ciosu i ogłuszenie przesunęły losowania (13/20 zamiast 14/20); balans mierzy Task 11
-        Assert.True(passed >= 12, $"Akt 0 przeszło {passed}/20");
+        // v0.23.0 Task 7: zwykłe zawody jak w core_tests.cpp; bot z trybem B, problemy +18% HP (Łatwy) – 13/20 (v0.22.1: 14/20)
+        Assert.True(passed >= 13, $"Akt 0 przeszło {passed}/20");
     }
 
     [Fact]

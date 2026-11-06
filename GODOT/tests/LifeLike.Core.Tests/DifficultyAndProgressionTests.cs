@@ -10,9 +10,10 @@ public class DifficultyAndProgressionTests
     {
         var n = TestData.Run(0, 42, 1);
         Assert.True(n.Diff == 1 && n.Tier == 0);
-        Assert.Equal(D.Stages[TestData.F0].HpPct, n.EnemyHpPct());
+        var hpPct = D.Stages[TestData.F0].HpPct * D.Difficulties[1].HpPct / 100; // v0.23.0 Task 7: Normalny +18% HP problemów
+        Assert.Equal(hpPct, n.EnemyHpPct());
         for (var i = 0; i < n.EnemiesCount; ++i)
-            Assert.Equal(D.Enemies[n.Enemies[i].DefId].MaxHealth * D.Stages[TestData.F0].HpPct / 100, n.Enemies[i].MaxHp);
+            Assert.Equal(D.Enemies[n.Enemies[i].DefId].MaxHealth * hpPct / 100, n.Enemies[i].MaxHp);
         var e = TestData.Run(0, 42, 0);
         var h = TestData.Run(0, 42, 2);
         Assert.True(e.EnemyHpPct() <= n.EnemyHpPct() && n.EnemyHpPct() < h.EnemyHpPct());

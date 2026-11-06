@@ -177,7 +177,8 @@ public class DamageBreakdownTests
         Assert.True(b.Min == 6 && b.Max == 9 && b.Avg10 == 77);
         var bud = D.EnemyIndex("budzet");
         var v = g.WeaponBreakdown(bud);
-        Assert.Equal(HitCalc.Apply(Math.Max(1, 6 - D.Enemies[bud].Defense / 2), v.HitPct), v.Min); // v0.23.0: x mnożnik ciosu (kielnia: cięcie na stal)
+        var pierce = HitCalc.Has(g.Weapon, HitType.Pierce) ? D.HitTypes.PierceDef : 0; // v0.23.0 Task 7: kielnia cięcie + kłucie
+        Assert.Equal(HitCalc.Apply(Math.Max(1, 6 - Math.Max(0, D.Enemies[bud].Defense - pierce) / 2), v.HitPct), v.Min); // x mnożnik ciosu (kielnia na stal)
         var gl = g.WeaponBreakdown(-1, -1, 1, 2, 0);
         Assert.Equal("teraz 6-8 -> 9-11 (średnio +3)", DamageHelp.CompareLine(new Message(), g.WeaponBreakdown(), gl).Text);
         Assert.Equal("+3 obrażeń", DamageHelp.GearLabel(D.Gear[5]));

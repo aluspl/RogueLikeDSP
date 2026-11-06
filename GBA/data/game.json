@@ -253,9 +253,9 @@
       "modeB": {
         "pattern": "single",
         "effect": "mark",
-        "value": 30,
+        "value": 20,
         "turns": 3,
-        "cooldown": 4
+        "cooldown": 6
       }
     },
     {
@@ -265,7 +265,10 @@
       "maxDamage": 6,
       "range": 1,
       "scalesWith": "strength",
-      "hit": "cut",
+      "hit": [
+        "cut",
+        "pierce"
+      ],
       "modeA": {
         "pattern": "arc"
       },
@@ -275,7 +278,8 @@
         "effect": "stun",
         "value": 100,
         "turns": 1,
-        "cooldown": 3
+        "cooldown": 7,
+        "dmgPct": 50
       }
     },
     {
@@ -292,7 +296,7 @@
       "modeB": {
         "pattern": "line",
         "dmgPct": 60,
-        "cooldown": 3
+        "cooldown": 5
       }
     },
     {
@@ -320,7 +324,10 @@
       "maxDamage": 7,
       "range": 1,
       "scalesWith": "strength",
-      "hit": "blunt",
+      "hit": [
+        "blunt",
+        "pierce"
+      ],
       "modeA": {
         "pattern": "single"
       },
@@ -364,7 +371,7 @@
         "pattern": "push",
         "effect": "push",
         "value": 2,
-        "cooldown": 3,
+        "cooldown": 5,
         "effect2": "openWall"
       }
     },
@@ -384,7 +391,7 @@
         "effect": "defdown",
         "value": 3,
         "turns": 3,
-        "cooldown": 3
+        "cooldown": 5
       }
     },
     {
@@ -400,7 +407,7 @@
       },
       "modeB": {
         "pattern": "lineBoth",
-        "cooldown": 4
+        "cooldown": 6
       }
     },
     {
@@ -419,7 +426,7 @@
       "modeB": {
         "pattern": "around",
         "effect": "openWall",
-        "cooldown": 5
+        "cooldown": 7
       }
     },
     {
@@ -437,7 +444,7 @@
         "pattern": "shot",
         "range": 3,
         "effect": "swap",
-        "cooldown": 4
+        "cooldown": 6
       }
     },
     {
@@ -456,7 +463,7 @@
         "effect": "reveal",
         "value": 10,
         "turns": 3,
-        "cooldown": 4
+        "cooldown": 6
       }
     },
     {
@@ -473,8 +480,8 @@
       "modeB": {
         "pattern": "throw",
         "range": 3,
-        "dmgPct": 50,
-        "cooldown": 4
+        "dmgPct": 100,
+        "cooldown": 3
       }
     },
     {
@@ -492,7 +499,7 @@
         "pattern": "single",
         "effect": "root",
         "turns": 2,
-        "cooldown": 4
+        "cooldown": 6
       }
     },
     {
@@ -511,7 +518,8 @@
         "range": 3,
         "effect": "pull",
         "value": 2,
-        "cooldown": 3
+        "cooldown": 5,
+        "dmgPct": 50
       }
     },
     {
@@ -533,7 +541,7 @@
         "effect": "defdown",
         "value": 99,
         "turns": 1,
-        "cooldown": 4
+        "cooldown": 6
       }
     },
     {
@@ -552,7 +560,7 @@
         "pattern": "single",
         "effect": "root",
         "turns": 2,
-        "cooldown": 3
+        "cooldown": 5
       }
     },
     {
@@ -572,7 +580,7 @@
         "effect": "dot",
         "value": 2,
         "turns": 3,
-        "cooldown": 3,
+        "cooldown": 4,
         "steelPct": 150
       }
     },
@@ -590,7 +598,7 @@
       "modeB": {
         "pattern": "cross",
         "effect": "mark",
-        "value": 25,
+        "value": 40,
         "turns": 3,
         "cooldown": 4
       }
@@ -635,7 +643,7 @@
         "pattern": "around",
         "effect": "push",
         "value": 1,
-        "cooldown": 5
+        "cooldown": 7
       },
       "master": true
     },
@@ -656,7 +664,7 @@
         "pattern": "lineBoth",
         "range": 3,
         "effect": "reveal",
-        "cooldown": 4
+        "cooldown": 6
       },
       "master": true
     },
@@ -683,7 +691,7 @@
         "effect": "defdown",
         "value": 2,
         "turns": 3,
-        "cooldown": 2
+        "cooldown": 4
       }
     },
     {
@@ -699,7 +707,7 @@
       },
       "modeB": {
         "pattern": "arc",
-        "cooldown": 3
+        "cooldown": 5
       }
     },
     {
@@ -719,7 +727,7 @@
         "effect": "dot",
         "value": 2,
         "turns": 3,
-        "cooldown": 3
+        "cooldown": 5
       }
     },
     {
@@ -736,7 +744,7 @@
       "modeB": {
         "pattern": "line",
         "range": 2,
-        "cooldown": 4
+        "cooldown": 6
       }
     },
     {
@@ -770,7 +778,7 @@
       },
       "modeB": {
         "pattern": "arc",
-        "cooldown": 3
+        "cooldown": 5
       }
     },
     {
@@ -789,7 +797,7 @@
         "pattern": "single",
         "effect": "root",
         "turns": 2,
-        "cooldown": 4
+        "cooldown": 6
       }
     },
     {
@@ -810,7 +818,7 @@
         "pattern": "push",
         "effect": "push",
         "value": 2,
-        "cooldown": 3
+        "cooldown": 5
       }
     },
     {
@@ -833,7 +841,7 @@
         "dmgPct": 50,
         "effect": "dry",
         "turns": 1,
-        "cooldown": 5
+        "cooldown": 7
       }
     },
     {
@@ -852,7 +860,7 @@
         "pattern": "single",
         "effect": "root",
         "turns": 3,
-        "cooldown": 3
+        "cooldown": 5
       }
     },
     {
@@ -874,7 +882,7 @@
         "effect": "stun",
         "value": 30,
         "turns": 1,
-        "cooldown": 4
+        "cooldown": 6
       }
     },
     {
@@ -892,7 +900,7 @@
       },
       "modeB": {
         "pattern": "around",
-        "cooldown": 5
+        "cooldown": 7
       },
       "master": true
     },
@@ -910,7 +918,7 @@
       "modeB": {
         "pattern": "cross",
         "effect": "reveal",
-        "cooldown": 4
+        "cooldown": 6
       }
     },
     {
@@ -928,7 +936,7 @@
         "pattern": "around",
         "effect": "push",
         "value": 1,
-        "cooldown": 5
+        "cooldown": 7
       }
     },
     {
@@ -944,7 +952,7 @@
       },
       "modeB": {
         "pattern": "line4",
-        "cooldown": 4
+        "cooldown": 6
       }
     },
     {
@@ -968,7 +976,7 @@
         "effect": "dot",
         "value": 2,
         "turns": 3,
-        "cooldown": 3,
+        "cooldown": 5,
         "effect2": "dry"
       }
     },
@@ -991,7 +999,7 @@
         "effect": "mark",
         "value": 100,
         "turns": 1,
-        "cooldown": 3
+        "cooldown": 5
       }
     }
   ],
@@ -2137,21 +2145,21 @@
     {
       "id": "latwy",
       "name": "Łatwy",
-      "hpPct": 100,
+      "hpPct": 118,
       "dmgBonus": -1,
       "scorePct": 50
     },
     {
       "id": "normalny",
       "name": "Normalny",
-      "hpPct": 100,
+      "hpPct": 118,
       "dmgBonus": 0,
       "scorePct": 100
     },
     {
       "id": "trudny",
       "name": "Trudny",
-      "hpPct": 145,
+      "hpPct": 165,
       "dmgBonus": 0,
       "scorePct": 150
     }
@@ -10073,31 +10081,31 @@
     ],
     "materialPct": [
       [
-        150,
+        125,
         75,
         100,
-        50,
+        75,
         100
       ],
       [
         75,
         75,
-        150,
-        100,
-        100
-      ],
-      [
-        100,
         125,
         100,
+        100
+      ],
+      [
+        75,
+        125,
         100,
+        75,
         100
       ]
     ],
     "stunChancePct": 20,
     "cutCritPct": 10,
-    "pierceDef": 2,
-    "sparkSteelPct": 150,
+    "pierceDef": 1,
+    "sparkSteelPct": 125,
     "powerWaterPct": 150,
     "fireWoodPct": 150,
     "fireWaterPct": 50,
@@ -10121,7 +10129,7 @@
     {
       "name": "Markowa",
       "color": "#6b4eff",
-      "dmgBonus": 2,
+      "dmgBonus": 1,
       "cooldownDelta": -1,
       "rollFrom": 94
     },

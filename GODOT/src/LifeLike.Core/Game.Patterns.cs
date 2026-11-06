@@ -39,6 +39,15 @@ public sealed partial class Game
         return false;
     }
 
+    /// <summary>
+    /// v0.23.0: problemy, które trafiłby tryb m skierowany na cel ei (0, gdy cel poza wzorem) – bez ataku; do podglądu i bota.
+    /// </summary>
+    public int PatternTargets(WeaponMode m, int ei, Span<int> hit)
+    {
+        if (ei < 0 || ei >= EnemiesCount || !Enemies[ei].Alive || Cheb(Hero.X, Hero.Y, Enemies[ei].X, Enemies[ei].Y) > ModeRange(m) || !InPattern(m, ei)) return 0;
+        return Targets(m, ei, hit);
+    }
+
     private bool OnLine(int tx, int ty) => Hero.X == tx || Hero.Y == ty || Math.Abs(tx - Hero.X) == Math.Abs(ty - Hero.Y);
 
     /// <summary>

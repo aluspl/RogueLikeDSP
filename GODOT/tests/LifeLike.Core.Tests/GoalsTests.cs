@@ -116,18 +116,19 @@ public class GoalsTests
         g0.NewRun(1, 4242, 1, Meta.Mods(D, a, 1));
         g1.NewRun(1, 4242, 1, Meta.Mods(D, b, 1));
         Assert.True(g1.Bonus.FirstHitBonus == bonus && g0.Bonus.FirstHitBonus == 0);
+        // v0.23.0: cel z mnożnikiem ciosu 100% (typ ciosu broni x materiał / woda), więc premia przechodzi bez zaokrąglenia
+        var neutral = Array.FindIndex(D.Enemies, e => HitCalc.Pct(D, g1.Weapon, e) == 100);
+        Assert.True(neutral >= 0);
         foreach (var g in new[] { g0, g1 })
         {
+            g.Enemies[0].DefId = (sbyte)neutral;
             g.Enemies[0].MaxHp = g.Enemies[0].Hp = 120;
             g.Enemies[0].Alive = true;
         }
         g0.HeroAttack(0);
         g1.HeroAttack(0);
         int d0 = 120 - g0.Enemies[0].Hp, d1 = 120 - g1.Enemies[0].Hp;
-        // v0.23.0: premia przechodzi przez mnożnik ciosu (typ x materiał celu), więc różnica to bonus x mnożnik (+-1 od zaokrąglenia)
-        var hp = HitCalc.Pct(D, g1.Weapon, D.Enemies[g1.Enemies[0].DefId]);
-        var diff = d1 - d0;
-        Assert.True(Math.Abs(diff - bonus * hp / 100) <= 1 || Math.Abs(diff - bonus * hp / 100 * D.CritMultiplier) <= D.CritMultiplier, $"{diff} {bonus} {hp}");
+        Assert.True(d1 - d0 == bonus || d1 - d0 == bonus * D.CritMultiplier, $"{d1 - d0} {bonus}");
         int h0 = g0.Enemies[0].Hp, h1 = g1.Enemies[0].Hp;
         g0.HeroAttack(0);
         g1.HeroAttack(0);

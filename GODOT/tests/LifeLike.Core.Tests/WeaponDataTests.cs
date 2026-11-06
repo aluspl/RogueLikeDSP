@@ -19,45 +19,45 @@ public class WeaponDataTests
     }
 
     [Theory]
-    [InlineData("dziennik", PatternKind.Shot, ModeEffect.None, PatternKind.Single, ModeEffect.Mark, 4)]
-    [InlineData("kielnia", PatternKind.Arc, ModeEffect.None, PatternKind.Shot, ModeEffect.Stun, 3)]
-    [InlineData("gwozdziarka", PatternKind.Shot, ModeEffect.None, PatternKind.Line, ModeEffect.None, 3)]
+    [InlineData("dziennik", PatternKind.Shot, ModeEffect.None, PatternKind.Single, ModeEffect.Mark, 6)]
+    [InlineData("kielnia", PatternKind.Arc, ModeEffect.None, PatternKind.Shot, ModeEffect.Stun, 7)]
+    [InlineData("gwozdziarka", PatternKind.Shot, ModeEffect.None, PatternKind.Line, ModeEffect.None, 5)]
     [InlineData("probnik", PatternKind.Shot, ModeEffect.None, PatternKind.Cross, ModeEffect.Chain, 4)]
     [InlineData("klucz", PatternKind.Single, ModeEffect.None, PatternKind.Single, ModeEffect.Dry, 4)]
     [InlineData("szlifierka", PatternKind.Single, ModeEffect.None, PatternKind.Arc, ModeEffect.None, 3)]
-    [InlineData("lom", PatternKind.Single, ModeEffect.None, PatternKind.Push, ModeEffect.Push, 3)]
-    [InlineData("wkretarka", PatternKind.Line, ModeEffect.None, PatternKind.Single, ModeEffect.DefDown, 3)]
-    [InlineData("laser", PatternKind.Line, ModeEffect.None, PatternKind.LineBoth, ModeEffect.None, 4)]
-    [InlineData("mlot", PatternKind.Push, ModeEffect.Push, PatternKind.Around, ModeEffect.OpenWall, 5)]
-    [InlineData("tablet", PatternKind.Single, ModeEffect.None, PatternKind.Shot, ModeEffect.Swap, 4)]
-    [InlineData("miernik", PatternKind.Shot, ModeEffect.None, PatternKind.Single, ModeEffect.Reveal, 4)]
-    [InlineData("dachowka", PatternKind.Shot, ModeEffect.None, PatternKind.Throw3x3, ModeEffect.None, 4)]
-    [InlineData("agregat", PatternKind.Spray, ModeEffect.None, PatternKind.Single, ModeEffect.Root, 4)]
-    [InlineData("lyzka", PatternKind.Arc, ModeEffect.None, PatternKind.Shot, ModeEffect.Pull, 3)]
-    [InlineData("udarowy", PatternKind.Single, ModeEffect.None, PatternKind.Line, ModeEffect.DefDown, 4)]
-    [InlineData("kotwy", PatternKind.Shot, ModeEffect.None, PatternKind.Single, ModeEffect.Root, 3)]
-    [InlineData("spawarka", PatternKind.Line, ModeEffect.None, PatternKind.Single, ModeEffect.Dot, 3)]
+    [InlineData("lom", PatternKind.Single, ModeEffect.None, PatternKind.Push, ModeEffect.Push, 5)]
+    [InlineData("wkretarka", PatternKind.Line, ModeEffect.None, PatternKind.Single, ModeEffect.DefDown, 5)]
+    [InlineData("laser", PatternKind.Line, ModeEffect.None, PatternKind.LineBoth, ModeEffect.None, 6)]
+    [InlineData("mlot", PatternKind.Push, ModeEffect.Push, PatternKind.Around, ModeEffect.OpenWall, 7)]
+    [InlineData("tablet", PatternKind.Single, ModeEffect.None, PatternKind.Shot, ModeEffect.Swap, 6)]
+    [InlineData("miernik", PatternKind.Shot, ModeEffect.None, PatternKind.Single, ModeEffect.Reveal, 6)]
+    [InlineData("dachowka", PatternKind.Shot, ModeEffect.None, PatternKind.Throw3x3, ModeEffect.None, 3)]
+    [InlineData("agregat", PatternKind.Spray, ModeEffect.None, PatternKind.Single, ModeEffect.Root, 6)]
+    [InlineData("lyzka", PatternKind.Arc, ModeEffect.None, PatternKind.Shot, ModeEffect.Pull, 5)]
+    [InlineData("udarowy", PatternKind.Single, ModeEffect.None, PatternKind.Line, ModeEffect.DefDown, 6)]
+    [InlineData("kotwy", PatternKind.Shot, ModeEffect.None, PatternKind.Single, ModeEffect.Root, 5)]
+    [InlineData("spawarka", PatternKind.Line, ModeEffect.None, PatternKind.Single, ModeEffect.Dot, 4)]
     [InlineData("tyczka", PatternKind.Line, ModeEffect.None, PatternKind.Cross, ModeEffect.Mark, 4)]
     [InlineData("mlotek", PatternKind.Single, ModeEffect.None, PatternKind.Single, ModeEffect.DefDown, 2)]
-    [InlineData("mlot_zenka", PatternKind.Push, ModeEffect.Push, PatternKind.Around, ModeEffect.Push, 5)]
-    [InlineData("poziomica_m", PatternKind.Shot, ModeEffect.None, PatternKind.LineBoth, ModeEffect.Reveal, 4)]
-    [InlineData("lopata", PatternKind.Arc, ModeEffect.Stun, PatternKind.Line, ModeEffect.DefDown, 2)]
-    [InlineData("siekiera", PatternKind.Single, ModeEffect.None, PatternKind.Arc, ModeEffect.None, 3)]
-    [InlineData("pila", PatternKind.Single, ModeEffect.None, PatternKind.Single, ModeEffect.Dot, 3)]
-    [InlineData("kilof", PatternKind.Single, ModeEffect.None, PatternKind.Line, ModeEffect.None, 4)]
+    [InlineData("mlot_zenka", PatternKind.Push, ModeEffect.Push, PatternKind.Around, ModeEffect.Push, 7)]
+    [InlineData("poziomica_m", PatternKind.Shot, ModeEffect.None, PatternKind.LineBoth, ModeEffect.Reveal, 6)]
+    [InlineData("lopata", PatternKind.Arc, ModeEffect.Stun, PatternKind.Line, ModeEffect.DefDown, 4)]
+    [InlineData("siekiera", PatternKind.Single, ModeEffect.None, PatternKind.Arc, ModeEffect.None, 5)]
+    [InlineData("pila", PatternKind.Single, ModeEffect.None, PatternKind.Single, ModeEffect.Dot, 5)]
+    [InlineData("kilof", PatternKind.Single, ModeEffect.None, PatternKind.Line, ModeEffect.None, 6)]
     [InlineData("przecinak", PatternKind.Single, ModeEffect.None, PatternKind.Single, ModeEffect.OpenWall, 1)]
-    [InlineData("nozyce", PatternKind.Single, ModeEffect.None, PatternKind.Arc, ModeEffect.None, 3)]
-    [InlineData("silikon", PatternKind.Shot, ModeEffect.None, PatternKind.Single, ModeEffect.Root, 4)]
-    [InlineData("myjka", PatternKind.Line, ModeEffect.Wet, PatternKind.Push, ModeEffect.Push, 3)]
-    [InlineData("palnik", PatternKind.Spray, ModeEffect.Dot, PatternKind.Around, ModeEffect.Dry, 5)]
-    [InlineData("taker", PatternKind.Shot, ModeEffect.None, PatternKind.Single, ModeEffect.Root, 3)]
-    [InlineData("mlotek_gumowy", PatternKind.Single, ModeEffect.Stun, PatternKind.Cross, ModeEffect.Stun, 4)]
-    [InlineData("pilarka", PatternKind.Arc, ModeEffect.None, PatternKind.Around, ModeEffect.None, 5)]
-    [InlineData("poziomica_2m", PatternKind.Shot, ModeEffect.None, PatternKind.Cross, ModeEffect.Reveal, 4)]
-    [InlineData("mieszadlo", PatternKind.Single, ModeEffect.None, PatternKind.Around, ModeEffect.Push, 5)]
-    [InlineData("laser_krzyzowy", PatternKind.Line, ModeEffect.None, PatternKind.Line4, ModeEffect.None, 4)]
-    [InlineData("lutownica", PatternKind.Single, ModeEffect.Dot, PatternKind.Line, ModeEffect.Dot, 3)]
-    [InlineData("opalarka", PatternKind.Spray, ModeEffect.Dry, PatternKind.Single, ModeEffect.Mark, 3)]
+    [InlineData("nozyce", PatternKind.Single, ModeEffect.None, PatternKind.Arc, ModeEffect.None, 5)]
+    [InlineData("silikon", PatternKind.Shot, ModeEffect.None, PatternKind.Single, ModeEffect.Root, 6)]
+    [InlineData("myjka", PatternKind.Line, ModeEffect.Wet, PatternKind.Push, ModeEffect.Push, 5)]
+    [InlineData("palnik", PatternKind.Spray, ModeEffect.Dot, PatternKind.Around, ModeEffect.Dry, 7)]
+    [InlineData("taker", PatternKind.Shot, ModeEffect.None, PatternKind.Single, ModeEffect.Root, 5)]
+    [InlineData("mlotek_gumowy", PatternKind.Single, ModeEffect.Stun, PatternKind.Cross, ModeEffect.Stun, 6)]
+    [InlineData("pilarka", PatternKind.Arc, ModeEffect.None, PatternKind.Around, ModeEffect.None, 7)]
+    [InlineData("poziomica_2m", PatternKind.Shot, ModeEffect.None, PatternKind.Cross, ModeEffect.Reveal, 6)]
+    [InlineData("mieszadlo", PatternKind.Single, ModeEffect.None, PatternKind.Around, ModeEffect.Push, 7)]
+    [InlineData("laser_krzyzowy", PatternKind.Line, ModeEffect.None, PatternKind.Line4, ModeEffect.None, 6)]
+    [InlineData("lutownica", PatternKind.Single, ModeEffect.Dot, PatternKind.Line, ModeEffect.Dot, 5)]
+    [InlineData("opalarka", PatternKind.Spray, ModeEffect.Dry, PatternKind.Single, ModeEffect.Mark, 5)]
     public void EveryWeaponModesMatchCatalog(string id, PatternKind a, ModeEffect aEffect, PatternKind b, ModeEffect bEffect, int cooldownB)
     {
         var w = W(id);
@@ -130,11 +130,13 @@ public class WeaponDataTests
         var drewno = Array.FindIndex(D.Materials, m => m.Id == "drewno");
         var cement = Array.FindIndex(D.Materials, m => m.Id == "cement");
         Assert.Equal(75, h.MaterialPct[(int)HitType.Blunt, stal]);
-        Assert.Equal(150, h.MaterialPct[(int)HitType.Blunt, cement]);
-        Assert.Equal(150, h.MaterialPct[(int)HitType.Cut, drewno]);
+        // v0.23.0 Task 7: tabela złagodzona do ±25% (spec. 4.7 pkt 3), kłucie słabsze na cement i wodę
+        Assert.Equal(125, h.MaterialPct[(int)HitType.Blunt, cement]);
+        Assert.Equal(125, h.MaterialPct[(int)HitType.Cut, drewno]);
         Assert.Equal(125, h.MaterialPct[(int)HitType.Pierce, stal]);
-        Assert.Equal(50, h.MaterialPct[(int)HitType.Blunt, 3]);
-        Assert.Equal((20, 10, 2, 150, 150, 150, 50, 2), (h.StunChancePct, h.CutCritPct, h.PierceDef, h.SparkSteelPct, h.PowerWaterPct, h.FireWoodPct, h.FireWaterPct, h.DotPerTurn));
+        Assert.Equal(75, h.MaterialPct[(int)HitType.Pierce, cement]);
+        Assert.Equal(75, h.MaterialPct[(int)HitType.Blunt, 3]);
+        Assert.Equal((20, 10, 1, 125, 150, 150, 50, 2), (h.StunChancePct, h.CutCritPct, h.PierceDef, h.SparkSteelPct, h.PowerWaterPct, h.FireWoodPct, h.FireWaterPct, h.DotPerTurn));
     }
 
     [Fact]

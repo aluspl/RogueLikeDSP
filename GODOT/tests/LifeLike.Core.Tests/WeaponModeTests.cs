@@ -45,11 +45,12 @@ public class WeaponModeTests
     {
         var g = Arena("kielnia");
         var e = Add(g, 9, 7); // zasięg 2
+        var cd = g.Weapon.ModeB.Cooldown;
         Assert.True(g.PlayerWeaponB(e));
-        Assert.Equal(3, g.WeaponBCd);
+        Assert.Equal(cd, g.WeaponBCd);
         Assert.False(g.PlayerWeaponB(e));
-        Assert.Equal(3, g.WeaponBCd);
-        for (var k = 0; k < 3; ++k) g.EndTurn();
+        Assert.Equal(cd, g.WeaponBCd);
+        for (var k = 0; k < cd; ++k) g.EndTurn();
         Assert.Equal(0, g.WeaponBCd);
     }
 
@@ -60,7 +61,7 @@ public class WeaponModeTests
         var e = Add(g, 9, 7);
         Assert.True(g.PlayerWeaponB(e));
         g.WeaponOverride = Wi("mlot");
-        Assert.Equal(3, g.WeaponBCd);
+        Assert.Equal(D.Weapons[Wi("kielnia")].ModeB.Cooldown, g.WeaponBCd);
     }
 
     [Fact]
@@ -197,7 +198,7 @@ public class WeaponModeTests
         var g = Arena("dziennik");
         var e = Add(g, 8, 7);
         Assert.True(B(g, e));
-        Assert.Equal(30, g.Enemies[e].MarkPct);
+        Assert.Equal(D.Weapons[Wi("dziennik")].ModeB.Value, g.Enemies[e].MarkPct);
         Assert.True(g.Enemies[e].MarkTurns > 0);
         for (var k = 0; k < 4; ++k) g.EndTurn();
         Assert.Equal(0, g.Enemies[e].MarkTurns);

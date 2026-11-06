@@ -24,14 +24,17 @@ public static class Bot
         return false;
     }
 
-    /// <summary>Waga pola dla bota: zwykłe 2, błoto 6 (kosztuje turę).</summary>
-    private static int W(Game g, int x, int y) => g.Mud(x, y) ? 6 : 2;
+    /// <summary>Waga pola dla bota: zwykłe 2, błoto 6 (kosztuje turę); v0.23.0: pole z niechcianą bronią AvoidW (nadeptanie ją podnosi).</summary>
+    private static int W(Game g, int x, int y, bool[] avoid = null) => avoid != null && avoid[y * Level.W + x] ? AvoidW : g.Mud(x, y) ? 6 : 2;
+
+    /// <summary>v0.23.0: waga pola z niechcianą bronią – bot obchodzi je, gdy jest inna droga.</summary>
+    private const int AvoidW = 40;
 
     /// <summary>
     /// Koszt drogi bota (4 kierunki, pola przechodnie) od (sx, sy) do każdego pola; -1 = nieosiągalne. Krok = waga pola,
     /// z którego + waga pola, na które - koszt symetryczny i maleje wzdłuż drogi do celu. Bez błota = 4 x liczba kroków.
     /// </summary>
-    private static int[] Costs(Game g, int sx, int sy)
+    private static int[] Costs(Game g, int sx, int sy, bool[] avoid = null)
     {
         var dist = new int[Level.W * Level.H];
         Array.Fill(dist, -1);
@@ -46,7 +49,7 @@ public static class Bot
             {
                 int nx = x + Dirs[k, 0], ny = y + Dirs[k, 1];
                 if (!Open(g, nx, ny)) continue;
-                var nc = pr.Cost + W(g, x, y) + W(g, nx, ny);
+                var nc = pr.Cost + W(g, x, y, avoid) + W(g, nx, ny, avoid);
                 var ni = ny * Level.W + nx;
                 if (dist[ni] < 0 || nc < dist[ni])
                 {
@@ -58,20 +61,35 @@ public static class Bot
         return dist;
     }
 
-    public static void Step(Game g)
+    public static void Step(Game g) => Step(g, BotOptions.Default);
+
+    /// <summary>Krok bota z ustawieniami (v0.23.0: bronie – tryb B, wzory, pas, znajdźki; patrz BotOptions).</summary>
+    public static void Step(Game g, BotOptions o)
     {
         if (g.HasOffer)
         {
             if (g.OfferIsBetter) g.AcceptOffer();
             else g.DeclineOffer();
         }
+        if (o.Weapons && g.HasToolOffer) // v0.23.0: wymiana ulepszonego narzędzia – wg oceny broni; tylko domyślna: zawsze odmowa
+        {
+            if (!o.DefaultWeaponOnly && BotWeapons.WantsTool(g, g.ToolOffer, g.ToolOfferRarity)) g.AcceptTool();
+            else g.DeclineTool();
+            return;
+        }
         if (g.BotPending()) return; // wydarzenie, premia z wydarzenia, cecha narzędzia, narzędzie
         if (g.CanOpenSecret() && g.Hero.X == g.SecretFrontX() && g.Hero.Y == g.SecretFrontY() // przed magazynem: otwórz
             && g.PlayerMove(g.SecretX - g.Hero.X, g.SecretY - g.Hero.Y)) return;
         if (g.Thermos > 0 && g.Hero.Hp * 100 < g.Hero.MaxHp * g.D.BotDrinkBelowPct && g.PlayerDrink()) return;
-        var hd = Costs(g, g.Hero.X, g.Hero.Y); // koszt drogi (błoto droższe)
+        var avoid = o.Weapons ? BotWeapons.AvoidCells(g, o) : null; // v0.23.0: niechciane bronie na ziemi
+        var hd = Costs(g, g.Hero.X, g.Hero.Y, avoid); // koszt drogi (błoto droższe)
         int tx = g.StairsX, ty = g.StairsY, best = 999999;
         if (g.BotGoal(out var gx, out var gy) && hd[gy * Level.W + gx] >= 0) // klucz, magazyn, skrzynia, wydarzenie
+        {
+            tx = gx;
+            ty = gy;
+        }
+        else if (o.Weapons && !o.DefaultWeaponOnly && BotWeapons.ToolGoal(g, hd, out gx, out gy)) // v0.23.0: lepsza broń w pobliżu
         {
             tx = gx;
             ty = gy;
@@ -103,7 +121,7 @@ public static class Bot
             }
         }
         var hasTarget = tx >= 0 && hd[ty * Level.W + tx] >= 0;
-        var td = hasTarget ? Costs(g, tx, ty) : hd;
+        var td = hasTarget ? Costs(g, tx, ty, avoid) : hd;
         if (g.DangerCell(g.Hero.X, g.Hero.Y)) // zapowiedziany cios bossa / wybuch: zejdź z czerwonych pól w stronę celu
         {
             int bk = -1, bs = -1000000;
@@ -121,6 +139,7 @@ public static class Bot
             }
             if (bk >= 0 && g.PlayerMove(Dirs[bk, 0], Dirs[bk, 1])) return;
         }
+        if (o.Weapons && BotWeapons.Fight(g, o)) return; // v0.23.0: zamiana z pasa, tryb B, atak wzorem A, ustawienie pod wzór
         if (g.NearestTarget() >= 0 && g.Weapon.Range > 1)
         {
             g.PlayerAttackNearest();
@@ -135,7 +154,7 @@ public static class Bot
         {
             int nx = g.Hero.X + Dirs[k, 0], ny = g.Hero.Y + Dirs[k, 1];
             var tn = td[ny * Level.W + nx];
-            if (!Open(g, nx, ny) || tn < 0 || tn + W(g, nx, ny) + W(g, g.Hero.X, g.Hero.Y) != td[g.Hero.Y * Level.W + g.Hero.X]) continue;
+            if (!Open(g, nx, ny) || tn < 0 || tn + W(g, nx, ny, avoid) + W(g, g.Hero.X, g.Hero.Y, avoid) != td[g.Hero.Y * Level.W + g.Hero.X]) continue;
             if (!g.Lv.Passable(nx, ny)) // mur Ścianki na drodze: czekaj, aż zniknie
             {
                 g.PlayerWait();
@@ -158,12 +177,21 @@ public static class Bot
     /// zakłada (wymiana cechy), gorszą zostawia; pije z termosu poniżej połowy HP; przy pierwszym problemie na etapie wzywa brygadę.
     /// Musi zgadzać się z GBA/tests/golden_dump.cpp.
     /// </summary>
-    public static void StepSmart(Game g)
+    public static void StepSmart(Game g) => StepSmart(g, BotOptions.Default);
+
+    /// <summary>StepSmart z ustawieniami (v0.23.0: bronie jak w Step – przed zwykłym celowaniem).</summary>
+    public static void StepSmart(Game g, BotOptions o)
     {
         if (g.HasOffer)
         {
             if (g.OfferRarity >= g.Equipped[g.OfferSlot]) g.AcceptOffer();
             else g.DeclineOffer();
+        }
+        if (o.Weapons && g.HasToolOffer) // v0.23.0: jak w Step
+        {
+            if (!o.DefaultWeaponOnly && BotWeapons.WantsTool(g, g.ToolOffer, g.ToolOfferRarity)) g.AcceptTool();
+            else g.DeclineTool();
+            return;
         }
         if (g.BotPending()) return;
         if (g.Thermos > 0 && g.Hero.Hp * 2 < g.Hero.MaxHp && g.PlayerDrink()) return;
@@ -189,13 +217,14 @@ public static class Bot
                             && (g.Hero.Hp * 2 >= g.Hero.MaxHp || g.HasTag(g.Enemies[t], Behavior.Stationary));
             if (t >= 0 && !pointless && Game.Cheb(g.Hero.X, g.Hero.Y, g.Enemies[t].X, g.Enemies[t].Y) <= 2 && g.PlayerAbility()) return;
         }
+        if (o.Weapons && BotWeapons.Fight(g, o)) return; // v0.23.0: pas, tryb B, wzór A
         if (!g.DangerCell(g.Hero.X, g.Hero.Y))
         {
             Span<sbyte> targets = stackalloc sbyte[Game.MaxEnemies];
             var n = g.TargetsInRange(targets);
             if (n > 0 && g.PlayerAttack(targets[0])) return;
         }
-        Step(g);
+        Step(g, o);
     }
 
     /// <summary>Po etapie: bot wybiera premię (BotBoonChoice, darmowe losowanie przy samych zwykłych) i idzie dalej.</summary>

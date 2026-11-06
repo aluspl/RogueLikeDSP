@@ -88,7 +88,7 @@ public class WeaponRarityTests
             g.Enemies[0].Hp = g.Enemies[0].MaxHp = 5000;
             g.UpdateFov();
             Assert.True(g.PlayerWeaponB(0));
-            Assert.Equal(Math.Max(1, 3 + D.WeaponRarities[r].CooldownDelta), g.WeaponBCd);
+            Assert.Equal(Math.Max(1, D.Weapons[Wi("kielnia")].ModeB.Cooldown + D.WeaponRarities[r].CooldownDelta), g.WeaponBCd);
         }
     }
 
