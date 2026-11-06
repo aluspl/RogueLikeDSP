@@ -44,7 +44,7 @@ public class GoldenTests
         if (fullMods)
         {
             for (var i = 0; i < d.Upgrades.Length; i++) p.Levels[i] = (byte)d.Upgrades[i].Levels;
-            p.Tools = (byte)((1 << d.Tools.Length) - 1);
+            p.Tools = (1UL << d.Tools.Length) - 1;
             p.Brigade = (byte)((1 << d.Brigade.Length) - 1);
         }
         p.Badges = (ushort)badges;

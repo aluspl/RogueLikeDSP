@@ -26,7 +26,7 @@ public sealed class GameData
     public BadgeDef[] Badges { get; private init; } = [];
     public ToolDef[] Tools { get; private init; } = [];
 
-    /// <summary>v0.23.0: źródła 17 nowych broni (meta.newTools); poza Tools (maska uint8 w profilu).</summary>
+    /// <summary>v0.23.0: źródła 17 nowych broni (meta.newTools); są też dołączone do Tools (indeksy 10..26).</summary>
     public NewToolDef[] NewTools { get; private init; } = [];
 
     /// <summary>v0.23.0: parametry typów ciosu (obuch, cięcie, kłucie) i tabela skuteczności wg materiału.</summary>
@@ -111,7 +111,13 @@ public sealed class GameData
     public int SlamCrossDelay { get; private init; } = 3;
     public int SlamCrossReach { get; private init; } = 2;
     public int CashPerScore { get; private init; }
-    public int StartToolsMask { get; private init; }
+    public ulong StartToolsMask { get; private init; }
+
+    /// <summary>v0.23.0: narzędzia, które mogą wypaść na budowie bez kupna (nowe bronie z flagą drop).</summary>
+    public ulong DropToolsMask { get; private init; }
+
+    /// <summary>v0.23.0: narzędzia w puli „Nowe narzędzie” w Hurtowni bez kupna (flaga hurtownia).</summary>
+    public ulong HurtowniaToolsMask { get; private init; }
     public int DropChancePct { get; private init; }
     public int GearSolidFrom { get; private init; }
     public int GearBrandFrom { get; private init; }
@@ -285,7 +291,7 @@ public sealed class GameData
     public int SecretClassesMask { get; private init; }
     public int OpenClassesCount { get; private init; }
     /// <summary>Narzędzia z sekretnych zleceń (w dropach dopiero po wykonaniu).</summary>
-    public int SecretToolsMask { get; private init; }
+    public ulong SecretToolsMask { get; private init; }
     /// <summary>Problemy papierowe (Akt 0 bez obrażeń od papierów), bity indeksów GameData.Enemies.</summary>
     public ulong SecretPaperMask { get; private init; }
     /// <summary>Boss pokonany ciosem brygady (Szef tylko dzwoni), -1 = brak.</summary>
@@ -511,15 +517,16 @@ public sealed class GameData
             Require(u.Levels is >= 1 and <= 5 && u.LegacyCosts.Length <= 4, $"ulepszenie {u.Name}: 1-5 poziomów");
         }
         var classCosts = meta.GetProperty("classCosts").EnumerateArray().Select(c => c.GetInt32()).ToArray();
-        var toolCosts = meta.GetProperty("toolCosts").EnumerateArray().Select(c => c.GetInt32()).ToArray();
+        var toolCosts = meta.GetProperty("toolCosts").EnumerateArray().Select(c => c.GetInt32())
+            .Concat(meta.TryGetProperty("newToolCosts", out var ntc) ? ntc.EnumerateArray().Select(c => c.GetInt32()) : []).ToArray(); // v0.23.0: ceny kolejnych nowych broni na sprzedaż
         Require(classCosts.Length >= 1 && toolCosts.Length >= 1, "ceny zawodów i narzędzi");
 
         var classesJson = d.GetProperty("classes").EnumerateArray().ToArray();
         var cid = Index(classesJson);
         var tools = meta.GetProperty("tools").EnumerateArray().Select(t => new ToolDef(Lookup(wid, Str(t, "weapon"), "narzędzie"), Bool(t, "shop"),
-            Bool(t, "reward"), Bool(t, "secret"))).ToArray();
+            Bool(t, "reward"), Bool(t, "secret"))).Concat(newTools.Select(t => new ToolDef(t.Weapon, t.Shop, false, t.Secret, t.Drop, t.Hurtownia))).ToArray();
         Require(tools.Count(t => t.Shop) == toolCosts.Length, "ceny narzędzi: tyle, ile narzędzi na sprzedaż");
-        Require(tools.Length <= 12 && tools.Select((t, i) => t.Secret || i < 8).All(x => x), "narzędzia: bitmaska uint8 w profilu (sekretne za nią)");
+        Require(tools.Length <= 64 && tools.All(t => !(t.Shop && t.Secret)), "narzędzia: bitmaska uint64 w profilu");
 
         var story = d.GetProperty("story");
         var storyStages = story.GetProperty("stages").EnumerateArray().Select(Story)
@@ -686,12 +693,16 @@ public sealed class GameData
         var slamJson = d.GetProperty("slam");
 
         Require(slots.Count is >= 3 and <= Game.MaxGearSlots, "sprzęt: 3-6 slotów");
-        var startTools = 0;
+        var startTools = 0UL;
+        ulong dropTools = 0UL, hurtowniaTools = 0UL;
         for (var i = 0; i < tools.Length; i++)
         {
-            if (!tools[i].Shop && !tools[i].Reward && !tools[i].Secret) startTools |= 1 << i;
+            if (tools[i].Drop) dropTools |= 1UL << i;
+            if (tools[i].Hurtownia) hurtowniaTools |= 1UL << i;
+            if (!tools[i].Shop && !tools[i].Reward && !tools[i].Secret && !tools[i].Drop && !tools[i].Hurtownia) startTools |= 1UL << i;
         }
-        int rewardClasses = 0, secretClasses = 0, secretTools = 0;
+        int rewardClasses = 0, secretClasses = 0;
+        var secretTools = 0UL;
         for (var i = 0; i < classes.Length; i++)
         {
             if (classes[i].Reward) rewardClasses |= 1 << i;
@@ -703,7 +714,7 @@ public sealed class GameData
         Require(classes.Skip(openClasses).All(c => c.Secret), "zawody z sekretnych zleceń na końcu listy");
         for (var i = 0; i < tools.Length; i++)
         {
-            if (tools[i].Secret) secretTools |= 1 << i;
+            if (tools[i].Secret) secretTools |= 1UL << i;
         }
 
         var hasSecrets = d.TryGetProperty("secrets", out var secj);
@@ -724,6 +735,7 @@ public sealed class GameData
             var tid = new Dictionary<string, int>();
             var tj = meta.GetProperty("tools").EnumerateArray().ToArray();
             for (var i = 0; i < tj.Length; i++) tid[Str(tj[i], "weapon")] = i;
+            for (var i = 0; i < newTools.Length; i++) tid[weapons[newTools[i].Weapon].Id] = tj.Length + i;
             foreach (var x in rwj.GetProperty("list").EnumerateArray())
             {
                 var kind = Str(x, "kind");
@@ -802,6 +814,7 @@ public sealed class GameData
         var tid2 = new Dictionary<string, int>();
         var toolsJson = meta.GetProperty("tools").EnumerateArray().ToArray();
         for (var i = 0; i < toolsJson.Length; i++) tid2[Str(toolsJson[i], "weapon")] = i;
+        for (var i = 0; i < newTools.Length; i++) tid2[weapons[newTools[i].Weapon].Id] = toolsJson.Length + i;
         var tutFrom = d.TryGetProperty("tutorial", out var tfj) ? Str(tfj, "from") : "";
         var secrets = secretsJson.Select(x =>
         {
@@ -1341,6 +1354,8 @@ public sealed class GameData
             SlamCrossReach = Int(slamJson, "crossReach", 2),
             CashPerScore = Int(d.GetProperty("cash"), "perScore"),
             StartToolsMask = startTools,
+            DropToolsMask = dropTools,
+            HurtowniaToolsMask = hurtowniaTools,
             DropChancePct = Int(drops, "chancePct"),
             GearSolidFrom = Int(rr, "solidFrom"),
             GearBrandFrom = Int(rr, "brandFrom"),
@@ -1582,6 +1597,7 @@ public sealed class GameData
         "brigade_pct" => UpgradeEffect.BrigadePct,
         "cooldown" => UpgradeEffect.Cooldown,
         "first_hit" => UpgradeEffect.FirstHit,
+        "start_rarity" => UpgradeEffect.StartRarity,
         _ => UpgradeEffect.Unknown, // nowsza wersja danych: ulepszenie bez działania
     };
 

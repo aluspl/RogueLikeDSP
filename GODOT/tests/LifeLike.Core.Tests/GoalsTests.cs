@@ -367,7 +367,7 @@ public class GoalsTests
         Assert.True(v.KillMark[0] == 0 && v.TaskDay == 0 && v.TaskDone == 0 && v.TasksTotal == 0 && v.Collections == 0);
         Assert.True(v.Streak == 3 && v.StreakDay == 202 && v.StreakBest == 3);
         Assert.False(Meta.ProfileFix(D, v));
-        Assert.Equal(384, v.ToBytes().Length);
+        Assert.Equal(Profile.Size, v.ToBytes().Length);
         var o = Meta.NewProfile(D);
         o.Runs = 3;
         var ob = o.ToBytes();

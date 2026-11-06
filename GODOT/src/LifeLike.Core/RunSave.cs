@@ -46,8 +46,10 @@ public sealed class RunSave
 
     public void Clear() => Magic = new byte[8];
 
+    /// <summary>Wczytuje stan; zapis z innej wersji (inna magia, np. PBRUN13) = null, bez wyjątku (v0.23.0, decyzja 7).</summary>
     public Game Load(GameData d)
     {
+        if (!Magic.AsSpan().SequenceEqual(Profile.MagicBytes(RunMagic))) return null;
         var g = new Game(d);
         var size = GameSize(d);
         if (Data.Length < size) // v0.21.52 cz. c / d: starszy stan bez liczników zadań i kontraktu na końcu

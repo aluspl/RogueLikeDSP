@@ -113,7 +113,8 @@ public static class StateDigest
         f.Add(g.ActBonus);
         f.Add(g.StageDamage);
         f.Add(g.StageKills);
-        f.Add(g.ToolsFound);
+        f.Add((int)g.ToolsFound);
+        f.Add((int)(g.ToolsFound >> 32));
         foreach (var m in g.Log)
         {
             f.Add(m.N);
@@ -194,6 +195,8 @@ public static class StateDigest
         f.Add(g.TraitPending ? 1 : 0);
         f.Add(g.ToolOffer);
         f.Add(g.ToolOfferPickup);
+        f.Add(g.WeaponRarity);
+        f.Add(g.ToolOfferRarity);
         f.Add(g.SecretX);
         f.Add(g.SecretY);
         f.Add(g.SecretKind);

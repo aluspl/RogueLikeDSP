@@ -15,7 +15,7 @@ public class ProgressionPaceTests
         for (var i = 0; i < D.Upgrades.Length; ++i)
         {
             var u = D.Upgrades[i];
-            Assert.InRange(u.Levels, 4, 5);
+            Assert.InRange(u.Levels, u.Id == "narzedzia" ? 2 : 4, 5); // v0.23.0: Narzędzia mają 2 poziomy (Solidna, Markowa)
             for (var l = 1; l < u.Levels; ++l) Assert.True(u.Cost(l) > u.Cost(l - 1), u.Name);
             Assert.True(Meta.UpgradeTotal(D, i, u.Levels, u.Effect) > 0, u.Name);
             foreach (var st in u.Steps) Assert.InRange(RunMods.UpgradeLabel(new Message(), st.Effect, st.Value).N, 4, 29);

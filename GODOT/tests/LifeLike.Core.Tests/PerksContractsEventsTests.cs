@@ -349,8 +349,8 @@ public class PerksContractsEventsTests
         p.RespectRanksHi[0] = 1;
         p.RespectRanksHi[2] = 3;
         var b = p.ToBytes();
-        Assert.Equal(384, b.Length);
-        Assert.Equal("PBRL017\0"u8.ToArray(), b[..8]);
+        Assert.Equal(400, b.Length); // v18: + maski broni 64 bity od 384
+        Assert.Equal("PBRL018\0"u8.ToArray(), b[..8]);
         Assert.Equal(new byte[] { 0x02, 0x01, 0x04, 0x03, 2, 1, 0, 3 }, b[188..196]);
         Assert.Equal(new byte[] { 0x0B, 0x0A, 0x0D, 0x0C }, b[156..160]);
         Assert.Equal(new byte[] { 0x02, 0x01 }, b[160..162]);

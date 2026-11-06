@@ -41,6 +41,8 @@ public sealed class DmgBreakdown
     public int Power, PowerRank = 1;
     /// <summary>v0.21.50 cz. 3: ulepszenie narzędzia (#31) – poziom, +obrażeń, cecha (GameData.ToolTraits, -1 = brak).</summary>
     public int UpgLevel, FlatUpgrade, UpgTrait = -1;
+    /// <summary>v0.23.0: premia do obrażeń od rzadkości broni.</summary>
+    public int FlatRarity;
     /// <summary>Cecha ulepszenia: -OBR problemu (Przebicie), +najsłabszy rzut (Wyważenie), +kryt (Ostrze).</summary>
     public int Pierce, Steady, CritUpg;
     /// <summary>v0.21.51 cz. 2: kryt broni (Poziomica mistrza).</summary>
@@ -70,7 +72,7 @@ public sealed class DmgBreakdown
     {
         StatValue = StatClass + StatCraft + StatTrait;
         StatDmg = StatValue / 2;
-        Flat = FlatMods + FlatLevel + FlatFound + FlatGear + FlatBoon + FlatUpgrade + FlatEvent;
+        Flat = FlatMods + FlatLevel + FlatFound + FlatGear + FlatBoon + FlatUpgrade + FlatRarity + FlatEvent;
         DefCut = Math.Max(0, EnemyDef + EnemyElite - Pierce) / 2;
         PctTotal = Pct + PctBoon;
         RollMin = Math.Min(WMax, WMin + Steady); // Wyważenie: najsłabszy rzut wyżej
@@ -131,6 +133,7 @@ public sealed class DmgBreakdown
             CritBonus = m.Crit,
             Pierce = HitCalc.Has(w, HitType.Pierce) ? d.HitTypes.PierceDef : 0,
             CritCut = HitCalc.Has(w, HitType.Cut) ? d.HitTypes.CutCritPct : 0,
+            FlatRarity = d.WeaponRarities.Length > 0 ? d.WeaponRarities[Game.StartRarity(d, m)].DmgBonus : 0, // v0.23.0
             CritWeapon = w.Crit + ((m.Mastery & MasteryBit.Weapon) != 0 ? d.MasteryClasses[cls].WeaponPerk.Value : 0), // broń mistrza
         };
         b.Finish(d);

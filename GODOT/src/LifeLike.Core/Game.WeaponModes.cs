@@ -15,9 +15,6 @@ public sealed partial class Game
     /// <summary>Pomiar (Miernik, Poziomica): premia do krytu bohatera i jej tury.</summary>
     public sbyte CritBuff, CritBuffTurns;
 
-    /// <summary>Zmiana odnowienia trybu B od rzadkości broni (WeaponRarityDef.CooldownDelta); rzadkość broni w ręku dojdzie w zadaniu 5.</summary>
-    private int WeaponCdDelta() => 0;
-
     /// <summary>
     /// Tryb B: wymaga braku odnowienia i ważnego celu wzoru B (żywy, widoczny, w zasięgu, na polu wzoru) – inaczej false bez kosztu.
     /// Atakuje wzorem B z efektami, ustawia odnowienie (ModeB.Cooldown + rzadkość, min 1). Zwraca true = tura zużyta.

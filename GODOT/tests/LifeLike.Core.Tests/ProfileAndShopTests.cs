@@ -100,10 +100,10 @@ public class ProfileAndShopTests
         Assert.True(Meta.ToolUnlocked(D, p, 0) && !Meta.ToolUnlocked(D, p, 3) && !Meta.BuyTool(D, p, 3));
         p.Xp = 100;
         Assert.True(Meta.BuyTool(D, p, 3) && Meta.ToolUnlocked(D, p, 3) && !Meta.BuyTool(D, p, 3) && p.Xp == 100 - D.ToolCosts[0]);
-        Assert.Equal(D.StartToolsMask | (1 << 3), Meta.Mods(D, p).Tools);
+        Assert.Equal(D.StartToolsMask | (1UL << 3), Meta.Mods(D, p).Tools);
         var m = RunMods.Default(D);
-        m.Tools = (1 << D.Tools.Length) - 1;
-        var seen = 0;
+        m.Tools = (1UL << D.Tools.Length) - 1;
+        var seen = 0UL;
         for (uint seed = 1; seed <= 3000 && seen != m.Tools; ++seed)
         {
             var h = TestData.NewGame();
@@ -113,7 +113,7 @@ public class ProfileAndShopTests
             h.Enemies[0].Hp = 1;
             h.PlayerMove(1, 0);
             var q = h.Pickups[h.PickupsCount - 1];
-            if (q.Type == PickupType.Tool) seen |= 1 << q.Arg;
+            if (q.Type == PickupType.Tool) seen |= 1UL << q.Arg;
         }
         Assert.Equal(m.Tools, seen);
         var old = Meta.NewProfile(D);
@@ -210,7 +210,7 @@ public class ProfileAndShopTests
         var p = Meta.NewProfile(D);
         var g = TestData.Arena(1);
         for (var e = 0; e < D.Enemies.Length; ++e) g.KillsByType[e] = 1;
-        g.ToolsFound = (byte)((1 << D.Tools.Length) - 1);
+        g.ToolsFound = (1UL << D.Tools.Length) - 1;
         g.HeroLevel = D.MaxHeroLevel;
         var got = Meta.CheckBadges(D, p, g);
         Assert.True((got & (1 << D.BadgeKatalog)) != 0 && (got & (1 << D.BadgeKolekcjoner)) != 0 && (got & (1 << D.BadgeZawodowiec)) != 0);
@@ -219,6 +219,6 @@ public class ProfileAndShopTests
         h.Pickups[0] = new Pickup(h.Hero.X, h.Hero.Y, PickupType.Tool, true, 2);
         h.PickupsCount = 1;
         h.Collect();
-        Assert.Equal(1 << 2, h.ToolsFound);
+        Assert.Equal(1UL << 2, h.ToolsFound);
     }
 }

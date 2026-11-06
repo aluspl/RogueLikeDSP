@@ -47,7 +47,7 @@ public sealed partial class Game
     public int StageDamage;
     public int StageKills;
     public int StageStartTurn;
-    public byte ToolsFound;
+    public ulong ToolsFound;
     // liczniki zleceń (przenoszone do profilu przez Meta.BankCounters; ile już przeniesiono – w profilu, Run*)
     /// <summary>Użycia mocy.</summary>
     public ushort PowersUsed;
@@ -557,6 +557,7 @@ public sealed partial class Game
         FirstStage = (sbyte)(mods.Act0 != 0 ? 0 : PreludeCount()); // bez nagrody Akt 0 budowa zaczyna się od Fundamentów
         StartStage(FirstStage);
         Thermos = Math.Min(ThermosCap(), mods.StartCoffee); // Respekt: Zaprawiony w boju
+        WeaponRarity = (byte)StartRarity(D, mods); // v0.23.0: Szkolenie Narzędzia; broń mistrza / unikat = Mistrzowska
     }
 
     public bool Occupied(int x, int y)
@@ -631,6 +632,7 @@ public sealed partial class Game
         ChoiceDone = 0;
         EventDmg = EventDef = 0;
         ToolOffer = ToolOfferPickup = -1;
+        ToolOfferRarity = 0;
         SecretX = SecretY = -1;
         SecretOpen = false;
         SecretKind = SecretDir = 0;

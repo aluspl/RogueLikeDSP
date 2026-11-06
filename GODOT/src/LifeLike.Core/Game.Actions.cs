@@ -14,7 +14,7 @@ public sealed partial class Game
         var melee = Cheb(Hero.X, Hero.Y, ex, ey) <= 1;
         var w = Weapon; // ulepszenie (#31): +obrażeń, Wyważenie (rzut), Przebicie (OBR)
         var dmg = R.Range(Math.Min(w.MaxDamage, w.MinDamage + ToolTraitValue(ToolTraitEffect.Steady)), w.MaxDamage)
-                  + HeroStat(w.ScalesWith) / 2 + DmgBonus + GearBonus(GearStat.Dmg) + BoonSum(BoonEffect.Dmg) + UpgradeDmg() + EventDmg
+                  + HeroStat(w.ScalesWith) / 2 + DmgBonus + GearBonus(GearStat.Dmg) + BoonSum(BoonEffect.Dmg) + UpgradeDmg() + WeaponDmgBonus() + EventDmg
                   + MarkBonus(ei) // Tyczenie (Geodeta)
                   + (Enemies[ei].Hp >= Enemies[ei].MaxHp ? Bonus.FirstHitBonus : 0) // v0.21.52 cz. c: Siła rozpędu
                   - Math.Max(0, EnemyDefense(ei) - PierceTotal(w)) / 2;
@@ -435,23 +435,16 @@ public sealed partial class Game
         }
         if (type == (int)PickupType.Tool)
         {
-            var n = 0;
-            for (var i = 0; i < D.Tools.Length; ++i) n += (Bonus.Tools >> i) & 1;
+            var pool = DropToolPool(); // v0.23.0: kupione + nowe bronie z flagą drop
+            var n = CountBits(pool);
             if (n == 0)
             {
                 type = (int)PickupType.Coffee;
             }
             else
             {
-                var k = R.Range(0, n - 1);
-                for (var i = 0; i < D.Tools.Length; ++i)
-                {
-                    if (((Bonus.Tools >> i) & 1) != 0 && k-- == 0)
-                    {
-                        arg = (byte)i;
-                        break;
-                    }
-                }
+                arg = (byte)NthTool(pool, R.Range(0, n - 1));
+                trait = (byte)RollWeaponRarity(); // v0.23.0: rzadkość narzędzia (Pickup.Trait), nigdy Mistrzowska
             }
         }
         Pickups[PickupsCount++] = new Pickup(x, y, (PickupType)type, true, arg, trait);
@@ -509,6 +502,7 @@ public sealed partial class Game
                 if (!HasToolOffer)
                 {
                     ToolOffer = (sbyte)p.Arg;
+                    ToolOfferRarity = (sbyte)p.Trait;
                     ToolOfferPickup = (sbyte)i;
                     Push(Msg(Loc.T("narzedzie_2")).Add(D.Weapons[D.Tools[p.Arg].Weapon].Name).Add(Loc.T("zamienic")).As(LogKind.Loot));
                 }
@@ -583,7 +577,7 @@ public sealed partial class Game
             }
             else
             {
-                TakeTool(p.Arg);
+                TakeTool(p.Arg, p.Trait);
             }
         }
     }

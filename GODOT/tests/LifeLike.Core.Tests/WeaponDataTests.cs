@@ -115,11 +115,11 @@ public class WeaponDataTests
     }
 
     [Fact]
-    public void NewWeaponsHaveSourcesAndStayOutsideProfileToolMask()
+    public void NewWeaponsHaveSourcesAndJoinToolList()
     {
         Assert.Equal(17, D.NewTools.Length);
         Assert.All(D.NewTools, t => Assert.True(t.Weapon >= 22 && (t.Shop || t.Drop || t.Hurtownia || t.Secret)));
-        Assert.Equal(10, D.Tools.Length);
+        Assert.Equal(27, D.Tools.Length); // v0.23.0 zad. 5: 10 + 17 w jednej liście (maska 64 bity)
     }
 
     [Fact]

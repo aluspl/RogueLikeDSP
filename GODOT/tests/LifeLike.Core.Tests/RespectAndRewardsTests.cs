@@ -229,6 +229,7 @@ public class RespectAndRewardsTests
         var refund = 0;
         for (var i = 0; i < D.Upgrades.Length; ++i) // v13: Szkolenia wracają jako doświadczenie po starej cenie
         {
+            if (D.Upgrades[i].LegacyCosts.Length == 0) continue; // v0.23.0: Narzędzia – bez dawnej ceny
             v7.Levels[i] = 1;
             refund += D.Upgrades[i].LegacyCosts[0];
         }

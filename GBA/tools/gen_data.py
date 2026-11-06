@@ -54,6 +54,10 @@ def overlay(o, path=""):
             if rx.match(path): return EN.get(o, o) if opt else tr(o, path)
     return o
 
+# v0.23.0: Szkolenia tylko w Godocie do zadania 10 (emisja C++): rzadkość broni na start
+NOWE_SZK = {"narzedzia"}
+
+
 def t(x):
     """Tekst gracza (core::ltext). Oba przebiegi (polski i angielski) znaczą teksty, scalanie robi z nich
     { "polski", "angielski" } w tej samej kolejności."""
@@ -152,7 +156,8 @@ def build(d):
            "crit", "dodge", "thermos", "mats_pct", "gear_pct", "cash"}   # v0.21.52: poziomy Szkoleń z różnym działaniem
     TREE_EFF = EFF | {"shop_pct", "brigade_pct", "cooldown", "first_hit"}   # v0.21.52 cz. c: węzły drzewka Szkoleń
     L.append("inline constexpr core::upgrade_def upgrades[] = {   // Szkolenia: poziomy (przyrost + koszt), stare koszty do zwrotu")
-    for u in m["upgrades"]:
+    SZK_GBA = [u for u in m["upgrades"] if u["id"] not in NOWE_SZK]
+    for u in SZK_GBA:
         st_ = u["steps"]
         assert u["effect"] in EFF and 1 <= len(st_) <= 5 and all(x["effect"] in EFF for x in st_), u
         assert any(x["effect"] == u["effect"] for x in st_), u   # główne działanie jest wśród poziomów
@@ -450,7 +455,7 @@ def build(d):
     assert len(d["classes"]) <= 12 and all(0 <= c["frame"] < 64 or 127 <= c["frame"] < 160 for c in d["classes"])
     open_classes = sum(1 for c in d["classes"] if not c.get("secret"))   # v0.21.51 cz. 2: zawody z sekretów na końcu listy
     assert all(c.get("secret") for c in d["classes"][open_classes:]), "zawody z sekretnych zleceń na końcu listy"
-    L += [f"inline constexpr int upgrades_count = {len(m['upgrades'])};",
+    L += [f"inline constexpr int upgrades_count = {len(SZK_GBA)};",
           f"inline constexpr int xp_per_kill = {m['xpPerKill']};",
           f"inline constexpr int xp_per_stage = {m['xpPerStage']};",
           f"inline constexpr int xp_boss = {m['xpBoss']};",
@@ -833,12 +838,12 @@ def build(d):
     assert len({t[2] for t in pt} | {x["title"] for x in d["badges"] + d["contracts"]}) == len(pt) + len(d["badges"]) + len(d["contracts"]), "tytuły bez powtórzeń"
     # ------------------------------------------------------------------ v0.21.52 cz. c: drzewko Szkoleń (#46), kolekcje (#49),
     # zadania dnia i tygodnia (#50), seria dni (#51)
-    tr = m["tree"]; upid = {u["id"]: i for i, u in enumerate(m["upgrades"])}
+    tr = m["tree"]; upid = {u["id"]: i for i, u in enumerate(SZK_GBA)}
     brid = {b["id"]: i for i, b in enumerate(tr["branches"])}
-    assert len(tr["branches"]) == 3 and sorted(sum((b["upgrades"] for b in tr["branches"]), [])) == sorted(upid), "każde Szkolenie w jednej gałęzi"
+    assert len(tr["branches"]) == 3 and sorted(sum(([x for x in b["upgrades"] if x not in NOWE_SZK] for b in tr["branches"]), [])) == sorted(upid), "każde Szkolenie w jednej gałęzi"
     assert 1 <= len(tr["nodes"]) <= 8 and 0 < tr["respecCost"] < 200   # profil: 2 bity na węzeł (uint16)
     L.append("inline constexpr core::tree_branch tree_branches[] = {   // gałęzie drzewka: pień = Szkolenia (bity data::upgrades)")
-    L += [f'    {{ {t(b["name"])}, {sum(1 << upid[u] for u in b["upgrades"])} }},' for b in tr["branches"]] + ["};"]
+    L += [f'    {{ {t(b["name"])}, {sum(1 << upid[u] for u in b["upgrades"] if u in upid)} }},' for b in tr["branches"]] + ["};"]
     L.append("inline constexpr core::tree_node tree_nodes[] = {   // węzły: głębokość (poziomy pnia gałęzi), koszt, 1 z 2 opcji")
     for x in tr["nodes"]:
         b = tr["branches"][brid[x["branch"]]]

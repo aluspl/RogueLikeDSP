@@ -112,7 +112,7 @@ public sealed partial class Game
         foreach (var v in new[] { Cls, Stage, Diff, Tier, DefBonus, DmgBonus, Turns, Kills, Score, StageDamage, StageKills, StageStartTurn })
             w.Write(v);
         w.Write(KillsByType);
-        w.Write(ToolsFound);
+        w.Write(ToolsFound); // v0.23.0: ulong (maska 64 bity)
         w.Write(PowersUsed);
         w.Write(BrandFound);
         w.Write(CleanBosses);
@@ -134,12 +134,13 @@ public sealed partial class Game
         foreach (var v in new[]
                  {
                      Bonus.Hp, Bonus.Def, Bonus.Dmg, Bonus.Coffee, Bonus.Pickups, Bonus.Luck, Bonus.Craft, Bonus.Cooldown, Bonus.Sight,
-                     Bonus.Thermos, Bonus.ToolPct, Bonus.XpPct, Bonus.Cash, Bonus.Crit, Bonus.Tools, Bonus.Helpers, Bonus.Investor,
+                     Bonus.Thermos, Bonus.ToolPct, Bonus.XpPct, Bonus.Cash, Bonus.Crit, Bonus.Helpers, Bonus.Investor,
                      Bonus.DmgPct, Bonus.TakenPct, Bonus.GearPct, Bonus.Dodge, Bonus.CoffeePct, Bonus.BrigadePct, Bonus.ShopPct,
                      Bonus.MatsPct, Bonus.SecondChance, Bonus.GearSlots, Bonus.Act0, Bonus.Rerolls, Bonus.Weekly, Bonus.StartCoffee,
-                     Bonus.Mastery,
+                     Bonus.Mastery, Bonus.WeaponRarity,
                  })
             w.Write(v);
+        w.Write(Bonus.Tools);
         foreach (var v in new[] { XpPct, XpBanked, RunXp, HeroLevel, Boss, StairsX, StairsY }) w.Write(v);
         w.Write((byte)St);
         foreach (var m in Log)
@@ -223,6 +224,8 @@ public sealed partial class Game
         w.Write(TraitPending);
         w.Write(ToolOffer);
         w.Write(ToolOfferPickup);
+        w.Write(WeaponRarity); // v0.23.0: rzadkość broni w ręku i zamiany
+        w.Write(ToolOfferRarity);
         w.Write(SecretX);
         w.Write(SecretY);
         w.Write(SecretKind);
@@ -304,7 +307,7 @@ public sealed partial class Game
         StageKills = r.ReadInt32();
         StageStartTurn = r.ReadInt32();
         r.Read(KillsByType, 0, KillsByType.Length);
-        ToolsFound = r.ReadByte();
+        ToolsFound = r.ReadUInt64();
         PowersUsed = r.ReadUInt16();
         BrandFound = r.ReadByte();
         CleanBosses = r.ReadByte();
@@ -329,14 +332,15 @@ public sealed partial class Game
         {
             Hp = r.ReadInt32(), Def = r.ReadInt32(), Dmg = r.ReadInt32(), Coffee = r.ReadInt32(), Pickups = r.ReadInt32(),
             Luck = r.ReadInt32(), Craft = r.ReadInt32(), Cooldown = r.ReadInt32(), Sight = r.ReadInt32(), Thermos = r.ReadInt32(),
-            ToolPct = r.ReadInt32(), XpPct = r.ReadInt32(), Cash = r.ReadInt32(), Crit = r.ReadInt32(), Tools = r.ReadInt32(),
+            ToolPct = r.ReadInt32(), XpPct = r.ReadInt32(), Cash = r.ReadInt32(), Crit = r.ReadInt32(),
             Helpers = r.ReadInt32(),
             Investor = r.ReadInt32(),
             DmgPct = r.ReadInt32(), TakenPct = r.ReadInt32(), GearPct = r.ReadInt32(), Dodge = r.ReadInt32(), CoffeePct = r.ReadInt32(),
             BrigadePct = r.ReadInt32(), ShopPct = r.ReadInt32(), MatsPct = r.ReadInt32(), SecondChance = r.ReadInt32(),
             GearSlots = r.ReadInt32(), Act0 = r.ReadInt32(), Rerolls = r.ReadInt32(), Weekly = r.ReadInt32(), StartCoffee = r.ReadInt32(),
-            Mastery = r.ReadInt32(),
+            Mastery = r.ReadInt32(), WeaponRarity = r.ReadInt32(),
         };
+        Bonus.Tools = r.ReadUInt64();
         XpPct = r.ReadInt32();
         XpBanked = r.ReadInt32();
         RunXp = r.ReadInt32();
@@ -418,6 +422,8 @@ public sealed partial class Game
         TraitPending = r.ReadBoolean();
         ToolOffer = r.ReadSByte();
         ToolOfferPickup = r.ReadSByte();
+        WeaponRarity = r.ReadByte();
+        ToolOfferRarity = r.ReadSByte();
         SecretX = r.ReadSByte();
         SecretY = r.ReadSByte();
         SecretKind = r.ReadSByte();

@@ -66,7 +66,7 @@ public static class GoldenSnapshot
         K("blast", Arr([g.BlastX, g.BlastY, g.BlastTimer, g.BlastDmg, g.GustIn(), g.GustDir()]));
         K("offer", Arr([g.OfferSlot, g.OfferRarity, g.OfferTrait]));
         K("respect", Arr([g.Respect, g.StageRespect(), g.DmgCarry, g.TakenCarry, g.SecondUsed ? 1 : 0, g.DodgePct(), g.CoffeeHeal(),
-            g.Bonus.GearSlots, g.Bonus.Tools]));
+            g.Bonus.GearSlots, (int)g.Bonus.Tools]));
         K("act0", Arr([g.FirstStage, g.Docs, g.DocsNeeded(), g.StairsLocked() ? 1 : 0, g.StageNumber(), g.StagesInRun()]));
         K("heroStatus", Arr(g.HeroStatus.Select(x => (int)x)));
         K("boons", "[" + string.Join(",", new long[]

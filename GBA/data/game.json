@@ -2184,6 +2184,12 @@
       125,
       150
     ],
+    "newToolCosts": [
+      175,
+      200,
+      225,
+      250
+    ],
     "upgrades": [
       {
         "id": "kondycja",
@@ -2409,6 +2415,25 @@
           20
         ],
         "refund": 40
+      },
+      {
+        "id": "narzedzia",
+        "name": "Narzędzia",
+        "desc": "Lepsza broń na start",
+        "effect": "start_rarity",
+        "steps": [
+          {
+            "effect": "start_rarity",
+            "value": 1,
+            "cost": 80
+          },
+          {
+            "effect": "start_rarity",
+            "value": 1,
+            "cost": 160
+          }
+        ],
+        "refund": 40
       }
     ],
     "tools": [
@@ -2460,7 +2485,8 @@
           "name": "Fach",
           "upgrades": [
             "fach",
-            "warsztaty"
+            "warsztaty",
+            "narzedzia"
           ]
         },
         {
@@ -8799,6 +8825,7 @@
     "stat_broni": " stat. broni",
     "sprzet_4": "Sprzęt +",
     "pierwszy_cios": "Pierwszy cios +",
+    "start_rzadkosc": "Rzadkość broni +",
     "tytul": "Tytuł: ",
     "ozdoba": "Ozdoba: ",
     "druga_pamiatka": "Druga pamiątka",

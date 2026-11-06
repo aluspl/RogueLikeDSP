@@ -32,7 +32,7 @@ public class LootAndGearTests
                 if (p.Type == PickupType.Tool)
                 {
                     ++toolsSeen;
-                    Assert.True((D.StartToolsMask & (1 << p.Arg)) != 0);
+                    Assert.True(((D.StartToolsMask | D.DropToolsMask) & (1UL << p.Arg)) != 0); // v0.23.0: kupione + nowe bronie z flagą drop
                 }
             }
         }

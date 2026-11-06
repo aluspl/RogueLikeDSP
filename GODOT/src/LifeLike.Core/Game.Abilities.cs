@@ -363,19 +363,9 @@ public sealed partial class Game
             }
             case ShopEffect.Tool:
             {
-                var n = 0;
-                for (var t = 0; t < D.Tools.Length; ++t) n += (Bonus.Tools >> t) & 1;
-                var k = R.Range(0, Math.Max(0, n - 1));
-                for (var t = 0; t < D.Tools.Length; ++t)
-                {
-                    if (((Bonus.Tools >> t) & 1) != 0 && k-- == 0)
-                    {
-                        ResetUpgrade();
-                        WeaponOverride = D.Tools[t].Weapon;
-                        ToolsFound = (byte)(ToolsFound | (1u << t));
-                        break;
-                    }
-                }
+                var pool = ShopToolPool(); // v0.23.0: kupione + nowe bronie z flagą hurtownia, rzadkość losowana przy zakupie
+                var t = NthTool(pool, R.Range(0, Math.Max(0, CountBits(pool) - 1)));
+                if (t >= 0) TakeTool(t, RollWeaponRarity(), false);
                 break;
             }
         }

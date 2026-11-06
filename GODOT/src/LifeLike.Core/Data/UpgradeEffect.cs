@@ -7,5 +7,7 @@ namespace LifeLike.Core.Data;
 public enum UpgradeEffect : byte
 {
     Hp, Def, Dmg, Coffee, Pickups, Luck, Craft, DmgPct, TakenPct, Crit, Dodge, Thermos, MatsPct, GearPct, Cash,
-    ShopPct, BrigadePct, Cooldown, FirstHit, Unknown = 255,
+    ShopPct, BrigadePct, Cooldown, FirstHit,
+    /// <summary>v0.23.0: startowa rzadkość broni domyślnej (Szkolenie Narzędzia: 1 = Solidna, 2 = Markowa).</summary>
+    StartRarity, Unknown = 255,
 }

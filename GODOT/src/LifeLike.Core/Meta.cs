@@ -272,6 +272,11 @@ public static class Meta
     public static bool ProfileFix(GameData d, Profile p)
     {
         if (p.MagicIs(Profile.MagicCurrent)) return ClampLevels(d, p);
+        if (p.MagicIs(Profile.MagicV17)) // v0.23.0 (decyzja 7): indeksy i szerokość masek broni się zmieniły – bez migracji, nowy profil
+        {
+            ProfileReset(d, p);
+            return true;
+        }
         if (p.MagicIs(Profile.MagicV16)) // v16 -> v17: filtr ekranu klasyczny, filtry do ogłoszenia
         {
             p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
@@ -577,7 +582,7 @@ public static class Meta
         var n = 0;
         for (var i = 0; i < d.Tools.Length; ++i)
         {
-            if (d.Tools[i].Shop && ((p.Tools >> i) & 1) != 0) ++n;
+            if (d.Tools[i].Shop && ((p.Tools >> i) & 1UL) != 0) ++n;
         }
         return n;
     }
@@ -604,13 +609,13 @@ public static class Meta
         return true;
     }
 
-    public static int ToolsMask(GameData d, Profile p)
+    public static ulong ToolsMask(GameData d, Profile p)
     {
         var m = p.Tools | d.StartToolsMask;
         for (var i = 0; i < d.Tools.Length; ++i)
         {
-            if (d.Tools[i].Reward) m = RewardUnlocked(d, p, RewardKind.Tool, i) ? m | (1 << i) : m & ~(1 << i);
-            if (d.Tools[i].Secret) m = Secrets.Owned(d, p, SecretReward.Tool, i) ? m | (1 << i) : m & ~(1 << i);
+            if (d.Tools[i].Reward) m = RewardUnlocked(d, p, RewardKind.Tool, i) ? m | (1UL << i) : m & ~(1UL << i);
+            if (d.Tools[i].Secret) m = Secrets.Owned(d, p, SecretReward.Tool, i) ? m | (1UL << i) : m & ~(1UL << i);
         }
         return m;
     }
@@ -626,14 +631,14 @@ public static class Meta
         return m;
     }
 
-    public static bool ToolUnlocked(GameData d, Profile p, int i) => ((ToolsMask(d, p) >> i) & 1) != 0;
+    public static bool ToolUnlocked(GameData d, Profile p, int i) => ((ToolsMask(d, p) >> i) & 1UL) != 0;
 
     public static bool BuyTool(GameData d, Profile p, int i)
     {
         var cost = ToolCost(d, p);
         if (!d.Tools[i].Shop || ToolUnlocked(d, p, i) || p.Xp < cost) return false;
         p.Xp -= cost;
-        p.Tools = (byte)(p.Tools | (1u << i));
+        p.Tools |= 1UL << i;
         return true;
     }
 
@@ -1104,7 +1109,7 @@ public static class Meta
         {
             if (g.KillsByType[e] != 0) CatalogAdd(p, e);
         }
-        p.ToolsFound = (byte)(p.ToolsFound | g.ToolsFound);
+        p.ToolsFound |= g.ToolsFound;
         if (g.St == GameStatus.Won) SetClassWon(p, g.Cls);
         var stake = Investor.Stake(d, g.Bonus.Investor); // rekord stawki zawodu (wygrana w trybie inwestora)
         if (g.St == GameStatus.Won && stake > BestStake(p, g.Cls))
@@ -1121,7 +1126,7 @@ public static class Meta
         RecordRun(d, p, g);
         var cleared = g.St == GameStatus.StageClear || g.St == GameStatus.Won;
         var won = g.St == GameStatus.Won;
-        var allTools = ((1 << d.Tools.Length) - 1) & ~d.SecretToolsMask; // sekretne narzędzia się nie liczą
+        var allTools = (d.Tools.Length >= 64 ? ulong.MaxValue : (1UL << d.Tools.Length) - 1) & ~d.SecretToolsMask; // sekretne narzędzia się nie liczą
         var cond = new bool[16];
         void Set(int idx, bool v)
         {

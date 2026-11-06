@@ -307,9 +307,9 @@ public sealed partial class Game
     {
         if (!HasToolOffer) return;
         Pickups[ToolOfferPickup].Active = false;
-        int t = ToolOffer;
+        int t = ToolOffer, rarity = ToolOfferRarity;
         ToolOffer = ToolOfferPickup = -1;
-        TakeTool(t);
+        TakeTool(t, rarity);
     }
 
     public void DeclineTool()
@@ -319,16 +319,18 @@ public sealed partial class Game
         Push(Msg(Loc.T("zostajesz_przy_ulepszonym")));
     }
 
-    public void TakeTool(int t)
+    public void TakeTool(int t, int rarity = 0, bool announce = true)
     {
         ResetUpgrade();
         WeaponOverride = D.Tools[t].Weapon;
-        ToolsFound = (byte)(ToolsFound | (1u << t));
+        WeaponRarity = (byte)ResolveRarity(WeaponOverride, rarity); // v0.23.0: rzadkość z dropu / Hurtowni, unikat zawsze Mistrzowska
+        ToolsFound |= 1UL << t;
+        if (!announce) return;
         Push(Msg(Loc.T("narzedzie_2")).Add(Weapon.Name).Add(" ").Add(Weapon.MinDamage).Add("-").Add(Weapon.MaxDamage).As(LogKind.Loot));
     }
 
     /// <summary>Bot bierze nowe narzędzie, gdy średni cios (bez problemu) jest wyższy niż ulepszonym obecnym.</summary>
-    public bool BotToolAccept() => WeaponBreakdown(-1, D.Tools[ToolOffer].Weapon).Avg10 > WeaponBreakdown().Avg10;
+    public bool BotToolAccept() => WeaponBreakdown(-1, D.Tools[ToolOffer].Weapon, -1, -1, 0, ResolveRarity(D.Tools[ToolOffer].Weapon, ToolOfferRarity)).Avg10 > WeaponBreakdown().Avg10;
 
     // ------------------------------------------------------------------ ukryte pomieszczenia
     /// <summary>
