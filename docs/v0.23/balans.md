@@ -285,3 +285,102 @@ Porażki na etapach (etap: udział % wszystkich przebiegów zawodu), Normalny:
 | Spawacz | 2: 0,3, 5: 20,6, 6: 2,3, 7: 2,6, 8: 16,3, 9: 6,6, 10: 2,6, 11: 14,3 | 2: 0,3, 5: 20,0, 6: 2,3, 7: 2,3, 8: 15,0, 9: 7,0, 10: 2,6, 11: 14,0 |
 | Geodeta | 4: 0,6, 5: 9,3, 6: 4,0, 7: 3,0, 8: 19,3, 9: 9,0, 10: 2,6, 11: 15,0 | 4: 0,6, 5: 8,0, 6: 4,0, 7: 3,0, 8: 19,6, 9: 9,0, 10: 3,3, 11: 13,3 |
 | Majster | 4: 0,3, 5: 7,6, 6: 1,6, 7: 1,3, 8: 15,0, 9: 24,6, 10: 1,0, 11: 20,6 | 4: 0,6, 5: 7,6, 6: 1,3, 7: 1,6, 8: 15,6, 9: 25,6, 10: 1,0, 11: 21,3 |
+
+## Kryt i problemy (v0.23.0, TODO #93) – pomiar 2026-11-07
+
+Zmiany: `luck.critPerLuckPct` 3 → 2, `hitTypes.cutCritPct` 10 → 5, nowy sufit `luck.critMaxPct` 35; unik ze szczęścia bez zmian
+(średni unik bota 6,0% < 8%); obrażenia problemów: `stages[].dmgBonus` Fundamenty, Izolacja, Mury parteru 0 → 1, Dach 2 → 3
+(+1 w całości okazało się za mocne: Normalny 14,6%); Trudny `hpPct` 165 → 150 (bez tego 6,3%); broń zawodu na start bez losowych
+profitów (opcja a; Mistrzowska – stałe).
+
+| Pomiar (bot, Normalny, 300/zawód) | Przed | Po |
+|---|---|---|
+| Kryt – średnia szansa przy trafieniu / faktycznie | 20,8 / 18,3 | 16,1 / 14,1 |
+| Glazurnik (najwyższy kryt) – szansa | 33,0 | 23,0 |
+| Obrażenia otrzymane na etap | 12,7 | 13,4 |
+| Unik – średnia szansa / faktycznie | 6,1 / 5,7 | 6,0 / 5,6 |
+| Wygrane (wszystkie zawody) | 34,1 | 27,0 |
+
+| Cel | Przed (#87) | Po (#93) | Zakres |
+|---|---|---|---|
+| Łatwy | 57,2 | 52,2 | 50–60 |
+| Normalny | 34,6 | 26,6 | 25–35 (cel 25–28) |
+| Trudny | 10,5 | 9,8 | 8–15 |
+| Pełne Szkolenia | 67,1 | 60,1 | 55–65 |
+| + Respekt | 77,2 | 70,3 | 70–80 |
+| Akt 0 + meta | 80,2 | 71,2 | 65–75 |
+| Inwestor | 15,2 | 9,6 | 5–15 |
+| Kontrakty bez meta | 28,2–31,7 | 26,6–28,7 | 25–40 |
+| Kontrakty pełne meta | 69,4–80,0 | **63,5** (Bliźniak)–71,8 | 65–80 |
+| Tylko broń domyślna | 33,7 | 27,0 | zawód ≥ v0.22.1 −5 p.p. – **7 zawodów poniżej** |
+
+Poza celem: Bliźniak z pełnym meta 63,5 (1,5 p.p. pod progiem; 150 przebiegów), oraz test „tylko broń domyślna ≥ v0.22.1 −5 p.p.”
+– sprzeczny z nowym celem Normalnego 25–28 (średnia v0.22.1 to 32,1, więc średni spadek ~5,5 p.p. jest wpisany w cel).
+Względem bota z bronią (ta sama wersja) broń domyślna mieści się w −5 p.p. dla każdego zawodu (najgorzej Glazurnik −5,0).
+
+Przebiegi na zawód: 300 (kontrakty 150); średnie celów = zwykłe zawody (bez sekretów), jak core_tests.cpp.
+
+| Cel | Wynik | Zakres |
+|---|---|---|
+| Łatwy | 52,2 | 50–60 |
+| Normalny | 26,6 (wszystkie zawody 27,0) | 25–35 |
+| Trudny | 9,8 | 8–15 |
+| Pełne Szkolenia | 60,1 | 55–65 |
+| + Respekt | 70,3 | 70–80 |
+| Akt 0 + meta | 71,2 | 65–75 |
+| Inwestor (wszystkie modyfikatory) | 9,6 | 5–15 |
+| Kontrakt Letniskowy bez meta / pełne meta | 27,6 / 71,8 | 25–40 / 65–80 |
+| Kontrakt Bliźniak bez meta / pełne meta | 26,6 / 63,5 | 25–40 / 65–80 |
+| Kontrakt Poddasze bez meta / pełne meta | 28,4 / 67,1 | 25–40 / 65–80 |
+| Kontrakt Kamienica bez meta / pełne meta | 28,7 / 66,3 | 25–40 / 65–80 |
+| Tylko broń domyślna, Normalny | 27,0 (wszystkie 27,2) | zawód ≥ v0.22.1 −5 p.p. |
+
+| Zawód | v0.22.1 | Bot (Normalny) | Tylko domyślna | Δ domyślna | Najgorszy etap domyślnej (Δ udziału porażek, p.p.) |
+|---|---|---|---|---|---|
+| Kierownik budowy | 36,7 | 30,3 | 33,0 | -3,7 | 6: 4,3 |
+| Murarz | 16,0 | 19,3 | 19,3 | 3,3 | 6: 6,3 |
+| Cieśla-dekarz | 48,7 | 37,6 | 42,6 | -6,1 | 6: 3,3 |
+| Elektryk | 35,3 | 28,0 | 28,3 | -7,0 | 10: 4,3 |
+| Hydraulik | 14,0 | 13,6 | 12,6 | -1,4 | 6: 6,3 |
+| Glazurnik | 23,3 | 19,0 | 14,0 | -9,3 | 5: 10,0 |
+| Dekarz | 57,0 | 45,6 | 50,0 | -7,0 | 11: 3,6 |
+| Tynkarz | 36,7 | 25,6 | 25,0 | -11,7 | 5: 7,3 |
+| Operator koparki | 23,0 | 19,6 | 18,3 | -4,7 | 6: 6,3 |
+| Spawacz | 35,0 | 30,0 | 28,6 | -6,4 | 11: 4,3 |
+| Geodeta | 36,7 | 28,3 | 30,0 | -6,7 | 6: 9,3 |
+| Majster | 23,0 | 27,0 | 24,3 | 1,3 | 6: 6,0 |
+
+Porażki na etapach (etap: udział % wszystkich przebiegów zawodu), Normalny:
+
+| Zawód | Bot | Tylko domyślna |
+|---|---|---|
+| Kierownik budowy | 2: 0,6, 3: 1,3, 4: 1,3, 5: 8,0, 6: 7,3, 7: 3,3, 8: 18,0, 9: 12,6, 10: 5,3, 11: 11,6 | 2: 0,6, 3: 1,3, 4: 1,3, 5: 7,3, 6: 7,0, 7: 3,6, 8: 17,0, 9: 11,6, 10: 5,6, 11: 11,3 |
+| Murarz | 2: 0,3, 3: 0,3, 4: 0,3, 5: 7,0, 6: 8,3, 7: 2,3, 8: 18,0, 9: 19,0, 10: 6,3, 11: 18,6 | 2: 0,3, 3: 0,3, 4: 0,3, 5: 7,3, 6: 8,3, 7: 2,3, 8: 18,3, 9: 19,3, 10: 6,0, 11: 18,0 |
+| Cieśla-dekarz | 2: 1,0, 3: 1,0, 4: 0,3, 5: 5,3, 6: 5,6, 7: 1,3, 8: 13,6, 9: 12,3, 10: 5,0, 11: 16,6 | 2: 1,0, 3: 1,0, 4: 0,3, 5: 6,3, 6: 4,6, 7: 1,3, 8: 10,6, 9: 12,3, 10: 4,6, 11: 15,0 |
+| Elektryk | 2: 0,3, 3: 0,6, 4: 1,3, 5: 11,0, 6: 6,6, 7: 5,0, 8: 16,0, 9: 11,0, 10: 5,3, 11: 14,6 | 2: 0,3, 3: 0,6, 4: 1,3, 5: 11,3, 6: 7,0, 7: 5,0, 8: 15,0, 9: 11,0, 10: 5,3, 11: 14,6 |
+| Hydraulik | 3: 0,3, 4: 1,6, 5: 7,6, 6: 9,6, 7: 3,0, 8: 28,6, 9: 22,3, 10: 2,3, 11: 10,6 | 3: 0,3, 4: 1,6, 5: 7,6, 6: 9,6, 7: 3,0, 8: 29,0, 9: 22,3, 10: 2,3, 11: 11,3 |
+| Glazurnik | 2: 2,0, 3: 1,0, 4: 4,3, 5: 18,3, 6: 8,6, 7: 3,0, 8: 17,6, 9: 14,0, 10: 2,0, 11: 10,0 | 2: 2,0, 3: 1,0, 4: 4,6, 5: 19,0, 6: 10,3, 7: 4,0, 8: 17,3, 9: 14,3, 10: 1,6, 11: 11,6 |
+| Dekarz | 2: 0,3, 3: 0,6, 4: 0,6, 5: 17,3, 6: 6,3, 7: 0,3, 8: 9,3, 9: 9,6, 10: 0,3, 11: 9,3 | 2: 0,3, 3: 0,6, 4: 0,6, 5: 17,6, 6: 4,3, 7: 0,3, 8: 7,3, 9: 7,3, 10: 0,6, 11: 10,6 |
+| Tynkarz | 4: 0,3, 5: 16,0, 6: 8,0, 7: 2,6, 8: 19,3, 9: 14,6, 10: 1,0, 11: 12,3 | 5: 17,0, 6: 8,0, 7: 3,3, 8: 19,0, 9: 15,6, 10: 0,6, 11: 11,3 |
+| Operator koparki | 4: 1,3, 5: 13,0, 6: 8,6, 7: 2,3, 8: 19,0, 9: 20,0, 10: 3,3, 11: 12,6 | 4: 1,3, 5: 13,0, 6: 9,6, 7: 2,3, 8: 19,0, 9: 20,3, 10: 3,3, 11: 12,6 |
+| Spawacz | 2: 0,3, 3: 0,6, 4: 1,0, 5: 20,6, 6: 8,3, 7: 2,0, 8: 16,3, 9: 7,6, 10: 3,0, 11: 10,0 | 2: 0,3, 3: 0,3, 4: 1,0, 5: 20,0, 6: 7,6, 7: 2,0, 8: 16,3, 9: 8,6, 10: 2,6, 11: 12,3 |
+| Geodeta | 3: 0,6, 4: 1,3, 5: 10,6, 6: 12,3, 7: 2,6, 8: 23,0, 9: 8,0, 10: 3,6, 11: 9,3 | 3: 0,6, 4: 1,0, 5: 8,6, 6: 11,6, 7: 3,3, 8: 22,3, 9: 9,3, 10: 4,0, 11: 9,0 |
+| Majster | 4: 0,3, 5: 10,6, 6: 8,0, 7: 1,3, 8: 15,6, 9: 22,3, 10: 1,3, 11: 13,3 | 4: 0,6, 5: 11,0, 6: 7,3, 7: 1,3, 8: 16,3, 9: 23,0, 10: 1,3, 11: 14,6 |
+
+Bot, Normalny, 300 przebiegów na zawód. Kryt: średnia szansa w chwili trafienia bohatera / faktyczny udział krytów; unik: średnia szansa przy ciosie problemu / faktyczny udział uników.
+
+| Zawód | Wygrane % | Kryt % (szansa / faktycznie) | Obrażenia otrzymane na etap | Unik % (szansa / faktycznie) |
+|---|---|---|---|---|
+| Kierownik budowy | 30,3 | 15,0 / 13,9 | 13,3 | 6,3 / 6,0 |
+| Murarz | 19,3 | 15,4 / 14,0 | 14,4 | 2,3 / 2,2 |
+| Cieśla-dekarz | 37,7 | 15,4 / 14,2 | 12,3 | 6,6 / 5,8 |
+| Elektryk | 28,0 | 12,7 / 10,6 | 11,6 | 4,5 / 4,1 |
+| Hydraulik | 13,7 | 15,0 / 13,9 | 15,3 | 6,4 / 6,3 |
+| Glazurnik | 19,0 | 23,0 / 20,1 | 14,9 | 9,9 / 9,8 |
+| Dekarz | 45,7 | 17,5 / 16,1 | 10,7 | 8,4 / 8,0 |
+| Tynkarz | 25,7 | 14,9 / 13,8 | 13,6 | 6,2 / 5,7 |
+| Operator koparki | 19,7 | 10,8 / 9,8 | 15,0 | 2,3 / 2,2 |
+| Spawacz | 30,0 | 19,8 / 12,1 | 12,4 | 6,5 / 5,8 |
+| Geodeta | 28,3 | 17,1 / 15,7 | 13,3 | 8,5 / 7,9 |
+| Majster | 27,0 | 19,1 / 17,9 | 14,7 | 6,3 / 5,7 |
+| **Razem** | 27,0 | 16,1 / 14,1 | 13,4 | 6,0 / 5,6 |

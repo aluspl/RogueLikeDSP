@@ -2206,7 +2206,7 @@
     {
       "id": "trudny",
       "name": "Trudny",
-      "hpPct": 165,
+      "hpPct": 150,
       "dmgBonus": 0,
       "scorePct": 150
     }

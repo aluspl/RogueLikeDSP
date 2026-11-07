@@ -3,7 +3,7 @@ using System.Text;
 namespace LifeLike.Core.Tests;
 
 /// <summary>
-/// v0.23.0: pomiar „odczucia walki” botem na Normalnym (na żądanie, BALANCE_OUT): średnia szansa krytu w chwili trafienia,
+/// v0.23.0: pomiar „odczucia walki” botem (Normalny albo BALANCE_DIFF; na żądanie, BALANCE_OUT): średnia szansa krytu w chwili trafienia,
 /// faktyczny udział krytów, obrażenia otrzymane na etap, średni unik przy ciosie problemu i wygrane. Tabela trafia do
 /// BALANCE_OUT + ".walka.md" (do docs/v0.23/balans.md).
 /// </summary>
@@ -24,16 +24,17 @@ public class CombatFeelTests
     {
         var s = Environment.GetEnvironmentVariable("BALANCE_RUNS");
         var runs = int.TryParse(s, out var n) && n > 0 ? n : 300;
+        var diff = int.TryParse(Environment.GetEnvironmentVariable("BALANCE_DIFF"), out var dv) ? dv : D.DefaultDifficulty; // trudność (strojenie)
         var nc = D.Classes.Length;
         var acc = new Acc[nc];
         Parallel.For(0, nc, c =>
         {
             var a = new Acc();
-            for (var k = 0; k < runs; ++k) Play(c, Seed(k), a);
+            for (var k = 0; k < runs; ++k) Play(c, Seed(k), diff, a);
             acc[c] = a;
         });
         var sb = new StringBuilder();
-        sb.AppendLine($"Bot, Normalny, {runs} przebiegów na zawód. Kryt: średnia szansa w chwili trafienia bohatera / faktyczny udział krytów; unik: średnia szansa przy ciosie problemu / faktyczny udział uników.");
+        sb.AppendLine($"Bot, {D.Difficulties[diff].Name}, {runs} przebiegów na zawód. Kryt: średnia szansa w chwili trafienia bohatera / faktyczny udział krytów; unik: średnia szansa przy ciosie problemu / faktyczny udział uników.");
         sb.AppendLine();
         sb.AppendLine("| Zawód | Wygrane % | Kryt % (szansa / faktycznie) | Obrażenia otrzymane na etap | Unik % (szansa / faktycznie) |");
         sb.AppendLine("|---|---|---|---|---|");
@@ -66,10 +67,10 @@ public class CombatFeelTests
         + $"{F(a.Taken / (double)Math.Max(1, a.Stages))} | {F(a.DodgePctSum / (double)Math.Max(1, a.Strikes))} / {F(a.Dodges * 100.0 / Math.Max(1, a.Strikes))}";
 
     /// <summary>Rozgrywka jak TestData.PlayOut, z odczytem trafień (Game.Hits) po każdym kroku bota.</summary>
-    private static void Play(int cls, uint seed, Acc a)
+    private static void Play(int cls, uint seed, int diff, Acc a)
     {
         var g = TestData.NewGame();
-        g.NewRun(cls, seed, D.DefaultDifficulty, RunMods.Default(D));
+        g.NewRun(cls, seed, diff, RunMods.Default(D));
         ++a.Runs;
         ++a.Stages;
         var stage = g.Stage;
