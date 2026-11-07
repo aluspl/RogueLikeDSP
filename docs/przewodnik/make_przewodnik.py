@@ -233,7 +233,7 @@ def sources():
         if t.get("artifact"):
             s.append("artefakt (Markowa baza z dropu)")
         if not s:
-            s.append("od startu")
+            s.append("w dropach i Hurtowni od pierwszej budowy (bez odblokowania)")
         src.setdefault(t["weapon"], []).extend(s)
     for sc in D["secrets"]["list"]:
         if sc["reward"].get("kind") == "tool":
@@ -354,9 +354,10 @@ def sec_weapons():
 <th style="width:26%">Tryb A</th><th style="width:26%">Tryb B</th></tr>{weapon_rows()}</table>"""
 
 
-PASSIVE = {"windproof": "odporny na porywy wiatru (Akt II)",
-           "push": f"cios odpycha ({D['passives'].get('pushChancePct', '?')}% szans)",
-           "surveyor": f"oznacza cele (Oznaczony na {D['passives'].get('markTurns', '?')} tur)"}
+PASSIVE = {"windproof": "pogoda Wiatr nie skraca zasięgu ataków z dystansu (porywy Aktu II dalej spychają)",
+           "push": f"cios wręcz odpycha problem o pole ({D['passives'].get('pushChancePct', '?')}% szans, bez bossa); "
+                   "wybija pękniętą ścianę magazynu bez klucza",
+           "surveyor": "widzi cały plac od początku etapu (także dokumenty Aktu 0)"}
 
 
 def class_unlock(c, i):
