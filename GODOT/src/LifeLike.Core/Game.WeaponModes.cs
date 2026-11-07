@@ -40,17 +40,24 @@ public sealed partial class Game
         if (m.Effect != ModeEffect.OpenWall || m.Value <= 0 || WeaponOverride < 0) return;
         // ładunki liczy tylko otwarcie ściany (wołający sprawdza)
         if (WeaponCharges <= 0) WeaponCharges = (sbyte)m.Value;
-        if (--WeaponCharges > 0) return;
+        var name = Weapon.Name;
+        if (--WeaponCharges > 0)
+        {
+            Push(Msg(name).Add(Loc.T("ladunki_zostalo")).Add(WeaponCharges).As(LogKind.Info)); // v0.23.0: ile ładunków zostało
+            return;
+        }
+        Push(Msg(name).Add(Loc.T("bron_zuzyta")).As(LogKind.Bad)); // v0.23.0: Przecinak się zużył, wraca broń zawodu
         WeaponCharges = 0;
         WeaponOverride = -1;
         ResetUpgrade();
     }
 
-    /// <summary>Efekty przed ciosem (ten sam cios je już czuje): ogłuszenie, unieruchomienie, osłabienie, znak, kryt, krwawienie, osuszenie, mokry.</summary>
-    private void ModeEffectBefore(ModeEffect eff, int val, int turns, int t, int steelPct)
+    /// <summary>Efekty przed ciosem (ten sam cios je już czuje): ogłuszenie, unieruchomienie, osłabienie, znak, kryt, krwawienie, osuszenie, mokry.
+    /// v0.23.0: zwraca, czy efekt zadziałał (do wpisu w dzienniku).</summary>
+    private bool ModeEffectBefore(ModeEffect eff, int val, int turns, int t, int steelPct)
     {
         ref var e = ref Enemies[t];
-        if (!e.Alive) return;
+        if (!e.Alive) return false;
         switch (eff)
         {
             case ModeEffect.Stun:
@@ -58,22 +65,24 @@ public sealed partial class Game
                 {
                     e.Stun = (sbyte)Math.Max((int)e.Stun, Math.Max(1, turns));
                     e.Awake = true;
+                    return true;
                 }
-                break;
+                return false;
             case ModeEffect.Root:
-                if (t != Boss) e.Root = (sbyte)Math.Max((int)e.Root, Math.Max(1, turns));
-                break;
+                if (t == Boss) return false;
+                e.Root = (sbyte)Math.Max((int)e.Root, Math.Max(1, turns));
+                return true;
             case ModeEffect.DefDown:
                 e.DefDown = (sbyte)Math.Max((int)e.DefDown, Math.Max(1, turns));
                 e.DefDownVal = (sbyte)Math.Clamp(val, 0, 100);
-                break;
+                return true;
             case ModeEffect.Mark:
                 e.MarkTurns = (sbyte)Math.Max(1, turns);
                 e.MarkPct = (byte)Math.Clamp(val, 0, 255);
-                break;
+                return true;
             case ModeEffect.CritNext:
                 e.Flags = (byte)(e.Flags | ActorFlag.CritNext);
-                break;
+                return true;
             case ModeEffect.Dot:
                 e.Dot = (sbyte)Math.Max(1, turns);
                 var dot = val > 0 ? val : D.HitTypes.DotPerTurn;
@@ -81,42 +90,74 @@ public sealed partial class Game
                 e.DotDmg = (sbyte)Math.Max(1, dot);
                 e.DotKind = (byte)(HitCalc.Has(Weapon, HitType.Cut) && Weapon.Elem != Element.Fire ? 2 : 1); // cięcie krwawi, reszta podpala
                 e.Awake = true;
-                break;
+                return true;
             case ModeEffect.Dry:
+            {
+                var was = e.Wet > 0;
                 e.Wet = 0;
                 if (D.Enemies[e.DefId].Elem == Element.Water && t != Boss) // zawór: problem wodny traci turę i leczenie
                 {
                     e.Stun = (sbyte)Math.Max((int)e.Stun, Math.Max(1, turns));
                     e.NoHeal = (sbyte)Math.Max((int)e.NoHeal, Math.Max(1, turns) + 1); // pierwsza tura to ta stracona
+                    return true;
                 }
-                break;
+                return was;
+            }
             case ModeEffect.Wet:
                 e.Wet = (sbyte)Math.Max((int)e.Wet, turns > 0 ? turns : D.WetTurns);
-                break;
+                return true;
         }
+        return false;
     }
 
-    /// <summary>Efekty po ciosie na przeżywającym celu: odrzut, przyciągnięcie, zamiana miejsc.</summary>
-    private void ModeEffectAfter(ModeEffect eff, int val, int t, bool knockbackDone)
+    /// <summary>Efekty po ciosie na przeżywającym celu: odrzut, przyciągnięcie, zamiana miejsc. v0.23.0: zwraca, czy zadziałał (dziennik).</summary>
+    private bool ModeEffectAfter(ModeEffect eff, int val, int t, bool knockbackDone)
     {
         ref var e = ref Enemies[t];
-        if (!e.Alive || t == Boss) return;
+        if (!e.Alive || t == Boss) return false;
         int dx = Math.Sign(e.X - Hero.X), dy = Math.Sign(e.Y - Hero.Y);
         switch (eff)
         {
             case ModeEffect.Push:
-                if (!knockbackDone) Shove(t, dx, dy, val);
-                break;
+                return !knockbackDone && Shove(t, dx, dy, val) > 0;
             case ModeEffect.Pull:
-                Shove(t, -dx, -dy, Math.Min(val, Cheb(Hero.X, Hero.Y, e.X, e.Y) - 1));
-                break;
+                return Shove(t, -dx, -dy, Math.Min(val, Cheb(Hero.X, Hero.Y, e.X, e.Y) - 1)) > 0;
             case ModeEffect.Swap:
                 (Hero.X, e.X) = (e.X, Hero.X);
                 (Hero.Y, e.Y) = (e.Y, Hero.Y);
                 Collect();
                 UpdateFov();
-                break;
+                return true;
         }
+        return false;
+    }
+
+    /// <summary>
+    /// v0.23.0: wpis w dzienniku o efekcie trybu – „Ogłuszenie: Przeciek +2” (pierwszy cel i ilu jeszcze); efekty bez wpisu
+    /// (odsłonięcie, ściana, łańcuch, iskry) mają własne komunikaty.
+    /// </summary>
+    private void NoteEffect(ModeEffect eff, int t, int count)
+    {
+        if (count <= 0 || t < 0) return;
+        var label = eff switch
+        {
+            ModeEffect.Stun => Loc.T("efekt_ogluszenie"),
+            ModeEffect.Root => D.Statuses[(int)StatusEffect.Root].Name,
+            ModeEffect.DefDown => D.Statuses[(int)StatusEffect.DefDown].Name,
+            ModeEffect.Mark => D.Statuses[(int)StatusEffect.Mark].Name,
+            ModeEffect.Dot => D.Statuses[(int)(Enemies[t].DotKind == 2 ? StatusEffect.Bleed : StatusEffect.Burn)].Name,
+            ModeEffect.Wet => D.Statuses[(int)StatusEffect.Wet].Name,
+            ModeEffect.Dry => Loc.T("efekt_osuszenie"),
+            ModeEffect.CritNext => Loc.T("efekt_pewny_kryt"),
+            ModeEffect.Push => Loc.T("efekt_odrzut"),
+            ModeEffect.Pull => Loc.T("efekt_przyciagniecie"),
+            ModeEffect.Swap => Loc.T("efekt_zamiana_miejsc"),
+            _ => null,
+        };
+        if (label is null) return;
+        var m = EnemyName(Msg(label).Add(": "), t);
+        if (count > 1) m.Add(" +").Add(count - 1);
+        Push(m.As(LogKind.Good));
     }
 
     /// <summary>Efekty całego ataku (raz, nie na cel): odsłonięcie pokoju + premia kryt, otwarcie ściany, łańcuch na mokrych, wybuch pyłu.</summary>
@@ -127,11 +168,14 @@ public sealed partial class Game
         {
             case ModeEffect.Reveal:
                 RevealRoom();
+                var rm = Msg(Loc.T("pokoj_odsloniety"));
                 if (val > 0 && turns > 0)
                 {
                     CritBuff = (sbyte)val;
                     CritBuffTurns = (sbyte)turns;
+                    rm.Add(Loc.T("kryt_4")).Add(val).Add("%");
                 }
+                Push(rm.As(LogKind.Good)); // v0.23.0: dziennik
                 break;
             case ModeEffect.OpenWall:
                 TryOpenWall(m, val);

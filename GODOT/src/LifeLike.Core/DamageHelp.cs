@@ -270,9 +270,16 @@ public static class DamageHelp
                 if (b.UpgTrait >= 0) m.Add(", ").Add(d.ToolTraits[b.UpgTrait].Name).Add(" ").Add(d.ToolTraits[b.UpgTrait].Short);
                 return true;
             case DmgText.HitMult: // v0.23.0: typ ciosu x materiał / żywioł problemu
-                if (!b.VsEnemy || b.HitPct == 100) // bez celu / bez zmiany: tekst jest, ale składnik nic nie daje
+                if (!b.VsEnemy) // bez celu: same typy ciosu broni („Typ ciosu: Obuch, Kłucie”), składnik nic nie daje
                 {
-                    m.Add(Loc.F("mnoznik_ciosu", b.HitMat.Length > 0 ? b.HitMat : "-", d.HitTypes.Names[(int)d.Weapons[b.Weapon].Hit[0]], 100));
+                    m.Add(Loc.T("typ_ciosu"));
+                    var hits = d.Weapons[b.Weapon].Hit;
+                    for (var i = 0; i < hits.Length; ++i) m.Add(i > 0 ? ", " : "").Add(d.HitTypes.Names[(int)hits[i]]);
+                    return false;
+                }
+                if (b.HitPct == 100) // bez zmiany: tekst jest, ale składnik nic nie daje
+                {
+                    m.Add(Loc.F("mnoznik_ciosu", b.HitMat, b.HitName, 100));
                     return false;
                 }
                 m.Add(Loc.F("mnoznik_ciosu", b.HitMat, b.HitName, b.HitPct));

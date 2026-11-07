@@ -106,14 +106,15 @@ public sealed partial class Game
         // stan celów sprzed ciosu: pozycje, mokry, zapylony (do łańcucha i wybuchu pyłu)
         Span<int> px = stackalloc int[hits], py = stackalloc int[hits];
         Span<bool> wasWet = stackalloc bool[hits], wasDusty = stackalloc bool[hits];
+        int n1 = 0, n2 = 0, f1 = -1, f2 = -1; // v0.23.0: ilu celów dotknął efekt 1 / 2 i pierwszy z nich (dziennik)
         for (var i = 0; i < hits; ++i)
         {
             px[i] = Enemies[hit[i]].X;
             py[i] = Enemies[hit[i]].Y;
             wasWet[i] = EnemyWet(hit[i]);
             wasDusty[i] = EnemyDusty(hit[i]);
-            ModeEffectBefore(m.Effect, m.Value, m.Turns, hit[i], m.SteelPct);
-            ModeEffectBefore(m.Effect2, m.Value2, m.Turns2, hit[i], m.SteelPct);
+            if (ModeEffectBefore(m.Effect, m.Value, m.Turns, hit[i], m.SteelPct) && n1++ == 0) f1 = hit[i];
+            if (ModeEffectBefore(m.Effect2, m.Value2, m.Turns2, hit[i], m.SteelPct) && n2++ == 0) f2 = hit[i];
         }
         var dealt = 0;
         for (var i = 0; i < hits; ++i)
@@ -126,9 +127,11 @@ public sealed partial class Game
         var knock = Weapon.Knockback && ReferenceEquals(m, Weapon.ModeA); // Młot Zenka odpycha już w HeroAttack
         for (var i = 0; i < hits; ++i)
         {
-            ModeEffectAfter(m.Effect, m.Value, hit[i], knock);
-            ModeEffectAfter(m.Effect2, m.Value2, hit[i], knock);
+            if (ModeEffectAfter(m.Effect, m.Value, hit[i], knock) && n1++ == 0) f1 = hit[i];
+            if (ModeEffectAfter(m.Effect2, m.Value2, hit[i], knock) && n2++ == 0) f2 = hit[i];
         }
+        NoteEffect(m.Effect, f1, n1);
+        NoteEffect(m.Effect2, f2, n2);
         var h = hit[..hits];
         ModeEffectOnce(m.Effect, m.Value, m.Turns, m, h, px, py, wasWet, wasDusty);
         ModeEffectOnce(m.Effect2, m.Value2, m.Turns2, m, h, px, py, wasWet, wasDusty);

@@ -123,6 +123,7 @@ public sealed partial class Game
             };
         }
         if (ok) Push(Msg(Loc.T("bron_z_kabury_wypada")).Add(D.Weapons[w].Name).As(LogKind.Loot));
+        else if (w == CDef.Weapon) Push(Msg(Loc.T("bron_z_kabury_domyslna")).Add(D.Weapons[w].Name).As(LogKind.Info)); // v0.23.0: broń zawodu wraca zawsze
         else Push(Msg(Loc.T("bron_z_kabury_przepada")).Add(D.Weapons[w].Name).As(LogKind.Loot));
         Weapon2 = -1;
         Weapon2Rarity = 0;

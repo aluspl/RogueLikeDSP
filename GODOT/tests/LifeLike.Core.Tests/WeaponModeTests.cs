@@ -440,4 +440,25 @@ public class WeaponModeTests
         g.EnemyAct(w);
         Assert.True(g.Enemies[other].Hp > 3);
     }
+
+    [Fact]
+    public void ModeEffectsAndChargesWriteLog()
+    {
+        // v0.23.0: dziennik – ogłuszenie z trybu B, ładunki Przecinaka i jego zużycie
+        var g = Arena("kielnia");
+        var e = Add(g, 9, 7);
+        Assert.True(g.PlayerWeaponB(e));
+        Assert.Contains(g.Log, m => m.Text.StartsWith(Loc.T("efekt_ogluszenie")));
+        var p = Arena("przecinak");
+        CrackedWall(p, 7, 6);
+        Assert.True(p.PlayerWeaponBWall());
+        Assert.Contains(p.Log, m => m.Text.Contains(Loc.T("ladunki_zostalo").Trim(' ', ':')));
+        p.WeaponCharges = 1;
+        p.SecretOpen = false;
+        CrackedWall(p, 7, 6);
+        p.WeaponBCd = 0;
+        Assert.True(p.PlayerWeaponBWall());
+        Assert.Equal(-1, p.WeaponOverride);
+        Assert.Contains(p.Log, m => m.Text.Contains(Loc.T("bron_zuzyta").Trim(' ', '!')));
+    }
 }

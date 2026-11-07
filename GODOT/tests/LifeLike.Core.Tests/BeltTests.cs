@@ -285,4 +285,19 @@ public class BeltTests
         Assert.Equal(g.Pickups[0].Extra, h.Pickups[0].Extra);
         Assert.Equal(StateDigest.Of(g), StateDigest.Of(h));
     }
+
+    [Fact]
+    public void LosingBeltWithClassWeaponInHolsterDoesNotSayLost()
+    {
+        // v0.23.0: broń zawodu w kaburze nie „przepada” – wraca zawsze (wpis: odkładasz)
+        var g = WithBelt();
+        var cls = g.CDef.Weapon;
+        g.WeaponOverride = Wi("przecinak");
+        g.Weapon2 = cls;
+        g.Equip(D.BeltSlot, 0, 0);
+        Assert.Equal(-1, g.Weapon2);
+        var tool = Ti(D.Weapons[cls].Id) >= 0;
+        Assert.DoesNotContain(g.Log.TakeLast(3), m => m.Text.Contains(Loc.T("bron_z_kabury_przepada").Trim()));
+        if (!tool) Assert.Contains(g.Log.TakeLast(3), m => m.Text.Contains(Loc.T("bron_z_kabury_domyslna").Trim()));
+    }
 }
