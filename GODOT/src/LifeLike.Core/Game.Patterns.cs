@@ -51,19 +51,21 @@ public sealed partial class Game
     private bool OnLine(int tx, int ty) => Hero.X == tx || Hero.Y == ty || Math.Abs(tx - Hero.X) == Math.Abs(ty - Hero.Y);
 
     /// <summary>
-    /// Żywe problemy trafione trybem m w kierunku celu ei (kolejność od bohatera): promienie zatrzymują się na pierwszej ścianie,
-    /// Shot daje pierwszy cel, Line* przebija. Zwraca liczbę zapisaną w hit.
+    /// v0.23.0: pola, które trafia tryb m skierowany na cel ei (kolejność od bohatera) – to samo, czego używa atak (Targets), więc
+    /// podświetlenie celowania nie rozjedzie się z ciosem. Single/Push/Shot poza linią: pole celu; promienie stają na pierwszej ścianie,
+    /// Shot kończy się na pierwszym problemie, natrysk / łuk / krzyż nie sięgają za ścianę przed bohaterem; ściany pominięte.
     /// </summary>
-    private int Targets(WeaponMode m, int ei, Span<int> hit)
+    public int PatternCells(WeaponMode m, int ei, Span<int> cx, Span<int> cy)
     {
+        if (ei < 0 || ei >= EnemiesCount || !Enemies[ei].Alive || cx.Length == 0 || cy.Length == 0) return 0;
         int tx = Enemies[ei].X, ty = Enemies[ei].Y;
         int dx = Math.Sign(tx - Hero.X), dy = Math.Sign(ty - Hero.Y);
         var pat = m.Pattern;
-        var hits = 0;
         if (pat == PatternKind.Single || pat == PatternKind.Push || (pat == PatternKind.Shot && !OnLine(tx, ty)))
         {
-            hit[hits++] = ei; // dzisiejsze zachowanie: cel w zasięgu dostaje cios
-            return hits;
+            cx[0] = tx; // dzisiejsze zachowanie: cel w zasięgu dostaje cios
+            cy[0] = ty;
+            return 1;
         }
         Span<int> xs = stackalloc int[HitPattern.MaxCells];
         Span<int> ys = stackalloc int[HitPattern.MaxCells];
@@ -73,7 +75,8 @@ public sealed partial class Game
         var ray = HitPattern.IsRay(pat);
         var prev = 0;
         var blocked = false;
-        for (var i = 0; i < n; ++i)
+        var cells = 0;
+        for (var i = 0; i < n && cells < cx.Length && cells < cy.Length; ++i)
         {
             var d = Cheb(Hero.X, Hero.Y, xs[i], ys[i]);
             if (d <= prev) blocked = false; // nowy promień
@@ -86,10 +89,35 @@ public sealed partial class Game
             }
             // wzory nieprzebijające ścian (natrysk, łuk, krzyż): dalsze pola za ścianą przed bohaterem nie są trafiane
             if (!ray && d >= 2 && pat is PatternKind.Spray or PatternKind.Arc or PatternKind.Cross && !Lv.Passable(Hero.X + dx, Hero.Y + dy)) continue;
+            cx[cells] = xs[i];
+            cy[cells] = ys[i];
+            ++cells;
+            if (pat == PatternKind.Shot && EnemyAt(xs[i], ys[i]) >= 0) break; // pierwszy cel w linii
+        }
+        return cells;
+    }
+
+    /// <summary>
+    /// Żywe problemy trafione trybem m w kierunku celu ei (kolejność od bohatera): problemy na polach PatternCells.
+    /// Zwraca liczbę zapisaną w hit.
+    /// </summary>
+    private int Targets(WeaponMode m, int ei, Span<int> hit)
+    {
+        Span<int> xs = stackalloc int[HitPattern.MaxCells];
+        Span<int> ys = stackalloc int[HitPattern.MaxCells];
+        var n = PatternCells(m, ei, xs, ys);
+        var pat = m.Pattern;
+        if (n == 1 && (pat == PatternKind.Single || pat == PatternKind.Push || (pat == PatternKind.Shot && !OnLine(xs[0], ys[0]))))
+        {
+            hit[0] = ei; // pole celu: cios w cel
+            return 1;
+        }
+        var hits = 0;
+        for (var i = 0; i < n; ++i)
+        {
             var j = EnemyAt(xs[i], ys[i]);
             if (j < 0 || hits >= hit.Length) continue;
             hit[hits++] = j;
-            if (pat == PatternKind.Shot) break; // pierwszy cel w linii
         }
         return hits;
     }

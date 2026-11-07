@@ -193,4 +193,55 @@ public class HitPatternTests
         Assert.Equal(6, HitPattern.Cells(PatternKind.LineBoth, 3, 7, 7, 0, -1, xs, ys));
         Assert.Equal(12, HitPattern.Cells(PatternKind.Line4, 3, 7, 7, 0, -1, xs, ys));
     }
+
+    [Theory]
+    [InlineData(PatternKind.Single)]
+    [InlineData(PatternKind.Arc)]
+    [InlineData(PatternKind.Around)]
+    [InlineData(PatternKind.Cross)]
+    [InlineData(PatternKind.Line)]
+    [InlineData(PatternKind.Shot)]
+    [InlineData(PatternKind.Throw3x3)]
+    [InlineData(PatternKind.Spray)]
+    [InlineData(PatternKind.Push)]
+    [InlineData(PatternKind.LineBoth)]
+    [InlineData(PatternKind.Line4)]
+    public void PatternCellsMatchTargets(PatternKind k)
+    {
+        // v0.23.0: podświetlenie celowania (Game.PatternCells) = pola, na których trafione są problemy (Game.PatternTargets),
+        // z murem przed bohaterem i rozstawionymi problemami, dla każdego celu w każdym kierunku
+        var g = Arena(k, 3);
+        g.Lv[7, 6] = Tile.Wall;
+        g.Lv[9, 9] = Tile.Wall;
+        Add(g, 8, 7);
+        Add(g, 6, 7);
+        for (var y = 4; y <= 10; ++y)
+        {
+            for (var x = 4; x <= 10; ++x)
+            {
+                if ((x + y) % 2 == 0 && g.Lv[x, y] == Tile.Floor && !(x == 7 && y == 7) && g.EnemiesCount < Game.MaxEnemies) Add(g, x, y);
+            }
+        }
+        var m = g.Weapon.ModeA;
+        Span<int> hit = stackalloc int[HitPattern.MaxCells];
+        Span<int> xs = stackalloc int[HitPattern.MaxCells];
+        Span<int> ys = stackalloc int[HitPattern.MaxCells];
+        var checkedTargets = 0;
+        for (var ei = 0; ei < g.EnemiesCount; ++ei)
+        {
+            var n = g.PatternTargets(m, ei, hit);
+            if (n == 0) continue;
+            ++checkedTargets;
+            var cells = g.PatternCells(m, ei, xs, ys);
+            var onCells = new HashSet<int>();
+            for (var c = 0; c < cells; ++c)
+            {
+                Assert.True(g.Lv.Passable(xs[c], ys[c]), $"{k}: pole za murem ({xs[c]},{ys[c]})");
+                var j = g.EnemyAt(xs[c], ys[c]);
+                if (j >= 0) onCells.Add(j);
+            }
+            Assert.Equal(hit[..n].ToArray().OrderBy(x => x), onCells.OrderBy(x => x));
+        }
+        Assert.True(checkedTargets > 0, k.ToString());
+    }
 }
