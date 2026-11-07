@@ -65,6 +65,7 @@ public class LanguageTests
             Assert.Equal("Leak", en.Enemies[en.EnemyIndex("przeciek")].Name);
             Assert.Equal("The Unmissable Deadline", en.Enemies[en.EnemyIndex("termin")].Name);
             Assert.Equal("Semi", en.Career.First(c => c.Id == "blizniak").Short); // wyjątek z „context”
+            Assert.True(en.BeltSlot >= 0 && en.BeltSlot == pl.BeltSlot); // v0.23.0: pas z kaburą po angielsku (slot po nazwie)
         }
     }
 

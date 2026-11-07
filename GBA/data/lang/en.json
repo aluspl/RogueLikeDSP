@@ -59,6 +59,7 @@
   "enemies[].reward.title",
   "enemies[].phase.name",
   "equipment.rarities[]",
+  "?equipment.beltSlot",
   "equipment.slots[].name",
   "equipment.slots[].items[][]",
   "equipment.traits[].name",
