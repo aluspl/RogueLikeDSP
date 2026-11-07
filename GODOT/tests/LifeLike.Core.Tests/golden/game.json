@@ -2231,7 +2231,7 @@
       ],
       "count": 5,
       "hpPct": 107,
-      "dmgBonus": 1,
+      "dmgBonus": 0,
       "act": 0,
       "cost": 48
     },
@@ -2245,7 +2245,7 @@
       ],
       "count": 5,
       "hpPct": 117,
-      "dmgBonus": 1,
+      "dmgBonus": 0,
       "act": 0,
       "cost": 22
     },
@@ -2259,7 +2259,7 @@
       ],
       "count": 6,
       "hpPct": 126,
-      "dmgBonus": 1,
+      "dmgBonus": 0,
       "act": 0,
       "cost": 62
     },
