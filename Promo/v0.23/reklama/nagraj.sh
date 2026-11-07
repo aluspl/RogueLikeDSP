@@ -7,8 +7,12 @@ OUT=${1:?katalog}; HERE=$(cd "$(dirname "$0")" && pwd)
 mkdir -p "$OUT/clips"
 rec(){ local n=$1; shift; python3 "$HERE/record.py" "$OUT/clips/$n.avi" 540 960 --touch --portrait "$@"; }
 # sceny pokazowe (--bench liczony zegarem, Movie Maker nagrywa szybciej – klip ~5 s)
-for sc in title classselect weapon-arc hero-weapons hero-gear weapon-tip-kielnia weapon-legend-found artifact-found case-some; do
+for sc in title classselect weapon-arc hero-weapons hero-gear weapon-tip-kielnia case-some; do
   rec "$sc" --screenshot "$OUT/x.png" --scene "$sc" --bench 1.2
+done
+# ogłoszenia (nóż, młot): PB_ANNOUNCE_AT=-1 – animacja leci od chwili podniesienia (wlot po skosie), nie zatrzymana w 0,45 s
+for sc in weapon-legend-found artifact-found; do
+  PB_ANNOUNCE_AT=-1 rec "$sc" --screenshot "$OUT/x.png" --scene "$sc" --bench 2
 done
 # bot gra (seed domyślny 424242): deszcz i latarka, filtry, Kwas z bliska, boss aktu
 rec murarz --demo 5 --class 1 --view 34 --lights on
