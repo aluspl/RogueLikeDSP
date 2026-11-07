@@ -44,6 +44,16 @@ public sealed partial class Game
     {
         if (St != GameStatus.Playing || !HasBelt() || Weapon2 < 0) return false;
         if (ShockedTurn()) return true;
+        SwapHands();
+        SecretFlags |= SecretToolSwapFlag; // v0.23.0 (#84): zlecenie „ta sama broń”
+        Push(Msg(Loc.T("zamiana_broni")).Add(Weapon.Name).As(LogKind.Loot));
+        EndTurn();
+        return true;
+    }
+
+    /// <summary>Broń z ręki do kabury i z kabury do ręki – z rzadkością, ładunkami, ulepszeniami i profitami (bez tury i wpisu).</summary>
+    private void SwapHands()
+    {
         var hand = HandWeapon();
         var rarity = WeaponRarity;
         var charges = WeaponCharges;
@@ -53,7 +63,6 @@ public sealed partial class Game
         var perks = WeaponPerks;
         WeaponOverride = Weapon2 == CDef.Weapon ? -1 : Weapon2;
         ResetProc(); // v0.23.0: licznik „co N-ty cios” od nowa
-        SecretFlags |= SecretToolSwapFlag; // v0.23.0 (#84): zlecenie „ta sama broń”
         WeaponRarity = Weapon2Rarity;
         WeaponCharges = Weapon2Charges;
         Weapon2 = hand;
@@ -68,9 +77,6 @@ public sealed partial class Game
         Weapon2TraitPending = pending;
         WeaponPerks = Weapon2Perks; // v0.23.0: profity należą do broni
         Weapon2Perks = perks;
-        Push(Msg(Loc.T("zamiana_broni")).Add(Weapon.Name).As(LogKind.Loot));
-        EndTurn();
-        return true;
     }
 
     /// <summary>Znaleziona broń z założonym pasem i pustą kaburą trafia do drugiego miejsca (zamiast pytania o wymianę).</summary>
@@ -115,10 +121,16 @@ public sealed partial class Game
     /// <summary>
     /// Utrata pasa z kaburą (inny przedmiot w slocie Pas): broń z drugiego miejsca wypada jako znajdźka na polu bohatera
     /// (albo obok), z rzadkością, ładunkami i ulepszeniami; kabura pusta. Gdy broń nie jest narzędziem albo brak miejsca – przepada.
+    /// Broń zawodu w kaburze nie przepada: wraca do ręki (z ulepszeniami), a wypada narzędzie, które było w ręku.
     /// </summary>
     private void DropHolster()
     {
         if (Weapon2 < 0) return;
+        if (Weapon2 == CDef.Weapon && HandWeapon() != CDef.Weapon)
+        {
+            SwapHands();
+            Push(Msg(Loc.T("bron_z_kabury_domyslna")).Add(Weapon.Name).As(LogKind.Info));
+        }
         var w = Weapon2;
         var t = Array.FindIndex(D.Tools, tl => tl.Weapon == w);
         int x = Hero.X, y = Hero.Y;
@@ -132,7 +144,6 @@ public sealed partial class Game
             };
         }
         if (ok) Push(Msg(Loc.T("bron_z_kabury_wypada")).Add(D.Weapons[w].Name).As(LogKind.Loot));
-        else if (w == CDef.Weapon) Push(Msg(Loc.T("bron_z_kabury_domyslna")).Add(D.Weapons[w].Name).As(LogKind.Info)); // v0.23.0: broń zawodu wraca zawsze
         else Push(Msg(Loc.T("bron_z_kabury_przepada")).Add(D.Weapons[w].Name).As(LogKind.Loot));
         Weapon2 = -1;
         Weapon2Rarity = 0;

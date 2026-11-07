@@ -162,7 +162,8 @@ static void snapshot(const game& g, int step)
     wi(g.gust_in()); w(","); wi(g.gust_dir()); w("]");
     w(","); key("offer"); w("["); wi(g.offer_slot); w(","); wi(g.offer_rarity); w(","); wi(g.offer_trait); w("]");
     w(","); key("respect"); w("["); wi(g.respect); w(","); wi(g.stage_respect()); w(","); wi(g.dmg_carry); w(","); wi(g.taken_carry); w(",");
-    wi(g.second_used); w(","); wi(g.dodge_pct()); w(","); wi(g.coffee_heal()); w(","); wi(g.bonus.gear_slots); w(","); wi(int(uint32_t(g.bonus.tools))); w("]");
+    wi(g.second_used); w(","); wi(g.dodge_pct()); w(","); wi(g.coffee_heal()); w(","); wi(g.bonus.gear_slots); w(","); wi(int(uint32_t(g.bonus.tools))); w(",");
+    wi(int(uint32_t(g.bonus.tools >> 32))); w("]");   // v0.23.0: 33 narzędzia - obie połowy maski
     w(","); key("act0"); w("["); wi(g.first_stage); w(","); wi(g.docs); w(","); wi(g.docs_needed()); w(","); wi(g.stairs_locked()); w(",");
     wi(g.stage_number()); w(","); wi(g.stages_in_run()); w("]");
     w(","); key("heroStatus"); w("["); for(int i = 0; i < status_slots; ++i) { if(i) w(","); wi(g.hero_status[i]); } w("]");

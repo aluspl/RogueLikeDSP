@@ -26,6 +26,16 @@ public class AnnounceQueueTests
     }
 
     [Fact]
+    public void HolsterSwapIsNotAFind()
+    {
+        // zamiana z kabury (ręka <-> kabura) to nie znalezisko: bez ogłoszenia „ARTEFAKT!” / nowej broni
+        Assert.True(AnnounceQueue.IsHolsterSwap(3, 9, 9, 3));
+        Assert.False(AnnounceQueue.IsHolsterSwap(3, -1, 9, -1)); // pusta kabura: nowa broń w ręku
+        Assert.False(AnnounceQueue.IsHolsterSwap(3, 9, 12, 9)); // nowa broń w ręku, kabura bez zmian
+        Assert.False(AnnounceQueue.IsHolsterSwap(3, 9, 9, -1)); // broń z kabury do ręki po utracie pasa – nie zamiana
+    }
+
+    [Fact]
     public void DurationIsAboutOneSecond() => Assert.InRange(AnnounceQueue.Duration, 0.8f, 1.4f);
 
     [Fact]

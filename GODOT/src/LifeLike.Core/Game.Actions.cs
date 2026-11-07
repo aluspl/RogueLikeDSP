@@ -481,6 +481,9 @@ public sealed partial class Game
 
     public bool OfferIsBetter => HasOffer && OfferRarity > Equipped[OfferSlot];
 
+    /// <summary>v0.23.0: założenie oferty zdejmie pas z kaburą (inny przedmiot w slocie Pas) – karta ostrzega, bot nie bierze przy broni w kaburze.</summary>
+    public bool OfferDropsHolster => HasOffer && OfferSlot == D.BeltSlot && HasBelt() && OfferRarity != BeltTier;
+
     /// <summary>Paczka sprzętu przy zajętym slocie: gracz porównuje (A zakładam, B zostawiam). Nie zużywa tury.</summary>
     public void AcceptOffer()
     {

@@ -68,7 +68,7 @@ public static class Bot
     {
         if (g.HasOffer)
         {
-            if (g.OfferIsBetter) g.AcceptOffer();
+            if (g.OfferIsBetter && !(g.OfferDropsHolster && g.Weapon2 >= 0)) g.AcceptOffer(); // v0.23.0: pas z bronią w kaburze zostaje
             else g.DeclineOffer();
         }
         if (o.Weapons && g.HasToolOffer) // v0.23.0: wymiana ulepszonego narzędzia – wg oceny broni; tylko domyślna: zawsze odmowa
@@ -184,7 +184,7 @@ public static class Bot
     {
         if (g.HasOffer)
         {
-            if (g.OfferRarity >= g.Equipped[g.OfferSlot]) g.AcceptOffer();
+            if (g.OfferRarity >= g.Equipped[g.OfferSlot] && !(g.OfferDropsHolster && g.Weapon2 >= 0)) g.AcceptOffer();
             else g.DeclineOffer();
         }
         if (o.Weapons && g.HasToolOffer) // v0.23.0: jak w Step

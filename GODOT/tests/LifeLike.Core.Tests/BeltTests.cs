@@ -302,4 +302,68 @@ public class BeltTests
         Assert.DoesNotContain(g.Log.TakeLast(3), m => m.Text.Contains(Loc.T("bron_z_kabury_przepada").Trim()));
         Assert.Contains(g.Log.TakeLast(3), m => m.Text.Contains(Loc.T("bron_z_kabury_domyslna").Trim()));
     }
+
+    [Fact]
+    public void LosingBeltReturnsClassWeaponToHandAndDropsTool()
+    {
+        // broń zawodu z kabury wraca do ręki z ulepszeniami, rzadkością i profitami; narzędzie z ręki wypada jako znajdźka
+        var g = WithBelt();
+        g.WeaponOverride = Wi("lom");
+        g.WeaponRarity = 2;
+        g.WeaponLvl = 1;
+        g.Weapon2 = g.CDef.Weapon;
+        g.Weapon2Rarity = 1;
+        g.Weapon2Lvl = 2;
+        g.Weapon2Trait = 0;
+        g.Weapon2Perks = 1;
+        var before = g.PickupsCount;
+        g.Equip(D.BeltSlot, 2, 0);
+        Assert.Equal(-1, g.WeaponOverride);
+        Assert.Equal(1, g.WeaponRarity);
+        Assert.Equal(2, g.WeaponLvl);
+        Assert.Equal(0, g.WeaponTrait);
+        Assert.Equal(1, g.WeaponPerks);
+        Assert.Equal(-1, g.Weapon2);
+        Assert.Equal(before + 1, g.PickupsCount);
+        Assert.Equal(Ti("lom"), g.Pickups[before].Arg);
+        Assert.Equal(2, g.Pickups[before].Trait);
+        Assert.Equal(1, g.Pickups[before].Extra & 15);
+    }
+
+    [Fact]
+    public void OfferWarnsWhenBeltWithHolsterIsReplaced()
+    {
+        var g = WithBelt();
+        g.TakeGear(D.BeltSlot, 2, 0);
+        Assert.True(g.HasOffer);
+        Assert.True(g.OfferDropsHolster);
+        g.OfferRarity = Game.BeltTier;
+        Assert.False(g.OfferDropsHolster); // ten sam pas z kaburą
+        g.DeclineOffer();
+        var h = TestData.Arena(0);
+        h.Equip(D.BeltSlot, 0, 0);
+        h.TakeGear(D.BeltSlot, 2, 0);
+        Assert.False(h.OfferDropsHolster); // bez kabury nic nie tracisz
+    }
+
+    [Fact]
+    public void BotKeepsHolsterBeltWithWeapon()
+    {
+        foreach (var smart in new[] { false, true })
+        {
+            var g = WithBelt();
+            g.Weapon2 = Wi("lom");
+            g.TakeGear(D.BeltSlot, 2, 0);
+            if (smart) Bot.StepSmart(g);
+            else Bot.Step(g);
+            Assert.True(g.HasBelt());
+            Assert.Equal(Wi("lom"), g.Weapon2);
+            // pusta kabura: lepszy pas bot bierze jak dawniej
+            var h = WithBelt();
+            h.TakeGear(D.BeltSlot, 2, 0);
+            if (smart) Bot.StepSmart(h);
+            else Bot.Step(h);
+            Assert.Equal(2, h.Equipped[D.BeltSlot]);
+        }
+    }
 }

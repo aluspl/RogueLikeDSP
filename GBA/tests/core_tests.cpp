@@ -3788,6 +3788,60 @@ int main()
             g.equip(data::belt_slot, 0, 0);
             CHECK(g.weapon2 == -1 && ! g.has_belt());
         }
+        // v0.23.0 poprawki po przeglądzie (C#: BeltTests, HitCalcTests, HitPatternTests)
+        {
+            // utrata pasa z bronią zawodu w kaburze: wraca do ręki z ulepszeniami, narzędzie z ręki wypada
+            game g; arena(g, 0); g.equip(data::belt_slot, game::belt_tier, 1);
+            const int lom = wi("Łom");
+            g.weapon_override = lom; g.weapon_rarity = 2; g.weapon_lvl = 1;
+            g.weapon2 = data::classes[0].weapon; g.weapon2_rarity = 1; g.weapon2_lvl = 2; g.weapon2_trait = 0; g.weapon2_perks = 1;
+            const int before = g.pickups_count;
+            g.equip(data::belt_slot, 2, 0);
+            CHECK(g.weapon_override == -1 && g.weapon_rarity == 1 && g.weapon_lvl == 2 && g.weapon_trait == 0 && g.weapon_perks == 1);
+            CHECK(g.weapon2 == -1 && g.pickups_count == before + 1 && g.pickups[before].arg == ti(lom) && g.pickups[before].trait == 2 && (g.pickups[before].extra & 15) == 1);
+        }
+        {
+            // oferta pasa bez kabury przy pasie z kaburą: ostrzeżenie; bot nie zamienia, gdy w kaburze jest broń
+            game g; arena(g, 0); g.equip(data::belt_slot, game::belt_tier, 1);
+            g.take_gear(data::belt_slot, 2, 0);
+            CHECK(g.has_offer() && g.offer_drops_holster());
+            g.offer_rarity = game::belt_tier; CHECK(! g.offer_drops_holster());
+            g.decline_offer();
+            game h; arena(h, 0); h.equip(data::belt_slot, 0, 0); h.take_gear(data::belt_slot, 2, 0); CHECK(! h.offer_drops_holster());
+            for(int smart = 0; smart < 2; ++smart)
+            {
+                game a; arena(a, 0); a.equip(data::belt_slot, game::belt_tier, 1); a.weapon2 = wi("Łom");
+                a.take_gear(data::belt_slot, 2, 0);
+                if(smart) botw::step_smart(a); else botw::step(a);
+                CHECK(a.has_belt() && a.weapon2 == wi("Łom"));
+                game b; arena(b, 0); b.equip(data::belt_slot, game::belt_tier, 1);
+                b.take_gear(data::belt_slot, 2, 0);
+                if(smart) botw::step_smart(b); else botw::step(b);
+                CHECK(b.equipped[data::belt_slot] == 2);
+            }
+        }
+        {
+            // bossy żywiołu wody bez materiału: kolumna woda (decyzja projektanta), nie 100%
+            const int sieki = wi("Siekiera ciesielska"), noz_t = wi("Nóż do tapet"), probnik = wi("Próbnik napięcia"), lutow = wi("Lutownica");
+            for(int e : { data::enemy_nawalnica, data::enemy_strych })
+            {
+                CHECK(hit_column(data::enemies[e]) == 3);
+                CHECK(hit_pct(data::weapons[mlot], data::enemies[e]) == 75 && hit_pct(data::weapons[sieki], data::enemies[e]) == 100);
+                CHECK(hit_pct(data::weapons[noz_t], data::enemies[e]) == 75 && hit_pct(data::weapons[probnik], data::enemies[e]) == 112);
+                CHECK(hit_pct(data::weapons[lutow], data::enemies[e]) == 37 && hit_pct(data::weapons[noz], data::enemies[e]) == 100);
+            }
+        }
+        {
+            // rzut 3x3: pole skośne za narożnikiem obok celu bez odłamków; jedna ściana nie zasłania
+            game g; arena(g, 0); g.weapon_override = dach; g.hero.hp = 99;
+            g.lv.t[4][8] = tile::wall; g.lv.t[3][7] = tile::wall;
+            int t = add(g, data::enemy_plesn, 7, 4), corner = add(g, data::enemy_plesn, 8, 3), open = add(g, data::enemy_plesn, 6, 3);
+            CHECK(g.player_weapon_b(t) && hurt(g, t) && hurt(g, open) && ! hurt(g, corner));
+            game h; arena(h, 0); h.weapon_override = dach; h.hero.hp = 99;
+            h.lv.t[4][8] = tile::wall;
+            int t2 = add(h, data::enemy_plesn, 7, 4), c2 = add(h, data::enemy_plesn, 8, 3);
+            CHECK(h.player_weapon_b(t2) && hurt(h, t2) && hurt(h, c2));
+        }
         // artefakt: Młot Gromowładny - co 5. cios piorun z ogłuszeniem; licznik zeruje zmiana broni
         {
             game g; arena(g, 0); g.weapon_override = grom; g.hero.hp = 999; g.hero.max_hp = 999;

@@ -128,6 +128,24 @@ public class HitPatternTests
     }
 
     [Fact]
+    public void Throw3x3SkipsCornerBehindWalls()
+    {
+        // pole skośne obok celu za narożnikiem (oba pola pomiędzy to ściany) nie dostaje odłamków; jedna ściana nie zasłania
+        var g = Arena(PatternKind.Throw3x3, 3);
+        g.Lv[8, 4] = Tile.Wall;
+        g.Lv[7, 3] = Tile.Wall;
+        int t = Add(g, 7, 4), corner = Add(g, 8, 3), open = Add(g, 6, 3);
+        Assert.True(g.PlayerAttack(t));
+        Assert.True(Hurt(g, t) && Hurt(g, open));
+        Assert.False(Hurt(g, corner));
+        var h = Arena(PatternKind.Throw3x3, 3);
+        h.Lv[8, 4] = Tile.Wall; // tylko jedna ściana: narożnik widać z celu
+        int t2 = Add(h, 7, 4), c2 = Add(h, 8, 3);
+        Assert.True(h.PlayerAttack(t2));
+        Assert.True(Hurt(h, t2) && Hurt(h, c2));
+    }
+
+    [Fact]
     public void StairsDoNotBlockPattern()
     {
         var g = Arena(PatternKind.Line, 3);

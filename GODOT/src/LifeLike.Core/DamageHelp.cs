@@ -324,6 +324,24 @@ public static class DamageHelp
         return AddTenths(m, next.Avg10 - now.Avg10, true).Add(")");
     }
 
+    /// <summary>
+    /// v0.23.0: dopisek do porównania broni, gdy nowa ma więcej krytu, przebicia OBR albo profitów („ + kryt, OBR -4, profity”);
+    /// pusty, gdy w niczym z tego nie jest lepsza.
+    /// </summary>
+    public static Message CompareExtras(Message m, DmgBreakdown now, DmgBreakdown next)
+    {
+        var first = true;
+        void Part(string s)
+        {
+            m.Add(first ? Loc.T("por_plus") : ", ").Add(s);
+            first = false;
+        }
+        if (next.CritChance() > now.CritChance()) Part(Loc.T("por_kryt"));
+        if (next.Pierce > now.Pierce) Part(Loc.F("por_obr", next.Pierce));
+        if (System.Numerics.BitOperations.PopCount((uint)next.Perks) > System.Numerics.BitOperations.PopCount((uint)now.Perks)) Part(Loc.T("por_profity"));
+        return m;
+    }
+
     /// <summary>„kryt 8-14 (11%) -&gt; 10-18 (16%)”.</summary>
     public static Message CompareCrit(Message m, DmgBreakdown now, DmgBreakdown next)
     {

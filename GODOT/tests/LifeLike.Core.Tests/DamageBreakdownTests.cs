@@ -183,4 +183,18 @@ public class DamageBreakdownTests
         Assert.Equal("teraz 6-8 -> 9-11 (średnio +3)", DamageHelp.CompareLine(new Message(), g.WeaponBreakdown(), gl).Text);
         Assert.Equal("+3 obrażeń", DamageHelp.GearLabel(D.Gear[5]));
     }
+
+    [Fact]
+    public void CompareExtrasShowCritPierceAndPerks()
+    {
+        // porównanie przy zamianie broni: nowa broń ma więcej krytu / przebicia / profitów – dopisek obok średniej,
+        // by Nóż majstra (niższa średnia, kryt, kłucie 4 + profit Przebicie) nie wyglądał na gorszy
+        var g = TestData.Arena(1); // Murarz: Kielnia
+        var now = g.WeaponBreakdown();
+        var noz = Array.FindIndex(D.Weapons, w => w.Id == "noz_majstra");
+        var next = g.WeaponBreakdown(-1, noz, -1, -1, 0, 3, 0);
+        Assert.Equal(" + kryt, OBR -5, profity", DamageHelp.CompareExtras(new Message(), now, next).Text);
+        Assert.Equal("", DamageHelp.CompareExtras(new Message(), next, now).Text); // gorsza w tym: nic nie dopisuje
+        Assert.Equal("", DamageHelp.CompareExtras(new Message(), now, now).Text);
+    }
 }

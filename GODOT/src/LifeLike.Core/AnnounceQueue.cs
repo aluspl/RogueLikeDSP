@@ -53,6 +53,10 @@ public sealed class AnnounceQueue
         Elapsed = 0f;
     }
 
+    /// <summary>Zamiana z kabury (broń z ręki do kabury i odwrotnie) – to nie znalezisko, bez ogłoszenia nowej broni.</summary>
+    public static bool IsHolsterSwap(int handBefore, int holsterBefore, int handAfter, int holsterAfter) =>
+        holsterBefore >= 0 && handAfter == holsterBefore && holsterAfter == handBefore;
+
     /// <summary>Znaleziona broń zasługuje na ogłoszenie: Markowa, Mistrzowska albo broń mistrza (unikat).</summary>
     public static bool WeaponWorthy(int rarity, bool master) => master || rarity >= 2;
 

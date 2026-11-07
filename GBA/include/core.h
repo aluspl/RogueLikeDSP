@@ -404,7 +404,8 @@ namespace core
 
     // ------------------------------------------------------------------ v0.23.0: typy ciosu (HitCalc w C#)
     // Mnożnik obrażeń ciosu (%) wg typu ciosu broni i celu: kolumna woda, gdy problem wodny (pierwszeństwo przed materiałem), inaczej
-    // jego materiał, inaczej bez materiału (bossy); broń z dwoma typami bierze lepszy; potem żywioł broni.
+    // jego materiał, inaczej bez materiału (boss bez materiału = 100%, chyba że ma żywioł wody: Nawałnica, Zawilgocony strych liczą
+    // się z kolumny woda - słabość żywiołu jak prąd na mokre); broń z dwoma typami bierze lepszy; potem żywioł broni.
     inline int hit_column(const enemy_def& e)
     {
         if(e.elem == element::water) return 3;
@@ -1979,7 +1980,7 @@ namespace core
             return targets(m, ei, hit);
         }
         // Pola, które trafia tryb m skierowany na cel ei (od bohatera): promienie stają na ścianie, Shot na pierwszym problemie,
-        // natrysk / łuk / krzyż nie sięgają za ścianę przed bohaterem.
+        // natrysk / łuk / krzyż nie sięgają za ścianę przed bohaterem, rzut 3x3 nie sięga za narożnik obok celu.
         void pattern_cells(const weapon_mode& m, int ei, cell_list& out) const
         {
             out.n = 0;
@@ -2004,6 +2005,8 @@ namespace core
                 prev = d;
                 if(ray && blocked) continue;
                 if(! lv.passable(c.x[i], c.y[i])) { if(ray) blocked = true; continue; }   // tylko ściana blokuje (schody nie)
+                // rzut 3x3: pole skośne za narożnikiem (oba pola między nim a celem to ściany) nie dostaje odłamków
+                if(pat == pattern_kind::throw3x3 && c.x[i] != tx && c.y[i] != ty && ! lv.passable(c.x[i], ty) && ! lv.passable(tx, c.y[i])) continue;
                 if(! ray && d >= 2 && (pat == pattern_kind::spray || pat == pattern_kind::arc || pat == pattern_kind::cross)
                    && ! lv.passable(hero.x + dx, hero.y + dy)) continue;
                 out.x[out.n] = c.x[i]; out.y[out.n] = c.y[i]; ++out.n;
@@ -2400,6 +2403,15 @@ namespace core
         {
             if(st != status::playing || ! has_belt() || weapon2 < 0) return false;
             if(shocked_turn()) return true;
+            swap_hands();
+            secret_flags = uint8_t(secret_flags | secret_tool_swap);
+            push(message().add(UI(zamiana_broni)).add(weapon().name).as(loot));
+            end_turn();
+            return true;
+        }
+        // Broń z ręki do kabury i z kabury do ręki - z rzadkością, ładunkami, ulepszeniami i profitami (bez tury i wpisu).
+        void swap_hands()
+        {
             const int hand = hand_weapon();
             const uint8_t rarity = weapon_rarity;
             const int8_t charges = weapon_charges, lvl = weapon_lvl, trait = weapon_trait;
@@ -2407,7 +2419,6 @@ namespace core
             const uint8_t perks = weapon_perks;
             weapon_override = weapon2 == cdef().weapon ? -1 : weapon2;
             reset_proc();
-            secret_flags = uint8_t(secret_flags | secret_tool_swap);
             weapon_rarity = weapon2_rarity;
             weapon_charges = weapon2_charges;
             weapon2 = hand;
@@ -2417,9 +2428,6 @@ namespace core
             weapon2_lvl = lvl; weapon2_trait = trait; weapon2_trait_pending = pending;
             weapon_perks = weapon2_perks;
             weapon2_perks = perks;
-            push(message().add(UI(zamiana_broni)).add(weapon().name).as(loot));
-            end_turn();
-            return true;
         }
         bool stash_tool(int t, int rarity, int extra = 0, int perks = 0)
         {
@@ -2454,10 +2462,15 @@ namespace core
             trait_pending = ((extra >> 12) & 1) != 0;
         }
         static int tool_of_weapon(int w) { for(int t = 0; t < data::tools_count; ++t) if(data::tools[t].weapon == w) return t; return -1; }
-        // Utrata pasa: broń z kabury wypada jako znajdźka (albo przepada).
+        // Utrata pasa: broń z kabury wypada jako znajdźka (albo przepada). Broń zawodu w kaburze wraca do ręki, wypada narzędzie z ręki.
         void drop_holster()
         {
             if(weapon2 < 0) return;
+            if(weapon2 == cdef().weapon && hand_weapon() != cdef().weapon)
+            {
+                swap_hands();
+                push(message().add(UI(bron_z_kabury_domyslna)).add(weapon().name).as(info));
+            }
             const int w = weapon2;
             const int t = tool_of_weapon(w);
             int x = hero.x, y = hero.y;
@@ -2470,7 +2483,6 @@ namespace core
                 p.perks = weapon2_perks;
             }
             if(ok) push(message().add(UI(bron_z_kabury_wypada)).add(data::weapons[w].name).as(loot));
-            else if(w == cdef().weapon) push(message().add(UI(bron_z_kabury_domyslna)).add(data::weapons[w].name).as(info));
             else push(message().add(UI(bron_z_kabury_przepada)).add(data::weapons[w].name).as(loot));
             weapon2 = -1; weapon2_rarity = 0; weapon2_charges = 0; weapon2_lvl = 0; weapon2_trait = -1; weapon2_trait_pending = false;
             weapon2_perks = 0;
@@ -4068,6 +4080,8 @@ namespace core
 
         bool has_offer() const { return offer_slot >= 0; }
         bool offer_is_better() const { return has_offer() && offer_rarity > equipped[offer_slot]; }
+        // v0.23.0: założenie oferty zdejmie pas z kaburą (karta ostrzega, bot nie bierze przy broni w kaburze)
+        bool offer_drops_holster() const { return has_offer() && offer_slot == data::belt_slot && has_belt() && offer_rarity != belt_tier; }
 
         // Paczka sprzętu przy zajętym slocie: gracz porównuje (A zakładam, B zostawiam). Nie zużywa tury.
         void accept_offer()

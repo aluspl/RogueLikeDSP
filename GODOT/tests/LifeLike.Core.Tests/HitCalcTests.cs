@@ -25,6 +25,22 @@ public class HitCalcTests
     [Fact]
     public void BossNeutral() => Assert.Equal(100, HitCalc.Pct(D, D.Weapons[Wi("mlot")], D.Enemies[Ei("termin")]));
 
+    [Theory]
+    [InlineData("nawalnica")]
+    [InlineData("strych")]
+    public void WaterBossesUseWaterColumn(string boss)
+    {
+        // bossy żywiołu wody (bez materiału) mają słabość żywiołu: kolumna „woda”, nie 100% – decyzja projektanta v0.23
+        var e = D.Enemies[Ei(boss)];
+        Assert.Equal(3, HitCalc.Column(D, e));
+        Assert.Equal(75, HitCalc.Pct(D, D.Weapons[Wi("mlot")], e)); // obuch
+        Assert.Equal(100, HitCalc.Pct(D, D.Weapons[Wi("siekiera")], e)); // cięcie
+        Assert.Equal(75, HitCalc.Pct(D, D.Weapons[Wi("noz")], e)); // kłucie
+        Assert.Equal(112, HitCalc.Pct(D, D.Weapons[Wi("probnik")], e)); // kłucie 75 × prąd 150%
+        Assert.Equal(37, HitCalc.Pct(D, D.Weapons[Wi("lutownica")], e)); // kłucie 75 × ogień 50%
+        Assert.Equal(100, HitCalc.Pct(D, D.Weapons[Wi("noz_majstra")], e)); // czyste kłucie
+    }
+
     [Fact]
     public void SparkOnSteel()
     {

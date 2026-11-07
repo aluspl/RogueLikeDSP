@@ -262,7 +262,7 @@ namespace botw
     // Krok bota (Bot.Step). no_coffee / drinks: warianty statystyk z core_tests.cpp (C# ich nie ma - w teście złotym wyłączone).
     inline void step(game& g, const bot_options& o = bot_options(), bool no_coffee = false, int* drinks = nullptr)
     {
-        if(g.has_offer()) { if(g.offer_is_better()) g.accept_offer(); else g.decline_offer(); }
+        if(g.has_offer()) { if(g.offer_is_better() && ! (g.offer_drops_holster() && g.weapon2 >= 0)) g.accept_offer(); else g.decline_offer(); }   // pas z bronią w kaburze zostaje
         if(o.weapons && g.has_tool_offer())   // wymiana ulepszonego narzędzia wg oceny broni; tylko domyślna: zawsze odmowa
         {
             if(! o.default_only && wants_tool(g, g.tool_offer, g.tool_offer_rarity, g.tool_offer_perks)) g.accept_tool();
@@ -333,7 +333,7 @@ namespace botw
     // Wariant "smart" (Bot.StepSmart): moc przy bliskim problemie, naprawy, brygada, celowanie; v0.23.0: bronie przed celowaniem.
     inline void step_smart(game& g, const bot_options& o = bot_options())
     {
-        if(g.has_offer()) { if(g.offer_rarity >= g.equipped[g.offer_slot]) g.accept_offer(); else g.decline_offer(); }
+        if(g.has_offer()) { if(g.offer_rarity >= g.equipped[g.offer_slot] && ! (g.offer_drops_holster() && g.weapon2 >= 0)) g.accept_offer(); else g.decline_offer(); }
         if(o.weapons && g.has_tool_offer())
         {
             if(! o.default_only && wants_tool(g, g.tool_offer, g.tool_offer_rarity, g.tool_offer_perks)) g.accept_tool();

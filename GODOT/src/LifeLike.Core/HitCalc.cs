@@ -4,8 +4,9 @@ namespace LifeLike.Core;
 
 /// <summary>
 /// v0.23.0: mnożnik obrażeń ciosu (w procentach) wg typu ciosu broni (obuch/cięcie/kłucie) i celu: kolumna „woda”, gdy problem
-/// jest wodny (pierwszeństwo przed materiałem), inaczej jego materiał (cement/stal/drewno), inaczej „bez materiału”
-/// (bossy). Broń z dwoma typami bierze lepszy. Potem żywioł broni: iskra na stal, prąd na wodę, ogień na drewno / wodę.
+/// jest wodny (pierwszeństwo przed materiałem), inaczej jego materiał (cement/stal/drewno), inaczej „bez materiału” (boss bez
+/// materiału = 100%, chyba że ma żywioł wody – Nawałnica i Zawilgocony strych liczą się z kolumny „woda”: słabość żywiołu, jak prąd
+/// na mokre). Broń z dwoma typami bierze lepszy. Potem żywioł broni: iskra na stal, prąd na wodę, ogień na drewno / wodę.
 /// </summary>
 public static class HitCalc
 {

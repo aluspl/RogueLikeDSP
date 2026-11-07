@@ -53,7 +53,8 @@ public sealed partial class Game
     /// <summary>
     /// v0.23.0: pola, które trafia tryb m skierowany na cel ei (kolejność od bohatera) – to samo, czego używa atak (Targets), więc
     /// podświetlenie celowania nie rozjedzie się z ciosem. Single/Push/Shot poza linią: pole celu; promienie stają na pierwszej ścianie,
-    /// Shot kończy się na pierwszym problemie, natrysk / łuk / krzyż nie sięgają za ścianę przed bohaterem; ściany pominięte.
+    /// Shot kończy się na pierwszym problemie, natrysk / łuk / krzyż nie sięgają za ścianę przed bohaterem, rzut 3x3 nie sięga za narożnik
+    /// obok celu; ściany pominięte.
     /// </summary>
     public int PatternCells(WeaponMode m, int ei, Span<int> cx, Span<int> cy)
     {
@@ -87,6 +88,8 @@ public sealed partial class Game
                 if (ray) blocked = true;
                 continue;
             }
+            // rzut 3x3: pole skośne za narożnikiem (oba pola między nim a celem to ściany) nie dostaje odłamków
+            if (pat == PatternKind.Throw3x3 && xs[i] != tx && ys[i] != ty && !Lv.Passable(xs[i], ty) && !Lv.Passable(tx, ys[i])) continue;
             // wzory nieprzebijające ścian (natrysk, łuk, krzyż): dalsze pola za ścianą przed bohaterem nie są trafiane
             if (!ray && d >= 2 && pat is PatternKind.Spray or PatternKind.Arc or PatternKind.Cross && !Lv.Passable(Hero.X + dx, Hero.Y + dy)) continue;
             cx[cells] = xs[i];
