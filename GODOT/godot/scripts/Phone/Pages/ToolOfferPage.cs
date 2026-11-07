@@ -72,8 +72,14 @@ public sealed class ToolOfferPage : PhonePage
         var r0 = PerksRow(p, c0, 2, now, WeaponLook.PhoneInk(d, _g.WeaponRarity), tx, right);
         p.Divider(c0, r0);
         p.Text(tx, p.RowY(c0, r0), DamageHelp.Text(d, now, DmgText.Upgrade), Ink.Dim, TextAlign.Left, right - tx);
+        // v0.23.0: „ + kryt, OBR -5, profity”, gdy nowa ma ich więcej – w wierszu porównania albo (gdy się nie mieści) pod nim
+        var extra = DamageHelp.CompareExtras(new Message(), now, next).Text;
+        var cmp = Loc.T("cios_2") + DamageHelp.CompareLine(new Message(), now, next).Text;
+        if (p.F.Measure(cmp) > right - tx) cmp = DamageHelp.CompareLine(new Message(), now, next, true).Text;
+        var extraRow = extra.Length > 0 && p.F.Measure(cmp + extra) > right - tx;
+        if (!extraRow) cmp += extra;
         y = p.Section(c0.End.Y + 4, Loc.T("nowe_4"));
-        var c1 = p.Card(y, 3 + PerkRows(next).Count);
+        var c1 = p.Card(y, 3 + PerkRows(next).Count + (extraRow ? 1 : 0));
         p.Stripe(c1, 0, WeaponLook.RarityColor(d, nr));
         ix = tx + p.WeaponIcon(tx, p.RowY(c1, 0), d.Weapons[w], nr);
         p.Text(ix, p.RowY(c1, 0), Loc.F("zasieg_3", d.Weapons[w].Name, next.Min, next.Max, d.Weapons[w].Range), Ink.Dark, TextAlign.Left, right - ix);
@@ -81,9 +87,13 @@ public sealed class ToolOfferPage : PhonePage
         p.Text(tx, p.RowY(c1, 1), KindLine(p, $"{WeaponLook.RarityName(d, nr)} · {WeaponLook.Hits(d, d.Weapons[w])}", d.Weapons[w], right - tx), WeaponLook.PhoneInk(d, nr), TextAlign.Left, right - tx);
         var r1 = PerksRow(p, c1, 2, next, WeaponLook.PhoneInk(d, nr), tx, right);
         p.Divider(c1, r1);
-        var cmp = Loc.T("cios_2") + DamageHelp.CompareLine(new Message(), now, next).Text;
-        if (p.F.Measure(cmp) > right - tx) cmp = DamageHelp.CompareLine(new Message(), now, next, true).Text;
-        p.Text(tx, p.RowY(c1, r1), cmp, next.Avg10 > now.Avg10 ? Ink.Done : Ink.Late, TextAlign.Left, right - tx);
+        var better = next.Avg10 > now.Avg10 || extra.Length > 0;
+        p.Text(tx, p.RowY(c1, r1), cmp, better ? Ink.Done : Ink.Late, TextAlign.Left, right - tx);
+        if (extraRow)
+        {
+            p.Divider(c1, r1 + 1);
+            p.Text(tx, p.RowY(c1, r1 + 1), extra.TrimStart(), Ink.Done, TextAlign.Left, right - tx);
+        }
         y = p.Section(c1.End.Y + 4, Loc.T("wybierz_3"));
         var c2 = p.Card(y, 2);
         string[] rows = [Loc.F("zostaje_3", _g.WeaponTitle()), Loc.F("zamieniam_przepadnie", d.Weapons[w].Name, _g.WeaponLvl)];

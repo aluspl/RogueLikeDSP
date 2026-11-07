@@ -23,13 +23,15 @@ namespace LifeLike.Game.Debug;
 /// PB_REDUCE_MOTION=1 – ograniczony ruch.
 /// v0.23.0 artefakty: Gablota w Profilu (case-empty, case-some, case-full) i w Szkoleniach (case-training), znaleziony Młot
 /// Gromowładny (artifact-found – ogłoszenie ARTEFAKT), Młot w ręce przed piorunem z dymkiem opisu ataku (artifact-tip).
+/// Poprawki po przeglądzie: paczka z Markowym pasem przy pasie z kaburą (offer-belt – ostrzeżenie), karta Nawałnicy (weapon-card-boss –
+/// mnożnik z kolumny woda), Nóż majstra seniora na placu przy ulepszonej Kielni (weapon-noz-swap – „+ kryt, OBR, profity”).
 /// </summary>
 public sealed class WeaponStaging
 {
     public static readonly string[] Names =
         ["weapon-arc", "weapon-b", "weapon-belt", "weapon-card", "weapon-rarity", "weapon-class", "help-weapons", "weapon-legend-found", "weapon-perks", "offer-trait", "weapon-tip-kielnia", "weapon-tip-noz",
          "weapon-tip-cios", "gear-scroll", "hero-weapons", "hero-weapons-big", "hero-gear", "weapon-drops", "announce-levelup", "announce-boss",
-         "case-empty", "case-some", "case-full", "case-training", "artifact-found", "artifact-tip"];
+         "case-empty", "case-some", "case-full", "case-training", "artifact-found", "artifact-tip", "offer-belt", "weapon-card-boss", "weapon-noz-swap"];
 
     private readonly App _app;
 
@@ -99,7 +101,7 @@ public sealed class WeaponStaging
                 _app.Nodes.ClassSelectView.Details = true;
                 return;
         }
-        var cls = scene switch { "weapon-arc" or "weapon-tip-kielnia" or "weapon-tip-cios" => 1, "weapon-b" => 2, "weapon-card" => 4, _ => 5 };
+        var cls = scene switch { "weapon-arc" or "weapon-tip-kielnia" or "weapon-tip-cios" or "weapon-noz-swap" => 1, "weapon-b" => 2, "weapon-card" or "weapon-card-boss" => 4, _ => 5 };
         _app.Session.ClassId = cls;
         _app.StartRun();
         new DebugScenes(_app).AdvanceMessages();
@@ -146,9 +148,10 @@ public sealed class WeaponStaging
                 break;
             }
             case "weapon-card": // Klucz (obuch + kłucie) na kamień (cement): obuch ×125%
+            case "weapon-card-boss": // Klucz na Nawałnicę (boss żywiołu wody): kolumna woda
             {
                 var (dx, dy) = OpenSide(g);
-                Place(g, "kamien", dx, dy);
+                Place(g, scene == "weapon-card" ? "kamien" : "nawalnica", dx, dy);
                 Refresh(g);
                 _app.Nodes.Touch.Bar.Pressed = Touch.BarButton.Wait;
                 Flow.Game.HandleInput(InputCmd.Of(GameAction.B));
@@ -172,6 +175,28 @@ public sealed class WeaponStaging
                 var (dx, dy) = OpenSide(g);
                 var t = Array.FindIndex(g.D.Tools, x => g.D.Weapons[x.Weapon].Id == "lom");
                 g.Pickups[g.PickupsCount++] = new Pickup(g.Hero.X + dx, g.Hero.Y + dy, PickupType.Tool, true, t, 2) { Perks = (1 << 0) | (1 << 4) };
+                Refresh(g);
+                _app.AfterAction(g.PlayerMove(dx, dy));
+                break;
+            }
+            case "offer-belt": // pas z kaburą (Markowy Łom w kaburze), pod nogami paczka z Markowym pasem – ostrzeżenie o kaburze
+            {
+                g.Equip(g.D.BeltSlot, CoreGame.BeltTier, 0);
+                g.Weapon2 = Array.FindIndex(g.D.Weapons, w => w.Id == "lom");
+                g.Weapon2Rarity = 2;
+                Refresh(g);
+                g.Pickups[0] = new Pickup(g.Hero.X, g.Hero.Y, PickupType.GearBox, true, g.D.BeltSlot * 3 + 2, 1);
+                g.PickupsCount = 1;
+                g.Collect();
+                _app.AfterAction(true);
+                break;
+            }
+            case "weapon-noz-swap": // ulepszona Kielnia, obok Nóż majstra seniora – porównanie z „+ kryt, OBR -5, profity”
+            {
+                g.WeaponLvl = 1;
+                var (dx, dy) = OpenSide(g);
+                var t = Array.FindIndex(g.D.Tools, x => g.D.Weapons[x.Weapon].Id == "noz_majstra");
+                g.Pickups[g.PickupsCount++] = new Pickup(g.Hero.X + dx, g.Hero.Y + dy, PickupType.Tool, true, t, 0);
                 Refresh(g);
                 _app.AfterAction(g.PlayerMove(dx, dy));
                 break;

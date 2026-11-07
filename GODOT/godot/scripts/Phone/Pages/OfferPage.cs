@@ -39,7 +39,8 @@ public sealed class OfferPage : PhonePage
             ? Loc.F("cecha_zmiana", d.GearTraits[g.EquippedTrait[slot]].Name, d.GearTraits[g.OfferTrait].Name)
             : Loc.T("cecha_2") + d.GearTraits[g.OfferTrait].Name;
         var traitLines = p.F.Wrap(traitText, tw);
-        var c = p.Card(y, 1 + cmp.Count + traitLines.Count);
+        var warnLines = g.OfferDropsHolster ? p.F.Wrap(HolsterWarning(), tw) : new List<string>(); // v0.23.0: pas bez kabury zdejmie kaburę
+        var c = p.Card(y, 1 + cmp.Count + traitLines.Count + warnLines.Count);
         var verdict = g.OfferIsBetter ? Loc.T("nowy_jest_lepszej_jakosci")
                     : g.OfferRarity == g.Equipped[slot] ? Loc.T("ta_sama_jakosc_inna_cecha") : Loc.T("nowy_jest_gorszej_jakosci");
         p.Stripe(c, 0, g.OfferIsBetter ? Pal.Done : Pal.Todo);
@@ -54,7 +55,18 @@ public sealed class OfferPage : PhonePage
             p.Divider(c, 1 + cmp.Count + i);
             p.Text(p.TextX(c), p.RowY(c, 1 + cmp.Count + i), traitLines[i], g.Equipped[slot] >= 0 && g.EquippedTrait[slot] != g.OfferTrait ? Ink.Brand : Ink.Dim, TextAlign.Left, c.End.X - 6 - p.TextX(c));
         }
+        var row = 1 + cmp.Count + traitLines.Count;
+        for (var i = 0; i < warnLines.Count; i++)
+        {
+            p.Divider(c, row + i);
+            p.Stripe(c, row + i, Pal.Late);
+            p.Text(p.TextX(c), p.RowY(c, row + i), warnLines[i], Ink.Late, TextAlign.Left, c.End.X - 6 - p.TextX(c));
+        }
     }
+
+    /// <summary>v0.23.0: ostrzeżenie, że pas bez kabury zdejmie pas z kaburą (broń z kabury wypadnie na ziemię).</summary>
+    private string HolsterWarning() =>
+        _g.Weapon2 >= 0 ? Loc.F("uwaga_kabura", _g.D.Weapons[_g.Weapon2].Name) : Loc.T("uwaga_kabura_pusta");
 
     /// <summary>Co się zmieni po założeniu: cios (średnio), kryt, obrona - tylko to, co się zmienia (jak na GBA).</summary>
     private List<string> Compare(PhonePainter p, int width)

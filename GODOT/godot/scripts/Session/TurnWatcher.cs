@@ -59,7 +59,9 @@ public sealed class TurnWatcher
             var oldRank = 1 + (_level >= 3 ? 1 : 0) + (_level >= 5 ? 1 : 0);
             _events.RaiseLevelUp(g.HeroLevel, g.AbilityRank() > oldRank);
         }
-        if (g.WeaponOverride != _weapon && g.WeaponOverride >= 0) _events.RaiseToolFound(_weapon);
+        // v0.23.0: zamiana z kabury to nie znalezisko (bez ogłoszenia „ARTEFAKT!” i banera nowej broni)
+        var swapped = AnnounceQueue.IsHolsterSwap(_weapon >= 0 ? _weapon : g.CDef.Weapon, _weapon2, g.WeaponOverride >= 0 ? g.WeaponOverride : g.CDef.Weapon, g.Weapon2);
+        if (g.WeaponOverride != _weapon && g.WeaponOverride >= 0 && !swapped) _events.RaiseToolFound(_weapon);
         // v0.23.0: artefakt prosto do kabury (bez zmiany broni w ręku – zamiana z kabury to nie znalezisko)
         if (g.Weapon2 != _weapon2 && g.Weapon2 >= 0 && g.WeaponOverride == _weapon && g.D.Weapons[g.Weapon2].Master) _events.RaiseArtifactHolstered(g.Weapon2);
         _weapon2 = g.Weapon2;
