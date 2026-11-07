@@ -409,9 +409,46 @@ weapon("noz_majstra", "hand", "stab", (1, 3), [
     ".....OO.....",
 ])
 
+# v0.23.0: artefakty (Gablota) – unikatowe warianty broni bazowych, tylko Mistrzowska; każdy z cechą rozpoznawczą.
+weapon("mlot_grom", "hand", "slam", (1, 4), [   # cecha: błyskawica (Y) na obuchu, iskra nad głową młota
+    ".........YY.",
+    "........lllg",
+    "........lgYd",
+    "........lYgd",
+    "AATTTTTTYYYd",
+    "AATTTTTTlgYd",
+    "........lYgd",
+    "........Yddd",
+])
+weapon("kielnia_cegla", "hand", "swing", (1, 3), [   # cecha: cegła z zaprawą na kielni
+    ".....RRWRR..",
+    ".....RWRRW..",
+    "......lWll..",
+    "TTAAdglllll*",
+    "TTAA..lggl..",
+    ".......ll...",
+])
+weapon("szlifierka_isk", "power", "swing", (1, 3), [   # cecha: snop iskier spod tarczy
+    "...hh....d..Y",
+    "...hh...dldY.",
+    "HHHHHHHggld.W",
+    "hHHhhHHggldY.",
+    "HHHHHHHggld.Y",
+    "........dldW.",
+    ".........d..Y",
+], shot="sparks")
+weapon("lom_deska", "hand", "slam", (1, 3), [   # cecha: podważona deska (ścięgno drewna) przy pazurze
+    ".......ddd..",
+    "......d..gd.",
+    ".....TtTt..d",
+    "AAAgggggggdd",
+    "AAAddddddddd",
+    ".....tTtT...",
+])
+
 # Bronie dokładane w Task 8 (fallback, gdyby jeszcze ich nie było w game.json; dopasowanie także po nazwie): id -> (nazwa, master)
 FALLBACK = {"noz": ("Nóż do tapet", False), "noz_majstra": ("Nóż majstra seniora", True)}
-MASTER_IDS = {"mlot_zenka", "poziomica_m", "pilarka", "noz_majstra"}
+MASTER_IDS = {"mlot_zenka", "poziomica_m", "pilarka", "noz_majstra", "mlot_grom", "kielnia_cegla", "szlifierka_isk", "lom_deska"}
 
 
 # ------------------------------------------------------------------ operacje na siatkach indeksów

@@ -28,8 +28,9 @@ mapowanie wiersz → id, kierunek, rzadkość, chwyt i animacje jest w `weapons.
   (rękojeść po lewej); `left` = odbicie, `up`/`down` = obrót o 90°. Przedmioty bez obrotu (dziennik, tablet,
   dachówki, lasery na statywie) mają w `up`/`down` tę samą klatkę co `right`.
 - **Rzadkość** (kolejność kolumn): Zwykła, Solidna, Markowa, Mistrzowska. Bronie Mistrzowskie
-  (`master: true` – Młot Zenka, Poziomica mistrza, Pilarka tarczowa, Nóż majstra seniora) mają tylko kolumny
-  Mistrzowskiej; pozostałe pola są przezroczyste.
+  (`master: true` – Młot Zenka, Poziomica mistrza, Pilarka tarczowa, Nóż majstra seniora i artefakty v0.23:
+  Młot Gromowładny – błyskawica na obuchu, Kielnia Pierwszej Cegły – cegła z zaprawą, Szlifierka Iskrownica – snop iskier,
+  Łom Ostatniej Deski – podważona deska przy pazurze) mają tylko kolumny Mistrzowskiej; pozostałe pola są przezroczyste.
 - **Chwyt**: `grip[kierunek]` = piksel rękojeści w klatce 16×16 (`gripGodot` w 32×32). Postawić klatkę tak, by
   ten piksel wypadł na prawej dłoni bohatera: `heroHand` w `weapons.json` = piksel (12,11) GBA / (24,22) Godot.
   Bohater nie ma klatek kierunkowych – przy ruchu w lewo klatka jest odbijana (`ActorSprite.Flip`), dłoń jest

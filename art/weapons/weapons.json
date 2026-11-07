@@ -4027,6 +4027,362 @@
      "row": 77
     }
    ]
+  },
+  {
+   "id": "mlot_grom",
+   "name": "Młot Gromowładny",
+   "row": 41,
+   "kind": "hand",
+   "family": "slam",
+   "master": true,
+   "rarities": [
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     8,
+     12
+    ],
+    "left": [
+     12,
+     8
+    ],
+    "right": [
+     3,
+     8
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     16,
+     24
+    ],
+    "left": [
+     24,
+     16
+    ],
+    "right": [
+     6,
+     16
+    ]
+   },
+   "gripMap": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     8,
+     11
+    ],
+    "left": [
+     11,
+     8
+    ],
+    "right": [
+     3,
+     8
+    ]
+   },
+   "gripMapGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     16,
+     22
+    ],
+    "left": [
+     22,
+     16
+    ],
+    "right": [
+     6,
+     16
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "mistrzowska",
+     "row": 78
+    }
+   ]
+  },
+  {
+   "id": "kielnia_cegla",
+   "name": "Kielnia Pierwszej Cegły",
+   "row": 42,
+   "kind": "hand",
+   "family": "swing",
+   "master": true,
+   "rarities": [
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     8,
+     12
+    ],
+    "left": [
+     12,
+     8
+    ],
+    "right": [
+     3,
+     8
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     16,
+     24
+    ],
+    "left": [
+     24,
+     16
+    ],
+    "right": [
+     6,
+     16
+    ]
+   },
+   "gripMap": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     8,
+     11
+    ],
+    "left": [
+     11,
+     8
+    ],
+    "right": [
+     3,
+     8
+    ]
+   },
+   "gripMapGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     16,
+     22
+    ],
+    "left": [
+     22,
+     16
+    ],
+    "right": [
+     6,
+     16
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "mistrzowska",
+     "row": 79
+    }
+   ]
+  },
+  {
+   "id": "szlifierka_isk",
+   "name": "Szlifierka Iskrownica",
+   "row": 43,
+   "kind": "power",
+   "family": "swing",
+   "master": true,
+   "rarities": [
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     2
+    ],
+    "up": [
+     7,
+     12
+    ],
+    "left": [
+     12,
+     7
+    ],
+    "right": [
+     2,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     4
+    ],
+    "up": [
+     14,
+     24
+    ],
+    "left": [
+     24,
+     14
+    ],
+    "right": [
+     4,
+     14
+    ]
+   },
+   "gripMap": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     7,
+     12
+    ],
+    "left": [
+     12,
+     7
+    ],
+    "right": [
+     3,
+     7
+    ]
+   },
+   "gripMapGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     14,
+     24
+    ],
+    "left": [
+     24,
+     14
+    ],
+    "right": [
+     6,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "mistrzowska",
+     "row": 80
+    }
+   ]
+  },
+  {
+   "id": "lom_deska",
+   "name": "Łom Ostatniej Deski",
+   "row": 44,
+   "kind": "hand",
+   "family": "slam",
+   "master": true,
+   "rarities": [
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     8,
+     12
+    ],
+    "left": [
+     12,
+     8
+    ],
+    "right": [
+     3,
+     8
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     16,
+     24
+    ],
+    "left": [
+     24,
+     16
+    ],
+    "right": [
+     6,
+     16
+    ]
+   },
+   "gripMap": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     8,
+     11
+    ],
+    "left": [
+     11,
+     8
+    ],
+    "right": [
+     3,
+     8
+    ]
+   },
+   "gripMapGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     16,
+     22
+    ],
+    "left": [
+     22,
+     16
+    ],
+    "right": [
+     6,
+     16
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "mistrzowska",
+     "row": 81
+    }
+   ]
   }
  ],
  "swingRows": [
@@ -4340,6 +4696,22 @@
   },
   {
    "id": "noz_majstra",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "mlot_grom",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "kielnia_cegla",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "szlifierka_isk",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "lom_deska",
    "rarity": "mistrzowska"
   }
  ]
