@@ -197,7 +197,8 @@ public partial class HudTop : Control
 
         // v0.23.0: broń w kolorze rzadkości i odnowienie Patentu („P” – gotowy, liczba – tury)
         var wx = x;
-        if (draw) Assets.DrawFrame(this, Assets.UiMenu, 0, Assets.Icon, new Vector2(x, 20), 1, WeaponLook.IconTint(g.D, g.WeaponRarity));
+        if (draw && !WeaponSheet.DrawIcon(this, g.Weapon, WeaponSheet.Rarity(g), new Rect2(x, 20, Assets.Icon, Assets.Icon)))
+            Assets.DrawFrame(this, Assets.UiMenu, 0, Assets.Icon, new Vector2(x, 20), 1, WeaponLook.IconTint(g.D, g.WeaponRarity));
         x += 18;
         if (labels) x += Text(x, Loc.T("hud_cios_b"), g.WeaponBCd == 0 ? Ink.MapGood : Ink.MapDim) + 4;
         if (g.WeaponBCd > 0) x += Text(x, g.WeaponBCd.ToString(), Ink.MapDim) + 8;

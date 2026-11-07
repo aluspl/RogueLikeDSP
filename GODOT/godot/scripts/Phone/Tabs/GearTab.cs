@@ -177,7 +177,8 @@ public sealed class GearTab : PhonePage
         var rc = WeaponLook.RarityColor(d, g.WeaponRarity);
         p.Stripe(c0, 0, rc);
         var pw = p.Pill(right, p.RowY(c0, 0), $"z{g.WeaponRange()} {UiText.StatShort(w.ScalesWith)}", PillKind.Group);
-        p.Text(tx, p.RowY(c0, 0), $"{g.WeaponTitle()} {b.Min}-{b.Max}", Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
+        var ix = tx + p.WeaponIcon(tx, p.RowY(c0, 0), w, WeaponSheet.Rarity(g)); // v0.23.0: ikona broni
+        p.Text(ix, p.RowY(c0, 0), $"{g.WeaponTitle()} {b.Min}-{b.Max}", Ink.Dark, TextAlign.Left, right - pw - 4 - ix);
         p.Divider(c0, 1);
         var avg = DamageHelp.AddTenths(new Message(), b.Avg10).Text;
         var bState = g.WeaponBCd == 0 ? Loc.T("b_gotowy") : Loc.F("b_za", g.WeaponBCd);

@@ -123,7 +123,7 @@ public partial class ActionBar : Control, ITapTargets
         switch (b)
         {
             case BarButton.Attack:
-                Assets.DrawFrame(this, Assets.MenuIcons, 0, 32, icon);
+                WeaponIcon(g, icon, Colors.White); // v0.23.0: broń w ręce w kolorze rzadkości
                 label = Loc.T("atak");
                 break;
             case BarButton.Ability:
@@ -157,13 +157,13 @@ public partial class ActionBar : Control, ITapTargets
                 {
                     var pulse = 0.5f + 0.5f * Mathf.Sin(_clock * 6f);
                     DrawStyleBox(Ui.Box(new Color(rc, 0.15f + 0.2f * pulse), 8), new Rect2(icon - new Vector2(3, 2), new Vector2(38, 36)));
-                    Assets.DrawFrame(this, Assets.MenuIcons, 0, 32, icon, 1, WeaponLook.IconTint(g.D, g.WeaponRarity));
+                    WeaponIcon(g, icon, Colors.White);
                     f.Draw(this, icon + new Vector2(24, 14), Loc.T("fach_znak"), Ink.Map, TextAlign.Center);
                     label = Loc.T("cios_b");
                 }
                 else
                 {
-                    Assets.DrawFrame(this, Assets.MenuIcons, 0, 32, icon, 1, new Color(0.6f, 0.6f, 0.65f, 0.6f));
+                    WeaponIcon(g, icon, new Color(0.6f, 0.6f, 0.65f, 0.6f));
                     f.Draw(this, icon + new Vector2(16, 6), g.WeaponBCd.ToString(), Ink.Map, TextAlign.Center, 1.5f);
                     label = Loc.F("cios_b_za", g.WeaponBCd);
                 }
@@ -182,5 +182,12 @@ public partial class ActionBar : Control, ITapTargets
         if (b == BarButton.WeaponB && f.Measure(label) > r.Size.X - 2) label = Loc.T("cios_b"); // v0.23.0: „Patent za N” nie mieści się – liczba jest na ikonie
         var ink = on ? Ink.White : enabled ? Ink.Map : Ink.MapDim;
         f.Draw(this, new Vector2(r.GetCenter().X, r.End.Y - 20), f.Fit(label, (int)r.Size.X - 2), ink, TextAlign.Center);
+    }
+
+    /// <summary>v0.23.0: ikona broni bohatera (weapons_icons_2x, kolumna rzadkości); bez rysunku – stara ikona ataku.</summary>
+    private void WeaponIcon(LifeLike.Core.Game g, Vector2 icon, Color mod)
+    {
+        if (!WeaponSheet.DrawIcon(this, g.Weapon, WeaponSheet.Rarity(g), new Rect2(icon, new Vector2(32, 32)), mod))
+            Assets.DrawFrame(this, Assets.MenuIcons, 0, 32, icon, 1, mod);
     }
 }

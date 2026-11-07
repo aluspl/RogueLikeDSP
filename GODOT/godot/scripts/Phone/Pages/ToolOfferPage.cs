@@ -65,7 +65,8 @@ public sealed class ToolOfferPage : PhonePage
         var tx = p.TextX(c0);
         var right = c0.End.X - 6;
         p.Stripe(c0, 0, WeaponLook.RarityColor(d, _g.WeaponRarity));
-        p.Text(tx, p.RowY(c0, 0), $"{_g.WeaponTitle()} {now.Min}-{now.Max}", Ink.Dark, TextAlign.Left, right - tx);
+        var ix = tx + p.WeaponIcon(tx, p.RowY(c0, 0), _g.Weapon, WeaponSheet.Rarity(_g)); // v0.23.0: ikony broni
+        p.Text(ix, p.RowY(c0, 0), $"{_g.WeaponTitle()} {now.Min}-{now.Max}", Ink.Dark, TextAlign.Left, right - ix);
         p.Divider(c0, 1);
         p.Text(tx, p.RowY(c0, 1), KindLine(p, $"{WeaponLook.RarityName(d, _g.WeaponRarity)} · {WeaponLook.Hits(d, _g.Weapon)}", _g.Weapon, right - tx), WeaponLook.PhoneInk(d, _g.WeaponRarity), TextAlign.Left, right - tx);
         var r0 = PerksRow(p, c0, 2, now, WeaponLook.PhoneInk(d, _g.WeaponRarity), tx, right);
@@ -74,7 +75,8 @@ public sealed class ToolOfferPage : PhonePage
         y = p.Section(c0.End.Y + 4, Loc.T("nowe_4"));
         var c1 = p.Card(y, 3 + PerkRows(next).Count);
         p.Stripe(c1, 0, WeaponLook.RarityColor(d, nr));
-        p.Text(tx, p.RowY(c1, 0), Loc.F("zasieg_3", d.Weapons[w].Name, next.Min, next.Max, d.Weapons[w].Range), Ink.Dark, TextAlign.Left, right - tx);
+        ix = tx + p.WeaponIcon(tx, p.RowY(c1, 0), d.Weapons[w], nr);
+        p.Text(ix, p.RowY(c1, 0), Loc.F("zasieg_3", d.Weapons[w].Name, next.Min, next.Max, d.Weapons[w].Range), Ink.Dark, TextAlign.Left, right - ix);
         p.Divider(c1, 1);
         p.Text(tx, p.RowY(c1, 1), KindLine(p, $"{WeaponLook.RarityName(d, nr)} · {WeaponLook.Hits(d, d.Weapons[w])}", d.Weapons[w], right - tx), WeaponLook.PhoneInk(d, nr), TextAlign.Left, right - tx);
         var r1 = PerksRow(p, c1, 2, next, WeaponLook.PhoneInk(d, nr), tx, right);

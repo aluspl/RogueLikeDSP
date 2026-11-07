@@ -139,6 +139,8 @@ public sealed class HurtowniaPage : PhonePage
                 MaterialIcon.Draw(p.C, it.Material, new Godot.Vector2(tx, y + (PhonePainter.RowH - MaterialIcon.Size) / 2));
                 nx += MaterialIcon.Size + 4;
             }
+            else if (it.Effect is LifeLike.Core.Data.ShopEffect.Tool or LifeLike.Core.Data.ShopEffect.Upgrade)
+                nx += p.WeaponIcon(tx, y, _g.Weapon, WeaponSheet.Rarity(_g)); // v0.23.0: broń w ręku w kolorze rzadkości
             p.Text(nx, y, it.Name, sel ? Ink.Brand : Ink.Dark, TextAlign.Left, right - pw - 4 - nx);
         }
         var dc = p.Card(card.End.Y + 6, 3);

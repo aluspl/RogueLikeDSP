@@ -124,7 +124,8 @@ public partial class EnemyCard : Control
         var row = top + 38;
         if (Layout.Portrait)
         {
-            f.Draw(this, new Vector2(x, row), f.Fit(Loc.T("twoj_cios") + HitLine, (int)(w - x - 8)), hitInk);
+            var ix = WeaponSheet.DrawIcon(this, _g.Weapon, WeaponSheet.Rarity(_g), new Rect2(x, row, Assets.Icon, Assets.Icon)) ? x + Assets.Icon + 3 : x; // v0.23.0
+            f.Draw(this, new Vector2(ix, row), f.Fit(Loc.T("twoj_cios") + HitLine, (int)(w - ix - 8)), hitInk);
             row += 18;
         }
         else lines.Insert(0, (Loc.T("twoj_cios") + HitLine, hitInk));

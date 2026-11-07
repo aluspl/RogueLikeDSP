@@ -66,6 +66,10 @@ public sealed class PhonePainter
     }
 
     /// <summary>Wiersz r karty jako cel dotyku dla elementu index (PhonePage.TapRow).</summary>
+    /// <summary>v0.23.0: ikona broni 16x16 w kolorze rzadkości na początku wiersza (x); zwraca przesunięcie tekstu (0 = brak rysunku).</summary>
+    public float WeaponIcon(float x, float rowY, LifeLike.Core.Data.WeaponDef w, int rarity) =>
+        WeaponSheet.DrawIcon(C, w, rarity, new Rect2(x, rowY + (RowH - Assets.Icon) / 2, Assets.Icon, Assets.Icon)) ? Assets.Icon + 3 : 0;
+
     public void HitRow(Rect2 card, int r, int index) => Hits.Add((new Rect2(card.Position.X, RowY(card, r), card.Size.X, RowH), index));
 
     /// <summary>Dowolny prostokąt jako cel dotyku (np. przyciski -/+ w wierszu); wcześniej dodane mają pierwszeństwo.</summary>

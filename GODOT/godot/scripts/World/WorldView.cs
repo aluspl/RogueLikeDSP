@@ -290,6 +290,7 @@ public partial class WorldView : Node2D
     {
         var dress = _hero.Dress;
         dress.Sync(_g);
+        if (snap) dress.Dir = _hero.Flip ? WeaponPose.Left : WeaponPose.Right; // nowy etap: broń w bok, nie pod butami
         // v0.23.0: kask ze sprzętu zakrywa wygląd z odznak i zleceń (kolor kasku, kask w paski) – wtedy zwykła klatka zawodu
         var look = dress.HasHelmet ? null : ProfileSource();
         _hero.BaseFrame = Assets.HeroFrame(_g.D, look, _g.Cls); // kask w paski z sekretu; w miejscu oddycha (bez klatki B), w kroku - chód z actors_anim
