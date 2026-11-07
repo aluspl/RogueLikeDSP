@@ -290,7 +290,11 @@ Decyzje właściciela (2026-11-05) do katalogu broni:
 DevOps i integracje z PlanBudowlany (Xcode Cloud, CI Android, konto PlanBudowlany w grze #55–#61) – już w repo
 organizacji (Godot prywatnie, GBA zostaje open source). Do tego czasu w tym repo bez konfiguracji chmurowych.
 
+Numeracja: następna zamknięta wersja może być **0.3** (nowe repo w organizacji); 0.23 = ostatnia otwartoźródłowa razem z GBA.
+
 Pomysły właściciela do v0.24 (2026-11-07):
+- **ProfileAssets w API PB**: zasoby gry przypięte do konta PlanBudowlany (kosmetyka, odblokowania, odznaki) – korzyści w obie strony (aktywność w aplikacji PB → nagrody w grze, osiągnięcia z gry → widoczne w profilu PB). Projekt API z zespołem PB.
+- **Wsparcie** (zgłoszenia z gry, kontakt) i powoli **sklepy** – na start za darmo (waluta z gry / nagrody), bez płatności.
 - **Zapis w chmurze** po zalogowaniu kontem PlanBudowlany: profil (~400 B) + zapis budowy wysyłane do API PB; konflikt dwóch urządzeń – scalanie pól profilu (maksimum Respektu, suma odblokowań, OR bitów kolekcji/artefaktów), budowa w toku – nowsza wygrywa; tryb offline jak dziś, synchronizacja przy starcie i po etapie.
 - **Wersja w przeglądarce**: Godot 4.7 z C# oficjalnie nie eksportuje na web (tylko eksperymentalne buildy społeczności, .NET wasm). Najpierw spike: eksperymentalny eksport + pomiar rozmiaru/startu; jeśli słabo – czekać na oficjalne wsparcie. Logowanie na webie najprościej na domenie planbudowlany.online (ta sama sesja). Ewentualnie wersja retro w emulatorze w przeglądarce (bez zapisu w chmurze).
 
