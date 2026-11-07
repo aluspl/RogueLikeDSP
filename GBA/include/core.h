@@ -473,9 +473,9 @@ namespace core
     constexpr int pattern_max_cells = 32;
     struct cell_list
     {
-        int x[pattern_max_cells], y[pattern_max_cells];
+        int8_t x[pattern_max_cells], y[pattern_max_cells];   // int8_t: mało stosu na GBA (wzory zagnieżdżone w ataku)
         int n = 0;
-        void add(int cx, int cy) { if(cx < 0 || cy < 0 || cx >= map_w || cy >= map_h || n >= pattern_max_cells) return; x[n] = cx; y[n] = cy; ++n; }
+        void add(int cx, int cy) { if(cx < 0 || cy < 0 || cx >= map_w || cy >= map_h || n >= pattern_max_cells) return; x[n] = int8_t(cx); y[n] = int8_t(cy); ++n; }
         void ray(int hx, int hy, int dx, int dy, int len) { for(int i = 1; i <= len; ++i) add(hx + dx * i, hy + dy * i); }
         void block(int cx, int cy) { for(int oy = -1; oy <= 1; ++oy) for(int ox = -1; ox <= 1; ++ox) add(cx + ox, cy + oy); }
     };
@@ -1966,14 +1966,14 @@ namespace core
                     break;
                 default: break;
             }
-            int hit[pattern_max_cells];
+            int8_t hit[pattern_max_cells];
             const int n = targets(m, ei, hit);
             if(m.pattern == pattern_kind::shot) return n > 0;
             for(int i = 0; i < n; ++i) if(hit[i] == ei) return true;
             return false;
         }
         // Problemy, które trafiłby tryb m skierowany na cel ei (0 = cel poza wzorem) - bez ataku (podgląd, bot).
-        int pattern_targets(const weapon_mode& m, int ei, int* hit) const
+        int pattern_targets(const weapon_mode& m, int ei, int8_t* hit) const
         {
             if(ei < 0 || ei >= enemies_count || ! enemies[ei].alive || cheb(hero.x, hero.y, enemies[ei].x, enemies[ei].y) > mode_range(m) || ! in_pattern(m, ei)) return 0;
             return targets(m, ei, hit);
@@ -1988,7 +1988,7 @@ namespace core
             const pattern_kind pat = m.pattern;
             if(pat == pattern_kind::single || pat == pattern_kind::push || (pat == pattern_kind::shot && ! on_line(tx, ty)))
             {
-                out.x[0] = tx; out.y[0] = ty; out.n = 1;
+                out.x[0] = int8_t(tx); out.y[0] = int8_t(ty); out.n = 1;
                 return;
             }
             cell_list c;
@@ -2010,14 +2010,14 @@ namespace core
                 if(pat == pattern_kind::shot && enemy_at(c.x[i], c.y[i]) >= 0) break;   // pierwszy cel w linii
             }
         }
-        int targets(const weapon_mode& m, int ei, int* hit) const
+        int targets(const weapon_mode& m, int ei, int8_t* hit) const
         {
             cell_list c;
             pattern_cells(m, ei, c);
             const pattern_kind pat = m.pattern;
             if(c.n == 1 && (pat == pattern_kind::single || pat == pattern_kind::push || (pat == pattern_kind::shot && ! on_line(c.x[0], c.y[0]))))
             {
-                hit[0] = ei;
+                hit[0] = int8_t(ei);
                 return 1;
             }
             int nhit = 0;
@@ -2025,20 +2025,20 @@ namespace core
             {
                 const int j = enemy_at(c.x[i], c.y[i]);
                 if(j < 0 || nhit >= pattern_max_cells) continue;
-                hit[nhit++] = j;
+                hit[nhit++] = int8_t(j);
             }
             return nhit;
         }
-        static bool hit_contains(const int* hit, int n, int j) { for(int i = 0; i < n; ++i) if(hit[i] == j) return true; return false; }
+        static bool hit_contains(const int8_t* hit, int n, int j) { for(int i = 0; i < n; ++i) if(hit[i] == j) return true; return false; }
         // Atak trybem m w kierunku celu ei: każdy żywy problem na polach wzoru, obrażenia x m.dmg_pct/100. Zwraca liczbę trafionych.
         int attack_with(const weapon_mode& m, int ei)
         {
             if(ei < 0 || ei >= enemies_count || ! enemies[ei].alive) return 0;
-            int hit[pattern_max_cells];
+            int8_t hit[pattern_max_cells];
             const int nhit = targets(m, ei, hit);
             const proc_def* proc = nhit > 0 ? count_proc() : nullptr;   // artefakt: co N-ty cios (A i Patent)
             if(proc && proc->every > 1) push(message().add(proc->name).add("!").as(good));
-            int px[pattern_max_cells], py[pattern_max_cells];
+            int8_t px[pattern_max_cells], py[pattern_max_cells];
             bool was_wet[pattern_max_cells], was_dusty[pattern_max_cells];
             int n1 = 0, n2 = 0, f1 = -1, f2 = -1, np = 0, fp = -1;
             for(int i = 0; i < nhit; ++i)
@@ -2225,7 +2225,7 @@ namespace core
             push(m.as(good));
         }
         // Efekty całego ataku (raz): odsłonięcie pokoju + kryt, otwarcie ściany, łańcuch na mokrych, ogień na sąsiadów, wybuch pyłu.
-        void mode_effect_once(mode_effect eff, int val, int turns_, const weapon_mode& m, const int* hit, int nhit, const int* px, const int* py,
+        void mode_effect_once(mode_effect eff, int val, int turns_, const weapon_mode& m, const int8_t* hit, int nhit, const int8_t* px, const int8_t* py,
                               const bool* was_wet, const bool* was_dusty)
         {
             switch(eff)
@@ -2284,7 +2284,7 @@ namespace core
             return m.effect2 == mode_effect::open_wall && wall_openable(m, m.value2);
         }
         // Łańcuch (Próbnik): prąd z trafionego niemokrego celu na mokre problemy obok.
-        void chain_shock(const int* hit, int nhit, const int* px, const int* py, const bool* was_wet)
+        void chain_shock(const int8_t* hit, int nhit, const int8_t* px, const int8_t* py, const bool* was_wet)
         {
             const combo_def& c = data::combos[int(combo_effect::shock_area)];
             bool announced = false;
@@ -2521,7 +2521,7 @@ namespace core
             return true;
         }
         // Ogień z podpalonych celów przeskakuje na n sąsiadów (żywych, nietrafionych, jeszcze się niepalących).
-        void spread_fire(int n, const int* hit, int nhit)
+        void spread_fire(int n, const int8_t* hit, int nhit)
         {
             for(int i = 0; i < nhit && n > 0; ++i)
             {

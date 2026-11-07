@@ -172,7 +172,7 @@ namespace botw
     }
     inline int mode_value(const game& g, const weapon_mode& m, int ei)
     {
-        int hit[pattern_max_cells];
+        int8_t hit[pattern_max_cells];
         const int n = g.pattern_targets(m, ei, hit);
         if(n == 0) return 0;
         const weapon_def& w = g.weapon();
