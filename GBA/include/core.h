@@ -4250,7 +4250,21 @@ namespace core
                 int nx = e.x + t[0], ny = e.y + t[1];
                 if(lv.at(nx, ny) == tile::floor && ! occupied(nx, ny)) { e.x = int8_t(nx); e.y = int8_t(ny); return true; }
             }
-            return false;
+            // v0.23.0: prosta droga zajęta (ściana, róg, inny problem) - krok w bok na wolne pole, które nie oddala od bohatera
+            // (Czebyszew); najbliższe w metryce miejskiej, przy remisie kolejność +x, -x, +y, -y (jak ChaseSides w C#)
+            static constexpr int8_t sides[4][2] = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
+            int bx = 0, by = 0, bd = 1 << 30;
+            const int ch = cheb(e.x, e.y, hero.x, hero.y);
+            for(const auto& s : sides)
+            {
+                int nx = e.x + s[0], ny = e.y + s[1];
+                if(lv.at(nx, ny) != tile::floor || occupied(nx, ny) || cheb(nx, ny, hero.x, hero.y) > ch) continue;
+                int d = iabs(nx - hero.x) + iabs(ny - hero.y);
+                if(d < bd) { bd = d; bx = nx; by = ny; }
+            }
+            if(bd == 1 << 30) return false;
+            e.x = int8_t(bx); e.y = int8_t(by);
+            return true;
         }
 
         // Cios problemu (wręcz albo z dystansu): unik ze szczęścia, obrażenia po obronie, stan, odepchnięcie.

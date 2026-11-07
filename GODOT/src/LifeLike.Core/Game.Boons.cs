@@ -424,6 +424,27 @@ public sealed partial class Game
                 return true;
             }
         }
-        return false;
+        // v0.23.0: prosta droga zajęta (ściana, róg, inny problem) – krok w bok na wolne pole, które nie oddala od bohatera
+        // (Czebyszew); najbliższe w metryce miejskiej, przy remisie kolejność ChaseSides
+        int bx = 0, by = 0, bd = int.MaxValue, cheb = Cheb(e.X, e.Y, Hero.X, Hero.Y);
+        for (var k = 0; k < 4; k++)
+        {
+            int nx = e.X + ChaseSides[k, 0], ny = e.Y + ChaseSides[k, 1];
+            if (Lv.At(nx, ny) != Tile.Floor || Occupied(nx, ny) || Cheb(nx, ny, Hero.X, Hero.Y) > cheb) continue;
+            var d = Math.Abs(nx - Hero.X) + Math.Abs(ny - Hero.Y);
+            if (d < bd)
+            {
+                bd = d;
+                bx = nx;
+                by = ny;
+            }
+        }
+        if (bd == int.MaxValue) return false;
+        e.X = (sbyte)bx;
+        e.Y = (sbyte)by;
+        return true;
     }
+
+    /// <summary>Kroki w bok pościgu (ChaseStep): +x, -x, +y, -y – ta sama kolejność co chase_sides w core.h.</summary>
+    private static readonly int[,] ChaseSides = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
 }

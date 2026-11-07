@@ -3899,6 +3899,25 @@ int main()
             CHECK(run_save_valid(s) && s.g.weapon_b_cd == 3 && s.g.weapon2 == mlot && s.g.weapon_perks == 5 && s.g.artifacts_run == 2);
         }
     }
+    // 56. v0.23.0: pościg – problem w linii z bohaterem, prosta droga zajęta (problem / ściana): krok w bok, nigdy dalej
+    //     (Czebyszew), kolejność +x, -x, +y, -y (odpowiednik C#: BehaviorAndActTests.ChaseStepSidestepsWhenStraightPathBlocked)
+    {
+        static game g;
+        auto put = [](game& gg, int x, int y) { gg.spawn(0, x, y); gg.enemies[gg.enemies_count - 1].awake = true; return gg.enemies_count - 1; };
+        arena(g, 0);
+        put(g, 7, 8);
+        int e = put(g, 7, 9);
+        CHECK(g.chase_step(g.enemies[e]) && g.enemies[e].x == 8 && g.enemies[e].y == 9);
+        CHECK(g.chase_step(g.enemies[e]) && g.enemies[e].x == 8 && g.enemies[e].y == 8);
+        arena(g, 0);
+        g.lv.t[8][7] = tile::wall;
+        e = put(g, 7, 9);
+        CHECK(g.chase_step(g.enemies[e]) && g.enemies[e].x == 8 && g.enemies[e].y == 9);
+        arena(g, 0);
+        g.lv.t[8][7] = g.lv.t[9][6] = g.lv.t[9][8] = tile::wall;
+        e = put(g, 7, 9);
+        CHECK(!g.chase_step(g.enemies[e]) && g.enemies[e].x == 7 && g.enemies[e].y == 9);
+    }
     if(std::getenv("PB_NO_BALANCE")) { std::printf(fails ? "\n%d FAIL\n" : "\nOK (bez balansu)\n", fails); return fails != 0; }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
