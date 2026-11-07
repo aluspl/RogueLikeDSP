@@ -200,7 +200,7 @@ namespace core
     static_assert(offsetof(profile, filter) == 363 && offsetof(profile, filters_seen) == 376 && offsetof(profile, language) == 378);
     static_assert(offsetof(profile, tools) == profile_v17_size && offsetof(profile, artifacts) == profile_v18_size);
     static_assert(sizeof(profile) == 440);
-    // Bajty 35 / 41 trzymają dolne 8 bitów masek (jak C# Profile.ToBytes) - przed zapisem do SRAM.
+    // Bajty 35 / 41 trzymają dolne 8 bitów masek (jak C# Profile.ToBytes); woła je write_profile (main.cpp) przed każdym zapisem do SRAM.
     inline void profile_sync(profile& p) { p.tools_lo = uint8_t(p.tools); p.tools_found_lo = uint8_t(p.tools_found); }
 
     // Katalog usterek: rodzaje 0-15 w catalog, 16-47 w catalog_hi.

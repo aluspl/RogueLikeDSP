@@ -344,6 +344,13 @@ namespace
     }
 
     // ------------------------------------------------------------------ zapis (SRAM): profil z meta.h
+    // Każdy zapis profilu: najpierw bajty 35 / 41 (dolne 8 bitów masek narzędzi, jak C# Profile.ToBytes), potem SRAM.
+    void write_profile(core::profile& p)
+    {
+        core::profile_sync(p);
+        bn::sram::write(p);
+    }
+
     core::profile load_save()
     {
         core::profile p;
@@ -360,7 +367,7 @@ namespace
                 if(core::run_save_valid(*s)) bn::sram::write_offset(*s, core::run_save_offset);
                 else { const struct { char magic[8]; } none = {}; bn::sram::write_offset(none, core::run_save_offset); }   // bez śmieci pod nowym adresem
             }
-            bn::sram::write(p);
+            write_profile(p);
         }
         return p;
     }
@@ -628,7 +635,7 @@ namespace
             if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
             {
                 core::set_language(a.save, sel);
-                bn::sram::write(a.save);
+                write_profile(a.save);
                 bn::sound_items::sfx_buy.play();
                 wait_release();
                 head.clear(); opts.clear();
@@ -675,7 +682,7 @@ namespace
         text_sprites goals_text;
         if(a.save.runs > 0)
         {
-            if(roll_tasks(a)) bn::sram::write(a.save);
+            if(roll_tasks(a)) write_profile(a.save);
             int day, week; goal_dates(a, day, week);
             core::message gm; gm.add(UI(zadania)).add(core::tasks_done_today(a.save)).add("/").add(core::daily_task_slots);
             a.text.set_right_alignment();
@@ -922,7 +929,7 @@ namespace
     {
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         page_help(a);
-        if(! core::has_flag(a.save, core::help_seen)) { core::set_flag(a.save, core::help_seen); bn::sram::write(a.save); }
+        if(! core::has_flag(a.save, core::help_seen)) { core::set_flag(a.save, core::help_seen); write_profile(a.save); }
         if(a.after_help == scene::title)   // z tytułu: samouczek menu jeszcze raz (#25)
         {
             page_sprites t;
@@ -936,7 +943,7 @@ namespace
             a.text.generate(0, 72, UI(b_wroc), t);
             wait_release();
             while(! bn::keypad::a_pressed() && ! bn::keypad::b_pressed() && ! bn::keypad::select_pressed()) next_frame();
-            if(bn::keypad::a_pressed()) { core::tutorial_reset(a.save); bn::sram::write(a.save); }
+            if(bn::keypad::a_pressed()) { core::tutorial_reset(a.save); write_profile(a.save); }
             wait_release();
         }
         return leave(a.after_help);
@@ -1221,7 +1228,7 @@ namespace
         c.reset();
         a.text.set_palette_item(ink0); a.text.set_bg_priority(prio0); a.text.set_z_order(z0);
         core::tutorial_done(a.save, screen);
-        bn::sram::write(a.save);
+        write_profile(a.save);
         wait_release();
     }
 
@@ -1245,7 +1252,7 @@ namespace
                 while(! bn::keypad::a_pressed() && ! bn::keypad::b_pressed() && ! bn::keypad::start_pressed()) next_frame();
             }
             core::mark_unlock(a.save, u, cls);
-            bn::sram::write(a.save);
+            write_profile(a.save);
             a.text.set_palette_item(ink0); a.text.set_bg_priority(prio0); a.text.set_z_order(z0);
             wait_release();
         }
@@ -2031,7 +2038,7 @@ namespace
         item_rows(2, g.offer_rarity, g.offer_trait, true);
         // wiersz 4: porównanie (rozpiska #26) - cios, kryt, obrona; kilka zmian na zmianę co ~1,5 s, bez zmian - cecha
         const core::dmg_breakdown now = g.weapon_breakdown(), next = g.weapon_breakdown(-1, -1, slot, g.offer_rarity, g.offer_trait);
-        core::message cmp[3]; int cmp_n = 0;
+        core::message cmp[4]; int cmp_n = 0;
         if(now.min != next.min || now.max != next.max || now.avg10 != next.avg10) { core::compare_line(cmp[cmp_n], now, next); if(a.text.width(cmp[cmp_n].s) > phone_text_w) { cmp[cmp_n] = core::message(); core::compare_line(cmp[cmp_n], now, next, true); } ++cmp_n; }
         if(now.crit_chance() != next.crit_chance() || now.crit_max != next.crit_max) core::compare_crit(cmp[cmp_n++], now, next);
         const core::gear_def& gold = data::gear[slot * 3 + g.equipped[slot]], &gnew = data::gear[slot * 3 + g.offer_rarity];
@@ -2042,10 +2049,19 @@ namespace
         }
         const bool neutral = cmp_n == 0;   // bez wpływu na walkę: jak dawniej cecha nowego przedmiotu
         if(neutral) cmp[cmp_n++].add(UI(cecha_2)).add(data::gear_traits[g.offer_trait].name);
+        // v0.23.0: pas bez kabury zdejmie pas z kaburą - ostrzeżenie pierwsze w kolejce wiersza 4
+        int warn = -1;
+        if(g.offer_drops_holster())
+        {
+            for(int i = cmp_n; i > 0; --i) cmp[i] = cmp[i - 1];
+            cmp[0] = core::message(); cmp[0].add(UI(tracisz_kabure));
+            if(g.weapon2 >= 0) cmp[0].add(data::weapons[g.weapon2].name);
+            warn = 0; ++cmp_n;
+        }
         page_sprites t4;
         auto draw_cmp = [&](int i) {
             t4.clear();
-            phone_text(a, t4, list_x, row_py(4), fit(a, cmp[i].s, phone_text_w).c_str(), neutral ? ink::dim : ink::brand);
+            phone_text(a, t4, list_x, row_py(4), fit(a, cmp[i].s, phone_text_w).c_str(), i == warn ? ink::late : (neutral ? ink::dim : ink::brand));
         };
         draw_cmp(0);
         core::message km; km.add(UI(a_zakladam_b_zostawiam)).add(data::gear_decline_xp + g.offer_rarity).add(")");
@@ -2903,7 +2919,7 @@ namespace
                 banner.push(rt.s, rb.s);
                 push_achievements(banner, got, done, secrets);
                 push_goals(banner, a.save, tasks, coll, tasks0);
-                bn::sram::write(a.save);   // liczniki zleceń przeniesione do profilu
+                write_profile(a.save);   // liczniki zleceń przeniesione do profilu
             }
             if(g.docs != prev_docs)   // Akt 0: dokument zebrany, komplet otwiera schody
             {
@@ -3791,7 +3807,7 @@ namespace
                         core::bank_progress(a.save, g);   // v0.21.52 cz. b: inspektor i mistrzostwo
                         core::artifacts_bank_today(a.save, g);   // v0.23.0: Gablota
                         bank_tasks(a, g); core::check_collections(a.save);   // cz. c: zadania, kolekcje
-                        bn::sram::write(a.save);
+                        write_profile(a.save);
                         clear_run(a);
                         return leave(scene::shop);
                     }
@@ -3956,7 +3972,7 @@ namespace
                     core::bank_progress(a.save, g);   // v0.21.52 cz. b: inspektor i mistrzostwo
                     core::artifacts_bank_today(a.save, g);   // v0.23.0: Gablota
                     bank_tasks(a, g); core::check_collections(a.save);   // cz. c: zadania, kolekcje
-                    bn::sram::write(a.save);
+                    write_profile(a.save);
                     clear_run(a);
                     return leave(scene::shop);
                 }
@@ -4597,7 +4613,7 @@ namespace
         uint32_t story_got = core::story_check(a.save, &g);   // fabuła (#35): nowe wątki SMS za kamienie milowe (też od inspektora)
         const int career_new = core::career_announce(a.save);   // v0.21.52 cz. d: nowe kontrakty na mapie kariery
         const int filters_new = core::filter_announce(a.save);   // v0.21.53: nowe filtry ekranu
-        bn::sram::write(a.save);
+        write_profile(a.save);
         clear_run(a);
         play_song(song::none);
         (won ? bn::sound_items::sfx_level : bn::sound_items::sfx_hurt).play();
@@ -4806,7 +4822,7 @@ namespace
             leave(scene::prologue);   // ściemnij plac przed wiadomością
         }
         core::set_flag(a.save, core::prologue_seen);
-        bn::sram::write(a.save);
+        write_profile(a.save);
         phone_message(a, data::story_prologue, UI(budowa), UI(twoj_pierwszy_plac_budowy), ink::dim, data::classes[g.cls].name);
         if(! core::has_flag(a.save, core::help_seen)) { a.after_help = scene::game; return leave(scene::help); }
         return leave(scene::game);
@@ -4849,6 +4865,11 @@ namespace
                 if(g.weapon_lvl >= data::tool_upgrade_max) dm.add(UI(maks_ulepszenie));
                 else { dm.add(" -> +").add(g.weapon_lvl + 1).add(": "); core::tool_level_label(dm, g.weapon_lvl, g.upgrade_price()); }
                 dk = ink::brand;
+            }
+            else if(si.effect == core::shop_effect::gear && g.has_belt() && g.weapon2 >= 0)   // v0.23.0: losowy pas zdejmie pas z kaburą
+            {
+                dm.add(UI(uwaga_2)).add(UI(pas_zabierze_kabure));
+                dk = ink::late;
             }
             else if(si.effect == core::shop_effect::tool && g.weapon_lvl > 0)
             {
@@ -4956,7 +4977,7 @@ namespace
                 if(core::career_unlocked(a.save, sel))
                 {
                     a.save.contract = uint8_t(sel);
-                    bn::sram::write(a.save);
+                    write_profile(a.save);
                     t.clear(); icons.clear();
                     a.text.set_palette_item(default_ink);
                     wait_release();
@@ -5038,7 +5059,7 @@ namespace
         wait_release();
         auto finish = [&]() {
             core::set_daily_date(a.save, y, m, d);
-            bn::sram::write(a.save);
+            write_profile(a.save);
             t.clear();
             a.text.set_palette_item(default_ink);
             wait_release();
@@ -5061,7 +5082,7 @@ namespace
                 finish();
                 core::start_daily(*a.g, core::daily_number(y, m, d));
                 core::start_run(a.save);
-                bn::sram::write(a.save);
+                write_profile(a.save);
                 return leave(scene::game);
             }
             if(bn::keypad::b_pressed()) { finish(); return leave(scene::title); }
@@ -5126,7 +5147,7 @@ namespace
         auto finish = [&]() {
             if(core::weekly_number(y, m, d) != week) core::civil_from_days(core::weekly_first_day(week), y, m, d);   // inny tydzień: jego poniedziałek
             core::set_daily_date(a.save, y, m, d);   // data wspólna z budową dnia
-            bn::sram::write(a.save);
+            write_profile(a.save);
             t.clear();
             a.text.set_palette_item(default_ink);
             wait_release();
@@ -5144,7 +5165,7 @@ namespace
                 finish();
                 core::start_weekly(*a.g, week);
                 core::start_run(a.save);
-                bn::sram::write(a.save);
+                write_profile(a.save);
                 return leave(scene::game);
             }
             if(bn::keypad::b_pressed()) { finish(); return leave(scene::title); }
@@ -5504,7 +5525,7 @@ namespace
                     debug_scenario::apply(*a.g, PB_SCENARIO);
 #endif
                     core::start_run(a.save);   // licznik budów i budów z pamiątką (ranga)
-                    bn::sram::write(a.save);
+                    write_profile(a.save);
                     wait_release();
                     if(! core::has_flag(a.save, core::prologue_seen)) return leave(scene::prologue);
                     if(! core::has_flag(a.save, core::help_seen)) { a.after_help = scene::game; return leave(scene::help); }
@@ -5707,7 +5728,7 @@ namespace
             }
             if(bn::keypad::b_pressed() || bn::keypad::start_pressed() || bn::keypad::select_pressed())
             {
-                bn::sram::write(a.save);
+                write_profile(a.save);
                 t.clear();
                 a.text.set_palette_item(default_ink);
                 wait_release();
@@ -5758,7 +5779,7 @@ namespace
         constexpr int catalog_pages_count = 4;
         int cpage = 0;
         int tcol = 0, trow = 0;   // v0.21.52 cz. c (#46): drzewko - gałąź (kolumna) i wiersz (węzeł I / II, opcja A / B)
-        if(roll_tasks(a)) bn::sram::write(a.save);   // zadania nowego dnia / tygodnia (data budowy dnia)
+        if(roll_tasks(a)) write_profile(a.save);   // zadania nowego dnia / tygodnia (data budowy dnia)
         int page = 0;
         // Zakładka Koszty ma strony przełączane SELECT: Szkolenia (doświadczenie) / Respekt / Nagrody za odbiór.
         auto cost_pages = [](int i) { const char* const n[] = { UI(szkolenia), UI(drzewko_2), UI(respekt), UI(nagrody) }; return n[i]; };   // v0.21.52 cz. c: drzewko Szkoleń
@@ -6348,7 +6369,7 @@ namespace
                     if(bn::keypad::a_pressed() && core::story_unlocked(a.save, asel))
                     {
                         arch = 2; amsg = 0;
-                        if(core::story_unread(a.save, asel)) { core::story_mark_read(a.save, asel); bn::sram::write(a.save); }
+                        if(core::story_unread(a.save, asel)) { core::story_mark_read(a.save, asel); write_profile(a.save); }
                         bn::sound_items::sfx_notify.play(bn::fixed(0.6));
                         redraw();
                     }
@@ -6392,7 +6413,7 @@ namespace
                     if(n >= 0 && core::tree_choose(a.save, n, trow % 2))
                     {
                         bn::sound_items::sfx_buy.play();
-                        bn::sram::write(a.save);
+                        write_profile(a.save);
                         note = UI(wybrane);
                     }
                     else if(n >= 0) note = ! core::tree_open(a.save, n) ? UI(najpierw_szkolenia_tej_galezi)
@@ -6423,13 +6444,13 @@ namespace
             if(tab == 3 && bn::keypad::select_pressed())   // v0.21.53 cz. 2 (#40): Zespół - SELECT zmienia język (od razu)
             {
                 core::set_language(a.save, core::language == 0 ? 1 : 0);
-                bn::sram::write(a.save);
+                write_profile(a.save);
                 redraw(); bn::sound_items::sfx_menu.play();
             }
             if(tab == 0 && page == 4 && bn::keypad::select_pressed() && core::title_owned(a.save, sel))   // v0.21.52: wybór tytułu
             {
                 a.save.title = uint8_t(core::selected_title(a.save) == sel ? 0 : sel + 1);
-                bn::sram::write(a.save);
+                write_profile(a.save);
                 redraw();
                 bn::sound_items::sfx_buy.play();
             }
@@ -6464,7 +6485,7 @@ namespace
                 if(core::buy_respect(a.save, sel))
                 {
                     bn::sound_items::sfx_buy.play();
-                    bn::sram::write(a.save);
+                    write_profile(a.save);
                     note = UI(kupione);
                 }
                 else note = ! core::respect_unlocked(a.save, sel) ? UI(najpierw_sekretne_zlecenie)
@@ -6481,7 +6502,7 @@ namespace
                 if(ok)
                 {
                     bn::sound_items::sfx_buy.play();
-                    bn::sram::write(a.save);
+                    write_profile(a.save);
                     note = UI(kupione);
                     rebuild();
                     if(sel >= entries.size()) sel = entries.size() - 1;
