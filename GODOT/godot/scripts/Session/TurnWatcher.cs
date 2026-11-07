@@ -11,7 +11,7 @@ namespace LifeLike.Game.Session;
 public sealed class TurnWatcher
 {
     private readonly SessionEvents _events;
-    private int _level, _weapon, _pickups, _cd, _active;
+    private int _level, _weapon, _weapon2 = -1, _pickups, _cd, _active;
     private readonly sbyte[] _equipped = new sbyte[CoreGame.MaxGearSlots];
     private bool _bossSeen, _second, _phase, _bossAlive;
     private int _docs;
@@ -24,6 +24,7 @@ public sealed class TurnWatcher
     {
         _level = g.HeroLevel;
         _weapon = g.WeaponOverride;
+        _weapon2 = g.Weapon2;
         _pickups = g.PickupsCount;
         _cd = g.AbilityCd;
         _active = ActivePickups(g);
@@ -59,6 +60,9 @@ public sealed class TurnWatcher
             _events.RaiseLevelUp(g.HeroLevel, g.AbilityRank() > oldRank);
         }
         if (g.WeaponOverride != _weapon && g.WeaponOverride >= 0) _events.RaiseToolFound(_weapon);
+        // v0.23.0: artefakt prosto do kabury (bez zmiany broni w ręku – zamiana z kabury to nie znalezisko)
+        if (g.Weapon2 != _weapon2 && g.Weapon2 >= 0 && g.WeaponOverride == _weapon && g.D.Weapons[g.Weapon2].Master) _events.RaiseArtifactHolstered(g.Weapon2);
+        _weapon2 = g.Weapon2;
         if (g.PickupsCount > _pickups) _events.RaiseDropped();
         for (var i = 0; i < g.D.GearSlotsCount && i < CoreGame.MaxGearSlots; i++)
         {
@@ -91,6 +95,7 @@ public sealed class TurnWatcher
         _bossAlive = bossAlive;
         _level = g.HeroLevel;
         _weapon = g.WeaponOverride;
+        _weapon2 = g.Weapon2;
         _pickups = g.PickupsCount;
         _cd = g.AbilityCd;
     }

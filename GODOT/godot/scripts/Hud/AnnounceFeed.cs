@@ -22,6 +22,7 @@ public sealed class AnnounceFeed
         ev.RunStarted += view.Queue.Clear;
         ev.LevelUp += (level, _) => Push(AnnounceKind.LevelUp, Loc.T("ogl_awans"), Loc.F("ogl_poziom", level));
         ev.ToolFound += _ => OnToolFound();
+        ev.ArtifactHolstered += w => _view.Push(new Announcement(AnnounceKind.Unique, Loc.T("ogl_artefakt"), _s.Data.Weapons[w].Name, w, 3));
         ev.BossDefeated += def => Push(AnnounceKind.Boss, Loc.T("ogl_boss"), _s.Data.Enemies[def].Name);
         ev.Achievements += (_, _, secrets) =>
         {
@@ -39,7 +40,8 @@ public sealed class AnnounceFeed
         var r = master ? 3 : g.WeaponRarity;
         if (!AnnounceQueue.WeaponWorthy(r, master)) return;
         var kind = AnnounceQueue.WeaponKind(r, master);
-        Push(kind, kind == AnnounceKind.Unique ? Loc.T("ogl_unikat") : Loc.T("ogl_markowa"), g.Weapon.Name);
+        var title = master ? Loc.T("ogl_artefakt") : kind == AnnounceKind.Unique ? Loc.T("ogl_unikat") : Loc.T("ogl_markowa"); // v0.23.0: artefakty (Gablota)
+        Push(kind, title, g.Weapon.Name);
     }
 
     /// <summary>Ogłoszenie z bronią bohatera (zamach Markowej / Mistrzowskiej albo ikona).</summary>

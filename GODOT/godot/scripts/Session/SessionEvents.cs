@@ -16,6 +16,8 @@ public sealed class SessionEvents
     public event Action<int, bool> LevelUp;
     /// <summary>Nowe narzędzie w ręku; argument: poprzednia broń (WeaponOverride, -1 = broń zawodu).</summary>
     public event Action<int> ToolFound;
+    /// <summary>v0.23.0: artefakt trafił prosto do kabury (pas z pustą kaburą); argument: broń.</summary>
+    public event Action<int> ArtifactHolstered;
     /// <summary>Coś wypadło z usuniętego problemu.</summary>
     public event Action Dropped;
     /// <summary>Założony sprzęt w slocie.</summary>
@@ -50,6 +52,7 @@ public sealed class SessionEvents
     public void RaisePickedUp() => PickedUp?.Invoke();
     public void RaiseLevelUp(int level, bool abilityUp) => LevelUp?.Invoke(level, abilityUp);
     public void RaiseToolFound(int previous) => ToolFound?.Invoke(previous);
+    public void RaiseArtifactHolstered(int weapon) => ArtifactHolstered?.Invoke(weapon);
     public void RaiseDropped() => Dropped?.Invoke();
     public void RaiseGearEquipped(int slot) => GearEquipped?.Invoke(slot);
     public void RaiseAbilityReady() => AbilityReady?.Invoke();
