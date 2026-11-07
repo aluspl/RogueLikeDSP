@@ -476,7 +476,10 @@ def build(d):
     REFF = {"dmg_pct", "taken_pct", "gear_pct", "crit", "dodge", "coffee_pct", "thermos", "cooldown", "cash", "xp_pct",
             "brigade_pct", "sight", "shop_pct", "mats_pct", "second_chance", "reroll", "veteran"}
     assert 1 <= len(rs["upgrades"]) <= 19 and all(0 < rs[k] < 50 for k in ("stage", "boss", "actBoss", "final"))   # profil: 16 + 3 (v12)
-    sec = d["secrets"]
+    sec = dict(d["secrets"])   # v0.23.0 (#84): zlecenia tylko w Godocie (nagroda – nowa broń, warunek bez wymiany broni) na końcu listy, pomijane na GBA
+    gba_sec = [x for x in sec["list"] if x["kind"] != "no_swap_win" and not (x["reward"]["kind"] == "tool" and x["reward"]["id"] in nowe)]
+    assert sec["list"][:len(gba_sec)] == gba_sec, "zlecenia tylko w Godocie na końcu listy (bity profilu GBA bez zmian)"
+    sec["list"] = gba_sec
     sid = {x["id"]: i for i, x in enumerate(sec["list"])}
     L.append("inline constexpr core::respect_def respect[] = {   // Respekt: stałe ulepszenia z rangami")
     for x in rs["upgrades"]:

@@ -47,7 +47,7 @@ public sealed partial class Game
     }
 
     /// <summary>v0.23.0: kłucie omija PierceDef obrony, razem z cechą Przebicie narzędzia.</summary>
-    public int PierceTotal(WeaponDef w) => ToolTraitValue(ToolTraitEffect.Pierce) + (HitCalc.Has(w, HitType.Pierce) ? D.HitTypes.PierceDef : 0);
+    public int PierceTotal(WeaponDef w) => ToolTraitValue(ToolTraitEffect.Pierce) + HitCalc.PierceDef(D, w);
 
     /// <summary>v0.23.0: skutki typu ciosu po trafieniu – obuch ogłusza (szansa StunChancePct, nie bossa), ogień osusza.</summary>
     public void HitTypeEffects(int ei, WeaponDef w)

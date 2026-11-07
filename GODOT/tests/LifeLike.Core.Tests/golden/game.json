@@ -1001,6 +1001,49 @@
         "turns": 1,
         "cooldown": 5
       }
+    },
+    {
+      "id": "noz",
+      "name": "Nóż do tapet",
+      "desc": "Łamane ostrze, zawsze ostre",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 1,
+      "scalesWith": "agility",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "line",
+        "range": 2,
+        "dmgPct": 80,
+        "cooldown": 3
+      }
+    },
+    {
+      "id": "noz_majstra",
+      "name": "Nóż majstra seniora",
+      "desc": "Ostrze prosi o emeryturę. Majster: nie!",
+      "minDamage": 3,
+      "maxDamage": 6,
+      "range": 1,
+      "scalesWith": "agility",
+      "crit": 15,
+      "hit": "pierce",
+      "neutral": true,
+      "pierce": 4,
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "single",
+        "hits": 2,
+        "dmgPct": 75,
+        "cooldown": 3,
+        "name": "Jeszcze nie emerytura"
+      },
+      "master": true
     }
   ],
   "enemies": [
@@ -2705,6 +2748,15 @@
       {
         "weapon": "opalarka",
         "drop": true
+      },
+      {
+        "weapon": "noz",
+        "drop": true,
+        "hurtownia": true
+      },
+      {
+        "weapon": "noz_majstra",
+        "secret": true
       }
     ]
   },
@@ -6589,6 +6641,19 @@
         },
         "rewardText": "Respekt: Zaprawiony",
         "news": "Dom w rekordowym czasie!|Respekt: Zaprawiony|w boju - kawa na start."
+      },
+      {
+        "id": "emerytura",
+        "hint": "Stara szkoła",
+        "desc": "Wygraj Majstrem, ta sama broń",
+        "kind": "no_swap_win",
+        "class": "majster",
+        "reward": {
+          "kind": "tool",
+          "id": "noz_majstra"
+        },
+        "rewardText": "Nóż majstra seniora",
+        "news": "Majster nie odpuszcza!|Nóż majstra seniora:|dwa pchnięcia w B."
       }
     ],
     "cosmetics": [
@@ -9381,6 +9446,81 @@
     "bron_z_kabury_wypada": "Bez pasa broń wypada: ",
     "bron_z_kabury_przepada": "Bez pasa broń przepada: ",
     "mnoznik_ciosu": "{0}: {1} ×{2}%",
+    "wzor_single": "1 pole",
+    "wzor_arc": "łuk 3 pól",
+    "wzor_around": "dookoła",
+    "wzor_cross": "krzyż",
+    "wzor_line": "linia {0}",
+    "wzor_shot": "strzał {0}",
+    "wzor_throw": "rzut 3x3 na {0}",
+    "wzor_spray": "natrysk",
+    "wzor_push": "pchnięcie",
+    "wzor_line_both": "linia {0} w 2 strony",
+    "wzor_line4": "linie {0} w 4 strony",
+    "ef_tury": " ({0} t.)",
+    "ef_stun": "ogłuszenie",
+    "ef_stun_szansa": "ogłuszenie {0}%",
+    "ef_root": "unieruchomienie",
+    "ef_push": "odrzut {0}",
+    "ef_pull": "przyciąga",
+    "ef_defdown": "-{0} OBR",
+    "ef_bleed": "krwawienie",
+    "ef_burn": "podpalenie",
+    "ef_mark": "znak +{0}%",
+    "ef_reveal": "odsłania pokój",
+    "ef_openwall": "otwiera pękniętą ścianę",
+    "ef_openwall_ladunki": "otwiera ścianę ({0} ład.)",
+    "ef_swap": "zamiana miejsc",
+    "ef_chain": "prąd po mokrych",
+    "ef_dry": "osusza",
+    "ef_critnext": "pewny kryt",
+    "ef_wet": "moczy",
+    "ef_ignite": "iskry w pył",
+    "ciosy_x": " x{0}",
+    "odn_b": ", odn. {0}",
+    "cios_b": "Cios B",
+    "cios_b_za": "B za {0}",
+    "zamien": "Zamień",
+    "cios_b_odnowienie": "Cios B: jeszcze {0} t.",
+    "cios_b_sciana": "Cios B: puść - otwierasz ścianę",
+    "cios_b_brak_celu": "Cios B ({0}): brak celu",
+    "pusc_f_wroc": "Puść F: wróć",
+    "pusc_cios_b_wroc": "Puść: wróć",
+    "cios_b_prefix": "Cios B ",
+    "strzalki_zmiana_celu_pusc_f": "Strzałki: cel, puść F: cios B",
+    "przesun_palec_cel_pusc_cios_b": "Przesuń palec: cel, puść: cios B",
+    "kabura_pusta": "Kabura pusta - nie ma czego zamienić",
+    "zamiana_tylko_z_pasem": "Zamiana broni tylko z pasem z kaburą",
+    "hud_cios_b": "Cios",
+    "zywiol_woda": "Woda",
+    "bez_materialu": "Bez materiału",
+    "b_gotowy": "B gotowy",
+    "b_za": "B za {0} t.",
+    "kabura": "Kabura: {0}",
+    "kabura_pusta_2": "Kabura: pusta (broń z dropu trafi tutaj)",
+    "kupione_bron": "Kupione: {0} {1}",
+    "w_reku_rzadkosc": "{0} W ręku: {1} {2}.",
+    "pomoc_bronie_tytul": "Bronie",
+    "pomoc_bronie_materialy": "Typ ciosu a materiał problemu",
+    "pomoc_bronie_1": "Każda broń ma typ ciosu: obuch, cięcie albo kłucie. Materiał problemu zmienia obrażenia - karta problemu pokazuje mnożnik Twojej broni.",
+    "pomoc_bronie_2": "Obuch: {0}% na ogłuszenie. Cięcie: kryt +{1}%. Kłucie: omija {2} OBR.",
+    "pomoc_bronie_3": "Tryb A to zwykły atak wzorem pól. Tryb B ma osobny przycisk: mocniejszy wzór albo efekt, potem odnowienie w turach.",
+    "pomoc_bronie_4": "Rzadkość: Zwykła, Solidna, Markowa (więcej obrażeń, krótsze odnowienie B), Mistrzowska - unikaty i broń mistrza.",
+    "pomoc_bronie_5": "Pas monterski z kaburą nosi drugą broń - zamiana kosztuje turę.",
+    "pomoc_cios_b": "tryb B broni (trzymaj: celuj)",
+    "pomoc_cios_b_dotyk": "tryb B (trzymaj: celuj wzorem)",
+    "pomoc_zamien": "druga broń z kabury (tura)",
+    "efekt_ogluszenie": "Ogłuszenie",
+    "efekt_osuszenie": "Osuszenie",
+    "efekt_pewny_kryt": "Pewny kryt",
+    "efekt_odrzut": "Odrzut",
+    "efekt_przyciagniecie": "Przyciągnięcie",
+    "efekt_zamiana_miejsc": "Zamiana miejsc",
+    "pokoj_odsloniety": "Pokój odsłonięty",
+    "ladunki_zostalo": ": ładunki ",
+    "bron_zuzyta": " zużyty!",
+    "bron_z_kabury_domyslna": "Bez pasa odkładasz: ",
+    "typ_ciosu": "Typ ciosu: ",
     "elita_4": "Elita: {0} ({1})",
     "obr_z_ciosu_problemu": "OBR {0}: -{1} z ciosu problemu",
     "unik_szcz_x": "Unik {0}% (SZCZ {1} x {2}%",

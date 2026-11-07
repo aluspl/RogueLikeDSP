@@ -162,7 +162,7 @@ public class WeaponRarityTests
         var q = Profile.FromBytes(p.ToBytes());
         Assert.Equal(p.Tools, q.Tools);
         Assert.Equal(p.ToolsFound, q.ToolsFound);
-        Assert.Equal(27, D.Tools.Length);
+        Assert.Equal(29, D.Tools.Length); // v0.23.0 (#84): + 2 noże
         Assert.Equal(1UL << 38, q.Tools & (1UL << 38));
     }
 

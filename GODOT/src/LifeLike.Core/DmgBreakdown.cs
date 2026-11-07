@@ -131,7 +131,7 @@ public sealed class DmgBreakdown
             EnemyDef = Math.Max(0, enemyDef),
             Luck = c.Luck + m.Luck,
             CritBonus = m.Crit,
-            Pierce = HitCalc.Has(w, HitType.Pierce) ? d.HitTypes.PierceDef : 0,
+            Pierce = HitCalc.PierceDef(d, w),
             CritCut = HitCalc.Has(w, HitType.Cut) ? d.HitTypes.CutCritPct : 0,
             FlatRarity = d.WeaponRarities.Length > 0 ? d.WeaponRarities[Game.StartRarity(d, m)].DmgBonus : 0, // v0.23.0
             CritWeapon = w.Crit + ((m.Mastery & MasteryBit.Weapon) != 0 ? d.MasteryClasses[cls].WeaponPerk.Value : 0), // broń mistrza

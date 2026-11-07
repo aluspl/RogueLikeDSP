@@ -20,7 +20,7 @@ public sealed partial class Game
         b.Scales = w.ScalesWith;
         b.CritWeapon = w.Crit + (b.Weapon == CDef.Weapon ? MasterCrit() : 0); // v0.21.52 cz. b: broń mistrza
         b.CritCut = HitCalc.Has(w, HitType.Cut) ? D.HitTypes.CutCritPct : 0; // v0.23.0: cięcie
-        b.Pierce = HitCalc.Has(w, HitType.Pierce) ? D.HitTypes.PierceDef : 0; // v0.23.0: kłucie (+ cecha Przebicie niżej)
+        b.Pierce = HitCalc.PierceDef(D, w); // v0.23.0: kłucie (+ cecha Przebicie niżej)
         var stTr = RunMods.StatTrait(w.ScalesWith);
         var luckT = 0;
         for (var i = 0; i < D.GearSlotsCount; ++i)

@@ -10,7 +10,7 @@ public class WeaponDataTests
     [Fact]
     public void AllWeaponsHaveHitAndModes()
     {
-        Assert.Equal(39, D.Weapons.Length);
+        Assert.Equal(41, D.Weapons.Length); // v0.23.0 (#84): + Nóż do tapet, Nóż majstra seniora
         Assert.All(D.Weapons, w =>
         {
             Assert.NotEmpty(w.Hit);
@@ -58,6 +58,8 @@ public class WeaponDataTests
     [InlineData("laser_krzyzowy", PatternKind.Line, ModeEffect.None, PatternKind.Line4, ModeEffect.None, 6)]
     [InlineData("lutownica", PatternKind.Single, ModeEffect.Dot, PatternKind.Line, ModeEffect.Dot, 5)]
     [InlineData("opalarka", PatternKind.Spray, ModeEffect.Dry, PatternKind.Single, ModeEffect.Mark, 5)]
+    [InlineData("noz", PatternKind.Single, ModeEffect.None, PatternKind.Line, ModeEffect.None, 3)]
+    [InlineData("noz_majstra", PatternKind.Single, ModeEffect.None, PatternKind.Single, ModeEffect.None, 3)]
     public void EveryWeaponModesMatchCatalog(string id, PatternKind a, ModeEffect aEffect, PatternKind b, ModeEffect bEffect, int cooldownB)
     {
         var w = W(id);
@@ -117,9 +119,9 @@ public class WeaponDataTests
     [Fact]
     public void NewWeaponsHaveSourcesAndJoinToolList()
     {
-        Assert.Equal(17, D.NewTools.Length);
+        Assert.Equal(19, D.NewTools.Length); // v0.23.0 (#84): + dwa noże
         Assert.All(D.NewTools, t => Assert.True(t.Weapon >= 22 && (t.Shop || t.Drop || t.Hurtownia || t.Secret)));
-        Assert.Equal(27, D.Tools.Length); // v0.23.0 zad. 5: 10 + 17 w jednej liście (maska 64 bity)
+        Assert.Equal(29, D.Tools.Length); // v0.23.0 zad. 5: 10 + 17 (+ 2 noże, #84) w jednej liście (maska 64 bity)
     }
 
     [Fact]
@@ -145,8 +147,29 @@ public class WeaponDataTests
         Assert.Equal(new[] { HitType.Blunt, HitType.Pierce }, W("udarowy").Hit);
         Assert.Equal((ModeEffect.OpenWall, 3, 1), (W("przecinak").ModeB.Effect, W("przecinak").ModeB.Value, W("przecinak").ModeB.Cooldown));
         Assert.Equal((ModeEffect.Stun, 20), (W("lopata").ModeA.Effect, W("lopata").ModeA.Value));
-        Assert.Equal(new[] { "mlot_zenka", "poziomica_m", "pilarka" }, D.Weapons.Where(w => w.Master).Select(w => w.Id));
+        Assert.Equal(new[] { "mlot_zenka", "poziomica_m", "pilarka", "noz_majstra" }, D.Weapons.Where(w => w.Master).Select(w => w.Id));
         Assert.Equal("Podpalenie", D.Statuses[(int)StatusEffect.Burn].Name);
         Assert.Equal("Oznaczony", D.Statuses[(int)StatusEffect.Mark].Name);
+    }
+
+    [Fact]
+    public void KnivesData()
+    {
+        // v0.23.0 (#84): Nóż do tapet – zwykła broń z dropu i Hurtowni; Nóż majstra seniora – unikat, czyste kłucie
+        var noz = Array.FindIndex(D.Tools, t => D.Weapons[t.Weapon].Id == "noz");
+        Assert.True(D.Tools[noz].Drop && D.Tools[noz].Hurtownia && !D.Tools[noz].Secret);
+        Assert.Equal(new[] { HitType.Pierce }, W("noz").Hit);
+        Assert.False(W("noz").Master);
+        var k = W("noz_majstra");
+        var t = Array.FindIndex(D.Tools, x => D.Weapons[x.Weapon].Id == "noz_majstra");
+        Assert.True(D.Tools[t].Secret && !D.Tools[t].Drop && !D.Tools[t].Hurtownia);
+        Assert.Equal(new[] { HitType.Pierce }, k.Hit);
+        Assert.True(k.Master && k.Neutral);
+        Assert.Equal((4, 15, 2, 3), (k.Pierce, k.Crit, k.ModeB.Hits, k.ModeB.Cooldown));
+        Assert.Equal("Jeszcze nie emerytura", k.ModeB.Name);
+        Assert.Equal("Ostrze prosi o emeryturę. Majster: nie!", k.Desc);
+        foreach (var e in D.Enemies) Assert.Equal(100, HitCalc.Pct(D, k, e)); // bez kar i premii za materiał
+        Assert.Equal(4, HitCalc.PierceDef(D, k));
+        Assert.Equal(D.HitTypes.PierceDef, HitCalc.PierceDef(D, W("noz")));
     }
 }

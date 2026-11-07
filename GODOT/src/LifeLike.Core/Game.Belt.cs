@@ -51,6 +51,7 @@ public sealed partial class Game
         var trait = WeaponTrait;
         var pending = TraitPending;
         WeaponOverride = Weapon2 == CDef.Weapon ? -1 : Weapon2;
+        SecretFlags |= SecretToolSwapFlag; // v0.23.0 (#84): zlecenie „ta sama broń”
         WeaponRarity = Weapon2Rarity;
         WeaponCharges = Weapon2Charges;
         Weapon2 = hand;

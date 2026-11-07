@@ -839,7 +839,8 @@ public sealed class GameData
                 "cosmetic" => (SecretReward.Cosmetic, Lookup(coid, id, "wygląd sekretu")),
                 _ => (SecretReward.Respect, Lookup(rsid, id, "Respekt sekretu")),
             };
-            var value = kind == SecretKind.HelperBoss ? Lookup(eid, Str(x, "enemy"), "boss sekretu") : Int(x, "value", 0);
+            var value = kind == SecretKind.HelperBoss ? Lookup(eid, Str(x, "enemy"), "boss sekretu")
+                : kind == SecretKind.NoSwapWin ? Lookup(cid, Str(x, "class"), "zawód sekretu") : Int(x, "value", 0); // v0.23.0 (#84)
             var lines = Str(x, "news").Split('|').ToList();
             while (lines.Count < 3) lines.Add("");
             return new SecretDef(Str(x, "id"), Str(x, "hint"), Str(x, "desc"), kind, value, reward, idx, Str(x, "rewardText"),
@@ -1650,7 +1651,8 @@ public sealed class GameData
         return new WeaponDef(
             Str(w, "id"), Str(w, "name"), Int(w, "minDamage"), Int(w, "maxDamage"), Int(w, "range"),
             ParseStat(Str(w, "scalesWith")), ParseElement(Str(w, "element", "none")), Int(w, "crit", 0), Bool(w, "knockback"),
-            Bool(w, "reveal"), ParseHit(w), ParseMode(w, "modeA"), ParseMode(w, "modeB"), Bool(w, "master"));
+            Bool(w, "reveal"), ParseHit(w), ParseMode(w, "modeA"), ParseMode(w, "modeB"), Bool(w, "master"), Bool(w, "neutral"), Int(w, "pierce", 0),
+            Str(w, "desc", ""));
     }
 
     /// <summary>v0.23.0: typ ciosu broni – tekst albo tablica (1-2 typów); brak = obuch.</summary>
@@ -1672,7 +1674,8 @@ public sealed class GameData
         var pat = Str(m, "pattern");
         return new WeaponMode(pat == "throw" ? PatternKind.Throw3x3 : ParseEnum<PatternKind>(pat), Int(m, "range", range), Int(m, "dmgPct", 100),
             ParseEnum<ModeEffect>(Str(m, "effect", "none")), Int(m, "value", 0), Int(m, "turns", 0), Int(m, "cooldown", 0),
-            ParseEnum<ModeEffect>(Str(m, "effect2", "none")), Int(m, "value2", 0), Int(m, "turns2", 0), Int(m, "steelPct", 0));
+            ParseEnum<ModeEffect>(Str(m, "effect2", "none")), Int(m, "value2", 0), Int(m, "turns2", 0), Int(m, "steelPct", 0),
+            Math.Max(1, Int(m, "hits", 1)), Str(m, "name", ""));
     }
 
     private static HitTypesDef ParseHitTypes(JsonElement h)

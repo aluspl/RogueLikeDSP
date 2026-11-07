@@ -39,6 +39,7 @@ public static class HitCalc
     /// <summary>Procent obrażeń ciosu broni w problem (100 = bez zmian).</summary>
     public static int Pct(GameData d, WeaponDef w, EnemyDef e)
     {
+        if (w.Neutral) return 100; // v0.23.0 (#84): czyste kłucie – materiał bez znaczenia
         var col = Column(d, e);
         var pct = d.HitTypes.MaterialPct[(int)Best(d, w, col), col];
         var steel = col == 1;
@@ -59,6 +60,9 @@ public static class HitCalc
         }
         return pct;
     }
+
+    /// <summary>v0.23.0 (#84): ile OBR omija kłucie broni (własna wartość broni albo HitTypes.PierceDef; bez kłucia 0).</summary>
+    public static int PierceDef(GameData d, WeaponDef w) => Has(w, HitType.Pierce) ? (w.Pierce > 0 ? w.Pierce : d.HitTypes.PierceDef) : 0;
 
     /// <summary>Obrażenia po mnożniku (najmniej 1).</summary>
     public static int Apply(int dmg, int pct) => Math.Max(1, dmg * pct / 100);

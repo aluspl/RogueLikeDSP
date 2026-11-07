@@ -10,7 +10,7 @@ public class GameDataTests
     {
         Assert.Equal(12, D.Classes.Length); // v0.21.51 cz. 2: + 3 zawody z sekretnych zleceń
         Assert.Equal(9, D.OpenClassesCount);
-        Assert.Equal(39, D.Weapons.Length); // v0.23.0: 22 dotychczasowych + 17 nowych broni
+        Assert.Equal(41, D.Weapons.Length); // v0.23.0: 22 dotychczasowych + 17 nowych broni + 2 noże (#84)
         Assert.Equal(47, D.Enemies.Length); // v0.21.52 cz. d: + 2 problemy i 4 bossów kontraktów mapy kariery
         Assert.Equal(12, D.StagesCount);
         Assert.Equal(1UL, D.StartToolsMask);
@@ -94,8 +94,8 @@ public class GameDataTests
         Assert.Equal(8, D.Upgrades.Length); // v0.23.0: + Narzędzia (rzadkość broni na start)
         Assert.Equal(UpgradeEffect.Luck, D.Upgrades[5].Effect);
         Assert.Equal(UpgradeEffect.GearPct, D.Upgrades[6].Effect); // v0.21.52 cz. c: Warsztaty – stat. broni w węźle Rzemieślnik
-        Assert.Equal(27, D.Tools.Length); // 10 (v0.21.51 cz. 2: + Młot Zenka, Poziomica mistrza) + 17 nowych broni v0.23.0
-        Assert.Equal(0b11_0000_0000UL | (1UL << 21), D.SecretToolsMask); // + Pilarka tarczowa
+        Assert.Equal(29, D.Tools.Length); // 10 (v0.21.51 cz. 2: + Młot Zenka, Poziomica mistrza) + 17 nowych broni v0.23.0 + 2 noże (#84)
+        Assert.Equal(0b11_0000_0000UL | (1UL << 21) | (1UL << 28), D.SecretToolsMask); // + Pilarka tarczowa, Nóż majstra seniora (#84)
         Assert.Equal(new Perk(PerkEffect.Hp, 2), D.Badges[D.BadgeBezUsterek].Bonus);
         Assert.Equal(new Perk(PerkEffect.ToolPct, 10), D.Badges[D.BadgeKolekcjoner].Bonus);
         Assert.Equal(new Perk(PerkEffect.XpPct, 10), D.Badges[D.BadgeOsiedle].Bonus);

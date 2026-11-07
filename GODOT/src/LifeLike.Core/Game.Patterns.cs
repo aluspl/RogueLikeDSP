@@ -120,7 +120,10 @@ public sealed partial class Game
         for (var i = 0; i < hits; ++i)
         {
             if (St != GameStatus.Playing || !Enemies[hit[i]].Alive) continue;
-            if (m.DmgPct > 0) HeroAttack(hit[i], m.DmgPct);
+            for (var k = 0; k < m.Hits && St == GameStatus.Playing && Enemies[hit[i]].Alive; ++k) // v0.23.0 (#84): kilka ciosów w cel
+            {
+                if (m.DmgPct > 0) HeroAttack(hit[i], m.DmgPct);
+            }
             ++dealt;
         }
         if (St != GameStatus.Playing) return dealt;

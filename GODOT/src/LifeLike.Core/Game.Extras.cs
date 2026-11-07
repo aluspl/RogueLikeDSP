@@ -326,6 +326,7 @@ public sealed partial class Game
     {
         ResetUpgrade();
         WeaponOverride = D.Tools[t].Weapon;
+        SecretFlags |= SecretToolSwapFlag; // v0.23.0 (#84): zlecenie „ta sama broń”
         WeaponRarity = (byte)ResolveRarity(WeaponOverride, rarity); // v0.23.0: rzadkość z dropu / Hurtowni, unikat zawsze Mistrzowska
         ToolsFound |= 1UL << t;
         ApplyWeaponExtra(extra); // v0.23.0: upuszczona z kabury broń zachowuje ulepszenia
