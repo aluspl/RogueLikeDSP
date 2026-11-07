@@ -287,6 +287,8 @@ Decyzje właściciela (2026-11-05) do katalogu broni:
 
 ## v0.24 (zapowiedź)
 
+**Do kolejnej wersji (pomysł właściciela 2026-11-07): synergie broni** – łańcuchy efektów między broniami/trybami, np. myjka ciśnieniowa moczy problemy (Mokre), potem broń z prądem (próbnik, Młot Gromowładny) razi wszystkie mokre naraz z premią; opalarka/lutownica osusza i podpala, woda gasi; zaprawa (Kielnia) + młot = kruszenie. Część już działa (prąd skacze po mokrych – ShockArea), do zrobienia: czytelna lista synergii w pomocy, ogłoszenie „Synergia!”, kombinacje między bronią w ręce i w kaburze (szybka zamiana jako ruch).
+
 DevOps i integracje z PlanBudowlany (Xcode Cloud, CI Android, konto PlanBudowlany w grze #55–#61) – już w repo
 organizacji (Godot prywatnie, GBA zostaje open source). Do tego czasu w tym repo bez konfiguracji chmurowych.
 
