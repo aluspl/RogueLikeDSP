@@ -289,15 +289,17 @@ public class BeltTests
     [Fact]
     public void LosingBeltWithClassWeaponInHolsterDoesNotSayLost()
     {
-        // v0.23.0: broń zawodu w kaburze nie „przepada” – wraca zawsze (wpis: odkładasz)
-        var g = WithBelt();
-        var cls = g.CDef.Weapon;
+        // v0.23.0: broń zawodu w kaburze nie „przepada” – wraca zawsze (wpis: odkładasz); zawód, którego broń nie jest
+        // narzędziem (nie wypada jako znajdźka), wybrany na stałe – pozytywna asercja zawsze sprawdzana
+        var cls = Array.FindIndex(D.Classes, c => !c.Secret && Array.FindIndex(D.Tools, t => t.Weapon == c.Weapon) < 0);
+        Assert.True(cls >= 0);
+        var g = TestData.Arena(cls);
+        g.Equip(D.BeltSlot, Game.BeltTier, 1);
         g.WeaponOverride = Wi("przecinak");
-        g.Weapon2 = cls;
+        g.Weapon2 = g.CDef.Weapon;
         g.Equip(D.BeltSlot, 0, 0);
         Assert.Equal(-1, g.Weapon2);
-        var tool = Ti(D.Weapons[cls].Id) >= 0;
         Assert.DoesNotContain(g.Log.TakeLast(3), m => m.Text.Contains(Loc.T("bron_z_kabury_przepada").Trim()));
-        if (!tool) Assert.Contains(g.Log.TakeLast(3), m => m.Text.Contains(Loc.T("bron_z_kabury_domyslna").Trim()));
+        Assert.Contains(g.Log.TakeLast(3), m => m.Text.Contains(Loc.T("bron_z_kabury_domyslna").Trim()));
     }
 }
