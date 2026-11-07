@@ -187,6 +187,11 @@ namespace
         if(g.enemy_wet(ei)) m.add(UI(mokry));
         if(g.enemy_dusty(ei)) m.add(m.n ? ", " : "").add(UI(zapylony));
         if(g.enemy_frozen(ei)) m.add(m.n ? ", " : "").add(UI(zmrozony));
+        const core::actor& e = g.enemies[ei];   // v0.23.0: stany od broni (krótkie nazwy z danych)
+        if(e.dot > 0) m.add(m.n ? ", " : "").add(data::statuses[int(e.dot_kind == 2 ? core::status_effect::bleed : core::status_effect::burn)].short_name);
+        if(e.root > 0) m.add(m.n ? ", " : "").add(data::statuses[int(core::status_effect::root)].short_name);
+        if(e.def_down > 0) m.add(m.n ? ", " : "").add(data::statuses[int(core::status_effect::def_down)].short_name);
+        if(e.mark_turns > 0) m.add(m.n ? ", " : "").add(data::statuses[int(core::status_effect::mark)].short_name);
         return m;
     }
     // Znaczniki premii, np. "Beton, BHP".
@@ -826,9 +831,28 @@ namespace
         wait_release();
     }
 
+    // v0.23.0: Patent (L+A) - najbliższy widoczny cel we wzorze trybu B, bez celu pęknięta ściana (Przecinak, Łom, Młot).
+    bool weapon_b_action(core::game& g)
+    {
+        const core::weapon_mode& m = g.weapon().mode_b;
+        const char* name = m.name.c_str()[0] ? m.name.c_str() : UI(cios_b);
+        if(g.weapon_b_cd > 0) { g.push(core::message().add(name).add(UI(patent_za)).add(g.weapon_b_cd).add(" t.")); return false; }
+        int best = -1, bd = 99;
+        for(int i = 0; i < g.enemies_count; ++i)
+        {
+            const core::actor& e = g.enemies[i];
+            const int d = core::cheb(g.hero.x, g.hero.y, e.x, e.y);
+            if(e.alive && g.visible(e.x, e.y) && d <= g.mode_range(m) && d < bd && g.in_pattern(m, i)) { bd = d; best = i; }
+        }
+        if(best >= 0) return g.player_weapon_b(best);
+        if(g.can_weapon_b_open_wall()) return g.player_weapon_b_wall();
+        g.push(core::message().add(name).add(UI(patent_brak_celu)));
+        return false;
+    }
+
     void page_help(app& a)
     {
-        constexpr int pages_count = 19;
+        constexpr int pages_count = 20;
         core::message cmb[3];   // kombinacje stanów (#29): "Mokry + prąd! Porażenie"
         for(int k = 0; k < 3 && k < data::combos_count; ++k) cmb[k].add(data::combos[k].short_name).add(" ").add(data::combos[k].name);
         core::message luck1, luck2;   // wzory z danych (sekcja luck)
@@ -838,6 +862,8 @@ namespace
             { UI(n3_akty_10_etapow_po_nagrodzie), UI(akt_0_boss_konczy_akt), UI(d_pad_ruch_i_atak_wrecz),
               UI(a_atak_trzymaj_celuj), UI(b_czekaj_trzymaj_podglad), UI(r_moc_zawodu_l_mapa),
               UI(start_akcje_select_telefon) },
+            { UI(gba_bronie_1), UI(gba_bronie_2), UI(gba_bronie_3), UI(gba_bronie_4), UI(gba_bronie_5), UI(gba_bronie_6),
+              UI(gba_bronie_7) },   // v0.23.0: bronie
             { UI(w_kazdym_oknie_tak_samo), UI(a_wybierz_dalej), UI(b_wroc_zostaw), UI(gora_dol_tylko_zaznacza),
               UI(a_zatwierdza_premia_zakup), UI(sms_zamiana_narzedzia), UI(po_otwarciu_chwila_blokady) },   // v0.21.51
             { UI(pogoda_dnia_ikona_w_hud), UI(skutek_w_telefonie_zadania), UI(brygada_raz_na_etap_za_zl),
@@ -1928,12 +1954,12 @@ namespace
         const int w = data::tools[g.tool_offer].weapon;
         phone_header(a, ph, t, UI(nowe_narzedzie), data::weapons[w].name);
         phone_canvas& c = *ph.canvas;
-        const core::dmg_breakdown now = g.weapon_breakdown(), next = g.weapon_breakdown(-1, w);
+        const core::dmg_breakdown now = g.weapon_breakdown(), next = g.tool_offer_breakdown();   // v0.23.0: z rzadkością i profitami
         core::message m0; m0.add(UI(teraz_3)); g.weapon_title(m0);
         core::add_range(m0.add(" "), now.min, now.max);
         stripe(c, 0, phone_tile::stripe_brand);
         phone_text(a, t, list_x, row_py(0), fit(a, m0.s, phone_text_w).c_str(), ink::dark);
-        core::message m1; m1.add(UI(nowe)).add(data::weapons[w].name).add(" ");
+        core::message m1; m1.add(UI(nowe)).add(data::weapons[w].name).add(" (").add(data::weapon_rarities[next.rarity].name).add(") ");
         core::add_range(m1, next.min, next.max).add(UI(zasieg)).add(data::weapons[w].range);
         stripe(c, 1, phone_tile::stripe_prog);
         phone_text(a, t, list_x, row_py(1), fit(a, m1.s, phone_text_w).c_str(), ink::dark);
@@ -2088,6 +2114,19 @@ namespace
             int st = k == dmg_text::weapon ? phone_tile::stripe_brand : (k == dmg_text::total ? phone_tile::stripe_done
                    : (k == dmg_text::crit ? phone_tile::stripe_prog : -1));
             push_row(a, out, l, i, st);
+            if(k == dmg_text::weapon)   // v0.23.0: rzadkość, Patent, typy ciosu, profity
+            {
+                const core::weapon_def& w = data::weapons[b.weapon];
+                core::message r; r.add(UI(rzadkosc_broni)).add(data::weapon_rarities[b.rarity].name);
+                push_row(a, out, r, ink::dark, -1);
+                core::message pt; pt.add(UI(cios_b)).add(": ").add(w.mode_b.name.c_str()[0] ? w.mode_b.name.c_str() : UI(cios_b))
+                    .add(UI(patent_odn)).add(core::imax(1, w.mode_b.cooldown + data::weapon_rarities[b.rarity].cooldown_delta
+                                                          - core::perk_value(b.perks, core::tool_trait_effect::cooldown_b)));
+                push_row(a, out, pt, ink::dim, -1);
+                core::message ht; core::dmg_line(ht, b, dmg_text::hit_mult);
+                push_row(a, out, ht, ink::dim, -1);
+                core::message pk; if(core::dmg_line(pk, b, dmg_text::perks)) push_row(a, out, pk, ink::dark, -1);
+            }
         }
         if(g)   // obrona i unik: co zmniejsza ciosy problemów
         {
@@ -2850,6 +2889,9 @@ namespace
             if(g.st == core::status::stage_clear || g.st == core::status::won)   // odznaki i zlecenia
             {
                 int got = core::check_badges(a.save, g);   // też Respekt za etap - od razu w profilu
+                if(const int art = core::artifacts_bank_today(a.save, g))   // v0.23.0: Gablota - nowy artefakt
+                    for(int i = 0; i < data::artifacts_count; ++i)
+                        if((art >> i) & 1) { banner.push(UI(artefakt_w_gablocie), data::weapons[data::artifacts[i]].name); break; }
                 int done = core::check_contracts(a.save);
                 int secrets = core::check_secrets(a.save, &g);   // v0.21.51 cz. 2: np. 5 magazynów, 20x mokry + prąd
                 const int tasks0 = a.save.tasks_total;
@@ -3490,6 +3532,7 @@ namespace
         refresh();
 
         // Podgląd mapy: trzymaj L (samo L, bez R - L+R+SELECT to skrót pokazowy).
+        int l_action = 0;   // v0.23.0: L+A Patent, L+B zamiana broni (wciśnięte w trakcie podglądu mapy)
         auto overview = [&]() {
             map->build_overview(g);
             bg_map_ptr.reload_cells_ref();
@@ -3524,6 +3567,8 @@ namespace
             int t = 0;
             while(bn::keypad::l_held() && ! bn::keypad::r_held())
             {
+                if(bn::keypad::a_pressed()) { l_action = 1; break; }
+                if(bn::keypad::b_pressed()) { l_action = 2; break; }
                 hero.set_visible((++t & 16) == 0);
                 next_frame();
             }
@@ -3670,8 +3715,22 @@ namespace
         {
             levelup_fx();
             levelup_update();
-            if(bn::keypad::l_held() && ! bn::keypad::r_held()) { overview(); continue; }
+            if(bn::keypad::l_held() && ! bn::keypad::r_held() && l_action == 0) { overview(); if(l_action == 0) continue; }
             bool acted = false;
+            if(l_action)   // v0.23.0: Patent (najbliższy cel we wzorze B albo pęknięta ściana) / zamiana broni z kabury
+            {
+                const int act = l_action;
+                l_action = 0;
+                if(act == 1) acted = weapon_b_action(g);
+                else if(! g.has_belt()) g.push(core::message().add(UI(bez_pasa)));
+                else if(g.weapon2 < 0) g.push(core::message().add(UI(kabura_pusta)));
+                else acted = g.player_swap_weapon();
+                refresh();
+                wait_release();
+                animate(); fx_particles.update(); banner.update(a);
+                next_frame();
+                continue;
+            }
             int dx = 0, dy = 0;
             // ruch: pojedyncze wciśnięcie lub przytrzymanie (auto-powtórzenie)
             if(aiming)   // celowanie trwa: strzałki wybierają cel, puszczenie A atakuje
@@ -3729,6 +3788,7 @@ namespace
                         core::check_secrets(a.save, &g);
                         core::bank_xp(a.save, g);
                         core::bank_progress(a.save, g);   // v0.21.52 cz. b: inspektor i mistrzostwo
+                        core::artifacts_bank_today(a.save, g);   // v0.23.0: Gablota
                         bank_tasks(a, g); core::check_collections(a.save);   // cz. c: zadania, kolekcje
                         bn::sram::write(a.save);
                         clear_run(a);
@@ -3893,6 +3953,7 @@ namespace
                     core::check_secrets(a.save, &g);
                     core::bank_xp(a.save, g);
                     core::bank_progress(a.save, g);   // v0.21.52 cz. b: inspektor i mistrzostwo
+                    core::artifacts_bank_today(a.save, g);   // v0.23.0: Gablota
                     bank_tasks(a, g); core::check_collections(a.save);   // cz. c: zadania, kolekcje
                     bn::sram::write(a.save);
                     clear_run(a);
@@ -4522,6 +4583,7 @@ namespace
         bool stake_record = won && stake > 0 && stake > core::best_stake(a.save, g.cls);
         const int stake_rank0 = core::stake_rank(a.save);   // v0.21.52 cz. b (#48): stopnie inwestora przed tą budową
         int badges_got = core::check_badges(a.save, g);   // katalog, narzędzia, Osiedle, liczniki zleceń, rekord stawki
+        core::artifacts_bank_today(a.save, g);   // v0.23.0: Gablota (dzień z daty w profilu)
         int contracts_got = core::check_contracts(a.save);
         int secrets_got = core::check_secrets(a.save, &g);   // v0.21.51 cz. 2: sekretne zlecenia (wygrana bez kawy, na styk...)
         int gained = core::bank_xp(a.save, g);

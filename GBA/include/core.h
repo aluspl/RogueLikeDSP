@@ -521,6 +521,7 @@ namespace core
                 }
                 break;
             case pattern_kind::throw3x3: c.block(hx + dx * r, hy + dy * r); break;
+            default: break;
         }
     }
 
@@ -581,6 +582,7 @@ namespace core
         int hit_pct = 100;                                      // v0.23.0: mnożnik ciosu (typ x materiał / żywioł)
         int hit_col = -1, hit_name = 0, hit_enemy = 0;          // kolumna, typ ciosu (data::hit_types.names), problem (nazwa bez materiału)
         int crit_cap = 100;
+        int rarity = 0;                                         // v0.23.0: rzadkość broni (karta broni w telefonie)
         int flat_event = 0;                                     // wydarzenie: ciosy +N na etap
         bool split = false;                  // źródła premii profilu znane (src_*)
         int src_dmg[mods_sources] = {}, src_pct[mods_sources] = {}, src_crit[mods_sources] = {};
@@ -663,6 +665,7 @@ namespace core
         const bool master = start_rarity(m) == master_weapon_rarity;
         b.perks = master ? master_perk_mask(c.weapon) : 0;
         b.perks_master = master;
+        b.rarity = start_rarity(m);
         b.add_perks();
         b.finish();
         return b;
@@ -2017,14 +2020,14 @@ namespace core
                 hit[0] = ei;
                 return 1;
             }
-            int hits = 0;
+            int nhit = 0;
             for(int i = 0; i < c.n; ++i)
             {
                 const int j = enemy_at(c.x[i], c.y[i]);
-                if(j < 0 || hits >= pattern_max_cells) continue;
-                hit[hits++] = j;
+                if(j < 0 || nhit >= pattern_max_cells) continue;
+                hit[nhit++] = j;
             }
-            return hits;
+            return nhit;
         }
         static bool hit_contains(const int* hit, int n, int j) { for(int i = 0; i < n; ++i) if(hit[i] == j) return true; return false; }
         // Atak trybem m w kierunku celu ei: każdy żywy problem na polach wzoru, obrażenia x m.dmg_pct/100. Zwraca liczbę trafionych.
@@ -2032,13 +2035,13 @@ namespace core
         {
             if(ei < 0 || ei >= enemies_count || ! enemies[ei].alive) return 0;
             int hit[pattern_max_cells];
-            const int hits = targets(m, ei, hit);
-            const proc_def* proc = hits > 0 ? count_proc() : nullptr;   // artefakt: co N-ty cios (A i Patent)
+            const int nhit = targets(m, ei, hit);
+            const proc_def* proc = nhit > 0 ? count_proc() : nullptr;   // artefakt: co N-ty cios (A i Patent)
             if(proc && proc->every > 1) push(message().add(proc->name).add("!").as(good));
             int px[pattern_max_cells], py[pattern_max_cells];
             bool was_wet[pattern_max_cells], was_dusty[pattern_max_cells];
             int n1 = 0, n2 = 0, f1 = -1, f2 = -1, np = 0, fp = -1;
-            for(int i = 0; i < hits; ++i)
+            for(int i = 0; i < nhit; ++i)
             {
                 px[i] = enemies[hit[i]].x; py[i] = enemies[hit[i]].y;
                 was_wet[i] = enemy_wet(hit[i]); was_dusty[i] = enemy_dusty(hit[i]);
@@ -2050,7 +2053,7 @@ namespace core
             const int pct = proc ? m.dmg_pct * proc->dmg_pct / 100 : m.dmg_pct;
             const uint8_t ctx = hit_ctx;
             if(proc && proc->elem == element::power) hit_ctx = uint8_t(hit_ctx | 1);   // piorun: cios prądem
-            for(int i = 0; i < hits; ++i)
+            for(int i = 0; i < nhit; ++i)
             {
                 if(st != status::playing || ! enemies[hit[i]].alive) continue;
                 for(int k = 0; k < m.hits && st == status::playing && enemies[hit[i]].alive; ++k) if(pct > 0) hero_attack(hit[i], pct);
@@ -2059,7 +2062,7 @@ namespace core
             hit_ctx = ctx;
             if(st != status::playing) return dealt;
             const bool knock = weapon().knockback && &m == &weapon().mode_a;   // Młot Zenka odpycha już w hero_attack
-            for(int i = 0; i < hits; ++i)
+            for(int i = 0; i < nhit; ++i)
             {
                 if(mode_effect_after(m.effect, m.value, hit[i], knock) && n1++ == 0) f1 = hit[i];
                 if(mode_effect_after(m.effect2, m.value2, hit[i], knock) && n2++ == 0) f2 = hit[i];
@@ -2067,9 +2070,9 @@ namespace core
             note_effect(m.effect, f1, n1);
             note_effect(m.effect2, f2, n2);
             if(proc) note_effect(proc->effect, fp, np);
-            mode_effect_once(m.effect, m.value, m.turns, m, hit, hits, px, py, was_wet, was_dusty);
-            mode_effect_once(m.effect2, m.value2, m.turns2, m, hit, hits, px, py, was_wet, was_dusty);
-            if(proc && st == status::playing) mode_effect_once(proc->effect2, proc->value2, proc->turns2, m, hit, hits, px, py, was_wet, was_dusty);
+            mode_effect_once(m.effect, m.value, m.turns, m, hit, nhit, px, py, was_wet, was_dusty);
+            mode_effect_once(m.effect2, m.value2, m.turns2, m, hit, nhit, px, py, was_wet, was_dusty);
+            if(proc && st == status::playing) mode_effect_once(proc->effect2, proc->value2, proc->turns2, m, hit, nhit, px, py, was_wet, was_dusty);
             return dealt;
         }
 
@@ -2222,7 +2225,7 @@ namespace core
             push(m.as(good));
         }
         // Efekty całego ataku (raz): odsłonięcie pokoju + kryt, otwarcie ściany, łańcuch na mokrych, ogień na sąsiadów, wybuch pyłu.
-        void mode_effect_once(mode_effect eff, int val, int turns_, const weapon_mode& m, const int* hit, int hits, const int* px, const int* py,
+        void mode_effect_once(mode_effect eff, int val, int turns_, const weapon_mode& m, const int* hit, int nhit, const int* px, const int* py,
                               const bool* was_wet, const bool* was_dusty)
         {
             switch(eff)
@@ -2240,10 +2243,10 @@ namespace core
                     break;
                 }
                 case mode_effect::open_wall: try_open_wall(m, val); break;
-                case mode_effect::chain: chain_shock(hit, hits, px, py, was_wet); break;
-                case mode_effect::spread: spread_fire(imax(1, val), hit, hits); break;
+                case mode_effect::chain: chain_shock(hit, nhit, px, py, was_wet); break;
+                case mode_effect::spread: spread_fire(imax(1, val), hit, nhit); break;
                 case mode_effect::ignite:
-                    for(int i = 0; i < hits && st == status::playing; ++i)
+                    for(int i = 0; i < nhit && st == status::playing; ++i)
                         if(was_dusty[i] && (enemies[hit[i]].flags & actor_dusty)) combo_dust(px[i], py[i]);
                     break;
                 default: break;
@@ -2281,16 +2284,16 @@ namespace core
             return m.effect2 == mode_effect::open_wall && wall_openable(m, m.value2);
         }
         // Łańcuch (Próbnik): prąd z trafionego niemokrego celu na mokre problemy obok.
-        void chain_shock(const int* hit, int hits, const int* px, const int* py, const bool* was_wet)
+        void chain_shock(const int* hit, int nhit, const int* px, const int* py, const bool* was_wet)
         {
             const combo_def& c = data::combos[int(combo_effect::shock_area)];
             bool announced = false;
-            for(int i = 0; i < hits && st == status::playing; ++i)
+            for(int i = 0; i < nhit && st == status::playing; ++i)
             {
                 if(was_wet[i]) continue;
                 for(int j = 0; j < enemies_count && st == status::playing; ++j)
                 {
-                    if(! enemies[j].alive || ! enemy_wet(j) || cheb(px[i], py[i], enemies[j].x, enemies[j].y) > 1 || hit_contains(hit, hits, j)) continue;
+                    if(! enemies[j].alive || ! enemy_wet(j) || cheb(px[i], py[i], enemies[j].x, enemies[j].y) > 1 || hit_contains(hit, nhit, j)) continue;
                     if(! announced)
                     {
                         announced = true;
@@ -2518,16 +2521,16 @@ namespace core
             return true;
         }
         // Ogień z podpalonych celów przeskakuje na n sąsiadów (żywych, nietrafionych, jeszcze się niepalących).
-        void spread_fire(int n, const int* hit, int hits)
+        void spread_fire(int n, const int* hit, int nhit)
         {
-            for(int i = 0; i < hits && n > 0; ++i)
+            for(int i = 0; i < nhit && n > 0; ++i)
             {
                 const actor& s = enemies[hit[i]];
                 if(! s.alive || s.dot <= 0 || s.dot_kind == 2) continue;
                 for(int j = 0; j < enemies_count && n > 0; ++j)
                 {
                     actor& e = enemies[j];
-                    if(! e.alive || e.dot > 0 || hit_contains(hit, hits, j) || cheb(s.x, s.y, e.x, e.y) > 1) continue;
+                    if(! e.alive || e.dot > 0 || hit_contains(hit, nhit, j) || cheb(s.x, s.y, e.x, e.y) > 1) continue;
                     e.dot = s.dot; e.dot_dmg = s.dot_dmg; e.dot_kind = 1; e.awake = true;
                     --n;
                     message m; m.add(data::statuses[int(status_effect::burn)].name).add(": ");
@@ -3070,12 +3073,14 @@ namespace core
                 b.crit_upg = tool_trait_value(tool_trait_effect::crit);
                 b.perks = weapon_perks;
                 b.perks_master = master_rarity(weapon_rarity);
+                b.rarity = weapon_rarity;
             }
             else
             {
                 b.flat_rarity = rarity_dmg(weapon_rarity_);   // v0.23.0: rzadkość porównywanej broni
                 b.perks = resolve_perks(b.weapon, weapon_rarity_, weapon_perks_);
                 b.perks_master = master_rarity(weapon_rarity_);
+                b.rarity = resolve_rarity(b.weapon, weapon_rarity_);
             }
             b.add_perks();   // v0.23.0: profity sumują się z cechą ulepszenia
             b.finish();

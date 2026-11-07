@@ -1544,6 +1544,13 @@ namespace core
         if(p.daily_y == 0 || p.daily_m < 1 || p.daily_m > 12 || p.daily_d < 1) { y = data::daily_default_date[0]; m = data::daily_default_date[1]; d = data::daily_default_date[2]; }
         else { y = p.daily_y; m = p.daily_m; d = imin(p.daily_d, days_in_month(p.daily_y, p.daily_m)); }
     }
+    // v0.23.0: Gablota na GBA - dzień znalezienia z daty wpisanej w profilu (GBA nie ma zegara).
+    inline int artifacts_bank_today(profile& p, const game& g)
+    {
+        int y, m, d;
+        daily_date(p, y, m, d);
+        return artifacts_bank(p, g, days_from_civil(y, m, d));
+    }
 
     inline void set_daily_date(profile& p, int y, int m, int d)
     {

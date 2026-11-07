@@ -201,7 +201,7 @@ namespace debug_scenario
         for(int i = 0; i < data::upgrades_count; ++i)
             if(data::upgrades[i].effect == core::upgrade_effect::luck || data::upgrades[i].effect == core::upgrade_effect::craft)
                 p.levels[i] = uint8_t(data::upgrades[i].levels);
-        p.tools = uint8_t((1 << data::tools_count) - 1);
+        p.tools = (uint64_t(1) << data::tools_count) - 1;
         if(scenario == 10)
         {
             p.badges = uint16_t((1 << data::badge_bez_usterek) | (1 << data::badge_seryjny) | (1 << data::badge_kolekcjoner)

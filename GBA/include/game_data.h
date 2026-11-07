@@ -2141,6 +2141,21 @@ namespace ui
         efekt_zamiana_miejsc,
         profity_brak,
         typ_ciosu,
+        cios_b,
+        artefakt_w_gablocie,
+        kabura_pusta,
+        patent_brak_celu,
+        patent_za,
+        bez_pasa,
+        rzadkosc_broni,
+        patent_odn,
+        gba_bronie_1,
+        gba_bronie_2,
+        gba_bronie_3,
+        gba_bronie_4,
+        gba_bronie_5,
+        gba_bronie_6,
+        gba_bronie_7,
         count_
     };
 }
@@ -2963,6 +2978,21 @@ inline constexpr core::ltext ui_texts[] = {
     { "Zamiana miejsc", "Swapped places" },
     { "Profity: brak", "Perks: none" },
     { "Typ ciosu: ", "Hit type: " },
+    { "Patent", "Trick" },
+    { "Nowy artefakt w Gablocie: ", "New artifact in the Showcase: " },
+    { "Kabura pusta - nie ma czego zamienić", "Holster empty - nothing to swap" },
+    { ": brak celu", ": no target" },
+    { " za ", " in " },
+    { "Brak pasa z kaburą", "No holster belt" },
+    { "Rzadkość: ", "Rarity: " },
+    { ", odn. ", ", cd " },
+    { "Ciosy: obuch, cięcie, kłucie -", "Hits: blunt, cut, pierce -" },
+    { "każdy mocniejszy na materiał", "each better vs a material" },
+    { "L+A: Patent - ruch specjalny", "L+A: Trick - special move" },
+    { "broni (odnawia się kilka tur)", "(recharges for a few turns)" },
+    { "L+B: zamiana broni z kabury", "L+B: swap holster weapon" },
+    { "Rzadkość i profity: telefon,", "Rarity and perks: phone," },
+    { "Obrażenia. Artefakt: co N cios", "Damage. Artifact: every Nth hit" },
 };
 inline const char* tr(ui::id i) { return ui_texts[i]; }
 
