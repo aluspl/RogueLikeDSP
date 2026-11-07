@@ -276,7 +276,9 @@ public static class Meta
     /// </summary>
     public static bool ProfileFix(GameData d, Profile p)
     {
+        var pre19 = !p.MagicIs(Profile.MagicCurrent);
         var migrated = ProfileMigrate(d, p);
+        if (pre19 && p.MagicIs(Profile.MagicCurrent)) ArtifactCase.MigrateV19(d, p); // v0.23.0: Gablota z każdej starszej wersji
         return ClampRespect(d, p) | migrated; // v0.23.0: rangi Respektu ponad obecną liczbę – zwrot (raz, bo ranga przycięta)
     }
 
@@ -322,17 +324,15 @@ public static class Meta
     private static bool ProfileMigrate(GameData d, Profile p)
     {
         if (p.MagicIs(Profile.MagicCurrent)) return ClampLevels(d, p);
-        if (p.MagicIs(Profile.MagicV18)) // v18 -> v19: Gablota z unikatów już znalezionych (bez daty); reszta danych bez zmian
+        if (p.MagicIs(Profile.MagicV18)) // v18 -> v19: dane bez zmian; Gablotę wypełnia ProfileFix (ArtifactCase.MigrateV19)
         {
             p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
-            ArtifactCase.MigrateV19(d, p);
             ClampLevels(d, p);
             return true;
         }
         if (p.MagicIs(Profile.MagicV17)) // v17 -> v18: te same indeksy 0..9 w maskach, FromBytes czytał 8-bitowe maski; dane zostają
         {
             p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
-            ArtifactCase.MigrateV19(d, p);
             ClampLevels(d, p);
             return true;
         }

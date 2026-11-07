@@ -45,7 +45,7 @@ public sealed partial class Game
     private void MarkArtifact(int weapon)
     {
         var i = ArtifactCase.Index(D, weapon);
-        if (i >= 0 && i < 16) ArtifactsRun = (ushort)(ArtifactsRun | (1 << i));
+        if (i >= 0 && i < Profile.MaxArtifacts) ArtifactsRun = (ushort)(ArtifactsRun | (1 << i));
     }
 
     /// <summary>
@@ -55,7 +55,7 @@ public sealed partial class Game
     private int ArtifactFor(int weapon)
     {
         var cls = -1;
-        for (var i = 0; i < D.Artifacts.Length && i < 16; ++i)
+        for (var i = 0; i < D.Artifacts.Length && i < Profile.MaxArtifacts; ++i)
         {
             if (((ArtifactsRun >> i) & 1) != 0) continue;
             var t = ArtifactCase.Tool(D, i);

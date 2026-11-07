@@ -176,6 +176,56 @@ public class ArtifactCaseTests
         Assert.Equal(Profile.Size, p.ToBytes().Length);
     }
 
+    /// <summary>Bit Gabloty = pozycja na liście artefaktów: kolejność tylko dopisywana (profil v19, GBA w Task 10 – ta sama).</summary>
+    [Fact]
+    public void CaseOrderIsPinnedAppendOnly()
+    {
+        Assert.Equal(new[] { "mlot_zenka", "poziomica_m", "pilarka", "noz_majstra", "mlot_grom", "kielnia_cegla", "szlifierka_isk", "lom_deska" },
+            D.Artifacts.Select(w => D.Weapons[w].Id));
+    }
+
+    [Fact]
+    public void V18MigrationKeepsBytesAndIsIdempotent()
+    {
+        var old = Meta.NewProfile(D);
+        old.Best = 999;
+        old.Xp = 1234;
+        old.Runs = 17;
+        old.Levels[1] = 1;
+        old.Tools = (1UL << 30) | 1;
+        old.ToolsFound = (1UL << Ti("noz_majstra")) | (1UL << Ti("pilarka")) | 1;
+        old.KillCount[3] = 42;
+        old.Respect = 77;
+        var raw = old.ToBytes()[..Profile.V18Size];
+        Profile.MagicBytes("PBRL018").CopyTo(raw, 0);
+        var p = Profile.FromBytes(raw);
+        Assert.True(Meta.ProfileFix(D, p));
+        var b = p.ToBytes();
+        Assert.Equal(raw[8..Profile.V18Size], b[8..Profile.V18Size]); // dane v18 bajt w bajt
+        Assert.Equal((1 << Ai("noz_majstra")) | (1 << Ai("pilarka")), p.Artifacts);
+        var again = Profile.FromBytes(b);
+        Assert.False(Meta.ProfileFix(D, again)); // drugi raz nic do naprawy
+        Assert.Equal(b, again.ToBytes());
+    }
+
+    [Fact]
+    public void V17ProfileWithSecretUniqueSeedsCase()
+    {
+        var old = Meta.NewProfile(D);
+        old.Best = 321;
+        var s = Array.FindIndex(D.Secrets, x => x.Reward == SecretReward.Tool && x.Index == Ti("mlot_zenka"));
+        old.Secrets = (ushort)(1 << s); // Młot Zenka z sekretu (v17: maski broni 8-bitowe, unikaty tylko przez sekret)
+        var raw = old.ToBytes()[..Profile.V17Size];
+        Profile.MagicBytes("PBRL017").CopyTo(raw, 0);
+        var p = Profile.FromBytes(raw);
+        Assert.True(Meta.ProfileFix(D, p));
+        Assert.True(p.MagicIs(Profile.MagicCurrent));
+        Assert.Equal(321, p.Best);
+        Assert.True(ArtifactCase.Found(p, Ai("mlot_zenka")));
+        Assert.Equal(0, ArtifactCase.Day(p, Ai("mlot_zenka")));
+        Assert.Equal(1, ArtifactCase.FoundCount(D, p));
+    }
+
     [Fact]
     public void RecordRunIsNotNeededForCaseButBankIsIdempotent()
     {

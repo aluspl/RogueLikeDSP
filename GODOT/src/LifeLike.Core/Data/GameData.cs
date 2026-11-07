@@ -49,7 +49,8 @@ public sealed class GameData
         return c;
     }
 
-    /// <summary>v0.23.0: artefakty (Gablota) – indeksy broni Mistrzowskich (master) w kolejności danych; bit Gabloty = pozycja na liście.</summary>
+    /// <summary>v0.23.0: artefakty (Gablota) – indeksy broni Mistrzowskich (master) w kolejności danych; bit Gabloty = pozycja na liście.
+    /// APPEND ONLY – profile bits: bronie master tylko dopisywane na końcu (ArtifactCaseTests.CaseOrderIsPinnedAppendOnly, gen_data.py).</summary>
     public int[] Artifacts { get; private init; } = [];
 
     /// <summary>v0.23.0: szansa (%), że Markowa broń bazowa z dropu okaże się jej artefaktem (sekcja artifacts.chancePct).</summary>
@@ -467,7 +468,9 @@ public sealed class GameData
         var mid = Index(materialsJson);
 
         var weapons = weaponsJson.Select(w => ParseWeapon(w)).ToArray();
-        var artifacts = Enumerable.Range(0, weapons.Length).Where(i => weapons[i].Master).ToArray(); // v0.23.0: Gablota
+        // v0.23.0: Gablota – bit profilu = pozycja broni Mistrzowskiej w weapons[]. APPEND ONLY – profile bits: nowe bronie master tylko
+        // na końcu listy, nigdy nie przestawiać ani nie usuwać (gen_data.py pilnuje kolejności; GBA w Task 10 – ta sama).
+        var artifacts = Enumerable.Range(0, weapons.Length).Where(i => weapons[i].Master).ToArray();
         Require(artifacts.Length <= Profile.MaxArtifacts, "artefakty: maks. 16 (maska Gabloty w profilu)");
         foreach (var w in weapons)
         {

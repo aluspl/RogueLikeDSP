@@ -96,7 +96,7 @@ public class ArtifactProcTests
     }
 
     [Fact]
-    public void MissDoesNotCount()
+    public void DeadTargetDoesNotCount()
     {
         var g = Arena("kielnia_cegla");
         var e = Add(g, 8, 7);
@@ -161,10 +161,10 @@ public class ArtifactProcTests
         var e = Add(g, 8, 7);
         var wet = Add(g, 9, 6);
         g.Enemies[wet].Wet = 3;
-        var dry = Add(g, 9, 9);
+        var dry = Add(g, 9, 8); // też obok celu, ale suchy
         g.ProcCount = 4;
         g.AttackWith(g.Weapon.ModeA, e);
-        Assert.True(g.Enemies[wet].Hp < 5000);
+        Assert.Equal(5000 - D.Combos[(int)ComboEffect.ShockArea].Value, g.Enemies[wet].Hp);
         Assert.Equal(5000, g.Enemies[dry].Hp);
         // bez pioruna prąd nie skacze
         var h = Arena("mlot_grom");
@@ -196,7 +196,8 @@ public class ArtifactProcTests
         var n1 = Add(g, 9, 7);
         var n2 = Add(g, 9, 8);
         g.AttackWith(g.Weapon.ModeA, e);
-        Assert.True(g.Enemies[e].Dot > 0);
+        Assert.Equal(2, g.Enemies[e].Dot); // 2 tury
+        Assert.Equal(D.HitTypes.DotPerTurn, g.Enemies[e].DotDmg);
         Assert.Equal(1, g.Enemies[e].DotKind); // podpalenie, nie krwawienie (cięcie)
         var burning = (g.Enemies[n1].Dot > 0 ? 1 : 0) + (g.Enemies[n2].Dot > 0 ? 1 : 0);
         Assert.Equal(1, burning);

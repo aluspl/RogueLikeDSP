@@ -50,7 +50,8 @@ public static class ArtifactCase
         return got;
     }
 
-    /// <summary>v18 -> v19: unikaty już znalezione (Profile.ToolsFound) trafiają do Gabloty bez daty.</summary>
+    /// <summary>Starszy profil -> v19: unikaty już znalezione (Profile.ToolsFound) albo zdobyte sekretnym zleceniem (v17 i starsze
+    /// nie mają szerokich masek broni) trafiają do Gabloty bez daty.</summary>
     public static void MigrateV19(GameData d, Profile p)
     {
         p.Artifacts = 0;
@@ -58,7 +59,7 @@ public static class ArtifactCase
         for (var i = 0; i < d.Artifacts.Length && i < Profile.MaxArtifacts; ++i)
         {
             var t = Tool(d, i);
-            if (t >= 0 && ((p.ToolsFound >> t) & 1) != 0) p.Artifacts = (ushort)(p.Artifacts | (1 << i));
+            if (t >= 0 && (((p.ToolsFound >> t) & 1) != 0 || Secrets.Owned(d, p, SecretReward.Tool, t))) p.Artifacts = (ushort)(p.Artifacts | (1 << i));
         }
     }
 }

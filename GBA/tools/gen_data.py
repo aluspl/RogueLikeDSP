@@ -74,6 +74,11 @@ def build(d):
     L = ["// WYGENEROWANE przez tools/gen_data.py z data/game.json - nie edytuj ręcznie.",
          "#pragma once", '#include "core_types.h"', "", "namespace data {", ""]
     L.append("inline constexpr core::weapon_def weapons[] = {")
+    # v0.23.0: Gablota artefaktów – bit profilu (v19) = pozycja broni "master" w weapons[]. APPEND ONLY – profile bits: nowe bronie
+    # master tylko na końcu, nigdy nie przestawiać ani nie usuwać (Godot: ArtifactCaseTests.CaseOrderIsPinnedAppendOnly; GBA – ta sama kolejność).
+    ARTIFACT_ORDER = ["mlot_zenka", "poziomica_m", "pilarka", "noz_majstra", "mlot_grom", "kielnia_cegla", "szlifierka_isk", "lom_deska"]
+    masters = [w["id"] for w in d["weapons"] if w.get("master")]
+    assert masters[:len(ARTIFACT_ORDER)] == ARTIFACT_ORDER and len(masters) <= 16, f"Gablota: kolejność broni master tylko dopisywana: {masters}"
     nowe = {x["weapon"] for x in d["meta"].get("newTools", [])}   # v0.23.0: 17 nowych broni (typy, tryby, ogień) – emisja C++ w zadaniu 10
     for w in d["weapons"]:
         if w["id"] in nowe: continue
