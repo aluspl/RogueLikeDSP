@@ -73,7 +73,7 @@ public static class Bot
         }
         if (o.Weapons && g.HasToolOffer) // v0.23.0: wymiana ulepszonego narzędzia – wg oceny broni; tylko domyślna: zawsze odmowa
         {
-            if (!o.DefaultWeaponOnly && BotWeapons.WantsTool(g, g.ToolOffer, g.ToolOfferRarity)) g.AcceptTool();
+            if (!o.DefaultWeaponOnly && BotWeapons.WantsTool(g, g.ToolOffer, g.ToolOfferRarity, g.ToolOfferPerks)) g.AcceptTool();
             else g.DeclineTool();
             return;
         }
@@ -189,7 +189,7 @@ public static class Bot
         }
         if (o.Weapons && g.HasToolOffer) // v0.23.0: jak w Step
         {
-            if (!o.DefaultWeaponOnly && BotWeapons.WantsTool(g, g.ToolOffer, g.ToolOfferRarity)) g.AcceptTool();
+            if (!o.DefaultWeaponOnly && BotWeapons.WantsTool(g, g.ToolOffer, g.ToolOfferRarity, g.ToolOfferPerks)) g.AcceptTool();
             else g.DeclineTool();
             return;
         }

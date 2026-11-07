@@ -341,7 +341,7 @@ public sealed partial class Game
     }
 
     /// <summary>Bot bierze nowe narzędzie, gdy średni cios (bez problemu) jest wyższy niż ulepszonym obecnym.</summary>
-    public bool BotToolAccept() => WeaponBreakdown(-1, D.Tools[ToolOffer].Weapon, -1, -1, 0, ResolveRarity(D.Tools[ToolOffer].Weapon, ToolOfferRarity)).Avg10 > WeaponBreakdown().Avg10;
+    public bool BotToolAccept() => ToolOfferBreakdown().Avg10 > WeaponBreakdown().Avg10; // v0.23.0: z profitami znajdźki
 
     // ------------------------------------------------------------------ ukryte pomieszczenia
     /// <summary>

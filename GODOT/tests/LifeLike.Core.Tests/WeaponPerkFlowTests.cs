@@ -203,4 +203,25 @@ public class WeaponPerkFlowTests
         Assert.Null(RunSave.FromBytes(rs.ToBytes()).Load(D));
         Assert.Equal("PBRUN18", RunSave.RunMagic);
     }
+
+    [Fact]
+    public void BotValuesPerks()
+    {
+        var g = TestData.Run(0, 5);
+        var lom = Wi("lom");
+        var bare = BotWeapons.Score(g, lom, 1, 0);
+        Assert.True(BotWeapons.Score(g, lom, 1, Mask("ostrze")) > bare, "profit bez wpływu na średni cios też się liczy");
+        Assert.True(BotWeapons.Score(g, lom, 1, Mask("ostrze", "chwyt")) > BotWeapons.Score(g, lom, 1, Mask("ostrze")));
+        // w ręku Solidna z profitem; na ziemi ta sama broń, Solidna bez profitów – bot jej nie chce
+        g.TakeTool(Ti("lom"), 1, false, 0, Mask("chwyt"));
+        Assert.True(BotWeapons.Score(g, -1, 0) > bare);
+        Assert.False(BotWeapons.WantsTool(g, Ti("lom"), 1, 0));
+        // oferta wymiany: bot liczy profity znajdźki
+        g.WeaponLvl = 1;
+        g.Pickups[g.PickupsCount++] = new Pickup(g.Hero.X, g.Hero.Y, PickupType.Tool, true, Ti("lom"), 2) { Perks = Mask("glowica", "wywazenie") };
+        g.Collect();
+        Assert.True(g.HasToolOffer);
+        Assert.Equal(g.ToolOfferBreakdown().Avg10 > g.WeaponBreakdown().Avg10, g.BotToolAccept());
+        Assert.True(g.ToolOfferBreakdown().Avg10 > g.WeaponBreakdown(-1, Wi("lom"), -1, -1, 0, 2).Avg10);
+    }
 }

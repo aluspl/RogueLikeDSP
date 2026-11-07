@@ -14,24 +14,29 @@ public static class BotWeapons
     private const int BetterPct = 115;
 
 
+    /// <summary>v0.23.0: premia oceny (%) za każdy profit broni – także za te, których nie widać w średnim ciosie (kryt, odnowienie B).</summary>
+    private const int PerkScorePct = 6;
+
     /// <summary>Ile pól drogi (koszt 4 na pole) bot zboczy po lepszą broń.</summary>
     private const int ToolGoalCost = 28;
 
     /// <summary>
     /// Ocena broni na najbliższe etapy: średni cios (×10, z mnożnikiem materiału) w problemy z puli bieżącego i następnego etapu
-    /// (boss ×2), z premią za zasięg i wzór wielopolowy. weapon -1 = broń w ręku (z ulepszeniem i rzadkością).
+    /// (boss ×2), z premią za zasięg i wzór wielopolowy. weapon -1 = broń w ręku (z ulepszeniem, rzadkością i profitami).
+    /// v0.23.0: perks = profity broni weapon (średni cios je zawiera) i premia PerkScorePct za każdy profit.
     /// </summary>
-    public static int Score(Game g, int weapon, int rarity)
+    public static int Score(Game g, int weapon, int rarity, int perks = 0)
     {
         if (cacheGame != g) // ocena zależy od etapu, broni i premii bohatera – pamięć na jedną budowę (wątek)
         {
             cacheGame = g;
             cache = new Dictionary<long, int>();
         }
-        var key = ((((long)g.Stage * 64 + weapon + 1) * 8 + rarity) * 64 + (weapon < 0 ? g.WeaponOverride + 1 : 0)) * 1024
-                  + (weapon < 0 ? g.WeaponLvl * 128 + g.WeaponRarity * 32 : 0) + g.HeroLevel + g.DmgBonus * 40;
+        if (weapon < 0) perks = g.WeaponPerks;
+        var key = (((((long)g.Stage * 64 + weapon + 1) * 8 + rarity) * 64 + (weapon < 0 ? g.WeaponOverride + 1 : 0)) * 1024
+                   + (weapon < 0 ? g.WeaponLvl * 128 + g.WeaponRarity * 32 : 0) + g.HeroLevel + g.DmgBonus * 40) * 256 + perks;
         if (cache.TryGetValue(key, out var v)) return v;
-        v = ScoreRaw(g, weapon, rarity);
+        v = ScoreRaw(g, weapon, rarity, perks) * (100 + PerkScorePct * System.Numerics.BitOperations.PopCount((uint)perks)) / 100;
         cache[key] = v;
         return v;
     }
@@ -42,7 +47,7 @@ public static class BotWeapons
     [ThreadStatic]
     private static Dictionary<long, int> cache;
 
-    private static int ScoreRaw(Game g, int weapon, int rarity)
+    private static int ScoreRaw(Game g, int weapon, int rarity, int perks)
     {
         long sum = 0, n = 0;
         var last = Math.Min(g.Stage + 1, g.RouteCount() - 1);
@@ -51,24 +56,28 @@ public static class BotWeapons
             var sd = g.SDef(s);
             foreach (var e in sd.Pool)
             {
-                sum += Avg(g, weapon, rarity, e);
+                sum += Avg(g, weapon, rarity, perks, e);
                 ++n;
             }
             if (sd.Boss >= 0)
             {
-                sum += 2 * Avg(g, weapon, rarity, sd.Boss);
+                sum += 2 * Avg(g, weapon, rarity, perks, sd.Boss);
                 n += 2;
             }
         }
-        var avg = n > 0 ? (int)(sum / n) : Avg(g, weapon, rarity, -1);
+        var avg = n > 0 ? (int)(sum / n) : Avg(g, weapon, rarity, perks, -1);
         return avg * Shape(g, weapon) / 100;
     }
 
     /// <summary>Ocena broni przeciw jednemu problemowi (zamiana z pasa pod cel).</summary>
-    private static int ScoreVs(Game g, int weapon, int rarity, int defId) => Avg(g, weapon, rarity, defId) * Shape(g, weapon) / 100;
+    private static int ScoreVs(Game g, int weapon, int rarity, int perks, int defId)
+    {
+        if (weapon < 0) perks = g.WeaponPerks;
+        return Avg(g, weapon, rarity, perks, defId) * Shape(g, weapon) / 100 * (100 + PerkScorePct * System.Numerics.BitOperations.PopCount((uint)perks)) / 100;
+    }
 
-    private static int Avg(Game g, int weapon, int rarity, int defId) =>
-        weapon < 0 ? g.WeaponBreakdown(defId).Avg10 : g.WeaponBreakdown(defId, weapon, -1, -1, 0, rarity).Avg10;
+    private static int Avg(Game g, int weapon, int rarity, int perks, int defId) =>
+        weapon < 0 ? g.WeaponBreakdown(defId).Avg10 : g.WeaponBreakdown(defId, weapon, -1, -1, 0, rarity, perks).Avg10;
 
     /// <summary>Premia (%) za zasięg (+25% za pole ponad 1, do 3) i wzór trybu A trafiający kilka pól (+10%).</summary>
     private static int Shape(Game g, int weapon)
@@ -80,15 +89,15 @@ public static class BotWeapons
     }
 
     /// <summary>Czy bot chce narzędzie t (rzadkość r) zamiast broni w ręku: wyraźnie lepsza ocena na najbliższe etapy.</summary>
-    public static bool WantsTool(Game g, int t, int rarity)
+    public static bool WantsTool(Game g, int t, int rarity, int perks = 0)
     {
         if (t < 0 || t >= g.D.Tools.Length) return false;
         var w = g.D.Tools[t].Weapon;
         if (g.HasBelt() && g.Weapon2 < 0) return true; // pusta kabura: broń trafi do drugiego miejsca
         var r = g.D.Weapons[w].Master ? g.D.WeaponRarities.Length - 1 : rarity;
         var hand = Score(g, -1, 0);
-        if (g.HasBelt() && g.Weapon2 >= 0) hand = Math.Min(hand, Score(g, g.Weapon2, g.Weapon2Rarity)); // nadepnięta zastąpi gorszą (bot przełoży)
-        return Score(g, w, r) * 100 > hand * BetterPct;
+        if (g.HasBelt() && g.Weapon2 >= 0) hand = Math.Min(hand, Score(g, g.Weapon2, g.Weapon2Rarity, g.Weapon2Perks)); // nadepnięta zastąpi gorszą (bot przełoży)
+        return Score(g, w, r, perks) * 100 > hand * BetterPct;
     }
 
     /// <summary>Pola z bronią, której bot nie chce (tylko domyślna: każda) – nadepnięcie podnosi ją bez pytania.</summary>
@@ -99,7 +108,7 @@ public static class BotWeapons
         {
             var p = g.Pickups[i];
             if (!p.Active || p.Type != PickupType.Tool) continue;
-            if (!o.DefaultWeaponOnly && WantsTool(g, p.Arg, p.Trait)) continue;
+            if (!o.DefaultWeaponOnly && WantsTool(g, p.Arg, p.Trait, p.Perks)) continue;
             avoid ??= new bool[Level.W * Level.H];
             avoid[p.Y * Level.W + p.X] = true;
         }
@@ -115,7 +124,7 @@ public static class BotWeapons
         {
             var p = g.Pickups[i];
             var dd = hd[p.Y * Level.W + p.X];
-            if (!p.Active || p.Type != PickupType.Tool || dd < 0 || dd >= best || !WantsTool(g, p.Arg, p.Trait)) continue;
+            if (!p.Active || p.Type != PickupType.Tool || dd < 0 || dd >= best || !WantsTool(g, p.Arg, p.Trait, p.Perks)) continue;
             best = dd;
             gx = p.X;
             gy = p.Y;
@@ -222,15 +231,15 @@ public static class BotWeapons
         if (near >= 0)
         {
             var def = g.Enemies[near].DefId;
-            hand = ScoreVs(g, -1, 0, def);
-            other = ScoreVs(g, g.Weapon2, g.Weapon2Rarity, def);
+            hand = ScoreVs(g, -1, 0, 0, def);
+            other = ScoreVs(g, g.Weapon2, g.Weapon2Rarity, g.Weapon2Perks, def);
             var adjacent = Game.Cheb(g.Hero.X, g.Hero.Y, g.Enemies[near].X, g.Enemies[near].Y) <= 1;
             if (adjacent && g.Hero.Hp * 2 < g.Hero.MaxHp) return false;
         }
         else
         {
             hand = Score(g, -1, 0);
-            other = Score(g, g.Weapon2, g.Weapon2Rarity);
+            other = Score(g, g.Weapon2, g.Weapon2Rarity, g.Weapon2Perks);
         }
         return other * 100 > hand * BetterPct && g.PlayerSwapWeapon();
     }
