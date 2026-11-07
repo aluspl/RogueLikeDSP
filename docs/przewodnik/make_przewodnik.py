@@ -479,6 +479,14 @@ def sec_perks():
         f"<tr><td><b>{esc(b['name'])}</b>{' <span class=\"tag\">' + esc(b['class']) + '</span>' if b.get('class') else ''}</td><td>{esc(b['desc'])}</td>"
         f"<td>{esc(brar.get(b['rarity'], b['rarity']))}</td><td>{esc(', '.join(tags.get(t, t) for t in b.get('tags', [])))}</td></tr>"
         for b in sorted(D["boons"]["list"], key=lambda b: (order.get(b["rarity"], 9), b["name"])))
+    wp = D["weaponPerks"]
+    pname = {x["id"]: x["name"] for x in wp["pool"]}
+    wpool = "".join(f"<tr><td><b>{esc(x['name'])}</b></td><td>{esc(x['short'])}</td><td>{esc(x['desc'])}</td><td class='mono'>{esc(x['effect'])} {esc(x['value'])}</td></tr>" for x in wp["pool"])
+    perrar = esc(", ".join(f"{r['name']} {n if i < len(RAR) - 1 else 'stałe'}" for i, (r, n) in enumerate(zip(RAR, wp["perRarity"]))))
+    hitn = dict(zip(["blunt", "cut", "pierce"], D["hitTypes"]["names"]))
+    wmaster = "".join(f"<tr><td>{esc(hitn.get(h, h))}</td><td>{esc(', '.join(pname[i] for i in ids))}</td></tr>" for h, ids in wp["master"].items())
+    wmaster += "".join(f"<tr><td><b>{esc(w['name'])}</b> (<code>masterPerks</code>)</td><td>{esc(', '.join(pname[i] for i in w['masterPerks']))}</td></tr>"
+                       for w in D["weapons"] if w.get("masterPerks"))
     return f"""<h2 class="break">8. Losowe profity</h2>
 <h3>Cechy sprzętu (<code>equipment.traits</code>, {len(eq['traits'])})</h3>
 <p class="dim">Losowane na sprzęcie z dropów (rzadkości sprzętu: {esc(', '.join(eq['rarities']))}).</p>
@@ -486,8 +494,14 @@ def sec_perks():
 <h3>Cechy ulepszenia narzędzia (<code>toolUpgrade.traits</code>, {len(tu['traits'])})</h3>
 <p class="dim">Ulepszenie w Hurtowni: +{tu['dmg']} obrażeń za poziom (maks. +{tu['max']}), od poziomu {tu['traitAt']} losowa cecha.</p>
 <table class="small"><tr><th>Cecha</th><th>Opis</th><th>Efekt</th></tr>{tool}</table>
-<div class="plan"><b>Planowane v0.23 (#87) – losowe profity broni wg rzadkości</b>: Zwykła 0, Solidna 1, Markowa 2 losowe profity z puli
-cech broni/narzędzia (jak wyżej), Mistrzowska – stały, unikalny efekt zamiast losowania. <i>Jeszcze nie w grze.</i></div>
+<h3>Profity broni (<code>weaponPerks</code>, {len(wp['pool'])})</h3>
+<p class="dim">Losowane przy powstaniu broni do podniesienia (drop, oferta wymiany, Hurtownia; broń zawodu na start – z seeda budowy),
+bez powtórzeń; widoczne na karcie broni, w ofercie wymiany i w Hurtowni. Ten sam efekt co cecha ulepszenia sumuje się z nią.
+Ile profitów wg rzadkości: {perrar}.</p>
+<table class="small"><tr><th>Profit</th><th>Skrót</th><th>Opis</th><th>Efekt</th></tr>{wpool}</table>
+<p class="dim">Mistrzowska nie losuje – <b>Unikat</b>: 2 stałe profity wg typu ciosu broni (<code>weaponPerks.master</code>),
+broń może je nadpisać polem <code>masterPerks</code>.</p>
+<table class="small"><tr><th>Typ ciosu / broń</th><th>Stałe profity Mistrzowskiej</th></tr>{wmaster}</table>
 <h3>Projekty (<code>boons.list</code>, {len(D['boons']['list'])})</h3>
 <p class="dim">Wybór 1 z kilku po etapie; wagi rzadkości: {esc(', '.join(f"{brar[k]} {v}" for k, v in bw.items()))}; od {D['boons']['synergyAt']} projektów z tym samym tagiem – synergia. Znacznik zawodu = projekt tylko dla niego.</p>
 <table class="small boons"><tr><th>Projekt</th><th>Działanie</th><th>Rzadkość</th><th>Tagi</th></tr>{boons}</table>"""
