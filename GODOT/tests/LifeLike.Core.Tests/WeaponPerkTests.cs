@@ -99,8 +99,9 @@ public class WeaponPerkTests
     }
 
     [Fact]
-    public void StartWeaponPerksFollowStartRarity()
+    public void StartWeaponHasOnlyMasterPerks()
     {
+        // v0.23.0: broń zawodu na start bez losowych profitów (Szkolenie daje tylko rzadkość); Mistrzowska – stałe
         var m = RunMods.Default(D);
         m.WeaponRarity = 2;
         for (uint seed = 1; seed <= 20; ++seed)
@@ -108,13 +109,8 @@ public class WeaponPerkTests
             var g = new Game(D);
             g.NewRun(0, seed, D.DefaultDifficulty, m);
             Assert.Equal(2, g.WeaponRarity);
-            Assert.Equal(2, System.Numerics.BitOperations.PopCount(g.WeaponPerks));
-            var h = new Game(D);
-            h.NewRun(0, seed, D.DefaultDifficulty, m);
-            Assert.Equal(g.WeaponPerks, h.WeaponPerks);
+            Assert.Equal(0, g.WeaponPerks);
         }
-        var plain = TestData.Run(0, 5);
-        Assert.Equal(0, plain.WeaponPerks);
         var mm = RunMods.Default(D);
         mm.Mastery = MasteryBit.Weapon;
         var master = new Game(D);
@@ -122,5 +118,6 @@ public class WeaponPerkTests
         Assert.Equal(Master, master.WeaponRarity);
         Assert.Equal(D.MasterPerkMask(D.Classes[0].Weapon), master.WeaponPerks);
         Assert.Equal(2, System.Numerics.BitOperations.PopCount(master.WeaponPerks));
+        Assert.Equal(0, master.PerkRolls); // start nie zużywa losowania
     }
 }

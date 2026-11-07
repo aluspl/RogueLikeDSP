@@ -2053,7 +2053,7 @@
       ],
       "count": 5,
       "hpPct": 107,
-      "dmgBonus": 0,
+      "dmgBonus": 1,
       "act": 0,
       "cost": 48
     },
@@ -2067,7 +2067,7 @@
       ],
       "count": 5,
       "hpPct": 117,
-      "dmgBonus": 0,
+      "dmgBonus": 1,
       "act": 0,
       "cost": 22
     },
@@ -2081,7 +2081,7 @@
       ],
       "count": 6,
       "hpPct": 126,
-      "dmgBonus": 0,
+      "dmgBonus": 1,
       "act": 0,
       "cost": 62
     },
@@ -2110,7 +2110,7 @@
       ],
       "count": 8,
       "hpPct": 150,
-      "dmgBonus": 2,
+      "dmgBonus": 3,
       "act": 1,
       "cost": 55
     },
