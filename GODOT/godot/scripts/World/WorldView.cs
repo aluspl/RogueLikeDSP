@@ -328,7 +328,6 @@ public partial class WorldView : Node2D
         var d = Proj.Floor(target) - new Vector2I(_g.Hero.X, _g.Hero.Y);
         dress.Dir = WeaponPose.Dir(d.X, d.Y, dress.Dir);
         _hero.Flip = WeaponPose.Flip(dress.Dir, _hero.Flip);
-        dress.Swing();
     }
 
     /// <summary>Pomocnik z brygady: fachowiec obok bohatera, dopóki pomaga.</summary>

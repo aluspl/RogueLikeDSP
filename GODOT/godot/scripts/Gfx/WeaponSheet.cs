@@ -56,9 +56,11 @@ public static class WeaponSheet
             }
             _byId[w.GetProperty("id").GetString() ?? ""] = e;
         }
+        var keys = new List<string>();
+        foreach (var k in doc.RootElement.GetProperty("rarityKeys").EnumerateArray()) keys.Add(k.GetString());
         var i = 0;
         foreach (var s in doc.RootElement.GetProperty("swingRows").EnumerateArray())
-            _swing[s.GetProperty("id").GetString() + ":" + s.GetProperty("rarity").GetString()] = i++;
+            _swing[s.GetProperty("id").GetString() + ":" + keys.IndexOf(s.GetProperty("rarity").GetString())] = i++;
     }
 
     /// <summary>Wiersz broni w arkuszach (-1 = brak rysunku).</summary>
@@ -79,7 +81,7 @@ public static class WeaponSheet
     public static int SwingRow(WeaponDef w, int rarity)
     {
         Load();
-        var key = w.Id + ":" + (w.Master || rarity >= 3 ? "mistrzowska" : rarity == 2 ? "markowa" : "");
+        var key = w.Id + ":" + (w.Master ? 3 : rarity);
         return _swing.TryGetValue(key, out var r) ? r : -1;
     }
 

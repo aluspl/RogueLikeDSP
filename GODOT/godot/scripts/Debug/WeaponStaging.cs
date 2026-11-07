@@ -17,13 +17,15 @@ namespace LifeLike.Game.Debug;
 /// opis ataku pod przyciskiem: Patent Kielni (weapon-tip-kielnia, Markowa z Chwytem, odnowienie), Patent Noża majstra seniora
 /// (weapon-tip-noz) i Cios Kielni (weapon-tip-cios); Sprzęt przewinięty o sekcję w poziomie (gear-scroll).
 /// Task 9c: broń w ręce na mapie – 4 rzadkości x 4 kierunki (hero-weapons: Kielnia Murarza, hero-weapons-big: Łyżka
-/// Operatora koparki), komplety sprzętu Zwykły / Solidny / Markowy na trzech zawodach (hero-gear).
+/// Operatora koparki), komplety sprzętu Zwykły / Solidny / Markowy na trzech zawodach (hero-gear), broń na placu
+/// (weapon-drops), ogłoszenia: awans z Markową Kielnią (announce-levelup), boss pokonany (announce-boss) i Nóż majstra
+/// seniora (weapon-legend-found) – zatrzymane w chwili PB_ANNOUNCE_AT (s, domyślnie 0,45; start 0,1, koniec 1,0).
 /// </summary>
 public sealed class WeaponStaging
 {
     public static readonly string[] Names =
         ["weapon-arc", "weapon-b", "weapon-belt", "weapon-card", "weapon-rarity", "weapon-class", "help-weapons", "weapon-legend-found", "weapon-perks", "offer-trait", "weapon-tip-kielnia", "weapon-tip-noz",
-         "weapon-tip-cios", "gear-scroll", "hero-weapons", "hero-weapons-big", "hero-gear", "weapon-drops"];
+         "weapon-tip-cios", "gear-scroll", "hero-weapons", "hero-weapons-big", "hero-gear", "weapon-drops", "announce-levelup", "announce-boss"];
 
     private readonly App _app;
 
@@ -195,8 +197,27 @@ public sealed class WeaponStaging
                 Open(g);
                 GearLineup(g);
                 break;
+            case "announce-levelup": // awans z Markową Kielnią w ręce – ogłoszenie z zamachem
+                g.WeaponRarity = 2;
+                Refresh(g);
+                while (g.HeroLevel < 2) g.GainXp(5);
+                _app.Refresh();
+                Freeze();
+                break;
+            case "announce-boss": // boss usunięty – ogłoszenie z nazwą bossa
+            {
+                var (dx, dy) = OpenSide(g);
+                Place(g, "betoniarka", dx, dy);
+                g.Boss = g.EnemiesCount - 1;
+                Refresh(g);
+                g.Enemies[g.Boss].Alive = false;
+                _app.Refresh();
+                Freeze();
+                break;
+            }
             case "weapon-legend-found": // Nóż majstra seniora podniesiony z placu (bohater na polu znajdźki, wpis w dzienniku)
             {
+                Freeze();
                 var (dx, dy) = OpenSide(g);
                 var t = Array.FindIndex(g.D.Tools, x => g.D.Weapons[x.Weapon].Id == "noz_majstra");
                 g.Pickups[g.PickupsCount++] = new Pickup(g.Hero.X + dx, g.Hero.Y + dy, PickupType.Tool, true, t, 0);
@@ -269,6 +290,13 @@ public sealed class WeaponStaging
         var s = new World.ActorSprite { BaseFrame = frame, Breathes = false, Dress = dress, Flip = flip };
         world.AddDebugSprite(s, first);
         s.MoveTo(world.HeroSprite.Position + offset, true);
+    }
+
+    /// <summary>Ogłoszenie zatrzymane w chwili PB_ANNOUNCE_AT (zrzuty klatek animacji).</summary>
+    private void Freeze()
+    {
+        var env = System.Environment.GetEnvironmentVariable("PB_ANNOUNCE_AT");
+        _app.Nodes.Announce.FreezeAt = float.TryParse(env, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var t) ? t : 0.45f;
     }
 
     /// <summary>Plac bez problemów i znajdziek wokół bohatera (pola obok – podłoga).</summary>

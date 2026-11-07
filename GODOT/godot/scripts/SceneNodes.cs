@@ -48,6 +48,8 @@ public sealed class SceneNodes
         Banners = new PushBanners();
         BannerLayer = new ScaledLayer { Layer = 4 };
         root.AddChild(BannerLayer);
+        Announce = new AnnounceView { Visible = false }; // v0.23.0: ogłoszenia „z przytupem” (pod banerami)
+        BannerLayer.Root.AddChild(Announce);
         BannerLayer.Root.AddChild(Banners);
         Settings = new SettingsButton { Visible = false };
         BannerLayer.Root.AddChild(Settings);
@@ -83,6 +85,7 @@ public sealed class SceneNodes
     public Backdrop Backdrop { get; }
     public PhoneView Phone { get; }
     public PushBanners Banners { get; }
+    public AnnounceView Announce { get; }
     public CoachView Coach { get; }
     public ScaledLayer BannerLayer { get; }
     public ScreenFilter Filter { get; }

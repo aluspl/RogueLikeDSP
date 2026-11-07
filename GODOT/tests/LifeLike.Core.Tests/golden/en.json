@@ -2480,6 +2480,12 @@
   "lang_en": "English"
  },
  "uiGodot": {
+  "ogl_awans": "LEVEL UP!",
+  "ogl_poziom": "Level {0}",
+  "ogl_markowa": "BRANDED!",
+  "ogl_unikat": "UNIQUE!",
+  "ogl_boss": "BOSS DOWN!",
+  "ogl_sekret": "SECRET JOB DONE!",
   "zamiana_broni": "Weapon swap: ",
   "bron_do_kabury": "To holster: ",
   "bron_z_kabury_wypada": "Belt gone, weapon dropped: ",

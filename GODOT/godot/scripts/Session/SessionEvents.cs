@@ -43,6 +43,9 @@ public sealed class SessionEvents
     /// <summary>Boss wszedł w drugą fazę (np. Decyzja odmowna: Odwołanie) - indeks definicji wroga.</summary>
     public event Action<int> BossPhase;
 
+    /// <summary>v0.23.0: boss etapu usunięty (indeks definicji problemu) – ogłoszenie.</summary>
+    public event Action<int> BossDefeated;
+
     public void RaiseRunStarted() => RunStarted?.Invoke();
     public void RaisePickedUp() => PickedUp?.Invoke();
     public void RaiseLevelUp(int level, bool abilityUp) => LevelUp?.Invoke(level, abilityUp);
@@ -60,4 +63,5 @@ public sealed class SessionEvents
     public void RaiseSecondChance() => SecondChance?.Invoke();
     public void RaiseDocumentFound(int doc, bool complete) => DocumentFound?.Invoke(doc, complete);
     public void RaiseBossPhase(int def) => BossPhase?.Invoke(def);
+    public void RaiseBossDefeated(int def) => BossDefeated?.Invoke(def);
 }

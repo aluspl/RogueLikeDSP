@@ -44,6 +44,9 @@ public sealed class AnnounceQueue
         Elapsed = 0f;
     }
 
+    /// <summary>Zrzuty ekranu: bieżące ogłoszenie zatrzymane w chwili t (najwyżej tuż przed końcem).</summary>
+    public void Seek(float t) => Elapsed = Math.Clamp(t, 0f, Duration - 0.001f);
+
     public void Clear()
     {
         _items.Clear();

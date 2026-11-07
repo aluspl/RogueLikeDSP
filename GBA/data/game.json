@@ -9486,6 +9486,12 @@
     "lang_en": "English"
   },
   "uiGodot": {
+    "ogl_awans": "AWANS!",
+    "ogl_poziom": "Poziom {0}",
+    "ogl_markowa": "MARKOWA!",
+    "ogl_unikat": "UNIKAT!",
+    "ogl_boss": "BOSS POKONANY!",
+    "ogl_sekret": "SEKRETNE ZLECENIE!",
     "zamiana_broni": "Zamiana broni: ",
     "bron_do_kabury": "Do kabury: ",
     "bron_z_kabury_wypada": "Bez pasa broń wypada: ",

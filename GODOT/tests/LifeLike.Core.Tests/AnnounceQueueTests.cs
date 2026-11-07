@@ -82,4 +82,16 @@ public class AnnounceQueueTests
         Assert.Equal(5, AnnounceQueue.SwingFrame(10f, 6));
         Assert.InRange(AnnounceQueue.SwingStep, 0.06f, 0.08f);
     }
+
+    [Fact]
+    public void SeekFreezesCurrentAtTime()
+    {
+        var q = new AnnounceQueue();
+        q.Push(A("1"));
+        q.Seek(0.5f);
+        Assert.Equal(0.5f, q.Elapsed);
+        q.Seek(AnnounceQueue.Duration + 1f); // zrzut końca: zostaje na ekranie
+        Assert.Equal("1", q.Current.Title);
+        Assert.True(q.Elapsed < AnnounceQueue.Duration);
+    }
 }

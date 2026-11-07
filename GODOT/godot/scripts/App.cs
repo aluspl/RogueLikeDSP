@@ -27,6 +27,7 @@ public sealed class App
         Nodes.Filter.Source = () => (Session.Data, Session.Profile);
         Nodes.Touch.Bind(Session.Game);
         Banners = new BannerFeed(Session, Nodes.Banners);
+        Announcements = new AnnounceFeed(Session, Nodes.Announce);
         SoundCues.Attach(Session.Events);
         Session.Events.LevelUp += (level, abilityUp) => Nodes.World.Effects.LevelUp(level, abilityUp);
         Session.Events.SecondChance += () => Nodes.World.Effects.SecondChance();
@@ -45,6 +46,8 @@ public sealed class App
     public SceneNodes Nodes { get; }
     public ScreenFlow Flow { get; }
     public BannerFeed Banners { get; }
+    /// <summary>v0.23.0: ogłoszenia „z przytupem”.</summary>
+    public AnnounceFeed Announcements { get; }
     /// <summary>Samouczek menu (#25): dymki na tytule i wyborze zawodu.</summary>
     public Guide.Coach Coach { get; }
 

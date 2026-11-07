@@ -167,7 +167,6 @@ public sealed class WorldFx
         }
         for (var k = 0; k < 10; k++) // gwiazdki unoszą się z ziemi wokół bohatera
             Fx.Spawn(h + new Vector2(Fx.Rand(-22, 22), Fx.Rand(0, 14)), new Vector2(Fx.Rand(-0.2f, 0.2f), Fx.Rand(-1.6f, -0.8f)), 0, 60 + Fx.RandInt(30), Assets.PStar);
-        Fx.AddFloater(new Floater { Pos = h + new Vector2(0, -40), Text = Loc.F("awans_poziom_4", level), Ink = Ink.MapLoot, Life = 1.6f, Scale = 2 });
         Fx.AddFloater(new Floater { Pos = h + new Vector2(0, -12), Text = LevelGains(g, level, abilityUp), Ink = Ink.MapGood, Life = 1.6f });
         Hero.Flash(Pal.LevelFlash);
         _w.Flash(Pal.LevelGlow, 0.3f);

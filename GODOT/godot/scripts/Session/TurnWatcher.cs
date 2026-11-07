@@ -13,7 +13,7 @@ public sealed class TurnWatcher
     private readonly SessionEvents _events;
     private int _level, _weapon, _pickups, _cd, _active;
     private readonly sbyte[] _equipped = new sbyte[CoreGame.MaxGearSlots];
-    private bool _bossSeen, _second, _phase;
+    private bool _bossSeen, _second, _phase, _bossAlive;
     private int _docs;
     private int _stage = -1, _tier = -1;
 
@@ -34,6 +34,7 @@ public sealed class TurnWatcher
         _phase = g.Boss >= 0 && (g.Enemies[g.Boss].Flags & ActorFlag.Phase) != 0;
         _stage = g.Stage;
         _tier = g.Tier;
+        _bossAlive = g.Boss >= 0 && g.Enemies[g.Boss].Alive;
     }
 
     private static int ActivePickups(CoreGame g)
@@ -85,6 +86,9 @@ public sealed class TurnWatcher
             _bossSeen = true;
             _events.RaiseBossSpotted(g.Enemies[g.Boss].DefId);
         }
+        var bossAlive = g.Boss >= 0 && g.Enemies[g.Boss].Alive;
+        if (_bossAlive && !bossAlive) _events.RaiseBossDefeated(g.Enemies[g.Boss].DefId); // v0.23.0: ogłoszenie
+        _bossAlive = bossAlive;
         _level = g.HeroLevel;
         _weapon = g.WeaponOverride;
         _pickups = g.PickupsCount;
