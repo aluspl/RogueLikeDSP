@@ -7,6 +7,9 @@ Roguelike o budowie domu w dwóch wersjach ze **wspólną logiką i danymi**: GB
 - **Wersje:** seria 0.21 zamknięta na v0.21.54 (branch `release/0.21`). Teraz seria **0.22** (branch `dev/0.22`).
   Wszystkie pomysły i poprawki trafiają do **otwartej wersji**; po skończonym pakiecie pokaż changelog i **zapytaj „wydajemy?”**.
   Nie rób osobnego wydania po każdej części.
+- **Buildy testowe automatycznie** (właściciel 2026-11-07): po każdej skończonej i przetestowanej części wrzucaj bez pytania
+  build na TestFlight i Google Play (internal), z czystego commita (`git archive` → `GODOT_DIR`), gdy agent zmienia drzewo.
+  Pełne wydanie (CHANGELOG, GitHub Release, Drive, karty sklepów) nadal po „wydajemy?”.
 - **Testy oszczędnie:** pełny zestaw (skill `rogue-test`) **raz przed wydaniem**. Po pojedynczej zmianie tylko szybkie
   kroki: build, testy jednostkowe, test dymny, kilka seedów małpy dla dotkniętej platformy. Nie czekaj na CI między częściami.
 - **Agenci:** większe zadania deleguj do jednego agenta na raz na te same pliki (GBA i `GODOT/godot` mogą iść równolegle);
