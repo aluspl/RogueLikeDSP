@@ -230,3 +230,58 @@ Porażki na etapach (etap: udział % wszystkich przebiegów zawodu), Normalny:
 | Spawacz | 2: 0,3, 5: 20,6, 6: 2,6, 7: 2,6, 8: 15,0, 9: 7,0, 10: 3,0, 11: 13,3 | 2: 0,3, 5: 19,6, 6: 2,6, 7: 2,0, 8: 14,6, 9: 7,6, 10: 3,0, 11: 14,3 |
 | Geodeta | 4: 0,6, 5: 9,0, 6: 3,3, 7: 2,0, 8: 19,3, 9: 10,0, 10: 3,0, 11: 14,6 | 4: 0,6, 5: 8,6, 6: 3,6, 7: 3,0, 8: 19,6, 9: 9,3, 10: 3,3, 11: 13,6 |
 | Majster | 4: 0,3, 5: 8,0, 6: 1,6, 7: 1,6, 8: 14,3, 9: 25,0, 10: 1,0, 11: 22,3 | 4: 0,6, 5: 8,0, 6: 1,3, 7: 1,6, 8: 14,3, 9: 26,3, 10: 1,0, 11: 22,0 |
+
+## Profity broni (v0.23.0, TODO #87) – pomiar 2026-11-07
+
+Pula 5 profitów (Przebicie OBR -1, Ostrze kryt +5%, Wyważenie rzut min +1, Głowica obr. maks +1, Chwyt odn. B -1), perRarity 0/1/2, Mistrzowska 2 stałe. Bot 300 przebiegów/zawód (kontrakty 150).
+
+**Poza celem (do decyzji):** pełne Szkolenia 67,1 (55–65), Akt 0 + meta 80,2 (65–75), inwestor 15,2 (5–15). Wariant perRarity 0/1/1/0 (tylko meta): Szkolenia 66,9, + Respekt 75,3, Akt 0 + meta 78,2, inwestor 13,0 – nadal poza celem. Przyczyna: pełne Szkolenia dają broń startową Markową (Szkolenie Narzędzia), więc każdy profil meta zaczyna z profitami; Akt 0 + meta był już 74,7 (sufit) przed profitami. Wartości profitów są już minimalne (1 pkt), więc same wartości / perRarity nie zejdą pod sufit bez wyłączenia profitów broni startowej.
+
+Przebiegi na zawód: 300 (kontrakty 150); średnie celów = zwykłe zawody (bez sekretów), jak core_tests.cpp.
+
+| Cel | Wynik | Zakres |
+|---|---|---|
+| Łatwy | 57,2 | 50–60 |
+| Normalny | 34,6 (wszystkie zawody 34,1) | 25–35 |
+| Trudny | 10,5 | 8–15 |
+| Pełne Szkolenia | 67,1 | 55–65 |
+| + Respekt | 77,2 | 70–80 |
+| Akt 0 + meta | 80,2 | 65–75 |
+| Inwestor (wszystkie modyfikatory) | 15,2 | 5–15 |
+| Kontrakt Letniskowy bez meta / pełne meta | 30,4 / 80,0 | 25–40 / 65–80 |
+| Kontrakt Bliźniak bez meta / pełne meta | 28,2 / 69,4 | 25–40 / 65–80 |
+| Kontrakt Poddasze bez meta / pełne meta | 31,7 / 71,1 | 25–40 / 65–80 |
+| Kontrakt Kamienica bez meta / pełne meta | 30,2 / 70,4 | 25–40 / 65–80 |
+| Tylko broń domyślna, Normalny | 33,7 (wszystkie 33,7) | zawód ≥ v0.22.1 −5 p.p. |
+
+| Zawód | v0.22.1 | Bot (Normalny) | Tylko domyślna | Δ domyślna | Najgorszy etap domyślnej (Δ udziału porażek, p.p.) |
+|---|---|---|---|---|---|
+| Kierownik budowy | 36,7 | 36,6 | 36,0 | -0,7 | 10: 5,3 |
+| Murarz | 16,0 | 25,0 | 25,0 | 9,0 | 11: 4,0 |
+| Cieśla-dekarz | 48,7 | 49,0 | 51,3 | 2,6 | 7: 2,0 |
+| Elektryk | 35,3 | 37,6 | 37,3 | 2,0 | 10: 2,3 |
+| Hydraulik | 14,0 | 18,6 | 16,6 | 2,6 | 11: 1,6 |
+| Glazurnik | 23,3 | 30,0 | 24,6 | 1,3 | 11: 3,0 |
+| Dekarz | 57,0 | 52,0 | 53,3 | -3,7 | 9: 2,7 |
+| Tynkarz | 36,7 | 37,6 | 37,0 | 0,3 | 5: 5,3 |
+| Operator koparki | 23,0 | 24,3 | 22,3 | -0,7 | 9: 4,6 |
+| Spawacz | 35,0 | 34,0 | 36,3 | 1,3 | 11: 6,0 |
+| Geodeta | 36,7 | 37,0 | 39,0 | 2,3 | 11: 4,0 |
+| Majster | 23,0 | 27,6 | 25,0 | 2,0 | 9: 4,9 |
+
+Porażki na etapach (etap: udział % wszystkich przebiegów zawodu), Normalny:
+
+| Zawód | Bot | Tylko domyślna |
+|---|---|---|
+| Kierownik budowy | 5: 7,6, 6: 3,6, 7: 3,0, 8: 19,0, 9: 11,3, 10: 5,6, 11: 13,0 | 5: 8,0, 6: 3,3, 7: 3,0, 8: 17,3, 9: 12,0, 10: 7,3, 11: 13,0 |
+| Murarz | 5: 5,0, 6: 2,6, 7: 1,6, 8: 22,0, 9: 20,3, 10: 5,3, 11: 18,0 | 5: 4,6, 6: 2,6, 7: 2,0, 8: 22,3, 9: 20,0, 10: 5,3, 11: 18,0 |
+| Cieśla-dekarz | 4: 0,6, 5: 5,3, 6: 2,0, 7: 3,3, 8: 12,0, 9: 11,3, 10: 5,0, 11: 11,3 | 3: 0,3, 4: 0,6, 5: 4,6, 6: 1,6, 7: 3,0, 8: 11,3, 9: 11,3, 10: 4,6, 11: 11,0 |
+| Elektryk | 2: 0,3, 3: 0,3, 4: 0,3, 5: 10,3, 6: 3,0, 7: 3,6, 8: 13,0, 9: 13,6, 10: 3,3, 11: 14,3 | 2: 0,3, 3: 0,3, 4: 0,3, 5: 10,6, 6: 2,6, 7: 3,0, 8: 13,3, 9: 13,3, 10: 3,3, 11: 15,3 |
+| Hydraulik | 4: 0,3, 5: 6,0, 6: 4,0, 7: 3,6, 8: 25,3, 9: 22,3, 10: 4,6, 11: 15,0 | 4: 0,3, 5: 6,0, 6: 4,0, 7: 3,6, 8: 26,6, 9: 23,3, 10: 4,6, 11: 14,6 |
+| Glazurnik | 5: 10,3, 6: 3,6, 7: 3,0, 8: 19,3, 9: 16,3, 10: 3,0, 11: 14,3 | 5: 11,3, 6: 4,0, 7: 3,0, 8: 21,6, 9: 16,0, 10: 3,3, 11: 16,0 |
+| Dekarz | 5: 13,3, 6: 3,0, 7: 0,3, 8: 9,6, 9: 10,6, 10: 1,6, 11: 9,3 | 5: 13,3, 6: 2,6, 7: 0,6, 8: 8,0, 9: 11,0, 10: 1,3, 11: 9,6 |
+| Tynkarz | 5: 13,6, 6: 1,6, 7: 2,3, 8: 21,0, 9: 11,0, 10: 1,3, 11: 11,3 | 5: 15,0, 6: 2,0, 7: 2,6, 8: 20,3, 9: 12,3, 10: 0,6, 11: 10,0 |
+| Operator koparki | 4: 0,3, 5: 11,0, 6: 4,3, 7: 2,6, 8: 19,0, 9: 22,3, 10: 3,3, 11: 12,6 | 4: 0,3, 5: 11,0, 6: 4,0, 7: 3,0, 8: 19,6, 9: 23,3, 10: 3,3, 11: 13,0 |
+| Spawacz | 2: 0,3, 5: 20,6, 6: 2,3, 7: 2,6, 8: 16,3, 9: 6,6, 10: 2,6, 11: 14,3 | 2: 0,3, 5: 20,0, 6: 2,3, 7: 2,3, 8: 15,0, 9: 7,0, 10: 2,6, 11: 14,0 |
+| Geodeta | 4: 0,6, 5: 9,3, 6: 4,0, 7: 3,0, 8: 19,3, 9: 9,0, 10: 2,6, 11: 15,0 | 4: 0,6, 5: 8,0, 6: 4,0, 7: 3,0, 8: 19,6, 9: 9,0, 10: 3,3, 11: 13,3 |
+| Majster | 4: 0,3, 5: 7,6, 6: 1,6, 7: 1,3, 8: 15,0, 9: 24,6, 10: 1,0, 11: 20,6 | 4: 0,6, 5: 7,6, 6: 1,3, 7: 1,6, 8: 15,6, 9: 25,6, 10: 1,0, 11: 21,3 |
