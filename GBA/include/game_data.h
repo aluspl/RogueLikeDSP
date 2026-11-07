@@ -97,11 +97,11 @@ inline constexpr core::enemy_def enemies[] = {
 inline constexpr core::stage_def stages[] = {   // Dom jednorodzinny, potem etapy kolejnych kontraktów (career)
     { { "Pozwolenie", "Permit" }, { 32, 34, 35, 36 }, 4, 6, -1, 130, 2, 3, 15, 0, 3, false },
     { { "Przyłącza", "Utilities" }, { 37, 38, 39, 33 }, 4, 6, 40, 134, 1, 3, 28, 1, 4, false },
-    { { "Fundamenty", "Foundations" }, { 12, 13, 0, 3 }, 4, 5, -1, 107, 0, 0, 48, 2, 0, false },
-    { { "Izolacja fundamentów", "Damp-Proof Footings" }, { 14, 15, 12, 0 }, 4, 5, -1, 117, 0, 0, 22, 3, 0, false },
-    { { "Mury parteru", "Ground Floor Walls" }, { 16, 17, 4, 5 }, 4, 6, -1, 126, 0, 0, 62, 4, 0, false },
+    { { "Fundamenty", "Foundations" }, { 12, 13, 0, 3 }, 4, 5, -1, 107, 1, 0, 48, 2, 0, false },
+    { { "Izolacja fundamentów", "Damp-Proof Footings" }, { 14, 15, 12, 0 }, 4, 5, -1, 117, 1, 0, 22, 3, 0, false },
+    { { "Mury parteru", "Ground Floor Walls" }, { 16, 17, 4, 5 }, 4, 6, -1, 126, 1, 0, 62, 4, 0, false },
     { { "Strop", "Floor Slab" }, { 18, 19, 5, 7 }, 4, 6, 9, 138, 1, 0, 36, 5, 0, false },
-    { { "Dach", "Roof" }, { 20, 21, 6, 3 }, 4, 8, -1, 150, 2, 1, 55, 6, 1, false },
+    { { "Dach", "Roof" }, { 20, 21, 6, 3 }, 4, 8, -1, 150, 3, 1, 55, 6, 1, false },
     { { "Ściany działowe", "Partition Walls" }, { 22, 23, 4, 5 }, 4, 7, -1, 159, 3, 1, 30, 7, 1, false },
     { { "Okna i drzwi", "Windows and Doors" }, { 24, 25, 6, 5 }, 4, 8, 10, 169, 4, 1, 41, 8, 1, false },
     { { "Instalacje", "Services" }, { 26, 27, 1, 0 }, 4, 8, 11, 181, 5, 2, 46, 9, 2, false },
@@ -150,7 +150,7 @@ inline constexpr core::stage_def stages[] = {   // Dom jednorodzinny, potem etap
 inline constexpr core::difficulty_def difficulties[] = {
     { { "Łatwy", "Easy" }, 118, -1, 50 },
     { { "Normalny", "Normal" }, 118, 0, 100 },
-    { { "Trudny", "Hard" }, 165, 0, 150 },
+    { { "Trudny", "Hard" }, 150, 0, 150 },
 };
 
 inline constexpr core::upgrade_def upgrades[] = {   // Szkolenia: poziomy (przyrost + koszt), stare koszty do zwrotu
