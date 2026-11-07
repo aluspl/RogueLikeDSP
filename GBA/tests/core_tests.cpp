@@ -1836,15 +1836,15 @@ int main()
         }
         {   // bot przechodzi Akt 0 (zbiera dokumenty)
             int won_act0 = 0;
-            for(int k = 0; k < 40; ++k)   // v0.23.0: próba 40 budów (jak C# Act0AndTutorialTests)
+            for(int k = 0; k < 80; ++k)   // v0.23.0: próba 80 budów (jak C# Act0AndTutorialTests; 40 – za mało, szum ±3)
             {
                 game b; b.new_run(k % data::open_classes_count, 300 + k * 13, 0, mods(p));
                 for(int step = 0; step < 3000 && b.st == status::playing && b.stage < F0; ++step) bot_step(b);
                 while(b.st == status::stage_clear && b.stage < F0) { bot_next(b); for(int step = 0; step < 3000 && b.st == status::playing; ++step) bot_step(b); }
                 won_act0 += b.stage >= F0 || (b.st == status::stage_clear && b.stage == F0 - 1);
             }
-            std::printf("Akt 0 (bot, Łatwy): %d/40\n", won_act0);
-            CHECK(won_act0 >= 24);
+            std::printf("Akt 0 (bot, Łatwy): %d/80\n", won_act0);
+            CHECK(won_act0 >= 44);   // zmierzone 49/80 (na 400 budowach 69%)
         }
         // samouczek: główny na tytule i wyborze zawodu, potem dymki odblokowań (każdy raz)
         profile t; profile_reset(t); int cls = -1;
