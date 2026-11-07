@@ -862,8 +862,6 @@ namespace
             { UI(n3_akty_10_etapow_po_nagrodzie), UI(akt_0_boss_konczy_akt), UI(d_pad_ruch_i_atak_wrecz),
               UI(a_atak_trzymaj_celuj), UI(b_czekaj_trzymaj_podglad), UI(r_moc_zawodu_l_mapa),
               UI(start_akcje_select_telefon) },
-            { UI(gba_bronie_1), UI(gba_bronie_2), UI(gba_bronie_3), UI(gba_bronie_4), UI(gba_bronie_5), UI(gba_bronie_6),
-              UI(gba_bronie_7) },   // v0.23.0: bronie
             { UI(w_kazdym_oknie_tak_samo), UI(a_wybierz_dalej), UI(b_wroc_zostaw), UI(gora_dol_tylko_zaznacza),
               UI(a_zatwierdza_premia_zakup), UI(sms_zamiana_narzedzia), UI(po_otwarciu_chwila_blokady) },   // v0.21.51
             { UI(pogoda_dnia_ikona_w_hud), UI(skutek_w_telefonie_zadania), UI(brygada_raz_na_etap_za_zl),
@@ -900,13 +898,16 @@ namespace
             { data::career_help[0], data::career_help[1], data::career_help[2], data::career_help[3], data::career_help[4],
               data::career_help[5], data::career_help[6] },   // v0.21.52 cz. d: mapa kariery
             { data::filters_help[0], data::filters_help[1], data::filters_help[2], data::filters_help[3], data::filters_help[4],
-              data::filters_help[5], data::filters_help[6] } };   // v0.21.53: filtry ekranu
+              data::filters_help[5], data::filters_help[6] },   // v0.21.53: filtry ekranu
+            { UI(gba_bronie_1), UI(gba_bronie_2), UI(gba_bronie_3), UI(gba_bronie_4), UI(gba_bronie_5), UI(gba_bronie_6),
+              UI(gba_bronie_7) } };   // v0.23.0: bronie
         for(int pg = 0; pg < pages_count; ++pg)
         {
             page_sprites t;
             a.text.set_center_alignment();
-            const char* const names[11] = { UI(kombinacje_2), UI(skad_stany), UI(premie_i_elity), UI(wydarzenia), UI(magazyn_2), UI(po_budowie),
-                                                   UI(sekrety), UI(inspektor_2), UI(cele), UI(kariera), UI(filtry_ekranu) };   // strony 9-19 (v0.21.50, 15: v0.21.51 cz. 2, 16-18: v0.21.52, 19: v0.21.53)
+            const char* const names[12] = { UI(kombinacje_2), UI(skad_stany), UI(premie_i_elity), UI(wydarzenia), UI(magazyn_2), UI(po_budowie),
+                                                   UI(sekrety), UI(inspektor_2), UI(cele), UI(kariera), UI(filtry_ekranu), UI(gba_bronie_tytul) };
+            static_assert(pages_count == 8 + 12);   // v0.23.0: strona 20 - bronie   // strony 9-19 (v0.21.50, 15: v0.21.51 cz. 2, 16-18: v0.21.52, 19: v0.21.53)
             core::message title; title.add(pg >= 8 ? names[pg - 8] : (pg == 1 ? UI(okna_i_wybory) : UI(jak_grac))).add(" (").add(pg + 1).add("/").add(pages_count).add(")");
             a.text.generate(0, -70, title.s, t);
             a.text.set_left_alignment();

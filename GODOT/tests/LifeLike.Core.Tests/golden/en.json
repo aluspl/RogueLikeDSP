@@ -2541,7 +2541,8 @@
   "gba_bronie_4": "(recharges for a few turns)",
   "gba_bronie_5": "L+B: swap holster weapon",
   "gba_bronie_6": "Rarity and perks: phone,",
-  "gba_bronie_7": "Damage. Artifact: every Nth hit"
+  "gba_bronie_7": "Damage. Artifact: every Nth hit",
+  "gba_bronie_tytul": "Weapons"
  },
  "uiGodot": {
   "ogl_awans": "LEVEL UP!",

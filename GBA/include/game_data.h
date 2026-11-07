@@ -2156,6 +2156,7 @@ namespace ui
         gba_bronie_5,
         gba_bronie_6,
         gba_bronie_7,
+        gba_bronie_tytul,
         count_
     };
 }
@@ -2993,6 +2994,7 @@ inline constexpr core::ltext ui_texts[] = {
     { "L+B: zamiana broni z kabury", "L+B: swap holster weapon" },
     { "Rzadkość i profity: telefon,", "Rarity and perks: phone," },
     { "Obrażenia. Artefakt: co N cios", "Damage. Artifact: every Nth hit" },
+    { "Bronie", "Weapons" },
 };
 inline const char* tr(ui::id i) { return ui_texts[i]; }
 

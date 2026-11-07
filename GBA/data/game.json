@@ -9685,7 +9685,8 @@
     "gba_bronie_4": "broni (odnawia się kilka tur)",
     "gba_bronie_5": "L+B: zamiana broni z kabury",
     "gba_bronie_6": "Rzadkość i profity: telefon,",
-    "gba_bronie_7": "Obrażenia. Artefakt: co N cios"
+    "gba_bronie_7": "Obrażenia. Artefakt: co N cios",
+    "gba_bronie_tytul": "Bronie"
   },
   "uiGodot": {
     "ogl_awans": "AWANS!",
