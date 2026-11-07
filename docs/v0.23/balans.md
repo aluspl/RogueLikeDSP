@@ -538,3 +538,47 @@ Porażki na etapach (etap: udział % wszystkich przebiegów zawodu), Normalny:
 | Spawacz | 2: 0,3, 3: 0,6, 4: 1,0, 5: 20,6, 6: 8,6, 7: 2,0, 8: 16,3, 9: 8,0, 10: 3,0, 11: 10,3 | 2: 0,3, 3: 0,3, 4: 1,0, 5: 20,0, 6: 7,6, 7: 2,0, 8: 16,6, 9: 8,6, 10: 2,6, 11: 12,3 |
 | Geodeta | 3: 0,6, 4: 1,3, 5: 11,0, 6: 12,0, 7: 2,3, 8: 23,0, 9: 8,3, 10: 5,0, 11: 8,6 | 3: 0,6, 4: 1,0, 5: 8,6, 6: 12,0, 7: 3,0, 8: 22,3, 9: 9,3, 10: 5,0, 11: 9,0 |
 | Majster | 4: 0,3, 5: 10,6, 6: 8,6, 7: 1,3, 8: 17,3, 9: 20,6, 10: 0,6, 11: 14,0 | 4: 0,6, 5: 11,3, 6: 7,6, 7: 1,3, 8: 17,6, 9: 21,6, 10: 0,6, 11: 15,0 |
+
+## v0.23.0 – krok w bok w pościgu i strojenie (2026-11-07, `ad8a8639` … `6573972d`)
+
+Błąd z TestFlight („wrogowie przestali chodzić za graczem”): `ChaseStep` / `chase_step` próbował tylko prostego kroku.
+Problem w linii z bohaterem stał, gdy pole zasłaniała ściana, róg albo inny problem. Teraz robi krok w bok na wolne pole,
+które nie oddala od bohatera (Czebyszew), w kolejności +x, -x, +y, -y. W Godocie (CHASE=1, ziarna 11 i 12) problemy
+ruszają się w 70% tur pościgu, wcześniej w 36%.
+
+Strojenie (decyzja koordynatora): Fundamenty, Izolacja fundamentów i Mury parteru wracają do 0 obrażeń problemów
+(było +1 z #93); Dach zostaje +1. HP problemów i etapów kontraktów bez zmian.
+
+Bot C# (`WeaponBalanceTests`, 300 przebiegów/zawód, kontrakty 150):
+
+| Cel | Przed (Task 11) | Krok w bok | + strojenie (wynik) | Zakres |
+|---|---|---|---|---|
+| Łatwy | 52,4 | 51,8 | 53,3 | 50–60 |
+| Normalny | 26,2 | 26,3 | 28,1 | 25–35 |
+| Trudny | 9,8 | 10,4 | 11,6 | 8–15 |
+| Pełne Szkolenia | 60,0 | 59,1 | 61,3 | 55–65 |
+| + Respekt | 69,7 | 68,6 | 70,1 | 70–80 |
+| Akt 0 + meta | 70,9 | 69,4 | 70,0 | 65–75 |
+| Inwestor (wszystkie modyfikatory) | 9,4 | 8,8 | 9,9 | 5–15 |
+| Kontrakt Letniskowy bez meta / pełne meta | 27,4 / 72,3 | 29,4 / 71,9 | 29,4 / 71,9 | 25–40 / 65–80 |
+| Kontrakt Bliźniak bez meta / pełne meta | 26,1 / 65,6 | 24,5 / 61,6 | 24,5 / **61,6** | 25–40 / 65–80 |
+| Kontrakt Poddasze bez meta / pełne meta | 29,0 / 65,4 | 28,7 / 62,1 | 28,7 / **62,1** | 25–40 / 65–80 |
+| Kontrakt Kamienica bez meta / pełne meta | 28,7 / 65,3 | 27,9 / 66,4 | 27,9 / 66,4 | 25–40 / 65–80 |
+| Tylko broń domyślna, Normalny | 27,3 | 26,6 | 28,3 | – |
+| Glazurnik etap 5, tylko broń domyślna (limit 19,0) | 19,0 | 21,6 | 16,6 | ≤ v0.22.1 + 10 p.p. |
+
+**Do decyzji właściciela (znane, `ContractsInTarget` czerwony jak w Task 11):** kontrakty Bliźniak i Poddasze z pełnym
+meta (61,6 / 62,1; cel 65–80) i Bliźniak bez meta 24,5 (cel 25–40, 150 przebiegów). Kontrakty mają własne etapy
+w `career`, więc strojenie głównych etapów ich nie rusza. Etapów kontraktów i HP problemów nie zmieniano.
+
+Test Aktu 0 (bot, Łatwy, bez meta) na 80 budowach, próg 44; zmierzone 49/80, na 400 budowach 69% (przed krokiem w bok 62,5%).
+
+Rdzeń GBA (`core_tests.cpp`, inne ziarna), przed (Task 11) → krok w bok → + strojenie:
+- Łatwy 51 → 49 → 50;
+- Normalny 26 → 25 → 27;
+- pełne Szkolenia 58 → 57 → 59;
+- + Respekt 68 → 67 → 69;
+- Akt 0 + meta 66 → 62 → 63;
+- kontrakty z pełnym meta 58–68 → 51–67 (Letniskowy 67, Bliźniak 53, Poddasze 51, Kamienica 59). Pełny `core_tests.cpp` po strojeniu: „OK – wszystkie testy przeszły”.
+
+Progi tylko GBA (cele mierzy C#): kontrakty z pełnym meta ≥ 50 (było 55), Akt 0 + meta ≥ 60 (było 65).

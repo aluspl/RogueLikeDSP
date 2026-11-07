@@ -56,8 +56,8 @@ after the update; your profile stays.**
 
 ### Zmiany
 1. **Rzadsze kryty, mocniejsze problemy (#93)** – Szczęście 2% krytu za punkt (było 3%), cięcie +5% (było +10%),
-   sufit szansy krytu 35%; obrażenia problemów na Fundamentach, Izolacji, Murach parteru i Dachu +1, HP problemów
-   +18%; Trudny HP 150%. Normalny jest wyraźnie trudniejszy (bot ~26% wygranych zamiast ~32% w v0.22.1).
+   sufit szansy krytu 35%; obrażenia problemów na Dachu +1, HP problemów +18%; Trudny HP 150%. Normalny jest
+   trudniejszy (bot ~28% wygranych zamiast ~32% w v0.22.1).
 2. **Meta** – Szkolenie Dostawy poziom 2: +5% materiałów, Kondycja poziom 4: lepszy sprzęt; sześć pozycji Respektu
    ma jedną rangę (za kupioną rangę II Respekt wraca na konto); broń zawodu na start bez losowych profitów.
 3. **Karty z pełnymi nazwami (#89, #91)** – sprzęt, bronie, dropy, Hurtownia i oferta narzędzia z pełną nazwą cechy
@@ -68,6 +68,8 @@ after the update; your profile stays.**
 1. Zamiana broni z kabury nie odpala już ogłoszenia „ARTEFAKT!” ani banera nowej broni.
 2. Rzut 3x3 nie trafia pola po skosie za narożnikiem ściany.
 3. Utrata pasa z bronią zawodu w kaburze nie gubi jej – wraca do ręki z ulepszeniami i profitami.
+4. **Problemy znów idą za Tobą** – problem w linii z bohaterem stał w miejscu, gdy prostą drogę zasłaniała ściana,
+   róg albo inny problem; teraz obchodzi przeszkodę krokiem w bok (nigdy dalej od Ciebie).
 
 ### Wersja retro
 1. **Logika broni 1:1 z Godotem** (wspólny test złoty): typy ciosu, materiały, żywioły, wzory, Patent, rzadkość,
