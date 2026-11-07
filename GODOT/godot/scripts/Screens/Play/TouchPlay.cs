@@ -21,8 +21,8 @@ public sealed class TouchPlay
     private readonly App _app;
     private readonly GameScreen _screen;
     private BarButton _down = BarButton.None;
-    private float _held, _stickTimer;
-    private bool _mapByHold, _lookByPress;
+    private float _held, _stickTimer, _tipHeld;
+    private bool _mapByHold, _lookByPress, _offButton;
 
     public TouchPlay(App app, GameScreen screen)
     {
@@ -42,6 +42,7 @@ public sealed class TouchPlay
     {
         _down = BarButton.None;
         _mapByHold = _lookByPress = false;
+        _screen.Tips.Hide();
         T.Bar.Pressed = BarButton.None;
         T.Stick.End();
         Walk.Stop();
@@ -51,6 +52,15 @@ public sealed class TouchPlay
     {
         Walk.Process(delta);
         var dt = (float)delta;
+        if (_down is BarButton.Attack or BarButton.WeaponB && !_offButton && !_screen.Tips.Holding) // v0.23.0: trzymanie – opis ataku
+        {
+            _tipHeld += dt;
+            if (_tipHeld >= AttackTips.HoldTime)
+            {
+                _screen.Tips.ShowOverButton(_down);
+                _screen.Tips.Holding = true;
+            }
+        }
         if (_down == BarButton.Phone && !_mapByHold)
         {
             _held += dt;
@@ -116,7 +126,8 @@ public sealed class TouchPlay
         if (b != BarButton.None)
         {
             _down = b;
-            _held = 0;
+            _held = _tipHeld = 0;
+            _offButton = false;
             T.Bar.Pressed = b;
             if (b == BarButton.Attack) _screen.Aim.Begin();
             else if (b == BarButton.WeaponB) _screen.Aim.Begin(true, Input.GameAction.WeaponB); // v0.23.0: celowanie trybem B
@@ -140,6 +151,11 @@ public sealed class TouchPlay
             }
             return;
         }
+        if (_down is BarButton.Attack or BarButton.WeaponB && !_offButton && ActionBar.HitTest(p) != _down) // palec zjechał: celowanie, bez opisu
+        {
+            _offButton = true;
+            _screen.Tips.Hide();
+        }
         if (_down is BarButton.Attack or BarButton.WeaponB && _screen.Aim.Active && !ActionBar.Covers(p)) _screen.Aim.PointAt(N.World.UiToGrid(p));
     }
 
@@ -153,6 +169,12 @@ public sealed class TouchPlay
         {
             _lookByPress = false;
             _screen.Look.Cancel();
+            return;
+        }
+        if (_screen.Tips.Holding) // v0.23.0: puszczenie po opisie ataku – bez ataku
+        {
+            _screen.Tips.Hide();
+            _screen.Aim.Cancel();
             return;
         }
         var same = ActionBar.HitTest(p) == b;

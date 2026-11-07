@@ -13,12 +13,15 @@ namespace LifeLike.Game.Debug;
 /// (weapon-b: Gwoździarka, linia), pas monterski po zamianie (weapon-belt: przycisk „Zamień”, wpis w dzienniku), karta
 /// problemu z mnożnikiem ciosu (weapon-card: Klucz na kamień – obuch ×125%), telefon Sprzęt z Markową bronią i kaburą
 /// (weapon-rarity), wybór zawodu ze szczegółami broni (weapon-class), Jak grać – Bronie (help-weapons) i znaleziony
-/// Nóż majstra seniora (weapon-legend-found – ogłoszenie z animacją w zadaniu 9), oferta wymiany z profitami (weapon-perks).
+/// Nóż majstra seniora (weapon-legend-found – ogłoszenie z animacją w zadaniu 9), oferta wymiany z profitami (weapon-perks),
+/// opis ataku pod przyciskiem: Fach Kielni (weapon-tip-kielnia, Markowa z Chwytem, odnowienie), Fach Noża majstra seniora
+/// (weapon-tip-noz) i Cios Kielni (weapon-tip-cios); Sprzęt przewinięty o sekcję w poziomie (gear-scroll).
 /// </summary>
 public sealed class WeaponStaging
 {
     public static readonly string[] Names =
-        ["weapon-arc", "weapon-b", "weapon-belt", "weapon-card", "weapon-rarity", "weapon-class", "help-weapons", "weapon-legend-found", "weapon-perks", "offer-trait"];
+        ["weapon-arc", "weapon-b", "weapon-belt", "weapon-card", "weapon-rarity", "weapon-class", "help-weapons", "weapon-legend-found", "weapon-perks", "offer-trait", "weapon-tip-kielnia", "weapon-tip-noz",
+         "weapon-tip-cios", "gear-scroll"];
 
     private readonly App _app;
 
@@ -45,7 +48,7 @@ public sealed class WeaponStaging
                 _app.Nodes.ClassSelectView.Details = true;
                 return;
         }
-        var cls = scene switch { "weapon-arc" => 1, "weapon-b" => 2, "weapon-card" => 4, _ => 5 };
+        var cls = scene switch { "weapon-arc" or "weapon-tip-kielnia" or "weapon-tip-cios" => 1, "weapon-b" => 2, "weapon-card" => 4, _ => 5 };
         _app.Session.ClassId = cls;
         _app.StartRun();
         new DebugScenes(_app).AdvanceMessages();
@@ -132,6 +135,43 @@ public sealed class WeaponStaging
                 _app.AfterAction(true);
                 break;
             }
+            case "weapon-tip-kielnia": // Fach Kielni: Markowa z Chwytem, odnowienie 2 t., dymek przytrzymanego przycisku
+            case "weapon-tip-cios":
+            case "weapon-tip-noz":
+            {
+                var noz = scene == "weapon-tip-noz";
+                if (noz) g.TakeTool(Array.FindIndex(g.D.Tools, t => g.D.Weapons[t.Weapon].Id == "noz_majstra"), 3, false);
+                else // Kielnia – broń zawodu (Murarz): Markowa z Chwytem
+                {
+                    g.WeaponRarity = 2;
+                    g.WeaponPerks = (byte)(1 << Array.FindIndex(g.D.WeaponPerkPool, p => p.Id == "chwyt"));
+                }
+                g.WeaponBCd = noz ? 0 : 2;
+                var (dx, dy) = OpenSide(g);
+                Place(g, "plesn", dx * 2, dy * 2);
+                Place(g, "kornik", dx - dy, dy + dx);
+                Refresh(g);
+                var b = scene == "weapon-tip-cios" ? Touch.BarButton.Attack : Touch.BarButton.WeaponB;
+                Flow.Game.Tips.Holding = true;
+                if (_app.Nodes.Touch.Visible)
+                {
+                    _app.Nodes.Touch.Bar.Pressed = b;
+                    Flow.Game.Tips.ShowOverButton(b);
+                }
+                else _app.Nodes.Hud.ShowAttackTipAtHud(g, b == Touch.BarButton.WeaponB);
+                break;
+            }
+            case "gear-scroll": // telefon Sprzęt przewinięty o sekcję (w poziomie trzy sekcje się nie mieszczą)
+                g.TakeTool(Array.FindIndex(g.D.Tools, t => g.D.Weapons[t.Weapon].Id == "siekiera"), 2, false);
+                g.Equip(g.D.BeltSlot, CoreGame.BeltTier, 0);
+                g.Weapon2 = Array.FindIndex(g.D.Weapons, w => w.Id == "poziomica_2m");
+                g.Weapon2Rarity = 1;
+                g.Weapon2Perks = 1 << 3;
+                Refresh(g);
+                Flow.Phone.Open(3, true);
+                await DebugRunner.Frames(_app.Root, 2); // pierwsze rysowanie liczy, czy trzeba przewijać
+                _app.Nodes.Phone.HandleInput(InputCmd.Of(GameAction.Down));
+                break;
             case "weapon-legend-found": // Nóż majstra seniora podniesiony z placu (bohater na polu znajdźki, wpis w dzienniku)
             {
                 var (dx, dy) = OpenSide(g);

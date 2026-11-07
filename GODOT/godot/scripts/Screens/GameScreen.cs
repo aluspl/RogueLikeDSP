@@ -17,8 +17,12 @@ public sealed class GameScreen : Screen
         Menu = new ActionMenu(app);
         Aim = new Aiming(app);
         Look = new EnemyLook(app);
+        Tips = new AttackTips(app, this);
         Touch = new TouchPlay(app, this);
     }
+
+    /// <summary>v0.23.0: opis ataku pod przyciskiem Cios / Fach (mysz, pad LB; palec – TouchPlay).</summary>
+    public AttackTips Tips { get; }
 
     public TouchPlay Touch { get; }
 
@@ -37,6 +41,7 @@ public sealed class GameScreen : Screen
         Aim.Cancel();
         Look.Cancel();
         Touch.Reset();
+        Tips.Hide();
     }
 
     public override void Process(double delta)
@@ -44,6 +49,7 @@ public sealed class GameScreen : Screen
         Aim.Process(delta);
         Look.Process(delta);
         Touch.Process(delta);
+        Tips.Process(delta);
     }
 
     public void Open(bool instant = false) => Flow.Go(this, instant);

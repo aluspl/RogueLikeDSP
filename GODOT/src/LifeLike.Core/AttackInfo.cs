@@ -4,7 +4,7 @@ namespace LifeLike.Core;
 
 /// <summary>
 /// v0.23.0: opis ataku pod przyciskiem Cios / Fach (przytrzymanie, najechanie myszą, LB na padzie) dla broni w ręku:
-/// tytuł (Cios albo nazwa ruchu Fachu), nagłówek („Fach · Kielnia”), wiersze (typ ciosu, obrażenia z % trybu, ciosy w cel,
+/// tytuł (Cios albo nazwa ruchu Fachu), nagłówek („Fach · Kielnia”, przy Ciosie sama broń), wiersze (typ ciosu, obrażenia z % trybu, ciosy w cel,
 /// wzór i zasięg, efekt, odnowienie, rzadkość i profity, które zmieniają ruch) oraz mini-siatka wzoru: bohater w środku
 /// zwrócony w prawo, pola trafione (Hit) i zasięg trybu (Reach). Siatka z HitPattern.Cells – tych samych pól, co atak.
 /// </summary>
@@ -43,7 +43,7 @@ public sealed class AttackInfo
         var a = new AttackInfo { ModeB = modeB };
         var kind = modeB ? Loc.T("cios_b") : Loc.T("tip_cios");
         a.Title = modeB ? ModeText.BName(w) : kind;
-        a.Header = $"{kind} · {g.WeaponTitle()}";
+        a.Header = modeB ? $"{kind} · {g.WeaponTitle()}" : g.WeaponTitle(); // Cios: tytuł już mówi „Cios”
 
         a.Lines.Add(Loc.T("typ_ciosu") + ModeText.Hits(d, w));
         a.Lines.Add(m.DmgPct == 100
