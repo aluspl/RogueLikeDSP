@@ -270,6 +270,7 @@ Decyzje właściciela (2026-11-05) do katalogu broni:
 | 78 | Rzadkość broni (zwykła / rzadka / legendarna) z własnym wyglądem i kolorem, widoczna w rękach postaci na mapie, na karcie i w dropach (projekt B+) | ⬜ | — |
 | 79 | Easter egg „Zaplecze”: tajemnicze drzwi (wyblakła tabliczka, migające światło) na rzadkim etapie → labirynt jednakowych żółtawych pokoi z brzęczącymi świetlówkami, mylące przejścia, cisza; wyjście daje nagrodę (wygląd / sekretne zlecenie / odznaka). Oparte na istniejących ukrytych pomieszczeniach i sekretach; własna nazwa i grafika (bez cudzych motywów z nazwy) | ⬜ | — |
 | 80 | Humor (projekt D): własne postacie, np. sąsiad z działki w SMS-ach i wydarzeniach | ⬜ | ⬜ |
+| 84 | Nóż do tapet (zwykła broń, kłucie) + jego legendarna wersja **Nóż majstra seniora** (Mistrzowska, unikat, obrażenia wyłącznie kłute: ignoruje 4 OBR, brak kary/premii materiału, wysoki kryt; tryb B „Jeszcze nie emerytura” – dwa szybkie pchnięcia w cel, odnowienie 3). Wygląd wg zdjęcia właściciela (nóż taty): pomarańczowa wytarta rękojeść, zeszlifowane cienkie wygięte ostrze. Opis: „Ostrze prosi o emeryturę. Majster: nie!”. Źródło: sekretne zlecenie (np. wygrana Majstrem bez wymiany narzędzia). Dane w Task 8, sprite w Task 9 planu broni | ⬜ | ⬜ |
 | 81 | Nowe zawody (broń domyślna z nowego systemu broni, moc, portret) | ⬜ | ⬜ |
 | 82 | Nowi bossowie (problemy budowy, nie ludzie; mechanika i zapowiedź ciosu) | ⬜ | ⬜ |
 | 83 | Zmiany mocy zawodów (przegląd 12 mocy, spójność z trybem B broni) | ⬜ | ⬜ |
