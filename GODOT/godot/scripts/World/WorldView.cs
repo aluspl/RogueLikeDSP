@@ -140,10 +140,24 @@ public partial class WorldView : Node2D
 
     public void Mark(int enemy) => Marked = enemy;
 
-    public void FlashRange() => _overlay.FlashRange();
+    public void FlashRange() => FlashRange(null);
+
+    /// <summary>v0.23.0: mignięcie zasięgu trybu broni (null = zasięg broni).</summary>
+    public void FlashRange(LifeLike.Core.Data.WeaponMode mode)
+    {
+        if (!_overlay.RangeHeld) AimPattern(mode, -1);
+        _overlay.FlashRange();
+    }
 
     /// <summary>Ramki pól w zasięgu broni na stałe (trzymane A).</summary>
     public void ShowRange(bool on) => _overlay.RangeHeld = on;
+
+    /// <summary>v0.23.0: celowanie trybem broni (A albo B) – zasięg trybu i pola wzoru na cel; null = zasięg broni.</summary>
+    public void AimPattern(LifeLike.Core.Data.WeaponMode mode, int target)
+    {
+        _overlay.AimMode = mode;
+        _overlay.AimTarget = target;
+    }
 
     public void ToggleOverview() => _camera.ToggleOverview(_g);
 

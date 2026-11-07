@@ -9,7 +9,8 @@ namespace LifeLike.Game.Phone.Tabs;
 /// <summary>
 /// Sprzęt (tab_gear na GBA): narzędzie z zakresem ciosu i krytem (rozpiska obrażeń #26: I / dotknięcie narzędzia),
 /// kask / rękawice / kamizelka / ... z jakością (kolor paska), skutkiem (np. „+2 OBR”) i cechą (pastylka), premie
-/// sprzętu oraz szczęście: kryt, unik, wzrok. A / przycisk: Brygada.
+/// sprzętu oraz szczęście: kryt, unik, wzrok. A / przycisk: Brygada. v0.23.0: broń z rzadkością (kolor), typem ciosu,
+/// trybami A i B słowami, odnowieniem B i drugą bronią w kaburze (pas monterski).
 /// </summary>
 public sealed class GearTab : PhonePage
 {
@@ -64,12 +65,15 @@ public sealed class GearTab : PhonePage
         var g = _g;
         var d = g.D;
         var y = p.Section(p.Top, Loc.T("narzedzie_4"), _breakdown is null ? "" : ButtonNames.Pick(Loc.T("i_rozpiska"), Loc.T("dotknij_rozpiska")));
-        var c0 = p.Card(y, 2);
+        var full = PhoneView.Full; // v0.23.0: tryby słowami tylko w pełnym telefonie (w poziomie brak miejsca)
+        var belt = g.HasBelt();
+        var c0 = p.Card(y, 3 + (full ? 2 : 0) + (belt ? 1 : 0));
         var tx = p.TextX(c0);
         var right = c0.End.X - 6;
         var w = g.Weapon;
         var b = g.WeaponBreakdown();   // zakres ciosu jak w walce (rozpiska #26)
-        p.Stripe(c0, 0, Pal.Brand);
+        var rc = WeaponLook.RarityColor(d, g.WeaponRarity);
+        p.Stripe(c0, 0, rc);
         var pw = p.Pill(right, p.RowY(c0, 0), $"z{g.WeaponRange()} {UiText.StatShort(w.ScalesWith)}", PillKind.Group);
         p.Text(tx, p.RowY(c0, 0), $"{g.WeaponTitle()} {b.Min}-{b.Max}", Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
         p.Divider(c0, 1);
@@ -77,6 +81,36 @@ public sealed class GearTab : PhonePage
         p.Text(tx, p.RowY(c0, 1), Loc.F("kryt_srednio", b.CritMin, b.CritMax, b.CritChance(), avg), Ink.Prog, TextAlign.Left, right - tx);
         p.HitRow(c0, 0, WeaponRow);
         p.HitRow(c0, 1, WeaponRow);
+        // v0.23.0: rzadkość i typ ciosu, odnowienie B, tryby A i B, kabura
+        var row = 2;
+        p.Divider(c0, row);
+        p.Stripe(c0, row, rc);
+        var bState = g.WeaponBCd == 0 ? Loc.T("b_gotowy") : Loc.F("b_za", g.WeaponBCd);
+        pw = p.Pill(right, p.RowY(c0, row), bState, g.WeaponBCd == 0 ? PillKind.Group : PillKind.Gray);
+        p.Text(tx, p.RowY(c0, row), $"{WeaponLook.RarityName(d, g.WeaponRarity)} · {WeaponLook.Hits(d, w)}", WeaponLook.PhoneInk(d, g.WeaponRarity), TextAlign.Left, right - pw - 4 - tx);
+        row++;
+        if (full)
+        {
+            p.Divider(c0, row);
+            p.Text(tx, p.RowY(c0, row), "A: " + WeaponLook.Mode(d, w, w.ModeA, false), Ink.Dim, TextAlign.Left, right - tx);
+            row++;
+            p.Divider(c0, row);
+            p.Text(tx, p.RowY(c0, row), "B: " + WeaponLook.Mode(d, w, w.ModeB, true, WeaponLook.CdDelta(d, g.WeaponRarity)), Ink.Dim, TextAlign.Left, right - tx);
+            row++;
+        }
+        if (belt)
+        {
+            p.Divider(c0, row);
+            if (g.Weapon2 >= 0)
+            {
+                p.Stripe(c0, row, WeaponLook.RarityColor(d, g.Weapon2Rarity));
+                var w2 = d.Weapons[g.Weapon2];
+                var lvl = g.Weapon2Lvl > 0 ? $"+{g.Weapon2Lvl}" : "";
+                p.Text(tx, p.RowY(c0, row), Loc.F("kabura", $"{w2.Name}{lvl} {w2.MinDamage}-{w2.MaxDamage} · {WeaponLook.Hits(d, w2)}"),
+                    WeaponLook.PhoneInk(d, g.Weapon2Rarity), TextAlign.Left, right - tx);
+            }
+            else p.Text(tx, p.RowY(c0, row), Loc.T("kabura_pusta_2"), Ink.Dim, TextAlign.Left, right - tx);
+        }
 
         // sloty: kask, rękawice, kamizelka + buty i pas z nagród za odbiór (jeśli odebrane albo założone)
         var slots = new System.Collections.Generic.List<int>();

@@ -36,7 +36,10 @@ public sealed class HelpPage : PhonePage
         (Loc.T("okna"), Loc.T("dotknij_zaznacz_wybierz_prawo")),   // v0.21.51: ten sam układ w każdym oknie
     ];
 
-    private const int Pages = 13; // v0.21.52 cz. b: strona 9 – inspektor i mistrzostwo; cz. c: strona 10 – drzewko, kolekcje, zadania, seria; cz. d: 11 – mapa kariery; v0.21.53: 12 – filtry ekranu; v0.21.54: 13 – widok i światło
+    private const int Pages = 14; // v0.23.0: 14 – bronie; v0.21.52 cz. b: strona 9 – inspektor i mistrzostwo; cz. c: strona 10 – drzewko, kolekcje, zadania, seria; cz. d: 11 – mapa kariery; v0.21.53: 12 – filtry ekranu; v0.21.54: 13 – widok i światło
+
+    /// <summary>v0.23.0: strona „Bronie” (indeks od 0): typy ciosu, tryby A i B, rzadkość, pas, mnożniki materiałów, klawisze.</summary>
+    public const int WeaponsPage = 13;
 
     /// <summary>v0.21.54: strona „Widok i światło” (indeks od 0).</summary>
     public const int ViewPage = 12;
@@ -118,6 +121,11 @@ public sealed class HelpPage : PhonePage
         if (_page == 4)
         {
             DrawList(p, Loc.T("kombinacje_stanow"), ComboLines(_d), Loc.T("skad_stany_premie_elity"), ComboWhereLines(_d));
+            return;
+        }
+        if (_page == WeaponsPage)
+        {
+            DrawWeapons(p);
             return;
         }
         if (_page == ViewPage) // v0.21.54: widok mapy (płaski / 3/4) i efekty świetlne
@@ -257,6 +265,45 @@ public sealed class HelpPage : PhonePage
         {
             if (i > 0) p.Divider(news, i);
             p.Text(tx, p.RowY(news, i), News[i], Ink.Dark, TextAlign.Left, right - tx);
+        }
+    }
+
+    /// <summary>v0.23.0: strona „Bronie” – opis (zawinięty), mnożniki materiałów z danych (pełny telefon) i klawisze Cios B / Zamień.</summary>
+    private void DrawWeapons(PhonePainter p)
+    {
+        var h = _d.HitTypes;
+        var width = (int)(p.Right - 6 - p.Left - 12);
+        var text = string.Join(" ", Loc.T("pomoc_bronie_1"), Loc.F("pomoc_bronie_2", h.StunChancePct, h.CutCritPct, h.PierceDef),
+            Loc.T("pomoc_bronie_3"), Loc.T("pomoc_bronie_4"), Loc.T("pomoc_bronie_5"));
+        var lines = p.F.Wrap(text, width);
+        var c = p.Card(p.Section(p.Top, Loc.T("pomoc_bronie_tytul")), lines.Count);
+        var x = p.TextX(c);
+        for (var i = 0; i < lines.Count; i++) p.Text(x, p.RowY(c, i), lines[i], Ink.Dark, TextAlign.Left, c.End.X - 6 - x);
+        var y = c.End.Y + 6;
+        if (PhoneView.Full) // mnożniki: kolumny materiałów i żywioł woda, wiersze typów ciosu
+        {
+            var cols = _d.Materials.Length + 1;
+            var mc = p.Card(p.Section(y, Loc.T("pomoc_bronie_materialy")), cols);
+            for (var col = 0; col < cols; col++)
+            {
+                if (col > 0) p.Divider(mc, col);
+                var name = col < _d.Materials.Length ? _d.Materials[col].Name : Loc.T("zywiol_woda");
+                var parts = new System.Collections.Generic.List<string>();
+                for (var t = 0; t < h.Names.Length; t++) parts.Add($"{h.Names[t]} {h.MaterialPct[t, col == _d.Materials.Length ? 3 : col]}%");
+                p.Text(x, p.RowY(mc, col), $"{name}: {string.Join(", ", parts)}", Ink.Dim, TextAlign.Left, mc.End.X - 6 - x);
+            }
+            y = mc.End.Y + 6;
+        }
+        (string Key, string What)[] keys = Layout.Touch
+            ? [(Loc.T("cios_b"), Loc.T("pomoc_cios_b_dotyk")), (Loc.T("zamien"), Loc.T("pomoc_zamien"))]
+            : [(ButtonNames.UseGbaNames ? "L+A" : ButtonNames.KeyName(GameAction.WeaponB), Loc.T("pomoc_cios_b")),
+               (ButtonNames.UseGbaNames ? "L+B" : ButtonNames.KeyName(GameAction.Swap), Loc.T("pomoc_zamien"))];
+        var kc = p.Card(p.Section(y, Loc.T("sterowanie_2")), keys.Length);
+        for (var i = 0; i < keys.Length; i++)
+        {
+            if (i > 0) p.Divider(kc, i);
+            var pw = p.Pill(kc.End.X - 6, p.RowY(kc, i), keys[i].Key, PillKind.Group);
+            p.Text(x, p.RowY(kc, i), keys[i].What, Ink.Dark, TextAlign.Left, kc.End.X - 6 - pw - 4 - x);
         }
     }
 

@@ -5,7 +5,7 @@ namespace LifeLike.Game.Input;
 /// <summary>
 /// Akcje gry jak przyciski GBA (jedno zdarzenie klawisza może dać kilka akcji, np. Q = zakładka i pamiątka):
 /// A = atak celu, B = czekaj / podgląd, R = moc zawodu, L = podgląd mapy, START = menu akcji / dalej,
-/// SELECT = telefon. Reszta to skróty z klawiatury (Esc, Q/E, P, K, I).
+/// SELECT = telefon. Reszta to skróty z klawiatury (Esc, Q/E, P, K, I). v0.23.0: F = Cios B (tryb B broni), X = Zamień broń.
 /// </summary>
 [Flags]
 public enum GameAction : uint
@@ -29,4 +29,6 @@ public enum GameAction : uint
     Profile = 1u << 15,
     Shop = 1u << 16,
     Info = 1u << 17,   // opis statystyk na wyborze zawodu (I; START na GBA)
+    WeaponB = 1u << 18,   // v0.23.0: tryb B broni (F; pad: L + A)
+    Swap = 1u << 19,      // v0.23.0: zamiana broni z kabury (X; pad: L + B)
 }

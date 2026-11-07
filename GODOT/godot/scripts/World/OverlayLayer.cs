@@ -26,6 +26,13 @@ public partial class OverlayLayer : Node2D
     /// <summary>Zasięg widoczny, dopóki gracz trzyma A (celowanie).</summary>
     public bool RangeHeld { get; set; }
 
+    /// <summary>v0.23.0: tryb broni przy celowaniu (null = zasięg broni jak dotąd) i cel – pola jego wzoru jaśniej.</summary>
+    public LifeLike.Core.Data.WeaponMode AimMode { get; set; }
+
+    public int AimTarget { get; set; } = -1;
+
+    private readonly System.Collections.Generic.HashSet<Vector2I> _pattern = new();
+
     public override void _Process(double delta)
     {
         _clock += (float)delta;
@@ -117,6 +124,10 @@ public partial class OverlayLayer : Node2D
     {
         if (_g is null) return;
         var pulse = 0.5f + 0.5f * Mathf.Sin(_clock * 7f);
+        var showRange = _range > 0 || RangeHeld;
+        var reach = AimMode is null ? _g.WeaponRange() : _g.ModeRange(AimMode);
+        if (showRange && AimMode is not null) PatternCells.Fill(_g, AimMode, AimTarget, _pattern);
+        else _pattern.Clear();
         for (var y = 0; y < Level.H; y++)
         {
             for (var x = 0; x < Level.W; x++)
@@ -134,9 +145,19 @@ public partial class OverlayLayer : Node2D
                     DrawTextureRect(Assets.Danger, r, false, new Color(1, 1, 1, 0.55f + 0.45f * pulse));
                     if (ScreenFilter.Cues) DrawHatch(r); // v0.21.53: wzór zamiast samego koloru (filtry dla daltonistów)
                 }
-                if ((_range > 0 || RangeHeld) && t != Tile.Wall && _g.Visible(x, y) && !(x == _g.Hero.X && y == _g.Hero.Y)
-                    && CoreGame.Cheb(_g.Hero.X, _g.Hero.Y, x, y) <= _g.WeaponRange())
-                    DrawTextureRect(Assets.Range, r, false, new Color(1, 1, 1, RangeHeld ? 0.75f + 0.25f * pulse : Mathf.Min(1f, _range * 4f)));
+                if (showRange && t != Tile.Wall && _g.Visible(x, y) && !(x == _g.Hero.X && y == _g.Hero.Y))
+                {
+                    var a = RangeHeld ? 0.75f + 0.25f * pulse : Mathf.Min(1f, _range * 4f);
+                    if (_pattern.Contains(new Vector2I(x, y))) // v0.23.0: pola wzoru na cel – pełne, z jasną ramką
+                    {
+                        DrawTextureRect(Assets.Range, r, false, new Color(1, 1, 1, a));
+                        DrawRect(r.Grow(-3), new Color(1f, 0.85f, 0.35f, 0.22f + 0.18f * pulse));
+                    }
+                    else if (CoreGame.Cheb(_g.Hero.X, _g.Hero.Y, x, y) <= reach)
+                    {
+                        DrawTextureRect(Assets.Range, r, false, new Color(1, 1, 1, _pattern.Count > 0 ? a * 0.4f : a));
+                    }
+                }
             }
         }
         for (var i = 0; i < _g.PickupsCount; i++)   // pole wydarzenia: poświata jak powiadomienie

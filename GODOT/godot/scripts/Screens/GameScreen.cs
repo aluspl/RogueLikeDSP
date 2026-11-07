@@ -8,7 +8,7 @@ namespace LifeLike.Game.Screens;
 /// <summary>
 /// Budowa (run_game na GBA): mapa z HUD, ruch, A atak, B czekaj, R moc, START menu akcji, SELECT telefon,
 /// L podgląd mapy, Esc ustawienia, mysz; przy dotyku pasek akcji i gesty (TouchPlay). Po każdej akcji
-/// App.AfterAction decyduje o kolejnym ekranie.
+/// App.AfterAction decyduje o kolejnym ekranie. v0.23.0: F (pad: L + A) Cios B z celowaniem wzoru B, X (pad: L + B) zamiana broni.
 /// </summary>
 public sealed class GameScreen : Screen
 {
@@ -102,7 +102,17 @@ public sealed class GameScreen : Screen
         else if (e.Is(GameAction.Left, true)) dx = -1;
         else if (e.Is(GameAction.Right, true)) dx = 1;
         bool acted;
+        var padL = GameInput.IsHeld(GameAction.TabPrev); // v0.23.0: pad L (LB) trzymany – A = Cios B, B = Zamień
         if (dx != 0 || dy != 0) acted = g.PlayerMove(dx, dy);
+        else if (e.Is(GameAction.WeaponB) || (padL && e.Is(GameAction.A)))
+        {
+            Aim.Begin(true, e.Is(GameAction.WeaponB) ? GameAction.WeaponB : GameAction.A); // tryb B po puszczeniu
+            return true;
+        }
+        else if (e.Is(GameAction.Swap) || (padL && e.Is(GameAction.B)))
+        {
+            acted = PlayCommands.SwapOrNotice(g);
+        }
         else if (e.Is(GameAction.A))
         {
             Aim.Begin(); // atak po puszczeniu A (celowanie jak na GBA)

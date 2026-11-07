@@ -10,7 +10,7 @@ namespace LifeLike.Game.Hud;
 /// Górny pasek HUD jak na GBA (półprzezroczysty ciemny pas): HP z paskiem, poziom z paskiem doświadczenia, etap
 /// (w wąskim pionie numer etapu z trudnością w 1. rzędzie, pełna nazwa etapu w 2. rzędzie po prawej);
 /// w drugim rzędzie stany z liczbą tur, termos, pogoda dnia, mechanika aktu (porywy: tury do kolejnego), materiały, wydarzenie na placu, ostrzeżenie o ciosie bossa, termos i ikona mocy
-/// (szara z odliczaniem, gdy się ładuje; „R” i podskakiwanie, gdy gotowa).
+/// (szara z odliczaniem, gdy się ładuje; „R” i podskakiwanie, gdy gotowa); v0.23.0: broń w kolorze rzadkości z odnowieniem trybu B.
 /// </summary>
 public partial class HudTop : Control
 {
@@ -191,6 +191,13 @@ public partial class HudTop : Control
         if (!ready) x += Text(x, g.AbilityCd.ToString(), Ink.MapDim) + 8;
         else if (((int)(_clock * 2) & 1) == 0) x += Text(x, "R", Ink.MapGood) + 8;
         else x += f.Measure("R") + 8;
+
+        // v0.23.0: broń w kolorze rzadkości i odnowienie trybu B („B” – gotowy, liczba – tury)
+        if (draw) Assets.DrawFrame(this, Assets.UiMenu, 0, Assets.Icon, new Vector2(x, 20), 1, WeaponLook.RarityColor(g.D, g.WeaponRarity).Lightened(0.25f));
+        x += 18;
+        if (labels) x += Text(x, Loc.T("hud_cios_b"), g.WeaponBCd == 0 ? Ink.MapGood : Ink.MapDim) + 4;
+        if (g.WeaponBCd > 0) x += Text(x, g.WeaponBCd.ToString(), Ink.MapDim) + 8;
+        else x += Text(x, "B", Ink.MapGood) + 8;
 
         // materiały: ikona + liczba (tylko posiadane)
         for (var m = 0; m < g.D.Materials.Length; m++)

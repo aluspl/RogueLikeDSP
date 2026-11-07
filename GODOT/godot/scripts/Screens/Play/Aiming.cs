@@ -1,5 +1,6 @@
 using LifeLike.Core;
 using Godot;
+using LifeLike.Game.Gfx;
 using LifeLike.Game.Input;
 using CoreGame = LifeLike.Core.Game;
 
@@ -8,7 +9,8 @@ namespace LifeLike.Game.Screens.Play;
 /// <summary>
 /// Celowanie pod A jak na GBA: wciśnięcie wybiera najbliższy cel w zasięgu, po chwili trzymania widać ramki
 /// zasięgu i celownik, strzałki przełączają cel, puszczenie A atakuje. Krótkie A = atak najbliższego;
-/// bez celu w zasięgu zasięg tylko mignie.
+/// bez celu w zasięgu zasięg tylko mignie. v0.23.0: celowanie trybem B (F, pad L + A, przycisk Cios B) – cele i zasięg
+/// wzoru B, pola wzoru na wybrany cel jaśniej; bez celu, ale z pękniętą ścianą obok (Przecinak, Łom) – otwarcie ściany.
 /// </summary>
 public sealed class Aiming
 {
@@ -25,6 +27,12 @@ public sealed class Aiming
 
     public bool Active { get; private set; }
 
+    /// <summary>v0.23.0: celowanie trybem B (inaczej zwykły atak A).</summary>
+    public bool ModeB { get; private set; }
+
+    /// <summary>v0.23.0: akcja, której puszczenie atakuje (A albo WeaponB).</summary>
+    private GameAction _trigger = GameAction.A;
+
     /// <summary>Wybrany cel (indeks wroga) albo -1.</summary>
     public int Target => Active && _count > 0 ? _targets[_sel] : -1;
 
@@ -32,14 +40,48 @@ public sealed class Aiming
 
     private SceneNodes N => _app.Nodes;
 
-    public void Begin()
+    public void Begin() => Begin(false, GameAction.A);
+
+    /// <summary>
+    /// v0.23.0: celowanie trybem A albo B; trigger = akcja, której puszczenie atakuje. Tryb B w odnowieniu – tylko podpowiedź
+    /// (bez celowania i bez tury); zwraca, czy celowanie ruszyło.
+    /// </summary>
+    public bool Begin(bool modeB, GameAction trigger)
     {
+        var g = _app.Session.Game;
+        if (modeB && g.WeaponBCd > 0)
+        {
+            PlayCommands.Notice(g, Loc.F("cios_b_odnowienie", g.WeaponBCd));
+            _app.AfterAction(false);
+            return false;
+        }
         Active = true;
+        ModeB = modeB;
+        _trigger = trigger;
         _time = 0;
         _sel = 0;
         _revealed = false;
-        _count = _app.Session.Game.TargetsInRange(_targets);
+        _count = modeB ? TargetsB(g, _targets) : g.TargetsInRange(_targets);
         N.World.Mark(Target);
+        N.World.AimPattern(modeB ? g.Weapon.ModeB : g.Weapon.ModeA, Target);
+        return true;
+    }
+
+    /// <summary>v0.23.0: cele trybu B – żywe, widoczne, w zasięgu wzoru B i na jego polach (od najbliższego).</summary>
+    public static int TargetsB(CoreGame g, System.Span<sbyte> output)
+    {
+        var m = g.Weapon.ModeB;
+        var reach = g.ModeRange(m);
+        var n = 0;
+        for (var d = 1; d <= reach; ++d)
+        {
+            for (var i = 0; i < g.EnemiesCount && n < output.Length; ++i)
+            {
+                var e = g.Enemies[i];
+                if (e.Alive && g.Visible(e.X, e.Y) && CoreGame.Cheb(g.Hero.X, g.Hero.Y, e.X, e.Y) == d && g.InPattern(m, i)) output[n++] = (sbyte)i;
+            }
+        }
+        return n;
     }
 
     public void Process(double delta)
@@ -55,7 +97,7 @@ public sealed class Aiming
     /// <summary>Wejście w trakcie celowania (wszystko inne jest połykane, jak pętla aiming na GBA).</summary>
     public bool HandleInput(InputCmd e)
     {
-        if (e.IsReleased(GameAction.A))
+        if (e.IsReleased(_trigger))
         {
             Commit();
             return true;
@@ -107,24 +149,37 @@ public sealed class Aiming
         N.World.Mark(Target);
         N.World.Reticle = Target;
         var g = _app.Session.Game;
+        N.World.AimPattern(ModeB ? g.Weapon.ModeB : g.Weapon.ModeA, Target);
         if (_count == 0)
         {
+            if (ModeB) // v0.23.0: tryb B bez celu – pęknięta ściana obok albo brak celu z opisem wzoru
+            {
+                var b = g.CanWeaponBOpenWall() ? Loc.T("cios_b_sciana") : Loc.F("cios_b_brak_celu", WeaponLook.Pattern(g.Weapon.ModeB));
+                N.Hud.ShowHint(b, ButtonNames.Pick(Loc.T("pusc_f_wroc"), Loc.T("pusc_cios_b_wroc")));
+                return;
+            }
             N.Hud.ShowHint(Loc.F("celowanie_brak_celu_w_zasiegu", g.WeaponRange()), ButtonNames.Pick(Loc.T("pusc_spacje_wroc"), Loc.T("pusc_atak_wroc")));
             return;
         }
         var e = g.Enemies[Target];
         var name = g.D.Enemies[e.DefId].Name;
-        N.Hud.ShowHint(Loc.F("cel_hp", _sel + 1, _count, name, e.Hp, e.MaxHp),
-            ButtonNames.Pick(Loc.T("strzalki_zmiana_celu_pusc"), Loc.T("przesun_palec_cel_pusc_atak")));
+        var line = Loc.F("cel_hp", _sel + 1, _count, name, e.Hp, e.MaxHp);
+        if (ModeB) line = Loc.T("cios_b_prefix") + line;
+        N.Hud.ShowHint(line, ModeB ? ButtonNames.Pick(Loc.T("strzalki_zmiana_celu_pusc_f"), Loc.T("przesun_palec_cel_pusc_cios_b"))
+            : ButtonNames.Pick(Loc.T("strzalki_zmiana_celu_pusc"), Loc.T("przesun_palec_cel_pusc_atak")));
     }
 
-    /// <summary>Puszczenie A: atak wybranego celu (bez celu - miga zasięg jak range_flash na GBA).</summary>
+    /// <summary>Puszczenie A: atak wybranego celu (bez celu - miga zasięg jak range_flash na GBA). v0.23.0: tryb B – cios B
+    /// w cel, bez celu otwarcie pękniętej ściany (Przecinak, Łom), inaczej mignięcie zasięgu wzoru B (bez tury).</summary>
     public void Commit()
     {
         var target = Target;
+        var modeB = ModeB;
         Cancel();
         var g = _app.Session.Game;
-        var acted = target >= 0 ? g.PlayerAttack(target) : PlayCommands.AttackNearest(g, N.World);
+        bool acted;
+        if (modeB) acted = PlayCommands.WeaponB(g, N.World, target);
+        else acted = target >= 0 ? g.PlayerAttack(target) : PlayCommands.AttackNearest(g, N.World);
         _app.AfterAction(acted);
     }
 
@@ -133,8 +188,11 @@ public sealed class Aiming
     {
         if (!Active) return;
         Active = false;
+        ModeB = false;
+        _trigger = GameAction.A;
         N.World.Reticle = -1;
         N.World.ShowRange(false);
+        N.World.AimPattern(null, -1);
         N.Hud.ShowHint(null);
     }
 }

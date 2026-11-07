@@ -10,10 +10,11 @@ namespace LifeLike.Game.Hud;
 /// Karta wroga pod trzymanym B (podgląd na GBA, w miejscu dziennika): portret, nazwa, HP z paskiem, obrona,
 /// obrażenia w obie strony (rozpiska #26: „Zadasz 2-5 (kryt 4-10), on Tobie 1-3” po OBR i procentach, unik),
 /// opis na zmianę z zachowaniami („Cechy: ...”); „Nikogo w polu widzenia”, gdy lista jest pusta.
+/// v0.23.0: wiersz materiału problemu i mnożnika bieżącej broni („Cement: Obuch ×125%”, zielony / czerwony).
 /// </summary>
 public partial class EnemyCard : Control
 {
-    private const int CardH = 76;
+    private const int CardH = 94;
     private CoreGame _g;
     private int _enemy = -1, _index, _count;
     private float _clock;
@@ -33,9 +34,27 @@ public partial class EnemyCard : Control
         Visible = false;
     }
 
+    /// <summary>v0.23.0: „Cement: Obuch ×125%” – materiał (albo żywioł woda / bez materiału) i mnożnik broni w ręku.</summary>
+    public string HitLine { get; private set; } = "";
+
+    private int _hitPct = 100;
+
+    /// <summary>v0.23.0: wiersz mnożnika ciosu broni w ręku na problem ei (jak HitCalc: woda ma pierwszeństwo przed materiałem).</summary>
+    public static string HitText(CoreGame g, int ei, out int pct)
+    {
+        var d = g.D;
+        var ed = d.Enemies[g.Enemies[ei].DefId];
+        var col = HitCalc.Column(d, ed);
+        pct = HitCalc.Pct(d, g.Weapon, ed);
+        var mat = col < d.Materials.Length ? d.Materials[col].Name : col == 3 ? Loc.T("zywiol_woda") : Loc.T("bez_materialu");
+        var hit = g.Weapon.Neutral ? WeaponLook.Hits(d, g.Weapon) : d.HitTypes.Names[(int)HitCalc.Best(d, g.Weapon, col)];
+        return Loc.F("mnoznik_ciosu", mat, hit, pct);
+    }
+
     public void Show(CoreGame g, int enemy, int index, int count)
     {
         _g = g;
+        HitLine = enemy >= 0 ? HitText(g, enemy, out _hitPct) : "";
         _enemy = enemy;
         _index = index;
         _count = count;
@@ -100,10 +119,11 @@ public partial class EnemyCard : Control
         if (elite) lines.Add((BoonLook.Elite(_g, _enemy), Ink.MapLoot));
         var states = BoonLook.States(_g, _enemy);
         if (states.Length > 0) lines.Add((Loc.T("stan") + states, Ink.MapWet));
+        f.Draw(this, new Vector2(x, top + 38), f.Fit(Loc.T("twoj_cios") + HitLine, (int)(w - x - 8)), _hitPct > 100 ? Ink.MapGood : _hitPct < 100 ? Ink.MapBad : Ink.MapDim);
         var line = lines[(int)(_clock / 2f) % lines.Count];
-        f.Draw(this, new Vector2(x, top + 38), f.Fit(line.Text, (int)(w - x - 8)), line.Ink);
+        f.Draw(this, new Vector2(x, top + 56), f.Fit(line.Text, (int)(w - x - 8)), line.Ink);
         var back = ButtonNames.Pick(Loc.T("pusc_z_wroc"), Loc.T("pusc_wroc"));
         var hint = _count > 1 ? $"{_index + 1}/{_count}  {ButtonNames.Pick(Loc.T("strzalki_nastepny"), Loc.T("przesun_nastepny"))}   {back}" : back;
-        f.Draw(this, new Vector2(w - 6, top + 56), hint, Ink.MapDim, TextAlign.Right);
+        f.Draw(this, new Vector2(w - 6, top + 74), hint, Ink.MapDim, TextAlign.Right);
     }
 }

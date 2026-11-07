@@ -76,6 +76,9 @@ public partial class HudLayer : ScaledLayer
         _log.Visible = false;
     }
 
+    /// <summary>v0.23.0: karta problemu (test dymny: wiersz mnożnika ciosu).</summary>
+    public EnemyCard Card => _card;
+
     public void HideEnemyCard()
     {
         _card.Visible = false;

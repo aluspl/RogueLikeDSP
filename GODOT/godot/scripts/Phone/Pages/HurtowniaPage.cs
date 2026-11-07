@@ -10,7 +10,8 @@ namespace LifeLike.Game.Phone.Pages;
 /// <summary>
 /// Hurtownia między aktami (run_hurtownia na GBA): budżet budowy w nagłówku, premia za akt, lista towarów
 /// z ceną w pastylce (fiolet - stać Cię, szara - za drogo; towary za materiały: „4x Stal”), opis zaznaczonego,
-/// posiadane materiały; Spacja kupuje, Enter - dalej.
+/// posiadane materiały; Spacja kupuje, Enter - dalej. v0.23.0: kupione narzędzie – nazwa w kolorze rzadkości
+/// („Kupione: Solidna Siekiera”), w opisie „Nowego narzędzia” broń w ręku też w kolorze rzadkości.
 /// </summary>
 public sealed class HurtowniaPage : PhonePage
 {
@@ -18,6 +19,7 @@ public sealed class HurtowniaPage : PhonePage
     private readonly CoreGame _g;
     private readonly ListState _list = new();
     private string _note = "";
+    private Ink _noteInk = Ink.Brand;
 
     public HurtowniaPage(CoreGame g) => _g = g;
 
@@ -47,10 +49,16 @@ public sealed class HurtowniaPage : PhonePage
     {
         var it = _g.D.Hurtownia[_list.Sel];
         var upgrade = it.Effect == LifeLike.Core.Data.ShopEffect.Upgrade;
+        _noteInk = Ink.Brand;
         if (_g.HurtowniaBuy(_list.Sel))
         {
             Sfx.Play("buy");
             _note = upgrade ? Loc.F("ulepszone", _g.WeaponTitle()) : Loc.T("kupione_enter_dalej");
+            if (it.Effect == LifeLike.Core.Data.ShopEffect.Tool) // v0.23.0: jaka broń i rzadkość przyszła
+            {
+                _note = Loc.F("kupione_bron", WeaponLook.RarityName(_g.D, _g.WeaponRarity), _g.Weapon.Name);
+                _noteInk = WeaponLook.PhoneInk(_g.D, _g.WeaponRarity);
+            }
             Bought?.Invoke();
         }
         else if (upgrade)
@@ -75,6 +83,8 @@ public sealed class HurtowniaPage : PhonePage
             return ($"{_g.WeaponTitle()} -> +{_g.WeaponLvl + 1}: {cost}{trait}. {it.Desc}", Ink.Brand);
         }
         if (it.Effect == LifeLike.Core.Data.ShopEffect.Tool && _g.WeaponLvl > 0) return (Loc.F("uwaga_przepadnie", _g.WeaponTitle(), it.Desc), Ink.Late);
+        if (it.Effect == LifeLike.Core.Data.ShopEffect.Tool) // v0.23.0: broń w ręku z rzadkością (zamiana na losową)
+            return (Loc.F("w_reku_rzadkosc", it.Desc, WeaponLook.RarityName(_g.D, _g.WeaponRarity), _g.WeaponTitle()), WeaponLook.PhoneInk(_g.D, _g.WeaponRarity));
         return (it.Desc, Ink.Dim);
     }
 
@@ -103,8 +113,8 @@ public sealed class HurtowniaPage : PhonePage
         var tx = p.TextX(c0);
         var right = c0.End.X - 6;
         var bonus = Loc.F("premia_za_akt_zl", _g.ActNumeral(), _g.ActBonus);
-        p.Stripe(c0, 0, _note.Length > 0 ? Pal.Brand : Pal.Done);
-        p.Text(tx, p.RowY(c0, 0), _note.Length > 0 ? _note : bonus, _note.Length > 0 ? Ink.Brand : Ink.Done, TextAlign.Left, right - tx);
+        p.Stripe(c0, 0, _note.Length > 0 ? _noteInk.Fill : Pal.Done);
+        p.Text(tx, p.RowY(c0, 0), _note.Length > 0 ? _note : bonus, _note.Length > 0 ? _noteInk : Ink.Done, TextAlign.Left, right - tx);
         var n = d.Hurtownia.Length;
         _list.Clamp(n, Window);
         var rows = Math.Min(Window, n - _list.Top);

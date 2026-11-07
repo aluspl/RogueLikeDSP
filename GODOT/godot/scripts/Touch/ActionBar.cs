@@ -11,11 +11,17 @@ namespace LifeLike.Game.Touch;
 /// Dolny pasek akcji dla kciuka (sterowanie dotykiem, jak menu akcji START z GBA): Atak (młotek), Moc (ikona zawodu:
 /// szara z odliczaniem albo pulsująca, gdy gotowa), Termos (liczba kaw), Czekaj (klepsydra), Telefon. Dla prawej
 /// ręki Atak jest najbliżej kciuka (prawa krawędź), dla lewej - odwrotnie. Nad paskiem domowym (bezpieczny obszar).
+/// v0.23.0: Cios B (tryb B broni, kolor rzadkości, szary z odliczaniem) obok Ataku i Zamień (tylko z pasem monterskim).
 /// </summary>
 public partial class ActionBar : Control, ITapTargets
 {
-    private static readonly BarButton[] RightHand = [BarButton.Phone, BarButton.Wait, BarButton.Thermos, BarButton.Ability, BarButton.Attack];
-    private static readonly BarButton[] LeftHand = [BarButton.Attack, BarButton.Ability, BarButton.Thermos, BarButton.Wait, BarButton.Phone];
+    private static readonly BarButton[] RightHand = [BarButton.Phone, BarButton.Wait, BarButton.Thermos, BarButton.Ability, BarButton.WeaponB, BarButton.Attack];
+    private static readonly BarButton[] LeftHand = [BarButton.Attack, BarButton.WeaponB, BarButton.Ability, BarButton.Thermos, BarButton.Wait, BarButton.Phone];
+    private static readonly BarButton[] RightBelt = [BarButton.Phone, BarButton.Wait, BarButton.Thermos, BarButton.Swap, BarButton.Ability, BarButton.WeaponB, BarButton.Attack];
+    private static readonly BarButton[] LeftBelt = [BarButton.Attack, BarButton.WeaponB, BarButton.Ability, BarButton.Swap, BarButton.Thermos, BarButton.Wait, BarButton.Phone];
+
+    /// <summary>v0.23.0: budowa paska (z pasem monterskim dochodzi „Zamień”).</summary>
+    private static CoreGame _bound;
 
     private CoreGame _g;
     private float _clock;
@@ -23,7 +29,9 @@ public partial class ActionBar : Control, ITapTargets
     /// <summary>Wciśnięty przycisk (podświetlony fioletem marki).</summary>
     public BarButton Pressed { get; set; } = BarButton.None;
 
-    public static BarButton[] Order => GameSettings.LeftHanded ? LeftHand : RightHand;
+    public static BarButton[] Order => _bound is not null && _bound.HasBelt()
+        ? (GameSettings.LeftHanded ? LeftBelt : RightBelt)
+        : (GameSettings.LeftHanded ? LeftHand : RightHand);
 
     /// <summary>Pasek w pikselach UI (bez paska domowego pod spodem).</summary>
     public static Rect2 BarRect => new(0, Layout.UiSize.Y - Layout.SafeBottom - Layout.ActionBarHeight, Layout.UiSize.X, Layout.ActionBarHeight);
@@ -34,7 +42,11 @@ public partial class ActionBar : Control, ITapTargets
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
     }
 
-    public void Bind(CoreGame g) => _g = g;
+    public void Bind(CoreGame g)
+    {
+        _g = g;
+        _bound = g;
+    }
 
     public override void _Process(double delta)
     {
@@ -52,7 +64,7 @@ public partial class ActionBar : Control, ITapTargets
     {
         var bar = BarRect;
         var left = Layout.SafeLeft + 4;
-        var w = (Layout.UiSize.X - Layout.SafeLeft - Layout.SafeRight - 8) / 5f;
+        var w = (Layout.UiSize.X - Layout.SafeLeft - Layout.SafeRight - 8) / (float)Order.Length;
         return new Rect2(Mathf.Round(left + slot * w + 2), bar.Position.Y + 4, Mathf.Round(w - 4), bar.Size.Y - 8);
     }
 
@@ -100,6 +112,8 @@ public partial class ActionBar : Control, ITapTargets
         {
             BarButton.Thermos => g.Thermos > 0,
             BarButton.Ability => g.AbilityCd == 0,
+            BarButton.WeaponB => g.WeaponBCd == 0,
+            BarButton.Swap => g.Weapon2 >= 0,
             _ => true,
         };
         DrawStyleBox(Ui.Box(on ? Pal.Brand : new Color(1, 1, 1, 0.07f), 10, on ? Pal.Accent : new Color(1, 1, 1, 0.14f)), r);
@@ -135,6 +149,29 @@ public partial class ActionBar : Control, ITapTargets
             case BarButton.Wait:
                 Assets.DrawFrame(this, Assets.MenuIcons, 2, 32, icon);
                 label = Loc.T("czekaj");
+                break;
+            case BarButton.WeaponB: // v0.23.0: młotek w kolorze rzadkości z „B”; odnowienie – szary z liczbą
+            {
+                var rc = WeaponLook.RarityColor(g.D, g.WeaponRarity);
+                if (g.WeaponBCd == 0)
+                {
+                    var pulse = 0.5f + 0.5f * Mathf.Sin(_clock * 6f);
+                    DrawStyleBox(Ui.Box(new Color(rc, 0.15f + 0.2f * pulse), 8), new Rect2(icon - new Vector2(3, 2), new Vector2(38, 36)));
+                    Assets.DrawFrame(this, Assets.MenuIcons, 0, 32, icon, 1, rc.Lightened(0.3f));
+                    f.Draw(this, icon + new Vector2(24, 14), "B", Ink.Map, TextAlign.Center);
+                    label = Loc.T("cios_b");
+                }
+                else
+                {
+                    Assets.DrawFrame(this, Assets.MenuIcons, 0, 32, icon, 1, new Color(0.6f, 0.6f, 0.65f, 0.6f));
+                    f.Draw(this, icon + new Vector2(16, 6), g.WeaponBCd.ToString(), Ink.Map, TextAlign.Center, 1.5f);
+                    label = Loc.F("cios_b_za", g.WeaponBCd);
+                }
+                break;
+            }
+            case BarButton.Swap: // v0.23.0: strzałki; podpis – broń w kaburze
+                Assets.DrawFrame(this, Assets.MenuIcons, 5, 32, icon, 1, dim);
+                label = Loc.T("zamien");
                 break;
             default:
                 Assets.DrawFrame(this, Assets.TouchIcons, TouchIcon.Phone, Assets.Icon, icon, 2);

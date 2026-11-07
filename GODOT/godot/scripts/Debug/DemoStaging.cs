@@ -177,6 +177,8 @@ public sealed class DemoStaging
         }
     }
 
+    private bool FreeFloor(int x, int y) => G.Lv.At(x, y) == Tile.Floor && !G.Occupied(x, y);
+
     /// <summary>Problem o identyfikatorze id na polu (bohater + dx, dy), przebudzony; hp > 0 = ustawione HP.</summary>
     private void Place(string id, int dx, int dy, int hp, int stun)
     {
@@ -201,12 +203,21 @@ public sealed class DemoStaging
         g.EnemiesCount = 0;
         g.PickupsCount = 0;
         Place("mostek", 0, 3, 0, 0);
-        Place("woda", 1, 0, 1, 4);
-        Place("pustak", -1, 0, 1, 4);
+        // v0.23.0: kierunek z wolną podłogą po obu stronach (schody / znajdźki obok bohatera psuły pokaz po zmianie puli dropów)
+        var (dx, dy) = (1, 0);
+        foreach (var (ax, ay) in new[] { (1, 0), (0, 1), (0, -1), (-1, 0) })
+        {
+            if (!FreeFloor(g.Hero.X + ax, g.Hero.Y + ay) || !FreeFloor(g.Hero.X - ax, g.Hero.Y - ay)) continue;
+            (dx, dy) = (ax, ay);
+            break;
+        }
+        Place("woda", dx, dy, 1, 4);
         g.UpdateFov();
         _app.Nodes.World.Sync();
-        _app.AfterAction(g.PlayerMove(1, 0));    // podział
-        _app.AfterAction(g.PlayerMove(-1, 0));   // wybuch za turę + strzał Mostka
+        _app.AfterAction(g.PlayerMove(dx, dy));    // podział
+        Place("pustak", -dx, -dy, 1, 4);          // dopiero teraz: inaczej pomocnik z brygady potrafi go zbić w turze podziału
+        g.UpdateFov();
+        _app.AfterAction(g.PlayerMove(-dx, -dy));  // wybuch za turę + strzał Mostka
     }
 
     /// <summary>

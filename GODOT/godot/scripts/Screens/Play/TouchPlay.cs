@@ -119,6 +119,7 @@ public sealed class TouchPlay
             _held = 0;
             T.Bar.Pressed = b;
             if (b == BarButton.Attack) _screen.Aim.Begin();
+            else if (b == BarButton.WeaponB) _screen.Aim.Begin(true, Input.GameAction.WeaponB); // v0.23.0: celowanie trybem B
             else if (b == BarButton.Wait) _screen.Look.Begin();
             return;
         }
@@ -139,7 +140,7 @@ public sealed class TouchPlay
             }
             return;
         }
-        if (_down == BarButton.Attack && _screen.Aim.Active && !ActionBar.Covers(p)) _screen.Aim.PointAt(N.World.UiToGrid(p));
+        if (_down is BarButton.Attack or BarButton.WeaponB && _screen.Aim.Active && !ActionBar.Covers(p)) _screen.Aim.PointAt(N.World.UiToGrid(p));
     }
 
     private void Up(Vector2 p)
@@ -158,7 +159,11 @@ public sealed class TouchPlay
         switch (b)
         {
             case BarButton.Attack:
+            case BarButton.WeaponB:
                 if (_screen.Aim.Active) _screen.Aim.Commit();
+                break;
+            case BarButton.Swap when same: // v0.23.0: zamiana broni z kabury
+                _app.AfterAction(PlayCommands.SwapOrNotice(G));
                 break;
             case BarButton.Wait:
                 if (_screen.Look.Active) _screen.Look.End();

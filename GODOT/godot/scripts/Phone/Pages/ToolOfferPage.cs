@@ -13,6 +13,7 @@ namespace LifeLike.Game.Phone.Pages;
 /// porównanie ciosu i ostrzeżenie, że ulepszenie (i cecha) przepadnie. v0.21.51: dwa wiersze wyboru – zaznaczony na
 /// start „Zostaję” – strzałki / dotknięcie zaznacza, A / Enter / „Wybierz” (albo drugie dotknięcie) zatwierdza,
 /// B / Esc / „Zostaję” zostawia – zamiana nigdy nie dzieje się jednym przypadkowym dotknięciem.
+/// v0.23.0: rzadkość (kolor) i typy ciosu obu broni, porównanie ciosu z rzadkością nowej.
 /// </summary>
 public sealed class ToolOfferPage : PhonePage
 {
@@ -56,24 +57,29 @@ public sealed class ToolOfferPage : PhonePage
         if (_g.ToolOffer < 0) return;
         var d = _g.D;
         var w = d.Tools[_g.ToolOffer].Weapon;
+        var nr = d.Weapons[w].Master ? d.WeaponRarities.Length - 1 : Math.Max(0, (int)_g.ToolOfferRarity); // unikat – Mistrzowska
         var now = _g.WeaponBreakdown();
-        var next = _g.WeaponBreakdown(-1, w);
+        var next = _g.WeaponBreakdown(-1, w, -1, -1, 0, nr);
         var y = p.Section(p.Top, Loc.T("teraz_5"));
-        var c0 = p.Card(y, 2);
+        var c0 = p.Card(y, 3);
         var tx = p.TextX(c0);
         var right = c0.End.X - 6;
-        p.Stripe(c0, 0, Pal.Brand);
+        p.Stripe(c0, 0, WeaponLook.RarityColor(d, _g.WeaponRarity));
         p.Text(tx, p.RowY(c0, 0), $"{_g.WeaponTitle()} {now.Min}-{now.Max}", Ink.Dark, TextAlign.Left, right - tx);
         p.Divider(c0, 1);
-        p.Text(tx, p.RowY(c0, 1), DamageHelp.Text(d, now, DmgText.Upgrade), Ink.Dim, TextAlign.Left, right - tx);
+        p.Text(tx, p.RowY(c0, 1), $"{WeaponLook.RarityName(d, _g.WeaponRarity)} · {WeaponLook.Hits(d, _g.Weapon)}", WeaponLook.PhoneInk(d, _g.WeaponRarity), TextAlign.Left, right - tx);
+        p.Divider(c0, 2);
+        p.Text(tx, p.RowY(c0, 2), DamageHelp.Text(d, now, DmgText.Upgrade), Ink.Dim, TextAlign.Left, right - tx);
         y = p.Section(c0.End.Y + 4, Loc.T("nowe_4"));
-        var c1 = p.Card(y, 2);
-        p.Stripe(c1, 0, Pal.Prog);
+        var c1 = p.Card(y, 3);
+        p.Stripe(c1, 0, WeaponLook.RarityColor(d, nr));
         p.Text(tx, p.RowY(c1, 0), Loc.F("zasieg_3", d.Weapons[w].Name, next.Min, next.Max, d.Weapons[w].Range), Ink.Dark, TextAlign.Left, right - tx);
         p.Divider(c1, 1);
+        p.Text(tx, p.RowY(c1, 1), $"{WeaponLook.RarityName(d, nr)} · {WeaponLook.Hits(d, d.Weapons[w])}", WeaponLook.PhoneInk(d, nr), TextAlign.Left, right - tx);
+        p.Divider(c1, 2);
         var cmp = Loc.T("cios_2") + DamageHelp.CompareLine(new Message(), now, next).Text;
         if (p.F.Measure(cmp) > right - tx) cmp = DamageHelp.CompareLine(new Message(), now, next, true).Text;
-        p.Text(tx, p.RowY(c1, 1), cmp, next.Avg10 > now.Avg10 ? Ink.Done : Ink.Late, TextAlign.Left, right - tx);
+        p.Text(tx, p.RowY(c1, 2), cmp, next.Avg10 > now.Avg10 ? Ink.Done : Ink.Late, TextAlign.Left, right - tx);
         y = p.Section(c1.End.Y + 4, Loc.T("wybierz_3"));
         var c2 = p.Card(y, 2);
         string[] rows = [Loc.F("zostaje_3", _g.WeaponTitle()), Loc.F("zamieniam_przepadnie", d.Weapons[w].Name, _g.WeaponLvl)];

@@ -6,7 +6,7 @@ namespace LifeLike.Game.Input;
 /// <summary>
 /// Mapa wejścia rejestrowana w kodzie (klawiatura + pad), jak przyciski GBA:
 /// A = atak celu, B = czekaj, R = moc zawodu, START = menu akcji (Enter), SELECT = telefon (Tab),
-/// L = podgląd mapy (M). W telefonie Q/E (LB/RB) i strzałki w lewo/prawo przełączają zakładki (L/R na GBA).
+/// L = podgląd mapy (M). v0.23.0: F = Cios B (pad: L + A), X = Zamień broń (pad: L + B). W telefonie Q/E (LB/RB) i strzałki w lewo/prawo przełączają zakładki (L/R na GBA).
 /// Na wyborze zawodu Q/E (LB/RB) - pamiątka, P (pad X) - profil, K (pad Y) - Szkolenia.
 /// Translate zamienia InputEvent Godota na InputCmd - reszta gry nie zna nazw akcji Godota.
 /// Wirtualny kontroler (dotyk: gałka i przyciski) wstrzykuje akcje przez Press / Release.
@@ -25,7 +25,7 @@ public static class GameInput
         (GameAction.R, "ability"), (GameAction.L, "map_overview"), (GameAction.Start, "confirm"),
         (GameAction.Select, "phone"), (GameAction.Cancel, "cancel"), (GameAction.TabPrev, "tab_prev"),
         (GameAction.TabNext, "tab_next"), (GameAction.KeepPrev, "keepsake_prev"), (GameAction.KeepNext, "keepsake_next"),
-        (GameAction.Profile, "profile"), (GameAction.Shop, "shop"),
+        (GameAction.Profile, "profile"), (GameAction.Shop, "shop"), (GameAction.WeaponB, "weapon_b"), (GameAction.Swap, "swap_weapon"),
     ];
 
     public static string NameOf(GameAction a)
@@ -51,11 +51,13 @@ public static class GameInput
         Add(GameAction.Right, Key.D, Key.Right, Key.Kp6);
         Pad(GameAction.Right, JoyButton.DpadRight);
         Axis(GameAction.Right, JoyAxis.LeftX, 1);
-        Add(GameAction.A, Key.Space, Key.X, Key.J);
+        Add(GameAction.A, Key.Space, Key.J); // v0.23.0: X przeszedł na Zamień broń
         Pad(GameAction.A, JoyButton.A);
         Add(GameAction.B, Key.Z, Key.Kp5, Key.Period);
         Pad(GameAction.B, JoyButton.B);
-        Add(GameAction.R, Key.R, Key.F);
+        Add(GameAction.R, Key.R); // v0.23.0: F przeszedł na Cios B
+        Add(GameAction.WeaponB, Key.F); // pad: L + A (GameScreen)
+        Add(GameAction.Swap, Key.X);    // pad: L + B (GameScreen)
         Pad(GameAction.R, JoyButton.RightShoulder);
         Add(GameAction.Select, Key.Tab);
         Pad(GameAction.Select, JoyButton.Back);

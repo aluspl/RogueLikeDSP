@@ -322,13 +322,22 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
 
         // broń: osobny blok ze statystyką, od której zależy (dotknięcie = rozpiska obrażeń)
         var wpn = _d.Weapons[c.Weapon];
-        var tag = UiText.StatShort(wpn.ScalesWith);
+        var tag = $"{UiText.StatShort(wpn.ScalesWith)} · {WeaponLook.Hits(_d, wpn)}"; // v0.23.0: typ ciosu obok statystyki
         var tw = f.Measure(tag) + 10;
-        var wr = new Rect2(x - 4, y, cw + 8, 26);
+        var rarity = LifeLike.Core.Game.StartRarity(_d, m); // v0.23.0: rzadkość startowa (Szkolenie Narzędzia, broń mistrza – Mistrzowska)
+        var wr = new Rect2(x - 4, y, cw + 8, full ? 42 : 26);
         DrawStyleBox(Ui.Box(Pal.Group, 8), wr);
+        DrawRect(new Rect2(wr.Position.X + 2, wr.Position.Y + 5, 3, wr.Size.Y - 10), WeaponLook.RarityColor(_d, rarity)); // pasek koloru rzadkości
         WeaponRow(new Rect2(x, y + 1, cw - tw - 4, 24), cls, m, cw - tw - 14, 1);
         DrawStyleBox(Ui.Box(Pal.Card, 7), new Rect2(x + cw - tw, y + 6, tw, 14));
         f.Draw(this, new Vector2(x + cw - tw / 2f, y + 4), tag, Ink.Brand, TextAlign.Center);
+        if (full) // v0.23.0: rzadkość i tryb B słowami (tryb A – w rozpisce pod dotknięciem)
+        {
+            var modes = $"{WeaponLook.RarityName(_d, rarity)} · B: {WeaponLook.Mode(_d, wpn, wpn.ModeB, true, WeaponLook.CdDelta(_d, rarity))}";
+            var full2 = $"{WeaponLook.RarityName(_d, rarity)} · A: {WeaponLook.Mode(_d, wpn, wpn.ModeA, false)} · B: {WeaponLook.Mode(_d, wpn, wpn.ModeB, true, WeaponLook.CdDelta(_d, rarity))}";
+            if (f.Measure(full2) <= cw - 8) modes = full2;
+            f.Draw(this, new Vector2(x + 4, y + 22), f.Fit(modes, cw - 8), WeaponLook.PhoneInk(_d, rarity));
+        }
         y = wr.End.Y + gap;
 
         if (full)
