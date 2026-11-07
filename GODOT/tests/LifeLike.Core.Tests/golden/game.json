@@ -4964,7 +4964,7 @@
       {
         "id": "respect",
         "title": "Respekt",
-        "text": "Respekt dostajesz za|każdy etap i zostaje po|porażce. Stałe premie!",
+        "text": "Każdy etap daje Respekt.|Nie przepada po porażce.|Kupisz za niego premie.",
         "screen": "title",
         "gba": "SELECT, Koszty"
       },
