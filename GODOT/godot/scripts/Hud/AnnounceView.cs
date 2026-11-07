@@ -34,7 +34,14 @@ public partial class AnnounceView : Control
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
     }
 
-    public void Push(Announcement a) => Queue.Push(a);
+    /// <summary>Ile ogłoszeń przyszło (test dymny).</summary>
+    public int Pushed { get; private set; }
+
+    public void Push(Announcement a)
+    {
+        Pushed++;
+        Queue.Push(a);
+    }
 
     public override void _Process(double delta)
     {
