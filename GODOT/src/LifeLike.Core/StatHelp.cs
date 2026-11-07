@@ -13,7 +13,8 @@ public static class StatHelp
 
     public static string Name(StatKind k) => Names[(int)k];
 
-    public static int LuckCritPct(GameData d, int luck) => d.CritBasePct + d.CritPerLuckPct * luck;
+    /// <summary>Kryt ze szczęścia; v0.23.0: najwyżej CritMaxPct.</summary>
+    public static int LuckCritPct(GameData d, int luck) => Math.Min(d.CritMaxPct, d.CritBasePct + d.CritPerLuckPct * luck);
 
     public static int LuckDodgePct(GameData d, int luck) => Math.Min(d.DodgeMaxPct, d.DodgePerLuckPct * Math.Max(0, luck));
 
@@ -56,7 +57,7 @@ public static class StatHelp
             case StatKind.Luck:
                 if (part == 1) return m.Add(Loc.T("unik_3")).Add(d.DodgePerLuckPct).Add(Loc.T("pkt_maks")).Add(d.DodgeMaxPct).Add("%)");
                 if (part == 2) return m.Add(Loc.T("lupy")).Add(d.DropPerLuckPct).Add(Loc.T("szansy_pkt"));
-                return m.Add(Loc.T("szcz_kryt")).Add(d.CritBasePct).Add("% +").Add(d.CritPerLuckPct).Add(Loc.T("pkt"));
+                return m.Add(Loc.T("szcz_kryt")).Add(d.CritBasePct).Add("% +").Add(d.CritPerLuckPct).Add(Loc.T("pkt_maks")).Add(d.CritMaxPct).Add("%)"); // v0.23.0: sufit krytu
             default:
                 return m;
         }

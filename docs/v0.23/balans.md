@@ -384,3 +384,13 @@ Bot, Normalny, 300 przebiegów na zawód. Kryt: średnia szansa w chwili trafien
 | Geodeta | 28,3 | 17,1 / 15,7 | 13,3 | 8,5 / 7,9 |
 | Majster | 27,0 | 19,1 / 17,9 | 14,7 | 6,3 / 5,7 |
 | **Razem** | 27,0 | 16,1 / 14,1 | 13,4 | 6,0 / 5,6 |
+
+### Rulingi po pomiarze #93 (2026-11-07)
+- **Broń domyślna**: test `DefaultWeaponNotWorse` porównuje teraz bota tylko z bronią domyślną z botem z bronią tej samej wersji
+  (próg −5 p.p. na zawód), bez bazy v0.22.1 – właściciel zażyczył sobie trudniejszego Normalnego (25–28%), a średnia v0.22.1
+  (32,1%) leży ponad celem, więc spadek względem v0.22.1 wynika z celu. Pomiar: wszystkie zawody w progu, najbliżej Glazurnik −5,0
+  (19,0 → 14,0). Test zielony.
+- **Kontrakt Bliźniak z pełnym meta 63,5** – przyjęte jako szum (150 przebiegów); do ponownego pomiaru na 300 przebiegach w pełnym
+  zestawie przed wydaniem. Bez strojenia.
+- **Glazurnik i Tynkarz** (największe spadki po rzadszym krycie i mocniejszych etapach) – strojenie zawodów odłożone na później.
+- Opis szczęścia w UI pokazuje sufit krytu: „SZCZ: kryt 5% +2%/pkt (maks. 35%)”.

@@ -72,14 +72,18 @@ public class WeaponBalanceTests
         }
     }
 
-    /// <summary>Spec. 4.7 pkt 2: bot tylko z bronią domyślną – Normalny nie niżej niż v0.22.1 −5 p.p. dla żadnego zawodu.</summary>
+    /// <summary>
+    /// Spec. 4.7 pkt 2: bot tylko z bronią domyślną – Normalny nie niżej niż bot z bronią tej samej wersji −5 p.p. dla żadnego
+    /// zawodu. Bez bazy v0.22.1: właściciel zażyczył sobie trudniejszego Normalnego (25–28%, średnia v0.22.1 to 32,1%), więc spadek
+    /// względem v0.22.1 wynika z celu, a nie z broni domyślnej.
+    /// </summary>
     [BalanceFact]
     public void DefaultWeaponNotWorse()
     {
         var r = Result.Value;
         for (var c = 0; c < D.Classes.Length; ++c)
         {
-            Assert.True(r.DefaultOnly.Win10[c] >= BaseWin10[c] - 50, $"{D.Classes[c].Name}: {r.DefaultOnly.Win10[c] / 10.0} vs v0.22.1 {BaseWin10[c] / 10.0}");
+            Assert.True(r.DefaultOnly.Win10[c] >= r.Normal.Win10[c] - 50, $"{D.Classes[c].Name}: {r.DefaultOnly.Win10[c] / 10.0} vs bot z bronią {r.Normal.Win10[c] / 10.0}");
         }
     }
 
@@ -238,9 +242,9 @@ public class WeaponBalanceTests
         sb.AppendLine($"| Akt 0 + meta | {P(r.Act0)} | 65–75 |");
         sb.AppendLine($"| Inwestor (wszystkie modyfikatory) | {P(r.Investor)} | 5–15 |");
         for (var k = 1; k < D.Career.Length; ++k) sb.AppendLine($"| Kontrakt {D.Career[k].Short} bez meta / pełne meta | {P(r.ContractNone[k])} / {P(r.ContractFull[k])} | 25–40 / 65–80 |");
-        sb.AppendLine($"| Tylko broń domyślna, Normalny | {P(r.DefaultOnly.OpenPct)} (wszystkie {P(r.DefaultOnly.AllPct)}) | zawód ≥ v0.22.1 −5 p.p. |");
+        sb.AppendLine($"| Tylko broń domyślna, Normalny | {P(r.DefaultOnly.OpenPct)} (wszystkie {P(r.DefaultOnly.AllPct)}) | zawód ≥ bot z bronią −5 p.p. |");
         sb.AppendLine();
-        sb.AppendLine("| Zawód | v0.22.1 | Bot (Normalny) | Tylko domyślna | Δ domyślna | Najgorszy etap domyślnej (Δ udziału porażek, p.p.) |");
+        sb.AppendLine("| Zawód | v0.22.1 | Bot (Normalny) | Tylko domyślna | Δ domyślna (vs bot) | Najgorszy etap domyślnej (Δ udziału porażek, p.p.) |");
         sb.AppendLine("|---|---|---|---|---|---|");
         for (var c = 0; c < D.Classes.Length; ++c)
         {
@@ -254,7 +258,7 @@ public class WeaponBalanceTests
                     ws = s;
                 }
             }
-            sb.AppendLine($"| {D.Classes[c].Name} | {P10(BaseWin10[c])} | {P10(r.Normal.Win10[c])} | {P10(r.DefaultOnly.Win10[c])} | {P10(r.DefaultOnly.Win10[c] - BaseWin10[c])} | {ws}: {P10(wd)} |");
+            sb.AppendLine($"| {D.Classes[c].Name} | {P10(BaseWin10[c])} | {P10(r.Normal.Win10[c])} | {P10(r.DefaultOnly.Win10[c])} | {P10(r.DefaultOnly.Win10[c] - r.Normal.Win10[c])} | {ws}: {P10(wd)} |");
         }
         sb.AppendLine();
         sb.AppendLine("Porażki na etapach (etap: udział % wszystkich przebiegów zawodu), Normalny:");

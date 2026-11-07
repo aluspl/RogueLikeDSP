@@ -253,7 +253,8 @@ public class BehaviorAndActTests
         Assert.Equal("nie dla tej broni", StatHelp.Effect(D, new Message(), StatKind.Agi, 5, false).Text);
         Assert.Equal("-2 obrażeń od problemów", StatHelp.Effect(D, new Message(), StatKind.Def, 5, false).Text);
         Assert.Equal("kryt 15%, unik 10%", StatHelp.Effect(D, new Message(), StatKind.Luck, 5, false).Text);
-        Assert.Equal("SZCZ: kryt 5% +2%/pkt", StatHelp.Rule(D, new Message(), StatKind.Luck).Text);
+        Assert.Equal("kryt 35%, unik 20%", StatHelp.Effect(D, new Message(), StatKind.Luck, 30, false).Text); // sufit krytu
+        Assert.Equal("SZCZ: kryt 5% +2%/pkt (maks. 35%)", StatHelp.Rule(D, new Message(), StatKind.Luck).Text);
         Assert.Equal("unik +2%/pkt (maks. 20%)", StatHelp.Rule(D, new Message(), StatKind.Luck, 1).Text);
         Assert.Equal("łupy: +2% szansy/pkt", StatHelp.Rule(D, new Message(), StatKind.Luck, 2).Text);
     }
