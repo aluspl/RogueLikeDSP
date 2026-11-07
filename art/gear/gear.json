@@ -1,0 +1,343 @@
+{
+ "version": 1,
+ "frame": {
+  "gba": 16,
+  "godot": 32
+ },
+ "rows": "slot * 3 + rarity",
+ "slots": [
+  "kask",
+  "rekawice",
+  "kamizelka",
+  "buty",
+  "pas"
+ ],
+ "rarities": [
+  "zwykly",
+  "solidny",
+  "markowy"
+ ],
+ "rarityNames": [
+  "Zwykły",
+  "Solidny",
+  "Markowy"
+ ],
+ "columns": {
+  "directions": [
+   "down",
+   "up",
+   "left",
+   "right"
+  ],
+  "gba": {
+   "frames": [
+    "A",
+    "B"
+   ],
+   "column": "dir * 2 + frame",
+   "note": "klatka A/B jak actors.bmp (anim_b w main.cpp)"
+  },
+  "godot": {
+   "frames": [
+    "walkA",
+    "walkAstep",
+    "walkB",
+    "walkBstep",
+    "breath"
+   ],
+   "column": "dir * 5 + frame",
+   "note": "jak actors_anim.png: AnimWalk0..3 (A, A w kroku, B, B w kroku), AnimBreath; klatka statyczna A = walkA, B = walkB"
+  },
+  "directionNote": "bohater nie ma klatek kierunkowych: down = up = right = klatka bohatera, left = odbicie lustrzane. Gdy rysuje się nakładkę tą samą transformacją co bohatera (ActorSprite.Flip), wystarczy kolumna down."
+ },
+ "drawOrder": [
+  "buty",
+  "kamizelka",
+  "pas",
+  "rekawice",
+  "kask"
+ ],
+ "drawOrderNote": "bohater -> buty -> kamizelka -> pas -> rękawice -> kask -> broń w ręce. Przy kierunku up broń rysuje się pod bohaterem i całym sprzętem (jak w art/weapons/README.md); sprzęt zawsze nad bohaterem (nie ma widoku z tyłu).",
+ "offsets": {
+  "kierownik": [
+   0,
+   0
+  ],
+  "murarz": [
+   0,
+   0
+  ],
+  "ciesla": [
+   0,
+   0
+  ],
+  "elektryk": [
+   0,
+   0
+  ],
+  "hydraulik": [
+   0,
+   0
+  ],
+  "glazurnik": [
+   0,
+   0
+  ],
+  "dekarz": [
+   0,
+   0
+  ],
+  "tynkarz": [
+   0,
+   0
+  ],
+  "operator": [
+   0,
+   0
+  ],
+  "spawacz": [
+   0,
+   0
+  ],
+  "geodeta": [
+   0,
+   0
+  ],
+  "majster": [
+   0,
+   0
+  ]
+ },
+ "offsetsNote": "wszystkie 12 zawodów mają tę samą sylwetkę (pixel_art.WORKER_TOP + nogi A/B), przesunięcia 0",
+ "verifyGodotMismatchPixels": {
+  "kierownik": 7,
+  "murarz": 37,
+  "ciesla": 22,
+  "elektryk": 52,
+  "hydraulik": 52,
+  "glazurnik": 22,
+  "dekarz": 22,
+  "tynkarz": 52,
+  "operator": 22,
+  "spawacz": 112,
+  "geodeta": 52,
+  "majster": 52
+ },
+ "toolCoversHand": {
+  "kierownik": [
+   [
+    12,
+    10
+   ]
+  ],
+  "murarz": [
+   [
+    12,
+    11
+   ]
+  ],
+  "hydraulik": [
+   [
+    12,
+    11
+   ]
+  ],
+  "operator": [
+   [
+    12,
+    10
+   ]
+  ],
+  "spawacz": [
+   [
+    12,
+    10
+   ]
+  ]
+ },
+ "toolCoversHandNote": "narzędzie zawodu jest wrysowane w klatkę actors.png na prawej dłoni - tam rękawica zasłoni piksel narzędzia (bez znaczenia, gdy w ręce rysowana jest broń)",
+ "palette": [
+  "#ff00ff",
+  "#1a1a1a",
+  "#f0f0f0",
+  "#c8c8c8",
+  "#8a8a8a",
+  "#54545e",
+  "#7a8c70",
+  "#54644e",
+  "#2096a4",
+  "#124860",
+  "#84d6de",
+  "#f6c020",
+  "#ba8412",
+  "#242428",
+  "#8b5a2b",
+  "#c48c4e"
+ ],
+ "paletteNames": [
+  "przezroczysty",
+  "obrys",
+  "biel",
+  "jasnoszary",
+  "szary",
+  "ciemnoszary",
+  "szarozielony",
+  "szarozielony cień",
+  "morski",
+  "głęboki morski",
+  "morski blik",
+  "żółty",
+  "żółty cień",
+  "czerń",
+  "brąz",
+  "jasny brąz"
+ ],
+ "items": [
+  {
+   "row": 0,
+   "slot": "kask",
+   "slotName": "Kask",
+   "rarity": "zwykly",
+   "rarityName": "Zwykły",
+   "item": "Kask budowlany",
+   "gbaTiles8x8": 2
+  },
+  {
+   "row": 1,
+   "slot": "kask",
+   "slotName": "Kask",
+   "rarity": "solidny",
+   "rarityName": "Solidny",
+   "item": "Kask z latarką",
+   "gbaTiles8x8": 2
+  },
+  {
+   "row": 2,
+   "slot": "kask",
+   "slotName": "Kask",
+   "rarity": "markowy",
+   "rarityName": "Markowy",
+   "item": "Kask markowy",
+   "gbaTiles8x8": 2
+  },
+  {
+   "row": 3,
+   "slot": "rekawice",
+   "slotName": "Rękawice",
+   "rarity": "zwykly",
+   "rarityName": "Zwykły",
+   "item": "Rękawice robocze",
+   "gbaTiles8x8": 2
+  },
+  {
+   "row": 4,
+   "slot": "rekawice",
+   "slotName": "Rękawice",
+   "rarity": "solidny",
+   "rarityName": "Solidny",
+   "item": "Rękawice wzmacniane",
+   "gbaTiles8x8": 2
+  },
+  {
+   "row": 5,
+   "slot": "rekawice",
+   "slotName": "Rękawice",
+   "rarity": "markowy",
+   "rarityName": "Markowy",
+   "item": "Rękawice markowe",
+   "gbaTiles8x8": 2
+  },
+  {
+   "row": 6,
+   "slot": "kamizelka",
+   "slotName": "Kamizelka",
+   "rarity": "zwykly",
+   "rarityName": "Zwykły",
+   "item": "Kamizelka odblaskowa",
+   "gbaTiles8x8": 2
+  },
+  {
+   "row": 7,
+   "slot": "kamizelka",
+   "slotName": "Kamizelka",
+   "rarity": "solidny",
+   "rarityName": "Solidny",
+   "item": "Kamizelka ocieplana",
+   "gbaTiles8x8": 2
+  },
+  {
+   "row": 8,
+   "slot": "kamizelka",
+   "slotName": "Kamizelka",
+   "rarity": "markowy",
+   "rarityName": "Markowy",
+   "item": "Kamizelka markowa",
+   "gbaTiles8x8": 2
+  },
+  {
+   "row": 9,
+   "slot": "buty",
+   "slotName": "Buty",
+   "rarity": "zwykly",
+   "rarityName": "Zwykły",
+   "item": "Buty robocze",
+   "gbaTiles8x8": 2
+  },
+  {
+   "row": 10,
+   "slot": "buty",
+   "slotName": "Buty",
+   "rarity": "solidny",
+   "rarityName": "Solidny",
+   "item": "Buty z podnoskiem",
+   "gbaTiles8x8": 2
+  },
+  {
+   "row": 11,
+   "slot": "buty",
+   "slotName": "Buty",
+   "rarity": "markowy",
+   "rarityName": "Markowy",
+   "item": "Buty markowe",
+   "gbaTiles8x8": 2
+  },
+  {
+   "row": 12,
+   "slot": "pas",
+   "slotName": "Pas",
+   "rarity": "zwykly",
+   "rarityName": "Zwykły",
+   "item": "Pas narzędziowy",
+   "gbaTiles8x8": 2
+  },
+  {
+   "row": 13,
+   "slot": "pas",
+   "slotName": "Pas",
+   "rarity": "solidny",
+   "rarityName": "Solidny",
+   "item": "Pas monterski z kaburą",
+   "gbaTiles8x8": 2
+  },
+  {
+   "row": 14,
+   "slot": "pas",
+   "slotName": "Pas",
+   "rarity": "markowy",
+   "rarityName": "Markowy",
+   "item": "Pas markowy",
+   "gbaTiles8x8": 2
+  }
+ ],
+ "gba": {
+  "tilesPerSlot8x8": {
+   "kask": 2,
+   "rekawice": 2,
+   "kamizelka": 2,
+   "buty": 2,
+   "pas": 2
+  },
+  "tilesAllSlots8x8": 4,
+  "file": "gear_overlay_gba.bmp (indeksowana, paleta = palette)"
+ }
+}
