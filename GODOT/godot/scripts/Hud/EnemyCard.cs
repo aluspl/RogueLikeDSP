@@ -14,7 +14,8 @@ namespace LifeLike.Game.Hud;
 /// </summary>
 public partial class EnemyCard : Control
 {
-    private const int CardH = 94;
+    /// <summary>v0.23.0: w pionie dodatkowy wiersz mnożnika ciosu; w poziomie (mało miejsca na mapę) mnożnik w wierszu na zmianę.</summary>
+    private static int CardH => Layout.Portrait ? 94 : 76;
     private CoreGame _g;
     private int _enemy = -1, _index, _count;
     private float _clock;
@@ -119,11 +120,18 @@ public partial class EnemyCard : Control
         if (elite) lines.Add((BoonLook.Elite(_g, _enemy), Ink.MapLoot));
         var states = BoonLook.States(_g, _enemy);
         if (states.Length > 0) lines.Add((Loc.T("stan") + states, Ink.MapWet));
-        f.Draw(this, new Vector2(x, top + 38), f.Fit(Loc.T("twoj_cios") + HitLine, (int)(w - x - 8)), _hitPct > 100 ? Ink.MapGood : _hitPct < 100 ? Ink.MapBad : Ink.MapDim);
+        var hitInk = _hitPct > 100 ? Ink.MapGood : _hitPct < 100 ? Ink.MapBad : Ink.MapDim;
+        var row = top + 38;
+        if (Layout.Portrait)
+        {
+            f.Draw(this, new Vector2(x, row), f.Fit(Loc.T("twoj_cios") + HitLine, (int)(w - x - 8)), hitInk);
+            row += 18;
+        }
+        else lines.Insert(0, (Loc.T("twoj_cios") + HitLine, hitInk));
         var line = lines[(int)(_clock / 2f) % lines.Count];
-        f.Draw(this, new Vector2(x, top + 56), f.Fit(line.Text, (int)(w - x - 8)), line.Ink);
+        f.Draw(this, new Vector2(x, row), f.Fit(line.Text, (int)(w - x - 8)), line.Ink);
         var back = ButtonNames.Pick(Loc.T("pusc_z_wroc"), Loc.T("pusc_wroc"));
         var hint = _count > 1 ? $"{_index + 1}/{_count}  {ButtonNames.Pick(Loc.T("strzalki_nastepny"), Loc.T("przesun_nastepny"))}   {back}" : back;
-        f.Draw(this, new Vector2(w - 6, top + 74), hint, Ink.MapDim, TextAlign.Right);
+        f.Draw(this, new Vector2(w - 6, row + 18), hint, Ink.MapDim, TextAlign.Right);
     }
 }

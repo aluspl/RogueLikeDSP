@@ -273,8 +273,10 @@ public sealed class HelpPage : PhonePage
     {
         var h = _d.HitTypes;
         var width = (int)(p.Right - 6 - p.Left - 12);
-        var text = string.Join(" ", Loc.T("pomoc_bronie_1"), Loc.F("pomoc_bronie_2", h.StunChancePct, h.CutCritPct, h.PierceDef),
-            Loc.T("pomoc_bronie_3"), Loc.T("pomoc_bronie_4"), Loc.T("pomoc_bronie_5"));
+        var text = PhoneView.Full
+            ? string.Join(" ", Loc.T("pomoc_bronie_1"), Loc.F("pomoc_bronie_2", h.StunChancePct, h.CutCritPct, h.PierceDef),
+                Loc.T("pomoc_bronie_3"), Loc.T("pomoc_bronie_4"), Loc.T("pomoc_bronie_5"))
+            : Loc.F("pomoc_bronie_2", h.StunChancePct, h.CutCritPct, h.PierceDef) + " " + Loc.T("pomoc_bronie_krotko"); // telefon w poziomie: krótko
         var lines = p.F.Wrap(text, width);
         var c = p.Card(p.Section(p.Top, Loc.T("pomoc_bronie_tytul")), lines.Count);
         var x = p.TextX(c);

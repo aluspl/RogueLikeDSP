@@ -21,6 +21,9 @@ public static class WeaponLook
     /// <summary>Tekst w kolorze rzadkości na jasnej karcie telefonu (przyciemniony – czytelny na bieli).</summary>
     public static Ink PhoneInk(GameData d, int r) => new(RarityColor(d, r).Darkened(r == 3 ? 0.35f : 0.15f), Colors.Transparent);
 
+    /// <summary>Podbarwienie ikony broni: Zwykła bez zmian (szary ściemniłby ikonę), reszta – jasny kolor rzadkości.</summary>
+    public static Color IconTint(GameData d, int r) => r <= 0 ? Colors.White : RarityColor(d, r).Lightened(0.35f);
+
     /// <summary>Tekst w kolorze rzadkości na mapie / ciemnym tle (rozjaśniony, z cieniem).</summary>
     public static Ink MapInk(GameData d, int r) => new(RarityColor(d, r).Lightened(r == 0 ? 0.35f : 0.25f), Ink.Map.Edge);
 

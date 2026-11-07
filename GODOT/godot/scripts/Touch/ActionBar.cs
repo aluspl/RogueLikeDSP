@@ -157,7 +157,7 @@ public partial class ActionBar : Control, ITapTargets
                 {
                     var pulse = 0.5f + 0.5f * Mathf.Sin(_clock * 6f);
                     DrawStyleBox(Ui.Box(new Color(rc, 0.15f + 0.2f * pulse), 8), new Rect2(icon - new Vector2(3, 2), new Vector2(38, 36)));
-                    Assets.DrawFrame(this, Assets.MenuIcons, 0, 32, icon, 1, rc.Lightened(0.3f));
+                    Assets.DrawFrame(this, Assets.MenuIcons, 0, 32, icon, 1, WeaponLook.IconTint(g.D, g.WeaponRarity));
                     f.Draw(this, icon + new Vector2(24, 14), "B", Ink.Map, TextAlign.Center);
                     label = Loc.T("cios_b");
                 }
@@ -178,6 +178,7 @@ public partial class ActionBar : Control, ITapTargets
                 label = Loc.T("telefon");
                 break;
         }
+        if (b == BarButton.Thermos && f.Measure(label) > r.Size.X - 2) label = g.Thermos.ToString(); // v0.23.0: wąski przycisk (7 na pasku)
         var ink = on ? Ink.White : enabled ? Ink.Map : Ink.MapDim;
         f.Draw(this, new Vector2(r.GetCenter().X, r.End.Y - 20), f.Fit(label, (int)r.Size.X - 2), ink, TextAlign.Center);
     }

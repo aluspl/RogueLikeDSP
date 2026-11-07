@@ -28,6 +28,7 @@ public sealed class MonkeyTest
     [
         Key.Up, Key.Down, Key.Left, Key.Right, Key.Up, Key.Down, Key.Left, Key.Right, Key.Space, Key.Space, Key.Enter, Key.Enter,
         Key.Z, Key.Escape, Key.Tab, Key.R, Key.M, Key.Q, Key.E, Key.I, Key.K, Key.P, Key.Space, Key.Z, Key.Enter,
+        Key.F, Key.X, // v0.23.0: Cios B, zamiana broni
     ];
 
     private readonly App _app;

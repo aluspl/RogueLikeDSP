@@ -193,7 +193,7 @@ public partial class HudTop : Control
         else x += f.Measure("R") + 8;
 
         // v0.23.0: broń w kolorze rzadkości i odnowienie trybu B („B” – gotowy, liczba – tury)
-        if (draw) Assets.DrawFrame(this, Assets.UiMenu, 0, Assets.Icon, new Vector2(x, 20), 1, WeaponLook.RarityColor(g.D, g.WeaponRarity).Lightened(0.25f));
+        if (draw) Assets.DrawFrame(this, Assets.UiMenu, 0, Assets.Icon, new Vector2(x, 20), 1, WeaponLook.IconTint(g.D, g.WeaponRarity));
         x += 18;
         if (labels) x += Text(x, Loc.T("hud_cios_b"), g.WeaponBCd == 0 ? Ink.MapGood : Ink.MapDim) + 4;
         if (g.WeaponBCd > 0) x += Text(x, g.WeaponBCd.ToString(), Ink.MapDim) + 8;

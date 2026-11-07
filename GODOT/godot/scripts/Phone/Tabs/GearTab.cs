@@ -67,7 +67,7 @@ public sealed class GearTab : PhonePage
         var y = p.Section(p.Top, Loc.T("narzedzie_4"), _breakdown is null ? "" : ButtonNames.Pick(Loc.T("i_rozpiska"), Loc.T("dotknij_rozpiska")));
         var full = PhoneView.Full; // v0.23.0: tryby słowami tylko w pełnym telefonie (w poziomie brak miejsca)
         var belt = g.HasBelt();
-        var c0 = p.Card(y, 3 + (full ? 2 : 0) + (belt ? 1 : 0));
+        var c0 = p.Card(y, (full ? 5 : 2) + (belt ? 1 : 0)); // w poziomie: rzadkość i typ w wierszu krytu (bez trybów)
         var tx = p.TextX(c0);
         var right = c0.End.X - 6;
         var w = g.Weapon;
@@ -78,16 +78,21 @@ public sealed class GearTab : PhonePage
         p.Text(tx, p.RowY(c0, 0), $"{g.WeaponTitle()} {b.Min}-{b.Max}", Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
         p.Divider(c0, 1);
         var avg = DamageHelp.AddTenths(new Message(), b.Avg10).Text;
-        p.Text(tx, p.RowY(c0, 1), Loc.F("kryt_srednio", b.CritMin, b.CritMax, b.CritChance(), avg), Ink.Prog, TextAlign.Left, right - tx);
+        var bState = g.WeaponBCd == 0 ? Loc.T("b_gotowy") : Loc.F("b_za", g.WeaponBCd);
+        var row = 1;
+        if (full)
+        {
+            p.Text(tx, p.RowY(c0, 1), Loc.F("kryt_srednio", b.CritMin, b.CritMax, b.CritChance(), avg), Ink.Prog, TextAlign.Left, right - tx);
+            row = 2;
+            p.Divider(c0, row);
+        }
         p.HitRow(c0, 0, WeaponRow);
         p.HitRow(c0, 1, WeaponRow);
-        // v0.23.0: rzadkość i typ ciosu, odnowienie B, tryby A i B, kabura
-        var row = 2;
-        p.Divider(c0, row);
+        // v0.23.0: rzadkość i typ ciosu (w poziomie z krytem), odnowienie B, tryby A i B, kabura
         p.Stripe(c0, row, rc);
-        var bState = g.WeaponBCd == 0 ? Loc.T("b_gotowy") : Loc.F("b_za", g.WeaponBCd);
         pw = p.Pill(right, p.RowY(c0, row), bState, g.WeaponBCd == 0 ? PillKind.Group : PillKind.Gray);
-        p.Text(tx, p.RowY(c0, row), $"{WeaponLook.RarityName(d, g.WeaponRarity)} · {WeaponLook.Hits(d, w)}", WeaponLook.PhoneInk(d, g.WeaponRarity), TextAlign.Left, right - pw - 4 - tx);
+        var kind = $"{WeaponLook.RarityName(d, g.WeaponRarity)} · {WeaponLook.Hits(d, w)}"; // kryt w poziomie – w karcie premii niżej
+        p.Text(tx, p.RowY(c0, row), kind, WeaponLook.PhoneInk(d, g.WeaponRarity), TextAlign.Left, right - pw - 4 - tx);
         row++;
         if (full)
         {

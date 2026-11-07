@@ -37,6 +37,7 @@ public sealed class DebugScenes
         .. CareerStaging.Names,
         .. FilterStaging.Names,
         .. BetweenStaging.Names,
+        .. WeaponStaging.Names,
     ];
 
     private readonly App _app;
@@ -47,6 +48,7 @@ public sealed class DebugScenes
     private readonly CareerStaging _career;
     private readonly FilterStaging _filters;
     private readonly BetweenStaging _between;
+    private readonly WeaponStaging _weapons;
 
     public DebugScenes(App app)
     {
@@ -58,6 +60,7 @@ public sealed class DebugScenes
         _career = new CareerStaging(app);
         _filters = new FilterStaging(app);
         _between = new BetweenStaging(app);
+        _weapons = new WeaponStaging(app);
     }
 
     private ScreenFlow Flow => _app.Flow;
@@ -79,6 +82,11 @@ public sealed class DebugScenes
         if (BetweenStaging.Handles(scene)) // v0.22.0 (UX A): rozmowa z Kierownikiem Markiem między budowami
         {
             await _between.Setup(scene);
+            return;
+        }
+        if (WeaponStaging.Handles(scene)) // v0.23.0: bronie – celowanie wzorem, Cios B, pas, karta problemu, rzadkość
+        {
+            await _weapons.Setup(scene);
             return;
         }
         if (scene == "filter-boon") scene = "boon-pick"; // v0.21.53: oferta premii w filtrze (litery rzadkości)
