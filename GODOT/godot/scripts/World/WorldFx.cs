@@ -42,6 +42,7 @@ public sealed class WorldFx
                 if (!heroHitEnemy)
                 {
                     heroHitEnemy = true;
+                    _w.HeroAttacked(pos); // v0.23.0: broń w stronę celu, wymach
                     if (CoreGame.Cheb(g.Hero.X, g.Hero.Y, h.X, h.Y) <= 1) Hero.Bump(pos - Hero.Position);
                     else Hero.Bump(new Vector2(Mathf.Sign(pos.X - Hero.Position.X), Mathf.Sign(pos.Y - Hero.Position.Y)) * 0.6f);
                 }

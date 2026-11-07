@@ -533,6 +533,36 @@ def frame16(g, grip, rarity, glow=True):
     return finish(f, rarity, glow), (grip[0] + ox, grip[1] + oy)
 
 
+MAP_SCALE = 0.75   # v0.23.0 (task 9c): broń w ręce na mapie ~3/4 (12 px na bohaterze 16 px)
+
+
+def shrink(g, grip, f=MAP_SCALE):
+    """Mapa broni zmniejszona najbliższym sąsiadem (próbki ze środków pól) + przeliczony chwyt."""
+    h, w = len(g), len(g[0])
+    nh, nw = max(1, round(h * f)), max(1, round(w * f))
+    out = [[g[min(h - 1, int((y + 0.5) / f))][min(w - 1, int((x + 0.5) / f))] for x in range(nw)] for y in range(nh)]
+    gx, gy = min(nw - 1, int(grip[0] * f)), min(nh - 1, int(grip[1] * f))
+    if not out[gy][gx]:   # chwyt na pustym polu - najbliższe niepuste
+        cand = [(abs(x - gx) + abs(y - gy), x, y) for y in range(nh) for x in range(nw) if out[y][x]]
+        _, gx, gy = min(cand)
+    return out, (gx, gy)
+
+
+def map_frame16(wid, d, rarity):
+    """Broń w ręce na mapie: mapa 3/4, obwódka (poświata) tylko Markowa i Mistrzowska - Zwykła i Solidna sam obrys
+    i kolor akcentu (pełny rozmiar przytłaczał postać i zwisał pod butami przy down)."""
+    spec = W[wid]
+    small, sgrip = shrink(grid_of(spec["rows"]), spec["grip"])
+    saved = dict(spec)
+    spec["rows"] = ["".join(".KWlgdTtRYCOHhA*"[v] for v in r) for r in small]
+    spec["grip"] = sgrip
+    try:
+        g, grip = oriented(wid, d)
+    finally:
+        spec.update(saved)
+    return frame16(g, grip, rarity, glow=rarity >= 2)
+
+
 def diagonal16(wid):
     """Broń obrócona o 45 st. (RotSprite) i wyśrodkowana w 16x16 - ikony narzędzi ręcznych (jak w klasycznych RPG)."""
     g = grid_of(W[wid]["rows"])
@@ -842,6 +872,8 @@ def main():
 
     inhand = Image.new("RGBA", (16 * 16, 16 * n), (0, 0, 0, 0))
     inhand2 = Image.new("RGBA", (32 * 16, 32 * n), (0, 0, 0, 0))
+    inmap = Image.new("RGBA", (16 * 16, 16 * n), (0, 0, 0, 0))
+    inmap2 = Image.new("RGBA", (32 * 16, 32 * n), (0, 0, 0, 0))
     icons = Image.new("RGBA", (16 * 4, 16 * n), (0, 0, 0, 0))
     icons2 = Image.new("RGBA", (32 * 4, 32 * n), (0, 0, 0, 0))
     gba_idx = []   # indeksy (bez palety) dla GBA: wiersz = broń, kolumna = kierunek (paleta = rzadkość)
@@ -856,6 +888,7 @@ def main():
     for row, (wid, name, master) in enumerate(weapons):
         rars = rarities_for(master)
         anchors = {}
+        map_anchors = {}
         for di, d in enumerate(DIRS):
             g, grip = oriented(wid, d)
             for r in rars:
@@ -865,6 +898,10 @@ def main():
                 inhand.paste(im, ((r * 4 + di) * 16, row * 16))
                 im2 = to_image(scale2x(f), pals[r])
                 inhand2.paste(im2, ((r * 4 + di) * 32, row * 32))
+                fm, manchor = map_frame16(wid, d, r)
+                map_anchors[d] = list(manchor)
+                inmap.paste(to_image(fm, pals[r]), ((r * 4 + di) * 16, row * 16))
+                inmap2.paste(to_image(scale2x(fm), pals[r]), ((r * 4 + di) * 32, row * 32))
         for r in rars:
             f = icon16(wid, r)
             icons.paste(to_image(f, pals[r]), (r * 16, row * 16))
@@ -880,9 +917,13 @@ def main():
                                     "family": W[wid]["family"], "master": master,
                                     "rarities": [RAR_KEYS[r] for r in rars],
                                     "grip": anchors, "gripGodot": {k: [v[0] * 2, v[1] * 2] for k, v in anchors.items()},
+                                    "gripMap": map_anchors,
+                                    "gripMapGodot": {k: [v[0] * 2, v[1] * 2] for k, v in map_anchors.items()},
                                     "swing": swing_list})
     inhand.save(os.path.join(OUT, "weapons_inhand.png"))
     inhand2.save(os.path.join(OUT, "weapons_inhand_2x.png"))
+    inmap.save(os.path.join(OUT, "weapons_inhand_map.png"))
+    inmap2.save(os.path.join(OUT, "weapons_inhand_map_2x.png"))
     icons.save(os.path.join(OUT, "weapons_icons.png"))
     icons2.save(os.path.join(OUT, "weapons_icons_2x.png"))
 

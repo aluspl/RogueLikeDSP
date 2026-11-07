@@ -279,7 +279,7 @@ def export_notool():
     return len(HERO_FRAMES)
 
 
-ART_COPIES = [("art/weapons/weapons_inhand_2x.png", "weapons/inhand.png"),
+ART_COPIES = [("art/weapons/weapons_inhand_map_2x.png", "weapons/inhand.png"),   # na mapie broń 3/4 (task 9c)
               ("art/weapons/weapons_icons_2x.png", "weapons/icons.png"),
               ("art/weapons/weapons_icons.png", "weapons/icons_1x.png"),
               ("art/weapons/weapons_swing_2x.png", "weapons/swing.png"),

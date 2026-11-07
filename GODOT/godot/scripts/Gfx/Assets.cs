@@ -84,6 +84,11 @@ public static class Assets
     /// <summary>Chód (4 klatki) i oddech postaci: wiersz = klatka z actors.png, kolumna = AnimWalk0..3 / AnimBreath.</summary>
     public static Texture2D ActorsAnim => Tex("sprites/actors_anim.png");
     public static Texture2D ActorsAnimWhite => Tex("sprites/actors_anim_white.png");
+    /// <summary>v0.23.0: te same arkusze, fachowcy bez narzędzia zawodu w dłoni (w ręce rysowana jest broń).</summary>
+    public static Texture2D ActorsNoTool => Tex("sprites/actors_notool.png");
+    public static Texture2D ActorsNoToolWhite => Tex("sprites/actors_notool_white.png");
+    public static Texture2D ActorsAnimNoTool => Tex("sprites/actors_anim_notool.png");
+    public static Texture2D ActorsAnimNoToolWhite => Tex("sprites/actors_anim_notool_white.png");
     public static Texture2D Truck => Tex("sprites/truck.png");
     public static Texture2D Particles => Tex("sprites/particles.png");
     public static Texture2D Houses => Tex("sprites/houses.png");

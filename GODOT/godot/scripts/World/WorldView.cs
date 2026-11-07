@@ -94,7 +94,7 @@ public partial class WorldView : Node2D
         _light.Bind(this);
         _backdrop.Bind(this);
         _walls.Attach(_actors);
-        _hero = new ActorSprite { AnimPeriod = 0.4f, Breathes = true };
+        _hero = new ActorSprite { AnimPeriod = 0.4f, Breathes = true, Dress = new HeroDress() };
         _actors.AddChild(_hero);
         _ally = new ActorSprite { AnimPeriod = 0.4f, Breathes = true, AnimPhase = 0.2f, Visible = false };
         _actors.AddChild(_ally);
@@ -238,6 +238,10 @@ public partial class WorldView : Node2D
             }
             _pickupActive[i] = p.Active;
             s.BaseFrame = Assets.PickupFrame(p);
+            var tool = p.Type == PickupType.Tool && p.Arg < _g.D.Tools.Length; // v0.23.0: broń na placu – ikona w kolorze rzadkości
+            s.DropWeapon = tool ? _g.D.Weapons[_g.D.Tools[p.Arg].Weapon] : null;
+            s.DropRarity = tool && s.DropWeapon.Master ? 3 : p.Trait;
+            s.DropGlow = tool ? WeaponLook.RarityColor(_g.D, s.DropRarity) : Colors.Transparent;
             s.Visible = p.Active && _g.Explored(p.X, p.Y);
         }
     }
@@ -284,18 +288,46 @@ public partial class WorldView : Node2D
 
     private void SyncHero(bool snap)
     {
-        _hero.BaseFrame = Assets.HeroFrame(_g.D, ProfileSource(), _g.Cls); // kask w paski z sekretu; w miejscu oddycha (bez klatki B), w kroku - chód z actors_anim
-        HelmetTint.Apply(_hero, _g.D, ProfileSource(), _g.Cls); // v0.21.52: kolor kasku (cz. b: kask mistrza tylko mistrzem)
+        var dress = _hero.Dress;
+        dress.Sync(_g);
+        // v0.23.0: kask ze sprzętu zakrywa wygląd z odznak i zleceń (kolor kasku, kask w paski) – wtedy zwykła klatka zawodu
+        var look = dress.HasHelmet ? null : ProfileSource();
+        _hero.BaseFrame = Assets.HeroFrame(_g.D, look, _g.Cls); // kask w paski z sekretu; w miejscu oddycha (bez klatki B), w kroku - chód z actors_anim
+        HelmetTint.Apply(_hero, _g.D, look, _g.Cls); // v0.21.52: kolor kasku (cz. b: kask mistrza tylko mistrzem)
         var heroDst = GridToScreen(_g.Hero.X, _g.Hero.Y);
         if (!snap && heroDst != _hero.Position && _hero.Position.DistanceTo(heroDst) <= Cell * 2) // pył spod butów
         {
-            if (heroDst.X != _hero.Position.X) _hero.Flip = heroDst.X < _hero.Position.X;
+            var step = Proj.Floor(heroDst) - Proj.Floor(_hero.Position);
+            dress.Dir = WeaponPose.Dir(step.X, step.Y, dress.Dir); // v0.23.0: broń w kierunku ruchu
+            _hero.Flip = WeaponPose.Flip(dress.Dir, _hero.Flip);
             for (var k = -1; k <= 1; k += 2)
                 _fx.Spawn(_hero.Position + new Vector2(k * 6, 12), new Vector2(k * 0.5f, -0.5f), 0, 18, Assets.PDust, 3);
         }
         _hero.MoveTo(heroDst, snap);
-        _hero.Visible = true;
+        _hero.Visible = !HideHero;
         _hero.Modulate = _g.Hero.Alive ? Colors.White : Pal.DeadHero;
+    }
+
+    /// <summary>v0.23.0 (zrzuty): dodatkowa postać na mapie (zestawienie broni / sprzętu); bohater ukryty.</summary>
+    public void AddDebugSprite(ActorSprite s, bool hideHero)
+    {
+        _actors.AddChild(s);
+        if (!hideHero) return;
+        HideHero = true;
+        _hero.Visible = false;
+    }
+
+    /// <summary>v0.23.0 (zrzuty): bohater ukryty (zestawienia broni i sprzętu).</summary>
+    public bool HideHero { get; set; }
+
+    /// <summary>v0.23.0: bohater zaatakował pole p (ekran) – broń w tę stronę i krótki wymach.</summary>
+    public void HeroAttacked(Vector2 target)
+    {
+        var dress = _hero.Dress;
+        var d = Proj.Floor(target) - new Vector2I(_g.Hero.X, _g.Hero.Y);
+        dress.Dir = WeaponPose.Dir(d.X, d.Y, dress.Dir);
+        _hero.Flip = WeaponPose.Flip(dress.Dir, _hero.Flip);
+        dress.Swing();
     }
 
     /// <summary>Pomocnik z brygady: fachowiec obok bohatera, dopóki pomaga.</summary>

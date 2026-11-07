@@ -16,12 +16,14 @@ namespace LifeLike.Game.Debug;
 /// Nóż majstra seniora (weapon-legend-found – ogłoszenie z animacją w zadaniu 9), oferta wymiany z profitami (weapon-perks),
 /// opis ataku pod przyciskiem: Patent Kielni (weapon-tip-kielnia, Markowa z Chwytem, odnowienie), Patent Noża majstra seniora
 /// (weapon-tip-noz) i Cios Kielni (weapon-tip-cios); Sprzęt przewinięty o sekcję w poziomie (gear-scroll).
+/// Task 9c: broń w ręce na mapie – 4 rzadkości x 4 kierunki (hero-weapons: Kielnia Murarza, hero-weapons-big: Łyżka
+/// Operatora koparki), komplety sprzętu Zwykły / Solidny / Markowy na trzech zawodach (hero-gear).
 /// </summary>
 public sealed class WeaponStaging
 {
     public static readonly string[] Names =
         ["weapon-arc", "weapon-b", "weapon-belt", "weapon-card", "weapon-rarity", "weapon-class", "help-weapons", "weapon-legend-found", "weapon-perks", "offer-trait", "weapon-tip-kielnia", "weapon-tip-noz",
-         "weapon-tip-cios", "gear-scroll"];
+         "weapon-tip-cios", "gear-scroll", "hero-weapons", "hero-weapons-big", "hero-gear", "weapon-drops"];
 
     private readonly App _app;
 
@@ -172,6 +174,27 @@ public sealed class WeaponStaging
                 await DebugRunner.Frames(_app.Root, 2); // pierwsze rysowanie liczy, czy trzeba przewijać
                 _app.Nodes.Phone.HandleInput(InputCmd.Of(GameAction.Down));
                 break;
+            case "hero-weapons":
+            case "hero-weapons-big":
+                Open(g);
+                Lineup(g, scene == "hero-weapons-big" ? "operator" : "murarz");
+                break;
+            case "weapon-drops": // broń na placu: Zwykła, Solidna, Markowa, Nóż majstra seniora (Mistrzowska)
+            {
+                Open(g);
+                string[] ids = [g.D.Weapons[g.D.Tools[0].Weapon].Id, "lom", "siekiera", "noz_majstra"];
+                for (var k = 0; k < ids.Length; k++)
+                {
+                    var t = Array.FindIndex(g.D.Tools, x => g.D.Weapons[x.Weapon].Id == ids[k]);
+                    g.Pickups[g.PickupsCount++] = new Pickup(g.Hero.X - 2 + k + (k >= 2 ? 1 : 0), g.Hero.Y + 1, PickupType.Tool, true, t, k);
+                }
+                Refresh(g);
+                break;
+            }
+            case "hero-gear":
+                Open(g);
+                GearLineup(g);
+                break;
             case "weapon-legend-found": // Nóż majstra seniora podniesiony z placu (bohater na polu znajdźki, wpis w dzienniku)
             {
                 var (dx, dy) = OpenSide(g);
@@ -184,6 +207,68 @@ public sealed class WeaponStaging
             }
         }
         await DebugRunner.Frames(_app.Root, 2);
+    }
+
+    /// <summary>Zestawienie na mapie: wiersz = rzadkość broni zawodu, kolumna = kierunek (dół, góra, lewo, prawo).</summary>
+    private void Lineup(CoreGame g, string cls)
+    {
+        var c = Array.FindIndex(g.D.Classes, x => x.Id == cls);
+        var w = g.D.Weapons[g.D.Classes[c].Weapon];
+        int[] dirs = [WeaponPose.Down, WeaponPose.Up, WeaponPose.Left, WeaponPose.Right];
+        for (var r = 0; r < 4; r++)
+        {
+            for (var k = 0; k < 4; k++)
+            {
+                var dress = new World.HeroDress { Weapon = w, Rarity = r, Dir = dirs[k] };
+                AddHero(g.D.Classes[c].Frame, dress, new Godot.Vector2((k - 1.5f) * 52f, (r - 1.5f) * 48f), WeaponPose.Flip(dirs[k], false), k == 0 && r == 0);
+            }
+        }
+    }
+
+    /// <summary>Komplety sprzętu: wiersz = zawód (Murarz, Elektryk, Geodeta), kolumna = bez sprzętu, Zwykły, Solidny, Markowy.</summary>
+    private void GearLineup(CoreGame g)
+    {
+        string[] classes = ["murarz", "elektryk", "geodeta"];
+        for (var row = 0; row < classes.Length; row++)
+        {
+            var c = Array.FindIndex(g.D.Classes, x => x.Id == classes[row]);
+            for (var k = 0; k < 4; k++)
+            {
+                var dress = new World.HeroDress { Weapon = g.D.Weapons[g.D.Classes[c].Weapon], Rarity = Math.Max(0, k - 1), Dir = WeaponPose.Right };
+                for (var s = 0; s < dress.Gear.Length; s++) dress.Gear[s] = k - 1;
+                AddHero(g.D.Classes[c].Frame, dress, new Godot.Vector2((k - 1.5f) * 52f, (row - 1f) * 52f), false, row == 0 && k == 0);
+            }
+        }
+    }
+
+    /// <summary>Podłoga i widoczność w promieniu 5 pól (zestawienie nie wpada we mgłę ani w mury).</summary>
+    private void Open(CoreGame g)
+    {
+        for (var y = g.Hero.Y - 5; y <= g.Hero.Y + 5; y++)
+        {
+            for (var x = g.Hero.X - 5; x <= g.Hero.X + 5; x++)
+            {
+                if (x < 1 || y < 1 || x >= Level.W - 1 || y >= Level.H - 1) continue;
+                g.Lv[x, y] = Tile.Floor;
+            }
+        }
+        Refresh(g);
+        for (var y = g.Hero.Y - 5; y <= g.Hero.Y + 5; y++)
+        {
+            for (var x = g.Hero.X - 5; x <= g.Hero.X + 5; x++)
+            {
+                if (Level.In(x, y)) g.Fov[y * Level.W + x] = Sight.InView;
+            }
+        }
+        _app.Nodes.World.Sync();
+    }
+
+    private void AddHero(int frame, World.HeroDress dress, Godot.Vector2 offset, bool flip, bool first)
+    {
+        var world = _app.Nodes.World;
+        var s = new World.ActorSprite { BaseFrame = frame, Breathes = false, Dress = dress, Flip = flip };
+        world.AddDebugSprite(s, first);
+        s.MoveTo(world.HeroSprite.Position + offset, true);
     }
 
     /// <summary>Plac bez problemów i znajdziek wokół bohatera (pola obok – podłoga).</summary>

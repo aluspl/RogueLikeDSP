@@ -29,6 +29,13 @@ public partial class ActorSprite : Node2D
     public bool Elite { get; set; }
     /// <summary>v0.21.50: stany nad głową (bity: 1 mokry, 2 zapylony, 4 zmrożony).</summary>
     public int States { get; set; }
+    /// <summary>v0.23.0: bohater – sprzęt na sobie i broń w ręce (klatki postaci bez narzędzia zawodu); null = bez.</summary>
+    public HeroDress Dress { get; set; }
+    /// <summary>v0.23.0: broń leżąca na placu – ikona w kolorze rzadkości zamiast skrzynki (null = zwykła klatka);
+    /// Markowa i Mistrzowska z poświatą (DropGlow), Mistrzowska z iskrą.</summary>
+    public LifeLike.Core.Data.WeaponDef DropWeapon { get; set; }
+    public int DropRarity { get; set; }
+    public Color DropGlow { get; set; } = Colors.Transparent;
 
     private Vector2 _bump;
     private float _flash;
@@ -48,6 +55,7 @@ public partial class ActorSprite : Node2D
     {
         var dt = (float)delta;
         _clock += dt;
+        Dress?.Update(dt);
         if (_flash > 0) _flash = Mathf.Max(0, _flash - dt * 4f);
         if (_blink > 0) _blink = Mathf.Max(0, _blink - dt);
         if (_walk > 0)
@@ -140,11 +148,20 @@ public partial class ActorSprite : Node2D
         }
         if (_blink > 0 && ((int)(_blink * 16) & 1) == 1) return;
         var off = at + _bump + new Vector2(0, bobY);
-        DrawSetTransform(off + new Vector2(0, (1 - scale) * s / 2), 0, new Vector2(Flip ? -scale : scale, scale));
+        var xf = new Transform2D(0f, new Vector2(Flip ? -scale : scale, scale), 0f, off + new Vector2(0, (1 - scale) * s / 2));
+        DrawSetTransformMatrix(xf);
         var dst = new Rect2(-s / 2, -s / 2 - 2, s, s);
-        var (tex, white, src) = Source(frame);
-        DrawTextureRectRegion(tex, dst, src, new Color(1, 1, 1, alpha));
+        if (DropWeapon != null && DrawDrop(dst, alpha)) return;
+        var (tex, white, src, anim) = Source(frame);
+        var mod = new Color(1, 1, 1, alpha);
+        if (Dress != null && Dress.WeaponBehind) Dress.DrawWeapon(this, xf, dst, mod); // v0.23.0: przy „up” broń za postacią
+        DrawTextureRectRegion(tex, dst, src, mod);
         if (_flash > 0) DrawTextureRectRegion(white, dst, src, new Color(_flashColor, _flash * 0.85f * alpha));
+        if (Dress != null) // v0.23.0: sprzęt na postaci, broń w dłoni
+        {
+            Dress.DrawGear(this, dst, anim, mod);
+            if (!Dress.WeaponBehind) Dress.DrawWeapon(this, xf, dst, mod);
+        }
         if (Elite) // elita: złoty odcień i narożniki ramki
         {
             DrawTextureRectRegion(white, dst, src, new Color(Pal.EliteGold, 0.2f * alpha));
@@ -174,17 +191,44 @@ public partial class ActorSprite : Node2D
         }
     }
 
-    /// <summary>Tekstura i region klatki: chód z actors_anim w trakcie kroku, oddech w miejscu, inaczej klatka A/B.</summary>
-    private (Texture2D Tex, Texture2D White, Rect2 Src) Source(int frame)
+    /// <summary>Tekstura i region klatki: chód z actors_anim w trakcie kroku, oddech w miejscu, inaczej klatka A/B;
+    /// Anim – kolumna chodu 0-3 / oddech 4 (klatka A = 0, B = 2) dla nakładek sprzętu. v0.23.0: z bronią w ręce – arkusze
+    /// bez narzędzia zawodu.</summary>
+    private (Texture2D Tex, Texture2D White, Rect2 Src, int Anim) Source(int frame)
     {
+        var bare = Dress?.Weapon != null;
         if (Assets.HasWalk(BaseFrame) && _dying < 0f)
         {
-            if (_walk > 0)
-                return (Assets.ActorsAnim, Assets.ActorsAnimWhite, Assets.AnimFrame(BaseFrame, (int)(_walkClock / WalkStep) % Assets.AnimWalkFrames));
-            if (Breathes && ((int)((_clock + AnimPhase) / 0.5f) & 1) == 1)
-                return (Assets.ActorsAnim, Assets.ActorsAnimWhite, Assets.AnimFrame(BaseFrame, Assets.AnimBreath));
+            var k = -1;
+            if (_walk > 0) k = (int)(_walkClock / WalkStep) % Assets.AnimWalkFrames;
+            else if (Breathes && ((int)((_clock + AnimPhase) / 0.5f) & 1) == 1) k = Assets.AnimBreath;
+            if (k >= 0)
+                return (bare ? Assets.ActorsAnimNoTool : Assets.ActorsAnim, bare ? Assets.ActorsAnimNoToolWhite : Assets.ActorsAnimWhite, Assets.AnimFrame(BaseFrame, k), k);
         }
-        return (Assets.Actors, Assets.ActorsWhite, Assets.Frame(frame, Assets.Actor));
+        return (bare ? Assets.ActorsNoTool : Assets.Actors, bare ? Assets.ActorsNoToolWhite : Assets.ActorsWhite, Assets.Frame(frame, Assets.Actor), frame == AltFrame ? 2 : 0);
+    }
+
+    /// <summary>v0.23.0: broń na placu – ikona 32x32 w kolorze rzadkości, poświata Markowej / Mistrzowskiej, iskra Mistrzowskiej.</summary>
+    private bool DrawDrop(Rect2 dst, float alpha)
+    {
+        if (DropRarity >= 2)
+        {
+            var pulse = 0.25f + 0.12f * Mathf.Sin(_clock * 3.5f);
+            DrawCircle(dst.GetCenter(), 13f, new Color(DropGlow, pulse * alpha));
+            DrawCircle(dst.GetCenter(), 8f, new Color(DropGlow, pulse * 0.8f * alpha));
+        }
+        if (!WeaponSheet.DrawIcon(this, DropWeapon, DropRarity, dst, new Color(1, 1, 1, alpha))) return false;
+        if (DropRarity >= 3) // iskra: krzyżyk krąży po rogu ikony
+        {
+            var t = (_clock * 1.3f) % 1f;
+            var p = dst.Position + new Vector2(24 + 4 * Mathf.Sin(t * Mathf.Tau), 6 + 2 * Mathf.Cos(t * Mathf.Tau));
+            var a = (0.5f + 0.5f * Mathf.Sin(_clock * 6f)) * alpha;
+            var c = new Color(1f, 0.96f, 0.63f, a);
+            DrawRect(new Rect2(p - new Vector2(1, 4), new Vector2(2, 8)), c);
+            DrawRect(new Rect2(p - new Vector2(4, 1), new Vector2(8, 2)), c);
+        }
+        DrawSetTransform(Vector2.Zero, 0, Vector2.One);
+        return true;
     }
 
     /// <summary>Mini pasek HP jak mini_hp.bmp na GBA (obrys, tło, wypełnienie w kolorze progu), w 2x.</summary>

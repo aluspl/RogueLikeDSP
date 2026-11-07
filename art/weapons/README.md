@@ -16,6 +16,7 @@ mapowanie wiersz → id, kierunek, rzadkość, chwyt i animacje jest w `weapons.
 |---|---|---|
 | `weapons_inhand.png` | 16×16 (skala GBA) | wiersz = broń; kolumna = `rzadkość*4 + kierunek` (16 kolumn) |
 | `weapons_inhand_2x.png` | 32×32 (Godot, Scale2x jak `actors.png`) | jw. |
+| `weapons_inhand_map.png` / `_map_2x.png` | 16×16 / 32×32 | **broń w ręce na mapie** (task 9c): mapa zmniejszona do 3/4 (~12 px na bohaterze 16 px), poświata tylko Markowa i Mistrzowska; chwyt `gripMap` / `gripMapGodot`; układ jak `weapons_inhand` (Godot: `assets/weapons/inhand.png`) |
 | `weapons_icons.png` | 16×16 (HUD, `Assets.Icon`) | wiersz = broń; kolumna = rzadkość (4) |
 | `weapons_icons_2x.png` | 32×32 (menu/telefon, Scale2x) | jw. |
 | `weapons_swing.png` | 32×32 (skala GBA) | wiersz = `swingRows[i]` (broń × Markowa/Mistrzowska); kolumna = klatka 0–5 |
