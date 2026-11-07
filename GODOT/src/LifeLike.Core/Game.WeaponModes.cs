@@ -30,7 +30,7 @@ public sealed partial class Game
         AttackWith(m, ei);
         if (wasClosed && !SecretClosed()) SpendCharge(m); // ładunek tylko za faktycznie otwartą ścianę
         EndTurn();
-        WeaponBCd = Math.Max(1, m.Cooldown + WeaponCdDelta()); // po EndTurn, by pierwsza tura nie zjadła odnowienia
+        WeaponBCd = Math.Max(1, m.Cooldown + WeaponBCdDelta()); // po EndTurn, by pierwsza tura nie zjadła odnowienia
         return true;
     }
 
@@ -218,7 +218,7 @@ public sealed partial class Game
         else TryOpenWall(m, m.Value2);
         SpendCharge(m);
         EndTurn();
-        WeaponBCd = Math.Max(1, m.Cooldown + WeaponCdDelta());
+        WeaponBCd = Math.Max(1, m.Cooldown + WeaponBCdDelta());
         return true;
     }
 

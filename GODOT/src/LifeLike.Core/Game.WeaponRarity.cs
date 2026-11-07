@@ -45,10 +45,7 @@ public sealed partial class Game
     private int ResolveRarity(int weapon, int rolled) => D.Weapons[weapon].Master ? D.WeaponRarities.Length - 1 : rolled;
 
     /// <summary>Zmiana odnowienia trybu B broni w ręku: rzadkość (WeaponRarityDef.CooldownDelta) i v0.23.0 profit Chwyt.</summary>
-    public int WeaponBCdDelta() => WeaponCdDelta();
-
-    /// <summary>Rzadkość i profit Chwyt (odnowienie liczone dalej z min. 1).</summary>
-    private int WeaponCdDelta() => (WeaponRarity < D.WeaponRarities.Length ? D.WeaponRarities[WeaponRarity].CooldownDelta : 0)
+    public int WeaponBCdDelta() => (WeaponRarity < D.WeaponRarities.Length ? D.WeaponRarities[WeaponRarity].CooldownDelta : 0)
                                    - WeaponBonus(ToolTraitEffect.CooldownB);
 
     /// <summary>Narzędzia, które mogą wypaść na budowie: kupione i odblokowane oraz nowe bronie z flagą drop.</summary>

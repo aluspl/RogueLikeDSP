@@ -157,16 +157,34 @@ public class WeaponPerkFlowTests
     }
 
     [Fact]
-    public void BrokenToolDropsItsPerks()
+    public void WornOutPrzecinakLosesItsPerks()
     {
         var g = TestData.Arena(0);
         g.TakeTool(Ti("przecinak"), 2, false, 0, Mask("chwyt", "glowica"));
         Assert.Equal(Mask("chwyt", "glowica"), g.WeaponPerks);
-        g.WeaponCharges = 1;
-        g.ResetUpgrade();
-        Assert.Equal(Mask("chwyt", "glowica"), g.WeaponPerks); // ulepszenie to nie profity
-        g.TakeTool(Ti("lom"), 0, false);
-        Assert.Equal(0, g.WeaponPerks); // Zwykła bez profitów
+        var uses = 0;
+        while (g.WeaponOverride == Wi("przecinak") && uses < 10) // otwiera pęknięte ściany, aż ładunki dojdą do 0
+        {
+            CrackedWall(g, g.Hero.X, g.Hero.Y - 1);
+            g.WeaponBCd = 0;
+            Assert.True(g.PlayerWeaponBWall());
+            Assert.True(g.SecretOpen);
+            ++uses;
+        }
+        Assert.True(uses > 1);
+        Assert.Equal(-1, g.WeaponOverride); // zużyty: wraca broń zawodu
+        Assert.Equal(0, g.WeaponCharges);
+        Assert.Equal(0, g.WeaponPerks); // profity przepadają razem z bronią
+    }
+
+    private static void CrackedWall(Game g, int x, int y)
+    {
+        g.Lv[x, y] = Tile.Wall;
+        g.SecretX = (sbyte)x;
+        g.SecretY = (sbyte)y;
+        g.SecretKind = (sbyte)Array.FindIndex(D.SecretKinds, s => s.Breakable);
+        g.SecretOpen = false;
+        g.SecretDir = 0;
     }
 
     [Fact]

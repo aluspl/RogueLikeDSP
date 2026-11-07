@@ -70,9 +70,6 @@ public sealed partial class Game
         Push(Msg(MasterRarity(rarity) ? Loc.T("unikat") : Loc.T("profity")).Add(": ").Add(DamageHelp.PerkShorts(D, perks)).As(LogKind.Loot));
     }
 
-    /// <summary>Suma wartości profitów z maski o danym skutku.</summary>
-    public int PerkValue(int perks, ToolTraitEffect e) => D.PerkValue(perks, e);
-
     /// <summary>Skutek broni w ręku: cecha ulepszenia + profity (ten sam skutek dodaje wartości).</summary>
-    public int WeaponBonus(ToolTraitEffect e) => ToolTraitValue(e) + PerkValue(WeaponPerks, e);
+    public int WeaponBonus(ToolTraitEffect e) => ToolTraitValue(e) + D.PerkValue(WeaponPerks, e);
 }

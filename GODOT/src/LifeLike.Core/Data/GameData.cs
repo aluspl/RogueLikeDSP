@@ -90,6 +90,7 @@ public sealed class GameData
         var h = (int)w.Hit[0];
         return h < WeaponPerksMaster.Length ? WeaponPerksMaster[h] : 0;
     }
+
     /// <summary>Pamiątki (sekcja "keepsakes"): wybierane na start budowy, ranga rośnie z budowami.</summary>
     public KeepsakeDef[] Keepsakes { get; private init; } = [];
     /// <summary>Po ilu budowach z pamiątką ranga II i III.</summary>
