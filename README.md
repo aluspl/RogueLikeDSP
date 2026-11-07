@@ -22,6 +22,11 @@ Osiedla), a codziennie czekają 3 zadania dnia i 2 tygodnia, a seria dni z budow
 Po wygranych otwiera się mapa kariery: kolejne budynki z własnymi etapami, wyglądem i bossem – Domek letniskowy z drewna
 (krótki), Bliźniak (to, co zostawisz w lewej połowie, przejdzie przez wspólną ścianę na prawą), Dom z poddaszem (silniejszy
 wiatr) i Kamienica do remontu (grzyb, stare instalacje, Pęknięty strop); pierwsza wygrana każdego daje Respekt, tytuł i kask.
+Bronie (v0.23): 45 broni – domyślna każdego zawodu, 25 do znalezienia i z Hurtowni, 8 artefaktów. Każda ma typ ciosu
+(obuch ogłusza, cięcie częściej trafia krytycznie, kłucie przebija OBR) kontra materiał i żywioł problemu, wzór pól,
+rzadkość (Zwykła, Solidna, Markowa, Mistrzowska – widać ją w rękach bohatera), losowe profity i **Patent** – własny ruch
+z odnowieniem (GBA: L+A). Pas monterski z kaburą nosi drugą broń do szybkiej zamiany (GBA: L+B), artefakty z mechaniką
+„co N-ty cios” (np. Młot Gromowładny) trafiają do Gabloty, a legendarny Nóż majstra seniora daje sekretne zlecenie.
 Filtry ekranu (v0.21.53): tryby dla daltonistów – Protanopia, Deuteranopia, Tritanopia i Wysoki kontrast – działają od
 pierwszego uruchomienia (czerwone pola ciosu w paski, litery rzadkości), a postępem odblokowujesz Noir, Retro LCD, Neon
 nocy i Kwas.

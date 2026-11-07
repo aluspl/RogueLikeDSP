@@ -2,6 +2,83 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
+## v0.23.0 – 2026-11-07 (bronie)
+
+> **Uwaga przy aktualizacji:** budowa w toku z poprzedniej wersji przepada (nowy format zapisu budowy). Profil,
+> doświadczenie, Szkolenia, Respekt, odznaki, sekrety i odkrycia zostają – profil przechodzi migrację automatycznie.
+
+### In English
+Weapons that really feel different. 45 weapons: a default one for each of the 12 trades, 25 to find on site or buy from
+the merchant, and 8 artifacts. Every weapon has a **hit type** (Blunt stuns and hits around, Cut crits more often,
+Stab pierces armour) that meets the problem's **material** (cement, steel, wood) and **element** (water, fire, power),
+a **pattern** of tiles it hits, a **rarity** (Basic, Sturdy, Branded, Master – visible in your hero's hands and on the
+ground) and random **perks**. Each weapon also has a **Trick** – its own named trade move with a cooldown (hold the
+button to read what it does). The **Rigger Holster Belt** carries a second weapon to swap. Artifacts – unique versions
+of base weapons with their own "every N-th hit" mechanic, e.g. the Thunder Maul – go to the **Showcase**; the
+legendary Senior Foreman's Knife comes from a secret contract. Crits are rarer (35% cap) and problems hit harder, so
+Normal is tougher. Gear shows on your hero, punchy announcements celebrate finds and boss kills. The retro version gets
+the same rules 1:1 (L+A Trick, L+B swap), without weapon graphics. **A build in progress from an older version is lost
+after the update; your profile stays.**
+
+### Nowości
+1. **System broni (#77)** – 45 broni: broń domyślna każdego z 12 zawodów, 25 do znalezienia i z Hurtowni (w tym
+   nowe: noże, młoty, elektronarzędzia, laser krzyżowy, lutownica, opalarka), 8 artefaktów.
+   - **Typ ciosu:** obuch (ogłusza, bije wokół), cięcie (częstszy kryt), kłucie (przebija OBR); część broni ma dwa typy.
+   - **Materiały i żywioły:** typ ciosu kontra materiał problemu (cement, stal, drewno) ±25%, woda, ogień i prąd jako
+     osobne kolumny; rozpiska obrażeń i karta problemu pokazują „Twój cios: …”.
+   - **Wzory pól:** 11 wzorów (linia, łuk, krzyż, natrysk, rzut 3x3 i inne), obracane po skosie, bez strzelania przez
+     ścianę; podgląd celowania liczy to samo co atak.
+   - **Patent** – drugi tryb każdej broni z własną nazwą ruchu (np. Kielnia, Gwoździarka, „Jeszcze nie emerytura”)
+     i odnowieniem; nowe stany problemów (ogłuszenie, unieruchomienie, krwawienie, podpalenie, osłabienie, mokry,
+     znak) i otwieranie pękniętych ścian Przecinakiem, Łomem i Młotem.
+2. **Rzadkość broni (#78, #86)** – Zwykła, Solidna, Markowa, Mistrzowska: lepsze obrażenia i krótsze odnowienie,
+   kolor rzadkości na obudowach elektronarzędzi i akcentach narzędzi ręcznych, poświata Markowej i Mistrzowskiej;
+   z dropów, Hurtowni i z nowego Szkolenia **Narzędzia** (broń startowa wyższej rzadkości).
+3. **Losowe profity broni (#87)** – Solidna 1, Markowa 2 z puli (Przebicie, Ostrze, Wyważenie, Głowica, Chwyt),
+   Mistrzowska – stałe profity; widać je na karcie, w dropie, w Hurtowni i w rozpisce.
+4. **Pas monterski z kaburą** – druga broń w kaburze i szybka zamiana (bez straty tury); ulepszenie i profity idą
+   razem z bronią. Gdy oferta pasa bez kabury zabrałaby kaburę z bronią – czerwone ostrzeżenie na karcie paczki
+   i w Hurtowni; broń z kabury wypada na ziemię, broń zawodu wraca do ręki.
+5. **Noże (#84)** – Nóż do tapet (kłucie) i legendarny **Nóż majstra seniora** (Mistrzowski, czyste kłucie bez kary
+   materiału, ignoruje 4 OBR, wysoki kryt, Patent „Jeszcze nie emerytura” – dwa pchnięcia) z sekretnego zlecenia
+   „Stara szkoła”. „Ostrze prosi o emeryturę. Majster: nie!”
+6. **Artefakty i Gablota (#92)** – 4 nowe artefakty z mechaniką „co N-ty cios” (licznik przy broni w HUD): Młot
+   Gromowładny (co 5. cios piorun i paraliż, skacze po mokrych), Kielnia Pierwszej Cegły, Szlifierka Iskrownica,
+   Łom Ostatniej Deski; artefakt może zastąpić Markową broń bazową z dropu. **Gablota artefaktów** w Profilu
+   i Szkoleniach – nieodkryte jako sylwetka ze wskazówką, odkryte z opisem, bazą i datą znalezienia. Nowe sekretne
+   zlecenia: „Stara szkoła” i „Przez ścianę”.
+7. **Broń w ręce i sprzęt na postaci (#88)** – bohater trzyma swoją broń (w kolorze rzadkości) w 4 kierunkach,
+   z wymachem przy ataku; kask, kamizelka, rękawice i buty widać na postaci, w kolorze rzadkości sprzętu.
+8. **Ogłoszenia z przytupem (#85)** – awans, Markowa / Mistrzowska broń, artefakt, boss pokonany, sekretne zlecenie:
+   napis wpada po skosie, pasy ostrzegawcze, wstrząs, błysk i wymach bronią (przy ograniczonym ruchu bez wstrząsu).
+9. **Opis ataku pod przyciskiem (#90)** – przytrzymanie palcem, najechanie myszą albo LB na Cios / Patent pokazuje
+   dymek: nazwa ruchu, mini-siatka wzoru, typ ciosu, obrażenia, zasięg, efekt i odnowienie.
+
+### Zmiany
+1. **Rzadsze kryty, mocniejsze problemy (#93)** – Szczęście 2% krytu za punkt (było 3%), cięcie +5% (było +10%),
+   sufit szansy krytu 35%; obrażenia problemów na Fundamentach, Izolacji, Murach parteru i Dachu +1, HP problemów
+   +18%; Trudny HP 150%. Normalny jest wyraźnie trudniejszy (bot ~27% zamiast ~33%).
+2. **Meta** – Szkolenie Dostawy poziom 2: +5% materiałów, Kondycja poziom 4: lepszy sprzęt; sześć pozycji Respektu
+   ma jedną rangę (za kupioną rangę II Respekt wraca na konto); broń zawodu na start bez losowych profitów.
+3. **Karty z pełnymi nazwami (#89, #91)** – sprzęt, bronie, dropy, Hurtownia i oferta narzędzia z pełną nazwą cechy
+   i profitu; „Zostawiam · +N dośw.” zamiast „Zostawiam +N”; porównanie broni z „+ kryt, OBR −N, profity”.
+4. **Sprzęt w telefonie** przewijany sekcjami także w poziomie.
+
+### Poprawki
+1. Zamiana broni z kabury nie odpala już ogłoszenia „ARTEFAKT!” ani banera nowej broni.
+2. Rzut 3x3 nie trafia pola po skosie za narożnikiem ściany.
+3. Utrata pasa z bronią zawodu w kaburze nie gubi jej – wraca do ręki z ulepszeniami i profitami.
+
+### Wersja retro
+1. **Logika broni 1:1 z Godotem** (wspólny test złoty): typy ciosu, materiały, żywioły, wzory, Patent, rzadkość,
+   profity, pas z kaburą, artefakty, sekrety, rzadsze kryty i mocniejsze problemy.
+2. **Sterowanie:** **L+A – Patent** (najbliższy cel we wzorze, bez celu pęknięta ściana), **L+B – zamiana z kaburą**;
+   karta broni pokazuje rzadkość, Patent z odnowieniem, typy ciosu i profity; ostrzeżenie o kaburze na karcie paczki
+   i w Hurtowni; strona pomocy „Bronie”; notatka „Nowy artefakt w Gablocie”.
+3. **Bez grafiki broni** (broń w ręce, sprzęt na postaci, ogłoszenia i ekran Gabloty – tylko w Godocie).
+4. Profil v19 (440 B) z migracją z każdej starszej wersji; zapis budowy `PBRUN19` – **budowa w toku sprzed
+   aktualizacji przepada**, profil zostaje.
+
 ## v0.22.1 – 2026-11-05
 
 ### Poprawki (Godot)
