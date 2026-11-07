@@ -12,6 +12,10 @@ Co powstaje:
   sprites/actors_anim.png    animacje postaci i problemów budowy (klatki 32x32, wiersz = numer klatki z actors.png):
                              4 klatki chodu (A, A w kroku, B, B w kroku - tułów o piksel wyżej, nogi zostają) i klatka
                              oddechu (głowa i tułów o pół piksela GBA niżej); sprites/actors_anim_white.png - sylwetki
+  sprites/actors_notool.png, actors_anim_notool.png (+ _white)  v0.23.0: to samo bez narzędzia zawodu w dłoni fachowców
+                             (w ręce rysowana jest broń)
+  weapons/*.png, weapons.json, gear/overlay.png   v0.23.0: kopie z art/weapons i art/gear (broń w ręce, ikony,
+                             zamach, nakładki sprzętu)
   sprites/truck.png          pickup z prologu (2 klatki kół), Scale2x
   sprites/particles.png      cząsteczki 16x16 (Scale2x z 8x8), kolejność jak particles.bmp
   sprites/houses.png         domy Osiedla 32x32
@@ -235,6 +239,61 @@ def export_actor_anims():
     save(sheet, "sprites/actors_anim.png")
     save(white, "sprites/actors_anim_white.png")
     return len(CHARACTER_FRAMES)
+
+
+HERO_FRAMES = ([(c, 0, c, False, False) for c in range(6)] + [(27 + c, 1, c, False, False) for c in range(6)]
+               + [(52 + i, 0, 6 + i, False, False) for i in range(3)] + [(55 + i, 1, 6 + i, False, False) for i in range(3)]
+               + [(SECRET_CLASS_FRAME + i, 0, 9 + i, False, False) for i in range(3)]
+               + [(SECRET_CLASS_FRAME + 3 + i, 1, 9 + i, False, False) for i in range(3)]
+               + [(STRIPES_FRAME + 2 * c + k, k, c, True, False) for c in range(12) for k in range(2)]
+               + [(HELMET_FRAME + 2 * c + k, k, c, False, True) for c in range(12) for k in range(2)])
+
+
+def export_notool():
+    """v0.23.0: sprites/actors_notool.png, actors_anim_notool.png (+ białe sylwetki) - te same arkusze, ale klatki
+    fachowców bez narzędzia zawodu w dłoni (w ręce rysuje się broń: art/weapons)."""
+    sys.path.insert(0, os.path.join(GBA, "tools"))
+    import pixel_art as pa
+    w, h, pixels, pal = load_indexed("actors")
+    frames = frames_of(pixels, w, 16, h // 16)
+    for f, k, c, stripes, mask in HERO_FRAMES:
+        bare = pa.worker_frame(c, k, stripes=stripes, helmet_mask=mask, tool=False)
+        full = pa.worker_frame(c, k, stripes=stripes, helmet_mask=mask)
+        assert [v for row in frames[f] for v in row] == full, ("klatka", f, "nie jest fachowcem", c)
+        frames[f] = [bare[y * 16:(y + 1) * 16] for y in range(16)]
+    save(frames_to_image([scale2x(f) for f in frames], pal), "sprites/actors_notool.png")
+    save(frames_to_image([scale2x(f) for f in frames], white_palette(pal)), "sprites/actors_notool_white.png")
+    sheet = Image.new("RGBA", (32 * ANIM_FRAMES, 32 * len(frames)), TRANSPARENT)
+    white = Image.new("RGBA", (32 * ANIM_FRAMES, 32 * len(frames)), TRANSPARENT)
+    for f, _k, _c, _s, _m in HERO_FRAMES:
+        if f not in CHARACTER_FRAMES:
+            continue
+        a, b = frames[f], frames[anim_b(f)]
+        cells = [scale2x(a), scale2x(step_frame(a)), scale2x(b), scale2x(step_frame(b))]
+        cells.append(breath_frame(cells[0]))
+        for i, cell in enumerate(cells):
+            sheet.paste(frames_to_image([cell], pal), (32 * i, 32 * f))
+            white.paste(frames_to_image([cell], white_palette(pal)), (32 * i, 32 * f))
+    save(sheet, "sprites/actors_anim_notool.png")
+    save(white, "sprites/actors_anim_notool_white.png")
+    return len(HERO_FRAMES)
+
+
+ART_COPIES = [("art/weapons/weapons_inhand_2x.png", "weapons/inhand.png"),
+              ("art/weapons/weapons_icons_2x.png", "weapons/icons.png"),
+              ("art/weapons/weapons_icons.png", "weapons/icons_1x.png"),
+              ("art/weapons/weapons_swing_2x.png", "weapons/swing.png"),
+              ("art/weapons/weapons.json", "weapons/weapons.json"),
+              ("art/gear/gear_overlay_2x.png", "gear/overlay.png")]
+
+
+def export_art():
+    """v0.23.0: bronie i sprzęt z art/ (generatory GBA/tools/weapon_sprites.py, gear_sprites.py) - kopie 1:1."""
+    for src, dst in ART_COPIES:
+        path = os.path.join(OUT, dst)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        shutil.copyfile(os.path.join(REPO, src), path)
+    return len(ART_COPIES)
 
 
 # ------------------------------------------------------------------ telefon: ikony zakładek
@@ -1012,6 +1071,8 @@ def main():
     report = {}
     report["actors"] = export_sheet("actors", 16, "sprites/actors.png", rel_white="sprites/actors_white.png")[0]
     report["actor_anims"] = export_actor_anims()
+    report["actors_notool"] = export_notool()
+    report["art"] = export_art()
     report["truck"] = export_sheet("truck", 16, "sprites/truck.png")[0]
     report["particles"] = export_sheet("particles", 8, "sprites/particles.png")[0]
     report["houses"] = export_sheet("houses", 16, "sprites/houses.png")[0]

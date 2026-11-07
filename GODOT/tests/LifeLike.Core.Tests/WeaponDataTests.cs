@@ -112,7 +112,7 @@ public class WeaponDataTests
     public void RaritiesAndBelt()
     {
         Assert.Equal(new[] { "Zwykła", "Solidna", "Markowa", "Mistrzowska" }, D.WeaponRarities.Select(r => r.Name));
-        Assert.Equal(new[] { "#8a8796", "#2f8fd6", "#6b4eff", "#d9a400" }, D.WeaponRarities.Select(r => r.Color));
+        Assert.Equal(new[] { "#8a8796", "#5cb4f0", "#6b4eff", "#d9a400" }, D.WeaponRarities.Select(r => r.Color));
         Assert.Contains(D.Gear, i => i.Name == "Pas monterski z kaburą");
     }
 

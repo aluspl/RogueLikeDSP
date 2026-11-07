@@ -41,7 +41,7 @@ BASE_PAL = [(255, 0, 255), (26, 26, 26), (240, 240, 240), (200, 200, 200), (138,
 # Rzadkości: (nazwa, obudowa H, obudowa h, akcent A = kolor z game.json weaponRarities, jasny akcent *)
 RARITIES = [
     ("Zwykła",      (44, 104, 58),  (36, 36, 40),   (0x8a, 0x87, 0x96), (196, 194, 206)),
-    # Solidna: poświata jaśniejsza niż weaponRarities.color (#2f8fd6), żeby w ręce różniła się jasnością od Zwykłej
+    # Solidna: poświata #5cb4f0 (= weaponRarities.color od task 9c; wcześniej #2f8fd6), żeby różniła się jasnością od Zwykłej
     # także w deuteranopii (#8a8796 i #2f8fd6 mają tę samą luminancję 0.25; #5cb4f0 = 0.41) - task 9a
     ("Solidna",     (32, 150, 164), (18, 72, 96),   (0x5c, 0xb4, 0xf0), (200, 236, 255)),
     ("Markowa",     (246, 192, 32), (36, 36, 40),   (0x6b, 0x4e, 0xff), (178, 160, 255)),

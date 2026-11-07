@@ -99,19 +99,20 @@ WORKERS = [("W", "O", "log"), ("O", "B", "trowel"), ("Y", "T", "nailgun"),
 HELMET_MASK = "D"   # v0.21.52: kolor kasku z odznaki / zlecenia - kask w indeksie palety D, gra podmienia ten kolor w palecie bohatera
 
 
-def worker_frame(index, frame, stripes=False, helmet_mask=False):
-    helmet, vest, tool = WORKERS[index]
+def worker_frame(index, frame, stripes=False, helmet_mask=False, tool=True):
+    """tool=False (v0.23.0): bez narzędzia zawodu w dłoni - klatki z bronią w ręce (Godot: actors_notool.png)."""
+    helmet, vest, tool_id = WORKERS[index]
     px = worker(HELMET_MASK if helmet_mask else helmet, vest, frame)
     if stripes:   # v0.21.51 cz. 2: kask w paski (wygląd z sekretnego zlecenia) - biało-czerwone pasy na kasku
         for y in range(1, 4):
             for x in range(16):
                 if WORKER_TOP[y][x] in "HW":
                     px[y * 16 + x] = CODES["W" if x % 2 == 0 else "R"]
-    for y, row in FACES.get(tool, {}).items():
+    for y, row in FACES.get(tool_id, {}).items():
         for x, ch in enumerate(row):
             if ch != ".":
                 px[y * 16 + x] = CODES[ch]
-    for x, y, ch in TOOLS[tool]:
+    for x, y, ch in TOOLS[tool_id] if tool else ():
         px[y * 16 + x] = CODES[ch]
     return px
 

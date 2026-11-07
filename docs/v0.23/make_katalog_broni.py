@@ -101,7 +101,7 @@ EFF = {"Obuch": ["75%", "100%", "150%", "50%", "100%"],
        "Prąd (żywioł)": ["100%", "100%", "100%", "150% + Porażenie", "100%"],
        "Ogień (żywioł)": ["100%", "150%", "100%", "50% + osusza", "100% + podpalenie"]}
 RAR = [("Zwykła", "#8a8796", "bazowe obrażenia, wygląd jak dziś"),
-       ("Solidna", "#2f8fd6", "+1 obrażeń albo 1 cecha (jak sprzęt Solidny), niebieski połysk w ręce"),
+       ("Solidna", "#5cb4f0", "+1 obrażeń albo 1 cecha (jak sprzęt Solidny), niebieski połysk w ręce"),
        ("Markowa", "#6b4eff", "+2 obrażeń i cecha, fioletowy połysk, lepszy tryb B (−1 tura odnowienia)"),
        ("Mistrzowska", "#d9a400", "unikat z własną nazwą i efektem (np. Młot Zenka, Poziomica mistrza), złota poświata")]
 COUNT = {k: 0 for k in ["Obuch", "Cięcie", "Kłucie"]}

@@ -10313,7 +10313,7 @@
     },
     {
       "name": "Solidna",
-      "color": "#2f8fd6",
+      "color": "#5cb4f0",
       "dmgBonus": 1,
       "cooldownDelta": 0,
       "rollFrom": 70

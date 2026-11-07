@@ -37,14 +37,18 @@ python3 GBA/tools/gear_sprites.py      # z katalogu repozytorium, wymaga Pillow
 
 | | Zwykły | Solidny | Markowy |
 |---|---|---|---|
-| Kask | biały, szare rondo | morski z latarką na czole | żółty, czarny grzebień i rondo |
+| Kask | czapka w kolorze zawodu, jasny obrys skorupy i szare rondo | morski z latarką na czole, pasek w kolorze czapki zawodu | żółty, czarny grzebień i rondo, pasek w kolorze czapki zawodu |
 | Rękawice | jasnoszare | morskie | żółte, czarny mankiet |
-| Kamizelka (rozpięta – środek w kolorze zawodu) | szarozielona, srebrny pas odblaskowy | morska pikowana | żółta, biały pas odblaskowy, czarny dół |
-| Buty | ciemne, brązowa podeszwa | morskie, stalowy podnosek | czarne, żółty nosek |
+| Kamizelka (rozpięta – środek w kolorze zawodu) | tylko srebrne pasy odblaskowe na koszuli zawodu | morska pikowana | żółta, biały pas odblaskowy, czarny dół |
+| Buty | tylko brązowe podeszwy | morskie, stalowy podnosek | czarne, żółty nosek |
 | Pas | skórzany, metalowa sprzączka | morski z kaburą z prawej | czarny, szeroka żółta sprzączka |
 
-Kask i kamizelka zasłaniają kolory zawodu (kask w barwie zawodu / z odznak – `HelmetTint`), zostaje środek tułowia,
-twarz i narzędzie.
+v0.23.0 (task 9c, decyzja koordynatora): **Zwykły sprzęt nie przemalowuje postaci** – kolory zawodu (koszula, czapka,
+spodnie) zostają, dochodzą tylko elementy. Solidny i Markowy przemalowują, ale kask zostawia pasek w kolorze czapki
+zawodu (przezroczyste piksele w wierszu 3 nakładki – widać kolor bohatera), więc zawód da się rozpoznać. Odznaka koloru
+kasku (`HelmetTint`) i kask w paski działają tylko bez kasku-sprzętu (z kaskiem gra rysuje zwykłą klatkę zawodu).
+Nakładka Godota zawiera tylko barwy nakładki i obrys – kolor zawodu nigdy do niej nie trafia (inaczej pasek kasku
+zawodu wzorcowego pokazałby się u innych).
 
 ## Paleta (16 kolorów, GBA 4bpp)
 

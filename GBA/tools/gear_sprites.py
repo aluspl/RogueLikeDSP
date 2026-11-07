@@ -9,7 +9,8 @@ Zasady:
     dla wszystkich - skrypt to sprawdza, składając każdy zawód z każdą nakładką (także po Scale2x, kroku i oddechu);
   * nakładka zmienia tylko piksele wewnątrz sylwetki (obrys K bohatera zostaje), wyjątek: sakwa pasa i kabura;
   * własna paleta 16 kolorów (GBA 4bpp, osobny bank palety sprite'a), barwy wg rzadkości spójne z bronią:
-    Zwykły - stonowany (biały kask, szarozielona kamizelka, brąz), Solidny - morski niebieski, Markowy - żółty+czarny;
+    Zwykły - nie przemalowuje (kolory zawodu zostają; jasny obrys kasku, pasy odblaskowe, rękawice, podeszwy, pas),
+    Solidny - morski niebieski, Markowy - żółty+czarny (kask z paskiem w kolorze czapki zawodu);
   * każda rzadkość ma też cechę bez koloru (daltonizm): Solidny kask z latarką, kamizelka pikowana, buty ze stalowym
     podnoskiem, pas z kaburą; Markowy kask z czarnym grzebieniem, czarny dół kamizelki, pas z dwiema sakwami.
 Bez nazw i barw cudzych marek.
@@ -52,16 +53,16 @@ GODOT_FRAMES = ["walkA", "walkAstep", "walkB", "walkBstep", "breath"]   # jak ac
 # ------------------------------------------------------------------ mapy nakładek (wiersz: 16 znaków, "." = bez zmian)
 # Sylwetka bohatera (pixel_art.WORKER_TOP): kask wiersze 1-4, twarz 5-8, kamizelka 9-12 (x 5-10), dłonie x=3 i x=12
 # w wierszach 10-11, pas = wiersz 13 (góra spodni), buty = wiersze 14-15 (inne w klatce A i B).
-HELMET = {
-    0: {2: ".....WWWWWl.....",          # kask budowlany: biały, cień jasnoszary, szare rondo
-        3: "....WWWWWWll....",
+HELMET = {   # v0.23.0: Zwykły nie przemalowuje (czapka w kolorze zawodu, jasny obrys skorupy i rondo); Solidny i Markowy
+    # zostawiają pasek w kolorze czapki zawodu (piksele "." w wierszu 3 - rozpoznawalność zawodu)
+    0: {1: ".....llllll.....",          # kask budowlany: jasny obrys skorupy, szare rondo, kolor zawodu zostaje
         4: "....gggggggg...."},
-    1: {2: ".....SZSSSs.....",          # kask z latarką: morski, blik, latarka na środku czoła
-        3: "....SZSYWSss....",
+    1: {2: ".....SZSSSs.....",          # kask z latarką: morski, blik, latarka na środku czoła, pasek zawodu
+        3: "....s..YW..s....",
         4: "....ssssssss...."},
-    2: {1: ".......NN.......",          # kask markowy: żółty z czarnym grzebieniem i czarnym rondem
+    2: {1: ".......NN.......",          # kask markowy: żółty z czarnym grzebieniem i czarnym rondem, pasek zawodu
         2: ".....YWNNYy.....",
-        3: "....YYYNNYyy....",
+        3: "....y..NN..y....",
         4: "....NNNNNNNN...."},
 }
 GLOVES = {
@@ -70,7 +71,7 @@ GLOVES = {
     2: {10: "...N........N...", 11: "...Y........Y..."},     # markowe: żółte, czarny mankiet
 }
 VEST = {   # rozpięta kamizelka: boki x 5-6 i 9-10, środek (kolor zawodu) widać
-    0: {9: ".....GG..GG.....", 10: ".....lW..Wl.....", 11: ".....GF..FG.....", 12: "......F..F......"},  # odblaskowa
+    0: {10: ".....lW..Wl.....", 12: "......l..l......"},   # odblaskowa: same srebrne pasy na kolorze zawodu
     1: {9: ".....SS..SS.....", 10: ".....sS..Ss.....", 11: ".....Ss..sS.....", 12: "......s..s......"},  # ocieplana, pikowana
     2: {9: ".....YY..YY.....", 10: ".....WW..WW.....", 11: ".....Yy..yY.....", 12: "......N..N......"},  # markowa
 }
@@ -80,7 +81,7 @@ BELT = {   # wiersz 13 = góra spodni (x 6-9), sakwa / kabura na brzegu sylwetki
     2: {13: "......NYYN......"},                     # markowy: czarny z szeroką żółtą sprzączką
 }
 BOOTS = {   # (klatka A, klatka B): nogi A - stopy x 5-7 i 9-11, B - x 4-6 i 9-11
-    0: ({14: "......d..d......", 15: "......T...T....."}, {14: ".....d....d.....", 15: ".....T....T....."}),
+    0: ({15: "......T...T....."}, {15: ".....T....T....."}),   # robocze: same podeszwy, nogawki w kolorze zawodu
     1: ({14: "......s..s......", 15: "......l...l....."}, {14: ".....s....s.....", 15: ".....l....l....."}),
     2: ({14: "......N..N......", 15: "......Y...Y....."}, {14: ".....N....N.....", 15: ".....Y....Y....."}),
 }
@@ -174,7 +175,10 @@ def overlay_cells(slot, rarity, ref_class=0):
     masks = mask_cells(mask_of(oa), mask_of(ob))
     out = []
     for hc, cc, mc in zip(hero_c, comp_c, masks):
-        out.append([[cc[y][x] if (mc[y][x] or cc[y][x] != hc[y][x]) else 0 for x in range(32)] for y in range(32)])
+        # v0.23.0: tylko barwy nakładki i obrys - kolor zawodu ref_class (pasek kasku, środek kamizelki) nie może
+        # trafić do nakładki, bo pokazałby się u innych zawodów
+        out.append([[cc[y][x] if ((mc[y][x] or cc[y][x] != hc[y][x]) and (cc[y][x] >= OFF or cc[y][x] == 1)) else 0
+                     for x in range(32)] for y in range(32)])
     return out
 
 

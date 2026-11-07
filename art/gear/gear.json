@@ -110,18 +110,18 @@
  },
  "offsetsNote": "wszystkie 12 zawodów mają tę samą sylwetkę (pixel_art.WORKER_TOP + nogi A/B), przesunięcia 0",
  "verifyGodotMismatchPixels": {
-  "kierownik": 7,
-  "murarz": 37,
-  "ciesla": 22,
-  "elektryk": 52,
-  "hydraulik": 52,
-  "glazurnik": 22,
-  "dekarz": 22,
-  "tynkarz": 52,
-  "operator": 22,
-  "spawacz": 112,
-  "geodeta": 52,
-  "majster": 52
+  "kierownik": 57,
+  "murarz": 87,
+  "ciesla": 72,
+  "elektryk": 102,
+  "hydraulik": 102,
+  "glazurnik": 72,
+  "dekarz": 72,
+  "tynkarz": 97,
+  "operator": 72,
+  "spawacz": 132,
+  "geodeta": 102,
+  "majster": 102
  },
  "toolCoversHand": {
   "kierownik": [
