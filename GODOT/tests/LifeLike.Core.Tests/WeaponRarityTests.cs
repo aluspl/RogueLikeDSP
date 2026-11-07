@@ -118,7 +118,7 @@ public class WeaponRarityTests
         Assert.False(rs.Valid(D));
         Assert.Null(RunSave.FromBytes(rs.ToBytes()).Load(D));
         Assert.NotNull(RunSave.Make(g).Load(D));
-        Assert.Equal("PBRUN18", RunSave.RunMagic);
+        Assert.Equal("PBRUN19", RunSave.RunMagic);
     }
 
     [Fact]
@@ -146,7 +146,7 @@ public class WeaponRarityTests
         Profile.MagicBytes("PBRL017").CopyTo(raw, 0);
         var p = Profile.FromBytes(raw);
         Assert.True(Meta.ProfileFix(D, p));
-        Assert.True(p.MagicIs(Profile.MagicCurrent) && Profile.MagicCurrent == "PBRL018");
+        Assert.True(p.MagicIs(Profile.MagicCurrent) && Profile.MagicCurrent == "PBRL019");
         Assert.True(p.Best == 1234 && p.Xp == 99 && p.Wins == 3 && p.Levels[0] == 2 && p.Tools == 0x0E && p.ToolsFound == 0x05);
         Assert.Equal(Profile.Size, p.ToBytes().Length);
         var junk = Profile.FromBytes(Enumerable.Repeat((byte)0x7F, 10).ToArray());
@@ -162,7 +162,7 @@ public class WeaponRarityTests
         var q = Profile.FromBytes(p.ToBytes());
         Assert.Equal(p.Tools, q.Tools);
         Assert.Equal(p.ToolsFound, q.ToolsFound);
-        Assert.Equal(29, D.Tools.Length); // v0.23.0 (#84): + 2 noże
+        Assert.Equal(33, D.Tools.Length); // v0.23.0 (#84): + 2 noże, + 4 artefakty
         Assert.Equal(1UL << 38, q.Tools & (1UL << 38));
     }
 

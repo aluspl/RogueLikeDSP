@@ -6,10 +6,13 @@ namespace LifeLike.Core.Data;
 /// Bez trybów w danych: A = Single (zasięg 1) albo Shot (zasięg broni), B = pusty tryb z odnowieniem 1.
 /// v0.23.0 (#84): Neutral = „czyste kłucie” – mnożnik materiału zawsze 100% (bez kar i premii za materiał / wodę, JSON "neutral"),
 /// Pierce = ile OBR omija kłucie tej broni (0 = HitTypes.PierceDef, JSON "pierce"), Desc = opis broni dla gracza (opcjonalny).
-/// v0.23.0: MasterPerks = id stałych profitów Mistrzowskiej (nadpisują weaponPerks.master wg typu ciosu; puste = wg typu).</summary>
+/// v0.23.0: MasterPerks = id stałych profitów Mistrzowskiej (nadpisują weaponPerks.master wg typu ciosu; puste = wg typu).
+/// v0.23.0: artefakty – Artifact = id broni bazowej (puste = zwykła broń), Hint = skąd (Gablota), Proc = „co N-ty cios” (null = brak),
+/// WallFree = Patent otwierający ścianę bez odnowienia, BonusMaterial / BonusPct = premia % obrażeń na problem z tego materiału.</summary>
 public sealed record WeaponDef(string Id, string Name, int MinDamage, int MaxDamage, int Range, Stat ScalesWith, Element Elem = Element.None,
     int Crit = 0, bool Knockback = false, bool Reveal = false, HitType[] Hit = null, WeaponMode ModeA = null, WeaponMode ModeB = null,
-    bool Master = false, bool Neutral = false, int Pierce = 0, string Desc = "", string[] MasterPerks = null)
+    bool Master = false, bool Neutral = false, int Pierce = 0, string Desc = "", string[] MasterPerks = null, string Artifact = "",
+    string Hint = "", ProcDef Proc = null, bool WallFree = false, string BonusMaterial = "", int BonusPct = 0)
 {
     /// <summary>Stałe profity Mistrzowskiej (id z weaponPerks.pool); puste = wg typu ciosu.</summary>
     public string[] MasterPerks { get; init; } = MasterPerks ?? [];

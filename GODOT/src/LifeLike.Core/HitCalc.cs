@@ -45,6 +45,7 @@ public static class HitCalc
         var steel = col == 1;
         var wood = col == 2;
         var water = col == 3;
+        if (w.BonusPct != 0 && col < d.Materials.Length && d.Materials[col].Id == w.BonusMaterial) pct = pct * (100 + w.BonusPct) / 100; // v0.23.0: artefakt (Łom Ostatniej Deski)
         switch (w.Elem)
         {
             case Element.Spark:

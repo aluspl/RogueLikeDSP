@@ -104,7 +104,7 @@ public class ProfileAndShopTests
         var m = RunMods.Default(D);
         m.Tools = (1UL << D.Tools.Length) - 1;
         var seen = 0UL;
-        for (uint seed = 1; seed <= 3000 && seen != m.Tools; ++seed)
+        for (uint seed = 1; seed <= 8000 && seen != m.Tools; ++seed) // v0.23.0: 33 narzędzia (z artefaktami)
         {
             var h = TestData.NewGame();
             h.NewRun(1, seed, D.DefaultDifficulty, m);

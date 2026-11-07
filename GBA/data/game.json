@@ -666,7 +666,9 @@
         "cooldown": 7,
         "name": "Zamach Zenka"
       },
-      "master": true
+      "master": true,
+      "artifact": "mlot",
+      "hint": "Sekretne zlecenie: Szef tylko dzwoni"
     },
     {
       "id": "poziomica_m",
@@ -688,7 +690,9 @@
         "cooldown": 6,
         "name": "Oko mistrza"
       },
-      "master": true
+      "master": true,
+      "artifact": "poziomica_2m",
+      "hint": "Sekretne zlecenie: Szczur magazynowy"
     },
     {
       "id": "lopata",
@@ -936,7 +940,9 @@
         "cooldown": 7,
         "name": "Pełny obrót"
       },
-      "master": true
+      "master": true,
+      "artifact": "pila",
+      "hint": "Markowa Piła z dropu - czasem coś więcej"
     },
     {
       "id": "poziomica_2m",
@@ -1065,8 +1071,8 @@
       "id": "noz_majstra",
       "name": "Nóż majstra seniora",
       "desc": "Ostrze prosi o emeryturę. Majster: nie!",
-      "minDamage": 3,
-      "maxDamage": 6,
+      "minDamage": 4,
+      "maxDamage": 7,
       "range": 1,
       "scalesWith": "agility",
       "crit": 15,
@@ -1087,7 +1093,139 @@
       "masterPerks": [
         "przebicie",
         "ostrze"
-      ]
+      ],
+      "artifact": "noz",
+      "hint": "Sekretne zlecenie: Stara szkoła"
+    },
+    {
+      "id": "mlot_grom",
+      "name": "Młot Gromowładny",
+      "desc": "Kuty w burzy. Obuch pamięta grzmot.",
+      "minDamage": 5,
+      "maxDamage": 8,
+      "range": 1,
+      "scalesWith": "strength",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "push",
+        "effect": "push",
+        "value": 1
+      },
+      "modeB": {
+        "pattern": "around",
+        "effect": "openWall",
+        "cooldown": 7,
+        "name": "Grzmot"
+      },
+      "master": true,
+      "artifact": "mlot",
+      "hint": "Markowy Młot wyburzeniowy z dropu",
+      "proc": {
+        "every": 5,
+        "name": "Piorun",
+        "desc": "Co 5. cios piorun: prąd +50%, paraliż 1 t. (boss: tylko obrażenia), skacze na mokre obok",
+        "effect": "stun",
+        "value": 100,
+        "turns": 1,
+        "dmgPct": 150,
+        "element": "prad",
+        "effect2": "chain"
+      }
+    },
+    {
+      "id": "kielnia_cegla",
+      "name": "Kielnia Pierwszej Cegły",
+      "desc": "Położyła pierwszą cegłę osiedla.",
+      "minDamage": 5,
+      "maxDamage": 7,
+      "range": 1,
+      "scalesWith": "strength",
+      "hit": [
+        "cut",
+        "pierce"
+      ],
+      "modeA": {
+        "pattern": "arc"
+      },
+      "modeB": {
+        "pattern": "shot",
+        "range": 2,
+        "effect": "stun",
+        "value": 100,
+        "turns": 1,
+        "cooldown": 7,
+        "dmgPct": 50,
+        "name": "Pierwsza cegła"
+      },
+      "master": true,
+      "artifact": "kielnia",
+      "hint": "Murarz: Markowa broń z dropu",
+      "proc": {
+        "every": 3,
+        "name": "Zaprawa wiąże",
+        "desc": "Co 3. cios zaprawa unieruchamia cel na 2 tury (nie bossa)",
+        "effect": "root",
+        "turns": 2
+      }
+    },
+    {
+      "id": "szlifierka_isk",
+      "name": "Szlifierka Iskrownica",
+      "desc": "Tarcza sypie iskrami jak fajerwerk.",
+      "minDamage": 5,
+      "maxDamage": 8,
+      "range": 1,
+      "scalesWith": "agility",
+      "element": "iskra",
+      "hit": "cut",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "arc",
+        "cooldown": 3,
+        "effect2": "ignite",
+        "name": "Snop iskier"
+      },
+      "master": true,
+      "artifact": "szlifierka",
+      "hint": "Glazurnik: Markowa broń z dropu",
+      "proc": {
+        "every": 1,
+        "name": "Iskry",
+        "desc": "Każdy cios podpala (2 tury); ogień przeskakuje na jednego sąsiada",
+        "effect": "burn",
+        "turns": 2,
+        "effect2": "spread",
+        "value2": 1
+      }
+    },
+    {
+      "id": "lom_deska",
+      "name": "Łom Ostatniej Deski",
+      "desc": "Podważył już każdą deskę na budowie.",
+      "minDamage": 4,
+      "maxDamage": 7,
+      "range": 1,
+      "scalesWith": "strength",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "push",
+        "effect": "push",
+        "value": 2,
+        "cooldown": 5,
+        "effect2": "openWall",
+        "name": "Ostatnia deska"
+      },
+      "master": true,
+      "artifact": "lom",
+      "hint": "Markowy Łom z dropu albo sekretne zlecenie",
+      "wallFree": true,
+      "bonusMaterial": "drewno",
+      "bonusPct": 100
     }
   ],
   "enemies": [
@@ -2770,7 +2908,8 @@
       },
       {
         "weapon": "pilarka",
-        "secret": true
+        "secret": true,
+        "artifact": true
       },
       {
         "weapon": "poziomica_2m",
@@ -2801,6 +2940,23 @@
       {
         "weapon": "noz_majstra",
         "secret": true
+      },
+      {
+        "weapon": "mlot_grom",
+        "artifact": true
+      },
+      {
+        "weapon": "kielnia_cegla",
+        "artifact": true
+      },
+      {
+        "weapon": "szlifierka_isk",
+        "artifact": true
+      },
+      {
+        "weapon": "lom_deska",
+        "secret": true,
+        "artifact": true
       }
     ]
   },
@@ -6699,6 +6855,19 @@
         },
         "rewardText": "Nóż majstra seniora",
         "news": "Majster nie odpuszcza!|Nóż majstra seniora:|Patent: dwa pchnięcia."
+      },
+      {
+        "id": "ostatnia_deska",
+        "hint": "Przez ścianę na skróty",
+        "desc": "3 ściany Patentem w budowie",
+        "kind": "patent_walls",
+        "value": 3,
+        "reward": {
+          "kind": "tool",
+          "id": "lom_deska"
+        },
+        "rewardText": "Łom Ostatniej Deski",
+        "news": "3 ściany Patentem!|Łom Ostatniej Deski:|ściana bez odnowienia."
       }
     ],
     "cosmetics": [
@@ -10269,7 +10438,21 @@
     "tip_odnowienie_za": "Odnowienie {0} t. (jeszcze {1})",
     "tip_rzadkosc_odn": "{0}: odn. {1}",
     "tryb_cios": "Cios: ",
-    "tryb_fach": "Patent: "
+    "tryb_fach": "Patent: ",
+    "gablota": "Gablota",
+    "gablota_nieodkryty": "Nieodkryty artefakt",
+    "gablota_skad": "Skąd: {0}",
+    "gablota_baza": "Baza: {0}",
+    "gablota_znaleziony": "Znaleziony {0}",
+    "gablota_dawno": "Znaleziony przed Gablotą",
+    "gablota_mechanika": "Mechanika: {0}",
+    "gablota_odkryte": "Odkryte {0}/{1}",
+    "ogl_artefakt": "ARTEFAKT!",
+    "artefakt_w_gablocie": "Nowy artefakt w Gablocie: ",
+    "tip_proc": "{0}: co {1}. cios ({2}/{1})",
+    "tip_proc_zawsze": "{0}: każdy cios",
+    "tip_sciana_bez_odn": "Ściana: bez odnowienia",
+    "tip_material": "+{0}% na {1}"
   },
   "hitTypes": {
     "names": [
@@ -10402,5 +10585,8 @@
         "ostrze"
       ]
     }
+  },
+  "artifacts": {
+    "chancePct": 25
   }
 }

@@ -239,6 +239,9 @@ public sealed partial class Game
         w.Write(Weapon2Perks);
         w.Write(ToolOfferPerks);
         w.Write(PerkRolls);
+        w.Write(ProcCount); // v0.23.0: artefakty – licznik ciosów, artefakty tej budowy, ściany otwarte Patentem
+        w.Write(ArtifactsRun);
+        w.Write(PatentWalls);
         w.Write(SecretX);
         w.Write(SecretY);
         w.Write(SecretKind);
@@ -448,6 +451,9 @@ public sealed partial class Game
         Weapon2Perks = r.ReadByte();
         ToolOfferPerks = r.ReadByte();
         PerkRolls = r.ReadUInt16();
+        ProcCount = r.ReadByte();
+        ArtifactsRun = r.ReadUInt16();
+        PatentWalls = r.ReadByte();
         SecretX = r.ReadSByte();
         SecretY = r.ReadSByte();
         SecretKind = r.ReadSByte();

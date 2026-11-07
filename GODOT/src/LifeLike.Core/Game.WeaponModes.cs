@@ -27,10 +27,13 @@ public sealed partial class Game
         if (!e.Alive || !Visible(e.X, e.Y) || Cheb(Hero.X, Hero.Y, e.X, e.Y) > ModeRange(m) || !InPattern(m, ei)) return false;
         if (ShockedTurn()) return true;
         var wasClosed = SecretClosed();
+        var wallFree = Weapon.WallFree;
         AttackWith(m, ei);
-        if (wasClosed && !SecretClosed()) SpendCharge(m); // ładunek tylko za faktycznie otwartą ścianę
+        var wall = wasClosed && !SecretClosed();
+        if (wall) PatentWall();
+        if (wall) SpendCharge(m); // ładunek tylko za faktycznie otwartą ścianę
         EndTurn();
-        WeaponBCd = Math.Max(1, m.Cooldown + WeaponBCdDelta()); // po EndTurn, by pierwsza tura nie zjadła odnowienia
+        WeaponBCd = wall && wallFree ? 0 : Math.Max(1, m.Cooldown + WeaponBCdDelta()); // po EndTurn, by pierwsza tura nie zjadła odnowienia; v0.23.0: Łom Ostatniej Deski
         return true;
     }
 
@@ -50,6 +53,7 @@ public sealed partial class Game
         WeaponCharges = 0;
         WeaponOverride = -1;
         ResetUpgrade();
+        ResetProc(); // v0.23.0: inna broń w ręku
         WeaponPerks = 0; // v0.23.0: profity zużytej broni przepadają z nią
     }
 
@@ -107,6 +111,12 @@ public sealed partial class Game
             case ModeEffect.Wet:
                 e.Wet = (sbyte)Math.Max((int)e.Wet, turns > 0 ? turns : D.WetTurns);
                 return true;
+            case ModeEffect.Burn: // v0.23.0: artefakt – podpalenie także bronią tnącą
+                e.Dot = (sbyte)Math.Max((int)e.Dot, Math.Max(1, turns));
+                e.DotDmg = (sbyte)Math.Max((int)e.DotDmg, Math.Max(1, val > 0 ? val : D.HitTypes.DotPerTurn));
+                e.DotKind = 1;
+                e.Awake = true;
+                return true;
         }
         return false;
     }
@@ -148,6 +158,7 @@ public sealed partial class Game
             ModeEffect.Mark => D.Statuses[(int)StatusEffect.Mark].Name,
             ModeEffect.Dot => D.Statuses[(int)(Enemies[t].DotKind == 2 ? StatusEffect.Bleed : StatusEffect.Burn)].Name,
             ModeEffect.Wet => D.Statuses[(int)StatusEffect.Wet].Name,
+            ModeEffect.Burn => D.Statuses[(int)StatusEffect.Burn].Name,
             ModeEffect.Dry => Loc.T("efekt_osuszenie"),
             ModeEffect.CritNext => Loc.T("efekt_pewny_kryt"),
             ModeEffect.Push => Loc.T("efekt_odrzut"),
@@ -184,6 +195,9 @@ public sealed partial class Game
             case ModeEffect.Chain:
                 ChainShock(hit, px, py, wasWet);
                 break;
+            case ModeEffect.Spread: // v0.23.0: artefakt – ogień przeskakuje na sąsiadów
+                SpreadFire(Math.Max(1, val), hit);
+                break;
             case ModeEffect.Ignite:
                 for (var i = 0; i < hit.Length && St == GameStatus.Playing; ++i)
                 {
@@ -214,11 +228,12 @@ public sealed partial class Game
         if (St != GameStatus.Playing || !CanWeaponBOpenWall()) return false;
         if (ShockedTurn()) return true;
         var m = Weapon.ModeB;
-        if (m.Effect == ModeEffect.OpenWall) TryOpenWall(m, m.Value);
-        else TryOpenWall(m, m.Value2);
+        var wallFree = Weapon.WallFree;
+        var opened = m.Effect == ModeEffect.OpenWall ? TryOpenWall(m, m.Value) : TryOpenWall(m, m.Value2);
+        if (opened) PatentWall();
         SpendCharge(m);
         EndTurn();
-        WeaponBCd = Math.Max(1, m.Cooldown + WeaponBCdDelta());
+        WeaponBCd = opened && wallFree ? 0 : Math.Max(1, m.Cooldown + WeaponBCdDelta()); // v0.23.0: Łom Ostatniej Deski – ściana bez odnowienia
         return true;
     }
 

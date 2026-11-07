@@ -130,4 +130,18 @@ public class AttackInfoTests
             }
         }
     }
+    [Fact]
+    public void ArtifactProcAndCounterShownInBothModes()
+    {
+        Loc.English = false;
+        var g = Arena("mlot_grom", 3);
+        g.ProcCount = 3;
+        Assert.Contains("Piorun: co 5. cios (3/5)", All(AttackInfo.For(g, false)));
+        Assert.Contains("Piorun: co 5. cios (3/5)", All(AttackInfo.For(g, true)));
+        Assert.Contains("Iskry: każdy cios", All(AttackInfo.For(Arena("szlifierka_isk", 3), false)));
+        var lom = AttackInfo.For(Arena("lom_deska", 3), true);
+        Assert.Contains("Ściana: bez odnowienia", All(lom));
+        Assert.Contains("+100% na Drewno", All(lom));
+        Assert.DoesNotContain("co 5.", All(AttackInfo.For(Arena("mlot"), false)));
+    }
 }

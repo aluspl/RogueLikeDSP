@@ -328,7 +328,9 @@ public sealed partial class Game
     public void TakeTool(int t, int rarity = 0, bool announce = true, int extra = 0, int perks = -1)
     {
         ResetUpgrade();
+        ResetProc(); // v0.23.0: licznik „co N-ty cios” należy do broni w ręku
         WeaponOverride = D.Tools[t].Weapon;
+        MarkArtifact(WeaponOverride); // v0.23.0: artefakt w tej budowie
         SecretFlags |= SecretToolSwapFlag; // v0.23.0 (#84): zlecenie „ta sama broń”
         WeaponRarity = (byte)ResolveRarity(WeaponOverride, rarity); // v0.23.0: rzadkość z dropu / Hurtowni, unikat zawsze Mistrzowska
         ToolsFound |= 1UL << t;

@@ -131,10 +131,12 @@ public sealed partial class Game
         if (ei < 0 || ei >= EnemiesCount || !Enemies[ei].Alive) return 0;
         Span<int> hit = stackalloc int[HitPattern.MaxCells];
         var hits = Targets(m, ei, hit);
+        var proc = hits > 0 ? CountProc() : null; // v0.23.0: artefakt – co N-ty cios (A i Patent)
+        if (proc is not null && proc.Every > 1) Push(Msg(proc.Name).Add("!").As(LogKind.Good));
         // stan celów sprzed ciosu: pozycje, mokry, zapylony (do łańcucha i wybuchu pyłu)
         Span<int> px = stackalloc int[hits], py = stackalloc int[hits];
         Span<bool> wasWet = stackalloc bool[hits], wasDusty = stackalloc bool[hits];
-        int n1 = 0, n2 = 0, f1 = -1, f2 = -1; // v0.23.0: ilu celów dotknął efekt 1 / 2 i pierwszy z nich (dziennik)
+        int n1 = 0, n2 = 0, f1 = -1, f2 = -1, np = 0, fp = -1; // v0.23.0: ilu celów dotknął efekt 1 / 2 / artefaktu i pierwszy z nich (dziennik)
         for (var i = 0; i < hits; ++i)
         {
             px[i] = Enemies[hit[i]].X;
@@ -143,17 +145,22 @@ public sealed partial class Game
             wasDusty[i] = EnemyDusty(hit[i]);
             if (ModeEffectBefore(m.Effect, m.Value, m.Turns, hit[i], m.SteelPct) && n1++ == 0) f1 = hit[i];
             if (ModeEffectBefore(m.Effect2, m.Value2, m.Turns2, hit[i], m.SteelPct) && n2++ == 0) f2 = hit[i];
+            if (proc is not null && ModeEffectBefore(proc.Effect, proc.Value, proc.Turns, hit[i], 0) && np++ == 0) fp = hit[i];
         }
         var dealt = 0;
+        var pct = proc is null ? m.DmgPct : m.DmgPct * proc.DmgPct / 100;
+        var ctx = HitCtx;
+        if (proc is not null && proc.Elem == Element.Power) HitCtx = (byte)(HitCtx | 1); // piorun: cios prądem (mokry cel = porażenie)
         for (var i = 0; i < hits; ++i)
         {
             if (St != GameStatus.Playing || !Enemies[hit[i]].Alive) continue;
             for (var k = 0; k < m.Hits && St == GameStatus.Playing && Enemies[hit[i]].Alive; ++k) // v0.23.0 (#84): kilka ciosów w cel
             {
-                if (m.DmgPct > 0) HeroAttack(hit[i], m.DmgPct);
+                if (pct > 0) HeroAttack(hit[i], pct);
             }
             ++dealt;
         }
+        HitCtx = ctx;
         if (St != GameStatus.Playing) return dealt;
         var knock = Weapon.Knockback && ReferenceEquals(m, Weapon.ModeA); // Młot Zenka odpycha już w HeroAttack
         for (var i = 0; i < hits; ++i)
@@ -163,9 +170,11 @@ public sealed partial class Game
         }
         NoteEffect(m.Effect, f1, n1);
         NoteEffect(m.Effect2, f2, n2);
+        if (proc is not null) NoteEffect(proc.Effect, fp, np);
         var h = hit[..hits];
         ModeEffectOnce(m.Effect, m.Value, m.Turns, m, h, px, py, wasWet, wasDusty);
         ModeEffectOnce(m.Effect2, m.Value2, m.Turns2, m, h, px, py, wasWet, wasDusty);
+        if (proc is not null && St == GameStatus.Playing) ModeEffectOnce(proc.Effect2, proc.Value2, proc.Turns2, m, h, px, py, wasWet, wasDusty);
         return dealt;
     }
 }

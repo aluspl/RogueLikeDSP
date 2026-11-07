@@ -10,7 +10,7 @@ public class WeaponDataTests
     [Fact]
     public void AllWeaponsHaveHitAndModes()
     {
-        Assert.Equal(41, D.Weapons.Length); // v0.23.0 (#84): + Nóż do tapet, Nóż majstra seniora
+        Assert.Equal(45, D.Weapons.Length); // v0.23.0 (#84): + Nóż do tapet, Nóż majstra seniora; + 4 artefakty
         Assert.All(D.Weapons, w =>
         {
             Assert.NotEmpty(w.Hit);
@@ -60,6 +60,10 @@ public class WeaponDataTests
     [InlineData("opalarka", PatternKind.Spray, ModeEffect.Dry, PatternKind.Single, ModeEffect.Mark, 5)]
     [InlineData("noz", PatternKind.Single, ModeEffect.None, PatternKind.Line, ModeEffect.None, 3)]
     [InlineData("noz_majstra", PatternKind.Single, ModeEffect.None, PatternKind.Single, ModeEffect.None, 3)]
+    [InlineData("mlot_grom", PatternKind.Push, ModeEffect.Push, PatternKind.Around, ModeEffect.OpenWall, 7)]
+    [InlineData("kielnia_cegla", PatternKind.Arc, ModeEffect.None, PatternKind.Shot, ModeEffect.Stun, 7)]
+    [InlineData("szlifierka_isk", PatternKind.Single, ModeEffect.None, PatternKind.Arc, ModeEffect.None, 3)]
+    [InlineData("lom_deska", PatternKind.Single, ModeEffect.None, PatternKind.Push, ModeEffect.Push, 5)]
     public void EveryWeaponModesMatchCatalog(string id, PatternKind a, ModeEffect aEffect, PatternKind b, ModeEffect bEffect, int cooldownB)
     {
         var w = W(id);
@@ -119,9 +123,9 @@ public class WeaponDataTests
     [Fact]
     public void NewWeaponsHaveSourcesAndJoinToolList()
     {
-        Assert.Equal(19, D.NewTools.Length); // v0.23.0 (#84): + dwa noże
-        Assert.All(D.NewTools, t => Assert.True(t.Weapon >= 22 && (t.Shop || t.Drop || t.Hurtownia || t.Secret)));
-        Assert.Equal(29, D.Tools.Length); // v0.23.0 zad. 5: 10 + 17 (+ 2 noże, #84) w jednej liście (maska 64 bity)
+        Assert.Equal(23, D.NewTools.Length); // v0.23.0 (#84): + dwa noże, + 4 artefakty
+        Assert.All(D.NewTools, t => Assert.True(t.Weapon >= 22 && (t.Shop || t.Drop || t.Hurtownia || t.Secret || t.Artifact)));
+        Assert.Equal(33, D.Tools.Length); // v0.23.0 zad. 5 (+ 4 artefakty): 10 + 17 (+ 2 noże, #84) w jednej liście (maska 64 bity)
     }
 
     [Fact]
@@ -147,7 +151,8 @@ public class WeaponDataTests
         Assert.Equal(new[] { HitType.Blunt, HitType.Pierce }, W("udarowy").Hit);
         Assert.Equal((ModeEffect.OpenWall, 3, 1), (W("przecinak").ModeB.Effect, W("przecinak").ModeB.Value, W("przecinak").ModeB.Cooldown));
         Assert.Equal((ModeEffect.Stun, 20), (W("lopata").ModeA.Effect, W("lopata").ModeA.Value));
-        Assert.Equal(new[] { "mlot_zenka", "poziomica_m", "pilarka", "noz_majstra" }, D.Weapons.Where(w => w.Master).Select(w => w.Id));
+        Assert.Equal(new[] { "mlot_zenka", "poziomica_m", "pilarka", "noz_majstra", "mlot_grom", "kielnia_cegla", "szlifierka_isk", "lom_deska" },
+            D.Weapons.Where(w => w.Master).Select(w => w.Id));
         Assert.Equal("Podpalenie", D.Statuses[(int)StatusEffect.Burn].Name);
         Assert.Equal("Oznaczony", D.Statuses[(int)StatusEffect.Mark].Name);
     }

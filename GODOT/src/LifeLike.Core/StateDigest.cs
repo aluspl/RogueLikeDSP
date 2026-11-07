@@ -210,6 +210,9 @@ public static class StateDigest
         f.Add(g.Weapon2Perks);
         f.Add(g.ToolOfferPerks);
         f.Add(g.PerkRolls);
+        f.Add(g.ProcCount); // v0.23.0: artefakty
+        f.Add(g.ArtifactsRun);
+        f.Add(g.PatentWalls);
         f.Add(g.SecretX);
         f.Add(g.SecretY);
         f.Add(g.SecretKind);

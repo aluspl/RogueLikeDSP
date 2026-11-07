@@ -52,6 +52,7 @@ public sealed partial class Game
         var pending = TraitPending;
         var perks = WeaponPerks;
         WeaponOverride = Weapon2 == CDef.Weapon ? -1 : Weapon2;
+        ResetProc(); // v0.23.0: licznik „co N-ty cios” od nowa
         SecretFlags |= SecretToolSwapFlag; // v0.23.0 (#84): zlecenie „ta sama broń”
         WeaponRarity = Weapon2Rarity;
         WeaponCharges = Weapon2Charges;
@@ -83,6 +84,7 @@ public sealed partial class Game
         Weapon2Trait = -1;
         Weapon2TraitPending = false;
         Weapon2Perks = ResolvePerks(Weapon2, Weapon2Rarity, perks); // v0.23.0
+        MarkArtifact(Weapon2);
         if (extra != 0)
         {
             Weapon2Lvl = (sbyte)(extra & 15);

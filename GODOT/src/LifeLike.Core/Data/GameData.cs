@@ -49,6 +49,16 @@ public sealed class GameData
         return c;
     }
 
+    /// <summary>v0.23.0: artefakty (Gablota) – indeksy broni Mistrzowskich (master) w kolejności danych; bit Gabloty = pozycja na liście.</summary>
+    public int[] Artifacts { get; private init; } = [];
+
+    /// <summary>v0.23.0: szansa (%), że Markowa broń bazowa z dropu okaże się jej artefaktem (sekcja artifacts.chancePct).</summary>
+    public int ArtifactChancePct { get; private init; }
+
+    /// <summary>v0.23.0: broń bazowa artefaktu (WeaponDef.Artifact) jako indeks broni; -1 = zwykła broń albo brak bazy.</summary>
+    public int ArtifactBase(int weapon) =>
+        weapon >= 0 && weapon < Weapons.Length && Weapons[weapon].Artifact.Length > 0 ? Array.FindIndex(Weapons, w => w.Id == Weapons[weapon].Artifact) : -1;
+
     /// <summary>v0.23.0: rzadkości broni (Zwykła, Solidna, Markowa, Mistrzowska).</summary>
     public WeaponRarityDef[] WeaponRarities { get; private init; } = [];
 
@@ -457,14 +467,18 @@ public sealed class GameData
         var mid = Index(materialsJson);
 
         var weapons = weaponsJson.Select(w => ParseWeapon(w)).ToArray();
+        var artifacts = Enumerable.Range(0, weapons.Length).Where(i => weapons[i].Master).ToArray(); // v0.23.0: Gablota
+        Require(artifacts.Length <= Profile.MaxArtifacts, "artefakty: maks. 16 (maska Gabloty w profilu)");
         foreach (var w in weapons)
         {
             Require(w.MinDamage <= w.MaxDamage && w.Range >= 1, $"broń {w.Id}: złe obrażenia/zasięg");
+            Require(w.Artifact.Length == 0 || (w.Master && wid.ContainsKey(w.Artifact)), $"broń {w.Id}: artefakt bez bazy albo nie Mistrzowski");
+            Require(w.Proc is null || w.Proc.Every >= 1, $"broń {w.Id}: proc.every >= 1");
             Require(w.Hit.Length <= 2 && w.ModeB.Cooldown > 0 && w.ModeA.DmgPct > 0 && w.ModeB.DmgPct > 0, $"broń {w.Id}: złe typy ciosu/tryby");
         }
         var newTools = d.GetProperty("meta").TryGetProperty("newTools", out var ntj)
             ? ntj.EnumerateArray().Select(t => new NewToolDef(Lookup(wid, Str(t, "weapon"), "nowa broń"), Bool(t, "shop"), Bool(t, "drop"),
-                Bool(t, "hurtownia"), Bool(t, "secret"))).ToArray()
+                Bool(t, "hurtownia"), Bool(t, "secret"), Bool(t, "artifact"))).ToArray()
             : [];
         var hitTypes = d.TryGetProperty("hitTypes", out var htj) ? ParseHitTypes(htj) : DefaultHitTypes();
         var weaponRarities = d.TryGetProperty("weaponRarities", out var wrj)
@@ -589,7 +603,7 @@ public sealed class GameData
         var classesJson = d.GetProperty("classes").EnumerateArray().ToArray();
         var cid = Index(classesJson);
         var tools = meta.GetProperty("tools").EnumerateArray().Select(t => new ToolDef(Lookup(wid, Str(t, "weapon"), "narzędzie"), Bool(t, "shop"),
-            Bool(t, "reward"), Bool(t, "secret"))).Concat(newTools.Select(t => new ToolDef(t.Weapon, t.Shop, false, t.Secret, t.Drop, t.Hurtownia))).ToArray();
+            Bool(t, "reward"), Bool(t, "secret"))).Concat(newTools.Select(t => new ToolDef(t.Weapon, t.Shop, false, t.Secret, t.Drop, t.Hurtownia, t.Artifact))).ToArray();
         Require(tools.Count(t => t.Shop) == toolCosts.Length, "ceny narzędzi: tyle, ile narzędzi na sprzedaż");
         Require(tools.Length <= 64 && tools.All(t => !(t.Shop && t.Secret)), "narzędzia: bitmaska uint64 w profilu");
 
@@ -764,7 +778,7 @@ public sealed class GameData
         {
             if (tools[i].Drop) dropTools |= 1UL << i;
             if (tools[i].Hurtownia) hurtowniaTools |= 1UL << i;
-            if (!tools[i].Shop && !tools[i].Reward && !tools[i].Secret && !tools[i].Drop && !tools[i].Hurtownia) startTools |= 1UL << i;
+            if (!tools[i].Shop && !tools[i].Reward && !tools[i].Secret && !tools[i].Drop && !tools[i].Hurtownia && !tools[i].Artifact) startTools |= 1UL << i;
         }
         int rewardClasses = 0, secretClasses = 0;
         var secretTools = 0UL;
@@ -1411,6 +1425,8 @@ public sealed class GameData
             ScheduleUrl = hasSchedule ? Str(scj, "url") : "planbudowlany.online",
             Tools = tools,
             NewTools = newTools,
+            Artifacts = artifacts,
+            ArtifactChancePct = d.TryGetProperty("artifacts", out var artj) ? Int(artj, "chancePct", 0) : 0,
             HitTypes = hitTypes,
             WeaponRarities = weaponRarities,
             WeaponPerkPool = perkPool,
@@ -1717,7 +1733,17 @@ public sealed class GameData
             Str(w, "id"), Str(w, "name"), Int(w, "minDamage"), Int(w, "maxDamage"), Int(w, "range"),
             ParseStat(Str(w, "scalesWith")), ParseElement(Str(w, "element", "none")), Int(w, "crit", 0), Bool(w, "knockback"),
             Bool(w, "reveal"), ParseHit(w), ParseMode(w, "modeA"), ParseMode(w, "modeB"), Bool(w, "master"), Bool(w, "neutral"), Int(w, "pierce", 0),
-            Str(w, "desc", ""), w.TryGetProperty("masterPerks", out var mp) ? mp.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : null);
+            Str(w, "desc", ""), w.TryGetProperty("masterPerks", out var mp) ? mp.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : null,
+            Str(w, "artifact", ""), Str(w, "hint", ""), w.TryGetProperty("proc", out var pj) ? ParseProc(pj) : null, Bool(w, "wallFree"),
+            Str(w, "bonusMaterial", ""), Int(w, "bonusPct", 0));
+    }
+
+    /// <summary>v0.23.0: mechanika artefaktu „co N-ty cios” (weapons[].proc).</summary>
+    private static ProcDef ParseProc(JsonElement p)
+    {
+        return new ProcDef(Int(p, "every"), Str(p, "name", ""), Str(p, "desc", ""), ParseEnum<ModeEffect>(Str(p, "effect", "none")), Int(p, "value", 0),
+            Int(p, "turns", 0), Int(p, "dmgPct", 100), ParseElement(Str(p, "element", "none")), ParseEnum<ModeEffect>(Str(p, "effect2", "none")),
+            Int(p, "value2", 0), Int(p, "turns2", 0));
     }
 
     /// <summary>v0.23.0: typ ciosu broni – tekst albo tablica (1-2 typów); brak = obuch.</summary>

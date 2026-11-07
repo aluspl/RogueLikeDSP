@@ -452,6 +452,7 @@ public sealed partial class Game
                 trait = (byte)RollWeaponRarity(); // v0.23.0: rzadkość narzędzia (Pickup.Trait), nigdy Mistrzowska
                 var w = D.Tools[arg].Weapon;
                 perks = RollWeaponPerks(w, ResolveRarity(w, trait)); // v0.23.0: profity znane już na ziemi
+                RollArtifact(ref arg, ref trait, ref perks); // v0.23.0: Markowa broń bazowa bywa artefaktem
             }
         }
         Pickups[PickupsCount++] = new Pickup(x, y, (PickupType)type, true, arg, trait) { Perks = (byte)perks };

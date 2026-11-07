@@ -8,7 +8,7 @@ namespace LifeLike.Core;
 /// </summary>
 public sealed class RunSave
 {
-    public const string RunMagic = "PBRUN18"; // 18: profity broni (v0.23.0); 17: tryb B broni, stany problemów (v0.23.0); 13: podsumowanie budowy, wyzwanie tygodnia; 12: wydarzenia z wyborem, ulepszenie narzędzia, magazyn; 11: premie po etapie, elity, kombinacje stanów; 10: Akt 0; 09: 10 etapów, zachowania
+    public const string RunMagic = "PBRUN19"; // 19: artefakty (licznik ciosów, Gablota w budowie); 18: profity broni (v0.23.0); 17: tryb B broni, stany problemów (v0.23.0); 13: podsumowanie budowy, wyzwanie tygodnia; 12: wydarzenia z wyborem, ulepszenie narzędzia, magazyn; 11: premie po etapie, elity, kombinacje stanów; 10: Akt 0; 09: 10 etapów, zachowania
 
     public byte[] Magic = new byte[8];
     public uint Size;

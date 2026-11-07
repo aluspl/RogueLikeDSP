@@ -27,7 +27,7 @@ public class SecretsTests
         var vet = Array.FindIndex(D.Respect, r => r.Effect == RespectEffect.Veteran);
         Assert.True(vet >= 16 && !Meta.RespectUnlocked(D, p, vet) && !Meta.BuyRespect(D, p, vet));
         for (var day = 1; day <= 200; ++day) Assert.True(Daily.ClassOf(D, Daily.Seed(day)) < D.OpenClassesCount);
-        Assert.Equal(9, D.Secrets.Length); // v0.23.0 (#84): + Stara szkoła (Nóż majstra seniora)
+        Assert.Equal(10, D.Secrets.Length); // v0.23.0 (#84): + Stara szkoła (Nóż majstra seniora), + Przez ścianę na skróty (Łom Ostatniej Deski)
     }
 
     [Fact]

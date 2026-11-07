@@ -126,6 +126,8 @@ public static class Meta
         dst.CareerBest = copy.CareerBest;
         dst.Filter = copy.Filter;
         dst.FiltersSeen = copy.FiltersSeen;
+        dst.Artifacts = copy.Artifacts; // v19: Gablota
+        dst.ArtifactDay = copy.ArtifactDay;
     }
 
     // ------------------------------------------------------------------ katalog usterek (rodzaje 0-15 w Catalog, 16-47 w CatalogHi)
@@ -320,9 +322,17 @@ public static class Meta
     private static bool ProfileMigrate(GameData d, Profile p)
     {
         if (p.MagicIs(Profile.MagicCurrent)) return ClampLevels(d, p);
+        if (p.MagicIs(Profile.MagicV18)) // v18 -> v19: Gablota z unikatów już znalezionych (bez daty); reszta danych bez zmian
+        {
+            p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
+            ArtifactCase.MigrateV19(d, p);
+            ClampLevels(d, p);
+            return true;
+        }
         if (p.MagicIs(Profile.MagicV17)) // v17 -> v18: te same indeksy 0..9 w maskach, FromBytes czytał 8-bitowe maski; dane zostają
         {
             p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
+            ArtifactCase.MigrateV19(d, p);
             ClampLevels(d, p);
             return true;
         }

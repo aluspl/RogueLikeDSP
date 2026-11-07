@@ -66,7 +66,7 @@ public static class BotWeapons
             }
         }
         var avg = n > 0 ? (int)(sum / n) : Avg(g, weapon, rarity, perks, -1);
-        return avg * Shape(g, weapon) / 100;
+        return avg * Shape(g, weapon) / 100 * (100 + ProcPct(weapon < 0 ? g.Weapon : g.D.Weapons[weapon])) / 100;
     }
 
     /// <summary>Ocena broni przeciw jednemu problemowi (zamiana z pasa pod cel).</summary>
@@ -78,6 +78,21 @@ public static class BotWeapons
 
     private static int Avg(Game g, int weapon, int rarity, int perks, int defId) =>
         weapon < 0 ? g.WeaponBreakdown(defId).Avg10 : g.WeaponBreakdown(defId, weapon, -1, -1, 0, rarity, perks).Avg10;
+
+    /// <summary>
+    /// v0.23.0: wartość mechaniki artefaktu (%) – średnio na cios: dodatkowe obrażenia (DmgPct - 100) / N, efekt unieruchamiający
+    /// albo podpalenie ~30% / N, przeskok (łańcuch, ogień) ~5% / N.
+    /// </summary>
+    public static int ProcPct(WeaponDef w)
+    {
+        var p = w.Proc;
+        if (p is null) return 0;
+        var n = Math.Max(1, p.Every);
+        var v = (p.DmgPct - 100) / n;
+        if (p.Effect is ModeEffect.Stun or ModeEffect.Root or ModeEffect.Burn or ModeEffect.Dot) v += 30 / n;
+        if (p.Effect2 is ModeEffect.Chain or ModeEffect.Spread) v += 5 / n;
+        return v;
+    }
 
     /// <summary>Premia (%) za zasięg (+25% za pole ponad 1, do 3) i wzór trybu A trafiający kilka pól (+10%).</summary>
     private static int Shape(Game g, int weapon)

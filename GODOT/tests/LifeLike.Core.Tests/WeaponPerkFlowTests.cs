@@ -219,7 +219,7 @@ public class WeaponPerkFlowTests
         rs.Magic = Profile.MagicBytes("PBRUN17");
         Assert.False(rs.Valid(D));
         Assert.Null(RunSave.FromBytes(rs.ToBytes()).Load(D));
-        Assert.Equal("PBRUN18", RunSave.RunMagic);
+        Assert.Equal("PBRUN19", RunSave.RunMagic);
     }
 
     [Fact]

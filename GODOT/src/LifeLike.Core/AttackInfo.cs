@@ -54,6 +54,11 @@ public sealed class AttackInfo
         a.Lines.Add(Loc.F("tip_wzor", ModeText.Pattern(m with { Range = range }), range));
         var eff = ModeText.Effects(w, m);
         if (eff.Length > 0) a.Lines.Add(ModeText.Capital(eff));
+        var pr = w.Proc; // v0.23.0: artefakt – co N-ty cios i licznik
+        if (pr is not null) a.Lines.Add(pr.Every <= 1 ? Loc.F("tip_proc_zawsze", pr.Name) : Loc.F("tip_proc", pr.Name, pr.Every, g.ProcCount));
+        if (modeB && w.WallFree && (m.Effect == ModeEffect.OpenWall || m.Effect2 == ModeEffect.OpenWall)) a.Lines.Add(Loc.T("tip_sciana_bez_odn"));
+        var mat = w.BonusPct != 0 ? Array.FindIndex(d.Materials, x => x.Id == w.BonusMaterial) : -1;
+        if (mat >= 0) a.Lines.Add(Loc.F("tip_material", w.BonusPct, d.Materials[mat].Name));
         if (modeB)
         {
             var cd = Math.Max(1, m.Cooldown + g.WeaponBCdDelta());

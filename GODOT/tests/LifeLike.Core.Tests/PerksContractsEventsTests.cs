@@ -349,8 +349,8 @@ public class PerksContractsEventsTests
         p.RespectRanksHi[0] = 1;
         p.RespectRanksHi[2] = 3;
         var b = p.ToBytes();
-        Assert.Equal(400, b.Length); // v18: + maski broni 64 bity od 384
-        Assert.Equal("PBRL018\0"u8.ToArray(), b[..8]);
+        Assert.Equal(440, b.Length); // v18: + maski broni 64 bity od 384; v19: + Gablota artefaktów od 400
+        Assert.Equal("PBRL019\0"u8.ToArray(), b[..8]);
         Assert.Equal(new byte[] { 0x02, 0x01, 0x04, 0x03, 2, 1, 0, 3 }, b[188..196]);
         Assert.Equal(new byte[] { 0x0B, 0x0A, 0x0D, 0x0C }, b[156..160]);
         Assert.Equal(new byte[] { 0x02, 0x01 }, b[160..162]);
@@ -515,6 +515,6 @@ public class PerksContractsEventsTests
         Assert.True(l.StageEvent == g.StageEvent && l.PowersUsed == 12 && l.BrandFound == 2 && l.CleanBosses == 1 && l.BossWakeDamage == 5);
         Assert.True(l.Bonus.Crit == g.Bonus.Crit && l.Bonus.XpPct == g.Bonus.XpPct && l.Bonus.Thermos == g.Bonus.Thermos && l.ThermosCap() == g.ThermosCap());
         Assert.Equal(StateDigest.Of(g), StateDigest.Of(l));
-        Assert.Equal("PBRUN18", RunSave.RunMagic);
+        Assert.Equal("PBRUN19", RunSave.RunMagic);
     }
 }
