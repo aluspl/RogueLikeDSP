@@ -230,6 +230,8 @@ def sources():
             s.append("drop")
         if t.get("hurtownia"):
             s.append("Hurtownia")
+        if t.get("artifact"):
+            s.append("artefakt (Markowa baza z dropu)")
         if not s:
             s.append("od startu")
         src.setdefault(t["weapon"], []).extend(s)
@@ -507,6 +509,36 @@ broń może je nadpisać polem <code>masterPerks</code>.</p>
 <table class="small boons"><tr><th>Projekt</th><th>Działanie</th><th>Rzadkość</th><th>Tagi</th></tr>{boons}</table>"""
 
 
+def sec_artifacts():
+    W = {w["id"]: w for w in D["weapons"]}
+    cls = {c["weapon"]: c["name"] for c in D["classes"]}
+    rows = ""
+    for w in D["weapons"]:
+        if not w.get("master"):
+            continue
+        b = W.get(w.get("artifact", ""))
+        base = esc(b["name"]) + (f" <span class='tag'>broń zawodu: {esc(cls[b['id']])}</span>" if b and b["id"] in cls else "") if b else "–"
+        pr = w.get("proc")
+        mech = []
+        if pr:
+            mech.append(f"<b>{esc(pr['name'])}</b> (co {pr['every']}. cios): {esc(pr['desc'])}")
+        if w.get("wallFree"):
+            mech.append("Patent na ścianie bez odnowienia")
+        if w.get("bonusPct"):
+            mech.append(f"+{w['bonusPct']}% na {esc(w['bonusMaterial'])}")
+        if not mech:
+            mech.append(f"Patent: {esc(w['modeB'].get('name', ''))}")
+        rows += (f"<tr><td>{weapon_icon(w['id'], 3, 24)} <b>{esc(w['name'])}</b><br><span class='dim'>{w['minDamage']}–{w['maxDamage']}</span></td>"
+                 f"<td>{base}</td><td>{'<br>'.join(mech)}</td><td>{esc(', '.join(SRC.get(w['id'], [])))}<br><span class='dim'>{esc(w.get('hint', ''))}</span></td></tr>")
+    return f"""<h2 class="break">9. Artefakty i Gablota</h2>
+<p class="dim">Artefakt = unikatowa broń Mistrzowska (<code>master</code>, stałe profity) z bazą <code>artifact</code>. Gdy z dropu wypada
+<b>Markowa</b> broń bazowa (albo dowolna Markowa broń, a baza to broń zawodu bohatera), z szansą {D['artifacts']['chancePct']}%
+zamienia się w swój artefakt – najwyżej raz w budowie. Mechanika „co N-ty cios” (<code>proc</code>) liczy ciosy bronią w ręku (Cios
+i Patent), zeruje się przy zmianie broni; licznik w HUD (błyskawica) i w opisie ataku. Gablota (Profil &gt; Katalog i Szkolenia)
+pokazuje wszystkie artefakty: nieodkryte jako sylwetkę ze wskazówką, odkryte z mechaniką i datą pierwszego znalezienia.</p>
+<table class="small"><tr><th>Artefakt</th><th>Baza</th><th>Mechanika</th><th>Źródło</th></tr>{rows}</table>"""
+
+
 INTRO = f"""<h1>Przewodnik projektowy</h1>
 <p class="dim">Plan Budowlany: Roguelike · stan danych {esc(D.get('version', ''))} · wygenerowano z <code>GBA/data/game.json</code>
 skryptem <code>docs/przewodnik/make_przewodnik.py</code></p>
@@ -579,6 +611,7 @@ def main():
 {sec_enemies()}
 {sec_stages()}
 {sec_perks()}
+{sec_artifacts()}
 </body></html>"""
     html_path = OUT / "przewodnik_gry.html"
     html_path.write_text(doc, encoding="utf-8")
