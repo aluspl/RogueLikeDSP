@@ -80,7 +80,7 @@ public class GameDataTests
         Assert.Equal("Zatrucie", D.Statuses[(int)StatusEffect.Poison].Name);
         Assert.Equal("-1 HP/turę", D.Statuses[(int)StatusEffect.Poison].Effect);
         Assert.Equal(3, D.PaperDelay);
-        Assert.True(D.CritBasePct == 5 && D.CritPerLuckPct == 3 && D.CritMultiplier == 2 && D.DodgeMaxPct == 20);
+        Assert.True(D.CritBasePct == 5 && D.CritPerLuckPct == 2 && D.CritMaxPct == 35 && D.CritMultiplier == 2 && D.DodgeMaxPct == 20);
         Assert.True(D.ThermosCapacity == 3 && D.CoffeeHeal == 8 && D.BotDrinkBelowPct == 40 && D.GearDeclineXp == 1);
         Assert.Equal(107, D.Stages[2].HpPct);
         Assert.Equal("v0.23.0", D.Version);

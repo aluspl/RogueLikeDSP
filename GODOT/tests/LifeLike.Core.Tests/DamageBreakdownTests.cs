@@ -68,7 +68,7 @@ public class DamageBreakdownTests
                 if (v >= 3) g.WeaponOverride = D.Tools[pick.Range(0, D.Tools.Length - 1)].Weapon;
                 var ed = pick.Range(0, D.Enemies.Length - 1);
                 var b = g.WeaponBreakdown(ed);
-                Assert.True(b.CritPct == g.CritPct() && b.StatValue == g.HeroStat(g.Weapon.ScalesWith));
+                Assert.True(b.CritChance() == g.CritPct() && b.StatValue == g.HeroStat(g.Weapon.ScalesWith));
                 Assert.True(b.Flat == g.DmgBonus + g.GearBonus(GearStat.Dmg) && b.FlatFound >= 0);
                 int lo = 999, hi = 0, clo = 999, chi = 0, crits = 0;
                 const int n = 3000;

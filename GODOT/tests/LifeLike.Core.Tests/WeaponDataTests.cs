@@ -138,7 +138,7 @@ public class WeaponDataTests
         Assert.Equal(125, h.MaterialPct[(int)HitType.Pierce, stal]);
         Assert.Equal(75, h.MaterialPct[(int)HitType.Pierce, cement]);
         Assert.Equal(75, h.MaterialPct[(int)HitType.Blunt, 3]);
-        Assert.Equal((20, 10, 1, 125, 150, 150, 50, 2), (h.StunChancePct, h.CutCritPct, h.PierceDef, h.SparkSteelPct, h.PowerWaterPct, h.FireWoodPct, h.FireWaterPct, h.DotPerTurn));
+        Assert.Equal((20, 5, 1, 125, 150, 150, 50, 2), (h.StunChancePct, h.CutCritPct, h.PierceDef, h.SparkSteelPct, h.PowerWaterPct, h.FireWoodPct, h.FireWaterPct, h.DotPerTurn));
     }
 
     [Fact]

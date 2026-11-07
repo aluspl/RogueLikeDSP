@@ -328,7 +328,10 @@ public sealed partial class Game
     /// <summary>Szczęście: kryt (x2), mały unik przed ciosem wroga, częstsze i lepsze dropy.</summary>
     public int Luck() => CDef.Luck + Bonus.Luck + TraitBonus(TraitEffect.Luck) + BoonLuck();
 
-    public int CritPct() => CritBuff + Weapon.Crit + (HitCalc.Has(Weapon, HitType.Cut) ? D.HitTypes.CutCritPct : 0) + D.CritBasePct + D.CritPerLuckPct * Luck() + TraitBonus(TraitEffect.Crit) + Bonus.Crit + BoonSum(BoonEffect.Crit)
+    /// <summary>Szansa krytu; v0.23.0: najwyżej CritMaxPct.</summary>
+    public int CritPct() => Math.Min(D.CritMaxPct, CritPctRaw());
+
+    private int CritPctRaw() => CritBuff + Weapon.Crit + (HitCalc.Has(Weapon, HitType.Cut) ? D.HitTypes.CutCritPct : 0) + D.CritBasePct + D.CritPerLuckPct * Luck() + TraitBonus(TraitEffect.Crit) + Bonus.Crit + BoonSum(BoonEffect.Crit)
                             + WeaponBonus(ToolTraitEffect.Crit) + MasterCrit(); // v0.23.0: cecha Ostrze + profit Ostrze
 
     /// <summary>Pole widzenia; pył (akt III) zmniejsza, najmniej 3.</summary>

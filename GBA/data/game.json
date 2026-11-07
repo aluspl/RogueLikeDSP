@@ -2791,8 +2791,9 @@
   },
   "luck": {
     "critBasePct": 5,
-    "critPerLuckPct": 3,
+    "critPerLuckPct": 2,
     "critMultiplier": 2,
+    "critMaxPct": 35,
     "dropPerLuckPct": 2,
     "rarityPerLuck": 3,
     "dodgePerLuckPct": 2,
@@ -10239,7 +10240,7 @@
       ]
     ],
     "stunChancePct": 20,
-    "cutCritPct": 10,
+    "cutCritPct": 5,
     "pierceDef": 1,
     "sparkSteelPct": 125,
     "powerWaterPct": 150,

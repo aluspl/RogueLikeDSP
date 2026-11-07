@@ -296,6 +296,8 @@ public sealed class GameData
     // Szczęście (sekcja "luck"): kryt, unik, dropy, jakość sprzętu.
     public int CritBasePct { get; private init; }
     public int CritPerLuckPct { get; private init; }
+    /// <summary>v0.23.0: sufit szansy krytu (luck.critMaxPct; brak w danych = 100, bez sufitu).</summary>
+    public int CritMaxPct { get; private init; } = 100;
     public int CritMultiplier { get; private init; }
     public int DropPerLuckPct { get; private init; }
     public int RarityPerLuck { get; private init; }
@@ -1459,6 +1461,7 @@ public sealed class GameData
             GearDeclineXp = Int(eq, "declineXp"),
             CritBasePct = Int(lk, "critBasePct"),
             CritPerLuckPct = Int(lk, "critPerLuckPct"),
+            CritMaxPct = Int(lk, "critMaxPct", 100),
             CritMultiplier = Int(lk, "critMultiplier"),
             DropPerLuckPct = Int(lk, "dropPerLuckPct"),
             RarityPerLuck = Int(lk, "rarityPerLuck"),

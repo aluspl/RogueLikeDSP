@@ -93,6 +93,7 @@ public sealed class DmgBreakdown
         CritLuck = d.CritPerLuckPct * Luck;
         CritPct = CritBase + CritLuck + CritTrait + CritBonus + CritBoon + CritUpg + CritWeapon + CritCut + CritPerk;
         CritMult = d.CritMultiplier;
+        CritCap = Math.Min(100, d.CritMaxPct);
         CritMin = Min * CritMult;
         CritMax = Max * CritMult;
     }
@@ -106,7 +107,10 @@ public sealed class DmgBreakdown
         WMax += d.PerkValue(Perks, ToolTraitEffect.MaxDmg);
     }
 
-    public int CritChance() => Math.Max(0, Math.Min(100, CritPct));
+    /// <summary>v0.23.0: sufit szansy krytu (GameData.CritMaxPct), ustawiany w Finish.</summary>
+    public int CritCap = 100;
+
+    public int CritChance() => Math.Max(0, Math.Min(CritCap, CritPct));
 
     /// <summary>Źródła premii profilu (Meta.ModsParts); tylko gdy sumy się zgadzają (nie budowa dnia).</summary>
     public void SetSources(RunMods[] parts)

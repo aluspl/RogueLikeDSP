@@ -462,8 +462,9 @@ inline constexpr int drop_chance_pct = 25;
 inline constexpr int drop_weights[] = { 40, 5, 5, 15, 35 };
 
 inline constexpr int crit_base_pct = 5;
-inline constexpr int crit_per_luck_pct = 3;
+inline constexpr int crit_per_luck_pct = 2;
 inline constexpr int crit_multiplier = 2;
+inline constexpr int crit_max_pct = 35;
 inline constexpr int drop_per_luck_pct = 2;
 inline constexpr int rarity_per_luck = 3;
 inline constexpr int dodge_per_luck_pct = 2;
