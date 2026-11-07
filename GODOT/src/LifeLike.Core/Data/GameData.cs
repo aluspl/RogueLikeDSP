@@ -61,6 +61,17 @@ public sealed class GameData
     /// <summary>v0.23.0: stałe profity Mistrzowskiej wg pierwszego typu ciosu broni (maski; indeks = HitType).</summary>
     public int[] WeaponPerksMaster { get; private init; } = [];
 
+    /// <summary>v0.23.0: suma wartości profitów z maski o danym skutku.</summary>
+    public int PerkValue(int perks, ToolTraitEffect e)
+    {
+        var v = 0;
+        for (var i = 0; i < WeaponPerkPool.Length; ++i)
+        {
+            if ((perks & (1 << i)) != 0 && WeaponPerkPool[i].Effect == e) v += WeaponPerkPool[i].Value;
+        }
+        return v;
+    }
+
     /// <summary>v0.23.0: maska stałych profitów Mistrzowskiej broni: WeaponDef.MasterPerks albo wg typu ciosu.</summary>
     public int MasterPerkMask(int weapon)
     {

@@ -43,6 +43,11 @@ public sealed class DmgBreakdown
     public int UpgLevel, FlatUpgrade, UpgTrait = -1;
     /// <summary>v0.23.0: premia do obrażeń od rzadkości broni.</summary>
     public int FlatRarity;
+    /// <summary>v0.23.0: profity broni (maska GameData.WeaponPerkPool), Mistrzowska – stałe (Unikat).</summary>
+    public int Perks;
+    public bool PerksMaster;
+    /// <summary>v0.23.0: kryt z profitu Ostrze (WMax już z Głowicą, Pierce i Steady z profitami).</summary>
+    public int CritPerk;
     /// <summary>Cecha ulepszenia: -OBR problemu (Przebicie), +najsłabszy rzut (Wyważenie), +kryt (Ostrze).</summary>
     public int Pierce, Steady, CritUpg;
     /// <summary>v0.21.51 cz. 2: kryt broni (Poziomica mistrza).</summary>
@@ -86,10 +91,19 @@ public sealed class DmgBreakdown
         Avg10 = n > 0 ? LifeLike.Core.Pct.DivRound(sum * HitPct, 1000 * n) : 0;
         CritBase = d.CritBasePct;
         CritLuck = d.CritPerLuckPct * Luck;
-        CritPct = CritBase + CritLuck + CritTrait + CritBonus + CritBoon + CritUpg + CritWeapon + CritCut;
+        CritPct = CritBase + CritLuck + CritTrait + CritBonus + CritBoon + CritUpg + CritWeapon + CritCut + CritPerk;
         CritMult = d.CritMultiplier;
         CritMin = Min * CritMult;
         CritMax = Max * CritMult;
+    }
+
+    /// <summary>v0.23.0: skutki profitów (Perks) w rozpisce: Przebicie, Wyważenie, Ostrze, Głowica (maks. rzutu).</summary>
+    public void AddPerks(GameData d)
+    {
+        Pierce += d.PerkValue(Perks, ToolTraitEffect.Pierce);
+        Steady += d.PerkValue(Perks, ToolTraitEffect.Steady);
+        CritPerk = d.PerkValue(Perks, ToolTraitEffect.Crit);
+        WMax += d.PerkValue(Perks, ToolTraitEffect.MaxDmg);
     }
 
     public int CritChance() => Math.Max(0, Math.Min(100, CritPct));
@@ -136,6 +150,11 @@ public sealed class DmgBreakdown
             FlatRarity = d.WeaponRarities.Length > 0 ? d.WeaponRarities[Game.StartRarity(d, m)].DmgBonus : 0, // v0.23.0
             CritWeapon = w.Crit + ((m.Mastery & MasteryBit.Weapon) != 0 ? d.MasteryClasses[cls].WeaponPerk.Value : 0), // broń mistrza
         };
+        // v0.23.0: Mistrzowska ma stałe profity (unikat); losowe profity Solidnej / Markowej znane dopiero na budowie
+        var master = d.WeaponRarities.Length > 0 && Game.StartRarity(d, m) == d.WeaponRarities.Length - 1;
+        b.Perks = master ? d.MasterPerkMask(c.Weapon) : 0;
+        b.PerksMaster = master;
+        b.AddPerks(d);
         b.Finish(d);
         return b;
     }

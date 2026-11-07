@@ -9,7 +9,7 @@ public sealed partial class Game
     /// Rozpiska obrażeń broni – wzory jak HeroAttack. enemyDefId: problem (jego obrona; -1 = bez), weaponIdx: inna broń
     /// (-1 = obecna; weaponRarity = jej rzadkość), swap*: sprzęt w slocie po zamianie (porównanie paczki; -1 = bez zmian).
     /// </summary>
-    public DmgBreakdown WeaponBreakdown(int enemyDefId = -1, int weaponIdx = -1, int swapSlot = -1, int swapRarity = -1, int swapTrait = 0, int weaponRarity = 0)
+    public DmgBreakdown WeaponBreakdown(int enemyDefId = -1, int weaponIdx = -1, int swapSlot = -1, int swapRarity = -1, int swapTrait = 0, int weaponRarity = 0, int weaponPerks = 0)
     {
         var b = new DmgBreakdown { Weapon = weaponIdx >= 0 ? weaponIdx : (WeaponOverride >= 0 ? WeaponOverride : CDef.Weapon) };
         var w = D.Weapons[b.Weapon];
@@ -71,11 +71,16 @@ public sealed partial class Game
             b.Pierce += ToolTraitValue(ToolTraitEffect.Pierce);
             b.Steady = ToolTraitValue(ToolTraitEffect.Steady);
             b.CritUpg = ToolTraitValue(ToolTraitEffect.Crit);
+            b.Perks = WeaponPerks;
+            b.PerksMaster = MasterRarity(WeaponRarity);
         }
         else
         {
             b.FlatRarity = RarityDmg(weaponRarity); // v0.23.0: rzadkość porównywanej broni (np. z paczki na ziemi)
+            b.Perks = ResolvePerks(b.Weapon, weaponRarity, weaponPerks);
+            b.PerksMaster = MasterRarity(weaponRarity);
         }
+        b.AddPerks(D); // v0.23.0: profity broni – sumują się z cechą ulepszenia (ten sam skutek)
         b.Finish(D);
         return b;
     }

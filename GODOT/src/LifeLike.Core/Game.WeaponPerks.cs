@@ -57,15 +57,7 @@ public sealed partial class Game
     private byte ResolvePerks(int weapon, int rarity, int perks) => (byte)(MasterRarity(rarity) ? D.MasterPerkMask(weapon) : perks);
 
     /// <summary>Suma wartości profitów z maski o danym skutku.</summary>
-    public int PerkValue(int perks, ToolTraitEffect e)
-    {
-        var v = 0;
-        for (var i = 0; i < D.WeaponPerkPool.Length; ++i)
-        {
-            if ((perks & (1 << i)) != 0 && D.WeaponPerkPool[i].Effect == e) v += D.WeaponPerkPool[i].Value;
-        }
-        return v;
-    }
+    public int PerkValue(int perks, ToolTraitEffect e) => D.PerkValue(perks, e);
 
     /// <summary>Skutek broni w ręku: cecha ulepszenia + profity (ten sam skutek dodaje wartości).</summary>
     public int WeaponBonus(ToolTraitEffect e) => ToolTraitValue(e) + PerkValue(WeaponPerks, e);

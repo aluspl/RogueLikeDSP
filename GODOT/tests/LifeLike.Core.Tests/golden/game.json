@@ -10204,7 +10204,10 @@
     "miedzy_wynik": "Wynik: {0} pkt.",
     "budowa_dnia_nr_najlepszy": "Budowa dnia nr {0}: najlepszy {1}",
     "wyzwanie_tygodnia_najlepszy": "Wyzwanie tygodnia: najlepszy {0}",
-    "wybierz_1_z_2": "wybierz 1 z 2"
+    "wybierz_1_z_2": "wybierz 1 z 2",
+    "profity": "Profity",
+    "profity_brak": "Profity: brak",
+    "unikat": "Unikat"
   },
   "hitTypes": {
     "names": [

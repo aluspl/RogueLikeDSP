@@ -75,6 +75,17 @@ public static class DamageHelp
 
     public static string GearLabel(GearDef gd) => GearLabel(new Message(), gd).Text;
 
+    /// <summary>v0.23.0: krótkie opisy profitów z maski („OBR -1, kryt +5%”), pusty tekst bez profitów.</summary>
+    public static string PerkShorts(GameData d, int perks)
+    {
+        var parts = new List<string>();
+        for (var i = 0; i < d.WeaponPerkPool.Length; ++i)
+        {
+            if ((perks & (1 << i)) != 0) parts.Add(d.WeaponPerkPool[i].Short);
+        }
+        return string.Join(", ", parts);
+    }
+
     /// <summary>Wiersz rozpiski k; false = ten składnik nic nie daje (można go pominąć), tekst i tak jest.</summary>
     public static bool Line(GameData d, Message m, DmgBreakdown b, DmgText k)
     {
@@ -190,7 +201,7 @@ public static class DamageHelp
                 return true;
             case DmgText.CritExtra:
             {
-                if (b.CritTrait == 0 && b.CritBonus == 0 && b.CritUpg == 0 && b.CritWeapon == 0 && b.CritCut == 0)
+                if (b.CritTrait == 0 && b.CritBonus == 0 && b.CritUpg == 0 && b.CritPerk == 0 && b.CritWeapon == 0 && b.CritCut == 0)
                 {
                     m.Add(Loc.T("kryt_bez_premii"));
                     return false;
@@ -212,9 +223,9 @@ public static class DamageHelp
                     m.Add(Loc.T("cecha")).Add(b.CritTrait).Add("%");
                     first = false;
                 }
-                if (b.CritUpg != 0)
+                if (b.CritUpg + b.CritPerk != 0) // cecha i v0.23.0 profit Ostrze razem
                 {
-                    m.Add(first ? " " : ", ").Add(Loc.T("ostrze")).Add(b.CritUpg).Add("%");
+                    m.Add(first ? " " : ", ").Add(Loc.T("ostrze")).Add(b.CritUpg + b.CritPerk).Add("%");
                     first = false;
                 }
                 if (!b.Split)
@@ -268,6 +279,14 @@ public static class DamageHelp
                 }
                 m.Add(Loc.T("ulepszenie")).Add(b.UpgLevel).Add(": +").Add(b.FlatUpgrade).Add(Loc.T("obr_3"));
                 if (b.UpgTrait >= 0) m.Add(", ").Add(d.ToolTraits[b.UpgTrait].Name).Add(" ").Add(d.ToolTraits[b.UpgTrait].Short);
+                return true;
+            case DmgText.Perks: // v0.23.0: profity broni (Mistrzowska: stałe – Unikat)
+                if (b.Perks == 0)
+                {
+                    m.Add(Loc.T("profity_brak"));
+                    return false;
+                }
+                m.Add(b.PerksMaster ? Loc.T("unikat") : Loc.T("profity")).Add(": ").Add(PerkShorts(d, b.Perks));
                 return true;
             case DmgText.HitMult: // v0.23.0: typ ciosu x materiał / żywioł problemu
                 if (!b.VsEnemy) // bez celu: same typy ciosu broni („Typ ciosu: Obuch, Kłucie”), składnik nic nie daje

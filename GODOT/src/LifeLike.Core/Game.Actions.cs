@@ -12,8 +12,9 @@ public sealed partial class Game
         int ex = Enemies[ei].X, ey = Enemies[ei].Y;
         bool wasWet = EnemyWet(ei), wasDusty = EnemyDusty(ei), wasFrozen = EnemyFrozen(ei);
         var melee = Cheb(Hero.X, Hero.Y, ex, ey) <= 1;
-        var w = Weapon; // ulepszenie (#31): +obrażeń, Wyważenie (rzut), Przebicie (OBR)
-        var dmg = R.Range(Math.Min(w.MaxDamage, w.MinDamage + ToolTraitValue(ToolTraitEffect.Steady)), w.MaxDamage)
+        var w = Weapon; // ulepszenie (#31): +obrażeń, Wyważenie (rzut), Przebicie (OBR); v0.23.0: + profity broni, Głowica (maks.)
+        var wmax = w.MaxDamage + WeaponBonus(ToolTraitEffect.MaxDmg);
+        var dmg = R.Range(Math.Min(wmax, w.MinDamage + WeaponBonus(ToolTraitEffect.Steady)), wmax)
                   + HeroStat(w.ScalesWith) / 2 + DmgBonus + GearBonus(GearStat.Dmg) + BoonSum(BoonEffect.Dmg) + UpgradeDmg() + WeaponDmgBonus() + EventDmg
                   + MarkBonus(ei) // Tyczenie (Geodeta)
                   + (Enemies[ei].Hp >= Enemies[ei].MaxHp ? Bonus.FirstHitBonus : 0) // v0.21.52 cz. c: Siła rozpędu
@@ -46,8 +47,8 @@ public sealed partial class Game
         HitTypeEffects(ei, w); // v0.23.0: na końcu, by nie przesuwać losowań krytu i odepchnięcia
     }
 
-    /// <summary>v0.23.0: kłucie omija PierceDef obrony, razem z cechą Przebicie narzędzia.</summary>
-    public int PierceTotal(WeaponDef w) => ToolTraitValue(ToolTraitEffect.Pierce) + HitCalc.PierceDef(D, w);
+    /// <summary>v0.23.0: kłucie omija PierceDef obrony, razem z cechą Przebicie narzędzia i profitem Przebicie.</summary>
+    public int PierceTotal(WeaponDef w) => WeaponBonus(ToolTraitEffect.Pierce) + HitCalc.PierceDef(D, w);
 
     /// <summary>v0.23.0: skutki typu ciosu po trafieniu – obuch ogłusza (szansa StunChancePct, nie bossa), ogień osusza.</summary>
     public void HitTypeEffects(int ei, WeaponDef w)
