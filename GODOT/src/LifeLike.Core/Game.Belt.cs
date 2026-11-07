@@ -50,6 +50,7 @@ public sealed partial class Game
         var lvl = WeaponLvl;
         var trait = WeaponTrait;
         var pending = TraitPending;
+        var perks = WeaponPerks;
         WeaponOverride = Weapon2 == CDef.Weapon ? -1 : Weapon2;
         SecretFlags |= SecretToolSwapFlag; // v0.23.0 (#84): zlecenie „ta sama broń”
         WeaponRarity = Weapon2Rarity;
@@ -64,13 +65,15 @@ public sealed partial class Game
         Weapon2Lvl = lvl;
         Weapon2Trait = trait;
         Weapon2TraitPending = pending;
+        WeaponPerks = Weapon2Perks; // v0.23.0: profity należą do broni
+        Weapon2Perks = perks;
         Push(Msg(Loc.T("zamiana_broni")).Add(Weapon.Name).As(LogKind.Loot));
         EndTurn();
         return true;
     }
 
     /// <summary>Znaleziona broń z założonym pasem i pustą kaburą trafia do drugiego miejsca (zamiast pytania o wymianę).</summary>
-    private bool StashTool(int t, int rarity, int extra = 0)
+    private bool StashTool(int t, int rarity, int extra = 0, int perks = 0)
     {
         if (!HasBelt() || Weapon2 >= 0) return false;
         Weapon2 = D.Tools[t].Weapon;
@@ -79,6 +82,7 @@ public sealed partial class Game
         Weapon2Lvl = 0;
         Weapon2Trait = -1;
         Weapon2TraitPending = false;
+        Weapon2Perks = ResolvePerks(Weapon2, Weapon2Rarity, perks); // v0.23.0
         if (extra != 0)
         {
             Weapon2Lvl = (sbyte)(extra & 15);
@@ -88,6 +92,7 @@ public sealed partial class Game
         }
         ToolsFound |= 1UL << t;
         Push(Msg(Loc.T("bron_do_kabury")).Add(D.Weapons[Weapon2].Name).As(LogKind.Loot));
+        PushPerks(Weapon2Perks, Weapon2Rarity);
         return true;
     }
 
@@ -121,6 +126,7 @@ public sealed partial class Game
             Pickups[PickupsCount++] = new Pickup(x, y, PickupType.Tool, true, t, Weapon2Rarity)
             {
                 Extra = PackWeaponExtra(Weapon2Lvl, Weapon2Trait, Weapon2Charges, Weapon2TraitPending),
+                Perks = Weapon2Perks, // v0.23.0: profity wypadają razem z bronią
             };
         }
         if (ok) Push(Msg(Loc.T("bron_z_kabury_wypada")).Add(D.Weapons[w].Name).As(LogKind.Loot));
@@ -132,5 +138,6 @@ public sealed partial class Game
         Weapon2Lvl = 0;
         Weapon2Trait = -1;
         Weapon2TraitPending = false;
+        Weapon2Perks = 0;
     }
 }

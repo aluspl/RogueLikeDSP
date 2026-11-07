@@ -309,9 +309,11 @@ public sealed partial class Game
         Pickups[ToolOfferPickup].Active = false;
         int t = ToolOffer, rarity = ToolOfferRarity;
         var extra = ToolOfferExtra;
+        var perks = ToolOfferPerks;
         ToolOffer = ToolOfferPickup = -1;
         ToolOfferExtra = 0;
-        TakeTool(t, rarity, true, extra);
+        ToolOfferPerks = 0;
+        TakeTool(t, rarity, true, extra, perks);
     }
 
     public void DeclineTool()
@@ -319,10 +321,11 @@ public sealed partial class Game
         if (!HasToolOffer) return;
         ToolOffer = ToolOfferPickup = -1;
         ToolOfferExtra = 0;
+        ToolOfferPerks = 0;
         Push(Msg(Loc.T("zostajesz_przy_ulepszonym")));
     }
 
-    public void TakeTool(int t, int rarity = 0, bool announce = true, int extra = 0)
+    public void TakeTool(int t, int rarity = 0, bool announce = true, int extra = 0, int perks = -1)
     {
         ResetUpgrade();
         WeaponOverride = D.Tools[t].Weapon;
@@ -330,8 +333,11 @@ public sealed partial class Game
         WeaponRarity = (byte)ResolveRarity(WeaponOverride, rarity); // v0.23.0: rzadkość z dropu / Hurtowni, unikat zawsze Mistrzowska
         ToolsFound |= 1UL << t;
         ApplyWeaponExtra(extra); // v0.23.0: upuszczona z kabury broń zachowuje ulepszenia
+        // v0.23.0: profity ze znajdźki (-1 = nowa broń bez znajdźki, np. Hurtownia – losowane teraz)
+        WeaponPerks = perks < 0 ? (byte)RollWeaponPerks(WeaponOverride, WeaponRarity) : ResolvePerks(WeaponOverride, WeaponRarity, perks);
         if (!announce) return;
         Push(Msg(Loc.T("narzedzie_2")).Add(Weapon.Name).Add(" ").Add(Weapon.MinDamage).Add("-").Add(Weapon.MaxDamage).As(LogKind.Loot));
+        PushPerks(WeaponPerks, WeaponRarity);
     }
 
     /// <summary>Bot bierze nowe narzędzie, gdy średni cios (bez problemu) jest wyższy niż ulepszonym obecnym.</summary>

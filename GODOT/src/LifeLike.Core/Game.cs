@@ -636,6 +636,7 @@ public sealed partial class Game
         ToolOffer = ToolOfferPickup = -1;
         ToolOfferRarity = 0;
         ToolOfferExtra = 0;
+        ToolOfferPerks = 0;
         SecretX = SecretY = -1;
         SecretOpen = false;
         SecretKind = SecretDir = 0;

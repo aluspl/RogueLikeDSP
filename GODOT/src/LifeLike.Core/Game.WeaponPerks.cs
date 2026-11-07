@@ -56,6 +56,20 @@ public sealed partial class Game
     /// <summary>Profity broni po wzięciu: Mistrzowska zawsze stałe, inaczej zapisane przy powstaniu broni (Pickup.Perks).</summary>
     private byte ResolvePerks(int weapon, int rarity, int perks) => (byte)(MasterRarity(rarity) ? D.MasterPerkMask(weapon) : perks);
 
+    /// <summary>Rozpiska narzędzia z oferty wymiany: rzadkość (unikat = Mistrzowska) i profity ze znajdźki.</summary>
+    public DmgBreakdown ToolOfferBreakdown(int enemyDefId = -1)
+    {
+        var w = D.Tools[ToolOffer].Weapon;
+        return WeaponBreakdown(enemyDefId, w, -1, -1, 0, ResolveRarity(w, ToolOfferRarity), ToolOfferPerks);
+    }
+
+    /// <summary>Wpis profitów nowej broni w dzienniku („Profity: OBR -1, kryt +5%”, Mistrzowska – „Unikat: …”); bez profitów nic.</summary>
+    private void PushPerks(int perks, int rarity)
+    {
+        if (perks == 0) return;
+        Push(Msg(MasterRarity(rarity) ? Loc.T("unikat") : Loc.T("profity")).Add(": ").Add(DamageHelp.PerkShorts(D, perks)).As(LogKind.Loot));
+    }
+
     /// <summary>Suma wartości profitów z maski o danym skutku.</summary>
     public int PerkValue(int perks, ToolTraitEffect e) => D.PerkValue(perks, e);
 

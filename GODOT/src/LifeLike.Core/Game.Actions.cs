@@ -428,7 +428,7 @@ public sealed partial class Game
         int roll = R.Range(1, total), type = 0;
         while (roll > D.DropWeights[type]) roll -= D.DropWeights[type++];
         if (type != (int)PickupType.Tool && Bonus.ToolPct > 0 && R.Range(1, 100) <= Bonus.ToolPct) type = (int)PickupType.Tool; // uprawnienie Kolekcjoner
-        int arg = 0, trait = 0;
+        int arg = 0, trait = 0, perks = 0;
         if (type == (int)PickupType.GearBox) // slot losowy, jakość lepsza na późnych etapach i ze szczęściem
         {
             var q = R.Range(1, 100) + Math.Max(0, PatternStage()) * D.GearStageBonus + D.RarityPerLuck * Luck() + Bonus.GearPct;
@@ -450,9 +450,11 @@ public sealed partial class Game
             {
                 arg = (byte)NthTool(pool, R.Range(0, n - 1));
                 trait = (byte)RollWeaponRarity(); // v0.23.0: rzadkość narzędzia (Pickup.Trait), nigdy Mistrzowska
+                var w = D.Tools[arg].Weapon;
+                perks = RollWeaponPerks(w, ResolveRarity(w, trait)); // v0.23.0: profity znane już na ziemi
             }
         }
-        Pickups[PickupsCount++] = new Pickup(x, y, (PickupType)type, true, arg, trait);
+        Pickups[PickupsCount++] = new Pickup(x, y, (PickupType)type, true, arg, trait) { Perks = (byte)perks };
     }
 
     /// <summary>Zakłada przedmiot w slocie (zastępuje obecny; kamizelka od razu zmienia max HP).</summary>
@@ -505,7 +507,7 @@ public sealed partial class Game
             if (p.Type == PickupType.GearBox && HasOffer) continue; // najpierw decyzja o poprzedniej paczce
             if (p.Type == PickupType.Tool && HasBelt() && Weapon2 < 0) // v0.23.0: pas z kaburą – broń do drugiego miejsca, bez pytania
             {
-                StashTool(p.Arg, p.Trait, p.Extra);
+                StashTool(p.Arg, p.Trait, p.Extra, p.Perks);
                 p.Active = false;
                 continue;
             }
@@ -516,6 +518,7 @@ public sealed partial class Game
                     ToolOffer = (sbyte)p.Arg;
                     ToolOfferRarity = (sbyte)p.Trait;
                     ToolOfferExtra = p.Extra;
+                    ToolOfferPerks = p.Perks;
                     ToolOfferPickup = (sbyte)i;
                     Push(Msg(Loc.T("narzedzie_2")).Add(D.Weapons[D.Tools[p.Arg].Weapon].Name).Add(Loc.T("zamienic")).As(LogKind.Loot));
                 }
@@ -590,7 +593,7 @@ public sealed partial class Game
             }
             else
             {
-                TakeTool(p.Arg, p.Trait, true, p.Extra);
+                TakeTool(p.Arg, p.Trait, true, p.Extra, p.Perks);
             }
         }
     }

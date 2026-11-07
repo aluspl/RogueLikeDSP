@@ -171,7 +171,8 @@ public class SecretsTests
         var cut0 = HitCalc.Has(poz.Weapon, HitType.Cut) ? D.HitTypes.CutCritPct : 0;
         poz.TakeTool(ToolOf(false));
         var cut1 = HitCalc.Has(poz.Weapon, HitType.Cut) ? D.HitTypes.CutCritPct : 0;
-        Assert.True(poz.CritPct() == c0 - cut0 + cut1 + poz.Weapon.Crit && poz.Weapon.Reveal && poz.WeaponBreakdown().CritPct == poz.CritPct());
+        var perk = D.PerkValue(poz.WeaponPerks, ToolTraitEffect.Crit); // v0.23.0: unikat – stałe profity (Ostrze)
+        Assert.True(poz.CritPct() == c0 - cut0 + cut1 + poz.Weapon.Crit + perk && poz.Weapon.Reveal && poz.WeaponBreakdown().CritPct == poz.CritPct());
     }
 
     [Fact]

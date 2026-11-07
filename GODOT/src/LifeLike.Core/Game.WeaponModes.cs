@@ -50,6 +50,7 @@ public sealed partial class Game
         WeaponCharges = 0;
         WeaponOverride = -1;
         ResetUpgrade();
+        WeaponPerks = 0; // v0.23.0: profity zużytej broni przepadają z nią
     }
 
     /// <summary>Efekty przed ciosem (ten sam cios je już czuje): ogłuszenie, unieruchomienie, osłabienie, znak, kryt, krwawienie, osuszenie, mokry.
