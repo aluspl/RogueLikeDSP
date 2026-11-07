@@ -92,6 +92,7 @@ public static class StateDigest
             f.Add(p.Arg);
             f.Add(p.Trait);
             f.Add(p.Extra);
+            f.Add(p.Perks);
         }
         for (var i = 0; i < Game.StatusSlots; i++) f.Add(g.HeroStatus[i]);
         for (var i = 0; i < Game.MaxGearSlots; i++) f.Add(g.Equipped[i]);
@@ -205,6 +206,10 @@ public static class StateDigest
         f.Add(g.Weapon2Trait);
         f.Add(g.Weapon2TraitPending ? 1 : 0);
         f.Add(g.ToolOfferExtra);
+        f.Add(g.WeaponPerks); // v0.23.0: profity broni
+        f.Add(g.Weapon2Perks);
+        f.Add(g.ToolOfferPerks);
+        f.Add(g.PerkRolls);
         f.Add(g.SecretX);
         f.Add(g.SecretY);
         f.Add(g.SecretKind);

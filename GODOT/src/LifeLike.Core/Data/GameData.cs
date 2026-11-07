@@ -51,6 +51,34 @@ public sealed class GameData
 
     /// <summary>v0.23.0: rzadkości broni (Zwykła, Solidna, Markowa, Mistrzowska).</summary>
     public WeaponRarityDef[] WeaponRarities { get; private init; } = [];
+
+    /// <summary>v0.23.0: pula profitów broni (sekcja weaponPerks; maska bitów = indeksy puli, maks. 8).</summary>
+    public ToolTraitDef[] WeaponPerkPool { get; private init; } = [];
+
+    /// <summary>v0.23.0: ile losowych profitów ma broń danej rzadkości (Mistrzowska – stałe, nie losuje).</summary>
+    public int[] WeaponPerksPerRarity { get; private init; } = [];
+
+    /// <summary>v0.23.0: stałe profity Mistrzowskiej wg pierwszego typu ciosu broni (maski; indeks = HitType).</summary>
+    public int[] WeaponPerksMaster { get; private init; } = [];
+
+    /// <summary>v0.23.0: maska stałych profitów Mistrzowskiej broni: WeaponDef.MasterPerks albo wg typu ciosu.</summary>
+    public int MasterPerkMask(int weapon)
+    {
+        if (weapon < 0 || weapon >= Weapons.Length) return 0;
+        var w = Weapons[weapon];
+        if (w.MasterPerks.Length > 0)
+        {
+            var m = 0;
+            foreach (var id in w.MasterPerks)
+            {
+                var i = Array.FindIndex(WeaponPerkPool, p => p.Id == id);
+                if (i >= 0) m |= 1 << i;
+            }
+            return m;
+        }
+        var h = (int)w.Hit[0];
+        return h < WeaponPerksMaster.Length ? WeaponPerksMaster[h] : 0;
+    }
     /// <summary>Pamiątki (sekcja "keepsakes"): wybierane na start budowy, ranga rośnie z budowami.</summary>
     public KeepsakeDef[] Keepsakes { get; private init; } = [];
     /// <summary>Po ilu budowach z pamiątką ranga II i III.</summary>
@@ -429,6 +457,25 @@ public sealed class GameData
             ? wrj.EnumerateArray().Select(r => new WeaponRarityDef(Str(r, "name"), Str(r, "color"), Int(r, "dmgBonus"), Int(r, "cooldownDelta", 0),
                 Int(r, "rollFrom", 0))).ToArray()
             : [];
+        ToolTraitDef[] perkPool = [];
+        int[] perksPerRarity = [];
+        int[] perksMaster = [];
+        if (d.TryGetProperty("weaponPerks", out var wpj)) // v0.23.0: losowe profity broni wg rzadkości
+        {
+            perkPool = wpj.GetProperty("pool").EnumerateArray().Select(x => new ToolTraitDef(Str(x, "id"), Str(x, "name"), Str(x, "short"),
+                Str(x, "desc"), ParseEnum<ToolTraitEffect>(Str(x, "effect")), Int(x, "value"))).ToArray();
+            var pid = Index(wpj.GetProperty("pool").EnumerateArray().ToArray());
+            perksPerRarity = wpj.GetProperty("perRarity").EnumerateArray().Select(x => x.GetInt32()).ToArray();
+            var mj = wpj.GetProperty("master");
+            perksMaster = Enum.GetValues<HitType>().Select(h => mj.TryGetProperty(h.ToString().ToLowerInvariant(), out var ids)
+                ? ids.EnumerateArray().Aggregate(0, (m, x) => m | 1 << Lookup(pid, x.GetString() ?? "", "profit broni")) : 0).ToArray();
+            Require(perkPool.Length is > 0 and <= 8 && perksPerRarity.Length == weaponRarities.Length
+                    && perksPerRarity.All(n => n >= 0 && n <= perkPool.Length), "profity broni: pula 1-8, perRarity = rzadkości");
+            foreach (var w in weapons)
+            {
+                foreach (var id in w.MasterPerks) Lookup(pid, id, $"profit broni {w.Id}");
+            }
+        }
 
         var classes = d.GetProperty("classes").EnumerateArray().Select(c =>
         {
@@ -1352,6 +1399,9 @@ public sealed class GameData
             NewTools = newTools,
             HitTypes = hitTypes,
             WeaponRarities = weaponRarities,
+            WeaponPerkPool = perkPool,
+            WeaponPerksPerRarity = perksPerRarity,
+            WeaponPerksMaster = perksMaster,
             Gear = gear.ToArray(),
             GearSlots = slots.ToArray(),
             GearRarities = rarities,
@@ -1652,7 +1702,7 @@ public sealed class GameData
             Str(w, "id"), Str(w, "name"), Int(w, "minDamage"), Int(w, "maxDamage"), Int(w, "range"),
             ParseStat(Str(w, "scalesWith")), ParseElement(Str(w, "element", "none")), Int(w, "crit", 0), Bool(w, "knockback"),
             Bool(w, "reveal"), ParseHit(w), ParseMode(w, "modeA"), ParseMode(w, "modeB"), Bool(w, "master"), Bool(w, "neutral"), Int(w, "pierce", 0),
-            Str(w, "desc", ""));
+            Str(w, "desc", ""), w.TryGetProperty("masterPerks", out var mp) ? mp.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : null);
     }
 
     /// <summary>v0.23.0: typ ciosu broni – tekst albo tablica (1-2 typów); brak = obuch.</summary>

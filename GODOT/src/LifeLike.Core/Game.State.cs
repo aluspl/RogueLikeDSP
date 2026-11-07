@@ -108,6 +108,7 @@ public sealed partial class Game
             w.Write(p.Arg);
             w.Write(p.Trait);
             w.Write(p.Extra);
+            w.Write(p.Perks);
         }
         w.Write(PickupsCount);
         foreach (var v in new[] { Cls, Stage, Diff, Tier, DefBonus, DmgBonus, Turns, Kills, Score, StageDamage, StageKills, StageStartTurn })
@@ -234,6 +235,10 @@ public sealed partial class Game
         w.Write(Weapon2Trait);
         w.Write(Weapon2TraitPending);
         w.Write(ToolOfferExtra);
+        w.Write(WeaponPerks); // v0.23.0: profity broni (ręka, kabura, oferta) i licznik losowań
+        w.Write(Weapon2Perks);
+        w.Write(ToolOfferPerks);
+        w.Write(PerkRolls);
         w.Write(SecretX);
         w.Write(SecretY);
         w.Write(SecretKind);
@@ -300,7 +305,7 @@ public sealed partial class Game
         for (var i = 0; i < Enemies.Length; i++) Enemies[i] = ReadActor(r);
         EnemiesCount = r.ReadInt32();
         for (var i = 0; i < Pickups.Length; i++)
-            Pickups[i] = new Pickup { X = r.ReadSByte(), Y = r.ReadSByte(), Type = (PickupType)r.ReadByte(), Active = r.ReadBoolean(), Arg = r.ReadByte(), Trait = r.ReadByte(), Extra = r.ReadUInt16() };
+            Pickups[i] = new Pickup { X = r.ReadSByte(), Y = r.ReadSByte(), Type = (PickupType)r.ReadByte(), Active = r.ReadBoolean(), Arg = r.ReadByte(), Trait = r.ReadByte(), Extra = r.ReadUInt16(), Perks = r.ReadByte() };
         PickupsCount = r.ReadInt32();
         Cls = r.ReadInt32();
         Stage = r.ReadInt32();
@@ -439,6 +444,10 @@ public sealed partial class Game
         Weapon2Trait = r.ReadSByte();
         Weapon2TraitPending = r.ReadBoolean();
         ToolOfferExtra = r.ReadUInt16();
+        WeaponPerks = r.ReadByte();
+        Weapon2Perks = r.ReadByte();
+        ToolOfferPerks = r.ReadByte();
+        PerkRolls = r.ReadUInt16();
         SecretX = r.ReadSByte();
         SecretY = r.ReadSByte();
         SecretKind = r.ReadSByte();

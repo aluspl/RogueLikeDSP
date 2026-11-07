@@ -161,7 +161,10 @@
   "weekly.list[].short",
   "weekly.list[].desc",
   "hitTypes.names[]",
-  "weaponRarities[].name"
+  "weaponRarities[].name",
+  "weaponPerks.pool[].name",
+  "weaponPerks.pool[].short",
+  "weaponPerks.pool[].desc"
  ],
  "fit": {
   "weapons[].name": 140,
@@ -1625,7 +1628,15 @@
   "Oznaczony": "Marked",
   "Ozn.": "Tag",
   "więcej obrażeń": "extra damage",
-  "Pas monterski z kaburą": "Rigger Holster Belt"
+  "Pas monterski z kaburą": "Rigger Holster Belt",
+  "OBR -1": "DEF -1",
+  "Ignoruje 1 OBR problemu": "Ignores 1 problem DEF",
+  "Głowica": "Head",
+  "obr. maks +1": "max dmg +1",
+  "Najsilniejszy rzut +1": "Strongest roll +1",
+  "Chwyt": "Grip",
+  "odn. B -1": "B cd -1",
+  "Odnowienie trybu B -1 (min. 1)": "Mode B cooldown -1 (min. 1)"
  },
  "ui": {
   "obrazen": "% damage",

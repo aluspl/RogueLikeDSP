@@ -1043,7 +1043,11 @@
         "cooldown": 3,
         "name": "Jeszcze nie emerytura"
       },
-      "master": true
+      "master": true,
+      "masterPerks": [
+        "przebicie",
+        "ostrze"
+      ]
     }
   ],
   "enemies": [
@@ -10269,5 +10273,69 @@
       "cooldownDelta": 0,
       "rollFrom": 101
     }
-  ]
+  ],
+  "weaponPerks": {
+    "perRarity": [
+      0,
+      1,
+      2,
+      0
+    ],
+    "pool": [
+      {
+        "id": "przebicie",
+        "name": "Przebicie",
+        "short": "OBR -1",
+        "desc": "Ignoruje 1 OBR problemu",
+        "effect": "pierce",
+        "value": 1
+      },
+      {
+        "id": "ostrze",
+        "name": "Ostrze",
+        "short": "kryt +5%",
+        "desc": "Kryt +5%",
+        "effect": "crit",
+        "value": 5
+      },
+      {
+        "id": "wywazenie",
+        "name": "Wyważenie",
+        "short": "rzut min +1",
+        "desc": "Najsłabszy rzut +1",
+        "effect": "steady",
+        "value": 1
+      },
+      {
+        "id": "glowica",
+        "name": "Głowica",
+        "short": "obr. maks +1",
+        "desc": "Najsilniejszy rzut +1",
+        "effect": "maxdmg",
+        "value": 1
+      },
+      {
+        "id": "chwyt",
+        "name": "Chwyt",
+        "short": "odn. B -1",
+        "desc": "Odnowienie trybu B -1 (min. 1)",
+        "effect": "cooldownB",
+        "value": 1
+      }
+    ],
+    "master": {
+      "blunt": [
+        "wywazenie",
+        "glowica"
+      ],
+      "cut": [
+        "ostrze",
+        "glowica"
+      ],
+      "pierce": [
+        "przebicie",
+        "ostrze"
+      ]
+    }
+  }
 }

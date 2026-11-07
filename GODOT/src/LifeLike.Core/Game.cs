@@ -559,6 +559,7 @@ public sealed partial class Game
         if (mods.StartBelt != 0 && D.BeltSlot >= 0) Equip(D.BeltSlot, BeltTier, R.Range(0, D.GearTraitsCount - 1)); // v0.23.0: nagroda za odbiór
         Thermos = Math.Min(ThermosCap(), mods.StartCoffee); // Respekt: Zaprawiony w boju
         WeaponRarity = (byte)StartRarity(D, mods); // v0.23.0: Szkolenie Narzędzia; broń mistrza / unikat = Mistrzowska
+        WeaponPerks = (byte)RollWeaponPerks(CDef.Weapon, WeaponRarity); // v0.23.0: profity broni zawodu z seeda budowy
     }
 
     public bool Occupied(int x, int y)
