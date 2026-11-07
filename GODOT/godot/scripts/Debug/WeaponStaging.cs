@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using LifeLike.Core;
+using LifeLike.Core.Data;
 using LifeLike.Game.Input;
 using LifeLike.Game.Screens;
 using CoreGame = LifeLike.Core.Game;
@@ -17,7 +18,7 @@ namespace LifeLike.Game.Debug;
 public sealed class WeaponStaging
 {
     public static readonly string[] Names =
-        ["weapon-arc", "weapon-b", "weapon-belt", "weapon-card", "weapon-rarity", "weapon-class", "help-weapons", "weapon-legend-found", "weapon-perks"];
+        ["weapon-arc", "weapon-b", "weapon-belt", "weapon-card", "weapon-rarity", "weapon-class", "help-weapons", "weapon-legend-found", "weapon-perks", "offer-trait"];
 
     private readonly App _app;
 
@@ -119,6 +120,16 @@ public sealed class WeaponStaging
                 g.Pickups[g.PickupsCount++] = new Pickup(g.Hero.X + dx, g.Hero.Y + dy, PickupType.Tool, true, t, 2) { Perks = (1 << 0) | (1 << 4) };
                 Refresh(g);
                 _app.AfterAction(g.PlayerMove(dx, dy));
+                break;
+            }
+            case "offer-trait": // v0.23.0 (#91): paczka – te same Solidne rękawice, cecha Szczęście +1 -> Odporność na zatrucie
+            {
+                g.Equip(1, 1, Array.FindIndex(g.D.GearTraits, t => t.Effect == TraitEffect.Luck));
+                Refresh(g);
+                g.Pickups[0] = new Pickup(g.Hero.X, g.Hero.Y, PickupType.GearBox, true, 1 * 3 + 1, Array.FindIndex(g.D.GearTraits, t => t.Effect == TraitEffect.PoisonRes));
+                g.PickupsCount = 1;
+                g.Collect();
+                _app.AfterAction(true);
                 break;
             }
             case "weapon-legend-found": // Nóż majstra seniora podniesiony z placu (bohater na polu znajdźki, wpis w dzienniku)

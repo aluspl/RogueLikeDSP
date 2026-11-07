@@ -10208,7 +10208,12 @@
     "wybierz_1_z_2": "wybierz 1 z 2",
     "profity": "Profity",
     "profity_brak": "Profity: brak",
-    "unikat": "Unikat"
+    "unikat": "Unikat",
+    "zostawiam_xp": "Zostawiam · +{0} dośw.",
+    "zostawiam_xp_kr": "Zostaw +{0} XP",
+    "profit_linia": "Profit {0}: {1}",
+    "unikat_linia": "Unikat {0}: {1}",
+    "cecha_zmiana": "Cecha: {0} -> {1}"
   },
   "hitTypes": {
     "names": [

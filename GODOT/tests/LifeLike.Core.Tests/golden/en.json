@@ -3203,6 +3203,11 @@
   "wybierz_1_z_2": "pick 1 of 2",
   "profity": "Perks",
   "profity_brak": "Perks: none",
-  "unikat": "Unique"
+  "unikat": "Unique",
+  "zostawiam_xp": "Leave it · +{0} XP",
+  "zostawiam_xp_kr": "Leave +{0} XP",
+  "profit_linia": "Perk {0}: {1}",
+  "unikat_linia": "Unique {0}: {1}",
+  "cecha_zmiana": "Trait: {0} -> {1}"
  }
 }

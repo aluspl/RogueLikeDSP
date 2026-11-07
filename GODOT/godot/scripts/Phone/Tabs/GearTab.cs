@@ -67,13 +67,15 @@ public sealed class GearTab : PhonePage
         var y = p.Section(p.Top, Loc.T("narzedzie_4"), _breakdown is null ? "" : ButtonNames.Pick(Loc.T("i_rozpiska"), Loc.T("dotknij_rozpiska")));
         var full = PhoneView.Full; // v0.23.0: tryby słowami tylko w pełnym telefonie (w poziomie brak miejsca)
         var belt = g.HasBelt();
-        var perks = g.WeaponPerks != 0; // v0.23.0: profity broni (i broni w kaburze) osobnymi wierszami
-        var perks2 = full && belt && g.Weapon2 >= 0 && g.Weapon2Perks != 0; // w poziomie brak miejsca – profity kabury po zamianie
-        var c0 = p.Card(y, (full ? 5 : 2) + (belt ? 1 : 0) + (perks ? 1 : 0) + (perks2 ? 1 : 0)); // w poziomie: rzadkość i typ w wierszu krytu (bez trybów)
+        var b = g.WeaponBreakdown();   // zakres ciosu jak w walce (rozpiska #26)
+        var perkLines = WeaponLook.PerkRows(d, b.Perks, b.PerksMaster, full); // v0.23.0 (#91): wiersz na profit, pełna nazwa i opis
+        var belt2 = belt && g.Weapon2 >= 0 && g.Weapon2Perks != 0; // profity broni w kaburze – też w poziomie (zawijanie w osobnych wierszach)
+        var b2 = belt2 ? g.WeaponBreakdown(-1, g.Weapon2, -1, -1, 0, g.Weapon2Rarity, g.Weapon2Perks) : default;
+        var perkLines2 = belt2 ? WeaponLook.PerkRows(d, b2.Perks, b2.PerksMaster, full) : [];
+        var c0 = p.Card(y, (full ? 5 : 2) + (belt ? 1 : 0) + perkLines.Count + perkLines2.Count); // w poziomie: rzadkość i typ w wierszu krytu (bez trybów)
         var tx = p.TextX(c0);
         var right = c0.End.X - 6;
         var w = g.Weapon;
-        var b = g.WeaponBreakdown();   // zakres ciosu jak w walce (rozpiska #26)
         var rc = WeaponLook.RarityColor(d, g.WeaponRarity);
         p.Stripe(c0, 0, rc);
         var pw = p.Pill(right, p.RowY(c0, 0), $"z{g.WeaponRange()} {UiText.StatShort(w.ScalesWith)}", PillKind.Group);
@@ -96,11 +98,11 @@ public sealed class GearTab : PhonePage
         var kind = $"{WeaponLook.RarityName(d, g.WeaponRarity)} · {WeaponLook.Hits(d, w)}"; // kryt w poziomie – w karcie premii niżej
         p.Text(tx, p.RowY(c0, row), kind, WeaponLook.PhoneInk(d, g.WeaponRarity), TextAlign.Left, right - pw - 4 - tx);
         row++;
-        if (perks)
+        foreach (var line in perkLines)
         {
             p.Divider(c0, row);
             p.Stripe(c0, row, rc);
-            p.Text(tx, p.RowY(c0, row), DamageHelp.Text(d, b, DmgText.Perks), WeaponLook.PhoneInk(d, g.WeaponRarity), TextAlign.Left, right - tx);
+            p.Text(tx, p.RowY(c0, row), line, WeaponLook.PhoneInk(d, g.WeaponRarity), TextAlign.Left, right - tx);
             row++;
         }
         if (full)
@@ -122,13 +124,12 @@ public sealed class GearTab : PhonePage
                 var lvl = g.Weapon2Lvl > 0 ? $"+{g.Weapon2Lvl}" : "";
                 p.Text(tx, p.RowY(c0, row), Loc.F("kabura", $"{w2.Name}{lvl} {w2.MinDamage}-{w2.MaxDamage} · {WeaponLook.Hits(d, w2)}"),
                     WeaponLook.PhoneInk(d, g.Weapon2Rarity), TextAlign.Left, right - tx);
-                if (perks2) // v0.23.0: profity broni w kaburze
+                foreach (var line in perkLines2) // v0.23.0: profity broni w kaburze
                 {
                     row++;
                     p.Divider(c0, row);
                     p.Stripe(c0, row, WeaponLook.RarityColor(d, g.Weapon2Rarity));
-                    var b2 = g.WeaponBreakdown(-1, g.Weapon2, -1, -1, 0, g.Weapon2Rarity, g.Weapon2Perks);
-                    p.Text(tx, p.RowY(c0, row), DamageHelp.Text(d, b2, DmgText.Perks), WeaponLook.PhoneInk(d, g.Weapon2Rarity), TextAlign.Left, right - tx);
+                    p.Text(tx, p.RowY(c0, row), line, WeaponLook.PhoneInk(d, g.Weapon2Rarity), TextAlign.Left, right - tx);
                 }
             }
             else p.Text(tx, p.RowY(c0, row), Loc.T("kabura_pusta_2"), Ink.Dim, TextAlign.Left, right - tx);
@@ -155,9 +156,12 @@ public sealed class GearTab : PhonePage
                 continue;
             }
             var gd = d.Gear[i * 3 + rar];
-            pw = p.Pill(right, r, d.GearTraits[g.EquippedTrait[i]].Short, rar == 2 ? PillKind.Prog : rar == 1 ? PillKind.Group : PillKind.Gray);
             // co daje (np. „+2 OBR”, „+3 obrażeń”); nazwa przedmiotu, a gdy się nie mieści - nazwa slotu
             var eff = DamageHelp.GearLabel(gd);
+            var tr = g.EquippedTrait[i];
+            var nameW = p.F.Measure(d.GearTraits[tr].Name) + 10; // v0.23.0 (#91): cecha pełną nazwą, skrót gdy zabraknie miejsca na nazwę przedmiotu
+            var useFull = right - nameW - 8 - tx - p.F.Measure(eff) - 6 - p.F.Measure(gd.Name) >= 0;
+            pw = p.Pill(right, r, useFull ? d.GearTraits[tr].Name : d.GearTraits[tr].Short, rar == 2 ? PillKind.Prog : rar == 1 ? PillKind.Group : PillKind.Gray);
             var room = right - pw - 8 - tx - p.F.Measure(eff) - 6;
             var name = p.F.Measure(gd.Name) <= room ? gd.Name : p.F.Fit(d.GearSlots[i], (int)room);
             var nx = tx + p.Text(tx, r, name, Ink.Dark) + 6;

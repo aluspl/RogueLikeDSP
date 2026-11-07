@@ -21,7 +21,7 @@ public sealed class OfferPage : PhonePage
     public override string Title => Loc.T("paczka_sprzetu");
     public override string Sub => _g.OfferSlot >= 0 ? _g.D.GearSlots[_g.OfferSlot] : "";
     public override string Hint => Loc.F("spacja_enter_zakladam_z_esc", _g.D.GearDeclineXp + _g.OfferRarity);
-    public override PageAction[] Actions => [new(Loc.T("zakladam"), GameAction.A), new(Loc.F("zostawiam", _g.D.GearDeclineXp + _g.OfferRarity), GameAction.B)];
+    public override PageAction[] Actions => [new(Loc.T("zakladam"), GameAction.A), new(PhoneView.Full ? Loc.F("zostawiam_xp", _g.D.GearDeclineXp + _g.OfferRarity) : Loc.F("zostawiam_xp_kr", _g.D.GearDeclineXp + _g.OfferRarity), GameAction.B)];
 
     public override void Draw(PhonePainter p)
     {
@@ -34,7 +34,12 @@ public sealed class OfferPage : PhonePage
         y = p.Section(y, Loc.T("nowy_2"), g.OfferIsBetter ? Loc.T("lepszy") : "");
         y = Item(p, y, g.OfferRarity, g.OfferTrait, true) + 6;
         var cmp = Compare(p, (int)(p.Width - 24));
-        var c = p.Card(y, 2 + cmp.Count);
+        var tw = (int)(p.Width - 24);
+        var traitText = g.Equipped[slot] >= 0 && g.EquippedTrait[slot] != g.OfferTrait // v0.23.0 (#91): wprost „Cecha: stara -> nowa”
+            ? Loc.F("cecha_zmiana", d.GearTraits[g.EquippedTrait[slot]].Name, d.GearTraits[g.OfferTrait].Name)
+            : Loc.T("cecha_2") + d.GearTraits[g.OfferTrait].Name;
+        var traitLines = p.F.Wrap(traitText, tw);
+        var c = p.Card(y, 1 + cmp.Count + traitLines.Count);
         var verdict = g.OfferIsBetter ? Loc.T("nowy_jest_lepszej_jakosci")
                     : g.OfferRarity == g.Equipped[slot] ? Loc.T("ta_sama_jakosc_inna_cecha") : Loc.T("nowy_jest_gorszej_jakosci");
         p.Stripe(c, 0, g.OfferIsBetter ? Pal.Done : Pal.Todo);
@@ -44,8 +49,11 @@ public sealed class OfferPage : PhonePage
             p.Divider(c, 1 + i);
             p.Text(p.TextX(c), p.RowY(c, 1 + i), cmp[i], Ink.Brand, TextAlign.Left, c.End.X - 6 - p.TextX(c));
         }
-        p.Divider(c, 1 + cmp.Count);
-        p.Text(p.TextX(c), p.RowY(c, 1 + cmp.Count), Loc.T("cecha_2") + d.GearTraits[g.OfferTrait].Name, Ink.Dim, TextAlign.Left, c.End.X - 6 - p.TextX(c));
+        for (var i = 0; i < traitLines.Count; i++)
+        {
+            p.Divider(c, 1 + cmp.Count + i);
+            p.Text(p.TextX(c), p.RowY(c, 1 + cmp.Count + i), traitLines[i], g.Equipped[slot] >= 0 && g.EquippedTrait[slot] != g.OfferTrait ? Ink.Brand : Ink.Dim, TextAlign.Left, c.End.X - 6 - p.TextX(c));
+        }
     }
 
     /// <summary>Co się zmieni po założeniu: cios (średnio), kryt, obrona - tylko to, co się zmienia (jak na GBA).</summary>
@@ -75,7 +83,11 @@ public sealed class OfferPage : PhonePage
     private float Item(PhonePainter p, float y, int rarity, int trait, bool isNew)
     {
         var d = _g.D;
-        var card = p.CardH(y, 2 * PhonePainter.RowH + 8);
+        var gdName = rarity < 0 ? null : d.Gear[_g.OfferSlot * 3 + rarity];
+        var statText = gdName is null ? "" : $"{UiText.GearStatName(gdName.Stat)} +{gdName.Value}, ";
+        var traitName = d.GearTraits[trait].Name;
+        var wide = gdName is not null && p.F.Measure(statText + traitName) > p.Width - 12 - 46 - 6; // v0.23.0 (#91): cecha pełną nazwą w osobnym wierszu, gdy nie mieści się obok premii
+        var card = p.CardH(y, (wide ? 3 : 2) * PhonePainter.RowH + 8);
         if (rarity < 0)
         {
             p.Text(p.TextX(card), p.RowY(card, 0), Loc.T("brak_2"), Ink.Dim);
@@ -91,7 +103,13 @@ public sealed class OfferPage : PhonePage
         tx += 34;
         var pw = p.Pill(right, p.RowY(card, 0), d.GearRarities[rarity], rarity == 2 ? PillKind.Prog : rarity == 1 ? PillKind.Group : PillKind.Gray);
         p.Text(tx, p.RowY(card, 0), gd.Name, Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
-        p.Text(tx, p.RowY(card, 1), $"{UiText.GearStatName(gd.Stat)} +{gd.Value}, {d.GearTraits[trait].Short}", isNew ? Ink.Brand : Ink.Dim, TextAlign.Left, right - tx);
+        var ink = isNew ? Ink.Brand : Ink.Dim;
+        if (wide)
+        {
+            p.Text(tx, p.RowY(card, 1), $"{UiText.GearStatName(gd.Stat)} +{gd.Value},", ink, TextAlign.Left, right - tx);
+            p.Text(tx, p.RowY(card, 2), traitName, ink, TextAlign.Left, right - tx);
+        }
+        else p.Text(tx, p.RowY(card, 1), statText + traitName, ink, TextAlign.Left, right - tx);
         return card.End.Y;
     }
 }

@@ -36,6 +36,44 @@ public static class WeaponLook
     }
 
     /// <summary>Wzór pól trybu: „łuk 3 pól”, „linia 2”, „strzał 3”, „rzut 3x3”.</summary>
+    /// <summary>v0.23.0 (#91): profity z maski pełnymi nazwami, po przecinku („Przebicie, Ostrze”) – do jednego wiersza.</summary>
+    public static string PerkNames(GameData d, int perks)
+    {
+        var parts = new List<string>();
+        for (var i = 0; i < d.WeaponPerkPool.Length; i++)
+        {
+            if ((perks & (1 << i)) != 0) parts.Add(d.WeaponPerkPool[i].Name);
+        }
+        return string.Join(", ", parts);
+    }
+
+    /// <summary>v0.23.0 (#91): po wierszu na profit – pełna nazwa i opis („Profit Ostrze: Kryt +5%”); Mistrzowska – „Unikat ...”.</summary>
+    public static List<string> PerkLines(GameData d, int perks, bool master)
+    {
+        var lines = new List<string>();
+        for (var i = 0; i < d.WeaponPerkPool.Length; i++)
+        {
+            if ((perks & (1 << i)) == 0) continue;
+            var pk = d.WeaponPerkPool[i];
+            lines.Add(master ? Loc.F("unikat_linia", pk.Name, pk.Desc) : Loc.F("profit_linia", pk.Name, pk.Desc));
+        }
+        return lines;
+    }
+
+    /// <summary>
+    /// Wiersze profitów na karcie: w pełnym telefonie (pion) po wierszu na profit z opisem, w poziomie (brak miejsca) jeden wiersz
+    /// z pełnymi nazwami („Profity: Ostrze, Głowica”). Bez profitów – pusta lista.
+    /// </summary>
+    public static List<string> PerkRows(GameData d, int perks, bool master, bool full)
+    {
+        if (perks == 0) return [];
+        return full ? PerkLines(d, perks, master) : [(master ? Loc.T("unikat") : Loc.T("profity")) + ": " + PerkNames(d, perks)];
+    }
+
+    /// <summary>Cecha sprzętu na karcie: pełna nazwa („Odporność na zatrucie”), skrót tylko gdy nazwa się nie mieści.</summary>
+    public static string TraitText(GameData d, int trait, PixelFont f, float room) =>
+        f.Measure(d.GearTraits[trait].Name) <= room ? d.GearTraits[trait].Name : d.GearTraits[trait].Short;
+
     public static string Pattern(WeaponMode m) => m.Pattern switch
     {
         PatternKind.Single => Loc.T("wzor_single"),
