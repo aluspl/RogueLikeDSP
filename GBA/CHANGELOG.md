@@ -57,7 +57,7 @@ after the update; your profile stays.**
 ### Zmiany
 1. **Rzadsze kryty, mocniejsze problemy (#93)** – Szczęście 2% krytu za punkt (było 3%), cięcie +5% (było +10%),
    sufit szansy krytu 35%; obrażenia problemów na Fundamentach, Izolacji, Murach parteru i Dachu +1, HP problemów
-   +18%; Trudny HP 150%. Normalny jest wyraźnie trudniejszy (bot ~27% zamiast ~33%).
+   +18%; Trudny HP 150%. Normalny jest wyraźnie trudniejszy (bot ~26% wygranych zamiast ~32% w v0.22.1).
 2. **Meta** – Szkolenie Dostawy poziom 2: +5% materiałów, Kondycja poziom 4: lepszy sprzęt; sześć pozycji Respektu
    ma jedną rangę (za kupioną rangę II Respekt wraca na konto); broń zawodu na start bez losowych profitów.
 3. **Karty z pełnymi nazwami (#89, #91)** – sprzęt, bronie, dropy, Hurtownia i oferta narzędzia z pełną nazwą cechy
