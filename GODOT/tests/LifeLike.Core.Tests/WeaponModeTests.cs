@@ -461,4 +461,26 @@ public class WeaponModeTests
         Assert.Equal(-1, p.WeaponOverride);
         Assert.Contains(p.Log, m => m.Text.Contains(Loc.T("bron_zuzyta").Trim(' ', '!')));
     }
+
+    [Fact]
+    public void BluntStunModeLogsStunOnce()
+    {
+        // v0.23.0: obuch (pewne ogłuszenie z typu ciosu) + tryb z ogłuszeniem – jeden wpis „Ogłuszenie”, nie dwa
+        var wi = Wi("mlotek_gumowy");
+        var w = D.Weapons[wi];
+        var d = D.WithHitTypes(D.HitTypes with { StunChancePct = 100 }).WithWeapon(wi, w with { ModeA = w.ModeA with { Value = 100 } });
+        var g = new Game(d);
+        g.NewRun(0, 77);
+        g.EnemiesCount = 0;
+        g.WeaponOverride = wi;
+        int x = g.Hero.X + 1, y = g.Hero.Y;
+        g.Lv[x, y] = Tile.Floor;
+        g.Spawn(Ei("plesn"), x, y);
+        g.Enemies[0].Hp = g.Enemies[0].MaxHp = 5000;
+        g.UpdateFov();
+        Assert.True(g.AttackWith(g.Weapon.ModeA, 0) > 0);
+        Assert.True(g.Enemies[0].Stun >= 1);
+        var stun = Loc.T("efekt_ogluszenie");
+        Assert.Equal(1, g.Log.Where(m => m.Text.StartsWith(stun)).Sum(m => m.Repeat));
+    }
 }

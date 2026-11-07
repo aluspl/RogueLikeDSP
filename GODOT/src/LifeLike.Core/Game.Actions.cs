@@ -55,8 +55,9 @@ public sealed partial class Game
         if (!Enemies[ei].Alive) return;
         if (HitCalc.Has(w, HitType.Blunt) && ei != Boss && D.HitTypes.StunChancePct > 0 && R.Range(1, 100) <= D.HitTypes.StunChancePct)
         {
+            var fresh = Enemies[ei].Stun <= 0; // już ogłuszony (np. efektem trybu w tym ciosie) – bez drugiego wpisu
             Enemies[ei].Stun = (sbyte)Math.Max((int)Enemies[ei].Stun, 1);
-            Push(EnemyName(Msg(Loc.T("efekt_ogluszenie")).Add(": "), ei).As(LogKind.Good)); // v0.23.0: dziennik
+            if (fresh) Push(EnemyName(Msg(Loc.T("efekt_ogluszenie")).Add(": "), ei).As(LogKind.Good)); // v0.23.0: dziennik
         }
         if (w.Elem == Element.Fire) Enemies[ei].Wet = 0;
     }
