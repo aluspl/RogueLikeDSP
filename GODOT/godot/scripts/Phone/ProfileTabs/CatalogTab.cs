@@ -10,15 +10,17 @@ namespace LifeLike.Game.Phone.ProfileTabs;
 /// Katalog usterek (zakładka 1 profilu na GBA): poznane problemy budowy z portretem, opisem i zachowaniami, reszta „???”.
 /// v0.21.52 cz. c, kolekcje: strony przełączane Spacją / przyciskiem (A na GBA) – Katalog z licznikiem pokonanych
 /// („x12”), Kolekcje (komplety z postępem i nagrodą), Bossowie (karty bossów: ile razy pokonany) i Album Osiedla
-/// (ozdoby: stoi / skąd).
+/// (ozdoby: stoi / skąd). v0.23.0: Gablota artefaktów (ArtifactCaseView).
 /// </summary>
 public sealed class CatalogTab : PhonePage
 {
     private const int Window = 8;
-    private static string[] Pages => [Loc.T("katalog"), Loc.T("kolekcje"), Loc.T("bossowie"), Loc.T("album")];
+    private static string[] Pages => [Loc.T("katalog"), Loc.T("kolekcje"), Loc.T("bossowie"), Loc.T("album"), Loc.T("gablota")];
     public const int CollectionsPage = 1;
     public const int BossesPage = 2;
     public const int AlbumPage = 3;
+    public const int CasePage = 4;
+    private readonly ArtifactCaseView _case;
     private readonly GameData _d;
     private readonly Profile _p;
     private readonly ListState _list = new();
@@ -28,7 +30,11 @@ public sealed class CatalogTab : PhonePage
     {
         _d = d;
         _p = p;
+        _case = new ArtifactCaseView(d, p);
     }
+
+    /// <summary>Gablota (zaznaczenie kafla w scenach zrzutów).</summary>
+    public ArtifactCaseView Case => _case;
 
     public override string Title => Pages[_page];
 
@@ -37,6 +43,7 @@ public sealed class CatalogTab : PhonePage
         CollectionsPage => $"{CollectionBook.Done(_d, _p)}/{_d.Collections.Length}",
         BossesPage => $"{BossesBeaten()}/{CollectionBook.BossesCount(_d)}",
         AlbumPage => $"{Story.EstateDecor(_d, _p)}/{_d.EstateDecor.Length}",
+        CasePage => _case.Sub,
         _ => $"{Meta.CatalogCount(_d, _p)}/{_d.Enemies.Length}",
     };
 
@@ -44,7 +51,7 @@ public sealed class CatalogTab : PhonePage
 
     public override PageAction[] Actions => [new(Pages[(_page + 1) % Pages.Length] + " >", GameAction.A)];
 
-    /// <summary>Bieżąca strona (0 Katalog, 1 Kolekcje, 2 Bossowie, 3 Album) – test dymny i zrzuty.</summary>
+    /// <summary>Bieżąca strona (0 Katalog, 1 Kolekcje, 2 Bossowie, 3 Album, 4 Gablota) – test dymny i zrzuty.</summary>
     public int Page
     {
         get => _page;
@@ -75,6 +82,7 @@ public sealed class CatalogTab : PhonePage
 
     public override bool TapRow(int index)
     {
+        if (_page == CasePage) return _case.Tap(index);
         _list.Sel = index;
         return true;
     }
@@ -90,6 +98,12 @@ public sealed class CatalogTab : PhonePage
 
     public override bool Input(InputCmd e)
     {
+        if (_page == CasePage && _case.Move(e.HDir, e.VDir))
+        {
+            Sfx.Play("menu");
+            return true;
+        }
+        if (_page == CasePage && e.VDir != 0) return true; // brzeg siatki w pionie; w poziomie dalej przełącza zakładki
         var v = e.VDir;
         if (v != 0)
         {
@@ -107,6 +121,11 @@ public sealed class CatalogTab : PhonePage
 
     public override void Draw(PhonePainter p)
     {
+        if (_page == CasePage)
+        {
+            _case.Draw(p);
+            return;
+        }
         var n = Count;
         _list.Clamp(n, Window);
         var rows = System.Math.Min(Window, n - _list.Top);

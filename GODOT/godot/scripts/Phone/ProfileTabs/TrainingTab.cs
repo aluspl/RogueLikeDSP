@@ -15,7 +15,8 @@ namespace LifeLike.Game.Phone.ProfileTabs;
 /// Szkolenia - „Pozostało” doświadczenia, lista ulepszeń, zablokowanych zawodów, narzędzi, fachowców brygady
 /// i najwyższej trudności; Drzewko (v0.21.52 cz. c) - 3 gałęzie (Fach, BHP, Logistyka): pień = Szkolenia gałęzi,
 /// w węzłach wybór 1 z 2 (strzałki, Spacja / stuknięcie wybiera, zmiana za opłatą); Respekt - stałe premie z rangami za
-/// Respekt z ukończonych etapów; Nagrody - nagrody za odbiór (każda wygrana odblokowuje kolejną). Spacja/Enter kupuje.
+/// Respekt z ukończonych etapów; Nagrody - nagrody za odbiór (każda wygrana odblokowuje kolejną); v0.23.0: Gablota artefaktów.
+/// Spacja/Enter kupuje.
 /// </summary>
 public sealed class TrainingTab : PhonePage
 {
@@ -27,10 +28,15 @@ public sealed class TrainingTab : PhonePage
     private readonly ListState _list = new();
     private readonly List<(TrainingKind K, int I)> _entries = new();
     private string _note = "";
-    private static string[] Pages => [Loc.T("szkolenia"), Loc.T("drzewko_2"), Loc.T("respekt"), Loc.T("nagrody")];
+    private static string[] Pages => [Loc.T("szkolenia"), Loc.T("drzewko_2"), Loc.T("respekt"), Loc.T("nagrody"), Loc.T("gablota")];
     public const int TreePage = 1;
     public const int RespectPage = 2;
     public const int RewardsPage = 3;
+    public const int CasePage = 4;
+    private readonly ArtifactCaseView _case;
+
+    /// <summary>Gablota (zaznaczenie kafla w scenach zrzutów).</summary>
+    public ArtifactCaseView Case => _case;
     private int _page;
     private int _tcol, _trow; // drzewko: gałąź i wiersz (węzeł I / II, opcja A / B)
 
@@ -39,20 +45,22 @@ public sealed class TrainingTab : PhonePage
         _d = d;
         _p = p;
         _saved = saved;
+        _case = new ArtifactCaseView(d, p);
         Rebuild();
     }
 
     public override string Title => Pages[_page];
-    public override string Sub => _page == RewardsPage ? Loc.F("wygrane_4", _p.Wins) : Loc.F("dosw_5", _p.Xp); // v0.22.0 (UX A): doświadczenie zamiast dubla „Koszty”
-    public override string Hint => _page == RewardsPage ? Loc.F("tab_q_e_zakladki_esc_wroc", Pages[0])
+    public override string Sub => _page == CasePage ? _case.Sub : _page == RewardsPage ? Loc.F("wygrane_4", _p.Wins) : Loc.F("dosw_5", _p.Xp); // v0.22.0 (UX A): doświadczenie zamiast dubla „Koszty”
+    public override string Hint => _page >= RewardsPage ? Loc.F("tab_q_e_zakladki_esc_wroc", Pages[(_page + 1) % Pages.Length])
                                    : _page == TreePage ? Loc.F("strzalki_wezel_spacja_wybierz", Pages[_page + 1])
                                    : Loc.F("spacja_kup_tab_q_e_zakladki", Pages[_page + 1]);
-    public override PageAction[] Actions => _page == RewardsPage ? [new(Pages[0] + " >", GameAction.Select)]
+    public override PageAction[] Actions => _page >= RewardsPage ? [new(Pages[(_page + 1) % Pages.Length] + " >", GameAction.Select)]
                                             : _page == TreePage ? [new(Loc.T("wybierz"), GameAction.A), new(Pages[_page + 1] + " >", GameAction.Select)]
                                             : [new(Loc.T("kup"), GameAction.A), new(Pages[_page + 1] + " >", GameAction.Select)];
 
     public override bool TapRow(int index)
     {
+        if (_page == CasePage) return _case.Tap(index);
         if (_page == TreePage) // drzewko: stuknięcie zaznacza węzeł, drugie wybiera
         {
             if (index >= BranchHit) // v0.22.1 (#70): przełącznik gałęzi
@@ -79,7 +87,7 @@ public sealed class TrainingTab : PhonePage
     }
 
     /// <summary>Liczba wierszy bieżącej strony.</summary>
-    public int Count => _page == RewardsPage ? _d.Rewards.Length : _page == RespectPage ? _d.Respect.Length : _page == TreePage ? 0 : _entries.Count;
+    public int Count => _page == CasePage ? 0 : _page == RewardsPage ? _d.Rewards.Length : _page == RespectPage ? _d.Respect.Length : _page == TreePage ? 0 : _entries.Count;
 
     /// <summary>Strona: 0 Szkolenia, 1 Drzewko, 2 Respekt, 3 Nagrody (test dymny, sceny zrzutów).</summary>
     public int Page
@@ -257,6 +265,12 @@ public sealed class TrainingTab : PhonePage
             Sfx.Play("menu");
             return true;
         }
+        if (_page == CasePage && _case.Move(e.HDir, v)) // v0.23.0: Gablota – strzałki po kaflach
+        {
+            Sfx.Play("menu");
+            return true;
+        }
+        if (_page == CasePage && v != 0) return true;
         if (v != 0)
         {
             _list.Move(v, Count, Window);
@@ -292,6 +306,11 @@ public sealed class TrainingTab : PhonePage
         if (_page == RewardsPage)
         {
             DrawRewards(p);
+            return;
+        }
+        if (_page == CasePage)
+        {
+            _case.Draw(p);
             return;
         }
         var c0 = p.Card(p.Top, 1);

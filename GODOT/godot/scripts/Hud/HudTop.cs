@@ -203,6 +203,14 @@ public partial class HudTop : Control
         if (labels) x += Text(x, Loc.T("hud_cios_b"), g.WeaponBCd == 0 ? Ink.MapGood : Ink.MapDim) + 4;
         if (g.WeaponBCd > 0) x += Text(x, g.WeaponBCd.ToString(), Ink.MapDim) + 8;
         else x += Text(x, Loc.T("fach_znak"), Ink.MapGood) + 8;
+        var pr = g.Weapon.Proc; // v0.23.0: artefakt – licznik „co N-ty cios” (przed N-tym na zielono)
+        if (pr is not null && pr.Every > 1)
+        {
+            var next = g.ProcCount >= pr.Every - 1;
+            if (draw) DrawBolt(new Vector2(x, 20), next && ((int)(_clock * 4) & 1) == 1);
+            x += 8;
+            x += Text(x, $"{g.ProcCount}/{pr.Every}", next ? Ink.MapGood : Ink.MapLoot) + 8;
+        }
         if (draw) WeaponRect = new Rect2(wx - 2, 16, x - wx - 4, 22); // v0.23.0: najechanie myszą – opis Patentu
 
         // materiały: ikona + liczba (tylko posiadane)
@@ -214,6 +222,18 @@ public partial class HudTop : Control
             x += Text(x, g.Mats[m].ToString(), Ink.Map) + 6;
         }
         return x;
+    }
+
+    /// <summary>v0.23.0: mała błyskawica (licznik „co N-ty cios” artefaktu) 6x11 px; lit – rozjaśniona (następny cios to ten N-ty).</summary>
+    private void DrawBolt(Vector2 p, bool lit)
+    {
+        Vector2[] pts = [p + new Vector2(3, 0), p + new Vector2(6, 0), p + new Vector2(4, 4), p + new Vector2(6, 4), p + new Vector2(1, 11),
+            p + new Vector2(2, 6), p + new Vector2(0, 6)];
+        var edge = new Vector2[pts.Length + 1];
+        pts.CopyTo(edge, 0);
+        edge[^1] = pts[0];
+        DrawColoredPolygon(pts, lit ? new Color("fff4a0") : new Color("ffd75a"));
+        DrawPolyline(edge, new Color("14141e"), 1);
     }
 
     /// <summary>v0.22.0 (#69): skrót poziomu trudności – pierwsza litera nazwy z danych (Łatwy → Ł, Normal → N, Hard → H).</summary>
