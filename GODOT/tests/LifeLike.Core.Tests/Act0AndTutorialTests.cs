@@ -103,12 +103,14 @@ public class Act0AndTutorialTests
         Assert.True(h.Stage == F0 && h.ActNumeral() == "I");
     }
 
+    private const int Builds = 40;
+
     [Fact]
     public void BotPassesAct0CollectingDocuments()
     {
         var m = Meta.Mods(D, WithAct0());
         var passed = 0;
-        for (var k = 0; k < 20; ++k)
+        for (var k = 0; k < Builds; ++k)
         {
             var b = new Game(D);
             b.NewRun(k % D.OpenClassesCount, (uint)(300 + k * 13), 0, m);
@@ -120,9 +122,9 @@ public class Act0AndTutorialTests
             }
             if (b.Stage >= F0 || (b.St == GameStatus.StageClear && b.Stage == F0 - 1)) ++passed;
         }
-        // v0.23.0 Task 7: zwykłe zawody jak w core_tests.cpp; bot z trybem B, problemy +18% HP (Łatwy) – 13/20 (v0.22.1: 14/20);
-        // Task 8 (#84): Nóż do tapet w puli dropów przesuwa rzuty – 12/20 (próba 20 budów; cel Akt 0 + meta sprawdza WeaponBalanceTests)
-        Assert.True(passed >= 12, $"Akt 0 przeszło {passed}/20");
+        // v0.23.0: zwykłe zawody jak w core_tests.cpp; bot z trybem B, problemy +18% HP (Łatwy). Próba 40 budów (było 20 –
+        // za mało, próg skakał z każdą zmianą puli dropów): zmierzone 28/40 (70%) po dodaniu noży; próg 24 = ok. 1,4 odchylenia niżej.
+        Assert.True(passed >= 24, $"Akt 0 przeszło {passed}/{Builds}");
     }
 
     [Fact]
