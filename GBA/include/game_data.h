@@ -5,29 +5,73 @@
 namespace data {
 
 inline constexpr core::weapon_def weapons[] = {
-    { { "Dziennik budowy", "Site Diary" }, 2, 4, 2, core::stat::intel, core::element::none, 0, false, false },
-    { { "Kielnia", "Trowel" }, 4, 6, 1, core::stat::str, core::element::none, 0, false, false },
-    { { "Gwoździarka", "Nail Gun" }, 2, 3, 3, core::stat::agi, core::element::none, 0, false, false },
-    { { "Próbnik napięcia", "Voltage Tester" }, 3, 5, 2, core::stat::intel, core::element::power, 0, false, false },
-    { { "Klucz nastawny", "Adjustable Wrench" }, 4, 7, 1, core::stat::str, core::element::none, 0, false, false },
-    { { "Szlifierka", "Angle Grinder" }, 4, 7, 1, core::stat::agi, core::element::spark, 0, false, false },
-    { { "Łom", "Crowbar" }, 3, 6, 1, core::stat::str, core::element::none, 0, false, false },
-    { { "Wkrętarka", "Drill Driver" }, 2, 5, 2, core::stat::agi, core::element::none, 0, false, false },
-    { { "Poziomica laserowa", "Laser Level" }, 2, 4, 4, core::stat::intel, core::element::none, 0, false, false },
-    { { "Młot wyburzeniowy", "Demolition Hammer" }, 5, 8, 1, core::stat::str, core::element::none, 0, false, false },
-    { { "Tablet z projektem", "Blueprint Tablet" }, 3, 5, 2, core::stat::intel, core::element::none, 0, false, false },
-    { { "Miernik laserowy", "Laser Measure" }, 2, 5, 3, core::stat::intel, core::element::none, 0, false, false },
-    { { "Dachówki", "Roof Tiles" }, 2, 3, 3, core::stat::agi, core::element::none, 0, false, false },
-    { { "Agregat tynkarski", "Plaster Sprayer" }, 2, 4, 2, core::stat::str, core::element::none, 0, false, false },
-    { { "Łyżka koparki", "Digger Bucket" }, 4, 7, 1, core::stat::str, core::element::none, 0, false, false },
-    { { "Młot udarowy", "Breaker Hammer" }, 5, 9, 1, core::stat::str, core::element::none, 0, false, false },
-    { { "Pistolet do kotew", "Anchor Gun" }, 3, 5, 3, core::stat::agi, core::element::spark, 0, false, false },
-    { { "Spawarka", "Welder" }, 2, 4, 2, core::stat::agi, core::element::spark, 0, false, false },
-    { { "Tyczka geodezyjna", "Survey Pole" }, 2, 4, 2, core::stat::intel, core::element::none, 0, false, false },
-    { { "Młotek ciesielski", "Framing Hammer" }, 4, 7, 1, core::stat::str, core::element::none, 0, false, false },
-    { { "Młot Zenka", "Zenek's Hammer" }, 4, 7, 1, core::stat::str, core::element::none, 0, true, false },
-    { { "Poziomica mistrza", "Master's Level" }, 2, 5, 3, core::stat::intel, core::element::none, 10, false, true },
+    { { "Dziennik budowy", "Site Diary" }, 2, 4, 2, core::stat::intel, core::element::none, 0, false, false, { core::hit_type::pierce, core::hit_type::pierce }, 1, { core::pattern_kind::shot, 2, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::single, 2, 100, core::mode_effect::mark, 20, 3, 6, core::mode_effect::none, 0, 0, 0, 1, { "Wpis do dziennika", "Logbook entry" } }, false, false, 0, { "", "" }, 3, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Kielnia", "Trowel" }, 4, 6, 1, core::stat::str, core::element::none, 0, false, false, { core::hit_type::cut, core::hit_type::pierce }, 2, { core::pattern_kind::arc, 1, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::shot, 2, 50, core::mode_effect::stun, 100, 1, 7, core::mode_effect::none, 0, 0, 0, 1, { "Rzut zaprawą", "Mortar toss" } }, false, false, 0, { "", "" }, 10, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Gwoździarka", "Nail Gun" }, 2, 3, 3, core::stat::agi, core::element::none, 0, false, false, { core::hit_type::pierce, core::hit_type::pierce }, 1, { core::pattern_kind::shot, 3, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::line, 3, 60, core::mode_effect::none, 0, 0, 5, core::mode_effect::none, 0, 0, 0, 1, { "Seria", "Burst" } }, false, false, 0, { "", "" }, 3, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Próbnik napięcia", "Voltage Tester" }, 3, 5, 2, core::stat::intel, core::element::power, 0, false, false, { core::hit_type::pierce, core::hit_type::pierce }, 1, { core::pattern_kind::shot, 2, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::cross, 2, 100, core::mode_effect::chain, 0, 0, 4, core::mode_effect::none, 0, 0, 0, 1, { "Przeskok", "Spark jump" } }, false, false, 0, { "", "" }, 3, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Klucz nastawny", "Adjustable Wrench" }, 4, 7, 1, core::stat::str, core::element::none, 0, false, false, { core::hit_type::blunt, core::hit_type::pierce }, 2, { core::pattern_kind::single, 1, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::single, 1, 100, core::mode_effect::dry, 0, 1, 4, core::mode_effect::none, 0, 0, 0, 1, { "Zakręcenie zaworu", "Valve shut" } }, false, false, 0, { "", "" }, 12, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Szlifierka", "Angle Grinder" }, 4, 7, 1, core::stat::agi, core::element::spark, 0, false, false, { core::hit_type::cut, core::hit_type::cut }, 1, { core::pattern_kind::single, 1, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::arc, 1, 100, core::mode_effect::none, 0, 0, 3, core::mode_effect::ignite, 0, 0, 0, 1, { "Iskry", "Sparks" } }, false, false, 0, { "", "" }, 10, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Łom", "Crowbar" }, 3, 6, 1, core::stat::str, core::element::none, 0, false, false, { core::hit_type::blunt, core::hit_type::blunt }, 1, { core::pattern_kind::single, 1, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::push, 1, 100, core::mode_effect::push, 2, 0, 5, core::mode_effect::open_wall, 0, 0, 0, 1, { "Podważenie", "Pry" } }, false, false, 0, { "", "" }, 12, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Wkrętarka", "Drill Driver" }, 2, 5, 2, core::stat::agi, core::element::none, 0, false, false, { core::hit_type::pierce, core::hit_type::pierce }, 1, { core::pattern_kind::line, 2, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::single, 2, 100, core::mode_effect::def_down, 3, 3, 5, core::mode_effect::none, 0, 0, 0, 1, { "Rozkręcenie", "Unscrew" } }, false, false, 0, { "", "" }, 3, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Poziomica laserowa", "Laser Level" }, 2, 4, 4, core::stat::intel, core::element::none, 0, false, false, { core::hit_type::pierce, core::hit_type::pierce }, 1, { core::pattern_kind::line, 4, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::line_both, 4, 100, core::mode_effect::none, 0, 0, 6, core::mode_effect::none, 0, 0, 0, 1, { "Wiązka w 2 strony", "Twin beam" } }, false, false, 0, { "", "" }, 3, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Młot wyburzeniowy", "Demolition Hammer" }, 5, 8, 1, core::stat::str, core::element::none, 0, false, false, { core::hit_type::blunt, core::hit_type::blunt }, 1, { core::pattern_kind::push, 1, 100, core::mode_effect::push, 1, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::around, 1, 100, core::mode_effect::open_wall, 0, 0, 7, core::mode_effect::none, 0, 0, 0, 1, { "Wyburzenie", "Demolition" } }, false, false, 0, { "", "" }, 12, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Tablet z projektem", "Blueprint Tablet" }, 3, 5, 2, core::stat::intel, core::element::none, 0, false, false, { core::hit_type::blunt, core::hit_type::blunt }, 1, { core::pattern_kind::single, 2, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::shot, 3, 100, core::mode_effect::swap, 0, 0, 6, core::mode_effect::none, 0, 0, 0, 1, { "Zmiana projektu", "Design change" } }, false, false, 0, { "", "" }, 12, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Miernik laserowy", "Laser Measure" }, 2, 5, 3, core::stat::intel, core::element::none, 0, false, false, { core::hit_type::pierce, core::hit_type::pierce }, 1, { core::pattern_kind::shot, 3, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::single, 3, 100, core::mode_effect::reveal, 10, 3, 6, core::mode_effect::none, 0, 0, 0, 1, { "Pomiar pokoju", "Room scan" } }, false, false, 0, { "", "" }, 3, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Dachówki", "Roof Tiles" }, 2, 3, 3, core::stat::agi, core::element::none, 0, false, false, { core::hit_type::blunt, core::hit_type::blunt }, 1, { core::pattern_kind::shot, 3, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::throw3x3, 3, 100, core::mode_effect::none, 0, 0, 2, core::mode_effect::none, 0, 0, 0, 1, { "Grad dachówek", "Tile hail" } }, false, false, 0, { "", "" }, 12, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Agregat tynkarski", "Plaster Sprayer" }, 2, 4, 2, core::stat::str, core::element::none, 0, false, false, { core::hit_type::blunt, core::hit_type::blunt }, 1, { core::pattern_kind::spray, 2, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::single, 2, 100, core::mode_effect::root, 0, 2, 6, core::mode_effect::none, 0, 0, 0, 1, { "Zatynkowanie", "Plaster coat" } }, false, false, 0, { "", "" }, 12, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Łyżka koparki", "Digger Bucket" }, 4, 7, 1, core::stat::str, core::element::none, 0, false, false, { core::hit_type::blunt, core::hit_type::blunt }, 1, { core::pattern_kind::arc, 1, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::shot, 3, 50, core::mode_effect::pull, 2, 0, 5, core::mode_effect::none, 0, 0, 0, 1, { "Zgarnięcie", "Scoop" } }, false, false, 0, { "", "" }, 12, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Młot udarowy", "Breaker Hammer" }, 5, 9, 1, core::stat::str, core::element::none, 0, false, false, { core::hit_type::blunt, core::hit_type::pierce }, 2, { core::pattern_kind::single, 1, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::line, 1, 100, core::mode_effect::def_down, 99, 1, 6, core::mode_effect::none, 0, 0, 0, 1, { "Kucie na wylot", "Chisel through" } }, false, false, 0, { "", "" }, 12, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Pistolet do kotew", "Anchor Gun" }, 3, 5, 3, core::stat::agi, core::element::spark, 0, false, false, { core::hit_type::pierce, core::hit_type::pierce }, 1, { core::pattern_kind::shot, 3, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::single, 3, 100, core::mode_effect::root, 0, 2, 5, core::mode_effect::none, 0, 0, 0, 1, { "Zakotwienie", "Anchor shot" } }, false, false, 0, { "", "" }, 3, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Spawarka", "Welder" }, 2, 4, 2, core::stat::agi, core::element::spark, 0, false, false, { core::hit_type::cut, core::hit_type::cut }, 1, { core::pattern_kind::line, 2, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::single, 2, 100, core::mode_effect::dot, 2, 3, 4, core::mode_effect::none, 0, 0, 150, 1, { "Gorący spaw", "Hot weld" } }, false, false, 0, { "", "" }, 10, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Tyczka geodezyjna", "Survey Pole" }, 2, 4, 2, core::stat::intel, core::element::none, 0, false, false, { core::hit_type::pierce, core::hit_type::pierce }, 1, { core::pattern_kind::line, 2, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::cross, 2, 100, core::mode_effect::mark, 40, 3, 4, core::mode_effect::none, 0, 0, 0, 1, { "Wytyczenie", "Staking out" } }, false, false, 0, { "", "" }, 3, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Młotek ciesielski", "Framing Hammer" }, 4, 7, 1, core::stat::str, core::element::none, 0, false, false, { core::hit_type::blunt, core::hit_type::cut }, 2, { core::pattern_kind::single, 1, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::single, 1, 100, core::mode_effect::def_down, 2, 1, 2, core::mode_effect::none, 0, 0, 0, 1, { "Dobicie gwoździa", "Nail it" } }, false, false, 0, { "", "" }, 12, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Młot Zenka", "Zenek's Hammer" }, 4, 7, 1, core::stat::str, core::element::none, 0, true, false, { core::hit_type::blunt, core::hit_type::blunt }, 1, { core::pattern_kind::push, 1, 100, core::mode_effect::push, 1, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::around, 1, 100, core::mode_effect::push, 1, 0, 7, core::mode_effect::none, 0, 0, 0, 1, { "Zamach Zenka", "Zenek's swing" } }, true, false, 0, { "", "" }, 12, 9, { "Sekretne zlecenie: Szef tylko dzwoni", "Secret job: The boss only calls" }, {}, false, -1, 0 },
+    { { "Poziomica mistrza", "Master's Level" }, 2, 5, 3, core::stat::intel, core::element::none, 10, false, true, { core::hit_type::pierce, core::hit_type::pierce }, 1, { core::pattern_kind::shot, 3, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::line_both, 3, 100, core::mode_effect::reveal, 0, 0, 6, core::mode_effect::none, 0, 0, 0, 1, { "Oko mistrza", "Master's eye" } }, true, false, 0, { "", "" }, 3, 34, { "Sekretne zlecenie: Szczur magazynowy", "Secret job: Storeroom rat" }, {}, false, -1, 0 },
+    { { "Łopata", "Shovel" }, 3, 6, 1, core::stat::str, core::element::none, 0, false, false, { core::hit_type::blunt, core::hit_type::pierce }, 2, { core::pattern_kind::arc, 1, 100, core::mode_effect::stun, 20, 1, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::line, 2, 100, core::mode_effect::def_down, 2, 3, 4, core::mode_effect::none, 0, 0, 0, 1, { "Podkop", "Undercut" } }, false, false, 0, { "", "" }, 12, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Siekiera ciesielska", "Carpenter's Axe" }, 4, 6, 1, core::stat::str, core::element::none, 0, false, false, { core::hit_type::cut, core::hit_type::cut }, 1, { core::pattern_kind::single, 1, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::arc, 1, 100, core::mode_effect::none, 0, 0, 5, core::mode_effect::none, 0, 0, 0, 1, { "Zamach z barku", "Wide chop" } }, false, false, 0, { "", "" }, 10, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Piła ręczna", "Handsaw" }, 2, 5, 1, core::stat::agi, core::element::none, 10, false, false, { core::hit_type::cut, core::hit_type::cut }, 1, { core::pattern_kind::single, 1, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::single, 1, 100, core::mode_effect::dot, 2, 3, 5, core::mode_effect::none, 0, 0, 0, 1, { "Piłowanie", "Sawing" } }, false, false, 0, { "", "" }, 10, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Kilof", "Pickaxe" }, 4, 7, 1, core::stat::str, core::element::none, 0, false, false, { core::hit_type::pierce, core::hit_type::pierce }, 1, { core::pattern_kind::single, 1, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::line, 2, 100, core::mode_effect::none, 0, 0, 6, core::mode_effect::none, 0, 0, 0, 1, { "Rozkucie", "Break through" } }, false, false, 0, { "", "" }, 3, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Przecinak z młotkiem", "Chisel and Hammer" }, 3, 5, 1, core::stat::str, core::element::none, 0, false, false, { core::hit_type::pierce, core::hit_type::pierce }, 1, { core::pattern_kind::single, 1, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::single, 1, 100, core::mode_effect::open_wall, 3, 0, 1, core::mode_effect::none, 0, 0, 0, 1, { "Wykucie bruzdy", "Wall chase" } }, false, false, 0, { "", "" }, 3, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Nożyce do blachy", "Tin Snips" }, 3, 5, 1, core::stat::agi, core::element::none, 0, false, false, { core::hit_type::cut, core::hit_type::cut }, 1, { core::pattern_kind::single, 1, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::arc, 1, 100, core::mode_effect::none, 0, 0, 5, core::mode_effect::none, 0, 0, 0, 1, { "Cięcie blachy", "Sheet snip" } }, false, false, 0, { "", "" }, 10, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Pistolet do silikonu", "Silicone Gun" }, 2, 3, 3, core::stat::agi, core::element::none, 0, false, false, { core::hit_type::pierce, core::hit_type::pierce }, 1, { core::pattern_kind::shot, 3, 70, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::single, 3, 100, core::mode_effect::root, 0, 2, 6, core::mode_effect::none, 0, 0, 0, 1, { "Uszczelnienie", "Seal up" } }, false, false, 0, { "", "" }, 3, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Myjka ciśnieniowa", "Pressure Washer" }, 2, 4, 3, core::stat::agi, core::element::water, 0, false, false, { core::hit_type::blunt, core::hit_type::blunt }, 1, { core::pattern_kind::line, 3, 100, core::mode_effect::wet, 0, 3, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::push, 3, 100, core::mode_effect::push, 2, 0, 5, core::mode_effect::none, 0, 0, 0, 1, { "Strumień", "Jet blast" } }, false, false, 0, { "", "" }, 12, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Palnik dekarski", "Roofing Torch" }, 2, 5, 2, core::stat::intel, core::element::fire, 0, false, false, { core::hit_type::blunt, core::hit_type::blunt }, 1, { core::pattern_kind::spray, 2, 100, core::mode_effect::dot, 2, 2, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::around, 2, 50, core::mode_effect::dry, 0, 1, 7, core::mode_effect::none, 0, 0, 0, 1, { "Krąg płomieni", "Flame ring" } }, false, false, 0, { "", "" }, 12, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Taker", "Stapler" }, 2, 4, 2, core::stat::agi, core::element::none, 0, false, false, { core::hit_type::pierce, core::hit_type::pierce }, 1, { core::pattern_kind::shot, 2, 60, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::single, 2, 100, core::mode_effect::root, 0, 3, 5, core::mode_effect::none, 0, 0, 0, 1, { "Zszycie", "Staple down" } }, false, false, 0, { "", "" }, 3, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Młotek gumowy", "Rubber Mallet" }, 2, 4, 1, core::stat::str, core::element::none, 0, false, false, { core::hit_type::blunt, core::hit_type::blunt }, 1, { core::pattern_kind::single, 1, 100, core::mode_effect::stun, 50, 1, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::cross, 1, 100, core::mode_effect::stun, 30, 1, 6, core::mode_effect::none, 0, 0, 0, 1, { "Opukiwanie", "Tapping round" } }, false, false, 0, { "", "" }, 12, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Pilarka tarczowa", "Circular Saw" }, 4, 7, 1, core::stat::agi, core::element::spark, 10, false, false, { core::hit_type::cut, core::hit_type::cut }, 1, { core::pattern_kind::arc, 1, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::around, 1, 100, core::mode_effect::none, 0, 0, 7, core::mode_effect::none, 0, 0, 0, 1, { "Pełny obrót", "Full spin" } }, true, false, 0, { "", "" }, 10, 24, { "Markowa Piła z dropu - czasem coś więcej", "Branded Saw drop - sometimes more" }, {}, false, -1, 0 },
+    { { "Poziomica 2 m", "2 m Level" }, 3, 5, 2, core::stat::intel, core::element::none, 0, false, false, { core::hit_type::blunt, core::hit_type::blunt }, 1, { core::pattern_kind::shot, 2, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::cross, 2, 100, core::mode_effect::reveal, 0, 0, 6, core::mode_effect::none, 0, 0, 0, 1, { "Sprawdzenie pionu", "Plumb check" } }, false, false, 0, { "", "" }, 12, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Mieszadło do zaprawy", "Mortar Mixer" }, 3, 6, 1, core::stat::str, core::element::none, 0, false, false, { core::hit_type::blunt, core::hit_type::blunt }, 1, { core::pattern_kind::single, 1, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::around, 1, 100, core::mode_effect::push, 1, 0, 7, core::mode_effect::none, 0, 0, 0, 1, { "Wir zaprawy", "Mortar swirl" } }, false, false, 0, { "", "" }, 12, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Laser krzyżowy", "Cross Laser" }, 2, 4, 4, core::stat::intel, core::element::none, 0, false, false, { core::hit_type::pierce, core::hit_type::pierce }, 1, { core::pattern_kind::line, 4, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::line4, 4, 100, core::mode_effect::none, 0, 0, 6, core::mode_effect::none, 0, 0, 0, 1, { "Krzyż laserowy", "Laser cross" } }, false, false, 0, { "", "" }, 3, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Lutownica", "Soldering Iron" }, 2, 4, 1, core::stat::intel, core::element::fire, 0, false, false, { core::hit_type::pierce, core::hit_type::pierce }, 1, { core::pattern_kind::single, 1, 100, core::mode_effect::dot, 2, 2, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::line, 2, 100, core::mode_effect::dot, 2, 3, 5, core::mode_effect::dry, 0, 0, 0, 1, { "Lut na gorąco", "Hot solder" } }, false, false, 0, { "", "" }, 3, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Opalarka", "Heat Gun" }, 2, 4, 2, core::stat::agi, core::element::fire, 0, false, false, { core::hit_type::blunt, core::hit_type::blunt }, 1, { core::pattern_kind::spray, 2, 100, core::mode_effect::dry, 0, 1, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::single, 2, 100, core::mode_effect::mark, 100, 1, 5, core::mode_effect::none, 0, 0, 0, 1, { "Zdarcie farby", "Paint strip" } }, false, false, 0, { "", "" }, 12, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Nóż do tapet", "Utility Knife" }, 2, 4, 1, core::stat::agi, core::element::none, 0, false, false, { core::hit_type::pierce, core::hit_type::pierce }, 1, { core::pattern_kind::single, 1, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::line, 2, 80, core::mode_effect::none, 0, 0, 3, core::mode_effect::none, 0, 0, 0, 1, { "Cięcie na zakładkę", "Overlap cut" } }, false, false, 0, { "Łamane ostrze, zawsze ostre", "Snap-off blade, always sharp" }, 3, -1, { "", "" }, {}, false, -1, 0 },
+    { { "Nóż majstra seniora", "Senior Foreman's Knife" }, 4, 7, 1, core::stat::agi, core::element::none, 15, false, false, { core::hit_type::pierce, core::hit_type::pierce }, 1, { core::pattern_kind::single, 1, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::single, 1, 75, core::mode_effect::none, 0, 0, 3, core::mode_effect::none, 0, 0, 0, 2, { "Jeszcze nie emerytura", "Not retiring yet" } }, true, true, 4, { "Ostrze prosi o emeryturę. Majster: nie!", "The blade begs to retire. The foreman: no!" }, 3, 39, { "Sekretne zlecenie: Stara szkoła", "Secret job: Old school" }, {}, false, -1, 0 },
+    { { "Młot Gromowładny", "Thunder Maul" }, 5, 8, 1, core::stat::str, core::element::none, 0, false, false, { core::hit_type::blunt, core::hit_type::blunt }, 1, { core::pattern_kind::push, 1, 100, core::mode_effect::push, 1, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::around, 1, 100, core::mode_effect::open_wall, 0, 0, 7, core::mode_effect::none, 0, 0, 0, 1, { "Grzmot", "Thunderclap" } }, true, false, 0, { "Kuty w burzy. Obuch pamięta grzmot.", "Storm-forged. Remembers thunder." }, 12, 9, { "Markowy Młot wyburzeniowy z dropu", "Branded Demolition Hammer drop" }, { 5, { "Piorun", "Lightning" }, { "Co 5. cios piorun: prąd +50%, paraliż 1 t. (boss: tylko obrażenia), skacze na mokre obok", "Every 5th hit: lightning, power +50%, paralysis 1 t. (boss: dmg only), jumps to wet" }, core::mode_effect::stun, 100, 1, 150, core::element::power, core::mode_effect::chain, 0, 0 }, false, -1, 0 },
+    { { "Kielnia Pierwszej Cegły", "First Brick Trowel" }, 5, 7, 1, core::stat::str, core::element::none, 0, false, false, { core::hit_type::cut, core::hit_type::pierce }, 2, { core::pattern_kind::arc, 1, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::shot, 2, 50, core::mode_effect::stun, 100, 1, 7, core::mode_effect::none, 0, 0, 0, 1, { "Pierwsza cegła", "First brick" } }, true, false, 0, { "Położyła pierwszą cegłę osiedla.", "Laid the estate's first brick." }, 10, 1, { "Murarz: Markowa broń z dropu", "Bricklayer: Branded weapon drop" }, { 3, { "Zaprawa wiąże", "Mortar sets" }, { "Co 3. cios zaprawa unieruchamia cel na 2 tury (nie bossa)", "Every 3rd hit mortar roots the target for 2 turns (not a boss)" }, core::mode_effect::root, 0, 2, 100, core::element::none, core::mode_effect::none, 0, 0 }, false, -1, 0 },
+    { { "Szlifierka Iskrownica", "Sparkstorm Grinder" }, 5, 8, 1, core::stat::agi, core::element::spark, 0, false, false, { core::hit_type::cut, core::hit_type::cut }, 1, { core::pattern_kind::single, 1, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::arc, 1, 100, core::mode_effect::none, 0, 0, 3, core::mode_effect::ignite, 0, 0, 0, 1, { "Snop iskier", "Spark sheaf" } }, true, false, 0, { "Tarcza sypie iskrami jak fajerwerk.", "The disc throws sparks like fireworks." }, 10, 5, { "Glazurnik: Markowa broń z dropu", "Tiler: Branded weapon drop" }, { 1, { "Iskry", "Sparks" }, { "Każdy cios podpala (2 tury); ogień przeskakuje na jednego sąsiada", "Every hit sets on fire (2 turns); fire jumps to one neighbour" }, core::mode_effect::burn, 0, 2, 100, core::element::none, core::mode_effect::spread, 1, 0 }, false, -1, 0 },
+    { { "Łom Ostatniej Deski", "Last Plank Crowbar" }, 4, 7, 1, core::stat::str, core::element::none, 0, false, false, { core::hit_type::blunt, core::hit_type::blunt }, 1, { core::pattern_kind::single, 1, 100, core::mode_effect::none, 0, 0, 0, core::mode_effect::none, 0, 0, 0, 1, { "", "" } }, { core::pattern_kind::push, 1, 100, core::mode_effect::push, 2, 0, 5, core::mode_effect::open_wall, 0, 0, 0, 1, { "Ostatnia deska", "Last plank" } }, true, false, 0, { "Podważył już każdą deskę na budowie.", "It has pried every plank on site." }, 12, 6, { "Markowy Łom z dropu albo sekretne zlecenie", "Branded Crowbar drop or a secret job" }, {}, true, 2, 100 },
 };
+
+inline constexpr core::hit_types_def hit_types = { { { 125, 75, 100, 75, 100 }, { 75, 75, 125, 100, 100 }, { 75, 125, 100, 75, 100 } }, 20, 5, 1, 125, 150, 150, 50, 2, { { "Obuch", "Blunt" }, { "Cięcie", "Cut" }, { "Kłucie", "Stab" } } };
+inline constexpr core::weapon_rarity_def weapon_rarities[] = {   // Zwykła, Solidna, Markowa, Mistrzowska
+    { { "Zwykła", "Basic" }, 18961, 0, 0, 0 },
+    { { "Solidna", "Sturdy" }, 31435, 1, 0, 70 },
+    { { "Markowa", "Branded" }, 32045, 1, -1, 94 },
+    { { "Mistrzowska", "Master" }, 667, 0, 0, 101 },
+};
+inline constexpr int weapon_rarities_count = 4;
+inline constexpr core::tool_trait_def weapon_perks[] = {   // profity broni (maska bitów = indeksy puli)
+    { { "Przebicie", "Pierce" }, { "OBR -1", "DEF -1" }, { "Ignoruje 1 OBR problemu", "Ignores 1 problem DEF" }, core::tool_trait_effect::pierce, 1 },
+    { { "Ostrze", "Edge" }, { "kryt +5%", "crit +5%" }, { "Kryt +5%", "Crit +5%" }, core::tool_trait_effect::crit, 5 },
+    { { "Wyważenie", "Balance" }, { "rzut min +1", "min roll +1" }, { "Najsłabszy rzut +1", "Weakest roll +1" }, core::tool_trait_effect::steady, 1 },
+    { { "Głowica", "Head" }, { "obr. maks +1", "max dmg +1" }, { "Najsilniejszy rzut +1", "Strongest roll +1" }, core::tool_trait_effect::max_dmg, 1 },
+    { { "Chwyt", "Grip" }, { "odn. Patentu -1", "Trick cd -1" }, { "Odnowienie Patentu -1 (min. 1)", "Trick cooldown -1 (min. 1)" }, core::tool_trait_effect::cooldown_b, 1 },
+};
+inline constexpr int weapon_perks_count = 5;
+inline constexpr int weapon_perks_per_rarity[] = { 0, 1, 2, 0 };
+inline constexpr int artifacts[] = { 20, 21, 33, 40, 41, 42, 43, 44 };   // Gablota: bit profilu = pozycja (tylko dopisywane)
+inline constexpr int artifacts_count = 8;
+inline constexpr int artifact_chance_pct = 25;
 
 inline constexpr core::class_def classes[] = {
     { { "Kierownik budowy", "Site Manager" }, { "Trzyma harmonogram w ryzach.", "Keeps the schedule in line." }, 30, 3, 3, 5, 3, 2, 0, 0, { "Odprawa", "Briefing" }, { "Ogłusza widocznych", "Stuns all in sight" }, core::ability_effect::stun, 15, core::class_passive::none },
@@ -161,6 +205,7 @@ inline constexpr core::upgrade_def upgrades[] = {   // Szkolenia: poziomy (przyr
     { { "Dostawy", "Deliveries" }, { "Więcej materiałów i budżetu", "More materials and budget" }, core::upgrade_effect::mats_pct, 4, { { core::upgrade_effect::mats_pct, 5 }, { core::upgrade_effect::mats_pct, 5 }, { core::upgrade_effect::cash, 5 }, { core::upgrade_effect::mats_pct, 5 }, {} }, { 25, 50, 90, 150, 0 }, { 15, 0, 0, 0 }, 1, 30 },
     { { "Kurs BHP II", "Safety Course" }, { "Szczęście, kryt i unik", "Luck, crits and dodge" }, core::upgrade_effect::luck, 4, { { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::luck, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, {} }, { 30, 60, 110, 180, 0 }, { 20, 0, 0, 0 }, 1, 40 },
     { { "Warsztaty", "Workshops" }, { "Lepsza broń i sprzęt", "Better tools and gear" }, core::upgrade_effect::gear_pct, 4, { { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, {} }, { 35, 70, 125, 200, 0 }, { 20, 0, 0, 0 }, 1, 40 },
+    { { "Narzędzia", "Tools" }, { "Lepsza broń na start", "Better weapon at the start" }, core::upgrade_effect::start_rarity, 2, { { core::upgrade_effect::start_rarity, 1 }, { core::upgrade_effect::start_rarity, 1 }, {}, {}, {} }, { 80, 160, 0, 0, 0 }, { 0, 0, 0, 0 }, 0, 40 },
 };
 
 inline constexpr core::story_msg story_stages[] = {   // SMS na starcie etapu (indeks jak data::stages)
@@ -263,6 +308,11 @@ inline constexpr core::status_def statuses[] = {   // indeks = core::status_effe
     { { "Poślizg", "Slip" }, { "Pośl.", "Slip" }, { "ruch o 2 pola", "move 2 tiles" } },
     { { "Papierologia", "Red Tape" }, { "Papier.", "Paper" }, { "moc później", "power later" } },
     { { "Mokry", "Wet" }, { "Mokry", "Wet" }, { "prąd boli bardziej", "zaps hurt more" } },
+    { { "Podpalenie", "Burning" }, { "Podp.", "Burn" }, { "-2 HP/turę", "-2 HP/turn" } },
+    { { "Krwawienie", "Bleeding" }, { "Krwaw.", "Bleed" }, { "-2 HP/turę", "-2 HP/turn" } },
+    { { "Unieruchomienie", "Rooted" }, { "Unier.", "Root" }, { "stoi w miejscu", "cannot move" } },
+    { { "Odsłonięty", "Exposed" }, { "Odsł.", "Weak" }, { "mniejsza OBR", "lower DEF" } },
+    { { "Oznaczony", "Marked" }, { "Ozn.", "Tag" }, { "więcej obrażeń", "extra damage" } },
 };
 inline constexpr int paper_delay = 3;
 inline constexpr int acts_count = 4;
@@ -441,23 +491,49 @@ inline constexpr int schedule_turns_per_day = 3;
 inline constexpr const char* schedule_url = "planbudowlany.online";
 
 inline constexpr core::tool_def tools[] = {
-    { 6, false, false, false },
-    { 7, true, false, false },
-    { 8, true, false, false },
-    { 9, true, false, false },
-    { 10, true, false, false },
-    { 11, true, false, false },
-    { 15, false, true, false },
-    { 16, false, true, false },
-    { 20, false, false, true },
-    { 21, false, false, true },
+    { 6, false, false, false, false, false, false },
+    { 7, true, false, false, false, false, false },
+    { 8, true, false, false, false, false, false },
+    { 9, true, false, false, false, false, false },
+    { 10, true, false, false, false, false, false },
+    { 11, true, false, false, false, false, false },
+    { 15, false, true, false, false, false, false },
+    { 16, false, true, false, false, false, false },
+    { 20, false, false, true, false, false, false },
+    { 21, false, false, true, false, false, false },
+    { 22, false, false, false, true, true, false },
+    { 23, true, false, false, false, false, false },
+    { 24, false, false, false, true, false, false },
+    { 25, false, false, false, true, false, false },
+    { 26, false, false, false, false, true, false },
+    { 27, false, false, false, true, false, false },
+    { 28, false, false, false, false, true, false },
+    { 29, false, false, false, true, false, false },
+    { 30, true, false, false, false, false, false },
+    { 31, false, false, false, true, false, false },
+    { 32, false, false, false, false, true, false },
+    { 33, false, false, true, false, false, true },
+    { 34, false, false, false, true, false, false },
+    { 35, true, false, false, false, false, false },
+    { 36, true, false, false, false, false, false },
+    { 37, false, false, false, true, true, false },
+    { 38, false, false, false, true, false, false },
+    { 39, false, false, false, true, true, false },
+    { 40, false, false, true, false, false, false },
+    { 41, false, false, false, false, false, true },
+    { 42, false, false, false, false, false, true },
+    { 43, false, false, false, false, false, true },
+    { 44, false, false, true, false, false, true },
 };
 
-inline constexpr int tools_count = 10;
-inline constexpr int secret_tools_mask = 768;   // z sekretnych zleceń
-inline constexpr int start_tools_mask = 1;
-inline constexpr int tool_costs[] = { 60, 80, 100, 125, 150 };   // v0.21.52: cena kolejnego kupionego narzędzia
-inline constexpr int tool_costs_count = 5;
+inline constexpr int tools_count = 33;
+inline constexpr uint64_t secret_tools_mask = 4565500672ull;   // z sekretnych zleceń
+inline constexpr uint64_t start_tools_mask = 1ull;
+inline constexpr uint64_t drop_tools_mask = 239776768ull;   // v0.23.0: wypadają bez kupna
+inline constexpr uint64_t hurtownia_tools_mask = 168903680ull;   // v0.23.0: Hurtownia bez kupna
+inline constexpr int original_tools_count = 10;   // v0.23.0: dawne narzędzia (odznaka Kolekcjoner)
+inline constexpr int tool_costs[] = { 60, 80, 100, 125, 150, 175, 200, 225, 250 };   // v0.21.52: cena kolejnego kupionego narzędzia
+inline constexpr int tool_costs_count = 9;
 inline constexpr int drop_chance_pct = 25;
 inline constexpr int drop_weights[] = { 40, 5, 5, 15, 35 };
 
@@ -512,8 +588,10 @@ inline constexpr int gear_base_mask = 7;   // pełny sprzęt (BHP)
 inline constexpr int gear_solid_from = 70;
 inline constexpr int gear_brand_from = 94;
 inline constexpr int gear_stage_bonus = 5;
+inline constexpr int belt_slot = 4;   // v0.23.0: pas z kaburą
+inline constexpr int belt_chance_pct = 15;
 
-inline constexpr int upgrades_count = 7;
+inline constexpr int upgrades_count = 8;
 inline constexpr int xp_per_kill = 1;
 inline constexpr int xp_per_stage = 5;
 inline constexpr int xp_boss = 20;
@@ -553,6 +631,7 @@ inline constexpr core::respect_def respect[] = {   // Respekt: stałe ulepszenia
 inline constexpr int push_chance_pct = 20;   // Operator koparki: cios wręcz odpycha
 inline constexpr int mark_turns = 6;   // Geodeta: Tyczenie trwa tyle tur
 inline constexpr int respect_count = 17;
+inline constexpr int16_t respect_removed_costs[][2] = { { 15, 40 }, { 15, 40 }, { 0, 0 }, { 15, 40 }, { 15, 40 }, { 10, 30 }, { 0, 0 }, { 30, 60 }, { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 } };
 inline constexpr int respect_stage = 2;   // Respekt za etap: zwykły, boss w środku aktu, boss aktu, ostatni
 inline constexpr int respect_boss = 4;
 inline constexpr int respect_act_boss = 6;
@@ -567,8 +646,9 @@ inline constexpr core::reward_def rewards[] = {   // nagrody za odbiór: każda 
     { core::reward_kind::gear, 4, { "Pas narzędziowy", "Tool Belt" }, { "Nowy sprzęt: termos", "New gear: flask" } },
     { core::reward_kind::cls, 8, { "Operator koparki", "Digger Operator" }, { "Nowy zawód: taran", "New trade: ram" } },
     { core::reward_kind::act, 3, { "Akt 0: Papierologia", "Act 0: Red Tape" }, { "Nowy akt przed budową", "New act before building" } },
+    { core::reward_kind::belt, 4, { "Pas monterski z kaburą", "Rigger Holster Belt" }, { "Start z pasem i kaburą", "Start with holster belt" } },
 };
-inline constexpr int rewards_count = 8;
+inline constexpr int rewards_count = 9;
 
 inline constexpr core::tutorial_step tutorial_steps[] = {   // samouczek menu: tytuł (0) i wybór zawodu (1)
     { "new", { "Nowa budowa", "New Build" }, { { "Kierownik Marek", "Manager Marek" }, { { "Tu zaczynasz budowę domu", "Start building the Nowak" }, { "Nowaków: zawód, trudność", "house here: trade, then" }, { "i na plac. Powodzenia!", "difficulty. Good luck!" } } }, { "START / A", "START / A" }, 0, false, false },
@@ -822,6 +902,8 @@ inline constexpr core::secret_def secrets[] = {   // sekretne zlecenia: "???" z 
     { { "Mokra robota", "Wet Work" }, { "20x mokry + prąd w budowie", "20x wet + current in a build" }, core::secret_kind::shock_combos, 20, core::secret_reward::cosmetic, 0, { "Wygląd: Złota kielnia", "Look: Golden Trowel" }, { { "Kierownik Marek", "Manager Marek" }, { { "20 porażeń w budowie!", "20 shocks in one build!" }, { "Złota kielnia: złoty", "Golden Trowel: a gold" }, { "błysk przy krycie.", "flash on crits." } } } },
     { { "Na styk", "Close Call" }, { "Wygraj z 1-3 HP", "Win with 1-3 HP" }, core::secret_kind::low_hp_win, 3, core::secret_reward::cosmetic, 1, { "Wygląd: Kask w paski", "Look: Striped Helmet" }, { { "Kierownik Marek", "Manager Marek" }, { { "Odbiór na ostatnich HP!", "Handover on your last HP!" }, { "Kask w paski: wybór", "Striped helmet: trade" }, { "zawodu, SELECT: Wygląd.", "select, SELECT: Look." } } } },
     { { "Szybka ekipa", "Fast Crew" }, { "Wygraj w 150 dni (bez Aktu 0)", "Win in 150 days (no Act 0)" }, core::secret_kind::fast_win, 150, core::secret_reward::respect, 16, { "Respekt: Zaprawiony", "Respect: Hardened" }, { { "Kierownik Marek", "Manager Marek" }, { { "Dom w rekordowym czasie!", "House in record time!" }, { "Respekt: Zaprawiony", "Respect: Battle-Hardened" }, { "w boju - kawa na start.", "- coffee at the start." } } } },
+    { { "Stara szkoła", "Old school" }, { "Wygraj Majstrem, ta sama broń", "Win as Foreman, same weapon" }, core::secret_kind::no_swap_win, 11, core::secret_reward::tool, 28, { "Nóż majstra seniora", "Senior Foreman's Knife" }, { { "Kierownik Marek", "Manager Marek" }, { { "Majster nie odpuszcza!", "The foreman won't quit!" }, { "Nóż majstra seniora:", "Senior Foreman's Knife:" }, { "Patent: dwa pchnięcia.", "Trick: two thrusts." } } } },
+    { { "Przez ścianę na skróty", "Shortcut through the wall" }, { "3 ściany Patentem w budowie", "3 walls with a Trick in a run" }, core::secret_kind::patent_walls, 3, core::secret_reward::tool, 32, { "Łom Ostatniej Deski", "Last Plank Crowbar" }, { { "Kierownik Marek", "Manager Marek" }, { { "3 ściany Patentem!", "3 walls with a Trick!" }, { "Łom Ostatniej Deski:", "Last Plank Crowbar:" }, { "ściana bez odnowienia.", "walls with no cooldown." } } } },
 };
 inline constexpr core::cosmetic_def cosmetics[] = {   // wygląd z sekretnych zleceń (tylko oprawa)
     { { "Złota kielnia", "Golden Trowel" }, { "Złoty błysk broni przy krycie", "Gold weapon flash on crits" }, -1 },
@@ -847,7 +929,7 @@ inline constexpr core::cosmetic_def cosmetics[] = {   // wygląd z sekretnych zl
     { { "Grafitowy kask", "Graphite Helmet" }, { "Kask bohatera na grafitowo", "Hero's helmet in graphite" }, 10536 },
     { { "Kremowy kask", "Cream Helmet" }, { "Kask jak sztukateria", "Helmet like old stucco" }, 25501 },
 };
-inline constexpr int secrets_count = 8;
+inline constexpr int secrets_count = 10;
 inline constexpr int cosmetics_count = 22;
 inline constexpr uint64_t secret_paper_mask = 1232655613952ull;   // problemy papierowe (Akt 0 bez obrażeń)
 inline constexpr int secret_helper_boss = 8;   // boss pokonany ciosem brygady (Szef tylko dzwoni)
@@ -968,7 +1050,7 @@ inline constexpr core::progress_level stake_ranks[] = {   // stopnie inwestora: 
 inline constexpr int stake_ranks_count = 10;
 
 inline constexpr core::tree_branch tree_branches[] = {   // gałęzie drzewka: pień = Szkolenia (bity data::upgrades)
-    { { "Fach", "Trade" }, 68 },
+    { { "Fach", "Trade" }, 196 },
     { { "BHP", "Safety" }, 35 },
     { { "Logistyka", "Logistics" }, 24 },
 };
@@ -2041,6 +2123,24 @@ namespace ui
         language_hint,
         lang_pl,
         lang_en,
+        efekt_ogluszenie,
+        ladunki_zostalo,
+        bron_zuzyta,
+        pokoj_odsloniety,
+        zamiana_broni,
+        bron_do_kabury,
+        bron_z_kabury_wypada,
+        bron_z_kabury_domyslna,
+        bron_z_kabury_przepada,
+        profity,
+        unikat,
+        efekt_osuszenie,
+        efekt_pewny_kryt,
+        efekt_odrzut,
+        efekt_przyciagniecie,
+        efekt_zamiana_miejsc,
+        profity_brak,
+        typ_ciosu,
         count_
     };
 }
@@ -2845,6 +2945,24 @@ inline constexpr core::ltext ui_texts[] = {
     { "A: wybierz", "A: choose" },
     { "Polski", "Polski" },
     { "English", "English" },
+    { "Ogłuszenie", "Stunned" },
+    { ": ładunki ", ": charges " },
+    { " zużyty!", " worn out!" },
+    { "Pokój odsłonięty", "Room revealed" },
+    { "Zamiana broni: ", "Weapon swap: " },
+    { "Do kabury: ", "To holster: " },
+    { "Bez pasa broń wypada: ", "Belt gone, weapon dropped: " },
+    { "Bez pasa odkładasz: ", "Belt gone, stowed: " },
+    { "Bez pasa broń przepada: ", "Belt gone, weapon lost: " },
+    { "Profity", "Perks" },
+    { "Unikat", "Unique" },
+    { "Osuszenie", "Dried" },
+    { "Pewny kryt", "Sure crit" },
+    { "Odrzut", "Pushed" },
+    { "Przyciągnięcie", "Pulled in" },
+    { "Zamiana miejsc", "Swapped places" },
+    { "Profity: brak", "Perks: none" },
+    { "Typ ciosu: ", "Hit type: " },
 };
 inline const char* tr(ui::id i) { return ui_texts[i]; }
 

@@ -13,111 +13,10 @@
 #include "meta.h"
 using namespace core;
 
-// ------------------------------------------------------------------ bot (kopia z core_tests.cpp)
-// Pole przechodnie dla bota: także tymczasowy mur (Ścianka) - znika za kilka tur, więc nie zmienia wybranego celu.
-static bool bot_open(const game& g, int x, int y)
-{
-    if(g.lv.passable(x, y)) return true;
-    for(int i = 0; i < g.walls_count; ++i) if(g.walls[i].x == x && g.walls[i].y == y) return true;
-    return false;
-}
-
-// Koszt drogi bota: krok = waga pola, z którego + waga pola, na które (zwykłe 2, błoto 6 - kosztuje turę), więc koszt
-// jest symetryczny i maleje wzdłuż drogi do celu (bez przeskakiwania między celami). Bez błota = 4 x liczba kroków.
-static int bot_w(const game& g, int x, int y) { return g.mud(x, y) ? 6 : 2; }
-static void bot_cost(const game& g, int sx, int sy, int (&dist)[map_h][map_w])
-{
-    static const int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}};
-    for(auto& r:dist) for(auto& c:r) c=-1;
-    std::priority_queue<std::pair<int,int>, std::vector<std::pair<int,int>>, std::greater<>> q;
-    dist[sy][sx]=0; q.push({0, sy*map_w+sx});
-    while(!q.empty()){ auto [c,p]=q.top(); q.pop(); int x=p%map_w, y=p/map_w; if(c!=dist[y][x]) continue;
-        for(int k=0;k<4;++k){int nx=x+d[k][0],ny=y+d[k][1]; if(!bot_open(g,nx,ny)) continue;
-            int nc=c+bot_w(g,x,y)+bot_w(g,nx,ny); if(dist[ny][nx]<0||nc<dist[ny][nx]){dist[ny][nx]=nc;q.push({nc,ny*map_w+nx});}}}
-}
-
-// Prosty bot: idź do najbliższego (po ścieżce) wroga albo schodów, atakuj z dystansu, gdy się da.
-// Cel wybiera odległość po ścieżce (do 7 pól drogi; na etapie z bossem każdy problem), więc z każdym krokiem do celu
-// jego odległość maleje i bot nie przeskakuje między dwoma celami (dawniej odległość w linii prostej przez ścianę:
-// krok w stronę celu oddalał go, bot wracał do schodów i kręcił się do limitu kroków). Przed ciosem bossa schodzi
-// z czerwonych pól w stronę celu (dawniej zawsze w tę samą stronę - w wąskim korytarzu cofał się bez końca).
-static void bot_step(game& g)
-{
-    static const int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}};
-    if(g.has_offer()) { if(g.offer_is_better()) g.accept_offer(); else g.decline_offer(); }
-    if(g.bot_pending()) return;   // v0.21.50 cz. 3: wydarzenie, premia z wydarzenia, cecha narzędzia, narzędzie
-    if(g.can_open_secret() && g.hero.x == g.secret_front_x() && g.hero.y == g.secret_front_y()   // przed magazynem: otwórz
-       && g.player_move(g.secret_x - g.hero.x, g.secret_y - g.hero.y)) return;
-    if(g.thermos > 0 && g.hero.hp * 100 < g.hero.max_hp * data::bot_drink_below_pct && g.player_drink()) return;
-    static int hd[map_h][map_w], td[map_h][map_w];
-    bot_cost(g, g.hero.x, g.hero.y, hd);   // koszt drogi (błoto droższe)
-    int tx = g.stairs_x, ty = g.stairs_y, best = 999999;
-    { int gx, gy; if(g.bot_goal(gx, gy) && hd[gy][gx] >= 0) { tx = gx; ty = gy; } }   // klucz, magazyn, skrzynia, wydarzenie
-    if(g.stairs_locked())   // pieczątki (Akt 0): najpierw najbliższy dokument, potem schody
-    {
-        int bdoc = 999999;
-        for(int i=0;i<g.pickups_count;++i){ const pickup& p=g.pickups[i]; int dd=hd[p.y][p.x];
-            if(p.active&&p.type==document&&dd>=0&&dd<bdoc){bdoc=dd;tx=p.x;ty=p.y;} }
-    }
-    for(int i=0;i<g.enemies_count;++i){ auto& e=g.enemies[i]; int dd=hd[e.y][e.x]; if(e.alive&&dd>=0&&dd<best&&(dd<32||g.stairs_x<0)){best=dd;tx=e.x;ty=e.y;} }
-    bool has_target = tx>=0 && hd[ty][tx]>=0;
-    if(has_target) bot_cost(g, tx, ty, td);
-    if(g.danger_cell(g.hero.x, g.hero.y))   // zapowiedziany cios bossa: zejdź z czerwonych pól (jak człowiek; nie wraca na nie)
-    {
-        int bk=-1, bs=-1000000;
-        for(int k=0;k<4;++k){ int nx=g.hero.x+d[k][0], ny=g.hero.y+d[k][1];
-            if(!g.lv.passable(nx,ny)||g.occupied(nx,ny)) continue;
-            int s=(g.danger_cell(nx,ny)?0:10000)-(has_target&&td[ny][nx]>=0?td[ny][nx]:5000); if(s>bs){bs=s;bk=k;} }
-        if(bk>=0 && g.player_move(d[bk][0],d[bk][1])) return;
-    }
-    if(g.nearest_target() >= 0 && g.weapon().range > 1) { g.player_attack_nearest(); return; }
-    if(!has_target||(tx==g.hero.x&&ty==g.hero.y)){ g.player_wait(); return; }
-    for(int k=0;k<4;++k)   // krok na sąsiednie pole bliżej celu
-    {
-        int nx=g.hero.x+d[k][0], ny=g.hero.y+d[k][1];
-        if(!bot_open(g,nx,ny)||td[ny][nx]<0||td[ny][nx]+bot_w(g,nx,ny)+bot_w(g,g.hero.x,g.hero.y)!=td[g.hero.y][g.hero.x]) continue;
-        if(!g.lv.passable(nx,ny)){ g.player_wait(); return; }   // mur Ścianki na drodze: czekaj, aż zniknie
-        if(g.danger_cell(nx,ny)&&g.enemy_at(nx,ny)<0){ g.player_wait(); return; }   // nie wchodzi na czerwone pola przed ciosem
-        if(!g.player_move(d[k][0],d[k][1])) g.player_wait();
-        return;
-    }
-    g.player_wait();
-}
-
-// Wariant: moc, gdy widoczny wróg jest blisko; celowanie w najbliższy widoczny cel w zasięgu (Bot.StepSmart w C#).
-// Paczka sprzętu tej samej lub lepszej jakości: zakłada (wymiana cechy), gorsza: zostawia. Termos poniżej połowy HP.
-static void bot_step_smart(game& g)
-{
-    if(g.has_offer()) { if(g.offer_rarity >= g.equipped[g.offer_slot]) g.accept_offer(); else g.decline_offer(); }
-    if(g.bot_pending()) return;
-    if(g.thermos > 0 && g.hero.hp * 2 < g.hero.max_hp && g.player_drink()) return;
-    for(int k = 0; k < data::repairs_count; ++k)   // naprawy: Kładka przy kałużach; Załataj przy niskim HP (problem w polu widzenia)
-    {
-        bool want = data::repairs[k].effect == repair_effect::bridge || g.hero.hp * 3 < g.hero.max_hp;
-        if(want && g.repair_blocked(k) == game::repair_ok && g.player_repair(k)) return;
-    }
-    if(g.helper_called < 0 && g.nearest_visible_enemy() >= 0)   // brygada: przy pierwszym problemie na etapie (kolejny fachowiec co etap)
-        for(int k = 0; k < data::brigade_count; ++k)
-        {
-            int h = (g.stage + k) % data::brigade_count;
-            if(g.helper_blocked(h) == game::helper_ok && g.call_helper(h)) return;
-        }
-    if(!g.danger_cell(g.hero.x, g.hero.y) && g.ability_cd == 0)
-    {
-        int t = g.nearest_visible_enemy();
-        // Ścianka tylko w obronie (HP poniżej połowy) i nie na problem, który stoi w miejscu - mur zasłania drogę do celu,
-        // a problem, który nie podchodzi (stoi, strzela z dystansu), zostaje za nim: bot czekałby na zniknięcie muru bez końca
-        const bool pointless = t >= 0 && g.cdef().ability == ability_effect::wall
-                               && (g.hero.hp * 2 >= g.hero.max_hp || g.has_tag(g.enemies[t], tag_stationary));
-        if(t >= 0 && ! pointless && cheb(g.hero.x, g.hero.y, g.enemies[t].x, g.enemies[t].y) <= 2 && g.player_ability()) return;
-    }
-    if(!g.danger_cell(g.hero.x, g.hero.y))
-    {
-        int8_t targets[max_enemies]; int n = g.targets_in_range(targets, max_enemies);
-        if(n > 0 && g.player_attack(targets[0])) return;
-    }
-    bot_step(g);
-}
+// ------------------------------------------------------------------ bot (tests/bot.h - wspólny z core_tests.cpp; Bot.cs + BotWeapons.cs)
+#include "bot.h"
+static void bot_step(game& g) { botw::step(g); }
+static void bot_step_smart(game& g) { botw::step_smart(g); }
 
 static void bot_shop(game& g) { for(int i = 0; i < data::hurtownia_count; ++i) { g.hurtownia_buy(i); g.bot_pending(); } }
 
@@ -131,6 +30,7 @@ static uint32_t digest(const game& g)
     f.add(g.turns); f.add(g.score); f.add(g.cash); f.add(g.xp_pct); f.add(g.run_xp); f.add(g.hero_level); f.add(int(g.st));
     f.add(int(g.r.s)); f.add(g.log_serial); f.add(g.ability_cd); f.add(g.def_bonus); f.add(g.dmg_bonus); f.add(g.stage); f.add(g.tier);
     f.add(g.kills); f.add(g.slam_timer); f.add(g.slam_x); f.add(g.slam_y); f.add(g.slam_counter); f.add(g.weapon_override);
+    f.add(g.weapon_b_cd); f.add(g.weapon_charges); f.add(g.crit_buff); f.add(g.crit_buff_turns);   // v0.23.0: tryb B broni
     f.add(g.walls_count); f.add(g.enemies_count);
     for(int i = 0; i < g.enemies_count; ++i)
     {
@@ -138,12 +38,14 @@ static uint32_t digest(const game& g)
         f.add(e.x); f.add(e.y); f.add(e.hp); f.add(e.max_hp); f.add(e.def_id); f.add(e.alive); f.add(e.awake); f.add(e.stun);
         f.add(e.flags); f.add(e.grow); f.add(e.timer);   // v0.21.49 cz. 2: zachowania problemów
         f.add(e.elite); f.add(e.wet);                     // v0.21.50 cz. 2: elity, mokry
+        f.add(e.dot); f.add(e.dot_dmg); f.add(e.dot_kind); f.add(e.root); f.add(e.def_down); f.add(e.def_down_val);   // v0.23.0
+        f.add(e.mark_turns); f.add(e.mark_pct); f.add(e.no_heal);
     }
     f.add(g.pickups_count);
     for(int i = 0; i < g.pickups_count; ++i)
     {
         const pickup& p = g.pickups[i];
-        f.add(p.x); f.add(p.y); f.add(p.type); f.add(p.active); f.add(p.arg); f.add(p.trait);
+        f.add(p.x); f.add(p.y); f.add(p.type); f.add(p.active); f.add(p.arg); f.add(p.trait); f.add(p.extra); f.add(p.perks);
     }
     for(int i = 0; i < status_slots; ++i) f.add(g.hero_status[i]);
     for(int i = 0; i < max_gear_slots; ++i) f.add(g.equipped[i]);
@@ -151,7 +53,7 @@ static uint32_t digest(const game& g)
     f.add(g.thermos); f.add(g.offer_slot); f.add(g.offer_rarity); f.add(g.offer_trait);
     f.add(g.hits_count);
     for(int i = 0; i < g.hits_count; ++i) { const hit& h = g.hits[i]; f.add(h.x); f.add(h.y); f.add(h.amount); f.add(h.on_hero); f.add(h.kind); }
-    f.add(g.act_cleared); f.add(g.act_bonus); f.add(g.stage_damage); f.add(g.stage_kills); f.add(g.tools_found);
+    f.add(g.act_cleared); f.add(g.act_bonus); f.add(g.stage_damage); f.add(g.stage_kills); f.add(int(uint32_t(g.tools_found))); f.add(int(uint32_t(g.tools_found >> 32)));
     for(const message& m : g.log)
     {
         f.add(m.n); f.add(m.kind); f.add(m.repeat);
@@ -188,6 +90,10 @@ static uint32_t digest(const game& g)
     f.add(g.boon_salt); f.add(g.pending_event); f.add(g.stage_choice); f.add(g.stage_choice_pick); f.add(g.choice_done);
     f.add(g.events_seen); f.add(g.event_dmg); f.add(g.event_def);
     f.add(g.weapon_lvl); f.add(g.weapon_trait); f.add(g.trait_pending); f.add(g.tool_offer); f.add(g.tool_offer_pickup);
+    f.add(g.weapon_rarity); f.add(g.tool_offer_rarity); f.add(g.weapon2); f.add(g.weapon2_rarity); f.add(g.weapon2_charges);   // v0.23.0
+    f.add(g.weapon2_lvl); f.add(g.weapon2_trait); f.add(g.weapon2_trait_pending); f.add(g.tool_offer_extra);
+    f.add(g.weapon_perks); f.add(g.weapon2_perks); f.add(g.tool_offer_perks); f.add(g.perk_rolls);
+    f.add(g.proc_count); f.add(g.artifacts_run); f.add(g.patent_walls);
     f.add(g.secret_x); f.add(g.secret_y); f.add(g.secret_kind); f.add(g.secret_dir); f.add(g.secret_rx); f.add(g.secret_ry);
     f.add(g.secret_rw); f.add(g.secret_rh); f.add(g.secret_open); f.add(g.key_holder); f.add(g.keys); f.add(g.secrets_found);
     f.add(g.upgrade_price()); f.add(g.can_open_secret());
@@ -207,6 +113,7 @@ static uint32_t digest(const game& g)
 static std::string out;
 static int event_hits[16];   // statystyka wydarzeń na placu (wypis na końcu)
 static int helper_hits[8];   // statystyka wezwań brygady
+static int weapon_stats[6];  // v0.23.0: losowania profitów, artefakty, pas, zmiana broni, rzadkość > Zwykła, ściany Patentem
 static void w(const char* s) { out += s; }
 static void wi(long v) { out += std::to_string(v); }
 static void key(const char* k) { out += '"'; out += k; out += "\":"; }
@@ -231,7 +138,7 @@ static void snapshot(const game& g, int step)
     w(","); key("stairs"); w("["); wi(g.stairs_x); w(","); wi(g.stairs_y); w("]");
     w(","); key("weaponOverride"); wi(g.weapon_override); w(","); key("actBonus"); wi(g.act_bonus);
     w(","); key("actCleared"); wi(g.act_cleared); w(","); key("actKills"); wi(g.act_kills);
-    w(","); key("toolsFound"); wi(g.tools_found); w(","); key("logSerial"); wi(g.log_serial);
+    w(","); key("toolsFound"); out += std::to_string((unsigned long long)g.tools_found); w(","); key("logSerial"); wi(g.log_serial);
     w(","); key("stageDamage"); wi(g.stage_damage); w(","); key("stageKills"); wi(g.stage_kills); w(","); key("stageStartTurn"); wi(g.stage_start_turn);
     w(","); key("slam"); w("["); wi(g.slam_timer); w(","); wi(g.slam_x); w(","); wi(g.slam_y); w(","); wi(g.slam_counter); w("]");
     w(","); key("equipped"); w("["); for(int i = 0; i < max_gear_slots; ++i) { if(i) w(","); wi(g.equipped[i]); } w("]");
@@ -255,7 +162,7 @@ static void snapshot(const game& g, int step)
     wi(g.gust_in()); w(","); wi(g.gust_dir()); w("]");
     w(","); key("offer"); w("["); wi(g.offer_slot); w(","); wi(g.offer_rarity); w(","); wi(g.offer_trait); w("]");
     w(","); key("respect"); w("["); wi(g.respect); w(","); wi(g.stage_respect()); w(","); wi(g.dmg_carry); w(","); wi(g.taken_carry); w(",");
-    wi(g.second_used); w(","); wi(g.dodge_pct()); w(","); wi(g.coffee_heal()); w(","); wi(g.bonus.gear_slots); w(","); wi(g.bonus.tools); w("]");
+    wi(g.second_used); w(","); wi(g.dodge_pct()); w(","); wi(g.coffee_heal()); w(","); wi(g.bonus.gear_slots); w(","); wi(int(uint32_t(g.bonus.tools))); w("]");
     w(","); key("act0"); w("["); wi(g.first_stage); w(","); wi(g.docs); w(","); wi(g.docs_needed()); w(","); wi(g.stairs_locked()); w(",");
     wi(g.stage_number()); w(","); wi(g.stages_in_run()); w("]");
     w(","); key("heroStatus"); w("["); for(int i = 0; i < status_slots; ++i) { if(i) w(","); wi(g.hero_status[i]); } w("]");
@@ -336,7 +243,7 @@ static void profile_json(const profile& p)
 {
     w("{"); key("best"); wi(p.best); w(","); key("runs"); wi(p.runs); w(","); key("wins"); wi(p.wins); w(","); key("xp"); wi(p.xp);
     w(","); key("badges"); wi(p.badges); w(","); key("catalog"); wi(p.catalog); w(","); key("classWins"); wi(p.class_wins);
-    w(","); key("toolsFound"); wi(p.tools_found); w(","); key("houses"); w("[");
+    w(","); key("toolsFound"); out += std::to_string((unsigned long long)p.tools_found); w(","); key("houses"); w("[");
     for(int i = 0; i < p.houses_count; ++i) { if(i) w(","); wi(p.houses[i]); }
     w("]"); w(","); key("killsTotal"); wi(p.kills_total); w(","); key("powersTotal"); wi(p.powers_total);
     w(","); key("brandTotal"); wi(p.brand_total); w(","); key("cleanBosses"); wi(p.clean_bosses);
@@ -368,7 +275,8 @@ static void profile_json(const profile& p)
     w(","); wi(titles_owned(p)); w(","); wi(helmets_unlocked(p)); w(","); wi(shop_spent(p));
     for(int d = 0; d < data::enemies_count; ++d) { w(","); wi(p.kill_count[d]); }
     w("]");
-    w(","); key("sram"); hex_bytes(reinterpret_cast<const char*>(&p), sizeof p);   // profil bajt po bajcie jak w SRAM
+    profile q = p; profile_sync(q);   // v0.23.0: bajty 35 / 41 = dolne 8 bitów masek (jak C# ToBytes)
+    w(","); key("sram"); hex_bytes(reinterpret_cast<const char*>(&q), sizeof q);   // profil bajt po bajcie jak w SRAM
     w("}");
 }
 
@@ -463,7 +371,7 @@ int main(int argc, char** argv)
         if(s.full_mods)
         {
             for(int i = 0; i < data::upgrades_count; ++i) p.levels[i] = uint8_t(data::upgrades[i].levels);
-            p.tools = uint8_t((1 << data::tools_count) - 1);
+            p.tools = (uint64_t(1) << data::tools_count) - 1;
             p.brigade = uint8_t((1 << data::brigade_count) - 1);
         }
         p.badges = uint16_t(s.badges); p.contracts = uint8_t(s.contracts); p.keepsake = uint8_t(s.keepsake);
@@ -478,6 +386,7 @@ int main(int argc, char** argv)
         if(s.daily == daily_number(2026, 10, 2)) record_daily(p, daily_number(2026, 10, 1), 10, false);   // cz. c: seria - poprzedni dzień
         run_mods m = mods(p, s.cls);   // przed start_run: ranga pamiątki z budów przed tą; v0.21.52 cz. b: mistrzostwo zawodu
         static game g;
+        botw::reset_cache();   // C#: nowy obiekt gry = nowa pamięć oceny broni
         if(s.weekly > 0) start_weekly(g, s.weekly);
         else if(s.daily > 0) start_daily(g, s.daily);
         else g.new_run(s.cls, s.seed, s.diff, m, s.contract);
@@ -555,11 +464,14 @@ int main(int argc, char** argv)
         std::fwrite(out.data(), 1, out.size(), f); std::fclose(f);
         std::printf("%s: zawód %d seed %u poziom %d -> %s etap %d tier %d tury %d wynik %d kroki %d\n", path, s.cls, s.seed, s.diff,
                     g.st == status::won ? "WYGRANA" : (g.st == status::dead ? "porażka" : "w toku"), g.stage + 1, g.tier, g.turns, g.score, step);
+        weapon_stats[0] += g.perk_rolls; weapon_stats[1] += g.artifacts_run != 0; weapon_stats[2] += g.weapon2 >= 0 || g.has_belt();
+        weapon_stats[3] += (g.secret_flags & game::secret_tool_swap) != 0; weapon_stats[4] += g.weapon_rarity > 0; weapon_stats[5] += g.patent_walls;
     }
     std::printf("wydarzenia na placu (etapy):");
     for(int i = 0; i < data::site_events_count; ++i) std::printf(" %s=%d", data::site_events[i].name.c_str(), event_hits[i]);
     std::printf("\nbrygada (wezwania):");
     for(int i = 0; i < data::brigade_count; ++i) std::printf(" %s=%d", data::brigade[i].name.c_str(), helper_hits[i]);
-    std::printf("\n");
+    std::printf("\nbronie: profity %d, artefakty %d, pas %d, zmiana broni %d, rzadkość %d, ściany Patentem %d\n", weapon_stats[0],
+                weapon_stats[1], weapon_stats[2], weapon_stats[3], weapon_stats[4], weapon_stats[5]);
     return 0;
 }

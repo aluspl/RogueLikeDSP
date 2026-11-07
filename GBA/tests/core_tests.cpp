@@ -23,77 +23,14 @@ static bool connected(const level& lv, int sx, int sy, const game* g = nullptr)
     return n==total;
 }
 
-// Pole przechodnie dla bota: także tymczasowy mur (Ścianka) - znika za kilka tur, więc nie zmienia wybranego celu.
-static bool bot_open(const game& g, int x, int y)
-{
-    if(g.lv.passable(x, y)) return true;
-    for(int i = 0; i < g.walls_count; ++i) if(g.walls[i].x == x && g.walls[i].y == y) return true;
-    return false;
-}
-
-// Koszt drogi bota: krok = waga pola, z którego + waga pola, na które (zwykłe 2, błoto 6 - kosztuje turę), więc koszt
-// jest symetryczny i maleje wzdłuż drogi do celu (bez przeskakiwania między celami). Bez błota = 4 x liczba kroków.
-static int bot_w(const game& g, int x, int y) { return g.mud(x, y) ? 6 : 2; }
-static void bot_cost(const game& g, int sx, int sy, int (&dist)[map_h][map_w])
-{
-    static const int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}};
-    for(auto& r:dist) for(auto& c:r) c=-1;
-    std::priority_queue<std::pair<int,int>, std::vector<std::pair<int,int>>, std::greater<>> q;
-    dist[sy][sx]=0; q.push({0, sy*map_w+sx});
-    while(!q.empty()){ auto [c,p]=q.top(); q.pop(); int x=p%map_w, y=p/map_w; if(c!=dist[y][x]) continue;
-        for(int k=0;k<4;++k){int nx=x+d[k][0],ny=y+d[k][1]; if(!bot_open(g,nx,ny)) continue;
-            int nc=c+bot_w(g,x,y)+bot_w(g,nx,ny); if(dist[ny][nx]<0||nc<dist[ny][nx]){dist[ny][nx]=nc;q.push({nc,ny*map_w+nx});}}}
-}
-
-// Prosty bot: idź do najbliższego (po ścieżce) wroga albo schodów, atakuj z dystansu, gdy się da.
-// Cel wybiera odległość po ścieżce (do 7 pól drogi; na etapie z bossem każdy problem), więc z każdym krokiem do celu
-// jego odległość maleje i bot nie przeskakuje między dwoma celami (dawniej odległość w linii prostej przez ścianę:
-// krok w stronę celu oddalał go, bot wracał do schodów i kręcił się do limitu kroków). Przed ciosem bossa schodzi
-// z czerwonych pól w stronę celu (dawniej zawsze w tę samą stronę - w wąskim korytarzu cofał się bez końca).
+// Bot (tests/bot.h - wspólny z golden_dump.cpp; port Bot.cs + BotWeapons.cs; v0.23.0: bronie). Warianty statystyk: kawy bota,
+// bez picia kawy (porównanie przedmiotów).
+#include "bot.h"
+using botw::bot_cost;
 static int bot_drinks = 0;          // statystyka: kawy wypite przez bota (czy przedmioty mają znaczenie)
 static bool bot_no_coffee = false;  // wariant bez picia kawy (porównanie)
-static void bot_step(game& g)
-{
-    static const int d[4][2]={{1,0},{-1,0},{0,1},{0,-1}};
-    if(g.has_offer()) { if(g.offer_is_better()) g.accept_offer(); else g.decline_offer(); }
-    if(g.bot_pending()) return;   // v0.21.50 cz. 3: wydarzenie, premia z wydarzenia, cecha narzędzia, narzędzie
-    if(g.can_open_secret() && g.hero.x == g.secret_front_x() && g.hero.y == g.secret_front_y()   // przed magazynem: otwórz
-       && g.player_move(g.secret_x - g.hero.x, g.secret_y - g.hero.y)) return;
-    if(! bot_no_coffee && g.thermos > 0 && g.hero.hp * 100 < g.hero.max_hp * data::bot_drink_below_pct && g.player_drink()) { ++bot_drinks; return; }
-    static int hd[map_h][map_w], td[map_h][map_w];
-    bot_cost(g, g.hero.x, g.hero.y, hd);   // koszt drogi (błoto droższe)
-    int tx = g.stairs_x, ty = g.stairs_y, best = 999999;
-    { int gx, gy; if(g.bot_goal(gx, gy) && hd[gy][gx] >= 0) { tx = gx; ty = gy; } }   // klucz, magazyn, skrzynia, wydarzenie
-    if(g.stairs_locked())   // pieczątki (Akt 0): najpierw najbliższy dokument, potem schody
-    {
-        int bdoc = 999999;
-        for(int i=0;i<g.pickups_count;++i){ const pickup& p=g.pickups[i]; int dd=hd[p.y][p.x];
-            if(p.active&&p.type==document&&dd>=0&&dd<bdoc){bdoc=dd;tx=p.x;ty=p.y;} }
-    }
-    for(int i=0;i<g.enemies_count;++i){ auto& e=g.enemies[i]; int dd=hd[e.y][e.x]; if(e.alive&&dd>=0&&dd<best&&(dd<32||g.stairs_x<0)){best=dd;tx=e.x;ty=e.y;} }
-    bool has_target = tx>=0 && hd[ty][tx]>=0;
-    if(has_target) bot_cost(g, tx, ty, td);
-    if(g.danger_cell(g.hero.x, g.hero.y))   // zapowiedziany cios bossa: zejdź z czerwonych pól (jak człowiek; nie wraca na nie)
-    {
-        int bk=-1, bs=-1000000;
-        for(int k=0;k<4;++k){ int nx=g.hero.x+d[k][0], ny=g.hero.y+d[k][1];
-            if(!g.lv.passable(nx,ny)||g.occupied(nx,ny)) continue;
-            int s=(g.danger_cell(nx,ny)?0:10000)-(has_target&&td[ny][nx]>=0?td[ny][nx]:5000); if(s>bs){bs=s;bk=k;} }
-        if(bk>=0 && g.player_move(d[bk][0],d[bk][1])) return;
-    }
-    if(g.nearest_target() >= 0 && g.weapon().range > 1) { g.player_attack_nearest(); return; }
-    if(!has_target||(tx==g.hero.x&&ty==g.hero.y)){ g.player_wait(); return; }
-    for(int k=0;k<4;++k)   // krok na sąsiednie pole bliżej celu
-    {
-        int nx=g.hero.x+d[k][0], ny=g.hero.y+d[k][1];
-        if(!bot_open(g,nx,ny)||td[ny][nx]<0||td[ny][nx]+bot_w(g,nx,ny)+bot_w(g,g.hero.x,g.hero.y)!=td[g.hero.y][g.hero.x]) continue;
-        if(!g.lv.passable(nx,ny)){ g.player_wait(); return; }   // mur Ścianki na drodze: czekaj, aż zniknie
-        if(g.danger_cell(nx,ny)&&g.enemy_at(nx,ny)<0){ g.player_wait(); return; }   // nie wchodzi na czerwone pola przed ciosem
-        if(!g.player_move(d[k][0],d[k][1])) g.player_wait();
-        return;
-    }
-    g.player_wait();
-}
+static botw::bot_options bot_opt;   // v0.23.0: ustawienia bota (tylko broń domyślna, bez broni)
+static void bot_step(game& g) { botw::step(g, bot_opt, bot_no_coffee, &bot_drinks); }
 
 // Po etapie: bot wybiera premię (kolejność skutków z core: bot_boon_choice) i idzie dalej.
 static bool bot_no_boons = false;   // wariant bez premii (porównanie)
@@ -162,9 +99,10 @@ int main()
     {
         game n; n.new_run(0, 42, 1);
         CHECK(n.diff == 1 && n.tier == 0);
-        CHECK(n.enemy_hp_pct() == data::stages[F0].hp_pct);
+        const int hp_pct = data::stages[F0].hp_pct * data::difficulties[1].hp_pct / 100;   // v0.23.0: Normalny +18% HP problemów
+        CHECK(n.enemy_hp_pct() == hp_pct);
         for(int i=0;i<n.enemies_count;++i)
-            CHECK(n.enemies[i].max_hp == data::enemies[n.enemies[i].def_id].max_health * data::stages[F0].hp_pct / 100);
+            CHECK(n.enemies[i].max_hp == data::enemies[n.enemies[i].def_id].max_health * hp_pct / 100);
         game e; e.new_run(0, 42, 0);
         game h; h.new_run(0, 42, 2);
         CHECK(e.enemy_hp_pct() <= n.enemy_hp_pct() && n.enemy_hp_pct() < h.enemy_hp_pct());
@@ -370,7 +308,7 @@ int main()
                 ++drops;
                 const pickup& p = g.pickups[g.pickups_count - 1];
                 CHECK(p.active && p.x == g.hero.x + 1 && p.y == g.hero.y);
-                if(p.type == tool) { ++tools_seen; CHECK(data::start_tools_mask & (1 << p.arg)); }
+                if(p.type == tool) { ++tools_seen; CHECK((data::start_tools_mask | data::drop_tools_mask) & (uint64_t(1) << p.arg)); }   // v0.23.0: + bronie z dropu
             }
         }
         CHECK(drops > 300 * data::drop_chance_pct / 200 && drops < 300 * data::drop_chance_pct * 2 / 100);
@@ -385,17 +323,18 @@ int main()
         profile p; profile_reset(p);
         CHECK(tool_unlocked(p, 0) && !tool_unlocked(p, 3) && !buy_tool(p, 3));
         p.xp = 100; CHECK(buy_tool(p, 3) && tool_unlocked(p, 3) && !buy_tool(p, 3) && p.xp == 100 - data::tool_costs[0]);
-        CHECK(mods(p).tools == (data::start_tools_mask | (1 << 3)));
+        CHECK(mods(p).tools == (data::start_tools_mask | (uint64_t(1) << 3)));
         // wszystkie narzędzia odblokowane -> każde może wypaść
-        run_mods m; m.tools = (1 << data::tools_count) - 1;
-        int seen = 0;
-        for(uint32_t seed = 1; seed <= 3000 && seen != m.tools; ++seed)
+        run_mods m; m.tools = (uint64_t(1) << data::tools_count) - 1;
+        uint64_t seen = 0;
+        for(uint32_t seed = 1; seed <= 30000 && seen != m.tools; ++seed)   // v0.23.0: 33 narzędzia
         {
             game h; h.new_run(1, seed, data::default_difficulty, m);
             h.enemies_count = 0; h.spawn(0, h.hero.x + 1, h.hero.y); h.enemies[0].hp = 1; h.player_move(1, 0);
             const pickup& q = h.pickups[h.pickups_count - 1];
-            if(q.type == tool) seen |= 1 << q.arg;
+            if(q.type == tool) seen |= uint64_t(1) << q.arg;
         }
+        if(seen != m.tools) std::printf("narzędzia bez dropu: %llx\n", (unsigned long long)(m.tools & ~seen));
         CHECK(seen == m.tools);
         // migracja: stary profil v2 (bajt narzędzi = 0) ma narzędzia startowe
         profile old; profile_reset(old); old.tools = 0; CHECK(tool_unlocked(old, 0));
@@ -491,7 +430,7 @@ int main()
     // 19. motywacja: liczniki etapu, odznaki, Osiedle, katalog, migracja profilu v2 -> v3
     {
         profile v2; profile_reset(v2);
-        std::memcpy(v2.magic, "PBRL002", 8); v2.xp = 77; v2.levels[0] = 2; v2.classes = 0x3F; v2.hard = 1; v2.flags = 1; v2.tools = 2; v2.best = 900;
+        std::memcpy(v2.magic, "PBRL002", 8); v2.xp = 77; v2.levels[0] = 2; v2.classes = 0x3F; v2.hard = 1; v2.flags = 1; v2.tools_lo = 2; v2.best = 900;
         std::memset(reinterpret_cast<char*>(&v2) + 36, 0xEE, sizeof v2 - 36);   // śmieci za starym końcem struktury
         CHECK(profile_fix(v2));
         const int r2 = data::upgrades[0].legacy_costs[0] + data::upgrades[0].legacy_costs[1];   // v13: Szkolenia wracają jako doświadczenie
@@ -540,7 +479,7 @@ int main()
         profile p; profile_reset(p);
         game g; arena(g, 1);
         for(int d = 0; d < data::enemies_count; ++d) g.kills_by_type[d] = 1;
-        g.tools_found = uint8_t((1 << data::tools_count) - 1);
+        g.tools_found = (uint64_t(1) << data::tools_count) - 1;
         g.hero_level = data::max_hero_level;
         int got = check_badges(p, g);
         CHECK(got & (1 << data::badge_katalog) && got & (1 << data::badge_kolekcjoner) && got & (1 << data::badge_zawodowiec));
@@ -849,7 +788,7 @@ int main()
         }
         game gl; arena(gl, 5);
         CHECK(dodges > 400 * gl.dodge_pct() / 300 && dodges < 400 * gl.dodge_pct() * 3 / 100);
-        game gm; arena(gm, 1); CHECK(gm.dodge_pct() == 0 && gm.crit_pct() == data::crit_base_pct);
+        game gm; arena(gm, 1); CHECK(gm.dodge_pct() == 0 && gm.crit_pct() == data::crit_base_pct + (hit_has(gm.weapon(), hit_type::cut) ? data::hit_types.cut_crit_pct : 0));
     }
     // 29. statystyki: cechy SIŁ/ZRĘ/INT, Warsztaty (statystyka broni zawodu), Kurs BHP II, narzędzia INT
     {
@@ -971,8 +910,8 @@ int main()
     {
         profile v3; profile_reset(v3);
         std::memcpy(v3.magic, "PBRL003", 8); v3.best = 1234; v3.runs = 9; v3.wins = 4; v3.xp = 321; v3.levels[0] = 2;
-        v3.classes = 0x1F; v3.hard = 1; v3.flags = 3; v3.tools = 5; v3.badges = 0x0123; v3.catalog = 0x07FF;
-        v3.class_wins = 0x05; v3.tools_found = 0x0B; v3.houses_count = 3; v3.houses[0] = 0x21; v3.houses[2] = 0x35;
+        v3.classes = 0x1F; v3.hard = 1; v3.flags = 3; v3.tools_lo = 5; v3.badges = 0x0123; v3.catalog = 0x07FF;
+        v3.class_wins = 0x05; v3.tools_found_lo = 0x0B; v3.houses_count = 3; v3.houses[0] = 0x21; v3.houses[2] = 0x35;
         std::memset(reinterpret_cast<char*>(&v3) + profile_v3_size, 0xCD, sizeof v3 - profile_v3_size);   // śmieci
         CHECK(profile_fix(v3) && std::strcmp(v3.magic, profile_magic) == 0);
         CHECK(v3.best == 1234 && v3.runs == 9 && v3.wins == 4 && v3.xp == 321 + legacy_refund_of(0, 2) && v3.levels[0] == 0 && v3.classes == 0x1F);
@@ -1630,7 +1569,7 @@ int main()
         profile v7; profile_reset(v7); std::memcpy(v7.magic, "PBRL007", 8);
         v7.wins = 3; v7.xp = 11; v7.best = 777; v7.daily_score[4] = 55;
         int refund = 0;
-        for(int i = 0; i < data::upgrades_count; ++i) { v7.levels[i] = 1; refund += data::upgrades[i].legacy_costs[0]; }
+        for(int i = 0; i < data::upgrades_count; ++i) { v7.levels[i] = 1; refund += legacy_refund_of(i, 1); }   // v0.23.0: Narzędzia - zwrot z refund
         CHECK(refund > 0);
         std::memset(reinterpret_cast<char*>(&v7) + profile_v7_size, 0xEE, sizeof v7 - profile_v7_size);
         CHECK(profile_fix(v7) && std::strcmp(v7.magic, profile_magic) == 0);
@@ -1840,7 +1779,7 @@ int main()
             CHECK(profile_fix(p) && std::strcmp(p.magic, profile_magic) == 0 && p.catalog_hi == 0 && p.best == 4321 && p.respect == 77 && p.catalog == 0x0F0F);
             catalog_add(p, 20); catalog_add(p, 31);
             CHECK(catalog_has(p, 20) && catalog_has(p, 31) && !catalog_has(p, 21) && catalog_count(p) == 8 + 2);
-            CHECK(std::strcmp(run_magic, "PBRUN16") == 0);
+            CHECK(std::strcmp(run_magic, "PBRUN19") == 0);
         }
     }
     // 41. v0.21.49 cz. 3: Akt 0 (Papierologia) - nagroda za odbiór, pieczątki zamykają schody, druga faza bossa;
@@ -1849,7 +1788,7 @@ int main()
         profile p; profile_reset(p);
         CHECK(!act0_unlocked(p) && mods(p).act0 == 0);
         int ai = -1; for(int i = 0; i < data::rewards_count; ++i) if(data::rewards[i].kind == reward_kind::act) ai = i;
-        CHECK(ai == data::rewards_count - 1 && rewards_available() == data::rewards_count);
+        CHECK(ai == data::rewards_count - 2 && rewards_available() == data::rewards_count);   // v0.23.0: za Aktem 0 nagroda "pas z kaburą"
         for(int k = 0; k <= ai; ++k) CHECK(record_win(p) == k);
         CHECK(act0_unlocked(p) && mods(p).act0 == 1);
         game n; n.new_run(1, 11);
@@ -1897,15 +1836,15 @@ int main()
         }
         {   // bot przechodzi Akt 0 (zbiera dokumenty)
             int won_act0 = 0;
-            for(int k = 0; k < 20; ++k)
+            for(int k = 0; k < 40; ++k)   // v0.23.0: próba 40 budów (jak C# Act0AndTutorialTests)
             {
                 game b; b.new_run(k % data::open_classes_count, 300 + k * 13, 0, mods(p));
                 for(int step = 0; step < 3000 && b.st == status::playing && b.stage < F0; ++step) bot_step(b);
                 while(b.st == status::stage_clear && b.stage < F0) { bot_next(b); for(int step = 0; step < 3000 && b.st == status::playing; ++step) bot_step(b); }
                 won_act0 += b.stage >= F0 || (b.st == status::stage_clear && b.stage == F0 - 1);
             }
-            std::printf("Akt 0 (bot, Łatwy): %d/20\n", won_act0);
-            CHECK(won_act0 >= 14);
+            std::printf("Akt 0 (bot, Łatwy): %d/40\n", won_act0);
+            CHECK(won_act0 >= 24);
         }
         // samouczek: główny na tytule i wyborze zawodu, potem dymki odblokowań (każdy raz)
         profile t; profile_reset(t); int cls = -1;
@@ -1935,7 +1874,7 @@ int main()
         CHECK(!tutorial_pending(v, 0) && !tutorial_pending(v, 1) && pending_unlock(v, 0, cls) == unlock_act0 && pending_unlock(v, 1, cls) == -1);
         profile nv; profile_reset(nv); std::memcpy(nv.magic, "PBRL009", 8);
         CHECK(profile_fix(nv) && tutorial_pending(nv, 0) && nv.rewards == 0 && nv.tutorial == 0);
-        CHECK(sizeof(profile) == 384 && std::strcmp(profile_magic, "PBRL017") == 0);
+        CHECK(sizeof(profile) == 440 && std::strcmp(profile_magic, "PBRL019") == 0);
     }
     // 46. v0.21.50: rozpiska obrażeń broni (#26) - zakres z rozpiski = to, co naprawdę zadaje walka (wiele rzutów z seedem)
     {
@@ -1982,7 +1921,7 @@ int main()
                 if(v >= 3) g.weapon_override = data::tools[pick.range(0, data::tools_count - 1)].weapon;
                 int ed = pick.range(0, data::enemies_count - 1);
                 dmg_breakdown b = g.weapon_breakdown(ed);
-                CHECK(b.crit_pct == g.crit_pct() && b.stat_value == g.hero_stat(g.weapon().scales_with));
+                CHECK(b.crit_chance() == g.crit_pct() && b.stat_value == g.hero_stat(g.weapon().scales_with));
                 CHECK(b.flat == g.dmg_bonus + g.gear_bonus(gear_stat::dmg) && b.flat_found >= 0);
                 int lo = 999, hi = 0, clo = 999, chi = 0, crits = 0;
                 const int n = 3000;
@@ -2056,17 +1995,19 @@ int main()
             game g; arena(g, 1);
             dmg_breakdown b = g.weapon_breakdown();
             CHECK(b.wmin == 4 && b.wmax == 6 && b.stat_dmg == 2 && b.min == 6 && b.max == 8 && b.avg10 == 70);
-            CHECK(b.crit_min == 12 && b.crit_max == 16 && b.crit_chance() == data::crit_base_pct);
+            CHECK(b.crit_min == 12 && b.crit_max == 16 && b.crit_chance() == data::crit_base_pct + (hit_has(g.weapon(), hit_type::cut) ? data::hit_types.cut_crit_pct : 0));
             message m; dmg_line(m, b, dmg_text::total); CHECK(std::strcmp(m.s, "Cios 6-8, średnio 7") == 0);
             message mw; dmg_line(mw, b, dmg_text::weapon); CHECK(std::strcmp(mw.s, "Kielnia 4-6, zasięg 1") == 0);
             message ms; dmg_line(ms, b, dmg_text::stat); CHECK(std::strcmp(ms.s, "SIŁ 5: +2 (+1 co 2 pkt)") == 0);
-            message mk; dmg_line(mk, b, dmg_text::crit); CHECK(std::strcmp(mk.s, "Kryt x2: 12-16, szansa 5%") == 0);
+            message mk; dmg_line(mk, b, dmg_text::crit); message mk2; mk2.add("Kryt x2: 12-16, szansa ").add(b.crit_chance()).add("%");
+            CHECK(std::strcmp(mk.s, mk2.s) == 0);
             message mg; compare_line(mg, b, g.weapon_breakdown(-1, -1, 1, 2, 0)); CHECK(std::strcmp(mg.s, "teraz 6-8 -> 9-11 (średnio +3)") == 0);
             message ml; gear_label(ml, data::gear[5]); CHECK(std::strcmp(ml.s, "+3 obrażeń") == 0);
             b.pct = 10; b.finish();   // 6..8 +10%: 6 -> 6 albo 7, 8 -> 8 albo 9
             CHECK(b.min == 6 && b.max == 9 && b.avg10 == 77);
             dmg_breakdown v = g.weapon_breakdown(data::enemy_budzet);   // obrona problemu / 2
-            CHECK(v.min == imax(1, 6 - data::enemies[data::enemy_budzet].defense / 2));
+            const int pierce = hit_has(g.weapon(), hit_type::pierce) ? data::hit_types.pierce_def : 0;   // v0.23.0: kielnia cięcie + kłucie
+            CHECK(v.min == hit_apply(imax(1, 6 - imax(0, data::enemies[data::enemy_budzet].defense - pierce) / 2), v.hit_pct));
         }
     }
     // 47. v0.21.50 cz. 2: premie po etapie (#27), elity (#28), kombinacje stanów (#29)
@@ -2279,7 +2220,7 @@ int main()
         {
             game g; g.new_run(3, 42); clear_stage(g); g.pick_boon(1);
             run_save* sv = new run_save(); run_save_make(*sv, g);
-            CHECK(run_save_valid(*sv) && sv->g.boons == g.boons && std::memcmp(sv->magic, "PBRUN16", 7) == 0);
+            CHECK(run_save_valid(*sv) && sv->g.boons == g.boons && std::memcmp(sv->magic, "PBRUN19", 7) == 0);
             delete sv;
         }
     }
@@ -2681,7 +2622,7 @@ int main()
         auto tool_of = [](bool knock) { for(int t = 0; t < data::tools_count; ++t) if(data::tools[t].secret && data::weapons[data::tools[t].weapon].knockback == knock) return t; return -1; };
         const int spawacz = class_idx(ability_effect::weld), geodeta = class_idx(ability_effect::mark), majster = class_idx(ability_effect::borrow);
         CHECK(spawacz >= data::open_classes_count && geodeta >= data::open_classes_count && majster >= data::open_classes_count);
-        CHECK(data::classes_count == 12 && data::open_classes_count == 9 && data::secrets_count == 8);
+        CHECK(data::classes_count == 12 && data::open_classes_count == 9 && data::secrets_count == 10);   // v0.23.0: + Stara szkoła, Przez ścianę
         for(int k = 0; k < 8; ++k) CHECK(secret_idx(secret_kind(k)) >= 0);
         // nowy profil: nic z sekretów, zawody i narzędzia zablokowane, nie do kupienia
         profile p; profile_reset(p); p.xp = 1 << 20; p.respect = 60000;
@@ -2868,7 +2809,7 @@ int main()
         {
             game g; g.new_run(majster, 9); g.coffee_drunk = 2; g.shock_combos = 7; g.secret_flags = 3;
             run_save* sv = new run_save(); run_save_make(*sv, g);
-            CHECK(run_save_valid(*sv) && sv->g.shock_combos == 7 && sv->g.borrow_cls == g.borrow_cls && std::memcmp(sv->magic, "PBRUN16", 7) == 0);
+            CHECK(run_save_valid(*sv) && sv->g.shock_combos == 7 && sv->g.borrow_cls == g.borrow_cls && std::memcmp(sv->magic, "PBRUN19", 7) == 0);
             delete sv;
         }
     }
@@ -2879,7 +2820,7 @@ int main()
         for(int i = 0; i < data::upgrades_count; ++i)
         {
             const upgrade_def& u = data::upgrades[i];
-            CHECK(u.levels >= 4 && u.levels <= 5);
+            CHECK(u.levels >= (u.effect == upgrade_effect::start_rarity ? 2 : 4) && u.levels <= 5);   // v0.23.0: Narzędzia - 2 poziomy
             for(int l = 1; l < u.levels; ++l) CHECK(u.costs[l] > u.costs[l - 1]);
             CHECK(upgrade_total(i, u.levels, u.effect) > 0);
             for(int l = 0; l < u.levels; ++l) { message m; upgrade_label(m, u.steps[l].effect, u.steps[l].value); CHECK(m.n > 3 && m.n < 30); }
@@ -2893,7 +2834,7 @@ int main()
             for(int i = 0; i < data::upgrades_count; ++i) f.levels[i] = uint8_t(data::upgrades[i].levels);
             f.xp = 10000; for(int n = 0; n < data::tree_nodes_count; ++n) CHECK(tree_choose(f, n, tree_best_pick[n])); f.xp = 0;
             run_mods m = mods(f);
-            CHECK(m.hp >= 4 && m.taken_pct >= 2 && m.dmg_pct >= 2 && m.coffee >= 1 && m.pickups >= 1 && m.luck >= 1 && m.craft == 0);   // cz. c: bez stat. broni
+            CHECK(m.hp >= 3 && m.taken_pct >= 2 && m.dmg_pct >= 2 && m.coffee >= 1 && m.pickups == 0 && m.luck >= 1 && m.craft == 0);   // v0.23.0: runda meta   // cz. c: bez stat. broni
             CHECK(m.hp <= 6 && m.taken_pct <= 5 && m.dmg_pct <= 5 && m.luck <= 1 && m.craft <= 1 && m.pickups <= 1);   // bez dużego wzrostu mocy
             // rozpiska obrażeń: część Szkoleń = premie bojowe z mods()
             run_mods s0 = mods_part(f, 0);
@@ -2983,7 +2924,7 @@ int main()
         // profil v12 -> v13: Szkolenia wracają po starej cenie (poziomy od zera), reszta zostaje; tytuł i kask od zera
         {
             profile v; profile_reset(v);
-            v.xp = 33; v.best = 4444; v.wins = 7; v.classes = 0x3F; v.tools = 0x0E; v.hard = 1; v.brigade = 3; v.secrets = 0x15;
+            v.xp = 33; v.best = 4444; v.wins = 7; v.classes = 0x3F; v.tools_lo = 0x0E; v.hard = 1; v.brigade = 3; v.secrets = 0x15;
             v.respect = 77; v.respect_ranks_hi[0] = 1;
             int want = 33;
             for(int i = 0; i < data::upgrades_count; ++i) { v.levels[i] = uint8_t(data::upgrades[i].legacy_levels); for(int l = 0; l < data::upgrades[i].legacy_levels; ++l) want += data::upgrades[i].legacy_costs[l]; }
@@ -3158,9 +3099,12 @@ int main()
         {
             game a; a.new_run(c, 9); game b; run_mods m; m.mastery = mastery_bit_weapon; b.new_run(c, 9, 1, m);
             const int pk = data::mastery_classes[c].weapon_perk.value;
-            CHECK(b.crit_pct() == a.crit_pct() + pk && b.master_weapon() && ! a.master_weapon());
+            const int perk_crit = perk_value(master_perk_mask(data::classes[c].weapon), tool_trait_effect::crit);   // v0.23.0: Mistrzowska - stałe profity
+            CHECK(b.weapon_perks == master_perk_mask(data::classes[c].weapon));
+            CHECK(b.crit_pct() == imin(data::crit_max_pct, a.crit_pct() + pk + perk_crit) && b.master_weapon() && ! a.master_weapon());
             CHECK(b.weapon_breakdown().crit_chance() == b.crit_pct() && class_breakdown(c, m).crit_chance() == b.crit_pct());
             b.weapon_override = data::tools[0].weapon; a.weapon_override = data::tools[0].weapon;
+            b.weapon_perks = 0;   // inne narzędzie - bez profitów broni mistrza
             CHECK(b.crit_pct() == a.crit_pct());
         }
         // premia mistrzostwa: tylko z bitem i tylko swoim zawodem; oferty bez mistrzostwa bez zmian
@@ -3460,13 +3404,11 @@ int main()
             // komplet już osiągnięty przy migracji: bez banera
             profile c; profile_reset(c); c.wins = 100; c.inspector_xp = 1000000; std::memcpy(c.magic, profile_magic_v14, sizeof c.magic);
             CHECK(profile_fix(c) && check_collections(c) == 0);
-            // zapis budowy: PBRUN14 (ten sam układ) wczytuje się z zerami w nowych licznikach
+            // zapis budowy: v0.23.0 - starszy zapis (PBRUN14) nie wczytuje się (inny układ stanu, jak C# RunSave)
             static run_save s; static game g; g.new_run(3, 99, 1);
-            g.helpers_called = 7; g.shop_buys = 2;
-            run_save_make(s, g); std::memcpy(s.magic, run_magic_v14, sizeof s.magic); s.checksum = run_checksum(s.g);
-            CHECK(run_save_valid(s));
-            run_save_upgrade(s);
-            CHECK(run_save_valid(s) && std::memcmp(s.magic, run_magic, sizeof s.magic) == 0 && s.g.helpers_called == 0 && s.g.shop_buys == 0 && s.g.cls == 3);
+            run_save_make(s, g); CHECK(run_save_valid(s));
+            std::memcpy(s.magic, "PBRUN14", sizeof s.magic); s.checksum = run_checksum(s.g);
+            CHECK(! run_save_valid(s));
             CHECK(run_save_offset >= int(sizeof(profile)) && run_save_offset_v14 == 256);
         }
     }
@@ -3600,10 +3542,8 @@ int main()
             CHECK(profile_fix(o) && o.career_wins[0] == 2 && o.career_done == 1 && o.contract == 0);
             static run_save s; static game g; g.new_run(3, 99, 1, run_mods(), 2);
             run_save_make(s, g); CHECK(run_save_valid(s) && s.g.contract == 2);
-            g.contract = 3; g.twin_carry = 9;   // stary zapis: śmieci w wyrównaniu
-            run_save_make(s, g); std::memcpy(s.magic, run_magic_v15, sizeof s.magic); s.checksum = run_checksum(s.g);
-            CHECK(run_save_valid(s)); run_save_upgrade(s);
-            CHECK(run_save_valid(s) && std::memcmp(s.magic, run_magic, sizeof s.magic) == 0 && s.g.contract == 0 && s.g.twin_carry == 0);
+            std::memcpy(s.magic, "PBRUN16", sizeof s.magic); s.checksum = run_checksum(s.g);   // v0.23.0: starszy zapis budowy pomijany
+            CHECK(! run_save_valid(s));
         }
     }
     // 54. v0.21.53 (#53, #54): filtry ekranu - klasyczny i dla daltonistów zawsze, zabawowe z warunków z danych, profil v17

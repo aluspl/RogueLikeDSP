@@ -18,7 +18,47 @@ namespace core
     enum class stat : uint8_t { str, agi, intel };
 
     // v0.21.50 cz. 2 (#29): żywioł ciosu / problemu - kombinacje stanów (mokry + prąd, pył + iskra).
-    enum class element : uint8_t { none, water, power, spark };
+    enum class element : uint8_t { none, water, power, spark, fire };   // v0.23.0: + ogień
+
+    // v0.23.0: typ ciosu broni (wiersze hit_types_def::material_pct), wzór pól trybu ataku, efekt trybu na celu.
+    enum class hit_type : uint8_t { blunt, cut, pierce };
+    enum class pattern_kind : uint8_t { single, arc, around, cross, line, shot, throw3x3, spray, push, line_both, line4 };
+    enum class mode_effect : uint8_t { none, stun, root, push, pull, def_down, dot, mark, reveal, open_wall, swap, chain, dry, crit_next,
+                                       wet, ignite, burn, spread };
+
+    // v0.23.0: tryb ataku broni (A zwykły, B "Patent" z odnowieniem) - jak WeaponMode w C#.
+    struct weapon_mode
+    {
+        pattern_kind pattern = pattern_kind::single;
+        int8_t range = 1;
+        int16_t dmg_pct = 100;
+        mode_effect effect = mode_effect::none;
+        int8_t value = 0;
+        int8_t turns = 0;
+        int8_t cooldown = 0;
+        mode_effect effect2 = mode_effect::none;
+        int8_t value2 = 0;
+        int8_t turns2 = 0;
+        int16_t steel_pct = 0;     // obrażenia Dot w problem ze stali (%; 0 = bez zmian)
+        int8_t hits = 1;           // ciosy w każdy trafiony cel
+        ltext name = { "", "" };   // nazwa ruchu Patentu
+    };
+
+    // v0.23.0: artefakt - mechanika "co N-ty cios" (ProcDef w C#).
+    struct proc_def
+    {
+        int8_t every = 0;          // 0 = brak mechaniki
+        ltext name = { "", "" };
+        ltext desc = { "", "" };
+        mode_effect effect = mode_effect::none;
+        int8_t value = 0;
+        int8_t turns = 0;
+        int16_t dmg_pct = 100;
+        element elem = element::none;
+        mode_effect effect2 = mode_effect::none;
+        int8_t value2 = 0;
+        int8_t turns2 = 0;
+    };
 
     struct weapon_def
     {
@@ -31,6 +71,48 @@ namespace core
         int8_t crit = 0;       // v0.21.51 cz. 2: kryt +% (Poziomica mistrza)
         bool knockback = false;   // cios wręcz odpycha problem o pole (Młot Zenka; bossa nie)
         bool reveal = false;   // magazyn widać na podglądzie mapy (Poziomica mistrza)
+        // v0.23.0: typy ciosu (1-2), tryby A i B, Mistrzowska, czyste kłucie, przebicie, opis, stałe profity Mistrzowskiej (maska),
+        // artefakt (broń bazowa, -1 = zwykła), skąd (Gablota), "co N-ty cios", ściana bez odnowienia, premia na materiał
+        hit_type hit[2] = { hit_type::blunt, hit_type::blunt };
+        int8_t hits_count = 1;
+        weapon_mode mode_a = {};
+        weapon_mode mode_b = {};
+        bool master = false;
+        bool neutral = false;
+        int8_t pierce = 0;
+        ltext desc = { "", "" };
+        uint8_t master_perks = 0;
+        int8_t artifact = -1;
+        ltext hint = { "", "" };
+        proc_def proc = {};
+        bool wall_free = false;
+        int8_t bonus_material = -1;
+        int16_t bonus_pct = 0;
+    };
+
+    // v0.23.0: typy ciosu - skuteczność wg materiału (kolumny: cement, stal, drewno, woda, bez materiału) i skutki typów.
+    struct hit_types_def
+    {
+        int16_t material_pct[3][5];
+        int8_t stun_chance_pct;
+        int8_t cut_crit_pct;
+        int8_t pierce_def;
+        int16_t spark_steel_pct;
+        int16_t power_water_pct;
+        int16_t fire_wood_pct;
+        int16_t fire_water_pct;
+        int8_t dot_per_turn;
+        ltext names[3];
+    };
+
+    // v0.23.0: rzadkość broni (Zwykła, Solidna, Markowa, Mistrzowska).
+    struct weapon_rarity_def
+    {
+        ltext name;
+        uint16_t color;          // RGB555
+        int8_t dmg_bonus;
+        int8_t cooldown_delta;
+        int16_t roll_from;
     };
 
     enum class ability_effect : uint8_t { stun, wall, volley, chain, flush, spin, line, splash, ram,
@@ -60,8 +142,9 @@ namespace core
     };
 
     // Stan nakładany przez problem budowy przy trafieniu bohatera.
-    enum class status_effect : uint8_t { none, poison, shock, slip, paper, wet };   // wet (v0.21.50): mokry - prąd boli bardziej
-    constexpr int status_slots = 6;
+    enum class status_effect : uint8_t { none, poison, shock, slip, paper, wet,   // wet (v0.21.50): mokry - prąd boli bardziej
+                                         burn, bleed, root, def_down, mark };   // v0.23.0: stany problemów od broni
+    constexpr int status_slots = 11;
 
     struct status_def          // opis stanu (komunikat przy nałożeniu, HUD, telefon)
     {
@@ -291,7 +374,8 @@ namespace core
     // craft: +statystyka broni zawodu; dmg_pct / taken_pct: +% zadawanych / -% otrzymanych obrażeń
     enum class upgrade_effect : uint8_t { hp, def, dmg, coffee, pickups, luck, craft, dmg_pct, taken_pct,
                                           crit, dodge, thermos, mats_pct, gear_pct, cash,   // v0.21.52: poziomy z różnym działaniem
-                                          shop_pct, brigade_pct, cooldown, first_hit };     // v0.21.52 cz. c: węzły drzewka Szkoleń
+                                          shop_pct, brigade_pct, cooldown, first_hit,      // v0.21.52 cz. c: węzły drzewka Szkoleń
+                                          start_rarity };                                  // v0.23.0: Szkolenie Narzędzia
 
     struct upgrade_step        // v0.21.52: jeden poziom Szkolenia - przyrost premii
     {
@@ -353,7 +437,7 @@ namespace core
     };
 
     // Nagroda za odbiór (jak odblokowania w Slay the Spire): każda wygrana odblokowuje kolejną z listy.
-    enum class reward_kind : uint8_t { tool, gear, cls, soon, act };
+    enum class reward_kind : uint8_t { tool, gear, cls, soon, act, belt };   // v0.23.0: pas monterski z kaburą
 
     struct reward_def
     {
@@ -411,7 +495,7 @@ namespace core
     };
 
     // Ulepszanie narzędzia (#31): +1 obrażeń za poziom, od poziomu trait_at jedna cecha.
-    enum class tool_trait_effect : uint8_t { pierce, crit, steady };
+    enum class tool_trait_effect : uint8_t { pierce, crit, steady, max_dmg, cooldown_b };   // v0.23.0: też profity broni
 
     struct tool_trait_def
     {
@@ -694,12 +778,16 @@ namespace core
         bool shop = false;     // v0.21.52: na sprzedaż w Szkoleniach (cena z data::tool_costs); bez flag = od początku
         bool reward = false;   // odblokowuje nagroda za odbiór (nie Szkolenia)
         bool secret = false;   // v0.21.51 cz. 2: odblokowuje sekretne zlecenie
+        bool drop = false;     // v0.23.0: może wypaść na budowie bez kupna
+        bool hurtownia = false;   // v0.23.0: w puli "Nowe narzędzie" w Hurtowni bez kupna
+        bool artifact = false; // v0.23.0: artefakt (Gablota) - zamiast Markowej broni bazowej z dropu albo z sekretu
     };
 
     // ------------------------------------------------------------------ v0.21.51 cz. 2
     // Sekretne zlecenie (#39): ukryty cel profilu ("???" z podpowiedzią do wykonania), nagroda: zawód, narzędzie,
     // wygląd albo ranga Respektu.
-    enum class secret_kind : uint8_t { no_coffee_win, helper_boss, storerooms, class_wins, paper_clean, shock_combos, low_hp_win, fast_win };
+    enum class secret_kind : uint8_t { no_coffee_win, helper_boss, storerooms, class_wins, paper_clean, shock_combos, low_hp_win, fast_win,
+                                       no_swap_win, patent_walls };   // v0.23.0: wygrana zawodem bez wymiany broni, ściany Patentem
     enum class secret_reward : uint8_t { cls, tool, cosmetic, respect };
 
     struct secret_def

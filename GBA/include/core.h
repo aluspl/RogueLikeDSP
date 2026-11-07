@@ -115,14 +115,25 @@ namespace core
         int8_t timer = 0;       // odnowienie ucieczki / łatania / odepchnięcia; u czekającego na powrót - tury do powrotu
         int8_t elite = -1;      // v0.21.50: cecha elity (data::elites), -1 = zwykły problem
         int8_t wet = 0;         // v0.21.50: tury mokrego (kałuża, Zawór, Wąż ogrodowy); problem wodny jest mokry zawsze
+        // v0.23.0: stany od broni - krwawienie / podpalenie (tury, obrażenia, rodzaj: 1 podpalenie, 2 krwawienie), unieruchomienie,
+        // osłabienie (tury, -OBR), znak (tury, +% obrażeń od bohatera), bez leczenia (Klucz: zakręcony zawór)
+        int8_t dot = 0, dot_dmg = 0;
+        uint8_t dot_kind = 0;
+        int8_t root = 0;
+        int8_t def_down = 0, def_down_val = 0;
+        int8_t mark_turns = 0;
+        uint8_t mark_pct = 0;
+        int8_t no_heal = 0;
     };
     // phase: boss w drugiej fazie; v0.21.50: dusty - zapylony (akt III), frozen - zmrożony (Mróz, Suchy lód), called - elita już wezwała
     enum actor_flag : uint8_t { actor_child = 1, actor_returned = 2, actor_reviving = 4, actor_phase = 8, actor_dusty = 16, actor_frozen = 32,
-                                actor_called = 64 };
+                                actor_called = 64, actor_crit_next = 128 };   // v0.23.0: następny cios bohatera w cel - pewny kryt
 
     struct temp_wall { int8_t x, y, turns; };   // Ścianka Murarza
 
-    struct pickup { int8_t x, y; uint8_t type; bool active; uint8_t arg = 0; uint8_t trait = 0; };   // arg: narzędzie / slot*3+jakość; trait: cecha sprzętu
+    // arg: narzędzie / slot*3+jakość; trait: cecha sprzętu (v0.23.0: narzędzie - rzadkość); extra (v0.23.0): ulepszenia broni z kabury
+    // (poziom, cecha+1, ładunki, wybór cechy po 4 bity), perks: profity broni (maska data::weapon_perks)
+    struct pickup { int8_t x, y; uint8_t type; bool active; uint8_t arg = 0; uint8_t trait = 0; uint16_t extra = 0; uint8_t perks = 0; };
     enum hit_kind : uint8_t { hit_normal, hit_crit, hit_dodge };
     struct hit { int8_t x, y; int16_t amount; bool on_hero; uint8_t kind = hit_normal; };   // do liczb obrażeń nad polem
 
@@ -177,7 +188,7 @@ namespace core
         int xp_pct = 0;              // % więcej doświadczenia
         int cash = 0;                // budżet na start budowy (zł)
         int crit = 0;                // kryt +%
-        int tools = data::start_tools_mask;   // narzędzia, które mogą wypaść z wrogów
+        uint64_t tools = data::start_tools_mask;   // narzędzia, które mogą wypaść z wrogów (v0.23.0: 64 bity)
         int helpers = data::start_helpers_mask;   // brygada: fachowcy do wezwania (Szkolenia)
         int investor = 0;            // tryb inwestora: włączone modyfikatory (bitmaska data::investor)
         // v0.21.49: procentowe premie (Szkolenia BHP i Kurs fachowy, Respekt), nagrody za odbiór
@@ -197,6 +208,8 @@ namespace core
         int start_coffee = 0;        // v0.21.51 cz. 2: Respekt Zaprawiony w boju - kawy w termosie na start
         int mastery = 0;             // v0.21.52 cz. b: mistrzostwo zawodu (bity mastery_bit): wariant mocy, broń mistrza, premia
                                      // (dawne wyrównanie - stary zapis budowy ma tu 0 = bez mistrzostwa)
+        int start_belt = 0;          // v0.23.0: nagroda za odbiór - budowa z założonym pasem z kaburą
+        int weapon_rarity = 0;       // v0.23.0: Szkolenie Narzędzia - rzadkość broni domyślnej (0..2)
     };
 
     // v0.21.52 cz. b: mistrzostwo zawodu w budowie (run_mods::mastery) - ustawia profil (meta.h: mastery_bits).
@@ -337,7 +350,7 @@ namespace core
         const char* const n[stat_kinds] = { "HP", UI(sil), UI(zre), UI(int_), UI(obr), UI(szcz) };
         return n[int(k)];
     }
-    inline int luck_crit_pct(int luck) { return data::crit_base_pct + data::crit_per_luck_pct * luck; }
+    inline int luck_crit_pct(int luck) { return imin(data::crit_max_pct, data::crit_base_pct + data::crit_per_luck_pct * luck); }   // v0.23.0: sufit
     inline int luck_dodge_pct(int luck) { return imin(data::dodge_max_pct, data::dodge_per_luck_pct * imax(0, luck)); }
     inline message& stat_effect(message& m, stat_kind k, int v, bool weapon_stat)
     {
@@ -367,7 +380,7 @@ namespace core
             case stat_kind::luck:
                 if(part == 1) return m.add(UI(unik_3)).add(data::dodge_per_luck_pct).add(UI(pkt_maks)).add(data::dodge_max_pct).add("%)");
                 if(part == 2) return m.add(UI(lupy)).add(data::drop_per_luck_pct).add(UI(szansy_pkt));
-                return m.add(UI(szcz_kryt)).add(data::crit_base_pct).add("% +").add(data::crit_per_luck_pct).add(UI(pkt));
+                return m.add(UI(szcz_kryt)).add(data::crit_base_pct).add("% +").add(data::crit_per_luck_pct).add(UI(pkt_maks)).add(data::crit_max_pct).add("%)");   // v0.23.0: sufit krytu
             default:              return m;
         }
     }
@@ -387,6 +400,128 @@ namespace core
     inline trait_effect stat_trait(stat s)
     {
         return s == stat::str ? trait_effect::str : (s == stat::agi ? trait_effect::agi : trait_effect::intel);
+    }
+
+    // ------------------------------------------------------------------ v0.23.0: typy ciosu (HitCalc w C#)
+    // Mnożnik obrażeń ciosu (%) wg typu ciosu broni i celu: kolumna woda, gdy problem wodny (pierwszeństwo przed materiałem), inaczej
+    // jego materiał, inaczej bez materiału (bossy); broń z dwoma typami bierze lepszy; potem żywioł broni.
+    inline int hit_column(const enemy_def& e)
+    {
+        if(e.elem == element::water) return 3;
+        return e.material >= 0 && e.material < data::materials_count ? e.material : 4;
+    }
+    inline bool hit_has(const weapon_def& w, hit_type t)
+    {
+        for(int i = 0; i < w.hits_count; ++i) if(w.hit[i] == t) return true;
+        return false;
+    }
+    inline hit_type hit_best(const weapon_def& w, int col)
+    {
+        hit_type best = w.hit[0];
+        for(int i = 0; i < w.hits_count; ++i)
+            if(data::hit_types.material_pct[int(w.hit[i])][col] > data::hit_types.material_pct[int(best)][col]) best = w.hit[i];
+        return best;
+    }
+    inline int hit_pct(const weapon_def& w, const enemy_def& e)
+    {
+        if(w.neutral) return 100;   // czyste kłucie: materiał bez znaczenia
+        const int col = hit_column(e);
+        int pct = data::hit_types.material_pct[int(hit_best(w, col))][col];
+        const bool steel = col == 1, wood = col == 2, water = col == 3;
+        if(w.bonus_pct != 0 && col < data::materials_count && col == w.bonus_material) pct = pct * (100 + w.bonus_pct) / 100;   // artefakt
+        switch(w.elem)
+        {
+            case element::spark: if(steel) pct = pct * data::hit_types.spark_steel_pct / 100; break;
+            case element::power: if(water) pct = pct * data::hit_types.power_water_pct / 100; break;
+            case element::fire:
+                if(wood) pct = pct * data::hit_types.fire_wood_pct / 100;
+                else if(water) pct = pct * data::hit_types.fire_water_pct / 100;
+                break;
+            default: break;
+        }
+        return pct;
+    }
+    // Ile OBR omija kłucie broni (własna wartość albo hit_types.pierce_def; bez kłucia 0).
+    inline int hit_pierce_def(const weapon_def& w) { return hit_has(w, hit_type::pierce) ? (w.pierce > 0 ? w.pierce : data::hit_types.pierce_def) : 0; }
+    inline int hit_apply(int dmg, int pct) { return imax(1, dmg * pct / 100); }
+
+    // Profity broni: suma wartości profitów z maski o danym skutku.
+    inline int perk_value(int perks, tool_trait_effect e)
+    {
+        int v = 0;
+        for(int i = 0; i < data::weapon_perks_count; ++i) if((perks >> i) & 1 && data::weapon_perks[i].effect == e) v += data::weapon_perks[i].value;
+        return v;
+    }
+    inline int master_perk_mask(int weapon) { return weapon >= 0 && weapon < int(sizeof data::weapons / sizeof data::weapons[0]) ? data::weapons[weapon].master_perks : 0; }
+    constexpr int max_rolled_weapon_rarity = 2;   // Markowa; Mistrzowska nigdy z dropu ani Hurtowni
+    constexpr int master_weapon_rarity = data::weapon_rarities_count - 1;
+    // Rzadkość broni domyślnej na starcie: Szkolenie Narzędzia albo Mistrzowska przy broni mistrza zawodu.
+    inline int start_rarity(const run_mods& m)
+    {
+        return (m.mastery & mastery_bit_weapon) ? master_weapon_rarity : imin(m.weapon_rarity, max_rolled_weapon_rarity);
+    }
+    // Krótkie opisy profitów z maski ("OBR -1, kryt +5%").
+    inline message& perk_shorts(message& m, int perks)
+    {
+        bool first = true;
+        for(int i = 0; i < data::weapon_perks_count; ++i)
+            if((perks >> i) & 1) { if(! first) m.add(", "); m.add(data::weapon_perks[i].short_name); first = false; }
+        return m;
+    }
+
+    // ------------------------------------------------------------------ v0.23.0: wzory pól trybu ataku (HitPattern w C#)
+    constexpr int pattern_max_cells = 32;
+    struct cell_list
+    {
+        int x[pattern_max_cells], y[pattern_max_cells];
+        int n = 0;
+        void add(int cx, int cy) { if(cx < 0 || cy < 0 || cx >= map_w || cy >= map_h || n >= pattern_max_cells) return; x[n] = cx; y[n] = cy; ++n; }
+        void ray(int hx, int hy, int dx, int dy, int len) { for(int i = 1; i <= len; ++i) add(hx + dx * i, hy + dy * i); }
+        void block(int cx, int cy) { for(int oy = -1; oy <= 1; ++oy) for(int ox = -1; ox <= 1; ++ox) add(cx + ox, cy + oy); }
+    };
+    inline bool pattern_is_ray(pattern_kind k)
+    {
+        return k == pattern_kind::line || k == pattern_kind::shot || k == pattern_kind::line_both || k == pattern_kind::line4;
+    }
+    // Pola wzoru dla bohatera w (hx, hy) zwróconego w (dx, dy) - kolejność od bohatera; skos obraca wzór o 45 stopni.
+    inline void pattern_cells_of(cell_list& c, pattern_kind k, int range, int hx, int hy, int dx, int dy)
+    {
+        c.n = 0;
+        if(dx == 0 && dy == 0) return;
+        const bool diag = dx != 0 && dy != 0;
+        const int r = imax(1, range);
+        switch(k)
+        {
+            case pattern_kind::single:
+            case pattern_kind::push: c.add(hx + dx, hy + dy); break;
+            case pattern_kind::shot:
+            case pattern_kind::line: c.ray(hx, hy, dx, dy, r); break;
+            case pattern_kind::line_both: c.ray(hx, hy, dx, dy, r); c.ray(hx, hy, -dx, -dy, r); break;
+            case pattern_kind::line4: c.ray(hx, hy, 0, -1, r); c.ray(hx, hy, 1, 0, r); c.ray(hx, hy, 0, 1, r); c.ray(hx, hy, -1, 0, r); break;
+            case pattern_kind::arc:
+                c.add(hx + dx, hy + dy);
+                if(diag) { c.add(hx, hy + dy); c.add(hx + dx, hy); }
+                else { c.add(hx + dx - dy, hy + dy + dx); c.add(hx + dx + dy, hy + dy - dx); }
+                break;
+            case pattern_kind::around:
+                for(int oy = -1; oy <= 1; ++oy) for(int ox = -1; ox <= 1; ++ox) if(ox != 0 || oy != 0) c.add(hx + ox, hy + oy);
+                break;
+            case pattern_kind::cross:
+                c.add(hx + dx, hy + dy);
+                if(diag) { c.add(hx + dx, hy - dy); c.add(hx - dx, hy + dy); c.add(hx - dx, hy - dy); }
+                else { c.add(hx - dy, hy + dx); c.add(hx + dy, hy - dx); c.add(hx - dx, hy - dy); }
+                break;
+            case pattern_kind::spray:   // pole przed bohaterem, dalej rząd 3 pól
+                c.add(hx + dx, hy + dy);
+                if(diag) { c.add(hx + 2 * dx, hy + 2 * dy); c.add(hx + dx, hy + 2 * dy); c.add(hx + 2 * dx, hy + dy); }
+                else
+                {
+                    const int cx = hx + 2 * dx, cy = hy + 2 * dy;
+                    c.add(cx, cy); c.add(cx - dy, cy + dx); c.add(cx + dy, cy - dx);
+                }
+                break;
+            case pattern_kind::throw3x3: c.block(hx + dx * r, hy + dy * r); break;
+        }
     }
 
     // ------------------------------------------------------------------ rozpiska obrażeń broni (#26, jak w D&D / BG3)
@@ -438,6 +573,14 @@ namespace core
         int upg_level = 0, flat_upgrade = 0, upg_trait = -1;   // poziom, +obrażeń, cecha (data::tool_traits)
         int pierce = 0, steady = 0, crit_upg = 0;              // cecha: -OBR problemu, +najsłabszy rzut, +kryt
         int crit_weapon = 0;                                    // v0.21.51 cz. 2: kryt broni (Poziomica mistrza)
+        int flat_rarity = 0;                                    // v0.23.0: premia rzadkości broni
+        int perks = 0;                                          // v0.23.0: profity broni (Mistrzowska: stałe - Unikat)
+        bool perks_master = false;
+        int crit_perk = 0;                                      // v0.23.0: kryt z profitu Ostrze
+        int crit_cut = 0;                                       // v0.23.0: kryt z cięcia
+        int hit_pct = 100;                                      // v0.23.0: mnożnik ciosu (typ x materiał / żywioł)
+        int hit_col = -1, hit_name = 0, hit_enemy = 0;          // kolumna, typ ciosu (data::hit_types.names), problem (nazwa bez materiału)
+        int crit_cap = 100;
         int flat_event = 0;                                     // wydarzenie: ciosy +N na etap
         bool split = false;                  // źródła premii profilu znane (src_*)
         int src_dmg[mods_sources] = {}, src_pct[mods_sources] = {}, src_crit[mods_sources] = {};
@@ -453,26 +596,35 @@ namespace core
         {
             stat_value = stat_class + stat_craft + stat_trait;
             stat_dmg = stat_value / 2;
-            flat = flat_mods + flat_level + flat_found + flat_gear + flat_boon + flat_upgrade + flat_event;
+            flat = flat_mods + flat_level + flat_found + flat_gear + flat_boon + flat_upgrade + flat_rarity + flat_event;
             def_cut = imax(0, enemy_def + enemy_elite - pierce) / 2;
             pct_total = pct + pct_boon;
             roll_min = imin(wmax, wmin + steady);   // Wyważenie: najsłabszy rzut wyżej
             const int add = stat_dmg + flat - def_cut;
             base_min = imax(1, roll_min + add);
             base_max = imax(1, wmax + add);
-            min = base_min + pct_floor(base_min, pct_total);
-            max = base_max + pct_ceil(base_max, pct_total);
+            min = hit_apply(base_min + pct_floor(base_min, pct_total), hit_pct);
+            max = hit_apply(base_max + pct_ceil(base_max, pct_total), hit_pct);
             int sum = 0, n = 0;
             for(int r = roll_min; r <= wmax; ++r, ++n) sum += imax(1, r + add) * (100 + imax(0, pct_total));
-            avg10 = n ? div_round(sum, 10 * n) : 0;
+            avg10 = n ? div_round(sum * hit_pct, 1000 * n) : 0;
             crit_base = data::crit_base_pct;
             crit_luck = data::crit_per_luck_pct * luck;
-            crit_pct = crit_base + crit_luck + crit_trait + crit_bonus + crit_boon + crit_upg + crit_weapon;
+            crit_pct = crit_base + crit_luck + crit_trait + crit_bonus + crit_boon + crit_upg + crit_weapon + crit_cut + crit_perk;
             crit_mult = data::crit_multiplier;
+            crit_cap = imin(100, data::crit_max_pct);
             crit_min = min * crit_mult;
             crit_max = max * crit_mult;
         }
-        int crit_chance() const { return imax(0, imin(100, crit_pct)); }
+        int crit_chance() const { return imax(0, imin(crit_cap, crit_pct)); }
+        // v0.23.0: skutki profitów w rozpisce: Przebicie, Wyważenie, Ostrze, Głowica.
+        void add_perks()
+        {
+            pierce += perk_value(perks, tool_trait_effect::pierce);
+            steady += perk_value(perks, tool_trait_effect::steady);
+            crit_perk = perk_value(perks, tool_trait_effect::crit);
+            wmax += perk_value(perks, tool_trait_effect::max_dmg);
+        }
         // Źródła premii profilu (parts = meta::mods_part dla każdego źródła); tylko gdy sumy się zgadzają (nie budowa dnia).
         void set_sources(const run_mods (&parts)[mods_sources])
         {
@@ -505,6 +657,13 @@ namespace core
         b.luck = c.luck + m.luck;
         b.crit_bonus = m.crit;
         b.crit_weapon = w.crit + ((m.mastery & mastery_bit_weapon) ? data::mastery_classes[cls].weapon_perk.value : 0);   // broń mistrza
+        b.pierce = hit_pierce_def(w);   // v0.23.0: kłucie, cięcie, rzadkość, stałe profity Mistrzowskiej
+        b.crit_cut = hit_has(w, hit_type::cut) ? data::hit_types.cut_crit_pct : 0;
+        b.flat_rarity = data::weapon_rarities[start_rarity(m)].dmg_bonus;
+        const bool master = start_rarity(m) == master_weapon_rarity;
+        b.perks = master ? master_perk_mask(c.weapon) : 0;
+        b.perks_master = master;
+        b.add_perks();
         b.finish();
         return b;
     }
@@ -519,8 +678,8 @@ namespace core
 
     // Teksty rozpiski (GBA: strona Obrażenia, Godot: podpowiedzi) - wspólne, krótkie (bufor message 48 bajtów).
     enum class dmg_text : uint8_t { weapon, stat, stat_parts, profile, run, gear, pct, enemy, total, crit, crit_parts, crit_extra, power, boon,
-                                    upgrade };
-    constexpr int dmg_texts = 15;
+                                    upgrade, hit_mult, perks };   // v0.23.0: mnożnik ciosu, profity broni
+    constexpr int dmg_texts = 17;
 
     inline message& add_range(message& m, int lo, int hi) { m.add(lo); if(hi != lo) m.add("-").add(hi); return m; }
     // Liczba x10 jako "7" albo "7,5" (ze znakiem, gdy sign).
@@ -622,12 +781,13 @@ namespace core
                 return true;
             case dmg_text::crit_extra:
             {
-                if(! b.crit_trait && ! b.crit_bonus && ! b.crit_upg && ! b.crit_weapon) { m.add(UI(kryt_bez_premii)); return false; }
+                if(! b.crit_trait && ! b.crit_bonus && ! b.crit_upg && ! b.crit_perk && ! b.crit_weapon && ! b.crit_cut) { m.add(UI(kryt_bez_premii)); return false; }
                 m.add("+");
                 bool first = true;
                 if(b.crit_weapon) { m.add(UI(bron)).add(b.crit_weapon).add("%"); first = false; }
+                if(b.crit_cut) { m.add(first ? " " : ", ").add(data::hit_types.names[int(hit_type::cut)]).add(" ").add(b.crit_cut).add("%"); first = false; }
                 if(b.crit_trait) { m.add(UI(cecha)).add(b.crit_trait).add("%"); first = false; }
-                if(b.crit_upg) { m.add(first ? " " : ", ").add(UI(ostrze)).add(b.crit_upg).add("%"); first = false; }
+                if(b.crit_upg + b.crit_perk) { m.add(first ? " " : ", ").add(UI(ostrze)).add(b.crit_upg + b.crit_perk).add("%"); first = false; }
                 if(! b.split) { if(b.crit_bonus) m.add(first ? " " : ", ").add(UI(premie_2)).add(b.crit_bonus).add("%"); return true; }
                 for(int s = 0; s < mods_sources; ++s)
                     if(b.src_crit[s]) { m.add(first ? " " : ", ").add(mods_source_name(s)).add(" ").add(b.src_crit[s]).add("%"); first = false; }
@@ -655,6 +815,23 @@ namespace core
                 m.add(UI(ulepszenie)).add(b.upg_level).add(": +").add(b.flat_upgrade).add(UI(obr_3));
                 if(b.upg_trait >= 0) m.add(", ").add(data::tool_traits[b.upg_trait].name).add(" ").add(data::tool_traits[b.upg_trait].short_name);
                 return true;
+            }
+            case dmg_text::perks:   // v0.23.0: profity broni (Mistrzowska: stałe)
+                if(! b.perks) { m.add(UI(profity_brak)); return false; }
+                perk_shorts(m.add(b.perks_master ? UI(unikat) : UI(profity)).add(": "), b.perks);
+                return true;
+            case dmg_text::hit_mult:   // v0.23.0: typ ciosu x materiał / żywioł problemu
+            {
+                const weapon_def& w = data::weapons[b.weapon];
+                if(! b.vs_enemy)
+                {
+                    m.add(UI(typ_ciosu));
+                    for(int i = 0; i < w.hits_count; ++i) m.add(i ? ", " : "").add(data::hit_types.names[int(w.hit[i])]);
+                    return false;
+                }
+                m.add(b.hit_col >= 0 && b.hit_col < data::materials_count ? data::materials[b.hit_col].name.c_str() : data::enemies[b.hit_enemy].name.c_str())
+                 .add(": ").add(data::hit_types.names[b.hit_name]).add(" x").add(b.hit_pct).add("%");
+                return b.hit_pct != 100;
             }
             default: return false;
         }
@@ -767,7 +944,7 @@ namespace core
         int stage_damage = 0;        // obrażenia otrzymane na bieżącym etapie (odznaka Bez usterek)
         int stage_kills = 0;         // problemy usunięte na bieżącym etapie (odznaka Seryjny)
         int stage_start_turn = 0;    // tura wejścia na etap (odznaka Przed terminem)
-        uint8_t tools_found = 0;     // narzędzia podniesione w tej budowie (odznaka Kolekcjoner)
+        uint64_t tools_found = 0;    // narzędzia podniesione w tej budowie (odznaka Kolekcjoner; v0.23.0: 64 bity)
         // liczniki zleceń (przenoszone do profilu przez bank_counters; ile już przeniesiono - w profilu, run_*)
         uint16_t powers_used = 0;    // użycia mocy
         uint8_t brand_found = 0;     // założone markowe przedmioty
@@ -855,7 +1032,7 @@ namespace core
         int8_t mark_target = -1, mark_turns = 0;   // Geodeta (Tyczenie): oznaczony problem i tury znaku
 
         // Numer etapu dla gracza (1..) i liczba etapów tej budowy (bez Aktu 0, gdy nieodblokowany).
-        enum secret_flag : uint8_t { secret_helper_boss = 1, secret_paper_clean = 2 };
+        enum secret_flag : uint8_t { secret_helper_boss = 1, secret_paper_clean = 2, secret_tool_swap = 4 };   // v0.23.0: broń wymieniona w budowie
 
         // v0.21.52 cz. d (#47): kontrakt budowy - etapy stage = 0..route_count()-1 to kolejne etapy kontraktu w data::stages
         // (Dom jednorodzinny: te same indeksy co wcześniej).
@@ -1144,10 +1321,13 @@ namespace core
         }
         // Szczęście: kryt (x2), mały unik przed ciosem wroga, częstsze i lepsze dropy.
         int luck() const { return cdef().luck + bonus.luck + trait_bonus(trait_effect::luck) + boon_luck(); }
-        int crit_pct() const
+        // Szansa krytu; v0.23.0: najwyżej crit_max_pct, + Pomiar, cięcie, cecha i profit Ostrze.
+        int crit_pct() const { return imin(data::crit_max_pct, crit_pct_raw()); }
+        int crit_pct_raw() const
         {
-            return data::crit_base_pct + data::crit_per_luck_pct * luck() + trait_bonus(trait_effect::crit) + bonus.crit + boon_sum(boon_effect::crit)
-                   + tool_trait_value(tool_trait_effect::crit) + weapon().crit + master_crit();
+            return crit_buff + weapon().crit + (hit_has(weapon(), hit_type::cut) ? data::hit_types.cut_crit_pct : 0) + data::crit_base_pct
+                   + data::crit_per_luck_pct * luck() + trait_bonus(trait_effect::crit) + bonus.crit + boon_sum(boon_effect::crit)
+                   + weapon_bonus(tool_trait_effect::crit) + master_crit();
         }
         int sight_radius() const   // pył (akt III)
         {
@@ -1347,7 +1527,10 @@ namespace core
         }
         // Obrona problemu ei: z danych + Tarcza elity.
         int enemy_elite_def(int ei) const { return elite_is(enemies[ei], elite_effect::shield) ? data::elites[enemies[ei].elite].value : 0; }
-        int enemy_defense(int ei) const { return data::enemies[enemies[ei].def_id].defense + enemy_elite_def(ei); }
+        int enemy_defense(int ei) const   // v0.23.0: osłabienie zmniejsza OBR
+        {
+            return imax(0, data::enemies[enemies[ei].def_id].defense + enemy_elite_def(ei) - (enemies[ei].def_down > 0 ? enemies[ei].def_down_val : 0));
+        }
         // Nazwa problemu z przedrostkiem elity ("Zbrojony Przeciek", "Uparta Pleśń").
         message& enemy_name(message& m, int ei) const
         {
@@ -1694,7 +1877,7 @@ namespace core
         {
             return weapon_trait >= 0 && data::tool_traits[weapon_trait].effect == e ? data::tool_traits[weapon_trait].value : 0;
         }
-        void reset_upgrade() { weapon_lvl = 0; weapon_trait = -1; trait_pending = false; }
+        void reset_upgrade() { weapon_lvl = 0; weapon_charges = 0; weapon_trait = -1; trait_pending = false; }
         // Nazwa narzędzia z poziomem ulepszenia ("Kielnia+2").
         message& weapon_title(message& m) const
         {
@@ -1708,27 +1891,668 @@ namespace core
         {
             if(! has_tool_offer()) return;
             pickups[tool_offer_pickup].active = false;
-            const int t = tool_offer;
+            const int t = tool_offer, rarity = tool_offer_rarity, extra = tool_offer_extra, perks = tool_offer_perks;
             tool_offer = tool_offer_pickup = -1;
-            take_tool(t);
+            tool_offer_extra = 0; tool_offer_perks = 0;
+            take_tool(t, rarity, true, extra, perks);
         }
         void decline_tool()
         {
             if(! has_tool_offer()) return;
             tool_offer = tool_offer_pickup = -1;
+            tool_offer_extra = 0; tool_offer_perks = 0;
             push(message().add(UI(zostajesz_przy_ulepszonym)));
         }
-        void take_tool(int t)
+        // v0.23.0: rzadkość, ogłoszenie, ulepszenia z kabury (extra), profity (-1 = nowa broń - losowane teraz)
+        void take_tool(int t, int rarity = 0, bool announce = true, int extra = 0, int perks = -1)
         {
             reset_upgrade();
+            reset_proc();
             weapon_override = data::tools[t].weapon;
-            tools_found = uint8_t(tools_found | (1u << t));
+            mark_artifact(weapon_override);
+            secret_flags = uint8_t(secret_flags | secret_tool_swap);
+            weapon_rarity = uint8_t(resolve_rarity(weapon_override, rarity));
+            tools_found |= uint64_t(1) << t;
+            apply_weapon_extra(extra);
+            weapon_perks = perks < 0 ? uint8_t(roll_weapon_perks(weapon_override, weapon_rarity)) : resolve_perks(weapon_override, weapon_rarity, perks);
+            if(! announce) return;
             push(message().add(UI(narzedzie_2)).add(weapon().name).add(" ").add(weapon().min_damage).add("-").add(weapon().max_damage).as(loot));
+            push_perks(weapon_perks, weapon_rarity);
         }
-        // Bot bierze nowe narzędzie, gdy średni cios (bez problemu) jest wyższy niż ulepszonym obecnym.
-        bool bot_tool_accept() const
+        // Bot bierze nowe narzędzie, gdy średni cios (bez problemu) jest wyższy niż ulepszonym obecnym (v0.23.0: z profitami znajdźki).
+        bool bot_tool_accept() const { return tool_offer_breakdown().avg10 > weapon_breakdown().avg10; }
+
+        // ------------------------------------------------------------------ v0.23.0: bronie (typy ciosu, tryby, rzadkość, profity, pas, artefakty)
+        // Port 1:1 z LifeLike.Core: Game.Patterns, Game.WeaponModes, Game.WeaponRarity, Game.WeaponPerks, Game.Belt, Game.Artifacts.
+        static constexpr int belt_tier = 1;   // jakość "Pas monterski z kaburą" w slocie pasa
+        int weapon_b_cd = 0;           // tury do ponownego użycia trybu B (Patentu)
+        int8_t weapon_charges = 0;     // ładunki broni jednorazowej (Przecinak); 0 = nie zaczęta
+        int8_t crit_buff = 0, crit_buff_turns = 0;   // Pomiar (Miernik, Poziomica): kryt +% na tury
+        uint8_t weapon_rarity = 0;     // 0 Zwykła, 1 Solidna, 2 Markowa, 3 Mistrzowska
+        int8_t tool_offer_rarity = 0;  // rzadkość narzędzia z oferty wymiany
+        int weapon2 = -1;              // broń w kaburze (indeks data::weapons), -1 = pusta
+        int8_t weapon2_lvl = 0, weapon2_trait = -1;
+        bool weapon2_trait_pending = false;
+        uint16_t tool_offer_extra = 0; // ulepszenia upuszczonej broni w ofercie wymiany (pickup::extra)
+        uint8_t weapon2_rarity = 0;
+        int8_t weapon2_charges = 0;
+        uint8_t weapon_perks = 0, weapon2_perks = 0, tool_offer_perks = 0;   // profity broni: w ręku, w kaburze, z oferty
+        uint16_t perk_rolls = 0;       // licznik losowań profitów (osobny generator z seeda budowy)
+        uint8_t proc_count = 0;        // ciosy od ostatniego "co N-tego" (artefakt)
+        uint16_t artifacts_run = 0;    // artefakty obecne w tej budowie (bity data::artifacts)
+        uint8_t patent_walls = 0;      // ściany magazynów otwarte Patentem (sekretne zlecenie)
+
+        // --- wzory pól (Game.Patterns)
+        int wind_range(int rg) const { return weather_is(weather_effect::wind) && rg > 1 && ! has_passive(class_passive::windproof) ? imax(1, rg - wdef().value) : rg; }
+        int mode_range(const weapon_mode& m) const { return wind_range(m.range); }
+        bool on_line(int tx, int ty) const { return hero.x == tx || hero.y == ty || iabs(tx - hero.x) == iabs(ty - hero.y); }
+        bool in_pattern(const weapon_mode& m, int ei) const
         {
-            return weapon_breakdown(-1, data::tools[tool_offer].weapon).avg10 > weapon_breakdown().avg10;
+            const actor& e = enemies[ei];
+            const int d = cheb(hero.x, hero.y, e.x, e.y);
+            if(d == 0) return false;
+            const int rg = mode_range(m);
+            switch(m.pattern)
+            {
+                case pattern_kind::single:
+                case pattern_kind::push:
+                case pattern_kind::throw3x3: return d <= rg;
+                case pattern_kind::shot:
+                    if(d > rg) return false;
+                    if(! on_line(e.x, e.y)) return true;
+                    break;
+                default: break;
+            }
+            int hit[pattern_max_cells];
+            const int n = targets(m, ei, hit);
+            if(m.pattern == pattern_kind::shot) return n > 0;
+            for(int i = 0; i < n; ++i) if(hit[i] == ei) return true;
+            return false;
+        }
+        // Problemy, które trafiłby tryb m skierowany na cel ei (0 = cel poza wzorem) - bez ataku (podgląd, bot).
+        int pattern_targets(const weapon_mode& m, int ei, int* hit) const
+        {
+            if(ei < 0 || ei >= enemies_count || ! enemies[ei].alive || cheb(hero.x, hero.y, enemies[ei].x, enemies[ei].y) > mode_range(m) || ! in_pattern(m, ei)) return 0;
+            return targets(m, ei, hit);
+        }
+        // Pola, które trafia tryb m skierowany na cel ei (od bohatera): promienie stają na ścianie, Shot na pierwszym problemie,
+        // natrysk / łuk / krzyż nie sięgają za ścianę przed bohaterem.
+        void pattern_cells(const weapon_mode& m, int ei, cell_list& out) const
+        {
+            out.n = 0;
+            if(ei < 0 || ei >= enemies_count || ! enemies[ei].alive) return;
+            const int tx = enemies[ei].x, ty = enemies[ei].y, dx = isign(tx - hero.x), dy = isign(ty - hero.y);
+            const pattern_kind pat = m.pattern;
+            if(pat == pattern_kind::single || pat == pattern_kind::push || (pat == pattern_kind::shot && ! on_line(tx, ty)))
+            {
+                out.x[0] = tx; out.y[0] = ty; out.n = 1;
+                return;
+            }
+            cell_list c;
+            if(pat == pattern_kind::throw3x3) { c.n = 0; c.block(tx, ty); }
+            else pattern_cells_of(c, pat, mode_range(m), hero.x, hero.y, dx, dy);
+            const bool ray = pattern_is_ray(pat);
+            int prev = 0;
+            bool blocked = false;
+            for(int i = 0; i < c.n && out.n < pattern_max_cells; ++i)
+            {
+                const int d = cheb(hero.x, hero.y, c.x[i], c.y[i]);
+                if(d <= prev) blocked = false;   // nowy promień
+                prev = d;
+                if(ray && blocked) continue;
+                if(! lv.passable(c.x[i], c.y[i])) { if(ray) blocked = true; continue; }   // tylko ściana blokuje (schody nie)
+                if(! ray && d >= 2 && (pat == pattern_kind::spray || pat == pattern_kind::arc || pat == pattern_kind::cross)
+                   && ! lv.passable(hero.x + dx, hero.y + dy)) continue;
+                out.x[out.n] = c.x[i]; out.y[out.n] = c.y[i]; ++out.n;
+                if(pat == pattern_kind::shot && enemy_at(c.x[i], c.y[i]) >= 0) break;   // pierwszy cel w linii
+            }
+        }
+        int targets(const weapon_mode& m, int ei, int* hit) const
+        {
+            cell_list c;
+            pattern_cells(m, ei, c);
+            const pattern_kind pat = m.pattern;
+            if(c.n == 1 && (pat == pattern_kind::single || pat == pattern_kind::push || (pat == pattern_kind::shot && ! on_line(c.x[0], c.y[0]))))
+            {
+                hit[0] = ei;
+                return 1;
+            }
+            int hits = 0;
+            for(int i = 0; i < c.n; ++i)
+            {
+                const int j = enemy_at(c.x[i], c.y[i]);
+                if(j < 0 || hits >= pattern_max_cells) continue;
+                hit[hits++] = j;
+            }
+            return hits;
+        }
+        static bool hit_contains(const int* hit, int n, int j) { for(int i = 0; i < n; ++i) if(hit[i] == j) return true; return false; }
+        // Atak trybem m w kierunku celu ei: każdy żywy problem na polach wzoru, obrażenia x m.dmg_pct/100. Zwraca liczbę trafionych.
+        int attack_with(const weapon_mode& m, int ei)
+        {
+            if(ei < 0 || ei >= enemies_count || ! enemies[ei].alive) return 0;
+            int hit[pattern_max_cells];
+            const int hits = targets(m, ei, hit);
+            const proc_def* proc = hits > 0 ? count_proc() : nullptr;   // artefakt: co N-ty cios (A i Patent)
+            if(proc && proc->every > 1) push(message().add(proc->name).add("!").as(good));
+            int px[pattern_max_cells], py[pattern_max_cells];
+            bool was_wet[pattern_max_cells], was_dusty[pattern_max_cells];
+            int n1 = 0, n2 = 0, f1 = -1, f2 = -1, np = 0, fp = -1;
+            for(int i = 0; i < hits; ++i)
+            {
+                px[i] = enemies[hit[i]].x; py[i] = enemies[hit[i]].y;
+                was_wet[i] = enemy_wet(hit[i]); was_dusty[i] = enemy_dusty(hit[i]);
+                if(mode_effect_before(m.effect, m.value, m.turns, hit[i], m.steel_pct) && n1++ == 0) f1 = hit[i];
+                if(mode_effect_before(m.effect2, m.value2, m.turns2, hit[i], m.steel_pct) && n2++ == 0) f2 = hit[i];
+                if(proc && mode_effect_before(proc->effect, proc->value, proc->turns, hit[i], 0) && np++ == 0) fp = hit[i];
+            }
+            int dealt = 0;
+            const int pct = proc ? m.dmg_pct * proc->dmg_pct / 100 : m.dmg_pct;
+            const uint8_t ctx = hit_ctx;
+            if(proc && proc->elem == element::power) hit_ctx = uint8_t(hit_ctx | 1);   // piorun: cios prądem
+            for(int i = 0; i < hits; ++i)
+            {
+                if(st != status::playing || ! enemies[hit[i]].alive) continue;
+                for(int k = 0; k < m.hits && st == status::playing && enemies[hit[i]].alive; ++k) if(pct > 0) hero_attack(hit[i], pct);
+                ++dealt;
+            }
+            hit_ctx = ctx;
+            if(st != status::playing) return dealt;
+            const bool knock = weapon().knockback && &m == &weapon().mode_a;   // Młot Zenka odpycha już w hero_attack
+            for(int i = 0; i < hits; ++i)
+            {
+                if(mode_effect_after(m.effect, m.value, hit[i], knock) && n1++ == 0) f1 = hit[i];
+                if(mode_effect_after(m.effect2, m.value2, hit[i], knock) && n2++ == 0) f2 = hit[i];
+            }
+            note_effect(m.effect, f1, n1);
+            note_effect(m.effect2, f2, n2);
+            if(proc) note_effect(proc->effect, fp, np);
+            mode_effect_once(m.effect, m.value, m.turns, m, hit, hits, px, py, was_wet, was_dusty);
+            mode_effect_once(m.effect2, m.value2, m.turns2, m, hit, hits, px, py, was_wet, was_dusty);
+            if(proc && st == status::playing) mode_effect_once(proc->effect2, proc->value2, proc->turns2, m, hit, hits, px, py, was_wet, was_dusty);
+            return dealt;
+        }
+
+        // --- tryb B i efekty (Game.WeaponModes)
+        // Tryb B: bez odnowienia i z ważnym celem wzoru B, inaczej false bez kosztu. Odnowienie = cooldown + rzadkość/profit (min 1).
+        bool player_weapon_b(int ei)
+        {
+            if(st != status::playing || weapon_b_cd > 0 || ei < 0 || ei >= enemies_count) return false;
+            const weapon_mode& m = weapon().mode_b;
+            const actor& e = enemies[ei];
+            if(! e.alive || ! visible(e.x, e.y) || cheb(hero.x, hero.y, e.x, e.y) > mode_range(m) || ! in_pattern(m, ei)) return false;
+            if(shocked_turn()) return true;
+            const bool was_closed = secret_closed();
+            const bool wall_free = weapon().wall_free;
+            attack_with(m, ei);
+            const bool wall = was_closed && ! secret_closed();
+            if(wall) patent_wall();
+            if(wall) spend_charge(m);   // ładunek tylko za otwartą ścianę
+            end_turn();
+            weapon_b_cd = wall && wall_free ? 0 : imax(1, m.cooldown + weapon_b_cd_delta());   // po end_turn
+            return true;
+        }
+        void spend_charge(const weapon_mode& m)
+        {
+            if(m.effect != mode_effect::open_wall || m.value <= 0 || weapon_override < 0) return;
+            if(weapon_charges <= 0) weapon_charges = m.value;
+            const char* name = weapon().name;
+            if(--weapon_charges > 0)
+            {
+                push(message().add(name).add(UI(ladunki_zostalo)).add(weapon_charges).as(info));
+                return;
+            }
+            push(message().add(name).add(UI(bron_zuzyta)).as(bad));   // Przecinak się zużył, wraca broń zawodu
+            weapon_charges = 0;
+            weapon_override = -1;
+            reset_upgrade();
+            reset_proc();
+            weapon_perks = 0;
+        }
+        // Efekty przed ciosem; zwraca, czy efekt zadziałał (dziennik).
+        bool mode_effect_before(mode_effect eff, int val, int turns_, int t, int steel_pct)
+        {
+            actor& e = enemies[t];
+            if(! e.alive) return false;
+            switch(eff)
+            {
+                case mode_effect::stun:
+                    if(t != boss && (val <= 0 || val >= 100 || r.range(1, 100) <= val))
+                    {
+                        e.stun = int8_t(imax(e.stun, imax(1, turns_)));
+                        e.awake = true;
+                        return true;
+                    }
+                    return false;
+                case mode_effect::root:
+                    if(t == boss) return false;
+                    e.root = int8_t(imax(e.root, imax(1, turns_)));
+                    return true;
+                case mode_effect::def_down:
+                    e.def_down = int8_t(imax(e.def_down, imax(1, turns_)));
+                    e.def_down_val = int8_t(imax(0, imin(100, val)));
+                    return true;
+                case mode_effect::mark:
+                    e.mark_turns = int8_t(imax(1, turns_));
+                    e.mark_pct = uint8_t(imax(0, imin(255, val)));
+                    return true;
+                case mode_effect::crit_next:
+                    e.flags = uint8_t(e.flags | actor_crit_next);
+                    return true;
+                case mode_effect::dot:
+                {
+                    e.dot = int8_t(imax(1, turns_));
+                    int dot = val > 0 ? val : data::hit_types.dot_per_turn;
+                    if(steel_pct > 0 && e.def_id >= 0 && data::enemies[e.def_id].material == 1) dot = dot * steel_pct / 100;   // 1 = stal
+                    e.dot_dmg = int8_t(imax(1, dot));
+                    e.dot_kind = uint8_t(hit_has(weapon(), hit_type::cut) && weapon().elem != element::fire ? 2 : 1);   // cięcie krwawi
+                    e.awake = true;
+                    return true;
+                }
+                case mode_effect::dry:
+                {
+                    const bool was = e.wet > 0;
+                    e.wet = 0;
+                    if(data::enemies[e.def_id].elem == element::water && t != boss)   // zawór: problem wodny traci turę i leczenie
+                    {
+                        e.stun = int8_t(imax(e.stun, imax(1, turns_)));
+                        e.no_heal = int8_t(imax(e.no_heal, imax(1, turns_) + 1));
+                        return true;
+                    }
+                    return was;
+                }
+                case mode_effect::wet:
+                    e.wet = int8_t(imax(e.wet, turns_ > 0 ? turns_ : data::wet_turns));
+                    return true;
+                case mode_effect::burn:   // artefakt: podpalenie także bronią tnącą
+                    e.dot = int8_t(imax(e.dot, imax(1, turns_)));
+                    e.dot_dmg = int8_t(imax(e.dot_dmg, imax(1, val > 0 ? val : data::hit_types.dot_per_turn)));
+                    e.dot_kind = 1;
+                    e.awake = true;
+                    return true;
+                default: return false;
+            }
+        }
+        // Efekty po ciosie na przeżywającym celu: odrzut, przyciągnięcie, zamiana miejsc.
+        bool mode_effect_after(mode_effect eff, int val, int t, bool knockback_done)
+        {
+            actor& e = enemies[t];
+            if(! e.alive || t == boss) return false;
+            const int dx = isign(e.x - hero.x), dy = isign(e.y - hero.y);
+            switch(eff)
+            {
+                case mode_effect::push: return ! knockback_done && shove(t, dx, dy, val) > 0;
+                case mode_effect::pull: return shove(t, -dx, -dy, imin(val, cheb(hero.x, hero.y, e.x, e.y) - 1)) > 0;
+                case mode_effect::swap:
+                {
+                    const int8_t hx = hero.x, hy = hero.y;
+                    hero.x = e.x; e.x = hx;
+                    hero.y = e.y; e.y = hy;
+                    collect();
+                    update_fov();
+                    return true;
+                }
+                default: return false;
+            }
+        }
+        // Wpis w dzienniku o efekcie trybu: "Ogłuszenie: Przeciek +2".
+        void note_effect(mode_effect eff, int t, int count)
+        {
+            if(count <= 0 || t < 0) return;
+            const char* label = nullptr;
+            switch(eff)
+            {
+                case mode_effect::stun:      label = UI(efekt_ogluszenie); break;
+                case mode_effect::root:      label = data::statuses[int(status_effect::root)].name; break;
+                case mode_effect::def_down:  label = data::statuses[int(status_effect::def_down)].name; break;
+                case mode_effect::mark:      label = data::statuses[int(status_effect::mark)].name; break;
+                case mode_effect::dot:       label = data::statuses[int(enemies[t].dot_kind == 2 ? status_effect::bleed : status_effect::burn)].name; break;
+                case mode_effect::wet:       label = data::statuses[int(status_effect::wet)].name; break;
+                case mode_effect::burn:      label = data::statuses[int(status_effect::burn)].name; break;
+                case mode_effect::dry:       label = UI(efekt_osuszenie); break;
+                case mode_effect::crit_next: label = UI(efekt_pewny_kryt); break;
+                case mode_effect::push:      label = UI(efekt_odrzut); break;
+                case mode_effect::pull:      label = UI(efekt_przyciagniecie); break;
+                case mode_effect::swap:      label = UI(efekt_zamiana_miejsc); break;
+                default: return;
+            }
+            message m; m.add(label).add(": ");
+            enemy_name(m, t);
+            if(count > 1) m.add(" +").add(count - 1);
+            push(m.as(good));
+        }
+        // Efekty całego ataku (raz): odsłonięcie pokoju + kryt, otwarcie ściany, łańcuch na mokrych, ogień na sąsiadów, wybuch pyłu.
+        void mode_effect_once(mode_effect eff, int val, int turns_, const weapon_mode& m, const int* hit, int hits, const int* px, const int* py,
+                              const bool* was_wet, const bool* was_dusty)
+        {
+            switch(eff)
+            {
+                case mode_effect::reveal:
+                {
+                    reveal_room();
+                    message rm; rm.add(UI(pokoj_odsloniety));
+                    if(val > 0 && turns_ > 0)
+                    {
+                        crit_buff = int8_t(val); crit_buff_turns = int8_t(turns_);
+                        rm.add(UI(kryt_4)).add(val).add("%");
+                    }
+                    push(rm.as(good));
+                    break;
+                }
+                case mode_effect::open_wall: try_open_wall(m, val); break;
+                case mode_effect::chain: chain_shock(hit, hits, px, py, was_wet); break;
+                case mode_effect::spread: spread_fire(imax(1, val), hit, hits); break;
+                case mode_effect::ignite:
+                    for(int i = 0; i < hits && st == status::playing; ++i)
+                        if(was_dusty[i] && (enemies[hit[i]].flags & actor_dusty)) combo_dust(px[i], py[i]);
+                    break;
+                default: break;
+            }
+        }
+        bool wall_openable(const weapon_mode& m, int val) const
+        {
+            return secret_closed() && cheb(hero.x, hero.y, secret_x, secret_y) <= imax(1, mode_range(m)) && (val > 0 || secret_def().breakable);
+        }
+        bool try_open_wall(const weapon_mode& m, int val)
+        {
+            if(! wall_openable(m, val)) return false;
+            open_secret(weapon().name);
+            return true;
+        }
+        // Tryb B bez celu-problemu: otwiera sąsiednią pękniętą ścianę (Przecinak, Łom, Młot). False bez kosztu, gdy nie ma czego.
+        bool player_weapon_b_wall()
+        {
+            if(st != status::playing || ! can_weapon_b_open_wall()) return false;
+            if(shocked_turn()) return true;
+            const weapon_mode& m = weapon().mode_b;
+            const bool wall_free = weapon().wall_free;
+            const bool opened = m.effect == mode_effect::open_wall ? try_open_wall(m, m.value) : try_open_wall(m, m.value2);
+            if(opened) patent_wall();
+            spend_charge(m);
+            end_turn();
+            weapon_b_cd = opened && wall_free ? 0 : imax(1, m.cooldown + weapon_b_cd_delta());
+            return true;
+        }
+        bool can_weapon_b_open_wall() const
+        {
+            const weapon_mode& m = weapon().mode_b;
+            if(weapon_b_cd > 0) return false;
+            if(m.effect == mode_effect::open_wall) return wall_openable(m, m.value);
+            return m.effect2 == mode_effect::open_wall && wall_openable(m, m.value2);
+        }
+        // Łańcuch (Próbnik): prąd z trafionego niemokrego celu na mokre problemy obok.
+        void chain_shock(const int* hit, int hits, const int* px, const int* py, const bool* was_wet)
+        {
+            const combo_def& c = data::combos[int(combo_effect::shock_area)];
+            bool announced = false;
+            for(int i = 0; i < hits && st == status::playing; ++i)
+            {
+                if(was_wet[i]) continue;
+                for(int j = 0; j < enemies_count && st == status::playing; ++j)
+                {
+                    if(! enemies[j].alive || ! enemy_wet(j) || cheb(px[i], py[i], enemies[j].x, enemies[j].y) > 1 || hit_contains(hit, hits, j)) continue;
+                    if(! announced)
+                    {
+                        announced = true;
+                        combo_events = uint8_t(combo_events | (1u << int(combo_effect::shock_area)));
+                        note_combo();
+                        push(message().add(c.short_name).add(" ").add(c.name).as(good));
+                    }
+                    damage_enemy(j, c.value, false, c.name);
+                }
+            }
+        }
+        // Odsłania pokój bohatera z murami i wnętrze zamkniętego magazynu (Miernik, Poziomica).
+        void reveal_room()
+        {
+            for(int k = 0; k < lv.rooms_count; ++k)
+            {
+                const room& rm = lv.rooms[k];
+                if(hero.x < rm.x || hero.x >= rm.x + rm.w || hero.y < rm.y || hero.y >= rm.y + rm.h) continue;
+                reveal_rect(rm.x - 1, rm.y - 1, rm.w + 2, rm.h + 2);
+            }
+            if(secret_closed()) reveal_rect(secret_rx - 1, secret_ry - 1, secret_rw + 2, secret_rh + 2);
+            update_fov();
+        }
+        void reveal_rect(int x0, int y0, int w, int h)
+        {
+            for(int y = y0; y < y0 + h; ++y) for(int x = x0; x < x0 + w; ++x) if(lv.in(x, y) && fov[y][x] == unknown) fov[y][x] = remembered;
+        }
+        // Początek tury problemu: krwawienie / podpalenie, osłabienie wygasa. False = problem padł (albo koniec budowy).
+        bool enemy_status_tick(int i)
+        {
+            actor& e = enemies[i];
+            if(e.def_down > 0 && --e.def_down == 0) e.def_down_val = 0;
+            if(e.dot <= 0) return true;
+            --e.dot;
+            const bool burn = e.dot_kind != 2;
+            const int dmg = imax(1, e.dot_dmg);
+            if(e.dot == 0) e.dot_dmg = 0;
+            if(burn) e.wet = 0;
+            damage_enemy(i, dmg, false, data::statuses[int(burn ? status_effect::burn : status_effect::bleed)].name);
+            return enemies[i].alive && st == status::playing;
+        }
+
+        // --- rzadkość (Game.WeaponRarity)
+        int roll_weapon_rarity()
+        {
+            const int q = r.range(1, 100) + imax(0, pattern_stage()) * data::gear_stage_bonus + data::rarity_per_luck * luck();
+            int rarity = 0;
+            for(int i = 1; i <= max_rolled_weapon_rarity && i < data::weapon_rarities_count; ++i) if(q >= data::weapon_rarities[i].roll_from) rarity = i;
+            return rarity;
+        }
+        int weapon_dmg_bonus() const { return rarity_dmg(weapon_rarity); }
+        static int rarity_dmg(int rarity) { return rarity >= 0 && rarity < data::weapon_rarities_count ? data::weapon_rarities[rarity].dmg_bonus : 0; }
+        bool weapon_master() const { return weapon().master || (master_weapon() && weapon_override < 0); }
+        static int resolve_rarity(int weapon, int rolled) { return data::weapons[weapon].master ? master_weapon_rarity : rolled; }
+        int weapon_b_cd_delta() const
+        {
+            return (weapon_rarity < data::weapon_rarities_count ? data::weapon_rarities[weapon_rarity].cooldown_delta : 0) - weapon_bonus(tool_trait_effect::cooldown_b);
+        }
+        uint64_t drop_tool_pool() const { return bonus.tools | data::drop_tools_mask; }
+        uint64_t shop_tool_pool() const { return bonus.tools | data::hurtownia_tools_mask; }
+        static int nth_tool(uint64_t mask, int k) { for(int t = 0; t < 64; ++t) if(((mask >> t) & 1) && k-- == 0) return t; return -1; }
+        static int count_bits(uint64_t mask) { int n = 0; for(; mask; mask &= mask - 1) ++n; return n; }
+
+        // --- profity (Game.WeaponPerks)
+        static bool master_rarity(int rarity) { return rarity >= master_weapon_rarity; }
+        int roll_weapon_perks(int weapon, int rarity)
+        {
+            if(master_rarity(rarity)) return master_perk_mask(weapon);
+            int n = rarity >= 0 && rarity < data::weapon_rarities_count ? data::weapon_perks_per_rarity[rarity] : 0;
+            const int pool = data::weapon_perks_count;
+            n = imin(n, pool);
+            if(n <= 0) return 0;
+            rng pr;
+            ++perk_rolls;
+            pr.seed((run_seed ^ (uint32_t(perk_rolls) * 2654435761u)) * 2246822519u + 0x9E3779B9u);
+            int mask = 0;
+            for(int k = 0; k < n; ++k)
+            {
+                int pick = pr.range(0, pool - 1 - k);   // k-ty wolny indeks puli
+                for(int i = 0; i < pool; ++i)
+                {
+                    if(mask & (1 << i)) continue;
+                    if(pick-- == 0) { mask |= 1 << i; break; }
+                }
+            }
+            return mask;
+        }
+        static uint8_t resolve_perks(int weapon, int rarity, int perks) { return uint8_t(master_rarity(rarity) ? master_perk_mask(weapon) : perks); }
+        void push_perks(int perks, int rarity)
+        {
+            if(perks == 0) return;
+            message m; m.add(master_rarity(rarity) ? UI(unikat) : UI(profity)).add(": ");
+            perk_shorts(m, perks);
+            push(m.as(loot));
+        }
+        int weapon_bonus(tool_trait_effect e) const { return tool_trait_value(e) + perk_value(weapon_perks, e); }
+        int pierce_total(const weapon_def& w) const { return weapon_bonus(tool_trait_effect::pierce) + hit_pierce_def(w); }
+
+        // --- pas z kaburą (Game.Belt)
+        bool has_belt() const { return data::belt_slot >= 0 && equipped[data::belt_slot] == belt_tier; }
+        int belt_filter(int slot, int rarity, int fallback) { return slot == data::belt_slot && rarity == belt_tier && r.range(1, 100) > data::belt_chance_pct ? fallback : rarity; }
+        int hand_weapon() const { return weapon_override >= 0 ? weapon_override : cdef().weapon; }
+        bool player_swap_weapon()
+        {
+            if(st != status::playing || ! has_belt() || weapon2 < 0) return false;
+            if(shocked_turn()) return true;
+            const int hand = hand_weapon();
+            const uint8_t rarity = weapon_rarity;
+            const int8_t charges = weapon_charges, lvl = weapon_lvl, trait = weapon_trait;
+            const bool pending = trait_pending;
+            const uint8_t perks = weapon_perks;
+            weapon_override = weapon2 == cdef().weapon ? -1 : weapon2;
+            reset_proc();
+            secret_flags = uint8_t(secret_flags | secret_tool_swap);
+            weapon_rarity = weapon2_rarity;
+            weapon_charges = weapon2_charges;
+            weapon2 = hand;
+            weapon2_rarity = rarity;
+            weapon2_charges = charges;
+            weapon_lvl = weapon2_lvl; weapon_trait = weapon2_trait; trait_pending = weapon2_trait_pending;
+            weapon2_lvl = lvl; weapon2_trait = trait; weapon2_trait_pending = pending;
+            weapon_perks = weapon2_perks;
+            weapon2_perks = perks;
+            push(message().add(UI(zamiana_broni)).add(weapon().name).as(loot));
+            end_turn();
+            return true;
+        }
+        bool stash_tool(int t, int rarity, int extra = 0, int perks = 0)
+        {
+            if(! has_belt() || weapon2 >= 0) return false;
+            weapon2 = data::tools[t].weapon;
+            weapon2_rarity = uint8_t(resolve_rarity(weapon2, rarity));
+            weapon2_charges = 0; weapon2_lvl = 0; weapon2_trait = -1; weapon2_trait_pending = false;
+            weapon2_perks = resolve_perks(weapon2, weapon2_rarity, perks);
+            mark_artifact(weapon2);
+            if(extra != 0)
+            {
+                weapon2_lvl = int8_t(extra & 15);
+                weapon2_trait = int8_t(((extra >> 4) & 15) - 1);
+                weapon2_charges = int8_t((extra >> 8) & 15);
+                weapon2_trait_pending = ((extra >> 12) & 1) != 0;
+            }
+            tools_found |= uint64_t(1) << t;
+            push(message().add(UI(bron_do_kabury)).add(data::weapons[weapon2].name).as(loot));
+            push_perks(weapon2_perks, weapon2_rarity);
+            return true;
+        }
+        static uint16_t pack_weapon_extra(int lvl, int trait, int charges, bool pending)
+        {
+            return uint16_t((lvl & 15) | (((trait + 1) & 15) << 4) | ((charges & 15) << 8) | (pending ? 1 << 12 : 0));
+        }
+        void apply_weapon_extra(int extra)
+        {
+            if(extra == 0) return;
+            weapon_lvl = int8_t(extra & 15);
+            weapon_trait = int8_t(((extra >> 4) & 15) - 1);
+            weapon_charges = int8_t((extra >> 8) & 15);
+            trait_pending = ((extra >> 12) & 1) != 0;
+        }
+        static int tool_of_weapon(int w) { for(int t = 0; t < data::tools_count; ++t) if(data::tools[t].weapon == w) return t; return -1; }
+        // Utrata pasa: broń z kabury wypada jako znajdźka (albo przepada).
+        void drop_holster()
+        {
+            if(weapon2 < 0) return;
+            const int w = weapon2;
+            const int t = tool_of_weapon(w);
+            int x = hero.x, y = hero.y;
+            const bool ok = t >= 0 && pickups_count < max_pickups && (! pickup_at(x, y) || free_around(x, y, hero.x, hero.y, x, y));
+            if(ok)
+            {
+                pickup& p = pickups[pickups_count++];
+                p = { int8_t(x), int8_t(y), uint8_t(tool), true, uint8_t(t), weapon2_rarity };
+                p.extra = pack_weapon_extra(weapon2_lvl, weapon2_trait, weapon2_charges, weapon2_trait_pending);
+                p.perks = weapon2_perks;
+            }
+            if(ok) push(message().add(UI(bron_z_kabury_wypada)).add(data::weapons[w].name).as(loot));
+            else if(w == cdef().weapon) push(message().add(UI(bron_z_kabury_domyslna)).add(data::weapons[w].name).as(info));
+            else push(message().add(UI(bron_z_kabury_przepada)).add(data::weapons[w].name).as(loot));
+            weapon2 = -1; weapon2_rarity = 0; weapon2_charges = 0; weapon2_lvl = 0; weapon2_trait = -1; weapon2_trait_pending = false;
+            weapon2_perks = 0;
+        }
+
+        // --- artefakty (Game.Artifacts)
+        static int artifact_index(int weapon) { for(int i = 0; i < data::artifacts_count; ++i) if(data::artifacts[i] == weapon) return i; return -1; }
+        static int artifact_tool(int i) { return i >= 0 && i < data::artifacts_count ? tool_of_weapon(data::artifacts[i]) : -1; }
+        const proc_def* count_proc()
+        {
+            const proc_def& p = weapon().proc;
+            if(p.every <= 0) return nullptr;
+            if(p.every <= 1) { proc_count = 0; return &p; }
+            if(++proc_count < p.every) return nullptr;
+            proc_count = 0;
+            return &p;
+        }
+        void patent_wall() { if(patent_walls < 255) ++patent_walls; }
+        void reset_proc() { proc_count = 0; }
+        void mark_artifact(int weapon)
+        {
+            const int i = artifact_index(weapon);
+            if(i >= 0 && i < 16) artifacts_run = uint16_t(artifacts_run | (1u << i));
+        }
+        int artifact_for(int weapon) const
+        {
+            int cls_i = -1;
+            for(int i = 0; i < data::artifacts_count && i < 16; ++i)
+            {
+                if((artifacts_run >> i) & 1) continue;
+                const int t = artifact_tool(i);
+                if(t < 0 || ! data::tools[t].artifact) continue;
+                const int b = data::weapons[data::artifacts[i]].artifact;
+                if(b == weapon) return i;
+                if(b == cdef().weapon && cls_i < 0) cls_i = i;
+            }
+            return cls_i;
+        }
+        bool roll_artifact(int& t, int& rarity, int& perks)
+        {
+            if(rarity != max_rolled_weapon_rarity || data::artifact_chance_pct <= 0) return false;
+            const int a = artifact_for(data::tools[t].weapon);
+            if(a < 0 || r.range(1, 100) > data::artifact_chance_pct) return false;
+            t = artifact_tool(a);
+            rarity = master_weapon_rarity;
+            perks = master_perk_mask(data::artifacts[a]);
+            artifacts_run = uint16_t(artifacts_run | (1u << a));
+            return true;
+        }
+        // Ogień z podpalonych celów przeskakuje na n sąsiadów (żywych, nietrafionych, jeszcze się niepalących).
+        void spread_fire(int n, const int* hit, int hits)
+        {
+            for(int i = 0; i < hits && n > 0; ++i)
+            {
+                const actor& s = enemies[hit[i]];
+                if(! s.alive || s.dot <= 0 || s.dot_kind == 2) continue;
+                for(int j = 0; j < enemies_count && n > 0; ++j)
+                {
+                    actor& e = enemies[j];
+                    if(! e.alive || e.dot > 0 || hit_contains(hit, hits, j) || cheb(s.x, s.y, e.x, e.y) > 1) continue;
+                    e.dot = s.dot; e.dot_dmg = s.dot_dmg; e.dot_kind = 1; e.awake = true;
+                    --n;
+                    message m; m.add(data::statuses[int(status_effect::burn)].name).add(": ");
+                    enemy_name(m, j);
+                    push(m.as(good));
+                }
+            }
+        }
+        // Rozpiska narzędzia z oferty wymiany.
+        dmg_breakdown tool_offer_breakdown(int enemy_def_id = -1) const
+        {
+            const int w = data::tools[tool_offer].weapon;
+            return weapon_breakdown(enemy_def_id, w, -1, -1, 0, resolve_rarity(w, tool_offer_rarity), tool_offer_perks);
+        }
+        // Skutki typu ciosu po trafieniu: obuch ogłusza (szansa, nie bossa), ogień osusza.
+        void hit_type_effects(int ei, const weapon_def& w)
+        {
+            if(! enemies[ei].alive) return;
+            if(hit_has(w, hit_type::blunt) && ei != boss && data::hit_types.stun_chance_pct > 0 && r.range(1, 100) <= data::hit_types.stun_chance_pct)
+            {
+                const bool fresh = enemies[ei].stun <= 0;
+                enemies[ei].stun = int8_t(imax(enemies[ei].stun, 1));
+                if(fresh) { message m; m.add(UI(efekt_ogluszenie)).add(": "); enemy_name(m, ei); push(m.as(good)); }
+            }
+            if(w.elem == element::fire) enemies[ei].wet = 0;
         }
 
         // ------------------------------------------------------------------ ukryte pomieszczenia (#32)
@@ -1864,6 +2688,7 @@ namespace core
         // Sprzęt z wydarzenia / skrzyni: pusty slot - zakłada, zajęty - porównanie (jak paczka).
         void take_gear(int slot, int rarity, int trait)
         {
+            rarity = belt_filter(slot, rarity, 2);   // v0.23.0: skrzynia i wydarzenia też podlegają regule pasa
             if(equipped[slot] < 0) equip(slot, rarity, trait);
             else if(! has_offer())
             {
@@ -1895,11 +2720,7 @@ namespace core
         const weapon_def& weapon() const { return data::weapons[weapon_override >= 0 ? weapon_override : cdef().weapon]; }
         // Zasięg broni z pogodą: wiatr skraca zasięg broni dalekiego zasięgu (nie mniej niż 1).
         int weapon_range() const { return range_of(weapon()); }
-        int range_of(const weapon_def& w) const
-        {
-            int rg = w.range;   // Dekarz: wiatr mu nie przeszkadza
-            return weather_is(weather_effect::wind) && rg > 1 && ! has_passive(class_passive::windproof) ? imax(1, rg - wdef().value) : rg;
-        }
+        int range_of(const weapon_def& w) const { return wind_range(w.range); }   // Dekarz: wiatr mu nie przeszkadza (wind_range)
         const difficulty_def& ddef() const { return data::difficulties[diff]; }
 
         // Wiadomość fabularna na wejściu etapu (przy NG+ pierwszy etap ma własną).
@@ -2015,7 +2836,10 @@ namespace core
             cash = mods.cash;
             first_stage = int8_t(mods.act0 ? 0 : prelude_count());   // bez nagrody Akt 0 budowa zaczyna się od Fundamentów
             start_stage(first_stage);
+            if(mods.start_belt != 0 && data::belt_slot >= 0) equip(data::belt_slot, belt_tier, r.range(0, data::gear_traits_count - 1));   // v0.23.0: nagroda
             thermos = imin(thermos_cap(), mods.start_coffee);   // Respekt: Zaprawiony w boju
+            weapon_rarity = uint8_t(start_rarity(mods));   // v0.23.0: Szkolenie Narzędzia; broń mistrza = Mistrzowska
+            weapon_perks = resolve_perks(cdef().weapon, weapon_rarity, 0);   // broń zawodu bez losowych profitów
         }
 
         bool occupied(int x, int y) const
@@ -2059,6 +2883,7 @@ namespace core
             blast_timer = 0; blast_x = blast_y = -1; shot_events = 0; docs = 0;
             pending_event = -1; stage_choice = stage_choice_pick = -1; choice_done = 0; event_dmg = event_def = 0;   // v0.21.50 cz. 3
             tool_offer = tool_offer_pickup = -1;
+            tool_offer_rarity = 0; tool_offer_extra = 0; tool_offer_perks = 0;   // v0.23.0
             secret_x = secret_y = -1; secret_open = false; secret_kind = secret_dir = 0; key_holder = -1; keys = 0;
             secret_rx = secret_ry = secret_rw = secret_rh = 0;
             mark_target = -1; mark_turns = 0;   // v0.21.51 cz. 2: Tyczenie tylko na etap
@@ -2188,7 +3013,7 @@ namespace core
         // Rozpiska obrażeń broni (#26) - wzory jak hero_attack niżej (opis przy dmg_breakdown). enemy_def_id: problem
         // (jego obrona; -1 = bez), weapon_idx: inna broń (-1 = obecna), swap_*: sprzęt w slocie po zamianie (paczka).
         dmg_breakdown weapon_breakdown(int enemy_def_id = -1, int weapon_idx = -1, int swap_slot = -1, int swap_rarity = -1,
-                                       int swap_trait = 0) const
+                                       int swap_trait = 0, int weapon_rarity_ = 0, int weapon_perks_ = 0) const
         {
             dmg_breakdown b;
             b.weapon = weapon_idx >= 0 ? weapon_idx : (weapon_override >= 0 ? weapon_override : cdef().weapon);
@@ -2197,6 +3022,8 @@ namespace core
             b.range_base = w.range; b.range = range_of(w);
             b.scales = w.scales_with;
             b.crit_weapon = w.crit + (b.weapon == cdef().weapon ? master_crit() : 0);   // v0.21.52 cz. b: broń mistrza
+            b.crit_cut = hit_has(w, hit_type::cut) ? data::hit_types.cut_crit_pct : 0;   // v0.23.0: cięcie
+            b.pierce = hit_pierce_def(w);   // v0.23.0: kłucie (+ cecha Przebicie niżej)
             const trait_effect st_tr = stat_trait(w.scales_with);
             int luck_t = 0;
             for(int i = 0; i < data::gear_slots_count; ++i)
@@ -2221,6 +3048,14 @@ namespace core
             b.crit_boon = boon_sum(boon_effect::crit);
             b.vs_enemy = enemy_def_id >= 0;
             b.enemy_def = b.vs_enemy ? data::enemies[enemy_def_id].defense : 0;
+            if(b.vs_enemy)   // v0.23.0: mnożnik ciosu wg materiału / żywiołu problemu
+            {
+                const enemy_def& ed = data::enemies[enemy_def_id];
+                b.hit_col = hit_column(ed);
+                b.hit_pct = hit_pct(w, ed);
+                b.hit_enemy = enemy_def_id;
+                b.hit_name = int(hit_best(w, b.hit_col));
+            }
             b.luck = cdef().luck + bonus.luck + luck_t + boon_luck();
             b.crit_bonus = bonus.crit;
             b.power_rank = ability_rank();
@@ -2229,10 +3064,20 @@ namespace core
             if(weapon_idx < 0)   // ulepszenie (#31) tylko obecnego narzędzia - przy zamianie przepada
             {
                 b.upg_level = weapon_lvl; b.flat_upgrade = upgrade_dmg(); b.upg_trait = weapon_trait;
-                b.pierce = tool_trait_value(tool_trait_effect::pierce);
+                b.flat_rarity = weapon_dmg_bonus();   // v0.23.0: rzadkość broni w ręku
+                b.pierce += tool_trait_value(tool_trait_effect::pierce);
                 b.steady = tool_trait_value(tool_trait_effect::steady);
                 b.crit_upg = tool_trait_value(tool_trait_effect::crit);
+                b.perks = weapon_perks;
+                b.perks_master = master_rarity(weapon_rarity);
             }
+            else
+            {
+                b.flat_rarity = rarity_dmg(weapon_rarity_);   // v0.23.0: rzadkość porównywanej broni
+                b.perks = resolve_perks(b.weapon, weapon_rarity_, weapon_perks_);
+                b.perks_master = master_rarity(weapon_rarity_);
+            }
+            b.add_perks();   // v0.23.0: profity sumują się z cechą ulepszenia
             b.finish();
             return b;
         }
@@ -2269,21 +3114,26 @@ namespace core
         }
 
         // obrażenia = rzut broni + stat/2 + premie - obrona/2, min 1
-        void hero_attack(int ei)
+        void hero_attack(int ei, int pct = 100)   // v0.23.0: pct = % obrażeń trybu ataku
         {
             if(ei == boss && boss_wake_damage < 0) boss_engaged();   // walka z bossem trwa
             const int ex = enemies[ei].x, ey = enemies[ei].y;
             const bool was_wet = enemy_wet(ei), was_dusty = enemy_dusty(ei), was_frozen = enemy_frozen(ei);
             const bool melee = cheb(hero.x, hero.y, ex, ey) <= 1;
-            const weapon_def& w = weapon();   // ulepszenie (#31): +obrażeń, Wyważenie (rzut), Przebicie (OBR)
-            int dmg = r.range(imin(w.max_damage, w.min_damage + tool_trait_value(tool_trait_effect::steady)), w.max_damage)
-                    + hero_stat(w.scales_with) / 2 + dmg_bonus + gear_bonus(gear_stat::dmg) + boon_sum(boon_effect::dmg) + upgrade_dmg() + event_dmg
+            const weapon_def& w = weapon();   // ulepszenie (#31): +obrażeń, Wyważenie (rzut), Przebicie (OBR); v0.23.0: profity, Głowica
+            const int wmax = w.max_damage + weapon_bonus(tool_trait_effect::max_dmg);
+            int dmg = r.range(imin(wmax, w.min_damage + weapon_bonus(tool_trait_effect::steady)), wmax)
+                    + hero_stat(w.scales_with) / 2 + dmg_bonus + gear_bonus(gear_stat::dmg) + boon_sum(boon_effect::dmg) + upgrade_dmg() + weapon_dmg_bonus()
+                    + event_dmg
                     + mark_bonus(ei)   // Tyczenie (Geodeta)
                     + (enemies[ei].hp >= enemies[ei].max_hp ? first_hit_bonus(bonus) : 0)   // v0.21.52 cz. c: Siła rozpędu
-                    - imax(0, enemy_defense(ei) - tool_trait_value(tool_trait_effect::pierce)) / 2;
+                    - imax(0, enemy_defense(ei) - pierce_total(w)) / 2;
             if(dmg < 1) dmg = 1;
             dmg += pct_part(dmg, bonus.dmg_pct + boon_sum(boon_effect::dmg_pct), dmg_carry);   // Kurs fachowy, Respekt, premie: +%
-            bool crit = r.range(1, 100) <= crit_pct();
+            dmg = hit_apply(dmg, hit_pct(w, data::enemies[enemies[ei].def_id]) * pct / 100);   // v0.23.0: typ ciosu x materiał x % trybu
+            if(enemies[ei].mark_turns > 0) dmg = hit_apply(dmg, 100 + enemies[ei].mark_pct);   // v0.23.0: znak
+            bool crit = r.range(1, 100) <= crit_pct() || (enemies[ei].flags & actor_crit_next);   // pewny kryt, losowanie zostaje
+            enemies[ei].flags = uint8_t(enemies[ei].flags & ~actor_crit_next);
             if(crit) dmg *= data::crit_multiplier;
             damage_enemy(ei, dmg, crit, weapon().name);
             // kombinacje stanów (#29): stan celu sprzed ciosu + żywioł ciosu
@@ -2299,6 +3149,7 @@ namespace core
                 shove(ei, isign(e.x - hero.x), isign(e.y - hero.y), 1);
             else if(w.knockback && e.alive && ei != boss && melee && cheb(hero.x, hero.y, e.x, e.y) == 1)   // Młot Zenka: zawsze odpycha
                 shove(ei, isign(e.x - hero.x), isign(e.y - hero.y), 1);
+            hit_type_effects(ei, w);   // v0.23.0: na końcu, by nie przesuwać losowań krytu i odepchnięcia
         }
 
         // Odepchnięcie problemu o n pól w kierunku (dx, dy), dopóki pole wolne; zwraca, o ile przesunięto.
@@ -2480,7 +3331,7 @@ namespace core
             int nx = hero.x + dx, ny = hero.y + dy;
             int ei = enemy_at(nx, ny);
             bool stuck = false;
-            if(ei >= 0) hero_attack(ei);
+            if(ei >= 0) attack_with(weapon().mode_a, ei);   // v0.23.0: cios wręcz całym wzorem trybu A
             else if(secret_closed() && secret_is(nx, ny)) { if(! try_open_secret()) return false; }   // magazyn (#32)
             else if(lv.passable(nx, ny))
             {
@@ -2514,7 +3365,7 @@ namespace core
             {
                 const actor& e = enemies[i];
                 int d = cheb(hero.x, hero.y, e.x, e.y);
-                if(e.alive && d <= weapon_range() && d < bd) { bd = d; best = i; }
+                if(e.alive && d <= weapon_range() && d < bd && in_pattern(weapon().mode_a, i)) { bd = d; best = i; }
             }
             return best;
         }
@@ -2527,7 +3378,7 @@ namespace core
                 for(int i = 0; i < enemies_count && n < max; ++i)
                 {
                     const actor& e = enemies[i];
-                    if(e.alive && visible(e.x, e.y) && cheb(hero.x, hero.y, e.x, e.y) == d) out[n++] = int8_t(i);
+                    if(e.alive && visible(e.x, e.y) && cheb(hero.x, hero.y, e.x, e.y) == d && in_pattern(weapon().mode_a, i)) out[n++] = int8_t(i);
                 }
             return n;
         }
@@ -2538,8 +3389,8 @@ namespace core
             if(st != status::playing || ei < 0 || ei >= enemies_count) return false;
             if(shocked_turn()) return true;
             const actor& e = enemies[ei];
-            if(! e.alive || ! visible(e.x, e.y) || cheb(hero.x, hero.y, e.x, e.y) > weapon_range()) return false;
-            hero_attack(ei);
+            if(! e.alive || ! visible(e.x, e.y) || cheb(hero.x, hero.y, e.x, e.y) > weapon_range() || ! in_pattern(weapon().mode_a, ei)) return false;
+            attack_with(weapon().mode_a, ei);
             end_turn();
             return true;
         }
@@ -2550,7 +3401,7 @@ namespace core
             if(shocked_turn()) return true;
             int t = nearest_target();
             if(t < 0) { push(message().add(UI(brak_celu_w_zasiegu)).add(weapon_range())); return false; }
-            hero_attack(t);
+            attack_with(weapon().mode_a, t);
             end_turn();
             return true;
         }
@@ -2998,15 +3849,15 @@ namespace core
                 {
                     int slot = random_slot(), rarity = r.range(1, 2);
                     if(rarity <= equipped[slot]) rarity = imin(2, equipped[slot] + 1);
+                    rarity = belt_filter(slot, rarity, 2);   // v0.23.0: pas z kaburą rzadki, inaczej Markowy
                     if(rarity > equipped[slot]) equip(slot, rarity, r.range(0, data::gear_traits_count - 1)); else gain_xp(3);
                     break;
                 }
-                case shop_effect::tool:
+                case shop_effect::tool:   // v0.23.0: kupione + nowe bronie z flagą hurtownia, rzadkość losowana przy zakupie
                 {
-                    int n = 0; for(int t = 0; t < data::tools_count; ++t) n += (bonus.tools >> t) & 1;
-                    int k = r.range(0, imax(0, n - 1));
-                    for(int t = 0; t < data::tools_count; ++t)
-                        if(((bonus.tools >> t) & 1) && k-- == 0) { reset_upgrade(); weapon_override = data::tools[t].weapon; tools_found = uint8_t(tools_found | (1u << t)); break; }
+                    const uint64_t pool = shop_tool_pool();
+                    const int t = nth_tool(pool, r.range(0, imax(0, count_bits(pool) - 1)));
+                    if(t >= 0) take_tool(t, roll_weapon_rarity(), false);
                     break;
                 }
                 default: break;
@@ -3163,30 +4014,38 @@ namespace core
             int roll = r.range(1, total), type = 0;
             while(roll > data::drop_weights[type]) roll -= data::drop_weights[type++];
             if(type != tool && bonus.tool_pct > 0 && r.range(1, 100) <= bonus.tool_pct) type = tool;   // uprawnienie Kolekcjoner
-            uint8_t arg = 0, trait = 0;
+            uint8_t arg = 0, trait = 0, perks = 0;
             if(type == gear_box)   // slot losowy, jakość lepsza na późnych etapach
             {
                 int q = r.range(1, 100) + imax(0, pattern_stage()) * data::gear_stage_bonus + data::rarity_per_luck * luck() + bonus.gear_pct;
                 int rarity = imax(min_rarity, q >= data::gear_brand_from ? 2 : (q >= data::gear_solid_from ? 1 : 0));
-                arg = uint8_t(random_slot() * 3 + rarity);
+                const int gslot = random_slot();
+                rarity = belt_filter(gslot, rarity, rarity - 1 >= min_rarity ? rarity - 1 : rarity + 1);   // v0.23.0: pas z kaburą rzadki
+                arg = uint8_t(gslot * 3 + rarity);
                 trait = uint8_t(r.range(0, data::gear_traits_count - 1));
             }
             if(type == tool)
             {
-                int n = 0; for(int i = 0; i < data::tools_count; ++i) n += (bonus.tools >> i) & 1;
+                const uint64_t pool = drop_tool_pool();   // v0.23.0: kupione + nowe bronie z flagą drop
+                const int n = count_bits(pool);
                 if(n == 0) type = coffee;
                 else
                 {
-                    int k = r.range(0, n - 1);
-                    for(int i = 0; i < data::tools_count; ++i) if(((bonus.tools >> i) & 1) && k-- == 0) { arg = uint8_t(i); break; }
+                    int t = nth_tool(pool, r.range(0, n - 1));
+                    int rar = roll_weapon_rarity();   // rzadkość (pickup::trait), nigdy Mistrzowska
+                    const int w = data::tools[t].weapon;
+                    int pk = roll_weapon_perks(w, resolve_rarity(w, rar));   // profity znane już na ziemi
+                    roll_artifact(t, rar, pk);   // Markowa broń bazowa bywa artefaktem
+                    arg = uint8_t(t); trait = uint8_t(rar); perks = uint8_t(pk);
                 }
             }
-            pickups[pickups_count++] = { int8_t(x), int8_t(y), uint8_t(type), true, arg, trait };
+            pickups[pickups_count++] = { int8_t(x), int8_t(y), uint8_t(type), true, arg, trait, 0, perks };
         }
 
         // Zakłada przedmiot w slocie (zastępuje obecny; kamizelka od razu zmienia max HP).
         void equip(int slot, int rarity, int trait)
         {
+            if(slot == data::belt_slot && equipped[slot] == belt_tier && rarity != belt_tier) drop_holster();   // v0.23.0: bez pasa broń z kabury wypada
             const gear_def& nw = data::gear[slot * 3 + rarity];
             if(nw.stat == gear_stat::hp)
             {
@@ -3229,11 +4088,18 @@ namespace core
                 pickup& p = pickups[i];
                 if(! p.active || p.x != hero.x || p.y != hero.y) continue;
                 if(p.type == gear_box && has_offer()) continue;   // najpierw decyzja o poprzedniej paczce
+                if(p.type == tool && has_belt() && weapon2 < 0)   // v0.23.0: pas z kaburą - broń do drugiego miejsca, bez pytania
+                {
+                    stash_tool(p.arg, p.trait, p.extra, p.perks);
+                    p.active = false;
+                    continue;
+                }
                 if(p.type == tool && (weapon_lvl > 0 || weapon_trait >= 0))   // ulepszone narzędzie: decyzja (ulepszenia przepadną)
                 {
                     if(! has_tool_offer())
                     {
                         tool_offer = int8_t(p.arg); tool_offer_pickup = int8_t(i);
+                        tool_offer_rarity = int8_t(p.trait); tool_offer_extra = p.extra; tool_offer_perks = p.perks;
                         push(message().add(UI(narzedzie_2)).add(data::weapons[data::tools[p.arg].weapon].name).add(UI(zamienic)).as(loot));
                     }
                     continue;
@@ -3280,7 +4146,7 @@ namespace core
                         push(message().add(UI(paczka)).add(data::gear[p.arg].name).as(loot));
                     }
                 }
-                else take_tool(p.arg);
+                else take_tool(p.arg, p.trait, true, p.extra, p.perks);
             }
         }
 
@@ -3312,6 +4178,11 @@ namespace core
             if(i == boss && boss_wake_damage < 0) boss_engaged();
             if(elite_is(e, elite_effect::regen) && e.hp < e.max_hp)   // elita Uparta: +HP co turę
                 e.hp = int16_t(imin(e.max_hp, e.hp + data::elites[e.elite].value));
+            if(! enemy_status_tick(i)) return;   // v0.23.0: krwawienie / podpalenie, unieruchomienie, osłabienie
+            const bool rooted = e.root > 0;
+            if(rooted) --e.root;
+            const bool no_heal = e.no_heal > 0;
+            if(no_heal) --e.no_heal;
             if(e.stun > 0) { --e.stun; return; }
             if(ed.slam && i == boss)   // boss: co kilka tur zapowiada uderzenie w obszar wokół bohatera
             {
@@ -3337,11 +4208,11 @@ namespace core
             if(tg & tag_grows) grow_tick(i);
             if(e.timer > 0) --e.timer;   // odnowienie ucieczki / łatania
             int manh = iabs(e.x - hero.x) + iabs(e.y - hero.y);
-            if((tg & tag_heals) && manh != 1 && e.timer == 0 && heal_near(i)) { e.timer = int8_t(data::behavior_heal_every); return; }
-            if((tg & tag_flees) && manh == 1 && e.timer == 0 && flee_step(i)) { e.timer = int8_t(data::behavior_flee_cooldown); return; }
+            if((tg & tag_heals) && ! no_heal && manh != 1 && e.timer == 0 && heal_near(i)) { e.timer = int8_t(data::behavior_heal_every); return; }
+            if((tg & tag_flees) && manh == 1 && e.timer == 0 && ! rooted && flee_step(i)) { e.timer = int8_t(data::behavior_flee_cooldown); return; }
             if(manh == 1) { enemy_strike(i, false); return; }
             if((tg & tag_ranged) && shot_line(e.x, e.y)) { shot_events |= 1u << i; enemy_strike(i, true); return; }
-            if(tg & tag_stationary) return;
+            if((tg & tag_stationary) || rooted) return;   // unieruchomiony nie rusza się, ale uderza sąsiada
             if(weather_is(weather_effect::frost) && i != boss && turns % wdef().value == 0) return;   // mróz: problemy stoją
             if((tg & tag_ranged) && ranged_step(i)) return;
             // elita Szybka: drugi krok, jeśli jeszcze nie stoi obok bohatera
@@ -3541,6 +4412,9 @@ namespace core
             }
             if(ability_cd > 0 && --ability_cd == 0) push(message().add(UI(moc_gotowa_2)).add(pdef().ability_name).as(good));
             if(mark_turns > 0 && --mark_turns == 0) mark_target = -1;   // Tyczenie mija
+            if(weapon_b_cd > 0) --weapon_b_cd;   // v0.23.0: odnowienie Patentu
+            if(crit_buff_turns > 0 && --crit_buff_turns == 0) crit_buff = 0;   // Pomiar mija
+            for(int i = 0; i < enemies_count; ++i) if(enemies[i].mark_turns > 0 && --enemies[i].mark_turns == 0) enemies[i].mark_pct = 0;   // znak mija
             int8_t& wet = hero_status[int(status_effect::wet)];
             if(wet > 0) --wet;   // mokry schnie
             for(int i = 0; i < enemies_count; ++i)   // problemy: kałuża moczy, poza nią schną
