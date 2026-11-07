@@ -14,7 +14,7 @@ namespace LifeLike.Game.Debug;
 /// problemu z mnożnikiem ciosu (weapon-card: Klucz na kamień – obuch ×125%), telefon Sprzęt z Markową bronią i kaburą
 /// (weapon-rarity), wybór zawodu ze szczegółami broni (weapon-class), Jak grać – Bronie (help-weapons) i znaleziony
 /// Nóż majstra seniora (weapon-legend-found – ogłoszenie z animacją w zadaniu 9), oferta wymiany z profitami (weapon-perks),
-/// opis ataku pod przyciskiem: Fach Kielni (weapon-tip-kielnia, Markowa z Chwytem, odnowienie), Fach Noża majstra seniora
+/// opis ataku pod przyciskiem: Patent Kielni (weapon-tip-kielnia, Markowa z Chwytem, odnowienie), Patent Noża majstra seniora
 /// (weapon-tip-noz) i Cios Kielni (weapon-tip-cios); Sprzęt przewinięty o sekcję w poziomie (gear-scroll).
 /// </summary>
 public sealed class WeaponStaging
@@ -135,7 +135,7 @@ public sealed class WeaponStaging
                 _app.AfterAction(true);
                 break;
             }
-            case "weapon-tip-kielnia": // Fach Kielni: Markowa z Chwytem, odnowienie 2 t., dymek przytrzymanego przycisku
+            case "weapon-tip-kielnia": // Patent Kielni: Markowa z Chwytem, odnowienie 2 t., dymek przytrzymanego przycisku
             case "weapon-tip-cios":
             case "weapon-tip-noz":
             {

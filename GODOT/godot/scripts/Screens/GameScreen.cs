@@ -21,7 +21,7 @@ public sealed class GameScreen : Screen
         Touch = new TouchPlay(app, this);
     }
 
-    /// <summary>v0.23.0: opis ataku pod przyciskiem Cios / Fach (mysz, pad LB; palec – TouchPlay).</summary>
+    /// <summary>v0.23.0: opis ataku pod przyciskiem Cios / Patent (mysz, pad LB; palec – TouchPlay).</summary>
     public AttackTips Tips { get; }
 
     public TouchPlay Touch { get; }

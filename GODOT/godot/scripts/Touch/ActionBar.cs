@@ -150,7 +150,7 @@ public partial class ActionBar : Control, ITapTargets
                 Assets.DrawFrame(this, Assets.MenuIcons, 2, 32, icon);
                 label = Loc.T("czekaj");
                 break;
-            case BarButton.WeaponB: // v0.23.0: Fach – młotek w kolorze rzadkości z „F”; odnowienie – szary z liczbą
+            case BarButton.WeaponB: // v0.23.0: Patent – młotek w kolorze rzadkości z „P”; odnowienie – szary z liczbą
             {
                 var rc = WeaponLook.RarityColor(g.D, g.WeaponRarity);
                 if (g.WeaponBCd == 0)
@@ -179,6 +179,7 @@ public partial class ActionBar : Control, ITapTargets
                 break;
         }
         if (b == BarButton.Thermos && f.Measure(label) > r.Size.X - 2) label = g.Thermos.ToString(); // v0.23.0: wąski przycisk (7 na pasku)
+        if (b == BarButton.WeaponB && f.Measure(label) > r.Size.X - 2) label = Loc.T("cios_b"); // v0.23.0: „Patent za N” nie mieści się – liczba jest na ikonie
         var ink = on ? Ink.White : enabled ? Ink.Map : Ink.MapDim;
         f.Draw(this, new Vector2(r.GetCenter().X, r.End.Y - 20), f.Fit(label, (int)r.Size.X - 2), ink, TextAlign.Center);
     }

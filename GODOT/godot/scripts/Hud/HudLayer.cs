@@ -81,13 +81,13 @@ public partial class HudLayer : ScaledLayer
     /// <summary>v0.23.0: karta problemu (test dymny: wiersz mnożnika ciosu).</summary>
     public EnemyCard Card => _card;
 
-    /// <summary>v0.23.0: dymek opisu ataku (Cios / Fach).</summary>
+    /// <summary>v0.23.0: dymek opisu ataku (Cios / Patent).</summary>
     public AttackTip Tip => _tip;
 
     /// <summary>v0.23.0: opis ataku nad prostokątem w układzie węzła from (np. przycisk paska akcji).</summary>
     public void ShowAttackTip(CoreGame g, bool modeB, Rect2 anchor, CanvasItem from) => _tip.ShowFor(g, modeB, anchor, from);
 
-    /// <summary>v0.23.0: opis Fachu pod polem broni w górnym pasku (mysz, pad LB bez paska dotykowego).</summary>
+    /// <summary>v0.23.0: opis Patentu pod polem broni w górnym pasku (mysz, pad LB bez paska dotykowego).</summary>
     public void ShowAttackTipAtHud(CoreGame g, bool modeB) =>
         _tip.ShowFor(g, modeB, _top.WeaponRect, _top);
 

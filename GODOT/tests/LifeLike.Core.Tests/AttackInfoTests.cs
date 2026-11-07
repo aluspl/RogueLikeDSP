@@ -1,6 +1,6 @@
 namespace LifeLike.Core.Tests;
 
-/// <summary>v0.23.0: opis ataku pod przyciskiem Cios / Fach – nazwa ruchu, wzór pól, obrażenia, efekt, odnowienie, profity.</summary>
+/// <summary>v0.23.0: opis ataku pod przyciskiem Cios / Patent – nazwa ruchu, wzór pól, obrażenia, efekt, odnowienie, profity.</summary>
 [Collection("Loc")]
 public class AttackInfoTests
 {
@@ -22,12 +22,12 @@ public class AttackInfoTests
     private static string All(AttackInfo a) => string.Join("\n", a.Lines);
 
     [Fact]
-    public void KielniaFachNamesMoveStunAndCooldown()
+    public void KielniaPatentNamesMoveStunAndCooldown()
     {
         Loc.English = false;
         var a = AttackInfo.For(Arena("kielnia"), true);
         Assert.Equal("Rzut zaprawą", a.Title);
-        Assert.Contains("Fach", a.Header);
+        Assert.Contains("Patent", a.Header);
         Assert.Contains("Kielnia", a.Header);
         Assert.Contains("Ogłuszenie", All(a));
         Assert.Contains("Odnowienie 7", All(a));
@@ -35,7 +35,7 @@ public class AttackInfoTests
     }
 
     [Fact]
-    public void KielniaFachGridIsShotOfTwoToTheRight()
+    public void KielniaPatentGridIsShotOfTwoToTheRight()
     {
         var a = AttackInfo.For(Arena("kielnia"), true);
         Assert.Equal(AttackInfo.Hero, a.Cell(0, 0));
@@ -60,7 +60,7 @@ public class AttackInfoTests
     }
 
     [Fact]
-    public void RarityAndGripShortenFachCooldownAndAreListed()
+    public void RarityAndGripShortenPatentCooldownAndAreListed()
     {
         Loc.English = false;
         var g = Arena("kielnia", 2, Perk("chwyt"));
@@ -100,7 +100,7 @@ public class AttackInfoTests
     }
 
     [Fact]
-    public void EveryWeaponHasShortFachName()
+    public void EveryWeaponHasShortPatentName()
     {
         foreach (var w in D.Weapons)
         {
@@ -110,7 +110,7 @@ public class AttackInfoTests
     }
 
     [Fact]
-    public void EmptyNameFallsBackToFach()
+    public void EmptyNameFallsBackToPatent()
     {
         var w = D.Weapons[Wi("kielnia")];
         var bare = w with { ModeB = w.ModeB with { Name = "" } };

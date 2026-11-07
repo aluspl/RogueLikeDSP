@@ -6,8 +6,8 @@ using LifeLike.Game.Touch;
 namespace LifeLike.Game.Screens.Play;
 
 /// <summary>
-/// v0.23.0: kiedy pokazać opis ataku (AttackTip) bez dotyku: najechanie myszą na przycisk Cios / Fach paska akcji (komputer
-/// z --touch) albo na pole broni w górnym pasku (komputer), przytrzymanie LB na padzie (Q na klawiaturze) – opis Fachu.
+/// v0.23.0: kiedy pokazać opis ataku (AttackTip) bez dotyku: najechanie myszą na przycisk Cios / Patent paska akcji (komputer
+/// z --touch) albo na pole broni w górnym pasku (komputer), przytrzymanie LB na padzie (Q na klawiaturze) – opis Patentu.
 /// Przytrzymanie palcem obsługuje TouchPlay (Holding = dymek należy do palca). Zjechanie myszą / puszczenie chowa dymek.
 /// </summary>
 public sealed class AttackTips
@@ -63,7 +63,7 @@ public sealed class AttackTips
             N.Hud.HideAttackTip();
             return;
         }
-        if (GameInput.IsHeld(GameAction.TabPrev)) // pad LB (klawiatura Q) – modyfikator Fachu
+        if (GameInput.IsHeld(GameAction.TabPrev)) // pad LB (klawiatura Q) – modyfikator Patentu
         {
             _padHeld += (float)delta;
             if (_padHeld < HoldTime) return;

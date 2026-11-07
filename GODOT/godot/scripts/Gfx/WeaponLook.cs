@@ -77,9 +77,9 @@ public static class WeaponLook
     /// <summary>v0.23.0: wiersz Cios („Cios: łuk 3 pól”).</summary>
     public static string LineA(WeaponDef w) => Loc.T("tryb_cios") + Mode(w, w.ModeA, false);
 
-    /// <summary>v0.23.0: wiersz Fachu z nazwą ruchu („Rzut zaprawą: strzał 2 50%, ogłuszenie (1 t.), odn. 7”).</summary>
+    /// <summary>v0.23.0: wiersz Patentu z nazwą ruchu („Rzut zaprawą: strzał 2 50%, ogłuszenie (1 t.), odn. 7”).</summary>
     public static string LineB(WeaponDef w, int cdDelta) => ModeText.BName(w) + ": " + Mode(w, w.ModeB, true, cdDelta);
 
-    /// <summary>Zmiana odnowienia Fachu (tryb B) od rzadkości (Markowa -1).</summary>
+    /// <summary>Zmiana odnowienia Patentu (tryb B) od rzadkości (Markowa -1).</summary>
     public static int CdDelta(GameData d, int r) => r >= 0 && r < d.WeaponRarities.Length ? d.WeaponRarities[r].CooldownDelta : 0;
 }

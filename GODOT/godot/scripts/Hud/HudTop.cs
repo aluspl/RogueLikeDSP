@@ -19,7 +19,7 @@ public partial class HudTop : Control
 
     public const int Height = 38;
 
-    /// <summary>v0.23.0: pole broni i Fachu w drugim rzędzie (współrzędne paska) – najechanie myszą pokazuje opis ataku.</summary>
+    /// <summary>v0.23.0: pole broni i Patentu w drugim rzędzie (współrzędne paska) – najechanie myszą pokazuje opis ataku.</summary>
     public Rect2 WeaponRect { get; private set; }
     private const int HpBarW = 64, XpBarW = 40;
 
@@ -195,14 +195,14 @@ public partial class HudTop : Control
         else if (((int)(_clock * 2) & 1) == 0) x += Text(x, "R", Ink.MapGood) + 8;
         else x += f.Measure("R") + 8;
 
-        // v0.23.0: broń w kolorze rzadkości i odnowienie Fachu („F” – gotowy, liczba – tury)
+        // v0.23.0: broń w kolorze rzadkości i odnowienie Patentu („P” – gotowy, liczba – tury)
         var wx = x;
         if (draw) Assets.DrawFrame(this, Assets.UiMenu, 0, Assets.Icon, new Vector2(x, 20), 1, WeaponLook.IconTint(g.D, g.WeaponRarity));
         x += 18;
         if (labels) x += Text(x, Loc.T("hud_cios_b"), g.WeaponBCd == 0 ? Ink.MapGood : Ink.MapDim) + 4;
         if (g.WeaponBCd > 0) x += Text(x, g.WeaponBCd.ToString(), Ink.MapDim) + 8;
         else x += Text(x, Loc.T("fach_znak"), Ink.MapGood) + 8;
-        if (draw) WeaponRect = new Rect2(wx - 2, 16, x - wx - 4, 22); // v0.23.0: najechanie myszą – opis Fachu
+        if (draw) WeaponRect = new Rect2(wx - 2, 16, x - wx - 4, 22); // v0.23.0: najechanie myszą – opis Patentu
 
         // materiały: ikona + liczba (tylko posiadane)
         for (var m = 0; m < g.D.Materials.Length; m++)

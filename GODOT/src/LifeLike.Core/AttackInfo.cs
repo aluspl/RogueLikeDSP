@@ -3,8 +3,8 @@ using LifeLike.Core.Data;
 namespace LifeLike.Core;
 
 /// <summary>
-/// v0.23.0: opis ataku pod przyciskiem Cios / Fach (przytrzymanie, najechanie myszą, LB na padzie) dla broni w ręku:
-/// tytuł (Cios albo nazwa ruchu Fachu), nagłówek („Fach · Kielnia”, przy Ciosie sama broń), wiersze (typ ciosu, obrażenia z % trybu, ciosy w cel,
+/// v0.23.0: opis ataku pod przyciskiem Cios / Patent (przytrzymanie, najechanie myszą, LB na padzie) dla broni w ręku:
+/// tytuł (Cios albo nazwa ruchu Patentu), nagłówek („Patent · Kielnia”, przy Ciosie sama broń), wiersze (typ ciosu, obrażenia z % trybu, ciosy w cel,
 /// wzór i zasięg, efekt, odnowienie, rzadkość i profity, które zmieniają ruch) oraz mini-siatka wzoru: bohater w środku
 /// zwrócony w prawo, pola trafione (Hit) i zasięg trybu (Reach). Siatka z HitPattern.Cells – tych samych pól, co atak.
 /// </summary>

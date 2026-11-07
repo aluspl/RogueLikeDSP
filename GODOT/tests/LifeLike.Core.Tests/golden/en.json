@@ -1673,9 +1673,9 @@
   "Lut na gorąco": "Hot solder",
   "Zdarcie farby": "Paint strip",
   "Cięcie na zakładkę": "Overlap cut",
-  "odn. Fachu -1": "Trick cd -1",
-  "Odnowienie Fachu -1 (min. 1)": "Trick cooldown -1 (min. 1)",
-  "Majster nie odpuszcza!|Nóż majstra seniora:|Fach: dwa pchnięcia.": "The foreman won't quit!|Senior Foreman's Knife:|Trick: two thrusts."
+  "odn. Patentu -1": "Trick cd -1",
+  "Odnowienie Patentu -1 (min. 1)": "Trick cooldown -1 (min. 1)",
+  "Majster nie odpuszcza!|Nóż majstra seniora:|Patent: dwa pchnięcia.": "The foreman won't quit!|Senior Foreman's Knife:|Trick: two thrusts."
  },
  "ui": {
   "obrazen": "% damage",

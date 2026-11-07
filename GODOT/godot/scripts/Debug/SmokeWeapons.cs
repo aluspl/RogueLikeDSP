@@ -13,7 +13,7 @@ namespace LifeLike.Game.Debug;
 /// <summary>
 /// v0.23.0: test dymny broni przez prawdziwe wejście ekranu budowy – Cios B (F: celowanie wzorem B, puszczenie = cios,
 /// odnowienie rusza; w odnowieniu bez tury), Zamień (X: bez pasa nic, z pasem i bronią w kaburze – zamiana za turę,
-/// przycisk „Zamień” na pasku dotyku), przytrzymanie przycisku Fach – dymek opisu bez ataku, karta problemu z wierszem mnożnika ciosu (Loc „mnoznik_ciosu”).
+/// przycisk „Zamień” na pasku dotyku), przytrzymanie przycisku Patent – dymek opisu bez ataku, karta problemu z wierszem mnożnika ciosu (Loc „mnoznik_ciosu”).
 /// </summary>
 public sealed class SmokeWeapons
 {
@@ -37,7 +37,7 @@ public sealed class SmokeWeapons
         if (Flow.Current != Flow.Game) throw new Exception($"bronie: brak ekranu budowy ({Flow.Current.GetType().Name})");
         var target = Arena(g);
 
-        // v0.23.0: przytrzymanie przycisku Fach (dotyk) – dymek opisu ataku, puszczenie bez ataku i bez tury
+        // v0.23.0: przytrzymanie przycisku Patent (dotyk) – dymek opisu ataku, puszczenie bez ataku i bez tury
         Layout.Touch = true;
         try
         {
@@ -48,10 +48,10 @@ public sealed class SmokeWeapons
             Flow.Game.HandleGesture(new Gesture(GestureKind.Down, at, at, Godot.Vector2I.Zero, 0));
             Flow.Game.Process(0.25);
             Flow.Game.Process(0.25);
-            if (!_app.Nodes.Hud.Tip.Shown || !_app.Nodes.Hud.Tip.ModeB) throw new Exception("opis Fachu: brak dymku po przytrzymaniu");
+            if (!_app.Nodes.Hud.Tip.Shown || !_app.Nodes.Hud.Tip.ModeB) throw new Exception("opis Patentu: brak dymku po przytrzymaniu");
             Flow.Game.HandleGesture(new Gesture(GestureKind.Up, at, at, Godot.Vector2I.Zero, 0.5f));
-            if (_app.Nodes.Hud.Tip.Shown) throw new Exception("opis Fachu: dymek po puszczeniu");
-            if (g.Turns != t0 || g.WeaponBCd != 0 || g.Enemies[target].Hp != hp || Flow.Game.Aim.Active) throw new Exception("opis Fachu: puszczenie wykonało atak");
+            if (_app.Nodes.Hud.Tip.Shown) throw new Exception("opis Patentu: dymek po puszczeniu");
+            if (g.Turns != t0 || g.WeaponBCd != 0 || g.Enemies[target].Hp != hp || Flow.Game.Aim.Active) throw new Exception("opis Patentu: puszczenie wykonało atak");
         }
         finally
         {
@@ -110,7 +110,7 @@ public sealed class SmokeWeapons
         var want = Loc.F("mnoznik_ciosu", mat, d.HitTypes.Names[(int)HitCalc.Best(d, g.Weapon, col)], HitCalc.Pct(d, g.Weapon, ed));
         if (!card.Visible || card.HitLine != want) throw new Exception($"karta problemu: „{card.HitLine}” zamiast „{want}”");
         Flow.Game.Look.Cancel();
-        Summary = $"Fach (odn. {cd}, opis bez ataku), zamiana, karta „{card.HitLine}”";
+        Summary = $"Patent (odn. {cd}, opis bez ataku), zamiana, karta „{card.HitLine}”";
     }
 
     /// <summary>Plac bez innych problemów: jeden wytrzymały problem tuż obok bohatera (w linii – każdy wzór go sięga).</summary>

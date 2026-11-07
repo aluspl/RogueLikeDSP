@@ -333,9 +333,9 @@ public partial class ClassSelectView : Control, Touch.ITapTargets
         WeaponRow(new Rect2(x, y + 1, cw - tw - 4, 24), cls, m, cw - tw - 14, 1);
         DrawStyleBox(Ui.Box(Pal.Card, 7), new Rect2(x + cw - tw, y + 6, tw, 14));
         f.Draw(this, new Vector2(x + cw - tw / 2f, y + 4), tag, Ink.Brand, TextAlign.Center);
-        if (modesLine) // v0.23.0: rzadkość i Fach słowami (Cios – w rozpisce pod dotknięciem)
+        if (modesLine) // v0.23.0: rzadkość i Patent słowami (Cios – w rozpisce pod dotknięciem)
         {
-            var lineB = WeaponLook.LineB(wpn, WeaponLook.CdDelta(_d, rarity)); // v0.23.0: Fach nazwą ruchu
+            var lineB = WeaponLook.LineB(wpn, WeaponLook.CdDelta(_d, rarity)); // v0.23.0: Patent nazwą ruchu
             var modes = $"{WeaponLook.RarityName(_d, rarity)} · {lineB}";
             var full2 = $"{WeaponLook.RarityName(_d, rarity)} · {WeaponLook.LineA(wpn)} · {lineB}";
             if (f.Measure(full2) <= cw - 8) modes = full2;

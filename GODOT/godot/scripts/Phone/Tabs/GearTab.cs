@@ -10,7 +10,7 @@ namespace LifeLike.Game.Phone.Tabs;
 /// Sprzęt (tab_gear na GBA): narzędzie z zakresem ciosu i krytem (rozpiska obrażeń #26: I / dotknięcie narzędzia),
 /// kask / rękawice / kamizelka / ... z jakością (kolor paska), skutkiem (np. „+2 OBR”) i cechą (pastylka), premie
 /// sprzętu oraz szczęście: kryt, unik, wzrok. A / przycisk: Brygada. v0.23.0: broń z rzadkością (kolor), typem ciosu,
-/// trybami A i B słowami, odnowieniem B i drugą bronią w kaburze (pas monterski). v0.23.0: Fach nazwą ruchu; gdy trzy
+/// trybami A i B słowami, odnowieniem B i drugą bronią w kaburze (pas monterski). v0.23.0: Patent nazwą ruchu; gdy trzy
 /// sekcje (Narzędzie, Sprzęt, Premie i materiały) nie mieszczą się (telefon w poziomie / ramka na komputerze), strona
 /// przewija się sekcjami: strzałki góra/dół, przesunięcie palcem, dotknięcie strzałki „więcej” – nic nie chowa się pod przyciskami.
 /// </summary>
@@ -131,7 +131,7 @@ public sealed class GearTab : PhonePage
         p.Hit(new Godot.Rect2(p.Left, y - 4, p.Width, MoreH + 8), down ? MoreDown : MoreUp);
     }
 
-    /// <summary>Wiersze karty narzędzia: w poziomie nazwa i rzadkość, w pionie też kryt i tryby (Cios, Fach z nazwą i opisem).</summary>
+    /// <summary>Wiersze karty narzędzia: w poziomie nazwa i rzadkość, w pionie też kryt i tryby (Cios, Patent z nazwą i opisem).</summary>
     private int ToolRows()
     {
         var g = _g;
@@ -190,7 +190,7 @@ public sealed class GearTab : PhonePage
         }
         p.HitRow(c0, 0, WeaponRow);
         p.HitRow(c0, 1, WeaponRow);
-        // v0.23.0: rzadkość i typ ciosu (w poziomie z krytem), odnowienie Fachu, Cios i Fach, kabura
+        // v0.23.0: rzadkość i typ ciosu (w poziomie z krytem), odnowienie Patentu, Cios i Patent, kabura
         p.Stripe(c0, row, rc);
         pw = p.Pill(right, p.RowY(c0, row), bState, g.WeaponBCd == 0 ? PillKind.Group : PillKind.Gray);
         var kind = $"{WeaponLook.RarityName(d, g.WeaponRarity)} · {WeaponLook.Hits(d, w)}"; // kryt w poziomie – w karcie premii niżej
@@ -208,7 +208,7 @@ public sealed class GearTab : PhonePage
             p.Divider(c0, row);
             p.Text(tx, p.RowY(c0, row), WeaponLook.LineA(w), Ink.Dim, TextAlign.Left, right - tx);
             row++;
-            p.Divider(c0, row); // v0.23.0: Fach – nazwa ruchu, pod nią wzór, efekt i odnowienie
+            p.Divider(c0, row); // v0.23.0: Patent – nazwa ruchu, pod nią wzór, efekt i odnowienie
             p.Text(tx, p.RowY(c0, row), Loc.T("tryb_fach") + ModeText.BName(w), Ink.Brand, TextAlign.Left, right - tx);
             row++;
             p.Text(tx + 8, p.RowY(c0, row), WeaponLook.Mode(w, w.ModeB, true, g.WeaponBCdDelta()), Ink.Dim, TextAlign.Left, right - tx - 8);
@@ -263,7 +263,8 @@ public sealed class GearTab : PhonePage
             var eff = DamageHelp.GearLabel(gd);
             var tr = g.EquippedTrait[i];
             var nameW = p.F.Measure(d.GearTraits[tr].Name) + 10; // v0.23.0 (#91): cecha pełną nazwą, skrót gdy zabraknie miejsca na nazwę przedmiotu
-            var useFull = right - nameW - 8 - tx - p.F.Measure(eff) - 6 - p.F.Measure(gd.Name) >= 0;
+            var free = right - nameW - 8 - tx - p.F.Measure(eff) - 6;
+            var useFull = free - System.Math.Min(p.F.Measure(gd.Name), p.F.Measure(d.GearSlots[i])) >= 0; // v0.23.0: pełna cecha także przy nazwie slotu („Pas … Szczęście +1”)
             var pw = p.Pill(right, r, useFull ? d.GearTraits[tr].Name : d.GearTraits[tr].Short, rar == 2 ? PillKind.Prog : rar == 1 ? PillKind.Group : PillKind.Gray);
             var room = right - pw - 8 - tx - p.F.Measure(eff) - 6;
             var name = p.F.Measure(gd.Name) <= room ? gd.Name : p.F.Fit(d.GearSlots[i], (int)room);

@@ -7,7 +7,7 @@ using CoreGame = LifeLike.Core.Game;
 namespace LifeLike.Game.Hud;
 
 /// <summary>
-/// v0.23.0: dymek z opisem ataku nad przyciskiem Cios / Fach (AttackInfo z rdzenia): nagłówek („Fach · Kielnia”), tytuł
+/// v0.23.0: dymek z opisem ataku nad przyciskiem Cios / Patent (AttackInfo z rdzenia): nagłówek („Patent · Kielnia”), tytuł
 /// (nazwa ruchu), mini-siatka wzoru (bohater w środku, w prawo; pola trafione w kolorze rzadkości, zasięg przyciemniony)
 /// i wiersze opisu. Kotwica w jednostkach warstwy HUD; dymek nad nią (pod nią, gdy brak miejsca), zawsze w ekranie.
 /// </summary>
@@ -22,7 +22,7 @@ public partial class AttackTip : Control
 
     public bool Shown => Visible && _info is not null;
 
-    /// <summary>Tryb pokazanego opisu (Fach albo Cios).</summary>
+    /// <summary>Tryb pokazanego opisu (Patent albo Cios).</summary>
     public bool ModeB => _info is not null && _info.ModeB;
 
     public override void _Ready()

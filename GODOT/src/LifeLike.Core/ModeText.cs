@@ -4,12 +4,12 @@ namespace LifeLike.Core;
 
 /// <summary>
 /// v0.23.0: tryby broni słowami – wzór pól („łuk 3 pól”, „linia 2”), efekt („ogłuszenie (1 t.)”), cały tryb
-/// („linia 2, -2 OBR (3 t.), odn. 4”) i nazwa ruchu Fachu (tryb B; pusta w danych – ogólne „Fach”).
+/// („linia 2, -2 OBR (3 t.), odn. 4”) i nazwa ruchu Patentu (tryb B; pusta w danych – ogólne „Patent”).
 /// Wspólne dla telefonu, wyboru zawodu, celowania i opisu ataku pod przyciskiem (AttackInfo).
 /// </summary>
 public static class ModeText
 {
-    /// <summary>Nazwa ruchu Fachu broni („Rzut zaprawą”); bez nazwy w danych – „Fach”.</summary>
+    /// <summary>Nazwa ruchu Patentu broni („Rzut zaprawą”); bez nazwy w danych – „Patent”.</summary>
     public static string BName(WeaponDef w) => w.ModeB.Name.Length > 0 ? w.ModeB.Name : Loc.T("cios_b");
 
     /// <summary>Typy ciosu broni: „Obuch”, „Cięcie/Kłucie”.</summary>
@@ -72,7 +72,7 @@ public static class ModeText
 
     /// <summary>
     /// Tryb słowami: wzór[ 50%][ x2][, efekt][, efekt 2][, odn. N] – np. „linia 2, -2 OBR (3 t.), odn. 4” (bez nazwy ruchu).
-    /// cooldown: dopisz odnowienie (Fach; rzadkość i profit Chwyt zmieniają je o delta).
+    /// cooldown: dopisz odnowienie (Patent; rzadkość i profit Chwyt zmieniają je o delta).
     /// </summary>
     public static string Mode(WeaponDef w, WeaponMode m, bool cooldown, int cdDelta = 0)
     {

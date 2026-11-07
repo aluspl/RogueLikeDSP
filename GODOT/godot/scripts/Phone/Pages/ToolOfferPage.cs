@@ -95,7 +95,7 @@ public sealed class ToolOfferPage : PhonePage
         }
     }
 
-    /// <summary>v0.23.0: rzadkość i typ ciosu, a gdy się mieści – też Fach nazwą ruchu („Markowa · Cięcie · Fach: Zamach z barku”).</summary>
+    /// <summary>v0.23.0: rzadkość i typ ciosu, a gdy się mieści – też Patent nazwą ruchu („Markowa · Cięcie · Patent: Zamach z barku”).</summary>
     private static string KindLine(PhonePainter p, string kind, LifeLike.Core.Data.WeaponDef w, float room)
     {
         var full = $"{kind} · {Loc.T("tryb_fach")}{ModeText.BName(w)}";
