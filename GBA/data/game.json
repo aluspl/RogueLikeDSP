@@ -255,7 +255,8 @@
         "effect": "mark",
         "value": 20,
         "turns": 3,
-        "cooldown": 6
+        "cooldown": 6,
+        "name": "Wpis do dziennika"
       }
     },
     {
@@ -279,7 +280,8 @@
         "value": 100,
         "turns": 1,
         "cooldown": 7,
-        "dmgPct": 50
+        "dmgPct": 50,
+        "name": "Rzut zaprawą"
       }
     },
     {
@@ -296,7 +298,8 @@
       "modeB": {
         "pattern": "line",
         "dmgPct": 60,
-        "cooldown": 5
+        "cooldown": 5,
+        "name": "Seria"
       }
     },
     {
@@ -314,7 +317,8 @@
       "modeB": {
         "pattern": "cross",
         "effect": "chain",
-        "cooldown": 4
+        "cooldown": 4,
+        "name": "Przeskok"
       }
     },
     {
@@ -335,7 +339,8 @@
         "pattern": "single",
         "effect": "dry",
         "turns": 1,
-        "cooldown": 4
+        "cooldown": 4,
+        "name": "Zakręcenie zaworu"
       }
     },
     {
@@ -353,7 +358,8 @@
       "modeB": {
         "pattern": "arc",
         "cooldown": 3,
-        "effect2": "ignite"
+        "effect2": "ignite",
+        "name": "Iskry"
       }
     },
     {
@@ -372,7 +378,8 @@
         "effect": "push",
         "value": 2,
         "cooldown": 5,
-        "effect2": "openWall"
+        "effect2": "openWall",
+        "name": "Podważenie"
       }
     },
     {
@@ -391,7 +398,8 @@
         "effect": "defdown",
         "value": 3,
         "turns": 3,
-        "cooldown": 5
+        "cooldown": 5,
+        "name": "Rozkręcenie"
       }
     },
     {
@@ -407,7 +415,8 @@
       },
       "modeB": {
         "pattern": "lineBoth",
-        "cooldown": 6
+        "cooldown": 6,
+        "name": "Wiązka w 2 strony"
       }
     },
     {
@@ -426,7 +435,8 @@
       "modeB": {
         "pattern": "around",
         "effect": "openWall",
-        "cooldown": 7
+        "cooldown": 7,
+        "name": "Wyburzenie"
       }
     },
     {
@@ -444,7 +454,8 @@
         "pattern": "shot",
         "range": 3,
         "effect": "swap",
-        "cooldown": 6
+        "cooldown": 6,
+        "name": "Zmiana projektu"
       }
     },
     {
@@ -463,7 +474,8 @@
         "effect": "reveal",
         "value": 10,
         "turns": 3,
-        "cooldown": 6
+        "cooldown": 6,
+        "name": "Pomiar pokoju"
       }
     },
     {
@@ -481,7 +493,8 @@
         "pattern": "throw",
         "range": 3,
         "dmgPct": 100,
-        "cooldown": 2
+        "cooldown": 2,
+        "name": "Grad dachówek"
       }
     },
     {
@@ -499,7 +512,8 @@
         "pattern": "single",
         "effect": "root",
         "turns": 2,
-        "cooldown": 6
+        "cooldown": 6,
+        "name": "Zatynkowanie"
       }
     },
     {
@@ -519,7 +533,8 @@
         "effect": "pull",
         "value": 2,
         "cooldown": 5,
-        "dmgPct": 50
+        "dmgPct": 50,
+        "name": "Zgarnięcie"
       }
     },
     {
@@ -541,7 +556,8 @@
         "effect": "defdown",
         "value": 99,
         "turns": 1,
-        "cooldown": 6
+        "cooldown": 6,
+        "name": "Kucie na wylot"
       }
     },
     {
@@ -560,7 +576,8 @@
         "pattern": "single",
         "effect": "root",
         "turns": 2,
-        "cooldown": 5
+        "cooldown": 5,
+        "name": "Zakotwienie"
       }
     },
     {
@@ -581,7 +598,8 @@
         "value": 2,
         "turns": 3,
         "cooldown": 4,
-        "steelPct": 150
+        "steelPct": 150,
+        "name": "Gorący spaw"
       }
     },
     {
@@ -600,7 +618,8 @@
         "effect": "mark",
         "value": 40,
         "turns": 3,
-        "cooldown": 4
+        "cooldown": 4,
+        "name": "Wytyczenie"
       }
     },
     {
@@ -622,7 +641,8 @@
         "effect": "defdown",
         "value": 2,
         "turns": 1,
-        "cooldown": 2
+        "cooldown": 2,
+        "name": "Dobicie gwoździa"
       }
     },
     {
@@ -643,7 +663,8 @@
         "pattern": "around",
         "effect": "push",
         "value": 1,
-        "cooldown": 7
+        "cooldown": 7,
+        "name": "Zamach Zenka"
       },
       "master": true
     },
@@ -664,7 +685,8 @@
         "pattern": "lineBoth",
         "range": 3,
         "effect": "reveal",
-        "cooldown": 6
+        "cooldown": 6,
+        "name": "Oko mistrza"
       },
       "master": true
     },
@@ -691,7 +713,8 @@
         "effect": "defdown",
         "value": 2,
         "turns": 3,
-        "cooldown": 4
+        "cooldown": 4,
+        "name": "Podkop"
       }
     },
     {
@@ -707,7 +730,8 @@
       },
       "modeB": {
         "pattern": "arc",
-        "cooldown": 5
+        "cooldown": 5,
+        "name": "Zamach z barku"
       }
     },
     {
@@ -727,7 +751,8 @@
         "effect": "dot",
         "value": 2,
         "turns": 3,
-        "cooldown": 5
+        "cooldown": 5,
+        "name": "Piłowanie"
       }
     },
     {
@@ -744,7 +769,8 @@
       "modeB": {
         "pattern": "line",
         "range": 2,
-        "cooldown": 6
+        "cooldown": 6,
+        "name": "Rozkucie"
       }
     },
     {
@@ -762,7 +788,8 @@
         "pattern": "single",
         "effect": "openWall",
         "value": 3,
-        "cooldown": 1
+        "cooldown": 1,
+        "name": "Wykucie bruzdy"
       }
     },
     {
@@ -778,7 +805,8 @@
       },
       "modeB": {
         "pattern": "arc",
-        "cooldown": 5
+        "cooldown": 5,
+        "name": "Cięcie blachy"
       }
     },
     {
@@ -797,7 +825,8 @@
         "pattern": "single",
         "effect": "root",
         "turns": 2,
-        "cooldown": 6
+        "cooldown": 6,
+        "name": "Uszczelnienie"
       }
     },
     {
@@ -818,7 +847,8 @@
         "pattern": "push",
         "effect": "push",
         "value": 2,
-        "cooldown": 5
+        "cooldown": 5,
+        "name": "Strumień"
       }
     },
     {
@@ -841,7 +871,8 @@
         "dmgPct": 50,
         "effect": "dry",
         "turns": 1,
-        "cooldown": 7
+        "cooldown": 7,
+        "name": "Krąg płomieni"
       }
     },
     {
@@ -860,7 +891,8 @@
         "pattern": "single",
         "effect": "root",
         "turns": 3,
-        "cooldown": 5
+        "cooldown": 5,
+        "name": "Zszycie"
       }
     },
     {
@@ -882,7 +914,8 @@
         "effect": "stun",
         "value": 30,
         "turns": 1,
-        "cooldown": 6
+        "cooldown": 6,
+        "name": "Opukiwanie"
       }
     },
     {
@@ -900,7 +933,8 @@
       },
       "modeB": {
         "pattern": "around",
-        "cooldown": 7
+        "cooldown": 7,
+        "name": "Pełny obrót"
       },
       "master": true
     },
@@ -918,7 +952,8 @@
       "modeB": {
         "pattern": "cross",
         "effect": "reveal",
-        "cooldown": 6
+        "cooldown": 6,
+        "name": "Sprawdzenie pionu"
       }
     },
     {
@@ -936,7 +971,8 @@
         "pattern": "around",
         "effect": "push",
         "value": 1,
-        "cooldown": 7
+        "cooldown": 7,
+        "name": "Wir zaprawy"
       }
     },
     {
@@ -952,7 +988,8 @@
       },
       "modeB": {
         "pattern": "line4",
-        "cooldown": 6
+        "cooldown": 6,
+        "name": "Krzyż laserowy"
       }
     },
     {
@@ -977,7 +1014,8 @@
         "value": 2,
         "turns": 3,
         "cooldown": 5,
-        "effect2": "dry"
+        "effect2": "dry",
+        "name": "Lut na gorąco"
       }
     },
     {
@@ -999,7 +1037,8 @@
         "effect": "mark",
         "value": 100,
         "turns": 1,
-        "cooldown": 5
+        "cooldown": 5,
+        "name": "Zdarcie farby"
       }
     },
     {
@@ -1018,7 +1057,8 @@
         "pattern": "line",
         "range": 2,
         "dmgPct": 80,
-        "cooldown": 3
+        "cooldown": 3,
+        "name": "Cięcie na zakładkę"
       }
     },
     {
@@ -6658,7 +6698,7 @@
           "id": "noz_majstra"
         },
         "rewardText": "Nóż majstra seniora",
-        "news": "Majster nie odpuszcza!|Nóż majstra seniora:|dwa pchnięcia w B."
+        "news": "Majster nie odpuszcza!|Nóż majstra seniora:|Fach: dwa pchnięcia."
       }
     ],
     "cosmetics": [
@@ -9451,7 +9491,7 @@
     "bron_z_kabury_wypada": "Bez pasa broń wypada: ",
     "bron_z_kabury_przepada": "Bez pasa broń przepada: ",
     "mnoznik_ciosu": "{0}: {1} ×{2}%",
-    "pomoc_bronie_krotko": "Tryb B: osobny przycisk, potem odnowienie. Pas z kaburą: druga broń.",
+    "pomoc_bronie_krotko": "Fach: osobny przycisk, potem odnowienie. Pas z kaburą: druga broń.",
     "wzor_single": "1 pole",
     "wzor_arc": "łuk 3 pól",
     "wzor_around": "dookoła",
@@ -9484,24 +9524,23 @@
     "ef_ignite": "iskry w pył",
     "ciosy_x": " x{0}",
     "odn_b": ", odn. {0}",
-    "cios_b": "Cios B",
-    "cios_b_za": "B za {0}",
+    "cios_b": "Fach",
+    "cios_b_za": "Fach za {0}",
     "zamien": "Zamień",
-    "cios_b_odnowienie": "Cios B: jeszcze {0} t.",
-    "cios_b_sciana": "Cios B: puść - otwierasz ścianę",
-    "cios_b_brak_celu": "Cios B ({0}): brak celu",
+    "cios_b_odnowienie": "Fach: jeszcze {0} t.",
+    "cios_b_sciana": "Fach: puść - otwierasz ścianę",
+    "cios_b_brak_celu": "Fach ({0}): brak celu",
     "pusc_f_wroc": "Puść F: wróć",
     "pusc_cios_b_wroc": "Puść: wróć",
-    "cios_b_prefix": "Cios B ",
-    "strzalki_zmiana_celu_pusc_f": "Strzałki: cel, puść F: cios B",
-    "przesun_palec_cel_pusc_cios_b": "Przesuń palec: cel, puść: cios B",
+    "strzalki_zmiana_celu_pusc_f": "Strzałki: cel, puść F: Fach",
+    "przesun_palec_cel_pusc_cios_b": "Przesuń palec: cel, puść: Fach",
     "kabura_pusta": "Kabura pusta - nie ma czego zamienić",
     "zamiana_tylko_z_pasem": "Zamiana broni tylko z pasem z kaburą",
-    "hud_cios_b": "Cios",
+    "hud_cios_b": "Fach",
     "zywiol_woda": "Woda",
     "bez_materialu": "Bez materiału",
-    "b_gotowy": "B gotowy",
-    "b_za": "B za {0} t.",
+    "b_gotowy": "Fach gotowy",
+    "b_za": "Fach za {0} t.",
     "kabura": "Kabura: {0}",
     "kabura_pusta_2": "Kabura: pusta (broń z dropu trafi tutaj)",
     "kupione_bron": "Kupione: {0} {1}",
@@ -9510,11 +9549,11 @@
     "pomoc_bronie_materialy": "Typ ciosu a materiał problemu",
     "pomoc_bronie_1": "Każda broń ma typ ciosu: obuch, cięcie albo kłucie. Materiał problemu zmienia obrażenia - karta problemu pokazuje mnożnik Twojej broni.",
     "pomoc_bronie_2": "Obuch: {0}% na ogłuszenie. Cięcie: kryt +{1}%. Kłucie: omija {2} OBR.",
-    "pomoc_bronie_3": "Tryb A to zwykły atak wzorem pól. Tryb B ma osobny przycisk: mocniejszy wzór albo efekt, potem odnowienie w turach.",
-    "pomoc_bronie_4": "Rzadkość: Zwykła, Solidna, Markowa (więcej obrażeń, krótsze odnowienie B), Mistrzowska - unikaty i broń mistrza.",
+    "pomoc_bronie_3": "Cios to zwykły atak wzorem pól. Fach to ruch broni z własną nazwą (osobny przycisk): mocniejszy wzór albo efekt, potem odnowienie w turach. Przytrzymaj przycisk Cios / Fach albo najedź myszą: opis ruchu i jego pola.",
+    "pomoc_bronie_4": "Rzadkość: Zwykła, Solidna, Markowa (więcej obrażeń, krótsze odnowienie Fachu), Mistrzowska - unikaty i broń mistrza.",
     "pomoc_bronie_5": "Pas monterski z kaburą nosi drugą broń - zamiana kosztuje turę.",
-    "pomoc_cios_b": "tryb B broni (trzymaj: celuj)",
-    "pomoc_cios_b_dotyk": "tryb B (trzymaj: celuj wzorem)",
+    "pomoc_cios_b": "Fach broni (trzymaj: celuj)",
+    "pomoc_cios_b_dotyk": "Fach (trzymaj: opis, przesuń: celuj)",
     "pomoc_zamien": "druga broń z kabury (tura)",
     "efekt_ogluszenie": "Ogłuszenie",
     "efekt_osuszenie": "Osuszenie",
@@ -10213,7 +10252,18 @@
     "zostawiam_xp_kr": "Zostaw +{0} XP",
     "profit_linia": "Profit {0}: {1}",
     "unikat_linia": "Unikat {0}: {1}",
-    "cecha_zmiana": "Cecha: {0} -> {1}"
+    "cecha_zmiana": "Cecha: {0} -> {1}",
+    "fach_znak": "F",
+    "tip_cios": "Cios",
+    "tip_obrazenia": "Obrażenia {0}-{1}",
+    "tip_obrazenia_pct": "Obrażenia {0}-{1} ({2}%)",
+    "tip_ciosy": "{0} ciosy w każdy cel",
+    "tip_wzor": "Wzór: {0}, zasięg {1}",
+    "tip_odnowienie": "Odnowienie {0} t.",
+    "tip_odnowienie_za": "Odnowienie {0} t. (jeszcze {1})",
+    "tip_rzadkosc_odn": "{0}: odn. {1}",
+    "tryb_cios": "Cios: ",
+    "tryb_fach": "Fach: "
   },
   "hitTypes": {
     "names": [
@@ -10326,8 +10376,8 @@
       {
         "id": "chwyt",
         "name": "Chwyt",
-        "short": "odn. B -1",
-        "desc": "Odnowienie trybu B -1 (min. 1)",
+        "short": "odn. Fachu -1",
+        "desc": "Odnowienie Fachu -1 (min. 1)",
         "effect": "cooldownB",
         "value": 1
       }

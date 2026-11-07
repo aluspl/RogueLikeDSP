@@ -8,6 +8,7 @@ namespace LifeLike.Core.Tests;
 /// {0}, {1}..., dane po angielsku wczytują się tak samo jak po polsku (te same liczby, odwołania po nazwie działają).
 /// Kopie golden/game.json i golden/en.json z GBA/data (jak przy przebiegach złotych).
 /// </summary>
+[Collection("Loc")]
 public class LanguageTests
 {
     private static string Game => File.ReadAllText(TestData.GoldenPath("game.json"));

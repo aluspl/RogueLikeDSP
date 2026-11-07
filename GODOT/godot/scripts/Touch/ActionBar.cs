@@ -150,7 +150,7 @@ public partial class ActionBar : Control, ITapTargets
                 Assets.DrawFrame(this, Assets.MenuIcons, 2, 32, icon);
                 label = Loc.T("czekaj");
                 break;
-            case BarButton.WeaponB: // v0.23.0: młotek w kolorze rzadkości z „B”; odnowienie – szary z liczbą
+            case BarButton.WeaponB: // v0.23.0: Fach – młotek w kolorze rzadkości z „F”; odnowienie – szary z liczbą
             {
                 var rc = WeaponLook.RarityColor(g.D, g.WeaponRarity);
                 if (g.WeaponBCd == 0)
@@ -158,7 +158,7 @@ public partial class ActionBar : Control, ITapTargets
                     var pulse = 0.5f + 0.5f * Mathf.Sin(_clock * 6f);
                     DrawStyleBox(Ui.Box(new Color(rc, 0.15f + 0.2f * pulse), 8), new Rect2(icon - new Vector2(3, 2), new Vector2(38, 36)));
                     Assets.DrawFrame(this, Assets.MenuIcons, 0, 32, icon, 1, WeaponLook.IconTint(g.D, g.WeaponRarity));
-                    f.Draw(this, icon + new Vector2(24, 14), "B", Ink.Map, TextAlign.Center);
+                    f.Draw(this, icon + new Vector2(24, 14), Loc.T("fach_znak"), Ink.Map, TextAlign.Center);
                     label = Loc.T("cios_b");
                 }
                 else

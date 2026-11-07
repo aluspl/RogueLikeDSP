@@ -10,15 +10,21 @@ namespace LifeLike.Game.Phone.Tabs;
 /// Sprzęt (tab_gear na GBA): narzędzie z zakresem ciosu i krytem (rozpiska obrażeń #26: I / dotknięcie narzędzia),
 /// kask / rękawice / kamizelka / ... z jakością (kolor paska), skutkiem (np. „+2 OBR”) i cechą (pastylka), premie
 /// sprzętu oraz szczęście: kryt, unik, wzrok. A / przycisk: Brygada. v0.23.0: broń z rzadkością (kolor), typem ciosu,
-/// trybami A i B słowami, odnowieniem B i drugą bronią w kaburze (pas monterski).
+/// trybami A i B słowami, odnowieniem B i drugą bronią w kaburze (pas monterski). v0.23.0: Fach nazwą ruchu; gdy trzy
+/// sekcje (Narzędzie, Sprzęt, Premie i materiały) nie mieszczą się (telefon w poziomie / ramka na komputerze), strona
+/// przewija się sekcjami: strzałki góra/dół, przesunięcie palcem, dotknięcie strzałki „więcej” – nic nie chowa się pod przyciskami.
 /// </summary>
 public sealed class GearTab : PhonePage
 {
-    private const int WeaponRow = 100;
+    private const int WeaponRow = 100, MoreDown = 101, MoreUp = 102;
+
+    /// <summary>Wysokość paska ze strzałką „więcej niżej / wyżej”.</summary>
+    private const int MoreH = 10;
     private readonly CoreGame _g;
     private readonly System.Action _brigade;
     private readonly System.Action _breakdown;
     private readonly System.Action _boons;
+    private int _scroll, _maxScroll;
 
     public GearTab(CoreGame g, System.Action brigade = null, System.Action breakdown = null, System.Action boons = null)
     {
@@ -35,8 +41,18 @@ public sealed class GearTab : PhonePage
         : _boons is null ? [new(Loc.T("obrazenia"), GameAction.Info), new(Loc.T("brygada_3"), GameAction.A)]
         : [new(Loc.T("obrazenia"), GameAction.Info), new(Loc.T("premie_3"), GameAction.R), new(Loc.T("brygada_3"), GameAction.A)];
 
+    /// <summary>Pierwsza widoczna sekcja (0 = od narzędzia).</summary>
+    public int Scroll => _scroll;
+
+    public override void Enter() => _scroll = 0;
+
     public override bool Input(InputCmd e)
     {
+        if (e.VDir != 0 && _maxScroll > 0) // v0.23.0: przewijanie sekcjami (w poziomie się nie mieszczą)
+        {
+            _scroll = System.Math.Clamp(_scroll + e.VDir, 0, _maxScroll);
+            return true;
+        }
         if (_breakdown is not null && e.Is(GameAction.Info))
         {
             _breakdown();
@@ -55,6 +71,11 @@ public sealed class GearTab : PhonePage
     /// <summary>Dotknięcie / klik narzędzia: rozpiska obrażeń.</summary>
     public override bool TapRow(int index)
     {
+        if (index is MoreDown or MoreUp)
+        {
+            _scroll = System.Math.Clamp(_scroll + (index == MoreDown ? 1 : -1), 0, _maxScroll);
+            return true;
+        }
         if (index != WeaponRow || _breakdown is null) return false;
         _breakdown();
         return true;
@@ -62,9 +83,86 @@ public sealed class GearTab : PhonePage
 
     public override void Draw(PhonePainter p)
     {
+        // v0.23.0: wysokości sekcji (nagłówek + karta + odstęp); gdy całość się nie mieści – przewijanie sekcjami
+        int[] rows = [ToolRows(), Slots().Count, _g.D.Materials.Length > 0 ? 4 : 3];
+        var h = new float[3];
+        for (var i = 0; i < 3; i++) h[i] = PhonePainter.RowH + rows[i] * PhonePainter.RowH + 8 + 4;
+        var room = p.Bottom - p.Top + 4;
+        _maxScroll = 0;
+        if (h[0] + h[1] + h[2] > room)
+        {
+            _maxScroll = 2;
+            for (var k = 1; k <= 2; k++)
+            {
+                var sum = (float)MoreH;
+                for (var i = k; i < 3; i++) sum += h[i];
+                if (sum > room) continue;
+                _maxScroll = k;
+                break;
+            }
+        }
+        _scroll = System.Math.Clamp(_scroll, 0, _maxScroll);
+        var y = p.Top;
+        if (_scroll > 0)
+        {
+            More(p, y, false);
+            y += MoreH;
+        }
+        var bottom = p.Bottom + 4 - (_maxScroll > 0 ? MoreH : 0);
+        var last = _scroll;
+        for (var i = _scroll; i < 3; i++)
+        {
+            if (i > _scroll && y + h[i] > (i == 2 ? p.Bottom + 4 : bottom)) break;
+            y = i switch { 0 => DrawTool(p, y, rows[0]), 1 => DrawGear(p, y), _ => DrawBoons(p, y) } + 4;
+            last = i;
+        }
+        if (last < 2) More(p, bottom, true);
+    }
+
+    /// <summary>Pasek ze strzałką „więcej niżej” (down) albo „wyżej” – dotknięcie przewija o sekcję.</summary>
+    private static void More(PhonePainter p, float y, bool down)
+    {
+        var cx = Godot.Mathf.Round((p.Left + p.Right) / 2);
+        var cy = y + MoreH / 2f;
+        Godot.Vector2[] tri = down
+            ? [new(cx - 6, cy - 3), new(cx + 6, cy - 3), new(cx, cy + 3)]
+            : [new(cx - 6, cy + 3), new(cx + 6, cy + 3), new(cx, cy - 3)];
+        p.C.DrawColoredPolygon(tri, Pal.Brand);
+        p.Hit(new Godot.Rect2(p.Left, y - 4, p.Width, MoreH + 8), down ? MoreDown : MoreUp);
+    }
+
+    /// <summary>Wiersze karty narzędzia: w poziomie nazwa i rzadkość, w pionie też kryt i tryby (Cios, Fach z nazwą i opisem).</summary>
+    private int ToolRows()
+    {
+        var g = _g;
+        var full = PhoneView.Full;
+        var belt = g.HasBelt();
+        var b = g.WeaponBreakdown();
+        var n = (full ? 6 : 2) + (belt ? 1 : 0) + WeaponLook.PerkRows(g.D, b.Perks, b.PerksMaster, full).Count;
+        if (belt && g.Weapon2 >= 0 && g.Weapon2Perks != 0)
+        {
+            var b2 = g.WeaponBreakdown(-1, g.Weapon2, -1, -1, 0, g.Weapon2Rarity, g.Weapon2Perks);
+            n += WeaponLook.PerkRows(g.D, b2.Perks, b2.PerksMaster, full).Count;
+        }
+        return n;
+    }
+
+    /// <summary>Sloty: kask, rękawice, kamizelka + buty i pas z nagród za odbiór (jeśli odebrane albo założone).</summary>
+    private System.Collections.Generic.List<int> Slots()
+    {
+        var slots = new System.Collections.Generic.List<int>();
+        for (var i = 0; i < _g.D.GearSlotsCount; i++)
+        {
+            if (((_g.Bonus.GearSlots >> i) & 1) != 0 || _g.Equipped[i] >= 0) slots.Add(i);
+        }
+        return slots;
+    }
+
+    private float DrawTool(PhonePainter p, float top, int rows)
+    {
         var g = _g;
         var d = g.D;
-        var y = p.Section(p.Top, Loc.T("narzedzie_4"), _breakdown is null ? "" : ButtonNames.Pick(Loc.T("i_rozpiska"), Loc.T("dotknij_rozpiska")));
+        var y = p.Section(top, Loc.T("narzedzie_4"), _breakdown is null ? "" : ButtonNames.Pick(Loc.T("i_rozpiska"), Loc.T("dotknij_rozpiska")));
         var full = PhoneView.Full; // v0.23.0: tryby słowami tylko w pełnym telefonie (w poziomie brak miejsca)
         var belt = g.HasBelt();
         var b = g.WeaponBreakdown();   // zakres ciosu jak w walce (rozpiska #26)
@@ -72,7 +170,7 @@ public sealed class GearTab : PhonePage
         var belt2 = belt && g.Weapon2 >= 0 && g.Weapon2Perks != 0; // profity broni w kaburze – też w poziomie (zawijanie w osobnych wierszach)
         var b2 = belt2 ? g.WeaponBreakdown(-1, g.Weapon2, -1, -1, 0, g.Weapon2Rarity, g.Weapon2Perks) : default;
         var perkLines2 = belt2 ? WeaponLook.PerkRows(d, b2.Perks, b2.PerksMaster, full) : [];
-        var c0 = p.Card(y, (full ? 5 : 2) + (belt ? 1 : 0) + perkLines.Count + perkLines2.Count); // w poziomie: rzadkość i typ w wierszu krytu (bez trybów)
+        var c0 = p.Card(y, rows); // w poziomie: rzadkość i typ w wierszu krytu (bez trybów)
         var tx = p.TextX(c0);
         var right = c0.End.X - 6;
         var w = g.Weapon;
@@ -92,7 +190,7 @@ public sealed class GearTab : PhonePage
         }
         p.HitRow(c0, 0, WeaponRow);
         p.HitRow(c0, 1, WeaponRow);
-        // v0.23.0: rzadkość i typ ciosu (w poziomie z krytem), odnowienie B, tryby A i B, kabura
+        // v0.23.0: rzadkość i typ ciosu (w poziomie z krytem), odnowienie Fachu, Cios i Fach, kabura
         p.Stripe(c0, row, rc);
         pw = p.Pill(right, p.RowY(c0, row), bState, g.WeaponBCd == 0 ? PillKind.Group : PillKind.Gray);
         var kind = $"{WeaponLook.RarityName(d, g.WeaponRarity)} · {WeaponLook.Hits(d, w)}"; // kryt w poziomie – w karcie premii niżej
@@ -108,10 +206,12 @@ public sealed class GearTab : PhonePage
         if (full)
         {
             p.Divider(c0, row);
-            p.Text(tx, p.RowY(c0, row), "A: " + WeaponLook.Mode(d, w, w.ModeA, false), Ink.Dim, TextAlign.Left, right - tx);
+            p.Text(tx, p.RowY(c0, row), WeaponLook.LineA(w), Ink.Dim, TextAlign.Left, right - tx);
             row++;
-            p.Divider(c0, row);
-            p.Text(tx, p.RowY(c0, row), "B: " + WeaponLook.Mode(d, w, w.ModeB, true, g.WeaponBCdDelta()), Ink.Dim, TextAlign.Left, right - tx);
+            p.Divider(c0, row); // v0.23.0: Fach – nazwa ruchu, pod nią wzór, efekt i odnowienie
+            p.Text(tx, p.RowY(c0, row), Loc.T("tryb_fach") + ModeText.BName(w), Ink.Brand, TextAlign.Left, right - tx);
+            row++;
+            p.Text(tx + 8, p.RowY(c0, row), WeaponLook.Mode(w, w.ModeB, true, g.WeaponBCdDelta()), Ink.Dim, TextAlign.Left, right - tx - 8);
             row++;
         }
         if (belt)
@@ -134,15 +234,18 @@ public sealed class GearTab : PhonePage
             }
             else p.Text(tx, p.RowY(c0, row), Loc.T("kabura_pusta_2"), Ink.Dim, TextAlign.Left, right - tx);
         }
+        return c0.End.Y;
+    }
 
-        // sloty: kask, rękawice, kamizelka + buty i pas z nagród za odbiór (jeśli odebrane albo założone)
-        var slots = new System.Collections.Generic.List<int>();
-        for (var i = 0; i < d.GearSlotsCount; i++)
-        {
-            if (((g.Bonus.GearSlots >> i) & 1) != 0 || g.Equipped[i] >= 0) slots.Add(i);
-        }
-        y = p.Section(c0.End.Y + 4, Loc.T("sprzet_8"), $"{CountEquipped()}/{slots.Count}");
+    private float DrawGear(PhonePainter p, float top)
+    {
+        var g = _g;
+        var d = g.D;
+        var slots = Slots();
+        var y = p.Section(top, Loc.T("sprzet_8"), $"{CountEquipped()}/{slots.Count}");
         var c1 = p.Card(y, slots.Count);
+        var tx = p.TextX(c1);
+        var right = c1.End.X - 6;
         for (var k = 0; k < slots.Count; k++)
         {
             var i = slots[k];
@@ -161,22 +264,30 @@ public sealed class GearTab : PhonePage
             var tr = g.EquippedTrait[i];
             var nameW = p.F.Measure(d.GearTraits[tr].Name) + 10; // v0.23.0 (#91): cecha pełną nazwą, skrót gdy zabraknie miejsca na nazwę przedmiotu
             var useFull = right - nameW - 8 - tx - p.F.Measure(eff) - 6 - p.F.Measure(gd.Name) >= 0;
-            pw = p.Pill(right, r, useFull ? d.GearTraits[tr].Name : d.GearTraits[tr].Short, rar == 2 ? PillKind.Prog : rar == 1 ? PillKind.Group : PillKind.Gray);
+            var pw = p.Pill(right, r, useFull ? d.GearTraits[tr].Name : d.GearTraits[tr].Short, rar == 2 ? PillKind.Prog : rar == 1 ? PillKind.Group : PillKind.Gray);
             var room = right - pw - 8 - tx - p.F.Measure(eff) - 6;
             var name = p.F.Measure(gd.Name) <= room ? gd.Name : p.F.Fit(d.GearSlots[i], (int)room);
             var nx = tx + p.Text(tx, r, name, Ink.Dark) + 6;
             p.Text(nx, r, eff, Ink.Brand);
         }
+        return c1.End.Y;
+    }
 
+    private float DrawBoons(PhonePainter p, float top)
+    {
+        var g = _g;
+        var d = g.D;
         var boonsRight = _boons is null ? "" : ButtonNames.Pick(Loc.F("r_premie", g.BoonsOwned()), Loc.F("premie_7", g.BoonsOwned()));
-        y = p.Section(c1.End.Y + 4, Loc.T("premie_i_materialy"), boonsRight);
+        var y = p.Section(top, Loc.T("premie_i_materialy"), boonsRight);
         var c2 = p.Card(y, d.Materials.Length > 0 ? 4 : 3);
+        var tx = p.TextX(c2);
+        var right = c2.End.X - 6;
         p.Text(tx, p.RowY(c2, 0), Loc.F("obrona_obraz_hp", g.GearBonus(GearStat.Def), g.GearBonus(GearStat.Dmg), g.GearBonus(GearStat.Hp)), Ink.Dim, TextAlign.Left, right - tx);
         p.Divider(c2, 1);
         p.Text(tx, p.RowY(c2, 1), Loc.F("kryt_unik_wzrok", g.CritPct(), g.DodgePct(), g.SightRadius()), Ink.Dim, TextAlign.Left, right - tx);
         p.Divider(c2, 2);
         p.Text(tx, p.RowY(c2, 2), Loc.F("szczescie_termos", g.Luck(), g.Thermos, g.ThermosCap()), Ink.Dim, TextAlign.Left, right - tx);
-        if (d.Materials.Length == 0) return;
+        if (d.Materials.Length == 0) return c2.End.Y;
         p.Divider(c2, 3); // materiały: Hurtownia i naprawy (Brygada)
         var mx = tx;
         for (var m = 0; m < d.Materials.Length; m++)
@@ -185,6 +296,7 @@ public sealed class GearTab : PhonePage
             mx += MaterialIcon.Size + 3;
             mx += p.Text(mx, p.RowY(c2, 3), $"{d.Materials[m].Name} {g.Mats[m]}", g.Mats[m] > 0 ? Ink.Dark : Ink.Dim) + 8;
         }
+        return c2.End.Y;
     }
 
     private int CountEquipped()

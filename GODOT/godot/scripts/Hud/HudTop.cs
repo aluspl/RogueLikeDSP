@@ -192,12 +192,12 @@ public partial class HudTop : Control
         else if (((int)(_clock * 2) & 1) == 0) x += Text(x, "R", Ink.MapGood) + 8;
         else x += f.Measure("R") + 8;
 
-        // v0.23.0: broń w kolorze rzadkości i odnowienie trybu B („B” – gotowy, liczba – tury)
+        // v0.23.0: broń w kolorze rzadkości i odnowienie Fachu („F” – gotowy, liczba – tury)
         if (draw) Assets.DrawFrame(this, Assets.UiMenu, 0, Assets.Icon, new Vector2(x, 20), 1, WeaponLook.IconTint(g.D, g.WeaponRarity));
         x += 18;
         if (labels) x += Text(x, Loc.T("hud_cios_b"), g.WeaponBCd == 0 ? Ink.MapGood : Ink.MapDim) + 4;
         if (g.WeaponBCd > 0) x += Text(x, g.WeaponBCd.ToString(), Ink.MapDim) + 8;
-        else x += Text(x, "B", Ink.MapGood) + 8;
+        else x += Text(x, Loc.T("fach_znak"), Ink.MapGood) + 8;
 
         // materiały: ikona + liczba (tylko posiadane)
         for (var m = 0; m < g.D.Materials.Length; m++)

@@ -164,7 +164,7 @@ public sealed class Aiming
         var e = g.Enemies[Target];
         var name = g.D.Enemies[e.DefId].Name;
         var line = Loc.F("cel_hp", _sel + 1, _count, name, e.Hp, e.MaxHp);
-        if (ModeB) line = Loc.T("cios_b_prefix") + line;
+        if (ModeB) line = ModeText.BName(g.Weapon) + ": " + line; // v0.23.0: nazwa ruchu Fachu
         N.Hud.ShowHint(line, ModeB ? ButtonNames.Pick(Loc.T("strzalki_zmiana_celu_pusc_f"), Loc.T("przesun_palec_cel_pusc_cios_b"))
             : ButtonNames.Pick(Loc.T("strzalki_zmiana_celu_pusc"), Loc.T("przesun_palec_cel_pusc_atak")));
     }
