@@ -3661,6 +3661,190 @@ int main()
             CHECK(after > before * 1.15 && min_after > 0.04);   // każda para dalej wyraźnie różna
         }
     }
+    // 55. v0.23.0: system broni (odpowiedniki C#: HitCalcTests, HitPatternTests, WeaponModeTests, WeaponRarityTests, WeaponPerkTests,
+    // BeltTests, ArtifactProcTests, ArtifactCaseTests, SecretsTests) - zgodność 1:1 sprawdza też test złoty
+    {
+        auto wi = [](const char* n) { for(int i = 0; i < int(sizeof data::weapons / sizeof data::weapons[0]); ++i) if(std::strcmp(data::weapons[i].name.s[0], n) == 0) return i; return -1; };
+        auto ti = [](int w) { for(int t = 0; t < data::tools_count; ++t) if(data::tools[t].weapon == w) return t; return -1; };
+        auto add = [](game& g, int def, int x, int y) { int i = g.enemies_count; g.spawn(def, x, y); g.enemies[i].hp = g.enemies[i].max_hp = 5000; g.update_fov(); return i; };
+        auto hurt = [](const game& g, int i) { return g.enemies[i].hp < g.enemies[i].max_hp; };
+        const int mlot = wi("Młot wyburzeniowy"), siekiera = wi("Siekiera ciesielska"), szlif = wi("Szlifierka"), lut = wi("Lutownica");
+        const int laser = wi("Poziomica laserowa"), gwozdz = wi("Gwoździarka"), dach = wi("Dachówki"), wkret = wi("Wkrętarka");
+        const int agregat = wi("Agregat tynkarski"), spaw = wi("Spawarka"), przecinak = wi("Przecinak z młotkiem"), grom = wi("Młot Gromowładny");
+        const int zenka = wi("Młot Zenka"), noz = wi("Nóż majstra seniora");
+        CHECK(mlot >= 0 && siekiera >= 0 && szlif >= 0 && lut >= 0 && laser >= 0 && gwozdz >= 0 && dach >= 0 && wkret >= 0 && agregat >= 0);
+        CHECK(spaw >= 0 && przecinak >= 0 && grom >= 0 && zenka >= 0 && noz >= 0);
+        // dane: 45 broni, 33 narzędzia, Gablota (bronie Mistrzowskie, kolejność tylko dopisywana)
+        CHECK(int(sizeof data::weapons / sizeof data::weapons[0]) == 45 && data::tools_count == 33 && data::original_tools_count == 10);
+        CHECK(data::artifacts_count == 8 && data::artifacts[0] == zenka && data::artifacts[3] == noz && data::weapons[grom].master);
+        for(int i = 0; i < data::artifacts_count; ++i) CHECK(data::weapons[data::artifacts[i]].master);
+        // typy ciosu: obuch na cement 125, cięcie na stal 75, woda przed materiałem, boss bez materiału, iskra na stal, ogień osusza
+        CHECK(hit_pct(data::weapons[mlot], data::enemies[data::enemy_kamien]) == 125);
+        CHECK(hit_pct(data::weapons[siekiera], data::enemies[data::enemy_dostawa]) == 75);
+        CHECK(hit_pct(data::weapons[mlot], data::enemies[data::enemy_przeciek]) == 75);
+        CHECK(hit_pct(data::weapons[mlot], data::enemies[data::enemy_termin]) == 100);
+        CHECK(hit_has(data::weapons[szlif], hit_type::cut) && hit_pct(data::weapons[szlif], data::enemies[data::enemy_dostawa]) == 75 * data::hit_types.spark_steel_pct / 100);
+        CHECK(hit_pct(data::weapons[noz], data::enemies[data::enemy_dostawa]) == 100 && hit_pierce_def(data::weapons[noz]) == 4);   // czyste kłucie
+        {
+            game g; arena(g, 0); g.weapon_override = lut;
+            const int e = add(g, data::enemy_plesn, 8, 7); g.enemies[e].wet = 3;
+            g.hero_attack(e); CHECK(g.enemies[e].wet == 0);
+        }
+        // wzory: łuk kielni (3 pola przed), wokół (8), linia przebija, strzał trafia pierwszego, rzut 3x3 wokół celu
+        {
+            game g; arena(g, 1);   // Murarz: Kielnia, tryb A - łuk
+            int a = add(g, data::enemy_plesn, 6, 6), b = add(g, data::enemy_plesn, 7, 6), c = add(g, data::enemy_plesn, 8, 6), far = add(g, data::enemy_plesn, 7, 5);
+            g.hero.hp = 99; CHECK(g.player_attack(b) && hurt(g, a) && hurt(g, b) && hurt(g, c) && ! hurt(g, far));
+        }
+        {
+            game g; arena(g, 0); g.weapon_override = laser; g.hero.hp = 99;
+            int a = add(g, data::enemy_plesn, 7, 6), b = add(g, data::enemy_plesn, 7, 5), c = add(g, data::enemy_plesn, 7, 4);
+            CHECK(g.player_attack(a) && hurt(g, a) && hurt(g, b) && hurt(g, c));
+            game h; arena(h, 0); h.weapon_override = laser; h.lv.t[5][7] = tile::wall;
+            int f = add(h, data::enemy_plesn, 7, 6), z = add(h, data::enemy_plesn, 7, 4);
+            CHECK(h.player_attack(f) && hurt(h, f) && ! hurt(h, z));   // ściana zatrzymuje linię
+        }
+        {
+            game g; arena(g, 0); g.weapon_override = gwozdz;
+            int a = add(g, data::enemy_plesn, 7, 6), b = add(g, data::enemy_plesn, 7, 5);
+            CHECK(g.player_attack(b) && hurt(g, a) && ! hurt(g, b));
+        }
+        {
+            game g; arena(g, 0); g.weapon_override = mlot; g.hero.hp = 99;
+            int ids[8], k = 0;
+            for(int dy = -1; dy <= 1; ++dy) for(int dx = -1; dx <= 1; ++dx) if(dx || dy) ids[k++] = add(g, data::enemy_plesn, 7 + dx, 7 + dy);
+            int out = add(g, data::enemy_plesn, 7, 5);
+            CHECK(g.player_weapon_b(ids[0]));   // Wyburzenie: wokół
+            for(int i = 0; i < 8; ++i) CHECK(hurt(g, ids[i]));
+            CHECK(! hurt(g, out) && g.weapon_b_cd == data::weapons[mlot].mode_b.cooldown && ! g.player_weapon_b(ids[0]));
+        }
+        {
+            game g; arena(g, 0); g.weapon_override = dach;
+            int t = add(g, data::enemy_plesn, 7, 4), n = add(g, data::enemy_plesn, 8, 3), far = add(g, data::enemy_plesn, 7, 9);
+            CHECK(g.player_weapon_b(t) && hurt(g, t) && hurt(g, n) && ! hurt(g, far));   // Grad dachówek
+        }
+        // tryb B: odnowienie po turze, Rzut zaprawą ogłusza, osłabienie, unieruchomienie, krwawienie / podpalenie (stal x150%)
+        {
+            game g; arena(g, 1);
+            int e = add(g, data::enemy_plesn, 9, 7);
+            CHECK(g.player_weapon_b(e) && g.weapon_b_cd == data::weapons[data::classes[1].weapon].mode_b.cooldown && g.turns == 1);
+            CHECK(g.enemies[e].x == 9);   // ogłuszony nie podszedł
+            const int cd = g.weapon_b_cd; g.player_wait(); CHECK(g.weapon_b_cd == cd - 1);
+        }
+        {
+            game g; arena(g, 0); g.weapon_override = wkret;
+            int e = add(g, data::enemy_dostawa, 8, 7);
+            const int d0 = g.enemy_defense(e);
+            CHECK(g.player_weapon_b(e) && g.enemies[e].def_down > 0 && g.enemy_defense(e) == imax(0, d0 - data::weapons[wkret].mode_b.value));
+        }
+        {
+            game g; arena(g, 0); g.weapon_override = agregat;
+            int e = add(g, data::enemy_plesn, 9, 7);
+            CHECK(g.player_weapon_b(e) && g.enemies[e].root > 0);
+            g.player_wait(); CHECK(g.enemies[e].x == 9 && g.enemies[e].y == 7);   // unieruchomiony stoi
+        }
+        {
+            game g; arena(g, 0); g.weapon_override = spaw;
+            int e = add(g, data::enemy_dostawa, 8, 7);
+            CHECK(g.player_weapon_b(e) && g.enemies[e].dot > 0 && g.enemies[e].dot_kind == 2 && g.enemies[e].dot_dmg == 3);   // cięcie: krwawienie, stal x150%
+            const int hp = g.enemies[e].hp; g.player_wait(); CHECK(g.enemies[e].hp <= hp - 3);
+        }
+        // Przecinak: pęknięta / zamknięta ściana bez problemu, ładunki, sekret ścian Patentem
+        {
+            game g; arena(g, 0); g.weapon_override = przecinak;
+            g.secret_x = 9; g.secret_y = 7; g.lv.t[7][9] = tile::wall; g.secret_open = false; g.secret_kind = 0;
+            g.secret_rx = 10; g.secret_ry = 6; g.secret_rw = 3; g.secret_rh = 3; g.hero.x = 8;
+            CHECK(g.can_weapon_b_open_wall() && g.player_weapon_b_wall() && g.secret_open && g.weapon_charges == data::weapons[przecinak].mode_b.value - 1);
+            CHECK(g.patent_walls == 1 && ! g.player_weapon_b_wall());   // brak ściany: bez kosztu
+        }
+        // rzadkość: losowanie nigdy Mistrzowska, broń mistrza Mistrzowska, Markowa skraca odnowienie Patentu
+        {
+            game g; g.new_run(0, 5);
+            for(int k = 0; k < 2000; ++k) CHECK(g.roll_weapon_rarity() <= max_rolled_weapon_rarity);
+            run_mods m; m.mastery = mastery_bit_weapon; game b; b.new_run(0, 5, 1, m);
+            CHECK(b.weapon_rarity == master_weapon_rarity && b.weapon_master());
+            g.weapon_rarity = 2; CHECK(g.weapon_b_cd_delta() == data::weapon_rarities[2].cooldown_delta && g.weapon_b_cd_delta() < 0);
+            run_mods t; t.weapon_rarity = 2; game c; c.new_run(0, 5, 1, t); CHECK(c.weapon_rarity == 2 && c.weapon_perks == 0);   // Szkolenie: bez losowych profitów
+        }
+        // profity: Zwykła 0, Solidna 1, Markowa 2 różne, Mistrzowska stałe; deterministyczne z seeda budowy
+        {
+            game a; a.new_run(0, 77); game b; b.new_run(0, 77);
+            CHECK(a.roll_weapon_perks(mlot, 0) == 0 && b.roll_weapon_perks(mlot, 0) == 0);
+            const int p1 = a.roll_weapon_perks(mlot, 1), p2 = a.roll_weapon_perks(mlot, 2);
+            CHECK(botw::popcount8(p1) == 1 && botw::popcount8(p2) == 2 && p1 == b.roll_weapon_perks(mlot, 1) && p2 == b.roll_weapon_perks(mlot, 2));
+            CHECK(a.roll_weapon_perks(noz, master_weapon_rarity) == master_perk_mask(noz) && master_perk_mask(noz) != 0 && a.perk_rolls == 2);
+            a.weapon_perks = uint8_t(master_perk_mask(noz)); CHECK(a.weapon_bonus(tool_trait_effect::crit) == perk_value(master_perk_mask(noz), tool_trait_effect::crit));
+        }
+        // pas z kaburą: znaleziona broń do kabury, zamiana za turę, utrata pasa - broń wypada
+        {
+            game g; arena(g, 0);
+            CHECK(! g.has_belt() && ! g.player_swap_weapon());
+            g.equip(data::belt_slot, game::belt_tier, 0); CHECK(g.has_belt());
+            g.pickups[0] = { g.hero.x, g.hero.y, tool, true, uint8_t(ti(mlot)), 2 }; g.pickups_count = 1; g.collect();
+            CHECK(g.weapon2 == mlot && g.weapon2_rarity == 2 && g.weapon_override < 0);
+            const int t0 = g.turns;
+            CHECK(g.player_swap_weapon() && g.turns == t0 + 1 && g.weapon_override == mlot && g.weapon_rarity == 2 && g.weapon2 == data::classes[0].weapon);
+            CHECK(g.secret_flags & game::secret_tool_swap);
+            g.equip(data::belt_slot, 0, 0);
+            CHECK(g.weapon2 == -1 && ! g.has_belt());
+        }
+        // artefakt: Młot Gromowładny - co 5. cios piorun z ogłuszeniem; licznik zeruje zmiana broni
+        {
+            game g; arena(g, 0); g.weapon_override = grom; g.hero.hp = 999; g.hero.max_hp = 999;
+            int e = add(g, data::enemy_kamien, 8, 7);
+            for(int k = 0; k < 4; ++k) { g.attack_with(data::weapons[grom].mode_a, e); g.enemies[e].stun = 0; }
+            CHECK(g.proc_count == 4);
+            g.attack_with(data::weapons[grom].mode_a, e); CHECK(g.proc_count == 0 && g.enemies[e].stun >= 1);
+            g.attack_with(data::weapons[grom].mode_a, e); CHECK(g.proc_count == 1);
+            g.take_tool(ti(mlot)); CHECK(g.proc_count == 0);
+        }
+        {   // Markowa broń bazowa z dropu bywa artefaktem (~25%), bez powtórki w budowie
+            int got = 0;
+            for(uint32_t s = 1; s <= 2000; ++s)
+            {
+                game g; g.new_run(0, s);
+                int t = ti(mlot), r = 2, pk = 0;
+                if(g.roll_artifact(t, r, pk)) { ++got; CHECK(r == master_weapon_rarity && data::weapons[data::tools[t].weapon].master); int t2 = ti(mlot), r2 = 2, p2 = 0; CHECK(! (g.roll_artifact(t2, r2, p2) && t2 == t)); }
+            }
+            CHECK(got > 2000 * data::artifact_chance_pct / 200 && got < 2000 * data::artifact_chance_pct * 2 / 100);
+        }
+        // profil v19: migracja v17 (maski z bajtów 35 / 41, Gablota z sekretów), v18 (szerokie maski), zwrot usuniętych rang Respektu
+        {
+            profile o; profile_reset(o); std::memcpy(o.magic, profile_magic_v17, sizeof o.magic);
+            o.tools_lo = 0x16; o.tools_found_lo = 0x05;
+            for(int i = 0; i < data::secrets_count; ++i) if(data::secrets[i].kind == secret_kind::helper_boss) o.secrets = uint16_t(1 << i);
+            std::memset(reinterpret_cast<char*>(&o) + profile_v17_size, 0xEE, sizeof o - profile_v17_size);   // śmieci za v17
+            CHECK(profile_fix(o) && std::strcmp(o.magic, profile_magic) == 0 && o.tools == 0x16 && o.tools_found == 0x05);
+            CHECK(artifact_found(o, 0) && artifact_day(o, 0) == 0 && o.artifacts == 1 && ! profile_fix(o));   // Młot Zenka z sekretu
+            profile w; profile_reset(w); std::memcpy(w.magic, profile_magic_v18, sizeof w.magic); w.tools = uint64_t(1) << 20; w.tools_found = uint64_t(1) << 15;
+            CHECK(profile_fix(w) && w.tools == (uint64_t(1) << 20) && w.tools_found == (uint64_t(1) << 15) && w.artifacts == 0);
+            profile r; profile_reset(r); set_respect_rank(r, 0, 2); r.respect = 5;   // Pewna ręka: ranga II usunięta
+            CHECK(profile_fix(r) && r.respect == 5 + data::respect_removed_costs[0][1] && respect_slot(r, 0) == 1 && ! profile_fix(r));
+            game g; g.new_run(0, 3); g.weapon_override = grom;
+            CHECK(artifacts_bank(r, g, 20400) == (1 << game::artifact_index(grom)) && artifact_day(r, game::artifact_index(grom)) == 20400);
+            CHECK(artifacts_bank(r, g, 20500) == 0 && artifact_day(r, game::artifact_index(grom)) == 20400);
+            CHECK(sizeof(profile) == 440 && offsetof(profile, artifact_day) == 402);
+        }
+        // sekretne zlecenia: Stara szkoła (Majster bez wymiany broni), Przez ścianę na skróty (3 ściany Patentem)
+        {
+            int ns = -1, pw = -1;
+            for(int i = 0; i < data::secrets_count; ++i) { if(data::secrets[i].kind == secret_kind::no_swap_win) ns = i; if(data::secrets[i].kind == secret_kind::patent_walls) pw = i; }
+            CHECK(ns >= 0 && pw >= 0 && data::secrets[ns].reward == secret_reward::tool && data::tools[data::secrets[ns].index].weapon == noz);
+            profile p; profile_reset(p);
+            const int majster = data::secrets[ns].value;
+            game g; g.new_run(majster, 11); g.st = status::won; CHECK(secret_condition(p, &g, ns));
+            game o; o.new_run(1, 11); o.st = status::won; CHECK(! secret_condition(p, &o, ns));
+            game s; s.new_run(majster, 11); s.take_tool(0); s.st = status::won; CHECK(! secret_condition(p, &s, ns));
+            game w; w.new_run(0, 3); w.patent_walls = uint8_t(data::secrets[pw].value - 1); CHECK(! secret_condition(p, &w, pw));
+            w.patent_walls = uint8_t(data::secrets[pw].value); CHECK(secret_condition(p, &w, pw));
+        }
+        // zapis budowy: stan broni w PBRUN19
+        {
+            static run_save s; static game g; g.new_run(2, 9); g.weapon_b_cd = 3; g.weapon2 = mlot; g.weapon_perks = 5; g.artifacts_run = 2;
+            run_save_make(s, g);
+            CHECK(run_save_valid(s) && s.g.weapon_b_cd == 3 && s.g.weapon2 == mlot && s.g.weapon_perks == 5 && s.g.artifacts_run == 2);
+        }
+    }
     if(std::getenv("PB_NO_BALANCE")) { std::printf(fails ? "\n%d FAIL\n" : "\nOK (bez balansu)\n", fails); return fails != 0; }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie
     std::printf("%-18s %-9s %6s %6s %6s %8s\n","zawód","poziom","wygr.%","śr.etap","śr.tury","śr.wynik");
@@ -3781,7 +3965,7 @@ int main()
             {
                 const int a = rate_k(k, none), b = rate_k(k, fullr);
                 std::printf(" %s %d/%d%%", data::career[k].short_name.c_str(), a, b);
-                CHECK(a >= 20 && a <= (data::career[k].count < 10 ? 50 : 42) && b >= 55 && b <= 82);
+                CHECK(a >= 20 && a <= (data::career[k].count < 10 ? 50 : 42) && b >= 60 && b <= 85);   // v0.23.0: cele 25-40 / 65-80 (+ zapas na szum 150 przebiegów)
             }
             std::printf("\n");
         }
@@ -3822,12 +4006,19 @@ int main()
         }
         std::printf("Kawa (bot): %.2f/budowę, pije w %d%% budów (bez meta); bez picia kawy: %d%% (pełne Szkolenia %d%%)\n",
                     double(dr0) / n, k0 * 100 / n, wx, wx1);
-        CHECK(w0 >= 25 && w0 <= 35);   // cele balansu v0.21.49
-        CHECK(w1 >= 50 && w1 <= 60);
-        CHECK(w2 >= 65 && w2 <= 75);
+        // v0.23.0: bot gra bronią domyślną bez znajdziek (BotOptions.DefaultOnly) - porównanie z botem z bronią
+        bot_opt.default_only = true;
+        long drd; int kd; const int wd = win_rate(mods(none), drd, kd); (void)drd; (void)kd;
+        bot_opt.default_only = false;
+        std::printf("  tylko broń domyślna (bez meta) %d%%\n", wd);
+        // cele balansu (CLAUDE.md; v0.23.0: meta "pół na pół" - decyzja właściciela 2026-11-06)
+        CHECK(w0 >= 25 && w0 <= 35);
+        CHECK(w1 >= 55 && w1 <= 65);
+        CHECK(w2 >= 70 && w2 <= 80);
         CHECK(w3 >= 5 && w3 <= 15);
-        CHECK(w4 >= 60 && w4 <= 70);   // v0.21.49 cz. 3: dłuższa budowa z Aktem 0
-        CHECK(w5 >= 60 && w5 <= 72 && w5 >= w4);   // v0.21.52 cz. b: mistrzostwo i inspektor - drobne premie
+        CHECK(w4 >= 65 && w4 <= 75);   // Akt 0 + pełne meta
+        CHECK(w5 >= 63 && w5 <= 80 && w5 >= w4 - 2);   // mistrzostwo i inspektor - drobne premie
+        CHECK(wd >= w0 - 10);          // broń domyślna wystarcza (bot bez znajdziek nie dużo słabszy)
         CHECK(wx < w0 && dr0 > 0);     // kawa ma znaczenie
         (void)dr1; (void)dr2; (void)dr3; (void)dr4; (void)k1; (void)k2; (void)k3; (void)k4;
     }
