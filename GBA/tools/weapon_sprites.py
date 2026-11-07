@@ -41,12 +41,18 @@ BASE_PAL = [(255, 0, 255), (26, 26, 26), (240, 240, 240), (200, 200, 200), (138,
 # Rzadkości: (nazwa, obudowa H, obudowa h, akcent A = kolor z game.json weaponRarities, jasny akcent *)
 RARITIES = [
     ("Zwykła",      (44, 104, 58),  (36, 36, 40),   (0x8a, 0x87, 0x96), (196, 194, 206)),
-    ("Solidna",     (32, 150, 164), (18, 72, 96),   (0x2f, 0x8f, 0xd6), (150, 206, 246)),
+    # Solidna: poświata jaśniejsza niż weaponRarities.color (#2f8fd6), żeby w ręce różniła się jasnością od Zwykłej
+    # także w deuteranopii (#8a8796 i #2f8fd6 mają tę samą luminancję 0.25; #5cb4f0 = 0.41) - task 9a
+    ("Solidna",     (32, 150, 164), (18, 72, 96),   (0x5c, 0xb4, 0xf0), (200, 236, 255)),
     ("Markowa",     (246, 192, 32), (36, 36, 40),   (0x6b, 0x4e, 0xff), (178, 160, 255)),
     ("Mistrzowska", (214, 44, 40),  (246, 246, 246), (0xd9, 0xa4, 0x00), (255, 244, 160)),
 ]
 RAR_KEYS = ["zwykla", "solidna", "markowa", "mistrzowska"]
 DIRS = ["down", "up", "left", "right"]
+# Prawa dłoń bohatera w klatce 16x16 actors (WORKER_TOP w pixel_art.py: skóra w x=12, wiersze 10-11). Bohater nie ma
+# klatek kierunkowych - przy ruchu w lewo cała klatka jest odbijana (ActorSprite.Flip), dłoń trafia wtedy na x=3.
+HAND = (12, 11)
+HAND_FLIPPED = (3, 11)
 
 
 def palette(r):
@@ -84,14 +90,14 @@ weapon("kielnia", "hand", "swing", (1, 2), [
     "TTAA..lggl..",
     ".......ll...",
 ])
-weapon("gwozdziarka", "power", "shoot", (2, 4), [
-    "..HHHHHHH...",
-    ".HWWHHHHHH..",
-    ".HHHHHHHHHdd",
-    "..hh...dddd.",
-    "..hh..llll..",
-    "..hhllll....",
-    "..llll......",
+weapon("gwozdziarka", "power", "shoot", (2, 4), [   # cecha: skośny magazynek z gwoździami (ld)
+    ".HHHHHHHH...",
+    "HWWHHHHHHdd.",
+    "HHHHHHHHHHdl",
+    ".hh...ldldd.",
+    ".hh.ldldl...",
+    ".hhldld.....",
+    ".hdld.......",
 ], shot="nail")
 weapon("probnik", "hand", "beam", (1, 2), [
     "..l.........",
@@ -122,15 +128,17 @@ weapon("lom", "hand", "slam", (1, 3), [
     "AAAgggggggdd",
     "AAAddddddddd",
 ])
-weapon("wkretarka", "power", "stab", (3, 4), [
-    ".HHHHHHgd...",
-    "HHhhhHHgdlll",
-    ".HHHHHHgd...",
+weapon("wkretarka", "power", "stab", (3, 4), [   # cecha: schodkowy uchwyt wiertła + akumulator
+    ".HHHHHH.....",
+    "HWHHHHHdd...",
+    "HHhhhHHddlll",
+    ".HHHHHHdd...",
     "..hhh.......",
     "..hhh.......",
+    ".hhhhh......",
     ".HHHHH......",
 ])
-weapon("laser", "power", "beam", (3, 6), [
+weapon("laser", "power", "beam", (0, 6), [
     "...ll.......",
     "..CCCC......",
     "..CWRCRRRRRR",
@@ -175,39 +183,40 @@ weapon("dachowka", "hand", "shoot", (0, 3), [
     ".RORORORR.",
     "RRRRRRRRRR",
 ], rotate=False, shot="tile")
-weapon("agregat", "power", "spray", (3, 6), [
-    ".lllllll....",
-    ".lWWWWWl....",
-    "..lllll.....",
-    "....dd......",
-    "HHHHHHHHgggl",
-    "HhhHHHHHggg.",
-    "..hh........",
-    "..hh........",
+weapon("agregat", "power", "spray", (4, 6), [   # cecha: lej z tynkiem nad pistoletem + wąż z tyłu
+    "..lWWWWWl...",
+    "..lgWWWgl...",
+    "...lgggl....",
+    "....lgl.....",
+    "...HHHHHgggl",
+    "d..HhHHHgg.l",
+    "dd..hh......",
+    ".ddhhh......",
 ], shot="plaster")
-weapon("lyzka", "power", "swing", (1, 0), [
-    ".dd.dd......",
-    "HHHHHHHHH...",
-    "HWHHHHHHHH..",
-    "HHhhhhhhHHH.",
-    "HHhhhhhhhHlg",
-    ".HHhhhhhhHlg",
-    "..HHHHHHHHl.",
+weapon("lyzka", "power", "swing", (2, 1), [   # cecha: łyżka z urobkiem i zębami na krawędzi
+    ".dlld.......",
+    ".dggdTTtT...",
+    "HHHHTTtTTT..",
+    "HWHHHHHHHHH.",
+    "HHHhhhhhhHHl",
+    "HHhhhhhhhHH.",
+    ".HHhhhhhHHHl",
+    "..HHHHHHHHH.",
+    "....l.l.l.l.",
 ])
-weapon("udarowy", "power", "stab", (0, 2), [
+weapon("udarowy", "power", "stab", (0, 2), [   # cecha: pałąk z tyłu, boczna rękojeść, długie dłuto
     "hhhHHHHH....",
-    "h.hHWHHHg...",
-    "h.hHHHHHglll",
-    "hhhHHHHHg...",
-    "....hh......",
-    "....hh......",
+    "h.hHWHHHd...",
+    "h.hHHHHHdlll",
+    "hhhHHHHHd...",
+    "......hh....",
+    ".......hh...",
 ])
-weapon("kotwy", "power", "shoot", (1, 5), [
-    "......d.....",
-    "HHHHHgggggd.",
-    "HWHHHlllllld",
-    "HHHHHgggggd.",
-    ".hh...d.....",
+weapon("kotwy", "power", "shoot", (1, 4), [   # cecha: bardzo długa lufa z kołnierzem
+    "HHHH........",
+    "HWHHgllllldl",
+    "HHHHggggggdl",
+    ".hh.........",
     ".hh.........",
     ".hh.........",
 ], shot="anchor")
@@ -291,14 +300,14 @@ weapon("nozyce", "hand", "swing", (1, 0), [
     ".AAAAd.ggg..",
     "AAAA........",
 ])
-weapon("silikon", "power", "shoot", (2, 4), [
-    "..HHHHHHHH..",
-    "ggHWWWWWWWll",
-    "..HWWWWWWWl.",
-    "..HHHHHHHH..",
-    "..hhd.......",
-    "..hhh.......",
-    "..hh........",
+weapon("silikon", "power", "shoot", (2, 5), [   # cecha: biała tuba w ramce, tłoczysko z tyłu, stożek dyszy
+    "...ggggggg..",
+    "ddgWWWWWWWl.",
+    "...WWWWWWWll",
+    "...ggggggg..",
+    "..Hh........",
+    "..HH........",
+    "..HH........",
 ], shot="blob")
 weapon("myjka", "power", "spray", (1, 4), [
     "..........C.",
@@ -315,13 +324,14 @@ weapon("palnik", "power", "spray", (1, 2), [
     "HHHh.....lOY",
     "d.h......ll.",
 ], shot="flame")
-weapon("taker", "power", "shoot", (0, 2), [
-    "hhhhhhhhh...",
-    "h...........",
-    "h...........",
-    "HHHHHHHHHHH.",
-    "HWWHHHHHHHHd",
-    "HHHHHHHHHHHd",
+weapon("taker", "power", "shoot", (0, 1), [   # cecha: dźwignia u góry i szeroka, wysoka głowica z przodu
+    "hhhhhhhh....",
+    "h......hh...",
+    "HHHHHHHHHHHH",
+    "HWWHHHHHHHHH",
+    "HHHHHHHHHddH",
+    ".........HWH",
+    ".........HHH",
 ], shot="staple")
 weapon("mlotek_gumowy", "hand", "slam", (1, 3), [
     ".......gddd.",
@@ -332,32 +342,32 @@ weapon("mlotek_gumowy", "hand", "slam", (1, 3), [
     ".......dddd.",
     ".......ddKd.",
 ])
-weapon("pilarka", "power", "swing", (7, 0), [
-    "......hhhh..",
-    "...HHHHH..h.",
-    "..HHWHHHHHh.",
-    ".HHHHHHHHHH.",
-    "dddglllgdddd",
-    "..gllllllg..",
-    "..glllWllg..",
-    "...gllllg...",
-    "....gggg....",
+weapon("pilarka", "power", "swing", (1, 1), [   # cecha: okrągła tarcza z zębami pod osłoną
+    "..hhh.......",
+    ".h..hHHHH...",
+    ".hhhHHWHHH..",
+    "...HHHHHHHH.",
+    ".l.glllllg.l",
+    "..glllWlllg.",
+    ".lglllKlllgl",
+    "..glllllllg.",
+    ".l..ggggg..l",
 ], shot="sparks")
 weapon("poziomica_2m", "hand", "slam", (1, 1), [
     "AllllllllllA",
     "AgggdCWdgggA",
     "AllllllllllA",
 ])
-weapon("mieszadlo", "power", "slam", (1, 5), [
-    "..........l.",
-    ".........g.g",
-    "HHHHHgggglgl",
-    "HWHHH....gl.",
-    "HHHHH....l.g",
-    ".hh.......g.",
-    ".hh.........",
+weapon("mieszadlo", "power", "slam", (1, 4), [   # cecha: spirala (helisa) na końcu trzpienia
+    ".hh.....l.l.",
+    "HHHHH...glgl",
+    "HWHHHggggglg",
+    "HHHHH...lglg",
+    ".hh.....glgl",
+    ".hh......l.l",
+    ".hhh........",
 ])
-weapon("laser_krzyzowy", "power", "beam", (3, 7), [
+weapon("laser_krzyzowy", "power", "beam", (0, 5), [
     "HHHHHHHH",
     "HhhhRhhH",
     "HRRRRRRH",
@@ -372,14 +382,15 @@ weapon("lutownica", "power", "stab", (2, 1), [
     "dHhhHhgggggO",
     "dHHHHhllll..",
 ], shot="flame")
-weapon("opalarka", "power", "spray", (3, 4), [
-    "..HHHHHH....",
-    ".HKHKHHHggg.",
-    "HHKHKHHHgllO",
-    ".HKHKHHHgggO",
+weapon("opalarka", "power", "spray", (3, 5), [   # cecha: gruba dysza z żarem + szeroka stopka
+    ".HHHHHH.....",
+    "HKHKHHHlllO.",
+    "HKHKHHHgggOO",
+    "HKHKHHHlllO.",
+    ".HHHHHH.....",
     "...hhh......",
     "...hhh......",
-    "..HHHHH.....",
+    ".HHHHHHH....",
 ], shot="heat")
 weapon("noz", "hand", "stab", (1, 2), [
     "....d.......",
@@ -457,7 +468,18 @@ def finish(g, rarity, glow=True, diag=False):
                     g[y][x] = I_A
     if rarity == 3:
         sparkle(g)
+    elif rarity == 1 and glow:
+        glint(g)
     return g
+
+
+def glint(g):
+    """Solidna: 1 px jasnego błysku na poświacie w prawym górnym rogu (rozpoznawalna bez koloru, task 9a)."""
+    for y in range(len(g)):
+        for x in range(len(g[0]) - 1, -1, -1):
+            if g[y][x] == I_A:
+                g[y][x] = I_STAR
+                return
 
 
 def sparkle(g):
@@ -826,6 +848,8 @@ def main():
     swing_rows = []
     manifest = {"version": 1, "frame": {"inhand": 16, "inhandGodot": 32, "icon": 16, "iconGodot": 32,
                                         "swing": SW, "swingGodot": SW * 2, "swingFrames": 6},
+                "heroHand": {"default": list(HAND), "flipped": list(HAND_FLIPPED),
+                             "godot": [HAND[0] * 2, HAND[1] * 2], "godotFlipped": [HAND_FLIPPED[0] * 2, HAND_FLIPPED[1] * 2]},
                 "directions": DIRS, "rarities": [r[0] for r in RARITIES], "rarityKeys": RAR_KEYS,
                 "palettes": {RAR_KEYS[r]: ["#%02x%02x%02x" % c for c in pals[r]] for r in range(4)},
                 "weapons": []}
@@ -950,10 +974,11 @@ def make_preview(weapons, inhand2, icons2, sw2, swing_rows):
             sheet.alpha_composite(hero, (x0 + 10, y + 18))
             gx, gy = man["weapons"][i]["gripGodot"]["down"]
             fr = inhand2.crop(((r * 4 + 0) * 32, i * 32, (r * 4 + 0) * 32 + 32, i * 32 + 32))
-            hand = (x0 + 10 + 26, y + 18 + 22)   # prawa ręka bohatera (piksel 13,11 GBA)
+            hand = (x0 + 10 + HAND[0] * 2, y + 18 + HAND[1] * 2)   # prawa dłoń bohatera
             sheet.alpha_composite(fr, (hand[0] - gx, hand[1] - gy))
     sheet.save(os.path.join(OUT, "preview.png"))
     deutan(sheet).save(os.path.join(OUT, "preview_deutan.png"))
+    make_hero_preview(weapons, inhand2, man, f_name, f_small, f_head)
 
     # podgląd animacji
     S = 64
@@ -969,6 +994,85 @@ def make_preview(weapons, inhand2, icons2, sw2, swing_rows):
             d.rectangle((220 + k * (S + 6), y, 220 + k * (S + 6) + S - 1, y + S - 1), fill=PANEL)
             sp.alpha_composite(fr, (220 + k * (S + 6), y))
     sp.save(os.path.join(OUT, "preview_swing.png"))
+
+
+HERO_PREVIEW = ["murarz", "operator", "geodeta"]   # mała broń ręczna, duża elektryczna, długa tyczka
+
+
+def hero_frames():
+    """(id zawodu, nazwa, broń domyślna, klatka actors.png 32x32, ta sama klatka bez narzędzia zawodu) dla podglądu."""
+    sys.path.insert(0, HERE)
+    import pixel_art as pa
+    raw = Image.open(os.path.join(REPO, "GBA", "graphics", "actors.bmp")).getpalette()   # SPR_PAL z make_assets.py
+    SPR_PAL = [tuple(raw[i:i + 3]) for i in range(0, 48, 3)]
+    data = json.load(open(GAME_JSON, encoding="utf-8"))
+    actors = Image.open(os.path.join(REPO, "GODOT", "godot", "assets", "sprites", "actors.png")).convert("RGBA")
+    out = []
+    for ci, c in enumerate(data["classes"]):
+        if c["id"] not in HERO_PREVIEW:
+            continue
+        real = actors.crop((0, 32 * c["frame"], 32, 32 * c["frame"] + 32))
+        helmet, vest, tool = pa.WORKERS[ci]
+        px = pa.worker(helmet, vest, 0)
+        for y, row in pa.FACES.get(tool, {}).items():
+            for x, ch in enumerate(row):
+                if ch != ".":
+                    px[y * 16 + x] = pa.CODES[ch]
+        g = [px[y * 16:(y + 1) * 16] for y in range(16)]
+        bare = to_image(scale2x(g), SPR_PAL)
+        out.append((c["id"], c["name"], c["weapon"], real, bare))
+    return out
+
+
+def make_hero_preview(weapons, inhand2, man, f_name, f_small, f_head):
+    """art/weapons/preview_hero.png: 3 zawody x 4 rzadkości x 4 kierunki, broń na pikselu chwytu w dłoni bohatera.
+    Lewa część: klatka z actors.png (z narzędziem zawodu wrysowanym w klatkę), prawa: ta sama postać bez narzędzia.
+    Kierunek left = klatka bohatera odbita (Flip), up = broń pod postacią."""
+    BG, PANEL = (46, 44, 58), (60, 58, 74)
+    Z, C, CELL = 2, 72, 150   # podgląd w skali Godota x2, kanwa 72x72 z bohaterem 32x32 w środku
+    rows_by_id = {w["id"]: w for w in man["weapons"]}
+    heroes = hero_frames()
+    left = 170
+    W_ = left + 2 * (4 * CELL + 16) + 10
+    H_ = 54 + len(heroes) * 4 * CELL
+    sheet = Image.new("RGBA", (W_, H_), BG + (255,))
+    d = ImageDraw.Draw(sheet)
+    for half, title in enumerate(("actors.png (z narzędziem zawodu)", "bez narzędzia zawodu")):
+        x0 = left + half * (4 * CELL + 16)
+        d.text((x0, 6), title, font=f_head, fill=(220, 220, 230))
+        for di, dname in enumerate(DIRS):
+            d.text((x0 + di * CELL + 60, 28), dname, font=f_small, fill=(170, 170, 185))
+    for hi, (cid, cname, wid, real, bare) in enumerate(heroes):
+        w = rows_by_id[wid]
+        rars = [RAR_KEYS.index(k) for k in w["rarities"]]
+        for ri, r in enumerate(range(4)):
+            y = 50 + (hi * 4 + ri) * CELL
+            d.rectangle((4, y + 2, W_ - 4, y + CELL - 4), fill=PANEL)
+            y -= 2
+            if ri == 0:
+                d.text((10, y + 10), cname, font=f_name, fill=(240, 240, 245))
+                d.text((10, y + 32), wid, font=f_small, fill=(170, 170, 185))
+            d.text((10, y + 70), RARITIES[r][0], font=f_small, fill=RARITIES[r][3])
+            if r not in rars:
+                continue
+            for half, hero in enumerate((real, bare)):
+                for di, dname in enumerate(DIRS):
+                    cell = Image.new("RGBA", (C, C), (0, 0, 0, 0))
+                    hx, hy = 20, 20
+                    h_img = hero.transpose(Image.FLIP_LEFT_RIGHT) if dname == "left" else hero
+                    hand = HAND_FLIPPED if dname == "left" else HAND
+                    gx, gy = w["gripGodot"][dname]
+                    fr = inhand2.crop(((r * 4 + di) * 32, w["row"] * 32, (r * 4 + di) * 32 + 32, w["row"] * 32 + 32))
+                    pos = (hx + hand[0] * 2 - gx, hy + hand[1] * 2 - gy)
+                    if dname == "up":
+                        cell.alpha_composite(fr, pos)
+                        cell.alpha_composite(h_img, (hx, hy))
+                    else:
+                        cell.alpha_composite(h_img, (hx, hy))
+                        cell.alpha_composite(fr, pos)
+                    x = left + half * (4 * CELL + 16) + di * CELL
+                    sheet.alpha_composite(cell.resize((C * Z, C * Z), Image.NEAREST), (x, y))
+    sheet.save(os.path.join(OUT, "preview_hero.png"))
 
 
 if __name__ == "__main__":

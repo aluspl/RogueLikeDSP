@@ -21,7 +21,7 @@ mapowanie wiersz → id, kierunek, rzadkość, chwyt i animacje jest w `weapons.
 | `weapons_swing.png` | 32×32 (skala GBA) | wiersz = `swingRows[i]` (broń × Markowa/Mistrzowska); kolumna = klatka 0–5 |
 | `weapons_swing_2x.png` | 64×64 (Godot) | jw.; do ogłoszeń rysować dalej ×2–×4 bez wygładzania |
 | `weapons.json` | – | manifest (rozmiary, palety, wiersze, chwyty, rodzina animacji) |
-| `preview.png`, `preview_deutan.png`, `preview_swing.png` | – | podgląd (nie do gry), symulacja deuteranopii |
+| `preview.png`, `preview_deutan.png`, `preview_swing.png`, `preview_hero.png` | – | podgląd (nie do gry), symulacja deuteranopii, broń w dłoni bohatera |
 
 - **Kierunki** (kolejność kolumn): `down`, `up`, `left`, `right`. Mapa broni jest rysowana w prawo
   (rękojeść po lewej); `left` = odbicie, `up`/`down` = obrót o 90°. Przedmioty bez obrotu (dziennik, tablet,
@@ -30,8 +30,14 @@ mapowanie wiersz → id, kierunek, rzadkość, chwyt i animacje jest w `weapons.
   (`master: true` – Młot Zenka, Poziomica mistrza, Pilarka tarczowa, Nóż majstra seniora) mają tylko kolumny
   Mistrzowskiej; pozostałe pola są przezroczyste.
 - **Chwyt**: `grip[kierunek]` = piksel rękojeści w klatce 16×16 (`gripGodot` w 32×32). Postawić klatkę tak, by
-  ten piksel wypadł na prawej ręce bohatera (w `actors.png` ok. piksel 13,11 GBA / 26,22 Godot). Przy `up`
-  broń rysować pod postacią, w pozostałych kierunkach nad.
+  ten piksel wypadł na prawej dłoni bohatera: `heroHand` w `weapons.json` = piksel (12,11) GBA / (24,22) Godot.
+  Bohater nie ma klatek kierunkowych – przy ruchu w lewo klatka jest odbijana (`ActorSprite.Flip`), dłoń jest
+  wtedy w (3,11) / (6,22) (`heroHand.flipped`) i używa się kolumny `left`. Przy `up` broń rysować pod postacią,
+  w pozostałych kierunkach nad. Podgląd złożenia: `preview_hero.png` (3 zawody × 4 rzadkości × 4 kierunki;
+  z lewej klatka z `actors.png`, z prawej ta sama postać bez narzędzia zawodu – patrz uwaga niżej).
+- **Narzędzie zawodu w klatce postaci**: `actors.png` ma narzędzie zawodu wrysowane w prawą rękę (`TOOLS` w
+  `pixel_art.py`). Z bronią w ręce wychodzą dwa narzędzia naraz – do pokazywania broni potrzebne są klatki
+  postaci bez narzędzia (`pixel_art.worker()` bez `TOOLS`, jak w prawej połowie `preview_hero.png`).
 - **Ikony**: narzędzia ręczne obrócone o 45° (RotSprite), elektronarzędzia i przedmioty bokiem. Znacznik
   niezależny od koloru w lewym dolnym rogu: Solidna 1 kropka, Markowa 2, Mistrzowska iskra.
 - **Zamach** (6 klatek, ~60–80 ms/klatkę): rodziny `swing` (cięcie łukiem ze smugą), `slam` (zamach znad głowy,
@@ -58,15 +64,26 @@ przy zmianie broni, w Godocie są gotowe PNG.
 | Rzadkość | Obudowa H + h (elektronarzędzia) | A (poświata = `weaponRarities.color`) | `*` |
 |---|---|---|---|
 | Zwykła | ciemna zieleń `#2c683a` + czerń `#242428` | `#8a8796` | `#c4c2ce` |
-| Solidna | morski `#2096a4` + głęboki morski `#124860` | `#2f8fd6` | `#96cef6` |
+| Solidna | morski `#2096a4` + głęboki morski `#124860` | `#5cb4f0` (*) | `#c8ecff` |
 | Markowa | żółty `#f6c020` + czerń `#242428` | `#6b4eff` | `#b2a0ff` |
 | Mistrzowska | czerwień `#d62c28` + biel `#f6f6f6` | `#d9a400` | `#fff4a0` |
+
+(*) Poświata Solidnej w sprite'ach jest jaśniejsza niż `weaponRarities.color` (`#2f8fd6`): Zwykła `#8a8796` i
+`#2f8fd6` mają tę samą luminancję (0,25), więc w ręce (bez znaczników ikon) w deuteranopii zlewały się;
+`#5cb4f0` ma 0,41. Solidna ma też 1 px jasnego błysku (`*`) na poświacie w prawym górnym rogu.
 
 Zasady: elektronarzędzia (`kind: power`) mają obudowę w kolorach rzadkości; narzędzia ręczne (`kind: hand`)
 zostają z drewna/stali/gumy, a kolor rzadkości trafia na pasek rękojeści, owijkę lub okładkę. Wszystko ma
 obrys `K` i 1 px poświaty `A`; Mistrzowska dodatkowo iskrę `*`. Nóż majstra seniora: pomarańczowa, wytarta
 rękojeść z wybrzuszeniem pod palec, cienkie zeszlifowane ostrze wygięte ku górze (wg zdjęcia właściciela,
 zdjęcie nie jest w repo).
+
+Elektronarzędzia „pistoletowe” mają po jednej cesze rozpoznawczej (task 9a): gwoździarka – skośny magazynek
+gwoździ, pistolet do kotew – długa lufa z kołnierzem, pistolet do silikonu – biała tuba w ramce z tłoczyskiem,
+wkrętarka – schodkowy uchwyt wiertła i akumulator, młot udarowy – pałąk z tyłu i boczna rękojeść, opalarka –
+gruba dysza z żarem i szeroka stopka. Pozostałe trudne: pilarka tarczowa – tarcza z zębami pod osłoną, łyżka
+koparki – urobek i zęby na krawędzi, taker – dźwignia u góry i wysoka głowica, mieszadło – spirala na trzpieniu,
+agregat tynkarski – lej z tynkiem i wąż.
 
 ## Nowa broń
 
