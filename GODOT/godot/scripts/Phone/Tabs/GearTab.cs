@@ -67,7 +67,9 @@ public sealed class GearTab : PhonePage
         var y = p.Section(p.Top, Loc.T("narzedzie_4"), _breakdown is null ? "" : ButtonNames.Pick(Loc.T("i_rozpiska"), Loc.T("dotknij_rozpiska")));
         var full = PhoneView.Full; // v0.23.0: tryby słowami tylko w pełnym telefonie (w poziomie brak miejsca)
         var belt = g.HasBelt();
-        var c0 = p.Card(y, (full ? 5 : 2) + (belt ? 1 : 0)); // w poziomie: rzadkość i typ w wierszu krytu (bez trybów)
+        var perks = g.WeaponPerks != 0; // v0.23.0: profity broni (i broni w kaburze) osobnymi wierszami
+        var perks2 = full && belt && g.Weapon2 >= 0 && g.Weapon2Perks != 0; // w poziomie brak miejsca – profity kabury po zamianie
+        var c0 = p.Card(y, (full ? 5 : 2) + (belt ? 1 : 0) + (perks ? 1 : 0) + (perks2 ? 1 : 0)); // w poziomie: rzadkość i typ w wierszu krytu (bez trybów)
         var tx = p.TextX(c0);
         var right = c0.End.X - 6;
         var w = g.Weapon;
@@ -94,13 +96,20 @@ public sealed class GearTab : PhonePage
         var kind = $"{WeaponLook.RarityName(d, g.WeaponRarity)} · {WeaponLook.Hits(d, w)}"; // kryt w poziomie – w karcie premii niżej
         p.Text(tx, p.RowY(c0, row), kind, WeaponLook.PhoneInk(d, g.WeaponRarity), TextAlign.Left, right - pw - 4 - tx);
         row++;
+        if (perks)
+        {
+            p.Divider(c0, row);
+            p.Stripe(c0, row, rc);
+            p.Text(tx, p.RowY(c0, row), DamageHelp.Text(d, b, DmgText.Perks), WeaponLook.PhoneInk(d, g.WeaponRarity), TextAlign.Left, right - tx);
+            row++;
+        }
         if (full)
         {
             p.Divider(c0, row);
             p.Text(tx, p.RowY(c0, row), "A: " + WeaponLook.Mode(d, w, w.ModeA, false), Ink.Dim, TextAlign.Left, right - tx);
             row++;
             p.Divider(c0, row);
-            p.Text(tx, p.RowY(c0, row), "B: " + WeaponLook.Mode(d, w, w.ModeB, true, WeaponLook.CdDelta(d, g.WeaponRarity)), Ink.Dim, TextAlign.Left, right - tx);
+            p.Text(tx, p.RowY(c0, row), "B: " + WeaponLook.Mode(d, w, w.ModeB, true, g.WeaponBCdDelta()), Ink.Dim, TextAlign.Left, right - tx);
             row++;
         }
         if (belt)
@@ -113,6 +122,14 @@ public sealed class GearTab : PhonePage
                 var lvl = g.Weapon2Lvl > 0 ? $"+{g.Weapon2Lvl}" : "";
                 p.Text(tx, p.RowY(c0, row), Loc.F("kabura", $"{w2.Name}{lvl} {w2.MinDamage}-{w2.MaxDamage} · {WeaponLook.Hits(d, w2)}"),
                     WeaponLook.PhoneInk(d, g.Weapon2Rarity), TextAlign.Left, right - tx);
+                if (perks2) // v0.23.0: profity broni w kaburze
+                {
+                    row++;
+                    p.Divider(c0, row);
+                    p.Stripe(c0, row, WeaponLook.RarityColor(d, g.Weapon2Rarity));
+                    var b2 = g.WeaponBreakdown(-1, g.Weapon2, -1, -1, 0, g.Weapon2Rarity, g.Weapon2Perks);
+                    p.Text(tx, p.RowY(c0, row), DamageHelp.Text(d, b2, DmgText.Perks), WeaponLook.PhoneInk(d, g.Weapon2Rarity), TextAlign.Left, right - tx);
+                }
             }
             else p.Text(tx, p.RowY(c0, row), Loc.T("kabura_pusta_2"), Ink.Dim, TextAlign.Left, right - tx);
         }

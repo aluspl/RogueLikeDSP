@@ -57,6 +57,7 @@ public sealed class HurtowniaPage : PhonePage
             if (it.Effect == LifeLike.Core.Data.ShopEffect.Tool) // v0.23.0: jaka broń i rzadkość przyszła
             {
                 _note = Loc.F("kupione_bron", WeaponLook.RarityName(_g.D, _g.WeaponRarity), _g.Weapon.Name);
+                if (_g.WeaponPerks != 0) _note += " · " + DamageHelp.PerkShorts(_g.D, _g.WeaponPerks); // v0.23.0: profity
                 _noteInk = WeaponLook.PhoneInk(_g.D, _g.WeaponRarity);
             }
             Bought?.Invoke();

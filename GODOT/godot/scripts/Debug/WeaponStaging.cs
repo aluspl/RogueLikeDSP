@@ -12,12 +12,12 @@ namespace LifeLike.Game.Debug;
 /// (weapon-b: Gwoździarka, linia), pas monterski po zamianie (weapon-belt: przycisk „Zamień”, wpis w dzienniku), karta
 /// problemu z mnożnikiem ciosu (weapon-card: Klucz na kamień – obuch ×125%), telefon Sprzęt z Markową bronią i kaburą
 /// (weapon-rarity), wybór zawodu ze szczegółami broni (weapon-class), Jak grać – Bronie (help-weapons) i znaleziony
-/// Nóż majstra seniora (weapon-legend-found – ogłoszenie z animacją w zadaniu 9).
+/// Nóż majstra seniora (weapon-legend-found – ogłoszenie z animacją w zadaniu 9), oferta wymiany z profitami (weapon-perks).
 /// </summary>
 public sealed class WeaponStaging
 {
     public static readonly string[] Names =
-        ["weapon-arc", "weapon-b", "weapon-belt", "weapon-card", "weapon-rarity", "weapon-class", "help-weapons", "weapon-legend-found"];
+        ["weapon-arc", "weapon-b", "weapon-belt", "weapon-card", "weapon-rarity", "weapon-class", "help-weapons", "weapon-legend-found", "weapon-perks"];
 
     private readonly App _app;
 
@@ -105,10 +105,22 @@ public sealed class WeaponStaging
                 g.Equip(g.D.BeltSlot, CoreGame.BeltTier, 0);
                 g.Weapon2 = Array.FindIndex(g.D.Weapons, w => w.Id == "poziomica_2m");
                 g.Weapon2Rarity = 1;
+                g.Weapon2Perks = 1 << 3; // v0.23.0: Solidna – jeden profit (Głowica)
                 g.WeaponBCd = 3;
                 Refresh(g);
                 Flow.Phone.Open(3, true);
                 break;
+            case "weapon-perks": // v0.23.0: oferta wymiany – ulepszona Siekiera z profitem, na ziemi Markowy Łom z dwoma profitami
+            {
+                g.TakeTool(Array.FindIndex(g.D.Tools, t => g.D.Weapons[t.Weapon].Id == "siekiera"), 1, false, 0, 1 << 1);
+                g.WeaponLvl = 1;
+                var (dx, dy) = OpenSide(g);
+                var t = Array.FindIndex(g.D.Tools, x => g.D.Weapons[x.Weapon].Id == "lom");
+                g.Pickups[g.PickupsCount++] = new Pickup(g.Hero.X + dx, g.Hero.Y + dy, PickupType.Tool, true, t, 2) { Perks = (1 << 0) | (1 << 4) };
+                Refresh(g);
+                _app.AfterAction(g.PlayerMove(dx, dy));
+                break;
+            }
             case "weapon-legend-found": // Nóż majstra seniora podniesiony z placu (bohater na polu znajdźki, wpis w dzienniku)
             {
                 var (dx, dy) = OpenSide(g);

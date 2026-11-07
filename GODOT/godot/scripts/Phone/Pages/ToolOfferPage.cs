@@ -59,27 +59,29 @@ public sealed class ToolOfferPage : PhonePage
         var w = d.Tools[_g.ToolOffer].Weapon;
         var nr = d.Weapons[w].Master ? d.WeaponRarities.Length - 1 : Math.Max(0, (int)_g.ToolOfferRarity); // unikat – Mistrzowska
         var now = _g.WeaponBreakdown();
-        var next = _g.WeaponBreakdown(-1, w, -1, -1, 0, nr);
+        var next = _g.ToolOfferBreakdown(); // v0.23.0: z profitami znajdźki
         var y = p.Section(p.Top, Loc.T("teraz_5"));
-        var c0 = p.Card(y, 3);
+        var c0 = p.Card(y, 3 + (now.Perks != 0 ? 1 : 0));
         var tx = p.TextX(c0);
         var right = c0.End.X - 6;
         p.Stripe(c0, 0, WeaponLook.RarityColor(d, _g.WeaponRarity));
         p.Text(tx, p.RowY(c0, 0), $"{_g.WeaponTitle()} {now.Min}-{now.Max}", Ink.Dark, TextAlign.Left, right - tx);
         p.Divider(c0, 1);
         p.Text(tx, p.RowY(c0, 1), $"{WeaponLook.RarityName(d, _g.WeaponRarity)} · {WeaponLook.Hits(d, _g.Weapon)}", WeaponLook.PhoneInk(d, _g.WeaponRarity), TextAlign.Left, right - tx);
-        p.Divider(c0, 2);
-        p.Text(tx, p.RowY(c0, 2), DamageHelp.Text(d, now, DmgText.Upgrade), Ink.Dim, TextAlign.Left, right - tx);
+        var r0 = PerksRow(p, c0, 2, now, WeaponLook.PhoneInk(d, _g.WeaponRarity), tx, right);
+        p.Divider(c0, r0);
+        p.Text(tx, p.RowY(c0, r0), DamageHelp.Text(d, now, DmgText.Upgrade), Ink.Dim, TextAlign.Left, right - tx);
         y = p.Section(c0.End.Y + 4, Loc.T("nowe_4"));
-        var c1 = p.Card(y, 3);
+        var c1 = p.Card(y, 3 + (next.Perks != 0 ? 1 : 0));
         p.Stripe(c1, 0, WeaponLook.RarityColor(d, nr));
         p.Text(tx, p.RowY(c1, 0), Loc.F("zasieg_3", d.Weapons[w].Name, next.Min, next.Max, d.Weapons[w].Range), Ink.Dark, TextAlign.Left, right - tx);
         p.Divider(c1, 1);
         p.Text(tx, p.RowY(c1, 1), $"{WeaponLook.RarityName(d, nr)} · {WeaponLook.Hits(d, d.Weapons[w])}", WeaponLook.PhoneInk(d, nr), TextAlign.Left, right - tx);
-        p.Divider(c1, 2);
+        var r1 = PerksRow(p, c1, 2, next, WeaponLook.PhoneInk(d, nr), tx, right);
+        p.Divider(c1, r1);
         var cmp = Loc.T("cios_2") + DamageHelp.CompareLine(new Message(), now, next).Text;
         if (p.F.Measure(cmp) > right - tx) cmp = DamageHelp.CompareLine(new Message(), now, next, true).Text;
-        p.Text(tx, p.RowY(c1, 2), cmp, next.Avg10 > now.Avg10 ? Ink.Done : Ink.Late, TextAlign.Left, right - tx);
+        p.Text(tx, p.RowY(c1, r1), cmp, next.Avg10 > now.Avg10 ? Ink.Done : Ink.Late, TextAlign.Left, right - tx);
         y = p.Section(c1.End.Y + 4, Loc.T("wybierz_3"));
         var c2 = p.Card(y, 2);
         string[] rows = [Loc.F("zostaje_3", _g.WeaponTitle()), Loc.F("zamieniam_przepadnie", d.Weapons[w].Name, _g.WeaponLvl)];
@@ -91,5 +93,14 @@ public sealed class ToolOfferPage : PhonePage
             p.HitRow(c2, k, k);
             p.Text(tx, p.RowY(c2, k), rows[k], k == Sel ? Ink.Brand : k == 1 ? Ink.Late : Ink.Dark, TextAlign.Left, right - tx);
         }
+    }
+
+    /// <summary>v0.23.0: wiersz profitów (broń z profitami); zwraca numer kolejnego wiersza karty.</summary>
+    private int PerksRow(PhonePainter p, Rect2 card, int row, DmgBreakdown b, Ink ink, float tx, float right)
+    {
+        if (b.Perks == 0) return row;
+        p.Divider(card, row);
+        p.Text(tx, p.RowY(card, row), DamageHelp.Text(_g.D, b, DmgText.Perks), ink, TextAlign.Left, right - tx);
+        return row + 1;
     }
 }
