@@ -19,7 +19,8 @@ namespace LifeLike.Game.Debug;
 /// Task 9c: broń w ręce na mapie – 4 rzadkości x 4 kierunki (hero-weapons: Kielnia Murarza, hero-weapons-big: Łyżka
 /// Operatora koparki), komplety sprzętu Zwykły / Solidny / Markowy na trzech zawodach (hero-gear), broń na placu
 /// (weapon-drops), ogłoszenia: awans z Markową Kielnią (announce-levelup), boss pokonany (announce-boss) i Nóż majstra
-/// seniora (weapon-legend-found) – zatrzymane w chwili PB_ANNOUNCE_AT (s, domyślnie 0,45; start 0,1, koniec 1,0).
+/// seniora (weapon-legend-found) – zatrzymane w chwili PB_ANNOUNCE_AT (s, domyślnie 0,45; start 0,05, koniec 1,0);
+/// PB_REDUCE_MOTION=1 – ograniczony ruch.
 /// </summary>
 public sealed class WeaponStaging
 {
@@ -295,6 +296,7 @@ public sealed class WeaponStaging
     /// <summary>Ogłoszenie zatrzymane w chwili PB_ANNOUNCE_AT (zrzuty klatek animacji).</summary>
     private void Freeze()
     {
+        if (System.Environment.GetEnvironmentVariable("PB_REDUCE_MOTION") == "1") Settings.GameSettings.ReduceMotion = true; // bez wlotu, wstrząsu i błysku
         var env = System.Environment.GetEnvironmentVariable("PB_ANNOUNCE_AT");
         _app.Nodes.Announce.FreezeAt = float.TryParse(env, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var t) ? t : 0.45f;
     }

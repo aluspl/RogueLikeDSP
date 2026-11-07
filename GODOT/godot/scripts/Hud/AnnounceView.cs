@@ -80,7 +80,7 @@ public partial class AnnounceView : Control
         var scale = Mathf.Clamp(Mathf.Floor(Mathf.Min(w / 240f, Size.Y / 250f)), 2f, 4f);
         while (scale > 1.5f && f.Measure(title, scale) > w * 0.6f) scale -= 0.5f;
         var subScale = Mathf.Max(1f, Mathf.Floor(scale / 2f));
-        var size = Mathf.Round(16f * scale * 1.5f / 16f) * 16f; // zamach 64x64 w całkowitej skali (bez wygładzania)
+        var size = 32f * Mathf.Floor(scale); // zamach (klatka 32 px GBA) x2-x4 bez wygładzania
         size = Mathf.Max(size, 48f);
         var bandH = Mathf.Max(size, 16f * scale + 16f * subScale + 6f * u) + 8f * u;
         var top = Mathf.Round(Size.Y * (w > Size.Y ? 0.38f : 0.34f) - bandH / 2); // w poziomie pod banerem push
