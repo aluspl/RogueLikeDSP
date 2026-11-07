@@ -598,7 +598,7 @@ namespace
     // ------------------------------------------------------------------ ekran tytułowy
     // v0.21.53 cz. 2 (#40): pierwsze uruchomienie - wybór języka (Polski / English), zapis w profilu. Później: profil >
     // Zespół > SELECT.
-    scene run_language(app& a)
+    [[gnu::noinline]] scene run_language(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         bn::sprite_palette_item default_ink = a.text.palette_item();
@@ -638,7 +638,7 @@ namespace
         }
     }
 
-    scene run_title(app& a)
+    [[gnu::noinline]] scene run_title(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         bn::regular_bg_ptr bg = (core::language ? bn::regular_bg_items::title_en : bn::regular_bg_items::title).create_bg(8, 48);   // lewy górny róg obrazu = róg ekranu
@@ -918,7 +918,7 @@ namespace
         }
     }
 
-    scene run_help(app& a)
+    [[gnu::noinline]] scene run_help(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         page_help(a);
@@ -2568,7 +2568,7 @@ namespace
 
     void boon_pick(app& a, bool mid_stage = false);   // premia 1 z 3 (niżej); mid_stage - z wydarzenia (#30)
 
-    scene run_game(app& a)
+    [[gnu::noinline]] scene run_game(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         core::game& g = *a.g;
         stage_card(a);
@@ -4268,7 +4268,7 @@ namespace
     // ------------------------------------------------------------------ harmonogram między etapami: wybór ścieżki
     // Telefon z aplikacją: zaliczony etap, kolejny etap i dwa warianty do wyboru (rozgałęzienie jak mapa w Slay the
     // Spire, kolejność etapów stała). Lewo/prawo - wariant, A/START - dalej (Hurtownia na końcu aktu).
-    scene run_schedule(app& a)
+    [[gnu::noinline]] scene run_schedule(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         core::game& g = *a.g;
         boon_pick(a);   // najpierw premia 1 z 3 (#27), potem ścieżka i Hurtownia
@@ -4568,7 +4568,7 @@ namespace
     }
 
     // ------------------------------------------------------------------ ekran końcowy z QR
-    scene run_end(app& a)
+    [[gnu::noinline]] scene run_end(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         core::game& g = *a.g;
         bool won = g.st == core::status::won;
@@ -4718,7 +4718,7 @@ namespace
     // ------------------------------------------------------------------ prolog: wjazd na działkę (pierwsza budowa)
     // Pickup wjeżdża na plac, bohater wysiada, kamera jedzie przez działkę z porozrzucanymi problemami budowy,
     // na koniec SMS od inwestorki. A/START pomija.
-    scene run_prologue(app& a)
+    [[gnu::noinline]] scene run_prologue(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         const core::game& g = *a.g;
         {
@@ -4813,7 +4813,7 @@ namespace
     }
 
     // ------------------------------------------------------------------ Hurtownia między aktami (budżet budowy)
-    scene run_hurtownia(app& a)
+    [[gnu::noinline]] scene run_hurtownia(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         core::game& g = *a.g;
         phone_screen ph(4);
@@ -4905,7 +4905,7 @@ namespace
     // i poziomem inspektora), najlepszy wynik i wygrane; A wybiera kontrakt i przechodzi do wyboru zawodu, B - tytuł.
     bool career_map(const app& a) { return a.save.runs > 0; }
 
-    scene run_career(app& a)
+    [[gnu::noinline]] scene run_career(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         phone_screen ph(0);
@@ -4975,7 +4975,7 @@ namespace
         }
     }
 
-    scene run_daily(app& a)
+    [[gnu::noinline]] scene run_daily(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         phone_screen ph(0);
@@ -5073,7 +5073,7 @@ namespace
     // ------------------------------------------------------------------ wyzwanie tygodnia (#34, L na tytule)
     // Tydzień z daty budowy dnia (GBA bez zegara; góra/dół = tydzień dalej / wcześniej). Seed z numeru tygodnia, zasady
     // z listy po kolei, osobne wyniki ostatnich tygodni w profilu. A - start, SELECT - budowa dnia, B - tytuł.
-    scene run_weekly(app& a)
+    [[gnu::noinline]] scene run_weekly(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         phone_screen ph(0);
@@ -5174,7 +5174,7 @@ namespace
         int slot_cx(int s) { return s * slot_w + slot_w / 2; }
     }
 
-    scene run_class_select(app& a)
+    [[gnu::noinline]] scene run_class_select(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         using namespace class_ui;
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
@@ -5546,7 +5546,7 @@ namespace
 
     // ------------------------------------------------------------------ tryb inwestora (SELECT na wyborze zawodu)
     // Modyfikatory trudności po pierwszej wygranej: A włącza/wyłącza, każdy daje % doświadczenia i punkty stawki.
-    scene run_investor(app& a)
+    [[gnu::noinline]] scene run_investor(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         phone_screen ph(4);
         ph.icon.set_visible(false);
@@ -5717,7 +5717,7 @@ namespace
         }
     }
 
-    scene run_shop(app& a, int tab = 4)
+    [[gnu::noinline]] scene run_shop(app& a, int tab = 4)   // v0.23.0: osobna ramka (mniej stosu pod grą)
     {
         phone_screen ph(tab);
         bn::sprite_palette_item default_ink = a.text.palette_item();
