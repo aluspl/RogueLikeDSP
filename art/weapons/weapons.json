@@ -1,0 +1,2852 @@
+{
+ "version": 1,
+ "frame": {
+  "inhand": 16,
+  "inhandGodot": 32,
+  "icon": 16,
+  "iconGodot": 32,
+  "swing": 32,
+  "swingGodot": 64,
+  "swingFrames": 6
+ },
+ "directions": [
+  "down",
+  "up",
+  "left",
+  "right"
+ ],
+ "rarities": [
+  "Zwykła",
+  "Solidna",
+  "Markowa",
+  "Mistrzowska"
+ ],
+ "rarityKeys": [
+  "zwykla",
+  "solidna",
+  "markowa",
+  "mistrzowska"
+ ],
+ "palettes": {
+  "zwykla": [
+   "#ff00ff",
+   "#1a1a1a",
+   "#f0f0f0",
+   "#c8c8c8",
+   "#8a8a8a",
+   "#54545e",
+   "#8b5a2b",
+   "#c48c4e",
+   "#d63c3c",
+   "#f5d33d",
+   "#5ad0e6",
+   "#ff7a3d",
+   "#2c683a",
+   "#242428",
+   "#8a8796",
+   "#c4c2ce"
+  ],
+  "solidna": [
+   "#ff00ff",
+   "#1a1a1a",
+   "#f0f0f0",
+   "#c8c8c8",
+   "#8a8a8a",
+   "#54545e",
+   "#8b5a2b",
+   "#c48c4e",
+   "#d63c3c",
+   "#f5d33d",
+   "#5ad0e6",
+   "#ff7a3d",
+   "#2096a4",
+   "#124860",
+   "#2f8fd6",
+   "#96cef6"
+  ],
+  "markowa": [
+   "#ff00ff",
+   "#1a1a1a",
+   "#f0f0f0",
+   "#c8c8c8",
+   "#8a8a8a",
+   "#54545e",
+   "#8b5a2b",
+   "#c48c4e",
+   "#d63c3c",
+   "#f5d33d",
+   "#5ad0e6",
+   "#ff7a3d",
+   "#f6c020",
+   "#242428",
+   "#6b4eff",
+   "#b2a0ff"
+  ],
+  "mistrzowska": [
+   "#ff00ff",
+   "#1a1a1a",
+   "#f0f0f0",
+   "#c8c8c8",
+   "#8a8a8a",
+   "#54545e",
+   "#8b5a2b",
+   "#c48c4e",
+   "#d63c3c",
+   "#f5d33d",
+   "#5ad0e6",
+   "#ff7a3d",
+   "#d62c28",
+   "#f6f6f6",
+   "#d9a400",
+   "#fff4a0"
+  ]
+ },
+ "weapons": [
+  {
+   "id": "dziennik",
+   "name": "Dziennik budowy",
+   "row": 0,
+   "kind": "hand",
+   "family": "beam",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     3,
+     7
+    ],
+    "up": [
+     3,
+     7
+    ],
+    "left": [
+     11,
+     7
+    ],
+    "right": [
+     3,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     6,
+     14
+    ],
+    "up": [
+     6,
+     14
+    ],
+    "left": [
+     22,
+     14
+    ],
+    "right": [
+     6,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 0
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 1
+    }
+   ]
+  },
+  {
+   "id": "kielnia",
+   "name": "Kielnia",
+   "row": 1,
+   "kind": "hand",
+   "family": "swing",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     7,
+     12
+    ],
+    "left": [
+     12,
+     7
+    ],
+    "right": [
+     3,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     14,
+     24
+    ],
+    "left": [
+     24,
+     14
+    ],
+    "right": [
+     6,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 2
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 3
+    }
+   ]
+  },
+  {
+   "id": "gwozdziarka",
+   "name": "Gwoździarka",
+   "row": 2,
+   "kind": "power",
+   "family": "shoot",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     6,
+     4
+    ],
+    "up": [
+     8,
+     11
+    ],
+    "left": [
+     11,
+     8
+    ],
+    "right": [
+     4,
+     8
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     12,
+     8
+    ],
+    "up": [
+     16,
+     22
+    ],
+    "left": [
+     22,
+     16
+    ],
+    "right": [
+     8,
+     16
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 4
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 5
+    }
+   ]
+  },
+  {
+   "id": "probnik",
+   "name": "Próbnik napięcia",
+   "row": 3,
+   "kind": "hand",
+   "family": "beam",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     8,
+     12
+    ],
+    "left": [
+     12,
+     8
+    ],
+    "right": [
+     3,
+     8
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     16,
+     24
+    ],
+    "left": [
+     24,
+     16
+    ],
+    "right": [
+     6,
+     16
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 6
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 7
+    }
+   ]
+  },
+  {
+   "id": "klucz",
+   "name": "Klucz nastawny",
+   "row": 4,
+   "kind": "hand",
+   "family": "slam",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     7,
+     12
+    ],
+    "left": [
+     12,
+     7
+    ],
+    "right": [
+     3,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     14,
+     24
+    ],
+    "left": [
+     24,
+     14
+    ],
+    "right": [
+     6,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 8
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 9
+    }
+   ]
+  },
+  {
+   "id": "szlifierka",
+   "name": "Szlifierka",
+   "row": 5,
+   "kind": "power",
+   "family": "swing",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     7,
+     12
+    ],
+    "left": [
+     12,
+     7
+    ],
+    "right": [
+     3,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     14,
+     24
+    ],
+    "left": [
+     24,
+     14
+    ],
+    "right": [
+     6,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 10
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 11
+    }
+   ]
+  },
+  {
+   "id": "lom",
+   "name": "Łom",
+   "row": 6,
+   "kind": "hand",
+   "family": "slam",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     6,
+     3
+    ],
+    "up": [
+     8,
+     12
+    ],
+    "left": [
+     12,
+     8
+    ],
+    "right": [
+     3,
+     8
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     12,
+     6
+    ],
+    "up": [
+     16,
+     24
+    ],
+    "left": [
+     24,
+     16
+    ],
+    "right": [
+     6,
+     16
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 12
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 13
+    }
+   ]
+  },
+  {
+   "id": "wkretarka",
+   "name": "Wkrętarka",
+   "row": 7,
+   "kind": "power",
+   "family": "stab",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     6,
+     5
+    ],
+    "up": [
+     9,
+     10
+    ],
+    "left": [
+     10,
+     9
+    ],
+    "right": [
+     5,
+     9
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     12,
+     10
+    ],
+    "up": [
+     18,
+     20
+    ],
+    "left": [
+     20,
+     18
+    ],
+    "right": [
+     10,
+     18
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 14
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 15
+    }
+   ]
+  },
+  {
+   "id": "laser",
+   "name": "Poziomica laserowa",
+   "row": 8,
+   "kind": "power",
+   "family": "beam",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     5,
+     10
+    ],
+    "up": [
+     5,
+     10
+    ],
+    "left": [
+     10,
+     10
+    ],
+    "right": [
+     5,
+     10
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     10,
+     20
+    ],
+    "up": [
+     10,
+     20
+    ],
+    "left": [
+     20,
+     20
+    ],
+    "right": [
+     10,
+     20
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 16
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 17
+    }
+   ]
+  },
+  {
+   "id": "mlot",
+   "name": "Młot wyburzeniowy",
+   "row": 9,
+   "kind": "hand",
+   "family": "slam",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     7,
+     12
+    ],
+    "left": [
+     12,
+     7
+    ],
+    "right": [
+     3,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     14,
+     24
+    ],
+    "left": [
+     24,
+     14
+    ],
+    "right": [
+     6,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 18
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 19
+    }
+   ]
+  },
+  {
+   "id": "tablet",
+   "name": "Tablet z projektem",
+   "row": 10,
+   "kind": "power",
+   "family": "beam",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     3,
+     7
+    ],
+    "up": [
+     3,
+     7
+    ],
+    "left": [
+     11,
+     7
+    ],
+    "right": [
+     3,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     6,
+     14
+    ],
+    "up": [
+     6,
+     14
+    ],
+    "left": [
+     22,
+     14
+    ],
+    "right": [
+     6,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 20
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 21
+    }
+   ]
+  },
+  {
+   "id": "miernik",
+   "name": "Miernik laserowy",
+   "row": 11,
+   "kind": "power",
+   "family": "beam",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     5,
+     3
+    ],
+    "up": [
+     9,
+     12
+    ],
+    "left": [
+     12,
+     9
+    ],
+    "right": [
+     3,
+     9
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     10,
+     6
+    ],
+    "up": [
+     18,
+     24
+    ],
+    "left": [
+     24,
+     18
+    ],
+    "right": [
+     6,
+     18
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 22
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 23
+    }
+   ]
+  },
+  {
+   "id": "dachowka",
+   "name": "Dachówki",
+   "row": 12,
+   "kind": "hand",
+   "family": "shoot",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     3,
+     7
+    ],
+    "up": [
+     3,
+     7
+    ],
+    "left": [
+     12,
+     7
+    ],
+    "right": [
+     3,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     6,
+     14
+    ],
+    "up": [
+     6,
+     14
+    ],
+    "left": [
+     24,
+     14
+    ],
+    "right": [
+     6,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 24
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 25
+    }
+   ]
+  },
+  {
+   "id": "agregat",
+   "name": "Agregat tynkarski",
+   "row": 13,
+   "kind": "power",
+   "family": "spray",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     5,
+     5
+    ],
+    "up": [
+     10,
+     10
+    ],
+    "left": [
+     10,
+     10
+    ],
+    "right": [
+     5,
+     10
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     10,
+     10
+    ],
+    "up": [
+     20,
+     20
+    ],
+    "left": [
+     20,
+     20
+    ],
+    "right": [
+     10,
+     20
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 26
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 27
+    }
+   ]
+  },
+  {
+   "id": "lyzka",
+   "name": "Łyżka koparki",
+   "row": 14,
+   "kind": "power",
+   "family": "swing",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     10,
+     3
+    ],
+    "up": [
+     4,
+     12
+    ],
+    "left": [
+     12,
+     4
+    ],
+    "right": [
+     3,
+     4
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     20,
+     6
+    ],
+    "up": [
+     8,
+     24
+    ],
+    "left": [
+     24,
+     8
+    ],
+    "right": [
+     6,
+     8
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 28
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 29
+    }
+   ]
+  },
+  {
+   "id": "udarowy",
+   "name": "Młot udarowy",
+   "row": 15,
+   "kind": "power",
+   "family": "stab",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     8,
+     2
+    ],
+    "up": [
+     7,
+     13
+    ],
+    "left": [
+     13,
+     7
+    ],
+    "right": [
+     2,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     16,
+     4
+    ],
+    "up": [
+     14,
+     26
+    ],
+    "left": [
+     26,
+     14
+    ],
+    "right": [
+     4,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 30
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 31
+    }
+   ]
+  },
+  {
+   "id": "kotwy",
+   "name": "Pistolet do kotew",
+   "row": 16,
+   "kind": "power",
+   "family": "shoot",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     5,
+     3
+    ],
+    "up": [
+     9,
+     12
+    ],
+    "left": [
+     12,
+     9
+    ],
+    "right": [
+     3,
+     9
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     10,
+     6
+    ],
+    "up": [
+     18,
+     24
+    ],
+    "left": [
+     24,
+     18
+    ],
+    "right": [
+     6,
+     18
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 32
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 33
+    }
+   ]
+  },
+  {
+   "id": "spawarka",
+   "name": "Spawarka",
+   "row": 17,
+   "kind": "power",
+   "family": "spray",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     8,
+     3
+    ],
+    "up": [
+     7,
+     12
+    ],
+    "left": [
+     12,
+     7
+    ],
+    "right": [
+     3,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     16,
+     6
+    ],
+    "up": [
+     14,
+     24
+    ],
+    "left": [
+     24,
+     14
+    ],
+    "right": [
+     6,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 34
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 35
+    }
+   ]
+  },
+  {
+   "id": "tyczka",
+   "name": "Tyczka geodezyjna",
+   "row": 18,
+   "kind": "hand",
+   "family": "stab",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     8,
+     12
+    ],
+    "left": [
+     12,
+     8
+    ],
+    "right": [
+     3,
+     8
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     16,
+     24
+    ],
+    "left": [
+     24,
+     16
+    ],
+    "right": [
+     6,
+     16
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 36
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 37
+    }
+   ]
+  },
+  {
+   "id": "mlotek",
+   "name": "Młotek ciesielski",
+   "row": 19,
+   "kind": "hand",
+   "family": "slam",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     7,
+     12
+    ],
+    "left": [
+     12,
+     7
+    ],
+    "right": [
+     3,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     14,
+     24
+    ],
+    "left": [
+     24,
+     14
+    ],
+    "right": [
+     6,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 38
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 39
+    }
+   ]
+  },
+  {
+   "id": "mlot_zenka",
+   "name": "Młot Zenka",
+   "row": 20,
+   "kind": "hand",
+   "family": "slam",
+   "master": true,
+   "rarities": [
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     7,
+     12
+    ],
+    "left": [
+     12,
+     7
+    ],
+    "right": [
+     3,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     14,
+     24
+    ],
+    "left": [
+     24,
+     14
+    ],
+    "right": [
+     6,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "mistrzowska",
+     "row": 40
+    }
+   ]
+  },
+  {
+   "id": "poziomica_m",
+   "name": "Poziomica mistrza",
+   "row": 21,
+   "kind": "hand",
+   "family": "beam",
+   "master": true,
+   "rarities": [
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     7,
+     12
+    ],
+    "left": [
+     12,
+     7
+    ],
+    "right": [
+     3,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     14,
+     24
+    ],
+    "left": [
+     24,
+     14
+    ],
+    "right": [
+     6,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "mistrzowska",
+     "row": 41
+    }
+   ]
+  },
+  {
+   "id": "lopata",
+   "name": "Łopata",
+   "row": 22,
+   "kind": "hand",
+   "family": "swing",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     7,
+     12
+    ],
+    "left": [
+     12,
+     7
+    ],
+    "right": [
+     3,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     14,
+     24
+    ],
+    "left": [
+     24,
+     14
+    ],
+    "right": [
+     6,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 42
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 43
+    }
+   ]
+  },
+  {
+   "id": "siekiera",
+   "name": "Siekiera ciesielska",
+   "row": 23,
+   "kind": "hand",
+   "family": "swing",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     6,
+     3
+    ],
+    "up": [
+     8,
+     12
+    ],
+    "left": [
+     12,
+     8
+    ],
+    "right": [
+     3,
+     8
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     12,
+     6
+    ],
+    "up": [
+     16,
+     24
+    ],
+    "left": [
+     24,
+     16
+    ],
+    "right": [
+     6,
+     16
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 44
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 45
+    }
+   ]
+  },
+  {
+   "id": "pila",
+   "name": "Piła ręczna",
+   "row": 24,
+   "kind": "hand",
+   "family": "swing",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     8,
+     3
+    ],
+    "up": [
+     7,
+     12
+    ],
+    "left": [
+     12,
+     7
+    ],
+    "right": [
+     3,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     16,
+     6
+    ],
+    "up": [
+     14,
+     24
+    ],
+    "left": [
+     24,
+     14
+    ],
+    "right": [
+     6,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 46
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 47
+    }
+   ]
+  },
+  {
+   "id": "kilof",
+   "name": "Kilof",
+   "row": 25,
+   "kind": "hand",
+   "family": "slam",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     8,
+     3
+    ],
+    "up": [
+     7,
+     12
+    ],
+    "left": [
+     12,
+     7
+    ],
+    "right": [
+     3,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     16,
+     6
+    ],
+    "up": [
+     14,
+     24
+    ],
+    "left": [
+     24,
+     14
+    ],
+    "right": [
+     6,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 48
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 49
+    }
+   ]
+  },
+  {
+   "id": "przecinak",
+   "name": "Przecinak z młotkiem",
+   "row": 26,
+   "kind": "hand",
+   "family": "slam",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     8,
+     5
+    ],
+    "up": [
+     7,
+     10
+    ],
+    "left": [
+     10,
+     7
+    ],
+    "right": [
+     5,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     16,
+     10
+    ],
+    "up": [
+     14,
+     20
+    ],
+    "left": [
+     20,
+     14
+    ],
+    "right": [
+     10,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 50
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 51
+    }
+   ]
+  },
+  {
+   "id": "nozyce",
+   "name": "Nożyce do blachy",
+   "row": 27,
+   "kind": "hand",
+   "family": "swing",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     9,
+     3
+    ],
+    "up": [
+     5,
+     12
+    ],
+    "left": [
+     12,
+     5
+    ],
+    "right": [
+     3,
+     5
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     18,
+     6
+    ],
+    "up": [
+     10,
+     24
+    ],
+    "left": [
+     24,
+     10
+    ],
+    "right": [
+     6,
+     10
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 52
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 53
+    }
+   ]
+  },
+  {
+   "id": "silikon",
+   "name": "Pistolet do silikonu",
+   "row": 28,
+   "kind": "power",
+   "family": "shoot",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     6,
+     4
+    ],
+    "up": [
+     8,
+     11
+    ],
+    "left": [
+     11,
+     8
+    ],
+    "right": [
+     4,
+     8
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     12,
+     8
+    ],
+    "up": [
+     16,
+     22
+    ],
+    "left": [
+     22,
+     16
+    ],
+    "right": [
+     8,
+     16
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 54
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 55
+    }
+   ]
+  },
+  {
+   "id": "myjka",
+   "name": "Myjka ciśnieniowa",
+   "row": 29,
+   "kind": "power",
+   "family": "spray",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     6,
+     3
+    ],
+    "up": [
+     8,
+     12
+    ],
+    "left": [
+     12,
+     8
+    ],
+    "right": [
+     3,
+     8
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     12,
+     6
+    ],
+    "up": [
+     16,
+     24
+    ],
+    "left": [
+     24,
+     16
+    ],
+    "right": [
+     6,
+     16
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 56
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 57
+    }
+   ]
+  },
+  {
+   "id": "palnik",
+   "name": "Palnik dekarski",
+   "row": 30,
+   "kind": "power",
+   "family": "spray",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     8,
+     12
+    ],
+    "left": [
+     12,
+     8
+    ],
+    "right": [
+     3,
+     8
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     16,
+     24
+    ],
+    "left": [
+     24,
+     16
+    ],
+    "right": [
+     6,
+     16
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 58
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 59
+    }
+   ]
+  },
+  {
+   "id": "taker",
+   "name": "Taker",
+   "row": 31,
+   "kind": "power",
+   "family": "shoot",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     8,
+     2
+    ],
+    "up": [
+     7,
+     13
+    ],
+    "left": [
+     13,
+     7
+    ],
+    "right": [
+     2,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     16,
+     4
+    ],
+    "up": [
+     14,
+     26
+    ],
+    "left": [
+     26,
+     14
+    ],
+    "right": [
+     4,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 60
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 61
+    }
+   ]
+  },
+  {
+   "id": "mlotek_gumowy",
+   "name": "Młotek gumowy",
+   "row": 32,
+   "kind": "hand",
+   "family": "slam",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     7,
+     12
+    ],
+    "left": [
+     12,
+     7
+    ],
+    "right": [
+     3,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     14,
+     24
+    ],
+    "left": [
+     24,
+     14
+    ],
+    "right": [
+     6,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 62
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 63
+    }
+   ]
+  },
+  {
+   "id": "pilarka",
+   "name": "Pilarka tarczowa",
+   "row": 33,
+   "kind": "power",
+   "family": "swing",
+   "master": true,
+   "rarities": [
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     11,
+     9
+    ],
+    "up": [
+     3,
+     6
+    ],
+    "left": [
+     6,
+     3
+    ],
+    "right": [
+     9,
+     3
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     22,
+     18
+    ],
+    "up": [
+     6,
+     12
+    ],
+    "left": [
+     12,
+     6
+    ],
+    "right": [
+     18,
+     6
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "mistrzowska",
+     "row": 64
+    }
+   ]
+  },
+  {
+   "id": "poziomica_2m",
+   "name": "Poziomica 2 m",
+   "row": 34,
+   "kind": "hand",
+   "family": "slam",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     7,
+     12
+    ],
+    "left": [
+     12,
+     7
+    ],
+    "right": [
+     3,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     14,
+     24
+    ],
+    "left": [
+     24,
+     14
+    ],
+    "right": [
+     6,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 65
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 66
+    }
+   ]
+  },
+  {
+   "id": "mieszadlo",
+   "name": "Mieszadło do zaprawy",
+   "row": 35,
+   "kind": "power",
+   "family": "slam",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     5,
+     3
+    ],
+    "up": [
+     9,
+     12
+    ],
+    "left": [
+     12,
+     9
+    ],
+    "right": [
+     3,
+     9
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     10,
+     6
+    ],
+    "up": [
+     18,
+     24
+    ],
+    "left": [
+     24,
+     18
+    ],
+    "right": [
+     6,
+     18
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 67
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 68
+    }
+   ]
+  },
+  {
+   "id": "laser_krzyzowy",
+   "name": "Laser krzyżowy",
+   "row": 36,
+   "kind": "power",
+   "family": "beam",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     11
+    ],
+    "up": [
+     7,
+     11
+    ],
+    "left": [
+     8,
+     11
+    ],
+    "right": [
+     7,
+     11
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     22
+    ],
+    "up": [
+     14,
+     22
+    ],
+    "left": [
+     16,
+     22
+    ],
+    "right": [
+     14,
+     22
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 69
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 70
+    }
+   ]
+  },
+  {
+   "id": "lutownica",
+   "name": "Lutownica",
+   "row": 37,
+   "kind": "power",
+   "family": "stab",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     4
+    ],
+    "up": [
+     7,
+     11
+    ],
+    "left": [
+     11,
+     7
+    ],
+    "right": [
+     4,
+     7
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     8
+    ],
+    "up": [
+     14,
+     22
+    ],
+    "left": [
+     22,
+     14
+    ],
+    "right": [
+     8,
+     14
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 71
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 72
+    }
+   ]
+  },
+  {
+   "id": "opalarka",
+   "name": "Opalarka",
+   "row": 38,
+   "kind": "power",
+   "family": "spray",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     6,
+     5
+    ],
+    "up": [
+     8,
+     10
+    ],
+    "left": [
+     10,
+     8
+    ],
+    "right": [
+     5,
+     8
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     12,
+     10
+    ],
+    "up": [
+     16,
+     20
+    ],
+    "left": [
+     20,
+     16
+    ],
+    "right": [
+     10,
+     16
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 73
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 74
+    }
+   ]
+  },
+  {
+   "id": "noz",
+   "name": "Nóż do tapet",
+   "row": 39,
+   "kind": "hand",
+   "family": "stab",
+   "master": false,
+   "rarities": [
+    "zwykla",
+    "solidna",
+    "markowa",
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     8,
+     12
+    ],
+    "left": [
+     12,
+     8
+    ],
+    "right": [
+     3,
+     8
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     16,
+     24
+    ],
+    "left": [
+     24,
+     16
+    ],
+    "right": [
+     6,
+     16
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "markowa",
+     "row": 75
+    },
+    {
+     "rarity": "mistrzowska",
+     "row": 76
+    }
+   ]
+  },
+  {
+   "id": "noz_majstra",
+   "name": "Nóż majstra seniora",
+   "row": 40,
+   "kind": "hand",
+   "family": "stab",
+   "master": true,
+   "rarities": [
+    "mistrzowska"
+   ],
+   "grip": {
+    "down": [
+     7,
+     3
+    ],
+    "up": [
+     8,
+     12
+    ],
+    "left": [
+     12,
+     8
+    ],
+    "right": [
+     3,
+     8
+    ]
+   },
+   "gripGodot": {
+    "down": [
+     14,
+     6
+    ],
+    "up": [
+     16,
+     24
+    ],
+    "left": [
+     24,
+     16
+    ],
+    "right": [
+     6,
+     16
+    ]
+   },
+   "swing": [
+    {
+     "rarity": "mistrzowska",
+     "row": 77
+    }
+   ]
+  }
+ ],
+ "swingRows": [
+  {
+   "id": "dziennik",
+   "rarity": "markowa"
+  },
+  {
+   "id": "dziennik",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "kielnia",
+   "rarity": "markowa"
+  },
+  {
+   "id": "kielnia",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "gwozdziarka",
+   "rarity": "markowa"
+  },
+  {
+   "id": "gwozdziarka",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "probnik",
+   "rarity": "markowa"
+  },
+  {
+   "id": "probnik",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "klucz",
+   "rarity": "markowa"
+  },
+  {
+   "id": "klucz",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "szlifierka",
+   "rarity": "markowa"
+  },
+  {
+   "id": "szlifierka",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "lom",
+   "rarity": "markowa"
+  },
+  {
+   "id": "lom",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "wkretarka",
+   "rarity": "markowa"
+  },
+  {
+   "id": "wkretarka",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "laser",
+   "rarity": "markowa"
+  },
+  {
+   "id": "laser",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "mlot",
+   "rarity": "markowa"
+  },
+  {
+   "id": "mlot",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "tablet",
+   "rarity": "markowa"
+  },
+  {
+   "id": "tablet",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "miernik",
+   "rarity": "markowa"
+  },
+  {
+   "id": "miernik",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "dachowka",
+   "rarity": "markowa"
+  },
+  {
+   "id": "dachowka",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "agregat",
+   "rarity": "markowa"
+  },
+  {
+   "id": "agregat",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "lyzka",
+   "rarity": "markowa"
+  },
+  {
+   "id": "lyzka",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "udarowy",
+   "rarity": "markowa"
+  },
+  {
+   "id": "udarowy",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "kotwy",
+   "rarity": "markowa"
+  },
+  {
+   "id": "kotwy",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "spawarka",
+   "rarity": "markowa"
+  },
+  {
+   "id": "spawarka",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "tyczka",
+   "rarity": "markowa"
+  },
+  {
+   "id": "tyczka",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "mlotek",
+   "rarity": "markowa"
+  },
+  {
+   "id": "mlotek",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "mlot_zenka",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "poziomica_m",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "lopata",
+   "rarity": "markowa"
+  },
+  {
+   "id": "lopata",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "siekiera",
+   "rarity": "markowa"
+  },
+  {
+   "id": "siekiera",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "pila",
+   "rarity": "markowa"
+  },
+  {
+   "id": "pila",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "kilof",
+   "rarity": "markowa"
+  },
+  {
+   "id": "kilof",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "przecinak",
+   "rarity": "markowa"
+  },
+  {
+   "id": "przecinak",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "nozyce",
+   "rarity": "markowa"
+  },
+  {
+   "id": "nozyce",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "silikon",
+   "rarity": "markowa"
+  },
+  {
+   "id": "silikon",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "myjka",
+   "rarity": "markowa"
+  },
+  {
+   "id": "myjka",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "palnik",
+   "rarity": "markowa"
+  },
+  {
+   "id": "palnik",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "taker",
+   "rarity": "markowa"
+  },
+  {
+   "id": "taker",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "mlotek_gumowy",
+   "rarity": "markowa"
+  },
+  {
+   "id": "mlotek_gumowy",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "pilarka",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "poziomica_2m",
+   "rarity": "markowa"
+  },
+  {
+   "id": "poziomica_2m",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "mieszadlo",
+   "rarity": "markowa"
+  },
+  {
+   "id": "mieszadlo",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "laser_krzyzowy",
+   "rarity": "markowa"
+  },
+  {
+   "id": "laser_krzyzowy",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "lutownica",
+   "rarity": "markowa"
+  },
+  {
+   "id": "lutownica",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "opalarka",
+   "rarity": "markowa"
+  },
+  {
+   "id": "opalarka",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "noz",
+   "rarity": "markowa"
+  },
+  {
+   "id": "noz",
+   "rarity": "mistrzowska"
+  },
+  {
+   "id": "noz_majstra",
+   "rarity": "mistrzowska"
+  }
+ ]
+}
