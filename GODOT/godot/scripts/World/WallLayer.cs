@@ -12,7 +12,8 @@ namespace LifeLike.Game.World;
 /// wysokie lico (stage_N_wall.png) – tylko gdy poniżej nie ma pokazanego muru. Czytelność: mur, który zasłania widoczną
 /// podłogę (x, y-1), płynnie robi się półprzezroczysty (np. południowa ściana pokoju, w którym jest bohater), a jeszcze
 /// bardziej przed bohaterem, pomocnikiem, problemem, znajdźką, polem ciosu i schodami (także postać w polu (x, y-2)
-/// zasłonięta do połowy). Pęknięcie / drzwi magazynu są na licu.
+/// zasłonięta do połowy). Pęknięcie / drzwi magazynu są na licu. v0.23.0: mury pod bocznym przejściem w cienkim murze
+/// są ucięte na jego dolnej krawędzi i nakryte wierzchem z jasną krawędzią (WallGaps) – przejście widać.
 /// </summary>
 public sealed partial class WallLayer
 {
@@ -120,19 +121,32 @@ public sealed partial class WallLayer
     /// <summary>Mur pokazany na mapie (odkryty) – jego wierzch zakrywa lico muru powyżej.</summary>
     private bool Shown(int x, int y) => Solid(x, y) && _g.Explored(x, y);
 
-    private bool IsTempWall(int x, int y)
-    {
-        for (var i = 0; i < _g.WallsCount; i++)
-        {
-            if (_g.Walls[i].X == x && _g.Walls[i].Y == y && _g.Walls[i].Turns > 0) return true;
-        }
-        return false;
-    }
+    private bool IsTempWall(int x, int y) => WallGaps.IsTempWall(_g, x, y);
 
     /// <summary>Prostokąt lica muru w polu (x, y) w pikselach świata.</summary>
     public static Rect2 FaceRect(int x, int y) => new(x * Proj.W, (y + 1) * Proj.RowH - Proj.WallH, Proj.W, Proj.WallH);
 
     public static Rect2 TopRect(int x, int y) => new(x * Proj.W, y * Proj.RowH - Proj.WallH, Proj.W, Proj.RowH);
+
+    /// <summary>v0.23.0: górna granica rysowania muru (x, y) w pikselach świata, gdy zasłania boczne przejście (WallGaps).</summary>
+    private float GapClip(int x, int y)
+    {
+        var row = WallGaps.ClipRow(_g, x, y);
+        return row == WallGaps.None ? float.MinValue : row * Proj.RowH;
+    }
+
+    /// <summary>Rysunek kafla obcięty od góry do clip (źródło 1:1 z celem).</summary>
+    private static void DrawClipped(CanvasItem ci, Texture2D tex, Rect2 dst, Rect2 src, Color mod, float clip)
+    {
+        var cut = clip - dst.Position.Y;
+        if (cut >= dst.Size.Y) return;
+        if (cut > 0)
+        {
+            dst = new Rect2(dst.Position.X, clip, dst.Size.X, dst.Size.Y - cut);
+            src = new Rect2(src.Position.X, src.Position.Y + cut, src.Size.X, src.Size.Y - cut);
+        }
+        ci.DrawTextureRectRegion(tex, dst, src, mod);
+    }
 
     private void DrawRow(CanvasItem ci, int y)
     {
@@ -152,9 +166,10 @@ public sealed partial class WallLayer
             if (!_g.Explored(x, y) || _g.Lv[x, y] != Tile.Wall) continue;
             var mod = new Color(1, 1, 1, _alpha[y * Level.W + x]);
             var temp = IsTempWall(x, y);
+            var clip = GapClip(x, y);
             var tt = temp ? brickTops : tops;
             var top = TopRect(x, y);
-            void Top(int idx) => ci.DrawTextureRectRegion(tt, top, new Rect2(idx * Proj.W, 0, Proj.W, rh), mod);
+            void Top(int idx) => DrawClipped(ci, tt, top, new Rect2(idx * Proj.W, 0, Proj.W, rh), mod, clip);
             Top(Assets.TileWall);
             bool n = Solid(x, y - 1), w = Solid(x - 1, y), e = Solid(x + 1, y);
             if (!temp)
@@ -169,10 +184,20 @@ public sealed partial class WallLayer
             {
                 var fr = FaceRect(x, y);
                 var ff = temp ? brickFaces : faces;
-                void Face(int k) => ci.DrawTextureRectRegion(ff, fr, new Rect2((col + k) * Proj.W, 0, Proj.W, wh), mod);
+                void Face(int k) => DrawClipped(ci, ff, fr, new Rect2((col + k) * Proj.W, 0, Proj.W, wh), mod, clip);
                 Face(Assets.WallFace);
                 if (!temp && !w) Face(Assets.WallFaceLeft);
                 if (!temp && !e) Face(Assets.WallFaceRight);
+            }
+            // ucięty mur pod przejściem: wierzch z jasną krawędzią na linii cięcia (w ostatnim wierszu, który tam rysuje)
+            if (clip > float.MinValue && !(Shown(x, y + 1) && GapClip(x, y + 1) > float.MinValue))
+            {
+                var cap = new Rect2(x * Proj.W, clip, Proj.W, rh / 2);
+                void Cap(int idx) => ci.DrawTextureRectRegion(tops, cap, new Rect2(idx * Proj.W, 0, Proj.W, rh / 2), mod);
+                Cap(Assets.TileWall);
+                Cap(Assets.TileEdgeTop);
+                if (!w) Cap(Assets.TileEdgeLeft);
+                if (!e) Cap(Assets.TileEdgeRight);
             }
             if (x == _g.SecretX && y == _g.SecretY && _g.SecretClosed()) DrawSecret(ci, x, y, face);
         }

@@ -38,7 +38,12 @@ vec2 cell(ivec2 c) {
     if (!inside(c)) return vec2(1.0, 0.0);
     return texelFetch(cells, c, 0).rg;
 }
-bool wall(ivec2 c) { return inside(c) && texelFetch(cells, c, 0).b > 0.5; }
+bool wall(ivec2 c) { return inside(c) && texelFetch(cells, c, 0).b > 0.2; }
+// v0.23.0: mur ucięty pod bocznym przejściem (B 2/3: od własnego wiersza, 1/3: od wiersza wyżej) nie zakrywa pikseli nad cięciem
+float wall_clip(ivec2 c) {
+    float b = texelFetch(cells, c, 0).b;
+    return b > 0.9 ? -1e6 : (b > 0.5 ? float(c.y) : float(c.y - 1));
+}
 void fragment() {
     vec2 ap = floor(vec2(UV.x * size.x, UV.y * (size.y + lift) - lift) * art); // piksel grafiki
     vec2 pc = (ap + 0.5) / art;            // jego środek w polach
@@ -48,7 +53,7 @@ void fragment() {
     bool on_wall = false;
     for (int k = 2; k >= 0; k--) {
         int yy = c.y + k;
-        if (on_wall || float(yy) - lift > pc.y || !wall(ivec2(c.x, yy))) continue;
+        if (on_wall || float(yy) - lift > pc.y || !wall(ivec2(c.x, yy)) || pc.y < wall_clip(ivec2(c.x, yy))) continue;
         on_wall = true;
         f.y = (pc.y - (float(yy) - lift)) / (1.0 + lift);
         c.y = yy;
@@ -98,7 +103,7 @@ void fragment() {
     private readonly float[] _cur = new float[Level.W * Level.H];
     private readonly float[] _dst = new float[Level.W * Level.H];
     private readonly bool[] _known = new bool[Level.W * Level.H];
-    private readonly bool[] _wall = new bool[Level.W * Level.H];
+    private readonly byte[] _wall = new byte[Level.W * Level.H];   // 255 mur, 170 / 85 mur ucięty pod przejściem (WallGaps)
     private bool _dirty = true;
     private Outside _outside;
 
@@ -130,7 +135,8 @@ void fragment() {
             {
                 var i = y * Level.W + x;
                 _known[i] = _g.Explored(x, y);
-                _wall[i] = _known[i] && _g.Lv[x, y] == Tile.Wall;
+                var clip = WallGaps.ClipRow(_g, x, y);
+                _wall[i] = (byte)(!_known[i] || _g.Lv[x, y] != Tile.Wall ? 0 : clip == WallGaps.None ? 255 : clip == y ? 170 : 85);
                 float a;
                 if (!_known[i]) a = 1f;
                 else if (!_g.Visible(x, y)) a = 0.58f;
@@ -165,7 +171,7 @@ void fragment() {
             var p = i * 4;
             _px[p] = (byte)Mathf.RoundToInt(Mathf.Clamp(_cur[i], 0f, 1f) * 255);
             _px[p + 1] = (byte)(_known[i] ? 255 : 0);
-            _px[p + 2] = (byte)(_wall[i] ? 255 : 0);
+            _px[p + 2] = _wall[i];
             _px[p + 3] = 255;
         }
         _tex.Update(Image.CreateFromData(Level.W, Level.H, false, Image.Format.Rgba8, _px));

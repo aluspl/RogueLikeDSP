@@ -437,6 +437,45 @@ public sealed class DemoStaging
         }
     }
 
+    /// <summary>
+    /// v0.23.0: boczne przejście w murze (zgłoszenie testera) – pionowy mur dwa pola na lewo od bohatera z przejściem
+    /// w jego wierszu i drugi, dwa pola na prawo, z przejściem wiersz niżej; poziomy mur trzy wiersze pod bohaterem.
+    /// </summary>
+    public void WallGapShowcase(int stage)
+    {
+        var g = G;
+        g.StartStage(stage);
+        g.EnemiesCount = 0;
+        g.PickupsCount = 0;
+        g.KeyHolder = -1;
+        ClearAround(-6, -5, 6, 4);
+        int hx = g.Hero.X, hy = g.Hero.Y;
+        void Wall(int x, int y)
+        {
+            if (x >= 1 && y >= 1 && x < Level.W - 1 && y < Level.H - 1 && (x != g.StairsX || y != g.StairsY)) g.Lv[x, y] = Tile.Wall;
+        }
+        for (var y = hy - 5; y <= hy + 4; y++)
+        {
+            if (y != hy) Wall(hx - 2, y);
+            if (y != hy + 1) Wall(hx + 3, y);
+        }
+        for (var x = hx - 6; x <= hx + 6; x++)
+        {
+            if (x != hx - 4 && x != hx + 1) Wall(x, hy + 3);
+        }
+        g.UpdateFov();
+        for (var y = hy - 6; y <= hy + 5; y++)
+        {
+            for (var x = hx - 7; x <= hx + 7; x++)
+            {
+                if (Level.In(x, y) && g.Fov[y * Level.W + x] == Sight.Unknown) g.Fov[y * Level.W + x] = Sight.Remembered;
+            }
+        }
+        _app.Session.ResetWatch();
+        _app.Nodes.World.Sync();
+        _app.Refresh();
+    }
+
     /// <summary>v0.21.50 cz. 3: pola wydarzeń w prawo od bohatera (po identyfikatorze z game.json), pusto wokół.</summary>
     public void EventTiles(params string[] ids)
     {
