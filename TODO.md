@@ -250,7 +250,7 @@ Stan v0.21.54: #62, #65, #66 zrobione, #63 jako prototyp w ustawieniach (wszystk
 
 > (Zamknięte w v0.22.0, sprawdzone zrzutami 2026-11-05.) Stan #67–#69 (2026-10-04, praca wstrzymana na prośbę): WIP w commicie – wersja v0.22.0 w danych, początek nowych kafli schodów w eksporcie i zmiany w HUD/dzienniku Godota; nie sprawdzone zrzutami ani testami, do dokończenia.
 
-## v0.23.0 (gotowa do wydania 2026-11-07; plan z 2026-11-05)
+## v0.23.0 (wydana 2026-11-08; plan z 2026-11-05)
 
 Pakiet zawartości i rozgrywki (zmienia logikę i balans: test złoty, bot 300 przebiegów/zawód). **Ostatnia wersja open
 source** – bez konfiguracji Xcode Cloud i integracji w tym repo. Przed kodem dokument projektu
@@ -299,7 +299,7 @@ Otwarte na później: #79 (Zaplecze), #80 (humor), #81–#83 (zawody, bossowie, 
 broni (v0.24), GBA: grafika broni i sprzętu (#86, #88), ekran Gabloty (#92), stos GBA 7360/8628 B do obserwacji;
 dalej zamknięta wersja 0.3 (repo organizacji).
 
-## v0.24 (zapowiedź)
+## v0.24 / 0.3 (zapowiedź – repo organizacji `planbudowlany-rogue`, gałąź main skopiowana 2026-11-08 z v0.23.0)
 
 **Do kolejnej wersji (pomysł właściciela 2026-11-07): synergie broni** – łańcuchy efektów między broniami/trybami, np. myjka ciśnieniowa moczy problemy (Mokre), potem broń z prądem (próbnik, Młot Gromowładny) razi wszystkie mokre naraz z premią; opalarka/lutownica osusza i podpala, woda gasi; zaprawa (Kielnia) + młot = kruszenie. Część już działa (prąd skacze po mokrych – ShockArea), do zrobienia: czytelna lista synergii w pomocy, ogłoszenie „Synergia!”, kombinacje między bronią w ręce i w kaburze (szybka zamiana jako ruch).
 

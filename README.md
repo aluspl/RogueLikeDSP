@@ -1,5 +1,9 @@
 # RogueLikeDSP – PlanBudowlany RogueLike (dawniej LifeLike)
 
+> **Stan repozytorium:** to publiczne repo zostaje zamrożone na wersji **v0.23.0** (ostatnie wydanie open source,
+> wersja GBA i Godot obok siebie) jako przykład wspólnej logiki C++/C#. Dalszy rozwój wersji Godot (od 0.3) toczy się
+> w prywatnym repozytorium organizacji.
+
 Roguelike o budowie domu: przechodzisz 10 etapów budowy w 3 aktach (Fundamenty → … → Wykończenie i odbiór; po
 8. wygranej przed nimi Akt 0 „Papierologia” – pozwolenie i przyłącza, boss Decyzja odmowna), a
 przeciwnikami są problemy budowy – każdy etap ma własne, z zachowaniami (Woda gruntowa się dzieli, Przeciekająca papa
