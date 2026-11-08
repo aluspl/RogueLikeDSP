@@ -15,6 +15,7 @@ public partial class DogBubble : Control
 {
     public const float Life = 5.5f;
     private const float PopIn = 0.15f, FadeOut = 0.4f;
+    private const float Margin = 12f;   // odstęp dymka od krawędzi ekranu
     private static readonly Color Fill = new("fff6e8"), Edge = new("8a4a1c"), NameInk = new("8a4a1c");
 
     private WorldView _world;
@@ -94,14 +95,15 @@ public partial class DogBubble : Control
         var f = PixelFont.I;
         var cs = Mathf.Max(1f, Layout.ContentScale);
         var widest = _lines.Length == 0 ? 1 : _lines.Max(l => f.Measure(l));
-        var room = Size.X - 24f;
-        var ts = widest * 1.5f + 20 <= room ? Mathf.Ceil(1.5f * cs - 0.01f) / cs : 1f; // ostry piksel fontu (jak dymek Kierownika)
+        var room = Size.X - 2 * Margin;
+        var ts = Mathf.Ceil(1.5f * cs - 0.01f) / cs; // ostry piksel fontu (jak dymek Kierownika)
+        if (widest * ts + 20 > room) ts = 1f;   // v0.23.0: po zaokrągleniu skali dymek nie może dotknąć krawędzi ekranu
         var lineH = Mathf.Round(16 * ts) + 1;
         var w = Mathf.Round(Mathf.Max(widest * ts, f.Measure(_name)) + 20);
         var h = Mathf.Round(18 + _lines.Length * lineH + 8);
         var tail = 9f;
         var below = anchor.Y - h - tail - 8 < 6; // brak miejsca nad psem: pod nim
-        var x = Mathf.Clamp(anchor.X - w / 2, 6f, Mathf.Max(6f, Size.X - w - 6));
+        var x = Mathf.Clamp(anchor.X - w / 2, Margin, Mathf.Max(Margin, Size.X - w - Margin));
         var y = below ? anchor.Y + 40 + tail : anchor.Y - h - tail;
         var pop = calm ? 1f : Mathf.Clamp(_age / PopIn, 0f, 1f);
         var fade = calm ? 1f : Mathf.Clamp((Life - _age) / FadeOut, 0f, 1f);
