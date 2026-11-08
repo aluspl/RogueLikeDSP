@@ -70,6 +70,10 @@ after the update; your profile stays.**
 3. Utrata pasa z bronią zawodu w kaburze nie gubi jej – wraca do ręki z ulepszeniami i profitami.
 4. **Problemy znów idą za Tobą** – problem w linii z bohaterem stał w miejscu, gdy prostą drogę zasłaniała ściana,
    róg albo inny problem; teraz obchodzi przeszkodę krokiem w bok (nigdy dalej od Ciebie).
+5. **Krótszy samouczek, większy tekst** (zgłoszenie testera) – na tytule i wyborze zawodu po 3 dymki zamiast 14;
+   Szkolenia, opcje, Jak grać, pamiątka i statystyki pojawiają się w osobnych dymkach, gdy pierwszy raz mają znaczenie
+   (jeden dymek na wejście na ekran; kto już widział stary samouczek, nie dostaje ich drugi raz). W Godocie tekst
+   dymka Kierownika jest ok. 1,5 raza większy i rośnie razem z opcją „duży tekst”.
 
 ### Wersja retro
 1. **Logika broni 1:1 z Godotem** (wspólny test złoty): typy ciosu, materiały, żywioły, wzory, Patent, rzadkość,
