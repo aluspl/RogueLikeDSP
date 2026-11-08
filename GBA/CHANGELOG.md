@@ -2,7 +2,7 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
-## v0.23.0 – 2026-11-07 (bronie)
+## v0.23.0 – 2026-11-08 (bronie)
 
 > **Uwaga przy aktualizacji:** budowa w toku z poprzedniej wersji przepada (nowy format zapisu budowy). Profil,
 > doświadczenie, Szkolenia, Respekt, odznaki, sekrety i odkrycia zostają – profil przechodzi migrację automatycznie.
