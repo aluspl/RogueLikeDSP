@@ -127,11 +127,16 @@ public sealed class DebugScenes
                 _app.Coach.Next();
                 return;
             case "tutorial-class": // wybór zawodu: dymek o trudności
-            case "tutorial-stats": // dymek o statystykach z przyciskiem do ich opisu
                 Meta.TutorialDone(s.Profile, 0);
                 s.ClassId = 1;
                 Flow.ClassSelect.Open();
-                while (_app.Coach.Active && _app.Coach.CurrentId != (scene == "tutorial-class" ? "difficulty" : "stats")) _app.Coach.Next();
+                while (_app.Coach.Active && _app.Coach.CurrentId != "difficulty") _app.Coach.Next();
+                return;
+            case "tutorial-stats": // v0.23.0: dymek o statystykach (osobny, po pierwszej budowie) z przyciskiem do ich opisu
+                s.Profile.Tutorial = (ushort)(Tutorial.Short | Tutorial.Title | Tutorial.Class | Tutorial.Keepsake);
+                s.Profile.Runs = 1;
+                s.ClassId = 1;
+                Flow.ClassSelect.Open();
                 return;
             case "tutorial-unlock": // dymek nowości: nowy zawód z nagrody (Dekarz) na wyborze zawodu
                 s.Profile.Tutorial = (ushort)(Tutorial.Title | Tutorial.Class | Tutorial.Investor);
