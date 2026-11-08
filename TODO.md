@@ -305,6 +305,12 @@ dalej zamknięta wersja 0.3 (repo organizacji).
 DevOps i integracje z PlanBudowlany (Xcode Cloud, CI Android, konto PlanBudowlany w grze #55–#61) – już w repo
 organizacji (Godot prywatnie, GBA zostaje open source). Do tego czasu w tym repo bez konfiguracji chmurowych.
 
+**Easter egg: pies Kawka / CoffeeDog** (pomysł właściciela 2026-11-08): co jakiś czas (rzadko, losowo z seeda) na kafelku błota
+siedzi suczka Kawka (EN: CoffeeDog) – nie problem, nie da się jej zaatakować. Wejście obok = animacja głaskania (serduszko),
+trochę doświadczenia (raz na budowę) i dymek z sarkastyczną oceną postępów zależną od stanu budowy (HP, etap, liczba
+pokonanych problemów, porażki z profilu), np. „Trzeci etap i dalej w kasku? Ambitnie.”. Sprite z referencyjnego zdjęcia
+(owczarek, rudo-czarna). Wpis w Katalogu/Gablocie „Spotkana Kawka”. Teksty w game.json/en.json; GBA minimalnie albo wcale.
+
 Numeracja: następna zamknięta wersja może być **0.3** (nowe repo w organizacji); 0.23 = ostatnia otwartoźródłowa razem z GBA.
 
 Pomysły właściciela do v0.24 (2026-11-07):
