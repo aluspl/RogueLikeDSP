@@ -1,8 +1,8 @@
 # Post – v0.23 (Instagram / Facebook / Reels)
 
-Grafiki: `infografika_1_nowosci.png`, `infografika_2_bronie.png` (1080×1350), skrypt `make_infografiki.py`,
-zrzuty z Godota w pionie w `zrzuty/`. Reklamówka 9:16 (~38 s): `reklama/` (nagranie `nagraj.sh`, ujęcia
-`shots_v023.json`, montaż `make_reklama.py`); plik MP4 ma ~48 MB, więc nie jest w repo (Organizacja: `Filmy/`).
+Grafiki: `infografika_1_nowosci.png` (z Kawką), `infografika_2_bronie.png`, `infografika_3_co_ma_gra.png` (przegląd gry) (1080×1350), skrypt `make_infografiki.py`,
+zrzuty z Godota w pionie w `zrzuty/`. Reklamówka 9:16 (~43 s, z Kawką): `reklama/` (nagranie `nagraj.sh`, ujęcia
+`shots_v023.json`, montaż `make_reklama.py`); plik MP4 ma ~51 MB (wersja do wrzucenia ~19 MB), więc nie jest w repo (Organizacja: `Filmy/`).
 
 ## PL
 
@@ -22,6 +22,10 @@ Co nowego:
 - legendarny Nóż majstra seniora: „Ostrze prosi o emeryturę. Majster: nie!”
 - sprzęt (kask, rękawice, kamizelka) widać na postaci
 - ogłoszenia z przytupem, trudniejszy Normalny i rzadsze kryty
+- problemy obchodzą przeszkody, boczne przejścia są czytelniejsze, a samouczek krótszy i z większym tekstem
+
+Easter egg: w błocie na placu siedzi czasem Kawka, suczka z budowy. Pogłaszcz ją – oceni twoje postępy, szczerze do bólu
+(„Nowa osoba na budowie? Zasada pierwsza: nie wchodź w beton.”). Za głaskanie w 4 budowach jest odznaka Psi przyjaciel.
 
 Nawet jeśli zaszkodzą ci opary – wciąż możesz grać.
 
@@ -32,7 +36,7 @@ Krótka wersja (Reels / opis filmu):
 
 ```
 Nowe bronie w PlanBudowlany Roguelike 0.23: obuch, cięcie, kłucie, rzadkość w rękach, Patent i artefakty.
-Znajdziesz legendarny Nóż majstra seniora? iPhone · Android · wersja retro – planbudowlany.online
+Znajdziesz legendarny Nóż majstra seniora? A w błocie czeka Kawka – pogłaszcz, oceni twoje postępy. iPhone · Android · wersja retro – planbudowlany.online
 ```
 
 ## EN
@@ -53,6 +57,10 @@ What's new:
 - the legendary Senior Foreman's Knife: "The blade begs to retire. The foreman: no!"
 - gear (helmet, gloves, vest) shows on your hero
 - punchier announcements, a tougher Normal and rarer crits
+- problems path around obstacles, side passages are easier to read, and the tutorial is shorter with bigger text
+
+Easter egg: sometimes CoffeeDog, the site dog, sits in the mud. Pet her and she'll rate your progress, brutally honestly
+("New on site? Rule one: don't step in wet concrete."). Pet her in 4 builds for the Dog's Best Pal badge.
 
 Even if the fumes get to you – you can still play.
 
@@ -63,5 +71,6 @@ Short version:
 
 ```
 New weapons in Project Builder: Roguelike 0.23 – Blunt, Cut, Stab, rarity you can see, Tricks and artifacts.
+And CoffeeDog in the mud – pet her, she'll rate your progress.
 iPhone · Android · retro version – planbudowlany.online
 ```
