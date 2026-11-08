@@ -236,6 +236,8 @@ def make_actors():
     car = [e for e in data["enemies"] if e["frame"] >= 184]
     assert [e["id"] for e in car] == pa.CAREER_ENEMY_ORDER and [e["frame"] for e in car] == list(range(184, 184 + 2 * len(car), 2))
     for i in range(len(car)): frames += [pa.career_enemy_frame(i, 0), pa.career_enemy_frame(i, 1)]
+    assert len(frames) == 196   # v0.23.0: 196-201 Kawka (siedzi A/B, zadowolona, uszy po sobie), dłoń, serduszko
+    frames += pa.dog_frames()
     px = [p for fr in frames for p in fr]
     write_bmp(os.path.join(G, "actors.bmp"), px, 16, 16 * len(frames), SPR_PAL, 4)
     write_json("actors", {"type": "sprite", "height": 16})

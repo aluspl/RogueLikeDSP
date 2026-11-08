@@ -1006,6 +1006,76 @@ def career_enemy_frame(index, frame):
     return px
 
 
+# ------------------------------------------------------------------ v0.23.0: easter egg - Kawka (klatki 196-201)
+# Suczka w typie owczarka: rudo-brązowa (T) z czarnym siodłem, uszami i kufą, jasna pierś (S), obroża w kolorze marki z
+# żółtą blaszką. 196/197 - siedzi i merda ogonem, 198 - zadowolona (zamknięte oko, język), 199 - uszy po sobie (ręka na
+# głowie), 200 - dłoń w rękawie kamizelki (głaskanie w ogłoszeniu), 201 - serduszko.
+DOG_SIT = [
+"................",
+"........K...K...",
+".......KTK.KTK..",
+".......KTKKKTK..",
+".......KKKTKKK..",
+"......KTTKTTTK..",
+"......KTWKTTTKKK",
+"......KTTTTKKKKK",
+"..K....KTTTKKRK.",
+".KTK...KYOOOK...",
+".KTK..KKKKKSSK..",
+"..KTKKKKKKKSSK..",
+"..KTTKKKKKTTSK..",
+"...KTTTTTTKTSK..",
+"...KTSKTTSKTSK..",
+"...KKKKKKKKKKK..",
+]
+DOG_TAIL_UP = {8: "K......KTTTKKRK.", 9: "KTK....KYOOOK...", 10: ".KTK..KKKKKSSK..", 11: "..KTKKKKKKKSSK.."}
+DOG_HAPPY = {5: "......KTKKTTTK..", 6: "......KTTKTTTKKK", 8: "K......KTTTKKRK.", 9: "KTK....KYOOOKRR.", 10: ".KTK..KKKKKSSK..",
+             11: "..KTKKKKKKKSSK.."}
+DOG_EARS_BACK = {**DOG_HAPPY, 1: "................", 2: "................", 3: ".......KKK.KKK..", 4: ".......KTTKKTTK."}
+DOG_HAND = [
+"................",
+"................",
+"................",
+"................",
+"..KKKKKK.KKKK...",
+".KOOYOOOKSSSSK..",
+".KOOOOOOKSSSSSK.",
+".KOOOOOOKSSSSSSK",
+".KOOOOOOKSSSSSSK",
+"..KKKKKKKSSSSSK.",
+"........KKKKKK..",
+"................",
+"................",
+"................",
+"................",
+"................",
+]
+DOG_HEART = [
+"................",
+"................",
+"................",
+"................",
+"....KK...KK.....",
+"...KRRK.KRRK....",
+"..KRWRRKRRRRK...",
+"..KRRRRRRRRRK...",
+"...KRRRRRRRK....",
+"....KRRRRRK.....",
+".....KRRRK......",
+"......KRK.......",
+".......K........",
+"................",
+"................",
+"................",
+]
+
+
+def dog_frames():
+    def var(ch):
+        return parse([ch.get(i, r) for i, r in enumerate(DOG_SIT)])
+    return [parse(DOG_SIT), var(DOG_TAIL_UP), var(DOG_HAPPY), var(DOG_EARS_BACK), parse(DOG_HAND), parse(DOG_HEART)]
+
+
 # ------------------------------------------------------------------ bossowie (klatki 46-47, druga klatka 48-49; Inspekcja 50-51)
 BOSSES = {
     "betoniarka": [
