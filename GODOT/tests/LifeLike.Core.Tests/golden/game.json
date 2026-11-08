@@ -10651,7 +10651,7 @@
       {
         "when": "no_kills",
         "value": 2,
-        "text": "Zero usuniętych usterek.|Też lubię leżeć|w błocie."
+        "text": "Ani jednej usterki?|Też lubię leżeć|w błocie."
       },
       {
         "when": "kills_ge",

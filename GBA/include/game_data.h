@@ -86,7 +86,7 @@ inline constexpr core::dog_quip_def dog_quips[] = {
     { core::dog_cond::no_helmet, 2, { { "Bez kasku? Odważnie.", "No helmet? Brave." }, { "Ja tam bym chociaż", "I'd wear a bucket," }, { "wiadro założyła.", "at least." } } },
     { core::dog_cond::master, 0, { { "Mistrzowska broń,", "A master's weapon," }, { "a głaszcze jak amator.", "yet you pet like" }, { "Ale lubię.", "an amateur. I like it." } } },
     { core::dog_cond::hp_full, 2, { { "Ani zadrapania?", "Not a scratch?" }, { "Na pewno tu pracujesz?", "Do you even work here?" }, { "", "" } } },
-    { core::dog_cond::no_kills, 2, { { "Zero usuniętych usterek.", "Zero defects fixed." }, { "Też lubię leżeć", "I like lying in" }, { "w błocie.", "the mud too." } } },
+    { core::dog_cond::no_kills, 2, { { "Ani jednej usterki?", "Not a single defect?" }, { "Też lubię leżeć", "I like lying in" }, { "w błocie.", "the mud too." } } },
     { core::dog_cond::kills_ge, 20, { { "Ile usterek już poszło?", "So many defects gone?" }, { "Szacun. Ja zakopałam", "Respect. I only" }, { "tylko trzy kości.", "buried three bones." } } },
     { core::dog_cond::losses_ge, 5, { { "Znowu Ty? Kierownik", "You again? The boss" }, { "mówi, że to już", "says this is build" }, { "któraś budowa z rzędu.", "number who-knows." } } },
     { core::dog_cond::runs_le, 1, { { "Nowa osoba na budowie?", "New on site?" }, { "Zasada pierwsza:", "Rule one: don't step" }, { "nie wchodź w beton.", "in wet concrete." } } },

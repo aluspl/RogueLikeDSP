@@ -1721,7 +1721,6 @@
   "Bez kasku? Odważnie.|Ja tam bym chociaż|wiadro założyła.": "No helmet? Brave.|I'd wear a bucket,|at least.",
   "Mistrzowska broń,|a głaszcze jak amator.|Ale lubię.": "A master's weapon,|yet you pet like|an amateur. I like it.",
   "Ani zadrapania?|Na pewno tu pracujesz?": "Not a scratch?|Do you even work here?",
-  "Zero usuniętych usterek.|Też lubię leżeć|w błocie.": "Zero defects fixed.|I like lying in|the mud too.",
   "Ile usterek już poszło?|Szacun. Ja zakopałam|tylko trzy kości.": "So many defects gone?|Respect. I only|buried three bones.",
   "Znowu Ty? Kierownik|mówi, że to już|któraś budowa z rzędu.": "You again? The boss|says this is build|number who-knows.",
   "Nowa osoba na budowie?|Zasada pierwsza:|nie wchodź w beton.": "New on site?|Rule one: don't step|in wet concrete.",
@@ -1733,7 +1732,8 @@
   "Dobra robota.|Tak mówię wszystkim,|którzy mają smakołyki.": "Good job. I say that|to everyone who|carries treats.",
   "Psi przyjaciel": "Dog's Best Pal",
   "Pogłaszcz Kawkę w 4 budowach": "Pet CoffeeDog in 4 builds",
-  "Przyjaciel Kawki": "CoffeeDog's Pal"
+  "Przyjaciel Kawki": "CoffeeDog's Pal",
+  "Ani jednej usterki?|Też lubię leżeć|w błocie.": "Not a single defect?|I like lying in|the mud too."
  },
  "ui": {
   "obrazen": "% damage",

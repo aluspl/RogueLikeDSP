@@ -135,6 +135,8 @@
 //  74 - Dom z poddaszem: Okna dachowe, boss Zerwana połać obok, porywy co 4 tury
 //  75 - Kamienica: Odbiór konserwatora, boss Pęknięty strop obok (kafle kamienicy, parkiet i sztukateria)
 //  76 - v0.21.53 filtry ekranu: wszystkie odblokowane, każde uruchomienie z zapisem (bez --fresh) = kolejny filtr
+//  77 - v0.23.0 Kawka: Fundamenty, Kawka na błocie tuż w prawo od bohatera; D-pad w prawo = głaskanie (+3 dośw.,
+//       banery z oceną postępów), drugi raz = Kawka robi miejsce (zamiana pól)
 //       (pierwsze: Noir, ...; Wygląd na wyborze zawodu, SELECT); plac: czerwone pola wybuchu, dwie elity, problemy
 //       mokry / zapylony / zmrożony, bohater ranny, zatruty i mokry
 #include "core.h"
@@ -1054,6 +1056,22 @@ namespace debug_scenario
                 g.hero.hp = int16_t(g.hero.max_hp / 3);
                 g.apply_status(core::status_effect::poison, 9);
                 g.soak_hero();
+                break;
+            }
+            case 77:   // v0.23.0: Kawka - na błocie obok bohatera (w prawo)
+            {
+                g.enemies_count = 0;
+                int best = 999, hx = g.hero.x, hy = g.hero.y;
+                for(int y = 1; y < core::map_h - 1; ++y)   // najbliższe błoto z wolnym polem po lewej
+                    for(int x = 2; x < core::map_w - 1; ++x)
+                        if(g.mud(x, y) && g.lv.at(x - 1, y) == core::tile::floor && ! g.mud(x - 1, y) && core::cheb(x, y, hx, hy) < best)
+                        {
+                            best = core::cheb(x, y, hx, hy);
+                            g.hero.x = int8_t(x - 1); g.hero.y = int8_t(y);
+                            g.dog_x = int8_t(x); g.dog_y = int8_t(y);
+                        }
+                if(best < 999) g.dog_flags = uint8_t(core::game::dog_on | core::game::dog_spawned);
+                g.update_fov();
                 break;
             }
             case 73:   // bliźniak: druga połowa z problemami z pierwszej (3 zostawione), ta sama pogoda

@@ -1428,8 +1428,8 @@ namespace core
         case dog_cond::wins_ge: return p.wins >= v;
         case dog_cond::coffee_ge: return g.coffee_drunk >= v;
         case dog_cond::level_ge: return g.hero_level >= v;
+        default: return false;
         }
-        return false;
     }
     // Sarkastyczna ocena postępów po pogłaskaniu (indeks data::dog_quips): pasujące oceny z warunkiem mają pierwszeństwo przed
     // ogólnymi; kolejne głaskanie w tej budowie - następna z pasujących (od miejsca ze skrótu seeda).

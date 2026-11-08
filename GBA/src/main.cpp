@@ -2855,7 +2855,19 @@ namespace
         bn::unique_ptr<text_sprites> levelup_text_heap(new text_sprites());
         text_sprites& levelup_text = *levelup_text_heap;
         int levelup_timer = 0;
+        int dog_pets_seen = g.dog_pets, dog_happy = 0;   // v0.23.0: Kawka - pogłaskana w tej turze: baner z oceną, zadowolona mina
         auto detect_events = [&]() {   // powiadomienia push o ważnych zdarzeniach
+            if(g.dog_pets < dog_pets_seen) dog_pets_seen = g.dog_pets;   // nowa budowa
+            if(g.dog_pets > dog_pets_seen)
+            {
+                dog_pets_seen = g.dog_pets;
+                dog_happy = 90;
+                const core::dog_quip_def& q = data::dog_quips[core::dog_quip(a.save, g)];
+                banner.push(data::dog_name, q.lines[0]);
+                if(q.lines[1][0]) banner.push(q.lines[1], q.lines[2]);
+                bn::fixed_point d = world(g.dog_x, g.dog_y);
+                for(int k = 0; k < 4; ++k) fx_particles.spawn(d.x() + fx_particles.rand(-64, 64), d.y() - 8, 0, fx_particles.rand(-20, -8), 0, 36, particle_pool::star);
+            }
             int active_pickups = 0;
             for(int i = 0; i < g.pickups_count; ++i) active_pickups += g.pickups[i].active;
             if(active_pickups < prev_active) bn::sound_items::sfx_pickup.play();   // zebrana znajdźka
@@ -3068,6 +3080,8 @@ namespace
         bn::optional<bn::sprite_ptr> ally_sprite;
         bn::fixed_point ally_cur, ally_dst;
         bool ally_hidden = false;
+        bn::optional<bn::sprite_ptr> dog_sprite;   // v0.23.0: Kawka w błocie (merda; po pogłaskaniu zadowolona)
+        bn::fixed_point dog_cur, dog_dst;
         bn::vector<int16_t, core::max_enemies> enemy_shown(g.enemies_count, -1);   // v0.21.52 cz. d: klatki problemów od 184
         bool snap_next = true;
         auto approach = [](bn::fixed_point& c, const bn::fixed_point& d) {
@@ -3151,6 +3165,24 @@ namespace
                 }
             }
             else if(ally_sprite) ally_sprite.reset();
+            if(g.dog_here() && g.visible(g.dog_x, g.dog_y) && ! ally_hidden)   // v0.23.0: Kawka
+            {
+                constexpr int dog_frame = 196;   // actors: 196/197 siedzi i merda, 198 zadowolona
+                if(! dog_sprite)
+                {
+                    dog_sprite = bn::sprite_items::actors.create_sprite_optional(dog_dst, dog_frame);
+                    if(dog_sprite) { dog_sprite->set_camera(cam); dog_cur = dog_dst; }
+                }
+                if(dog_sprite)
+                {
+                    approach(dog_cur, dog_dst);
+                    dog_sprite->set_position(dog_cur);
+                    dog_sprite->set_horizontal_flip(g.hero.x < g.dog_x);
+                    dog_sprite->set_tiles(bn::sprite_items::actors.tiles_item(), dog_happy > 0 ? dog_frame + 2 : dog_frame + ((anim_clock / 12) & 1));
+                }
+            }
+            else if(dog_sprite) dog_sprite.reset();
+            if(dog_happy > 0) --dog_happy;
             for(int i = 0; i < pickups.size(); ++i)   // znajdźki lekko podskakują
                 pickups[i].set_y(world(g.pickups[i].x, g.pickups[i].y).y() - (((anim_clock / 16 + i) & 1) ? 1 : 0));
             cam_base = bn::fixed_point(clampf(hero_cur.x(), 136), clampf(hero_cur.y(), 176));
@@ -3423,11 +3455,13 @@ namespace
                 enemy_dst[i] = world(g.enemies[i].x, g.enemies[i].y);
             }
             if(g.ally_turns > 0) ally_dst = world(g.ally_x, g.ally_y);
+            if(g.dog_here()) dog_dst = world(g.dog_x, g.dog_y);
             behavior_fx();
             if(snap_next)
             {
                 hero_cur = hero_dst;
                 ally_cur = ally_dst;
+                dog_cur = dog_dst;
                 for(int i = 0; i < g.enemies_count; ++i) enemy_cur[i] = enemy_dst[i];
                 snap_next = false;
             }
@@ -3577,7 +3611,7 @@ namespace
             fx.clear(); log.clear(); floaters.clear(); fx_particles.list.clear(); levelup_text.clear(); levelup_timer = 0;
             hide_mini_bars(); target_marker.set_visible(false); status_sprite.set_visible(false);
             power_icon.set_visible(false); power_text.clear(); shown_cd = -1; hide_status_hud();
-            ally_hidden = true; ally_sprite.reset();
+            ally_hidden = true; ally_sprite.reset(); dog_sprite.reset();
             a.text.set_left_alignment();
             a.text.generate(-116, 72, UI(podglad_mapy_pusc_l), log);
             // magazyn (#32): znacznik ściany / drzwi, gdy odkryte, i skrzynia (odkryta, jeszcze nieotwarta)
@@ -3632,7 +3666,7 @@ namespace
             for(int i = 0; i < enemies.size(); ++i) { enemies[i].set_tiles(bn::sprite_items::actors.tiles_item(), shared); enemy_shown[i] = -1; }
             for(auto& sp : pickups) sp.set_tiles(bn::sprite_items::actors.tiles_item(), shared);
             power_icon.set_visible(false); power_text.clear(); shown_cd = -1; hide_status_hud();
-            ally_hidden = true; ally_sprite.reset();
+            ally_hidden = true; ally_sprite.reset(); dog_sprite.reset();
             release_strips();
             banner.hide();
             fx_particles.list.clear();

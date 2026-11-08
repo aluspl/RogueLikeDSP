@@ -169,7 +169,7 @@ def build(d):
           "inline constexpr core::dog_quip_def dog_quips[] = {"]
     for q in dg["quips"]:
         lines = q["text"].split("|")
-        assert q["when"] in DOGC and len(lines) <= 3 and all(len(l) <= 25 for l in lines) and -1000 < q.get("value", 0) < 1000, q   # dymek: 3 x 25
+        assert q["when"] in DOGC and len(lines) <= 3 and all(len(l) <= 23 for l in lines) and -1000 < q.get("value", 0) < 1000, q   # dymek 3 linie; GBA: baner 23 znaki
         L.append(f'    {{ core::dog_cond::{q["when"]}, {q.get("value", 0)}, {{ {", ".join(tsplit(q["text"], 3))} }} }},')
     L += ["};", f"inline constexpr int dog_quips_count = {len(dg['quips'])};", ""]
     L.append("inline constexpr core::class_def classes[] = {")
