@@ -180,7 +180,7 @@ public sealed class BetweenRunsPage : PhonePage
         if (nr >= 0)
         {
             var reward = _s.Data.Rewards[nr];
-            var name = weapon >= 0 ? $"{reward.Name} ({_s.Data.Weapons[weapon].Name})" : reward.Name;
+            var name = weapon >= 0 && _s.Data.Weapons[weapon].Name != reward.Name ? $"{reward.Name} ({_s.Data.Weapons[weapon].Name})" : reward.Name;
             var card = p.CardH(y, PhonePainter.RowH + 8);
             p.Stripe(card, 0, Pal.Done);
             p.Text(p.TextX(card), p.RowY(card, 0) + PhonePainter.TextDy, Loc.F("za_kolejny_odbior_2", name), Ink.Done, TextAlign.Left, card.Size.X - 20);
