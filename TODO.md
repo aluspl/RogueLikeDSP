@@ -284,6 +284,7 @@ Decyzje właściciela (2026-11-05) do katalogu broni:
 | 82 | Nowi bossowie (problemy budowy, nie ludzie; mechanika i zapowiedź ciosu) | ⬜ | ⬜ |
 | 83 | Zmiany mocy zawodów (przegląd 12 mocy, spójność z trybem B broni) | ⬜ | ⬜ |
 | 73 | Trudność wg gracza (patrz #73 w v0.22.0) – razem z balansem broni | ⬜ | ⬜ |
+| 94 | **Easter egg: suczka Kawka / CoffeeDog** (pomysł właściciela 2026-11-08): ~co 2–3 budowy (dog.chancePct 40, osobny skrót seeda – RNG gry bez zmian) na jednym etapie Aktu I bez bossa siedzi w błocie (wnętrze pokoju, z dala od startu) suczka w typie owczarka, rudo-czarna. Nie problem: nie da się jej trafić, problemy ją omijają. Wejście = głaskanie: ogłoszenie z dłonią i serduszkami, +3 dośw. (raz na budowę), dymek nad nią z sarkastyczną oceną postępów (16 ocen wg stanu: etap, HP, kask, usterki, porażki, wygrane, kawa, poziom, Mistrzowska broń); kolejne wejście – zamiana pól. Wpis „Spotkana Kawka” w Katalogu, odznaka **Psi przyjaciel** (4 budowy z Kawką, licznik w profilu v20). Sceny dog-map, dog-pet, dog-quip, dog-catalog; GBA scenariusz 77 | ✅ (v0.23.0) | ✅ (sprite na mapie, ocena w banerach) |
 
 ### Gdzie skończyliśmy (2026-11-07)
 
@@ -304,12 +305,6 @@ dalej zamknięta wersja 0.3 (repo organizacji).
 
 DevOps i integracje z PlanBudowlany (Xcode Cloud, CI Android, konto PlanBudowlany w grze #55–#61) – już w repo
 organizacji (Godot prywatnie, GBA zostaje open source). Do tego czasu w tym repo bez konfiguracji chmurowych.
-
-**Easter egg: pies Kawka / CoffeeDog** (pomysł właściciela 2026-11-08): co jakiś czas (rzadko, losowo z seeda) na kafelku błota
-siedzi suczka Kawka (EN: CoffeeDog) – nie problem, nie da się jej zaatakować. Wejście obok = animacja głaskania (serduszko),
-trochę doświadczenia (raz na budowę) i dymek z sarkastyczną oceną postępów zależną od stanu budowy (HP, etap, liczba
-pokonanych problemów, porażki z profilu), np. „Trzeci etap i dalej w kasku? Ambitnie.”. Sprite z referencyjnego zdjęcia
-(owczarek, rudo-czarna). Wpis w Katalogu/Gablocie „Spotkana Kawka”. Teksty w game.json/en.json; GBA minimalnie albo wcale.
 
 Numeracja: następna zamknięta wersja może być **0.3** (nowe repo w organizacji); 0.23 = ostatnia otwartoźródłowa razem z GBA.
 

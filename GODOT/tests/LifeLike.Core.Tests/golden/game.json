@@ -10473,7 +10473,7 @@
     "tip_sciana_bez_odn": "Ściana: bez odnowienia",
     "tip_material": "+{0}% na {1}",
     "ogl_kawka_sub": "Pogłaskana! +{0} dośw.",
-    "kawka_spotkana": "spotkana",
+    "kawka_spotkana": "SPOTKANA",
     "kawka_wpis": "Spotkana Kawka"
   },
   "hitTypes": {

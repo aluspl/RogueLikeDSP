@@ -17,7 +17,8 @@ button to read what it does). The **Rigger Holster Belt** carries a second weapo
 of base weapons with their own "every N-th hit" mechanic, e.g. the Thunder Maul – go to the **Showcase**; the
 legendary Senior Foreman's Knife comes from a secret contract. Crits are rarer (35% cap) and problems hit harder, so
 Normal is tougher. Gear shows on your hero, punchy announcements celebrate finds and boss kills. The retro version gets
-the same rules 1:1 (L+A Trick, L+B swap), without weapon graphics. **A build in progress from an older version is lost
+the same rules 1:1 (L+A Trick, L+B swap), without weapon graphics. Easter egg: every 2–3 builds or so **CoffeeDog**, a site dog,
+sits in the mud of Act I – pet her for a little XP and a sarcastic review of your progress (badge: Dog's Best Pal). **A build in progress from an older version is lost
 after the update; your profile stays.**
 
 ### Nowości
@@ -53,6 +54,13 @@ after the update; your profile stays.**
    napis wpada po skosie, pasy ostrzegawcze, wstrząs, błysk i wymach bronią (przy ograniczonym ruchu bez wstrząsu).
 9. **Opis ataku pod przyciskiem (#90)** – przytrzymanie palcem, najechanie myszą albo LB na Cios / Patent pokazuje
    dymek: nazwa ruchu, mini-siatka wzoru, typ ciosu, obrażenia, zasięg, efekt i odnowienie.
+10. **Easter egg: suczka Kawka** – mniej więcej co 2–3 budowy na jednym etapie Aktu I siedzi w błocie Kawka (owczarek,
+   rudo-czarna). Nie problem: nie da się jej trafić, problemy ją omijają. Wejście na nią = głaskanie: ogłoszenie z dłonią
+   i serduszkami, +3 dośw. (raz na budowę) i dymek nad nią z sarkastyczną oceną postępów zależną od stanu budowy
+   (etap, HP, kask, usunięte usterki, porażki z profilu…), np. „Trzeci etap i dalej w kasku? Ambitnie.”; kolejne
+   wejście – Kawka robi miejsce. Wpis „Spotkana Kawka” w Katalogu i odznaka **Psi przyjaciel** (Kawka w 4 budowach,
+   tytuł „Przyjaciel Kawki”). Wersja retro: Kawka na mapie i ocena w banerach. Profil v20 (migracja automatyczna,
+   wybrany tytuł zlecenia przesuwa się za nową odznaką).
 
 ### Zmiany
 1. **Rzadsze kryty, mocniejsze problemy (#93)** – Szczęście 2% krytu za punkt (było 3%), cięcie +5% (było +10%),
