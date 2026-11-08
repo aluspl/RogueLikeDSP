@@ -48,6 +48,9 @@ public sealed class SceneNodes
         Banners = new PushBanners();
         BannerLayer = new ScaledLayer { Layer = 4 };
         root.AddChild(BannerLayer);
+        DogBubble = new DogBubble { Visible = false }; // v0.23.0: dymek Kawki nad mapą (pod ogłoszeniami)
+        BannerLayer.Root.AddChild(DogBubble);
+        DogBubble.Bind(World);
         Announce = new AnnounceView { Visible = false }; // v0.23.0: ogłoszenia „z przytupem” (pod banerami)
         BannerLayer.Root.AddChild(Announce);
         BannerLayer.Root.AddChild(Banners);
@@ -86,6 +89,7 @@ public sealed class SceneNodes
     public PhoneView Phone { get; }
     public PushBanners Banners { get; }
     public AnnounceView Announce { get; }
+    public DogBubble DogBubble { get; }
     public CoachView Coach { get; }
     public ScaledLayer BannerLayer { get; }
     public ScreenFilter Filter { get; }

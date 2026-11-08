@@ -16,6 +16,7 @@ public sealed class TurnWatcher
     private bool _bossSeen, _second, _phase, _bossAlive;
     private int _docs;
     private int _stage = -1, _tier = -1;
+    private int _dogPets;
 
     public TurnWatcher(SessionEvents events) => _events = events;
 
@@ -36,6 +37,7 @@ public sealed class TurnWatcher
         _stage = g.Stage;
         _tier = g.Tier;
         _bossAlive = g.Boss >= 0 && g.Enemies[g.Boss].Alive;
+        _dogPets = g.DogPets;
     }
 
     private static int ActivePickups(CoreGame g)
@@ -95,6 +97,8 @@ public sealed class TurnWatcher
         var bossAlive = g.Boss >= 0 && g.Enemies[g.Boss].Alive;
         if (_bossAlive && !bossAlive) _events.RaiseBossDefeated(g.Enemies[g.Boss].DefId); // v0.23.0: ogłoszenie
         _bossAlive = bossAlive;
+        if (g.DogPets > _dogPets) _events.RaiseDogPetted(_dogPets == 0); // v0.23.0: Kawka – pierwsze głaskanie z dośw.
+        _dogPets = g.DogPets;
         _level = g.HeroLevel;
         _weapon = g.WeaponOverride;
         _weapon2 = g.Weapon2;

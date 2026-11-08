@@ -77,8 +77,11 @@ public sealed class CatalogTab : PhonePage
         CollectionsPage => _d.Collections.Length,
         BossesPage => CollectionBook.BossesCount(_d),
         AlbumPage => _d.EstateDecor.Length,
-        _ => _d.Enemies.Length,
+        _ => _d.Enemies.Length + (_d.DogQuips.Length > 0 ? 1 : 0), // v0.23.0: na końcu wpis „Spotkana Kawka”
     };
+
+    /// <summary>v0.23.0: pozycja wpisu Kawki w Katalogu (za problemami).</summary>
+    public int DogRow => _d.Enemies.Length;
 
     public override bool TapRow(int index)
     {
@@ -156,7 +159,8 @@ public sealed class CatalogTab : PhonePage
                 DrawDecor(p, card);
                 break;
             default:
-                DrawEnemyCard(p, card, _list.Sel, false);
+                if (_list.Sel == DogRow) DrawDogCard(p, card);
+                else DrawEnemyCard(p, card, _list.Sel, false);
                 break;
         }
     }
@@ -195,6 +199,13 @@ public sealed class CatalogTab : PhonePage
             }
             default:
             {
+                if (i == DogRow) // v0.23.0: easter egg – Kawka (nie usterka)
+                {
+                    var met = Dog.Met(_p);
+                    var dw = p.Pill(right, y, met ? Loc.T("kawka_spotkana") : Loc.T("nieznana"), met ? PillKind.Done : PillKind.Gray);
+                    p.Text(tx, y, met ? Loc.T("kawka_wpis") : "???", sel ? Ink.Brand : met ? Ink.Dark : Ink.Dim, TextAlign.Left, right - dw - 4 - tx);
+                    return;
+                }
                 var known = Known(i);
                 var pw = p.Pill(right, y, known ? $"x{_p.KillCount[i]}" : Loc.T("nieznana"), known ? PillKind.Done : PillKind.Gray);
                 p.Text(tx, y, $"#{i + 1} {(known ? _d.Enemies[i].Name : "???")}", sel ? Ink.Brand : known ? Ink.Dark : Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
@@ -224,6 +235,21 @@ public sealed class CatalogTab : PhonePage
         }
         var tags = UiText.Behaviors(_d, s);
         if (known && tags.Length > 0) p.Text(x, dc.Position.Y + 40, Loc.T("cechy") + tags, Ink.Late, TextAlign.Left, right - x);
+    }
+
+    /// <summary>v0.23.0: karta Kawki – portret (sylwetka, dopóki nie spotkana), imię, opis albo podpowiedź, ile budów z nią.</summary>
+    private void DrawDogCard(PhonePainter p, Godot.Rect2 card)
+    {
+        var right = card.End.X - 6;
+        var dc = p.CardH(card.End.Y + 6, 62);
+        var met = Dog.Met(_p);
+        var photo = new Godot.Rect2(dc.Position.X + 8, dc.Position.Y + 8, 32, 32);
+        p.C.DrawStyleBox(Ui.Box(met ? Pal.DoneBg : Pal.Group, 5), photo);
+        p.IconTinted(Assets.Actors, Assets.FrameDog, Assets.Actor, photo.Position, 1, met ? Godot.Colors.White : new Godot.Color(0, 0, 0, 0.8f));
+        var x = photo.End.X + 8;
+        var lines = p.F.Wrap(met ? _d.DogDesc : _d.DogHint, (int)(right - x));
+        p.Text(x, dc.Position.Y + 4, met ? _d.DogName + $" (x{_p.DogBuilds})" : "???", Ink.Dark, TextAlign.Left, right - x);
+        for (var k = 0; k < lines.Count && k < 2; k++) p.Text(x, dc.Position.Y + 22 + k * 18, lines[k], Ink.Dim, TextAlign.Left, right - x);
     }
 
     /// <summary>Kolekcja: co liczyć (problemy aktu x10, bossowie, ozdoby), najbliższy brakujący i nagroda.</summary>

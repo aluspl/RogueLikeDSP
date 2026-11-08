@@ -34,6 +34,8 @@ public partial class WorldView : Node2D
     private readonly WorldCamera _camera = new();
     private ActorSprite _hero;
     private ActorSprite _ally; // pomocnik z brygady
+    private ActorSprite _dog; // v0.23.0: easter egg – Kawka
+    private float _dogHappy; // s zadowolonej miny po pogłaskaniu
     private readonly List<ActorSprite> _enemies = new();
     private readonly List<ActorSprite> _pickups = new();
     private readonly List<bool> _enemyAlive = new();
@@ -98,6 +100,8 @@ public partial class WorldView : Node2D
         _actors.AddChild(_hero);
         _ally = new ActorSprite { AnimPeriod = 0.4f, Breathes = true, AnimPhase = 0.2f, Visible = false };
         _actors.AddChild(_ally);
+        _dog = new ActorSprite { BaseFrame = Assets.FrameDog, AltFrame = Assets.FrameDogB, AnimPeriod = 0.28f, Visible = false };
+        _actors.AddChild(_dog);
     }
 
     public void Bind(CoreGame g)
@@ -270,6 +274,7 @@ public partial class WorldView : Node2D
         _walls.Redraw();
         SyncHero(snap);
         SyncAlly(snap);
+        SyncDog(snap);
         for (var i = 0; i < _g.EnemiesCount; i++) SyncEnemy(i, snap);
         SyncPickups(snap);
         if (!snap) BehaviorFx();
@@ -329,6 +334,30 @@ public partial class WorldView : Node2D
         dress.Dir = WeaponPose.Dir(d.X, d.Y, dress.Dir);
         _hero.Flip = WeaponPose.Flip(dress.Dir, _hero.Flip);
     }
+
+    /// <summary>v0.23.0: Kawka – siedzi w błocie i merda (klatki A/B), zwrócona do bohatera; po pogłaskaniu zadowolona.</summary>
+    private void SyncDog(bool snap)
+    {
+        if (!_g.DogHere || !_g.Visible(_g.DogX, _g.DogY))
+        {
+            _dog.Visible = false;
+            return;
+        }
+        var dst = GridToScreen(_g.DogX, _g.DogY);
+        _dog.MoveTo(dst, snap || !_dog.Visible);
+        _dog.Flip = _g.Hero.X < _g.DogX;
+        _dog.Visible = true;
+    }
+
+    /// <summary>v0.23.0: Kawka pogłaskana – zadowolona mina i podskok.</summary>
+    public void DogPetted()
+    {
+        _dogHappy = 1.4f;
+        _dog.Flash(new Color(1f, 0.85f, 0.7f), 0.5f);
+    }
+
+    /// <summary>Sprite Kawki (zrzuty, test dymny).</summary>
+    public ActorSprite DogSprite => _dog;
 
     /// <summary>Pomocnik z brygady: fachowiec obok bohatera, dopóki pomaga.</summary>
     private void SyncAlly(bool snap)
@@ -429,6 +458,7 @@ public partial class WorldView : Node2D
         if (_g is null) return;
         _hero.MoveTo(GridToScreen(_g.Hero.X, _g.Hero.Y), true);
         if (_g.AllyTurns > 0) _ally.MoveTo(GridToScreen(_g.AllyX, _g.AllyY), true);
+        if (_g.DogHere) _dog.MoveTo(GridToScreen(_g.DogX, _g.DogY), true);
         for (var i = 0; i < _enemies.Count && i < _g.EnemiesCount; i++) _enemies[i].MoveTo(GridToScreen(_g.Enemies[i].X, _g.Enemies[i].Y), true);
         for (var i = 0; i < _pickups.Count && i < _g.PickupsCount; i++) _pickups[i].MoveTo(GridToScreen(_g.Pickups[i].X, _g.Pickups[i].Y) - new Vector2(0, 2), true);
         _fx.Clear();
@@ -454,6 +484,7 @@ public partial class WorldView : Node2D
         Sprite(_hero, true);
         _walls.Mark(_g.Hero.X, _g.Hero.Y, true);
         Sprite(_ally, true);
+        Sprite(_dog, true);
         foreach (var e in _enemies) Sprite(e, true);
         foreach (var p in _pickups) Sprite(p, false);
         for (var y = 0; y < Level.H - 1; y++)
@@ -472,6 +503,9 @@ public partial class WorldView : Node2D
     {
         if (_hero is null) return;
         if (_threeQuarter != Proj.ThreeQuarter) Reproject();
+        if (_dogHappy > 0f) _dogHappy -= (float)delta;
+        _dog.BaseFrame = _dogHappy > 0f ? Assets.FrameDogHappy : Assets.FrameDog;
+        _dog.AltFrame = _dogHappy > 0f ? -1 : Assets.FrameDogB;
         if (_g is not null)
         {
             MarkSeeThrough();

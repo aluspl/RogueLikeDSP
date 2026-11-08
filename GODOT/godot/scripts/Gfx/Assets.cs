@@ -55,6 +55,8 @@ public static class Assets
     public const int FrameHelmet = 160;
     /// <summary>v0.21.52 cz. d (#47): problemy i bossowie kontraktów mapy kariery 184-195 (para klatek A/B).</summary>
     public const int FrameCareerEnemy = 184, CareerEnemies = 6;
+    /// <summary>v0.23.0: easter egg – Kawka 196/197 (siedzi, merda), 198 zadowolona, 199 uszy po sobie, 200 dłoń, 201 serduszko.</summary>
+    public const int FrameDog = 196, FrameDogB = 197, FrameDogHappy = 198, FrameDogEars = 199, FrameDogHand = 200, FrameDogHeart = 201;
     // menu_icons.png 30-34: sekretne zlecenie (koperta z „?”), Młot Zenka, Poziomica mistrza, Złota kielnia, Kask w paski
     public const int MenuSecret = 30, MenuZenka = 31, MenuLevel = 32, MenuGold = 33, MenuStripes = 34;
 

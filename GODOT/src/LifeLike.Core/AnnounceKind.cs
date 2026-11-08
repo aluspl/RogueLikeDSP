@@ -8,4 +8,6 @@ public enum AnnounceKind
     Unique,
     Boss,
     Secret,
+    /// <summary>v0.23.0: easter egg – pogłaskana Kawka (dłoń, serduszka; dłużej niż reszta).</summary>
+    Dog,
 }

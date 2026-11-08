@@ -32,12 +32,25 @@ public sealed class App
         Session.Events.LevelUp += (level, abilityUp) => Nodes.World.Effects.LevelUp(level, abilityUp);
         Session.Events.SecondChance += () => Nodes.World.Effects.SecondChance();
         Session.Events.BossPhase += _ => Nodes.World.Effects.BossPhase();
+        Session.Events.DogPetted += _ => ShowDogQuip(); // v0.23.0: easter egg – Kawka: ocena postępów w dymku nad nią
+        Session.Events.RunStarted += Nodes.DogBubble.HideBubble;
+        Nodes.DogBubble.Allowed = () => !Nodes.Phone.IsOpen && Nodes.World.IsVisibleInTree();
         Session.Events.RunEnded += won =>
         {
             if (won) Nodes.World.Effects.Confetti();
         };
         Flow = new ScreenFlow(this);
         Coach = new Guide.Coach(this);
+    }
+
+    /// <summary>v0.23.0: Kawka pogłaskana – zadowolona mina na mapie i dymek z oceną postępów (Dog.Quip: stan budowy i profilu).</summary>
+    public void ShowDogQuip()
+    {
+        var d = Session.Data;
+        if (d.DogQuips.Length == 0) return;
+        var q = d.DogQuips[Dog.Quip(d, Session.Profile, Session.Game)];
+        Nodes.World.DogPetted();
+        Nodes.DogBubble.Show(d.DogName, q.Lines);
     }
 
     /// <summary>Węzeł główny (Main) - dla zadań czekających na klatki (zrzuty, test dymny).</summary>

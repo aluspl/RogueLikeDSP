@@ -38,6 +38,7 @@ public sealed class DebugScenes
         .. FilterStaging.Names,
         .. BetweenStaging.Names,
         .. WeaponStaging.Names,
+        .. DogStaging.Names,
     ];
 
     private readonly App _app;
@@ -49,6 +50,7 @@ public sealed class DebugScenes
     private readonly FilterStaging _filters;
     private readonly BetweenStaging _between;
     private readonly WeaponStaging _weapons;
+    private readonly DogStaging _dog;
 
     public DebugScenes(App app)
     {
@@ -61,6 +63,7 @@ public sealed class DebugScenes
         _filters = new FilterStaging(app);
         _between = new BetweenStaging(app);
         _weapons = new WeaponStaging(app);
+        _dog = new DogStaging(app);
     }
 
     private ScreenFlow Flow => _app.Flow;
@@ -82,6 +85,11 @@ public sealed class DebugScenes
         if (BetweenStaging.Handles(scene)) // v0.22.0 (UX A): rozmowa z Kierownikiem Markiem między budowami
         {
             await _between.Setup(scene);
+            return;
+        }
+        if (DogStaging.Handles(scene)) // v0.23.0: easter egg – Kawka (mapa, głaskanie, dymek, Katalog)
+        {
+            await _dog.Setup(scene);
             return;
         }
         if (WeaponStaging.Handles(scene)) // v0.23.0: bronie – celowanie wzorem, Cios B, pas, karta problemu, rzadkość

@@ -39,6 +39,22 @@ public class AnnounceQueueTests
     public void DurationIsAboutOneSecond() => Assert.InRange(AnnounceQueue.Duration, 0.8f, 1.4f);
 
     [Fact]
+    public void DogPettingLastsLonger()
+    {
+        // v0.23.0: Kawka – głaskanie ~2 s, potem następne ogłoszenie
+        var q = new AnnounceQueue();
+        q.Push(A("Kawka", AnnounceKind.Dog));
+        q.Push(A("AWANS"));
+        q.Update(AnnounceQueue.Duration + 0.1f);
+        Assert.Equal("Kawka", q.Current.Title);
+        q.Seek(10f);
+        Assert.True(q.Elapsed < AnnounceQueue.DogDuration);
+        q.Update(AnnounceQueue.DogDuration);
+        Assert.Equal("AWANS", q.Current.Title);
+        Assert.InRange(AnnounceQueue.DogDuration, 1.6f, 3f);
+    }
+
+    [Fact]
     public void QueueIsCappedKeepingNewest()
     {
         var q = new AnnounceQueue();

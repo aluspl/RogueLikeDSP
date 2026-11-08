@@ -36,8 +36,12 @@ public partial class WeatherOverlay : Control
     public override void _Process(double delta)
     {
         _clock += (float)delta;
-        if (Effect != WeatherEffect.None && IsVisibleInTree()) QueueRedraw();
+        var e = Effect;
+        if ((e != WeatherEffect.None || _drawn != WeatherEffect.None) && IsVisibleInTree()) QueueRedraw(); // v0.23.0: po zmianie pogody na brak – raz jeszcze (bez zostawionych kropel)
+        _drawn = e;
     }
+
+    private WeatherEffect _drawn;
 
     public override void _Draw()
     {

@@ -69,10 +69,50 @@ public partial class AnnounceView : Control
         AnnounceKind.Unique => new Color("ffd84a"),
         AnnounceKind.Branded => new Color("b2a0ff"),
         AnnounceKind.Secret => new Color("ffd84a"),
+        AnnounceKind.Dog => new Color("ffc27a"),
         _ => Pal.Accent,
     };
 
-    private static Color EdgeColor(Announcement a) => a.Kind is AnnounceKind.Unique or AnnounceKind.Secret ? new Color("6b4a00") : Pal.Brand.Darkened(0.35f);
+    private static Color EdgeColor(Announcement a) => a.Kind switch
+    {
+        AnnounceKind.Unique or AnnounceKind.Secret => new Color("6b4a00"),
+        AnnounceKind.Dog => new Color("5a2a0c"),
+        _ => Pal.Brand.Darkened(0.35f),
+    };
+
+    /// <summary>v0.23.0: Kawka – dłoń głaszcze po głowie (pociągnięcia ~0,5 s; uszy po sobie, gdy dłoń przyciska), serduszka
+    /// unoszą się nad głową. Ograniczony ruch: dłoń na głowie i jedno serduszko, bez ruchu.</summary>
+    private void DrawDog(float titleW, float cx, Rect2 band, float size, float t, bool calm, Vector2 shake)
+    {
+        var k = size / Assets.Actor; // piksel klatki 32 px
+        var x = Mathf.Round(Mathf.Max(4f, cx - titleW / 2 - size - 10f * k));
+        var y = Mathf.Round(band.GetCenter().Y - size / 2 + 3f * k);
+        var pos = new Vector2(x, y) + shake;
+        const float stroke = 0.5f;
+        var phase = calm ? 0.25f : Mathf.PosMod(t, stroke) / stroke; // 0..1: dłoń od karku do czoła i z powrotem
+        var swing = Mathf.Sin(phase * Mathf.Tau);
+        var press = !calm && swing > 0.35f;
+        var frame = press ? Assets.FrameDogEars : Assets.FrameDogHappy;
+        DrawTextureRectRegion(Assets.Actors, new Rect2(pos, new Vector2(size, size)), Assets.Frame(frame, Assets.Actor));
+        // dłoń (60% psa): środek dłoni (klatka dłoni ~x 22, y 18 z 32) na czubku głowy za oczami (~x 16-19, y 2-5), od karku do czoła
+        var hs = Mathf.Round(size * 0.6f);
+        var hx = pos.X + (16f + 3f * swing) * k - hs * 22f / 32f;
+        var hy = pos.Y + (press ? 6f : 4f) * k - hs * 18f / 32f;
+        DrawTextureRectRegion(Assets.Actors, new Rect2(new Vector2(Mathf.Round(hx), Mathf.Round(hy)), new Vector2(hs, hs)), Assets.Frame(Assets.FrameDogHand, Assets.Actor));
+        // serduszka: co ~0,35 s nowe, unosi się i znika
+        var hearts = calm ? 1 : 5;
+        for (var i = 0; i < hearts; i++)
+        {
+            var born = 0.15f + i * 0.35f;
+            var age = calm ? 0.4f : t - born;
+            if (age < 0f || age > 1.1f) continue;
+            var ts = Mathf.Round(size * (0.36f + 0.08f * (i % 2)));
+            var drift = (i % 2 == 0 ? 1f : -1f) * 4f * k * Mathf.Sin(age * 5f);
+            var hp = pos + new Vector2(size * (0.62f + 0.14f * (i % 3)) - ts / 2 + drift, -age * size * 0.5f - 4f * k);
+            var alpha = calm ? 1f : Mathf.Clamp((1.1f - age) / 0.4f, 0f, 1f);
+            DrawTextureRectRegion(Assets.Actors, new Rect2(hp.Round(), new Vector2(ts, ts)), Assets.Frame(Assets.FrameDogHeart, Assets.Actor), new Color(1, 1, 1, alpha));
+        }
+    }
 
     private void DrawContent()
     {
@@ -89,9 +129,10 @@ public partial class AnnounceView : Control
         var subScale = Mathf.Max(1f, Mathf.Floor(scale / 2f));
         var size = 32f * Mathf.Floor(scale); // zamach (klatka 32 px GBA) x2-x4 bez wygładzania
         size = Mathf.Max(size, 48f);
+        if (a.Kind == AnnounceKind.Dog) size = Mathf.Max(64f, size + 32f); // Kawka: klatka 32 px, o stopień większa niż zamach
         var bandH = Mathf.Max(size, 16f * scale + 16f * subScale + 6f * u) + 8f * u;
         var top = Mathf.Round(Size.Y * (w > Size.Y ? 0.38f : 0.34f) - bandH / 2); // w poziomie pod banerem push
-        var fade = calm ? 1f : Mathf.Clamp((AnnounceQueue.Duration - t) / FadeOut, 0f, 1f);
+        var fade = calm ? 1f : Mathf.Clamp((AnnounceQueue.DurationOf(a) - t) / FadeOut, 0f, 1f);
         var shake = Vector2.Zero;
         if (!calm && t > FlyIn && t < FlyIn + ShakeTime)
         {
@@ -145,11 +186,18 @@ public partial class AnnounceView : Control
                 WeaponSheet.DrawIcon(this, wd, a.Rarity, new Rect2(pos + new Vector2(size * 0.15f, size * 0.15f + bob), new Vector2(size * 0.7f, size * 0.7f)));
             }
         }
+        if (a.Kind == AnnounceKind.Dog) // pies na lewo od napisu i podpisu (podpis bywa szerszy)
+            DrawDog(Mathf.Max(f.Measure(title, scale), f.Measure(f.Fit(a.Sub, (int)(w * 0.6f), subScale), subScale)), cx, band, size, t, calm, shake);
         // błysk przy lądowaniu
         if (!calm && t > FlyIn && t < FlyIn + 0.14f)
         {
             var k = 1f - (t - FlyIn) / 0.14f;
-            var flash = a.Kind is AnnounceKind.Unique or AnnounceKind.Secret ? new Color(1f, 0.9f, 0.4f) : new Color(1f, 0.95f, 1f);
+            var flash = a.Kind switch
+            {
+                AnnounceKind.Unique or AnnounceKind.Secret => new Color(1f, 0.9f, 0.4f),
+                AnnounceKind.Dog => new Color(1f, 0.8f, 0.6f),
+                _ => new Color(1f, 0.95f, 1f),
+            };
             DrawRect(bandR, new Color(flash, 0.55f * k));
         }
     }

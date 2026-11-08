@@ -24,6 +24,10 @@ public sealed class AnnounceFeed
         ev.ToolFound += _ => OnToolFound();
         ev.ArtifactHolstered += w => _view.Push(new Announcement(AnnounceKind.Unique, Loc.T("ogl_artefakt"), _s.Data.Weapons[w].Name, w, 3));
         ev.BossDefeated += def => Push(AnnounceKind.Boss, Loc.T("ogl_boss"), _s.Data.Enemies[def].Name);
+        ev.DogPetted += first => // v0.23.0: easter egg – Kawka (ogłoszenie tylko za pierwszym razem, potem sam dymek)
+        {
+            if (first) _view.Push(new Announcement(AnnounceKind.Dog, _s.Data.DogName, Loc.F("ogl_kawka_sub", _s.Data.DogXp), -1, 0));
+        };
         ev.Achievements += (_, _, secrets) =>
         {
             for (var i = 0; i < _s.Data.Secrets.Length; i++)
