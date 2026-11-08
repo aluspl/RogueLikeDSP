@@ -14,6 +14,9 @@ done
 for sc in weapon-legend-found artifact-found; do
   PB_ANNOUNCE_AT=-1 rec "$sc" --screenshot "$OUT/x.png" --scene "$sc" --bench 2
 done
+# Kawka (easter egg): ogłoszenie głaskania i dymek z oceną – animowane od początku
+PB_ANNOUNCE_AT=-1 rec dog-pet --screenshot "$OUT/x.png" --scene dog-pet --bench 2.5
+PB_BUBBLE_AT=-1 rec dog-quip --screenshot "$OUT/x.png" --scene dog-quip --bench 2.5
 # bot gra (seed domyślny 424242): deszcz i latarka, filtry, Kwas z bliska, boss aktu
 rec murarz --demo 5 --class 1 --view 34 --lights on
 rec noir   --demo 4 --class 3 --stage 2 --filter noir
