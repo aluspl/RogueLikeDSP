@@ -549,11 +549,16 @@ namespace core
     }
 
     // ------------------------------------------------------------------ samouczek menu (#25)
-    // Pierwsze uruchomienie: dymki po kolei na tytule i wyborze zawodu; potem jeden dymek przy pierwszym odblokowaniu
-    // (Respekt, codzienna budowa, tryb inwestora, Akt 0, nowy zawód). "Pokaż samouczek jeszcze raz" w Jak grać.
-    enum tutorial_flag : uint16_t { tut_title = 1, tut_class = 2, tut_respect = 4, tut_daily = 8, tut_investor = 16, tut_act0 = 32 };
-    enum tutorial_unlock : int { unlock_respect, unlock_daily, unlock_investor, unlock_act0, unlock_class, unlock_secret };   // = data::tutorial_unlocks
-    static_assert(data::tutorial_unlocks_count == 6);
+    // Pierwsze uruchomienie: krótki samouczek (do 3 dymków) na tytule i wyborze zawodu; potem po jednym dymku na wejście
+    // na ekran przy pierwszej okazji (Respekt, codzienna budowa, tryb inwestora, Akt 0, nowy zawód, sekret; v0.23.0:
+    // też Szkolenia, opcje, Jak grać, pamiątka, statystyki - wcześniej w głównym samouczku). "Pokaż samouczek jeszcze
+    // raz" w Jak grać. v0.23.0: tut_short = profil zaczął od krótkiego samouczka; starsze profile (pełny samouczek
+    // obejrzany) nie dostają dymków o tym, co już widziały - bez nowej wersji profilu (wolne bity pola tutorial).
+    enum tutorial_flag : uint16_t { tut_title = 1, tut_class = 2, tut_respect = 4, tut_daily = 8, tut_investor = 16, tut_act0 = 32,
+        tut_short = 64, tut_training = 128, tut_options = 256, tut_help = 512, tut_keepsake = 1024, tut_stats = 2048 };
+    enum tutorial_unlock : int { unlock_respect, unlock_daily, unlock_investor, unlock_act0, unlock_class, unlock_secret,
+        unlock_training, unlock_options, unlock_help, unlock_keepsake, unlock_stats };   // = data::tutorial_unlocks
+    static_assert(data::tutorial_unlocks_count == 11);
 
     inline bool class_reward(int c);
     inline bool class_unlocked(const profile& p, int c);
@@ -561,7 +566,11 @@ namespace core
 
     // Główny samouczek ekranu (0 tytuł, 1 wybór zawodu) jeszcze nieobejrzany.
     inline bool tutorial_pending(const profile& p, int screen) { return ! (p.tutorial & (screen == 0 ? tut_title : tut_class)); }
-    inline void tutorial_done(profile& p, int screen) { p.tutorial = uint16_t(p.tutorial | (screen == 0 ? tut_title : tut_class)); }
+    inline void tutorial_done(profile& p, int screen)
+    {
+        if(p.tutorial == 0) p.tutorial = tut_short;   // v0.23.0: świeży profil - krótki samouczek, reszta w dymkach
+        p.tutorial = uint16_t(p.tutorial | (screen == 0 ? tut_title : tut_class));
+    }
     inline void tutorial_reset(profile& p) { p.tutorial = uint16_t(p.tutorial & ~(tut_title | tut_class)); }
     // Kroki samouczka widoczne na ekranie (bez kroków tylko dla Godota na GBA; tryb inwestora dopiero po odblokowaniu).
     inline bool tutorial_step_shown(const profile& p, int i, bool godot)
@@ -570,28 +579,37 @@ namespace core
         return (godot || ! t.godot_only) && (! t.needs_investor || investor_unlocked(p));
     }
     // Dymek odblokowania do pokazania na ekranie (-1 = brak); cls = nowy zawód z nagrody (unlock_class) albo wykonane
-    // sekretne zlecenie (unlock_secret, v0.21.51 cz. 2).
-    inline int pending_unlock(const profile& p, int screen, int& cls)
+    // sekretne zlecenie (unlock_secret, v0.21.51 cz. 2). godot = dymki tylko dla Godota (opcje pod kluczem).
+    inline int pending_unlock(const profile& p, int screen, int& cls, bool godot = false)
     {
         cls = -1;
         if(tutorial_pending(p, screen)) return -1;   // najpierw główny samouczek
+        const bool fresh = p.tutorial & tut_short;
+        auto due = [&](uint16_t bit) { return fresh && ! (p.tutorial & bit); };
         if(screen == 0)
         {
+            if(godot && due(tut_options)) return unlock_options;   // wielkość tekstu - przy pierwszym powrocie na tytuł
             if(p.respect_total > 0 && ! (p.tutorial & tut_respect)) return unlock_respect;
             if(p.runs > 0 && ! (p.tutorial & tut_daily)) return unlock_daily;
             if(act0_unlocked(p) && ! (p.tutorial & tut_act0)) return unlock_act0;
             for(int i = 0; i < data::secrets_count; ++i) if((p.secrets_new >> i) & 1) { cls = i; return unlock_secret; }
+            int kind = -1, index = -1;
+            if(p.runs > 0 && due(tut_training)) { const int c = next_unlock(p, kind, index); if(c >= 0 && p.xp >= c) return unlock_training; }
+            if(p.runs > 0 && due(tut_help)) return unlock_help;
             return -1;
         }
         if(investor_unlocked(p) && ! (p.tutorial & tut_investor)) return unlock_investor;
         for(int c = 0; c < data::classes_count; ++c)
             if(class_reward(c) && class_unlocked(p, c) && ! ((p.classes_seen >> c) & 1)) { cls = c; return unlock_class; }
+        if(p.runs > 0 && due(tut_keepsake)) return unlock_keepsake;
+        if(p.runs > 0 && due(tut_stats)) return unlock_stats;
         return -1;
     }
     inline void mark_unlock(profile& p, int u, int cls)
     {
-        static constexpr uint16_t bits[4] = { tut_respect, tut_daily, tut_investor, tut_act0 };
-        if(u >= 0 && u < 4) p.tutorial = uint16_t(p.tutorial | bits[u]);
+        static constexpr uint16_t bits[11] = { tut_respect, tut_daily, tut_investor, tut_act0, 0, 0,
+            tut_training, tut_options, tut_help, tut_keepsake, tut_stats };
+        if(u >= 0 && u < 11) p.tutorial = uint16_t(p.tutorial | bits[u]);
         if(u == unlock_class && cls >= 0) p.classes_seen = uint16_t(p.classes_seen | (1u << cls));
         if(u == unlock_secret && cls >= 0) p.secrets_new = uint16_t(p.secrets_new & ~(1u << cls));
     }

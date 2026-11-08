@@ -1846,19 +1846,25 @@ int main()
             std::printf("Akt 0 (bot, Łatwy): %d/80\n", won_act0);
             CHECK(won_act0 >= 44);   // zmierzone 49/80 (na 400 budowach 69%)
         }
-        // samouczek: główny na tytule i wyborze zawodu, potem dymki odblokowań (każdy raz)
+        // samouczek (v0.23.0: krótki, do 3 dymków na ekran), potem dymki przy pierwszej okazji (każdy raz)
         profile t; profile_reset(t); int cls = -1;
         CHECK(tutorial_pending(t, 0) && tutorial_pending(t, 1) && pending_unlock(t, 0, cls) == -1);
-        int gba = 0, godot = 0; for(int i = 0; i < data::tutorial_steps_count; ++i) { gba += tutorial_step_shown(t, i, false); godot += tutorial_step_shown(t, i, true); }
-        CHECK(gba > 5 && godot == gba + 1);   // klucz z opcjami tylko w Godocie; tryb inwestora jeszcze ukryty
+        int per[2] = { 0, 0 }, godot = 0;
+        for(int i = 0; i < data::tutorial_steps_count; ++i) { per[data::tutorial_steps[i].screen] += tutorial_step_shown(t, i, false); godot += tutorial_step_shown(t, i, true); }
+        CHECK(per[0] >= 2 && per[0] <= 3 && per[1] >= 2 && per[1] <= 3 && godot == per[0] + per[1]);
         tutorial_done(t, 0); tutorial_done(t, 1);
-        CHECK(!tutorial_pending(t, 0) && !tutorial_pending(t, 1) && pending_unlock(t, 0, cls) == -1 && pending_unlock(t, 1, cls) == -1);
-        t.respect_total = 2; CHECK(pending_unlock(t, 0, cls) == unlock_respect); mark_unlock(t, unlock_respect, -1);
-        t.runs = 1; CHECK(pending_unlock(t, 0, cls) == unlock_daily); mark_unlock(t, unlock_daily, -1);
-        CHECK(pending_unlock(t, 0, cls) == -1);
+        CHECK(!tutorial_pending(t, 0) && !tutorial_pending(t, 1) && (t.tutorial & tut_short) && pending_unlock(t, 0, cls) == -1 && pending_unlock(t, 1, cls) == -1);
+        CHECK(pending_unlock(t, 0, cls, true) == unlock_options); mark_unlock(t, unlock_options, -1);   // klucz z opcjami tylko w Godocie
+        t.respect_total = 2; CHECK(pending_unlock(t, 0, cls, true) == unlock_respect); mark_unlock(t, unlock_respect, -1);
+        t.runs = 1; t.xp = 0; CHECK(pending_unlock(t, 0, cls) == unlock_daily); mark_unlock(t, unlock_daily, -1);
+        CHECK(pending_unlock(t, 0, cls) == unlock_help); mark_unlock(t, unlock_help, -1);
+        CHECK(pending_unlock(t, 0, cls, true) == -1);
+        { int k = -1, i = -1; t.xp = next_unlock(t, k, i); CHECK(t.xp > 0 && pending_unlock(t, 0, cls) == unlock_training); }   // stać na Szkolenie
+        mark_unlock(t, unlock_training, -1); CHECK(pending_unlock(t, 0, cls, true) == -1);
+        CHECK(pending_unlock(t, 1, cls) == unlock_keepsake); mark_unlock(t, unlock_keepsake, -1);
+        CHECK(pending_unlock(t, 1, cls) == unlock_stats); mark_unlock(t, unlock_stats, -1);
+        CHECK(pending_unlock(t, 1, cls) == -1);
         record_win(t); CHECK(pending_unlock(t, 1, cls) == unlock_investor); mark_unlock(t, unlock_investor, -1);
-        int gba2 = 0; for(int i = 0; i < data::tutorial_steps_count; ++i) gba2 += tutorial_step_shown(t, i, false);
-        CHECK(gba2 == gba + 1);   // krok o trybie inwestora po odblokowaniu
         while(pending_unlock(t, 1, cls) == -1 && t.rewards < data::rewards_count) record_win(t);
         CHECK(pending_unlock(t, 1, cls) == unlock_class && class_reward(cls) && class_unlocked(t, cls));
         mark_unlock(t, unlock_class, cls); CHECK(pending_unlock(t, 1, cls) != unlock_class || cls >= 0);
@@ -1866,12 +1872,16 @@ int main()
         for(int k = 0; k < data::classes_count; ++k) { int c2; if(pending_unlock(t, 1, c2) == unlock_class) mark_unlock(t, unlock_class, c2); }
         CHECK(pending_unlock(t, 1, cls) == -1 && pending_unlock(t, 0, cls) == unlock_act0);
         mark_unlock(t, unlock_act0, -1); CHECK(pending_unlock(t, 0, cls) == -1);
+        // profil po starym (pełnym) samouczku: bez dymków o tym, co już widział (bez bitu tut_short)
+        profile o; profile_reset(o); o.tutorial = uint16_t(tut_title | tut_class | tut_daily); o.runs = 5; o.xp = 30000;
+        CHECK(pending_unlock(o, 0, cls, true) == -1 && pending_unlock(o, 1, cls) == -1);
         tutorial_reset(t); CHECK(tutorial_pending(t, 0) && tutorial_pending(t, 1) && (t.tutorial & tut_act0));   // powtórka z Jak grać
         // profil v9 -> v10: kto grał, nie ogląda głównego samouczka; Akt 0 za dotychczasowe wygrane (z dymkiem)
         profile v; profile_reset(v); std::memcpy(v.magic, "PBRL009", 8);
         v.runs = 12; v.wins = 9; v.rewards = uint8_t(ai); v.respect_total = 40; v.best = 999; v.tutorial = 0xABCD; v.classes_seen = 0x1234;
         CHECK(profile_fix(v) && std::strcmp(v.magic, profile_magic) == 0 && v.best == 999 && v.rewards == data::rewards_count && act0_unlocked(v));
-        CHECK(!tutorial_pending(v, 0) && !tutorial_pending(v, 1) && pending_unlock(v, 0, cls) == unlock_act0 && pending_unlock(v, 1, cls) == -1);
+        CHECK(!tutorial_pending(v, 0) && !tutorial_pending(v, 1) && pending_unlock(v, 0, cls, true) == unlock_act0 && pending_unlock(v, 1, cls) == -1);
+        mark_unlock(v, unlock_act0, -1); CHECK(pending_unlock(v, 0, cls, true) == -1 && !(v.tutorial & tut_short));
         profile nv; profile_reset(nv); std::memcpy(nv.magic, "PBRL009", 8);
         CHECK(profile_fix(nv) && tutorial_pending(nv, 0) && nv.rewards == 0 && nv.tutorial == 0);
         CHECK(sizeof(profile) == 440 && std::strcmp(profile_magic, "PBRL019") == 0);

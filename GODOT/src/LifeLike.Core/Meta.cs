@@ -525,13 +525,19 @@ public static class Meta
     }
 
     // ------------------------------------------------------------------ samouczek menu (#25)
-    // Pierwsze uruchomienie: dymki po kolei na tytule i wyborze zawodu; potem jeden dymek przy pierwszym odblokowaniu
-    // (Respekt, codzienna budowa, tryb inwestora, Akt 0, nowy zawód). „Pokaż samouczek jeszcze raz” w Jak grać.
+    // Pierwsze uruchomienie: krótki samouczek (do 3 dymków) na tytule i wyborze zawodu; potem po jednym dymku na wejście
+    // na ekran przy pierwszej okazji (Respekt, codzienna budowa, tryb inwestora, Akt 0, nowy zawód, sekret; v0.23.0:
+    // też Szkolenia, opcje, Jak grać, pamiątka, statystyki). „Pokaż samouczek jeszcze raz” w Jak grać.
+    // v0.23.0: Tutorial.Short = profil zaczął od krótkiego samouczka; starsze profile nie dostają dymków o tym, co już widziały.
 
     /// <summary>Główny samouczek ekranu (0 tytuł, 1 wybór zawodu) jeszcze nieobejrzany.</summary>
     public static bool TutorialPending(Profile p, int screen) => (p.Tutorial & (screen == 0 ? Tutorial.Title : Tutorial.Class)) == 0;
 
-    public static void TutorialDone(Profile p, int screen) => p.Tutorial |= screen == 0 ? Tutorial.Title : Tutorial.Class;
+    public static void TutorialDone(Profile p, int screen)
+    {
+        if (p.Tutorial == 0) p.Tutorial = Tutorial.Short; // v0.23.0: świeży profil - krótki samouczek, reszta w dymkach
+        p.Tutorial |= screen == 0 ? Tutorial.Title : Tutorial.Class;
+    }
 
     public static void TutorialReset(Profile p) => p.Tutorial = (ushort)(p.Tutorial & ~(Tutorial.Title | Tutorial.Class));
 
@@ -542,13 +548,19 @@ public static class Meta
         return (godot || !t.GodotOnly) && (!t.NeedsInvestor || InvestorUnlocked(p));
     }
 
-    /// <summary>Dymek odblokowania do pokazania na ekranie (-1 = brak; indeks = TutorialUnlock); cls = nowy zawód z nagrody.</summary>
-    public static int PendingUnlock(GameData d, Profile p, int screen, out int cls)
+    /// <summary>
+    /// Dymek odblokowania do pokazania na ekranie (-1 = brak; indeks = TutorialUnlock); cls = nowy zawód z nagrody albo
+    /// wykonany sekret. godot = także dymki tylko dla Godota (opcje pod kluczem).
+    /// </summary>
+    public static int PendingUnlock(GameData d, Profile p, int screen, out int cls, bool godot = false)
     {
         cls = -1;
         if (TutorialPending(p, screen)) return -1; // najpierw główny samouczek
+        var fresh = (p.Tutorial & Tutorial.Short) != 0;
+        bool Due(ushort bit) => fresh && (p.Tutorial & bit) == 0;
         if (screen == 0)
         {
+            if (godot && Due(Tutorial.Options)) return TutorialUnlock.Options; // wielkość tekstu - przy pierwszym powrocie na tytuł
             if (p.RespectTotal > 0 && (p.Tutorial & Tutorial.Respect) == 0) return TutorialUnlock.Respect;
             if (p.Runs > 0 && (p.Tutorial & Tutorial.Daily) == 0) return TutorialUnlock.Daily;
             if (Act0Unlocked(d, p) && (p.Tutorial & Tutorial.Act0) == 0) return TutorialUnlock.Act0;
@@ -558,6 +570,12 @@ public static class Meta
                 cls = i;
                 return TutorialUnlock.Secret;
             }
+            if (p.Runs > 0 && Due(Tutorial.Training))
+            {
+                var c = NextUnlock(d, p, out _, out _);
+                if (c >= 0 && p.Xp >= c) return TutorialUnlock.Training;
+            }
+            if (p.Runs > 0 && Due(Tutorial.Help)) return TutorialUnlock.Help;
             return -1;
         }
         if (InvestorUnlocked(p) && (p.Tutorial & Tutorial.Investor) == 0) return TutorialUnlock.Investor;
@@ -569,13 +587,16 @@ public static class Meta
                 return TutorialUnlock.Class;
             }
         }
+        if (p.Runs > 0 && Due(Tutorial.Keepsake)) return TutorialUnlock.Keepsake;
+        if (p.Runs > 0 && Due(Tutorial.Stats)) return TutorialUnlock.Stats;
         return -1;
     }
 
     public static void MarkUnlock(Profile p, int u, int cls)
     {
-        ushort[] bits = [Tutorial.Respect, Tutorial.Daily, Tutorial.Investor, Tutorial.Act0];
-        if (u is >= 0 and < 4) p.Tutorial |= bits[u];
+        ushort[] bits = [Tutorial.Respect, Tutorial.Daily, Tutorial.Investor, Tutorial.Act0, 0, 0,
+            Tutorial.Training, Tutorial.Options, Tutorial.Help, Tutorial.Keepsake, Tutorial.Stats];
+        if (u >= 0 && u < bits.Length) p.Tutorial |= bits[u];
         if (u == TutorialUnlock.Class && cls >= 0) p.ClassesSeen = (ushort)(p.ClassesSeen | (1u << cls));
         if (u == TutorialUnlock.Secret && cls >= 0) p.SecretsNew = (ushort)(p.SecretsNew & ~(1u << cls));
     }

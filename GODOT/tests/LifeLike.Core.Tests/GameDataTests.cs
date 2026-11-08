@@ -55,8 +55,8 @@ public class GameDataTests
         Assert.True(dec.PhasePct == 50 && dec.PhaseHeal > 0 && dec.PhaseSummon == 1 && dec.PhaseName == "Odwołanie" && dec.Summon == D.EnemyIndex("wniosek"));
         Assert.Equal(D.EnemyIndex("decyzja"), D.Stages[1].Boss);
         Assert.True(D.Rewards[^2].Kind == RewardKind.Act && D.Rewards[^2].Index == 3 && D.Rewards[^1].Kind == RewardKind.Belt); // v0.23.0: pas z kaburą na końcu listy nagród
-        Assert.True(D.TutorialSteps.Length > 6 && D.TutorialUnlocks.Length == 6 && D.TutorialSteps[0].Msg.From == "Kierownik Marek");
-        Assert.True(D.TutorialSteps.Any(t => t.GodotOnly) && D.TutorialSteps.Any(t => t.NeedsInvestor) && D.TutorialSteps.Any(t => t.Link == "stats"));
+        Assert.True(D.TutorialSteps.Length <= 6 && D.TutorialUnlocks.Length == 11 && D.TutorialSteps[0].Msg.From == "Kierownik Marek");
+        Assert.True(D.TutorialUnlocks.Any(t => t.GodotOnly) && D.TutorialUnlocks.Any(t => t.Link == "stats")); // v0.23.0: opcje i statystyki w dymkach
     }
 
     [Fact]

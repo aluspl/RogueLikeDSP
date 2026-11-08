@@ -614,7 +614,7 @@ def build(d):
                 f'{TSCR[x["screen"]]}, {"true" if x.get("godotOnly") else "false"}, {"true" if x.get("requires") == "investor" else "false"} }},')
     L.append("inline constexpr core::tutorial_step tutorial_steps[] = {   // samouczek menu: tytuł (0) i wybór zawodu (1)")
     L += [tut(x) for x in tu["steps"]] + ["};"]
-    UNL = ["respect", "daily", "investor", "act0", "class", "secret"]
+    UNL = ["respect", "daily", "investor", "act0", "class", "secret", "training", "options", "help", "keepsake", "stats"]
     assert [x["id"] for x in tu["unlocks"]] == UNL
     L.append("inline constexpr core::tutorial_step tutorial_unlocks[] = {   // dymki przy pierwszym odblokowaniu (kolejność = core::tutorial_unlock)")
     L += [tut(x) for x in tu["unlocks"]] + ["};"]

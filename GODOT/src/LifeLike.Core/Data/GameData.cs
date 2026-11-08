@@ -889,8 +889,8 @@ public sealed class GameData
             tutSteps = tuj.GetProperty("steps").EnumerateArray().Select(Tut).ToArray();
             tutUnlocks = tuj.GetProperty("unlocks").EnumerateArray().Select(Tut).ToArray();
             var unlockIds = tutUnlocks.Select(x => x.Id).ToArray();
-            Require(unlockIds.SequenceEqual(new[] { "respect", "daily", "investor", "act0", "class" })
-                    || unlockIds.SequenceEqual(new[] { "respect", "daily", "investor", "act0", "class", "secret" }), "samouczek: 5-6 dymków odblokowań");
+            Require(unlockIds.SequenceEqual(new[] { "respect", "daily", "investor", "act0", "class", "secret", "training", "options", "help", "keepsake", "stats" }),
+                "samouczek: 11 dymków odblokowań (kolejność = TutorialUnlock)");
         }
         // v0.21.51 cz. 2: sekretne zlecenia (#39) – nagroda: zawód, narzędzie, wygląd, ranga Respektu
         var cosmeticsJson = hasSecrets ? secj.GetProperty("cosmetics").EnumerateArray().ToArray() : [];

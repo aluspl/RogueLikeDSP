@@ -1232,37 +1232,54 @@ namespace
         wait_release();
     }
 
-    // Dymki przy pierwszym odblokowaniu (Respekt, codzienna budowa, tryb inwestora, Akt 0, nowy zawód) - po jednym.
-    template<class HoleFn>
-    void run_unlocks(app& a, int screen, HoleFn hole_of)
+    // Dymek przy pierwszej okazji (Respekt, codzienna budowa, tryb inwestora, Akt 0, nowy zawód, sekret, v0.23.0:
+    // Szkolenia, Jak grać, pamiątka, statystyki) - jeden na wejście na ekran, żeby nie było ściany tekstu.
+    // START przy dymku o statystykach otwiera ich opis (on_link), jak w samouczku.
+    template<class HoleFn, class LinkFn>
+    void run_unlocks(app& a, int screen, HoleFn hole_of, LinkFn on_link)
     {
         const bn::sprite_palette_item ink0 = a.text.palette_item();
         const int prio0 = a.text.bg_priority(), z0 = a.text.z_order();
         int cls = -1;
-        for(int u = core::pending_unlock(a.save, screen, cls); u >= 0; u = core::pending_unlock(a.save, screen, cls))
+        const int u = core::pending_unlock(a.save, screen, cls);
+        if(u < 0) return;
+        core::tutorial_step s = data::tutorial_unlocks[u];
+        const bool secret = u == core::unlock_secret, link = u == core::unlock_stats;
+        if(secret) s.msg = data::secrets[cls].news;   // v0.21.51 cz. 2: co wykonano i jaka nagroda
+        core::message cnt;
+        if(cls >= 0 && ! secret) cnt.add(clip(data::classes[cls].name, 12).c_str());
+        else cnt.add(UI(nowosc));
         {
-            core::tutorial_step s = data::tutorial_unlocks[u];
-            const bool secret = u == core::unlock_secret;
-            if(secret) s.msg = data::secrets[cls].news;   // v0.21.51 cz. 2: co wykonano i jaka nagroda
-            {
-                coach c;
-                c.show(a, s, cls >= 0 && ! secret ? clip(data::classes[cls].name, 12).c_str() : UI(nowosc), hole_of(s.id), false);
-                bn::sound_items::sfx_notify.play(bn::fixed(0.7));
-                wait_release();
-                while(! bn::keypad::a_pressed() && ! bn::keypad::b_pressed() && ! bn::keypad::start_pressed()) next_frame();
-            }
-            core::mark_unlock(a.save, u, cls);
-            write_profile(a.save);
-            a.text.set_palette_item(ink0); a.text.set_bg_priority(prio0); a.text.set_z_order(z0);
+            bn::optional<coach> c;
+            c.emplace();
+            c->show(a, s, cnt.s, hole_of(s.id), link);
+            bn::sound_items::sfx_notify.play(bn::fixed(0.7));
             wait_release();
+            while(! bn::keypad::a_pressed() && ! bn::keypad::b_pressed())
+            {
+                if(bn::keypad::start_pressed())
+                {
+                    if(! link) break;
+                    c.reset();
+                    a.text.set_palette_item(ink0); a.text.set_bg_priority(prio0); a.text.set_z_order(z0);
+                    on_link();
+                    c.emplace();
+                    c->show(a, s, cnt.s, hole_of(s.id), link);
+                }
+                next_frame();
+            }
         }
+        core::mark_unlock(a.save, u, cls);
+        write_profile(a.save);
+        a.text.set_palette_item(ink0); a.text.set_bg_priority(prio0); a.text.set_z_order(z0);
+        wait_release();
     }
 
     void title_tutorial(app& a)
     {
         auto hole = [](const char*) { return coach_hole{ 0, 0, 0, 0, false }; };   // tytuł: klawisz na karcie, logo przygaszone
         if(core::tutorial_pending(a.save, 0)) run_tutorial(a, 0, hole, [] {});
-        run_unlocks(a, 0, hole);
+        else run_unlocks(a, 0, hole, [] {});   // v0.23.0: jeden dymek na wejście
     }
 
     void tab_tasks(app& a, phone_screen& ph, page_sprites& t)   // Zadania = harmonogram budowy
@@ -5473,7 +5490,7 @@ namespace
                 return coach_hole{ 0, 0, 30, 5, false };   // zawód, na plac, nowy zawód: pasek portretów
             };
             if(core::tutorial_pending(a.save, 1)) run_tutorial(a, 1, hole, open_stats);
-            run_unlocks(a, 1, hole);
+            else run_unlocks(a, 1, hole, open_stats);   // v0.23.0: jeden dymek na wejście
             a.text.set_bg_priority(1);
         }
 

@@ -4949,45 +4949,17 @@
       },
       {
         "id": "phone",
-        "title": "Profil w telefonie",
-        "text": "Twój telefon: odznaki,|zlecenia, pamiątki,|Katalog usterek, Osiedle.",
+        "title": "Telefon kierownika",
+        "text": "W telefonie masz odznaki,|zlecenia i postępy.|Zajrzyj tu po budowie!",
         "screen": "title",
         "gba": "SELECT"
       },
       {
         "id": "training",
-        "title": "Szkolenia",
-        "text": "Za doświadczenie z budów|kupisz Szkolenia: HP,|nowe zawody, narzędzia.",
+        "title": "Szkolenia i Respekt",
+        "text": "Doświadczenie i Respekt|z budów zostają na stałe.|Wydasz je w telefonie.",
         "screen": "title",
         "gba": "SELECT, Koszty"
-      },
-      {
-        "id": "respect",
-        "title": "Respekt",
-        "text": "Każdy etap daje Respekt.|Nie przepada po porażce.|Kupisz za niego premie.",
-        "screen": "title",
-        "gba": "SELECT, Koszty"
-      },
-      {
-        "id": "daily",
-        "title": "Codzienna budowa",
-        "text": "Budowa dnia: ten sam|plac i zawód dla|wszystkich. Pobij wynik!",
-        "screen": "title",
-        "gba": "R"
-      },
-      {
-        "id": "help",
-        "title": "Jak grać",
-        "text": "Sterowanie, akty,|statystyki. Tam też|powtórzysz samouczek.",
-        "screen": "title",
-        "gba": "B"
-      },
-      {
-        "id": "options",
-        "title": "Opcje",
-        "text": "Dźwięk, wibracje,|sterowanie i wielkość|tekstu są pod kluczem.",
-        "screen": "title",
-        "godotOnly": true
       },
       {
         "id": "class",
@@ -5002,29 +4974,6 @@
         "text": "Łatwy, Normalny, Trudny:|silniejsze problemy,|więcej punktów.",
         "screen": "class",
         "gba": "góra / dół"
-      },
-      {
-        "id": "keepsake",
-        "title": "Pamiątka",
-        "text": "Jedna pamiątka na|budowę. Im częściej ją|bierzesz, tym mocniejsza.",
-        "screen": "class",
-        "gba": "L / R"
-      },
-      {
-        "id": "stats",
-        "title": "Statystyki",
-        "text": "Co daje SIŁ, ZRĘ, INT,|OBR i SZCZ - wzory|w prostych słowach.",
-        "screen": "class",
-        "gba": "START",
-        "link": "stats"
-      },
-      {
-        "id": "investor",
-        "title": "Tryb inwestora",
-        "text": "Utrudnienia za więcej|doświadczenia. Stawka|to Twój rekord zawodu.",
-        "screen": "class",
-        "gba": "SELECT",
-        "requires": "investor"
       },
       {
         "id": "go",
@@ -5076,6 +5025,42 @@
         "text": "Wykonane! Nagroda czeka.|Telefon: Odznaki, A:|strona Sekrety.",
         "screen": "title",
         "gba": "SELECT, A"
+      },
+      {
+        "id": "training",
+        "title": "Czas na Szkolenie!",
+        "text": "Masz dość doświadczenia|na Szkolenie! Kupisz je|w telefonie: Koszty.",
+        "screen": "title",
+        "gba": "SELECT, Koszty"
+      },
+      {
+        "id": "options",
+        "title": "Opcje",
+        "text": "Pod kluczem zmienisz|dźwięk, sterowanie|i wielkość tekstu.",
+        "screen": "title",
+        "godotOnly": true
+      },
+      {
+        "id": "help",
+        "title": "Jak grać",
+        "text": "Sterowanie, akty i rady|są w Jak grać. Tam też|powtórzysz samouczek.",
+        "screen": "title",
+        "gba": "B"
+      },
+      {
+        "id": "keepsake",
+        "title": "Pamiątka",
+        "text": "Jedna pamiątka na|budowę. Im częściej ją|bierzesz, tym mocniejsza.",
+        "screen": "class",
+        "gba": "L / R"
+      },
+      {
+        "id": "stats",
+        "title": "Statystyki",
+        "text": "Co daje SIŁ, ZRĘ, INT,|OBR i SZCZ - wzory|w prostych słowach.",
+        "screen": "class",
+        "gba": "START",
+        "link": "stats"
       }
     ]
   },
