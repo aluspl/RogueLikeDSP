@@ -1934,6 +1934,10 @@ namespace core
         int8_t crit_buff = 0, crit_buff_turns = 0;   // Pomiar (Miernik, Poziomica): kryt +% na tury
         uint8_t weapon_rarity = 0;     // 0 Zwykła, 1 Solidna, 2 Markowa, 3 Mistrzowska
         int8_t tool_offer_rarity = 0;  // rzadkość narzędzia z oferty wymiany
+        // v0.23.0: easter egg - Kawka. Pola w miejscu wyrównania (przed int weapon2, za patent_walls): rozmiar stanu i zapis
+        // PBRUN19 bez zmian; starszy zapis ma tu zera = bez Kawki (dog_on = 0).
+        int8_t dog_x = -1, dog_y = -1; // pole Kawki na etapie (ważne tylko z dog_on)
+        uint8_t dog_flags = 0;         // bity dog_flag
         int weapon2 = -1;              // broń w kaburze (indeks data::weapons), -1 = pusta
         int8_t weapon2_lvl = 0, weapon2_trait = -1;
         bool weapon2_trait_pending = false;
@@ -1945,6 +1949,82 @@ namespace core
         uint8_t proc_count = 0;        // ciosy od ostatniego "co N-tego" (artefakt)
         uint16_t artifacts_run = 0;    // artefakty obecne w tej budowie (bity data::artifacts)
         uint8_t patent_walls = 0;      // ściany magazynów otwarte Patentem (sekretne zlecenie)
+        uint8_t dog_pets = 0;          // v0.23.0: Kawka - ile razy pogłaskana w tej budowie (w miejscu wyrównania, jak pola niżej)
+
+        // --- v0.23.0: easter egg - Kawka (Game.Dog). Raz na budowę (data::dog_chance_pct) siedzi w błocie na jednym etapie Aktu I
+        // bez bossa; nie problem: nie da się jej trafić, problemy ją omijają (occupied). Pierwsze wejście = głaskanie i dośw.
+        // (raz), kolejne - Kawka robi miejsce (zamiana pól, bez blokady przejścia). Losowanie z osobnego skrótu seeda budowy.
+        enum dog_flag : uint8_t { dog_on = 1, dog_petted = 2, dog_spawned = 4, dog_banked = 8 };   // dog_banked: doliczona do profilu
+        bool dog_at(int x, int y) const { return (dog_flags & dog_on) && dog_x == x && dog_y == y; }
+        bool dog_here() const { return dog_flags & dog_on; }
+        uint32_t dog_hash() const
+        {
+            uint32_t h = (run_seed ^ 0x4B41574Bu) * 2246822519u + 0x9E3779B9u;
+            h ^= h >> 15; h *= 2654435761u; h ^= h >> 13;
+            return h;
+        }
+        bool dog_stage_ok(int s) const { return data::acts[sdef(s).act].mechanic == act_mechanic::mud && sdef(s).boss < 0; }
+        // Etap z Kawką w tej budowie (-1 = nie tym razem).
+        int dog_stage() const
+        {
+            const uint32_t h = dog_hash();
+            if(int(h % 100u) >= data::dog_chance_pct) return -1;
+            int n = 0;
+            for(int s = first_stage; s < route_count(); ++s) n += dog_stage_ok(s);
+            if(n == 0) return -1;
+            int k = int((h >> 8) % uint32_t(n));
+            for(int s = first_stage; s < route_count(); ++s) if(dog_stage_ok(s) && k-- == 0) return s;
+            return -1;
+        }
+        bool dog_cell_ok(int x, int y, bool need_mud) const
+        {
+            return lv.at(x, y) == tile::floor && (! need_mud || mud(x, y)) && ! occupied(x, y) && ! pickup_at(x, y) && ! in_secret(x, y)
+                && cheb(x, y, hero.x, hero.y) > 3;
+        }
+        void place_dog()
+        {
+            if(tier > 0 || (dog_flags & dog_spawned) || lv.rooms_count < 2 || stage != dog_stage()) return;
+            rng dr = side_rng(131);
+            for(int pass = 0; pass < 2; ++pass)   // błoto we wnętrzu pokoju (nie w przejściu); bez błota - dowolna podłoga wnętrza
+            {
+                int n = 0;
+                for(int i = 1; i < lv.rooms_count; ++i)
+                {
+                    const room& rm = lv.rooms[i];
+                    for(int y = rm.y + 1; y < rm.y + rm.h - 1; ++y) for(int x = rm.x + 1; x < rm.x + rm.w - 1; ++x) n += dog_cell_ok(x, y, pass == 0);
+                }
+                if(n == 0) continue;
+                int k = dr.range(0, n - 1);
+                for(int i = 1; i < lv.rooms_count; ++i)
+                {
+                    const room& rm = lv.rooms[i];
+                    for(int y = rm.y + 1; y < rm.y + rm.h - 1; ++y) for(int x = rm.x + 1; x < rm.x + rm.w - 1; ++x)
+                        if(dog_cell_ok(x, y, pass == 0) && k-- == 0)
+                        {
+                            dog_x = int8_t(x); dog_y = int8_t(y);
+                            dog_flags = uint8_t(dog_flags | dog_on | dog_spawned);
+                            return;
+                        }
+                }
+            }
+        }
+        // Wejście na Kawkę: pierwsze = głaskanie z dośw. (raz na budowę), kolejne - zamiana pól (Kawka przepuszcza).
+        void pet_dog()
+        {
+            if(dog_pets < 255) ++dog_pets;
+            if(! (dog_flags & dog_petted))
+            {
+                dog_flags = uint8_t(dog_flags | dog_petted);
+                push(message().add(UI(kawka_glaszczesz)).add(data::dog_xp).add(UI(dosw)).as(good));
+                gain_xp(data::dog_xp);
+                return;
+            }
+            const int8_t ox = hero.x, oy = hero.y;
+            hero.x = dog_x; hero.y = dog_y;
+            dog_x = ox; dog_y = oy;
+            push(message().add(UI(kawka_przepuszcza)));
+            collect();
+        }
 
         // --- wzory pól (Game.Patterns)
         int wind_range(int rg) const { return weather_is(weather_effect::wind) && rg > 1 && ! has_passive(class_passive::windproof) ? imax(1, rg - wdef().value) : rg; }
@@ -2860,6 +2940,7 @@ namespace core
         bool occupied(int x, int y) const
         {
             if(hero.alive && hero.x == x && hero.y == y) return true;
+            if(dog_at(x, y)) return true;   // v0.23.0: Kawka - nikt na nią nie wchodzi (bohater głaszcze)
             if(ally_turns > 0 && ally_x == x && ally_y == y) return true;   // pomocnik z brygady
             for(int i = 0; i < enemies_count; ++i)
                 if(enemies[i].alive && enemies[i].x == x && enemies[i].y == y) return true;
@@ -2902,6 +2983,7 @@ namespace core
             secret_x = secret_y = -1; secret_open = false; secret_kind = secret_dir = 0; key_holder = -1; keys = 0;
             secret_rx = secret_ry = secret_rw = secret_rh = 0;
             mark_target = -1; mark_turns = 0;   // v0.21.51 cz. 2: Tyczenie tylko na etap
+            dog_flags = uint8_t(dog_flags & ~dog_on); dog_x = dog_y = -1;   // v0.23.0: Kawka tylko na swoim etapie
             if(s == 0) paper_hits = 0;          // Akt 0 od nowa (NG+): ciosy od papierów liczone od pierwszego etapu
             if(cdef().ability == ability_effect::borrow)   // Majster: moc innego fachu na ten etap (osobny generator)
             {
@@ -2974,6 +3056,7 @@ namespace core
             place_documents();
             place_event();    // v0.21.50 cz. 3: pole wydarzenia z wyborem (#30)
             place_secret();   // ukryte pomieszczenie (#32): magazyn, skrzynia, klucz, strażnik
+            place_dog();      // v0.23.0: easter egg - Kawka w błocie (osobny generator, RNG gry bez zmian)
             // kombinacje stanów (#29): w pyle (akt III) problemy są zapylone, w Mróz - zmrożone (boss nie)
             for(int i = 0; i < enemies_count; ++i)
             {
@@ -3349,6 +3432,7 @@ namespace core
             int ei = enemy_at(nx, ny);
             bool stuck = false;
             if(ei >= 0) attack_with(weapon().mode_a, ei);   // v0.23.0: cios wręcz całym wzorem trybu A
+            else if(dog_at(nx, ny)) pet_dog();   // v0.23.0: Kawka - głaskanie zamiast ruchu
             else if(secret_closed() && secret_is(nx, ny)) { if(! try_open_secret()) return false; }   // magazyn (#32)
             else if(lv.passable(nx, ny))
             {

@@ -156,6 +156,22 @@ def build(d):
     L += [f"inline constexpr int artifacts[] = {{ {', '.join(map(str, arts))} }};   // Gablota: bit profilu = pozycja (tylko dopisywane)",
           f"inline constexpr int artifacts_count = {len(arts)};",
           f"inline constexpr int artifact_chance_pct = {d.get('artifacts', {}).get('chancePct', 0)};", ""]
+    # v0.23.0: easter egg - Kawka (suczka w błocie Aktu I): szansa na budowę, dośw. za pierwsze pogłaskanie, oceny postępów
+    dg = d["dog"]
+    DOGC = ["any", "first", "helmet_stage", "hp_low", "no_helmet", "master", "hp_full", "no_kills", "kills_ge", "losses_ge", "runs_le",
+            "wins_ge", "coffee_ge", "level_ge"]
+    assert 0 <= dg["chancePct"] <= 100 and 0 <= dg["xp"] <= 10 and 1 <= len(dg["quips"]) <= 32, dg
+    assert any(q["when"] == "any" for q in dg["quips"]), "Kawka: potrzebna ocena bez warunku (any)"
+    L += [f"inline constexpr core::ltext dog_name = {t(dg['name'])};", f"inline constexpr core::ltext dog_desc = {t(dg['desc'])};",
+          f"inline constexpr core::ltext dog_hint = {t(dg['hint'])};",
+          f"inline constexpr int dog_chance_pct = {dg['chancePct']};", f"inline constexpr int dog_xp = {dg['xp']};",
+          f"inline constexpr int dog_badge_builds = {dg['badgeBuilds']};",
+          "inline constexpr core::dog_quip_def dog_quips[] = {"]
+    for q in dg["quips"]:
+        lines = q["text"].split("|")
+        assert q["when"] in DOGC and len(lines) <= 3 and all(len(l) <= 25 for l in lines) and -1000 < q.get("value", 0) < 1000, q   # dymek: 3 x 25
+        L.append(f'    {{ core::dog_cond::{q["when"]}, {q.get("value", 0)}, {{ {", ".join(tsplit(q["text"], 3))} }} }},')
+    L += ["};", f"inline constexpr int dog_quips_count = {len(dg['quips'])};", ""]
     L.append("inline constexpr core::class_def classes[] = {")
     for c in d["classes"]:
         ab = c["ability"]

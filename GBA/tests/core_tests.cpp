@@ -1884,7 +1884,7 @@ int main()
         mark_unlock(v, unlock_act0, -1); CHECK(pending_unlock(v, 0, cls, true) == -1 && !(v.tutorial & tut_short));
         profile nv; profile_reset(nv); std::memcpy(nv.magic, "PBRL009", 8);
         CHECK(profile_fix(nv) && tutorial_pending(nv, 0) && nv.rewards == 0 && nv.tutorial == 0);
-        CHECK(sizeof(profile) == 440 && std::strcmp(profile_magic, "PBRL019") == 0);
+        CHECK(sizeof(profile) == 440 && std::strcmp(profile_magic, "PBRL020") == 0);
     }
     // 46. v0.21.50: rozpiska obrażeń broni (#26) - zakres z rozpiski = to, co naprawdę zadaje walka (wiele rzutów z seedem)
     {
@@ -3927,6 +3927,87 @@ int main()
         g.lv.t[8][7] = g.lv.t[9][6] = g.lv.t[9][8] = tile::wall;
         e = put(g, 7, 9);
         CHECK(!g.chase_step(g.enemies[e]) && g.enemies[e].x == 7 && g.enemies[e].y == 9);
+    }
+    // 57. v0.23.0: easter egg - Kawka (odpowiednik C#: DogTests): etap z seeda (~dog_chance_pct budów), błoto we wnętrzu pokoju,
+    //     nigdy na starcie / schodach, RNG gry bez zmian, dośw. raz, potem zamiana pól; profil v20 (budowy z Kawką, odznaka)
+    {
+        static game g;
+        int with = 0, placed = 0, first_seed = -1;
+        for(uint32_t s = 1; s <= 400; ++s)
+        {
+            g.new_run(int(s % 3), s);
+            const int ds = g.dog_stage();
+            if(ds < 0) continue;
+            ++with;
+            CHECK(g.dog_stage_ok(ds) && data::acts[g.sdef(ds).act].mechanic == act_mechanic::mud && g.sdef(ds).boss < 0);
+            if(ds != g.stage) g.start_stage(ds);
+            if(! g.dog_here()) continue;
+            ++placed;
+            if(first_seed < 0) first_seed = int(s);
+            CHECK(g.lv.at(g.dog_x, g.dog_y) == tile::floor && g.mud(g.dog_x, g.dog_y) && ! (g.dog_x == g.stairs_x && g.dog_y == g.stairs_y));
+            CHECK(cheb(g.dog_x, g.dog_y, g.hero.x, g.hero.y) > 3 && g.occupied(g.dog_x, g.dog_y) && g.enemy_at(g.dog_x, g.dog_y) < 0);
+            CHECK(g.dog_flags & game::dog_spawned);
+            const uint32_t rs = g.r.s;
+            const int8_t dx = g.dog_x, dy = g.dog_y;
+            g.dog_flags = uint8_t(g.dog_flags & ~(game::dog_on | game::dog_spawned)); g.place_dog();
+            CHECK(g.r.s == rs && g.dog_x == dx && g.dog_y == dy);   // osobny generator, ten sam wynik
+            g.place_dog(); CHECK(g.dog_x == dx);   // raz na budowę: drugi raz nic
+        }
+        std::printf("Kawka: %d z 400 budów (etap z Kawką), na mapie %d\n", with, placed);
+        CHECK(with > 400 * data::dog_chance_pct / 150 && with < 400 * data::dog_chance_pct * 3 / 200 && placed * 10 >= with * 9);
+        // ta sama budowa = to samo pole
+        game a, b; a.new_run(0, uint32_t(first_seed)); b.new_run(0, uint32_t(first_seed));
+        a.start_stage(a.dog_stage()); b.start_stage(b.dog_stage());
+        CHECK(a.dog_x == b.dog_x && a.dog_y == b.dog_y && a.r.s == b.r.s);
+        // głaskanie: dośw. raz, bohater stoi; potem Kawka przepuszcza (zamiana pól), bez dośw.
+        arena(g, 0);
+        g.dog_x = 9; g.dog_y = 7; g.dog_flags = game::dog_on | game::dog_spawned;
+        const int xp0 = g.run_xp;
+        CHECK(g.player_move(1, 0) && g.hero.x == 8 && g.run_xp == xp0 && g.dog_pets == 0);   // pole obok: zwykły krok
+        arena(g, 0);
+        g.dog_x = 8; g.dog_y = 7; g.dog_flags = game::dog_on | game::dog_spawned;
+        const int xp1 = g.run_xp;
+        CHECK(g.player_move(1, 0) && g.hero.x == 7 && g.hero.y == 7 && g.run_xp == xp1 + data::dog_xp && g.dog_pets == 1 && (g.dog_flags & game::dog_petted));
+        CHECK(g.player_move(1, 0) && g.hero.x == 8 && g.dog_x == 7 && g.run_xp == xp1 + data::dog_xp && g.dog_pets == 2);
+        CHECK(g.player_move(-1, 0) && g.hero.x == 7 && g.dog_x == 8 && g.run_xp == xp1 + data::dog_xp && g.dog_pets == 3);
+        // problemy omijają Kawkę (zajęte pole), cios wzorem jej nie trafia
+        g.spawn(0, 9, 7); g.enemies[g.enemies_count - 1].awake = true;
+        CHECK(g.occupied(8, 7) && g.enemy_at(8, 7) < 0);
+        // profil: budowa z Kawką liczy się raz, odznaka po dog_badge_builds budowach
+        profile p; profile_reset(p);
+        CHECK(dog_bank(p, g) && p.dog_builds == 1 && ! dog_bank(p, g) && p.dog_builds == 1 && dog_met(p));
+        p.dog_builds = uint8_t(data::dog_badge_builds - 1);
+        game h; h.new_run(0, 5); h.dog_flags = game::dog_petted;
+        CHECK((check_badges(p, h) >> data::badge_psi_przyjaciel) & 1);
+        CHECK(p.dog_builds == data::dog_badge_builds && ! ((check_badges(p, h) >> data::badge_psi_przyjaciel) & 1));
+        game n; n.new_run(0, 6); CHECK(! dog_bank(p, n));   // bez głaskania - nic
+        p.dog_builds = 255; h.dog_flags = game::dog_petted; dog_bank(p, h); CHECK(p.dog_builds == 255);   // licznik nasycony
+        // ocena: zawsze pasująca; bez pasującej szczególnej - ogólna; pierwszy dzień w pierwszej budowie
+        profile q; profile_reset(q); q.runs = 3; q.wins = 1;
+        game f; f.new_run(0, 21); f.kills = 1; f.dog_pets = 1;
+        const int qi = dog_quip(q, f);
+        CHECK(data::dog_quips[qi].when == dog_cond::any);
+        for(int k = 1; k <= 8; ++k) { f.dog_pets = uint8_t(k); CHECK(dog_quip_fits(q, f, data::dog_quips[dog_quip(q, f)])); }
+        f.dog_pets = 2; CHECK(dog_quip(q, f) != qi);   // kolejne głaskanie - inna ocena
+        q.runs = 5; f.kills = 0; f.dog_pets = 1;
+        int first_q = -1; for(int i = 0; i < data::dog_quips_count; ++i) if(data::dog_quips[i].when == dog_cond::first) first_q = i;
+        bool seen_first = false;
+        for(int k = 1; k <= 4; ++k) { f.dog_pets = uint8_t(k); seen_first |= dog_quip(q, f) == first_q; CHECK(data::dog_quips[dog_quip(q, f)].when != dog_cond::any); }
+        CHECK(first_q >= 0 && seen_first);
+        f.hero.hp = int16_t(f.hero.max_hp / 5); f.dog_pets = 1;
+        bool low = false; for(int k = 1; k <= 6; ++k) { f.dog_pets = uint8_t(k); low |= data::dog_quips[dog_quip(q, f)].when == dog_cond::hp_low; }
+        CHECK(low);
+        // profil v19 -> v20: Gablota zostaje, tytuł zlecenia przesunięty za nową odznakę, licznik Kawki od zera
+        profile v; profile_reset(v); std::memcpy(v.magic, profile_magic_v19, sizeof v.magic);
+        v.artifacts = 3; v.title = uint8_t(badges_v19 + 2); v.dog_builds = 7;
+        CHECK(profile_fix(v) && std::strcmp(v.magic, profile_magic) == 0 && v.artifacts == 3 && v.dog_builds == 0);
+        CHECK(v.title == badges_v19 + 2 + (data::badges_count - badges_v19) && ! profile_fix(v));
+        profile tb; profile_reset(tb); std::memcpy(tb.magic, profile_magic_v19, sizeof tb.magic); tb.title = 3;
+        CHECK(profile_fix(tb) && tb.title == 3);   // tytuł z odznaki - bez zmian
+        // zapis budowy: Kawka w PBRUN19 bez zmiany rozmiaru stanu
+        static run_save rs; g.dog_x = 5; g.dog_y = 6; g.dog_flags = game::dog_on | game::dog_petted; g.dog_pets = 4;
+        run_save_make(rs, g);
+        CHECK(run_save_valid(rs) && rs.g.dog_x == 5 && rs.g.dog_y == 6 && rs.g.dog_pets == 4 && sizeof(game) % 8 == 0);
     }
     if(std::getenv("PB_NO_BALANCE")) { std::printf(fails ? "\n%d FAIL\n" : "\nOK (bez balansu)\n", fails); return fails != 0; }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie

@@ -106,6 +106,7 @@ static uint32_t digest(const game& g)
     // v0.21.51 cz. 2: sekretne zlecenia (liczniki budowy), Majster, Geodeta, kawa na start
     f.add(g.coffee_drunk); f.add(g.shock_combos); f.add(g.paper_hits); f.add(g.secret_flags); f.add(g.helper_ctx);
     f.add(g.borrow_cls); f.add(g.mark_target); f.add(g.mark_turns); f.add(g.power_cls()); f.add(g.build_days()); f.add(g.bonus.start_coffee);
+    if(g.dog_flags || g.dog_pets) { f.add(g.dog_x); f.add(g.dog_y); f.add(g.dog_flags); f.add(g.dog_pets); }   // v0.23.0: Kawka (tylko budowy z nią)
     return f.h;
 }
 
@@ -191,6 +192,7 @@ static void snapshot(const game& g, int step)
     w(","); wi(g.helpers_called); w(","); wi(g.shop_buys); w(","); wi(first_hit_bonus(g.bonus)); w(","); wi(run_stages_done(g)); w("]");   // cz. c
     w(","); key("career"); w("["); wi(g.contract); w(","); wi(g.twin_carry); w(","); wi(g.stage_id(g.stage)); w(",");   // v0.21.52 cz. d
     wi(g.route_count()); w(","); wi(g.mech_value()); w(","); wi(career_stages_done(g)); w("]");
+    if(g.dog_flags || g.dog_pets) { w(","); key("dog"); w("["); wi(g.dog_x); w(","); wi(g.dog_y); w(","); wi(g.dog_flags); w(","); wi(g.dog_pets); w(","); wi(g.dog_stage()); w("]"); }   // v0.23.0
     w(","); key("killsByType"); w("["); for(int i = 0; i < max_enemy_types; ++i) { if(i) w(","); wi(g.kills_by_type[i]); } w("]");
     w(","); key("rooms"); w("[");
     for(int i = 0; i < g.lv.rooms_count; ++i) { if(i) w(","); const room& r = g.lv.rooms[i]; w("["); wi(r.x); w(","); wi(r.y); w(","); wi(r.w); w(","); wi(r.h); w("]"); }

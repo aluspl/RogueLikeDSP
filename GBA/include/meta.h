@@ -13,7 +13,8 @@ namespace core
     constexpr int max_respect = 19;       // 16 w respect_ranks + 3 w respect_ranks_hi (v12)
     static_assert(data::classes_count <= max_classes && data::respect_count <= max_respect && data::rewards_count <= 255);
 
-    constexpr char profile_magic[8] = "PBRL019";      // v0.23.0: v19 - Gablota artefaktów; v18 - 64-bitowe maski broni
+    constexpr char profile_magic[8] = "PBRL020";      // v0.23.0: v20 - Kawka (budowy z pogłaskaniem, odznaka); v19 - Gablota artefaktów
+    constexpr char profile_magic_v19[8] = "PBRL019";
     constexpr char profile_magic_v18[8] = "PBRL018";
     constexpr char profile_magic_v17[8] = "PBRL017";
     constexpr char profile_magic_v16[8] = "PBRL016";
@@ -49,6 +50,8 @@ namespace core
     // v17 (v0.21.53) = v16 + filtr ekranu i ogłoszone filtry - w dawnym wyrównaniu v16 (rozmiar bez zmian, 384 B)
     constexpr int profile_v17_size = 384; // v18 (v0.23.0) = v17 + pełne maski broni (tools, tools_found po 8 B)
     constexpr int profile_v18_size = 400; // v19 (v0.23.0) = v18 + Gablota artefaktów (maska i dzień znalezienia)
+    constexpr int profile_v19_size = 434; // v20 (v0.23.0) = v19 + Kawka (dog_builds) w dawnym wyrównaniu - rozmiar bez zmian (440 B)
+    constexpr int badges_v19 = 9;         // odznaki do v19: tytuły zleceń i inspektora za nimi przesuwa nowa odznaka (migrate_v20)
     constexpr int max_artifacts = 16;
     static_assert(data::artifacts_count <= max_artifacts);
     static_assert(data::screen_filters_count <= 16);   // ogłoszone filtry: bity uint16
@@ -180,7 +183,9 @@ namespace core
         // --- v19 (v0.23.0): Gablota artefaktów
         uint16_t artifacts;            // odkryte artefakty (bity data::artifacts)
         uint16_t artifact_day[max_artifacts];   // dzień pierwszego znalezienia (dni od 1970-01-01; 0 = przed Gablotą)
-        uint8_t reserved19[6];         // wyrównanie do 440 B (zapis budowy od 512)
+        // --- v20 (v0.23.0): easter egg - Kawka
+        uint8_t dog_builds;            // budowy, w których pogłaskano Kawkę (do 255; odznaka Psi przyjaciel)
+        uint8_t reserved20[5];         // wyrównanie do 440 B (zapis budowy od 512)
     };
     static_assert(offsetof(profile, badges) == profile_v2_size);
     static_assert(offsetof(profile, kills_total) == profile_v3_size);
@@ -199,7 +204,7 @@ namespace core
     static_assert(offsetof(profile, contract) == profile_v15_size && offsetof(profile, career_wins) == 364 && offsetof(profile, career_best) == 370);
     static_assert(offsetof(profile, filter) == 363 && offsetof(profile, filters_seen) == 376 && offsetof(profile, language) == 378);
     static_assert(offsetof(profile, tools) == profile_v17_size && offsetof(profile, artifacts) == profile_v18_size);
-    static_assert(sizeof(profile) == 440);
+    static_assert(offsetof(profile, dog_builds) == profile_v19_size && sizeof(profile) == 440);
     // Bajty 35 / 41 trzymają dolne 8 bitów masek (jak C# Profile.ToBytes); woła je write_profile (main.cpp) przed każdym zapisem do SRAM.
     inline void profile_sync(profile& p) { p.tools_lo = uint8_t(p.tools); p.tools_found_lo = uint8_t(p.tools_found); }
 
@@ -389,8 +394,9 @@ namespace core
     inline bool profile_migrate(profile& p)
     {
         if(std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0) return clamp_levels(p);
-        if(std::memcmp(p.magic, profile_magic_v18, sizeof p.magic) == 0 || std::memcmp(p.magic, profile_magic_v17, sizeof p.magic) == 0)
-        {   // v17/v18 -> v19: dane bez zmian (maski szerokie z profile_fix); Gablotę wypełnia migrate_v19
+        if(std::memcmp(p.magic, profile_magic_v19, sizeof p.magic) == 0 || std::memcmp(p.magic, profile_magic_v18, sizeof p.magic) == 0
+           || std::memcmp(p.magic, profile_magic_v17, sizeof p.magic) == 0)
+        {   // v17/v18/v19 -> v20: dane bez zmian (maski szerokie z profile_fix); Gablotę wypełnia migrate_v19, Kawkę migrate_v20
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             clamp_levels(p);
             return true;
@@ -524,20 +530,31 @@ namespace core
 
     inline bool clamp_respect(profile& p);
     inline void migrate_v19(profile& p);
-    // v0.23.0: v17 i starsze - maski broni z bajtów 35 / 41; Gablota z każdej starszej wersji; zwrot za usunięte rangi Respektu.
+    // v0.23.0 v20: nowa odznaka (Psi przyjaciel) za dawnymi - wybrany tytuł zlecenia / inspektora przesuwa się o jedną pozycję.
+    inline void migrate_v20(profile& p)
+    {
+        if(p.title > badges_v19) p.title = uint8_t(p.title + (data::badges_count - badges_v19));
+        p.dog_builds = 0;
+        for(auto& x : p.reserved20) x = 0;
+    }
+    // v0.23.0: v17 i starsze - maski broni z bajtów 35 / 41; Gablota z każdej starszej wersji; zwrot za usunięte rangi Respektu;
+    // v20: Kawka i przesunięte tytuły z każdej starszej wersji.
     inline bool profile_fix(profile& p)
     {
-        const bool v19 = std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0;
+        const bool v20 = std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0;
+        const bool v19 = v20 || std::memcmp(p.magic, profile_magic_v19, sizeof p.magic) == 0;
         const bool wide = v19 || std::memcmp(p.magic, profile_magic_v18, sizeof p.magic) == 0;
         if(! v19)
         {
             p.artifacts = 0;
             for(auto& x : p.artifact_day) x = 0;
-            for(auto& x : p.reserved19) x = 0;
         }
+        if(! v20) { p.dog_builds = 0; for(auto& x : p.reserved20) x = 0; }
         const bool migrated = profile_migrate(p);   // migracje nie czytają masek broni
         if(! wide) { p.tools = p.tools_lo; p.tools_found = p.tools_found_lo; }   // po wyczyszczeniu pól spoza starej wersji
-        if(! v19 && std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0) migrate_v19(p);
+        const bool now = std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0;
+        if(! v19 && now) migrate_v19(p);
+        if(! v20 && now) migrate_v20(p);
         return clamp_respect(p) | migrated;
     }
 
@@ -1381,6 +1398,61 @@ namespace core
 
     // Sprawdza odznaki po ważnym momencie (koniec etapu, koniec budowy). Nowe odznaki dają doświadczenie.
     // Zwraca bitmaskę odznak zdobytych właśnie teraz.
+    // ------------------------------------------------------------------ v0.23.0: easter egg - Kawka
+    // Budowa z pogłaskaną Kawką: +1 w profilu (raz na budowę - bit dog_banked w stanie budowy). Zwraca true, gdy doliczono teraz.
+    inline bool dog_bank(profile& p, game& g)
+    {
+        if(! (g.dog_flags & game::dog_petted) || (g.dog_flags & game::dog_banked)) return false;
+        g.dog_flags = uint8_t(g.dog_flags | game::dog_banked);
+        if(p.dog_builds < 255) ++p.dog_builds;
+        return true;
+    }
+    inline bool dog_met(const profile& p) { return p.dog_builds > 0; }
+    // Czy ocena q pasuje do stanu budowy i profilu.
+    inline bool dog_quip_fits(const profile& p, const game& g, const dog_quip_def& q)
+    {
+        const int hp_pct = g.hero.max_hp > 0 ? g.hero.hp * 100 / g.hero.max_hp : 100, st = g.stage_number(), v = q.value;
+        switch(q.when)
+        {
+        case dog_cond::any: return true;
+        case dog_cond::first: return st == 1 && g.kills == 0;
+        case dog_cond::helmet_stage: return st >= v && g.equipped[0] >= 0;
+        case dog_cond::hp_low: return hp_pct <= v;
+        case dog_cond::no_helmet: return st >= v && g.equipped[0] < 0;
+        case dog_cond::master: return g.weapon_rarity >= 3 || g.weapon().master;
+        case dog_cond::hp_full: return st >= v && g.hero.hp >= g.hero.max_hp;
+        case dog_cond::no_kills: return st >= v && g.kills == 0;
+        case dog_cond::kills_ge: return g.kills >= v;
+        case dog_cond::losses_ge: return p.runs - p.wins >= v;
+        case dog_cond::runs_le: return p.runs <= v;
+        case dog_cond::wins_ge: return p.wins >= v;
+        case dog_cond::coffee_ge: return g.coffee_drunk >= v;
+        case dog_cond::level_ge: return g.hero_level >= v;
+        }
+        return false;
+    }
+    // Sarkastyczna ocena postępów po pogłaskaniu (indeks data::dog_quips): pasujące oceny z warunkiem mają pierwszeństwo przed
+    // ogólnymi; kolejne głaskanie w tej budowie - następna z pasujących (od miejsca ze skrótu seeda).
+    inline int dog_quip(const profile& p, const game& g)
+    {
+        int n = 0, any = 0;
+        for(int i = 0; i < data::dog_quips_count; ++i)
+        {
+            const bool fit = dog_quip_fits(p, g, data::dog_quips[i]);
+            n += fit && data::dog_quips[i].when != dog_cond::any;
+            any += data::dog_quips[i].when == dog_cond::any;
+        }
+        const bool special = n > 0;
+        const int count = special ? n : any;
+        int k = int(((g.dog_hash() >> 16) + uint32_t(imax(0, g.dog_pets - 1))) % uint32_t(count));
+        for(int i = 0; i < data::dog_quips_count; ++i)
+        {
+            const dog_quip_def& q = data::dog_quips[i];
+            if((special ? (q.when != dog_cond::any && dog_quip_fits(p, g, q)) : q.when == dog_cond::any) && k-- == 0) return i;
+        }
+        return 0;
+    }
+
     inline int check_badges(profile& p, game& g)
     {
         record_run(p, g);
@@ -1388,6 +1460,7 @@ namespace core
         bool won = g.st == status::won;
         // v0.23.0: tylko dawne narzędzia (sprzed nowych broni), bez sekretnych
         const uint64_t all_tools = ((uint64_t(1) << imin(data::tools_count, data::original_tools_count)) - 1) & ~data::secret_tools_mask;
+        dog_bank(p, g);   // v0.23.0: Kawka - budowa z pogłaskaniem liczy się raz (znak wodny w stanie budowy)
         bool cond[16] = {};
         cond[data::badge_bez_usterek] = cleared && g.stage_damage == 0;
         cond[data::badge_przed_terminem] = won && g.turns - g.stage_start_turn <= 150;
@@ -1398,6 +1471,7 @@ namespace core
         cond[data::badge_kolekcjoner] = (p.tools_found & all_tools) == all_tools;
         cond[data::badge_katalog] = catalog_count(p) == data::enemies_count;
         cond[data::badge_osiedle] = p.houses_count >= 5;
+        cond[data::badge_psi_przyjaciel] = p.dog_builds >= data::dog_badge_builds;   // v0.23.0
         int got = 0;
         for(int i = 0; i < data::badges_count; ++i)
             if(cond[i] && ! (p.badges & (1u << i)))

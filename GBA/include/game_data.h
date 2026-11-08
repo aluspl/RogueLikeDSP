@@ -73,6 +73,32 @@ inline constexpr int artifacts[] = { 20, 21, 33, 40, 41, 42, 43, 44 };   // Gabl
 inline constexpr int artifacts_count = 8;
 inline constexpr int artifact_chance_pct = 25;
 
+inline constexpr core::ltext dog_name = { "Kawka", "CoffeeDog" };
+inline constexpr core::ltext dog_desc = { "Suczka z placu. Nie usterka, tylko kierownik od morale.", "A site dog. Not a defect, just the head of morale." };
+inline constexpr core::ltext dog_hint = { "Podobno siedzi w błocie...", "Rumour says she sits in the mud..." };
+inline constexpr int dog_chance_pct = 40;
+inline constexpr int dog_xp = 3;
+inline constexpr int dog_badge_builds = 4;
+inline constexpr core::dog_quip_def dog_quips[] = {
+    { core::dog_cond::first, 0, { { "Pierwszy dzień?", "First day?" }, { "Widać po butach.", "Your boots say so." }, { "Za czyste.", "Way too clean." } } },
+    { core::dog_cond::helmet_stage, 3, { { "Trzeci etap i dalej", "Third stage and still" }, { "w kasku? Ambitnie.", "in a helmet? Bold." }, { "", "" } } },
+    { core::dog_cond::hp_low, 30, { { "Wyglądasz jak strop", "You look like a slab" }, { "po pierwszej zimie.", "after a hard winter." }, { "Pogłaszcz, pomoże.", "A pat will help." } } },
+    { core::dog_cond::no_helmet, 2, { { "Bez kasku? Odważnie.", "No helmet? Brave." }, { "Ja tam bym chociaż", "I'd wear a bucket," }, { "wiadro założyła.", "at least." } } },
+    { core::dog_cond::master, 0, { { "Mistrzowska broń,", "A master's weapon," }, { "a głaszcze jak amator.", "yet you pet like" }, { "Ale lubię.", "an amateur. I like it." } } },
+    { core::dog_cond::hp_full, 2, { { "Ani zadrapania?", "Not a scratch?" }, { "Na pewno tu pracujesz?", "Do you even work here?" }, { "", "" } } },
+    { core::dog_cond::no_kills, 2, { { "Zero usuniętych usterek.", "Zero defects fixed." }, { "Też lubię leżeć", "I like lying in" }, { "w błocie.", "the mud too." } } },
+    { core::dog_cond::kills_ge, 20, { { "Ile usterek już poszło?", "So many defects gone?" }, { "Szacun. Ja zakopałam", "Respect. I only" }, { "tylko trzy kości.", "buried three bones." } } },
+    { core::dog_cond::losses_ge, 5, { { "Znowu Ty? Kierownik", "You again? The boss" }, { "mówi, że to już", "says this is build" }, { "któraś budowa z rzędu.", "number who-knows." } } },
+    { core::dog_cond::runs_le, 1, { { "Nowa osoba na budowie?", "New on site?" }, { "Zasada pierwsza:", "Rule one: don't step" }, { "nie wchodź w beton.", "in wet concrete." } } },
+    { core::dog_cond::wins_ge, 3, { { "Podobno masz już kilka", "Heard you've built" }, { "odebranych domów. Ja", "a few houses. Still" }, { "dalej czekam na budę.", "waiting for my kennel." } } },
+    { core::dog_cond::coffee_ge, 3, { { "Pachniesz kawą.", "You smell of coffee." }, { "Dlatego Kawka? Nie,", "Is that why CoffeeDog?" }, { "tak mam od urodzenia.", "No, born this way." } } },
+    { core::dog_cond::level_ge, 4, { { "Poziom w górę, ale", "Level up, but the" }, { "poziomica i tak mówi,", "spirit level still" }, { "że krzywo.", "says it's crooked." } } },
+    { core::dog_cond::any, 0, { { "Błoto po kolana,", "Mud to the knees," }, { "termin po szyję.", "deadline to the neck." }, { "Typowy wtorek.", "A typical Tuesday." } } },
+    { core::dog_cond::any, 0, { { "Hau. To znaczy:", "Woof. Meaning:" }, { "fundament krzywy,", "the footing's crooked," }, { "ale się trzyma.", "but it holds." } } },
+    { core::dog_cond::any, 0, { { "Dobra robota.", "Good job. I say that" }, { "Tak mówię wszystkim,", "to everyone who" }, { "którzy mają smakołyki.", "carries treats." } } },
+};
+inline constexpr int dog_quips_count = 16;
+
 inline constexpr core::class_def classes[] = {
     { { "Kierownik budowy", "Site Manager" }, { "Trzyma harmonogram w ryzach.", "Keeps the schedule in line." }, 30, 3, 3, 5, 3, 2, 0, 0, { "Odprawa", "Briefing" }, { "Ogłusza widocznych", "Stuns all in sight" }, core::ability_effect::stun, 15, core::class_passive::none },
     { { "Murarz", "Bricklayer" }, { "Twardy jak pustak.", "Tough as a breeze block." }, 34, 5, 2, 1, 4, 0, 1, 1, { "Ścianka", "Wall" }, { "Mur przed wrogiem", "Wall in front of a foe" }, core::ability_effect::wall, 15, core::class_passive::none },
@@ -382,9 +408,10 @@ inline constexpr core::badge_def badges[] = {   // perk = uprawnienie: trwała p
     { { "Kolekcjoner", "Collector" }, { "Znajdź wszystkie narzędzia", "Find all the tools" }, 10, { core::perk_effect::tool_pct, 10 }, { "Narzędziowiec", "Tool Hoarder" }, -1 },
     { { "Katalog usterek", "Snag Catalog" }, { "Pokonaj każdy problem", "Beat every problem" }, 10, { core::perk_effect::luck, 1 }, { "Encyklopedia", "Encyclopedia" }, 4 },
     { { "Osiedle", "Estate" }, { "Zbuduj 5 domów", "Build 5 houses" }, 10, { core::perk_effect::xp_pct, 10 }, { "Deweloper", "Developer" }, 5 },
+    { { "Psi przyjaciel", "Dog's Best Pal" }, { "Pogłaszcz Kawkę w 4 budowach", "Pet CoffeeDog in 4 builds" }, 10, { core::perk_effect::xp_pct, 5 }, { "Przyjaciel Kawki", "CoffeeDog's Pal" }, -1 },
 };
 
-inline constexpr int badges_count = 9;
+inline constexpr int badges_count = 10;
 inline constexpr int enemies_count = 47;
 inline constexpr int badge_bez_usterek = 0;
 inline constexpr int badge_przed_terminem = 1;
@@ -395,6 +422,7 @@ inline constexpr int badge_pelny_zespol = 5;
 inline constexpr int badge_kolekcjoner = 6;
 inline constexpr int badge_katalog = 7;
 inline constexpr int badge_osiedle = 8;
+inline constexpr int badge_psi_przyjaciel = 9;
 
 inline constexpr core::keepsake_def keepsakes[] = {   // pamiątki: wybierane na start budowy, ranga rośnie z budowami
     { { "Termos babci", "Granny's Flask" }, { "Stary, ale trzyma ciepło", "Old, but keeps it warm" }, core::perk_effect::thermos, { 1, 2, 3 }, -1, true, 0 },
@@ -2157,6 +2185,8 @@ namespace ui
         gba_bronie_6,
         gba_bronie_7,
         gba_bronie_tytul,
+        kawka_glaszczesz,
+        kawka_przepuszcza,
         count_
     };
 }
@@ -2997,6 +3027,8 @@ inline constexpr core::ltext ui_texts[] = {
     { "Rzadkość i profity: telefon,", "Rarity and perks: phone," },
     { "Obrażenia. Artefakt: co N cios", "Damage. Artifact: every Nth hit" },
     { "Bronie", "Weapons" },
+    { "Głaszczesz Kawkę! +", "You pet CoffeeDog! +" },
+    { "Kawka robi Ci miejsce.", "CoffeeDog makes way." },
 };
 inline const char* tr(ui::id i) { return ui_texts[i]; }
 

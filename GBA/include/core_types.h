@@ -834,6 +834,16 @@ namespace core
         const char* id;        // identyfikator z danych (tryb efektu: screen_filter.h, filter_mode_of)
     };
 
+    // v0.23.0: easter egg - suczka Kawka w błocie (Akt I): warunek sarkastycznej oceny postępów (dog.quips w game.json)
+    enum class dog_cond : uint8_t { any, first, helmet_stage, hp_low, no_helmet, master, hp_full, no_kills, kills_ge, losses_ge, runs_le,
+                                    wins_ge, coffee_ge, level_ge };
+    struct dog_quip_def
+    {
+        dog_cond when;
+        int16_t value;         // próg warunku (etap, %, liczba)
+        ltext lines[3];        // dymek: 3 linie x 25 znaków
+    };
+
     struct difficulty_def     // poziom trudności wybierany na starcie
     {
         ltext name;
