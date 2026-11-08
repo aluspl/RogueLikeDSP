@@ -126,12 +126,13 @@ public sealed class SmokeSecrets
 
     private async Task NewsBubble(Profile p, GameData d)
     {
-        Flow.Title.Open();
-        await DebugRunner.Frames(_app.Root, 2);
         var coach = _app.Coach;
         var shown = 0;
-        for (var k = 0; k < 20 && coach.Active; k++)
+        for (var k = 0; k < 20; k++)   // v0.23.0: jeden dymek na wejście na tytuł
         {
+            Flow.Title.Open();
+            await DebugRunner.Frames(_app.Root, 2);
+            if (!coach.Active) break;
             if (coach.CurrentId == "secret")
             {
                 shown++;

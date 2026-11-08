@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Godot;
@@ -153,29 +154,45 @@ public sealed class SmokeTest
             if (coach.Active || seen != want || Meta.TutorialPending(s.Profile, screen)) throw new Exception($"samouczek ekranu {screen} niedokończony ({seen}/{want})");
             _tutorial += seen;
         }
-        // dymki nowości: każdy raz, po jednym
+        // dymki nowości: każdy raz, po jednym na wejście na ekran (v0.23.0)
         s.Profile.RespectTotal = 4;
         s.Profile.Runs = 1;
         s.Profile.Wins = d.Rewards.Length;
         s.Profile.Rewards = (byte)d.Rewards.Length;
+        s.Profile.Xp = 100000;
+        var ids = new HashSet<string>();
         for (var pass = 0; pass < 2; pass++)
         {
             var got = 0;
-            foreach (var screen in new[] { 0, 1 })
+            for (var visit = 0; visit < 30; visit++)
             {
-                if (screen == 0) Flow.Title.Open();
-                else Flow.ClassSelect.Open();
-                Screen cur = screen == 0 ? Flow.Title : Flow.ClassSelect;
-                for (var k = 0; k < 20 && coach.Active; k++)
+                var shown = 0;
+                foreach (var screen in new[] { 0, 1 })
                 {
+                    if (screen == 0) Flow.Title.Open();
+                    else Flow.ClassSelect.Open();
+                    Screen cur = screen == 0 ? Flow.Title : Flow.ClassSelect;
+                    if (!coach.Active) continue;
                     await DebugRunner.Frames(_app.Root, 1);
-                    got++;
-                    cur.HandleInput(InputCmd.Of(k % 2 == 0 ? GameAction.A : GameAction.B));
+                    ids.Add(coach.CurrentId);
+                    shown++;
+                    if (coach.CurrentId == "stats")   // link: opis statystyk i powrót do dymka
+                    {
+                        cur.HandleInput(InputCmd.Of(GameAction.Info));
+                        if (Flow.Current != Flow.Stats) throw new Exception("dymek statystyk: I nie otwiera opisu");
+                        Flow.Stats.HandleInput(InputCmd.Of(GameAction.B));
+                        if (Flow.Current != Flow.ClassSelect || coach.CurrentId != "stats") throw new Exception("dymek statystyk: po opisie nie wrócił");
+                    }
+                    cur.HandleInput(InputCmd.Of(visit % 2 == 0 ? GameAction.A : GameAction.B));
+                    if (coach.Active) throw new Exception($"dymek nowości {coach.CurrentId}: drugi na tym samym wejściu");
                 }
+                got += shown;
+                if (shown == 0) break;
             }
             var reward = 0;
             foreach (var c in d.Classes) reward += c.Reward ? 1 : 0;
-            if (pass == 0 && got != 4 + reward) throw new Exception($"dymki nowości: {got} zamiast {4 + reward}");
+            var want = 9 + reward; // respect, daily, act0, investor, training, options, help, keepsake, stats + nowe zawody
+            if (pass == 0 && got != want) throw new Exception($"dymki nowości: {got} zamiast {want} ({string.Join(",", ids)})");
             if (pass == 1 && got != 0) throw new Exception("dymki nowości pokazują się drugi raz");
             _unlocks += got;
         }
