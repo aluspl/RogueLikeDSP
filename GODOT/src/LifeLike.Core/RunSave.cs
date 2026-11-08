@@ -39,10 +39,19 @@ public sealed class RunSave
     /// <summary>v0.21.52 cz. d: stan sprzed mapy kariery (kontrakt i bliźniak – 2 bajty na końcu) – Dom jednorodzinny.</summary>
     public const int V15Tail = 2;
 
-    public bool Valid(GameData d) =>
-        Magic.AsSpan().SequenceEqual(Profile.MagicBytes(RunMagic))
-        && (Size == GameSize(d) || Size == GameSize(d) - V15Tail || Size == GameSize(d) - V15Tail - V14Tail)
-        && Data.Length == Size && Checksum == Fnv1a(Data);
+    /// <summary>v0.23.0: stan sprzed Kawki (4 bajty na końcu) – wczytuje się z zerami (bez Kawki); ta sama magia PBRUN19.</summary>
+    public const int DogTail = 4;
+
+    public bool Valid(GameData d)
+    {
+        if (!Magic.AsSpan().SequenceEqual(Profile.MagicBytes(RunMagic)) || Data.Length != Size || Checksum != Fnv1a(Data)) return false;
+        var full = GameSize(d);
+        foreach (var cut in new[] { 0, DogTail, DogTail + V15Tail, DogTail + V15Tail + V14Tail })
+        {
+            if (Size == full - cut) return true;
+        }
+        return false;
+    }
 
     public void Clear() => Magic = new byte[8];
 

@@ -127,6 +127,7 @@ public static class Meta
         dst.Filter = copy.Filter;
         dst.FiltersSeen = copy.FiltersSeen;
         dst.Artifacts = copy.Artifacts; // v19: Gablota
+        dst.DogBuilds = copy.DogBuilds; // v20: Kawka
         dst.ArtifactDay = copy.ArtifactDay;
     }
 
@@ -276,9 +277,11 @@ public static class Meta
     /// </summary>
     public static bool ProfileFix(GameData d, Profile p)
     {
-        var pre19 = !p.MagicIs(Profile.MagicCurrent);
+        var pre20 = !p.MagicIs(Profile.MagicCurrent);
+        var pre19 = pre20 && !p.MagicIs(Profile.MagicV19);
         var migrated = ProfileMigrate(d, p);
         if (pre19 && p.MagicIs(Profile.MagicCurrent)) ArtifactCase.MigrateV19(d, p); // v0.23.0: Gablota z każdej starszej wersji
+        if (pre20 && p.MagicIs(Profile.MagicCurrent)) MigrateV20(d, p); // v0.23.0: Kawka i tytuły za nową odznaką
         return ClampRespect(d, p) | migrated; // v0.23.0: rangi Respektu ponad obecną liczbę – zwrot (raz, bo ranga przycięta)
     }
 
@@ -320,10 +323,24 @@ public static class Meta
         return changed;
     }
 
+    /// <summary>v0.23.0 v20: nowa odznaka (Psi przyjaciel) za dawnymi – wybrany tytuł zlecenia / inspektora przesuwa się o jedną
+    /// pozycję; licznik Kawki od zera (meta.h: migrate_v20).</summary>
+    public static void MigrateV20(GameData d, Profile p)
+    {
+        if (p.Title > Profile.BadgesV19) p.Title = (byte)(p.Title + (d.Badges.Length - Profile.BadgesV19));
+        p.DogBuilds = 0;
+    }
+
     /// <summary>Migracje wersji profilu (dawne ciało ProfileFix).</summary>
     private static bool ProfileMigrate(GameData d, Profile p)
     {
         if (p.MagicIs(Profile.MagicCurrent)) return ClampLevels(d, p);
+        if (p.MagicIs(Profile.MagicV19)) // v19 -> v20: dane bez zmian; Kawkę i tytuły poprawia ProfileFix (MigrateV20)
+        {
+            p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
+            ClampLevels(d, p);
+            return true;
+        }
         if (p.MagicIs(Profile.MagicV18)) // v18 -> v19: dane bez zmian; Gablotę wypełnia ProfileFix (ArtifactCase.MigrateV19)
         {
             p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
@@ -1208,6 +1225,7 @@ public static class Meta
         var cleared = g.St == GameStatus.StageClear || g.St == GameStatus.Won;
         var won = g.St == GameStatus.Won;
         var allTools = ((1UL << Math.Min(d.Tools.Length, OriginalToolCount)) - 1) & ~d.SecretToolsMask; // v0.23.0: tylko dawne 10 narzędzi, bez sekretnych
+        Dog.Bank(p, g); // v0.23.0: Kawka – budowa z pogłaskaniem liczy się raz (znak wodny w stanie budowy)
         var cond = new bool[16];
         void Set(int idx, bool v)
         {
@@ -1222,6 +1240,7 @@ public static class Meta
         Set(d.BadgeKolekcjoner, (p.ToolsFound & allTools) == allTools);
         Set(d.BadgeKatalog, CatalogCount(d, p) == d.Enemies.Length);
         Set(d.BadgeOsiedle, p.HousesCount >= 5);
+        Set(d.BadgePsiPrzyjaciel, p.DogBuilds >= d.DogBadgeBuilds); // v0.23.0
         var got = 0;
         for (var i = 0; i < d.Badges.Length; ++i)
         {

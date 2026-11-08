@@ -56,6 +56,19 @@ public sealed class GameData
     /// <summary>v0.23.0: szansa (%), że Markowa broń bazowa z dropu okaże się jej artefaktem (sekcja artifacts.chancePct).</summary>
     public int ArtifactChancePct { get; private init; }
 
+    /// <summary>v0.23.0: easter egg – Kawka (sekcja dog): imię, opis i podpowiedź w Katalogu.</summary>
+    public string DogName { get; private init; } = "";
+    public string DogDesc { get; private init; } = "";
+    public string DogHint { get; private init; } = "";
+    /// <summary>Szansa (%) na budowę z Kawką (etap Aktu I bez bossa).</summary>
+    public int DogChancePct { get; private init; }
+    /// <summary>Dośw. za pierwsze pogłaskanie w budowie.</summary>
+    public int DogXp { get; private init; }
+    /// <summary>Budowy z Kawką do odznaki Psi przyjaciel.</summary>
+    public int DogBadgeBuilds { get; private init; } = 4;
+    public DogQuip[] DogQuips { get; private init; } = [];
+    public int BadgePsiPrzyjaciel { get; private init; } = -1;
+
     /// <summary>v0.23.0: broń bazowa artefaktu (WeaponDef.Artifact) jako indeks broni; -1 = zwykła broń albo brak bazy.</summary>
     public int ArtifactBase(int weapon) =>
         weapon >= 0 && weapon < Weapons.Length && Weapons[weapon].Artifact.Length > 0 ? Array.FindIndex(Weapons, w => w.Id == Weapons[weapon].Artifact) : -1;
@@ -471,6 +484,16 @@ public sealed class GameData
         // v0.23.0: Gablota – bit profilu = pozycja broni Mistrzowskiej w weapons[]. APPEND ONLY – profile bits: nowe bronie master tylko
         // na końcu listy, nigdy nie przestawiać ani nie usuwać (gen_data.py pilnuje kolejności; GBA w Task 10 – ta sama).
         var artifacts = Enumerable.Range(0, weapons.Length).Where(i => weapons[i].Master).ToArray();
+        // v0.23.0: easter egg – Kawka (dog): oceny postępów z warunkiem (jak gen_data.py)
+        var hasDog = d.TryGetProperty("dog", out var dogj);
+        var dogQuips = hasDog ? dogj.GetProperty("quips").EnumerateArray().Select(q =>
+        {
+            var lines = Str(q, "text").Split('|').ToList();
+            Require(lines.Count <= 3 && lines.All(l => l.Length <= 25), "Kawka: dymek maks. 3 linie x 25 znaków");
+            while (lines.Count < 3) lines.Add("");
+            return new DogQuip(ParseDogCond(Str(q, "when")), Int(q, "value", 0), lines.ToArray());
+        }).ToArray() : [];
+        Require(!hasDog || dogQuips.Any(q => q.When == DogCond.Any), "Kawka: potrzebna ocena bez warunku (any)");
         Require(artifacts.Length <= Profile.MaxArtifacts, "artefakty: maks. 16 (maska Gabloty w profilu)");
         foreach (var w in weapons)
         {
@@ -1430,6 +1453,13 @@ public sealed class GameData
             NewTools = newTools,
             Artifacts = artifacts,
             ArtifactChancePct = d.TryGetProperty("artifacts", out var artj) ? Int(artj, "chancePct", 0) : 0,
+            DogName = hasDog ? Str(dogj, "name") : "",
+            DogDesc = hasDog ? Str(dogj, "desc") : "",
+            DogHint = hasDog ? Str(dogj, "hint") : "",
+            DogChancePct = hasDog ? Int(dogj, "chancePct") : 0,
+            DogXp = hasDog ? Int(dogj, "xp") : 0,
+            DogBadgeBuilds = hasDog ? Int(dogj, "badgeBuilds", 4) : 4,
+            DogQuips = dogQuips,
             HitTypes = hitTypes,
             WeaponRarities = weaponRarities,
             WeaponPerkPool = perkPool,
@@ -1498,6 +1528,7 @@ public sealed class GameData
             BadgeKolekcjoner = BadgeIdx("kolekcjoner"),
             BadgeKatalog = BadgeIdx("katalog"),
             BadgeOsiedle = BadgeIdx("osiedle"),
+            BadgePsiPrzyjaciel = BadgeIdx("psi_przyjaciel"),
             Respect = respect,
             RespectStage = hasRespect ? Int(rsj, "stage") : 0,
             RespectBoss = hasRespect ? Int(rsj, "boss") : 0,
@@ -1600,6 +1631,25 @@ public sealed class GameData
 
     private static int Int(JsonElement e, string name, int fallback) =>
         e.TryGetProperty(name, out var v) ? v.GetInt32() : fallback;
+
+    private static DogCond ParseDogCond(string s) => s switch
+    {
+        "any" => DogCond.Any,
+        "first" => DogCond.First,
+        "helmet_stage" => DogCond.HelmetStage,
+        "hp_low" => DogCond.HpLow,
+        "no_helmet" => DogCond.NoHelmet,
+        "master" => DogCond.Master,
+        "hp_full" => DogCond.HpFull,
+        "no_kills" => DogCond.NoKills,
+        "kills_ge" => DogCond.KillsGe,
+        "losses_ge" => DogCond.LossesGe,
+        "runs_le" => DogCond.RunsLe,
+        "wins_ge" => DogCond.WinsGe,
+        "coffee_ge" => DogCond.CoffeeGe,
+        "level_ge" => DogCond.LevelGe,
+        _ => throw new GameDataException($"Kawka: nieznany warunek: {s}"),
+    };
 
     private static Stat ParseStat(string s) => s switch
     {

@@ -568,6 +568,7 @@ public sealed partial class Game
     public bool Occupied(int x, int y)
     {
         if (Hero.Alive && Hero.X == x && Hero.Y == y) return true;
+        if (DogAt(x, y)) return true; // v0.23.0: Kawka – nikt na nią nie wchodzi (bohater głaszcze)
         if (AllyTurns > 0 && AllyX == x && AllyY == y) return true; // pomocnik z brygady
         for (var i = 0; i < EnemiesCount; ++i)
         {
@@ -648,6 +649,8 @@ public sealed partial class Game
         SecretRx = SecretRy = SecretRw = SecretRh = 0;
         MarkTarget = -1; // v0.21.51 cz. 2: Tyczenie tylko na etap
         MarkTurns = 0;
+        DogFlags = (byte)(DogFlags & ~DogOn); // v0.23.0: Kawka tylko na swoim etapie
+        DogX = DogY = -1;
         if (s == 0) PaperHits = 0; // Akt 0 od nowa (NG+): ciosy od papierów liczone od pierwszego etapu
         RollBorrow(); // Majster: moc innego fachu na ten etap
         Array.Fill(Fov, Sight.Unknown);
@@ -723,6 +726,7 @@ public sealed partial class Game
         PlaceDocuments();
         PlaceEvent(); // v0.21.50 cz. 3: pole wydarzenia z wyborem (#30)
         PlaceSecret(); // ukryte pomieszczenie (#32): magazyn, skrzynia, klucz, strażnik
+        PlaceDog(); // v0.23.0: easter egg – Kawka w błocie (osobny generator, RNG gry bez zmian)
         // kombinacje stanów: w pyle (akt III) problemy są zapylone, w Mróz – zmrożone (boss nie)
         for (var i = 0; i < EnemiesCount; ++i)
         {

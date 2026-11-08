@@ -167,7 +167,11 @@
   "weaponPerks.pool[].desc",
   "weapons[].hint",
   "weapons[].proc.name",
-  "weapons[].proc.desc"
+  "weapons[].proc.desc",
+  "dog.name",
+  "dog.desc",
+  "dog.hint",
+  "dog.quips[].text"
  ],
  "fit": {
   "weapons[].name": 140,
@@ -219,7 +223,10 @@
   "ui.odbior_2": 60,
   "ui.katalog_kolekcje": 150,
   "ui.po": 46,
-  "ui.dom_na_osiedlu": 150
+  "ui.dom_na_osiedlu": 150,
+  "dog.desc": 400,
+  "dog.hint": 300,
+  "dog.name": 80
  },
  "context": {
   "career.list[].short": {
@@ -1704,7 +1711,29 @@
   "Sekretne zlecenie: Stara szkoła": "Secret job: Old school",
   "Przez ścianę na skróty": "Shortcut through the wall",
   "3 ściany Patentem w budowie": "3 walls with a Trick in a run",
-  "3 ściany Patentem!|Łom Ostatniej Deski:|ściana bez odnowienia.": "3 walls with a Trick!|Last Plank Crowbar:|walls with no cooldown."
+  "3 ściany Patentem!|Łom Ostatniej Deski:|ściana bez odnowienia.": "3 walls with a Trick!|Last Plank Crowbar:|walls with no cooldown.",
+  "Kawka": "CoffeeDog",
+  "Suczka z placu. Nie usterka, tylko kierownik od morale.": "A site dog. Not a defect, just the head of morale.",
+  "Podobno siedzi w błocie...": "Rumour says she sits in the mud...",
+  "Pierwszy dzień?|Widać po butach.|Za czyste.": "First day?|Your boots say so.|Way too clean.",
+  "Trzeci etap i dalej|w kasku? Ambitnie.": "Third stage and still|in a helmet? Bold.",
+  "Wyglądasz jak strop|po pierwszej zimie.|Pogłaszcz, pomoże.": "You look like a slab|after a hard winter.|A pat will help.",
+  "Bez kasku? Odważnie.|Ja tam bym chociaż|wiadro założyła.": "No helmet? Brave.|I'd wear a bucket,|at least.",
+  "Mistrzowska broń,|a głaszcze jak amator.|Ale lubię.": "A master's weapon,|yet you pet like|an amateur. I like it.",
+  "Ani zadrapania?|Na pewno tu pracujesz?": "Not a scratch?|Do you even work here?",
+  "Zero usuniętych usterek.|Też lubię leżeć|w błocie.": "Zero defects fixed.|I like lying in|the mud too.",
+  "Ile usterek już poszło?|Szacun. Ja zakopałam|tylko trzy kości.": "So many defects gone?|Respect. I only|buried three bones.",
+  "Znowu Ty? Kierownik|mówi, że to już|któraś budowa z rzędu.": "You again? The boss|says this is build|number who-knows.",
+  "Nowa osoba na budowie?|Zasada pierwsza:|nie wchodź w beton.": "New on site?|Rule one: don't step|in wet concrete.",
+  "Podobno masz już kilka|odebranych domów. Ja|dalej czekam na budę.": "Heard you've built|a few houses. Still|waiting for my kennel.",
+  "Pachniesz kawą.|Dlatego Kawka? Nie,|tak mam od urodzenia.": "You smell of coffee.|Is that why CoffeeDog?|No, born this way.",
+  "Poziom w górę, ale|poziomica i tak mówi,|że krzywo.": "Level up, but the|spirit level still|says it's crooked.",
+  "Błoto po kolana,|termin po szyję.|Typowy wtorek.": "Mud to the knees,|deadline to the neck.|A typical Tuesday.",
+  "Hau. To znaczy:|fundament krzywy,|ale się trzyma.": "Woof. Meaning:|the footing's crooked,|but it holds.",
+  "Dobra robota.|Tak mówię wszystkim,|którzy mają smakołyki.": "Good job. I say that|to everyone who|carries treats.",
+  "Psi przyjaciel": "Dog's Best Pal",
+  "Pogłaszcz Kawkę w 4 budowach": "Pet CoffeeDog in 4 builds",
+  "Przyjaciel Kawki": "CoffeeDog's Pal"
  },
  "ui": {
   "obrazen": "% damage",
@@ -2542,7 +2571,9 @@
   "gba_bronie_5": "L+B: swap holster weapon",
   "gba_bronie_6": "Rarity and perks: phone,",
   "gba_bronie_7": "Damage. Artifact: every Nth hit",
-  "gba_bronie_tytul": "Weapons"
+  "gba_bronie_tytul": "Weapons",
+  "kawka_glaszczesz": "You pet CoffeeDog! +",
+  "kawka_przepuszcza": "CoffeeDog makes way."
  },
  "uiGodot": {
   "ogl_awans": "LEVEL UP!",
@@ -3327,6 +3358,9 @@
   "tip_proc": "{0}: every {1} hits ({2}/{1})",
   "tip_proc_zawsze": "{0}: every hit",
   "tip_sciana_bez_odn": "Wall: no cooldown",
-  "tip_material": "+{0}% vs {1}"
+  "tip_material": "+{0}% vs {1}",
+  "ogl_kawka_sub": "Petted! +{0} XP",
+  "kawka_spotkana": "met",
+  "kawka_wpis": "Met CoffeeDog"
  }
 }

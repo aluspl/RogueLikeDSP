@@ -258,6 +258,13 @@ public static class StateDigest
                      g.BuildDays(), g.Bonus.StartCoffee,
                  })
             f.Add(v);
+        if (g.DogFlags != 0 || g.DogPets != 0) // v0.23.0: Kawka (tylko budowy z nią)
+        {
+            f.Add(g.DogX);
+            f.Add(g.DogY);
+            f.Add(g.DogFlags);
+            f.Add(g.DogPets);
+        }
         return f.H;
     }
 }

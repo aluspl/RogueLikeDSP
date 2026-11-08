@@ -167,7 +167,7 @@ public class ArtifactCaseTests
         var p = Profile.FromBytes(raw);
         Assert.Equal(old.Tools, p.Tools); // v18 ma już szerokie maski
         Assert.True(Meta.ProfileFix(D, p));
-        Assert.True(p.MagicIs(Profile.MagicCurrent) && Profile.MagicCurrent == "PBRL019");
+        Assert.True(p.MagicIs(Profile.MagicCurrent) && Profile.MagicCurrent == "PBRL020");
         Assert.True(p.Best == 4321 && p.Xp == 77 && p.Tools == old.Tools && p.ToolsFound == old.ToolsFound);
         var i = Ai("noz_majstra");
         Assert.True(ArtifactCase.Found(p, i));

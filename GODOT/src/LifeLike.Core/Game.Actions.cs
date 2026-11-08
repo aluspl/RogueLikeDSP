@@ -250,6 +250,10 @@ public sealed partial class Game
         {
             AttackWith(Weapon.ModeA, ei); // v0.23.0: cios wręcz też trafia całym wzorem trybu A (np. łuk kielni)
         }
+        else if (DogAt(nx, ny))
+        {
+            PetDog(); // v0.23.0: Kawka – głaskanie zamiast ruchu
+        }
         else if (SecretClosed() && SecretIs(nx, ny)) // magazyn (#32)
         {
             if (!TryOpenSecret()) return false;

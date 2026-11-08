@@ -283,6 +283,11 @@ public sealed partial class Game
         // v0.21.52 cz. d: mapa kariery (na końcu – zapis bez nich wczytuje się z zerami = Dom jednorodzinny)
         w.Write(Contract);
         w.Write(TwinCarry);
+        // v0.23.0: Kawka (na końcu – starszy zapis PBRUN19 wczytuje się z zerami = bez Kawki, RunSave.DogTail)
+        w.Write(DogX);
+        w.Write(DogY);
+        w.Write(DogFlags);
+        w.Write(DogPets);
     }
 
     private static void WriteHit(BinaryWriter w, in RecapHit h)
@@ -491,6 +496,11 @@ public sealed partial class Game
         ShopBuys = r.ReadByte();
         Contract = r.ReadSByte();
         TwinCarry = r.ReadByte();
+        DogX = r.ReadSByte();
+        DogY = r.ReadSByte();
+        DogFlags = r.ReadByte();
+        DogPets = r.ReadByte();
+        if ((DogFlags & DogOn) == 0) DogX = DogY = -1;
         if (Contract < 0 || Contract >= D.Career.Length) Contract = 0;
     }
 }

@@ -146,7 +146,7 @@ public class WeaponRarityTests
         Profile.MagicBytes("PBRL017").CopyTo(raw, 0);
         var p = Profile.FromBytes(raw);
         Assert.True(Meta.ProfileFix(D, p));
-        Assert.True(p.MagicIs(Profile.MagicCurrent) && Profile.MagicCurrent == "PBRL019");
+        Assert.True(p.MagicIs(Profile.MagicCurrent) && Profile.MagicCurrent == "PBRL020");
         Assert.True(p.Best == 1234 && p.Xp == 99 && p.Wins == 3 && p.Levels[0] == 2 && p.Tools == 0x0E && p.ToolsFound == 0x05);
         Assert.Equal(Profile.Size, p.ToBytes().Length);
         var junk = Profile.FromBytes(Enumerable.Repeat((byte)0x7F, 10).ToArray());

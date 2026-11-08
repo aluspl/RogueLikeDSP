@@ -394,7 +394,7 @@ public class GoalsTests
         g.ShopBuys = 2;
         var save = RunSave.Make(g);
         Assert.True(save.Valid(D));
-        var old = save.Data[..^(RunSave.V14Tail + RunSave.V15Tail)];
+        var old = save.Data[..^(RunSave.DogTail + RunSave.V14Tail + RunSave.V15Tail)];
         var s14 = new RunSave { Magic = save.Magic, Size = (uint)old.Length, Data = old, Checksum = RunSave.Fnv1a(old) };
         Assert.True(s14.Valid(D));
         var back = s14.Load(D);

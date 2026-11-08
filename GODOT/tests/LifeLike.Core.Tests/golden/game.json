@@ -3103,6 +3103,17 @@
       },
       "title": "Deweloper",
       "cosmetic": "kask_zloty"
+    },
+    {
+      "id": "psi_przyjaciel",
+      "name": "Psi przyjaciel",
+      "desc": "Pogłaszcz Kawkę w 4 budowach",
+      "xp": 10,
+      "perk": {
+        "effect": "xp_pct",
+        "value": 5
+      },
+      "title": "Przyjaciel Kawki"
     }
   ],
   "story": {
@@ -9673,7 +9684,9 @@
     "gba_bronie_5": "L+B: zamiana broni z kabury",
     "gba_bronie_6": "Rzadkość i profity: telefon,",
     "gba_bronie_7": "Obrażenia. Artefakt: co N cios",
-    "gba_bronie_tytul": "Bronie"
+    "gba_bronie_tytul": "Bronie",
+    "kawka_glaszczesz": "Głaszczesz Kawkę! +",
+    "kawka_przepuszcza": "Kawka robi Ci miejsce."
   },
   "uiGodot": {
     "ogl_awans": "AWANS!",
@@ -10458,7 +10471,10 @@
     "tip_proc": "{0}: co {1}. cios ({2}/{1})",
     "tip_proc_zawsze": "{0}: każdy cios",
     "tip_sciana_bez_odn": "Ściana: bez odnowienia",
-    "tip_material": "+{0}% na {1}"
+    "tip_material": "+{0}% na {1}",
+    "ogl_kawka_sub": "Pogłaskana! +{0} dośw.",
+    "kawka_spotkana": "spotkana",
+    "kawka_wpis": "Spotkana Kawka"
   },
   "hitTypes": {
     "names": [
@@ -10594,5 +10610,95 @@
   },
   "artifacts": {
     "chancePct": 25
+  },
+  "dog": {
+    "name": "Kawka",
+    "desc": "Suczka z placu. Nie usterka, tylko kierownik od morale.",
+    "hint": "Podobno siedzi w błocie...",
+    "chancePct": 40,
+    "xp": 3,
+    "quips": [
+      {
+        "when": "first",
+        "value": 0,
+        "text": "Pierwszy dzień?|Widać po butach.|Za czyste."
+      },
+      {
+        "when": "helmet_stage",
+        "value": 3,
+        "text": "Trzeci etap i dalej|w kasku? Ambitnie."
+      },
+      {
+        "when": "hp_low",
+        "value": 30,
+        "text": "Wyglądasz jak strop|po pierwszej zimie.|Pogłaszcz, pomoże."
+      },
+      {
+        "when": "no_helmet",
+        "value": 2,
+        "text": "Bez kasku? Odważnie.|Ja tam bym chociaż|wiadro założyła."
+      },
+      {
+        "when": "master",
+        "value": 0,
+        "text": "Mistrzowska broń,|a głaszcze jak amator.|Ale lubię."
+      },
+      {
+        "when": "hp_full",
+        "value": 2,
+        "text": "Ani zadrapania?|Na pewno tu pracujesz?"
+      },
+      {
+        "when": "no_kills",
+        "value": 2,
+        "text": "Zero usuniętych usterek.|Też lubię leżeć|w błocie."
+      },
+      {
+        "when": "kills_ge",
+        "value": 20,
+        "text": "Ile usterek już poszło?|Szacun. Ja zakopałam|tylko trzy kości."
+      },
+      {
+        "when": "losses_ge",
+        "value": 5,
+        "text": "Znowu Ty? Kierownik|mówi, że to już|któraś budowa z rzędu."
+      },
+      {
+        "when": "runs_le",
+        "value": 1,
+        "text": "Nowa osoba na budowie?|Zasada pierwsza:|nie wchodź w beton."
+      },
+      {
+        "when": "wins_ge",
+        "value": 3,
+        "text": "Podobno masz już kilka|odebranych domów. Ja|dalej czekam na budę."
+      },
+      {
+        "when": "coffee_ge",
+        "value": 3,
+        "text": "Pachniesz kawą.|Dlatego Kawka? Nie,|tak mam od urodzenia."
+      },
+      {
+        "when": "level_ge",
+        "value": 4,
+        "text": "Poziom w górę, ale|poziomica i tak mówi,|że krzywo."
+      },
+      {
+        "when": "any",
+        "value": 0,
+        "text": "Błoto po kolana,|termin po szyję.|Typowy wtorek."
+      },
+      {
+        "when": "any",
+        "value": 0,
+        "text": "Hau. To znaczy:|fundament krzywy,|ale się trzyma."
+      },
+      {
+        "when": "any",
+        "value": 0,
+        "text": "Dobra robota.|Tak mówię wszystkim,|którzy mają smakołyki."
+      }
+    ],
+    "badgeBuilds": 4
   }
 }
