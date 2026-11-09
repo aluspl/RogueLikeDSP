@@ -306,6 +306,20 @@ dalej zamknięta wersja 0.3 (repo organizacji).
 DevOps i integracje z PlanBudowlany (Xcode Cloud, CI Android, konto PlanBudowlany w grze #55–#61) – już w repo
 organizacji (Godot prywatnie, GBA zostaje open source). Do tego czasu w tym repo bez konfiguracji chmurowych.
 
+**Uwagi właściciela po graniu w v0.23.0 (2026-11-09) – do v0.24:**
+- **Podniesienie broni z wyborem:** wejście na nową broń pokazuje kartę z jej atakami (Cios i Patent: nazwa ruchu,
+  mini-siatka wzoru, typ ciosu, obrażenia, zasięg, efekt, odnowienie) i pytanie „Zamienić czy zostawić?”; przy zamianie
+  stara broń zostaje na mapie (z rzadkością, profitami, ulepszeniem); przy wolnej kaburze trzecia opcja „Do kabury”.
+- **Okno porównania broni:** stara i nowa obok siebie – ataki Cios + Patent, obrażenia, wzory, efekty, różnice +/−
+  wyróżnione (jak porównanie sprzętu). Pion i poziom, PL i EN; GBA minimalnie (A zamień / B zostaw).
+- **Mniej termosów z kawą:** nadal za dużo (zrzut: Termos 5/5 na etapie 5/10, Normalny) – przejrzeć źródła ładunków
+  (baza, Szkolenia, Respekt, pamiątki, dropy, uzupełnienia), potem balans bota.
+- **Boss areny:** po pokonaniu schody pojawiają się w miejscu jego śmierci, ale mapa się nie kończy – można dalej
+  zwiedzać i wyjść schodami (wszystkie rodzaje bossów; bot musi wejść na schody).
+- **Znacznik pękniętej ściany do przerobienia** (zgłaszany kilka razy): teraz czarny „X” w pomarańczowej ramce na murze
+  wygląda źle – zamiast tego pikselowe pęknięcie w materiale ściany (poszarpane linie z jaśniejszą krawędzią, okruchy
+  cegieł na podłodze), dyskretne, ale czytelne; sceny secret-crack, secret-map.
+
 Numeracja: następna zamknięta wersja może być **0.3** (nowe repo w organizacji); 0.23 = ostatnia otwartoźródłowa razem z GBA.
 
 Pomysły właściciela do v0.24 (2026-11-07):
