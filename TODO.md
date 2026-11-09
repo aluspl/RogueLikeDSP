@@ -306,7 +306,8 @@ dalej zamknięta wersja 0.3 (repo organizacji).
 DevOps i integracje z PlanBudowlany (Xcode Cloud, CI Android, konto PlanBudowlany w grze #55–#61) – już w repo
 organizacji (Godot prywatnie, GBA zostaje open source). Do tego czasu w tym repo bez konfiguracji chmurowych.
 
-**Uwagi właściciela po graniu w v0.23.0 (2026-11-09) – do v0.24:**
+**Uwagi właściciela po graniu w v0.23.0 (2026-11-09) – do v0.24** (balans i rażące błędy z tej listy, np. termosy, mogą
+wejść też do publicznego 0.23.x):
 - **Podniesienie broni z wyborem:** wejście na nową broń pokazuje kartę z jej atakami (Cios i Patent: nazwa ruchu,
   mini-siatka wzoru, typ ciosu, obrażenia, zasięg, efekt, odnowienie) i pytanie „Zamienić czy zostawić?”; przy zamianie
   stara broń zostaje na mapie (z rzadkością, profitami, ulepszeniem); przy wolnej kaburze trzecia opcja „Do kabury”.
