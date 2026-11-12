@@ -313,13 +313,17 @@ wejść też do publicznego 0.23.x):
   stara broń zostaje na mapie (z rzadkością, profitami, ulepszeniem); przy wolnej kaburze trzecia opcja „Do kabury”.
 - **Okno porównania broni:** stara i nowa obok siebie – ataki Cios + Patent, obrażenia, wzory, efekty, różnice +/−
   wyróżnione (jak porównanie sprzętu). Pion i poziom, PL i EN; GBA minimalnie (A zamień / B zostaw).
-- **Mniej termosów z kawą:** nadal za dużo (zrzut: Termos 5/5 na etapie 5/10, Normalny) – przejrzeć źródła ładunków
-  (baza, Szkolenia, Respekt, pamiątki, dropy, uzupełnienia), potem balans bota.
+- ✅ **(v0.23.1) Mniej termosów z kawą:** nadal za dużo (zrzut: Termos 5/5 na etapie 5/10, Normalny) – przejrzeć źródła ładunków
+  (baza, Szkolenia, Respekt, pamiątki, dropy, uzupełnienia), potem balans bota. Zrobione: termos 2 (było 3), Termos
+  babci +1/+1/+2, Lepszy termos razem +2, z mapy jedna kawa na etap, kawa z dropów o połowę rzadziej; kawa leczy 11 HP
+  (było 8) – Normalny 30,6% (docs/v0.23/balans.md, v0.23.1).
 - **Boss areny:** po pokonaniu schody pojawiają się w miejscu jego śmierci, ale mapa się nie kończy – można dalej
   zwiedzać i wyjść schodami (wszystkie rodzaje bossów; bot musi wejść na schody).
-- **Znacznik pękniętej ściany do przerobienia** (zgłaszany kilka razy): teraz czarny „X” w pomarańczowej ramce na murze
+- ✅ **(v0.23.1) Znacznik pękniętej ściany do przerobienia** (zgłaszany kilka razy): teraz czarny „X” w pomarańczowej ramce na murze
   wygląda źle – zamiast tego pikselowe pęknięcie w materiale ściany (poszarpane linie z jaśniejszą krawędzią, okruchy
-  cegieł na podłodze), dyskretne, ale czytelne; sceny secret-crack, secret-map.
+  cegieł na podłodze), dyskretne, ale czytelne; sceny secret-crack, secret-map. Zrobione: schodkowe pęknięcie w materiale
+  muru + okruchy; magazyn na klucz to drzwi z kłódką; zamiast ramki pulsuje krawędź / kłódka (sceny secret-crack-a1..a3,
+  secret-door-a1/a3).
 
 Numeracja: następna zamknięta wersja może być **0.3** (nowe repo w organizacji); 0.23 = ostatnia otwartoźródłowa razem z GBA.
 

@@ -2,6 +2,33 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
+## v0.23.1 – 2026-11-12 (poprawki)
+
+### In English
+Fewer coffee flasks: the flask holds 2 cups (was 3), Grandma's Flask keepsake adds +1/+1/+2 (was +1/+2/+3), the
+Better Flask training gives +2 cups in total (its last level now improves gear instead), each stage has one coffee on
+the map (extra finds no longer roll coffee) and problems drop coffee half as often. To keep the game fair a coffee now
+heals 11 HP (was 8). The cracked storeroom wall is a proper pixel-art crack in the wall material with rubble on the
+floor, and the key-only storeroom is a wooden door with a padlock; with a key in hand the crack edge or the padlock
+glows instead of the old orange frame. Saves and profiles are kept.
+
+### Balans
+1. **Mniej termosów z kawą** (uwaga właściciela: „ilość termosów jeszcze za duża”, Termos 5/5 w połowie budowy) –
+   termos mieści 2 kawy (było 3); pamiątka Termos babci +1 / +1 / +2 (było +1 / +2 / +3); Szkolenie Lepszy termos
+   razem +2 miejsca (ostatni poziom: lepszy sprzęt zamiast termosu); z mapy jedna kawa na etap (dodatkowa znajdźka,
+   która wylosuje kawę, przepada – kask i projekt bez zmian); kawa z problemów o połowę rzadziej (drop 20%, waga kawy
+   20). Kompensata: **kawa leczy 11 HP** (było 8). Bot: kawy wypite na budowę 3,7 → 2,3, termos na etapie 5 bez meta
+   1,4 / 3 → 0,9 / 2. Normalny 30,6%, Łatwy 52,1%, Trudny 13,3%, pełne Szkolenia 61,8%, + Respekt 73,1%
+   (szczegóły: `docs/v0.23/balans.md`, sekcja v0.23.1). Wspólna logika C++ i C#, test złoty odświeżony.
+
+### Poprawki
+2. **Pęknięta ściana magazynu** (zgłaszane kilka razy) – zamiast czarnego „X” w pomarańczowej ramce: schodkowe
+   pęknięcie w materiale muru (ciemna szczelina z jasną krawędzią, wyłamany róg), okruchy na podłodze pod murem;
+   wygląda dobrze na cegle, betonie i tynku każdego aktu.
+3. **Drzwi magazynu (tylko klucz)** – drewniane drzwi z okuciami i kłódką z dziurką od klucza zamiast skrzynki.
+   Gdy masz klucz (albo możesz skruszyć ścianę), pulsuje krawędź pęknięcia albo kłódka i obrys drzwi – bez ramki.
+   Wersja retro: nowe klatki pęknięcia i drzwi.
+
 ## v0.23.0 – 2026-11-08 (bronie)
 
 > **Uwaga przy aktualizacji:** budowa w toku z poprzedniej wersji przepada (nowy format zapisu budowy). Profil,
