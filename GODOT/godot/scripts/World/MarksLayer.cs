@@ -42,7 +42,8 @@ public partial class MarksLayer : Node2D
         var pulse = 0.5f + 0.5f * Mathf.Sin(_clock * 5f);
         var r = new Rect2(g.SecretX * c, (g.SecretY + 1) * Proj.RowH - c, c, c); // v0.21.54: u dołu lica muru
         DrawRect(r.Grow(2), new Color(0.05f, 0.04f, 0.1f, 0.75f));
-        DrawTextureRectRegion(Assets.Actors, r, Assets.Frame(g.SecretDef.Breakable ? Assets.FrameCrack : Assets.FrameDoor, Assets.Actor));
+        if (g.SecretDef.Breakable) SecretArt.DrawCrack(this, r, 1f, 0f, false); // v0.23.1: jak na licu muru
+        else SecretArt.DrawDoor(this, r, 1f, 0f);
         DrawRect(r.Grow(2), new Color(Pal.EliteGold, 0.55f + 0.45f * pulse), false, 4f);
         DrawArc(r.GetCenter(), c * (1.4f + 0.3f * pulse), 0, Mathf.Tau, 24, new Color(Pal.EliteGold, 0.5f), 4f); // widać przy oddaleniu
         Assets.DrawFrame(this, Assets.UiMenu, Assets.MenuLevel, Assets.Icon, r.Position + new Vector2(c / 2f - 16, -40 - 4 * pulse), 2);

@@ -495,15 +495,18 @@ public sealed class DemoStaging
     }
 
     /// <summary>Etap z magazynem danego rodzaju (0 pęknięta ściana, 1 drzwi), ściana w prawo; bohater przed nią.</summary>
-    public void SecretStage(int kind)
+    public void SecretStage(int kind) => SecretStage(kind, G.D.PreludeStages + 1, 0);
+
+    /// <summary>v0.23.1: magazyn na wybranym etapie (wygląd muru aktu) i z kierunku dir (3 – w murze nad bohaterem, lico widać).</summary>
+    public void SecretStage(int kind, int stage, int dir)
     {
         var g = G;
         var bas = g.RunSeed;
         for (uint k = 1; k < 4000; k++)
         {
             g.RunSeed = bas + k * 7919u;
-            g.StartStage(g.D.PreludeStages + 1);
-            if (g.HasSecret && g.SecretKind == kind && g.SecretDir == 0) break;
+            g.StartStage(stage);
+            if (g.HasSecret && g.SecretKind == kind && g.SecretDir == dir) break;
         }
         g.Hero.X = (sbyte)g.SecretFrontX();
         g.Hero.Y = (sbyte)g.SecretFrontY();

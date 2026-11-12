@@ -28,7 +28,8 @@ public sealed class DebugScenes
         "boon-pick", "boon-synergy", "boon-phone", "boon-synergies", "elite-map", "elite-card", "combo-shock", "combo-dust", "combo-crack",
         "help-combos",
         "event-map", "event-sms", "event-choices", "event-result", "event-boon", "upgrade-shop", "upgrade-trait", "upgrade-gear",
-        "tool-swap", "secret-crack", "secret-card", "secret-open", "secret-door", "secret-map", "tasks-extras", "help-extras",
+        "tool-swap", "secret-crack", "secret-card", "secret-open", "secret-door", "secret-map",
+        "secret-crack-a1", "secret-crack-a2", "secret-crack-a3", "secret-door-a1", "secret-door-a3", "tasks-extras", "help-extras",
         "recap-endmsg", "recap-death", "recap-death-scroll", "recap-win", "recap-end", "weekly", "weekly-card", "weekly-run",
         "recap-progress", "titles", "looks", "inspector", "help-progress",
         "story-archive", "story-thread", "estate-grow", "help-meta",
@@ -478,6 +479,21 @@ public sealed class DebugScenes
                 if (scene == "secret-open")
                 {
                     for (var k = 0; k < 4 && Flow.Current == Flow.Game; k++) _app.AfterAction(g.PlayerMove(1, 0));
+                }
+                break;
+            case "secret-crack-a1": // v0.23.1: pęknięcie / drzwi na licu muru w każdym akcie (z kluczem – puls)
+            case "secret-crack-a2":
+            case "secret-crack-a3":
+            case "secret-door-a1":
+            case "secret-door-a3":
+                {
+                    var act = scene[^1] - '1';
+                    _stage.SecretStage(scene.StartsWith("secret-door") ? 1 : 0, g.D.PreludeStages + 1 + act * 4 - (act == 2 ? 1 : 0), 3);
+                    g.Keys = 1;
+                    if (g.Lv.At(g.Hero.X + 1, g.Hero.Y) == Tile.Floor && !g.Occupied(g.Hero.X + 1, g.Hero.Y)) g.Hero.X++; // magazyn nie za bohaterem
+                    g.UpdateFov();
+                    _app.Nodes.World.Sync();
+                    _app.Refresh();
                 }
                 break;
             case "secret-door":

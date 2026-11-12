@@ -204,17 +204,15 @@ public sealed partial class WallLayer
         ci.DrawSetTransform(Vector2.Zero);
     }
 
-    /// <summary>Magazyn: pęknięcie albo drzwi u dołu lica (bez lica – na wierzchu), złota ramka, gdy da się otworzyć.</summary>
+    /// <summary>Magazyn: pęknięcie albo drzwi u dołu lica (bez lica – na wierzchu). v0.23.1: pikselowe pęknięcie
+    /// w materiale muru / drzwi z kłódką (SecretArt); gdy da się otworzyć, pulsuje krawędź albo kłódka – bez ramki.</summary>
     private void DrawSecret(CanvasItem ci, int x, int y, bool face)
     {
         var r = face ? new Rect2(x * Proj.W, (y + 1) * Proj.RowH - Assets.Actor, Assets.Actor, Assets.Actor) : TopRect(x, y);
-        var frame = _g.SecretDef.Breakable ? Assets.FrameCrack : Assets.FrameDoor;
-        ci.DrawTextureRectRegion(Assets.Actors, r, Assets.Frame(frame, Assets.Actor), new Color(1, 1, 1, _g.Visible(x, y) ? 1f : 0.6f));
-        if (_g.Keys > 0 || _g.CanOpenSecret())
-        {
-            var pulse = 0.5f + 0.5f * Mathf.Sin(_clock * 7f);
-            ci.DrawRect(r.Grow(-1), new Color(1f, 0.85f, 0.3f, 0.35f + 0.4f * pulse), false, 2f);
-        }
+        var alpha = _g.Visible(x, y) ? 1f : 0.6f;
+        var glow = _g.Keys > 0 || _g.CanOpenSecret() ? 0.5f + 0.5f * Mathf.Sin(_clock * 5f) : 0f;
+        if (_g.SecretDef.Breakable) SecretArt.DrawCrack(ci, r, alpha, glow, face);
+        else SecretArt.DrawDoor(ci, r, alpha, glow);
     }
 
     /// <summary>Wiersz murów (węzeł sortowany po Y razem z postaciami).</summary>
