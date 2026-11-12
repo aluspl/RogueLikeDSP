@@ -269,7 +269,7 @@ public class ArtifactProcTests
         Assert.Equal(StateDigest.Of(g), StateDigest.Of(h));
         h.ProcCount = 1;
         Assert.NotEqual(StateDigest.Of(g), StateDigest.Of(h));
-        Assert.Equal("PBRUN19", RunSave.RunMagic);
+        Assert.Equal("PBRUN20", RunSave.RunMagic);
     }
 
     [Fact]

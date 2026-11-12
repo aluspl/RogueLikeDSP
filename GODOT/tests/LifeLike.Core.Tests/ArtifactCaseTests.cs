@@ -116,6 +116,7 @@ public class ArtifactCaseTests
         var g = TestData.Arena(0);
         g.Pickups[g.PickupsCount++] = new Pickup(g.Hero.X, g.Hero.Y, PickupType.Tool, true, Ti("mlot_grom"), 3);
         g.Collect();
+        g.AcceptTool(); // v0.23.2: karta broni – Weź
         Assert.Equal(Wi("mlot_grom"), g.WeaponOverride);
         Assert.Equal(3, g.WeaponRarity);
         Assert.NotEqual(0UL, g.ToolsFound & (1UL << Ti("mlot_grom")));

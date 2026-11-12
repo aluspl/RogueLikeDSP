@@ -288,6 +288,17 @@ public sealed partial class Game
         w.Write(DogY);
         w.Write(DogFlags);
         w.Write(DogPets);
+        // v0.23.2: plecak i znajdźka oferty sprzętu (na końcu – zapis PBRUN19 wczytuje się z pustym plecakiem, RunSave.BackpackTail)
+        foreach (var it in Backpack)
+        {
+            w.Write((byte)it.Kind);
+            w.Write(it.Id);
+            w.Write(it.Rarity);
+            w.Write(it.Trait);
+            w.Write(it.Perks);
+            w.Write(it.Extra);
+        }
+        w.Write(OfferPickup);
     }
 
     private static void WriteHit(BinaryWriter w, in RecapHit h)
@@ -500,6 +511,15 @@ public sealed partial class Game
         DogY = r.ReadSByte();
         DogFlags = r.ReadByte();
         DogPets = r.ReadByte();
+        for (var i = 0; i < Backpack.Length; i++)
+        {
+            Backpack[i] = new BackpackItem
+            {
+                Kind = (BackpackKind)r.ReadByte(), Id = r.ReadSByte(), Rarity = r.ReadByte(), Trait = r.ReadSByte(), Perks = r.ReadByte(),
+                Extra = r.ReadUInt16(),
+            };
+        }
+        OfferPickup = r.ReadSByte();
         if ((DogFlags & DogOn) == 0) DogX = DogY = -1;
         if (Contract < 0 || Contract >= D.Career.Length) Contract = 0;
     }

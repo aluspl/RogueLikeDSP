@@ -132,6 +132,12 @@ public sealed partial class Game
             Push(Msg(Loc.T("bron_z_kabury_domyslna")).Add(Weapon.Name).As(LogKind.Info));
         }
         var w = Weapon2;
+        if (BackpackAdd(BackpackItem.Weapon(w, Weapon2Rarity, Weapon2Perks, PackWeaponExtra(Weapon2Lvl, Weapon2Trait, Weapon2Charges, Weapon2TraitPending))))
+        {
+            Push(Msg(Loc.T("bron_z_kabury_do_plecaka")).Add(D.Weapons[w].Name).As(LogKind.Loot)); // v0.23.2: najpierw do plecaka
+            ClearHolster();
+            return;
+        }
         var t = Array.FindIndex(D.Tools, tl => tl.Weapon == w);
         int x = Hero.X, y = Hero.Y;
         var ok = t >= 0 && PickupsCount < MaxPickups && (!PickupAt(x, y) || FreeAround(x, y, Hero.X, Hero.Y, out x, out y));
@@ -145,6 +151,12 @@ public sealed partial class Game
         }
         if (ok) Push(Msg(Loc.T("bron_z_kabury_wypada")).Add(D.Weapons[w].Name).As(LogKind.Loot));
         else Push(Msg(Loc.T("bron_z_kabury_przepada")).Add(D.Weapons[w].Name).As(LogKind.Loot));
+        ClearHolster();
+    }
+
+    /// <summary>Pusta kabura (bez wpisu).</summary>
+    private void ClearHolster()
+    {
         Weapon2 = -1;
         Weapon2Rarity = 0;
         Weapon2Charges = 0;

@@ -638,6 +638,7 @@ public sealed partial class Game
         ChoiceDone = 0;
         EventDmg = EventDef = 0;
         ToolOffer = ToolOfferPickup = -1;
+        OfferPickup = -1; // v0.23.2
         ToolOfferRarity = 0;
         ToolOfferExtra = 0;
         ToolOfferPerks = 0;

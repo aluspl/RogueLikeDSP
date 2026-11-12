@@ -258,6 +258,16 @@ public static class StateDigest
                      g.BuildDays(), g.Bonus.StartCoffee,
                  })
             f.Add(v);
+        f.Add(g.OfferPickup); // v0.23.2: plecak
+        foreach (var it in g.Backpack)
+        {
+            f.Add((int)it.Kind);
+            f.Add(it.Id);
+            f.Add(it.Rarity);
+            f.Add(it.Trait);
+            f.Add(it.Perks);
+            f.Add(it.Extra);
+        }
         if (g.DogFlags != 0 || g.DogPets != 0) // v0.23.0: Kawka (tylko budowy z nią)
         {
             f.Add(g.DogX);

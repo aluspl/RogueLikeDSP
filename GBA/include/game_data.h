@@ -500,6 +500,15 @@ inline constexpr int material_boss_drop = 2;
 inline constexpr int material_gear_box = 1;
 inline constexpr int material_max = 9;
 
+inline constexpr int backpack_slots = 6;
+inline constexpr int backpack_sell[] = { 1, 2, 3, 5 };   // Zwykła, Solidna, Markowa, Mistrzowska / artefakt
+inline constexpr int backpack_weapon_mat = 1;
+inline constexpr int backpack_gear_mat = 2;
+inline constexpr int backpack_alt_mat = 0;
+inline constexpr int pszok_xp = 3;
+inline constexpr int pszok_xp_per_tier = 2;
+inline constexpr int pszok_hp = 2;
+
 inline constexpr core::path_def paths[] = {   // wybór ścieżki: wariant kolejnego etapu
     { { "Szybko i drogo", "Fast & Pricey" }, { "Szybko", "Fast" }, { "-2 problemy, -15 zł, -1 znajdźka", "-2 problems, -15 zł, -1 pickup" }, -2, -1, -15, 0, false, false },
     { { "Tanio, ryzyko", "Cheap, Risky" }, { "Tanio", "Cheap" }, { "+1 problem, +2 znajdźki, zła pogoda", "+1 problem, +2 items, bad weather" }, 1, 2, 0, 0, true, false },
@@ -2187,6 +2196,14 @@ namespace ui
         gba_bronie_tytul,
         kawka_glaszczesz,
         kawka_przepuszcza,
+        z_plecaka,
+        do_plecaka,
+        plecak_pelny_ziemia,
+        przedmiot_przepada,
+        wyrzucasz,
+        skup,
+        pszok_segregacja,
+        bron_z_kabury_do_plecaka,
         count_
     };
 }
@@ -3029,6 +3046,14 @@ inline constexpr core::ltext ui_texts[] = {
     { "Bronie", "Weapons" },
     { "Głaszczesz Kawkę! +", "You pet CoffeeDog! +" },
     { "Kawka robi Ci miejsce.", "CoffeeDog makes way." },
+    { "Z plecaka: ", "Unpacked: " },
+    { "Do plecaka: ", "To backpack: " },
+    { "Plecak pełny, na ziemi: ", "Backpack full, dropped: " },
+    { "Przepada: ", "Lost: " },
+    { "Wyrzucasz: ", "Dropped: " },
+    { "Skup: ", "Sold: " },
+    { "PSZOK: segregacja zaliczona! +", "Recycling: sorted! +" },
+    { "Bez pasa broń do plecaka: ", "Belt gone, weapon to pack: " },
 };
 inline const char* tr(ui::id i) { return ui_texts[i]; }
 

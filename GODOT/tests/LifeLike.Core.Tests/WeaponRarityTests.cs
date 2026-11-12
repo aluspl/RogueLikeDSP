@@ -120,7 +120,7 @@ public class WeaponRarityTests
         Assert.False(rs.Valid(D));
         Assert.Null(RunSave.FromBytes(rs.ToBytes()).Load(D));
         Assert.NotNull(RunSave.Make(g).Load(D));
-        Assert.Equal("PBRUN19", RunSave.RunMagic);
+        Assert.Equal("PBRUN20", RunSave.RunMagic);
     }
 
     [Fact]

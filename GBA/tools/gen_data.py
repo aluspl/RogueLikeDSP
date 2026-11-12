@@ -461,6 +461,17 @@ def build(d):
           f"inline constexpr int material_boss_drop = {ma['bossDrop']};",
           f"inline constexpr int material_gear_box = {ma['gearBox']};",
           f"inline constexpr int material_max = {ma['max']};", ""]
+    bp = d["backpack"]   # v0.23.2: plecak - miejsca, Skup (sztuki wg poziomu, materiały), PSZOK
+    assert 1 <= bp["slots"] <= 6 and len(bp["sell"]) == 4 and all(0 <= v <= 9 for v in bp["sell"]), bp
+    assert 0 <= bp["pszokXp"] <= 50 and 0 <= bp["pszokXpPerTier"] <= 20 and 0 <= bp["pszokHp"] <= 20, bp
+    L += [f"inline constexpr int backpack_slots = {bp['slots']};",
+          f"inline constexpr int backpack_sell[] = {{ {', '.join(map(str, bp['sell']))} }};   // Zwykła, Solidna, Markowa, Mistrzowska / artefakt",
+          f"inline constexpr int backpack_weapon_mat = {mid[bp['weaponMat']]};",
+          f"inline constexpr int backpack_gear_mat = {mid[bp['gearMat']]};",
+          f"inline constexpr int backpack_alt_mat = {mid[bp['altMat']]};",
+          f"inline constexpr int pszok_xp = {bp['pszokXp']};",
+          f"inline constexpr int pszok_xp_per_tier = {bp['pszokXpPerTier']};",
+          f"inline constexpr int pszok_hp = {bp['pszokHp']};", ""]
     assert len(ma["repairs"]) + len(d["brigade"]["list"]) <= 8
     pa = d["paths"]["list"]
     assert 2 <= len(pa) <= 8

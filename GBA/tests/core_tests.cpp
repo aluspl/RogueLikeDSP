@@ -329,7 +329,7 @@ int main()
     {
         game g; g.new_run(1, 9);
         int lom = data::tools[0].weapon;
-        g.pickups[0] = { g.hero.x, g.hero.y, tool, true, 0 }; g.collect();
+        g.pickups[0] = { g.hero.x, g.hero.y, tool, true, 0 }; g.collect(); g.accept_tool();   // v0.23.2: karta broni - Weź
         CHECK(&g.weapon() == &data::weapons[lom]);
         profile p; profile_reset(p);
         CHECK(tool_unlocked(p, 0) && !tool_unlocked(p, 3) && !buy_tool(p, 3));
@@ -496,7 +496,7 @@ int main()
         CHECK(got & (1 << data::badge_katalog) && got & (1 << data::badge_kolekcjoner) && got & (1 << data::badge_zawodowiec));
         CHECK(p.catalog == 0xFFFF && catalog_count(p) == data::enemies_count && catalog_has(p, data::enemies_count - 1));
         // zebranie narzędzia zapisuje je w liczniku budowy
-        game h; arena(h, 1); h.pickups[0] = { h.hero.x, h.hero.y, tool, true, 2 }; h.pickups_count = 1; h.collect();
+        game h; arena(h, 1); h.pickups[0] = { h.hero.x, h.hero.y, tool, true, 2 }; h.pickups_count = 1; h.collect(); h.accept_tool();
         CHECK(h.tools_found == (1 << 2));
     }
     // 20. fabuła: wiadomość etapu, NG+ ma własną
@@ -1790,7 +1790,7 @@ int main()
             CHECK(profile_fix(p) && std::strcmp(p.magic, profile_magic) == 0 && p.catalog_hi == 0 && p.best == 4321 && p.respect == 77 && p.catalog == 0x0F0F);
             catalog_add(p, 20); catalog_add(p, 31);
             CHECK(catalog_has(p, 20) && catalog_has(p, 31) && !catalog_has(p, 21) && catalog_count(p) == 8 + 2);
-            CHECK(std::strcmp(run_magic, "PBRUN19") == 0);
+            CHECK(std::strcmp(run_magic, "PBRUN20") == 0);
         }
     }
     // 41. v0.21.49 cz. 3: Akt 0 (Papierologia) - nagroda za odbiór, pieczątki zamykają schody, druga faza bossa;
@@ -2241,7 +2241,7 @@ int main()
         {
             game g; g.new_run(3, 42); clear_stage(g); g.pick_boon(1);
             run_save* sv = new run_save(); run_save_make(*sv, g);
-            CHECK(run_save_valid(*sv) && sv->g.boons == g.boons && std::memcmp(sv->magic, "PBRUN19", 7) == 0);
+            CHECK(run_save_valid(*sv) && sv->g.boons == g.boons && std::memcmp(sv->magic, "PBRUN20", 7) == 0);
             delete sv;
         }
     }
@@ -2830,7 +2830,7 @@ int main()
         {
             game g; g.new_run(majster, 9); g.coffee_drunk = 2; g.shock_combos = 7; g.secret_flags = 3;
             run_save* sv = new run_save(); run_save_make(*sv, g);
-            CHECK(run_save_valid(*sv) && sv->g.shock_combos == 7 && sv->g.borrow_cls == g.borrow_cls && std::memcmp(sv->magic, "PBRUN19", 7) == 0);
+            CHECK(run_save_valid(*sv) && sv->g.shock_combos == 7 && sv->g.borrow_cls == g.borrow_cls && std::memcmp(sv->magic, "PBRUN20", 7) == 0);
             delete sv;
         }
     }
@@ -3816,6 +3816,7 @@ int main()
             const int lom = wi("Łom");
             g.weapon_override = lom; g.weapon_rarity = 2; g.weapon_lvl = 1;
             g.weapon2 = data::classes[0].weapon; g.weapon2_rarity = 1; g.weapon2_lvl = 2; g.weapon2_trait = 0; g.weapon2_perks = 1;
+            for(auto& it : g.backpack) it = bp_gear_item(0, 0, 0);   // v0.23.2: pełny plecak - narzędzie na ziemię
             const int before = g.pickups_count;
             g.equip(data::belt_slot, 2, 0);
             CHECK(g.weapon_override == -1 && g.weapon_rarity == 1 && g.weapon_lvl == 2 && g.weapon_trait == 0 && g.weapon_perks == 1);
@@ -4019,6 +4020,69 @@ int main()
         static run_save rs; g.dog_x = 5; g.dog_y = 6; g.dog_flags = game::dog_on | game::dog_petted; g.dog_pets = 4;
         run_save_make(rs, g);
         CHECK(run_save_valid(rs) && rs.g.dog_x == 5 && rs.g.dog_y == 6 && rs.g.dog_pets == 4 && sizeof(game) % 8 == 0);
+    }
+    // 57. v0.23.2: plecak - karta paczki i broni, pełny plecak, zamiana za turę, wyrzucenie, Skup, PSZOK, zapis PBRUN19 -> PBRUN20
+    //     (odpowiednik C#: BackpackTests)
+    {
+        auto fill = [](game& g) { for(int k = 0; k < game::backpack_slots(); ++k) g.backpack[k] = bp_gear_item(0, 0, 0); };
+        auto offer = [](game& g, int rarity) { arena(g, 0); g.equip(0, 1, 0); g.pickups[g.pickups_count++] = { g.hero.x, g.hero.y, gear_box, true, uint8_t(rarity), 2 }; g.collect(); };
+        CHECK(game::backpack_slots() == 6 && data::backpack_sell[3] == 5);
+        { static game g; offer(g, 2); CHECK(g.has_offer() && g.offer_to_backpack() && ! g.has_offer() && g.backpack_count() == 1 && g.equipped[0] == 1); }
+        { static game g; offer(g, 2); fill(g); CHECK(g.backpack_full() && ! g.offer_to_backpack() && g.has_offer()); }
+        { static game g; offer(g, 2); g.accept_offer(); CHECK(g.equipped[0] == 2 && g.backpack[0].kind == bp_gear && g.backpack[0].rarity == 1); }
+        {
+            static game g; offer(g, 2); fill(g); const int n = g.pickups_count; g.accept_offer();
+            const pickup& p = g.pickups[n - 1];
+            CHECK(g.equipped[0] == 2 && g.pickups_count == n && p.active && p.type == gear_box && p.arg == 1 && (p.extra & game::gear_box_used));
+        }
+        {
+            static game g; offer(g, 0); const int xp = g.run_xp; g.decline_offer(); CHECK(g.run_xp > xp && g.pickups[0].active);
+            const int x2 = g.run_xp; g.collect(); CHECK(g.has_offer()); g.decline_offer(); CHECK(g.run_xp == x2);
+        }
+        int lom = -1; for(int t = 0; t < data::tools_count; ++t) if(! data::weapons[data::tools[t].weapon].master && data::tools[t].weapon != data::classes[0].weapon) { lom = t; break; }
+        const int lw = data::tools[lom].weapon;
+        {
+            static game g; arena(g, 0); g.weapon_lvl = 2; g.pickups[g.pickups_count++] = { g.hero.x, g.hero.y, tool, true, uint8_t(lom), 1 }; g.collect();
+            CHECK(g.has_tool_offer()); g.accept_tool();
+            CHECK(g.weapon_override == lw && g.backpack[0].kind == bp_weapon && g.backpack[0].id == data::classes[0].weapon && (g.backpack[0].extra & 15) == 2);
+        }
+        {
+            static game g; arena(g, 0); g.pickups[g.pickups_count++] = { g.hero.x, g.hero.y, tool, true, uint8_t(lom), 2 }; g.collect();
+            CHECK(g.tool_to_backpack() && g.weapon_override < 0 && ! g.pickups[0].active && g.backpack[0].id == lw && g.backpack[0].rarity == 2);
+        }
+        {   // zamiana: na placu tura, w Hurtowni bez tury
+            static game g; arena(g, 0); g.backpack[0] = bp_weapon_item(lw, 2, 0, 3); const int t0 = g.turns;
+            CHECK(g.backpack_equip(0) && g.turns == t0 + 1 && g.weapon_override == lw && g.weapon_lvl == 3 && g.backpack[0].id == data::classes[0].weapon);
+            static game h; arena(h, 0); h.backpack[0] = bp_gear_item(2, 2, 0); h.st = status::stage_clear; h.act_cleared = true; const int t1 = h.turns;
+            CHECK(h.backpack_equip(0) && h.turns == t1 && h.equipped[2] == 2 && h.backpack[0].kind == bp_empty);
+        }
+        {   // wyrzucenie: narzędzie na ziemię, broń zawodu przepada
+            static game g; arena(g, 0); g.backpack[0] = bp_weapon_item(lw, 1, 0, 0); g.backpack[1] = bp_weapon_item(data::classes[0].weapon, 0, 0, 0);
+            CHECK(g.backpack_drop(0) && g.pickups_count == 1 && g.pickups[0].type == tool && g.pickups[0].arg == lom);
+            CHECK(g.backpack_drop(1) && g.pickups_count == 1 && g.backpack_count() == 0);
+        }
+        {   // Skup i PSZOK
+            static game g; arena(g, 0); for(auto& m : g.mats) m = 0;
+            g.backpack[0] = bp_weapon_item(lw, 2, 0, 0); g.backpack[1] = bp_gear_item(0, 0, 0); g.backpack[2] = bp_gear_item(1, 1, 0);
+            CHECK(! g.backpack_sell(0));
+            g.st = status::stage_clear; g.act_cleared = true;
+            CHECK(g.backpack_sell(0) && g.backpack_sell(1) && g.backpack_sell(2));
+            CHECK(g.mats[data::backpack_weapon_mat] == 2 && g.mats[data::backpack_gear_mat] == 2 && g.mats[data::backpack_alt_mat] == 2);
+            g.hero.hp = 5; g.backpack[3] = bp_gear_item(0, 2, 0); const int xp = g.run_xp;
+            CHECK(game::pszok_xp_for(g.backpack[3]) == 7 && g.backpack_recycle(3) && g.run_xp > xp && g.hero.hp == 7);
+        }
+        {   // zapis: PBRUN20 trzyma plecak; PBRUN19 (stary rozmiar) wczytuje się z pustym plecakiem
+            static run_save rs; static game g; g.new_run(2, 9); g.backpack[2] = bp_weapon_item(lw, 2, 3, 0x21); g.offer_pickup = 3;
+            run_save_make(rs, g);
+            CHECK(std::strcmp(run_magic, "PBRUN20") == 0 && run_save_valid(rs) && rs.g.backpack[2].extra == 0x21 && rs.g.offer_pickup == 3);
+            std::memcpy(rs.magic, run_magic_v19, sizeof rs.magic); rs.size = run_size_v19; rs.checksum = run_checksum(rs.g, run_size_v19);
+            CHECK(run_save_valid(rs));
+            run_save_upgrade(rs);
+            CHECK(run_save_valid(rs) && std::strcmp(rs.magic, run_magic) == 0 && rs.size == sizeof(game) && rs.g.backpack_count() == 0 && rs.g.offer_pickup == -1);
+            CHECK(rs.g.stage == g.stage && rs.g.hero.hp == g.hero.hp && rs.g.turns == g.turns);
+            std::printf("SRAM: profil %u B, zapis budowy %u B od %d (stan %u B, PBRUN19 %u B)\n", unsigned(sizeof(profile)), unsigned(sizeof(run_save)),
+                        run_save_offset, unsigned(sizeof(game)), run_size_v19);
+        }
     }
     if(std::getenv("PB_NO_BALANCE")) { std::printf(fails ? "\n%d FAIL\n" : "\nOK (bez balansu)\n", fails); return fails != 0; }
     // 28. balans: bot gra po 300 runów każdym zawodem na każdym poziomie

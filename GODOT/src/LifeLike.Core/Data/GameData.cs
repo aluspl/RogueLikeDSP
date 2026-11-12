@@ -142,6 +142,16 @@ public sealed class GameData
     public int MaterialBossDrop { get; private init; }
     public int MaterialGearBox { get; private init; }
     public int MaterialMax { get; private init; } = 9;
+    /// <summary>v0.23.2: plecak (sekcja "backpack") – miejsca, Skup: sztuki materiału wg poziomu przedmiotu (Zwykła, Solidna,
+    /// Markowa, Mistrzowska / artefakt), materiał za broń / sprzęt i co drugą sztukę; PSZOK: dośw. bazowe + za poziom, HP.</summary>
+    public int BackpackSlots { get; private init; }
+    public int[] BackpackSell { get; private init; } = [];
+    public int BackpackWeaponMat { get; private init; } = -1;
+    public int BackpackGearMat { get; private init; } = -1;
+    public int BackpackAltMat { get; private init; } = -1;
+    public int PszokXp { get; private init; }
+    public int PszokXpPerTier { get; private init; }
+    public int PszokHp { get; private init; }
     /// <summary>Wybór ścieżki między etapami (sekcja "paths"); bez sekcji – pusta lista (bez wyboru).</summary>
     public PathDef[] Paths { get; private init; } = [];
     /// <summary>Codzienna budowa: dzień nr 1 (rok, miesiąc, dzień), domyślna data na GBA, trudność, ile modyfikatorów dnia,
@@ -494,6 +504,9 @@ public sealed class GameData
             return new DogQuip(ParseDogCond(Str(q, "when")), Int(q, "value", 0), lines.ToArray());
         }).ToArray() : [];
         Require(!hasDog || dogQuips.Any(q => q.When == DogCond.Any), "Kawka: potrzebna ocena bez warunku (any)");
+        var hasBackpack = d.TryGetProperty("backpack", out var backj); // v0.23.2: plecak
+        Require(!hasBackpack || (Int(backj, "slots") is >= 1 and <= Game.MaxBackpack && backj.GetProperty("sell").GetArrayLength() == 4),
+            "plecak: 1..6 miejsc, sell = 4 poziomy");
         Require(artifacts.Length <= Profile.MaxArtifacts, "artefakty: maks. 16 (maska Gabloty w profilu)");
         foreach (var w in weapons)
         {
@@ -1460,6 +1473,14 @@ public sealed class GameData
             DogXp = hasDog ? Int(dogj, "xp") : 0,
             DogBadgeBuilds = hasDog ? Int(dogj, "badgeBuilds", 4) : 4,
             DogQuips = dogQuips,
+            BackpackSlots = hasBackpack ? Int(backj, "slots") : 0,
+            BackpackSell = hasBackpack ? backj.GetProperty("sell").EnumerateArray().Select(x => x.GetInt32()).ToArray() : [],
+            BackpackWeaponMat = hasBackpack && hasMaterials ? Lookup(mid, Str(backj, "weaponMat"), "materiał") : -1,
+            BackpackGearMat = hasBackpack && hasMaterials ? Lookup(mid, Str(backj, "gearMat"), "materiał") : -1,
+            BackpackAltMat = hasBackpack && hasMaterials ? Lookup(mid, Str(backj, "altMat"), "materiał") : -1,
+            PszokXp = hasBackpack ? Int(backj, "pszokXp") : 0,
+            PszokXpPerTier = hasBackpack ? Int(backj, "pszokXpPerTier") : 0,
+            PszokHp = hasBackpack ? Int(backj, "pszokHp") : 0,
             HitTypes = hitTypes,
             WeaponRarities = weaponRarities,
             WeaponPerkPool = perkPool,

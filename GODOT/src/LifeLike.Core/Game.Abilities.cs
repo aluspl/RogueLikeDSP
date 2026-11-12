@@ -366,7 +366,12 @@ public sealed partial class Game
             {
                 var pool = ShopToolPool(); // v0.23.0: kupione + nowe bronie z flagą hurtownia, rzadkość losowana przy zakupie
                 var t = NthTool(pool, R.Range(0, Math.Max(0, CountBits(pool) - 1)));
-                if (t >= 0) TakeTool(t, RollWeaponRarity(), false);
+                if (t >= 0)
+                {
+                    var old = HandItem(); // v0.23.2: stara broń do plecaka (pełny – przepada jak dawniej)
+                    TakeTool(t, RollWeaponRarity(), false);
+                    if (BackpackAdd(old)) Push(Msg(Loc.T("do_plecaka")).Add(BackpackName(old)).As(LogKind.Loot));
+                }
                 break;
             }
         }

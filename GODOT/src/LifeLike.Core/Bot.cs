@@ -66,15 +66,10 @@ public static class Bot
     /// <summary>Krok bota z ustawieniami (v0.23.0: bronie – tryb B, wzory, pas, znajdźki; patrz BotOptions).</summary>
     public static void Step(Game g, BotOptions o)
     {
-        if (g.HasOffer)
+        g.BotGearOffer(false); // v0.23.2: lepszą zakłada, tej samej jakości do plecaka, gorszą zostawia (pas z bronią w kaburze zostaje)
+        if (o.Weapons && g.HasToolOffer) // v0.23.0: wymiana narzędzia – wg oceny broni; v0.23.2: porównywalna do plecaka; tylko domyślna: odmowa
         {
-            if (g.OfferIsBetter && !(g.OfferDropsHolster && g.Weapon2 >= 0)) g.AcceptOffer(); // v0.23.0: pas z bronią w kaburze zostaje
-            else g.DeclineOffer();
-        }
-        if (o.Weapons && g.HasToolOffer) // v0.23.0: wymiana ulepszonego narzędzia – wg oceny broni; tylko domyślna: zawsze odmowa
-        {
-            if (!o.DefaultWeaponOnly && BotWeapons.WantsTool(g, g.ToolOffer, g.ToolOfferRarity, g.ToolOfferPerks)) g.AcceptTool();
-            else g.DeclineTool();
+            BotWeapons.ToolOffer(g, o);
             return;
         }
         if (g.BotPending()) return; // wydarzenie, premia z wydarzenia, cecha narzędzia, narzędzie
@@ -182,15 +177,10 @@ public static class Bot
     /// <summary>StepSmart z ustawieniami (v0.23.0: bronie jak w Step – przed zwykłym celowaniem).</summary>
     public static void StepSmart(Game g, BotOptions o)
     {
-        if (g.HasOffer)
-        {
-            if (g.OfferRarity >= g.Equipped[g.OfferSlot] && !(g.OfferDropsHolster && g.Weapon2 >= 0)) g.AcceptOffer();
-            else g.DeclineOffer();
-        }
+        g.BotGearOffer(true); // v0.23.2: tej samej jakości zakłada (wymiana cechy), gorszą zostawia
         if (o.Weapons && g.HasToolOffer) // v0.23.0: jak w Step
         {
-            if (!o.DefaultWeaponOnly && BotWeapons.WantsTool(g, g.ToolOffer, g.ToolOfferRarity, g.ToolOfferPerks)) g.AcceptTool();
-            else g.DeclineTool();
+            BotWeapons.ToolOffer(g, o);
             return;
         }
         if (g.BotPending()) return;

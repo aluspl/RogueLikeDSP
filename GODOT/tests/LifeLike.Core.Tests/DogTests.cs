@@ -151,8 +151,8 @@ public class DogTests
         Assert.True(s.Valid(D));
         var l = s.Load(D);
         Assert.True(l.DogX == 5 && l.DogY == 6 && l.DogPets == 4 && l.DogHere);
-        var data = g.ToBytes()[..^RunSave.DogTail]; // zapis PBRUN19 sprzed Kawki
-        var o = new RunSave { Magic = Profile.MagicBytes(RunSave.RunMagic), Size = (uint)data.Length, Data = data, Checksum = RunSave.Fnv1a(data) };
+        var data = g.ToBytes()[..^(RunSave.BackpackTail + RunSave.DogTail)]; // zapis PBRUN19 sprzed Kawki
+        var o = new RunSave { Magic = Profile.MagicBytes(RunSave.PrevMagic), Size = (uint)data.Length, Data = data, Checksum = RunSave.Fnv1a(data) };
         Assert.True(o.Valid(D));
         var lo = o.Load(D);
         Assert.True(!lo.DogHere && lo.DogX == -1 && lo.DogPets == 0 && lo.Stage == g.Stage);

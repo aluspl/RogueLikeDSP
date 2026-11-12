@@ -112,6 +112,7 @@ public class BeltTests
         // bez pasa nic się nie zmienia: broń trafia do ręki
         var h = TestData.Arena(0);
         DropToolAtHero(h, t, 0);
+        h.AcceptTool(); // v0.23.2: bez pasa – karta broni, Weź
         Assert.Equal(Wi("lom"), h.WeaponOverride);
         Assert.Equal(-1, h.Weapon2);
     }
@@ -252,6 +253,7 @@ public class BeltTests
         g.Weapon2Charges = 2;
         g.Weapon2Lvl = 2;
         g.Weapon2Trait = 0;
+        for (var k = 0; k < Game.MaxBackpack; k++) g.Backpack[k] = BackpackItem.Gear(0, 0, 0); // v0.23.2: pełny plecak – broń na ziemię
         var before = g.PickupsCount;
         g.Equip(D.BeltSlot, 0, 0);
         Assert.False(g.HasBelt());
@@ -266,6 +268,7 @@ public class BeltTests
         g.Hero.X = p.X;
         g.Hero.Y = p.Y;
         g.Collect();
+        g.AcceptTool(); // v0.23.2: karta broni – Weź
         Assert.Equal(Wi("przecinak"), g.WeaponOverride);
         Assert.Equal(2, g.WeaponRarity);
         Assert.Equal(2, g.WeaponCharges);
@@ -316,6 +319,7 @@ public class BeltTests
         g.Weapon2Lvl = 2;
         g.Weapon2Trait = 0;
         g.Weapon2Perks = 1;
+        for (var k = 0; k < Game.MaxBackpack; k++) g.Backpack[k] = BackpackItem.Gear(0, 0, 0); // v0.23.2: pełny plecak – broń na ziemię
         var before = g.PickupsCount;
         g.Equip(D.BeltSlot, 2, 0);
         Assert.Equal(-1, g.WeaponOverride);

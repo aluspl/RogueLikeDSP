@@ -126,6 +126,17 @@ namespace botw
         if(g.has_belt() && g.weapon2 >= 0) hand = imin(hand, score(g, g.weapon2, g.weapon2_rarity, g.weapon2_perks));
         return score(g, w, r, perks) * 100 > hand * better_pct;
     }
+    // v0.23.2: karta broni (BotWeapons.ToolOffer) - lepszą bierze, porównywalną (>= backpack_pct% ręki) do plecaka, resztę zostawia.
+    constexpr int backpack_pct = 90;
+    inline void tool_offer(game& g, const bot_options& o)
+    {
+        if(! g.has_tool_offer()) return;
+        if(o.default_only) { g.decline_tool(); return; }
+        if(wants_tool(g, g.tool_offer, g.tool_offer_rarity, g.tool_offer_perks)) { g.accept_tool(); return; }
+        const int w = data::tools[g.tool_offer].weapon;
+        const int r = data::weapons[w].master ? data::weapon_rarities_count - 1 : g.tool_offer_rarity;
+        if(g.backpack_full() || score(g, w, r, g.tool_offer_perks) * 100 < score(g, -1, 0) * backpack_pct || ! g.tool_to_backpack()) g.decline_tool();
+    }
     // Pola z bronią, której bot nie chce (tylko domyślna: każda). false = brak takich pól.
     inline bool avoid_cells(const game& g, const bot_options& o, avoid_map& avoid)
     {
@@ -262,13 +273,8 @@ namespace botw
     // Krok bota (Bot.Step). no_coffee / drinks: warianty statystyk z core_tests.cpp (C# ich nie ma - w teście złotym wyłączone).
     inline void step(game& g, const bot_options& o = bot_options(), bool no_coffee = false, int* drinks = nullptr)
     {
-        if(g.has_offer()) { if(g.offer_is_better() && ! (g.offer_drops_holster() && g.weapon2 >= 0)) g.accept_offer(); else g.decline_offer(); }   // pas z bronią w kaburze zostaje
-        if(o.weapons && g.has_tool_offer())   // wymiana ulepszonego narzędzia wg oceny broni; tylko domyślna: zawsze odmowa
-        {
-            if(! o.default_only && wants_tool(g, g.tool_offer, g.tool_offer_rarity, g.tool_offer_perks)) g.accept_tool();
-            else g.decline_tool();
-            return;
-        }
+        g.bot_gear_offer(false);   // v0.23.2: lepszą zakłada, tej samej jakości do plecaka, gorszą zostawia (pas z bronią w kaburze zostaje)
+        if(o.weapons && g.has_tool_offer()) { tool_offer(g, o); return; }   // wg oceny broni; porównywalna do plecaka; tylko domyślna: odmowa
         if(g.bot_pending()) return;   // wydarzenie, premia z wydarzenia, cecha narzędzia, narzędzie
         if(g.can_open_secret() && g.hero.x == g.secret_front_x() && g.hero.y == g.secret_front_y()   // przed magazynem: otwórz
            && g.player_move(g.secret_x - g.hero.x, g.secret_y - g.hero.y)) return;
@@ -333,13 +339,8 @@ namespace botw
     // Wariant "smart" (Bot.StepSmart): moc przy bliskim problemie, naprawy, brygada, celowanie; v0.23.0: bronie przed celowaniem.
     inline void step_smart(game& g, const bot_options& o = bot_options())
     {
-        if(g.has_offer()) { if(g.offer_rarity >= g.equipped[g.offer_slot] && ! (g.offer_drops_holster() && g.weapon2 >= 0)) g.accept_offer(); else g.decline_offer(); }
-        if(o.weapons && g.has_tool_offer())
-        {
-            if(! o.default_only && wants_tool(g, g.tool_offer, g.tool_offer_rarity, g.tool_offer_perks)) g.accept_tool();
-            else g.decline_tool();
-            return;
-        }
+        g.bot_gear_offer(true);   // v0.23.2: tej samej jakości zakłada (wymiana cechy), gorszą zostawia
+        if(o.weapons && g.has_tool_offer()) { tool_offer(g, o); return; }
         if(g.bot_pending()) return;
         if(g.thermos > 0 && g.hero.hp * 2 < g.hero.max_hp && g.player_drink()) return;
         for(int k = 0; k < data::repairs_count; ++k)   // naprawy: Kładka przy kałużach; Załataj przy niskim HP

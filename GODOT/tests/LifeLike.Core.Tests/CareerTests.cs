@@ -185,8 +185,8 @@ public class CareerTests
         g.NewRun(3, 99, 1, RunMods.Default(D), 2);
         var save = RunSave.Make(g);
         Assert.True(save.Valid(D) && save.Load(D).Contract == 2);
-        var old = save.Data[..^(RunSave.DogTail + RunSave.V15Tail)];
-        var s15 = new RunSave { Magic = save.Magic, Size = (uint)old.Length, Data = old, Checksum = RunSave.Fnv1a(old) };
+        var old = save.Data[..^(RunSave.BackpackTail + RunSave.DogTail + RunSave.V15Tail)];
+        var s15 = new RunSave { Magic = Profile.MagicBytes(RunSave.PrevMagic), Size = (uint)old.Length, Data = old, Checksum = RunSave.Fnv1a(old) };
         Assert.True(s15.Valid(D) && s15.Load(D).Contract == 0 && s15.Load(D).Cls == 3);
     }
 }

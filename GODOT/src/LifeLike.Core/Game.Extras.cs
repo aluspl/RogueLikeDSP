@@ -306,14 +306,17 @@ public sealed partial class Game
     public void AcceptTool()
     {
         if (!HasToolOffer) return;
-        Pickups[ToolOfferPickup].Active = false;
+        int pick = ToolOfferPickup;
+        Pickups[pick].Active = false;
         int t = ToolOffer, rarity = ToolOfferRarity;
         var extra = ToolOfferExtra;
         var perks = ToolOfferPerks;
         ToolOffer = ToolOfferPickup = -1;
         ToolOfferExtra = 0;
         ToolOfferPerks = 0;
+        var old = HandItem(); // v0.23.2: stara broń do plecaka, przy pełnym – na ziemię w polu znajdźki (broń zawodu przepada)
         TakeTool(t, rarity, true, extra, perks);
+        StoreOrDrop(old, pick);
     }
 
     public void DeclineTool()
@@ -575,6 +578,7 @@ public sealed partial class Game
     public void BotUpgrade()
     {
         if (!ActCleared || ShopClosed) return;
+        BotSkup(); // v0.23.2: Skup przed ulepszeniem – materiały na kolejny poziom
         for (var i = 0; i < D.Hurtownia.Length; ++i)
         {
             if (D.Hurtownia[i].Effect == ShopEffect.Upgrade && HurtowniaBuy(i)) BotPending();
@@ -591,6 +595,7 @@ public sealed partial class Game
         }
         else if (!HasOffer)
         {
+            OfferPickup = -1; // v0.23.2: bez znajdźki (skrzynia, wydarzenie) – Zostaw jak dawniej
             OfferSlot = (sbyte)slot;
             OfferRarity = (sbyte)rarity;
             OfferTrait = (sbyte)trait;

@@ -8,7 +8,7 @@ namespace LifeLike.Core;
 /// </summary>
 public sealed class RunSave
 {
-    public const string RunMagic = "PBRUN19"; // 19: artefakty (licznik ciosów, Gablota w budowie); 18: profity broni (v0.23.0); 17: tryb B broni, stany problemów (v0.23.0); 13: podsumowanie budowy, wyzwanie tygodnia; 12: wydarzenia z wyborem, ulepszenie narzędzia, magazyn; 11: premie po etapie, elity, kombinacje stanów; 10: Akt 0; 09: 10 etapów, zachowania
+    public const string RunMagic = "PBRUN20"; // 20: plecak (v0.23.2; PBRUN19 wczytuje się z pustym plecakiem); 19: artefakty (licznik ciosów, Gablota w budowie); 18: profity broni (v0.23.0); 17: tryb B broni, stany problemów (v0.23.0); 13: podsumowanie budowy, wyzwanie tygodnia; 12: wydarzenia z wyborem, ulepszenie narzędzia, magazyn; 11: premie po etapie, elity, kombinacje stanów; 10: Akt 0; 09: 10 etapów, zachowania
 
     public byte[] Magic = new byte[8];
     public uint Size;
@@ -42,33 +42,55 @@ public sealed class RunSave
     /// <summary>v0.23.0: stan sprzed Kawki (4 bajty na końcu) – wczytuje się z zerami (bez Kawki); ta sama magia PBRUN19.</summary>
     public const int DogTail = 4;
 
+    /// <summary>v0.23.2: plecak (6 x 7 bajtów) i znajdźka oferty sprzętu na końcu stanu – zapis PBRUN19 nie ma ich wcale.</summary>
+    public const int BackpackTail = Game.MaxBackpack * 7 + 1;
+
+    /// <summary>v0.23.2: poprzednia magia (stan bez plecaka) – wczytywana z migracją.</summary>
+    public const string PrevMagic = "PBRUN19";
+
+    private bool IsPrev => Magic.AsSpan().SequenceEqual(Profile.MagicBytes(PrevMagic));
+
+    private bool IsCurrent => Magic.AsSpan().SequenceEqual(Profile.MagicBytes(RunMagic));
+
     public bool Valid(GameData d)
     {
-        if (!Magic.AsSpan().SequenceEqual(Profile.MagicBytes(RunMagic)) || Data.Length != Size || Checksum != Fnv1a(Data)) return false;
+        if (!(IsCurrent || IsPrev) || Data.Length != Size || Checksum != Fnv1a(Data)) return false;
         var full = GameSize(d);
-        foreach (var cut in new[] { 0, DogTail, DogTail + V15Tail, DogTail + V15Tail + V14Tail })
+        if (IsCurrent) return Size == full;
+        foreach (var cut in new[] { 0, DogTail, DogTail + V15Tail, DogTail + V15Tail + V14Tail }) // PBRUN19: bez plecaka (i starsze ogony)
         {
-            if (Size == full - cut) return true;
+            if (Size == full - BackpackTail - cut) return true;
         }
         return false;
     }
 
     public void Clear() => Magic = new byte[8];
 
-    /// <summary>Wczytuje stan; zapis z innej wersji (inna magia, np. PBRUN13) = null, bez wyjątku (v0.23.0, decyzja 7).</summary>
+    /// <summary>
+    /// Wczytuje stan; zapis z innej wersji (inna magia, np. PBRUN13) = null, bez wyjątku (v0.23.0, decyzja 7).
+    /// v0.23.2: PBRUN19 (bez plecaka) – migracja: pusty plecak, oferta sprzętu bez znajdźki.
+    /// </summary>
     public Game Load(GameData d)
     {
-        if (!Magic.AsSpan().SequenceEqual(Profile.MagicBytes(RunMagic))) return null;
+        var prev = IsPrev;
+        if (!IsCurrent && !prev) return null;
         var g = new Game(d);
         var size = GameSize(d);
-        if (Data.Length < size) // v0.21.52 cz. c / d: starszy stan bez liczników zadań i kontraktu na końcu
+        if (Data.Length < size) // v0.21.52 cz. c / d, v0.23.2: starszy stan bez ogona (zadania, kontrakt, Kawka, plecak) – zera
         {
             var padded = new byte[size];
-            Data.CopyTo(padded, 0);
+            Data.AsSpan(0, Math.Min(Data.Length, size)).CopyTo(padded);
             g.FromBytes(padded);
-            return g;
         }
-        g.FromBytes(Data);
+        else
+        {
+            g.FromBytes(Data);
+        }
+        if (prev)
+        {
+            Array.Clear(g.Backpack);
+            g.OfferPickup = -1;
+        }
         return g;
     }
 

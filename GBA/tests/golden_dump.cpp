@@ -106,6 +106,8 @@ static uint32_t digest(const game& g)
     // v0.21.51 cz. 2: sekretne zlecenia (liczniki budowy), Majster, Geodeta, kawa na start
     f.add(g.coffee_drunk); f.add(g.shock_combos); f.add(g.paper_hits); f.add(g.secret_flags); f.add(g.helper_ctx);
     f.add(g.borrow_cls); f.add(g.mark_target); f.add(g.mark_turns); f.add(g.power_cls()); f.add(g.build_days()); f.add(g.bonus.start_coffee);
+    f.add(g.offer_pickup);   // v0.23.2: plecak
+    for(const bp_item& it : g.backpack) { f.add(it.kind); f.add(it.id); f.add(it.rarity); f.add(it.trait); f.add(it.perks); f.add(it.extra); }
     if(g.dog_flags || g.dog_pets) { f.add(g.dog_x); f.add(g.dog_y); f.add(g.dog_flags); f.add(g.dog_pets); }   // v0.23.0: Kawka (tylko budowy z nią)
     return f.h;
 }

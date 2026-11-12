@@ -56,6 +56,7 @@ public class WeaponPerkFlowTests
         var p = DropTool(g, 2);
         Assert.Equal(2, Bits(p.Perks));
         g.Collect();
+        g.AcceptTool(); // v0.23.2: karta broni – Weź
         Assert.Equal(D.Tools[p.Arg].Weapon, g.WeaponOverride);
         Assert.Equal(p.Perks, g.WeaponPerks);
         Assert.Contains(g.Log.TakeLast(2), m => m.Text.Contains(DamageHelp.PerkShorts(D, p.Perks)));
@@ -84,6 +85,7 @@ public class WeaponPerkFlowTests
         var t = Ti("noz_majstra");
         g.Pickups[g.PickupsCount++] = new Pickup(g.Hero.X, g.Hero.Y, PickupType.Tool, true, t, 0);
         g.Collect();
+        g.AcceptTool(); // v0.23.2: karta broni – Weź
         Assert.Equal(D.WeaponRarities.Length - 1, g.WeaponRarity);
         Assert.Equal(Mask("przebicie", "ostrze"), g.WeaponPerks);
     }
@@ -144,6 +146,7 @@ public class WeaponPerkFlowTests
         g.Weapon2 = Wi("lom");
         g.Weapon2Rarity = 2;
         g.Weapon2Perks = Mask("ostrze", "wywazenie");
+        for (var k = 0; k < Game.MaxBackpack; k++) g.Backpack[k] = BackpackItem.Gear(0, 0, 0); // v0.23.2: pełny plecak – broń na ziemię
         var before = g.PickupsCount;
         g.Equip(D.BeltSlot, 0, 0);
         Assert.Equal(-1, g.Weapon2);
@@ -153,6 +156,7 @@ public class WeaponPerkFlowTests
         g.Hero.X = p.X;
         g.Hero.Y = p.Y;
         g.Collect();
+        g.AcceptTool(); // v0.23.2: karta broni – Weź
         Assert.Equal(Mask("ostrze", "wywazenie"), g.WeaponPerks);
     }
 
@@ -219,7 +223,7 @@ public class WeaponPerkFlowTests
         rs.Magic = Profile.MagicBytes("PBRUN17");
         Assert.False(rs.Valid(D));
         Assert.Null(RunSave.FromBytes(rs.ToBytes()).Load(D));
-        Assert.Equal("PBRUN19", RunSave.RunMagic);
+        Assert.Equal("PBRUN20", RunSave.RunMagic);
     }
 
     [Fact]

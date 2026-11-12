@@ -394,8 +394,8 @@ public class GoalsTests
         g.ShopBuys = 2;
         var save = RunSave.Make(g);
         Assert.True(save.Valid(D));
-        var old = save.Data[..^(RunSave.DogTail + RunSave.V14Tail + RunSave.V15Tail)];
-        var s14 = new RunSave { Magic = save.Magic, Size = (uint)old.Length, Data = old, Checksum = RunSave.Fnv1a(old) };
+        var old = save.Data[..^(RunSave.BackpackTail + RunSave.DogTail + RunSave.V14Tail + RunSave.V15Tail)];
+        var s14 = new RunSave { Magic = Profile.MagicBytes(RunSave.PrevMagic), Size = (uint)old.Length, Data = old, Checksum = RunSave.Fnv1a(old) };
         Assert.True(s14.Valid(D));
         var back = s14.Load(D);
         Assert.True(back.Cls == 3 && back.HelpersCalled == 0 && back.ShopBuys == 0);

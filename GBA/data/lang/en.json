@@ -2573,7 +2573,15 @@
   "gba_bronie_7": "Damage. Artifact: every Nth hit",
   "gba_bronie_tytul": "Weapons",
   "kawka_glaszczesz": "You pet CoffeeDog! +",
-  "kawka_przepuszcza": "CoffeeDog makes way."
+  "kawka_przepuszcza": "CoffeeDog makes way.",
+  "z_plecaka": "Unpacked: ",
+  "do_plecaka": "To backpack: ",
+  "plecak_pelny_ziemia": "Backpack full, dropped: ",
+  "przedmiot_przepada": "Lost: ",
+  "wyrzucasz": "Dropped: ",
+  "skup": "Sold: ",
+  "pszok_segregacja": "Recycling: sorted! +",
+  "bron_z_kabury_do_plecaka": "Belt gone, weapon to pack: "
  },
  "uiGodot": {
   "ogl_awans": "LEVEL UP!",

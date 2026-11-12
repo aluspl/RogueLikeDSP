@@ -488,21 +488,35 @@ public sealed partial class Game
     /// <summary>v0.23.0: założenie oferty zdejmie pas z kaburą (inny przedmiot w slocie Pas) – karta ostrzega, bot nie bierze przy broni w kaburze.</summary>
     public bool OfferDropsHolster => HasOffer && OfferSlot == D.BeltSlot && HasBelt() && OfferRarity != BeltTier;
 
-    /// <summary>Paczka sprzętu przy zajętym slocie: gracz porównuje (A zakładam, B zostawiam). Nie zużywa tury.</summary>
+    /// <summary>
+    /// Paczka sprzętu przy zajętym slocie: gracz porównuje (Załóż, Do plecaka, Zostaw). Nie zużywa tury.
+    /// v0.23.2: Załóż – stary przedmiot do plecaka, a przy pełnym zostaje na ziemi w tym polu.
+    /// </summary>
     public void AcceptOffer()
     {
         if (!HasOffer) return;
-        int slot = OfferSlot;
+        int slot = OfferSlot, pick = OfferPickup;
         OfferSlot = -1;
+        OfferPickup = -1;
+        var old = Equipped[slot] >= 0 ? BackpackItem.Gear(slot, Equipped[slot], EquippedTrait[slot]) : default;
         Equip(slot, OfferRarity, OfferTrait);
+        if (!old.Empty) StoreOrDrop(old, pick);
     }
 
+    /// <summary>Zostaw: dośw. (raz za paczkę) i v0.23.2 – paczka zostaje na ziemi (można wrócić, gdy zwolni się plecak).</summary>
     public void DeclineOffer()
     {
         if (!HasOffer) return;
-        var xp = D.GearDeclineXp + OfferRarity;
+        var used = OfferPickup >= 0 && (Pickups[OfferPickup].Extra & GearBoxUsed) != 0;
+        var xp = used ? 0 : D.GearDeclineXp + OfferRarity;
+        if (OfferPickup >= 0)
+        {
+            Pickups[OfferPickup].Active = true;
+            Pickups[OfferPickup].Extra |= GearBoxUsed;
+        }
         OfferSlot = -1;
-        GainXp(xp);
+        OfferPickup = -1;
+        if (xp > 0) GainXp(xp);
         Push(Msg(Loc.T("zostawiasz_stary_sprzet")).Add(xp).Add(Loc.T("dosw")).As(LogKind.Loot));
     }
 
@@ -519,7 +533,7 @@ public sealed partial class Game
                 p.Active = false;
                 continue;
             }
-            if (p.Type == PickupType.Tool && (WeaponLvl > 0 || WeaponTrait >= 0)) // ulepszone narzędzie: decyzja (ulepszenia przepadną)
+            if (p.Type == PickupType.Tool) // v0.23.2: każda broń – karta Weź / Do plecaka / Zostaw (pusta kabura łapie ją wyżej)
             {
                 if (!HasToolOffer)
                 {
@@ -585,7 +599,8 @@ public sealed partial class Game
             }
             else if (p.Type == PickupType.GearBox)
             {
-                if (D.Materials.Length > 0) AddMaterial(R.Range(0, D.Materials.Length - 1), D.MaterialGearBox); // w paczce też materiał
+                var fresh = (p.Extra & GearBoxUsed) == 0; // v0.23.2: odłożona paczka – bez drugiego materiału
+                if (fresh && D.Materials.Length > 0) AddMaterial(R.Range(0, D.Materials.Length - 1), D.MaterialGearBox); // w paczce też materiał
                 var slot = p.Arg / 3;
                 if (Equipped[slot] < 0)
                 {
@@ -596,6 +611,7 @@ public sealed partial class Game
                     OfferSlot = (sbyte)slot;
                     OfferRarity = (sbyte)(p.Arg % 3);
                     OfferTrait = (sbyte)p.Trait;
+                    OfferPickup = (sbyte)i;
                     Push(Msg(Loc.T("paczka")).Add(D.Gear[p.Arg].Name).As(LogKind.Loot));
                 }
             }

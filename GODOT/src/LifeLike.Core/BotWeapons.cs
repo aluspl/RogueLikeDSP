@@ -115,6 +115,31 @@ public static class BotWeapons
         return Score(g, w, r, perks) * 100 > hand * BetterPct;
     }
 
+    /// <summary>v0.23.2: broń z mapy w plecaku, gdy jej ocena to co najmniej BackpackPct% broni w ręku.</summary>
+    private const int BackpackPct = 90;
+
+    /// <summary>
+    /// v0.23.2: karta broni – wyraźnie lepszą bierze (stara do plecaka), porównywalną chowa do plecaka (na Skup / zapas), resztę
+    /// zostawia. Tylko broń domyślna: zawsze Zostaw.
+    /// </summary>
+    public static void ToolOffer(Game g, BotOptions o)
+    {
+        if (!g.HasToolOffer) return;
+        if (o.DefaultWeaponOnly)
+        {
+            g.DeclineTool();
+            return;
+        }
+        if (WantsTool(g, g.ToolOffer, g.ToolOfferRarity, g.ToolOfferPerks))
+        {
+            g.AcceptTool();
+            return;
+        }
+        var w = g.D.Tools[g.ToolOffer].Weapon;
+        var r = g.D.Weapons[w].Master ? g.D.WeaponRarities.Length - 1 : g.ToolOfferRarity;
+        if (g.BackpackFull() || Score(g, w, r, g.ToolOfferPerks) * 100 < Score(g, -1, 0) * BackpackPct || !g.ToolToBackpack()) g.DeclineTool();
+    }
+
     /// <summary>Pola z bronią, której bot nie chce (tylko domyślna: każda) – nadepnięcie podnosi ją bez pytania.</summary>
     public static bool[] AvoidCells(Game g, BotOptions o)
     {

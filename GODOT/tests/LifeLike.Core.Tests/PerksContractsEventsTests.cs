@@ -515,6 +515,6 @@ public class PerksContractsEventsTests
         Assert.True(l.StageEvent == g.StageEvent && l.PowersUsed == 12 && l.BrandFound == 2 && l.CleanBosses == 1 && l.BossWakeDamage == 5);
         Assert.True(l.Bonus.Crit == g.Bonus.Crit && l.Bonus.XpPct == g.Bonus.XpPct && l.Bonus.Thermos == g.Bonus.Thermos && l.ThermosCap() == g.ThermosCap());
         Assert.Equal(StateDigest.Of(g), StateDigest.Of(l));
-        Assert.Equal("PBRUN19", RunSave.RunMagic);
+        Assert.Equal("PBRUN20", RunSave.RunMagic);
     }
 }

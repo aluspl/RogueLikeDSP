@@ -134,6 +134,20 @@ namespace core
     // arg: narzędzie / slot*3+jakość; trait: cecha sprzętu (v0.23.0: narzędzie - rzadkość); extra (v0.23.0): ulepszenia broni z kabury
     // (poziom, cecha+1, ładunki, wybór cechy po 4 bity), perks: profity broni (maska data::weapon_perks)
     struct pickup { int8_t x, y; uint8_t type; bool active; uint8_t arg = 0; uint8_t trait = 0; uint16_t extra = 0; uint8_t perks = 0; };
+    // v0.23.2: przedmiot w plecaku (LifeLike.Core.BackpackItem). Broń: id = data::weapons, rarity, perks, extra (ulepszenia jak
+    // pickup::extra); sprzęt: id = slot, rarity 0..2, trait = cecha sprzętu.
+    enum bp_kind : uint8_t { bp_empty, bp_weapon, bp_gear };
+    struct bp_item { uint8_t kind = bp_empty; int8_t id = 0; uint8_t rarity = 0; int8_t trait = 0; uint8_t perks = 0; uint8_t pad = 0; uint16_t extra = 0; };
+    inline bp_item bp_weapon_item(int w, int rarity, int perks, int extra)
+    {
+        bp_item it; it.kind = bp_weapon; it.id = int8_t(w); it.rarity = uint8_t(rarity); it.trait = -1; it.perks = uint8_t(perks); it.extra = uint16_t(extra);
+        return it;
+    }
+    inline bp_item bp_gear_item(int slot, int rarity, int trait)
+    {
+        bp_item it; it.kind = bp_gear; it.id = int8_t(slot); it.rarity = uint8_t(rarity); it.trait = int8_t(trait);
+        return it;
+    }
     enum hit_kind : uint8_t { hit_normal, hit_crit, hit_dodge };
     struct hit { int8_t x, y; int16_t amount; bool on_hero; uint8_t kind = hit_normal; };   // do liczb obrażeń nad polem
 
@@ -1894,11 +1908,14 @@ namespace core
         void accept_tool()
         {
             if(! has_tool_offer()) return;
-            pickups[tool_offer_pickup].active = false;
+            const int pick = tool_offer_pickup;
+            pickups[pick].active = false;
             const int t = tool_offer, rarity = tool_offer_rarity, extra = tool_offer_extra, perks = tool_offer_perks;
             tool_offer = tool_offer_pickup = -1;
             tool_offer_extra = 0; tool_offer_perks = 0;
+            const bp_item old = hand_item();   // v0.23.2: stara broń do plecaka, przy pełnym - na ziemię w polu znajdźki
             take_tool(t, rarity, true, extra, perks);
+            store_or_drop(old, pick);
         }
         void decline_tool()
         {
@@ -2552,6 +2569,12 @@ namespace core
                 push(message().add(UI(bron_z_kabury_domyslna)).add(weapon().name).as(info));
             }
             const int w = weapon2;
+            if(backpack_add(bp_weapon_item(w, weapon2_rarity, weapon2_perks, pack_weapon_extra(weapon2_lvl, weapon2_trait, weapon2_charges, weapon2_trait_pending))))
+            {
+                push(message().add(UI(bron_z_kabury_do_plecaka)).add(data::weapons[w].name).as(loot));   // v0.23.2: najpierw do plecaka
+                clear_holster();
+                return;
+            }
             const int t = tool_of_weapon(w);
             int x = hero.x, y = hero.y;
             const bool ok = t >= 0 && pickups_count < max_pickups && (! pickup_at(x, y) || free_around(x, y, hero.x, hero.y, x, y));
@@ -2564,6 +2587,10 @@ namespace core
             }
             if(ok) push(message().add(UI(bron_z_kabury_wypada)).add(data::weapons[w].name).as(loot));
             else push(message().add(UI(bron_z_kabury_przepada)).add(data::weapons[w].name).as(loot));
+            clear_holster();
+        }
+        void clear_holster()
+        {
             weapon2 = -1; weapon2_rarity = 0; weapon2_charges = 0; weapon2_lvl = 0; weapon2_trait = -1; weapon2_trait_pending = false;
             weapon2_perks = 0;
         }
@@ -2777,6 +2804,7 @@ namespace core
         void bot_upgrade()
         {
             if(! act_cleared || shop_closed()) return;
+            bot_skup();   // v0.23.2: Skup przed ulepszeniem - materiały na kolejny poziom
             for(int i = 0; i < data::hurtownia_count; ++i)
                 if(data::hurtownia[i].effect == shop_effect::upgrade && hurtownia_buy(i)) bot_pending();
         }
@@ -2787,6 +2815,7 @@ namespace core
             if(equipped[slot] < 0) equip(slot, rarity, trait);
             else if(! has_offer())
             {
+                offer_pickup = -1;   // v0.23.2: bez znajdźki (skrzynia, wydarzenie) - Zostaw jak dawniej
                 offer_slot = int8_t(slot); offer_rarity = int8_t(rarity); offer_trait = int8_t(trait);
                 push(message().add(UI(paczka)).add(data::gear[slot * 3 + rarity].name).as(loot));
             }
@@ -2979,6 +3008,7 @@ namespace core
             blast_timer = 0; blast_x = blast_y = -1; shot_events = 0; docs = 0;
             pending_event = -1; stage_choice = stage_choice_pick = -1; choice_done = 0; event_dmg = event_def = 0;   // v0.21.50 cz. 3
             tool_offer = tool_offer_pickup = -1;
+            offer_pickup = -1;   // v0.23.2
             tool_offer_rarity = 0; tool_offer_extra = 0; tool_offer_perks = 0;   // v0.23.0
             secret_x = secret_y = -1; secret_open = false; secret_kind = secret_dir = 0; key_holder = -1; keys = 0;
             secret_rx = secret_ry = secret_rw = secret_rh = 0;
@@ -3960,7 +3990,12 @@ namespace core
                 {
                     const uint64_t pool = shop_tool_pool();
                     const int t = nth_tool(pool, r.range(0, imax(0, count_bits(pool) - 1)));
-                    if(t >= 0) take_tool(t, roll_weapon_rarity(), false);
+                    if(t >= 0)
+                    {
+                        const bp_item old = hand_item();   // v0.23.2: stara broń do plecaka (pełny - przepada jak dawniej)
+                        take_tool(t, roll_weapon_rarity(), false);
+                        if(backpack_add(old)) push(bp_msg(UI(do_plecaka), old));
+                    }
                     break;
                 }
                 default: break;
@@ -4169,20 +4204,27 @@ namespace core
         // v0.23.0: założenie oferty zdejmie pas z kaburą (karta ostrzega, bot nie bierze przy broni w kaburze)
         bool offer_drops_holster() const { return has_offer() && offer_slot == data::belt_slot && has_belt() && offer_rarity != belt_tier; }
 
-        // Paczka sprzętu przy zajętym slocie: gracz porównuje (A zakładam, B zostawiam). Nie zużywa tury.
+        // Paczka sprzętu przy zajętym slocie: Załóż, Do plecaka, Zostaw. Nie zużywa tury. v0.23.2: Załóż - stary do plecaka,
+        // przy pełnym zostaje na ziemi w tym polu.
         void accept_offer()
         {
             if(! has_offer()) return;
-            int slot = offer_slot; offer_slot = -1;
+            const int slot = offer_slot, pick = offer_pickup;
+            offer_slot = -1; offer_pickup = -1;
+            const bp_item old = equipped[slot] >= 0 ? bp_gear_item(slot, equipped[slot], equipped_trait[slot]) : bp_item();
             equip(slot, offer_rarity, offer_trait);
+            if(old.kind != bp_empty) store_or_drop(old, pick);
         }
 
+        // Zostaw: dośw. (raz za paczkę); v0.23.2 - paczka zostaje na ziemi.
         void decline_offer()
         {
             if(! has_offer()) return;
-            int xp = data::gear_decline_xp + offer_rarity;
-            offer_slot = -1;
-            gain_xp(xp);
+            const bool used = offer_pickup >= 0 && (pickups[offer_pickup].extra & gear_box_used);
+            const int xp = used ? 0 : data::gear_decline_xp + offer_rarity;
+            if(offer_pickup >= 0) { pickups[offer_pickup].active = true; pickups[offer_pickup].extra = uint16_t(pickups[offer_pickup].extra | gear_box_used); }
+            offer_slot = -1; offer_pickup = -1;
+            if(xp > 0) gain_xp(xp);
             push(message().add(UI(zostawiasz_stary_sprzet)).add(xp).add(UI(dosw)).as(loot));
         }
 
@@ -4199,7 +4241,7 @@ namespace core
                     p.active = false;
                     continue;
                 }
-                if(p.type == tool && (weapon_lvl > 0 || weapon_trait >= 0))   // ulepszone narzędzie: decyzja (ulepszenia przepadną)
+                if(p.type == tool)   // v0.23.2: każda broń - karta Weź / Do plecaka / Zostaw (pusta kabura łapie ją wyżej)
                 {
                     if(! has_tool_offer())
                     {
@@ -4242,12 +4284,12 @@ namespace core
                 }
                 else if(p.type == gear_box)
                 {
-                    add_material(r.range(0, data::materials_count - 1), data::material_gear_box);   // w paczce też materiał
+                    if(! (p.extra & gear_box_used)) add_material(r.range(0, data::materials_count - 1), data::material_gear_box);   // w paczce też materiał (v0.23.2: odłożona - bez)
                     int slot = p.arg / 3;
                     if(equipped[slot] < 0) equip(slot, p.arg % 3, p.trait);   // pusty slot: zakłada od razu
                     else
                     {
-                        offer_slot = int8_t(slot); offer_rarity = int8_t(p.arg % 3); offer_trait = int8_t(p.trait);
+                        offer_slot = int8_t(slot); offer_rarity = int8_t(p.arg % 3); offer_trait = int8_t(p.trait); offer_pickup = int8_t(i);
                         push(message().add(UI(paczka)).add(data::gear[p.arg].name).as(loot));
                     }
                 }
@@ -4663,6 +4705,219 @@ namespace core
             start_stage(first_stage);
             push(message().add(UI(kolejna_budowa_poziom)).add(tier + 1));
             return true;
+        }
+
+        // ------------------------------------------------------------------ v0.23.2: plecak (Game.Backpack)
+        // Pola na końcu stanu: zapis PBRUN19 (bez nich) wczytuje się z pustym plecakiem (meta.h run_save_upgrade).
+        static constexpr int max_backpack = 6;
+        static constexpr uint16_t gear_box_used = 1;   // pickup::extra odłożonej paczki: bez materiału i dośw. za Zostaw
+        bp_item backpack[max_backpack] = {};
+        int8_t offer_pickup = -1;      // znajdźka paczki z oferty (Zostaw kładzie ją z powrotem), -1 = bez znajdźki
+
+        static int backpack_slots() { return imin(max_backpack, data::backpack_slots); }
+        int backpack_count() const { int n = 0; for(int i = 0; i < backpack_slots(); ++i) n += backpack[i].kind != bp_empty; return n; }
+        bool backpack_full() const { return backpack_count() >= backpack_slots(); }
+        bool backpack_add(const bp_item& it)
+        {
+            for(int i = 0; i < backpack_slots(); ++i) if(backpack[i].kind == bp_empty) { backpack[i] = it; return true; }
+            return false;
+        }
+        // Nazwa przedmiotu (broń z ulepszeniem: "Kielnia+2").
+        message& bp_name(message& m, const bp_item& it) const
+        {
+            if(it.kind == bp_gear) return m.add(data::gear[it.id * 3 + it.rarity].name);
+            if(it.kind != bp_weapon) return m;
+            m.add(data::weapons[it.id].name);
+            if(it.extra & 15) m.add("+").add(int(it.extra & 15));
+            return m;
+        }
+        message bp_msg(const char* head, const bp_item& it) const { message m; m.add(head); bp_name(m, it); return m.as(loot); }
+        // Poziom do Skupu i PSZOK-u: 0 Zwykła, 1 Solidna, 2 Markowa, 3 Mistrzowska / artefakt.
+        static int bp_tier(const bp_item& it)
+        {
+            if(it.kind == bp_gear) return imax(0, imin(2, it.rarity));
+            if(it.kind != bp_weapon) return 0;
+            return data::weapons[it.id].master || it.rarity >= 3 ? 3 : imax(0, imin(2, it.rarity));
+        }
+        bp_item hand_item() const
+        {
+            return bp_weapon_item(hand_weapon(), weapon_rarity, weapon_perks, pack_weapon_extra(weapon_lvl, weapon_trait, weapon_charges, trait_pending));
+        }
+        void set_hand(const bp_item& it)
+        {
+            reset_upgrade();
+            reset_proc();
+            weapon_override = it.id == cdef().weapon ? -1 : it.id;
+            weapon_rarity = it.rarity;
+            weapon_perks = it.perks;
+            apply_weapon_extra(it.extra);
+            mark_artifact(it.id);
+            secret_flags = uint8_t(secret_flags | secret_tool_swap);
+        }
+        int item_avg10(const bp_item& it) const
+        {
+            return weapon_breakdown(-1, it.id, -1, -1, 0, it.rarity, it.perks).avg10 + int(it.extra & 15) * data::tool_upgrade_dmg * 10;
+        }
+        // Porównanie z noszonym: 1 lepsze, -1 słabsze, 0 równe (broń - średni cios, sprzęt - jakość).
+        int backpack_compare(int i) const
+        {
+            const bp_item& it = backpack[i];
+            if(it.kind == bp_gear) { const int now = equipped[it.id]; return it.rarity > now ? 1 : (it.rarity < now ? -1 : 0); }
+            if(it.kind != bp_weapon) return 0;
+            const int mine = weapon_breakdown().avg10, other = item_avg10(it);
+            return other > mine ? 1 : (other < mine ? -1 : 0);
+        }
+        bool in_hurtownia() const { return st == status::stage_clear && act_cleared; }
+        bool can_trade() const { return in_hurtownia() && ! shop_closed(); }
+        bool backpack_usable() const { return st == status::playing || in_hurtownia(); }
+        bool bp_valid(int i) const { return i >= 0 && i < backpack_slots() && backpack[i].kind != bp_empty; }
+        // Załóż: zamiana z noszonym; na placu tura, w Hurtowni bez tury.
+        bool backpack_equip(int i)
+        {
+            if(! bp_valid(i) || ! backpack_usable()) return false;
+            if(st == status::playing && shocked_turn()) return true;
+            const bp_item it = backpack[i];
+            if(it.kind == bp_gear)
+            {
+                const int slot = it.id;
+                backpack[i] = equipped[slot] >= 0 ? bp_gear_item(slot, equipped[slot], equipped_trait[slot]) : bp_item();
+                equip(slot, it.rarity, it.trait);
+            }
+            else
+            {
+                backpack[i] = hand_item();
+                set_hand(it);
+                message m; m.add(UI(z_plecaka)); weapon_title(m); push(m.as(loot));
+                push_perks(weapon_perks, weapon_rarity);
+            }
+            if(st == status::playing) end_turn();
+            return true;
+        }
+        bool backpack_holster(int i)
+        {
+            if(! bp_valid(i) || backpack[i].kind != bp_weapon || ! has_belt() || ! backpack_usable()) return false;
+            if(st == status::playing && shocked_turn()) return true;
+            const bp_item it = backpack[i];
+            backpack[i] = weapon2 >= 0 ? bp_weapon_item(weapon2, weapon2_rarity, weapon2_perks, pack_weapon_extra(weapon2_lvl, weapon2_trait, weapon2_charges, weapon2_trait_pending)) : bp_item();
+            weapon2 = it.id; weapon2_rarity = it.rarity; weapon2_perks = it.perks;
+            weapon2_lvl = int8_t(it.extra & 15);
+            weapon2_trait = int8_t(((it.extra >> 4) & 15) - 1);
+            weapon2_charges = int8_t((it.extra >> 8) & 15);
+            weapon2_trait_pending = ((it.extra >> 12) & 1) != 0;
+            mark_artifact(it.id);
+            push(message().add(UI(bron_do_kabury)).add(data::weapons[weapon2].name).as(loot));
+            if(st == status::playing) end_turn();
+            return true;
+        }
+        bool drop_cell(int& x, int& y) const
+        {
+            x = hero.x; y = hero.y;
+            if(pickups_count >= max_pickups) return false;
+            return ! pickup_at(x, y) || free_around(hero.x, hero.y, hero.x, hero.y, x, y);
+        }
+        bool place_item(const bp_item& it, int x, int y, int slot = -1)
+        {
+            pickup p;
+            if(it.kind == bp_gear) p = { int8_t(x), int8_t(y), uint8_t(gear_box), true, uint8_t(it.id * 3 + it.rarity), uint8_t(imax(0, it.trait)), gear_box_used, 0 };
+            else
+            {
+                const int t = tool_of_weapon(it.id);
+                if(t < 0) return false;
+                p = { int8_t(x), int8_t(y), uint8_t(tool), true, uint8_t(t), it.rarity, it.extra, it.perks };
+            }
+            if(slot >= 0) pickups[slot] = p;
+            else if(pickups_count < max_pickups) pickups[pickups_count++] = p;
+            else return false;
+            return true;
+        }
+        bool store_or_drop(const bp_item& it, int slot = -1)
+        {
+            if(backpack_add(it)) { push(bp_msg(UI(do_plecaka), it)); return true; }
+            int x = hero.x, y = hero.y;
+            bool ok = slot >= 0 || drop_cell(x, y);
+            ok = ok && place_item(it, x, y, slot);
+            push(bp_msg(ok ? UI(plecak_pelny_ziemia) : UI(przedmiot_przepada), it));
+            return ok;
+        }
+        bool backpack_drop(int i)
+        {
+            if(! bp_valid(i) || st != status::playing) return false;
+            const bp_item it = backpack[i];
+            backpack[i] = bp_item();
+            int x, y;
+            const bool ok = drop_cell(x, y) && place_item(it, x, y);
+            push(bp_msg(ok ? UI(wyrzucasz) : UI(przedmiot_przepada), it));
+            return true;
+        }
+        static int sell_count(const bp_item& it) { return it.kind == bp_empty ? 0 : data::backpack_sell[imin(bp_tier(it), 3)]; }
+        static int sell_mat(const bp_item& it) { return it.kind == bp_weapon ? data::backpack_weapon_mat : data::backpack_gear_mat; }
+        bool backpack_sell(int i)
+        {
+            if(! bp_valid(i) || ! can_trade()) return false;
+            const bp_item it = backpack[i];
+            const int n = sell_count(it);
+            backpack[i] = bp_item();
+            push(bp_msg(UI(skup), it));
+            add_material(sell_mat(it), (n + 1) / 2);
+            if(n / 2 > 0) add_material(data::backpack_alt_mat, n / 2);
+            return true;
+        }
+        static int pszok_xp_for(const bp_item& it) { return it.kind == bp_empty ? 0 : data::pszok_xp + data::pszok_xp_per_tier * bp_tier(it); }
+        bool backpack_recycle(int i)
+        {
+            if(! bp_valid(i) || ! can_trade()) return false;
+            const int xp = pszok_xp_for(backpack[i]);
+            backpack[i] = bp_item();
+            gain_xp(xp);
+            hero.hp = int16_t(imin(hero.max_hp, hero.hp + data::pszok_hp));
+            push(message().add(UI(pszok_segregacja)).add(xp).add(UI(dosw)).as(good));
+            return true;
+        }
+        bool offer_to_backpack()
+        {
+            if(! has_offer() || backpack_full()) return false;
+            const bp_item it = bp_gear_item(offer_slot, offer_rarity, offer_trait);
+            offer_slot = -1; offer_pickup = -1;
+            backpack_add(it);
+            push(bp_msg(UI(do_plecaka), it));
+            return true;
+        }
+        bool tool_to_backpack()
+        {
+            if(! has_tool_offer() || backpack_full()) return false;
+            const int t = tool_offer, w = data::tools[t].weapon;
+            const int rarity = resolve_rarity(w, tool_offer_rarity);
+            const bp_item it = bp_weapon_item(w, rarity, resolve_perks(w, rarity, tool_offer_perks), tool_offer_extra);
+            pickups[tool_offer_pickup].active = false;
+            tool_offer = tool_offer_pickup = -1;
+            tool_offer_extra = 0; tool_offer_perks = 0;
+            tools_found |= uint64_t(1) << t;
+            mark_artifact(w);
+            backpack_add(it);
+            push(bp_msg(UI(do_plecaka), it));
+            return true;
+        }
+        // Bot w Skupie: sprzedaje wszystko oprócz najlepszej zapasowej broni (średni cios).
+        void bot_skup()
+        {
+            if(! can_trade()) return;
+            int keep = -1, best = -1;
+            for(int i = 0; i < backpack_slots(); ++i)
+            {
+                if(backpack[i].kind != bp_weapon) continue;
+                const int v = item_avg10(backpack[i]);
+                if(v > best) { best = v; keep = i; }
+            }
+            for(int i = 0; i < backpack_slots(); ++i) if(i != keep && backpack[i].kind != bp_empty) backpack_sell(i);
+        }
+        // Bot: lepszą paczkę zakłada (accept_same: też tej samej jakości), tej samej jakości do plecaka, gorszą zostawia.
+        void bot_gear_offer(bool accept_same)
+        {
+            if(! has_offer()) return;
+            const bool holster = offer_drops_holster() && weapon2 >= 0;
+            const int now = equipped[offer_slot];
+            if(! holster && (offer_rarity > now || (accept_same && offer_rarity == now))) accept_offer();
+            else if(offer_rarity < now || ! offer_to_backpack()) decline_offer();
         }
     };
 }

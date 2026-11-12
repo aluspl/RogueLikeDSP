@@ -2397,7 +2397,12 @@ namespace core
     // v0.21.52 cz. c: PBRUN15 - liczniki zadań (wezwania brygady, zakupy) w miejscu wyrównania; rozmiar stanu bez zmian, więc
     // zapis PBRUN14 też się wczytuje (z zerami w nowych polach). Profil v15 (384 B) nie mieści się przed 256 - zapis budowy
     // od 512; przy migracji profilu warstwa GBA przenosi przerwaną budowę spod 256 (run_save_offset_v14).
-    constexpr char run_magic[8] = "PBRUN19";   // 19 (v0.23.0): bronie (tryby, rzadkość, profity, pas, artefakty) - starsze zapisy budowy przepadają
+    constexpr char run_magic[8] = "PBRUN20";   // 20 (v0.23.2): plecak na końcu stanu; 19 (v0.23.0): bronie (tryby, rzadkość, profity, pas, artefakty)
+    // v0.23.2: PBRUN19 - stan bez plecaka (plecak i offer_pickup dopisane na końcu struktury game) wczytuje się z pustym plecakiem.
+    constexpr char run_magic_v19[8] = "PBRUN19";
+    constexpr unsigned run_size_v19 = 3488;   // sizeof(game) w v0.23.0-v0.23.1 (ARM i PC)
+    static_assert(std::is_standard_layout_v<game>);
+    static_assert(((offsetof(game, backpack) + alignof(game) - 1) & ~(alignof(game) - 1)) == run_size_v19, "pola przed plecakiem się zmieniły");
     constexpr int run_save_offset = 512;
     constexpr int run_save_offset_v14 = 256;   // profil v14 i starsze (240 B)
     static_assert(sizeof(profile) <= run_save_offset);
@@ -2411,11 +2416,11 @@ namespace core
         game g;
     };
 
-    inline uint32_t run_checksum(const game& g)
+    inline uint32_t run_checksum(const game& g, unsigned n = sizeof(game))
     {
         uint32_t h = 2166136261u;   // FNV-1a
         const unsigned char* b = reinterpret_cast<const unsigned char*>(&g);
-        for(unsigned i = 0; i < sizeof g; ++i) { h ^= b[i]; h *= 16777619u; }
+        for(unsigned i = 0; i < n; ++i) { h ^= b[i]; h *= 16777619u; }
         return h;
     }
 
@@ -2427,12 +2432,26 @@ namespace core
         s.checksum = run_checksum(s.g);
     }
 
-    // Ważny zapis tylko bieżącej wersji (v0.23.0: inny układ stanu - starszy zapis budowy jest pomijany jak w C# RunSave).
+    // Ważny zapis bieżącej wersji albo PBRUN19 (v0.23.2: bez plecaka - run_save_upgrade); starsze są pomijane jak w C# RunSave.
+    inline bool run_save_v19(const run_save& s)
+    {
+        return std::memcmp(s.magic, run_magic_v19, sizeof s.magic) == 0 && s.size == run_size_v19 && s.checksum == run_checksum(s.g, run_size_v19);
+    }
     inline bool run_save_valid(const run_save& s)
     {
+        if(run_save_v19(s)) return true;
         return std::memcmp(s.magic, run_magic, sizeof s.magic) == 0 && s.size == sizeof(game) && s.checksum == run_checksum(s.g);
     }
-    inline void run_save_upgrade(run_save&) {}
+    // v0.23.2: PBRUN19 -> PBRUN20 - pusty plecak, oferta sprzętu bez znajdźki (bajty za starym stanem to śmieci z SRAM).
+    inline void run_save_upgrade(run_save& s)
+    {
+        if(! run_save_v19(s)) return;
+        for(auto& it : s.g.backpack) it = bp_item();
+        s.g.offer_pickup = -1;
+        std::memcpy(s.magic, run_magic, sizeof s.magic);
+        s.size = sizeof(game);
+        s.checksum = run_checksum(s.g);
+    }
 
     inline void run_save_clear(run_save& s) { std::memset(s.magic, 0, sizeof s.magic); }
 }

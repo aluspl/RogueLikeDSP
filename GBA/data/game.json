@@ -9686,7 +9686,15 @@
     "gba_bronie_7": "Obrażenia. Artefakt: co N cios",
     "gba_bronie_tytul": "Bronie",
     "kawka_glaszczesz": "Głaszczesz Kawkę! +",
-    "kawka_przepuszcza": "Kawka robi Ci miejsce."
+    "kawka_przepuszcza": "Kawka robi Ci miejsce.",
+    "z_plecaka": "Z plecaka: ",
+    "do_plecaka": "Do plecaka: ",
+    "plecak_pelny_ziemia": "Plecak pełny, na ziemi: ",
+    "przedmiot_przepada": "Przepada: ",
+    "wyrzucasz": "Wyrzucasz: ",
+    "skup": "Skup: ",
+    "pszok_segregacja": "PSZOK: segregacja zaliczona! +",
+    "bron_z_kabury_do_plecaka": "Bez pasa broń do plecaka: "
   },
   "uiGodot": {
     "ogl_awans": "AWANS!",
@@ -10700,5 +10708,20 @@
       }
     ],
     "badgeBuilds": 4
+  },
+  "backpack": {
+    "slots": 6,
+    "sell": [
+      1,
+      2,
+      3,
+      5
+    ],
+    "weaponMat": "stal",
+    "gearMat": "drewno",
+    "altMat": "cement",
+    "pszokXp": 3,
+    "pszokXpPerTier": 2,
+    "pszokHp": 2
   }
 }

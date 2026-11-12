@@ -95,6 +95,7 @@ public class ProfileAndShopTests
         var lom = D.Tools[0].Weapon;
         g.Pickups[0] = new Pickup(g.Hero.X, g.Hero.Y, PickupType.Tool, true, 0);
         g.Collect();
+        g.AcceptTool(); // v0.23.2: karta broni – Weź
         Assert.Same(D.Weapons[lom], g.Weapon);
         var p = Meta.NewProfile(D);
         Assert.True(Meta.ToolUnlocked(D, p, 0) && !Meta.ToolUnlocked(D, p, 3) && !Meta.BuyTool(D, p, 3));
@@ -222,6 +223,7 @@ public class ProfileAndShopTests
         h.Pickups[0] = new Pickup(h.Hero.X, h.Hero.Y, PickupType.Tool, true, 2);
         h.PickupsCount = 1;
         h.Collect();
+        h.AcceptTool(); // v0.23.2: karta broni – Weź
         Assert.Equal(1UL << 2, h.ToolsFound);
     }
 }
