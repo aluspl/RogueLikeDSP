@@ -698,7 +698,9 @@ public sealed partial class Game
         {
             var rm = Lv.Rooms[R.Range(1, Lv.RoomsCount - 1)];
             RandomFreeCellInRoom(rm, out var x, out var y);
-            Pickups[PickupsCount++] = new Pickup(x, y, i == 0 ? PickupType.Coffee : (PickupType)R.Range(0, 2), true);
+            var pt = i == 0 ? PickupType.Coffee : (PickupType)R.Range(0, 2);
+            if (i > 0 && pt == PickupType.Coffee) continue; // v0.23.1: jedna kawa na etap z mapy (mniej termosów)
+            Pickups[PickupsCount++] = new Pickup(x, y, pt, true);
         }
         Push(Msg(Loc.T("etap")).Add(StageNumber()).Add(": ").Add(sd.Name));
         if (TwinCarry > 0) Push(Msg(Loc.T("wspolna_sciana")).Add(TwinCarry).Add(Loc.T("z_1_polowy")).As(LogKind.Bad));

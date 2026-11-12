@@ -582,3 +582,56 @@ Rdzeń GBA (`core_tests.cpp`, inne ziarna), przed (Task 11) → krok w bok → +
 - kontrakty z pełnym meta 58–68 → 51–67 (Letniskowy 67, Bliźniak 53, Poddasze 51, Kamienica 59). Pełny `core_tests.cpp` po strojeniu: „OK – wszystkie testy przeszły”.
 
 Progi tylko GBA (cele mierzy C#): kontrakty z pełnym meta ≥ 50 (było 55), Akt 0 + meta ≥ 60 (było 65).
+
+## v0.23.1 – mniej termosów z kawą (2026-11-12)
+
+Uwaga właściciela po v0.23.0: „ilość termosów z kawą jeszcze za duża” (zrzut: Termos 5/5 na etapie 5/10, Normalny).
+
+**Źródła ładunków i pojemności (przed → po):**
+
+| Źródło | Przed | Po |
+|---|---|---|
+| Pojemność bazowa (`thermos.capacity`) | 3 | **2** |
+| Pamiątka Termos babci (startowa, rangi po 3 i 8 budowach) | +1 / +2 / +3 | **+1 / +1 / +2** |
+| Szkolenie Lepszy termos (poziomy 25 / 50 / 90 / 150) | termos +1, sprzęt +1, termos +1, termos +1 | termos +1, sprzęt +1, termos +1, **sprzęt +1** |
+| Kawa z mapy na etap (`Game.StartStage`) | 1 pewna + 2 losowe (kawa / kask / projekt, każda ⅓) ≈ 1,67 | **1 pewna**; dodatkowa znajdźka, która wylosuje kawę, przepada (kask i projekt bez zmian) |
+| Dropy z problemów (`drops`) | 25%, waga kawy 40 / 95 | **20%, waga kawy 20 / 75** (pozostałe dropy tak samo częste, kawa o połowę rzadziej) |
+| Kawa leczy (`thermos.heal`) – kompensata | 8 HP | **11 HP** |
+| Bez zmian | Respekt Duży termos +1, Zaprawiony w boju (kawa na start), pas +1/+1/+2, projekt Termos z bufetu +1, wydarzenie Ekipa na kawie (pełny termos), Hurtownia Deskowanie (2 kawy), wybory SMS | – |
+
+Pomiar ładunków (bot C#, Normalny, 100 przebiegów na zawód, zwykłe zawody; termos na wejściu na etap 5 i 8 / pojemność;
+bot pije poniżej 40% HP, więc trzyma mniej niż gracz):
+
+| Profil | Przed: etap 5 | Po: etap 5 | Przed: etap 8 | Po: etap 8 | Kawy wypite na budowę przed → po |
+|---|---|---|---|---|---|
+| Bez meta | 1,37 / 3,09 | 0,86 / 2,09 | 1,38 | 0,87 | 3,69 → 2,33 |
+| Nowy profil (Termos babci I) | 1,58 / 4,09 | 1,06 / 3,09 | 1,68 | 1,13 | 3,85 → 2,53 |
+| Pełne Szkolenia | 2,33 / 7,09 | 1,64 / 5,08 | 2,98 | 2,07 | 4,01 → 2,51 |
+
+Gracz z typowym meta (Termos babci II–III, pierwszy poziom Lepszego termosu) ma teraz termos 3–4 zamiast 5–7.
+
+Rundy (C# `WeaponBalanceTests`, 300 przebiegów/zawód, kontrakty 150):
+- warianty, w których wylosowana kawa zamieniała się w kask / projekt (+1 OBR / +1 obrażeń na stałe), podnosiły Normalny
+  do 31–33% na 100 przebiegach – odrzucone (kawę trzeba zabrać, nie zamienić na mocniejszą znajdźkę);
+- tylko cięcia (bez kompensaty, kawa 8 HP): Normalny **23,8**, Łatwy 46,5, kontrakty bez meta 19,9–24,9 – za mało;
+- kawa leczy 12 HP: Normalny 31,4 (szybki pomiar); **11 HP – wynik końcowy** (HP problemów bez zmian):
+
+| Cel | v0.23.0 (wydanie) | v0.23.1 | Zakres |
+|---|---|---|---|
+| Łatwy | 53,3 | 52,1 | 50–60 |
+| Normalny | 28,1 | 30,6 (wszystkie zawody 29,6) | 25–35 |
+| Trudny | 11,6 | 13,3 | 8–15 |
+| Pełne Szkolenia | 61,3 | 61,8 | 55–65 |
+| + Respekt | 70,1 | 73,1 | 70–80 |
+| Akt 0 + meta | 70,0 | 72,0 | 65–75 |
+| Inwestor (wszystkie modyfikatory) | 9,9 | 12,7 | 5–15 |
+| Kontrakt Letniskowy bez meta / pełne meta | 29,4 / 71,9 | 28,8 / 71,7 | 25–40 / 65–80 |
+| Kontrakt Bliźniak bez meta / pełne meta | 24,5 / 61,6 | 26,1 / **65,0** (64,96) | 25–40 / 65–80 |
+| Kontrakt Poddasze bez meta / pełne meta | 28,7 / 62,1 | 29,4 / 69,8 | 25–40 / 65–80 |
+| Kontrakt Kamienica bez meta / pełne meta | 27,9 / 66,4 | 30,0 / 70,7 | 25–40 / 65–80 |
+| Tylko broń domyślna, Normalny | 28,3 | 30,6 | – |
+| Glazurnik etap 5, tylko broń domyślna (limit 19,0) | 16,6 | **20,0** | ≤ v0.22.1 + 10 p.p. |
+
+Testy `WeaponBalanceTests`: czerwone `ContractsInTarget` (Bliźniak z pełnym meta 64,96 – w v0.23.0 61,6, też czerwony) i
+`DefaultWeaponStageShare` (Glazurnik etap 5: 20,0 przy limicie 19,0 – mniej kawy w Akcie I boli zawód wręcz przy bossie
+Fundamentów; Glazurnik razem 22,6 / tylko domyślna 17,6). Do decyzji właściciela przy „wydajemy?”.

@@ -155,7 +155,6 @@ int main()
         game b; b.new_run(1, 5, data::default_difficulty, m);
         CHECK(b.hero.max_hp == a.hero.max_hp + 8 && b.hero.hp == b.hero.max_hp);
         CHECK(b.def_bonus == 1 && b.dmg_bonus == 2);
-        CHECK(b.pickups_count == a.pickups_count + 2);
         b.hero.hp = 1; b.pickups[0] = { b.hero.x, b.hero.y, coffee, true }; b.collect();
         CHECK(b.hero.hp == 1 && b.thermos == 1);                          // kawa trafia do termosu
         CHECK(b.player_drink() && b.hero.hp == 1 + data::coffee_heal + 4 && b.thermos == 0 && b.turns == 1);
@@ -165,7 +164,19 @@ int main()
         CHECK(b.hero.hp == 1 + data::coffee_heal + 4 && b.thermos == data::thermos_capacity);   // pełny: pije od razu
         b.hero.hp = b.hero.max_hp; CHECK(!b.player_drink() && b.thermos == data::thermos_capacity);
         auto regular = [](const game& x) { int n = 0; for(int i = 0; i < x.pickups_count; ++i) n += x.pickups[i].type <= plan; return n; };
-        b.next_stage(); CHECK(regular(b) == regular(a) + 2);   // premia trwa w kolejnych etapach (bez wydarzeń i skrzyń)
+        // v0.23.1: dodatkowa znajdźka, która wylosuje kawę, przepada (kawa z mapy jedna na etap) - premia +2 to średnio +4/3
+        int ra = 0, rb = 0;
+        for(int s = 1; s <= 30; ++s)
+        {
+            game x; x.new_run(1, s); x.next_stage();
+            game y; y.new_run(1, s, data::default_difficulty, m); y.next_stage();   // premia trwa w kolejnych etapach
+            int cx = 0, cy = 0;
+            for(int i = 0; i < x.pickups_count; ++i) cx += x.pickups[i].type == coffee;
+            for(int i = 0; i < y.pickups_count; ++i) cy += y.pickups[i].type == coffee;
+            CHECK(cx == 1 && cy == 1);
+            ra += regular(x); rb += regular(y);
+        }
+        CHECK(rb >= ra + 30 && rb <= ra + 60);
     }
     // 8. doświadczenie: wrogowie, etapy, boss; mnożone przez trudność
     {

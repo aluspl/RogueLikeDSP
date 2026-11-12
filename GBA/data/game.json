@@ -2524,7 +2524,7 @@
       {
         "id": "termos",
         "name": "Lepszy termos",
-        "desc": "Większy termos na kawę",
+        "desc": "Większy termos, lepszy sprzęt",
         "effect": "thermos",
         "steps": [
           {
@@ -2543,7 +2543,7 @@
             "cost": 90
           },
           {
-            "effect": "thermos",
+            "effect": "gear_pct",
             "value": 1,
             "cost": 150
           }
@@ -2976,9 +2976,9 @@
     ]
   },
   "drops": {
-    "chancePct": 25,
+    "chancePct": 20,
     "weights": {
-      "coffee": 40,
+      "coffee": 20,
       "helmet": 5,
       "plan": 5,
       "tool": 15,
@@ -2996,8 +2996,8 @@
     "dodgeMaxPct": 20
   },
   "thermos": {
-    "capacity": 3,
-    "heal": 8,
+    "capacity": 2,
+    "heal": 11,
     "botDrinkBelowPct": 40
   },
   "badges": [
@@ -3992,7 +3992,7 @@
       "effect": "thermos"
     }
   ],
-  "version": "v0.23.0",
+  "version": "v0.23.1",
   "damageHelp": [
     "Cios = rzut broni + premie:",
     "SIŁ/ZRĘ/INT broni +1 co 2 pkt,",
@@ -4095,8 +4095,8 @@
         "effect": "thermos",
         "values": [
           1,
-          2,
-          3
+          1,
+          2
         ],
         "start": true
       },

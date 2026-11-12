@@ -103,7 +103,9 @@ public class WeaponRarityTests
             g.PickupsCount = 0;
             g.Bonus.ToolPct = 100;
             g.DropAt(3, 3);
-            if (g.Pickups[0].Type == PickupType.Tool) rolled.Add(g.Pickups[0].Trait);
+            if (g.Pickups[0].Type != PickupType.Tool) continue;
+            if (ArtifactCase.Index(D, D.Tools[g.Pickups[0].Arg].Weapon) >= 0) continue; // artefakt z Markowej bazowej jest Mistrzowski
+            rolled.Add(g.Pickups[0].Trait);
         }
         Assert.True(rolled.Contains(0) && rolled.Contains(1));
         Assert.DoesNotContain(3, rolled);

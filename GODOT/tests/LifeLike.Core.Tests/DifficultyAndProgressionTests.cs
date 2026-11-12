@@ -95,7 +95,6 @@ public class DifficultyAndProgressionTests
         b.NewRun(1, 5, D.DefaultDifficulty, m);
         Assert.True(b.Hero.MaxHp == a.Hero.MaxHp + 8 && b.Hero.Hp == b.Hero.MaxHp);
         Assert.True(b.DefBonus == 1 && b.DmgBonus == 2);
-        Assert.Equal(a.PickupsCount + 2, b.PickupsCount);
         b.Hero.Hp = 1;
         b.Pickups[0] = new Pickup(b.Hero.X, b.Hero.Y, PickupType.Coffee, true);
         b.Collect();
@@ -109,8 +108,22 @@ public class DifficultyAndProgressionTests
         Assert.True(b.Hero.Hp == 1 + D.CoffeeHeal + 4 && b.Thermos == D.ThermosCapacity); // pełny: pije od razu
         b.Hero.Hp = b.Hero.MaxHp;
         Assert.True(!b.PlayerDrink() && b.Thermos == D.ThermosCapacity);
-        b.NextStage();
-        Assert.Equal(Regular(a) + 2, Regular(b)); // premia trwa w kolejnych etapach (bez wydarzeń i skrzyń)
+        // v0.23.1: dodatkowa znajdźka, która wylosuje kawę, przepada (kawa z mapy jedna na etap) – premia +2 to średnio +4/3
+        int ra = 0, rb = 0;
+        for (var s = 1; s <= 30; ++s)
+        {
+            var x = TestData.NewGame();
+            x.NewRun(1, (uint)s);
+            x.NextStage();
+            var y = TestData.NewGame();
+            y.NewRun(1, (uint)s, D.DefaultDifficulty, m);
+            y.NextStage(); // premia trwa w kolejnych etapach
+            Assert.Equal(1, Coffees(x));
+            Assert.Equal(1, Coffees(y));
+            ra += Regular(x);
+            rb += Regular(y);
+        }
+        Assert.InRange(rb, ra + 30, ra + 60);
     }
 
     [Fact]
@@ -177,6 +190,16 @@ public class DifficultyAndProgressionTests
         g.NewGamePlus();
         Assert.Same(D.StoryNgPlus, g.StageStory);
         foreach (var s in D.StoryStages) Assert.True(s.From.Length > 0 && s.Lines[0].Length > 0);
+    }
+
+    private static int Coffees(Game g)
+    {
+        var n = 0;
+        for (var i = 0; i < g.PickupsCount; ++i)
+        {
+            if (g.Pickups[i].Type == PickupType.Coffee) n++;
+        }
+        return n;
     }
 
     private static int Regular(Game g)

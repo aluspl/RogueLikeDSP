@@ -3031,7 +3031,9 @@ namespace core
             {
                 const room& rm = lv.rooms[r.range(1, lv.rooms_count - 1)];
                 int x, y; random_free_cell_in_room(rm, x, y);
-                pickups[pickups_count++] = { int8_t(x), int8_t(y), uint8_t(i == 0 ? coffee : r.range(0, 2)), true };
+                const int pt = i == 0 ? int(coffee) : r.range(0, 2);
+                if(i > 0 && pt == int(coffee)) continue;   // v0.23.1: jedna kawa na etap z mapy (mniej termosów)
+                pickups[pickups_count++] = { int8_t(x), int8_t(y), uint8_t(pt), true };
             }
             push(message().add(UI(etap)).add(stage_number()).add(": ").add(sd.name));
             if(twin_carry > 0) push(message().add(UI(wspolna_sciana)).add(int(twin_carry)).add(UI(z_1_polowy)).as(bad));

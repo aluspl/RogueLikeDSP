@@ -18,7 +18,7 @@ public class GameDataTests
         Assert.Equal(32, D.DmgLevelsMask);
         Assert.Equal(8, D.DefLevelsMask);
         Assert.Equal(5, D.MaxHeroLevel);
-        Assert.Equal([40, 5, 5, 15, 35], D.DropWeights);
+        Assert.Equal([20, 5, 5, 15, 35], D.DropWeights); // v0.23.1: kawa o połowę rzadziej
         Assert.Equal(new[] { 12, 13, 0, 3 }, D.Stages[2].Pool); // v0.21.49 cz. 3: etapy 0-1 to Akt 0
         Assert.Equal(9, D.Stages[5].Boss);
         Assert.Equal(-1, D.Stages[2].Boss);
@@ -81,9 +81,9 @@ public class GameDataTests
         Assert.Equal("-1 HP/turę", D.Statuses[(int)StatusEffect.Poison].Effect);
         Assert.Equal(3, D.PaperDelay);
         Assert.True(D.CritBasePct == 5 && D.CritPerLuckPct == 2 && D.CritMaxPct == 35 && D.CritMultiplier == 2 && D.DodgeMaxPct == 20);
-        Assert.True(D.ThermosCapacity == 3 && D.CoffeeHeal == 8 && D.BotDrinkBelowPct == 40 && D.GearDeclineXp == 1);
+        Assert.True(D.ThermosCapacity == 2 && D.CoffeeHeal == 11 && D.BotDrinkBelowPct == 40 && D.GearDeclineXp == 1);
         Assert.Equal(107, D.Stages[2].HpPct);
-        Assert.Equal("v0.23.0", D.Version);
+        Assert.Equal("v0.23.1", D.Version);
     }
 
     [Fact]

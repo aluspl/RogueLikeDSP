@@ -227,7 +227,7 @@ inline constexpr core::upgrade_def upgrades[] = {   // Szkolenia: poziomy (przyr
     { { "Kondycja", "Fitness" }, { "Więcej HP na start", "More HP at the start" }, core::upgrade_effect::hp, 4, { { core::upgrade_effect::hp, 1 }, { core::upgrade_effect::hp, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, {} }, { 25, 50, 90, 150, 0 }, { 10, 20, 0, 0 }, 2, 35 },
     { { "Szkolenie BHP", "Safety Basics" }, { "Mniej otrzymanych obrażeń", "Less damage taken" }, core::upgrade_effect::taken_pct, 4, { { core::upgrade_effect::taken_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::taken_pct, 1 }, { core::upgrade_effect::cash, 5 }, {} }, { 30, 60, 110, 180, 0 }, { 15, 0, 0, 0 }, 1, 30 },
     { { "Kurs fachowy", "Trade Course" }, { "Więcej zadawanych obrażeń", "More damage dealt" }, core::upgrade_effect::dmg_pct, 4, { { core::upgrade_effect::dmg_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::dmg_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, {} }, { 35, 70, 125, 200, 0 }, { 20, 0, 0, 0 }, 1, 40 },
-    { { "Lepszy termos", "Better Flask" }, { "Większy termos na kawę", "A bigger coffee flask" }, core::upgrade_effect::thermos, 4, { { core::upgrade_effect::thermos, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::thermos, 1 }, { core::upgrade_effect::thermos, 1 }, {} }, { 25, 50, 90, 150, 0 }, { 10, 0, 0, 0 }, 1, 20 },
+    { { "Lepszy termos", "Better Flask" }, { "Większy termos, lepszy sprzęt", "Bigger flask, better gear" }, core::upgrade_effect::thermos, 4, { { core::upgrade_effect::thermos, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::thermos, 1 }, { core::upgrade_effect::gear_pct, 1 }, {} }, { 25, 50, 90, 150, 0 }, { 10, 0, 0, 0 }, 1, 20 },
     { { "Dostawy", "Deliveries" }, { "Więcej materiałów i budżetu", "More materials and budget" }, core::upgrade_effect::mats_pct, 4, { { core::upgrade_effect::mats_pct, 5 }, { core::upgrade_effect::mats_pct, 5 }, { core::upgrade_effect::cash, 5 }, { core::upgrade_effect::mats_pct, 5 }, {} }, { 25, 50, 90, 150, 0 }, { 15, 0, 0, 0 }, 1, 30 },
     { { "Kurs BHP II", "Safety Course" }, { "Szczęście, kryt i unik", "Luck, crits and dodge" }, core::upgrade_effect::luck, 4, { { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::luck, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, {} }, { 30, 60, 110, 180, 0 }, { 20, 0, 0, 0 }, 1, 40 },
     { { "Warsztaty", "Workshops" }, { "Lepsza broń i sprzęt", "Better tools and gear" }, core::upgrade_effect::gear_pct, 4, { { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, { core::upgrade_effect::gear_pct, 1 }, {} }, { 35, 70, 125, 200, 0 }, { 20, 0, 0, 0 }, 1, 40 },
@@ -425,7 +425,7 @@ inline constexpr int badge_osiedle = 8;
 inline constexpr int badge_psi_przyjaciel = 9;
 
 inline constexpr core::keepsake_def keepsakes[] = {   // pamiątki: wybierane na start budowy, ranga rośnie z budowami
-    { { "Termos babci", "Granny's Flask" }, { "Stary, ale trzyma ciepło", "Old, but keeps it warm" }, core::perk_effect::thermos, { 1, 2, 3 }, -1, true, 0 },
+    { { "Termos babci", "Granny's Flask" }, { "Stary, ale trzyma ciepło", "Old, but keeps it warm" }, core::perk_effect::thermos, { 1, 1, 2 }, -1, true, 0 },
     { { "Kask ojca", "Dad's Helmet" }, { "Mniej boli: mniej obrażeń", "Hurts less: less damage" }, core::perk_effect::taken_pct, { 5, 8, 10 }, 0, false, 0 },
     { { "Szczęśliwa kielnia", "Lucky Trowel" }, { "Nigdy nie zawiodła", "Never let me down" }, core::perk_effect::luck, { 2, 3, 4 }, -1, false, 0 },
     { { "Stara poziomica", "Old Spirit Level" }, { "Wszystko widać jak na dłoni", "Everything plain as day" }, core::perk_effect::sight, { 1, 2, 3 }, -1, false, 0 },
@@ -562,8 +562,8 @@ inline constexpr uint64_t hurtownia_tools_mask = 168903680ull;   // v0.23.0: Hur
 inline constexpr int original_tools_count = 10;   // v0.23.0: dawne narzędzia (odznaka Kolekcjoner)
 inline constexpr int tool_costs[] = { 60, 80, 100, 125, 150, 175, 200, 225, 250 };   // v0.21.52: cena kolejnego kupionego narzędzia
 inline constexpr int tool_costs_count = 9;
-inline constexpr int drop_chance_pct = 25;
-inline constexpr int drop_weights[] = { 40, 5, 5, 15, 35 };
+inline constexpr int drop_chance_pct = 20;
+inline constexpr int drop_weights[] = { 20, 5, 5, 15, 35 };
 
 inline constexpr int crit_base_pct = 5;
 inline constexpr int crit_per_luck_pct = 2;
@@ -574,8 +574,8 @@ inline constexpr int rarity_per_luck = 3;
 inline constexpr int dodge_per_luck_pct = 2;
 inline constexpr int dodge_max_pct = 20;
 
-inline constexpr int thermos_capacity = 3;
-inline constexpr int coffee_heal = 8;
+inline constexpr int thermos_capacity = 2;
+inline constexpr int coffee_heal = 11;
 inline constexpr int bot_drink_below_pct = 40;
 
 inline constexpr core::gear_def gear[] = {   // indeks = slot * 3 + jakość
@@ -1163,7 +1163,7 @@ inline constexpr core::progress_title progress_titles[] = {   // tytuły: inspek
 };
 inline constexpr int progress_titles_count = 21;
 
-inline constexpr const char* version = "v0.23.0";   // numer wersji (ekran tytułowy, changelog)
+inline constexpr const char* version = "v0.23.1";   // numer wersji (ekran tytułowy, changelog)
 
 inline constexpr core::ltext damage_help[] = {   // Jak grać: obrażenia broni w prostych słowach (rozpiska #26)
     { "Cios = rzut broni + premie:", "Hit = weapon roll + bonuses:" },
