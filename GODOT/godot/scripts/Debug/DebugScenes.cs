@@ -40,6 +40,7 @@ public sealed class DebugScenes
         .. BetweenStaging.Names,
         .. WeaponStaging.Names,
         .. DogStaging.Names,
+        .. BackpackStaging.Names,
     ];
 
     private readonly App _app;
@@ -52,6 +53,7 @@ public sealed class DebugScenes
     private readonly BetweenStaging _between;
     private readonly WeaponStaging _weapons;
     private readonly DogStaging _dog;
+    private readonly BackpackStaging _bag;
 
     public DebugScenes(App app)
     {
@@ -65,6 +67,7 @@ public sealed class DebugScenes
         _between = new BetweenStaging(app);
         _weapons = new WeaponStaging(app);
         _dog = new DogStaging(app);
+        _bag = new BackpackStaging(app);
     }
 
     private ScreenFlow Flow => _app.Flow;
@@ -91,6 +94,11 @@ public sealed class DebugScenes
         if (DogStaging.Handles(scene)) // v0.23.0: easter egg – Kawka (mapa, głaskanie, dymek, Katalog)
         {
             await _dog.Setup(scene);
+            return;
+        }
+        if (BackpackStaging.Handles(scene)) // v0.23.2: plecak (karta, ekran, Hurtownia: Skup, PSZOK)
+        {
+            await _bag.Setup(scene);
             return;
         }
         if (WeaponStaging.Handles(scene)) // v0.23.0: bronie – celowanie wzorem, Cios B, pas, karta problemu, rzadkość

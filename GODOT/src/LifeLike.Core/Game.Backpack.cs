@@ -257,6 +257,13 @@ public sealed partial class Game
         return true;
     }
 
+    /// <summary>Dośw. za „Zostaw” na karcie paczki (0, gdy paczka była już odłożona).</summary>
+    public int OfferDeclineXp() =>
+        !HasOffer || (OfferPickup >= 0 && (Pickups[OfferPickup].Extra & GearBoxUsed) != 0) ? 0 : D.GearDeclineXp + OfferRarity;
+
+    /// <summary>Co stanie się ze starą bronią po „Weź”: 0 do plecaka, 1 na ziemię, 2 przepada (broń zawodu przy pełnym plecaku).</summary>
+    public int ToolTakeFate() => !BackpackFull() ? 0 : Array.FindIndex(D.Tools, tl => tl.Weapon == HandWeapon()) >= 0 ? 1 : 2;
+
     /// <summary>Paczka sprzętu z karty do plecaka (bez tury); false = plecak pełny.</summary>
     public bool OfferToBackpack()
     {

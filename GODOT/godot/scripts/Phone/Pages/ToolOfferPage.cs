@@ -23,22 +23,23 @@ public sealed class ToolOfferPage : PhonePage
 
     public override string Title => Loc.T("nowe_narzedzie");
     public override string Sub => _g.ToolOffer >= 0 ? _g.D.Weapons[_g.D.Tools[_g.ToolOffer].Weapon].Name : "";
-    /// <summary>Zaznaczony wybór: 0 = zostaję przy ulepszonym (domyślnie), 1 = zamieniam.</summary>
+    /// <summary>v0.23.2: zaznaczony wybór – OfferPage.Take (Weź), Store (Do plecaka, domyślnie), Leave (Zostaw).</summary>
     public int Sel { get; set; }
 
-    /// <summary>Zatwierdzenie: true = zamiana (ToolOfferScreen.Decide).</summary>
-    public Action<bool> Decided;
+    /// <summary>Zatwierdzenie wyboru (ToolOfferScreen.Decide).</summary>
+    public Action<int> Decided;
 
-    public override string Hint => Loc.T("strzalki_wybor_spacja_enter");
-    public override PageAction[] Actions => [new(Loc.T("wybierz"), GameAction.A), new(Loc.T("zostaje_2"), GameAction.B)];
+    public override string Hint => Loc.T("karta_hint");
+    public override PageAction[] Actions => [new(Loc.T("zostaw"), GameAction.B), new(Loc.T("wybierz"), GameAction.A)];
 
-    public override void Enter() => Sel = 0;
+    public override void Enter() => Sel = _g.BackpackFull() ? OfferPage.Leave : OfferPage.Store;
 
     public override bool Input(InputCmd e)
     {
-        var d = e.VDir != 0 ? e.VDir : e.HDir;
+        var d = e.VDir;
         if (d == 0) return false;
-        Sel = 1 - Sel;
+        Sel = (Sel + d + 3) % 3;
+        if (Sel == OfferPage.Store && _g.BackpackFull()) Sel = (Sel + d + 3) % 3;
         Sfx.Play("menu");
         return true;
     }
@@ -46,8 +47,8 @@ public sealed class ToolOfferPage : PhonePage
     /// <summary>Dotknięcie wiersza: pierwsze zaznacza, drugie na zaznaczonym zatwierdza.</summary>
     public override bool TapRow(int index)
     {
-        if (index is < 0 or > 1) return false;
-        if (index == Sel) Decided?.Invoke(Sel == 1);
+        if (index is < 0 or > 2 || (index == OfferPage.Store && _g.BackpackFull())) return false;
+        if (index == Sel) Decided?.Invoke(Sel);
         else Sel = index;
         return true;
     }
@@ -94,17 +95,17 @@ public sealed class ToolOfferPage : PhonePage
             p.Divider(c1, r1 + 1);
             p.Text(tx, p.RowY(c1, r1 + 1), extra.TrimStart(), Ink.Done, TextAlign.Left, right - tx);
         }
-        y = p.Section(c1.End.Y + 4, Loc.T("wybierz_3"));
-        var c2 = p.Card(y, 2);
-        string[] rows = [Loc.F("zostaje_3", _g.WeaponTitle()), Loc.F("zamieniam_przepadnie", d.Weapons[w].Name, _g.WeaponLvl)];
-        for (var k = 0; k < 2; k++)
-        {
-            if (k > 0) p.Divider(c2, k);
-            if (k == Sel) p.Selected(c2, k);
-            else p.Stripe(c2, k, k == 1 ? Pal.Late : Pal.Todo);
-            p.HitRow(c2, k, k);
-            p.Text(tx, p.RowY(c2, k), rows[k], k == Sel ? Ink.Brand : k == 1 ? Ink.Late : Ink.Dark, TextAlign.Left, right - tx);
-        }
+        // v0.23.2: trzy wybory – Weź (stara broń do plecaka / na ziemię / przepada), Do plecaka, Zostaw
+        var full = _g.BackpackFull();
+        var fate = _g.ToolTakeFate();
+        var title = _g.WeaponTitle();
+        string[] rows =
+        [
+            fate == 0 ? Loc.F("karta_wez_plecak", title) : fate == 1 ? Loc.F("karta_wez_ziemia", title) : Loc.F("karta_wez_przepada", title),
+            full ? Loc.F("karta_plecak_pelny", _g.BackpackCount(), _g.BackpackSlots()) : Loc.F("karta_do_plecaka", _g.BackpackCount(), _g.BackpackSlots()),
+            Loc.T("karta_zostaw"),
+        ];
+        OfferPage.Choices(p, c1.End.Y + 4, rows, Sel, full, 0);
     }
 
     /// <summary>v0.23.0: rzadkość i typ ciosu, a gdy się mieści – też Patent nazwą ruchu („Markowa · Cięcie · Patent: Zamach z barku”).</summary>

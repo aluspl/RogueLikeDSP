@@ -97,6 +97,11 @@ public sealed class GameScreen : Screen
             ToggleOverview();
             return true;
         }
+        if (e.Is(GameAction.Info)) // v0.23.2: plecak (I)
+        {
+            Flow.Backpack.Open();
+            return true;
+        }
         if (e.Is(GameAction.Start))
         {
             Menu.Open();

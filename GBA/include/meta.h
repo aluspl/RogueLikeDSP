@@ -572,7 +572,8 @@ namespace core
     // raz" w Jak grać. v0.23.0: tut_short = profil zaczął od krótkiego samouczka; starsze profile (pełny samouczek
     // obejrzany) nie dostają dymków o tym, co już widziały - bez nowej wersji profilu (wolne bity pola tutorial).
     enum tutorial_flag : uint16_t { tut_title = 1, tut_class = 2, tut_respect = 4, tut_daily = 8, tut_investor = 16, tut_act0 = 32,
-        tut_short = 64, tut_training = 128, tut_options = 256, tut_help = 512, tut_keepsake = 1024, tut_stats = 2048 };
+        tut_short = 64, tut_training = 128, tut_options = 256, tut_help = 512, tut_keepsake = 1024, tut_stats = 2048,
+        tut_backpack = 4096 };   // v0.23.2: dymek Marka przy pierwszym przedmiocie w plecaku
     enum tutorial_unlock : int { unlock_respect, unlock_daily, unlock_investor, unlock_act0, unlock_class, unlock_secret,
         unlock_training, unlock_options, unlock_help, unlock_keepsake, unlock_stats };   // = data::tutorial_unlocks
     static_assert(data::tutorial_unlocks_count == 11);

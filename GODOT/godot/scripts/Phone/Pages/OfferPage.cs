@@ -14,14 +14,66 @@ namespace LifeLike.Game.Phone.Pages;
 /// </summary>
 public sealed class OfferPage : PhonePage
 {
+    /// <summary>v0.23.2: wybory karty – Załóż, Do plecaka, Zostaw.</summary>
+    public const int Take = 0, Store = 1, Leave = 2;
+
+    private const int ChoiceBase = 50;
     private readonly CoreGame _g;
 
     public OfferPage(CoreGame g) => _g = g;
 
+    /// <summary>Zaznaczony wybór (Take / Store / Leave).</summary>
+    public int Sel { get; set; }
+
+    /// <summary>Zatwierdzenie wyboru (OfferScreen.Decide).</summary>
+    public System.Action<int> Decided { get; set; }
+
     public override string Title => Loc.T("paczka_sprzetu");
     public override string Sub => _g.OfferSlot >= 0 ? _g.D.GearSlots[_g.OfferSlot] : "";
-    public override string Hint => Loc.F("spacja_enter_zakladam_z_esc", _g.D.GearDeclineXp + _g.OfferRarity);
-    public override PageAction[] Actions => [new(Loc.T("zakladam"), GameAction.A), new(PhoneView.Full ? Loc.F("zostawiam_xp", _g.D.GearDeclineXp + _g.OfferRarity) : Loc.F("zostawiam_xp_kr", _g.D.GearDeclineXp + _g.OfferRarity), GameAction.B)];
+    public override string Hint => Loc.T("karta_hint");
+    public override PageAction[] Actions => [new(Loc.T("zostaw"), GameAction.B), new(Loc.T("wybierz"), GameAction.A)];
+
+    public override void Enter() => Sel = _g.OfferIsBetter ? Take : !_g.BackpackFull() ? Store : Leave;
+
+    public override bool Input(InputCmd e)
+    {
+        var d = e.VDir;
+        if (d == 0) return false;
+        Sel = (Sel + d + 3) % 3;
+        if (Sel == Store && _g.BackpackFull()) Sel = (Sel + d + 3) % 3; // pełny plecak – pomija wyszarzony wybór
+        Audio.Sfx.Play("menu");
+        return true;
+    }
+
+    /// <summary>Dotknięcie wyboru: pierwsze zaznacza, drugie zatwierdza.</summary>
+    public override bool TapRow(int index)
+    {
+        var k = index - ChoiceBase;
+        if (k is < 0 or > 2 || (k == Store && _g.BackpackFull())) return false;
+        if (k == Sel) Decided?.Invoke(k);
+        else Sel = k;
+        return true;
+    }
+
+    /// <summary>v0.23.2: trzy wybory karty (Załóż / Do plecaka / Zostaw) od y – wspólne z kartą broni.</summary>
+    public static float Choices(PhonePainter p, float y, string[] rows, int sel, bool storeOff, int hitBase)
+    {
+        var c = p.Card(y, rows.Length);
+        var tx = p.TextX(c);
+        for (var k = 0; k < rows.Length; k++)
+        {
+            var off = k == Store && storeOff;
+            if (k == sel) p.Selected(c, k);
+            else
+            {
+                if (k > 0) p.Divider(c, k);
+                p.Stripe(c, k, off ? Pal.Border : k == Take ? Pal.Done : k == Store ? Pal.Prog : Pal.Todo);
+            }
+            if (!off) p.HitRow(c, k, hitBase + k);
+            p.Text(tx, p.RowY(c, k), rows[k], off ? Ink.Dim : k == sel ? Ink.Brand : Ink.Dark, TextAlign.Left, c.End.X - 6 - tx);
+        }
+        return c.End.Y;
+    }
 
     public override void Draw(PhonePainter p)
     {
@@ -62,6 +114,16 @@ public sealed class OfferPage : PhonePage
             p.Stripe(c, row + i, Pal.Late);
             p.Text(p.TextX(c), p.RowY(c, row + i), warnLines[i], Ink.Late, TextAlign.Left, c.End.X - 6 - p.TextX(c));
         }
+        // v0.23.2: trzy wybory
+        var full = g.BackpackFull();
+        var xp = g.OfferDeclineXp();
+        string[] rows =
+        [
+            full ? Loc.T("karta_zaloz_ziemia") : Loc.T("karta_zaloz_plecak"),
+            full ? Loc.F("karta_plecak_pelny", g.BackpackCount(), g.BackpackSlots()) : Loc.F("karta_do_plecaka", g.BackpackCount(), g.BackpackSlots()),
+            xp > 0 ? Loc.F("karta_zostaw_xp", xp) : Loc.T("karta_zostaw"),
+        ];
+        Choices(p, c.End.Y + 4, rows, Sel, full, ChoiceBase);
     }
 
     /// <summary>v0.23.0: ostrzeżenie, że pas bez kabury zdejmie pas z kaburą (broń z kabury wypadnie na ziemię).</summary>

@@ -96,6 +96,15 @@ public partial class HudLayer : ScaledLayer
 
     public void HideAttackTip() => _tip.HideTip();
 
+    /// <summary>v0.23.2: dotknięcie pola broni w górnym pasku (punkt w pikselach UI) – plecak.</summary>
+    public bool WeaponHit(Vector2 p)
+    {
+        if (!_top.Visible || _top.WeaponRect.Size.X <= 0) return false;
+        var s = Layout.HudScale;
+        var local = p / s - new Vector2(_top.OffsetLeft, _top.OffsetTop);
+        return _top.WeaponRect.Grow(3).HasPoint(local);
+    }
+
     public void HideEnemyCard()
     {
         _card.Visible = false;

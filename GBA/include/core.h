@@ -4873,6 +4873,12 @@ namespace core
             push(message().add(UI(pszok_segregacja)).add(xp).add(UI(dosw)).as(good));
             return true;
         }
+        int offer_decline_xp() const
+        {
+            return ! has_offer() || (offer_pickup >= 0 && (pickups[offer_pickup].extra & gear_box_used)) ? 0 : data::gear_decline_xp + offer_rarity;
+        }
+        // Stara broń po "Weź": 0 do plecaka, 1 na ziemię, 2 przepada (broń zawodu przy pełnym plecaku).
+        int tool_take_fate() const { return ! backpack_full() ? 0 : (tool_of_weapon(hand_weapon()) >= 0 ? 1 : 2); }
         bool offer_to_backpack()
         {
             if(! has_offer() || backpack_full()) return false;

@@ -16,4 +16,6 @@ public static class Tutorial
     public const ushort Help = 512;
     public const ushort Keepsake = 1024;
     public const ushort Stats = 2048;
+    /// <summary>v0.23.2: dymek Marka przy pierwszym przedmiocie w plecaku (w trakcie budowy).</summary>
+    public const ushort Backpack = 4096;
 }

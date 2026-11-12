@@ -24,14 +24,16 @@ public sealed class GearTab : PhonePage
     private readonly System.Action _brigade;
     private readonly System.Action _breakdown;
     private readonly System.Action _boons;
+    private readonly System.Action _backpack;
     private int _scroll, _maxScroll;
 
-    public GearTab(CoreGame g, System.Action brigade = null, System.Action breakdown = null, System.Action boons = null)
+    public GearTab(CoreGame g, System.Action brigade = null, System.Action breakdown = null, System.Action boons = null, System.Action backpack = null)
     {
         _g = g;
         _brigade = brigade;
         _breakdown = breakdown;
         _boons = boons;
+        _backpack = backpack;
     }
 
     public override string Title => Loc.T("sprzet_5");
@@ -39,7 +41,8 @@ public sealed class GearTab : PhonePage
     public override PageAction[] Actions =>
         _brigade is null ? [] : _breakdown is null ? [new(Loc.T("brygada_3"), GameAction.A)]
         : _boons is null ? [new(Loc.T("obrazenia"), GameAction.Info), new(Loc.T("brygada_3"), GameAction.A)]
-        : [new(Loc.T("obrazenia"), GameAction.Info), new(Loc.T("premie_3"), GameAction.R), new(Loc.T("brygada_3"), GameAction.A)];
+        : _backpack is null ? [new(Loc.T("obrazenia"), GameAction.Info), new(Loc.T("premie_3"), GameAction.R), new(Loc.T("brygada_3"), GameAction.A)]
+        : [new(Loc.T("obrazenia"), GameAction.Info), new(Loc.T("premie_3"), GameAction.R), new(Loc.F("plecak_btn", _g.BackpackCount()), GameAction.Swap), new(Loc.T("brygada_3"), GameAction.A)]; // v0.23.2
 
     /// <summary>Pierwsza widoczna sekcja (0 = od narzędzia).</summary>
     public int Scroll => _scroll;
@@ -56,6 +59,11 @@ public sealed class GearTab : PhonePage
         if (_breakdown is not null && e.Is(GameAction.Info))
         {
             _breakdown();
+            return true;
+        }
+        if (_backpack is not null && e.Is(GameAction.Swap)) // v0.23.2: plecak (X)
+        {
+            _backpack();
             return true;
         }
         if (_boons is not null && e.Is(GameAction.R)) // premie po etapach i synergie
@@ -243,7 +251,8 @@ public sealed class GearTab : PhonePage
         var g = _g;
         var d = g.D;
         var slots = Slots();
-        var y = p.Section(top, Loc.T("sprzet_8"), $"{CountEquipped()}/{slots.Count}");
+        var bag = _backpack is null ? "" : ButtonNames.Pick(Loc.F("x_plecak", _g.BackpackCount(), _g.BackpackSlots()), Loc.F("plecak_n", _g.BackpackCount(), _g.BackpackSlots())) + "  "; // v0.23.2
+        var y = p.Section(top, Loc.T("sprzet_8"), $"{bag}{CountEquipped()}/{slots.Count}");
         var c1 = p.Card(y, slots.Count);
         var tx = p.TextX(c1);
         var right = c1.End.X - 6;

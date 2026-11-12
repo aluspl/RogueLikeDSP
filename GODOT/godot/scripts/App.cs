@@ -83,6 +83,7 @@ public sealed class App
     public void AfterAction(bool acted)
     {
         Refresh();
+        BackpackTip();
         if (!acted) return;
         if (OpenPending()) return;
         switch (Session.Resolve())
@@ -100,6 +101,16 @@ public sealed class App
                 Flow.Offer.Open();
                 break;
         }
+    }
+
+    /// <summary>v0.23.2: pierwszy przedmiot w plecaku – jednorazowy dymek Marka (bit Tutorial.Backpack w profilu).</summary>
+    private void BackpackTip()
+    {
+        var p = Session.Profile;
+        if (p is null || Session.Game.BackpackCount() == 0 || (p.Tutorial & Tutorial.Backpack) != 0) return;
+        p.Tutorial |= Tutorial.Backpack;
+        Session.Save();
+        Nodes.Banners.Push(Loc.T("tut_plecak_tytul"), Loc.T("tut_plecak"), Phone.PhoneTabs.Gear);
     }
 
     /// <summary>

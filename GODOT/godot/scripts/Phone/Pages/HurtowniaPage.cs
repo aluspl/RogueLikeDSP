@@ -28,8 +28,16 @@ public sealed class HurtowniaPage : PhonePage
     public override string Hint => Loc.T("spacja_enter_kup_zaznaczone_z");
     public override PageAction[] Actions => [new(Loc.T("kup"), GameAction.A), new(Loc.T("dalej"), GameAction.B, PageRole.Back)];
 
+    /// <summary>v0.23.2: dotknięcie zakładki Hurtowni (Skup, PSZOK, Plecak).</summary>
+    public System.Action<int> TabTo { get; set; }
+
     public override bool TapRow(int index)
     {
+        if (index >= HurtTabs.HitBase)
+        {
+            TabTo?.Invoke(index - HurtTabs.HitBase);
+            return true;
+        }
         if (index == _list.Sel) Buy();
         else _note = "";
         _list.Sel = index;
@@ -112,7 +120,7 @@ public sealed class HurtowniaPage : PhonePage
     public override void Draw(PhonePainter p)
     {
         var d = _g.D;
-        var c0 = p.Card(p.Top, 1);
+        var c0 = p.Card(HurtTabs.Draw(p, p.Top, HurtTabs.Shop), 1); // v0.23.2: zakładki
         var tx = p.TextX(c0);
         var right = c0.End.X - 6;
         var bonus = Loc.F("premia_za_akt_zl", _g.ActNumeral(), _g.ActBonus);
