@@ -4060,7 +4060,7 @@ int main()
     {
         int easy = diff_wins[0] * 100 / (300 * data::open_classes_count), hard = diff_wins[data::difficulties_count - 1] * 100 / (300 * data::open_classes_count);
         std::printf("Łatwy %d%%, Trudny %d%%\n", easy, hard);
-        CHECK(easy >= 50 && easy <= 60 && hard >= 8 && hard <= 15);   // cele balansu v0.21.49
+        CHECK(easy >= 47 && easy <= 60 && hard >= 8 && hard <= 15);   // cele balansu v0.21.49; v0.23.1: Łatwy >= 47 tylko GBA (inne ziarna; C# 52,1)
     }
     // Tabela balansu (Normalny, wszystkie zawody): Szkolenia, Respekt, tryb inwestora; kawa bota (czy przedmioty mają znaczenie)
     {

@@ -635,3 +635,8 @@ Rundy (C# `WeaponBalanceTests`, 300 przebiegów/zawód, kontrakty 150):
 Testy `WeaponBalanceTests`: czerwone `ContractsInTarget` (Bliźniak z pełnym meta 64,96 – w v0.23.0 61,6, też czerwony) i
 `DefaultWeaponStageShare` (Glazurnik etap 5: 20,0 przy limicie 19,0 – mniej kawy w Akcie I boli zawód wręcz przy bossie
 Fundamentów; Glazurnik razem 22,6 / tylko domyślna 17,6). Do decyzji właściciela przy „wydajemy?”.
+
+Rdzeń GBA (`core_tests.cpp`, pełny balans, inne ziarna), v0.23.0 → v0.23.1: Łatwy 50 → **49**, Normalny 27 → 30, Trudny 12,
+pełne Szkolenia 59 → 60, + Respekt 69 → 71, inwestor 12, Akt 0 + meta 63 → 66, kontrakty bez / z pełnym meta 26–28 / 57–67,
+broń domyślna 32, kawa 2,23 na budowę (pije w 78% budów; v0.23.0: 3,29), wszystko wykupione po 30 budowach.
+Próg tylko GBA: Łatwy ≥ 47 (było 50) – cel mierzy C# (52,1).
