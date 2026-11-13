@@ -9,7 +9,7 @@ Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 ### In English
 **Backpack**: 6 slots for weapons and gear you find on site. A gear pack or a weapon on the floor now opens a card with
 three choices – **Equip / Take** (the old item goes to the backpack, or stays on the floor when it is full), **To
-backpack** and **Leave it**. The **Backpack** screen (I on desktop, phone → Gear → Backpack, tap the weapon in the HUD in
+backpack** and **Leave it**. The **Backpack** screen (in the Godot version now part of the Character screen; I on desktop, phone → Gear → Backpack, tap the weapon in the HUD in
 portrait; retro version: phone → Gear → A) shows ▲ better / ▼ weaker / = same against what you wear; swapping costs a
 turn (like the holster), dropping is free. After an act boss the merchant has new tabs: **Sell** (backpack items for
 materials – rarer gives more) and **Scrap** (give items away for a little XP and +2 HP; "Sorted!"), plus a free swap.
@@ -27,7 +27,7 @@ for storerooms. A build in progress from v0.23.0–v0.23.1 still loads (with an 
      jak dotąd): **Załóż / Weź** (stary przedmiot do plecaka, przy pełnym zostaje na ziemi), **Do plecaka** (przy
      pełnym wyszarzone: „Plecak pełny (6/6)”), **Zostaw** (+dośw. raz, przedmiot zostaje na ziemi – można wrócić).
      Broń z kabury przy zmianie pasa i stara broń przy zakupie w Hurtowni też trafiają najpierw do plecaka.
-   - **Ekran Plecak:** I na placu, telefon → Sprzęt → Plecak, w pionie dotknięcie broni w górnym pasku; w wersji retro
+   - **Ekran Plecak** (w Godot od pkt 1a – ekran Postać): I na placu, telefon → Sprzęt → Plecak, w pionie dotknięcie broni w górnym pasku; w wersji retro
      telefon → Sprzęt → A (rozpiska obrażeń: Start → A). Przy każdym przedmiocie ▲ lepsze / ▼ słabsze / = równe
      względem noszonego (broń: średni cios), porównanie zaznaczonego; **Załóż** (1 tura, jak kabura), **Do kabury**,
      **Wyrzuć** (na ziemię pod bohaterem, bez tury).
