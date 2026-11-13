@@ -5067,7 +5067,8 @@ namespace
         phone_screen ph(4);
         bn::sprite_palette_item default_ink = a.text.palette_item();
         page_sprites t;
-        int sel = 0, top = 0;
+        int sel = 0, top = 0, clock = 0;
+        bool tabs_hint = false;   // v0.23.2: wiersz 0 na zmianę - premia za akt i "L/R: Skup, PSZOK, Plecak"
         const char* note = nullptr;
         bn::sound_items::sfx_notify.play(bn::fixed(0.7));
         auto redraw = [&]() {
@@ -5076,7 +5077,7 @@ namespace
             phone_header(a, ph, t, UI(hurtownia_3), sub.s);
             phone_canvas& c = *ph.canvas;
             core::message b; b.add(UI(premia_za_akt)).add(g.act_numeral()).add(": +").add(g.act_bonus).add(UI(zl));
-            phone_text(a, t, list_x, row_py(0), note ? note : b.s, note ? ink::brand : ink::done);
+            phone_text(a, t, list_x, row_py(0), note ? note : (tabs_hint ? UI(bpg_hurt_tabs) : b.s), note ? ink::brand : (tabs_hint ? ink::brand : ink::done));
             for(int r = 0; r < 4 && top + r < data::hurtownia_count; ++r)   // 4 wiersze, przewijane
             {
                 const core::shop_item_def& it = data::hurtownia[top + r];
@@ -5131,6 +5132,7 @@ namespace
                 next_frame();
                 continue;
             }
+            if(! note && ++clock % 150 == 0) { tabs_hint = ! tabs_hint; redraw(); }
             int n = data::hurtownia_count;
             int dir = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
             if(dir)

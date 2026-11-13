@@ -317,6 +317,13 @@ wejść też do publicznego 0.23.x):
   (baza, Szkolenia, Respekt, pamiątki, dropy, uzupełnienia), potem balans bota. Zrobione: termos 2 (było 3), Termos
   babci +1/+1/+2, Lepszy termos razem +2, z mapy jedna kawa na etap, kawa z dropów o połowę rzadziej; kawa leczy 11 HP
   (było 8) – Normalny 30,6% (docs/v0.23/balans.md, v0.23.1).
+- ✅ **(v0.23.2) Plecak** (właściciel 2026-11-12, projekt `docs/v0.23/plecak.md`): 6 miejsc na bronie i sprzęt z mapy;
+  karta paczki / broni z trzema wyborami (Załóż/Weź – stary do plecaka, Do plecaka, Zostaw – przedmiot zostaje na ziemi),
+  ekran Plecak (▲ lepsze / ▼ słabsze / =, Załóż za turę, Do kabury, Wyrzuć), po bossie aktu Hurtownia: Skup (materiały
+  1/2/3/5 wg rzadkości) i PSZOK (dośw. + 2 HP), zapis PBRUN20 z migracją, dymek Marka; Godot i GBA (telefon → Sprzęt → A,
+  Hurtownia L/R). Bot: zakłada lepsze, porównywalne do plecaka, sprzedaje wszystko oprócz najlepszej zapasowej broni –
+  Normalny 32,6%, wszystkie cele w zakresie (docs/v0.23/balans.md, v0.23.2). Podniesienie broni z kartą 3 wyborów zrobione
+  tu; okno porównania ataków (Cios/Patent) zostaje do v0.24.
 - **Boss areny:** po pokonaniu schody pojawiają się w miejscu jego śmierci, ale mapa się nie kończy – można dalej
   zwiedzać i wyjść schodami (wszystkie rodzaje bossów; bot musi wejść na schody).
 - ✅ **(v0.23.1) Znacznik pękniętej ściany do przerobienia** (zgłaszany kilka razy): teraz czarny „X” w pomarańczowej ramce na murze

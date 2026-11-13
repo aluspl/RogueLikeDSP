@@ -640,3 +640,83 @@ Rdzeń GBA (`core_tests.cpp`, pełny balans, inne ziarna), v0.23.0 → v0.23.1: 
 pełne Szkolenia 59 → 60, + Respekt 69 → 71, inwestor 12, Akt 0 + meta 63 → 66, kontrakty bez / z pełnym meta 26–28 / 57–67,
 broń domyślna 32, kawa 2,23 na budowę (pije w 78% budów; v0.23.0: 3,29), wszystko wykupione po 30 budowach.
 Próg tylko GBA: Łatwy ≥ 47 (było 50) – cel mierzy C# (52,1).
+
+## v0.23.2 – plecak (2026-11-13)
+
+Zmiana: plecak 6 miejsc (`backpack` w `game.json`), karta paczki / broni z wyborem Załóż / Do plecaka / Zostaw (każda
+broń z mapy daje kartę; Zostaw zostawia przedmiot na ziemi, dośw. i materiał z paczki tylko raz), Skup po bossie aktu
+(sztuki materiału wg poziomu: Zwykła 1, Solidna 2, Markowa 3, Mistrzowska / artefakt 5; broń – stal, sprzęt – drewno, co
+druga sztuka cement; limit materiału 9) i PSZOK (+3 dośw. + 2 za poziom, +2 HP). Bot (`Bot.Step` / `StepSmart`,
+`BotWeapons.ToolOffer`, `Game.BotGearOffer`, `Game.BotSkup`): paczkę lepszą zakłada (stary do plecaka), tej samej
+jakości chowa do plecaka, gorszą zostawia; broń wyraźnie lepszą (115%) bierze, porównywalną (≥ 90% oceny broni w ręku)
+chowa do plecaka; w Skupie sprzedaje wszystko oprócz najlepszej zapasowej broni (średni cios), Skup przed ulepszeniem
+narzędzia (materiały na kolejny poziom). Bot „tylko broń domyślna” plecaka nie używa (zawsze Zostaw).
+
+Pomiar: `WeaponBalanceTests`, 300 przebiegów na zawód (kontrakty 150), ceny Skupu wyjściowe z projektu – **bez strojenia**
+(wszystkie cele w zakresie; Normalny +2 p.p. względem v0.23.1, nadal w 25–35). Kontrakt Bliźniak z pełnym meta wraca do
+celu (65,3; w v0.23.1 64,96). Jedyny czerwony test: `DefaultWeaponStageShare` – Glazurnik tylko z bronią domyślną, etap 5:
+20,6% przy limicie 19,0 (v0.22.1 + 10 p.p.); znany z v0.23.1 (20,0) – bot z bronią domyślną nie używa plecaka, więc to
+skutek mniejszej liczby kaw w Akcie I, nie plecaka. Do decyzji właściciela (jak w v0.23.1).
+
+| Cel | v0.23.1 | v0.23.2 | Zakres |
+|---|---|---|---|
+| Łatwy | 52,1 | 54,0 | 50–60 |
+| Normalny | 30,6 | 32,6 | 25–35 |
+| Trudny | 13,3 | 13,9 | 8–15 |
+| Pełne Szkolenia | 61,8 | 64,6 | 55–65 |
+| + Respekt | 73,1 | 75,6 | 70–80 |
+| Akt 0 + meta | 72,0 | 72,2 | 65–75 |
+| Inwestor | 12,7 | 14,3 | 5–15 |
+| Kontrakty bez meta | 26,1–30,0 | 27,6–31,7 | 25–40 |
+| Kontrakty pełne meta | 65,0–71,7 | 65,3–71,9 | 65–80 |
+
+Pełny wynik (300 przebiegów na zawód):
+
+Przebiegi na zawód: 300 (kontrakty 150); średnie celów = zwykłe zawody (bez sekretów), jak core_tests.cpp.
+
+| Cel | Wynik | Zakres |
+|---|---|---|
+| Łatwy | 54,0 | 50–60 |
+| Normalny | 32,6 (wszystkie zawody 31,9) | 25–35 |
+| Trudny | 13,9 | 8–15 |
+| Pełne Szkolenia | 64,6 | 55–65 |
+| + Respekt | 75,6 | 70–80 |
+| Akt 0 + meta | 72,2 | 65–75 |
+| Inwestor (wszystkie modyfikatory) | 14,3 | 5–15 |
+| Kontrakt Letniskowy bez meta / pełne meta | 29,6 / 71,9 | 25–40 / 65–80 |
+| Kontrakt Bliźniak bez meta / pełne meta | 27,6 / 65,3 | 25–40 / 65–80 |
+| Kontrakt Poddasze bez meta / pełne meta | 31,7 / 70,4 | 25–40 / 65–80 |
+| Kontrakt Kamienica bez meta / pełne meta | 31,3 / 71,1 | 25–40 / 65–80 |
+| Tylko broń domyślna, Normalny | 32,8 (wszystkie 32,0) | zawód ≥ bot z bronią −5 p.p. |
+
+| Zawód | v0.22.1 | Bot (Normalny) | Tylko domyślna | Δ domyślna (vs bot) | Najgorszy etap domyślnej (Δ udziału porażek, p.p.) |
+|---|---|---|---|---|---|
+| Kierownik budowy | 36,7 | 38,0 | 37,3 | -0,7 | 10: 5,3 |
+| Murarz | 16,0 | 22,3 | 22,6 | 0,3 | 6: 4,0 |
+| Cieśla-dekarz | 48,7 | 50,6 | 54,6 | 4,0 | 6: 2,7 |
+| Elektryk | 35,3 | 39,0 | 39,3 | 0,3 | 10: 4,6 |
+| Hydraulik | 14,0 | 13,3 | 11,6 | -1,7 | 6: 3,0 |
+| Glazurnik | 23,3 | 21,3 | 16,3 | -5,0 | 5: 11,6 |
+| Dekarz | 57,0 | 50,3 | 56,0 | 5,7 | 11: 5,0 |
+| Tynkarz | 36,7 | 36,0 | 36,3 | 0,3 | 5: 5,9 |
+| Operator koparki | 23,0 | 22,6 | 20,6 | -2,0 | 9: 4,9 |
+| Spawacz | 35,0 | 34,6 | 35,6 | 1,0 | 11: 5,0 |
+| Geodeta | 36,7 | 33,6 | 34,3 | 0,7 | 6: 11,7 |
+| Majster | 23,0 | 20,6 | 19,0 | -1,6 | 9: 9,3 |
+
+Porażki na etapach (etap: udział % wszystkich przebiegów zawodu), Normalny:
+
+| Zawód | Bot | Tylko domyślna |
+|---|---|---|
+| Kierownik budowy | 3: 0,3, 4: 0,6, 5: 7,6, 6: 6,6, 7: 2,0, 8: 15,0, 9: 11,6, 10: 6,6, 11: 11,3 | 3: 0,3, 4: 0,6, 5: 6,6, 6: 7,6, 7: 1,3, 8: 13,3, 9: 12,6, 10: 7,3, 11: 12,6 |
+| Murarz | 4: 0,3, 5: 7,6, 6: 6,3, 7: 3,0, 8: 18,3, 9: 20,0, 10: 6,3, 11: 15,6 | 4: 0,3, 5: 8,3, 6: 6,0, 7: 3,0, 8: 18,3, 9: 20,0, 10: 6,0, 11: 15,3 |
+| Cieśla-dekarz | 3: 0,3, 4: 0,3, 5: 4,3, 6: 4,6, 7: 1,6, 8: 10,0, 9: 10,3, 10: 6,0, 11: 11,6 | 3: 0,6, 5: 4,0, 6: 4,0, 7: 1,6, 8: 7,3, 9: 10,3, 10: 5,6, 11: 11,6 |
+| Elektryk | 4: 0,6, 5: 6,6, 6: 2,6, 7: 3,6, 8: 12,3, 9: 12,3, 10: 5,3, 11: 17,3 | 4: 0,6, 5: 7,0, 6: 2,3, 7: 3,6, 8: 12,6, 9: 11,6, 10: 5,6, 11: 17,0 |
+| Hydraulik | 4: 0,3, 5: 4,0, 6: 6,0, 7: 5,6, 8: 29,3, 9: 24,3, 10: 3,3, 11: 13,6 | 4: 0,3, 5: 4,3, 6: 6,3, 7: 5,6, 8: 29,6, 9: 23,3, 10: 3,6, 11: 15,0 |
+| Glazurnik | 4: 0,6, 5: 19,6, 6: 10,6, 7: 3,3, 8: 16,0, 9: 13,6, 10: 2,3, 11: 12,3 | 4: 0,6, 5: 20,6, 6: 10,6, 7: 4,3, 8: 19,6, 9: 12,3, 10: 2,3, 11: 13,0 |
+| Dekarz | 5: 14,6, 6: 3,3, 8: 8,3, 9: 10,6, 10: 0,6, 11: 12,0 | 5: 14,3, 6: 2,6, 8: 7,0, 9: 8,0, 11: 12,0 |
+| Tynkarz | 3: 0,3, 5: 15,3, 6: 5,3, 7: 2,3, 8: 13,3, 9: 12,0, 10: 1,0, 11: 14,3 | 3: 0,3, 5: 15,6, 6: 4,0, 7: 3,0, 8: 12,3, 9: 12,0, 10: 1,0, 11: 15,3 |
+| Operator koparki | 5: 9,6, 6: 6,3, 7: 1,6, 8: 24,3, 9: 23,3, 10: 2,0, 11: 10,0 | 5: 9,0, 6: 6,6, 7: 2,0, 8: 24,0, 9: 23,6, 10: 2,6, 11: 11,3 |
+| Spawacz | 4: 0,3, 5: 11,0, 6: 9,6, 7: 3,6, 8: 16,0, 9: 8,3, 10: 4,0, 11: 12,3 | 5: 10,6, 6: 8,0, 7: 3,3, 8: 15,6, 9: 9,0, 10: 4,6, 11: 13,0 |
+| Geodeta | 4: 0,6, 5: 8,6, 6: 14,3, 7: 2,0, 8: 17,3, 9: 8,6, 10: 5,6, 11: 9,0 | 4: 0,6, 5: 8,0, 6: 14,0, 7: 2,3, 8: 17,3, 9: 8,6, 10: 6,0, 11: 8,6 |
+| Majster | 5: 7,6, 6: 5,0, 7: 1,6, 8: 16,0, 9: 30,6, 10: 3,0, 11: 15,3 | 5: 7,6, 6: 5,0, 7: 2,0, 8: 16,6, 9: 30,0, 10: 2,6, 11: 17,0 |

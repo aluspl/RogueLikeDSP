@@ -2236,6 +2236,7 @@ namespace ui
         bpg_tip_t,
         bpg_tip,
         bpg_sprzet_a,
+        bpg_hurt_tabs,
         count_
     };
 }
@@ -3116,8 +3117,9 @@ inline constexpr core::ltext ui_texts[] = {
     { "Segregacja zaliczona!", "Sorted and recycled!" },
     { "Zamiana bez tury.", "Swap costs no turn." },
     { "Marek: plecak", "Marek: backpack" },
-    { "6 miejsc, zamiana 1 tura", "6 slots, swap = 1 turn" },
-    { "A plecak góra prem. dół Bryg.", "A pack up boons dn crew" },
+    { "6 miejsc. Zamiana: tura", "6 slots, swap = 1 turn" },
+    { "A plecak góra prem dół Bryg", "A pack up boons dn crew" },
+    { "L/R: Skup, PSZOK, Plecak", "L/R: Sell, Scrap, Pack" },
 };
 inline const char* tr(ui::id i) { return ui_texts[i]; }
 
