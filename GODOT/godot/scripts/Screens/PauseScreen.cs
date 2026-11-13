@@ -54,7 +54,7 @@ public sealed class PauseScreen : Screen
                 App.Refresh();
                 break;
             case PausePage.Character:
-                Flow.Phone.Open(Phone.PhoneTabs.Gear, false, this); // krok 3: ekran Postać
+                Flow.Character.Open(this);
                 break;
             case PausePage.Site:
                 Flow.Phone.Open(-1, false, this);

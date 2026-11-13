@@ -28,6 +28,9 @@ public partial class PhoneView : Control, Touch.ITapTargets
 
     private PhonePage[] _tabs = [];
     private string[] _labels = [];
+    private int[] _icons;
+    private PageAction[] _shared = [];
+    private string _sharedHint = "";
     private PhonePage _single;
     private int _singleIcon = -1;
     private int _tab;
@@ -120,10 +123,16 @@ public partial class PhoneView : Control, Touch.ITapTargets
     }
 
     /// <summary>Telefon z zakładkami (w grze: Zadania, Usterki, Start, Sprzęt, Koszty; na tytule: profil).</summary>
-    public void OpenTabs(PhonePage[] tabs, string[] labels, int index, bool instant = false)
+    /// <param name="icons">v0.23.2: klatki ikon zakładek (phone_icons); null = kolejno 0, 1, 2...</param>
+    /// <param name="shared">v0.23.2: przyciski wspólne dla wszystkich zakładek (np. Brygada w Budowie) – po przyciskach strony.</param>
+    /// <param name="sharedHint">v0.23.2: podpowiedź klawiszy, gdy strona nie ma własnej.</param>
+    public void OpenTabs(PhonePage[] tabs, string[] labels, int index, bool instant = false, int[] icons = null, PageAction[] shared = null, string sharedHint = "")
     {
         _tabs = tabs;
         _labels = labels;
+        _icons = icons;
+        _shared = shared ?? [];
+        _sharedHint = sharedHint;
         _single = null;
         _tab = Mathf.Clamp(index, 0, tabs.Length - 1);
         foreach (var t in tabs) t.Owner = this;
@@ -137,6 +146,8 @@ public partial class PhoneView : Control, Touch.ITapTargets
     {
         _single = page;
         _singleIcon = icon;
+        _shared = [];
+        _sharedHint = "";
         page.Owner = this;
         _scroll = 0;
         page.Enter();
@@ -247,7 +258,8 @@ public partial class PhoneView : Control, Touch.ITapTargets
         foreach (var (rect, _) in _buttons) into.Add(rect);
         if (HasTabs)
         {
-            for (var i = 0; i < 5; i++) into.Add(new Rect2(_tabBar.Position.X + i * _tabBar.Size.X / 5f, _tabBar.Position.Y, _tabBar.Size.X / 5f, _tabBar.Size.Y));
+            var n = _tabs.Length;
+            for (var i = 0; i < n; i++) into.Add(new Rect2(_tabBar.Position.X + i * _tabBar.Size.X / n, _tabBar.Position.Y, _tabBar.Size.X / n, _tabBar.Size.Y));
         }
         foreach (var (rect, _) in _hits) into.Add(rect);
     }
@@ -267,7 +279,7 @@ public partial class PhoneView : Control, Touch.ITapTargets
         }
         if (HasTabs && _tabBar.HasPoint(p))
         {
-            var i = (int)((p.X - _tabBar.Position.X) / (_tabBar.Size.X / 5f));
+            var i = (int)((p.X - _tabBar.Position.X) / (_tabBar.Size.X / _tabs.Length));
             if (i >= 0 && i < _tabs.Length && i != _tab) SwitchTab(i - _tab);
             return true;
         }
@@ -359,8 +371,8 @@ public partial class PhoneView : Control, Touch.ITapTargets
 
         // treść strony (przyciski strony przy dotyku albo podpowiedź klawiszy pod nią); v0.23.2: strona Scrolls przewija się
         var tabTop = scr.End.Y - tabH;
-        var actions = Layout.Touch ? page.Actions : [];
-        var hint = Layout.Touch ? "" : page.Hint;
+        PageAction[] actions = Layout.Touch ? [.. page.Actions, .. _shared] : [];
+        var hint = Layout.Touch ? "" : page.Hint.Length > 0 ? page.Hint : _sharedHint;
         var buttonsH = actions.Length > 0 ? (full ? FullButtonsH : 30) : 0;
         var contentBottom = tabTop - (buttonsH > 0 ? buttonsH : hint.Length > 0 ? 18 : 4);
         var top = scr.Position.Y + statusH + headerH + (full ? 6 : 0);
@@ -437,14 +449,16 @@ public partial class PhoneView : Control, Touch.ITapTargets
         }
         _tabBar = new Rect2(sx, tabTop, scr.Size.X, full ? FullTabH : TabH);
         var active = _single is not null ? _singleIcon : _tab;
-        var slot = scr.Size.X / 5f;
+        var count = _tabs.Length;
+        var slot = scr.Size.X / count;
         var iconScale = 1;
-        for (var i = 0; i < 5; i++)
+        for (var i = 0; i < count; i++)
         {
             var cx = sx + slot * i + slot / 2;
             var on = i == active;
             var isz = Assets.Icon * iconScale;
-            Assets.DrawFrame(this, on ? Assets.PhoneIcons : Assets.PhoneIconsDim, i, Assets.Icon, new Vector2(Mathf.Round(cx - isz / 2f), tabTop + (full ? 5 : 3)), iconScale);
+            var frame = _icons is not null && i < _icons.Length ? _icons[i] : i;
+            Assets.DrawFrame(this, on ? Assets.PhoneIcons : Assets.PhoneIconsDim, frame, Assets.Icon, new Vector2(Mathf.Round(cx - isz / 2f), tabTop + (full ? 5 : 3)), iconScale);
             var label = _single is null && i < _labels.Length ? _labels[i] : "";
             if (label.Length > 0) f.Draw(this, new Vector2(Mathf.Round(cx), tabTop + (full ? 21 : 18)), f.Fit(label, (int)slot), on ? Ink.Brand : Ink.Dim, TextAlign.Center);
         }

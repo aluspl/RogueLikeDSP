@@ -44,7 +44,7 @@ public sealed class ScreenFlow
         Trait = new TraitScreen(app);
         ToolOffer = new ToolOfferScreen(app);
         Career = new CareerScreen(app);
-        Backpack = new BackpackScreen(app);
+        Character = new CharacterScreen(app);
         Pause = new PauseScreen(app);
     }
 
@@ -93,8 +93,8 @@ public sealed class ScreenFlow
     public ToolOfferScreen ToolOffer { get; }
     /// <summary>v0.21.52 cz. d (#47): mapa kariery przed wyborem zawodu.</summary>
     public CareerScreen Career { get; }
-    /// <summary>v0.23.2: plecak (zamiana, wyrzucenie).</summary>
-    public BackpackScreen Backpack { get; }
+    /// <summary>v0.23.2 (UI 2): Postać – sprzęt, kluczowe liczby i plecak.</summary>
+    public CharacterScreen Character { get; }
     /// <summary>v0.23.2 (UI 2): pauza (Wznów, Postać, Budowa, Ustawienia, Wyjdź do menu).</summary>
     public PauseScreen Pause { get; }
 

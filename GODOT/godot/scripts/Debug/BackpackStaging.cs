@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using LifeLike.Core;
+using LifeLike.Game.Input;
 using LifeLike.Game.Phone.Pages;
 using LifeLike.Game.Screens;
 using CoreGame = LifeLike.Core.Game;
@@ -10,11 +11,14 @@ namespace LifeLike.Game.Debug;
 /// <summary>
 /// v0.23.2: sceny zrzutów plecaka – karta paczki z trzema wyborami (bag-offer), karta broni (bag-weapon), ekran plecaka
 /// (bag, bag-menu z akcjami), Hurtownia: zakupy z zakładkami (bag-shop), Skup (bag-skup), PSZOK (bag-pszok), dymek Marka
-/// przy pierwszym przedmiocie (bag-tip). v0.23.2 (UI 2): pauza (pause, pause-quit z potwierdzeniem).
+/// przy pierwszym przedmiocie (bag-tip). v0.23.2 (UI 2): pauza (pause, pause-quit z potwierdzeniem); Postać (char, bag = Postać
+/// z kartą kasku, bag-menu = karta broni z plecaka, char-gear – karta noszonej kamizelki, char-hand – broń w ręku ze
+/// szczegółami, char-empty – pusty plecak); Hurtownia: Plecak (bag-hurt, bag-hurt-sheet), karta w Skupie (bag-skup-sheet).
 /// </summary>
 public sealed class BackpackStaging
 {
-    public static readonly string[] Names = ["bag-offer", "bag-weapon", "bag", "bag-menu", "bag-shop", "bag-skup", "bag-pszok", "bag-tip", "pause", "pause-quit"];
+    public static readonly string[] Names = ["bag-offer", "bag-weapon", "bag", "bag-menu", "bag-shop", "bag-skup", "bag-pszok", "bag-tip", "pause", "pause-quit",
+        "char", "char-gear", "char-hand", "char-empty", "bag-hurt", "bag-hurt-sheet", "bag-skup-sheet"];
 
     private readonly App _app;
 
@@ -73,19 +77,35 @@ public sealed class BackpackStaging
                 break;
             case "bag":
             case "bag-menu":
-                Fill(g);
+            case "char":
+            case "char-gear":
+            case "char-hand":
+            case "char-empty":
+                if (scene != "char-empty") Fill(g);
+                g.Equip(4, 1, 0); // pas monterski z kaburą
+                g.Weapon2 = Weapon(g, "mlotek");
+                g.Hero.Hp = (short)(g.Hero.MaxHp - 7);
                 _app.Refresh();
-                Flow.Backpack.Open(null, true);
-                if (scene == "bag-menu")
+                Flow.Character.Open(null, true);
+                var page = Flow.Character.Page;
+                if (scene == "bag") page.OpenSheet(Phone.Pages.CharacterPage.BagBase + 2);
+                else if (scene == "bag-menu") page.OpenSheet(Phone.Pages.CharacterPage.BagBase);
+                else if (scene == "char-gear") page.OpenSheet(2);
+                else if (scene == "char-hand")
                 {
-                    Flow.Backpack.Page.Sel = 0;
-                    Flow.Backpack.Page.Confirm();
+                    page.OpenSheet(Phone.Pages.CharacterPage.HandId);
+                    page.Sheet.Input(InputCmd.Of(GameAction.Left));
+                    page.Sheet.Input(InputCmd.Of(GameAction.Left));
+                    page.Sheet.Input(InputCmd.Of(GameAction.A));
                 }
-                else Flow.Backpack.Page.Sel = 2;
+                else page.Focus = Phone.Pages.CharacterPage.BagBase + 1;
                 break;
             case "bag-shop":
             case "bag-skup":
             case "bag-pszok":
+            case "bag-hurt":
+            case "bag-hurt-sheet":
+            case "bag-skup-sheet":
                 Fill(g);
                 g.Mats[0] = 2;
                 g.Mats[1] = 3;
@@ -96,7 +116,10 @@ public sealed class BackpackStaging
                 g.St = GameStatus.StageClear;
                 g.ActCleared = true;
                 _app.Refresh();
-                Flow.Hurtownia.OpenTab(scene == "bag-shop" ? HurtTabs.Shop : scene == "bag-skup" ? HurtTabs.Sell : HurtTabs.Recycle, true);
+                Flow.Hurtownia.OpenTab(scene == "bag-shop" ? HurtTabs.Shop : scene is "bag-skup" or "bag-skup-sheet" ? HurtTabs.Sell
+                    : scene is "bag-hurt" or "bag-hurt-sheet" ? HurtTabs.Bag : HurtTabs.Recycle, true);
+                if (scene == "bag-skup-sheet") Flow.Hurtownia.Bag.TapRow(0);
+                if (scene == "bag-hurt-sheet") Flow.Hurtownia.Character.OpenSheet(Phone.Pages.CharacterPage.BagBase + 4);
                 break;
             case "pause":
             case "pause-quit":

@@ -6,8 +6,8 @@ namespace LifeLike.Game.Screens;
 
 /// <summary>
 /// Hurtownia między aktami (run_hurtownia na GBA): zakupy za budżet budowy, potem kolejny etap.
-/// v0.23.2: zakładki (Q/E, dotknięcie paska): Hurtownia, Skup (plecak za materiały), PSZOK (oddanie za dośw. i HP),
-/// Plecak (zamiana bez tury).
+/// v0.23.2: zakładki (Q/E, dotknięcie paska): Zakupy, Skup (plecak za materiały), PSZOK (oddanie za dośw. i HP),
+/// Plecak (v0.23.2 UI 2: ekran Postać z zamianą bez tury).
 /// </summary>
 public sealed class HurtowniaScreen : Screen
 {
@@ -20,11 +20,17 @@ public sealed class HurtowniaScreen : Screen
 
     public HurtowniaPage Page { get; private set; }
 
-    /// <summary>v0.23.2: strona Skupu / PSZOK-u / plecaka (zakładka Tab &gt; 0).</summary>
+    /// <summary>v0.23.2: strona Skupu / PSZOK-u (zakładka Sell / Recycle).</summary>
     public BackpackPage Bag { get; private set; }
+
+    /// <summary>v0.23.2 (UI 2): zakładka Plecak – Postać w trybie Hurtowni.</summary>
+    public CharacterPage Character { get; private set; }
 
     /// <summary>v0.23.2: zakładka (HurtTabs).</summary>
     public int Tab { get; private set; }
+
+    /// <summary>Karta przedmiotu otwarta (Q/E nie przełączają wtedy zakładek).</summary>
+    private bool SheetOpen => (Tab is HurtTabs.Sell or HurtTabs.Recycle && (Bag?.MenuOpen ?? false)) || (Tab == HurtTabs.Bag && (Character?.Sheet.IsOpen ?? false));
 
     public void Open(bool instant = false) => Flow.Go(this, instant);
 
@@ -54,8 +60,13 @@ public sealed class HurtowniaScreen : Screen
             N.Phone.OpenSingle(Page, 4, instant);
             return;
         }
-        var mode = Tab == HurtTabs.Sell ? BagMode.Sell : Tab == HurtTabs.Recycle ? BagMode.Recycle : BagMode.Bag;
-        Bag = new BackpackPage(S.Game) { Mode = mode, Shop = true, Tab = Tab, TabTo = SwitchTo, Done = _ => N.Hud.ShowGame(S.Game) };
+        if (Tab == HurtTabs.Bag)
+        {
+            Character = new CharacterPage(S.Game, S.Profile) { Shop = true, TabTo = SwitchTo, Done = _ => App.Refresh() };
+            N.Phone.OpenSingle(Character, 4, true);
+            return;
+        }
+        Bag = new BackpackPage(S.Game) { Mode = Tab == HurtTabs.Sell ? BagMode.Sell : BagMode.Recycle, Tab = Tab, TabTo = SwitchTo, Done = _ => App.Refresh() };
         N.Phone.OpenSingle(Bag, 4, true);
     }
 
@@ -70,7 +81,7 @@ public sealed class HurtowniaScreen : Screen
 
     public override bool HandleInput(InputCmd e)
     {
-        if (e.Is(GameAction.TabPrev | GameAction.TabNext) && !(Bag?.MenuOpen ?? false))
+        if (e.Is(GameAction.TabPrev | GameAction.TabNext) && !SheetOpen)
         {
             SwitchTo((Tab + (e.Is(GameAction.TabNext) ? 1 : HurtTabs.Count - 1)) % HurtTabs.Count);
             return true;

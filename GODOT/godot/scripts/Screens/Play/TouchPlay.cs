@@ -226,14 +226,9 @@ public sealed class TouchPlay
             return;
         }
         if (ActionBar.Covers(p)) return;
-        if (N.Hud.WeaponHit(p)) // v0.23.2: broń w górnym pasku – plecak
+        if (p.Y < Layout.SafeTop + (HudTop.Height + 1) * Layout.HudScale) // v0.23.2 (UI 2): pasek HUD i broń w nim – Postać z plecakiem
         {
-            _app.Flow.Backpack.Open();
-            return;
-        }
-        if (p.Y < Layout.SafeTop + (HudTop.Height + 1) * Layout.HudScale) // pasek HUD: pulpit postaci w telefonie
-        {
-            _app.Flow.Phone.Open(PhoneTabs.Start);
+            _app.Flow.Character.Open();
             return;
         }
         var g = G;

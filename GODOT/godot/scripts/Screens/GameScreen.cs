@@ -97,9 +97,9 @@ public sealed class GameScreen : Screen
             ToggleOverview();
             return true;
         }
-        if (e.Is(GameAction.Info)) // v0.23.2: plecak (I)
+        if (e.Is(GameAction.Info)) // v0.23.2: Postać z plecakiem (I)
         {
-            Flow.Backpack.Open();
+            Flow.Character.Open();
             return true;
         }
         if (e.Is(GameAction.Start))

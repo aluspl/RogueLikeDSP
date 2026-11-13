@@ -104,7 +104,7 @@ public sealed class SmokeTest
             if (DrawErrors.Count > 0) throw new Exception($"błędy rysowania: {DrawErrors.Count}, ostatni: {DrawErrors.Last}");
             GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {s.Data.Version}, zawody {s.Data.Classes.Length}, etap {stage + 1}, " +
                      $"dzień {g.Turns}, HP {g.Hero.Hp}/{g.Hero.MaxHp}, wynik {g.Score}, budżet {g.Cash}, kroki {_steps}, " +
-                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps} (ogłoszenia {_app.Nodes.Announce.Pushed}), ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, tydzień {(_weekly ? "tak" : "nie")}, podsumowanie {_recapRows} wierszy, fabuła {_story} wątków, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, rozpiska obrażeń {(_damage ? "tak" : "nie")}, samouczek {_tutorial} dymków + nowości {_unlocks}, Akt 0 {(_act0 ? "tak" : "nie")} (dokumenty {_docs}, druga faza {_phases}), premie {_boons} (lista {_boonList}, synergie {g.SynergyMask()}, blokada wejścia {(_inputLock ? "tak" : "nie")}), wydarzenia {_events} (ekran {(_extras ? "tak" : "nie")}), Jak grać {(_help ? "tak" : "nie")}, cele {_goals}, kariera {_career}, filtry {_filters}, głębia {_depth}, bronie {_weapons}, sekrety {_secrets}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
+                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps} (ogłoszenia {_app.Nodes.Announce.Pushed}), ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, tydzień {(_weekly ? "tak" : "nie")}, podsumowanie {_recapRows} wierszy, fabuła {_story} wątków, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, rozpiska obrażeń {(_damage ? "tak" : "nie")}, samouczek {_tutorial} dymków + nowości {_unlocks}, Akt 0 {(_act0 ? "tak" : "nie")} (dokumenty {_docs}, druga faza {_phases}), premie {_boons} (lista {_boonList}, synergie {g.SynergyMask()}, blokada wejścia {(_inputLock ? "tak" : "nie")}), wydarzenia {_events} (ekran {(_extras ? "tak" : "nie")}), Jak grać {(_help ? "tak" : "nie")}, cele {_goals}, kariera {_career}, filtry {_filters}, głębia {_depth}, bronie {_weapons}, sekrety {_secrets}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, postać {(_character ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
                      $"ekran {Flow.Current.GetType().Name}");
             _app.Root.GetTree().Quit(ok ? 0 : 1);
         }
@@ -277,15 +277,15 @@ public sealed class SmokeTest
         if (midStage) return;
         _boons++;
         if (_boonList > 0) return;
-        Flow.Phone.Open(Phone.PhoneTabs.Gear, true);
-        Flow.Phone.HandleInput(InputCmd.Of(GameAction.R));
-        if (Flow.Current != Flow.BoonList) throw new Exception("telefon > Sprzęt: R nie otwiera listy premii");
+        Flow.Phone.Open(Phone.PhoneTabs.Gear, true); // v0.23.2 (UI 2): Sprzęt = Postać, Q – premie
+        Flow.Character.HandleInput(InputCmd.Of(GameAction.TabPrev));
+        if (Flow.Current != Flow.BoonList) throw new Exception("Postać: Q nie otwiera listy premii");
         await DebugRunner.Frames(_app.Root, 1);
         Flow.BoonList.HandleInput(InputCmd.Of(GameAction.Right));
         if (Flow.BoonList.Page.Mode != 1) throw new Exception("lista premii: strzałka nie przełącza na synergie");
         await DebugRunner.Frames(_app.Root, 1);
         Flow.BoonList.HandleInput(InputCmd.Of(GameAction.B));
-        if (Flow.Current != Flow.Phone) throw new Exception("lista premii: B nie wraca do telefonu");
+        if (Flow.Current != Flow.Character) throw new Exception("lista premii: B nie wraca do Postaci");
         _boonList++;
         Flow.Schedule.Open();
     }
@@ -1328,15 +1328,16 @@ public sealed class SmokeTest
             if (g.ShotEvents != 0) throw new Exception("warstwa Godota nie wyzerowała strzałów po turze");
         }
         if (_splits == 0 || _blasts == 0) throw new Exception($"pokaz zachowań: podział {_splits}, wybuch {_blasts} (problemów {before} -> {g.EnemiesCount}) etap {g.Stage} klasa {g.Cls} log: {string.Join(" | ", System.Linq.Enumerable.Select(g.Log, m => m.Text))}");
-        Flow.Phone.Open(PhoneTabs.Start, true);
+        Flow.Phone.Open(PhoneTabs.Start, true); // v0.23.2 (UI 2): Start = Postać, E – opis statystyk
         await DebugRunner.Frames(_app.Root, 1);
-        Flow.Phone.HandleInput(InputCmd.Of(GameAction.A));
-        if (Flow.Current != Flow.Stats) throw new Exception("Start > A nie otwiera opisu statystyk");
+        Flow.Character.HandleInput(InputCmd.Of(GameAction.TabNext));
+        if (Flow.Current != Flow.Stats) throw new Exception("Postać > E nie otwiera opisu statystyk");
         Flow.Stats.HandleInput(InputCmd.Of(GameAction.A));
         await DebugRunner.Frames(_app.Root, 2);
         Flow.Stats.HandleInput(InputCmd.Of(GameAction.B));
-        if (Flow.Current != Flow.Phone) throw new Exception("statystyki: B nie wraca do telefonu");
-        Flow.Phone.HandleInput(InputCmd.Of(GameAction.Select));
+        if (Flow.Current != Flow.Character) throw new Exception("statystyki: B nie wraca do Postaci");
+        Flow.Character.HandleInput(InputCmd.Of(GameAction.Info));
+        if (Flow.Current != Flow.Game) throw new Exception("Postać: I nie wraca na plac");
         await DebugRunner.Frames(_app.Root, 1);
     }
 
@@ -1436,11 +1437,13 @@ public sealed class SmokeTest
     /// </summary>
     private async Task ExerciseDamage(LifeLike.Core.Game g)
     {
-        Flow.Phone.Open(PhoneTabs.Gear, true);
+        Flow.Phone.Open(PhoneTabs.Gear, true); // v0.23.2 (UI 2): Postać > broń w ręku > Rozpiska
         await DebugRunner.Frames(_app.Root, 1);
-        Flow.Phone.HandleInput(InputCmd.Of(GameAction.Info));
+        Flow.Character.Page.OpenSheet(Phone.Pages.CharacterPage.HandId);
+        await DebugRunner.Frames(_app.Root, 1);
+        Flow.Character.HandleInput(InputCmd.Of(GameAction.A));
         if (Flow.Current != Flow.Stats || _app.Nodes.Phone.Current is not Phone.Pages.StatsPage sp || sp.Page != Phone.Pages.StatsPage.DamagePage)
-            throw new Exception("Sprzęt > I nie otwiera rozpiski obrażeń");
+            throw new Exception("Postać > broń > Rozpiska nie otwiera rozpiski obrażeń");
         var b = g.WeaponBreakdown();
         if (b.Min < 1 || b.Max < b.Min || b.CritMin != b.Min * g.D.CritMultiplier || b.CritPct != g.CritPct())
             throw new Exception($"rozpiska: zakres {b.Min}-{b.Max}, kryt {b.CritMin} / {b.CritPct} vs {g.CritPct()}");
@@ -1449,9 +1452,42 @@ public sealed class SmokeTest
         if (sp.Page != Phone.Pages.StatsPage.DamagePage + 1) throw new Exception("rozpiska: A nie przechodzi do Kryt i obrona");
         await DebugRunner.Frames(_app.Root, 2);
         Flow.Stats.HandleInput(InputCmd.Of(GameAction.B));
-        if (Flow.Current != Flow.Phone || _app.Nodes.Phone.TabIndex != PhoneTabs.Gear) throw new Exception("rozpiska: B nie wraca na Sprzęt");
+        if (Flow.Current != Flow.Character) throw new Exception("rozpiska: B nie wraca do Postaci");
         await DebugRunner.Frames(_app.Root, 1);
         _damage = true;
+    }
+
+    /// <summary>
+    /// v0.23.2 (UI 2): Postać – karta przedmiotu z plecaka (Załóż = 1 tura, powrót na plac), karta noszonego sprzętu,
+    /// strzałki przesuwają fokus, B zamyka kartę, potem ekran.
+    /// </summary>
+    private bool _character;
+
+    private async Task ExerciseCharacter(LifeLike.Core.Game g)
+    {
+        if (g.St != GameStatus.Playing) return;
+        var slot = Array.FindIndex(g.Backpack, it => it.Empty);
+        if (slot < 0) return;
+        g.Backpack[slot] = BackpackItem.Gear(0, 2, 0);
+        Flow.Character.Open(null, true);
+        await DebugRunner.Frames(_app.Root, 2);
+        var page = Flow.Character.Page;
+        page.Focus = Phone.Pages.CharacterPage.HandId;
+        Flow.Character.HandleInput(InputCmd.Of(GameAction.Left));
+        if (page.Focus == Phone.Pages.CharacterPage.HandId) throw new Exception("Postać: strzałka nie przesuwa fokusu");
+        page.OpenSheet(0);
+        if (g.Equipped[0] >= 0 && !page.Sheet.IsOpen) throw new Exception("Postać: brak karty noszonego kasku");
+        Flow.Character.HandleInput(InputCmd.Of(GameAction.B));
+        if (page.Sheet.IsOpen || Flow.Current != Flow.Character) throw new Exception("Postać: B nie zamyka karty");
+        await _app.Root.ToSignal(_app.Root.GetTree().CreateTimer(ScreenFlow.LockSeconds + 0.1f), SceneTreeTimer.SignalName.Timeout); // blokada wejścia po otwarciu
+        var rect = _app.Nodes.Phone.RowRect(Phone.Pages.CharacterPage.BagBase + slot) ?? throw new Exception("Postać: brak kafla plecaka do dotknięcia");
+        ((Main)_app.Root).InjectGesture(new Gesture(GestureKind.Tap, rect.GetCenter(), rect.GetCenter(), Vector2I.Zero, 0.05f));
+        await DebugRunner.Frames(_app.Root, 1);
+        if (!page.Sheet.IsOpen || page.Sheet.Index != slot) throw new Exception("Postać: dotknięcie kafla nie otwiera karty");
+        var turns = g.Turns;
+        Flow.Character.HandleInput(InputCmd.Of(GameAction.A)); // główny przycisk: Załóż (1 tura)
+        if (g.Equipped[0] != 2 || Flow.Current != Flow.Game || g.Turns != turns + 1) throw new Exception($"Postać: Załóż z karty nie działa (kask {g.Equipped[0]}, tury {turns} -> {g.Turns}, ekran {Flow.Current?.GetType().Name})");
+        _character = true;
     }
 
     /// <summary>Opis statystyk na wyborze zawodu (I, dymek nad wierszem) i 3 strony Jak grać z tytułu.</summary>
@@ -1492,7 +1528,8 @@ public sealed class SmokeTest
                 Flow.Phone.Open(t, true);
                 await DebugRunner.Frames(_app.Root, 2);
             }
-            Flow.Phone.HandleInput(InputCmd.Of(GameAction.Select));
+            Flow.Current.HandleInput(InputCmd.Of(GameAction.Select));
+            await ExerciseCharacter(s.Game);
         }
         for (var t = 0; t < 5; t++)
         {
