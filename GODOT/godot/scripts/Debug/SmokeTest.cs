@@ -290,6 +290,28 @@ public sealed class SmokeTest
         Flow.Schedule.Open();
     }
 
+    /// <summary>v0.23.2 (UI 2): Esc = pauza; Budowa i Ustawienia z pauzy wracają do pauzy, Esc wznawia, Wyjdź pyta (Anuluj wraca).</summary>
+    private async Task ExercisePause(LifeLike.Core.Game g, int turns)
+    {
+        Flow.Game.HandleInput(InputCmd.Of(GameAction.Cancel));
+        if (Flow.Current != Flow.Pause) throw new Exception("pauza: Esc na mapie nie otwiera pauzy");
+        await DebugRunner.Frames(_app.Root, 2);
+        var stay = Flow.Pause.Page.Sel;
+        Flow.Pause.Pick(Phone.Pages.PausePage.Site);
+        if (Flow.Current != Flow.Phone) throw new Exception("pauza: Budowa nie otwiera telefonu");
+        Flow.Phone.HandleInput(InputCmd.Of(GameAction.Cancel));
+        if (Flow.Current != Flow.Pause) throw new Exception("pauza: telefon nie wraca do pauzy");
+        Flow.Pause.Pick(Phone.Pages.PausePage.Settings);
+        Flow.Settings.HandleInput(InputCmd.Of(GameAction.Cancel));
+        if (Flow.Current != Flow.Pause) throw new Exception("pauza: Ustawienia nie wracają do pauzy");
+        Flow.Pause.Pick(Phone.Pages.PausePage.Quit);
+        if (!Flow.Pause.Page.Confirming) throw new Exception("pauza: Wyjdź do menu bez pytania");
+        Flow.Pause.HandleInput(InputCmd.Of(GameAction.B));
+        if (Flow.Pause.Page.Confirming || Flow.Current != Flow.Pause) throw new Exception("pauza: Anuluj nie wraca do listy");
+        Flow.Pause.HandleInput(InputCmd.Of(GameAction.Cancel));
+        if (Flow.Current != Flow.Game || g.Turns != turns || stay != 0) throw new Exception("pauza: Esc nie wznawia gry albo zużyła turę");
+    }
+
     /// <summary>
     /// Blokada wejścia (v0.21.51): świeżo otwarta premia ignoruje A z klawiatury i stuknięcie w kartę (jak stuknięcie
     /// w mapę tuż przed końcem etapu); po LockSeconds pierwsze stuknięcie w kartę tylko ją zaznacza (bez wyboru).
@@ -783,6 +805,7 @@ public sealed class SmokeTest
             Flow.Settings.HandleInput(InputCmd.Of(GameAction.Cancel));
             if (Flow.Current != Flow.Game || g.Turns != turns) throw new Exception("ustawienia zużyły turę albo nie wróciły do gry");
             GameSettings.Music = music;
+            await ExercisePause(g, turns);
             _touch = true;
         }
         finally

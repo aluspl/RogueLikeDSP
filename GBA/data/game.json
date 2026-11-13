@@ -10565,7 +10565,18 @@
     "plecak_btn": "Plecak {0}",
     "x_plecak": "X: plecak {0}/{1}",
     "plecak_n": "plecak {0}/{1}",
-    "hurt_tab_plecak": "Plecak"
+    "hurt_tab_plecak": "Plecak",
+    "pauza": "Pauza",
+    "pauza_etap": "Etap {0}/{1}: {2}",
+    "pauza_wznow": "Wznów",
+    "pauza_postac": "Postać",
+    "pauza_budowa": "Budowa",
+    "pauza_ustawienia": "Ustawienia",
+    "pauza_wyjdz": "Wyjdź do menu",
+    "pauza_wyjdz_pyt": "Wyjść do menu?",
+    "pauza_wyjdz_opis": "Budowa zostanie zapisana – dokończysz ją z menu.",
+    "pauza_wyjdz_tak": "Zapisz i wyjdź",
+    "pauza_hint": "Strzałki: wybór  Spacja: OK  Esc: wznów"
   },
   "hitTypes": {
     "names": [

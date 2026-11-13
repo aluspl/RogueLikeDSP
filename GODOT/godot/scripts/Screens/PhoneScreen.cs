@@ -13,6 +13,7 @@ public sealed class PhoneScreen : Screen
 {
     private int _lastTab = PhoneTabs.Start;
     private int _tab = -1;
+    private Screen _back;
 
     public PhoneScreen(App app) : base(app)
     {
@@ -22,8 +23,15 @@ public sealed class PhoneScreen : Screen
     public override bool UsesPhone => true;
     public override bool ShowsTarget => true;
 
-    /// <summary>Otwórz na zakładce (-1 = ostatnio otwarta).</summary>
-    public void Open(int tab = -1, bool instant = false)
+    /// <summary>Otwórz na zakładce (-1 = ostatnio otwarta); back – ekran po zamknięciu (v0.23.2: pauza), null = plac budowy.</summary>
+    public void Open(int tab = -1, bool instant = false, Screen back = null)
+    {
+        _back = back;
+        Return(tab, instant);
+    }
+
+    /// <summary>Powrót z ekranu otwartego z telefonu (rozpiska, premie) – ten sam ekran po zamknięciu co wcześniej.</summary>
+    public void Return(int tab = -1, bool instant = false)
     {
         _tab = tab;
         Flow.Game.Menu.Close();
@@ -51,6 +59,11 @@ public sealed class PhoneScreen : Screen
         }
         if (N.Phone.HandleInput(e)) return true;
         if (!e.Is(GameAction.Select | GameAction.Cancel | GameAction.B | GameAction.Start)) return false;
+        if (_back is not null && _back != Flow.Game)
+        {
+            Flow.Go(_back);
+            return true;
+        }
         Flow.Game.Open();
         App.Refresh();
         return true;

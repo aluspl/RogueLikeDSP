@@ -45,6 +45,7 @@ public sealed class ScreenFlow
         ToolOffer = new ToolOfferScreen(app);
         Career = new CareerScreen(app);
         Backpack = new BackpackScreen(app);
+        Pause = new PauseScreen(app);
     }
 
     public Screen Current { get; private set; }
@@ -94,6 +95,8 @@ public sealed class ScreenFlow
     public CareerScreen Career { get; }
     /// <summary>v0.23.2: plecak (zamiana, wyrzucenie).</summary>
     public BackpackScreen Backpack { get; }
+    /// <summary>v0.23.2 (UI 2): pauza (Wznów, Postać, Budowa, Ustawienia, Wyjdź do menu).</summary>
+    public PauseScreen Pause { get; }
 
     /// <summary>Przejście na ekran; instant = bez animacji (telefon od razu na miejscu, tło od razu rozmyte).</summary>
     public void Go(Screen next, bool instant = false)
@@ -106,6 +109,7 @@ public sealed class ScreenFlow
         n.Hud.Visible = next.InRun;
         n.Touch.Visible = Layout.Touch && next == Game;
         n.Settings.Visible = next.ShowsSettings;
+        n.Settings.Pause = next.InRun; // v0.23.2: na mapie przycisk pauzy zamiast klucza
         n.Coach.Visible = false;   // samouczek: pokazuje go ekran-właściciel (Coach.Update)
         n.TitleView.Visible = (next.Views & ViewSet.Title) != 0;
         n.ClassSelectView.Visible = (next.Views & ViewSet.ClassSelect) != 0;

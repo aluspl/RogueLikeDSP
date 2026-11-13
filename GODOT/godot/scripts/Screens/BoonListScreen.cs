@@ -34,7 +34,7 @@ public sealed class BoonListScreen : Screen
     {
         if (N.Phone.HandleInput(e)) return true;
         if (!e.Is(GameAction.B | GameAction.Cancel | GameAction.Start | GameAction.Select | GameAction.R)) return false;
-        Flow.Phone.Open(PhoneTabs.Gear);
+        Flow.Phone.Return(PhoneTabs.Gear);
         return true;
     }
 }

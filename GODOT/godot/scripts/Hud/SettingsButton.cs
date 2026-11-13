@@ -24,6 +24,20 @@ public partial class SettingsButton : Control
 
     public override void _ExitTree() => Layout.Changed -= QueueRedraw;
 
+    /// <summary>v0.23.2 (UI 2): w trakcie budowy ikona pauzy (dwie belki) – otwiera pauzę.</summary>
+    public bool Pause
+    {
+        get => _pause;
+        set
+        {
+            if (_pause == value) return;
+            _pause = value;
+            QueueRedraw();
+        }
+    }
+
+    private bool _pause;
+
     public bool Hit(Vector2 p) => IsVisibleInTree() && Rect.Grow(6).HasPoint(p);
 
     public override void _Draw()
@@ -31,6 +45,15 @@ public partial class SettingsButton : Control
         var r = Rect;
         var inner = r.Grow(-3);
         DrawStyleBox(Ui.Box(new Color(Pal.Text, 0.55f), 9, new Color(Pal.Brand, 0.8f)), inner);
+        if (_pause)
+        {
+            var c = inner.GetCenter().Round();
+            var bh = Mathf.Round(inner.Size.Y * 0.44f);
+            var bw = Mathf.Max(3, Mathf.Round(inner.Size.X * 0.13f));
+            DrawRect(new Rect2(c.X - bw - 2, c.Y - bh / 2, bw, bh), Colors.White);
+            DrawRect(new Rect2(c.X + 2, c.Y - bh / 2, bw, bh), Colors.White);
+            return;
+        }
         var scale = inner.Size.X >= 34 ? 2 : 1;
         var icon = Assets.Icon * scale;
         Assets.DrawFrame(this, Assets.TouchIcons, TouchIcon.Wrench, Assets.Icon, (inner.GetCenter() - new Vector2(icon, icon) / 2).Round(), scale);

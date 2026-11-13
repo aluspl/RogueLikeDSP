@@ -154,7 +154,7 @@ public sealed class MonkeyTest
         // ale czasem (10%) małpa wali w ekran także w czasie blokady
         for (var i = 0; i < 400 && flow.InputLocked && _rng.Randf() >= 0.1f; i++) await DebugRunner.Frames(Root, 1);
         // Ustawienia (Z / Esc na tytule i mapie) zjadały ~45% akcji na klawiaturze: częściej z nich wychodzimy
-        if (flow.Current == flow.Settings && _rng.Randf() < 0.35f)
+        if ((flow.Current == flow.Settings || flow.Current == flow.Pause) && _rng.Randf() < 0.35f)
         {
             await Press(_rng.Randf() < 0.5f ? Key.Escape : Key.Z, 1, false);
             return;

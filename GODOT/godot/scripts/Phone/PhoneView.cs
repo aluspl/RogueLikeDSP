@@ -151,7 +151,7 @@ public partial class PhoneView : Control, Touch.ITapTargets
         Size = PhoneSize;
         Scale = Vector2.One * Zoom;
         _slide?.Kill();
-        if (instant || wasOpen)
+        if (instant || wasOpen || Current is { Overlay: true })
         {
             Position = Origin;
         }
@@ -169,7 +169,7 @@ public partial class PhoneView : Control, Touch.ITapTargets
         if (!IsOpen) return;
         IsOpen = false;
         _slide?.Kill();
-        if (instant)
+        if (instant || Current is { Overlay: true })
         {
             Visible = false;
             return;
@@ -325,6 +325,11 @@ public partial class PhoneView : Control, Touch.ITapTargets
     {
         var page = Current;
         if (page is null) return;
+        if (page.Overlay)
+        {
+            DrawOverlay(page);
+            return;
+        }
         var f = PixelFont.I;
         var full = Full;
         var size = PhoneSize;
@@ -443,6 +448,26 @@ public partial class PhoneView : Control, Touch.ITapTargets
             var label = _single is null && i < _labels.Length ? _labels[i] : "";
             if (label.Length > 0) f.Draw(this, new Vector2(Mathf.Round(cx), tabTop + (full ? 21 : 18)), f.Fit(label, (int)slot), on ? Ink.Brand : Ink.Dim, TextAlign.Center);
         }
+    }
+
+    /// <summary>v0.23.2 (UI 2): strona-nakładka (pauza) w bezpiecznym obszarze, bez telefonu; przyciski rysuje sama.</summary>
+    private void DrawOverlay(PhonePage page)
+    {
+        var z = Zoom;
+        var size = PhoneSize;
+        var area = Full
+            ? new Rect2(12, Mathf.Ceil(Layout.SafeTop / z) + 8, size.X - 24, size.Y - Mathf.Ceil((Layout.SafeTop + Layout.SafeBottom) / z) - 16)
+            : new Rect2(4, (H - Layout.UiSize.Y) / 2 + 8, W - 8, Layout.UiSize.Y - 16);
+        var painter = new PhonePainter(this, area);
+        page.Draw(painter);
+        _hits = painter.Hits;
+        _buttons.Clear();
+        _tabBar = new Rect2();
+        _close = new Rect2();
+        _maxScroll = 0;
+        Overflow = Mathf.Max(0, painter.Extent - area.End.Y);
+        var hint = Layout.Touch ? "" : page.Hint;
+        if (hint.Length > 0) PixelFont.I.Draw(this, new Vector2(area.GetCenter().X, area.End.Y - 16), PixelFont.I.Fit(hint, (int)area.Size.X), Ink.MapDim, TextAlign.Center);
     }
 
     /// <summary>Pasek statusu w ramce telefonu (poziomo): 09:41, wyspa z kamerą, zasięg, bateria. Pionowo jest prawdziwy.</summary>

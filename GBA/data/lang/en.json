@@ -3452,6 +3452,17 @@
   "plecak_btn": "Pack {0}",
   "x_plecak": "X: pack {0}/{1}",
   "plecak_n": "pack {0}/{1}",
-  "hurt_tab_plecak": "Pack"
+  "hurt_tab_plecak": "Pack",
+  "pauza": "Paused",
+  "pauza_etap": "Stage {0}/{1}: {2}",
+  "pauza_wznow": "Resume",
+  "pauza_postac": "Character",
+  "pauza_budowa": "Site app",
+  "pauza_ustawienia": "Settings",
+  "pauza_wyjdz": "Quit to menu",
+  "pauza_wyjdz_pyt": "Quit to menu?",
+  "pauza_wyjdz_opis": "The build is saved – continue it from the menu.",
+  "pauza_wyjdz_tak": "Save and quit",
+  "pauza_hint": "Arrows: pick  Space: OK  Esc: resume"
  }
 }

@@ -10,11 +10,11 @@ namespace LifeLike.Game.Debug;
 /// <summary>
 /// v0.23.2: sceny zrzutów plecaka – karta paczki z trzema wyborami (bag-offer), karta broni (bag-weapon), ekran plecaka
 /// (bag, bag-menu z akcjami), Hurtownia: zakupy z zakładkami (bag-shop), Skup (bag-skup), PSZOK (bag-pszok), dymek Marka
-/// przy pierwszym przedmiocie (bag-tip).
+/// przy pierwszym przedmiocie (bag-tip). v0.23.2 (UI 2): pauza (pause, pause-quit z potwierdzeniem).
 /// </summary>
 public sealed class BackpackStaging
 {
-    public static readonly string[] Names = ["bag-offer", "bag-weapon", "bag", "bag-menu", "bag-shop", "bag-skup", "bag-pszok", "bag-tip"];
+    public static readonly string[] Names = ["bag-offer", "bag-weapon", "bag", "bag-menu", "bag-shop", "bag-skup", "bag-pszok", "bag-tip", "pause", "pause-quit"];
 
     private readonly App _app;
 
@@ -97,6 +97,14 @@ public sealed class BackpackStaging
                 g.ActCleared = true;
                 _app.Refresh();
                 Flow.Hurtownia.OpenTab(scene == "bag-shop" ? HurtTabs.Shop : scene == "bag-skup" ? HurtTabs.Sell : HurtTabs.Recycle, true);
+                break;
+            case "pause":
+            case "pause-quit":
+                Fill(g);
+                g.Hero.Hp = (short)(g.Hero.MaxHp * 2 / 3);
+                _app.Refresh();
+                Flow.Pause.Open(true);
+                if (scene == "pause-quit") Flow.Pause.Pick(PausePage.Quit);
                 break;
             case "bag-tip":
                 _app.Session.Profile.Tutorial = (ushort)(_app.Session.Profile.Tutorial & ~Tutorial.Backpack);

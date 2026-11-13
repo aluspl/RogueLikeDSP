@@ -7,7 +7,7 @@ namespace LifeLike.Game.Screens;
 
 /// <summary>
 /// Budowa (run_game na GBA): mapa z HUD, ruch, A atak, B czekaj, R moc, START menu akcji, SELECT telefon,
-/// L podgląd mapy, Esc ustawienia, mysz; przy dotyku pasek akcji i gesty (TouchPlay). Po każdej akcji
+/// L podgląd mapy, Esc pauza (v0.23.2), mysz; przy dotyku pasek akcji i gesty (TouchPlay). Po każdej akcji
 /// App.AfterAction decyduje o kolejnym ekranie. v0.23.0: F (pad: L + A) Cios B z celowaniem wzoru B, X (pad: L + B) zamiana broni.
 /// </summary>
 public sealed class GameScreen : Screen
@@ -82,9 +82,9 @@ public sealed class GameScreen : Screen
             ToggleOverview();
             return true;
         }
-        if (e.Is(GameAction.Cancel))
+        if (e.Is(GameAction.Cancel)) // v0.23.2 (UI 2): Esc = pauza
         {
-            Flow.Settings.Open(this);
+            Flow.Pause.Open();
             return true;
         }
         if (e.Is(GameAction.Select))

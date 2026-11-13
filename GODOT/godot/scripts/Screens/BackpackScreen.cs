@@ -60,7 +60,7 @@ public sealed class BackpackScreen : Screen
     {
         if (!acted && _back is PhoneScreen ph)
         {
-            ph.Open(PhoneTabs.Gear);
+            ph.Return(PhoneTabs.Gear);
             return;
         }
         Flow.Game.Open();
