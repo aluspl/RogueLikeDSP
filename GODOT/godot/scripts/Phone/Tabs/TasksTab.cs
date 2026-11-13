@@ -23,7 +23,10 @@ public sealed class TasksTab : PhonePage
         var y = p.Section(p.Top, Loc.T("harmonogram_3"), Loc.F("akt_4", _g.ActNumeral()));
         var f0 = _g.FirstStage;   // bez Aktu 0: od Fundamentów
         var n = _g.RouteCount() - f0;
-        var rows = PhoneView.Full ? n : Math.Min(n, 5);   // wąski telefon (poziomo): okno etapów wokół bieżącego
+        // v0.23.2 (UI 2): tyle etapów, ile zmieści się nad kartą placu budowy (okno wokół bieżącego)
+        var site = (_g.StagePath >= 0 && _g.StagePath < d.Paths.Length ? 4 : 3) + (ExtraRow(out _, out _, out _) ? 1 : 0);
+        var fit = (int)((p.Bottom - y - 8 - 4 - PhonePainter.RowH - site * PhonePainter.RowH - 8) / PhonePainter.RowH);
+        var rows = Math.Clamp(Math.Min(n, PhoneView.Full ? fit : 5), Math.Min(n, 3), n);
         var first = f0 + Math.Max(0, Math.Min(_g.Stage - f0 - 1, n - rows));
         var card = p.Card(y, rows);
         for (var r = 0; r < rows; r++)
