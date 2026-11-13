@@ -13,12 +13,13 @@ namespace LifeLike.Game.Debug;
 /// (bag, bag-menu z akcjami), Hurtownia: zakupy z zakładkami (bag-shop), Skup (bag-skup), PSZOK (bag-pszok), dymek Marka
 /// przy pierwszym przedmiocie (bag-tip). v0.23.2 (UI 2): pauza (pause, pause-quit z potwierdzeniem); Postać (char, bag = Postać
 /// z kartą kasku, bag-menu = karta broni z plecaka, char-gear – karta noszonej kamizelki, char-hand – broń w ręku ze
-/// szczegółami, char-empty – pusty plecak); Hurtownia: Plecak (bag-hurt, bag-hurt-sheet), karta w Skupie (bag-skup-sheet).
+/// szczegółami, char-empty – pusty plecak, char-helmet – karta noszonego kasku: Zmień / Do plecaka / Na PSZOK,
+/// char-change – lista Zmień z podglądem, char-full – pełny plecak: „Do plecaka” wyszarzone); Hurtownia: Plecak (bag-hurt, bag-hurt-sheet), karta w Skupie (bag-skup-sheet).
 /// </summary>
 public sealed class BackpackStaging
 {
     public static readonly string[] Names = ["bag-offer", "bag-weapon", "bag", "bag-menu", "bag-shop", "bag-skup", "bag-pszok", "bag-tip", "pause", "pause-quit",
-        "char", "char-gear", "char-hand", "char-empty", "bag-hurt", "bag-hurt-sheet", "bag-skup-sheet"];
+        "char", "char-gear", "char-hand", "char-empty", "char-change", "char-full", "char-helmet", "bag-hurt", "bag-hurt-sheet", "bag-skup-sheet"];
 
     private readonly App _app;
 
@@ -81,7 +82,11 @@ public sealed class BackpackStaging
             case "char-gear":
             case "char-hand":
             case "char-empty":
+            case "char-change":
+            case "char-full":
+            case "char-helmet":
                 if (scene != "char-empty") Fill(g);
+                if (scene == "char-full") g.Backpack[5] = BackpackItem.Gear(1, 1, 4);
                 g.Equip(4, 1, 0); // pas monterski z kaburą
                 g.Weapon2 = Weapon(g, "mlotek");
                 g.Hero.Hp = (short)(g.Hero.MaxHp - 7);
@@ -91,12 +96,16 @@ public sealed class BackpackStaging
                 if (scene == "bag") page.OpenSheet(Phone.Pages.CharacterPage.BagBase + 2);
                 else if (scene == "bag-menu") page.OpenSheet(Phone.Pages.CharacterPage.BagBase);
                 else if (scene == "char-gear") page.OpenSheet(2);
+                else if (scene is "char-helmet" or "char-full") page.OpenSheet(0);
+                else if (scene == "char-change")
+                {
+                    page.OpenSheet(0);
+                    page.Sheet.Input(InputCmd.Of(GameAction.A)); // główny przycisk: Zmień
+                }
                 else if (scene == "char-hand")
                 {
                     page.OpenSheet(Phone.Pages.CharacterPage.HandId);
-                    page.Sheet.Input(InputCmd.Of(GameAction.Left));
-                    page.Sheet.Input(InputCmd.Of(GameAction.Left));
-                    page.Sheet.Input(InputCmd.Of(GameAction.A));
+                    page.Sheet.Tap(Phone.ItemSheet.HitBase + page.Sheet.Buttons().IndexOf(Phone.SheetAct.Details)); // szczegóły trybów
                 }
                 else page.Focus = Phone.Pages.CharacterPage.BagBase + 1;
                 break;

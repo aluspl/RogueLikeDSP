@@ -1441,7 +1441,8 @@ public sealed class SmokeTest
         await DebugRunner.Frames(_app.Root, 1);
         Flow.Character.Page.OpenSheet(Phone.Pages.CharacterPage.HandId);
         await DebugRunner.Frames(_app.Root, 1);
-        Flow.Character.HandleInput(InputCmd.Of(GameAction.A));
+        var sheet = Flow.Character.Page.Sheet;
+        sheet.Tap(Phone.ItemSheet.HitBase + sheet.Buttons().IndexOf(Phone.SheetAct.Breakdown));
         if (Flow.Current != Flow.Stats || _app.Nodes.Phone.Current is not Phone.Pages.StatsPage sp || sp.Page != Phone.Pages.StatsPage.DamagePage)
             throw new Exception("Postać > broń > Rozpiska nie otwiera rozpiski obrażeń");
         var b = g.WeaponBreakdown();
@@ -1487,6 +1488,28 @@ public sealed class SmokeTest
         var turns = g.Turns;
         Flow.Character.HandleInput(InputCmd.Of(GameAction.A)); // główny przycisk: Załóż (1 tura)
         if (g.Equipped[0] != 2 || Flow.Current != Flow.Game || g.Turns != turns + 1) throw new Exception($"Postać: Załóż z karty nie działa (kask {g.Equipped[0]}, tury {turns} -> {g.Turns}, ekran {Flow.Current?.GetType().Name})");
+        // noszone: Zmień (lista z plecaka) i PSZOK z plecaka na placu – po 1 turze
+        if (g.St != GameStatus.Playing) return;
+        var free = Array.FindIndex(g.Backpack, it => it.Empty);
+        if (free < 0) return;
+        g.Backpack[free] = BackpackItem.Gear(0, 0, 1);
+        Flow.Character.Open(null, true);
+        page = Flow.Character.Page;
+        page.OpenSheet(0);
+        turns = g.Turns;
+        Flow.Character.HandleInput(InputCmd.Of(GameAction.A)); // główny: Zmień
+        if (!page.Sheet.Picking) throw new Exception("Postać: Zmień nie pokazuje listy z plecaka");
+        Flow.Character.HandleInput(InputCmd.Of(GameAction.A));
+        if (g.Equipped[0] != 0 || g.Turns != turns + 1 || Flow.Current != Flow.Game) throw new Exception("Postać: Zmień z listy nie zakłada (1 tura)");
+        var bag = Array.FindIndex(g.Backpack, it => it.Kind == BackpackKind.Gear && it.Id == 0);
+        if (bag < 0 || g.St != GameStatus.Playing) return;
+        Flow.Character.Open(null, true);
+        page = Flow.Character.Page;
+        page.OpenSheet(Phone.Pages.CharacterPage.BagBase + bag);
+        var xp = g.RunXp;
+        turns = g.Turns;
+        page.Sheet.Tap(Phone.ItemSheet.HitBase + page.Sheet.Buttons().IndexOf(Phone.SheetAct.Recycle));
+        if (!g.Backpack[bag].Empty || g.RunXp <= xp || g.Turns != turns + 1) throw new Exception("Postać: PSZOK na placu nie działa (dośw., 1 tura)");
         _character = true;
     }
 

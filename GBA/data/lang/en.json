@@ -3386,7 +3386,7 @@
   "zostaw": "Leave",
   "hurt_tab_hurtownia": "Shop",
   "hurt_tab_skup": "Sell",
-  "hurt_tab_pszok": "Scrap",
+  "hurt_tab_pszok": "Recycling",
   "skup_opis": "Buy-back: backpack items for materials, rarer = more.",
   "pszok_opis": "Recycling: give items away for XP and +{0} HP each.",
   "pszok_cena": "+{0} XP",
@@ -3434,7 +3434,7 @@
   "karta_hint_2": "Arrows, Space: OK  Z: close",
   "bp_wyrzuc_btn": "Drop",
   "skup_btn": "Sell",
-  "pszok_btn": "Scrap it",
+  "pszok_btn": "Recycle",
   "budowa_hint": "Q/E: tabs  Space: Crew  Z: back",
   "bp_kabura_btn": "Holster (1 turn)",
   "bp_bez_tury_sub": "swap: no turn",
@@ -3444,6 +3444,18 @@
   "karta_los_plecak": "After the swap: {0} goes to the pack.",
   "karta_los_ziemia": "After the swap: {0} stays here.",
   "karta_los_przepada": "After the swap: {0} is lost (pack full).",
-  "karta_zostaw_nota": "Leave it: +{0} XP."
+  "karta_zostaw_nota": "Leave it: +{0} XP.",
+  "karta_atak": "Attack",
+  "karta_atak_spec": "Special",
+  "karta_spec_krotko": "Spec.",
+  "karta_zmien": "Change",
+  "karta_zdejmij": "To pack",
+  "karta_zmien_na": "Replace {0} with:",
+  "karta_bez_zmian": "same numbers",
+  "karta_odnowienie": "Special cooldown: {0} -> {1} turns",
+  "karta_cecha_zmiana": "Trait: {0} -> {1}",
+  "karta_cecha_zdanie": "Trait: {0}",
+  "karta_tura_nota": "On site every change takes 1 turn.",
+  "karta_plecak_pelny_btn": "Pack full"
  }
 }

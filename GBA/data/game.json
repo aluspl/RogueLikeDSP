@@ -10547,7 +10547,7 @@
     "karta_hint_2": "Strzałki, Spacja: OK  Z: zamknij",
     "bp_wyrzuc_btn": "Wyrzuć",
     "skup_btn": "Sprzedaj",
-    "pszok_btn": "Oddaj do PSZOK",
+    "pszok_btn": "Na PSZOK",
     "budowa_hint": "Q/E: zakładki  Spacja: Brygada  Z: wróć",
     "bp_kabura_btn": "Kabura (1 tura)",
     "bp_bez_tury_sub": "zamiana bez tury",
@@ -10557,7 +10557,19 @@
     "karta_los_plecak": "Po zamianie: {0} do plecaka.",
     "karta_los_ziemia": "Po zamianie: {0} zostaje tutaj.",
     "karta_los_przepada": "Po zamianie: {0} przepada (pełny plecak).",
-    "karta_zostaw_nota": "Zostaw: +{0} dośw."
+    "karta_zostaw_nota": "Zostaw: +{0} dośw.",
+    "karta_atak": "Atak",
+    "karta_atak_spec": "Atak specjalny",
+    "karta_spec_krotko": "Spec.",
+    "karta_zmien": "Zmień",
+    "karta_zdejmij": "Do plecaka",
+    "karta_zmien_na": "Zamień {0} na:",
+    "karta_bez_zmian": "liczby bez zmian",
+    "karta_odnowienie": "Odnowienie Patentu: {0} -> {1} t.",
+    "karta_cecha_zmiana": "Cecha: {0} -> {1}",
+    "karta_cecha_zdanie": "Cecha: {0}",
+    "karta_tura_nota": "Na placu każda zmiana to 1 tura.",
+    "karta_plecak_pelny_btn": "Plecak pełny"
   },
   "hitTypes": {
     "names": [

@@ -292,7 +292,7 @@ public sealed class CharacterPage : PhonePage
         [
             ("HP", $"{_g.Hero.Hp}/{_g.Hero.MaxHp}", _g.Hero.Hp * 4 <= _g.Hero.MaxHp ? Ink.Late : Ink.Dark),
             (Loc.T("postac_obrona"), $"{_g.HeroDefense()}", Ink.Dark),
-            (Loc.T("postac_obrazenia"), $"{b.Min}-{b.Max}", Ink.Dark),
+            (Loc.T("karta_atak"), $"{b.Min}-{b.Max}", Ink.Dark),
             (Loc.T("karta_kryt"), $"{_g.CritPct()}%", Ink.Dark),
         ];
         var h = big ? 42f : 36f;

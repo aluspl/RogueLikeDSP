@@ -101,8 +101,9 @@ public sealed class PixelFont
     public List<string> Wrap(string s, int maxWidth, float scale = 1)
     {
         var lines = new List<string>();
-        foreach (var para in Normalize(s).Split('\n'))
+        foreach (var raw in (s ?? "").Split('\n')) // v0.23.2: najpierw łamanie (Normalize zamienia \n na „?”)
         {
+            var para = Normalize(raw);
             var line = "";
             foreach (var word in para.Split(' '))
             {

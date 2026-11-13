@@ -26,14 +26,22 @@ dolny arkusz z 1–3 najważniejszymi liczbami i porównaniem +/−.
 - **Postać (paperdoll):** bohater na środku, dookoła sloty: broń w ręku, kabura, kask, kamizelka, rękawice, buty,
   pas. Pod spodem 4 kluczowe liczby (HP, Obrona, Obrażenia, Kryt), „Więcej statystyk” rozwija resztę.
   Niżej **Plecak** – siatka 6 dużych kafli (3×2) z ikoną i ramką rzadkości, ▲/▼ na rogu kafla, gdy lepsze/słabsze.
-- **Karta przedmiotu** (dotknięcie kafla lub slotu): dolny arkusz – nazwa, rzadkość, 1–3 liczby z porównaniem
-  do noszonego (+2 zielone, −1 czerwone), cecha jednym zdaniem; przyciski: **Załóż** (1 tura na budowie) /
-  **Wyrzuć**; w Hurtowni także **Sprzedaj** (cena) i **PSZOK**. Pełna rozpiska obrażeń pod „Szczegóły”.
-- **Karta znaleziska** (paczka/broń z mapy): ten sam układ co karta przedmiotu: nowy vs noszony,
+- **Karta przedmiotu** (dotknięcie kafla lub slotu): dolny arkusz – nazwa, rzadkość, cecha jednym zdaniem; pełna rozpiska
+  obrażeń pod „Szczegóły” / „Rozpiska”. Doprecyzowanie właściciela (2026-11-13) – klasyczny flow ekwipunku:
+  - **Noszony slot** (kask, kamizelka, broń...): **Zmień** (lista przedmiotów z plecaka na ten slot, każdy z podglądem
+    liczb), **Do plecaka** (zdejmij; wyszarzone „Plecak pełny” przy 6/6), **Na PSZOK** (oddanie: ta sama mała premia co
+    w Hurtowni – dośw. + HP; na placu 1 tura). Broni zawodu nie da się zdjąć „w nic” ani oddać – te opcje są ukryte.
+  - **Przedmiot z plecaka**: **Załóż** z czytelnym podglądem trzech liczb „teraz → po” z zielonym + / czerwonym −:
+    **Atak** (cios), **Atak specjalny** (Patent), **Obrona** (+ HP przy kamizelce); obok Kabura i **Na PSZOK** (zastępuje
+    „Wyrzuć na ziemię” – wyrzucanie zniknęło z interfejsu); w Hurtowni także **Sprzedaj**.
+  - Na placu każda zmiana (zakładanie, zdejmowanie, PSZOK) to 1 tura; w Hurtowni bez tury.
+- **Karta znaleziska** (paczka/broń z mapy): ten sam układ i ten sam podgląd trzech liczb: nowy vs noszony,
   przyciski **Załóż** / **Do plecaka (n/6)** / **Zostaw**.
 - **Budowa (telefon):** zostaje motyw smartfona i aplikacji, ale mniej treści na ekran: zakładki Zadania,
   Usterki, Koszty z większymi wierszami; Start i Sprzęt zastępuje ekran Postać.
 - **Hurtownia:** zakładki zostają (Zakupy / Skup / PSZOK / Plecak), ale wiersze i kafle w tym samym stylu.
 
 ## Poza zakresem
-- GBA, logika gry i balans (bez zmian). Teksty nowe lub zmienione tylko w game.json / en.json.
+- GBA (interfejs bez zmian), balans. Teksty nowe lub zmienione tylko w game.json / en.json.
+- Wyjątek w logice (minimalny, C# + C++ + testy): zdejmowanie noszonego do plecaka / do PSZOK-u i PSZOK na placu
+  (1 tura) – bot z nich nie korzysta, złote przebiegi bez zmian.
