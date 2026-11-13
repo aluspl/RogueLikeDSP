@@ -9725,8 +9725,9 @@
     "bpg_oddane": "Segregacja zaliczona!",
     "bpg_bez_tury": "Zamiana bez tury.",
     "bpg_tip_t": "Marek: plecak",
-    "bpg_tip": "6 miejsc, zamiana 1 tura",
-    "bpg_sprzet_a": "A plecak góra prem. dół Bryg."
+    "bpg_tip": "6 miejsc. Zamiana: tura",
+    "bpg_sprzet_a": "A plecak góra prem dół Bryg",
+    "bpg_hurt_tabs": "L/R: Skup, PSZOK, Plecak"
   },
   "uiGodot": {
     "ogl_awans": "AWANS!",

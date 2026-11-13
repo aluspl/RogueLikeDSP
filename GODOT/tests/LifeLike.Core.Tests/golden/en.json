@@ -2613,7 +2613,8 @@
   "bpg_bez_tury": "Swap costs no turn.",
   "bpg_tip_t": "Marek: backpack",
   "bpg_tip": "6 slots, swap = 1 turn",
-  "bpg_sprzet_a": "A pack up boons dn crew"
+  "bpg_sprzet_a": "A pack up boons dn crew",
+  "bpg_hurt_tabs": "L/R: Sell, Scrap, Pack"
  },
  "uiGodot": {
   "ogl_awans": "LEVEL UP!",
