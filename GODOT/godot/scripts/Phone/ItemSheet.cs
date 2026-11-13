@@ -502,6 +502,7 @@ public sealed class ItemSheet
         if (Height() > avail) dLines.Clear();
         if (Height() > avail) sLines.Clear();
         if (Height() > avail) buttonH = 28;
+        if (Height() > avail) facts.RemoveAll(fc => fc.Label == Loc.T("hurt_tab_skup") || fc.Label == Loc.T("hurt_tab_pszok")); // ceny są też pod kaflami
         while (_picking && Height() > avail && pickRows > 1) pickRows--;
         var h = Height();
         var top = Mathf.Max(p.Top, p.Bottom - h);
