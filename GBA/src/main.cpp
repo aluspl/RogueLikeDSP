@@ -1460,7 +1460,7 @@ namespace
         const core::game& g = *a.g;
         int slots[core::max_gear_slots], n = 0;
         for(int i = 0; i < data::gear_slots_count; ++i) if(((g.bonus.gear_slots >> i) & 1) || g.equipped[i] >= 0) slots[n++] = i;
-        phone_header(a, ph, t, tab_name(3), UI(a_obr_gora_prem_dol_bryg));
+        phone_header(a, ph, t, tab_name(3), UI(bpg_sprzet_a));   // v0.23.2: A = plecak (rozpiska: Start > A)
         phone_canvas& c = *ph.canvas;
         const core::dmg_breakdown b = g.weapon_breakdown();
         core::message w; g.weapon_title(w).add(" ");   // ulepszone: "Kielnia+2"
@@ -1696,6 +1696,11 @@ namespace
 
     enum class pause_result { resume, quit, save_exit };
 
+    // v0.23.2: plecak (telefon: Sprzęt > A; Hurtownia: Skup, PSZOK, Plecak). Zwraca: -1 B, -2 / -3 zakładka L / R,
+    // >= 100 akcja z turą (100 + miejsce * 4 + akcja: 0 Załóż, 1 Do kabury) - wykonuje ją gra po powrocie.
+    enum class bag_mode { bag, sell, recycle };
+    int backpack_loop(app& a, phone_screen& ph, page_sprites& t, bag_mode mode, const char* title);
+
     // Telefon pod SELECT. L/R lub strzałki: zakładki; START: menu akcji; B/SELECT: powrót do gry.
     pause_result run_phone(app& a, bool brigade_page = false)
     {
@@ -1790,9 +1795,11 @@ namespace
                 }
                 else if(a.phone_tab == 3 && bn::keypad::down_pressed()) { brigade = true; bsel = 0; redraw(); bn::sound_items::sfx_menu.play(); }
                 else if(a.phone_tab == 3 && bn::keypad::up_pressed()) { boons = true; psel = 0; redraw(); bn::sound_items::sfx_menu.play(); }
-                else if(a.phone_tab == 3 && bn::keypad::a_pressed())   // Sprzęt: A = rozpiska obrażeń broni (#26)
+                else if(a.phone_tab == 3 && bn::keypad::a_pressed())   // v0.23.2: Sprzęt: A = plecak (rozpiska obrażeń: Start > A)
                 {
-                    stats_page(a, ph, t, a.g, a.g->cls, a.g->bonus, 1);
+                    wait_release();
+                    const int r = backpack_loop(a, ph, t, bag_mode::bag, UI(bpg_tytul));
+                    if(r >= 100) { a.pending_helper = r; return finish(pause_result::resume); }   // zamiana zużywa turę - w grze
                     redraw();
                     next_frame();
                     continue;
@@ -1968,6 +1975,137 @@ namespace
     }
 
     // Narzędzie na polu przy ulepszonym (#31): porównanie, ostrzeżenie o utracie ulepszenia. A - zamieniam, B - zostaję.
+
+    // ------------------------------------------------------------------ v0.23.2: plecak
+    // Lista 6 miejsc (pasek = rzadkość, zaznaczony - fiolet), pastylka: lepsze / słabsze / równe (Skup: materiały, PSZOK:
+    // dośw.); A - akcje (Załóż, Do kabury, Wyrzuć, Anuluj) albo sprzedaż / oddanie; B - wróć; L/R - zakładki (Hurtownia).
+    [[gnu::noinline]] int backpack_loop(app& a, phone_screen& ph, page_sprites& t, bag_mode mode, const char* title)
+    {
+        core::game& g = *a.g;
+        const int n = core::game::backpack_slots();
+        const bool site = g.st == core::status::playing, shop = g.in_hurtownia();
+        int sel = 0, msel = 0;
+        bool menu = false;
+        const char* note = nullptr;
+        int acts[4], acts_n = 0;   // 0 Załóż, 1 Do kabury, 2 Wyrzuć, 3 Anuluj
+        auto make_menu = [&]() {
+            acts_n = 0;
+            acts[acts_n++] = 0;
+            if(g.backpack[sel].kind == core::bp_weapon && g.has_belt()) acts[acts_n++] = 1;
+            if(site) acts[acts_n++] = 2;
+            acts[acts_n++] = 3;
+        };
+        auto act_name = [&](int k) {
+            switch(k)
+            {
+                case 0: return site ? UI(bpg_zaloz) : UI(bpg_zaloz_h);
+                case 1: return site ? UI(bpg_kabura) : UI(bpg_kabura_h);
+                case 2: return UI(bpg_wyrzuc);
+                default: return UI(bpg_anuluj);
+            }
+        };
+        auto redraw = [&]() {
+            core::message sub;
+            if(note) sub.add(note);
+            else
+            {
+                sub.add(g.backpack_count()).add("/").add(n);
+                sub.add(shop ? UI(bpg_a_hurt) : UI(bpg_a_akcje));
+            }
+            if(menu) { core::message hm; g.bp_name(hm, g.backpack[sel]); phone_header(a, ph, t, fit(a, hm.s, 120).c_str(), sub.s); }
+            else phone_header(a, ph, t, title, sub.s);
+            phone_canvas& c = *ph.canvas;
+            if(menu)
+            {
+                for(int k = 0; k < acts_n; ++k)
+                {
+                    stripe(c, k, k == msel ? phone_tile::stripe_brand : (acts[k] == 2 ? phone_tile::stripe_late : phone_tile::stripe_todo));
+                    phone_text(a, t, list_x, row_py(k), act_name(acts[k]), k == msel ? ink::brand : (acts[k] == 2 ? ink::late : ink::dark));
+                }
+                core::message cm;   // porównanie zaznaczonego
+                const core::bp_item& it = g.backpack[sel];
+                if(it.kind == core::bp_weapon)
+                {
+                    const core::dmg_breakdown now = g.weapon_breakdown(), nx = g.weapon_breakdown(-1, it.id, -1, -1, 0, it.rarity, it.perks);
+                    core::compare_line(cm, now, nx, true);
+                }
+                else
+                {
+                    const core::gear_def& gd = data::gear[it.id * 3 + it.rarity];
+                    cm.add(gear_stat_name(gd.stat)).add(" +").add(gd.value).add(", ").add(data::gear_traits[core::imax(0, it.trait)].short_name);
+                }
+                phone_text(a, t, list_x, row_py(5), fit(a, cm.s, phone_text_w).c_str(), ink::dim);
+                ph.commit();
+                return;
+            }
+            for(int r = 0; r < n && r < 6; ++r)
+            {
+                const core::bp_item& it = g.backpack[r];
+                const bool on = r == sel;
+                stripe(c, r, on ? phone_tile::stripe_brand : rarity_stripe(core::imin(2, it.rarity)));
+                if(it.kind == core::bp_empty) { phone_text(a, t, list_x, row_py(r), UI(bpg_pusto), ink::dim); continue; }
+                core::message pm; pill pk = pill::gray;
+                if(mode == bag_mode::sell)
+                {
+                    const int k = core::game::sell_count(it);
+                    pm.add((k + 1) / 2).add(" ").add(data::materials[core::game::sell_mat(it)].short_name);
+                    if(k / 2 > 0) pm.add("+").add(k / 2);
+                    pk = pill::prog;
+                }
+                else if(mode == bag_mode::recycle) { pm.add("+").add(core::game::pszok_xp_for(it)).add(UI(dosw)); pk = pill::group; }
+                else
+                {
+                    const int cmp = g.backpack_compare(r);
+                    pm.add(cmp > 0 ? UI(bpg_lepsze) : (cmp < 0 ? UI(bpg_slabsze) : UI(bpg_rowne)));
+                    pk = cmp > 0 ? pill::done : (cmp < 0 ? pill::late : pill::gray);
+                }
+                core::message nm; g.bp_name(nm, it);
+                phone_text(a, t, list_x, row_py(r), fit(a, nm.s, pill_room(pm.s)).c_str(), on ? ink::brand : ink::dark);
+                phone_pill(a, c, t, pill_end, row_ty(r), pm.s, pk);
+            }
+            ph.commit();
+        };
+        redraw();
+        modal_guard();
+        while(true)
+        {
+            const int v = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+            if(v)
+            {
+                if(menu) msel = (msel + v + acts_n) % acts_n;
+                else { sel = (sel + v + n) % n; note = nullptr; }
+                redraw(); bn::sound_items::sfx_menu.play();
+            }
+            else if(bn::keypad::a_pressed())
+            {
+                if(menu)
+                {
+                    const int k = acts[msel];
+                    menu = false;
+                    if(k == 2) { if(g.backpack_drop(sel)) { note = g.log[core::log_lines - 1].s; bn::sound_items::sfx_menu.play(); } }
+                    else if(k < 2 && site) { wait_release(); return 100 + sel * 4 + k; }   // tura - w grze
+                    else if(k == 0 && g.backpack_equip(sel)) { note = UI(bpg_bez_tury); bn::sound_items::sfx_pickup.play(); }
+                    else if(k == 1 && g.backpack_holster(sel)) { note = UI(bpg_bez_tury); bn::sound_items::sfx_pickup.play(); }
+                    redraw();
+                }
+                else if(g.backpack[sel].kind != core::bp_empty)
+                {
+                    if(mode == bag_mode::sell && g.backpack_sell(sel)) { note = UI(bpg_sprzedane); bn::sound_items::sfx_buy.play(); }
+                    else if(mode == bag_mode::recycle && g.backpack_recycle(sel)) { note = UI(bpg_oddane); bn::sound_items::sfx_level.play(); }
+                    else if(mode == bag_mode::bag) { menu = true; msel = 0; make_menu(); bn::sound_items::sfx_menu.play(); }
+                    redraw();
+                }
+            }
+            else if(bn::keypad::b_pressed())
+            {
+                if(menu) { menu = false; redraw(); }
+                else { wait_release(); return -1; }
+            }
+            else if(shop && ! menu && (bn::keypad::l_pressed() || bn::keypad::r_pressed())) return bn::keypad::l_pressed() ? -2 : -3;
+            next_frame();
+        }
+    }
+
     void tool_offer_dialog(app& a)
     {
         core::game& g = *a.g;
@@ -1991,26 +2129,25 @@ namespace
         core::message m2; core::compare_line(m2, now, next);
         if(a.text.width(m2.s) > phone_text_w) { m2 = core::message(); core::compare_line(m2, now, next, true); }
         phone_text(a, t, list_x, row_py(2), fit(a, m2.s, phone_text_w).c_str(), next.avg10 > now.avg10 ? ink::done : ink::late);
-        core::message m3; m3.add(UI(uwaga)).add(g.weapon_lvl);
-        if(g.weapon_trait >= 0) m3.add(" i ").add(data::tool_traits[g.weapon_trait].short_name).add(UI(przepadna));
-        else m3.add(UI(przepadnie));
-        stripe(c, 3, phone_tile::stripe_late);
-        phone_text(a, t, list_x, row_py(3), fit(a, m3.s, phone_text_w).c_str(), ink::late);
         ph.commit();
-        // v0.21.51: wybór zaznaczeniem - na start „Zostaję”, góra/dół zaznacza, A zatwierdza, B zostaję
-        int sel = 0;
+        // v0.23.2: trzy wybory (wiersze 3-5): Weź (stara do plecaka / na ziemię / przepada), Do plecaka, Zostaw;
+        // na start Do plecaka (przy pełnym - Zostaw), góra/dół zaznacza, A zatwierdza, B zostaw
+        const bool full = g.backpack_full();
+        const int fate = g.tool_take_fate();
+        int sel = full ? 2 : 1;
         page_sprites rows;
         auto draw_rows = [&]() {
             rows.clear();
-            for(int k = 0; k < 2; ++k)
+            for(int k = 0; k < 3; ++k)
             {
-                const bool on = k == sel;
-                c.rounded(1, row_ty(4 + k), 28, 2, on ? phone_tile::fill_group : phone_tile::fill_card, on ? phone_tile::corner_group : phone_tile::corner_card);
-                stripe(c, 4 + k, on ? phone_tile::stripe_brand : (k == 1 ? phone_tile::stripe_late : phone_tile::stripe_todo));
+                const bool on = k == sel, off = k == 1 && full;
+                c.rounded(1, row_ty(3 + k), 28, 2, on ? phone_tile::fill_group : phone_tile::fill_card, on ? phone_tile::corner_group : phone_tile::corner_card);
+                stripe(c, 3 + k, on ? phone_tile::stripe_brand : (k == 0 ? phone_tile::stripe_done : (k == 1 ? phone_tile::stripe_prog : phone_tile::stripe_todo)));
                 core::message r; r.add(on ? "> " : "  ");
-                if(k == 0) { r.add(UI(zostaje)); g.weapon_title(r); }
-                else r.add(UI(zamieniam_na)).add(data::weapons[w].name);
-                phone_text(a, rows, list_x, row_py(4 + k), fit(a, r.s, phone_text_w).c_str(), on ? ink::brand : (k == 1 ? ink::late : ink::dark));
+                if(k == 0) r.add(fate == 0 ? UI(bpg_wez_plecak) : (fate == 1 ? UI(bpg_wez_ziemia) : UI(bpg_wez_przepada)));
+                else if(k == 1) r.add(full ? UI(bpg_plecak_pelny) : UI(bpg_do_plecaka)).add(g.backpack_count()).add("/").add(core::game::backpack_slots());
+                else r.add(UI(bpg_zostaw));
+                phone_text(a, rows, list_x, row_py(3 + k), fit(a, r.s, phone_text_w).c_str(), on ? ink::brand : (off ? ink::dim : (k == 0 && fate == 2 ? ink::late : ink::dark)));
             }
             ph.commit();
         };
@@ -2019,8 +2156,15 @@ namespace
         modal_guard();
         while(g.has_tool_offer())
         {
-            if(bn::keypad::up_pressed() || bn::keypad::down_pressed()) { sel = 1 - sel; draw_rows(); bn::sound_items::sfx_menu.play(); }
-            else if(bn::keypad::a_pressed() && sel == 1) { g.accept_tool(); bn::sound_items::sfx_buy.play(); }
+            const int v = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+            if(v)
+            {
+                sel = (sel + v + 3) % 3;
+                if(sel == 1 && full) sel = (sel + v + 3) % 3;
+                draw_rows(); bn::sound_items::sfx_menu.play();
+            }
+            else if(bn::keypad::a_pressed() && sel == 0) { g.accept_tool(); bn::sound_items::sfx_buy.play(); }
+            else if(bn::keypad::a_pressed() && sel == 1) { if(g.tool_to_backpack()) bn::sound_items::sfx_pickup.play(); }
             else if(bn::keypad::a_pressed() || bn::keypad::b_pressed()) { g.decline_tool(); bn::sound_items::sfx_menu.play(); }
             next_frame();
         }
@@ -2040,20 +2184,17 @@ namespace
         const int slot = g.offer_slot;
         phone_header(a, ph, t, UI(paczka_sprzetu), data::gear_slots[slot]);
         phone_canvas& c = *ph.canvas;
-        auto item_rows = [&](int row, int rarity, int trait, bool is_new) {
+        auto item_row = [&](int row, int rarity, int trait, bool is_new) {   // v0.23.2: jeden wiersz na przedmiot (+ trzy wybory)
             const core::gear_def& gd = data::gear[slot * 3 + rarity];
             stripe(c, row, is_new ? phone_tile::stripe_prog : phone_tile::stripe_todo);
-            stripe(c, row + 1, is_new ? phone_tile::stripe_prog : phone_tile::stripe_todo);
-            phone_text(a, t, list_x, row_py(row), clip(gd.name, 17).c_str(), ink::dark);
-            phone_pill(a, c, t, pill_end, row_ty(row), data::gear_rarities[rarity],
-                       rarity == 2 ? pill::prog : (rarity == 1 ? pill::group : pill::gray));
-            core::message m; m.add(is_new ? UI(nowy) : UI(teraz_3)).add(gear_stat_name(gd.stat)).add(" +").add(gd.value)
-                                .add(", ").add(data::gear_traits[trait].short_name);
-            phone_text(a, t, list_x, row_py(row + 1), fit(a, m.s, phone_text_w).c_str(), is_new ? ink::brand : ink::dim);
+            core::message m; m.add(is_new ? UI(nowy) : UI(teraz_3)).add(gd.name).add(", ").add(data::gear_traits[trait].short_name);
+            const char* rn = data::gear_rarities[rarity];
+            phone_text(a, t, list_x, row_py(row), fit(a, m.s, pill_room(rn)).c_str(), is_new ? ink::brand : ink::dark);
+            phone_pill(a, c, t, pill_end, row_ty(row), rn, rarity == 2 ? pill::prog : (rarity == 1 ? pill::group : pill::gray));
         };
-        item_rows(0, g.equipped[slot], g.equipped_trait[slot], false);
-        item_rows(2, g.offer_rarity, g.offer_trait, true);
-        // wiersz 4: porównanie (rozpiska #26) - cios, kryt, obrona; kilka zmian na zmianę co ~1,5 s, bez zmian - cecha
+        item_row(0, g.equipped[slot], g.equipped_trait[slot], false);
+        item_row(1, g.offer_rarity, g.offer_trait, true);
+        // wiersz 2: porównanie (rozpiska #26) - cios, kryt, obrona; kilka zmian na zmianę co ~1,5 s, bez zmian - cecha
         const core::dmg_breakdown now = g.weapon_breakdown(), next = g.weapon_breakdown(-1, -1, slot, g.offer_rarity, g.offer_trait);
         core::message cmp[4]; int cmp_n = 0;
         if(now.min != next.min || now.max != next.max || now.avg10 != next.avg10) { core::compare_line(cmp[cmp_n], now, next); if(a.text.width(cmp[cmp_n].s) > phone_text_w) { cmp[cmp_n] = core::message(); core::compare_line(cmp[cmp_n], now, next, true); } ++cmp_n; }
@@ -2078,22 +2219,49 @@ namespace
         page_sprites t4;
         auto draw_cmp = [&](int i) {
             t4.clear();
-            phone_text(a, t4, list_x, row_py(4), fit(a, cmp[i].s, phone_text_w).c_str(), i == warn ? ink::late : (neutral ? ink::dim : ink::brand));
+            phone_text(a, t4, list_x, row_py(2), fit(a, cmp[i].s, phone_text_w).c_str(), i == warn ? ink::late : (neutral ? ink::dim : ink::brand));
         };
         draw_cmp(0);
-        core::message km; km.add(UI(a_zakladam_b_zostawiam)).add(data::gear_decline_xp + g.offer_rarity).add(")");
-        phone_text(a, t, list_x, row_py(5), km.s, g.offer_is_better() ? ink::done : ink::dark);
-        ph.commit();
+        // v0.23.2: trzy wybory (wiersze 3-5): Załóż (stary do plecaka / na ziemię), Do plecaka, Zostaw (+dośw.)
+        const bool full = g.backpack_full();
+        const int xp = g.offer_decline_xp();
+        int sel = g.offer_is_better() ? 0 : (full ? 2 : 1);
+        page_sprites rows;
+        auto draw_rows = [&]() {
+            rows.clear();
+            for(int k = 0; k < 3; ++k)
+            {
+                const bool on = k == sel, off = k == 1 && full;
+                c.rounded(1, row_ty(3 + k), 28, 2, on ? phone_tile::fill_group : phone_tile::fill_card, on ? phone_tile::corner_group : phone_tile::corner_card);
+                stripe(c, 3 + k, on ? phone_tile::stripe_brand : (k == 0 ? phone_tile::stripe_done : (k == 1 ? phone_tile::stripe_prog : phone_tile::stripe_todo)));
+                core::message r; r.add(on ? "> " : "  ");
+                if(k == 0) r.add(full ? UI(bpg_zaloz_ziemia) : UI(bpg_zaloz_plecak));
+                else if(k == 1) r.add(full ? UI(bpg_plecak_pelny) : UI(bpg_do_plecaka)).add(g.backpack_count()).add("/").add(core::game::backpack_slots());
+                else { r.add(UI(bpg_zostaw)); if(xp > 0) r.add(" +").add(xp).add(UI(dosw)); }
+                phone_text(a, rows, list_x, row_py(3 + k), fit(a, r.s, phone_text_w).c_str(), on ? ink::brand : (off ? ink::dim : ink::dark));
+            }
+            ph.commit();
+        };
+        draw_rows();
         bn::sound_items::sfx_notify.play(bn::fixed(0.7));
         modal_guard();
         int clock = 0;
         while(g.has_offer())
         {
-            if(bn::keypad::a_pressed()) { g.accept_offer(); bn::sound_items::sfx_buy.play(); }
-            else if(bn::keypad::b_pressed()) { g.decline_offer(); bn::sound_items::sfx_menu.play(); }
+            const int v = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+            if(v)
+            {
+                sel = (sel + v + 3) % 3;
+                if(sel == 1 && full) sel = (sel + v + 3) % 3;
+                draw_rows(); bn::sound_items::sfx_menu.play();
+            }
+            else if(bn::keypad::a_pressed() && sel == 0) { g.accept_offer(); bn::sound_items::sfx_buy.play(); }
+            else if(bn::keypad::a_pressed() && sel == 1) { if(g.offer_to_backpack()) bn::sound_items::sfx_pickup.play(); }
+            else if(bn::keypad::a_pressed() || bn::keypad::b_pressed()) { g.decline_offer(); bn::sound_items::sfx_menu.play(); }
             else if(cmp_n > 1 && ++clock % 90 == 0) draw_cmp((clock / 90) % cmp_n);
             next_frame();
         }
+        rows.clear();
         t4.clear();
         t.clear();
         a.text.set_palette_item(default_ink);
@@ -2868,6 +3036,12 @@ namespace
                 bn::fixed_point d = world(g.dog_x, g.dog_y);
                 for(int k = 0; k < 4; ++k) fx_particles.spawn(d.x() + fx_particles.rand(-64, 64), d.y() - 8, 0, fx_particles.rand(-20, -8), 0, 36, particle_pool::star);
             }
+            if(g.backpack_count() > 0 && ! (a.save.tutorial & core::tut_backpack))   // v0.23.2: dymek Marka - pierwszy przedmiot w plecaku
+            {
+                a.save.tutorial = uint16_t(a.save.tutorial | core::tut_backpack);
+                write_profile(a.save);
+                banner.push(UI(bpg_tip_t), UI(bpg_tip));
+            }
             int active_pickups = 0;
             for(int i = 0; i < g.pickups_count; ++i) active_pickups += g.pickups[i].active;
             if(active_pickups < prev_active) bn::sound_items::sfx_pickup.play();   // zebrana znajdźka
@@ -3346,6 +3520,13 @@ namespace
 
         // Wybrane w telefonie: fachowiec z brygady albo naprawa za materiał (h >= brigade_count). Zużywa turę.
         auto do_pending = [&](int h) {
+            if(h >= 100)   // v0.23.2: zamiana z plecaka (Załóż / Do kabury) - tura
+            {
+                const int i = (h - 100) / 4, k = (h - 100) % 4;
+                if(! (k == 0 ? g.backpack_equip(i) : g.backpack_holster(i))) return false;
+                bn::sound_items::sfx_pickup.play();
+                return true;
+            }
             if(h < data::brigade_count)
             {
                 if(! g.call_helper(h)) return false;
@@ -4935,6 +5116,21 @@ namespace
         modal_guard();
         while(true)
         {
+            if(bn::keypad::l_pressed() || bn::keypad::r_pressed())   // v0.23.2: zakładki Skup, PSZOK, Plecak (L/R)
+            {
+                int tab = bn::keypad::l_pressed() ? 3 : 1;
+                while(tab != 0)
+                {
+                    bn::sound_items::sfx_menu.play();
+                    const bag_mode m = tab == 1 ? bag_mode::sell : (tab == 2 ? bag_mode::recycle : bag_mode::bag);
+                    const int r = backpack_loop(a, ph, t, m, tab == 1 ? UI(bpg_skup) : (tab == 2 ? UI(bpg_pszok) : UI(bpg_tytul)));
+                    tab = r == -2 ? (tab + 3) % 4 : (r == -3 ? (tab + 1) % 4 : 0);
+                }
+                note = nullptr;
+                redraw();
+                next_frame();
+                continue;
+            }
             int n = data::hurtownia_count;
             int dir = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
             if(dir)

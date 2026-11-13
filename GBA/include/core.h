@@ -4728,7 +4728,7 @@ namespace core
             if(it.kind == bp_gear) return m.add(data::gear[it.id * 3 + it.rarity].name);
             if(it.kind != bp_weapon) return m;
             m.add(data::weapons[it.id].name);
-            if(it.extra & 15) m.add("+").add(int(it.extra & 15));
+            if(it.extra & 15) m.add("+").add(it.extra & 15);
             return m;
         }
         message bp_msg(const char* head, const bp_item& it) const { message m; m.add(head); bp_name(m, it); return m.as(loot); }
@@ -4756,7 +4756,7 @@ namespace core
         }
         int item_avg10(const bp_item& it) const
         {
-            return weapon_breakdown(-1, it.id, -1, -1, 0, it.rarity, it.perks).avg10 + int(it.extra & 15) * data::tool_upgrade_dmg * 10;
+            return weapon_breakdown(-1, it.id, -1, -1, 0, it.rarity, it.perks).avg10 + (it.extra & 15) * data::tool_upgrade_dmg * 10;
         }
         // Porównanie z noszonym: 1 lepsze, -1 słabsze, 0 równe (broń - średni cios, sprzęt - jakość).
         int backpack_compare(int i) const
