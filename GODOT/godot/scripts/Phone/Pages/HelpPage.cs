@@ -94,10 +94,14 @@ public sealed class HelpPage : PhonePage
         : [new(Loc.T("dalej"), GameAction.A)];
 
     /// <summary>A / Start: kolejna strona (akty i problemy, statystyki); na ostatniej - wyjście (HelpScreen).</summary>
+    /// <summary>v0.23.2: powiększony telefon w pionie – długie strony przewijają się.</summary>
+    public override bool Scrolls => true;
+
     public override bool Input(InputCmd e)
     {
         if (!e.Is(GameAction.A | GameAction.Start) || _page >= Pages - 1) return false;
         _page++;
+        Owner?.ResetScroll();
         return true;
     }
 
@@ -251,11 +255,13 @@ public sealed class HelpPage : PhonePage
             DrawControls(p, p.Section(top.End.Y + 6, Loc.T("sterowanie_2")));
             return;
         }
-        var intro = p.Card(p.Top, 2);
-        p.Stripe(intro, 0, Pal.Brand);
-        p.Stripe(intro, 1, Pal.Brand);
-        p.Text(p.TextX(intro), p.RowY(intro, 0), Loc.T("n10_etapow_w_3_aktach_akt_0_z"), Ink.Dark);
-        p.Text(p.TextX(intro), p.RowY(intro, 1), Loc.T("kazdy_konczy_boss_schody_dalej"), Ink.Dark);
+        var introLines = p.F.Wrap(Loc.T("n10_etapow_w_3_aktach_akt_0_z") + " " + Loc.T("kazdy_konczy_boss_schody_dalej"), (int)(p.Width - 24)); // v0.23.2: zawinięte (powiększony telefon)
+        var intro = p.Card(p.Top, introLines.Count);
+        for (var i = 0; i < introLines.Count; i++)
+        {
+            p.Stripe(intro, i, Pal.Brand);
+            p.Text(p.TextX(intro), p.RowY(intro, i), introLines[i], Ink.Dark);
+        }
         var card = DrawControls(p, p.Section(intro.End.Y + 6, Loc.T("sterowanie_2")));
         var tx = p.TextX(card);
         var right = card.End.X - 6;

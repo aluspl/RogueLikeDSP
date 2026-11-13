@@ -108,6 +108,6 @@ public sealed class ActionMenu
             3 => Loc.T("czekaj_ture"),
             _ => Loc.T("akcje_wybierz_strzalka_gora"),
         };
-        N.Hud.ShowHint(label, sel < 0 ? Loc.T("spacja_brygada_enter_z_zamknij") : Loc.T("ta_sama_strzalka_lub_spacja"));
+        N.Hud.ShowHint(label, Layout.Touch ? "" : sel < 0 ? Loc.T("spacja_brygada_enter_z_zamknij") : Loc.T("ta_sama_strzalka_lub_spacja")); // v0.23.2: klawisze tylko bez dotyku
     }
 }

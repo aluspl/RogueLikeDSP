@@ -1247,7 +1247,8 @@ public sealed class SmokeTest
             await DebugRunner.Frames(_app.Root, 2);
             Flow.Phone.Open(2, true);
             await DebugRunner.Frames(_app.Root, 2);
-            if (_app.Nodes.Phone.Size != Layout.UiSize) throw new Exception("telefon pionowo nie jest na cały ekran");
+            var onScreen = _app.Nodes.Phone.Size * _app.Nodes.Phone.Scale.X; // v0.23.2: telefon powiększony (Zoom)
+            if (onScreen.X < Layout.UiSize.X - 2 || onScreen.Y < Layout.UiSize.Y) throw new Exception("telefon pionowo nie jest na cały ekran");
             Flow.Settings.Open(Flow.Game, true);
             await DebugRunner.Frames(_app.Root, 2);
             Flow.Title.Open();

@@ -11,8 +11,8 @@ namespace LifeLike.Game.Phone;
 /// </summary>
 public sealed class PhonePainter
 {
-    /// <summary>Wysokość wiersza: 18 px, przy dotyku na pionowym ekranie 26 px (większy cel palca).</summary>
-    public static int RowH => Layout.Touch && Layout.Portrait ? 26 : 18;
+    /// <summary>Wysokość wiersza: 18 px, przy dotyku na pionowym ekranie 28 px telefonu (v0.23.2: razy PhoneView.Zoom ≈ 45 pt).</summary>
+    public static int RowH => Layout.Touch && Layout.Portrait ? 28 : 18;
 
     /// <summary>Przesunięcie tekstu 16 px w wierszu (wyśrodkowanie).</summary>
     public static int TextDy => (RowH - 16) / 2;
@@ -24,6 +24,12 @@ public sealed class PhonePainter
 
     /// <summary>Wiersze list do dotknięcia (prostokąt we współrzędnych telefonu, indeks elementu).</summary>
     public readonly List<(Rect2 Rect, int Index)> Hits = new();
+
+    /// <summary>v0.23.2: najniższy punkt narysowanych kart i tekstów (test: czy strona mieści się nad przyciskami).</summary>
+    public float Extent { get; private set; }
+
+    /// <summary>Zgłoś dół narysowanego elementu (Extent).</summary>
+    public void Reach(float y) => Extent = Mathf.Max(Extent, y);
 
     public PhonePainter(CanvasItem c, Rect2 content)
     {
@@ -44,6 +50,7 @@ public sealed class PhonePainter
     {
         var r = new Rect2(Left, y, Width, h);
         C.DrawStyleBox(Ui.Box(Pal.Card, 6, Pal.Border), r);
+        Reach(r.End.Y);
         return r;
     }
 
@@ -84,6 +91,7 @@ public sealed class PhonePainter
     public float Text(float x, float y, string s, Ink ink, TextAlign a = TextAlign.Left, float maxW = 0)
     {
         if (maxW > 0) s = F.Fit(s, (int)maxW);
+        Reach(y + TextDy + PixelFont.LineHeight);
         return F.Draw(C, new Vector2(x, y + TextDy), s, ink, a);
     }
 
