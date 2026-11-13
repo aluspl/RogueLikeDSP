@@ -234,37 +234,37 @@ public sealed class ItemSheet
         NoteInk = ink;
     }
 
-    /// <summary>Wiersz liczby: etykieta, wartość, zmiana względem noszonego (sign: 1 lepiej, -1 gorzej, 0 bez koloru).</summary>
-    private readonly record struct Fact(string Label, string Value, string Delta, int Sign);
-
-    private List<Fact> Facts(out string kind, out string sentence, out List<string> details)
+    /// <summary>
+    /// Liczby przedmiotu it (skąd: kind) z porównaniem do noszonego, opis rzadkości (kindText), zdanie (profity / co noszone)
+    /// i szczegóły (tryby broni). Znalezisko broni (Find) liczy się jak oferta narzędzia (ToolOfferBreakdown).
+    /// </summary>
+    public List<ItemFact> Facts(BackpackItem it, SheetKind kind, out string kindText, out string sentence, out List<string> details)
     {
         var d = _g.D;
-        var it = Item;
-        var facts = new List<Fact>();
+        var facts = new List<ItemFact>();
         details = new List<string>();
         sentence = "";
-        var compare = Kind is SheetKind.Bag or SheetKind.Holster;
-        if (Shop && Kind == SheetKind.Bag && _g.CanTrade) // Hurtownia: ceny Skupu i PSZOK-u na górze karty
+        var compare = kind is SheetKind.Bag or SheetKind.Holster or SheetKind.Find;
+        if (Shop && kind == SheetKind.Bag && _g.CanTrade) // Hurtownia: ceny Skupu i PSZOK-u na górze karty
         {
-            facts.Add(new Fact(Loc.T("hurt_tab_skup"), BackpackPage.SellText(_g, it), "", 0));
-            facts.Add(new Fact(Loc.T("hurt_tab_pszok"), Loc.F("pszok_cena", _g.PszokXpFor(it)), "", 0));
+            facts.Add(new ItemFact(Loc.T("hurt_tab_skup"), BackpackPage.SellText(_g, it), "", 0));
+            facts.Add(new ItemFact(Loc.T("hurt_tab_pszok"), Loc.F("pszok_cena", _g.PszokXpFor(it)), "", 0));
         }
         if (it.Kind == BackpackKind.Weapon)
         {
             var w = d.Weapons[it.Id];
             var now = _g.WeaponBreakdown();
-            var hand = Kind == SheetKind.Hand;
-            var next = hand ? now : _g.WeaponBreakdown(-1, it.Id, -1, -1, 0, it.Rarity, it.Perks);
-            var lvl = hand ? 0 : (it.Extra & 15) * d.ToolUpgradeDmg;
+            var hand = kind == SheetKind.Hand;
+            var next = hand ? now : kind == SheetKind.Find ? _g.ToolOfferBreakdown() : _g.WeaponBreakdown(-1, it.Id, -1, -1, 0, it.Rarity, it.Perks);
+            var lvl = hand || kind == SheetKind.Find ? 0 : (it.Extra & 15) * d.ToolUpgradeDmg;
             var avg = next.Avg10 + lvl * 10;
             var dAvg = avg - now.Avg10;
-            facts.Add(new Fact(Loc.T("karta_cios"), $"{next.Min + lvl}-{next.Max + lvl}",
+            facts.Add(new ItemFact(Loc.T("karta_cios"), $"{next.Min + lvl}-{next.Max + lvl}",
                 compare && dAvg != 0 ? DamageHelp.AddTenths(new Message(), dAvg, true).Text : "", compare ? Math.Sign(dAvg) : 0));
             var dCrit = next.CritChance() - now.CritChance();
-            facts.Add(new Fact(Loc.T("karta_kryt"), $"{next.CritChance()}%", compare && dCrit != 0 ? (dCrit > 0 ? "+" : "") + dCrit + "%" : "", compare ? Math.Sign(dCrit) : 0));
-            facts.Add(new Fact(Loc.T("karta_patent"), ModeText.BName(w), "", 0));
-            kind = $"{ItemArt.RarityName(d, it)} · {WeaponLook.Hits(d, w)}";
+            facts.Add(new ItemFact(Loc.T("karta_kryt"), $"{next.CritChance()}%", compare && dCrit != 0 ? (dCrit > 0 ? "+" : "") + dCrit + "%" : "", compare ? Math.Sign(dCrit) : 0));
+            facts.Add(new ItemFact(Loc.T("karta_patent"), ModeText.BName(w), "", 0));
+            kindText = $"{ItemArt.RarityName(d, it)} · {WeaponLook.Hits(d, w)}";
             if (it.Perks != 0) sentence = Loc.F("karta_profity", WeaponLook.PerkNames(d, it.Perks));
             details.Add(WeaponLook.LineA(w));
             details.Add(Loc.T("tryb_fach") + WeaponLook.Mode(w, w.ModeB, true, WeaponLook.CdDelta(d, it.Rarity)));
@@ -276,12 +276,52 @@ public sealed class ItemSheet
         var cur = _g.Equipped[slot];
         var curVal = cur >= 0 ? d.Gear[slot * 3 + cur].Value : 0;
         var dv = gd.Value - curVal;
-        facts.Add(new Fact(UiText.GearStatName(gd.Stat), $"+{gd.Value}", Kind == SheetKind.Bag && dv != 0 ? (dv > 0 ? "+" : "") + dv : "", Kind == SheetKind.Bag ? Math.Sign(dv) : 0));
-        facts.Add(new Fact(Loc.T("karta_cecha"), d.GearTraits[Math.Max(0, (int)it.Trait)].Name, "", 0));
-        kind = $"{ItemArt.RarityName(d, it)} · {d.GearSlots[slot]}";
-        if (Kind == SheetKind.Bag)
+        facts.Add(new ItemFact(UiText.GearStatName(gd.Stat), $"+{gd.Value}", compare && dv != 0 ? (dv > 0 ? "+" : "") + dv : "", compare ? Math.Sign(dv) : 0));
+        facts.Add(new ItemFact(Loc.T("karta_cecha"), d.GearTraits[Math.Max(0, (int)it.Trait)].Name, "", 0));
+        kindText = $"{ItemArt.RarityName(d, it)} · {d.GearSlots[slot]}";
+        if (kind == SheetKind.Bag)
             sentence = cur >= 0 ? Loc.F("bp_teraz", $"{d.Gear[slot * 3 + cur].Name}, {d.GearTraits[Math.Max(0, (int)_g.EquippedTrait[slot])].Name}") : Loc.T("bp_teraz_pusto");
         return facts;
+    }
+
+    /// <summary>Nagłówek karty: kafel z obrazkiem (icon px), nazwa pogrubiona i rzadkość pod nią; zwraca y pod nagłówkiem.</summary>
+    public float DrawHeader(PhonePainter p, BackpackItem it, string kindText, float x, float y, float w, float icon = 40)
+    {
+        var d = _g.D;
+        var f = p.F;
+        var r = new Rect2(x, y, icon, icon);
+        p.C.DrawStyleBox(Ui.Box(ItemArt.Rarity(d, it), 7), r);
+        p.C.DrawStyleBox(Ui.Box(Pal.Card, 5), r.Grow(-2));
+        ItemArt.Draw(p.C, d, it, r.Grow(-4));
+        var nx = r.End.X + 8;
+        var ty = y + Mathf.Round((icon - 38) / 2);
+        f.Draw(p.C, new Vector2(nx, ty + 2), f.Fit(_g.BackpackName(it), (int)(x + w - nx - 8)), Ink.Dark, TextAlign.Left, 1, true);
+        f.Draw(p.C, new Vector2(nx, ty + 21), f.Fit(kindText, (int)(x + w - nx)), ItemArt.RarityInk(d, it));
+        p.Reach(y + icon);
+        return y + icon + 8;
+    }
+
+    /// <summary>Wiersze liczb (etykieta, wartość pogrubiona, zmiana w pastylce przy prawej krawędzi); zwraca y pod nimi.</summary>
+    public static float DrawFacts(PhonePainter p, List<ItemFact> facts, float x, float y, float w)
+    {
+        var f = p.F;
+        foreach (var fact in facts)
+        {
+            f.Draw(p.C, new Vector2(x, y), fact.Label, Ink.Dim);
+            var vx = x + Mathf.Max(70, w * 0.32f);
+            var dw = fact.Delta.Length > 0 ? f.Measure(fact.Delta, 1, true) + 12 : 0;
+            f.Draw(p.C, new Vector2(vx, y), f.Fit(fact.Value, (int)(x + w - vx - dw)), Ink.Dark, TextAlign.Left, 1, true);
+            if (fact.Delta.Length > 0)
+            {
+                var (bg, ink) = fact.Sign > 0 ? (Pal.DoneBg, Ink.Done) : fact.Sign < 0 ? (Pal.LateBg, Ink.Late) : (Pal.Border, Ink.Dim);
+                var pr = new Rect2(x + w - dw, y - 1, dw, 18);
+                p.C.DrawStyleBox(Ui.Box(bg, 8), pr);
+                f.Draw(p.C, new Vector2(pr.GetCenter().X, y), fact.Delta, ink, TextAlign.Center, 1, true);
+            }
+            y += 22;
+            p.Reach(y);
+        }
+        return y;
     }
 
     /// <summary>Przyciemnienie strony i karta przy dolnej krawędzi treści.</summary>
@@ -297,7 +337,7 @@ public sealed class ItemSheet
         var d = _g.D;
         var f = p.F;
         p.C.DrawRect(new Rect2(p.Content.Position.X - 16, p.Top - 400, p.Content.Size.X + 32, p.Bottom - p.Top + 800), new Color(0.05f, 0.04f, 0.12f, 0.5f));
-        var facts = Facts(out var kind, out var sentence, out var details);
+        var facts = Facts(it, Kind, out var kind, out var sentence, out var details);
         var w = p.Width - 8;
         var tw = (int)w;
         var sLines = sentence.Length > 0 ? f.Wrap(sentence, tw) : new List<string>();
@@ -322,29 +362,8 @@ public sealed class ItemSheet
         p.Hit(new Rect2(p.Content.Position.X, p.Top - 400, p.Content.Size.X, top - p.Top + 400), HitBase + Outside);
         var x = p.Left + 4;
         var y = top + Pad;
-        var icon = new Rect2(x, y, 40, 40);
-        p.C.DrawStyleBox(Ui.Box(ItemArt.Rarity(d, it), 7), icon);
-        p.C.DrawStyleBox(Ui.Box(Pal.Card, 5), icon.Grow(-2));
-        ItemArt.Draw(p.C, d, it, icon.Grow(-4));
-        var nx = icon.End.X + 8;
-        f.Draw(p.C, new Vector2(nx, y + 2), f.Fit(_g.BackpackName(it), (int)(x + w - nx - 8)), Ink.Dark, TextAlign.Left, 1, true);
-        f.Draw(p.C, new Vector2(nx, y + 21), f.Fit(kind, (int)(x + w - nx)), ItemArt.RarityInk(d, it));
-        y += 48;
-        foreach (var fact in facts)
-        {
-            f.Draw(p.C, new Vector2(x, y), fact.Label, Ink.Dim);
-            var vx = x + Mathf.Max(70, w * 0.32f);
-            var dw = fact.Delta.Length > 0 ? f.Measure(fact.Delta, 1, true) + 12 : 0;
-            f.Draw(p.C, new Vector2(vx, y), f.Fit(fact.Value, (int)(x + w - vx - dw)), Ink.Dark, TextAlign.Left, 1, true);
-            if (fact.Delta.Length > 0)
-            {
-                var (bg, ink) = fact.Sign > 0 ? (Pal.DoneBg, Ink.Done) : fact.Sign < 0 ? (Pal.LateBg, Ink.Late) : (Pal.Border, Ink.Dim);
-                var pr = new Rect2(x + w - dw, y - 1, dw, 18);
-                p.C.DrawStyleBox(Ui.Box(bg, 8), pr);
-                f.Draw(p.C, new Vector2(pr.GetCenter().X, y), fact.Delta, ink, TextAlign.Center, 1, true);
-            }
-            y += 22;
-        }
+        y = DrawHeader(p, it, kind, x, y, w);
+        y = DrawFacts(p, facts, x, y, w);
         y += 4;
         foreach (var l in sLines)
         {

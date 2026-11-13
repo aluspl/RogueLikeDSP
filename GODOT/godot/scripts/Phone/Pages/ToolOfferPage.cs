@@ -1,7 +1,6 @@
 using System;
-using Godot;
+using System.Collections.Generic;
 using LifeLike.Core;
-using LifeLike.Game.Audio;
 using LifeLike.Game.Gfx;
 using LifeLike.Game.Input;
 using CoreGame = LifeLike.Core.Game;
@@ -9,11 +8,9 @@ using CoreGame = LifeLike.Core.Game;
 namespace LifeLike.Game.Phone.Pages;
 
 /// <summary>
-/// Nowe narzędzie na polu przy ulepszonym (v0.21.50 cz. 3, tool_offer_dialog na GBA): obecne „Kielnia+2” i nowe,
-/// porównanie ciosu i ostrzeżenie, że ulepszenie (i cecha) przepadnie. v0.21.51: dwa wiersze wyboru – zaznaczony na
-/// start „Zostaję” – strzałki / dotknięcie zaznacza, A / Enter / „Wybierz” (albo drugie dotknięcie) zatwierdza,
-/// B / Esc / „Zostaję” zostawia – zamiana nigdy nie dzieje się jednym przypadkowym dotknięciem.
-/// v0.23.0: rzadkość (kolor) i typy ciosu obu broni, porównanie ciosu z rzadkością nowej.
+/// Nowe narzędzie na polu (v0.21.50 cz. 3, tool_offer_dialog na GBA). v0.23.2 (UI 2): karta znaleziska (FindCard) – nowa broń
+/// z porównaniem ciosu i krytu do noszonej, wiersz „Noszone”, co stanie się z noszoną (do plecaka / zostaje / przepada),
+/// przyciski Do plecaka (n/6), Zostaw i Weź. Domyślnie zaznaczone „Do plecaka” (pełny plecak – „Zostaw”).
 /// </summary>
 public sealed class ToolOfferPage : PhonePage
 {
@@ -23,6 +20,7 @@ public sealed class ToolOfferPage : PhonePage
 
     public override string Title => Loc.T("nowe_narzedzie");
     public override string Sub => _g.ToolOffer >= 0 ? _g.D.Weapons[_g.D.Tools[_g.ToolOffer].Weapon].Name : "";
+
     /// <summary>v0.23.2: zaznaczony wybór – OfferPage.Take (Weź), Store (Do plecaka, domyślnie), Leave (Zostaw).</summary>
     public int Sel { get; set; }
 
@@ -30,26 +28,17 @@ public sealed class ToolOfferPage : PhonePage
     public Action<int> Decided;
 
     public override string Hint => Loc.T("karta_hint");
-    public override PageAction[] Actions => [new(Loc.T("zostaw"), GameAction.B), new(Loc.T("wybierz"), GameAction.A)];
 
     public override void Enter() => Sel = _g.BackpackFull() ? OfferPage.Leave : OfferPage.Store;
 
-    public override bool Input(InputCmd e)
-    {
-        var d = e.VDir;
-        if (d == 0) return false;
-        Sel = (Sel + d + 3) % 3;
-        if (Sel == OfferPage.Store && _g.BackpackFull()) Sel = (Sel + d + 3) % 3;
-        Sfx.Play("menu");
-        return true;
-    }
+    public override bool Input(InputCmd e) => OfferPage.Move(e, _g.BackpackFull(), () => Sel, v => Sel = v);
 
-    /// <summary>Dotknięcie wiersza: pierwsze zaznacza, drugie na zaznaczonym zatwierdza.</summary>
     public override bool TapRow(int index)
     {
-        if (index is < 0 or > 2 || (index == OfferPage.Store && _g.BackpackFull())) return false;
-        if (index == Sel) Decided?.Invoke(Sel);
-        else Sel = index;
+        var k = index - FindCard.HitBase;
+        if (k is < 0 or > 2 || (k == OfferPage.Store && _g.BackpackFull())) return false;
+        Sel = k;
+        Decided?.Invoke(k);
         return true;
     }
 
@@ -59,73 +48,21 @@ public sealed class ToolOfferPage : PhonePage
         var d = _g.D;
         var w = d.Tools[_g.ToolOffer].Weapon;
         var nr = d.Weapons[w].Master ? d.WeaponRarities.Length - 1 : Math.Max(0, (int)_g.ToolOfferRarity); // unikat – Mistrzowska
-        var now = _g.WeaponBreakdown();
-        var next = _g.ToolOfferBreakdown(); // v0.23.0: z profitami znajdźki
-        var y = p.Section(p.Top, Loc.T("teraz_5"));
-        var c0 = p.Card(y, 3 + PerkRows(now).Count);
-        var tx = p.TextX(c0);
-        var right = c0.End.X - 6;
-        p.Stripe(c0, 0, WeaponLook.RarityColor(d, _g.WeaponRarity));
-        var ix = tx + p.WeaponIcon(tx, p.RowY(c0, 0), _g.Weapon, WeaponSheet.Rarity(_g)); // v0.23.0: ikony broni
-        p.Text(ix, p.RowY(c0, 0), $"{_g.WeaponTitle()} {now.Min}-{now.Max}", Ink.Dark, TextAlign.Left, right - ix);
-        p.Divider(c0, 1);
-        p.Text(tx, p.RowY(c0, 1), KindLine(p, $"{WeaponLook.RarityName(d, _g.WeaponRarity)} · {WeaponLook.Hits(d, _g.Weapon)}", _g.Weapon, right - tx), WeaponLook.PhoneInk(d, _g.WeaponRarity), TextAlign.Left, right - tx);
-        var r0 = PerksRow(p, c0, 2, now, WeaponLook.PhoneInk(d, _g.WeaponRarity), tx, right);
-        p.Divider(c0, r0);
-        p.Text(tx, p.RowY(c0, r0), DamageHelp.Text(d, now, DmgText.Upgrade), Ink.Dim, TextAlign.Left, right - tx);
-        // v0.23.0: „ + kryt, OBR -5, profity”, gdy nowa ma ich więcej – w wierszu porównania albo (gdy się nie mieści) pod nim
-        var extra = DamageHelp.CompareExtras(new Message(), now, next).Text;
-        var cmp = Loc.T("cios_2") + DamageHelp.CompareLine(new Message(), now, next).Text;
-        if (p.F.Measure(cmp) > right - tx) cmp = DamageHelp.CompareLine(new Message(), now, next, true).Text;
-        var extraRow = extra.Length > 0 && p.F.Measure(cmp + extra) > right - tx;
-        if (!extraRow) cmp += extra;
-        y = p.Section(c0.End.Y + 4, Loc.T("nowe_4"));
-        var c1 = p.Card(y, 3 + PerkRows(next).Count + (extraRow ? 1 : 0));
-        p.Stripe(c1, 0, WeaponLook.RarityColor(d, nr));
-        ix = tx + p.WeaponIcon(tx, p.RowY(c1, 0), d.Weapons[w], nr);
-        p.Text(ix, p.RowY(c1, 0), Loc.F("zasieg_3", d.Weapons[w].Name, next.Min, next.Max, d.Weapons[w].Range), Ink.Dark, TextAlign.Left, right - ix);
-        p.Divider(c1, 1);
-        p.Text(tx, p.RowY(c1, 1), KindLine(p, $"{WeaponLook.RarityName(d, nr)} · {WeaponLook.Hits(d, d.Weapons[w])}", d.Weapons[w], right - tx), WeaponLook.PhoneInk(d, nr), TextAlign.Left, right - tx);
-        var r1 = PerksRow(p, c1, 2, next, WeaponLook.PhoneInk(d, nr), tx, right);
-        p.Divider(c1, r1);
-        var better = next.Avg10 > now.Avg10 || extra.Length > 0;
-        p.Text(tx, p.RowY(c1, r1), cmp, better ? Ink.Done : Ink.Late, TextAlign.Left, right - tx);
-        if (extraRow)
-        {
-            p.Divider(c1, r1 + 1);
-            p.Text(tx, p.RowY(c1, r1 + 1), extra.TrimStart(), Ink.Done, TextAlign.Left, right - tx);
-        }
-        // v0.23.2: trzy wybory – Weź (stara broń do plecaka / na ziemię / przepada), Do plecaka, Zostaw
+        var found = BackpackItem.Weapon(w, nr, _g.ToolOfferBreakdown().Perks, 0);
+        var worn = _g.HandItem();
         var full = _g.BackpackFull();
-        var fate = _g.ToolTakeFate();
         var title = _g.WeaponTitle();
-        string[] rows =
-        [
-            fate == 0 ? Loc.F("karta_wez_plecak", title) : fate == 1 ? Loc.F("karta_wez_ziemia", title) : Loc.F("karta_wez_przepada", title),
-            full ? Loc.F("karta_plecak_pelny", _g.BackpackCount(), _g.BackpackSlots()) : Loc.F("karta_do_plecaka", _g.BackpackCount(), _g.BackpackSlots()),
-            Loc.T("karta_zostaw"),
-        ];
-        OfferPage.Choices(p, c1.End.Y + 4, rows, Sel, full, 0);
-    }
-
-    /// <summary>v0.23.0: rzadkość i typ ciosu, a gdy się mieści – też Patent nazwą ruchu („Markowa · Cięcie · Patent: Zamach z barku”).</summary>
-    private static string KindLine(PhonePainter p, string kind, LifeLike.Core.Data.WeaponDef w, float room)
-    {
-        var full = $"{kind} · {Loc.T("tryb_fach")}{ModeText.BName(w)}";
-        return p.F.Measure(full) <= room ? full : kind;
-    }
-
-    private System.Collections.Generic.List<string> PerkRows(DmgBreakdown b) => WeaponLook.PerkRows(_g.D, b.Perks, b.PerksMaster, PhoneView.Full);
-
-    /// <summary>v0.23.0 (#91): wiersz na profit (pełna nazwa i opis); zwraca numer kolejnego wiersza karty.</summary>
-    private int PerksRow(PhonePainter p, Rect2 card, int row, DmgBreakdown b, Ink ink, float tx, float right)
-    {
-        foreach (var line in PerkRows(b))
+        var fate = _g.ToolTakeFate();
+        var notes = new List<(string, Ink)>
         {
-            p.Divider(card, row);
-            p.Text(tx, p.RowY(card, row), line, ink, TextAlign.Left, right - tx);
-            row++;
-        }
-        return row;
+            fate == 0 ? (Loc.F("karta_los_plecak", title), Ink.Dim) : fate == 1 ? (Loc.F("karta_los_ziemia", title), Ink.Dim) : (Loc.F("karta_los_przepada", title), Ink.Late),
+        };
+        string[] labels =
+        [
+            Loc.T("karta_wez"),
+            full ? Loc.F("karta_plecak_pelny", _g.BackpackCount(), _g.BackpackSlots()) : Loc.F("karta_do_plecaka", _g.BackpackCount(), _g.BackpackSlots()),
+            Loc.T("zostaw"),
+        ];
+        FindCard.Draw(p, _g, found, worn, notes, labels, full, Sel);
     }
 }
