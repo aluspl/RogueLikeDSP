@@ -244,17 +244,106 @@ public sealed partial class Game
     /// <summary>PSZOK: dośw. za oddanie (bazowe + za poziom przedmiotu).</summary>
     public int PszokXpFor(BackpackItem it) => it.Empty ? 0 : D.PszokXp + D.PszokXpPerTier * BackpackTier(it);
 
-    /// <summary>PSZOK (Hurtownia): oddanie za darmo – dośw. i trochę HP.</summary>
+    /// <summary>v0.23.2 (UI 2): PSZOK otwarty – w Hurtowni (bez tury) i na placu (1 tura).</summary>
+    public bool CanRecycle => CanTrade || St == GameStatus.Playing;
+
+    /// <summary>PSZOK: oddanie za darmo – dośw. i trochę HP. v0.23.2 (UI 2): także na placu (1 tura), w Hurtowni bez tury.</summary>
     public bool BackpackRecycle(int i)
     {
-        if (i < 0 || i >= BackpackSlots() || Backpack[i].Empty || !CanTrade) return false;
+        if (i < 0 || i >= BackpackSlots() || Backpack[i].Empty || !CanRecycle) return false;
+        if (St == GameStatus.Playing && ShockedTurn()) return true;
         var it = Backpack[i];
-        var xp = PszokXpFor(it);
         Backpack[i] = default;
+        PszokReward(it);
+        BackpackTurn();
+        return true;
+    }
+
+    private void PszokReward(BackpackItem it)
+    {
+        var xp = PszokXpFor(it);
         GainXp(xp);
         Hero.Hp = (short)Math.Min(Hero.MaxHp, Hero.Hp + D.PszokHp);
         Push(Msg(Loc.T("pszok_segregacja")).Add(xp).Add(Loc.T("dosw")).As(LogKind.Good));
+    }
+
+    /// <summary>v0.23.2 (UI 2): Unequip – broń w ręku i broń w kaburze (sloty sprzętu: 0..GearSlotsCount-1).</summary>
+    public const int UnequipHand = -1, UnequipHolster = -2;
+
+    /// <summary>Broń zawodu poza ręką (plecak, kabura) – wtedy broni w ręku nie da się zdjąć (zawód ma jedną).</summary>
+    private bool ClassWeaponCarried()
+    {
+        if (Weapon2 == CDef.Weapon) return true;
+        for (var i = 0; i < BackpackSlots(); ++i)
+        {
+            if (Backpack[i].Kind == BackpackKind.Weapon && Backpack[i].Id == CDef.Weapon) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// v0.23.2 (UI 2): czy da się zdjąć noszone do plecaka (recycle = false; trzeba miejsca – pas z bronią w kaburze: dwóch)
+    /// albo oddać do PSZOK-u (recycle = true). Broń w ręku: tylko narzędzie (do ręki wraca broń zawodu); broni zawodu nie
+    /// oddaje się do PSZOK-u.
+    /// </summary>
+    public bool CanUnequip(int slot, bool recycle)
+    {
+        if (!BackpackUsable || (recycle && !CanRecycle)) return false;
+        var free = BackpackSlots() - BackpackCount();
+        if (slot == UnequipHand) return WeaponOverride >= 0 && !ClassWeaponCarried() && (recycle || free > 0);
+        if (slot == UnequipHolster) return HasBelt() && Weapon2 >= 0 && (recycle ? Weapon2 != CDef.Weapon : free > 0);
+        if (slot < 0 || slot >= D.GearSlotsCount || Equipped[slot] < 0) return false;
+        return recycle || free > (slot == D.BeltSlot && HasBelt() && Weapon2 >= 0 ? 1 : 0);
+    }
+
+    /// <summary>
+    /// v0.23.2 (UI 2): zdejmij noszone (slot sprzętu, UnequipHand, UnequipHolster) do plecaka albo oddaj do PSZOK-u (dośw. i HP).
+    /// Na placu 1 tura, w Hurtowni bez tury.
+    /// </summary>
+    public bool Unequip(int slot, bool recycle)
+    {
+        if (!CanUnequip(slot, recycle)) return false;
+        if (St == GameStatus.Playing && ShockedTurn()) return true;
+        BackpackItem it;
+        if (slot == UnequipHand)
+        {
+            it = HandItem();
+            SetHand(BackpackItem.Weapon(CDef.Weapon, 0, 0, 0));
+        }
+        else if (slot == UnequipHolster)
+        {
+            it = BackpackItem.Weapon(Weapon2, Weapon2Rarity, Weapon2Perks, PackWeaponExtra(Weapon2Lvl, Weapon2Trait, Weapon2Charges, Weapon2TraitPending));
+            ClearHolster();
+        }
+        else
+        {
+            it = BackpackItem.Gear(slot, Equipped[slot], EquippedTrait[slot]);
+            TakeOff(slot);
+        }
+        if (recycle) PszokReward(it);
+        else
+        {
+            BackpackAdd(it);
+            Push(Msg(Loc.T("do_plecaka")).Add(BackpackName(it)).As(LogKind.Loot));
+        }
+        BackpackTurn();
         return true;
+    }
+
+    /// <summary>Pusty slot sprzętu (odwrotność Equip): HP kamizelki, kabura z pasem, termos, pole widzenia.</summary>
+    private void TakeOff(int slot)
+    {
+        if (slot == D.BeltSlot && HasBelt()) DropHolster();
+        var gd = D.Gear[slot * 3 + Equipped[slot]];
+        if (gd.Stat == Data.GearStat.Hp)
+        {
+            Hero.MaxHp = (short)(Hero.MaxHp - gd.Value);
+            Hero.Hp = (short)Math.Max(1, Hero.Hp - gd.Value);
+        }
+        Equipped[slot] = -1;
+        EquippedTrait[slot] = 0;
+        Thermos = Math.Min(Thermos, ThermosCap());
+        UpdateFov();
     }
 
     /// <summary>Dośw. za „Zostaw” na karcie paczki (0, gdy paczka była już odłożona).</summary>

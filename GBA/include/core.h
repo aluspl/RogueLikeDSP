@@ -4863,15 +4863,68 @@ namespace core
             return true;
         }
         static int pszok_xp_for(const bp_item& it) { return it.kind == bp_empty ? 0 : data::pszok_xp + data::pszok_xp_per_tier * bp_tier(it); }
+        // v0.23.2 (UI 2): PSZOK także na placu (1 tura), w Hurtowni bez tury.
+        bool can_recycle() const { return can_trade() || st == status::playing; }
         bool backpack_recycle(int i)
         {
-            if(! bp_valid(i) || ! can_trade()) return false;
-            const int xp = pszok_xp_for(backpack[i]);
+            if(! bp_valid(i) || ! can_recycle()) return false;
+            if(st == status::playing && shocked_turn()) return true;
+            const bp_item it = backpack[i];
             backpack[i] = bp_item();
+            pszok_reward(it);
+            if(st == status::playing) end_turn();
+            return true;
+        }
+        void pszok_reward(const bp_item& it)
+        {
+            const int xp = pszok_xp_for(it);
             gain_xp(xp);
             hero.hp = int16_t(imin(hero.max_hp, hero.hp + data::pszok_hp));
             push(message().add(UI(pszok_segregacja)).add(xp).add(UI(dosw)).as(good));
+        }
+        // v0.23.2 (UI 2): zdejmowanie noszonego – slot sprzętu 0.., broń w ręku, kabura (Unequip w C#).
+        static constexpr int unequip_hand = -1, unequip_holster = -2;
+        bool class_weapon_carried() const
+        {
+            if(weapon2 == cdef().weapon) return true;
+            for(int i = 0; i < backpack_slots(); ++i) if(backpack[i].kind == bp_weapon && backpack[i].id == cdef().weapon) return true;
+            return false;
+        }
+        bool can_unequip(int slot, bool recycle) const
+        {
+            if(! backpack_usable() || (recycle && ! can_recycle())) return false;
+            const int free = backpack_slots() - backpack_count();
+            if(slot == unequip_hand) return weapon_override >= 0 && ! class_weapon_carried() && (recycle || free > 0);
+            if(slot == unequip_holster) return has_belt() && weapon2 >= 0 && (recycle ? weapon2 != cdef().weapon : free > 0);
+            if(slot < 0 || slot >= data::gear_slots_count || equipped[slot] < 0) return false;
+            return recycle || free > ((slot == data::belt_slot && has_belt() && weapon2 >= 0) ? 1 : 0);
+        }
+        bool unequip(int slot, bool recycle)
+        {
+            if(! can_unequip(slot, recycle)) return false;
+            if(st == status::playing && shocked_turn()) return true;
+            bp_item it;
+            if(slot == unequip_hand) { it = hand_item(); set_hand(bp_weapon_item(cdef().weapon, 0, 0, 0)); }
+            else if(slot == unequip_holster)
+            {
+                it = bp_weapon_item(weapon2, weapon2_rarity, weapon2_perks, pack_weapon_extra(weapon2_lvl, weapon2_trait, weapon2_charges, weapon2_trait_pending));
+                clear_holster();
+            }
+            else { it = bp_gear_item(slot, equipped[slot], equipped_trait[slot]); take_off(slot); }
+            if(recycle) pszok_reward(it);
+            else { backpack_add(it); push(bp_msg(UI(do_plecaka), it)); }
+            if(st == status::playing) end_turn();
             return true;
+        }
+        void take_off(int slot)
+        {
+            if(slot == data::belt_slot && has_belt()) drop_holster();
+            const gear_def& gd = data::gear[slot * 3 + equipped[slot]];
+            if(gd.stat == gear_stat::hp) { hero.max_hp = int16_t(hero.max_hp - gd.value); hero.hp = int16_t(imax(1, hero.hp - gd.value)); }
+            equipped[slot] = -1;
+            equipped_trait[slot] = 0;
+            thermos = imin(thermos, thermos_cap());
+            update_fov();
         }
         int offer_decline_xp() const
         {

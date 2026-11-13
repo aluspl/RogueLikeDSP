@@ -217,6 +217,25 @@ public class BackpackTests
     }
 
     [Fact]
+    public void UnequipAndRecycleOnSiteCostATurn()
+    {
+        var g = TestData.Arena(0);
+        g.Equip(2, 2, 0);
+        int hp = g.Hero.MaxHp, t0 = g.Turns;
+        Assert.True(g.CanUnequip(2, false) && g.Unequip(2, false));
+        Assert.True(g.Equipped[2] < 0 && g.Hero.MaxHp == hp - D.Gear[2 * 3 + 2].Value && g.Turns == t0 + 1);
+        Assert.True(g.Backpack[0].Kind == BackpackKind.Gear && g.Backpack[0].Id == 2 && g.Backpack[0].Rarity == 2);
+        var xp = g.RunXp;
+        Assert.True(g.BackpackRecycle(0) && g.RunXp > xp && g.BackpackCount() == 0 && g.Turns == t0 + 2);
+        Assert.False(g.CanUnequip(LifeLike.Core.Game.UnequipHand, false) || g.CanUnequip(LifeLike.Core.Game.UnequipHand, true));
+        g.Backpack[0] = BackpackItem.Weapon(Wi("lom"), 1, 0, 0);
+        Assert.True(g.BackpackEquip(0) && g.WeaponOverride == Wi("lom") && g.Backpack[0].Id == g.CDef.Weapon);
+        Assert.False(g.CanUnequip(LifeLike.Core.Game.UnequipHand, false)); // broń zawodu w plecaku
+        g.Backpack[0] = default;
+        Assert.True(g.Unequip(LifeLike.Core.Game.UnequipHand, true) && g.WeaponOverride < 0 && g.BackpackCount() == 0);
+    }
+
+    [Fact]
     public void BotSkupKeepsBestSpareWeapon()
     {
         var g = TestData.Arena(0);

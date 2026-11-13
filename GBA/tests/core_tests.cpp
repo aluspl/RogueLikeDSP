@@ -4071,6 +4071,16 @@ int main()
             g.hero.hp = 5; g.backpack[3] = bp_gear_item(0, 2, 0); const int xp = g.run_xp;
             CHECK(game::pszok_xp_for(g.backpack[3]) == 7 && g.backpack_recycle(3) && g.run_xp > xp && g.hero.hp == 7);
         }
+        {   // v0.23.2 (UI 2): PSZOK na placu (tura), zdejmowanie do plecaka i do PSZOK-u, broń zawodu zostaje
+            static game g; arena(g, 0); g.equip(2, 2, 0); const int hp = g.hero.max_hp, t0 = g.turns;
+            CHECK(g.can_unequip(2, false) && g.unequip(2, false) && g.equipped[2] < 0 && g.hero.max_hp == hp - data::gear[2 * 3 + 2].value && g.turns == t0 + 1);
+            CHECK(g.backpack[0].kind == bp_gear && g.backpack[0].id == 2 && g.backpack[0].rarity == 2);
+            const int xp = g.run_xp; CHECK(g.backpack_recycle(0) && g.run_xp > xp && g.backpack_count() == 0 && g.turns == t0 + 2);
+            CHECK(! g.can_unequip(game::unequip_hand, false) && ! g.can_unequip(game::unequip_hand, true));
+            g.backpack[0] = bp_weapon_item(lw, 1, 0, 0); CHECK(g.backpack_equip(0) && g.weapon_override == lw && g.backpack[0].id == data::classes[0].weapon);
+            CHECK(! g.can_unequip(game::unequip_hand, false));   // broń zawodu w plecaku – broni w ręku nie da się zdjąć
+            g.backpack[0] = bp_item(); CHECK(g.unequip(game::unequip_hand, true) && g.weapon_override < 0 && g.backpack_count() == 0);
+        }
         {   // zapis: PBRUN20 trzyma plecak; PBRUN19 (stary rozmiar) wczytuje się z pustym plecakiem
             static run_save rs; static game g; g.new_run(2, 9); g.backpack[2] = bp_weapon_item(lw, 2, 3, 0x21); g.offer_pickup = 3;
             run_save_make(rs, g);
