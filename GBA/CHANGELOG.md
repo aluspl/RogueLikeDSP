@@ -13,6 +13,11 @@ backpack** and **Leave it**. The **Backpack** screen (I on desktop, phone → Ge
 portrait; retro version: phone → Gear → A) shows ▲ better / ▼ weaker / = same against what you wear; swapping costs a
 turn (like the holster), dropping is free. After an act boss the merchant has new tabs: **Sell** (backpack items for
 materials – rarer gives more) and **Scrap** (give items away for a little XP and +2 HP; "Sorted!"), plus a free swap.
+**New phone-sized interface (Godot):** text ~1.5x bigger in portrait, one column, no keyboard hints on touch; Esc / the
+pause button opens a **pause** menu (Resume, Character, Site app, Settings, Quit to menu); the **Character** screen shows
+the builder with gear slots, four key numbers and the backpack as a 3x2 tile grid; tapping a tile or slot opens an item
+card (Equip / Change / To pack / Recycle, with Attack, Special and Defense shown as now -> after in green / red); the find
+card uses the same layout. On site, recycling an item (or what you wear) now works too – same small XP/HP bonus, 1 turn.
 Also from v0.23.1: fewer coffee flasks (2 cups, coffee heals 11 HP) and a proper cracked-wall / padlocked-door look
 for storerooms. A build in progress from v0.23.0–v0.23.1 still loads (with an empty backpack).
 
@@ -34,6 +39,16 @@ for storerooms. A build in progress from v0.23.0–v0.23.1 still loads (with an 
    - Bot balansu zakłada lepsze, porównywalne chowa do plecaka, w Skupie sprzedaje wszystko oprócz najlepszej
      zapasowej broni. Normalny 32,6%, Łatwy 54,0%, Trudny 13,9%, pełne Szkolenia 64,6%, + Respekt 75,6%, Akt 0 + meta
      72,2%, inwestor 14,3%, kontrakty 27,6–31,7 / 65,3–71,9 (`docs/v0.23/balans.md`, sekcja v0.23.2).
+
+1a. **Nowy, czytelny interfejs na telefonie (Godot)** – uwagi właściciela po teście („mega nieczytelny”, „tragiczny
+   flow pauzy”): w pionie tekst ~1,5x większy, jedna kolumna, bez podpowiedzi klawiszy na dotyku, duży krzyżyk.
+   **Pauza** (Esc, przycisk pauzy w rogu mapy): Wznów, Postać, Budowa, Ustawienia, Wyjdź do menu (z potwierdzeniem).
+   **Postać** zastępuje Start, Sprzęt i osobny ekran plecaka: bohater ze slotami, 4 liczby (HP, Obrona, Atak, Kryt),
+   plecak siatką 3x2 kafli z ramką rzadkości i ▲/▼. **Karta przedmiotu** (dolny arkusz): noszone – Zmień (lista
+   z plecaka z podglądem), Do plecaka, Na PSZOK; z plecaka – Załóż z podglądem „teraz -> po” (Atak, Atak specjalny,
+   Obrona, HP) na zielono / czerwono, Kabura, Na PSZOK (zamiast „Wyrzuć”), w Hurtowni Sprzedaj. **Karta znaleziska**
+   w tym samym układzie. Telefon **Budowa**: Zadania, Usterki, Koszty + przycisk Brygada. PSZOK działa też na placu
+   (1 tura, ta sama premia), noszone da się zdjąć do plecaka (broń zawodu zostaje) – rdzeń C# i C++, bot bez zmian.
 
 ### Balans
 2. **Mniej termosów z kawą** (uwaga właściciela: „ilość termosów jeszcze za duża”, Termos 5/5 w połowie budowy) –
