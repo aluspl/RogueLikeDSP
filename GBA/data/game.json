@@ -3992,7 +3992,7 @@
       "effect": "thermos"
     }
   ],
-  "version": "v0.23.1",
+  "version": "v0.23.2",
   "damageHelp": [
     "Cios = rzut broni + premie:",
     "SIŁ/ZRĘ/INT broni +1 co 2 pkt,",
@@ -4007,7 +4007,7 @@
     "Kawa z termosu leczy - menu START",
     "Czerwone pola? Masz 2 tury na unik",
     "Moc pod R: ikona pulsuje = gotowa",
-    "Paczka: A zakładam, B zostawiam",
+    "Paczka: załóż albo do plecaka",
     "Przytrzymaj L: mapa odkrytego placu",
     "Telefon (SELECT): Koszty i Zlecenia",
     "Co 4 tury czekania (B) +1 HP",
@@ -6479,12 +6479,12 @@
     }
   },
   "extrasHelp": [
-    "Pole z SMS-em: wydarzenie.",
-    "Odpowiedź: ryzyko albo zysk,",
-    "szansa (np. 30%) raz.",
+    "SMS na polu: wydarzenie, ryzyko",
+    "albo zysk (szansa, np. 30%).",
     "Hurtownia: ulepsz (zł+stal):",
     "+1 obrażeń za poziom, maks. +3,",
-    "od +2 cecha. Zmiana: strata!",
+    "od +2 cecha. Plecak: 6 miejsc,",
+    "po bossie Skup i PSZOK (dośw.).",
     "Pęknięta ściana / drzwi:",
     "magazyn. Klucz ma problem",
     "(często elita). Ścianę kruszy",

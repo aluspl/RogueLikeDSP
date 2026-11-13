@@ -1172,7 +1172,7 @@ inline constexpr core::progress_title progress_titles[] = {   // tytuły: inspek
 };
 inline constexpr int progress_titles_count = 21;
 
-inline constexpr const char* version = "v0.23.1";   // numer wersji (ekran tytułowy, changelog)
+inline constexpr const char* version = "v0.23.2";   // numer wersji (ekran tytułowy, changelog)
 
 inline constexpr core::ltext damage_help[] = {   // Jak grać: obrażenia broni w prostych słowach (rozpiska #26)
     { "Cios = rzut broni + premie:", "Hit = weapon roll + bonuses:" },
@@ -1185,12 +1185,12 @@ inline constexpr core::ltext damage_help[] = {   // Jak grać: obrażenia broni 
 inline constexpr int damage_help_count = 6;
 
 inline constexpr core::ltext extras_help[] = {   // Jak grać: wydarzenia z wyborem, ulepszanie narzędzia, magazyn
-    { "Pole z SMS-em: wydarzenie.", "SMS tile: an event." },
-    { "Odpowiedź: ryzyko albo zysk,", "Answers: risk or reward," },
-    { "szansa (np. 30%) raz.", "a chance (e.g. 30%) once." },
+    { "SMS na polu: wydarzenie, ryzyko", "SMS tile: an event, risk" },
+    { "albo zysk (szansa, np. 30%).", "or reward (chance, e.g. 30%)." },
     { "Hurtownia: ulepsz (zł+stal):", "Merchant: upgrade (zł+steel):" },
     { "+1 obrażeń za poziom, maks. +3,", "+1 damage per level, max +3," },
-    { "od +2 cecha. Zmiana: strata!", "trait at +2. Swapping: lost!" },
+    { "od +2 cecha. Plecak: 6 miejsc,", "trait from +2. Pack: 6 slots," },
+    { "po bossie Skup i PSZOK (dośw.).", "after boss: sell or scrap (XP)." },
     { "Pęknięta ściana / drzwi:", "Cracked wall / door:" },
     { "magazyn. Klucz ma problem", "storeroom. A problem has the" },
     { "(często elita). Ścianę kruszy", "key (often elite). Operator or" },
@@ -1325,7 +1325,7 @@ inline constexpr core::ltext tips[] = {   // rady kierownika na ekranie harmonog
     { "Kawa z termosu leczy - menu START", "Flask coffee heals - START menu" },
     { "Czerwone pola? Masz 2 tury na unik", "Red tiles? 2 turns to step away" },
     { "Moc pod R: ikona pulsuje = gotowa", "Power on R: pulsing icon = ready" },
-    { "Paczka: A zakładam, B zostawiam", "Gear pack: A wear it, B leave it" },
+    { "Paczka: załóż albo do plecaka", "Gear pack: wear it or pack it" },
     { "Przytrzymaj L: mapa odkrytego placu", "Hold L: map of the explored site" },
     { "Telefon (SELECT): Koszty i Zlecenia", "Phone (SELECT): Costs and Jobs" },
     { "Co 4 tury czekania (B) +1 HP", "Every 4 turns waiting (B) +1 HP" },

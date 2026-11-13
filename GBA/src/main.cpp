@@ -5103,7 +5103,7 @@ namespace
                 dm.add(UI(uwaga_2)).add(UI(pas_zabierze_kabure));
                 dk = ink::late;
             }
-            else if(si.effect == core::shop_effect::tool && g.weapon_lvl > 0)
+            else if(si.effect == core::shop_effect::tool && g.weapon_lvl > 0 && g.backpack_full())   // v0.23.2: z miejscem w plecaku stara broń trafia do plecaka
             {
                 dm.add(UI(uwaga_2)); g.weapon_title(dm).add(UI(przepadnie));
                 dk = ink::late;

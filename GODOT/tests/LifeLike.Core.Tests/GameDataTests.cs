@@ -83,7 +83,7 @@ public class GameDataTests
         Assert.True(D.CritBasePct == 5 && D.CritPerLuckPct == 2 && D.CritMaxPct == 35 && D.CritMultiplier == 2 && D.DodgeMaxPct == 20);
         Assert.True(D.ThermosCapacity == 2 && D.CoffeeHeal == 11 && D.BotDrinkBelowPct == 40 && D.GearDeclineXp == 1);
         Assert.Equal(107, D.Stages[2].HpPct);
-        Assert.Equal("v0.23.1", D.Version);
+        Assert.Equal("v0.23.2", D.Version);
     }
 
     [Fact]

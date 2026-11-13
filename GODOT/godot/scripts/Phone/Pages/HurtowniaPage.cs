@@ -93,7 +93,7 @@ public sealed class HurtowniaPage : PhonePage
         }
         if (it.Effect == LifeLike.Core.Data.ShopEffect.Gear && _g.HasBelt() && _g.Weapon2 >= 0) // v0.23.0: losowy pas zdejmie pas z kaburą
             return (Loc.F("uwaga_kabura_hurtownia", it.Desc, _g.D.Weapons[_g.Weapon2].Name), Ink.Late);
-        if (it.Effect == LifeLike.Core.Data.ShopEffect.Tool && _g.WeaponLvl > 0) return (Loc.F("uwaga_przepadnie", _g.WeaponTitle(), it.Desc), Ink.Late);
+        if (it.Effect == LifeLike.Core.Data.ShopEffect.Tool && _g.WeaponLvl > 0 && _g.BackpackFull()) return (Loc.F("uwaga_przepadnie", _g.WeaponTitle(), it.Desc), Ink.Late);
         if (it.Effect == LifeLike.Core.Data.ShopEffect.Tool) // v0.23.0: broń w ręku z rzadkością (zamiana na losową)
             return (Loc.F("w_reku_rzadkosc", it.Desc, WeaponLook.RarityName(_g.D, _g.WeaponRarity), _g.WeaponTitle()), WeaponLook.PhoneInk(_g.D, _g.WeaponRarity));
         return (it.Desc, Ink.Dim);

@@ -2,18 +2,41 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
-## v0.23.1 – 2026-11-12 (poprawki)
+## v0.23.2 – 2026-11-13 (plecak i poprawki)
+
+> Budowa w toku z v0.23.0 / v0.23.1 wczytuje się (z pustym plecakiem); profil bez zmian.
 
 ### In English
-Fewer coffee flasks: the flask holds 2 cups (was 3), Grandma's Flask keepsake adds +1/+1/+2 (was +1/+2/+3), the
-Better Flask training gives +2 cups in total (its last level now improves gear instead), each stage has one coffee on
-the map (extra finds no longer roll coffee) and problems drop coffee half as often. To keep the game fair a coffee now
-heals 11 HP (was 8). The cracked storeroom wall is a proper pixel-art crack in the wall material with rubble on the
-floor, and the key-only storeroom is a wooden door with a padlock; with a key in hand the crack edge or the padlock
-glows instead of the old orange frame. Saves and profiles are kept.
+**Backpack**: 6 slots for weapons and gear you find on site. A gear pack or a weapon on the floor now opens a card with
+three choices – **Equip / Take** (the old item goes to the backpack, or stays on the floor when it is full), **To
+backpack** and **Leave it**. The **Backpack** screen (I on desktop, phone → Gear → Backpack, tap the weapon in the HUD in
+portrait; retro version: phone → Gear → A) shows ▲ better / ▼ weaker / = same against what you wear; swapping costs a
+turn (like the holster), dropping is free. After an act boss the merchant has new tabs: **Sell** (backpack items for
+materials – rarer gives more) and **Scrap** (give items away for a little XP and +2 HP; "Sorted!"), plus a free swap.
+Also from v0.23.1: fewer coffee flasks (2 cups, coffee heals 11 HP) and a proper cracked-wall / padlocked-door look
+for storerooms. A build in progress from v0.23.0–v0.23.1 still loads (with an empty backpack).
+
+### Nowości
+1. **Plecak** – 6 miejsc na bronie (z rzadkością, profitami i ulepszeniami) i sprzęt z mapy, na jedną budowę.
+   - **Karta z trzema wyborami:** paczka sprzętu przy zajętym slocie i każda broń z mapy (pusta kabura łapie broń
+     jak dotąd): **Załóż / Weź** (stary przedmiot do plecaka, przy pełnym zostaje na ziemi), **Do plecaka** (przy
+     pełnym wyszarzone: „Plecak pełny (6/6)”), **Zostaw** (+dośw. raz, przedmiot zostaje na ziemi – można wrócić).
+     Broń z kabury przy zmianie pasa i stara broń przy zakupie w Hurtowni też trafiają najpierw do plecaka.
+   - **Ekran Plecak:** I na placu, telefon → Sprzęt → Plecak, w pionie dotknięcie broni w górnym pasku; w wersji retro
+     telefon → Sprzęt → A (rozpiska obrażeń: Start → A). Przy każdym przedmiocie ▲ lepsze / ▼ słabsze / = równe
+     względem noszonego (broń: średni cios), porównanie zaznaczonego; **Załóż** (1 tura, jak kabura), **Do kabury**,
+     **Wyrzuć** (na ziemię pod bohaterem, bez tury).
+   - **Hurtownia po bossie aktu:** zakładki **Skup** (przedmiot za materiały: Zwykły 1, Solidny 2, Markowy 3,
+     Mistrzowski / artefakt 5 sztuk; broń – stal, sprzęt – drewno, co druga sztuka cement), **PSZOK** (oddanie za
+     darmo: +3 dośw. + 2 za poziom przedmiotu i +2 HP, „Segregacja zaliczona!”) i **Plecak** (zamiana bez tury).
+   - Pierwszy przedmiot w plecaku: dymek Kierownika Marka. Zapis budowy PBRUN20 – budowa z v0.23.0 / v0.23.1 wczytuje
+     się z pustym plecakiem.
+   - Bot balansu zakłada lepsze, porównywalne chowa do plecaka, w Skupie sprzedaje wszystko oprócz najlepszej
+     zapasowej broni. Normalny 32,6%, Łatwy 54,0%, Trudny 13,9%, pełne Szkolenia 64,6%, + Respekt 75,6%, Akt 0 + meta
+     72,2%, inwestor 14,3%, kontrakty 27,6–31,7 / 65,3–71,9 (`docs/v0.23/balans.md`, sekcja v0.23.2).
 
 ### Balans
-1. **Mniej termosów z kawą** (uwaga właściciela: „ilość termosów jeszcze za duża”, Termos 5/5 w połowie budowy) –
+2. **Mniej termosów z kawą** (uwaga właściciela: „ilość termosów jeszcze za duża”, Termos 5/5 w połowie budowy) –
    termos mieści 2 kawy (było 3); pamiątka Termos babci +1 / +1 / +2 (było +1 / +2 / +3); Szkolenie Lepszy termos
    razem +2 miejsca (ostatni poziom: lepszy sprzęt zamiast termosu); z mapy jedna kawa na etap (dodatkowa znajdźka,
    która wylosuje kawę, przepada – kask i projekt bez zmian); kawa z problemów o połowę rzadziej (drop 20%, waga kawy
@@ -22,10 +45,10 @@ glows instead of the old orange frame. Saves and profiles are kept.
    (szczegóły: `docs/v0.23/balans.md`, sekcja v0.23.1). Wspólna logika C++ i C#, test złoty odświeżony.
 
 ### Poprawki
-2. **Pęknięta ściana magazynu** (zgłaszane kilka razy) – zamiast czarnego „X” w pomarańczowej ramce: schodkowe
+3. **Pęknięta ściana magazynu** (zgłaszane kilka razy) – zamiast czarnego „X” w pomarańczowej ramce: schodkowe
    pęknięcie w materiale muru (ciemna szczelina z jasną krawędzią, wyłamany róg), okruchy na podłodze pod murem;
    wygląda dobrze na cegle, betonie i tynku każdego aktu.
-3. **Drzwi magazynu (tylko klucz)** – drewniane drzwi z okuciami i kłódką z dziurką od klucza zamiast skrzynki.
+4. **Drzwi magazynu (tylko klucz)** – drewniane drzwi z okuciami i kłódką z dziurką od klucza zamiast skrzynki.
    Gdy masz klucz (albo możesz skruszyć ścianę), pulsuje krawędź pęknięcia albo kłódka i obrys drzwi – bez ramki.
    Wersja retro: nowe klatki pęknięcia i drzwi.
 
