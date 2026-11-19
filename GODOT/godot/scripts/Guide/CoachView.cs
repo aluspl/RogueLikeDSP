@@ -94,8 +94,9 @@ public partial class CoachView : Control, Touch.ITapTargets
 
         // karta dymka: szerokość jak powiadomienie, pod albo nad podświetleniem (tam, gdzie więcej miejsca)
         var safe = Layout.SafeArea;
-        var cw = Mathf.Min(w - 24, 380f);
-        var lineH = 16f;
+        var cw = Mathf.Min(w - 24, 400f);
+        var ts = TextScale(f, cw - 34);
+        var lineH = Mathf.Round(16 * ts) + 1;
         var btnH = Layout.Touch || Layout.Portrait ? Mathf.Max(34f, Layout.TouchTarget - 6) : 24f;
         var ch = 10 + 34 + 4 + 18 + Lines.Length * lineH + 10 + btnH + 10;
         var cx = Mathf.Round((w - cw) / 2);
@@ -121,6 +122,7 @@ public partial class CoachView : Control, Touch.ITapTargets
                 if (hole.Size.X < w * 0.6f) cx = Fit(Mathf.Round(hole.GetCenter().X - cw / 2), safe.Position.X + 8, safe.End.X - cw - 8);
             }
         }
+        ts = Mathf.Min(ts, TextScale(f, cw - 34));   // węższa karta obok podświetlenia
         var card = new Rect2(cx, Mathf.Round(cy), cw, ch);
         CardRect = card;
         DrawStyleBox(Ui.Box(new Color(0, 0, 0, 0.35f), 14), new Rect2(card.Position + new Vector2(0, 4), card.Size));
@@ -148,7 +150,7 @@ public partial class CoachView : Control, Touch.ITapTargets
         var bubble = new Rect2(x, y, card.Size.X - 20, 12 + Lines.Length * lineH);
         DrawStyleBox(Ui.Box(Pal.Group, 10), bubble);
         for (var i = 0; i < Lines.Length; i++)
-            f.Draw(this, new Vector2(x + 8, y + 5 + i * lineH), f.Fit(Lines[i], (int)bubble.Size.X - 14), Ink.Dark);
+            f.Draw(this, new Vector2(x + 8, y + 5 + i * lineH), f.Fit(Lines[i], (int)bubble.Size.X - 14, ts), Ink.Dark, TextAlign.Left, ts);
         y = bubble.End.Y + 10;
 
         // przyciski
@@ -168,6 +170,24 @@ public partial class CoachView : Control, Touch.ITapTargets
             bx += bw + gap;
         }
         Button(new Rect2(bx, y, card.End.X - 10 - bx, btnH), (Last ? Loc.T("gotowe") : Loc.T("dalej")) + ButtonNames.Pick(Loc.T("spacja_2"), ""), true, CoachHit.Next);
+    }
+
+    /// <summary>
+    /// v0.23.0 (zgłoszenie testera: malutka czcionka): tekst dymka ~1,5x, tak żeby piksel fontu był całkowitą liczbą
+    /// pikseli okna (ostro); mniej, jeśli najdłuższa linia nie zmieści się w dymku. „Duży tekst” w opcjach powiększa
+    /// całe UI (Layout.ScaleFor), więc dymek rośnie razem z nim.
+    /// </summary>
+    private float TextScale(PixelFont f, float room)
+    {
+        var cs = Mathf.Max(1f, Layout.ContentScale);
+        var widest = 1;
+        foreach (var l in Lines) widest = Mathf.Max(widest, f.Measure(l));
+        var fit = Mathf.Min(1.5f, room / widest);
+        var px = Mathf.Floor(fit * cs + 0.01f);   // pikseli okna na piksel fontu
+        if (px < cs) px = cs;                      // nigdy mniej niż dotąd (1x)
+        else if (fit >= 1.5f) px = Mathf.Max(px, Mathf.Ceil(1.5f * cs - 0.01f));
+        var ts = px / cs;
+        return widest * ts <= room ? ts : Mathf.Max(1f, Mathf.Floor(room / widest * cs) / cs);
     }
 
     /// <summary>Clamp odporny na mały ekran (min > max: min).</summary>

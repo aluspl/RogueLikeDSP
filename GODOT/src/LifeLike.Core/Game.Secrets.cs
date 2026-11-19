@@ -6,8 +6,8 @@ namespace LifeLike.Core;
 // Majster) – port 1:1 z core.h.
 public sealed partial class Game
 {
-    /// <summary>Bity SecretFlags: boss pokonany ciosem brygady, Akt 0 bez obrażeń od papierów.</summary>
-    public const byte SecretHelperBossFlag = 1, SecretPaperCleanFlag = 2;
+    /// <summary>Bity SecretFlags: boss pokonany ciosem brygady, Akt 0 bez obrażeń od papierów, v0.23.0 (#84): broń wymieniona w budowie.</summary>
+    public const byte SecretHelperBossFlag = 1, SecretPaperCleanFlag = 2, SecretToolSwapFlag = 4;
 
     /// <summary>Kawy wypite w budowie (termos, pełny termos, Hurtownia).</summary>
     public byte CoffeeDrunk;

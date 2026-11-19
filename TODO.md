@@ -1,16 +1,9 @@
 # TODO – PlanBudowlany RogueLike
 
-Stan na 2026-10-03: GBA v0.21.50 wydane, **v0.21.52 gotowe do wydania** (jedno wydanie razem z niewydanym osobno v0.21.51:
-poprawki po graniu na iPhonie, sekretne zlecenia; v0.21.52 cz. a–d: tempo postępu, inspektor i mistrzostwo, drzewko,
-kolekcje, zadania i seria dni, mapa kariery #47). Historia: **v0.21.51 cz. 1 gotowe** (autokafle ścian #36, rzadsze błoto jako mokra plama #37,
-spójne sterowanie i blokada wejścia #38 – GBA i Godot, HUD z pełną nazwą etapu w pionie; balans bez zmian: Łatwy 54%,
-Normalny 32%, Trudny 10%), cz. 2 – sekretne zlecenia #39: GBA i Godot gotowe (patrz „Gdzie skończyliśmy”); wcześniej v0.21.50 (cz. 1: rozpiska obrażeń broni #26; cz. 2: premie po etapie #27, elity #28,
-kombinacje stanów #29; cz. 3: wydarzenia z wyborem #30, ulepszanie narzędzia #31, ukryte pomieszczenia #32; cz. 4: podsumowanie
-budowy #33, wyzwania tygodnia #34, fabuła odkrywana z budowami #35 – GBA i Godot; balans: Łatwy 53%, Normalny 32%, Trudny 10%,
-Szkolenia 54%, + Respekt 70%, z Aktem 0 66%, wszystkie modyfikatory 9%; wyzwania tygodnia 11–35%),
-wcześniej v0.21.49 (Respekt, nagrody za odbiór, nowe zawody, balans
-Szkoleń; cz. 2: 10 etapów, wrogowie etapów z zachowaniami, mechaniki aktów, opis statystyk; cz. 3: Akt 0 „Papierologia”,
-samouczek menu), Godot – logika zgodna z v0.21.49, oprawa z GBA, wersja mobilna na iPhonie. Opis projektów: [`README.md`](README.md).
+Stan na 2026-10-04: **v0.21.54 wydane – ostatnia wersja serii 0.21** (GitHub, Drive, TestFlight, Google Play).
+Kolejne iteracje to seria **0.22** (otwarta wersja: v0.22.0). Zasada: pomysły i poprawki trafiają do otwartej wersji,
+po skończonym pakiecie changelog i pytanie „wydajemy?”; pełny zestaw testów (skill `rogue-test`) raz przed wydaniem.
+Historia zmian: [`GBA/CHANGELOG.md`](GBA/CHANGELOG.md). Opis projektów: [`README.md`](README.md).
 
 Legenda: ✅ zrobione · 🔄 w toku · ⬜ do zrobienia · — nie dotyczy
 
@@ -24,12 +17,12 @@ Legenda: ✅ zrobione · 🔄 w toku · ⬜ do zrobienia · — nie dotyczy
 | Przycisk planbudowlany.online na tytule | ✅ | ✅ (QR na ekranie końcowym) |
 | Instalacja na urządzeniu jedną komendą (`GODOT/tools/ios_deploy.sh`) | ✅ | — |
 | Test ręczny na sprzęcie i poprawki po graniu | 🔄 iPhone (zainstalowane) | ⬜ Miyoo, dźwięk |
-| Android: eksport i instalacja (podpis bez sekretów w repo) | ⬜ | — |
+| Android: eksport i instalacja (podpis bez sekretów w repo) | ✅ (`android_release.sh`, Google Play – testy wewnętrzne) | — |
 | Wydania do pobrania w Releases | ⬜ .ipa / .apk / desktop | ✅ ROM co wersję |
-| Oprawa 2.5D: kamera 3/4, dynamiczne światło (latarka czołowa), pogoda na etapie Dach | ⬜ | — |
+| Oprawa 2.5D: kamera 3/4, dynamiczne światło (latarka czołowa), pogoda na etapie Dach | ✅ kamera 3/4 i latarka (v0.21.54); ⬜ pogoda na Dachu | — |
 | Mapy tematyczne etapów (szalunki, otwory okienne, krokwie, bruzdy) i elementy otoczenia (rusztowania, betoniarka, palety) | ⬜ | ⬜ (prostsza wersja) |
 | Zadania etapu jako cele poboczne (odbiór częściowy, dodatkowe doświadczenie) | ⬜ | ⬜ |
-| Drzewka ulepszeń mocy zawodów w zakładce Koszty | ⬜ | ⬜ |
+| Drzewka ulepszeń mocy zawodów w zakładce Koszty | ✅ (drzewko Szkoleń, v0.21.52; nowy widok – #70) | ✅ |
 | Muzyka: pętle bez przerwy | ⬜ (MP3 → OGG) | ✅ |
 | Portret Kierownika na wyborze zawodu lekko przesunięty | — | ⬜ |
 | Czytelniejszy komunikat „Brak celu w zasięgu 1” (`core.h` + port C#) | ⬜ | ⬜ |
@@ -58,7 +51,7 @@ Kolejność: A – rdzeń i GBA (po bossie Inspekcja Pracy), B – Godot i mobil
 | 8 | Widżet / Live Activity z postępem budowy | B (natywne rozszerzenie iOS) | ⬜ | — |
 | 9 | Udostępnianie wyniku (obrazek + link planbudowlany.online) | B | ⬜ | ⬜ (kod QR z wynikiem) |
 | 10 | Game Center / Google Play Games: osiągnięcia z odznak, tabela wyników | B (konfiguracja w App Store Connect) | ⬜ | — |
-| 11 | 2.5D: kamera 3/4, latarka czołowa, cienie ścian | C | ⬜ | — |
+| 11 | 2.5D: kamera 3/4, latarka czołowa, cienie ścian | C | ✅ (v0.21.54: widok 3/4 – prototyp, latarka, wysokie ściany) | — |
 | 12 | Ulewa jako pogoda na etapie Dach (deszcz, kałuże, poślizg) | C | ⬜ | ⬜ (prostszy efekt) |
 | 13 | Po wygranej: harmonogram domu w stylu aplikacji + „Zaplanuj swoją budowę” | A/B | ✅ | ✅ |
 | 14 | Więcej etapów (np. 10–12) i wyraźna różnorodność między aktami – własne kafle/paleta, zestaw problemów, mechanika aktu (np. akt I wykop i błoto, akt II wysokość i wiatr, akt III instalacje i terminy) | A3, v0.21.49: 10 etapów (Izolacja fundamentów, Ściany działowe), kafle aktów, błoto / porywy / pył | ✅ | ✅ |
@@ -68,7 +61,7 @@ Kolejność: A – rdzeń i GBA (po bossie Inspekcja Pracy), B – Godot i mobil
 | 18 | Więcej różnych przedmiotów – nowe jednorazowe (np. apteczka, energetyk, taśma naprawcza, plan awaryjny), nowe elementy sprzętu i cechy, rzadkie przedmioty unikalne | A3 | ⬜ | ⬜ |
 | 19 | Opis statystyk – co robi każda statystyka i jak (wzór w prostych słowach, np. „SIŁ: +1 obrażeń co 2 pkt dla broni SIŁ”), na wyborze zawodu, w telefonie (Start/Sprzęt) i w Jak grać | A3, v0.21.49: wybór zawodu (GBA START, Godot podpowiedzi), telefon Start → skąd premie, Jak grać | ✅ | ✅ |
 | 20 | Akt 0 „Papierologia” przed stanem surowym – etapy Działka i pozwolenie, Przyłącza; problemy papierowe i sieciowe (Brakujący podpis, Zaginiony wniosek, Termin na odwołanie, Niezgodność z planem, Pieczątka nie ta, Pęknięta rura, Brak ciśnienia, Kolizja z kablem) – nigdy urzędnicy; boss „Decyzja odmowna” z drugą fazą Odwołanie; mechanika pieczątki (3 dokumenty otwierają schody) | A3, v0.21.49: nagroda za 8. odbiór, potem każda budowa od Aktu 0 | ✅ | ✅ |
-| 21 | Bonus między etapami – po każdym etapie wybór 1 z 3 premii na bieżącą budowę (np. +2 max HP, moc -1 t., kryt +5%, kawa +2 HP, brygada -5 zł), rzadkość premii (może się połączyć z wyborem ścieżki #3) | A3 | ⬜ | ⬜ |
+| 21 | Bonus między etapami – po każdym etapie wybór 1 z 3 premii na bieżącą budowę (np. +2 max HP, moc -1 t., kryt +5%, kawa +2 HP, brygada -5 zł), rzadkość premii (może się połączyć z wyborem ścieżki #3) | A3 | ✅ (premie 1 z 3 z rzadkością i synergiami) | ✅ |
 | 22 | Respekt – stała waluta za ukończenie każdego etapu (więcej za bossów i akty), zapisana w profilu (nie przepada przy śmierci); wydawana na stałe ulepszenia procentowe z rangami (lista niżej) – v0.21.49: telefon profilu → Koszty → SELECT = Respekt | A3 | ✅ | ✅ |
 | 23 | Odblokowania za kolejne przejścia (jak Slay the Spire): każda wygrana odblokowuje coś nowego – lepsze narzędzie, element sprzętu, nowy zawód (np. Dekarz, Tynkarz, Operator koparki), nowy akt/etap, nowy tryb; lista nagród po kolei widoczna w profilu – v0.21.49: Młot udarowy, Dekarz, Buty robocze, Pistolet do kotew, Tynkarz, Pas narzędziowy, Operator koparki, Akt 0 „Papierologia”; strona Nagrody (Koszty → SELECT → SELECT) | A3 | ✅ | ✅ |
 
@@ -243,6 +236,158 @@ Balans (bot: Normalny 25–35% itd.) zostaje nietknięty, a gracze bez konta PB 
 Kolejność proponowana: #62 → #63 (prototyp na jednym akcie, porównanie zrzutów) → #65; #55–#57 po uzgodnieniu API z sesją PB.
 Stan v0.21.54: #62, #65, #66 zrobione, #63 jako prototyp w ustawieniach (wszystkie akty), #64 (izometria) – otwarte.
 
+## v0.22.0 (otwarta wersja)
+
+| # | Zadanie | GODOT (MOBILE) | GBA |
+|---|---|---|---|
+| 67 | Schody na mapie: zamiast żółtej skrzynki w ramce – czytelne schody w dół (stopnie z głębią, ciemny otwór, delikatna poświata / strzałka „Wyjście”), dopasowane do wyższych ścian i widoku 3/4, zamknięte (Akt 0) z kłódką | ✅ (v0.22.0) | ⬜ (sprawdzić czytelność) |
+| 68 | Dziennik nad mapą: w pionie teksty dziennika giną pod ścianami (półprzezroczyste, słabo czytelne) – pasek tła / cień pod tekstem | ✅ (v0.22.0) | — |
+| 69 | HUD w pionie: ucięte „Normal..” przy długiej nazwie etapu – skrót trudności (N/Ł/T) albo ikona | ✅ (v0.22.0) | — |
+| 70 | Drzewko Szkoleń – przebudowa widoku: zamiast 3 ciasnych kolumn z czerwonym „od pnia N” – lista gałęzi (karta na gałąź) z paskiem pnia, węzły jako karty ze stanem (zablokowany / do wyboru 1 z 2 / wybrany), ceną i opisem; jasne „wybierz jedno z dwóch” | ✅ v0.22.1 | ⬜ (GBA: ten sam porządek na stronach) |
+| 71 | Harmonogram domu po wygranej: uporządkować (dubel „Zaplanuj swoją budowę” w karcie i przycisku, pusta przestrzeń, krótsze wiersze) | ✅ (projekt A: kod QR, bez dubla) | ⬜ |
+| 72 | Po wygranej zamiast „Kolejna budowa (NG+)” – ekran „Co dalej”: od razu zakupy Szkoleń/Respektu (co Cię stać), najbliższe odblokowania, nowy kontrakt kariery, wyższa stawka inwestora, zadania dnia; NG+ jako opcja dodatkowa | 🔄 (projekt A: rozmowa z Markiem – szybki zakup Szkoleń, nagroda za odbiór, kontrakty i stawka w „Do tego:”; Respekt i zadania dnia jeszcze nie) | ⬜ |
+| 73 | Trudność wg gracza: wygrana „bez żadnych problemów” – przegląd balansu Normalnego (czy bot ≈ człowiek), podpowiedź „Spróbuj Trudnego / trybu inwestora” po wygranej, ewentualnie twardszy Normalny | ⬜ | ⬜ |
+
+> (Zamknięte w v0.22.0, sprawdzone zrzutami 2026-11-05.) Stan #67–#69 (2026-10-04, praca wstrzymana na prośbę): WIP w commicie – wersja v0.22.0 w danych, początek nowych kafli schodów w eksporcie i zmiany w HUD/dzienniku Godota; nie sprawdzone zrzutami ani testami, do dokończenia.
+
+## v0.23.0 (wydana 2026-11-08; plan z 2026-11-05)
+
+Pakiet zawartości i rozgrywki (zmienia logikę i balans: test złoty, bot 300 przebiegów/zawód). **Ostatnia wersja open
+source** – bez konfiguracji Xcode Cloud i integracji w tym repo. Przed kodem dokument projektu
+(propozycja: `docs/v0.23/katalog_broni.pdf`).
+
+Decyzje właściciela (2026-11-05) do katalogu broni:
+1. Tryb B z odnowieniem (jak moc) – dla balansu.
+2. Jedna broń naraz; rzadki przedmiot „pas budowlańca” (własna nazwa, bez cudzych marek) odblokowuje drugą broń.
+3. Siła różnic (±50% / ±25%) – ustalić testami balansu botem.
+4. Rzadkość broni z dropów **i** ze Szkoleń / Hurtowni.
+5. Wszystkie 14 nowych broni; poziomica laserowa w trybie B – linia przód i tył, nowa broń „laser krzyżowy” – 4 strony.
+6. GBA: pełny system.
+
+| # | Zadanie | GODOT (MOBILE) | GBA |
+|---|---|---|---|
+| 77 | Bronie: typy obrażeń (obuch – wokół / ogłuszenie, cięte – kryt, kłute – linia, przebicie), zasięgi, odporności i słabości wrogów; broń domyślna zawodu, kolejne ze Szkoleń i do znalezienia (projekt B+) | ✅ (v0.23.0) | ✅ (logika 1:1, bez grafiki) |
+| 78 | Rzadkość broni (zwykła / rzadka / legendarna) z własnym wyglądem i kolorem, widoczna w rękach postaci na mapie, na karcie i w dropach (projekt B+) | ✅ (v0.23.0, w rękach, na placu, na kartach) | — (rzadkość na karcie broni) |
+| 79 | Easter egg „Zaplecze”: tajemnicze drzwi (wyblakła tabliczka, migające światło) na rzadkim etapie → labirynt jednakowych żółtawych pokoi z brzęczącymi świetlówkami, mylące przejścia, cisza; wyjście daje nagrodę (wygląd / sekretne zlecenie / odznaka). Oparte na istniejących ukrytych pomieszczeniach i sekretach; własna nazwa i grafika (bez cudzych motywów z nazwy) | ⬜ | — |
+| 80 | Humor (projekt D): własne postacie, np. sąsiad z działki w SMS-ach i wydarzeniach | ⬜ | ⬜ |
+| 84 | Nóż do tapet (zwykła broń, kłucie) + jego legendarna wersja **Nóż majstra seniora** (Mistrzowska, unikat, obrażenia wyłącznie kłute: ignoruje 4 OBR, brak kary/premii materiału, wysoki kryt; tryb B „Jeszcze nie emerytura” – dwa szybkie pchnięcia w cel, odnowienie 3). Wygląd wg zdjęcia właściciela (nóż taty): pomarańczowa wytarta rękojeść, zeszlifowane cienkie wygięte ostrze. Opis: „Ostrze prosi o emeryturę. Majster: nie!”. Źródło: sekretne zlecenie (np. wygrana Majstrem bez wymiany narzędzia). Dane w Task 8, sprite w Task 9 planu broni | ✅ (v0.23.0) | ✅ (dane i logika, bez sprite'u) |
+| 85 | Ogłoszenia „z przytupem” (inspiracja: arcade lat 80 / dynamiczne gry akcji – bez cudzego stylu 1:1): duży napis wpada po skosie, krótki wstrząs i błysk, barwy gry (fiolet, pomarańcz, złoto dla Mistrzowskich), pikselowy font i pasy ostrzegawcze; obok pikselowa animacja wymachu daną bronią (4–6 klatek). Zdarzenia: awans, znaleziona broń Markowa/Mistrzowska, boss pokonany, sekretne zlecenie. ~1 s, nie blokuje gry; przy „ograniczonym ruchu” bez wstrząsu i błysku. Razem z Task 9 planu broni (sprite'y broni + klatki wymachu) | ✅ (v0.23.0) | — |
+| 86 | Kolory broni wg rzadkości (bez nazw marek w grze): elektronarzędzia (wkrętarka, szlifierka, gwoździarka, młot udarowy, pilarka, opalarka, myjka, pistolet do kotew, spawarka, laser) – obudowa: Zwykła ciemna zieleń+czerń, Solidna morski niebieski, Markowa żółty+czarny, Mistrzowska czerwień+biel; narzędzia ręczne – kolor rzadkości na akcentach (pasek rękojeści, owijka, ostrze); wspólny akcent rzadkości (obwódka/poświata: szary, niebieski, fiolet, złoto z iskrą). Nóż majstra seniora: pomarańczowa wytarta rękojeść wg zdjęcia + złoty akcent. Task 9 | ✅ (v0.23.0) | ⬜ (bez grafiki broni w v0.23) |
+| 87 | Losowe profity broni wg rzadkości: Zwykła 0, Solidna 1, Markowa 2 losowe profity z puli cech narzędzi/sprzętu (przebicie, ostrze, wyważenie, szczęście, kryt…), Mistrzowska – stały unikat; widoczne na karcie broni i w dropie; balans botem | ✅ (v0.23.0) | ✅ |
+| 88 | Sprzęt (kask, kamizelka, rękawice, buty…) widoczny na postaci na mapie i w kolorze swojej rzadkości (Zwykły / Solidny / Markowy / Mistrzowski – ta sama paleta i obwódka co bronie #86): warstwy sprite'u bohatera w 4 kierunkach, podgląd na karcie sprzętu (feedback właściciela 2026-11-07, zrzut „Paczka sprzętu”). Razem z Task 9 (sprite'y broni) – Godot; GBA wg limitu kafli | ✅ (v0.23.0) | ⬜ (bez grafiki sprzętu w v0.23) |
+| 89 | „Paczka sprzętu”: przycisk „Zostawiam +2” nic nie mówi – napisać, że +2 to doświadczenie za odłożenie (np. „Zostawiam · +2 dośw.”), sprawdzić szerokość (feedback 2026-11-07) | ✅ (v0.23.0) | — (GBA: „A: zakładam B: zostawiam (+N)”) |
+| 90 | Opis ataku pod przyciskiem (feedback 2026-11-07): przytrzymanie (dotyk) / najechanie (mysz) / LB (pad) na Cios i drugi tryb pokazuje dymek: nazwa ruchu, wzór pól (mini-siatka jak przy celowaniu), typ ciosu, obrażenia %, zasięg, efekt i czas, odnowienie. Drugi tryb przemianowany z „Cios B” na **„Fach”** (fachowy ruch); każda broń dostaje własną krótką nazwę ruchu B (np. Kielnia „Rzut zaprawą”, Gwoździarka „Seria”, Nóż majstra „Jeszcze nie emerytura”) w game.json/en.json. Razem z Task 9 | ✅ (v0.23.0, drugi tryb nazwany „Patent”, EN „Trick”) | ✅ (nazwa ruchu Patentu, L+A) |
+| 91 | Godot: pełne opisy zamiast skrótów (feedback 2026-11-07, „Paczka sprzętu”): na kartach sprzętu i broni pełna nazwa cechy / profitu z opisem (np. „Siła +1”, „Odporność na zatrucie” zamiast „SIŁ+1”, „Bez zatr.”), w porównaniu wprost „Cecha: Siła +1 → Odporność na zatrucie”; dotyczy Paczki sprzętu, Sprzętu (GearTab), dropów, Hurtowni, oferty narzędzia. Skróty zostają tam, gdzie brak miejsca (HUD, GBA). Razem z #89 | ✅ (v0.23.0) | — |
+| 92 | **Artefakty** (właściciel 2026-11-07): rzadkie, unikatowe warianty zwykłych broni (jak Nóż majstra seniora dla noża) z własną mechaniką, sprite'em i opisem. Źródło: gdy wypada Mistrzowska wersja broni bazowej – mała szansa, że to jej artefakt; część z sekretnych zleceń. Nowa mechanika rdzenia: licznik ciosów „co N-ty cios” (`procEvery`, `procEffect`, widoczny licznik przy broni). Propozycja zestawu: **Młot Gromowładny** (z Młota wyburzeniowego; inspiracja: młot Thora) – co 5. cios piorun: obrażenia prądem +50% i paraliż 1 turę (boss: tylko obrażenia), przeskakuje na mokre problemy obok; **Nóż majstra seniora** (jest, #84); **Kielnia Pierwszej Cegły** (Kielnia) – co 3. cios zaprawa unieruchamia cel na 2 tury; **Poziomica Absolutna** (Poziomica 2 m) – pierwszy cios w problem z pełnym HP zawsze krytyczny („równo od początku”); **Szlifierka Iskrownica** (Szlifierka) – każdy cios podpala, ogień przeskakuje na sąsiada; **Łom Ostatniej Deski** (Łom) – Fach otwiera ścianę bez odnowienia, +100% na drewno. **Gablota artefaktów** w Szkoleniach i w Profilu: wszystkie artefakty, nieodkryte jako sylwetka ze wskazówką, odkryte z opisem, sprite'em i datą pierwszego znalezienia (zapis w profilu – nowa wersja profilu z migracją). Po Task 9 (sprite'y przez agenta, ta sama paleta Mistrzowska + złota iskra) | ✅ (v0.23.0, 4 artefakty + Gablota) | 🔄 (rdzeń i zapis Gabloty w profilu v19; bez ekranu Gabloty i sprite'ów) |
+| 93 | Kryty za częste, wrogowie „litościwi” (feedback 2026-11-07, gra na telefonie). Diagnoza: kryt = 5% baza + 3%/Szczęście + 10% cięcie + broń 10–15 + cechy/projekty/profity, bez sufitu, ×2 – Glazurnik ma ~27% od startu, z premiami 40–50%. Plan: Szczęście 3→2%/pkt, cięcie 10→5%, **sufit kryt 35%**, sprawdzić unik (2%/Szcz., maks. 20%); potem wrogowie mocniejsi (obrażenia wrogów zamiast dalszego HP), bot Normalny celowo przy dolnej granicy (25–28%), bo człowiek wygrywa łatwiej (#73). Pomiar botem przed i po (średni kryt %, śr. obrażenia przyjęte na etap) | ✅ (v0.23.0) | ✅ |
+| 81 | Nowe zawody (broń domyślna z nowego systemu broni, moc, portret) | ⬜ | ⬜ |
+| 82 | Nowi bossowie (problemy budowy, nie ludzie; mechanika i zapowiedź ciosu) | ⬜ | ⬜ |
+| 83 | Zmiany mocy zawodów (przegląd 12 mocy, spójność z trybem B broni) | ⬜ | ⬜ |
+| 73 | Trudność wg gracza (patrz #73 w v0.22.0) – razem z balansem broni | ⬜ | ⬜ |
+| 94 | **Easter egg: suczka Kawka / CoffeeDog** (pomysł właściciela 2026-11-08): ~co 2–3 budowy (dog.chancePct 40, osobny skrót seeda – RNG gry bez zmian) na jednym etapie Aktu I bez bossa siedzi w błocie (wnętrze pokoju, z dala od startu) suczka w typie owczarka, rudo-czarna. Nie problem: nie da się jej trafić, problemy ją omijają. Wejście = głaskanie: ogłoszenie z dłonią i serduszkami, +3 dośw. (raz na budowę), dymek nad nią z sarkastyczną oceną postępów (16 ocen wg stanu: etap, HP, kask, usterki, porażki, wygrane, kawa, poziom, Mistrzowska broń); kolejne wejście – zamiana pól. Wpis „Spotkana Kawka” w Katalogu, odznaka **Psi przyjaciel** (4 budowy z Kawką, licznik w profilu v20). Sceny dog-map, dog-pet, dog-quip, dog-catalog; GBA scenariusz 77 | ✅ (v0.23.0) | ✅ (sprite na mapie, ocena w banerach) |
+
+### Gdzie skończyliśmy (2026-11-07)
+
+Pakiet v0.23.0 (bronie) gotowy na branchu `dev/0.23`, czeka na „wydajemy?” (wpis w `GBA/CHANGELOG.md`, przewodnik
+`docs/przewodnik/przewodnik_gry.pdf`, balans `docs/v0.23/balans.md`). Zrobione: #77, #78, #84–#93 (Godot w całości; GBA –
+logika 1:1, L+A Patent, L+B zamiana, bez grafiki broni/sprzętu i ekranu Gabloty). Pełny zestaw `rogue-test` przed wydaniem:
+zielony poza balansem meta – + Respekt 69,7 (cel 70–80) i kontrakty z pełnym meta na 300 przebiegach: Bliźniak 62,7,
+Poddasze 63,3, Kamienica 64,2 (cel 65–80) – bez strojenia, decyzja właściciela; tempo „wszystko wykupione” 31–32 budowy
+(cel 20–30). Uwaga dla graczy: budowa w toku z poprzedniej wersji przepada po aktualizacji (profil zostaje).
+
+Otwarte na później: #79 (Zaplecze), #80 (humor), #81–#83 (zawody, bossowie, moce), #73 (trudność wg gracza), synergie
+broni (v0.24), GBA: grafika broni i sprzętu (#86, #88), ekran Gabloty (#92), stos GBA 7360/8628 B do obserwacji;
+dalej zamknięta wersja 0.3 (repo organizacji).
+
+## v0.24 / 0.3 (zapowiedź – repo organizacji `planbudowlany-rogue`, gałąź main skopiowana 2026-11-08 z v0.23.0)
+
+**Do kolejnej wersji (pomysł właściciela 2026-11-07): synergie broni** – łańcuchy efektów między broniami/trybami, np. myjka ciśnieniowa moczy problemy (Mokre), potem broń z prądem (próbnik, Młot Gromowładny) razi wszystkie mokre naraz z premią; opalarka/lutownica osusza i podpala, woda gasi; zaprawa (Kielnia) + młot = kruszenie. Część już działa (prąd skacze po mokrych – ShockArea), do zrobienia: czytelna lista synergii w pomocy, ogłoszenie „Synergia!”, kombinacje między bronią w ręce i w kaburze (szybka zamiana jako ruch).
+
+DevOps i integracje z PlanBudowlany (Xcode Cloud, CI Android, konto PlanBudowlany w grze #55–#61) – już w repo
+organizacji (Godot prywatnie, GBA zostaje open source). Do tego czasu w tym repo bez konfiguracji chmurowych.
+
+**Uwagi właściciela po graniu w v0.23.0 (2026-11-09) – do v0.24** (balans i rażące błędy z tej listy, np. termosy, mogą
+wejść też do publicznego 0.23.x):
+- **Podniesienie broni z wyborem:** wejście na nową broń pokazuje kartę z jej atakami (Cios i Patent: nazwa ruchu,
+  mini-siatka wzoru, typ ciosu, obrażenia, zasięg, efekt, odnowienie) i pytanie „Zamienić czy zostawić?”; przy zamianie
+  stara broń zostaje na mapie (z rzadkością, profitami, ulepszeniem); przy wolnej kaburze trzecia opcja „Do kabury”.
+- **Okno porównania broni:** stara i nowa obok siebie – ataki Cios + Patent, obrażenia, wzory, efekty, różnice +/−
+  wyróżnione (jak porównanie sprzętu). Pion i poziom, PL i EN; GBA minimalnie (A zamień / B zostaw).
+- ✅ **(v0.23.1) Mniej termosów z kawą:** nadal za dużo (zrzut: Termos 5/5 na etapie 5/10, Normalny) – przejrzeć źródła ładunków
+  (baza, Szkolenia, Respekt, pamiątki, dropy, uzupełnienia), potem balans bota. Zrobione: termos 2 (było 3), Termos
+  babci +1/+1/+2, Lepszy termos razem +2, z mapy jedna kawa na etap, kawa z dropów o połowę rzadziej; kawa leczy 11 HP
+  (było 8) – Normalny 30,6% (docs/v0.23/balans.md, v0.23.1).
+- ✅ **(v0.23.2) Plecak** (właściciel 2026-11-12, projekt `docs/v0.23/plecak.md`): 6 miejsc na bronie i sprzęt z mapy;
+  karta paczki / broni z trzema wyborami (Załóż/Weź – stary do plecaka, Do plecaka, Zostaw – przedmiot zostaje na ziemi),
+  ekran Plecak (▲ lepsze / ▼ słabsze / =, Załóż za turę, Do kabury, Wyrzuć), po bossie aktu Hurtownia: Skup (materiały
+  1/2/3/5 wg rzadkości) i PSZOK (dośw. + 2 HP), zapis PBRUN20 z migracją, dymek Marka; Godot i GBA (telefon → Sprzęt → A,
+  Hurtownia L/R). Bot: zakłada lepsze, porównywalne do plecaka, sprzedaje wszystko oprócz najlepszej zapasowej broni –
+  Normalny 32,6%, wszystkie cele w zakresie (docs/v0.23/balans.md, v0.23.2). Podniesienie broni z kartą 3 wyborów zrobione
+  tu; okno porównania ataków (Cios/Patent) zostaje do v0.24.
+- **Boss areny:** po pokonaniu schody pojawiają się w miejscu jego śmierci, ale mapa się nie kończy – można dalej
+  zwiedzać i wyjść schodami (wszystkie rodzaje bossów; bot musi wejść na schody).
+- ✅ **(v0.23.1) Znacznik pękniętej ściany do przerobienia** (zgłaszany kilka razy): teraz czarny „X” w pomarańczowej ramce na murze
+  wygląda źle – zamiast tego pikselowe pęknięcie w materiale ściany (poszarpane linie z jaśniejszą krawędzią, okruchy
+  cegieł na podłodze), dyskretne, ale czytelne; sceny secret-crack, secret-map. Zrobione: schodkowe pęknięcie w materiale
+  muru + okruchy; magazyn na klucz to drzwi z kłódką; zamiast ramki pulsuje krawędź / kłódka (sceny secret-crack-a1..a3,
+  secret-door-a1/a3).
+
+Numeracja: następna zamknięta wersja może być **0.3** (nowe repo w organizacji); 0.23 = ostatnia otwartoźródłowa razem z GBA.
+
+Pomysły właściciela do v0.24 (2026-11-07):
+- **ProfileAssets w API PB**: zasoby gry przypięte do konta PlanBudowlany (kosmetyka, odblokowania, odznaki) – korzyści w obie strony (aktywność w aplikacji PB → nagrody w grze, osiągnięcia z gry → widoczne w profilu PB). Projekt API z zespołem PB.
+- **Wsparcie** (zgłoszenia z gry, kontakt) i powoli **sklepy** – na start za darmo (waluta z gry / nagrody), bez płatności.
+- **Zapis w chmurze** po zalogowaniu kontem PlanBudowlany: profil (~400 B) + zapis budowy wysyłane do API PB; konflikt dwóch urządzeń – scalanie pól profilu (maksimum Respektu, suma odblokowań, OR bitów kolekcji/artefaktów), budowa w toku – nowsza wygrywa; tryb offline jak dziś, synchronizacja przy starcie i po etapie.
+- **Wersja w przeglądarce**: Godot 4.7 z C# oficjalnie nie eksportuje na web (tylko eksperymentalne buildy społeczności, .NET wasm). Najpierw spike: eksperymentalny eksport + pomiar rozmiaru/startu; jeśli słabo – czekać na oficjalne wsparcie. Logowanie na webie najprościej na domenie planbudowlany.online (ta sama sesja). Ewentualnie wersja retro w emulatorze w przeglądarce (bez zapisu w chmurze).
+
+## v0.22.1 (wydana 2026-11-05)
+
+| # | Zadanie | GODOT (MOBILE) | GBA |
+|---|---|---|---|
+| 74 | Drobiazgi z przeglądu projektu A: banery przy telefonie po obrocie ekranu, HUD 1,5x na rozłożonym składaku w poziomie, oferta drzewka otwiera stronę Drzewko, „Szczegóły” w wyborze zawodu z klawiatury / pada (i nie gasną po powrocie z Inwestora / Statystyk), kolejność opisów w `PhonePainter` | ✅ | — |
+| 70 | Drzewko Szkoleń – nowy widok (karty gałęzi, węzły ze stanem, jasne „1 z 2”) – patrz wiersz #70 wyżej | ✅ (przełącznik gałęzi + karta gałęzi) | ⬜ (później) |
+| 75 | Filtr „Kwas” łagodniejszy domyślnie albo suwak siły w ustawieniach | ✅ (łagodniejszy shader; suwak siły i ograniczony ruch już były w Filtr ekranu) | — |
+| 76 | Porządek w TODO: przejrzeć stare wiersze (np. #21 premie po etapie są już w grze) i oznaczyć zrobione | ✅ (#21, #11, oprawa 3/4, drzewka; reszta otwarta) | — |
+
+Bronie (typy obrażeń, zasięgi, rzadkość widoczna w rękach) – osobny pakiet po brainstormingu (projekt B+), raczej v0.22.2.
+
+### Gdzie skończyliśmy (2026-11-05)
+
+Projekt A (UX Godot) zrobiony: 11 zadań + poprawki po przeglądzie (commity na `dev/0.22`, wpis v0.22.0 w CHANGELOG,
+zrzuty „po” w `docs/ux/pakiet-a/po_*.png`). Czeka na decyzję „wydajemy?” (przed wydaniem pełny `rogue-test`).
+Drobiazgi z przeglądu na później: banery po obrocie ekranu, HUD 1.5x na rozłożonym składaku w poziomie, oferta drzewka
+→ strona Drzewko, „Szczegóły” w wyborze zawodu z klawiatury/pada, kopie `golden/game.json`/`en.json` w testach.
+Dalej wg kolejności: D (humor) → C → B → E.
+
+### Gdzie skończyliśmy (2026-10-24)
+
+Pomysły właściciela z 2026-10-23 podzielone na 5 projektów, kolejność **A → D → C → B → E**. Godot ma priorytet,
+GBA dostaje tylko konieczne minimum (był eksperymentem promocyjnym).
+
+| Projekt | Zakres | Stan |
+|---|---|---|
+| **A – UX i przepływ ekranów (Godot)** | Rozmowa z Kierownikiem Markiem między budowami (zamiast plansz końcowych), tytuł z kartą „Twoje postępy”, wybór zawodu jako siatka kafli, jeden baner naraz, duży ekran (składak, tablet), QR w harmonogramie domu, HUD z podpisami, legenda kolorów. Obejmuje #71, #72 i „UX doświadczenia” z listy 2026-10-09 | ✅ 2026-11-05: wszystkie 11 zadań planu (commity na `dev/0.22`, wpis w CHANGELOG v0.22.0); czeka na przegląd i „wydajemy?” |
+| D – humor | Własne postacie (np. sąsiad z działki), bez cudzych marek | ⬜ |
+| C – animacje walki i oprawa | Animacje ataku i trafień; detale map: okna w ścianach, piwnica poniżej, światło z góry w etapach dachowych (pomysł 2026-10-23) | ⬜ |
+| B – zawartość | Więcej kontraktów, ulepszeń, broni z unikalnymi umiejętnościami, pula odblokowań między budowami, jednorazowy przecinak/młot do pękniętych ścian | ⬜ |
+| B+ – rodzaje broni (pomysł 2026-11-05) | Typy obrażeń i zasięgi: obuch (np. łopata – cios wokół bohatera, szansa na ogłuszenie), cięte (szansa na krytyk), kłute/przebijające (linia przed bohaterem, przebija kilku). Wrogowie z odpornościami/słabościami na typ (np. odporny na obuch). Zawód ma broń domyślną, kolejne odblokowane w Szkoleniach, ale też do znalezienia na budowie. Do przemyślenia: lista obecnych 22 broni i narzędzi → przypisanie typów, propozycje nowych, balans botem | ⬜ (po A, razem z B) |
+| B+ – rzadkość broni (pomysł 2026-11-05) | Warianty broni: zwykła / rzadka / legendarna (itd.) – każdy z własnym wyglądem i kolorem (sprite), widoczny w rękach postaci na mapie (szczególnie przy patrzeniu w dół), na karcie i w dropach; do zaprojektowania razem z typami obrażeń (B+ wyżej): co daje rzadkość (statystyki, cecha, efekt), skąd się bierze (drop, Szkolenia, nagroda), balans botem, czy GBA dostaje prostszą wersję | ⬜ (razem z B+) |
+| C+ – filtr „Kwas” (uwaga właściciela 2026-11-05) | „Fajny, ale chyba zbyt intensywny” – zostaje jako easter egg (odblokowanie: inspektor 20 / sekret); rozważyć słabsze fale domyślnie albo suwak siły filtra w ustawieniach | ✅ v0.22.1 (#75) |
+| Promo – filmik reklamowy (pomysł 2026-11-05) | Po pakiecie A (gotowe ekrany): skryptowany przebieg (różne zawody, bronie, filtry ekranu, rozmowa z Markiem) nagrany przez Godot Movie Maker (`--write-movie`) ze scen zrzutów; pion 9:16 i poziom 16:9, do `Promo/v0.22.0/` razem z postem | ⬜ |
+| E – wsparcie z telefonu | „Wezwij pomoc” z telefonu (pokrewne Brygadzie) | ⬜ |
+
+Dokumenty projektu A:
+- dokument projektu: [`docs/superpowers/specs/2026-10-23-ux-pakiet-a-design.md`](docs/superpowers/specs/2026-10-23-ux-pakiet-a-design.md)
+- plan (11 zadań): [`docs/superpowers/plans/2026-10-23-ux-pakiet-a.md`](docs/superpowers/plans/2026-10-23-ux-pakiet-a.md);
+  zastępuje [`2026-10-22-ux-xp-flow.md`](docs/superpowers/plans/2026-10-22-ux-xp-flow.md)
+- makiety i zrzuty z testu przepływu: [`docs/ux/pakiet-a/`](docs/ux/pakiet-a/)
+
+Kolejność zadań planu A: 1 rdzeń „co kupić” + testy → 2 duży ekran → 3 banery → 4 telefon (zakładka „Szkolenia”) →
+5 rozmowa między budowami → 6 harmonogram domu z QR → 7 tytuł → 8 wybór zawodu → 9 podsumowanie → 10 HUD, legenda,
+ustawienia → 11 dokumentacja i pytanie „wydajemy?”.
+
+Wciąż otwarte: #67–#69 (WIP z commita `0d08cc42`, do sprawdzenia zrzutami), #70, #73.
+
 ## Zgodność funkcji
 
 | Funkcja | GODOT (MOBILE) | GBA |
@@ -269,7 +414,7 @@ Historia zmian: [`GBA/CHANGELOG.md`](GBA/CHANGELOG.md), postęp Godota: [`GODOT/
 - GBA: brak natywnego środowiska buildu na hoście Hermesa. Build działa w kontenerze (podman, devkitpro/devkitarm + butano w `../butano`), ale testy C++ (`GBA/tests/core_tests.cpp`) nie były uruchamiane poza Macem.
 
 ## Następne (2026-10-09)
-- ⬜ UX: przepływ po wygranej i przegranej – pokazać, że zdobyte doświadczenie można wydać; przy starcie nowej gry, jeśli doświadczenie > 0, komunikat z przejściem do widoku ulepszeń (GBA i Godot); ogólny przegląd UX
+- ✅ Godot (projekt A, 2026-11-05; GBA bez zmian – decyzja: Godot ma priorytet) UX: przepływ po wygranej i przegranej – pokazać, że zdobyte doświadczenie można wydać; przy starcie nowej gry, jeśli doświadczenie > 0, komunikat z przejściem do widoku ulepszeń (GBA i Godot); ogólny przegląd UX
 - ⬜ Xcode Cloud: pipeline automatycznie wysyła build iOS na TestFlight
 - ⬜ Godot w prywatnym repo w organizacji LifeLike-Szymon-Motyka (po wejściu integracji); GBA zostaje open source
 - ⬜ Wspólne źródło konfiguracji dla GBA i Godot (dziś `GBA/data/game.json` kopiowany do Godota przy buildzie; po podziale repo potrzebny inny mechanizm, np. submodule, paczka albo osobny pakiet danych)

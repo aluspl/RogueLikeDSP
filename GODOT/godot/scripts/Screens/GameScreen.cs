@@ -7,8 +7,8 @@ namespace LifeLike.Game.Screens;
 
 /// <summary>
 /// Budowa (run_game na GBA): mapa z HUD, ruch, A atak, B czekaj, R moc, START menu akcji, SELECT telefon,
-/// L podgląd mapy, Esc ustawienia, mysz; przy dotyku pasek akcji i gesty (TouchPlay). Po każdej akcji
-/// App.AfterAction decyduje o kolejnym ekranie.
+/// L podgląd mapy, Esc pauza (v0.23.2), mysz; przy dotyku pasek akcji i gesty (TouchPlay). Po każdej akcji
+/// App.AfterAction decyduje o kolejnym ekranie. v0.23.0: F (pad: L + A) Cios B z celowaniem wzoru B, X (pad: L + B) zamiana broni.
 /// </summary>
 public sealed class GameScreen : Screen
 {
@@ -17,8 +17,12 @@ public sealed class GameScreen : Screen
         Menu = new ActionMenu(app);
         Aim = new Aiming(app);
         Look = new EnemyLook(app);
+        Tips = new AttackTips(app, this);
         Touch = new TouchPlay(app, this);
     }
+
+    /// <summary>v0.23.0: opis ataku pod przyciskiem Cios / Patent (mysz, pad LB; palec – TouchPlay).</summary>
+    public AttackTips Tips { get; }
 
     public TouchPlay Touch { get; }
 
@@ -37,6 +41,7 @@ public sealed class GameScreen : Screen
         Aim.Cancel();
         Look.Cancel();
         Touch.Reset();
+        Tips.Hide();
     }
 
     public override void Process(double delta)
@@ -44,6 +49,7 @@ public sealed class GameScreen : Screen
         Aim.Process(delta);
         Look.Process(delta);
         Touch.Process(delta);
+        Tips.Process(delta);
     }
 
     public void Open(bool instant = false) => Flow.Go(this, instant);
@@ -76,9 +82,9 @@ public sealed class GameScreen : Screen
             ToggleOverview();
             return true;
         }
-        if (e.Is(GameAction.Cancel))
+        if (e.Is(GameAction.Cancel)) // v0.23.2 (UI 2): Esc = pauza
         {
-            Flow.Settings.Open(this);
+            Flow.Pause.Open();
             return true;
         }
         if (e.Is(GameAction.Select))
@@ -89,6 +95,11 @@ public sealed class GameScreen : Screen
         if (e.Is(GameAction.L))
         {
             ToggleOverview();
+            return true;
+        }
+        if (e.Is(GameAction.Info)) // v0.23.2: Postać z plecakiem (I)
+        {
+            Flow.Character.Open();
             return true;
         }
         if (e.Is(GameAction.Start))
@@ -102,7 +113,17 @@ public sealed class GameScreen : Screen
         else if (e.Is(GameAction.Left, true)) dx = -1;
         else if (e.Is(GameAction.Right, true)) dx = 1;
         bool acted;
+        var padL = GameInput.IsHeld(GameAction.TabPrev); // v0.23.0: pad L (LB) trzymany – A = Cios B, B = Zamień
         if (dx != 0 || dy != 0) acted = g.PlayerMove(dx, dy);
+        else if (e.Is(GameAction.WeaponB) || (padL && e.Is(GameAction.A)))
+        {
+            Aim.Begin(true, e.Is(GameAction.WeaponB) ? GameAction.WeaponB : GameAction.A); // tryb B po puszczeniu
+            return true;
+        }
+        else if (e.Is(GameAction.Swap) || (padL && e.Is(GameAction.B)))
+        {
+            acted = PlayCommands.SwapOrNotice(g);
+        }
         else if (e.Is(GameAction.A))
         {
             Aim.Begin(); // atak po puszczeniu A (celowanie jak na GBA)

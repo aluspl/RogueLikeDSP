@@ -5,7 +5,7 @@ namespace LifeLike.Core;
 
 /// <summary>
 /// Profil gracza (odpowiednik core::profile z meta.h): rekord, doświadczenie, zakupy, odznaki, Osiedle.
-/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v17: 384 bajty, little-endian, bajt 55 to wyrównanie),
+/// ToBytes/FromBytes zachowują układ zapisu SRAM z GBA (v19: 440 bajtów, little-endian, bajt 55 to wyrównanie),
 /// więc migracje v1–v14 działają tak samo.
 /// </summary>
 public sealed class Profile
@@ -41,7 +41,17 @@ public sealed class Profile
     public const int V15Size = 360;
     /// <summary>Kontrakty mapy kariery (GameData.Career).</summary>
     public const int MaxContracts = 6;
-    public const int Size = 384;
+    /// <summary>v18 (v0.23.0) = v17 + szerokie maski broni (Tools i ToolsFound po 8 bajtów) od tego offsetu.</summary>
+    public const int V17Size = 384;
+    /// <summary>v19 (v0.23.0) = v18 + Gablota artefaktów (maska odkrytych i dzień znalezienia) od tego offsetu.</summary>
+    public const int V18Size = 400;
+    /// <summary>v20 (v0.23.0) = v19 + Kawka (DogBuilds) w dawnym wyrównaniu od tego offsetu – rozmiar bez zmian.</summary>
+    public const int V19Size = 434;
+    /// <summary>Odznaki do v19 – tytuły zleceń i inspektora za nimi przesuwa nowa odznaka (Meta: migracja v20).</summary>
+    public const int BadgesV19 = 9;
+    public const int Size = 440;
+    /// <summary>Artefakty w Gablocie (bity GameData.Artifacts).</summary>
+    public const int MaxArtifacts = 16;
     /// <summary>Rodzaje problemów (liczniki kolekcji, jak core::max_enemy_types).</summary>
     public const int MaxEnemyTypes = 48;
     /// <summary>3 zadania dnia + 2 tygodnia.</summary>
@@ -57,8 +67,11 @@ public sealed class Profile
     public const int DailySlots = 5;
     /// <summary>v17 (v0.21.53) = v16 + filtr ekranu (bajt 363) i ogłoszone filtry (376) w dawnym wyrównaniu – rozmiar bez zmian.</summary>
     public const int V16Size = 384;
-    /// <summary>Bieżący format (v17, v0.21.53).</summary>
-    public const string MagicCurrent = "PBRL017";
+    /// <summary>Bieżący format (v19, v0.23.0: Gablota artefaktów; v18: 64-bitowe maski broni).</summary>
+    public const string MagicCurrent = "PBRL020";
+    public const string MagicV19 = "PBRL019";
+    public const string MagicV18 = "PBRL018";
+    public const string MagicV17 = "PBRL017";
     public const string MagicV16 = "PBRL016";
     public const string MagicV15 = "PBRL015";
     public const string MagicV14 = "PBRL014";
@@ -88,11 +101,13 @@ public sealed class Profile
     public byte Classes;
     public byte Hard;
     public byte Flags;
-    public byte Tools;
+    /// <summary>Kupione narzędzia (bit = indeks GameData.Tools); v0.23.0: 64 bity (bajt 35 trzyma dolne 8 dla migracji starszych profili).</summary>
+    public ulong Tools;
     public ushort Badges;
     public ushort Catalog;
     public byte ClassWins;
-    public byte ToolsFound;
+    /// <summary>Znalezione narzędzia (bity jak Tools).</summary>
+    public ulong ToolsFound;
     public byte HousesCount;
     /// <summary>Osiedle: zawód (4 bity) | wielkość domu &lt;&lt; 4.</summary>
     public byte[] Houses = new byte[MaxHouses];
@@ -240,6 +255,14 @@ public sealed class Profile
     public byte Filter;
     /// <summary>Bity: odblokowanie filtra już ogłoszone (baner raz).</summary>
     public ushort FiltersSeen;
+    // --- v19 (v0.23.0): Gablota artefaktów
+    /// <summary>Odkryte artefakty (bity GameData.Artifacts).</summary>
+    public ushort Artifacts;
+    /// <summary>Dzień pierwszego znalezienia artefaktu (dni od 1970-01-01, Daily.DaysFromCivil; 0 = przed Gablotą / nieznany).</summary>
+    public ushort[] ArtifactDay = new ushort[MaxArtifacts];
+    // --- v20 (v0.23.0): easter egg – Kawka
+    /// <summary>Budowy, w których pogłaskano Kawkę (do 255; odznaka Psi przyjaciel).</summary>
+    public byte DogBuilds;
 
     public static byte[] MagicBytes(string s)
     {
@@ -268,11 +291,11 @@ public sealed class Profile
         b[32] = Classes;
         b[33] = Hard;
         b[34] = Flags;
-        b[35] = Tools;
+        b[35] = (byte)Tools;
         BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(36), Badges);
         BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(38), Catalog);
         b[40] = ClassWins;
-        b[41] = ToolsFound;
+        b[41] = (byte)ToolsFound;
         b[42] = HousesCount;
         Houses.CopyTo(b, 43);
         BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(56), KillsTotal);
@@ -346,6 +369,11 @@ public sealed class Profile
         CareerBest.CopyTo(b, 370);
         b[363] = Filter;
         BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(376), FiltersSeen);
+        BinaryPrimitives.WriteUInt64LittleEndian(b.AsSpan(V17Size), Tools); // v18: pełne maski broni
+        BinaryPrimitives.WriteUInt64LittleEndian(b.AsSpan(V17Size + 8), ToolsFound);
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(V18Size), Artifacts); // v19: Gablota
+        for (var i = 0; i < MaxArtifacts; i++) BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(V18Size + 2 + i * 2), ArtifactDay[i]);
+        b[V19Size] = DogBuilds; // v20: Kawka
         return b;
     }
 
@@ -354,6 +382,9 @@ public sealed class Profile
     {
         Span<byte> b = stackalloc byte[Size];
         src[..Math.Min(src.Length, Size)].CopyTo(b);
+        var v20 = b[..8].SequenceEqual(MagicBytes(MagicCurrent));
+        var v19 = v20 || b[..8].SequenceEqual(MagicBytes(MagicV19));
+        var wide = v19 || b[..8].SequenceEqual(MagicBytes(MagicV18)); // maski 64-bitowe od formatu v18; starsze: dolne 8 bitów z bajtów 35 / 41
         var p = new Profile
         {
             Magic = b[..8].ToArray(),
@@ -365,11 +396,11 @@ public sealed class Profile
             Classes = b[32],
             Hard = b[33],
             Flags = b[34],
-            Tools = b[35],
+            Tools = wide ? BinaryPrimitives.ReadUInt64LittleEndian(b[V17Size..]) : b[35],
             Badges = BinaryPrimitives.ReadUInt16LittleEndian(b[36..]),
             Catalog = BinaryPrimitives.ReadUInt16LittleEndian(b[38..]),
             ClassWins = b[40],
-            ToolsFound = b[41],
+            ToolsFound = wide ? BinaryPrimitives.ReadUInt64LittleEndian(b[(V17Size + 8)..]) : b[41],
             HousesCount = b[42],
             Houses = b.Slice(43, MaxHouses).ToArray(),
             KillsTotal = BinaryPrimitives.ReadUInt16LittleEndian(b[56..]),
@@ -435,7 +466,10 @@ public sealed class Profile
             CareerBest = b.Slice(370, MaxContracts).ToArray(),
             Filter = b[363],
             FiltersSeen = BinaryPrimitives.ReadUInt16LittleEndian(b[376..]),
+            Artifacts = v19 ? BinaryPrimitives.ReadUInt16LittleEndian(b[V18Size..]) : (ushort)0,
+            DogBuilds = v20 ? b[V19Size] : (byte)0,
         };
+        for (var i = 0; i < MaxArtifacts && v19; i++) p.ArtifactDay[i] = BinaryPrimitives.ReadUInt16LittleEndian(b[(V18Size + 2 + i * 2)..]);
         for (var i = 0; i < MaxClasses; i++) p.MasteryXp[i] = BinaryPrimitives.ReadUInt16LittleEndian(b[(204 + i * 2)..]);
         for (var i = 0; i < WeeklySlots; i++)
         {

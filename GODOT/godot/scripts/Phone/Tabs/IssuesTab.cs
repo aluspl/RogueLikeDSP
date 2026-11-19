@@ -12,7 +12,8 @@ namespace LifeLike.Game.Phone.Tabs;
 /// </summary>
 public sealed class IssuesTab : PhonePage
 {
-    private const int Row = 36;
+    /// <summary>Wysokość wiersza zgłoszenia (v0.23.2: przy dotyku w pionie wyższa).</summary>
+    private static int Row => PhoneView.Full && Layout.Touch ? 42 : 36;
     private readonly CoreGame _g;
 
     public IssuesTab(CoreGame g) => _g = g;
@@ -55,7 +56,7 @@ public sealed class IssuesTab : PhonePage
             var y = card.Position.Y + 4 + r * Row;
             if (r > 0) p.C.DrawRect(new Rect2(card.Position.X + 10, y - 1, card.Size.X - 20, 1), Pal.Bg);
             p.C.DrawRect(new Rect2(card.Position.X + 4, y + 3, 3, Row - 6), open ? Pal.Late : Pal.Done);
-            var photo = new Rect2(card.Position.X + 11, y + 2, 32, 32);
+            var photo = new Rect2(card.Position.X + 11, y + (Row - 32) / 2, 32, 32);
             p.C.DrawStyleBox(Ui.Box(open ? Pal.LateBg : Pal.DoneBg, 5), photo);
             p.Icon(Assets.Actors, ed.Frame, Assets.Actor, photo.Position);
             var x = photo.End.X + 6;
@@ -63,7 +64,7 @@ public sealed class IssuesTab : PhonePage
             var kills = _g.KillsByType[def] > 0 ? $" x{_g.KillsByType[def]}" : "";
             var boss = _g.SDef().Boss == def ? " (boss)" : "";
             p.Text(x, y, $"#{r + 1} {ed.Name}{kills}{boss}", Ink.Dark, TextAlign.Left, card.End.X - 10 - pw - x);
-            p.Text(x, y + 16, ed.Desc, Ink.Dim, TextAlign.Left, card.End.X - 8 - x);
+            p.Text(x, y + Row - 20, ed.Desc, Ink.Dim, TextAlign.Left, card.End.X - 8 - x);
         }
     }
 }

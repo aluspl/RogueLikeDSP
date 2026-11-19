@@ -56,7 +56,7 @@ public sealed class StatsScreen : Screen
     {
         if (N.Phone.HandleInput(e)) return true;
         if (!e.Is(GameAction.B | GameAction.Cancel | GameAction.Start | GameAction.Select | GameAction.Info)) return false;
-        if (_inRun) Flow.Phone.Open(_back);
+        if (_inRun) Flow.Phone.Return(_back);
         else Flow.ClassSelect.Open();
         return true;
     }

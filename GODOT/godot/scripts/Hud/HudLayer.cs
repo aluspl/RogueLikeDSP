@@ -20,6 +20,7 @@ public partial class HudLayer : ScaledLayer
     private readonly HudTop _top = new();
     private readonly HudLog _log = new();
     private readonly EnemyCard _card = new();
+    private readonly AttackTip _tip = new();
 
     public ScreenTint Tint => _tint;
 
@@ -31,6 +32,7 @@ public partial class HudLayer : ScaledLayer
         Root.AddChild(_top);
         Root.AddChild(_log);
         Root.AddChild(_card);
+        Root.AddChild(_tip);
         base._Ready();
         Layout.Changed += Place;
         Place();
@@ -74,6 +76,33 @@ public partial class HudLayer : ScaledLayer
     {
         _card.Show(g, enemy, index, count);
         _log.Visible = false;
+    }
+
+    /// <summary>v0.23.0: karta problemu (test dymny: wiersz mnożnika ciosu).</summary>
+    public EnemyCard Card => _card;
+
+    /// <summary>v0.23.0: dymek opisu ataku (Cios / Patent).</summary>
+    public AttackTip Tip => _tip;
+
+    /// <summary>v0.23.0: opis ataku nad prostokątem w układzie węzła from (np. przycisk paska akcji).</summary>
+    public void ShowAttackTip(CoreGame g, bool modeB, Rect2 anchor, CanvasItem from) => _tip.ShowFor(g, modeB, anchor, from);
+
+    /// <summary>v0.23.0: opis Patentu pod polem broni w górnym pasku (mysz, pad LB bez paska dotykowego).</summary>
+    public void ShowAttackTipAtHud(CoreGame g, bool modeB) =>
+        _tip.ShowFor(g, modeB, _top.WeaponRect, _top);
+
+    /// <summary>v0.23.0: czy mysz jest nad polem broni w górnym pasku.</summary>
+    public bool MouseOverWeapon() => _top.Visible && _top.WeaponRect.Size.X > 0 && _top.WeaponRect.HasPoint(_top.GetLocalMousePosition());
+
+    public void HideAttackTip() => _tip.HideTip();
+
+    /// <summary>v0.23.2: dotknięcie pola broni w górnym pasku (punkt w pikselach UI) – plecak.</summary>
+    public bool WeaponHit(Vector2 p)
+    {
+        if (!_top.Visible || _top.WeaponRect.Size.X <= 0) return false;
+        var s = Layout.HudScale;
+        var local = p / s - new Vector2(_top.OffsetLeft, _top.OffsetTop);
+        return _top.WeaponRect.Grow(3).HasPoint(local);
     }
 
     public void HideEnemyCard()

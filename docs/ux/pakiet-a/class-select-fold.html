@@ -1,0 +1,91 @@
+<style>
+  .dev{background:#f6f5f8;border:6px solid #1d1b2e;border-radius:22px;overflow:hidden;font:12px/1.35 ui-monospace,Menlo,monospace;color:#1d1b2e;display:flex;flex-direction:column}
+  .phone{width:280px;height:600px}
+  .fold{width:600px;height:540px}
+  .top{background:linear-gradient(#7a5cff,#5a3fe0);color:#fff;padding:10px;text-align:center;font-weight:bold}
+  .grid{display:grid;gap:6px;padding:8px}
+  .g3{grid-template-columns:repeat(3,1fr)} .g4{grid-template-columns:repeat(4,1fr)}
+  .tile{background:#fff;border-radius:10px;padding:6px 4px;text-align:center;font-size:10px;min-height:62px}
+  .tile.sel{outline:2px solid #6b4eff;color:#6b4eff;font-weight:bold}
+  .tile.lock{background:#ebe8f2;color:#77738a}
+  .face{width:30px;height:30px;margin:0 auto 4px;border-radius:8px;background:#ffd2a6;border:2px solid #1d1b2e}
+  .lock .face{background:#3a3550}
+  .card{background:#fff;margin:8px;border-radius:12px;padding:10px}
+  .card h4{margin:0 0 2px;font-size:15px}
+  .muted{color:#77738a}
+  .wpn{display:flex;gap:8px;align-items:center;background:#f0edff;border-radius:8px;padding:6px;margin:6px 0}
+  .ico{width:26px;height:26px;border-radius:6px;background:#c94f2c;flex:0 0 26px}
+  .stat{display:flex;justify-content:space-between;border-bottom:1px solid #eee;padding:2px 0}
+  .btns{display:flex;gap:6px;padding:8px}
+  .btn{flex:1;text-align:center;padding:10px 0;border-radius:10px;background:#fff;color:#6b4eff;font-weight:bold}
+  .btn.p{background:#6b4eff;color:#fff}
+  .row2{display:flex;flex:1;min-height:0}
+  .wrapx{display:flex;gap:28px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+  .cap{text-align:center;margin-top:8px;font-weight:bold}
+</style>
+
+<h2>Wariant B na telefonie i na rozłożonym składaku</h2>
+<p class="subtitle">Moja propozycja: siatka kafli (B). Na zwykłym telefonie 3 kolumny i karta pod spodem. Na rozłożonym ekranie siatka po lewej, pełna karta po prawej, bez dodatkowego stuknięcia.</p>
+
+<div class="wrapx">
+  <div>
+    <div class="dev phone">
+      <div class="top">Wybierz zawód</div>
+      <div class="grid g3">
+        <div class="tile"><div class="face"></div>Kierownik budowy</div>
+        <div class="tile sel"><div class="face"></div>Murarz</div>
+        <div class="tile"><div class="face"></div>Cieśla-dekarz</div>
+        <div class="tile"><div class="face"></div>Elektryk</div>
+        <div class="tile"><div class="face"></div>Hydraulik</div>
+        <div class="tile"><div class="face"></div>Glazurnik</div>
+        <div class="tile lock"><div class="face"></div>Spawacz<br>5 wygr.</div>
+        <div class="tile lock"><div class="face"></div>Geodeta<br>60 dośw.</div>
+        <div class="tile lock"><div class="face"></div>Sekret<br>?</div>
+      </div>
+      <div class="card">
+        <h4>Murarz</h4><span class="muted">Twardy jak pustak.</span>
+        <div class="wpn"><div class="ico"></div><div><b>Kielnia</b> · wręcz · 7–10</div></div>
+      </div>
+      <div style="flex:1"></div>
+      <div class="btns"><div class="btn">Szczegóły</div><div class="btn p">Start budowy</div></div>
+    </div>
+    <div class="cap">Telefon (złożony)</div>
+  </div>
+
+  <div>
+    <div class="dev fold">
+      <div class="top">Wybierz zawód</div>
+      <div class="row2">
+        <div style="flex:1">
+          <div class="grid g4">
+            <div class="tile"><div class="face"></div>Kierownik budowy</div>
+            <div class="tile sel"><div class="face"></div>Murarz</div>
+            <div class="tile"><div class="face"></div>Cieśla-dekarz</div>
+            <div class="tile"><div class="face"></div>Elektryk</div>
+            <div class="tile"><div class="face"></div>Hydraulik</div>
+            <div class="tile"><div class="face"></div>Glazurnik</div>
+            <div class="tile"><div class="face"></div>Dekarz</div>
+            <div class="tile"><div class="face"></div>Tynkarz</div>
+            <div class="tile lock"><div class="face"></div>Spawacz<br>5 wygr.</div>
+            <div class="tile lock"><div class="face"></div>Geodeta<br>60 dośw.</div>
+            <div class="tile lock"><div class="face"></div>Operator koparki<br>Akt 0</div>
+            <div class="tile lock"><div class="face"></div>Sekret<br>?</div>
+          </div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column">
+          <div class="card" style="flex:1">
+            <h4>Murarz</h4><div class="muted">Twardy jak pustak. · Mistrz 6</div>
+            <div class="wpn"><div class="ico"></div><div><b>Kielnia</b> · wręcz, zasięg 1<br><span class="muted">7–10 obrażeń, kryt 17%</span></div></div>
+            <div class="wpn" style="background:#fff4e0"><div class="ico" style="background:#ffb020"></div><div><b>Moc: Mur na zakładkę</b><br><span class="muted">Stoi 3 tury</span></div></div>
+            <div class="stat"><span>Zdrowie</span><b>34 (+4 kask)</b></div>
+            <div class="stat"><span>Siła · obrażenia wręcz</span><b>5</b></div>
+            <div class="stat"><span>Szczęście · lepszy sprzęt</span><b>+3</b></div>
+            <div class="stat"><span>Trudność</span><b>‹ Normalny ›</b></div>
+          </div>
+          <div class="btns"><div class="btn">Wróć</div><div class="btn p">Start budowy</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="cap">Rozłożony składak / iPad (dwa panele)</div>
+  </div>
+</div>

@@ -285,6 +285,7 @@ public sealed partial class Game
     public void ResetUpgrade()
     {
         WeaponLvl = 0;
+        WeaponCharges = 0;
         WeaponTrait = -1;
         TraitPending = false;
     }
@@ -305,29 +306,47 @@ public sealed partial class Game
     public void AcceptTool()
     {
         if (!HasToolOffer) return;
-        Pickups[ToolOfferPickup].Active = false;
-        int t = ToolOffer;
+        int pick = ToolOfferPickup;
+        Pickups[pick].Active = false;
+        int t = ToolOffer, rarity = ToolOfferRarity;
+        var extra = ToolOfferExtra;
+        var perks = ToolOfferPerks;
         ToolOffer = ToolOfferPickup = -1;
-        TakeTool(t);
+        ToolOfferExtra = 0;
+        ToolOfferPerks = 0;
+        var old = HandItem(); // v0.23.2: stara broń do plecaka, przy pełnym – na ziemię w polu znajdźki (broń zawodu przepada)
+        TakeTool(t, rarity, true, extra, perks);
+        StoreOrDrop(old, pick);
     }
 
     public void DeclineTool()
     {
         if (!HasToolOffer) return;
         ToolOffer = ToolOfferPickup = -1;
+        ToolOfferExtra = 0;
+        ToolOfferPerks = 0;
         Push(Msg(Loc.T("zostajesz_przy_ulepszonym")));
     }
 
-    public void TakeTool(int t)
+    public void TakeTool(int t, int rarity = 0, bool announce = true, int extra = 0, int perks = -1)
     {
         ResetUpgrade();
+        ResetProc(); // v0.23.0: licznik „co N-ty cios” należy do broni w ręku
         WeaponOverride = D.Tools[t].Weapon;
-        ToolsFound = (byte)(ToolsFound | (1u << t));
+        MarkArtifact(WeaponOverride); // v0.23.0: artefakt w tej budowie
+        SecretFlags |= SecretToolSwapFlag; // v0.23.0 (#84): zlecenie „ta sama broń”
+        WeaponRarity = (byte)ResolveRarity(WeaponOverride, rarity); // v0.23.0: rzadkość z dropu / Hurtowni, unikat zawsze Mistrzowska
+        ToolsFound |= 1UL << t;
+        ApplyWeaponExtra(extra); // v0.23.0: upuszczona z kabury broń zachowuje ulepszenia
+        // v0.23.0: profity ze znajdźki (-1 = nowa broń bez znajdźki, np. Hurtownia – losowane teraz)
+        WeaponPerks = perks < 0 ? (byte)RollWeaponPerks(WeaponOverride, WeaponRarity) : ResolvePerks(WeaponOverride, WeaponRarity, perks);
+        if (!announce) return;
         Push(Msg(Loc.T("narzedzie_2")).Add(Weapon.Name).Add(" ").Add(Weapon.MinDamage).Add("-").Add(Weapon.MaxDamage).As(LogKind.Loot));
+        PushPerks(WeaponPerks, WeaponRarity);
     }
 
     /// <summary>Bot bierze nowe narzędzie, gdy średni cios (bez problemu) jest wyższy niż ulepszonym obecnym.</summary>
-    public bool BotToolAccept() => WeaponBreakdown(-1, D.Tools[ToolOffer].Weapon).Avg10 > WeaponBreakdown().Avg10;
+    public bool BotToolAccept() => ToolOfferBreakdown().Avg10 > WeaponBreakdown().Avg10; // v0.23.0: z profitami znajdźki
 
     // ------------------------------------------------------------------ ukryte pomieszczenia
     /// <summary>
@@ -559,6 +578,7 @@ public sealed partial class Game
     public void BotUpgrade()
     {
         if (!ActCleared || ShopClosed) return;
+        BotSkup(); // v0.23.2: Skup przed ulepszeniem – materiały na kolejny poziom
         for (var i = 0; i < D.Hurtownia.Length; ++i)
         {
             if (D.Hurtownia[i].Effect == ShopEffect.Upgrade && HurtowniaBuy(i)) BotPending();
@@ -568,12 +588,14 @@ public sealed partial class Game
     /// <summary>Sprzęt z wydarzenia / skrzyni: pusty slot – zakłada, zajęty – porównanie (jak paczka).</summary>
     public void TakeGear(int slot, int rarity, int trait)
     {
+        rarity = BeltFilter(slot, rarity, 2); // v0.23.0: skrzynia i wydarzenia też podlegają regule rzadkości pasa
         if (Equipped[slot] < 0)
         {
             Equip(slot, rarity, trait);
         }
         else if (!HasOffer)
         {
+            OfferPickup = -1; // v0.23.2: bez znajdźki (skrzynia, wydarzenie) – Zostaw jak dawniej
             OfferSlot = (sbyte)slot;
             OfferRarity = (sbyte)rarity;
             OfferTrait = (sbyte)trait;

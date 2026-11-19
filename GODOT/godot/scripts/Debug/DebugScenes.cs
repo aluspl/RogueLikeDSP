@@ -20,7 +20,7 @@ public sealed class DebugScenes
         "brigade", "ally", "investor",
         "schedule-path", "materials", "repairs", "hurtownia-mats", "daily", "house", "levelup", "death",
         "respect", "rewards", "classselect-locked", "class-dekarz", "class-tynkarz", "class-operator", "gear5", "respect-banner",
-        "second-chance", "behaviors", "act-mud", "act-gust", "act-dust", "stats-class", "stats-tip", "stats-phone", "catalog-tags",
+        "second-chance", "behaviors", "act-mud", "act-gust", "act-dust", "stairs", "wall-gap", "stats-class", "stats-tip", "stats-phone", "catalog-tags",
         "help-acts", "help-stats", "help-view",
         "tutorial-title", "tutorial-class", "tutorial-stats", "tutorial-unlock", "tutorial-act0", "help-tutorial",
         "act0-card", "act0-stamps", "act0-stairs-open", "act0-boss-phase",
@@ -28,7 +28,8 @@ public sealed class DebugScenes
         "boon-pick", "boon-synergy", "boon-phone", "boon-synergies", "elite-map", "elite-card", "combo-shock", "combo-dust", "combo-crack",
         "help-combos",
         "event-map", "event-sms", "event-choices", "event-result", "event-boon", "upgrade-shop", "upgrade-trait", "upgrade-gear",
-        "tool-swap", "secret-crack", "secret-card", "secret-open", "secret-door", "secret-map", "tasks-extras", "help-extras",
+        "tool-swap", "secret-crack", "secret-card", "secret-open", "secret-door", "secret-map",
+        "secret-crack-a1", "secret-crack-a2", "secret-crack-a3", "secret-door-a1", "secret-door-a3", "tasks-extras", "help-extras",
         "recap-endmsg", "recap-death", "recap-death-scroll", "recap-win", "recap-end", "weekly", "weekly-card", "weekly-run",
         "recap-progress", "titles", "looks", "inspector", "help-progress",
         "story-archive", "story-thread", "estate-grow", "help-meta",
@@ -36,6 +37,10 @@ public sealed class DebugScenes
         .. GoalsStaging.Names,
         .. CareerStaging.Names,
         .. FilterStaging.Names,
+        .. BetweenStaging.Names,
+        .. WeaponStaging.Names,
+        .. DogStaging.Names,
+        .. BackpackStaging.Names,
     ];
 
     private readonly App _app;
@@ -45,6 +50,10 @@ public sealed class DebugScenes
     private readonly GoalsStaging _goals;
     private readonly CareerStaging _career;
     private readonly FilterStaging _filters;
+    private readonly BetweenStaging _between;
+    private readonly WeaponStaging _weapons;
+    private readonly DogStaging _dog;
+    private readonly BackpackStaging _bag;
 
     public DebugScenes(App app)
     {
@@ -55,6 +64,10 @@ public sealed class DebugScenes
         _goals = new GoalsStaging(app);
         _career = new CareerStaging(app);
         _filters = new FilterStaging(app);
+        _between = new BetweenStaging(app);
+        _weapons = new WeaponStaging(app);
+        _dog = new DogStaging(app);
+        _bag = new BackpackStaging(app);
     }
 
     private ScreenFlow Flow => _app.Flow;
@@ -63,7 +76,8 @@ public sealed class DebugScenes
         scene is "title" or "classselect" or "profile" or "catalog" or "estate" or "team" or "training" or "card" or "perks" or "investor"
             or "daily" or "death" or "respect" or "rewards" or "classselect-locked" or "stats-class" or "stats-tip" or "catalog-tags"
             or "tutorial-unlock" or "tutorial-act0" or "dmg-class" or "dmg-stats" or "titles" or "looks" or "recap-progress" or "recap-end" or "inspector"
-            || SecretStaging.UsesDemoProfile(scene) || GoalsStaging.Handles(scene) || CareerStaging.Handles(scene);
+            || SecretStaging.UsesDemoProfile(scene) || GoalsStaging.Handles(scene) || CareerStaging.Handles(scene)
+            || BetweenStaging.Handles(scene) || scene is "end" or "endmsg";
 
     /// <summary>Sceny samouczka menu: profil bez obejrzanych dymków (inne sceny - samouczek już obejrzany).</summary>
     public static bool UsesTutorial(string scene) => scene.StartsWith("tutorial");
@@ -71,6 +85,27 @@ public sealed class DebugScenes
     public async Task Setup(string scene)
     {
         var s = _app.Session;
+        if (scene is "end" or "endmsg") scene = "between-win"; // v0.22.0 (UX A): plansza końcowa zastąpiona rozmową
+        if (BetweenStaging.Handles(scene)) // v0.22.0 (UX A): rozmowa z Kierownikiem Markiem między budowami
+        {
+            await _between.Setup(scene);
+            return;
+        }
+        if (DogStaging.Handles(scene)) // v0.23.0: easter egg – Kawka (mapa, głaskanie, dymek, Katalog)
+        {
+            await _dog.Setup(scene);
+            return;
+        }
+        if (BackpackStaging.Handles(scene)) // v0.23.2: plecak (karta, ekran, Hurtownia: Skup, PSZOK)
+        {
+            await _bag.Setup(scene);
+            return;
+        }
+        if (WeaponStaging.Handles(scene)) // v0.23.0: bronie – celowanie wzorem, Cios B, pas, karta problemu, rzadkość
+        {
+            await _weapons.Setup(scene);
+            return;
+        }
         if (scene == "filter-boon") scene = "boon-pick"; // v0.21.53: oferta premii w filtrze (litery rzadkości)
         if (FilterStaging.Handles(scene)) // v0.21.53: filtry ekranu
         {
@@ -101,6 +136,7 @@ public sealed class DebugScenes
         {
             case "title":
                 Flow.Title.Open();
+                _app.Nodes.Banners.Clear(); // v0.22.0: czysty tytuł (zrzuty sklepu); baner filtra – scena filter-banner
                 return;
             case "tutorial-title": // pierwsze uruchomienie: trzeci dymek (Szkolenia) nad przyciemnionym tytułem
                 Flow.Title.Open();
@@ -108,11 +144,16 @@ public sealed class DebugScenes
                 _app.Coach.Next();
                 return;
             case "tutorial-class": // wybór zawodu: dymek o trudności
-            case "tutorial-stats": // dymek o statystykach z przyciskiem do ich opisu
                 Meta.TutorialDone(s.Profile, 0);
                 s.ClassId = 1;
                 Flow.ClassSelect.Open();
-                while (_app.Coach.Active && _app.Coach.CurrentId != (scene == "tutorial-class" ? "difficulty" : "stats")) _app.Coach.Next();
+                while (_app.Coach.Active && _app.Coach.CurrentId != "difficulty") _app.Coach.Next();
+                return;
+            case "tutorial-stats": // v0.23.0: dymek o statystykach (osobny, po pierwszej budowie) z przyciskiem do ich opisu
+                s.Profile.Tutorial = (ushort)(Tutorial.Short | Tutorial.Title | Tutorial.Class | Tutorial.Keepsake);
+                s.Profile.Runs = 1;
+                s.ClassId = 1;
+                Flow.ClassSelect.Open();
                 return;
             case "tutorial-unlock": // dymek nowości: nowy zawód z nagrody (Dekarz) na wyborze zawodu
                 s.Profile.Tutorial = (ushort)(Tutorial.Title | Tutorial.Class | Tutorial.Investor);
@@ -313,10 +354,12 @@ public sealed class DebugScenes
             await DebugRunner.Frames(_app.Root, 6);
             return;
         }
-        if (scene is "behaviors" or "act-mud" or "act-gust" or "act-dust" or "stats-phone")
+        if (scene is "behaviors" or "act-mud" or "act-gust" or "act-dust" or "stairs" or "wall-gap" or "stats-phone")
         {
             _app.Nodes.Banners.Clear();
             if (scene == "behaviors") _stage.BehaviorShowcase();
+            else if (scene == "stairs") _stage.StairsShowcase(s.Data.PreludeStages + 2); // v0.22.0 (#67-#69): schody w przejściu muru, dziennik, HUD
+            else if (scene == "wall-gap") _stage.WallGapShowcase(s.Data.PreludeStages + 2); // v0.23.0: boczne przejście w murze
             else if (scene == "stats-phone")
             {
                 g.Equip(1, 2, Array.FindIndex(s.Data.GearTraits, t => t.Effect == TraitEffect.Str));
@@ -343,7 +386,7 @@ public sealed class DebugScenes
             await BoonScene(scene);
             return;
         }
-        if (scene is "schedule" or "schedule-tip" or "hurtownia" or "endmsg" or "end" or "boss" or "schedule-path" or "hurtownia-mats" or "house")
+        if (scene is "schedule" or "schedule-tip" or "hurtownia" or "boss" or "schedule-path" or "hurtownia-mats" or "house")
         {
             await SkipStages(scene);
             return;
@@ -444,6 +487,21 @@ public sealed class DebugScenes
                 if (scene == "secret-open")
                 {
                     for (var k = 0; k < 4 && Flow.Current == Flow.Game; k++) _app.AfterAction(g.PlayerMove(1, 0));
+                }
+                break;
+            case "secret-crack-a1": // v0.23.1: pęknięcie / drzwi na licu muru w każdym akcie (z kluczem – puls)
+            case "secret-crack-a2":
+            case "secret-crack-a3":
+            case "secret-door-a1":
+            case "secret-door-a3":
+                {
+                    var act = scene[^1] - '1';
+                    _stage.SecretStage(scene.StartsWith("secret-door") ? 1 : 0, g.D.PreludeStages + 1 + act * 4 - (act == 2 ? 1 : 0), 3);
+                    g.Keys = 1;
+                    if (g.Lv.At(g.Hero.X + 1, g.Hero.Y) == Tile.Floor && !g.Occupied(g.Hero.X + 1, g.Hero.Y)) g.Hero.X++; // magazyn nie za bohaterem
+                    g.UpdateFov();
+                    _app.Nodes.World.Sync();
+                    _app.Refresh();
                 }
                 break;
             case "secret-door":
@@ -754,9 +812,8 @@ public sealed class DebugScenes
                 return;
             }
             if (Flow.Current == Flow.Schedule && scene == "schedule-tip" && g.Stage >= 1) return; // druga rada, notatka z odznakami
-            if (Flow.Current == Flow.EndMessage)
+            if (Flow.Current == Flow.HouseSchedule || Flow.Current == Flow.BetweenRuns)
             {
-                if (scene == "end") Flow.End.Open();
                 if (scene == "house")
                 {
                     _app.Session.FixedToday = Tuple.Create(2026, 9, 25);

@@ -76,7 +76,7 @@ public sealed class BannerFeed
         var m = DamageHelp.AddRange(new Message(), was.Min, was.Max).Add(" -> ");
         DamageHelp.AddRange(m, now.Min, now.Max).Add(Loc.T("sr"));
         DamageHelp.AddTenths(m, now.Avg10 - was.Avg10, true).Add(")");
-        _banners.Push(Loc.T("nowe") + g.Weapon.Name, m.Text, PhoneTabs.Gear);
+        _banners.Push(Loc.T("nowe") + g.Weapon.Name, m.Text + DamageHelp.CompareExtras(new Message(), was, now).Text, PhoneTabs.Gear); // v0.23.0: + kryt / OBR / profity
     }
 
     private void OnGearEquipped(int slot)

@@ -1,5 +1,6 @@
 using System;
 using Godot;
+using LifeLike.Core;
 using LifeLike.Game.Audio;
 using LifeLike.Game.World;
 using CoreGame = LifeLike.Core.Game;
@@ -29,6 +30,35 @@ public static class PlayCommands
         }
         return acted;
     }
+
+    /// <summary>
+    /// v0.23.0: Cios B – tryb B broni w cel; bez celu otwiera pękniętą ścianę obok (Przecinak, Łom), inaczej miga zasięg wzoru B
+    /// (bez tury). Bez celu wybiera najbliższy cel trybu B.
+    /// </summary>
+    public static bool WeaponB(CoreGame g, WorldView view, int target)
+    {
+        if (target < 0)
+        {
+            Span<sbyte> t = stackalloc sbyte[CoreGame.MaxEnemies];
+            if (Aiming.TargetsB(g, t) > 0) target = t[0];
+        }
+        var acted = target >= 0 ? g.PlayerWeaponB(target) : g.CanWeaponBOpenWall() && g.PlayerWeaponBWall();
+        if (acted) Sfx.Play("ability", 0.8f);
+        else view.FlashRange(g.Weapon.ModeB);
+        return acted;
+    }
+
+    /// <summary>v0.23.0: zamiana broni z kabury (pas monterski) – tura; bez pasa / z pustą kaburą wpis w dzienniku, bez tury.</summary>
+    public static bool SwapOrNotice(CoreGame g)
+    {
+        var acted = g.PlayerSwapWeapon();
+        if (acted) Sfx.Play("pickup");
+        else Notice(g, g.HasBelt() ? Loc.T("kabura_pusta") : Loc.T("zamiana_tylko_z_pasem"));
+        return acted;
+    }
+
+    /// <summary>v0.23.0: krótka informacja w dzienniku budowy (bez tury), np. „Cios B: jeszcze 3 t.”.</summary>
+    public static void Notice(CoreGame g, string text) => g.Push(new Message().Add(text));
 
     /// <summary>Termos: kawa leczy i zużywa turę.</summary>
     public static bool Drink(CoreGame g)

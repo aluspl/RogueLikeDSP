@@ -34,6 +34,8 @@ public partial class WorldView : Node2D
     private readonly WorldCamera _camera = new();
     private ActorSprite _hero;
     private ActorSprite _ally; // pomocnik z brygady
+    private ActorSprite _dog; // v0.23.0: easter egg – Kawka
+    private float _dogHappy; // s zadowolonej miny po pogłaskaniu
     private readonly List<ActorSprite> _enemies = new();
     private readonly List<ActorSprite> _pickups = new();
     private readonly List<bool> _enemyAlive = new();
@@ -94,10 +96,12 @@ public partial class WorldView : Node2D
         _light.Bind(this);
         _backdrop.Bind(this);
         _walls.Attach(_actors);
-        _hero = new ActorSprite { AnimPeriod = 0.4f, Breathes = true };
+        _hero = new ActorSprite { AnimPeriod = 0.4f, Breathes = true, Dress = new HeroDress() };
         _actors.AddChild(_hero);
         _ally = new ActorSprite { AnimPeriod = 0.4f, Breathes = true, AnimPhase = 0.2f, Visible = false };
         _actors.AddChild(_ally);
+        _dog = new ActorSprite { BaseFrame = Assets.FrameDog, AltFrame = Assets.FrameDogB, AnimPeriod = 0.28f, Visible = false };
+        _actors.AddChild(_dog);
     }
 
     public void Bind(CoreGame g)
@@ -140,10 +144,24 @@ public partial class WorldView : Node2D
 
     public void Mark(int enemy) => Marked = enemy;
 
-    public void FlashRange() => _overlay.FlashRange();
+    public void FlashRange() => FlashRange(null);
+
+    /// <summary>v0.23.0: mignięcie zasięgu trybu broni (null = zasięg broni).</summary>
+    public void FlashRange(LifeLike.Core.Data.WeaponMode mode)
+    {
+        if (!_overlay.RangeHeld) AimPattern(mode, -1);
+        _overlay.FlashRange();
+    }
 
     /// <summary>Ramki pól w zasięgu broni na stałe (trzymane A).</summary>
     public void ShowRange(bool on) => _overlay.RangeHeld = on;
+
+    /// <summary>v0.23.0: celowanie trybem broni (A albo B) – zasięg trybu i pola wzoru na cel; null = zasięg broni.</summary>
+    public void AimPattern(LifeLike.Core.Data.WeaponMode mode, int target)
+    {
+        _overlay.AimMode = mode;
+        _overlay.AimTarget = target;
+    }
 
     public void ToggleOverview() => _camera.ToggleOverview(_g);
 
@@ -224,6 +242,10 @@ public partial class WorldView : Node2D
             }
             _pickupActive[i] = p.Active;
             s.BaseFrame = Assets.PickupFrame(p);
+            var tool = p.Type == PickupType.Tool && p.Arg < _g.D.Tools.Length; // v0.23.0: broń na placu – ikona w kolorze rzadkości
+            s.DropWeapon = tool ? _g.D.Weapons[_g.D.Tools[p.Arg].Weapon] : null;
+            s.DropRarity = tool && s.DropWeapon.Master ? 3 : p.Trait;
+            s.DropGlow = tool ? WeaponLook.RarityColor(_g.D, s.DropRarity) : Colors.Transparent;
             s.Visible = p.Active && _g.Explored(p.X, p.Y);
         }
     }
@@ -252,6 +274,7 @@ public partial class WorldView : Node2D
         _walls.Redraw();
         SyncHero(snap);
         SyncAlly(snap);
+        SyncDog(snap);
         for (var i = 0; i < _g.EnemiesCount; i++) SyncEnemy(i, snap);
         SyncPickups(snap);
         if (!snap) BehaviorFx();
@@ -270,19 +293,71 @@ public partial class WorldView : Node2D
 
     private void SyncHero(bool snap)
     {
-        _hero.BaseFrame = Assets.HeroFrame(_g.D, ProfileSource(), _g.Cls); // kask w paski z sekretu; w miejscu oddycha (bez klatki B), w kroku - chód z actors_anim
-        HelmetTint.Apply(_hero, _g.D, ProfileSource(), _g.Cls); // v0.21.52: kolor kasku (cz. b: kask mistrza tylko mistrzem)
+        var dress = _hero.Dress;
+        dress.Sync(_g);
+        if (snap) dress.Dir = _hero.Flip ? WeaponPose.Left : WeaponPose.Right; // nowy etap: broń w bok, nie pod butami
+        // v0.23.0: kask ze sprzętu zakrywa wygląd z odznak i zleceń (kolor kasku, kask w paski) – wtedy zwykła klatka zawodu
+        var look = dress.HasHelmet ? null : ProfileSource();
+        _hero.BaseFrame = Assets.HeroFrame(_g.D, look, _g.Cls); // kask w paski z sekretu; w miejscu oddycha (bez klatki B), w kroku - chód z actors_anim
+        HelmetTint.Apply(_hero, _g.D, look, _g.Cls); // v0.21.52: kolor kasku (cz. b: kask mistrza tylko mistrzem)
         var heroDst = GridToScreen(_g.Hero.X, _g.Hero.Y);
         if (!snap && heroDst != _hero.Position && _hero.Position.DistanceTo(heroDst) <= Cell * 2) // pył spod butów
         {
-            if (heroDst.X != _hero.Position.X) _hero.Flip = heroDst.X < _hero.Position.X;
+            var step = Proj.Floor(heroDst) - Proj.Floor(_hero.Position);
+            dress.Dir = WeaponPose.Dir(step.X, step.Y, dress.Dir); // v0.23.0: broń w kierunku ruchu
+            _hero.Flip = WeaponPose.Flip(dress.Dir, _hero.Flip);
             for (var k = -1; k <= 1; k += 2)
                 _fx.Spawn(_hero.Position + new Vector2(k * 6, 12), new Vector2(k * 0.5f, -0.5f), 0, 18, Assets.PDust, 3);
         }
         _hero.MoveTo(heroDst, snap);
-        _hero.Visible = true;
+        _hero.Visible = !HideHero;
         _hero.Modulate = _g.Hero.Alive ? Colors.White : Pal.DeadHero;
     }
+
+    /// <summary>v0.23.0 (zrzuty): dodatkowa postać na mapie (zestawienie broni / sprzętu); bohater ukryty.</summary>
+    public void AddDebugSprite(ActorSprite s, bool hideHero)
+    {
+        _actors.AddChild(s);
+        if (!hideHero) return;
+        HideHero = true;
+        _hero.Visible = false;
+    }
+
+    /// <summary>v0.23.0 (zrzuty): bohater ukryty (zestawienia broni i sprzętu).</summary>
+    public bool HideHero { get; set; }
+
+    /// <summary>v0.23.0: bohater zaatakował pole p (ekran) – broń w tę stronę i krótki wymach.</summary>
+    public void HeroAttacked(Vector2 target)
+    {
+        var dress = _hero.Dress;
+        var d = Proj.Floor(target) - new Vector2I(_g.Hero.X, _g.Hero.Y);
+        dress.Dir = WeaponPose.Dir(d.X, d.Y, dress.Dir);
+        _hero.Flip = WeaponPose.Flip(dress.Dir, _hero.Flip);
+    }
+
+    /// <summary>v0.23.0: Kawka – siedzi w błocie i merda (klatki A/B), zwrócona do bohatera; po pogłaskaniu zadowolona.</summary>
+    private void SyncDog(bool snap)
+    {
+        if (!_g.DogHere || !_g.Visible(_g.DogX, _g.DogY))
+        {
+            _dog.Visible = false;
+            return;
+        }
+        var dst = GridToScreen(_g.DogX, _g.DogY);
+        _dog.MoveTo(dst, snap || !_dog.Visible);
+        _dog.Flip = _g.Hero.X < _g.DogX;
+        _dog.Visible = true;
+    }
+
+    /// <summary>v0.23.0: Kawka pogłaskana – zadowolona mina i podskok.</summary>
+    public void DogPetted()
+    {
+        _dogHappy = 1.4f;
+        _dog.Flash(new Color(1f, 0.85f, 0.7f), 0.5f);
+    }
+
+    /// <summary>Sprite Kawki (zrzuty, test dymny).</summary>
+    public ActorSprite DogSprite => _dog;
 
     /// <summary>Pomocnik z brygady: fachowiec obok bohatera, dopóki pomaga.</summary>
     private void SyncAlly(bool snap)
@@ -383,6 +458,7 @@ public partial class WorldView : Node2D
         if (_g is null) return;
         _hero.MoveTo(GridToScreen(_g.Hero.X, _g.Hero.Y), true);
         if (_g.AllyTurns > 0) _ally.MoveTo(GridToScreen(_g.AllyX, _g.AllyY), true);
+        if (_g.DogHere) _dog.MoveTo(GridToScreen(_g.DogX, _g.DogY), true);
         for (var i = 0; i < _enemies.Count && i < _g.EnemiesCount; i++) _enemies[i].MoveTo(GridToScreen(_g.Enemies[i].X, _g.Enemies[i].Y), true);
         for (var i = 0; i < _pickups.Count && i < _g.PickupsCount; i++) _pickups[i].MoveTo(GridToScreen(_g.Pickups[i].X, _g.Pickups[i].Y) - new Vector2(0, 2), true);
         _fx.Clear();
@@ -408,6 +484,7 @@ public partial class WorldView : Node2D
         Sprite(_hero, true);
         _walls.Mark(_g.Hero.X, _g.Hero.Y, true);
         Sprite(_ally, true);
+        Sprite(_dog, true);
         foreach (var e in _enemies) Sprite(e, true);
         foreach (var p in _pickups) Sprite(p, false);
         for (var y = 0; y < Level.H - 1; y++)
@@ -426,6 +503,9 @@ public partial class WorldView : Node2D
     {
         if (_hero is null) return;
         if (_threeQuarter != Proj.ThreeQuarter) Reproject();
+        if (_dogHappy > 0f) _dogHappy -= (float)delta;
+        _dog.BaseFrame = _dogHappy > 0f ? Assets.FrameDogHappy : Assets.FrameDog;
+        _dog.AltFrame = _dogHappy > 0f ? -1 : Assets.FrameDogB;
         if (_g is not null)
         {
             MarkSeeThrough();

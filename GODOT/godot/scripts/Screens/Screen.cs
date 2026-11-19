@@ -1,4 +1,5 @@
 using Godot;
+using LifeLike.Game.Hud;
 using LifeLike.Game.Input;
 using LifeLike.Game.Session;
 using LifeLike.Game.Touch;
@@ -18,6 +19,9 @@ public abstract class Screen
     protected GameSession S => App.Session;
     protected SceneNodes N => App.Nodes;
     protected ScreenFlow Flow => App.Flow;
+
+    /// <summary>v0.22.0 (UX A): miejsce powiadomień – przy telefonie od dołu, inaczej domyślnie.</summary>
+    public virtual BannerSpot BannerSpot => UsesPhone ? BannerSpot.Bottom : BannerSpot.Default;
 
     /// <summary>Plansze pełnoekranowe widoczne na tym ekranie.</summary>
     public virtual ViewSet Views => ViewSet.None;

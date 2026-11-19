@@ -357,24 +357,20 @@ public sealed partial class Game
                 var slot = RandomSlot();
                 var rarity = R.Range(1, 2);
                 if (rarity <= Equipped[slot]) rarity = Math.Min(2, Equipped[slot] + 1);
+                rarity = BeltFilter(slot, rarity, 2); // v0.23.0: pas z kaburą rzadki, inaczej Markowy
                 if (rarity > Equipped[slot]) Equip(slot, rarity, R.Range(0, D.GearTraitsCount - 1));
                 else GainXp(3);
                 break;
             }
             case ShopEffect.Tool:
             {
-                var n = 0;
-                for (var t = 0; t < D.Tools.Length; ++t) n += (Bonus.Tools >> t) & 1;
-                var k = R.Range(0, Math.Max(0, n - 1));
-                for (var t = 0; t < D.Tools.Length; ++t)
+                var pool = ShopToolPool(); // v0.23.0: kupione + nowe bronie z flagą hurtownia, rzadkość losowana przy zakupie
+                var t = NthTool(pool, R.Range(0, Math.Max(0, CountBits(pool) - 1)));
+                if (t >= 0)
                 {
-                    if (((Bonus.Tools >> t) & 1) != 0 && k-- == 0)
-                    {
-                        ResetUpgrade();
-                        WeaponOverride = D.Tools[t].Weapon;
-                        ToolsFound = (byte)(ToolsFound | (1u << t));
-                        break;
-                    }
+                    var old = HandItem(); // v0.23.2: stara broń do plecaka (pełny – przepada jak dawniej)
+                    TakeTool(t, RollWeaponRarity(), false);
+                    if (BackpackAdd(old)) Push(Msg(Loc.T("do_plecaka")).Add(BackpackName(old)).As(LogKind.Loot));
                 }
                 break;
             }

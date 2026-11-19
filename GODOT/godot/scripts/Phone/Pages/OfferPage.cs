@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Godot;
 using LifeLike.Core;
 using LifeLike.Game.Gfx;
 using LifeLike.Game.Input;
@@ -8,20 +7,54 @@ using CoreGame = LifeLike.Core.Game;
 namespace LifeLike.Game.Phone.Pages;
 
 /// <summary>
-/// Paczka sprzętu przy zajętym slocie (gear_offer_dialog na GBA): obecny i nowy przedmiot z jakością (pastylka),
-/// premią i cechą; porównanie ciosu, krytu i obrony (rozpiska #26: „teraz 4-7 -&gt; 5-9 (średnio +1,5)”);
-/// A zakładam, B zostawiam (+doświadczenie).
+/// Paczka sprzętu przy zajętym slocie (gear_offer_dialog na GBA). v0.23.2 (UI 2): karta znaleziska (FindCard) – nowy
+/// przedmiot z porównaniem do noszonego, wiersz „Noszone”, przyciski Do plecaka (n/6), Zostaw (+dośw.) i Załóż.
+/// Strzałki / dotknięcie wybierają, A / Enter zatwierdza, B / Esc = Zostaw.
 /// </summary>
 public sealed class OfferPage : PhonePage
 {
+    /// <summary>v0.23.2: wybory karty – Załóż, Do plecaka, Zostaw.</summary>
+    public const int Take = 0, Store = 1, Leave = 2;
+
     private readonly CoreGame _g;
 
     public OfferPage(CoreGame g) => _g = g;
 
+    /// <summary>Zaznaczony wybór (Take / Store / Leave).</summary>
+    public int Sel { get; set; }
+
+    /// <summary>Zatwierdzenie wyboru (OfferScreen.Decide).</summary>
+    public System.Action<int> Decided { get; set; }
+
     public override string Title => Loc.T("paczka_sprzetu");
     public override string Sub => _g.OfferSlot >= 0 ? _g.D.GearSlots[_g.OfferSlot] : "";
-    public override string Hint => Loc.F("spacja_enter_zakladam_z_esc", _g.D.GearDeclineXp + _g.OfferRarity);
-    public override PageAction[] Actions => [new(Loc.T("zakladam"), GameAction.A), new(Loc.F("zostawiam", _g.D.GearDeclineXp + _g.OfferRarity), GameAction.B)];
+    public override string Hint => Loc.T("karta_hint");
+
+    public override void Enter() => Sel = _g.OfferIsBetter ? Take : !_g.BackpackFull() ? Store : Leave;
+
+    public override bool Input(InputCmd e) => Move(e, _g.BackpackFull(), () => Sel, v => Sel = v);
+
+    /// <summary>Strzałki: kolejny wybór (pełny plecak – pomija „Do plecaka”); wspólne z kartą broni.</summary>
+    public static bool Move(InputCmd e, bool storeOff, System.Func<int> get, System.Action<int> set)
+    {
+        var d = e.VDir != 0 ? e.VDir : e.HDir;
+        if (d == 0) return false;
+        var sel = (get() + d + 3) % 3;
+        if (sel == Store && storeOff) sel = (sel + d + 3) % 3;
+        set(sel);
+        Audio.Sfx.Play("menu");
+        return true;
+    }
+
+    /// <summary>Dotknięcie przycisku: od razu wybór (v0.23.2 – duże przyciski, blokada wejścia chroni przed przypadkiem).</summary>
+    public override bool TapRow(int index)
+    {
+        var k = index - FindCard.HitBase;
+        if (k is < 0 or > 2 || (k == Store && _g.BackpackFull())) return false;
+        Sel = k;
+        Decided?.Invoke(k);
+        return true;
+    }
 
     public override void Draw(PhonePainter p)
     {
@@ -29,69 +62,20 @@ public sealed class OfferPage : PhonePage
         var d = g.D;
         var slot = g.OfferSlot;
         if (slot < 0) return;
-        var y = p.Section(p.Top, Loc.T("teraz_5"));
-        y = Item(p, y, g.Equipped[slot], g.EquippedTrait[slot], false) + 4;
-        y = p.Section(y, Loc.T("nowy_2"), g.OfferIsBetter ? Loc.T("lepszy") : "");
-        y = Item(p, y, g.OfferRarity, g.OfferTrait, true) + 6;
-        var cmp = Compare(p, (int)(p.Width - 24));
-        var c = p.Card(y, 2 + cmp.Count);
-        var verdict = g.OfferIsBetter ? Loc.T("nowy_jest_lepszej_jakosci")
-                    : g.OfferRarity == g.Equipped[slot] ? Loc.T("ta_sama_jakosc_inna_cecha") : Loc.T("nowy_jest_gorszej_jakosci");
-        p.Stripe(c, 0, g.OfferIsBetter ? Pal.Done : Pal.Todo);
-        p.Text(p.TextX(c), p.RowY(c, 0), verdict, g.OfferIsBetter ? Ink.Done : Ink.Dark, TextAlign.Left, c.End.X - 6 - p.TextX(c));
-        for (var i = 0; i < cmp.Count; i++)
-        {
-            p.Divider(c, 1 + i);
-            p.Text(p.TextX(c), p.RowY(c, 1 + i), cmp[i], Ink.Brand, TextAlign.Left, c.End.X - 6 - p.TextX(c));
-        }
-        p.Divider(c, 1 + cmp.Count);
-        p.Text(p.TextX(c), p.RowY(c, 1 + cmp.Count), Loc.T("cecha_2") + d.GearTraits[g.OfferTrait].Name, Ink.Dim, TextAlign.Left, c.End.X - 6 - p.TextX(c));
-    }
-
-    /// <summary>Co się zmieni po założeniu: cios (średnio), kryt, obrona - tylko to, co się zmienia (jak na GBA).</summary>
-    private List<string> Compare(PhonePainter p, int width)
-    {
-        var g = _g;
-        var slot = g.OfferSlot;
-        var now = g.WeaponBreakdown();
-        var next = g.WeaponBreakdown(-1, -1, slot, g.OfferRarity, g.OfferTrait);
-        var list = new List<string>();
-        if (now.Min != next.Min || now.Max != next.Max || now.Avg10 != next.Avg10)
-        {
-            var line = Loc.T("cios_2") + DamageHelp.CompareLine(new Message(), now, next).Text;
-            list.Add(p.F.Measure(line) <= width ? line : DamageHelp.CompareLine(new Message(), now, next, true).Text);
-        }
-        if (now.CritChance() != next.CritChance() || now.CritMax != next.CritMax) list.Add(DamageHelp.CompareCrit(new Message(), now, next).Text);
-        var old = g.D.Gear[slot * 3 + g.Equipped[slot]];
-        var gnew = g.D.Gear[slot * 3 + g.OfferRarity];
-        if (old.Stat == LifeLike.Core.Data.GearStat.Def && gnew.Value != old.Value)
-        {
-            int d0 = g.HeroDefense(), d1 = d0 - old.Value + gnew.Value;
-            list.Add(Loc.F("obr_z_ciosu", d0, d1, d0 / 2, d1 / 2));
-        }
-        return list;
-    }
-
-    private float Item(PhonePainter p, float y, int rarity, int trait, bool isNew)
-    {
-        var d = _g.D;
-        var card = p.CardH(y, 2 * PhonePainter.RowH + 8);
-        if (rarity < 0)
-        {
-            p.Text(p.TextX(card), p.RowY(card, 0), Loc.T("brak_2"), Ink.Dim);
-            return card.End.Y;
-        }
-        var gd = d.Gear[_g.OfferSlot * 3 + rarity];
-        var right = card.End.X - 6;
-        var tx = p.TextX(card);
-        var stripe = isNew ? Pal.Prog : Pal.Todo;
-        p.C.DrawRect(new Rect2(card.Position.X + 4, card.Position.Y + 6, 3, 2 * PhonePainter.RowH - 4), stripe);
-        var photo = new Vector2(tx - 2, card.Position.Y + 4);
-        p.Icon(Assets.Actors, Assets.FrameGear + rarity, Assets.Actor, photo);
-        tx += 34;
-        var pw = p.Pill(right, p.RowY(card, 0), d.GearRarities[rarity], rarity == 2 ? PillKind.Prog : rarity == 1 ? PillKind.Group : PillKind.Gray);
-        p.Text(tx, p.RowY(card, 0), gd.Name, Ink.Dark, TextAlign.Left, right - pw - 4 - tx);
-        p.Text(tx, p.RowY(card, 1), $"{UiText.GearStatName(gd.Stat)} +{gd.Value}, {d.GearTraits[trait].Short}", isNew ? Ink.Brand : Ink.Dim, TextAlign.Left, right - tx);
-        return card.End.Y;
+        var found = BackpackItem.Gear(slot, g.OfferRarity, g.OfferTrait);
+        var worn = g.Equipped[slot] >= 0 ? BackpackItem.Gear(slot, g.Equipped[slot], g.EquippedTrait[slot]) : default;
+        var full = g.BackpackFull();
+        var notes = new List<(string, Ink)>();
+        if (!worn.Empty) notes.Add((full ? Loc.F("karta_los_ziemia", d.Gear[slot * 3 + worn.Rarity].Name) : Loc.F("karta_los_plecak", d.Gear[slot * 3 + worn.Rarity].Name), Ink.Dim));
+        var xp = g.OfferDeclineXp();
+        if (xp > 0) notes.Add((Loc.F("karta_zostaw_nota", xp), Ink.Done));
+        if (g.OfferDropsHolster) notes.Add((g.Weapon2 >= 0 ? Loc.F("uwaga_kabura", d.Weapons[g.Weapon2].Name) : Loc.T("uwaga_kabura_pusta"), Ink.Late));
+        string[] labels =
+        [
+            Loc.T("bp_zaloz"),
+            full ? Loc.F("karta_plecak_pelny", g.BackpackCount(), g.BackpackSlots()) : Loc.F("karta_do_plecaka", g.BackpackCount(), g.BackpackSlots()),
+            Loc.T("zostaw"),
+        ];
+        FindCard.Draw(p, g, found, worn, notes, labels, full, Sel);
     }
 }

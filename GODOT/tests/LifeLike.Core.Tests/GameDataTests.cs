@@ -10,15 +10,15 @@ public class GameDataTests
     {
         Assert.Equal(12, D.Classes.Length); // v0.21.51 cz. 2: + 3 zawody z sekretnych zleceń
         Assert.Equal(9, D.OpenClassesCount);
-        Assert.Equal(22, D.Weapons.Length);
+        Assert.Equal(45, D.Weapons.Length); // v0.23.0: 22 dotychczasowych + 17 nowych broni + 2 noże (#84) + 4 artefakty
         Assert.Equal(47, D.Enemies.Length); // v0.21.52 cz. d: + 2 problemy i 4 bossów kontraktów mapy kariery
         Assert.Equal(12, D.StagesCount);
-        Assert.Equal(1, D.StartToolsMask);
+        Assert.Equal(1UL, D.StartToolsMask);
         Assert.Equal(19, D.StartClassesMask);
         Assert.Equal(32, D.DmgLevelsMask);
         Assert.Equal(8, D.DefLevelsMask);
         Assert.Equal(5, D.MaxHeroLevel);
-        Assert.Equal([40, 5, 5, 15, 35], D.DropWeights);
+        Assert.Equal([20, 5, 5, 15, 35], D.DropWeights); // v0.23.1: kawa o połowę rzadziej
         Assert.Equal(new[] { 12, 13, 0, 3 }, D.Stages[2].Pool); // v0.21.49 cz. 3: etapy 0-1 to Akt 0
         Assert.Equal(9, D.Stages[5].Boss);
         Assert.Equal(-1, D.Stages[2].Boss);
@@ -54,9 +54,9 @@ public class GameDataTests
         var dec = D.Enemies[D.EnemyIndex("decyzja")];
         Assert.True(dec.PhasePct == 50 && dec.PhaseHeal > 0 && dec.PhaseSummon == 1 && dec.PhaseName == "Odwołanie" && dec.Summon == D.EnemyIndex("wniosek"));
         Assert.Equal(D.EnemyIndex("decyzja"), D.Stages[1].Boss);
-        Assert.True(D.Rewards[^1].Kind == RewardKind.Act && D.Rewards[^1].Index == 3);
-        Assert.True(D.TutorialSteps.Length > 6 && D.TutorialUnlocks.Length == 6 && D.TutorialSteps[0].Msg.From == "Kierownik Marek");
-        Assert.True(D.TutorialSteps.Any(t => t.GodotOnly) && D.TutorialSteps.Any(t => t.NeedsInvestor) && D.TutorialSteps.Any(t => t.Link == "stats"));
+        Assert.True(D.Rewards[^2].Kind == RewardKind.Act && D.Rewards[^2].Index == 3 && D.Rewards[^1].Kind == RewardKind.Belt); // v0.23.0: pas z kaburą na końcu listy nagród
+        Assert.True(D.TutorialSteps.Length <= 6 && D.TutorialUnlocks.Length == 11 && D.TutorialSteps[0].Msg.From == "Kierownik Marek");
+        Assert.True(D.TutorialUnlocks.Any(t => t.GodotOnly) && D.TutorialUnlocks.Any(t => t.Link == "stats")); // v0.23.0: opcje i statystyki w dymkach
     }
 
     [Fact]
@@ -80,10 +80,10 @@ public class GameDataTests
         Assert.Equal("Zatrucie", D.Statuses[(int)StatusEffect.Poison].Name);
         Assert.Equal("-1 HP/turę", D.Statuses[(int)StatusEffect.Poison].Effect);
         Assert.Equal(3, D.PaperDelay);
-        Assert.True(D.CritBasePct == 5 && D.CritPerLuckPct == 3 && D.CritMultiplier == 2 && D.DodgeMaxPct == 20);
-        Assert.True(D.ThermosCapacity == 3 && D.CoffeeHeal == 8 && D.BotDrinkBelowPct == 40 && D.GearDeclineXp == 1);
+        Assert.True(D.CritBasePct == 5 && D.CritPerLuckPct == 2 && D.CritMaxPct == 35 && D.CritMultiplier == 2 && D.DodgeMaxPct == 20);
+        Assert.True(D.ThermosCapacity == 2 && D.CoffeeHeal == 11 && D.BotDrinkBelowPct == 40 && D.GearDeclineXp == 1);
         Assert.Equal(107, D.Stages[2].HpPct);
-        Assert.Equal("v0.21.54", D.Version);
+        Assert.Equal("v0.23.2", D.Version);
     }
 
     [Fact]
@@ -91,11 +91,11 @@ public class GameDataTests
     {
         Assert.Equal(TraitEffect.Str, D.GearTraits[5].Effect);
         Assert.Equal(TraitEffect.Intel, D.GearTraits[7].Effect);
-        Assert.Equal(7, D.Upgrades.Length);
+        Assert.Equal(8, D.Upgrades.Length); // v0.23.0: + Narzędzia (rzadkość broni na start)
         Assert.Equal(UpgradeEffect.Luck, D.Upgrades[5].Effect);
         Assert.Equal(UpgradeEffect.GearPct, D.Upgrades[6].Effect); // v0.21.52 cz. c: Warsztaty – stat. broni w węźle Rzemieślnik
-        Assert.Equal(10, D.Tools.Length); // v0.21.51 cz. 2: + Młot Zenka, Poziomica mistrza (sekretne)
-        Assert.Equal(0b11_0000_0000, D.SecretToolsMask);
+        Assert.Equal(33, D.Tools.Length); // 10 (v0.21.51 cz. 2: + Młot Zenka, Poziomica mistrza) + 17 nowych broni v0.23.0 + 2 noże (#84) + 4 artefakty
+        Assert.Equal(0b11_0000_0000UL | (1UL << 21) | (1UL << 28) | (1UL << 32), D.SecretToolsMask); // + Pilarka tarczowa, Nóż majstra seniora (#84), Łom Ostatniej Deski
         Assert.Equal(new Perk(PerkEffect.Hp, 2), D.Badges[D.BadgeBezUsterek].Bonus);
         Assert.Equal(new Perk(PerkEffect.ToolPct, 10), D.Badges[D.BadgeKolekcjoner].Bonus);
         Assert.Equal(new Perk(PerkEffect.XpPct, 10), D.Badges[D.BadgeOsiedle].Bonus);
@@ -146,7 +146,7 @@ public class GameDataTests
     {
         var json = File.ReadAllText(TestData.GoldenPath("game.json"))
             .Replace("\"effect\": \"cooldown\"", "\"effect\": \"nowa_cecha\"")
-            .Replace("\"effect\": \"pickups\"", "\"effect\": \"nowe_szkolenie\"")
+            .Replace("\"effect\": \"start_rarity\"", "\"effect\": \"nowe_szkolenie\"") // v0.23.0: Dostawy już bez znajdziek
             .Replace("\"effect\": \"xp_pct\"", "\"effect\": \"nowe_uprawnienie\"");
         var d = GameData.Parse(json);
         Assert.Equal(TraitEffect.Unknown, d.GearTraits[4].Effect);

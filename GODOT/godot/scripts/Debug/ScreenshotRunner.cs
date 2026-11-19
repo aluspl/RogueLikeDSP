@@ -34,6 +34,7 @@ public sealed class ScreenshotRunner
         await new DebugScenes(_app).Setup(scene);
         await DebugRunner.Frames(root, 50);
         if (bench > 0f) await Bench(root, scene, bench);
+        if (_app.Nodes.Phone.IsOpen && _app.Nodes.Phone.Overflow > 0) GD.Print($"OVERFLOW {scene}: {_app.Nodes.Phone.Overflow:0} px ({_app.Nodes.Phone.Current?.GetType().Name})");
         var img = root.GetViewport().GetTexture().GetImage();
         if (img.GetWidth() < 1000) img.Resize(img.GetWidth() * 2, img.GetHeight() * 2, Image.Interpolation.Nearest);
         img.SavePng(path);

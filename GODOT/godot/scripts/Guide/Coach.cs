@@ -11,10 +11,11 @@ namespace LifeLike.Game.Guide;
 
 /// <summary>
 /// Samouczek menu (#25, run_tutorial / run_unlocks na GBA): przy pierwszym wejściu na tytuł i wybór zawodu dymki
-/// Kierownika Marka po kolei nad elementami ekranu (GameData.TutorialSteps, te same teksty co na GBA), potem po jednym
-/// dymku przy pierwszym odblokowaniu nowości (Meta.PendingUnlock: Respekt, codzienna budowa, Akt 0, tryb inwestora,
-/// nowy zawód). A / Spacja / dotknięcie = dalej, B / Esc / „Pomiń” = pomiń resztę, I / „Statystyki” przy kroku
-/// o statystykach otwiera ich opis (po powrocie samouczek trwa dalej). Flagi w profilu (Meta.TutorialDone, MarkUnlock).
+/// Kierownika Marka po kolei nad elementami ekranu (GameData.TutorialSteps, te same teksty co na GBA; v0.23.0: do 3 na
+/// ekran), potem przy kolejnych wejściach po jednym dymku nowości (Meta.PendingUnlock: Respekt, codzienna budowa, Akt 0,
+/// tryb inwestora, nowy zawód, sekret, Szkolenia, opcje, Jak grać, pamiątka, statystyki). A / Spacja / dotknięcie =
+/// dalej, B / Esc / „Pomiń” = pomiń resztę, I / „Statystyki” przy dymku o statystykach otwiera ich opis (po powrocie
+/// dymek wraca). Flagi w profilu (Meta.TutorialDone, MarkUnlock).
 /// </summary>
 public sealed class Coach
 {
@@ -123,7 +124,7 @@ public sealed class Coach
         {
             Meta.MarkUnlock(P, _unlock, _cls);
             _app.Session.Save();
-            NextUnlock();
+            Hide(); // v0.23.0: jeden dymek na wejście na ekran - kolejne przy następnych wejściach
         }
     }
 
@@ -150,12 +151,18 @@ public sealed class Coach
     {
         Meta.TutorialDone(P, _screen);
         _app.Session.Save();
-        NextUnlock();
+        Hide(); // dymki nowości dopiero przy następnym wejściu
+    }
+
+    private void Hide()
+    {
+        _mode = 0;
+        V.Visible = false;
     }
 
     private void NextUnlock()
     {
-        _unlock = Meta.PendingUnlock(D, P, _screen, out _cls);
+        _unlock = Meta.PendingUnlock(D, P, _screen, out _cls, true);
         _mode = _unlock >= 0 ? 2 : 0;
         if (_mode == 0)
         {
@@ -175,7 +182,7 @@ public sealed class Coach
         V.Lines = Array.ConvertAll(msg.Lines, ButtonNames.Localize);
         V.Avatar = D.Classes[0].Frame;   // Kierownik budowy
         V.Single = _mode == 2;
-        V.Link = _mode == 1 && s.Link.Length > 0;
+        V.Link = s.Link.Length > 0;
         V.Last = _mode == 1 && _k == _steps.Count - 1;
         V.Pill = _mode == 1 ? $"{_k + 1}/{_steps.Count}" : _cls >= 0 && !secret ? D.Classes[_cls].Name : Loc.T("nowosc");
         V.PillBrand = _mode == 2;

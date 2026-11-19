@@ -188,11 +188,15 @@ public class InspectorMasteryTests
             m.Mastery = MasteryBit.Weapon;
             var b = TestData.NewGame();
             b.NewRun(c, 9, 1, m);
-            Assert.True(b.CritPct() == a.CritPct() + D.MasteryClasses[c].WeaponPerk.Value && b.MasterWeapon() && !a.MasterWeapon());
+            // v0.23.0: broń mistrza jest Mistrzowska – stałe profity (Ostrze dodaje kryt)
+            var perkCrit = D.PerkValue(D.MasterPerkMask(D.Classes[c].Weapon), ToolTraitEffect.Crit);
+            Assert.Equal(D.MasterPerkMask(D.Classes[c].Weapon), b.WeaponPerks);
+            Assert.True(b.CritPct() == a.CritPct() + D.MasteryClasses[c].WeaponPerk.Value + perkCrit && b.MasterWeapon() && !a.MasterWeapon());
             Assert.Equal(b.CritPct(), b.WeaponBreakdown().CritChance());
             Assert.Equal(b.CritPct(), DmgBreakdown.ForClass(D, c, m).CritChance());
             a.WeaponOverride = D.Tools[0].Weapon;
             b.WeaponOverride = D.Tools[0].Weapon;
+            b.WeaponPerks = 0; // inne narzędzie – bez profitów broni mistrza
             Assert.Equal(a.CritPct(), b.CritPct());
         }
     }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Godot;
@@ -40,6 +41,7 @@ public sealed class SmokeTest
     private string _career = "";
     private int _filters;
     private int _depth;
+    private string _weapons = "-";
 
     public SmokeTest(App app) => _app = app;
 
@@ -89,16 +91,20 @@ public sealed class SmokeTest
             await ExerciseStatsAndHelp();
             await ExerciseDamageRun();
             await ExerciseExtras();
+            var weapons = new SmokeWeapons(_app); // v0.23.0: Cios B, zamiana broni, karta problemu z mnożnikiem
+            await weapons.Run();
+            _weapons = weapons.Summary;
             if (!_pathOk) throw new Exception("wybór ścieżki: druga oferta nie trafiła na etap");
             if (_boons == 0 || _boonList == 0) throw new Exception($"premie po etapie: wybrane {_boons}, lista w telefonie {_boonList}");
             if (!_inputLock) throw new Exception("blokada wejścia: nie sprawdzona");
+            if (_levelUps > 0 && _app.Nodes.Announce.Pushed == 0) throw new Exception("ogłoszenia: awans bez ogłoszenia"); // v0.23.0
             await ExercisePortrait();
             var missing = Sfx.Missing();
             if (missing.Length > 0) throw new Exception("brak dźwięków: " + missing);
             if (DrawErrors.Count > 0) throw new Exception($"błędy rysowania: {DrawErrors.Count}, ostatni: {DrawErrors.Last}");
             GD.Print($"SMOKE {(ok ? "OK" : "FAIL")}: dane {s.Data.Version}, zawody {s.Data.Classes.Length}, etap {stage + 1}, " +
                      $"dzień {g.Turns}, HP {g.Hero.Hp}/{g.Hero.MaxHp}, wynik {g.Score}, budżet {g.Cash}, kroki {_steps}, " +
-                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps}, ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, tydzień {(_weekly ? "tak" : "nie")}, podsumowanie {_recapRows} wierszy, fabuła {_story} wątków, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, rozpiska obrażeń {(_damage ? "tak" : "nie")}, samouczek {_tutorial} dymków + nowości {_unlocks}, Akt 0 {(_act0 ? "tak" : "nie")} (dokumenty {_docs}, druga faza {_phases}), premie {_boons} (lista {_boonList}, synergie {g.SynergyMask()}, blokada wejścia {(_inputLock ? "tak" : "nie")}), wydarzenia {_events} (ekran {(_extras ? "tak" : "nie")}), Jak grać {(_help ? "tak" : "nie")}, cele {_goals}, kariera {_career}, filtry {_filters}, głębia {_depth}, sekrety {_secrets}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
+                     $"paczki {_offers}, termos {_drinks}, A/B {_holds}, pogoda {_weathers}, brygada {_helpers}, naprawy {_repairs}, awanse {_levelUps} (ogłoszenia {_app.Nodes.Announce.Pushed}), ścieżka {(_pathOk ? "tak" : "nie")}, budowa dnia {(_daily ? "tak" : "nie")}, tydzień {(_weekly ? "tak" : "nie")}, podsumowanie {_recapRows} wierszy, fabuła {_story} wątków, harmonogram domu {(_house ? "tak" : "nie")}, inwestor {(_investor ? "tak" : "nie")}, Respekt {s.Profile.RespectTotal} (ranga {_respectBought}), nagroda {(_reward >= 0 ? s.Data.Rewards[_reward].Name : "-")}, nowe zawody {_newClasses}, akty {_acts}, podziały {_splits}, wybuchy {_blasts}, strzały {_shots}, statystyki {(_stats ? "tak" : "nie")}, rozpiska obrażeń {(_damage ? "tak" : "nie")}, samouczek {_tutorial} dymków + nowości {_unlocks}, Akt 0 {(_act0 ? "tak" : "nie")} (dokumenty {_docs}, druga faza {_phases}), premie {_boons} (lista {_boonList}, synergie {g.SynergyMask()}, blokada wejścia {(_inputLock ? "tak" : "nie")}), wydarzenia {_events} (ekran {(_extras ? "tak" : "nie")}), Jak grać {(_help ? "tak" : "nie")}, cele {_goals}, kariera {_career}, filtry {_filters}, głębia {_depth}, bronie {_weapons}, sekrety {_secrets}, prolog {(_prologue ? "tak" : "nie")}, dotyk {(_touch ? "tak" : "nie")}, pion {(_portrait ? "tak" : "nie")}, postać {(_character ? "tak" : "nie")}, zabite w profilu {s.Profile.KillsTotal}, moce {s.Profile.PowersTotal}, " +
                      $"ekran {Flow.Current.GetType().Name}");
             _app.Root.GetTree().Quit(ok ? 0 : 1);
         }
@@ -148,29 +154,45 @@ public sealed class SmokeTest
             if (coach.Active || seen != want || Meta.TutorialPending(s.Profile, screen)) throw new Exception($"samouczek ekranu {screen} niedokończony ({seen}/{want})");
             _tutorial += seen;
         }
-        // dymki nowości: każdy raz, po jednym
+        // dymki nowości: każdy raz, po jednym na wejście na ekran (v0.23.0)
         s.Profile.RespectTotal = 4;
         s.Profile.Runs = 1;
         s.Profile.Wins = d.Rewards.Length;
         s.Profile.Rewards = (byte)d.Rewards.Length;
+        s.Profile.Xp = 100000;
+        var ids = new HashSet<string>();
         for (var pass = 0; pass < 2; pass++)
         {
             var got = 0;
-            foreach (var screen in new[] { 0, 1 })
+            for (var visit = 0; visit < 30; visit++)
             {
-                if (screen == 0) Flow.Title.Open();
-                else Flow.ClassSelect.Open();
-                Screen cur = screen == 0 ? Flow.Title : Flow.ClassSelect;
-                for (var k = 0; k < 20 && coach.Active; k++)
+                var shown = 0;
+                foreach (var screen in new[] { 0, 1 })
                 {
+                    if (screen == 0) Flow.Title.Open();
+                    else Flow.ClassSelect.Open();
+                    Screen cur = screen == 0 ? Flow.Title : Flow.ClassSelect;
+                    if (!coach.Active) continue;
                     await DebugRunner.Frames(_app.Root, 1);
-                    got++;
-                    cur.HandleInput(InputCmd.Of(k % 2 == 0 ? GameAction.A : GameAction.B));
+                    ids.Add(coach.CurrentId);
+                    shown++;
+                    if (coach.CurrentId == "stats")   // link: opis statystyk i powrót do dymka
+                    {
+                        cur.HandleInput(InputCmd.Of(GameAction.Info));
+                        if (Flow.Current != Flow.Stats) throw new Exception("dymek statystyk: I nie otwiera opisu");
+                        Flow.Stats.HandleInput(InputCmd.Of(GameAction.B));
+                        if (Flow.Current != Flow.ClassSelect || coach.CurrentId != "stats") throw new Exception("dymek statystyk: po opisie nie wrócił");
+                    }
+                    cur.HandleInput(InputCmd.Of(visit % 2 == 0 ? GameAction.A : GameAction.B));
+                    if (coach.Active) throw new Exception($"dymek nowości {coach.CurrentId}: drugi na tym samym wejściu");
                 }
+                got += shown;
+                if (shown == 0) break;
             }
             var reward = 0;
             foreach (var c in d.Classes) reward += c.Reward ? 1 : 0;
-            if (pass == 0 && got != 4 + reward) throw new Exception($"dymki nowości: {got} zamiast {4 + reward}");
+            var want = 9 + reward; // respect, daily, act0, investor, training, options, help, keepsake, stats + nowe zawody
+            if (pass == 0 && got != want) throw new Exception($"dymki nowości: {got} zamiast {want} ({string.Join(",", ids)})");
             if (pass == 1 && got != 0) throw new Exception("dymki nowości pokazują się drugi raz");
             _unlocks += got;
         }
@@ -255,17 +277,39 @@ public sealed class SmokeTest
         if (midStage) return;
         _boons++;
         if (_boonList > 0) return;
-        Flow.Phone.Open(Phone.PhoneTabs.Gear, true);
-        Flow.Phone.HandleInput(InputCmd.Of(GameAction.R));
-        if (Flow.Current != Flow.BoonList) throw new Exception("telefon > Sprzęt: R nie otwiera listy premii");
+        Flow.Phone.Open(Phone.PhoneTabs.Gear, true); // v0.23.2 (UI 2): Sprzęt = Postać, Q – premie
+        Flow.Character.HandleInput(InputCmd.Of(GameAction.TabPrev));
+        if (Flow.Current != Flow.BoonList) throw new Exception("Postać: Q nie otwiera listy premii");
         await DebugRunner.Frames(_app.Root, 1);
         Flow.BoonList.HandleInput(InputCmd.Of(GameAction.Right));
         if (Flow.BoonList.Page.Mode != 1) throw new Exception("lista premii: strzałka nie przełącza na synergie");
         await DebugRunner.Frames(_app.Root, 1);
         Flow.BoonList.HandleInput(InputCmd.Of(GameAction.B));
-        if (Flow.Current != Flow.Phone) throw new Exception("lista premii: B nie wraca do telefonu");
+        if (Flow.Current != Flow.Character) throw new Exception("lista premii: B nie wraca do Postaci");
         _boonList++;
         Flow.Schedule.Open();
+    }
+
+    /// <summary>v0.23.2 (UI 2): Esc = pauza; Budowa i Ustawienia z pauzy wracają do pauzy, Esc wznawia, Wyjdź pyta (Anuluj wraca).</summary>
+    private async Task ExercisePause(LifeLike.Core.Game g, int turns)
+    {
+        Flow.Game.HandleInput(InputCmd.Of(GameAction.Cancel));
+        if (Flow.Current != Flow.Pause) throw new Exception("pauza: Esc na mapie nie otwiera pauzy");
+        await DebugRunner.Frames(_app.Root, 2);
+        var stay = Flow.Pause.Page.Sel;
+        Flow.Pause.Pick(Phone.Pages.PausePage.Site);
+        if (Flow.Current != Flow.Phone) throw new Exception("pauza: Budowa nie otwiera telefonu");
+        Flow.Phone.HandleInput(InputCmd.Of(GameAction.Cancel));
+        if (Flow.Current != Flow.Pause) throw new Exception("pauza: telefon nie wraca do pauzy");
+        Flow.Pause.Pick(Phone.Pages.PausePage.Settings);
+        Flow.Settings.HandleInput(InputCmd.Of(GameAction.Cancel));
+        if (Flow.Current != Flow.Pause) throw new Exception("pauza: Ustawienia nie wracają do pauzy");
+        Flow.Pause.Pick(Phone.Pages.PausePage.Quit);
+        if (!Flow.Pause.Page.Confirming) throw new Exception("pauza: Wyjdź do menu bez pytania");
+        Flow.Pause.HandleInput(InputCmd.Of(GameAction.B));
+        if (Flow.Pause.Page.Confirming || Flow.Current != Flow.Pause) throw new Exception("pauza: Anuluj nie wraca do listy");
+        Flow.Pause.HandleInput(InputCmd.Of(GameAction.Cancel));
+        if (Flow.Current != Flow.Game || g.Turns != turns || stay != 0) throw new Exception("pauza: Esc nie wznawia gry albo zużyła turę");
     }
 
     /// <summary>
@@ -312,7 +356,7 @@ public sealed class SmokeTest
                 if (Flow.Current != Flow.PrologueMessage) throw new Exception("prolog nie przeszedł do SMS-a");
                 Flow.PrologueMessage.HandleInput(InputCmd.Of(GameAction.Start));
                 if (Flow.Current != Flow.Help) throw new Exception("po prologu brak ekranu Jak grać");
-                for (var k = 0; k < 13 && Flow.Current == Flow.Help; k++) Flow.Help.HandleInput(InputCmd.Of(GameAction.A)); // 13 stron Jak grać (v0.21.53: filtry ekranu, v0.21.54: widok i światło)
+                for (var k = 0; k < 14 && Flow.Current == Flow.Help; k++) Flow.Help.HandleInput(InputCmd.Of(GameAction.A)); // 14 stron Jak grać (v0.21.53: filtry ekranu, v0.21.54: widok i światło, v0.23.0: bronie)
                 if (Flow.Current == Flow.Help) throw new Exception("Jak grać: A nie przechodzi dalej");
                 if (!_app.Session.Profile.HasFlag(Profile.FlagPrologueSeen)) throw new Exception("prolog nie zapisał się w profilu");
                 _prologue = true;
@@ -541,7 +585,10 @@ public sealed class SmokeTest
             _app.AfterAction(true);
         }
         if (Weekly.Best(s.Data, s.Profile, week) != g.Score || s.Profile.WeeklyRuns == 0) throw new Exception("tydzień: brak wyniku w profilu");
-        if (Flow.Current == Flow.EndMessage) Flow.EndMessage.HandleInput(InputCmd.Of(GameAction.A));
+        // v0.22.0 (UX A): koniec budowy -> rozmowa z Kierownikiem Markiem; „Szczegóły budowy” -> podsumowanie -> z powrotem
+        if (Flow.Current != Flow.BetweenRuns) throw new Exception("tydzień: brak rozmowy między budowami");
+        if (Flow.BetweenRuns.CanContinue || Flow.BetweenRuns.Page.Replies.Contains(Phone.Pages.QuickReply.NextPlus)) throw new Exception("tydzień: NG+ w rozmowie");
+        Flow.BetweenRuns.Reply(Phone.Pages.QuickReply.Details);
         if (Flow.Current != Flow.Recap) throw new Exception("porażka: brak podsumowania budowy");
         var page = Flow.Recap.Page;
         _recapRows = page.Count;
@@ -550,7 +597,9 @@ public sealed class SmokeTest
         await DebugRunner.Frames(_app.Root, 1);
         if (page.Count > 12 && page.Top == 0) throw new Exception("podsumowanie: nie przewija się");
         Flow.Recap.HandleInput(InputCmd.Of(GameAction.Start));
-        if (Flow.Current != Flow.End || _app.Nodes.EndView.CanContinue) throw new Exception("tydzień: plansza końcowa z NG+");
+        if (Flow.Current != Flow.BetweenRuns) throw new Exception("podsumowanie: brak powrotu do rozmowy");
+        Flow.BetweenRuns.HandleInput(InputCmd.Of(GameAction.Start)); // kolejna budowa: zwykła, nie kolejny tydzień
+        if (Flow.Current != Flow.Career && Flow.Current != Flow.ClassSelect) throw new Exception($"tydzień: kolejna budowa prowadzi do {Flow.Current?.GetType().Name}");
         Flow.Weekly.Open(true);
         Flow.Weekly.Submit();
         if (!Flow.Weekly.Page.Note.Contains("pb.weekly.")) throw new Exception("tydzień: brak tabeli tygodnia (zaślepka)");
@@ -600,12 +649,52 @@ public sealed class SmokeTest
             _app.AfterAction(true);
         }
         if (Daily.Best(s.Data, s.Profile, day) != g.Score) throw new Exception("codzienna budowa: brak wyniku dnia w profilu");
-        if (Flow.Current == Flow.EndMessage) Flow.EndMessage.HandleInput(InputCmd.Of(GameAction.A));
-        if (Flow.Current == Flow.Recap) Flow.Recap.HandleInput(InputCmd.Of(GameAction.Start)); // podsumowanie budowy (#33)
-        if (Flow.Current == Flow.End && _app.Nodes.EndView.CanContinue) throw new Exception("codzienna budowa: NG+ nie powinno być");
+        if (Flow.Current != Flow.BetweenRuns) throw new Exception("codzienna budowa: brak rozmowy między budowami");
+        if (Flow.BetweenRuns.Page.Replies.Contains(Phone.Pages.QuickReply.NextPlus)) throw new Exception("codzienna budowa: NG+ nie powinno być");
+        if (!Flow.BetweenRuns.Page.Chat.Contains(Loc.F("miedzy_wynik", g.Score))) throw new Exception("rozmowa: brak wyniku budowy");
+        // Szkolenia z rozmowy wracają do rozmowy (nie do tytułu – NG+ i „Do tego:” zostają)
+        Flow.BetweenRuns.Reply(Phone.Pages.QuickReply.Training);
+        if (Flow.Current != Flow.Profile) throw new Exception("rozmowa: Pokaż Szkolenia nie otwiera telefonu");
+        Flow.Profile.HandleInput(InputCmd.Of(GameAction.B));
+        if (Flow.Current != Flow.BetweenRuns) throw new Exception($"Szkolenia z rozmowy: powrót do {Flow.Current?.GetType().Name}");
+        // dwa szybkie zakupy pod rząd: Marek odpisuje, oferta przechodzi na następną rzecz, doświadczenie schodzi o oba koszty
+        s.Profile.Xp = 100000;
+        var c1 = Spend.QuickKind(s.Data, s.Profile, out _, out _);
+        Flow.BetweenRuns.Reply(Phone.Pages.QuickReply.Buy);
+        var c2 = Spend.QuickKind(s.Data, s.Profile, out _, out _);
+        Flow.BetweenRuns.Reply(Phone.Pages.QuickReply.Buy);
+        if (c1 < 0 || c2 < 0 || s.Profile.Xp != 100000 - c1 - c2) throw new Exception($"rozmowa: zakupy {c1}+{c2}, zostało {s.Profile.Xp}");
+        if (Flow.BetweenRuns.Page.Chat.Count(t => t.StartsWith(Loc.F("miedzy_kupione", "").Split(' ')[0])) != 2) throw new Exception("rozmowa: Marek nie odpisał po zakupach");
         await DebugRunner.Frames(_app.Root, 2);
+        Flow.BetweenRuns.HandleInput(InputCmd.Of(GameAction.Start));
+        if (Flow.Current != Flow.Career && Flow.Current != Flow.ClassSelect) throw new Exception("codzienna budowa: kolejna budowa nie prowadzi do zwykłej budowy");
+        // v0.22.1 (#74): oferta węzła drzewka – „Pokaż Szkolenia” otwiera od razu stronę Drzewko (kopia profilu)
+        var keep = s.Profile;
+        s.Profile = Profile.FromBytes(keep.ToBytes());
+        try
+        {
+            s.Profile.Xp = 1000000;
+            while (Spend.QuickBuy(s.Data, s.Profile)) { }
+            s.Profile.Xp = 1000000;
+            var node = Spend.TreePick(s.Data, s.Profile);
+            s.Profile.Xp = node >= 0 ? s.Data.TreeNodes[node].Cost : 0;
+            Flow.BetweenRuns.Open(true);
+            Flow.BetweenRuns.Reply(Phone.Pages.QuickReply.Training);
+            if (_app.Nodes.Phone.Current is not Phone.ProfileTabs.TrainingTab tt || tt.Page != Phone.ProfileTabs.TrainingTab.TreePage)
+                throw new Exception("rozmowa: oferta drzewka nie otwiera strony Drzewko");
+            var picksBefore = SkillTree.Picked(s.Data, s.Profile); // v0.22.1 (#70): przełącznik gałęzi zmienia gałąź, niczego nie wybiera
+            tt.TapRow(Phone.ProfileTabs.TrainingTab.BranchTap(2));
+            if (tt.Branch != 2 || SkillTree.Picked(s.Data, s.Profile) != picksBefore) throw new Exception("drzewko: przełącznik gałęzi nie działa");
+            tt.TapRow(Phone.ProfileTabs.TrainingTab.BranchTap(2));
+            if (tt.Branch != 2 || SkillTree.Picked(s.Data, s.Profile) != picksBefore) throw new Exception("drzewko: drugie stuknięcie w gałąź wybrało węzeł");
+            Flow.Profile.HandleInput(InputCmd.Of(GameAction.B));
+        }
+        finally
+        {
+            s.Profile = keep;
+        }
         _daily = true;
-        // wygrana: SMS -> harmonogram domu -> link (bez przeglądarki) -> plansza końcowa
+        // wygrana: harmonogram domu -> link (bez przeglądarki) -> rozmowa z NG+ -> szczegóły -> rozmowa
         s.ClassId = 0;
         _app.StartRun();
         new DebugScenes(_app).AdvanceMessages();
@@ -615,17 +704,19 @@ public sealed class SmokeTest
             _app.AfterAction(true);
             new DebugScenes(_app).AdvanceMessages();
         }
-        if (Flow.Current != Flow.EndMessage) throw new Exception("wygrana: brak SMS-a z odbioru");
-        Flow.EndMessage.HandleInput(InputCmd.Of(GameAction.A));
         if (Flow.Current != Flow.HouseSchedule) throw new Exception("wygrana: brak harmonogramu domu");
         Flow.HouseSchedule.OpenBrowser = false;
         await DebugRunner.Frames(_app.Root, 2);
         Flow.HouseSchedule.HandleInput(InputCmd.Of(GameAction.Select));
         if (Flow.HouseSchedule.LinkOpened != 1) throw new Exception("harmonogram domu: link nie działa");
         Flow.HouseSchedule.HandleInput(InputCmd.Of(GameAction.Start));
+        if (Flow.Current != Flow.BetweenRuns || !Flow.BetweenRuns.Page.Replies.Contains(Phone.Pages.QuickReply.NextPlus)) throw new Exception("po harmonogramie domu brak rozmowy z NG+");
+        Flow.BetweenRuns.Reply(Phone.Pages.QuickReply.Details);
         if (Flow.Current != Flow.Recap || Flow.Recap.Page.Count < 10) throw new Exception("wygrana: brak podsumowania budowy");
+        foreach (var note in Session.EndNotes.Of(s)) // „i N więcej w szczegółach” – pełna lista w podsumowaniu
+            if (!Flow.Recap.Page.Has(note)) throw new Exception($"podsumowanie: brak „{note}”");
         Flow.Recap.HandleInput(InputCmd.Of(GameAction.Start));
-        if (Flow.Current != Flow.End || !_app.Nodes.EndView.CanContinue) throw new Exception("po harmonogramie domu brak planszy końcowej z NG+");
+        if (Flow.Current != Flow.BetweenRuns) throw new Exception("wygrana: podsumowanie nie wraca do rozmowy");
         await DebugRunner.Frames(_app.Root, 2);
         _house = true;
         Flow.Title.Open();
@@ -714,6 +805,7 @@ public sealed class SmokeTest
             Flow.Settings.HandleInput(InputCmd.Of(GameAction.Cancel));
             if (Flow.Current != Flow.Game || g.Turns != turns) throw new Exception("ustawienia zużyły turę albo nie wróciły do gry");
             GameSettings.Music = music;
+            await ExercisePause(g, turns);
             _touch = true;
         }
         finally
@@ -757,7 +849,7 @@ public sealed class SmokeTest
         s.ClassId = 1;
         _app.StartRun();
         var scenes = new DebugScenes(_app);
-        for (var guard = 0; guard < 60 && Flow.Current != Flow.EndMessage; guard++)
+        for (var guard = 0; guard < 60 && Flow.Current != Flow.HouseSchedule && Flow.Current != Flow.BetweenRuns; guard++)
         {
             scenes.AdvanceMessages();
             if (Flow.Current == Flow.Prologue) Flow.Prologue.HandleInput(InputCmd.Of(GameAction.A));
@@ -767,7 +859,7 @@ public sealed class SmokeTest
             _app.AfterAction(true);
             await DebugRunner.Frames(_app.Root, 1);
         }
-        if (Flow.Current != Flow.EndMessage || s.Game.St != GameStatus.Won) throw new Exception("skrót nie doprowadził do odbioru");
+        if (Flow.Current != Flow.HouseSchedule || s.Game.St != GameStatus.Won) throw new Exception("skrót nie doprowadził do odbioru");
         if (before < Meta.RewardsAvailable(d))
         {
             if (p.Rewards != before + 1 || s.LastReward != before) throw new Exception("wygrana nie odblokowała nagrody za odbiór");
@@ -1135,6 +1227,38 @@ public sealed class SmokeTest
             await DebugRunner.Frames(_app.Root, 2);
             Flow.ClassSelect.Open();
             await DebugRunner.Frames(_app.Root, 2);
+            // v0.22.1 (#74): „Szczegóły” z klawiatury / pada (I), zostają po powrocie ze Statystyk, B zamyka
+            var csv = _app.Nodes.ClassSelectView;
+            Flow.ClassSelect.HandleInput(InputCmd.Of(GameAction.Info));
+            if (!csv.Details) throw new Exception("pion: I nie otwiera Szczegółów zawodu");
+            Flow.ClassSelect.HandleInput(InputCmd.Of(GameAction.Info));
+            if (Flow.Current != Flow.Stats) throw new Exception("pion: I w Szczegółach nie otwiera Statystyk");
+            Flow.Stats.HandleInput(InputCmd.Of(GameAction.B));
+            if (Flow.Current != Flow.ClassSelect || !csv.Details) throw new Exception("pion: po Statystykach Szczegóły zamknięte");
+            Flow.ClassSelect.HandleInput(InputCmd.Of(GameAction.B));
+            if (Flow.Current != Flow.ClassSelect || csv.Details) throw new Exception("pion: B nie zamyka Szczegółów");
+            // v0.22.1 (#74): obrót przy telefonie – banery z dołu (pion) przechodzą w kolumnę obok telefonu (poziom)
+            var bn = _app.Nodes.Banners;
+            Flow.Profile.Open(0, true);
+            await DebugRunner.Frames(_app.Root, 2);
+            if (!bn.Bottom) throw new Exception("pion: banery przy telefonie nie od dołu");
+            root.Size = new Vector2I(1280, 720);
+            Layout.Refresh();
+            await DebugRunner.Frames(_app.Root, 2);
+            if (bn.Bottom || !bn.Compact) throw new Exception("obrót: banery zostały w układzie pionowym");
+            root.Size = new Vector2I(1290, 2796);
+            Layout.Refresh();
+            await DebugRunner.Frames(_app.Root, 2);
+            if (!bn.Bottom) throw new Exception("obrót z powrotem: banery nie od dołu");
+            if (Layout.HudScale > 1f) throw new Exception($"telefon: HUD w skali {Layout.HudScale} zamiast 1");
+            root.Size = new Vector2I(1640, 1460); // v0.22.1 (#74): rozłożony składak w poziomie – większy HUD
+            Layout.Refresh();
+            await DebugRunner.Frames(_app.Root, 2);
+            if (!Layout.Wide || Layout.HudScale <= 1f) throw new Exception($"składak: HUD w skali {Layout.HudScale} (UI {Layout.UiSize})");
+            root.Size = new Vector2I(1290, 2796);
+            Layout.Refresh();
+            await DebugRunner.Frames(_app.Root, 2);
+            Flow.ClassSelect.Open();
             _app.StartRun();
             new DebugScenes(_app).AdvanceMessages();
             while (Flow.Current != Flow.Game && Flow.Current is not null)
@@ -1146,7 +1270,8 @@ public sealed class SmokeTest
             await DebugRunner.Frames(_app.Root, 2);
             Flow.Phone.Open(2, true);
             await DebugRunner.Frames(_app.Root, 2);
-            if (_app.Nodes.Phone.Size != Layout.UiSize) throw new Exception("telefon pionowo nie jest na cały ekran");
+            var onScreen = _app.Nodes.Phone.Size * _app.Nodes.Phone.Scale.X; // v0.23.2: telefon powiększony (Zoom)
+            if (onScreen.X < Layout.UiSize.X - 2 || onScreen.Y < Layout.UiSize.Y) throw new Exception("telefon pionowo nie jest na cały ekran");
             Flow.Settings.Open(Flow.Game, true);
             await DebugRunner.Frames(_app.Root, 2);
             Flow.Title.Open();
@@ -1203,15 +1328,16 @@ public sealed class SmokeTest
             if (g.ShotEvents != 0) throw new Exception("warstwa Godota nie wyzerowała strzałów po turze");
         }
         if (_splits == 0 || _blasts == 0) throw new Exception($"pokaz zachowań: podział {_splits}, wybuch {_blasts} (problemów {before} -> {g.EnemiesCount}) etap {g.Stage} klasa {g.Cls} log: {string.Join(" | ", System.Linq.Enumerable.Select(g.Log, m => m.Text))}");
-        Flow.Phone.Open(PhoneTabs.Start, true);
+        Flow.Phone.Open(PhoneTabs.Start, true); // v0.23.2 (UI 2): Start = Postać, E – opis statystyk
         await DebugRunner.Frames(_app.Root, 1);
-        Flow.Phone.HandleInput(InputCmd.Of(GameAction.A));
-        if (Flow.Current != Flow.Stats) throw new Exception("Start > A nie otwiera opisu statystyk");
+        Flow.Character.HandleInput(InputCmd.Of(GameAction.TabNext));
+        if (Flow.Current != Flow.Stats) throw new Exception("Postać > E nie otwiera opisu statystyk");
         Flow.Stats.HandleInput(InputCmd.Of(GameAction.A));
         await DebugRunner.Frames(_app.Root, 2);
         Flow.Stats.HandleInput(InputCmd.Of(GameAction.B));
-        if (Flow.Current != Flow.Phone) throw new Exception("statystyki: B nie wraca do telefonu");
-        Flow.Phone.HandleInput(InputCmd.Of(GameAction.Select));
+        if (Flow.Current != Flow.Character) throw new Exception("statystyki: B nie wraca do Postaci");
+        Flow.Character.HandleInput(InputCmd.Of(GameAction.Info));
+        if (Flow.Current != Flow.Game) throw new Exception("Postać: I nie wraca na plac");
         await DebugRunner.Frames(_app.Root, 1);
     }
 
@@ -1311,11 +1437,14 @@ public sealed class SmokeTest
     /// </summary>
     private async Task ExerciseDamage(LifeLike.Core.Game g)
     {
-        Flow.Phone.Open(PhoneTabs.Gear, true);
+        Flow.Phone.Open(PhoneTabs.Gear, true); // v0.23.2 (UI 2): Postać > broń w ręku > Rozpiska
         await DebugRunner.Frames(_app.Root, 1);
-        Flow.Phone.HandleInput(InputCmd.Of(GameAction.Info));
+        Flow.Character.Page.OpenSheet(Phone.Pages.CharacterPage.HandId);
+        await DebugRunner.Frames(_app.Root, 1);
+        var sheet = Flow.Character.Page.Sheet;
+        sheet.Tap(Phone.ItemSheet.HitBase + sheet.Buttons().IndexOf(Phone.SheetAct.Breakdown));
         if (Flow.Current != Flow.Stats || _app.Nodes.Phone.Current is not Phone.Pages.StatsPage sp || sp.Page != Phone.Pages.StatsPage.DamagePage)
-            throw new Exception("Sprzęt > I nie otwiera rozpiski obrażeń");
+            throw new Exception("Postać > broń > Rozpiska nie otwiera rozpiski obrażeń");
         var b = g.WeaponBreakdown();
         if (b.Min < 1 || b.Max < b.Min || b.CritMin != b.Min * g.D.CritMultiplier || b.CritPct != g.CritPct())
             throw new Exception($"rozpiska: zakres {b.Min}-{b.Max}, kryt {b.CritMin} / {b.CritPct} vs {g.CritPct()}");
@@ -1324,9 +1453,64 @@ public sealed class SmokeTest
         if (sp.Page != Phone.Pages.StatsPage.DamagePage + 1) throw new Exception("rozpiska: A nie przechodzi do Kryt i obrona");
         await DebugRunner.Frames(_app.Root, 2);
         Flow.Stats.HandleInput(InputCmd.Of(GameAction.B));
-        if (Flow.Current != Flow.Phone || _app.Nodes.Phone.TabIndex != PhoneTabs.Gear) throw new Exception("rozpiska: B nie wraca na Sprzęt");
+        if (Flow.Current != Flow.Character) throw new Exception("rozpiska: B nie wraca do Postaci");
         await DebugRunner.Frames(_app.Root, 1);
         _damage = true;
+    }
+
+    /// <summary>
+    /// v0.23.2 (UI 2): Postać – karta przedmiotu z plecaka (Załóż = 1 tura, powrót na plac), karta noszonego sprzętu,
+    /// strzałki przesuwają fokus, B zamyka kartę, potem ekran.
+    /// </summary>
+    private bool _character;
+
+    private async Task ExerciseCharacter(LifeLike.Core.Game g)
+    {
+        if (g.St != GameStatus.Playing) return;
+        var slot = Array.FindIndex(g.Backpack, it => it.Empty);
+        if (slot < 0) return;
+        g.Backpack[slot] = BackpackItem.Gear(0, 2, 0);
+        Flow.Character.Open(null, true);
+        await DebugRunner.Frames(_app.Root, 2);
+        var page = Flow.Character.Page;
+        page.Focus = Phone.Pages.CharacterPage.HandId;
+        Flow.Character.HandleInput(InputCmd.Of(GameAction.Left));
+        if (page.Focus == Phone.Pages.CharacterPage.HandId) throw new Exception("Postać: strzałka nie przesuwa fokusu");
+        page.OpenSheet(0);
+        if (g.Equipped[0] >= 0 && !page.Sheet.IsOpen) throw new Exception("Postać: brak karty noszonego kasku");
+        Flow.Character.HandleInput(InputCmd.Of(GameAction.B));
+        if (page.Sheet.IsOpen || Flow.Current != Flow.Character) throw new Exception("Postać: B nie zamyka karty");
+        await _app.Root.ToSignal(_app.Root.GetTree().CreateTimer(ScreenFlow.LockSeconds + 0.1f), SceneTreeTimer.SignalName.Timeout); // blokada wejścia po otwarciu
+        var rect = _app.Nodes.Phone.RowRect(Phone.Pages.CharacterPage.BagBase + slot) ?? throw new Exception("Postać: brak kafla plecaka do dotknięcia");
+        ((Main)_app.Root).InjectGesture(new Gesture(GestureKind.Tap, rect.GetCenter(), rect.GetCenter(), Vector2I.Zero, 0.05f));
+        await DebugRunner.Frames(_app.Root, 1);
+        if (!page.Sheet.IsOpen || page.Sheet.Index != slot) throw new Exception("Postać: dotknięcie kafla nie otwiera karty");
+        var turns = g.Turns;
+        Flow.Character.HandleInput(InputCmd.Of(GameAction.A)); // główny przycisk: Załóż (1 tura)
+        if (g.Equipped[0] != 2 || Flow.Current != Flow.Game || g.Turns != turns + 1) throw new Exception($"Postać: Załóż z karty nie działa (kask {g.Equipped[0]}, tury {turns} -> {g.Turns}, ekran {Flow.Current?.GetType().Name})");
+        // noszone: Zmień (lista z plecaka) i PSZOK z plecaka na placu – po 1 turze
+        if (g.St != GameStatus.Playing) return;
+        var free = Array.FindIndex(g.Backpack, it => it.Empty);
+        if (free < 0) return;
+        g.Backpack[free] = BackpackItem.Gear(0, 0, 1);
+        Flow.Character.Open(null, true);
+        page = Flow.Character.Page;
+        page.OpenSheet(0);
+        turns = g.Turns;
+        Flow.Character.HandleInput(InputCmd.Of(GameAction.A)); // główny: Zmień
+        if (!page.Sheet.Picking) throw new Exception("Postać: Zmień nie pokazuje listy z plecaka");
+        Flow.Character.HandleInput(InputCmd.Of(GameAction.A));
+        if (g.Equipped[0] != 0 || g.Turns != turns + 1 || Flow.Current != Flow.Game) throw new Exception("Postać: Zmień z listy nie zakłada (1 tura)");
+        var bag = Array.FindIndex(g.Backpack, it => it.Kind == BackpackKind.Gear && it.Id == 0);
+        if (bag < 0 || g.St != GameStatus.Playing) return;
+        Flow.Character.Open(null, true);
+        page = Flow.Character.Page;
+        page.OpenSheet(Phone.Pages.CharacterPage.BagBase + bag);
+        var xp = g.RunXp;
+        turns = g.Turns;
+        page.Sheet.Tap(Phone.ItemSheet.HitBase + page.Sheet.Buttons().IndexOf(Phone.SheetAct.Recycle));
+        if (!g.Backpack[bag].Empty || g.RunXp <= xp || g.Turns != turns + 1) throw new Exception("Postać: PSZOK na placu nie działa (dośw., 1 tura)");
+        _character = true;
     }
 
     /// <summary>Opis statystyk na wyborze zawodu (I, dymek nad wierszem) i 3 strony Jak grać z tytułu.</summary>
@@ -1347,12 +1531,12 @@ public sealed class SmokeTest
         if (Flow.Current != Flow.ClassSelect) throw new Exception("statystyki: B nie wraca na wybór zawodu");
         _stats = true;
         Flow.Help.Open(true, true);
-        for (var k = 0; k < 13; k++) // 13 stron: v0.21.50 cz. 4 - po budowie, tydzień, fabuła; v0.21.51 cz. 2 - sekrety; v0.21.52 cz. b - inspektor, cz. c - cele, cz. d - kariera; v0.21.53 - filtry; v0.21.54 - widok i światło
+        for (var k = 0; k < 14; k++) // 14 stron (v0.23.0: bronie): v0.21.50 cz. 4 - po budowie, tydzień, fabuła; v0.21.51 cz. 2 - sekrety; v0.21.52 cz. b - inspektor, cz. c - cele, cz. d - kariera; v0.21.53 - filtry; v0.21.54 - widok i światło
         {
             await DebugRunner.Frames(_app.Root, 1);
             Flow.Help.HandleInput(InputCmd.Of(GameAction.A));
         }
-        if (Flow.Current != Flow.Title) throw new Exception("Jak grać: po 13 stronach brak powrotu na tytuł");
+        if (Flow.Current != Flow.Title) throw new Exception("Jak grać: po 14 stronach brak powrotu na tytuł");
         _help = true;
     }
 
@@ -1367,7 +1551,8 @@ public sealed class SmokeTest
                 Flow.Phone.Open(t, true);
                 await DebugRunner.Frames(_app.Root, 2);
             }
-            Flow.Phone.HandleInput(InputCmd.Of(GameAction.Select));
+            Flow.Current.HandleInput(InputCmd.Of(GameAction.Select));
+            await ExerciseCharacter(s.Game);
         }
         for (var t = 0; t < 5; t++)
         {

@@ -5,22 +5,26 @@ namespace LifeLike.Core;
 // Akcje gracza, walka, AI problemów budowy i koniec tury (port core::game z core.h).
 public sealed partial class Game
 {
-    /// <summary>Obrażenia = rzut broni + stat/2 + premie - obrona/2, min 1.</summary>
-    public void HeroAttack(int ei)
+    /// <summary>Obrażenia = rzut broni + stat/2 + premie - obrona/2, min 1. pct (v0.23.0) = % obrażeń trybu ataku (100 = bez zmian).</summary>
+    public void HeroAttack(int ei, int pct = 100)
     {
         if (ei == Boss && BossWakeDamage < 0) BossEngaged(); // walka z bossem trwa
         int ex = Enemies[ei].X, ey = Enemies[ei].Y;
         bool wasWet = EnemyWet(ei), wasDusty = EnemyDusty(ei), wasFrozen = EnemyFrozen(ei);
         var melee = Cheb(Hero.X, Hero.Y, ex, ey) <= 1;
-        var w = Weapon; // ulepszenie (#31): +obrażeń, Wyważenie (rzut), Przebicie (OBR)
-        var dmg = R.Range(Math.Min(w.MaxDamage, w.MinDamage + ToolTraitValue(ToolTraitEffect.Steady)), w.MaxDamage)
-                  + HeroStat(w.ScalesWith) / 2 + DmgBonus + GearBonus(GearStat.Dmg) + BoonSum(BoonEffect.Dmg) + UpgradeDmg() + EventDmg
+        var w = Weapon; // ulepszenie (#31): +obrażeń, Wyważenie (rzut), Przebicie (OBR); v0.23.0: + profity broni, Głowica (maks.)
+        var wmax = w.MaxDamage + WeaponBonus(ToolTraitEffect.MaxDmg);
+        var dmg = R.Range(Math.Min(wmax, w.MinDamage + WeaponBonus(ToolTraitEffect.Steady)), wmax)
+                  + HeroStat(w.ScalesWith) / 2 + DmgBonus + GearBonus(GearStat.Dmg) + BoonSum(BoonEffect.Dmg) + UpgradeDmg() + WeaponDmgBonus() + EventDmg
                   + MarkBonus(ei) // Tyczenie (Geodeta)
                   + (Enemies[ei].Hp >= Enemies[ei].MaxHp ? Bonus.FirstHitBonus : 0) // v0.21.52 cz. c: Siła rozpędu
-                  - Math.Max(0, EnemyDefense(ei) - ToolTraitValue(ToolTraitEffect.Pierce)) / 2;
+                  - Math.Max(0, EnemyDefense(ei) - PierceTotal(w)) / 2;
         if (dmg < 1) dmg = 1;
         dmg += Pct.Part(dmg, Bonus.DmgPct + BoonSum(BoonEffect.DmgPct), ref DmgCarry); // Kurs fachowy, Respekt, premie: +%
-        var crit = R.Range(1, 100) <= CritPct();
+        dmg = HitCalc.Apply(dmg, HitCalc.Pct(D, w, D.Enemies[Enemies[ei].DefId]) * pct / 100); // v0.23.0: typ ciosu x materiał / żywioł celu x % trybu
+        if (Enemies[ei].MarkTurns > 0) dmg = HitCalc.Apply(dmg, 100 + Enemies[ei].MarkPct); // v0.23.0: znak (Dziennik, Tyczka, Opalarka)
+        var crit = R.Range(1, 100) <= CritPct() || (Enemies[ei].Flags & ActorFlag.CritNext) != 0; // CritNext: pewny kryt, losowanie zostaje
+        Enemies[ei].Flags = (byte)(Enemies[ei].Flags & ~ActorFlag.CritNext);
         if (crit) dmg *= D.CritMultiplier;
         DamageEnemy(ei, dmg, crit, Weapon.Name);
         // kombinacje stanów: stan celu sprzed ciosu + żywioł ciosu
@@ -40,6 +44,23 @@ public sealed partial class Game
         {
             Shove(ei, Math.Sign(e.X - Hero.X), Math.Sign(e.Y - Hero.Y), 1);
         }
+        HitTypeEffects(ei, w); // v0.23.0: na końcu, by nie przesuwać losowań krytu i odepchnięcia
+    }
+
+    /// <summary>v0.23.0: kłucie omija PierceDef obrony, razem z cechą Przebicie narzędzia i profitem Przebicie.</summary>
+    public int PierceTotal(WeaponDef w) => WeaponBonus(ToolTraitEffect.Pierce) + HitCalc.PierceDef(D, w);
+
+    /// <summary>v0.23.0: skutki typu ciosu po trafieniu – obuch ogłusza (szansa StunChancePct, nie bossa), ogień osusza.</summary>
+    public void HitTypeEffects(int ei, WeaponDef w)
+    {
+        if (!Enemies[ei].Alive) return;
+        if (HitCalc.Has(w, HitType.Blunt) && ei != Boss && D.HitTypes.StunChancePct > 0 && R.Range(1, 100) <= D.HitTypes.StunChancePct)
+        {
+            var fresh = Enemies[ei].Stun <= 0; // już ogłuszony (np. efektem trybu w tym ciosie) – bez drugiego wpisu
+            Enemies[ei].Stun = (sbyte)Math.Max((int)Enemies[ei].Stun, 1);
+            if (fresh) Push(EnemyName(Msg(Loc.T("efekt_ogluszenie")).Add(": "), ei).As(LogKind.Good)); // v0.23.0: dziennik
+        }
+        if (w.Elem == Element.Fire) Enemies[ei].Wet = 0;
     }
 
     /// <summary>Odepchnięcie problemu o n pól w kierunku (dx, dy), dopóki pole wolne; zwraca, o ile przesunięto.</summary>
@@ -227,7 +248,11 @@ public sealed partial class Game
         var stuck = false;
         if (ei >= 0)
         {
-            HeroAttack(ei);
+            AttackWith(Weapon.ModeA, ei); // v0.23.0: cios wręcz też trafia całym wzorem trybu A (np. łuk kielni)
+        }
+        else if (DogAt(nx, ny))
+        {
+            PetDog(); // v0.23.0: Kawka – głaskanie zamiast ruchu
         }
         else if (SecretClosed() && SecretIs(nx, ny)) // magazyn (#32)
         {
@@ -277,7 +302,7 @@ public sealed partial class Game
         {
             var e = Enemies[i];
             var d = Cheb(Hero.X, Hero.Y, e.X, e.Y);
-            if (e.Alive && d <= WeaponRange() && d < bd)
+            if (e.Alive && d <= WeaponRange() && d < bd && InPattern(Weapon.ModeA, i))
             {
                 bd = d;
                 best = i;
@@ -295,7 +320,7 @@ public sealed partial class Game
             for (var i = 0; i < EnemiesCount && n < output.Length; ++i)
             {
                 var e = Enemies[i];
-                if (e.Alive && Visible(e.X, e.Y) && Cheb(Hero.X, Hero.Y, e.X, e.Y) == d) output[n++] = (sbyte)i;
+                if (e.Alive && Visible(e.X, e.Y) && Cheb(Hero.X, Hero.Y, e.X, e.Y) == d && InPattern(Weapon.ModeA, i)) output[n++] = (sbyte)i;
             }
         }
         return n;
@@ -307,8 +332,8 @@ public sealed partial class Game
         if (St != GameStatus.Playing || ei < 0 || ei >= EnemiesCount) return false;
         if (ShockedTurn()) return true;
         var e = Enemies[ei];
-        if (!e.Alive || !Visible(e.X, e.Y) || Cheb(Hero.X, Hero.Y, e.X, e.Y) > WeaponRange()) return false;
-        HeroAttack(ei);
+        if (!e.Alive || !Visible(e.X, e.Y) || Cheb(Hero.X, Hero.Y, e.X, e.Y) > WeaponRange() || !InPattern(Weapon.ModeA, ei)) return false;
+        AttackWith(Weapon.ModeA, ei);
         EndTurn();
         return true;
     }
@@ -323,7 +348,7 @@ public sealed partial class Game
             Push(Msg(Loc.T("brak_celu_w_zasiegu")).Add(WeaponRange()));
             return false;
         }
-        HeroAttack(t);
+        AttackWith(Weapon.ModeA, t);
         EndTurn();
         return true;
     }
@@ -407,41 +432,40 @@ public sealed partial class Game
         int roll = R.Range(1, total), type = 0;
         while (roll > D.DropWeights[type]) roll -= D.DropWeights[type++];
         if (type != (int)PickupType.Tool && Bonus.ToolPct > 0 && R.Range(1, 100) <= Bonus.ToolPct) type = (int)PickupType.Tool; // uprawnienie Kolekcjoner
-        int arg = 0, trait = 0;
+        int arg = 0, trait = 0, perks = 0;
         if (type == (int)PickupType.GearBox) // slot losowy, jakość lepsza na późnych etapach i ze szczęściem
         {
             var q = R.Range(1, 100) + Math.Max(0, PatternStage()) * D.GearStageBonus + D.RarityPerLuck * Luck() + Bonus.GearPct;
             var rarity = Math.Max(minRarity, q >= D.GearBrandFrom ? 2 : (q >= D.GearSolidFrom ? 1 : 0));
-            arg = (byte)(RandomSlot() * 3 + rarity);
+            var gslot = RandomSlot();
+            rarity = BeltFilter(gslot, rarity, rarity - 1 >= minRarity ? rarity - 1 : rarity + 1); // v0.23.0: pas z kaburą rzadki
+            arg = (byte)(gslot * 3 + rarity);
             trait = (byte)R.Range(0, D.GearTraitsCount - 1);
         }
         if (type == (int)PickupType.Tool)
         {
-            var n = 0;
-            for (var i = 0; i < D.Tools.Length; ++i) n += (Bonus.Tools >> i) & 1;
+            var pool = DropToolPool(); // v0.23.0: kupione + nowe bronie z flagą drop
+            var n = CountBits(pool);
             if (n == 0)
             {
                 type = (int)PickupType.Coffee;
             }
             else
             {
-                var k = R.Range(0, n - 1);
-                for (var i = 0; i < D.Tools.Length; ++i)
-                {
-                    if (((Bonus.Tools >> i) & 1) != 0 && k-- == 0)
-                    {
-                        arg = (byte)i;
-                        break;
-                    }
-                }
+                arg = (byte)NthTool(pool, R.Range(0, n - 1));
+                trait = (byte)RollWeaponRarity(); // v0.23.0: rzadkość narzędzia (Pickup.Trait), nigdy Mistrzowska
+                var w = D.Tools[arg].Weapon;
+                perks = RollWeaponPerks(w, ResolveRarity(w, trait)); // v0.23.0: profity znane już na ziemi
+                RollArtifact(ref arg, ref trait, ref perks); // v0.23.0: Markowa broń bazowa bywa artefaktem
             }
         }
-        Pickups[PickupsCount++] = new Pickup(x, y, (PickupType)type, true, arg, trait);
+        Pickups[PickupsCount++] = new Pickup(x, y, (PickupType)type, true, arg, trait) { Perks = (byte)perks };
     }
 
     /// <summary>Zakłada przedmiot w slocie (zastępuje obecny; kamizelka od razu zmienia max HP).</summary>
     public void Equip(int slot, int rarity, int trait)
     {
+        if (slot == D.BeltSlot && Equipped[slot] == BeltTier && rarity != BeltTier) DropHolster(); // v0.23.0: bez pasa broń z kabury wypada
         var nw = D.Gear[slot * 3 + rarity];
         if (nw.Stat == GearStat.Hp)
         {
@@ -461,21 +485,38 @@ public sealed partial class Game
 
     public bool OfferIsBetter => HasOffer && OfferRarity > Equipped[OfferSlot];
 
-    /// <summary>Paczka sprzętu przy zajętym slocie: gracz porównuje (A zakładam, B zostawiam). Nie zużywa tury.</summary>
+    /// <summary>v0.23.0: założenie oferty zdejmie pas z kaburą (inny przedmiot w slocie Pas) – karta ostrzega, bot nie bierze przy broni w kaburze.</summary>
+    public bool OfferDropsHolster => HasOffer && OfferSlot == D.BeltSlot && HasBelt() && OfferRarity != BeltTier;
+
+    /// <summary>
+    /// Paczka sprzętu przy zajętym slocie: gracz porównuje (Załóż, Do plecaka, Zostaw). Nie zużywa tury.
+    /// v0.23.2: Załóż – stary przedmiot do plecaka, a przy pełnym zostaje na ziemi w tym polu.
+    /// </summary>
     public void AcceptOffer()
     {
         if (!HasOffer) return;
-        int slot = OfferSlot;
+        int slot = OfferSlot, pick = OfferPickup;
         OfferSlot = -1;
+        OfferPickup = -1;
+        var old = Equipped[slot] >= 0 ? BackpackItem.Gear(slot, Equipped[slot], EquippedTrait[slot]) : default;
         Equip(slot, OfferRarity, OfferTrait);
+        if (!old.Empty) StoreOrDrop(old, pick);
     }
 
+    /// <summary>Zostaw: dośw. (raz za paczkę) i v0.23.2 – paczka zostaje na ziemi (można wrócić, gdy zwolni się plecak).</summary>
     public void DeclineOffer()
     {
         if (!HasOffer) return;
-        var xp = D.GearDeclineXp + OfferRarity;
+        var used = OfferPickup >= 0 && (Pickups[OfferPickup].Extra & GearBoxUsed) != 0;
+        var xp = used ? 0 : D.GearDeclineXp + OfferRarity;
+        if (OfferPickup >= 0)
+        {
+            Pickups[OfferPickup].Active = true;
+            Pickups[OfferPickup].Extra |= GearBoxUsed;
+        }
         OfferSlot = -1;
-        GainXp(xp);
+        OfferPickup = -1;
+        if (xp > 0) GainXp(xp);
         Push(Msg(Loc.T("zostawiasz_stary_sprzet")).Add(xp).Add(Loc.T("dosw")).As(LogKind.Loot));
     }
 
@@ -486,11 +527,20 @@ public sealed partial class Game
             ref var p = ref Pickups[i];
             if (!p.Active || p.X != Hero.X || p.Y != Hero.Y) continue;
             if (p.Type == PickupType.GearBox && HasOffer) continue; // najpierw decyzja o poprzedniej paczce
-            if (p.Type == PickupType.Tool && (WeaponLvl > 0 || WeaponTrait >= 0)) // ulepszone narzędzie: decyzja (ulepszenia przepadną)
+            if (p.Type == PickupType.Tool && HasBelt() && Weapon2 < 0) // v0.23.0: pas z kaburą – broń do drugiego miejsca, bez pytania
+            {
+                StashTool(p.Arg, p.Trait, p.Extra, p.Perks);
+                p.Active = false;
+                continue;
+            }
+            if (p.Type == PickupType.Tool) // v0.23.2: każda broń – karta Weź / Do plecaka / Zostaw (pusta kabura łapie ją wyżej)
             {
                 if (!HasToolOffer)
                 {
                     ToolOffer = (sbyte)p.Arg;
+                    ToolOfferRarity = (sbyte)p.Trait;
+                    ToolOfferExtra = p.Extra;
+                    ToolOfferPerks = p.Perks;
                     ToolOfferPickup = (sbyte)i;
                     Push(Msg(Loc.T("narzedzie_2")).Add(D.Weapons[D.Tools[p.Arg].Weapon].Name).Add(Loc.T("zamienic")).As(LogKind.Loot));
                 }
@@ -549,7 +599,8 @@ public sealed partial class Game
             }
             else if (p.Type == PickupType.GearBox)
             {
-                if (D.Materials.Length > 0) AddMaterial(R.Range(0, D.Materials.Length - 1), D.MaterialGearBox); // w paczce też materiał
+                var fresh = (p.Extra & GearBoxUsed) == 0; // v0.23.2: odłożona paczka – bez drugiego materiału
+                if (fresh && D.Materials.Length > 0) AddMaterial(R.Range(0, D.Materials.Length - 1), D.MaterialGearBox); // w paczce też materiał
                 var slot = p.Arg / 3;
                 if (Equipped[slot] < 0)
                 {
@@ -560,12 +611,13 @@ public sealed partial class Game
                     OfferSlot = (sbyte)slot;
                     OfferRarity = (sbyte)(p.Arg % 3);
                     OfferTrait = (sbyte)p.Trait;
+                    OfferPickup = (sbyte)i;
                     Push(Msg(Loc.T("paczka")).Add(D.Gear[p.Arg].Name).As(LogKind.Loot));
                 }
             }
             else
             {
-                TakeTool(p.Arg);
+                TakeTool(p.Arg, p.Trait, true, p.Extra, p.Perks);
             }
         }
     }
@@ -607,6 +659,11 @@ public sealed partial class Game
         }
         if (i == Boss && BossWakeDamage < 0) BossEngaged();
         if (EliteIs(e, EliteEffect.Regen) && e.Hp < e.MaxHp) e.Hp = (short)Math.Min(e.MaxHp, e.Hp + D.Elites[e.Elite].Value); // elita Uparta
+        if (!EnemyStatusTick(i)) return; // v0.23.0: krwawienie / podpalenie, unieruchomienie, osłabienie
+        var rooted = e.Root > 0;
+        if (rooted) --e.Root;
+        var noHeal = e.NoHeal > 0;
+        if (noHeal) --e.NoHeal;
         if (e.Stun > 0)
         {
             --e.Stun;
@@ -637,12 +694,12 @@ public sealed partial class Game
         if ((tg & Behavior.Grows) != 0) GrowTick(i);
         if (e.Timer > 0) --e.Timer; // odnowienie ucieczki / łatania
         var manh = Math.Abs(e.X - Hero.X) + Math.Abs(e.Y - Hero.Y);
-        if ((tg & Behavior.Heals) != 0 && manh != 1 && e.Timer == 0 && HealNear(i))
+        if ((tg & Behavior.Heals) != 0 && !noHeal && manh != 1 && e.Timer == 0 && HealNear(i))
         {
             e.Timer = (sbyte)D.BehaviorHealEvery;
             return;
         }
-        if ((tg & Behavior.Flees) != 0 && manh == 1 && e.Timer == 0 && FleeStep(i))
+        if ((tg & Behavior.Flees) != 0 && manh == 1 && e.Timer == 0 && !rooted && FleeStep(i))
         {
             e.Timer = (sbyte)D.BehaviorFleeCooldown;
             return;
@@ -658,7 +715,7 @@ public sealed partial class Game
             EnemyStrike(i, true);
             return;
         }
-        if ((tg & Behavior.Stationary) != 0) return;
+        if ((tg & Behavior.Stationary) != 0 || rooted) return; // unieruchomiony nie rusza się, ale uderza sąsiada
         if (WeatherIs(WeatherEffect.Frost) && i != Boss && Turns % WDef.Value == 0) return; // mróz: problemy stoją
         if ((tg & Behavior.Ranged) != 0 && RangedStep(i)) return;
         // elita Szybka: drugi krok, jeśli jeszcze nie stoi obok bohatera
@@ -681,6 +738,12 @@ public sealed partial class Game
         }
         if (AbilityCd > 0 && --AbilityCd == 0) Push(Msg(Loc.T("moc_gotowa_2")).Add(PDef.AbilityName).As(LogKind.Good));
         if (MarkTurns > 0 && --MarkTurns == 0) MarkTarget = -1; // Tyczenie mija
+        if (WeaponBCd > 0) --WeaponBCd; // v0.23.0: odnowienie trybu B broni
+        if (CritBuffTurns > 0 && --CritBuffTurns == 0) CritBuff = 0; // Pomiar (Miernik) mija
+        for (var i = 0; i < EnemiesCount; ++i)
+        {
+            if (Enemies[i].MarkTurns > 0 && --Enemies[i].MarkTurns == 0) Enemies[i].MarkPct = 0; // znak na problemie mija
+        }
         ref var wet = ref HeroStatus[(int)StatusEffect.Wet];
         if (wet > 0) --wet; // mokry schnie
         for (var i = 0; i < EnemiesCount; ++i) // problemy: kałuża moczy, poza nią schną

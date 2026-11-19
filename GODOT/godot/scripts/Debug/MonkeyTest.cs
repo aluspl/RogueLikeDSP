@@ -28,6 +28,7 @@ public sealed class MonkeyTest
     [
         Key.Up, Key.Down, Key.Left, Key.Right, Key.Up, Key.Down, Key.Left, Key.Right, Key.Space, Key.Space, Key.Enter, Key.Enter,
         Key.Z, Key.Escape, Key.Tab, Key.R, Key.M, Key.Q, Key.E, Key.I, Key.K, Key.P, Key.Space, Key.Z, Key.Enter,
+        Key.F, Key.X, // v0.23.0: Cios B, zamiana broni
     ];
 
     private readonly App _app;
@@ -153,7 +154,7 @@ public sealed class MonkeyTest
         // ale czasem (10%) małpa wali w ekran także w czasie blokady
         for (var i = 0; i < 400 && flow.InputLocked && _rng.Randf() >= 0.1f; i++) await DebugRunner.Frames(Root, 1);
         // Ustawienia (Z / Esc na tytule i mapie) zjadały ~45% akcji na klawiaturze: częściej z nich wychodzimy
-        if (flow.Current == flow.Settings && _rng.Randf() < 0.35f)
+        if ((flow.Current == flow.Settings || flow.Current == flow.Pause) && _rng.Randf() < 0.35f)
         {
             await Press(_rng.Randf() < 0.5f ? Key.Escape : Key.Z, 1, false);
             return;

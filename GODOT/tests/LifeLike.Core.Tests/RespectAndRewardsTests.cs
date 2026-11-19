@@ -89,6 +89,25 @@ public class RespectAndRewardsTests
         Assert.True(Daily.Mods(D, 1).DmgPct == 0 && Daily.Mods(D, 1).SecondChance == 0); // budowa dnia bez Respektu
     }
 
+    /// <summary>v0.23.0 (zad. 7): rangi II usunięte z sześciu wpisów Respektu – ProfileFix zwraca ich koszt raz i przycina rangę.</summary>
+    [Fact]
+    public void RemovedRespectRankIsRefundedOnce()
+    {
+        var p = Meta.NewProfile(D);
+        var i = Array.FindIndex(D.Respect, r => r.Id == "reka");
+        Assert.True(i >= 0 && D.Respect[i].Ranks == 1);
+        Meta.SetRespectRank(p, i, 2);
+        p.Respect = 100;
+        var spent = Meta.RespectSpent(D, p);
+        Assert.True(Meta.ProfileFix(D, p));
+        Assert.Equal(140, p.Respect); // dawny koszt rangi II Pewnej ręki: 40
+        Assert.Equal(1, Meta.RespectSlot(p, i));
+        Assert.Equal(spent, Meta.RespectSpent(D, p));
+        Assert.False(Meta.ProfileFix(D, p));
+        Assert.Equal(140, p.Respect);
+        Assert.Equal(1, Meta.RespectSlot(p, i));
+    }
+
     [Fact]
     public void PercentBonusesAndSecondChance()
     {
@@ -111,7 +130,7 @@ public class RespectAndRewardsTests
             sb += 999 - b.Enemies[b.EnemiesCount - 1].Hp;
             a.EnemiesCount = b.EnemiesCount = 0;
         }
-        Assert.True(sb * 100 >= sa * 122 && sb * 100 <= sa * 128, $"{sa} {sb}");
+        Assert.True(sb * 100 >= sa * 122 && sb * 100 <= sa * 128, $"{sa} {sb}"); // v0.23.0 Task 7: 126,7% (tabela ±25%)
         // otrzymane obrażenia -%: mniej, ale zawsze co najmniej 1
         var ta0 = TestData.Run(1, 5);
         var tb0 = TestData.Run(1, 5);
@@ -229,6 +248,7 @@ public class RespectAndRewardsTests
         var refund = 0;
         for (var i = 0; i < D.Upgrades.Length; ++i) // v13: Szkolenia wracają jako doświadczenie po starej cenie
         {
+            if (D.Upgrades[i].LegacyCosts.Length == 0) continue; // v0.23.0: Narzędzia – bez dawnej ceny
             v7.Levels[i] = 1;
             refund += D.Upgrades[i].LegacyCosts[0];
         }

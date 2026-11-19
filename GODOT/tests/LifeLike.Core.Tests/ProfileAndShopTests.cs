@@ -95,16 +95,17 @@ public class ProfileAndShopTests
         var lom = D.Tools[0].Weapon;
         g.Pickups[0] = new Pickup(g.Hero.X, g.Hero.Y, PickupType.Tool, true, 0);
         g.Collect();
+        g.AcceptTool(); // v0.23.2: karta broni – Weź
         Assert.Same(D.Weapons[lom], g.Weapon);
         var p = Meta.NewProfile(D);
         Assert.True(Meta.ToolUnlocked(D, p, 0) && !Meta.ToolUnlocked(D, p, 3) && !Meta.BuyTool(D, p, 3));
         p.Xp = 100;
         Assert.True(Meta.BuyTool(D, p, 3) && Meta.ToolUnlocked(D, p, 3) && !Meta.BuyTool(D, p, 3) && p.Xp == 100 - D.ToolCosts[0]);
-        Assert.Equal(D.StartToolsMask | (1 << 3), Meta.Mods(D, p).Tools);
+        Assert.Equal(D.StartToolsMask | (1UL << 3), Meta.Mods(D, p).Tools);
         var m = RunMods.Default(D);
-        m.Tools = (1 << D.Tools.Length) - 1;
-        var seen = 0;
-        for (uint seed = 1; seed <= 3000 && seen != m.Tools; ++seed)
+        m.Tools = (1UL << D.Tools.Length) - 1;
+        var seen = 0UL;
+        for (uint seed = 1; seed <= 8000 && seen != m.Tools; ++seed) // v0.23.0: 33 narzędzia (z artefaktami)
         {
             var h = TestData.NewGame();
             h.NewRun(1, seed, D.DefaultDifficulty, m);
@@ -113,7 +114,7 @@ public class ProfileAndShopTests
             h.Enemies[0].Hp = 1;
             h.PlayerMove(1, 0);
             var q = h.Pickups[h.PickupsCount - 1];
-            if (q.Type == PickupType.Tool) seen |= 1 << q.Arg;
+            if (q.Type == PickupType.Tool) seen |= 1UL << q.Arg;
         }
         Assert.Equal(m.Tools, seen);
         var old = Meta.NewProfile(D);
@@ -210,15 +211,19 @@ public class ProfileAndShopTests
         var p = Meta.NewProfile(D);
         var g = TestData.Arena(1);
         for (var e = 0; e < D.Enemies.Length; ++e) g.KillsByType[e] = 1;
-        g.ToolsFound = (byte)((1 << D.Tools.Length) - 1);
+        g.ToolsFound = (1UL << Meta.OriginalToolCount) - 1; // v0.23.0: wystarczą dawne 10 (nowe bronie się nie liczą)
         g.HeroLevel = D.MaxHeroLevel;
         var got = Meta.CheckBadges(D, p, g);
         Assert.True((got & (1 << D.BadgeKatalog)) != 0 && (got & (1 << D.BadgeKolekcjoner)) != 0 && (got & (1 << D.BadgeZawodowiec)) != 0);
         Assert.True(p.Catalog == 0xFFFF && Meta.CatalogCount(D, p) == D.Enemies.Length && Meta.CatalogHas(p, D.Enemies.Length - 1));
+        var partial = Meta.NewProfile(D);
+        g.ToolsFound = ((1UL << D.Tools.Length) - 1) & ~(1UL << 3); // wszystkie nowe, ale brak jednego dawnego
+        Assert.True((Meta.CheckBadges(D, partial, g) & (1 << D.BadgeKolekcjoner)) == 0);
         var h = TestData.Arena(1);
         h.Pickups[0] = new Pickup(h.Hero.X, h.Hero.Y, PickupType.Tool, true, 2);
         h.PickupsCount = 1;
         h.Collect();
-        Assert.Equal(1 << 2, h.ToolsFound);
+        h.AcceptTool(); // v0.23.2: karta broni – Weź
+        Assert.Equal(1UL << 2, h.ToolsFound);
     }
 }

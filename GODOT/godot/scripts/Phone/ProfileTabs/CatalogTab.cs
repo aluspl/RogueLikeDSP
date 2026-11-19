@@ -10,15 +10,17 @@ namespace LifeLike.Game.Phone.ProfileTabs;
 /// Katalog usterek (zakładka 1 profilu na GBA): poznane problemy budowy z portretem, opisem i zachowaniami, reszta „???”.
 /// v0.21.52 cz. c, kolekcje: strony przełączane Spacją / przyciskiem (A na GBA) – Katalog z licznikiem pokonanych
 /// („x12”), Kolekcje (komplety z postępem i nagrodą), Bossowie (karty bossów: ile razy pokonany) i Album Osiedla
-/// (ozdoby: stoi / skąd).
+/// (ozdoby: stoi / skąd). v0.23.0: Gablota artefaktów (ArtifactCaseView).
 /// </summary>
 public sealed class CatalogTab : PhonePage
 {
     private const int Window = 8;
-    private static string[] Pages => [Loc.T("katalog"), Loc.T("kolekcje"), Loc.T("bossowie"), Loc.T("album")];
+    private static string[] Pages => [Loc.T("katalog"), Loc.T("kolekcje"), Loc.T("bossowie"), Loc.T("album"), Loc.T("gablota")];
     public const int CollectionsPage = 1;
     public const int BossesPage = 2;
     public const int AlbumPage = 3;
+    public const int CasePage = 4;
+    private readonly ArtifactCaseView _case;
     private readonly GameData _d;
     private readonly Profile _p;
     private readonly ListState _list = new();
@@ -28,7 +30,11 @@ public sealed class CatalogTab : PhonePage
     {
         _d = d;
         _p = p;
+        _case = new ArtifactCaseView(d, p);
     }
+
+    /// <summary>Gablota (zaznaczenie kafla w scenach zrzutów).</summary>
+    public ArtifactCaseView Case => _case;
 
     public override string Title => Pages[_page];
 
@@ -37,6 +43,7 @@ public sealed class CatalogTab : PhonePage
         CollectionsPage => $"{CollectionBook.Done(_d, _p)}/{_d.Collections.Length}",
         BossesPage => $"{BossesBeaten()}/{CollectionBook.BossesCount(_d)}",
         AlbumPage => $"{Story.EstateDecor(_d, _p)}/{_d.EstateDecor.Length}",
+        CasePage => _case.Sub,
         _ => $"{Meta.CatalogCount(_d, _p)}/{_d.Enemies.Length}",
     };
 
@@ -44,7 +51,7 @@ public sealed class CatalogTab : PhonePage
 
     public override PageAction[] Actions => [new(Pages[(_page + 1) % Pages.Length] + " >", GameAction.A)];
 
-    /// <summary>Bieżąca strona (0 Katalog, 1 Kolekcje, 2 Bossowie, 3 Album) – test dymny i zrzuty.</summary>
+    /// <summary>Bieżąca strona (0 Katalog, 1 Kolekcje, 2 Bossowie, 3 Album, 4 Gablota) – test dymny i zrzuty.</summary>
     public int Page
     {
         get => _page;
@@ -70,11 +77,15 @@ public sealed class CatalogTab : PhonePage
         CollectionsPage => _d.Collections.Length,
         BossesPage => CollectionBook.BossesCount(_d),
         AlbumPage => _d.EstateDecor.Length,
-        _ => _d.Enemies.Length,
+        _ => _d.Enemies.Length + (_d.DogQuips.Length > 0 ? 1 : 0), // v0.23.0: na końcu wpis „Spotkana Kawka”
     };
+
+    /// <summary>v0.23.0: pozycja wpisu Kawki w Katalogu (za problemami).</summary>
+    public int DogRow => _d.Enemies.Length;
 
     public override bool TapRow(int index)
     {
+        if (_page == CasePage) return _case.Tap(index);
         _list.Sel = index;
         return true;
     }
@@ -90,6 +101,12 @@ public sealed class CatalogTab : PhonePage
 
     public override bool Input(InputCmd e)
     {
+        if (_page == CasePage && _case.Move(e.HDir, e.VDir))
+        {
+            Sfx.Play("menu");
+            return true;
+        }
+        if (_page == CasePage && e.VDir != 0) return true; // brzeg siatki w pionie; w poziomie dalej przełącza zakładki
         var v = e.VDir;
         if (v != 0)
         {
@@ -107,6 +124,11 @@ public sealed class CatalogTab : PhonePage
 
     public override void Draw(PhonePainter p)
     {
+        if (_page == CasePage)
+        {
+            _case.Draw(p);
+            return;
+        }
         var n = Count;
         _list.Clamp(n, Window);
         var rows = System.Math.Min(Window, n - _list.Top);
@@ -137,7 +159,8 @@ public sealed class CatalogTab : PhonePage
                 DrawDecor(p, card);
                 break;
             default:
-                DrawEnemyCard(p, card, _list.Sel, false);
+                if (_list.Sel == DogRow) DrawDogCard(p, card);
+                else DrawEnemyCard(p, card, _list.Sel, false);
                 break;
         }
     }
@@ -176,6 +199,13 @@ public sealed class CatalogTab : PhonePage
             }
             default:
             {
+                if (i == DogRow) // v0.23.0: easter egg – Kawka (nie usterka)
+                {
+                    var met = Dog.Met(_p);
+                    var dw = p.Pill(right, y, met ? Loc.T("kawka_spotkana") : Loc.T("nieznana"), met ? PillKind.Done : PillKind.Gray);
+                    p.Text(tx, y, met ? Loc.T("kawka_wpis") : "???", sel ? Ink.Brand : met ? Ink.Dark : Ink.Dim, TextAlign.Left, right - dw - 4 - tx);
+                    return;
+                }
                 var known = Known(i);
                 var pw = p.Pill(right, y, known ? $"x{_p.KillCount[i]}" : Loc.T("nieznana"), known ? PillKind.Done : PillKind.Gray);
                 p.Text(tx, y, $"#{i + 1} {(known ? _d.Enemies[i].Name : "???")}", sel ? Ink.Brand : known ? Ink.Dark : Ink.Dim, TextAlign.Left, right - pw - 4 - tx);
@@ -205,6 +235,21 @@ public sealed class CatalogTab : PhonePage
         }
         var tags = UiText.Behaviors(_d, s);
         if (known && tags.Length > 0) p.Text(x, dc.Position.Y + 40, Loc.T("cechy") + tags, Ink.Late, TextAlign.Left, right - x);
+    }
+
+    /// <summary>v0.23.0: karta Kawki – portret (sylwetka, dopóki nie spotkana), imię, opis albo podpowiedź, ile budów z nią.</summary>
+    private void DrawDogCard(PhonePainter p, Godot.Rect2 card)
+    {
+        var right = card.End.X - 6;
+        var dc = p.CardH(card.End.Y + 6, 62);
+        var met = Dog.Met(_p);
+        var photo = new Godot.Rect2(dc.Position.X + 8, dc.Position.Y + 8, 32, 32);
+        p.C.DrawStyleBox(Ui.Box(met ? Pal.DoneBg : Pal.Group, 5), photo);
+        p.IconTinted(Assets.Actors, Assets.FrameDog, Assets.Actor, photo.Position, 1, met ? Godot.Colors.White : new Godot.Color(0, 0, 0, 0.8f));
+        var x = photo.End.X + 8;
+        var lines = p.F.Wrap(met ? _d.DogDesc : _d.DogHint, (int)(right - x));
+        p.Text(x, dc.Position.Y + 4, met ? _d.DogName + $" (x{_p.DogBuilds})" : "???", Ink.Dark, TextAlign.Left, right - x);
+        for (var k = 0; k < lines.Count && k < 2; k++) p.Text(x, dc.Position.Y + 22 + k * 18, lines[k], Ink.Dim, TextAlign.Left, right - x);
     }
 
     /// <summary>Kolekcja: co liczyć (problemy aktu x10, bossowie, ozdoby), najbliższy brakujący i nagroda.</summary>

@@ -81,13 +81,13 @@ void fragment() {
 		if (mod(floor(FRAGCOORD.y / max(1.0, px * 0.5)), 2.0) < 1.0) o *= 0.8;
 	} else if (mode == 4) {
 		if (motion) {
-			uv.x += sin(uv.y * 18.0 + t * 2.2) * 0.004 * strength;
-			uv.y += sin(uv.x * 14.0 + t * 1.7) * 0.003 * strength;
+			uv.x += sin(uv.y * 18.0 + t * 1.6) * 0.0024 * strength; // v0.22.1 (#75): łagodniej (było 0.004, 2.2)
+			uv.y += sin(uv.x * 14.0 + t * 1.2) * 0.0018 * strength;
 		}
 		vec3 c = texture(screen_tex, uv).rgb;
 		vec3 c2 = texture(screen_tex, uv + vec2(upx.x * 3.0, 0.0)).rgb;
 		c = mix(c, max(c, c2), 0.5);
-		o = saturate3(hue_rot(c, t * 0.8 + (uv.x + uv.y) * 2.4), 1.5);
+		o = saturate3(hue_rot(c, t * 0.35 + (uv.x + uv.y) * 1.4), 1.3); // v0.22.1 (#75): wolniejsza tęcza (było 0.8, 2.4, 1.5)
 	} else if (mode >= 5 && mode <= 7) {
 		o = daltonize(src, mode);
 	} else if (mode == 8) {

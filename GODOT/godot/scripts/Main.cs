@@ -104,7 +104,11 @@ public partial class Main : Node2D
     private void OpenSettings()
     {
         var cur = _app.Flow.Current;
-        if (cur == _app.Flow.Game) _app.Flow.Game.Touch.Reset();
+        if (cur == _app.Flow.Game) // v0.23.2 (UI 2): na mapie przycisk pauzy
+        {
+            _app.Flow.Pause.Open();
+            return;
+        }
         _app.Flow.Settings.Open(cur);
     }
 

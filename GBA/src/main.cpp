@@ -187,6 +187,11 @@ namespace
         if(g.enemy_wet(ei)) m.add(UI(mokry));
         if(g.enemy_dusty(ei)) m.add(m.n ? ", " : "").add(UI(zapylony));
         if(g.enemy_frozen(ei)) m.add(m.n ? ", " : "").add(UI(zmrozony));
+        const core::actor& e = g.enemies[ei];   // v0.23.0: stany od broni (krótkie nazwy z danych)
+        if(e.dot > 0) m.add(m.n ? ", " : "").add(data::statuses[int(e.dot_kind == 2 ? core::status_effect::bleed : core::status_effect::burn)].short_name);
+        if(e.root > 0) m.add(m.n ? ", " : "").add(data::statuses[int(core::status_effect::root)].short_name);
+        if(e.def_down > 0) m.add(m.n ? ", " : "").add(data::statuses[int(core::status_effect::def_down)].short_name);
+        if(e.mark_turns > 0) m.add(m.n ? ", " : "").add(data::statuses[int(core::status_effect::mark)].short_name);
         return m;
     }
     // Znaczniki premii, np. "Beton, BHP".
@@ -339,6 +344,13 @@ namespace
     }
 
     // ------------------------------------------------------------------ zapis (SRAM): profil z meta.h
+    // Każdy zapis profilu: najpierw bajty 35 / 41 (dolne 8 bitów masek narzędzi, jak C# Profile.ToBytes), potem SRAM.
+    void write_profile(core::profile& p)
+    {
+        core::profile_sync(p);
+        bn::sram::write(p);
+    }
+
     core::profile load_save()
     {
         core::profile p;
@@ -355,7 +367,7 @@ namespace
                 if(core::run_save_valid(*s)) bn::sram::write_offset(*s, core::run_save_offset);
                 else { const struct { char magic[8]; } none = {}; bn::sram::write_offset(none, core::run_save_offset); }   // bez śmieci pod nowym adresem
             }
-            bn::sram::write(p);
+            write_profile(p);
         }
         return p;
     }
@@ -593,7 +605,7 @@ namespace
     // ------------------------------------------------------------------ ekran tytułowy
     // v0.21.53 cz. 2 (#40): pierwsze uruchomienie - wybór języka (Polski / English), zapis w profilu. Później: profil >
     // Zespół > SELECT.
-    scene run_language(app& a)
+    [[gnu::noinline]] scene run_language(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         bn::sprite_palette_item default_ink = a.text.palette_item();
@@ -623,7 +635,7 @@ namespace
             if(bn::keypad::a_pressed() || bn::keypad::start_pressed())
             {
                 core::set_language(a.save, sel);
-                bn::sram::write(a.save);
+                write_profile(a.save);
                 bn::sound_items::sfx_buy.play();
                 wait_release();
                 head.clear(); opts.clear();
@@ -633,7 +645,7 @@ namespace
         }
     }
 
-    scene run_title(app& a)
+    [[gnu::noinline]] scene run_title(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         bn::regular_bg_ptr bg = (core::language ? bn::regular_bg_items::title_en : bn::regular_bg_items::title).create_bg(8, 48);   // lewy górny róg obrazu = róg ekranu
@@ -670,7 +682,7 @@ namespace
         text_sprites goals_text;
         if(a.save.runs > 0)
         {
-            if(roll_tasks(a)) bn::sram::write(a.save);
+            if(roll_tasks(a)) write_profile(a.save);
             int day, week; goal_dates(a, day, week);
             core::message gm; gm.add(UI(zadania)).add(core::tasks_done_today(a.save)).add("/").add(core::daily_task_slots);
             a.text.set_right_alignment();
@@ -826,9 +838,28 @@ namespace
         wait_release();
     }
 
+    // v0.23.0: Patent (L+A) - najbliższy widoczny cel we wzorze trybu B, bez celu pęknięta ściana (Przecinak, Łom, Młot).
+    bool weapon_b_action(core::game& g)
+    {
+        const core::weapon_mode& m = g.weapon().mode_b;
+        const char* name = m.name.c_str()[0] ? m.name.c_str() : UI(cios_b);
+        if(g.weapon_b_cd > 0) { g.push(core::message().add(name).add(UI(patent_za)).add(g.weapon_b_cd).add(" t.")); return false; }
+        int best = -1, bd = 99;
+        for(int i = 0; i < g.enemies_count; ++i)
+        {
+            const core::actor& e = g.enemies[i];
+            const int d = core::cheb(g.hero.x, g.hero.y, e.x, e.y);
+            if(e.alive && g.visible(e.x, e.y) && d <= g.mode_range(m) && d < bd && g.in_pattern(m, i)) { bd = d; best = i; }
+        }
+        if(best >= 0) return g.player_weapon_b(best);
+        if(g.can_weapon_b_open_wall()) return g.player_weapon_b_wall();
+        g.push(core::message().add(name).add(UI(patent_brak_celu)));
+        return false;
+    }
+
     void page_help(app& a)
     {
-        constexpr int pages_count = 19;
+        constexpr int pages_count = 20;
         core::message cmb[3];   // kombinacje stanów (#29): "Mokry + prąd! Porażenie"
         for(int k = 0; k < 3 && k < data::combos_count; ++k) cmb[k].add(data::combos[k].short_name).add(" ").add(data::combos[k].name);
         core::message luck1, luck2;   // wzory z danych (sekcja luck)
@@ -874,13 +905,16 @@ namespace
             { data::career_help[0], data::career_help[1], data::career_help[2], data::career_help[3], data::career_help[4],
               data::career_help[5], data::career_help[6] },   // v0.21.52 cz. d: mapa kariery
             { data::filters_help[0], data::filters_help[1], data::filters_help[2], data::filters_help[3], data::filters_help[4],
-              data::filters_help[5], data::filters_help[6] } };   // v0.21.53: filtry ekranu
+              data::filters_help[5], data::filters_help[6] },   // v0.21.53: filtry ekranu
+            { UI(gba_bronie_1), UI(gba_bronie_2), UI(gba_bronie_3), UI(gba_bronie_4), UI(gba_bronie_5), UI(gba_bronie_6),
+              UI(gba_bronie_7) } };   // v0.23.0: bronie
         for(int pg = 0; pg < pages_count; ++pg)
         {
             page_sprites t;
             a.text.set_center_alignment();
-            const char* const names[11] = { UI(kombinacje_2), UI(skad_stany), UI(premie_i_elity), UI(wydarzenia), UI(magazyn_2), UI(po_budowie),
-                                                   UI(sekrety), UI(inspektor_2), UI(cele), UI(kariera), UI(filtry_ekranu) };   // strony 9-19 (v0.21.50, 15: v0.21.51 cz. 2, 16-18: v0.21.52, 19: v0.21.53)
+            const char* const names[12] = { UI(kombinacje_2), UI(skad_stany), UI(premie_i_elity), UI(wydarzenia), UI(magazyn_2), UI(po_budowie),
+                                                   UI(sekrety), UI(inspektor_2), UI(cele), UI(kariera), UI(filtry_ekranu), UI(gba_bronie_tytul) };
+            static_assert(pages_count == 8 + 12);   // v0.23.0: strona 20 - bronie   // strony 9-19 (v0.21.50, 15: v0.21.51 cz. 2, 16-18: v0.21.52, 19: v0.21.53)
             core::message title; title.add(pg >= 8 ? names[pg - 8] : (pg == 1 ? UI(okna_i_wybory) : UI(jak_grac))).add(" (").add(pg + 1).add("/").add(pages_count).add(")");
             a.text.generate(0, -70, title.s, t);
             a.text.set_left_alignment();
@@ -891,11 +925,11 @@ namespace
         }
     }
 
-    scene run_help(app& a)
+    [[gnu::noinline]] scene run_help(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         page_help(a);
-        if(! core::has_flag(a.save, core::help_seen)) { core::set_flag(a.save, core::help_seen); bn::sram::write(a.save); }
+        if(! core::has_flag(a.save, core::help_seen)) { core::set_flag(a.save, core::help_seen); write_profile(a.save); }
         if(a.after_help == scene::title)   // z tytułu: samouczek menu jeszcze raz (#25)
         {
             page_sprites t;
@@ -909,7 +943,7 @@ namespace
             a.text.generate(0, 72, UI(b_wroc), t);
             wait_release();
             while(! bn::keypad::a_pressed() && ! bn::keypad::b_pressed() && ! bn::keypad::select_pressed()) next_frame();
-            if(bn::keypad::a_pressed()) { core::tutorial_reset(a.save); bn::sram::write(a.save); }
+            if(bn::keypad::a_pressed()) { core::tutorial_reset(a.save); write_profile(a.save); }
             wait_release();
         }
         return leave(a.after_help);
@@ -1194,41 +1228,58 @@ namespace
         c.reset();
         a.text.set_palette_item(ink0); a.text.set_bg_priority(prio0); a.text.set_z_order(z0);
         core::tutorial_done(a.save, screen);
-        bn::sram::write(a.save);
+        write_profile(a.save);
         wait_release();
     }
 
-    // Dymki przy pierwszym odblokowaniu (Respekt, codzienna budowa, tryb inwestora, Akt 0, nowy zawód) - po jednym.
-    template<class HoleFn>
-    void run_unlocks(app& a, int screen, HoleFn hole_of)
+    // Dymek przy pierwszej okazji (Respekt, codzienna budowa, tryb inwestora, Akt 0, nowy zawód, sekret, v0.23.0:
+    // Szkolenia, Jak grać, pamiątka, statystyki) - jeden na wejście na ekran, żeby nie było ściany tekstu.
+    // START przy dymku o statystykach otwiera ich opis (on_link), jak w samouczku.
+    template<class HoleFn, class LinkFn>
+    void run_unlocks(app& a, int screen, HoleFn hole_of, LinkFn on_link)
     {
         const bn::sprite_palette_item ink0 = a.text.palette_item();
         const int prio0 = a.text.bg_priority(), z0 = a.text.z_order();
         int cls = -1;
-        for(int u = core::pending_unlock(a.save, screen, cls); u >= 0; u = core::pending_unlock(a.save, screen, cls))
+        const int u = core::pending_unlock(a.save, screen, cls);
+        if(u < 0) return;
+        core::tutorial_step s = data::tutorial_unlocks[u];
+        const bool secret = u == core::unlock_secret, link = u == core::unlock_stats;
+        if(secret) s.msg = data::secrets[cls].news;   // v0.21.51 cz. 2: co wykonano i jaka nagroda
+        core::message cnt;
+        if(cls >= 0 && ! secret) cnt.add(clip(data::classes[cls].name, 12).c_str());
+        else cnt.add(UI(nowosc));
         {
-            core::tutorial_step s = data::tutorial_unlocks[u];
-            const bool secret = u == core::unlock_secret;
-            if(secret) s.msg = data::secrets[cls].news;   // v0.21.51 cz. 2: co wykonano i jaka nagroda
-            {
-                coach c;
-                c.show(a, s, cls >= 0 && ! secret ? clip(data::classes[cls].name, 12).c_str() : UI(nowosc), hole_of(s.id), false);
-                bn::sound_items::sfx_notify.play(bn::fixed(0.7));
-                wait_release();
-                while(! bn::keypad::a_pressed() && ! bn::keypad::b_pressed() && ! bn::keypad::start_pressed()) next_frame();
-            }
-            core::mark_unlock(a.save, u, cls);
-            bn::sram::write(a.save);
-            a.text.set_palette_item(ink0); a.text.set_bg_priority(prio0); a.text.set_z_order(z0);
+            bn::optional<coach> c;
+            c.emplace();
+            c->show(a, s, cnt.s, hole_of(s.id), link);
+            bn::sound_items::sfx_notify.play(bn::fixed(0.7));
             wait_release();
+            while(! bn::keypad::a_pressed() && ! bn::keypad::b_pressed())
+            {
+                if(bn::keypad::start_pressed())
+                {
+                    if(! link) break;
+                    c.reset();
+                    a.text.set_palette_item(ink0); a.text.set_bg_priority(prio0); a.text.set_z_order(z0);
+                    on_link();
+                    c.emplace();
+                    c->show(a, s, cnt.s, hole_of(s.id), link);
+                }
+                next_frame();
+            }
         }
+        core::mark_unlock(a.save, u, cls);
+        write_profile(a.save);
+        a.text.set_palette_item(ink0); a.text.set_bg_priority(prio0); a.text.set_z_order(z0);
+        wait_release();
     }
 
     void title_tutorial(app& a)
     {
         auto hole = [](const char*) { return coach_hole{ 0, 0, 0, 0, false }; };   // tytuł: klawisz na karcie, logo przygaszone
         if(core::tutorial_pending(a.save, 0)) run_tutorial(a, 0, hole, [] {});
-        run_unlocks(a, 0, hole);
+        else run_unlocks(a, 0, hole, [] {});   // v0.23.0: jeden dymek na wejście
     }
 
     void tab_tasks(app& a, phone_screen& ph, page_sprites& t)   // Zadania = harmonogram budowy
@@ -1409,7 +1460,7 @@ namespace
         const core::game& g = *a.g;
         int slots[core::max_gear_slots], n = 0;
         for(int i = 0; i < data::gear_slots_count; ++i) if(((g.bonus.gear_slots >> i) & 1) || g.equipped[i] >= 0) slots[n++] = i;
-        phone_header(a, ph, t, tab_name(3), UI(a_obr_gora_prem_dol_bryg));
+        phone_header(a, ph, t, tab_name(3), UI(bpg_sprzet_a));   // v0.23.2: A = plecak (rozpiska: Start > A)
         phone_canvas& c = *ph.canvas;
         const core::dmg_breakdown b = g.weapon_breakdown();
         core::message w; g.weapon_title(w).add(" ");   // ulepszone: "Kielnia+2"
@@ -1645,6 +1696,11 @@ namespace
 
     enum class pause_result { resume, quit, save_exit };
 
+    // v0.23.2: plecak (telefon: Sprzęt > A; Hurtownia: Skup, PSZOK, Plecak). Zwraca: -1 B, -2 / -3 zakładka L / R,
+    // >= 100 akcja z turą (100 + miejsce * 4 + akcja: 0 Załóż, 1 Do kabury) - wykonuje ją gra po powrocie.
+    enum class bag_mode { bag, sell, recycle };
+    int backpack_loop(app& a, phone_screen& ph, page_sprites& t, bag_mode mode, const char* title);
+
     // Telefon pod SELECT. L/R lub strzałki: zakładki; START: menu akcji; B/SELECT: powrót do gry.
     pause_result run_phone(app& a, bool brigade_page = false)
     {
@@ -1739,9 +1795,11 @@ namespace
                 }
                 else if(a.phone_tab == 3 && bn::keypad::down_pressed()) { brigade = true; bsel = 0; redraw(); bn::sound_items::sfx_menu.play(); }
                 else if(a.phone_tab == 3 && bn::keypad::up_pressed()) { boons = true; psel = 0; redraw(); bn::sound_items::sfx_menu.play(); }
-                else if(a.phone_tab == 3 && bn::keypad::a_pressed())   // Sprzęt: A = rozpiska obrażeń broni (#26)
+                else if(a.phone_tab == 3 && bn::keypad::a_pressed())   // v0.23.2: Sprzęt: A = plecak (rozpiska obrażeń: Start > A)
                 {
-                    stats_page(a, ph, t, a.g, a.g->cls, a.g->bonus, 1);
+                    wait_release();
+                    const int r = backpack_loop(a, ph, t, bag_mode::bag, UI(bpg_tytul));
+                    if(r >= 100) { a.pending_helper = r; return finish(pause_result::resume); }   // zamiana zużywa turę - w grze
                     redraw();
                     next_frame();
                     continue;
@@ -1917,6 +1975,137 @@ namespace
     }
 
     // Narzędzie na polu przy ulepszonym (#31): porównanie, ostrzeżenie o utracie ulepszenia. A - zamieniam, B - zostaję.
+
+    // ------------------------------------------------------------------ v0.23.2: plecak
+    // Lista 6 miejsc (pasek = rzadkość, zaznaczony - fiolet), pastylka: lepsze / słabsze / równe (Skup: materiały, PSZOK:
+    // dośw.); A - akcje (Załóż, Do kabury, Wyrzuć, Anuluj) albo sprzedaż / oddanie; B - wróć; L/R - zakładki (Hurtownia).
+    [[gnu::noinline]] int backpack_loop(app& a, phone_screen& ph, page_sprites& t, bag_mode mode, const char* title)
+    {
+        core::game& g = *a.g;
+        const int n = core::game::backpack_slots();
+        const bool site = g.st == core::status::playing, shop = g.in_hurtownia();
+        int sel = 0, msel = 0;
+        bool menu = false;
+        const char* note = nullptr;
+        int acts[4], acts_n = 0;   // 0 Załóż, 1 Do kabury, 2 Wyrzuć, 3 Anuluj
+        auto make_menu = [&]() {
+            acts_n = 0;
+            acts[acts_n++] = 0;
+            if(g.backpack[sel].kind == core::bp_weapon && g.has_belt()) acts[acts_n++] = 1;
+            if(site) acts[acts_n++] = 2;
+            acts[acts_n++] = 3;
+        };
+        auto act_name = [&](int k) {
+            switch(k)
+            {
+                case 0: return site ? UI(bpg_zaloz) : UI(bpg_zaloz_h);
+                case 1: return site ? UI(bpg_kabura) : UI(bpg_kabura_h);
+                case 2: return UI(bpg_wyrzuc);
+                default: return UI(bpg_anuluj);
+            }
+        };
+        auto redraw = [&]() {
+            core::message sub;
+            if(note) sub.add(note);
+            else
+            {
+                sub.add(g.backpack_count()).add("/").add(n);
+                sub.add(shop ? UI(bpg_a_hurt) : UI(bpg_a_akcje));
+            }
+            if(menu) { core::message hm; g.bp_name(hm, g.backpack[sel]); phone_header(a, ph, t, fit(a, hm.s, 120).c_str(), sub.s); }
+            else phone_header(a, ph, t, title, sub.s);
+            phone_canvas& c = *ph.canvas;
+            if(menu)
+            {
+                for(int k = 0; k < acts_n; ++k)
+                {
+                    stripe(c, k, k == msel ? phone_tile::stripe_brand : (acts[k] == 2 ? phone_tile::stripe_late : phone_tile::stripe_todo));
+                    phone_text(a, t, list_x, row_py(k), act_name(acts[k]), k == msel ? ink::brand : (acts[k] == 2 ? ink::late : ink::dark));
+                }
+                core::message cm;   // porównanie zaznaczonego
+                const core::bp_item& it = g.backpack[sel];
+                if(it.kind == core::bp_weapon)
+                {
+                    const core::dmg_breakdown now = g.weapon_breakdown(), nx = g.weapon_breakdown(-1, it.id, -1, -1, 0, it.rarity, it.perks);
+                    core::compare_line(cm, now, nx, true);
+                }
+                else
+                {
+                    const core::gear_def& gd = data::gear[it.id * 3 + it.rarity];
+                    cm.add(gear_stat_name(gd.stat)).add(" +").add(gd.value).add(", ").add(data::gear_traits[core::imax(0, it.trait)].short_name);
+                }
+                phone_text(a, t, list_x, row_py(5), fit(a, cm.s, phone_text_w).c_str(), ink::dim);
+                ph.commit();
+                return;
+            }
+            for(int r = 0; r < n && r < 6; ++r)
+            {
+                const core::bp_item& it = g.backpack[r];
+                const bool on = r == sel;
+                stripe(c, r, on ? phone_tile::stripe_brand : rarity_stripe(core::imin(2, it.rarity)));
+                if(it.kind == core::bp_empty) { phone_text(a, t, list_x, row_py(r), UI(bpg_pusto), ink::dim); continue; }
+                core::message pm; pill pk = pill::gray;
+                if(mode == bag_mode::sell)
+                {
+                    const int k = core::game::sell_count(it);
+                    pm.add((k + 1) / 2).add(" ").add(data::materials[core::game::sell_mat(it)].short_name);
+                    if(k / 2 > 0) pm.add("+").add(k / 2);
+                    pk = pill::prog;
+                }
+                else if(mode == bag_mode::recycle) { pm.add("+").add(core::game::pszok_xp_for(it)).add(UI(dosw)); pk = pill::group; }
+                else
+                {
+                    const int cmp = g.backpack_compare(r);
+                    pm.add(cmp > 0 ? UI(bpg_lepsze) : (cmp < 0 ? UI(bpg_slabsze) : UI(bpg_rowne)));
+                    pk = cmp > 0 ? pill::done : (cmp < 0 ? pill::late : pill::gray);
+                }
+                core::message nm; g.bp_name(nm, it);
+                phone_text(a, t, list_x, row_py(r), fit(a, nm.s, pill_room(pm.s)).c_str(), on ? ink::brand : ink::dark);
+                phone_pill(a, c, t, pill_end, row_ty(r), pm.s, pk);
+            }
+            ph.commit();
+        };
+        redraw();
+        modal_guard();
+        while(true)
+        {
+            const int v = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+            if(v)
+            {
+                if(menu) msel = (msel + v + acts_n) % acts_n;
+                else { sel = (sel + v + n) % n; note = nullptr; }
+                redraw(); bn::sound_items::sfx_menu.play();
+            }
+            else if(bn::keypad::a_pressed())
+            {
+                if(menu)
+                {
+                    const int k = acts[msel];
+                    menu = false;
+                    if(k == 2) { if(g.backpack_drop(sel)) { note = g.log[core::log_lines - 1].s; bn::sound_items::sfx_menu.play(); } }
+                    else if(k < 2 && site) { wait_release(); return 100 + sel * 4 + k; }   // tura - w grze
+                    else if(k == 0 && g.backpack_equip(sel)) { note = UI(bpg_bez_tury); bn::sound_items::sfx_pickup.play(); }
+                    else if(k == 1 && g.backpack_holster(sel)) { note = UI(bpg_bez_tury); bn::sound_items::sfx_pickup.play(); }
+                    redraw();
+                }
+                else if(g.backpack[sel].kind != core::bp_empty)
+                {
+                    if(mode == bag_mode::sell && g.backpack_sell(sel)) { note = UI(bpg_sprzedane); bn::sound_items::sfx_buy.play(); }
+                    else if(mode == bag_mode::recycle && g.backpack_recycle(sel)) { note = UI(bpg_oddane); bn::sound_items::sfx_level.play(); }
+                    else if(mode == bag_mode::bag) { menu = true; msel = 0; make_menu(); bn::sound_items::sfx_menu.play(); }
+                    redraw();
+                }
+            }
+            else if(bn::keypad::b_pressed())
+            {
+                if(menu) { menu = false; redraw(); }
+                else { wait_release(); return -1; }
+            }
+            else if(shop && ! menu && (bn::keypad::l_pressed() || bn::keypad::r_pressed())) return bn::keypad::l_pressed() ? -2 : -3;
+            next_frame();
+        }
+    }
+
     void tool_offer_dialog(app& a)
     {
         core::game& g = *a.g;
@@ -1928,38 +2117,37 @@ namespace
         const int w = data::tools[g.tool_offer].weapon;
         phone_header(a, ph, t, UI(nowe_narzedzie), data::weapons[w].name);
         phone_canvas& c = *ph.canvas;
-        const core::dmg_breakdown now = g.weapon_breakdown(), next = g.weapon_breakdown(-1, w);
+        const core::dmg_breakdown now = g.weapon_breakdown(), next = g.tool_offer_breakdown();   // v0.23.0: z rzadkością i profitami
         core::message m0; m0.add(UI(teraz_3)); g.weapon_title(m0);
         core::add_range(m0.add(" "), now.min, now.max);
         stripe(c, 0, phone_tile::stripe_brand);
         phone_text(a, t, list_x, row_py(0), fit(a, m0.s, phone_text_w).c_str(), ink::dark);
-        core::message m1; m1.add(UI(nowe)).add(data::weapons[w].name).add(" ");
+        core::message m1; m1.add(UI(nowe)).add(data::weapons[w].name).add(" (").add(data::weapon_rarities[next.rarity].name).add(") ");
         core::add_range(m1, next.min, next.max).add(UI(zasieg)).add(data::weapons[w].range);
         stripe(c, 1, phone_tile::stripe_prog);
         phone_text(a, t, list_x, row_py(1), fit(a, m1.s, phone_text_w).c_str(), ink::dark);
         core::message m2; core::compare_line(m2, now, next);
         if(a.text.width(m2.s) > phone_text_w) { m2 = core::message(); core::compare_line(m2, now, next, true); }
         phone_text(a, t, list_x, row_py(2), fit(a, m2.s, phone_text_w).c_str(), next.avg10 > now.avg10 ? ink::done : ink::late);
-        core::message m3; m3.add(UI(uwaga)).add(g.weapon_lvl);
-        if(g.weapon_trait >= 0) m3.add(" i ").add(data::tool_traits[g.weapon_trait].short_name).add(UI(przepadna));
-        else m3.add(UI(przepadnie));
-        stripe(c, 3, phone_tile::stripe_late);
-        phone_text(a, t, list_x, row_py(3), fit(a, m3.s, phone_text_w).c_str(), ink::late);
         ph.commit();
-        // v0.21.51: wybór zaznaczeniem - na start „Zostaję”, góra/dół zaznacza, A zatwierdza, B zostaję
-        int sel = 0;
+        // v0.23.2: trzy wybory (wiersze 3-5): Weź (stara do plecaka / na ziemię / przepada), Do plecaka, Zostaw;
+        // na start Do plecaka (przy pełnym - Zostaw), góra/dół zaznacza, A zatwierdza, B zostaw
+        const bool full = g.backpack_full();
+        const int fate = g.tool_take_fate();
+        int sel = full ? 2 : 1;
         page_sprites rows;
         auto draw_rows = [&]() {
             rows.clear();
-            for(int k = 0; k < 2; ++k)
+            for(int k = 0; k < 3; ++k)
             {
-                const bool on = k == sel;
-                c.rounded(1, row_ty(4 + k), 28, 2, on ? phone_tile::fill_group : phone_tile::fill_card, on ? phone_tile::corner_group : phone_tile::corner_card);
-                stripe(c, 4 + k, on ? phone_tile::stripe_brand : (k == 1 ? phone_tile::stripe_late : phone_tile::stripe_todo));
+                const bool on = k == sel, off = k == 1 && full;
+                c.rounded(1, row_ty(3 + k), 28, 2, on ? phone_tile::fill_group : phone_tile::fill_card, on ? phone_tile::corner_group : phone_tile::corner_card);
+                stripe(c, 3 + k, on ? phone_tile::stripe_brand : (k == 0 ? phone_tile::stripe_done : (k == 1 ? phone_tile::stripe_prog : phone_tile::stripe_todo)));
                 core::message r; r.add(on ? "> " : "  ");
-                if(k == 0) { r.add(UI(zostaje)); g.weapon_title(r); }
-                else r.add(UI(zamieniam_na)).add(data::weapons[w].name);
-                phone_text(a, rows, list_x, row_py(4 + k), fit(a, r.s, phone_text_w).c_str(), on ? ink::brand : (k == 1 ? ink::late : ink::dark));
+                if(k == 0) r.add(fate == 0 ? UI(bpg_wez_plecak) : (fate == 1 ? UI(bpg_wez_ziemia) : UI(bpg_wez_przepada)));
+                else if(k == 1) r.add(full ? UI(bpg_plecak_pelny) : UI(bpg_do_plecaka)).add(g.backpack_count()).add("/").add(core::game::backpack_slots());
+                else r.add(UI(bpg_zostaw));
+                phone_text(a, rows, list_x, row_py(3 + k), fit(a, r.s, phone_text_w).c_str(), on ? ink::brand : (off ? ink::dim : (k == 0 && fate == 2 ? ink::late : ink::dark)));
             }
             ph.commit();
         };
@@ -1968,8 +2156,15 @@ namespace
         modal_guard();
         while(g.has_tool_offer())
         {
-            if(bn::keypad::up_pressed() || bn::keypad::down_pressed()) { sel = 1 - sel; draw_rows(); bn::sound_items::sfx_menu.play(); }
-            else if(bn::keypad::a_pressed() && sel == 1) { g.accept_tool(); bn::sound_items::sfx_buy.play(); }
+            const int v = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+            if(v)
+            {
+                sel = (sel + v + 3) % 3;
+                if(sel == 1 && full) sel = (sel + v + 3) % 3;
+                draw_rows(); bn::sound_items::sfx_menu.play();
+            }
+            else if(bn::keypad::a_pressed() && sel == 0) { g.accept_tool(); bn::sound_items::sfx_buy.play(); }
+            else if(bn::keypad::a_pressed() && sel == 1) { if(g.tool_to_backpack()) bn::sound_items::sfx_pickup.play(); }
             else if(bn::keypad::a_pressed() || bn::keypad::b_pressed()) { g.decline_tool(); bn::sound_items::sfx_menu.play(); }
             next_frame();
         }
@@ -1989,22 +2184,19 @@ namespace
         const int slot = g.offer_slot;
         phone_header(a, ph, t, UI(paczka_sprzetu), data::gear_slots[slot]);
         phone_canvas& c = *ph.canvas;
-        auto item_rows = [&](int row, int rarity, int trait, bool is_new) {
+        auto item_row = [&](int row, int rarity, int trait, bool is_new) {   // v0.23.2: jeden wiersz na przedmiot (+ trzy wybory)
             const core::gear_def& gd = data::gear[slot * 3 + rarity];
             stripe(c, row, is_new ? phone_tile::stripe_prog : phone_tile::stripe_todo);
-            stripe(c, row + 1, is_new ? phone_tile::stripe_prog : phone_tile::stripe_todo);
-            phone_text(a, t, list_x, row_py(row), clip(gd.name, 17).c_str(), ink::dark);
-            phone_pill(a, c, t, pill_end, row_ty(row), data::gear_rarities[rarity],
-                       rarity == 2 ? pill::prog : (rarity == 1 ? pill::group : pill::gray));
-            core::message m; m.add(is_new ? UI(nowy) : UI(teraz_3)).add(gear_stat_name(gd.stat)).add(" +").add(gd.value)
-                                .add(", ").add(data::gear_traits[trait].short_name);
-            phone_text(a, t, list_x, row_py(row + 1), fit(a, m.s, phone_text_w).c_str(), is_new ? ink::brand : ink::dim);
+            core::message m; m.add(is_new ? UI(nowy) : UI(teraz_3)).add(gd.name).add(", ").add(data::gear_traits[trait].short_name);
+            const char* rn = data::gear_rarities[rarity];
+            phone_text(a, t, list_x, row_py(row), fit(a, m.s, pill_room(rn)).c_str(), is_new ? ink::brand : ink::dark);
+            phone_pill(a, c, t, pill_end, row_ty(row), rn, rarity == 2 ? pill::prog : (rarity == 1 ? pill::group : pill::gray));
         };
-        item_rows(0, g.equipped[slot], g.equipped_trait[slot], false);
-        item_rows(2, g.offer_rarity, g.offer_trait, true);
-        // wiersz 4: porównanie (rozpiska #26) - cios, kryt, obrona; kilka zmian na zmianę co ~1,5 s, bez zmian - cecha
+        item_row(0, g.equipped[slot], g.equipped_trait[slot], false);
+        item_row(1, g.offer_rarity, g.offer_trait, true);
+        // wiersz 2: porównanie (rozpiska #26) - cios, kryt, obrona; kilka zmian na zmianę co ~1,5 s, bez zmian - cecha
         const core::dmg_breakdown now = g.weapon_breakdown(), next = g.weapon_breakdown(-1, -1, slot, g.offer_rarity, g.offer_trait);
-        core::message cmp[3]; int cmp_n = 0;
+        core::message cmp[4]; int cmp_n = 0;
         if(now.min != next.min || now.max != next.max || now.avg10 != next.avg10) { core::compare_line(cmp[cmp_n], now, next); if(a.text.width(cmp[cmp_n].s) > phone_text_w) { cmp[cmp_n] = core::message(); core::compare_line(cmp[cmp_n], now, next, true); } ++cmp_n; }
         if(now.crit_chance() != next.crit_chance() || now.crit_max != next.crit_max) core::compare_crit(cmp[cmp_n++], now, next);
         const core::gear_def& gold = data::gear[slot * 3 + g.equipped[slot]], &gnew = data::gear[slot * 3 + g.offer_rarity];
@@ -2015,25 +2207,61 @@ namespace
         }
         const bool neutral = cmp_n == 0;   // bez wpływu na walkę: jak dawniej cecha nowego przedmiotu
         if(neutral) cmp[cmp_n++].add(UI(cecha_2)).add(data::gear_traits[g.offer_trait].name);
+        // v0.23.0: pas bez kabury zdejmie pas z kaburą - ostrzeżenie pierwsze w kolejce wiersza 4
+        int warn = -1;
+        if(g.offer_drops_holster())
+        {
+            for(int i = cmp_n; i > 0; --i) cmp[i] = cmp[i - 1];
+            cmp[0] = core::message(); cmp[0].add(UI(tracisz_kabure));
+            if(g.weapon2 >= 0) cmp[0].add(data::weapons[g.weapon2].name);
+            warn = 0; ++cmp_n;
+        }
         page_sprites t4;
         auto draw_cmp = [&](int i) {
             t4.clear();
-            phone_text(a, t4, list_x, row_py(4), fit(a, cmp[i].s, phone_text_w).c_str(), neutral ? ink::dim : ink::brand);
+            phone_text(a, t4, list_x, row_py(2), fit(a, cmp[i].s, phone_text_w).c_str(), i == warn ? ink::late : (neutral ? ink::dim : ink::brand));
         };
         draw_cmp(0);
-        core::message km; km.add(UI(a_zakladam_b_zostawiam)).add(data::gear_decline_xp + g.offer_rarity).add(")");
-        phone_text(a, t, list_x, row_py(5), km.s, g.offer_is_better() ? ink::done : ink::dark);
-        ph.commit();
+        // v0.23.2: trzy wybory (wiersze 3-5): Załóż (stary do plecaka / na ziemię), Do plecaka, Zostaw (+dośw.)
+        const bool full = g.backpack_full();
+        const int xp = g.offer_decline_xp();
+        int sel = g.offer_is_better() ? 0 : (full ? 2 : 1);
+        page_sprites rows;
+        auto draw_rows = [&]() {
+            rows.clear();
+            for(int k = 0; k < 3; ++k)
+            {
+                const bool on = k == sel, off = k == 1 && full;
+                c.rounded(1, row_ty(3 + k), 28, 2, on ? phone_tile::fill_group : phone_tile::fill_card, on ? phone_tile::corner_group : phone_tile::corner_card);
+                stripe(c, 3 + k, on ? phone_tile::stripe_brand : (k == 0 ? phone_tile::stripe_done : (k == 1 ? phone_tile::stripe_prog : phone_tile::stripe_todo)));
+                core::message r; r.add(on ? "> " : "  ");
+                if(k == 0) r.add(full ? UI(bpg_zaloz_ziemia) : UI(bpg_zaloz_plecak));
+                else if(k == 1) r.add(full ? UI(bpg_plecak_pelny) : UI(bpg_do_plecaka)).add(g.backpack_count()).add("/").add(core::game::backpack_slots());
+                else { r.add(UI(bpg_zostaw)); if(xp > 0) r.add(" +").add(xp).add(UI(dosw)); }
+                phone_text(a, rows, list_x, row_py(3 + k), fit(a, r.s, phone_text_w).c_str(), on ? ink::brand : (off ? ink::dim : ink::dark));
+            }
+            ph.commit();
+        };
+        draw_rows();
         bn::sound_items::sfx_notify.play(bn::fixed(0.7));
         modal_guard();
         int clock = 0;
         while(g.has_offer())
         {
-            if(bn::keypad::a_pressed()) { g.accept_offer(); bn::sound_items::sfx_buy.play(); }
-            else if(bn::keypad::b_pressed()) { g.decline_offer(); bn::sound_items::sfx_menu.play(); }
+            const int v = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
+            if(v)
+            {
+                sel = (sel + v + 3) % 3;
+                if(sel == 1 && full) sel = (sel + v + 3) % 3;
+                draw_rows(); bn::sound_items::sfx_menu.play();
+            }
+            else if(bn::keypad::a_pressed() && sel == 0) { g.accept_offer(); bn::sound_items::sfx_buy.play(); }
+            else if(bn::keypad::a_pressed() && sel == 1) { if(g.offer_to_backpack()) bn::sound_items::sfx_pickup.play(); }
+            else if(bn::keypad::a_pressed() || bn::keypad::b_pressed()) { g.decline_offer(); bn::sound_items::sfx_menu.play(); }
             else if(cmp_n > 1 && ++clock % 90 == 0) draw_cmp((clock / 90) % cmp_n);
             next_frame();
         }
+        rows.clear();
         t4.clear();
         t.clear();
         a.text.set_palette_item(default_ink);
@@ -2088,6 +2316,19 @@ namespace
             int st = k == dmg_text::weapon ? phone_tile::stripe_brand : (k == dmg_text::total ? phone_tile::stripe_done
                    : (k == dmg_text::crit ? phone_tile::stripe_prog : -1));
             push_row(a, out, l, i, st);
+            if(k == dmg_text::weapon)   // v0.23.0: rzadkość, Patent, typy ciosu, profity
+            {
+                const core::weapon_def& w = data::weapons[b.weapon];
+                core::message r; r.add(UI(rzadkosc_broni)).add(data::weapon_rarities[b.rarity].name);
+                push_row(a, out, r, ink::dark, -1);
+                core::message pt; pt.add(UI(cios_b)).add(": ").add(w.mode_b.name.c_str()[0] ? w.mode_b.name.c_str() : UI(cios_b))
+                    .add(UI(patent_odn)).add(core::imax(1, w.mode_b.cooldown + data::weapon_rarities[b.rarity].cooldown_delta
+                                                          - core::perk_value(b.perks, core::tool_trait_effect::cooldown_b)));
+                push_row(a, out, pt, ink::dim, -1);
+                core::message ht; core::dmg_line(ht, b, dmg_text::hit_mult);
+                push_row(a, out, ht, ink::dim, -1);
+                core::message pk; if(core::dmg_line(pk, b, dmg_text::perks)) push_row(a, out, pk, ink::dark, -1);
+            }
         }
         if(g)   // obrona i unik: co zmniejsza ciosy problemów
         {
@@ -2528,7 +2769,7 @@ namespace
 
     void boon_pick(app& a, bool mid_stage = false);   // premia 1 z 3 (niżej); mid_stage - z wydarzenia (#30)
 
-    scene run_game(app& a)
+    [[gnu::noinline]] scene run_game(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         core::game& g = *a.g;
         stage_card(a);
@@ -2782,7 +3023,25 @@ namespace
         bn::unique_ptr<text_sprites> levelup_text_heap(new text_sprites());
         text_sprites& levelup_text = *levelup_text_heap;
         int levelup_timer = 0;
+        int dog_pets_seen = g.dog_pets, dog_happy = 0;   // v0.23.0: Kawka - pogłaskana w tej turze: baner z oceną, zadowolona mina
         auto detect_events = [&]() {   // powiadomienia push o ważnych zdarzeniach
+            if(g.dog_pets < dog_pets_seen) dog_pets_seen = g.dog_pets;   // nowa budowa
+            if(g.dog_pets > dog_pets_seen)
+            {
+                dog_pets_seen = g.dog_pets;
+                dog_happy = 90;
+                const core::dog_quip_def& q = data::dog_quips[core::dog_quip(a.save, g)];
+                banner.push(data::dog_name, q.lines[0]);
+                if(q.lines[1][0]) banner.push(q.lines[1], q.lines[2]);
+                bn::fixed_point d = world(g.dog_x, g.dog_y);
+                for(int k = 0; k < 4; ++k) fx_particles.spawn(d.x() + fx_particles.rand(-64, 64), d.y() - 8, 0, fx_particles.rand(-20, -8), 0, 36, particle_pool::star);
+            }
+            if(g.backpack_count() > 0 && ! (a.save.tutorial & core::tut_backpack))   // v0.23.2: dymek Marka - pierwszy przedmiot w plecaku
+            {
+                a.save.tutorial = uint16_t(a.save.tutorial | core::tut_backpack);
+                write_profile(a.save);
+                banner.push(UI(bpg_tip_t), UI(bpg_tip));
+            }
             int active_pickups = 0;
             for(int i = 0; i < g.pickups_count; ++i) active_pickups += g.pickups[i].active;
             if(active_pickups < prev_active) bn::sound_items::sfx_pickup.play();   // zebrana znajdźka
@@ -2850,6 +3109,9 @@ namespace
             if(g.st == core::status::stage_clear || g.st == core::status::won)   // odznaki i zlecenia
             {
                 int got = core::check_badges(a.save, g);   // też Respekt za etap - od razu w profilu
+                if(const int art = core::artifacts_bank_today(a.save, g))   // v0.23.0: Gablota - nowy artefakt
+                    for(int i = 0; i < data::artifacts_count; ++i)
+                        if((art >> i) & 1) { banner.push(UI(artefakt_w_gablocie), data::weapons[data::artifacts[i]].name); break; }
                 int done = core::check_contracts(a.save);
                 int secrets = core::check_secrets(a.save, &g);   // v0.21.51 cz. 2: np. 5 magazynów, 20x mokry + prąd
                 const int tasks0 = a.save.tasks_total;
@@ -2860,7 +3122,7 @@ namespace
                 banner.push(rt.s, rb.s);
                 push_achievements(banner, got, done, secrets);
                 push_goals(banner, a.save, tasks, coll, tasks0);
-                bn::sram::write(a.save);   // liczniki zleceń przeniesione do profilu
+                write_profile(a.save);   // liczniki zleceń przeniesione do profilu
             }
             if(g.docs != prev_docs)   // Akt 0: dokument zebrany, komplet otwiera schody
             {
@@ -2992,6 +3254,8 @@ namespace
         bn::optional<bn::sprite_ptr> ally_sprite;
         bn::fixed_point ally_cur, ally_dst;
         bool ally_hidden = false;
+        bn::optional<bn::sprite_ptr> dog_sprite;   // v0.23.0: Kawka w błocie (merda; po pogłaskaniu zadowolona)
+        bn::fixed_point dog_cur, dog_dst;
         bn::vector<int16_t, core::max_enemies> enemy_shown(g.enemies_count, -1);   // v0.21.52 cz. d: klatki problemów od 184
         bool snap_next = true;
         auto approach = [](bn::fixed_point& c, const bn::fixed_point& d) {
@@ -3075,6 +3339,24 @@ namespace
                 }
             }
             else if(ally_sprite) ally_sprite.reset();
+            if(g.dog_here() && g.visible(g.dog_x, g.dog_y) && ! ally_hidden)   // v0.23.0: Kawka
+            {
+                constexpr int dog_frame = 196;   // actors: 196/197 siedzi i merda, 198 zadowolona
+                if(! dog_sprite)
+                {
+                    dog_sprite = bn::sprite_items::actors.create_sprite_optional(dog_dst, dog_frame);
+                    if(dog_sprite) { dog_sprite->set_camera(cam); dog_cur = dog_dst; }
+                }
+                if(dog_sprite)
+                {
+                    approach(dog_cur, dog_dst);
+                    dog_sprite->set_position(dog_cur);
+                    dog_sprite->set_horizontal_flip(g.hero.x < g.dog_x);
+                    dog_sprite->set_tiles(bn::sprite_items::actors.tiles_item(), dog_happy > 0 ? dog_frame + 2 : dog_frame + ((anim_clock / 12) & 1));
+                }
+            }
+            else if(dog_sprite) dog_sprite.reset();
+            if(dog_happy > 0) --dog_happy;
             for(int i = 0; i < pickups.size(); ++i)   // znajdźki lekko podskakują
                 pickups[i].set_y(world(g.pickups[i].x, g.pickups[i].y).y() - (((anim_clock / 16 + i) & 1) ? 1 : 0));
             cam_base = bn::fixed_point(clampf(hero_cur.x(), 136), clampf(hero_cur.y(), 176));
@@ -3238,6 +3520,13 @@ namespace
 
         // Wybrane w telefonie: fachowiec z brygady albo naprawa za materiał (h >= brigade_count). Zużywa turę.
         auto do_pending = [&](int h) {
+            if(h >= 100)   // v0.23.2: zamiana z plecaka (Załóż / Do kabury) - tura
+            {
+                const int i = (h - 100) / 4, k = (h - 100) % 4;
+                if(! (k == 0 ? g.backpack_equip(i) : g.backpack_holster(i))) return false;
+                bn::sound_items::sfx_pickup.play();
+                return true;
+            }
             if(h < data::brigade_count)
             {
                 if(! g.call_helper(h)) return false;
@@ -3347,11 +3636,13 @@ namespace
                 enemy_dst[i] = world(g.enemies[i].x, g.enemies[i].y);
             }
             if(g.ally_turns > 0) ally_dst = world(g.ally_x, g.ally_y);
+            if(g.dog_here()) dog_dst = world(g.dog_x, g.dog_y);
             behavior_fx();
             if(snap_next)
             {
                 hero_cur = hero_dst;
                 ally_cur = ally_dst;
+                dog_cur = dog_dst;
                 for(int i = 0; i < g.enemies_count; ++i) enemy_cur[i] = enemy_dst[i];
                 snap_next = false;
             }
@@ -3490,6 +3781,7 @@ namespace
         refresh();
 
         // Podgląd mapy: trzymaj L (samo L, bez R - L+R+SELECT to skrót pokazowy).
+        int l_action = 0;   // v0.23.0: L+A Patent, L+B zamiana broni (wciśnięte w trakcie podglądu mapy)
         auto overview = [&]() {
             map->build_overview(g);
             bg_map_ptr.reload_cells_ref();
@@ -3500,7 +3792,7 @@ namespace
             fx.clear(); log.clear(); floaters.clear(); fx_particles.list.clear(); levelup_text.clear(); levelup_timer = 0;
             hide_mini_bars(); target_marker.set_visible(false); status_sprite.set_visible(false);
             power_icon.set_visible(false); power_text.clear(); shown_cd = -1; hide_status_hud();
-            ally_hidden = true; ally_sprite.reset();
+            ally_hidden = true; ally_sprite.reset(); dog_sprite.reset();
             a.text.set_left_alignment();
             a.text.generate(-116, 72, UI(podglad_mapy_pusc_l), log);
             // magazyn (#32): znacznik ściany / drzwi, gdy odkryte, i skrzynia (odkryta, jeszcze nieotwarta)
@@ -3524,6 +3816,8 @@ namespace
             int t = 0;
             while(bn::keypad::l_held() && ! bn::keypad::r_held())
             {
+                if(bn::keypad::a_pressed()) { l_action = 1; break; }
+                if(bn::keypad::b_pressed()) { l_action = 2; break; }
                 hero.set_visible((++t & 16) == 0);
                 next_frame();
             }
@@ -3553,7 +3847,7 @@ namespace
             for(int i = 0; i < enemies.size(); ++i) { enemies[i].set_tiles(bn::sprite_items::actors.tiles_item(), shared); enemy_shown[i] = -1; }
             for(auto& sp : pickups) sp.set_tiles(bn::sprite_items::actors.tiles_item(), shared);
             power_icon.set_visible(false); power_text.clear(); shown_cd = -1; hide_status_hud();
-            ally_hidden = true; ally_sprite.reset();
+            ally_hidden = true; ally_sprite.reset(); dog_sprite.reset();
             release_strips();
             banner.hide();
             fx_particles.list.clear();
@@ -3670,8 +3964,22 @@ namespace
         {
             levelup_fx();
             levelup_update();
-            if(bn::keypad::l_held() && ! bn::keypad::r_held()) { overview(); continue; }
+            if(bn::keypad::l_held() && ! bn::keypad::r_held() && l_action == 0) { overview(); if(l_action == 0) continue; }
             bool acted = false;
+            if(l_action)   // v0.23.0: Patent (najbliższy cel we wzorze B albo pęknięta ściana) / zamiana broni z kabury
+            {
+                const int act = l_action;
+                l_action = 0;
+                if(act == 1) acted = weapon_b_action(g);
+                else if(! g.has_belt()) g.push(core::message().add(UI(bez_pasa)));
+                else if(g.weapon2 < 0) g.push(core::message().add(UI(kabura_pusta)));
+                else acted = g.player_swap_weapon();
+                refresh();
+                wait_release();
+                animate(); fx_particles.update(); banner.update(a);
+                next_frame();
+                continue;
+            }
             int dx = 0, dy = 0;
             // ruch: pojedyncze wciśnięcie lub przytrzymanie (auto-powtórzenie)
             if(aiming)   // celowanie trwa: strzałki wybierają cel, puszczenie A atakuje
@@ -3729,8 +4037,9 @@ namespace
                         core::check_secrets(a.save, &g);
                         core::bank_xp(a.save, g);
                         core::bank_progress(a.save, g);   // v0.21.52 cz. b: inspektor i mistrzostwo
+                        core::artifacts_bank_today(a.save, g);   // v0.23.0: Gablota
                         bank_tasks(a, g); core::check_collections(a.save);   // cz. c: zadania, kolekcje
-                        bn::sram::write(a.save);
+                        write_profile(a.save);
                         clear_run(a);
                         return leave(scene::shop);
                     }
@@ -3893,8 +4202,9 @@ namespace
                     core::check_secrets(a.save, &g);
                     core::bank_xp(a.save, g);
                     core::bank_progress(a.save, g);   // v0.21.52 cz. b: inspektor i mistrzostwo
+                    core::artifacts_bank_today(a.save, g);   // v0.23.0: Gablota
                     bank_tasks(a, g); core::check_collections(a.save);   // cz. c: zadania, kolekcje
-                    bn::sram::write(a.save);
+                    write_profile(a.save);
                     clear_run(a);
                     return leave(scene::shop);
                 }
@@ -4206,7 +4516,7 @@ namespace
     // ------------------------------------------------------------------ harmonogram między etapami: wybór ścieżki
     // Telefon z aplikacją: zaliczony etap, kolejny etap i dwa warianty do wyboru (rozgałęzienie jak mapa w Slay the
     // Spire, kolejność etapów stała). Lewo/prawo - wariant, A/START - dalej (Hurtownia na końcu aktu).
-    scene run_schedule(app& a)
+    [[gnu::noinline]] scene run_schedule(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         core::game& g = *a.g;
         boon_pick(a);   // najpierw premia 1 z 3 (#27), potem ścieżka i Hurtownia
@@ -4506,7 +4816,7 @@ namespace
     }
 
     // ------------------------------------------------------------------ ekran końcowy z QR
-    scene run_end(app& a)
+    [[gnu::noinline]] scene run_end(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         core::game& g = *a.g;
         bool won = g.st == core::status::won;
@@ -4522,6 +4832,7 @@ namespace
         bool stake_record = won && stake > 0 && stake > core::best_stake(a.save, g.cls);
         const int stake_rank0 = core::stake_rank(a.save);   // v0.21.52 cz. b (#48): stopnie inwestora przed tą budową
         int badges_got = core::check_badges(a.save, g);   // katalog, narzędzia, Osiedle, liczniki zleceń, rekord stawki
+        core::artifacts_bank_today(a.save, g);   // v0.23.0: Gablota (dzień z daty w profilu)
         int contracts_got = core::check_contracts(a.save);
         int secrets_got = core::check_secrets(a.save, &g);   // v0.21.51 cz. 2: sekretne zlecenia (wygrana bez kawy, na styk...)
         int gained = core::bank_xp(a.save, g);
@@ -4534,7 +4845,7 @@ namespace
         uint32_t story_got = core::story_check(a.save, &g);   // fabuła (#35): nowe wątki SMS za kamienie milowe (też od inspektora)
         const int career_new = core::career_announce(a.save);   // v0.21.52 cz. d: nowe kontrakty na mapie kariery
         const int filters_new = core::filter_announce(a.save);   // v0.21.53: nowe filtry ekranu
-        bn::sram::write(a.save);
+        write_profile(a.save);
         clear_run(a);
         play_song(song::none);
         (won ? bn::sound_items::sfx_level : bn::sound_items::sfx_hurt).play();
@@ -4655,7 +4966,7 @@ namespace
     // ------------------------------------------------------------------ prolog: wjazd na działkę (pierwsza budowa)
     // Pickup wjeżdża na plac, bohater wysiada, kamera jedzie przez działkę z porozrzucanymi problemami budowy,
     // na koniec SMS od inwestorki. A/START pomija.
-    scene run_prologue(app& a)
+    [[gnu::noinline]] scene run_prologue(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         const core::game& g = *a.g;
         {
@@ -4743,20 +5054,21 @@ namespace
             leave(scene::prologue);   // ściemnij plac przed wiadomością
         }
         core::set_flag(a.save, core::prologue_seen);
-        bn::sram::write(a.save);
+        write_profile(a.save);
         phone_message(a, data::story_prologue, UI(budowa), UI(twoj_pierwszy_plac_budowy), ink::dim, data::classes[g.cls].name);
         if(! core::has_flag(a.save, core::help_seen)) { a.after_help = scene::game; return leave(scene::help); }
         return leave(scene::game);
     }
 
     // ------------------------------------------------------------------ Hurtownia między aktami (budżet budowy)
-    scene run_hurtownia(app& a)
+    [[gnu::noinline]] scene run_hurtownia(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         core::game& g = *a.g;
         phone_screen ph(4);
         bn::sprite_palette_item default_ink = a.text.palette_item();
         page_sprites t;
-        int sel = 0, top = 0;
+        int sel = 0, top = 0, clock = 0;
+        bool tabs_hint = false;   // v0.23.2: wiersz 0 na zmianę - premia za akt i "L/R: Skup, PSZOK, Plecak"
         const char* note = nullptr;
         bn::sound_items::sfx_notify.play(bn::fixed(0.7));
         auto redraw = [&]() {
@@ -4765,7 +5077,7 @@ namespace
             phone_header(a, ph, t, UI(hurtownia_3), sub.s);
             phone_canvas& c = *ph.canvas;
             core::message b; b.add(UI(premia_za_akt)).add(g.act_numeral()).add(": +").add(g.act_bonus).add(UI(zl));
-            phone_text(a, t, list_x, row_py(0), note ? note : b.s, note ? ink::brand : ink::done);
+            phone_text(a, t, list_x, row_py(0), note ? note : (tabs_hint ? UI(bpg_hurt_tabs) : b.s), note ? ink::brand : (tabs_hint ? ink::brand : ink::done));
             for(int r = 0; r < 4 && top + r < data::hurtownia_count; ++r)   // 4 wiersze, przewijane
             {
                 const core::shop_item_def& it = data::hurtownia[top + r];
@@ -4787,7 +5099,12 @@ namespace
                 else { dm.add(" -> +").add(g.weapon_lvl + 1).add(": "); core::tool_level_label(dm, g.weapon_lvl, g.upgrade_price()); }
                 dk = ink::brand;
             }
-            else if(si.effect == core::shop_effect::tool && g.weapon_lvl > 0)
+            else if(si.effect == core::shop_effect::gear && g.has_belt() && g.weapon2 >= 0)   // v0.23.0: losowy pas zdejmie pas z kaburą
+            {
+                dm.add(UI(uwaga_2)).add(UI(pas_zabierze_kabure));
+                dk = ink::late;
+            }
+            else if(si.effect == core::shop_effect::tool && g.weapon_lvl > 0 && g.backpack_full())   // v0.23.2: z miejscem w plecaku stara broń trafia do plecaka
             {
                 dm.add(UI(uwaga_2)); g.weapon_title(dm).add(UI(przepadnie));
                 dk = ink::late;
@@ -4800,6 +5117,22 @@ namespace
         modal_guard();
         while(true)
         {
+            if(bn::keypad::l_pressed() || bn::keypad::r_pressed())   // v0.23.2: zakładki Skup, PSZOK, Plecak (L/R)
+            {
+                int tab = bn::keypad::l_pressed() ? 3 : 1;
+                while(tab != 0)
+                {
+                    bn::sound_items::sfx_menu.play();
+                    const bag_mode m = tab == 1 ? bag_mode::sell : (tab == 2 ? bag_mode::recycle : bag_mode::bag);
+                    const int r = backpack_loop(a, ph, t, m, tab == 1 ? UI(bpg_skup) : (tab == 2 ? UI(bpg_pszok) : UI(bpg_tytul)));
+                    tab = r == -2 ? (tab + 3) % 4 : (r == -3 ? (tab + 1) % 4 : 0);
+                }
+                note = nullptr;
+                redraw();
+                next_frame();
+                continue;
+            }
+            if(! note && ++clock % 150 == 0) { tabs_hint = ! tabs_hint; redraw(); }
             int n = data::hurtownia_count;
             int dir = bn::keypad::up_pressed() ? -1 : (bn::keypad::down_pressed() ? 1 : 0);
             if(dir)
@@ -4842,7 +5175,7 @@ namespace
     // i poziomem inspektora), najlepszy wynik i wygrane; A wybiera kontrakt i przechodzi do wyboru zawodu, B - tytuł.
     bool career_map(const app& a) { return a.save.runs > 0; }
 
-    scene run_career(app& a)
+    [[gnu::noinline]] scene run_career(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         phone_screen ph(0);
@@ -4893,7 +5226,7 @@ namespace
                 if(core::career_unlocked(a.save, sel))
                 {
                     a.save.contract = uint8_t(sel);
-                    bn::sram::write(a.save);
+                    write_profile(a.save);
                     t.clear(); icons.clear();
                     a.text.set_palette_item(default_ink);
                     wait_release();
@@ -4912,7 +5245,7 @@ namespace
         }
     }
 
-    scene run_daily(app& a)
+    [[gnu::noinline]] scene run_daily(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         phone_screen ph(0);
@@ -4975,7 +5308,7 @@ namespace
         wait_release();
         auto finish = [&]() {
             core::set_daily_date(a.save, y, m, d);
-            bn::sram::write(a.save);
+            write_profile(a.save);
             t.clear();
             a.text.set_palette_item(default_ink);
             wait_release();
@@ -4998,7 +5331,7 @@ namespace
                 finish();
                 core::start_daily(*a.g, core::daily_number(y, m, d));
                 core::start_run(a.save);
-                bn::sram::write(a.save);
+                write_profile(a.save);
                 return leave(scene::game);
             }
             if(bn::keypad::b_pressed()) { finish(); return leave(scene::title); }
@@ -5010,7 +5343,7 @@ namespace
     // ------------------------------------------------------------------ wyzwanie tygodnia (#34, L na tytule)
     // Tydzień z daty budowy dnia (GBA bez zegara; góra/dół = tydzień dalej / wcześniej). Seed z numeru tygodnia, zasady
     // z listy po kolei, osobne wyniki ostatnich tygodni w profilu. A - start, SELECT - budowa dnia, B - tytuł.
-    scene run_weekly(app& a)
+    [[gnu::noinline]] scene run_weekly(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
         phone_screen ph(0);
@@ -5063,7 +5396,7 @@ namespace
         auto finish = [&]() {
             if(core::weekly_number(y, m, d) != week) core::civil_from_days(core::weekly_first_day(week), y, m, d);   // inny tydzień: jego poniedziałek
             core::set_daily_date(a.save, y, m, d);   // data wspólna z budową dnia
-            bn::sram::write(a.save);
+            write_profile(a.save);
             t.clear();
             a.text.set_palette_item(default_ink);
             wait_release();
@@ -5081,7 +5414,7 @@ namespace
                 finish();
                 core::start_weekly(*a.g, week);
                 core::start_run(a.save);
-                bn::sram::write(a.save);
+                write_profile(a.save);
                 return leave(scene::game);
             }
             if(bn::keypad::b_pressed()) { finish(); return leave(scene::title); }
@@ -5111,7 +5444,7 @@ namespace
         int slot_cx(int s) { return s * slot_w + slot_w / 2; }
     }
 
-    scene run_class_select(app& a)
+    [[gnu::noinline]] scene run_class_select(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         using namespace class_ui;
         bn::bg_palettes::set_transparent_color(bn::color(3, 2, 8));
@@ -5389,7 +5722,7 @@ namespace
                 return coach_hole{ 0, 0, 30, 5, false };   // zawód, na plac, nowy zawód: pasek portretów
             };
             if(core::tutorial_pending(a.save, 1)) run_tutorial(a, 1, hole, open_stats);
-            run_unlocks(a, 1, hole);
+            else run_unlocks(a, 1, hole, open_stats);   // v0.23.0: jeden dymek na wejście
             a.text.set_bg_priority(1);
         }
 
@@ -5441,7 +5774,7 @@ namespace
                     debug_scenario::apply(*a.g, PB_SCENARIO);
 #endif
                     core::start_run(a.save);   // licznik budów i budów z pamiątką (ranga)
-                    bn::sram::write(a.save);
+                    write_profile(a.save);
                     wait_release();
                     if(! core::has_flag(a.save, core::prologue_seen)) return leave(scene::prologue);
                     if(! core::has_flag(a.save, core::help_seen)) { a.after_help = scene::game; return leave(scene::help); }
@@ -5483,7 +5816,7 @@ namespace
 
     // ------------------------------------------------------------------ tryb inwestora (SELECT na wyborze zawodu)
     // Modyfikatory trudności po pierwszej wygranej: A włącza/wyłącza, każdy daje % doświadczenia i punkty stawki.
-    scene run_investor(app& a)
+    [[gnu::noinline]] scene run_investor(app& a)   // v0.23.0: osobna ramka (scena nie wkleja się w main - mniej stosu pod grą)
     {
         phone_screen ph(4);
         ph.icon.set_visible(false);
@@ -5644,7 +5977,7 @@ namespace
             }
             if(bn::keypad::b_pressed() || bn::keypad::start_pressed() || bn::keypad::select_pressed())
             {
-                bn::sram::write(a.save);
+                write_profile(a.save);
                 t.clear();
                 a.text.set_palette_item(default_ink);
                 wait_release();
@@ -5654,7 +5987,7 @@ namespace
         }
     }
 
-    scene run_shop(app& a, int tab = 4)
+    [[gnu::noinline]] scene run_shop(app& a, int tab = 4)   // v0.23.0: osobna ramka (mniej stosu pod grą)
     {
         phone_screen ph(tab);
         bn::sprite_palette_item default_ink = a.text.palette_item();
@@ -5695,7 +6028,7 @@ namespace
         constexpr int catalog_pages_count = 4;
         int cpage = 0;
         int tcol = 0, trow = 0;   // v0.21.52 cz. c (#46): drzewko - gałąź (kolumna) i wiersz (węzeł I / II, opcja A / B)
-        if(roll_tasks(a)) bn::sram::write(a.save);   // zadania nowego dnia / tygodnia (data budowy dnia)
+        if(roll_tasks(a)) write_profile(a.save);   // zadania nowego dnia / tygodnia (data budowy dnia)
         int page = 0;
         // Zakładka Koszty ma strony przełączane SELECT: Szkolenia (doświadczenie) / Respekt / Nagrody za odbiór.
         auto cost_pages = [](int i) { const char* const n[] = { UI(szkolenia), UI(drzewko_2), UI(respekt), UI(nagrody) }; return n[i]; };   // v0.21.52 cz. c: drzewko Szkoleń
@@ -6285,7 +6618,7 @@ namespace
                     if(bn::keypad::a_pressed() && core::story_unlocked(a.save, asel))
                     {
                         arch = 2; amsg = 0;
-                        if(core::story_unread(a.save, asel)) { core::story_mark_read(a.save, asel); bn::sram::write(a.save); }
+                        if(core::story_unread(a.save, asel)) { core::story_mark_read(a.save, asel); write_profile(a.save); }
                         bn::sound_items::sfx_notify.play(bn::fixed(0.6));
                         redraw();
                     }
@@ -6329,7 +6662,7 @@ namespace
                     if(n >= 0 && core::tree_choose(a.save, n, trow % 2))
                     {
                         bn::sound_items::sfx_buy.play();
-                        bn::sram::write(a.save);
+                        write_profile(a.save);
                         note = UI(wybrane);
                     }
                     else if(n >= 0) note = ! core::tree_open(a.save, n) ? UI(najpierw_szkolenia_tej_galezi)
@@ -6360,13 +6693,13 @@ namespace
             if(tab == 3 && bn::keypad::select_pressed())   // v0.21.53 cz. 2 (#40): Zespół - SELECT zmienia język (od razu)
             {
                 core::set_language(a.save, core::language == 0 ? 1 : 0);
-                bn::sram::write(a.save);
+                write_profile(a.save);
                 redraw(); bn::sound_items::sfx_menu.play();
             }
             if(tab == 0 && page == 4 && bn::keypad::select_pressed() && core::title_owned(a.save, sel))   // v0.21.52: wybór tytułu
             {
                 a.save.title = uint8_t(core::selected_title(a.save) == sel ? 0 : sel + 1);
-                bn::sram::write(a.save);
+                write_profile(a.save);
                 redraw();
                 bn::sound_items::sfx_buy.play();
             }
@@ -6401,7 +6734,7 @@ namespace
                 if(core::buy_respect(a.save, sel))
                 {
                     bn::sound_items::sfx_buy.play();
-                    bn::sram::write(a.save);
+                    write_profile(a.save);
                     note = UI(kupione);
                 }
                 else note = ! core::respect_unlocked(a.save, sel) ? UI(najpierw_sekretne_zlecenie)
@@ -6418,7 +6751,7 @@ namespace
                 if(ok)
                 {
                     bn::sound_items::sfx_buy.play();
-                    bn::sram::write(a.save);
+                    write_profile(a.save);
                     note = UI(kupione);
                     rebuild();
                     if(sel >= entries.size()) sel = entries.size() - 1;

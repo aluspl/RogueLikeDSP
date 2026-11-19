@@ -141,7 +141,7 @@ public sealed class RecapStaging
         if (scene == "recap-progress") Flow.Recap.Page.ScrollTo(Loc.T("postep_2")); // v0.21.52: karta z paskami postępu
         if (scene == "recap-end")
         {
-            Flow.End.Open();
+            Flow.BetweenRuns.Open(true);
             await DebugRunner.Frames(_app.Root, 20);
         }
         _app.Nodes.Phone.QueueRedraw();

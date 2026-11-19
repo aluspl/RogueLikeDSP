@@ -55,6 +55,8 @@ public static class Assets
     public const int FrameHelmet = 160;
     /// <summary>v0.21.52 cz. d (#47): problemy i bossowie kontraktów mapy kariery 184-195 (para klatek A/B).</summary>
     public const int FrameCareerEnemy = 184, CareerEnemies = 6;
+    /// <summary>v0.23.0: easter egg – Kawka 196/197 (siedzi, merda), 198 zadowolona, 199 uszy po sobie, 200 dłoń, 201 serduszko.</summary>
+    public const int FrameDog = 196, FrameDogB = 197, FrameDogHappy = 198, FrameDogEars = 199, FrameDogHand = 200, FrameDogHeart = 201;
     // menu_icons.png 30-34: sekretne zlecenie (koperta z „?”), Młot Zenka, Poziomica mistrza, Złota kielnia, Kask w paski
     public const int MenuSecret = 30, MenuZenka = 31, MenuLevel = 32, MenuGold = 33, MenuStripes = 34;
 
@@ -84,6 +86,11 @@ public static class Assets
     /// <summary>Chód (4 klatki) i oddech postaci: wiersz = klatka z actors.png, kolumna = AnimWalk0..3 / AnimBreath.</summary>
     public static Texture2D ActorsAnim => Tex("sprites/actors_anim.png");
     public static Texture2D ActorsAnimWhite => Tex("sprites/actors_anim_white.png");
+    /// <summary>v0.23.0: te same arkusze, fachowcy bez narzędzia zawodu w dłoni (w ręce rysowana jest broń).</summary>
+    public static Texture2D ActorsNoTool => Tex("sprites/actors_notool.png");
+    public static Texture2D ActorsNoToolWhite => Tex("sprites/actors_notool_white.png");
+    public static Texture2D ActorsAnimNoTool => Tex("sprites/actors_anim_notool.png");
+    public static Texture2D ActorsAnimNoToolWhite => Tex("sprites/actors_anim_notool_white.png");
     public static Texture2D Truck => Tex("sprites/truck.png");
     public static Texture2D Particles => Tex("sprites/particles.png");
     public static Texture2D Houses => Tex("sprites/houses.png");
@@ -182,6 +189,7 @@ public static class Assets
     public static int RewardIcon(GameData d, RewardDef r)
     {
         if (r.Kind == RewardKind.Tool) return d.Weapons[d.Tools[r.Index].Weapon].Elem == Element.Spark ? MenuRewardTool2 : MenuRewardTool;   // Pistolet do kotew
+        if (r.Kind == RewardKind.Belt) return MenuBelt;   // v0.23.0: pas z kaburą
         if (r.Kind == RewardKind.Gear) return d.Gear[r.Index * 3].Stat == GearStat.Thermos ? MenuBelt : MenuBoots;
         if (r.Kind == RewardKind.Act) return MenuStamps;
         return MenuCalendar;

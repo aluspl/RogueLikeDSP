@@ -159,7 +159,7 @@ public sealed class GoalsStaging
         for (var k = 0; k < 6 && g.St == GameStatus.Playing; k++) g.EnemyStrike(0, false);
         _app.AfterAction(true);
         await DebugRunner.Frames(_app.Root, 2);
-        Flow.End.Open();
+        Flow.BetweenRuns.Open(true);
         await DebugRunner.Frames(_app.Root, 20);
     }
 

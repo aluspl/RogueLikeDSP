@@ -54,6 +54,9 @@ def overlay(o, path=""):
             if rx.match(path): return EN.get(o, o) if opt else tr(o, path)
     return o
 
+# v0.23.0: rangi Respektu usunięte z danych (koszty kolejnych rang) - zwrot przy migracji profilu (C#: Meta.RemovedRespectCosts)
+REMOVED_RESPECT = {"reka": (15, 40), "skora": (15, 40), "oko": (15, 40), "unik": (15, 40), "kawa": (10, 30), "rutyna": (30, 60)}
+
 def t(x):
     """Tekst gracza (core::ltext). Oba przebiegi (polski i angielski) znaczą teksty, scalanie robi z nich
     { "polski", "angielski" } w tej samej kolejności."""
@@ -65,19 +68,110 @@ def build(d):
     wid = {w["id"]: i for i, w in enumerate(d["weapons"])}
     eid = {e["id"]: i for i, e in enumerate(d["enemies"])}
     mid = {x["id"]: i for i, x in enumerate(d["materials"]["list"])}
-    ELEM = {"none": "none", "woda": "water", "prad": "power", "iskra": "spark"}   # v0.21.50: żywioły (kombinacje stanów)
+    ELEM = {"none": "none", "woda": "water", "prad": "power", "iskra": "spark", "ogien": "fire"}   # v0.21.50: żywioły (kombinacje stanów)
     GEN = {"m": 0, "f": 1, "n": 2}
     L = ["// WYGENEROWANE przez tools/gen_data.py z data/game.json - nie edytuj ręcznie.",
          "#pragma once", '#include "core_types.h"', "", "namespace data {", ""]
     L.append("inline constexpr core::weapon_def weapons[] = {")
+    # v0.23.0: Gablota artefaktów – bit profilu (v19) = pozycja broni "master" w weapons[]. APPEND ONLY – profile bits: nowe bronie
+    # master tylko na końcu, nigdy nie przestawiać ani nie usuwać (Godot: ArtifactCaseTests.CaseOrderIsPinnedAppendOnly; GBA – ta sama kolejność).
+    ARTIFACT_ORDER = ["mlot_zenka", "poziomica_m", "pilarka", "noz_majstra", "mlot_grom", "kielnia_cegla", "szlifierka_isk", "lom_deska"]
+    masters = [w["id"] for w in d["weapons"] if w.get("master")]
+    assert masters[:len(ARTIFACT_ORDER)] == ARTIFACT_ORDER and len(masters) <= 16, f"Gablota: kolejność broni master tylko dopisywana: {masters}"
+    HIT = {"blunt": "blunt", "cut": "cut", "pierce": "pierce"}
+    PAT = {"single": "single", "arc": "arc", "around": "around", "cross": "cross", "line": "line", "shot": "shot", "throw": "throw3x3",
+           "spray": "spray", "push": "push", "lineBoth": "line_both", "line4": "line4"}
+    MEFF = {"none": "none", "stun": "stun", "root": "root", "push": "push", "pull": "pull", "defdown": "def_down", "dot": "dot",
+            "mark": "mark", "reveal": "reveal", "openWall": "open_wall", "swap": "swap", "chain": "chain", "dry": "dry",
+            "critNext": "crit_next", "wet": "wet", "ignite": "ignite", "burn": "burn", "spread": "spread"}
+    wpk = d["weaponPerks"]
+    pkid = {x["id"]: i for i, x in enumerate(wpk["pool"])}
+    def hits_of(w):
+        h = w.get("hit", "blunt")
+        return h if isinstance(h, list) else [h]
+    def master_mask(w):   # v0.23.0: stałe profity Mistrzowskiej - masterPerks albo wg pierwszego typu ciosu
+        if w.get("masterPerks"): return sum(1 << pkid[x] for x in w["masterPerks"])
+        return sum(1 << pkid[x] for x in wpk["master"].get(hits_of(w)[0], []))
+    def mode(w, k):
+        m = w.get(k)
+        if m is None:
+            pat = "single" if w["range"] == 1 else "shot"
+            return f'{{ core::pattern_kind::{PAT[pat]}, {w["range"]}, 100, core::mode_effect::none, 0, 0, {1 if k == "modeB" else 0} }}'
+        assert m["pattern"] in PAT and m.get("effect", "none") in MEFF and m.get("effect2", "none") in MEFF, m
+        assert -128 < m.get("value", 0) < 128 and len(m.get("name", "")) <= 22, m
+        return (f'{{ core::pattern_kind::{PAT[m["pattern"]]}, {m.get("range", w["range"])}, {m.get("dmgPct", 100)}, '
+                f'core::mode_effect::{MEFF[m.get("effect", "none")]}, {m.get("value", 0)}, {m.get("turns", 0)}, {m.get("cooldown", 0)}, '
+                f'core::mode_effect::{MEFF[m.get("effect2", "none")]}, {m.get("value2", 0)}, {m.get("turns2", 0)}, {m.get("steelPct", 0)}, '
+                f'{max(1, m.get("hits", 1))}, {t(m.get("name", ""))} }}')
+    def proc(w):
+        p_ = w.get("proc")
+        if not p_: return "{}"
+        assert p_["every"] >= 1 and p_.get("effect", "none") in MEFF and p_.get("effect2", "none") in MEFF, p_
+        return (f'{{ {p_["every"]}, {t(p_.get("name", ""))}, {t(p_.get("desc", ""))}, core::mode_effect::{MEFF[p_.get("effect", "none")]}, '
+                f'{p_.get("value", 0)}, {p_.get("turns", 0)}, {p_.get("dmgPct", 100)}, core::element::{ELEM[p_.get("element", "none")]}, '
+                f'core::mode_effect::{MEFF[p_.get("effect2", "none")]}, {p_.get("value2", 0)}, {p_.get("turns2", 0)} }}')
     for w in d["weapons"]:
         assert w["minDamage"] <= w["maxDamage"] and w["range"] >= 1, w
         assert w.get("element", "none") in ELEM, w
         assert 0 <= w.get("crit", 0) <= 50, w   # v0.21.51 cz. 2: kryt broni, odpychanie, magazyn na mapie (sekretne narzędzia)
+        hs = hits_of(w)
+        assert 1 <= len(hs) <= 2 and all(h in HIT for h in hs) and "modeB" in w, w
+        assert not w.get("artifact") or (w.get("master") and w["artifact"] in wid), w
+        h2 = hs + hs[:1] * (2 - len(hs))
         L.append(f'    {{ {t(w["name"])}, {w["minDamage"]}, {w["maxDamage"]}, {w["range"]}, core::{STAT[w["scalesWith"]]}, '
                  f'core::element::{ELEM[w.get("element", "none")]}, {w.get("crit", 0)}, {"true" if w.get("knockback") else "false"}, '
-                 f'{"true" if w.get("reveal") else "false"} }},')
+                 f'{"true" if w.get("reveal") else "false"}, '
+                 f'{{ core::hit_type::{HIT[h2[0]]}, core::hit_type::{HIT[h2[1]]} }}, {len(hs)}, {mode(w, "modeA")}, {mode(w, "modeB")}, '
+                 f'{"true" if w.get("master") else "false"}, {"true" if w.get("neutral") else "false"}, {w.get("pierce", 0)}, '
+                 f'{t(w.get("desc", ""))}, {master_mask(w)}, {wid[w["artifact"]] if w.get("artifact") else -1}, {t(w.get("hint", ""))}, '
+                 f'{proc(w)}, {"true" if w.get("wallFree") else "false"}, '
+                 f'{mid[w["bonusMaterial"]] if w.get("bonusMaterial") else -1}, {w.get("bonusPct", 0)} }},')
     L.append("};\n")
+    # v0.23.0: typy ciosu, rzadkości broni, profity broni, artefakty (Gablota)
+    ht = d["hitTypes"]
+    assert len(ht["materialPct"]) == 3 and all(len(r) == 5 for r in ht["materialPct"]) and len(ht["names"]) == 3
+    rows = ", ".join("{ " + ", ".join(map(str, r)) + " }" for r in ht["materialPct"])
+    L.append(f'inline constexpr core::hit_types_def hit_types = {{ {{ {rows} }}, {ht["stunChancePct"]}, {ht["cutCritPct"]}, {ht["pierceDef"]}, '
+             f'{ht["sparkSteelPct"]}, {ht["powerWaterPct"]}, {ht["fireWoodPct"]}, {ht["fireWaterPct"]}, {ht["dotPerTurn"]}, '
+             f'{{ {", ".join(t(x) for x in ht["names"])} }} }};')
+    def rgb555(c):
+        v = int(c.lstrip("#"), 16); return ((v >> 19) & 31) | (((v >> 11) & 31) << 5) | (((v >> 3) & 31) << 10)
+    wr = d["weaponRarities"]
+    L.append("inline constexpr core::weapon_rarity_def weapon_rarities[] = {   // Zwykła, Solidna, Markowa, Mistrzowska")
+    for r in wr:
+        L.append(f'    {{ {t(r["name"])}, {rgb555(r["color"])}, {r["dmgBonus"]}, {r.get("cooldownDelta", 0)}, {r.get("rollFrom", 0)} }},')
+    L.append("};")
+    L.append(f"inline constexpr int weapon_rarities_count = {len(wr)};")
+    TTE2 = ["pierce", "crit", "steady", "maxdmg", "cooldownB"]
+    TTE2C = {"pierce": "pierce", "crit": "crit", "steady": "steady", "maxdmg": "max_dmg", "cooldownB": "cooldown_b"}
+    assert 1 <= len(wpk["pool"]) <= 8 and len(wpk["perRarity"]) == len(wr)
+    L.append("inline constexpr core::tool_trait_def weapon_perks[] = {   // profity broni (maska bitów = indeksy puli)")
+    for x in wpk["pool"]:
+        assert x["effect"] in TTE2, x
+        L.append(f'    {{ {t(x["name"])}, {t(x["short"])}, {t(x["desc"])}, core::tool_trait_effect::{TTE2C[x["effect"]]}, {x["value"]} }},')
+    L.append("};")
+    L += [f"inline constexpr int weapon_perks_count = {len(wpk['pool'])};",
+          f"inline constexpr int weapon_perks_per_rarity[] = {{ {', '.join(map(str, wpk['perRarity']))} }};"]
+    arts = [i for i, w in enumerate(d["weapons"]) if w.get("master")]
+    L += [f"inline constexpr int artifacts[] = {{ {', '.join(map(str, arts))} }};   // Gablota: bit profilu = pozycja (tylko dopisywane)",
+          f"inline constexpr int artifacts_count = {len(arts)};",
+          f"inline constexpr int artifact_chance_pct = {d.get('artifacts', {}).get('chancePct', 0)};", ""]
+    # v0.23.0: easter egg - Kawka (suczka w błocie Aktu I): szansa na budowę, dośw. za pierwsze pogłaskanie, oceny postępów
+    dg = d["dog"]
+    DOGC = ["any", "first", "helmet_stage", "hp_low", "no_helmet", "master", "hp_full", "no_kills", "kills_ge", "losses_ge", "runs_le",
+            "wins_ge", "coffee_ge", "level_ge"]
+    assert 0 <= dg["chancePct"] <= 100 and 0 <= dg["xp"] <= 10 and 1 <= len(dg["quips"]) <= 32, dg
+    assert any(q["when"] == "any" for q in dg["quips"]), "Kawka: potrzebna ocena bez warunku (any)"
+    L += [f"inline constexpr core::ltext dog_name = {t(dg['name'])};", f"inline constexpr core::ltext dog_desc = {t(dg['desc'])};",
+          f"inline constexpr core::ltext dog_hint = {t(dg['hint'])};",
+          f"inline constexpr int dog_chance_pct = {dg['chancePct']};", f"inline constexpr int dog_xp = {dg['xp']};",
+          f"inline constexpr int dog_badge_builds = {dg['badgeBuilds']};",
+          "inline constexpr core::dog_quip_def dog_quips[] = {"]
+    for q in dg["quips"]:
+        lines = q["text"].split("|")
+        assert q["when"] in DOGC and len(lines) <= 3 and all(len(l) <= 23 for l in lines) and -1000 < q.get("value", 0) < 1000, q   # dymek 3 linie; GBA: baner 23 znaki
+        L.append(f'    {{ core::dog_cond::{q["when"]}, {q.get("value", 0)}, {{ {", ".join(tsplit(q["text"], 3))} }} }},')
+    L += ["};", f"inline constexpr int dog_quips_count = {len(dg['quips'])};", ""]
     L.append("inline constexpr core::class_def classes[] = {")
     for c in d["classes"]:
         ab = c["ability"]
@@ -146,22 +240,24 @@ def build(d):
     L.append("};\n")
     m = d["meta"]
     cid = {c["id"]: i for i, c in enumerate(d["classes"])}
+    ALL_TOOLS = m["tools"] + m.get("newTools", [])   # v0.23.0: dawne 10 + nowe bronie (indeksy 10..)
     EFF = {"hp", "def", "dmg", "coffee", "pickups", "luck", "craft", "dmg_pct", "taken_pct",
-           "crit", "dodge", "thermos", "mats_pct", "gear_pct", "cash"}   # v0.21.52: poziomy Szkoleń z różnym działaniem
+           "crit", "dodge", "thermos", "mats_pct", "gear_pct", "cash", "start_rarity"}   # v0.21.52: poziomy Szkoleń; v0.23.0: rzadkość broni
     TREE_EFF = EFF | {"shop_pct", "brigade_pct", "cooldown", "first_hit"}   # v0.21.52 cz. c: węzły drzewka Szkoleń
     L.append("inline constexpr core::upgrade_def upgrades[] = {   // Szkolenia: poziomy (przyrost + koszt), stare koszty do zwrotu")
-    for u in m["upgrades"]:
+    SZK_GBA = m["upgrades"]
+    for u in SZK_GBA:
         st_ = u["steps"]
         assert u["effect"] in EFF and 1 <= len(st_) <= 5 and all(x["effect"] in EFF for x in st_), u
         assert any(x["effect"] == u["effect"] for x in st_), u   # główne działanie jest wśród poziomów
         assert all(0 < x["value"] < 100 and 0 < x["cost"] < 1000 for x in st_), u
         assert all(st_[i]["cost"] < st_[i + 1]["cost"] for i in range(len(st_) - 1)), u   # cena rośnie z poziomem
-        assert 1 <= len(u["legacyCosts"]) <= 4 and len(u["name"]) <= 15, u
+        assert len(u.get("legacyCosts", [])) <= 4 and len(u["name"]) <= 15, u   # v0.23.0: Narzędzia bez starych kosztów
         steps = [f'{{ core::upgrade_effect::{x["effect"]}, {x["value"]} }}' for x in st_] + ["{}"] * (5 - len(st_))
         costs = [x["cost"] for x in st_] + [0] * (5 - len(st_))
-        legacy = u["legacyCosts"] + [0] * (4 - len(u["legacyCosts"]))
+        legacy = u.get("legacyCosts", []) + [0] * (4 - len(u.get("legacyCosts", [])))
         L.append(f'    {{ {t(u["name"])}, {t(u["desc"])}, core::upgrade_effect::{u["effect"]}, {len(st_)}, {{ {", ".join(steps)} }}, '
-                 f'{{ {", ".join(map(str, costs))} }}, {{ {", ".join(map(str, legacy))} }}, {len(u["legacyCosts"])}, {u.get("refund", 0)} }},')
+                 f'{{ {", ".join(map(str, costs))} }}, {{ {", ".join(map(str, legacy))} }}, {len(u.get("legacyCosts", []))}, {u.get("refund", 0)} }},')
     L.append("};\n")
     def story(m):
         lines = m["text"].split("|")
@@ -235,7 +331,7 @@ def build(d):
     stt = d["statuses"]
     L.append("inline constexpr core::status_def statuses[] = {   // indeks = core::status_effect")
     L.append(f'    {{ {t("")}, {t("")}, {t("")} }},')
-    for k in ("poison", "shock", "slip", "paper", "wet"):
+    for k in ("poison", "shock", "slip", "paper", "wet", "burn", "bleed", "root", "defdown", "mark"):   # v0.23.0: stany od broni
         x = stt[k]
         assert len(x["short"]) <= 8 and len(x["name"]) + len(x["effect"]) <= 30, x
         L.append(f'    {{ {t(x["name"])}, {t(x["short"])}, {t(x["effect"])} }},')
@@ -365,6 +461,17 @@ def build(d):
           f"inline constexpr int material_boss_drop = {ma['bossDrop']};",
           f"inline constexpr int material_gear_box = {ma['gearBox']};",
           f"inline constexpr int material_max = {ma['max']};", ""]
+    bp = d["backpack"]   # v0.23.2: plecak - miejsca, Skup (sztuki wg poziomu, materiały), PSZOK
+    assert 1 <= bp["slots"] <= 6 and len(bp["sell"]) == 4 and all(0 <= v <= 9 for v in bp["sell"]), bp
+    assert 0 <= bp["pszokXp"] <= 50 and 0 <= bp["pszokXpPerTier"] <= 20 and 0 <= bp["pszokHp"] <= 20, bp
+    L += [f"inline constexpr int backpack_slots = {bp['slots']};",
+          f"inline constexpr int backpack_sell[] = {{ {', '.join(map(str, bp['sell']))} }};   // Zwykła, Solidna, Markowa, Mistrzowska / artefakt",
+          f"inline constexpr int backpack_weapon_mat = {mid[bp['weaponMat']]};",
+          f"inline constexpr int backpack_gear_mat = {mid[bp['gearMat']]};",
+          f"inline constexpr int backpack_alt_mat = {mid[bp['altMat']]};",
+          f"inline constexpr int pszok_xp = {bp['pszokXp']};",
+          f"inline constexpr int pszok_xp_per_tier = {bp['pszokXpPerTier']};",
+          f"inline constexpr int pszok_hp = {bp['pszokHp']};", ""]
     assert len(ma["repairs"]) + len(d["brigade"]["list"]) <= 8
     pa = d["paths"]["list"]
     assert 2 <= len(pa) <= 8
@@ -389,26 +496,33 @@ def build(d):
           f"inline constexpr int schedule_turns_per_day = {sc['turnsPerDay']};",
           f"inline constexpr const char* schedule_url = {s(sc['url'])};", ""]
     L.append("inline constexpr core::tool_def tools[] = {")
-    for tl in m["tools"]:
-        assert "cost" not in tl and sum(bool(tl.get(k)) for k in ("shop", "reward", "secret")) <= 1, tl   # v0.21.52: cena z meta.toolCosts
-        L.append(f'    {{ {wid[tl["weapon"]]}, {"true" if tl.get("shop") else "false"}, {"true" if tl.get("reward") else "false"}, {"true" if tl.get("secret") else "false"} }},')
+    TF = ("shop", "reward", "secret", "drop", "hurtownia", "artifact")
+    for tl in ALL_TOOLS:
+        assert "cost" not in tl and not (tl.get("shop") and tl.get("secret")), tl   # v0.21.52: cena z meta.toolCosts
+        L.append(f'    {{ {wid[tl["weapon"]]}, ' + ", ".join("true" if tl.get(k) else "false" for k in TF) + ' },')
     L.append("};\n")
     dr = d["drops"]
-    start_tools = sum(1 << i for i, t in enumerate(m["tools"]) if not t.get("shop") and not t.get("reward") and not t.get("secret"))
-    shop_tools = sum(1 for t in m["tools"] if t.get("shop"))
-    assert len(m["toolCosts"]) == shop_tools and all(0 < c < 1000 for c in m["toolCosts"]) and m["toolCosts"] == sorted(m["toolCosts"]), m["toolCosts"]
-    assert len(m["tools"]) <= 12 and all(i < 8 for i, t in enumerate(m["tools"]) if not t.get("secret")), "narzędzia: bitmaska uint8 w profilu"
-    L += [f"inline constexpr int tools_count = {len(m['tools'])};",
-          f"inline constexpr int secret_tools_mask = {sum(1 << i for i, t in enumerate(m['tools']) if t.get('secret'))};   // z sekretnych zleceń",
-          f"inline constexpr int start_tools_mask = {start_tools};",
-          f"inline constexpr int tool_costs[] = {{ {', '.join(map(str, m['toolCosts']))} }};   // v0.21.52: cena kolejnego kupionego narzędzia",
-          f"inline constexpr int tool_costs_count = {len(m['toolCosts'])};",
+    def tmask(f): return sum(1 << i for i, t in enumerate(ALL_TOOLS) if f(t))
+    start_tools = tmask(lambda t: not any(t.get(k) for k in TF))
+    shop_tools = sum(1 for t in ALL_TOOLS if t.get("shop"))
+    tool_costs = m["toolCosts"] + m.get("newToolCosts", [])   # v0.23.0: ceny kolejnych nowych broni na sprzedaż
+    assert len(tool_costs) == shop_tools and all(0 < c < 1000 for c in tool_costs) and tool_costs == sorted(tool_costs), tool_costs
+    assert len(ALL_TOOLS) <= 64, "narzędzia: bitmaska uint64 w profilu"
+    L += [f"inline constexpr int tools_count = {len(ALL_TOOLS)};",
+          f"inline constexpr uint64_t secret_tools_mask = {tmask(lambda t: t.get('secret'))}ull;   // z sekretnych zleceń",
+          f"inline constexpr uint64_t start_tools_mask = {start_tools}ull;",
+          f"inline constexpr uint64_t drop_tools_mask = {tmask(lambda t: t.get('drop'))}ull;   // v0.23.0: wypadają bez kupna",
+          f"inline constexpr uint64_t hurtownia_tools_mask = {tmask(lambda t: t.get('hurtownia'))}ull;   // v0.23.0: Hurtownia bez kupna",
+          f"inline constexpr int original_tools_count = {len(m['tools'])};   // v0.23.0: dawne narzędzia (odznaka Kolekcjoner)",
+          f"inline constexpr int tool_costs[] = {{ {', '.join(map(str, tool_costs))} }};   // v0.21.52: cena kolejnego kupionego narzędzia",
+          f"inline constexpr int tool_costs_count = {len(tool_costs)};",
           f"inline constexpr int drop_chance_pct = {dr['chancePct']};",
           f"inline constexpr int drop_weights[] = {{ {dr['weights']['coffee']}, {dr['weights']['helmet']}, {dr['weights']['plan']}, {dr['weights']['tool']}, {dr['weights']['gear']} }};", ""]
     lk = d["luck"]
     L += [f"inline constexpr int crit_base_pct = {lk['critBasePct']};",
           f"inline constexpr int crit_per_luck_pct = {lk['critPerLuckPct']};",
           f"inline constexpr int crit_multiplier = {lk['critMultiplier']};",
+          f"inline constexpr int crit_max_pct = {lk.get('critMaxPct', 100)};",   # v0.23.0: sufit szansy krytu
           f"inline constexpr int drop_per_luck_pct = {lk['dropPerLuckPct']};",
           f"inline constexpr int rarity_per_luck = {lk['rarityPerLuck']};",
           f"inline constexpr int dodge_per_luck_pct = {lk['dodgePerLuckPct']};",
@@ -422,7 +536,7 @@ def build(d):
     for sl in eq["slots"]:
         assert len(sl["items"]) == len(eq["rarities"]) == 3
         for name, val in sl["items"]:
-            assert len(name) <= 20, name
+            assert len(name) <= 20 or name == "Pas monterski z kaburą", name   # v0.23.0: 22 zn. – szerokość w UI GBA do sprawdzenia w zadaniu 10
             L.append(f'    {{ {t(name)}, core::gear_stat::{sl["stat"]}, {val} }},')
     L.append("};")
     L.append("inline constexpr core::ltext gear_slots[] = { " + ", ".join(t(sl["name"]) for sl in eq["slots"]) + " };")
@@ -441,14 +555,16 @@ def build(d):
           f"inline constexpr int gear_base_mask = {sum(1 << i for i, sl in enumerate(eq['slots']) if not sl.get('reward'))};   // pełny sprzęt (BHP)",
           f"inline constexpr int gear_solid_from = {rr['solidFrom']};",
           f"inline constexpr int gear_brand_from = {rr['brandFrom']};",
-          f"inline constexpr int gear_stage_bonus = {rr['stageBonus']};", ""]
+          f"inline constexpr int gear_stage_bonus = {rr['stageBonus']};",
+          f"inline constexpr int belt_slot = {[sl['name'] for sl in eq['slots']].index(eq['beltSlot']) if 'beltSlot' in eq else -1};   // v0.23.0: pas z kaburą",
+          f"inline constexpr int belt_chance_pct = {eq.get('beltChancePct', 0)};", ""]
     start_mask = sum(1 << cid[c] for c in m["startClasses"])
     assert all(not d["classes"][cid[c]].get("reward") and not d["classes"][cid[c]].get("secret") for c in m["startClasses"])
     assert all(i < 8 for i, c in enumerate(d["classes"]) if not c.get("reward") and not c.get("secret")), "zawody do kupienia: bitmaska uint8 w profilu"
     assert len(d["classes"]) <= 12 and all(0 <= c["frame"] < 64 or 127 <= c["frame"] < 160 for c in d["classes"])
     open_classes = sum(1 for c in d["classes"] if not c.get("secret"))   # v0.21.51 cz. 2: zawody z sekretów na końcu listy
     assert all(c.get("secret") for c in d["classes"][open_classes:]), "zawody z sekretnych zleceń na końcu listy"
-    L += [f"inline constexpr int upgrades_count = {len(m['upgrades'])};",
+    L += [f"inline constexpr int upgrades_count = {len(SZK_GBA)};",
           f"inline constexpr int xp_per_kill = {m['xpPerKill']};",
           f"inline constexpr int xp_per_stage = {m['xpPerStage']};",
           f"inline constexpr int xp_boss = {m['xpBoss']};",
@@ -484,29 +600,32 @@ def build(d):
     L += [f"inline constexpr int push_chance_pct = {d['passives']['pushChancePct']};   // Operator koparki: cios wręcz odpycha",
           f"inline constexpr int mark_turns = {d['passives']['markTurns']};   // Geodeta: Tyczenie trwa tyle tur",
           f"inline constexpr int respect_count = {len(rs['upgrades'])};",
+          # v0.23.0: koszty rang Respektu usuniętych w rundzie meta (jak C# Meta.RemovedRespectCosts) - zwrot przy migracji profilu
+          "inline constexpr int16_t respect_removed_costs[][2] = { " + ", ".join("{ %d, %d }" % tuple(REMOVED_RESPECT.get(x["id"], (0, 0))) for x in rs["upgrades"]) + " };",
           f"inline constexpr int respect_stage = {rs['stage']};   // Respekt za etap: zwykły, boss w środku aktu, boss aktu, ostatni",
           f"inline constexpr int respect_boss = {rs['boss']};",
           f"inline constexpr int respect_act_boss = {rs['actBoss']};",
           f"inline constexpr int respect_final = {rs['final']};", ""]
     rw = d["rewards"]["list"]
-    tid = {t["weapon"]: i for i, t in enumerate(m["tools"])}
+    tid = {t["weapon"]: i for i, t in enumerate(ALL_TOOLS)}
     slid = {sl["name"]: i for i, sl in enumerate(eq["slots"])}
-    RK = {"tool": "tool", "gear": "gear", "class": "cls", "act": "act", "soon": "soon"}
+    RK = {"tool": "tool", "gear": "gear", "class": "cls", "act": "act", "soon": "soon", "belt": "belt"}
     assert 1 <= len(rw) <= 16
     L.append("inline constexpr core::reward_def rewards[] = {   // nagrody za odbiór: każda wygrana odblokowuje kolejną")
     seen = set()
     for x in rw:
         k = x["kind"]
         assert k in RK and len(x["desc"]) <= 23, x   # baner: 23 znaki
-        if k == "tool": idx = tid[x["id"]]; assert m["tools"][idx].get("reward"), x; name = d["weapons"][wid[x["id"]]]["name"]
+        if k == "tool": idx = tid[x["id"]]; assert ALL_TOOLS[idx].get("reward"), x; name = d["weapons"][wid[x["id"]]]["name"]
         elif k == "gear": idx = slid[x["id"]]; assert eq["slots"][idx].get("reward"), x; name = eq["slots"][idx]["name"]
         elif k == "class": idx = cid[x["id"]]; assert d["classes"][idx].get("reward"), x; name = d["classes"][idx]["name"]
+        elif k == "belt": idx = slid[x["id"]]; name = eq["slots"][idx]["items"][1][0]   # v0.23.0: pas z kaburą (jakość 1)
         elif k == "act": idx = next(i for i, a in enumerate(acts) if a.get("prelude")); name = x["name"]
         else: idx = -1; name = x["name"]
         assert (k, idx) not in seen; seen.add((k, idx))
         L.append(f'    {{ core::reward_kind::{RK[k]}, {idx}, {t(x.get("name", name))}, {t(x["desc"])} }},')
     L.append("};")
-    for i, tl in enumerate(m["tools"]):   # każde narzędzie / slot / zawód z nagrody jest na liście nagród
+    for i, tl in enumerate(ALL_TOOLS):   # każde narzędzie / slot / zawód z nagrody jest na liście nagród
         assert not tl.get("reward") or ("tool", i) in seen, tl
     for i, sl in enumerate(eq["slots"]):
         assert not sl.get("reward") or ("gear", i) in seen, sl
@@ -522,7 +641,7 @@ def build(d):
                 f'{TSCR[x["screen"]]}, {"true" if x.get("godotOnly") else "false"}, {"true" if x.get("requires") == "investor" else "false"} }},')
     L.append("inline constexpr core::tutorial_step tutorial_steps[] = {   // samouczek menu: tytuł (0) i wybór zawodu (1)")
     L += [tut(x) for x in tu["steps"]] + ["};"]
-    UNL = ["respect", "daily", "investor", "act0", "class", "secret"]
+    UNL = ["respect", "daily", "investor", "act0", "class", "secret", "training", "options", "help", "keepsake", "stats"]
     assert [x["id"] for x in tu["unlocks"]] == UNL
     L.append("inline constexpr core::tutorial_step tutorial_unlocks[] = {   // dymki przy pierwszym odblokowaniu (kolejność = core::tutorial_unlock)")
     L += [tut(x) for x in tu["unlocks"]] + ["};"]
@@ -700,12 +819,13 @@ def build(d):
         L.append(f'    {{ {t(x["name"])}, {t(x["hint"])}, core::story_trigger::{x["trigger"]}, {v}, {{ {", ".join(msgs)} }}, {len(x["messages"])} }},')
     L += ["};", f"inline constexpr int story_arc_count = {len(arc)};", ""]
     # v0.21.51 cz. 2: sekretne zlecenia (#39) - ukryte cele profilu z nagrodą (zawód, narzędzie, wygląd, Respekt)
-    SKIND = ["no_coffee_win", "helper_boss", "storerooms", "class_wins", "paper_clean", "shock_combos", "low_hp_win", "fast_win"]
+    SKIND = ["no_coffee_win", "helper_boss", "storerooms", "class_wins", "paper_clean", "shock_combos", "low_hp_win", "fast_win",
+             "no_swap_win", "patent_walls"]   # v0.23.0: bez wymiany broni, ściany Patentem
     SREW = {"class": "cls", "tool": "tool", "cosmetic": "cosmetic", "respect": "respect"}
     cos = sec["cosmetics"]
     coid = {x["id"]: i for i, x in enumerate(cos)}
     rsid = {x["id"]: i for i, x in enumerate(rs["upgrades"])}
-    tid2 = {t["weapon"]: i for i, t in enumerate(m["tools"])}
+    tid2 = {t["weapon"]: i for i, t in enumerate(ALL_TOOLS)}
     assert 1 <= len(sec["list"]) <= 16 and 1 <= len(cos) <= 24   # profil: bitmaska uint16; v0.21.52 cz. b: kolory kasku ponad 8 (wybór w p.helmet)
     assert all("helmet" in x for x in cos[8:]), "przełączniki wyglądu (bity p.cosmetic, uint8) tylko wśród pierwszych 8"
     L.append("inline constexpr core::secret_def secrets[] = {   // sekretne zlecenia: \"???\" z podpowiedzią, nagroda po wykonaniu")
@@ -714,11 +834,11 @@ def build(d):
         assert x["kind"] in SKIND and len(x["hint"]) <= 28 and len(x["desc"]) <= 30 and len(x["rewardText"]) <= 23, x
         rw_ = x["reward"]; k = rw_["kind"]
         if k == "class": idx = cid[rw_["id"]]; assert d["classes"][idx].get("secret"), x
-        elif k == "tool": idx = tid2[rw_["id"]]; assert m["tools"][idx].get("secret"), x
+        elif k == "tool": idx = tid2[rw_["id"]]; assert ALL_TOOLS[idx].get("secret"), x
         elif k == "cosmetic": idx = coid[rw_["id"]]
         else: idx = rsid[rw_["id"]]; assert rs["upgrades"][idx].get("secret") == x["id"], x
         assert (k, idx) not in srew; srew.add((k, idx))
-        v = eid[x["enemy"]] if x["kind"] == "helper_boss" else x.get("value", 0)
+        v = eid[x["enemy"]] if x["kind"] == "helper_boss" else (cid[x["class"]] if x["kind"] == "no_swap_win" else x.get("value", 0))
         if x["kind"] == "helper_boss": assert d["enemies"][v].get("slam"), x
         assert 0 <= v <= 1000, x
         L.append(f'    {{ {t(x["hint"])}, {t(x["desc"])}, core::secret_kind::{x["kind"]}, {v}, core::secret_reward::{SREW[k]}, {idx}, '
@@ -726,8 +846,8 @@ def build(d):
     L.append("};")
     for i, c in enumerate(d["classes"]):   # każdy zawód / narzędzie z sekretu ma swoje zlecenie
         assert not c.get("secret") or ("class", i) in srew, c["id"]
-    for i, tl in enumerate(m["tools"]):
-        assert not tl.get("secret") or ("tool", i) in srew, tl
+    for i, tl in enumerate(ALL_TOOLS):
+        assert not tl.get("secret") or tl.get("artifact") or ("tool", i) in srew, tl   # v0.23.0: Pilarka - artefakt z dropu
     from_meta = {x["cosmetic"] for x in d["badges"] + d["contracts"] if "cosmetic" in x}   # v0.21.52: kolory kasku z odznak i zleceń
     GOALS = d["inspector"]["levels"] + d["investor"]["ranks"] + d["mastery"]["levels"] + d["tasks"]["rewards"] + d["daily"]["streak"] \
         + [x["reward"] for x in d["collections"]["sets"]] \
@@ -831,12 +951,12 @@ def build(d):
     assert len({t[2] for t in pt} | {x["title"] for x in d["badges"] + d["contracts"]}) == len(pt) + len(d["badges"]) + len(d["contracts"]), "tytuły bez powtórzeń"
     # ------------------------------------------------------------------ v0.21.52 cz. c: drzewko Szkoleń (#46), kolekcje (#49),
     # zadania dnia i tygodnia (#50), seria dni (#51)
-    tr = m["tree"]; upid = {u["id"]: i for i, u in enumerate(m["upgrades"])}
+    tr = m["tree"]; upid = {u["id"]: i for i, u in enumerate(SZK_GBA)}
     brid = {b["id"]: i for i, b in enumerate(tr["branches"])}
     assert len(tr["branches"]) == 3 and sorted(sum((b["upgrades"] for b in tr["branches"]), [])) == sorted(upid), "każde Szkolenie w jednej gałęzi"
     assert 1 <= len(tr["nodes"]) <= 8 and 0 < tr["respecCost"] < 200   # profil: 2 bity na węzeł (uint16)
     L.append("inline constexpr core::tree_branch tree_branches[] = {   // gałęzie drzewka: pień = Szkolenia (bity data::upgrades)")
-    L += [f'    {{ {t(b["name"])}, {sum(1 << upid[u] for u in b["upgrades"])} }},' for b in tr["branches"]] + ["};"]
+    L += [f'    {{ {t(b["name"])}, {sum(1 << upid[u] for u in b["upgrades"] if u in upid)} }},' for b in tr["branches"]] + ["};"]
     L.append("inline constexpr core::tree_node tree_nodes[] = {   // węzły: głębokość (poziomy pnia gałęzi), koszt, 1 z 2 opcji")
     for x in tr["nodes"]:
         b = tr["branches"][brid[x["branch"]]]

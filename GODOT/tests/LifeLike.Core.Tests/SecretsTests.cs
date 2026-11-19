@@ -27,7 +27,7 @@ public class SecretsTests
         var vet = Array.FindIndex(D.Respect, r => r.Effect == RespectEffect.Veteran);
         Assert.True(vet >= 16 && !Meta.RespectUnlocked(D, p, vet) && !Meta.BuyRespect(D, p, vet));
         for (var day = 1; day <= 200; ++day) Assert.True(Daily.ClassOf(D, Daily.Seed(day)) < D.OpenClassesCount);
-        Assert.Equal(8, D.Secrets.Length);
+        Assert.Equal(10, D.Secrets.Length); // v0.23.0 (#84): + Stara szkoła (Nóż majstra seniora), + Przez ścianę na skróty (Łom Ostatniej Deski)
     }
 
     [Fact]
@@ -168,7 +168,36 @@ public class SecretsTests
         Assert.Equal(9, zenka.Enemies[0].X);
         var poz = TestData.Run(1, 5);
         var c0 = poz.CritPct();
+        var cut0 = HitCalc.Has(poz.Weapon, HitType.Cut) ? D.HitTypes.CutCritPct : 0;
         poz.TakeTool(ToolOf(false));
-        Assert.True(poz.CritPct() == c0 + poz.Weapon.Crit && poz.Weapon.Reveal && poz.WeaponBreakdown().CritPct == poz.CritPct());
+        var cut1 = HitCalc.Has(poz.Weapon, HitType.Cut) ? D.HitTypes.CutCritPct : 0;
+        var perk = D.PerkValue(poz.WeaponPerks, ToolTraitEffect.Crit); // v0.23.0: unikat – stałe profity (Ostrze)
+        Assert.True(poz.CritPct() == c0 - cut0 + cut1 + poz.Weapon.Crit + perk && poz.Weapon.Reveal && poz.WeaponBreakdown().CritPct == poz.CritPct());
+    }
+
+    [Fact]
+    public void ForemanWinWithoutSwapUnlocksSeniorKnife()
+    {
+        // v0.23.0 (#84): wygrana Majstrem bez wymiany broni odblokowuje Nóż majstra seniora (w dropach)
+        var majster = Array.FindIndex(D.Classes, c => c.Id == "majster");
+        var knife = Array.FindIndex(D.Tools, t => D.Weapons[t.Weapon].Id == "noz_majstra");
+        var sec = SecretOf(SecretKind.NoSwapWin);
+        Assert.Equal(majster, D.Secrets[sec].Value);
+        Assert.Equal((SecretReward.Tool, knife), (D.Secrets[sec].Reward, D.Secrets[sec].Index));
+        var p = Meta.NewProfile(D);
+        Assert.False(Meta.ToolUnlocked(D, p, knife));
+        var other = TestData.Run(1, 11);
+        other.St = GameStatus.Won;
+        Assert.False(Secrets.Condition(D, p, other, sec)); // inny zawód
+        var g = TestData.Run(majster, 11);
+        g.St = GameStatus.Won;
+        Assert.True(Secrets.Condition(D, p, g, sec));
+        var swapped = TestData.Run(majster, 11);
+        swapped.TakeTool(0);
+        swapped.St = GameStatus.Won;
+        Assert.False(Secrets.Condition(D, p, swapped, sec)); // broń wymieniona
+        Assert.NotEqual(0, Secrets.Check(D, p, g) & (1 << sec));
+        Assert.True(Meta.ToolUnlocked(D, p, knife));
+        Assert.NotEqual(0UL, Meta.Mods(D, p, 0).Tools & (1UL << knife)); // trafia do puli dropów
     }
 }

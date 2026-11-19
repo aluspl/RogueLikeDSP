@@ -23,7 +23,7 @@ public sealed partial class Game
     /// <summary>Kask, rękawice, kamizelka + sloty z nagród (buty, pas).</summary>
     public const int MaxGearSlots = 6;
     /// <summary>Stany bohatera (indeks = StatusEffect; v0.21.50: + Mokry).</summary>
-    public const int StatusSlots = 6;
+    public const int StatusSlots = 11; // v0.23.0: + Burn, Bleed, Root, DefDown, Mark (StatusEffect)
 
     public GameData D { get; }
 
@@ -47,7 +47,7 @@ public sealed partial class Game
     public int StageDamage;
     public int StageKills;
     public int StageStartTurn;
-    public byte ToolsFound;
+    public ulong ToolsFound;
     // liczniki zleceń (przenoszone do profilu przez Meta.BankCounters; ile już przeniesiono – w profilu, Run*)
     /// <summary>Użycia mocy.</summary>
     public ushort PowersUsed;
@@ -186,9 +186,12 @@ public sealed partial class Game
     public int WeaponRange() => RangeOf(Weapon);
 
     /// <summary>Zasięg danej broni z pogodą (range_of).</summary>
-    public int RangeOf(WeaponDef w)
+    public int RangeOf(WeaponDef w) => WindRange(w.Range);
+
+    /// <summary>Zasięg rg z pogodą (v0.23.0: także zasięg wzoru trybu).</summary>
+    public int WindRange(int rg)
     {
-        var rg = w.Range; // Dekarz: wiatr mu nie przeszkadza
+        // Dekarz: wiatr mu nie przeszkadza
         return WeatherIs(WeatherEffect.Wind) && rg > 1 && !HasPassive(ClassPassive.Windproof) ? Math.Max(1, rg - WDef.Value) : rg;
     }
 
@@ -325,8 +328,11 @@ public sealed partial class Game
     /// <summary>Szczęście: kryt (x2), mały unik przed ciosem wroga, częstsze i lepsze dropy.</summary>
     public int Luck() => CDef.Luck + Bonus.Luck + TraitBonus(TraitEffect.Luck) + BoonLuck();
 
-    public int CritPct() => Weapon.Crit + D.CritBasePct + D.CritPerLuckPct * Luck() + TraitBonus(TraitEffect.Crit) + Bonus.Crit + BoonSum(BoonEffect.Crit)
-                            + ToolTraitValue(ToolTraitEffect.Crit) + MasterCrit();
+    /// <summary>Szansa krytu; v0.23.0: najwyżej CritMaxPct.</summary>
+    public int CritPct() => Math.Min(D.CritMaxPct, CritPctRaw());
+
+    private int CritPctRaw() => CritBuff + Weapon.Crit + (HitCalc.Has(Weapon, HitType.Cut) ? D.HitTypes.CutCritPct : 0) + D.CritBasePct + D.CritPerLuckPct * Luck() + TraitBonus(TraitEffect.Crit) + Bonus.Crit + BoonSum(BoonEffect.Crit)
+                            + WeaponBonus(ToolTraitEffect.Crit) + MasterCrit(); // v0.23.0: cecha Ostrze + profit Ostrze
 
     /// <summary>Pole widzenia; pył (akt III) zmniejsza, najmniej 3.</summary>
     public int SightRadius() => Math.Max(3, FovRadius + TraitBonus(TraitEffect.Sight) + Bonus.Sight + BoonSum(BoonEffect.Sight) - DustSight());
@@ -553,12 +559,16 @@ public sealed partial class Game
         Cash = mods.Cash;
         FirstStage = (sbyte)(mods.Act0 != 0 ? 0 : PreludeCount()); // bez nagrody Akt 0 budowa zaczyna się od Fundamentów
         StartStage(FirstStage);
+        if (mods.StartBelt != 0 && D.BeltSlot >= 0) Equip(D.BeltSlot, BeltTier, R.Range(0, D.GearTraitsCount - 1)); // v0.23.0: nagroda za odbiór
         Thermos = Math.Min(ThermosCap(), mods.StartCoffee); // Respekt: Zaprawiony w boju
+        WeaponRarity = (byte)StartRarity(D, mods); // v0.23.0: Szkolenie Narzędzia; broń mistrza / unikat = Mistrzowska
+        WeaponPerks = (byte)ResolvePerks(CDef.Weapon, WeaponRarity, 0); // v0.23.0: broń zawodu bez losowych profitów, Mistrzowska – stałe
     }
 
     public bool Occupied(int x, int y)
     {
         if (Hero.Alive && Hero.X == x && Hero.Y == y) return true;
+        if (DogAt(x, y)) return true; // v0.23.0: Kawka – nikt na nią nie wchodzi (bohater głaszcze)
         if (AllyTurns > 0 && AllyX == x && AllyY == y) return true; // pomocnik z brygady
         for (var i = 0; i < EnemiesCount; ++i)
         {
@@ -628,6 +638,10 @@ public sealed partial class Game
         ChoiceDone = 0;
         EventDmg = EventDef = 0;
         ToolOffer = ToolOfferPickup = -1;
+        OfferPickup = -1; // v0.23.2
+        ToolOfferRarity = 0;
+        ToolOfferExtra = 0;
+        ToolOfferPerks = 0;
         SecretX = SecretY = -1;
         SecretOpen = false;
         SecretKind = SecretDir = 0;
@@ -636,6 +650,8 @@ public sealed partial class Game
         SecretRx = SecretRy = SecretRw = SecretRh = 0;
         MarkTarget = -1; // v0.21.51 cz. 2: Tyczenie tylko na etap
         MarkTurns = 0;
+        DogFlags = (byte)(DogFlags & ~DogOn); // v0.23.0: Kawka tylko na swoim etapie
+        DogX = DogY = -1;
         if (s == 0) PaperHits = 0; // Akt 0 od nowa (NG+): ciosy od papierów liczone od pierwszego etapu
         RollBorrow(); // Majster: moc innego fachu na ten etap
         Array.Fill(Fov, Sight.Unknown);
@@ -683,7 +699,9 @@ public sealed partial class Game
         {
             var rm = Lv.Rooms[R.Range(1, Lv.RoomsCount - 1)];
             RandomFreeCellInRoom(rm, out var x, out var y);
-            Pickups[PickupsCount++] = new Pickup(x, y, i == 0 ? PickupType.Coffee : (PickupType)R.Range(0, 2), true);
+            var pt = i == 0 ? PickupType.Coffee : (PickupType)R.Range(0, 2);
+            if (i > 0 && pt == PickupType.Coffee) continue; // v0.23.1: jedna kawa na etap z mapy (mniej termosów)
+            Pickups[PickupsCount++] = new Pickup(x, y, pt, true);
         }
         Push(Msg(Loc.T("etap")).Add(StageNumber()).Add(": ").Add(sd.Name));
         if (TwinCarry > 0) Push(Msg(Loc.T("wspolna_sciana")).Add(TwinCarry).Add(Loc.T("z_1_polowy")).As(LogKind.Bad));
@@ -711,6 +729,7 @@ public sealed partial class Game
         PlaceDocuments();
         PlaceEvent(); // v0.21.50 cz. 3: pole wydarzenia z wyborem (#30)
         PlaceSecret(); // ukryte pomieszczenie (#32): magazyn, skrzynia, klucz, strażnik
+        PlaceDog(); // v0.23.0: easter egg – Kawka w błocie (osobny generator, RNG gry bez zmian)
         // kombinacje stanów: w pyle (akt III) problemy są zapylone, w Mróz – zmrożone (boss nie)
         for (var i = 0; i < EnemiesCount; ++i)
         {

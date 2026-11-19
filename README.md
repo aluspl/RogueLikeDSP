@@ -1,5 +1,10 @@
 # RogueLikeDSP – PlanBudowlany RogueLike (dawniej LifeLike)
 
+> **Stan repozytorium:** to publiczne repo zostaje zamrożone na wersji **v0.23.0** (ostatnie wydanie open source,
+> wersja GBA i Godot obok siebie) jako przykład wspólnej logiki C++/C#. Dalszy rozwój wersji Godot (od 0.3) toczy się
+> w prywatnym repozytorium organizacji. Publiczne repo dostaje jeszcze tylko poprawki balansu i rażących błędów
+> (wydania 0.23.x).
+
 Roguelike o budowie domu: przechodzisz 10 etapów budowy w 3 aktach (Fundamenty → … → Wykończenie i odbiór; po
 8. wygranej przed nimi Akt 0 „Papierologia” – pozwolenie i przyłącza, boss Decyzja odmowna), a
 przeciwnikami są problemy budowy – każdy etap ma własne, z zachowaniami (Woda gruntowa się dzieli, Przeciekająca papa
@@ -22,6 +27,11 @@ Osiedla), a codziennie czekają 3 zadania dnia i 2 tygodnia, a seria dni z budow
 Po wygranych otwiera się mapa kariery: kolejne budynki z własnymi etapami, wyglądem i bossem – Domek letniskowy z drewna
 (krótki), Bliźniak (to, co zostawisz w lewej połowie, przejdzie przez wspólną ścianę na prawą), Dom z poddaszem (silniejszy
 wiatr) i Kamienica do remontu (grzyb, stare instalacje, Pęknięty strop); pierwsza wygrana każdego daje Respekt, tytuł i kask.
+Bronie (v0.23): 45 broni – domyślna każdego zawodu, 25 do znalezienia i z Hurtowni, 8 artefaktów. Każda ma typ ciosu
+(obuch ogłusza, cięcie częściej trafia krytycznie, kłucie przebija OBR) kontra materiał i żywioł problemu, wzór pól,
+rzadkość (Zwykła, Solidna, Markowa, Mistrzowska – widać ją w rękach bohatera), losowe profity i **Patent** – własny ruch
+z odnowieniem (GBA: L+A). Pas monterski z kaburą nosi drugą broń do szybkiej zamiany (GBA: L+B), artefakty z mechaniką
+„co N-ty cios” (np. Młot Gromowładny) trafiają do Gabloty, a legendarny Nóż majstra seniora daje sekretne zlecenie.
 Filtry ekranu (v0.21.53): tryby dla daltonistów – Protanopia, Deuteranopia, Tritanopia i Wysoki kontrast – działają od
 pierwszego uruchomienia (czerwone pola ciosu w paski, litery rzadkości), a postępem odblokowujesz Noir, Retro LCD, Neon
 nocy i Kwas.

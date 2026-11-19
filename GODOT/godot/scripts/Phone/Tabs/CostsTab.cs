@@ -74,6 +74,7 @@ public sealed class CostsTab : PhonePage
         }
         else p.Text(tx, r, Loc.T("zadania_na_dzis_wykonane"), Ink.Done);
 
+        if (ct.End.Y + 4 + 2 * PhonePainter.RowH + 8 > p.Bottom) return; // v0.23.2: bez miejsca nad przyciskiem Brygada – bez karty Szkoleń
         y = p.Section(ct.End.Y + 4, Loc.T("szkolenia_4"));
         var c2 = p.Card(y, 1);
         p.Text(p.TextX(c2), p.RowY(c2, 0), Loc.T("kupisz_po_budowie_profil"), Ink.Dim, TextAlign.Left, right - p.TextX(c2));

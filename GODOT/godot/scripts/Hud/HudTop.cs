@@ -10,7 +10,7 @@ namespace LifeLike.Game.Hud;
 /// Górny pasek HUD jak na GBA (półprzezroczysty ciemny pas): HP z paskiem, poziom z paskiem doświadczenia, etap
 /// (w wąskim pionie numer etapu z trudnością w 1. rzędzie, pełna nazwa etapu w 2. rzędzie po prawej);
 /// w drugim rzędzie stany z liczbą tur, termos, pogoda dnia, mechanika aktu (porywy: tury do kolejnego), materiały, wydarzenie na placu, ostrzeżenie o ciosie bossa, termos i ikona mocy
-/// (szara z odliczaniem, gdy się ładuje; „R” i podskakiwanie, gdy gotowa).
+/// (szara z odliczaniem, gdy się ładuje; „R” i podskakiwanie, gdy gotowa); v0.23.0: broń w kolorze rzadkości z odnowieniem trybu B.
 /// </summary>
 public partial class HudTop : Control
 {
@@ -18,6 +18,9 @@ public partial class HudTop : Control
     private float _clock;
 
     public const int Height = 38;
+
+    /// <summary>v0.23.0: pole broni i Patentu w drugim rzędzie (współrzędne paska) – najechanie myszą pokazuje opis ataku.</summary>
+    public Rect2 WeaponRect { get; private set; }
     private const int HpBarW = 64, XpBarW = 40;
 
     public override void _Ready()
@@ -85,70 +88,27 @@ public partial class HudTop : Control
         var re = w - 6 - Mathf.Ceil((SettingsButton.Side + 4) / Layout.HudScale); // miejsce na klucz ustawień
         var room1 = (int)(re - xr.End.X - 12);
         var nameBelow = f.Measure(right) > room1;
-        if (nameBelow) f.Draw(this, new Vector2(re, 2), f.Fit($"{stageNo}, {g.DDef.Name}{ng}", room1), Ink.Map, TextAlign.Right);
+        if (nameBelow) // v0.22.0 (#69): gdy „Etap 3/10, Normalny” się nie mieści – skrót trudności (N/Ł/T, EN: N/E/H) zamiast „Normal..”
+        {
+            var full = $"{stageNo}, {g.DDef.Name}{ng}";
+            var tag = $"{stageNo} {DifficultyTag(g.DDef.Name)}{ng}";
+            var bare = $"{g.StageNumber()}/{g.StagesInRun()} {DifficultyTag(g.DDef.Name)}{ng}";   // najwęższy: „3/10 N”
+            var row1 = f.Measure(full) <= room1 ? full : f.Measure(tag) <= room1 ? tag : f.Fit(bare, room1);
+            f.Draw(this, new Vector2(re, 2), row1, Ink.Map, TextAlign.Right);
+        }
         else
         {
             f.Draw(this, new Vector2(re, 2), right, Ink.Map, TextAlign.Right);
             f.Draw(this, new Vector2(re, 19), $"{g.DDef.Name}{ng}", Ink.MapDim, TextAlign.Right);
         }
 
-        // rząd 2: stany (ikona + tury)
-        x = 6f;
-        for (var k = 0; k < 3; k++)
-        {
-            var t = g.StatusTurns(UiText.HudStatuses[k]);
-            if (t <= 0) continue;
-            Assets.DrawFrame(this, Assets.Particles, Assets.PStatus + k, Assets.Particle, new Vector2(x, 20));
-            x += 16;
-            x += f.Draw(this, new Vector2(x, 19), t.ToString(), Ink.MapBad) + 6;
-        }
-        var wet = g.StatusTurns(StatusEffect.Wet); // v0.21.50: mokry (prąd boli bardziej)
-        if (wet > 0)
-        {
-            Assets.DrawFrame(this, Assets.Particles, Assets.PDrop, Assets.Particle, new Vector2(x, 20));
-            x += 16;
-            x += f.Draw(this, new Vector2(x, 19), wet.ToString(), Ink.MapWet) + 6;
-        }
-        if (x > 6) x += 4;
-
-        // termos
-        Assets.DrawFrame(this, Assets.UiMenu, 1, Assets.Icon, new Vector2(x, 20));
-        x += 17;
-        x += f.Draw(this, new Vector2(x, 19), $"{g.Thermos}/{g.ThermosCap()}", g.Thermos > 0 ? Ink.Map : Ink.MapDim) + 8;
-
-        // pogoda dnia (menu_icons 6-10 jak na GBA)
-        Assets.DrawFrame(this, Assets.UiMenu, Assets.MenuWeather + (int)g.WDef.Effect, Assets.Icon, new Vector2(x, 20));
-        x += 20;
-
-        // mechanika aktu (menu_icons 20-22: błoto, porywy, pył; 24: pieczątki Aktu 0); przy porywach tury do kolejnego (ostatnia na czerwono)
-        var mech = (int)g.ADef.Mechanic;
-        if (mech > 0)
-        {
-            Assets.DrawFrame(this, Assets.UiMenu, Assets.ActIcon(g.ADef.Mechanic), Assets.Icon, new Vector2(x, 20));
-            x += 17;
-            var gin = g.GustIn();
-            if (g.DocsNeeded() > 0) x += f.Draw(this, new Vector2(x, 19), $"{g.DocsCount()}/{g.DocsNeeded()}", g.StairsLocked() ? Ink.Map : Ink.MapGood) + 6;   // pieczątki
-            else if (gin > 0) x += f.Draw(this, new Vector2(x, 19), gin.ToString(), gin == 1 ? Ink.MapBad : Ink.Map) + 6;
-            else x += 3;
-        }
-
-        // moc zawodu: ikona szara z odliczaniem albo pulsująca z „R”
-        var ready = g.AbilityCd == 0;
-        var bob = ready && ((int)(_clock * 4) & 1) == 1 ? -1 : 0;
-        Assets.DrawFrame(this, ready ? Assets.UiAbility : Assets.UiAbilityGray, g.PowerCls(), Assets.Icon, new Vector2(x, 20 + bob));
-        x += 18;
-        if (!ready) x += f.Draw(this, new Vector2(x, 19), g.AbilityCd.ToString(), Ink.MapDim) + 8;
-        else if (((int)(_clock * 2) & 1) == 0) x += f.Draw(this, new Vector2(x, 19), "R", Ink.MapGood) + 8;
-        else x += f.Measure("R") + 8;
-
-        // materiały: ikona + liczba (tylko posiadane)
-        for (var m = 0; m < g.D.Materials.Length; m++)
-        {
-            if (g.Mats[m] == 0) continue;
-            MaterialIcon.Draw(this, m, new Vector2(x, 22));
-            x += MaterialIcon.Size + 2;
-            x += f.Draw(this, new Vector2(x, 19), g.Mats[m].ToString(), Ink.Map) + 6;
-        }
+        // rząd 2 (v0.22.0, UX A): ikony z krótkimi podpisami („Termos 0/4”, „Deszcz”, „Błoto”, „Moc R”), gdy mieszczą się
+        // obok nazwy etapu i wydarzenia; inaczej same ikony jak dotąd
+        var reserve = (nameBelow ? Mathf.Min(f.Measure(sd.Name), 160) : f.Measure($"{g.DDef.Name}{ng}")) + 8f; // prawa strona rzędu 2
+        if (g.SlamTimer > 0) reserve += f.Measure(Loc.F("cios_za", g.SlamTimer)) + 8;   // zapowiedź ciosu bossa
+        else if (g.CurrentEvent is { } cev) reserve += f.Measure(cev.Short) + 18;       // pastylka wydarzenia na placu
+        var labels = Row2(f, false, true) <= re - 6 - reserve;
+        x = Row2(f, true, labels);
 
         // nazwa etapu w 2. rzędzie (gdy nie zmieściła się w 1.): pierwszeństwo przed pastylką wydarzenia
         var nameRoom = re - x - 6;
@@ -175,6 +135,109 @@ public partial class HudTop : Control
             f.Draw(this, new Vector2(r.Position.X + pill / 2, 19), ev.Short, Ink.White, TextAlign.Center);
         }
     }
+
+    /// <summary>Rząd 2 HUD: stany, termos, pogoda, mechanika aktu, moc, materiały; draw = false tylko mierzy. Zwraca prawą krawędź.</summary>
+    private float Row2(PixelFont f, bool draw, bool labels)
+    {
+        var g = _g;
+        var x = 6f;
+        float Text(float tx, string t, Ink ink) => draw ? f.Draw(this, new Vector2(tx, 19), t, ink) : f.Measure(t);
+        void Icon(Texture2D tex, int frame, int size, float ix, float iy)
+        {
+            if (draw) Assets.DrawFrame(this, tex, frame, size, new Vector2(ix, iy));
+        }
+        for (var k = 0; k < 3; k++)
+        {
+            var t = g.StatusTurns(UiText.HudStatuses[k]);
+            if (t <= 0) continue;
+            Icon(Assets.Particles, Assets.PStatus + k, Assets.Particle, x, 20);
+            x += 16;
+            x += Text(x, t.ToString(), Ink.MapBad) + 6;
+        }
+        var wet = g.StatusTurns(StatusEffect.Wet); // v0.21.50: mokry (prąd boli bardziej)
+        if (wet > 0)
+        {
+            Icon(Assets.Particles, Assets.PDrop, Assets.Particle, x, 20);
+            x += 16;
+            x += Text(x, wet.ToString(), Ink.MapWet) + 6;
+        }
+        if (x > 6) x += 4;
+
+        // termos
+        Icon(Assets.UiMenu, 1, Assets.Icon, x, 20);
+        x += 17;
+        x += Text(x, (labels ? Loc.T("hud_termos") + " " : "") + $"{g.Thermos}/{g.ThermosCap()}", g.Thermos > 0 ? Ink.Map : Ink.MapDim) + 8;
+
+        // pogoda dnia (menu_icons 6-10 jak na GBA)
+        Icon(Assets.UiMenu, Assets.MenuWeather + (int)g.WDef.Effect, Assets.Icon, x, 20);
+        x += labels ? 18 + Text(x + 18, g.WDef.Name, g.WDef.Bad ? Ink.MapBad : Ink.MapDim) + 8 : 20;
+
+        // mechanika aktu (menu_icons 20-22: błoto, porywy, pył; 24: pieczątki Aktu 0); przy porywach tury do kolejnego (ostatnia na czerwono)
+        var mech = (int)g.ADef.Mechanic;
+        if (mech > 0)
+        {
+            Icon(Assets.UiMenu, Assets.ActIcon(g.ADef.Mechanic), Assets.Icon, x, 20);
+            x += 17;
+            if (labels) x += Text(x, g.ADef.MechShort, Ink.MapDim) + 4;
+            var gin = g.GustIn();
+            if (g.DocsNeeded() > 0) x += Text(x, $"{g.DocsCount()}/{g.DocsNeeded()}", g.StairsLocked() ? Ink.Map : Ink.MapGood) + 6;   // pieczątki
+            else if (gin > 0) x += Text(x, gin.ToString(), gin == 1 ? Ink.MapBad : Ink.Map) + 6;
+            else x += labels ? 6 : 3;
+        }
+
+        // moc zawodu: ikona szara z odliczaniem albo pulsująca z „R”
+        var ready = g.AbilityCd == 0;
+        var bob = ready && ((int)(_clock * 4) & 1) == 1 ? -1 : 0;
+        Icon(ready ? Assets.UiAbility : Assets.UiAbilityGray, g.PowerCls(), Assets.Icon, x, 20 + bob);
+        x += 18;
+        if (labels) x += Text(x, Loc.T("hud_moc"), ready ? Ink.MapGood : Ink.MapDim) + 4;
+        if (!ready) x += Text(x, g.AbilityCd.ToString(), Ink.MapDim) + 8;
+        else if (((int)(_clock * 2) & 1) == 0) x += Text(x, "R", Ink.MapGood) + 8;
+        else x += f.Measure("R") + 8;
+
+        // v0.23.0: broń w kolorze rzadkości i odnowienie Patentu („P” – gotowy, liczba – tury)
+        var wx = x;
+        if (draw && !WeaponSheet.DrawIcon(this, g.Weapon, WeaponSheet.Rarity(g), new Rect2(x, 20, Assets.Icon, Assets.Icon)))
+            Assets.DrawFrame(this, Assets.UiMenu, 0, Assets.Icon, new Vector2(x, 20), 1, WeaponLook.IconTint(g.D, g.WeaponRarity));
+        x += 18;
+        if (labels) x += Text(x, Loc.T("hud_cios_b"), g.WeaponBCd == 0 ? Ink.MapGood : Ink.MapDim) + 4;
+        if (g.WeaponBCd > 0) x += Text(x, g.WeaponBCd.ToString(), Ink.MapDim) + 8;
+        else x += Text(x, Loc.T("fach_znak"), Ink.MapGood) + 8;
+        var pr = g.Weapon.Proc; // v0.23.0: artefakt – licznik „co N-ty cios” (przed N-tym na zielono)
+        if (pr is not null && pr.Every > 1)
+        {
+            var next = g.ProcCount >= pr.Every - 1;
+            if (draw) DrawBolt(new Vector2(x, 20), next && ((int)(_clock * 4) & 1) == 1);
+            x += 8;
+            x += Text(x, $"{g.ProcCount}/{pr.Every}", next ? Ink.MapGood : Ink.MapLoot) + 8;
+        }
+        if (draw) WeaponRect = new Rect2(wx - 2, 16, x - wx - 4, 22); // v0.23.0: najechanie myszą – opis Patentu
+
+        // materiały: ikona + liczba (tylko posiadane)
+        for (var m = 0; m < g.D.Materials.Length; m++)
+        {
+            if (g.Mats[m] == 0) continue;
+            if (draw) MaterialIcon.Draw(this, m, new Vector2(x, 22));
+            x += MaterialIcon.Size + 2;
+            x += Text(x, g.Mats[m].ToString(), Ink.Map) + 6;
+        }
+        return x;
+    }
+
+    /// <summary>v0.23.0: mała błyskawica (licznik „co N-ty cios” artefaktu) 6x11 px; lit – rozjaśniona (następny cios to ten N-ty).</summary>
+    private void DrawBolt(Vector2 p, bool lit)
+    {
+        Vector2[] pts = [p + new Vector2(3, 0), p + new Vector2(6, 0), p + new Vector2(4, 4), p + new Vector2(6, 4), p + new Vector2(1, 11),
+            p + new Vector2(2, 6), p + new Vector2(0, 6)];
+        var edge = new Vector2[pts.Length + 1];
+        pts.CopyTo(edge, 0);
+        edge[^1] = pts[0];
+        DrawColoredPolygon(pts, lit ? new Color("fff4a0") : new Color("ffd75a"));
+        DrawPolyline(edge, new Color("14141e"), 1);
+    }
+
+    /// <summary>v0.22.0 (#69): skrót poziomu trudności – pierwsza litera nazwy z danych (Łatwy → Ł, Normal → N, Hard → H).</summary>
+    public static string DifficultyTag(string name) => string.IsNullOrEmpty(name) ? "" : char.ToUpperInvariant(name[0]).ToString();
 
     /// <summary>Pasek HP jak hp_bar.bmp (obrys, tło, połysk w 1. wierszu, cień w ostatnim), kolor wg progu.</summary>
     private void DrawHpBar(Rect2 r, int hp, int max)

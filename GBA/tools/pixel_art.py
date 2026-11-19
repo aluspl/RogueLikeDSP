@@ -99,19 +99,20 @@ WORKERS = [("W", "O", "log"), ("O", "B", "trowel"), ("Y", "T", "nailgun"),
 HELMET_MASK = "D"   # v0.21.52: kolor kasku z odznaki / zlecenia - kask w indeksie palety D, gra podmienia ten kolor w palecie bohatera
 
 
-def worker_frame(index, frame, stripes=False, helmet_mask=False):
-    helmet, vest, tool = WORKERS[index]
+def worker_frame(index, frame, stripes=False, helmet_mask=False, tool=True):
+    """tool=False (v0.23.0): bez narzędzia zawodu w dłoni - klatki z bronią w ręce (Godot: actors_notool.png)."""
+    helmet, vest, tool_id = WORKERS[index]
     px = worker(HELMET_MASK if helmet_mask else helmet, vest, frame)
     if stripes:   # v0.21.51 cz. 2: kask w paski (wygląd z sekretnego zlecenia) - biało-czerwone pasy na kasku
         for y in range(1, 4):
             for x in range(16):
                 if WORKER_TOP[y][x] in "HW":
                     px[y * 16 + x] = CODES["W" if x % 2 == 0 else "R"]
-    for y, row in FACES.get(tool, {}).items():
+    for y, row in FACES.get(tool_id, {}).items():
         for x, ch in enumerate(row):
             if ch != ".":
                 px[y * 16 + x] = CODES[ch]
-    for x, y, ch in TOOLS[tool]:
+    for x, y, ch in TOOLS[tool_id] if tool else ():
         px[y * 16 + x] = CODES[ch]
     return px
 
@@ -575,40 +576,40 @@ PART3 = {
         "...KK......KK...",
         "................",
         "................"],
-    "crack": [
+    "crack": [   # v0.23.1: schodkowe pęknięcie z jasną krawędzią, wyłamany róg i okruchy przy podstawie
         "................",
-        ".......K........",
-        "......Kl........",
-        "......KK........",
-        ".......Kl..K....",
-        "........K.Kl....",
-        "........KK......",
-        ".......K.Kl.....",
-        "......Kl..K.....",
-        ".....K.....K....",
-        "....KKl.....K...",
-        "...K.........K..",
-        "..K..g...g......",
-        "................",
-        "....g.g...g.g...",
-        "................"],
-    "door": [
-        "KKKKKKKKKKKKKKKK",
-        "KggggggggggggggK",
-        "KgKKKKKKKKKKKKgK",
-        "KgKTTTTTTTTTTKgK",
-        "KgKTOTTTTTTOTKgK",
-        "KgKTTTTTTTTTTKgK",
-        "KgKKKKKKKKKKKKgK",
-        "KgKTTTTKKTTTTKgK",
-        "KgKTTTKgKKTTTKgK",
-        "KgKTTKYYYYKTTKgK",
-        "KgKTTKYKKYKTTKgK",
-        "KgKTTKYYYYKTTKgK",
-        "KgKTOTKKKKTTOKgK",
-        "KgKTTTTTTTTTTKgK",
-        "KgKKKKKKKKKKKKgK",
-        "KKKKKKKKKKKKKKKK"],
+        "..........K.....",
+        "..........lK....",
+        "...........K....",
+        "........KKKK....",
+        ".......lK.......",
+        ".......lK.......",
+        ".......lK.......",
+        "....KKKK........",
+        "...lK...lK......",
+        "...lK....K......",
+        "..lK.....lK.....",
+        "..lK............",
+        ".lKK............",
+        ".KKKK......g....",
+        "lKKKKK..g.l..g.."],
+    "door": [    # v0.23.1: drewniane drzwi z okuciami i kłódką (tylko klucz)
+        "..KKKKKKKKKKKK..",
+        "..KTTKTTKTTTTK..",
+        "..KTTKTTKTTTTK..",
+        "..KggggggggggK..",
+        "..KTTKTTKTTTTK..",
+        "..KTTKTTKlllTK..",
+        "..KTTKTTKlTlTK..",
+        "..KTTKTTYYYYYK..",
+        "..KTTKTTYYKYYK..",
+        "..KTTKTTYYKYYK..",
+        "..KTTKTTYYYYYK..",
+        "..KggggggggggK..",
+        "..KTTKTTKTTTTK..",
+        "..KTTKTTKTTTTK..",
+        "..KTTKTTKTTTTK..",
+        ".KKKKKKKKKKKKKK."],
 }
 PART3_ORDER = ["event", "key", "chest", "crack", "door"]
 
@@ -1003,6 +1004,76 @@ def career_enemy_frame(index, frame):
     if frame == 1:
         px = [0] * 16 + px[:16 * 15]
     return px
+
+
+# ------------------------------------------------------------------ v0.23.0: easter egg - Kawka (klatki 196-201)
+# Suczka w typie owczarka: rudo-brązowa (T) z czarnym siodłem, uszami i kufą, jasna pierś (S), obroża w kolorze marki z
+# żółtą blaszką. 196/197 - siedzi i merda ogonem, 198 - zadowolona (zamknięte oko, język), 199 - uszy po sobie (ręka na
+# głowie), 200 - dłoń w rękawie kamizelki (głaskanie w ogłoszeniu), 201 - serduszko.
+DOG_SIT = [
+"................",
+"........K...K...",
+".......KTK.KTK..",
+".......KTKKKTK..",
+".......KKKTKKK..",
+"......KTTKTTTK..",
+"......KTWKTTTKKK",
+"......KTTTTKKKKK",
+"..K....KTTTKKRK.",
+".KTK...KYOOOK...",
+".KTK..KKKKKSSK..",
+"..KTKKKKKKKSSK..",
+"..KTTKKKKKTTSK..",
+"...KTTTTTTKTSK..",
+"...KTSKTTSKTSK..",
+"...KKKKKKKKKKK..",
+]
+DOG_TAIL_UP = {8: "K......KTTTKKRK.", 9: "KTK....KYOOOK...", 10: ".KTK..KKKKKSSK..", 11: "..KTKKKKKKKSSK.."}
+DOG_HAPPY = {5: "......KTKKTTTK..", 6: "......KTTKTTTKKK", 8: "K......KTTTKKRK.", 9: "KTK....KYOOOKRR.", 10: ".KTK..KKKKKSSK..",
+             11: "..KTKKKKKKKSSK.."}
+DOG_EARS_BACK = {**DOG_HAPPY, 1: "................", 2: "................", 3: ".......KKK.KKK..", 4: ".......KTTKKTTK."}
+DOG_HAND = [
+"................",
+"................",
+"................",
+"................",
+"................",
+"..KKK.KKKKKKK...",
+".KOOOKSSSSSSSKK.",
+".KOYOKSSSSSSSSSK",
+".KOOOKSSSSKKKKK.",
+".KOYOKSSSSSSSSSK",
+".KOOOKSSSSSSSKK.",
+"..KKKKSSSKKKK...",
+"......KKK.......",
+"................",
+"................",
+"................",
+]
+DOG_HEART = [
+"................",
+"................",
+"................",
+"................",
+"....KK...KK.....",
+"...KRRK.KRRK....",
+"..KRWRRKRRRRK...",
+"..KRRRRRRRRRK...",
+"...KRRRRRRRK....",
+"....KRRRRRK.....",
+".....KRRRK......",
+"......KRK.......",
+".......K........",
+"................",
+"................",
+"................",
+]
+
+
+def dog_frames():
+    def var(ch):
+        return parse([ch.get(i, r) for i, r in enumerate(DOG_SIT)])
+    return [parse(DOG_SIT), var(DOG_TAIL_UP), var(DOG_HAPPY), var(DOG_EARS_BACK), parse(DOG_HAND), parse(DOG_HEART)]
 
 
 # ------------------------------------------------------------------ bossowie (klatki 46-47, druga klatka 48-49; Inspekcja 50-51)

@@ -9,4 +9,8 @@ public enum BarButton
     Thermos = 2,
     Wait = 3,
     Phone = 4,
+    /// <summary>v0.23.0: tryb B broni (odliczanie jak Moc).</summary>
+    WeaponB = 5,
+    /// <summary>v0.23.0: zamiana broni z kabury (tylko z pasem monterskim).</summary>
+    Swap = 6,
 }

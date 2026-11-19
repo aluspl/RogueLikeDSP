@@ -30,25 +30,35 @@ public sealed class ToolOfferScreen : Screen
     public override bool HandleInput(InputCmd e)
     {
         if (N.Phone.HandleInput(e)) return true;
-        if (e.IsConfirm) Decide(Page?.Sel == 1);
-        else if (e.IsBack) Decide(false);
+        if (e.IsConfirm) Decide(Page?.Sel ?? OfferPage.Leave);
+        else if (e.IsBack) Decide(OfferPage.Leave);
         else return false;
         return true;
     }
 
-    public void Decide(bool accept)
+    /// <summary>v0.23.2: Weź (stara broń do plecaka), Do plecaka, Zostaw.</summary>
+    public void Decide(int choice)
     {
-        if (accept)
+        var g = S.Game;
+        switch (choice)
         {
-            S.Game.AcceptTool();
-            Sfx.Play("buy");
-        }
-        else
-        {
-            S.Game.DeclineTool();
-            Sfx.Play("menu");
+            case OfferPage.Take:
+                g.AcceptTool();
+                Sfx.Play("buy");
+                break;
+            case OfferPage.Store:
+                if (!g.ToolToBackpack()) return;
+                Sfx.Play("pickup");
+                break;
+            default:
+                g.DeclineTool();
+                Sfx.Play("menu");
+                break;
         }
         Flow.Game.Open();
         App.AfterAction(true);
     }
+
+    /// <summary>Zgodność (test dymny, małpa): true = Weź, false = Zostaw.</summary>
+    public void Decide(bool accept) => Decide(accept ? OfferPage.Take : OfferPage.Leave);
 }

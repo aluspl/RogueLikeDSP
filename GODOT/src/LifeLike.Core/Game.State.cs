@@ -47,6 +47,15 @@ public sealed partial class Game
         w.Write(a.Timer);
         w.Write(a.Elite);
         w.Write(a.Wet);
+        w.Write(a.Dot);
+        w.Write(a.DotDmg);
+        w.Write(a.DotKind);
+        w.Write(a.Root);
+        w.Write(a.DefDown);
+        w.Write(a.DefDownVal);
+        w.Write(a.MarkTurns);
+        w.Write(a.MarkPct);
+        w.Write(a.NoHeal);
     }
 
     private static Actor ReadActor(BinaryReader r) => new()
@@ -64,6 +73,15 @@ public sealed partial class Game
         Timer = r.ReadSByte(),
         Elite = r.ReadSByte(),
         Wet = r.ReadSByte(),
+        Dot = r.ReadSByte(),
+        DotDmg = r.ReadSByte(),
+        DotKind = r.ReadByte(),
+        Root = r.ReadSByte(),
+        DefDown = r.ReadSByte(),
+        DefDownVal = r.ReadSByte(),
+        MarkTurns = r.ReadSByte(),
+        MarkPct = r.ReadByte(),
+        NoHeal = r.ReadSByte(),
     };
 
     public void Write(BinaryWriter w)
@@ -89,12 +107,14 @@ public sealed partial class Game
             w.Write(p.Active);
             w.Write(p.Arg);
             w.Write(p.Trait);
+            w.Write(p.Extra);
+            w.Write(p.Perks);
         }
         w.Write(PickupsCount);
         foreach (var v in new[] { Cls, Stage, Diff, Tier, DefBonus, DmgBonus, Turns, Kills, Score, StageDamage, StageKills, StageStartTurn })
             w.Write(v);
         w.Write(KillsByType);
-        w.Write(ToolsFound);
+        w.Write(ToolsFound); // v0.23.0: ulong (maska 64 bity)
         w.Write(PowersUsed);
         w.Write(BrandFound);
         w.Write(CleanBosses);
@@ -116,12 +136,13 @@ public sealed partial class Game
         foreach (var v in new[]
                  {
                      Bonus.Hp, Bonus.Def, Bonus.Dmg, Bonus.Coffee, Bonus.Pickups, Bonus.Luck, Bonus.Craft, Bonus.Cooldown, Bonus.Sight,
-                     Bonus.Thermos, Bonus.ToolPct, Bonus.XpPct, Bonus.Cash, Bonus.Crit, Bonus.Tools, Bonus.Helpers, Bonus.Investor,
+                     Bonus.Thermos, Bonus.ToolPct, Bonus.XpPct, Bonus.Cash, Bonus.Crit, Bonus.Helpers, Bonus.Investor,
                      Bonus.DmgPct, Bonus.TakenPct, Bonus.GearPct, Bonus.Dodge, Bonus.CoffeePct, Bonus.BrigadePct, Bonus.ShopPct,
                      Bonus.MatsPct, Bonus.SecondChance, Bonus.GearSlots, Bonus.Act0, Bonus.Rerolls, Bonus.Weekly, Bonus.StartCoffee,
-                     Bonus.Mastery,
+                     Bonus.Mastery, Bonus.WeaponRarity, Bonus.StartBelt,
                  })
             w.Write(v);
+        w.Write(Bonus.Tools);
         foreach (var v in new[] { XpPct, XpBanked, RunXp, HeroLevel, Boss, StairsX, StairsY }) w.Write(v);
         w.Write((byte)St);
         foreach (var m in Log)
@@ -159,6 +180,10 @@ public sealed partial class Game
         w.Write(OfferRarity);
         w.Write(OfferTrait);
         w.Write(WeaponOverride);
+        w.Write(WeaponBCd);
+        w.Write(WeaponCharges);
+        w.Write(CritBuff);
+        w.Write(CritBuffTurns);
         w.Write(LogSerial);
         w.Write(SummonCounter);
         w.Write(SummonsUsed);
@@ -201,6 +226,22 @@ public sealed partial class Game
         w.Write(TraitPending);
         w.Write(ToolOffer);
         w.Write(ToolOfferPickup);
+        w.Write(WeaponRarity); // v0.23.0: rzadkość broni w ręku i zamiany
+        w.Write(ToolOfferRarity);
+        w.Write(Weapon2); // v0.23.0: druga broń w kaburze
+        w.Write(Weapon2Rarity);
+        w.Write(Weapon2Charges);
+        w.Write(Weapon2Lvl);
+        w.Write(Weapon2Trait);
+        w.Write(Weapon2TraitPending);
+        w.Write(ToolOfferExtra);
+        w.Write(WeaponPerks); // v0.23.0: profity broni (ręka, kabura, oferta) i licznik losowań
+        w.Write(Weapon2Perks);
+        w.Write(ToolOfferPerks);
+        w.Write(PerkRolls);
+        w.Write(ProcCount); // v0.23.0: artefakty – licznik ciosów, artefakty tej budowy, ściany otwarte Patentem
+        w.Write(ArtifactsRun);
+        w.Write(PatentWalls);
         w.Write(SecretX);
         w.Write(SecretY);
         w.Write(SecretKind);
@@ -242,6 +283,22 @@ public sealed partial class Game
         // v0.21.52 cz. d: mapa kariery (na końcu – zapis bez nich wczytuje się z zerami = Dom jednorodzinny)
         w.Write(Contract);
         w.Write(TwinCarry);
+        // v0.23.0: Kawka (na końcu – starszy zapis PBRUN19 wczytuje się z zerami = bez Kawki, RunSave.DogTail)
+        w.Write(DogX);
+        w.Write(DogY);
+        w.Write(DogFlags);
+        w.Write(DogPets);
+        // v0.23.2: plecak i znajdźka oferty sprzętu (na końcu – zapis PBRUN19 wczytuje się z pustym plecakiem, RunSave.BackpackTail)
+        foreach (var it in Backpack)
+        {
+            w.Write((byte)it.Kind);
+            w.Write(it.Id);
+            w.Write(it.Rarity);
+            w.Write(it.Trait);
+            w.Write(it.Perks);
+            w.Write(it.Extra);
+        }
+        w.Write(OfferPickup);
     }
 
     private static void WriteHit(BinaryWriter w, in RecapHit h)
@@ -267,7 +324,7 @@ public sealed partial class Game
         for (var i = 0; i < Enemies.Length; i++) Enemies[i] = ReadActor(r);
         EnemiesCount = r.ReadInt32();
         for (var i = 0; i < Pickups.Length; i++)
-            Pickups[i] = new Pickup { X = r.ReadSByte(), Y = r.ReadSByte(), Type = (PickupType)r.ReadByte(), Active = r.ReadBoolean(), Arg = r.ReadByte(), Trait = r.ReadByte() };
+            Pickups[i] = new Pickup { X = r.ReadSByte(), Y = r.ReadSByte(), Type = (PickupType)r.ReadByte(), Active = r.ReadBoolean(), Arg = r.ReadByte(), Trait = r.ReadByte(), Extra = r.ReadUInt16(), Perks = r.ReadByte() };
         PickupsCount = r.ReadInt32();
         Cls = r.ReadInt32();
         Stage = r.ReadInt32();
@@ -282,7 +339,7 @@ public sealed partial class Game
         StageKills = r.ReadInt32();
         StageStartTurn = r.ReadInt32();
         r.Read(KillsByType, 0, KillsByType.Length);
-        ToolsFound = r.ReadByte();
+        ToolsFound = r.ReadUInt64();
         PowersUsed = r.ReadUInt16();
         BrandFound = r.ReadByte();
         CleanBosses = r.ReadByte();
@@ -307,14 +364,15 @@ public sealed partial class Game
         {
             Hp = r.ReadInt32(), Def = r.ReadInt32(), Dmg = r.ReadInt32(), Coffee = r.ReadInt32(), Pickups = r.ReadInt32(),
             Luck = r.ReadInt32(), Craft = r.ReadInt32(), Cooldown = r.ReadInt32(), Sight = r.ReadInt32(), Thermos = r.ReadInt32(),
-            ToolPct = r.ReadInt32(), XpPct = r.ReadInt32(), Cash = r.ReadInt32(), Crit = r.ReadInt32(), Tools = r.ReadInt32(),
+            ToolPct = r.ReadInt32(), XpPct = r.ReadInt32(), Cash = r.ReadInt32(), Crit = r.ReadInt32(),
             Helpers = r.ReadInt32(),
             Investor = r.ReadInt32(),
             DmgPct = r.ReadInt32(), TakenPct = r.ReadInt32(), GearPct = r.ReadInt32(), Dodge = r.ReadInt32(), CoffeePct = r.ReadInt32(),
             BrigadePct = r.ReadInt32(), ShopPct = r.ReadInt32(), MatsPct = r.ReadInt32(), SecondChance = r.ReadInt32(),
             GearSlots = r.ReadInt32(), Act0 = r.ReadInt32(), Rerolls = r.ReadInt32(), Weekly = r.ReadInt32(), StartCoffee = r.ReadInt32(),
-            Mastery = r.ReadInt32(),
+            Mastery = r.ReadInt32(), WeaponRarity = r.ReadInt32(), StartBelt = r.ReadInt32(),
         };
+        Bonus.Tools = r.ReadUInt64();
         XpPct = r.ReadInt32();
         XpBanked = r.ReadInt32();
         RunXp = r.ReadInt32();
@@ -350,6 +408,10 @@ public sealed partial class Game
         OfferRarity = r.ReadSByte();
         OfferTrait = r.ReadSByte();
         WeaponOverride = r.ReadInt32();
+        WeaponBCd = r.ReadInt32();
+        WeaponCharges = r.ReadSByte();
+        CritBuff = r.ReadSByte();
+        CritBuffTurns = r.ReadSByte();
         LogSerial = r.ReadInt32();
         SummonCounter = r.ReadInt32();
         SummonsUsed = r.ReadInt32();
@@ -392,6 +454,22 @@ public sealed partial class Game
         TraitPending = r.ReadBoolean();
         ToolOffer = r.ReadSByte();
         ToolOfferPickup = r.ReadSByte();
+        WeaponRarity = r.ReadByte();
+        ToolOfferRarity = r.ReadSByte();
+        Weapon2 = r.ReadInt32();
+        Weapon2Rarity = r.ReadByte();
+        Weapon2Charges = r.ReadSByte();
+        Weapon2Lvl = r.ReadSByte();
+        Weapon2Trait = r.ReadSByte();
+        Weapon2TraitPending = r.ReadBoolean();
+        ToolOfferExtra = r.ReadUInt16();
+        WeaponPerks = r.ReadByte();
+        Weapon2Perks = r.ReadByte();
+        ToolOfferPerks = r.ReadByte();
+        PerkRolls = r.ReadUInt16();
+        ProcCount = r.ReadByte();
+        ArtifactsRun = r.ReadUInt16();
+        PatentWalls = r.ReadByte();
         SecretX = r.ReadSByte();
         SecretY = r.ReadSByte();
         SecretKind = r.ReadSByte();
@@ -429,6 +507,20 @@ public sealed partial class Game
         ShopBuys = r.ReadByte();
         Contract = r.ReadSByte();
         TwinCarry = r.ReadByte();
+        DogX = r.ReadSByte();
+        DogY = r.ReadSByte();
+        DogFlags = r.ReadByte();
+        DogPets = r.ReadByte();
+        for (var i = 0; i < Backpack.Length; i++)
+        {
+            Backpack[i] = new BackpackItem
+            {
+                Kind = (BackpackKind)r.ReadByte(), Id = r.ReadSByte(), Rarity = r.ReadByte(), Trait = r.ReadSByte(), Perks = r.ReadByte(),
+                Extra = r.ReadUInt16(),
+            };
+        }
+        OfferPickup = r.ReadSByte();
+        if ((DogFlags & DogOn) == 0) DogX = DogY = -1;
         if (Contract < 0 || Contract >= D.Career.Length) Contract = 0;
     }
 }

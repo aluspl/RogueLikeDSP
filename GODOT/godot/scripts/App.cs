@@ -27,10 +27,14 @@ public sealed class App
         Nodes.Filter.Source = () => (Session.Data, Session.Profile);
         Nodes.Touch.Bind(Session.Game);
         Banners = new BannerFeed(Session, Nodes.Banners);
+        Announcements = new AnnounceFeed(Session, Nodes.Announce);
         SoundCues.Attach(Session.Events);
         Session.Events.LevelUp += (level, abilityUp) => Nodes.World.Effects.LevelUp(level, abilityUp);
         Session.Events.SecondChance += () => Nodes.World.Effects.SecondChance();
         Session.Events.BossPhase += _ => Nodes.World.Effects.BossPhase();
+        Session.Events.DogPetted += _ => ShowDogQuip(); // v0.23.0: easter egg – Kawka: ocena postępów w dymku nad nią
+        Session.Events.RunStarted += Nodes.DogBubble.HideBubble;
+        Nodes.DogBubble.Allowed = () => !Nodes.Phone.IsOpen && Nodes.World.IsVisibleInTree();
         Session.Events.RunEnded += won =>
         {
             if (won) Nodes.World.Effects.Confetti();
@@ -39,12 +43,24 @@ public sealed class App
         Coach = new Guide.Coach(this);
     }
 
+    /// <summary>v0.23.0: Kawka pogłaskana – zadowolona mina na mapie i dymek z oceną postępów (Dog.Quip: stan budowy i profilu).</summary>
+    public void ShowDogQuip()
+    {
+        var d = Session.Data;
+        if (d.DogQuips.Length == 0) return;
+        var q = d.DogQuips[Dog.Quip(d, Session.Profile, Session.Game)];
+        Nodes.World.DogPetted();
+        Nodes.DogBubble.Show(d.DogName, q.Lines);
+    }
+
     /// <summary>Węzeł główny (Main) - dla zadań czekających na klatki (zrzuty, test dymny).</summary>
     public Node Root { get; }
     public GameSession Session { get; }
     public SceneNodes Nodes { get; }
     public ScreenFlow Flow { get; }
     public BannerFeed Banners { get; }
+    /// <summary>v0.23.0: ogłoszenia „z przytupem”.</summary>
+    public AnnounceFeed Announcements { get; }
     /// <summary>Samouczek menu (#25): dymki na tytule i wyborze zawodu.</summary>
     public Guide.Coach Coach { get; }
 
@@ -67,6 +83,7 @@ public sealed class App
     public void AfterAction(bool acted)
     {
         Refresh();
+        BackpackTip();
         if (!acted) return;
         if (OpenPending()) return;
         switch (Session.Resolve())
@@ -76,12 +93,24 @@ public sealed class App
                 else Flow.Schedule.Open();
                 break;
             case TurnOutcome.RunEnded:
-                Flow.EndMessage.Open();
+                // v0.22.0 (UX A): po wygranej harmonogram domu (z kodem QR), potem rozmowa z Kierownikiem Markiem
+                if (Session.Game.St == GameStatus.Won && Session.Game.RouteCount() > 0) Flow.HouseSchedule.Open();
+                else Flow.BetweenRuns.Open();
                 break;
             case TurnOutcome.Offer when Flow.Current == Flow.Game:
                 Flow.Offer.Open();
                 break;
         }
+    }
+
+    /// <summary>v0.23.2: pierwszy przedmiot w plecaku – jednorazowy dymek Marka (bit Tutorial.Backpack w profilu).</summary>
+    private void BackpackTip()
+    {
+        var p = Session.Profile;
+        if (p is null || Session.Game.BackpackCount() == 0 || (p.Tutorial & Tutorial.Backpack) != 0) return;
+        p.Tutorial |= Tutorial.Backpack;
+        Session.Save();
+        Nodes.Banners.Push(Loc.T("tut_plecak_tytul"), Loc.T("tut_plecak"), Phone.PhoneTabs.Gear);
     }
 
     /// <summary>

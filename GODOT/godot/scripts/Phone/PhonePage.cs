@@ -24,6 +24,12 @@ public abstract class PhonePage
     /// <summary>Krzyżyk w nagłówku przy dotyku (zamyka stronę akcją Cancel); zakładki mają go zawsze.</summary>
     public virtual bool Closable => false;
 
+    /// <summary>v0.23.2 (UI 2): nakładka bez telefonu (pauza) – bez ramki, nagłówka i tła; strona rysuje się na przyciemnionej mapie.</summary>
+    public virtual bool Overlay => false;
+
+    /// <summary>v0.23.2: treść dłuższa niż ekran przewija się (strzałki góra/dół, przesunięcie palcem), gdy strona sama nie używa strzałek.</summary>
+    public virtual bool Scrolls => false;
+
     /// <summary>Dotknięcie wiersza listy zarejestrowanego przez PhonePainter.HitRow; true = obsłużone.</summary>
     public virtual bool TapRow(int index) => false;
 

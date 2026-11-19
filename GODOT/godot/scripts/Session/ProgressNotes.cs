@@ -19,6 +19,10 @@ public static class ProgressNotes
     public static string Secrets(GameData d, int got) =>
         got == 0 ? "" : Loc.T("sekretne_zlecenie_2") + string.Join(", ", d.Secrets.Where((_, i) => (got & (1 << i)) != 0).Select(s => s.RewardText));
 
-    public static string Join(GameData d, int badges, int contracts, int secrets = 0) =>
-        string.Join("\n", new[] { Secrets(d, secrets), Badges(d, badges), Contracts(d, contracts) }.Where(s => s.Length > 0));
+    /// <summary>v0.23.0: artefakty, które właśnie trafiły do Gabloty.</summary>
+    public static string Artifacts(GameData d, int got) =>
+        got == 0 ? "" : Loc.T("artefakt_w_gablocie") + string.Join(", ", d.Artifacts.Where((_, i) => (got & (1 << i)) != 0).Select(w => d.Weapons[w].Name));
+
+    public static string Join(GameData d, int badges, int contracts, int secrets = 0, int artifacts = 0) =>
+        string.Join("\n", new[] { Secrets(d, secrets), Artifacts(d, artifacts), Badges(d, badges), Contracts(d, contracts) }.Where(s => s.Length > 0));
 }

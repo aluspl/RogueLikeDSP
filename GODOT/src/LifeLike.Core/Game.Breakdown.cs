@@ -7,9 +7,9 @@ public sealed partial class Game
 {
     /// <summary>
     /// Rozpiska obrażeń broni – wzory jak HeroAttack. enemyDefId: problem (jego obrona; -1 = bez), weaponIdx: inna broń
-    /// (-1 = obecna), swap*: sprzęt w slocie po zamianie (porównanie paczki; -1 = bez zmian).
+    /// (-1 = obecna; weaponRarity = jej rzadkość), swap*: sprzęt w slocie po zamianie (porównanie paczki; -1 = bez zmian).
     /// </summary>
-    public DmgBreakdown WeaponBreakdown(int enemyDefId = -1, int weaponIdx = -1, int swapSlot = -1, int swapRarity = -1, int swapTrait = 0)
+    public DmgBreakdown WeaponBreakdown(int enemyDefId = -1, int weaponIdx = -1, int swapSlot = -1, int swapRarity = -1, int swapTrait = 0, int weaponRarity = 0, int weaponPerks = 0)
     {
         var b = new DmgBreakdown { Weapon = weaponIdx >= 0 ? weaponIdx : (WeaponOverride >= 0 ? WeaponOverride : CDef.Weapon) };
         var w = D.Weapons[b.Weapon];
@@ -19,6 +19,8 @@ public sealed partial class Game
         b.Range = RangeOf(w);
         b.Scales = w.ScalesWith;
         b.CritWeapon = w.Crit + (b.Weapon == CDef.Weapon ? MasterCrit() : 0); // v0.21.52 cz. b: broń mistrza
+        b.CritCut = HitCalc.Has(w, HitType.Cut) ? D.HitTypes.CutCritPct : 0; // v0.23.0: cięcie
+        b.Pierce = HitCalc.PierceDef(D, w); // v0.23.0: kłucie (+ cecha Przebicie niżej)
         var stTr = RunMods.StatTrait(w.ScalesWith);
         var luckT = 0;
         for (var i = 0; i < D.GearSlotsCount; ++i)
@@ -47,6 +49,14 @@ public sealed partial class Game
         b.CritBoon = BoonSum(BoonEffect.Crit);
         b.VsEnemy = enemyDefId >= 0;
         b.EnemyDef = b.VsEnemy ? D.Enemies[enemyDefId].Defense : 0;
+        if (b.VsEnemy) // v0.23.0: mnożnik ciosu wg materiału / żywiołu problemu
+        {
+            var ed = D.Enemies[enemyDefId];
+            var col = HitCalc.Column(D, ed);
+            b.HitPct = HitCalc.Pct(D, w, ed);
+            b.HitMat = col < D.Materials.Length ? D.Materials[col].Name : ed.Name;
+            b.HitName = D.HitTypes.Names[(int)HitCalc.Best(D, w, col)];
+        }
         b.Luck = CDef.Luck + Bonus.Luck + luckT + BoonLuck();
         b.CritBonus = Bonus.Crit;
         b.PowerRank = AbilityRank();
@@ -56,11 +66,21 @@ public sealed partial class Game
         {
             b.UpgLevel = WeaponLvl;
             b.FlatUpgrade = UpgradeDmg();
+            b.FlatRarity = WeaponDmgBonus(); // v0.23.0: rzadkość broni w ręku
             b.UpgTrait = WeaponTrait;
-            b.Pierce = ToolTraitValue(ToolTraitEffect.Pierce);
+            b.Pierce += ToolTraitValue(ToolTraitEffect.Pierce);
             b.Steady = ToolTraitValue(ToolTraitEffect.Steady);
             b.CritUpg = ToolTraitValue(ToolTraitEffect.Crit);
+            b.Perks = WeaponPerks;
+            b.PerksMaster = MasterRarity(WeaponRarity);
         }
+        else
+        {
+            b.FlatRarity = RarityDmg(weaponRarity); // v0.23.0: rzadkość porównywanej broni (np. z paczki na ziemi)
+            b.Perks = ResolvePerks(b.Weapon, weaponRarity, weaponPerks);
+            b.PerksMaster = MasterRarity(weaponRarity);
+        }
+        b.AddPerks(D); // v0.23.0: profity broni – sumują się z cechą ulepszenia (ten sam skutek)
         b.Finish(D);
         return b;
     }

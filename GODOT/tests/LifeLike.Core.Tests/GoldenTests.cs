@@ -15,6 +15,15 @@ public class GoldenTests
     [Fact]
     public void GoldenFilesExist() => Assert.True(Runs().Count() >= 10);
 
+    [Fact]
+    public void SnapshotKeepsAllToolBits()
+    {
+        // 33 narzędzia: bit 32 (Łom Ostatniej Deski) też w zrzucie – maska w dwóch połowach jak toolsFound
+        var g = TestData.Arena(0);
+        g.Bonus.Tools = (1UL << 32) | 5;
+        Assert.Contains($",{g.Bonus.GearSlots},5,1],", GoldenSnapshot.Of(g, 0));
+    }
+
     [Theory]
     [MemberData(nameof(Runs))]
     public void ReplayMatchesGba(string file)
@@ -44,7 +53,7 @@ public class GoldenTests
         if (fullMods)
         {
             for (var i = 0; i < d.Upgrades.Length; i++) p.Levels[i] = (byte)d.Upgrades[i].Levels;
-            p.Tools = (byte)((1 << d.Tools.Length) - 1);
+            p.Tools = (1UL << d.Tools.Length) - 1;
             p.Brigade = (byte)((1 << d.Brigade.Length) - 1);
         }
         p.Badges = (ushort)badges;

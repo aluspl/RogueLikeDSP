@@ -68,7 +68,7 @@ public class DamageBreakdownTests
                 if (v >= 3) g.WeaponOverride = D.Tools[pick.Range(0, D.Tools.Length - 1)].Weapon;
                 var ed = pick.Range(0, D.Enemies.Length - 1);
                 var b = g.WeaponBreakdown(ed);
-                Assert.True(b.CritPct == g.CritPct() && b.StatValue == g.HeroStat(g.Weapon.ScalesWith));
+                Assert.True(b.CritChance() == g.CritPct() && b.StatValue == g.HeroStat(g.Weapon.ScalesWith));
                 Assert.True(b.Flat == g.DmgBonus + g.GearBonus(GearStat.Dmg) && b.FlatFound >= 0);
                 int lo = 999, hi = 0, clo = 999, chi = 0, crits = 0;
                 const int n = 3000;
@@ -167,19 +167,34 @@ public class DamageBreakdownTests
         var g = TestData.Arena(1);
         var b = g.WeaponBreakdown();
         Assert.True(b.WMin == 4 && b.WMax == 6 && b.StatDmg == 2 && b.Min == 6 && b.Max == 8 && b.Avg10 == 70);
-        Assert.True(b.CritMin == 12 && b.CritMax == 16 && b.CritChance() == D.CritBasePct);
+        Assert.True(b.CritMin == 12 && b.CritMax == 16 && b.CritChance() == D.CritBasePct + (HitCalc.Has(g.Weapon, HitType.Cut) ? D.HitTypes.CutCritPct : 0));
         Assert.Equal("Cios 6-8, średnio 7", DamageHelp.Text(D, b, DmgText.Total));
         Assert.Equal("Kielnia 4-6, zasięg 1", DamageHelp.Text(D, b, DmgText.Weapon));
         Assert.Equal("SIŁ 5: +2 (+1 co 2 pkt)", DamageHelp.Text(D, b, DmgText.Stat));
-        Assert.Equal("Kryt x2: 12-16, szansa 5%", DamageHelp.Text(D, b, DmgText.Crit));
+        Assert.Equal($"Kryt x2: 12-16, szansa {b.CritChance()}%", DamageHelp.Text(D, b, DmgText.Crit));
         b.Pct = 10;
         b.Finish(D);
         Assert.True(b.Min == 6 && b.Max == 9 && b.Avg10 == 77);
         var bud = D.EnemyIndex("budzet");
         var v = g.WeaponBreakdown(bud);
-        Assert.Equal(Math.Max(1, 6 - D.Enemies[bud].Defense / 2), v.Min);
+        var pierce = HitCalc.Has(g.Weapon, HitType.Pierce) ? D.HitTypes.PierceDef : 0; // v0.23.0 Task 7: kielnia cięcie + kłucie
+        Assert.Equal(HitCalc.Apply(Math.Max(1, 6 - Math.Max(0, D.Enemies[bud].Defense - pierce) / 2), v.HitPct), v.Min); // x mnożnik ciosu (kielnia na stal)
         var gl = g.WeaponBreakdown(-1, -1, 1, 2, 0);
         Assert.Equal("teraz 6-8 -> 9-11 (średnio +3)", DamageHelp.CompareLine(new Message(), g.WeaponBreakdown(), gl).Text);
         Assert.Equal("+3 obrażeń", DamageHelp.GearLabel(D.Gear[5]));
+    }
+
+    [Fact]
+    public void CompareExtrasShowCritPierceAndPerks()
+    {
+        // porównanie przy zamianie broni: nowa broń ma więcej krytu / przebicia / profitów – dopisek obok średniej,
+        // by Nóż majstra (niższa średnia, kryt, kłucie 4 + profit Przebicie) nie wyglądał na gorszy
+        var g = TestData.Arena(1); // Murarz: Kielnia
+        var now = g.WeaponBreakdown();
+        var noz = Array.FindIndex(D.Weapons, w => w.Id == "noz_majstra");
+        var next = g.WeaponBreakdown(-1, noz, -1, -1, 0, 3, 0);
+        Assert.Equal(" + kryt, OBR -5, profity", DamageHelp.CompareExtras(new Message(), now, next).Text);
+        Assert.Equal("", DamageHelp.CompareExtras(new Message(), next, now).Text); // gorsza w tym: nic nie dopisuje
+        Assert.Equal("", DamageHelp.CompareExtras(new Message(), now, now).Text);
     }
 }

@@ -66,7 +66,7 @@ public static class GoldenSnapshot
         K("blast", Arr([g.BlastX, g.BlastY, g.BlastTimer, g.BlastDmg, g.GustIn(), g.GustDir()]));
         K("offer", Arr([g.OfferSlot, g.OfferRarity, g.OfferTrait]));
         K("respect", Arr([g.Respect, g.StageRespect(), g.DmgCarry, g.TakenCarry, g.SecondUsed ? 1 : 0, g.DodgePct(), g.CoffeeHeal(),
-            g.Bonus.GearSlots, g.Bonus.Tools]));
+            g.Bonus.GearSlots, (int)(uint)g.Bonus.Tools, (int)(uint)(g.Bonus.Tools >> 32)]));
         K("act0", Arr([g.FirstStage, g.Docs, g.DocsNeeded(), g.StairsLocked() ? 1 : 0, g.StageNumber(), g.StagesInRun()]));
         K("heroStatus", Arr(g.HeroStatus.Select(x => (int)x)));
         K("boons", "[" + string.Join(",", new long[]
@@ -89,6 +89,7 @@ public static class GoldenSnapshot
             g.Bonus.Mastery, g.MasterCrit(), g.BoonPower(), Progress.RunProgressXp(TestData.D, g), // v0.21.52 cz. b
             g.HelpersCalled, g.ShopBuys, g.Bonus.FirstHitBonus, DailyTasks.StagesDone(TestData.D, g)])); // cz. c
         K("career", Arr([g.Contract, g.TwinCarry, g.StageId(g.Stage), g.RouteCount(), g.MechValue(), Career.StagesDone(g)])); // v0.21.52 cz. d
+        if (g.DogFlags != 0 || g.DogPets != 0) K("dog", Arr([g.DogX, g.DogY, g.DogFlags, g.DogPets, g.DogStage()])); // v0.23.0: Kawka
         K("killsByType", Arr(g.KillsByType.Select(x => (int)x)));
         K("rooms", "[" + string.Join(",", g.Lv.Rooms.Take(g.Lv.RoomsCount).Select(r => Arr([r.X, r.Y, r.W, r.H]))) + "]");
         var map = new List<string>();

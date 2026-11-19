@@ -27,8 +27,8 @@ public struct RunMods
     public int Cash;
     /// <summary>Kryt +%.</summary>
     public int Crit;
-    /// <summary>Narzędzia, które mogą wypaść z wrogów (bitmaska).</summary>
-    public int Tools;
+    /// <summary>Narzędzia, które mogą wypaść z wrogów (bitmaska; v0.23.0: 64 bity).</summary>
+    public ulong Tools;
     /// <summary>Brygada: fachowcy do wezwania (bitmaska GameData.Brigade).</summary>
     public int Helpers;
     /// <summary>Tryb inwestora: włączone modyfikatory (bitmaska GameData.Investor).</summary>
@@ -54,6 +54,8 @@ public struct RunMods
     public int SecondChance;
     /// <summary>Sloty sprzętu w dropach (bitmaska; nagrody: buty, pas).</summary>
     public int GearSlots;
+    /// <summary>v0.23.0: nagroda za odbiór „Pas monterski z kaburą” – budowa zaczyna się z założonym pasem (1 = tak).</summary>
+    public int StartBelt;
     /// <summary>v0.21.49: Akt 0 (Papierologia) z nagrody za odbiór – budowa zaczyna się od niego (1 = tak).</summary>
     public int Act0;
     /// <summary>v0.21.50: Respekt Druga oferta – darmowe losowanie premii po etapie.</summary>
@@ -67,6 +69,9 @@ public struct RunMods
     /// cz. c: bity 8-11 – Siła rozpędu z drzewka (FirstHitBonus).
     /// </summary>
     public int Mastery;
+
+    /// <summary>v0.23.0: startowa rzadkość broni domyślnej (Szkolenie Narzędzia: 0 Zwykła, 1 Solidna, 2 Markowa).</summary>
+    public int WeaponRarity;
 
     /// <summary>v0.21.52 cz. c: +obrażeń pierwszego ciosu w nietknięty problem (węzeł drzewka Siła rozpędu).</summary>
     public readonly int FirstHitBonus => (Mastery >> MasteryBit.FirstHitShift) & 15;
@@ -128,6 +133,7 @@ public struct RunMods
             case UpgradeEffect.ShopPct: ShopPct += v; break; // v0.21.52 cz. c: węzły drzewka
             case UpgradeEffect.BrigadePct: BrigadePct += v; break;
             case UpgradeEffect.Cooldown: Cooldown += v; break;
+            case UpgradeEffect.StartRarity: WeaponRarity = Math.Min(2, WeaponRarity + v); break; // v0.23.0: Szkolenie Narzędzia
             case UpgradeEffect.FirstHit: Mastery += Math.Min(15, v) << MasteryBit.FirstHitShift; break; // Siła rozpędu (jeden węzeł)
         }
     }
@@ -160,6 +166,7 @@ public struct RunMods
         UpgradeEffect.BrigadePct => m.Add(Loc.T("brygada")).Add(v).Add("%"),
         UpgradeEffect.Cooldown => m.Add(Loc.T("moc")).Add(v).Add(" t."),
         UpgradeEffect.FirstHit => m.Add(Loc.T("pierwszy_cios")).Add(v),
+        UpgradeEffect.StartRarity => m.Add(Loc.T("start_rzadkosc")).Add(v),
         _ => m,
     };
 

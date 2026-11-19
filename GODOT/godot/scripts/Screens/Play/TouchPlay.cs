@@ -21,8 +21,8 @@ public sealed class TouchPlay
     private readonly App _app;
     private readonly GameScreen _screen;
     private BarButton _down = BarButton.None;
-    private float _held, _stickTimer;
-    private bool _mapByHold, _lookByPress;
+    private float _held, _stickTimer, _tipHeld;
+    private bool _mapByHold, _lookByPress, _offButton;
 
     public TouchPlay(App app, GameScreen screen)
     {
@@ -42,6 +42,7 @@ public sealed class TouchPlay
     {
         _down = BarButton.None;
         _mapByHold = _lookByPress = false;
+        _screen.Tips.Hide();
         T.Bar.Pressed = BarButton.None;
         T.Stick.End();
         Walk.Stop();
@@ -51,6 +52,15 @@ public sealed class TouchPlay
     {
         Walk.Process(delta);
         var dt = (float)delta;
+        if (_down is BarButton.Attack or BarButton.WeaponB && !_offButton && !_screen.Tips.Holding) // v0.23.0: trzymanie – opis ataku
+        {
+            _tipHeld += dt;
+            if (_tipHeld >= AttackTips.HoldTime)
+            {
+                _screen.Tips.ShowOverButton(_down);
+                _screen.Tips.Holding = true;
+            }
+        }
         if (_down == BarButton.Phone && !_mapByHold)
         {
             _held += dt;
@@ -116,9 +126,11 @@ public sealed class TouchPlay
         if (b != BarButton.None)
         {
             _down = b;
-            _held = 0;
+            _held = _tipHeld = 0;
+            _offButton = false;
             T.Bar.Pressed = b;
             if (b == BarButton.Attack) _screen.Aim.Begin();
+            else if (b == BarButton.WeaponB) _screen.Aim.Begin(true, Input.GameAction.WeaponB); // v0.23.0: celowanie trybem B
             else if (b == BarButton.Wait) _screen.Look.Begin();
             return;
         }
@@ -139,7 +151,12 @@ public sealed class TouchPlay
             }
             return;
         }
-        if (_down == BarButton.Attack && _screen.Aim.Active && !ActionBar.Covers(p)) _screen.Aim.PointAt(N.World.UiToGrid(p));
+        if (_down is BarButton.Attack or BarButton.WeaponB && !_offButton && ActionBar.HitTest(p) != _down) // palec zjechał: celowanie, bez opisu
+        {
+            _offButton = true;
+            _screen.Tips.Hide();
+        }
+        if (_down is BarButton.Attack or BarButton.WeaponB && _screen.Aim.Active && !ActionBar.Covers(p)) _screen.Aim.PointAt(N.World.UiToGrid(p));
     }
 
     private void Up(Vector2 p)
@@ -154,11 +171,21 @@ public sealed class TouchPlay
             _screen.Look.Cancel();
             return;
         }
+        if (_screen.Tips.Holding) // v0.23.0: puszczenie po opisie ataku – bez ataku
+        {
+            _screen.Tips.Hide();
+            _screen.Aim.Cancel();
+            return;
+        }
         var same = ActionBar.HitTest(p) == b;
         switch (b)
         {
             case BarButton.Attack:
+            case BarButton.WeaponB:
                 if (_screen.Aim.Active) _screen.Aim.Commit();
+                break;
+            case BarButton.Swap when same: // v0.23.0: zamiana broni z kabury
+                _app.AfterAction(PlayCommands.SwapOrNotice(G));
                 break;
             case BarButton.Wait:
                 if (_screen.Look.Active) _screen.Look.End();
@@ -199,9 +226,9 @@ public sealed class TouchPlay
             return;
         }
         if (ActionBar.Covers(p)) return;
-        if (p.Y < Layout.SafeTop + (HudTop.Height + 1) * Layout.HudScale) // pasek HUD: pulpit postaci w telefonie
+        if (p.Y < Layout.SafeTop + (HudTop.Height + 1) * Layout.HudScale) // v0.23.2 (UI 2): pasek HUD i broń w nim – Postać z plecakiem
         {
-            _app.Flow.Phone.Open(PhoneTabs.Start);
+            _app.Flow.Character.Open();
             return;
         }
         var g = G;

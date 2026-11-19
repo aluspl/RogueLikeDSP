@@ -41,10 +41,22 @@ public sealed class DmgBreakdown
     public int Power, PowerRank = 1;
     /// <summary>v0.21.50 cz. 3: ulepszenie narzędzia (#31) – poziom, +obrażeń, cecha (GameData.ToolTraits, -1 = brak).</summary>
     public int UpgLevel, FlatUpgrade, UpgTrait = -1;
+    /// <summary>v0.23.0: premia do obrażeń od rzadkości broni.</summary>
+    public int FlatRarity;
+    /// <summary>v0.23.0: profity broni (maska GameData.WeaponPerkPool), Mistrzowska – stałe (Unikat).</summary>
+    public int Perks;
+    public bool PerksMaster;
+    /// <summary>v0.23.0: kryt z profitu Ostrze (WMax już z Głowicą, Pierce i Steady z profitami).</summary>
+    public int CritPerk;
     /// <summary>Cecha ulepszenia: -OBR problemu (Przebicie), +najsłabszy rzut (Wyważenie), +kryt (Ostrze).</summary>
     public int Pierce, Steady, CritUpg;
     /// <summary>v0.21.51 cz. 2: kryt broni (Poziomica mistrza).</summary>
     public int CritWeapon;
+    /// <summary>v0.23.0: kryt z typu ciosu (cięcie: CutCritPct).</summary>
+    public int CritCut;
+    /// <summary>v0.23.0: mnożnik ciosu w % (typ x materiał / żywioł celu; 100 = bez zmian) i jego opis dla gracza.</summary>
+    public int HitPct = 100;
+    public string HitMat = "", HitName = "";
     /// <summary>Wydarzenie z wyborem (#30): ciosy +N na etap.</summary>
     public int FlatEvent;
     /// <summary>Źródła premii profilu znane (Src*): Szkolenia, Respekt, odznaki, pamiątka.</summary>
@@ -65,27 +77,40 @@ public sealed class DmgBreakdown
     {
         StatValue = StatClass + StatCraft + StatTrait;
         StatDmg = StatValue / 2;
-        Flat = FlatMods + FlatLevel + FlatFound + FlatGear + FlatBoon + FlatUpgrade + FlatEvent;
+        Flat = FlatMods + FlatLevel + FlatFound + FlatGear + FlatBoon + FlatUpgrade + FlatRarity + FlatEvent;
         DefCut = Math.Max(0, EnemyDef + EnemyElite - Pierce) / 2;
         PctTotal = Pct + PctBoon;
         RollMin = Math.Min(WMax, WMin + Steady); // Wyważenie: najsłabszy rzut wyżej
         var add = StatDmg + Flat - DefCut;
         BaseMin = Math.Max(1, RollMin + add);
         BaseMax = Math.Max(1, WMax + add);
-        Min = BaseMin + DamageHelp.PctFloor(BaseMin, PctTotal);
-        Max = BaseMax + DamageHelp.PctCeil(BaseMax, PctTotal);
+        Min = HitCalc.Apply(BaseMin + DamageHelp.PctFloor(BaseMin, PctTotal), HitPct);
+        Max = HitCalc.Apply(BaseMax + DamageHelp.PctCeil(BaseMax, PctTotal), HitPct);
         int sum = 0, n = 0;
         for (var r = RollMin; r <= WMax; ++r, ++n) sum += Math.Max(1, r + add) * (100 + Math.Max(0, PctTotal));
-        Avg10 = n > 0 ? LifeLike.Core.Pct.DivRound(sum, 10 * n) : 0;
+        Avg10 = n > 0 ? LifeLike.Core.Pct.DivRound(sum * HitPct, 1000 * n) : 0;
         CritBase = d.CritBasePct;
         CritLuck = d.CritPerLuckPct * Luck;
-        CritPct = CritBase + CritLuck + CritTrait + CritBonus + CritBoon + CritUpg + CritWeapon;
+        CritPct = CritBase + CritLuck + CritTrait + CritBonus + CritBoon + CritUpg + CritWeapon + CritCut + CritPerk;
         CritMult = d.CritMultiplier;
+        CritCap = Math.Min(100, d.CritMaxPct);
         CritMin = Min * CritMult;
         CritMax = Max * CritMult;
     }
 
-    public int CritChance() => Math.Max(0, Math.Min(100, CritPct));
+    /// <summary>v0.23.0: skutki profitów (Perks) w rozpisce: Przebicie, Wyważenie, Ostrze, Głowica (maks. rzutu).</summary>
+    public void AddPerks(GameData d)
+    {
+        Pierce += d.PerkValue(Perks, ToolTraitEffect.Pierce);
+        Steady += d.PerkValue(Perks, ToolTraitEffect.Steady);
+        CritPerk = d.PerkValue(Perks, ToolTraitEffect.Crit);
+        WMax += d.PerkValue(Perks, ToolTraitEffect.MaxDmg);
+    }
+
+    /// <summary>v0.23.0: sufit szansy krytu (GameData.CritMaxPct), ustawiany w Finish.</summary>
+    public int CritCap = 100;
+
+    public int CritChance() => Math.Max(0, Math.Min(CritCap, CritPct));
 
     /// <summary>Źródła premii profilu (Meta.ModsParts); tylko gdy sumy się zgadzają (nie budowa dnia).</summary>
     public void SetSources(RunMods[] parts)
@@ -124,8 +149,16 @@ public sealed class DmgBreakdown
             EnemyDef = Math.Max(0, enemyDef),
             Luck = c.Luck + m.Luck,
             CritBonus = m.Crit,
+            Pierce = HitCalc.PierceDef(d, w),
+            CritCut = HitCalc.Has(w, HitType.Cut) ? d.HitTypes.CutCritPct : 0,
+            FlatRarity = d.WeaponRarities.Length > 0 ? d.WeaponRarities[Game.StartRarity(d, m)].DmgBonus : 0, // v0.23.0
             CritWeapon = w.Crit + ((m.Mastery & MasteryBit.Weapon) != 0 ? d.MasteryClasses[cls].WeaponPerk.Value : 0), // broń mistrza
         };
+        // v0.23.0: Mistrzowska ma stałe profity (unikat); losowe profity Solidnej / Markowej znane dopiero na budowie
+        var master = d.WeaponRarities.Length > 0 && Game.StartRarity(d, m) == d.WeaponRarities.Length - 1;
+        b.Perks = master ? d.MasterPerkMask(c.Weapon) : 0;
+        b.PerksMaster = master;
+        b.AddPerks(d);
         b.Finish(d);
         return b;
     }

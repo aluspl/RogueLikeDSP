@@ -102,7 +102,7 @@ public sealed class SmokeSecrets
         s.ClassId = 1;
         _app.StartRun();
         var scenes = new DebugScenes(_app);
-        for (var guard = 0; guard < 60 && Flow.Current != Flow.EndMessage; guard++)
+        for (var guard = 0; guard < 60 && Flow.Current != Flow.HouseSchedule && Flow.Current != Flow.BetweenRuns; guard++)
         {
             scenes.AdvanceMessages();
             if (Flow.Current == Flow.Prologue) Flow.Prologue.HandleInput(InputCmd.Of(GameAction.A));
@@ -112,12 +112,13 @@ public sealed class SmokeSecrets
             _app.AfterAction(true);
             await DebugRunner.Frames(_app.Root, 1);
         }
-        if (Flow.Current != Flow.EndMessage || s.Game.St != GameStatus.Won) throw new Exception("sekrety: skrót nie doprowadził do odbioru");
+        if (Flow.Current != Flow.HouseSchedule || s.Game.St != GameStatus.Won) throw new Exception("sekrety: skrót nie doprowadził do odbioru");
         var noCoffee = Array.FindIndex(d.Secrets, x => x.Kind == SecretKind.NoCoffeeWin);
         if (!Secrets.Done(p, noCoffee) || (s.LastSecrets & (1 << noCoffee)) == 0) throw new Exception("sekrety: wygrana bez kawy nie dała sekretnego zlecenia");
         if ((p.SecretsNew & (1 << noCoffee)) == 0) throw new Exception("sekrety: brak dymka Nowość do pokazania");
-        Banners = _app.Nodes.Banners.All.Count(b => b.Title == Loc.T("sekretne_zlecenie"));
-        if (Banners == 0) throw new Exception("sekrety: brak banera Sekretne zlecenie!");
+        // v0.22.0 (UX A): koniec budowy bez banerów – sekretne zlecenie w rozmowie („Do tego:”)
+        Banners = Session.EndNotes.Of(s).Count(n => n.StartsWith(Loc.T("sekretne_zlecenie_2").Trim()));
+        if (Banners == 0) throw new Exception("sekrety: brak sekretnego zlecenia w rozmowie między budowami");
         if (!s.Note.Contains(Loc.T("sekretne_zlecenie").TrimEnd('!'))) throw new Exception("sekrety: brak notatki na planszy końcowej");
         Done = Secrets.DoneCount(d, p);
         await DebugRunner.Frames(_app.Root, 3);
@@ -125,12 +126,13 @@ public sealed class SmokeSecrets
 
     private async Task NewsBubble(Profile p, GameData d)
     {
-        Flow.Title.Open();
-        await DebugRunner.Frames(_app.Root, 2);
         var coach = _app.Coach;
         var shown = 0;
-        for (var k = 0; k < 20 && coach.Active; k++)
+        for (var k = 0; k < 20; k++)   // v0.23.0: jeden dymek na wejście na tytuł
         {
+            Flow.Title.Open();
+            await DebugRunner.Frames(_app.Root, 2);
+            if (!coach.Active) break;
             if (coach.CurrentId == "secret")
             {
                 shown++;

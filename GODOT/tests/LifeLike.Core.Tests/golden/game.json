@@ -245,7 +245,19 @@
       "minDamage": 2,
       "maxDamage": 4,
       "range": 2,
-      "scalesWith": "intelligence"
+      "scalesWith": "intelligence",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "shot"
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "mark",
+        "value": 20,
+        "turns": 3,
+        "cooldown": 6,
+        "name": "Wpis do dziennika"
+      }
     },
     {
       "id": "kielnia",
@@ -253,7 +265,24 @@
       "minDamage": 4,
       "maxDamage": 6,
       "range": 1,
-      "scalesWith": "strength"
+      "scalesWith": "strength",
+      "hit": [
+        "cut",
+        "pierce"
+      ],
+      "modeA": {
+        "pattern": "arc"
+      },
+      "modeB": {
+        "pattern": "shot",
+        "range": 2,
+        "effect": "stun",
+        "value": 100,
+        "turns": 1,
+        "cooldown": 7,
+        "dmgPct": 50,
+        "name": "Rzut zaprawą"
+      }
     },
     {
       "id": "gwozdziarka",
@@ -261,7 +290,17 @@
       "minDamage": 2,
       "maxDamage": 3,
       "range": 3,
-      "scalesWith": "agility"
+      "scalesWith": "agility",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "shot"
+      },
+      "modeB": {
+        "pattern": "line",
+        "dmgPct": 60,
+        "cooldown": 5,
+        "name": "Seria"
+      }
     },
     {
       "id": "probnik",
@@ -270,7 +309,17 @@
       "maxDamage": 5,
       "range": 2,
       "scalesWith": "intelligence",
-      "element": "prad"
+      "element": "prad",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "shot"
+      },
+      "modeB": {
+        "pattern": "cross",
+        "effect": "chain",
+        "cooldown": 4,
+        "name": "Przeskok"
+      }
     },
     {
       "id": "klucz",
@@ -278,7 +327,21 @@
       "minDamage": 4,
       "maxDamage": 7,
       "range": 1,
-      "scalesWith": "strength"
+      "scalesWith": "strength",
+      "hit": [
+        "blunt",
+        "pierce"
+      ],
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "dry",
+        "turns": 1,
+        "cooldown": 4,
+        "name": "Zakręcenie zaworu"
+      }
     },
     {
       "id": "szlifierka",
@@ -287,7 +350,17 @@
       "maxDamage": 7,
       "range": 1,
       "scalesWith": "agility",
-      "element": "iskra"
+      "element": "iskra",
+      "hit": "cut",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "arc",
+        "cooldown": 3,
+        "effect2": "ignite",
+        "name": "Iskry"
+      }
     },
     {
       "id": "lom",
@@ -295,7 +368,19 @@
       "minDamage": 3,
       "maxDamage": 6,
       "range": 1,
-      "scalesWith": "strength"
+      "scalesWith": "strength",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "push",
+        "effect": "push",
+        "value": 2,
+        "cooldown": 5,
+        "effect2": "openWall",
+        "name": "Podważenie"
+      }
     },
     {
       "id": "wkretarka",
@@ -303,7 +388,19 @@
       "minDamage": 2,
       "maxDamage": 5,
       "range": 2,
-      "scalesWith": "agility"
+      "scalesWith": "agility",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "line"
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "defdown",
+        "value": 3,
+        "turns": 3,
+        "cooldown": 5,
+        "name": "Rozkręcenie"
+      }
     },
     {
       "id": "laser",
@@ -311,7 +408,16 @@
       "minDamage": 2,
       "maxDamage": 4,
       "range": 4,
-      "scalesWith": "intelligence"
+      "scalesWith": "intelligence",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "line"
+      },
+      "modeB": {
+        "pattern": "lineBoth",
+        "cooldown": 6,
+        "name": "Wiązka w 2 strony"
+      }
     },
     {
       "id": "mlot",
@@ -319,7 +425,19 @@
       "minDamage": 5,
       "maxDamage": 8,
       "range": 1,
-      "scalesWith": "strength"
+      "scalesWith": "strength",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "push",
+        "effect": "push",
+        "value": 1
+      },
+      "modeB": {
+        "pattern": "around",
+        "effect": "openWall",
+        "cooldown": 7,
+        "name": "Wyburzenie"
+      }
     },
     {
       "id": "tablet",
@@ -327,7 +445,18 @@
       "minDamage": 3,
       "maxDamage": 5,
       "range": 2,
-      "scalesWith": "intelligence"
+      "scalesWith": "intelligence",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "shot",
+        "range": 3,
+        "effect": "swap",
+        "cooldown": 6,
+        "name": "Zmiana projektu"
+      }
     },
     {
       "id": "miernik",
@@ -335,7 +464,19 @@
       "minDamage": 2,
       "maxDamage": 5,
       "range": 3,
-      "scalesWith": "intelligence"
+      "scalesWith": "intelligence",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "shot"
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "reveal",
+        "value": 10,
+        "turns": 3,
+        "cooldown": 6,
+        "name": "Pomiar pokoju"
+      }
     },
     {
       "id": "dachowka",
@@ -343,7 +484,18 @@
       "minDamage": 2,
       "maxDamage": 3,
       "range": 3,
-      "scalesWith": "agility"
+      "scalesWith": "agility",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "shot"
+      },
+      "modeB": {
+        "pattern": "throw",
+        "range": 3,
+        "dmgPct": 100,
+        "cooldown": 2,
+        "name": "Grad dachówek"
+      }
     },
     {
       "id": "agregat",
@@ -351,7 +503,18 @@
       "minDamage": 2,
       "maxDamage": 4,
       "range": 2,
-      "scalesWith": "strength"
+      "scalesWith": "strength",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "spray"
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "root",
+        "turns": 2,
+        "cooldown": 6,
+        "name": "Zatynkowanie"
+      }
     },
     {
       "id": "lyzka",
@@ -359,7 +522,20 @@
       "minDamage": 4,
       "maxDamage": 7,
       "range": 1,
-      "scalesWith": "strength"
+      "scalesWith": "strength",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "arc"
+      },
+      "modeB": {
+        "pattern": "shot",
+        "range": 3,
+        "effect": "pull",
+        "value": 2,
+        "cooldown": 5,
+        "dmgPct": 50,
+        "name": "Zgarnięcie"
+      }
     },
     {
       "id": "udarowy",
@@ -367,7 +543,22 @@
       "minDamage": 5,
       "maxDamage": 9,
       "range": 1,
-      "scalesWith": "strength"
+      "scalesWith": "strength",
+      "hit": [
+        "blunt",
+        "pierce"
+      ],
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "line",
+        "effect": "defdown",
+        "value": 99,
+        "turns": 1,
+        "cooldown": 6,
+        "name": "Kucie na wylot"
+      }
     },
     {
       "id": "kotwy",
@@ -376,7 +567,18 @@
       "maxDamage": 5,
       "range": 3,
       "scalesWith": "agility",
-      "element": "iskra"
+      "element": "iskra",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "shot"
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "root",
+        "turns": 2,
+        "cooldown": 5,
+        "name": "Zakotwienie"
+      }
     },
     {
       "id": "spawarka",
@@ -385,7 +587,20 @@
       "maxDamage": 4,
       "range": 2,
       "scalesWith": "agility",
-      "element": "iskra"
+      "element": "iskra",
+      "hit": "cut",
+      "modeA": {
+        "pattern": "line"
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "dot",
+        "value": 2,
+        "turns": 3,
+        "cooldown": 4,
+        "steelPct": 150,
+        "name": "Gorący spaw"
+      }
     },
     {
       "id": "tyczka",
@@ -393,7 +608,19 @@
       "minDamage": 2,
       "maxDamage": 4,
       "range": 2,
-      "scalesWith": "intelligence"
+      "scalesWith": "intelligence",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "line"
+      },
+      "modeB": {
+        "pattern": "cross",
+        "effect": "mark",
+        "value": 40,
+        "turns": 3,
+        "cooldown": 4,
+        "name": "Wytyczenie"
+      }
     },
     {
       "id": "mlotek",
@@ -401,7 +628,22 @@
       "minDamage": 4,
       "maxDamage": 7,
       "range": 1,
-      "scalesWith": "strength"
+      "scalesWith": "strength",
+      "hit": [
+        "blunt",
+        "cut"
+      ],
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "defdown",
+        "value": 2,
+        "turns": 1,
+        "cooldown": 2,
+        "name": "Dobicie gwoździa"
+      }
     },
     {
       "id": "mlot_zenka",
@@ -410,7 +652,23 @@
       "maxDamage": 7,
       "range": 1,
       "scalesWith": "strength",
-      "knockback": true
+      "knockback": true,
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "push",
+        "effect": "push",
+        "value": 1
+      },
+      "modeB": {
+        "pattern": "around",
+        "effect": "push",
+        "value": 1,
+        "cooldown": 7,
+        "name": "Zamach Zenka"
+      },
+      "master": true,
+      "artifact": "mlot",
+      "hint": "Sekretne zlecenie: Szef tylko dzwoni"
     },
     {
       "id": "poziomica_m",
@@ -420,7 +678,554 @@
       "range": 3,
       "scalesWith": "intelligence",
       "crit": 10,
-      "reveal": true
+      "reveal": true,
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "shot"
+      },
+      "modeB": {
+        "pattern": "lineBoth",
+        "range": 3,
+        "effect": "reveal",
+        "cooldown": 6,
+        "name": "Oko mistrza"
+      },
+      "master": true,
+      "artifact": "poziomica_2m",
+      "hint": "Sekretne zlecenie: Szczur magazynowy"
+    },
+    {
+      "id": "lopata",
+      "name": "Łopata",
+      "minDamage": 3,
+      "maxDamage": 6,
+      "range": 1,
+      "scalesWith": "strength",
+      "hit": [
+        "blunt",
+        "pierce"
+      ],
+      "modeA": {
+        "pattern": "arc",
+        "effect": "stun",
+        "value": 20,
+        "turns": 1
+      },
+      "modeB": {
+        "pattern": "line",
+        "range": 2,
+        "effect": "defdown",
+        "value": 2,
+        "turns": 3,
+        "cooldown": 4,
+        "name": "Podkop"
+      }
+    },
+    {
+      "id": "siekiera",
+      "name": "Siekiera ciesielska",
+      "minDamage": 4,
+      "maxDamage": 6,
+      "range": 1,
+      "scalesWith": "strength",
+      "hit": "cut",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "arc",
+        "cooldown": 5,
+        "name": "Zamach z barku"
+      }
+    },
+    {
+      "id": "pila",
+      "name": "Piła ręczna",
+      "minDamage": 2,
+      "maxDamage": 5,
+      "range": 1,
+      "scalesWith": "agility",
+      "crit": 10,
+      "hit": "cut",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "dot",
+        "value": 2,
+        "turns": 3,
+        "cooldown": 5,
+        "name": "Piłowanie"
+      }
+    },
+    {
+      "id": "kilof",
+      "name": "Kilof",
+      "minDamage": 4,
+      "maxDamage": 7,
+      "range": 1,
+      "scalesWith": "strength",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "line",
+        "range": 2,
+        "cooldown": 6,
+        "name": "Rozkucie"
+      }
+    },
+    {
+      "id": "przecinak",
+      "name": "Przecinak z młotkiem",
+      "minDamage": 3,
+      "maxDamage": 5,
+      "range": 1,
+      "scalesWith": "strength",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "openWall",
+        "value": 3,
+        "cooldown": 1,
+        "name": "Wykucie bruzdy"
+      }
+    },
+    {
+      "id": "nozyce",
+      "name": "Nożyce do blachy",
+      "minDamage": 3,
+      "maxDamage": 5,
+      "range": 1,
+      "scalesWith": "agility",
+      "hit": "cut",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "arc",
+        "cooldown": 5,
+        "name": "Cięcie blachy"
+      }
+    },
+    {
+      "id": "silikon",
+      "name": "Pistolet do silikonu",
+      "minDamage": 2,
+      "maxDamage": 3,
+      "range": 3,
+      "scalesWith": "agility",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "shot",
+        "dmgPct": 70
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "root",
+        "turns": 2,
+        "cooldown": 6,
+        "name": "Uszczelnienie"
+      }
+    },
+    {
+      "id": "myjka",
+      "name": "Myjka ciśnieniowa",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 3,
+      "scalesWith": "agility",
+      "element": "woda",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "line",
+        "effect": "wet",
+        "turns": 3
+      },
+      "modeB": {
+        "pattern": "push",
+        "effect": "push",
+        "value": 2,
+        "cooldown": 5,
+        "name": "Strumień"
+      }
+    },
+    {
+      "id": "palnik",
+      "name": "Palnik dekarski",
+      "minDamage": 2,
+      "maxDamage": 5,
+      "range": 2,
+      "scalesWith": "intelligence",
+      "element": "ogien",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "spray",
+        "effect": "dot",
+        "value": 2,
+        "turns": 2
+      },
+      "modeB": {
+        "pattern": "around",
+        "dmgPct": 50,
+        "effect": "dry",
+        "turns": 1,
+        "cooldown": 7,
+        "name": "Krąg płomieni"
+      }
+    },
+    {
+      "id": "taker",
+      "name": "Taker",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 2,
+      "scalesWith": "agility",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "shot",
+        "dmgPct": 60
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "root",
+        "turns": 3,
+        "cooldown": 5,
+        "name": "Zszycie"
+      }
+    },
+    {
+      "id": "mlotek_gumowy",
+      "name": "Młotek gumowy",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 1,
+      "scalesWith": "strength",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "single",
+        "effect": "stun",
+        "value": 50,
+        "turns": 1
+      },
+      "modeB": {
+        "pattern": "cross",
+        "effect": "stun",
+        "value": 30,
+        "turns": 1,
+        "cooldown": 6,
+        "name": "Opukiwanie"
+      }
+    },
+    {
+      "id": "pilarka",
+      "name": "Pilarka tarczowa",
+      "minDamage": 4,
+      "maxDamage": 7,
+      "range": 1,
+      "scalesWith": "agility",
+      "element": "iskra",
+      "crit": 10,
+      "hit": "cut",
+      "modeA": {
+        "pattern": "arc"
+      },
+      "modeB": {
+        "pattern": "around",
+        "cooldown": 7,
+        "name": "Pełny obrót"
+      },
+      "master": true,
+      "artifact": "pila",
+      "hint": "Markowa Piła z dropu - czasem coś więcej"
+    },
+    {
+      "id": "poziomica_2m",
+      "name": "Poziomica 2 m",
+      "minDamage": 3,
+      "maxDamage": 5,
+      "range": 2,
+      "scalesWith": "intelligence",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "shot"
+      },
+      "modeB": {
+        "pattern": "cross",
+        "effect": "reveal",
+        "cooldown": 6,
+        "name": "Sprawdzenie pionu"
+      }
+    },
+    {
+      "id": "mieszadlo",
+      "name": "Mieszadło do zaprawy",
+      "minDamage": 3,
+      "maxDamage": 6,
+      "range": 1,
+      "scalesWith": "strength",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "around",
+        "effect": "push",
+        "value": 1,
+        "cooldown": 7,
+        "name": "Wir zaprawy"
+      }
+    },
+    {
+      "id": "laser_krzyzowy",
+      "name": "Laser krzyżowy",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 4,
+      "scalesWith": "intelligence",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "line"
+      },
+      "modeB": {
+        "pattern": "line4",
+        "cooldown": 6,
+        "name": "Krzyż laserowy"
+      }
+    },
+    {
+      "id": "lutownica",
+      "name": "Lutownica",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 1,
+      "scalesWith": "intelligence",
+      "element": "ogien",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "single",
+        "effect": "dot",
+        "value": 2,
+        "turns": 2
+      },
+      "modeB": {
+        "pattern": "line",
+        "range": 2,
+        "effect": "dot",
+        "value": 2,
+        "turns": 3,
+        "cooldown": 5,
+        "effect2": "dry",
+        "name": "Lut na gorąco"
+      }
+    },
+    {
+      "id": "opalarka",
+      "name": "Opalarka",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 2,
+      "scalesWith": "agility",
+      "element": "ogien",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "spray",
+        "effect": "dry",
+        "turns": 1
+      },
+      "modeB": {
+        "pattern": "single",
+        "effect": "mark",
+        "value": 100,
+        "turns": 1,
+        "cooldown": 5,
+        "name": "Zdarcie farby"
+      }
+    },
+    {
+      "id": "noz",
+      "name": "Nóż do tapet",
+      "desc": "Łamane ostrze, zawsze ostre",
+      "minDamage": 2,
+      "maxDamage": 4,
+      "range": 1,
+      "scalesWith": "agility",
+      "hit": "pierce",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "line",
+        "range": 2,
+        "dmgPct": 80,
+        "cooldown": 3,
+        "name": "Cięcie na zakładkę"
+      }
+    },
+    {
+      "id": "noz_majstra",
+      "name": "Nóż majstra seniora",
+      "desc": "Ostrze prosi o emeryturę. Majster: nie!",
+      "minDamage": 4,
+      "maxDamage": 7,
+      "range": 1,
+      "scalesWith": "agility",
+      "crit": 15,
+      "hit": "pierce",
+      "neutral": true,
+      "pierce": 4,
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "single",
+        "hits": 2,
+        "dmgPct": 75,
+        "cooldown": 3,
+        "name": "Jeszcze nie emerytura"
+      },
+      "master": true,
+      "masterPerks": [
+        "przebicie",
+        "ostrze"
+      ],
+      "artifact": "noz",
+      "hint": "Sekretne zlecenie: Stara szkoła"
+    },
+    {
+      "id": "mlot_grom",
+      "name": "Młot Gromowładny",
+      "desc": "Kuty w burzy. Obuch pamięta grzmot.",
+      "minDamage": 5,
+      "maxDamage": 8,
+      "range": 1,
+      "scalesWith": "strength",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "push",
+        "effect": "push",
+        "value": 1
+      },
+      "modeB": {
+        "pattern": "around",
+        "effect": "openWall",
+        "cooldown": 7,
+        "name": "Grzmot"
+      },
+      "master": true,
+      "artifact": "mlot",
+      "hint": "Markowy Młot wyburzeniowy z dropu",
+      "proc": {
+        "every": 5,
+        "name": "Piorun",
+        "desc": "Co 5. cios piorun: prąd +50%, paraliż 1 t. (boss: tylko obrażenia), skacze na mokre obok",
+        "effect": "stun",
+        "value": 100,
+        "turns": 1,
+        "dmgPct": 150,
+        "element": "prad",
+        "effect2": "chain"
+      }
+    },
+    {
+      "id": "kielnia_cegla",
+      "name": "Kielnia Pierwszej Cegły",
+      "desc": "Położyła pierwszą cegłę osiedla.",
+      "minDamage": 5,
+      "maxDamage": 7,
+      "range": 1,
+      "scalesWith": "strength",
+      "hit": [
+        "cut",
+        "pierce"
+      ],
+      "modeA": {
+        "pattern": "arc"
+      },
+      "modeB": {
+        "pattern": "shot",
+        "range": 2,
+        "effect": "stun",
+        "value": 100,
+        "turns": 1,
+        "cooldown": 7,
+        "dmgPct": 50,
+        "name": "Pierwsza cegła"
+      },
+      "master": true,
+      "artifact": "kielnia",
+      "hint": "Murarz: Markowa broń z dropu",
+      "proc": {
+        "every": 3,
+        "name": "Zaprawa wiąże",
+        "desc": "Co 3. cios zaprawa unieruchamia cel na 2 tury (nie bossa)",
+        "effect": "root",
+        "turns": 2
+      }
+    },
+    {
+      "id": "szlifierka_isk",
+      "name": "Szlifierka Iskrownica",
+      "desc": "Tarcza sypie iskrami jak fajerwerk.",
+      "minDamage": 5,
+      "maxDamage": 8,
+      "range": 1,
+      "scalesWith": "agility",
+      "element": "iskra",
+      "hit": "cut",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "arc",
+        "cooldown": 3,
+        "effect2": "ignite",
+        "name": "Snop iskier"
+      },
+      "master": true,
+      "artifact": "szlifierka",
+      "hint": "Glazurnik: Markowa broń z dropu",
+      "proc": {
+        "every": 1,
+        "name": "Iskry",
+        "desc": "Każdy cios podpala (2 tury); ogień przeskakuje na jednego sąsiada",
+        "effect": "burn",
+        "turns": 2,
+        "effect2": "spread",
+        "value2": 1
+      }
+    },
+    {
+      "id": "lom_deska",
+      "name": "Łom Ostatniej Deski",
+      "desc": "Podważył już każdą deskę na budowie.",
+      "minDamage": 4,
+      "maxDamage": 7,
+      "range": 1,
+      "scalesWith": "strength",
+      "hit": "blunt",
+      "modeA": {
+        "pattern": "single"
+      },
+      "modeB": {
+        "pattern": "push",
+        "effect": "push",
+        "value": 2,
+        "cooldown": 5,
+        "effect2": "openWall",
+        "name": "Ostatnia deska"
+      },
+      "master": true,
+      "artifact": "lom",
+      "hint": "Markowy Łom z dropu albo sekretne zlecenie",
+      "wallFree": true,
+      "bonusMaterial": "drewno",
+      "bonusPct": 100
     }
   ],
   "enemies": [
@@ -1483,7 +2288,7 @@
       ],
       "count": 8,
       "hpPct": 150,
-      "dmgBonus": 2,
+      "dmgBonus": 3,
       "act": 1,
       "cost": 55
     },
@@ -1565,21 +2370,21 @@
     {
       "id": "latwy",
       "name": "Łatwy",
-      "hpPct": 100,
+      "hpPct": 118,
       "dmgBonus": -1,
       "scorePct": 50
     },
     {
       "id": "normalny",
       "name": "Normalny",
-      "hpPct": 100,
+      "hpPct": 118,
       "dmgBonus": 0,
       "scorePct": 100
     },
     {
       "id": "trudny",
       "name": "Trudny",
-      "hpPct": 145,
+      "hpPct": 150,
       "dmgBonus": 0,
       "scorePct": 150
     }
@@ -1612,6 +2417,12 @@
       125,
       150
     ],
+    "newToolCosts": [
+      175,
+      200,
+      225,
+      250
+    ],
     "upgrades": [
       {
         "id": "kondycja",
@@ -1635,7 +2446,7 @@
             "cost": 90
           },
           {
-            "effect": "hp",
+            "effect": "gear_pct",
             "value": 1,
             "cost": 150
           }
@@ -1713,7 +2524,7 @@
       {
         "id": "termos",
         "name": "Lepszy termos",
-        "desc": "Większy termos na kawę",
+        "desc": "Większy termos, lepszy sprzęt",
         "effect": "thermos",
         "steps": [
           {
@@ -1732,7 +2543,7 @@
             "cost": 90
           },
           {
-            "effect": "thermos",
+            "effect": "gear_pct",
             "value": 1,
             "cost": 150
           }
@@ -1745,8 +2556,8 @@
       {
         "id": "dostawy",
         "name": "Dostawy",
-        "desc": "Więcej znajdziek i materiałów",
-        "effect": "pickups",
+        "desc": "Więcej materiałów i budżetu",
+        "effect": "mats_pct",
         "steps": [
           {
             "effect": "mats_pct",
@@ -1754,8 +2565,8 @@
             "cost": 25
           },
           {
-            "effect": "pickups",
-            "value": 1,
+            "effect": "mats_pct",
+            "value": 5,
             "cost": 50
           },
           {
@@ -1837,6 +2648,25 @@
           20
         ],
         "refund": 40
+      },
+      {
+        "id": "narzedzia",
+        "name": "Narzędzia",
+        "desc": "Lepsza broń na start",
+        "effect": "start_rarity",
+        "steps": [
+          {
+            "effect": "start_rarity",
+            "value": 1,
+            "cost": 80
+          },
+          {
+            "effect": "start_rarity",
+            "value": 1,
+            "cost": 160
+          }
+        ],
+        "refund": 40
       }
     ],
     "tools": [
@@ -1888,7 +2718,8 @@
           "name": "Fach",
           "upgrades": [
             "fach",
-            "warsztaty"
+            "warsztaty",
+            "narzedzia"
           ]
         },
         {
@@ -2028,7 +2859,106 @@
           ]
         }
       ]
-    }
+    },
+    "newTools": [
+      {
+        "weapon": "lopata",
+        "drop": true,
+        "hurtownia": true
+      },
+      {
+        "weapon": "siekiera",
+        "shop": true
+      },
+      {
+        "weapon": "pila",
+        "drop": true
+      },
+      {
+        "weapon": "kilof",
+        "drop": true
+      },
+      {
+        "weapon": "przecinak",
+        "hurtownia": true
+      },
+      {
+        "weapon": "nozyce",
+        "drop": true
+      },
+      {
+        "weapon": "silikon",
+        "hurtownia": true
+      },
+      {
+        "weapon": "myjka",
+        "drop": true
+      },
+      {
+        "weapon": "palnik",
+        "shop": true
+      },
+      {
+        "weapon": "taker",
+        "drop": true
+      },
+      {
+        "weapon": "mlotek_gumowy",
+        "hurtownia": true
+      },
+      {
+        "weapon": "pilarka",
+        "secret": true,
+        "artifact": true
+      },
+      {
+        "weapon": "poziomica_2m",
+        "drop": true
+      },
+      {
+        "weapon": "mieszadlo",
+        "shop": true
+      },
+      {
+        "weapon": "laser_krzyzowy",
+        "shop": true
+      },
+      {
+        "weapon": "lutownica",
+        "drop": true,
+        "hurtownia": true
+      },
+      {
+        "weapon": "opalarka",
+        "drop": true
+      },
+      {
+        "weapon": "noz",
+        "drop": true,
+        "hurtownia": true
+      },
+      {
+        "weapon": "noz_majstra",
+        "secret": true
+      },
+      {
+        "weapon": "mlot_grom",
+        "artifact": true
+      },
+      {
+        "weapon": "kielnia_cegla",
+        "artifact": true
+      },
+      {
+        "weapon": "szlifierka_isk",
+        "artifact": true
+      },
+      {
+        "weapon": "lom_deska",
+        "secret": true,
+        "artifact": true
+      }
+    ]
   },
   "heroLevels": {
     "thresholds": [
@@ -2046,9 +2976,9 @@
     ]
   },
   "drops": {
-    "chancePct": 25,
+    "chancePct": 20,
     "weights": {
-      "coffee": 40,
+      "coffee": 20,
       "helmet": 5,
       "plan": 5,
       "tool": 15,
@@ -2057,16 +2987,17 @@
   },
   "luck": {
     "critBasePct": 5,
-    "critPerLuckPct": 3,
+    "critPerLuckPct": 2,
     "critMultiplier": 2,
+    "critMaxPct": 35,
     "dropPerLuckPct": 2,
     "rarityPerLuck": 3,
     "dodgePerLuckPct": 2,
     "dodgeMaxPct": 20
   },
   "thermos": {
-    "capacity": 3,
-    "heal": 8,
+    "capacity": 2,
+    "heal": 11,
     "botDrinkBelowPct": 40
   },
   "badges": [
@@ -2172,6 +3103,17 @@
       },
       "title": "Deweloper",
       "cosmetic": "kask_zloty"
+    },
+    {
+      "id": "psi_przyjaciel",
+      "name": "Psi przyjaciel",
+      "desc": "Pogłaszcz Kawkę w 4 budowach",
+      "xp": 10,
+      "perk": {
+        "effect": "xp_pct",
+        "value": 5
+      },
+      "title": "Przyjaciel Kawki"
     }
   ],
   "story": {
@@ -2781,7 +3723,7 @@
             1
           ],
           [
-            "Pas z kaburą",
+            "Pas monterski z kaburą",
             1
           ],
           [
@@ -2856,7 +3798,9 @@
         "value": 1
       }
     ],
-    "declineXp": 1
+    "declineXp": 1,
+    "beltSlot": "Pas",
+    "beltChancePct": 15
   },
   "acts": [
     {
@@ -2947,6 +3891,31 @@
       "name": "Mokry",
       "short": "Mokry",
       "effect": "prąd boli bardziej"
+    },
+    "burn": {
+      "name": "Podpalenie",
+      "short": "Podp.",
+      "effect": "-2 HP/turę"
+    },
+    "bleed": {
+      "name": "Krwawienie",
+      "short": "Krwaw.",
+      "effect": "-2 HP/turę"
+    },
+    "root": {
+      "name": "Unieruchomienie",
+      "short": "Unier.",
+      "effect": "stoi w miejscu"
+    },
+    "defdown": {
+      "name": "Odsłonięty",
+      "short": "Odsł.",
+      "effect": "mniejsza OBR"
+    },
+    "mark": {
+      "name": "Oznaczony",
+      "short": "Ozn.",
+      "effect": "więcej obrażeń"
     }
   },
   "cash": {
@@ -3023,7 +3992,7 @@
       "effect": "thermos"
     }
   ],
-  "version": "v0.21.54",
+  "version": "v0.23.2",
   "damageHelp": [
     "Cios = rzut broni + premie:",
     "SIŁ/ZRĘ/INT broni +1 co 2 pkt,",
@@ -3038,7 +4007,7 @@
     "Kawa z termosu leczy - menu START",
     "Czerwone pola? Masz 2 tury na unik",
     "Moc pod R: ikona pulsuje = gotowa",
-    "Paczka: A zakładam, B zostawiam",
+    "Paczka: załóż albo do plecaka",
     "Przytrzymaj L: mapa odkrytego placu",
     "Telefon (SELECT): Koszty i Zlecenia",
     "Co 4 tury czekania (B) +1 HP",
@@ -3126,8 +4095,8 @@
         "effect": "thermos",
         "values": [
           1,
-          2,
-          3
+          1,
+          2
         ],
         "start": true
       },
@@ -3639,12 +4608,10 @@
         "desc": "Obrażenia",
         "effect": "dmg_pct",
         "values": [
-          1,
-          2
+          1
         ],
         "costs": [
-          15,
-          40
+          15
         ]
       },
       {
@@ -3653,12 +4620,10 @@
         "desc": "Otrzymane obrażenia",
         "effect": "taken_pct",
         "values": [
-          1,
-          2
+          1
         ],
         "costs": [
-          15,
-          40
+          15
         ]
       },
       {
@@ -3687,12 +4652,10 @@
         "desc": "Szansa na kryt",
         "effect": "crit",
         "values": [
-          1,
-          2
+          1
         ],
         "costs": [
-          15,
-          40
+          15
         ]
       },
       {
@@ -3701,12 +4664,10 @@
         "desc": "Unik (łącznie maks. 20%)",
         "effect": "dodge",
         "values": [
-          1,
-          2
+          1
         ],
         "costs": [
-          15,
-          40
+          15
         ]
       },
       {
@@ -3715,12 +4676,10 @@
         "desc": "Kawa leczy więcej",
         "effect": "coffee_pct",
         "values": [
-          5,
-          10
+          5
         ],
         "costs": [
-          10,
-          30
+          10
         ]
       },
       {
@@ -3741,12 +4700,10 @@
         "desc": "Moc odnawia się szybciej",
         "effect": "cooldown",
         "values": [
-          1,
-          2
+          1
         ],
         "costs": [
-          30,
-          60
+          30
         ]
       },
       {
@@ -3946,6 +4903,12 @@
         "id": "akt0",
         "name": "Akt 0: Papierologia",
         "desc": "Nowy akt przed budową"
+      },
+      {
+        "kind": "belt",
+        "id": "Pas",
+        "name": "Pas monterski z kaburą",
+        "desc": "Start z pasem i kaburą"
       }
     ]
   },
@@ -3997,45 +4960,17 @@
       },
       {
         "id": "phone",
-        "title": "Profil w telefonie",
-        "text": "Twój telefon: odznaki,|zlecenia, pamiątki,|Katalog usterek, Osiedle.",
+        "title": "Telefon kierownika",
+        "text": "W telefonie masz odznaki,|zlecenia i postępy.|Zajrzyj tu po budowie!",
         "screen": "title",
         "gba": "SELECT"
       },
       {
         "id": "training",
-        "title": "Szkolenia",
-        "text": "Za doświadczenie z budów|kupisz Szkolenia: HP,|nowe zawody, narzędzia.",
+        "title": "Szkolenia i Respekt",
+        "text": "Doświadczenie i Respekt|z budów zostają na stałe.|Wydasz je w telefonie.",
         "screen": "title",
         "gba": "SELECT, Koszty"
-      },
-      {
-        "id": "respect",
-        "title": "Respekt",
-        "text": "Respekt dostajesz za|każdy etap i zostaje po|porażce. Stałe premie!",
-        "screen": "title",
-        "gba": "SELECT, Koszty"
-      },
-      {
-        "id": "daily",
-        "title": "Codzienna budowa",
-        "text": "Budowa dnia: ten sam|plac i zawód dla|wszystkich. Pobij wynik!",
-        "screen": "title",
-        "gba": "R"
-      },
-      {
-        "id": "help",
-        "title": "Jak grać",
-        "text": "Sterowanie, akty,|statystyki. Tam też|powtórzysz samouczek.",
-        "screen": "title",
-        "gba": "B"
-      },
-      {
-        "id": "options",
-        "title": "Opcje",
-        "text": "Dźwięk, wibracje,|sterowanie i wielkość|tekstu są pod kluczem.",
-        "screen": "title",
-        "godotOnly": true
       },
       {
         "id": "class",
@@ -4050,29 +4985,6 @@
         "text": "Łatwy, Normalny, Trudny:|silniejsze problemy,|więcej punktów.",
         "screen": "class",
         "gba": "góra / dół"
-      },
-      {
-        "id": "keepsake",
-        "title": "Pamiątka",
-        "text": "Jedna pamiątka na|budowę. Im częściej ją|bierzesz, tym mocniejsza.",
-        "screen": "class",
-        "gba": "L / R"
-      },
-      {
-        "id": "stats",
-        "title": "Statystyki",
-        "text": "Co daje SIŁ, ZRĘ, INT,|OBR i SZCZ - wzory|w prostych słowach.",
-        "screen": "class",
-        "gba": "START",
-        "link": "stats"
-      },
-      {
-        "id": "investor",
-        "title": "Tryb inwestora",
-        "text": "Utrudnienia za więcej|doświadczenia. Stawka|to Twój rekord zawodu.",
-        "screen": "class",
-        "gba": "SELECT",
-        "requires": "investor"
       },
       {
         "id": "go",
@@ -4124,6 +5036,42 @@
         "text": "Wykonane! Nagroda czeka.|Telefon: Odznaki, A:|strona Sekrety.",
         "screen": "title",
         "gba": "SELECT, A"
+      },
+      {
+        "id": "training",
+        "title": "Czas na Szkolenie!",
+        "text": "Masz dość doświadczenia|na Szkolenie! Kupisz je|w telefonie: Koszty.",
+        "screen": "title",
+        "gba": "SELECT, Koszty"
+      },
+      {
+        "id": "options",
+        "title": "Opcje",
+        "text": "Pod kluczem zmienisz|dźwięk, sterowanie|i wielkość tekstu.",
+        "screen": "title",
+        "godotOnly": true
+      },
+      {
+        "id": "help",
+        "title": "Jak grać",
+        "text": "Sterowanie, akty i rady|są w Jak grać. Tam też|powtórzysz samouczek.",
+        "screen": "title",
+        "gba": "B"
+      },
+      {
+        "id": "keepsake",
+        "title": "Pamiątka",
+        "text": "Jedna pamiątka na|budowę. Im częściej ją|bierzesz, tym mocniejsza.",
+        "screen": "class",
+        "gba": "L / R"
+      },
+      {
+        "id": "stats",
+        "title": "Statystyki",
+        "text": "Co daje SIŁ, ZRĘ, INT,|OBR i SZCZ - wzory|w prostych słowach.",
+        "screen": "class",
+        "gba": "START",
+        "link": "stats"
       }
     ]
   },
@@ -5531,12 +6479,12 @@
     }
   },
   "extrasHelp": [
-    "Pole z SMS-em: wydarzenie.",
-    "Odpowiedź: ryzyko albo zysk,",
-    "szansa (np. 30%) raz.",
+    "SMS na polu: wydarzenie, ryzyko",
+    "albo zysk (szansa, np. 30%).",
     "Hurtownia: ulepsz (zł+stal):",
     "+1 obrażeń za poziom, maks. +3,",
-    "od +2 cecha. Zmiana: strata!",
+    "od +2 cecha. Plecak: 6 miejsc,",
+    "po bossie Skup i PSZOK (dośw.).",
     "Pęknięta ściana / drzwi:",
     "magazyn. Klucz ma problem",
     "(często elita). Ścianę kruszy",
@@ -5890,6 +6838,32 @@
         },
         "rewardText": "Respekt: Zaprawiony",
         "news": "Dom w rekordowym czasie!|Respekt: Zaprawiony|w boju - kawa na start."
+      },
+      {
+        "id": "emerytura",
+        "hint": "Stara szkoła",
+        "desc": "Wygraj Majstrem, ta sama broń",
+        "kind": "no_swap_win",
+        "class": "majster",
+        "reward": {
+          "kind": "tool",
+          "id": "noz_majstra"
+        },
+        "rewardText": "Nóż majstra seniora",
+        "news": "Majster nie odpuszcza!|Nóż majstra seniora:|Patent: dwa pchnięcia."
+      },
+      {
+        "id": "ostatnia_deska",
+        "hint": "Przez ścianę na skróty",
+        "desc": "3 ściany Patentem w budowie",
+        "kind": "patent_walls",
+        "value": 3,
+        "reward": {
+          "kind": "tool",
+          "id": "lom_deska"
+        },
+        "rewardText": "Łom Ostatniej Deski",
+        "news": "3 ściany Patentem!|Łom Ostatniej Deski:|ściana bez odnowienia."
       }
     ],
     "cosmetics": [
@@ -8130,6 +9104,7 @@
     "stat_broni": " stat. broni",
     "sprzet_4": "Sprzęt +",
     "pierwszy_cios": "Pierwszy cios +",
+    "start_rzadkosc": "Rzadkość broni +",
     "tytul": "Tytuł: ",
     "ozdoba": "Ozdoba: ",
     "druga_pamiatka": "Druga pamiątka",
@@ -8673,9 +9648,153 @@
     "language_pick": "Język / Language",
     "language_hint": "A: wybierz",
     "lang_pl": "Polski",
-    "lang_en": "English"
+    "lang_en": "English",
+    "efekt_ogluszenie": "Ogłuszenie",
+    "ladunki_zostalo": ": ładunki ",
+    "bron_zuzyta": " zużyty!",
+    "pokoj_odsloniety": "Pokój odsłonięty",
+    "zamiana_broni": "Zamiana broni: ",
+    "bron_do_kabury": "Do kabury: ",
+    "bron_z_kabury_wypada": "Bez pasa broń wypada: ",
+    "bron_z_kabury_domyslna": "Bez pasa do ręki wraca: ",
+    "bron_z_kabury_przepada": "Bez pasa broń przepada: ",
+    "tracisz_kabure": "Tracisz kaburę: ",
+    "pas_zabierze_kabure": "pas zabierze kaburę",
+    "profity": "Profity",
+    "unikat": "Unikat",
+    "efekt_osuszenie": "Osuszenie",
+    "efekt_pewny_kryt": "Pewny kryt",
+    "efekt_odrzut": "Odrzut",
+    "efekt_przyciagniecie": "Przyciągnięcie",
+    "efekt_zamiana_miejsc": "Zamiana miejsc",
+    "profity_brak": "Profity: brak",
+    "typ_ciosu": "Typ ciosu: ",
+    "cios_b": "Patent",
+    "artefakt_w_gablocie": "Nowy artefakt w Gablocie: ",
+    "kabura_pusta": "Kabura pusta - nie ma czego zamienić",
+    "patent_brak_celu": ": brak celu",
+    "patent_za": " za ",
+    "bez_pasa": "Brak pasa z kaburą",
+    "rzadkosc_broni": "Rzadkość: ",
+    "patent_odn": ", odn. ",
+    "gba_bronie_1": "Ciosy: obuch, cięcie, kłucie -",
+    "gba_bronie_2": "każdy mocniejszy na materiał",
+    "gba_bronie_3": "L+A: Patent - ruch specjalny",
+    "gba_bronie_4": "broni (odnawia się kilka tur)",
+    "gba_bronie_5": "L+B: zamiana broni z kabury",
+    "gba_bronie_6": "Rzadkość i profity: telefon,",
+    "gba_bronie_7": "Obrażenia. Artefakt: co N cios",
+    "gba_bronie_tytul": "Bronie",
+    "kawka_glaszczesz": "Głaszczesz Kawkę! +",
+    "kawka_przepuszcza": "Kawka robi Ci miejsce.",
+    "z_plecaka": "Z plecaka: ",
+    "do_plecaka": "Do plecaka: ",
+    "plecak_pelny_ziemia": "Plecak pełny, na ziemi: ",
+    "przedmiot_przepada": "Przepada: ",
+    "wyrzucasz": "Wyrzucasz: ",
+    "skup": "Skup: ",
+    "pszok_segregacja": "PSZOK: segregacja zaliczona! +",
+    "bron_z_kabury_do_plecaka": "Bez pasa broń do plecaka: ",
+    "bpg_tytul": "Plecak",
+    "bpg_a_akcje": " A akcje B wróć",
+    "bpg_a_hurt": " L/R zakładki",
+    "bpg_pusto": "- pusto -",
+    "bpg_zaloz": "Załóż (1 tura)",
+    "bpg_zaloz_h": "Załóż",
+    "bpg_kabura": "Do kabury (1 tura)",
+    "bpg_kabura_h": "Do kabury",
+    "bpg_wyrzuc": "Wyrzuć na ziemię",
+    "bpg_anuluj": "Anuluj",
+    "bpg_lepsze": "lepsze",
+    "bpg_slabsze": "słabsze",
+    "bpg_rowne": "równe",
+    "bpg_zaloz_plecak": "Załóż, stary do plecaka",
+    "bpg_zaloz_ziemia": "Załóż, stary na ziemię",
+    "bpg_do_plecaka": "Do plecaka ",
+    "bpg_plecak_pelny": "Plecak pełny ",
+    "bpg_zostaw": "Zostaw",
+    "bpg_wez_plecak": "Weź, stara do plecaka",
+    "bpg_wez_ziemia": "Weź, stara na ziemię",
+    "bpg_wez_przepada": "Weź, stara przepada",
+    "bpg_zakupy": "Hurtownia",
+    "bpg_skup": "Skup",
+    "bpg_pszok": "PSZOK",
+    "bpg_skup_opis": "A: sprzedaj za materiały",
+    "bpg_pszok_opis": "A: oddaj za dośw. i HP",
+    "bpg_sprzedane": "Sprzedane!",
+    "bpg_oddane": "Segregacja zaliczona!",
+    "bpg_bez_tury": "Zamiana bez tury.",
+    "bpg_tip_t": "Marek: plecak",
+    "bpg_tip": "6 miejsc. Zamiana: tura",
+    "bpg_sprzet_a": "A plecak góra prem dół Bryg",
+    "bpg_hurt_tabs": "L/R: Skup, PSZOK, Plecak"
   },
   "uiGodot": {
+    "ogl_awans": "AWANS!",
+    "ogl_poziom": "Poziom {0}",
+    "ogl_markowa": "MARKOWA!",
+    "ogl_unikat": "UNIKAT!",
+    "ogl_boss": "BOSS POKONANY!",
+    "ogl_sekret": "SEKRETNE ZLECENIE!",
+    "mnoznik_ciosu": "{0}: {1} ×{2}%",
+    "pomoc_bronie_krotko": "Patent: osobny przycisk, potem odnowienie. Pas z kaburą: druga broń.",
+    "wzor_single": "1 pole",
+    "wzor_arc": "łuk 3 pól",
+    "wzor_around": "dookoła",
+    "wzor_cross": "krzyż",
+    "wzor_line": "linia {0}",
+    "wzor_shot": "strzał {0}",
+    "wzor_throw": "rzut 3x3 na {0}",
+    "wzor_spray": "natrysk",
+    "wzor_push": "pchnięcie",
+    "wzor_line_both": "linia {0} w 2 strony",
+    "wzor_line4": "linie {0} w 4 strony",
+    "ef_tury": " ({0} t.)",
+    "ef_stun": "ogłuszenie",
+    "ef_stun_szansa": "ogłuszenie {0}%",
+    "ef_root": "unieruchomienie",
+    "ef_push": "odrzut {0}",
+    "ef_pull": "przyciąga",
+    "ef_defdown": "-{0} OBR",
+    "ef_bleed": "krwawienie",
+    "ef_burn": "podpalenie",
+    "ef_mark": "znak +{0}%",
+    "ef_reveal": "odsłania pokój",
+    "ef_openwall": "otwiera pękniętą ścianę",
+    "ef_openwall_ladunki": "otwiera ścianę ({0} ład.)",
+    "ef_swap": "zamiana miejsc",
+    "ef_chain": "prąd po mokrych",
+    "ef_dry": "osusza",
+    "ef_critnext": "pewny kryt",
+    "ef_wet": "moczy",
+    "ef_ignite": "iskry w pył",
+    "ciosy_x": " x{0}",
+    "odn_b": ", odn. {0}",
+    "cios_b_za": "Patent za {0}",
+    "zamien": "Zamień",
+    "cios_b_odnowienie": "Patent: jeszcze {0} t.",
+    "cios_b_sciana": "Patent: puść - otwierasz ścianę",
+    "cios_b_brak_celu": "Patent ({0}): brak celu",
+    "pusc_f_wroc": "Puść F: wróć",
+    "pusc_cios_b_wroc": "Puść: wróć",
+    "strzalki_zmiana_celu_pusc_f": "Strzałki: cel, puść F: Patent",
+    "przesun_palec_cel_pusc_cios_b": "Przesuń palec: cel, puść: Patent",
+    "zamiana_tylko_z_pasem": "Zamiana broni tylko z pasem z kaburą",
+    "hud_cios_b": "Patent",
+    "zywiol_woda": "Woda",
+    "bez_materialu": "Bez materiału",
+    "kupione_bron": "Kupione: {0} {1}",
+    "w_reku_rzadkosc": "{0} W ręku: {1} {2}.",
+    "pomoc_bronie_tytul": "Bronie",
+    "pomoc_bronie_materialy": "Typ ciosu a materiał problemu",
+    "pomoc_bronie_1": "Każda broń ma typ ciosu: obuch, cięcie albo kłucie. Materiał problemu zmienia obrażenia - karta problemu pokazuje mnożnik Twojej broni.",
+    "pomoc_bronie_2": "Obuch: {0}% na ogłuszenie. Cięcie: kryt +{1}%. Kłucie: omija {2} OBR.",
+    "pomoc_bronie_3": "Cios to zwykły atak wzorem pól. Patent to ruch broni z własną nazwą (osobny przycisk): mocniejszy wzór albo efekt, potem odnowienie w turach. Przytrzymaj przycisk Cios / Patent albo najedź myszą: opis ruchu i jego pola.",
+    "pomoc_bronie_4": "Rzadkość: Zwykła, Solidna, Markowa (więcej obrażeń, krótsze odnowienie Patentu), Mistrzowska - unikaty i broń mistrza.",
+    "pomoc_bronie_5": "Pas monterski z kaburą nosi drugą broń - zamiana kosztuje turę.",
+    "pomoc_cios_b": "Patent broni (trzymaj: celuj)",
+    "pomoc_cios_b_dotyk": "Patent (trzymaj: opis, przesuń: celuj)",
+    "pomoc_zamien": "druga broń z kabury (tura)",
     "elita_4": "Elita: {0} ({1})",
     "obr_z_ciosu_problemu": "OBR {0}: -{1} z ciosu problemu",
     "unik_szcz_x": "Unik {0}% (SZCZ {1} x {2}%",
@@ -8701,7 +9820,7 @@
     "unik_9": ", unik {0}%",
     "strzalki_nastepny": "Strzałki: następny",
     "przesun_nastepny": "Przesuń: następny",
-    "tab_telefon_enter_akcje_r_moc": "Tab: telefon  Enter: akcje  R: moc  M: mapa",
+    "tab_telefon_enter_akcje_r_moc": "Esc: pauza  I: postać  Tab: budowa  R: moc",
     "poz_2": "Poz. {0}",
     "etap_2": "Etap {0}/{1}",
     "uwaga_cios_za": "UWAGA: cios za {0}!",
@@ -8871,19 +9990,19 @@
     "odpychaja_wracaja_raz": "Odpychają, wracają raz",
     "liczy_sie_tylko_statystyka": "(liczy się tylko statystyka broni)",
     "wybor_zawodu_dotknij": "Wybór zawodu: dotknij statystyki",
-    "telefon_start_opis_statystyk": "Telefon > Start > Opis statystyk",
+    "telefon_start_opis_statystyk": "Pauza > Postać > Statystyki",
     "wybor_zawodu_i_albo_mysz": "Wybór zawodu: I albo mysz",
-    "telefon_start_spacja": "Telefon > Start > Spacja",
+    "telefon_start_spacja": "Postać (I) > E",
     "wybor_zawodu_dotknij_narzedzia": "Wybór zawodu: dotknij narzędzia",
-    "telefon_sprzet_dotknij": "Telefon > Sprzęt > dotknij narzędzia",
+    "telefon_sprzet_dotknij": "Postać > broń > Rozpiska",
     "przytrzymaj_problem_obrazenia": "Przytrzymaj problem: obrażenia w obie strony",
     "wybor_zawodu_mysz_na_narzedziu": "Wybór zawodu: mysz na narzędziu, I",
-    "telefon_sprzet_i": "Telefon > Sprzęt > I",
+    "telefon_sprzet_i": "Postać (I) > broń > Rozpiska",
     "trzymaj_z_obrazenia_w_obie": "Trzymaj Z: obrażenia w obie strony",
     "okna_a_bierze_b_wraca_wszedzie": "Okna: A bierze, B wraca (wszędzie)",
     "respekt_i_nagrody_profil": "Respekt i nagrody: profil > Koszty",
     "codzienna_budowa_menu_tytulu": "Codzienna budowa: menu tytułu",
-    "pogoda_brygada_telefon_sprzet": "Pogoda, brygada: telefon > Sprzęt",
+    "pogoda_brygada_telefon_sprzet": "Pogoda: Budowa > Zadania, brygada: Budowa",
     "po_etapie_premia_1_z_3_potem": "Po etapie: premia 1 z 3, potem ścieżka etapu",
     "zlota_ramka_elita_cecha_lepsza": "Złota ramka: elita (cecha, lepsza nagroda)",
     "materialy_z_problemow_2": "Materiały z problemów: Hurtownia i naprawy (Brygada)",
@@ -8891,12 +10010,12 @@
     "kladka_stal_kaluze_bez": "Kładka (stal): kałuże bez poślizgu",
     "codzienna_budowa_menu_tytulu_2": "Codzienna budowa: menu tytułu, jedna na dzień",
     "pogoda_dnia_ikona_w_hud_skutek": "Pogoda dnia: ikona w HUD, skutek w Zadaniach",
-    "brygada_telefon_sprzet_brygada": "Brygada: Telefon > Sprzęt > Brygada (raz na etap)",
+    "brygada_telefon_sprzet_brygada": "Brygada: Budowa > Brygada (raz na etap)",
     "po_wygranej_tryb_inwestora_na": "Po wygranej: Tryb inwestora na wyborze zawodu",
     "respekt_za_kazdy_etap_zostaje": "Respekt za każdy etap zostaje po porażce: profil > Koszty > Respekt",
     "kazda_wygrana_nagroda_za": "Każda wygrana: nagroda za odbiór (sprzęt, narzędzia, zawody)",
     "okna_strzalki_zaznaczaja_a": "Okna: strzałki zaznaczają, A (Spacja/Enter) bierze, B (Z/Esc) wraca",
-    "brygada_enter_spacja_albo": "Brygada: Enter, Spacja (albo telefon > Sprzęt)",
+    "brygada_enter_spacja_albo": "Brygada: Enter, Spacja (albo Budowa > Brygada)",
     "po_wygranej_tab_na_wyborze": "Po wygranej: Tab na wyborze zawodu = tryb inwestora",
     "respekt_za_kazdy_etap_zostaje_2": "Respekt za każdy etap zostaje po porażce: profil (P) > Koszty > Tab",
     "harmonogram_domu": "Harmonogram domu",
@@ -8906,14 +10025,21 @@
     "odbior_4": "Odbiór {0:00}.{1:00}.{2}",
     "dni_tys_zl": "{0} dni, {1} tys. zł",
     "wszystkie_gotowe": "wszystkie gotowe",
-    "spacja_enter_kup_zaznaczone_z": "Spacja/Enter: kup zaznaczone  Z/Esc: dalej",
+    "spacja_enter_kup_zaznaczone_z": "Spacja: kup  Q/E: zakładki  Z: dalej",
     "kup": "Kup",
     "ulepszone": "Ulepszone: {0}",
-    "kupione_enter_dalej": "Kupione! Enter: dalej",
+    "kupione_enter_dalej": "Kupione!",
     "za_malo": "Za mało: {0}",
     "maksymalne_ulepszenie_2": "{0}: maksymalne ulepszenie",
     "wybor_cechy": ", wybór cechy",
     "uwaga_przepadnie": "Uwaga: {0} przepadnie! {1}",
+    "uwaga_kabura": "Uwaga: tracisz kaburę – {0} wypadnie na ziemię.",
+    "uwaga_kabura_pusta": "Uwaga: tracisz kaburę (miejsce na drugą broń).",
+    "uwaga_kabura_hurtownia": "{0} Uwaga: jeśli trafi się pas, tracisz kaburę – {1} wypadnie na ziemię.",
+    "por_plus": " + ",
+    "por_kryt": "kryt",
+    "por_obr": "OBR -{0}",
+    "por_profity": "profity",
     "premia_za_akt_zl": "Premia za akt {0}: +{1} zł",
     "zl_x": "{0} zł + {1}x {2}",
     "stawka_2": "Stawka {0}",
@@ -8938,14 +10064,7 @@
     "spacja_enter_zakladam_z_esc": "Spacja/Enter: zakładam  Z/Esc: zostawiam (+{0})",
     "zakladam": "Zakładam",
     "zostawiam": "Zostawiam +{0}",
-    "nowy_jest_lepszej_jakosci": "Nowy jest lepszej jakości.",
-    "ta_sama_jakosc_inna_cecha": "Ta sama jakość - inna cecha.",
-    "nowy_jest_gorszej_jakosci": "Nowy jest gorszej jakości.",
-    "cios_2": "Cios: ",
-    "obr_z_ciosu": "OBR {0} -> {1}: z ciosu -{2} -> -{3}",
     "gora_dol_przewin_enter_dalej": "Góra/dół: przewiń  Enter: dalej",
-    "wyzej": "Wyżej",
-    "nizej": "Niżej",
     "usuniete_elity_kombinacje": "Usunięte {0}, elity {1}, kombinacje {2}",
     "ostatnie_ciosy_2": "OSTATNIE CIOSY",
     "najmocniejsze_ciosy": "NAJMOCNIEJSZE CIOSY",
@@ -9026,7 +10145,6 @@
     "inne_statystyki_nie_daja": "Inne statystyki nie dają obrażeń tej broni",
     "strzalki_wybor_spacja_enter": "Strzałki: wybór  Spacja/Enter: wybierz  Z/Esc: zostaję",
     "zostaje_2": "Zostaję",
-    "zasieg_3": "{0} {1}-{2}, zasięg {3}",
     "zostaje_3": "Zostaję: {0}",
     "zamieniam_przepadnie": "Zamieniam: {0} (+{1} przepadnie!)",
     "cecha_od": "CECHA OD +",
@@ -9129,27 +10247,7 @@
     "respekt_6": "Respekt {0}",
     "wszystkie_zlecenia_wykonane": "Wszystkie zlecenia wykonane",
     "zadanie_dnia_3": "ZADANIE DNIA",
-    "kupisz_po_budowie_profil": "Kupisz po budowie (profil: Koszty, Tab: Respekt)",
-    "na_budowie": "Na budowie",
-    "spacja_brygada": "Spacja: Brygada",
-    "narzedzie_4": "NARZĘDZIE",
-    "i_rozpiska": "I: rozpiska",
-    "dotknij_rozpiska": "dotknij: rozpiska",
-    "kryt_srednio": "kryt {0}-{1} ({2}%), średnio {3}",
-    "sprzet_8": "SPRZĘT",
-    "brak_6": "{0}: brak",
-    "r_premie": "R: premie {0}",
-    "premie_i_materialy": "PREMIE I MATERIAŁY",
-    "obrona_obraz_hp": "Obrona +{0}  Obraż. +{1}  HP +{2}",
-    "kryt_unik_wzrok": "Kryt {0}%  Unik {1}%  Wzrok {2}",
-    "szczescie_termos": "Szczęście {0}  Termos {1}/{2}",
-    "opis_statystyk": "Opis statystyk",
-    "zl_6": "{0}{1}, {2} zł",
-    "dzien_2": "Dzień {0}",
-    "etap_3": "Etap {0}: {1}",
-    "poziom_5": "Poziom {0}",
-    "wynik_5": "Wynik {0}",
-    "usuniete_2": "Usunięte: {0}",
+    "kupisz_po_budowie_profil": "Kupisz po budowie: profil > Koszty.",
     "otwarte_2": "Otwarte: {0}",
     "etap_pkt": "Etap {0}/{1}, {2} pkt",
     "akt_4": "Akt {0}",
@@ -9163,32 +10261,14 @@
     "synergia_6": "Synergia {0}: {1}",
     "ten_zawod_odblokujesz_w": "Ten zawód odblokujesz w Szkoleniach{0} za {1} dośw.",
     "najpierw_rozegraj_budowe_dnia": "Najpierw rozegraj budowę dnia",
-    "wynik_dosw_w_profilu": "Wynik {0}  Dośw. +{1} (w profilu {2})",
     "rekord_tygodnia_4": "Rekord tygodnia! {0}",
-    "wyzwanie_tygodnia_najlepszy": "Wyzwanie tygodnia: najlepszy {0}",
     "rekord_dnia_budowa_dnia_nr": "Rekord dnia! Budowa dnia nr {0}",
-    "budowa_dnia_nr_najlepszy": "Budowa dnia nr {0}: najlepszy {1}",
     "nowy_rekord_poprzedni": "Nowy rekord! (poprzedni {0})",
-    "rekord_do_pobicia": "Rekord {0} - do pobicia",
     "tryb_inwestora_stawka_3": "Tryb inwestora: stawka {0}",
     "rekord_zawodu": " (rekord zawodu {0})",
     "nagroda_3": "Nagroda: {0}! {1}",
     "respekt_z_budowy_masz": "Respekt z budowy +{0}, masz {1}",
-    "wkrotce_3": "{0} - wkrótce",
     "za_kolejny_odbior_2": "Za kolejny odbiór: {0}",
-    "zlecenie_5": "Zlecenie {0}: {1}/{2}",
-    "wezel_drzewka_2": "węzeł drzewka {0}",
-    "stac_cie_dosw": "Stać Cię: {0} ({1} dośw.)",
-    "najblizej_brakuje_dosw": "Najbliżej: {0}, brakuje {1} dośw.",
-    "wynik_dni_etap_dosw": "Wynik {0}   Dni {1}   Etap {2}/{3}   Dośw. +{4}",
-    "nowy_rekord_2": "Nowy rekord!",
-    "rekord_4": "Rekord {0}",
-    "rekord_dnia_4": "   Rekord dnia!",
-    "budowa_dnia_nr_3": "   Budowa dnia nr {0}",
-    "rekord_tygodnia_5": "   Rekord tygodnia!",
-    "tydzien_nr_3": "   Tydzień nr {0}",
-    "doswiadczenie_w_profilu": "{0}   Doświadczenie w profilu {1}   Respekt +{2} (masz {3})",
-    "dom_na_osiedlu_2": "   Dom na Osiedlu!",
     "nowe_wiadomosci": "Nowe wiadomości: {0}",
     "profil_osiedle_wiadomosci_2": "Profil > Osiedle > Wiadomości",
     "wygrany_kontrakt": "Wygrany kontrakt: {0}",
@@ -9220,12 +10300,7 @@
     "wspolna_sciana_problemy_z_1": "Wspólna ściana: +{0} problemy z 1. połowy",
     "kontynuuj_budowe": "Kontynuuj budowę",
     "nowa_budowa": "Nowa budowa",
-    "profil_odznaki_zlecenia": "Profil: odznaki, zlecenia",
-    "szkolenia_koszty": "Szkolenia (Koszty)",
-    "profil": "Profil",
     "codzienna": "Codzienna",
-    "budowy_doswiadczenie": "Budowy: {0}   Doświadczenie: {1}",
-    "p_profil_k_szkolenia": "   P: profil   K: Szkolenia",
     "zadania_4": "Zadania {0}/{1}",
     "dzien_3": "dzień",
     "seria_2": "Seria {0} {1}",
@@ -9242,19 +10317,12 @@
     "mistrz_max": "Mistrz {0} MAX",
     "kask_zawodu": "kask zawodu",
     "stawka_rekord": "stawka {0}, rekord {1}",
-    "moc_r": "Moc (R): {0}",
-    "trudnosc_3": "Trudność:",
-    "inwestor": "Inwestor:",
-    "wyglad_4": "Wygląd:",
-    "pamiatka_5": "Pamiątka:",
     "kryt_zasieg": "{0}, kryt {1}-{2} ({3}%), zasięg {4}",
     "kryt_11": "{0}, kryt {1}-{2} ({3}%)",
     "sekretne_zlecenie_telefon_2": "Sekretne zlecenie (telefon, Odznaki > Sekrety): {0}",
     "nagroda_za_odbior_budowy_za": "Nagroda za odbiór budowy: za {0}. wygraną, masz {1}",
     "zablokowany_dosw_w_szkoleniach": "Zablokowany: {0} dośw. w Szkoleniach",
     "kolejna_budowa_ng": "Kolejna budowa (NG+)",
-    "spacja_kolejna_budowa_ng_enter": "Spacja: kolejna budowa (NG+)   Enter: menu",
-    "enter_menu": "Enter: menu",
     "spacja_enter_pomin": "Spacja / Enter: pomiń",
     "dotknij_pomin": "Dotknij: pomiń",
     "rekord_5": "Rekord: {0}",
@@ -9265,7 +10333,7 @@
     "zadania_wykonanych": "Zadania: {0} wykonanych",
     "seria_dni_2": "Seria dni: {0}!",
     "na_tym_urzadzeniu": "Na tym urządzeniu",
-    "wynik_zapisany_lokalnie_tabela": "Wynik {0} zapisany lokalnie. Tabela Game Center wkrótce.",
+    "wynik_zapisany_lokalnie_tabela": "Wynik {0} zapisany lokalnie. Wspólna tabela wkrótce.",
     "wynik_tygodnia_zapisany": "Wynik tygodnia {0} zapisany lokalnie ({1}).",
     "inspektor_poziom_2": "Inspektor: poziom {0}",
     "nagrody_profil_odznaki_2": "Nagrody: Profil > Odznaki",
@@ -9279,7 +10347,6 @@
     "moc_8": "Moc {0}",
     "termos_5": "Termos {0}",
     "kryt_12": "KRYT! -{0}",
-    "awans_poziom_4": "AWANS! Poziom {0}",
     "max_hp_3": "+{0} max HP",
     "ranga_mocy": ", ranga mocy {0}",
     "tytul_7": "Tytuł: {0}",
@@ -9302,14 +10369,10 @@
     "etapy_3": "ETAPY",
     "tys_2": "{0} tys.",
     "dni_4": "{0} dni",
-    "teraz_5": "TERAZ",
-    "nowy_2": "NOWY",
-    "lepszy": "lepszy!",
     "kryt_13": " (kryt)",
     "masz_4": "masz {0}",
     "wzory": "WZORY",
     "cios_3": "CIOS",
-    "nowe_4": "NOWE",
     "wybierz_3": "WYBIERZ",
     "premia_5": "{0} Premia: {1}",
     "wygr_4": "{0} wygr.",
@@ -9320,8 +10383,6 @@
     "zlecenie_7": "ZLECENIE",
     "szkolenia_4": "SZKOLENIA",
     "harmonogram_3": "HARMONOGRAM",
-    "brygada_4": "brygada: {0}",
-    "poziom_6": "poziom {0}",
     "zablok_3": " (zablok.)",
     "filtr": "filtr ",
     "czytaj_pill": "czytaj",
@@ -9345,6 +10406,401 @@
     "ustawienia_widok_mapy": "Ustawienia (klucz) > Widok mapy",
     "ustawienia_efekty_swietlne": "Ustawienia (klucz) > Efekty świetlne",
     "pomoc_widok_mapy": "Widok mapy: Płaski albo 3/4 (lekko z boku, cienie postaci). Ściany mają 1,5 pola; mur przed postacią, polem ciosu albo widoczną podłogą prześwituje. Stuknięcia i ruch po siatce jak zawsze.",
-    "pomoc_efekty_swietlne": "Efekty świetlne: latarka na kasku, odblaski kałuż, błyski iskier. Tylko wygląd; wyłącz, by oszczędzać baterię."
+    "pomoc_efekty_swietlne": "Efekty świetlne: latarka na kasku, odblaski kałuż, błyski iskier. Tylko wygląd; wyłącz, by oszczędzać baterię.",
+    "kierownik_marek": "Kierownik Marek",
+    "miedzy_wygrana": "Szefie, odbiór zaliczony! Inwestorka zadowolona.",
+    "miedzy_przegrana": "Szefie, budowa stanęła. Ale doświadczenie zostaje w kieszeni.",
+    "miedzy_dosw": "Mamy +{0} dośw., razem {1}.",
+    "miedzy_kup": "Za {1} dośw. możemy wziąć: {0}. Kupujemy?",
+    "miedzy_drzewko": "W drzewku Szkoleń czeka wybór: {0}.",
+    "miedzy_brakuje": "Do „{0}” brakuje jeszcze {1} dośw.",
+    "miedzy_kupione": "Zrobione! {0} kupione.",
+    "do_tego": "Do tego:",
+    "i_wiecej": "i {0} więcej w szczegółach",
+    "kup_x": "Kup: {0}",
+    "pokaz_szkolenia": "Pokaż Szkolenia",
+    "kolejna_budowa": "Kolejna budowa",
+    "szczegoly_budowy": "Szczegóły budowy",
+    "miedzy_klawisze": "Spacja: wybierz  Enter: dalej",
+    "telefon_kierownika": "Telefon kierownika",
+    "twoje_postepy": "Twoje postępy",
+    "postepy_linia": "Doświadczenie {0} · Budowy {1}",
+    "wydaj_doswiadczenie": "Wydaj doświadczenie",
+    "dziennie": "Dziennie",
+    "postep_grupa": "Postęp",
+    "brakuje_dosw": "Brakuje {0} dośw.",
+    "stat_hp": "Zdrowie",
+    "stat_str": "Siła",
+    "stat_agi": "Zręczność",
+    "stat_int": "Inteligencja",
+    "stat_def": "Obrona",
+    "stat_luck": "Szczęście",
+    "szczegoly": "Szczegóły",
+    "za_wygrana_nr": "Za {0}. wygraną",
+    "za_dosw_szkolenia": "Szkolenia: {0} dośw.",
+    "sekretne_zlecenie_3": "Sekretne zlecenie",
+    "przegrana_2": "Przegrana",
+    "hud_termos": "Termos",
+    "hud_moc": "Moc",
+    "legenda_premia": "premia",
+    "legenda_zagrozenie": "zagrożenie",
+    "legenda_sciezka": "ścieżka",
+    "legenda_info": "info",
+    "miedzy_wynik": "Wynik: {0} pkt.",
+    "budowa_dnia_nr_najlepszy": "Budowa dnia nr {0}: najlepszy {1}",
+    "wyzwanie_tygodnia_najlepszy": "Wyzwanie tygodnia: najlepszy {0}",
+    "wybierz_1_z_2": "wybierz 1 z 2",
+    "zostawiam_xp": "Zostawiam · +{0} dośw.",
+    "zostawiam_xp_kr": "Zostaw +{0} XP",
+    "profit_linia": "Profit {0}: {1}",
+    "unikat_linia": "Unikat {0}: {1}",
+    "fach_znak": "P",
+    "tip_cios": "Cios",
+    "tip_obrazenia": "Obrażenia {0}-{1}",
+    "tip_obrazenia_pct": "Obrażenia {0}-{1} ({2}%)",
+    "tip_ciosy": "{0} ciosy w każdy cel",
+    "tip_wzor": "Wzór: {0}, zasięg {1}",
+    "tip_odnowienie": "Odnowienie {0} t.",
+    "tip_odnowienie_za": "Odnowienie {0} t. (jeszcze {1})",
+    "tip_rzadkosc_odn": "{0}: odn. {1}",
+    "tryb_cios": "Cios: ",
+    "tryb_fach": "Patent: ",
+    "gablota": "Gablota",
+    "gablota_nieodkryty": "Nieodkryty artefakt",
+    "gablota_skad": "Skąd: {0}",
+    "gablota_baza": "Baza: {0}",
+    "gablota_znaleziony": "Znaleziony {0}",
+    "gablota_dawno": "Znaleziony przed Gablotą",
+    "gablota_mechanika": "Mechanika: {0}",
+    "gablota_odkryte": "Odkryte {0}/{1}",
+    "ogl_artefakt": "ARTEFAKT!",
+    "tip_proc": "{0}: co {1}. cios ({2}/{1})",
+    "tip_proc_zawsze": "{0}: każdy cios",
+    "tip_sciana_bez_odn": "Ściana: bez odnowienia",
+    "tip_material": "+{0}% na {1}",
+    "ogl_kawka_sub": "Pogłaskana! +{0} dośw.",
+    "kawka_spotkana": "SPOTKANA",
+    "kawka_wpis": "Spotkana Kawka",
+    "plecak": "Plecak",
+    "plecak_sub": "{0}/{1} miejsc",
+    "plecak_pusty": "Plecak jest pusty.",
+    "bp_zaloz": "Załóż",
+    "bp_kabura": "Do kabury",
+    "bp_anuluj": "Anuluj",
+    "bp_lepsze": "lepsze",
+    "bp_slabsze": "słabsze",
+    "bp_rowne": "równe",
+    "karta_do_plecaka": "Do plecaka ({0}/{1})",
+    "karta_plecak_pelny": "Plecak pełny ({0}/{1})",
+    "karta_hint": "Strzałki: wybór  Spacja: OK  Z: zostaw",
+    "zostaw": "Zostaw",
+    "hurt_tab_hurtownia": "Zakupy",
+    "hurt_tab_skup": "Skup",
+    "hurt_tab_pszok": "PSZOK",
+    "skup_opis": "Skup: przedmiot z plecaka za materiały, rzadszy = więcej.",
+    "pszok_opis": "PSZOK: oddaj za darmo – dośw. i +{0} HP za każdy przedmiot.",
+    "pszok_cena": "+{0} dośw.",
+    "skup_sprzedane": "Sprzedane: {0}",
+    "pszok_oddane": "Segregacja zaliczona: {0}",
+    "skup_maks": "Masz już maks. {0} szt.",
+    "hurt_hint_skup": "Spacja: sprzedaj  Q/E  Z: dalej",
+    "hurt_hint_pszok": "Spacja: oddaj  Q/E: zakładki  Z: dalej",
+    "hurt_hint_plecak": "Spacja: akcje  Q/E: zakładki  Z: dalej",
+    "tut_plecak_tytul": "Marek: plecak",
+    "tut_plecak": "6 miejsc na broń i sprzęt. Zamiana to 1 tura, po bossie sprzedasz w Skupie.",
+    "hurt_tab_plecak": "Plecak",
+    "pauza": "Pauza",
+    "pauza_etap": "Etap {0}/{1}: {2}",
+    "pauza_wznow": "Wznów",
+    "pauza_postac": "Postać",
+    "pauza_budowa": "Budowa",
+    "pauza_ustawienia": "Ustawienia",
+    "pauza_wyjdz": "Wyjdź do menu",
+    "pauza_wyjdz_pyt": "Wyjść do menu?",
+    "pauza_wyjdz_opis": "Budowa zostanie zapisana – dokończysz ją z menu.",
+    "pauza_wyjdz_tak": "Zapisz i wyjdź",
+    "pauza_hint": "Strzałki: wybór  Spacja: OK  Esc: wznów",
+    "postac": "Postać",
+    "postac_sub": "{0}, poz. {1}",
+    "postac_hint": "Spacja: karta  Q: premie  E: opis",
+    "postac_premie": "Premie {0}",
+    "postac_statystyki": "Statystyki",
+    "postac_obrona": "Obrona",
+    "slot_bron": "Broń",
+    "slot_kabura": "Kabura",
+    "plecak_pusty_karta": "Pusty. Broń i sprzęt z mapy: „Do plecaka” na karcie znaleziska.",
+    "karta_cios": "Cios",
+    "karta_kryt": "Kryt",
+    "karta_cecha": "Cecha",
+    "karta_profity": "Profity: {0}",
+    "karta_szczegoly": "Szczegóły",
+    "karta_mniej": "Mniej",
+    "karta_zamknij": "Zamknij",
+    "karta_rozpiska": "Rozpiska",
+    "karta_zamien": "Zamień",
+    "karta_hint_2": "Strzałki, Spacja: OK  Z: zamknij",
+    "skup_btn": "Sprzedaj",
+    "pszok_btn": "Na PSZOK",
+    "budowa_hint": "Q/E: zakładki  Spacja: Brygada",
+    "bp_bez_tury_sub": "zamiana bez tury",
+    "karta_znalezisko": "Znalezisko",
+    "karta_noszone": "Noszone",
+    "karta_wez": "Weź",
+    "karta_los_plecak": "Po zamianie: {0} do plecaka.",
+    "karta_los_ziemia": "Po zamianie: {0} zostaje tutaj.",
+    "karta_los_przepada": "Po zamianie: {0} przepada (pełny plecak).",
+    "karta_zostaw_nota": "Zostaw: +{0} dośw.",
+    "karta_atak": "Atak",
+    "karta_atak_spec": "Atak specjalny",
+    "karta_spec_krotko": "Spec.",
+    "karta_zmien": "Zmień",
+    "karta_zdejmij": "Do plecaka",
+    "karta_zmien_na": "Zamień {0} na:",
+    "karta_bez_zmian": "liczby bez zmian",
+    "karta_odnowienie": "Odnowienie Patentu: {0} -> {1} t.",
+    "karta_cecha_zmiana": "Cecha: {0} -> {1}",
+    "karta_cecha_zdanie": "Cecha: {0}",
+    "karta_tura_nota": "Na placu każda zmiana to 1 tura.",
+    "karta_plecak_pelny_btn": "Plecak pełny"
+  },
+  "hitTypes": {
+    "names": [
+      "Obuch",
+      "Cięcie",
+      "Kłucie"
+    ],
+    "materialPct": [
+      [
+        125,
+        75,
+        100,
+        75,
+        100
+      ],
+      [
+        75,
+        75,
+        125,
+        100,
+        100
+      ],
+      [
+        75,
+        125,
+        100,
+        75,
+        100
+      ]
+    ],
+    "stunChancePct": 20,
+    "cutCritPct": 5,
+    "pierceDef": 1,
+    "sparkSteelPct": 125,
+    "powerWaterPct": 150,
+    "fireWoodPct": 150,
+    "fireWaterPct": 50,
+    "dotPerTurn": 2
+  },
+  "weaponRarities": [
+    {
+      "name": "Zwykła",
+      "color": "#8a8796",
+      "dmgBonus": 0,
+      "cooldownDelta": 0,
+      "rollFrom": 0
+    },
+    {
+      "name": "Solidna",
+      "color": "#5cb4f0",
+      "dmgBonus": 1,
+      "cooldownDelta": 0,
+      "rollFrom": 70
+    },
+    {
+      "name": "Markowa",
+      "color": "#6b4eff",
+      "dmgBonus": 1,
+      "cooldownDelta": -1,
+      "rollFrom": 94
+    },
+    {
+      "name": "Mistrzowska",
+      "color": "#d9a400",
+      "dmgBonus": 0,
+      "cooldownDelta": 0,
+      "rollFrom": 101
+    }
+  ],
+  "weaponPerks": {
+    "perRarity": [
+      0,
+      1,
+      2,
+      0
+    ],
+    "pool": [
+      {
+        "id": "przebicie",
+        "name": "Przebicie",
+        "short": "OBR -1",
+        "desc": "Ignoruje 1 OBR problemu",
+        "effect": "pierce",
+        "value": 1
+      },
+      {
+        "id": "ostrze",
+        "name": "Ostrze",
+        "short": "kryt +5%",
+        "desc": "Kryt +5%",
+        "effect": "crit",
+        "value": 5
+      },
+      {
+        "id": "wywazenie",
+        "name": "Wyważenie",
+        "short": "rzut min +1",
+        "desc": "Najsłabszy rzut +1",
+        "effect": "steady",
+        "value": 1
+      },
+      {
+        "id": "glowica",
+        "name": "Głowica",
+        "short": "obr. maks +1",
+        "desc": "Najsilniejszy rzut +1",
+        "effect": "maxdmg",
+        "value": 1
+      },
+      {
+        "id": "chwyt",
+        "name": "Chwyt",
+        "short": "odn. Patentu -1",
+        "desc": "Odnowienie Patentu -1 (min. 1)",
+        "effect": "cooldownB",
+        "value": 1
+      }
+    ],
+    "master": {
+      "blunt": [
+        "wywazenie",
+        "glowica"
+      ],
+      "cut": [
+        "ostrze",
+        "glowica"
+      ],
+      "pierce": [
+        "przebicie",
+        "ostrze"
+      ]
+    }
+  },
+  "artifacts": {
+    "chancePct": 25
+  },
+  "dog": {
+    "name": "Kawka",
+    "desc": "Suczka z placu. Nie usterka, tylko kierownik od morale.",
+    "hint": "Podobno siedzi w błocie...",
+    "chancePct": 40,
+    "xp": 3,
+    "quips": [
+      {
+        "when": "first",
+        "value": 0,
+        "text": "Pierwszy dzień?|Widać po butach.|Za czyste."
+      },
+      {
+        "when": "helmet_stage",
+        "value": 3,
+        "text": "Trzeci etap i dalej|w kasku? Ambitnie."
+      },
+      {
+        "when": "hp_low",
+        "value": 30,
+        "text": "Wyglądasz jak strop|po pierwszej zimie.|Pogłaszcz, pomoże."
+      },
+      {
+        "when": "no_helmet",
+        "value": 2,
+        "text": "Bez kasku? Odważnie.|Ja tam bym chociaż|wiadro założyła."
+      },
+      {
+        "when": "master",
+        "value": 0,
+        "text": "Mistrzowska broń,|a głaszcze jak amator.|Ale lubię."
+      },
+      {
+        "when": "hp_full",
+        "value": 2,
+        "text": "Ani zadrapania?|Na pewno tu pracujesz?"
+      },
+      {
+        "when": "no_kills",
+        "value": 2,
+        "text": "Ani jednej usterki?|Też lubię leżeć|w błocie."
+      },
+      {
+        "when": "kills_ge",
+        "value": 20,
+        "text": "Ile usterek już poszło?|Szacun. Ja zakopałam|tylko trzy kości."
+      },
+      {
+        "when": "losses_ge",
+        "value": 5,
+        "text": "Znowu Ty? Kierownik|mówi, że to już|któraś budowa z rzędu."
+      },
+      {
+        "when": "runs_le",
+        "value": 1,
+        "text": "Nowa osoba na budowie?|Zasada pierwsza:|nie wchodź w beton."
+      },
+      {
+        "when": "wins_ge",
+        "value": 3,
+        "text": "Podobno masz już kilka|odebranych domów. Ja|dalej czekam na budę."
+      },
+      {
+        "when": "coffee_ge",
+        "value": 3,
+        "text": "Pachniesz kawą.|Dlatego Kawka? Nie,|tak mam od urodzenia."
+      },
+      {
+        "when": "level_ge",
+        "value": 4,
+        "text": "Poziom w górę, ale|poziomica i tak mówi,|że krzywo."
+      },
+      {
+        "when": "any",
+        "value": 0,
+        "text": "Błoto po kolana,|termin po szyję.|Typowy wtorek."
+      },
+      {
+        "when": "any",
+        "value": 0,
+        "text": "Hau. To znaczy:|fundament krzywy,|ale się trzyma."
+      },
+      {
+        "when": "any",
+        "value": 0,
+        "text": "Dobra robota.|Tak mówię wszystkim,|którzy mają smakołyki."
+      }
+    ],
+    "badgeBuilds": 4
+  },
+  "backpack": {
+    "slots": 6,
+    "sell": [
+      1,
+      2,
+      3,
+      5
+    ],
+    "weaponMat": "stal",
+    "gearMat": "drewno",
+    "altMat": "cement",
+    "pszokXp": 3,
+    "pszokXpPerTier": 2,
+    "pszokHp": 2
   }
 }

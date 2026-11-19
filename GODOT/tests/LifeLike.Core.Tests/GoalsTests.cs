@@ -116,15 +116,19 @@ public class GoalsTests
         g0.NewRun(1, 4242, 1, Meta.Mods(D, a, 1));
         g1.NewRun(1, 4242, 1, Meta.Mods(D, b, 1));
         Assert.True(g1.Bonus.FirstHitBonus == bonus && g0.Bonus.FirstHitBonus == 0);
+        // v0.23.0: cel z mnożnikiem ciosu 100% (typ ciosu broni x materiał / woda), więc premia przechodzi bez zaokrąglenia
+        var neutral = Array.FindIndex(D.Enemies, e => HitCalc.Pct(D, g1.Weapon, e) == 100);
+        Assert.True(neutral >= 0);
         foreach (var g in new[] { g0, g1 })
         {
+            g.Enemies[0].DefId = (sbyte)neutral;
             g.Enemies[0].MaxHp = g.Enemies[0].Hp = 120;
             g.Enemies[0].Alive = true;
         }
         g0.HeroAttack(0);
         g1.HeroAttack(0);
         int d0 = 120 - g0.Enemies[0].Hp, d1 = 120 - g1.Enemies[0].Hp;
-        Assert.True(d1 - d0 == bonus || d1 - d0 == bonus * D.CritMultiplier);
+        Assert.True(d1 - d0 == bonus || d1 - d0 == bonus * D.CritMultiplier, $"{d1 - d0} {bonus}");
         int h0 = g0.Enemies[0].Hp, h1 = g1.Enemies[0].Hp;
         g0.HeroAttack(0);
         g1.HeroAttack(0);
@@ -364,7 +368,7 @@ public class GoalsTests
         Assert.True(v.KillMark[0] == 0 && v.TaskDay == 0 && v.TaskDone == 0 && v.TasksTotal == 0 && v.Collections == 0);
         Assert.True(v.Streak == 3 && v.StreakDay == 202 && v.StreakBest == 3);
         Assert.False(Meta.ProfileFix(D, v));
-        Assert.Equal(384, v.ToBytes().Length);
+        Assert.Equal(Profile.Size, v.ToBytes().Length);
         var o = Meta.NewProfile(D);
         o.Runs = 3;
         var ob = o.ToBytes();
@@ -390,8 +394,8 @@ public class GoalsTests
         g.ShopBuys = 2;
         var save = RunSave.Make(g);
         Assert.True(save.Valid(D));
-        var old = save.Data[..^(RunSave.V14Tail + RunSave.V15Tail)];
-        var s14 = new RunSave { Magic = save.Magic, Size = (uint)old.Length, Data = old, Checksum = RunSave.Fnv1a(old) };
+        var old = save.Data[..^(RunSave.BackpackTail + RunSave.DogTail + RunSave.V14Tail + RunSave.V15Tail)];
+        var s14 = new RunSave { Magic = Profile.MagicBytes(RunSave.PrevMagic), Size = (uint)old.Length, Data = old, Checksum = RunSave.Fnv1a(old) };
         Assert.True(s14.Valid(D));
         var back = s14.Load(D);
         Assert.True(back.Cls == 3 && back.HelpersCalled == 0 && back.ShopBuys == 0);

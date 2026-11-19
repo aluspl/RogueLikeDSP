@@ -243,7 +243,7 @@ public class BehaviorAndActTests
         Meta.CatalogAdd(p, 20);
         Meta.CatalogAdd(p, 31);
         Assert.True(Meta.CatalogHas(p, 20) && Meta.CatalogHas(p, 31) && !Meta.CatalogHas(p, 21) && Meta.CatalogCount(D, p) == 8 + 2);
-        Assert.Equal("PBRUN13", RunSave.RunMagic);
+        Assert.Equal("PBRUN20", RunSave.RunMagic);
     }
 
     [Fact]
@@ -252,9 +252,52 @@ public class BehaviorAndActTests
         Assert.Equal("+2 obrażeń broni", StatHelp.Effect(D, new Message(), StatKind.Str, 5, true).Text);
         Assert.Equal("nie dla tej broni", StatHelp.Effect(D, new Message(), StatKind.Agi, 5, false).Text);
         Assert.Equal("-2 obrażeń od problemów", StatHelp.Effect(D, new Message(), StatKind.Def, 5, false).Text);
-        Assert.Equal("kryt 20%, unik 10%", StatHelp.Effect(D, new Message(), StatKind.Luck, 5, false).Text);
-        Assert.Equal("SZCZ: kryt 5% +3%/pkt", StatHelp.Rule(D, new Message(), StatKind.Luck).Text);
+        Assert.Equal("kryt 15%, unik 10%", StatHelp.Effect(D, new Message(), StatKind.Luck, 5, false).Text);
+        Assert.Equal("kryt 35%, unik 20%", StatHelp.Effect(D, new Message(), StatKind.Luck, 30, false).Text); // sufit krytu
+        Assert.Equal("SZCZ: kryt 5% +2%/pkt (maks. 35%)", StatHelp.Rule(D, new Message(), StatKind.Luck).Text);
         Assert.Equal("unik +2%/pkt (maks. 20%)", StatHelp.Rule(D, new Message(), StatKind.Luck, 1).Text);
         Assert.Equal("łupy: +2% szansy/pkt", StatHelp.Rule(D, new Message(), StatKind.Luck, 2).Text);
+    }
+    /// <summary>Otwarty plac 14x14 bez problemów i znajdziek, bohater na (7,7), bez pogody.</summary>
+    private static Game OpenYard()
+    {
+        var g = TestData.Run(0, 77);
+        g.Lv.Fill(Tile.Wall);
+        for (var y = 1; y <= 14; ++y)
+            for (var x = 1; x <= 14; ++x)
+                g.Lv[x, y] = Tile.Floor;
+        g.EnemiesCount = 0;
+        g.PickupsCount = 0;
+        g.StairsX = g.StairsY = -1;
+        g.Weather = 0;
+        g.Hero.X = 7;
+        g.Hero.Y = 7;
+        g.UpdateFov();
+        return g;
+    }
+
+    [Fact]
+    public void ChaseStepSidestepsWhenStraightPathBlocked()
+    {
+        // v0.23.0: problem w linii z bohaterem, prosta droga zajęta przez drugi problem – krok w bok (dawniej stał w miejscu)
+        var g = OpenYard();
+        Put(g, 0, 7, 8);
+        var e = Put(g, 0, 7, 9);
+        Assert.True(g.ChaseStep(e));
+        Assert.Equal((8, 9), ((int)g.Enemies[e].X, (int)g.Enemies[e].Y)); // kolejność: +x, -x, +y, -y
+        Assert.True(g.ChaseStep(e)); // następna tura: już po przekątnej, idzie do bohatera
+        Assert.Equal((8, 8), ((int)g.Enemies[e].X, (int)g.Enemies[e].Y));
+        // ściana zamiast problemu
+        g = OpenYard();
+        g.Lv[7, 8] = Tile.Wall;
+        e = Put(g, 0, 7, 9);
+        Assert.True(g.ChaseStep(e));
+        Assert.Equal((8, 9), ((int)g.Enemies[e].X, (int)g.Enemies[e].Y));
+        // krok w bok nigdy nie oddala (Czebyszew); ślepy zaułek – stoi
+        g = OpenYard();
+        g.Lv[7, 8] = g.Lv[6, 9] = g.Lv[8, 9] = Tile.Wall;
+        e = Put(g, 0, 7, 9);
+        Assert.False(g.ChaseStep(e));
+        Assert.Equal((7, 9), ((int)g.Enemies[e].X, (int)g.Enemies[e].Y));
     }
 }

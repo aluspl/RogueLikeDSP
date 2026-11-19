@@ -12,6 +12,10 @@ Co powstaje:
   sprites/actors_anim.png    animacje postaci i problemów budowy (klatki 32x32, wiersz = numer klatki z actors.png):
                              4 klatki chodu (A, A w kroku, B, B w kroku - tułów o piksel wyżej, nogi zostają) i klatka
                              oddechu (głowa i tułów o pół piksela GBA niżej); sprites/actors_anim_white.png - sylwetki
+  sprites/actors_notool.png, actors_anim_notool.png (+ _white)  v0.23.0: to samo bez narzędzia zawodu w dłoni fachowców
+                             (w ręce rysowana jest broń)
+  weapons/*.png, weapons.json, gear/overlay.png   v0.23.0: kopie z art/weapons i art/gear (broń w ręce, ikony,
+                             zamach, nakładki sprzętu)
   sprites/truck.png          pickup z prologu (2 klatki kół), Scale2x
   sprites/particles.png      cząsteczki 16x16 (Scale2x z 8x8), kolejność jak particles.bmp
   sprites/houses.png         domy Osiedla 32x32
@@ -237,6 +241,61 @@ def export_actor_anims():
     return len(CHARACTER_FRAMES)
 
 
+HERO_FRAMES = ([(c, 0, c, False, False) for c in range(6)] + [(27 + c, 1, c, False, False) for c in range(6)]
+               + [(52 + i, 0, 6 + i, False, False) for i in range(3)] + [(55 + i, 1, 6 + i, False, False) for i in range(3)]
+               + [(SECRET_CLASS_FRAME + i, 0, 9 + i, False, False) for i in range(3)]
+               + [(SECRET_CLASS_FRAME + 3 + i, 1, 9 + i, False, False) for i in range(3)]
+               + [(STRIPES_FRAME + 2 * c + k, k, c, True, False) for c in range(12) for k in range(2)]
+               + [(HELMET_FRAME + 2 * c + k, k, c, False, True) for c in range(12) for k in range(2)])
+
+
+def export_notool():
+    """v0.23.0: sprites/actors_notool.png, actors_anim_notool.png (+ białe sylwetki) - te same arkusze, ale klatki
+    fachowców bez narzędzia zawodu w dłoni (w ręce rysuje się broń: art/weapons)."""
+    sys.path.insert(0, os.path.join(GBA, "tools"))
+    import pixel_art as pa
+    w, h, pixels, pal = load_indexed("actors")
+    frames = frames_of(pixels, w, 16, h // 16)
+    for f, k, c, stripes, mask in HERO_FRAMES:
+        bare = pa.worker_frame(c, k, stripes=stripes, helmet_mask=mask, tool=False)
+        full = pa.worker_frame(c, k, stripes=stripes, helmet_mask=mask)
+        assert [v for row in frames[f] for v in row] == full, ("klatka", f, "nie jest fachowcem", c)
+        frames[f] = [bare[y * 16:(y + 1) * 16] for y in range(16)]
+    save(frames_to_image([scale2x(f) for f in frames], pal), "sprites/actors_notool.png")
+    save(frames_to_image([scale2x(f) for f in frames], white_palette(pal)), "sprites/actors_notool_white.png")
+    sheet = Image.new("RGBA", (32 * ANIM_FRAMES, 32 * len(frames)), TRANSPARENT)
+    white = Image.new("RGBA", (32 * ANIM_FRAMES, 32 * len(frames)), TRANSPARENT)
+    for f, _k, _c, _s, _m in HERO_FRAMES:
+        if f not in CHARACTER_FRAMES:
+            continue
+        a, b = frames[f], frames[anim_b(f)]
+        cells = [scale2x(a), scale2x(step_frame(a)), scale2x(b), scale2x(step_frame(b))]
+        cells.append(breath_frame(cells[0]))
+        for i, cell in enumerate(cells):
+            sheet.paste(frames_to_image([cell], pal), (32 * i, 32 * f))
+            white.paste(frames_to_image([cell], white_palette(pal)), (32 * i, 32 * f))
+    save(sheet, "sprites/actors_anim_notool.png")
+    save(white, "sprites/actors_anim_notool_white.png")
+    return len(HERO_FRAMES)
+
+
+ART_COPIES = [("art/weapons/weapons_inhand_map_2x.png", "weapons/inhand.png"),   # na mapie broń 3/4 (task 9c)
+              ("art/weapons/weapons_icons_2x.png", "weapons/icons.png"),
+              ("art/weapons/weapons_icons.png", "weapons/icons_1x.png"),
+              ("art/weapons/weapons_swing_2x.png", "weapons/swing.png"),
+              ("art/weapons/weapons.json", "weapons/weapons.json"),
+              ("art/gear/gear_overlay_2x.png", "gear/overlay.png")]
+
+
+def export_art():
+    """v0.23.0: bronie i sprzęt z art/ (generatory GBA/tools/weapon_sprites.py, gear_sprites.py) - kopie 1:1."""
+    for src, dst in ART_COPIES:
+        path = os.path.join(OUT, dst)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        shutil.copyfile(os.path.join(REPO, src), path)
+    return len(ART_COPIES)
+
+
 # ------------------------------------------------------------------ telefon: ikony zakładek
 def export_phone_icons():
     w, h, pixels, pal = load_indexed("phone_icons")
@@ -343,6 +402,20 @@ def export_screen(name, crop_h, rel):
             if v != bg:
                 px[x, y] = (pal[v * 3], pal[v * 3 + 1], pal[v * 3 + 2], 255)
     save(out, rel)
+
+
+def export_qr(src, rel):
+    """v0.22.0 (UX A): sam kod QR planbudowlany.online z planszy końcowej (ostatnia kolumna nieprzezroczystych pikseli)."""
+    im = Image.open(os.path.join(OUT, src)).convert("RGBA")
+    w, h = im.size
+    px = im.load()
+    cols = [any(px[x, y][3] > 0 for y in range(h)) for x in range(w)]
+    x1 = max(x for x in range(w) if cols[x]) + 1
+    x0 = x1
+    while x0 > 0 and cols[x0 - 1]:
+        x0 -= 1
+    qr = im.crop((x0, 0, x1, h))
+    save(qr.crop(qr.getbbox()), rel)
 
 
 # ------------------------------------------------------------------ font 8x16 z polskimi znakami
@@ -760,20 +833,7 @@ def make_stage_tiles(i):
     draw_wall(wall, col, WALL_KIND[i], rnd)
     cells.append(make_wall_top(wall, col))     # 6: wierzch muru (masa muru, pole z murem poniżej) - bez pasów
     cells.append(make_wall_face(wall, col))    # 7: lico muru nad podłogą - krawędź wierzchu, wzór materiału, cień u dołu
-    st = Canvas(col["wall"])   # schody w dół: boczne ściany, stopnie coraz ciemniejsze, u dołu otwór
-    for k in range(5):
-        y0 = 2 + k * 6
-        c0 = mix(col["stairs"], col["stairs2"], k / 4.0)
-        c0 = mix(c0, (12, 12, 20), k * 0.14)
-        st.rect(4, y0, 27, y0 + 5, c0)
-        st.hline(4, 27, y0, mix(c0, (255, 255, 255), 0.35))
-        st.hline(4, 27, y0 + 5, shade(c0, 0.55))
-    st.rect(0, 0, 3, 31, col["wall"])
-    st.rect(28, 0, 31, 31, col["wall"])
-    st.vline(3, 0, 31, col["shadow"])
-    st.vline(28, 0, 31, col["light"])
-    st.rect(0, 0, 31, 1, col["light"])
-    st.rect(4, 30, 27, 31, (12, 12, 20))
+    st = make_stairs(cells[0], col)            # 8: schody w dół (v0.22.0, #67)
     cells.append(st)
     cells += make_wall_edges(col)              # 9-14: nakładki autokafli muru (krawędzie wierzchu, końce lica)
     sheet = Image.new("RGBA", (32 * len(cells), 32), TRANSPARENT)
@@ -783,6 +843,58 @@ def make_stage_tiles(i):
     save(make_tall_walls(wall, col), "tiles/stage_%d_wall.png" % i)   # v0.21.54 (#62): wysokie lico muru
     save(squash_rows(sheet, ROW_34), "tiles/stage_%d_34.png" % i)      # v0.21.54 (#63): kafle widoku 3/4
     return col
+
+
+# ------------------------------------------------------------------ v0.22.0 (#67): schody w dół
+# Otwór w podłodze etapu (bez ramki w kolorze muru - pole nie wygląda jak skrzynka w przejściu między murami). Patrzymy z
+# południa jak na mury: najbliższy stopień u dołu pola jest na poziomie podłogi i najjaśniejszy, kolejne (w górę pola)
+# schodzą głębiej - ciemnieją i zwężają się między ciemnymi ścianami szybu, u góry czarny otwór. Stopnie w kolorze
+# podłogi etapu (beton, deski, płytki), krawędzie stopni żółte jak taśma antypoślizgowa na budowie (kolor schodów z
+# palety GBA), więc czytelne w każdym akcie. Światło z lewej góry: prawa ściana szybu jaśniejsza od lewej.
+STAIRS_STEPS = 5
+
+
+def make_stairs(floor, col):
+    st = Canvas(col["floor"])
+    st.im.paste(floor.im, (0, 0))
+    st.px = st.im.load()
+    void = (10, 9, 16)
+    x0, x1, y0, y1 = 3, 28, 3, 29              # otwór
+    rim_dark = shade(col["floor"], 0.45)
+    rim_lit = mix(col["floor"], (255, 255, 255), 0.45)
+    tread0 = mix(col["floor"], col["light"], 0.35)
+    nose = mix(col["stairs"], (255, 255, 255), 0.15)
+    wall_l = mix(shade(col["wall"], 0.35), void, 0.3)
+    wall_r = mix(shade(col["wall"], 0.6), void, 0.15)
+    st.rect(x0, y0, x1, y1, void)
+    step_h = (y1 - y0 - 3) // STAIRS_STEPS      # 4 górne wiersze: czarna głębia
+    for k in range(STAIRS_STEPS):               # k = 0: najbliższy stopień (u dołu), wyżej - głębiej
+        yb = y1 - k * step_h
+        yt = yb - step_h + 1
+        inset = k                               # szyb zwęża się w głąb
+        depth = k / float(STAIRS_STEPS)
+        t = mix(tread0, void, depth * 0.85)
+        n = mix(nose, void, depth * 0.75)
+        lx, rx = x0 + 1 + inset, x1 - 1 - inset
+        st.rect(lx, yt, rx, yb, t)
+        st.hline(lx, rx, yt, n)                                  # żółta krawędź stopnia
+        if (yt + 1) <= yb:
+            st.hline(lx, rx, yt + 1, mix(n, t, 0.55))
+        st.hline(lx, rx, yb, mix(t, void, 0.45))                 # cień pod krawędzią następnego stopnia
+        for y in range(yt, yb + 1):                              # ściany szybu po bokach stopnia
+            st.rect(x0, y, lx - 1, y, mix(wall_l, void, depth * 0.6))
+            st.rect(rx + 1, y, x1, y, mix(wall_r, void, depth * 0.6))
+    for y in range(y0, y0 + 4):                                  # głębia u góry: czarna z miękkim przejściem
+        for x in range(x0, x1 + 1):
+            if y == y0 + 3 and (x + y) % 2 == 0:
+                continue
+            st.set(x, y, void)
+    st.hline(x0 - 1, x1 + 1, y0 - 1, rim_dark)                  # krawędź otworu: daleka w cieniu,
+    st.vline(x0 - 1, y0 - 1, y1 + 1, rim_dark)                  # lewa w cieniu,
+    st.vline(x1 + 1, y0 - 1, y1 + 1, mix(rim_dark, rim_lit, 0.5))
+    st.hline(x0 - 1, x1 + 1, y1 + 1, rim_lit)                   # bliska oświetlona (próg)
+    st.hline(x0, x1, y1 + 2, mix(col["floor"], rim_lit, 0.4))
+    return st
 
 
 # ------------------------------------------------------------------ v0.21.54: wyższe ściany (#62) i widok 3/4 (#63)
@@ -959,6 +1071,8 @@ def main():
     report = {}
     report["actors"] = export_sheet("actors", 16, "sprites/actors.png", rel_white="sprites/actors_white.png")[0]
     report["actor_anims"] = export_actor_anims()
+    report["actors_notool"] = export_notool()
+    report["art"] = export_art()
     report["truck"] = export_sheet("truck", 16, "sprites/truck.png")[0]
     report["particles"] = export_sheet("particles", 8, "sprites/particles.png")[0]
     report["houses"] = export_sheet("houses", 16, "sprites/houses.png")[0]
@@ -970,6 +1084,7 @@ def main():
     report["app_icon"] = make_app_icon()
     export_screen("title", 128, "ui/title.png")
     export_screen("end", 104, "ui/end.png")
+    export_qr("ui/end.png", "ui/qr.png")
     report["font_glyphs"] = export_font()
     danger = None
     stages = len(FLOOR_KIND)   # v0.21.52 cz. d: wyglądy etapów (Dom 0-11 i kontrakty mapy kariery 12-21)

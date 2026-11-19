@@ -2,6 +2,223 @@
 
 Wydania z plikiem ROM: https://github.com/aluspl/RogueLikeDSP/releases
 
+## v0.23.2 – 2026-11-13 (plecak i poprawki)
+
+> Budowa w toku z v0.23.0 / v0.23.1 wczytuje się (z pustym plecakiem); profil bez zmian.
+
+### In English
+**Backpack**: 6 slots for weapons and gear you find on site. A gear pack or a weapon on the floor now opens a card with
+three choices – **Equip / Take** (the old item goes to the backpack, or stays on the floor when it is full), **To
+backpack** and **Leave it**. The **Backpack** screen (in the Godot version now part of the Character screen; I on desktop, phone → Gear → Backpack, tap the weapon in the HUD in
+portrait; retro version: phone → Gear → A) shows ▲ better / ▼ weaker / = same against what you wear; swapping costs a
+turn (like the holster), dropping is free. After an act boss the merchant has new tabs: **Sell** (backpack items for
+materials – rarer gives more) and **Scrap** (give items away for a little XP and +2 HP; "Sorted!"), plus a free swap.
+**New phone-sized interface (Godot):** text ~1.5x bigger in portrait, one column, no keyboard hints on touch; Esc / the
+pause button opens a **pause** menu (Resume, Character, Site app, Settings, Quit to menu); the **Character** screen shows
+the builder with gear slots, four key numbers and the backpack as a 3x2 tile grid; tapping a tile or slot opens an item
+card (Equip / Change / To pack / Recycle, with Attack, Special and Defense shown as now -> after in green / red); the find
+card uses the same layout. On site, recycling an item (or what you wear) now works too – same small XP/HP bonus, 1 turn.
+Also from v0.23.1: fewer coffee flasks (2 cups, coffee heals 11 HP) and a proper cracked-wall / padlocked-door look
+for storerooms. A build in progress from v0.23.0–v0.23.1 still loads (with an empty backpack).
+
+### Nowości
+1. **Plecak** – 6 miejsc na bronie (z rzadkością, profitami i ulepszeniami) i sprzęt z mapy, na jedną budowę.
+   - **Karta z trzema wyborami:** paczka sprzętu przy zajętym slocie i każda broń z mapy (pusta kabura łapie broń
+     jak dotąd): **Załóż / Weź** (stary przedmiot do plecaka, przy pełnym zostaje na ziemi), **Do plecaka** (przy
+     pełnym wyszarzone: „Plecak pełny (6/6)”), **Zostaw** (+dośw. raz, przedmiot zostaje na ziemi – można wrócić).
+     Broń z kabury przy zmianie pasa i stara broń przy zakupie w Hurtowni też trafiają najpierw do plecaka.
+   - **Ekran Plecak** (w Godot od pkt 1a – ekran Postać): I na placu, telefon → Sprzęt → Plecak, w pionie dotknięcie broni w górnym pasku; w wersji retro
+     telefon → Sprzęt → A (rozpiska obrażeń: Start → A). Przy każdym przedmiocie ▲ lepsze / ▼ słabsze / = równe
+     względem noszonego (broń: średni cios), porównanie zaznaczonego; **Załóż** (1 tura, jak kabura), **Do kabury**,
+     **Wyrzuć** (na ziemię pod bohaterem, bez tury).
+   - **Hurtownia po bossie aktu:** zakładki **Skup** (przedmiot za materiały: Zwykły 1, Solidny 2, Markowy 3,
+     Mistrzowski / artefakt 5 sztuk; broń – stal, sprzęt – drewno, co druga sztuka cement), **PSZOK** (oddanie za
+     darmo: +3 dośw. + 2 za poziom przedmiotu i +2 HP, „Segregacja zaliczona!”) i **Plecak** (zamiana bez tury).
+   - Pierwszy przedmiot w plecaku: dymek Kierownika Marka. Zapis budowy PBRUN20 – budowa z v0.23.0 / v0.23.1 wczytuje
+     się z pustym plecakiem.
+   - Bot balansu zakłada lepsze, porównywalne chowa do plecaka, w Skupie sprzedaje wszystko oprócz najlepszej
+     zapasowej broni. Normalny 32,6%, Łatwy 54,0%, Trudny 13,9%, pełne Szkolenia 64,6%, + Respekt 75,6%, Akt 0 + meta
+     72,2%, inwestor 14,3%, kontrakty 27,6–31,7 / 65,3–71,9 (`docs/v0.23/balans.md`, sekcja v0.23.2).
+
+1a. **Nowy, czytelny interfejs na telefonie (Godot)** – uwagi właściciela po teście („mega nieczytelny”, „tragiczny
+   flow pauzy”): w pionie tekst ~1,5x większy, jedna kolumna, bez podpowiedzi klawiszy na dotyku, duży krzyżyk.
+   **Pauza** (Esc, przycisk pauzy w rogu mapy): Wznów, Postać, Budowa, Ustawienia, Wyjdź do menu (z potwierdzeniem).
+   **Postać** zastępuje Start, Sprzęt i osobny ekran plecaka: bohater ze slotami, 4 liczby (HP, Obrona, Atak, Kryt),
+   plecak siatką 3x2 kafli z ramką rzadkości i ▲/▼. **Karta przedmiotu** (dolny arkusz): noszone – Zmień (lista
+   z plecaka z podglądem), Do plecaka, Na PSZOK; z plecaka – Załóż z podglądem „teraz -> po” (Atak, Atak specjalny,
+   Obrona, HP) na zielono / czerwono, Kabura, Na PSZOK (zamiast „Wyrzuć”), w Hurtowni Sprzedaj. **Karta znaleziska**
+   w tym samym układzie. Telefon **Budowa**: Zadania, Usterki, Koszty + przycisk Brygada. PSZOK działa też na placu
+   (1 tura, ta sama premia), noszone da się zdjąć do plecaka (broń zawodu zostaje) – rdzeń C# i C++, bot bez zmian.
+
+### Balans
+2. **Mniej termosów z kawą** (uwaga właściciela: „ilość termosów jeszcze za duża”, Termos 5/5 w połowie budowy) –
+   termos mieści 2 kawy (było 3); pamiątka Termos babci +1 / +1 / +2 (było +1 / +2 / +3); Szkolenie Lepszy termos
+   razem +2 miejsca (ostatni poziom: lepszy sprzęt zamiast termosu); z mapy jedna kawa na etap (dodatkowa znajdźka,
+   która wylosuje kawę, przepada – kask i projekt bez zmian); kawa z problemów o połowę rzadziej (drop 20%, waga kawy
+   20). Kompensata: **kawa leczy 11 HP** (było 8). Bot: kawy wypite na budowę 3,7 → 2,3, termos na etapie 5 bez meta
+   1,4 / 3 → 0,9 / 2. Normalny 30,6%, Łatwy 52,1%, Trudny 13,3%, pełne Szkolenia 61,8%, + Respekt 73,1%
+   (szczegóły: `docs/v0.23/balans.md`, sekcja v0.23.1). Wspólna logika C++ i C#, test złoty odświeżony.
+
+### Poprawki
+3. **Pęknięta ściana magazynu** (zgłaszane kilka razy) – zamiast czarnego „X” w pomarańczowej ramce: schodkowe
+   pęknięcie w materiale muru (ciemna szczelina z jasną krawędzią, wyłamany róg), okruchy na podłodze pod murem;
+   wygląda dobrze na cegle, betonie i tynku każdego aktu.
+4. **Drzwi magazynu (tylko klucz)** – drewniane drzwi z okuciami i kłódką z dziurką od klucza zamiast skrzynki.
+   Gdy masz klucz (albo możesz skruszyć ścianę), pulsuje krawędź pęknięcia albo kłódka i obrys drzwi – bez ramki.
+   Wersja retro: nowe klatki pęknięcia i drzwi.
+
+## v0.23.0 – 2026-11-08 (bronie)
+
+> **Uwaga przy aktualizacji:** budowa w toku z poprzedniej wersji przepada (nowy format zapisu budowy). Profil,
+> doświadczenie, Szkolenia, Respekt, odznaki, sekrety i odkrycia zostają – profil przechodzi migrację automatycznie.
+
+### In English
+Weapons that really feel different. 45 weapons: a default one for each of the 12 trades, 25 to find on site or buy from
+the merchant, and 8 artifacts. Every weapon has a **hit type** (Blunt stuns and hits around, Cut crits more often,
+Stab pierces armour) that meets the problem's **material** (cement, steel, wood) and **element** (water, fire, power),
+a **pattern** of tiles it hits, a **rarity** (Basic, Sturdy, Branded, Master – visible in your hero's hands and on the
+ground) and random **perks**. Each weapon also has a **Trick** – its own named trade move with a cooldown (hold the
+button to read what it does). The **Rigger Holster Belt** carries a second weapon to swap. Artifacts – unique versions
+of base weapons with their own "every N-th hit" mechanic, e.g. the Thunder Maul – go to the **Showcase**; the
+legendary Senior Foreman's Knife comes from a secret contract. Crits are rarer (35% cap) and problems hit harder, so
+Normal is tougher. Gear shows on your hero, punchy announcements celebrate finds and boss kills. The retro version gets
+the same rules 1:1 (L+A Trick, L+B swap), without weapon graphics. Easter egg: every 2–3 builds or so **CoffeeDog**, a site dog,
+sits in the mud of Act I – pet her for a little XP and a sarcastic review of your progress (badge: Dog's Best Pal). **A build in progress from an older version is lost
+after the update; your profile stays.**
+
+### Nowości
+1. **System broni (#77)** – 45 broni: broń domyślna każdego z 12 zawodów, 25 do znalezienia i z Hurtowni (w tym
+   nowe: noże, młoty, elektronarzędzia, laser krzyżowy, lutownica, opalarka), 8 artefaktów.
+   - **Typ ciosu:** obuch (ogłusza, bije wokół), cięcie (częstszy kryt), kłucie (przebija OBR); część broni ma dwa typy.
+   - **Materiały i żywioły:** typ ciosu kontra materiał problemu (cement, stal, drewno) ±25%, woda, ogień i prąd jako
+     osobne kolumny; rozpiska obrażeń i karta problemu pokazują „Twój cios: …”.
+   - **Wzory pól:** 11 wzorów (linia, łuk, krzyż, natrysk, rzut 3x3 i inne), obracane po skosie, bez strzelania przez
+     ścianę; podgląd celowania liczy to samo co atak.
+   - **Patent** – drugi tryb każdej broni z własną nazwą ruchu (np. Kielnia, Gwoździarka, „Jeszcze nie emerytura”)
+     i odnowieniem; nowe stany problemów (ogłuszenie, unieruchomienie, krwawienie, podpalenie, osłabienie, mokry,
+     znak) i otwieranie pękniętych ścian Przecinakiem, Łomem i Młotem.
+2. **Rzadkość broni (#78, #86)** – Zwykła, Solidna, Markowa, Mistrzowska: lepsze obrażenia i krótsze odnowienie,
+   kolor rzadkości na obudowach elektronarzędzi i akcentach narzędzi ręcznych, poświata Markowej i Mistrzowskiej;
+   z dropów, Hurtowni i z nowego Szkolenia **Narzędzia** (broń startowa wyższej rzadkości).
+3. **Losowe profity broni (#87)** – Solidna 1, Markowa 2 z puli (Przebicie, Ostrze, Wyważenie, Głowica, Chwyt),
+   Mistrzowska – stałe profity; widać je na karcie, w dropie, w Hurtowni i w rozpisce.
+4. **Pas monterski z kaburą** – druga broń w kaburze i szybka zamiana (bez straty tury); ulepszenie i profity idą
+   razem z bronią. Gdy oferta pasa bez kabury zabrałaby kaburę z bronią – czerwone ostrzeżenie na karcie paczki
+   i w Hurtowni; broń z kabury wypada na ziemię, broń zawodu wraca do ręki.
+5. **Noże (#84)** – Nóż do tapet (kłucie) i legendarny **Nóż majstra seniora** (Mistrzowski, czyste kłucie bez kary
+   materiału, ignoruje 4 OBR, wysoki kryt, Patent „Jeszcze nie emerytura” – dwa pchnięcia) z sekretnego zlecenia
+   „Stara szkoła”. „Ostrze prosi o emeryturę. Majster: nie!”
+6. **Artefakty i Gablota (#92)** – 4 nowe artefakty z mechaniką „co N-ty cios” (licznik przy broni w HUD): Młot
+   Gromowładny (co 5. cios piorun i paraliż, skacze po mokrych), Kielnia Pierwszej Cegły, Szlifierka Iskrownica,
+   Łom Ostatniej Deski; artefakt może zastąpić Markową broń bazową z dropu. **Gablota artefaktów** w Profilu
+   i Szkoleniach – nieodkryte jako sylwetka ze wskazówką, odkryte z opisem, bazą i datą znalezienia. Nowe sekretne
+   zlecenia: „Stara szkoła” i „Przez ścianę”.
+7. **Broń w ręce i sprzęt na postaci (#88)** – bohater trzyma swoją broń (w kolorze rzadkości) w 4 kierunkach,
+   z wymachem przy ataku; kask, kamizelka, rękawice i buty widać na postaci, w kolorze rzadkości sprzętu.
+8. **Ogłoszenia z przytupem (#85)** – awans, Markowa / Mistrzowska broń, artefakt, boss pokonany, sekretne zlecenie:
+   napis wpada po skosie, pasy ostrzegawcze, wstrząs, błysk i wymach bronią (przy ograniczonym ruchu bez wstrząsu).
+9. **Opis ataku pod przyciskiem (#90)** – przytrzymanie palcem, najechanie myszą albo LB na Cios / Patent pokazuje
+   dymek: nazwa ruchu, mini-siatka wzoru, typ ciosu, obrażenia, zasięg, efekt i odnowienie.
+10. **Easter egg: suczka Kawka** – mniej więcej co 2–3 budowy na jednym etapie Aktu I siedzi w błocie Kawka (owczarek,
+   rudo-czarna). Nie problem: nie da się jej trafić, problemy ją omijają. Wejście na nią = głaskanie: ogłoszenie z dłonią
+   i serduszkami, +3 dośw. (raz na budowę) i dymek nad nią z sarkastyczną oceną postępów zależną od stanu budowy
+   (etap, HP, kask, usunięte usterki, porażki z profilu…), np. „Trzeci etap i dalej w kasku? Ambitnie.”; kolejne
+   wejście – Kawka robi miejsce. Wpis „Spotkana Kawka” w Katalogu i odznaka **Psi przyjaciel** (Kawka w 4 budowach,
+   tytuł „Przyjaciel Kawki”). Wersja retro: Kawka na mapie i ocena w banerach. Profil v20 (migracja automatyczna,
+   wybrany tytuł zlecenia przesuwa się za nową odznaką).
+
+### Zmiany
+1. **Rzadsze kryty, mocniejsze problemy (#93)** – Szczęście 2% krytu za punkt (było 3%), cięcie +5% (było +10%),
+   sufit szansy krytu 35%; obrażenia problemów na Dachu +1, HP problemów +18%; Trudny HP 150%. Normalny jest
+   trudniejszy (bot ~28% wygranych zamiast ~32% w v0.22.1).
+2. **Meta** – Szkolenie Dostawy poziom 2: +5% materiałów, Kondycja poziom 4: lepszy sprzęt; sześć pozycji Respektu
+   ma jedną rangę (za kupioną rangę II Respekt wraca na konto); broń zawodu na start bez losowych profitów.
+3. **Karty z pełnymi nazwami (#89, #91)** – sprzęt, bronie, dropy, Hurtownia i oferta narzędzia z pełną nazwą cechy
+   i profitu; „Zostawiam · +N dośw.” zamiast „Zostawiam +N”; porównanie broni z „+ kryt, OBR −N, profity”.
+4. **Sprzęt w telefonie** przewijany sekcjami także w poziomie.
+
+### Poprawki
+1. Zamiana broni z kabury nie odpala już ogłoszenia „ARTEFAKT!” ani banera nowej broni.
+2. Rzut 3x3 nie trafia pola po skosie za narożnikiem ściany.
+3. Utrata pasa z bronią zawodu w kaburze nie gubi jej – wraca do ręki z ulepszeniami i profitami.
+4. **Problemy znów idą za Tobą** – problem w linii z bohaterem stał w miejscu, gdy prostą drogę zasłaniała ściana,
+   róg albo inny problem; teraz obchodzi przeszkodę krokiem w bok (nigdy dalej od Ciebie).
+5. **Krótszy samouczek, większy tekst** (zgłoszenie testera) – na tytule i wyborze zawodu po 3 dymki zamiast 14;
+   Szkolenia, opcje, Jak grać, pamiątka i statystyki pojawiają się w osobnych dymkach, gdy pierwszy raz mają znaczenie
+   (jeden dymek na wejście na ekran; kto już widział stary samouczek, nie dostaje ich drugi raz). W Godocie tekst
+   dymka Kierownika jest ok. 1,5 raza większy i rośnie razem z opcją „duży tekst”.
+
+### Wersja retro
+1. **Logika broni 1:1 z Godotem** (wspólny test złoty): typy ciosu, materiały, żywioły, wzory, Patent, rzadkość,
+   profity, pas z kaburą, artefakty, sekrety, rzadsze kryty i mocniejsze problemy.
+2. **Sterowanie:** **L+A – Patent** (najbliższy cel we wzorze, bez celu pęknięta ściana), **L+B – zamiana z kaburą**;
+   karta broni pokazuje rzadkość, Patent z odnowieniem, typy ciosu i profity; ostrzeżenie o kaburze na karcie paczki
+   i w Hurtowni; strona pomocy „Bronie”; notatka „Nowy artefakt w Gablocie”.
+3. **Bez grafiki broni** (broń w ręce, sprzęt na postaci, ogłoszenia i ekran Gabloty – tylko w Godocie).
+4. Profil v19 (440 B) z migracją z każdej starszej wersji; zapis budowy `PBRUN19` – **budowa w toku sprzed
+   aktualizacji przepada**, profil zostaje.
+
+## v0.22.1 – 2026-11-05
+
+### Poprawki (Godot)
+1. **Obrót ekranu przy telefonie (#74)** – powiadomienia od razu przechodzą z dołu ekranu (pion) do kolumny obok
+   telefonu (poziom) i z powrotem.
+2. **Składak (#74)** – na rozłożonym ekranie w poziomie większy HUD i dziennik (jak na dużym ekranie), telefon bez zmian.
+3. **Szkolenia z rozmowy (#74)** – gdy Marek proponuje wybór w drzewku, „Pokaż Szkolenia” otwiera od razu stronę Drzewko.
+4. **Wybór zawodu w pionie (#74)** – „Szczegóły” także klawiszem I (drugi raz: Statystyki), pełna karta zostaje po
+   powrocie ze Statystyk i Inwestora; po obrocie do poziomu B od razu wraca.
+5. **Filtr „Kwas” (#75)** – łagodniejszy: mniejsze i wolniejsze fale, wolniej zmieniająca się tęcza, mniejsze nasycenie.
+   Siłę efektu i ograniczony ruch dalej ustawisz w Ustawienia > Filtr ekranu.
+
+### Nowe (Godot): drzewko Szkoleń w nowym układzie (#70)
+U góry przełącznik gałęzi (Fach / BHP / Logistyka) z pniem, pod nim karta wybranej gałęzi: dwa węzły, w każdym dwie
+opcje obok siebie z efektem i ceną; stan węzła wprost – „wybierz 1 z 2”, „Wybrane!”, „od pnia N”. Zamiast trzech ciasnych
+kolumn z ucinanymi nazwami. Klawiatura bez zmian (↑/↓ opcja, ←/→ gałąź, Spacja wybiera).
+
+## v0.22.0 – 2026-11-05 (pierwsza wersja serii 0.22)
+
+### Nowe (Godot): projekt A – wygląd i przepływ ekranów
+### In English
+The Godot version now leads you from one build to the next. After every build your site manager Marek texts you:
+how it went, how much experience you earned, what you can buy right now (**one tap**), the reward for the next
+handover and quick replies – Next build, Next build (NG+) after a win, Build details, Menu. After a win the house
+schedule comes first, now with a QR code to planbudowlany.online. The title screen is grouped (Daily, Progress) and
+shows a **Your progress** card with a Spend experience button. Trade select is a grid of tiles with full names; the
+card shows the power and the weapon as separate blocks and the stats in words ("Strength 5 · +2 weapon damage").
+Only one notification at a time, placed where it hides nothing; the phone tab bar only where tabs work; the HUD
+labels its icons; colour legends in messages and on the site card; settings are grouped also in landscape. Foldables
+and tablets get the portrait layout with a centred phone. Game rules and balance are unchanged; GBA is unchanged.
+
+### Najważniejsze
+Tylko wersja Godot; logika gry, balans i ceny bez zmian (test złoty bez zmian), GBA bez zmian.
+1. **Między budowami rozmowa z Kierownikiem Markiem** – zamiast SMS-a końca budowy, podsumowania i planszy końcowej:
+   wynik, zdobyte doświadczenie, oferta „Kup: …” jednym stuknięciem (rzeczy bez wyboru; węzeł drzewka → „Pokaż
+   Szkolenia”), po zakupie Marek odpisuje i proponuje następną rzecz; „Do tego:” zbiera to, co pokazywały banery
+   (rekordy, nagroda za odbiór, sekretne zlecenia, odznaki, nowe poziomy, kontrakty, filtry, wątki fabuły); karta
+   „Za kolejny odbiór”; odpowiedzi: Kolejna budowa (prosto do mapy kariery / wyboru zawodu, także po budowie dnia
+   i tygodnia), Kolejna budowa (NG+) po wygranej, Szczegóły budowy (podsumowanie), Menu. Nowy rdzeń `Spend`
+   (szybki zakup, wybór w drzewku, następna nagroda) z testami.
+2. **Harmonogram domu po wygranej** z kodem QR planbudowlany.online (2x, ostre piksele), bez dubla „Zaplanuj swoją
+   budowę” (#71).
+3. **Tytuł** – Nowa budowa, grupa Dziennie (Codzienna | Tydzień), grupa Postęp (Telefon kierownika, Jak grać) i karta
+   „Twoje postępy” (doświadczenie, budowy, „Wydaj doświadczenie” – fioletowy, gdy stać na najbliższy zakup).
+4. **Wybór zawodu** – siatka kafli z pełnymi nazwami (zablokowane: sylwetka, kłódka, warunek), moc i broń jako osobne
+   bloki, statystyki słowami z prawdziwym wzorem, szary przycisk startu z warunkiem („Za 5. wygraną”); w pionie krótka
+   karta + „Szczegóły”, na komputerze siatka i pełna karta obok siebie.
+5. **Podsumowanie budowy** – wynik i doświadczenie na górze, bez „10/48” i „Wyżej/Niżej” (przewijanie palcem).
+6. **Mniej zasłaniania** – najwyżej jedno powiadomienie naraz (na tytule pod statystykami, przy telefonie nad
+   przyciskami), pasek zakładek telefonu tylko przy zakładkach, zakładka „Szkolenia” zamiast „Koszty” w Telefonie
+   kierownika.
+7. **HUD i legenda** – podpisy przy ikonach (Termos, pogoda, mechanika aktu, Moc), gdy się mieszczą; legenda kolorów
+   (premia / zagrożenie / ścieżka) w wiadomościach i na karcie placu; ustawienia w grupach także w poziomie.
+8. **Składak i tablet** – dotykowy ekran prawie kwadratowy dostaje układ pionowy (skala od krótszego boku), telefon
+   wyśrodkowany, najwyżej 480 px UI szerokości.
+9. **Mapa (#67–#69)** – czytelne schody w dół (stopnie, ciemny otwór; zamknięte z kłódką w Akcie 0), dziennik na
+   własnym pasku pod mapą, w pionie HUD skraca trudność zamiast ucinać nazwę etapu.
+10. **Po przeglądzie** – Szkolenia otwarte z rozmowy wracają do rozmowy (NG+ zostaje), Marek podaje wynik budowy
+   (budowa dnia / tygodnia: najlepszy wynik), pełna lista „Do tego:” w podsumowaniu, podpisy HUD ustępują wydarzeniu
+   i zapowiedzi ciosu bossa.
+
 ## v0.21.54 – 2026-10-04 (ostatnia wersja serii 0.21)
 Ostatnia spójna wersja serii 0.21: zamyka wszystko od pierwszego wydania v0.21.37 (GBA + Godot, iOS i Android).
 Kolejne iteracje rozwijamy jako **0.22**.

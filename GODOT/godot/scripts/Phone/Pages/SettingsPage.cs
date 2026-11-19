@@ -195,12 +195,29 @@ public sealed class SettingsPage : PhonePage
         var rh = PhonePainter.RowH;
         if (3 * rh + _rows.Count * rh + 4 * 8 + 3 * 4 > p.Bottom - p.Top) // za mało miejsca (poziomo w budowie): jedna przewijana lista
         {
-            var window = Math.Max(3, (int)((p.Bottom - p.Top - 8) / rh));
-            if (_sel < _top) _top = _sel;
-            if (_sel >= _top + window) _top = _sel - window + 1;
-            _top = Math.Clamp(_top, 0, Math.Max(0, _rows.Count - window));
-            var shown = Math.Min(window, _rows.Count);
-            DrawRows(p, p.Card(p.Top, shown), _top, shown);
+            // v0.22.0 (UX A): także tu nagłówki grup (Dźwięk / Sterowanie / Gra) – wpis -1..-3 = nagłówek, inaczej wiersz
+            var entries = new List<int> { -1, 0, 1, 2, -2, 3, 4, 5, -3 };
+            for (var i = 6; i < _rows.Count; i++) entries.Add(i);
+            var window = Math.Max(3, (int)((p.Bottom - p.Top - 8) / rh) - 1);
+            var at = entries.IndexOf(_sel);
+            if (at - 1 < _top) _top = Math.Max(0, at - 1); // nagłówek nad pierwszym wierszem grupy też widoczny
+            if (at >= _top + window) _top = at - window + 1;
+            _top = Math.Clamp(_top, 0, Math.Max(0, entries.Count - window));
+            var sy = p.Top;
+            var end = Math.Min(entries.Count, _top + window);
+            for (var k = _top; k < end;)
+            {
+                if (entries[k] < 0)
+                {
+                    sy = p.Section(sy, entries[k] == -1 ? Loc.T("dzwiek") : entries[k] == -2 ? Loc.T("sterowanie_2") : Loc.T("gra"));
+                    k++;
+                    continue;
+                }
+                var from = entries[k];
+                var count = 0;
+                while (k < end && entries[k] >= 0 && (count == 0 || entries[k] == from + count)) { count++; k++; }
+                sy = Group(p, sy, from, count) + 4;
+            }
             return;
         }
         var y = p.Section(p.Top, Loc.T("dzwiek"));

@@ -1,0 +1,102 @@
+<style>
+  .ph{width:300px;height:620px;background:#f6f5f8;border-radius:22px;border:6px solid #1d1b2e;overflow:hidden;font:12px/1.35 ui-monospace,Menlo,monospace;color:#1d1b2e;display:flex;flex-direction:column;margin:0 auto}
+  .top{background:linear-gradient(#7a5cff,#5a3fe0);color:#fff;padding:10px 10px 8px}
+  .top b{display:block;text-align:center;margin-bottom:6px}
+  .strip{display:flex;gap:6px;overflow:hidden}
+  .por{flex:0 0 78px;background:rgba(255,255,255,.14);border-radius:10px;padding:6px 4px;text-align:center;font-size:10px}
+  .por.sel{background:#fff;color:#6b4eff;outline:2px solid #ffb020}
+  .face{width:34px;height:34px;margin:0 auto 4px;border-radius:8px;background:#ffd2a6;border:2px solid #1d1b2e}
+  .lock .face{background:#3a3550}
+  .lock{opacity:.8}
+  .card{background:#fff;margin:8px;border-radius:12px;padding:10px;flex:1}
+  .card h4{margin:0 0 2px;font-size:16px}
+  .muted{color:#77738a}
+  .wpn{display:flex;gap:8px;align-items:center;background:#f0edff;border-radius:8px;padding:6px;margin:8px 0}
+  .ico{width:28px;height:28px;border-radius:6px;background:#c94f2c;flex:0 0 28px}
+  .stat{display:flex;justify-content:space-between;border-bottom:1px solid #eee;padding:2px 0}
+  .btns{display:flex;gap:6px;padding:8px}
+  .btn{flex:1;text-align:center;padding:10px 0;border-radius:10px;background:#fff;color:#6b4eff;font-weight:bold}
+  .btn.p{background:#6b4eff;color:#fff}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px}
+  .tile{background:#fff;border-radius:10px;padding:6px 4px;text-align:center;font-size:10px;min-height:66px}
+  .tile.sel{outline:2px solid #6b4eff}
+  .tile.lock{background:#ebe8f2;color:#77738a}
+  .row{display:flex;gap:8px;align-items:center;background:#fff;border-radius:10px;margin:4px 8px;padding:6px}
+  .row .face{margin:0;width:30px;height:30px}
+  .row.sel{outline:2px solid #6b4eff}
+  .row.lock{background:#ebe8f2;color:#77738a}
+</style>
+
+<h2>Wybór zawodu: jak pokazać pełne nazwy?</h2>
+<p class="subtitle">Dziś pasek 12 małych portretów, nazwy ucinane („Kier..”, „Hyd..”). Każdy wariant ma pełne nazwy i broń zawodu jako osobny blok, żeby było widać, czym się gra. Kliknij wariant, który Ci pasuje.</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="ph">
+        <div class="top"><b>Wybierz zawód</b>
+          <div class="strip">
+            <div class="por"><div class="face"></div>Kierownik<br>budowy</div>
+            <div class="por sel"><div class="face"></div>Murarz<br>&nbsp;</div>
+            <div class="por"><div class="face"></div>Cieśla-<br>dekarz</div>
+            <div class="por lock"><div class="face"></div>Spawacz<br>5 wygr.</div>
+          </div>
+        </div>
+        <div class="card">
+          <h4>Murarz</h4><div class="muted">Twardy jak pustak. · Mistrz 6</div>
+          <div class="wpn"><div class="ico"></div><div><b>Kielnia</b> · wręcz, zasięg 1<br><span class="muted">7–10 obrażeń, kryt 17%</span></div></div>
+          <div class="wpn" style="background:#fff4e0"><div class="ico" style="background:#ffb020"></div><div><b>Moc: Mur na zakładkę</b><br><span class="muted">Stoi 3 tury, odnowienie +1 t.</span></div></div>
+          <div class="stat"><span>Zdrowie</span><b>34 (+4 kask)</b></div>
+          <div class="stat"><span>Siła · obrażenia wręcz</span><b>5</b></div>
+          <div class="stat"><span>Szczęście · lepszy sprzęt</span><b>+3</b></div>
+        </div>
+        <div class="btns"><div class="btn">Wróć</div><div class="btn p">Start budowy</div></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>A · Większe portrety, przewijane</h3><p>Najmniejsza zmiana. 3–4 zawody widoczne naraz, nazwa w dwóch linijkach, resztę przesuwasz palcem. Zablokowane z warunkiem pod portretem.</p></div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="ph">
+        <div class="top"><b>Wybierz zawód</b></div>
+        <div class="grid">
+          <div class="tile"><div class="face"></div>Kierownik budowy</div>
+          <div class="tile sel"><div class="face"></div>Murarz</div>
+          <div class="tile"><div class="face"></div>Cieśla-dekarz</div>
+          <div class="tile"><div class="face"></div>Elektryk</div>
+          <div class="tile"><div class="face"></div>Hydraulik</div>
+          <div class="tile"><div class="face"></div>Glazurnik</div>
+          <div class="tile lock"><div class="face"></div>Dekarz<br>5 wygr.</div>
+          <div class="tile lock"><div class="face"></div>Tynkarz<br>7 wygr.</div>
+          <div class="tile lock"><div class="face"></div>Sekret<br>?</div>
+        </div>
+        <div class="card" style="flex:0">
+          <b>Murarz</b> · Kielnia 7–10 · Moc: Mur na zakładkę
+          <div class="muted">Stuknij jeszcze raz: pełna karta</div>
+        </div>
+        <div style="flex:1"></div>
+        <div class="btns"><div class="btn">Wróć</div><div class="btn p">Start budowy</div></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>B · Siatka kafli 3×4</h3><p>Wszystkie zawody naraz, pełne nazwy. Widać od razu, ile jest do odblokowania. Szczegóły w drugim kroku (stuknięcie albo osobna karta).</p></div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="ph">
+        <div class="top"><b>Wybierz zawód</b></div>
+        <div class="row"><div class="face"></div><div><b>Kierownik budowy</b><br><span class="muted">Dziennik · zasięg 2</span></div></div>
+        <div class="row sel"><div class="face"></div><div><b>Murarz</b><br><span class="muted">Kielnia · wręcz · Mur na zakładkę</span></div></div>
+        <div class="row"><div class="face"></div><div><b>Cieśla-dekarz</b><br><span class="muted">Gwoździarka · z daleka</span></div></div>
+        <div class="row"><div class="face"></div><div><b>Elektryk</b><br><span class="muted">Próbnik · porażenie</span></div></div>
+        <div class="row"><div class="face"></div><div><b>Hydraulik</b><br><span class="muted">Klucz nastawny</span></div></div>
+        <div class="row lock"><div class="face"></div><div><b>Spawacz</b><br>Odblokuj: wygraj 5 budów</div></div>
+        <div class="row lock"><div class="face"></div><div><b>Operator koparki</b><br>Odblokuj: Akt 0 (8 wygranych)</div></div>
+        <div style="flex:1"></div>
+        <div class="btns"><div class="btn">Statystyki</div><div class="btn p">Start budowy</div></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>C · Lista wierszy</h3><p>Najbardziej „appkowa”: nazwa, broń i jej styl w jednym wierszu, warunek odblokowania pełnym zdaniem. Mniej miejsca na portret i klimat.</p></div>
+  </div>
+</div>

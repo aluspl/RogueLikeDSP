@@ -203,3 +203,9 @@ Szkic ekranu (1280×720): telefon w pionie na środku, mapa etapu w tle rozmyta 
   `tools/ios_deploy.sh` – build, podpis i instalacja na iPhonie jednym poleceniem.
 - Dalej: 2.5D i światło (kamień 4), zrzut ekranu z urządzenia w automatycznych testach.
 
+### v0.22.0 – projekt A: przepływ ekranów (zrobione, 2026-11-05)
+- Koniec budowy: po wygranej harmonogram domu (kod QR), potem rozmowa z Kierownikiem Markiem (`BetweenRunsScreen`,
+  `BetweenRunsPage`): zakup jednym stuknięciem (`Spend` w rdzeniu), „Do tego:” zamiast banerów, kolejna budowa / NG+ /
+  szczegóły (podsumowanie) / menu. Plansza końcowa (`EndView`) i SMS końca budowy usunięte.
+- Tytuł w grupach z kartą „Twoje postępy”, wybór zawodu jako siatka kafli, jeden baner naraz, `Layout.Wide` /
+  `NearSquare` dla składaków i tabletów. Plan: `docs/superpowers/plans/2026-10-23-ux-pakiet-a.md`.

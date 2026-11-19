@@ -5,10 +5,10 @@ using LifeLike.Game.Phone.ProfileTabs;
 
 namespace LifeLike.Game.Screens;
 
-/// <summary>Telefon profilu na tle tytułu (run_shop na GBA): Odznaki/Zlecenia/Pamiątki, Katalog, Osiedle, Zespół, Koszty = Szkolenia.</summary>
+/// <summary>Telefon profilu na tle tytułu (run_shop na GBA): Odznaki/Zlecenia/Pamiątki, Katalog, Osiedle, Zespół, Szkolenia.</summary>
 public sealed class ProfileScreen : Screen
 {
-    private static string[] TabLabels => [Loc.T("odznaki_2"), Loc.T("katalog"), Loc.T("osiedle"), Loc.T("zespol"), Loc.T("koszty")];
+    private static string[] TabLabels => [Loc.T("odznaki_2"), Loc.T("katalog"), Loc.T("osiedle"), Loc.T("zespol"), Loc.T("szkolenia")]; // v0.22.0 (UX A): „Szkolenia” zamiast „Koszty”
     private int _tab;
 
     public ProfileScreen(App app) : base(app)
@@ -19,12 +19,18 @@ public sealed class ProfileScreen : Screen
     public override bool UsesPhone => true;
     public override string Music => "title";
 
-    public void Open(int tab = 0, bool instant = false)
+    /// <summary>back = ekran, do którego wraca telefon (v0.22.0, UX A: rozmowa między budowami); null = tytuł.</summary>
+    public void Open(int tab = 0, bool instant = false, Screen back = null, int trainingPage = 0)
     {
         _tab = tab;
-        S.Note = "";
+        _back = back;
+        _trainingPage = trainingPage;
+        if (back is null) S.Note = ""; // notatka końca budowy (sekrety, odznaki) zostaje dla rozmowy
         Flow.Go(this, instant);
     }
+
+    private Screen _back;
+    private int _trainingPage; // v0.22.1 (#74): strona Szkoleń na start (Drzewko z oferty w rozmowie)
 
     public override void Enter(bool instant)
     {
@@ -38,7 +44,7 @@ public sealed class ProfileScreen : Screen
             new CatalogTab(d, p),
             new EstateTab(d, p, S.Save),
             new TeamTab(d, p),
-            new TrainingTab(d, p, S.Save),
+            new TrainingTab(d, p, S.Save) { Page = _trainingPage },
         ];
         N.Phone.OpenTabs(tabs, TabLabels, _tab, instant);
     }
@@ -47,8 +53,13 @@ public sealed class ProfileScreen : Screen
     {
         if (N.Phone.HandleInput(e)) return true;
         if (!e.Is(GameAction.Profile | GameAction.B | GameAction.Cancel | GameAction.Select | GameAction.Shop | GameAction.Start)) return false;
-        S.Note = "";
         N.Phone.Close();
+        if (_back is not null)
+        {
+            Flow.Go(_back);
+            return true;
+        }
+        S.Note = "";
         Flow.Title.Open();
         return true;
     }

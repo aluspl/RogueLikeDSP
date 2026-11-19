@@ -29,8 +29,7 @@ public sealed class ScreenFlow
         Schedule = new ScheduleScreen(app);
         Hurtownia = new HurtowniaScreen(app);
         Offer = new OfferScreen(app);
-        EndMessage = new EndMessageScreen(app);
-        End = new EndScreen(app);
+        BetweenRuns = new BetweenRunsScreen(app); // v0.22.0 (UX A): zamiast SMS-a końca budowy i planszy końcowej
         Settings = new SettingsScreen(app);
         Brigade = new BrigadeScreen(app);
         Investor = new InvestorScreen(app);
@@ -45,6 +44,8 @@ public sealed class ScreenFlow
         Trait = new TraitScreen(app);
         ToolOffer = new ToolOfferScreen(app);
         Career = new CareerScreen(app);
+        Character = new CharacterScreen(app);
+        Pause = new PauseScreen(app);
     }
 
     public Screen Current { get; private set; }
@@ -73,8 +74,7 @@ public sealed class ScreenFlow
     public ScheduleScreen Schedule { get; }
     public HurtowniaScreen Hurtownia { get; }
     public OfferScreen Offer { get; }
-    public EndMessageScreen EndMessage { get; }
-    public EndScreen End { get; }
+    public BetweenRunsScreen BetweenRuns { get; }
     public SettingsScreen Settings { get; }
     public BrigadeScreen Brigade { get; }
     public InvestorScreen Investor { get; }
@@ -93,6 +93,10 @@ public sealed class ScreenFlow
     public ToolOfferScreen ToolOffer { get; }
     /// <summary>v0.21.52 cz. d (#47): mapa kariery przed wyborem zawodu.</summary>
     public CareerScreen Career { get; }
+    /// <summary>v0.23.2 (UI 2): Postać – sprzęt, kluczowe liczby i plecak.</summary>
+    public CharacterScreen Character { get; }
+    /// <summary>v0.23.2 (UI 2): pauza (Wznów, Postać, Budowa, Ustawienia, Wyjdź do menu).</summary>
+    public PauseScreen Pause { get; }
 
     /// <summary>Przejście na ekran; instant = bez animacji (telefon od razu na miejscu, tło od razu rozmyte).</summary>
     public void Go(Screen next, bool instant = false)
@@ -105,13 +109,13 @@ public sealed class ScreenFlow
         n.Hud.Visible = next.InRun;
         n.Touch.Visible = Layout.Touch && next == Game;
         n.Settings.Visible = next.ShowsSettings;
+        n.Settings.Pause = next.InRun; // v0.23.2: na mapie przycisk pauzy zamiast klucza
         n.Coach.Visible = false;   // samouczek: pokazuje go ekran-właściciel (Coach.Update)
         n.TitleView.Visible = (next.Views & ViewSet.Title) != 0;
         n.ClassSelectView.Visible = (next.Views & ViewSet.ClassSelect) != 0;
-        n.EndView.Visible = (next.Views & ViewSet.End) != 0;
         n.PrologueView.Visible = (next.Views & ViewSet.Prologue) != 0;
         n.Backdrop.SetOn(next.UsesPhone, instant);
-        n.SetBannerMode(next.UsesPhone, next.InRun);
+        n.SetBannerMode(next.BannerSpot, next.UsesPhone, next.InRun);
         if (!next.UsesPhone) n.Phone.Close();
         n.Hud.ShowHint(null);
         Sfx.Music(next.Music);

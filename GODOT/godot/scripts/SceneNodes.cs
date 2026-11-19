@@ -33,11 +33,9 @@ public sealed class SceneNodes
         root.AddChild(screens);
         TitleView = new TitleView { Visible = false, Version = version };
         ClassSelectView = new ClassSelectView { Visible = false };
-        EndView = new EndView { Visible = false };
         PrologueView = new PrologueView { Visible = false };
         screens.AddChild(TitleView);
         screens.AddChild(ClassSelectView);
-        screens.AddChild(EndView);
         screens.AddChild(PrologueView);
 
         var phoneLayer = new CanvasLayer { Layer = 3 };
@@ -50,6 +48,11 @@ public sealed class SceneNodes
         Banners = new PushBanners();
         BannerLayer = new ScaledLayer { Layer = 4 };
         root.AddChild(BannerLayer);
+        DogBubble = new DogBubble { Visible = false }; // v0.23.0: dymek Kawki nad mapą (pod ogłoszeniami)
+        BannerLayer.Root.AddChild(DogBubble);
+        DogBubble.Bind(World);
+        Announce = new AnnounceView { Visible = false }; // v0.23.0: ogłoszenia „z przytupem” (pod banerami)
+        BannerLayer.Root.AddChild(Announce);
         BannerLayer.Root.AddChild(Banners);
         Settings = new SettingsButton { Visible = false };
         BannerLayer.Root.AddChild(Settings);
@@ -64,13 +67,15 @@ public sealed class SceneNodes
     }
 
     /// <summary>
-    /// Banery: przy telefonie wąska kolumna obok niego (pionowo: na górze aplikacji), na mapie w prawym górnym rogu
-    /// pod paskiem HUD.
+    /// Banery: przy telefonie wąska kolumna obok niego, na mapie w prawym górnym rogu pod paskiem HUD.
+    /// v0.22.0 (UX A): telefon na cały ekran – od dołu nad przyciskami; tytuł – pod statystykami i kluczem.
     /// </summary>
-    public void SetBannerMode(bool compact, bool underHud)
+    public void SetBannerMode(BannerSpot spot, bool compact, bool underHud)
     {
-        Banners.Compact = compact && !PhoneView.Full;
-        Banners.TopInset = Layout.SafeTop + (underHud && !compact ? Mathf.Ceil((HudTop.Height + 1) * Hud.UiScale) + 4 : 6);
+        Banners.OnPhone = compact;
+        Banners.Spot = spot;
+        Banners.TopInset = spot == BannerSpot.BelowTitleStats ? TitleView.StatsBottom + 4
+            : Layout.SafeTop + (underHud && !compact ? Mathf.Ceil((HudTop.Height + 1) * Hud.UiScale) + 4 : 6);
     }
 
     public WorldView World { get; }
@@ -79,11 +84,12 @@ public sealed class SceneNodes
     public HudLayer Hud { get; }
     public TitleView TitleView { get; }
     public ClassSelectView ClassSelectView { get; }
-    public EndView EndView { get; }
     public PrologueView PrologueView { get; }
     public Backdrop Backdrop { get; }
     public PhoneView Phone { get; }
     public PushBanners Banners { get; }
+    public AnnounceView Announce { get; }
+    public DogBubble DogBubble { get; }
     public CoachView Coach { get; }
     public ScaledLayer BannerLayer { get; }
     public ScreenFilter Filter { get; }

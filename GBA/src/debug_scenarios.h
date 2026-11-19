@@ -56,6 +56,9 @@
 //       (kłódka, HUD 0/3); D-pad w prawo zbiera dokumenty (banery), komplet otwiera schody, wejście = etap zaliczony
 //  38 - Akt 0, boss Decyzja odmowna obok bohatera (w prawo), HP tuż nad połową: A = druga faza Odwołanie (baner, +HP,
 //       wezwanie Zaginionego wniosku), dalej Stempel ODMOWA; L+R+SELECT = pokonanie (Pozwolenie wydane, premia za akt)
+//  78 - v0.23.2 plecak: 4 przedmioty, w prawo paczka (karta: Załóż / Do plecaka / Zostaw), w lewo narzędzie; SELECT ->
+//       Sprzęt -> A = Plecak (akcje pod A)
+//  79 - v0.23.2 plecak + boss aktu I: L+R+SELECT = pokonanie, potem Hurtownia (L/R: Skup, PSZOK, Plecak)
 //  39 - samouczek menu na profilu po pierwszej wygranej (tryb inwestora odblokowany): wszystkie dymki tytułu
 //       i wyboru zawodu (A dalej, START przy statystykach); B na tytule -> Jak grać -> "pokaż samouczek jeszcze raz"
 //  40 - dymki nowości: Respekt, codzienna budowa, Akt 0 (tytuł), tryb inwestora i nowe zawody (wybór zawodu)
@@ -135,6 +138,8 @@
 //  74 - Dom z poddaszem: Okna dachowe, boss Zerwana połać obok, porywy co 4 tury
 //  75 - Kamienica: Odbiór konserwatora, boss Pęknięty strop obok (kafle kamienicy, parkiet i sztukateria)
 //  76 - v0.21.53 filtry ekranu: wszystkie odblokowane, każde uruchomienie z zapisem (bez --fresh) = kolejny filtr
+//  77 - v0.23.0 Kawka: Fundamenty, Kawka na błocie tuż w prawo od bohatera; D-pad w prawo = głaskanie (+3 dośw.,
+//       banery z oceną postępów), drugi raz = Kawka robi miejsce (zamiana pól)
 //       (pierwsze: Noir, ...; Wygląd na wyborze zawodu, SELECT); plac: czerwone pola wybuchu, dwie elity, problemy
 //       mokry / zapylony / zmrożony, bohater ranny, zatruty i mokry
 #include "core.h"
@@ -201,7 +206,7 @@ namespace debug_scenario
         for(int i = 0; i < data::upgrades_count; ++i)
             if(data::upgrades[i].effect == core::upgrade_effect::luck || data::upgrades[i].effect == core::upgrade_effect::craft)
                 p.levels[i] = uint8_t(data::upgrades[i].levels);
-        p.tools = uint8_t((1 << data::tools_count) - 1);
+        p.tools = (uint64_t(1) << data::tools_count) - 1;
         if(scenario == 10)
         {
             p.badges = uint16_t((1 << data::badge_bez_usterek) | (1 << data::badge_seryjny) | (1 << data::badge_kolekcjoner)
@@ -1054,6 +1059,56 @@ namespace debug_scenario
                 g.hero.hp = int16_t(g.hero.max_hp / 3);
                 g.apply_status(core::status_effect::poison, 9);
                 g.soak_hero();
+                break;
+            }
+            case 78:   // v0.23.2: plecak - 4 przedmioty, w prawo paczka z lepszym kaskiem, w lewo narzędzie (karta 3 wyborów)
+            case 79:   // v0.23.2: plecak + boss aktu I obok (L+R+SELECT = pokonanie -> Hurtownia: L/R Skup, PSZOK, Plecak)
+            {
+                if(scenario == 79)
+                {
+                    int boss_stage = F;
+                    while(data::stages[boss_stage].boss < 0) ++boss_stage;
+                    g.start_stage(boss_stage);
+                }
+                g.pickups_count = 0;
+                g.equip(0, 1, 1);
+                g.equip(2, 1, 0);
+                int lom = -1, axe = -1;
+                for(int t = 0; t < data::tools_count; ++t)
+                {
+                    const int w = data::tools[t].weapon;
+                    if(data::weapons[w].master || w == g.cdef().weapon) continue;
+                    if(lom < 0) lom = t; else if(axe < 0) axe = t;
+                }
+                g.backpack[0] = core::bp_weapon_item(data::tools[lom].weapon, 2, 1, 1);
+                g.backpack[1] = core::bp_gear_item(0, 2, 3);
+                g.backpack[2] = core::bp_gear_item(1, 0, 1);
+                g.backpack[3] = core::bp_gear_item(2, 2, 2);
+                g.mats[0] = 2; g.mats[1] = 3; g.mats[2] = 1;
+                if(scenario == 78)
+                {
+                    g.enemies_count = 0;
+                    if(g.lv.at(g.hero.x + 1, g.hero.y) == core::tile::floor)
+                        g.pickups[g.pickups_count++] = { int8_t(g.hero.x + 1), g.hero.y, core::gear_box, true, uint8_t(0 * 3 + 2), 3 };
+                    if(g.lv.at(g.hero.x - 1, g.hero.y) == core::tile::floor)
+                        g.pickups[g.pickups_count++] = { int8_t(g.hero.x - 1), g.hero.y, core::tool, true, uint8_t(axe), 2, 0, 1 };
+                }
+                break;
+            }
+            case 77:   // v0.23.0: Kawka - na błocie obok bohatera (w prawo)
+            {
+                g.enemies_count = 0;
+                int best = 999, hx = g.hero.x, hy = g.hero.y;
+                for(int y = 1; y < core::map_h - 1; ++y)   // najbliższe błoto z wolnym polem po lewej
+                    for(int x = 2; x < core::map_w - 1; ++x)
+                        if(g.mud(x, y) && g.lv.at(x - 1, y) == core::tile::floor && ! g.mud(x - 1, y) && core::cheb(x, y, hx, hy) < best)
+                        {
+                            best = core::cheb(x, y, hx, hy);
+                            g.hero.x = int8_t(x - 1); g.hero.y = int8_t(y);
+                            g.dog_x = int8_t(x); g.dog_y = int8_t(y);
+                        }
+                if(best < 999) g.dog_flags = uint8_t(core::game::dog_on | core::game::dog_spawned);
+                g.update_fov();
                 break;
             }
             case 73:   // bliźniak: druga połowa z problemami z pierwszej (3 zostawione), ta sama pogoda

@@ -177,6 +177,8 @@ public sealed class DemoStaging
         }
     }
 
+    private bool FreeFloor(int x, int y) => G.Lv.At(x, y) == Tile.Floor && !G.Occupied(x, y);
+
     /// <summary>Problem o identyfikatorze id na polu (bohater + dx, dy), przebudzony; hp > 0 = ustawione HP.</summary>
     private void Place(string id, int dx, int dy, int hp, int stun)
     {
@@ -201,12 +203,21 @@ public sealed class DemoStaging
         g.EnemiesCount = 0;
         g.PickupsCount = 0;
         Place("mostek", 0, 3, 0, 0);
-        Place("woda", 1, 0, 1, 4);
-        Place("pustak", -1, 0, 1, 4);
+        // v0.23.0: kierunek z wolną podłogą po obu stronach (schody / znajdźki obok bohatera psuły pokaz po zmianie puli dropów)
+        var (dx, dy) = (1, 0);
+        foreach (var (ax, ay) in new[] { (1, 0), (0, 1), (0, -1), (-1, 0) })
+        {
+            if (!FreeFloor(g.Hero.X + ax, g.Hero.Y + ay) || !FreeFloor(g.Hero.X - ax, g.Hero.Y - ay)) continue;
+            (dx, dy) = (ax, ay);
+            break;
+        }
+        Place("woda", dx, dy, 1, 4);
         g.UpdateFov();
         _app.Nodes.World.Sync();
-        _app.AfterAction(g.PlayerMove(1, 0));    // podział
-        _app.AfterAction(g.PlayerMove(-1, 0));   // wybuch za turę + strzał Mostka
+        _app.AfterAction(g.PlayerMove(dx, dy));    // podział
+        Place("pustak", -dx, -dy, 1, 4);          // dopiero teraz: inaczej pomocnik z brygady potrafi go zbić w turze podziału
+        g.UpdateFov();
+        _app.AfterAction(g.PlayerMove(-dx, -dy));  // wybuch za turę + strzał Mostka
     }
 
     /// <summary>
@@ -395,6 +406,76 @@ public sealed class DemoStaging
         _app.AfterAction(g.PlayerMove(1, 0));
     }
 
+    /// <summary>
+    /// v0.22.0 (#67-#69): etap aktu I (Mury parteru), schody w przejściu poziomego muru dwa wiersze nad bohaterem (mur po
+    /// obu stronach, pusto za nim), obok problem z dużym HP - dwa ciosy wypełniają dziennik nad mapą.
+    /// </summary>
+    public void StairsShowcase(int stage)
+    {
+        var g = G;
+        g.StartStage(stage);
+        g.EnemiesCount = 0;
+        g.PickupsCount = 0;
+        ClearAround(-4, -5, 4, 2);
+        int hx = g.Hero.X, hy = g.Hero.Y;
+        for (var x = hx - 4; x <= hx + 4; x++)
+        {
+            if (x >= 1 && x < Level.W - 1 && hy - 2 >= 1) g.Lv[x, hy - 2] = Tile.Wall;
+        }
+        g.Lv[g.StairsX, g.StairsY] = Tile.Floor;
+        g.StairsX = hx + 1;
+        g.StairsY = hy - 2;
+        g.Lv[g.StairsX, g.StairsY] = Tile.Stairs;
+        Place("przeciek", -1, 0, 0, 40);
+        if (g.EnemiesCount > 0) g.Enemies[0].Hp = g.Enemies[0].MaxHp = 400;
+        g.UpdateFov();
+        _app.Nodes.World.Sync();
+        for (var k = 0; k < 3; k++)
+        {
+            g.Hero.Hp = g.Hero.MaxHp;
+            _app.AfterAction(g.PlayerMove(-1, 0));
+        }
+    }
+
+    /// <summary>
+    /// v0.23.0: boczne przejście w murze (zgłoszenie testera) – pionowy mur dwa pola na lewo od bohatera z przejściem
+    /// w jego wierszu i drugi, dwa pola na prawo, z przejściem wiersz niżej; poziomy mur trzy wiersze pod bohaterem.
+    /// </summary>
+    public void WallGapShowcase(int stage)
+    {
+        var g = G;
+        g.StartStage(stage);
+        g.EnemiesCount = 0;
+        g.PickupsCount = 0;
+        g.KeyHolder = -1;
+        ClearAround(-6, -5, 6, 4);
+        int hx = g.Hero.X, hy = g.Hero.Y;
+        void Wall(int x, int y)
+        {
+            if (x >= 1 && y >= 1 && x < Level.W - 1 && y < Level.H - 1 && (x != g.StairsX || y != g.StairsY)) g.Lv[x, y] = Tile.Wall;
+        }
+        for (var y = hy - 5; y <= hy + 4; y++)
+        {
+            if (y != hy) Wall(hx - 2, y);
+            if (y != hy + 1) Wall(hx + 3, y);
+        }
+        for (var x = hx - 6; x <= hx + 6; x++)
+        {
+            if (x != hx - 4 && x != hx + 1) Wall(x, hy + 3);
+        }
+        g.UpdateFov();
+        for (var y = hy - 6; y <= hy + 5; y++)
+        {
+            for (var x = hx - 7; x <= hx + 7; x++)
+            {
+                if (Level.In(x, y) && g.Fov[y * Level.W + x] == Sight.Unknown) g.Fov[y * Level.W + x] = Sight.Remembered;
+            }
+        }
+        _app.Session.ResetWatch();
+        _app.Nodes.World.Sync();
+        _app.Refresh();
+    }
+
     /// <summary>v0.21.50 cz. 3: pola wydarzeń w prawo od bohatera (po identyfikatorze z game.json), pusto wokół.</summary>
     public void EventTiles(params string[] ids)
     {
@@ -414,15 +495,18 @@ public sealed class DemoStaging
     }
 
     /// <summary>Etap z magazynem danego rodzaju (0 pęknięta ściana, 1 drzwi), ściana w prawo; bohater przed nią.</summary>
-    public void SecretStage(int kind)
+    public void SecretStage(int kind) => SecretStage(kind, G.D.PreludeStages + 1, 0);
+
+    /// <summary>v0.23.1: magazyn na wybranym etapie (wygląd muru aktu) i z kierunku dir (3 – w murze nad bohaterem, lico widać).</summary>
+    public void SecretStage(int kind, int stage, int dir)
     {
         var g = G;
         var bas = g.RunSeed;
         for (uint k = 1; k < 4000; k++)
         {
             g.RunSeed = bas + k * 7919u;
-            g.StartStage(g.D.PreludeStages + 1);
-            if (g.HasSecret && g.SecretKind == kind && g.SecretDir == 0) break;
+            g.StartStage(stage);
+            if (g.HasSecret && g.SecretKind == kind && g.SecretDir == dir) break;
         }
         g.Hero.X = (sbyte)g.SecretFrontX();
         g.Hero.Y = (sbyte)g.SecretFrontY();

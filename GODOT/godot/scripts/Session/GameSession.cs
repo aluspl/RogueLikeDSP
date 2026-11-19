@@ -70,6 +70,16 @@ public sealed class GameSession
             return Daily.Number(Data, y, m, d);
         }
     }
+    /// <summary>v0.23.0: dzisiejsza data jako dni od 1970-01-01 (data znalezienia artefaktu w Gablocie).</summary>
+    public int TodayDays
+    {
+        get
+        {
+            var (y, m, d) = Today;
+            return Daily.DaysFromCivil(y, m, d);
+        }
+    }
+
     /// <summary>Numer bieżącego tygodnia (wyzwanie tygodnia #34).</summary>
     public int TodayWeek
     {
@@ -313,7 +323,8 @@ public sealed class GameSession
         var secrets = LifeLike.Core.Secrets.Check(Data, Profile, Game);
         LastSecrets |= secrets;
         Events.RaiseAchievements(got, done, secrets);
-        return ProgressNotes.Join(Data, got, done, secrets);
+        var artifacts = ArtifactCase.Bank(Data, Profile, Game, TodayDays); // v0.23.0: Gablota artefaktów
+        return ProgressNotes.Join(Data, got, done, secrets, artifacts);
     }
 
     /// <summary>Sekretne zlecenia wykonane w tej budowie (bity GameData.Secrets) – plansza końcowa.</summary>

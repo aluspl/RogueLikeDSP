@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Godot;
 using LifeLike.Game.Audio;
 using LifeLike.Game.Gfx;
+using LifeLike.Game.Phone;
 
 namespace LifeLike.Game.Hud;
 
@@ -11,19 +12,37 @@ namespace LifeLike.Game.Hud;
 /// tytuł, treść i „teraz”; kilka banerów układa się w stos, każdy z dźwiękiem powiadomienia. Na mapie stos stoi
 /// w prawym górnym rogu pod paskiem HUD (nie zasłania HP ani ostrzeżenia o ciosie bossa); przy telefonie -
 /// wąska kolumna po jego lewej stronie. Kliknięcie banera z zakładką otwiera ją w telefonie.
+/// v0.22.0 (UX A): najwyżej jeden naraz (reszta czeka w kolejce); przy telefonie na cały ekran od dołu.
 /// </summary>
 public partial class PushBanners : Control
 {
     private const float Slide = 0.18f, Hold = 2.8f;
-    private const int MaxVisible = 3, WideW = 272, CompactW = 180, H = 36, Gap = 4, Margin = 6;
+    private const int WideW = 272, CompactW = 180, H = 36, Gap = 4, Margin = 6;
+
+    /// <summary>v0.22.0 (UX A): najwyżej jeden baner na ekranie – kilka naraz zasłaniało klucz, Hurtownię i SMS-y.</summary>
+    public const int MaxActive = 1;
 
     private readonly Queue<PushBanner> _queue = new();
     private readonly List<PushBanner> _active = new();
 
     public bool Busy => _active.Count > 0 || _queue.Count > 0;
 
-    /// <summary>Telefon na ekranie: banery węższe, w kolumnie po lewej stronie telefonu (nie zasłaniają aplikacji).</summary>
-    public bool Compact { get; set; }
+    /// <summary>Ekran z telefonem (ustawia ScreenFlow przy zmianie ekranu).</summary>
+    public bool OnPhone { get; set; }
+
+    /// <summary>v0.22.0 (UX A): miejsce banerów wybrane przez ekran.</summary>
+    public BannerSpot Spot { get; set; }
+
+    /// <summary>
+    /// Telefon na środku ekranu (poziomo): banery węższe, w kolumnie po lewej stronie telefonu. v0.22.1 (#74): liczone
+    /// na bieżąco z układu – po obrocie ekranu banery od razu przechodzą do właściwego miejsca.
+    /// </summary>
+    public bool Compact => OnPhone && !PhoneView.Full;
+
+    /// <summary>v0.22.0 (UX A): banery od dołu (telefon na cały ekran), nad przyciskami strony.</summary>
+    public bool Bottom => Spot == BannerSpot.Bottom && PhoneView.Full;
+
+    private static float BottomEdge => PhoneView.BannerFloor;
 
     /// <summary>Górna krawędź stosu (pod paskiem HUD, gdy mapa jest widoczna).</summary>
     public float TopInset { get; set; } = Margin;
@@ -32,7 +51,7 @@ public partial class PushBanners : Control
 
     private float Left => Compact ? 8f : Mathf.Round(Mathf.Min(Size.X, Layout.SafeArea.End.X) - W - Margin);
 
-    private float Top => Compact ? 40f : TopInset;
+    private float Top => Compact ? 40f : Bottom ? BottomEdge - H : TopInset;
 
     public override void _Ready()
     {
@@ -89,11 +108,11 @@ public partial class PushBanners : Control
     public override void _Process(double delta)
     {
         var dt = (float)delta;
-        while (_active.Count < MaxVisible && _queue.Count > 0)
+        while (_active.Count < MaxActive && _queue.Count > 0)
         {
             var b = _queue.Dequeue();
             // pierwszy zjeżdża z góry, kolejne pojawiają się na swoim miejscu w stosie (bez przejazdu przez inne)
-            b.Y = _active.Count == 0 ? Top - H - 14 : Top + _active.Count * (H + Gap) - 12;
+            b.Y = Bottom ? Top + 14 : _active.Count == 0 ? Top - H - 14 : Top + _active.Count * (H + Gap) - 12;
             _active.Add(b);
             Sfx.Play("notify", 0.7f);
         }

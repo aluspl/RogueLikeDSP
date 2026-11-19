@@ -126,6 +126,8 @@ public static class Secrets
             SecretKind.ShockCombos => g != null && g.ShockCombos >= sd.Value,
             SecretKind.LowHpWin => won && g.Hero.Hp >= 1 && g.Hero.Hp <= sd.Value,
             SecretKind.FastWin => won && g.BuildDays() <= sd.Value,
+            SecretKind.NoSwapWin => won && g.Cls == sd.Value && (g.SecretFlags & Game.SecretToolSwapFlag) == 0, // v0.23.0 (#84)
+            SecretKind.PatentWalls => g != null && g.PatentWalls >= sd.Value, // v0.23.0: Łom Ostatniej Deski
             _ => false,
         };
     }

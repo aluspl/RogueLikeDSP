@@ -23,6 +23,11 @@ public static class DebugRunner
             new SmokeTest(app).Run();
             return true;
         }
+        if (opts.Demo > 0f) // v0.23.0: nagrania reklamówki
+        {
+            new DemoRunner(app).Run(opts.Demo, opts.DemoClass, opts.DemoStage, opts.DemoStep);
+            return true;
+        }
         if (opts.Screenshot)
         {
             new ScreenshotRunner(app).Run(opts.ScreenshotPath, opts.Scene, opts.Bench);

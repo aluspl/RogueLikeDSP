@@ -11,8 +11,8 @@ namespace LifeLike.Game.Phone;
 /// </summary>
 public sealed class PhonePainter
 {
-    /// <summary>Wysokość wiersza: 18 px, przy dotyku na pionowym ekranie 26 px (większy cel palca).</summary>
-    public static int RowH => Layout.Touch && Layout.Portrait ? 26 : 18;
+    /// <summary>Wysokość wiersza: 18 px, przy dotyku na pionowym ekranie 28 px telefonu (v0.23.2: razy PhoneView.Zoom ≈ 45 pt).</summary>
+    public static int RowH => Layout.Touch && Layout.Portrait ? 28 : 18;
 
     /// <summary>Przesunięcie tekstu 16 px w wierszu (wyśrodkowanie).</summary>
     public static int TextDy => (RowH - 16) / 2;
@@ -24,6 +24,12 @@ public sealed class PhonePainter
 
     /// <summary>Wiersze list do dotknięcia (prostokąt we współrzędnych telefonu, indeks elementu).</summary>
     public readonly List<(Rect2 Rect, int Index)> Hits = new();
+
+    /// <summary>v0.23.2: najniższy punkt narysowanych kart i tekstów (test: czy strona mieści się nad przyciskami).</summary>
+    public float Extent { get; private set; }
+
+    /// <summary>Zgłoś dół narysowanego elementu (Extent).</summary>
+    public void Reach(float y) => Extent = Mathf.Max(Extent, y);
 
     public PhonePainter(CanvasItem c, Rect2 content)
     {
@@ -44,6 +50,7 @@ public sealed class PhonePainter
     {
         var r = new Rect2(Left, y, Width, h);
         C.DrawStyleBox(Ui.Box(Pal.Card, 6, Pal.Border), r);
+        Reach(r.End.Y);
         return r;
     }
 
@@ -66,6 +73,10 @@ public sealed class PhonePainter
     }
 
     /// <summary>Wiersz r karty jako cel dotyku dla elementu index (PhonePage.TapRow).</summary>
+    /// <summary>v0.23.0: ikona broni 16x16 w kolorze rzadkości na początku wiersza (x); zwraca przesunięcie tekstu (0 = brak rysunku).</summary>
+    public float WeaponIcon(float x, float rowY, LifeLike.Core.Data.WeaponDef w, int rarity) =>
+        WeaponSheet.DrawIcon(C, w, rarity, new Rect2(x, rowY + (RowH - Assets.Icon) / 2, Assets.Icon, Assets.Icon)) ? Assets.Icon + 3 : 0;
+
     public void HitRow(Rect2 card, int r, int index) => Hits.Add((new Rect2(card.Position.X, RowY(card, r), card.Size.X, RowH), index));
 
     /// <summary>Dowolny prostokąt jako cel dotyku (np. przyciski -/+ w wierszu); wcześniej dodane mają pierwszeństwo.</summary>
@@ -80,6 +91,7 @@ public sealed class PhonePainter
     public float Text(float x, float y, string s, Ink ink, TextAlign a = TextAlign.Left, float maxW = 0)
     {
         if (maxW > 0) s = F.Fit(s, (int)maxW);
+        Reach(y + TextDy + PixelFont.LineHeight);
         return F.Draw(C, new Vector2(x, y + TextDy), s, ink, a);
     }
 
@@ -115,6 +127,21 @@ public sealed class PhonePainter
         C.DrawStyleBox(Ui.Box(Pal.Group, 3), r);
         var fw = max > 0 ? Mathf.Round(w * Mathf.Clamp(value / (float)max, 0f, 1f)) : 0;
         if (fw >= 2) C.DrawStyleBox(Ui.Box(c, 3), new Rect2(r.Position, new Vector2(fw, h)));
+    }
+
+    /// <summary>v0.22.0 (UX A): legenda kolorów pasków (kwadrat + słowo), wyśrodkowana w jednym wierszu; zwraca dół.</summary>
+    public float Legend(float y, (Color Color, string Label)[] items)
+    {
+        var total = 0f;
+        foreach (var (_, l) in items) total += 12 + F.Measure(l) + 10;
+        var x = Mathf.Round(Left + (Width - total + 10) / 2);
+        foreach (var (c, l) in items)
+        {
+            C.DrawRect(new Rect2(x, y + RowH / 2f - 4, 8, 8), c);
+            x += 12;
+            x += F.Draw(C, new Vector2(x, y + TextDy), l, Ink.Dim) + 10;
+        }
+        return y + RowH;
     }
 
     /// <summary>Nagłówek sekcji nad kartą (wersaliki w kolorze textDim).</summary>

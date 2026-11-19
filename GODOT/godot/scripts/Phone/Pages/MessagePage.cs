@@ -91,5 +91,16 @@ public sealed class MessagePage : PhonePage
             p.C.DrawRect(new Rect2(ic.Position.X + 4, p.RowY(ic, r) + 2, 3, wrapped[i].Count * PhonePainter.RowH - 4), _info[i].Ink.Fill);
             foreach (var line in wrapped[i]) p.Text(tx, p.RowY(ic, r++), line, _info[i].Ink);
         }
+        // v0.22.0 (UX A): legenda kolorów, gdy paski mają co najmniej dwa znaczenia i jest miejsce
+        var legend = new List<(Color, string)>();
+        void Mark(Ink ink, string label)
+        {
+            if (_info.Exists(x => x.Ink.Fill == ink.Fill)) legend.Add((ink.Fill, label));
+        }
+        Mark(Ink.Done, Loc.T("legenda_premia"));
+        Mark(Ink.Late, Loc.T("legenda_zagrozenie"));
+        Mark(Ink.Brand, Loc.T("legenda_sciezka"));
+        Mark(Ink.Prog, Loc.T("legenda_info"));
+        if (legend.Count >= 2 && ic.End.Y + 4 + PhonePainter.RowH <= p.Bottom) p.Legend(ic.End.Y + 4, legend.ToArray());
     }
 }

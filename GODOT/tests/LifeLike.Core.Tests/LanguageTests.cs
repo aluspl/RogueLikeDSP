@@ -8,6 +8,7 @@ namespace LifeLike.Core.Tests;
 /// {0}, {1}..., dane po angielsku wczytują się tak samo jak po polsku (te same liczby, odwołania po nazwie działają).
 /// Kopie golden/game.json i golden/en.json z GBA/data (jak przy przebiegach złotych).
 /// </summary>
+[Collection("Loc")]
 public class LanguageTests
 {
     private static string Game => File.ReadAllText(TestData.GoldenPath("game.json"));
@@ -65,6 +66,7 @@ public class LanguageTests
             Assert.Equal("Leak", en.Enemies[en.EnemyIndex("przeciek")].Name);
             Assert.Equal("The Unmissable Deadline", en.Enemies[en.EnemyIndex("termin")].Name);
             Assert.Equal("Semi", en.Career.First(c => c.Id == "blizniak").Short); // wyjątek z „context”
+            Assert.True(en.BeltSlot >= 0 && en.BeltSlot == pl.BeltSlot); // v0.23.0: pas z kaburą po angielsku (slot po nazwie)
         }
     }
 

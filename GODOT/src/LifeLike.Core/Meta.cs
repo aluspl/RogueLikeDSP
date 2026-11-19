@@ -8,6 +8,9 @@ namespace LifeLike.Core;
 /// </summary>
 public static class Meta
 {
+    /// <summary>Dawny zestaw narzędzi sprzed v0.23.0 (pierwsze wpisy GameData.Tools) – liczy się do odznaki Kolekcjoner.</summary>
+    public const int OriginalToolCount = 10;
+
     public static void ProfileReset(GameData d, Profile p)
     {
         var fresh = Profile.FromBytes(new byte[Profile.Size]);
@@ -123,6 +126,9 @@ public static class Meta
         dst.CareerBest = copy.CareerBest;
         dst.Filter = copy.Filter;
         dst.FiltersSeen = copy.FiltersSeen;
+        dst.Artifacts = copy.Artifacts; // v19: Gablota
+        dst.DogBuilds = copy.DogBuilds; // v20: Kawka
+        dst.ArtifactDay = copy.ArtifactDay;
     }
 
     // ------------------------------------------------------------------ katalog usterek (rodzaje 0-15 w Catalog, 16-47 w CatalogHi)
@@ -271,7 +277,82 @@ public static class Meta
     /// </summary>
     public static bool ProfileFix(GameData d, Profile p)
     {
+        var pre20 = !p.MagicIs(Profile.MagicCurrent);
+        var pre19 = pre20 && !p.MagicIs(Profile.MagicV19);
+        var migrated = ProfileMigrate(d, p);
+        if (pre19 && p.MagicIs(Profile.MagicCurrent)) ArtifactCase.MigrateV19(d, p); // v0.23.0: Gablota z każdej starszej wersji
+        if (pre20 && p.MagicIs(Profile.MagicCurrent)) MigrateV20(d, p); // v0.23.0: Kawka i tytuły za nową odznaką
+        return ClampRespect(d, p) | migrated; // v0.23.0: rangi Respektu ponad obecną liczbę – zwrot (raz, bo ranga przycięta)
+    }
+
+    /// <summary>
+    /// v0.23.0 (zad. 7, runda meta): koszty rang Respektu usuniętych z danych (game.json z commitu f4ad7098, przed
+    /// „pół na pół”): id → koszty kolejnych rang. Zwrot za rangę r = koszt[r] dla r ≥ obecnej liczby rang.
+    /// </summary>
+    private static readonly Dictionary<string, int[]> RemovedRespectCosts = new()
+    {
+        ["reka"] = [15, 40],
+        ["skora"] = [15, 40],
+        ["oko"] = [15, 40],
+        ["unik"] = [15, 40],
+        ["kawa"] = [10, 30],
+        ["rutyna"] = [30, 60],
+    };
+
+    /// <summary>
+    /// Ranga Respektu zapisana ponad obecne maksimum (dane obcięły rangi): zwraca do p.Respect koszt każdej usuniętej rangi
+    /// (z RemovedRespectCosts, inaczej bez zwrotu) i przycina zapisaną rangę – drugi raz nie zwraca. Zwraca true przy zmianie.
+    /// </summary>
+    public static bool ClampRespect(GameData d, Profile p)
+    {
+        var changed = false;
+        for (var i = 0; i < d.Respect.Length; ++i)
+        {
+            var slot = RespectSlot(p, i);
+            var max = d.Respect[i].Ranks;
+            if (slot <= max) continue;
+            var refund = 0;
+            if (RemovedRespectCosts.TryGetValue(d.Respect[i].Id, out var old))
+            {
+                for (var r = max; r < slot && r < old.Length; ++r) refund += old[r];
+            }
+            p.Respect = (ushort)Math.Min(ushort.MaxValue, p.Respect + refund);
+            SetRespectRank(p, i, max);
+            changed = true;
+        }
+        return changed;
+    }
+
+    /// <summary>v0.23.0 v20: nowa odznaka (Psi przyjaciel) za dawnymi – wybrany tytuł zlecenia / inspektora przesuwa się o jedną
+    /// pozycję; licznik Kawki od zera (meta.h: migrate_v20).</summary>
+    public static void MigrateV20(GameData d, Profile p)
+    {
+        if (p.Title > Profile.BadgesV19) p.Title = (byte)(p.Title + (d.Badges.Length - Profile.BadgesV19));
+        p.DogBuilds = 0;
+    }
+
+    /// <summary>Migracje wersji profilu (dawne ciało ProfileFix).</summary>
+    private static bool ProfileMigrate(GameData d, Profile p)
+    {
         if (p.MagicIs(Profile.MagicCurrent)) return ClampLevels(d, p);
+        if (p.MagicIs(Profile.MagicV19)) // v19 -> v20: dane bez zmian; Kawkę i tytuły poprawia ProfileFix (MigrateV20)
+        {
+            p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
+            ClampLevels(d, p);
+            return true;
+        }
+        if (p.MagicIs(Profile.MagicV18)) // v18 -> v19: dane bez zmian; Gablotę wypełnia ProfileFix (ArtifactCase.MigrateV19)
+        {
+            p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
+            ClampLevels(d, p);
+            return true;
+        }
+        if (p.MagicIs(Profile.MagicV17)) // v17 -> v18: te same indeksy 0..9 w maskach, FromBytes czytał 8-bitowe maski; dane zostają
+        {
+            p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
+            ClampLevels(d, p);
+            return true;
+        }
         if (p.MagicIs(Profile.MagicV16)) // v16 -> v17: filtr ekranu klasyczny, filtry do ogłoszenia
         {
             p.Magic = Profile.MagicBytes(Profile.MagicCurrent);
@@ -461,13 +542,19 @@ public static class Meta
     }
 
     // ------------------------------------------------------------------ samouczek menu (#25)
-    // Pierwsze uruchomienie: dymki po kolei na tytule i wyborze zawodu; potem jeden dymek przy pierwszym odblokowaniu
-    // (Respekt, codzienna budowa, tryb inwestora, Akt 0, nowy zawód). „Pokaż samouczek jeszcze raz” w Jak grać.
+    // Pierwsze uruchomienie: krótki samouczek (do 3 dymków) na tytule i wyborze zawodu; potem po jednym dymku na wejście
+    // na ekran przy pierwszej okazji (Respekt, codzienna budowa, tryb inwestora, Akt 0, nowy zawód, sekret; v0.23.0:
+    // też Szkolenia, opcje, Jak grać, pamiątka, statystyki). „Pokaż samouczek jeszcze raz” w Jak grać.
+    // v0.23.0: Tutorial.Short = profil zaczął od krótkiego samouczka; starsze profile nie dostają dymków o tym, co już widziały.
 
     /// <summary>Główny samouczek ekranu (0 tytuł, 1 wybór zawodu) jeszcze nieobejrzany.</summary>
     public static bool TutorialPending(Profile p, int screen) => (p.Tutorial & (screen == 0 ? Tutorial.Title : Tutorial.Class)) == 0;
 
-    public static void TutorialDone(Profile p, int screen) => p.Tutorial |= screen == 0 ? Tutorial.Title : Tutorial.Class;
+    public static void TutorialDone(Profile p, int screen)
+    {
+        if (p.Tutorial == 0) p.Tutorial = Tutorial.Short; // v0.23.0: świeży profil - krótki samouczek, reszta w dymkach
+        p.Tutorial |= screen == 0 ? Tutorial.Title : Tutorial.Class;
+    }
 
     public static void TutorialReset(Profile p) => p.Tutorial = (ushort)(p.Tutorial & ~(Tutorial.Title | Tutorial.Class));
 
@@ -478,13 +565,19 @@ public static class Meta
         return (godot || !t.GodotOnly) && (!t.NeedsInvestor || InvestorUnlocked(p));
     }
 
-    /// <summary>Dymek odblokowania do pokazania na ekranie (-1 = brak; indeks = TutorialUnlock); cls = nowy zawód z nagrody.</summary>
-    public static int PendingUnlock(GameData d, Profile p, int screen, out int cls)
+    /// <summary>
+    /// Dymek odblokowania do pokazania na ekranie (-1 = brak; indeks = TutorialUnlock); cls = nowy zawód z nagrody albo
+    /// wykonany sekret. godot = także dymki tylko dla Godota (opcje pod kluczem).
+    /// </summary>
+    public static int PendingUnlock(GameData d, Profile p, int screen, out int cls, bool godot = false)
     {
         cls = -1;
         if (TutorialPending(p, screen)) return -1; // najpierw główny samouczek
+        var fresh = (p.Tutorial & Tutorial.Short) != 0;
+        bool Due(ushort bit) => fresh && (p.Tutorial & bit) == 0;
         if (screen == 0)
         {
+            if (godot && Due(Tutorial.Options)) return TutorialUnlock.Options; // wielkość tekstu - przy pierwszym powrocie na tytuł
             if (p.RespectTotal > 0 && (p.Tutorial & Tutorial.Respect) == 0) return TutorialUnlock.Respect;
             if (p.Runs > 0 && (p.Tutorial & Tutorial.Daily) == 0) return TutorialUnlock.Daily;
             if (Act0Unlocked(d, p) && (p.Tutorial & Tutorial.Act0) == 0) return TutorialUnlock.Act0;
@@ -494,6 +587,12 @@ public static class Meta
                 cls = i;
                 return TutorialUnlock.Secret;
             }
+            if (p.Runs > 0 && Due(Tutorial.Training))
+            {
+                var c = NextUnlock(d, p, out _, out _);
+                if (c >= 0 && p.Xp >= c) return TutorialUnlock.Training;
+            }
+            if (p.Runs > 0 && Due(Tutorial.Help)) return TutorialUnlock.Help;
             return -1;
         }
         if (InvestorUnlocked(p) && (p.Tutorial & Tutorial.Investor) == 0) return TutorialUnlock.Investor;
@@ -505,13 +604,16 @@ public static class Meta
                 return TutorialUnlock.Class;
             }
         }
+        if (p.Runs > 0 && Due(Tutorial.Keepsake)) return TutorialUnlock.Keepsake;
+        if (p.Runs > 0 && Due(Tutorial.Stats)) return TutorialUnlock.Stats;
         return -1;
     }
 
     public static void MarkUnlock(Profile p, int u, int cls)
     {
-        ushort[] bits = [Tutorial.Respect, Tutorial.Daily, Tutorial.Investor, Tutorial.Act0];
-        if (u is >= 0 and < 4) p.Tutorial |= bits[u];
+        ushort[] bits = [Tutorial.Respect, Tutorial.Daily, Tutorial.Investor, Tutorial.Act0, 0, 0,
+            Tutorial.Training, Tutorial.Options, Tutorial.Help, Tutorial.Keepsake, Tutorial.Stats];
+        if (u >= 0 && u < bits.Length) p.Tutorial |= bits[u];
         if (u == TutorialUnlock.Class && cls >= 0) p.ClassesSeen = (ushort)(p.ClassesSeen | (1u << cls));
         if (u == TutorialUnlock.Secret && cls >= 0) p.SecretsNew = (ushort)(p.SecretsNew & ~(1u << cls));
     }
@@ -577,7 +679,7 @@ public static class Meta
         var n = 0;
         for (var i = 0; i < d.Tools.Length; ++i)
         {
-            if (d.Tools[i].Shop && ((p.Tools >> i) & 1) != 0) ++n;
+            if (d.Tools[i].Shop && ((p.Tools >> i) & 1UL) != 0) ++n;
         }
         return n;
     }
@@ -604,13 +706,13 @@ public static class Meta
         return true;
     }
 
-    public static int ToolsMask(GameData d, Profile p)
+    public static ulong ToolsMask(GameData d, Profile p)
     {
         var m = p.Tools | d.StartToolsMask;
         for (var i = 0; i < d.Tools.Length; ++i)
         {
-            if (d.Tools[i].Reward) m = RewardUnlocked(d, p, RewardKind.Tool, i) ? m | (1 << i) : m & ~(1 << i);
-            if (d.Tools[i].Secret) m = Secrets.Owned(d, p, SecretReward.Tool, i) ? m | (1 << i) : m & ~(1 << i);
+            if (d.Tools[i].Reward) m = RewardUnlocked(d, p, RewardKind.Tool, i) ? m | (1UL << i) : m & ~(1UL << i);
+            if (d.Tools[i].Secret) m = Secrets.Owned(d, p, SecretReward.Tool, i) ? m | (1UL << i) : m & ~(1UL << i);
         }
         return m;
     }
@@ -626,14 +728,14 @@ public static class Meta
         return m;
     }
 
-    public static bool ToolUnlocked(GameData d, Profile p, int i) => ((ToolsMask(d, p) >> i) & 1) != 0;
+    public static bool ToolUnlocked(GameData d, Profile p, int i) => ((ToolsMask(d, p) >> i) & 1UL) != 0;
 
     public static bool BuyTool(GameData d, Profile p, int i)
     {
         var cost = ToolCost(d, p);
         if (!d.Tools[i].Shop || ToolUnlocked(d, p, i) || p.Xp < cost) return false;
         p.Xp -= cost;
-        p.Tools = (byte)(p.Tools | (1u << i));
+        p.Tools |= 1UL << i;
         return true;
     }
 
@@ -739,6 +841,7 @@ public static class Meta
             if (RespectRank(d, p, i) > 0) m.AddRespect(d.Respect[i].Effect, RespectValue(d, p, i));
         }
         m.GearSlots = GearSlotsMask(d, p); // nagrody za odbiór: buty, pas
+        m.StartBelt = RewardUnlocked(d, p, RewardKind.Belt, d.BeltSlot) ? 1 : 0; // v0.23.0: nagroda za odbiór: pas z kaburą
         m.Act0 = Act0Unlocked(d, p) ? 1 : 0; // nagroda za odbiór: Akt 0 przed budową
         for (var i = 0; i < d.Badges.Length; ++i) // uprawnienia ze zdobytych odznak
         {
@@ -963,7 +1066,10 @@ public static class Meta
     /// Po budowie: najtańsze niekupione w Szkoleniach (motywacja). Kind: 0 ulepszenie, 1 zawód, 2 narzędzie, 3 brygada,
     /// 4 poziom Trudny, 5 węzeł drzewka (otwarty, bez wyboru; v0.21.52 cz. c). Zwraca koszt albo -1, gdy wszystko kupione.
     /// </summary>
-    public static int NextUnlock(GameData d, Profile p, out int kind, out int index)
+    public static int NextUnlock(GameData d, Profile p, out int kind, out int index) => NextUnlock(d, p, true, out kind, out index);
+
+    /// <summary>v0.22.0 (UX A): jak NextUnlock; tree = false pomija węzły drzewka (szybki zakup bez wyboru opcji).</summary>
+    internal static int NextUnlock(GameData d, Profile p, bool tree, out int kind, out int index)
     {
         int best = -1, k0 = -1, i0 = -1;
         void Take(int k, int i, int c)
@@ -989,7 +1095,7 @@ public static class Meta
             if (!HelperUnlocked(d, p, i)) Take(3, i, d.Brigade[i].Cost);
         }
         if (p.Hard == 0) Take(4, 0, d.HardCost);
-        for (var n = 0; n < d.TreeNodes.Length; ++n)
+        for (var n = 0; tree && n < d.TreeNodes.Length; ++n)
         {
             if (SkillTree.Pick(p, n) == 0 && SkillTree.Open(d, p, n)) Take(5, n, d.TreeNodes[n].Cost);
         }
@@ -1101,7 +1207,7 @@ public static class Meta
         {
             if (g.KillsByType[e] != 0) CatalogAdd(p, e);
         }
-        p.ToolsFound = (byte)(p.ToolsFound | g.ToolsFound);
+        p.ToolsFound |= g.ToolsFound;
         if (g.St == GameStatus.Won) SetClassWon(p, g.Cls);
         var stake = Investor.Stake(d, g.Bonus.Investor); // rekord stawki zawodu (wygrana w trybie inwestora)
         if (g.St == GameStatus.Won && stake > BestStake(p, g.Cls))
@@ -1118,7 +1224,8 @@ public static class Meta
         RecordRun(d, p, g);
         var cleared = g.St == GameStatus.StageClear || g.St == GameStatus.Won;
         var won = g.St == GameStatus.Won;
-        var allTools = ((1 << d.Tools.Length) - 1) & ~d.SecretToolsMask; // sekretne narzędzia się nie liczą
+        var allTools = ((1UL << Math.Min(d.Tools.Length, OriginalToolCount)) - 1) & ~d.SecretToolsMask; // v0.23.0: tylko dawne 10 narzędzi, bez sekretnych
+        Dog.Bank(p, g); // v0.23.0: Kawka – budowa z pogłaskaniem liczy się raz (znak wodny w stanie budowy)
         var cond = new bool[16];
         void Set(int idx, bool v)
         {
@@ -1133,6 +1240,7 @@ public static class Meta
         Set(d.BadgeKolekcjoner, (p.ToolsFound & allTools) == allTools);
         Set(d.BadgeKatalog, CatalogCount(d, p) == d.Enemies.Length);
         Set(d.BadgeOsiedle, p.HousesCount >= 5);
+        Set(d.BadgePsiPrzyjaciel, p.DogBuilds >= d.DogBadgeBuilds); // v0.23.0
         var got = 0;
         for (var i = 0; i < d.Badges.Length; ++i)
         {

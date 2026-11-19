@@ -17,4 +17,6 @@ public static class ActorFlag
     public const byte Frozen = 32;
     /// <summary>v0.21.50: elita już wezwała pomoc.</summary>
     public const byte Called = 64;
+    /// <summary>v0.23.0: następny cios bohatera w ten cel to pewny kryt (CritNext).</summary>
+    public const byte CritNext = 128;
 }

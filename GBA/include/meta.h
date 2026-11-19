@@ -13,7 +13,10 @@ namespace core
     constexpr int max_respect = 19;       // 16 w respect_ranks + 3 w respect_ranks_hi (v12)
     static_assert(data::classes_count <= max_classes && data::respect_count <= max_respect && data::rewards_count <= 255);
 
-    constexpr char profile_magic[8] = "PBRL017";
+    constexpr char profile_magic[8] = "PBRL020";      // v0.23.0: v20 - Kawka (budowy z pogłaskaniem, odznaka); v19 - Gablota artefaktów
+    constexpr char profile_magic_v19[8] = "PBRL019";
+    constexpr char profile_magic_v18[8] = "PBRL018";
+    constexpr char profile_magic_v17[8] = "PBRL017";
     constexpr char profile_magic_v16[8] = "PBRL016";
     constexpr char profile_magic_v15[8] = "PBRL015";
     constexpr char profile_magic_v14[8] = "PBRL014";
@@ -45,6 +48,12 @@ namespace core
     constexpr int profile_v14_size = 240; // v15 = v14 + drzewko Szkoleń, kolekcje, zadania dnia, seria dni (v0.21.52 cz. c)
     constexpr int profile_v15_size = 360; // v16 = v15 + mapa kariery (v0.21.52 cz. d): kontrakty, wygrane, najlepszy etap
     // v17 (v0.21.53) = v16 + filtr ekranu i ogłoszone filtry - w dawnym wyrównaniu v16 (rozmiar bez zmian, 384 B)
+    constexpr int profile_v17_size = 384; // v18 (v0.23.0) = v17 + pełne maski broni (tools, tools_found po 8 B)
+    constexpr int profile_v18_size = 400; // v19 (v0.23.0) = v18 + Gablota artefaktów (maska i dzień znalezienia)
+    constexpr int profile_v19_size = 434; // v20 (v0.23.0) = v19 + Kawka (dog_builds) w dawnym wyrównaniu - rozmiar bez zmian (440 B)
+    constexpr int badges_v19 = 9;         // odznaki do v19: tytuły zleceń i inspektora za nimi przesuwa nowa odznaka (migrate_v20)
+    constexpr int max_artifacts = 16;
+    static_assert(data::artifacts_count <= max_artifacts);
     static_assert(data::screen_filters_count <= 16);   // ogłoszone filtry: bity uint16
     constexpr int max_contracts = 6;      // kontrakty mapy kariery (data::career)
     static_assert(data::career_count <= max_contracts);
@@ -73,12 +82,12 @@ namespace core
         uint8_t classes;               // bitmaska odblokowanych zawodów
         uint8_t hard;                  // odblokowany poziom Trudny
         uint8_t flags;                 // bity profile_flag (dawny bajt wyrównania = 0 w starych zapisach)
-        uint8_t tools;                 // kupione narzędzia (bitmaska; startowe zawsze dostępne)
+        uint8_t tools_lo;              // kupione narzędzia - dolne 8 bitów (v17 i starsze; v18+: tools niżej)
         // --- v3: motywacja do kolejnych budów
         uint16_t badges;               // zdobyte odznaki (bitmaska data::badges)
         uint16_t catalog;              // rodzaje problemów kiedykolwiek pokonane (Katalog usterek)
         uint8_t class_wins;            // zawody, którymi wygrano (odznaka Pełny zespół)
-        uint8_t tools_found;           // narzędzia kiedykolwiek znalezione (odznaka Kolekcjoner)
+        uint8_t tools_found_lo;        // znalezione narzędzia - dolne 8 bitów (v17 i starsze; v18+: tools_found niżej)
         uint8_t houses_count;
         uint8_t houses[max_houses];    // Osiedle: zawód (4 bity) | wielkość domu << 4
         // --- v4: zlecenia i pamiątki
@@ -167,7 +176,16 @@ namespace core
         // --- v17 (v0.21.53): filtry ekranu (#53, #54)
         uint16_t filters_seen;         // bity: odblokowanie filtra już ogłoszone (baner raz)
         uint8_t language;              // v17 cz. 2 (#40): 0 = jeszcze nie wybrano (pytanie przy starcie), 1 = polski, 2 = angielski
-        uint8_t reserved17[5];         // wyrównanie do 384 B (zapis budowy od 512)
+        uint8_t reserved17[5];         // wyrównanie do 384 B
+        // --- v18 (v0.23.0): pełne maski broni (bit = data::tools)
+        uint64_t tools;                // kupione narzędzia (startowe zawsze dostępne)
+        uint64_t tools_found;          // narzędzia kiedykolwiek znalezione (odznaka Kolekcjoner)
+        // --- v19 (v0.23.0): Gablota artefaktów
+        uint16_t artifacts;            // odkryte artefakty (bity data::artifacts)
+        uint16_t artifact_day[max_artifacts];   // dzień pierwszego znalezienia (dni od 1970-01-01; 0 = przed Gablotą)
+        // --- v20 (v0.23.0): easter egg - Kawka
+        uint8_t dog_builds;            // budowy, w których pogłaskano Kawkę (do 255; odznaka Psi przyjaciel)
+        uint8_t reserved20[5];         // wyrównanie do 440 B (zapis budowy od 512)
     };
     static_assert(offsetof(profile, badges) == profile_v2_size);
     static_assert(offsetof(profile, kills_total) == profile_v3_size);
@@ -185,7 +203,10 @@ namespace core
     static_assert(offsetof(profile, tasks_total) == 354 && offsetof(profile, streak_day) == 356 && offsetof(profile, collections) == 359);
     static_assert(offsetof(profile, contract) == profile_v15_size && offsetof(profile, career_wins) == 364 && offsetof(profile, career_best) == 370);
     static_assert(offsetof(profile, filter) == 363 && offsetof(profile, filters_seen) == 376 && offsetof(profile, language) == 378);
-    static_assert(sizeof(profile) == 384);
+    static_assert(offsetof(profile, tools) == profile_v17_size && offsetof(profile, artifacts) == profile_v18_size);
+    static_assert(offsetof(profile, dog_builds) == profile_v19_size && sizeof(profile) == 440);
+    // Bajty 35 / 41 trzymają dolne 8 bitów masek (jak C# Profile.ToBytes); woła je write_profile (main.cpp) przed każdym zapisem do SRAM.
+    inline void profile_sync(profile& p) { p.tools_lo = uint8_t(p.tools); p.tools_found_lo = uint8_t(p.tools_found); }
 
     // Katalog usterek: rodzaje 0-15 w catalog, 16-47 w catalog_hi.
     inline bool catalog_has(const profile& p, int d) { return d < 16 ? (p.catalog >> d) & 1 : (p.catalog_hi >> (d - 16)) & 1; }
@@ -370,9 +391,16 @@ namespace core
 
     // v0.21.52 cz. c: każda ścieżka migracji kończy się migrate_v15 (drzewko, kolekcje, zadania, seria dni);
     // cz. d: potem migrate_v16 (mapa kariery); v0.21.53: migrate_v17 (filtry ekranu).
-    inline bool profile_fix(profile& p)
+    inline bool profile_migrate(profile& p)
     {
         if(std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0) return clamp_levels(p);
+        if(std::memcmp(p.magic, profile_magic_v19, sizeof p.magic) == 0 || std::memcmp(p.magic, profile_magic_v18, sizeof p.magic) == 0
+           || std::memcmp(p.magic, profile_magic_v17, sizeof p.magic) == 0)
+        {   // v17/v18/v19 -> v20: dane bez zmian (maski szerokie z profile_fix); Gablotę wypełnia migrate_v19, Kawkę migrate_v20
+            std::memcpy(p.magic, profile_magic, sizeof p.magic);
+            clamp_levels(p);
+            return true;
+        }
         if(std::memcmp(p.magic, profile_magic_v16, sizeof p.magic) == 0)   // v16 -> v17: filtr ekranu klasyczny, filtry do ogłoszenia
         {
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
@@ -381,7 +409,7 @@ namespace core
         }
         if(std::memcmp(p.magic, profile_magic_v15, sizeof p.magic) == 0)   // v15 -> v16: Dom jednorodzinny z dotychczasowych wygranych
         {
-            std::memset(reinterpret_cast<char*>(&p) + profile_v15_size, 0, sizeof p - profile_v15_size);
+            std::memset(reinterpret_cast<char*>(&p) + profile_v15_size, 0, profile_v17_size - profile_v15_size);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             migrate_v16(p);
             migrate_v17(p);
@@ -389,7 +417,7 @@ namespace core
         }
         if(std::memcmp(p.magic, profile_magic_v14, sizeof p.magic) == 0)   // v14 -> v15: kolekcje z Katalogu, seria z wyników dni
         {
-            std::memset(reinterpret_cast<char*>(&p) + profile_v14_size, 0, sizeof p - profile_v14_size);
+            std::memset(reinterpret_cast<char*>(&p) + profile_v14_size, 0, profile_v17_size - profile_v14_size);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             migrate_v15(p);
             migrate_v16(p);
@@ -398,7 +426,7 @@ namespace core
         }
         if(std::memcmp(p.magic, profile_magic_v13, sizeof p.magic) == 0)   // v13 -> v14: inspektor i mistrzostwo z dotychczasowych statystyk
         {
-            std::memset(reinterpret_cast<char*>(&p) + profile_v13_size, 0, sizeof p - profile_v13_size);
+            std::memset(reinterpret_cast<char*>(&p) + profile_v13_size, 0, profile_v17_size - profile_v13_size);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             migrate_v14(p);
             migrate_v15(p);
@@ -408,7 +436,7 @@ namespace core
         }
         if(std::memcmp(p.magic, profile_magic_v12, sizeof p.magic) == 0)   // v12 -> v13: zwrot za Szkolenia, tytuł i kask od zera
         {
-            std::memset(reinterpret_cast<char*>(&p) + profile_v12_size, 0, sizeof p - profile_v12_size);
+            std::memset(reinterpret_cast<char*>(&p) + profile_v12_size, 0, profile_v17_size - profile_v12_size);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             migrate_v13(p);
             migrate_v14(p);
@@ -419,7 +447,7 @@ namespace core
         }
         if(std::memcmp(p.magic, profile_magic_v11, sizeof p.magic) == 0)   // v11 -> v12: sekretne zlecenia z tego, co już widać w profilu
         {
-            std::memset(reinterpret_cast<char*>(&p) + profile_v11_size, 0, sizeof p - profile_v11_size);
+            std::memset(reinterpret_cast<char*>(&p) + profile_v11_size, 0, profile_v17_size - profile_v11_size);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             migrate_v13(p);
             migrate_v12(p);
@@ -431,7 +459,7 @@ namespace core
         }
         if(std::memcmp(p.magic, profile_magic_v10, sizeof p.magic) == 0)   // v10 -> v11: wyzwania tygodnia i fabuła od zera
         {
-            std::memset(reinterpret_cast<char*>(&p) + profile_v10_size, 0, sizeof p - profile_v10_size);
+            std::memset(reinterpret_cast<char*>(&p) + profile_v10_size, 0, profile_v17_size - profile_v10_size);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             migrate_v13(p);
             migrate_v11(p);
@@ -446,7 +474,7 @@ namespace core
         if(v9 || std::memcmp(p.magic, profile_magic_v8, sizeof p.magic) == 0)   // v8 -> v9: katalog 16-47 od zera; v9 -> v10: samouczek
         {
             int keep = v9 ? profile_v9_size : profile_v8_size;
-            std::memset(reinterpret_cast<char*>(&p) + keep, 0, sizeof p - keep);
+            std::memset(reinterpret_cast<char*>(&p) + keep, 0, profile_v17_size - keep);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             migrate_v13(p);
             migrate_v10(p);
@@ -467,7 +495,7 @@ namespace core
                  : (std::memcmp(p.magic, profile_magic_v2, sizeof p.magic) == 0 ? profile_v2_size : 0));
         if(keep > 0)
         {
-            std::memset(reinterpret_cast<char*>(&p) + keep, 0, sizeof p - keep);
+            std::memset(reinterpret_cast<char*>(&p) + keep, 0, profile_v17_size - keep);
             std::memcpy(p.magic, profile_magic, sizeof p.magic);
             default_keepsake(p);
             migrate_v13(p);
@@ -500,6 +528,36 @@ namespace core
         return true;
     }
 
+    inline bool clamp_respect(profile& p);
+    inline void migrate_v19(profile& p);
+    // v0.23.0 v20: nowa odznaka (Psi przyjaciel) za dawnymi - wybrany tytuł zlecenia / inspektora przesuwa się o jedną pozycję.
+    inline void migrate_v20(profile& p)
+    {
+        if(p.title > badges_v19) p.title = uint8_t(p.title + (data::badges_count - badges_v19));
+        p.dog_builds = 0;
+        for(auto& x : p.reserved20) x = 0;
+    }
+    // v0.23.0: v17 i starsze - maski broni z bajtów 35 / 41; Gablota z każdej starszej wersji; zwrot za usunięte rangi Respektu;
+    // v20: Kawka i przesunięte tytuły z każdej starszej wersji.
+    inline bool profile_fix(profile& p)
+    {
+        const bool v20 = std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0;
+        const bool v19 = v20 || std::memcmp(p.magic, profile_magic_v19, sizeof p.magic) == 0;
+        const bool wide = v19 || std::memcmp(p.magic, profile_magic_v18, sizeof p.magic) == 0;
+        if(! v19)
+        {
+            p.artifacts = 0;
+            for(auto& x : p.artifact_day) x = 0;
+        }
+        if(! v20) { p.dog_builds = 0; for(auto& x : p.reserved20) x = 0; }
+        const bool migrated = profile_migrate(p);   // migracje nie czytają masek broni
+        if(! wide) { p.tools = p.tools_lo; p.tools_found = p.tools_found_lo; }   // po wyczyszczeniu pól spoza starej wersji
+        const bool now = std::memcmp(p.magic, profile_magic, sizeof p.magic) == 0;
+        if(! v19 && now) migrate_v19(p);
+        if(! v20 && now) migrate_v20(p);
+        return clamp_respect(p) | migrated;
+    }
+
     // Akt 0 (Papierologia) z nagrody za odbiór: budowa zaczyna się od jego etapów.
     inline bool act0_unlocked(const profile& p)
     {
@@ -508,11 +566,17 @@ namespace core
     }
 
     // ------------------------------------------------------------------ samouczek menu (#25)
-    // Pierwsze uruchomienie: dymki po kolei na tytule i wyborze zawodu; potem jeden dymek przy pierwszym odblokowaniu
-    // (Respekt, codzienna budowa, tryb inwestora, Akt 0, nowy zawód). "Pokaż samouczek jeszcze raz" w Jak grać.
-    enum tutorial_flag : uint16_t { tut_title = 1, tut_class = 2, tut_respect = 4, tut_daily = 8, tut_investor = 16, tut_act0 = 32 };
-    enum tutorial_unlock : int { unlock_respect, unlock_daily, unlock_investor, unlock_act0, unlock_class, unlock_secret };   // = data::tutorial_unlocks
-    static_assert(data::tutorial_unlocks_count == 6);
+    // Pierwsze uruchomienie: krótki samouczek (do 3 dymków) na tytule i wyborze zawodu; potem po jednym dymku na wejście
+    // na ekran przy pierwszej okazji (Respekt, codzienna budowa, tryb inwestora, Akt 0, nowy zawód, sekret; v0.23.0:
+    // też Szkolenia, opcje, Jak grać, pamiątka, statystyki - wcześniej w głównym samouczku). "Pokaż samouczek jeszcze
+    // raz" w Jak grać. v0.23.0: tut_short = profil zaczął od krótkiego samouczka; starsze profile (pełny samouczek
+    // obejrzany) nie dostają dymków o tym, co już widziały - bez nowej wersji profilu (wolne bity pola tutorial).
+    enum tutorial_flag : uint16_t { tut_title = 1, tut_class = 2, tut_respect = 4, tut_daily = 8, tut_investor = 16, tut_act0 = 32,
+        tut_short = 64, tut_training = 128, tut_options = 256, tut_help = 512, tut_keepsake = 1024, tut_stats = 2048,
+        tut_backpack = 4096 };   // v0.23.2: dymek Marka przy pierwszym przedmiocie w plecaku
+    enum tutorial_unlock : int { unlock_respect, unlock_daily, unlock_investor, unlock_act0, unlock_class, unlock_secret,
+        unlock_training, unlock_options, unlock_help, unlock_keepsake, unlock_stats };   // = data::tutorial_unlocks
+    static_assert(data::tutorial_unlocks_count == 11);
 
     inline bool class_reward(int c);
     inline bool class_unlocked(const profile& p, int c);
@@ -520,7 +584,11 @@ namespace core
 
     // Główny samouczek ekranu (0 tytuł, 1 wybór zawodu) jeszcze nieobejrzany.
     inline bool tutorial_pending(const profile& p, int screen) { return ! (p.tutorial & (screen == 0 ? tut_title : tut_class)); }
-    inline void tutorial_done(profile& p, int screen) { p.tutorial = uint16_t(p.tutorial | (screen == 0 ? tut_title : tut_class)); }
+    inline void tutorial_done(profile& p, int screen)
+    {
+        if(p.tutorial == 0) p.tutorial = tut_short;   // v0.23.0: świeży profil - krótki samouczek, reszta w dymkach
+        p.tutorial = uint16_t(p.tutorial | (screen == 0 ? tut_title : tut_class));
+    }
     inline void tutorial_reset(profile& p) { p.tutorial = uint16_t(p.tutorial & ~(tut_title | tut_class)); }
     // Kroki samouczka widoczne na ekranie (bez kroków tylko dla Godota na GBA; tryb inwestora dopiero po odblokowaniu).
     inline bool tutorial_step_shown(const profile& p, int i, bool godot)
@@ -529,28 +597,37 @@ namespace core
         return (godot || ! t.godot_only) && (! t.needs_investor || investor_unlocked(p));
     }
     // Dymek odblokowania do pokazania na ekranie (-1 = brak); cls = nowy zawód z nagrody (unlock_class) albo wykonane
-    // sekretne zlecenie (unlock_secret, v0.21.51 cz. 2).
-    inline int pending_unlock(const profile& p, int screen, int& cls)
+    // sekretne zlecenie (unlock_secret, v0.21.51 cz. 2). godot = dymki tylko dla Godota (opcje pod kluczem).
+    inline int pending_unlock(const profile& p, int screen, int& cls, bool godot = false)
     {
         cls = -1;
         if(tutorial_pending(p, screen)) return -1;   // najpierw główny samouczek
+        const bool fresh = p.tutorial & tut_short;
+        auto due = [&](uint16_t bit) { return fresh && ! (p.tutorial & bit); };
         if(screen == 0)
         {
+            if(godot && due(tut_options)) return unlock_options;   // wielkość tekstu - przy pierwszym powrocie na tytuł
             if(p.respect_total > 0 && ! (p.tutorial & tut_respect)) return unlock_respect;
             if(p.runs > 0 && ! (p.tutorial & tut_daily)) return unlock_daily;
             if(act0_unlocked(p) && ! (p.tutorial & tut_act0)) return unlock_act0;
             for(int i = 0; i < data::secrets_count; ++i) if((p.secrets_new >> i) & 1) { cls = i; return unlock_secret; }
+            int kind = -1, index = -1;
+            if(p.runs > 0 && due(tut_training)) { const int c = next_unlock(p, kind, index); if(c >= 0 && p.xp >= c) return unlock_training; }
+            if(p.runs > 0 && due(tut_help)) return unlock_help;
             return -1;
         }
         if(investor_unlocked(p) && ! (p.tutorial & tut_investor)) return unlock_investor;
         for(int c = 0; c < data::classes_count; ++c)
             if(class_reward(c) && class_unlocked(p, c) && ! ((p.classes_seen >> c) & 1)) { cls = c; return unlock_class; }
+        if(p.runs > 0 && due(tut_keepsake)) return unlock_keepsake;
+        if(p.runs > 0 && due(tut_stats)) return unlock_stats;
         return -1;
     }
     inline void mark_unlock(profile& p, int u, int cls)
     {
-        static constexpr uint16_t bits[4] = { tut_respect, tut_daily, tut_investor, tut_act0 };
-        if(u >= 0 && u < 4) p.tutorial = uint16_t(p.tutorial | bits[u]);
+        static constexpr uint16_t bits[11] = { tut_respect, tut_daily, tut_investor, tut_act0, 0, 0,
+            tut_training, tut_options, tut_help, tut_keepsake, tut_stats };
+        if(u >= 0 && u < 11) p.tutorial = uint16_t(p.tutorial | bits[u]);
         if(u == unlock_class && cls >= 0) p.classes_seen = uint16_t(p.classes_seen | (1u << cls));
         if(u == unlock_secret && cls >= 0) p.secrets_new = uint16_t(p.secrets_new & ~(1u << cls));
     }
@@ -803,13 +880,13 @@ namespace core
         return true;
     }
 
-    inline int tools_mask(const profile& p)
+    inline uint64_t tools_mask(const profile& p)
     {
-        int m = p.tools | data::start_tools_mask;
+        uint64_t m = p.tools | data::start_tools_mask;
         for(int i = 0; i < data::tools_count; ++i)
         {
-            if(data::tools[i].reward) m = reward_unlocked(p, reward_kind::tool, i) ? m | (1 << i) : m & ~(1 << i);
-            if(data::tools[i].secret) m = secret_owned(p, secret_reward::tool, i) ? m | (1 << i) : m & ~(1 << i);
+            if(data::tools[i].reward) m = reward_unlocked(p, reward_kind::tool, i) ? m | (uint64_t(1) << i) : m & ~(uint64_t(1) << i);
+            if(data::tools[i].secret) m = secret_owned(p, secret_reward::tool, i) ? m | (uint64_t(1) << i) : m & ~(uint64_t(1) << i);
         }
         return m;
     }
@@ -826,7 +903,7 @@ namespace core
     {
         const int cost = tool_cost(p);
         if(! data::tools[i].shop || tool_unlocked(p, i) || p.xp < cost) return false;
-        p.xp -= cost; p.tools = uint8_t(p.tools | (1u << i));
+        p.xp -= cost; p.tools |= uint64_t(1) << i;
         return true;
     }
 
@@ -944,6 +1021,56 @@ namespace core
     }
     // Wartość kupionej rangi (0 = nic nie kupiono).
     inline int respect_value(const profile& p, int i) { int r = respect_rank(p, i); return r > 0 ? data::respect[i].values[r - 1] : 0; }
+    // Ranga zapisana ponad obecne maksimum: zwrot kosztu usuniętych rang i przycięcie (drugi raz nie zwraca).
+    inline bool clamp_respect(profile& p)
+    {
+        bool changed = false;
+        for(int i = 0; i < data::respect_count; ++i)
+        {
+            const int slot = respect_slot(p, i), max = data::respect[i].ranks;
+            if(slot <= max) continue;
+            int refund = 0;
+            for(int r = max; r < slot && r < 2; ++r) refund += data::respect_removed_costs[i][r];   // usunięte rangi (dane)
+            p.respect = uint16_t(imin(65535, p.respect + refund));
+            set_respect_rank(p, i, max);
+            changed = true;
+        }
+        return changed;
+    }
+
+    // ------------------------------------------------------------------ v0.23.0: Gablota artefaktów (ArtifactCase w C#)
+    inline bool artifact_found(const profile& p, int i) { return i >= 0 && i < max_artifacts && ((p.artifacts >> i) & 1); }
+    inline int artifact_day(const profile& p, int i) { return i >= 0 && i < max_artifacts ? p.artifact_day[i] : 0; }
+    inline int artifacts_found_count(const profile& p) { int n = 0; for(int i = 0; i < data::artifacts_count; ++i) n += artifact_found(p, i); return n; }
+    inline bool artifact_in_run(const game& g, int i)
+    {
+        const int t = game::artifact_tool(i);
+        return (t >= 0 && ((g.tools_found >> t) & 1)) || g.weapon2 == data::artifacts[i] || g.weapon_override == data::artifacts[i];
+    }
+    // Zapisuje do Gabloty artefakty znalezione w budowie (dzień today); zwraca maskę odkrytych teraz.
+    inline int artifacts_bank(profile& p, const game& g, int today)
+    {
+        int got = 0;
+        for(int i = 0; i < data::artifacts_count && i < max_artifacts; ++i)
+        {
+            if(artifact_found(p, i) || ! artifact_in_run(g, i)) continue;
+            got |= 1 << i;
+            p.artifact_day[i] = uint16_t(imax(0, imin(65535, today)));
+        }
+        p.artifacts = uint16_t(p.artifacts | got);
+        return got;
+    }
+    // Starszy profil -> v19: unikaty już znalezione albo zdobyte sekretnym zleceniem trafiają do Gabloty bez daty.
+    inline void migrate_v19(profile& p)
+    {
+        p.artifacts = 0;
+        for(auto& x : p.artifact_day) x = 0;
+        for(int i = 0; i < data::artifacts_count && i < max_artifacts; ++i)
+        {
+            const int t = game::artifact_tool(i);
+            if(t >= 0 && (((p.tools_found >> t) & 1) || secret_owned(p, secret_reward::tool, t))) p.artifacts = uint16_t(p.artifacts | (1u << i));
+        }
+    }
     inline int respect_total_cost()
     {
         int t = 0;
@@ -986,6 +1113,7 @@ namespace core
             case upgrade_effect::brigade_pct: m.brigade_pct += v; break;
             case upgrade_effect::cooldown:    m.cooldown += v; break;
             case upgrade_effect::first_hit:   m.mastery += imin(15, v) << first_hit_shift; break;   // Siła rozpędu (jeden węzeł)
+            case upgrade_effect::start_rarity: m.weapon_rarity = imin(2, m.weapon_rarity + v); break;   // v0.23.0: Szkolenie Narzędzia
             default: break;
         }
     }
@@ -1028,6 +1156,7 @@ namespace core
             case upgrade_effect::brigade_pct: return m.add(UI(brygada)).add(v).add("%");
             case upgrade_effect::cooldown:    return m.add(UI(moc)).add(v).add(" t.");
             case upgrade_effect::first_hit:   return m.add(UI(pierwszy_cios)).add(v);
+            case upgrade_effect::start_rarity: return m.add(UI(start_rzadkosc)).add(v);
             default:                        return m;
         }
     }
@@ -1060,6 +1189,7 @@ namespace core
         for(int i = 0; i < data::respect_count; ++i)   // Respekt: kupione rangi
             if(respect_rank(p, i) > 0) add_respect(m, data::respect[i].effect, respect_value(p, i));
         m.gear_slots = gear_slots_mask(p);   // nagrody za odbiór: buty, pas
+        m.start_belt = reward_unlocked(p, reward_kind::belt, data::belt_slot) ? 1 : 0;   // v0.23.0: pas z kaburą na start
         m.act0 = act0_unlocked(p) ? 1 : 0;   // nagroda za odbiór: Akt 0 przed budową
         for(int i = 0; i < data::badges_count; ++i)   // uprawnienia z zdobytych odznak
             if(p.badges & (1u << i)) add_perk(m, data::badges[i].bonus);
@@ -1256,7 +1386,7 @@ namespace core
         bank_collections(p, g);   // v0.21.52 cz. c: liczniki kolekcji (znak wodny kill_mark)
         career_record(p, g);      // v0.21.52 cz. d: najlepszy etap kontraktu
         for(int d = 0; d < data::enemies_count; ++d) if(g.kills_by_type[d]) catalog_add(p, d);
-        p.tools_found = uint8_t(p.tools_found | g.tools_found);
+        p.tools_found |= g.tools_found;
         if(g.st == status::won) set_class_won(p, g.cls);
         int stake = investor_stake(g.bonus.investor);   // rekord stawki zawodu (wygrana w trybie inwestora)
         if(g.st == status::won && stake > best_stake(p, g.cls))
@@ -1269,12 +1399,69 @@ namespace core
 
     // Sprawdza odznaki po ważnym momencie (koniec etapu, koniec budowy). Nowe odznaki dają doświadczenie.
     // Zwraca bitmaskę odznak zdobytych właśnie teraz.
+    // ------------------------------------------------------------------ v0.23.0: easter egg - Kawka
+    // Budowa z pogłaskaną Kawką: +1 w profilu (raz na budowę - bit dog_banked w stanie budowy). Zwraca true, gdy doliczono teraz.
+    inline bool dog_bank(profile& p, game& g)
+    {
+        if(! (g.dog_flags & game::dog_petted) || (g.dog_flags & game::dog_banked)) return false;
+        g.dog_flags = uint8_t(g.dog_flags | game::dog_banked);
+        if(p.dog_builds < 255) ++p.dog_builds;
+        return true;
+    }
+    inline bool dog_met(const profile& p) { return p.dog_builds > 0; }
+    // Czy ocena q pasuje do stanu budowy i profilu.
+    inline bool dog_quip_fits(const profile& p, const game& g, const dog_quip_def& q)
+    {
+        const int hp_pct = g.hero.max_hp > 0 ? g.hero.hp * 100 / g.hero.max_hp : 100, st = g.stage_number(), v = q.value;
+        switch(q.when)
+        {
+        case dog_cond::any: return true;
+        case dog_cond::first: return st == 1 && g.kills == 0;
+        case dog_cond::helmet_stage: return st >= v && g.equipped[0] >= 0;
+        case dog_cond::hp_low: return hp_pct <= v;
+        case dog_cond::no_helmet: return st >= v && g.equipped[0] < 0;
+        case dog_cond::master: return g.weapon_rarity >= 3 || g.weapon().master;
+        case dog_cond::hp_full: return st >= v && g.hero.hp >= g.hero.max_hp;
+        case dog_cond::no_kills: return st >= v && g.kills == 0;
+        case dog_cond::kills_ge: return g.kills >= v;
+        case dog_cond::losses_ge: return p.runs - p.wins >= v;
+        case dog_cond::runs_le: return p.runs <= v;
+        case dog_cond::wins_ge: return p.wins >= v;
+        case dog_cond::coffee_ge: return g.coffee_drunk >= v;
+        case dog_cond::level_ge: return g.hero_level >= v;
+        default: return false;
+        }
+    }
+    // Sarkastyczna ocena postępów po pogłaskaniu (indeks data::dog_quips): pasujące oceny z warunkiem mają pierwszeństwo przed
+    // ogólnymi; kolejne głaskanie w tej budowie - następna z pasujących (od miejsca ze skrótu seeda).
+    inline int dog_quip(const profile& p, const game& g)
+    {
+        int n = 0, any = 0;
+        for(int i = 0; i < data::dog_quips_count; ++i)
+        {
+            const bool fit = dog_quip_fits(p, g, data::dog_quips[i]);
+            n += fit && data::dog_quips[i].when != dog_cond::any;
+            any += data::dog_quips[i].when == dog_cond::any;
+        }
+        const bool special = n > 0;
+        const int count = special ? n : any;
+        int k = int(((g.dog_hash() >> 16) + uint32_t(imax(0, g.dog_pets - 1))) % uint32_t(count));
+        for(int i = 0; i < data::dog_quips_count; ++i)
+        {
+            const dog_quip_def& q = data::dog_quips[i];
+            if((special ? (q.when != dog_cond::any && dog_quip_fits(p, g, q)) : q.when == dog_cond::any) && k-- == 0) return i;
+        }
+        return 0;
+    }
+
     inline int check_badges(profile& p, game& g)
     {
         record_run(p, g);
         bool cleared = g.st == status::stage_clear || g.st == status::won;
         bool won = g.st == status::won;
-        int all_tools = ((1 << data::tools_count) - 1) & ~data::secret_tools_mask;   // sekretne narzędzia się nie liczą
+        // v0.23.0: tylko dawne narzędzia (sprzed nowych broni), bez sekretnych
+        const uint64_t all_tools = ((uint64_t(1) << imin(data::tools_count, data::original_tools_count)) - 1) & ~data::secret_tools_mask;
+        dog_bank(p, g);   // v0.23.0: Kawka - budowa z pogłaskaniem liczy się raz (znak wodny w stanie budowy)
         bool cond[16] = {};
         cond[data::badge_bez_usterek] = cleared && g.stage_damage == 0;
         cond[data::badge_przed_terminem] = won && g.turns - g.stage_start_turn <= 150;
@@ -1285,6 +1472,7 @@ namespace core
         cond[data::badge_kolekcjoner] = (p.tools_found & all_tools) == all_tools;
         cond[data::badge_katalog] = catalog_count(p) == data::enemies_count;
         cond[data::badge_osiedle] = p.houses_count >= 5;
+        cond[data::badge_psi_przyjaciel] = p.dog_builds >= data::dog_badge_builds;   // v0.23.0
         int got = 0;
         for(int i = 0; i < data::badges_count; ++i)
             if(cond[i] && ! (p.badges & (1u << i)))
@@ -1448,6 +1636,13 @@ namespace core
     {
         if(p.daily_y == 0 || p.daily_m < 1 || p.daily_m > 12 || p.daily_d < 1) { y = data::daily_default_date[0]; m = data::daily_default_date[1]; d = data::daily_default_date[2]; }
         else { y = p.daily_y; m = p.daily_m; d = imin(p.daily_d, days_in_month(p.daily_y, p.daily_m)); }
+    }
+    // v0.23.0: Gablota na GBA - dzień znalezienia z daty wpisanej w profilu (GBA nie ma zegara).
+    inline int artifacts_bank_today(profile& p, const game& g)
+    {
+        int y, m, d;
+        daily_date(p, y, m, d);
+        return artifacts_bank(p, g, days_from_civil(y, m, d));
     }
 
     inline void set_daily_date(profile& p, int y, int m, int d)
@@ -1631,6 +1826,8 @@ namespace core
             case secret_kind::shock_combos:  return g && g->shock_combos >= sd.value;
             case secret_kind::low_hp_win:    return won && g->hero.hp >= 1 && g->hero.hp <= sd.value;
             case secret_kind::fast_win:      return won && g->build_days() <= sd.value;
+            case secret_kind::no_swap_win:   return won && g->cls == sd.value && ! (g->secret_flags & game::secret_tool_swap);   // v0.23.0
+            case secret_kind::patent_walls:  return g && g->patent_walls >= sd.value;   // v0.23.0: Łom Ostatniej Deski
             default:                         return false;
         }
     }
@@ -2201,13 +2398,16 @@ namespace core
     // v0.21.52 cz. c: PBRUN15 - liczniki zadań (wezwania brygady, zakupy) w miejscu wyrównania; rozmiar stanu bez zmian, więc
     // zapis PBRUN14 też się wczytuje (z zerami w nowych polach). Profil v15 (384 B) nie mieści się przed 256 - zapis budowy
     // od 512; przy migracji profilu warstwa GBA przenosi przerwaną budowę spod 256 (run_save_offset_v14).
-    constexpr char run_magic[8] = "PBRUN16";
-    constexpr char run_magic_v15[8] = "PBRUN15";   // 16 (v0.21.52 cz. d): kontrakt mapy kariery i problemy z 1. połowy bliźniaka w wyrównaniu; 15: liczniki zadań
-    constexpr char run_magic_v14[8] = "PBRUN14";   // 14: sekretne zlecenia (liczniki budowy), nowe zawody; 13: podsumowanie budowy (ciosy, oś czasu), wyzwanie tygodnia; 12: wydarzenia z wyborem, ulepszenie narzędzia, magazyn; 11: premie po etapie, elity, kombinacje stanów; 10: Akt 0; 09: 10 etapów, zachowania
+    constexpr char run_magic[8] = "PBRUN20";   // 20 (v0.23.2): plecak na końcu stanu; 19 (v0.23.0): bronie (tryby, rzadkość, profity, pas, artefakty)
+    // v0.23.2: PBRUN19 - stan bez plecaka (plecak i offer_pickup dopisane na końcu struktury game) wczytuje się z pustym plecakiem.
+    constexpr char run_magic_v19[8] = "PBRUN19";
+    constexpr unsigned run_size_v19 = 3488;   // sizeof(game) w v0.23.0-v0.23.1 (ARM i PC)
+    static_assert(std::is_standard_layout_v<game>);
+    static_assert(((offsetof(game, backpack) + alignof(game) - 1) & ~(alignof(game) - 1)) == run_size_v19, "pola przed plecakiem się zmieniły");
     constexpr int run_save_offset = 512;
     constexpr int run_save_offset_v14 = 256;   // profil v14 i starsze (240 B)
     static_assert(sizeof(profile) <= run_save_offset);
-    static_assert(sizeof(game) == 3248);   // v0.21.52 cz. c: liczniki zadań w wyrównaniu - stary zapis budowy pasuje
+    // v0.23.0: stan budowy z bronią (PBRUN19) - starsze zapisy budowy nie wczytują się (decyzja 7, jak C# RunSave)
 
     struct run_save
     {
@@ -2217,11 +2417,11 @@ namespace core
         game g;
     };
 
-    inline uint32_t run_checksum(const game& g)
+    inline uint32_t run_checksum(const game& g, unsigned n = sizeof(game))
     {
         uint32_t h = 2166136261u;   // FNV-1a
         const unsigned char* b = reinterpret_cast<const unsigned char*>(&g);
-        for(unsigned i = 0; i < sizeof g; ++i) { h ^= b[i]; h *= 16777619u; }
+        for(unsigned i = 0; i < n; ++i) { h ^= b[i]; h *= 16777619u; }
         return h;
     }
 
@@ -2233,21 +2433,24 @@ namespace core
         s.checksum = run_checksum(s.g);
     }
 
-    // Ważny zapis (bieżący albo PBRUN14 / PBRUN15 - ten sam układ stanu). Po wczytaniu starszego wołać run_save_upgrade.
+    // Ważny zapis bieżącej wersji albo PBRUN19 (v0.23.2: bez plecaka - run_save_upgrade); starsze są pomijane jak w C# RunSave.
+    inline bool run_save_v19(const run_save& s)
+    {
+        return std::memcmp(s.magic, run_magic_v19, sizeof s.magic) == 0 && s.size == run_size_v19 && s.checksum == run_checksum(s.g, run_size_v19);
+    }
     inline bool run_save_valid(const run_save& s)
     {
-        const bool magic = std::memcmp(s.magic, run_magic, sizeof s.magic) == 0 || std::memcmp(s.magic, run_magic_v15, sizeof s.magic) == 0
-                        || std::memcmp(s.magic, run_magic_v14, sizeof s.magic) == 0;
-        return magic && s.size == sizeof(game) && s.checksum == run_checksum(s.g);
+        if(run_save_v19(s)) return true;
+        return std::memcmp(s.magic, run_magic, sizeof s.magic) == 0 && s.size == sizeof(game) && s.checksum == run_checksum(s.g);
     }
-    // PBRUN14 -> PBRUN16: pola w dawnym wyrównaniu (liczniki zadań; v0.21.52 cz. d: kontrakt i bliźniak) od zera.
+    // v0.23.2: PBRUN19 -> PBRUN20 - pusty plecak, oferta sprzętu bez znajdźki (bajty za starym stanem to śmieci z SRAM).
     inline void run_save_upgrade(run_save& s)
     {
-        const bool v14 = std::memcmp(s.magic, run_magic_v14, sizeof s.magic) == 0;
-        if(! v14 && std::memcmp(s.magic, run_magic_v15, sizeof s.magic) != 0) return;
-        if(v14) { s.g.helpers_called = 0; s.g.shop_buys = 0; }
-        s.g.contract = 0; s.g.twin_carry = 0;   // przerwana budowa sprzed mapy kariery: Dom jednorodzinny
+        if(! run_save_v19(s)) return;
+        for(auto& it : s.g.backpack) it = bp_item();
+        s.g.offer_pickup = -1;
         std::memcpy(s.magic, run_magic, sizeof s.magic);
+        s.size = sizeof(game);
         s.checksum = run_checksum(s.g);
     }
 

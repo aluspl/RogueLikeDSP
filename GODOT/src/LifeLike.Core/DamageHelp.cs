@@ -75,6 +75,17 @@ public static class DamageHelp
 
     public static string GearLabel(GearDef gd) => GearLabel(new Message(), gd).Text;
 
+    /// <summary>v0.23.0: krótkie opisy profitów z maski („OBR -1, kryt +5%”), pusty tekst bez profitów.</summary>
+    public static string PerkShorts(GameData d, int perks)
+    {
+        var parts = new List<string>();
+        for (var i = 0; i < d.WeaponPerkPool.Length; ++i)
+        {
+            if ((perks & (1 << i)) != 0) parts.Add(d.WeaponPerkPool[i].Short);
+        }
+        return string.Join(", ", parts);
+    }
+
     /// <summary>Wiersz rozpiski k; false = ten składnik nic nie daje (można go pominąć), tekst i tak jest.</summary>
     public static bool Line(GameData d, Message m, DmgBreakdown b, DmgText k)
     {
@@ -190,7 +201,7 @@ public static class DamageHelp
                 return true;
             case DmgText.CritExtra:
             {
-                if (b.CritTrait == 0 && b.CritBonus == 0 && b.CritUpg == 0 && b.CritWeapon == 0)
+                if (b.CritTrait == 0 && b.CritBonus == 0 && b.CritUpg == 0 && b.CritPerk == 0 && b.CritWeapon == 0 && b.CritCut == 0)
                 {
                     m.Add(Loc.T("kryt_bez_premii"));
                     return false;
@@ -202,14 +213,19 @@ public static class DamageHelp
                     m.Add(Loc.T("bron")).Add(b.CritWeapon).Add("%");
                     first = false;
                 }
+                if (b.CritCut != 0) // v0.23.0: cięcie
+                {
+                    m.Add(first ? " " : ", ").Add(d.HitTypes.Names[(int)HitType.Cut]).Add(" ").Add(b.CritCut).Add("%");
+                    first = false;
+                }
                 if (b.CritTrait != 0)
                 {
                     m.Add(Loc.T("cecha")).Add(b.CritTrait).Add("%");
                     first = false;
                 }
-                if (b.CritUpg != 0)
+                if (b.CritUpg + b.CritPerk != 0) // cecha i v0.23.0 profit Ostrze razem
                 {
-                    m.Add(first ? " " : ", ").Add(Loc.T("ostrze")).Add(b.CritUpg).Add("%");
+                    m.Add(first ? " " : ", ").Add(Loc.T("ostrze")).Add(b.CritUpg + b.CritPerk).Add("%");
                     first = false;
                 }
                 if (!b.Split)
@@ -264,6 +280,29 @@ public static class DamageHelp
                 m.Add(Loc.T("ulepszenie")).Add(b.UpgLevel).Add(": +").Add(b.FlatUpgrade).Add(Loc.T("obr_3"));
                 if (b.UpgTrait >= 0) m.Add(", ").Add(d.ToolTraits[b.UpgTrait].Name).Add(" ").Add(d.ToolTraits[b.UpgTrait].Short);
                 return true;
+            case DmgText.Perks: // v0.23.0: profity broni (Mistrzowska: stałe – Unikat)
+                if (b.Perks == 0)
+                {
+                    m.Add(Loc.T("profity_brak"));
+                    return false;
+                }
+                m.Add(b.PerksMaster ? Loc.T("unikat") : Loc.T("profity")).Add(": ").Add(PerkShorts(d, b.Perks));
+                return true;
+            case DmgText.HitMult: // v0.23.0: typ ciosu x materiał / żywioł problemu
+                if (!b.VsEnemy) // bez celu: same typy ciosu broni („Typ ciosu: Obuch, Kłucie”), składnik nic nie daje
+                {
+                    m.Add(Loc.T("typ_ciosu"));
+                    var hits = d.Weapons[b.Weapon].Hit;
+                    for (var i = 0; i < hits.Length; ++i) m.Add(i > 0 ? ", " : "").Add(d.HitTypes.Names[(int)hits[i]]);
+                    return false;
+                }
+                if (b.HitPct == 100) // bez zmiany: tekst jest, ale składnik nic nie daje
+                {
+                    m.Add(Loc.F("mnoznik_ciosu", b.HitMat, b.HitName, 100));
+                    return false;
+                }
+                m.Add(Loc.F("mnoznik_ciosu", b.HitMat, b.HitName, b.HitPct));
+                return true;
             default:
                 return false;
         }
@@ -283,6 +322,24 @@ public static class DamageHelp
         AddRange(m.Add(Loc.T("teraz")), now.Min, now.Max).Add(" -> ");
         AddRange(m, next.Min, next.Max).Add(shortAvg ? Loc.T("sr") : Loc.T("srednio_2"));
         return AddTenths(m, next.Avg10 - now.Avg10, true).Add(")");
+    }
+
+    /// <summary>
+    /// v0.23.0: dopisek do porównania broni, gdy nowa ma więcej krytu, przebicia OBR albo profitów („ + kryt, OBR -4, profity”);
+    /// pusty, gdy w niczym z tego nie jest lepsza.
+    /// </summary>
+    public static Message CompareExtras(Message m, DmgBreakdown now, DmgBreakdown next)
+    {
+        var first = true;
+        void Part(string s)
+        {
+            m.Add(first ? Loc.T("por_plus") : ", ").Add(s);
+            first = false;
+        }
+        if (next.CritChance() > now.CritChance()) Part(Loc.T("por_kryt"));
+        if (next.Pierce > now.Pierce) Part(Loc.F("por_obr", next.Pierce));
+        if (System.Numerics.BitOperations.PopCount((uint)next.Perks) > System.Numerics.BitOperations.PopCount((uint)now.Perks)) Part(Loc.T("por_profity"));
+        return m;
     }
 
     /// <summary>„kryt 8-14 (11%) -&gt; 10-18 (16%)”.</summary>

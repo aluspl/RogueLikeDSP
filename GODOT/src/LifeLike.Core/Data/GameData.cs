@@ -9,7 +9,7 @@ namespace LifeLike.Core.Data;
 /// </summary>
 public sealed class GameData
 {
-    public WeaponDef[] Weapons { get; private init; } = [];
+    public WeaponDef[] Weapons { get; private set; } = [];
     public ClassDef[] Classes { get; private init; } = [];
     public EnemyDef[] Enemies { get; private init; } = [];
     public StageDef[] Stages { get; private init; } = [];
@@ -25,6 +25,96 @@ public sealed class GameData
     public ShopItemDef[] Hurtownia { get; private init; } = [];
     public BadgeDef[] Badges { get; private init; } = [];
     public ToolDef[] Tools { get; private init; } = [];
+
+    /// <summary>v0.23.0: źródła 17 nowych broni (meta.newTools); są też dołączone do Tools (indeksy 10..26).</summary>
+    public NewToolDef[] NewTools { get; private init; } = [];
+
+    /// <summary>v0.23.0: parametry typów ciosu (obuch, cięcie, kłucie) i tabela skuteczności wg materiału.</summary>
+    public HitTypesDef HitTypes { get; private set; } = DefaultHitTypes();
+
+    /// <summary>v0.23.0: płytka kopia danych z innymi parametrami typów ciosu (testy: np. pewne ogłuszenie).</summary>
+    public GameData WithHitTypes(HitTypesDef hitTypes)
+    {
+        var c = (GameData)MemberwiseClone();
+        c.HitTypes = hitTypes;
+        return c;
+    }
+
+    /// <summary>v0.23.0: płytka kopia danych z podmienioną bronią (testy wzorów pól).</summary>
+    public GameData WithWeapon(int index, WeaponDef weapon)
+    {
+        var c = (GameData)MemberwiseClone();
+        c.Weapons = (WeaponDef[])Weapons.Clone();
+        c.Weapons[index] = weapon;
+        return c;
+    }
+
+    /// <summary>v0.23.0: artefakty (Gablota) – indeksy broni Mistrzowskich (master) w kolejności danych; bit Gabloty = pozycja na liście.
+    /// APPEND ONLY – profile bits: bronie master tylko dopisywane na końcu (ArtifactCaseTests.CaseOrderIsPinnedAppendOnly, gen_data.py).</summary>
+    public int[] Artifacts { get; private init; } = [];
+
+    /// <summary>v0.23.0: szansa (%), że Markowa broń bazowa z dropu okaże się jej artefaktem (sekcja artifacts.chancePct).</summary>
+    public int ArtifactChancePct { get; private init; }
+
+    /// <summary>v0.23.0: easter egg – Kawka (sekcja dog): imię, opis i podpowiedź w Katalogu.</summary>
+    public string DogName { get; private init; } = "";
+    public string DogDesc { get; private init; } = "";
+    public string DogHint { get; private init; } = "";
+    /// <summary>Szansa (%) na budowę z Kawką (etap Aktu I bez bossa).</summary>
+    public int DogChancePct { get; private init; }
+    /// <summary>Dośw. za pierwsze pogłaskanie w budowie.</summary>
+    public int DogXp { get; private init; }
+    /// <summary>Budowy z Kawką do odznaki Psi przyjaciel.</summary>
+    public int DogBadgeBuilds { get; private init; } = 4;
+    public DogQuip[] DogQuips { get; private init; } = [];
+    public int BadgePsiPrzyjaciel { get; private init; } = -1;
+
+    /// <summary>v0.23.0: broń bazowa artefaktu (WeaponDef.Artifact) jako indeks broni; -1 = zwykła broń albo brak bazy.</summary>
+    public int ArtifactBase(int weapon) =>
+        weapon >= 0 && weapon < Weapons.Length && Weapons[weapon].Artifact.Length > 0 ? Array.FindIndex(Weapons, w => w.Id == Weapons[weapon].Artifact) : -1;
+
+    /// <summary>v0.23.0: rzadkości broni (Zwykła, Solidna, Markowa, Mistrzowska).</summary>
+    public WeaponRarityDef[] WeaponRarities { get; private init; } = [];
+
+    /// <summary>v0.23.0: pula profitów broni (sekcja weaponPerks; maska bitów = indeksy puli, maks. 8).</summary>
+    public ToolTraitDef[] WeaponPerkPool { get; private init; } = [];
+
+    /// <summary>v0.23.0: ile losowych profitów ma broń danej rzadkości (Mistrzowska – stałe, nie losuje).</summary>
+    public int[] WeaponPerksPerRarity { get; private init; } = [];
+
+    /// <summary>v0.23.0: stałe profity Mistrzowskiej wg pierwszego typu ciosu broni (maski; indeks = HitType).</summary>
+    public int[] WeaponPerksMaster { get; private init; } = [];
+
+    /// <summary>v0.23.0: suma wartości profitów z maski o danym skutku.</summary>
+    public int PerkValue(int perks, ToolTraitEffect e)
+    {
+        var v = 0;
+        for (var i = 0; i < WeaponPerkPool.Length; ++i)
+        {
+            if ((perks & (1 << i)) != 0 && WeaponPerkPool[i].Effect == e) v += WeaponPerkPool[i].Value;
+        }
+        return v;
+    }
+
+    /// <summary>v0.23.0: maska stałych profitów Mistrzowskiej broni: WeaponDef.MasterPerks albo wg typu ciosu.</summary>
+    public int MasterPerkMask(int weapon)
+    {
+        if (weapon < 0 || weapon >= Weapons.Length) return 0;
+        var w = Weapons[weapon];
+        if (w.MasterPerks.Length > 0)
+        {
+            var m = 0;
+            foreach (var id in w.MasterPerks)
+            {
+                var i = Array.FindIndex(WeaponPerkPool, p => p.Id == id);
+                if (i >= 0) m |= 1 << i;
+            }
+            return m;
+        }
+        var h = (int)w.Hit[0];
+        return h < WeaponPerksMaster.Length ? WeaponPerksMaster[h] : 0;
+    }
+
     /// <summary>Pamiątki (sekcja "keepsakes"): wybierane na start budowy, ranga rośnie z budowami.</summary>
     public KeepsakeDef[] Keepsakes { get; private init; } = [];
     /// <summary>Po ilu budowach z pamiątką ranga II i III.</summary>
@@ -52,6 +142,16 @@ public sealed class GameData
     public int MaterialBossDrop { get; private init; }
     public int MaterialGearBox { get; private init; }
     public int MaterialMax { get; private init; } = 9;
+    /// <summary>v0.23.2: plecak (sekcja "backpack") – miejsca, Skup: sztuki materiału wg poziomu przedmiotu (Zwykła, Solidna,
+    /// Markowa, Mistrzowska / artefakt), materiał za broń / sprzęt i co drugą sztukę; PSZOK: dośw. bazowe + za poziom, HP.</summary>
+    public int BackpackSlots { get; private init; }
+    public int[] BackpackSell { get; private init; } = [];
+    public int BackpackWeaponMat { get; private init; } = -1;
+    public int BackpackGearMat { get; private init; } = -1;
+    public int BackpackAltMat { get; private init; } = -1;
+    public int PszokXp { get; private init; }
+    public int PszokXpPerTier { get; private init; }
+    public int PszokHp { get; private init; }
     /// <summary>Wybór ścieżki między etapami (sekcja "paths"); bez sekcji – pusta lista (bez wyboru).</summary>
     public PathDef[] Paths { get; private init; } = [];
     /// <summary>Codzienna budowa: dzień nr 1 (rok, miesiąc, dzień), domyślna data na GBA, trudność, ile modyfikatorów dnia,
@@ -85,10 +185,20 @@ public sealed class GameData
     public int SlamCrossDelay { get; private init; } = 3;
     public int SlamCrossReach { get; private init; } = 2;
     public int CashPerScore { get; private init; }
-    public int StartToolsMask { get; private init; }
+    public ulong StartToolsMask { get; private init; }
+
+    /// <summary>v0.23.0: narzędzia, które mogą wypaść na budowie bez kupna (nowe bronie z flagą drop).</summary>
+    public ulong DropToolsMask { get; private init; }
+
+    /// <summary>v0.23.0: narzędzia w puli „Nowe narzędzie” w Hurtowni bez kupna (flaga hurtownia).</summary>
+    public ulong HurtowniaToolsMask { get; private init; }
     public int DropChancePct { get; private init; }
     public int GearSolidFrom { get; private init; }
     public int GearBrandFrom { get; private init; }
+    /// <summary>v0.23.0: slot pasa (Pas), -1 bez pasa; przedmiot pasa z kaburą to jakość Game.BeltTier w tym slocie.</summary>
+    public int BeltSlot { get; private init; } = -1;
+    /// <summary>v0.23.0: szansa (%), że paczka / Hurtownia dająca Pas jakości Game.BeltTier naprawdę da pas z kaburą.</summary>
+    public int BeltChancePct { get; private init; }
     public int GearStageBonus { get; private init; }
     public int XpPerKill { get; private init; }
     public int XpPerStage { get; private init; }
@@ -220,6 +330,8 @@ public sealed class GameData
     // Szczęście (sekcja "luck"): kryt, unik, dropy, jakość sprzętu.
     public int CritBasePct { get; private init; }
     public int CritPerLuckPct { get; private init; }
+    /// <summary>v0.23.0: sufit szansy krytu (luck.critMaxPct; brak w danych = 100, bez sufitu).</summary>
+    public int CritMaxPct { get; private init; } = 100;
     public int CritMultiplier { get; private init; }
     public int DropPerLuckPct { get; private init; }
     public int RarityPerLuck { get; private init; }
@@ -259,7 +371,7 @@ public sealed class GameData
     public int SecretClassesMask { get; private init; }
     public int OpenClassesCount { get; private init; }
     /// <summary>Narzędzia z sekretnych zleceń (w dropach dopiero po wykonaniu).</summary>
-    public int SecretToolsMask { get; private init; }
+    public ulong SecretToolsMask { get; private init; }
     /// <summary>Problemy papierowe (Akt 0 bez obrażeń od papierów), bity indeksów GameData.Enemies.</summary>
     public ulong SecretPaperMask { get; private init; }
     /// <summary>Boss pokonany ciosem brygady (Szef tylko dzwoni), -1 = brak.</summary>
@@ -378,13 +490,58 @@ public sealed class GameData
         var materialsJson = hasMaterials ? matj.GetProperty("list").EnumerateArray().ToArray() : [];
         var mid = Index(materialsJson);
 
-        var weapons = weaponsJson.Select(w => new WeaponDef(
-            Str(w, "id"), Str(w, "name"), Int(w, "minDamage"), Int(w, "maxDamage"), Int(w, "range"),
-            ParseStat(Str(w, "scalesWith")), ParseElement(Str(w, "element", "none")), Int(w, "crit", 0), Bool(w, "knockback"),
-            Bool(w, "reveal"))).ToArray();
+        var weapons = weaponsJson.Select(w => ParseWeapon(w)).ToArray();
+        // v0.23.0: Gablota – bit profilu = pozycja broni Mistrzowskiej w weapons[]. APPEND ONLY – profile bits: nowe bronie master tylko
+        // na końcu listy, nigdy nie przestawiać ani nie usuwać (gen_data.py pilnuje kolejności; GBA w Task 10 – ta sama).
+        var artifacts = Enumerable.Range(0, weapons.Length).Where(i => weapons[i].Master).ToArray();
+        // v0.23.0: easter egg – Kawka (dog): oceny postępów z warunkiem (jak gen_data.py)
+        var hasDog = d.TryGetProperty("dog", out var dogj);
+        var dogQuips = hasDog ? dogj.GetProperty("quips").EnumerateArray().Select(q =>
+        {
+            var lines = Str(q, "text").Split('|').ToList();
+            Require(lines.Count <= 3 && lines.All(l => l.Length <= 25), "Kawka: dymek maks. 3 linie x 25 znaków");
+            while (lines.Count < 3) lines.Add("");
+            return new DogQuip(ParseDogCond(Str(q, "when")), Int(q, "value", 0), lines.ToArray());
+        }).ToArray() : [];
+        Require(!hasDog || dogQuips.Any(q => q.When == DogCond.Any), "Kawka: potrzebna ocena bez warunku (any)");
+        var hasBackpack = d.TryGetProperty("backpack", out var backj); // v0.23.2: plecak
+        Require(!hasBackpack || (Int(backj, "slots") is >= 1 and <= Game.MaxBackpack && backj.GetProperty("sell").GetArrayLength() == 4),
+            "plecak: 1..6 miejsc, sell = 4 poziomy");
+        Require(artifacts.Length <= Profile.MaxArtifacts, "artefakty: maks. 16 (maska Gabloty w profilu)");
         foreach (var w in weapons)
         {
             Require(w.MinDamage <= w.MaxDamage && w.Range >= 1, $"broń {w.Id}: złe obrażenia/zasięg");
+            Require(w.Artifact.Length == 0 || (w.Master && wid.ContainsKey(w.Artifact)), $"broń {w.Id}: artefakt bez bazy albo nie Mistrzowski");
+            Require(w.Proc is null || w.Proc.Every >= 1, $"broń {w.Id}: proc.every >= 1");
+            Require(w.Hit.Length <= 2 && w.ModeB.Cooldown > 0 && w.ModeA.DmgPct > 0 && w.ModeB.DmgPct > 0, $"broń {w.Id}: złe typy ciosu/tryby");
+        }
+        var newTools = d.GetProperty("meta").TryGetProperty("newTools", out var ntj)
+            ? ntj.EnumerateArray().Select(t => new NewToolDef(Lookup(wid, Str(t, "weapon"), "nowa broń"), Bool(t, "shop"), Bool(t, "drop"),
+                Bool(t, "hurtownia"), Bool(t, "secret"), Bool(t, "artifact"))).ToArray()
+            : [];
+        var hitTypes = d.TryGetProperty("hitTypes", out var htj) ? ParseHitTypes(htj) : DefaultHitTypes();
+        var weaponRarities = d.TryGetProperty("weaponRarities", out var wrj)
+            ? wrj.EnumerateArray().Select(r => new WeaponRarityDef(Str(r, "name"), Str(r, "color"), Int(r, "dmgBonus"), Int(r, "cooldownDelta", 0),
+                Int(r, "rollFrom", 0))).ToArray()
+            : [];
+        ToolTraitDef[] perkPool = [];
+        int[] perksPerRarity = [];
+        int[] perksMaster = [];
+        if (d.TryGetProperty("weaponPerks", out var wpj)) // v0.23.0: losowe profity broni wg rzadkości
+        {
+            perkPool = wpj.GetProperty("pool").EnumerateArray().Select(x => new ToolTraitDef(Str(x, "id"), Str(x, "name"), Str(x, "short"),
+                Str(x, "desc"), ParseEnum<ToolTraitEffect>(Str(x, "effect")), Int(x, "value"))).ToArray();
+            var pid = Index(wpj.GetProperty("pool").EnumerateArray().ToArray());
+            perksPerRarity = wpj.GetProperty("perRarity").EnumerateArray().Select(x => x.GetInt32()).ToArray();
+            var mj = wpj.GetProperty("master");
+            perksMaster = Enum.GetValues<HitType>().Select(h => mj.TryGetProperty(h.ToString().ToLowerInvariant(), out var ids)
+                ? ids.EnumerateArray().Aggregate(0, (m, x) => m | 1 << Lookup(pid, x.GetString() ?? "", "profit broni")) : 0).ToArray();
+            Require(perkPool.Length is > 0 and <= 8 && perksPerRarity.Length == weaponRarities.Length
+                    && perksPerRarity.All(n => n >= 0 && n <= perkPool.Length), "profity broni: pula 1-8, perRarity = rzadkości");
+            foreach (var w in weapons)
+            {
+                foreach (var id in w.MasterPerks) Lookup(pid, id, $"profit broni {w.Id}");
+            }
         }
 
         var classes = d.GetProperty("classes").EnumerateArray().Select(c =>
@@ -478,15 +635,16 @@ public sealed class GameData
             Require(u.Levels is >= 1 and <= 5 && u.LegacyCosts.Length <= 4, $"ulepszenie {u.Name}: 1-5 poziomów");
         }
         var classCosts = meta.GetProperty("classCosts").EnumerateArray().Select(c => c.GetInt32()).ToArray();
-        var toolCosts = meta.GetProperty("toolCosts").EnumerateArray().Select(c => c.GetInt32()).ToArray();
+        var toolCosts = meta.GetProperty("toolCosts").EnumerateArray().Select(c => c.GetInt32())
+            .Concat(meta.TryGetProperty("newToolCosts", out var ntc) ? ntc.EnumerateArray().Select(c => c.GetInt32()) : []).ToArray(); // v0.23.0: ceny kolejnych nowych broni na sprzedaż
         Require(classCosts.Length >= 1 && toolCosts.Length >= 1, "ceny zawodów i narzędzi");
 
         var classesJson = d.GetProperty("classes").EnumerateArray().ToArray();
         var cid = Index(classesJson);
         var tools = meta.GetProperty("tools").EnumerateArray().Select(t => new ToolDef(Lookup(wid, Str(t, "weapon"), "narzędzie"), Bool(t, "shop"),
-            Bool(t, "reward"), Bool(t, "secret"))).ToArray();
+            Bool(t, "reward"), Bool(t, "secret"))).Concat(newTools.Select(t => new ToolDef(t.Weapon, t.Shop, false, t.Secret, t.Drop, t.Hurtownia, t.Artifact))).ToArray();
         Require(tools.Count(t => t.Shop) == toolCosts.Length, "ceny narzędzi: tyle, ile narzędzi na sprzedaż");
-        Require(tools.Length <= 12 && tools.Select((t, i) => t.Secret || i < 8).All(x => x), "narzędzia: bitmaska uint8 w profilu (sekretne za nią)");
+        Require(tools.Length <= 64 && tools.All(t => !(t.Shop && t.Secret)), "narzędzia: bitmaska uint64 w profilu");
 
         var story = d.GetProperty("story");
         var storyStages = story.GetProperty("stages").EnumerateArray().Select(Story)
@@ -645,6 +803,7 @@ public sealed class GameData
             var x = stt.GetProperty(k);
             return new StatusDef(Str(x, "name"), Str(x, "short"), Str(x, "effect"));
         }
+        StatusDef StatusOrNone(string k) => stt.TryGetProperty(k, out _) ? StatusOf(k) : new StatusDef("", "", ""); // v0.23.0: nowe stany
         var lk = d.GetProperty("luck");
         var th = d.GetProperty("thermos");
         var hl = d.GetProperty("heroLevels");
@@ -652,12 +811,16 @@ public sealed class GameData
         var slamJson = d.GetProperty("slam");
 
         Require(slots.Count is >= 3 and <= Game.MaxGearSlots, "sprzęt: 3-6 slotów");
-        var startTools = 0;
+        var startTools = 0UL;
+        ulong dropTools = 0UL, hurtowniaTools = 0UL;
         for (var i = 0; i < tools.Length; i++)
         {
-            if (!tools[i].Shop && !tools[i].Reward && !tools[i].Secret) startTools |= 1 << i;
+            if (tools[i].Drop) dropTools |= 1UL << i;
+            if (tools[i].Hurtownia) hurtowniaTools |= 1UL << i;
+            if (!tools[i].Shop && !tools[i].Reward && !tools[i].Secret && !tools[i].Drop && !tools[i].Hurtownia && !tools[i].Artifact) startTools |= 1UL << i;
         }
-        int rewardClasses = 0, secretClasses = 0, secretTools = 0;
+        int rewardClasses = 0, secretClasses = 0;
+        var secretTools = 0UL;
         for (var i = 0; i < classes.Length; i++)
         {
             if (classes[i].Reward) rewardClasses |= 1 << i;
@@ -669,7 +832,7 @@ public sealed class GameData
         Require(classes.Skip(openClasses).All(c => c.Secret), "zawody z sekretnych zleceń na końcu listy");
         for (var i = 0; i < tools.Length; i++)
         {
-            if (tools[i].Secret) secretTools |= 1 << i;
+            if (tools[i].Secret) secretTools |= 1UL << i;
         }
 
         var hasSecrets = d.TryGetProperty("secrets", out var secj);
@@ -690,6 +853,7 @@ public sealed class GameData
             var tid = new Dictionary<string, int>();
             var tj = meta.GetProperty("tools").EnumerateArray().ToArray();
             for (var i = 0; i < tj.Length; i++) tid[Str(tj[i], "weapon")] = i;
+            for (var i = 0; i < newTools.Length; i++) tid[weapons[newTools[i].Weapon].Id] = tj.Length + i;
             foreach (var x in rwj.GetProperty("list").EnumerateArray())
             {
                 var kind = Str(x, "kind");
@@ -709,6 +873,12 @@ public sealed class GameData
                         idx = slots.IndexOf(id);
                         Require(idx >= 0, $"nagroda: nieznany slot {id}");
                         name = slots[idx];
+                        break;
+                    case "belt":
+                        rk = RewardKind.Belt;
+                        idx = slots.IndexOf(id);
+                        Require(idx >= 0, $"nagroda: nieznany slot pasa {id}");
+                        name = gear[idx * 3 + Game.BeltTier].Name;
                         break;
                     case "class":
                         rk = RewardKind.Cls;
@@ -755,8 +925,8 @@ public sealed class GameData
             tutSteps = tuj.GetProperty("steps").EnumerateArray().Select(Tut).ToArray();
             tutUnlocks = tuj.GetProperty("unlocks").EnumerateArray().Select(Tut).ToArray();
             var unlockIds = tutUnlocks.Select(x => x.Id).ToArray();
-            Require(unlockIds.SequenceEqual(new[] { "respect", "daily", "investor", "act0", "class" })
-                    || unlockIds.SequenceEqual(new[] { "respect", "daily", "investor", "act0", "class", "secret" }), "samouczek: 5-6 dymków odblokowań");
+            Require(unlockIds.SequenceEqual(new[] { "respect", "daily", "investor", "act0", "class", "secret", "training", "options", "help", "keepsake", "stats" }),
+                "samouczek: 11 dymków odblokowań (kolejność = TutorialUnlock)");
         }
         // v0.21.51 cz. 2: sekretne zlecenia (#39) – nagroda: zawód, narzędzie, wygląd, ranga Respektu
         var cosmeticsJson = hasSecrets ? secj.GetProperty("cosmetics").EnumerateArray().ToArray() : [];
@@ -768,6 +938,7 @@ public sealed class GameData
         var tid2 = new Dictionary<string, int>();
         var toolsJson = meta.GetProperty("tools").EnumerateArray().ToArray();
         for (var i = 0; i < toolsJson.Length; i++) tid2[Str(toolsJson[i], "weapon")] = i;
+        for (var i = 0; i < newTools.Length; i++) tid2[weapons[newTools[i].Weapon].Id] = toolsJson.Length + i;
         var tutFrom = d.TryGetProperty("tutorial", out var tfj) ? Str(tfj, "from") : "";
         var secrets = secretsJson.Select(x =>
         {
@@ -782,7 +953,8 @@ public sealed class GameData
                 "cosmetic" => (SecretReward.Cosmetic, Lookup(coid, id, "wygląd sekretu")),
                 _ => (SecretReward.Respect, Lookup(rsid, id, "Respekt sekretu")),
             };
-            var value = kind == SecretKind.HelperBoss ? Lookup(eid, Str(x, "enemy"), "boss sekretu") : Int(x, "value", 0);
+            var value = kind == SecretKind.HelperBoss ? Lookup(eid, Str(x, "enemy"), "boss sekretu")
+                : kind == SecretKind.NoSwapWin ? Lookup(cid, Str(x, "class"), "zawód sekretu") : Int(x, "value", 0); // v0.23.0 (#84)
             var lines = Str(x, "news").Split('|').ToList();
             while (lines.Count < 3) lines.Add("");
             return new SecretDef(Str(x, "id"), Str(x, "hint"), Str(x, "desc"), kind, value, reward, idx, Str(x, "rewardText"),
@@ -1291,6 +1463,29 @@ public sealed class GameData
             ScheduleTurnsPerDay = hasSchedule ? Int(scj, "turnsPerDay") : 3,
             ScheduleUrl = hasSchedule ? Str(scj, "url") : "planbudowlany.online",
             Tools = tools,
+            NewTools = newTools,
+            Artifacts = artifacts,
+            ArtifactChancePct = d.TryGetProperty("artifacts", out var artj) ? Int(artj, "chancePct", 0) : 0,
+            DogName = hasDog ? Str(dogj, "name") : "",
+            DogDesc = hasDog ? Str(dogj, "desc") : "",
+            DogHint = hasDog ? Str(dogj, "hint") : "",
+            DogChancePct = hasDog ? Int(dogj, "chancePct") : 0,
+            DogXp = hasDog ? Int(dogj, "xp") : 0,
+            DogBadgeBuilds = hasDog ? Int(dogj, "badgeBuilds", 4) : 4,
+            DogQuips = dogQuips,
+            BackpackSlots = hasBackpack ? Int(backj, "slots") : 0,
+            BackpackSell = hasBackpack ? backj.GetProperty("sell").EnumerateArray().Select(x => x.GetInt32()).ToArray() : [],
+            BackpackWeaponMat = hasBackpack && hasMaterials ? Lookup(mid, Str(backj, "weaponMat"), "materiał") : -1,
+            BackpackGearMat = hasBackpack && hasMaterials ? Lookup(mid, Str(backj, "gearMat"), "materiał") : -1,
+            BackpackAltMat = hasBackpack && hasMaterials ? Lookup(mid, Str(backj, "altMat"), "materiał") : -1,
+            PszokXp = hasBackpack ? Int(backj, "pszokXp") : 0,
+            PszokXpPerTier = hasBackpack ? Int(backj, "pszokXpPerTier") : 0,
+            PszokHp = hasBackpack ? Int(backj, "pszokHp") : 0,
+            HitTypes = hitTypes,
+            WeaponRarities = weaponRarities,
+            WeaponPerkPool = perkPool,
+            WeaponPerksPerRarity = perksPerRarity,
+            WeaponPerksMaster = perksMaster,
             Gear = gear.ToArray(),
             GearSlots = slots.ToArray(),
             GearRarities = rarities,
@@ -1304,9 +1499,13 @@ public sealed class GameData
             SlamCrossReach = Int(slamJson, "crossReach", 2),
             CashPerScore = Int(d.GetProperty("cash"), "perScore"),
             StartToolsMask = startTools,
+            DropToolsMask = dropTools,
+            HurtowniaToolsMask = hurtowniaTools,
             DropChancePct = Int(drops, "chancePct"),
             GearSolidFrom = Int(rr, "solidFrom"),
             GearBrandFrom = Int(rr, "brandFrom"),
+            BeltSlot = eq.TryGetProperty("beltSlot", out var bsj) ? slots.IndexOf(bsj.GetString() ?? "") : -1,
+            BeltChancePct = Int(eq, "beltChancePct", 0),
             GearStageBonus = Int(rr, "stageBonus"),
             XpPerKill = Int(meta, "xpPerKill"),
             XpPerStage = Int(meta, "xpPerStage"),
@@ -1325,12 +1524,14 @@ public sealed class GameData
             NgDmgBonusPerTier = Int(ng, "dmgBonusPerTier"),
             NgScorePctPerTier = Int(ng, "scorePctPerTier"),
             Statuses = [new StatusDef("", "", ""), StatusOf("poison"), StatusOf("shock"), StatusOf("slip"), StatusOf("paper"),
-                stt.TryGetProperty("wet", out _) ? StatusOf("wet") : new StatusDef("Mokry", "Mokry", "prąd boli bardziej")],
+                stt.TryGetProperty("wet", out _) ? StatusOf("wet") : new StatusDef("Mokry", "Mokry", "prąd boli bardziej"),
+                StatusOrNone("burn"), StatusOrNone("bleed"), StatusOrNone("root"), StatusOrNone("defdown"), StatusOrNone("mark")],
             PaperDelay = Int(stt.GetProperty("paper"), "delay"),
             GearTraits = traits,
             GearDeclineXp = Int(eq, "declineXp"),
             CritBasePct = Int(lk, "critBasePct"),
             CritPerLuckPct = Int(lk, "critPerLuckPct"),
+            CritMaxPct = Int(lk, "critMaxPct", 100),
             CritMultiplier = Int(lk, "critMultiplier"),
             DropPerLuckPct = Int(lk, "dropPerLuckPct"),
             RarityPerLuck = Int(lk, "rarityPerLuck"),
@@ -1348,6 +1549,7 @@ public sealed class GameData
             BadgeKolekcjoner = BadgeIdx("kolekcjoner"),
             BadgeKatalog = BadgeIdx("katalog"),
             BadgeOsiedle = BadgeIdx("osiedle"),
+            BadgePsiPrzyjaciel = BadgeIdx("psi_przyjaciel"),
             Respect = respect,
             RespectStage = hasRespect ? Int(rsj, "stage") : 0,
             RespectBoss = hasRespect ? Int(rsj, "boss") : 0,
@@ -1451,6 +1653,25 @@ public sealed class GameData
     private static int Int(JsonElement e, string name, int fallback) =>
         e.TryGetProperty(name, out var v) ? v.GetInt32() : fallback;
 
+    private static DogCond ParseDogCond(string s) => s switch
+    {
+        "any" => DogCond.Any,
+        "first" => DogCond.First,
+        "helmet_stage" => DogCond.HelmetStage,
+        "hp_low" => DogCond.HpLow,
+        "no_helmet" => DogCond.NoHelmet,
+        "master" => DogCond.Master,
+        "hp_full" => DogCond.HpFull,
+        "no_kills" => DogCond.NoKills,
+        "kills_ge" => DogCond.KillsGe,
+        "losses_ge" => DogCond.LossesGe,
+        "runs_le" => DogCond.RunsLe,
+        "wins_ge" => DogCond.WinsGe,
+        "coffee_ge" => DogCond.CoffeeGe,
+        "level_ge" => DogCond.LevelGe,
+        _ => throw new GameDataException($"Kawka: nieznany warunek: {s}"),
+    };
+
     private static Stat ParseStat(string s) => s switch
     {
         "strength" => Stat.Str,
@@ -1544,6 +1765,7 @@ public sealed class GameData
         "brigade_pct" => UpgradeEffect.BrigadePct,
         "cooldown" => UpgradeEffect.Cooldown,
         "first_hit" => UpgradeEffect.FirstHit,
+        "start_rarity" => UpgradeEffect.StartRarity,
         _ => UpgradeEffect.Unknown, // nowsza wersja danych: ulepszenie bez działania
     };
 
@@ -1576,11 +1798,79 @@ public sealed class GameData
     private static T ParseSnakeOr<T>(string s, T fallback) where T : struct, Enum =>
         Enum.TryParse<T>(string.Concat(s.Split('_').Select(p => p.Length > 0 ? char.ToUpperInvariant(p[0]) + p[1..] : p)), true, out var v) ? v : fallback;
 
+    /// <summary>v0.23.0: broń z JSON. requireModes (domyślnie tak, jak w game.json): tryb B musi być w danych, brak = błąd;
+    /// bez wymagania brakujące tryby dostają wartości domyślne (zasięg 1 = Single, dalej = Shot; B z odnowieniem 1).</summary>
+    public static WeaponDef ParseWeapon(JsonElement w, bool requireModes = true)
+    {
+        if (requireModes) Require(w.TryGetProperty("modeB", out _), $"broń {Str(w, "id")}: brak trybu B");
+        return new WeaponDef(
+            Str(w, "id"), Str(w, "name"), Int(w, "minDamage"), Int(w, "maxDamage"), Int(w, "range"),
+            ParseStat(Str(w, "scalesWith")), ParseElement(Str(w, "element", "none")), Int(w, "crit", 0), Bool(w, "knockback"),
+            Bool(w, "reveal"), ParseHit(w), ParseMode(w, "modeA"), ParseMode(w, "modeB"), Bool(w, "master"), Bool(w, "neutral"), Int(w, "pierce", 0),
+            Str(w, "desc", ""), w.TryGetProperty("masterPerks", out var mp) ? mp.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : null,
+            Str(w, "artifact", ""), Str(w, "hint", ""), w.TryGetProperty("proc", out var pj) ? ParseProc(pj) : null, Bool(w, "wallFree"),
+            Str(w, "bonusMaterial", ""), Int(w, "bonusPct", 0));
+    }
+
+    /// <summary>v0.23.0: mechanika artefaktu „co N-ty cios” (weapons[].proc).</summary>
+    private static ProcDef ParseProc(JsonElement p)
+    {
+        return new ProcDef(Int(p, "every"), Str(p, "name", ""), Str(p, "desc", ""), ParseEnum<ModeEffect>(Str(p, "effect", "none")), Int(p, "value", 0),
+            Int(p, "turns", 0), Int(p, "dmgPct", 100), ParseElement(Str(p, "element", "none")), ParseEnum<ModeEffect>(Str(p, "effect2", "none")),
+            Int(p, "value2", 0), Int(p, "turns2", 0));
+    }
+
+    /// <summary>v0.23.0: typ ciosu broni – tekst albo tablica (1-2 typów); brak = obuch.</summary>
+    private static HitType[] ParseHit(JsonElement w)
+    {
+        if (!w.TryGetProperty("hit", out var h)) return [HitType.Blunt];
+        return h.ValueKind == JsonValueKind.Array
+            ? h.EnumerateArray().Select(x => ParseEnum<HitType>(x.GetString() ?? "")).ToArray()
+            : [ParseEnum<HitType>(h.GetString() ?? "")];
+    }
+
+    /// <summary>v0.23.0: tryb ataku; brak w danych = dzisiejsze zachowanie (zasięg 1 – pojedyncze pole, dalej – strzał). Tryb B bez
+    /// odnowienia dostaje 1 (tryb B zawsze ma odnowienie).</summary>
+    private static WeaponMode ParseMode(JsonElement w, string name)
+    {
+        var range = Int(w, "range");
+        if (!w.TryGetProperty(name, out var m))
+            return new WeaponMode(range == 1 ? PatternKind.Single : PatternKind.Shot, range, 100, ModeEffect.None, 0, 0, name == "modeB" ? 1 : 0);
+        var pat = Str(m, "pattern");
+        return new WeaponMode(pat == "throw" ? PatternKind.Throw3x3 : ParseEnum<PatternKind>(pat), Int(m, "range", range), Int(m, "dmgPct", 100),
+            ParseEnum<ModeEffect>(Str(m, "effect", "none")), Int(m, "value", 0), Int(m, "turns", 0), Int(m, "cooldown", 0),
+            ParseEnum<ModeEffect>(Str(m, "effect2", "none")), Int(m, "value2", 0), Int(m, "turns2", 0), Int(m, "steelPct", 0),
+            Math.Max(1, Int(m, "hits", 1)), Str(m, "name", ""));
+    }
+
+    private static HitTypesDef ParseHitTypes(JsonElement h)
+    {
+        var rows = h.GetProperty("materialPct").EnumerateArray().Select(r => r.EnumerateArray().Select(x => x.GetInt32()).ToArray()).ToArray();
+        Require(rows.Length == 3 && rows.All(r => r.Length == 5), "typy ciosu: 3 wiersze po 5 kolumn (cement, stal, drewno, woda, brak)");
+        var pct = new int[3, 5];
+        for (var i = 0; i < 3; i++)
+            for (var j = 0; j < 5; j++) pct[i, j] = rows[i][j];
+        var names = h.TryGetProperty("names", out var nj) ? nj.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : ["", "", ""];
+        Require(names.Length == 3, "typy ciosu: 3 nazwy");
+        return new HitTypesDef(pct, Int(h, "stunChancePct"), Int(h, "cutCritPct"), Int(h, "pierceDef"), Int(h, "sparkSteelPct"),
+            Int(h, "powerWaterPct"), Int(h, "fireWoodPct"), Int(h, "fireWaterPct"), Int(h, "dotPerTurn"), names);
+    }
+
+    /// <summary>Dane bez sekcji hitTypes (stare pliki): wszystko 100%, bez efektów.</summary>
+    private static HitTypesDef DefaultHitTypes()
+    {
+        var pct = new int[3, 5];
+        for (var i = 0; i < 3; i++)
+            for (var j = 0; j < 5; j++) pct[i, j] = 100;
+        return new HitTypesDef(pct, 0, 0, 0, 100, 100, 100, 100, 0, ["", "", ""]);
+    }
+
     private static Element ParseElement(string s) => s switch
     {
         "woda" => Element.Water,
         "prad" => Element.Power,
         "iskra" => Element.Spark,
+        "ogien" => Element.Fire,
         "none" => Element.None,
         _ => throw new GameDataException($"nieznany żywioł: {s}"),
     };

@@ -3,7 +3,7 @@ using LifeLike.Game.Phone.Pages;
 
 namespace LifeLike.Game.Screens;
 
-/// <summary>Podsumowanie budowy (#33) po SMS-ie końca budowy (i harmonogramie domu po wygranej), przed planszą końcową.</summary>
+/// <summary>Podsumowanie budowy (#33): „Szczegóły budowy” z rozmowy między budowami, powrót do niej.</summary>
 public sealed class RecapScreen : Screen
 {
     public RecapScreen(App app) : base(app)
@@ -28,7 +28,7 @@ public sealed class RecapScreen : Screen
     {
         if (N.Phone.HandleInput(e)) return true;
         if (!e.Is(GameAction.Start | GameAction.A | GameAction.B | GameAction.Cancel)) return false;
-        Flow.End.Open();
+        Flow.BetweenRuns.Open(); // v0.22.0 (UX A): powrót do rozmowy
         return true;
     }
 }

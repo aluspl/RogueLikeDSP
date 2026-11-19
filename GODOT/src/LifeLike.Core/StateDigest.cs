@@ -49,6 +49,10 @@ public static class StateDigest
         f.Add(g.SlamY);
         f.Add(g.SlamCounter);
         f.Add(g.WeaponOverride);
+        f.Add(g.WeaponBCd); // v0.23.0: tryb B broni
+        f.Add(g.WeaponCharges);
+        f.Add(g.CritBuff);
+        f.Add(g.CritBuffTurns);
         f.Add(g.WallsCount);
         f.Add(g.EnemiesCount);
         for (var i = 0; i < g.EnemiesCount; i++)
@@ -67,6 +71,15 @@ public static class StateDigest
             f.Add(e.Timer);
             f.Add(e.Elite); // v0.21.50 cz. 2: elity, mokry
             f.Add(e.Wet);
+            f.Add(e.Dot); // v0.23.0: stany trybu B broni
+            f.Add(e.DotDmg);
+            f.Add(e.DotKind);
+            f.Add(e.Root);
+            f.Add(e.DefDown);
+            f.Add(e.DefDownVal);
+            f.Add(e.MarkTurns);
+            f.Add(e.MarkPct);
+            f.Add(e.NoHeal);
         }
         f.Add(g.PickupsCount);
         for (var i = 0; i < g.PickupsCount; i++)
@@ -78,6 +91,8 @@ public static class StateDigest
             f.Add(p.Active ? 1 : 0);
             f.Add(p.Arg);
             f.Add(p.Trait);
+            f.Add(p.Extra);
+            f.Add(p.Perks);
         }
         for (var i = 0; i < Game.StatusSlots; i++) f.Add(g.HeroStatus[i]);
         for (var i = 0; i < Game.MaxGearSlots; i++) f.Add(g.Equipped[i]);
@@ -100,7 +115,8 @@ public static class StateDigest
         f.Add(g.ActBonus);
         f.Add(g.StageDamage);
         f.Add(g.StageKills);
-        f.Add(g.ToolsFound);
+        f.Add((int)g.ToolsFound);
+        f.Add((int)(g.ToolsFound >> 32));
         foreach (var m in g.Log)
         {
             f.Add(m.N);
@@ -181,6 +197,22 @@ public static class StateDigest
         f.Add(g.TraitPending ? 1 : 0);
         f.Add(g.ToolOffer);
         f.Add(g.ToolOfferPickup);
+        f.Add(g.WeaponRarity);
+        f.Add(g.ToolOfferRarity);
+        f.Add(g.Weapon2); // v0.23.0: druga broń w kaburze
+        f.Add(g.Weapon2Rarity);
+        f.Add(g.Weapon2Charges);
+        f.Add(g.Weapon2Lvl);
+        f.Add(g.Weapon2Trait);
+        f.Add(g.Weapon2TraitPending ? 1 : 0);
+        f.Add(g.ToolOfferExtra);
+        f.Add(g.WeaponPerks); // v0.23.0: profity broni
+        f.Add(g.Weapon2Perks);
+        f.Add(g.ToolOfferPerks);
+        f.Add(g.PerkRolls);
+        f.Add(g.ProcCount); // v0.23.0: artefakty
+        f.Add(g.ArtifactsRun);
+        f.Add(g.PatentWalls);
         f.Add(g.SecretX);
         f.Add(g.SecretY);
         f.Add(g.SecretKind);
@@ -226,6 +258,23 @@ public static class StateDigest
                      g.BuildDays(), g.Bonus.StartCoffee,
                  })
             f.Add(v);
+        f.Add(g.OfferPickup); // v0.23.2: plecak
+        foreach (var it in g.Backpack)
+        {
+            f.Add((int)it.Kind);
+            f.Add(it.Id);
+            f.Add(it.Rarity);
+            f.Add(it.Trait);
+            f.Add(it.Perks);
+            f.Add(it.Extra);
+        }
+        if (g.DogFlags != 0 || g.DogPets != 0) // v0.23.0: Kawka (tylko budowy z nią)
+        {
+            f.Add(g.DogX);
+            f.Add(g.DogY);
+            f.Add(g.DogFlags);
+            f.Add(g.DogPets);
+        }
         return f.H;
     }
 }

@@ -25,7 +25,7 @@ public class Act0AndTutorialTests
         var p = Meta.NewProfile(D);
         Assert.True(!Meta.Act0Unlocked(D, p) && Meta.Mods(D, p).Act0 == 0);
         var ai = ActReward();
-        Assert.True(ai == D.Rewards.Length - 1 && Meta.RewardsAvailable(D) == D.Rewards.Length);
+        Assert.True(ai == D.Rewards.Length - 2 && Meta.RewardsAvailable(D) == D.Rewards.Length); // v0.23.0: za Aktem 0 jest jeszcze nagroda „pas z kaburą”
         for (var k = 0; k <= ai; ++k) Assert.Equal(k, Meta.RecordWin(D, p));
         Assert.True(Meta.Act0Unlocked(D, p) && Meta.Mods(D, p).Act0 == 1);
         var n = TestData.Run(1, 11);
@@ -103,15 +103,17 @@ public class Act0AndTutorialTests
         Assert.True(h.Stage == F0 && h.ActNumeral() == "I");
     }
 
+    private const int Builds = 80;
+
     [Fact]
     public void BotPassesAct0CollectingDocuments()
     {
         var m = Meta.Mods(D, WithAct0());
         var passed = 0;
-        for (var k = 0; k < 20; ++k)
+        for (var k = 0; k < Builds; ++k)
         {
             var b = new Game(D);
-            b.NewRun(k % D.Classes.Length, (uint)(300 + k * 13), 0, m);
+            b.NewRun(k % D.OpenClassesCount, (uint)(300 + k * 13), 0, m);
             for (var step = 0; step < 3000 && b.St == GameStatus.Playing && b.Stage < F0; ++step) Bot.Step(b);
             while (b.St == GameStatus.StageClear && b.Stage < F0)
             {
@@ -120,7 +122,9 @@ public class Act0AndTutorialTests
             }
             if (b.Stage >= F0 || (b.St == GameStatus.StageClear && b.Stage == F0 - 1)) ++passed;
         }
-        Assert.True(passed >= 14, $"Akt 0 przeszło {passed}/20");
+        // v0.23.0: zwykłe zawody jak w core_tests.cpp; bot z trybem B, problemy +18% HP (Łatwy). Próba 80 budów (40 – za mało:
+        // po kroku w bok w pościgu 22/40, choć na 400 budowach 69%): zmierzone 49/80; próg 44 (55%) = ok. 1,1 odchylenia niżej.
+        Assert.True(passed >= 44, $"Akt 0 przeszło {passed}/{Builds}");
     }
 
     [Fact]
@@ -128,29 +132,42 @@ public class Act0AndTutorialTests
     {
         var t = Meta.NewProfile(D);
         Assert.True(Meta.TutorialPending(t, 0) && Meta.TutorialPending(t, 1) && Meta.PendingUnlock(D, t, 0, out _) == -1);
-        int gba = 0, godot = 0;
+        int[] per = [0, 0];
+        var godot = 0;
         for (var i = 0; i < D.TutorialSteps.Length; ++i)
         {
-            if (Meta.TutorialStepShown(D, t, i, false)) ++gba;
+            if (Meta.TutorialStepShown(D, t, i, false)) ++per[D.TutorialSteps[i].Screen];
             if (Meta.TutorialStepShown(D, t, i, true)) ++godot;
         }
-        Assert.True(gba > 5 && godot == gba + 1); // klucz z opcjami tylko w Godocie; tryb inwestora jeszcze ukryty
+        Assert.True(per[0] is >= 2 and <= 3 && per[1] is >= 2 and <= 3 && godot == per[0] + per[1]); // v0.23.0: krótki samouczek
         Meta.TutorialDone(t, 0);
         Meta.TutorialDone(t, 1);
-        Assert.True(!Meta.TutorialPending(t, 0) && !Meta.TutorialPending(t, 1));
+        Assert.True(!Meta.TutorialPending(t, 0) && !Meta.TutorialPending(t, 1) && (t.Tutorial & Tutorial.Short) != 0);
         Assert.True(Meta.PendingUnlock(D, t, 0, out _) == -1 && Meta.PendingUnlock(D, t, 1, out _) == -1);
+        Assert.Equal(TutorialUnlock.Options, Meta.PendingUnlock(D, t, 0, out _, true)); // klucz z opcjami tylko w Godocie
+        Meta.MarkUnlock(t, TutorialUnlock.Options, -1);
         t.RespectTotal = 2;
-        Assert.Equal(TutorialUnlock.Respect, Meta.PendingUnlock(D, t, 0, out _));
+        Assert.Equal(TutorialUnlock.Respect, Meta.PendingUnlock(D, t, 0, out _, true));
         Meta.MarkUnlock(t, TutorialUnlock.Respect, -1);
         t.Runs = 1;
+        t.Xp = 0;
         Assert.Equal(TutorialUnlock.Daily, Meta.PendingUnlock(D, t, 0, out _));
         Meta.MarkUnlock(t, TutorialUnlock.Daily, -1);
-        Assert.Equal(-1, Meta.PendingUnlock(D, t, 0, out _));
+        Assert.Equal(TutorialUnlock.Help, Meta.PendingUnlock(D, t, 0, out _));
+        Meta.MarkUnlock(t, TutorialUnlock.Help, -1);
+        Assert.Equal(-1, Meta.PendingUnlock(D, t, 0, out _, true));
+        t.Xp = Meta.NextUnlock(D, t, out _, out _); // stać na Szkolenie
+        Assert.True(t.Xp > 0 && Meta.PendingUnlock(D, t, 0, out _) == TutorialUnlock.Training);
+        Meta.MarkUnlock(t, TutorialUnlock.Training, -1);
+        Assert.Equal(-1, Meta.PendingUnlock(D, t, 0, out _, true));
+        Assert.Equal(TutorialUnlock.Keepsake, Meta.PendingUnlock(D, t, 1, out _));
+        Meta.MarkUnlock(t, TutorialUnlock.Keepsake, -1);
+        Assert.Equal(TutorialUnlock.Stats, Meta.PendingUnlock(D, t, 1, out _));
+        Meta.MarkUnlock(t, TutorialUnlock.Stats, -1);
+        Assert.Equal(-1, Meta.PendingUnlock(D, t, 1, out _));
         Meta.RecordWin(D, t);
         Assert.Equal(TutorialUnlock.Investor, Meta.PendingUnlock(D, t, 1, out _));
         Meta.MarkUnlock(t, TutorialUnlock.Investor, -1);
-        var gba2 = Enumerable.Range(0, D.TutorialSteps.Length).Count(i => Meta.TutorialStepShown(D, t, i, false));
-        Assert.Equal(gba + 1, gba2); // krok o trybie inwestora po odblokowaniu
         int cls;
         while (Meta.PendingUnlock(D, t, 1, out cls) == -1 && t.Rewards < D.Rewards.Length) Meta.RecordWin(D, t);
         Assert.True(Meta.PendingUnlock(D, t, 1, out cls) == TutorialUnlock.Class && Meta.ClassReward(D, cls) && Meta.ClassUnlocked(D, t, cls));
@@ -165,6 +182,12 @@ public class Act0AndTutorialTests
         Assert.Equal(-1, Meta.PendingUnlock(D, t, 0, out _));
         Meta.TutorialReset(t); // powtórka z Jak grać
         Assert.True(Meta.TutorialPending(t, 0) && Meta.TutorialPending(t, 1) && (t.Tutorial & Tutorial.Act0) != 0);
+        // profil po starym (pełnym) samouczku: bez dymków o tym, co już widział (bez bitu Short)
+        var o = Meta.NewProfile(D);
+        o.Tutorial = (ushort)(Tutorial.Title | Tutorial.Class | Tutorial.Daily);
+        o.Runs = 5;
+        o.Xp = 30000;
+        Assert.True(Meta.PendingUnlock(D, o, 0, out _, true) == -1 && Meta.PendingUnlock(D, o, 1, out _) == -1);
     }
 
     [Fact]
@@ -181,7 +204,9 @@ public class Act0AndTutorialTests
         v.ClassesSeen = 0x1234;
         Assert.True(Meta.ProfileFix(D, v) && v.MagicIs(Profile.MagicCurrent) && v.Best == 999 && v.Rewards == D.Rewards.Length && Meta.Act0Unlocked(D, v));
         Assert.True(!Meta.TutorialPending(v, 0) && !Meta.TutorialPending(v, 1));
-        Assert.True(Meta.PendingUnlock(D, v, 0, out _) == TutorialUnlock.Act0 && Meta.PendingUnlock(D, v, 1, out _) == -1);
+        Assert.True(Meta.PendingUnlock(D, v, 0, out _, true) == TutorialUnlock.Act0 && Meta.PendingUnlock(D, v, 1, out _) == -1);
+        Meta.MarkUnlock(v, TutorialUnlock.Act0, -1);
+        Assert.True(Meta.PendingUnlock(D, v, 0, out _, true) == -1 && (v.Tutorial & Tutorial.Short) == 0);
         var nv = Meta.NewProfile(D);
         nv.Magic = Profile.MagicBytes(Profile.MagicV9);
         Assert.True(Meta.ProfileFix(D, nv) && Meta.TutorialPending(nv, 0) && nv.Rewards == 0 && nv.Tutorial == 0);

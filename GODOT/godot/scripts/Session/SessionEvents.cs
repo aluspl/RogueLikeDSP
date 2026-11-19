@@ -16,6 +16,8 @@ public sealed class SessionEvents
     public event Action<int, bool> LevelUp;
     /// <summary>Nowe narzędzie w ręku; argument: poprzednia broń (WeaponOverride, -1 = broń zawodu).</summary>
     public event Action<int> ToolFound;
+    /// <summary>v0.23.0: artefakt trafił prosto do kabury (pas z pustą kaburą); argument: broń.</summary>
+    public event Action<int> ArtifactHolstered;
     /// <summary>Coś wypadło z usuniętego problemu.</summary>
     public event Action Dropped;
     /// <summary>Założony sprzęt w slocie.</summary>
@@ -43,10 +45,17 @@ public sealed class SessionEvents
     /// <summary>Boss wszedł w drugą fazę (np. Decyzja odmowna: Odwołanie) - indeks definicji wroga.</summary>
     public event Action<int> BossPhase;
 
+    /// <summary>v0.23.0: boss etapu usunięty (indeks definicji problemu) – ogłoszenie.</summary>
+    public event Action<int> BossDefeated;
+
+    /// <summary>v0.23.0: easter egg – Kawka pogłaskana (true = pierwszy raz w tej budowie: ogłoszenie i dośw.).</summary>
+    public event Action<bool> DogPetted;
+
     public void RaiseRunStarted() => RunStarted?.Invoke();
     public void RaisePickedUp() => PickedUp?.Invoke();
     public void RaiseLevelUp(int level, bool abilityUp) => LevelUp?.Invoke(level, abilityUp);
     public void RaiseToolFound(int previous) => ToolFound?.Invoke(previous);
+    public void RaiseArtifactHolstered(int weapon) => ArtifactHolstered?.Invoke(weapon);
     public void RaiseDropped() => Dropped?.Invoke();
     public void RaiseGearEquipped(int slot) => GearEquipped?.Invoke(slot);
     public void RaiseAbilityReady() => AbilityReady?.Invoke();
@@ -60,4 +69,6 @@ public sealed class SessionEvents
     public void RaiseSecondChance() => SecondChance?.Invoke();
     public void RaiseDocumentFound(int doc, bool complete) => DocumentFound?.Invoke(doc, complete);
     public void RaiseBossPhase(int def) => BossPhase?.Invoke(def);
+    public void RaiseBossDefeated(int def) => BossDefeated?.Invoke(def);
+    public void RaiseDogPetted(bool first) => DogPetted?.Invoke(first);
 }
